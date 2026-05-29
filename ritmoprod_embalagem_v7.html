@@ -1,0 +1,3277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RitmoProd · Embalagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══ CARBON FORGE TOKENS ═══ */
+:root{
+  --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
+  --acc:#F5A623;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --font-h:'Barlow Condensed',sans-serif;
+  --font-b:'Barlow',sans-serif;
+  --font-d:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--font-b);display:flex;flex-direction:column}
+
+/* ═══ HEADER ═══ */
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 20px;display:flex;align-items:center;gap:14px;height:54px;flex-shrink:0;
+}
+.hdr-logo{height:30px;flex-shrink:0}
+.hdr-info{display:flex;flex-direction:column;gap:1px;border-left:1px solid var(--border);padding-left:14px}
+.hdr-empresa{font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:1.5px;color:var(--txt)}
+.hdr-setor{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.hdr-spacer{flex:1}
+#refresh-badge{display:flex;align-items:center;gap:6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;padding:4px 10px;border-radius:3px;border:0.5px solid var(--border)}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot-live{background:var(--ok);animation:pulse 2s infinite}
+.dot-demo{background:var(--txt3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.hdr-clock-wrap{text-align:right}
+.hdr-clock{font-family:var(--font-d);font-size:19px;font-weight:600;color:var(--acc);letter-spacing:2px;line-height:1}
+.hdr-date{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:2px}
+.btn{font-family:var(--font-b);font-size:12px;font-weight:600;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.8}
+.btn-acc{background:var(--acc);color:#111}
+.btn-ghost{background:transparent;color:var(--txt2);border:0.5px solid var(--border)}
+.btn-tipo-parada{
+  background:transparent;color:var(--txt2);border:0.5px solid var(--border);
+  padding:6px 14px;border-radius:4px;font-family:var(--font-d);font-size:10px;
+  letter-spacing:1px;cursor:pointer;transition:all .15s;
+}
+.btn-tipo-parada:hover{ border-color:rgba(229,115,115,.6);color:#e57373; }
+.btn-tipo-parada.ativo{ background:rgba(229,115,115,.15);color:#e57373;border-color:rgba(229,115,115,.6); }
+.btn-icon{background:transparent;color:var(--txt2);border:0.5px solid var(--border);padding:7px 10px;font-size:15px}
+input[type=file]{display:none}
+
+/* ═══ NAV ═══ */
+nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;flex-shrink:0}
+.tab{font-family:var(--font-h);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--txt2);background:transparent;border:none;padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:var(--txt)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* ═══ MAIN / SECTIONS ═══ */
+main{flex:1;overflow:auto;min-height:0}
+.sec{display:none;padding:18px 20px}
+.sec.on{display:block}
+#sec-tv.on{
+  display:flex;flex-direction:column;padding:0;
+  height:calc(100vh - 54px - 39px - 40px); /* viewport - header - nav - footer */
+  min-height:0;overflow:hidden;
+}
+
+/* ═══ KPI GRID ═══ */
+.kpi-grid{display:grid;gap:10px;margin-bottom:16px}
+.kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
+.kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+.kpi-grid.c9{grid-template-columns:repeat(3,1fr)}
+.kpi-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--border)}
+.kpi-card.ok::before{background:var(--ok)}
+.kpi-card.warn::before{background:var(--warn)}
+.kpi-card.red::before{background:var(--red)}
+.kpi-card.acc::before{background:var(--acc)}
+.kpi-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
+.kpi-val{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1;color:var(--txt)}
+.kpi-sub{font-family:var(--font-d);font-size:10px;color:var(--txt2);margin-top:5px}
+
+/* ═══ CHARTS ═══ */
+.charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-bottom:16px}
+.chart-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
+.chart-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.chart-box{position:relative;height:170px}
+.chart-box-lg{position:relative;height:230px}
+
+/* ═══ ANÁLISE ROW ═══ */
+.analise-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.a-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:13px 15px}
+.a-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.a-val{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--acc)}
+.a-desc{font-family:var(--font-b);font-size:11px;color:var(--txt2);margin-top:3px}
+
+/* ═══ TABLE ═══ */
+.tbl-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;overflow:hidden}
+.tbl-hdr{padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.tbl-hdr-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+table{width:100%;border-collapse:collapse}
+th{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase;padding:9px 14px;border-bottom:0.5px solid var(--border);text-align:left;background:var(--elevated)}
+td{font-family:var(--font-b);font-size:13px;color:var(--txt);padding:9px 14px;border-bottom:0.5px solid var(--border)}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--font-d);font-size:12px}
+td.hora-cell{font-family:var(--font-h);font-size:15px;font-weight:700}
+.badge{font-family:var(--font-d);font-size:9px;font-weight:600;padding:3px 9px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.b-ok  {background:rgba(76,175,80,.1); color:var(--ok);  border:0.5px solid rgba(76,175,80,.3)}
+.b-warn{background:rgba(255,152,0,.1); color:var(--warn);border:0.5px solid rgba(255,152,0,.3)}
+.b-red {background:rgba(244,67,54,.1); color:var(--red); border:0.5px solid rgba(244,67,54,.3)}
+.b-mute{background:rgba(255,255,255,.04);color:var(--txt3);border:0.5px solid var(--border)}
+.b-he  {background:rgba(245,166,35,.12);color:var(--acc); border:0.5px solid rgba(245,166,35,.4)}
+tr.he-row td{background:rgba(245,166,35,.03)}
+.he-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--acc);margin-right:5px;vertical-align:middle}
+.tv-table tr.he-row td{background:rgba(245,166,35,.04)}
+.he-list{margin-top:10px;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto}
+.he-item{display:flex;align-items:center;gap:8px;background:var(--elevated);border:0.5px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--font-d);font-size:11px;color:var(--txt2)}
+.he-item span{flex:1}
+.he-item button{background:none;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0 4px;line-height:1}
+.he-sep{height:0.5px;background:var(--border);margin:12px 0}
+
+/* ── TV LOGO EMPRESA ── */
+.tv-logo-area{
+  display:flex;align-items:center;justify-content:center;
+  width:130px;height:68px;border-radius:8px;
+  border:1.5px dashed var(--border);cursor:pointer;
+  transition:all .2s;flex-shrink:0;overflow:hidden;
+  background:rgba(255,255,255,0.03);
+}
+.tv-logo-area:hover{ border-color:var(--acc);background:rgba(245,166,35,.05); }
+.tv-logo-area img{ max-width:124px;max-height:62px;object-fit:contain; }
+.tv-logo-placeholder{
+  font-family:var(--font-d);font-size:8px;color:var(--txt3);
+  letter-spacing:1.5px;text-align:center;line-height:1.7;pointer-events:none;
+}
+/* ── BOTÃO FULLSCREEN ── */
+.tv-fs-btn{
+  background:transparent;border:0.5px solid var(--border);color:var(--txt2);
+  border-radius:5px;padding:6px 13px;cursor:pointer;
+  font-family:var(--font-d);font-size:10px;letter-spacing:1.5px;
+  transition:all .15s;white-space:nowrap;
+}
+.tv-fs-btn:hover{ border-color:var(--acc);color:var(--acc); }
+body.tv-fullscreen > header,
+body.tv-fullscreen > nav,
+body.tv-fullscreen > footer{ display:none!important; }
+body.tv-fullscreen > main{ height:100vh!important;overflow:hidden!important; }
+body.tv-fullscreen #sec-tv{ height:100vh!important; }
+
+/* ═══ TV PANEL ═══ */
+.tv-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.tv-empresa{font-family:var(--font-h);font-size:15px;font-weight:700;letter-spacing:3px;color:var(--txt2);text-transform:uppercase}
+.tv-setor{font-family:var(--font-h);font-size:32px;font-weight:700;letter-spacing:4px;color:var(--txt);text-transform:uppercase;line-height:1}
+.tv-clock-wrap{text-align:right}
+.tv-clock{font-family:var(--font-d);font-size:42px;font-weight:600;color:var(--acc);letter-spacing:3px;line-height:1}
+.tv-date-txt{font-family:var(--font-d);font-size:11px;color:var(--txt2);text-align:right;margin-top:2px;letter-spacing:1px}
+.tv-body{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0;overflow:hidden}
+.tv-left{padding:16px 36px;display:flex;flex-direction:column;justify-content:space-evenly;border-left:1px solid var(--border)}
+.tv-right{padding:10px 18px;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
+.tv-kpi-lbl{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;margin-bottom:3px}
+.tv-big{font-family:var(--font-h);font-size:clamp(72px,10vw,140px);font-weight:700;line-height:1;color:var(--txt)}
+.tv-big.ok{color:var(--ok)} .tv-big.warn{color:var(--warn)} .tv-big.red{color:var(--red)}
+.tv-ef-row{display:flex;align-items:baseline;gap:14px}
+.tv-ef-val{font-family:var(--font-h);font-size:clamp(48px,6vw,88px);font-weight:700;line-height:1}
+.tv-ef-val.ok{color:var(--ok)} .tv-ef-val.warn{color:var(--warn)} .tv-ef-val.red{color:var(--red)}
+.tv-status-badge{font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:2px;padding:7px 18px;border-radius:5px;display:inline-flex;align-items:center;gap:8px}
+.tv-status-badge.ok  {background:rgba(76,175,80,.12); color:var(--ok);  border:1px solid rgba(76,175,80,.35)}
+.tv-status-badge.warn{background:rgba(255,152,0,.12); color:var(--warn);border:1px solid rgba(255,152,0,.35)}
+.tv-status-badge.red {background:rgba(244,67,54,.12); color:var(--red); border:1px solid rgba(244,67,54,.35);animation:piscar 1.4s infinite}
+@keyframes piscar{0%,100%{opacity:1}50%{opacity:.35}}
+.tv-progress-lbl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px;margin-bottom:6px}
+.tv-progress-bar{height:16px;background:var(--surface);border-radius:8px;overflow:hidden;border:0.5px solid var(--border)}
+.tv-progress-fill{height:100%;border-radius:8px;transition:width .6s ease}
+.tv-mini-row{display:flex;gap:28px}
+.tv-mini-kpi .tv-kpi-lbl{font-size:10px}
+.tv-mini-val{font-family:var(--font-h);font-size:clamp(30px,4vw,56px);font-weight:700}
+.tv-mini-unit{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:1px;margin-top:2px}
+.tv-tbl-ttl{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;margin-bottom:7px;flex-shrink:0}
+.tv-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.tv-table th{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:2px;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
+.tv-table td{font-family:var(--font-h);font-size:clamp(15px,1.9vw,26px);font-weight:700;padding:clamp(5px,.9vh,12px) 10px;border-bottom:0.5px solid var(--border)}
+.tv-table .td-h{font-family:var(--font-d);font-size:clamp(11px,1vw,14px);font-weight:600;color:var(--txt)}
+.tv-table .td-s{font-size:clamp(12px,1.3vw,18px)}
+.tv-table tr.r-ok   td{color:var(--ok)}
+.tv-table tr.r-warn td{color:var(--warn)}
+.tv-table tr.r-red  td{color:var(--red)}
+.tv-table tr.r-pend td{color:var(--txt3);font-style:italic}
+.tv-table tr.r-ok   .td-h,.tv-table tr.r-warn .td-h,
+.tv-table tr.r-red  .td-h,.tv-table tr.r-pend .td-h{color:var(--txt)}
+.tv-table tr.he-row td{background:rgba(245,166,35,.04)}
+.tv-foot{padding:8px 28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.tv-tagline{font-family:var(--font-h);font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:3px;text-transform:uppercase}
+
+/* ═══ MOBILE TV ═══ */
+@media (max-width:768px){
+  /* Header compacto */
+  .tv-hdr{ padding:8px 12px; gap:8px; }
+  .tv-logo-area{ width:52px; height:42px; }
+  .tv-logo-area img{ max-width:48px; max-height:38px; }
+  .tv-empresa{ font-size:10px; letter-spacing:1px; }
+  .tv-setor{ font-size:18px; letter-spacing:2px; }
+  .tv-clock{ font-size:24px; letter-spacing:1px; }
+  .tv-date-txt{ font-size:9px; }
+  .tv-fs-btn{ font-size:8px; padding:5px 8px; letter-spacing:1px; }
+
+  /* Body: KPIs em cima, tabela embaixo */
+  .tv-body{
+    grid-template-columns:1fr!important;
+    grid-template-rows:auto 1fr;
+    overflow-y:auto;
+  }
+  .tv-right{
+    order:2;
+    border-right:none!important;
+    border-top:1px solid var(--border);
+    padding:8px 12px;
+    overflow-y:auto;
+    flex:1;
+  }
+  .tv-left{
+    order:1;
+    border-left:none!important;
+    padding:10px 14px;
+    gap:10px;
+    justify-content:flex-start!important;
+  }
+
+  /* KPIs menores no mobile */
+  .tv-big{ font-size:clamp(48px,12vw,72px)!important; }
+  .tv-ef-val{ font-size:clamp(32px,8vw,52px)!important; }
+  .tv-mini-val{ font-size:clamp(22px,5vw,36px)!important; }
+  .tv-status-badge{ font-size:13px; padding:5px 12px; }
+  .tv-kpi-lbl{ font-size:9px; }
+  .tv-progress-bar{ height:12px; }
+
+  /* Tabela compacta */
+  .tv-table th{ font-size:8px; padding:6px 8px; }
+  .tv-table td{ font-size:clamp(13px,3.5vw,18px); padding:6px 8px; }
+  .tv-table .td-h{ font-size:clamp(9px,2.5vw,12px); }
+  .tv-tbl-ttl{ font-size:9px; margin-bottom:5px; }
+
+  /* Meta destaque menor */
+  #tv-meta-dest{ font-size:clamp(22px,6vw,36px)!important; }
+
+  /* Rodapé oculto no mobile */
+  .tv-foot{ padding:6px 12px; }
+  .tv-tagline{ font-size:10px; letter-spacing:1px; }
+
+  /* Fullscreen mobile */
+  body.tv-fullscreen #sec-tv{ height:100dvh!important; }
+
+  /* Header principal compacto no mobile */
+  header{ height:44px; padding:0 10px; gap:8px; }
+  .hdr-logo{ height:22px; }
+  .hdr-info{ display:none; }
+  .hdr-clock{ font-size:14px; }
+  .hdr-date{ font-size:7px; }
+  #perfil-badge{ font-size:8px; padding:3px 7px; }
+  nav{ padding:0 8px; }
+  .tab{ font-size:9px; padding:9px 10px; letter-spacing:1px; }
+
+  /* Seção TV ocupa tudo */
+  #sec-tv.on{
+    height:calc(100dvh - 44px - 35px - 38px)!important;
+  }
+}
+
+/* ═══ HISTÓRICO ═══ */
+.hist-filters{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.hist-filters select,.hist-filters input[type=date]{background:var(--surface);border:0.5px solid var(--border);color:var(--txt);font-family:var(--font-b);font-size:12px;padding:7px 11px;border-radius:5px;outline:none}
+.hist-filters input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5)}
+
+/* ═══ MODAL CONFIG ═══ */
+.modal-over{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center}
+.modal-over.on{display:flex}
+.modal{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:24px;width:500px;max-width:95vw}
+.modal-ttl{font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:2px;color:var(--acc);text-transform:uppercase;margin-bottom:20px}
+.frm-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
+.frm-grp{display:flex;flex-direction:column;gap:4px}
+.frm-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.frm-inp{background:var(--elevated);border:0.5px solid var(--border);color:var(--txt);font-family:var(--font-b);font-size:13px;padding:8px 11px;border-radius:5px;outline:none}
+.frm-inp:focus{border-color:var(--acc)}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:15px;border-top:0.5px solid var(--border)}
+
+/* ═══ FOOTER ═══ */
+footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px solid var(--border);background:var(--bg);flex-shrink:0}
+#ftr-fonte{font-family:var(--font-d);font-size:10px;color:var(--txt3)}
+
+/* ═══ MISC ═══ */
+.empty-msg{font-family:var(--font-b);font-size:12px;color:var(--txt3);padding:18px;text-align:center}
+.export-row{display:flex;gap:8px}
+/* ═══ PRINT / PDF ═══ */
+@media print{
+  @page{ size:A4 portrait; margin:12mm 15mm 15mm 15mm; }
+
+  *{
+    background:transparent!important;
+    color:#111!important;
+    border-color:#ddd!important;
+    box-shadow:none!important;
+    text-shadow:none!important;
+  }
+  html,body{
+    background:#fff!important;
+    font-family:'Barlow',Arial,sans-serif;
+    width:100%; margin:0; padding:0; display:block;
+  }
+
+  /* ── OCULTAR ELEMENTOS DE TELA ── */
+  header,nav,footer,
+  .hist-filters,.export-row,
+  button,.btn,.btn-icon,.btn-acc,.btn-ghost,
+  #modal-cfg,#modal-he,#modal-parada,
+  #btn-fechar-dia,#dia-fechado-badge,#btn-reabrir-dia,
+  input[type=file],#refresh-badge,#countdown-badge,
+  #hist-storage-info,
+  .sec:not(.on){ display:none!important; }
+
+  /* ── SEÇÃO ATIVA ── */
+  main{ display:block!important; overflow:visible!important; }
+  section.on{ display:block!important; width:100%!important; overflow:visible!important; padding:0!important; margin:0!important; }
+
+  /* ── CABEÇALHO DE IMPRESSÃO ── */
+  .print-header{ display:flex!important; border-bottom:2px solid #F5A623!important; margin-bottom:16px; padding-bottom:10px; }
+  .print-header-left h1{ color:#111!important; }
+  .print-header-left p{ color:#666!important; }
+  .print-header-right{ color:#666!important; white-space:pre-line; font-size:9px; }
+
+  /* ── CHARTS: canvas oculto, img visível ── */
+  .charts-row{ display:grid!important; grid-template-columns:1.5fr 1fr!important; gap:8px!important; margin-bottom:14px!important; }
+  .chart-card{ display:block!important; background:#f9f9f9!important; border:1px solid #ddd!important; border-radius:4px; padding:10px 12px; break-inside:avoid; }
+  .chart-ttl{ color:#666!important; font-size:7px!important; letter-spacing:1.5px; margin-bottom:8px!important; }
+  .chart-box canvas{ display:none!important; }
+  .chart-box .print-chart-img{ display:block!important; width:100%!important; height:auto!important; }
+  .chart-box{ height:auto!important; }
+
+  /* ── ANÁLISE ROW ── */
+  #analise-row{ display:grid!important; grid-template-columns:repeat(4,1fr)!important; gap:8px!important; margin-bottom:14px!important; }
+  .a-card{ background:#f9f9f9!important; border:1px solid #ddd!important; border-radius:4px; padding:10px 12px; }
+  .a-lbl{ color:#777!important; font-size:7px!important; }
+  .a-val{ color:#111!important; font-size:20px!important; }
+  .a-desc{ color:#888!important; font-size:9px!important; }
+
+  /* ── KPI GRID ── */
+  .kpi-grid{ display:grid!important; break-inside:avoid; margin-bottom:12px; }
+  .kpi-grid.c9{ grid-template-columns:repeat(3,1fr)!important; gap:8px!important; }
+  .kpi-grid.c4{ grid-template-columns:repeat(4,1fr)!important; gap:8px!important; }
+  .kpi-card{ background:#f7f7f7!important; border:1px solid #ddd!important; border-left-width:3px!important; border-radius:4px; padding:10px 12px; }
+  .kpi-card.ok  { border-left-color:#4CAF50!important; }
+  .kpi-card.warn{ border-left-color:#FF9800!important; }
+  .kpi-card.red { border-left-color:#F44336!important; }
+  .kpi-card.acc { border-left-color:#F5A623!important; }
+  .kpi-card::before{ display:none!important; }
+  .kpi-lbl{ color:#777!important; font-size:7px!important; letter-spacing:1.5px; }
+  .kpi-val{ color:#111!important; font-size:22px!important; }
+  .kpi-sub{ color:#888!important; font-size:9px!important; }
+
+  /* ── TABELA ── */
+  .tbl-wrap{ background:#fff!important; border:1px solid #ccc!important; border-radius:4px; break-inside:avoid; margin-bottom:12px; }
+  .tbl-hdr{ background:#f2f2f2!important; border-bottom:1px solid #ddd!important; padding:8px 14px!important; }
+  .tbl-hdr-ttl{ color:#444!important; font-size:8px!important; }
+  table{ width:100%; border-collapse:collapse; }
+  thead{ background:#eeeeee!important; }
+  th{ background:#eeeeee!important; color:#555!important; font-size:8px!important; font-family:'IBM Plex Mono',monospace; letter-spacing:1.2px; padding:7px 12px!important; border-bottom:1.5px solid #ccc!important; text-align:left; }
+  td{ background:#fff!important; color:#111!important; font-size:11px!important; padding:7px 12px!important; border-bottom:1px solid #eee!important; }
+  td.hora-cell{ font-family:'Barlow Condensed',sans-serif!important; font-weight:700!important; font-size:13px!important; color:#111!important; }
+  td.mono{ font-family:'IBM Plex Mono',monospace!important; font-size:10px!important; color:#111!important; }
+  tr:last-child td{ border-bottom:none!important; }
+  tr.he-row td{ background:#fffdf4!important; }
+  td[style*="ok"]  { color:#2e7d32!important; }
+  td[style*="warn"]{ color:#e65100!important; }
+  td[style*="red"] { color:#b71c1c!important; }
+  td[style*="txt2"]{ color:#666!important; }
+  td[style*="txt3"]{ color:#aaa!important; }
+
+  /* ── BADGES ── */
+  .badge{ font-size:7px!important; padding:2px 7px!important; border-radius:2px!important; font-weight:700; }
+  .b-ok  { background:#e8f5e9!important; color:#2e7d32!important; border:1px solid #a5d6a7!important; }
+  .b-warn{ background:#fff3e0!important; color:#e65100!important; border:1px solid #ffcc80!important; }
+  .b-red { background:#ffebee!important; color:#b71c1c!important; border:1px solid #ef9a9a!important; }
+  .b-mute{ background:#f5f5f5!important; color:#999!important; border:1px solid #ddd!important; }
+  .b-he  { background:#fff8e1!important; color:#c77800!important; border:1px solid #ffe082!important; }
+  .he-dot{ background:#F5A623!important; width:5px!important; height:5px!important; }
+
+  /* ── RODAPÉ DE PÁGINA ── */
+  .print-page-footer{ display:flex!important; }
+
+  /* ── QUEBRAS ── */
+  tr{ page-break-inside:avoid; }
+  .kpi-grid + .tbl-wrap{ page-break-before:avoid; }
+}
+
+/* Cabeçalho de impressão (hidden na tela) */
+.print-header{
+  display:none;
+  justify-content:space-between;
+  align-items:flex-end;
+  padding-bottom:10px;
+  margin-bottom:12px;
+  border-bottom:2px solid #F5A623;
+}
+.print-header-left h1{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:20px; font-weight:700; letter-spacing:2px; color:#111; margin:0;
+}
+.print-header-left p{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px; color:#888; margin:3px 0 0; letter-spacing:1px;
+}
+.print-header-right{
+  text-align:right;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px; color:#666; line-height:1.6;
+}
+/* Rodapé de página (hidden na tela) */
+.print-page-footer{
+  display:none;
+  justify-content:space-between;
+  align-items:center;
+  padding-top:10px;
+  margin-top:16px;
+  border-top:1px solid #ddd;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:8px; color:#aaa;
+}
+/* ═══ LOGIN ═══ */
+.login-over{
+  position:fixed;inset:0;background:var(--bg);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+}
+.login-box{
+  width:360px;background:var(--surface);border:0.5px solid var(--border);
+  border-radius:12px;padding:36px 32px;display:flex;flex-direction:column;gap:18px;
+}
+.login-logo{ text-align:center;font-family:var(--font-h);font-size:22px;font-weight:700;letter-spacing:3px;color:var(--txt); }
+.login-logo span{color:var(--acc)}
+.login-sub{ text-align:center;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-top:-10px; }
+.login-sep{ height:0.5px;background:var(--border); }
+.login-grp{ display:flex;flex-direction:column;gap:5px; }
+.login-lbl{ font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase; }
+.login-inp{ background:var(--elevated);border:0.5px solid var(--border);color:var(--txt);font-family:var(--font-b);font-size:14px;padding:10px 13px;border-radius:6px;outline:none;width:100%; }
+.login-inp:focus{border-color:var(--acc)}
+.login-btns{display:flex;gap:10px}
+.login-btn{ flex:1;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:2px;padding:12px;border:none;border-radius:6px;cursor:pointer;transition:opacity .15s; }
+.login-btn:hover{opacity:.85}
+.login-btn-op {background:var(--elevated);color:var(--txt);border:0.5px solid var(--border)}
+.login-btn-ger{background:var(--acc);color:#111}
+.login-err{ font-family:var(--font-d);font-size:10px;color:var(--red);letter-spacing:1px;text-align:center;display:none; }
+.login-err.on{display:block}
+.perfil-badge{ font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;padding:4px 10px;border-radius:3px;border:0.5px solid var(--border);color:var(--txt2);cursor:pointer;transition:all .15s; }
+.perfil-badge:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-over" id="login-over">
+  <div class="login-box">
+    <!-- Logo empresa -->
+    <div style="text-align:center">
+      <div id="login-logo-wrap" style="margin:0 auto 10px;width:120px;height:56px;border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.03)" onclick="document.getElementById('tv-logo-input').click()" title="Clique para carregar logo">
+        <img id="login-logo-img" src="" style="display:none;max-width:116px;max-height:52px;object-fit:contain">
+        <div id="login-logo-ph" style="font-family:var(--font-d);font-size:8px;color:var(--txt3);letter-spacing:1px;text-align:center;line-height:1.6">LOGO<br>EMPRESA</div>
+      </div>
+      <div id="login-empresa-sub" style="font-family:var(--font-h);font-size:16px;font-weight:700;letter-spacing:2px;color:var(--txt);text-transform:uppercase">—</div>
+      <div style="font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;margin-top:3px">CONTROLE DE PRODUÇÃO</div>
+    </div>
+    <div class="login-sep"></div>
+    <!-- RitmoProd branding pequeno -->
+    <div style="text-align:center;font-family:var(--font-d);font-size:8px;color:var(--txt3);letter-spacing:2px">
+      SISTEMA <span style="color:var(--acc);font-weight:700">RITMOPROD</span>
+    </div>
+    <div class="login-grp">
+      <label class="login-lbl">SENHA</label>
+      <input class="login-inp" id="login-senha" type="password" placeholder="••••••" autocomplete="off"
+        onkeydown="if(event.key==='Enter') tentarLogin()">
+    </div>
+    <div class="login-err" id="login-err">SENHA INCORRETA — TENTE NOVAMENTE</div>
+    <div class="login-btns">
+      <button class="login-btn login-btn-op"  onclick="tentarLogin('operador')">OPERADOR</button>
+      <button class="login-btn login-btn-ger" onclick="tentarLogin('gerencial')">GERENCIAL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <svg class="hdr-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 48">
+    <rect width="260" height="48" fill="#111" rx="4"/>
+    <rect width="260" height="1.5" fill="#F5A623" rx="1"/>
+    <rect x="10" y="31" width="5" height="8"  fill="#2A2A2A" rx="1"/>
+    <rect x="18" y="22" width="5" height="17" fill="#F5A623" rx="1"/>
+    <rect x="26" y="27" width="5" height="12" fill="#2A2A2A" rx="1"/>
+    <rect x="34" y="16" width="5" height="23" fill="#F5A623" rx="1"/>
+    <polygon points="36.5,9 42,16 31,16" fill="#F5A623"/>
+    <text x="48" y="32" font-family="'Barlow Condensed',sans-serif" font-size="21" font-weight="700" fill="#F5F5F5" letter-spacing="2">RITMOPROD</text>
+    <text x="49" y="42" font-family="'IBM Plex Mono',monospace" font-size="5.5" fill="#888" letter-spacing="2">ANÁLISE · PRODUÇÃO · RITMO</text>
+  </svg>
+
+  <div class="hdr-info">
+    <span class="hdr-empresa" id="hdr-empresa">PATRIMAR MÓVEIS</span>
+    <span class="hdr-setor"   id="hdr-setor">EMBALAGEM · JACI/SP</span>
+  </div>
+
+  <div class="hdr-spacer"></div>
+
+  <div id="refresh-badge">
+    <div class="dot dot-demo" id="rdot"></div>
+    <span id="rtxt">DEMO</span>
+  </div>
+
+  <!-- countdown -->
+  <div id="countdown-badge" 
+    onclick="forcarRefresh()"
+    ondblclick="alterarIntervalo()"
+    title="Clique: atualizar agora  |  Duplo clique: alterar intervalo"
+    style="display:none;align-items:center;gap:6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);padding:4px 10px;border-radius:3px;border:0.5px solid var(--border);cursor:pointer;user-select:none;transition:border-color .15s">
+    🔄 <span id="countdown-txt">5:00</span>
+    <span id="countdown-intervalo" style="color:var(--txt3);font-size:8px"></span>
+  </div>
+
+  <!-- badge de perfil + logout -->
+  <div class="perfil-badge" id="perfil-badge" onclick="logout()" title="Sair do sistema">
+    👤 <span id="perfil-txt">—</span> &nbsp;✕
+  </div>
+
+  <div class="hdr-clock-wrap">
+    <div class="hdr-clock" id="hdr-clock">--:--:--</div>
+    <div class="hdr-date"  id="hdr-date">--/--/----</div>
+  </div>
+
+  <button class="btn btn-acc" id="btn-pasta" onclick="selecionarPasta()">📁 SELECIONAR PASTA</button>
+  <button class="btn btn-ghost" id="btn-arquivo" onclick="triggerImport()" title="Selecionar arquivo avulso" style="padding:7px 10px">📄</button>
+  <button class="btn btn-icon" title="Configurações" onclick="openCfg()">⚙</button>
+  <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileInput(this)">
+</header>
+
+<!-- ═══ NAVIGATION ═══ -->
+<nav>
+  <button class="tab on" data-tab="gerencial" onclick="setTab('gerencial')">📊 GERENCIAL</button>
+  <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
+  <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
+</nav>
+
+<main>
+
+<!-- ═══ GERENCIAL ═══ -->
+<section id="sec-gerencial" class="sec on">
+
+  <!-- Cabeçalho visível apenas no PDF -->
+  <div class="print-header" id="ph-gerencial">
+    <div class="print-header-left">
+      <h1>RITMOPROD · EMBALAGEM</h1>
+      <p id="ph-ger-sub">—</p>
+    </div>
+    <div class="print-header-right" id="ph-ger-info">—</div>
+  </div>  <div class="kpi-grid c9" id="kpi-grid"></div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-ttl">⬛ PRODUÇÃO HORA A HORA — HOJE</div>
+      <div class="chart-box"><canvas id="ch-hora"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">◧ REALIZADO × META</div>
+      <div class="chart-box"><canvas id="ch-comp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="analise-row" id="analise-row"></div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="tbl-data-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2)"></span>
+        <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
+        <button class="btn btn-ghost" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="openHE()">＋ HORA EXTRA</button>
+        <button class="btn btn-ghost" id="btn-parada" style="padding:4px 10px;font-size:10px;color:#e57373;border-color:rgba(229,115,115,.4)" onclick="openParada()">⏸ PARADA</button>
+        <button class="btn btn-ghost" id="btn-fechar-dia" style="padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)" onclick="fecharDia()">✔ FECHAR DIA</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th>STATUS</th></tr></thead>
+        <tbody id="tbl-hora-body"><tr><td colspan="6" class="empty-msg">Carregando dados…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PARADAS DO DIA -->
+  <div class="tbl-wrap" id="paradas-wrap" style="margin-top:12px;display:none">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">⏸ PARADAS DO DIA</span>
+      <span id="paradas-tempo-total" style="font-family:var(--font-d);font-size:10px;color:#e57373"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>OBS</th><th></th></tr></thead>
+        <tbody id="tbl-paradas-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TV OPERACIONAL ═══ -->
+<section id="sec-tv" class="sec">
+
+  <div class="tv-hdr">
+
+    <!-- LOGO + NOME — bloco esquerdo -->
+    <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+      <div class="tv-logo-area" onclick="document.getElementById('tv-logo-input').click()" title="Clique para carregar logo">
+        <img id="tv-logo-img" src="" style="display:none">
+        <div class="tv-logo-placeholder" id="tv-logo-ph">LOGO<br>EMPRESA</div>
+      </div>
+      <input type="file" id="tv-logo-input" accept="image/*" style="display:none" onchange="carregarLogo(this)">
+      <div>
+        <div class="tv-empresa" id="tv-empresa">PATRIMAR MÓVEIS · JACI/SP</div>
+        <div class="tv-setor"   id="tv-setor">EMBALAGEM</div>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- BOTÃO + RELÓGIO — bloco direito -->
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="tv-fs-btn" id="btn-tv-fs" onclick="toggleTVFullscreen()">⛶ PAINEL CHEIO</button>
+      <button onclick="openParada()" style="
+        background:rgba(229,115,115,.15);color:#e57373;
+        border:0.5px solid rgba(229,115,115,.5);
+        padding:6px 16px;border-radius:4px;
+        font-family:var(--font-h);font-size:13px;font-weight:700;
+        letter-spacing:1.5px;cursor:pointer;
+      ">⏸ PARADA</button>
+      <div class="tv-clock-wrap">
+        <div class="tv-clock" id="tv-clock">--:--:--</div>
+        <div class="tv-date-txt" id="tv-date">--/--/----</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tv-body">
+    <!-- Lado esquerdo: tabela hora a hora -->
+    <div class="tv-right">
+      <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
+      <div style="overflow-y:auto;flex:1">
+        <table class="tv-table">
+          <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>STATUS</th></tr></thead>
+          <tbody id="tv-tbl-body"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Lado direito: KPIs principais -->
+    <div class="tv-left">
+      <!-- META DO DIA em destaque -->
+      <div style="background:rgba(245,166,35,.07);border:0.5px solid rgba(245,166,35,.25);border-radius:6px;padding:12px 18px;display:flex;align-items:baseline;justify-content:space-between">
+        <div class="tv-kpi-lbl" style="margin:0;font-size:13px">META DO DIA</div>
+        <div style="font-family:var(--font-h);font-size:clamp(42px,5.5vw,72px);font-weight:700;color:var(--acc);line-height:1" id="tv-meta-dest">—</div>
+        <div style="font-family:var(--font-d);font-size:13px;color:var(--acc);opacity:.7">CX</div>
+      </div>
+
+      <div>
+        <div class="tv-kpi-lbl">PRODUÇÃO ACUMULADA</div>
+        <div class="tv-big" id="tv-prod">—</div>
+      </div>
+
+      <div class="tv-ef-row">
+        <div>
+          <div class="tv-kpi-lbl">EFICIÊNCIA</div>
+          <div class="tv-ef-val" id="tv-ef">—</div>
+        </div>
+        <span id="tv-badge" class="tv-status-badge ok">● META</span>
+      </div>
+
+      <div>
+        <div class="tv-progress-lbl">
+          <span>PROGRESSO DO DIA</span>
+          <span id="tv-prog-pct">0%</span>
+        </div>
+        <div class="tv-progress-bar">
+          <div class="tv-progress-fill" id="tv-prog-fill" style="width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;font-family:var(--font-d);font-size:10px;color:var(--txt2)">
+          <span>0</span><span id="tv-meta-lbl">META: —</span>
+        </div>
+      </div>
+
+      <div class="tv-mini-row">
+        <div class="tv-mini-kpi">
+          <div class="tv-kpi-lbl">RITMO ATUAL</div>
+          <div class="tv-mini-val" style="color:var(--acc)" id="tv-ritmo">—</div>
+          <div class="tv-mini-unit">CX/HORA</div>
+        </div>
+        <div class="tv-mini-kpi">
+          <div class="tv-kpi-lbl">NECESSÁRIO</div>
+          <div class="tv-mini-val" style="color:var(--warn)" id="tv-nec">—</div>
+          <div class="tv-mini-unit">CX/HORA</div>
+        </div>
+        <div class="tv-mini-kpi">
+          <div class="tv-kpi-lbl">PROJEÇÃO</div>
+          <div class="tv-mini-val" style="color:var(--txt2)" id="tv-proj">—</div>
+          <div class="tv-mini-unit">CX FINAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tv-foot">
+    <span class="tv-tagline">Fluxo define resultado.</span>
+    <div id="tv-paradas-resumo" style="font-family:var(--font-d);font-size:10px;color:#e57373;letter-spacing:1px"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 36" height="22">
+      <rect x="0"  y="24" width="4" height="6"  fill="#2A2A2A" rx="1"/>
+      <rect x="7"  y="17" width="4" height="13" fill="#F5A623" rx="1"/>
+      <rect x="14" y="21" width="4" height="9"  fill="#2A2A2A" rx="1"/>
+      <rect x="21" y="12" width="4" height="18" fill="#F5A623" rx="1"/>
+      <polygon points="23,6 27,12 19,12" fill="#F5A623"/>
+      <text x="33" y="26" font-family="'Barlow Condensed',sans-serif" font-size="18" font-weight="700" fill="#888" letter-spacing="2">RITMOPROD</text>
+    </svg>
+  </div>
+
+</section>
+
+<!-- ═══ HISTÓRICO ═══ -->
+<section id="sec-historico" class="sec">
+
+  <!-- Cabeçalho visível apenas no PDF -->
+  <div class="print-header" id="ph-historico">
+    <div class="print-header-left">
+      <h1>RITMOPROD · HISTÓRICO</h1>
+      <p id="ph-hist-sub">—</p>
+    </div>
+    <div class="print-header-right" id="ph-hist-info">—</div>
+  </div>
+
+  <div class="hist-filters">
+    <select id="hist-period" onchange="renderHist()">
+      <option value="diario">Diário</option>
+      <option value="semanal">Semanal</option>
+      <option value="mensal">Mensal</option>
+    </select>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
+    <input type="date" id="hist-de" onchange="renderHist()">
+    <span style="color:var(--txt2)">–</span>
+    <input type="date" id="hist-ate" onchange="renderHist()">
+    <button class="btn btn-ghost" onclick="renderHist()">↻ ATUALIZAR</button>
+    <span id="hist-storage-info" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px"></span>
+    <div class="hdr-spacer"></div>
+    <div class="export-row">
+      <button class="btn btn-ghost" onclick="exportarExcelHist()">📊 EXPORTAR EXCEL</button>
+      <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
+      <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
+      <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid c4" id="hist-kpi-grid" style="margin-bottom:14px"></div>
+
+  <div class="chart-card" style="margin-bottom:14px">
+    <div class="chart-ttl">EVOLUÇÃO DE PRODUÇÃO E EFICIÊNCIA</div>
+    <div class="chart-box-lg"><canvas id="ch-hist"></canvas></div>
+  </div>
+
+  <div class="tbl-wrap">
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
+        <tbody id="hist-tbl-body"><tr><td colspan="9" class="empty-msg">Nenhum dado.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <span style="font-family:var(--font-b);font-size:12px;color:var(--txt2)">Oderli Garcia © 2026</span>
+  <span style="color:var(--border)">·</span>
+  <span style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoProd</span>
+  <span style="color:var(--border)">·</span>
+  <span style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7 · 27/05/2026</span>
+  <span style="color:var(--border)">·</span>
+  <span id="ftr-fonte">DEMO · Carregue um arquivo Excel para dados reais</span>
+</footer>
+
+<!-- ═══ MODAL PARADA ═══ -->
+<div class="modal-over" id="modal-parada">
+  <div class="modal" style="width:460px">
+    <div class="modal-ttl">⏸ REGISTRAR PARADA</div>
+
+    <div class="frm-grp" style="margin-bottom:14px">
+      <label class="frm-lbl">TIPO DE PARADA</label>
+      <div id="parada-tipos" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+        <button class="btn-tipo-parada" data-tipo="☕ Café"          onclick="selecionarTipo(this)">☕ Café</button>
+        <button class="btn-tipo-parada" data-tipo="🔧 Manutenção"   onclick="selecionarTipo(this)">🔧 Manutenção</button>
+        <button class="btn-tipo-parada" data-tipo="📦 Falta Material" onclick="selecionarTipo(this)">📦 Falta Material</button>
+        <button class="btn-tipo-parada" data-tipo="⚙ Setup"         onclick="selecionarTipo(this)">⚙ Setup</button>
+        <button class="btn-tipo-parada" data-tipo="📋 Outros"        onclick="selecionarTipo(this)">📋 Outros</button>
+      </div>
+    </div>
+
+    <div class="frm-row">
+      <div class="frm-grp">
+        <label class="frm-lbl">INÍCIO</label>
+        <input class="frm-inp" id="parada-ini" type="time">
+      </div>
+      <div class="frm-grp">
+        <label class="frm-lbl">FIM <span style="color:var(--txt3);font-size:9px">(deixe vazio se em andamento)</span></label>
+        <input class="frm-inp" id="parada-fim" type="time">
+      </div>
+    </div>
+
+    <div class="frm-grp" style="margin-bottom:16px">
+      <label class="frm-lbl">OBSERVAÇÃO <span style="color:var(--txt3);font-size:9px">(opcional)</span></label>
+      <input class="frm-inp" id="parada-obs" type="text" placeholder="Ex: máquina travou, aguardando técnico...">
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="fecharModalParada()">CANCELAR</button>
+      <button class="btn btn-acc" onclick="salvarParada()">⏸ REGISTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIGURAÇÕES ═══ -->
+<div class="modal-over" id="modal-cfg">
+  <div class="modal" style="width:560px">
+    <div class="modal-ttl">⚙ CONFIGURAÇÕES</div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">EMPRESA</label><input class="frm-inp" id="c-empresa" type="text"></div>
+      <div class="frm-grp"><label class="frm-lbl">UNIDADE</label><input class="frm-inp" id="c-unidade" type="text"></div>
+    </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">SETOR</label><input class="frm-inp" id="c-setor" type="text"></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"></div>
+    </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
+      <div class="frm-grp"><label class="frm-lbl">FIM TURNO</label><input class="frm-inp" id="c-t1" type="time"></div>
+    </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">INÍCIO ALMOÇO</label><input class="frm-inp" id="c-a0" type="time"></div>
+      <div class="frm-grp"><label class="frm-lbl">FIM ALMOÇO</label><input class="frm-inp" id="c-a1" type="time"></div>
+    </div>
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">SENHAS DE ACESSO</div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">SENHA OPERADOR</label><input class="frm-inp" id="c-senha-op" type="password" placeholder="••••"></div>
+      <div class="frm-grp"><label class="frm-lbl">SENHA GERENCIAL</label><input class="frm-inp" id="c-senha-ger" type="password" placeholder="••••"></div>
+    </div>
+    <!-- Google Sheets -->
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
+    <div class="frm-grp" style="margin-bottom:8px">
+      <label class="frm-lbl">URL DO APPS SCRIPT (deixe vazio para usar arquivo local)</label>
+      <input class="frm-inp" id="c-sheets-url" type="url" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <div style="font-family:var(--font-b);font-size:11px;color:var(--txt2);line-height:1.5;background:var(--elevated);border-radius:4px;padding:8px 10px">
+      📋 Para configurar: cole o script <strong style="color:var(--acc)">ritmoprod_appscript.gs</strong> no Google Sheets
+      → <em>Extensões → Apps Script</em> → Implantar → App da Web → Qualquer pessoa → copie a URL aqui.
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeCfg()">CANCELAR</button>
+      <button class="btn btn-ghost" id="btn-testar-sheets" onclick="testarSheets()" style="color:var(--acc)">🔗 TESTAR URL</button>
+      <button class="btn btn-acc"   onclick="saveCfg()">SALVAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL HORA EXTRA ═══ -->
+<div class="modal-over" id="modal-he">
+  <div class="modal" style="width:420px">
+    <div class="modal-ttl">⏱ HORA EXTRA</div>
+
+    <div class="frm-row">
+      <div class="frm-grp">
+        <label class="frm-lbl">INÍCIO</label>
+        <input class="frm-inp" id="he-ini" type="time" placeholder="17:00">
+      </div>
+      <div class="frm-grp">
+        <label class="frm-lbl">FIM</label>
+        <input class="frm-inp" id="he-fim" type="time" placeholder="18:00">
+      </div>
+    </div>
+    <div class="frm-row">
+      <div class="frm-grp">
+        <label class="frm-lbl">META (CX)</label>
+        <input class="frm-inp" id="he-meta" type="number" placeholder="ex: 210" min="0">
+      </div>
+      <div class="frm-grp">
+        <label class="frm-lbl">REALIZADO (deixe vazio se futuro)</label>
+        <input class="frm-inp" id="he-real" type="number" placeholder="—" min="0">
+      </div>
+    </div>
+
+    <button class="btn btn-acc" style="width:100%;justify-content:center;margin-top:4px" onclick="addHE()">＋ ADICIONAR SLOT</button>
+
+    <div class="he-sep"></div>
+    <div style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">HORAS EXTRAS DE HOJE</div>
+    <div class="he-list" id="he-list"></div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeHE()">FECHAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════════════
+let DADOS = [];
+let CFG = {
+  empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
+  metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
+  almocoInicio:'11:00', almocoFim:'12:12',
+  sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
+  senhaOperador:'1234',
+  senhaGerencial:'admin'
+};
+let fileHandle    = null;
+let isLive        = false;
+let countdownSec  = 0;
+let countdownTimer= null;
+let CHARTS        = {};
+
+// ════════════════════════════════════════════════
+// HISTÓRICO LOCAL — localStorage
+// Estrutura rpe_hist: { "23/05/2026": { slots:[], metaDia, fechado, fechadoEm } }
+// ════════════════════════════════════════════════
+function loadHistAll(){ try{ const s=localStorage.getItem('rpe_hist'); return s?JSON.parse(s):{}; }catch(e){ return {}; } }
+function saveHistAll(all){ try{ localStorage.setItem('rpe_hist',JSON.stringify(all)); }catch(e){ alert('localStorage cheio. Exporte e limpe o histórico.'); } }
+function loadHistDia(data){ return loadHistAll()[data]||null; }
+
+function salvarDiaLocal(data,slots,metaDia,fechado,fechadoEm){
+  const all=loadHistAll();
+  if(all[data]&&all[data].fechado&&!fechado) return; // não sobrescreve dia já fechado
+  all[data]={ slots, metaDia, fechado:fechado||false, fechadoEm:fechadoEm||null,
+    salvoEm:new Date().toLocaleString('pt-BR') };
+  saveHistAll(all);
+  updateStorageInfo();
+}
+
+function autoSaveDia(){
+  const hoje=hojeStr();
+  const dh=getDadosHoje();
+  if(!dh.length&&!loadHE(hoje).length) return;
+  if(isDiaFechado(hoje)) return;
+  const k=calcKPIs(dh);
+  const slots=k.allHoje.filter(d=>d.producaoHora!=null).map(d=>({
+    horario:d.horario, label:d.slotLabel||d.horario,
+    prod:d.producaoHora, meta:d.metaHora, he:d.he||false
+  }));
+  salvarDiaLocal(hoje,slots,k.meta,false,null);
+}
+
+function fecharDia(){
+  const hoje=hojeStr();
+  const dh=getDadosHoje();
+  if(!dh.length){ alert('Nenhum lançamento registrado hoje.'); return; }
+  if(!confirm(`Fechar o dia ${hoje}?\n\nIsso salva no histórico (local + Google Sheets) e exporta o Excel.\nO registro será bloqueado.`)) return;
+  const k=calcKPIs(dh);
+  const slots=k.allHoje.filter(d=>d.producaoHora!=null).map(d=>({
+    horario:d.horario, label:d.slotLabel||d.horario,
+    prod:d.producaoHora, meta:d.metaHora, he:d.he||false
+  }));
+  const agora=new Date().toLocaleString('pt-BR');
+  // 1. Salvar local
+  salvarDiaLocal(hoje,slots,k.meta,true,agora);
+  // 2. Exportar Excel
+  exportarExcelDia(hoje,slots,k.meta);
+  // 3. Salvar no Google Sheets (se configurado)
+  if(CFG.sheetsUrl) salvarDiaSheets(hoje,k,agora);
+  renderAll();
+  renderHist();
+}
+
+function reabrirDia(){
+  const hoje=hojeStr();
+  if(!confirm(`Reabrir o dia ${hoje}?\n\nO fechamento será removido e o dia ficará editável novamente.`)) return;
+  const all=loadHistAll();
+  if(all[hoje]){
+    all[hoje].fechado=false;
+    all[hoje].fechadoEm=null;
+    all[hoje].salvoEm=new Date().toLocaleString('pt-BR');
+    saveHistAll(all);
+  }
+  renderAll();
+  renderHist();
+}
+
+function isDiaFechado(data){
+  const d=loadHistDia(data); return d&&d.fechado;
+}
+
+function updateStorageInfo(){
+  try{
+    const all=loadHistAll();
+    const dias=Object.keys(all).length;
+    const fechados=Object.values(all).filter(d=>d.fechado).length;
+    const kb=(new Blob([localStorage.getItem('rpe_hist')||'']).size/1024).toFixed(1);
+    const el=document.getElementById('hist-storage-info');
+    if(el) el.textContent=`💾 ${dias} dias · ${fechados} fechados · ${kb}KB`;
+  }catch(e){}
+}
+
+function limparHistorico(){
+  const all=loadHistAll();
+  const n=Object.keys(all).length;
+  if(!n){ alert('Nenhum histórico para limpar.'); return; }
+  if(!confirm(`Apagar ${n} dias do histórico local?\nEsta ação não pode ser desfeita.`)) return;
+  localStorage.removeItem('rpe_hist');
+  updateStorageInfo();
+  renderHist();
+}
+
+function exportarExcelDia(data,slots,metaDia){
+  const[dd,mm,yy]=data.split('/');
+  const rows=[
+    ['RITMOPROD — FECHAMENTO DO DIA','','','','',''],
+    ['Data:',data,'Meta Dia:',metaDia,'Gerado em:',new Date().toLocaleString('pt-BR')],
+    [],
+    ['HORÁRIO','REALIZADO','META/H','EFICIÊNCIA %','ACUMULADO','TIPO'],
+  ];
+  let acum=0;
+  slots.forEach(s=>{ acum+=s.prod;
+    rows.push([s.label,s.prod,s.meta,s.meta>0?+(s.prod/s.meta*100).toFixed(1):0,acum,s.he?'HE':'TURNO']);
+  });
+  rows.push([]);
+  const tot=slots.reduce((a,s)=>a+s.prod,0);
+  rows.push(['TOTAL',tot,metaDia,metaDia>0?+(tot/metaDia*100).toFixed(1)+'%':'—','','']);
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:12},{wch:10},{wch:14},{wch:12},{wch:10}];
+  const wb2=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2,ws,`Dia_${dd}_${mm}`);
+  XLSX.writeFile(wb2,`ritmoprod_${dd}${mm}${yy}_fechamento.xlsx`);
+}
+
+function exportarExcelHist(){
+  const rows=[['DATA','REALIZADO','META','EFICIÊNCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM']];
+  const diasHist=buildDiasHist();
+  const all=loadHistAll();
+  diasHist.forEach(d=>{
+    const h=all[d.data];
+    rows.push([d.data,d.real,d.meta,+d.ef.toFixed(1),d.melhor,d.pior,d.heCount||0,
+      h&&h.fechado?'SIM':'NÃO', h&&h.fechadoEm||'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:12},{wch:10},{wch:14},{wch:12},{wch:10},{wch:5},{wch:10},{wch:20}];
+  const wb2=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2,ws,'Histórico');
+  XLSX.writeFile(wb2,`ritmoprod_historico_${hojeStr().replace(/\//g,'_')}.xlsx`);
+}
+
+// ════════════════════════════════════════════════
+// HORAS EXTRAS — armazenadas por data em localStorage
+// Estrutura: { "23/05/2026": [ {ini, fim, label, metaHora, producaoHora} ] }
+// ════════════════════════════════════════════════
+function loadHE(data){ try{ const s=localStorage.getItem('rpe_he'); const all=s?JSON.parse(s):{}; return all[data]||[]; }catch(e){ return []; } }
+function saveHE(data,list){ try{ const s=localStorage.getItem('rpe_he'); const all=s?JSON.parse(s):{}; all[data]=list; localStorage.setItem('rpe_he',JSON.stringify(all)); }catch(e){} }
+function openHE(){
+  document.getElementById('he-ini').value='';
+  document.getElementById('he-fim').value='';
+  document.getElementById('he-meta').value='';
+  document.getElementById('he-real').value='';
+  renderHEList();
+  document.getElementById('modal-he').classList.add('on');
+}
+function closeHE(){ document.getElementById('modal-he').classList.remove('on'); }
+async function addHE(){
+  const ini=document.getElementById('he-ini').value;
+  const fim=document.getElementById('he-fim').value;
+  const meta=parseInt(document.getElementById('he-meta').value)||0;
+  const realStr=document.getElementById('he-real').value;
+  const prod=realStr!==''?parseFloat(realStr):null;
+  if(!ini||!fim){ alert('Informe início e fim do slot.'); return; }
+  if(ini>=fim){ alert('Início deve ser menor que fim.'); return; }
+  const label=ini+'-'+fim;
+  const hoje=hojeStr();
+  const list=loadHE(hoje);
+  if(list.find(s=>s.ini===ini)){ alert('Slot '+ini+' já existe.'); return; }
+  list.push({ini, fim, label, metaHora:meta, producaoHora:prod, he:true});
+  list.sort((a,b)=>a.ini.localeCompare(b.ini));
+  saveHE(hoje,list);
+  renderHEList();
+  document.getElementById('he-ini').value='';
+  document.getElementById('he-fim').value='';
+  document.getElementById('he-meta').value='';
+  document.getElementById('he-real').value='';
+  // Se Sheets configurado: gravar na planilha também
+  if(CFG.sheetsUrl){
+    const btn=document.querySelector('#modal-he .btn-acc');
+    if(btn){ btn.textContent='⏳ Gravando...'; btn.disabled=true; }
+    try{
+      const params=['action=addHE',
+        'label='+encodeURIComponent(label),
+        'meta='+meta,
+        'real='+(prod!==null?prod:'')].join('&');
+      const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+      const res=await jsonpFetch(url);
+      if(res.ok===false) throw new Error(res.erro||'Erro ao gravar HE');
+      setStatusBadge('live','HE '+label+' gravada no Sheets');
+    }catch(e){
+      alert('HE salva localmente, mas erro ao gravar no Sheets:\n'+e.message);
+    }finally{
+      if(btn){ btn.textContent='＋ ADICIONAR SLOT'; btn.disabled=false; }
+    }
+  }
+  renderAll();
+}
+function removeHE(ini){
+  const hoje=hojeStr();
+  const list=loadHE(hoje).filter(s=>s.ini!==ini);
+  saveHE(hoje,list);
+  renderHEList();
+  renderAll();
+}
+function renderHEList(){
+  const hoje=hojeStr();
+  const list=loadHE(hoje);
+  const el=document.getElementById('he-list');
+  if(!list.length){ el.innerHTML='<div class="empty-msg" style="padding:10px">Nenhuma hora extra cadastrada hoje.</div>'; return; }
+  el.innerHTML=list.map(s=>`
+    <div class="he-item">
+      <span style="color:var(--acc)">▸</span>
+      <span>${s.label} &nbsp;·&nbsp; META: ${s.metaHora} cx &nbsp;·&nbsp; REAL: ${s.producaoHora!=null?s.producaoHora:'—'}</span>
+      <button onclick="removeHE('${s.ini}')" title="Remover">✕</button>
+    </div>`).join('');
+}
+document.getElementById('modal-he').addEventListener('click',function(e){ if(e.target===this) closeHE(); });
+// ════════════════════════════════════════════════
+// LOGIN / PERFIL
+// ════════════════════════════════════════════════
+let PERFIL = null; // 'operador' | 'gerencial'
+
+function tentarLogin(tipo){
+  const senha=document.getElementById('login-senha').value;
+  const err  =document.getElementById('login-err');
+  const ok   =tipo==='operador'?CFG.senhaOperador:CFG.senhaGerencial;
+  if(senha!==ok){
+    err.classList.add('on');
+    document.getElementById('login-senha').focus();
+    setTimeout(()=>err.classList.remove('on'),2500);
+    return;
+  }
+  PERFIL=tipo;
+  document.getElementById('login-over').style.display='none';
+  document.getElementById('perfil-txt').textContent=tipo==='operador'?'OPERADOR':'GERENCIAL';
+  aplicarPerfil();
+  // Mobile: sempre abre TV
+  const isMobile=window.innerWidth<=768;
+  if(tipo==='operador'||isMobile) setTab('tv');
+}
+
+function logout(){
+  if(!confirm('Sair do sistema?')) return;
+  PERFIL=null;
+  document.getElementById('login-senha').value='';
+  document.getElementById('login-err').classList.remove('on');
+  document.getElementById('login-over').style.display='flex';
+}
+
+function aplicarPerfil(){
+  const isOp=PERFIL==='operador';
+  // Tabs
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.style.display=(isOp&&t.dataset.tab!=='tv')?'none':'';
+  });
+  // Botões gerenciais
+  ['btn-pasta','btn-arquivo'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display=isOp?'none':'';
+  });
+  document.querySelectorAll('.btn-icon').forEach(el=>el.style.display=isOp?'none':'');
+  // Badge cor
+  const badge=document.getElementById('perfil-badge');
+  if(badge){
+    badge.style.color=isOp?'var(--warn)':'var(--ok)';
+    badge.title=isOp?'OPERADOR — clique para sair':'GERENCIAL — clique para sair';
+  }
+}
+
+function loadCfg(){
+  try{ const s=localStorage.getItem('rpe_cfg'); if(s) CFG={...CFG,...JSON.parse(s)}; }catch(e){}
+}
+function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
+
+// ════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════
+const p2 = n => String(n).padStart(2,'0');
+const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
+const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
+
+function hojeStr(){
+  const d=new Date();
+  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function dtToStr(d){
+  if(!(d instanceof Date)||isNaN(d)) return '';
+  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function parseDataBR(s){
+  if(!s) return null;
+  if(s instanceof Date) return s;
+  if(typeof s==='number'){
+    const d=new Date(Math.round((s-25569)*86400000));
+    d.setMinutes(d.getMinutes()+d.getTimezoneOffset());
+    return d;
+  }
+  const m=String(s).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m) return new Date(+m[3]<100?2000+ +m[3]:+m[3], +m[2]-1, +m[1]);
+  return new Date(s);
+}
+function toISO(d){ return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
+function toMin(s){ const[h,m]=s.split(':').map(Number); return h*60+m; }
+function fromMin(m){ return `${p2(Math.floor(m/60))}:${p2(m%60)}`; }
+
+// ════════════════════════════════════════════════
+// SLOTS DE TURNO
+// ════════════════════════════════════════════════
+function getSlots(){
+  const slots=[];
+  let cur=toMin(CFG.turnoInicio);
+  const fim=toMin(CFG.turnoFim);
+  const almI=toMin(CFG.almocoInicio);
+  const almF=toMin(CFG.almocoFim);
+  while(cur<fim){
+    if(cur>=almI&&cur<almF){ cur=almF; continue; }
+    const nxt=(cur<almI&&cur+60>almI) ? almI : Math.min(cur+60,fim);
+    slots.push({inicio:fromMin(cur), fim:fromMin(nxt), label:`${fromMin(cur)}–${fromMin(nxt)}`, min:nxt-cur});
+    cur=nxt;
+    if(cur===almI) cur=almF;
+  }
+  return slots;
+}
+
+// ════════════════════════════════════════════════
+// DEMO DATA
+// ════════════════════════════════════════════════
+function gerarDemo(){
+  const slots=getSlots();
+  const hoje=new Date();
+  const metaH=Math.round(CFG.metaDia/slots.length);
+  const nowMin=hoje.getHours()*60+hoje.getMinutes();
+  const ops=['Carlos S.','Ana Lima','João C.','Maria S.'];
+  const dados=[];
+
+  for(let d=6;d>=0;d--){
+    const dt=new Date(hoje); dt.setDate(dt.getDate()-d);
+    const dtStr=dtToStr(dt);
+    const isToday=d===0;
+    let acum=0;
+    slots.forEach((slot,i)=>{
+      if(isToday && toMin(slot.inicio)>=nowMin) {
+        // slot futuro — adicionar como pendente (prod null)
+        dados.push({
+          data:dtStr, horario:slot.inicio, slotFim:slot.fim, slotLabel:slot.label,
+          producaoHora:null, acumulado:acum,
+          metaHora:metaH, metaDia:CFG.metaDia,
+          operador:ops[i%ops.length], setor:CFG.setor, obs:'', status:'PENDENTE'
+        });
+        return;
+      }
+      const seed=(dt.getDate()*13+i*7)%97;
+      const v=0.70+(seed/97)*0.60;
+      const prod=Math.round(metaH*v);
+      acum+=prod;
+      dados.push({
+        data:dtStr, horario:slot.inicio, slotFim:slot.fim, slotLabel:slot.label,
+        producaoHora:prod, acumulado:acum,
+        metaHora:metaH, metaDia:CFG.metaDia,
+        operador:ops[i%ops.length], setor:CFG.setor, obs:'',
+        status:prod>=metaH*0.9?'OK':prod>=metaH*0.7?'ATENÇÃO':'ABAIXO'
+      });
+    });
+  }
+  return dados;
+}
+
+// ════════════════════════════════════════════════
+// PARSER EXCEL  — suporta dois formatos:
+//   A) HORA | META | REALIZADO  (modelo simples — "MODELO_HORA_A_HORA")
+//   B) Data | Horário | Produção Hora | ... (formato completo)
+// ════════════════════════════════════════════════
+function parseExcel(buf){
+  const wb=XLSX.read(buf,{type:'array',cellDates:false});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+
+  // ── Detectar formato: varrer até achar linha de cabeçalho ──
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+  let headerRow=-1;
+  for(let i=0;i<Math.min(raw.length,10);i++){
+    const row=raw[i].map(c=>String(c||'').trim().toUpperCase());
+    if(row.includes('HORA')&&row.includes('META')&&row.includes('REALIZADO')){ headerRow=i; break; }
+  }
+
+  // ── FORMATO A: HORA | META | REALIZADO ──
+  if(headerRow>=0){
+    const hdr=raw[headerRow].map(c=>String(c||'').trim().toUpperCase());
+    const iH=hdr.indexOf('HORA');
+    const iM=hdr.indexOf('META');
+    const iR=hdr.indexOf('REALIZADO');
+    const registros=[];
+    let totalMeta=0;
+    const hojeD=hojeStr();
+    // Primeira passagem: descobrir metaDia
+    for(let i=headerRow+1;i<raw.length;i++){
+      const row=raw[i];
+      const horaCell=String(row[iH]||'').trim();
+      if(!horaCell||horaCell.toUpperCase()==='TOTAL') continue;
+      const meta=parseFloat(row[iM])||0;
+      totalMeta+=meta;
+    }
+    const metaDiaExcel=totalMeta||CFG.metaDia;
+    // Segunda passagem: criar registros
+    let acumCalc=0;
+    for(let i=headerRow+1;i<raw.length;i++){
+      const row=raw[i];
+      const horaCell=String(row[iH]||'').trim();
+      if(!horaCell||horaCell.toUpperCase()==='TOTAL') continue;
+      // Parse label "07:00-08:00" → inicio "07:00", fim "08:00"
+      const parts=horaCell.match(/^(\d{1,2}:\d{2})[–\-—](\d{1,2}:\d{2})$/);
+      const inicio=parts?parts[1].padStart(5,'0'):horaCell.substring(0,5);
+      const fim=parts?parts[2].padStart(5,'0'):'';
+      const label=horaCell;
+      const metaH=parseFloat(row[iM])||0;
+      if(metaH===0) continue; // slot sem meta — não exibir
+      const realVal=row[iR];
+      const prod=(realVal!==null&&realVal!=='')?parseFloat(realVal):null;
+      if(prod!==null) acumCalc+=prod;
+      registros.push({
+        data:hojeD, horario:inicio, slotFim:fim, slotLabel:label,
+        producaoHora:prod, acumulado:acumCalc,
+        metaHora:metaH, metaDia:metaDiaExcel,
+        operador:'', setor:CFG.setor, obs:'',
+        status:prod===null?'PENDENTE':prod>=metaH*0.9?'OK':prod>=metaH*0.7?'ATENÇÃO':'ABAIXO'
+      });
+    }
+    return registros;
+  }
+
+  // ── FORMATO B: formato completo com coluna Data ──
+  const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+  const map={
+    data:['Data','DATA','data'],
+    horario:['Horário','Horario','HORÁRIO','HORARIO','horario'],
+    producaoHora:['Produção Hora','Producao Hora','PRODUÇÃO HORA','PRODUCAO HORA','producaoHora'],
+    acumulado:['Acumulado','ACUMULADO'],
+    metaHora:['Meta Hora','META HORA','metaHora'],
+    metaDia:['Meta Dia','META DIA','metaDia'],
+    operador:['Operador','OPERADOR'],setor:['Setor','SETOR'],obs:['Observação','obs']
+  };
+  const get=(row,k)=>{ for(const key of map[k]){ if(row[key]!==undefined&&row[key]!=='') return row[key]; } return ''; };
+  const slots=getSlots();
+  const metaH2=Math.round(CFG.metaDia/slots.length);
+  return rows.filter(r=>get(r,'data')!=='').map(r=>{
+    const dt=parseDataBR(get(r,'data'));
+    const prod=parseFloat(get(r,'producaoHora'))||0;
+    const mH=parseFloat(get(r,'metaHora'))||metaH2;
+    const hor=String(get(r,'horario')).substring(0,5);
+    return{
+      data:dtToStr(dt), horario:hor, slotLabel:hor, slotFim:'',
+      producaoHora:prod, acumulado:parseFloat(get(r,'acumulado'))||0,
+      metaHora:mH, metaDia:parseFloat(get(r,'metaDia'))||CFG.metaDia,
+      operador:String(get(r,'operador')), setor:String(get(r,'setor'))||CFG.setor,
+      obs:String(get(r,'obs')),
+      status:prod>=mH*0.9?'OK':prod>=mH*0.7?'ATENÇÃO':'ABAIXO'
+    };
+  }).filter(r=>r.data);
+}
+
+// ════════════════════════════════════════════════
+// GOOGLE SHEETS — fetch via Apps Script
+// ════════════════════════════════════════════════
+let isSheets = false;
+
+// JSONP — funciona em file:// sem CORS
+function jsonpFetch(url){
+  return new Promise((res,rej)=>{
+    const cb='rpe_cb_'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },12000);
+    function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=data=>{ cleanup(); res(data); };
+    s.onerror=()=>{ cleanup(); rej(new Error('Erro ao carregar script — URL inválida ou sem acesso')); };
+    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    document.head.appendChild(s);
+  });
+}
+
+function processarRespostaSheets(json){
+  const hoje = hojeStr();
+  // Avisar se dados são de outro dia
+  if(json.dadosDeHoje === false){
+    setStatusBadge('warn','Sheets: dados de '+json.dataRef+' (ontem) — aguardando novo dia');
+    document.getElementById('ftr-fonte').textContent =
+      '⚠ Dados de '+json.dataRef+' — o script limpará o REALIZADO automaticamente às 06:00';
+  }
+  let acum = 0;
+  const novos = json.slots.filter(s=>s.metaHora>0).map(s=>{
+    if(s.producaoHora!=null) acum+=s.producaoHora;
+    return {
+      data: hoje,
+      horario: s.inicio, slotFim: s.fim, slotLabel: s.label,
+      producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
+      acumulado: s.producaoHora!=null ? acum : null,
+      metaHora: s.metaHora, metaDia: json.metaDia||CFG.metaDia,
+      operador: s.operador||'', setor: CFG.setor, obs: s.obs||'',
+      status: s.producaoHora==null?'PENDENTE':s.producaoHora>=s.metaHora*0.9?'OK':'ABAIXO'
+    };
+  });
+  DADOS = [...DADOS.filter(d=>d.data!==hoje), ...novos];
+  isLive = true; isSheets = true;
+  const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  setStatusBadge('live','Google Sheets · '+agora);
+  document.getElementById('ftr-fonte').textContent =
+    `📊 ${json.planilha||'Google Sheets'} · ${novos.length} slots · Meta: ${json.metaDia} cx · ${agora}`;
+  document.getElementById('btn-pasta').textContent = '📊 Google Sheets';
+  renderAll();
+  window.dispatchEvent(new Event('rpe-sheets-loaded'));
+}
+
+async function lerSheets(){
+  const url = CFG.sheetsUrl;
+  if(!url) return false;
+  try{
+    setStatusBadge('warn','Buscando dados...');
+    const json = await jsonpFetch(url);
+    if(json.erro) throw new Error(json.erro);
+    processarRespostaSheets(json);
+    return true;
+  }catch(e){
+    console.error('lerSheets:', e);
+    setStatusBadge('red','Sheets: '+e.message);
+    return false;
+  }
+}
+
+async function testarSheets(){
+  const url = document.getElementById('c-sheets-url').value.trim();
+  if(!url){ alert('Cole a URL do Apps Script primeiro.'); return; }
+  const btn = document.getElementById('btn-testar-sheets');
+  btn.textContent = '⏳ Testando...'; btn.disabled = true;
+  try{
+    const json = await jsonpFetch(url);
+    if(json.erro) throw new Error(json.erro);
+    btn.textContent = '✓ OK — '+json.slots.length+' slots / Meta: '+json.metaDia+' / Aba: '+(json.aba||'?');
+    btn.style.color = 'var(--ok)';
+  }catch(e){
+    btn.textContent = '✗ '+e.message;
+    btn.style.color = 'var(--red)';
+  }
+  btn.disabled = false;
+  setTimeout(()=>{ btn.textContent='🔗 TESTAR URL'; btn.style.color='var(--acc)'; },5000);
+}
+// (fileHandle, isLive, countdownSec, countdownTimer declarados no topo)
+
+// ── IndexedDB: persist fileHandle entre sessões ──
+function idbSet(key,val){ return new Promise((res,rej)=>{
+  const req=indexedDB.open('rpe_fs',1);
+  req.onupgradeneeded=e=>e.target.result.createObjectStore('handles');
+  req.onsuccess=e=>{
+    const tx=e.target.result.transaction('handles','readwrite');
+    tx.objectStore('handles').put(val,key);
+    tx.oncomplete=()=>res(); tx.onerror=rej;
+  }; req.onerror=rej;
+}); }
+function idbGet(key){ return new Promise((res,rej)=>{
+  const req=indexedDB.open('rpe_fs',1);
+  req.onupgradeneeded=e=>e.target.result.createObjectStore('handles');
+  req.onsuccess=e=>{
+    const tx=e.target.result.transaction('handles','readonly');
+    const r=tx.objectStore('handles').get(key);
+    r.onsuccess=()=>res(r.result||null); r.onerror=rej;
+  }; req.onerror=rej;
+}); }
+
+// ── Selecionar arquivo Excel ──
+async function selecionarPasta(){
+  if(window.showOpenFilePicker){
+    try{
+      const [fh] = await window.showOpenFilePicker({
+        types:[{description:'Excel (.xlsx)',
+          accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx'],
+                  'application/vnd.ms-excel':['.xls']}}],
+        multiple:false
+      });
+      fileHandle = fh;
+      try{ await idbSet('fileHandle', fh); }catch(ex){}
+      await lerArquivo();
+      iniciarAutoRefresh();
+      return;
+    }catch(e){
+      if(e.name==='AbortError') return; // usuário cancelou
+      // FSA falhou (ex: file://) — cai no input clássico
+      console.warn('FSA indisponível:', e.message);
+    }
+  }
+  // Fallback sempre funciona
+  document.getElementById('file-input').click();
+}
+
+// ── Ler arquivo (chamado no refresh também) ──
+async function lerArquivo(){
+  if(!fileHandle) return;
+  try{
+    // Verificar/pedir permissão
+    let perm = await fileHandle.queryPermission({mode:'read'});
+    if(perm !== 'granted'){
+      perm = await fileHandle.requestPermission({mode:'read'});
+    }
+    if(perm !== 'granted'){
+      setStatusBadge('warn','SEM PERMISSÃO — clique no arquivo novamente'); return;
+    }
+    const file = await fileHandle.getFile();
+    const buf  = await file.arrayBuffer();
+    DADOS = parseExcel(buf);
+    isLive = true;
+    const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    setStatusBadge('live', file.name + ' · ' + agora);
+    document.getElementById('btn-pasta').textContent = '📄 ' + file.name;
+    document.getElementById('ftr-fonte').textContent =
+      `📄 ${file.name} · ${DADOS.length} slots · Meta: ${DADOS[0]?.metaDia||CFG.metaDia} cx · ${agora}`;
+    renderAll();
+  }catch(e){
+    console.error('lerArquivo:', e);
+    setStatusBadge('red','ERRO AO LER — ' + e.message);
+  }
+}
+
+// ── Restaurar handle da sessão anterior ──
+async function tentarRestaurarPasta(){
+  try{
+    const fh = await idbGet('fileHandle');
+    if(!fh) return;
+    fileHandle = fh;
+    const perm = await fileHandle.queryPermission({mode:'read'});
+    if(perm === 'granted'){
+      // Conecta silenciosamente
+      await lerArquivo();
+      iniciarAutoRefresh();
+    } else {
+      // Pede reconexão com 1 clique
+      const nome = (await fileHandle.getFile().catch(()=>({name:'arquivo anterior'}))).name;
+      document.getElementById('btn-pasta').textContent = '🔌 RECONECTAR: ' + nome;
+      document.getElementById('btn-pasta').style.background = 'var(--warn)';
+      document.getElementById('btn-pasta').style.color = '#111';
+    }
+  }catch(e){ /* sem handle salvo */ }
+}
+
+// ── Badge de status ──
+function setStatusBadge(estado, msg){
+  const dot=document.getElementById('rdot');
+  const txt=document.getElementById('rtxt');
+  dot.style.background='';
+  if(estado==='live'){ dot.className='dot dot-live'; }
+  else if(estado==='warn'){ dot.className='dot'; dot.style.background='var(--warn)'; }
+  else if(estado==='red') { dot.className='dot'; dot.style.background='var(--red)'; }
+  else { dot.className='dot dot-demo'; }
+  txt.textContent = msg;
+}
+
+// ── Countdown ──
+function iniciarAutoRefresh(){
+  if(countdownTimer) clearInterval(countdownTimer);
+  document.getElementById('countdown-badge').style.display='flex';
+  const salvo=parseInt(localStorage.getItem('rpe_intervalo')||'5');
+  window._intervaloMin=salvo>=1&&salvo<=60?salvo:5;
+  countdownSec=window._intervaloMin*60;
+  _atualizarLabelIntervalo();
+  _tickCountdown();
+  countdownTimer=setInterval(_tickCountdown,1000);
+}
+function _tickCountdown(){
+  const m=Math.floor(countdownSec/60),s=countdownSec%60;
+  document.getElementById('countdown-txt').textContent=m+':'+String(s).padStart(2,'0');
+  if(countdownSec===0){
+    countdownSec=(window._intervaloMin||5)*60;
+    if(CFG.sheetsUrl) lerSheets(); else lerArquivo();
+  } else countdownSec--;
+}
+function _atualizarLabelIntervalo(){
+  const el=document.getElementById('countdown-intervalo');
+  if(el) el.textContent='/ '+(window._intervaloMin||5)+'min';
+}
+function forcarRefresh(){
+  const badge=document.getElementById('countdown-badge');
+  badge.style.borderColor='var(--acc)'; badge.style.color='var(--acc)';
+  setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
+  countdownSec=(window._intervaloMin||5)*60;
+  if(CFG.sheetsUrl) lerSheets(); else lerArquivo();
+}
+function alterarIntervalo(){
+  const atual=window._intervaloMin||5;
+  const input=prompt('Intervalo de atualização (minutos)\nAtual: '+atual+' min\n\nDigite entre 1 e 60:',atual);
+  if(input===null) return;
+  const novo=parseInt(input);
+  if(isNaN(novo)||novo<1||novo>60){ alert('Valor inválido. Use 1–60.'); return; }
+  window._intervaloMin=novo;
+  localStorage.setItem('rpe_intervalo',novo);
+  countdownSec=novo*60;
+  _atualizarLabelIntervalo();
+}
+
+// ── Fallbacks ──
+function triggerImport(){ document.getElementById('file-input').click(); }
+function updateRefreshBadge(){
+  if(!isLive) setStatusBadge('demo','DEMO');
+}
+function handleFileInput(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    DADOS=parseExcel(e.target.result);
+    isLive=true;
+    setStatusBadge('live', f.name+' (sem auto-refresh)');
+    document.getElementById('btn-pasta').textContent='📄 '+f.name;
+    document.getElementById('ftr-fonte').textContent=`📄 ${f.name} · ${DADOS.length} slots`;
+    renderAll();
+  };
+  r.readAsArrayBuffer(f);
+}
+
+// ════════════════════════════════════════════════
+// CÁLCULOS
+// ════════════════════════════════════════════════
+function getDadosHoje(){
+  const h=hojeStr();
+  // apenas slots com realizado lançado
+  return DADOS.filter(d=>d.data===h && d.producaoHora!=null).sort((a,b)=>a.horario.localeCompare(b.horario));
+}
+// Retorna os slots efetivos: do Sheets/Excel (hoje) ou do CFG + HEs do dia
+function getEffectiveSlots(dh){
+  const hoje=hojeStr();
+  const heSlots=loadHE(hoje).map(s=>({
+    inicio:s.ini, fim:s.fim, label:s.label,
+    min:calcMin(s.ini,s.fim), he:true, _heData:s
+  }));
+
+  let baseSlots;
+  // Verifica dados DE HOJE especificamente (não DADOS[0] que pode ser demo antigo)
+  const allHoje=DADOS.filter(d=>d.data===hoje);
+  const temSlotsHoje=allHoje.length>0 && allHoje[0].slotLabel;
+
+  if(temSlotsHoje){
+    // Sheets ou Excel: usa TODOS os slots do arquivo (inclui 11:00-12:00 etc)
+    baseSlots=allHoje.map(r=>({
+      inicio:r.horario, fim:r.slotFim||'', label:r.slotLabel||r.horario,
+      min:calcMin(r.horario,r.slotFim), he:false, _data:r
+    }));
+    // Remove duplicatas mantendo a ordem
+    const seen=new Set();
+    baseSlots=baseSlots.filter(s=>{ if(seen.has(s.inicio)) return false; seen.add(s.inicio); return true; });
+  } else {
+    baseSlots=getSlots().map(s=>({...s, he:false, _data:null}));
+  }
+
+  const merged=[...baseSlots];
+  heSlots.forEach(he=>{
+    if(!merged.find(s=>s.inicio===he.inicio)) merged.push(he);
+  });
+  merged.sort((a,b)=>a.inicio.localeCompare(b.inicio));
+  return merged;
+}
+function calcMin(i,f){
+  if(!i||!f) return 60;
+  const[h0,m0]=i.split(':').map(Number);
+  const[h1,m1]=f.split(':').map(Number);
+  const d=(h1*60+m1)-(h0*60+m0);
+  return d>0?d:60;
+}
+function calcKPIs(dh){
+  const hoje=hojeStr();
+  const heList=loadHE(hoje);
+
+  // allHoje = dados DADOS (Excel/demo) + HEs locais convertidos para mesmo formato
+  const dadosHoje=DADOS.filter(d=>d.data===hoje);
+  const heDados=heList.map(s=>({
+    data:hoje, horario:s.ini, slotFim:s.fim, slotLabel:s.label,
+    producaoHora:s.producaoHora, acumulado:0,
+    metaHora:s.metaHora, metaDia:0, he:true,
+    operador:'', setor:CFG.setor, obs:'HE', status:s.producaoHora!=null?(s.producaoHora>=s.metaHora*0.9?'OK':'ABAIXO'):'PENDENTE'
+  }));
+  // Mesclar: HE tem prioridade se mesmo horário
+  const allHoje=[...dadosHoje];
+  heDados.forEach(h=>{ if(!allHoje.find(d=>d.horario===h.horario)) allHoje.push(h); });
+  allHoje.sort((a,b)=>a.horario.localeCompare(b.horario));
+
+  const effSlots=getEffectiveSlots(dh);
+  // dh = apenas slots com realizado (todos, incluindo HE)
+  const dhAll=allHoje.filter(d=>d.producaoHora!=null);
+  const n=dhAll.length;
+  const real=dhAll.reduce((s,r)=>s+r.producaoHora,0);
+
+  // metaDia: soma das metas de todos os slots (base + HE)
+  const metaBase=dadosHoje.length>0?dadosHoje[0].metaDia:CFG.metaDia;
+  const metaHE=heList.reduce((s,h)=>s+h.metaHora,0);
+  const meta=metaBase+metaHE;
+
+  const metaReal=dhAll.reduce((s,r)=>s+(r.metaHora||0),0);
+  const ef=metaReal>0?(real/metaReal)*100:0;
+  const gap=meta-real;
+  const ritmo=n>0?Math.round(real/n):0;
+  const slotsRest=effSlots.length-n;
+  const metaH=n>0?Math.round(dhAll.reduce((s,r)=>s+(r.metaHora||0),0)/n):Math.round(meta/Math.max(effSlots.length,1));
+  const proj=real+ritmo*slotsRest;
+  const nec=slotsRest>0?Math.ceil((meta-real)/slotsRest):0;
+  const prods=dhAll.map(r=>r.producaoHora);
+  const melhor=prods.length?Math.max(...prods):0;
+  const pior=prods.length?Math.min(...prods):0;
+  const hProd=(n*(effSlots[0]?.min||60))/60;
+  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje};
+}
+function sc(ef){ return ef>=90?'ok':ef>=70?'warn':'red'; }
+function sl(ef){ return ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
+
+// ════════════════════════════════════════════════
+// RENDER GERENCIAL
+// ════════════════════════════════════════════════
+function renderGerencial(){
+  const dh=getDadosHoje();
+  const k=calcKPIs(dh);
+  const s=sc(k.ef);
+
+  // ── KPIs ──
+  const kpis=[
+    {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
+    {l:'EFICIÊNCIA %',      v:fmtP(k.ef),               sub:sl(k.ef),                c:s},
+    {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
+    {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'cx na última hora',      c:'acc'},
+    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
+    {l:'HORAS PRODUTIVAS',  v:k.hProd.toFixed(1)+'h',  sub:`${k.n} slots registrados`,c:''},
+    {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
+    {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.l}</div>
+      <div class="kpi-val">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // ── Análise ──
+  const tendStr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'↑ CRESCENDO':'↓ QUEDA'):'SEM DADOS';
+  const tendClr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'var(--ok)':'var(--red)'):'var(--txt2)';
+  const picoR=dh.find(r=>r.producaoHora===k.melhor);
+  const valeR=dh.find(r=>r.producaoHora===k.pior);
+  document.getElementById('analise-row').innerHTML=`
+    <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
+      <div class="a-val" style="color:var(--warn)">${k.slotsRest>0?fmtN(k.nec)+' cx/h':'— Turno enc.'}</div>
+      <div class="a-desc">para meta em ${k.slotsRest} hora(s)</div></div>
+    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
+      <div class="a-val" style="color:${tendClr}">${tendStr}</div>
+      <div class="a-desc">últimas 2 horas registradas</div></div>
+    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
+      <div class="a-val">${picoR?picoR.horario:'—'}</div>
+      <div class="a-desc">${fmtN(k.melhor)} cx neste horário</div></div>
+    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
+      <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
+      <div class="a-desc">${fmtN(k.pior)} cx — menor ritmo</div></div>`;
+
+  // ── Tabela hora a hora ──
+  document.getElementById('tbl-data-lbl').textContent=hojeStr();
+  let acumCalc=0;
+  document.getElementById('tbl-hora-body').innerHTML=k.slots.map(sl=>{
+    const reg=k.allHoje.find(d=>d.horario===sl.inicio);
+    const prod=reg?reg.producaoHora:null;
+    const metaSlot=reg?reg.metaHora:k.metaH;
+    const isHE=reg?.he||sl.he||false;
+    if(prod!==null&&prod!==undefined) acumCalc+=prod;
+    const ef=prod!=null?(prod/metaSlot*100):null;
+    const s2=ef===null?'mute':ef>=90?'ok':ef>=70?'warn':'red';
+    const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
+    const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=90?'OK':ef>=70?'ATENÇÃO':'ABAIXO'}</span>`;
+    return`<tr class="${isHE?'he-row':''}">
+      <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}</td>
+      <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
+      <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
+      <td class="mono" style="color:${isHE?'var(--acc)':'var(--txt2)'}">${fmtN(metaSlot)}</td>
+      <td class="mono" style="color:${ef!=null?(ef>=90?'var(--ok)':ef>=70?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
+      <td>${bdg}</td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
+
+  renderChartHora(dh,k.slots,k.metaH);
+  renderChartComp(dh,k.slots,k.metaH);
+}
+
+// ════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════
+const CHART_DEFAULTS={
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'}},
+    y:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'},beginAtZero:true}
+  }
+};
+function mkChart(id,cfg){
+  if(CHARTS[id]) CHARTS[id].destroy();
+  const el=document.getElementById(id);
+  if(!el) return;
+  CHARTS[id]=new Chart(el,cfg);
+}
+
+function renderChartHora(dh,slots,metaH){
+  const labels=slots.map(s=>s.label||s.inicio);
+  const allH=isLive?DADOS.filter(d=>d.data===hojeStr()):dh;
+  const real=slots.map(s=>{
+    const r=allH.find(d=>d.horario===s.inicio);
+    return r&&r.producaoHora!=null?r.producaoHora:null;
+  });
+  const metas=slots.map(s=>{
+    const r=allH.find(d=>d.horario===s.inicio);
+    return r?r.metaHora:metaH;
+  });
+  const colors=real.map((v,i)=>v===null?'rgba(42,42,42,0.4)':v>=metas[i]*0.9?'rgba(76,175,80,0.75)':v>=metas[i]*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)');
+  mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
+    {label:'Realizado',data:real,backgroundColor:colors,borderRadius:3},
+    {label:'Meta/h',data:metas,type:'line',borderColor:'#F5A62360',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
+  ]},options:CHART_DEFAULTS});
+}
+function renderChartComp(dh,slots,metaH){
+  const n=Math.min(dh.length,slots.length);
+  if(!n){ mkChart('ch-comp',{type:'bar',data:{labels:[],datasets:[]},options:CHART_DEFAULTS}); return; }
+  const labels=dh.slice(0,n).map(d=>d.horario);
+  mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
+    {label:'Real',data:dh.slice(0,n).map(d=>d.producaoHora),backgroundColor:'rgba(245,166,35,0.7)',borderRadius:3},
+    {label:'Meta',data:dh.slice(0,n).map(()=>metaH),backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3}
+  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+
+  renderParadas();
+}
+
+// ════════════════════════════════════════════════
+// RENDER TV
+// ════════════════════════════════════════════════
+function renderTV(){
+  const dh=getDadosHoje();
+  const k=calcKPIs(dh);
+  const s=sc(k.ef);
+
+  const pe=document.getElementById('tv-prod');
+  pe.textContent=fmtN(k.real); pe.className=`tv-big ${s}`;
+
+  const ee=document.getElementById('tv-ef');
+  ee.textContent=fmtP(k.ef); ee.className=`tv-ef-val ${s}`;
+
+  const be=document.getElementById('tv-badge');
+  be.textContent='● '+sl(k.ef); be.className=`tv-status-badge ${s}`;
+
+  const pct=Math.min(100,(k.real/k.meta)*100);
+  const fill=document.getElementById('tv-prog-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=s==='ok'?'var(--ok)':s==='warn'?'var(--warn)':'var(--red)';
+  document.getElementById('tv-prog-pct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('tv-meta-lbl').textContent='META: '+fmtN(k.meta);
+  const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fmtN(k.meta);
+  document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
+  document.getElementById('tv-nec').textContent=k.slotsRest>0?fmtN(k.nec):'—';
+  document.getElementById('tv-proj').textContent=fmtN(k.proj);
+  document.getElementById('tv-empresa').textContent=`${CFG.empresa} · ${CFG.unidade}`;
+  document.getElementById('tv-setor').textContent=CFG.setor;
+
+  let acumC=0;
+  document.getElementById('tv-tbl-body').innerHTML=k.slots.map(sl=>{
+    const reg=k.allHoje.find(d=>d.horario===sl.inicio);
+    const prod=reg?reg.producaoHora:null;
+    const metaSlot=reg?reg.metaHora:k.metaH;
+    const isHE=reg?.he||sl.he||false;
+    if(prod!==null&&prod!==undefined) acumC+=prod;
+    const ef2=prod!=null?(prod/metaSlot*100):null;
+    const rc=prod===null?'r-pend':ef2>=90?'r-ok':ef2>=70?'r-warn':'r-red';
+    const st=prod===null?'—':ef2>=90?'✓ OK':ef2>=70?'! ATEN':'✗ ABX';
+    const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
+    return`<tr class="${rc}${isHE?' he-row':''}">
+      <td class="td-h">${lbl}</td>
+      <td class="td-h">${fmtN(metaSlot)}</td>
+      <td>${prod!=null?fmtN(prod):'—'}</td>
+      <td>${prod!=null?fmtN(acumC):'—'}</td>
+      <td class="td-s">${st}</td></tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// RENDER HISTÓRICO
+// ════════════════════════════════════════════════
+// ── Salvar dia no Google Sheets (action=saveDay via JSONP) ──
+function salvarDiaSheets(data, k, fechadoEm){
+  if(!CFG.sheetsUrl) return;
+  const heCount=k.allHoje.filter(d=>d.he&&d.producaoHora!=null).length;
+  const params=[
+    'action=saveDay',
+    'data='+encodeURIComponent(data),
+    'real='+k.real,
+    'meta='+k.meta,
+    'ef='+k.ef.toFixed(1),
+    'melhor='+k.melhor,
+    'pior='+k.pior,
+    'he='+heCount,
+    'fechadoEm='+encodeURIComponent(fechadoEm)
+  ].join('&');
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+  jsonpFetch(url)
+    .then(r=>{ if(r.ok) console.log('Histórico salvo no Sheets:', r.data); else console.warn('Sheets saveDay:', r); })
+    .catch(e=>console.error('Erro ao salvar no Sheets:', e));
+}
+
+// ── Buscar histórico do Sheets ──
+async function lerHistoricoSheets(){
+  if(!CFG.sheetsUrl) return null;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
+    const json=await jsonpFetch(url);
+    if(json.erro) throw new Error(json.erro);
+    const dias = json.dias||[];
+    console.log('[getHistory] retornou', dias.length, 'dias:', dias.map(d=>d.data));
+    return dias;
+  }catch(e){
+    console.warn('[getHistory] ERRO:', e.message);
+    // Retorna array vazio em vez de null — não interrompe o merge
+    return [];
+  }
+}
+
+// ── Constrói lista de dias: Sheets + localStorage + memória ──
+async function buildDiasHistAsync(){
+  let diasSheets=[];
+  if(CFG.sheetsUrl){
+    const r=await lerHistoricoSheets();
+    if(r) diasSheets=r;
+  }
+  return _mergeDias(diasSheets);
+}
+
+function buildDiasHist(){
+  // Versão síncrona (usa só local+memória)
+  return _mergeDias([]);
+}
+
+function _mergeDias(diasSheets){
+  const porDia={};
+
+  // Normalizar data vinda do Sheets (pode ser objeto Date serializado)
+  function normData(d){
+    if(!d) return '';
+    const s=String(d).trim();
+    if(s.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return s;
+    const dt=new Date(s); if(!isNaN(dt)) return p2(dt.getDate())+'/'+p2(dt.getMonth()+1)+'/'+dt.getFullYear();
+    return s;
+  }
+
+  // 1. Google Sheets (fechados)
+  diasSheets.forEach(d=>{
+    d.data = normData(d.data);
+    porDia[d.data]={
+      data:d.data, real:d.real, meta:d.meta, ef:d.ef,
+      melhor:d.melhor, pior:d.pior, ok:d.ef>=100,
+      fechado:true, fechadoEm:d.fechadoEm, heCount:d.heCount||0,
+      fonte:'sheets'
+    };
+  });
+
+  // 2. localStorage (fechados locais)
+  const all=loadHistAll();
+  Object.entries(all).forEach(([data,d])=>{
+    data = normData(data);
+    if(!d.slots||!d.slots.length) return;
+    if(porDia[data]&&porDia[data].fonte==='sheets') return; // Sheets tem prioridade
+    const real=d.slots.reduce((s,sl)=>s+sl.prod,0);
+    const meta=d.metaDia||CFG.metaDia;
+    const ef=meta>0?(real/meta)*100:0;
+    const prods=d.slots.map(sl=>sl.prod);
+    const heCount=d.slots.filter(sl=>sl.he).length;
+    porDia[data]={data,real,meta,ef,
+      melhor:prods.length?Math.max(...prods):0,
+      pior:prods.length?Math.min(...prods):0,
+      ok:ef>=100, fechado:d.fechado, fechadoEm:d.fechadoEm, heCount, fonte:'local'};
+  });
+
+  // 3. DADOS em memória (apenas se NÃO estiver usando Sheets — evita dados demo)
+  if(!isSheets){
+    const porDiaMem={};
+    DADOS.filter(r=>r.producaoHora!=null).forEach(r=>{
+      if(!porDiaMem[r.data]) porDiaMem[r.data]={data:r.data,regs:[],meta:r.metaDia||CFG.metaDia};
+      porDiaMem[r.data].regs.push(r);
+    });
+    Object.values(porDiaMem).forEach(d=>{
+      if(porDia[d.data]&&porDia[d.data].fechado) return;
+      const real=d.regs.reduce((s,r)=>s+r.producaoHora,0);
+      const ef=d.meta>0?(real/d.meta)*100:0;
+      const prods=d.regs.map(r=>r.producaoHora);
+      const heCount=d.regs.filter(r=>r.he).length;
+      porDia[d.data]={data:d.data,real,meta:d.meta,ef,
+        melhor:prods.length?Math.max(...prods):0,
+        pior:prods.length?Math.min(...prods):0,
+        ok:ef>=100, fechado:false, fechadoEm:null, heCount, fonte:'memoria'};
+    });
+  }
+
+  return Object.values(porDia);
+}
+
+async function renderHist(){
+  const periodo=document.getElementById('hist-period').value;
+  const deStr=document.getElementById('hist-de').value;
+  const ateStr=document.getElementById('hist-ate').value;
+  updateStorageInfo();
+
+  // Buscar do Sheets se configurado, senão usa local
+  let dias = CFG.sheetsUrl
+    ? await buildDiasHistAsync()
+    : buildDiasHist();
+
+  // Filtrar período — parse manual para evitar bug de timezone (ISO → meia-noite UTC)
+  if(deStr||ateStr){
+    const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+    const dtDe=parseFiltro(deStr);
+    const dtAte=parseFiltro(ateStr);
+    dias=dias.filter(d=>{
+      const[dd,mm,yy]=d.data.split('/').map(Number);
+      const dt=new Date(yy,mm-1,dd);
+      if(dtDe&&dt<dtDe) return false;
+      if(dtAte&&dt>dtAte) return false;
+      return true;
+    });
+  }
+  dias.sort((a,b)=>{
+    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
+    return p(a.data)-p(b.data);
+  });
+
+  // KPIs sumário
+  const totReal=dias.reduce((s,d)=>s+d.real,0);
+  const efM=dias.length?dias.reduce((s,d)=>s+d.ef,0)/dias.length:0;
+  const comMeta=dias.filter(d=>d.ok).length;
+  const melhorDia=dias.length?dias.reduce((a,b)=>a.ef>b.ef?a:b):null;
+  const fechados=dias.filter(d=>d.fechado).length;
+  document.getElementById('hist-kpi-grid').innerHTML=`
+    <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${dias.length} dias no período</div></div>
+    <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
+    <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>`;
+
+  renderChartHist(dias,periodo);
+
+  const tbody=document.getElementById('hist-tbl-body');
+  if(!dias.length){ tbody.innerHTML='<tr><td colspan="8" class="empty-msg">Nenhum dado no período.</td></tr>'; return; }
+  tbody.innerHTML=dias.map(d=>`<tr>
+    <td class="mono">${d.data}</td>
+    <td class="mono">${fmtN(d.real)}</td>
+    <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
+    <td class="mono" style="color:${d.ef>=90?'var(--ok)':d.ef>=70?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
+    <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
+    <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
+    <td><span class="badge b-${d.ef>=90?'ok':d.ef>=70?'warn':'red'}">${d.ef>=90?'✓ META':d.ef>=70?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
+    <td>${d.fechado?`<span class="badge b-ok" title="${d.fechadoEm||''}">✓ ${(d.fechadoEm||'').substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
+    <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
+  </tr>`).join('');
+}
+
+function renderChartHist(dias,periodo){
+  let labels,realD,metaD,efD;
+  if(periodo==='diario'){
+    labels=dias.map(d=>d.data.substring(0,5));
+    realD=dias.map(d=>d.real); metaD=dias.map(d=>d.meta);
+    efD=dias.map(d=>parseFloat(d.ef.toFixed(1)));
+  } else if(periodo==='semanal'){
+    const sem={};
+    dias.forEach(d=>{
+      const[dd,mm,yy]=d.data.split('/').map(Number);
+      const dt=new Date(yy,mm-1,dd);
+      const day=dt.getDay(); const diff=dt.getDate()-day+(day===0?-6:1);
+      const seg=new Date(yy,mm-1,diff);
+      const key=`${p2(seg.getDate())}/${p2(seg.getMonth()+1)}`;
+      if(!sem[key]) sem[key]={real:0,meta:0};
+      sem[key].real+=d.real; sem[key].meta+=d.meta;
+    });
+    labels=Object.keys(sem);
+    realD=labels.map(l=>sem[l].real); metaD=labels.map(l=>sem[l].meta);
+    efD=labels.map(l=>parseFloat((sem[l].real/sem[l].meta*100).toFixed(1)));
+  } else {
+    const mes={};
+    dias.forEach(d=>{const key=d.data.substring(3,10); if(!mes[key]) mes[key]={real:0,meta:0}; mes[key].real+=d.real; mes[key].meta+=d.meta;});
+    labels=Object.keys(mes);
+    realD=labels.map(l=>mes[l].real); metaD=labels.map(l=>mes[l].meta);
+    efD=labels.map(l=>parseFloat((mes[l].real/mes[l].meta*100).toFixed(1)));
+  }
+  mkChart('ch-hist',{type:'bar',data:{labels,datasets:[
+    {label:'Realizado',data:realD,backgroundColor:'rgba(245,166,35,0.65)',borderRadius:3,yAxisID:'y'},
+    {label:'Meta',data:metaD,backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3,yAxisID:'y'},
+    {label:'Ef.%',data:efD,type:'line',borderColor:'var(--ok)',borderWidth:2,pointRadius:3,pointBackgroundColor:'var(--ok)',yAxisID:'y2',fill:false}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{color:'#666',font:{family:'IBM Plex Mono',size:9}}}},
+    scales:{
+      x:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'}},
+      y:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'},beginAtZero:true},
+      y2:{ticks:{color:'#4CAF50',font:{family:'IBM Plex Mono',size:9}},grid:{display:false},position:'right',min:0,max:150}
+    }
+  }});
+}
+
+// ════════════════════════════════════════════════
+// EXPORT EXCEL
+// ════════════════════════════════════════════════
+function exportarExcel(){
+  const rows=[['Data','Realizado','Meta','Eficiência %','Melhor Hora','Pior Hora','Status']];
+  document.querySelectorAll('#hist-tbl-body tr').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds.length>=7) rows.push([...tds].map(td=>td.textContent.trim()));
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb2=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2,ws,'Histórico');
+  XLSX.writeFile(wb2,`ritmoprod_historico_${hojeStr().replace(/\//g,'_')}.xlsx`);
+}
+
+// ════════════════════════════════════════════════
+// CONFIG MODAL
+// ════════════════════════════════════════════════
+function openCfg(){
+  document.getElementById('c-empresa').value=CFG.empresa;
+  document.getElementById('c-unidade').value=CFG.unidade;
+  document.getElementById('c-setor').value=CFG.setor;
+  document.getElementById('c-meta').value=CFG.metaDia;
+  document.getElementById('c-t0').value=CFG.turnoInicio;
+  document.getElementById('c-t1').value=CFG.turnoFim;
+  document.getElementById('c-a0').value=CFG.almocoInicio;
+  document.getElementById('c-a1').value=CFG.almocoFim;
+  document.getElementById('c-sheets-url').value=CFG.sheetsUrl||'';
+  document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
+  document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
+  document.getElementById('modal-cfg').classList.add('on');
+}
+function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
+function saveCfg(){
+  CFG.empresa=document.getElementById('c-empresa').value;
+  CFG.unidade=document.getElementById('c-unidade').value;
+  CFG.setor=document.getElementById('c-setor').value;
+  CFG.metaDia=parseInt(document.getElementById('c-meta').value)||1500;
+  CFG.turnoInicio=document.getElementById('c-t0').value;
+  CFG.turnoFim=document.getElementById('c-t1').value;
+  CFG.almocoInicio=document.getElementById('c-a0').value;
+  CFG.almocoFim=document.getElementById('c-a1').value;
+  CFG.sheetsUrl=(document.getElementById('c-sheets-url').value||'').trim();
+  const sOp=document.getElementById('c-senha-op').value.trim();
+  const sGer=document.getElementById('c-senha-ger').value.trim();
+  if(sOp)  CFG.senhaOperador=sOp;
+  if(sGer) CFG.senhaGerencial=sGer;
+  saveCfgLocal();
+  closeCfg();
+  if(CFG.sheetsUrl){ lerSheets(); iniciarAutoRefresh(); }
+  else if(!isLive){ DADOS=gerarDemo(); renderAll(); }
+  else renderAll();
+}
+document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.target===this) closeCfg(); });
+
+// ════════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════════
+function tick(){
+  const n=new Date();
+  const t=`${p2(n.getHours())}:${p2(n.getMinutes())}:${p2(n.getSeconds())}`;
+  const ws=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  const dl=`${ws[n.getDay()]} · ${p2(n.getDate())}/${p2(n.getMonth()+1)}/${n.getFullYear()}`;
+  ['hdr-clock','tv-clock'].forEach(id=>document.getElementById(id).textContent=t);
+  ['hdr-date','tv-date'].forEach(id=>document.getElementById(id).textContent=dl);
+}
+
+// ════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════
+function setTab(tab){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sec-'+tab).classList.add('on');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('on');
+  if(tab==='tv') renderTV();
+  if(tab==='historico') renderHist();
+}
+
+// ════════════════════════════════════════════════
+// HEADER UPDATE
+// ════════════════════════════════════════════════
+function updateHeader(){
+  document.getElementById('hdr-empresa').textContent=CFG.empresa;
+  document.getElementById('hdr-setor').textContent=`${CFG.setor} · ${CFG.unidade}`;
+}
+
+function renderAll(){
+  updateHeader();
+  renderGerencial();
+  autoSaveDia(); // salva snapshot automático após cada render
+  // Atualizar badges/botões de fechamento
+  const hoje=hojeStr();
+  const fechado=isDiaFechado(hoje);
+  const badge  =document.getElementById('dia-fechado-badge');
+  const btnF   =document.getElementById('btn-fechar-dia');
+  const btnR   =document.getElementById('btn-reabrir-dia');
+  if(badge)  badge.style.display  = fechado?'inline-flex':'none';
+  if(btnF)   btnF.style.display   = fechado?'none':'inline-flex';
+  if(btnR)   btnR.style.display   = fechado?'inline-flex':'none';
+  const activeTab=document.querySelector('.tab.on');
+  if(activeTab){
+    const t=activeTab.dataset.tab;
+    if(t==='tv') renderTV();
+    if(t==='historico') renderHist();
+  }
+  updateStorageInfo();
+}
+
+// ════════════════════════════════════════════════
+// IMPRIMIR / PDF — com gráficos capturados
+// ════════════════════════════════════════════════
+async function imprimir(){
+  // Se estiver na aba HISTÓRICO → gera janela formatada (não window.print())
+  const secOn=document.querySelector('.sec.on');
+  if(secOn&&secOn.id==='sec-historico'){
+    await _imprimirHistoricoFormatado();
+    return;
+  }
+  // Demais abas → print normal
+  const hoje=hojeStr();
+  const dh=getDadosHoje();
+  const k=dh.length?calcKPIs(dh):null;
+  const agora=new Date().toLocaleString('pt-BR');
+  const subGer=`${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}`;
+  const infoGer=k
+    ?`Realizado: ${fmtN(k.real)} cx  |  Meta: ${fmtN(k.meta)} cx  |  Eficiência: ${fmtP(k.ef)}\nSlots: ${k.n}/${k.slots.length}  |  Projeção: ${fmtN(k.proj)} cx\nImpresso em: ${agora}`
+    :`Impresso em: ${agora}`;
+  setTxt('ph-ger-sub', subGer);
+  setTxt('ph-ger-info', infoGer);
+  _capturarGraficos();
+  _adicionarRodapePagina(agora);
+  window.print();
+  setTimeout(_limparAposImpressao, 1000);
+}
+
+async function _imprimirHistoricoFormatado(){
+  const win=window.open('','_blank','width=960,height=800');
+  if(!win){ alert('Pop-up bloqueado. Permita pop-ups para este site.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Gerando relatório...</p></body></html>');
+
+  // Buscar dados do período atual
+  let dias = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
+
+  // Aplicar filtro do período selecionado
+  const deStr=document.getElementById('hist-de').value;
+  const ateStr=document.getElementById('hist-ate').value;
+  const periodo=document.getElementById('hist-period').value;
+  if(deStr||ateStr){
+    const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+    const dtDe=parseFiltro(deStr);
+    const dtAte=parseFiltro(ateStr);
+    dias=dias.filter(d=>{
+      const[dd,mm,yy]=d.data.split('/').map(Number);
+      const dt=new Date(yy,mm-1,dd);
+      dt.setHours(0,0,0,0);
+      if(dtDe&&dt<dtDe) return false;
+      if(dtAte){const ateF=new Date(dtAte);ateF.setHours(23,59,59,999);if(dt>ateF) return false;}
+      return true;
+    });
+  }
+  dias.sort((a,b)=>{
+    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
+    return p(a.data)-p(b.data);
+  });
+
+  if(!dias.length){ win.close(); alert('Nenhum dado no período selecionado.'); return; }
+
+  const agora=new Date().toLocaleString('pt-BR');
+  const totReal=dias.reduce((s,d)=>s+d.real,0);
+  const totMeta=dias.reduce((s,d)=>s+d.meta,0);
+  const efMedia=dias.reduce((s,d)=>s+d.ef,0)/dias.length;
+  const comMeta=dias.filter(d=>d.ok).length;
+  const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
+  const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
+  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
+  const bdgCls=ef=>ef>=90?'s-ok':ef>=70?'s-warn':'s-red';
+  const bdgLbl=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
+  const periodoLabel=deStr&&ateStr?`${deStr.split('-').reverse().join('/')} a ${ateStr.split('-').reverse().join('/')}`:periodo.toUpperCase();
+
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>RitmoProd · Histórico · ${periodoLabel}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
+  @page{size:A4 portrait;margin:0}
+  @media print{body{padding:10mm 12mm}.no-print{display:none!important}}
+  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #F5A623}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px}
+  .rp-logo span{color:#F5A623}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
+  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#F5A623}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 8px;border-bottom:0.5px solid #eee;padding-bottom:5px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px}
+  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #ddd;border-radius:4px;padding:9px 11px}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;line-height:1;color:#111}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#999;margin-top:3px}
+  .rp-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .rp-highlight{background:#f8f8f8;border:1px solid #eee;border-radius:4px;padding:10px 12px;display:flex;align-items:center;gap:12px}
+  .rp-hl-icon{font-size:20px}
+  .rp-hl-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:1.5px;margin-bottom:2px}
+  .rp-hl-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#111}
+  .rp-hl-sub{font-size:9px;color:#888;margin-top:2px}
+  .rp-chart-wrap{background:#f9f9f9;border:1px solid #eee;border-radius:4px;padding:10px 12px;margin-bottom:4px}
+  svg text{font-family:'IBM Plex Mono',monospace}
+  table{width:100%;border-collapse:collapse}
+  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:7px 9px;border-bottom:1.5px solid #ccc;text-align:left}
+  tbody td{font-size:11px;padding:7px 9px;border-bottom:1px solid #f0f0f0;color:#111}
+  tbody tr:last-child td{border-bottom:none}
+  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
+  .td-bold{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
+  .sbadge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:2px;letter-spacing:1px}
+  .s-ok{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
+  .s-warn{background:#fff3e0;color:#e65100;border:1px solid #ffcc80}
+  .s-red{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
+  .rp-footer{margin-top:16px;padding-top:8px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
+  .rp-print-btn{position:fixed;top:14px;right:14px;background:#F5A623;color:#111;border:none;padding:9px 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+</style>
+</head>
+<body>
+<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+
+<div class="rp-header">
+  <div>
+    <div class="rp-logo">RITMO<span>PROD</span> · HISTÓRICO</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
+  </div>
+  <div class="rp-meta">
+    <div class="rp-periodo">${periodoLabel}</div>
+    <div>Gerado em: ${agora}</div>
+    <div>${dias.length} dia(s) no período</div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
+<div class="kpi-grid">
+  <div class="kpi-card" style="border-left-color:#F5A623">
+    <div class="kpi-lbl">TOTAL PRODUZIDO</div>
+    <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas no período</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+    <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
+    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
+    <div class="kpi-sub">${bdgLbl(efMedia).toLowerCase()}</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
+    <div class="kpi-lbl">DIAS COM META</div>
+    <div class="kpi-val">${comMeta}</div>
+    <div class="kpi-sub">de ${dias.length} (${Math.round(comMeta/dias.length*100)}%)</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#888">
+    <div class="kpi-lbl">TOTAL META</div>
+    <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</div>
+  </div>
+</div>
+
+<div class="rp-row2" style="margin-top:8px">
+  <div class="rp-highlight">
+    <div class="rp-hl-icon">🏆</div>
+    <div>
+      <div class="rp-hl-lbl">MELHOR DIA</div>
+      <div class="rp-hl-val">${melhorDia.data}</div>
+      <div class="rp-hl-sub" style="color:${cor(melhorDia.ef)}">${melhorDia.ef.toFixed(1)}% · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
+    </div>
+  </div>
+  <div class="rp-highlight">
+    <div class="rp-hl-icon">📉</div>
+    <div>
+      <div class="rp-hl-lbl">DIA MAIS FRACO</div>
+      <div class="rp-hl-val">${piorDia.data}</div>
+      <div class="rp-hl-sub" style="color:${cor(piorDia.ef)}">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
+    </div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl" style="margin-top:16px">PRODUÇÃO × META POR DIA</div>
+<div class="rp-chart-wrap">${_svgBarChart(dias)}</div>
+
+<div class="rp-sec-ttl" style="margin-top:16px">DESEMPENHO HORA A HORA — POR DIA</div>
+${dias.map(d=>_svgDiaHora(d)).join('')}
+
+<div class="rp-sec-ttl" style="margin-top:16px">DETALHAMENTO POR DIA</div>
+<table>
+  <thead><tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr></thead>
+  <tbody>
+    ${dias.map(d=>`<tr>
+      <td class="td-mono">${d.data}</td>
+      <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
+      <td><span class="sbadge ${bdgCls(d.ef)}">${bdgLbl(d.ef)}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+(d.fechadoEm||'').substring(0,10):'—'}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+<div class="rp-footer">
+  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · v7</span>
+  <span>Gerado em: ${agora}</span>
+</div>
+</body></html>`;
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+function _capturarGraficos(){
+  ['ch-hora','ch-comp','ch-hist'].forEach(id=>{
+    const canvas=document.getElementById(id);
+    if(!canvas) return;
+    const box=canvas.closest('.chart-box');
+    if(!box) return;
+    // Remove imagem anterior se existir
+    const old=box.querySelector('.print-chart-img');
+    if(old) old.remove();
+    // Cria nova imagem a partir do canvas
+    try{
+      const img=document.createElement('img');
+      img.src=canvas.toDataURL('image/png');
+      img.className='print-chart-img';
+      img.style.display='none'; // oculta na tela, visível no CSS print
+      box.appendChild(img);
+    }catch(e){ console.warn('Não foi possível capturar gráfico:', id); }
+  });
+}
+
+function _adicionarRodapePagina(agora){
+  document.querySelectorAll('.print-page-footer').forEach(e=>e.remove());
+  const footer=document.createElement('div');
+  footer.className='print-page-footer';
+  footer.innerHTML=`<span>RitmoProd · ${CFG.empresa} · ${CFG.setor}</span><span>Gerado em: ${agora}</span>`;
+  const secOn=document.querySelector('.sec.on');
+  if(secOn) secOn.appendChild(footer);
+}
+
+function _limparAposImpressao(){
+  document.querySelectorAll('.print-chart-img').forEach(e=>e.remove());
+  document.querySelectorAll('.print-page-footer').forEach(e=>e.remove());
+}
+
+// Capturar gráficos automaticamente ao imprimir via Ctrl+P
+window.addEventListener('beforeprint', ()=>{
+  _capturarGraficos();
+  _adicionarRodapePagina(new Date().toLocaleString('pt-BR'));
+});
+window.addEventListener('afterprint', _limparAposImpressao);
+
+function setTxt(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt; }
+
+// ════════════════════════════════════════════════
+// RELATÓRIO SEMANAL
+// ════════════════════════════════════════════════
+async function gerarRelatorioSemanal(){
+  // Abrir janela ANTES do await (evita bloqueio de pop-up)
+  const win=window.open('','_blank','width=960,height=720');
+  if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
+
+  // Determinar semana atual (seg-sex) ou semana do filtro
+  const ate=document.getElementById('hist-ate').value;
+  const refDate=ate?new Date(ate):new Date();
+  const diaSem=refDate.getDay();
+  const diffSeg=diaSem===0?-6:1-diaSem;
+  const seg=new Date(refDate); seg.setDate(refDate.getDate()+diffSeg);
+  seg.setHours(0,0,0,0);   // ← início do dia (fix: evita excluir segunda-feira)
+  const sex=new Date(seg); sex.setDate(seg.getDate()+6);
+  sex.setHours(23,59,59,999); // ← fim do dia
+
+  const fmtD=d=>`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+  const semStr=`${fmtD(seg)} a ${fmtD(sex)}`;
+  const numSem=_numSemana(seg);
+
+  // Buscar dados
+  const todosDias=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
+  console.log('[RelSemanal] Total dias encontrados:', todosDias.length, todosDias.map(d=>d.data+' ('+d.fonte+')'));
+
+  // Filtrar pela semana
+  const diasSem=todosDias.filter(d=>{
+    const[dd,mm,yy]=d.data.split('/').map(Number);
+    const dt=new Date(yy,mm-1,dd);
+    return dt>=seg && dt<=sex;
+  }).sort((a,b)=>{
+    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
+    return p(a.data)-p(b.data);
+  });
+
+  if(!diasSem.length){
+    alert(`Nenhum dado encontrado para a semana ${semStr}.\n\nAjuste o filtro "Até" na aba Histórico para a semana desejada.`);
+    return;
+  }
+
+  // KPIs da semana
+  const totReal=diasSem.reduce((s,d)=>s+d.real,0);
+  const totMeta=diasSem.reduce((s,d)=>s+d.meta,0);
+  const efMedia=diasSem.reduce((s,d)=>s+d.ef,0)/diasSem.length;
+  const comMeta=diasSem.filter(d=>d.ok).length;
+  const melhorDia=diasSem.reduce((a,b)=>a.ef>b.ef?a:b);
+  const piorDia=diasSem.reduce((a,b)=>a.ef<b.ef?a:b);
+
+  // Cor de status
+  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
+  const badge=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
+
+  // Gerar HTML do relatório
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório Semanal — Semana ${numSem}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:16mm 18mm; font-size:11px; }
+  @page{ size:A4 portrait; margin:0; }
+  @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
+
+  /* HEADER */
+  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #F5A623; }
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-logo span{ color:#F5A623; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#F5A623; }
+
+  /* SEÇÃO */
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+
+  /* KPI GRID */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
+  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#111; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+
+  /* HIGHLIGHT */
+  .rp-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
+  .rp-highlight{ background:#f8f8f8; border:1px solid #eee; border-radius:4px; padding:12px 14px; display:flex; align-items:center; gap:14px; }
+  .rp-hl-icon{ font-size:22px; }
+  .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#111; }
+  .rp-hl-sub{ font-size:10px; color:#888; margin-top:2px; }
+
+  /* GRÁFICO SVG */
+  .rp-chart-wrap{ background:#f9f9f9; border:1px solid #eee; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
+  svg text{ font-family:'IBM Plex Mono',monospace; }
+
+  /* TABELA */
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #ccc; text-align:left; }
+  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #f0f0f0; color:#111; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:#fafafa; }
+  .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
+  .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
+
+  /* STATUS BADGE */
+  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
+  .s-ok  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+  .s-warn{ background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
+  .s-red { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
+
+  /* RODAPÉ */
+  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
+
+  /* BOTÃO IMPRIMIR */
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#F5A623; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+</style>
+</head>
+<body>
+
+<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+
+<!-- CABEÇALHO -->
+<div class="rp-header">
+  <div>
+    <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO SEMANAL</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
+  </div>
+  <div class="rp-meta">
+    <div class="rp-semana">SEMANA ${numSem} / ${new Date().getFullYear()}</div>
+    <div>${semStr}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+</div>
+
+<!-- KPIs SEMANA -->
+<div class="rp-sec-ttl">RESUMO DA SEMANA</div>
+<div class="kpi-grid">
+  <div class="kpi-card" style="border-left-color:#F5A623">
+    <div class="kpi-lbl">TOTAL PRODUZIDO</div>
+    <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas na semana</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+    <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
+    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
+    <div class="kpi-sub">${badge(efMedia)}</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#4CAF50">
+    <div class="kpi-lbl">DIAS COM META</div>
+    <div class="kpi-val">${comMeta}</div>
+    <div class="kpi-sub">de ${diasSem.length} dias (${((comMeta/diasSem.length)*100).toFixed(0)}%)</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#888">
+    <div class="kpi-lbl">TOTAL META</div>
+    <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</div>
+  </div>
+</div>
+
+<!-- MELHOR / PIOR -->
+<div class="rp-row2" style="margin-top:10px">
+  <div class="rp-highlight">
+    <div class="rp-hl-icon">🏆</div>
+    <div>
+      <div class="rp-hl-lbl">MELHOR DIA</div>
+      <div class="rp-hl-val" style="color:#4CAF50">${melhorDia.data}</div>
+      <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${melhorDia.ef.toFixed(1)}% eficiência</div>
+    </div>
+  </div>
+  <div class="rp-highlight">
+    <div class="rp-hl-icon">📉</div>
+    <div>
+      <div class="rp-hl-lbl">DIA MAIS FRACO</div>
+      <div class="rp-hl-val" style="color:#F44336">${piorDia.data}</div>
+      <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${piorDia.ef.toFixed(1)}% eficiência</div>
+    </div>
+  </div>
+</div>
+
+<!-- GRÁFICO SVG -->
+<div class="rp-sec-ttl" style="margin-top:18px">PRODUÇÃO × META POR DIA</div>
+<div class="rp-chart-wrap">
+  ${_svgBarChart(diasSem)}
+</div>
+
+<!-- GRÁFICOS HORA A HORA POR DIA -->
+<div class="rp-sec-ttl" style="margin-top:18px">DESEMPENHO HORA A HORA — POR DIA</div>
+${diasSem.map(d=>_svgDiaHora(d)).join('')}
+
+<!-- TABELA DETALHADA -->
+<div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
+<table>
+  <thead>
+    <tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
+  </thead>
+  <tbody>
+    ${diasSem.map(d=>`
+    <tr>
+      <td class="td-mono">${d.data}</td>
+      <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
+      <td><span class="sbadge ${d.ef>=90?'s-ok':d.ef>=70?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+(d.fechadoEm||'').substring(0,5):'—'}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+<!-- RODAPÉ -->
+<div class="rp-footer">
+  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>Semana ${numSem} · ${semStr}</span>
+</div>
+
+</body>
+</html>`;
+
+  // Escrever relatório na janela já aberta
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+// ── Gráfico semanal resumido (barra por dia) ──
+function _svgBarChart(dias){
+  const W=720, H=180, pad={t:30,r:20,b:36,l:48};
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const n=dias.length;
+  const slot=cw/n;
+  const barW=Math.min(56,(slot*0.5));
+  const maxVal=Math.max(...dias.map(d=>Math.max(d.real,d.meta)),1);
+  const sy=v=>pad.t+ch-(v/maxVal)*ch;
+  const cx=i=>pad.l+i*slot+slot/2;
+
+  let out='';
+
+  // Fundo zebrado
+  dias.forEach((_,i)=>{
+    if(i%2===0) out+=`<rect x="${pad.l+i*slot}" y="${pad.t}" width="${slot}" height="${ch}" fill="#f9f9f9"/>`;
+  });
+
+  // Linhas de grade horizontais
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y=sy(maxVal*f);
+    const v=Math.round(maxVal*f);
+    out+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e8e8e8" stroke-width="${f===1?1.5:0.8}" stroke-dasharray="${f===1?'none':'3,3'}"/>`;
+    out+=`<text x="${pad.l-6}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#bbb" font-family="'IBM Plex Mono',monospace">${v.toLocaleString('pt-BR')}</text>`;
+  });
+
+  // Linha de meta
+  const yMetaRef=sy(dias[0]?.meta||0);
+
+  dias.forEach((d,i)=>{
+    const x=cx(i);
+    const yM=sy(d.meta);
+    const yR=sy(d.real);
+    const clr=d.ef>=90?'#4CAF50':d.ef>=70?'#FF9800':'#F44336';
+    const bgClr=d.ef>=90?'#e8f5e9':d.ef>=70?'#fff3e0':'#ffebee';
+
+    // Barra meta (fantasma)
+    out+=`<rect x="${x-barW/2-3}" y="${yM}" width="${barW+6}" height="${ch+pad.t-yM}" fill="${bgClr}" rx="3"/>`;
+    // Barra realizado
+    out+=`<rect x="${x-barW/2}" y="${yR}" width="${barW}" height="${ch+pad.t-yR}" fill="${clr}" rx="3" opacity="0.9"/>`;
+
+    // Valor realizado no topo
+    out+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace">${d.real.toLocaleString('pt-BR')}</text>`;
+
+    // Eficiência % acima
+    out+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace">${d.ef.toFixed(1)}%</text>`;
+
+    // Label data embaixo
+    const dd=d.data.substring(0,5);
+    const dow=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+    const[dd2,mm2,yy2]=d.data.split('/').map(Number);
+    const diaSem=new Date(yy2,mm2-1,dd2).getDay();
+    out+=`<text x="${x}" y="${H-18}" text-anchor="middle" font-size="9" font-weight="bold" fill="#444" font-family="'IBM Plex Mono',monospace">${dd}</text>`;
+    out+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="7" fill="#aaa" font-family="'IBM Plex Mono',monospace">${dow[diaSem]}</text>`;
+  });
+
+  // Legenda
+  out+=`<rect x="${W-160}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
+    <text x="${W-146}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
+    <rect x="${W-100}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
+    <text x="${W-86}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
+}
+
+// ── Gráfico hora a hora por dia ──
+function _svgDiaHora(dia){
+  // Tentar buscar slots do localStorage
+  const hist=loadHistAll();
+  const diaHist=hist[dia.data];
+  const slots=diaHist&&diaHist.slots&&diaHist.slots.length
+    ? diaHist.slots.filter(s=>s.prod!=null)
+    : null;
+
+  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
+  const badge=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
+  const bdgCls=ef=>ef>=90?'s-ok':ef>=70?'s-warn':'s-red';
+  const dow=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  const[dd,mm,yy]=dia.data.split('/').map(Number);
+  const diaSem=new Date(yy,mm-1,dd).getDay();
+
+  const header=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px">
+    <div>
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111">${dia.data}</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#aaa;margin-left:8px">${dow[diaSem]}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888">Real: <strong style="color:#111">${dia.real.toLocaleString('pt-BR')}</strong> · Meta: <strong style="color:#888">${dia.meta.toLocaleString('pt-BR')}</strong></span>
+      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${dia.ef.toFixed(1)}% — ${badge(dia.ef)}</span>
+    </div>
+  </div>`;
+
+  // Se tiver slots detalhados → gráfico hora a hora completo
+  if(slots&&slots.length>=2){
+    const W=680, H=130, pad={t:24,r:12,b:28,l:40};
+    const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+    const n=slots.length;
+    const bw=Math.max(8,Math.min(36,(cw/n)*0.65));
+    const slot=cw/n;
+    const maxP=Math.max(...slots.map(s=>s.prod),1);
+    const metaH=diaHist.metaDia/slots.length; // aprox metaHora
+    const maxV=Math.max(maxP,metaH*1.1);
+    const sy=v=>pad.t+ch-(v/maxV)*ch;
+    const cx=i=>pad.l+i*slot+slot/2;
+
+    const melhorIdx=slots.reduce((mi,s,i)=>s.prod>slots[mi].prod?i:mi,0);
+    const piorIdx=slots.reduce((mi,s,i)=>s.prod<slots[mi].prod?i:mi,0);
+
+    let bars='',labels='',annots='',grid='';
+
+    // Linha meta/hora
+    const yM=sy(metaH);
+    grid+=`<line x1="${pad.l}" y1="${yM}" x2="${W-pad.r}" y2="${yM}" stroke="#F5A623" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+    grid+=`<text x="${W-pad.r+2}" y="${yM+3}" font-size="7" fill="#F5A623" font-family="'IBM Plex Mono',monospace" opacity="0.8">META/H</text>`;
+
+    // Grade
+    [0,0.5,1].forEach(f=>{
+      const y=sy(maxV*f);
+      grid+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#eee" stroke-width="0.8"/>`;
+      grid+=`<text x="${pad.l-4}" y="${y+3}" text-anchor="end" font-size="7" fill="#ccc" font-family="'IBM Plex Mono',monospace">${Math.round(maxV*f)}</text>`;
+    });
+
+    slots.forEach((s,i)=>{
+      const x=cx(i);
+      const yR=sy(s.prod);
+      const isMelhor=i===melhorIdx;
+      const isPior=i===piorIdx;
+      const clr=isMelhor?'#4CAF50':isPior?'#F44336':s.prod>=metaH*0.9?'#4CAF50':s.prod>=metaH*0.7?'#FF9800':'#ef5350';
+
+      bars+=`<rect x="${x-bw/2}" y="${yR}" width="${bw}" height="${ch+pad.t-yR}" fill="${clr}" rx="2" opacity="${isMelhor||isPior?1:0.75}"/>`;
+
+      // Label valor nos destaques
+      if(isMelhor||isPior){
+        bars+=`<rect x="${x-bw/2-1}" y="${yR-1}" width="${bw+2}" height="${ch+pad.t-yR+1}" fill="none" stroke="${clr}" stroke-width="1.5" rx="2"/>`;
+        annots+=`<text x="${x}" y="${yR-6}" text-anchor="middle" font-size="8" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace">${s.prod}</text>`;
+        annots+=`<text x="${x}" y="${yR-16}" text-anchor="middle" font-size="7" fill="${clr}" font-family="'IBM Plex Mono',monospace">${isMelhor?'▲ MELHOR':'▼ PIOR'}</text>`;
+      }
+
+      // Label hora
+      const label=(s.label||s.horario||'').substring(0,5);
+      labels+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="6.5" fill="#aaa" font-family="'IBM Plex Mono',monospace">${label}</text>`;
+    });
+
+    const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${grid}${bars}${annots}${labels}</svg>`;
+
+    return `${header}<div class="rp-chart-wrap" style="margin-bottom:4px;padding:10px 12px">${svg}
+      <div style="display:flex;gap:16px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888">
+        <span><span style="color:#4CAF50">■</span> Melhor: ${slots[melhorIdx].prod} cx (${(slots[melhorIdx].label||slots[melhorIdx].horario||'').substring(0,5)})</span>
+        <span><span style="color:#F44336">■</span> Pior: ${slots[piorIdx].prod} cx (${(slots[piorIdx].label||slots[piorIdx].horario||'').substring(0,5)})</span>
+        <span><span style="color:#F5A623">— —</span> Meta/hora aprox.</span>
+      </div>
+    </div>`;
+  }
+
+  // Fallback: sem slots detalhados → visual com melhor/pior/real
+  const W=680, H=80, pad={t:16,r:12,b:20,l:40};
+  const ch=H-pad.t-pad.b, cw=W-pad.l-pad.r;
+  const maxV=Math.max(dia.melhor,dia.meta/8,1);
+  const sy=v=>pad.t+ch-(v/maxV)*ch;
+  const bw=40;
+
+  // 3 barras: Pior | Médio | Melhor
+  const medio=Math.round(dia.real/Math.max(dia.real>0?Math.ceil(dia.real/dia.melhor):1,1));
+  const pts=[
+    {v:dia.pior,  lbl:'PIOR',   clr:'#F44336', x:pad.l+cw*0.2},
+    {v:Math.round(dia.real/(dia.meta>0?Math.round(dia.meta/dia.melhor):8)), lbl:'MÉDIA/H', clr:'#FF9800', x:pad.l+cw*0.5},
+    {v:dia.melhor,lbl:'MELHOR', clr:'#4CAF50', x:pad.l+cw*0.8},
+  ];
+
+  let bars2='';
+  pts.forEach(p=>{
+    const y=sy(p.v);
+    bars2+=`<rect x="${p.x-bw/2}" y="${y}" width="${bw}" height="${ch+pad.t-y}" fill="${p.clr}" rx="2" opacity="0.8"/>`;
+    bars2+=`<text x="${p.x}" y="${y-5}" text-anchor="middle" font-size="9" font-weight="bold" fill="${p.clr}" font-family="'IBM Plex Mono',monospace">${p.v} cx</text>`;
+    bars2+=`<text x="${p.x}" y="${H-4}" text-anchor="middle" font-size="8" fill="#aaa" font-family="'IBM Plex Mono',monospace">${p.lbl}</text>`;
+  });
+
+  const svg2=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+    <line x1="${pad.l}" y1="${pad.t}" x2="${W-pad.r}" y2="${pad.t}" stroke="#eee" stroke-width="0.8"/>
+    ${bars2}
+  </svg>`;
+
+  return `${header}<div class="rp-chart-wrap" style="margin-bottom:4px;padding:10px 12px">
+    ${svg2}
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb;margin-top:4px">
+      * Dados detalhados por hora não disponíveis para este dia
+    </div>
+  </div>`;
+}
+
+function _numSemana(d){
+  const inicio=new Date(d.getFullYear(),0,1);
+  return Math.ceil(((d-inicio)/86400000+inicio.getDay()+1)/7);
+}
+
+// ════════════════════════════════════════════════
+// TV — LOGO EMPRESA + FULLSCREEN
+// ════════════════════════════════════════════════
+function carregarLogo(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const src=e.target.result;
+    const img=document.getElementById('tv-logo-img');
+    const ph =document.getElementById('tv-logo-ph');
+    img.src=src; img.style.display='block'; ph.style.display='none';
+    const li=document.getElementById('login-logo-img');
+    const lp=document.getElementById('login-logo-ph');
+    if(li){ li.src=src; li.style.display='block'; if(lp) lp.style.display='none'; }
+    try{ localStorage.setItem('rpe_logo',src); }catch(ex){}
+  };
+  r.readAsDataURL(f); inp.value='';
+}
+function restaurarLogo(){
+  try{
+    const src=localStorage.getItem('rpe_logo'); if(!src) return;
+    // TV logo
+    const img=document.getElementById('tv-logo-img');
+    const ph =document.getElementById('tv-logo-ph');
+    img.src=src; img.style.display='block'; ph.style.display='none';
+    // Login logo
+    const li=document.getElementById('login-logo-img');
+    const lp=document.getElementById('login-logo-ph');
+    if(li){ li.src=src; li.style.display='block'; if(lp) lp.style.display='none'; }
+  }catch(e){}
+}
+function toggleTVFullscreen(){
+  const body=document.body;
+  const btn=document.getElementById('btn-tv-fs');
+  if(body.classList.contains('tv-fullscreen')){
+    body.classList.remove('tv-fullscreen');
+    btn.textContent='⛶ PAINEL CHEIO';
+    if(document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  } else {
+    body.classList.add('tv-fullscreen');
+    btn.textContent='✕ FECHAR PAINEL';
+    if(document.documentElement.requestFullscreen)
+      document.documentElement.requestFullscreen().catch(()=>{});
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&document.body.classList.contains('tv-fullscreen')){
+    document.body.classList.remove('tv-fullscreen');
+    const btn=document.getElementById('btn-tv-fs');
+    if(btn) btn.textContent='⛶ PAINEL CHEIO';
+  }
+});
+document.addEventListener('fullscreenchange',()=>{
+  if(!document.fullscreenElement&&document.body.classList.contains('tv-fullscreen')){
+    document.body.classList.remove('tv-fullscreen');
+    const btn=document.getElementById('btn-tv-fs');
+    if(btn) btn.textContent='⛶ PAINEL CHEIO';
+  }
+});
+
+loadCfg();
+DADOS=gerarDemo();
+const hoje=new Date();
+const um=new Date(hoje); um.setDate(um.getDate()-30);
+document.getElementById('hist-de').value=toISO(um);
+document.getElementById('hist-ate').value=toISO(hoje);
+document.getElementById('login-empresa-sub').textContent=CFG.empresa+' · '+CFG.setor;
+renderAll();
+restaurarLogo();
+tick();
+setInterval(tick,1000);
+// Iniciar fonte de dados
+if(CFG.sheetsUrl){
+  lerSheets().then(ok=>{ if(ok) iniciarAutoRefresh(); });
+} else {
+  tentarRestaurarPasta();
+}
+// Auto-render a cada 1 min para slots de hoje
+setInterval(()=>{
+  const at=document.querySelector('.sec.on');
+  if(!at) return;
+  if(at.id==='sec-gerencial') renderGerencial();
+  if(at.id==='sec-tv') renderTV();
+},60000);
+
+// ════════════════════════════════════════════════
+// PARADAS
+// ════════════════════════════════════════════════
+function loadParadas(data){ try{ const s=localStorage.getItem('rpe_paradas'); const all=s?JSON.parse(s):{}; return all[data]||[]; }catch(e){ return []; } }
+function saveParadas(data,list){ try{ const s=localStorage.getItem('rpe_paradas'); const all=s?JSON.parse(s):{}; all[data]=list; localStorage.setItem('rpe_paradas',JSON.stringify(all)); }catch(e){} }
+
+function openParada(){
+  const agora=new Date();
+  const hh=String(agora.getHours()).padStart(2,'0');
+  const mm=String(agora.getMinutes()).padStart(2,'0');
+  document.getElementById('parada-ini').value=hh+':'+mm;
+  document.getElementById('parada-fim').value='';
+  document.getElementById('parada-obs').value='';
+  document.querySelectorAll('.btn-tipo-parada').forEach(b=>b.classList.remove('ativo'));
+  document.getElementById('modal-parada').classList.add('on');
+}
+
+function fecharModalParada(){
+  document.getElementById('modal-parada').classList.remove('on');
+}
+
+function selecionarTipo(btn){
+  document.querySelectorAll('.btn-tipo-parada').forEach(b=>b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+}
+
+function salvarParada(){
+  const tipoBtn=document.querySelector('.btn-tipo-parada.ativo');
+  if(!tipoBtn){ alert('Selecione o tipo de parada.'); return; }
+  const tipo=tipoBtn.dataset.tipo;
+  const ini=document.getElementById('parada-ini').value;
+  const fim=document.getElementById('parada-fim').value;
+  const obs=document.getElementById('parada-obs').value.trim();
+  if(!ini){ alert('Informe o horário de início.'); return; }
+
+  const hoje=hojeStr();
+  const list=loadParadas(hoje);
+  list.push({ tipo, ini, fim, obs, id: Date.now() });
+  saveParadas(hoje, list);
+  fecharModalParada();
+  renderParadas();
+}
+
+function encerrarParada(id){
+  const hoje=hojeStr();
+  const agora=new Date();
+  const hh=String(agora.getHours()).padStart(2,'0');
+  const mm=String(agora.getMinutes()).padStart(2,'0');
+  const list=loadParadas(hoje).map(p=>p.id===id?{...p,fim:hh+':'+mm}:p);
+  saveParadas(hoje,list);
+  renderParadas();
+}
+
+function excluirParada(id){
+  const hoje=hojeStr();
+  const list=loadParadas(hoje).filter(p=>p.id!==id);
+  saveParadas(hoje,list);
+  renderParadas();
+}
+
+function calcDurMin(ini,fim){
+  if(!ini||!fim) return null;
+  const[h0,m0]=ini.split(':').map(Number);
+  const[h1,m1]=fim.split(':').map(Number);
+  return (h1*60+m1)-(h0*60+m0);
+}
+
+function fmtDur(min){
+  if(min==null||min<0) return '—';
+  return min>=60?`${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}m`:`${min}min`;
+}
+
+function renderParadas(){
+  const hoje=hojeStr();
+  const list=loadParadas(hoje);
+  const wrap=document.getElementById('paradas-wrap');
+  const tbody=document.getElementById('tbl-paradas-body');
+  const totalEl=document.getElementById('paradas-tempo-total');
+  if(!wrap||!tbody) return;
+
+  if(!list.length){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+
+  let totalMin=0;
+  tbody.innerHTML=list.map(p=>{
+    const dur=calcDurMin(p.ini,p.fim);
+    if(dur!=null&&dur>0) totalMin+=dur;
+    const andamento=!p.fim;
+    return `<tr>
+      <td style="font-family:var(--font-d);font-size:11px;color:#e57373">${p.tipo}</td>
+      <td class="td-mono">${p.ini}</td>
+      <td class="td-mono">${p.fim||'<span style="color:var(--warn)">EM ANDAMENTO</span>'}</td>
+      <td class="td-mono" style="color:${dur>30?'#e57373':dur>15?'var(--warn)':'var(--txt2)'}">${fmtDur(dur)}</td>
+      <td style="font-size:10px;color:var(--txt3)">${p.obs||'—'}</td>
+      <td style="text-align:right">
+        ${andamento?`<button onclick="encerrarParada(${p.id})" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.4);padding:2px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:var(--font-d);letter-spacing:1px">✔ ENCERRAR</button>`:''}
+        <button onclick="excluirParada(${p.id})" style="background:transparent;color:var(--txt3);border:none;padding:2px 6px;cursor:pointer;font-size:11px">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  totalEl.textContent=totalMin>0?`TOTAL: ${fmtDur(totalMin)}`:'';
+
+  // Atualiza resumo na TV
+  const tvRes=document.getElementById('tv-paradas-resumo');
+  if(tvRes){
+    const emAndamento=list.find(p=>!p.fim);
+    if(emAndamento){
+      tvRes.innerHTML=`⏸ PARADA EM ANDAMENTO: ${emAndamento.tipo} desde ${emAndamento.ini}`;
+    } else if(totalMin>0){
+      tvRes.innerHTML=`⏸ ${list.length} parada(s) hoje · ${fmtDur(totalMin)} total`;
+    } else {
+      tvRes.innerHTML='';
+    }
+  }
+}
+
+// ════════════════════════════════════════════════
+// ALERTA DE LANÇAMENTO — a cada hora
+// ════════════════════════════════════════════════
+(function iniciarAlertaLancamento(){
+  // Criar modal de alerta
+  const modal=document.createElement('div');
+  modal.id='alerta-lancamento';
+  modal.style.cssText=`
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);
+    align-items:center;justify-content:center;
+  `;
+  modal.innerHTML=`
+    <div style="
+      background:#1a1a1a;border:1px solid rgba(245,166,35,0.5);border-radius:8px;
+      padding:32px 40px;max-width:420px;width:90%;text-align:center;
+      box-shadow:0 0 40px rgba(245,166,35,0.2);
+    ">
+      <div style="font-size:36px;margin-bottom:12px;">⏰</div>
+      <div style="
+        font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;
+        color:#F5A623;letter-spacing:2px;margin-bottom:8px;
+      ">LEMBRETE DE LANÇAMENTO</div>
+      <div id="alerta-slot-msg" style="
+        font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa;
+        margin-bottom:24px;line-height:1.6;
+      ">Atualize o REALIZADO na planilha Google Sheets.</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="fecharAlertaLancamento(true)" style="
+          background:#F5A623;color:#111;border:none;padding:10px 24px;
+          border-radius:4px;font-family:'Barlow Condensed',sans-serif;
+          font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;
+        ">✔ JÁ LANCEI</button>
+        <button onclick="fecharAlertaLancamento(false)" style="
+          background:transparent;color:#666;border:1px solid #333;padding:10px 24px;
+          border-radius:4px;font-family:'Barlow Condensed',sans-serif;
+          font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;
+        ">FECHAR</button>
+      </div>
+      <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#444;">
+        Este alerta dispara automaticamente a cada hora
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Som de alerta (beep via Web Audio API)
+  function tocarBeep(){
+    try{
+      const ctx=new(window.AudioContext||window.webkitAudioContext)();
+      [0,200,400].forEach(delay=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value=880;
+        g.gain.setValueAtTime(0,ctx.currentTime+delay/1000);
+        g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+delay/1000+0.05);
+        g.gain.linearRampToValueAtTime(0,ctx.currentTime+delay/1000+0.25);
+        o.start(ctx.currentTime+delay/1000);
+        o.stop(ctx.currentTime+delay/1000+0.3);
+      });
+    }catch(e){}
+  }
+
+  // Notificação do sistema (se permitido)
+  function notificarSistema(msg){
+    if(!('Notification' in window)) return;
+    if(Notification.permission==='granted'){
+      new Notification('RitmoProd ⏰ Lembrete',{
+        body:msg, icon:'', tag:'ritmoprod-lancamento'
+      });
+    } else if(Notification.permission!=='denied'){
+      Notification.requestPermission();
+    }
+  }
+
+  // Verificar slot da hora atual pendente
+  function getSlotPendente(){
+    const agora=new Date();
+    const hh=String(agora.getHours()).padStart(2,'0');
+    const mm=String(agora.getMinutes()).padStart(2,'0');
+    const horaAtual=hh+':'+mm;
+    const toMin=s=>{ const[h,m]=s.split(':').map(Number); return h*60+m; };
+    const minAtual=toMin(horaAtual);
+    const hoje=hojeStr();
+    const allHoje=DADOS.filter(d=>d.data===hoje);
+    if(!allHoje.length) return null;
+
+    // 1. Slot encerrando nos próximos 5 min (aviso antecipado)
+    const aviso=allHoje.find(d=>{
+      if(d.producaoHora!=null) return false;
+      if(!d.slotFim) return false;
+      const diff=toMin(d.slotFim)-minAtual;
+      return diff>=0 && diff<=5;
+    });
+    if(aviso) return {label: aviso.slotLabel||aviso.horario, total:1, tipo:'aviso'};
+
+    // 2. Slots já encerrados sem lançamento
+    const pendentes=allHoje.filter(d=>{
+      if(d.producaoHora!=null) return false;
+      if(!d.slotFim) return false;
+      return toMin(d.slotFim)<=minAtual;
+    });
+    if(!pendentes.length) return null;
+    pendentes.sort((a,b)=>toMin(b.slotFim||'00:00')-toMin(a.slotFim||'00:00'));
+    const p=pendentes[0];
+    return {label: p.slotLabel||p.horario, total: pendentes.length, tipo:'atrasado'};
+  }
+
+  // Controle anti-repetição por slot
+  let _ultimoAlerta='';
+  let _alertaAberto=false;
+
+  window.fecharAlertaLancamento=function(foiLancado){
+    modal.style.display='none';
+    _alertaAberto=false;
+    _ultimoAlerta='';
+    if(foiLancado && CFG.sheetsUrl){ lerSheets(); }
+  };
+
+  function dispararAlerta(){
+    if(_alertaAberto) return; // não empilha alertas
+    const agora=new Date();
+    const hh=agora.getHours();
+    const[hIni]=CFG.turnoInicio.split(':').map(Number);
+    const[hFim]=CFG.turnoFim.split(':').map(Number);
+    if(hh<hIni||hh>hFim) return;
+
+    const res=getSlotPendente();
+    if(!res) return;
+
+    const chave=res.label+'|'+res.total;
+    if(chave===_ultimoAlerta) return;
+    _ultimoAlerta=chave;
+    _alertaAberto=true;
+
+    const extra=res.total>1?` <span style="color:#aaa;font-size:10px">(+${res.total-1} sem lançamento)</span>`:'';
+    const isAviso=res.tipo==='aviso';
+    document.getElementById('alerta-slot-msg').innerHTML= isAviso
+      ? `⏰ Slot encerrando em <strong style="color:#F5A623">5 minutos</strong>: <strong style="color:#fff">${res.label}</strong><br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`
+      : `⚠ Slot sem lançamento: <strong style="color:#F5A623">${res.label}</strong>${extra}<br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`;
+
+    modal.style.display='flex';
+    tocarBeep();
+    notificarSistema(isAviso
+      ? `Slot ${res.label} encerra em 5 min — preencha o REALIZADO.`
+      : `Slot ${res.label} sem lançamento — preencha o REALIZADO na planilha.`);
+  }
+
+  function agendarProximaHora(){
+    const agora=new Date();
+    const prox=new Date(agora);
+    prox.setSeconds(0,0);
+    prox.setMinutes(agora.getMinutes()+1);
+    const ms=prox-agora;
+    setTimeout(()=>{
+      dispararAlerta();
+      setInterval(dispararAlerta,60000);
+    },ms);
+    console.log('[Alerta] Próxima verificação em',Math.round(ms/1000),'s');
+  }
+
+  // Disparar também ao carregar a página (após Sheets responder)
+  window.addEventListener('rpe-sheets-loaded',()=>{
+    setTimeout(dispararAlerta, 2000); // aguarda 2s para DADOS estarem prontos
+  });
+
+  // Solicitar permissão de notificação na inicialização
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+
+  agendarProximaHora();
+})();
+
+</script>
+</body>
+</html>
