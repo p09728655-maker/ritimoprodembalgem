@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="RitmoProd">
 <meta name="theme-color" content="#0A0A0B">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RitmoProd · Embalagem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
   --font-d:'IBM Plex Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--font-b);display:flex;flex-direction:column}
+html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);font-family:var(--font-b);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
 /* ═══ HEADER ═══ */
 header{
