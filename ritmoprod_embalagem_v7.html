@@ -439,6 +439,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 .login-over{
   position:fixed;inset:0;background:var(--bg);z-index:500;
   display:flex;align-items:center;justify-content:center;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
 }
 .login-box{
   width:360px;background:var(--surface);border:0.5px solid var(--border);
