@@ -136,7 +136,7 @@ tr.he-row td{background:rgba(245,166,35,.03)}
   display:flex;align-items:center;justify-content:center;
   width:130px;height:68px;border-radius:8px;
   border:1.5px dashed var(--border);cursor:pointer;
-  transition:all .2s;flex-shrink:0;overflow:hidden;
+  transition:all .2s;flex-shrink:0;overflow:visible;
   background:rgba(255,255,255,0.03);
 }
 .tv-logo-area:hover{ border-color:var(--acc);background:rgba(245,166,35,.05); }
@@ -209,6 +209,8 @@ body.tv-fullscreen #sec-tv{ height:100vh!important; }
   .tv-hdr{ padding:8px 12px; gap:8px; }
   .tv-logo-area{ width:52px; height:42px; }
   .tv-logo-area img{ max-width:48px; max-height:38px; }
+  footer > span:not(:nth-child(1)):not(:nth-child(3)){ display:none!important; }
+  footer{ justify-content:space-between; }
   .tv-empresa{ font-size:10px; letter-spacing:1px; }
   .tv-setor{ font-size:18px; letter-spacing:2px; }
   .tv-clock{ font-size:24px; letter-spacing:1px; }
@@ -275,6 +277,8 @@ body.tv-fullscreen #sec-tv{ height:100vh!important; }
   #sec-tv.on{
     height:calc(100dvh - 44px - 35px - 38px)!important;
   }
+  .ftr-hide-mobile{ display:none!important; }
+  footer{ gap:4px; }
 }
 
 /* ═══ HISTÓRICO ═══ */
@@ -776,13 +780,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
 <!-- ═══ FOOTER ═══ -->
 <footer>
-  <span style="font-family:var(--font-b);font-size:12px;color:var(--txt2)">Oderli Garcia © 2026</span>
-  <span style="color:var(--border)">·</span>
+  <span class="ftr-hide-mobile" style="font-family:var(--font-b);font-size:12px;color:var(--txt2)">Oderli Garcia © 2026</span>
+  <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoProd</span>
-  <span style="color:var(--border)">·</span>
-  <span style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7 · 27/05/2026</span>
-  <span style="color:var(--border)">·</span>
-  <span id="ftr-fonte">DEMO · Carregue um arquivo Excel para dados reais</span>
+  <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
+  <span class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7 · 27/05/2026</span>
+  <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
+  <span id="ftr-fonte" class="ftr-hide-mobile">DEMO · Carregue um arquivo Excel para dados reais</span>
   <span style="flex:1"></span>
   <span style="font-family:'Inter',var(--font-b);font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:-0.2px">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></span>
 </footer>
