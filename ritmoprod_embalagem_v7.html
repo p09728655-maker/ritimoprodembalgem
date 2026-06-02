@@ -277,6 +277,16 @@ body.tv-fullscreen #sec-tv{ height:100vh!important; }
   #sec-tv.on{
     height:calc(100dvh - 44px - 35px - 38px)!important;
   }
+
+  /* Header mobile — esconder elementos secundários */
+  #refresh-badge, #countdown-badge, #perfil-badge,
+  #btn-pasta, #btn-arquivo, .btn-icon,
+  .hdr-clock-wrap .hdr-date { display:none!important; }
+  header{ height:auto; min-height:44px; padding:6px 10px; flex-wrap:wrap; gap:6px; }
+  .hdr-clock{ font-size:16px!important; }
+  .hdr-info{ border-left:none!important; padding-left:8px!important; }
+  .hdr-empresa{ font-size:11px!important; }
+  .hdr-setor{ font-size:8px!important; }
   .ftr-hide-mobile{ display:none!important; }
   footer{ gap:4px; }
 }
@@ -789,6 +799,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <span id="ftr-fonte" class="ftr-hide-mobile">DEMO · Carregue um arquivo Excel para dados reais</span>
   <span style="flex:1"></span>
   <span style="font-family:'Inter',var(--font-b);font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:-0.2px">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></span>
+  <span class="ftr-mobile-only" id="ftr-gs-status" style="display:none;font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1px"></span>
 </footer>
 
 <!-- ═══ MODAL PARADA ═══ -->
