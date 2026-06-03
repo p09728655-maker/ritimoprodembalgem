@@ -20,7 +20,7 @@
 /* ═══ CARBON FORGE TOKENS ═══ */
 :root{
   --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
-  --acc:#F5A623;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
+  --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
   --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
   --font-h:'Barlow Condensed',sans-serif;
   --font-b:'Barlow',sans-serif;
@@ -345,7 +345,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   section.on{ display:block!important; width:100%!important; overflow:visible!important; padding:0!important; margin:0!important; }
 
   /* ── CABEÇALHO DE IMPRESSÃO ── */
-  .print-header{ display:flex!important; border-bottom:2px solid #F5A623!important; margin-bottom:16px; padding-bottom:10px; }
+  .print-header{ display:flex!important; border-bottom:2px solid #FF5C1F!important; margin-bottom:16px; padding-bottom:10px; }
   .print-header-left h1{ color:#111!important; }
   .print-header-left p{ color:#666!important; }
   .print-header-right{ color:#666!important; white-space:pre-line; font-size:9px; }
@@ -373,7 +373,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   .kpi-card.ok  { border-left-color:#4CAF50!important; }
   .kpi-card.warn{ border-left-color:#FF9800!important; }
   .kpi-card.red { border-left-color:#F44336!important; }
-  .kpi-card.acc { border-left-color:#F5A623!important; }
+  .kpi-card.acc { border-left-color:#FF5C1F!important; }
   .kpi-card::before{ display:none!important; }
   .kpi-lbl{ color:#777!important; font-size:7px!important; letter-spacing:1.5px; }
   .kpi-val{ color:#111!important; font-size:22px!important; }
@@ -404,7 +404,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   .b-red { background:#ffebee!important; color:#b71c1c!important; border:1px solid #ef9a9a!important; }
   .b-mute{ background:#f5f5f5!important; color:#999!important; border:1px solid #ddd!important; }
   .b-he  { background:#fff8e1!important; color:#c77800!important; border:1px solid #ffe082!important; }
-  .he-dot{ background:#F5A623!important; width:5px!important; height:5px!important; }
+  .he-dot{ background:#FF5C1F!important; width:5px!important; height:5px!important; }
 
   /* ── RODAPÉ DE PÁGINA ── */
   .print-page-footer{ display:flex!important; }
@@ -421,7 +421,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   align-items:flex-end;
   padding-bottom:10px;
   margin-bottom:12px;
-  border-bottom:2px solid #F5A623;
+  border-bottom:2px solid #FF5C1F;
 }
 .print-header-left h1{
   font-family:'Barlow Condensed',sans-serif;
@@ -1876,7 +1876,7 @@ function renderChartHora(dh,slots,metaH){
   const colors=real.map((v,i)=>v===null?'rgba(42,42,42,0.4)':v>=metas[i]*0.9?'rgba(76,175,80,0.75)':v>=metas[i]*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)');
   mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
     {label:'Realizado',data:real,backgroundColor:colors,borderRadius:3},
-    {label:'Meta/h',data:metas,type:'line',borderColor:'#F5A62360',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
+    {label:'Meta/h',data:metas,type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
   ]},options:CHART_DEFAULTS});
 }
 function renderChartComp(dh,slots,metaH){
@@ -2354,12 +2354,12 @@ async function _imprimirHistoricoFormatado(){
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
   @page{size:A4 portrait;margin:0}
   @media print{body{padding:10mm 12mm}.no-print{display:none!important}}
-  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #F5A623}
+  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #FF5C1F}
   .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px}
-  .rp-logo span{color:#F5A623}
+  .rp-logo span{color:#FF5C1F}
   .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
   .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
-  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#F5A623}
+  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#FF5C1F}
   .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 8px;border-bottom:0.5px solid #eee;padding-bottom:5px}
   .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px}
   .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #ddd;border-radius:4px;padding:9px 11px}
@@ -2385,7 +2385,7 @@ async function _imprimirHistoricoFormatado(){
   .s-warn{background:#fff3e0;color:#e65100;border:1px solid #ffcc80}
   .s-red{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
   .rp-footer{margin-top:16px;padding-top:8px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
-  .rp-print-btn{position:fixed;top:14px;right:14px;background:#F5A623;color:#111;border:none;padding:9px 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+  .rp-print-btn{position:fixed;top:14px;right:14px;background:#FF5C1F;color:#111;border:none;padding:9px 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
 </style>
 </head>
 <body>
@@ -2405,7 +2405,7 @@ async function _imprimirHistoricoFormatado(){
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
-  <div class="kpi-card" style="border-left-color:#F5A623">
+  <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">caixas no período</div>
@@ -2591,12 +2591,12 @@ async function gerarRelatorioSemanal(){
   @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
 
   /* HEADER */
-  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #F5A623; }
+  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #FF5C1F; }
   .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
-  .rp-logo span{ color:#F5A623; }
+  .rp-logo span{ color:#FF5C1F; }
   .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
   .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
-  .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#F5A623; }
+  .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
   /* SEÇÃO */
   .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
@@ -2639,7 +2639,7 @@ async function gerarRelatorioSemanal(){
   .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
 
   /* BOTÃO IMPRIMIR */
-  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#F5A623; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
 </head>
 <body>
@@ -2662,7 +2662,7 @@ async function gerarRelatorioSemanal(){
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
 <div class="kpi-grid">
-  <div class="kpi-card" style="border-left-color:#F5A623">
+  <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">caixas na semana</div>
@@ -2863,8 +2863,8 @@ function _svgDiaHora(dia){
 
     // Linha meta/hora
     const yM=sy(metaH);
-    grid+=`<line x1="${pad.l}" y1="${yM}" x2="${W-pad.r}" y2="${yM}" stroke="#F5A623" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
-    grid+=`<text x="${W-pad.r+2}" y="${yM+3}" font-size="7" fill="#F5A623" font-family="'IBM Plex Mono',monospace" opacity="0.8">META/H</text>`;
+    grid+=`<line x1="${pad.l}" y1="${yM}" x2="${W-pad.r}" y2="${yM}" stroke="#FF5C1F" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+    grid+=`<text x="${W-pad.r+2}" y="${yM+3}" font-size="7" fill="#FF5C1F" font-family="'IBM Plex Mono',monospace" opacity="0.8">META/H</text>`;
 
     // Grade
     [0,0.5,1].forEach(f=>{
@@ -2900,7 +2900,7 @@ function _svgDiaHora(dia){
       <div style="display:flex;gap:16px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888">
         <span><span style="color:#4CAF50">■</span> Melhor: ${slots[melhorIdx].prod} cx (${(slots[melhorIdx].label||slots[melhorIdx].horario||'').substring(0,5)})</span>
         <span><span style="color:#F44336">■</span> Pior: ${slots[piorIdx].prod} cx (${(slots[piorIdx].label||slots[piorIdx].horario||'').substring(0,5)})</span>
-        <span><span style="color:#F5A623">— —</span> Meta/hora aprox.</span>
+        <span><span style="color:#FF5C1F">— —</span> Meta/hora aprox.</span>
       </div>
     </div>`;
   }
@@ -3169,7 +3169,7 @@ function renderParadas(){
       <div style="font-size:36px;margin-bottom:12px;">⏰</div>
       <div style="
         font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;
-        color:#F5A623;letter-spacing:2px;margin-bottom:8px;
+        color:#FF5C1F;letter-spacing:2px;margin-bottom:8px;
       ">LEMBRETE DE LANÇAMENTO</div>
       <div id="alerta-slot-msg" style="
         font-family:'IBM Plex Mono',monospace;font-size:12px;color:#aaa;
@@ -3177,7 +3177,7 @@ function renderParadas(){
       ">Atualize o REALIZADO na planilha Google Sheets.</div>
       <div style="display:flex;gap:10px;justify-content:center;">
         <button onclick="fecharAlertaLancamento(true)" style="
-          background:#F5A623;color:#111;border:none;padding:10px 24px;
+          background:#FF5C1F;color:#111;border:none;padding:10px 24px;
           border-radius:4px;font-family:'Barlow Condensed',sans-serif;
           font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;
         ">✔ JÁ LANCEI</button>
@@ -3286,8 +3286,8 @@ function renderParadas(){
     const extra=res.total>1?` <span style="color:#aaa;font-size:10px">(+${res.total-1} sem lançamento)</span>`:'';
     const isAviso=res.tipo==='aviso';
     document.getElementById('alerta-slot-msg').innerHTML= isAviso
-      ? `⏰ Slot encerrando em <strong style="color:#F5A623">5 minutos</strong>: <strong style="color:#fff">${res.label}</strong><br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`
-      : `⚠ Slot sem lançamento: <strong style="color:#F5A623">${res.label}</strong>${extra}<br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`;
+      ? `⏰ Slot encerrando em <strong style="color:#FF5C1F">5 minutos</strong>: <strong style="color:#fff">${res.label}</strong><br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`
+      : `⚠ Slot sem lançamento: <strong style="color:#FF5C1F">${res.label}</strong>${extra}<br><br>Preencha o <strong style="color:#fff">REALIZADO</strong> na planilha Google Sheets.`;
 
     modal.style.display='flex';
     tocarBeep();
