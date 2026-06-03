@@ -2073,8 +2073,6 @@ function _mergeDias(diasSheets){
   return Object.values(porDia);
 }
 
-async 
-
 // Helper: formatar data em português
 function fmtDataPtBR(dateOrStr, formato){
   let dt;
@@ -2113,7 +2111,7 @@ function filtroRapido(dias){
   document.getElementById('hist-ate').value=ate;
   renderHist();
 }
-function renderHist(){
+async function renderHist(){
   const periodo=document.getElementById('hist-period').value;
   const deStr=document.getElementById('hist-de').value;
   const ateStr=document.getElementById('hist-ate').value;
