@@ -865,6 +865,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">SENHA OPERADOR</label><input class="frm-inp" id="c-senha-op" type="password" placeholder="••••"></div>
       <div class="frm-grp"><label class="frm-lbl">SENHA GERENCIAL</label><input class="frm-inp" id="c-senha-ger" type="password" placeholder="••••"></div>
     </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
+      <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
+    </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
@@ -933,7 +937,8 @@ let CFG = {
   almocoInicio:'11:00', almocoFim:'12:12',
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
-  senhaGerencial:'admin'
+  senhaGerencial:'admin',
+  horarioFechamento:'17:05'
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -1018,12 +1023,13 @@ function fecharDiaAutomatico(){
 (function agendarFechamento(){
   setInterval(function(){
     const agora=new Date();
-    const h=agora.getHours();
-    const m=agora.getMinutes();
-    if(h===17 && m===5){
+    const hAtual=agora.getHours();
+    const mAtual=agora.getMinutes();
+    const [hCfg,mCfg]=(CFG.horarioFechamento||'17:05').split(':').map(Number);
+    if(hAtual===hCfg && mAtual===mCfg){
       fecharDiaAutomatico();
     }
-  }, 60000); // verifica a cada 1 minuto
+  }, 60000);
 })();
 
 function reabrirDia(){
@@ -2184,6 +2190,7 @@ function openCfg(){
   document.getElementById('c-sheets-url').value=CFG.sheetsUrl||'';
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
+  document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
   document.getElementById('modal-cfg').classList.add('on');
 }
 function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
@@ -2201,6 +2208,8 @@ function saveCfg(){
   const sGer=document.getElementById('c-senha-ger').value.trim();
   if(sOp)  CFG.senhaOperador=sOp;
   if(sGer) CFG.senhaGerencial=sGer;
+  const hFech=document.getElementById('c-fechamento').value;
+  if(hFech) CFG.horarioFechamento=hFech;
   saveCfgLocal();
   closeCfg();
   if(CFG.sheetsUrl){ lerSheets(); iniciarAutoRefresh(); }
