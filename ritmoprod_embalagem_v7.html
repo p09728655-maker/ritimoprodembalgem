@@ -992,6 +992,40 @@ function fecharDia(){
   renderHist();
 }
 
+
+function fecharDiaAutomatico(){
+  const hoje=hojeStr();
+  const dh=getDadosHoje();
+  if(!dh.length) return; // sem lançamentos, não fecha
+  // Verificar se já está fechado
+  const all=loadHistAll();
+  if(all[hoje] && all[hoje].fechado) return;
+  const k=calcKPIs(dh);
+  const slots=k.allHoje.filter(d=>d.producaoHora!=null).map(d=>({
+    horario:d.horario, label:d.slotLabel||d.horario,
+    prod:d.producaoHora, meta:d.metaHora, he:d.he||false
+  }));
+  const agora=new Date().toLocaleString('pt-BR');
+  salvarDiaLocal(hoje,slots,k.meta,true,agora);
+  // Export Excel omitido no automático (evita popup no browser)
+  if(CFG.sheetsUrl) salvarDiaSheets(hoje,k,agora);
+  renderAll();
+  renderHist();
+  console.log('Fechamento automático realizado: '+hoje+' às '+agora);
+}
+
+// Verificação periódica — dispara fecharDiaAutomatico às 17:05
+(function agendarFechamento(){
+  setInterval(function(){
+    const agora=new Date();
+    const h=agora.getHours();
+    const m=agora.getMinutes();
+    if(h===17 && m===5){
+      fecharDiaAutomatico();
+    }
+  }, 60000); // verifica a cada 1 minuto
+})();
+
 function reabrirDia(){
   const hoje=hojeStr();
   if(!confirm(`Reabrir o dia ${hoje}?\n\nO fechamento será removido e o dia ficará editável novamente.`)) return;
