@@ -320,10 +320,15 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   *{
     background:transparent!important;
     color:#111!important;
-    border-color:#ddd!important;
+    border-color:#ccc!important;
     box-shadow:none!important;
     text-shadow:none!important;
   }
+  /* B&W: substituir laranja por cinza escuro */
+  [style*="color:#FF5C1F"],[style*="color:var(--acc)"]{color:#333!important}
+  [style*="background:#FF5C1F"],[style*="background:var(--acc)"]{background:#333!important;color:#fff!important}
+  .kpi-card::before{background:#999!important}
+  .tab.on{border-bottom-color:#333!important;color:#333!important}
   html,body{
     background:#fff!important;
     font-family:'Barlow',Arial,sans-serif;
@@ -745,6 +750,14 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   </div>
 
   <div class="hist-filters">
+    <!-- Botões rápidos de período -->
+    <div style="display:flex;gap:4px;flex-shrink:0">
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(0)">HOJE</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(1)">ONTEM</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(3)">3 DIAS</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(7)">SEMANA</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(30)">MÊS</button>
+    </div>
     <select id="hist-period" onchange="renderHist()">
       <option value="diario">Diário</option>
       <option value="semanal">Semanal</option>
@@ -2060,7 +2073,47 @@ function _mergeDias(diasSheets){
   return Object.values(porDia);
 }
 
-async function renderHist(){
+async 
+
+// Helper: formatar data em português
+function fmtDataPtBR(dateOrStr, formato){
+  let dt;
+  if(typeof dateOrStr === 'string'){
+    const[dd,mm,yy]=dateOrStr.split('/').map(Number);
+    dt=new Date(yy,mm-1,dd);
+  } else { dt=dateOrStr; }
+  const dias=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const diasAbrev=['dom','seg','ter','qua','qui','sex','sáb'];
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const mesesAbrev=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const d=dt.getDate(), m=dt.getMonth(), y=dt.getFullYear();
+  const dow=dt.getDay();
+  if(formato==='longo') return `${d} de ${meses[m]} de ${y}`;
+  if(formato==='medio') return `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
+  if(formato==='diaSemana') return diasAbrev[dow].toUpperCase();
+  return `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
+}
+function filtroRapido(dias){
+  const hoje=new Date();
+  const ate=hoje.toISOString().split('T')[0];
+  let de;
+  if(dias===0){
+    de=ate;
+  } else if(dias===1){
+    const ontem=new Date(hoje); ontem.setDate(hoje.getDate()-1);
+    de=ontem.toISOString().split('T')[0];
+    document.getElementById('hist-ate').value=de;
+    document.getElementById('hist-de').value=de;
+    renderHist(); return;
+  } else {
+    const inicio=new Date(hoje); inicio.setDate(hoje.getDate()-(dias-1));
+    de=inicio.toISOString().split('T')[0];
+  }
+  document.getElementById('hist-de').value=de;
+  document.getElementById('hist-ate').value=ate;
+  renderHist();
+}
+function renderHist(){
   const periodo=document.getElementById('hist-period').value;
   const deStr=document.getElementById('hist-de').value;
   const ateStr=document.getElementById('hist-ate').value;
@@ -2308,22 +2361,26 @@ async function _imprimirHistoricoFormatado(){
   let dias = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
 
   // Aplicar filtro do período selecionado
-  const deStr=document.getElementById('hist-de').value;
-  const ateStr=document.getElementById('hist-ate').value;
+  let deStr=document.getElementById('hist-de').value;
+  let ateStr=document.getElementById('hist-ate').value;
   const periodo=document.getElementById('hist-period').value;
-  if(deStr||ateStr){
-    const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
-    const dtDe=parseFiltro(deStr);
-    const dtAte=parseFiltro(ateStr);
-    dias=dias.filter(d=>{
-      const[dd,mm,yy]=d.data.split('/').map(Number);
-      const dt=new Date(yy,mm-1,dd);
-      dt.setHours(0,0,0,0);
-      if(dtDe&&dt<dtDe) return false;
-      if(dtAte){const ateF=new Date(dtAte);ateF.setHours(23,59,59,999);if(dt>ateF) return false;}
-      return true;
-    });
+  // Se sem datas, usar últimos 30 dias
+  if(!deStr && !ateStr){
+    const hoje=new Date(); const ini=new Date(hoje); ini.setDate(hoje.getDate()-29);
+    ateStr=hoje.toISOString().split('T')[0];
+    deStr=ini.toISOString().split('T')[0];
   }
+  const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+  const dtDe=parseFiltro(deStr);
+  const dtAte=parseFiltro(ateStr);
+  dias=dias.filter(d=>{
+    const[dd,mm,yy]=d.data.split('/').map(Number);
+    const dt=new Date(yy,mm-1,dd);
+    dt.setHours(0,0,0,0);
+    if(dtDe&&dt<dtDe) return false;
+    if(dtAte){const ateF=new Date(dtAte);ateF.setHours(23,59,59,999);if(dt>ateF) return false;}
+    return true;
+  });
   dias.sort((a,b)=>{
     const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
     return p(a.data)-p(b.data);
@@ -2354,12 +2411,12 @@ async function _imprimirHistoricoFormatado(){
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
   @page{size:A4 portrait;margin:0}
   @media print{body{padding:10mm 12mm}.no-print{display:none!important}}
-  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #FF5C1F}
+  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #111}
   .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px}
-  .rp-logo span{color:#FF5C1F}
+  .rp-logo span{color:#111}
   .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
   .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
-  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#FF5C1F}
+  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111}
   .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 8px;border-bottom:0.5px solid #eee;padding-bottom:5px}
   .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px}
   .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #ddd;border-radius:4px;padding:9px 11px}
