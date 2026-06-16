@@ -158,6 +158,8 @@ body.tv-fullscreen > nav,
 body.tv-fullscreen > footer{ display:none!important; }
 body.tv-fullscreen > main{ height:100vh!important;overflow:hidden!important; }
 body.tv-fullscreen #sec-tv{ height:100vh!important; }
+body.tv-fullscreen .tv-body{ height:calc(100vh - 130px)!important; }
+body.tv-fullscreen .tv-right{ height:100%!important; }
 
 /* ═══ TV PANEL ═══ */
 .tv-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
@@ -188,9 +190,12 @@ body.tv-fullscreen #sec-tv{ height:100vh!important; }
 .tv-mini-val{font-family:var(--font-h);font-size:clamp(30px,4vw,56px);font-weight:700}
 .tv-mini-unit{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:1px;margin-top:2px}
 .tv-tbl-ttl{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;margin-bottom:7px;flex-shrink:0}
-.tv-table{width:100%;border-collapse:collapse;table-layout:fixed}
-.tv-table th{font-family:var(--font-d);font-size:12px;color:var(--txt2);letter-spacing:2px;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
-.tv-table td{font-family:var(--font-h);font-size:clamp(20px,2.6vw,38px);font-weight:700;padding:clamp(6px,1vh,14px) 10px;border-bottom:0.5px solid var(--border)}
+.tv-table{width:100%;border-collapse:collapse;table-layout:fixed;height:100%}
+.tv-table thead{display:table-header-group}
+.tv-table tbody{display:table-row-group}
+.tv-table tbody tr{height:1%}
+.tv-table th{font-family:var(--font-d);font-size:12px;color:var(--txt2);letter-spacing:2px;padding:6px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
+.tv-table td{font-family:var(--font-h);font-size:clamp(14px,2vw,30px);font-weight:700;padding:2px 10px;border-bottom:0.5px solid var(--border)}
 .tv-table .td-h{font-family:var(--font-d);font-size:clamp(14px,1.3vw,19px);font-weight:600;color:var(--txt)}
 .tv-table .td-s{font-size:clamp(16px,1.8vw,26px)}
 .tv-table tr.r-ok   td{color:var(--ok)}
@@ -659,8 +664,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <!-- Lado esquerdo: tabela hora a hora -->
     <div class="tv-right">
       <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
-      <div style="overflow-y:auto;flex:1">
-        <table class="tv-table">
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+        <table class="tv-table" style="height:100%">
           <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>STATUS</th></tr></thead>
           <tbody id="tv-tbl-body"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody>
         </table>
