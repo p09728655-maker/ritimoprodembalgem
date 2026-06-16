@@ -542,12 +542,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     👤 <span id="perfil-txt">—</span> &nbsp;✕
   </div>
 
-  <div class="hdr-clock-wrap">
-    <div class="hdr-clock" id="hdr-clock">--:--:--</div>
-    <div class="hdr-date"  id="hdr-date">--/--/----</div>
-  </div>
-
-  <button class="btn btn-acc" id="btn-pasta" onclick="selecionarPasta()">📁 SELECIONAR PASTA</button>
+<button class="btn btn-acc" id="btn-pasta" onclick="selecionarPasta()">📁 SELECIONAR PASTA</button>
   <button class="btn btn-ghost" id="btn-arquivo" onclick="triggerImport()" title="Selecionar arquivo avulso" style="padding:7px 10px">📄</button>
   <button class="btn btn-icon" title="Configurações" onclick="openCfg()">⚙</button>
   <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileInput(this)">
@@ -2299,8 +2294,8 @@ function tick(){
   const t=`${p2(n.getHours())}:${p2(n.getMinutes())}:${p2(n.getSeconds())}`;
   const ws=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
   const dl=`${ws[n.getDay()]} · ${p2(n.getDate())}/${p2(n.getMonth()+1)}/${n.getFullYear()}`;
-  ['hdr-clock','tv-clock'].forEach(id=>document.getElementById(id).textContent=t);
-  ['hdr-date','tv-date'].forEach(id=>document.getElementById(id).textContent=dl);
+  ['hdr-clock','tv-clock'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t;});
+  ['hdr-date','tv-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dl;});
 }
 
 // ════════════════════════════════════════════════
