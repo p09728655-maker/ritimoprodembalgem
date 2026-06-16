@@ -3097,6 +3097,14 @@ renderAll();
 restaurarLogo();
 tick();
 setInterval(tick,1000);
+// Auto-login como operador se URL tiver ?tv (ex: para TV LG fixa)
+if(new URLSearchParams(location.search).has('tv')){
+  PERFIL='operador';
+  document.getElementById('login-over').style.display='none';
+  document.getElementById('perfil-txt').textContent='OPERADOR';
+  aplicarPerfil();
+  setTab('tv');
+}
 // Iniciar fonte de dados
 if(CFG.sheetsUrl){
   lerSheets().then(ok=>{ if(ok) iniciarAutoRefresh(); });
