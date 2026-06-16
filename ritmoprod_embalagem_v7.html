@@ -2098,7 +2098,8 @@ function _mergeDias(diasSheets){
     });
   }
 
-  return Object.values(porDia);
+  // Oculta dias sem produção (sábados/feriados não trabalhados, realizado = 0)
+  return Object.values(porDia).filter(d=>d.real>0);
 }
 
 // Helper: formatar data em português
