@@ -500,10 +500,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div style="text-align:center;font-family:var(--font-d);font-size:8px;color:var(--txt3);letter-spacing:2px">
       SISTEMA <span style="color:var(--acc);font-weight:700">RITMOPROD</span>
     </div>
-    <div class="login-grp">
-      <label class="login-lbl">SENHA</label>
+    <div class="login-grp" id="login-senha-grp" style="display:none">
+      <label class="login-lbl">SENHA GERENCIAL</label>
       <input class="login-inp" id="login-senha" type="password" placeholder="••••••" autocomplete="off"
-        onkeydown="if(event.key==='Enter') tentarLogin()">
+        onkeydown="if(event.key==='Enter') tentarLogin('gerencial')">
     </div>
     <div class="login-err" id="login-err">SENHA INCORRETA — TENTE NOVAMENTE</div>
     <div class="login-btns">
@@ -1202,22 +1202,35 @@ document.getElementById('modal-he').addEventListener('click',function(e){ if(e.t
 let PERFIL = null; // 'operador' | 'gerencial'
 
 function tentarLogin(tipo){
+  if(tipo==='operador'){
+    PERFIL='operador';
+    document.getElementById('login-over').style.display='none';
+    document.getElementById('perfil-txt').textContent='OPERADOR';
+    aplicarPerfil();
+    setTab('tv');
+    return;
+  }
+  // Gerencial — exibe campo de senha se ainda oculto
+  const grp=document.getElementById('login-senha-grp');
+  if(grp.style.display==='none'){
+    grp.style.display='';
+    document.getElementById('login-senha').focus();
+    return;
+  }
   const senha=document.getElementById('login-senha').value;
   const err  =document.getElementById('login-err');
-  const ok   =tipo==='operador'?CFG.senhaOperador:CFG.senhaGerencial;
-  if(senha!==ok){
+  if(senha!==CFG.senhaGerencial){
     err.classList.add('on');
     document.getElementById('login-senha').focus();
     setTimeout(()=>err.classList.remove('on'),2500);
     return;
   }
-  PERFIL=tipo;
+  PERFIL='gerencial';
   document.getElementById('login-over').style.display='none';
-  document.getElementById('perfil-txt').textContent=tipo==='operador'?'OPERADOR':'GERENCIAL';
+  document.getElementById('perfil-txt').textContent='GERENCIAL';
   aplicarPerfil();
-  // Mobile: sempre abre TV
   const isMobile=window.innerWidth<=768;
-  if(tipo==='operador'||isMobile) setTab('tv');
+  if(isMobile) setTab('tv');
 }
 
 function logout(){
@@ -1225,6 +1238,7 @@ function logout(){
   PERFIL=null;
   document.getElementById('login-senha').value='';
   document.getElementById('login-err').classList.remove('on');
+  document.getElementById('login-senha-grp').style.display='none';
   document.getElementById('login-over').style.display='flex';
 }
 
