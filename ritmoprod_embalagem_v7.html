@@ -3109,6 +3109,21 @@ if(new URLSearchParams(location.search).has('tv')){
   aplicarPerfil();
   setTab('tv');
 }
+// ?resetsenha → restaura senhas ao padrão (sem apagar histórico ou outras configs)
+if(new URLSearchParams(location.search).has('resetsenha')){
+  CFG.senhaOperador='1234';
+  CFG.senhaGerencial='admin';
+  cfgSalvar();
+  alert('✅ Senhas restauradas!\nSENHA GERENCIAL: admin\n\nFeche esta aba e abra o painel normalmente.');
+}
+// ?resetcfg → apaga TUDO do localStorage (configs + histórico)
+if(new URLSearchParams(location.search).has('resetcfg')){
+  if(confirm('⚠️ Isso vai apagar TODAS as configurações e histórico local.\nTem certeza?')){
+    localStorage.clear();
+    alert('✅ Dados locais apagados. A página vai recarregar com as configurações padrão.');
+    location.href=location.pathname;
+  }
+}
 // Iniciar fonte de dados
 if(CFG.sheetsUrl){
   lerSheets().then(ok=>{ if(ok) iniciarAutoRefresh(); });
