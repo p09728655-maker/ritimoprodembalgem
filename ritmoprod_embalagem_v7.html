@@ -1939,7 +1939,7 @@ function renderTV(){
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
   document.getElementById('tv-nec').textContent=k.slotsRest>0?fmtN(k.nec):'—';
   document.getElementById('tv-proj').textContent=fmtN(k.proj);
-  document.getElementById('tv-empresa').textContent=`${CFG.empresa} · ${CFG.unidade}`;
+  const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
   document.getElementById('tv-setor').textContent=CFG.setor;
 
   let acumC=0;
