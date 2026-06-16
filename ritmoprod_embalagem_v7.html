@@ -1239,7 +1239,9 @@ function logout(){
 
 function aplicarPerfil(){
   const isOp=PERFIL==='operador';
-  // Tabs
+  // Nav bar
+  const nav=document.querySelector('nav');
+  if(nav) nav.style.display=isOp?'none':'';
   document.querySelectorAll('.tab').forEach(t=>{
     t.style.display=(isOp&&t.dataset.tab!=='tv')?'none':'';
   });
