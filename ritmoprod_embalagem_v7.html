@@ -1260,6 +1260,16 @@ function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 const p2 = n => String(n).padStart(2,'0');
 const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
 const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
+function fmtFechadoEm(v){
+  if(v==null||v===''||v===true||v===false) return 'SIM';
+  const s=String(v).trim();
+  if(/^(true|false|sim|n[ãa]o)$/i.test(s)) return 'SIM';
+  const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(m){ const y=+m[3]<100?2000+ +m[3]:+m[3]; return `${p2(+m[1])}/${p2(+m[2])}/${y}`; }
+  const dt=new Date(s);
+  if(!isNaN(dt)) return dtToStr(dt);
+  return 'SIM';
+}
 
 function hojeStr(){
   const d=new Date();
@@ -2164,7 +2174,7 @@ async function renderHist(){
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
     <td><span class="badge b-${d.ef>=90?'ok':d.ef>=70?'warn':'red'}">${d.ef>=90?'✓ META':d.ef>=70?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
-    <td>${d.fechado?`<span class="badge b-ok" title="${d.fechadoEm||''}">✓ ${(d.fechadoEm||'').substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
+    <td>${d.fechado?`<span class="badge b-ok" title="${fmtFechadoEm(d.fechadoEm)}">✓ ${fmtFechadoEm(d.fechadoEm).substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
 }
@@ -2519,7 +2529,7 @@ ${dias.map(d=>_svgDiaHora(d)).join('')}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${bdgCls(d.ef)}">${bdgLbl(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+(d.fechadoEm||'').substring(0,10):'—'}</td>
+      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,10):'—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
@@ -2785,7 +2795,7 @@ ${diasSem.map(d=>_svgDiaHora(d)).join('')}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=90?'s-ok':d.ef>=70?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+(d.fechadoEm||'').substring(0,5):'—'}</td>
+      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,5):'—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
