@@ -764,9 +764,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <option value="mensal">Mensal</option>
     </select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-    <input type="date" id="hist-de" onchange="renderHist()">
+    <input type="text" id="hist-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" style="width:110px">
     <span style="color:var(--txt2)">–</span>
-    <input type="date" id="hist-ate" onchange="renderHist()">
+    <input type="text" id="hist-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" style="width:110px">
     <button class="btn btn-ghost" onclick="renderHist()">↻ ATUALIZAR</button>
     <span id="hist-storage-info" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px"></span>
     <div class="hdr-spacer"></div>
@@ -1275,6 +1275,8 @@ function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 // UTILS
 // ════════════════════════════════════════════════
 const p2 = n => String(n).padStart(2,'0');
+function maskData(el){let v=el.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);if(v.length>5)v=v.slice(0,5)+'/'+v.slice(5,9);el.value=v;}
+function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
 const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
 const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
 function fmtFechadoEm(v){
@@ -2122,19 +2124,19 @@ function fmtDataPtBR(dateOrStr, formato){
 }
 function filtroRapido(dias){
   const hoje=new Date();
-  const ate=hoje.toISOString().split('T')[0];
+  const ate=dtToStr(hoje);
   let de;
   if(dias===0){
     de=ate;
   } else if(dias===1){
     const ontem=new Date(hoje); ontem.setDate(hoje.getDate()-1);
-    de=ontem.toISOString().split('T')[0];
+    de=dtToStr(ontem);
     document.getElementById('hist-ate').value=de;
     document.getElementById('hist-de').value=de;
     renderHist(); return;
   } else {
     const inicio=new Date(hoje); inicio.setDate(hoje.getDate()-(dias-1));
-    de=inicio.toISOString().split('T')[0];
+    de=dtToStr(inicio);
   }
   document.getElementById('hist-de').value=de;
   document.getElementById('hist-ate').value=ate;
@@ -2153,7 +2155,7 @@ async function renderHist(){
 
   // Filtrar período — parse manual para evitar bug de timezone (ISO → meia-noite UTC)
   if(deStr||ateStr){
-    const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+    const parseFiltro=s=>parseBR(s);
     const dtDe=parseFiltro(deStr);
     const dtAte=parseFiltro(ateStr);
     dias=dias.filter(d=>{
@@ -2394,8 +2396,8 @@ async function _imprimirHistoricoFormatado(){
   // Se sem datas, usar últimos 30 dias
   if(!deStr && !ateStr){
     const hoje=new Date(); const ini=new Date(hoje); ini.setDate(hoje.getDate()-29);
-    ateStr=hoje.toISOString().split('T')[0];
-    deStr=ini.toISOString().split('T')[0];
+    ateStr=dtToStr(hoje);
+    deStr=dtToStr(ini);
   }
   const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
   const dtDe=parseFiltro(deStr);
@@ -2618,7 +2620,7 @@ async function gerarRelatorioSemanal(){
 
   // Determinar semana atual (seg-sex) ou semana do filtro
   const ate=document.getElementById('hist-ate').value;
-  const refDate=ate?new Date(ate):new Date();
+  const refDate=ate?parseBR(ate):new Date();
   const diaSem=refDate.getDay();
   const diffSeg=diaSem===0?-6:1-diaSem;
   const seg=new Date(refDate); seg.setDate(refDate.getDate()+diffSeg);
@@ -3094,8 +3096,8 @@ loadCfg();
 DADOS=gerarDemo();
 const hoje=new Date();
 const um=new Date(hoje); um.setDate(um.getDate()-30);
-document.getElementById('hist-de').value=toISO(um);
-document.getElementById('hist-ate').value=toISO(hoje);
+document.getElementById('hist-de').value=dtToStr(um);
+document.getElementById('hist-ate').value=dtToStr(hoje);
 document.getElementById('login-empresa-sub').textContent=CFG.empresa+' · '+CFG.setor;
 renderAll();
 restaurarLogo();
