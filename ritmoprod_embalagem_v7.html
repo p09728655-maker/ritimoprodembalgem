@@ -184,6 +184,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-status-badge.warn{background:rgba(255,152,0,.12); color:var(--warn);border:1px solid rgba(255,152,0,.35)}
 .tv-status-badge.red {background:rgba(244,67,54,.12); color:var(--red); border:1px solid rgba(244,67,54,.35);animation:piscar 1.4s infinite}
 @keyframes piscar{0%,100%{opacity:1}50%{opacity:.35}}
+/* Scan line anti-sleep: muda pixels reais na tela para impedir screen-off do WebOS */
+@keyframes tv-scan{0%{transform:translateX(-220px)}100%{transform:translateX(100vw)}}
+.tv-scan-bar{position:relative;height:2px;overflow:hidden;flex-shrink:0;background:transparent}
+.tv-scan-bar::after{content:'';position:absolute;top:0;left:0;width:220px;height:100%;background:linear-gradient(90deg,transparent 0%,rgba(255,92,31,.45) 50%,transparent 100%);animation:tv-scan 3s linear infinite}
 .tv-progress-lbl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px;margin-bottom:6px}
 .tv-progress-bar{height:16px;background:var(--surface);border-radius:8px;overflow:hidden;border:0.5px solid var(--border)}
 .tv-progress-fill{height:100%;border-radius:8px;transition:width .6s ease}
@@ -729,6 +733,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
+  <div class="tv-scan-bar"></div>
   <div class="tv-foot">
     <span class="tv-tagline"><span style="color:#FF5C1F;margin-right:12px">—</span>Fluxo define resultado<span style="color:#FF5C1F">.</span></span>
     <div id="tv-paradas-resumo" style="font-family:var(--font-d);font-size:10px;color:#e57373;letter-spacing:1px"></div>
