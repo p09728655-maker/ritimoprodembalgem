@@ -3167,7 +3167,9 @@ document.addEventListener('fullscreenchange',()=>{
 });
 
 loadCfg();
-DADOS=gerarDemo();
+// Com Sheets configurado, NÃO gerar demo: evita o painel abrir com número
+// falso e só depois trocar pelo real. Fica vazio até lerSheets() carregar.
+DADOS = CFG.sheetsUrl ? [] : gerarDemo();
 const hoje=new Date();
 const um=new Date(hoje); um.setDate(um.getDate()-30);
 document.getElementById('hist-de').value=dtToStr(um);
