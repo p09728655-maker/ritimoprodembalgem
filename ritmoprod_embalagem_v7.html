@@ -214,6 +214,29 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-foot{padding:12px 28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
 .tv-tagline{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--txt2);letter-spacing:6px;text-transform:uppercase}
 
+/* ═══ TV SLIDE B — visão macro (ciclo anti-sleep WebOS) ═══ */
+#sec-tv{position:relative}
+#tv-slide-b{
+  position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;
+  display:none;flex-direction:column;justify-content:space-evenly;align-items:center;
+  padding:0 5vw;text-align:center;
+}
+.tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--border)}
+.tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(20px,2.8vw,44px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
+.tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(26px,3.2vw,52px);font-weight:600;color:var(--acc);letter-spacing:3px}
+.tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(11px,1.1vw,16px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(90px,13vw,210px);font-weight:700;line-height:.9;color:var(--txt)}
+.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(13px,1.3vw,20px);color:var(--txt2);letter-spacing:3px}
+.tvb-kpis{width:100%;display:flex;justify-content:space-evenly;gap:2vw}
+.tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
+.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(10px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(40px,4.8vw,84px);font-weight:700;line-height:1}
+.tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
+.tvb-prog-bar{height:20px;background:var(--surface);border-radius:10px;overflow:hidden;border:.5px solid var(--border)}
+.tvb-prog-fill{height:100%;border-radius:10px;transition:width .6s ease}
+.tvb-prog-info{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:clamp(11px,1.1vw,16px);color:var(--txt2);letter-spacing:1px}
+
 /* ═══ MOBILE TV ═══ */
 @media (max-width:768px){
   /* Header compacto */
@@ -738,6 +761,52 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span class="tv-tagline"><span style="color:#FF5C1F;margin-right:12px">—</span>Fluxo define resultado<span style="color:#FF5C1F">.</span></span>
     <div id="tv-paradas-resumo" style="font-family:var(--font-d);font-size:10px;color:#e57373;letter-spacing:1px"></div>
     <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmoprod<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
+  </div>
+
+  <!-- ═══ SLIDE B — visão macro, cicla com slide A a cada 90s ═══ -->
+  <div id="tv-slide-b">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl" id="tvb-setor">EMBALAGEM</div>
+      <div class="tvb-clock-lbl" id="tvb-clock">--:--:--</div>
+    </div>
+
+    <div class="tvb-hero">
+      <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
+      <div class="tvb-hero-num" id="tvb-prod">—</div>
+      <div class="tvb-hero-unit">CAIXAS</div>
+    </div>
+
+    <div class="tvb-kpis">
+      <div class="tvb-kpi">
+        <div class="tvb-kpi-lbl">META DO DIA</div>
+        <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
+      </div>
+      <div class="tvb-kpi">
+        <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
+        <div class="tvb-kpi-val" id="tvb-ef">—</div>
+      </div>
+      <div class="tvb-kpi">
+        <div class="tvb-kpi-lbl">STATUS</div>
+        <span id="tvb-badge" class="tv-status-badge ok">● META</span>
+      </div>
+    </div>
+
+    <div class="tvb-prog">
+      <div class="tvb-prog-info">
+        <span>PROGRESSO DO DIA</span>
+        <span id="tvb-prog-pct">0%</span>
+      </div>
+      <div class="tvb-prog-bar">
+        <div class="tvb-prog-fill" id="tvb-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div>
+      <span style="font-family:'Arial Black',Arial,sans-serif;font-weight:900;font-size:clamp(18px,2.4vw,36px)">
+        <span style="color:#D8232A">Patrimar</span>
+        <span style="font-family:Arial,sans-serif;font-weight:400;font-size:.38em;color:#888">móveis</span>
+      </span>
+    </div>
   </div>
 
 </section>
@@ -3511,6 +3580,59 @@ function renderParadas(){
   }, 10000);
 
   console.log('[TV] Anti-sleep v2 ativo: WakeLock + VideoStream + PointerEvents + ScrollTick');
+})();
+
+// ─── CICLO DE TELAS TV — troca entre Slide A e Slide B a cada 90s ────────────
+(function() {
+  const INTERVALO_MS = 90 * 1000;
+  let _tela = 'a';
+
+  function _sincSlideB() {
+    const get = id => { const el = document.getElementById(id); return el ? el.textContent : '—'; };
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    set('tvb-setor',    get('tv-setor'));
+    set('tvb-clock',    get('tv-clock'));
+    set('tvb-prod',     get('tv-prod'));
+    set('tvb-meta',     get('tv-meta-dest'));
+    set('tvb-ef',       get('tv-ef'));
+    set('tvb-prog-pct', get('tv-prog-pct'));
+
+    const fillA = document.getElementById('tv-prog-fill');
+    const fillB = document.getElementById('tvb-prog-fill');
+    if (fillA && fillB) {
+      fillB.style.width      = fillA.style.width;
+      fillB.style.background = fillA.style.background;
+    }
+
+    const bdgA = document.getElementById('tv-badge');
+    const bdgB = document.getElementById('tvb-badge');
+    if (bdgA && bdgB) { bdgB.textContent = bdgA.textContent; bdgB.className = bdgA.className; }
+
+    const efA = document.getElementById('tv-ef');
+    const efB = document.getElementById('tvb-ef');
+    if (efA && efB) efB.style.color = getComputedStyle(efA).color;
+  }
+
+  function _trocar() {
+    const slideB = document.getElementById('tv-slide-b');
+    if (!slideB) return;
+    _tela = _tela === 'a' ? 'b' : 'a';
+    if (_tela === 'b') { _sincSlideB(); slideB.style.display = 'flex'; }
+    else               { slideB.style.display = 'none'; }
+  }
+
+  // Atualiza relógio no Slide B a cada segundo quando visível
+  setInterval(() => {
+    if (_tela === 'b') {
+      const c = document.getElementById('tv-clock');
+      const cb = document.getElementById('tvb-clock');
+      if (c && cb) cb.textContent = c.textContent;
+    }
+  }, 1000);
+
+  setInterval(_trocar, INTERVALO_MS);
+  console.log('[TV] Ciclo de telas ativo: Slide A ↔ Slide B a cada 90s');
 })();
 
 </script>
