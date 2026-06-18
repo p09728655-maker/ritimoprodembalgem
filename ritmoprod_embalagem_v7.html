@@ -3431,6 +3431,52 @@ function renderParadas(){
   agendarProximaHora();
 })();
 
+// ─── ANTI-SLEEP: mantém tela ativa em TVs LG WebOS ───────────────────────────
+(function() {
+  // 1. Screen Wake Lock API (W3C) ─ impede o sistema de apagar a tela
+  let _wl = null;
+  async function _pedirWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      _wl = await navigator.wakeLock.request('screen');
+      _wl.addEventListener('release', () => { _wl = null; setTimeout(_pedirWakeLock, 2000); });
+      console.log('[TV] Screen Wake Lock ativo.');
+    } catch (e) { console.warn('[TV] Wake Lock indisponível:', e.message); }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !_wl) _pedirWakeLock();
+  });
+  _pedirWakeLock();
+
+  // 2. Canvas 2×2px com animação contínua ─ mantém GPU/renderização ativa
+  const _cv = document.createElement('canvas');
+  _cv.width = _cv.height = 2;
+  Object.assign(_cv.style, {
+    position: 'fixed', bottom: '0', right: '0',
+    width: '2px', height: '2px', opacity: '0.01',
+    pointerEvents: 'none', zIndex: '-9999'
+  });
+  document.body.appendChild(_cv);
+  const _ctx = _cv.getContext('2d');
+  let _fr = 0;
+  (function _loop() {
+    _fr = (_fr + 1) % 256;
+    _ctx.fillStyle = (_fr & 1) ? '#111111' : '#111112';
+    _ctx.fillRect(0, 0, 2, 2);
+    requestAnimationFrame(_loop);
+  })();
+
+  // 3. MouseEvent sintético a cada 30s ─ sinaliza atividade ao SO da TV
+  setInterval(() => {
+    document.dispatchEvent(new MouseEvent('mousemove', {
+      bubbles: true, cancelable: false, view: window,
+      clientX: (_fr % 2), clientY: 0
+    }));
+  }, 30000);
+
+  console.log('[TV] Anti-sleep ativo: WakeLock + Canvas + MouseEvents');
+})();
+
 </script>
 </body>
 </html>
