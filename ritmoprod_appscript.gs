@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
-// Versão: 4.5 — fecha o dia às 23:59 (Brasília): salva HISTÓRICO e zera
+// Versão: 4.6 — fecha o dia às 23:59 (Brasília) e zera à prova de falhas
 // ════════════════════════════════════════════════════════
 //
-// CONFIGURAR 1 VEZ (importante):
+// CONFIGURAR 1 VEZ (recomendado, p/ o fechamento limpo às 23:59):
 //   1. Configurações do projeto ▸ Fuso horário = (GMT-03:00) America/Sao_Paulo.
 //      O horário do GATILHO segue o fuso do PROJETO — se ficar em UTC, ele
 //      dispara na hora errada (20:00 em vez de 23:59).
@@ -11,11 +11,16 @@
 //      gatilho diário que, às 23:59, salva o dia no HISTÓRICO e zera o REALIZADO.
 //
 // COMPORTAMENTO:
+//   • Cada lançamento (manual na planilha via onEdit, ou pelo app) CARIMBA a
+//     qual dia os dados pertencem (propriedade 'dataDados'). Assim o script
+//     sempre sabe se a planilha contém dados de HOJE ou de um dia anterior.
 //   • 23:59 (Brasília): resetDiario() arquiva o dia atual em HISTORICO e limpa
 //     o REALIZADO. Como o turno acaba às 16:45, isso nunca atrapalha a produção.
-//   • Abrir o painel/TV NÃO zera mais durante o dia. A leitura só dispara um
-//     fallback de segurança de madrugada (antes das 05:00) caso o gatilho tenha
-//     falhado na noite anterior — fechando o dia anterior sob a data correta.
+//   • FAILSAFE: mesmo que o gatilho das 23:59 falhe (ou nunca tenha sido
+//     instalado), a leitura do painel (getDados) fecha automaticamente o dia
+//     anterior na PRIMEIRA leitura do novo dia, EM QUALQUER HORÁRIO. Ele só
+//     zera quando os dados na planilha são de um dia ANTERIOR — nunca apaga a
+//     produção já lançada hoje.
 //   • arquivarDiaAtual() nunca sobrescreve um dia já fechado manualmente
 //     (botão "Fechar o Dia", FECHADO = true).
 // ════════════════════════════════════════════════════════
@@ -30,7 +35,10 @@ const TZ = 'America/Sao_Paulo';
 // Horário do fechamento automático (segue o fuso do PROJETO no gatilho).
 const HORA_RESET  = 23;  // 23h
 const MIN_RESET   = 59;  // :59  → ~23:59
-const HORA_INICIO = 5;   // início do turno — a leitura nunca zera a partir daqui
+
+// Propriedade que guarda a qual dia (dd/MM/yyyy) pertencem os dados na planilha.
+// É o que permite zerar com segurança em qualquer horário, sem apagar o dia atual.
+const PROP_DATA_DADOS = 'dataDados';
 
 
 // ════════════════════════════════════════════════════════
@@ -182,6 +190,10 @@ function saveRealizado(p) {
     const iR      = hdr.indexOf('REALIZADO');
     const horario = String(p.horario || '').trim();
     const real    = Number(p.realizado) || 0;
+
+    // Carimba que a planilha contém dados de HOJE (protege contra zeramento).
+    PropertiesService.getScriptProperties()
+      .setProperty(PROP_DATA_DADOS, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
     const iLotes = [];
     for (let c = iR + 1; c < hdr.length; c++) {
@@ -380,6 +392,28 @@ function getParadas(p) {
 
 
 // ════════════════════════════════════════════════════════
+// onEdit — carimba o dia ao lançar dados manualmente na planilha
+// ════════════════════════════════════════════════════════
+
+// Gatilho SIMPLES (dispara sozinho em edições manuais; NÃO dispara em
+// alterações feitas por script, como o zeramento). Registra que a planilha
+// passou a conter dados de HOJE, protegendo a produção atual do failsafe.
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    const sh = e.range.getSheet();
+    if (sh.getName() !== SHEET_DADOS) return;
+    if (e.range.getRow() <= 4) return; // cabeçalho/meta nas primeiras linhas
+
+    PropertiesService.getScriptProperties()
+      .setProperty(PROP_DATA_DADOS, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  } catch (err) {
+    // onEdit deve falhar em silêncio para não travar a edição na planilha.
+  }
+}
+
+
+// ════════════════════════════════════════════════════════
 // GATILHO DIÁRIO — rode instalarGatilhos() UMA vez
 // ════════════════════════════════════════════════════════
 
@@ -397,6 +431,18 @@ function instalarGatilhos() {
     + ' (fuso do projeto). Confirme o fuso = ' + TZ);
 }
 
+// Rode AGORA (menu Executar) para fechar e zerar o painel na hora, caso ele
+// tenha ficado com os dados de ontem. Arquiva sob a data correta antes de zerar.
+function zerarPainelAgora() {
+  const props   = PropertiesService.getScriptProperties();
+  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const ontem   = Utilities.formatDate(new Date(Date.now() - 86400000), TZ, 'dd/MM/yyyy');
+  const carimbo = props.getProperty(PROP_DATA_DADOS);
+  const dataRef = (carimbo && carimbo !== hoje) ? carimbo : ontem;
+  executarReset(dataRef, props);
+  Logger.log('Painel zerado manualmente (arquivado em ' + dataRef + ').');
+}
+
 // Executada pelo gatilho às ~23:59. Salva o dia no HISTÓRICO e zera o REALIZADO.
 function resetDiario() {
   const props = PropertiesService.getScriptProperties();
@@ -407,23 +453,25 @@ function resetDiario() {
 
 
 // ════════════════════════════════════════════════════════
-// FALLBACK DE SEGURANÇA (só de madrugada, antes do turno)
+// FAILSAFE — fecha o dia anterior na 1ª leitura do novo dia
 // ════════════════════════════════════════════════════════
 
-// Roda dentro de getDados(). Se o gatilho das 23:59 tiver falhado na noite
-// anterior, fecha o dia anterior de madrugada — antes do turno começar.
-// Depois das HORA_INICIO, NÃO faz nada (nunca zera durante o expediente).
+// Roda dentro de getDados(). Usa o carimbo 'dataDados' (gravado a cada
+// lançamento, manual via onEdit ou pelo app) para decidir com segurança:
+//   • Se a planilha tem dados de um dia ANTERIOR → arquiva e zera, EM QUALQUER
+//     HORÁRIO. Isso cobre o caso do gatilho das 23:59 não ter rodado.
+//   • Se os dados são de HOJE → NÃO faz nada (nunca apaga a produção atual).
+//   • Se não há carimbo (planilha vazia/sem produção) → NÃO faz nada.
 function verificarNovoDia() {
   const props = PropertiesService.getScriptProperties();
-  const agora = new Date();
+  const hoje  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
 
-  const horaNum = Number(Utilities.formatDate(agora, TZ, 'HH'));
-  if (horaNum >= HORA_INICIO) return; // turno em andamento: jamais zera
+  const dataDados = props.getProperty(PROP_DATA_DADOS);
+  if (!dataDados)          return; // sem produção registrada — nada a fechar
+  if (dataDados === hoje)  return; // dados são de hoje (turno em andamento) — jamais zera
 
-  const ontem = Utilities.formatDate(new Date(agora.getTime() - 86400000), TZ, 'dd/MM/yyyy');
-  if (props.getProperty('ultimoReset') === ontem) return; // ontem já foi fechado
-
-  executarReset(ontem, props);
+  // A planilha contém dados de um dia anterior: fecha sob a data correta.
+  executarReset(dataDados, props);
 }
 
 // Arquiva o dia informado no HISTÓRICO e zera o REALIZADO.
@@ -433,6 +481,7 @@ function executarReset(dataRef, props) {
 
   limparRealizado();
   props.setProperty('ultimoReset', dataRef);
+  props.deleteProperty(PROP_DATA_DADOS); // planilha zerada: sem dados carimbados
   Logger.log('Dia fechado e zerado: ' + dataRef);
 }
 
