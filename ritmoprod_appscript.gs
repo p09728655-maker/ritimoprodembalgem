@@ -84,7 +84,7 @@ function doGet(e) {
 // ════════════════════════════════════════════════════════
 
 function getDados() {
-  verificarNovoDia(); // fallback seguro: só age de madrugada (ver função)
+  verificarNovoDia(); // failsafe: fecha o dia anterior se os dados não forem de hoje
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_DADOS);
