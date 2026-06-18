@@ -3431,50 +3431,81 @@ function renderParadas(){
   agendarProximaHora();
 })();
 
-// ─── ANTI-SLEEP: mantém tela ativa em TVs LG WebOS ───────────────────────────
+// ─── ANTI-SLEEP v2: mantém tela ativa em TVs LG WebOS ────────────────────────
+// O screensaver do WebOS (relógio) ativa por falta de interação real.
+// 4 camadas combinadas para cobrir diferentes versões de WebOS:
 (function() {
-  // 1. Screen Wake Lock API (W3C) ─ impede o sistema de apagar a tela
+  // 1. Screen Wake Lock API (W3C)
   let _wl = null;
   async function _pedirWakeLock() {
     if (!('wakeLock' in navigator)) return;
     try {
       _wl = await navigator.wakeLock.request('screen');
-      _wl.addEventListener('release', () => { _wl = null; setTimeout(_pedirWakeLock, 2000); });
-      console.log('[TV] Screen Wake Lock ativo.');
-    } catch (e) { console.warn('[TV] Wake Lock indisponível:', e.message); }
+      _wl.addEventListener('release', () => { _wl = null; setTimeout(_pedirWakeLock, 1000); });
+    } catch (e) { /* silent */ }
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && !_wl) _pedirWakeLock();
   });
   _pedirWakeLock();
 
-  // 2. Canvas 2×2px com animação contínua ─ mantém GPU/renderização ativa
+  // 2. Canvas animado + captureStream → <video> em loop
+  // TVs LG suprimem o screensaver enquanto detectam reprodução de vídeo.
   const _cv = document.createElement('canvas');
-  _cv.width = _cv.height = 2;
-  Object.assign(_cv.style, {
-    position: 'fixed', bottom: '0', right: '0',
-    width: '2px', height: '2px', opacity: '0.01',
-    pointerEvents: 'none', zIndex: '-9999'
-  });
-  document.body.appendChild(_cv);
+  _cv.width = _cv.height = 4;
   const _ctx = _cv.getContext('2d');
   let _fr = 0;
-  (function _loop() {
-    _fr = (_fr + 1) % 256;
-    _ctx.fillStyle = (_fr & 1) ? '#111111' : '#111112';
-    _ctx.fillRect(0, 0, 2, 2);
-    requestAnimationFrame(_loop);
+  (function _drawLoop() {
+    _fr = (_fr + 1) & 255;
+    _ctx.fillStyle = (_fr & 1) ? '#0a0a0a' : '#0a0a0b';
+    _ctx.fillRect(0, 0, 4, 4);
+    requestAnimationFrame(_drawLoop);
   })();
 
-  // 3. MouseEvent sintético a cada 30s ─ sinaliza atividade ao SO da TV
-  setInterval(() => {
-    document.dispatchEvent(new MouseEvent('mousemove', {
-      bubbles: true, cancelable: false, view: window,
-      clientX: (_fr % 2), clientY: 0
-    }));
-  }, 30000);
+  if (typeof _cv.captureStream === 'function') {
+    const _vid = document.createElement('video');
+    _vid.srcObject = _cv.captureStream(2);
+    _vid.muted = true;
+    _vid.loop = true;
+    _vid.playsInline = true;
+    _vid.style.cssText = 'position:fixed;bottom:0;right:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-9999';
+    document.body.appendChild(_vid);
+    const _tryPlay = () => _vid.play().catch(() => setTimeout(_tryPlay, 2000));
+    _tryPlay();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') _tryPlay();
+    });
+  } else {
+    // Fallback: só canvas, sem captureStream (WebOS mais antigos)
+    Object.assign(_cv.style, {
+      position: 'fixed', bottom: '0', right: '0',
+      width: '2px', height: '2px', opacity: '0.01',
+      pointerEvents: 'none', zIndex: '-9999'
+    });
+    document.body.appendChild(_cv);
+  }
 
-  console.log('[TV] Anti-sleep ativo: WakeLock + Canvas + MouseEvents');
+  // 3. Pointer events sintéticos a cada 15s
+  // Intervalo curto para que o timeout do WebOS (geralmente 5 min) não dispare.
+  setInterval(() => {
+    ['pointermove', 'mousemove'].forEach(type => {
+      document.dispatchEvent(new MouseEvent(type, {
+        bubbles: true, cancelable: false, view: window,
+        clientX: _fr & 1, clientY: 0
+      }));
+    });
+  }, 15000);
+
+  // 4. Micro-scroll no container principal a cada 10s
+  // Força mudança real de layout, perceptível pelo SO como atividade.
+  setInterval(() => {
+    const el = document.querySelector('main') || document.body;
+    const s = el.scrollTop;
+    el.scrollTop = s + 1;
+    requestAnimationFrame(() => { el.scrollTop = s; });
+  }, 10000);
+
+  console.log('[TV] Anti-sleep v2 ativo: WakeLock + VideoStream + PointerEvents + ScrollTick');
 })();
 
 </script>
