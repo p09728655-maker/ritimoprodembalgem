@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
-// Versão: 4.6 — fecha o dia às 23:59 (Brasília) e zera à prova de falhas
+// Versão: 4.7 — fecha o dia às 23:59 (Brasília) e zera à prova de erros
 // ════════════════════════════════════════════════════════
 //
 // CONFIGURAR 1 VEZ (recomendado, p/ o fechamento limpo às 23:59):
@@ -23,6 +23,14 @@
 //     produção já lançada hoje.
 //   • arquivarDiaAtual() nunca sobrescreve um dia já fechado manualmente
 //     (botão "Fechar o Dia", FECHADO = true).
+//
+// À PROVA DE ERROS:
+//   • O failsafe roda dentro de try/catch: qualquer erro é só registrado e
+//     NUNCA derruba o painel; a leitura seguinte tenta de novo (auto-recupera).
+//   • Recuperação dupla: além do carimbo do lançamento (forte), o dia da última
+//     leitura do painel (fraco) é usado se o carimbo faltar — mas, sem o forte,
+//     o zeramento só ocorre de madrugada, jamais apagando produção de hoje.
+//   • Só zera se houver produção pendente na planilha (planilhaTemProducao).
 // ════════════════════════════════════════════════════════
 
 const SHEET_DADOS   = 'HORA_A_HORA';
@@ -35,10 +43,13 @@ const TZ = 'America/Sao_Paulo';
 // Horário do fechamento automático (segue o fuso do PROJETO no gatilho).
 const HORA_RESET  = 23;  // 23h
 const MIN_RESET   = 59;  // :59  → ~23:59
+const HORA_INICIO = 5;   // antes desta hora é seguro zerar mesmo sem carimbo forte
 
 // Propriedade que guarda a qual dia (dd/MM/yyyy) pertencem os dados na planilha.
 // É o que permite zerar com segurança em qualquer horário, sem apagar o dia atual.
-const PROP_DATA_DADOS = 'dataDados';
+const PROP_DATA_DADOS     = 'dataDados';
+// Dia da última leitura do painel — recuperação caso o carimbo forte falte.
+const PROP_ULTIMA_LEITURA = 'ultimaLeitura';
 
 
 // ════════════════════════════════════════════════════════
@@ -84,7 +95,9 @@ function doGet(e) {
 // ════════════════════════════════════════════════════════
 
 function getDados() {
-  verificarNovoDia(); // failsafe: fecha o dia anterior se os dados não forem de hoje
+  // O failsafe NUNCA pode derrubar o painel: qualquer erro é apenas registrado.
+  try { verificarNovoDia(); }
+  catch (err) { Logger.log('verificarNovoDia falhou (ignorado): ' + err.message); }
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_DADOS);
@@ -93,9 +106,10 @@ function getDados() {
 
   const lastRow = sh.getLastRow();
   const lastCol = sh.getLastColumn();
+  if (lastRow < 5 || lastCol < 1) return { ok: false, erro: 'Planilha HORA_A_HORA sem dados.' };
   const data    = sh.getRange(1, 1, lastRow, lastCol).getValues();
 
-  const metaDia = Number(data[2][1]) || 0;
+  const metaDia = (data[2] && Number(data[2][1])) || 0;
 
   const hIdx = 3;
   const hdr  = data[hIdx].map(c => String(c).trim().toUpperCase());
@@ -456,25 +470,65 @@ function resetDiario() {
 // FAILSAFE — fecha o dia anterior na 1ª leitura do novo dia
 // ════════════════════════════════════════════════════════
 
-// Roda dentro de getDados(). Usa o carimbo 'dataDados' (gravado a cada
-// lançamento, manual via onEdit ou pelo app) para decidir com segurança:
-//   • Se a planilha tem dados de um dia ANTERIOR → arquiva e zera, EM QUALQUER
-//     HORÁRIO. Isso cobre o caso do gatilho das 23:59 não ter rodado.
-//   • Se os dados são de HOJE → NÃO faz nada (nunca apaga a produção atual).
-//   • Se não há carimbo (planilha vazia/sem produção) → NÃO faz nada.
+// Roda dentro de getDados() (sempre protegido por try/catch — nunca derruba o
+// painel). Decide com segurança se a planilha contém dados de um dia anterior:
+//   • Carimbo FORTE ('dataDados'): gravado em cada lançamento real (onEdit/app).
+//     Prova a data dos dados → fecha em QUALQUER HORÁRIO.
+//   • Carimbo FRACO ('ultimaLeitura'): dia da última leitura do painel. Usado
+//     como recuperação se o forte faltar; só fecha de madrugada (antes do turno)
+//     para nunca apagar produção já lançada hoje.
+//   • Dados de HOJE ou planilha sem produção → NÃO faz nada.
 function verificarNovoDia() {
   const props = PropertiesService.getScriptProperties();
-  const hoje  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const agora = new Date();
+  const hoje  = Utilities.formatDate(agora, TZ, 'dd/MM/yyyy');
 
-  const dataDados = props.getProperty(PROP_DATA_DADOS);
-  if (!dataDados)          return; // sem produção registrada — nada a fechar
-  if (dataDados === hoje)  return; // dados são de hoje (turno em andamento) — jamais zera
+  const stamp      = props.getProperty(PROP_DATA_DADOS);
+  const ultLeitura = props.getProperty(PROP_ULTIMA_LEITURA);
+  props.setProperty(PROP_ULTIMA_LEITURA, hoje); // registra a leitura de hoje
 
-  // A planilha contém dados de um dia anterior: fecha sob a data correta.
-  executarReset(dataDados, props);
+  const carimbo = stamp || ultLeitura;
+  if (!carimbo)         return; // nunca houve produção/leitura — nada a fechar
+  if (carimbo === hoje) return; // dados são de hoje (turno em andamento) — jamais zera
+
+  // Sem produção pendente: nada a arquivar; só limpa o carimbo forte.
+  if (!planilhaTemProducao()) { props.deleteProperty(PROP_DATA_DADOS); return; }
+
+  // Sem carimbo forte, só zera de madrugada (antes do turno) — segurança extra.
+  if (!stamp && Number(Utilities.formatDate(agora, TZ, 'HH')) >= HORA_INICIO) return;
+
+  executarReset(carimbo, props);
+}
+
+// true se há qualquer realizado/lote > 0 na planilha (produção pendente).
+function planilhaTemProducao() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_DADOS);
+  if (!sh) return false;
+
+  const data = sh.getDataRange().getValues();
+  const hIdx = 3;
+  if (data.length <= hIdx) return false;
+
+  const hdr = data[hIdx].map(c => String(c).trim().toUpperCase());
+  const iH  = hdr.indexOf('HORA');
+  const iR  = hdr.indexOf('REALIZADO');
+  if (iR < 0) return false;
+
+  for (let i = hIdx + 1; i < data.length; i++) {
+    const hora = String(data[i][iH] || '').trim().toUpperCase();
+    if (!hora || hora === 'TOTAL') continue;
+    for (let c = iR; c <= Math.min(12, data[i].length - 1); c++) {
+      const v = data[i][c];
+      if (v !== '' && v !== null && v !== undefined && !isNaN(Number(v)) && Number(v) > 0) return true;
+    }
+  }
+  return false;
 }
 
 // Arquiva o dia informado no HISTÓRICO e zera o REALIZADO.
+// Se limparRealizado() falhar, a exceção sobe e o getDados() apenas registra o
+// erro e tenta de novo na próxima leitura (auto-recuperação, sem travar o painel).
 function executarReset(dataRef, props) {
   try { arquivarDiaAtual(dataRef); }
   catch (err) { Logger.log('Falha ao arquivar ' + dataRef + ': ' + err.message); }
@@ -493,6 +547,7 @@ function limparRealizado() {
 
   const data = sh.getDataRange().getValues();
   const hIdx = 3;
+  if (data.length <= hIdx) return;
   const hdr  = data[hIdx].map(c => String(c).trim().toUpperCase());
   const iH   = hdr.indexOf('HORA');
   const iR   = hdr.indexOf('REALIZADO');
