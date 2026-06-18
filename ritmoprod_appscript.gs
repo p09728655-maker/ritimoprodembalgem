@@ -601,6 +601,15 @@ function arquivarDiaAtual(dataRef) {
   const iM   = hdr.findIndex(c => c.includes('META'));
   if (iH < 0 || iR < 0 || iM < 0) return;
 
+  // Identifica colunas de lote (mesmo critério de saveRealizado) para não somar
+  // colunas de fórmula como ACUM ou %/H que aparecem após REALIZADO na planilha.
+  const iLotes = [];
+  for (let c = iR + 1; c < hdr.length; c++) {
+    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
+      iLotes.push(c);
+    }
+  }
+
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
@@ -614,10 +623,10 @@ function arquivarDiaAtual(dataRef) {
     const ehHE    = hora.toUpperCase().startsWith('HE');
     const metaVal = Number(row[iM]) || 0;
 
-    // Realizado da linha = coluna REALIZADO ou, se vazia, soma dos lotes.
+    // Realizado da linha = coluna REALIZADO ou, se vazia, soma apenas dos lotes.
     const direto = num(row[iR]);
     let somaLotes = 0;
-    for (let c = iR + 1; c <= Math.min(12, row.length - 1); c++) somaLotes += num(row[c]);
+    iLotes.forEach(c => { somaLotes += num(row[c]); });
     const realVal = Math.max(direto, somaLotes);
 
     if (metaVal > 0 && !ehHE) meta += metaVal;
