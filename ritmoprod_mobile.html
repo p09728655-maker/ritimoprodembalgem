@@ -141,7 +141,19 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ HISTÓRICO ═══ */
 .hist-list{display:flex;flex-direction:column;gap:6px}
-.hist-item{background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center}
+.hist-sel{background:var(--elevated);border:0.5px solid var(--border);color:var(--txt);border-radius:5px;padding:4px 8px;font-family:var(--font-d);font-size:10px;letter-spacing:.5px}
+.hist-resumo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.hist-rz{background:var(--elevated);border:0.5px solid var(--border);border-radius:6px;padding:10px 12px}
+.hist-rz-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase}
+.hist-rz-val{font-family:var(--font-h);font-size:20px;font-weight:700;margin-top:3px;line-height:1}
+.hist-rz-val.ok{color:var(--ok)}.hist-rz-val.warn{color:var(--warn)}.hist-rz-val.red{color:var(--red)}
+.hist-item{background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;cursor:pointer;transition:background .15s}
+.hist-item:active{background:var(--elevated)}
+.md-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:12px}
+.md-row:last-child{border-bottom:none}
+.md-row .k{color:var(--txt2);letter-spacing:.5px}
+.md-row .v{font-weight:600}
+.md-row .v.ok{color:var(--ok)}.md-row .v.warn{color:var(--warn)}.md-row .v.red{color:var(--red)}
 .hist-data{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 .hist-real{font-family:var(--font-h);font-size:20px;font-weight:700}
 .hist-ef{font-family:var(--font-d);font-size:10px;padding:3px 7px;border-radius:3px}
@@ -313,10 +325,32 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
     <!-- Histórico -->
     <div class="card">
-      <div class="card-ttl">ÚLTIMOS 7 DIAS</div>
+      <div class="card-ttl" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span>HISTÓRICO</span>
+        <select id="hist-periodo" onchange="renderHistorico()" class="hist-sel">
+          <option value="7">Semana (7 dias)</option>
+          <option value="15">15 dias</option>
+          <option value="30">30 dias</option>
+        </select>
+      </div>
+      <div class="hist-resumo" id="hist-resumo"></div>
       <div class="hist-list" id="hist-list">
         <div class="loading">CARREGANDO...</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL DIA (detalhe do histórico) ═══ -->
+<div class="modal-over" id="modal-dia">
+  <div class="modal-sheet" style="border-radius:14px;max-width:400px">
+    <div class="modal-slot-info">
+      <div class="modal-slot-hora" id="md-data">--/--/----</div>
+      <div class="modal-slot-nome">RESUMO DO DIA</div>
+    </div>
+    <div id="md-body"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" style="flex:1" onclick="fecharModalDia()">FECHAR</button>
     </div>
   </div>
 </div>
@@ -863,23 +897,41 @@ async function renderHistorico(){
   renderHistoricoComDados(dias);
 }
 
+let _histDias=[];   // guarda o histórico carregado p/ o detalhe do dia
 function renderHistoricoComDados(dias){
+  _histDias = dias||[];
   const el=document.getElementById('hist-list');
+  const elRes=document.getElementById('hist-resumo');
+  if(elRes) elRes.innerHTML='';
   if(!dias||!dias.length){
     el.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div>Sem histórico disponível.</div>';
     return;
   }
-  // Últimos 7 dias excluindo hoje
+  // Período escolhido (7/15/30), excluindo hoje
   const hoje=hojeStr();
-  const lista=dias.filter(d=>d.data!==hoje).slice(-7).reverse();
+  const periodo=parseInt((document.getElementById('hist-periodo')||{}).value||'7');
+  const lista=dias.filter(d=>d.data!==hoje).slice(-periodo).reverse();
   if(!lista.length){
     el.innerHTML='<div class="empty-state">Sem histórico de dias anteriores.</div>';
     return;
   }
+  // ── Resumo do período ──
+  const totReal=lista.reduce((s,d)=>s+(parseFloat(d.real)||0),0);
+  const totMeta=lista.reduce((s,d)=>s+(parseFloat(d.meta)||0),0);
+  const efMed=totMeta>0?(totReal/totMeta)*100:0;
+  const mediaDia=lista.length?Math.round(totReal/lista.length):0;
+  if(elRes){
+    elRes.innerHTML=`
+      <div class="hist-rz"><div class="hist-rz-lbl">Produzido (${lista.length}d)</div><div class="hist-rz-val">${fmtN(totReal)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
+      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>`;
+  }
+  // ── Lista de dias (toque para detalhe) ──
   el.innerHTML=lista.map(d=>{
     const ef=d.ef!=null?parseFloat(d.ef):null;
     const cls=ef!=null?sc(ef):'';
-    return `<div class="hist-item">
+    return `<div class="hist-item" onclick="abrirDia('${d.data}')">
       <div class="hist-data">${d.data}</div>
       <div class="hist-real">${fmtN(d.real)}<span style="font-size:12px;color:var(--txt2)"> CX</span></div>
       <div></div>
@@ -887,6 +939,33 @@ function renderHistoricoComDados(dias){
     </div>`;
   }).join('');
 }
+
+// ── Detalhe de um dia (modal) ──
+function abrirDia(data){
+  const d=_histDias.find(x=>x.data===data);
+  if(!d) return;
+  const ef=d.ef!=null?parseFloat(d.ef):null;
+  const cls=ef!=null?sc(ef):'';
+  const real=parseFloat(d.real)||0, meta=parseFloat(d.meta)||0;
+  const gap=meta-real;
+  const linhas=[
+    ['REALIZADO', fmtN(real)+' CX', ''],
+    ['META', fmtN(meta)+' CX', ''],
+    ['EFICIÊNCIA', ef!=null?fmtP(ef):'—', cls],
+    ['STATUS', ef!=null?sl(ef):'—', cls],
+    ['GAP DA META', gap>0?fmtN(gap)+' CX':'✓ atingida', gap>0?'red':'ok'],
+    ['MELHOR HORA', fmtN(d.melhor||0)+' CX', 'ok'],
+    ['PIOR HORA', fmtN(d.pior||0)+' CX', 'red'],
+  ];
+  if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
+  if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);
+  document.getElementById('md-data').textContent=data;
+  document.getElementById('md-body').innerHTML=linhas.map(([k,v,c])=>
+    `<div class="md-row"><span class="k">${k}</span><span class="v ${c}">${v}</span></div>`).join('');
+  document.getElementById('modal-dia').classList.add('open');
+}
+function fecharModalDia(){ document.getElementById('modal-dia').classList.remove('open'); }
+document.getElementById('modal-dia').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-dia')) fecharModalDia(); });
 
 // ════════════════════════════════════════════════
 // INSTALAÇÃO COMO APP (PWA)
