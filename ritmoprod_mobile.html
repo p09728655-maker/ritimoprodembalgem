@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RitmoProd Mobile">
+<title>RitmoProd · Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
+  --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --font-h:'Barlow Condensed',sans-serif;
+  --font-b:'Barlow',sans-serif;
+  --font-d:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);font-family:var(--font-b);overflow-x:hidden}
+
+/* ═══ VIEW SYSTEM ═══ */
+.view{display:none;min-height:100dvh}
+.view.active{display:flex;flex-direction:column}
+
+/* ═══ LOGIN ═══ */
+#view-login{background:var(--bg);align-items:center;justify-content:center;padding:20px}
+.login-box{width:100%;max-width:360px;display:flex;flex-direction:column;gap:24px;align-items:center}
+.login-brand{text-align:center}
+.login-logo{font-family:'Arial Black',sans-serif;font-size:36px;letter-spacing:-1px;line-height:1}
+.login-logo .p-red{color:#D8232A}
+.login-logo .p-grey{font-size:.4em;color:var(--txt2);display:block;letter-spacing:2px;font-family:var(--font-h)}
+.login-title{font-family:var(--font-h);font-size:13px;letter-spacing:4px;color:var(--txt2);text-transform:uppercase;text-align:center;margin-top:4px}
+.login-divider{width:40px;height:1px;background:var(--border)}
+.login-btns{display:flex;flex-direction:column;gap:12px;width:100%}
+.login-btn{
+  width:100%;padding:18px;border-radius:8px;border:none;cursor:pointer;
+  font-family:var(--font-h);font-size:16px;font-weight:700;letter-spacing:3px;
+  text-transform:uppercase;transition:opacity .15s;
+}
+.login-btn:active{opacity:.7}
+.login-btn-op{background:var(--acc);color:#111}
+.login-btn-ger{background:var(--surface);color:var(--txt);border:1px solid var(--border)}
+.login-ver{font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:2px;text-align:center}
+
+/* ═══ HEADER MOBILE ═══ */
+.mob-header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 16px;display:flex;align-items:center;gap:12px;
+  height:52px;flex-shrink:0;padding-top:env(safe-area-inset-top);
+}
+.mob-title{font-family:var(--font-h);font-size:15px;font-weight:700;letter-spacing:2px;flex:1}
+.mob-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase}
+.mob-clock{font-family:var(--font-d);font-size:14px;color:var(--acc);letter-spacing:1px}
+.mob-btn-sair{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:5px;padding:6px 12px;font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;cursor:pointer}
+.mob-btn-sair:active{opacity:.6}
+
+/* ═══ SCROLL CONTENT ═══ */
+.mob-content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
+
+/* ═══ STATUS BAR ═══ */
+.status-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-live{background:var(--ok);animation:pulse 2s infinite}
+.dot-warn{background:var(--warn)}
+.dot-err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.status-txt{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;flex:1}
+.btn-refresh{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:4px;padding:5px 10px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;cursor:pointer}
+.btn-refresh:active{opacity:.6}
+
+/* ═══ SECTION LABEL ═══ */
+.sec-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;padding-left:2px}
+
+/* ═══ SLOT LIST (LANÇAMENTOS) ═══ */
+.slot-list{display:flex;flex-direction:column;gap:8px}
+.slot-item{
+  background:var(--surface);border:0.5px solid var(--border);border-radius:8px;
+  padding:14px 16px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:background .15s;user-select:none;
+  position:relative;overflow:hidden;
+}
+.slot-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--border)}
+.slot-item.ok::before{background:var(--ok)}
+.slot-item.warn::before{background:var(--warn)}
+.slot-item.red::before{background:var(--red)}
+.slot-item.andamento::before{background:var(--acc);animation:pulse 2s infinite}
+.slot-item.pendente::before{background:var(--border)}
+.slot-item:active{background:var(--elevated)}
+.slot-item.disabled{cursor:default;opacity:.5}
+.slot-item.disabled:active{background:var(--surface)}
+.slot-hora{font-family:var(--font-d);font-size:13px;color:var(--txt2);letter-spacing:.5px;min-width:105px}
+.slot-info{flex:1}
+.slot-nome{font-family:var(--font-h);font-size:16px;font-weight:700;line-height:1.1}
+.slot-meta{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:3px}
+.slot-badge{
+  font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;padding:4px 8px;
+  border-radius:3px;border:0.5px solid currentColor;text-transform:uppercase;white-space:nowrap;
+}
+.badge-pendente{color:var(--txt2)}
+.badge-ok{color:var(--ok)}
+.badge-warn{color:var(--warn)}
+.badge-red{color:var(--red)}
+.badge-andamento{color:var(--acc);animation:pulse 2s infinite}
+.slot-chevron{color:var(--txt2);font-size:18px;flex-shrink:0}
+
+/* ═══ KPI CARDS (GERENCIAL) ═══ */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi-card{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--border)}
+.kpi-card.ok::before{background:var(--ok)}
+.kpi-card.warn::before{background:var(--warn)}
+.kpi-card.red::before{background:var(--red)}
+.kpi-card.acc::before{background:var(--acc)}
+.kpi-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.kpi-val{font-family:var(--font-h);font-size:26px;font-weight:700;line-height:1;color:var(--txt)}
+.kpi-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:4px}
+
+/* ═══ TABELA HORA A HORA ═══ */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tbl{width:100%;border-collapse:collapse;font-family:var(--font-d);font-size:11px}
+.tbl th{background:var(--elevated);color:var(--txt2);font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 10px;border-bottom:0.5px solid var(--border);color:var(--txt)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:active td{background:var(--elevated)}
+.td-num{text-align:right}
+.td-s{text-align:center}
+.tbl .ok{color:var(--ok)}
+.tbl .warn{color:var(--warn)}
+.tbl .red{color:var(--red)}
+.tbl .pend{color:var(--txt2)}
+
+/* ═══ HISTÓRICO ═══ */
+.hist-list{display:flex;flex-direction:column;gap:6px}
+.hist-item{background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center}
+.hist-data{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+.hist-real{font-family:var(--font-h);font-size:20px;font-weight:700}
+.hist-ef{font-family:var(--font-d);font-size:10px;padding:3px 7px;border-radius:3px}
+.hist-ef.ok{background:rgba(76,175,80,.15);color:var(--ok)}
+.hist-ef.warn{background:rgba(255,152,0,.15);color:var(--warn)}
+.hist-ef.red{background:rgba(244,67,54,.15);color:var(--red)}
+
+/* ═══ CARD CONTAINER ═══ */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px}
+.card-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px}
+
+/* ═══ MODAL LANÇAMENTO ═══ */
+.modal-over{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:flex-end;justify-content:center;z-index:100;padding:16px}
+.modal-over.open{display:flex}
+.modal-sheet{
+  background:var(--surface);border-radius:14px 14px 8px 8px;
+  width:100%;max-width:420px;padding:24px;
+  display:flex;flex-direction:column;gap:18px;
+  animation:slideUp .25s ease-out;
+  max-height:90dvh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+.modal-slot-info{display:flex;flex-direction:column;gap:4px}
+.modal-slot-hora{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px}
+.modal-slot-nome{font-family:var(--font-h);font-size:22px;font-weight:700}
+.modal-slot-meta{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+.inp-grp{display:flex;flex-direction:column;gap:8px}
+.inp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.inp-num{
+  width:100%;padding:16px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-d);font-size:28px;
+  text-align:center;letter-spacing:2px;outline:none;
+  -webkit-appearance:none;-moz-appearance:textfield;
+}
+.inp-num:focus{border-color:var(--acc)}
+.inp-num::-webkit-inner-spin-button,.inp-num::-webkit-outer-spin-button{-webkit-appearance:none}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numpad-btn{
+  padding:16px;background:var(--elevated);border:0.5px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-h);font-size:22px;
+  font-weight:700;cursor:pointer;transition:background .1s;
+  display:flex;align-items:center;justify-content:center;
+}
+.numpad-btn:active{background:var(--border)}
+.numpad-btn.del{color:var(--txt2);font-size:18px}
+.numpad-btn.zero{grid-column:1/3}
+.modal-btns{display:flex;gap:10px}
+.btn-cancelar{flex:1;padding:15px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer}
+.btn-salvar{flex:2;padding:15px;background:var(--acc);border:none;border-radius:8px;color:#111;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:opacity .15s}
+.btn-salvar:disabled{opacity:.5;cursor:default}
+.btn-salvar:active:not(:disabled){opacity:.7}
+.btn-cancelar:active{opacity:.6}
+
+/* ═══ SENHA MODAL ═══ */
+#modal-senha .modal-sheet{border-radius:14px}
+.modal-ttl{font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px}
+.senha-inp{
+  width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-d);font-size:16px;
+  letter-spacing:4px;outline:none;text-align:center;
+}
+.senha-inp:focus{border-color:var(--acc)}
+.senha-btns{display:flex;gap:10px}
+.btn-confirmar{flex:1;padding:14px;background:var(--acc);border:none;border-radius:8px;color:#111;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:2px;cursor:pointer}
+.btn-fechar{padding:14px 18px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-h);font-size:14px;cursor:pointer}
+
+/* ═══ EMPTY STATE ═══ */
+.empty-state{text-align:center;padding:40px 20px;color:var(--txt2);font-family:var(--font-d);font-size:11px;letter-spacing:1px}
+.empty-icon{font-size:32px;margin-bottom:12px}
+
+/* ═══ LOADING ═══ */
+.loading{text-align:center;padding:30px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<!-- ═══ VIEW: LOGIN ═══ -->
+<div class="view active" id="view-login">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-logo">
+        <span class="p-red">Patrimar</span><span class="p-grey">móveis</span>
+      </div>
+      <div class="login-title">RitmoProd · Mobile</div>
+    </div>
+    <div class="login-divider"></div>
+    <div class="login-btns">
+      <button class="login-btn login-btn-op" onclick="loginComo('operador')">OPERADOR</button>
+      <button class="login-btn login-btn-ger" onclick="loginComo('gerencial')">GERENCIAL</button>
+    </div>
+    <div class="login-ver">v1.0 · EMBALAGEM</div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: LANÇAMENTOS ═══ -->
+<div class="view" id="view-lancamentos">
+  <div class="mob-header">
+    <div>
+      <div class="mob-title">LANÇAMENTOS</div>
+      <div class="mob-sub">EMBALAGEM · <span id="lan-data">--/--/----</span></div>
+    </div>
+    <div style="flex:1"></div>
+    <span class="mob-clock" id="lan-clock">--:--</span>
+    <button class="mob-btn-sair" onclick="sair()">SAIR</button>
+  </div>
+  <div class="mob-content">
+    <div class="status-bar">
+      <div class="dot" id="lan-dot"></div>
+      <span class="status-txt" id="lan-status">Carregando...</span>
+      <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
+    </div>
+    <div class="sec-lbl">SLOTS DO DIA</div>
+    <div class="slot-list" id="slot-list">
+      <div class="loading">CARREGANDO SLOTS...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: GERENCIAL ═══ -->
+<div class="view" id="view-gerencial">
+  <div class="mob-header">
+    <div>
+      <div class="mob-title">GERENCIAL</div>
+      <div class="mob-sub">EMBALAGEM · <span id="ger-data">--/--/----</span></div>
+    </div>
+    <div style="flex:1"></div>
+    <span class="mob-clock" id="ger-clock">--:--</span>
+    <button class="mob-btn-sair" onclick="sair()">SAIR</button>
+  </div>
+  <div class="mob-content">
+    <div class="status-bar">
+      <div class="dot" id="ger-dot"></div>
+      <span class="status-txt" id="ger-status">Carregando...</span>
+      <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="sec-lbl">KPIs DO DIA</div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="loading" style="grid-column:1/-1">CARREGANDO...</div>
+    </div>
+
+    <!-- Tabela hora a hora -->
+    <div class="card">
+      <div class="card-ttl">HORA A HORA — <span id="ger-data-tbl">--/--/----</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>HORA</th>
+              <th class="td-num">REAL</th>
+              <th class="td-num">META</th>
+              <th class="td-s">%</th>
+              <th class="td-s">STATUS</th>
+            </tr>
+          </thead>
+          <tbody id="ger-tbl-body">
+            <tr><td colspan="5" class="loading">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="card">
+      <div class="card-ttl">ÚLTIMOS 7 DIAS</div>
+      <div class="hist-list" id="hist-list">
+        <div class="loading">CARREGANDO...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SENHA ═══ -->
+<div class="modal-over" id="modal-senha">
+  <div class="modal-sheet" style="border-radius:14px;max-width:380px">
+    <div class="modal-ttl" id="senha-titulo">ACESSO OPERADOR</div>
+    <div class="inp-grp">
+      <div class="inp-lbl">SENHA</div>
+      <input class="senha-inp" id="senha-inp" type="password" placeholder="····" autocomplete="current-password">
+    </div>
+    <div class="senha-btns">
+      <button class="btn-fechar" onclick="fecharModalSenha()">CANCELAR</button>
+      <button class="btn-confirmar" onclick="confirmarSenha()">ENTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL LANÇAMENTO ═══ -->
+<div class="modal-over" id="modal-lanc">
+  <div class="modal-sheet">
+    <div class="modal-slot-info">
+      <div class="modal-slot-hora" id="ml-hora">--:-- – --:--</div>
+      <div class="modal-slot-nome" id="ml-nome">LANÇAR PRODUÇÃO</div>
+      <div class="modal-slot-meta" id="ml-meta">META: --- CX/HORA</div>
+    </div>
+    <div class="inp-grp">
+      <div class="inp-lbl">QUANTIDADE (CAIXAS)</div>
+      <input class="inp-num" id="ml-qtd" type="number" min="0" max="9999" placeholder="0" inputmode="numeric" pattern="[0-9]*">
+    </div>
+    <div class="numpad">
+      <button class="numpad-btn" onclick="numpad('1')">1</button>
+      <button class="numpad-btn" onclick="numpad('2')">2</button>
+      <button class="numpad-btn" onclick="numpad('3')">3</button>
+      <button class="numpad-btn" onclick="numpad('4')">4</button>
+      <button class="numpad-btn" onclick="numpad('5')">5</button>
+      <button class="numpad-btn" onclick="numpad('6')">6</button>
+      <button class="numpad-btn" onclick="numpad('7')">7</button>
+      <button class="numpad-btn" onclick="numpad('8')">8</button>
+      <button class="numpad-btn" onclick="numpad('9')">9</button>
+      <button class="numpad-btn zero" onclick="numpad('0')">0</button>
+      <button class="numpad-btn del" onclick="numpadDel()">⌫</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModalLanc()">CANCELAR</button>
+      <button class="btn-salvar" id="btn-salvar" onclick="salvarLanc()">SALVAR</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════════════
+let DADOS = [];
+let CFG = {
+  empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
+  metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
+  almocoInicio:'11:00', almocoFim:'12:12',
+  sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
+  senhaOperador:'1234',
+  senhaGerencial:'admin',
+  horarioFechamento:'17:05',
+};
+let PERFIL = null;
+let _slotAtivo = null;
+let _senhaCallback = null;
+let _refreshTimer = null;
+
+function loadCfg(){
+  try{
+    const s = localStorage.getItem('rpe_cfg');
+    if(s) CFG = {...CFG, ...JSON.parse(s)};
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════
+const p2 = n => String(n).padStart(2,'0');
+const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
+const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
+function hojeStr(){
+  const d = new Date();
+  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function dtToStr(d){
+  if(!(d instanceof Date)||isNaN(d)) return '';
+  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+function toMin(s){ const[h,m]=s.split(':').map(Number); return h*60+m; }
+function fromMin(m){ return `${p2(Math.floor(m/60))}:${p2(m%60)}`; }
+function nowMin(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
+function sc(ef){ return ef>=90?'ok':ef>=70?'warn':'red'; }
+function sl(ef){ return ef>=90?'META':ef>=70?'ATENÇÃO':'ABAIXO'; }
+
+// ════════════════════════════════════════════════
+// SLOTS
+// ════════════════════════════════════════════════
+function getSlots(){
+  const slots=[];
+  let cur=toMin(CFG.turnoInicio);
+  const fim=toMin(CFG.turnoFim);
+  const almI=toMin(CFG.almocoInicio);
+  const almF=toMin(CFG.almocoFim);
+  while(cur<fim){
+    if(cur>=almI&&cur<almF){ cur=almF; continue; }
+    const nxt=(cur<almI&&cur+60>almI)?almI:Math.min(cur+60,fim);
+    slots.push({inicio:fromMin(cur), fim:fromMin(nxt), label:`${fromMin(cur)}–${fromMin(nxt)}`, min:nxt-cur});
+    cur=nxt;
+    if(cur===almI) cur=almF;
+  }
+  return slots;
+}
+
+// ════════════════════════════════════════════════
+// JSONP FETCH
+// ════════════════════════════════════════════════
+function jsonpFetch(url){
+  return new Promise((res,rej)=>{
+    const cb='rpe_cb_'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); },15000);
+    function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
+    window[cb]=data=>{ cleanup(); res(data); };
+    s.onerror=()=>{ cleanup(); rej(new Error('Erro de rede')); };
+    s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    document.head.appendChild(s);
+  });
+}
+
+// ════════════════════════════════════════════════
+// FETCH DADOS SHEETS
+// ════════════════════════════════════════════════
+async function lerSheets(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    setDotStatus('warn','Buscando dados...');
+    const json = await jsonpFetch(CFG.sheetsUrl);
+    if(json.erro) throw new Error(json.erro);
+    processarResposta(json);
+    return true;
+  }catch(e){
+    setDotStatus('err', 'Erro: '+e.message);
+    return false;
+  }
+}
+
+function processarResposta(json){
+  const hoje = hojeStr();
+  let acum = 0;
+  const novos = (json.slots||[]).filter(s=>s.metaHora>0).map(s=>{
+    if(s.producaoHora!=null) acum+=s.producaoHora;
+    return {
+      data: hoje,
+      horario: s.inicio, slotFim: s.fim, slotLabel: s.label||s.inicio,
+      producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
+      acumulado: s.producaoHora!=null ? acum : null,
+      metaHora: s.metaHora, metaDia: json.metaDia||CFG.metaDia,
+      operador: s.operador||'', obs: s.obs||'',
+      status: s.producaoHora==null?'PENDENTE':s.producaoHora>=s.metaHora*0.9?'OK':'ABAIXO'
+    };
+  });
+  DADOS = [...DADOS.filter(d=>d.data!==hoje), ...novos];
+  const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  setDotStatus('live', 'Google Sheets · '+agora);
+  renderAtivo();
+}
+
+// ════════════════════════════════════════════════
+// FETCH HISTÓRICO
+// ════════════════════════════════════════════════
+async function lerHistorico(){
+  if(!CFG.sheetsUrl) return [];
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
+    const json = await jsonpFetch(url);
+    if(json.erro) throw new Error(json.erro);
+    return json.dias||[];
+  }catch(e){
+    return [];
+  }
+}
+
+// ════════════════════════════════════════════════
+// CÁLCULOS KPI
+// ════════════════════════════════════════════════
+function getDadosHoje(){
+  const h = hojeStr();
+  return DADOS.filter(d=>d.data===h && d.producaoHora!=null).sort((a,b)=>a.horario.localeCompare(b.horario));
+}
+
+function calcKPIs(){
+  const hoje = hojeStr();
+  const slots = getSlots();
+  const allHoje = DADOS.filter(d=>d.data===hoje).sort((a,b)=>a.horario.localeCompare(b.horario));
+  const dh = allHoje.filter(d=>d.producaoHora!=null);
+  const n = dh.length;
+  const real = dh.reduce((s,r)=>s+r.producaoHora, 0);
+  const meta = dh.length>0 ? (dh[0].metaDia||CFG.metaDia) : CFG.metaDia;
+  const metaReal = dh.reduce((s,r)=>s+(r.metaHora||0), 0);
+  const ef = metaReal>0 ? (real/metaReal)*100 : 0;
+  const gap = meta-real;
+  const ritmo = n>0 ? Math.round(real/n) : 0;
+  const totalSlots = allHoje.length>0 ? allHoje.length : slots.length;
+  const slotsRest = totalSlots-n;
+  const proj = real+ritmo*slotsRest;
+  const nec = slotsRest>0 ? Math.ceil((meta-real)/slotsRest) : 0;
+  const prods = dh.map(r=>r.producaoHora);
+  const melhor = prods.length ? Math.max(...prods) : 0;
+  const pior = prods.length ? Math.min(...prods) : 0;
+  const metaH = totalSlots>0 ? Math.round(meta/totalSlots) : 0;
+  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
+}
+
+// ════════════════════════════════════════════════
+// VIEWS
+// ════════════════════════════════════════════════
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function setDotStatus(tipo, txt){
+  ['lan-dot','ger-dot'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.className='dot';
+    if(tipo==='live') el.classList.add('dot-live');
+    else if(tipo==='warn') el.classList.add('dot-warn');
+    else if(tipo==='err') el.classList.add('dot-err');
+  });
+  ['lan-status','ger-status'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = txt;
+  });
+}
+
+function renderAtivo(){
+  if(PERFIL==='operador') renderLancamentos();
+  else if(PERFIL==='gerencial') renderGerencial();
+}
+
+// ════════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════════
+function tickClock(){
+  const n = new Date();
+  const hm = `${p2(n.getHours())}:${p2(n.getMinutes())}`;
+  const hoje = hojeStr();
+  ['lan-clock','ger-clock'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hm; });
+  ['lan-data','ger-data','ger-data-tbl'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hoje; });
+}
+
+// ════════════════════════════════════════════════
+// LOGIN / SENHA
+// ════════════════════════════════════════════════
+function loginComo(tipo){
+  const senha = tipo==='operador' ? CFG.senhaOperador : CFG.senhaGerencial;
+  if(!senha){
+    entrar(tipo);
+    return;
+  }
+  _senhaCallback = (ok)=>{ if(ok) entrar(tipo); };
+  document.getElementById('senha-titulo').textContent = tipo==='operador' ? 'ACESSO OPERADOR' : 'ACESSO GERENCIAL';
+  document.getElementById('senha-inp').value='';
+  document.getElementById('modal-senha').classList.add('open');
+  setTimeout(()=>document.getElementById('senha-inp').focus(), 100);
+}
+
+function fecharModalSenha(){
+  document.getElementById('modal-senha').classList.remove('open');
+  document.getElementById('senha-inp').value='';
+  _senhaCallback = null;
+}
+
+function confirmarSenha(){
+  const val = document.getElementById('senha-inp').value;
+  const btn = PERFIL ? CFG.senhaGerencial : (document.getElementById('senha-titulo').textContent.includes('GERENCIAL')?CFG.senhaGerencial:CFG.senhaOperador);
+  const senhaCorreta = document.getElementById('senha-titulo').textContent.includes('GERENCIAL') ? CFG.senhaGerencial : CFG.senhaOperador;
+  if(val===senhaCorreta){
+    fecharModalSenha();
+    if(_senhaCallback) { _senhaCallback(true); _senhaCallback=null; }
+  }else{
+    document.getElementById('senha-inp').style.borderColor='var(--red)';
+    document.getElementById('senha-inp').value='';
+    setTimeout(()=>{ document.getElementById('senha-inp').style.borderColor=''; },1000);
+  }
+}
+
+document.getElementById('senha-inp').addEventListener('keydown',e=>{ if(e.key==='Enter') confirmarSenha(); });
+
+function entrar(tipo){
+  PERFIL = tipo;
+  if(tipo==='operador'){
+    showView('view-lancamentos');
+    iniciarRefreshAuto();
+    renderLancamentos();
+    lerSheets();
+  } else {
+    showView('view-gerencial');
+    iniciarRefreshAuto();
+    renderGerencial();
+    lerSheets().then(()=>renderHistorico());
+    lerHistorico().then(renderHistoricoComDados);
+  }
+}
+
+function sair(){
+  PERFIL = null;
+  pararRefreshAuto();
+  DADOS = [];
+  showView('view-login');
+}
+
+// ════════════════════════════════════════════════
+// AUTO-REFRESH
+// ════════════════════════════════════════════════
+function iniciarRefreshAuto(){
+  pararRefreshAuto();
+  _refreshTimer = setInterval(()=>{
+    lerSheets();
+    if(PERFIL==='gerencial') lerHistorico().then(renderHistoricoComDados);
+  }, 60*1000);
+}
+
+function pararRefreshAuto(){
+  if(_refreshTimer){ clearInterval(_refreshTimer); _refreshTimer=null; }
+}
+
+function refresh(){
+  lerSheets().then(()=>{
+    if(PERFIL==='gerencial') lerHistorico().then(renderHistoricoComDados);
+  });
+}
+
+// ════════════════════════════════════════════════
+// RENDER LANÇAMENTOS
+// ════════════════════════════════════════════════
+function renderLancamentos(){
+  const slots = getSlots();
+  const hoje = hojeStr();
+  const nm = nowMin();
+  const allHoje = DADOS.filter(d=>d.data===hoje).sort((a,b)=>a.horario.localeCompare(b.horario));
+  const metaH = allHoje.length>0 ? (allHoje[0].metaHora||Math.round(CFG.metaDia/slots.length)) : Math.round(CFG.metaDia/slots.length);
+
+  const sourceFim = allHoje.length>0 ? allHoje[allHoje.length-1].slotFim : null;
+  const listSlots = allHoje.length>0 ? allHoje.map(s=>({
+    inicio: s.horario,
+    fim: s.slotFim||'',
+    label: s.slotLabel||s.horario,
+    metaHora: s.metaHora||metaH,
+    producaoHora: s.producaoHora,
+    operador: s.operador||''
+  })) : slots.map(s=>({
+    inicio: s.inicio, fim: s.fim, label: s.label,
+    metaHora: metaH, producaoHora: null, operador:''
+  }));
+
+  const el = document.getElementById('slot-list');
+  if(!listSlots.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div>Nenhum slot configurado para hoje.</div>';
+    return;
+  }
+
+  el.innerHTML = listSlots.map(slot=>{
+    const ini = toMin(slot.inicio);
+    const fim = slot.fim ? toMin(slot.fim) : ini+60;
+    const prod = slot.producaoHora;
+    const andamento = nm>=ini && nm<fim && prod===null;
+    const futuro = nm<ini;
+    const lançado = prod!==null;
+    let efSlot = lançado ? (prod/(slot.metaHora||metaH))*100 : null;
+    let cls='', badgeClass='badge-pendente', badgeText='PENDENTE';
+    if(andamento){ cls='andamento'; badgeClass='badge-andamento'; badgeText='EM ANDAMENTO'; }
+    else if(lançado){
+      const c=sc(efSlot);
+      cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
+    }
+    const disabled = futuro ? 'disabled' : '';
+    const onclick = futuro ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${prod!==null?prod:'null'})"`;
+    return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
+      <div class="slot-hora">${slot.label}</div>
+      <div class="slot-info">
+        <div class="slot-nome">${lançado ? fmtN(prod)+' CX' : andamento ? 'EM ANDAMENTO' : futuro ? 'PENDENTE' : 'PENDENTE'}</div>
+        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${lançado && efSlot!==null?' · '+fmtP(efSlot):''}</div>
+      </div>
+      <span class="${badgeClass} slot-badge">${badgeText}</span>
+      ${futuro?'':'<span class="slot-chevron">›</span>'}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// MODAL LANÇAMENTO
+// ════════════════════════════════════════════════
+function abrirLanc(inicio, fim, label, meta, prodAtual){
+  _slotAtivo = {inicio, fim, label, meta, prodAtual};
+  document.getElementById('ml-hora').textContent = label;
+  document.getElementById('ml-nome').textContent = 'LANÇAR PRODUÇÃO';
+  document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
+  document.getElementById('ml-qtd').value = prodAtual!==null && prodAtual!==undefined ? prodAtual : '';
+  document.getElementById('btn-salvar').textContent='SALVAR';
+  document.getElementById('btn-salvar').disabled=false;
+  document.getElementById('modal-lanc').classList.add('open');
+}
+
+function fecharModalLanc(){
+  document.getElementById('modal-lanc').classList.remove('open');
+  _slotAtivo=null;
+}
+
+function numpad(d){
+  const inp=document.getElementById('ml-qtd');
+  const cur=inp.value||'';
+  if(cur.length>=4) return;
+  inp.value=cur+d;
+}
+function numpadDel(){
+  const inp=document.getElementById('ml-qtd');
+  inp.value=(inp.value||'').slice(0,-1);
+}
+
+document.getElementById('modal-lanc').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-lanc')) fecharModalLanc(); });
+
+async function salvarLanc(){
+  const qtd = parseInt(document.getElementById('ml-qtd').value);
+  if(isNaN(qtd)||qtd<0){ alert('Informe uma quantidade válida.'); return; }
+  if(!_slotAtivo) return;
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  const btn=document.getElementById('btn-salvar');
+  btn.textContent='SALVANDO...'; btn.disabled=true;
+
+  const params=[
+    'action=saveRealizado',
+    'horario='+encodeURIComponent(_slotAtivo.inicio),
+    'producao='+qtd,
+    'operador='+encodeURIComponent('Mobile')
+  ].join('&');
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+
+  try{
+    const res=await jsonpFetch(url);
+    if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
+    fecharModalLanc();
+    await lerSheets();
+  }catch(e){
+    alert('Erro ao salvar: '+e.message);
+    btn.textContent='SALVAR'; btn.disabled=false;
+  }
+}
+
+// ════════════════════════════════════════════════
+// RENDER GERENCIAL — KPIs
+// ════════════════════════════════════════════════
+function renderGerencial(){
+  const k = calcKPIs();
+  const s = sc(k.ef);
+  const kpis=[
+    {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    {l:'EFICIÊNCIA',     v:fmtP(k.ef),    sub:sl(k.ef), c:s},
+    {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
+    {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
+    {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
+    {l:'NEC. P/ META',   v:fmtN(k.nec),   sub:`cx/h — ${k.slotsRest} slot(s)`, c:k.nec<=k.ritmo?'ok':'warn'},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.l}</div>
+      <div class="kpi-val">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  renderTabelaHoraHora(k.allHoje);
+}
+
+// ════════════════════════════════════════════════
+// RENDER TABELA HORA A HORA
+// ════════════════════════════════════════════════
+function renderTabelaHoraHora(allHoje){
+  const tbody=document.getElementById('ger-tbl-body');
+  if(!allHoje||!allHoje.length){
+    tbody.innerHTML='<tr><td colspan="5" class="empty-state" style="text-align:center">Sem dados</td></tr>';
+    return;
+  }
+  let acumC=0;
+  tbody.innerHTML=allHoje.map(r=>{
+    const prod=r.producaoHora;
+    if(prod!=null) acumC+=prod;
+    const ef2=prod!=null&&r.metaHora>0?(prod/r.metaHora)*100:null;
+    const cls=ef2!=null?sc(ef2):'pend';
+    const st=ef2!=null?sl(ef2):'—';
+    return `<tr>
+      <td style="white-space:nowrap">${r.slotLabel||r.horario}</td>
+      <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
+      <td class="td-num">${fmtN(r.metaHora)}</td>
+      <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}</td>
+      <td class="td-s ${cls}" style="font-size:9px">${st}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// RENDER HISTÓRICO
+// ════════════════════════════════════════════════
+async function renderHistorico(){
+  const dias = await lerHistorico();
+  renderHistoricoComDados(dias);
+}
+
+function renderHistoricoComDados(dias){
+  const el=document.getElementById('hist-list');
+  if(!dias||!dias.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div>Sem histórico disponível.</div>';
+    return;
+  }
+  // Últimos 7 dias excluindo hoje
+  const hoje=hojeStr();
+  const lista=dias.filter(d=>d.data!==hoje).slice(-7).reverse();
+  if(!lista.length){
+    el.innerHTML='<div class="empty-state">Sem histórico de dias anteriores.</div>';
+    return;
+  }
+  el.innerHTML=lista.map(d=>{
+    const ef=d.ef!=null?parseFloat(d.ef):null;
+    const cls=ef!=null?sc(ef):'';
+    return `<div class="hist-item">
+      <div class="hist-data">${d.data}</div>
+      <div class="hist-real">${fmtN(d.real)}<span style="font-size:12px;color:var(--txt2)"> CX</span></div>
+      <div></div>
+      ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:'<div></div>'}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+loadCfg();
+tickClock();
+setInterval(tickClock, 10000);
+</script>
+</body>
+</html>
