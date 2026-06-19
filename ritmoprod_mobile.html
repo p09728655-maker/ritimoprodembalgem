@@ -695,8 +695,9 @@ function renderLancamentos(){
       cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
       nome = fmtN(prod)+' CX';
     }
-    const disabled = futuro ? 'disabled' : '';
-    const onclick = futuro ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
+    const bloqueado = !ativo; // só a hora atual aceita lançamento
+    const disabled = bloqueado ? 'disabled' : '';
+    const onclick = bloqueado ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
@@ -704,7 +705,7 @@ function renderLancamentos(){
         <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}</div>
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
-      ${futuro?'':'<span class="slot-chevron">›</span>'}
+      ${ativo?'<span class="slot-chevron">›</span>':''}
     </div>`;
   }).join('');
 }
