@@ -744,16 +744,16 @@ async function salvarLanc(){
   if(!_slotAtivo) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
 
-  const acumAtual = Number(_slotAtivo.prodAtual)||0;
-  const total = acumAtual + add;
-
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
 
+  // O backend grava cada lançamento numa coluna de LOTE separada e SOMA os lotes
+  // ao montar o REALIZADO da hora. Por isso enviamos só o INCREMENTO (não o total)
+  // e usamos o parâmetro 'realizado', que é o que o Apps Script lê.
   const params=[
     'action=saveRealizado',
     'horario='+encodeURIComponent(_slotAtivo.inicio),
-    'producao='+total,
+    'realizado='+add,
     'operador='+encodeURIComponent('Mobile')
   ].join('&');
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
