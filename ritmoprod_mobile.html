@@ -167,6 +167,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .modal-slot-hora{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px}
 .modal-slot-nome{font-family:var(--font-h);font-size:22px;font-weight:700}
 .modal-slot-meta{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+.modal-slot-acum{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--acc);letter-spacing:1px;margin-top:6px}
+.modal-slot-acum .un{font-size:10px;color:var(--txt2);font-weight:400}
 .inp-grp{display:flex;flex-direction:column;gap:8px}
 .inp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .inp-num{
@@ -336,9 +338,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <div class="modal-slot-hora" id="ml-hora">--:-- – --:--</div>
       <div class="modal-slot-nome" id="ml-nome">LANÇAR PRODUÇÃO</div>
       <div class="modal-slot-meta" id="ml-meta">META: --- CX/HORA</div>
+      <div class="modal-slot-acum" id="ml-acum">ACUMULADO NA HORA: 0 <span class="un">CX</span></div>
     </div>
     <div class="inp-grp">
-      <div class="inp-lbl">QUANTIDADE (CAIXAS)</div>
+      <div class="inp-lbl" id="ml-inplbl">ADICIONAR (CAIXAS)</div>
       <input class="inp-num" id="ml-qtd" type="number" min="0" max="9999" placeholder="0" inputmode="numeric" pattern="[0-9]*">
     </div>
     <div class="numpad">
@@ -671,23 +674,28 @@ function renderLancamentos(){
     const ini = toMin(slot.inicio);
     const fim = slot.fim ? toMin(slot.fim) : ini+60;
     const prod = slot.producaoHora;
-    const andamento = nm>=ini && nm<fim && prod===null;
+    const temValor = prod!==null;
     const futuro = nm<ini;
-    const lançado = prod!==null;
-    let efSlot = lançado ? (prod/(slot.metaHora||metaH))*100 : null;
-    let cls='', badgeClass='badge-pendente', badgeText='PENDENTE';
-    if(andamento){ cls='andamento'; badgeClass='badge-andamento'; badgeText='EM ANDAMENTO'; }
-    else if(lançado){
+    const ativo = nm>=ini && nm<fim;          // hora corrente, vai acumulando
+    const finalizado = nm>=fim && temValor;   // hora fechada com valor
+    const efSlot = temValor ? (prod/(slot.metaHora||metaH))*100 : null;
+    let cls='', badgeClass='badge-pendente', badgeText='PENDENTE', nome='PENDENTE';
+    if(ativo){
+      cls='andamento'; badgeClass='badge-andamento';
+      badgeText = temValor ? 'PARCIAL · '+fmtN(prod)+' CX' : 'EM ANDAMENTO';
+      nome = temValor ? fmtN(prod)+' CX (parcial)' : 'EM ANDAMENTO';
+    } else if(finalizado){
       const c=sc(efSlot);
       cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
+      nome = fmtN(prod)+' CX';
     }
     const disabled = futuro ? 'disabled' : '';
-    const onclick = futuro ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${prod!==null?prod:'null'})"`;
+    const onclick = futuro ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
-        <div class="slot-nome">${lançado ? fmtN(prod)+' CX' : andamento ? 'EM ANDAMENTO' : futuro ? 'PENDENTE' : 'PENDENTE'}</div>
-        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${lançado && efSlot!==null?' · '+fmtP(efSlot):''}</div>
+        <div class="slot-nome">${nome}</div>
+        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}</div>
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
       ${futuro?'':'<span class="slot-chevron">›</span>'}
@@ -699,12 +707,15 @@ function renderLancamentos(){
 // MODAL LANÇAMENTO
 // ════════════════════════════════════════════════
 function abrirLanc(inicio, fim, label, meta, prodAtual){
-  _slotAtivo = {inicio, fim, label, meta, prodAtual};
+  const acumAtual = (prodAtual!==null && prodAtual!==undefined) ? Number(prodAtual) : 0;
+  _slotAtivo = {inicio, fim, label, meta, prodAtual: acumAtual};
   document.getElementById('ml-hora').textContent = label;
   document.getElementById('ml-nome').textContent = 'LANÇAR PRODUÇÃO';
   document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
-  document.getElementById('ml-qtd').value = prodAtual!==null && prodAtual!==undefined ? prodAtual : '';
-  document.getElementById('btn-salvar').textContent='SALVAR';
+  document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
+  document.getElementById('ml-inplbl').textContent = 'ADICIONAR (CAIXAS)';
+  document.getElementById('ml-qtd').value = '';
+  document.getElementById('btn-salvar').textContent='ADICIONAR';
   document.getElementById('btn-salvar').disabled=false;
   document.getElementById('modal-lanc').classList.add('open');
 }
@@ -728,10 +739,13 @@ function numpadDel(){
 document.getElementById('modal-lanc').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-lanc')) fecharModalLanc(); });
 
 async function salvarLanc(){
-  const qtd = parseInt(document.getElementById('ml-qtd').value);
-  if(isNaN(qtd)||qtd<0){ alert('Informe uma quantidade válida.'); return; }
+  const add = parseInt(document.getElementById('ml-qtd').value);
+  if(isNaN(add)||add<=0){ alert('Informe a quantidade a adicionar.'); return; }
   if(!_slotAtivo) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  const acumAtual = Number(_slotAtivo.prodAtual)||0;
+  const total = acumAtual + add;
 
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
@@ -739,7 +753,7 @@ async function salvarLanc(){
   const params=[
     'action=saveRealizado',
     'horario='+encodeURIComponent(_slotAtivo.inicio),
-    'producao='+qtd,
+    'producao='+total,
     'operador='+encodeURIComponent('Mobile')
   ].join('&');
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
@@ -751,7 +765,7 @@ async function salvarLanc(){
     await lerSheets();
   }catch(e){
     alert('Erro ao salvar: '+e.message);
-    btn.textContent='SALVAR'; btn.disabled=false;
+    btn.textContent='ADICIONAR'; btn.disabled=false;
   }
 }
 
