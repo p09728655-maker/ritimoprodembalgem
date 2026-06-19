@@ -2327,10 +2327,10 @@ async function renderHist(){
     <td class="mono">${d.data}</td>
     <td class="mono">${fmtN(d.real)}</td>
     <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
-    <td class="mono" style="color:${d.ef>=90?'var(--ok)':d.ef>=70?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
+    <td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
-    <td><span class="badge b-${d.ef>=90?'ok':d.ef>=70?'warn':'red'}">${d.ef>=90?'✓ META':d.ef>=70?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
+    <td><span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
     <td>${d.fechado?`<span class="badge b-ok" title="${fmtFechadoEm(d.fechadoEm)}">✓ ${fmtFechadoEm(d.fechadoEm).substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
@@ -2572,9 +2572,9 @@ async function _imprimirHistoricoFormatado(){
   const comMeta=dias.filter(d=>d.ok).length;
   const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
-  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
-  const bdgCls=ef=>ef>=90?'s-ok':ef>=70?'s-warn':'s-red';
-  const bdgLbl=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
+  const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
+  const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
+  const bdgLbl=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
   const periodoLabel=deStr&&ateStr?`${deStr.split('-').reverse().join('/')} a ${ateStr.split('-').reverse().join('/')}`:periodo.toUpperCase();
 
   const html=`<!DOCTYPE html>
@@ -2808,8 +2808,8 @@ async function gerarRelatorioSemanal(){
   const piorDia=diasSem.reduce((a,b)=>a.ef<b.ef?a:b);
 
   // Cor de status
-  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
-  const badge=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
+  const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
+  const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
 
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
@@ -2963,7 +2963,7 @@ ${diasSem.map(d=>_svgDiaHora(d)).join('')}
       <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${d.ef>=90?'s-ok':d.ef>=70?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
+      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
       <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,5):'—'}</td>
     </tr>`).join('')}
   </tbody>
@@ -3017,8 +3017,8 @@ function _svgBarChart(dias){
     const x=cx(i);
     const yM=sy(d.meta);
     const yR=sy(d.real);
-    const clr=d.ef>=90?'#4CAF50':d.ef>=70?'#FF9800':'#F44336';
-    const bgClr=d.ef>=90?'#e8f5e9':d.ef>=70?'#fff3e0':'#ffebee';
+    const clr=d.ef>=96?'#4CAF50':d.ef>=90?'#FF9800':'#F44336';
+    const bgClr=d.ef>=96?'#e8f5e9':d.ef>=90?'#fff3e0':'#ffebee';
 
     // Barra meta (fantasma)
     out+=`<rect x="${x-barW/2-3}" y="${yM}" width="${barW+6}" height="${ch+pad.t-yM}" fill="${bgClr}" rx="3"/>`;
@@ -3058,9 +3058,9 @@ function _svgDiaHora(dia){
     ? diaHist.slots.filter(s=>s.prod!=null)
     : null;
 
-  const cor=ef=>ef>=90?'#4CAF50':ef>=70?'#FF9800':'#F44336';
-  const badge=ef=>ef>=90?'DENTRO DA META':ef>=70?'ATENÇÃO':'ABAIXO';
-  const bdgCls=ef=>ef>=90?'s-ok':ef>=70?'s-warn':'s-red';
+  const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
+  const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
+  const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
   const dow=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
   const[dd,mm,yy]=dia.data.split('/').map(Number);
   const diaSem=new Date(yy,mm-1,dd).getDay();
