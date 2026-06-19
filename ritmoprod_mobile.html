@@ -101,6 +101,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .slot-info{flex:1}
 .slot-nome{font-family:var(--font-h);font-size:16px;font-weight:700;line-height:1.1}
 .slot-meta{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:3px}
+.slot-lotes{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:.5px;margin-top:4px;word-break:break-word}
 .slot-badge{
   font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;padding:4px 8px;
   border-radius:3px;border:0.5px solid currentColor;text-transform:uppercase;white-space:nowrap;
@@ -169,6 +170,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .modal-slot-meta{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 .modal-slot-acum{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--acc);letter-spacing:1px;margin-top:6px}
 .modal-slot-acum .un{font-size:10px;color:var(--txt2);font-weight:400}
+.modal-slot-lotes{font-family:var(--font-d);font-size:11px;color:var(--acc);letter-spacing:.5px;margin-top:8px;line-height:1.4;word-break:break-word}
+.modal-slot-lotes .lbl{display:block;color:var(--txt2);font-size:9px;letter-spacing:1px;margin-bottom:2px}
 .inp-grp{display:flex;flex-direction:column;gap:8px}
 .inp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .inp-num{
@@ -339,6 +342,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <div class="modal-slot-nome" id="ml-nome">LANÇAR PRODUÇÃO</div>
       <div class="modal-slot-meta" id="ml-meta">META: --- CX/HORA</div>
       <div class="modal-slot-acum" id="ml-acum">ACUMULADO NA HORA: 0 <span class="un">CX</span></div>
+      <div class="modal-slot-lotes" id="ml-lotes" style="display:none"></div>
     </div>
     <div class="inp-grp">
       <div class="inp-lbl" id="ml-inplbl">ADICIONAR (CAIXAS)</div>
@@ -396,6 +400,7 @@ function loadCfg(){
 const p2 = n => String(n).padStart(2,'0');
 const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
 const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
+const fmtLotes = arr => (Array.isArray(arr)?arr:[]).map(fmtN).join(' · ');
 function hojeStr(){
   const d = new Date();
   return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
@@ -477,6 +482,7 @@ function processarResposta(json){
       data: hoje,
       horario: s.inicio, slotFim: s.fim, slotLabel: s.label||s.inicio,
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
+      lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
       acumulado: s.producaoHora!=null ? acum : null,
       metaHora: s.metaHora, metaDia: json.metaDia||CFG.metaDia,
       operador: s.operador||'', obs: s.obs||'',
@@ -664,10 +670,11 @@ function renderLancamentos(){
     label: s.slotLabel||s.horario,
     metaHora: s.metaHora||metaH,
     producaoHora: s.producaoHora,
+    lotes: s.lotes||[],
     operador: s.operador||''
   })) : slots.map(s=>({
     inicio: s.inicio, fim: s.fim, label: s.label,
-    metaHora: metaH, producaoHora: null, operador:''
+    metaHora: metaH, producaoHora: null, lotes: [], operador:''
   }));
 
   const el = document.getElementById('slot-list');
@@ -698,11 +705,13 @@ function renderLancamentos(){
     const bloqueado = !ativo; // só a hora atual aceita lançamento
     const disabled = bloqueado ? 'disabled' : '';
     const onclick = bloqueado ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
+    const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
         <div class="slot-nome">${nome}</div>
         <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}</div>
+        ${lotesTxt?`<div class="slot-lotes">Lotes: ${lotesTxt}</div>`:''}
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
       ${ativo?'<span class="slot-chevron">›</span>':''}
@@ -720,6 +729,16 @@ function abrirLanc(inicio, fim, label, meta, prodAtual){
   document.getElementById('ml-nome').textContent = 'LANÇAR PRODUÇÃO';
   document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
   document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
+  // Lotes já lançados nesta hora (busca em DADOS pelo horário de início)
+  const slotDados = DADOS.find(d=>d.data===hojeStr() && d.horario===inicio);
+  const lotesAtuais = (slotDados && slotDados.lotes) ? slotDados.lotes : [];
+  const elLotes = document.getElementById('ml-lotes');
+  if(lotesAtuais.length){
+    elLotes.innerHTML = `<span class="lbl">LANÇADO NESTA HORA</span>${fmtLotes(lotesAtuais)}`;
+    elLotes.style.display = 'block';
+  } else {
+    elLotes.style.display = 'none';
+  }
   document.getElementById('ml-inplbl').textContent = 'ADICIONAR (CAIXAS)';
   document.getElementById('ml-qtd').value = '';
   document.getElementById('btn-salvar').textContent='ADICIONAR';

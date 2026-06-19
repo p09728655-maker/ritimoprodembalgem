@@ -746,7 +746,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tv-mini-kpi">
           <div class="tv-kpi-lbl">NECESSÁRIO</div>
           <div class="tv-mini-val" style="color:var(--warn)" id="tv-nec">—</div>
-          <div class="tv-mini-unit">CX/HORA</div>
+          <div class="tv-mini-unit" id="tv-nec-unit">CX/HORA</div>
         </div>
         <div class="tv-mini-kpi">
           <div class="tv-kpi-lbl">PROJEÇÃO</div>
@@ -814,7 +814,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-kpi" id="tvb-kpi-nec">
         <div class="tvb-kpi-lbl">NECESSÁRIO</div>
         <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
-        <div class="tvb-kpi-unit">CX/HORA</div>
+        <div class="tvb-kpi-unit" id="tvb-nec-unit">CX/HORA</div>
       </div>
       <div class="tvb-kpi" id="tvb-kpi-proj">
         <div class="tvb-kpi-lbl">PROJEÇÃO</div>
@@ -2072,7 +2072,18 @@ function renderTV(){
   document.getElementById('tv-meta-lbl').textContent='META: '+fmtN(k.meta);
   const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fmtN(k.meta);
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
-  document.getElementById('tv-nec').textContent=k.slotsRest>0?fmtN(k.nec):'—';
+  // NECESSÁRIO: nas horas restantes, mostra o ritmo (cx/hora) p/ bater a meta.
+  // Na última hora (sem horas futuras), mostra quanto ainda FALTA para a meta.
+  const necEl=document.getElementById('tv-nec');
+  const necUnit=document.getElementById('tv-nec-unit');
+  if(k.slotsRest>0){
+    necEl.textContent=fmtN(k.nec);
+    if(necUnit) necUnit.textContent='CX/HORA';
+  }else{
+    const falta=Math.max(0,Math.round(k.gap));
+    necEl.textContent=falta>0?fmtN(falta):'✓';
+    if(necUnit) necUnit.textContent=falta>0?'CX P/ META':'META OK';
+  }
   document.getElementById('tv-proj').textContent=fmtN(k.proj);
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
   document.getElementById('tv-setor').textContent=CFG.setor;
@@ -3562,7 +3573,10 @@ function renderParadas(){
 // ─── ANTI-SLEEP v2: mantém tela ativa em TVs LG WebOS ────────────────────────
 // O screensaver do WebOS (relógio) ativa por falta de interação real.
 // 4 camadas combinadas para cobrir diferentes versões de WebOS:
+// Só roda em modo TV (?tv na URL). Em máquinas normais isso causava
+// reload a cada 28 min, deslogando o usuário (PERFIL só vive em memória).
 (function() {
+  if (!new URLSearchParams(location.search).has('tv')) return;
   // 1. Screen Wake Lock API (W3C)
   let _wl = null;
   async function _pedirWakeLock() {
@@ -3656,6 +3670,7 @@ const _cicloTV = (function() {
     set('tvb-prog-pct', get('tv-prog-pct'));
     set('tvb-ritmo',    get('tv-ritmo'));
     set('tvb-nec',      get('tv-nec'));
+    set('tvb-nec-unit', get('tv-nec-unit'));
     set('tvb-proj',     get('tv-proj'));
 
     const fillA = document.getElementById('tv-prog-fill');
