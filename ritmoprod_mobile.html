@@ -316,7 +316,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="modal-ttl" id="senha-titulo">ACESSO OPERADOR</div>
     <div class="inp-grp">
       <div class="inp-lbl">SENHA</div>
-      <input class="senha-inp" id="senha-inp" type="password" placeholder="····" autocomplete="current-password">
+      <input class="senha-inp" id="senha-inp" type="password" placeholder="····" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false">
     </div>
     <div class="senha-btns">
       <button class="btn-fechar" onclick="fecharModalSenha()">CANCELAR</button>
@@ -587,7 +587,7 @@ function confirmarSenha(){
   const val = document.getElementById('senha-inp').value;
   const btn = PERFIL ? CFG.senhaGerencial : (document.getElementById('senha-titulo').textContent.includes('GERENCIAL')?CFG.senhaGerencial:CFG.senhaOperador);
   const senhaCorreta = document.getElementById('senha-titulo').textContent.includes('GERENCIAL') ? CFG.senhaGerencial : CFG.senhaOperador;
-  if(val===senhaCorreta){
+  if(val.trim()===senhaCorreta){
     fecharModalSenha();
     if(_senhaCallback) { _senhaCallback(true); _senhaCallback=null; }
   }else{
