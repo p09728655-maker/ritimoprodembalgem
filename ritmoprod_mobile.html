@@ -565,16 +565,7 @@ function tickClock(){
 // LOGIN / SENHA
 // ════════════════════════════════════════════════
 function loginComo(tipo){
-  const senha = tipo==='operador' ? CFG.senhaOperador : CFG.senhaGerencial;
-  if(!senha){
-    entrar(tipo);
-    return;
-  }
-  _senhaCallback = (ok)=>{ if(ok) entrar(tipo); };
-  document.getElementById('senha-titulo').textContent = tipo==='operador' ? 'ACESSO OPERADOR' : 'ACESSO GERENCIAL';
-  document.getElementById('senha-inp').value='';
-  document.getElementById('modal-senha').classList.add('open');
-  setTimeout(()=>document.getElementById('senha-inp').focus(), 100);
+  entrar(tipo);
 }
 
 function fecharModalSenha(){
