@@ -149,6 +149,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hist-rz-val.ok{color:var(--ok)}.hist-rz-val.warn{color:var(--warn)}.hist-rz-val.red{color:var(--red)}
 .hist-item{background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;cursor:pointer;transition:background .15s}
 .hist-item:active{background:var(--elevated)}
+.hist-mh{font-family:var(--font-d);font-size:13px;color:var(--acc);font-weight:600;text-align:right;white-space:nowrap}
+.hist-mh .u{font-size:9px;color:var(--txt2);font-weight:400}
 .md-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:12px}
 .md-row:last-child{border-bottom:none}
 .md-row .k{color:var(--txt2);letter-spacing:.5px}
@@ -897,6 +899,15 @@ async function renderHistorico(){
   renderHistoricoComDados(dias);
 }
 
+// Média de cx por hora do dia. Usa o valor gravado (mediaH); se o dia for
+// antigo e ainda não tiver esse dado, estima por horas do turno + HE.
+function mediaCxH(d){
+  if(d.mediaH && parseFloat(d.mediaH)>0) return Math.round(parseFloat(d.mediaH));
+  const horas = getSlots().length + (parseInt(d.heCount)||0);
+  const real = parseFloat(d.real)||0;
+  return horas>0 ? Math.round(real/horas) : 0;
+}
+
 let _histDias=[];   // guarda o histórico carregado p/ o detalhe do dia
 function renderHistoricoComDados(dias){
   _histDias = dias||[];
@@ -934,7 +945,7 @@ function renderHistoricoComDados(dias){
     return `<div class="hist-item" onclick="abrirDia('${d.data}')">
       <div class="hist-data">${d.data}</div>
       <div class="hist-real">${fmtN(d.real)}<span style="font-size:12px;color:var(--txt2)"> CX</span></div>
-      <div></div>
+      <div class="hist-mh">${fmtN(mediaCxH(d))}<span class="u"> cx/h</span></div>
       ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:'<div></div>'}
     </div>`;
   }).join('');
@@ -950,6 +961,7 @@ function abrirDia(data){
   const gap=meta-real;
   const linhas=[
     ['REALIZADO', fmtN(real)+' CX', ''],
+    ['MÉDIA CX/H', fmtN(mediaCxH(d))+' cx/h', ''],
     ['META', fmtN(meta)+' CX', ''],
     ['EFICIÊNCIA', ef!=null?fmtP(ef):'—', cls],
     ['STATUS', ef!=null?sl(ef):'—', cls],
