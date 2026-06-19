@@ -232,6 +232,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
 .tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(10px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvb-kpi-val{font-family:var(--font-h);font-size:clamp(40px,4.8vw,84px);font-weight:700;line-height:1}
+.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(9px,.9vw,12px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
 .tvb-prog-bar{height:20px;background:var(--surface);border-radius:10px;overflow:hidden;border:.5px solid var(--border)}
 .tvb-prog-fill{height:100%;border-radius:10px;transition:width .6s ease}
@@ -331,7 +332,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 /* ═══ MODAL CONFIG ═══ */
 .modal-over{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:center;justify-content:center}
 .modal-over.on{display:flex}
-.modal{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:24px;width:500px;max-width:95vw}
+.modal{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto}
 .modal-ttl{font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:2px;color:var(--acc);text-transform:uppercase;margin-bottom:20px}
 .frm-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
 .frm-grp{display:flex;flex-direction:column;gap:4px}
@@ -777,27 +778,45 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
 
     <div class="tvb-kpis">
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-meta">
         <div class="tvb-kpi-lbl">META DO DIA</div>
         <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
       </div>
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-ef">
         <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
         <div class="tvb-kpi-val" id="tvb-ef">—</div>
       </div>
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-status">
         <div class="tvb-kpi-lbl">STATUS</div>
         <span id="tvb-badge" class="tv-status-badge ok">● META</span>
       </div>
     </div>
 
-    <div class="tvb-prog">
+    <div class="tvb-prog" id="tvb-kpi-prog">
       <div class="tvb-prog-info">
         <span>PROGRESSO DO DIA</span>
         <span id="tvb-prog-pct">0%</span>
       </div>
       <div class="tvb-prog-bar">
         <div class="tvb-prog-fill" id="tvb-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="tvb-kpis" id="tvb-row2" style="display:none">
+      <div class="tvb-kpi" id="tvb-kpi-ritmo">
+        <div class="tvb-kpi-lbl">RITMO ATUAL</div>
+        <div class="tvb-kpi-val" id="tvb-ritmo" style="color:var(--acc)">—</div>
+        <div class="tvb-kpi-unit">CX/HORA</div>
+      </div>
+      <div class="tvb-kpi" id="tvb-kpi-nec">
+        <div class="tvb-kpi-lbl">NECESSÁRIO</div>
+        <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
+        <div class="tvb-kpi-unit">CX/HORA</div>
+      </div>
+      <div class="tvb-kpi" id="tvb-kpi-proj">
+        <div class="tvb-kpi-lbl">PROJEÇÃO</div>
+        <div class="tvb-kpi-val" id="tvb-proj" style="color:var(--txt2)">—</div>
+        <div class="tvb-kpi-unit">CX FINAL</div>
       </div>
     </div>
 
@@ -956,6 +975,27 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
       <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
     </div>
+    <!-- Tela B -->
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — TELA B (VISÃO MACRO)</div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="5" max="300" placeholder="15"></div>
+      <div class="frm-grp" style="display:flex;align-items:flex-end;padding-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
+          <input type="checkbox" id="c-slideb-ativo" style="accent-color:var(--acc);width:16px;height:16px"> ATIVAR ALTERNÂNCIA
+        </label>
+      </div>
+    </div>
+    <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-meta" style="accent-color:var(--acc)"> META DO DIA</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ef" style="accent-color:var(--acc)"> EFICIÊNCIA</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-status" style="accent-color:var(--acc)"> STATUS</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-prog" style="accent-color:var(--acc)"> PROGRESSO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ritmo" style="accent-color:var(--acc)"> RITMO ATUAL</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
+    </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
@@ -1025,7 +1065,10 @@ let CFG = {
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
   senhaGerencial:'admin',
-  horarioFechamento:'17:05'
+  horarioFechamento:'17:05',
+  slideBIntervalo:15,
+  slideBAtivo:true,
+  slideBKpis:['meta','ef','status','prog']
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -2347,6 +2390,12 @@ function openCfg(){
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
+  document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
+  document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
+  const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
+  ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k=>{
+    const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
+  });
   document.getElementById('modal-cfg').classList.add('on');
 }
 function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
@@ -2366,7 +2415,13 @@ function saveCfg(){
   if(sGer) CFG.senhaGerencial=sGer;
   const hFech=document.getElementById('c-fechamento').value;
   if(hFech) CFG.horarioFechamento=hFech;
+  CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
+  CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
+  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj'].filter(k=>{
+    const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
+  });
   saveCfgLocal();
+  if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
   closeCfg();
   if(CFG.sheetsUrl){ lerSheets(); iniciarAutoRefresh(); }
   else if(!isLive){ DADOS=gerarDemo(); renderAll(); }
@@ -3167,7 +3222,9 @@ document.addEventListener('fullscreenchange',()=>{
 });
 
 loadCfg();
-DADOS=gerarDemo();
+// Com Sheets configurado, NÃO gerar demo: evita o painel abrir com número
+// falso e só depois trocar pelo real. Fica vazio até lerSheets() carregar.
+DADOS = CFG.sheetsUrl ? [] : gerarDemo();
 const hoje=new Date();
 const um=new Date(hoje); um.setDate(um.getDate()-30);
 document.getElementById('hist-de').value=dtToStr(um);
@@ -3582,9 +3639,9 @@ function renderParadas(){
   console.log('[TV] Anti-sleep v2 ativo: WakeLock + VideoStream + PointerEvents + ScrollTick');
 })();
 
-// ─── CICLO DE TELAS TV — troca entre Slide A e Slide B a cada 90s ────────────
-(function() {
-  const INTERVALO_MS = 90 * 1000;
+// ─── CICLO DE TELAS TV — troca entre Slide A e Slide B ───────────────────────
+const _cicloTV = (function() {
+  let _timer = null;
   let _tela = 'a';
 
   function _sincSlideB() {
@@ -3597,6 +3654,9 @@ function renderParadas(){
     set('tvb-meta',     get('tv-meta-dest'));
     set('tvb-ef',       get('tv-ef'));
     set('tvb-prog-pct', get('tv-prog-pct'));
+    set('tvb-ritmo',    get('tv-ritmo'));
+    set('tvb-nec',      get('tv-nec'));
+    set('tvb-proj',     get('tv-proj'));
 
     const fillA = document.getElementById('tv-prog-fill');
     const fillB = document.getElementById('tvb-prog-fill');
@@ -3612,6 +3672,14 @@ function renderParadas(){
     const efA = document.getElementById('tv-ef');
     const efB = document.getElementById('tvb-ef');
     if (efA && efB) efB.style.color = getComputedStyle(efA).color;
+
+    const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
+    ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k => {
+      const el = document.getElementById('tvb-kpi-' + k);
+      if (el) el.style.display = kpis.includes(k) ? '' : 'none';
+    });
+    const row2 = document.getElementById('tvb-row2');
+    if (row2) row2.style.display = ['ritmo','nec','proj'].some(k => kpis.includes(k)) ? 'flex' : 'none';
   }
 
   function _trocar() {
@@ -3631,8 +3699,22 @@ function renderParadas(){
     }
   }, 1000);
 
-  setInterval(_trocar, INTERVALO_MS);
-  console.log('[TV] Ciclo de telas ativo: Slide A ↔ Slide B a cada 90s');
+  function reiniciar() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+    _tela = 'a';
+    const slideB = document.getElementById('tv-slide-b');
+    if (slideB) slideB.style.display = 'none';
+    if (!CFG.slideBAtivo) {
+      console.log('[TV] Tela B desativada');
+      return;
+    }
+    const ms = (CFG.slideBIntervalo || 15) * 1000;
+    _timer = setInterval(_trocar, ms);
+    console.log(`[TV] Ciclo ativo: Slide A ↔ Slide B a cada ${CFG.slideBIntervalo || 15}s`);
+  }
+
+  reiniciar();
+  return { reiniciar };
 })();
 
 </script>

@@ -122,6 +122,16 @@ function getDados() {
     return { ok: false, erro: 'Cabecalho HORA / REALIZADO / META nao encontrado na linha 4.' };
   }
 
+  // Colunas de lote (mesma deteccao de saveRealizado/arquivarDiaAtual). A producao
+  // e lancada NESTAS colunas; a coluna REALIZADO pode ficar vazia ou parcial. Sem
+  // somar os lotes, o painel mostra menos caixas do que o realmente produzido.
+  const iLotes = [];
+  for (let c = iR + 1; c < hdr.length; c++) {
+    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
+      iLotes.push(c);
+    }
+  }
+
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
 
   const slots = [];
@@ -140,11 +150,23 @@ function getDados() {
     const metaVal = Number(row[iM]) || 0;
     if (metaVal === 0) continue;
 
-    const realRaw = row[iR];
-    const producaoHora =
-      (realRaw === '' || realRaw === null || realRaw === undefined)
-        ? null
-        : Number(realRaw);
+    const realRaw       = row[iR];
+    const realVazio     = (realRaw === '' || realRaw === null || realRaw === undefined);
+    const direto        = realVazio ? 0 : (Number(realRaw) || 0);
+
+    // Soma das colunas de lote (onde a producao e de fato lancada).
+    let somaLotes = 0, temLote = false;
+    iLotes.forEach(c => {
+      const v = row[c];
+      if (v !== '' && v !== null && v !== undefined && !isNaN(Number(v))) {
+        somaLotes += Number(v);
+        temLote = true;
+      }
+    });
+
+    // Sem REALIZADO e sem lotes => slot pendente (null). Caso contrario, usa o maior
+    // entre a coluna REALIZADO e a soma dos lotes (espelha arquivarDiaAtual).
+    const producaoHora = (realVazio && !temLote) ? null : Math.max(direto, somaLotes);
 
     slots.push({
       id:           hoje + '_' + inicio.replace(':', ''),
@@ -601,6 +623,15 @@ function arquivarDiaAtual(dataRef) {
   const iM   = hdr.findIndex(c => c.includes('META'));
   if (iH < 0 || iR < 0 || iM < 0) return;
 
+  // Identifica colunas de lote (mesmo critério de saveRealizado) para não somar
+  // colunas de fórmula como ACUM ou %/H que aparecem após REALIZADO na planilha.
+  const iLotes = [];
+  for (let c = iR + 1; c < hdr.length; c++) {
+    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
+      iLotes.push(c);
+    }
+  }
+
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
@@ -614,10 +645,10 @@ function arquivarDiaAtual(dataRef) {
     const ehHE    = hora.toUpperCase().startsWith('HE');
     const metaVal = Number(row[iM]) || 0;
 
-    // Realizado da linha = coluna REALIZADO ou, se vazia, soma dos lotes.
+    // Realizado da linha = coluna REALIZADO ou, se vazia, soma apenas dos lotes.
     const direto = num(row[iR]);
     let somaLotes = 0;
-    for (let c = iR + 1; c <= Math.min(12, row.length - 1); c++) somaLotes += num(row[c]);
+    iLotes.forEach(c => { somaLotes += num(row[c]); });
     const realVal = Math.max(direto, somaLotes);
 
     if (metaVal > 0 && !ehHE) meta += metaVal;
