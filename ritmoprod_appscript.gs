@@ -155,12 +155,16 @@ function getDados() {
     const direto        = realVazio ? 0 : (Number(realRaw) || 0);
 
     // Soma das colunas de lote (onde a producao e de fato lancada).
+    // Tambem coletamos cada lote individual (na ordem das colunas) para o app
+    // mostrar lancamento a lancamento, como o operador via na planilha.
     let somaLotes = 0, temLote = false;
+    const lotes = [];
     iLotes.forEach(c => {
       const v = row[c];
       if (v !== '' && v !== null && v !== undefined && !isNaN(Number(v))) {
         somaLotes += Number(v);
         temLote = true;
+        lotes.push(Number(v));
       }
     });
 
@@ -175,6 +179,7 @@ function getDados() {
       label:        horaVal,
       metaHora:     metaVal,
       producaoHora,
+      lotes,
       operador:     '',
       obs:          ''
     });
