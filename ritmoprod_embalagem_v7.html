@@ -3586,7 +3586,7 @@ function renderParadas(){
 
 // ─── CICLO DE TELAS TV — troca entre Slide A e Slide B a cada 90s ────────────
 (function() {
-  const INTERVALO_MS = 90 * 1000;
+  const INTERVALO_MS = 15 * 1000;
   let _tela = 'a';
 
   function _sincSlideB() {
@@ -3634,7 +3634,7 @@ function renderParadas(){
   }, 1000);
 
   setInterval(_trocar, INTERVALO_MS);
-  console.log('[TV] Ciclo de telas ativo: Slide A ↔ Slide B a cada 90s');
+  console.log('[TV] Ciclo de telas ativo: Slide A ↔ Slide B a cada 15s');
 })();
 
 </script>
