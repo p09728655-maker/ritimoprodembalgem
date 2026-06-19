@@ -232,6 +232,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
 .tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(10px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvb-kpi-val{font-family:var(--font-h);font-size:clamp(40px,4.8vw,84px);font-weight:700;line-height:1}
+.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(9px,.9vw,12px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
 .tvb-prog-bar{height:20px;background:var(--surface);border-radius:10px;overflow:hidden;border:.5px solid var(--border)}
 .tvb-prog-fill{height:100%;border-radius:10px;transition:width .6s ease}
@@ -777,27 +778,45 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
 
     <div class="tvb-kpis">
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-meta">
         <div class="tvb-kpi-lbl">META DO DIA</div>
         <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
       </div>
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-ef">
         <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
         <div class="tvb-kpi-val" id="tvb-ef">—</div>
       </div>
-      <div class="tvb-kpi">
+      <div class="tvb-kpi" id="tvb-kpi-status">
         <div class="tvb-kpi-lbl">STATUS</div>
         <span id="tvb-badge" class="tv-status-badge ok">● META</span>
       </div>
     </div>
 
-    <div class="tvb-prog">
+    <div class="tvb-prog" id="tvb-kpi-prog">
       <div class="tvb-prog-info">
         <span>PROGRESSO DO DIA</span>
         <span id="tvb-prog-pct">0%</span>
       </div>
       <div class="tvb-prog-bar">
         <div class="tvb-prog-fill" id="tvb-prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="tvb-kpis" id="tvb-row2" style="display:none">
+      <div class="tvb-kpi" id="tvb-kpi-ritmo">
+        <div class="tvb-kpi-lbl">RITMO ATUAL</div>
+        <div class="tvb-kpi-val" id="tvb-ritmo" style="color:var(--acc)">—</div>
+        <div class="tvb-kpi-unit">CX/HORA</div>
+      </div>
+      <div class="tvb-kpi" id="tvb-kpi-nec">
+        <div class="tvb-kpi-lbl">NECESSÁRIO</div>
+        <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
+        <div class="tvb-kpi-unit">CX/HORA</div>
+      </div>
+      <div class="tvb-kpi" id="tvb-kpi-proj">
+        <div class="tvb-kpi-lbl">PROJEÇÃO</div>
+        <div class="tvb-kpi-val" id="tvb-proj" style="color:var(--txt2)">—</div>
+        <div class="tvb-kpi-unit">CX FINAL</div>
       </div>
     </div>
 
@@ -967,6 +986,16 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         </label>
       </div>
     </div>
+    <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-meta" style="accent-color:var(--acc)"> META DO DIA</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ef" style="accent-color:var(--acc)"> EFICIÊNCIA</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-status" style="accent-color:var(--acc)"> STATUS</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-prog" style="accent-color:var(--acc)"> PROGRESSO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ritmo" style="accent-color:var(--acc)"> RITMO ATUAL</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
+    </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
@@ -1038,7 +1067,8 @@ let CFG = {
   senhaGerencial:'admin',
   horarioFechamento:'17:05',
   slideBIntervalo:15,
-  slideBAtivo:true
+  slideBAtivo:true,
+  slideBKpis:['meta','ef','status','prog']
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -2362,6 +2392,10 @@ function openCfg(){
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
+  const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
+  ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k=>{
+    const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
+  });
   document.getElementById('modal-cfg').classList.add('on');
 }
 function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
@@ -2383,6 +2417,9 @@ function saveCfg(){
   if(hFech) CFG.horarioFechamento=hFech;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
+  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj'].filter(k=>{
+    const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
+  });
   saveCfgLocal();
   if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
   closeCfg();
@@ -3617,6 +3654,9 @@ const _cicloTV = (function() {
     set('tvb-meta',     get('tv-meta-dest'));
     set('tvb-ef',       get('tv-ef'));
     set('tvb-prog-pct', get('tv-prog-pct'));
+    set('tvb-ritmo',    get('tv-ritmo'));
+    set('tvb-nec',      get('tv-nec'));
+    set('tvb-proj',     get('tv-proj'));
 
     const fillA = document.getElementById('tv-prog-fill');
     const fillB = document.getElementById('tvb-prog-fill');
@@ -3632,6 +3672,14 @@ const _cicloTV = (function() {
     const efA = document.getElementById('tv-ef');
     const efB = document.getElementById('tvb-ef');
     if (efA && efB) efB.style.color = getComputedStyle(efA).color;
+
+    const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
+    ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k => {
+      const el = document.getElementById('tvb-kpi-' + k);
+      if (el) el.style.display = kpis.includes(k) ? '' : 'none';
+    });
+    const row2 = document.getElementById('tvb-row2');
+    if (row2) row2.style.display = ['ritmo','nec','proj'].some(k => kpis.includes(k)) ? 'flex' : 'none';
   }
 
   function _trocar() {
