@@ -956,6 +956,17 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
       <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
     </div>
+    <!-- Tela B -->
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — TELA B (VISÃO MACRO)</div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="5" max="300" placeholder="15"></div>
+      <div class="frm-grp" style="display:flex;align-items:flex-end;padding-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
+          <input type="checkbox" id="c-slideb-ativo" style="accent-color:var(--acc);width:16px;height:16px"> ATIVAR ALTERNÂNCIA
+        </label>
+      </div>
+    </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
@@ -1025,7 +1036,9 @@ let CFG = {
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
   senhaGerencial:'admin',
-  horarioFechamento:'17:05'
+  horarioFechamento:'17:05',
+  slideBIntervalo:15,
+  slideBAtivo:true
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -2347,6 +2360,8 @@ function openCfg(){
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
+  document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
+  document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
   document.getElementById('modal-cfg').classList.add('on');
 }
 function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
@@ -2366,7 +2381,10 @@ function saveCfg(){
   if(sGer) CFG.senhaGerencial=sGer;
   const hFech=document.getElementById('c-fechamento').value;
   if(hFech) CFG.horarioFechamento=hFech;
+  CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
+  CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
   saveCfgLocal();
+  if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
   closeCfg();
   if(CFG.sheetsUrl){ lerSheets(); iniciarAutoRefresh(); }
   else if(!isLive){ DADOS=gerarDemo(); renderAll(); }
@@ -3584,9 +3602,9 @@ function renderParadas(){
   console.log('[TV] Anti-sleep v2 ativo: WakeLock + VideoStream + PointerEvents + ScrollTick');
 })();
 
-// ─── CICLO DE TELAS TV — troca entre Slide A e Slide B a cada 90s ────────────
-(function() {
-  const INTERVALO_MS = 15 * 1000;
+// ─── CICLO DE TELAS TV — troca entre Slide A e Slide B ───────────────────────
+const _cicloTV = (function() {
+  let _timer = null;
   let _tela = 'a';
 
   function _sincSlideB() {
@@ -3633,8 +3651,22 @@ function renderParadas(){
     }
   }, 1000);
 
-  setInterval(_trocar, INTERVALO_MS);
-  console.log('[TV] Ciclo de telas ativo: Slide A ↔ Slide B a cada 15s');
+  function reiniciar() {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+    _tela = 'a';
+    const slideB = document.getElementById('tv-slide-b');
+    if (slideB) slideB.style.display = 'none';
+    if (!CFG.slideBAtivo) {
+      console.log('[TV] Tela B desativada');
+      return;
+    }
+    const ms = (CFG.slideBIntervalo || 15) * 1000;
+    _timer = setInterval(_trocar, ms);
+    console.log(`[TV] Ciclo ativo: Slide A ↔ Slide B a cada ${CFG.slideBIntervalo || 15}s`);
+  }
+
+  reiniciar();
+  return { reiniciar };
 })();
 
 </script>
