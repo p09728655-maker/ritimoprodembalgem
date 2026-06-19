@@ -485,7 +485,7 @@ function jsonpFetch(url){
   return new Promise((res,rej)=>{
     const cb='rpe_cb_'+Date.now();
     const s=document.createElement('script');
-    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); },15000);
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); },20000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=data=>{ cleanup(); res(data); };
     s.onerror=()=>{ cleanup(); rej(new Error('Erro de rede')); };
@@ -499,16 +499,22 @@ function jsonpFetch(url){
 // ════════════════════════════════════════════════
 async function lerSheets(){
   if(!CFG.sheetsUrl) return false;
-  try{
-    setDotStatus('warn','Buscando dados...');
-    const json = await jsonpFetch(CFG.sheetsUrl);
-    if(json.erro) throw new Error(json.erro);
-    processarResposta(json);
-    return true;
-  }catch(e){
-    setDotStatus('err', 'Erro: '+e.message);
-    return false;
+  // Retenta automaticamente: a 1ª chamada costuma "acordar" o Apps Script
+  // (cold start) e estourar o tempo; a seguinte responde rápido.
+  const tentativas = 3;
+  for(let i=1; i<=tentativas; i++){
+    try{
+      setDotStatus('warn', i>1 ? `Reconectando (${i}/${tentativas})...` : 'Buscando dados...');
+      const json = await jsonpFetch(CFG.sheetsUrl);
+      if(json.erro) throw new Error(json.erro);
+      processarResposta(json);
+      return true;
+    }catch(e){
+      if(i===tentativas){ setDotStatus('err', 'Erro: '+e.message); return false; }
+      await new Promise(r=>setTimeout(r, 1500*i)); // espera crescente antes de tentar de novo
+    }
   }
+  return false;
 }
 
 function processarResposta(json){
@@ -538,14 +544,18 @@ function processarResposta(json){
 // ════════════════════════════════════════════════
 async function lerHistorico(){
   if(!CFG.sheetsUrl) return [];
-  try{
-    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
-    const json = await jsonpFetch(url);
-    if(json.erro) throw new Error(json.erro);
-    return json.dias||[];
-  }catch(e){
-    return [];
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
+  for(let i=1; i<=3; i++){
+    try{
+      const json = await jsonpFetch(url);
+      if(json.erro) throw new Error(json.erro);
+      return json.dias||[];
+    }catch(e){
+      if(i===3) return [];
+      await new Promise(r=>setTimeout(r, 1500*i));
+    }
   }
+  return [];
 }
 
 // ════════════════════════════════════════════════
