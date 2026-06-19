@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/ritmoprod_embalagem_v7.html" }
+    { "source": "/", "destination": "/ritmoprod_embalagem_v7.html" },
+    { "source": "/mobile", "destination": "/ritmoprod_mobile.html" }
   ]
 }
