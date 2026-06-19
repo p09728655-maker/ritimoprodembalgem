@@ -412,8 +412,8 @@ function dtToStr(d){
 function toMin(s){ const[h,m]=s.split(':').map(Number); return h*60+m; }
 function fromMin(m){ return `${p2(Math.floor(m/60))}:${p2(m%60)}`; }
 function nowMin(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
-function sc(ef){ return ef>=90?'ok':ef>=70?'warn':'red'; }
-function sl(ef){ return ef>=90?'META':ef>=70?'ATENÇÃO':'ABAIXO'; }
+function sc(ef){ return ef>=96?'ok':ef>=90?'warn':'red'; }
+function sl(ef){ return ef>=96?'META':ef>=90?'ATENÇÃO':'ABAIXO'; }
 
 // ════════════════════════════════════════════════
 // SLOTS
@@ -801,13 +801,18 @@ async function salvarLanc(){
 function renderGerencial(){
   const k = calcKPIs();
   const s = sc(k.ef);
+  // NEC. P/ META: nas horas restantes mostra o ritmo (cx/h); na última hora
+  // (sem horas futuras) mostra o que ainda falta para bater a meta.
+  const necKpi = k.slotsRest>0
+    ? {l:'NEC. P/ META', v:fmtN(k.nec), sub:`cx/h — ${k.slotsRest} slot(s)`, c:k.nec<=k.ritmo?'ok':'warn'}
+    : {l:'NEC. P/ META', v:k.gap>0?fmtN(k.gap):'✓', sub:k.gap>0?'cx p/ bater a meta':'META OK', c:k.gap>0?'warn':'ok'};
   const kpis=[
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
     {l:'EFICIÊNCIA',     v:fmtP(k.ef),    sub:sl(k.ef), c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
-    {l:'NEC. P/ META',   v:fmtN(k.nec),   sub:`cx/h — ${k.slotsRest} slot(s)`, c:k.nec<=k.ritmo?'ok':'warn'},
+    necKpi,
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
