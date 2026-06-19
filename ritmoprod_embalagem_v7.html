@@ -3634,6 +3634,9 @@ function renderParadas(){
   }, 10000);
 
   console.log('[TV] Anti-sleep v2 ativo: WakeLock + VideoStream + PointerEvents + ScrollTick');
+
+  // Reload a cada 28 min para resetar contador de inatividade do WebOS (timer máx 30 min)
+  setTimeout(() => location.reload(), 28 * 60 * 1000);
 })();
 
 // ─── CICLO DE TELAS TV — troca entre Slide A e Slide B ───────────────────────
