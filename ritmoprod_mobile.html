@@ -421,7 +421,13 @@ function getSlots(){
   const almF=toMin(CFG.almocoFim);
   while(cur<fim){
     if(cur>=almI&&cur<almF){ cur=almF; continue; }
-    const nxt=(cur<almI&&cur+60>almI)?almI:Math.min(cur+60,fim);
+    // Primeiro slot pós-almoço: encerra na próxima hora cheia (ex: 12:12 → 13:00)
+    let nxt;
+    if(cur===almF && cur%60!==0){
+      nxt=Math.min(Math.ceil(cur/60)*60, fim);
+    } else {
+      nxt=(cur<almI&&cur+60>almI)?almI:Math.min(cur+60,fim);
+    }
     slots.push({inicio:fromMin(cur), fim:fromMin(nxt), label:`${fromMin(cur)}–${fromMin(nxt)}`, min:nxt-cur});
     cur=nxt;
     if(cur===almI) cur=almF;
