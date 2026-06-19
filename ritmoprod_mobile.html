@@ -235,7 +235,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="login-btns">
       <button class="login-btn login-btn-op" onclick="loginComo('operador')">OPERADOR</button>
       <button class="login-btn login-btn-ger" onclick="loginComo('gerencial')">GERENCIAL</button>
+      <button id="btn-instalar" class="login-btn login-btn-ger" style="display:none;font-size:13px;letter-spacing:2px" onclick="instalarApp()">📲 INSTALAR APP</button>
     </div>
+    <div id="ios-hint" class="login-ver" style="display:none;line-height:1.7">No iPhone: toque em <b style="color:var(--txt)">Compartilhar</b> e depois <b style="color:var(--txt)">“Adicionar à Tela de Início”</b></div>
     <div class="login-ver">v1.0 · EMBALAGEM</div>
   </div>
 </div>
@@ -884,6 +886,44 @@ function renderHistoricoComDados(dias){
       ${ef!=null?`<div class="hist-ef ${cls}">${fmtP(ef)}</div>`:'<div></div>'}
     </div>`;
   }).join('');
+}
+
+// ════════════════════════════════════════════════
+// INSTALAÇÃO COMO APP (PWA)
+// ════════════════════════════════════════════════
+let _deferredPrompt = null;
+// Android/Chrome: captura o evento e mostra o botão "Instalar app".
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+  const b = document.getElementById('btn-instalar');
+  if (b) b.style.display = 'block';
+});
+window.addEventListener('appinstalled', () => {
+  _deferredPrompt = null;
+  const b = document.getElementById('btn-instalar');
+  if (b) b.style.display = 'none';
+});
+async function instalarApp(){
+  if (!_deferredPrompt) return;
+  _deferredPrompt.prompt();
+  await _deferredPrompt.userChoice;
+  _deferredPrompt = null;
+  const b = document.getElementById('btn-instalar');
+  if (b) b.style.display = 'none';
+}
+// iPhone (Safari não dispara beforeinstallprompt): mostra a instrução manual.
+(function(){
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (isIOS && !standalone) {
+    const h = document.getElementById('ios-hint');
+    if (h) h.style.display = 'block';
+  }
+})();
+// Service worker (necessário para o app ser instalável e abrir como atalho).
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-mobile.js').catch(()=>{});
 }
 
 // ════════════════════════════════════════════════
