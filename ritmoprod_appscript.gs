@@ -299,9 +299,10 @@ function saveDay(p) {
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_HIST);
-    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM']);
+    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H']);
     sh.setFrozenRows(1);
   }
+  if (String(sh.getRange(1, 10).getValue()).trim() === '') sh.getRange(1, 10).setValue('MEDIA CX/H');
 
   sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@');
   sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');
@@ -318,7 +319,8 @@ function saveDay(p) {
     Number(p.pior)   || 0,
     Number(p.he || 0),
     true,
-    String(p.fechadoEm || '')
+    String(p.fechadoEm || ''),
+    Number(p.mediaH || 0)
   ];
 
   if (idx >= 0) {
@@ -355,7 +357,8 @@ function getHistory() {
       pior:      Number(r[5]) || 0,
       heCount:   Number(r[6]) || 0,
       fechado:   r[7] === true || r[7] === 'TRUE' || String(r[7]).toLowerCase() === 'true',
-      fechadoEm: fmtFechadoBR(r[8])
+      fechadoEm: fmtFechadoBR(r[8]),
+      mediaH:    Number(r[9]) || 0
     }));
 
   return { ok: true, dias };
@@ -640,7 +643,7 @@ function arquivarDiaAtual(dataRef) {
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
-  let real = 0, meta = 0, he = 0, melhor = 0, pior = null;
+  let real = 0, meta = 0, he = 0, melhor = 0, pior = null, horas = 0;
 
   for (let i = hIdx + 1; i < data.length; i++) {
     const row  = data[i];
@@ -663,6 +666,7 @@ function arquivarDiaAtual(dataRef) {
       if (ehHE) {
         he++;
       } else {
+        horas++; // horas produtivas (não-HE) para a média cx/h
         if (realVal > melhor) melhor = realVal;
         if (pior === null || realVal < pior) pior = realVal;
       }
@@ -672,13 +676,16 @@ function arquivarDiaAtual(dataRef) {
   if (real <= 0) return; // nada produzido — nada a arquivar
 
   const ef = meta > 0 ? Number((real / meta * 100).toFixed(1)) : 0;
+  const mediaH = horas > 0 ? Math.round(real / horas) : 0;
 
   let shH = ss.getSheetByName(SHEET_HIST);
   if (!shH) {
     shH = ss.insertSheet(SHEET_HIST);
-    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM']);
+    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H']);
     shH.setFrozenRows(1);
   }
+  // Garante o cabeçalho da coluna de média mesmo em planilhas antigas.
+  if (String(shH.getRange(1, 10).getValue()).trim() === '') shH.getRange(1, 10).setValue('MEDIA CX/H');
   shH.getRange(1, 1, shH.getMaxRows(), 1).setNumberFormat('@');
   shH.getRange(1, 9, shH.getMaxRows(), 1).setNumberFormat('@');
 
@@ -701,7 +708,8 @@ function arquivarDiaAtual(dataRef) {
     pior === null ? 0 : pior,
     he,
     false, // arquivamento automático (não foi fechado manualmente)
-    'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm')
+    'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm'),
+    mediaH
   ];
 
   if (idx >= 0) {
