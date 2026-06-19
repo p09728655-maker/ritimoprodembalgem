@@ -739,7 +739,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         </div>
       </div>
 
-      <div id="tv-falta" class="tv-falta">FALTAM — CX PARA BATER A META</div>
+      <div id="tv-falta" class="tv-falta">FALTARAM — CX PARA BATER A META</div>
 
       <div class="tv-mini-row">
         <div class="tv-mini-kpi">
@@ -2093,7 +2093,7 @@ function renderTV(){
   const fe=document.getElementById('tv-falta');
   if(fe){
     const falta=Math.round(k.gap);
-    if(falta>0){ fe.textContent=`FALTAM ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
+    if(falta>0){ fe.textContent=`FALTARAM ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
     else { fe.textContent='✓ META BATIDA'; fe.className='tv-falta ok'; }
   }
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
