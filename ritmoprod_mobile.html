@@ -459,6 +459,10 @@ function sl(ef){ return ef>=96?'META':ef>=90?'ATENÇÃO':'ABAIXO'; }
 function getSlots(){
   const slots=[];
   let cur=toMin(CFG.turnoInicio);
+  // Se começou mais cedo que o turno configurado (ex.: entrou às 5h e o turno
+  // começa 7h), inclui as horas anteriores a partir da hora atual.
+  const inicioAtual=Math.floor(nowMin()/60)*60;
+  if(inicioAtual<cur) cur=inicioAtual;
   const fim=toMin(CFG.turnoFim);
   const almI=toMin(CFG.almocoInicio);
   const almF=toMin(CFG.almocoFim);
