@@ -151,6 +151,17 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .hist-item:active{background:var(--elevated)}
 .hist-mh{font-family:var(--font-d);font-size:13px;color:var(--acc);font-weight:600;text-align:right;white-space:nowrap}
 .hist-mh .u{font-size:9px;color:var(--txt2);font-weight:400}
+/* ═══ GRÁFICO DE TENDÊNCIA (HISTÓRICO) ═══ */
+.hist-chart{display:flex;align-items:flex-end;gap:5px;height:118px;margin-bottom:14px;padding:4px 2px 0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.hist-chart:empty{display:none}
+.hc-bar{flex:1 0 auto;min-width:26px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;cursor:pointer}
+.hc-bar:active{opacity:.7}
+.hc-val{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:.3px;white-space:nowrap}
+.hc-track{position:relative;width:100%;flex:1;display:flex;align-items:flex-end;min-height:0}
+.hc-fill{width:100%;border-radius:3px 3px 0 0;min-height:3px;transition:height .2s}
+.hc-fill.ok{background:var(--ok)}.hc-fill.warn{background:var(--warn)}.hc-fill.red{background:var(--red)}
+.hc-meta{position:absolute;left:0;right:0;height:0;border-top:1px dashed rgba(255,255,255,.35)}
+.hc-day{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:.3px;white-space:nowrap}
 .md-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:12px}
 .md-row:last-child{border-bottom:none}
 .md-row .k{color:var(--txt2);letter-spacing:.5px}
@@ -336,6 +347,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
         </select>
       </div>
       <div class="hist-resumo" id="hist-resumo"></div>
+      <div class="hist-chart" id="hist-chart"></div>
       <div class="hist-list" id="hist-list">
         <div class="loading">CARREGANDO...</div>
       </div>
@@ -927,7 +939,9 @@ function renderHistoricoComDados(dias){
   _histDias = dias||[];
   const el=document.getElementById('hist-list');
   const elRes=document.getElementById('hist-resumo');
+  const elChart=document.getElementById('hist-chart');
   if(elRes) elRes.innerHTML='';
+  if(elChart) elChart.innerHTML='';
   if(!dias||!dias.length){
     el.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div>Sem histórico disponível.</div>';
     return;
@@ -951,6 +965,25 @@ function renderHistoricoComDados(dias){
       <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>`;
+  }
+  // ── Gráfico de tendência (barras, ordem cronológica) ──
+  if(elChart){
+    const cron=lista.slice().reverse(); // lista vem do mais recente; gráfico do mais antigo p/ o mais novo
+    const maxReal=Math.max(1, ...cron.map(d=>parseFloat(d.real)||0));
+    elChart.innerHTML=cron.map(d=>{
+      const real=parseFloat(d.real)||0;
+      const ef=d.ef!=null?parseFloat(d.ef):null;
+      const cls=ef!=null?sc(ef):'';
+      const h=Math.max(3, Math.round((real/maxReal)*100));
+      const meta=parseFloat(d.meta)||0;
+      const metaPct=meta>0?Math.min(100, Math.round((meta/maxReal)*100)):0;
+      const metaLine=metaPct>0?`<div class="hc-meta" style="bottom:${metaPct}%"></div>`:'';
+      return `<div class="hc-bar" onclick="abrirDia('${d.data}')" title="${d.data}">
+        <div class="hc-val">${fmtN(real)}</div>
+        <div class="hc-track">${metaLine}<div class="hc-fill ${cls}" style="height:${h}%"></div></div>
+        <div class="hc-day">${d.data.substring(0,5)}</div>
+      </div>`;
+    }).join('');
   }
   // ── Lista de dias (toque para detalhe) ──
   el.innerHTML=lista.map(d=>{
