@@ -734,9 +734,24 @@ function calcDurMin(ini, fim) {
   return d > 0 ? d : null;
 }
 
-function fmtDataBR(v) {
+// Normaliza datas para dd/MM/yyyy. Aceita Date, "dd/MM/yyyy", "d/m", "d/m/aa".
+// Datas sem ano assumem o ano atual; ano com 2 digitos vira 20xx.
+function normalizarDataBR(v) {
   if (v instanceof Date) return Utilities.formatDate(v, TZ, 'dd/MM/yyyy');
-  return String(v || '');
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (!m) return s; // formato desconhecido: devolve como veio
+  const d = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  let y = m[3] ? parseInt(m[3], 10) : Number(Utilities.formatDate(new Date(), TZ, 'yyyy'));
+  if (y < 100) y += 2000;
+  if (d < 1 || d > 31 || mo < 1 || mo > 12) return s;
+  return ('0' + d).slice(-2) + '/' + ('0' + mo).slice(-2) + '/' + y;
+}
+
+function fmtDataBR(v) {
+  return normalizarDataBR(v);
 }
 
 function fmtFechadoBR(v) {
@@ -771,3 +786,35 @@ function testeFecharAgora() {
   const hoje  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   executarReset(hoje, props);
 }
+
+// ════════════════════════════════════════════════════════
+// MANUTENÇÃO
+// ════════════════════════════════════════════════════════
+
+// Corrige datas malformadas na coluna DATA do HISTORICO (ex.: "2/6" -> "02/06/2026").
+// Rode UMA VEZ pelo editor do Apps Script (selecione a função e clique em Executar).
+function corrigirDatasHistorico() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_HIST);
+  if (!sh) return { ok: false, erro: 'Aba HISTORICO nao encontrada.' };
+
+  const last = sh.getLastRow();
+  if (last < 2) return { ok: true, corrigidas: 0 };
+
+  const vals = sh.getRange(2, 1, last - 1, 1).getValues();
+  let mudou = 0;
+  for (let i = 0; i < vals.length; i++) {
+    const orig = vals[i][0];
+    const novo = normalizarDataBR(orig);
+    if (novo && novo !== String(orig)) {
+      const cell = sh.getRange(2 + i, 1);
+      cell.setNumberFormat('@');
+      cell.setValue(novo);
+      mudou++;
+      Logger.log('Corrigido: "' + orig + '" -> "' + novo + '"');
+    }
+  }
+  Logger.log('Total de datas corrigidas no HISTORICO: ' + mudou);
+  return { ok: true, corrigidas: mudou };
+}
+
