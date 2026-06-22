@@ -1063,6 +1063,11 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 // ESTADO
 // ════════════════════════════════════════════════
 let DADOS = [];
+// Médias históricas de produção por horário (alerta de hora fraca — opção 2).
+// MEDIA_HORAS[label] = média de caixas naquele horário nos dias anteriores.
+// AMOSTRA_HORAS[label] = quantos dias entraram nessa média.
+let MEDIA_HORAS   = {};
+let AMOSTRA_HORAS = {};
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
@@ -1660,6 +1665,27 @@ async function lerSheets(){
   }
 }
 
+// ── Médias históricas por horário (alerta de hora fraca — opção 2) ──
+// Busca, no Apps Script, a média de produção de cada horário nos dias já
+// fechados (não inclui hoje). É matemática pura, não usa chave de API.
+// Atualiza pouco (muda só quando um novo dia é arquivado), então buscamos
+// sob demanda e guardamos em memória.
+async function lerMediaHoras(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getMediaHoras';
+    const json=await jsonpFetch(url);
+    if(json && json.ok){
+      MEDIA_HORAS   = json.medias  || {};
+      AMOSTRA_HORAS = json.amostra || {};
+      return true;
+    }
+  }catch(e){
+    console.warn('lerMediaHoras:', e.message);
+  }
+  return false;
+}
+
 async function testarSheets(){
   const url = document.getElementById('c-sheets-url').value.trim();
   if(!url){ alert('Cole a URL do Apps Script primeiro.'); return; }
@@ -1998,8 +2024,15 @@ function renderGerencial(){
     const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
     const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
     const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+    // Alerta de hora fraca (opção 2): produção >15% abaixo da média histórica
+    // deste mesmo horário (≥2 dias de amostra). Independe da meta.
+    const med=MEDIA_HORAS[sl.label], amo=AMOSTRA_HORAS[sl.label]||0;
+    const horaFraca = prod!=null && !isHE && amo>=2 && med>0 && prod < med*0.85;
+    const fraqMark = horaFraca
+      ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+      : '';
     return`<tr class="${isHE?'he-row':''}">
-      <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}</td>
+      <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
       <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
       <td class="mono" style="color:${isHE?'var(--acc)':'var(--txt2)'}">${fmtN(metaSlot)}</td>
@@ -2124,9 +2157,17 @@ function renderTV(){
     const ef2=prod!=null?(prod/metaSlot*100):null;
     const rc=prod===null?'r-pend':ef2>=96?'r-ok':ef2>=90?'r-warn':'r-red';
     const st=prod===null?'—':ef2>=96?'✓ OK':ef2>=90?'! ATEN':'✗ ABX';
+    // Alerta de hora fraca (opção 2): hora já lançada e produção bem abaixo da
+    // média histórica do MESMO horário (≥2 dias de amostra, >15% abaixo).
+    // Independe da meta — sinaliza queda de ritmo vs. o costume daquele horário.
+    const med=MEDIA_HORAS[sl.label], amo=AMOSTRA_HORAS[sl.label]||0;
+    const horaFraca = prod!=null && !isHE && amo>=2 && med>0 && prod < med*0.85;
+    const fraqMark = horaFraca
+      ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠ &lt;méd ${fmtN(med)}</span>`
+      : '';
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
-      <td class="td-h">${lbl}</td>
+      <td class="td-h">${lbl}${fraqMark}</td>
       <td class="td-h">${fmtN(metaSlot)}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
       <td>${prod!=null?fmtN(acumC):'—'}</td>
@@ -3294,6 +3335,10 @@ if(new URLSearchParams(location.search).has('resetcfg')){
 // Iniciar fonte de dados
 if(CFG.sheetsUrl){
   lerSheets().then(ok=>{ if(ok) iniciarAutoRefresh(); });
+  // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
+  // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
+  lerMediaHoras().then(ok=>{ if(ok) renderAll(); });
+  setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
 } else {
   tentarRestaurarPasta();
 }

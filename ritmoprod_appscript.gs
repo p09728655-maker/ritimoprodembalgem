@@ -33,9 +33,10 @@
 //   • Só zera se houver produção pendente na planilha (planilhaTemProducao).
 // ════════════════════════════════════════════════════════
 
-const SHEET_DADOS   = 'HORA_A_HORA';
-const SHEET_HIST    = 'HISTORICO';
-const SHEET_PARADAS = 'PARADAS';
+const SHEET_DADOS     = 'HORA_A_HORA';
+const SHEET_HIST      = 'HISTORICO';
+const SHEET_HIST_HORA = 'HISTORICO_HORA';
+const SHEET_PARADAS   = 'PARADAS';
 
 // Fuso fixo para os rótulos de data/arquivamento (independe do fuso do projeto).
 const TZ = 'America/Sao_Paulo';
@@ -71,6 +72,7 @@ function doGet(e) {
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
     else if (act === 'saveRealizado') result = saveRealizado(p);
+    else if (act === 'getMediaHoras') result = getMediaHoras();
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -366,6 +368,62 @@ function getHistory() {
 
 
 // ════════════════════════════════════════════════════════
+// HISTÓRICO POR HORA (para média por horário / alerta de hora fraca)
+// ════════════════════════════════════════════════════════
+
+// Grava a produção de cada hora do dia na aba HISTORICO_HORA.
+// Reescreve as linhas do mesmo dia se já existirem (idempotente).
+function arquivarHorasDoDia(dataRef, horasArr) {
+  if (!dataRef || !horasArr || !horasArr.length) return;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_HIST_HORA);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_HIST_HORA);
+    sh.appendRow(['DATA', 'HORA', 'REALIZADO']);
+    sh.setFrozenRows(1);
+  }
+  sh.getRange(1, 1, sh.getMaxRows(), 2).setNumberFormat('@'); // DATA e HORA como texto
+
+  // Remove linhas já existentes deste dia (de baixo p/ cima)
+  const vals = sh.getDataRange().getValues();
+  for (let i = vals.length - 1; i >= 1; i--) {
+    if (String(vals[i][0]) === String(dataRef)) sh.deleteRow(i + 1);
+  }
+
+  const novas = horasArr.map(h => [dataRef, h.hora, Number(h.real) || 0]);
+  if (novas.length) {
+    sh.getRange(sh.getLastRow() + 1, 1, novas.length, 3).setValues(novas);
+  }
+}
+
+// Devolve a média de produção por horário (rótulo da HORA), com a amostra (nº de dias).
+function getMediaHoras() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_HIST_HORA);
+  if (!sh) return { ok: true, medias: {}, amostra: {} };
+
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const rows = sh.getDataRange().getValues().slice(1);
+  const soma = {}, cont = {};
+  rows.forEach(r => {
+    const data = String(r[0]).trim();
+    const hora = String(r[1]).trim();
+    const real = Number(r[2]) || 0;
+    if (!hora || data === hoje) return; // ignora hoje (ainda em andamento) e linhas vazias
+    soma[hora] = (soma[hora] || 0) + real;
+    cont[hora] = (cont[hora] || 0) + 1;
+  });
+
+  const medias = {}, amostra = {};
+  Object.keys(soma).forEach(h => {
+    medias[h]  = Math.round(soma[h] / cont[h]);
+    amostra[h] = cont[h];
+  });
+  return { ok: true, medias, amostra };
+}
+
+
+// ════════════════════════════════════════════════════════
 // ADICIONAR HORA EXTRA
 // ════════════════════════════════════════════════════════
 
@@ -644,6 +702,7 @@ function arquivarDiaAtual(dataRef) {
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
   let real = 0, meta = 0, he = 0, melhor = 0, pior = null, horas = 0;
+  const horasArr = []; // {hora, real} por hora produtiva (não-HE) para a média por horário
 
   for (let i = hIdx + 1; i < data.length; i++) {
     const row  = data[i];
@@ -669,11 +728,14 @@ function arquivarDiaAtual(dataRef) {
         horas++; // horas produtivas (não-HE) para a média cx/h
         if (realVal > melhor) melhor = realVal;
         if (pior === null || realVal < pior) pior = realVal;
+        horasArr.push({ hora: hora, real: realVal });
       }
     }
   }
 
   if (real <= 0) return; // nada produzido — nada a arquivar
+
+  arquivarHorasDoDia(dataRef, horasArr); // grava a produção por hora p/ média por horário
 
   const ef = meta > 0 ? Number((real / meta * 100).toFixed(1)) : 0;
   const mediaH = horas > 0 ? Math.round(real / horas) : 0;
