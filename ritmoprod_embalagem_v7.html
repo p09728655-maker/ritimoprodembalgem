@@ -2089,11 +2089,16 @@ function renderTV(){
     if(necUnit) necUnit.textContent=falta>0?'CX P/ META':'META OK';
   }
   document.getElementById('tv-proj').textContent=fmtN(k.proj);
-  // Banner do que falta para bater a meta do dia
+  // Banner do que falta para bater a meta do dia.
+  // Durante o turno: "FALTAM" (presente). Depois do turno encerrado: "FALTARAM".
   const fe=document.getElementById('tv-falta');
   if(fe){
     const falta=Math.round(k.gap);
-    if(falta>0){ fe.textContent=`FALTARAM ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
+    const ultimo=(k.slots&&k.slots.length)?k.slots[k.slots.length-1]:null;
+    const fimTurno=(ultimo&&ultimo.fim)?toMin(ultimo.fim):toMin(CFG.turnoFim);
+    const ag=new Date(); const nmAg=ag.getHours()*60+ag.getMinutes();
+    const turnoAcabou=nmAg>=fimTurno;
+    if(falta>0){ fe.textContent=`${turnoAcabou?'FALTARAM':'FALTAM'} ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
     else { fe.textContent='✓ META BATIDA'; fe.className='tv-falta ok'; }
   }
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
