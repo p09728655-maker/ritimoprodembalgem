@@ -797,6 +797,11 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-kpi-lbl">STATUS</div>
         <span id="tvb-badge" class="tv-status-badge ok">● META</span>
       </div>
+      <div class="tvb-kpi" id="tvb-kpi-falta" style="display:none">
+        <div class="tvb-kpi-lbl">FALTA P/ META</div>
+        <div class="tvb-kpi-val" id="tvb-falta" style="color:var(--warn)">—</div>
+        <div class="tvb-kpi-unit">CAIXAS</div>
+      </div>
     </div>
 
     <div class="tvb-prog" id="tvb-kpi-prog">
@@ -996,6 +1001,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ritmo" style="accent-color:var(--acc)"> RITMO ATUAL</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-falta" style="accent-color:var(--acc)"> FALTA P/ META</label>
     </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
@@ -2100,6 +2106,9 @@ function renderTV(){
     const turnoAcabou=nmAg>=fimTurno;
     if(falta>0){ fe.textContent=`${turnoAcabou?'FALTARAM':'FALTAM'} ${fmtN(falta)} CX PARA BATER A META`; fe.className='tv-falta'; }
     else { fe.textContent='✓ META BATIDA'; fe.className='tv-falta ok'; }
+    // Espelha o valor para o KPI "FALTA P/ META" da Tela B
+    const tbf=document.getElementById('tvb-falta');
+    if(tbf){ tbf.textContent = falta>0?fmtN(falta):'0'; tbf.style.color = falta>0?'var(--warn)':'var(--ok)'; }
   }
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
   document.getElementById('tv-setor').textContent=CFG.setor;
@@ -2417,7 +2426,7 @@ function openCfg(){
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
-  ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k=>{
+  ['meta','ef','status','prog','ritmo','nec','proj','falta'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
   });
   document.getElementById('modal-cfg').classList.add('on');
@@ -2441,7 +2450,7 @@ function saveCfg(){
   if(hFech) CFG.horarioFechamento=hFech;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
-  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj'].filter(k=>{
+  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
   saveCfgLocal();
@@ -3705,7 +3714,7 @@ const _cicloTV = (function() {
     if (efA && efB) efB.style.color = getComputedStyle(efA).color;
 
     const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
-    ['meta','ef','status','prog','ritmo','nec','proj'].forEach(k => {
+    ['meta','ef','status','prog','ritmo','nec','proj','falta'].forEach(k => {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
