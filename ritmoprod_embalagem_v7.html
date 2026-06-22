@@ -1387,7 +1387,8 @@ function aplicarPerfil(){
     badge.title=isOp?'OPERADOR — clique para sair':'GERENCIAL — clique para sair';
   }
   // Reavalia a alternância A/B: roda na TV (operador), não no gerencial.
-  if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
+  // try/catch porque aplicarPerfil pode rodar antes de _cicloTV existir (ex.: ?tv no load).
+  try{ _cicloTV.reiniciar(); }catch(e){}
 }
 
 function loadCfg(){
