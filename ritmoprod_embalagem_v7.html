@@ -1386,6 +1386,8 @@ function aplicarPerfil(){
     badge.style.color=isOp?'var(--warn)':'var(--ok)';
     badge.title=isOp?'OPERADOR — clique para sair':'GERENCIAL — clique para sair';
   }
+  // Reavalia a alternância A/B: roda na TV (operador), não no gerencial.
+  if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
 }
 
 function loadCfg(){
@@ -3742,8 +3744,9 @@ const _cicloTV = (function() {
     _tela = 'a';
     const slideB = document.getElementById('tv-slide-b');
     if (slideB) slideB.style.display = 'none';
-    if (!CFG.slideBAtivo) {
-      console.log('[TV] Tela B desativada');
+    // No gerencial a alternância não faz sentido — só roda na TV (operador).
+    if (!CFG.slideBAtivo || PERFIL === 'gerencial') {
+      console.log('[TV] Tela B desativada (config ou perfil gerencial)');
       return;
     }
     const ms = (CFG.slideBIntervalo || 15) * 1000;
