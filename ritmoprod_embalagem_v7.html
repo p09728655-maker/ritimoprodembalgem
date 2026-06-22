@@ -900,8 +900,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
 <!-- ═══ FOOTER ═══ -->
 <footer>
-  <span class="ftr-hide-mobile" style="font-family:var(--font-b);font-size:12px;color:var(--txt2)">Oderli Garcia © 2026</span>
-  <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span class="ftr-hide-mobile" style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoProd</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7 · 18/06/2026</span>
@@ -3268,7 +3266,7 @@ restaurarLogo();
 tick();
 setInterval(tick,1000);
 // Auto-login como operador se URL tiver ?tv (ex: para TV LG fixa)
-if(new URLSearchParams(location.search).has('tv')){
+if(new URLSearchParams(location.search.toLowerCase()).has('tv')){
   PERFIL='operador';
   document.getElementById('login-over').style.display='none';
   document.getElementById('perfil-txt').textContent='OPERADOR';
@@ -3601,7 +3599,7 @@ function renderParadas(){
 // Só roda em modo TV (?tv na URL). Em máquinas normais isso causava
 // reload a cada 28 min, deslogando o usuário (PERFIL só vive em memória).
 (function() {
-  if (!new URLSearchParams(location.search).has('tv')) return;
+  if (!new URLSearchParams(location.search.toLowerCase()).has('tv')) return;
   // 1. Screen Wake Lock API (W3C)
   let _wl = null;
   async function _pedirWakeLock() {
