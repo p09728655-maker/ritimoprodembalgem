@@ -423,6 +423,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 // ESTADO
 // ════════════════════════════════════════════════
 let DADOS = [];
+// Médias históricas por horário (alerta de hora fraca — opção 2).
+let MEDIA_HORAS   = {};
+let AMOSTRA_HORAS = {};
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
@@ -553,6 +556,23 @@ function processarResposta(json){
   const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   setDotStatus('live', 'Google Sheets · '+agora);
   renderAtivo();
+}
+
+// ── Médias históricas por horário (alerta de hora fraca — opção 2) ──
+// Matemática pura no Apps Script (sem chave de API): média de produção de
+// cada horário nos dias já fechados. Usada para sinalizar quedas de ritmo.
+async function lerMediaHoras(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getMediaHoras';
+    const json=await jsonpFetch(url);
+    if(json && json.ok){
+      MEDIA_HORAS   = json.medias  || {};
+      AMOSTRA_HORAS = json.amostra || {};
+      return true;
+    }
+  }catch(e){ console.warn('lerMediaHoras:', e.message); }
+  return false;
 }
 
 // ════════════════════════════════════════════════
@@ -686,6 +706,7 @@ function entrar(tipo){
     renderGerencial();
     lerSheets().then(()=>renderHistorico());
     lerHistorico().then(renderHistoricoComDados);
+    lerMediaHoras().then(ok=>{ if(ok) renderGerencial(); });
   }
 }
 
@@ -907,8 +928,15 @@ function renderTabelaHoraHora(allHoje){
     const ef2=prod!=null&&r.metaHora>0?(prod/r.metaHora)*100:null;
     const cls=ef2!=null?sc(ef2):'pend';
     const st=ef2!=null?sl(ef2):'—';
+    // Alerta de hora fraca (opção 2): >15% abaixo da média histórica do mesmo
+    // horário (≥2 dias de amostra). Independe da meta.
+    const med=MEDIA_HORAS[r.slotLabel], amo=AMOSTRA_HORAS[r.slotLabel]||0;
+    const horaFraca = prod!=null && amo>=2 && med>0 && prod < med*0.85;
+    const fraqMark = horaFraca
+      ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+      : '';
     return `<tr>
-      <td style="white-space:nowrap">${r.slotLabel||r.horario}</td>
+      <td style="white-space:nowrap">${r.slotLabel||r.horario}${fraqMark}</td>
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
       <td class="td-num">${fmtN(r.metaHora)}</td>
       <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}</td>
