@@ -500,9 +500,12 @@ function getSlots(){
 // ════════════════════════════════════════════════
 // JSONP FETCH
 // ════════════════════════════════════════════════
+let _jsonpSeq = 0;
 function jsonpFetch(url){
   return new Promise((res,rej)=>{
-    const cb='rpe_cb_'+Date.now();
+    // Nome único por chamada: Date.now() sozinho colide quando dois fetches
+    // disparam no mesmo milissegundo, travando a busca de dados.
+    const cb='rpe_cb_'+Date.now()+'_'+(++_jsonpSeq);
     const s=document.createElement('script');
     const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); },20000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
