@@ -1614,7 +1614,7 @@ function jsonpFetch(url){
     // fazendo um sobrescrever o callback do outro e travar em "Buscando dados...".
     const cb='rpe_cb_'+Date.now()+'_'+(++_jsonpSeq);
     const s=document.createElement('script');
-    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },12000);
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },25000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=data=>{ cleanup(); res(data); };
     s.onerror=()=>{ cleanup(); rej(new Error('Erro ao carregar script — URL inválida ou sem acesso')); };
@@ -3366,9 +3366,25 @@ if(new URLSearchParams(location.search).has('resetcfg')){
     location.href=location.pathname;
   }
 }
+// Carga inicial com retry: o Apps Script pode estar "frio" (cold start) e a 1ª
+// chamada estourar o timeout. Sem isto, a TV cai no modo DEMO (produção zerada)
+// após o reload automático de 28 min. Tenta reconectar algumas vezes antes de
+// desistir — a 2ª chamada normalmente já pega a instância "quente" e responde
+// rápido. NÃO altera a URL nem o fluxo JSONP, só tolera a lentidão inicial.
+async function lerSheetsComRetry(tentativas){
+  for(let i=0;i<tentativas;i++){
+    const ok=await lerSheets();
+    if(ok) return true;
+    if(i<tentativas-1){
+      setStatusBadge('warn',`Reconectando... (${i+2}/${tentativas})`);
+      await new Promise(r=>setTimeout(r,3000));
+    }
+  }
+  return false;
+}
 // Iniciar fonte de dados
 if(CFG.sheetsUrl){
-  lerSheets().then(ok=>{ if(ok) iniciarAutoRefresh(); });
+  lerSheetsComRetry(4).then(ok=>{ if(ok) iniciarAutoRefresh(); });
   // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
   lerMediaHoras().then(ok=>{ if(ok) renderAll(); });
