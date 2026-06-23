@@ -983,7 +983,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — TELA B (VISÃO MACRO)</div>
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="5" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp" style="display:flex;align-items:flex-end;padding-bottom:4px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
           <input type="checkbox" id="c-slideb-ativo" style="accent-color:var(--acc);width:16px;height:16px"> ATIVAR ALTERNÂNCIA
@@ -1076,6 +1077,7 @@ let CFG = {
   senhaOperador:'1234',
   senhaGerencial:'admin',
   horarioFechamento:'17:05',
+  slideAIntervalo:15,
   slideBIntervalo:15,
   slideBAtivo:true,
   slideBKpis:['meta','ef','status','prog']
@@ -2495,6 +2497,7 @@ function openCfg(){
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
+  document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
@@ -2520,6 +2523,7 @@ function saveCfg(){
   if(sGer) CFG.senhaGerencial=sGer;
   const hFech=document.getElementById('c-fechamento').value;
   if(hFech) CFG.horarioFechamento=hFech;
+  CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta'].filter(k=>{
@@ -3798,12 +3802,21 @@ const _cicloTV = (function() {
     if (row2) row2.style.display = ['ritmo','nec','proj'].some(k => kpis.includes(k)) ? 'flex' : 'none';
   }
 
+  // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
+  // Tela A e Tela B têm tempos independentes (ex.: 20s em A, 5s em B).
+  function _agendar() {
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+    const seg = _tela === 'a' ? (CFG.slideAIntervalo || 15) : (CFG.slideBIntervalo || 15);
+    _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
+  }
+
   function _trocar() {
     const slideB = document.getElementById('tv-slide-b');
     if (!slideB) return;
     _tela = _tela === 'a' ? 'b' : 'a';
     if (_tela === 'b') { _sincSlideB(); slideB.style.display = 'flex'; }
     else               { slideB.style.display = 'none'; }
+    _agendar(); // reagenda com a duração da nova tela
   }
 
   // Atualiza relógio no Slide B a cada segundo quando visível
@@ -3816,7 +3829,7 @@ const _cicloTV = (function() {
   }, 1000);
 
   function reiniciar() {
-    if (_timer) { clearInterval(_timer); _timer = null; }
+    if (_timer) { clearTimeout(_timer); _timer = null; }
     _tela = 'a';
     const slideB = document.getElementById('tv-slide-b');
     if (slideB) slideB.style.display = 'none';
@@ -3825,9 +3838,8 @@ const _cicloTV = (function() {
       console.log('[TV] Tela B desativada (config ou perfil gerencial)');
       return;
     }
-    const ms = (CFG.slideBIntervalo || 15) * 1000;
-    _timer = setInterval(_trocar, ms);
-    console.log(`[TV] Ciclo ativo: Slide A ↔ Slide B a cada ${CFG.slideBIntervalo || 15}s`);
+    _agendar(); // começa contando a duração da Tela A
+    console.log(`[TV] Ciclo ativo: Tela A ${CFG.slideAIntervalo || 15}s ↔ Tela B ${CFG.slideBIntervalo || 15}s`);
   }
 
   reiniciar();
