@@ -1674,14 +1674,35 @@ async function lerSheets(){
 // fechados (não inclui hoje). É matemática pura, não usa chave de API.
 // Atualiza pouco (muda só quando um novo dia é arquivado), então buscamos
 // sob demanda e guardamos em memória.
+// Normaliza o rótulo do horário p/ comparar médias: unifica traços (-, –, —…)
+// e remove espaços, p/ "07:00-08:00" casar com "07:00 – 08:00". Sem isso, uma
+// linha digitada à mão com traço diferente vira "outro horário" e não soma.
+function normHora(s){
+  return String(s||'').replace(/[‐-―−]/g,'-').replace(/\s+/g,'').trim();
+}
+// Reagrupa medias/amostra do backend por rótulo normalizado, somando as
+// amostras (reconstrói a soma via média×amostra) p/ não perder dias quando o
+// traço difere entre linhas gravadas pelo sistema e digitadas manualmente.
+function mergeMedias(medias, amostra){
+  const soma={}, cont={};
+  Object.keys(medias||{}).forEach(k=>{
+    const nk=normHora(k), c=(amostra||{})[k]||0;
+    soma[nk]=(soma[nk]||0)+(medias[k]||0)*c;
+    cont[nk]=(cont[nk]||0)+c;
+  });
+  const M={}, A={};
+  Object.keys(cont).forEach(nk=>{ if(cont[nk]>0){ M[nk]=Math.round(soma[nk]/cont[nk]); A[nk]=cont[nk]; } });
+  return {medias:M, amostra:A};
+}
 async function lerMediaHoras(){
   if(!CFG.sheetsUrl) return false;
   try{
     const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getMediaHoras';
     const json=await jsonpFetch(url);
     if(json && json.ok){
-      MEDIA_HORAS   = json.medias  || {};
-      AMOSTRA_HORAS = json.amostra || {};
+      const merged=mergeMedias(json.medias, json.amostra);
+      MEDIA_HORAS   = merged.medias;
+      AMOSTRA_HORAS = merged.amostra;
       return true;
     }
   }catch(e){
@@ -2030,7 +2051,8 @@ function renderGerencial(){
     const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
     // Alerta de hora fraca (opção 2): produção >15% abaixo da média histórica
     // deste mesmo horário (≥2 dias de amostra). Independe da meta.
-    const med=MEDIA_HORAS[sl.label], amo=AMOSTRA_HORAS[sl.label]||0;
+    const _hk=normHora(sl.label);
+    const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     const horaFraca = prod!=null && !isHE && amo>=2 && med>0 && prod < med*0.85;
     const fraqMark = horaFraca
       ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
@@ -2164,7 +2186,8 @@ function renderTV(){
     // Alerta de hora fraca (opção 2): hora já lançada e produção bem abaixo da
     // média histórica do MESMO horário (≥2 dias de amostra, >15% abaixo).
     // Independe da meta — sinaliza queda de ritmo vs. o costume daquele horário.
-    const med=MEDIA_HORAS[sl.label], amo=AMOSTRA_HORAS[sl.label]||0;
+    const _hk=normHora(sl.label);
+    const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     const horaFraca = prod!=null && !isHE && amo>=2 && med>0 && prod < med*0.85;
     const fraqMark = horaFraca
       ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠ &lt;méd ${fmtN(med)}</span>`
