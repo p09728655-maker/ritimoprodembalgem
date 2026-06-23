@@ -22,9 +22,14 @@ via Google Apps Script (JSONP).
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
-  sempre é **cold start do Apps Script** (resposta pode passar de 12s), não perda
-  de dados. Recarregar a página costuma reconectar. NÃO é causado por mudanças
-  de front-end.
+  sempre é **cold start do Apps Script**, não perda de dados. NÃO é causado por
+  mudanças de front-end.
+  - **Só zera na TV**: a TV se recarrega sozinha a cada 28 min (anti-sleep WebOS,
+    `setTimeout(location.reload, 28min)`). Se o reload pega o Apps Script "frio",
+    o `lerSheets` estoura e cai no DEMO. O auto-refresh normal (5 min) NÃO zera —
+    em falha mantém os últimos dados.
+  - **Mitigação já aplicada:** timeout do `jsonpFetch` = **25s** e a carga inicial
+    usa `lerSheetsComRetry(4)` (reconecta antes de desistir). Manter assim.
 - **Alerta de "hora fraca" (⚠)**: compara a produção de hoje (`HORA_A_HORA`) com a
   média histórica por horário (`HISTORICO_HORA`, via `action=getMediaHoras`).
   Só dispara com **≥2 dias** de amostra e produção **>15% abaixo** da média.
