@@ -2189,8 +2189,11 @@ function renderTV(){
     const _hk=normHora(sl.label);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     const horaFraca = prod!=null && !isHE && amo>=2 && med>0 && prod < med*0.85;
+    // Na TV só o ⚠ (inline, sem quebrar linha): "⚠ <méd 230" quebrava para uma
+    // 2ª linha, aumentava a altura da linha e empurrava o último horário p/ fora
+    // da tela. A média fica no title (e na tela gerencial). nowrap garante 1 linha.
     const fraqMark = horaFraca
-      ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠ &lt;méd ${fmtN(med)}</span>`
+      ? ` <span style="color:var(--warn);font-weight:700;white-space:nowrap" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
       : '';
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
