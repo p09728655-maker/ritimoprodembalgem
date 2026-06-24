@@ -2078,8 +2078,8 @@ function renderGerencial(){
     const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
-        ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-        : ` <span style="color:var(--ok);font-weight:700;font-size:15px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
+        ? `<span style="color:var(--warn);font-weight:700;font-size:12px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+        : `<span style="color:var(--ok);font-weight:700;font-size:13px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     return`<tr class="${isHE?'he-row':''}">
       <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
