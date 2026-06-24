@@ -692,13 +692,15 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="tv-body">
     <!-- Lado esquerdo: tabela hora a hora -->
     <div class="tv-right">
-      <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL<span id="tv-leg-fraca" style="display:none;color:var(--warn);font-weight:700;margin-left:16px;font-size:.82em;letter-spacing:1px">⚠ ABAIXO DA MÉDIA DO HORÁRIO</span></div>
+      <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
         <table class="tv-table" style="height:100%">
           <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>%/H</th><th>STATUS</th></tr></thead>
           <tbody id="tv-tbl-body"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody>
         </table>
       </div>
+      <!-- Legenda do ⚠ (abaixo da tabela). Aparece só quando há hora fraca. -->
+      <div id="tv-leg-fraca" style="display:none;color:var(--warn);font-weight:700;font-size:13px;letter-spacing:1px;padding:8px 4px 0">⚠ ABAIXO DA MÉDIA DO HORÁRIO</div>
     </div>
 
     <!-- Lado direito: KPIs principais -->
@@ -2232,7 +2234,7 @@ function renderTV(){
   // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela (na TV o
   // tooltip não é visível, então a legenda explica o símbolo).
   const _tl=document.getElementById('tv-leg-fraca');
-  if(_tl) _tl.style.display=document.getElementById('tv-tbl-body').innerHTML.includes('⚠')?'inline':'none';
+  if(_tl) _tl.style.display=document.getElementById('tv-tbl-body').innerHTML.includes('⚠')?'block':'none';
 }
 
 // ════════════════════════════════════════════════
