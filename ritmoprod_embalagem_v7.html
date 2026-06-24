@@ -1712,6 +1712,18 @@ async function lerMediaHoras(){
   }
   return false;
 }
+// Igual ao lerSheetsComRetry: o getMediaHoras é uma chamada JSONP separada e, no
+// load, pode pegar o Apps Script "frio" (cold start) e estourar o timeout. Sem
+// retry, MEDIA_HORAS fica vazio e o alerta de hora fraca (⚠) não aparece até o
+// refresh seguinte (1 h). Tenta reconectar algumas vezes antes de desistir.
+async function lerMediaHorasComRetry(tentativas){
+  for(let i=0;i<tentativas;i++){
+    const ok=await lerMediaHoras();
+    if(ok) return true;
+    if(i<tentativas-1) await new Promise(r=>setTimeout(r,3000));
+  }
+  return false;
+}
 
 async function testarSheets(){
   const url = document.getElementById('c-sheets-url').value.trim();
@@ -3387,7 +3399,7 @@ if(CFG.sheetsUrl){
   lerSheetsComRetry(4).then(ok=>{ if(ok) iniciarAutoRefresh(); });
   // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
-  lerMediaHoras().then(ok=>{ if(ok) renderAll(); });
+  lerMediaHorasComRetry(4).then(ok=>{ if(ok) renderAll(); });
   setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
 } else {
   tentarRestaurarPasta();
