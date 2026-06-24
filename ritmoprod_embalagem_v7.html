@@ -621,7 +621,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
   <div class="tbl-wrap">
     <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span>
+      <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;color:var(--warn);font-weight:600;font-size:10px;margin-left:10px;letter-spacing:.5px" title="A produção desse horário ficou >15% abaixo da média histórica do mesmo horário (≥2 dias).">⚠ = abaixo da média do horário</span>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="tbl-data-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2)"></span>
         <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
@@ -692,7 +692,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="tv-body">
     <!-- Lado esquerdo: tabela hora a hora -->
     <div class="tv-right">
-      <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
+      <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL<span id="tv-leg-fraca" style="display:none;color:var(--warn);font-weight:700;margin-left:16px;font-size:.82em;letter-spacing:1px">⚠ ABAIXO DA MÉDIA DO HORÁRIO</span></div>
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
         <table class="tv-table" style="height:100%">
           <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>%/H</th><th>STATUS</th></tr></thead>
@@ -2082,6 +2082,9 @@ function renderGerencial(){
       <td class="mono" style="color:${ef!=null?(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
+  // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela.
+  const _gl=document.getElementById('ger-leg-fraca');
+  if(_gl) _gl.style.display=document.getElementById('tbl-hora-body').innerHTML.includes('⚠')?'inline':'none';
 
   renderChartHora(dh,k.slots,k.metaH);
   renderChartComp(dh,k.slots,k.metaH);
@@ -2226,6 +2229,10 @@ function renderTV(){
       <td class="td-s">${ef2!=null?fmtP(ef2):'—'}</td>
       <td class="td-s">${st}</td></tr>`;
   }).join('');
+  // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela (na TV o
+  // tooltip não é visível, então a legenda explica o símbolo).
+  const _tl=document.getElementById('tv-leg-fraca');
+  if(_tl) _tl.style.display=document.getElementById('tv-tbl-body').innerHTML.includes('⚠')?'inline':'none';
 }
 
 // ════════════════════════════════════════════════
