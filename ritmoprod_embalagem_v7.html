@@ -621,7 +621,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
   <div class="tbl-wrap">
     <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;color:var(--warn);font-weight:600;font-size:10px;margin-left:10px;letter-spacing:.5px" title="A produção desse horário ficou >15% abaixo da média histórica do mesmo horário (≥2 dias).">⚠ = abaixo da média do horário</span>
+      <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;font-size:10px;margin-left:10px;letter-spacing:.5px" title="Comparação com a média histórica do mesmo horário (≥2 dias)."><span style="color:var(--ok);font-weight:600">▲ na média/acima</span><span style="color:var(--warn);font-weight:600;margin-left:10px">⚠ abaixo</span></span>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="tbl-data-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2)"></span>
         <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
@@ -700,7 +700,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         </table>
       </div>
       <!-- Legenda do ⚠ (abaixo da tabela). Aparece só quando há hora fraca. -->
-      <div id="tv-leg-fraca" style="display:none;color:var(--warn);font-weight:700;font-size:13px;letter-spacing:1px;padding:8px 4px 0">⚠ ABAIXO DA MÉDIA DO HORÁRIO</div>
+      <div id="tv-leg-fraca" style="display:none;font-size:13px;letter-spacing:1px;padding:8px 4px 0"><span style="color:var(--ok);font-weight:700">▲ NA MÉDIA / ACIMA</span><span style="color:var(--warn);font-weight:700;margin-left:20px">⚠ ABAIXO DA MÉDIA</span></div>
     </div>
 
     <!-- Lado direito: KPIs principais -->
@@ -2072,10 +2072,14 @@ function renderGerencial(){
     // lançamento. Comparar uma hora incompleta com a média do dia inteiro é injusto.
     const _ag=new Date(), _nm=_ag.getHours()*60+_ag.getMinutes();
     const _fim = sl.fim ? toMin(sl.fim) : null;
-    const horaFraca = prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && prod < med*0.85;
-    const fraqMark = horaFraca
-      ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-      : '';
+    // Marcador vs média histórica do MESMO horário (só hora encerrada, com
+    // produção real >0 e ≥2 dias de amostra): ▲ verde = na média ou acima;
+    // ⚠ = abaixo (>15%). Tooltip mostra a média.
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    const fraqMark = !_cmp ? ''
+      : prod < med*0.85
+        ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+        : ` <span style="color:var(--ok);font-weight:700;font-size:11px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     return`<tr class="${isHE?'he-row':''}">
       <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
@@ -2086,7 +2090,7 @@ function renderGerencial(){
   }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
   // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela.
   const _gl=document.getElementById('ger-leg-fraca');
-  if(_gl) _gl.style.display=document.getElementById('tbl-hora-body').innerHTML.includes('⚠')?'inline':'none';
+  if(_gl){ const _h=document.getElementById('tbl-hora-body').innerHTML; _gl.style.display=(_h.includes('⚠')||_h.includes('▲'))?'inline':'none'; }
 
   renderChartHora(dh,k.slots,k.metaH);
   renderChartComp(dh,k.slots,k.metaH);
@@ -2215,13 +2219,15 @@ function renderTV(){
     // lançamento. Comparar uma hora incompleta com a média do dia inteiro é injusto.
     const _ag=new Date(), _nm=_ag.getHours()*60+_ag.getMinutes();
     const _fim = sl.fim ? toMin(sl.fim) : null;
-    const horaFraca = prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && prod < med*0.85;
-    // Na TV só o ⚠ (inline, sem quebrar linha): "⚠ <méd 230" quebrava para uma
-    // 2ª linha, aumentava a altura da linha e empurrava o último horário p/ fora
-    // da tela. A média fica no title (e na tela gerencial). nowrap garante 1 linha.
-    const fraqMark = horaFraca
-      ? ` <span style="color:var(--warn);font-weight:700;white-space:nowrap" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-      : '';
+    // Marcador vs média do MESMO horário (só hora encerrada, produção real >0 e
+    // ≥2 dias): ▲ verde = na média ou acima; ⚠ = abaixo (>15%). Só símbolo
+    // (nowrap) p/ não quebrar a linha e empurrar o último horário p/ fora da tela;
+    // a média fica no title (e na tela gerencial).
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    const fraqMark = !_cmp ? ''
+      : prod < med*0.85
+        ? ` <span style="color:var(--warn);font-weight:700;white-space:nowrap" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+        : ` <span style="color:var(--ok);font-weight:700;white-space:nowrap" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h">${lbl}${fraqMark}</td>
@@ -2234,7 +2240,7 @@ function renderTV(){
   // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela (na TV o
   // tooltip não é visível, então a legenda explica o símbolo).
   const _tl=document.getElementById('tv-leg-fraca');
-  if(_tl) _tl.style.display=document.getElementById('tv-tbl-body').innerHTML.includes('⚠')?'block':'none';
+  if(_tl){ const _h=document.getElementById('tv-tbl-body').innerHTML; _tl.style.display=(_h.includes('⚠')||_h.includes('▲'))?'block':'none'; }
 }
 
 // ════════════════════════════════════════════════
