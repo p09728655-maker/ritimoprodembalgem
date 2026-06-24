@@ -2079,7 +2079,7 @@ function renderGerencial(){
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? ` <span style="color:var(--warn);font-weight:700;font-size:11px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-        : ` <span style="color:var(--ok);font-weight:700;font-size:11px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
+        : ` <span style="color:var(--ok);font-weight:700;font-size:13px" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     return`<tr class="${isHE?'he-row':''}">
       <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
@@ -2227,7 +2227,7 @@ function renderTV(){
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? ` <span style="color:var(--warn);font-weight:700;white-space:nowrap" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-        : ` <span style="color:var(--ok);font-weight:700;white-space:nowrap" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
+        : ` <span style="color:var(--ok);font-weight:700;white-space:nowrap;font-size:1.2em" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h">${lbl}${fraqMark}</td>
