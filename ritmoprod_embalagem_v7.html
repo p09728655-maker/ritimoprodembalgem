@@ -3223,6 +3223,35 @@ async function gerarRelatorioSemanal(){
   </tbody>
 </table>
 
+${(()=>{
+  const slotsP=Object.keys(MEDIA_HORAS)
+    .map(k=>({label:k,media:MEDIA_HORAS[k],amo:AMOSTRA_HORAS[k]||0}))
+    .filter(s=>s.amo>=2)
+    .sort((a,b)=>b.media-a.media);
+  if(!slotsP.length) return '';
+  const melhorH=slotsP[0], piorH=slotsP[slotsP.length-1];
+  return `
+<div class="rp-sec-ttl" style="margin-top:18px">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</div>
+<div class="rp-row2">
+  <div class="rp-highlight" style="border-left:3px solid #4CAF50">
+    <div class="rp-hl-icon">🏆</div>
+    <div>
+      <div class="rp-hl-lbl">MELHOR HORÁRIO</div>
+      <div class="rp-hl-val" style="color:#4CAF50">${melhorH.label}</div>
+      <div class="rp-hl-sub">${Math.round(melhorH.media).toLocaleString('pt-BR')} cx/h em média · ${melhorH.amo} dias</div>
+    </div>
+  </div>
+  <div class="rp-highlight" style="border-left:3px solid #F44336">
+    <div class="rp-hl-icon">⚠</div>
+    <div>
+      <div class="rp-hl-lbl">PIOR HORÁRIO</div>
+      <div class="rp-hl-val" style="color:#F44336">${piorH.label}</div>
+      <div class="rp-hl-sub">${Math.round(piorH.media).toLocaleString('pt-BR')} cx/h em média · ${piorH.amo} dias</div>
+    </div>
+  </div>
+</div>`;
+})()}
+
 <!-- RODAPÉ -->
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
