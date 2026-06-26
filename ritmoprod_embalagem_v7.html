@@ -2916,6 +2916,62 @@ ${dias.map(d=>_svgDiaHora(d)).join('')}
   </tbody>
 </table>
 
+${(()=>{
+  const slotsPrint=Object.keys(MEDIA_HORAS)
+    .map(k=>({label:k,media:MEDIA_HORAS[k],amo:AMOSTRA_HORAS[k]||0}))
+    .filter(s=>s.amo>=2)
+    .sort((a,b)=>b.media-a.media);
+  if(!slotsPrint.length) return '';
+  const maxM=slotsPrint[0].media;
+  const melhorP=slotsPrint[0], piorP=slotsPrint[slotsPrint.length-1];
+  const barHtml=s=>{
+    const pct=maxM>0?Math.round((s.media/maxM)*100):0;
+    const isBest=s===melhorP, isWorst=s===piorP;
+    const clr=isBest?'#4CAF50':isWorst?'#F44336':'#FF5C1F';
+    return `<div style="background:#eee;border-radius:2px;height:7px;width:100%">
+      <div style="background:${clr};width:${pct}%;height:100%;border-radius:2px"></div>
+    </div>`;
+  };
+  return `
+<div class="rp-sec-ttl" style="margin-top:16px">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</div>
+<div class="rp-row2" style="margin-top:0;margin-bottom:10px">
+  <div class="rp-highlight" style="border-left:3px solid #4CAF50">
+    <div class="rp-hl-icon">🏆</div>
+    <div>
+      <div class="rp-hl-lbl">MELHOR HORÁRIO</div>
+      <div class="rp-hl-val">${melhorP.label}</div>
+      <div class="rp-hl-sub" style="color:#4CAF50">${Math.round(melhorP.media).toLocaleString('pt-BR')} cx/h em média · ${melhorP.amo} dias</div>
+    </div>
+  </div>
+  <div class="rp-highlight" style="border-left:3px solid #F44336">
+    <div class="rp-hl-icon">⚠</div>
+    <div>
+      <div class="rp-hl-lbl">PIOR HORÁRIO</div>
+      <div class="rp-hl-val">${piorP.label}</div>
+      <div class="rp-hl-sub" style="color:#F44336">${Math.round(piorP.media).toLocaleString('pt-BR')} cx/h em média · ${piorP.amo} dias</div>
+    </div>
+  </div>
+</div>
+<table>
+  <thead><tr><th style="width:30px">#</th><th>HORÁRIO</th><th style="text-align:right">MÉDIA CX/H</th><th style="text-align:right">AMOSTRAS</th><th style="width:40%">DESEMPENHO RELATIVO</th></tr></thead>
+  <tbody>
+    ${slotsPrint.map((s,i)=>{
+      const isBest=i===0, isWorst=i===slotsPrint.length-1;
+      const clr=isBest?'#4CAF50':isWorst?'#F44336':'#111';
+      const badge=isBest?`<span class="sbadge s-ok" style="margin-left:6px">🏆 MELHOR</span>`:
+                  isWorst?`<span class="sbadge s-red" style="margin-left:6px">⚠ PIOR</span>`:'';
+      return `<tr>
+        <td class="td-mono" style="color:#bbb;text-align:center">${i+1}</td>
+        <td class="td-mono">${s.label}${badge}</td>
+        <td class="td-bold" style="text-align:right;color:${clr}">${Math.round(s.media).toLocaleString('pt-BR')}</td>
+        <td class="td-mono" style="text-align:right;color:#999">${s.amo}</td>
+        <td style="padding:7px 9px">${barHtml(s)}</td>
+      </tr>`;
+    }).join('')}
+  </tbody>
+</table>`;
+})()}
+
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · v7</span>
   <span>Gerado em: ${agora}</span>
