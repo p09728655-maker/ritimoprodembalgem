@@ -2756,9 +2756,8 @@ async function _imprimirHistoricoFormatado(){
     ateStr=dtToStr(hoje);
     deStr=dtToStr(ini);
   }
-  const parseFiltro=s=>{ if(!s) return null; const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
-  const dtDe=parseFiltro(deStr);
-  const dtAte=parseFiltro(ateStr);
+  const dtDe=parseBR(deStr);
+  const dtAte=parseBR(ateStr);
   dias=dias.filter(d=>{
     const[dd,mm,yy]=d.data.split('/').map(Number);
     const dt=new Date(yy,mm-1,dd);
@@ -2784,7 +2783,7 @@ async function _imprimirHistoricoFormatado(){
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
   const bdgLbl=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
-  const periodoLabel=deStr&&ateStr?`${deStr.split('-').reverse().join('/')} a ${ateStr.split('-').reverse().join('/')}`:periodo.toUpperCase();
+  const periodoLabel=deStr&&ateStr?`${deStr} a ${ateStr}`:periodo.toUpperCase();
 
   const html=`<!DOCTYPE html>
 <html lang="pt-BR">
