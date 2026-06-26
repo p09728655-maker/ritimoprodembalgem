@@ -2433,7 +2433,7 @@ function filtroRapido(dias){
   renderHist();
 }
 async function renderHist(){
-  const periodo=document.getElementById('hist-period').value;
+  const periodo='diario';
   const deStr=document.getElementById('hist-de').value;
   const ateStr=document.getElementById('hist-ate').value;
   updateStorageInfo();
@@ -2749,7 +2749,7 @@ async function _imprimirHistoricoFormatado(){
   // Aplicar filtro do período selecionado
   let deStr=document.getElementById('hist-de').value;
   let ateStr=document.getElementById('hist-ate').value;
-  const periodo=document.getElementById('hist-period').value;
+  const periodo='diario';
   // Se sem datas, usar últimos 30 dias
   if(!deStr && !ateStr){
     const hoje=new Date(); const ini=new Date(hoje); ini.setDate(hoje.getDate()-29);
