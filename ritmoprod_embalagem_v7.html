@@ -2251,11 +2251,11 @@ function renderTV(){
     const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
-        ? ` <span style="color:var(--warn);font-weight:700;white-space:nowrap;line-height:1;vertical-align:middle" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
-        : ` <span style="color:var(--ok);font-weight:700;white-space:nowrap;line-height:1;vertical-align:middle" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
+        ? `&nbsp;<span style="color:var(--warn);font-weight:700;line-height:1;vertical-align:middle" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
+        : `&nbsp;<span style="color:var(--ok);font-weight:700;line-height:1;vertical-align:middle" title="Na média deste horário ou acima: média ${fmtN(med)} cx em ${amo} dias">▲</span>`;
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
-      <td class="td-h">${lbl}${fraqMark}</td>
+      <td class="td-h" style="white-space:nowrap">${lbl}${fraqMark}</td>
       <td class="td-h">${fmtN(metaSlot)}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
       <td>${prod!=null?fmtN(acumC):'—'}</td>
