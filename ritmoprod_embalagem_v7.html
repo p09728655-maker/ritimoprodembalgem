@@ -2479,6 +2479,7 @@ async function renderHist(){
 
   renderChartHist(dias,periodo);
 
+  renderAnaliseHorario();
   const tbody=document.getElementById('hist-tbl-body');
   if(!dias.length){ tbody.innerHTML='<tr><td colspan="8" class="empty-msg">Nenhum dado no período.</td></tr>'; return; }
   tbody.innerHTML=dias.map(d=>`<tr>
@@ -2493,7 +2494,6 @@ async function renderHist(){
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
 
-  renderAnaliseHorario();
 }
 
 function renderChartHist(dias,periodo){
@@ -2798,41 +2798,48 @@ async function _imprimirHistoricoFormatado(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:12mm 14mm;font-size:10px}
   @page{size:A4 portrait;margin:0}
-  @media print{body{padding:10mm 12mm}.no-print{display:none!important}}
-  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:10px;margin-bottom:16px;border-bottom:3px solid #111}
-  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:2px}
-  .rp-logo span{color:#111}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
-  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111}
-  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 8px;border-bottom:0.5px solid #eee;padding-bottom:5px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:4px}
-  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #ddd;border-radius:4px;padding:9px 11px}
-  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
-  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;line-height:1;color:#111}
-  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#999;margin-top:3px}
-  .rp-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
-  .rp-highlight{background:#f8f8f8;border:1px solid #eee;border-radius:4px;padding:10px 12px;display:flex;align-items:center;gap:12px}
-  .rp-hl-icon{font-size:20px}
-  .rp-hl-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:1.5px;margin-bottom:2px}
-  .rp-hl-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#111}
-  .rp-hl-sub{font-size:9px;color:#888;margin-top:2px}
-  .rp-chart-wrap{background:#f9f9f9;border:1px solid #eee;border-radius:4px;padding:10px 12px;margin-bottom:4px}
+  @media print{body{padding:8mm 10mm}.no-print{display:none!important} tr{page-break-inside:avoid}}
+  /* HEADER */
+  .rp-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid #111}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;margin-top:2px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#666;line-height:1.6}
+  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#111}
+  /* SECTION TITLE */
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;border-bottom:0.5px solid #eee;padding-bottom:4px;page-break-after:avoid}
+  /* KPI GRID — 6 colunas p/ caber resumo + melhor/pior dia na mesma linha */
+  .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:6px;page-break-inside:avoid}
+  .kpi-card{background:#f8f8f8;border:0.5px solid #e0e0e0;border-left:3px solid #ddd;border-radius:3px;padding:7px 9px}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1;color:#111}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#bbb;margin-top:2px}
+  /* CHART */
+  .rp-chart-wrap{background:#fafafa;border:0.5px solid #e8e8e8;border-radius:3px;padding:8px 10px;margin-bottom:6px;page-break-inside:avoid}
   svg text{font-family:'IBM Plex Mono',monospace}
-  table{width:100%;border-collapse:collapse}
-  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:7px 9px;border-bottom:1.5px solid #ccc;text-align:left}
-  tbody td{font-size:11px;padding:7px 9px;border-bottom:1px solid #f0f0f0;color:#111}
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;page-break-inside:auto}
+  thead{display:table-header-group}
+  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#555;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;border-bottom:1px solid #ccc;text-align:left;page-break-after:avoid}
+  tbody td{font-size:10px;padding:5px 8px;border-bottom:0.5px solid #f0f0f0;color:#111}
   tbody tr:last-child td{border-bottom:none}
-  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
-  .td-bold{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
-  .sbadge{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;border-radius:2px;letter-spacing:1px}
-  .s-ok{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
-  .s-warn{background:#fff3e0;color:#e65100;border:1px solid #ffcc80}
-  .s-red{background:#ffebee;color:#b71c1c;border:1px solid #ef9a9a}
-  .rp-footer{margin-top:16px;padding-top:8px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
-  .rp-print-btn{position:fixed;top:14px;right:14px;background:#FF5C1F;color:#111;border:none;padding:9px 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:9px}
+  .td-bold{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700}
+  .sbadge{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:700;padding:2px 6px;border-radius:2px;letter-spacing:0.8px;white-space:nowrap}
+  .s-ok{background:#e8f5e9;color:#2e7d32;border:0.5px solid #a5d6a7}
+  .s-warn{background:#fff3e0;color:#e65100;border:0.5px solid #ffcc80}
+  .s-red{background:#ffebee;color:#b71c1c;border:0.5px solid #ef9a9a}
+  /* ANÁLISE HORÁRIO */
+  .ah-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;page-break-inside:avoid}
+  .ah-card{border:0.5px solid #e0e0e0;border-radius:3px;padding:8px 12px;display:flex;align-items:center;gap:10px}
+  .ah-icon{font-size:18px}
+  .ah-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#999;letter-spacing:1px;margin-bottom:2px}
+  .ah-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111}
+  .ah-sub{font-size:8px;color:#999;margin-top:1px}
+  /* FOOTER */
+  .rp-footer{margin-top:12px;padding-top:6px;border-top:0.5px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#ccc}
+  .rp-print-btn{position:fixed;top:12px;right:12px;background:#FF5C1F;color:#fff;border:none;padding:8px 16px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 </style>
 </head>
 <body>
@@ -2855,7 +2862,7 @@ async function _imprimirHistoricoFormatado(){
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">caixas no período</div>
+    <div class="kpi-sub">caixas · gap: ${(totReal-totMeta).toLocaleString('pt-BR')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
@@ -2870,26 +2877,17 @@ async function _imprimirHistoricoFormatado(){
   <div class="kpi-card" style="border-left-color:#888">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub">${dias.length} dias no período</div>
   </div>
-</div>
-
-<div class="rp-row2" style="margin-top:8px">
-  <div class="rp-highlight">
-    <div class="rp-hl-icon">🏆</div>
-    <div>
-      <div class="rp-hl-lbl">MELHOR DIA</div>
-      <div class="rp-hl-val">${melhorDia.data}</div>
-      <div class="rp-hl-sub" style="color:${cor(melhorDia.ef)}">${melhorDia.ef.toFixed(1)}% · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
-    </div>
+  <div class="kpi-card" style="border-left-color:#4CAF50">
+    <div class="kpi-lbl">🏆 MELHOR DIA</div>
+    <div class="kpi-val" style="font-size:14px">${melhorDia.data}</div>
+    <div class="kpi-sub" style="color:#4CAF50">${melhorDia.ef.toFixed(1)}% · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
-  <div class="rp-highlight">
-    <div class="rp-hl-icon">📉</div>
-    <div>
-      <div class="rp-hl-lbl">DIA MAIS FRACO</div>
-      <div class="rp-hl-val">${piorDia.data}</div>
-      <div class="rp-hl-sub" style="color:${cor(piorDia.ef)}">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
-    </div>
+  <div class="kpi-card" style="border-left-color:#F44336">
+    <div class="kpi-lbl">📉 DIA MAIS FRACO</div>
+    <div class="kpi-val" style="font-size:14px">${piorDia.data}</div>
+    <div class="kpi-sub" style="color:#F44336">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
 </div>
 
@@ -2929,22 +2927,22 @@ ${(()=>{
       `<div style="background:${clr};width:${pct}%;height:10px;border-radius:2px;display:block"></div></div>`;
   };
   return `
-<div class="rp-sec-ttl" style="margin-top:16px">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</div>
-<div class="rp-row2" style="margin-top:0;margin-bottom:10px">
-  <div class="rp-highlight" style="border-left:3px solid #4CAF50">
-    <div class="rp-hl-icon">🏆</div>
+<div class="rp-sec-ttl" style="margin-top:12px">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</div>
+<div class="ah-grid">
+  <div class="ah-card" style="border-left:3px solid #4CAF50">
+    <div class="ah-icon">🏆</div>
     <div>
-      <div class="rp-hl-lbl">MELHOR HORÁRIO</div>
-      <div class="rp-hl-val">${melhorP.label}</div>
-      <div class="rp-hl-sub" style="color:#4CAF50">${Math.round(melhorP.media).toLocaleString('pt-BR')} cx/h em média · ${melhorP.amo} dias</div>
+      <div class="ah-lbl">MELHOR HORÁRIO</div>
+      <div class="ah-val">${melhorP.label}</div>
+      <div class="ah-sub" style="color:#4CAF50">${Math.round(melhorP.media).toLocaleString('pt-BR')} cx/h em média · ${melhorP.amo} dias</div>
     </div>
   </div>
-  <div class="rp-highlight" style="border-left:3px solid #F44336">
-    <div class="rp-hl-icon">⚠</div>
+  <div class="ah-card" style="border-left:3px solid #F44336">
+    <div class="ah-icon">⚠</div>
     <div>
-      <div class="rp-hl-lbl">PIOR HORÁRIO</div>
-      <div class="rp-hl-val">${piorP.label}</div>
-      <div class="rp-hl-sub" style="color:#F44336">${Math.round(piorP.media).toLocaleString('pt-BR')} cx/h em média · ${piorP.amo} dias</div>
+      <div class="ah-lbl">PIOR HORÁRIO</div>
+      <div class="ah-val">${piorP.label}</div>
+      <div class="ah-sub" style="color:#F44336">${Math.round(piorP.media).toLocaleString('pt-BR')} cx/h em média · ${piorP.amo} dias</div>
     </div>
   </div>
 </div>
