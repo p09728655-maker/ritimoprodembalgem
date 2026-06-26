@@ -851,26 +851,16 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="hist-filters">
     <!-- Botões rápidos de período -->
     <div style="display:flex;gap:4px;flex-shrink:0">
-      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(0)">HOJE</button>
-      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(1)">ONTEM</button>
-      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(3)">3 DIAS</button>
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(7)">SEMANA</button>
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(30)">MÊS</button>
     </div>
-    <select id="hist-period" onchange="renderHist()">
-      <option value="diario">Diário</option>
-      <option value="semanal">Semanal</option>
-      <option value="mensal">Mensal</option>
-    </select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
     <input type="text" id="hist-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
     <span style="color:var(--txt2)">–</span>
     <input type="text" id="hist-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
-    <button class="btn btn-ghost" onclick="renderHist()">↻ ATUALIZAR</button>
     <span id="hist-storage-info" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px"></span>
     <div class="hdr-spacer"></div>
     <div class="export-row">
-      <button class="btn btn-ghost" onclick="exportarExcelHist()">📊 EXPORTAR EXCEL</button>
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
@@ -2416,6 +2406,12 @@ function fmtDataPtBR(dateOrStr, formato){
   if(formato==='diaSemana') return diasAbrev[dow].toUpperCase();
   return `${String(d).padStart(2,'0')}/${String(m+1).padStart(2,'0')}/${y}`;
 }
+function _initFiltroHist(){
+  const de=document.getElementById('hist-de');
+  const ate=document.getElementById('hist-ate');
+  if(de.value||ate.value) return; // já tem filtro, não sobrescrever
+  filtroRapido(30); // padrão: último mês
+}
 function filtroRapido(dias){
   const hoje=new Date();
   const ate=dtToStr(hoje);
@@ -2682,7 +2678,7 @@ function setTab(tab){
   document.getElementById('sec-'+tab).classList.add('on');
   document.querySelector(`[data-tab="${tab}"]`).classList.add('on');
   if(tab==='tv') renderTV();
-  if(tab==='historico') renderHist();
+  if(tab==='historico'){ _initFiltroHist(); renderHist(); }
 }
 
 // ════════════════════════════════════════════════
@@ -2710,7 +2706,7 @@ function renderAll(){
   if(activeTab){
     const t=activeTab.dataset.tab;
     if(t==='tv') renderTV();
-    if(t==='historico') renderHist();
+    if(t==='historico'){ _initFiltroHist(); renderHist(); }
   }
   updateStorageInfo();
 }
@@ -3206,10 +3202,6 @@ async function gerarRelatorioSemanal(){
 <div class="rp-chart-wrap">
   ${_svgBarChart(diasSem)}
 </div>
-
-<!-- GRÁFICOS HORA A HORA POR DIA -->
-<div class="rp-sec-ttl" style="margin-top:18px">DESEMPENHO HORA A HORA — POR DIA</div>
-${diasSem.map(d=>_svgDiaHora(d)).join('')}
 
 <!-- TABELA DETALHADA -->
 <div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
