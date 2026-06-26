@@ -894,6 +894,41 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
+  <!-- ── Análise por Horário ── -->
+  <div id="analise-horario" style="margin-top:20px">
+    <div class="tbl-hdr" style="margin-bottom:12px"><span class="tbl-hdr-ttl">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</span></div>
+
+    <!-- Cards de destaque -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div id="ah-melhor-card" class="kpi-card ok" style="padding:14px 18px">
+        <div class="kpi-lbl">🏆 MELHOR HORÁRIO</div>
+        <div id="ah-melhor-slot" class="kpi-val" style="font-size:18px">—</div>
+        <div id="ah-melhor-sub" class="kpi-sub">—</div>
+      </div>
+      <div id="ah-pior-card" class="kpi-card red" style="padding:14px 18px">
+        <div class="kpi-lbl">⚠ PIOR HORÁRIO</div>
+        <div id="ah-pior-slot" class="kpi-val" style="font-size:18px">—</div>
+        <div id="ah-pior-sub" class="kpi-sub">—</div>
+      </div>
+    </div>
+
+    <!-- Tabela ranking -->
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:36px">#</th>
+            <th>HORÁRIO</th>
+            <th style="text-align:right">MÉDIA CX</th>
+            <th style="text-align:right">AMOSTRAS</th>
+            <th style="width:45%">DESEMPENHO RELATIVO</th>
+          </tr>
+        </thead>
+        <tbody id="ah-rank-body"><tr><td colspan="5" class="empty-msg">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
 </section>
 
 </main>
@@ -2457,6 +2492,8 @@ async function renderHist(){
     <td>${d.fechado?`<span class="badge b-ok" title="${fmtFechadoEm(d.fechadoEm)}">✓ ${fmtFechadoEm(d.fechadoEm).substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
+
+  renderAnaliseHorario();
 }
 
 function renderChartHist(dias,periodo){
@@ -2499,6 +2536,57 @@ function renderChartHist(dias,periodo){
       y2:{ticks:{color:'#4CAF50',font:{family:'IBM Plex Mono',size:9}},grid:{display:false},position:'right',min:0,max:150}
     }
   }});
+}
+
+// ════════════════════════════════════════════════
+// ANÁLISE POR HORÁRIO
+// ════════════════════════════════════════════════
+function renderAnaliseHorario(){
+  const sec=document.getElementById('analise-horario');
+  if(!sec) return;
+
+  // Monta lista filtrada (amostra >= 2)
+  const slots=Object.keys(MEDIA_HORAS)
+    .map(k=>({label:k, media:MEDIA_HORAS[k], amo:AMOSTRA_HORAS[k]||0}))
+    .filter(s=>s.amo>=2)
+    .sort((a,b)=>b.media-a.media);
+
+  const tbody=document.getElementById('ah-rank-body');
+  if(!slots.length){
+    document.getElementById('ah-melhor-slot').textContent='—';
+    document.getElementById('ah-melhor-sub').textContent='Histórico insuficiente (mín. 2 dias)';
+    document.getElementById('ah-pior-slot').textContent='—';
+    document.getElementById('ah-pior-sub').textContent='Histórico insuficiente (mín. 2 dias)';
+    tbody.innerHTML='<tr><td colspan="5" class="empty-msg">Dados insuficientes — são necessários pelo menos 2 dias de histórico.</td></tr>';
+    return;
+  }
+
+  const melhor=slots[0], pior=slots[slots.length-1];
+  const maxMedia=melhor.media;
+
+  document.getElementById('ah-melhor-slot').textContent=melhor.label;
+  document.getElementById('ah-melhor-sub').textContent=`${fmtN(Math.round(melhor.media))} cx/h em média · ${melhor.amo} dia${melhor.amo>1?'s':''}`;
+  document.getElementById('ah-pior-slot').textContent=pior.label;
+  document.getElementById('ah-pior-sub').textContent=`${fmtN(Math.round(pior.media))} cx/h em média · ${pior.amo} dia${pior.amo>1?'s':''}`;
+
+  tbody.innerHTML=slots.map((s,i)=>{
+    const isMelhor=i===0, isPior=i===slots.length-1;
+    const pct=maxMedia>0?Math.round((s.media/maxMedia)*100):0;
+    const barColor=isMelhor?'var(--ok)':isPior?'var(--red)':'var(--acc)';
+    const badge=isMelhor?'<span class="badge b-ok" style="margin-left:6px">🏆 MELHOR</span>':
+                isPior?'<span class="badge b-red" style="margin-left:6px">⚠ PIOR</span>':'';
+    return `<tr>
+      <td class="mono" style="color:var(--txt3);text-align:center">${i+1}</td>
+      <td class="mono">${s.label}${badge}</td>
+      <td class="mono" style="text-align:right;color:${barColor};font-weight:700">${fmtN(Math.round(s.media))}</td>
+      <td class="mono" style="text-align:right;color:var(--txt3)">${s.amo}</td>
+      <td>
+        <div style="background:var(--bg2);border-radius:3px;height:8px;overflow:hidden">
+          <div style="background:${barColor};width:${pct}%;height:100%;border-radius:3px;transition:width .4s"></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════
