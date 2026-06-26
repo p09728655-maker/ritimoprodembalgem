@@ -2577,7 +2577,7 @@ function renderAnaliseHorario(){
                 isPior?'<span class="badge b-red" style="margin-left:6px">⚠ PIOR</span>':'';
     return `<tr>
       <td class="mono" style="color:var(--txt3);text-align:center">${i+1}</td>
-      <td class="mono">${s.label}${badge}</td>
+      <td class="mono" style="white-space:nowrap">${s.label}${badge}</td>
       <td class="mono" style="text-align:right;color:${barColor};font-weight:700">${fmtN(Math.round(s.media))}</td>
       <td class="mono" style="text-align:right;color:var(--txt3)">${s.amo}</td>
       <td>
