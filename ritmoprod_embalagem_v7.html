@@ -3562,7 +3562,7 @@ if(CFG.sheetsUrl){
   lerSheetsComRetry(4).then(ok=>{ if(ok) iniciarAutoRefresh(); });
   // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
-  lerMediaHorasComRetry(4).then(ok=>{ if(ok) renderAll(); });
+  lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
   setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
 } else {
   tentarRestaurarPasta();
