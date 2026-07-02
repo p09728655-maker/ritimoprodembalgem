@@ -231,6 +231,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 /* ═══ SENHA MODAL ═══ */
 #modal-senha .modal-sheet{border-radius:14px}
 .modal-ttl{font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px}
+.cf-msg{font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55}
 .senha-inp{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-d);font-size:16px;
@@ -282,6 +283,12 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   /* Gerencial: KPIs e tabela também maiores */
   .kpi-grid{grid-template-columns:repeat(4,1fr);gap:14px}
   .kpi-card{padding:18px}
+
+  /* Modais centralizados e com texto maior no tablet */
+  .modal-over{align-items:center}
+  .modal-ttl{font-size:22px}
+  .cf-msg{font-size:17px}
+  .btn-cancelar,.btn-salvar{font-size:16px;padding:17px}
 }
 </style>
 </head>
@@ -424,6 +431,18 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="senha-btns">
       <button class="btn-fechar" onclick="fecharModalSenha()">CANCELAR</button>
       <button class="btn-confirmar" onclick="confirmarSenha()">ENTRAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CONFIRMAÇÃO ═══ -->
+<div class="modal-over" id="modal-confirma">
+  <div class="modal-sheet" style="border-radius:14px;max-width:400px">
+    <div class="modal-ttl" id="cf-ttl">CONFIRMAR</div>
+    <div class="cf-msg" id="cf-msg"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="_confirmaResolve(false)">CANCELAR</button>
+      <button class="btn-salvar" id="cf-ok" onclick="_confirmaResolve(true)">CONFIRMAR</button>
     </div>
   </div>
 </div>
@@ -892,15 +911,35 @@ function atualizarBtnInicio(){
   btn.style.display = '';
 }
 
+// Modal de confirmação próprio (substitui o confirm() nativo, que mostra o
+// domínio e destoa do app). Retorna Promise<boolean>.
+let _confirmaCb = null;
+function confirmarModal(opts){
+  opts = opts || {};
+  document.getElementById('cf-ttl').textContent = opts.titulo || 'CONFIRMAR';
+  document.getElementById('cf-msg').textContent = opts.msg || '';
+  document.getElementById('cf-ok').textContent  = opts.ok  || 'CONFIRMAR';
+  document.getElementById('modal-confirma').classList.add('open');
+  return new Promise(res => { _confirmaCb = res; });
+}
+function _confirmaResolve(v){
+  document.getElementById('modal-confirma').classList.remove('open');
+  const cb = _confirmaCb; _confirmaCb = null;
+  if(cb) cb(v);
+}
+document.getElementById('modal-confirma').addEventListener('click', e=>{
+  if(e.target === document.getElementById('modal-confirma')) _confirmaResolve(false);
+});
+
 let _salvandoInicio = false;
 async function toggleInicioTurno(){
   if(_salvandoInicio) return;
   const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
   const novo = cedo ? 7 : 5;   // alterna entre 05:00 e 07:00
-  const msg = novo===5
-    ? 'Marcar que o turno COMEÇOU ÀS 05:00? Os horários 05:00 e 06:00 vão aparecer.'
-    : 'Voltar o início para 07:00? Os horários 05:00 e 06:00 vão sumir.';
-  if(!confirm(msg)) return;
+  const ok = await confirmarModal(novo===5
+    ? {titulo:'INÍCIO ÀS 05:00', msg:'Confirmar que o turno começou às 05:00? Os horários 05:00 e 06:00 vão aparecer para lançamento.', ok:'SIM, INÍCIO 05:00'}
+    : {titulo:'INÍCIO ÀS 07:00', msg:'Voltar o início do turno para 07:00? Os horários 05:00 e 06:00 vão sair da lista.', ok:'VOLTAR P/ 07:00'});
+  if(!ok) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
 
   const btn = document.getElementById('btn-inicio');
