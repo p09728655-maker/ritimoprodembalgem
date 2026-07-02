@@ -79,6 +79,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ SECTION LABEL ═══ */
 .sec-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;padding-left:2px}
+.sec-lbl-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.btn-inicio{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:5px;padding:6px 12px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.btn-inicio:active{opacity:.6}
+.btn-inicio.on{border-color:var(--acc);color:var(--acc)}
 
 /* ═══ SLOT LIST (LANÇAMENTOS) ═══ */
 .slot-list{display:flex;flex-direction:column;gap:8px}
@@ -285,7 +289,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <span class="status-txt" id="lan-status">Carregando...</span>
       <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
     </div>
-    <div class="sec-lbl">SLOTS DO DIA</div>
+    <div class="sec-lbl-row">
+      <span class="sec-lbl">SLOTS DO DIA</span>
+      <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+    </div>
     <div class="slot-list" id="slot-list">
       <div class="loading">CARREGANDO SLOTS...</div>
     </div>
@@ -831,6 +838,57 @@ function renderLancamentos(){
       ${ativo?'<span class="slot-chevron">›</span>':''}
     </div>`;
   }).join('');
+
+  atualizarBtnInicio();
+}
+
+// ════════════════════════════════════════════════
+// INÍCIO DO TURNO (botão do operador → grava C3 na planilha)
+// ════════════════════════════════════════════════
+// A hora de início mora na célula C3 (5→05:00, 7→07:00). O operador troca aqui
+// e o backend grava na planilha; os slots 05:00/06:00 aparecem/somem conforme.
+function atualizarBtnInicio(){
+  const btn = document.getElementById('btn-inicio');
+  if(!btn) return;
+  const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
+  btn.classList.toggle('on', cedo);
+  btn.textContent = cedo ? '✓ INÍCIO 05:00 · MUDAR P/ 07:00' : 'COMEÇOU ÀS 05:00?';
+  btn.style.display = '';
+}
+
+let _salvandoInicio = false;
+async function toggleInicioTurno(){
+  if(_salvandoInicio) return;
+  const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
+  const novo = cedo ? 7 : 5;   // alterna entre 05:00 e 07:00
+  const msg = novo===5
+    ? 'Marcar que o turno COMEÇOU ÀS 05:00? Os horários 05:00 e 06:00 vão aparecer.'
+    : 'Voltar o início para 07:00? Os horários 05:00 e 06:00 vão sumir.';
+  if(!confirm(msg)) return;
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  const btn = document.getElementById('btn-inicio');
+  const txtAntigo = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = 'SALVANDO...'; btn.disabled = true; }
+  _salvandoInicio = true;
+
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setTurnoInicio&inicio='+novo;
+  try{
+    const res = await jsonpFetch(url);
+    if(res && res.ok){
+      CFG.turnoInicio = res.turnoInicio || CFG.turnoInicio;
+      await lerSheets();               // recarrega os slots já filtrados pelo backend
+    } else {
+      alert('Não foi possível mudar o início: '+((res&&res.erro)||'erro'));
+    }
+  }catch(e){
+    alert('Erro ao mudar o início: '+e.message);
+  }finally{
+    _salvandoInicio = false;
+    if(btn) btn.disabled = false;
+    atualizarBtnInicio();
+    if(btn && btn.textContent==='SALVANDO...') btn.textContent = txtAntigo;
+  }
 }
 
 // ════════════════════════════════════════════════

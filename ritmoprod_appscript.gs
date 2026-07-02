@@ -72,6 +72,7 @@ function doGet(e) {
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
     else if (act === 'saveRealizado') result = saveRealizado(p);
+    else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else                              result = getDados();
   } catch(err) {
@@ -302,6 +303,29 @@ function saveRealizado(p) {
 
     return { ok: false, erro: 'Slot nao encontrado: ' + horario };
 
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+
+// ════════════════════════════════════════════════════════
+// DEFINIR INICIO DO TURNO (célula C3) — botão do operador
+// ════════════════════════════════════════════════════════
+// Grava 5 ou 7 em C3 (linha 3, coluna C) da aba HORA_A_HORA. É o mesmo valor
+// que getDados() lê para decidir se os slots 05:00/06:00 aparecem. Assim o
+// operador troca o início pelo app e reflete em mobile, TV e gerencial.
+function setTurnoInicio(p) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_DADOS);
+    if (!sh) return { ok: false, erro: 'Aba HORA_A_HORA nao encontrada.' };
+
+    const cod = Number(p.inicio) === 5 ? 5 : 7;
+    sh.getRange(3, 3).setValue(cod);   // C3
+    return { ok: true, cod: cod, turnoInicio: cod === 5 ? '05:00' : '07:00' };
   } finally {
     lock.releaseLock();
   }
