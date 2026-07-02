@@ -19,6 +19,16 @@ via Google Apps Script (JSONP).
 - **A conexão com o Google Sheets** (`CFG.sheetsUrl` / lógica de `lerSheets` /
   `jsonpFetch`). Não mexer na URL nem no fluxo de conexão.
 
+## Início do turno (célula C3)
+- As linhas de **05:00** e **06:00** existem **sempre** na aba `HORA_A_HORA`. Quem
+  decide se elas aparecem para o operador é a célula **`C3`** (linha 3, coluna C):
+  **`5` → turno começa 05:00** (dia com hora extra matinal, mostra 05:00/06:00);
+  **`7` ou vazio → 07:00** (turno normal, esconde 05:00/06:00).
+- O **backend** (`ritmoprod_appscript.gs`, função de leitura) lê `C3`, filtra os
+  slots anteriores ao início e ainda devolve `turnoInicio` no JSON. Como o filtro
+  é no backend, **mobile, TV e gerencial** ficam consistentes de uma vez.
+  Lembre: mudar o `.gs` exige **re-deploy manual** no editor do Apps Script.
+
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase

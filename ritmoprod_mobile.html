@@ -541,6 +541,10 @@ async function lerSheets(){
 }
 
 function processarResposta(json){
+  // Início do turno vem da célula C3 da planilha (5→05:00, 7→07:00). O backend
+  // já filtra os slots por ela; aqui só espelhamos em CFG p/ o getSlots de
+  // contingência (quando o Sheets não responde) usar a mesma hora de início.
+  if(json.turnoInicio) CFG.turnoInicio = json.turnoInicio;
   const hoje = hojeStr();
   let acum = 0;
   const novos = (json.slots||[]).filter(s=>s.metaHora>0).map(s=>{

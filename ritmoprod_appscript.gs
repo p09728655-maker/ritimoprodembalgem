@@ -113,6 +113,15 @@ function getDados() {
 
   const metaDia = (data[2] && Number(data[2][1])) || 0;
 
+  // C3 (linha 3, coluna C): hora de inicio do turno informada na planilha.
+  //   5  => turno comeca as 05:00 (dia com hora extra matinal)
+  //   7  => turno normal, comeca as 07:00 (padrao tambem quando vazio)
+  // As linhas de 05:00 e 06:00 existem sempre na aba; este valor decide se elas
+  // aparecem para o operador. Com C3=7, escondemos as horas anteriores as 07:00.
+  const inicioTurnoCod = data[2] ? Number(data[2][2]) : 0;
+  const turnoInicio    = inicioTurnoCod === 5 ? '05:00' : '07:00';
+  const inicioTurnoMin = (inicioTurnoCod === 5 ? 5 : 7) * 60;
+
   const hIdx = 3;
   const hdr  = data[hIdx].map(c => String(c).trim().toUpperCase());
 
@@ -148,6 +157,13 @@ function getDados() {
     const parts  = horaVal.split('-');
     const inicio = parts[0] ? parts[0].trim() : '';
     const fim    = parts[1] ? parts[1].trim() : '';
+
+    // Respeita o inicio do turno (C3): com C3=7 os slots 05:00 e 06:00 nao vao
+    // para o app; com C3=5 eles aparecem. Nao mexe nos rotulos, so filtra.
+    const iniMin = inicio
+      ? (Number(inicio.split(':')[0]) || 0) * 60 + (Number(inicio.split(':')[1]) || 0)
+      : 0;
+    if (inicio && iniMin < inicioTurnoMin) continue;
 
     const metaVal = Number(row[iM]) || 0;
     if (metaVal === 0) continue;
@@ -190,6 +206,7 @@ function getDados() {
   return {
     ok:          true,
     slots,
+    turnoInicio,
     metaDia:     slots.reduce((s, sl) => s + sl.metaHora, 0) || metaDia,
     dataRef:     hoje,
     dadosDeHoje: true,
