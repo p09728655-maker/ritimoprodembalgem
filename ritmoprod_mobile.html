@@ -79,6 +79,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ SECTION LABEL ═══ */
 .sec-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;padding-left:2px}
+.sec-lbl-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.btn-inicio{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:5px;padding:6px 12px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.btn-inicio:active{opacity:.6}
+.btn-inicio.on{border-color:var(--acc);color:var(--acc)}
 
 /* ═══ SLOT LIST (LANÇAMENTOS) ═══ */
 .slot-list{display:flex;flex-direction:column;gap:8px}
@@ -243,6 +247,42 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ LOADING ═══ */
 .loading{text-align:center;padding:30px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:2px}
+
+/* ═══ TABLET / TELAS GRANDES ═══ */
+/* O app é feito para celular (fontes 9–16px). Num tablet a mesma tela ficava
+   com letra miúda e linhas esticadas de ponta a ponta. A partir de ~700px de
+   largura, centralizamos numa coluna e aumentamos tudo para leitura à
+   distância na estação do operador. Só CSS — não muda a lógica. */
+@media (min-width:700px){
+  .mob-header{height:64px;padding:0 24px}
+  .mob-title{font-size:22px;letter-spacing:3px}
+  .mob-sub{font-size:12px}
+  .mob-clock{font-size:22px}
+  .mob-btn-sair{font-size:12px;padding:10px 18px}
+
+  .mob-content{max-width:1040px;margin-inline:auto;width:100%;padding:24px;gap:18px}
+
+  .status-bar{padding:12px 18px}
+  .status-txt{font-size:13px}
+  .btn-refresh{font-size:12px;padding:9px 16px}
+
+  .sec-lbl{font-size:13px}
+  .btn-inicio{font-size:13px;padding:10px 18px}
+
+  .slot-list{gap:12px}
+  .slot-item{padding:22px 26px;gap:22px}
+  .slot-item::before{width:5px}
+  .slot-hora{font-size:24px;min-width:190px}
+  .slot-nome{font-size:30px}
+  .slot-meta{font-size:15px;margin-top:5px}
+  .slot-lotes{font-size:16px;margin-top:6px}
+  .slot-badge{font-size:15px;padding:8px 15px}
+  .slot-chevron{font-size:30px}
+
+  /* Gerencial: KPIs e tabela também maiores */
+  .kpi-grid{grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi-card{padding:18px}
+}
 </style>
 </head>
 <body>
@@ -285,7 +325,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <span class="status-txt" id="lan-status">Carregando...</span>
       <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
     </div>
-    <div class="sec-lbl">SLOTS DO DIA</div>
+    <div class="sec-lbl-row">
+      <span class="sec-lbl">SLOTS DO DIA</span>
+      <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+    </div>
     <div class="slot-list" id="slot-list">
       <div class="loading">CARREGANDO SLOTS...</div>
     </div>
@@ -541,6 +584,10 @@ async function lerSheets(){
 }
 
 function processarResposta(json){
+  // Início do turno vem da célula C3 da planilha (5→05:00, 7→07:00). O backend
+  // já filtra os slots por ela; aqui só espelhamos em CFG p/ o getSlots de
+  // contingência (quando o Sheets não responde) usar a mesma hora de início.
+  if(json.turnoInicio) CFG.turnoInicio = json.turnoInicio;
   const hoje = hojeStr();
   let acum = 0;
   const novos = (json.slots||[]).filter(s=>s.metaHora>0).map(s=>{
@@ -827,6 +874,57 @@ function renderLancamentos(){
       ${ativo?'<span class="slot-chevron">›</span>':''}
     </div>`;
   }).join('');
+
+  atualizarBtnInicio();
+}
+
+// ════════════════════════════════════════════════
+// INÍCIO DO TURNO (botão do operador → grava C3 na planilha)
+// ════════════════════════════════════════════════
+// A hora de início mora na célula C3 (5→05:00, 7→07:00). O operador troca aqui
+// e o backend grava na planilha; os slots 05:00/06:00 aparecem/somem conforme.
+function atualizarBtnInicio(){
+  const btn = document.getElementById('btn-inicio');
+  if(!btn) return;
+  const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
+  btn.classList.toggle('on', cedo);
+  btn.textContent = cedo ? '✓ INÍCIO 05:00 · MUDAR P/ 07:00' : 'COMEÇOU ÀS 05:00?';
+  btn.style.display = '';
+}
+
+let _salvandoInicio = false;
+async function toggleInicioTurno(){
+  if(_salvandoInicio) return;
+  const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
+  const novo = cedo ? 7 : 5;   // alterna entre 05:00 e 07:00
+  const msg = novo===5
+    ? 'Marcar que o turno COMEÇOU ÀS 05:00? Os horários 05:00 e 06:00 vão aparecer.'
+    : 'Voltar o início para 07:00? Os horários 05:00 e 06:00 vão sumir.';
+  if(!confirm(msg)) return;
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  const btn = document.getElementById('btn-inicio');
+  const txtAntigo = btn ? btn.textContent : '';
+  if(btn){ btn.textContent = 'SALVANDO...'; btn.disabled = true; }
+  _salvandoInicio = true;
+
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setTurnoInicio&inicio='+novo;
+  try{
+    const res = await jsonpFetch(url);
+    if(res && res.ok){
+      CFG.turnoInicio = res.turnoInicio || CFG.turnoInicio;
+      await lerSheets();               // recarrega os slots já filtrados pelo backend
+    } else {
+      alert('Não foi possível mudar o início: '+((res&&res.erro)||'erro'));
+    }
+  }catch(e){
+    alert('Erro ao mudar o início: '+e.message);
+  }finally{
+    _salvandoInicio = false;
+    if(btn) btn.disabled = false;
+    atualizarBtnInicio();
+    if(btn && btn.textContent==='SALVANDO...') btn.textContent = txtAntigo;
+  }
 }
 
 // ════════════════════════════════════════════════
