@@ -226,6 +226,9 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(20px,2.8vw,44px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(26px,3.2vw,52px);font-weight:600;color:var(--acc);letter-spacing:3px}
+.tvb-produto-row{display:flex;align-items:center;justify-content:center;gap:10px}
+.tvb-produto-lbl{font-family:var(--font-d);font-size:clamp(9px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb-produto-val{font-family:var(--font-h);font-size:clamp(16px,1.8vw,26px);font-weight:700;color:var(--txt)}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
 .tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(11px,1.1vw,16px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
 .tvb-hero-num{font-family:var(--font-h);font-size:clamp(90px,13vw,210px);font-weight:700;line-height:.9;color:var(--txt)}
@@ -623,6 +626,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;font-size:10px;margin-left:10px;letter-spacing:.5px" title="Comparação com a média histórica do mesmo horário (≥2 dias)."><span style="color:var(--ok);font-weight:600">▲ na média/acima</span><span style="color:var(--warn);font-weight:600;margin-left:10px">⚠ abaixo</span></span>
       <div style="display:flex;align-items:center;gap:8px">
+        <span id="ger-produto-atual" style="display:none;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:.5px" title="Produto selecionado pelo operador no app — opcional">📦 <span id="ger-produto-val"></span></span>
         <span id="tbl-data-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2)"></span>
         <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
         <button class="btn btn-ghost" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
@@ -778,6 +782,12 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-clock-lbl" id="tvb-clock">--:--:--</div>
     </div>
 
+    <!-- Produto atual do turno — OPCIONAL (só aparece quando o operador seleciona no app) -->
+    <div class="tvb-produto-row" id="tvb-produto-row">
+      <span class="tvb-produto-lbl">PRODUTO ATUAL</span>
+      <span class="tvb-produto-val" id="tvb-produto">—</span>
+    </div>
+
     <div class="tvb-hero">
       <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
       <div class="tvb-hero-num" id="tvb-prod">—</div>
@@ -829,6 +839,20 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-kpi-lbl">PROJEÇÃO</div>
         <div class="tvb-kpi-val" id="tvb-proj" style="color:var(--txt2)">—</div>
         <div class="tvb-kpi-unit">CX FINAL</div>
+      </div>
+    </div>
+
+    <!-- Produção em pontos/peso — dinâmico por produto, OPCIONAL (só se o operador selecionou produto) -->
+    <div class="tvb-kpis" id="tvb-row3" style="display:none">
+      <div class="tvb-kpi" id="tvb-kpi-pontos" style="display:none">
+        <div class="tvb-kpi-lbl">PRODUÇÃO (PONTOS)</div>
+        <div class="tvb-kpi-val" id="tvb-pontos" style="color:var(--acc)">—</div>
+        <div class="tvb-kpi-unit">PTS</div>
+      </div>
+      <div class="tvb-kpi" id="tvb-kpi-peso" style="display:none">
+        <div class="tvb-kpi-lbl">PESO PRODUZIDO</div>
+        <div class="tvb-kpi-val" id="tvb-peso" style="color:var(--acc)">—</div>
+        <div class="tvb-kpi-unit">KG</div>
       </div>
     </div>
 
@@ -1026,6 +1050,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-falta" style="accent-color:var(--acc)"> FALTA P/ META</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-pontos" style="accent-color:var(--acc)"> PRODUÇÃO (PONTOS)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-peso" style="accent-color:var(--acc)"> PESO PRODUZIDO</label>
     </div>
     <!-- Google Sheets -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
@@ -1094,6 +1120,9 @@ let DADOS = [];
 // AMOSTRA_HORAS[label] = quantos dias entraram nessa média.
 let MEDIA_HORAS   = {};
 let AMOSTRA_HORAS = {};
+// Produção do dia em PONTOS/PESO por produto — identificação de produto é
+// OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[] };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
@@ -1750,6 +1779,28 @@ async function lerMediaHorasComRetry(tentativas){
   return false;
 }
 
+// Produção do dia em PONTOS/PESO por produto (identificação de produto é
+// OPCIONAL). Chamada separada, fora do caminho quente de getDados, igual a
+// getMediaHoras — não afeta o timeout/cold-start do painel principal.
+async function lerPontosDia(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
+    const json=await jsonpFetch(url);
+    if(json && json.ok){
+      PONTOS_DIA = {
+        pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
+        produtoAtual: json.produtoAtual||'', produtoAtualDesc: json.produtoAtualDesc||'',
+        porProduto: json.porProduto||[], porHora: json.porHora||[]
+      };
+      return true;
+    }
+  }catch(e){
+    console.warn('lerPontosDia:', e.message);
+  }
+  return false;
+}
+
 async function testarSheets(){
   const url = document.getElementById('c-sheets-url').value.trim();
   if(!url){ alert('Cole a URL do Apps Script primeiro.'); return; }
@@ -1891,7 +1942,7 @@ function _tickCountdown(){
   document.getElementById('countdown-txt').textContent=m+':'+String(s).padStart(2,'0');
   if(countdownSec===0){
     countdownSec=(window._intervaloMin||5)*60;
-    if(CFG.sheetsUrl) lerSheets(); else lerArquivo();
+    if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
   } else countdownSec--;
 }
 function _atualizarLabelIntervalo(){
@@ -1903,7 +1954,7 @@ function forcarRefresh(){
   badge.style.borderColor='var(--acc)'; badge.style.color='var(--acc)';
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
   countdownSec=(window._intervaloMin||5)*60;
-  if(CFG.sheetsUrl) lerSheets(); else lerArquivo();
+  if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
 }
 function alterarIntervalo(){
   const atual=window._intervaloMin||5;
@@ -2048,6 +2099,9 @@ function renderGerencial(){
     {l:'HORAS PRODUTIVAS',  v:k.hProd.toFixed(1)+'h',  sub:`${k.n} slots registrados`,c:''},
     {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
     {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
+    // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
+    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(PONTOS_DIA.pesoKg)+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
@@ -2074,6 +2128,16 @@ function renderGerencial(){
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
       <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
       <div class="a-desc">${fmtN(k.pior)} cx — menor ritmo</div></div>`;
+
+  // ── Produto atual do turno (opcional — só aparece se o operador selecionou) ──
+  const gerProdEl=document.getElementById('ger-produto-atual');
+  if(gerProdEl){
+    if(PONTOS_DIA.produtoAtual){
+      document.getElementById('ger-produto-val').textContent =
+        PONTOS_DIA.produtoAtual+(PONTOS_DIA.produtoAtualDesc?' · '+PONTOS_DIA.produtoAtualDesc:'');
+      gerProdEl.style.display='inline';
+    } else gerProdEl.style.display='none';
+  }
 
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
@@ -2620,7 +2684,7 @@ function openCfg(){
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
-  ['meta','ef','status','prog','ritmo','nec','proj','falta'].forEach(k=>{
+  ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
   });
   document.getElementById('modal-cfg').classList.add('on');
@@ -2645,7 +2709,7 @@ function saveCfg(){
   CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
-  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta'].filter(k=>{
+  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
   saveCfgLocal();
@@ -3582,6 +3646,9 @@ if(CFG.sheetsUrl){
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
   lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
   setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
+  // PONTOS/PESO por produto (identificação de produto é OPCIONAL): busca no load
+  // e renova junto com o refresh normal (_tickCountdown/forcarRefresh acima).
+  lerPontosDia().then(()=>renderGerencial());
 } else {
   tentarRestaurarPasta();
 }
@@ -4002,13 +4069,23 @@ const _cicloTV = (function() {
     const efB = document.getElementById('tvb-ef');
     if (efA && efB) efB.style.color = getComputedStyle(efA).color;
 
+    // Produto atual / PONTOS / PESO não existem na Tela A (mantida limpa de propósito),
+    // então vêm direto de PONTOS_DIA (buscado por getPontosDia) em vez de espelhar DOM.
+    set('tvb-produto', PONTOS_DIA.produtoAtual
+      ? PONTOS_DIA.produtoAtual + (PONTOS_DIA.produtoAtualDesc ? ' · ' + PONTOS_DIA.produtoAtualDesc : '')
+      : '—');
+    set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
+    set('tvb-peso',   fmtN(PONTOS_DIA.pesoKg || 0) + ' kg');
+
     const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
-    ['meta','ef','status','prog','ritmo','nec','proj','falta'].forEach(k => {
+    ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k => {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
     const row2 = document.getElementById('tvb-row2');
     if (row2) row2.style.display = ['ritmo','nec','proj'].some(k => kpis.includes(k)) ? 'flex' : 'none';
+    const row3 = document.getElementById('tvb-row3');
+    if (row3) row3.style.display = ['pontos','peso'].some(k => kpis.includes(k)) ? 'flex' : 'none';
   }
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
