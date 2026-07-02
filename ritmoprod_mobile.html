@@ -247,6 +247,42 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ LOADING ═══ */
 .loading{text-align:center;padding:30px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:2px}
+
+/* ═══ TABLET / TELAS GRANDES ═══ */
+/* O app é feito para celular (fontes 9–16px). Num tablet a mesma tela ficava
+   com letra miúda e linhas esticadas de ponta a ponta. A partir de ~700px de
+   largura, centralizamos numa coluna e aumentamos tudo para leitura à
+   distância na estação do operador. Só CSS — não muda a lógica. */
+@media (min-width:700px){
+  .mob-header{height:64px;padding:0 24px}
+  .mob-title{font-size:22px;letter-spacing:3px}
+  .mob-sub{font-size:12px}
+  .mob-clock{font-size:22px}
+  .mob-btn-sair{font-size:12px;padding:10px 18px}
+
+  .mob-content{max-width:1040px;margin-inline:auto;width:100%;padding:24px;gap:18px}
+
+  .status-bar{padding:12px 18px}
+  .status-txt{font-size:13px}
+  .btn-refresh{font-size:12px;padding:9px 16px}
+
+  .sec-lbl{font-size:13px}
+  .btn-inicio{font-size:13px;padding:10px 18px}
+
+  .slot-list{gap:12px}
+  .slot-item{padding:22px 26px;gap:22px}
+  .slot-item::before{width:5px}
+  .slot-hora{font-size:24px;min-width:190px}
+  .slot-nome{font-size:30px}
+  .slot-meta{font-size:15px;margin-top:5px}
+  .slot-lotes{font-size:16px;margin-top:6px}
+  .slot-badge{font-size:15px;padding:8px 15px}
+  .slot-chevron{font-size:30px}
+
+  /* Gerencial: KPIs e tabela também maiores */
+  .kpi-grid{grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi-card{padding:18px}
+}
 </style>
 </head>
 <body>
