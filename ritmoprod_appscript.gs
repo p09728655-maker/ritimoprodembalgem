@@ -648,7 +648,11 @@ function getPontosDia() {
     // automaticamente, e uma comparação de texto (String(r[iData])!==hoje) nunca
     // batia — por isso pontos/peso/produto do dia apareciam sempre zerados.
     if (dataParaNum(r[iData]) !== hojeNum) return;
-    const hora   = String(r[iHora]).trim();
+    // Mesma armadilha na coluna HORA: o Sheets converte "13:00" pra um Date
+    // (epoch 30/12/1899) sozinho, e String(Date) vira algo tipo "Sat Dec 30
+    // 1899 13:00:00 GMT-0300 (...)" em vez de "13:00". formatHoraCel() trata
+    // os dois formatos (Date ou texto já pronto).
+    const hora   = formatHoraCel(r[iHora]);
     const codigo = String(r[iCod]).trim();
     const cx     = Number(r[iCx]) || 0;
     if (!codigo || !cx) return;
@@ -659,14 +663,20 @@ function getPontosDia() {
 
     pontos += pts; pesoKg += kg; caixas += cx;
 
+    // Arredonda só na exibição por item (pontos inteiro, peso com 1 casa) —
+    // os totais do dia (pontos/pesoKg acima) somam o valor cheio e arredondam
+    // uma vez só no final, pra não acumular erro de arredondamento.
+    const ptsR = Math.round(pts);
+    const kgR  = Math.round(kg * 10) / 10;
+
     if (!porProdutoMap[codigo]) {
       porProdutoMap[codigo] = { codigo, desc: prod.desc || '', caixas: 0, pontos: 0, pesoKg: 0 };
     }
     porProdutoMap[codigo].caixas += cx;
-    porProdutoMap[codigo].pontos += pts;
-    porProdutoMap[codigo].pesoKg += kg;
+    porProdutoMap[codigo].pontos += ptsR;
+    porProdutoMap[codigo].pesoKg += kgR;
 
-    porHora.push({ hora, codigo, desc: prod.desc || '', caixas: cx, pontos: pts, pesoKg: kg });
+    porHora.push({ hora, codigo, desc: prod.desc || '', caixas: cx, pontos: ptsR, pesoKg: kgR });
   });
 
   // Mesma produção de porHora, agrupada por hora + modelo (soma as variantes de
@@ -735,6 +745,15 @@ function dataParaNum(v) {
     return ano * 10000 + Number(m[2]) * 100 + Number(m[1]);
   }
   return 0;
+}
+
+// Formata a coluna HORA do log PRODUCAO_PRODUTO como "HH:mm". O Sheets converte
+// sozinho um texto tipo "13:00" digitado/gravado numa célula pra um Date (epoch
+// 30/12/1899) quando a coluna pega formato de hora — String(Date) daria algo
+// tipo "Sat Dec 30 1899 13:00:00 GMT-0300 (...)" em vez de "13:00".
+function formatHoraCel(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'HH:mm');
+  return String(v || '').trim();
 }
 
 // Chave de produto = só os dígitos do código. Une formatos diferentes: a aba
