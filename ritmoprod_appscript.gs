@@ -891,7 +891,9 @@ function getProgramacaoDetalhada() {
       // se já tivesse sido embalado quando na verdade ainda nem venceu.
       metaEfetiva: st ? st.metaEfetiva : 0
     };
-  }).filter(function (it) { return it.dataNum > 0; });
+  // Só entram linhas com lote preenchido: pedido do usuário, pra tela ficar mais
+  // confiável (linhas sem lote costumam ser lançamento incompleto/rascunho).
+  }).filter(function (it) { return it.dataNum > 0 && it.lote; });
 
   itens.sort(function (a, b) { return a.dataNum - b.dataNum; });
   return { ok: true, itens: itens };
