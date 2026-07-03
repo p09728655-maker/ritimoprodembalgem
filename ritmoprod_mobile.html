@@ -550,11 +550,11 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Toque os números do código no teclado abaixo</div>
+      <div class="modal-slot-meta">Digite o LOTE ou os números do código no teclado abaixo</div>
     </div>
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
-    <input class="prod-search-inp" id="prod-search-inp" type="text" inputmode="none" readonly placeholder="Ex.: 501041 ou 501.041" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
+    <input class="prod-search-inp" id="prod-search-inp" type="text" inputmode="none" readonly placeholder="Ex.: lote 24906 ou código 501041" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
     <div class="prod-search-list" id="prod-search-list" style="max-height:24vh">
       <div class="prod-search-empty">Toque um número ou digite para buscar…</div>
     </div>
@@ -886,7 +886,8 @@ function fecharModalProduto(){
   document.getElementById('modal-produto').classList.remove('open');
 }
 function filtrarProdutos(){
-  const q = normTxt(document.getElementById('prod-search-inp').value.trim());
+  const raw = document.getElementById('prod-search-inp').value.trim();
+  const q = normTxt(raw);
   const lista = document.getElementById('prod-search-list');
   if(!q){
     // Sem busca: mostra os PRODUTOS DO DIA (programados + em atraso) para toque
@@ -895,21 +896,37 @@ function filtrarProdutos(){
       lista.innerHTML =
         '<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">PRODUTOS DE HOJE — toque para selecionar</div>' +
         PROG_HOJE.map(p=>{
+          const lot = p.lote ? `<span style="color:var(--acc);font-family:var(--font-d);font-size:10px;margin-left:8px">LOTE ${p.lote}</span>` : '';
           const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px;margin-left:8px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
           const qtd = p.qtde>0 ? `<div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">meta ${fmtN(p.qtde)} cx</div>` : '';
           return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
-            <div class="prod-search-cod">${p.codigo}${atr}</div>
+            <div class="prod-search-cod">${p.codigo}${lot}${atr}</div>
             <div class="prod-search-desc">${p.desc}</div>${qtd}
           </div>`;
         }).join('');
     } else {
-      lista.innerHTML='<div class="prod-search-empty">Digite o código ou nome do produto…</div>';
+      lista.innerHTML='<div class="prod-search-empty">Digite o lote, código ou nome do produto…</div>';
     }
     return;
   }
-  // Busca por código é tolerante a pontos/espaços (compara só os dígitos), então
-  // "501041" e "501.041" acham o mesmo item; e também casa por descrição.
+  // Busca por LOTE primeiro (número exato, contra a programação de hoje). Um
+  // lote pode ter vários produtos (cores/variações da mesma peça) — mostra
+  // todos para o operador tocar no certo, sem precisar decorar o código.
   const qd = q.replace(/[^0-9]/g,'');
+  const porLote = qd ? PROG_HOJE.filter(p => p.lote && String(p.lote).replace(/[^0-9]/g,'') === qd) : [];
+  if(porLote.length){
+    lista.innerHTML =
+      `<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">LOTE ${porLote[0].lote}${porLote.length>1?' — toque no produto certo':''}</div>` +
+      porLote.map(p=>`
+        <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+          <div class="prod-search-cod">${p.codigo}</div>
+          <div class="prod-search-desc">${p.desc}</div>
+        </div>`).join('');
+    return;
+  }
+  // Sem lote encontrado: busca normal por código/descrição no catálogo. Tolerante
+  // a pontos/espaços no código (compara só os dígitos), então "501041" e
+  // "501.041" acham o mesmo item; e também casa por descrição.
   const res = PRODUTOS.filter(p=>{
     const codD = String(p.codigo).replace(/[^0-9]/g,'');
     return normTxt(p.codigo).includes(q) || (qd && codD.includes(qd)) || normTxt(p.desc).includes(q);
