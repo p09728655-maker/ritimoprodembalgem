@@ -874,16 +874,21 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div id="prog2-dias"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
 </section>
 
-<!-- ═══ PRODUÇÃO POR HORA (visão dedicada: modelo × caixas por horário) ═══ -->
+<!-- ═══ PRODUÇÃO POR MODELO (visão dedicada: total do dia, um modelo por linha) ═══ -->
 <section id="sec-producaohora" class="sec">
   <div class="tbl-wrap" style="margin-top:0">
     <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">PRODUÇÃO POR HORA — POR MODELO</span>
+      <span class="tbl-hdr-ttl">PRODUÇÃO POR MODELO — TOTAL DO DIA</span>
       <div style="flex:1"></div>
       <span id="porhora2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
     </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr></thead>
+        <tbody id="porhora2-body"><tr><td colspan="5" class="empty-msg">Carregando…</td></tr></tbody>
+      </table>
+    </div>
   </div>
-  <div id="porhora2-horas"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
 </section>
 
 <!-- ═══ HISTÓRICO ═══ -->
@@ -2223,57 +2228,50 @@ function renderGerencial(){
 }
 
 // ════════════════════════════════════════════════
-// PRODUÇÃO POR HORA — TELA DEDICADA (por modelo, soma as variantes de cor)
+// PRODUÇÃO POR MODELO — TELA DEDICADA (total do dia, soma as variantes de cor
+// e as horas: um modelo por linha, não repete o mesmo modelo em várias horas)
 // ════════════════════════════════════════════════
 // Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
 // refresh normal). Identificação de produto é OPCIONAL: só aparece o que o
 // operador lançou com produto selecionado no app.
 function renderProducaoPorHoraDedicada(){
-  const wrap=document.getElementById('porhora2-horas');
+  const body=document.getElementById('porhora2-body');
   const totEl=document.getElementById('porhora2-totais');
-  if(!wrap) return;
+  if(!body) return;
   const lista=(PONTOS_DIA.porHoraModelo)||[];
   if(!lista.length){
-    wrap.innerHTML='<div class="empty-msg" style="padding:20px">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</div>';
+    body.innerHTML='<tr><td colspan="5" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
     if(totEl) totEl.textContent='';
     return;
   }
-  const porHora={}, ordem=[];
+  // Agrupa por modelo (não por hora): soma caixas/peso/pontos do dia inteiro e
+  // conta em quantas horas distintas o modelo apareceu, pra tirar a média cx/h.
+  const porModelo={}, ordem=[];
   lista.forEach(it=>{
-    if(!porHora[it.hora]){ porHora[it.hora]=[]; ordem.push(it.hora); }
-    porHora[it.hora].push(it);
+    if(!porModelo[it.modelo]){
+      porModelo[it.modelo]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set() };
+      ordem.push(it.modelo);
+    }
+    const m=porModelo[it.modelo];
+    m.caixas+=it.caixas; m.pesoKg+=it.pesoKg; m.pontos+=it.pontos;
+    m.horas.add(it.hora);
   });
-  ordem.sort((a,b)=>String(a).localeCompare(String(b)));
+  ordem.sort((a,b)=>porModelo[b].caixas-porModelo[a].caixas);
 
   let totCx=0, totPeso=0, totPts=0;
-  wrap.innerHTML=ordem.map(hora=>{
-    const itens=porHora[hora].slice().sort((a,b)=>b.caixas-a.caixas);
-    let hCx=0, hPeso=0, hPts=0;
-    const linhas=itens.map(it=>{
-      hCx+=it.caixas; hPeso+=it.pesoKg; hPts+=it.pontos;
-      return `<tr>
-        <td style="text-align:left">${it.modelo}${it.nome?' · '+it.nome:''}</td>
-        <td class="mono">${fmtN(it.caixas)}</td>
-        <td class="mono">${fmtN(it.pesoKg)} kg</td>
-        <td class="mono">${fmtN(it.pontos)}</td>
-      </tr>`;
-    }).join('');
-    totCx+=hCx; totPeso+=hPeso; totPts+=hPts;
-    return `<div class="tbl-wrap" style="margin-top:14px">
-      <div class="tbl-hdr">
-        <span class="tbl-hdr-ttl">${hora}</span>
-        <div style="flex:1"></div>
-        <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(hCx)} cx · ${fmtN(hPeso)} kg · ${fmtN(hPts)} pts</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead><tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th></tr></thead>
-          <tbody>${linhas}</tbody>
-        </table>
-      </div>
-    </div>`;
+  body.innerHTML=ordem.map(modelo=>{
+    const m=porModelo[modelo];
+    totCx+=m.caixas; totPeso+=m.pesoKg; totPts+=m.pontos;
+    const media=Math.round(m.caixas/m.horas.size);
+    return `<tr>
+      <td style="text-align:left">${m.modelo}${m.nome?' · '+m.nome:''}</td>
+      <td class="mono">${fmtN(m.caixas)}</td>
+      <td class="mono">${fmtN(Math.round(m.pesoKg*10)/10)} kg</td>
+      <td class="mono">${fmtN(m.pontos)}</td>
+      <td class="mono">${fmtN(media)}</td>
+    </tr>`;
   }).join('');
-  if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
+  if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(Math.round(totPeso*10)/10)} kg · ${fmtN(totPts)} pts`;
 }
 
 // ════════════════════════════════════════════════
