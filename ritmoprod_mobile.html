@@ -555,7 +555,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
     <input class="prod-search-inp" id="prod-search-inp" type="text" inputmode="none" readonly placeholder="Ex.: lote 24906 ou código 501041" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
-    <div class="prod-search-list" id="prod-search-list" style="max-height:24vh">
+    <!-- Altura FIXA (não max-height): o teclado numérico abaixo não pode subir/descer
+         conforme o nº de resultados muda (1 produto vs 10 lotes de hoje, etc.). -->
+    <div class="prod-search-list" id="prod-search-list" style="height:24vh">
       <div class="prod-search-empty">Toque um número ou digite para buscar…</div>
     </div>
     <!-- Teclado numérico próprio: o código é numérico, então evita abrir o teclado

@@ -713,7 +713,8 @@ function lerProgramacao() {
   const iData = acha('DATA');
   const iCod  = acha('CODIGO', 'COD');
   const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX');
-  const iLote = acha('LOTE', 'LT');
+  // Tolerante a variações do cabeçalho (LOTE, LOTES, Nº LOTE, LOTE PRODUCAO...).
+  const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
