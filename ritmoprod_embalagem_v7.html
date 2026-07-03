@@ -880,7 +880,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">PRODUÇÃO POR MODELO — TOTAL DO DIA</span>
       <div style="flex:1"></div>
-      <span id="porhora2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
+      <span id="porhora2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px;margin-right:12px"></span>
+      <button class="btn btn-acc" onclick="gerarRelatorioProducaoModelo()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO</button>
     </div>
     <div style="overflow-x:auto">
       <table>
@@ -2231,21 +2232,11 @@ function renderGerencial(){
 // PRODUÇÃO POR MODELO — TELA DEDICADA (total do dia, soma as variantes de cor
 // e as horas: um modelo por linha, não repete o mesmo modelo em várias horas)
 // ════════════════════════════════════════════════
-// Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
-// refresh normal). Identificação de produto é OPCIONAL: só aparece o que o
-// operador lançou com produto selecionado no app.
-function renderProducaoPorHoraDedicada(){
-  const body=document.getElementById('porhora2-body');
-  const totEl=document.getElementById('porhora2-totais');
-  if(!body) return;
+// Agrupa PONTOS_DIA.porHoraModelo por MODELO (soma caixas/peso/pontos do dia
+// inteiro e conta em quantas horas distintas apareceu, pra tirar a média
+// cx/h). Reaproveitado pela tela e pelo relatório (gerarRelatorioProducaoModelo).
+function calcPorModelo(){
   const lista=(PONTOS_DIA.porHoraModelo)||[];
-  if(!lista.length){
-    body.innerHTML='<tr><td colspan="5" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
-    if(totEl) totEl.textContent='';
-    return;
-  }
-  // Agrupa por modelo (não por hora): soma caixas/peso/pontos do dia inteiro e
-  // conta em quantas horas distintas o modelo apareceu, pra tirar a média cx/h.
   const porModelo={}, ordem=[];
   lista.forEach(it=>{
     if(!porModelo[it.modelo]){
@@ -2257,21 +2248,159 @@ function renderProducaoPorHoraDedicada(){
     m.horas.add(it.hora);
   });
   ordem.sort((a,b)=>porModelo[b].caixas-porModelo[a].caixas);
-
-  let totCx=0, totPeso=0, totPts=0;
-  body.innerHTML=ordem.map(modelo=>{
+  const linhas=ordem.map(modelo=>{
     const m=porModelo[modelo];
-    totCx+=m.caixas; totPeso+=m.pesoKg; totPts+=m.pontos;
-    const media=Math.round(m.caixas/m.horas.size);
-    return `<tr>
+    return { modelo:m.modelo, nome:m.nome, caixas:m.caixas,
+      pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
+      media:Math.round(m.caixas/m.horas.size) };
+  });
+  const totCx=linhas.reduce((s,l)=>s+l.caixas,0);
+  const totPeso=Math.round(linhas.reduce((s,l)=>s+l.pesoKg,0)*10)/10;
+  const totPts=linhas.reduce((s,l)=>s+l.pontos,0);
+  return { linhas, totCx, totPeso, totPts };
+}
+
+// Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
+// refresh normal). Identificação de produto é OPCIONAL: só aparece o que o
+// operador lançou com produto selecionado no app.
+function renderProducaoPorHoraDedicada(){
+  const body=document.getElementById('porhora2-body');
+  const totEl=document.getElementById('porhora2-totais');
+  if(!body) return;
+  const {linhas,totCx,totPeso,totPts}=calcPorModelo();
+  if(!linhas.length){
+    body.innerHTML='<tr><td colspan="5" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
+    if(totEl) totEl.textContent='';
+    return;
+  }
+  body.innerHTML=linhas.map(m=>`<tr>
       <td style="text-align:left">${m.modelo}${m.nome?' · '+m.nome:''}</td>
       <td class="mono">${fmtN(m.caixas)}</td>
-      <td class="mono">${fmtN(Math.round(m.pesoKg*10)/10)} kg</td>
+      <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
-      <td class="mono">${fmtN(media)}</td>
-    </tr>`;
-  }).join('');
-  if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(Math.round(totPeso*10)/10)} kg · ${fmtN(totPts)} pts`;
+      <td class="mono">${fmtN(m.media)}</td>
+    </tr>`).join('');
+  if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
+}
+
+// Relatório formatado (janela separada, pronta pra exportar em PDF pelo
+// navegador) — mesmo padrão visual do gerarRelatorioSemanal() do HISTÓRICO.
+function gerarRelatorioProducaoModelo(){
+  const win=window.open('','_blank','width=960,height=720');
+  if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
+
+  const {linhas,totCx,totPeso,totPts}=calcPorModelo();
+  if(!linhas.length){
+    win.close();
+    alert('Sem produção por modelo hoje — nada pra gerar no relatório\n(o operador precisa selecionar o produto ao lançar no app).');
+    return;
+  }
+
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Produção por Modelo — ${hojeStr()}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:16mm 18mm; font-size:11px; }
+  @page{ size:A4 portrait; margin:0; }
+  @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
+
+  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #FF5C1F; }
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-logo span{ color:#FF5C1F; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
+
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
+  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#111; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #ccc; text-align:left; }
+  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #f0f0f0; color:#111; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
+  .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
+
+  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+</style>
+</head>
+<body>
+
+<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+
+<div class="rp-header">
+  <div>
+    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR MODELO</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
+  </div>
+  <div class="rp-meta">
+    <div class="rp-dia">${hojeStr()}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl">RESUMO DO DIA</div>
+<div class="kpi-grid">
+  <div class="kpi-card" style="border-left-color:#FF5C1F">
+    <div class="kpi-lbl">TOTAL CAIXAS</div>
+    <div class="kpi-val">${totCx.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas produzidas hoje</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#888">
+    <div class="kpi-lbl">PESO TOTAL</div>
+    <div class="kpi-val">${totPeso.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">kg</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#888">
+    <div class="kpi-lbl">PONTOS TOTAL</div>
+    <div class="kpi-val">${totPts.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas × pontos/produto</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#4CAF50">
+    <div class="kpi-lbl">MODELOS</div>
+    <div class="kpi-val">${linhas.length}</div>
+    <div class="kpi-sub">modelos diferentes hoje</div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl" style="margin-top:18px">DETALHAMENTO POR MODELO</div>
+<table>
+  <thead>
+    <tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr>
+  </thead>
+  <tbody>
+    ${linhas.map(m=>`
+    <tr>
+      <td>${m.modelo}${m.nome?' · '+m.nome:''}</td>
+      <td class="td-bold">${m.caixas.toLocaleString('pt-BR')}</td>
+      <td class="td-mono">${m.pesoKg.toLocaleString('pt-BR')} kg</td>
+      <td class="td-mono">${m.pontos.toLocaleString('pt-BR')}</td>
+      <td class="td-mono">${m.media.toLocaleString('pt-BR')}</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+<div class="rp-footer">
+  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>${hojeStr()}</span>
+</div>
+
+</body>
+</html>`;
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 // ════════════════════════════════════════════════
