@@ -549,11 +549,27 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Busque por código ou descrição</div>
+      <div class="modal-slot-meta">Toque os números do código — ou o campo p/ digitar o nome</div>
     </div>
-    <input class="prod-search-inp" id="prod-search-inp" type="text" placeholder="Ex.: 501.041 ou BERCO ARCO-IRIS" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
-    <div class="prod-search-list" id="prod-search-list">
-      <div class="prod-search-empty">Digite para buscar…</div>
+    <input class="prod-search-inp" id="prod-search-inp" type="text" placeholder="Ex.: 501041 ou BERCO ARCO-IRIS" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
+    <div class="prod-search-list" id="prod-search-list" style="max-height:24vh">
+      <div class="prod-search-empty">Toque um número ou digite para buscar…</div>
+    </div>
+    <!-- Teclado numérico próprio: o código é numérico, então evita abrir o teclado
+         completo do tablet. O campo continua editável p/ buscar por nome. -->
+    <div class="numpad" id="prod-numpad">
+      <button class="numpad-btn" onclick="prodNumpad('1')">1</button>
+      <button class="numpad-btn" onclick="prodNumpad('2')">2</button>
+      <button class="numpad-btn" onclick="prodNumpad('3')">3</button>
+      <button class="numpad-btn" onclick="prodNumpad('4')">4</button>
+      <button class="numpad-btn" onclick="prodNumpad('5')">5</button>
+      <button class="numpad-btn" onclick="prodNumpad('6')">6</button>
+      <button class="numpad-btn" onclick="prodNumpad('7')">7</button>
+      <button class="numpad-btn" onclick="prodNumpad('8')">8</button>
+      <button class="numpad-btn" onclick="prodNumpad('9')">9</button>
+      <button class="numpad-btn" onclick="prodNumpad('.')">.</button>
+      <button class="numpad-btn" onclick="prodNumpad('0')">0</button>
+      <button class="numpad-btn del" onclick="prodNumpadDel()">⌫</button>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" style="flex:1" onclick="fecharModalProduto()">FECHAR</button>
@@ -858,7 +874,8 @@ function abrirModalProduto(){
   document.getElementById('prod-search-inp').value='';
   filtrarProdutos();
   document.getElementById('modal-produto').classList.add('open');
-  setTimeout(()=>document.getElementById('prod-search-inp').focus(), 150);
+  // NÃO dá foco automático no campo: no tablet isso abria o teclado completo.
+  // O operador usa o teclado numérico próprio (ou toca no campo p/ digitar nome).
   if(!PRODUTOS.length) carregarProdutos().then(filtrarProdutos);
   carregarProgramacaoHoje().then(filtrarProdutos); // atualiza a lista do dia
 }
@@ -887,13 +904,32 @@ function filtrarProdutos(){
     }
     return;
   }
-  const res = PRODUTOS.filter(p=> normTxt(p.codigo).includes(q) || normTxt(p.desc).includes(q)).slice(0,30);
+  // Busca por código é tolerante a pontos/espaços (compara só os dígitos), então
+  // "501041" e "501.041" acham o mesmo item; e também casa por descrição.
+  const qd = q.replace(/[^0-9]/g,'');
+  const res = PRODUTOS.filter(p=>{
+    const codD = String(p.codigo).replace(/[^0-9]/g,'');
+    return normTxt(p.codigo).includes(q) || (qd && codD.includes(qd)) || normTxt(p.desc).includes(q);
+  }).slice(0,30);
   if(!res.length){ lista.innerHTML='<div class="prod-search-empty">Nenhum produto encontrado.</div>'; return; }
   lista.innerHTML = res.map(p=>`
     <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
       <div class="prod-search-cod">${p.codigo}</div>
       <div class="prod-search-desc">${p.desc}</div>
     </div>`).join('');
+}
+// Teclado numérico do seletor de produto (código é numérico — evita abrir o
+// teclado completo do tablet). Digita no mesmo campo e filtra ao vivo.
+function prodNumpad(d){
+  const inp=document.getElementById('prod-search-inp');
+  if(inp.value && inp.value.length>=12) return;
+  inp.value=(inp.value||'')+d;
+  filtrarProdutos();
+}
+function prodNumpadDel(){
+  const inp=document.getElementById('prod-search-inp');
+  inp.value=(inp.value||'').slice(0,-1);
+  filtrarProdutos();
 }
 async function selecionarProduto(codigo){
   PROD_ATUAL = codigo;
