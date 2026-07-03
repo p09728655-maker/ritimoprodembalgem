@@ -286,7 +286,7 @@ function saveRealizado(p) {
           if (!cell.getFormula()) {
             cell.setValue(real);
           }
-          registrarProducaoProduto(p.produto, inicio || horario, real);
+          registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
           return { ok: true, linha: i + 1, horario: cellHora, realizado: real };
         }
       }
@@ -312,7 +312,7 @@ function saveRealizado(p) {
           sh.getRange(i + 1, ultimo + 1).setValue(real);
           colunaEscrita = ultimo + 1;
         }
-        registrarProducaoProduto(p.produto, inicio || horario, real);
+        registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
         return { ok: true, linha: i + 1, coluna: colunaEscrita, horario: cellHora, realizado: real };
       }
     }
@@ -327,21 +327,33 @@ function saveRealizado(p) {
 // Loga a produção por hora/produto (opcional — só se o operador selecionou um
 // produto no app). Também atualiza o "produto atual do turno". Chamada já sob o
 // lock de saveRealizado; não mexe nas colunas de lote de HORA_A_HORA.
-function registrarProducaoProduto(codigo, horaInicio, caixas) {
+// Grava DESCRICAO/PONTOS/PESO_KG já calculados (snapshot no momento do lançamento)
+// para facilitar relatório direto na planilha, sem precisar cruzar com PRODUTO_CODIGO.
+function registrarProducaoProduto(codigo, horaInicio, caixas, operador) {
   codigo = String(codigo || '').trim();
   if (!codigo) return; // produto é opcional — nada a fazer
 
   PropertiesService.getScriptProperties().setProperty(PROP_PROD_ATUAL, codigo);
 
+  const cx = Number(caixas) || 0;
+  // Busca os dados do produto no catálogo para carimbar descrição/pontos/peso.
+  let desc = '', pontos = 0, pesoKg = 0;
+  const prod = lerCatalogoProdutos().filter(function (p) { return p.codigo === codigo; })[0];
+  if (prod) {
+    desc   = prod.desc || '';
+    pontos = cx * (prod.pontos || 0);
+    pesoKg = Math.round(cx * (prod.peso || 0) * 10) / 10;
+  }
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(SHEET_PROD_LOG);
   if (!sh) {
     sh = ss.insertSheet(SHEET_PROD_LOG);
-    sh.appendRow(['DATA', 'HORA', 'CODIGO', 'CAIXAS']);
+    sh.appendRow(['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR']);
     sh.setFrozenRows(1);
   }
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  sh.appendRow([hoje, horaInicio, codigo, Number(caixas) || 0]);
+  sh.appendRow([hoje, horaInicio, codigo, desc, cx, pontos, pesoKg, operador || '']);
 }
 
 
@@ -582,16 +594,25 @@ function getPontosDia() {
   }
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const rows = sh.getDataRange().getValues().slice(1);
+  const values = sh.getDataRange().getValues();
+
+  // Detecta as colunas pelo cabeçalho (a aba pode ter DESCRICAO/PONTOS/PESO_KG/OPERADOR
+  // além de DATA/HORA/CODIGO/CAIXAS). Fallback posicional p/ o formato antigo.
+  const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const rows = values.slice(1);
 
   let pontos = 0, pesoKg = 0, caixas = 0;
   const porProdutoMap = {}, porHora = [];
 
   rows.forEach(r => {
-    if (String(r[0]).trim() !== hoje) return;
-    const hora   = String(r[1]).trim();
-    const codigo = String(r[2]).trim();
-    const cx     = Number(r[3]) || 0;
+    if (String(r[iData]).trim() !== hoje) return;
+    const hora   = String(r[iHora]).trim();
+    const codigo = String(r[iCod]).trim();
+    const cx     = Number(r[iCx]) || 0;
     if (!codigo || !cx) return;
 
     const prod = catalogo[codigo] || { desc: '', pontos: 0, peso: 0 };
