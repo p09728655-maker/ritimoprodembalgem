@@ -779,11 +779,15 @@ function calcularProgramacao() {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
+    // Lote mais recente conhecido p/ esse produto, olhando hoje OU atraso (dias
+    // anteriores) — assim um produto atrasado (programado num dia passado, ainda
+    // não embalado) também é achável pelo lote, não só o programado de hoje.
+    // Ignora lote de datas futuras (produto ainda nem está em pauta).
+    if (pr.lote && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
+      loteHoje[key] = { lote: pr.lote, dNum: dNum };
+    }
     if (dNum === hojeNum) {
       progHoje[key] = (progHoje[key] || 0) + pr.qtde;
-      // Lote do dia p/ esse produto (usado no app p/ o operador buscar por lote
-      // em vez de decorar o código). Uma linha = 1 produto = 1 lote.
-      if (pr.lote) loteHoje[key] = pr.lote;
     }
     else if (dNum < hojeNum && dNum >= inicio) progAntes[key] = (progAntes[key] || 0) + pr.qtde;
     // antes do controle (< inicio) ou futuro: não vira atraso de hoje
@@ -809,7 +813,7 @@ function calcularProgramacao() {
     lista.push({
       codigo: prod ? prod.codigo : key,
       desc:   prod ? prod.desc   : '',
-      lote:   loteHoje[key] || '',
+      lote:   loteHoje[key] ? loteHoje[key].lote : '',
       programadoHoje: ph,
       atraso: atraso,
       embaladoHoje: eh,
