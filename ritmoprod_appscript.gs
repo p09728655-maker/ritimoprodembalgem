@@ -37,6 +37,12 @@ const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
 const SHEET_HIST_HORA = 'HISTORICO_HORA';
 const SHEET_PARADAS   = 'PARADAS';
+const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
+const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
+const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
+
+// Produto selecionado pelo operador ("produto atual do turno" — opcional).
+const PROP_PROD_ATUAL = 'produtoAtual';
 
 // Fuso fixo para os rótulos de data/arquivamento (independe do fuso do projeto).
 const TZ = 'America/Sao_Paulo';
@@ -74,6 +80,10 @@ function doGet(e) {
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
+    else if (act === 'getProdutos')   result = getProdutos();
+    else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
+    else if (act === 'getPontosDia')  result = getPontosDia();
+    else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -204,6 +214,11 @@ function getDados() {
     });
   }
 
+  // Produto atual do turno (opcional — só existe se o operador selecionou no app).
+  // Leitura barata (ScriptProperties), não bate na aba PRODUTO_CODIGO aqui para
+  // manter getDados leve (caminho quente, sensível a timeout/cold start).
+  const produtoAtual = PropertiesService.getScriptProperties().getProperty(PROP_PROD_ATUAL) || '';
+
   return {
     ok:          true,
     slots,
@@ -212,7 +227,8 @@ function getDados() {
     dataRef:     hoje,
     dadosDeHoje: true,
     planilha:    ss.getName(),
-    aba:         SHEET_DADOS
+    aba:         SHEET_DADOS,
+    produtoAtual
   };
 }
 
@@ -272,6 +288,7 @@ function saveRealizado(p) {
           if (!cell.getFormula()) {
             cell.setValue(real);
           }
+          registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
           return { ok: true, linha: i + 1, horario: cellHora, realizado: real };
         }
       }
@@ -297,6 +314,7 @@ function saveRealizado(p) {
           sh.getRange(i + 1, ultimo + 1).setValue(real);
           colunaEscrita = ultimo + 1;
         }
+        registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
         return { ok: true, linha: i + 1, coluna: colunaEscrita, horario: cellHora, realizado: real };
       }
     }
@@ -306,6 +324,38 @@ function saveRealizado(p) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Loga a produção por hora/produto (opcional — só se o operador selecionou um
+// produto no app). Também atualiza o "produto atual do turno". Chamada já sob o
+// lock de saveRealizado; não mexe nas colunas de lote de HORA_A_HORA.
+// Grava DESCRICAO/PONTOS/PESO_KG já calculados (snapshot no momento do lançamento)
+// para facilitar relatório direto na planilha, sem precisar cruzar com PRODUTO_CODIGO.
+function registrarProducaoProduto(codigo, horaInicio, caixas, operador) {
+  codigo = String(codigo || '').trim();
+  if (!codigo) return; // produto é opcional — nada a fazer
+
+  PropertiesService.getScriptProperties().setProperty(PROP_PROD_ATUAL, codigo);
+
+  const cx = Number(caixas) || 0;
+  // Busca os dados do produto no catálogo para carimbar descrição/pontos/peso.
+  let desc = '', pontos = 0, pesoKg = 0;
+  const prod = lerCatalogoProdutos().filter(function (p) { return p.codigo === codigo; })[0];
+  if (prod) {
+    desc   = prod.desc || '';
+    pontos = cx * (prod.pontos || 0);
+    pesoKg = Math.round(cx * (prod.peso || 0) * 10) / 10;
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_PROD_LOG);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_PROD_LOG);
+    sh.appendRow(['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR']);
+    sh.setFrozenRows(1);
+  }
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  sh.appendRow([hoje, horaInicio, codigo, desc, cx, pontos, pesoKg, operador || '']);
 }
 
 
@@ -461,6 +511,276 @@ function getMediaHoras() {
     amostra[h] = cont[h];
   });
   return { ok: true, medias, amostra };
+}
+
+
+// ════════════════════════════════════════════════════════
+// PRODUTOS (catálogo PRODUTO_CODIGO) + PRODUÇÃO EM PONTOS/PESO
+// ════════════════════════════════════════════════════════
+// Identificação de produto é OPCIONAL: o operador pode selecionar um produto no
+// app (busca por código/descrição) para acompanhar pontos/peso no gerencial e na
+// TV, mas o lançamento de caixas funciona normalmente sem produto selecionado.
+
+// Lê o catálogo detectando colunas pelo NOME do cabeçalho (robusto a reordenação),
+// no mesmo padrão de getDados/saveRealizado.
+function lerCatalogoProdutos() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PRODUTOS);
+  if (!sh) return [];
+
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if (lastRow < 2) return [];
+
+  const data = sh.getRange(1, 1, lastRow, lastCol).getValues();
+  const hdr  = data[0].map(c => String(c).trim().toUpperCase().replace(/\s+/g, ' '));
+
+  const iCod    = hdr.indexOf('CODIGO');
+  const iDesc   = hdr.indexOf('DESCRICAO');
+  const iPeso   = hdr.indexOf('P B');       // peso bruto (kg)
+  const iEan    = hdr.indexOf('EAN 128');
+  const iMedida = hdr.indexOf('MEDIDA DA CAIXA');
+  const iVel    = hdr.indexOf('VELOCIDADE');
+  const iEntre  = hdr.indexOf('ENTRE_PECA');
+  const iPontos = hdr.indexOf('PONTOS');
+  const iTroca  = hdr.indexOf('TEMPO DE TROCA MIN');
+
+  if (iCod < 0) return [];
+
+  const produtos = [];
+  for (let i = 1; i < data.length; i++) {
+    const row    = data[i];
+    const codigo = String(row[iCod] || '').trim();
+    if (!codigo) continue;
+    produtos.push({
+      codigo,
+      desc:       iDesc   >= 0 ? String(row[iDesc] || '').trim() : '',
+      peso:       iPeso   >= 0 ? Number(row[iPeso])   || 0 : 0,
+      ean:        iEan    >= 0 ? String(row[iEan] || '').trim() : '',
+      medida:     iMedida >= 0 ? Number(row[iMedida]) || 0 : 0,
+      velocidade: iVel    >= 0 ? Number(row[iVel])    || 0 : 0,
+      entrePeca:  iEntre  >= 0 ? Number(row[iEntre])  || 0 : 0,
+      pontos:     iPontos >= 0 ? Number(row[iPontos]) || 0 : 0,
+      tempoTroca: iTroca  >= 0 ? Number(row[iTroca])  || 0 : 0
+    });
+  }
+  return produtos;
+}
+
+// Catálogo completo para a busca no app (operador digita código ou descrição).
+function getProdutos() {
+  return { ok: true, produtos: lerCatalogoProdutos() };
+}
+
+// Grava o produto escolhido pelo operador como "produto atual do turno".
+function setProdutoAtual(p) {
+  const codigo = String(p.codigo || '').trim();
+  if (!codigo) return { ok: false, erro: 'Codigo obrigatorio.' };
+  PropertiesService.getScriptProperties().setProperty(PROP_PROD_ATUAL, codigo);
+  return { ok: true, produtoAtual: codigo };
+}
+
+// Produção do dia em PONTOS e PESO (kg), a partir do log PRODUCAO_PRODUTO.
+// Usada só pelo gerencial/TV (fora do caminho quente do app do operador).
+function getPontosDia() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROD_LOG);
+
+  const produtoAtual = PropertiesService.getScriptProperties().getProperty(PROP_PROD_ATUAL) || '';
+  const catalogo = {};
+  lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
+  const produtoAtualDesc = catalogo[produtoAtual] ? catalogo[produtoAtual].desc : '';
+
+  // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
+  const programacao = calcularProgramacao();
+
+  if (!sh) {
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], programacao };
+  }
+
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const values = sh.getDataRange().getValues();
+
+  // Detecta as colunas pelo cabeçalho (a aba pode ter DESCRICAO/PONTOS/PESO_KG/OPERADOR
+  // além de DATA/HORA/CODIGO/CAIXAS). Fallback posicional p/ o formato antigo.
+  const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const rows = values.slice(1);
+
+  let pontos = 0, pesoKg = 0, caixas = 0;
+  const porProdutoMap = {}, porHora = [];
+
+  rows.forEach(r => {
+    if (String(r[iData]).trim() !== hoje) return;
+    const hora   = String(r[iHora]).trim();
+    const codigo = String(r[iCod]).trim();
+    const cx     = Number(r[iCx]) || 0;
+    if (!codigo || !cx) return;
+
+    const prod = catalogo[codigo] || { desc: '', pontos: 0, peso: 0 };
+    const pts  = cx * (prod.pontos || 0);
+    const kg   = cx * (prod.peso   || 0);
+
+    pontos += pts; pesoKg += kg; caixas += cx;
+
+    if (!porProdutoMap[codigo]) {
+      porProdutoMap[codigo] = { codigo, desc: prod.desc || '', caixas: 0, pontos: 0, pesoKg: 0 };
+    }
+    porProdutoMap[codigo].caixas += cx;
+    porProdutoMap[codigo].pontos += pts;
+    porProdutoMap[codigo].pesoKg += kg;
+
+    porHora.push({ hora, codigo, caixas: cx, pontos: pts, pesoKg: kg });
+  });
+
+  return {
+    ok: true,
+    pontos: Math.round(pontos),
+    pesoKg: Math.round(pesoKg * 10) / 10,
+    caixas,
+    produtoAtual,
+    produtoAtualDesc,
+    porProduto: Object.values(porProdutoMap),
+    porHora,
+    programacao
+  };
+}
+
+
+// ════════════════════════════════════════════════════════
+// PROGRAMAÇÃO + ATRASO (planejado × embalado)
+// ════════════════════════════════════════════════════════
+// Aba PROGRAMACAO: DATA, CODIGO, QTDE (quanto embalar de cada produto por dia).
+// O "atraso" ACUMULA DESDE SEMPRE por produto:
+//   atraso[cod]      = max( programado(< hoje) - embalado(< hoje), 0 )
+//   metaEfetiva[cod] = programado(hoje) + atraso[cod]
+// Se um dia embala mais que o programado, o excedente abate o atraso (saldo se
+// autocorrige). Depende do operador MARCAR o produto no lançamento (opcional).
+
+// Converte dd/MM/yyyy -> número yyyymmdd para comparar datas (0 se inválida).
+function dataParaNum(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return 0;
+  return Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]);
+}
+
+// Lê a aba PROGRAMACAO (DATA, CODIGO, QTDE) detectando colunas pelo cabeçalho.
+function lerProgramacao() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROG);
+  if (!sh) return [];
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const hdr  = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 1;
+  const iQtd  = hdr.indexOf('QTDE')   >= 0 ? hdr.indexOf('QTDE')   : 2;
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const data   = String(r[iData] || '').trim();
+    const qtde   = Number(r[iQtd]) || 0;
+    if (!codigo || !data) continue;
+    out.push({ data, codigo, qtde });
+  }
+  return out;
+}
+
+// Caixas embaladas por produto, separando o que foi ANTES de hoje e HOJE
+// (comparando com hojeNum). Usado para o atraso acumulado.
+function lerEmbaladoPorProduto(hojeNum) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROD_LOG);
+  const antes = {}, hoje = {};
+  if (!sh) return { antes, hoje };
+  const values = sh.getDataRange().getValues();
+  const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const cx     = Number(r[iCx]) || 0;
+    if (!codigo || !cx) continue;
+    const dNum = dataParaNum(r[iData]);
+    if (dNum === 0) continue;
+    if (dNum < hojeNum)      antes[codigo] = (antes[codigo] || 0) + cx;
+    else if (dNum === hojeNum) hoje[codigo] = (hoje[codigo] || 0) + cx;
+    // dNum > hojeNum (futuro): ignora
+  }
+  return { antes, hoje };
+}
+
+// Monta a lista por produto (programado hoje, atraso, embalado hoje, falta) e os
+// totais, incluindo a "meta efetiva" do dia (programado de hoje + atraso).
+function calcularProgramacao() {
+  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const hojeNum = dataParaNum(hoje);
+  const catalogo = {};
+  lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
+
+  const progHoje = {}, progAntes = {};
+  lerProgramacao().forEach(pr => {
+    const dNum = dataParaNum(pr.data);
+    if (dNum === 0) return;
+    if (dNum === hojeNum)     progHoje[pr.codigo]  = (progHoje[pr.codigo]  || 0) + pr.qtde;
+    else if (dNum < hojeNum)  progAntes[pr.codigo] = (progAntes[pr.codigo] || 0) + pr.qtde;
+    // futuro: não entra na meta/atraso de hoje
+  });
+
+  const emb = lerEmbaladoPorProduto(hojeNum);
+
+  const codigos = {};
+  Object.keys(progHoje).forEach(c => codigos[c] = 1);
+  Object.keys(progAntes).forEach(c => codigos[c] = 1);
+  Object.keys(emb.hoje).forEach(c => codigos[c] = 1);
+
+  const lista = [];
+  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0;
+  Object.keys(codigos).forEach(cod => {
+    const ph = progHoje[cod]  || 0;
+    const pa = progAntes[cod] || 0;
+    const ea = emb.antes[cod] || 0;
+    const eh = emb.hoje[cod]  || 0;
+    const atraso      = Math.max(pa - ea, 0);
+    const metaEfetiva = ph + atraso;
+    const falta       = Math.max(metaEfetiva - eh, 0);
+    if (ph === 0 && atraso === 0 && eh === 0) return; // nada a mostrar
+    lista.push({
+      codigo: cod,
+      desc: catalogo[cod] ? catalogo[cod].desc : '',
+      programadoHoje: ph,
+      atraso: atraso,
+      embaladoHoje: eh,
+      metaEfetiva: metaEfetiva,
+      falta: falta
+    });
+    totMeta += metaEfetiva; totProgHoje += ph; totAtraso += atraso; totEmbHoje += eh;
+  });
+  lista.sort((a, b) => b.falta - a.falta); // maior falta primeiro
+
+  return {
+    lista: lista,
+    metaEfetiva: totMeta,
+    programadoHoje: totProgHoje,
+    atrasoTotal: totAtraso,
+    embaladoHoje: totEmbHoje
+  };
+}
+
+// Lista enxuta para o app do operador: produtos programados para hoje OU em
+// atraso (o que ele deve rodar), para seleção rápida sem varrer o catálogo todo.
+function getProgramacaoHoje() {
+  const p = calcularProgramacao();
+  const produtos = p.lista
+    .filter(x => x.programadoHoje > 0 || x.atraso > 0)
+    .map(x => ({ codigo: x.codigo, desc: x.desc, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
+  return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
 }
 
 

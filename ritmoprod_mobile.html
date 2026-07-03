@@ -182,6 +182,51 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .card{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:14px}
 .card-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px}
 
+/* ═══ PRODUTO ATUAL / PARADAS (barra do operador) ═══ */
+.prod-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px;cursor:pointer}
+.prod-bar:active{background:var(--elevated)}
+.prod-bar-ico{font-size:16px;flex-shrink:0}
+.prod-bar-txt{flex:1;min-width:0}
+.prod-bar-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.prod-bar-val{font-family:var(--font-h);font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-bar-chev{color:var(--txt2);font-size:12px;flex-shrink:0}
+.btn-paradas{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:5px;padding:6px 12px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.btn-paradas.tem-paradas{color:var(--warn);border-color:var(--warn)}
+
+/* Busca de produto */
+.prod-search-inp{
+  width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:16px;outline:none;
+}
+.prod-search-inp:focus{border-color:var(--acc)}
+.prod-search-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
+.prod-search-item{padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;cursor:pointer}
+.prod-search-item:active{background:var(--border)}
+.prod-search-cod{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px}
+.prod-search-desc{font-family:var(--font-b);font-size:13px;margin-top:2px}
+.prod-search-empty{text-align:center;padding:20px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px}
+
+/* Paradas */
+.parada-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px}
+.parada-info{flex:1;min-width:0}
+.parada-tipo{font-family:var(--font-h);font-size:14px;font-weight:700}
+.parada-hora{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px;margin-top:2px}
+.parada-obs{font-family:var(--font-b);font-size:11px;color:var(--txt2);margin-top:2px}
+.sel-tipo{
+  width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:15px;outline:none;
+}
+.inp-time{
+  width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-d);font-size:16px;outline:none;
+}
+.inp-obs{
+  width:100%;padding:12px;background:var(--elevated);border:1px solid var(--border);
+  border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:14px;outline:none;resize:none;
+}
+.row-2{display:flex;gap:10px}
+.row-2>*{flex:1}
+
 /* ═══ MODAL LANÇAMENTO ═══ */
 .modal-over{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:flex-end;justify-content:center;z-index:100;padding:16px}
 .modal-over.open{display:flex}
@@ -289,6 +334,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   .modal-ttl{font-size:22px}
   .cf-msg{font-size:17px}
   .btn-cancelar,.btn-salvar{font-size:16px;padding:17px}
+
+  .prod-bar{padding:14px 18px}
+  .prod-bar-val{font-size:19px}
+  .btn-paradas{font-size:12px;padding:9px 16px}
 }
 </style>
 </head>
@@ -332,9 +381,23 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <span class="status-txt" id="lan-status">Carregando...</span>
       <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
     </div>
+
+    <!-- Produto atual do turno — OPCIONAL, não bloqueia lançamento -->
+    <div class="prod-bar" id="prod-bar" onclick="abrirModalProduto()">
+      <span class="prod-bar-ico">📦</span>
+      <div class="prod-bar-txt">
+        <div class="prod-bar-lbl">PRODUTO ATUAL</div>
+        <div class="prod-bar-val" id="prod-bar-val">TOCAR PARA SELECIONAR</div>
+      </div>
+      <span class="prod-bar-chev">›</span>
+    </div>
+
     <div class="sec-lbl-row">
       <span class="sec-lbl">SLOTS DO DIA</span>
-      <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+      <div class="row-2" style="flex:none">
+        <button class="btn-paradas" id="btn-paradas" onclick="abrirModalParadas()">⏸ PARADAS</button>
+        <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+      </div>
     </div>
     <div class="slot-list" id="slot-list">
       <div class="loading">CARREGANDO SLOTS...</div>
@@ -481,6 +544,68 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   </div>
 </div>
 
+<!-- ═══ MODAL PRODUTO (busca por código/descrição) ═══ -->
+<div class="modal-over" id="modal-produto">
+  <div class="modal-sheet">
+    <div class="modal-slot-info">
+      <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
+      <div class="modal-slot-meta">Busque por código ou descrição</div>
+    </div>
+    <input class="prod-search-inp" id="prod-search-inp" type="text" placeholder="Ex.: 501.041 ou BERCO ARCO-IRIS" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
+    <div class="prod-search-list" id="prod-search-list">
+      <div class="prod-search-empty">Digite para buscar…</div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" style="flex:1" onclick="fecharModalProduto()">FECHAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL PARADAS ═══ -->
+<div class="modal-over" id="modal-paradas">
+  <div class="modal-sheet">
+    <div class="modal-slot-info">
+      <div class="modal-slot-nome">PARADAS DO DIA</div>
+      <div class="modal-slot-meta" id="par-data">--/--/----</div>
+    </div>
+    <div class="prod-search-list" id="paradas-list" style="max-height:30vh">
+      <div class="prod-search-empty">Nenhuma parada registrada.</div>
+    </div>
+    <div class="inp-grp">
+      <div class="inp-lbl">TIPO DE PARADA</div>
+      <select class="sel-tipo" id="par-tipo">
+        <option>Troca de produto</option>
+        <option>Manutenção</option>
+        <option>Falta de material</option>
+        <option>Refeição/Intervalo</option>
+        <option>Limpeza</option>
+        <option>Reunião</option>
+        <option>Falta de energia</option>
+        <option>Ajuste de máquina</option>
+        <option>Outro</option>
+      </select>
+    </div>
+    <div class="row-2">
+      <div class="inp-grp">
+        <div class="inp-lbl">INÍCIO</div>
+        <input class="inp-time" id="par-ini" type="time">
+      </div>
+      <div class="inp-grp">
+        <div class="inp-lbl">FIM</div>
+        <input class="inp-time" id="par-fim" type="time">
+      </div>
+    </div>
+    <div class="inp-grp">
+      <div class="inp-lbl">OBSERVAÇÃO (OPCIONAL)</div>
+      <textarea class="inp-obs" id="par-obs" rows="2" placeholder="Detalhes da parada…"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModalParadas()">FECHAR</button>
+      <button class="btn-salvar" id="btn-salvar-parada" onclick="salvarParada()">REGISTRAR</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════
 // ESTADO
@@ -502,11 +627,26 @@ let PERFIL = null;
 let _slotAtivo = null;
 let _senhaCallback = null;
 let _refreshTimer = null;
+// Catálogo de produtos (PRODUTO_CODIGO) e produto atual do turno — OPCIONAL,
+// não bloqueia lançamento de caixas.
+let PRODUTOS = [];
+let PROD_ATUAL = '';
+let PARADAS_HOJE = [];
+// Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
+let PROG_HOJE = [];
 
 function loadCfg(){
   try{
     const s = localStorage.getItem('rpe_cfg');
     if(s) CFG = {...CFG, ...JSON.parse(s)};
+  }catch(e){}
+}
+
+function loadProdutoLocal(){
+  try{
+    const c = localStorage.getItem('rpe_produtos');
+    if(c) PRODUTOS = JSON.parse(c);
+    PROD_ATUAL = localStorage.getItem('rpe_prod_atual') || '';
   }catch(e){}
 }
 
@@ -607,6 +747,13 @@ function processarResposta(json){
   // já filtra os slots por ela; aqui só espelhamos em CFG p/ o getSlots de
   // contingência (quando o Sheets não responde) usar a mesma hora de início.
   if(json.turnoInicio) CFG.turnoInicio = json.turnoInicio;
+  // Produto atual do turno (opcional): backend é a fonte da verdade, sincroniza
+  // entre operador/gerencial/TV. Só atualiza quando o backend devolve um valor.
+  if(json.produtoAtual){
+    PROD_ATUAL = json.produtoAtual;
+    localStorage.setItem('rpe_prod_atual', PROD_ATUAL);
+    atualizarProdutoBar();
+  }
   const hoje = hojeStr();
   let acum = 0;
   const novos = (json.slots||[]).filter(s=>s.metaHora>0).map(s=>{
@@ -664,6 +811,174 @@ async function lerMediaHoras(){
     }
   }catch(e){ console.warn('lerMediaHoras:', e.message); }
   return false;
+}
+
+// ════════════════════════════════════════════════
+// PRODUTOS (identificação do produto — OPCIONAL)
+// ════════════════════════════════════════════════
+async function carregarProdutos(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.produtos)){
+      PRODUTOS = json.produtos;
+      localStorage.setItem('rpe_produtos', JSON.stringify(PRODUTOS));
+    }
+  }catch(e){ console.warn('carregarProdutos:', e.message); }
+}
+
+// Produtos programados para hoje (+ em atraso). Fica no topo do seletor para o
+// operador escolher rápido, sem varrer o catálogo inteiro.
+async function carregarProgramacaoHoje(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoHoje';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.produtos)){
+      PROG_HOJE = json.produtos;
+    }
+  }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
+}
+
+function atualizarProdutoBar(){
+  const el = document.getElementById('prod-bar-val');
+  if(!el) return;
+  if(!PROD_ATUAL){ el.textContent='TOCAR PARA SELECIONAR'; return; }
+  const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
+  el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+}
+
+// Remove acentos p/ a busca não depender de digitar acento certo.
+function normTxt(s){
+  return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+
+function abrirModalProduto(){
+  document.getElementById('prod-search-inp').value='';
+  filtrarProdutos();
+  document.getElementById('modal-produto').classList.add('open');
+  setTimeout(()=>document.getElementById('prod-search-inp').focus(), 150);
+  if(!PRODUTOS.length) carregarProdutos().then(filtrarProdutos);
+  carregarProgramacaoHoje().then(filtrarProdutos); // atualiza a lista do dia
+}
+function fecharModalProduto(){
+  document.getElementById('modal-produto').classList.remove('open');
+}
+function filtrarProdutos(){
+  const q = normTxt(document.getElementById('prod-search-inp').value.trim());
+  const lista = document.getElementById('prod-search-list');
+  if(!q){
+    // Sem busca: mostra os PRODUTOS DO DIA (programados + em atraso) para toque
+    // rápido. Se não houver programação, cai no aviso de digitar a busca.
+    if(PROG_HOJE.length){
+      lista.innerHTML =
+        '<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">PRODUTOS DE HOJE — toque para selecionar</div>' +
+        PROG_HOJE.map(p=>{
+          const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px;margin-left:8px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
+          const qtd = p.qtde>0 ? `<div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">meta ${fmtN(p.qtde)} cx</div>` : '';
+          return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+            <div class="prod-search-cod">${p.codigo}${atr}</div>
+            <div class="prod-search-desc">${p.desc}</div>${qtd}
+          </div>`;
+        }).join('');
+    } else {
+      lista.innerHTML='<div class="prod-search-empty">Digite o código ou nome do produto…</div>';
+    }
+    return;
+  }
+  const res = PRODUTOS.filter(p=> normTxt(p.codigo).includes(q) || normTxt(p.desc).includes(q)).slice(0,30);
+  if(!res.length){ lista.innerHTML='<div class="prod-search-empty">Nenhum produto encontrado.</div>'; return; }
+  lista.innerHTML = res.map(p=>`
+    <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+      <div class="prod-search-cod">${p.codigo}</div>
+      <div class="prod-search-desc">${p.desc}</div>
+    </div>`).join('');
+}
+async function selecionarProduto(codigo){
+  PROD_ATUAL = codigo;
+  localStorage.setItem('rpe_prod_atual', codigo);
+  atualizarProdutoBar();
+  fecharModalProduto();
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setProdutoAtual&codigo='+encodeURIComponent(codigo);
+    await jsonpFetch(url);
+  }catch(e){ console.warn('setProdutoAtual:', e.message); }
+}
+
+// ════════════════════════════════════════════════
+// PARADAS (registro do operador — reusa saveParadas/getParadas do backend)
+// ════════════════════════════════════════════════
+async function carregarParadas(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas';
+    const json = await jsonpFetch(url);
+    if(json && json.ok){
+      PARADAS_HOJE = json.paradas||[];
+      renderParadasList();
+      atualizarBadgeParadas();
+    }
+  }catch(e){ console.warn('carregarParadas:', e.message); }
+}
+function atualizarBadgeParadas(){
+  const btn = document.getElementById('btn-paradas');
+  if(btn) btn.classList.toggle('tem-paradas', PARADAS_HOJE.length>0);
+}
+function renderParadasList(){
+  const el = document.getElementById('paradas-list');
+  if(!el) return;
+  if(!PARADAS_HOJE.length){ el.innerHTML='<div class="prod-search-empty">Nenhuma parada registrada.</div>'; return; }
+  el.innerHTML = PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>`
+    <div class="parada-item">
+      <div class="parada-info">
+        <div class="parada-tipo">${p.tipo||'—'}</div>
+        <div class="parada-hora">${p.ini||'--:--'} – ${p.fim||'--:--'}</div>
+        ${p.obs?`<div class="parada-obs">${p.obs}</div>`:''}
+      </div>
+    </div>`).join('');
+}
+function abrirModalParadas(){
+  document.getElementById('par-data').textContent = hojeStr();
+  document.getElementById('par-tipo').selectedIndex = 0;
+  document.getElementById('par-ini').value='';
+  document.getElementById('par-fim').value='';
+  document.getElementById('par-obs').value='';
+  renderParadasList();
+  document.getElementById('modal-paradas').classList.add('open');
+  carregarParadas();
+}
+function fecharModalParadas(){
+  document.getElementById('modal-paradas').classList.remove('open');
+}
+async function salvarParada(){
+  const tipo = document.getElementById('par-tipo').value;
+  const ini  = document.getElementById('par-ini').value;
+  const fim  = document.getElementById('par-fim').value;
+  const obs  = document.getElementById('par-obs').value.trim();
+  if(!ini || !fim){ alert('Informe o início e o fim da parada.'); return; }
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  const btn = document.getElementById('btn-salvar-parada');
+  btn.textContent='SALVANDO...'; btn.disabled=true;
+
+  const nova = { id: Date.now(), tipo, ini, fim, obs };
+  const params = 'action=saveParadas&paradas='+encodeURIComponent(JSON.stringify([nova]));
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+
+  try{
+    const res = await jsonpFetch(url);
+    if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
+    document.getElementById('par-ini').value='';
+    document.getElementById('par-fim').value='';
+    document.getElementById('par-obs').value='';
+    await carregarParadas();
+  }catch(e){
+    alert('Erro ao salvar parada: '+e.message);
+  }finally{
+    btn.textContent='REGISTRAR'; btn.disabled=false;
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -790,6 +1105,10 @@ function entrar(tipo){
     showView('view-lancamentos');
     iniciarRefreshAuto();
     renderLancamentos();
+    atualizarProdutoBar();
+    carregarProdutos();
+    carregarProgramacaoHoje();
+    carregarParadas();
     lerSheets();
   } else {
     showView('view-gerencial');
@@ -1028,8 +1347,11 @@ async function salvarLanc(){
     'horario='+encodeURIComponent(_slotAtivo.inicio),
     'realizado='+add,
     'operador='+encodeURIComponent('Mobile')
-  ].join('&');
-  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+  ];
+  // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
+  // (sem produto) — não bloqueia a produção.
+  if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
   try{
     const res=await jsonpFetch(url);
@@ -1259,6 +1581,7 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ════════════════════════════════════════════════
 loadCfg();
+loadProdutoLocal();
 tickClock();
 setInterval(tickClock, 10000);
 </script>
