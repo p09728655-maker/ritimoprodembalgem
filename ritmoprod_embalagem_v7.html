@@ -659,6 +659,19 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
+  <!-- Produção por hora, detalhada por produto (só aparece quando há lançamento com produto selecionado) -->
+  <div class="tbl-wrap" id="porhora-wrap" style="margin-top:12px;display:none">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">PRODUÇÃO POR HORA — POR PRODUTO</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>HORÁRIO</th><th>PRODUTO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th></tr></thead>
+        <tbody id="porhora-body"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- PARADAS DO DIA -->
   <div class="tbl-wrap" id="paradas-wrap" style="margin-top:12px;display:none">
     <div class="tbl-hdr">
@@ -2181,6 +2194,9 @@ function renderGerencial(){
   // ── Programação × Embalado (com atraso) ──
   renderProgramacao();
 
+  // ── Produção por hora, detalhada por produto ──
+  renderProducaoPorHora();
+
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
   let acumCalc=0;
@@ -2256,6 +2272,26 @@ function renderProgramacao(){
       <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
     </tr>`;
   }).join('');
+}
+
+// Produção por hora, detalhada por produto — reaproveita PONTOS_DIA.porHora
+// (um lançamento por linha; identificação de produto é opcional, então só
+// aparece o que o operador lançou com produto selecionado).
+function renderProducaoPorHora(){
+  const wrap=document.getElementById('porhora-wrap');
+  if(!wrap) return;
+  const lista=(PONTOS_DIA.porHora)||[];
+  if(!lista.length){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+  const ordenado=[...lista].sort((a,b)=>String(a.hora).localeCompare(String(b.hora)));
+  document.getElementById('porhora-body').innerHTML=ordenado.map(it=>`
+    <tr>
+      <td class="mono">${it.hora||'—'}</td>
+      <td style="text-align:left">${it.codigo}${it.desc?' · '+it.desc:''}</td>
+      <td class="mono">${fmtN(it.caixas)}</td>
+      <td class="mono">${fmtN(it.pesoKg)} kg</td>
+      <td class="mono">${fmtN(it.pontos)}</td>
+    </tr>`).join('');
 }
 
 // ════════════════════════════════════════════════

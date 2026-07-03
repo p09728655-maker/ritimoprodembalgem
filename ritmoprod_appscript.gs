@@ -654,7 +654,7 @@ function getPontosDia() {
     porProdutoMap[codigo].pontos += pts;
     porProdutoMap[codigo].pesoKg += kg;
 
-    porHora.push({ hora, codigo, caixas: cx, pontos: pts, pesoKg: kg });
+    porHora.push({ hora, codigo, desc: prod.desc || '', caixas: cx, pontos: pts, pesoKg: kg });
   });
 
   return {
