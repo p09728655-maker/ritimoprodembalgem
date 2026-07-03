@@ -713,6 +713,7 @@ function lerProgramacao() {
   const iData = acha('DATA');
   const iCod  = acha('CODIGO', 'COD');
   const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX');
+  const iLote = acha('LOTE', 'LT');
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -722,7 +723,9 @@ function lerProgramacao() {
     const codigo = String(r[cCod] || '').trim();
     const qtde   = Number(r[cQtd]) || 0;
     if (!codigo || !r[cData]) continue;
-    out.push({ data: r[cData], codigo: codigo, qtde: qtde });
+    // LOTE é opcional: aba pode nao ter a coluna ainda (compatibilidade).
+    const lote = iLote >= 0 ? String(r[iLote] || '').trim() : '';
+    out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote });
   }
   return out;
 }
@@ -770,12 +773,17 @@ function calcularProgramacao() {
   const emb    = lerEmbaladoPorProduto(hojeNum);
   const inicio = emb.inicio; // atraso só conta de 'inicio' até ontem
 
-  const progHoje = {}, progAntes = {};
+  const progHoje = {}, progAntes = {}, loteHoje = {};
   lerProgramacao().forEach(pr => {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
-    if (dNum === hojeNum)                      progHoje[key]  = (progHoje[key]  || 0) + pr.qtde;
+    if (dNum === hojeNum) {
+      progHoje[key] = (progHoje[key] || 0) + pr.qtde;
+      // Lote do dia p/ esse produto (usado no app p/ o operador buscar por lote
+      // em vez de decorar o código). Uma linha = 1 produto = 1 lote.
+      if (pr.lote) loteHoje[key] = pr.lote;
+    }
     else if (dNum < hojeNum && dNum >= inicio) progAntes[key] = (progAntes[key] || 0) + pr.qtde;
     // antes do controle (< inicio) ou futuro: não vira atraso de hoje
   });
@@ -800,6 +808,7 @@ function calcularProgramacao() {
     lista.push({
       codigo: prod ? prod.codigo : key,
       desc:   prod ? prod.desc   : '',
+      lote:   loteHoje[key] || '',
       programadoHoje: ph,
       atraso: atraso,
       embaladoHoje: eh,
@@ -825,7 +834,7 @@ function getProgramacaoHoje() {
   const p = calcularProgramacao();
   const produtos = p.lista
     .filter(x => x.programadoHoje > 0 || x.atraso > 0)
-    .map(x => ({ codigo: x.codigo, desc: x.desc, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
+    .map(x => ({ codigo: x.codigo, desc: x.desc, lote: x.lote, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
   return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
 }
 

@@ -2082,10 +2082,12 @@ function calcKPIs(dh){
   const metaReal=dhAll.reduce((s,r)=>s+(r.metaHora||0),0);
   const ef=metaReal>0?(real/metaReal)*100:0;
   const gap=meta-real;
-  // Ritmo Atual = produção da ÚLTIMA hora já lançada (rótulo na tela diz "cx na
-  // última hora"). Antes usava a média do dia inteiro (real/n), o que não batia
-  // com o rótulo e distorcia a Projeção quando o ritmo do dia mudava de patamar.
-  const ritmo=n>0?dhAll[n-1].producaoHora:0;
+  // Ritmo Atual = média de cx/hora nas horas já passadas do turno. Já foi trocado
+  // para "última hora" por engano (o rótulo antigo dizia isso), mas o pedido real
+  // é a média — o que estava mesmo quebrado era o backend contando horas futuras
+  // como já lançadas (ver getDados em ritmoprod_appscript.gs), inflando o "n" e
+  // distorcendo essa média. Com o backend corrigido, a média volta a fazer sentido.
+  const ritmo=n>0?Math.round(real/n):0;
   const slotsRest=effSlots.length-n;
   const metaH=n>0?Math.round(dhAll.reduce((s,r)=>s+(r.metaHora||0),0)/n):Math.round(meta/Math.max(effSlots.length,1));
   const proj=real+ritmo*slotsRest;
@@ -2113,7 +2115,7 @@ function renderGerencial(){
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
     {l:'EFICIÊNCIA %',      v:fmtP(k.ef),               sub:sl(k.ef),                c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
-    {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'cx na última hora',      c:'acc'},
+    {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
     {l:'HORAS PRODUTIVAS',  v:k.hProd.toFixed(1)+'h',  sub:`${k.n} slots registrados`,c:''},
     {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
