@@ -869,12 +869,20 @@ function getProgramacaoDetalhada() {
   const statusByKey = {};
   calcularProgramacao().lista.forEach(function (x) { statusByKey[codKey(x.codigo)] = x; });
 
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+
   const itens = lerProgramacao().map(function (pr) {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     const cat  = catByKey[key];
     const st   = statusByKey[key];
     const qtde = pr.qtde || 0;
+    // Linha de data FUTURA (dNum > hojeNum): ainda não venceu, então não mostra
+    // embalado/falta nem que fosse o total do produto — mesmo que esse mesmo
+    // produto tenha atraso de OUTRO lote (data <= hoje), isso não pode "vazar"
+    // pra uma linha que ainda nem chegou (senão parece que o item futuro já
+    // está em falta, o que não faz sentido).
+    const futura = dNum > hojeNum;
     return {
       data:     normalizarDataBR(pr.data),
       dataNum:  dNum,
@@ -884,12 +892,12 @@ function getProgramacaoDetalhada() {
       qtde:     qtde,
       pesoKg:   Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
       pontos:   Math.round(qtde * (cat ? cat.pontos : 0)),
-      embalado: st ? st.embaladoHoje  : 0,
-      falta:    st ? st.falta         : 0,
+      embalado: futura ? 0 : (st ? st.embaladoHoje : 0),
+      falta:    futura ? 0 : (st ? st.falta         : 0),
       // metaEfetiva=0 quer dizer "nada vencendo hoje pra esse produto" (comum
       // em linha de data futura) — o app usa isso pra não mostrar "✓ OK" como
       // se já tivesse sido embalado quando na verdade ainda nem venceu.
-      metaEfetiva: st ? st.metaEfetiva : 0
+      metaEfetiva: futura ? 0 : (st ? st.metaEfetiva : 0)
     };
   // Só entram linhas com lote preenchido: pedido do usuário, pra tela ficar mais
   // confiável (linhas sem lote costumam ser lançamento incompleto/rascunho).
