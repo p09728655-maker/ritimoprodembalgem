@@ -39,6 +39,7 @@ const SHEET_HIST_HORA = 'HISTORICO_HORA';
 const SHEET_PARADAS   = 'PARADAS';
 const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
 const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
+const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -82,6 +83,7 @@ function doGet(e) {
     else if (act === 'getProdutos')   result = getProdutos();
     else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
     else if (act === 'getPontosDia')  result = getPontosDia();
+    else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -589,8 +591,11 @@ function getPontosDia() {
   lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
   const produtoAtualDesc = catalogo[produtoAtual] ? catalogo[produtoAtual].desc : '';
 
+  // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
+  const programacao = calcularProgramacao();
+
   if (!sh) {
-    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [] };
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], programacao };
   }
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
@@ -639,8 +644,143 @@ function getPontosDia() {
     produtoAtual,
     produtoAtualDesc,
     porProduto: Object.values(porProdutoMap),
-    porHora
+    porHora,
+    programacao
   };
+}
+
+
+// ════════════════════════════════════════════════════════
+// PROGRAMAÇÃO + ATRASO (planejado × embalado)
+// ════════════════════════════════════════════════════════
+// Aba PROGRAMACAO: DATA, CODIGO, QTDE (quanto embalar de cada produto por dia).
+// O "atraso" ACUMULA DESDE SEMPRE por produto:
+//   atraso[cod]      = max( programado(< hoje) - embalado(< hoje), 0 )
+//   metaEfetiva[cod] = programado(hoje) + atraso[cod]
+// Se um dia embala mais que o programado, o excedente abate o atraso (saldo se
+// autocorrige). Depende do operador MARCAR o produto no lançamento (opcional).
+
+// Converte dd/MM/yyyy -> número yyyymmdd para comparar datas (0 se inválida).
+function dataParaNum(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return 0;
+  return Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]);
+}
+
+// Lê a aba PROGRAMACAO (DATA, CODIGO, QTDE) detectando colunas pelo cabeçalho.
+function lerProgramacao() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROG);
+  if (!sh) return [];
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return [];
+  const hdr  = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 1;
+  const iQtd  = hdr.indexOf('QTDE')   >= 0 ? hdr.indexOf('QTDE')   : 2;
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const data   = String(r[iData] || '').trim();
+    const qtde   = Number(r[iQtd]) || 0;
+    if (!codigo || !data) continue;
+    out.push({ data, codigo, qtde });
+  }
+  return out;
+}
+
+// Caixas embaladas por produto, separando o que foi ANTES de hoje e HOJE
+// (comparando com hojeNum). Usado para o atraso acumulado.
+function lerEmbaladoPorProduto(hojeNum) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROD_LOG);
+  const antes = {}, hoje = {};
+  if (!sh) return { antes, hoje };
+  const values = sh.getDataRange().getValues();
+  const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const cx     = Number(r[iCx]) || 0;
+    if (!codigo || !cx) continue;
+    const dNum = dataParaNum(r[iData]);
+    if (dNum === 0) continue;
+    if (dNum < hojeNum)      antes[codigo] = (antes[codigo] || 0) + cx;
+    else if (dNum === hojeNum) hoje[codigo] = (hoje[codigo] || 0) + cx;
+    // dNum > hojeNum (futuro): ignora
+  }
+  return { antes, hoje };
+}
+
+// Monta a lista por produto (programado hoje, atraso, embalado hoje, falta) e os
+// totais, incluindo a "meta efetiva" do dia (programado de hoje + atraso).
+function calcularProgramacao() {
+  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const hojeNum = dataParaNum(hoje);
+  const catalogo = {};
+  lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
+
+  const progHoje = {}, progAntes = {};
+  lerProgramacao().forEach(pr => {
+    const dNum = dataParaNum(pr.data);
+    if (dNum === 0) return;
+    if (dNum === hojeNum)     progHoje[pr.codigo]  = (progHoje[pr.codigo]  || 0) + pr.qtde;
+    else if (dNum < hojeNum)  progAntes[pr.codigo] = (progAntes[pr.codigo] || 0) + pr.qtde;
+    // futuro: não entra na meta/atraso de hoje
+  });
+
+  const emb = lerEmbaladoPorProduto(hojeNum);
+
+  const codigos = {};
+  Object.keys(progHoje).forEach(c => codigos[c] = 1);
+  Object.keys(progAntes).forEach(c => codigos[c] = 1);
+  Object.keys(emb.hoje).forEach(c => codigos[c] = 1);
+
+  const lista = [];
+  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0;
+  Object.keys(codigos).forEach(cod => {
+    const ph = progHoje[cod]  || 0;
+    const pa = progAntes[cod] || 0;
+    const ea = emb.antes[cod] || 0;
+    const eh = emb.hoje[cod]  || 0;
+    const atraso      = Math.max(pa - ea, 0);
+    const metaEfetiva = ph + atraso;
+    const falta       = Math.max(metaEfetiva - eh, 0);
+    if (ph === 0 && atraso === 0 && eh === 0) return; // nada a mostrar
+    lista.push({
+      codigo: cod,
+      desc: catalogo[cod] ? catalogo[cod].desc : '',
+      programadoHoje: ph,
+      atraso: atraso,
+      embaladoHoje: eh,
+      metaEfetiva: metaEfetiva,
+      falta: falta
+    });
+    totMeta += metaEfetiva; totProgHoje += ph; totAtraso += atraso; totEmbHoje += eh;
+  });
+  lista.sort((a, b) => b.falta - a.falta); // maior falta primeiro
+
+  return {
+    lista: lista,
+    metaEfetiva: totMeta,
+    programadoHoje: totProgHoje,
+    atrasoTotal: totAtraso,
+    embaladoHoje: totEmbHoje
+  };
+}
+
+// Lista enxuta para o app do operador: produtos programados para hoje OU em
+// atraso (o que ele deve rodar), para seleção rápida sem varrer o catálogo todo.
+function getProgramacaoHoje() {
+  const p = calcularProgramacao();
+  const produtos = p.lista
+    .filter(x => x.programadoHoje > 0 || x.atraso > 0)
+    .map(x => ({ codigo: x.codigo, desc: x.desc, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
+  return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
 }
 
 

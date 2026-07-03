@@ -632,6 +632,8 @@ let _refreshTimer = null;
 let PRODUTOS = [];
 let PROD_ATUAL = '';
 let PARADAS_HOJE = [];
+// Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
+let PROG_HOJE = [];
 
 function loadCfg(){
   try{
@@ -826,6 +828,19 @@ async function carregarProdutos(){
   }catch(e){ console.warn('carregarProdutos:', e.message); }
 }
 
+// Produtos programados para hoje (+ em atraso). Fica no topo do seletor para o
+// operador escolher rápido, sem varrer o catálogo inteiro.
+async function carregarProgramacaoHoje(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoHoje';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.produtos)){
+      PROG_HOJE = json.produtos;
+    }
+  }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
+}
+
 function atualizarProdutoBar(){
   const el = document.getElementById('prod-bar-val');
   if(!el) return;
@@ -845,6 +860,7 @@ function abrirModalProduto(){
   document.getElementById('modal-produto').classList.add('open');
   setTimeout(()=>document.getElementById('prod-search-inp').focus(), 150);
   if(!PRODUTOS.length) carregarProdutos().then(filtrarProdutos);
+  carregarProgramacaoHoje().then(filtrarProdutos); // atualiza a lista do dia
 }
 function fecharModalProduto(){
   document.getElementById('modal-produto').classList.remove('open');
@@ -852,7 +868,25 @@ function fecharModalProduto(){
 function filtrarProdutos(){
   const q = normTxt(document.getElementById('prod-search-inp').value.trim());
   const lista = document.getElementById('prod-search-list');
-  if(!q){ lista.innerHTML='<div class="prod-search-empty">Digite o código ou nome do produto…</div>'; return; }
+  if(!q){
+    // Sem busca: mostra os PRODUTOS DO DIA (programados + em atraso) para toque
+    // rápido. Se não houver programação, cai no aviso de digitar a busca.
+    if(PROG_HOJE.length){
+      lista.innerHTML =
+        '<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">PRODUTOS DE HOJE — toque para selecionar</div>' +
+        PROG_HOJE.map(p=>{
+          const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px;margin-left:8px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
+          const qtd = p.qtde>0 ? `<div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">meta ${fmtN(p.qtde)} cx</div>` : '';
+          return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+            <div class="prod-search-cod">${p.codigo}${atr}</div>
+            <div class="prod-search-desc">${p.desc}</div>${qtd}
+          </div>`;
+        }).join('');
+    } else {
+      lista.innerHTML='<div class="prod-search-empty">Digite o código ou nome do produto…</div>';
+    }
+    return;
+  }
   const res = PRODUTOS.filter(p=> normTxt(p.codigo).includes(q) || normTxt(p.desc).includes(q)).slice(0,30);
   if(!res.length){ lista.innerHTML='<div class="prod-search-empty">Nenhum produto encontrado.</div>'; return; }
   lista.innerHTML = res.map(p=>`
@@ -1073,6 +1107,7 @@ function entrar(tipo){
     renderLancamentos();
     atualizarProdutoBar();
     carregarProdutos();
+    carregarProgramacaoHoje();
     carregarParadas();
     lerSheets();
   } else {

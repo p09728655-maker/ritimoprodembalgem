@@ -622,6 +622,21 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
   <div class="analise-row" id="analise-row"></div>
 
+  <!-- Programação × Embalado (só aparece quando há programação/atraso cadastrado) -->
+  <div class="tbl-wrap" id="prog-wrap" style="display:none">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">PROGRAMAÇÃO — PROGRAMADO × EMBALADO</span>
+      <span id="prog-atraso-lbl" style="display:none;font-family:var(--font-d);font-size:10px;color:var(--red);letter-spacing:.5px;margin-left:10px"></span>
+      <div style="flex:1"></div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>PRODUTO</th><th>PROGRAMADO HOJE</th><th>ATRASO</th><th>EMBALADO HOJE</th><th>FALTA</th></tr></thead>
+        <tbody id="prog-body"><tr><td colspan="5" class="empty-msg">Sem programação para hoje.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="tbl-wrap">
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;font-size:10px;margin-left:10px;letter-spacing:.5px" title="Comparação com a média histórica do mesmo horário (≥2 dias)."><span style="color:var(--ok);font-weight:600">▲ na média/acima</span><span style="color:var(--warn);font-weight:600;margin-left:10px">⚠ abaixo</span></span>
@@ -1122,7 +1137,7 @@ let MEDIA_HORAS   = {};
 let AMOSTRA_HORAS = {};
 // Produção do dia em PONTOS/PESO por produto — identificação de produto é
 // OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[] };
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
@@ -1791,7 +1806,8 @@ async function lerPontosDia(){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
         produtoAtual: json.produtoAtual||'', produtoAtualDesc: json.produtoAtualDesc||'',
-        porProduto: json.porProduto||[], porHora: json.porHora||[]
+        porProduto: json.porProduto||[], porHora: json.porHora||[],
+        programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
       };
       return true;
     }
@@ -2103,6 +2119,11 @@ function renderGerencial(){
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(PONTOS_DIA.pesoKg)+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
   ];
+  // META C/ ATRASO (programação): só entra quando há programação/atraso cadastrado.
+  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,atrasoTotal:0};
+  if(_prog.metaEfetiva>0 || _prog.atrasoTotal>0){
+    kpis.push({l:'META C/ ATRASO', v:fmtN(_prog.metaEfetiva), sub:`programado hoje + ${fmtN(_prog.atrasoTotal)} atrasadas`, c:_prog.atrasoTotal>0?'red':'acc'});
+  }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
       <div class="kpi-lbl">${k.l}</div>
@@ -2138,6 +2159,9 @@ function renderGerencial(){
       gerProdEl.style.display='inline';
     } else gerProdEl.style.display='none';
   }
+
+  // ── Programação × Embalado (com atraso) ──
+  renderProgramacao();
 
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
@@ -2183,6 +2207,37 @@ function renderGerencial(){
 
   renderChartHora(dh,k.slots,k.metaH);
   renderChartComp(dh,k.slots,k.metaH);
+}
+
+// Tabela PROGRAMADO × EMBALADO (com atraso). Só aparece quando a aba PROGRAMACAO
+// tem itens do dia OU há atraso acumulado de dias anteriores.
+function renderProgramacao(){
+  const wrap=document.getElementById('prog-wrap');
+  if(!wrap) return;
+  const prog=(PONTOS_DIA.programacao)||{lista:[],metaEfetiva:0,atrasoTotal:0};
+  const lista=prog.lista||[];
+  if(!lista.length){ wrap.style.display='none'; return; }
+  wrap.style.display='';
+
+  const lbl=document.getElementById('prog-atraso-lbl');
+  if(lbl){
+    if(prog.atrasoTotal>0){ lbl.textContent='⚠ '+fmtN(prog.atrasoTotal)+' cx em atraso'; lbl.style.display='inline'; }
+    else lbl.style.display='none';
+  }
+
+  document.getElementById('prog-body').innerHTML=lista.map(p=>{
+    const nome=`${p.codigo}${p.desc?' · '+p.desc:''}`;
+    const atrCor=p.atraso>0?'var(--red)':'var(--txt3)';
+    const faltaCor=p.falta<=0?'var(--ok)':(p.atraso>0?'var(--red)':'var(--warn)');
+    const faltaTxt=p.falta<=0?'✓ OK':fmtN(p.falta);
+    return `<tr>
+      <td style="text-align:left">${nome}</td>
+      <td class="mono">${fmtN(p.programadoHoje)}</td>
+      <td class="mono" style="color:${atrCor}">${p.atraso>0?fmtN(p.atraso):'—'}</td>
+      <td class="mono">${fmtN(p.embaladoHoje)}</td>
+      <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════
