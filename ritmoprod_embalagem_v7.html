@@ -593,6 +593,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <button class="tab on" data-tab="gerencial" onclick="setTab('gerencial')">📊 GERENCIAL</button>
   <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
+  <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
 </nav>
 
@@ -622,21 +623,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   </div>
 
   <div class="analise-row" id="analise-row"></div>
-
-  <!-- Programação × Embalado (só aparece quando há programação/atraso cadastrado) -->
-  <div class="tbl-wrap" id="prog-wrap" style="display:none">
-    <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">PROGRAMAÇÃO — PROGRAMADO × EMBALADO</span>
-      <span id="prog-atraso-lbl" style="display:none;font-family:var(--font-d);font-size:10px;color:var(--red);letter-spacing:.5px;margin-left:10px"></span>
-      <div style="flex:1"></div>
-    </div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>PRODUTO</th><th>PROGRAMADO HOJE</th><th>ATRASO</th><th>EMBALADO HOJE</th><th>FALTA</th></tr></thead>
-        <tbody id="prog-body"><tr><td colspan="5" class="empty-msg">Sem programação para hoje.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
 
   <div class="tbl-wrap">
     <div class="tbl-hdr">
@@ -886,6 +872,18 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
   <div id="prog2-dias"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
+</section>
+
+<!-- ═══ PRODUÇÃO POR HORA (visão dedicada: modelo × caixas por horário) ═══ -->
+<section id="sec-producaohora" class="sec">
+  <div class="tbl-wrap" style="margin-top:0">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">PRODUÇÃO POR HORA — POR MODELO</span>
+      <div style="flex:1"></div>
+      <span id="porhora2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
+    </div>
+  </div>
+  <div id="porhora2-horas"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
 </section>
 
 <!-- ═══ HISTÓRICO ═══ -->
@@ -1150,7 +1148,7 @@ let MEDIA_HORAS   = {};
 let AMOSTRA_HORAS = {};
 // Produção do dia em PONTOS/PESO por produto — identificação de produto é
 // OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
@@ -1819,7 +1817,7 @@ async function lerPontosDia(){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
         produtoAtual: json.produtoAtual||'', produtoAtualDesc: json.produtoAtualDesc||'',
-        porProduto: json.porProduto||[], porHora: json.porHora||[],
+        porProduto: json.porProduto||[], porHora: json.porHora||[], porHoraModelo: json.porHoraModelo||[],
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
       };
       return true;
@@ -2178,9 +2176,6 @@ function renderGerencial(){
     } else gerProdEl.style.display='none';
   }
 
-  // ── Programação × Embalado (com atraso) ──
-  renderProgramacao();
-
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
   let acumCalc=0;
@@ -2227,35 +2222,58 @@ function renderGerencial(){
   renderChartComp(dh,k.slots,k.metaH);
 }
 
-// Tabela PROGRAMADO × EMBALADO (com atraso). Só aparece quando a aba PROGRAMACAO
-// tem itens do dia OU há atraso acumulado de dias anteriores.
-function renderProgramacao(){
-  const wrap=document.getElementById('prog-wrap');
+// ════════════════════════════════════════════════
+// PRODUÇÃO POR HORA — TELA DEDICADA (por modelo, soma as variantes de cor)
+// ════════════════════════════════════════════════
+// Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
+// refresh normal). Identificação de produto é OPCIONAL: só aparece o que o
+// operador lançou com produto selecionado no app.
+function renderProducaoPorHoraDedicada(){
+  const wrap=document.getElementById('porhora2-horas');
+  const totEl=document.getElementById('porhora2-totais');
   if(!wrap) return;
-  const prog=(PONTOS_DIA.programacao)||{lista:[],metaEfetiva:0,atrasoTotal:0};
-  const lista=prog.lista||[];
-  if(!lista.length){ wrap.style.display='none'; return; }
-  wrap.style.display='';
-
-  const lbl=document.getElementById('prog-atraso-lbl');
-  if(lbl){
-    if(prog.atrasoTotal>0){ lbl.textContent='⚠ '+fmtN(prog.atrasoTotal)+' cx em atraso'; lbl.style.display='inline'; }
-    else lbl.style.display='none';
+  const lista=(PONTOS_DIA.porHoraModelo)||[];
+  if(!lista.length){
+    wrap.innerHTML='<div class="empty-msg" style="padding:20px">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</div>';
+    if(totEl) totEl.textContent='';
+    return;
   }
+  const porHora={}, ordem=[];
+  lista.forEach(it=>{
+    if(!porHora[it.hora]){ porHora[it.hora]=[]; ordem.push(it.hora); }
+    porHora[it.hora].push(it);
+  });
+  ordem.sort((a,b)=>String(a).localeCompare(String(b)));
 
-  document.getElementById('prog-body').innerHTML=lista.map(p=>{
-    const nome=`${p.codigo}${p.desc?' · '+p.desc:''}`;
-    const atrCor=p.atraso>0?'var(--red)':'var(--txt3)';
-    const faltaCor=p.falta<=0?'var(--ok)':(p.atraso>0?'var(--red)':'var(--warn)');
-    const faltaTxt=p.falta<=0?'✓ OK':fmtN(p.falta);
-    return `<tr>
-      <td style="text-align:left">${nome}</td>
-      <td class="mono">${fmtN(p.programadoHoje)}</td>
-      <td class="mono" style="color:${atrCor}">${p.atraso>0?fmtN(p.atraso):'—'}</td>
-      <td class="mono">${fmtN(p.embaladoHoje)}</td>
-      <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
-    </tr>`;
+  let totCx=0, totPeso=0, totPts=0;
+  wrap.innerHTML=ordem.map(hora=>{
+    const itens=porHora[hora].slice().sort((a,b)=>b.caixas-a.caixas);
+    let hCx=0, hPeso=0, hPts=0;
+    const linhas=itens.map(it=>{
+      hCx+=it.caixas; hPeso+=it.pesoKg; hPts+=it.pontos;
+      return `<tr>
+        <td style="text-align:left">${it.modelo}${it.nome?' · '+it.nome:''}</td>
+        <td class="mono">${fmtN(it.caixas)}</td>
+        <td class="mono">${fmtN(it.pesoKg)} kg</td>
+        <td class="mono">${fmtN(it.pontos)}</td>
+      </tr>`;
+    }).join('');
+    totCx+=hCx; totPeso+=hPeso; totPts+=hPts;
+    return `<div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-hdr">
+        <span class="tbl-hdr-ttl">${hora}</span>
+        <div style="flex:1"></div>
+        <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(hCx)} cx · ${fmtN(hPeso)} kg · ${fmtN(hPts)} pts</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    </div>`;
   }).join('');
+  if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
 }
 
 // ════════════════════════════════════════════════
@@ -2882,6 +2900,7 @@ function setTab(tab){
   if(tab==='tv') renderTV();
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
+  if(tab==='producaohora') lerPontosDia().then(renderProducaoPorHoraDedicada);
 }
 
 // ════════════════════════════════════════════════
