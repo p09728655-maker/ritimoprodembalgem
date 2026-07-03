@@ -872,6 +872,8 @@ function atualizarProdutoBar(){
 function normTxt(s){
   return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
 }
+// Só os dígitos do código — casa "501.041.001" (programação) com "501041001" (app).
+function soDigitos(s){ return String(s||'').replace(/[^0-9]/g,''); }
 
 function abrirModalProduto(){
   document.getElementById('prod-search-inp').value='';
@@ -1375,6 +1377,30 @@ async function salvarLanc(){
   if(!_slotAtivo) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
 
+  // ── TRAVA POR LOTE / PROGRAMAÇÃO ──
+  // Regras: (1) exige um produto que esteja na programação do dia; (2) não deixa
+  // passar do lote = programado + atraso (o campo 'falta' já é esse saldo).
+  // PROTEÇÃO: se NÃO houver programação do dia (aba vazia ou backend antigo), o
+  // app libera o lançamento pra não travar a linha — a trava só age quando há
+  // programação carregada.
+  if(!PROG_HOJE.length) await carregarProgramacaoHoje();
+  if(PROG_HOJE.length){
+    if(!PROD_ATUAL){
+      alert('Selecione o PRODUTO (da programação de hoje) antes de lançar.');
+      fecharModalLanc(); abrirModalProduto(); return;
+    }
+    const prog = PROG_HOJE.find(p=> soDigitos(p.codigo)===soDigitos(PROD_ATUAL));
+    if(!prog){
+      alert('Este produto não está na programação de hoje.\nSelecione um produto programado para lançar.');
+      fecharModalLanc(); abrirModalProduto(); return;
+    }
+    const rest = Number(prog.falta)||0; // programado + atraso − já embalado
+    if(add > rest){
+      alert('PASSOU DO LOTE!\nFaltam apenas '+fmtN(rest)+' cx de '+PROD_ATUAL+'.\nAjuste a quantidade ou selecione outro produto.');
+      return;
+    }
+  }
+
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
 
@@ -1387,8 +1413,6 @@ async function salvarLanc(){
     'realizado='+add,
     'operador='+encodeURIComponent('Mobile')
   ];
-  // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
-  // (sem produto) — não bloqueia a produção.
   if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
@@ -1397,6 +1421,7 @@ async function salvarLanc(){
     if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
     fecharModalLanc();
     await lerSheets();
+    await carregarProgramacaoHoje(); // atualiza a 'falta' do produto após o lançamento
   }catch(e){
     alert('Erro ao salvar: '+e.message);
     btn.textContent='ADICIONAR'; btn.disabled=false;
