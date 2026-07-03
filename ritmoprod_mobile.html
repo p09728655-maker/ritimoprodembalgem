@@ -653,6 +653,8 @@ let PROD_ATUAL = '';
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
+// Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0 };
 
 function loadCfg(){
   try{
@@ -858,6 +860,20 @@ async function carregarProgramacaoHoje(){
       PROG_HOJE = json.produtos;
     }
   }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
+}
+
+// Produção do dia em PONTOS/PESO (aba PRODUCAO_PRODUTO), usada só no gerencial.
+async function lerPontosDia(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
+    const json = await jsonpFetch(url);
+    if(json && json.ok){
+      PONTOS_DIA = { pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0 };
+      return true;
+    }
+  }catch(e){ console.warn('lerPontosDia:', e.message); }
+  return false;
 }
 
 function atualizarProdutoBar(){
@@ -1173,6 +1189,7 @@ function entrar(tipo){
     lerSheets().then(()=>renderHistorico());
     lerHistorico().then(renderHistoricoComDados);
     lerMediaHoras().then(ok=>{ if(ok) renderGerencial(); });
+    lerPontosDia().then(()=>renderGerencial());
   }
 }
 
@@ -1190,7 +1207,10 @@ function iniciarRefreshAuto(){
   pararRefreshAuto();
   _refreshTimer = setInterval(()=>{
     lerSheets();
-    if(PERFIL==='gerencial') lerHistorico().then(renderHistoricoComDados);
+    if(PERFIL==='gerencial'){
+      lerHistorico().then(renderHistoricoComDados);
+      lerPontosDia().then(()=>renderGerencial());
+    }
   }, 60*1000);
 }
 
@@ -1441,6 +1461,9 @@ function renderGerencial(){
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
     necKpi,
+    // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto.
+    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts — caixas × pontos/produto', c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(PONTOS_DIA.pesoKg)+' kg', sub:'caixas × peso bruto/produto',   c:'acc'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
