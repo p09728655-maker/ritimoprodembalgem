@@ -859,23 +859,33 @@ function getProgramacaoHoje() {
 // Programação linha a linha (sem agregar por produto), para a tela dedicada:
 // lote, peso e pontos estimados (via catálogo) de cada item, agrupável por dia
 // no app. Cobre passado, hoje e futuro (é só o planejamento, não o atraso).
+// Também traz o acompanhamento de entrada (embalado/falta) do PRODUTO daquela
+// linha, reaproveitando calcularProgramacao() — mesmo valor em todas as linhas
+// do mesmo produto (é um total do produto, não da linha/dia específica).
 function getProgramacaoDetalhada() {
   const catByKey = {};
   lerCatalogoProdutos().forEach(pr => { catByKey[codKey(pr.codigo)] = pr; });
 
+  const statusByKey = {};
+  calcularProgramacao().lista.forEach(function (x) { statusByKey[codKey(x.codigo)] = x; });
+
   const itens = lerProgramacao().map(function (pr) {
+    const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
-    const cat  = catByKey[codKey(pr.codigo)];
+    const cat  = catByKey[key];
+    const st   = statusByKey[key];
     const qtde = pr.qtde || 0;
     return {
-      data:    normalizarDataBR(pr.data),
-      dataNum: dNum,
-      lote:    pr.lote || '',
-      codigo:  cat ? cat.codigo : pr.codigo,
-      desc:    cat ? cat.desc   : '',
-      qtde:    qtde,
-      pesoKg:  Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
-      pontos:  Math.round(qtde * (cat ? cat.pontos : 0))
+      data:     normalizarDataBR(pr.data),
+      dataNum:  dNum,
+      lote:     pr.lote || '',
+      codigo:   cat ? cat.codigo : pr.codigo,
+      desc:     cat ? cat.desc   : '',
+      qtde:     qtde,
+      pesoKg:   Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
+      pontos:   Math.round(qtde * (cat ? cat.pontos : 0)),
+      embalado: st ? st.embaladoHoje : 0,
+      falta:    st ? st.falta        : 0
     };
   }).filter(function (it) { return it.dataNum > 0; });
 

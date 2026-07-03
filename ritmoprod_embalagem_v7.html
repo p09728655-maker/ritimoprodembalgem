@@ -2292,12 +2292,16 @@ function renderProgramacaoDetalhada(){
     let dQtd=0, dPeso=0, dPts=0;
     const linhas=itens.map(it=>{
       dQtd+=it.qtde; dPeso+=it.pesoKg; dPts+=it.pontos;
+      const faltaCor=it.falta<=0?'var(--ok)':'var(--red)';
+      const faltaTxt=it.falta<=0?'✓ OK':fmtN(it.falta);
       return `<tr>
         <td class="mono">${it.lote||'—'}</td>
         <td style="text-align:left">${it.codigo}${it.desc?' · '+it.desc:''}</td>
         <td class="mono">${fmtN(it.qtde)}</td>
         <td class="mono">${fmtN(it.pesoKg)} kg</td>
         <td class="mono">${fmtN(it.pontos)}</td>
+        <td class="mono">${fmtN(it.embalado)}</td>
+        <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
       </tr>`;
     }).join('');
     totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts;
@@ -2308,7 +2312,7 @@ function renderProgramacaoDetalhada(){
         <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(dQtd)} cx · ${fmtN(dPeso)} kg · ${fmtN(dPts)} pts</span>
       </div>
       <div style="overflow-x:auto"><table>
-        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th></tr></thead>
+        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th><th>EMBALADO</th><th>FALTA</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table></div>
     </div>`;
