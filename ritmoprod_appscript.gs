@@ -155,6 +155,8 @@ function getDados() {
   }
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const agora    = new Date();
+  const agoraMin = Number(Utilities.formatDate(agora, TZ, 'H')) * 60 + Number(Utilities.formatDate(agora, TZ, 'm'));
 
   const slots = [];
 
@@ -197,9 +199,22 @@ function getDados() {
       }
     });
 
-    // Sem REALIZADO e sem lotes => slot pendente (null). Caso contrario, usa o maior
-    // entre a coluna REALIZADO e a soma dos lotes (espelha arquivarDiaAtual).
-    const producaoHora = (realVazio && !temLote) ? null : Math.max(direto, somaLotes);
+    // A planilha orienta deixar REALIZADO em branco OU 0 para horas futuras (aba
+    // HORA_A_HORA, coluna "COMO PREENCHER"). Um 0 sozinho, portanto, nao prova que a
+    // hora aconteceu: so conta como "lancada" se ja tiver passado do horario de FIM
+    // (hoje as 23:59 nunca zera errado, pois o turno ja acabou ha muito). Enquanto a
+    // hora ainda esta aberta (nao terminou) e nao ha lote real lancado, fica pendente
+    // (null) -- e isso mantem "horas restantes" corretas p/ Projecao e Ritmo Atual.
+    const finMin = fim
+      ? (Number(fim.split(':')[0]) || 0) * 60 + (Number(fim.split(':')[1]) || 0)
+      : null;
+    const horaAberta = finMin !== null && agoraMin < finMin;
+
+    // Sem lote real: pendente se REALIZADO vazio OU a hora ainda nao terminou.
+    // Com lote real lancado, conta sempre (mesmo em hora ainda aberta = parcial).
+    const producaoHora = (!temLote && (realVazio || horaAberta))
+      ? null
+      : Math.max(direto, somaLotes);
 
     slots.push({
       id:           hoje + '_' + inicio.replace(':', ''),
@@ -598,8 +613,9 @@ function getPontosDia() {
     return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], programacao };
   }
 
-  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const values = sh.getDataRange().getValues();
+  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const hojeNum = dataParaNum(hoje);
+  const values  = sh.getDataRange().getValues();
 
   // Detecta as colunas pelo cabeçalho (a aba pode ter DESCRICAO/PONTOS/PESO_KG/OPERADOR
   // além de DATA/HORA/CODIGO/CAIXAS). Fallback posicional p/ o formato antigo.
@@ -614,7 +630,11 @@ function getPontosDia() {
   const porProdutoMap = {}, porHora = [];
 
   rows.forEach(r => {
-    if (String(r[iData]).trim() !== hoje) return;
+    // dataParaNum() trata tanto texto "dd/MM/yyyy" quanto objeto Date: o Sheets
+    // converte a data gravada por registrarProducaoProduto() de texto p/ Date
+    // automaticamente, e uma comparação de texto (String(r[iData])!==hoje) nunca
+    // batia — por isso pontos/peso/produto do dia apareciam sempre zerados.
+    if (dataParaNum(r[iData]) !== hojeNum) return;
     const hora   = String(r[iHora]).trim();
     const codigo = String(r[iCod]).trim();
     const cx     = Number(r[iCx]) || 0;

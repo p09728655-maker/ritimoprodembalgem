@@ -2082,7 +2082,10 @@ function calcKPIs(dh){
   const metaReal=dhAll.reduce((s,r)=>s+(r.metaHora||0),0);
   const ef=metaReal>0?(real/metaReal)*100:0;
   const gap=meta-real;
-  const ritmo=n>0?Math.round(real/n):0;
+  // Ritmo Atual = produção da ÚLTIMA hora já lançada (rótulo na tela diz "cx na
+  // última hora"). Antes usava a média do dia inteiro (real/n), o que não batia
+  // com o rótulo e distorcia a Projeção quando o ritmo do dia mudava de patamar.
+  const ritmo=n>0?dhAll[n-1].producaoHora:0;
   const slotsRest=effSlots.length-n;
   const metaH=n>0?Math.round(dhAll.reduce((s,r)=>s+(r.metaHora||0),0)/n):Math.round(meta/Math.max(effSlots.length,1));
   const proj=real+ritmo*slotsRest;
