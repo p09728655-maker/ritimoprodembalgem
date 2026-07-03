@@ -592,6 +592,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 <nav>
   <button class="tab on" data-tab="gerencial" onclick="setTab('gerencial')">📊 GERENCIAL</button>
   <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
+  <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
 </nav>
 
@@ -873,6 +874,18 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
   </div>
 
+</section>
+
+<!-- ═══ PROGRAMAÇÃO (visão dedicada: lote, peso, pontos, por dia) ═══ -->
+<section id="sec-programacao" class="sec">
+  <div class="tbl-wrap" style="margin-top:0">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">PROGRAMAÇÃO POR DIA — LOTE · PESO · PONTOS</span>
+      <div style="flex:1"></div>
+      <span id="prog2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
+    </div>
+  </div>
+  <div id="prog2-dias"><div class="empty-msg" style="padding:20px">Carregando…</div></div>
 </section>
 
 <!-- ═══ HISTÓRICO ═══ -->
@@ -2246,6 +2259,64 @@ function renderProgramacao(){
 }
 
 // ════════════════════════════════════════════════
+// PROGRAMAÇÃO — TELA DEDICADA (lote, peso, pontos, por dia)
+// ════════════════════════════════════════════════
+let PROG_DETALHADA=[];
+async function carregarProgramacaoDetalhada(){
+  if(!CFG.sheetsUrl) return false;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
+    const json=await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.itens)){ PROG_DETALHADA=json.itens; return true; }
+  }catch(e){ console.warn('carregarProgramacaoDetalhada:', e.message); }
+  return false;
+}
+function renderProgramacaoDetalhada(){
+  const wrap=document.getElementById('prog2-dias');
+  const totEl=document.getElementById('prog2-totais');
+  if(!wrap) return;
+  if(!PROG_DETALHADA.length){
+    wrap.innerHTML='<div class="empty-msg" style="padding:20px">Sem programação cadastrada.</div>';
+    if(totEl) totEl.textContent='';
+    return;
+  }
+  // Agrupa por data — já vem ordenado cronologicamente do backend.
+  const porDia={}, ordem=[];
+  PROG_DETALHADA.forEach(it=>{
+    if(!porDia[it.data]){ porDia[it.data]=[]; ordem.push(it.data); }
+    porDia[it.data].push(it);
+  });
+  let totQtd=0, totPeso=0, totPts=0;
+  wrap.innerHTML=ordem.map(data=>{
+    const itens=porDia[data];
+    let dQtd=0, dPeso=0, dPts=0;
+    const linhas=itens.map(it=>{
+      dQtd+=it.qtde; dPeso+=it.pesoKg; dPts+=it.pontos;
+      return `<tr>
+        <td class="mono">${it.lote||'—'}</td>
+        <td style="text-align:left">${it.codigo}${it.desc?' · '+it.desc:''}</td>
+        <td class="mono">${fmtN(it.qtde)}</td>
+        <td class="mono">${fmtN(it.pesoKg)} kg</td>
+        <td class="mono">${fmtN(it.pontos)}</td>
+      </tr>`;
+    }).join('');
+    totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts;
+    return `<div class="tbl-wrap" style="margin-top:14px">
+      <div class="tbl-hdr">
+        <span class="tbl-hdr-ttl">${data}</span>
+        <div style="flex:1"></div>
+        <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(dQtd)} cx · ${fmtN(dPeso)} kg · ${fmtN(dPts)} pts</span>
+      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+  if(totEl) totEl.textContent=`TOTAL: ${fmtN(totQtd)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
+}
+
+// ════════════════════════════════════════════════
 // CHARTS
 // ════════════════════════════════════════════════
 const CHART_DEFAULTS={
@@ -2803,6 +2874,7 @@ function setTab(tab){
   document.querySelector(`[data-tab="${tab}"]`).classList.add('on');
   if(tab==='tv') renderTV();
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
+  if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
 }
 
 // ════════════════════════════════════════════════

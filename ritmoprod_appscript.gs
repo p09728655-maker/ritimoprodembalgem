@@ -84,6 +84,7 @@ function doGet(e) {
     else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
     else if (act === 'getPontosDia')  result = getPontosDia();
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
+    else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -853,6 +854,33 @@ function getProgramacaoHoje() {
     .filter(x => x.programadoHoje > 0 || x.atraso > 0)
     .map(x => ({ codigo: x.codigo, desc: x.desc, lote: x.lote, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
   return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
+}
+
+// Programação linha a linha (sem agregar por produto), para a tela dedicada:
+// lote, peso e pontos estimados (via catálogo) de cada item, agrupável por dia
+// no app. Cobre passado, hoje e futuro (é só o planejamento, não o atraso).
+function getProgramacaoDetalhada() {
+  const catByKey = {};
+  lerCatalogoProdutos().forEach(pr => { catByKey[codKey(pr.codigo)] = pr; });
+
+  const itens = lerProgramacao().map(function (pr) {
+    const dNum = dataParaNum(pr.data);
+    const cat  = catByKey[codKey(pr.codigo)];
+    const qtde = pr.qtde || 0;
+    return {
+      data:    normalizarDataBR(pr.data),
+      dataNum: dNum,
+      lote:    pr.lote || '',
+      codigo:  cat ? cat.codigo : pr.codigo,
+      desc:    cat ? cat.desc   : '',
+      qtde:    qtde,
+      pesoKg:  Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
+      pontos:  Math.round(qtde * (cat ? cat.pontos : 0))
+    };
+  }).filter(function (it) { return it.dataNum > 0; });
+
+  itens.sort(function (a, b) { return a.dataNum - b.dataNum; });
+  return { ok: true, itens: itens };
 }
 
 
