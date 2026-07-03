@@ -183,7 +183,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .card-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px}
 
 /* ═══ PRODUTO ATUAL / PARADAS (barra do operador) ═══ */
-.prod-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px;cursor:pointer}
+/* Fixa no topo ao rolar a lista de slots, pra não sumir da vista do operador. */
+.prod-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px;cursor:pointer;box-shadow:0 6px 12px -4px rgba(0,0,0,.55)}
 .prod-bar:active{background:var(--elevated)}
 .prod-bar-ico{font-size:16px;flex-shrink:0}
 .prod-bar-txt{flex:1;min-width:0}
@@ -549,9 +550,11 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Toque os números do código — ou o campo p/ digitar o nome</div>
+      <div class="modal-slot-meta">Toque os números do código no teclado abaixo</div>
     </div>
-    <input class="prod-search-inp" id="prod-search-inp" type="text" placeholder="Ex.: 501041 ou BERCO ARCO-IRIS" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
+    <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
+         sistema (tablet) NÃO abre ao tocar no campo. -->
+    <input class="prod-search-inp" id="prod-search-inp" type="text" inputmode="none" readonly placeholder="Ex.: 501041 ou 501.041" autocomplete="off" autocorrect="off" autocapitalize="off" oninput="filtrarProdutos()">
     <div class="prod-search-list" id="prod-search-list" style="max-height:24vh">
       <div class="prod-search-empty">Toque um número ou digite para buscar…</div>
     </div>
