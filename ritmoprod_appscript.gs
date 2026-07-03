@@ -607,11 +607,23 @@ function getPontosDia() {
   lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
   const produtoAtualDesc = catalogo[produtoAtual] ? catalogo[produtoAtual].desc : '';
 
+  // "Modelo" = 6 primeiros dígitos do código (os 3 últimos são a variante de
+  // cor/acabamento, ex.: 501094001 BRANCO / 501094002 PRETO ACETINADO são o
+  // mesmo modelo "501094"). Nome do modelo = maior prefixo de palavras comum
+  // entre as descrições das variantes, pra não depender de adivinhar onde a
+  // cor termina no texto (ex.: "VOL 1/1 MESA CABECEIRA SLEEP").
+  const modeloNome = {};
+  lerCatalogoProdutos().forEach(function (pr) {
+    const m = String(pr.codigo || '').slice(0, 6);
+    if (!m) return;
+    modeloNome[m] = modeloNome[m] === undefined ? (pr.desc || '') : prefixoComumPalavras(modeloNome[m], pr.desc || '');
+  });
+
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
   const programacao = calcularProgramacao();
 
   if (!sh) {
-    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], programacao };
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], porHoraModelo: [], programacao };
   }
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
@@ -657,6 +669,21 @@ function getPontosDia() {
     porHora.push({ hora, codigo, desc: prod.desc || '', caixas: cx, pontos: pts, pesoKg: kg });
   });
 
+  // Mesma produção de porHora, agrupada por hora + modelo (soma as variantes de
+  // cor da mesma hora numa linha só) — pedido do usuário: ver "quantos SLEEP",
+  // "quantos PRINCESA" por hora, sem abrir por cor.
+  const porHoraModeloMap = {};
+  porHora.forEach(function (it) {
+    const modelo = String(it.codigo || '').slice(0, 6);
+    const key = it.hora + '|' + modelo;
+    if (!porHoraModeloMap[key]) {
+      porHoraModeloMap[key] = { hora: it.hora, modelo: modelo, nome: modeloNome[modelo] || it.desc || '', caixas: 0, pontos: 0, pesoKg: 0 };
+    }
+    porHoraModeloMap[key].caixas += it.caixas;
+    porHoraModeloMap[key].pontos += it.pontos;
+    porHoraModeloMap[key].pesoKg += it.pesoKg;
+  });
+
   return {
     ok: true,
     pontos: Math.round(pontos),
@@ -666,8 +693,22 @@ function getPontosDia() {
     produtoAtualDesc,
     porProduto: Object.values(porProdutoMap),
     porHora,
+    porHoraModelo: Object.values(porHoraModeloMap),
     programacao
   };
+}
+
+// Maior prefixo de PALAVRAS comum entre duas descrições (usado pra achar o
+// "nome do modelo" sem a cor, sem precisar adivinhar onde ela termina no texto).
+function prefixoComumPalavras(a, b) {
+  const wa = String(a || '').split(' ');
+  const wb = String(b || '').split(' ');
+  const out = [];
+  for (let i = 0; i < Math.min(wa.length, wb.length); i++) {
+    if (wa[i] !== wb[i]) break;
+    out.push(wa[i]);
+  }
+  return out.join(' ');
 }
 
 
