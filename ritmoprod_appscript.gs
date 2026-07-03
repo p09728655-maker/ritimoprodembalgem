@@ -884,8 +884,12 @@ function getProgramacaoDetalhada() {
       qtde:     qtde,
       pesoKg:   Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
       pontos:   Math.round(qtde * (cat ? cat.pontos : 0)),
-      embalado: st ? st.embaladoHoje : 0,
-      falta:    st ? st.falta        : 0
+      embalado: st ? st.embaladoHoje  : 0,
+      falta:    st ? st.falta         : 0,
+      // metaEfetiva=0 quer dizer "nada vencendo hoje pra esse produto" (comum
+      // em linha de data futura) — o app usa isso pra não mostrar "✓ OK" como
+      // se já tivesse sido embalado quando na verdade ainda nem venceu.
+      metaEfetiva: st ? st.metaEfetiva : 0
     };
   }).filter(function (it) { return it.dataNum > 0; });
 

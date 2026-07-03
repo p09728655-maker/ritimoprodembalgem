@@ -2292,8 +2292,11 @@ function renderProgramacaoDetalhada(){
     let dQtd=0, dPeso=0, dPts=0;
     const linhas=itens.map(it=>{
       dQtd+=it.qtde; dPeso+=it.pesoKg; dPts+=it.pontos;
-      const faltaCor=it.falta<=0?'var(--ok)':'var(--red)';
-      const faltaTxt=it.falta<=0?'✓ OK':fmtN(it.falta);
+      // metaEfetiva=0: nada vencendo ainda pra esse produto (comum em data
+      // futura) — mostra "—" em vez de "✓ OK" pra não parecer que já foi
+      // embalado quando na verdade a data nem chegou.
+      const faltaCor=it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)');
+      const faltaTxt=it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta));
       return `<tr>
         <td class="mono">${it.lote||'—'}</td>
         <td style="text-align:left">${it.codigo}${it.desc?' · '+it.desc:''}</td>
