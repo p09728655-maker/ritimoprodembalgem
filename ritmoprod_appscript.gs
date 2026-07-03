@@ -760,9 +760,9 @@ function lerEmbaladoPorProduto(hojeNum) {
 
 // Monta a lista por produto (programado hoje, atraso, embalado hoje, falta) e os
 // totais + "meta efetiva" (programado de hoje + atraso).
-// O atraso ACUMULA, mas só a partir do 1º dia em que houve registro de produção
-// por produto (emb.inicio) — assim a programação antiga (antes do controle
-// começar) não vira atraso gigante sem embalado correspondente.
+// O atraso ACUMULA de qualquer programação passada ainda não embalada (sem
+// limite de janela) — pedido explícito: pegar tudo que está atrasado, mesmo
+// de antes do 1º lançamento por produto registrado em PRODUCAO_PRODUTO.
 function calcularProgramacao() {
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
@@ -771,8 +771,7 @@ function calcularProgramacao() {
   const catByKey = {};
   lerCatalogoProdutos().forEach(pr => { catByKey[codKey(pr.codigo)] = pr; });
 
-  const emb    = lerEmbaladoPorProduto(hojeNum);
-  const inicio = emb.inicio; // atraso só conta de 'inicio' até ontem
+  const emb = lerEmbaladoPorProduto(hojeNum);
 
   const progHoje = {}, progAntes = {}, loteHoje = {};
   lerProgramacao().forEach(pr => {
@@ -789,8 +788,8 @@ function calcularProgramacao() {
     if (dNum === hojeNum) {
       progHoje[key] = (progHoje[key] || 0) + pr.qtde;
     }
-    else if (dNum < hojeNum && dNum >= inicio) progAntes[key] = (progAntes[key] || 0) + pr.qtde;
-    // antes do controle (< inicio) ou futuro: não vira atraso de hoje
+    else if (dNum < hojeNum) progAntes[key] = (progAntes[key] || 0) + pr.qtde;
+    // futuro: não vira atraso de hoje
   });
 
   const keys = {};
