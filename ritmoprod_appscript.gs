@@ -711,7 +711,6 @@ function prefixoComumPalavras(a, b) {
   return out.join(' ');
 }
 
-
 // ════════════════════════════════════════════════════════
 // PROGRAMAÇÃO + ATRASO (planejado × embalado)
 // ════════════════════════════════════════════════════════
