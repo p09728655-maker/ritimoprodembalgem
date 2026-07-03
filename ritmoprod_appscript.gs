@@ -700,11 +700,24 @@ function dataParaNum(v) {
 // PROGRAMACAO pode ter "501.118.001" e o PRODUTO_CODIGO/app "501118001".
 function codKey(c) { return String(c || '').replace(/[^0-9]/g, ''); }
 
+// Acha uma aba pelo nome tolerando acento/maiúscula diferente do esperado (ex.:
+// constante diz "PROGRAMACAO" mas a aba real na planilha é "PROGRAMAÇÃO" —
+// getSheetByName exige nome IDÊNTICO, incluindo acentos, e isso fazia a leitura
+// de programação/atraso sempre voltar vazia, sem erro nenhum pra avisar).
+function acharAbaTolerante(ss, nome) {
+  const exata = ss.getSheetByName(nome);
+  if (exata) return exata;
+  const norm = function (s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim(); };
+  const alvo = norm(nome);
+  const achada = ss.getSheets().filter(function (s) { return norm(s.getName()) === alvo; })[0];
+  return achada || null;
+}
+
 // Lê a aba PROGRAMACAO. Detecta as colunas pelo cabeçalho, tolerando os nomes
 // reais da planilha (Data, Codigo, Qtd_cx). Mantém a data crua (pode ser Date).
 function lerProgramacao() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(SHEET_PROG);
+  const sh = acharAbaTolerante(ss, SHEET_PROG);
   if (!sh) return [];
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return [];
