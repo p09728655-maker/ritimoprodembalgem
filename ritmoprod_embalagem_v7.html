@@ -701,6 +701,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
         <table class="tv-table" style="height:100%">
+          <colgroup>
+            <col style="width:21%"><col style="width:17%"><col style="width:14%">
+            <col style="width:14%"><col style="width:15%"><col style="width:19%">
+          </colgroup>
           <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>%/H</th><th>STATUS</th></tr></thead>
           <tbody id="tv-tbl-body"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody>
         </table>
@@ -2624,7 +2628,7 @@ function renderTV(){
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h" style="white-space:nowrap">${lbl}${fraqMark}</td>
-      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:10px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
+      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:14px;font-weight:700" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
       <td>${prod!=null?fmtN(acumC):'—'}</td>
       <td class="td-s">${ef2!=null?fmtP(ef2):'—'}</td>
