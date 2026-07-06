@@ -1082,6 +1082,21 @@ function getDadosHoje(){
   return DADOS.filter(d=>d.data===h && d.producaoHora!=null).sort((a,b)=>a.horario.localeCompare(b.horario));
 }
 
+// Acúmulo de atraso HORA A HORA (mesmo princípio do atraso por produto/dia em
+// calcularProgramacao() do ritmoprod_appscript.gs, aplicado às horas do turno
+// de HOJE). Calculado no cliente: metaHora/producaoHora de todas as horas do
+// dia já estão carregados de uma vez. Recalculado do zero a cada render, então
+// uma hora que supera a meta zera o atraso carregado automaticamente.
+function calcAtrasoHoras(rows){
+  let accMeta=0, accProd=0;
+  return rows.map(r=>{
+    const atrasoHora = Math.max(accMeta-accProd, 0);
+    const metaEfetivaHora = (r.metaHora||0) + atrasoHora;
+    accMeta += (r.metaHora||0);
+    accProd += (r.producaoHora!=null ? r.producaoHora : 0);
+    return { atrasoHora, metaEfetivaHora };
+  });
+}
 function calcKPIs(){
   const hoje = hojeStr();
   const slots = getSlots();
@@ -1487,10 +1502,12 @@ function renderTabelaHoraHora(allHoje){
     return;
   }
   let acumC=0;
-  tbody.innerHTML=allHoje.map(r=>{
+  const atrasoHoras=calcAtrasoHoras(allHoje);
+  tbody.innerHTML=allHoje.map((r,i)=>{
     const prod=r.producaoHora;
     if(prod!=null) acumC+=prod;
-    const ef2=prod!=null&&r.metaHora>0?(prod/r.metaHora)*100:null;
+    const {atrasoHora=0, metaEfetivaHora=r.metaHora} = atrasoHoras[i]||{};
+    const ef2=prod!=null&&metaEfetivaHora>0?(prod/metaEfetivaHora)*100:null;
     const cls=ef2!=null?sc(ef2):'pend';
     const st=ef2!=null?sl(ef2):'—';
     // Alerta de hora fraca (opção 2): >15% abaixo da média histórica do mesmo
@@ -1504,7 +1521,7 @@ function renderTabelaHoraHora(allHoje){
     return `<tr>
       <td style="white-space:nowrap">${r.slotLabel||r.horario}${fraqMark}</td>
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
-      <td class="td-num">${fmtN(r.metaHora)}</td>
+      <td class="td-num">${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
       <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}</td>
       <td class="td-s ${cls}" style="font-size:9px">${st}</td>
     </tr>`;
