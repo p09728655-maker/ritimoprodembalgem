@@ -234,19 +234,24 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-produto-row{display:flex;align-items:center;justify-content:center;gap:10px}
 .tvb-produto-lbl{font-family:var(--font-d);font-size:clamp(9px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvb-produto-val{font-family:var(--font-h);font-size:clamp(18px,2vw,30px);font-weight:700;color:var(--txt)}
+.tvb-hero-band{width:100%;display:grid;grid-template-columns:1.5fr 1fr;column-gap:4vw;align-items:center}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(13px,1.4vw,21px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb-hero-num{font-family:var(--font-h);font-size:clamp(105px,15vw,255px);font-weight:700;line-height:.9;color:var(--txt)}
-.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(16px,1.8vw,27px);color:var(--txt2);letter-spacing:3px}
-.tvb-kpis{width:100%;display:flex;justify-content:space-evenly;gap:2vw}
+.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(16px,1.7vw,28px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(150px,17vw,320px);font-weight:700;line-height:.9;color:var(--txt)}
+.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(18px,2vw,32px);color:var(--txt2);letter-spacing:3px}
+.tvb-kpis{width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly;row-gap:1.5vh;gap:2vw}
+.tvb-side-rail{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;width:100%}
 .tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(13px,1.2vw,18px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
-.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(58px,7vw,120px);font-weight:700;line-height:1}
-.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(12px,1.2vw,17px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(14px,1.3vw,20px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(62px,6.4vw,128px);font-weight:700;line-height:1}
+.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(13px,1.3vw,19px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb-side-rail .tvb-kpi{width:100%}
+.tvb-side-rail .tvb-kpi-val{font-size:clamp(56px,6vw,124px)}
+.tvb-side-rail .tv-status-badge{font-size:clamp(20px,2.4vw,38px);padding:10px 24px}
 .tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
-.tvb-prog-bar{height:24px;background:var(--surface);border-radius:12px;overflow:hidden;border:.5px solid var(--border)}
-.tvb-prog-fill{height:100%;border-radius:12px;transition:width .6s ease}
-.tvb-prog-info{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:clamp(12px,1.2vw,18px);color:var(--txt2);letter-spacing:1px}
+.tvb-prog-bar{height:28px;background:var(--surface);border-radius:14px;overflow:hidden;border:.5px solid var(--border)}
+.tvb-prog-fill{height:100%;border-radius:14px;transition:width .6s ease}
+.tvb-prog-info{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:clamp(13px,1.3vw,20px);color:var(--txt2);letter-spacing:1px}
 
 /* ═══ MOBILE TV ═══ */
 @media (max-width:768px){
@@ -799,29 +804,31 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <span class="tvb-produto-val" id="tvb-produto">—</span>
     </div>
 
-    <div class="tvb-hero">
-      <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
-      <div class="tvb-hero-num" id="tvb-prod">—</div>
-      <div class="tvb-hero-unit">CAIXAS</div>
-    </div>
+    <div class="tvb-hero-band">
+      <div class="tvb-hero">
+        <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
+        <div class="tvb-hero-num" id="tvb-prod">—</div>
+        <div class="tvb-hero-unit">CAIXAS</div>
+      </div>
 
-    <div class="tvb-kpis">
-      <div class="tvb-kpi" id="tvb-kpi-meta">
-        <div class="tvb-kpi-lbl">META DO DIA</div>
-        <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
-      </div>
-      <div class="tvb-kpi" id="tvb-kpi-ef">
-        <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
-        <div class="tvb-kpi-val" id="tvb-ef">—</div>
-      </div>
-      <div class="tvb-kpi" id="tvb-kpi-status">
-        <div class="tvb-kpi-lbl">STATUS</div>
-        <span id="tvb-badge" class="tv-status-badge ok">● META</span>
-      </div>
-      <div class="tvb-kpi" id="tvb-kpi-falta" style="display:none">
-        <div class="tvb-kpi-lbl">FALTA P/ META</div>
-        <div class="tvb-kpi-val" id="tvb-falta" style="color:var(--warn)">—</div>
-        <div class="tvb-kpi-unit">CAIXAS</div>
+      <div class="tvb-kpis tvb-side-rail">
+        <div class="tvb-kpi" id="tvb-kpi-meta">
+          <div class="tvb-kpi-lbl">META DO DIA</div>
+          <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
+        </div>
+        <div class="tvb-kpi" id="tvb-kpi-ef">
+          <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
+          <div class="tvb-kpi-val" id="tvb-ef">—</div>
+        </div>
+        <div class="tvb-kpi" id="tvb-kpi-status">
+          <div class="tvb-kpi-lbl">STATUS</div>
+          <span id="tvb-badge" class="tv-status-badge ok">● META</span>
+        </div>
+        <div class="tvb-kpi" id="tvb-kpi-falta" style="display:none">
+          <div class="tvb-kpi-lbl">FALTA P/ META</div>
+          <div class="tvb-kpi-val" id="tvb-falta" style="color:var(--warn)">—</div>
+          <div class="tvb-kpi-unit">CAIXAS</div>
+        </div>
       </div>
     </div>
 
@@ -835,7 +842,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
     </div>
 
-    <div class="tvb-kpis" id="tvb-row2" style="display:none">
+    <!-- Linha extra consolidada: ritmo/necessário/projeção + produção em pontos/peso
+         (pontos/peso são dinâmicos por produto, OPCIONAL — só se o operador selecionou produto) -->
+    <div class="tvb-kpis" id="tvb-row-extra" style="display:none">
       <div class="tvb-kpi" id="tvb-kpi-ritmo">
         <div class="tvb-kpi-lbl">RITMO ATUAL</div>
         <div class="tvb-kpi-val" id="tvb-ritmo" style="color:var(--acc)">—</div>
@@ -851,10 +860,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-kpi-val" id="tvb-proj" style="color:var(--txt2)">—</div>
         <div class="tvb-kpi-unit">CX FINAL</div>
       </div>
-    </div>
-
-    <!-- Produção em pontos/peso — dinâmico por produto, OPCIONAL (só se o operador selecionou produto) -->
-    <div class="tvb-kpis" id="tvb-row3" style="display:none">
       <div class="tvb-kpi" id="tvb-kpi-pontos" style="display:none">
         <div class="tvb-kpi-lbl">PRODUÇÃO (PONTOS)</div>
         <div class="tvb-kpi-val" id="tvb-pontos" style="color:var(--acc)">—</div>
@@ -4411,17 +4416,24 @@ const _cicloTV = (function() {
       ? PONTOS_DIA.produtoAtual + (PONTOS_DIA.produtoAtualDesc ? ' · ' + PONTOS_DIA.produtoAtualDesc : '')
       : '—');
     set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
-    set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)) + ' kg');
+    set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)));
 
     const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
     ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k => {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
-    const row2 = document.getElementById('tvb-row2');
-    if (row2) row2.style.display = ['ritmo','nec','proj'].some(k => kpis.includes(k)) ? 'flex' : 'none';
-    const row3 = document.getElementById('tvb-row3');
-    if (row3) row3.style.display = ['pontos','peso'].some(k => kpis.includes(k)) ? 'flex' : 'none';
+    const rowExtra = document.getElementById('tvb-row-extra');
+    if (rowExtra) rowExtra.style.display = ['ritmo','nec','proj','pontos','peso'].some(k => kpis.includes(k)) ? 'flex' : 'none';
+
+    // Se nenhum KPI do rail lateral (meta/ef/status/falta) estiver ligado, o rail
+    // fica vazio — nesse caso a banda vira 1 coluna só pra não deixar um vão
+    // reservado do lado do número principal.
+    const sideRail = document.querySelector('.tvb-side-rail');
+    const heroBand = document.querySelector('.tvb-hero-band');
+    const temRail = ['meta','ef','status','falta'].some(k => kpis.includes(k));
+    if (sideRail) sideRail.style.display = temRail ? '' : 'none';
+    if (heroBand) heroBand.style.gridTemplateColumns = temRail ? '' : '1fr';
   }
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
