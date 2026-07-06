@@ -236,21 +236,38 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-produto-val{font-family:var(--font-h);font-size:clamp(18px,2vw,30px);font-weight:700;color:var(--txt)}
 .tvb-hero-band{width:100%;display:grid;grid-template-columns:1.5fr 1fr;column-gap:4vw;align-items:center}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(16px,1.7vw,28px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb-hero-num{font-family:var(--font-h);font-size:clamp(150px,17vw,320px);font-weight:700;line-height:.9;color:var(--txt)}
-.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(18px,2vw,32px);color:var(--txt2);letter-spacing:3px}
+.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(18px,1.9vw,31px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(165px,19vw,375px);font-weight:700;line-height:.9;color:var(--txt)}
+.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(20px,2.2vw,35px);color:var(--txt2);letter-spacing:3px}
 .tvb-kpis{width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly;row-gap:1.5vh;gap:2vw}
-.tvb-side-rail{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;width:100%}
+.tvb-side-rail{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%}
 .tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(14px,1.3vw,20px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
-.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(62px,6.4vw,128px);font-weight:700;line-height:1}
-.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(13px,1.3vw,19px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(15px,1.4vw,22px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(64px,6.6vw,136px);font-weight:700;line-height:1}
+.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(14px,1.4vw,21px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .tvb-side-rail .tvb-kpi{width:100%}
-.tvb-side-rail .tvb-kpi-val{font-size:clamp(56px,6vw,124px)}
-.tvb-side-rail .tv-status-badge{font-size:clamp(20px,2.4vw,38px);padding:10px 24px}
-.tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
-.tvb-prog-bar{height:28px;background:var(--surface);border-radius:14px;overflow:hidden;border:.5px solid var(--border)}
-.tvb-prog-fill{height:100%;border-radius:14px;transition:width .6s ease}
+.tvb-side-rail .tv-status-badge{padding:12px 26px}
+
+/* Escala adaptativa: quanto menos KPIs ligados, maior cada número fica —
+   em vez de um tamanho fixo pensado sempre pro pior caso (todos ligados). */
+.tvb-side-rail[data-n="1"] .tvb-kpi-val{font-size:clamp(80px,8vw,168px)}
+.tvb-side-rail[data-n="1"] .tv-status-badge{font-size:clamp(24px,2.8vw,46px)}
+.tvb-side-rail[data-n="2"] .tvb-kpi-val{font-size:clamp(74px,7.2vw,150px)}
+.tvb-side-rail[data-n="2"] .tv-status-badge{font-size:clamp(22px,2.6vw,42px)}
+.tvb-side-rail[data-n="3"] .tvb-kpi-val{font-size:clamp(68px,6.6vw,136px)}
+.tvb-side-rail[data-n="3"] .tv-status-badge{font-size:clamp(20px,2.4vw,38px)}
+.tvb-side-rail[data-n="4"] .tvb-kpi-val{font-size:clamp(58px,6vw,112px)}
+.tvb-side-rail[data-n="4"] .tv-status-badge{font-size:clamp(20px,2.3vw,36px);padding:9px 20px}
+
+#tvb-row-extra[data-n="1"] .tvb-kpi-val{font-size:clamp(78px,7.5vw,165px)}
+#tvb-row-extra[data-n="2"] .tvb-kpi-val{font-size:clamp(72px,7vw,150px)}
+#tvb-row-extra[data-n="3"] .tvb-kpi-val{font-size:clamp(68px,6.6vw,136px)}
+#tvb-row-extra[data-n="4"] .tvb-kpi-val{font-size:clamp(62px,6vw,124px)}
+#tvb-row-extra[data-n="5"] .tvb-kpi-val{font-size:clamp(58px,5.6vw,110px)}
+
+.tvb-prog{width:100%;display:flex;flex-direction:column;gap:6px}
+.tvb-prog-bar{height:22px;background:var(--surface);border-radius:11px;overflow:hidden;border:.5px solid var(--border)}
+.tvb-prog-fill{height:100%;border-radius:11px;transition:width .6s ease}
 .tvb-prog-info{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:clamp(13px,1.3vw,20px);color:var(--txt2);letter-spacing:1px}
 
 /* ═══ MOBILE TV ═══ */
@@ -4423,17 +4440,26 @@ const _cicloTV = (function() {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
+    const extraKeys = ['ritmo','nec','proj','pontos','peso'].filter(k => kpis.includes(k));
     const rowExtra = document.getElementById('tvb-row-extra');
-    if (rowExtra) rowExtra.style.display = ['ritmo','nec','proj','pontos','peso'].some(k => kpis.includes(k)) ? 'flex' : 'none';
+    if (rowExtra) {
+      rowExtra.style.display = extraKeys.length ? 'flex' : 'none';
+      // Escala adaptativa: quanto menos itens ligados nessa linha, maior cada um fica.
+      rowExtra.dataset.n = extraKeys.length || '';
+    }
 
     // Se nenhum KPI do rail lateral (meta/ef/status/falta) estiver ligado, o rail
     // fica vazio — nesse caso a banda vira 1 coluna só pra não deixar um vão
     // reservado do lado do número principal.
+    const railKeys = ['meta','ef','status','falta'].filter(k => kpis.includes(k));
     const sideRail = document.querySelector('.tvb-side-rail');
     const heroBand = document.querySelector('.tvb-hero-band');
-    const temRail = ['meta','ef','status','falta'].some(k => kpis.includes(k));
-    if (sideRail) sideRail.style.display = temRail ? '' : 'none';
-    if (heroBand) heroBand.style.gridTemplateColumns = temRail ? '' : '1fr';
+    if (sideRail) {
+      sideRail.style.display = railKeys.length ? '' : 'none';
+      // Escala adaptativa: quanto menos KPIs ligados no rail, maior cada um fica.
+      sideRail.dataset.n = railKeys.length || '';
+    }
+    if (heroBand) heroBand.style.gridTemplateColumns = railKeys.length ? '' : '1fr';
   }
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
