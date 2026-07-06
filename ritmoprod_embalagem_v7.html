@@ -4425,6 +4425,15 @@ const _cicloTV = (function() {
     });
     const rowExtra = document.getElementById('tvb-row-extra');
     if (rowExtra) rowExtra.style.display = ['ritmo','nec','proj','pontos','peso'].some(k => kpis.includes(k)) ? 'flex' : 'none';
+
+    // Se nenhum KPI do rail lateral (meta/ef/status/falta) estiver ligado, o rail
+    // fica vazio — nesse caso a banda vira 1 coluna só pra não deixar um vão
+    // reservado do lado do número principal.
+    const sideRail = document.querySelector('.tvb-side-rail');
+    const heroBand = document.querySelector('.tvb-hero-band');
+    const temRail = ['meta','ef','status','falta'].some(k => kpis.includes(k));
+    if (sideRail) sideRail.style.display = temRail ? '' : 'none';
+    if (heroBand) heroBand.style.gridTemplateColumns = temRail ? '' : '1fr';
   }
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
