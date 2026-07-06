@@ -179,7 +179,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-ef-row{display:flex;align-items:baseline;gap:14px}
 .tv-ef-val{font-family:var(--font-h);font-size:clamp(42px,4.4vw,76px);font-weight:700;line-height:1}
 .tv-ef-val.ok{color:var(--ok)} .tv-ef-val.warn{color:var(--warn)} .tv-ef-val.red{color:var(--red)}
-.tv-status-badge{font-family:var(--font-h);font-size:clamp(17px,2vw,28px);font-weight:700;letter-spacing:2px;padding:9px 22px;border-radius:5px;display:inline-flex;align-items:center;gap:8px}
+.tv-status-badge{font-family:var(--font-h);font-size:clamp(20px,2.4vw,34px);font-weight:700;letter-spacing:2px;padding:9px 22px;border-radius:5px;display:inline-flex;align-items:center;gap:8px}
 .tv-status-badge.ok  {background:rgba(76,175,80,.12); color:var(--ok);  border:1px solid rgba(76,175,80,.35)}
 .tv-status-badge.warn{background:rgba(255,152,0,.12); color:var(--warn);border:1px solid rgba(255,152,0,.35)}
 .tv-status-badge.red {background:rgba(244,67,54,.12); color:var(--red); border:1px solid rgba(244,67,54,.35);animation:piscar 1.4s infinite}
@@ -223,21 +223,21 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   display:none;flex-direction:column;justify-content:space-evenly;align-items:center;
   padding:0 5vw;text-align:center;
 }
-.tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--border)}
-.tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(20px,2.8vw,44px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
-.tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(26px,3.2vw,52px);font-weight:600;color:var(--acc);letter-spacing:3px}
+.tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(14px,1.8vw,28px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
+.tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(16px,2.1vw,32px);font-weight:600;color:var(--acc);letter-spacing:3px}
 .tvb-produto-row{display:flex;align-items:center;justify-content:center;gap:10px}
 .tvb-produto-lbl{font-family:var(--font-d);font-size:clamp(9px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvb-produto-val{font-family:var(--font-h);font-size:clamp(16px,1.8vw,26px);font-weight:700;color:var(--txt)}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(11px,1.1vw,16px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb-hero-num{font-family:var(--font-h);font-size:clamp(90px,13vw,210px);font-weight:700;line-height:.9;color:var(--txt)}
-.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(13px,1.3vw,20px);color:var(--txt2);letter-spacing:3px}
+.tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(12px,1.3vw,19px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(100px,14.5vw,230px);font-weight:700;line-height:.9;color:var(--txt)}
+.tvb-hero-unit{font-family:var(--font-d);font-size:clamp(15px,1.6vw,24px);color:var(--txt2);letter-spacing:3px}
 .tvb-kpis{width:100%;display:flex;justify-content:space-evenly;gap:2vw}
 .tvb-kpi{display:flex;flex-direction:column;align-items:center;gap:6px}
-.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(10px,.9vw,13px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
-.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(40px,4.8vw,84px);font-weight:700;line-height:1}
-.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(9px,.9vw,12px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb-kpi-lbl{font-family:var(--font-d);font-size:clamp(12px,1.1vw,16px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb-kpi-val{font-family:var(--font-h);font-size:clamp(56px,6.5vw,110px);font-weight:700;line-height:1}
+.tvb-kpi-unit{font-family:var(--font-d);font-size:clamp(11px,1.1vw,15px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .tvb-prog{width:100%;display:flex;flex-direction:column;gap:10px}
 .tvb-prog-bar{height:20px;background:var(--surface);border-radius:10px;overflow:hidden;border:.5px solid var(--border)}
 .tvb-prog-fill{height:100%;border-radius:10px;transition:width .6s ease}
@@ -783,7 +783,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-setor-lbl" id="tvb-setor">EMBALAGEM</div>
       <div style="text-align:center;line-height:1">
         <!-- LOGO Patrimar móveis (imagem oficial) -->
-        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(42px,7.5vw,88px);width:auto;display:inline-block;vertical-align:middle">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(26px,4.5vw,52px);width:auto;display:inline-block;vertical-align:middle">
       </div>
       <div class="tvb-clock-lbl" id="tvb-clock">--:--:--</div>
     </div>
