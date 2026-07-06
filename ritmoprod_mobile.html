@@ -1480,7 +1480,7 @@ function renderGerencial(){
     necKpi,
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto.
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts — caixas × pontos/produto', c:'acc'},
-    {l:'PESO PRODUZIDO',    v:fmtN(PONTOS_DIA.pesoKg)+' kg', sub:'caixas × peso bruto/produto',   c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto',   c:'acc'},
   ];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
