@@ -2186,7 +2186,7 @@ function renderGerencial(){
     {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
-    {l:'PESO PRODUZIDO',    v:fmtN(PONTOS_DIA.pesoKg)+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
   ];
   // META C/ ATRASO (programação): só entra quando há programação/atraso cadastrado.
   const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,atrasoTotal:0};
@@ -4411,7 +4411,7 @@ const _cicloTV = (function() {
       ? PONTOS_DIA.produtoAtual + (PONTOS_DIA.produtoAtualDesc ? ' · ' + PONTOS_DIA.produtoAtualDesc : '')
       : '—');
     set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
-    set('tvb-peso',   fmtN(PONTOS_DIA.pesoKg || 0) + ' kg');
+    set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)) + ' kg');
 
     const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
     ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k => {
