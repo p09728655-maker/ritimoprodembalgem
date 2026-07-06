@@ -2628,7 +2628,7 @@ function renderTV(){
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h" style="white-space:nowrap">${lbl}${fraqMark}</td>
-      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:14px;font-weight:700" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
+      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:18px;font-weight:700" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
       <td>${prod!=null?fmtN(acumC):'—'}</td>
       <td class="td-s">${ef2!=null?fmtP(ef2):'—'}</td>
