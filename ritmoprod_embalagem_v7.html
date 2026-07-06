@@ -1071,7 +1071,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">SETOR</label><input class="frm-inp" id="c-setor" type="text"></div>
-      <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"><div id="c-meta-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
     </div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
@@ -1188,7 +1188,7 @@ let AMOSTRA_HORAS = {};
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
-  metaDia:1500, turnoInicio:'07:00', turnoFim:'17:00',
+  metaDia:1500, metaDiaManual:false, metaDiaManualData:'', turnoInicio:'07:00', turnoFim:'17:00',
   almocoInicio:'11:00', almocoFim:'12:12',
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
@@ -1857,12 +1857,28 @@ async function lerPontosDia(){
         porProduto: json.porProduto||[], porHora: json.porHora||[], porHoraModelo: json.porHoraModelo||[],
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
       };
+      aplicarMetaDiaAutomatica();
       return true;
     }
   }catch(e){
     console.warn('lerPontosDia:', e.message);
   }
   return false;
+}
+
+// Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez.
+// Hoje usamos só o programado pra hoje (programadoHoje). Pra cobrar também
+// o atraso acumulado de dias anteriores, troque a linha abaixo para usar
+// PONTOS_DIA.programacao.metaEfetiva (mesmo valor do KPI "META C/ATRASO").
+function aplicarMetaDiaAutomatica(){
+  const hoje = hojeStr();
+  if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) return; // usuário já ajustou manualmente hoje
+  const auto = PONTOS_DIA.programacao?.programadoHoje || 0;
+  if (auto > 0) {
+    CFG.metaDia = auto;
+    CFG.metaDiaManual = false; // limpa um override de dia anterior que já expirou
+    saveCfgLocal();
+  }
 }
 
 async function testarSheets(){
@@ -3028,6 +3044,11 @@ function openCfg(){
   document.getElementById('c-unidade').value=CFG.unidade;
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
+  const _hoje=hojeStr(), _auto=PONTOS_DIA.programacao?.programadoHoje||0;
+  document.getElementById('c-meta-hint').textContent =
+    (CFG.metaDiaManual && CFG.metaDiaManualData===_hoje)
+      ? '✎ ajustado manualmente hoje'
+      : _auto>0 ? `🔄 automático via Programação (hoje: ${fmtN(_auto)} cx)` : '';
   document.getElementById('c-t0').value=CFG.turnoInicio;
   document.getElementById('c-t1').value=CFG.turnoFim;
   document.getElementById('c-a0').value=CFG.almocoInicio;
@@ -3050,7 +3071,13 @@ function saveCfg(){
   CFG.empresa=document.getElementById('c-empresa').value;
   CFG.unidade=document.getElementById('c-unidade').value;
   CFG.setor=document.getElementById('c-setor').value;
-  CFG.metaDia=parseInt(document.getElementById('c-meta').value)||1500;
+  {
+    const novaMeta=parseInt(document.getElementById('c-meta').value)||1500;
+    const autoAtual=PONTOS_DIA.programacao?.programadoHoje||0;
+    CFG.metaDia=novaMeta;
+    CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
+    CFG.metaDiaManualData=hojeStr();
+  }
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
   CFG.almocoInicio=document.getElementById('c-a0').value;
