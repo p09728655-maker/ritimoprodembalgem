@@ -138,6 +138,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .tbl tr:active td{background:var(--elevated)}
 .td-num{text-align:right}
 .td-s{text-align:center}
+/* Status (ABAIXO/META/ATENÇÃO) some junto do % numa 2ª linha em vez de coluna
+   própria — 5 colunas com o rótulo de horário (não abreviável, ex: "12:12-13:00")
+   estouravam a largura em celulares ~320-360px e cortavam a última coluna. */
+.td-s-sub{display:block;font-size:8px;font-weight:400;opacity:.85;letter-spacing:.5px}
 .tbl .ok{color:var(--ok)}
 .tbl .warn{color:var(--warn)}
 .tbl .red{color:var(--red)}
@@ -329,6 +333,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   /* Gerencial: KPIs e tabela também maiores */
   .kpi-grid{grid-template-columns:repeat(4,1fr);gap:14px}
   .kpi-card{padding:18px}
+  .tbl{font-size:13px}
+  .tbl th{padding:11px 14px;font-size:10px;letter-spacing:1.5px}
+  .tbl td{padding:14px 14px}
 
   /* Modais centralizados e com texto maior no tablet */
   .modal-over{align-items:center}
@@ -441,11 +448,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
               <th class="td-num">REAL</th>
               <th class="td-num">META</th>
               <th class="td-s">%</th>
-              <th class="td-s">STATUS</th>
             </tr>
           </thead>
           <tbody id="ger-tbl-body">
-            <tr><td colspan="5" class="loading">—</td></tr>
+            <tr><td colspan="4" class="loading">—</td></tr>
           </tbody>
         </table>
       </div>
@@ -1502,7 +1508,7 @@ function renderGerencial(){
 function renderTabelaHoraHora(allHoje){
   const tbody=document.getElementById('ger-tbl-body');
   if(!allHoje||!allHoje.length){
-    tbody.innerHTML='<tr><td colspan="5" class="empty-state" style="text-align:center">Sem dados</td></tr>';
+    tbody.innerHTML='<tr><td colspan="4" class="empty-state" style="text-align:center">Sem dados</td></tr>';
     return;
   }
   let acumC=0;
@@ -1526,8 +1532,7 @@ function renderTabelaHoraHora(allHoje){
       <td style="white-space:nowrap">${r.slotLabel||r.horario}${fraqMark}</td>
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
       <td class="td-num">${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
-      <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}</td>
-      <td class="td-s ${cls}" style="font-size:9px">${st}</td>
+      <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}${ef2!=null?`<span class="td-s-sub">${st}</span>`:''}</td>
     </tr>`;
   }).join('');
 }
