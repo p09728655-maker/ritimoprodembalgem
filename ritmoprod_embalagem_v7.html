@@ -170,8 +170,12 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-clock-wrap{text-align:right}
 .tv-clock{font-family:var(--font-d);font-size:42px;font-weight:600;color:var(--acc);letter-spacing:3px;line-height:1}
 .tv-date-txt{font-family:var(--font-d);font-size:11px;color:var(--txt2);text-align:right;margin-top:2px;letter-spacing:1px}
-.tv-body{flex:1;display:grid;grid-template-columns:1.2fr 1fr;min-height:0;overflow:hidden}
-.tv-left{padding:16px 36px;display:flex;flex-direction:column;justify-content:space-evenly;border-left:1px solid var(--border)}
+.tv-body{flex:1;display:grid;grid-template-columns:1fr;min-height:0;overflow:hidden}
+/* KPIs do dia saíram da Tela A: ficam só na Tela B (visão macro), pra não repetir
+   a mesma informação em telas diferentes. Tela A agora é só a tabela hora-a-hora
+   (foco na hora anterior/atual/próxima), ocupando a largura toda — só na TV do
+   operador, a tela GERENCIAL (desktop) continua com o painel de KPIs de sempre. */
+.tv-left{display:none}
 .tv-right{padding:10px 18px;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)}
 .tv-kpi-lbl{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;margin-bottom:3px}
 .tv-big{font-family:var(--font-h);font-size:clamp(56px,6vw,108px);font-weight:700;line-height:1;color:var(--txt)}
@@ -202,10 +206,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-table thead{display:table-header-group}
 .tv-table tbody{display:table-row-group}
 .tv-table tbody tr{height:1%}
-.tv-table th{font-family:var(--font-d);font-size:12px;color:var(--txt2);letter-spacing:2px;padding:3px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
-.tv-table td{font-family:var(--font-h);font-size:clamp(16px,2.1vw,31px);font-weight:700;padding:0 10px;line-height:1.1;border-bottom:0.5px solid var(--border)}
-.tv-table .td-h{font-family:var(--font-d);font-size:clamp(16px,1.5vw,22px);font-weight:600;color:var(--txt)}
-.tv-table .td-s{font-size:clamp(17px,1.9vw,27px)}
+.tv-table th{font-family:var(--font-d);font-size:22px;color:var(--txt2);letter-spacing:2px;padding:3px 10px;border-bottom:1px solid var(--border);text-align:left;background:var(--surface)}
+.tv-table td{font-family:var(--font-h);font-size:clamp(40px,5.5vw,84px);font-weight:700;padding:0 10px;line-height:1.1;border-bottom:0.5px solid var(--border)}
+.tv-table .td-h{font-family:var(--font-d);font-size:clamp(40px,4.5vw,68px);font-weight:600;color:var(--txt)}
+.tv-table .td-s{font-size:clamp(44px,5vw,74px)}
 .tv-table tr.r-ok   td{color:var(--ok)}
 .tv-table tr.r-warn td{color:var(--warn)}
 .tv-table tr.r-red  td{color:var(--red)}
@@ -702,10 +706,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden">
         <table class="tv-table" style="height:100%">
           <colgroup>
-            <col style="width:21%"><col style="width:17%"><col style="width:14%">
-            <col style="width:14%"><col style="width:15%"><col style="width:19%">
+            <col style="width:31%"><col style="width:14%"><col style="width:12%">
+            <col style="width:16%"><col style="width:27%">
           </colgroup>
-          <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>ACUM.</th><th>%/H</th><th>STATUS</th></tr></thead>
+          <thead><tr><th>HORA</th><th>META/H</th><th>REALIZADO</th><th>%/H</th><th>STATUS</th></tr></thead>
           <tbody id="tv-tbl-body"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody>
         </table>
       </div>
@@ -2072,6 +2076,25 @@ function calcMin(i,f){
   const d=(h1*60+m1)-(h0*60+m0);
   return d>0?d:60;
 }
+// Índices (na lista de slots, ordenada por horário) da hora ANTERIOR, ATUAL e
+// PRÓXIMA em relação ao horário real agora — usado pela Tela A da TV do
+// operador, que mostra só essas 3 linhas (bem maiores) em vez do turno inteiro.
+// "Atual" = slot em andamento; fora do turno (antes de começar, depois de
+// encerrar, ou num intervalo tipo o almoço) cai no slot mais próximo.
+function focoHoraIdx(slots){
+  if(!slots||!slots.length) return [];
+  const ag=new Date(), nm=ag.getHours()*60+ag.getMinutes();
+  let cur=slots.findIndex(s=>{
+    const ini=toMin(s.inicio), fim=s.fim?toMin(s.fim):ini+60;
+    return nm>=ini&&nm<fim;
+  });
+  if(cur===-1){
+    if(nm<toMin(slots[0].inicio)) cur=0;
+    else if(nm>=toMin(slots[slots.length-1].fim||slots[slots.length-1].inicio)) cur=slots.length-1;
+    else{ cur=slots.findIndex(s=>toMin(s.inicio)>nm); if(cur===-1) cur=slots.length-1; }
+  }
+  return [cur-1,cur,cur+1].filter(i=>i>=0&&i<slots.length);
+}
 // Acúmulo de atraso HORA A HORA (mesmo princípio do atraso por produto/dia em
 // calcularProgramacao() do ritmoprod_appscript.gs, aplicado às horas do turno
 // de HOJE). Calculado no cliente: metaHora/producaoHora de todas as horas do
@@ -2595,14 +2618,17 @@ function renderTV(){
   const elEmp=document.getElementById('tv-empresa'); if(elEmp) elEmp.textContent=`${CFG.empresa} · ${CFG.unidade}`;
   document.getElementById('tv-setor').textContent=CFG.setor;
 
-  let acumC=0;
-  document.getElementById('tv-tbl-body').innerHTML=k.slots.map((sl,i)=>{
+  // Tela A (TV do operador) foca só na hora anterior/atual/próxima — o resto do
+  // dia (acumulado, meta do dia etc.) já está na Tela B (visão macro). Menos
+  // linhas na tela = fonte bem maior, legível a distância no chão de fábrica.
+  const focoIdx=focoHoraIdx(k.slots);
+  document.getElementById('tv-tbl-body').innerHTML=focoIdx.map(i=>{
+    const sl=k.slots[i];
     const reg=k.allHoje.find(d=>d.horario===sl.inicio);
     const prod=reg?reg.producaoHora:null;
     const metaSlot=reg?reg.metaHora:k.metaH;
     const {atrasoHora=0, metaEfetivaHora=metaSlot} = k.atrasoHoras?.[i]||{};
     const isHE=reg?.he||sl.he||false;
-    if(prod!==null&&prod!==undefined) acumC+=prod;
     const ef2=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const rc=prod===null?'r-pend':ef2>=96?'r-ok':ef2>=90?'r-warn':'r-red';
     const st=prod===null?'—':ef2>=96?'✓ OK':ef2>=90?'! ATEN':'✗ ABX';
@@ -2628,9 +2654,8 @@ function renderTV(){
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h" style="white-space:nowrap">${lbl}${fraqMark}</td>
-      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:18px;font-weight:700" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
+      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:34px;font-weight:700" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
-      <td>${prod!=null?fmtN(acumC):'—'}</td>
       <td class="td-s">${ef2!=null?fmtP(ef2):'—'}</td>
       <td class="td-s">${st}</td></tr>`;
   }).join('');
