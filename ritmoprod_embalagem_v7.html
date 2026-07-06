@@ -2068,6 +2068,21 @@ function calcMin(i,f){
   const d=(h1*60+m1)-(h0*60+m0);
   return d>0?d:60;
 }
+// Acúmulo de atraso HORA A HORA (mesmo princípio do atraso por produto/dia em
+// calcularProgramacao() do ritmoprod_appscript.gs, aplicado às horas do turno
+// de HOJE). Calculado no cliente: metaHora/producaoHora de todas as horas do
+// dia já estão carregados de uma vez. Recalculado do zero a cada render, então
+// uma hora que supera a meta zera o atraso carregado automaticamente.
+function calcAtrasoHoras(rows){
+  let accMeta=0, accProd=0;
+  return rows.map(r=>{
+    const atrasoHora = Math.max(accMeta-accProd, 0);
+    const metaEfetivaHora = (r.metaHora||0) + atrasoHora;
+    accMeta += (r.metaHora||0);
+    accProd += (r.producaoHora!=null ? r.producaoHora : 0);
+    return { atrasoHora, metaEfetivaHora };
+  });
+}
 function calcKPIs(dh){
   const hoje=hojeStr();
   const heList=loadHE(hoje);
@@ -2113,7 +2128,11 @@ function calcKPIs(dh){
   const melhor=prods.length?Math.max(...prods):0;
   const pior=prods.length?Math.min(...prods):0;
   const hProd=(n*(effSlots[0]?.min||60))/60;
-  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje};
+  const atrasoHoras=calcAtrasoHoras(effSlots.map(sl=>{
+    const reg=allHoje.find(d=>d.horario===sl.inicio);
+    return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
+  }));
+  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sc(ef){ return ef>=96?'ok':ef>=90?'warn':'red'; }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
@@ -2185,13 +2204,14 @@ function renderGerencial(){
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
   let acumCalc=0;
-  document.getElementById('tbl-hora-body').innerHTML=k.slots.map(sl=>{
+  document.getElementById('tbl-hora-body').innerHTML=k.slots.map((sl,i)=>{
     const reg=k.allHoje.find(d=>d.horario===sl.inicio);
     const prod=reg?reg.producaoHora:null;
     const metaSlot=reg?reg.metaHora:k.metaH;
+    const {atrasoHora=0, metaEfetivaHora=metaSlot} = k.atrasoHoras?.[i]||{};
     const isHE=reg?.he||sl.he||false;
     if(prod!==null&&prod!==undefined) acumCalc+=prod;
-    const ef=prod!=null?(prod/metaSlot*100):null;
+    const ef=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
     const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
     const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
@@ -2216,7 +2236,7 @@ function renderGerencial(){
       <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
       <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
-      <td class="mono" style="color:${isHE?'var(--acc)':'var(--txt2)'}">${fmtN(metaSlot)}</td>
+      <td class="mono" style="color:${isHE?'var(--acc)':'var(--txt2)'}">${fmtN(metaSlot)}${atrasoHora>0?`<span style="color:var(--warn);font-size:10px;margin-left:3px" title="Meta efetiva com atraso acumulado do turno: ${fmtN(metaEfetivaHora)} cx">(+${fmtN(atrasoHora)})</span>`:''}</td>
       <td class="mono" style="color:${ef!=null?(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
@@ -2572,13 +2592,14 @@ function renderTV(){
   document.getElementById('tv-setor').textContent=CFG.setor;
 
   let acumC=0;
-  document.getElementById('tv-tbl-body').innerHTML=k.slots.map(sl=>{
+  document.getElementById('tv-tbl-body').innerHTML=k.slots.map((sl,i)=>{
     const reg=k.allHoje.find(d=>d.horario===sl.inicio);
     const prod=reg?reg.producaoHora:null;
     const metaSlot=reg?reg.metaHora:k.metaH;
+    const {atrasoHora=0, metaEfetivaHora=metaSlot} = k.atrasoHoras?.[i]||{};
     const isHE=reg?.he||sl.he||false;
     if(prod!==null&&prod!==undefined) acumC+=prod;
-    const ef2=prod!=null?(prod/metaSlot*100):null;
+    const ef2=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const rc=prod===null?'r-pend':ef2>=96?'r-ok':ef2>=90?'r-warn':'r-red';
     const st=prod===null?'—':ef2>=96?'✓ OK':ef2>=90?'! ATEN':'✗ ABX';
     // Alerta de hora fraca (opção 2): hora já lançada e produção bem abaixo da
@@ -2603,7 +2624,7 @@ function renderTV(){
     const lbl=isHE?`<span style="color:var(--acc);font-size:11px">HE </span>${sl.label}`:sl.label;
     return`<tr class="${rc}${isHE?' he-row':''}">
       <td class="td-h" style="white-space:nowrap">${lbl}${fraqMark}</td>
-      <td class="td-h">${fmtN(metaSlot)}</td>
+      <td class="td-h" style="white-space:nowrap">${fmtN(metaSlot)}${atrasoHora>0?`&nbsp;<span style="color:var(--warn);font-size:10px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
       <td>${prod!=null?fmtN(prod):'—'}</td>
       <td>${prod!=null?fmtN(acumC):'—'}</td>
       <td class="td-s">${ef2!=null?fmtP(ef2):'—'}</td>
