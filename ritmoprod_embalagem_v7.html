@@ -2179,6 +2179,11 @@ function calcKPIs(dh){
 
   const metaReal=dhAll.reduce((s,r)=>s+(r.metaHora||0),0);
   const ef=metaReal>0?(real/metaReal)*100:0;
+  // efDia = % da meta do dia já cumprido (real/meta), usado só para o NÚMERO
+  // exibido de "EFICIÊNCIA". O status/badge (OK/ATENÇÃO/ABAIXO) continua usando
+  // "ef" (ritmo até agora vs meta até agora), senão o badge ficaria vermelho o
+  // turno inteiro até quase o fim do dia.
+  const efDia=meta>0?(real/meta)*100:0;
   const gap=meta-real;
   // Ritmo Atual = média de cx/hora nas horas já passadas do turno. Já foi trocado
   // para "última hora" por engano (o rótulo antigo dizia isso), mas o pedido real
@@ -2198,7 +2203,7 @@ function calcKPIs(dh){
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
   }));
-  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+  return{real,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sc(ef){ return ef>=96?'ok':ef>=90?'warn':'red'; }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
@@ -2215,7 +2220,7 @@ function renderGerencial(){
   const kpis=[
     {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:`meta ${fmtN(k.meta)} cx`, c:s},
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
-    {l:'EFICIÊNCIA %',      v:fmtP(k.ef),               sub:sl(k.ef),                c:s},
+    {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef),                c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
@@ -2613,7 +2618,7 @@ function renderTV(){
   pe.textContent=fmtN(k.real); pe.className=`tv-big ${s}`;
 
   const ee=document.getElementById('tv-ef');
-  ee.textContent=fmtP(k.ef); ee.className=`tv-ef-val ${s}`;
+  ee.textContent=fmtP(k.efDia); ee.className=`tv-ef-val ${s}`;
 
   const be=document.getElementById('tv-badge');
   be.textContent='● '+sl(k.ef); be.className=`tv-status-badge ${s}`;
@@ -3177,7 +3182,7 @@ async function imprimir(){
   const agora=new Date().toLocaleString('pt-BR');
   const subGer=`${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}`;
   const infoGer=k
-    ?`Realizado: ${fmtN(k.real)} cx  |  Meta: ${fmtN(k.meta)} cx  |  Eficiência: ${fmtP(k.ef)}\nSlots: ${k.n}/${k.slots.length}  |  Projeção: ${fmtN(k.proj)} cx\nImpresso em: ${agora}`
+    ?`Realizado: ${fmtN(k.real)} cx  |  Meta: ${fmtN(k.meta)} cx  |  Eficiência: ${fmtP(k.efDia)}\nSlots: ${k.n}/${k.slots.length}  |  Projeção: ${fmtN(k.proj)} cx\nImpresso em: ${agora}`
     :`Impresso em: ${agora}`;
   setTxt('ph-ger-sub', subGer);
   setTxt('ph-ger-info', infoGer);

@@ -1107,6 +1107,10 @@ function calcKPIs(){
   const meta = dh.length>0 ? (dh[0].metaDia||CFG.metaDia) : CFG.metaDia;
   const metaReal = dh.reduce((s,r)=>s+(r.metaHora||0), 0);
   const ef = metaReal>0 ? (real/metaReal)*100 : 0;
+  // efDia = % da meta do dia já cumprido (real/meta), usado só para o NÚMERO
+  // exibido de "EFICIÊNCIA". O status/badge continua usando "ef" (ritmo até
+  // agora vs meta até agora).
+  const efDia = meta>0 ? (real/meta)*100 : 0;
   const gap = meta-real;
   const ritmo = n>0 ? Math.round(real/n) : 0;
   const totalSlots = allHoje.length>0 ? allHoje.length : slots.length;
@@ -1117,7 +1121,7 @@ function calcKPIs(){
   const melhor = prods.length ? Math.max(...prods) : 0;
   const pior = prods.length ? Math.min(...prods) : 0;
   const metaH = totalSlots>0 ? Math.round(meta/totalSlots) : 0;
-  return{real,meta,ef,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
+  return{real,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
 }
 
 // ════════════════════════════════════════════════
@@ -1473,7 +1477,7 @@ function renderGerencial(){
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
   const kpis=[
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
-    {l:'EFICIÊNCIA',     v:fmtP(k.ef),    sub:sl(k.ef), c:s},
+    {l:'EFICIÊNCIA',     v:fmtP(k.efDia), sub:sl(k.ef), c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
