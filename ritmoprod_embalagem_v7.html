@@ -950,6 +950,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-hero-num" id="tvc-nec-hora" style="color:var(--red);font-size:clamp(70px,9vw,160px)">—</div>
       <div class="tvb-hero-unit" id="tvc-nec-hora-sub">CX/HORA ALÉM DA META NORMAL</div>
       <div id="tvc-nec-he" style="display:none;margin-top:14px;font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:1.5px;color:var(--warn)">⏰ —</div>
+      <div id="tvc-nec-linha" style="display:none;margin-top:6px;font-family:var(--font-d);font-size:clamp(13px,1.4vw,19px);letter-spacing:1.5px;color:var(--acc)">🏭 —</div>
     </div>
   </div>
 
@@ -4651,19 +4652,33 @@ const _cicloTV = (function() {
     // realista de HE = 2h/dia — acima disso, divide em dias em vez de
     // sugerir um número de horas impossível de caber num turno só.
     const HE_MAX_DIA = 2;
+    // Acima de HE_DIAS_LIMITE dias de HE, o atraso é grande demais pra
+    // resolver só com hora extra num prazo razoável — sugere considerar
+    // uma segunda linha de embalagem como alternativa.
+    const HE_DIAS_LIMITE = 5;
     const heEl = document.getElementById('tvc-nec-he');
+    const linhaEl = document.getElementById('tvc-nec-linha');
     if (heEl) {
       if (metaH > 0 && atraso > 0) {
         const horasHE = Math.ceil(atraso / metaH);
+        const dias = Math.ceil(horasHE / HE_MAX_DIA);
         if (horasHE <= HE_MAX_DIA) {
           heEl.textContent = `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`;
         } else {
-          const dias = Math.ceil(horasHE / HE_MAX_DIA);
           heEl.textContent = `⏰ ~${horasHE}H DE HE NO TOTAL — ~${dias} DIAS DE HE (${HE_MAX_DIA}H/DIA)`;
         }
         heEl.style.display = 'block';
+        if (linhaEl) {
+          if (dias > HE_DIAS_LIMITE) {
+            linhaEl.textContent = `🏭 ATRASO GRANDE P/ HE (~${dias} DIAS) — AVALIAR 2ª LINHA DE EMBALAGEM`;
+            linhaEl.style.display = 'block';
+          } else {
+            linhaEl.style.display = 'none';
+          }
+        }
       } else {
         heEl.style.display = 'none';
+        if (linhaEl) linhaEl.style.display = 'none';
       }
     }
   }
