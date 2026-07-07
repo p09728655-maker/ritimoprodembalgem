@@ -228,6 +228,16 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   display:none;flex-direction:column;justify-content:space-evenly;align-items:center;
   padding:0 5vw;text-align:center;
 }
+/* Tela C reaproveita as classes tvb-* da Tela B, mas empilhada (hero + tabela
+   de atraso por produto) em vez de space-evenly — precisa de menos altura por
+   bloco pra caber a tabela embaixo sem estourar a tela. */
+#tv-slide-c{
+  position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;
+  display:none;flex-direction:column;align-items:center;
+  padding:14px 5vw 20px;text-align:center;gap:10px;
+}
+#tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
+#tv-slide-c .tv-table{font-size:clamp(13px,1.3vw,20px)}
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -743,10 +753,17 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
 
       <!-- ⚠ Atraso da PROGRAMAÇÃO — só aparece quando há atraso acumulado. -->
-      <div id="tv-atraso-banner" style="display:none;background:rgba(229,115,115,.12);border:0.5px solid rgba(229,115,115,.5);border-radius:6px;padding:10px 18px;align-items:baseline;justify-content:space-between">
-        <div class="tv-kpi-lbl" style="margin:0;font-size:13px;letter-spacing:2px;color:var(--red)">⚠ ATRASADOS DA PROGRAMAÇÃO</div>
-        <div style="font-family:var(--font-h);font-size:clamp(22px,2.4vw,32px);font-weight:700;color:var(--red);line-height:1" id="tv-atraso-val">—</div>
-        <div style="font-family:var(--font-d);font-size:12px;color:var(--red);opacity:.7">CX</div>
+      <div id="tv-atraso-banner" style="display:none;background:rgba(229,115,115,.12);border:0.5px solid rgba(229,115,115,.5);border-radius:6px;padding:10px 18px;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <div class="tv-kpi-lbl" style="margin:0;font-size:13px;letter-spacing:2px;color:var(--red)">⚠ ATRASADO (DIAS ANTERIORES)</div>
+          <div style="font-family:var(--font-h);font-size:clamp(22px,2.4vw,32px);font-weight:700;color:var(--red);line-height:1" id="tv-atraso-val">—</div>
+          <div style="font-family:var(--font-d);font-size:12px;color:var(--red);opacity:.7">CX</div>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;border-top:0.5px solid rgba(229,115,115,.3);padding-top:6px">
+          <div class="tv-kpi-lbl" style="margin:0;font-size:11px;letter-spacing:1.5px;color:var(--red);opacity:.85">PRODUZIR HOJE P/ ZERAR</div>
+          <div style="font-family:var(--font-h);font-size:clamp(16px,1.8vw,22px);font-weight:700;color:var(--red);line-height:1" id="tv-atraso-meta-val">—</div>
+          <div style="font-family:var(--font-d);font-size:11px;color:var(--red);opacity:.7">CX</div>
+        </div>
       </div>
 
       <div>
@@ -894,6 +911,44 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
     </div>
 
+  </div>
+
+  <!-- ═══ SLIDE C — atraso da PROGRAMAÇÃO, cicla junto de A/B só quando há atraso ═══ -->
+  <div id="tv-slide-c" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl" id="tvc-setor">EMBALAGEM</div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(56px,9vw,120px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tvc-clock">--:--:--</div>
+    </div>
+
+    <div style="text-align:center;font-family:var(--font-d);font-size:clamp(15px,1.5vw,20px);letter-spacing:3px;color:var(--red);margin:4px 0 16px">⚠ ATRASO NA PROGRAMAÇÃO</div>
+
+    <div class="tvb-hero-band">
+      <div class="tvb-hero">
+        <div class="tvb-hero-lbl" style="color:var(--red)">ATRASADO (DIAS ANTERIORES)</div>
+        <div class="tvb-hero-num" id="tvc-atraso" style="color:var(--red)">—</div>
+        <div class="tvb-hero-unit">CAIXAS</div>
+      </div>
+      <div class="tvb-kpis tvb-side-rail" data-n="1">
+        <div class="tvb-kpi">
+          <div class="tvb-kpi-lbl">PRODUZIR HOJE P/ ZERAR</div>
+          <div class="tvb-kpi-val" id="tvc-meta-efetiva" style="color:var(--red)">—</div>
+          <div class="tvb-kpi-unit">CAIXAS</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;flex:1;display:flex;flex-direction:column;min-height:0">
+      <div style="font-family:var(--font-d);font-size:clamp(12px,1.2vw,16px);letter-spacing:2px;color:var(--txt2);margin-bottom:8px">▸ MAIORES ATRASOS POR PRODUTO</div>
+      <div style="flex:1;overflow:hidden">
+        <table class="tv-table" style="height:100%">
+          <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>FALTA</th></tr></thead>
+          <tbody id="tvc-tbl-body"><tr><td colspan="3" class="empty-msg">—</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </section>
@@ -2650,6 +2705,9 @@ function renderTV(){
     abTV.style.display = _atrasoTV>0 ? 'flex' : 'none';
     const avTV = document.getElementById('tv-atraso-val');
     if(avTV) avTV.textContent = fmtN(_atrasoTV);
+    // Produzir a meta efetiva (programado hoje + atraso) hoje zera o atraso.
+    const amvTV = document.getElementById('tv-atraso-meta-val');
+    if(amvTV) amvTV.textContent = fmtN(_progTV.metaEfetiva || 0);
   }
 
   const pe=document.getElementById('tv-prod');
@@ -4554,28 +4612,57 @@ const _cicloTV = (function() {
     if (heroBand) heroBand.style.gridTemplateColumns = railKeys.length ? '' : '1fr';
   }
 
+  // Tela C (atraso da PROGRAMAÇÃO por produto) — só entra no ciclo quando há
+  // atraso acumulado (atrasoTotal>0); reaproveita a duração da Tela B, sem
+  // precisar de um campo de configuração novo.
+  function _sincSlideC() {
+    const get = id => { const el = document.getElementById(id); return el ? el.textContent : '—'; };
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('tvc-setor', get('tv-setor'));
+    set('tvc-clock', get('tv-clock'));
+    const prog = PONTOS_DIA.programacao || { lista: [], atrasoTotal: 0, metaEfetiva: 0 };
+    set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
+    set('tvc-meta-efetiva', fmtN(prog.metaEfetiva || 0));
+    const top = (prog.lista || []).filter(it => it.falta > 0).slice(0, 6);
+    const body = document.getElementById('tvc-tbl-body');
+    if (body) {
+      body.innerHTML = top.length
+        ? top.map(it => `<tr><td class="td-h">${it.codigo}</td><td>${it.desc || '—'}</td><td class="td-s" style="color:var(--red)">${fmtN(it.falta)}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="empty-msg">—</td></tr>';
+    }
+  }
+
+  function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
+
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
-  // Tela A e Tela B têm tempos independentes (ex.: 20s em A, 5s em B).
+  // Tela A tem tempo próprio; Tela B e C compartilham CFG.slideBIntervalo.
   function _agendar() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
     const seg = _tela === 'a' ? (CFG.slideAIntervalo || 15) : (CFG.slideBIntervalo || 15);
     _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
   }
 
+  function _ordemTelas() { return _temAtrasoAgora() ? ['a', 'b', 'c'] : ['a', 'b']; }
+
   function _trocar() {
     const slideB = document.getElementById('tv-slide-b');
+    const slideC = document.getElementById('tv-slide-c');
     if (!slideB) return;
-    _tela = _tela === 'a' ? 'b' : 'a';
+    const ordem = _ordemTelas();
+    const idx = ordem.indexOf(_tela);
+    _tela = ordem[(idx + 1) % ordem.length] || 'a'; // se a tela atual saiu da ordem (ex.: atraso zerou), volta pra 'a'
+    slideB.style.display = 'none';
+    if (slideC) slideC.style.display = 'none';
     if (_tela === 'b') { _sincSlideB(); slideB.style.display = 'flex'; }
-    else               { slideB.style.display = 'none'; }
+    else if (_tela === 'c' && slideC) { _sincSlideC(); slideC.style.display = 'flex'; }
     _agendar(); // reagenda com a duração da nova tela
   }
 
-  // Atualiza relógio no Slide B a cada segundo quando visível
+  // Atualiza relógio nas Telas B/C a cada segundo quando visíveis
   setInterval(() => {
-    if (_tela === 'b') {
+    if (_tela === 'b' || _tela === 'c') {
       const c = document.getElementById('tv-clock');
-      const cb = document.getElementById('tvb-clock');
+      const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : 'tvc-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
   }, 1000);
@@ -4584,14 +4671,16 @@ const _cicloTV = (function() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
     _tela = 'a';
     const slideB = document.getElementById('tv-slide-b');
+    const slideC = document.getElementById('tv-slide-c');
     if (slideB) slideB.style.display = 'none';
+    if (slideC) slideC.style.display = 'none';
     // No gerencial a alternância não faz sentido — só roda na TV (operador).
     if (!CFG.slideBAtivo || PERFIL === 'gerencial') {
-      console.log('[TV] Tela B desativada (config ou perfil gerencial)');
+      console.log('[TV] Tela B/C desativada (config ou perfil gerencial)');
       return;
     }
     _agendar(); // começa contando a duração da Tela A
-    console.log(`[TV] Ciclo ativo: Tela A ${CFG.slideAIntervalo || 15}s ↔ Tela B ${CFG.slideBIntervalo || 15}s`);
+    console.log(`[TV] Ciclo ativo: Tela A ${CFG.slideAIntervalo || 15}s ↔ Tela B/C ${CFG.slideBIntervalo || 15}s (Tela C só com atraso)`);
   }
 
   reiniciar();
