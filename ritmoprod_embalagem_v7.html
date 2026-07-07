@@ -1080,7 +1080,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
     <div class="frm-row">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
-        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)">
+        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)" onchange="onToggleMetaComAtraso()">
         Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
       </label>
     </div>
@@ -3113,6 +3113,20 @@ function openCfg(){
   document.getElementById('modal-cfg').classList.add('on');
 }
 function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on'); }
+// Ao marcar/desmarcar "Somar atraso na META DO DIA", atualiza o campo META
+// DIA (CX) na hora com o valor automático correspondente. Sem isso, o campo
+// continuava mostrando o número antigo e, ao salvar, era comparado com o novo
+// autoAtual (diferente) — marcando a meta como "ajustada manualmente" e nunca
+// aplicando o atraso, mesmo com o checkbox marcado.
+function onToggleMetaComAtraso(){
+  const comAtraso=document.getElementById('c-meta-atraso').checked;
+  const _prog=PONTOS_DIA.programacao||{};
+  const auto=(comAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
+  if(auto>0){
+    document.getElementById('c-meta').value=auto;
+    document.getElementById('c-meta-hint').textContent=`🔄 automático via Programação (hoje: ${fmtN(auto)} cx)`;
+  }
+}
 function saveCfg(){
   CFG.empresa=document.getElementById('c-empresa').value;
   CFG.unidade=document.getElementById('c-unidade').value;
