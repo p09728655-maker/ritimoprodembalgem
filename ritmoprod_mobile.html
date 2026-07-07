@@ -663,6 +663,9 @@ let PARADAS_HOJE = [];
 let PROG_HOJE = [];
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
+// Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
+// não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
+let META_HORA_A_HORA = 0;
 
 function loadCfg(){
   try{
@@ -799,6 +802,8 @@ function processarResposta(json){
     };
   });
   DADOS = [...DADOS.filter(d=>d.data!==hoje), ...novos];
+  META_HORA_A_HORA = Number(json.metaDia) || META_HORA_A_HORA;
+  aplicarMetaDiaAutomatica();
   const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   setDotStatus('live', 'Google Sheets · '+agora);
   renderAtivo();
@@ -889,10 +894,12 @@ async function lerPontosDia(){
 }
 
 // Meta do dia automática: puxa da PROGRAMAÇÃO (metaEfetiva = programado de hoje
-// + atraso acumulado de dias anteriores) em vez de usar a meta da HORA_A_HORA.
+// + atraso acumulado de dias anteriores). Sem nada cadastrado pra hoje
+// (metaEfetiva=0), cai na meta da HORA_A_HORA em vez do default fixo do app.
 function aplicarMetaDiaAutomatica(){
   const auto = PONTOS_DIA.programacao?.metaEfetiva || 0;
-  if (auto > 0) CFG.metaDia = auto;
+  const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
+  if (novoValor > 0) CFG.metaDia = novoValor;
 }
 
 function atualizarProdutoBar(){
