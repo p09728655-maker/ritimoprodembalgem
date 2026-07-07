@@ -707,13 +707,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <!-- BOTÃO + RELÓGIO — bloco direito -->
     <div style="display:flex;align-items:center;gap:14px">
       <button class="tv-fs-btn" id="btn-tv-fs" onclick="toggleTVFullscreen()">⛶ PAINEL CHEIO</button>
-      <button onclick="openParada()" style="
-        background:rgba(229,115,115,.15);color:#e57373;
-        border:0.5px solid rgba(229,115,115,.5);
-        padding:6px 16px;border-radius:4px;
-        font-family:var(--font-h);font-size:13px;font-weight:700;
-        letter-spacing:1.5px;cursor:pointer;
-      ">⏸ PARADA</button>
       <div class="tv-clock-wrap">
         <div class="tv-clock" id="tv-clock">--:--:--</div>
         <div class="tv-date-txt" id="tv-date">--/--/----</div>
@@ -747,6 +740,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tv-kpi-lbl" style="margin:0;font-size:16px;letter-spacing:3px">META DO DIA</div>
         <div style="font-family:var(--font-h);font-size:clamp(38px,4.2vw,60px);font-weight:700;color:var(--acc);line-height:1" id="tv-meta-dest">—</div>
         <div style="font-family:var(--font-d);font-size:13px;color:var(--acc);opacity:.7">CX</div>
+      </div>
+
+      <!-- ⚠ Atraso da PROGRAMAÇÃO — só aparece quando há atraso acumulado. -->
+      <div id="tv-atraso-banner" style="display:none;background:rgba(229,115,115,.12);border:0.5px solid rgba(229,115,115,.5);border-radius:6px;padding:10px 18px;align-items:baseline;justify-content:space-between">
+        <div class="tv-kpi-lbl" style="margin:0;font-size:13px;letter-spacing:2px;color:var(--red)">⚠ ATRASADOS DA PROGRAMAÇÃO</div>
+        <div style="font-family:var(--font-h);font-size:clamp(22px,2.4vw,32px);font-weight:700;color:var(--red);line-height:1" id="tv-atraso-val">—</div>
+        <div style="font-family:var(--font-d);font-size:12px;color:var(--red);opacity:.7">CX</div>
       </div>
 
       <div>
@@ -1074,6 +1074,12 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"><div id="c-meta-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
     </div>
     <div class="frm-row">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
+        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)">
+        Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
+      </label>
+    </div>
+    <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM TURNO</label><input class="frm-inp" id="c-t1" type="time"></div>
     </div>
@@ -1188,7 +1194,7 @@ let AMOSTRA_HORAS = {};
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
-  metaDia:1500, metaDiaManual:false, metaDiaManualData:'', turnoInicio:'07:00', turnoFim:'17:00',
+  metaDia:1500, metaDiaManual:false, metaDiaManualData:'', metaComAtraso:false, turnoInicio:'07:00', turnoFim:'17:00',
   almocoInicio:'11:00', almocoFim:'12:12',
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
@@ -1721,6 +1727,9 @@ function parseExcel(buf){
 // GOOGLE SHEETS — fetch via Apps Script
 // ════════════════════════════════════════════════
 let isSheets = false;
+// Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
+// não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
+let META_HORA_A_HORA = 0;
 
 // JSONP — funciona em file:// sem CORS
 let _jsonpSeq = 0;
@@ -1763,6 +1772,8 @@ function processarRespostaSheets(json){
   });
   DADOS = [...DADOS.filter(d=>d.data!==hoje), ...novos];
   isLive = true; isSheets = true;
+  META_HORA_A_HORA = Number(json.metaDia) || META_HORA_A_HORA;
+  aplicarMetaDiaAutomatica();
   const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   setStatusBadge('live','Google Sheets · '+agora);
   document.getElementById('ftr-fonte').textContent =
@@ -1866,16 +1877,21 @@ async function lerPontosDia(){
   return false;
 }
 
-// Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez.
-// Hoje usamos só o programado pra hoje (programadoHoje). Pra cobrar também
-// o atraso acumulado de dias anteriores, troque a linha abaixo para usar
-// PONTOS_DIA.programacao.metaEfetiva (mesmo valor do KPI "META C/ATRASO").
+// Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez. Por
+// padrão usa só programadoHoje (o que está previsto pra hoje) — o atraso
+// acumulado de dias anteriores fica à parte, como aviso no KPI "⚠ ATRASO NA
+// PROGRAMAÇÃO" (ver renderGerencial). Se CFG.metaComAtraso estiver ligado
+// (checkbox nas configurações), a meta do dia já soma o atraso (metaEfetiva).
+// Sem nada cadastrado na PROGRAMAÇÃO pra hoje, cai na meta da HORA_A_HORA em
+// vez do default fixo do app — nunca mostra um número "chutado".
 function aplicarMetaDiaAutomatica(){
   const hoje = hojeStr();
   if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) return; // usuário já ajustou manualmente hoje
-  const auto = PONTOS_DIA.programacao?.programadoHoje || 0;
-  if (auto > 0) {
-    CFG.metaDia = auto;
+  const prog = PONTOS_DIA.programacao || {};
+  const auto = (CFG.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
+  const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
+  if (novoValor > 0 && novoValor !== CFG.metaDia) {
+    CFG.metaDia = novoValor;
     CFG.metaDiaManual = false; // limpa um override de dia anterior que já expirou
     saveCfgLocal();
   }
@@ -2172,8 +2188,12 @@ function calcKPIs(dh){
   const n=dhAll.length;
   const real=dhAll.reduce((s,r)=>s+r.producaoHora,0);
 
-  // metaDia: soma das metas de todos os slots (base + HE)
-  const metaBase=dadosHoje.length>0?dadosHoje[0].metaDia:CFG.metaDia;
+  // metaDia: no modo Sheets, CFG.metaDia já vem da PROGRAMAÇÃO (metaEfetiva,
+  // ver aplicarMetaDiaAutomatica) ou de ajuste manual do usuário — não pode ser
+  // sobrescrita pelo metaDia da aba HORA_A_HORA (dadosHoje[0].metaDia), senão a
+  // meta automática da PROGRAMAÇÃO nunca aparece (fica sempre a de HORA_A_HORA).
+  // Fora do modo Sheets (Excel/demo), mantém o metaDia do próprio arquivo.
+  const metaBase=isSheets?CFG.metaDia:(dadosHoje.length>0?dadosHoje[0].metaDia:CFG.metaDia);
   const metaHE=heList.reduce((s,h)=>s+h.metaHora,0);
   const meta=metaBase+metaHE;
 
@@ -2231,10 +2251,11 @@ function renderGerencial(){
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
   ];
-  // META C/ ATRASO (programação): só entra quando há programação/atraso cadastrado.
-  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,atrasoTotal:0};
-  if(_prog.metaEfetiva>0 || _prog.atrasoTotal>0){
-    kpis.push({l:'META C/ ATRASO', v:fmtN(_prog.metaEfetiva), sub:`programado hoje + ${fmtN(_prog.atrasoTotal)} atrasadas`, c:_prog.atrasoTotal>0?'red':'acc'});
+  // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
+  // quando há atraso acumulado de dias anteriores ainda não embalado.
+  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
+  if(_prog.atrasoTotal>0){
+    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
   }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
@@ -2613,6 +2634,17 @@ function renderTV(){
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
   const s=sc(k.ef);
+
+  // ⚠ Atraso da PROGRAMAÇÃO: visível na TV pra deixar claro o quanto está
+  // acumulado, mesmo quando a META DO DIA (acima) mostra só o programado de hoje.
+  const _progTV = PONTOS_DIA.programacao || {};
+  const _atrasoTV = _progTV.atrasoTotal || 0;
+  const abTV = document.getElementById('tv-atraso-banner');
+  if(abTV){
+    abTV.style.display = _atrasoTV>0 ? 'flex' : 'none';
+    const avTV = document.getElementById('tv-atraso-val');
+    if(avTV) avTV.textContent = fmtN(_atrasoTV);
+  }
 
   const pe=document.getElementById('tv-prod');
   pe.textContent=fmtN(k.real); pe.className=`tv-big ${s}`;
@@ -3049,7 +3081,10 @@ function openCfg(){
   document.getElementById('c-unidade').value=CFG.unidade;
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
-  const _hoje=hojeStr(), _auto=PONTOS_DIA.programacao?.programadoHoje||0;
+  document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
+  const _hoje=hojeStr();
+  const _prog=PONTOS_DIA.programacao||{};
+  const _auto=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
   document.getElementById('c-meta-hint').textContent =
     (CFG.metaDiaManual && CFG.metaDiaManualData===_hoje)
       ? '✎ ajustado manualmente hoje'
@@ -3077,8 +3112,10 @@ function saveCfg(){
   CFG.unidade=document.getElementById('c-unidade').value;
   CFG.setor=document.getElementById('c-setor').value;
   {
+    CFG.metaComAtraso=document.getElementById('c-meta-atraso').checked;
     const novaMeta=parseInt(document.getElementById('c-meta').value)||1500;
-    const autoAtual=PONTOS_DIA.programacao?.programadoHoje||0;
+    const _prog=PONTOS_DIA.programacao||{};
+    const autoAtual=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
     CFG.metaDia=novaMeta;
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();

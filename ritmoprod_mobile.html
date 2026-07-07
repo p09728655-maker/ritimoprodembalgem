@@ -662,7 +662,10 @@ let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0 };
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
+// Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
+// não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
+let META_HORA_A_HORA = 0;
 
 function loadCfg(){
   try{
@@ -799,6 +802,8 @@ function processarResposta(json){
     };
   });
   DADOS = [...DADOS.filter(d=>d.data!==hoje), ...novos];
+  META_HORA_A_HORA = Number(json.metaDia) || META_HORA_A_HORA;
+  aplicarMetaDiaAutomatica();
   const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   setDotStatus('live', 'Google Sheets · '+agora);
   renderAtivo();
@@ -877,11 +882,25 @@ async function lerPontosDia(){
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
     const json = await jsonpFetch(url);
     if(json && json.ok){
-      PONTOS_DIA = { pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0 };
+      PONTOS_DIA = {
+        pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
+        programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
+      };
+      aplicarMetaDiaAutomatica();
       return true;
     }
   }catch(e){ console.warn('lerPontosDia:', e.message); }
   return false;
+}
+
+// Meta do dia automática: puxa da PROGRAMAÇÃO (só programadoHoje — o atraso
+// acumulado de dias anteriores NÃO entra na meta do dia, aparece à parte como
+// aviso no KPI "⚠ ATRASO NA PROGRAMAÇÃO"). Sem nada cadastrado pra hoje
+// (programadoHoje=0), cai na meta da HORA_A_HORA em vez do default fixo do app.
+function aplicarMetaDiaAutomatica(){
+  const auto = PONTOS_DIA.programacao?.programadoHoje || 0;
+  const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
+  if (novoValor > 0) CFG.metaDia = novoValor;
 }
 
 function atualizarProdutoBar(){
@@ -1110,7 +1129,9 @@ function calcKPIs(){
   const dh = allHoje.filter(d=>d.producaoHora!=null);
   const n = dh.length;
   const real = dh.reduce((s,r)=>s+r.producaoHora, 0);
-  const meta = dh.length>0 ? (dh[0].metaDia||CFG.metaDia) : CFG.metaDia;
+  // CFG.metaDia vem da PROGRAMAÇÃO (metaEfetiva, ver aplicarMetaDiaAutomatica)
+  // e não pode ser sobrescrito pelo metaDia da aba HORA_A_HORA (dh[0].metaDia).
+  const meta = CFG.metaDia || (dh.length>0 ? dh[0].metaDia : 0);
   const metaReal = dh.reduce((s,r)=>s+(r.metaHora||0), 0);
   const ef = metaReal>0 ? (real/metaReal)*100 : 0;
   // efDia = % da meta do dia já cumprido (real/meta), usado só para o NÚMERO
@@ -1492,6 +1513,12 @@ function renderGerencial(){
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts — caixas × pontos/produto', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto',   c:'acc'},
   ];
+  // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
+  // quando há atraso acumulado de dias anteriores ainda não embalado.
+  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
+  if(_prog.atrasoTotal>0){
+    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
+  }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
       <div class="kpi-lbl">${k.l}</div>
