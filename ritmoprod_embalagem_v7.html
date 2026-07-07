@@ -1867,13 +1867,12 @@ async function lerPontosDia(){
 }
 
 // Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez.
-// Hoje usamos só o programado pra hoje (programadoHoje). Pra cobrar também
-// o atraso acumulado de dias anteriores, troque a linha abaixo para usar
-// PONTOS_DIA.programacao.metaEfetiva (mesmo valor do KPI "META C/ATRASO").
+// Usa metaEfetiva (programado de hoje + atraso acumulado de dias anteriores),
+// mesmo valor do KPI "META C/ATRASO" — a meta do dia cobra também o atraso.
 function aplicarMetaDiaAutomatica(){
   const hoje = hojeStr();
   if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) return; // usuário já ajustou manualmente hoje
-  const auto = PONTOS_DIA.programacao?.programadoHoje || 0;
+  const auto = PONTOS_DIA.programacao?.metaEfetiva || 0;
   if (auto > 0) {
     CFG.metaDia = auto;
     CFG.metaDiaManual = false; // limpa um override de dia anterior que já expirou
@@ -2172,8 +2171,12 @@ function calcKPIs(dh){
   const n=dhAll.length;
   const real=dhAll.reduce((s,r)=>s+r.producaoHora,0);
 
-  // metaDia: soma das metas de todos os slots (base + HE)
-  const metaBase=dadosHoje.length>0?dadosHoje[0].metaDia:CFG.metaDia;
+  // metaDia: no modo Sheets, CFG.metaDia já vem da PROGRAMAÇÃO (metaEfetiva,
+  // ver aplicarMetaDiaAutomatica) ou de ajuste manual do usuário — não pode ser
+  // sobrescrita pelo metaDia da aba HORA_A_HORA (dadosHoje[0].metaDia), senão a
+  // meta automática da PROGRAMAÇÃO nunca aparece (fica sempre a de HORA_A_HORA).
+  // Fora do modo Sheets (Excel/demo), mantém o metaDia do próprio arquivo.
+  const metaBase=isSheets?CFG.metaDia:(dadosHoje.length>0?dadosHoje[0].metaDia:CFG.metaDia);
   const metaHE=heList.reduce((s,h)=>s+h.metaHora,0);
   const meta=metaBase+metaHE;
 
@@ -3049,7 +3052,7 @@ function openCfg(){
   document.getElementById('c-unidade').value=CFG.unidade;
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
-  const _hoje=hojeStr(), _auto=PONTOS_DIA.programacao?.programadoHoje||0;
+  const _hoje=hojeStr(), _auto=PONTOS_DIA.programacao?.metaEfetiva||0;
   document.getElementById('c-meta-hint').textContent =
     (CFG.metaDiaManual && CFG.metaDiaManualData===_hoje)
       ? '✎ ajustado manualmente hoje'
@@ -3078,7 +3081,7 @@ function saveCfg(){
   CFG.setor=document.getElementById('c-setor').value;
   {
     const novaMeta=parseInt(document.getElementById('c-meta').value)||1500;
-    const autoAtual=PONTOS_DIA.programacao?.programadoHoje||0;
+    const autoAtual=PONTOS_DIA.programacao?.metaEfetiva||0;
     CFG.metaDia=novaMeta;
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();
