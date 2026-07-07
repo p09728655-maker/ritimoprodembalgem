@@ -4647,16 +4647,20 @@ const _cicloTV = (function() {
 
     // Sugestão de HE: quantas horas extras (no ritmo normal, metaH/hora)
     // seriam necessárias pra absorver o atraso inteiro, como alternativa a
-    // forçar um ritmo extra impossível dentro do turno normal. Acima de 4h
-    // não cabe num turno só — deixa claro que é o TOTAL, não "hoje", pra não
-    // sugerir HE impossível (ex.: 15h extras no mesmo dia).
+    // forçar um ritmo extra impossível dentro do turno normal. Capacidade
+    // realista de HE = 2h/dia — acima disso, divide em dias em vez de
+    // sugerir um número de horas impossível de caber num turno só.
+    const HE_MAX_DIA = 2;
     const heEl = document.getElementById('tvc-nec-he');
     if (heEl) {
       if (metaH > 0 && atraso > 0) {
         const horasHE = Math.ceil(atraso / metaH);
-        heEl.textContent = horasHE <= 4
-          ? `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`
-          : `⏰ ~${horasHE} HORAS EXTRAS NO TOTAL (VÁRIOS DIAS), NO RITMO NORMAL`;
+        if (horasHE <= HE_MAX_DIA) {
+          heEl.textContent = `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`;
+        } else {
+          const dias = Math.ceil(horasHE / HE_MAX_DIA);
+          heEl.textContent = `⏰ ~${horasHE}H DE HE NO TOTAL — ~${dias} DIAS DE HE (${HE_MAX_DIA}H/DIA)`;
+        }
         heEl.style.display = 'block';
       } else {
         heEl.style.display = 'none';
