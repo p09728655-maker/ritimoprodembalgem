@@ -945,14 +945,11 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
     </div>
 
-    <div style="margin-top:16px;flex:1;display:flex;flex-direction:column;min-height:0">
-      <div style="font-family:var(--font-d);font-size:clamp(12px,1.2vw,16px);letter-spacing:2px;color:var(--txt2);margin-bottom:8px">▸ MAIORES ATRASOS POR PRODUTO</div>
-      <div style="flex:1;overflow:hidden">
-        <table class="tv-table" style="height:100%">
-          <thead><tr><th>CÓDIGO</th><th>FALTA</th></tr></thead>
-          <tbody id="tvc-tbl-body"><tr><td colspan="2" class="empty-msg">—</td></tr></tbody>
-        </table>
-      </div>
+    <div style="margin-top:20px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(229,115,115,.08);border:0.5px solid rgba(229,115,115,.35);border-radius:8px;padding:16px">
+      <div class="tvb-hero-lbl" style="color:var(--red)">NECESSÁRIO EXTRA POR HORA P/ ZERAR</div>
+      <div class="tvb-hero-num" id="tvc-nec-hora" style="color:var(--red);font-size:clamp(70px,9vw,160px)">—</div>
+      <div class="tvb-hero-unit" id="tvc-nec-hora-sub">CX/HORA ALÉM DA META NORMAL</div>
+      <div id="tvc-nec-he" style="display:none;margin-top:14px;font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:1.5px;color:var(--warn)">⏰ OU ~— HORA(S) EXTRA HOJE, NO RITMO NORMAL</div>
     </div>
   </div>
 
@@ -1796,6 +1793,9 @@ let isSheets = false;
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
 let META_HORA_A_HORA = 0;
+// Horas restantes e meta/hora média do turno (do último calcKPIs em renderTV)
+// — usado pela Tela C da TV pra calcular o ritmo extra (ou HE) p/ zerar o atraso.
+let TV_TURNO_INFO = { slotsRest: 0, metaH: 0 };
 
 // JSONP — funciona em file:// sem CORS
 let _jsonpSeq = 0;
@@ -2700,6 +2700,7 @@ function renderTV(){
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
   const s=sc(k.ef);
+  TV_TURNO_INFO = { slotsRest: k.slotsRest, metaH: k.metaH };
 
   // ⚠ Atraso da PROGRAMAÇÃO: visível na TV pra deixar claro o quanto está
   // acumulado, mesmo quando a META DO DIA (acima) mostra só o programado de hoje.
@@ -4626,14 +4627,36 @@ const _cicloTV = (function() {
     set('tvc-setor', get('tv-setor'));
     set('tvc-clock', get('tv-clock'));
     const prog = PONTOS_DIA.programacao || { lista: [], atrasoTotal: 0, metaEfetiva: 0 };
-    set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
+    const atraso = prog.atrasoTotal || 0;
+    set('tvc-atraso', fmtN(atraso));
     set('tvc-meta-efetiva', fmtN(prog.metaEfetiva || 0));
-    const top = (prog.lista || []).filter(it => it.falta > 0).slice(0, 6);
-    const body = document.getElementById('tvc-tbl-body');
-    if (body) {
-      body.innerHTML = top.length
-        ? top.map(it => `<tr><td class="td-h">${it.codigo}</td><td class="td-s" style="color:var(--red)">${fmtN(it.falta)}</td></tr>`).join('')
-        : '<tr><td colspan="2" class="empty-msg">—</td></tr>';
+
+    // Ritmo extra necessário nas horas que restam do turno pra zerar o atraso
+    // (além da meta/hora normal). Sem horas restantes (turno acabou/última
+    // hora), não dá pra distribuir no turno normal — sugere só HE.
+    const { slotsRest, metaH } = TV_TURNO_INFO;
+    const necHoraEl = document.getElementById('tvc-nec-hora');
+    const necHoraSub = document.getElementById('tvc-nec-hora-sub');
+    if (slotsRest > 0) {
+      necHoraEl.textContent = fmtN(Math.ceil(atraso / slotsRest));
+      necHoraSub.textContent = `CX/HORA ALÉM DA META NORMAL (${slotsRest}H RESTANTE${slotsRest>1?'S':''})`;
+    } else {
+      necHoraEl.textContent = '—';
+      necHoraSub.textContent = 'TURNO SEM HORAS RESTANTES';
+    }
+
+    // Sugestão de HE: quantas horas extras (no ritmo normal, metaH/hora)
+    // seriam necessárias pra absorver o atraso inteiro, como alternativa a
+    // forçar um ritmo extra impossível dentro do turno normal.
+    const heEl = document.getElementById('tvc-nec-he');
+    if (heEl) {
+      if (metaH > 0 && atraso > 0) {
+        const horasHE = Math.ceil(atraso / metaH);
+        heEl.textContent = `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`;
+        heEl.style.display = 'block';
+      } else {
+        heEl.style.display = 'none';
+      }
     }
   }
 
