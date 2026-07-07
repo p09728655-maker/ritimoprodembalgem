@@ -1074,6 +1074,12 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"><div id="c-meta-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
     </div>
     <div class="frm-row">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
+        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)">
+        Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
+      </label>
+    </div>
+    <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM TURNO</label><input class="frm-inp" id="c-t1" type="time"></div>
     </div>
@@ -1188,7 +1194,7 @@ let AMOSTRA_HORAS = {};
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
-  metaDia:1500, metaDiaManual:false, metaDiaManualData:'', turnoInicio:'07:00', turnoFim:'17:00',
+  metaDia:1500, metaDiaManual:false, metaDiaManualData:'', metaComAtraso:false, turnoInicio:'07:00', turnoFim:'17:00',
   almocoInicio:'11:00', almocoFim:'12:12',
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
@@ -1871,15 +1877,18 @@ async function lerPontosDia(){
   return false;
 }
 
-// Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez.
-// Usa metaEfetiva (programado de hoje + atraso acumulado de dias anteriores),
-// mesmo valor do KPI "META C/ATRASO" — a meta do dia cobra também o atraso.
-// Sem nada cadastrado na PROGRAMAÇÃO pra hoje (metaEfetiva=0), cai na meta da
-// HORA_A_HORA em vez do default fixo do app — nunca mostra um número "chutado".
+// Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez. Por
+// padrão usa só programadoHoje (o que está previsto pra hoje) — o atraso
+// acumulado de dias anteriores fica à parte, como aviso no KPI "⚠ ATRASO NA
+// PROGRAMAÇÃO" (ver renderGerencial). Se CFG.metaComAtraso estiver ligado
+// (checkbox nas configurações), a meta do dia já soma o atraso (metaEfetiva).
+// Sem nada cadastrado na PROGRAMAÇÃO pra hoje, cai na meta da HORA_A_HORA em
+// vez do default fixo do app — nunca mostra um número "chutado".
 function aplicarMetaDiaAutomatica(){
   const hoje = hojeStr();
   if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) return; // usuário já ajustou manualmente hoje
-  const auto = PONTOS_DIA.programacao?.metaEfetiva || 0;
+  const prog = PONTOS_DIA.programacao || {};
+  const auto = (CFG.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
   const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
   if (novoValor > 0 && novoValor !== CFG.metaDia) {
     CFG.metaDia = novoValor;
@@ -2242,10 +2251,11 @@ function renderGerencial(){
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
   ];
-  // META C/ ATRASO (programação): só entra quando há programação/atraso cadastrado.
-  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,atrasoTotal:0};
-  if(_prog.metaEfetiva>0 || _prog.atrasoTotal>0){
-    kpis.push({l:'META C/ ATRASO', v:fmtN(_prog.metaEfetiva), sub:`programado hoje + ${fmtN(_prog.atrasoTotal)} atrasadas`, c:_prog.atrasoTotal>0?'red':'acc'});
+  // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
+  // quando há atraso acumulado de dias anteriores ainda não embalado.
+  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
+  if(_prog.atrasoTotal>0){
+    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
   }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
@@ -3060,7 +3070,10 @@ function openCfg(){
   document.getElementById('c-unidade').value=CFG.unidade;
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
-  const _hoje=hojeStr(), _auto=PONTOS_DIA.programacao?.metaEfetiva||0;
+  document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
+  const _hoje=hojeStr();
+  const _prog=PONTOS_DIA.programacao||{};
+  const _auto=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
   document.getElementById('c-meta-hint').textContent =
     (CFG.metaDiaManual && CFG.metaDiaManualData===_hoje)
       ? '✎ ajustado manualmente hoje'
@@ -3088,8 +3101,10 @@ function saveCfg(){
   CFG.unidade=document.getElementById('c-unidade').value;
   CFG.setor=document.getElementById('c-setor').value;
   {
+    CFG.metaComAtraso=document.getElementById('c-meta-atraso').checked;
     const novaMeta=parseInt(document.getElementById('c-meta').value)||1500;
-    const autoAtual=PONTOS_DIA.programacao?.metaEfetiva||0;
+    const _prog=PONTOS_DIA.programacao||{};
+    const autoAtual=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
     CFG.metaDia=novaMeta;
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();
