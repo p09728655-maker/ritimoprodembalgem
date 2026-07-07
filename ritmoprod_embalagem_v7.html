@@ -1162,15 +1162,16 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
     <!-- Tela B -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — TELA B (VISÃO MACRO)</div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — CICLO DE TELAS</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp" style="display:flex;align-items:flex-end;padding-bottom:4px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
-          <input type="checkbox" id="c-slideb-ativo" style="accent-color:var(--acc);width:16px;height:16px"> ATIVAR ALTERNÂNCIA
-        </label>
-      </div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B/C (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
+    </div>
+    <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-a" style="accent-color:var(--acc)"> TELA A — HORA A HORA</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"> TELA B — VISÃO MACRO</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -1266,7 +1267,8 @@ let CFG = {
   horarioFechamento:'17:05',
   slideAIntervalo:15,
   slideBIntervalo:15,
-  slideBAtivo:true,
+  slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
+  telasAtivas:{a:true,b:true,c:true},
   slideBKpis:['meta','ef','status','prog','proj','pontos','peso','atraso']
 };
 let fileHandle    = null;
@@ -1953,9 +1955,21 @@ async function lerPontosDia(){
 // vez do default fixo do app — nunca mostra um número "chutado".
 function aplicarMetaDiaAutomatica(){
   const hoje = hojeStr();
-  if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) return; // usuário já ajustou manualmente hoje
   const prog = PONTOS_DIA.programacao || {};
   const auto = (CFG.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
+  // Autocorreção: se a meta "manual" bate exatamente com o valor automático do
+  // OUTRO modo (ex.: ligou "somar atraso" mas a meta ainda é a antiga, só
+  // programadoHoje), é sobra do bug do checkbox não recalcular sozinho — não é
+  // um número digitado de propósito. Limpa o override pra voltar a acompanhar
+  // a PROGRAMAÇÃO automaticamente.
+  const outroModo = (CFG.metaComAtraso ? prog.programadoHoje : prog.metaEfetiva) || 0;
+  if (CFG.metaDiaManual && CFG.metaDiaManualData === hoje) {
+    if (outroModo > 0 && CFG.metaDia === outroModo) {
+      CFG.metaDiaManual = false;
+    } else {
+      return; // ajuste manual genuíno — respeita
+    }
+  }
   const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
   if (novoValor > 0 && novoValor !== CFG.metaDia) {
     CFG.metaDia = novoValor;
@@ -3170,7 +3184,10 @@ function openCfg(){
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
   document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
-  document.getElementById('c-slideb-ativo').checked=CFG.slideBAtivo!==false;
+  const _telas=CFG.telasAtivas||{a:true,b:true,c:true};
+  document.getElementById('c-tela-a').checked=_telas.a!==false;
+  document.getElementById('c-tela-b').checked=_telas.b!==false;
+  document.getElementById('c-tela-c').checked=_telas.c!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
   ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso','atraso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
@@ -3218,7 +3235,11 @@ function saveCfg(){
   if(hFech) CFG.horarioFechamento=hFech;
   CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
-  CFG.slideBAtivo=document.getElementById('c-slideb-ativo').checked;
+  CFG.telasAtivas={
+    a:document.getElementById('c-tela-a').checked,
+    b:document.getElementById('c-tela-b').checked,
+    c:document.getElementById('c-tela-c').checked
+  };
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso','atraso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
@@ -4693,7 +4714,17 @@ const _cicloTV = (function() {
     _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
   }
 
-  function _ordemTelas() { return _temAtrasoAgora() ? ['a', 'b', 'c'] : ['a', 'b']; }
+  // Telas ativas no ciclo, na ordem A→B→C — configurável em CFG.telasAtivas.
+  // Tela C também exige atraso>0 (não faz sentido mostrá-la vazia). Nunca
+  // devolve lista vazia: sem nenhuma tela marcada, cai em ['a'] (fallback).
+  function _ordemTelas() {
+    const t = CFG.telasAtivas || { a: true, b: true, c: true };
+    const ordem = [];
+    if (t.a !== false) ordem.push('a');
+    if (t.b !== false) ordem.push('b');
+    if (t.c !== false && _temAtrasoAgora()) ordem.push('c');
+    return ordem.length ? ordem : ['a'];
+  }
 
   function _trocar() {
     const slideB = document.getElementById('tv-slide-b');
@@ -4720,18 +4751,22 @@ const _cicloTV = (function() {
 
   function reiniciar() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
-    _tela = 'a';
     const slideB = document.getElementById('tv-slide-b');
     const slideC = document.getElementById('tv-slide-c');
-    if (slideB) slideB.style.display = 'none';
-    if (slideC) slideC.style.display = 'none';
+    const ordemInicial = _ordemTelas();
+    _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
+    if (slideB) slideB.style.display = (_tela === 'b') ? 'flex' : 'none';
+    if (slideC) slideC.style.display = (_tela === 'c') ? 'flex' : 'none';
+    if (_tela === 'b') _sincSlideB();
+    else if (_tela === 'c') _sincSlideC();
     // No gerencial a alternância não faz sentido — só roda na TV (operador).
-    if (!CFG.slideBAtivo || PERFIL === 'gerencial') {
-      console.log('[TV] Tela B/C desativada (config ou perfil gerencial)');
+    // Com só 1 tela ativa na config, também não há o que trocar.
+    if (ordemInicial.length <= 1 || PERFIL === 'gerencial') {
+      console.log('[TV] Ciclo parado (só 1 tela ativa na config, ou perfil gerencial)');
       return;
     }
-    _agendar(); // começa contando a duração da Tela A
-    console.log(`[TV] Ciclo ativo: Tela A ${CFG.slideAIntervalo || 15}s ↔ Tela B/C ${CFG.slideBIntervalo || 15}s (Tela C só com atraso)`);
+    _agendar(); // começa contando a duração da tela atual
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B,C:${CFG.slideBIntervalo||15}s)`);
   }
 
   reiniciar();
