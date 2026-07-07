@@ -707,13 +707,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <!-- BOTÃO + RELÓGIO — bloco direito -->
     <div style="display:flex;align-items:center;gap:14px">
       <button class="tv-fs-btn" id="btn-tv-fs" onclick="toggleTVFullscreen()">⛶ PAINEL CHEIO</button>
-      <button onclick="openParada()" style="
-        background:rgba(229,115,115,.15);color:#e57373;
-        border:0.5px solid rgba(229,115,115,.5);
-        padding:6px 16px;border-radius:4px;
-        font-family:var(--font-h);font-size:13px;font-weight:700;
-        letter-spacing:1.5px;cursor:pointer;
-      ">⏸ PARADA</button>
       <div class="tv-clock-wrap">
         <div class="tv-clock" id="tv-clock">--:--:--</div>
         <div class="tv-date-txt" id="tv-date">--/--/----</div>
@@ -747,6 +740,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tv-kpi-lbl" style="margin:0;font-size:16px;letter-spacing:3px">META DO DIA</div>
         <div style="font-family:var(--font-h);font-size:clamp(38px,4.2vw,60px);font-weight:700;color:var(--acc);line-height:1" id="tv-meta-dest">—</div>
         <div style="font-family:var(--font-d);font-size:13px;color:var(--acc);opacity:.7">CX</div>
+      </div>
+
+      <!-- ⚠ Atraso da PROGRAMAÇÃO — só aparece quando há atraso acumulado. -->
+      <div id="tv-atraso-banner" style="display:none;background:rgba(229,115,115,.12);border:0.5px solid rgba(229,115,115,.5);border-radius:6px;padding:10px 18px;align-items:baseline;justify-content:space-between">
+        <div class="tv-kpi-lbl" style="margin:0;font-size:13px;letter-spacing:2px;color:var(--red)">⚠ ATRASADOS DA PROGRAMAÇÃO</div>
+        <div style="font-family:var(--font-h);font-size:clamp(22px,2.4vw,32px);font-weight:700;color:var(--red);line-height:1" id="tv-atraso-val">—</div>
+        <div style="font-family:var(--font-d);font-size:12px;color:var(--red);opacity:.7">CX</div>
       </div>
 
       <div>
@@ -2634,6 +2634,17 @@ function renderTV(){
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
   const s=sc(k.ef);
+
+  // ⚠ Atraso da PROGRAMAÇÃO: visível na TV pra deixar claro o quanto está
+  // acumulado, mesmo quando a META DO DIA (acima) mostra só o programado de hoje.
+  const _progTV = PONTOS_DIA.programacao || {};
+  const _atrasoTV = _progTV.atrasoTotal || 0;
+  const abTV = document.getElementById('tv-atraso-banner');
+  if(abTV){
+    abTV.style.display = _atrasoTV>0 ? 'flex' : 'none';
+    const avTV = document.getElementById('tv-atraso-val');
+    if(avTV) avTV.textContent = fmtN(_atrasoTV);
+  }
 
   const pe=document.getElementById('tv-prod');
   pe.textContent=fmtN(k.real); pe.className=`tv-big ${s}`;
