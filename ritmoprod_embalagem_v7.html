@@ -949,7 +949,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-hero-lbl" style="color:var(--red)">NECESSÁRIO EXTRA POR HORA P/ ZERAR</div>
       <div class="tvb-hero-num" id="tvc-nec-hora" style="color:var(--red);font-size:clamp(70px,9vw,160px)">—</div>
       <div class="tvb-hero-unit" id="tvc-nec-hora-sub">CX/HORA ALÉM DA META NORMAL</div>
-      <div id="tvc-nec-he" style="display:none;margin-top:14px;font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:1.5px;color:var(--warn)">⏰ OU ~— HORA(S) EXTRA HOJE, NO RITMO NORMAL</div>
+      <div id="tvc-nec-he" style="display:none;margin-top:14px;font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:1.5px;color:var(--warn)">⏰ —</div>
     </div>
   </div>
 
@@ -4647,12 +4647,16 @@ const _cicloTV = (function() {
 
     // Sugestão de HE: quantas horas extras (no ritmo normal, metaH/hora)
     // seriam necessárias pra absorver o atraso inteiro, como alternativa a
-    // forçar um ritmo extra impossível dentro do turno normal.
+    // forçar um ritmo extra impossível dentro do turno normal. Acima de 4h
+    // não cabe num turno só — deixa claro que é o TOTAL, não "hoje", pra não
+    // sugerir HE impossível (ex.: 15h extras no mesmo dia).
     const heEl = document.getElementById('tvc-nec-he');
     if (heEl) {
       if (metaH > 0 && atraso > 0) {
         const horasHE = Math.ceil(atraso / metaH);
-        heEl.textContent = `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`;
+        heEl.textContent = horasHE <= 4
+          ? `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`
+          : `⏰ ~${horasHE} HORAS EXTRAS NO TOTAL (VÁRIOS DIAS), NO RITMO NORMAL`;
         heEl.style.display = 'block';
       } else {
         heEl.style.display = 'none';
