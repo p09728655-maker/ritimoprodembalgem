@@ -237,7 +237,12 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   padding:14px 5vw 20px;text-align:center;gap:10px;
 }
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
-#tv-slide-c .tv-table{font-size:clamp(13px,1.3vw,20px)}
+/* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
+   ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
+#tv-slide-c .tv-table th{font-size:clamp(13px,1.3vw,18px);padding:6px 16px}
+#tv-slide-c .tv-table td{font-size:clamp(24px,2.8vw,42px);padding:8px 16px;line-height:1.2}
+#tv-slide-c .tv-table .td-h{font-size:clamp(24px,2.8vw,42px)}
+#tv-slide-c .tv-table .td-s{font-size:clamp(28px,3.2vw,48px);text-align:right}
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -944,8 +949,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div style="font-family:var(--font-d);font-size:clamp(12px,1.2vw,16px);letter-spacing:2px;color:var(--txt2);margin-bottom:8px">▸ MAIORES ATRASOS POR PRODUTO</div>
       <div style="flex:1;overflow:hidden">
         <table class="tv-table" style="height:100%">
-          <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>FALTA</th></tr></thead>
-          <tbody id="tvc-tbl-body"><tr><td colspan="3" class="empty-msg">—</td></tr></tbody>
+          <thead><tr><th>CÓDIGO</th><th>FALTA</th></tr></thead>
+          <tbody id="tvc-tbl-body"><tr><td colspan="2" class="empty-msg">—</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -4627,8 +4632,8 @@ const _cicloTV = (function() {
     const body = document.getElementById('tvc-tbl-body');
     if (body) {
       body.innerHTML = top.length
-        ? top.map(it => `<tr><td class="td-h">${it.codigo}</td><td>${it.desc || '—'}</td><td class="td-s" style="color:var(--red)">${fmtN(it.falta)}</td></tr>`).join('')
-        : '<tr><td colspan="3" class="empty-msg">—</td></tr>';
+        ? top.map(it => `<tr><td class="td-h">${it.codigo}</td><td class="td-s" style="color:var(--red)">${fmtN(it.falta)}</td></tr>`).join('')
+        : '<tr><td colspan="2" class="empty-msg">—</td></tr>';
     }
   }
 
