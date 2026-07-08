@@ -2388,8 +2388,9 @@ function renderGerencial(){
     const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
     const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
     const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
-    // Alerta de hora fraca (opção 2): produção >15% abaixo da média histórica
-    // deste mesmo horário (≥2 dias de amostra). Independe da meta.
+    // Alerta de hora fraca: produção >15% abaixo da média histórica deste mesmo
+    // horário (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a
+    // META, com a média histórica.
     const _hk=normHora(sl.label);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     // Só sinaliza horário JÁ ENCERRADO (agora >= fim do slot) e com produção real
@@ -2400,7 +2401,10 @@ function renderGerencial(){
     // Marcador vs média histórica do MESMO horário (só hora encerrada, com
     // produção real >0 e ≥2 dias de amostra): ▲ verde = na média ou acima;
     // ⚠ = abaixo (>15%). Tooltip mostra a média.
-    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    // IMPORTANTE: se a META da hora for MENOR que a média histórica, isso é uma
+    // decisão de planejamento — não compara e não mostra ícone nenhum (nem ⚠ nem ▲),
+    // apenas exibe a meta normalmente (metaSlot>=med).
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && metaSlot>=med);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? `<span style="color:var(--warn);font-weight:700;font-size:12px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
@@ -2793,9 +2797,9 @@ function renderTV(){
     const ef2=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const rc=prod===null?'r-pend':ef2>=96?'r-ok':ef2>=90?'r-warn':'r-red';
     const st=prod===null?'—':ef2>=96?'✓ OK':ef2>=90?'! ATEN':'✗ ABX';
-    // Alerta de hora fraca (opção 2): hora já lançada e produção bem abaixo da
-    // média histórica do MESMO horário (≥2 dias de amostra, >15% abaixo).
-    // Independe da meta — sinaliza queda de ritmo vs. o costume daquele horário.
+    // Alerta de hora fraca: hora já lançada e produção bem abaixo da média
+    // histórica do MESMO horário (≥2 dias de amostra, >15% abaixo). Compara
+    // SEMPRE o REALIZADO (prod), nunca a META, com a média histórica.
     const _hk=normHora(sl.label);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     // Só sinaliza horário JÁ ENCERRADO (agora >= fim do slot) e com produção real
@@ -2807,7 +2811,9 @@ function renderTV(){
     // ≥2 dias): ▲ verde = na média ou acima; ⚠ = abaixo (>15%). Só símbolo
     // (nowrap) p/ não quebrar a linha e empurrar o último horário p/ fora da tela;
     // a média fica no title (e na tela gerencial).
-    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    // IMPORTANTE: se a META da hora for MENOR que a média histórica, é decisão de
+    // planejamento — não compara nem mostra ícone (metaSlot>=med).
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && metaSlot>=med);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? `&nbsp;<span style="color:var(--warn);font-weight:700;line-height:1;vertical-align:middle" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`

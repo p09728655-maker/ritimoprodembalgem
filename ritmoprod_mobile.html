@@ -1547,11 +1547,13 @@ function renderTabelaHoraHora(allHoje){
     const ef2=prod!=null&&metaEfetivaHora>0?(prod/metaEfetivaHora)*100:null;
     const cls=ef2!=null?sc(ef2):'pend';
     const st=ef2!=null?sl(ef2):'—';
-    // Alerta de hora fraca (opção 2): >15% abaixo da média histórica do mesmo
-    // horário (≥2 dias de amostra). Independe da meta.
+    // Alerta de hora fraca: >15% abaixo da média histórica do mesmo horário
+    // (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a META.
+    // Se a META da hora for menor que a média histórica, é decisão de planejamento
+    // — não mostra ícone (r.metaHora>=med).
     const _hk=normHora(r.slotLabel);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
-    const horaFraca = prod!=null && amo>=2 && med>0 && prod < med*0.85;
+    const horaFraca = prod!=null && amo>=2 && med>0 && r.metaHora>=med && prod < med*0.85;
     const fraqMark = horaFraca
       ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: ${fmtN(med)} cx em ${amo} dias">⚠</span>`
       : '';
