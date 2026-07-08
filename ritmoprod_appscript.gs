@@ -258,6 +258,35 @@ function saveRealizado(p) {
   lock.waitLock(30000);
 
   try {
+    // IDEMPOTÊNCIA: se este lançamento (lancId) já foi processado, devolve o
+    // resultado anterior SEM gravar de novo. Protege contra o retry do app após
+    // timeout/cold start, que antes gerava um lote duplicado (produção inflada).
+    // O lock acima garante que dois envios simultâneos do mesmo id serializam.
+    const lancId = String(p.lancId || '').trim();
+    const cache  = lancId ? CacheService.getScriptCache() : null;
+    if (cache) {
+      const prev = cache.get('lanc_' + lancId);
+      if (prev) { const r = JSON.parse(prev); r.duplicado = true; return r; }
+    }
+
+    const resultado = _saveRealizadoCore(p);
+
+    // Só memoriza quando de fato gravou (ok:true): uma falha transitória não pode
+    // ficar "presa" no cache impedindo uma nova tentativa real de gravar.
+    if (cache && resultado && resultado.ok) {
+      cache.put('lanc_' + lancId, JSON.stringify(resultado), 7200); // 2h de janela
+    }
+    return resultado;
+
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Núcleo do lançamento — grava o realizado numa coluna de LOTE de HORA_A_HORA.
+// Separado de saveRealizado só para permitir a checagem de idempotência acima.
+// Roda já sob o lock adquirido por saveRealizado; não adquire lock próprio.
+function _saveRealizadoCore(p) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sh = ss.getSheetByName(SHEET_DADOS);
 
@@ -336,10 +365,6 @@ function saveRealizado(p) {
     }
 
     return { ok: false, erro: 'Slot nao encontrado: ' + horario };
-
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 // Loga a produção por hora/produto (opcional — só se o operador selecionou um
