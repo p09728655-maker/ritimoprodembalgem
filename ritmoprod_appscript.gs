@@ -42,6 +42,7 @@ const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
 const SHEET_SALDO     = 'SALDO_LOTE';           // item 3: saldo por lote (produzido, restante, %, status)
 const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
+const SHEET_CONFIG    = 'CONFIG_PAINEL';        // config do ciclo de telas da TV, compartilhada entre aparelhos
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -87,6 +88,8 @@ function doGet(e) {
     else if (act === 'getPontosDia')  result = getPontosDia();
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
+    else if (act === 'setConfigPainel') result = setConfigPainel(p);
+    else if (act === 'getConfigPainel') result = { ok: true, painelConfig: getConfigPainel() };
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -735,6 +738,88 @@ function setProdutoAtual(p) {
   return { ok: true, produtoAtual: codigo };
 }
 
+
+// ════════════════════════════════════════════════════════
+// CONFIG DO CICLO DE TELAS DA TV — COMPARTILHADA ENTRE APARELHOS
+// ════════════════════════════════════════════════════════
+// Guarda, na aba CONFIG_PAINEL (chave/valor), quais telas (A/B/C) entram no
+// ciclo, o tempo de cada uma e os KPIs visíveis na Tela B. Como fica na planilha
+// (e não no localStorage de cada aparelho), mudar num lugar reflete na TV, no
+// gerencial e no mobile — mesma ideia do início do turno pela célula C3.
+
+// Lê a config atual. Devolve null se a aba ainda não existe (aí cada aparelho
+// segue com a sua config local, como era antes — comportamento retrocompatível).
+function getConfigPainel() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_CONFIG);
+  if (!sh) return null;
+  const vals = sh.getDataRange().getValues();
+  const kv = {};
+  for (let i = 1; i < vals.length; i++) {
+    const k = String(vals[i][0] || '').trim().toUpperCase();
+    if (k) kv[k] = vals[i][1];
+  }
+  if (!Object.keys(kv).length) return null;
+
+  const bool = (v, padrao) => {
+    const s = String(v).trim().toLowerCase();
+    if (s === '1' || s === 'true' || s === 'sim')  return true;
+    if (s === '0' || s === 'false' || s === 'nao' || s === 'não') return false;
+    return padrao;
+  };
+  const num = (v, padrao) => { const n = parseInt(v, 10); return isNaN(n) ? padrao : n; };
+
+  return {
+    telaA:  bool(kv.TELA_A, true),
+    telaB:  bool(kv.TELA_B, true),
+    telaC:  bool(kv.TELA_C, true),
+    tempoA: num(kv.TEMPO_A, 15),
+    tempoB: num(kv.TEMPO_B, 15),
+    tempoC: num(kv.TEMPO_C, 15),
+    kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null
+  };
+}
+
+// Grava a config (upsert chave/valor). Chamada pelo app ao salvar as
+// configurações; assim a mudança fica disponível para todos os aparelhos.
+function setConfigPainel(p) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sh = ss.getSheetByName(SHEET_CONFIG);
+    if (!sh) {
+      sh = ss.insertSheet(SHEET_CONFIG);
+      sh.appendRow(['CHAVE', 'VALOR']);
+      sh.setFrozenRows(1);
+    }
+    // Só grava as chaves realmente enviadas (não apaga o que não veio).
+    const b01 = v => (String(v).trim().toLowerCase() === 'true' || String(v).trim() === '1') ? '1' : '0';
+    const novos = {};
+    if (p.telaA  !== undefined) novos.TELA_A  = b01(p.telaA);
+    if (p.telaB  !== undefined) novos.TELA_B  = b01(p.telaB);
+    if (p.telaC  !== undefined) novos.TELA_C  = b01(p.telaC);
+    if (p.tempoA !== undefined) novos.TEMPO_A = String(parseInt(p.tempoA, 10) || 15);
+    if (p.tempoB !== undefined) novos.TEMPO_B = String(parseInt(p.tempoB, 10) || 15);
+    if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
+    if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
+
+    const vals = sh.getDataRange().getValues();
+    const linhaDe = {};
+    for (let i = 1; i < vals.length; i++) {
+      const k = String(vals[i][0] || '').trim().toUpperCase();
+      if (k) linhaDe[k] = i + 1; // 1-based
+    }
+    Object.keys(novos).forEach(function (k) {
+      if (linhaDe[k]) sh.getRange(linhaDe[k], 2).setValue(novos[k]);
+      else            sh.appendRow([k, novos[k]]);
+    });
+    return { ok: true, painelConfig: getConfigPainel() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // Produção do dia em PONTOS e PESO (kg), a partir do log PRODUCAO_PRODUTO.
 // Usada só pelo gerencial/TV (fora do caminho quente do app do operador).
 function getPontosDia() {
@@ -783,8 +868,14 @@ function getPontosDia() {
   try { gravarMetaDiaNaPlanilha(programacao); }
   catch (e) { Logger.log('gravarMetaDiaNaPlanilha (getPontosDia) falhou (ignorado): ' + e.message); }
 
+  // Config do ciclo de telas da TV, compartilhada via planilha (null se a aba
+  // ainda não existe). A TV lê isto no refresh e se ajusta sozinha. Em try/catch
+  // para nunca derrubar a leitura do painel.
+  let painelConfig = null;
+  try { painelConfig = getConfigPainel(); } catch (e) { Logger.log('getConfigPainel falhou (ignorado): ' + e.message); }
+
   if (!sh) {
-    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], porHoraModelo: [], programacao };
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], porHoraModelo: [], programacao, painelConfig };
   }
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
@@ -865,7 +956,8 @@ function getPontosDia() {
     porProduto: Object.values(porProdutoMap),
     porHora,
     porHoraModelo: Object.values(porHoraModeloMap),
-    programacao
+    programacao,
+    painelConfig
   };
 }
 

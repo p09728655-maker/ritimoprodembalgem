@@ -944,14 +944,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         </div>
       </div>
     </div>
-
-    <div style="margin-top:20px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(229,115,115,.08);border:0.5px solid rgba(229,115,115,.35);border-radius:8px;padding:16px">
-      <div class="tvb-hero-lbl" style="color:var(--red)">NECESSÁRIO EXTRA POR HORA P/ ZERAR</div>
-      <div class="tvb-hero-num" id="tvc-nec-hora" style="color:var(--red);font-size:clamp(70px,9vw,160px)">—</div>
-      <div class="tvb-hero-unit" id="tvc-nec-hora-sub">CX/HORA ALÉM DA META NORMAL</div>
-      <div id="tvc-nec-he" style="display:none;margin-top:14px;font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:1.5px;color:var(--warn)">⏰ —</div>
-      <div id="tvc-nec-linha" style="display:none;margin-top:6px;font-family:var(--font-d);font-size:clamp(13px,1.4vw,19px);letter-spacing:1.5px;color:var(--acc)">🏭 —</div>
-    </div>
+    <!-- Quadro "NECESSÁRIO EXTRA POR HORA / HE / 2ª LINHA" removido a pedido:
+         era linguagem de gestão e confundia o chão de fábrica. A Tela C fica só
+         com ATRASADO (DIAS ANTERIORES) e PRODUZIR HOJE P/ ZERAR. -->
   </div>
 
 </section>
@@ -1940,6 +1935,9 @@ async function lerPontosDia(){
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
       };
       aplicarMetaDiaAutomatica();
+      // Config do ciclo de telas compartilhada via planilha: se veio do backend,
+      // aplica (a TV se ajusta sozinha quando muda em qualquer aparelho).
+      if(json.painelConfig) aplicarConfigPainel(json.painelConfig);
       return true;
     }
   }catch(e){
@@ -3254,6 +3252,9 @@ function saveCfg(){
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
   saveCfgLocal();
+  // Compartilha a config do ciclo de telas com os outros aparelhos (TV, mobile)
+  // via planilha — assim mudar aqui reflete na TV sozinho.
+  enviarConfigPainel();
   if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
   closeCfg();
   if(CFG.sheetsUrl){ lerSheets(); iniciarAutoRefresh(); }
@@ -3261,6 +3262,46 @@ function saveCfg(){
   else renderAll();
 }
 document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.target===this) closeCfg(); });
+
+// ── Config do ciclo de telas COMPARTILHADA via planilha ──────────────────────
+// Envia a config atual (telas ativas + tempos + KPIs da Tela B) para o backend,
+// que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
+function enviarConfigPainel(){
+  if(!CFG.sheetsUrl) return;
+  const t = CFG.telasAtivas||{a:true,b:true,c:true};
+  const params=[
+    'action=setConfigPainel',
+    'telaA='+(t.a!==false?1:0),
+    'telaB='+(t.b!==false?1:0),
+    'telaC='+(t.c!==false?1:0),
+    'tempoA='+(CFG.slideAIntervalo||15),
+    'tempoB='+(CFG.slideBIntervalo||15),
+    'tempoC='+(CFG.slideCIntervalo||15),
+    'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(','))
+  ];
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
+  try{ jsonpFetch(url).catch(function(){}); }catch(e){}
+}
+
+// Aplica a config recebida da planilha. Só reage quando a config MUDA (assinatura),
+// senão reiniciaria o ciclo da TV a cada refresh. É o que faz a TV se ajustar
+// sozinha quando o gerente muda a config em outro aparelho.
+let _painelCfgSig = null;
+function aplicarConfigPainel(pc){
+  if(!pc) return;
+  const sig = JSON.stringify(pc);
+  if(sig===_painelCfgSig) return;
+  _painelCfgSig = sig;
+  CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false };
+  if(pc.tempoA) CFG.slideAIntervalo = pc.tempoA;
+  if(pc.tempoB) CFG.slideBIntervalo = pc.tempoB;
+  if(pc.tempoC) CFG.slideCIntervalo = pc.tempoC;
+  if(typeof pc.kpisTelaB==='string'){
+    CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  }
+  saveCfgLocal();
+  if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
+}
 
 // ════════════════════════════════════════════════
 // CLOCK
@@ -4662,56 +4703,9 @@ const _cicloTV = (function() {
     const atraso = prog.atrasoTotal || 0;
     set('tvc-atraso', fmtN(atraso));
     set('tvc-meta-efetiva', fmtN(prog.metaEfetiva || 0));
-
-    // Ritmo extra necessário nas horas que restam do turno pra zerar o atraso
-    // (além da meta/hora normal). Sem horas restantes (turno acabou/última
-    // hora), não dá pra distribuir no turno normal — sugere só HE.
-    const { slotsRest, metaH } = TV_TURNO_INFO;
-    const necHoraEl = document.getElementById('tvc-nec-hora');
-    const necHoraSub = document.getElementById('tvc-nec-hora-sub');
-    if (slotsRest > 0) {
-      necHoraEl.textContent = fmtN(Math.ceil(atraso / slotsRest));
-      necHoraSub.textContent = `CX/HORA ALÉM DA META NORMAL (${slotsRest}H RESTANTE${slotsRest>1?'S':''})`;
-    } else {
-      necHoraEl.textContent = '—';
-      necHoraSub.textContent = 'TURNO SEM HORAS RESTANTES';
-    }
-
-    // Sugestão de HE: quantas horas extras (no ritmo normal, metaH/hora)
-    // seriam necessárias pra absorver o atraso inteiro, como alternativa a
-    // forçar um ritmo extra impossível dentro do turno normal. Capacidade
-    // realista de HE = 2h/dia — acima disso, divide em dias em vez de
-    // sugerir um número de horas impossível de caber num turno só.
-    const HE_MAX_DIA = 2;
-    // Acima de HE_DIAS_LIMITE dias de HE, o atraso é grande demais pra
-    // resolver só com hora extra num prazo razoável — sugere considerar
-    // uma segunda linha de embalagem como alternativa.
-    const HE_DIAS_LIMITE = 5;
-    const heEl = document.getElementById('tvc-nec-he');
-    const linhaEl = document.getElementById('tvc-nec-linha');
-    if (heEl) {
-      if (metaH > 0 && atraso > 0) {
-        const horasHE = Math.ceil(atraso / metaH);
-        const dias = Math.ceil(horasHE / HE_MAX_DIA);
-        if (horasHE <= HE_MAX_DIA) {
-          heEl.textContent = `⏰ OU ~${horasHE} HORA${horasHE>1?'S':''} EXTRA HOJE, NO RITMO NORMAL`;
-        } else {
-          heEl.textContent = `⏰ ~${horasHE}H DE HE NO TOTAL — ~${dias} DIAS DE HE (${HE_MAX_DIA}H/DIA)`;
-        }
-        heEl.style.display = 'block';
-        if (linhaEl) {
-          if (dias > HE_DIAS_LIMITE) {
-            linhaEl.textContent = `🏭 ATRASO GRANDE P/ HE (~${dias} DIAS) — AVALIAR 2ª LINHA DE EMBALAGEM`;
-            linhaEl.style.display = 'block';
-          } else {
-            linhaEl.style.display = 'none';
-          }
-        }
-      } else {
-        heEl.style.display = 'none';
-        if (linhaEl) linhaEl.style.display = 'none';
-      }
-    }
+    // O quadro "NECESSÁRIO EXTRA POR HORA / HE / 2ª LINHA" foi removido do layout
+    // (confundia o chão de fábrica). A Tela C mostra só ATRASADO e PRODUZIR HOJE
+    // P/ ZERAR — por isso não há mais nada a preencher aqui.
   }
 
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
