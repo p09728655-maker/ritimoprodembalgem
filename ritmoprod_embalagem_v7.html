@@ -949,6 +949,15 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
          com ATRASADO (DIAS ANTERIORES) e PRODUZIR HOJE P/ ZERAR. -->
   </div>
 
+  <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
+       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C. -->
+  <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
+    <button type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
+    <button type="button" id="btn-ciclo-pause" onclick="_cicloTV.togglePause()" title="Pausar / continuar o carrossel" style="background:var(--acc);color:#111;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;min-width:120px">⏸ PAUSAR</button>
+    <button type="button" onclick="_cicloTV.proxima()" title="Próxima tela" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">▶</button>
+    <span id="tv-ciclo-tela" style="font-family:var(--font-d);font-size:12px;letter-spacing:1px;color:var(--txt2);margin-left:4px;min-width:52px;text-align:center"></span>
+  </div>
+
 </section>
 
 <!-- ═══ PROGRAMAÇÃO (visão dedicada: lote, peso, pontos, por dia) ═══ -->
@@ -3327,6 +3336,14 @@ function setTab(tab){
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='producaohora') lerPontosDia().then(renderProducaoPorHoraDedicada);
+  // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
+  // aba TV e (re)inicia a alternância; ao sair da aba, o ciclo se para sozinho.
+  const ctrl=document.getElementById('tv-ciclo-ctrl');
+  if(ctrl) ctrl.style.display=(tab==='tv' && PERFIL==='gerencial')?'flex':'none';
+  try{
+    if(tab==='tv' && PERFIL==='gerencial') _cicloTV.entrar();
+    else _cicloTV.reiniciar();
+  }catch(e){}
 }
 
 // ════════════════════════════════════════════════
@@ -4622,6 +4639,25 @@ function renderParadas(){
 const _cicloTV = (function() {
   let _timer = null;
   let _tela = 'a';
+  let _pausado = false; // só usado no gerencial (preview): trava numa tela p/ conferir
+
+  // O carrossel roda na TV do operador SEMPRE; no gerencial só quando o gestor
+  // está de fato na aba "TV OPERACIONAL" (preview) — nunca em segundo plano.
+  function _secTvAtiva() {
+    const s = document.getElementById('sec-tv');
+    return !!(s && s.classList.contains('on'));
+  }
+  function _podeRodar() {
+    return PERFIL !== 'gerencial' || _secTvAtiva();
+  }
+  function _rotuloTela(t) { return t === 'a' ? 'TELA A' : t === 'b' ? 'TELA B' : 'TELA C'; }
+  // Atualiza os botões de controle (só existem/aparecem no gerencial).
+  function _updBtn() {
+    const b = document.getElementById('btn-ciclo-pause');
+    if (b) b.textContent = _pausado ? '▶ CONTINUAR' : '⏸ PAUSAR';
+    const l = document.getElementById('tv-ciclo-tela');
+    if (l) l.textContent = _rotuloTela(_tela);
+  }
 
   function _sincSlideB() {
     const get = id => { const el = document.getElementById(id); return el ? el.textContent : '—'; };
@@ -4736,19 +4772,44 @@ const _cicloTV = (function() {
     return ordem.length ? ordem : ['a'];
   }
 
-  function _trocar() {
+  // Mostra uma tela específica (esconde as outras e sincroniza a que aparece).
+  function _mostrarTela(t) {
     const slideB = document.getElementById('tv-slide-b');
     const slideC = document.getElementById('tv-slide-c');
-    if (!slideB) return;
+    if (slideB) slideB.style.display = 'none';
+    if (slideC) slideC.style.display = 'none';
+    _tela = t;
+    if (t === 'b') { _sincSlideB(); if (slideB) slideB.style.display = 'flex'; }
+    else if (t === 'c' && slideC) { _sincSlideC(); slideC.style.display = 'flex'; }
+    _updBtn();
+  }
+
+  function _trocar() {
     const ordem = _ordemTelas();
     const idx = ordem.indexOf(_tela);
-    _tela = ordem[(idx + 1) % ordem.length] || 'a'; // se a tela atual saiu da ordem (ex.: atraso zerou), volta pra 'a'
-    slideB.style.display = 'none';
-    if (slideC) slideC.style.display = 'none';
-    if (_tela === 'b') { _sincSlideB(); slideB.style.display = 'flex'; }
-    else if (_tela === 'c' && slideC) { _sincSlideC(); slideC.style.display = 'flex'; }
+    _mostrarTela(ordem[(idx + 1) % ordem.length] || 'a'); // se a tela saiu da ordem, volta pra 'a'
     _agendar(); // reagenda com a duração da nova tela
   }
+
+  // ── Controles manuais (só usados no gerencial) ──
+  // Passo manual entre telas (avança/volta). Funciona inclusive pausado, pra o
+  // gestor conferir cada tela; se não estiver pausado, retoma a contagem.
+  function _passo(dir) {
+    const ordem = _ordemTelas();
+    const n = ordem.length;
+    const idx = ordem.indexOf(_tela);
+    _mostrarTela(ordem[((idx + dir) % n + n) % n] || 'a');
+    if (_timer) { clearTimeout(_timer); _timer = null; }
+    if (!_pausado) _agendar();
+  }
+  function _togglePause() {
+    _pausado = !_pausado;
+    if (_pausado) { if (_timer) { clearTimeout(_timer); _timer = null; } }
+    else if (_podeRodar() && _ordemTelas().length > 1) { _agendar(); }
+    _updBtn();
+  }
+  // Entra no modo preview do gerencial: começa a rodar do zero, despausado.
+  function _entrar() { _pausado = false; reiniciar(); }
 
   // Atualiza relógio nas Telas B/C a cada segundo quando visíveis
   setInterval(() => {
@@ -4758,10 +4819,12 @@ const _cicloTV = (function() {
       if (c && cb) cb.textContent = c.textContent;
     }
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
-    // (ex.: operador DESMARCOU a Tela C, ou o atraso zerou), ela precisa sumir
-    // na hora — sem depender do próximo saveCfg/reiniciar. Também esconde
-    // qualquer slide que esteja visível mas não seja o da tela ativa.
-    if (PERFIL !== 'gerencial') {
+    // (ex.: DESMARCOU a Tela C, ou o atraso zerou), ela precisa sumir na hora —
+    // sem depender do próximo saveCfg/reiniciar. Também esconde qualquer slide
+    // que esteja visível mas não seja o da tela ativa. Roda para o operador
+    // (sempre) e para o gerencial só quando está na aba TV; pausado, não mexe
+    // (o gestor está segurando a tela de propósito).
+    if (_podeRodar() && !_pausado) {
       const ordemAtual = _ordemTelas();
       if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
       const slideB = document.getElementById('tv-slide-b');
@@ -4781,10 +4844,11 @@ const _cicloTV = (function() {
     if (slideC) slideC.style.display = (_tela === 'c') ? 'flex' : 'none';
     if (_tela === 'b') _sincSlideB();
     else if (_tela === 'c') _sincSlideC();
-    // No gerencial a alternância não faz sentido — só roda na TV (operador).
-    // Com só 1 tela ativa na config, também não há o que trocar.
-    if (ordemInicial.length <= 1 || PERFIL === 'gerencial') {
-      console.log('[TV] Ciclo parado (só 1 tela ativa na config, ou perfil gerencial)');
+    _updBtn();
+    // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
+    // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.
+    if (ordemInicial.length <= 1 || !_podeRodar() || _pausado) {
+      console.log('[TV] Ciclo parado (1 tela, fora da aba TV, ou pausado)');
       return;
     }
     _agendar(); // começa contando a duração da tela atual
@@ -4792,7 +4856,7 @@ const _cicloTV = (function() {
   }
 
   reiniciar();
-  return { reiniciar };
+  return { reiniciar, togglePause: _togglePause, proxima: () => _passo(1), anterior: () => _passo(-1), entrar: _entrar };
 })();
 
 </script>
