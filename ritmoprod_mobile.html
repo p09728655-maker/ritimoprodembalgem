@@ -736,13 +736,13 @@ function getSlots(){
 // JSONP FETCH
 // ════════════════════════════════════════════════
 let _jsonpSeq = 0;
-function jsonpFetch(url){
+function jsonpFetch(url, timeoutMs){
   return new Promise((res,rej)=>{
     // Nome único por chamada: Date.now() sozinho colide quando dois fetches
     // disparam no mesmo milissegundo, travando a busca de dados.
     const cb='rpe_cb_'+Date.now()+'_'+(++_jsonpSeq);
     const s=document.createElement('script');
-    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); },20000);
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout')); }, timeoutMs||20000);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=data=>{ cleanup(); res(data); };
     s.onerror=()=>{ cleanup(); rej(new Error('Erro de rede')); };
@@ -1463,6 +1463,17 @@ async function salvarLanc(){
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
 
+  // IDEMPOTÊNCIA: gera um id ESTÁVEL por tentativa de lançamento (mesmo slot +
+  // mesma quantidade). É reutilizado em toda retentativa para que, se a 1ª
+  // resposta se perder (timeout/cold start do Apps Script) mas a gravação tiver
+  // ocorrido, o backend NÃO grave de novo — devolve o resultado anterior.
+  // Só troca de id quando a quantidade muda (aí é outro lançamento).
+  if(!_slotAtivo._lancId || _slotAtivo._lancQtd!==add){
+    _slotAtivo._lancId = 'L'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    _slotAtivo._lancQtd = add;
+  }
+  const lancId = _slotAtivo._lancId;
+
   // O backend grava cada lançamento numa coluna de LOTE separada e SOMA os lotes
   // ao montar o REALIZADO da hora. Por isso enviamos só o INCREMENTO (não o total)
   // e usamos o parâmetro 'realizado', que é o que o Apps Script lê.
@@ -1470,6 +1481,7 @@ async function salvarLanc(){
     'action=saveRealizado',
     'horario='+encodeURIComponent(_slotAtivo.inicio),
     'realizado='+add,
+    'lancId='+encodeURIComponent(lancId),
     'operador='+encodeURIComponent('Mobile')
   ];
   // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
@@ -1477,15 +1489,28 @@ async function salvarLanc(){
   if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
-  try{
-    const res=await jsonpFetch(url);
-    if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
-    fecharModalLanc();
-    await lerSheets();
-  }catch(e){
-    alert('Erro ao salvar: '+e.message);
-    btn.textContent='ADICIONAR'; btn.disabled=false;
+  // Auto-retry: como o lançamento agora é idempotente (mesmo lancId não grava 2x),
+  // podemos retentar sem risco de duplicar. Isso ELIMINA o timeout visível ao
+  // operador em cold start. A confirmação só aparece após a gravação concluída.
+  const TENTATIVAS = 4, TIMEOUT = 30000;
+  let ultimoErro = null;
+  for(let i=1; i<=TENTATIVAS; i++){
+    try{
+      if(i>1) btn.textContent='RECONECTANDO '+i+'/'+TENTATIVAS+'...';
+      const res=await jsonpFetch(url, TIMEOUT);
+      if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
+      fecharModalLanc();
+      await lerSheets();
+      return;
+    }catch(e){
+      ultimoErro = e;
+      // Erro de dados do backend (ok:false) não adianta retentar — aborta já.
+      if(!/timeout|rede/i.test(e.message)) break;
+    }
   }
+  alert('Erro ao salvar: '+(ultimoErro?ultimoErro.message:'desconhecido')+
+        '\n\nSe o valor não aparecer, tente novamente — o sistema evita lançamento duplicado.');
+  btn.textContent='ADICIONAR'; btn.disabled=false;
 }
 
 // ════════════════════════════════════════════════
@@ -1504,6 +1529,9 @@ function renderGerencial(){
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
   const kpis=[
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
+    // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
+    {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
     {l:'EFICIÊNCIA',     v:fmtP(k.efDia), sub:sl(k.ef), c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
@@ -1547,11 +1575,13 @@ function renderTabelaHoraHora(allHoje){
     const ef2=prod!=null&&metaEfetivaHora>0?(prod/metaEfetivaHora)*100:null;
     const cls=ef2!=null?sc(ef2):'pend';
     const st=ef2!=null?sl(ef2):'—';
-    // Alerta de hora fraca (opção 2): >15% abaixo da média histórica do mesmo
-    // horário (≥2 dias de amostra). Independe da meta.
+    // Alerta de hora fraca: >15% abaixo da média histórica do mesmo horário
+    // (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a META.
+    // Se a META da hora for menor que a média histórica, é decisão de planejamento
+    // — não mostra ícone (r.metaHora>=med).
     const _hk=normHora(r.slotLabel);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
-    const horaFraca = prod!=null && amo>=2 && med>0 && prod < med*0.85;
+    const horaFraca = prod!=null && amo>=2 && med>0 && r.metaHora>=med && prod < med*0.85;
     const fraqMark = horaFraca
       ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: ${fmtN(med)} cx em ${amo} dias">⚠</span>`
       : '';

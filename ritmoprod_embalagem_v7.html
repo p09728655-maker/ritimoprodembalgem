@@ -1165,7 +1165,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — CICLO DE TELAS</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B/C (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -1267,6 +1268,7 @@ let CFG = {
   horarioFechamento:'17:05',
   slideAIntervalo:15,
   slideBIntervalo:15,
+  slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
   telasAtivas:{a:true,b:true,c:true},
   slideBKpis:['meta','ef','status','prog','proj','pontos','peso','atraso']
@@ -2388,8 +2390,9 @@ function renderGerencial(){
     const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
     const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
     const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
-    // Alerta de hora fraca (opção 2): produção >15% abaixo da média histórica
-    // deste mesmo horário (≥2 dias de amostra). Independe da meta.
+    // Alerta de hora fraca: produção >15% abaixo da média histórica deste mesmo
+    // horário (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a
+    // META, com a média histórica.
     const _hk=normHora(sl.label);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     // Só sinaliza horário JÁ ENCERRADO (agora >= fim do slot) e com produção real
@@ -2400,7 +2403,10 @@ function renderGerencial(){
     // Marcador vs média histórica do MESMO horário (só hora encerrada, com
     // produção real >0 e ≥2 dias de amostra): ▲ verde = na média ou acima;
     // ⚠ = abaixo (>15%). Tooltip mostra a média.
-    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    // IMPORTANTE: se a META da hora for MENOR que a média histórica, isso é uma
+    // decisão de planejamento — não compara e não mostra ícone nenhum (nem ⚠ nem ▲),
+    // apenas exibe a meta normalmente (metaSlot>=med).
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && metaSlot>=med);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? `<span style="color:var(--warn);font-weight:700;font-size:12px;display:inline-block;vertical-align:middle;line-height:1;margin-left:6px" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
@@ -2793,9 +2799,9 @@ function renderTV(){
     const ef2=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const rc=prod===null?'r-pend':ef2>=96?'r-ok':ef2>=90?'r-warn':'r-red';
     const st=prod===null?'—':ef2>=96?'✓ OK':ef2>=90?'! ATEN':'✗ ABX';
-    // Alerta de hora fraca (opção 2): hora já lançada e produção bem abaixo da
-    // média histórica do MESMO horário (≥2 dias de amostra, >15% abaixo).
-    // Independe da meta — sinaliza queda de ritmo vs. o costume daquele horário.
+    // Alerta de hora fraca: hora já lançada e produção bem abaixo da média
+    // histórica do MESMO horário (≥2 dias de amostra, >15% abaixo). Compara
+    // SEMPRE o REALIZADO (prod), nunca a META, com a média histórica.
     const _hk=normHora(sl.label);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
     // Só sinaliza horário JÁ ENCERRADO (agora >= fim do slot) e com produção real
@@ -2807,7 +2813,9 @@ function renderTV(){
     // ≥2 dias): ▲ verde = na média ou acima; ⚠ = abaixo (>15%). Só símbolo
     // (nowrap) p/ não quebrar a linha e empurrar o último horário p/ fora da tela;
     // a média fica no title (e na tela gerencial).
-    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0);
+    // IMPORTANTE: se a META da hora for MENOR que a média histórica, é decisão de
+    // planejamento — não compara nem mostra ícone (metaSlot>=med).
+    const _cmp = (prod!=null && prod>0 && !isHE && _fim!=null && _nm>=_fim && amo>=2 && med>0 && metaSlot>=med);
     const fraqMark = !_cmp ? ''
       : prod < med*0.85
         ? `&nbsp;<span style="color:var(--warn);font-weight:700;line-height:1;vertical-align:middle" title="Abaixo da média deste horário: média ${fmtN(med)} cx em ${amo} dias">⚠</span>`
@@ -3184,6 +3192,7 @@ function openCfg(){
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
   document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
+  document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
   const _telas=CFG.telasAtivas||{a:true,b:true,c:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
   document.getElementById('c-tela-b').checked=_telas.b!==false;
@@ -3235,6 +3244,7 @@ function saveCfg(){
   if(hFech) CFG.horarioFechamento=hFech;
   CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
+  CFG.slideCIntervalo=parseInt(document.getElementById('c-slidec-int').value)||15;
   CFG.telasAtivas={
     a:document.getElementById('c-tela-a').checked,
     b:document.getElementById('c-tela-b').checked,
@@ -4707,10 +4717,16 @@ const _cicloTV = (function() {
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
-  // Tela A tem tempo próprio; Tela B e C compartilham CFG.slideBIntervalo.
+  // Cada tela tem o SEU próprio tempo (A / B / C). Tela C, se não configurada,
+  // cai no tempo da Tela B (compatibilidade com config antiga).
+  function _duracaoTela(t) {
+    if (t === 'a') return CFG.slideAIntervalo || 15;
+    if (t === 'c') return CFG.slideCIntervalo || CFG.slideBIntervalo || 15;
+    return CFG.slideBIntervalo || 15;
+  }
   function _agendar() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
-    const seg = _tela === 'a' ? (CFG.slideAIntervalo || 15) : (CFG.slideBIntervalo || 15);
+    const seg = _duracaoTela(_tela);
     _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
   }
 
@@ -4747,6 +4763,18 @@ const _cicloTV = (function() {
       const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : 'tvc-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
+    // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
+    // (ex.: operador DESMARCOU a Tela C, ou o atraso zerou), ela precisa sumir
+    // na hora — sem depender do próximo saveCfg/reiniciar. Também esconde
+    // qualquer slide que esteja visível mas não seja o da tela ativa.
+    if (PERFIL !== 'gerencial') {
+      const ordemAtual = _ordemTelas();
+      if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
+      const slideB = document.getElementById('tv-slide-b');
+      const slideC = document.getElementById('tv-slide-c');
+      if (slideB && _tela !== 'b' && slideB.style.display !== 'none') slideB.style.display = 'none';
+      if (slideC && _tela !== 'c' && slideC.style.display !== 'none') slideC.style.display = 'none';
+    }
   }, 1000);
 
   function reiniciar() {
@@ -4766,7 +4794,7 @@ const _cicloTV = (function() {
       return;
     }
     _agendar(); // começa contando a duração da tela atual
-    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B,C:${CFG.slideBIntervalo||15}s)`);
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s)`);
   }
 
   reiniciar();
