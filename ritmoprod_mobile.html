@@ -1504,6 +1504,9 @@ function renderGerencial(){
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
   const kpis=[
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
+    // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
+    {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
     {l:'EFICIÊNCIA',     v:fmtP(k.efDia), sub:sl(k.ef), c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
