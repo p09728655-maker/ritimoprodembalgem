@@ -40,6 +40,8 @@ const SHEET_PARADAS   = 'PARADAS';
 const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
 const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
+const SHEET_SALDO     = 'SALDO_LOTE';           // item 3: saldo por lote (produzido, restante, %, status)
+const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -276,6 +278,14 @@ function saveRealizado(p) {
     if (cache && resultado && resultado.ok) {
       cache.put('lanc_' + lancId, JSON.stringify(resultado), 7200); // 2h de janela
     }
+
+    // Itens 1 e 3: a cada lançamento efetivo, sincroniza a meta do dia e o saldo
+    // dos lotes na planilha. Em try/catch: uma falha aqui NUNCA pode derrubar o
+    // lançamento (que já foi gravado com sucesso acima).
+    if (resultado && resultado.ok) {
+      try { sincronizarPlanilhaPosLancamento(); }
+      catch (e) { Logger.log('sincronizarPlanilha falhou (ignorado): ' + e.message); }
+    }
     return resultado;
 
   } finally {
@@ -397,6 +407,110 @@ function registrarProducaoProduto(codigo, horaInicio, caixas, operador) {
   }
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   sh.appendRow([hoje, horaInicio, codigo, desc, cx, pontos, pesoKg, operador || '']);
+
+  // Item 5: histórico de produtividade por FAMÍLIA. Não pode derrubar o lançamento
+  // se falhar — por isso o try/catch.
+  try { registrarHistoricoFamilia(codigo, horaInicio, cx, desc, pontos, pesoKg); }
+  catch (e) { Logger.log('registrarHistoricoFamilia falhou (ignorado): ' + e.message); }
+}
+
+// ════════════════════════════════════════════════════════
+// ITEM 5 — HISTÓRICO DE MÉDIA POR HORA POR FAMÍLIA (append-only)
+// ════════════════════════════════════════════════════════
+// Grava, a CADA lançamento, um novo registro na aba HISTORICO_MEDIA_FAMILIA, sem
+// apagar/sobrescrever os anteriores (base para análise histórica por família).
+// Código da Família = os 6 PRIMEIROS DÍGITOS do código do produto
+// (ex.: 501094001 -> 501094), o mesmo agrupamento "modelo" usado no restante do
+// sistema. Média (Cx/h) = caixas do próprio lançamento (a janela é a hora).
+function registrarHistoricoFamilia(codigo, horaInicio, caixas, desc, pontos, pesoKg) {
+  const fam = codKey(codigo).slice(0, 6);
+  if (!fam) return; // sem código de família válido, nada a gravar
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_HIST_FAM);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_HIST_FAM);
+    sh.appendRow(['DATA', 'HORA', 'CODIGO_FAMILIA', 'DESCRICAO', 'CAIXAS', 'PESO_KG', 'PONTOS', 'MEDIA_CX_H']);
+    sh.setFrozenRows(1);
+  }
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const cx   = Number(caixas) || 0;
+  sh.appendRow([hoje, horaInicio, fam, desc || '', cx, Number(pesoKg) || 0, Number(pontos) || 0, cx]);
+}
+
+
+// ════════════════════════════════════════════════════════
+// ITENS 1 e 3 — SINCRONIZAR META DO DIA E SALDO DOS LOTES NA PLANILHA
+// ════════════════════════════════════════════════════════
+// Roda após cada lançamento (e a meta também no refresh do gerencial). É sempre
+// chamada dentro de try/catch pelos callers: um erro aqui NUNCA pode quebrar o
+// lançamento nem a leitura do painel. Recebe a programação já calculada para
+// evitar recalcular calcularProgramacao() duas vezes.
+function sincronizarPlanilhaPosLancamento() {
+  const prog = calcularProgramacao();
+  try { gravarMetaDiaNaPlanilha(prog); } catch (e) { Logger.log('meta sync: '  + e.message); }
+  try { atualizarSaldoLotes(prog); }     catch (e) { Logger.log('saldo sync: ' + e.message); }
+}
+
+// Item 1: grava a META DO DIA (quantidade programada para hoje) na célula B3 da
+// aba HORA_A_HORA, para alimentar os indicadores do painel. Só grava quando o
+// valor MUDA (idempotente) e nunca sobrescreve uma fórmula existente na célula.
+function gravarMetaDiaNaPlanilha(prog) {
+  prog = prog || calcularProgramacao();
+  const meta = Number(prog.programadoHoje) || 0;
+  if (meta <= 0) return; // sem programação para hoje: não mexe na meta atual
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_DADOS);
+  if (!sh) return;
+  const cell = sh.getRange(3, 2); // B3 = meta do dia (mesma célula lida por getDados)
+  if (cell.getFormula()) return;  // respeita meta por fórmula, não sobrescreve
+  const atual = Number(cell.getValue()) || 0;
+  if (atual !== meta) cell.setValue(meta);
+}
+
+// Item 3: mantém a aba SALDO_LOTE sincronizada. Para cada produto COM lote
+// programado, grava/atualiza (upsert por DATA+LOTE+CODIGO) a quantidade
+// produzida, o saldo restante, o % concluído e o status do lote.
+function atualizarSaldoLotes(prog) {
+  prog = prog || calcularProgramacao();
+  const itens = (prog.lista || []).filter(function (x) { return x.lote; });
+  if (!itens.length) return;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_SALDO);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_SALDO);
+    sh.appendRow(['DATA', 'LOTE', 'CODIGO', 'DESCRICAO', 'PROGRAMADO', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM']);
+    sh.setFrozenRows(1);
+  }
+
+  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const hojeNum = dataParaNum(hoje);
+  const agora   = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+
+  // Índice das linhas existentes por DATA|LOTE|CODIGO (normalizado, pois o Sheets
+  // pode converter a coluna DATA em objeto Date e o código pode vir com pontos).
+  const values = sh.getDataRange().getValues();
+  const idx = {};
+  for (let i = 1; i < values.length; i++) {
+    const k = dataParaNum(values[i][0]) + '|' + String(values[i][1]).trim() + '|' + codKey(values[i][2]);
+    idx[k] = i + 1; // linha 1-based
+  }
+
+  itens.forEach(function (x) {
+    const programado = Number(x.metaEfetiva)  || 0; // programado do dia + atraso
+    const produzido  = Number(x.embaladoHoje) || 0;
+    const saldo      = Math.max(programado - produzido, 0);
+    const pct        = programado > 0 ? Math.round(produzido / programado * 100) : 0;
+    const status     = (programado > 0 && saldo <= 0) ? 'CONCLUIDO'
+                     : (produzido > 0)                ? 'EM ANDAMENTO'
+                     :                                  'PENDENTE';
+    const row = [hoje, x.lote, x.codigo, x.desc || '', programado, produzido, saldo, pct, status, agora];
+    const key = hojeNum + '|' + String(x.lote).trim() + '|' + codKey(x.codigo);
+    if (idx[key]) sh.getRange(idx[key], 1, 1, row.length).setValues([row]);
+    else          sh.appendRow(row);
+  });
 }
 
 
@@ -646,6 +760,13 @@ function getPontosDia() {
 
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
   const programacao = calcularProgramacao();
+
+  // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
+  // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
+  // lote do dia" alimenta os indicadores mesmo sem um lançamento ainda. Em
+  // try/catch: nunca pode derrubar a leitura do painel.
+  try { gravarMetaDiaNaPlanilha(programacao); }
+  catch (e) { Logger.log('gravarMetaDiaNaPlanilha (getPontosDia) falhou (ignorado): ' + e.message); }
 
   if (!sh) {
     return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], porHoraModelo: [], programacao };
