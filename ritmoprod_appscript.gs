@@ -751,11 +751,26 @@ function getPontosDia() {
   // mesmo modelo "501094"). Nome do modelo = maior prefixo de palavras comum
   // entre as descrições das variantes, pra não depender de adivinhar onde a
   // cor termina no texto (ex.: "VOL 1/1 MESA CABECEIRA SLEEP").
-  const modeloNome = {};
+  // PROBLEMA que isso resolve: quando alguma variante diverge logo na 2ª palavra
+  // (ou tem descrição curta/incompleta), o prefixo comum "desabava" para algo
+  // inútil tipo só "VOL", cortando o nome do produto na tela PRODUÇÃO/HORA.
+  // Solução: se o prefixo comum ficar com menos de 2 palavras, usa a descrição
+  // MAIS LONGA das variantes — melhor um nome completo (mesmo com a cor) do que "VOL".
+  const modeloDescs = {};
   lerCatalogoProdutos().forEach(function (pr) {
     const m = String(pr.codigo || '').slice(0, 6);
     if (!m) return;
-    modeloNome[m] = modeloNome[m] === undefined ? (pr.desc || '') : prefixoComumPalavras(modeloNome[m], pr.desc || '');
+    const d = String(pr.desc || '').trim();
+    if (!d) return;
+    (modeloDescs[m] = modeloDescs[m] || []).push(d);
+  });
+  const modeloNome = {};
+  Object.keys(modeloDescs).forEach(function (m) {
+    const descs = modeloDescs[m];
+    let pref = descs[0];
+    for (let i = 1; i < descs.length; i++) pref = prefixoComumPalavras(pref, descs[i]);
+    const maisLonga = descs.reduce(function (a, b) { return b.length > a.length ? b : a; }, '');
+    modeloNome[m] = (pref && pref.split(' ').filter(String).length >= 2) ? pref : maisLonga;
   });
 
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
