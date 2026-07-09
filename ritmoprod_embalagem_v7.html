@@ -931,17 +931,22 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-hero-num" id="tvc-atraso" style="color:var(--red)">—</div>
         <div class="tvb-hero-unit">CAIXAS</div>
       </div>
-      <div class="tvb-kpis tvb-side-rail" data-n="1">
+      <div class="tvb-kpis tvb-side-rail" data-n="2">
         <div class="tvb-kpi">
           <div class="tvb-kpi-lbl">PRODUZIR HOJE P/ ZERAR</div>
           <div class="tvb-kpi-val" id="tvc-meta-efetiva" style="color:var(--red)">—</div>
           <div class="tvb-kpi-unit">CAIXAS</div>
         </div>
+        <!-- Ritmo p/ zerar: quantas cx por hora produzir nas horas que faltam do
+             turno pra chegar na meta efetiva (programado hoje + atraso). É o
+             número de chão de fábrica: "faça X cx/hora que o atraso some". -->
+        <div class="tvb-kpi" id="tvc-kpi-ritmo">
+          <div class="tvb-kpi-lbl">RITMO P/ ZERAR</div>
+          <div class="tvb-kpi-val" id="tvc-ritmo-zerar" style="color:var(--red)">—</div>
+          <div class="tvb-kpi-unit">CX/HORA</div>
+        </div>
       </div>
     </div>
-    <!-- Quadro "NECESSÁRIO EXTRA POR HORA / HE / 2ª LINHA" removido a pedido:
-         era linguagem de gestão e confundia o chão de fábrica. A Tela C fica só
-         com ATRASADO (DIAS ANTERIORES) e PRODUZIR HOJE P/ ZERAR. -->
   </div>
 
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
@@ -4727,13 +4732,20 @@ const _cicloTV = (function() {
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('tvc-setor', get('tv-setor'));
     set('tvc-clock', get('tv-clock'));
-    const prog = PONTOS_DIA.programacao || { lista: [], atrasoTotal: 0, metaEfetiva: 0 };
+    const prog = PONTOS_DIA.programacao || { lista: [], atrasoTotal: 0, metaEfetiva: 0, embaladoHoje: 0 };
     const atraso = prog.atrasoTotal || 0;
+    const metaEfetiva = prog.metaEfetiva || 0;
     set('tvc-atraso', fmtN(atraso));
-    set('tvc-meta-efetiva', fmtN(prog.metaEfetiva || 0));
-    // O quadro "NECESSÁRIO EXTRA POR HORA / HE / 2ª LINHA" foi removido do layout
-    // (confundia o chão de fábrica). A Tela C mostra só ATRASADO e PRODUZIR HOJE
-    // P/ ZERAR — por isso não há mais nada a preencher aqui.
+    set('tvc-meta-efetiva', fmtN(metaEfetiva));
+    // RITMO P/ ZERAR — cx por hora a produzir nas horas que faltam do turno pra
+    // chegar na meta efetiva (programado hoje + atraso). Desconta o que já foi
+    // embalado hoje e divide o que falta pelos slots restantes (TV_TURNO_INFO,
+    // do último calcKPIs). Turno encerrado (0 slots) → "—", não faz sentido "por
+    // hora". O slot pós-almoço é mais curto, mas contamos como 1 hora igual ao
+    // "NECESSÁRIO" da Tela A, pra o número bater com o resto do painel.
+    const slotsRest = TV_TURNO_INFO.slotsRest || 0;
+    const faltaZerar = Math.max(metaEfetiva - (prog.embaladoHoje || 0), 0);
+    set('tvc-ritmo-zerar', slotsRest > 0 ? fmtN(Math.ceil(faltaZerar / slotsRest)) : '—');
   }
 
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
