@@ -868,11 +868,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
           <div class="tvb-kpi-val" id="tvb-falta" style="color:var(--warn)">—</div>
           <div class="tvb-kpi-unit">CAIXAS</div>
         </div>
-        <div class="tvb-kpi" id="tvb-kpi-atraso" style="display:none">
-          <div class="tvb-kpi-lbl">⚠ ATRASO NA PROGRAMAÇÃO</div>
-          <div class="tvb-kpi-val" id="tvb-atraso" style="color:var(--red)">—</div>
-          <div class="tvb-kpi-unit">CAIXAS</div>
-        </div>
       </div>
     </div>
 
@@ -1188,7 +1183,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-falta" style="accent-color:var(--acc)"> FALTA P/ META</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-atraso" style="accent-color:var(--acc)"> ⚠ ATRASO NA PROGRAMAÇÃO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-pontos" style="accent-color:var(--acc)"> PRODUÇÃO (PONTOS)</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-peso" style="accent-color:var(--acc)"> PESO PRODUZIDO</label>
     </div>
@@ -1275,7 +1269,7 @@ let CFG = {
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
   telasAtivas:{a:true,b:true,c:true},
-  slideBKpis:['meta','ef','status','prog','proj','pontos','peso','atraso']
+  slideBKpis:['meta','ef','status','prog','proj','pontos','peso']
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -3205,7 +3199,7 @@ function openCfg(){
   document.getElementById('c-tela-b').checked=_telas.b!==false;
   document.getElementById('c-tela-c').checked=_telas.c!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
-  ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso','atraso'].forEach(k=>{
+  ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
   });
   document.getElementById('modal-cfg').classList.add('on');
@@ -3257,7 +3251,7 @@ function saveCfg(){
     b:document.getElementById('c-tela-b').checked,
     c:document.getElementById('c-tela-c').checked
   };
-  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso','atraso'].filter(k=>{
+  CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
   saveCfgLocal();
@@ -4696,14 +4690,12 @@ const _cicloTV = (function() {
       : '—');
     set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
     set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)));
-    set('tvb-atraso', fmtN(PONTOS_DIA.programacao?.atrasoTotal || 0));
 
     const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
-    const _semAtraso = !(PONTOS_DIA.programacao?.atrasoTotal > 0);
-    ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso','atraso'].forEach(k => {
+    // O ATRASO NÃO aparece mais na Tela B (a Tela C é a dedicada ao atraso).
+    ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k => {
       const el = document.getElementById('tvb-kpi-' + k);
-      // "atraso" só aparece de fato quando há atraso>0, mesmo que ligado nas configs.
-      if (el) el.style.display = (kpis.includes(k) && !(k==='atraso' && _semAtraso)) ? '' : 'none';
+      if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
     const extraKeys = ['ritmo','nec','proj','pontos','peso'].filter(k => kpis.includes(k));
     const rowExtra = document.getElementById('tvb-row-extra');
@@ -4716,7 +4708,7 @@ const _cicloTV = (function() {
     // Se nenhum KPI do rail lateral (meta/ef/status/falta/atraso) estiver ligado,
     // o rail fica vazio — nesse caso a banda vira 1 coluna só pra não deixar um
     // vão reservado do lado do número principal.
-    const railKeys = ['meta','ef','status','falta','atraso'].filter(k => kpis.includes(k) && !(k==='atraso' && _semAtraso));
+    const railKeys = ['meta','ef','status','falta'].filter(k => kpis.includes(k));
     const sideRail = document.querySelector('.tvb-side-rail');
     const heroBand = document.querySelector('.tvb-hero-band');
     if (sideRail) {
