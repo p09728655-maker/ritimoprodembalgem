@@ -243,6 +243,13 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #tv-slide-c .tv-table td{font-size:clamp(24px,2.8vw,42px);padding:8px 16px;line-height:1.2}
 #tv-slide-c .tv-table .td-h{font-size:clamp(24px,2.8vw,42px)}
 #tv-slide-c .tv-table .td-s{font-size:clamp(28px,3.2vw,48px);text-align:right}
+/* RITMO P/ ZERAR — número de ação do chão de fábrica: centralizado e o maior
+   possível, ocupando toda a altura que sobra abaixo do topo (ATRASADO +
+   PRODUZIR HOJE). flex:1 + justify-center mantém ele no meio da tela. */
+.tvc-ritmo-band{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%}
+.tvc-ritmo-lbl{font-family:var(--font-d);font-size:clamp(20px,2.4vw,40px);color:var(--red);letter-spacing:6px;text-transform:uppercase}
+.tvc-ritmo-num{font-family:var(--font-h);font-size:clamp(160px,24vw,460px);font-weight:700;line-height:.85;color:var(--red)}
+.tvc-ritmo-unit{font-family:var(--font-d);font-size:clamp(22px,2.6vw,44px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -931,21 +938,22 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-hero-num" id="tvc-atraso" style="color:var(--red)">—</div>
         <div class="tvb-hero-unit">CAIXAS</div>
       </div>
-      <div class="tvb-kpis tvb-side-rail" data-n="2">
+      <div class="tvb-kpis tvb-side-rail" data-n="1">
         <div class="tvb-kpi">
           <div class="tvb-kpi-lbl">PRODUZIR HOJE P/ ZERAR</div>
           <div class="tvb-kpi-val" id="tvc-meta-efetiva" style="color:var(--red)">—</div>
           <div class="tvb-kpi-unit">CAIXAS</div>
         </div>
-        <!-- Ritmo p/ zerar: quantas cx por hora produzir nas horas que faltam do
-             turno pra chegar na meta efetiva (programado hoje + atraso). É o
-             número de chão de fábrica: "faça X cx/hora que o atraso some". -->
-        <div class="tvb-kpi" id="tvc-kpi-ritmo">
-          <div class="tvb-kpi-lbl">RITMO P/ ZERAR</div>
-          <div class="tvb-kpi-val" id="tvc-ritmo-zerar" style="color:var(--red)">—</div>
-          <div class="tvb-kpi-unit">CX/HORA</div>
-        </div>
       </div>
+    </div>
+
+    <!-- RITMO P/ ZERAR: quantas cx por hora produzir nas horas que faltam do
+         turno pra zerar o atraso. Fica no centro da tela e o maior possível —
+         é o número de ação do chão de fábrica: "faça X cx/hora que o atraso some". -->
+    <div class="tvc-ritmo-band" id="tvc-kpi-ritmo">
+      <div class="tvc-ritmo-lbl">RITMO P/ ZERAR</div>
+      <div class="tvc-ritmo-num" id="tvc-ritmo-zerar">—</div>
+      <div class="tvc-ritmo-unit">CX/HORA</div>
     </div>
   </div>
 
