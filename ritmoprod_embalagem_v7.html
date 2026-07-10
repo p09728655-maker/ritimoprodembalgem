@@ -298,35 +298,48 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    reaproveitando as tvb-* antigas, então nada aqui afeta a Tela C. ═══ */
 .tvb2-prodhead{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.05;min-width:0}
 .tvb2-prod-lbl{font-family:var(--font-d);font-size:clamp(10px,1vw,15px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb2-prod-val{font-family:var(--font-h);font-size:clamp(20px,2.4vw,40px);font-weight:700;color:var(--txt);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+.tvb2-prod-val{font-family:var(--font-h);font-size:clamp(20px,2.3vw,38px);font-weight:700;color:var(--txt);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw}
 .tvb2-prod-cod{font-family:var(--font-d);font-size:clamp(11px,1.1vw,17px);color:var(--txt2);letter-spacing:2px}
 .tvb2-prod-cod b{color:var(--txt);font-family:var(--font-h);letter-spacing:2px}
 
 .tvb2-band{width:100%;display:grid;grid-template-columns:1.35fr 1fr;column-gap:3.5vw;align-items:stretch}
-.tvb2-herocol{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh}
-.tvb2-peso{display:flex;align-items:center;gap:16px;width:100%;justify-content:center;border-top:1px solid var(--border);padding-top:2.6vh}
-.tvb2-peso svg{width:clamp(30px,3.2vw,58px);height:auto;color:var(--txt2);flex-shrink:0}
-.tvb2-peso-txt{display:flex;flex-direction:column;gap:3px;text-align:left}
-.tvb2-peso-lbl{font-family:var(--font-d);font-size:clamp(12px,1.2vw,19px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
-.tvb2-peso-line{display:flex;align-items:baseline;gap:8px}
-.tvb2-peso-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.4vw,62px);line-height:1}
-.tvb2-peso-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,20px);color:var(--txt2);letter-spacing:1px}
+.tvb2-herocol{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3.2vh}
+/* PESO / PRODUÇÃO (PONTOS) — infos secundárias, lado a lado embaixo do número
+   grande (saíram da linha de baixo pra não estourar a tela e p/ liberar altura
+   ao rail). */
+.tvb2-substats{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:2vh 3.2vw;width:100%;border-top:1px solid var(--border);padding-top:2.4vh}
+.tvb2-substat{display:flex;align-items:center;gap:14px}
+.tvb2-substat svg{width:clamp(28px,2.8vw,52px);height:auto;color:var(--txt2);flex-shrink:0}
+.tvb2-substat-txt{display:flex;flex-direction:column;gap:3px;text-align:left}
+.tvb2-substat-lbl{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb2-substat-line{display:flex;align-items:baseline;gap:8px}
+.tvb2-substat-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.2vw,60px);line-height:1}
+.tvb2-substat-unit{font-family:var(--font-d);font-size:clamp(14px,1.2vw,22px);color:var(--txt2);letter-spacing:1px}
 
 .tvb2-rail{display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
-.tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.5vh 0 1.5vh 2.4vw;border-top:1px solid var(--border)}
-.tvb2-info{display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
-.tvb2-lbl{font-family:var(--font-d);font-size:clamp(12px,1.15vw,19px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
-.tvb2-val{font-family:var(--font-h);font-weight:700;line-height:1;color:var(--txt);font-size:clamp(38px,4.2vw,88px)}
+.tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.6vh 0 1.6vh 2.4vw;border-top:1px solid var(--border)}
+.tvb2-info{display:flex;flex-direction:column;gap:4px;text-align:left;min-width:0}
+.tvb2-lbl{font-family:var(--font-d);font-size:clamp(15px,1.4vw,26px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+/* Números do rail GRANDES (TV a ~15 m). Escala adaptativa: menos KPIs ligados =
+   cada número maior (data-n setado por _sincSlideB conforme os KPIs do rail). */
+.tvb2-val{font-family:var(--font-h);font-weight:700;line-height:1;color:var(--txt);font-size:clamp(46px,5vw,108px)}
 .tvb2-val.warn{color:var(--warn)}
-.tvb2-unit{font-family:var(--font-d);font-size:clamp(11px,1.05vw,17px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
-.tvb2-icon{width:clamp(30px,3vw,56px);height:auto;color:var(--txt2);opacity:.85;flex-shrink:0}
+.tvb2-rail[data-n="5"] .tvb2-val{font-size:clamp(40px,4.3vw,92px)}
+.tvb2-rail[data-n="4"] .tvb2-val{font-size:clamp(48px,5.2vw,112px)}
+.tvb2-rail[data-n="3"] .tvb2-val{font-size:clamp(58px,6.4vw,144px)}
+.tvb2-rail[data-n="2"] .tvb2-val{font-size:clamp(66px,7.4vw,172px)}
+.tvb2-rail[data-n="1"] .tvb2-val{font-size:clamp(76px,8.4vw,196px)}
+.tvb2-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb2-icon{width:clamp(34px,3.4vw,64px);height:auto;color:var(--txt2);opacity:.85;flex-shrink:0}
 /* EFICIÊNCIA: número + barra segmentada (a cor dos segmentos acesos é setada
    por JS conforme o status, igual à cor do número). */
-.tvb2-effline{display:flex;align-items:center;gap:clamp(10px,1.4vw,22px)}
-.tvb2-effbar{display:flex;gap:clamp(3px,.42vw,7px);align-items:center;height:clamp(24px,2.8vw,52px)}
-.tvb2-seg{width:clamp(6px,.72vw,13px);height:100%;border-radius:2px;background:var(--surface)}
+.tvb2-effline{display:flex;align-items:center;gap:clamp(10px,1.4vw,24px)}
+.tvb2-effbar{display:flex;gap:clamp(3px,.42vw,8px);align-items:center;height:clamp(28px,3.2vw,62px)}
+.tvb2-seg{width:clamp(7px,.8vw,15px);height:100%;border-radius:2px;background:var(--surface)}
 /* STATUS: só o texto colorido com o ponto (sem a "pílula") — igual à foto. */
-.tvb2-row-status .tv-status-badge{background:transparent;border:0;padding:0;font-size:clamp(26px,3vw,58px)}
+.tvb2-row-status .tv-status-badge{background:transparent;border:0;padding:0;font-size:clamp(30px,3.4vw,64px);line-height:1.05}
+.tvb2-rail[data-n="3"] .tvb2-row-status .tv-status-badge{font-size:clamp(34px,3.9vw,74px)}
+.tvb2-rail[data-n="2"] .tvb2-row-status .tv-status-badge{font-size:clamp(38px,4.3vw,84px)}
 
 /* ═══ MOBILE TV ═══ */
 @media (max-width:768px){
@@ -901,18 +914,27 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
 
     <div class="tvb2-band">
-      <!-- Coluna esquerda: número gigante + PESO PRODUZIDO embaixo -->
+      <!-- Coluna esquerda: número gigante + PESO/PONTOS embaixo (lado a lado) -->
       <div class="tvb2-herocol">
         <div class="tvb-hero">
           <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
           <div class="tvb-hero-num" id="tvb-prod">—</div>
           <div class="tvb-hero-unit">CAIXAS</div>
         </div>
-        <div class="tvb2-peso" id="tvb-kpi-peso">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
-          <div class="tvb2-peso-txt">
-            <div class="tvb2-peso-lbl">PESO PRODUZIDO</div>
-            <div class="tvb2-peso-line"><span class="tvb2-peso-val" id="tvb-peso">—</span><span class="tvb2-peso-unit">kg</span></div>
+        <div class="tvb2-substats">
+          <div class="tvb2-substat" id="tvb-kpi-peso">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+            <div class="tvb2-substat-txt">
+              <div class="tvb2-substat-lbl">PESO PRODUZIDO</div>
+              <div class="tvb2-substat-line"><span class="tvb2-substat-val" id="tvb-peso">—</span><span class="tvb2-substat-unit">kg</span></div>
+            </div>
+          </div>
+          <div class="tvb2-substat" id="tvb-kpi-pontos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8L3.5 9.2l5.9-.9L12 3Z"/></svg>
+            <div class="tvb2-substat-txt">
+              <div class="tvb2-substat-lbl">PRODUÇÃO (PONTOS)</div>
+              <div class="tvb2-substat-line"><span class="tvb2-substat-val" id="tvb-pontos">—</span><span class="tvb2-substat-unit">pts</span></div>
+            </div>
           </div>
         </div>
       </div>
@@ -987,11 +1009,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-kpi-lbl">NECESSÁRIO</div>
         <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
         <div class="tvb-kpi-unit" id="tvb-nec-unit">CX/HORA</div>
-      </div>
-      <div class="tvb-kpi" id="tvb-kpi-pontos" style="display:none">
-        <div class="tvb-kpi-lbl">PRODUÇÃO (PONTOS)</div>
-        <div class="tvb-kpi-val" id="tvb-pontos" style="color:var(--acc)">—</div>
-        <div class="tvb-kpi-unit">PTS</div>
       </div>
     </div>
 
@@ -4805,20 +4822,25 @@ const _cicloTV = (function() {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
-    // Linha extra (embaixo) só p/ ritmo/necessário/pontos — off por padrão.
-    const extraKeys = ['ritmo','nec','pontos'].filter(k => kpis.includes(k));
+    // Linha extra (embaixo) só p/ ritmo/necessário — off por padrão. (PONTOS e
+    // PESO agora ficam na coluna esquerda, junto do número grande.)
+    const extraKeys = ['ritmo','nec'].filter(k => kpis.includes(k));
     const rowExtra = document.getElementById('tvb-row-extra');
     if (rowExtra) {
       rowExtra.style.display = extraKeys.length ? 'flex' : 'none';
       rowExtra.dataset.n = extraKeys.length || '';
     }
 
-    // Se nenhum KPI do rail direito estiver ligado, a banda vira 1 coluna só pra
-    // o número principal não ficar com um vão reservado do lado.
+    // Rail direito: escala adaptativa por nº de KPIs ligados (data-n) — menos
+    // KPIs = números maiores (TV vista a ~15 m). Se o rail ficar vazio, a banda
+    // vira 1 coluna pro número principal não deixar um vão reservado do lado.
     const railKeys = ['meta','falta','proj','ef','status'].filter(k => kpis.includes(k));
     const rail = document.querySelector('#tv-slide-b .tvb2-rail');
     const band = document.querySelector('#tv-slide-b .tvb2-band');
-    if (rail) rail.style.display = railKeys.length ? '' : 'none';
+    if (rail) {
+      rail.style.display = railKeys.length ? '' : 'none';
+      rail.dataset.n = railKeys.length || '';
+    }
     if (band) band.style.gridTemplateColumns = railKeys.length ? '' : '1fr';
   }
 
