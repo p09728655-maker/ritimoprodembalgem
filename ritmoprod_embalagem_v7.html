@@ -292,6 +292,42 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-prog-fill{height:100%;border-radius:11px;transition:width .6s ease}
 .tvb-prog-info{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:clamp(13px,1.3vw,20px);color:var(--txt2);letter-spacing:1px}
 
+/* ═══ TV SLIDE B v2 — layout da foto (produto+código no topo, hero à esquerda
+   com PESO embaixo, rail de KPIs com ícone à direita, EFICIÊNCIA em barra
+   segmentada). Classes tvb2-* são EXCLUSIVAS da Tela B — a Tela C continua
+   reaproveitando as tvb-* antigas, então nada aqui afeta a Tela C. ═══ */
+.tvb2-prodhead{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.05;min-width:0}
+.tvb2-prod-lbl{font-family:var(--font-d);font-size:clamp(10px,1vw,15px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+.tvb2-prod-val{font-family:var(--font-h);font-size:clamp(20px,2.4vw,40px);font-weight:700;color:var(--txt);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}
+.tvb2-prod-cod{font-family:var(--font-d);font-size:clamp(11px,1.1vw,17px);color:var(--txt2);letter-spacing:2px}
+.tvb2-prod-cod b{color:var(--txt);font-family:var(--font-h);letter-spacing:2px}
+
+.tvb2-band{width:100%;display:grid;grid-template-columns:1.35fr 1fr;column-gap:3.5vw;align-items:stretch}
+.tvb2-herocol{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3vh}
+.tvb2-peso{display:flex;align-items:center;gap:16px;width:100%;justify-content:center;border-top:1px solid var(--border);padding-top:2.6vh}
+.tvb2-peso svg{width:clamp(30px,3.2vw,58px);height:auto;color:var(--txt2);flex-shrink:0}
+.tvb2-peso-txt{display:flex;flex-direction:column;gap:3px;text-align:left}
+.tvb2-peso-lbl{font-family:var(--font-d);font-size:clamp(12px,1.2vw,19px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb2-peso-line{display:flex;align-items:baseline;gap:8px}
+.tvb2-peso-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.4vw,62px);line-height:1}
+.tvb2-peso-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,20px);color:var(--txt2);letter-spacing:1px}
+
+.tvb2-rail{display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
+.tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.5vh 0 1.5vh 2.4vw;border-top:1px solid var(--border)}
+.tvb2-info{display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
+.tvb2-lbl{font-family:var(--font-d);font-size:clamp(12px,1.15vw,19px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb2-val{font-family:var(--font-h);font-weight:700;line-height:1;color:var(--txt);font-size:clamp(38px,4.2vw,88px)}
+.tvb2-val.warn{color:var(--warn)}
+.tvb2-unit{font-family:var(--font-d);font-size:clamp(11px,1.05vw,17px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.tvb2-icon{width:clamp(30px,3vw,56px);height:auto;color:var(--txt2);opacity:.85;flex-shrink:0}
+/* EFICIÊNCIA: número + barra segmentada (a cor dos segmentos acesos é setada
+   por JS conforme o status, igual à cor do número). */
+.tvb2-effline{display:flex;align-items:center;gap:clamp(10px,1.4vw,22px)}
+.tvb2-effbar{display:flex;gap:clamp(3px,.42vw,7px);align-items:center;height:clamp(24px,2.8vw,52px)}
+.tvb2-seg{width:clamp(6px,.72vw,13px);height:100%;border-radius:2px;background:var(--surface)}
+/* STATUS: só o texto colorido com o ponto (sem a "pílula") — igual à foto. */
+.tvb2-row-status .tv-status-badge{background:transparent;border:0;padding:0;font-size:clamp(26px,3vw,58px)}
+
 /* ═══ MOBILE TV ═══ */
 @media (max-width:768px){
   /* Header compacto */
@@ -376,6 +412,15 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   .hdr-setor{ font-size:8px!important; }
   .ftr-hide-mobile{ display:none!important; }
   footer{ gap:4px; }
+
+  /* Tela B v2 no retrato: empilha hero em cima, rail embaixo (sem divisória
+     vertical). No paisagem a largura passa de 768px e cai no layout normal. */
+  .tvb2-band{ grid-template-columns:1fr; row-gap:2vh; }
+  .tvb2-rail{ border-left:0; border-top:1px solid var(--border); }
+  .tvb2-prod-val{ max-width:60vw; }
+  .tvb2-row{ padding:1.2vh 0; }
+  .tvb2-val{ font-size:clamp(30px,8vw,52px); }
+  .tvb2-row-status .tv-status-badge{ font-size:clamp(18px,5vw,30px); }
 }
 
 /* ═══ HISTÓRICO ═══ */
@@ -833,52 +878,95 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmoprod<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
   </div>
 
-  <!-- ═══ SLIDE B — visão macro, cicla com slide A a cada 90s ═══ -->
+  <!-- ═══ SLIDE B — visão macro, cicla com slide A a cada 90s.
+       Layout redesenhado (foto): produto+código no topo, PRODUÇÃO ACUMULADA
+       gigante à esquerda com PESO logo abaixo, e um rail de KPIs com ícone à
+       direita. Os KPIs continuam ligáveis/desligáveis pela config (ids
+       tvb-kpi-*); os valores continuam vindo prontos de calcKPIs/_sincSlideB —
+       NENHUMA fórmula muda aqui. ═══ -->
   <div id="tv-slide-b">
     <div class="tvb-top">
-      <div class="tvb-setor-lbl" id="tvb-setor">EMBALAGEM</div>
-      <div style="text-align:center;line-height:1">
-        <!-- LOGO Patrimar móveis (imagem oficial) -->
+      <!-- Produto atual + código (OPCIONAL — só aparece se o operador selecionou) -->
+      <div class="tvb2-prodhead" id="tvb-produto-row">
+        <span class="tvb2-prod-lbl">PRODUTO ATUAL</span>
+        <span class="tvb2-prod-val" id="tvb-produto">—</span>
+        <span class="tvb2-prod-cod" id="tvb-produto-codrow" style="display:none">CÓDIGO <b id="tvb-produto-cod">—</b></span>
+      </div>
+      <!-- setor mantido oculto só p/ compatibilidade com _sincSlideB(set tvb-setor) -->
+      <span id="tvb-setor" style="display:none">EMBALAGEM</span>
+      <div style="text-align:center;line-height:1;flex-shrink:0">
         <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(56px,9vw,120px);width:auto;display:inline-block;vertical-align:middle">
       </div>
       <div class="tvb-clock-lbl" id="tvb-clock">--:--:--</div>
     </div>
 
-    <!-- Produto atual do turno — OPCIONAL (só aparece quando o operador seleciona no app) -->
-    <div class="tvb-produto-row" id="tvb-produto-row">
-      <span class="tvb-produto-lbl">PRODUTO ATUAL</span>
-      <span class="tvb-produto-val" id="tvb-produto">—</span>
-    </div>
-
-    <div class="tvb-hero-band">
-      <div class="tvb-hero">
-        <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
-        <div class="tvb-hero-num" id="tvb-prod">—</div>
-        <div class="tvb-hero-unit">CAIXAS</div>
+    <div class="tvb2-band">
+      <!-- Coluna esquerda: número gigante + PESO PRODUZIDO embaixo -->
+      <div class="tvb2-herocol">
+        <div class="tvb-hero">
+          <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
+          <div class="tvb-hero-num" id="tvb-prod">—</div>
+          <div class="tvb-hero-unit">CAIXAS</div>
+        </div>
+        <div class="tvb2-peso" id="tvb-kpi-peso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>
+          <div class="tvb2-peso-txt">
+            <div class="tvb2-peso-lbl">PESO PRODUZIDO</div>
+            <div class="tvb2-peso-line"><span class="tvb2-peso-val" id="tvb-peso">—</span><span class="tvb2-peso-unit">kg</span></div>
+          </div>
+        </div>
       </div>
 
-      <div class="tvb-kpis tvb-side-rail">
-        <div class="tvb-kpi" id="tvb-kpi-meta">
-          <div class="tvb-kpi-lbl">META DO DIA</div>
-          <div class="tvb-kpi-val" id="tvb-meta" style="color:var(--acc)">—</div>
+      <!-- Coluna direita: rail de KPIs (cada um com ícone) -->
+      <div class="tvb2-rail">
+        <div class="tvb2-row" id="tvb-kpi-meta">
+          <div class="tvb2-info">
+            <div class="tvb2-lbl">META DO DIA</div>
+            <div class="tvb2-val" id="tvb-meta">—</div>
+            <div class="tvb2-unit">CAIXAS</div>
+          </div>
+          <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg>
         </div>
-        <div class="tvb-kpi" id="tvb-kpi-ef">
-          <div class="tvb-kpi-lbl">EFICIÊNCIA</div>
-          <div class="tvb-kpi-val" id="tvb-ef">—</div>
+
+        <div class="tvb2-row" id="tvb-kpi-falta">
+          <div class="tvb2-info">
+            <div class="tvb2-lbl">FALTAM</div>
+            <div class="tvb2-val warn" id="tvb-falta">—</div>
+            <div class="tvb2-unit">CAIXAS</div>
+          </div>
+          <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="m9 14 2 2 4-4"/></svg>
         </div>
-        <div class="tvb-kpi" id="tvb-kpi-status">
-          <div class="tvb-kpi-lbl">STATUS</div>
+
+        <div class="tvb2-row" id="tvb-kpi-proj">
+          <div class="tvb2-info">
+            <div class="tvb2-lbl">PROJEÇÃO FINAL</div>
+            <div class="tvb2-val" id="tvb-proj">—</div>
+            <div class="tvb2-unit">CAIXAS</div>
+          </div>
+          <svg class="tvb2-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9 11l4 4 8-8"/><path d="M16 6h5v5"/></svg>
+        </div>
+
+        <div class="tvb2-row" id="tvb-kpi-ef">
+          <div class="tvb2-info">
+            <div class="tvb2-lbl">EFICIÊNCIA</div>
+            <div class="tvb2-effline">
+              <div class="tvb2-val" id="tvb-ef">—</div>
+              <div class="tvb2-effbar" id="tvb-effbar"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tvb2-row tvb2-row-status" id="tvb-kpi-status">
+          <div class="tvb2-info">
+            <div class="tvb2-lbl">STATUS</div>
+          </div>
           <span id="tvb-badge" class="tv-status-badge ok">● META</span>
         </div>
-        <div class="tvb-kpi" id="tvb-kpi-falta" style="display:none">
-          <div class="tvb-kpi-lbl">FALTA P/ META</div>
-          <div class="tvb-kpi-val" id="tvb-falta" style="color:var(--warn)">—</div>
-          <div class="tvb-kpi-unit">CAIXAS</div>
-        </div>
       </div>
     </div>
 
-    <div class="tvb-prog" id="tvb-kpi-prog">
+    <!-- PROGRESSO DO DIA — OPCIONAL (desligado por padrão; ligável na config) -->
+    <div class="tvb-prog" id="tvb-kpi-prog" style="display:none">
       <div class="tvb-prog-info">
         <span>PROGRESSO DO DIA</span>
         <span id="tvb-prog-pct">0%</span>
@@ -888,8 +976,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
     </div>
 
-    <!-- Linha extra consolidada: ritmo/necessário/projeção + produção em pontos/peso
-         (pontos/peso são dinâmicos por produto, OPCIONAL — só se o operador selecionou produto) -->
+    <!-- Linha extra OPCIONAL: ritmo/necessário/pontos (desligados por padrão) -->
     <div class="tvb-kpis" id="tvb-row-extra" style="display:none">
       <div class="tvb-kpi" id="tvb-kpi-ritmo">
         <div class="tvb-kpi-lbl">RITMO ATUAL</div>
@@ -901,20 +988,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
         <div class="tvb-kpi-unit" id="tvb-nec-unit">CX/HORA</div>
       </div>
-      <div class="tvb-kpi" id="tvb-kpi-proj">
-        <div class="tvb-kpi-lbl">PROJEÇÃO</div>
-        <div class="tvb-kpi-val" id="tvb-proj" style="color:var(--txt2)">—</div>
-        <div class="tvb-kpi-unit">CX FINAL</div>
-      </div>
       <div class="tvb-kpi" id="tvb-kpi-pontos" style="display:none">
         <div class="tvb-kpi-lbl">PRODUÇÃO (PONTOS)</div>
         <div class="tvb-kpi-val" id="tvb-pontos" style="color:var(--acc)">—</div>
         <div class="tvb-kpi-unit">PTS</div>
-      </div>
-      <div class="tvb-kpi" id="tvb-kpi-peso" style="display:none">
-        <div class="tvb-kpi-lbl">PESO PRODUZIDO</div>
-        <div class="tvb-kpi-val" id="tvb-peso" style="color:var(--acc)">—</div>
-        <div class="tvb-kpi-unit">KG</div>
       </div>
     </div>
 
@@ -1282,7 +1359,7 @@ let CFG = {
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
   telasAtivas:{a:true,b:true,c:true},
-  slideBKpis:['meta','ef','status','prog','proj','pontos','peso']
+  slideBKpis:['meta','falta','proj','ef','status','peso']
 };
 let fileHandle    = null;
 let isLive        = false;
@@ -4698,38 +4775,51 @@ const _cicloTV = (function() {
 
     // Produto atual / PONTOS / PESO não existem na Tela A (mantida limpa de propósito),
     // então vêm direto de PONTOS_DIA (buscado por getPontosDia) em vez de espelhar DOM.
-    set('tvb-produto', PONTOS_DIA.produtoAtual
-      ? PONTOS_DIA.produtoAtual + (PONTOS_DIA.produtoAtualDesc ? ' · ' + PONTOS_DIA.produtoAtualDesc : '')
-      : '—');
+    // No layout novo: descrição no destaque, código numa linha própria (só aparece
+    // quando o operador selecionou o produto). produtoAtual = código; produtoAtualDesc = nome.
+    const temProduto = !!PONTOS_DIA.produtoAtual;
+    set('tvb-produto', temProduto ? (PONTOS_DIA.produtoAtualDesc || PONTOS_DIA.produtoAtual) : '—');
+    set('tvb-produto-cod', PONTOS_DIA.produtoAtual || '—');
+    const codRow = document.getElementById('tvb-produto-codrow');
+    if (codRow) codRow.style.display = temProduto ? '' : 'none';
     set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
     set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)));
 
-    const kpis = CFG.slideBKpis || ['meta','ef','status','prog'];
-    // O ATRASO NÃO aparece mais na Tela B (a Tela C é a dedicada ao atraso).
+    // EFICIÊNCIA em barra segmentada — enche proporcional ao % (lê o número já
+    // pronto de tvb-ef, não recalcula nada) e usa a MESMA cor do status.
+    const barEl = document.getElementById('tvb-effbar');
+    if (barEl) {
+      const pct = parseFloat(String(get('tvb-ef')).replace('%', '').replace(',', '.'));
+      const N = 20;
+      const on = isNaN(pct) ? 0 : Math.max(0, Math.min(N, Math.round(N * Math.min(100, pct) / 100)));
+      const cor = efB ? getComputedStyle(efB).color : 'var(--warn)';
+      let html = '';
+      for (let i = 0; i < N; i++) html += `<span class="tvb2-seg" style="background:${i < on ? cor : 'var(--surface)'}"></span>`;
+      barEl.innerHTML = html;
+    }
+
+    const kpis = CFG.slideBKpis || ['meta','falta','proj','ef','status','peso'];
+    // O ATRASO NÃO aparece na Tela B (a Tela C é a dedicada ao atraso). Cada KPI
+    // continua ligável/desligável pela config (ids tvb-kpi-*).
     ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k => {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
-    const extraKeys = ['ritmo','nec','proj','pontos','peso'].filter(k => kpis.includes(k));
+    // Linha extra (embaixo) só p/ ritmo/necessário/pontos — off por padrão.
+    const extraKeys = ['ritmo','nec','pontos'].filter(k => kpis.includes(k));
     const rowExtra = document.getElementById('tvb-row-extra');
     if (rowExtra) {
       rowExtra.style.display = extraKeys.length ? 'flex' : 'none';
-      // Escala adaptativa: quanto menos itens ligados nessa linha, maior cada um fica.
       rowExtra.dataset.n = extraKeys.length || '';
     }
 
-    // Se nenhum KPI do rail lateral (meta/ef/status/falta/atraso) estiver ligado,
-    // o rail fica vazio — nesse caso a banda vira 1 coluna só pra não deixar um
-    // vão reservado do lado do número principal.
-    const railKeys = ['meta','ef','status','falta'].filter(k => kpis.includes(k));
-    const sideRail = document.querySelector('.tvb-side-rail');
-    const heroBand = document.querySelector('.tvb-hero-band');
-    if (sideRail) {
-      sideRail.style.display = railKeys.length ? '' : 'none';
-      // Escala adaptativa: quanto menos KPIs ligados no rail, maior cada um fica.
-      sideRail.dataset.n = railKeys.length || '';
-    }
-    if (heroBand) heroBand.style.gridTemplateColumns = railKeys.length ? '' : '1fr';
+    // Se nenhum KPI do rail direito estiver ligado, a banda vira 1 coluna só pra
+    // o número principal não ficar com um vão reservado do lado.
+    const railKeys = ['meta','falta','proj','ef','status'].filter(k => kpis.includes(k));
+    const rail = document.querySelector('#tv-slide-b .tvb2-rail');
+    const band = document.querySelector('#tv-slide-b .tvb2-band');
+    if (rail) rail.style.display = railKeys.length ? '' : 'none';
+    if (band) band.style.gridTemplateColumns = railKeys.length ? '' : '1fr';
   }
 
   // Tela C (atraso da PROGRAMAÇÃO por produto) — só entra no ciclo quando há
