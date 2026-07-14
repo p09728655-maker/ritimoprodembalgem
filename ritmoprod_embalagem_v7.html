@@ -226,7 +226,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    faixa de status (%/status) colorida. Números gigantes p/ leitura a ~15 m no
    chão de fábrica. Os KPIs do dia continuam existindo (ocultos, #tv-a-legacy)
    só p/ alimentar a Tela B via _sincSlideB — nada de dados novo é calculado. */
-#tv-a-focus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3.4vh,52px);padding:2vh 4vw;text-align:center;height:100%}
+#tv-a-focus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3.4vh,52px);padding:2vh 4vw 5vh;text-align:center;height:100%}
 .tva-hora-lbl{font-family:var(--font-d);font-size:clamp(18px,2.2vw,42px);font-weight:700;color:var(--acc);letter-spacing:8px;text-transform:uppercase}
 .tva-range{font-family:var(--font-h);font-size:clamp(68px,12vw,240px);font-weight:700;line-height:.92;color:var(--txt);letter-spacing:2px;white-space:nowrap}
 .tva-mr{display:flex;align-items:stretch;justify-content:center;gap:clamp(24px,5vw,96px);width:100%}
@@ -1697,6 +1697,11 @@ function tentarLogin(tipo){
     document.getElementById('perfil-txt').textContent='OPERADOR';
     aplicarPerfil();
     setTab('tv');
+    // Abre já em PAINEL CHEIO (zoom): evita ter que pegar o controle e rolar
+    // até o botão. O requestFullscreen é permitido aqui por estar no gesto do
+    // clique de login; se a TV bloquear a API, o layout tv-fullscreen (via CSS)
+    // ainda maximiza o painel. Só entra se ainda não estiver em tela cheia.
+    if(!document.body.classList.contains('tv-fullscreen')) toggleTVFullscreen();
     return;
   }
   // Gerencial — exibe campo de senha se ainda oculto
