@@ -4995,18 +4995,30 @@ const _cicloTV = (function() {
     set('tvc-setor', get('tv-setor'));
     set('tvc-clock', get('tv-clock'));
     const prog = PONTOS_DIA.programacao || { lista: [], atrasoTotal: 0, metaEfetiva: 0, embaladoHoje: 0 };
-    const atraso = prog.atrasoTotal || 0;
-    const metaEfetiva = prog.metaEfetiva || 0;
-    set('tvc-atraso', fmtN(atraso));
-    set('tvc-meta-efetiva', fmtN(metaEfetiva));
-    // RITMO P/ ZERAR — cx por hora a produzir nas horas que faltam do turno pra
-    // chegar na meta efetiva (programado hoje + atraso). Desconta o que já foi
-    // embalado hoje e divide o que falta pelos slots restantes (TV_TURNO_INFO,
-    // do último calcKPIs). Turno encerrado (0 slots) → "—", não faz sentido "por
-    // hora". O slot pós-almoço é mais curto, mas contamos como 1 hora igual ao
-    // "NECESSÁRIO" da Tela A, pra o número bater com o resto do painel.
+    // ATRASADO (DIAS ANTERIORES): no backend novo o atraso é "vivo" (já abatido
+    // pela produção de hoje, alocação FIFO por lote), então o número cai durante o
+    // dia conforme o time zera os lotes antigos.
+    set('tvc-atraso', fmtN(prog.atrasoTotal || 0));
+
+    // PRODUZIR HOJE P/ ZERAR (card) + RITMO P/ ZERAR (cx/hora).
+    // Backend NOVO: prog.faltaZerar = atraso vivo + resto da meta de hoje. A
+    //   produção JÁ foi descontada na alocação FIFO, então NÃO desconta de novo.
+    // Backend ANTIGO (sem faltaZerar): mantém o comportamento anterior (card =
+    //   metaEfetiva; ritmo = metaEfetiva − embaladoHoje), pra Tela C não mudar
+    //   enquanto o Apps Script não for re-deployado (o front sobe antes pela Vercel).
     const slotsRest = TV_TURNO_INFO.slotsRest || 0;
-    const faltaZerar = Math.max(metaEfetiva - (prog.embaladoHoje || 0), 0);
+    let cardValor, faltaZerar;
+    if (prog.faltaZerar != null) {
+      cardValor  = prog.faltaZerar;
+      faltaZerar = prog.faltaZerar;
+    } else {
+      cardValor  = prog.metaEfetiva || 0;
+      faltaZerar = Math.max((prog.metaEfetiva || 0) - (prog.embaladoHoje || 0), 0);
+    }
+    set('tvc-meta-efetiva', fmtN(cardValor));
+    // Turno encerrado (0 slots) → "—", não faz sentido "por hora". O slot
+    // pós-almoço é mais curto, mas conta como 1 hora igual ao "NECESSÁRIO" da
+    // Tela A, pra o número bater com o resto do painel.
     set('tvc-ritmo-zerar', slotsRest > 0 ? fmtN(Math.ceil(faltaZerar / slotsRest)) : '—');
   }
 
