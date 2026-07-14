@@ -1041,6 +1041,9 @@ function lerProgramacao() {
   const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX');
   // Tolerante a variações do cabeçalho (LOTE, LOTES, Nº LOTE, LOTE PRODUCAO...).
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
+  // Coluna opcional: marca "fechado fora da esteira" (FORA_ESTEIRA, FORA DA
+  // ESTEIRA, FORA...). Qualquer célula PREENCHIDA = item não é da esteira.
+  const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -1052,7 +1055,11 @@ function lerProgramacao() {
     if (!codigo || !r[cData]) continue;
     // LOTE é opcional: aba pode nao ter a coluna ainda (compatibilidade).
     const lote = iLote >= 0 ? String(r[iLote] || '').trim() : '';
-    out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote });
+    // FORA_ESTEIRA é opcional: sem a coluna, tudo é da esteira (comportamento
+    // de sempre). Com a coluna, célula preenchida tira o item da conta.
+    const foraTxt = iFora >= 0 ? String(r[iFora] || '').trim() : '';
+    out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote,
+               foraEsteira: foraTxt !== '', foraLocal: foraTxt });
   }
   return out;
 }
@@ -1104,6 +1111,9 @@ function calcularProgramacao() {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
+    // Fechado fora da esteira: não é produção desta linha. Fica registrado na
+    // aba (histórico), mas sai da meta, do atraso, do lote e dos pendentes.
+    if (pr.foraEsteira) return;
     // Lote mais recente conhecido p/ esse produto, olhando hoje OU atraso (dias
     // anteriores) — assim um produto atrasado (programado num dia passado, ainda
     // não embalado) também é achável pelo lote, não só o programado de hoje.
@@ -1209,7 +1219,10 @@ function getProgramacaoDetalhada() {
       // metaEfetiva=0 quer dizer "nada vencendo hoje pra esse produto" (comum
       // em linha de data futura) — o app usa isso pra não mostrar "✓ OK" como
       // se já tivesse sido embalado quando na verdade ainda nem venceu.
-      metaEfetiva: futura ? 0 : (st ? st.metaEfetiva : 0)
+      metaEfetiva: futura ? 0 : (st ? st.metaEfetiva : 0),
+      // Fechado fora da esteira: registrado, mas fora da meta/pendentes.
+      foraEsteira: !!pr.foraEsteira,
+      foraLocal:   pr.foraLocal || ''
     };
   // Só entram linhas com lote preenchido: pedido do usuário, pra tela ficar mais
   // confiável (linhas sem lote costumam ser lançamento incompleto/rascunho).
