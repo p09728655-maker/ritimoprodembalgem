@@ -289,9 +289,21 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    possível, ocupando toda a altura que sobra abaixo do topo (ATRASADO +
    PRODUZIR HOJE). flex:1 + justify-center mantém ele no meio da tela. */
 .tvc-ritmo-band{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%}
-.tvc-ritmo-lbl{font-family:var(--font-d);font-size:clamp(20px,2.4vw,40px);color:var(--red);letter-spacing:6px;text-transform:uppercase}
+.tvc-ritmo-lbl{font-family:var(--font-d);font-size:clamp(20px,2.4vw,40px);color:var(--txt2);letter-spacing:6px;text-transform:uppercase}
 .tvc-ritmo-num{font-family:var(--font-h);font-size:clamp(160px,24vw,460px);font-weight:700;line-height:.85;color:var(--red)}
 .tvc-ritmo-unit{font-family:var(--font-d);font-size:clamp(22px,2.6vw,44px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
+/* ═══ TELA C v2 — alinhada ao padrão da Tela B: aviso em badge/pill e os 2 KPIs
+   (ATRASADO / PRODUZIR HOJE) em cards com ícone, lado a lado e equilibrados (fim
+   do rail com 1 KPI só). Classes tvc-* são EXCLUSIVAS da Tela C. ═══ */
+.tvc-badge{align-self:center;display:inline-flex;align-items:center;gap:10px;font-family:var(--font-d);font-size:clamp(15px,1.5vw,22px);letter-spacing:3px;text-transform:uppercase;color:var(--red);border:1px solid rgba(244,67,54,.45);background:rgba(244,67,54,.08);padding:8px 22px;border-radius:999px;margin:2px auto}
+.tvc-cards{width:100%;display:grid;grid-template-columns:1fr 1fr;align-items:stretch;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.tvc-card{display:flex;align-items:center;gap:clamp(14px,1.6vw,28px);padding:clamp(14px,2vh,26px) clamp(16px,2vw,32px)}
+.tvc-card + .tvc-card{border-left:1px solid var(--border)}
+.tvc-card svg{width:clamp(34px,3.6vw,68px);height:auto;color:var(--txt2);opacity:.85;flex-shrink:0}
+.tvc-card-info{display:flex;flex-direction:column;gap:4px;text-align:left;min-width:0}
+.tvc-card-lbl{font-family:var(--font-d);font-size:clamp(14px,1.4vw,24px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvc-card-val{font-family:var(--font-h);font-weight:700;line-height:.95;color:var(--red);font-size:clamp(60px,6.6vw,140px)}
+.tvc-card-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -1099,19 +1111,26 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="tvb-clock-lbl" id="tvc-clock">--:--:--</div>
     </div>
 
-    <div style="text-align:center;font-family:var(--font-d);font-size:clamp(15px,1.5vw,20px);letter-spacing:3px;color:var(--red);margin:4px 0 16px">⚠ ATRASO NA PROGRAMAÇÃO</div>
+    <!-- Aviso em badge/pill (padrão da Tela B), em vez de texto solto. -->
+    <div class="tvc-badge">⚠ ATRASO NA PROGRAMAÇÃO</div>
 
-    <div class="tvb-hero-band">
-      <div class="tvb-hero">
-        <div class="tvb-hero-lbl" style="color:var(--red)">ATRASADO (DIAS ANTERIORES)</div>
-        <div class="tvb-hero-num" id="tvc-atraso" style="color:var(--red)">—</div>
-        <div class="tvb-hero-unit">CAIXAS</div>
+    <!-- Os 2 KPIs de apoio em cards com ícone, lado a lado (mesma linguagem do
+         rail da Tela B). IDs tvc-atraso / tvc-meta-efetiva preservados. -->
+    <div class="tvc-cards">
+      <div class="tvc-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div class="tvc-card-info">
+          <div class="tvc-card-lbl">ATRASADO (DIAS ANTERIORES)</div>
+          <div class="tvc-card-val" id="tvc-atraso">—</div>
+          <div class="tvc-card-unit">CAIXAS</div>
+        </div>
       </div>
-      <div class="tvb-kpis tvb-side-rail" data-n="1">
-        <div class="tvb-kpi">
-          <div class="tvb-kpi-lbl">PRODUZIR HOJE P/ ZERAR</div>
-          <div class="tvb-kpi-val" id="tvc-meta-efetiva" style="color:var(--red)">—</div>
-          <div class="tvb-kpi-unit">CAIXAS</div>
+      <div class="tvc-card">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="m9 14 2 2 4-4"/></svg>
+        <div class="tvc-card-info">
+          <div class="tvc-card-lbl">PRODUZIR HOJE P/ ZERAR</div>
+          <div class="tvc-card-val" id="tvc-meta-efetiva">—</div>
+          <div class="tvc-card-unit">CAIXAS</div>
         </div>
       </div>
     </div>
