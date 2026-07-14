@@ -1023,6 +1023,16 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
               <div class="tvb2-substat-line"><span class="tvb2-substat-val" id="tvb-pontos">—</span><span class="tvb2-substat-unit">pts</span></div>
             </div>
           </div>
+          <!-- RITMO ATUAL agora vive aqui (mesmos ids tvb-kpi-ritmo / tvb-ritmo do
+               código antigo), no visual dos substats, em vez da linha extra que
+               transbordava pro rodapé. Liga/desliga pela config igual aos outros. -->
+          <div class="tvb2-substat" id="tvb-kpi-ritmo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5 7 5-14 2.5 7h4"/></svg>
+            <div class="tvb2-substat-txt">
+              <div class="tvb2-substat-lbl">RITMO ATUAL</div>
+              <div class="tvb2-substat-line"><span class="tvb2-substat-val" id="tvb-ritmo" style="color:var(--acc)">—</span><span class="tvb2-substat-unit">cx/h</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1085,13 +1095,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       </div>
     </div>
 
-    <!-- Linha extra OPCIONAL: ritmo/necessário/pontos (desligados por padrão) -->
+    <!-- Linha extra OPCIONAL: só NECESSÁRIO (o RITMO ATUAL foi pra coluna esquerda,
+         junto de PESO/PONTOS, no visual dos substats). Desligada por padrão. -->
     <div class="tvb-kpis" id="tvb-row-extra" style="display:none">
-      <div class="tvb-kpi" id="tvb-kpi-ritmo">
-        <div class="tvb-kpi-lbl">RITMO ATUAL</div>
-        <div class="tvb-kpi-val" id="tvb-ritmo" style="color:var(--acc)">—</div>
-        <div class="tvb-kpi-unit">CX/HORA</div>
-      </div>
       <div class="tvb-kpi" id="tvb-kpi-nec">
         <div class="tvb-kpi-lbl">NECESSÁRIO</div>
         <div class="tvb-kpi-val" id="tvb-nec" style="color:var(--warn)">—</div>
@@ -4964,9 +4970,9 @@ const _cicloTV = (function() {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
-    // Linha extra (embaixo) só p/ ritmo/necessário — off por padrão. (PONTOS e
-    // PESO agora ficam na coluna esquerda, junto do número grande.)
-    const extraKeys = ['ritmo','nec'].filter(k => kpis.includes(k));
+    // Linha extra (embaixo) só p/ NECESSÁRIO — off por padrão. (RITMO ATUAL, PONTOS
+    // e PESO ficam na coluna esquerda, junto do número grande, no visual novo.)
+    const extraKeys = ['nec'].filter(k => kpis.includes(k));
     const rowExtra = document.getElementById('tvb-row-extra');
     if (rowExtra) {
       rowExtra.style.display = extraKeys.length ? 'flex' : 'none';
