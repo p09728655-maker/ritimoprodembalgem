@@ -168,8 +168,8 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-empresa{font-family:var(--font-h);font-size:15px;font-weight:700;letter-spacing:3px;color:var(--txt2);text-transform:uppercase}
 .tv-setor{font-family:var(--font-h);font-size:32px;font-weight:700;letter-spacing:4px;color:var(--txt);text-transform:uppercase;line-height:1}
 .tv-clock-wrap{text-align:right}
-.tv-clock{font-family:var(--font-d);font-size:42px;font-weight:600;color:var(--acc);letter-spacing:3px;line-height:1}
-.tv-date-txt{font-family:var(--font-d);font-size:11px;color:var(--txt2);text-align:right;margin-top:2px;letter-spacing:1px}
+.tv-clock{font-family:var(--font-d);font-size:clamp(52px,4.6vw,96px);font-weight:600;color:var(--acc);letter-spacing:3px;line-height:1}
+.tv-date-txt{font-family:var(--font-d);font-size:clamp(12px,1.05vw,20px);color:var(--txt2);text-align:right;margin-top:4px;letter-spacing:1px}
 .tv-body{flex:1;display:grid;grid-template-columns:1fr;min-height:0;overflow:hidden}
 /* KPIs do dia saíram da Tela A: ficam só na Tela B (visão macro), pra não repetir
    a mesma informação em telas diferentes. Tela A agora é só a tabela hora-a-hora
@@ -220,6 +220,37 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-table tr.he-row td{background:rgba(245,166,35,.04)}
 .tv-foot{padding:12px 28px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
 .tv-tagline{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--txt2);letter-spacing:6px;text-transform:uppercase}
+
+/* ═══ TV SLIDE A v2 — FOCO NA HORA ATUAL ═══
+   Layout grande/limpo (foto): só a hora corrente com META | REALIZADO e uma
+   faixa de status (%/status) colorida. Números gigantes p/ leitura a ~15 m no
+   chão de fábrica. Os KPIs do dia continuam existindo (ocultos, #tv-a-legacy)
+   só p/ alimentar a Tela B via _sincSlideB — nada de dados novo é calculado. */
+#tv-a-focus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3.4vh,52px);padding:2vh 4vw;text-align:center;height:100%}
+.tva-hora-lbl{font-family:var(--font-d);font-size:clamp(18px,2.2vw,42px);font-weight:700;color:var(--acc);letter-spacing:8px;text-transform:uppercase}
+.tva-range{font-family:var(--font-h);font-size:clamp(68px,12vw,240px);font-weight:700;line-height:.92;color:var(--txt);letter-spacing:2px;white-space:nowrap}
+.tva-mr{display:flex;align-items:stretch;justify-content:center;gap:clamp(24px,5vw,96px);width:100%}
+.tva-mr-col{display:flex;flex-direction:column;align-items:center;gap:clamp(4px,1.2vh,16px);flex:1;max-width:42vw}
+.tva-mr-lbl{font-family:var(--font-d);font-size:clamp(16px,2vw,40px);font-weight:600;color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+.tva-mr-val{font-family:var(--font-h);font-size:clamp(78px,11vw,220px);font-weight:700;line-height:.9;color:var(--txt)}
+.tva-mr-sep{width:2px;background:var(--border);align-self:stretch;margin:clamp(6px,1.4vh,18px) 0}
+.tva-band{display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,80px);width:100%;border-radius:clamp(10px,1.4vw,24px);padding:clamp(14px,2.8vh,46px) clamp(20px,4vw,80px)}
+.tva-band.pend{background:var(--elevated)}
+.tva-band.ok  {background:var(--ok)}
+.tva-band.warn{background:var(--warn)}
+/* Pulso SUAVE só na faixa vermelha (alarme) — chama atenção no chão de fábrica
+   sem apagar os números como o piscar (que cai a 35% e some a distância). */
+@keyframes tvaAlarme{0%,100%{opacity:1}50%{opacity:.82}}
+.tva-band.red {background:var(--red);animation:tvaAlarme 1.4s infinite}
+.tva-band-pct{font-family:var(--font-h);font-size:clamp(70px,11vw,220px);font-weight:700;line-height:.9;color:#fff}
+.tva-band.pend .tva-band-pct{color:var(--txt2)}
+.tva-band-sep{width:2px;align-self:stretch;background:rgba(255,255,255,.42);margin:clamp(6px,1.2vh,14px) 0}
+.tva-band.pend .tva-band-sep{background:var(--border)}
+.tva-band-st{display:flex;align-items:center;gap:clamp(12px,1.8vw,32px)}
+.tva-band-icon{display:inline-flex;align-items:center;justify-content:center;width:clamp(44px,5vw,96px);height:clamp(44px,5vw,96px);border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:clamp(26px,3.2vw,60px);font-weight:700;line-height:1}
+.tva-band.pend .tva-band-icon{background:var(--surface);color:var(--txt2)}
+.tva-band-txt{font-family:var(--font-h);font-size:clamp(30px,4.2vw,90px);font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;text-align:left;line-height:1}
+.tva-band.pend .tva-band-txt{color:var(--txt2)}
 
 /* ═══ TV SLIDE B — visão macro (ciclo anti-sleep WebOS) ═══ */
 #sec-tv{position:relative}
@@ -796,6 +827,36 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   </div>
 
   <div class="tv-body">
+    <!-- ═══ TELA A — FOCO NA HORA ATUAL (layout da foto) ═══ -->
+    <div id="tv-a-focus">
+      <div class="tva-hora-lbl">HORA ATUAL</div>
+      <div class="tva-range" id="tva-range">--:-- — --:--</div>
+      <div class="tva-mr">
+        <div class="tva-mr-col">
+          <div class="tva-mr-lbl">META</div>
+          <div class="tva-mr-val" id="tva-meta">—</div>
+        </div>
+        <div class="tva-mr-sep"></div>
+        <div class="tva-mr-col">
+          <div class="tva-mr-lbl">REALIZADO</div>
+          <div class="tva-mr-val" id="tva-real">—</div>
+        </div>
+      </div>
+      <div class="tva-band pend" id="tva-band">
+        <div class="tva-band-pct" id="tva-pct">—</div>
+        <div class="tva-band-sep"></div>
+        <div class="tva-band-st">
+          <span class="tva-band-icon" id="tva-icon">⏱</span>
+          <span class="tva-band-txt" id="tva-status">AGUARDANDO</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ LEGADO (oculto) ═══ tabela hora-a-hora + KPIs do dia. Mantido no DOM
+         SÓ como fonte de dados p/ a Tela B (visão macro), que espelha estes IDs
+         via _sincSlideB(). Não é exibido — a Tela A agora é o foco na hora atual
+         acima. (Na gerencial/preview a TV mostra o mesmo foco.) -->
+    <div id="tv-a-legacy" style="display:none">
     <!-- Lado esquerdo: tabela hora a hora -->
     <div class="tv-right">
       <div class="tv-tbl-ttl">▸ HORA A HORA — TURNO ATUAL</div>
@@ -882,6 +943,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         </div>
       </div>
     </div>
+    </div><!-- /#tv-a-legacy -->
   </div>
 
   <div class="tv-scan-bar"></div>
@@ -2940,6 +3002,49 @@ function renderTV(){
   // tooltip não é visível, então a legenda explica o símbolo).
   const _tl=document.getElementById('tv-leg-fraca');
   if(_tl){ const _h=document.getElementById('tv-tbl-body').innerHTML; _tl.style.display=(_h.includes('⚠')||_h.includes('▲'))?'block':'none'; }
+
+  // ── TELA A (FOCO NA HORA ATUAL) ── números gigantes só da hora corrente:
+  // HORA / META / REALIZADO / %/status. Mesma fonte da tabela hora-a-hora acima
+  // (k.slots + k.allHoje), sem cálculo novo. O % = REALIZADO/META da hora (igual
+  // ao que o operador lê nos dois números), status pelos mesmos limiares da tabela
+  // (≥96 OK / ≥90 ATENÇÃO / <90 ABAIXO). O rótulo do slot vem exato da planilha
+  // (só troca o traço por " — " p/ leitura; preserva 12:12-13:00 etc.).
+  (function(){
+    const setTxt=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    const bd=document.getElementById('tva-band');
+    const slots=k.slots||[];
+    if(!slots.length){
+      setTxt('tva-range','--:-- — --:--'); setTxt('tva-meta','—'); setTxt('tva-real','—');
+      setTxt('tva-pct','—'); setTxt('tva-status','AGUARDANDO'); setTxt('tva-icon','⏱');
+      if(bd) bd.className='tva-band pend';
+      return;
+    }
+    const ag=new Date(), nm=ag.getHours()*60+ag.getMinutes();
+    let cur=slots.findIndex(sl=>{const ini=toMin(sl.inicio),fim=sl.fim?toMin(sl.fim):ini+60;return nm>=ini&&nm<fim;});
+    if(cur===-1){
+      if(nm<toMin(slots[0].inicio)) cur=0;
+      else if(nm>=toMin(slots[slots.length-1].fim||slots[slots.length-1].inicio)) cur=slots.length-1;
+      else{ cur=slots.findIndex(sl=>toMin(sl.inicio)>nm); if(cur===-1) cur=slots.length-1; }
+    }
+    const slot=slots[cur];
+    const reg=k.allHoje.find(d=>d.horario===slot.inicio);
+    const prod=reg?reg.producaoHora:null;
+    const metaSlot=reg?reg.metaHora:k.metaH;
+    const ef2=(prod!=null&&metaSlot>0)?(prod/metaSlot*100):null;
+    setTxt('tva-range', String(slot.label||`${slot.inicio}-${slot.fim||''}`).replace(/\s*[-–—]\s*/,' — '));
+    setTxt('tva-meta', fmtN(metaSlot));
+    setTxt('tva-real', prod!=null?fmtN(prod):'—');
+    if(ef2==null){
+      setTxt('tva-pct','—'); setTxt('tva-status','AGUARDANDO'); setTxt('tva-icon','⏱');
+      if(bd) bd.className='tva-band pend';
+    }else{
+      const st=ef2>=96?'ok':ef2>=90?'warn':'red';
+      setTxt('tva-pct', fmtP(ef2));
+      setTxt('tva-status', st==='ok'?'NA META':st==='warn'?'ATENÇÃO':'ABAIXO DA META');
+      setTxt('tva-icon', st==='ok'?'✓':st==='warn'?'!':'✕');
+      if(bd) bd.className='tva-band '+st;
+    }
+  })();
 }
 
 // ════════════════════════════════════════════════
