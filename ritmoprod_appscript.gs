@@ -40,7 +40,6 @@ const SHEET_PARADAS   = 'PARADAS';
 const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
 const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
-const SHEET_SALDO     = 'SALDO_LOTE';           // item 3: saldo por lote (produzido, restante, %, status)
 const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
 const SHEET_CONFIG    = 'CONFIG_PAINEL';        // config do ciclo de telas da TV, compartilhada entre aparelhos
 
@@ -443,7 +442,7 @@ function registrarHistoricoFamilia(codigo, horaInicio, caixas, desc, pontos, pes
 
 
 // ════════════════════════════════════════════════════════
-// ITENS 1 e 3 — SINCRONIZAR META DO DIA E SALDO DOS LOTES NA PLANILHA
+// ITENS 1 e 3 — SINCRONIZAR META DO DIA E SALDO NA PLANILHA
 // ════════════════════════════════════════════════════════
 // Roda após cada lançamento (e a meta também no refresh do gerencial). É sempre
 // chamada dentro de try/catch pelos callers: um erro aqui NUNCA pode quebrar o
@@ -451,8 +450,8 @@ function registrarHistoricoFamilia(codigo, horaInicio, caixas, desc, pontos, pes
 // evitar recalcular calcularProgramacao() duas vezes.
 function sincronizarPlanilhaPosLancamento() {
   const prog = calcularProgramacao();
-  try { gravarMetaDiaNaPlanilha(prog); } catch (e) { Logger.log('meta sync: '  + e.message); }
-  try { atualizarSaldoLotes(prog); }     catch (e) { Logger.log('saldo sync: ' + e.message); }
+  try { gravarMetaDiaNaPlanilha(prog); }      catch (e) { Logger.log('meta sync: '  + e.message); }
+  try { atualizarSaldoNaProgramacao(prog); }  catch (e) { Logger.log('saldo sync: ' + e.message); }
 }
 
 // Item 1: grava a META DO DIA (quantidade programada para hoje) na célula B3 da
@@ -472,47 +471,101 @@ function gravarMetaDiaNaPlanilha(prog) {
   if (atual !== meta) cell.setValue(meta);
 }
 
-// Item 3: mantém a aba SALDO_LOTE sincronizada. Para cada produto COM lote
-// programado, grava/atualiza (upsert por DATA+LOTE+CODIGO) a quantidade
-// produzida, o saldo restante, o % concluído e o status do lote.
-function atualizarSaldoLotes(prog) {
+// Item 3: escreve o saldo na PRÓPRIA aba PROGRAMACAO (aposentou a antiga aba
+// SALDO_LOTE). Assim o operador vê produzido/saldo/status na mesma linha em que
+// digita o volume e marca FORA_ESTEIRA — facilitando a limpeza de volumes.
+//
+// Regras de segurança:
+//  - NUNCA sobrescreve as colunas de digitação (DATA, CODIGO, QTDE, LOTE,
+//    FORA_ESTEIRA). Só escreve nas colunas de saída, criadas à direita se não
+//    existirem, e escreve UMA COLUNA POR VEZ (jamais um bloco que pegue colunas
+//    de entrada no meio).
+//  - O produzido é medido POR PRODUTO (o log não separa por lote), então o saldo
+//    é gravado na linha do LOTE ATIVO de cada produto (a que o painel considera
+//    em andamento) — mesma semântica da antiga SALDO_LOTE. Linhas de datas
+//    futuras / outros lotes ficam em branco pra não parecer já produzido.
+//  - Linha marcada FORA_ESTEIRA vira STATUS = "FORA DA ESTEIRA" e não conta.
+//  - Cada rodada reescreve TODAS as linhas (em branco onde não se aplica), então
+//    valores antigos são limpos automaticamente.
+function atualizarSaldoNaProgramacao(prog) {
   prog = prog || calcularProgramacao();
-  const itens = (prog.lista || []).filter(function (x) { return x.lote; });
-  if (!itens.length) return;
-
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(SHEET_SALDO);
-  if (!sh) {
-    sh = ss.insertSheet(SHEET_SALDO);
-    sh.appendRow(['DATA', 'LOTE', 'CODIGO', 'DESCRICAO', 'PROGRAMADO', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM']);
-    sh.setFrozenRows(1);
-  }
+  const sh = acharAbaTolerante(ss, SHEET_PROG);
+  if (!sh) return;
 
-  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const hojeNum = dataParaNum(hoje);
-  const agora   = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
-
-  // Índice das linhas existentes por DATA|LOTE|CODIGO (normalizado, pois o Sheets
-  // pode converter a coluna DATA em objeto Date e o código pode vir com pontos).
   const values = sh.getDataRange().getValues();
-  const idx = {};
+  if (values.length < 2) return;
+
+  const hdr  = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
+  const iData = acha('DATA') >= 0 ? acha('DATA') : 0;
+  const iCod  = acha('CODIGO', 'COD') >= 0 ? acha('CODIGO', 'COD') : 2;
+  const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
+  const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+
+  // Garante as colunas de saída. Se faltarem, cria à DIREITA (contíguas), nunca
+  // no meio das colunas de entrada. Reaproveita as que já existem.
+  const OUT = ['PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM'];
+  let nCols = hdr.length;
+  const outIdx = {};
+  OUT.forEach(function (name) {
+    let j = hdr.indexOf(name);
+    if (j < 0) { j = nCols++; sh.getRange(1, j + 1).setValue(name); }
+    outIdx[name] = j;
+  });
+
+  // Status por produto (chave = dígitos do código). prog.lista já EXCLUI os
+  // itens marcados FORA_ESTEIRA (tratados linha a linha mais abaixo).
+  const stByKey = {};
+  (prog.lista || []).forEach(function (x) { stByKey[codKey(x.codigo)] = x; });
+
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  const cols = {}; OUT.forEach(function (n) { cols[n] = []; });
+
   for (let i = 1; i < values.length; i++) {
-    const k = dataParaNum(values[i][0]) + '|' + String(values[i][1]).trim() + '|' + codKey(values[i][2]);
-    idx[k] = i + 1; // linha 1-based
+    const r      = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const key    = codKey(codigo);
+    const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
+    const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const temLinha = codigo && r[iData];
+
+    let produzido = '', saldo = '', pct = '', status = '', quando = '';
+
+    if (!temLinha) {
+      // linha vazia/rascunho: não escreve nada
+    } else if (fora) {
+      status = 'FORA DA ESTEIRA';
+      quando = agora;
+    } else {
+      const st = stByKey[key];
+      // Só a linha do LOTE ATIVO do produto recebe o saldo (mesma semântica da
+      // antiga SALDO_LOTE, que gravava 1 linha por produto-com-lote).
+      if (st && lote && String(st.lote).trim() === lote) {
+        const programado = Number(st.metaEfetiva)  || 0; // programado do dia + atraso
+        produzido        = Number(st.embaladoHoje) || 0;
+        saldo            = Math.max(programado - produzido, 0);
+        pct              = programado > 0 ? Math.round(produzido / programado * 100) : 0;
+        status           = (programado > 0 && saldo <= 0) ? 'CONCLUIDO'
+                         : (produzido > 0)                ? 'EM ANDAMENTO'
+                         :                                  'PENDENTE';
+        quando           = agora;
+      }
+      // demais linhas (futuras / lote não-ativo): ficam em branco
+    }
+
+    cols['PRODUZIDO'].push([produzido]);
+    cols['SALDO'].push([saldo]);
+    cols['PERCENTUAL'].push([pct]);
+    cols['STATUS'].push([status]);
+    cols['ATUALIZADO_EM'].push([quando]);
   }
 
-  itens.forEach(function (x) {
-    const programado = Number(x.metaEfetiva)  || 0; // programado do dia + atraso
-    const produzido  = Number(x.embaladoHoje) || 0;
-    const saldo      = Math.max(programado - produzido, 0);
-    const pct        = programado > 0 ? Math.round(produzido / programado * 100) : 0;
-    const status     = (programado > 0 && saldo <= 0) ? 'CONCLUIDO'
-                     : (produzido > 0)                ? 'EM ANDAMENTO'
-                     :                                  'PENDENTE';
-    const row = [hoje, x.lote, x.codigo, x.desc || '', programado, produzido, saldo, pct, status, agora];
-    const key = hojeNum + '|' + String(x.lote).trim() + '|' + codKey(x.codigo);
-    if (idx[key]) sh.getRange(idx[key], 1, 1, row.length).setValues([row]);
-    else          sh.appendRow(row);
+  // Escreve UMA COLUNA POR VEZ — jamais um bloco que possa cair sobre colunas de
+  // entrada que estejam entre as de saída.
+  const nRows = values.length - 1;
+  OUT.forEach(function (name) {
+    sh.getRange(2, outIdx[name] + 1, nRows, 1).setValues(cols[name]);
   });
 }
 
