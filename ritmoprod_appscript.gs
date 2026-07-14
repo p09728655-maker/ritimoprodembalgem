@@ -500,8 +500,10 @@ function atualizarSaldoNaProgramacao(prog) {
   const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
   const iData = acha('DATA') >= 0 ? acha('DATA') : 0;
   const iCod  = acha('CODIGO', 'COD') >= 0 ? acha('CODIGO', 'COD') : 2;
+  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
   // Garante as colunas de saída. Se faltarem, cria à DIREITA (contíguas), nunca
   // no meio das colunas de entrada. Reaproveita as que já existem.
@@ -514,10 +516,11 @@ function atualizarSaldoNaProgramacao(prog) {
     outIdx[name] = j;
   });
 
-  // Status por produto (chave = dígitos do código). prog.lista já EXCLUI os
-  // itens marcados FORA_ESTEIRA (tratados linha a linha mais abaixo).
-  const stByKey = {};
-  (prog.lista || []).forEach(function (x) { stByKey[codKey(x.codigo)] = x; });
+  // Saldo POR LOTE, vindo da alocação FIFO de calcularProgramacao() (chave
+  // "digitosDoCodigo|lote|dataNum"). Cada linha de lote recebe o SEU saldo — então
+  // somar a coluna SALDO passa a bater com o total (antes só a linha do lote ativo
+  // recebia valor, e o produzido era só o de hoje, o que não fechava).
+  const saldoMap = prog.saldoLinha || {};
 
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   const cols = {}; OUT.forEach(function (n) { cols[n] = []; });
@@ -528,6 +531,7 @@ function atualizarSaldoNaProgramacao(prog) {
     const key    = codKey(codigo);
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
 
     let produzido = '', saldo = '', pct = '', status = '', quando = '';
@@ -537,22 +541,21 @@ function atualizarSaldoNaProgramacao(prog) {
     } else if (fora) {
       status = 'FORA DA ESTEIRA';
       quando = agora;
-    } else {
-      const st = stByKey[key];
-      // Só a linha do LOTE ATIVO do produto recebe o saldo (mesma semântica da
-      // antiga SALDO_LOTE, que gravava 1 linha por produto-com-lote).
-      if (st && lote && String(st.lote).trim() === lote) {
-        const programado = Number(st.metaEfetiva)  || 0; // programado do dia + atraso
-        produzido        = Number(st.embaladoHoje) || 0;
-        saldo            = Math.max(programado - produzido, 0);
-        pct              = programado > 0 ? Math.round(produzido / programado * 100) : 0;
-        status           = (programado > 0 && saldo <= 0) ? 'CONCLUIDO'
-                         : (produzido > 0)                ? 'EM ANDAMENTO'
-                         :                                  'PENDENTE';
-        quando           = agora;
+    } else if (dNum > 0 && dNum <= hojeNum) {
+      // Lote já vencido ou de hoje: pega o saldo alocado FIFO para esta linha.
+      const lk = key + '|' + lote + '|' + dNum;
+      if (saldoMap[lk] != null) {
+        const qtde = Number(r[iQtd]) || 0;
+        saldo      = Math.max(saldoMap[lk], 0);
+        produzido  = Math.max(qtde - saldo, 0);
+        pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
+        status     = (qtde > 0 && saldo <= 0) ? 'CONCLUIDO'
+                   : (produzido > 0)          ? 'EM ANDAMENTO'
+                   :                            'PENDENTE';
+        quando     = agora;
       }
-      // demais linhas (futuras / lote não-ativo): ficam em branco
     }
+    // demais linhas (futuras / sem correspondência): ficam em branco
 
     cols['PRODUZIDO'].push([produzido]);
     cols['SALDO'].push([saldo]);
@@ -913,6 +916,9 @@ function getPontosDia() {
 
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
   const programacao = calcularProgramacao();
+  // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
+  // não precisa ir no JSON do painel — remove para manter o payload enxuto.
+  try { delete programacao.saldoLinha; } catch (e) {}
 
   // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
   // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
@@ -1122,9 +1128,9 @@ function lerProgramacao() {
 function lerEmbaladoPorProduto(hojeNum) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PROD_LOG);
-  const antes = {}, hoje = {};
+  const antes = {}, hoje = {}, eventos = {};
   let inicio = 0;
-  if (!sh) return { antes: antes, hoje: hoje, inicio: hojeNum };
+  if (!sh) return { antes: antes, hoje: hoje, eventos: eventos, inicio: hojeNum };
   const values = sh.getDataRange().getValues();
   const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
@@ -1140,15 +1146,24 @@ function lerEmbaladoPorProduto(hojeNum) {
     if (inicio === 0 || dNum < inicio) inicio = dNum;
     if (dNum < hojeNum)        antes[key] = (antes[key] || 0) + cx;
     else if (dNum === hojeNum) hoje[key]  = (hoje[key]  || 0) + cx;
+    // Eventos datados (até hoje) para a alocação FIFO cronológica por lote em
+    // calcularProgramacao(): a produção só abate um lote já ABERTO na sua data,
+    // então produção anterior à abertura do lote não o credita (evita o "atraso
+    // some" por causa de produção antiga do mesmo código, de outro lote).
+    if (dNum <= hojeNum) (eventos[key] = eventos[key] || []).push({ dNum: dNum, cx: cx });
   }
-  return { antes: antes, hoje: hoje, inicio: inicio || hojeNum };
+  return { antes: antes, hoje: hoje, eventos: eventos, inicio: inicio || hojeNum };
 }
 
 // Monta a lista por produto (programado hoje, atraso, embalado hoje, falta) e os
 // totais + "meta efetiva" (programado de hoje + atraso).
-// O atraso ACUMULA de qualquer programação passada ainda não embalada (sem
-// limite de janela) — pedido explícito: pegar tudo que está atrasado, mesmo
-// de antes do 1º lançamento por produto registrado em PRODUCAO_PRODUTO.
+// O atraso é apurado por ALOCAÇÃO FIFO por lote/data (não mais um simples
+// max(programado−embalado) por código): a produção abate o lote aberto mais
+// ANTIGO, e produção anterior à abertura de um lote NÃO o credita. Assim, um lote
+// programado num dia não é "zerado" por produção antiga de outro lote do mesmo
+// código. A produção de hoje também abate o atraso mais antigo primeiro, então
+// atrasoTotal é "vivo" (cai durante o dia). faltaZerar = atraso + resto da meta
+// de hoje = o que ainda falta produzir p/ zerar tudo.
 function calcularProgramacao() {
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
@@ -1159,56 +1174,82 @@ function calcularProgramacao() {
 
   const emb = lerEmbaladoPorProduto(hojeNum);
 
-  const progHoje = {}, progAntes = {}, loteHoje = {};
+  // Cada linha da PROGRAMAÇÃO (data <= hoje) vira uma DEMANDA (lote) com data.
+  // Guardamos as linhas por produto para alocar a produção FIFO (lote mais antigo
+  // primeiro). Futuro não entra (não vira atraso nem meta de hoje). loteHoje = lote
+  // mais recente <= hoje, só para rótulo do produto.
+  const progLinhas = {}, loteHoje = {};
   lerProgramacao().forEach(pr => {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
-    // Fechado fora da esteira: não é produção desta linha. Fica registrado na
-    // aba (histórico), mas sai da meta, do atraso, do lote e dos pendentes.
+    // Fechado fora da esteira: não é produção desta linha. Sai da meta/atraso.
     if (pr.foraEsteira) return;
-    // Lote mais recente conhecido p/ esse produto, olhando hoje OU atraso (dias
-    // anteriores) — assim um produto atrasado (programado num dia passado, ainda
-    // não embalado) também é achável pelo lote, não só o programado de hoje.
-    // Ignora lote de datas futuras (produto ainda nem está em pauta).
     if (pr.lote && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
       loteHoje[key] = { lote: pr.lote, dNum: dNum };
     }
-    if (dNum === hojeNum) {
-      progHoje[key] = (progHoje[key] || 0) + pr.qtde;
+    if (dNum <= hojeNum) {
+      (progLinhas[key] = progLinhas[key] || []).push({ dNum: dNum, qtde: Number(pr.qtde) || 0, lote: pr.lote || '' });
     }
-    else if (dNum < hojeNum) progAntes[key] = (progAntes[key] || 0) + pr.qtde;
-    // futuro: não vira atraso de hoje
   });
 
   const keys = {};
-  Object.keys(progHoje).forEach(k => keys[k] = 1);
-  Object.keys(progAntes).forEach(k => keys[k] = 1);
+  Object.keys(progLinhas).forEach(k => keys[k] = 1);
   Object.keys(emb.hoje).forEach(k => keys[k] = 1);
 
   const lista = [];
-  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0;
+  const saldoLinha = {}; // "key|lote|dNum" -> saldo restante do lote (p/ o write-back)
+  let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0;
+
   Object.keys(keys).forEach(key => {
-    const ph = progHoje[key]  || 0;
-    const pa = progAntes[key] || 0;
-    const ea = emb.antes[key] || 0;
-    const eh = emb.hoje[key]  || 0;
-    const atraso      = Math.max(pa - ea, 0);
-    const metaEfetiva = ph + atraso;
-    const falta       = Math.max(metaEfetiva - eh, 0);
-    if (ph === 0 && atraso === 0 && eh === 0) return; // nada a mostrar
+    const linhas  = progLinhas[key]   || [];
+    const eventos = emb.eventos[key]  || [];
+    const eh      = emb.hoje[key]     || 0;
+
+    // FIFO cronológico: prog ABRE demanda, emb ABATE o lote aberto mais antigo.
+    // Mesma data: a demanda (prog) entra antes da produção (emb). Produção sem
+    // demanda aberta (anterior ao lote) é descartada — não credita o lote. Como
+    // a produção de HOJE também entra, ela abate primeiro o atraso mais antigo
+    // ("atraso vivo": o número cai conforme o time produz).
+    const ev = [];
+    linhas.forEach(ln => ev.push({ d: ln.dNum, t: 0, q: ln.qtde, lote: ln.lote }));
+    eventos.forEach(e  => ev.push({ d: e.dNum,  t: 1, q: e.cx }));
+    ev.sort((a, b) => (a.d - b.d) || (a.t - b.t));
+
+    const fila = []; // demandas abertas: {d, rem, lote}
+    ev.forEach(e => {
+      if (e.t === 0) { fila.push({ d: e.d, rem: e.q, lote: e.lote }); return; }
+      let rem = e.q;
+      for (let i = 0; i < fila.length && rem > 0; i++) {
+        const take = Math.min(fila[i].rem, rem);
+        fila[i].rem -= take; rem -= take;
+      }
+    });
+
+    let atraso = 0, hojeRest = 0, progHoje = 0;
+    fila.forEach(lot => {
+      if (lot.d < hojeNum)       atraso   += lot.rem;
+      else if (lot.d === hojeNum) hojeRest += lot.rem;
+      const lk = key + '|' + lot.lote + '|' + lot.d;
+      saldoLinha[lk] = (saldoLinha[lk] || 0) + lot.rem;
+    });
+    linhas.forEach(ln => { if (ln.dNum === hojeNum) progHoje += ln.qtde; });
+
+    if (progHoje === 0 && atraso === 0 && eh === 0) return; // nada a mostrar
     const prod = catByKey[key];
+    const metaEfetiva = progHoje + atraso;
     lista.push({
       codigo: prod ? prod.codigo : key,
       desc:   prod ? prod.desc   : '',
       lote:   loteHoje[key] ? loteHoje[key].lote : '',
-      programadoHoje: ph,
+      programadoHoje: progHoje,
       atraso: atraso,
       embaladoHoje: eh,
       metaEfetiva: metaEfetiva,
-      falta: falta
+      falta: atraso + hojeRest
     });
-    totMeta += metaEfetiva; totProgHoje += ph; totAtraso += atraso; totEmbHoje += eh;
+    totMeta += metaEfetiva; totProgHoje += progHoje; totAtraso += atraso;
+    totEmbHoje += eh; totHojeRest += hojeRest;
   });
   lista.sort((a, b) => b.falta - a.falta); // maior falta primeiro
 
@@ -1216,8 +1257,11 @@ function calcularProgramacao() {
     lista: lista,
     metaEfetiva: totMeta,
     programadoHoje: totProgHoje,
-    atrasoTotal: totAtraso,
-    embaladoHoje: totEmbHoje
+    atrasoTotal: totAtraso,               // atraso VIVO (já abatido pela produção de hoje, FIFO)
+    embaladoHoje: totEmbHoje,
+    hojeRestante: totHojeRest,            // quanto da meta de hoje ainda falta
+    faltaZerar: totAtraso + totHojeRest,  // total que ainda falta produzir p/ zerar tudo
+    saldoLinha: saldoLinha                // uso interno do write-back (removido antes de ir p/ o cliente)
   };
 }
 
