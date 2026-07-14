@@ -160,7 +160,10 @@ body.tv-fullscreen > nav,
 body.tv-fullscreen > footer{ display:none!important; }
 body.tv-fullscreen > main{ height:100vh!important;overflow:hidden!important; }
 body.tv-fullscreen #sec-tv{ height:100vh!important; }
-body.tv-fullscreen .tv-body{ height:calc(100vh - 130px)!important; }
+/* Corpo em flex:1 (altura automática) em vez de calc fixo: o flexbox distribui
+   sozinho a altura entre cabeçalho + corpo + rodapé, independente do tamanho do
+   cabeçalho (relógio grande) — evita estourar 100vh e cortar a barra embaixo. */
+body.tv-fullscreen .tv-body{ height:auto!important;flex:1 1 auto!important;min-height:0!important; }
 body.tv-fullscreen .tv-right{ height:100%!important; }
 
 /* ═══ TV PANEL ═══ */
@@ -230,15 +233,19 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    faixa de status (%/status) colorida. Números gigantes p/ leitura a ~15 m no
    chão de fábrica. Os KPIs do dia continuam existindo (ocultos, #tv-a-legacy)
    só p/ alimentar a Tela B via _sincSlideB — nada de dados novo é calculado. */
-#tv-a-focus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(14px,3.4vh,52px);padding:2vh 4vw 5vh;text-align:center;height:100%}
-.tva-hora-lbl{font-family:var(--font-d);font-size:clamp(18px,2.2vw,42px);font-weight:700;color:var(--acc);letter-spacing:8px;text-transform:uppercase}
-.tva-range{font-family:var(--font-h);font-size:clamp(68px,12vw,240px);font-weight:700;line-height:.92;color:var(--txt);letter-spacing:2px;white-space:nowrap}
+/* Tamanhos dos números escalam por ALTURA (vh) — numa TV 16:9 a restrição é a
+   altura, não a largura. Assim o bloco inteiro sempre cabe em 100vh (evita cortar
+   a barra embaixo em telas mais baixas / com overscan). Onde a largura importa
+   (rótulo do status), uso min(vw,vh). */
+#tv-a-focus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2.4vh,40px);padding:2vh 4vw 3.5vh;text-align:center;height:100%}
+.tva-hora-lbl{font-family:var(--font-d);font-size:clamp(16px,3vh,38px);font-weight:700;color:var(--acc);letter-spacing:8px;text-transform:uppercase}
+.tva-range{font-family:var(--font-h);font-size:clamp(56px,17vh,230px);font-weight:700;line-height:.92;color:var(--txt);letter-spacing:2px;white-space:nowrap}
 .tva-mr{display:flex;align-items:stretch;justify-content:center;gap:clamp(24px,5vw,96px);width:100%}
 .tva-mr-col{display:flex;flex-direction:column;align-items:center;gap:clamp(4px,1.2vh,16px);flex:1;max-width:42vw}
-.tva-mr-lbl{font-family:var(--font-d);font-size:clamp(16px,2vw,40px);font-weight:600;color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
-.tva-mr-val{font-family:var(--font-h);font-size:clamp(78px,11vw,220px);font-weight:700;line-height:.9;color:var(--txt)}
+.tva-mr-lbl{font-family:var(--font-d);font-size:clamp(15px,2.4vh,36px);font-weight:600;color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+.tva-mr-val{font-family:var(--font-h);font-size:clamp(60px,16vh,210px);font-weight:700;line-height:.9;color:var(--txt)}
 .tva-mr-sep{width:2px;background:var(--border);align-self:stretch;margin:clamp(6px,1.4vh,18px) 0}
-.tva-band{display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,80px);width:100%;border-radius:clamp(10px,1.4vw,24px);padding:clamp(14px,2.8vh,46px) clamp(20px,4vw,80px)}
+.tva-band{display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,80px);width:100%;border-radius:clamp(10px,1.4vw,24px);padding:clamp(12px,2.2vh,40px) clamp(20px,4vw,80px)}
 .tva-band.pend{background:var(--elevated)}
 .tva-band.ok  {background:var(--ok)}
 .tva-band.warn{background:var(--warn)}
@@ -246,14 +253,14 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    sem apagar os números como o piscar (que cai a 35% e some a distância). */
 @keyframes tvaAlarme{0%,100%{opacity:1}50%{opacity:.82}}
 .tva-band.red {background:var(--red);animation:tvaAlarme 1.4s infinite}
-.tva-band-pct{font-family:var(--font-h);font-size:clamp(70px,11vw,220px);font-weight:700;line-height:.9;color:#fff}
+.tva-band-pct{font-family:var(--font-h);font-size:clamp(56px,16vh,210px);font-weight:700;line-height:.9;color:#fff}
 .tva-band.pend .tva-band-pct{color:var(--txt2)}
 .tva-band-sep{width:2px;align-self:stretch;background:rgba(255,255,255,.42);margin:clamp(6px,1.2vh,14px) 0}
 .tva-band.pend .tva-band-sep{background:var(--border)}
 .tva-band-st{display:flex;align-items:center;gap:clamp(12px,1.8vw,32px)}
-.tva-band-icon{display:inline-flex;align-items:center;justify-content:center;width:clamp(44px,5vw,96px);height:clamp(44px,5vw,96px);border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:clamp(26px,3.2vw,60px);font-weight:700;line-height:1}
+.tva-band-icon{display:inline-flex;align-items:center;justify-content:center;width:clamp(40px,7vh,92px);height:clamp(40px,7vh,92px);border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:clamp(24px,4vh,56px);font-weight:700;line-height:1}
 .tva-band.pend .tva-band-icon{background:var(--surface);color:var(--txt2)}
-.tva-band-txt{font-family:var(--font-h);font-size:clamp(30px,4.2vw,90px);font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;text-align:left;line-height:1}
+.tva-band-txt{font-family:var(--font-h);font-size:clamp(28px,min(4.4vw,6.5vh),84px);font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;text-align:left;line-height:1}
 .tva-band.pend .tva-band-txt{color:var(--txt2)}
 
 /* ═══ TV SLIDE B — visão macro (ciclo anti-sleep WebOS) ═══ */
