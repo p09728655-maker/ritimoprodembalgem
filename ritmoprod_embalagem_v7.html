@@ -1193,6 +1193,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <select id="ph-modelo" onchange="renderModeloPeriodo()" class="frm-inp" style="min-width:150px;padding:4px 8px;font-size:11px"><option value="">TODOS</option></select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MÉTRICA</span>
     <select id="ph-metrica" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
+      <option value="mediaH">MÉDIA CX/H</option>
       <option value="caixas">CAIXAS</option>
       <option value="pontos">PONTOS</option>
       <option value="pesoKg">PESO (KG)</option>
@@ -2766,16 +2767,33 @@ function phFiltroRapido(dias){
   document.getElementById('ph-ate').value=ate;
   renderModeloPeriodo();
 }
-// Metadados da métrica selecionada (caixas / pontos / peso).
+// Metadados da métrica selecionada. mediaH (cx/h) é uma TAXA (caixas ÷ horas),
+// não é somável — as demais (caixas/pontos/peso) são aditivas.
 function _phMetricInfo(){
-  const metric=(document.getElementById('ph-metrica')||{}).value||'caixas';
-  const labels={caixas:'CAIXAS',pontos:'PONTOS',pesoKg:'PESO'};
-  const unit={caixas:'cx',pontos:'pts',pesoKg:'kg'};
-  return {metric,label:labels[metric]||'CAIXAS',unit:unit[metric]||''};
+  const metric=(document.getElementById('ph-metrica')||{}).value||'mediaH';
+  const map={
+    mediaH:{label:'MÉDIA CX/H',unit:'cx/h',additive:false},
+    caixas:{label:'CAIXAS',unit:'cx',additive:true},
+    pontos:{label:'PONTOS',unit:'pts',additive:true},
+    pesoKg:{label:'PESO',unit:'kg',additive:true}
+  };
+  const m=map[metric]||map.mediaH;
+  return {metric,label:m.label,unit:m.unit,additive:m.additive};
 }
 function _phFmt(v,metric){
   return metric==='pesoKg' ? fmtN(Math.round(v*10)/10) : fmtN(Math.round(v));
 }
+// Valor exibido de um acumulador {caixas,pontos,pesoKg,horas} p/ a métrica.
+// Para mediaH devolve o RITMO (caixas÷horas) — média ponderada quando o
+// acumulador junta vários dias/modelos.
+function _phVal(acc,metric){
+  if(metric==='mediaH') return acc.horas>0 ? acc.caixas/acc.horas : 0;
+  if(metric==='pontos') return acc.pontos;
+  if(metric==='pesoKg') return acc.pesoKg;
+  return acc.caixas;
+}
+function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0}; }
+function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0; }
 function _phParseData(s){const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd);}
 
 // Busca a produção por modelo/dia do período no backend (novo endpoint).
@@ -2840,19 +2858,31 @@ async function renderModeloPeriodo(){
   }
   const modeloSel=selEl?selEl.value:'';
   const itensView = modeloSel ? itens.filter(it=>it.modelo===modeloSel) : itens;
-  const {metric,label,unit}=_phMetricInfo();
+  const {metric,label,unit,additive}=_phMetricInfo();
+
+  // Acumuladores {caixas,pontos,pesoKg,horas} por célula (modelo|dia), por
+  // linha (modelo) e por dia — permitem calcular tanto soma quanto ritmo (cx/h).
+  const cellAcc={}, rowAcc={}, dayAcc={}, grandAcc=_phAcc();
+  const datasSet=new Set(), nomeDe={};
+  itensView.forEach(it=>{
+    datasSet.add(it.data); nomeDe[it.modelo]=it.nome;
+    const ck=it.modelo+'|'+it.data;
+    if(!cellAcc[ck]) cellAcc[ck]=_phAcc();  _phAdd(cellAcc[ck],it);
+    if(!rowAcc[it.modelo]) rowAcc[it.modelo]=_phAcc();  _phAdd(rowAcc[it.modelo],it);
+    if(!dayAcc[it.data]) dayAcc[it.data]=_phAcc();  _phAdd(dayAcc[it.data],it);
+    _phAdd(grandAcc,it);
+  });
 
   // KPIs (do conjunto exibido).
-  const totCx=itensView.reduce((s,it)=>s+it.caixas,0);
-  const datasSet=new Set(itensView.map(it=>it.data));
   const nDatas=datasSet.size;
-  const nModelos=new Set(itensView.map(it=>it.modelo)).size;
+  const nModelos=Object.keys(rowAcc).length;
+  const mediaHGeral=grandAcc.horas>0?Math.round(grandAcc.caixas/grandAcc.horas):0;
   const top=modeloSel?modelosInfo[modeloSel]:(modelosOrd[0]||null);
   if(kpi){
     kpi.innerHTML=`
-      <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(totCx)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
-      <div class="kpi-card ok"><div class="kpi-lbl">${modeloSel?'MODELO':'MODELOS'}</div><div class="kpi-val">${modeloSel?modeloSel:nModelos}</div><div class="kpi-sub">${modeloSel?(top&&top.nome?top.nome:'modelo filtrado'):'modelos no período'}</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">MÉDIA POR DIA</div><div class="kpi-val">${fmtN(nDatas?Math.round(totCx/nDatas):0)}</div><div class="kpi-sub">caixas/dia</div></div>
+      <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
+      <div class="kpi-card ok"><div class="kpi-lbl">MÉDIA CX/H</div><div class="kpi-val">${fmtN(mediaHGeral)}</div><div class="kpi-sub">ritmo médio do período</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">${modeloSel?'MODELO':'MODELOS'}</div><div class="kpi-val">${modeloSel?modeloSel:nModelos}</div><div class="kpi-sub">${modeloSel?(top&&top.nome?top.nome:'modelo filtrado'):'modelos no período'}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">MODELO TOP</div><div class="kpi-val" style="font-size:18px">${top?top.modelo:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx'+(top.nome?' · '+top.nome:''):'—'}</div></div>`;
   }
 
@@ -2863,31 +2893,33 @@ async function renderModeloPeriodo(){
     return;
   }
 
-  // Matriz modelo × dia. Linhas = modelos (por total da métrica desc);
-  // colunas = dias (cronológico).
+  // Matriz modelo × dia. Linhas ordenadas pelo valor da métrica (desc):
+  // ritmo p/ mediaH, volume p/ as demais.
   const datas=[...datasSet].sort((a,b)=>_phParseData(a)-_phParseData(b));
-  const linhasInfo={};
-  itensView.forEach(it=>{ if(!linhasInfo[it.modelo]) linhasInfo[it.modelo]={modelo:it.modelo,nome:it.nome,total:0}; linhasInfo[it.modelo].total+=it[metric]; });
-  const linhas=Object.values(linhasInfo).sort((a,b)=>b.total-a.total);
-  const cell={};
-  itensView.forEach(it=>{ const k=it.modelo+'|'+it.data; cell[k]=(cell[k]||0)+it[metric]; });
+  const linhas=Object.keys(rowAcc).map(m=>({modelo:m,nome:nomeDe[m]||'',acc:rowAcc[m]}))
+    .sort((a,b)=>_phVal(b.acc,metric)-_phVal(a.acc,metric));
 
+  // Colunas finais mudam de sentido conforme a métrica:
+  //  - aditiva (caixas/pontos/peso): TOTAL do período + MÉD/DIA
+  //  - ritmo (mediaH): MÉD.PERÍODO (cx÷h ponderado) + MELHOR DIA (maior ritmo)
+  const col1=additive?'TOTAL':'MÉD.PERÍODO';
+  const col2=additive?'MÉD/DIA':'MELHOR DIA';
   head.innerHTML='<tr><th style="text-align:left">MODELO</th>'
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
-    + '<th style="text-align:right">TOTAL</th><th style="text-align:right">MÉD/DIA</th></tr>';
-
-  const totaisDia=datas.map(d=>linhas.reduce((s,l)=>s+(cell[l.modelo+'|'+d]||0),0));
-  const grand=linhas.reduce((s,l)=>s+l.total,0);
+    + `<th style="text-align:right">${col1}</th><th style="text-align:right">${col2}</th></tr>`;
 
   body.innerHTML=linhas.map(l=>{
-    const cells=datas.map(d=>{ const v=cell[l.modelo+'|'+d]; return `<td class="mono" style="text-align:right${v?'':';color:var(--txt3)'}">${v?_phFmt(v,metric):'·'}</td>`; }).join('');
-    const nd=datas.filter(d=>cell[l.modelo+'|'+d]).length;
-    const med=nd?l.total/nd:0;
-    return `<tr><td style="text-align:left">${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="mono" style="text-align:right;color:var(--acc);font-weight:600">${_phFmt(l.total,metric)}</td><td class="mono" style="text-align:right">${_phFmt(med,metric)}</td></tr>`;
+    const cells=datas.map(d=>{ const a=cellAcc[l.modelo+'|'+d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
+    const nd=datas.filter(d=>cellAcc[l.modelo+'|'+d]&&cellAcc[l.modelo+'|'+d].caixas).length;
+    const v1=_phVal(l.acc,metric);
+    const v2=additive ? (nd?_phVal(l.acc,metric)/nd:0)
+                      : Math.max(0,...datas.map(d=>cellAcc[l.modelo+'|'+d]?_phVal(cellAcc[l.modelo+'|'+d],metric):0));
+    return `<tr><td style="text-align:left">${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="mono" style="text-align:right;color:var(--acc);font-weight:600">${_phFmt(v1,metric)}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
   }).join('')
-    + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">TOTAL/DIA</td>`
-    + totaisDia.map(t=>`<td class="mono" style="text-align:right;font-weight:600">${t?_phFmt(t,metric):'·'}</td>`).join('')
-    + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(grand,metric)}</td><td></td></tr>`;
+    + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
+    + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
+    + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
+  const grand=_phVal(grandAcc,metric);
 
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} modelo${linhas.length===1?'':'s'} · ${datas.length} dia${datas.length===1?'':'s'}`;
 }
@@ -2902,20 +2934,31 @@ async function gerarRelatorioProducaoHora(){
   const win=window.open('','_blank','width=1200,height=760');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
-  const {metric,label,unit}=_phMetricInfo();
+  const {metric,label,unit,additive}=_phMetricInfo();
   const fmt=v=> metric==='pesoKg' ? (Math.round(v*10)/10).toLocaleString('pt-BR') : Math.round(v).toLocaleString('pt-BR');
 
   const datas=[...new Set(itensView.map(it=>it.data))].sort((a,b)=>_phParseData(a)-_phParseData(b));
-  const linhasInfo={};
-  itensView.forEach(it=>{ if(!linhasInfo[it.modelo]) linhasInfo[it.modelo]={modelo:it.modelo,nome:it.nome,total:0}; linhasInfo[it.modelo].total+=it[metric]; });
-  const linhas=Object.values(linhasInfo).sort((a,b)=>b.total-a.total);
-  const cell={};
-  itensView.forEach(it=>{ const k=it.modelo+'|'+it.data; cell[k]=(cell[k]||0)+it[metric]; });
+  const cellAcc={}, rowAcc={}, dayAcc={}, grandAcc=_phAcc(), nomeDe={};
+  itensView.forEach(it=>{
+    nomeDe[it.modelo]=it.nome;
+    const ck=it.modelo+'|'+it.data;
+    if(!cellAcc[ck]) cellAcc[ck]=_phAcc();  _phAdd(cellAcc[ck],it);
+    if(!rowAcc[it.modelo]) rowAcc[it.modelo]=_phAcc();  _phAdd(rowAcc[it.modelo],it);
+    if(!dayAcc[it.data]) dayAcc[it.data]=_phAcc();  _phAdd(dayAcc[it.data],it);
+    _phAdd(grandAcc,it);
+  });
+  const linhas=Object.keys(rowAcc).map(m=>({modelo:m,nome:nomeDe[m]||'',acc:rowAcc[m]}))
+    .sort((a,b)=>_phVal(b.acc,metric)-_phVal(a.acc,metric));
+  const cellV=(m,d)=>{ const a=cellAcc[m+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
+  const rowV2=(l)=>{ const nd=datas.filter(d=>cellAcc[l.modelo+'|'+d]&&cellAcc[l.modelo+'|'+d].caixas).length;
+    return additive ? (nd?_phVal(l.acc,metric)/nd:0)
+                    : Math.max(0,...datas.map(d=>cellAcc[l.modelo+'|'+d]?_phVal(cellAcc[l.modelo+'|'+d],metric):0)); };
+  const col1=additive?'TOTAL':'MÉD.PERÍODO';
+  const col2=additive?'MÉD/DIA':'MELHOR DIA';
 
-  const totCx=itensView.reduce((s,it)=>s+it.caixas,0);
-  const grand=linhas.reduce((s,l)=>s+l.total,0);
-  const top=linhas[0];
-  const totaisDia=datas.map(d=>linhas.reduce((s,l)=>s+(cell[l.modelo+'|'+d]||0),0));
+  const totCx=grandAcc.caixas;
+  const grand=_phVal(grandAcc,metric);
+  const top=linhas[0]?{modelo:linhas[0].modelo,nome:linhas[0].nome,total:linhas[0].acc.caixas}:null;
   const deStr=document.getElementById('ph-de').value||datas[0];
   const ateStr=document.getElementById('ph-ate').value||datas[datas.length-1];
 
@@ -2978,9 +3021,9 @@ async function gerarRelatorioProducaoHora(){
     <div class="kpi-sub">${datas.length} dias com produção</div>
   </div>
   <div class="kpi-card" style="border-left-color:#888">
-    <div class="kpi-lbl">MÉDIA POR DIA</div>
-    <div class="kpi-val">${(datas.length?Math.round(totCx/datas.length):0).toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">caixas/dia</div>
+    <div class="kpi-lbl">MÉDIA CX/H</div>
+    <div class="kpi-val">${(grandAcc.horas>0?Math.round(grandAcc.caixas/grandAcc.horas):0).toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">ritmo médio do período</div>
   </div>
   <div class="kpi-card" style="border-left-color:#888">
     <div class="kpi-lbl">${modeloSel?'MODELO':'MODELOS'}</div>
@@ -2997,18 +3040,16 @@ async function gerarRelatorioProducaoHora(){
 <div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR MODELO — POR DIA (${label})</div>
 <table>
   <thead>
-    <tr><th>MODELO</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>TOTAL</th><th>MÉD/DIA</th></tr>
+    <tr><th>MODELO</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>${col1}</th><th>${col2}</th></tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
-      const cells=datas.map(d=>{ const v=cell[l.modelo+'|'+d]; return `<td${v?'':' style="color:#ccc"'}>${v?fmt(v):'·'}</td>`; }).join('');
-      const nd=datas.filter(d=>cell[l.modelo+'|'+d]).length;
-      const med=nd?l.total/nd:0;
-      return `<tr><td>${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="col-tot">${fmt(l.total)}</td><td>${fmt(med)}</td></tr>`;
+      const cells=datas.map(d=>{ const v=cellV(l.modelo,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
+      return `<tr><td>${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="col-tot">${fmt(_phVal(l.acc,metric))}</td><td>${fmt(rowV2(l))}</td></tr>`;
     }).join('')}
   </tbody>
   <tfoot>
-    <tr><td>TOTAL/DIA</td>${totaisDia.map(t=>`<td>${t?fmt(t):'·'}</td>`).join('')}<td class="col-tot">${fmt(grand)}</td><td></td></tr>
+    <tr><td>${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td>${has?fmt(_phVal(a,metric)):'·'}</td>`; }).join('')}<td class="col-tot">${fmt(grand)}</td><td></td></tr>
   </tfoot>
 </table>
 
