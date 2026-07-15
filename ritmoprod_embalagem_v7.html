@@ -1176,12 +1176,50 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
 <!-- ═══ PRODUÇÃO POR MODELO (visão dedicada: total do dia, um modelo por linha) ═══ -->
 <section id="sec-producaohora" class="sec">
-  <div class="tbl-wrap" style="margin-top:0">
+
+  <!-- ── FILTROS DE PERÍODO ── -->
+  <div class="hist-filters">
+    <!-- Botões rápidos de período -->
+    <div style="display:flex;gap:4px;flex-shrink:0">
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="phFiltroRapido(0)">HOJE</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="phFiltroRapido(7)">SEMANA</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="phFiltroRapido(30)">MÊS</button>
+    </div>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
+    <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderProducaoHoraPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <span style="color:var(--txt2)">–</span>
+    <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderProducaoHoraPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <div class="hdr-spacer"></div>
+    <div class="export-row">
+      <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
+    </div>
+  </div>
+
+  <!-- ── KPIs DO PERÍODO ── -->
+  <div class="kpi-grid c4" id="ph-kpi-grid" style="margin-bottom:14px"></div>
+
+  <!-- ── ACOMPANHAMENTO POR DIA ── -->
+  <div class="tbl-wrap">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">ACOMPANHAMENTO POR DIA</span>
+      <div style="flex:1"></div>
+      <span id="ph-periodo-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>DATA</th><th>DIA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th></tr></thead>
+        <tbody id="ph-periodo-body"><tr><td colspan="8" class="empty-msg">Carregando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PRODUÇÃO POR MODELO (HOJE) ── -->
+  <div class="tbl-wrap">
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">PRODUÇÃO POR MODELO — TOTAL DO DIA</span>
       <div style="flex:1"></div>
       <span id="porhora2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px;margin-right:12px"></span>
-      <button class="btn btn-acc" onclick="gerarRelatorioProducaoModelo()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioProducaoModelo()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO DIA</button>
     </div>
     <div style="overflow-x:auto">
       <table>
@@ -2695,6 +2733,228 @@ function renderProducaoPorHoraDedicada(){
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
 }
 
+// ════════════════════════════════════════════════
+// PRODUÇÃO/HORA — ACOMPANHAMENTO POR PERÍODO (vários dias)
+// Reaproveita a mesma fonte do HISTÓRICO (buildDiasHistAsync → totais diários
+// do Sheets + local). O histórico NÃO guarda quebra por modelo — só totais do
+// dia (realizado, meta, eficiência) — então o acompanhamento por período é por
+// dia. A quebra por modelo continua sendo do dia atual (tabela abaixo).
+// ════════════════════════════════════════════════
+function _initFiltroPH(){
+  const de=document.getElementById('ph-de');
+  const ate=document.getElementById('ph-ate');
+  if(!de||!ate) return;
+  if(de.value||ate.value) return; // já tem filtro, não sobrescrever
+  phFiltroRapido(30); // padrão: último mês
+}
+function phFiltroRapido(dias){
+  const hoje=new Date();
+  const ate=dtToStr(hoje);
+  let de;
+  if(dias===0){ de=ate; }
+  else{ const inicio=new Date(hoje); inicio.setDate(hoje.getDate()-(dias-1)); de=dtToStr(inicio); }
+  document.getElementById('ph-de').value=de;
+  document.getElementById('ph-ate').value=ate;
+  renderProducaoHoraPeriodo();
+}
+// Retorna os dias do período selecionado (ordenados cronologicamente).
+async function _phDiasPeriodo(){
+  const deStr=document.getElementById('ph-de').value;
+  const ateStr=document.getElementById('ph-ate').value;
+  let dias = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
+  if(deStr||ateStr){
+    const dtDe=parseBR(deStr), dtAte=parseBR(ateStr);
+    dias=dias.filter(d=>{
+      const[dd,mm,yy]=d.data.split('/').map(Number);
+      const dt=new Date(yy,mm-1,dd);
+      if(dtDe&&dt<dtDe) return false;
+      if(dtAte&&dt>dtAte) return false;
+      return true;
+    });
+  }
+  dias.sort((a,b)=>{
+    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
+    return p(a.data)-p(b.data);
+  });
+  return dias;
+}
+async function renderProducaoHoraPeriodo(){
+  const kpi=document.getElementById('ph-kpi-grid');
+  const body=document.getElementById('ph-periodo-body');
+  const totEl=document.getElementById('ph-periodo-totais');
+  if(!body) return;
+  const dias=await _phDiasPeriodo();
+
+  // KPIs do período
+  const totReal=dias.reduce((s,d)=>s+d.real,0);
+  const efM=dias.length?dias.reduce((s,d)=>s+d.ef,0)/dias.length:0;
+  const comMeta=dias.filter(d=>d.ok).length;
+  const mediaDia=dias.length?Math.round(totReal/dias.length):0;
+  const melhorDia=dias.length?dias.reduce((a,b)=>a.ef>b.ef?a:b):null;
+  if(kpi){
+    kpi.innerHTML=`
+      <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${dias.length} dias no período</div></div>
+      <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
+      <div class="kpi-card ok"><div class="kpi-lbl">MÉDIA POR DIA</div><div class="kpi-val">${fmtN(mediaDia)}</div><div class="kpi-sub">caixas/dia</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length}${melhorDia?' · melhor '+fmtP(melhorDia.ef):''}</div></div>`;
+  }
+
+  // Tabela por dia
+  if(!dias.length){
+    body.innerHTML='<tr><td colspan="8" class="empty-msg">Nenhum dia com produção no período selecionado.</td></tr>';
+    if(totEl) totEl.textContent='';
+    return;
+  }
+  body.innerHTML=dias.map(d=>{
+    const cor=d.ef>=96?'var(--ok)':d.ef>=90?'var(--acc)':'var(--red)';
+    const st=d.ef>=96?'✓ META':d.ef>=90?'⚠ ATENÇÃO':'✗ ABAIXO';
+    return `<tr>
+      <td style="text-align:left">${d.data}</td>
+      <td style="text-align:left;color:var(--txt2)">${fmtDataPtBR(d.data,'diaSemana')}</td>
+      <td class="mono">${fmtN(d.real)}</td>
+      <td class="mono">${fmtN(d.meta)}</td>
+      <td class="mono" style="color:${cor}">${fmtP(d.ef)}</td>
+      <td class="mono">${fmtN(d.melhor)}</td>
+      <td class="mono">${fmtN(d.pior)}</td>
+      <td style="color:${cor};font-family:var(--font-d);font-size:10px;letter-spacing:.5px">${st}</td>
+    </tr>`;
+  }).join('');
+  if(totEl) totEl.textContent=`${fmtN(totReal)} cx · ${dias.length} dias · ${fmtP(efM)} ef. média`;
+}
+
+// Relatório do PERÍODO (janela separada p/ PDF) — dia a dia + resumo.
+async function gerarRelatorioProducaoHora(){
+  const dias=await _phDiasPeriodo();
+  if(!dias.length){ alert('Nenhum dia com produção no período selecionado — nada pra gerar no relatório.'); return; }
+  const win=window.open('','_blank','width=960,height=720');
+  if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
+
+  const totReal=dias.reduce((s,d)=>s+d.real,0);
+  const totMeta=dias.reduce((s,d)=>s+d.meta,0);
+  const efM=dias.length?dias.reduce((s,d)=>s+d.ef,0)/dias.length:0;
+  const comMeta=dias.filter(d=>d.ok).length;
+  const mediaDia=dias.length?Math.round(totReal/dias.length):0;
+  const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
+  const deStr=document.getElementById('ph-de').value||dias[0].data;
+  const ateStr=document.getElementById('ph-ate').value||dias[dias.length-1].data;
+
+  const html=`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Produção por Período — ${deStr} a ${ateStr}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:16mm 18mm; font-size:11px; }
+  @page{ size:A4 portrait; margin:0; }
+  @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
+  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #FF5C1F; }
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-logo span{ color:#FF5C1F; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
+  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#111; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #ccc; text-align:left; }
+  tbody td{ font-size:11px; padding:7px 10px; border-bottom:1px solid #f0f0f0; color:#111; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tfoot td{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; padding:8px 10px; border-top:1.5px solid #ccc; background:#fafafa; }
+  .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
+  .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
+  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+</style>
+</head>
+<body>
+
+<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+
+<div class="rp-header">
+  <div>
+    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR PERÍODO</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
+  </div>
+  <div class="rp-meta">
+    <div class="rp-dia">${deStr} — ${ateStr}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
+<div class="kpi-grid">
+  <div class="kpi-card" style="border-left-color:#FF5C1F">
+    <div class="kpi-lbl">TOTAL REALIZADO</div>
+    <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas em ${dias.length} dias</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#888">
+    <div class="kpi-lbl">MÉDIA POR DIA</div>
+    <div class="kpi-val">${mediaDia.toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas/dia</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:${efM>=96?'#4CAF50':efM>=90?'#FF9800':'#F44336'}">
+    <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
+    <div class="kpi-val">${efM.toFixed(1)}%</div>
+    <div class="kpi-sub">${sl(efM)}</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:#4CAF50">
+    <div class="kpi-lbl">DIAS COM META</div>
+    <div class="kpi-val">${comMeta}</div>
+    <div class="kpi-sub">de ${dias.length} · melhor ${melhorDia.data} (${melhorDia.ef.toFixed(1)}%)</div>
+  </div>
+</div>
+
+<div class="rp-sec-ttl" style="margin-top:18px">ACOMPANHAMENTO DIA A DIA</div>
+<table>
+  <thead>
+    <tr><th>DATA</th><th>DIA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th></tr>
+  </thead>
+  <tbody>
+    ${dias.map(d=>{
+      const cor=d.ef>=96?'#4CAF50':d.ef>=90?'#FF9800':'#F44336';
+      const st=d.ef>=96?'✓ META':d.ef>=90?'⚠ ATENÇÃO':'✗ ABAIXO';
+      return `<tr>
+      <td class="td-mono">${d.data}</td>
+      <td class="td-mono" style="color:#999">${fmtDataPtBR(d.data,'diaSemana')}</td>
+      <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      <td class="td-mono">${d.meta.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${cor};font-weight:600">${d.ef.toFixed(1)}%</td>
+      <td class="td-mono">${d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono">${d.pior.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${cor}">${st}</td>
+    </tr>`;}).join('')}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">TOTAL / MÉDIA</td>
+      <td>${totReal.toLocaleString('pt-BR')}</td>
+      <td>${totMeta.toLocaleString('pt-BR')}</td>
+      <td>${efM.toFixed(1)}%</td>
+      <td colspan="3"></td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="rp-footer">
+  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>${deStr} — ${ateStr}</span>
+</div>
+
+</body>
+</html>`;
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
 // Relatório formatado (janela separada, pronta pra exportar em PDF pelo
 // navegador) — mesmo padrão visual do gerarRelatorioSemanal() do HISTÓRICO.
 function gerarRelatorioProducaoModelo(){
@@ -3584,7 +3844,7 @@ function setTab(tab){
   if(tab==='tv') renderTV();
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
-  if(tab==='producaohora') lerPontosDia().then(renderProducaoPorHoraDedicada);
+  if(tab==='producaohora'){ _initFiltroPH(); renderProducaoHoraPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
   // aba TV e (re)inicia a alternância; ao sair da aba, o ciclo se para sozinho.
   const ctrl=document.getElementById('tv-ciclo-ctrl');
