@@ -1189,8 +1189,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
     <span style="color:var(--txt2)">–</span>
     <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
-    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MODELO</span>
-    <select id="ph-modelo" onchange="renderModeloPeriodo()" class="frm-inp" style="min-width:150px;padding:4px 8px;font-size:11px"><option value="">TODOS</option></select>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">FAMÍLIA</span>
+    <select id="ph-modelo" onchange="renderModeloPeriodo()" class="frm-inp" style="min-width:150px;padding:4px 8px;font-size:11px"><option value="">TODAS</option></select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MÉTRICA</span>
     <select id="ph-metrica" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="mediaH">MÉDIA CX/H</option>
@@ -1204,13 +1204,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
-  <!-- ── KPIs DO PERÍODO (POR MODELO) ── -->
+  <!-- ── KPIs DO PERÍODO (POR FAMÍLIA) ── -->
   <div class="kpi-grid c4" id="ph-kpi-grid" style="margin-bottom:14px"></div>
 
-  <!-- ── COMPARATIVO POR MODELO × DIA ── -->
+  <!-- ── COMPARATIVO POR FAMÍLIA × DIA ── -->
   <div class="tbl-wrap">
     <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">COMPARATIVO POR MODELO — POR DIA</span>
+      <span class="tbl-hdr-ttl">COMPARATIVO POR FAMÍLIA — POR DIA</span>
       <div style="flex:1"></div>
       <span id="ph-periodo-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
     </div>
@@ -2853,7 +2853,7 @@ async function renderModeloPeriodo(){
   const modelosOrd=Object.values(modelosInfo).sort((a,b)=>b.caixas-a.caixas);
   if(selEl){
     const selAtual=selEl.value;
-    selEl.innerHTML='<option value="">TODOS OS MODELOS</option>'+modelosOrd.map(m=>`<option value="${m.modelo}">${m.modelo}${m.nome?' · '+m.nome:''}</option>`).join('');
+    selEl.innerHTML='<option value="">TODAS AS FAMÍLIAS</option>'+modelosOrd.map(m=>`<option value="${m.modelo}">${m.modelo}${m.nome?' · '+m.nome:''}</option>`).join('');
     selEl.value=(selAtual && modelosInfo[selAtual]) ? selAtual : '';
   }
   const modeloSel=selEl?selEl.value:'';
@@ -2882,8 +2882,8 @@ async function renderModeloPeriodo(){
     kpi.innerHTML=`
       <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
       <div class="kpi-card ok"><div class="kpi-lbl">MÉDIA CX/H</div><div class="kpi-val">${fmtN(mediaHGeral)}</div><div class="kpi-sub">ritmo médio do período</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">${modeloSel?'MODELO':'MODELOS'}</div><div class="kpi-val">${modeloSel?modeloSel:nModelos}</div><div class="kpi-sub">${modeloSel?(top&&top.nome?top.nome:'modelo filtrado'):'modelos no período'}</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">MODELO TOP</div><div class="kpi-val" style="font-size:18px">${top?top.modelo:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx'+(top.nome?' · '+top.nome:''):'—'}</div></div>`;
+      <div class="kpi-card"><div class="kpi-lbl">${modeloSel?'FAMÍLIA':'FAMÍLIAS'}</div><div class="kpi-val" style="${modeloSel?'font-size:16px':''}">${modeloSel?modeloSel:nModelos}</div><div class="kpi-sub">${modeloSel?'família filtrada':'famílias no período'}</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">FAMÍLIA TOP</div><div class="kpi-val" style="font-size:16px">${top?top.modelo:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
   }
 
   if(!itensView.length){
@@ -2904,7 +2904,7 @@ async function renderModeloPeriodo(){
   //  - ritmo (mediaH): MÉD.PERÍODO (cx÷h ponderado) + MELHOR DIA (maior ritmo)
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
-  head.innerHTML='<tr><th style="text-align:left">MODELO</th>'
+  head.innerHTML='<tr><th style="text-align:left">FAMÍLIA</th>'
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right">${col1}</th><th style="text-align:right">${col2}</th></tr>`;
 
@@ -2921,7 +2921,7 @@ async function renderModeloPeriodo(){
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} modelo${linhas.length===1?'':'s'} · ${datas.length} dia${datas.length===1?'':'s'}`;
+  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} família${linhas.length===1?'':'s'} · ${datas.length} dia${datas.length===1?'':'s'}`;
 }
 
 // Relatório do PERÍODO (janela separada p/ PDF) — comparativo modelo × dia.
@@ -2966,7 +2966,7 @@ async function gerarRelatorioProducaoHora(){
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório Produção por Modelo — ${deStr} a ${ateStr}</title>
+<title>Relatório Produção por Família — ${deStr} a ${ateStr}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
@@ -3004,8 +3004,8 @@ async function gerarRelatorioProducaoHora(){
 
 <div class="rp-header">
   <div>
-    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR MODELO</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${modeloSel?' · MODELO '+modeloSel:''}</div>
+    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR FAMÍLIA</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${modeloSel?' · FAMÍLIA '+modeloSel:''}</div>
   </div>
   <div class="rp-meta">
     <div class="rp-dia">${deStr} — ${ateStr}</div>
@@ -3026,21 +3026,21 @@ async function gerarRelatorioProducaoHora(){
     <div class="kpi-sub">ritmo médio do período</div>
   </div>
   <div class="kpi-card" style="border-left-color:#888">
-    <div class="kpi-lbl">${modeloSel?'MODELO':'MODELOS'}</div>
-    <div class="kpi-val">${modeloSel?modeloSel:linhas.length}</div>
-    <div class="kpi-sub">${modeloSel?(top&&top.nome?top.nome:'filtrado'):'modelos no período'}</div>
+    <div class="kpi-lbl">${modeloSel?'FAMÍLIA':'FAMÍLIAS'}</div>
+    <div class="kpi-val" style="${modeloSel?'font-size:16px':''}">${modeloSel?modeloSel:linhas.length}</div>
+    <div class="kpi-sub">${modeloSel?'família filtrada':'famílias no período'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
-    <div class="kpi-lbl">MODELO TOP</div>
-    <div class="kpi-val" style="font-size:18px">${top?top.modelo:'—'}</div>
-    <div class="kpi-sub">${top?fmt(top.total)+' '+unit+(top.nome?' · '+top.nome:''):'—'}</div>
+    <div class="kpi-lbl">FAMÍLIA TOP</div>
+    <div class="kpi-val" style="font-size:16px">${top?top.modelo:'—'}</div>
+    <div class="kpi-sub">${top?top.total.toLocaleString('pt-BR')+' cx no período':'—'}</div>
   </div>
 </div>
 
-<div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR MODELO — POR DIA (${label})</div>
+<div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR FAMÍLIA — POR DIA (${label})</div>
 <table>
   <thead>
-    <tr><th>MODELO</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>${col1}</th><th>${col2}</th></tr>
+    <tr><th>FAMÍLIA</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>${col1}</th><th>${col2}</th></tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
