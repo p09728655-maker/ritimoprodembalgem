@@ -1189,8 +1189,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
     <span style="color:var(--txt2)">–</span>
     <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
-    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">FAMÍLIA</span>
-    <select id="ph-modelo" onchange="renderModeloPeriodo()" class="frm-inp" style="min-width:150px;padding:4px 8px;font-size:11px"><option value="">TODAS</option></select>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">AGRUPAR</span>
+    <select id="ph-grupo" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
+      <option value="modelo">MODELO</option>
+      <option value="familia">FAMÍLIA</option>
+    </select>
+    <span id="ph-filtro-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MODELO</span>
+    <select id="ph-modelo" onchange="renderModeloPeriodo()" class="frm-inp" style="min-width:150px;padding:4px 8px;font-size:11px"><option value="">TODOS</option></select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MÉTRICA</span>
     <select id="ph-metrica" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="mediaH">MÉDIA CX/H</option>
@@ -2847,56 +2852,68 @@ async function renderModeloPeriodo(){
     return;
   }
 
-  // Seletor de modelos (por total de caixas no período), preservando a seleção.
-  const modelosInfo={};
-  itens.forEach(it=>{ if(!modelosInfo[it.modelo]) modelosInfo[it.modelo]={modelo:it.modelo,nome:it.nome,caixas:0}; modelosInfo[it.modelo].caixas+=it.caixas; });
-  const modelosOrd=Object.values(modelosInfo).sort((a,b)=>b.caixas-a.caixas);
+  // Nível de agrupamento: MODELO (RACK INTENSE, RACK TOPAZIO…) ou FAMÍLIA
+  // ampla (RACK). Cada item já traz modelo, nome (limpo) e familia — a troca é
+  // toda no cliente, sem refazer a chamada.
+  const ehFam=((document.getElementById('ph-grupo')||{}).value||'modelo')==='familia';
+  const keyOf  =it=> ehFam ? (it.familia||it.modelo) : it.modelo;
+  const labelOf=it=> ehFam ? (it.familia||it.modelo) : (it.nome?(it.modelo+' · '+it.nome):it.modelo);
+  const Termo  = ehFam?'FAMÍLIA':'MODELO';
+  const Termos = ehFam?'FAMÍLIAS':'MODELOS';
+  const termoS = ehFam?'família':'modelo';
+  const termoP = ehFam?'famílias':'modelos';
+  const fltLbl=document.getElementById('ph-filtro-lbl'); if(fltLbl) fltLbl.textContent=Termo;
+
+  // Seletor (por total de caixas no período), preservando a seleção.
+  const gInfo={};
+  itens.forEach(it=>{ const k=keyOf(it); if(!gInfo[k]) gInfo[k]={key:k,label:labelOf(it),caixas:0}; gInfo[k].caixas+=it.caixas; });
+  const gOrd=Object.values(gInfo).sort((a,b)=>b.caixas-a.caixas);
   if(selEl){
     const selAtual=selEl.value;
-    selEl.innerHTML='<option value="">TODAS AS FAMÍLIAS</option>'+modelosOrd.map(m=>`<option value="${m.modelo}">${m.modelo}${m.nome?' · '+m.nome:''}</option>`).join('');
-    selEl.value=(selAtual && modelosInfo[selAtual]) ? selAtual : '';
+    selEl.innerHTML=`<option value="">${ehFam?'TODAS AS FAMÍLIAS':'TODOS OS MODELOS'}</option>`+gOrd.map(g=>`<option value="${g.key}">${g.label}</option>`).join('');
+    selEl.value=(selAtual && gInfo[selAtual]) ? selAtual : '';
   }
-  const modeloSel=selEl?selEl.value:'';
-  const itensView = modeloSel ? itens.filter(it=>it.modelo===modeloSel) : itens;
+  const sel=selEl?selEl.value:'';
+  const itensView = sel ? itens.filter(it=>keyOf(it)===sel) : itens;
   const {metric,label,unit,additive}=_phMetricInfo();
 
-  // Acumuladores {caixas,pontos,pesoKg,horas} por célula (modelo|dia), por
-  // linha (modelo) e por dia — permitem calcular tanto soma quanto ritmo (cx/h).
+  // Acumuladores {caixas,pontos,pesoKg,horas} por célula (grupo|dia), por
+  // linha (grupo) e por dia — permitem calcular tanto soma quanto ritmo (cx/h).
   const cellAcc={}, rowAcc={}, dayAcc={}, grandAcc=_phAcc();
-  const datasSet=new Set(), nomeDe={};
+  const datasSet=new Set(), labelDe={};
   itensView.forEach(it=>{
-    datasSet.add(it.data); nomeDe[it.modelo]=it.nome;
-    const ck=it.modelo+'|'+it.data;
+    const k=keyOf(it); datasSet.add(it.data); labelDe[k]=labelOf(it);
+    const ck=k+'|'+it.data;
     if(!cellAcc[ck]) cellAcc[ck]=_phAcc();  _phAdd(cellAcc[ck],it);
-    if(!rowAcc[it.modelo]) rowAcc[it.modelo]=_phAcc();  _phAdd(rowAcc[it.modelo],it);
+    if(!rowAcc[k]) rowAcc[k]=_phAcc();  _phAdd(rowAcc[k],it);
     if(!dayAcc[it.data]) dayAcc[it.data]=_phAcc();  _phAdd(dayAcc[it.data],it);
     _phAdd(grandAcc,it);
   });
 
   // KPIs (do conjunto exibido).
   const nDatas=datasSet.size;
-  const nModelos=Object.keys(rowAcc).length;
+  const nGrupos=Object.keys(rowAcc).length;
   const mediaHGeral=grandAcc.horas>0?Math.round(grandAcc.caixas/grandAcc.horas):0;
-  const top=modeloSel?modelosInfo[modeloSel]:(modelosOrd[0]||null);
+  const top=sel?gInfo[sel]:(gOrd[0]||null);
   if(kpi){
     kpi.innerHTML=`
       <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
       <div class="kpi-card ok"><div class="kpi-lbl">MÉDIA CX/H</div><div class="kpi-val">${fmtN(mediaHGeral)}</div><div class="kpi-sub">ritmo médio do período</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">${modeloSel?'FAMÍLIA':'FAMÍLIAS'}</div><div class="kpi-val" style="${modeloSel?'font-size:16px':''}">${modeloSel?modeloSel:nModelos}</div><div class="kpi-sub">${modeloSel?'família filtrada':'famílias no período'}</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">FAMÍLIA TOP</div><div class="kpi-val" style="font-size:16px">${top?top.modelo:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
+      <div class="kpi-card"><div class="kpi-lbl">${sel?Termo:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">${Termo} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
   }
 
   if(!itensView.length){
     if(head) head.innerHTML='';
-    body.innerHTML='<tr><td class="empty-msg" style="padding:20px">Sem produção por modelo no período selecionado.<br>(só aparece o que o operador lançou com o produto selecionado no app).</td></tr>';
+    body.innerHTML=`<tr><td class="empty-msg" style="padding:20px">Sem produção por ${termoS} no período selecionado.<br>(só aparece o que o operador lançou com o produto selecionado no app).</td></tr>`;
     if(totEl) totEl.textContent='';
     return;
   }
 
-  // Matriz modelo × dia. Linhas ordenadas pelo valor da métrica (desc):
+  // Matriz grupo × dia. Linhas ordenadas pelo valor da métrica (desc):
   // ritmo p/ mediaH, volume p/ as demais.
   const datas=[...datasSet].sort((a,b)=>_phParseData(a)-_phParseData(b));
-  const linhas=Object.keys(rowAcc).map(m=>({modelo:m,nome:nomeDe[m]||'',acc:rowAcc[m]}))
+  const linhas=Object.keys(rowAcc).map(k=>({key:k,label:labelDe[k]||k,acc:rowAcc[k]}))
     .sort((a,b)=>_phVal(b.acc,metric)-_phVal(a.acc,metric));
 
   // Colunas finais mudam de sentido conforme a métrica:
@@ -2904,33 +2921,37 @@ async function renderModeloPeriodo(){
   //  - ritmo (mediaH): MÉD.PERÍODO (cx÷h ponderado) + MELHOR DIA (maior ritmo)
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
-  head.innerHTML='<tr><th style="text-align:left">FAMÍLIA</th>'
+  head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right">${col1}</th><th style="text-align:right">${col2}</th></tr>`;
 
   body.innerHTML=linhas.map(l=>{
-    const cells=datas.map(d=>{ const a=cellAcc[l.modelo+'|'+d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
-    const nd=datas.filter(d=>cellAcc[l.modelo+'|'+d]&&cellAcc[l.modelo+'|'+d].caixas).length;
+    const cells=datas.map(d=>{ const a=cellAcc[l.key+'|'+d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
+    const nd=datas.filter(d=>cellAcc[l.key+'|'+d]&&cellAcc[l.key+'|'+d].caixas).length;
     const v1=_phVal(l.acc,metric);
     const v2=additive ? (nd?_phVal(l.acc,metric)/nd:0)
-                      : Math.max(0,...datas.map(d=>cellAcc[l.modelo+'|'+d]?_phVal(cellAcc[l.modelo+'|'+d],metric):0));
-    return `<tr><td style="text-align:left">${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="mono" style="text-align:right;color:var(--acc);font-weight:600">${_phFmt(v1,metric)}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
+                      : Math.max(0,...datas.map(d=>cellAcc[l.key+'|'+d]?_phVal(cellAcc[l.key+'|'+d],metric):0));
+    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:var(--acc);font-weight:600">${_phFmt(v1,metric)}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} família${linhas.length===1?'':'s'} · ${datas.length} dia${datas.length===1?'':'s'}`;
+  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}`;
 }
 
 // Relatório do PERÍODO (janela separada p/ PDF) — comparativo modelo × dia.
 async function gerarRelatorioProducaoHora(){
   const itens=await _phItensPeriodo();
-  if(itens==null){ alert('O comparativo por modelo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
-  const modeloSel=(document.getElementById('ph-modelo')||{}).value||'';
-  const itensView = modeloSel ? itens.filter(it=>it.modelo===modeloSel) : itens;
-  if(!itensView.length){ alert('Sem produção por modelo no período selecionado — nada pra gerar no relatório.'); return; }
+  if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
+  const ehFam=((document.getElementById('ph-grupo')||{}).value||'modelo')==='familia';
+  const keyOf  =it=> ehFam ? (it.familia||it.modelo) : it.modelo;
+  const labelOf=it=> ehFam ? (it.familia||it.modelo) : (it.nome?(it.modelo+' · '+it.nome):it.modelo);
+  const Termo  = ehFam?'FAMÍLIA':'MODELO';
+  const sel=(document.getElementById('ph-modelo')||{}).value||'';
+  const itensView = sel ? itens.filter(it=>keyOf(it)===sel) : itens;
+  if(!itensView.length){ alert('Sem produção no período selecionado — nada pra gerar no relatório.'); return; }
   const win=window.open('','_blank','width=1200,height=760');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
@@ -2938,27 +2959,27 @@ async function gerarRelatorioProducaoHora(){
   const fmt=v=> metric==='pesoKg' ? (Math.round(v*10)/10).toLocaleString('pt-BR') : Math.round(v).toLocaleString('pt-BR');
 
   const datas=[...new Set(itensView.map(it=>it.data))].sort((a,b)=>_phParseData(a)-_phParseData(b));
-  const cellAcc={}, rowAcc={}, dayAcc={}, grandAcc=_phAcc(), nomeDe={};
+  const cellAcc={}, rowAcc={}, dayAcc={}, grandAcc=_phAcc(), labelDe={};
   itensView.forEach(it=>{
-    nomeDe[it.modelo]=it.nome;
-    const ck=it.modelo+'|'+it.data;
+    const k=keyOf(it); labelDe[k]=labelOf(it);
+    const ck=k+'|'+it.data;
     if(!cellAcc[ck]) cellAcc[ck]=_phAcc();  _phAdd(cellAcc[ck],it);
-    if(!rowAcc[it.modelo]) rowAcc[it.modelo]=_phAcc();  _phAdd(rowAcc[it.modelo],it);
+    if(!rowAcc[k]) rowAcc[k]=_phAcc();  _phAdd(rowAcc[k],it);
     if(!dayAcc[it.data]) dayAcc[it.data]=_phAcc();  _phAdd(dayAcc[it.data],it);
     _phAdd(grandAcc,it);
   });
-  const linhas=Object.keys(rowAcc).map(m=>({modelo:m,nome:nomeDe[m]||'',acc:rowAcc[m]}))
+  const linhas=Object.keys(rowAcc).map(k=>({key:k,label:labelDe[k]||k,acc:rowAcc[k]}))
     .sort((a,b)=>_phVal(b.acc,metric)-_phVal(a.acc,metric));
-  const cellV=(m,d)=>{ const a=cellAcc[m+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
-  const rowV2=(l)=>{ const nd=datas.filter(d=>cellAcc[l.modelo+'|'+d]&&cellAcc[l.modelo+'|'+d].caixas).length;
+  const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
+  const rowV2=(l)=>{ const nd=datas.filter(d=>cellAcc[l.key+'|'+d]&&cellAcc[l.key+'|'+d].caixas).length;
     return additive ? (nd?_phVal(l.acc,metric)/nd:0)
-                    : Math.max(0,...datas.map(d=>cellAcc[l.modelo+'|'+d]?_phVal(cellAcc[l.modelo+'|'+d],metric):0)); };
+                    : Math.max(0,...datas.map(d=>cellAcc[l.key+'|'+d]?_phVal(cellAcc[l.key+'|'+d],metric):0)); };
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
 
   const totCx=grandAcc.caixas;
   const grand=_phVal(grandAcc,metric);
-  const top=linhas[0]?{modelo:linhas[0].modelo,nome:linhas[0].nome,total:linhas[0].acc.caixas}:null;
+  const top=linhas[0]?{label:linhas[0].label,total:linhas[0].acc.caixas}:null;
   const deStr=document.getElementById('ph-de').value||datas[0];
   const ateStr=document.getElementById('ph-ate').value||datas[datas.length-1];
 
@@ -2966,7 +2987,7 @@ async function gerarRelatorioProducaoHora(){
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório Produção por Família — ${deStr} a ${ateStr}</title>
+<title>Relatório Produção por ${ehFam?'Família':'Modelo'} — ${deStr} a ${ateStr}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
@@ -3004,8 +3025,8 @@ async function gerarRelatorioProducaoHora(){
 
 <div class="rp-header">
   <div>
-    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR FAMÍLIA</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${modeloSel?' · FAMÍLIA '+modeloSel:''}</div>
+    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR ${Termo}</div>
+    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${sel?' · '+Termo+' '+(top?top.label:sel):''}</div>
   </div>
   <div class="rp-meta">
     <div class="rp-dia">${deStr} — ${ateStr}</div>
@@ -3026,26 +3047,26 @@ async function gerarRelatorioProducaoHora(){
     <div class="kpi-sub">ritmo médio do período</div>
   </div>
   <div class="kpi-card" style="border-left-color:#888">
-    <div class="kpi-lbl">${modeloSel?'FAMÍLIA':'FAMÍLIAS'}</div>
-    <div class="kpi-val" style="${modeloSel?'font-size:16px':''}">${modeloSel?modeloSel:linhas.length}</div>
-    <div class="kpi-sub">${modeloSel?'família filtrada':'famílias no período'}</div>
+    <div class="kpi-lbl">${sel?Termo:(ehFam?'FAMÍLIAS':'MODELOS')}</div>
+    <div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):linhas.length}</div>
+    <div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(ehFam?'famílias no período':'modelos no período')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
-    <div class="kpi-lbl">FAMÍLIA TOP</div>
-    <div class="kpi-val" style="font-size:16px">${top?top.modelo:'—'}</div>
+    <div class="kpi-lbl">${Termo} TOP</div>
+    <div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div>
     <div class="kpi-sub">${top?top.total.toLocaleString('pt-BR')+' cx no período':'—'}</div>
   </div>
 </div>
 
-<div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR FAMÍLIA — POR DIA (${label})</div>
+<div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR ${Termo} — POR DIA (${label})</div>
 <table>
   <thead>
-    <tr><th>FAMÍLIA</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>${col1}</th><th>${col2}</th></tr>
+    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th>${col1}</th><th>${col2}</th></tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
-      const cells=datas.map(d=>{ const v=cellV(l.modelo,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
-      return `<tr><td>${l.modelo}${l.nome?' · '+l.nome:''}</td>${cells}<td class="col-tot">${fmt(_phVal(l.acc,metric))}</td><td>${fmt(rowV2(l))}</td></tr>`;
+      const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
+      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(_phVal(l.acc,metric))}</td><td>${fmt(rowV2(l))}</td></tr>`;
     }).join('')}
   </tbody>
   <tfoot>

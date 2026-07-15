@@ -69,6 +69,14 @@ const FAMILIAS = [
   'CADEIRA', 'POLTRONA', 'BANCADA', 'GABINETE'
 ];
 
+// Nome do MODELO já limpo (só tira o prefixo de volume "VOL 1/1"): mantém o
+// nome do produto, ex.: "VOL 1/1 RACK INTENSE" -> "RACK INTENSE". Diferente de
+// familiaDoNome, que colapsa para a família ampla ("RACK").
+function limpaNomeModelo(desc) {
+  return String(desc || '').toUpperCase().trim()
+    .replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').trim();
+}
+
 // Deriva a família (ampla) a partir da descrição do produto. Ver comentário da
 // lista FAMILIAS. Devolve '' se não sobrar texto útil.
 function familiaDoNome(desc) {
@@ -1118,15 +1126,16 @@ function getProducaoModeloPeriodo(p) {
 
     const modelo = codigo.slice(0, 6);
     const prod   = catalogo[codigo] || { pontos: 0, peso: 0, desc: '' };
-    // Agrupamento AMPLO por família (junta vários códigos, ex.: todas as MESA
-    // CABECEIRA). A descrição-base vem do catálogo; se faltar, usa o nome do
-    // modelo (6 díg.); em último caso, o próprio código de 6 dígitos.
-    const descBase = String(prod.desc || '') || modeloNome[modelo] || '';
-    const familia  = familiaDoNome(descBase) || modelo;
-    const key = dNum + '|' + familia;
+    // Agrupa por MODELO (6 díg.: junta só as cores de um mesmo produto) e
+    // carimba, em cada item, o NOME do modelo (limpo, sem "VOL 1/1") e a
+    // FAMÍLIA ampla — assim o painel alterna entre modelo/família sem refazer a
+    // chamada. Base do nome: prefixo comum das variantes; se faltar, o catálogo.
+    const descBase = modeloNome[modelo] || String(prod.desc || '');
+    const key = dNum + '|' + modelo;
     if (!map[key]) {
-      map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: familia,
-                   nome: '',
+      map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
+                   nome: limpaNomeModelo(descBase),
+                   familia: familiaDoNome(descBase) || modelo,
                    caixas: 0, pontos: 0, pesoKg: 0, horasSet: {} };
     }
     map[key].caixas += cx;
@@ -1142,6 +1151,7 @@ function getProducaoModeloPeriodo(p) {
     const it = map[k];
     const horas = Object.keys(it.horasSet).length;
     return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
+             familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
              pesoKg: Math.round(it.pesoKg * 10) / 10,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
