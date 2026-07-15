@@ -658,6 +658,7 @@ let _refreshTimer = null;
 // não bloqueia lançamento de caixas.
 let PRODUTOS = [];
 let PROD_ATUAL = '';
+let PROD_LOTE  = '';   // lote travado do produto atual — obrigatório p/ lançar
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
@@ -679,6 +680,7 @@ function loadProdutoLocal(){
     const c = localStorage.getItem('rpe_produtos');
     if(c) PRODUTOS = JSON.parse(c);
     PROD_ATUAL = localStorage.getItem('rpe_prod_atual') || '';
+    PROD_LOTE  = localStorage.getItem('rpe_prod_lote')  || '';
   }catch(e){}
 }
 
@@ -908,7 +910,9 @@ function atualizarProdutoBar(){
   if(!el) return;
   if(!PROD_ATUAL){ el.textContent='TOCAR PARA SELECIONAR'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
-  el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+  const base = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+  // Mostra o LOTE travado; se ainda não há lote, avisa (não deixa lançar sem).
+  el.textContent = PROD_LOTE ? `LOTE ${PROD_LOTE} · ${base}` : `⚠ ESCOLHA O LOTE · ${base}`;
 }
 
 // Remove acentos p/ a busca não depender de digitar acento certo.
@@ -942,7 +946,7 @@ function filtrarProdutos(){
           const lot = p.lote ? `<span style="color:var(--acc);font-family:var(--font-d);font-size:10px;margin-left:8px">LOTE ${p.lote}</span>` : '';
           const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px;margin-left:8px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
           const qtd = p.qtde>0 ? `<div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">meta ${fmtN(p.qtde)} cx</div>` : '';
-          return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+          return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}','${p.lote||''}')">
             <div class="prod-search-cod">${p.codigo}${lot}${atr}</div>
             <div class="prod-search-desc">${p.desc}</div>${qtd}
           </div>`;
@@ -961,7 +965,7 @@ function filtrarProdutos(){
     lista.innerHTML =
       `<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">LOTE ${porLote[0].lote}${porLote.length>1?' — toque no produto certo':''}</div>` +
       porLote.map(p=>`
-        <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+        <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}','${p.lote||''}')">
           <div class="prod-search-cod">${p.codigo}</div>
           <div class="prod-search-desc">${p.desc}</div>
         </div>`).join('');
@@ -994,14 +998,24 @@ function prodNumpadDel(){
   inp.value=(inp.value||'').slice(0,-1);
   filtrarProdutos();
 }
-async function selecionarProduto(codigo){
+async function selecionarProduto(codigo, lote){
+  lote = String(lote || '');
+  // Se veio sem lote (busca por código/nome no catálogo), tenta resolver pela
+  // programação de hoje: 1 lote só → usa; vários → fica vazio e o lançamento
+  // pede pra escolher o lote (trava exata por código+lote).
+  if(!lote){
+    const lotes = [...new Set(PROG_HOJE.filter(p => String(p.codigo)===String(codigo) && p.lote).map(p => String(p.lote)))];
+    if(lotes.length === 1) lote = lotes[0];
+  }
   PROD_ATUAL = codigo;
+  PROD_LOTE  = lote;   // trava o lote junto do produto
   localStorage.setItem('rpe_prod_atual', codigo);
+  localStorage.setItem('rpe_prod_lote', PROD_LOTE);
   atualizarProdutoBar();
   fecharModalProduto();
   if(!CFG.sheetsUrl) return;
   try{
-    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setProdutoAtual&codigo='+encodeURIComponent(codigo);
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setProdutoAtual&codigo='+encodeURIComponent(codigo)+'&lote='+encodeURIComponent(PROD_LOTE);
     await jsonpFetch(url);
   }catch(e){ console.warn('setProdutoAtual:', e.message); }
 }
@@ -1459,6 +1473,9 @@ async function salvarLanc(){
   if(isNaN(add)||add<=0){ alert('Informe a quantidade a adicionar.'); return; }
   if(!_slotAtivo) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+  // TRAVADO NO LOTE: exige produto E lote antes de lançar (conferência exata
+  // por código + lote). Sem lote não lança.
+  if(!PROD_ATUAL || !PROD_LOTE){ alert('Selecione o PRODUTO e o LOTE antes de lançar.\n\nToque em "Produto" e escolha pelo LOTE (ou digite o número do lote).'); return; }
 
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
@@ -1468,9 +1485,10 @@ async function salvarLanc(){
   // resposta se perder (timeout/cold start do Apps Script) mas a gravação tiver
   // ocorrido, o backend NÃO grave de novo — devolve o resultado anterior.
   // Só troca de id quando a quantidade muda (aí é outro lançamento).
-  if(!_slotAtivo._lancId || _slotAtivo._lancQtd!==add){
+  const _chave = add+'|'+PROD_ATUAL+'|'+PROD_LOTE;
+  if(!_slotAtivo._lancId || _slotAtivo._lancChave!==_chave){
     _slotAtivo._lancId = 'L'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    _slotAtivo._lancQtd = add;
+    _slotAtivo._lancChave = _chave;
   }
   const lancId = _slotAtivo._lancId;
 
@@ -1484,9 +1502,9 @@ async function salvarLanc(){
     'lancId='+encodeURIComponent(lancId),
     'operador='+encodeURIComponent('Mobile')
   ];
-  // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
-  // (sem produto) — não bloqueia a produção.
-  if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
+  // Produto e LOTE são obrigatórios (travado no lote — já validado acima).
+  params.push('produto='+encodeURIComponent(PROD_ATUAL));
+  params.push('lote='+encodeURIComponent(PROD_LOTE));
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
   // Auto-retry: como o lançamento agora é idempotente (mesmo lancId não grava 2x),

@@ -391,7 +391,7 @@ function _saveRealizadoCore(p) {
           if (!cell.getFormula()) {
             cell.setValue(real);
           }
-          registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
+          registrarProducaoProduto(p.produto, inicio || horario, real, p.operador, p.lote);
           return { ok: true, linha: i + 1, horario: cellHora, realizado: real };
         }
       }
@@ -417,7 +417,7 @@ function _saveRealizadoCore(p) {
           sh.getRange(i + 1, ultimo + 1).setValue(real);
           colunaEscrita = ultimo + 1;
         }
-        registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
+        registrarProducaoProduto(p.produto, inicio || horario, real, p.operador, p.lote);
         return { ok: true, linha: i + 1, coluna: colunaEscrita, horario: cellHora, realizado: real };
       }
     }
@@ -430,9 +430,10 @@ function _saveRealizadoCore(p) {
 // lock de saveRealizado; não mexe nas colunas de lote de HORA_A_HORA.
 // Grava DESCRICAO/PONTOS/PESO_KG já calculados (snapshot no momento do lançamento)
 // para facilitar relatório direto na planilha, sem precisar cruzar com PRODUTO_CODIGO.
-function registrarProducaoProduto(codigo, horaInicio, caixas, operador) {
+function registrarProducaoProduto(codigo, horaInicio, caixas, operador, lote) {
   codigo = String(codigo || '').trim();
   if (!codigo) return; // produto é opcional — nada a fazer
+  lote = String(lote || '').trim(); // LOTE travado (conferência exata por código+lote)
 
   PropertiesService.getScriptProperties().setProperty(PROP_PROD_ATUAL, codigo);
 
@@ -450,11 +451,20 @@ function registrarProducaoProduto(codigo, horaInicio, caixas, operador) {
   let sh = ss.getSheetByName(SHEET_PROD_LOG);
   if (!sh) {
     sh = ss.insertSheet(SHEET_PROD_LOG);
-    sh.appendRow(['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR']);
+    sh.appendRow(['DATA', 'HORA', 'CODIGO', 'LOTE', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR']);
     sh.setFrozenRows(1);
   }
+  // Garante a coluna LOTE mesmo em planilhas antigas (acrescenta no fim do
+  // cabeçalho se não existir). A gravação segue a ORDEM do cabeçalho atual —
+  // robusto a colunas extras/ordem diferente.
+  let hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  if (hdr.indexOf('LOTE') < 0) {
+    sh.getRange(1, sh.getLastColumn() + 1).setValue('LOTE');
+    hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  }
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  sh.appendRow([hoje, horaInicio, codigo, desc, cx, pontos, pesoKg, operador || '']);
+  const valBy = { DATA: hoje, HORA: horaInicio, CODIGO: codigo, LOTE: lote, DESCRICAO: desc, CAIXAS: cx, PONTOS: pontos, PESO_KG: pesoKg, OPERADOR: operador || '' };
+  sh.appendRow(hdr.map(function (h) { return valBy.hasOwnProperty(h) ? valBy[h] : ''; }));
 
   // Item 5: histórico de produtividade por FAMÍLIA. Não pode derrubar o lançamento
   // se falhar — por isso o try/catch.
