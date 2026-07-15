@@ -85,6 +85,7 @@ function doGet(e) {
     else if (act === 'getProdutos')   result = getProdutos();
     else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
     else if (act === 'getPontosDia')  result = getPontosDia();
+    else if (act === 'getProducaoModeloPeriodo') result = getProducaoModeloPeriodo(p);
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
@@ -1022,6 +1023,88 @@ function getPontosDia() {
 
 // Maior prefixo de PALAVRAS comum entre duas descrições (usado pra achar o
 // "nome do modelo" sem a cor, sem precisar adivinhar onde ela termina no texto).
+// ════════════════════════════════════════════════════════
+// PRODUÇÃO POR MODELO — HISTÓRICO POR PERÍODO
+// Lê o log append-only PRODUCAO_PRODUTO (mesma fonte de getPontosDia, mas SEM
+// filtrar só o dia de hoje) e devolve a produção agrupada por DATA + MODELO
+// (6 primeiros dígitos do código). Serve pra comparar um mesmo modelo em vários
+// dias — ou vários modelos entre si — na aba PRODUÇÃO/HORA do painel.
+// Parâmetros opcionais: de / ate (dd/MM/yyyy). Sem eles, devolve tudo.
+// ════════════════════════════════════════════════════════
+function getProducaoModeloPeriodo(p) {
+  p = p || {};
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PROD_LOG);
+  if (!sh) return { ok: true, itens: [] };
+
+  // Catálogo + nome "limpo" do modelo (mesma lógica de getPontosDia: prefixo de
+  // palavras comum entre as variantes de cor; se ficar curto demais, a descrição
+  // mais longa).
+  const catalogo = {};
+  const modeloDescs = {};
+  lerCatalogoProdutos().forEach(function (pr) {
+    catalogo[pr.codigo] = pr;
+    const m = String(pr.codigo || '').slice(0, 6);
+    const d = String(pr.desc || '').trim();
+    if (m && d) (modeloDescs[m] = modeloDescs[m] || []).push(d);
+  });
+  const modeloNome = {};
+  Object.keys(modeloDescs).forEach(function (m) {
+    const descs = modeloDescs[m];
+    let pref = descs[0];
+    for (let i = 1; i < descs.length; i++) pref = prefixoComumPalavras(pref, descs[i]);
+    const maisLonga = descs.reduce(function (a, b) { return b.length > a.length ? b : a; }, '');
+    modeloNome[m] = (pref && pref.split(' ').filter(String).length >= 2) ? pref : maisLonga;
+  });
+
+  const deNum  = p.de  ? dataParaNum(p.de)  : null;
+  const ateNum = p.ate ? dataParaNum(p.ate) : null;
+
+  const values = sh.getDataRange().getValues();
+  const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
+
+  const map = {}; // chave "dataNum|modelo"
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const dNum = dataParaNum(r[iData]);
+    if (!dNum) continue;
+    if (deNum  && dNum < deNum)  continue;
+    if (ateNum && dNum > ateNum) continue;
+
+    const codigo = String(r[iCod]).trim();
+    const cx = Number(r[iCx]) || 0;
+    if (!codigo || !cx) continue;
+
+    const modelo = codigo.slice(0, 6);
+    const prod   = catalogo[codigo] || { pontos: 0, peso: 0 };
+    const key = dNum + '|' + modelo;
+    if (!map[key]) {
+      map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
+                   nome: modeloNome[modelo] || String(prod.desc || ''),
+                   caixas: 0, pontos: 0, pesoKg: 0 };
+    }
+    map[key].caixas += cx;
+    map[key].pontos += cx * (prod.pontos || 0);
+    map[key].pesoKg += cx * (prod.peso   || 0);
+  }
+
+  const itens = Object.keys(map).map(function (k) {
+    const it = map[k];
+    return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
+             caixas: it.caixas, pontos: Math.round(it.pontos),
+             pesoKg: Math.round(it.pesoKg * 10) / 10 };
+  }).sort(function (a, b) {
+    return a.dataNum - b.dataNum || b.caixas - a.caixas;
+  });
+
+  return { ok: true, itens: itens };
+}
+
+// Maior prefixo de PALAVRAS comum entre duas descrições (usado pra achar o
+// "nome do modelo" sem a cor, sem precisar adivinhar onde a cor termina no texto).
 function prefixoComumPalavras(a, b) {
   const wa = String(a || '').split(' ');
   const wb = String(b || '').split(' ');
