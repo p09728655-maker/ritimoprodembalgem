@@ -49,6 +49,51 @@ const PROP_PROD_ATUAL = 'produtoAtual';
 // Fuso fixo para os rótulos de data/arquivamento (independe do fuso do projeto).
 const TZ = 'America/Sao_Paulo';
 
+// ════════════════════════════════════════════════════════
+// FAMÍLIAS DE PRODUTO (agrupamento amplo do comparativo por período)
+// A planilha não tem coluna de "família", então ela é DEDUZIDA da descrição:
+// tira o prefixo de volume ("VOL 1/1", "VOL 1/2") e um "KIT n" inicial, e casa
+// o começo do texto com a lista abaixo (o casamento MAIS LONGO vence — por isso
+// "MESA CABECEIRA" precisa vir antes de um eventual "MESA"). Sem casar, a
+// família vira a 1ª palavra do texto.
+// ► Para incluir/ajustar famílias, edite esta lista (é só isto que muda). ◄
+const FAMILIAS = [
+  'MESA CABECEIRA', 'MESA CENTRO', 'MESA JANTAR', 'MESA',
+  'CANT CAFE',
+  'COMODA SAPATEIRA', 'COMODA',
+  'PENTEADEIRA CAMARIM', 'PENTEADEIRA',
+  'MODULO RIPADO', 'MODULO',
+  'GUARDA ROUPA', 'CRIADO MUDO',
+  'RACK', 'ESCRIVANINHA', 'SAPATEIRA', 'BANQUETA', 'LIVREIRO', 'BUFFET',
+  'PAINEL', 'BALCAO', 'ARMARIO', 'NICHO', 'PRATELEIRA', 'ESTANTE', 'APARADOR',
+  'CADEIRA', 'POLTRONA', 'BANCADA', 'GABINETE'
+];
+
+// Nome do MODELO já limpo (só tira o prefixo de volume "VOL 1/1"): mantém o
+// nome do produto, ex.: "VOL 1/1 RACK INTENSE" -> "RACK INTENSE". Diferente de
+// familiaDoNome, que colapsa para a família ampla ("RACK").
+function limpaNomeModelo(desc) {
+  return String(desc || '').toUpperCase().trim()
+    .replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').trim();
+}
+
+// Deriva a família (ampla) a partir da descrição do produto. Ver comentário da
+// lista FAMILIAS. Devolve '' se não sobrar texto útil.
+function familiaDoNome(desc) {
+  let s = String(desc || '').toUpperCase().trim();
+  s = s.replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').trim(); // tira "VOL 1/1", "VOL 1/2"
+  s = s.replace(/^KIT\s*\d*\s*/, '').trim();               // tira "KIT", "KIT 2"
+  if (!s) return '';
+  // Casa o começo com a família mais longa possível (lista já vem do mais
+  // específico p/ o mais genérico; garante o mais longo comparando comprimento).
+  let melhor = '';
+  for (let i = 0; i < FAMILIAS.length; i++) {
+    const f = FAMILIAS[i];
+    if ((s === f || s.indexOf(f + ' ') === 0) && f.length > melhor.length) melhor = f;
+  }
+  return melhor || s.split(' ')[0];
+}
+
 // Horário do fechamento automático (segue o fuso do PROJETO no gatilho).
 const HORA_RESET  = 23;  // 23h
 const MIN_RESET   = 59;  // :59  → ~23:59
@@ -1080,11 +1125,17 @@ function getProducaoModeloPeriodo(p) {
     if (!codigo || !cx) continue;
 
     const modelo = codigo.slice(0, 6);
-    const prod   = catalogo[codigo] || { pontos: 0, peso: 0 };
+    const prod   = catalogo[codigo] || { pontos: 0, peso: 0, desc: '' };
+    // Agrupa por MODELO (6 díg.: junta só as cores de um mesmo produto) e
+    // carimba, em cada item, o NOME do modelo (limpo, sem "VOL 1/1") e a
+    // FAMÍLIA ampla — assim o painel alterna entre modelo/família sem refazer a
+    // chamada. Base do nome: prefixo comum das variantes; se faltar, o catálogo.
+    const descBase = modeloNome[modelo] || String(prod.desc || '');
     const key = dNum + '|' + modelo;
     if (!map[key]) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
-                   nome: modeloNome[modelo] || String(prod.desc || ''),
+                   nome: limpaNomeModelo(descBase),
+                   familia: familiaDoNome(descBase) || modelo,
                    caixas: 0, pontos: 0, pesoKg: 0, horasSet: {} };
     }
     map[key].caixas += cx;
@@ -1100,6 +1151,7 @@ function getProducaoModeloPeriodo(p) {
     const it = map[k];
     const horas = Object.keys(it.horasSet).length;
     return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
+             familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
              pesoKg: Math.round(it.pesoKg * 10) / 10,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
