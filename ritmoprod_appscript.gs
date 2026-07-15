@@ -1063,6 +1063,7 @@ function getProducaoModeloPeriodo(p) {
   const values = sh.getDataRange().getValues();
   const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
+  const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
   const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
 
@@ -1084,18 +1085,24 @@ function getProducaoModeloPeriodo(p) {
     if (!map[key]) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: modeloNome[modelo] || String(prod.desc || ''),
-                   caixas: 0, pontos: 0, pesoKg: 0 };
+                   caixas: 0, pontos: 0, pesoKg: 0, horasSet: {} };
     }
     map[key].caixas += cx;
     map[key].pontos += cx * (prod.pontos || 0);
     map[key].pesoKg += cx * (prod.peso   || 0);
+    // Conta as HORAS distintas em que esse modelo rodou no dia — base da
+    // média cx/h (ritmo). formatHoraCel normaliza texto "13:00" e Date.
+    const hora = formatHoraCel(r[iHora]);
+    if (hora) map[key].horasSet[hora] = true;
   }
 
   const itens = Object.keys(map).map(function (k) {
     const it = map[k];
+    const horas = Object.keys(it.horasSet).length;
     return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
              caixas: it.caixas, pontos: Math.round(it.pontos),
-             pesoKg: Math.round(it.pesoKg * 10) / 10 };
+             pesoKg: Math.round(it.pesoKg * 10) / 10,
+             horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;
   });
