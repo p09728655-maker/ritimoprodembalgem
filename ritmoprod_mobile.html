@@ -227,8 +227,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .par-banner-tipo{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--txt);margin-top:6px}
 .par-banner-obs{font-family:var(--font-b);font-size:13px;color:var(--txt2);margin-top:4px;word-break:break-word}
 .par-banner-hora{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px;margin-top:6px}
-.par-btn-parar{width:100%;background:var(--red);color:#fff}
-.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
+/* especificidade dupla p/ vencer o .btn-salvar (laranja) definido depois */
+.btn-salvar.par-btn-parar{width:100%;background:var(--red);color:#fff}
+.btn-salvar.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
 .btn-paradas.parada-ativa{color:var(--red);border-color:var(--red);animation:pulse 2s infinite}
 .sel-tipo{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
