@@ -29,7 +29,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 
 /* ═══ VIEW SYSTEM ═══ */
 .view{display:none;min-height:100dvh}
-.view.active{display:flex;flex-direction:column}
+/* height fixa no viewport: assim o .mob-content vira o container que ROLA
+   (e não a página), fazendo o topo .lanc-frozen realmente congelar. */
+.view.active{display:flex;flex-direction:column;height:100dvh}
 
 /* ═══ LOGIN ═══ */
 #view-login{background:var(--bg);align-items:center;justify-content:center;padding:20px}
@@ -64,7 +66,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .mob-btn-sair:active{opacity:.6}
 
 /* ═══ SCROLL CONTENT ═══ */
-.mob-content{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
+.mob-content{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;display:flex;flex-direction:column;gap:14px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px)}
 
 /* ═══ STATUS BAR ═══ */
 .status-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px}
@@ -1030,6 +1032,12 @@ async function carregarTiposParada(){
 function paradaAtiva(){ return PARADAS_HOJE.find(p=>!p.fim || String(p.fim).trim()===''); }
 function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 
+// Guarda a parada recém-registrada até o backend devolvê-la. Sem isso, um
+// getParadas defasado (logo após salvar) sobrescrevia PARADAS_HOJE SEM a parada
+// nova → a tela voltava pra "RODANDO" e o operador registrava outra, deixando
+// paradas abertas acumuladas. Este "seguro" mantém o estado PARADO firme.
+let _paradaLocalAberta = null;
+
 async function carregarParadas(){
   if(!CFG.sheetsUrl) return;
   try{
@@ -1037,6 +1045,16 @@ async function carregarParadas(){
     const json = await jsonpFetch(url);
     if(json && json.ok){
       PARADAS_HOJE = json.paradas||[];
+      // Reconcilia com a parada local otimista.
+      if(_paradaLocalAberta){
+        const temEssa   = PARADAS_HOJE.some(p=>String(p.id)===String(_paradaLocalAberta.id));
+        const temAberta = PARADAS_HOJE.some(p=>!p.fim || String(p.fim).trim()==='');
+        if(!temEssa && !temAberta){
+          PARADAS_HOJE.push(_paradaLocalAberta); // ainda não veio: mantém PARADO
+        } else {
+          _paradaLocalAberta = null;             // já há parada aberta; solta o seguro
+        }
+      }
       renderParadasList();
       renderParadaEstado();
       atualizarBadgeParadas();
@@ -1122,7 +1140,9 @@ async function registrarParadaAgora(){
   try{
     const res = await jsonpFetch(url);
     if(res.ok===false) throw new Error(res.erro||'Erro ao registrar');
-    // Reflete na hora, sem esperar o próximo poll.
+    // Reflete na hora, sem esperar o próximo poll, e segura o estado PARADO até
+    // o backend confirmar (evita voltar pra RODANDO e duplicar parada).
+    _paradaLocalAberta = nova;
     PARADAS_HOJE.push(nova);
     renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
     await carregarParadas();
@@ -1134,18 +1154,24 @@ async function registrarParadaAgora(){
 // Dá START: encerra a parada em andamento (carimba fim). A TV para de mostrar a
 // tela cheia no próximo poll.
 async function darStartParada(){
-  const at = paradaAtiva();
-  if(!at){ renderParadaEstado(); return; }
+  // Encerra TODAS as paradas abertas (não só a 1ª) — se sobraram duplicatas
+  // abertas, o START limpa tudo de uma vez e o painel volta ao normal.
+  const abertas = PARADAS_HOJE.filter(p=>!p.fim || String(p.fim).trim()==='');
+  if(!abertas.length){ _paradaLocalAberta=null; renderParadaEstado(); return; }
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
   const btn = document.getElementById('btn-start-parada');
   if(btn){ btn.textContent='RETOMANDO...'; btn.disabled=true; }
 
-  const params = 'action=endParada&id='+encodeURIComponent(at.id)+'&fim='+encodeURIComponent(nowHHMM());
-  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+  const fim = nowHHMM();
   try{
-    const res = await jsonpFetch(url);
-    if(res.ok===false) throw new Error(res.erro||'Erro ao dar start');
-    at.fim = nowHHMM();
+    for(const at of abertas){
+      const params = 'action=endParada&id='+encodeURIComponent(at.id)+'&fim='+encodeURIComponent(fim);
+      const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+      const res = await jsonpFetch(url);
+      if(res.ok===false) throw new Error(res.erro||'Erro ao dar start');
+      at.fim = fim;
+    }
+    _paradaLocalAberta = null;
     renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
     await carregarParadas();
   }catch(e){
