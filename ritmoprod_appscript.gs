@@ -113,6 +113,11 @@ const PROP_ULTIMA_LEITURA = 'ultimaLeitura';
 function doGet(e) {
   e = e || {};
   const p        = e.parameter || {};
+  // API do ESTUDO DE TEMPO (contrato ?acao= / JSON puro) — MESMO backend e MESMA
+  // planilha das demais telas. Permite a tela Estudo calcular e GRAVAR a
+  // programação COM LOTE aqui, alimentando a meta e a conferência por código+lote.
+  // Só entra quando vem ?acao=; o contrato ?action= (JSONP) segue intacto.
+  if (p.acao) return estudoDoGet(p);
   const act      = p.action   || '';
   const callback = p.callback || '';
 
@@ -151,6 +156,193 @@ function doGet(e) {
   return ContentService
     .createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// ════════════════════════════════════════════════════════
+// API DO ESTUDO DE TEMPO (contrato ?acao= / JSON) — MESMO backend/planilha.
+// A tela "Estudo de Tempo" calcula e GRAVA a programação COM LOTE nesta mesma
+// planilha. Assim: um backend só, uma planilha só, programação com lote → meta
+// pelo estudo → conferência exata por código+lote. Não toca no ?action= (JSONP).
+// ════════════════════════════════════════════════════════
+
+function estudoJson_(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function estudoOk_(data)  { return estudoJson_({ ok: true,  data: data }); }
+function estudoErr_(msg)  { return estudoJson_({ ok: false, error: String(msg) }); }
+
+// Catálogo no formato que a tela Estudo espera (reaproveita lerCatalogoProdutos).
+function estudoProdutos_() {
+  return lerCatalogoProdutos().map(function (p) {
+    return {
+      codigo:      p.codigo,
+      descricao:   p.desc,
+      pb:          p.peso ? String(p.peso) : '',
+      ean128:      p.ean,
+      medida:      p.medida,
+      vel:         p.velocidade,
+      entre_pecas: p.entrePeca,
+      pontos:      p.pontos,
+      troca_min:   p.tempoTroca
+    };
+  });
+}
+function estudoBuscarCodigo_(codigo) {
+  if (!codigo) return null;
+  const alvo = codKey(codigo);
+  return estudoProdutos_().filter(function (p) { return codKey(p.codigo) === alvo; })[0] || null;
+}
+function estudoBuscarEAN_(ean) {
+  if (!ean) return null;
+  const alvo = String(ean).trim();
+  return estudoProdutos_().filter(function (p) { return String(p.ean128).trim() === alvo; })[0] || null;
+}
+function estudoConfig_() {
+  // Turno início vem da HORA_A_HORA (C3) quando existir; senão 07:00.
+  var ini = '07:00';
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_DADOS);
+    if (sh) { const c3 = String(sh.getRange(3, 3).getValue() || '').trim(); if (/^\d{1,2}:\d{2}$/.test(c3)) ini = c3; }
+  } catch (e) {}
+  return { TURNO_INICIO: ini, TURNO_FIM: '17:00', TOTAL_MIN: 513, FATOR_ACELERACAO: 1.10 };
+}
+// Programação no formato do Estudo, JÁ COM LOTE, enriquecida pelo catálogo.
+function estudoGetProgramacao_(dataFiltro) {
+  const cat = {};
+  lerCatalogoProdutos().forEach(function (p) { cat[codKey(p.codigo)] = p; });
+  const alvoNum = dataFiltro ? dataParaNum(dataFiltro) : 0;
+  const out = [];
+  lerProgramacao().forEach(function (pr, idx) {
+    if (alvoNum && dataParaNum(pr.data) !== alvoNum) return;
+    const c = cat[codKey(pr.codigo)] || {};
+    out.push({
+      data:        normalizarDataBR(pr.data),
+      ordem:       idx + 1,
+      codigo:      pr.codigo,
+      lote:        pr.lote || '',
+      descricao:   c.desc || '',
+      qtd_cx:      pr.qtde || 0,
+      vel:         c.velocidade || 0,
+      medida:      c.medida || 0,
+      entre_pecas: c.entrePeca || 0,
+      troca_min:   c.tempoTroca || 0,
+      cx_min:      0,
+      tempo_min:   0,
+      hora_inicio: '',
+      hora_fim:    '',
+      pb:          c.peso || 0,
+      pontos:      c.pontos || 0,
+      foraEsteira: !!pr.foraEsteira
+    });
+  });
+  return out;
+}
+function estudoDoGet(p) {
+  try {
+    const acao = String(p.acao || '').trim();
+    if (acao === 'config')         return estudoOk_(estudoConfig_());
+    if (acao === 'produtos')       return estudoOk_(estudoProdutos_());
+    if (acao === 'buscarCodigo')   return estudoOk_(estudoBuscarCodigo_(String(p.codigo || '').trim()));
+    if (acao === 'buscarEAN')      return estudoOk_(estudoBuscarEAN_(String(p.ean || '').trim()));
+    if (acao === 'getProgramacao') return estudoOk_(estudoGetProgramacao_(String(p.data || '').trim()));
+    return estudoErr_('acao invalida: ' + acao);
+  } catch (ex) {
+    return estudoErr_(ex.message);
+  }
+}
+
+// Recebe o POST do Estudo (?acao=salvarProgramacao). Sob lock, grava a
+// programação do dia COM LOTE. JSON puro {ok,data}, como o Estudo espera.
+function doPost(e) {
+  e = e || {};
+  const p = e.parameter || {};
+  const acao = String(p.acao || '').trim();
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(20000);
+    var body = {};
+    try { body = JSON.parse((e.postData && e.postData.contents) || '{}'); }
+    catch (parseErr) { return estudoErr_('JSON invalido: ' + parseErr.message); }
+    if (acao === 'salvarProgramacao') { estudoSalvarProgramacao_(body); return estudoOk_(null); }
+    return estudoErr_('acao invalida: ' + acao);
+  } catch (ex) {
+    return estudoErr_(ex.message);
+  } finally {
+    try { lock.releaseLock(); } catch (ignored) {}
+  }
+}
+
+// Grava a programação do dia COM LOTE na aba PROGRAMACAO, escrevendo POR
+// CABEÇALHO (tolera o layout real: Lote/Data/Ordem/Codigo/Descricao/Qtd_cx…).
+// Substitui só as linhas do MESMO dia; não mexe em outros dias. As colunas de
+// conferência (PRODUZIDO/SALDO/STATUS…) não são preenchidas aqui — o saldo por
+// lote é calculado pelo painel a partir do realizado (PRODUCAO_PRODUTO).
+function estudoSalvarProgramacao_(body) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = acharAbaTolerante(ss, SHEET_PROG);
+  if (!sh) throw new Error('Aba PROGRAMACAO nao encontrada.');
+  const dataStr = String(body.data || '').trim();
+  if (!dataStr) throw new Error('Data nao informada.');
+  const itens = body.itens || [];
+  const alvoNum = dataParaNum(dataStr);
+  if (!alvoNum) throw new Error('Data invalida: ' + dataStr);
+
+  const values = sh.getDataRange().getValues();
+  const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const idx = function () { for (var i = 0; i < arguments.length; i++) { var j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
+  const iData  = idx('DATA');
+  const iCod   = idx('CODIGO', 'COD');
+  const iQtd   = idx('QTD_CX', 'QTDE', 'QTD', 'QUANTIDADE', 'QTD CX');
+  const iLote  = hdr.findIndex(function (h) { return h.indexOf('LOTE') >= 0; });
+  const iDesc  = idx('DESCRICAO');
+  const iOrdem = idx('ORDEM');
+  const iAtual = hdr.findIndex(function (h) { return h.indexOf('ATUALIZADO') >= 0; });
+  const iVel   = idx('VEL', 'VELOCIDADE');
+  const iMed   = idx('MEDIDA', 'MEDIDA DA CAIXA');
+  const iEntre = hdr.findIndex(function (h) { return h.indexOf('ENTRE_PEC') >= 0 || h.indexOf('ENTRE PEC') >= 0; });
+  const iTroca = idx('TROCA_MIN', 'TROCA');
+  const iCxMin = idx('CXMIN', 'CX_MIN');
+  const iTempo = idx('TEMPO_MIN', 'TEMPO');
+  const iIni   = idx('HORA_INICIO', 'HORA_INI');
+  const iFim   = idx('HORA_FIM');
+  if (iData < 0 || iCod < 0) throw new Error('Cabecalho da PROGRAMACAO sem DATA/CODIGO.');
+
+  const ncols = hdr.length;
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  const dateObj = (function () {
+    const m = dataStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) { var y = parseInt(m[3], 10); if (y < 100) y += 2000; return new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10)); }
+    return dataStr;
+  })();
+
+  // Remove as linhas do MESMO dia (de baixo pra cima, sobre o snapshot).
+  for (var i = values.length - 1; i >= 1; i--) {
+    if (dataParaNum(values[i][iData]) === alvoNum) sh.deleteRow(i + 1);
+  }
+
+  // Acrescenta as novas linhas do dia, COM LOTE, na ordem do cabeçalho.
+  itens.forEach(function (it, k) {
+    const row = [];
+    for (var c = 0; c < ncols; c++) row.push('');
+    row[iData] = dateObj;
+    row[iCod]  = it.codigo || '';
+    if (iLote  >= 0) row[iLote]  = it.lote || '';
+    if (iQtd   >= 0) row[iQtd]   = Number(it.qtd_cx) || 0;
+    if (iDesc  >= 0) row[iDesc]  = it.descricao || '';
+    if (iOrdem >= 0) row[iOrdem] = k + 1;
+    if (iVel   >= 0) row[iVel]   = Number(it.vel) || 0;
+    if (iMed   >= 0) row[iMed]   = Number(it.medida) || 0;
+    if (iEntre >= 0) row[iEntre] = Number(it.entre_pecas) || 0;
+    if (iTroca >= 0) row[iTroca] = Number(it.troca_min) || 0;
+    if (iCxMin >= 0) row[iCxMin] = Number(it.cx_min) || 0;
+    if (iTempo >= 0) row[iTempo] = Number(it.tempo_min) || 0;
+    if (iIni   >= 0) row[iIni]   = it.hora_inicio || '';
+    if (iFim   >= 0) row[iFim]   = it.hora_fim || '';
+    if (iAtual >= 0) row[iAtual] = agora;
+    sh.appendRow(row);
+  });
 }
 
 
