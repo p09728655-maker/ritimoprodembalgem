@@ -1515,25 +1515,34 @@ function saveParadas(p) {
   // Mapa ID -> linha (1-based) das paradas já gravadas, p/ decidir update x append.
   const values = sh.getDataRange().getValues();
   const rowById = {};
-  for (let i = 1; i < values.length; i++) rowById[String(values[i][1])] = i + 1;
+  let temAbertaHoje = false;
+  for (let i = 1; i < values.length; i++) {
+    rowById[String(values[i][1])] = i + 1;
+    if (String(values[i][0]) === data && !String(values[i][4] || '').trim()) temAbertaHoje = true;
+  }
 
+  let salvos = 0;
   paradas.forEach(par => {
-    const id  = String(par.id || Date.now());
+    const id      = String(par.id || Date.now());
+    const abrindo = !String(par.fim || '').trim();
+    const r       = rowById[id];
+
+    // Dedupe: não cria uma SEGUNDA parada aberta enquanto já houver uma aberta
+    // hoje. Impede o acúmulo de paradas "em andamento" por toques repetidos /
+    // leituras defasadas no mobile.
+    if (!r && abrindo && temAbertaHoje) return;
+
     const row = [
-      data,
-      id,
-      par.tipo || '',
-      par.ini  || '',
-      par.fim  || '',
-      calcDurMin(par.ini, par.fim) || '',
-      par.obs  || ''
+      data, id, par.tipo || '', par.ini || '', par.fim || '',
+      calcDurMin(par.ini, par.fim) || '', par.obs || ''
     ];
-    const r = rowById[id];
     if (r) sh.getRange(r, 1, 1, 7).setValues([row]);
-    else   sh.appendRow(row);
+    else { sh.appendRow(row); if (abrindo) temAbertaHoje = true; }
+    salvos++;
   });
 
-  return { ok: true, salvos: paradas.length };
+  SpreadsheetApp.flush(); // garante commit antes do próximo getParadas
+  return { ok: true, salvos };
 }
 
 // Dá START (encerra) numa parada em andamento: carimba o FIM (hora do servidor,
@@ -1555,6 +1564,7 @@ function endParada(p) {
       const ini = String(values[i][3] || '');
       sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
       sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
+      SpreadsheetApp.flush();
       return { ok: true, fim };
     }
   }
