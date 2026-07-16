@@ -40,6 +40,7 @@ const SHEET_PARADAS   = 'PARADAS';
 const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
 const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
+const SHEET_PROG_EST  = 'PROGRAMACAO_ESTUDO'; // plano firmado pelo Estudo (COM LOTE), separado da PROGRAMACAO original
 const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
 const SHEET_CONFIG    = 'CONFIG_PAINEL';        // config do ciclo de telas da TV, compartilhada entre aparelhos
 
@@ -281,13 +282,22 @@ function doPost(e) {
 // lote é calculado pelo painel a partir do realizado (PRODUCAO_PRODUTO).
 function estudoSalvarProgramacao_(body) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = acharAbaTolerante(ss, SHEET_PROG);
-  if (!sh) throw new Error('Aba PROGRAMACAO nao encontrada.');
   const dataStr = String(body.data || '').trim();
   if (!dataStr) throw new Error('Data nao informada.');
-  const itens = body.itens || [];
   const alvoNum = dataParaNum(dataStr);
   if (!alvoNum) throw new Error('Data invalida: ' + dataStr);
+  const itens = body.itens || [];
+  // Grava SEMPRE na aba do Estudo (separada) — NÃO toca na PROGRAMACAO original.
+  // Cria com cabeçalho próprio (COM LOTE) se ainda não existir.
+  let sh = acharAbaTolerante(ss, SHEET_PROG_EST);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_PROG_EST);
+    sh.getRange(1, 1, 1, 15).setValues([[
+      'Lote', 'Data', 'Ordem', 'Codigo', 'Descricao', 'Qtd_cx', 'Vel', 'Medida',
+      'Entre_pecas', 'Troca_min', 'CxMin', 'Tempo_min', 'Hora_inicio', 'Hora_fim', 'ATUALIZADO_EM'
+    ]]);
+    sh.setFrozenRows(1);
+  }
 
   const values = sh.getDataRange().getValues();
   const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
@@ -741,7 +751,9 @@ function gravarMetaDiaNaPlanilha(prog) {
 function atualizarSaldoNaProgramacao(prog) {
   prog = prog || calcularProgramacao();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = acharAbaTolerante(ss, SHEET_PROG);
+  // Escreve o saldo/status na aba ATIVA (a do Estudo quando existir) — mantém a
+  // PROGRAMACAO original intocada assim que o plano passa a vir do Estudo.
+  const sh = abaProgramacaoAtiva(ss);
   if (!sh) return;
 
   const values = sh.getDataRange().getValues();
@@ -1437,11 +1449,23 @@ function acharAbaTolerante(ss, nome) {
   return achada || null;
 }
 
-// Lê a aba PROGRAMACAO. Detecta as colunas pelo cabeçalho, tolerando os nomes
-// reais da planilha (Data, Codigo, Qtd_cx). Mantém a data crua (pode ser Date).
+// Aba de programação ATIVA para conferência/meta: prefere a do Estudo
+// (PROGRAMACAO_ESTUDO, plano firmado COM LOTE) quando existir e tiver dados;
+// senão usa a PROGRAMACAO original (do outro processo). Assim a conferência
+// segue o plano do Estudo sem tocar na aba antiga.
+function abaProgramacaoAtiva(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const est = acharAbaTolerante(ss, SHEET_PROG_EST);
+  if (est && est.getLastRow() > 1) return est;
+  return acharAbaTolerante(ss, SHEET_PROG);
+}
+
+// Lê a aba de programação ATIVA (Estudo se houver; senão a original). Detecta as
+// colunas pelo cabeçalho, tolerando os nomes reais (Data, Codigo, Qtd_cx).
+// Mantém a data crua (pode ser Date).
 function lerProgramacao() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = acharAbaTolerante(ss, SHEET_PROG);
+  const sh = abaProgramacaoAtiva(ss);
   if (!sh) return [];
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return [];
