@@ -798,7 +798,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
         <button class="btn btn-ghost" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="openHE()">＋ HORA EXTRA</button>
-        <button class="btn btn-ghost" id="btn-parada" style="padding:4px 10px;font-size:10px;color:#e57373;border-color:rgba(229,115,115,.4)" onclick="openParada()">⏸ PARADA</button>
         <button class="btn btn-ghost" id="btn-fechar-dia" style="padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)" onclick="fecharDia()">✔ FECHAR DIA</button>
       </div>
     </div>
@@ -810,19 +809,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
-  <!-- PARADAS DO DIA -->
-  <div class="tbl-wrap" id="paradas-wrap" style="margin-top:12px;display:none">
-    <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">⏸ PARADAS DO DIA</span>
-      <span id="paradas-tempo-total" style="font-family:var(--font-d);font-size:10px;color:#e57373"></span>
-    </div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>OBS</th><th></th></tr></thead>
-        <tbody id="tbl-paradas-body"></tbody>
-      </table>
-    </div>
-  </div>
 </section>
 
 <!-- ═══ TV OPERACIONAL ═══ -->
@@ -1362,44 +1348,6 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <span class="ftr-mobile-only" id="ftr-gs-status" style="display:none;font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1px"></span>
 </footer>
 
-<!-- ═══ MODAL PARADA ═══ -->
-<div class="modal-over" id="modal-parada">
-  <div class="modal" style="width:460px">
-    <div class="modal-ttl">⏸ REGISTRAR PARADA</div>
-
-    <div class="frm-grp" style="margin-bottom:14px">
-      <label class="frm-lbl">TIPO DE PARADA</label>
-      <div id="parada-tipos" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
-        <button class="btn-tipo-parada" data-tipo="☕ Café"          onclick="selecionarTipo(this)">☕ Café</button>
-        <button class="btn-tipo-parada" data-tipo="🔧 Manutenção"   onclick="selecionarTipo(this)">🔧 Manutenção</button>
-        <button class="btn-tipo-parada" data-tipo="📦 Falta Material" onclick="selecionarTipo(this)">📦 Falta Material</button>
-        <button class="btn-tipo-parada" data-tipo="⚙ Setup"         onclick="selecionarTipo(this)">⚙ Setup</button>
-        <button class="btn-tipo-parada" data-tipo="📋 Outros"        onclick="selecionarTipo(this)">📋 Outros</button>
-      </div>
-    </div>
-
-    <div class="frm-row">
-      <div class="frm-grp">
-        <label class="frm-lbl">INÍCIO</label>
-        <input class="frm-inp" id="parada-ini" type="time">
-      </div>
-      <div class="frm-grp">
-        <label class="frm-lbl">FIM <span style="color:var(--txt3);font-size:9px">(deixe vazio se em andamento)</span></label>
-        <input class="frm-inp" id="parada-fim" type="time">
-      </div>
-    </div>
-
-    <div class="frm-grp" style="margin-bottom:16px">
-      <label class="frm-lbl">OBSERVAÇÃO <span style="color:var(--txt3);font-size:9px">(opcional)</span></label>
-      <input class="frm-inp" id="parada-obs" type="text" placeholder="Ex: máquina travou, aguardando técnico...">
-    </div>
-
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="fecharModalParada()">CANCELAR</button>
-      <button class="btn btn-acc" onclick="salvarParada()">⏸ REGISTRAR</button>
-    </div>
-  </div>
-</div>
 
 <!-- ═══ MODAL CONFIGURAÇÕES ═══ -->
 <div class="modal-over" id="modal-cfg">
@@ -3334,8 +3282,6 @@ function renderChartComp(dh,slots,metaH){
     {label:'Real',data:dh.slice(0,n).map(d=>d.producaoHora),backgroundColor:'rgba(245,166,35,0.7)',borderRadius:3},
     {label:'Meta',data:dh.slice(0,n).map(()=>metaH),backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3}
   ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
-
-  renderParadas();
 }
 
 // ════════════════════════════════════════════════
@@ -4937,122 +4883,6 @@ setInterval(()=>{
   if(at.id==='sec-tv') renderTV();
 },60000);
 
-// ════════════════════════════════════════════════
-// PARADAS
-// ════════════════════════════════════════════════
-function loadParadas(data){ try{ const s=localStorage.getItem('rpe_paradas'); const all=s?JSON.parse(s):{}; return all[data]||[]; }catch(e){ return []; } }
-function saveParadas(data,list){ try{ const s=localStorage.getItem('rpe_paradas'); const all=s?JSON.parse(s):{}; all[data]=list; localStorage.setItem('rpe_paradas',JSON.stringify(all)); }catch(e){} }
-
-function openParada(){
-  const agora=new Date();
-  const hh=String(agora.getHours()).padStart(2,'0');
-  const mm=String(agora.getMinutes()).padStart(2,'0');
-  document.getElementById('parada-ini').value=hh+':'+mm;
-  document.getElementById('parada-fim').value='';
-  document.getElementById('parada-obs').value='';
-  document.querySelectorAll('.btn-tipo-parada').forEach(b=>b.classList.remove('ativo'));
-  document.getElementById('modal-parada').classList.add('on');
-}
-
-function fecharModalParada(){
-  document.getElementById('modal-parada').classList.remove('on');
-}
-
-function selecionarTipo(btn){
-  document.querySelectorAll('.btn-tipo-parada').forEach(b=>b.classList.remove('ativo'));
-  btn.classList.add('ativo');
-}
-
-function salvarParada(){
-  const tipoBtn=document.querySelector('.btn-tipo-parada.ativo');
-  if(!tipoBtn){ alert('Selecione o tipo de parada.'); return; }
-  const tipo=tipoBtn.dataset.tipo;
-  const ini=document.getElementById('parada-ini').value;
-  const fim=document.getElementById('parada-fim').value;
-  const obs=document.getElementById('parada-obs').value.trim();
-  if(!ini){ alert('Informe o horário de início.'); return; }
-
-  const hoje=hojeStr();
-  const list=loadParadas(hoje);
-  list.push({ tipo, ini, fim, obs, id: Date.now() });
-  saveParadas(hoje, list);
-  fecharModalParada();
-  renderParadas();
-}
-
-function encerrarParada(id){
-  const hoje=hojeStr();
-  const agora=new Date();
-  const hh=String(agora.getHours()).padStart(2,'0');
-  const mm=String(agora.getMinutes()).padStart(2,'0');
-  const list=loadParadas(hoje).map(p=>p.id===id?{...p,fim:hh+':'+mm}:p);
-  saveParadas(hoje,list);
-  renderParadas();
-}
-
-function excluirParada(id){
-  const hoje=hojeStr();
-  const list=loadParadas(hoje).filter(p=>p.id!==id);
-  saveParadas(hoje,list);
-  renderParadas();
-}
-
-function calcDurMin(ini,fim){
-  if(!ini||!fim) return null;
-  const[h0,m0]=ini.split(':').map(Number);
-  const[h1,m1]=fim.split(':').map(Number);
-  return (h1*60+m1)-(h0*60+m0);
-}
-
-function fmtDur(min){
-  if(min==null||min<0) return '—';
-  return min>=60?`${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}m`:`${min}min`;
-}
-
-function renderParadas(){
-  const hoje=hojeStr();
-  const list=loadParadas(hoje);
-  const wrap=document.getElementById('paradas-wrap');
-  const tbody=document.getElementById('tbl-paradas-body');
-  const totalEl=document.getElementById('paradas-tempo-total');
-  if(!wrap||!tbody) return;
-
-  if(!list.length){ wrap.style.display='none'; return; }
-  wrap.style.display='';
-
-  let totalMin=0;
-  tbody.innerHTML=list.map(p=>{
-    const dur=calcDurMin(p.ini,p.fim);
-    if(dur!=null&&dur>0) totalMin+=dur;
-    const andamento=!p.fim;
-    return `<tr>
-      <td style="font-family:var(--font-d);font-size:11px;color:#e57373">${p.tipo}</td>
-      <td class="td-mono">${p.ini}</td>
-      <td class="td-mono">${p.fim||'<span style="color:var(--warn)">EM ANDAMENTO</span>'}</td>
-      <td class="td-mono" style="color:${dur>30?'#e57373':dur>15?'var(--warn)':'var(--txt2)'}">${fmtDur(dur)}</td>
-      <td style="font-size:10px;color:var(--txt3)">${p.obs||'—'}</td>
-      <td style="text-align:right">
-        ${andamento?`<button onclick="encerrarParada(${p.id})" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.4);padding:2px 8px;border-radius:3px;font-size:9px;cursor:pointer;font-family:var(--font-d);letter-spacing:1px">✔ ENCERRAR</button>`:''}
-        <button onclick="excluirParada(${p.id})" style="background:transparent;color:var(--txt3);border:none;padding:2px 6px;cursor:pointer;font-size:11px">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-
-  totalEl.textContent=totalMin>0?`TOTAL: ${fmtDur(totalMin)}`:'';
-
-  // Atualiza resumo na TV
-  const tvRes=document.getElementById('tv-paradas-resumo');
-  if(tvRes){
-    const emAndamento=list.find(p=>!p.fim);
-    if(emAndamento){
-      tvRes.innerHTML=`⏸ PARADA EM ANDAMENTO: ${emAndamento.tipo} desde ${emAndamento.ini}`;
-    } else if(totalMin>0){
-      tvRes.innerHTML=`⏸ ${list.length} parada(s) hoje · ${fmtDur(totalMin)} total`;
-    } else {
-      tvRes.innerHTML='';
-    }
-  }
-}
 
 // ════════════════════════════════════════════════
 // TELA CHEIA DE PARADA (dirigida pelo mobile via backend)
