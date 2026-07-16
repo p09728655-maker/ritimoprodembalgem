@@ -126,6 +126,7 @@ function doGet(e) {
     else if (act === 'addHE')         result = addHE(p);
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
+    else if (act === 'endParada')     result = endParada(p);
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
@@ -1491,6 +1492,11 @@ function addHE(p) {
 // PARADAS
 // ════════════════════════════════════════════════════════
 
+// UPSERT por ID: se já existe uma linha com o mesmo ID (mesma parada), atualiza-a;
+// senão, acrescenta. Isso permite o fluxo "ao vivo" do operador — registrar uma
+// parada EM ANDAMENTO (sem FIM) e depois dar START (reenviar a mesma parada com o
+// FIM preenchido) sem duplicar linhas. IDs novos continuam sendo acrescentados,
+// então o comportamento antigo (paradas já com início e fim) é preservado.
 function saveParadas(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh   = ss.getSheetByName(SHEET_PARADAS);
@@ -1504,19 +1510,53 @@ function saveParadas(p) {
   const data = p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const paradas = JSON.parse(p.paradas || '[]');
 
+  // Mapa ID -> linha (1-based) das paradas já gravadas, p/ decidir update x append.
+  const values = sh.getDataRange().getValues();
+  const rowById = {};
+  for (let i = 1; i < values.length; i++) rowById[String(values[i][1])] = i + 1;
+
   paradas.forEach(par => {
-    sh.appendRow([
+    const id  = String(par.id || Date.now());
+    const row = [
       data,
-      par.id   || Date.now(),
+      id,
       par.tipo || '',
       par.ini  || '',
       par.fim  || '',
       calcDurMin(par.ini, par.fim) || '',
       par.obs  || ''
-    ]);
+    ];
+    const r = rowById[id];
+    if (r) sh.getRange(r, 1, 1, 7).setValues([row]);
+    else   sh.appendRow(row);
   });
 
   return { ok: true, salvos: paradas.length };
+}
+
+// Dá START (encerra) numa parada em andamento: carimba o FIM (hora do servidor,
+// se não vier) e recalcula a DURAÇÃO da linha cujo ID casa. Usado pelo operador
+// no mobile quando a produção volta a rodar.
+function endParada(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PARADAS);
+  if (!sh) return { ok: false, erro: 'sem paradas' };
+
+  const id = String(p.id || '');
+  if (!id) return { ok: false, erro: 'id obrigatório' };
+
+  const fim    = p.fim || Utilities.formatDate(new Date(), TZ, 'HH:mm');
+  const values = sh.getDataRange().getValues();
+
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][1]) === id) {
+      const ini = String(values[i][3] || '');
+      sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
+      sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
+      return { ok: true, fim };
+    }
+  }
+  return { ok: false, erro: 'parada não encontrada' };
 }
 
 function getParadas(p) {

@@ -1164,6 +1164,21 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span id="tv-ciclo-tela" style="font-family:var(--font-d);font-size:12px;letter-spacing:1px;color:var(--txt2);margin-left:4px;min-width:52px;text-align:center"></span>
   </div>
 
+  <!-- ═══ TELA CHEIA DE PARADA ═══ Aparece SOZINHA sobre a TV quando o operador
+       registra uma parada no mobile (getParadas devolve uma parada sem FIM). Some
+       quando o operador dá START. Fica dentro de #sec-tv, então só existe na TV. -->
+  <div id="tv-parada-over" style="display:none;position:fixed;inset:0;z-index:9000;background:radial-gradient(ellipse at center,#2a0d0d 0%,#160404 70%,#0a0202 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vh 5vw;gap:2.2vh">
+    <div style="font-family:var(--font-d);font-size:clamp(16px,2vw,26px);letter-spacing:8px;color:#ff8a80;opacity:.85">PRODUÇÃO PARADA</div>
+    <div style="font-size:clamp(60px,13vw,180px);line-height:.9">⏸</div>
+    <div id="tv-parada-tipo" style="font-family:var(--font-h);font-weight:800;font-size:clamp(34px,6vw,90px);color:#fff;line-height:1.05">—</div>
+    <div id="tv-parada-motivo" style="font-family:var(--font-b);font-size:clamp(20px,3.2vw,46px);color:#ffd6d1;max-width:80vw;line-height:1.25"></div>
+    <div style="display:flex;align-items:baseline;gap:14px;margin-top:1vh">
+      <span style="font-family:var(--font-d);font-size:clamp(14px,1.6vw,22px);letter-spacing:3px;color:#ff8a80">PARADO HÁ</span>
+      <span id="tv-parada-cron" style="font-family:var(--font-d);font-weight:800;font-size:clamp(40px,8vw,120px);color:#ff5c4d;line-height:1;font-variant-numeric:tabular-nums">00:00</span>
+    </div>
+    <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(12px,1.4vw,20px);letter-spacing:2px;color:#c98a86"></div>
+  </div>
+
 </section>
 
 <!-- ═══ PROGRAMAÇÃO (visão dedicada: lote, peso, pontos, por dia) ═══ -->
@@ -3327,6 +3342,9 @@ function renderChartComp(dh,slots,metaH){
 // RENDER TV
 // ════════════════════════════════════════════════
 function renderTV(){
+  // Reavalia a tela cheia de parada assim que a TV renderiza (ex.: ao trocar de
+  // aba p/ a TV) — sem esperar o poll de 15s.
+  if(typeof renderParadaOverlay==='function') renderParadaOverlay();
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
   const s=sc(k.ef);
@@ -4902,6 +4920,12 @@ if(CFG.sheetsUrl){
   // PONTOS/PESO por produto (identificação de produto é OPCIONAL): busca no load
   // e renova junto com o refresh normal (_tickCountdown/forcarRefresh acima).
   lerPontosDia().then(()=>renderGerencial());
+  // TELA CHEIA DE PARADA: poll rápido (15s) p/ a TV reagir logo quando o operador
+  // registra/encerra a parada no mobile. Chamada JSONP leve e separada do fluxo
+  // principal — não interfere no lerSheets nem no DEMO.
+  pollParadaTV();
+  setInterval(pollParadaTV, 15000);
+  setInterval(()=>{ if(PARADA_TV) _tickCronParada(); }, 1000);
 } else {
   tentarRestaurarPasta();
 }
@@ -5028,6 +5052,62 @@ function renderParadas(){
       tvRes.innerHTML='';
     }
   }
+}
+
+// ════════════════════════════════════════════════
+// TELA CHEIA DE PARADA (dirigida pelo mobile via backend)
+// ────────────────────────────────────────────────
+// O operador registra/encerra a parada NO MOBILE. A TV só faz poll de
+// getParadas: se vier uma parada sem FIM (em andamento), mostra a tela cheia
+// com tipo + motivo + cronômetro; quando o operador dá START (fim preenchido),
+// a tela some. É uma chamada JSONP separada (igual getMediaHoras): se falhar,
+// NÃO derruba os dados nem cai no DEMO — apenas mantém o estado atual.
+// ════════════════════════════════════════════════
+let PARADA_TV = null;
+
+async function pollParadaTV(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas';
+    const json = await jsonpFetch(url);
+    if(json && json.ok){
+      const lista = json.paradas || [];
+      PARADA_TV = lista.find(p=>!p.fim || String(p.fim).trim()==='') || null;
+      renderParadaOverlay();
+    }
+  }catch(e){ /* mantém o estado atual — falha de rede não some/aparece a tela */ }
+}
+
+function _segDesde(hhmm){
+  if(!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null;
+  const [h,m]=hhmm.split(':').map(Number);
+  const a=new Date();
+  let s=(a.getHours()*3600+a.getMinutes()*60+a.getSeconds())-(h*3600+m*60);
+  return s<0?0:s;
+}
+function _fmtCron(seg){
+  if(seg==null) return '--:--';
+  const h=Math.floor(seg/3600), m=Math.floor((seg%3600)/60), s=seg%60;
+  const mm=String(m).padStart(2,'0'), ss=String(s).padStart(2,'0');
+  return h>0?`${h}:${mm}:${ss}`:`${mm}:${ss}`;
+}
+function renderParadaOverlay(){
+  const over=document.getElementById('tv-parada-over');
+  if(!over) return;
+  const naTV=document.getElementById('sec-tv') && document.getElementById('sec-tv').classList.contains('on');
+  if(PARADA_TV && naTV){
+    document.getElementById('tv-parada-tipo').textContent   = PARADA_TV.tipo || 'PARADA';
+    document.getElementById('tv-parada-motivo').textContent = PARADA_TV.obs || '';
+    document.getElementById('tv-parada-desde').textContent  = PARADA_TV.ini ? ('INÍCIO '+PARADA_TV.ini) : '';
+    over.style.display='flex';
+    _tickCronParada();
+  } else {
+    over.style.display='none';
+  }
+}
+function _tickCronParada(){
+  const el=document.getElementById('tv-parada-cron');
+  if(el && PARADA_TV) el.textContent=_fmtCron(_segDesde(PARADA_TV.ini));
 }
 
 // ════════════════════════════════════════════════
