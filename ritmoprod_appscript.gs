@@ -39,6 +39,7 @@ const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
 const SHEET_HIST_HORA = 'HISTORICO_HORA';
 const SHEET_PARADAS   = 'PARADAS';
+const SHEET_TIPOS_PAR = 'TIPOS_PARADA';       // lista editável dos tipos de parada (dropdown do mobile)
 const SHEET_PRODUTOS  = 'PRODUTO_CODIGO';   // catálogo de produtos (código, descrição, pontos, peso...)
 const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/produto
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
@@ -127,6 +128,7 @@ function doGet(e) {
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
     else if (act === 'endParada')     result = endParada(p);
+    else if (act === 'getTiposParada')result = getTiposParada();
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
@@ -1557,6 +1559,32 @@ function endParada(p) {
     }
   }
   return { ok: false, erro: 'parada não encontrada' };
+}
+
+// Lista editável dos TIPOS de parada (o dropdown do mobile). Fica na aba
+// TIPOS_PARADA (coluna A). Na 1ª vez cria a aba já com os padrões — daí o
+// gestor edita direto na planilha, sem mexer no código. Se a aba ficar vazia,
+// devolve os padrões p/ o mobile nunca ficar sem opções.
+function getTiposParada() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_TIPOS_PAR);
+  const PADRAO = ['Troca de produto','Manutenção','Falta de material',
+    'Refeição/Intervalo','Limpeza','Reunião','Falta de energia',
+    'Ajuste de máquina','Outro'];
+
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_TIPOS_PAR);
+    sh.appendRow(['TIPO_DE_PARADA']);
+    sh.setFrozenRows(1);
+    PADRAO.forEach(t => sh.appendRow([t]));
+  }
+
+  const tipos = sh.getDataRange().getValues()
+    .slice(1)
+    .map(r => String(r[0] || '').trim())
+    .filter(Boolean);
+
+  return { ok: true, tipos: tipos.length ? tipos : PADRAO };
 }
 
 function getParadas(p) {
