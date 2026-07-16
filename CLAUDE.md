@@ -40,6 +40,9 @@ via Google Apps Script (JSONP).
   dado. É chamada JSONP separada — se falhar, **não** derruba os dados nem cai no DEMO.
 - Backend: `saveParadas` virou **upsert por ID** e há a ação **`endParada`** (carimba
   `FIM`/`DURACAO`). ⚠️ Mudou o `.gs` → **re-deploy manual** no Apps Script.
+- **Tipos de parada (dropdown) são editáveis na planilha:** aba **`TIPOS_PARADA`**
+  (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
+  *motivo* continua **texto livre** digitado pelo operador — não se cadastra.
 
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos

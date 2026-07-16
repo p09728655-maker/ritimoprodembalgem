@@ -998,7 +998,25 @@ async function selecionarProduto(codigo){
 // ════════════════════════════════════════════════
 // PARADAS (registro do operador — reusa saveParadas/getParadas do backend)
 // ════════════════════════════════════════════════
-const PAR_TIPOS = ['Troca de produto','Manutenção','Falta de material','Refeição/Intervalo','Limpeza','Reunião','Falta de energia','Ajuste de máquina','Outro'];
+// Tipos de parada (dropdown). Padrões locais como fallback; a lista "de verdade"
+// vem da aba TIPOS_PARADA da planilha via getTiposParada() — assim o gestor edita
+// os tipos direto no Sheets, sem mexer no código.
+let PAR_TIPOS = ['Troca de produto','Manutenção','Falta de material','Refeição/Intervalo','Limpeza','Reunião','Falta de energia','Ajuste de máquina','Outro'];
+
+async function carregarTiposParada(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getTiposParada';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.tipos) && json.tipos.length){
+      PAR_TIPOS = json.tipos;
+      // Se o modal estiver aberto e rodando, atualiza o dropdown na hora.
+      if(document.getElementById('modal-paradas')?.classList.contains('open') && !paradaAtiva()){
+        renderParadaEstado();
+      }
+    }
+  }catch(e){ console.warn('carregarTiposParada:', e.message); }
+}
 
 // Parada EM ANDAMENTO = linha sem FIM. É o que dispara a tela cheia na TV.
 function paradaAtiva(){ return PARADAS_HOJE.find(p=>!p.fim || String(p.fim).trim()===''); }
@@ -1075,6 +1093,7 @@ function abrirModalParadas(){
   renderParadaEstado();
   document.getElementById('modal-paradas').classList.add('open');
   carregarParadas();
+  carregarTiposParada();
 }
 function fecharModalParadas(){
   document.getElementById('modal-paradas').classList.remove('open');
@@ -1276,6 +1295,7 @@ function entrar(tipo){
     carregarProdutos();
     carregarProgramacaoHoje();
     carregarParadas();
+    carregarTiposParada();
     lerSheets();
   } else {
     showView('view-gerencial');
