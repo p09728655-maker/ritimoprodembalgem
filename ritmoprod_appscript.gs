@@ -1,6 +1,8 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
-// Versão: 4.7 — fecha o dia às 23:59 (Brasília) e zera à prova de erros
+// Versão: 4.8 — fecha o dia às 23:59 (Brasília) e zera à prova de erros
+//               + failsafe do fechamento roda em BACKGROUND (não bloqueia a
+//                 leitura da TV num cold start; ver agendarResetEmBackground)
 // ════════════════════════════════════════════════════════
 //
 // CONFIGURAR 1 VEZ (recomendado, p/ o fechamento limpo às 23:59):
@@ -1634,7 +1636,66 @@ function verificarNovoDia() {
   // Sem carimbo forte, só zera de madrugada (antes do turno) — segurança extra.
   if (!stamp && Number(Utilities.formatDate(agora, TZ, 'HH')) >= HORA_INICIO) return;
 
-  executarReset(carimbo, props);
+  // BLINDAGEM DE COLD START: em vez de arquivar+zerar AQUI (pesado — 2 leituras
+  // da planilha + escrita em HISTORICO/HISTORICO_HORA + exclusão de linhas), o
+  // que num cold start do Apps Script poderia estourar o timeout de 25s da
+  // leitura e derrubar a TV no modo DEMO, agendamos o reset para rodar em
+  // BACKGROUND (gatilho temporário) logo depois. O getDados devolve na hora; o
+  // dia é fechado em seguida, fora do caminho quente. NÃO altera a URL nem o
+  // fluxo de conexão — só tira o trabalho pesado da frente da leitura.
+  agendarResetEmBackground(carimbo, props);
+}
+
+// Agenda o reset pesado (arquivar + zerar) para rodar em BACKGROUND, via gatilho
+// temporário, em vez de dentro do getDados. Assim a leitura do painel (caminho
+// quente da TV) nunca fica presa atrás do arquivamento num cold start.
+// - Guarda contra empilhar gatilhos: se já existe um agendado, só atualiza a
+//   data-alvo (resetPendente) e sai — no máximo 1 gatilho temporário por vez.
+// - Se não conseguir criar o gatilho (ex.: cota), NÃO trava o painel: apenas
+//   registra; o gatilho diário das 23:59 continua sendo o backup do fechamento.
+function agendarResetEmBackground(dataRef, props) {
+  props = props || PropertiesService.getScriptProperties();
+  props.setProperty('resetPendente', dataRef); // data-alvo mais recente a fechar
+  const jaTem = ScriptApp.getProjectTriggers().some(function (t) {
+    return t.getHandlerFunction() === 'resetPendenteBackground';
+  });
+  if (jaTem) return;
+  try {
+    ScriptApp.newTrigger('resetPendenteBackground')
+      .timeBased()
+      .after(15 * 1000) // ~15s depois: fora do caminho quente da leitura
+      .create();
+  } catch (e) {
+    Logger.log('agendarResetEmBackground falhou (ignorado): ' + e.message);
+  }
+}
+
+// Executada pelo gatilho temporário criado por agendarResetEmBackground(). Faz o
+// arquivamento+zeramento pesado FORA do getDados e se auto-remove. Idempotente:
+// se o dia já foi fechado (ultimoReset) ou já virou hoje, sai sem trabalho.
+// Reaproveita toda a lógica segura existente (planilhaTemProducao/executarReset);
+// em erro, apenas registra — a próxima leitura reagenda e o 23:59 é o backstop.
+function resetPendenteBackground() {
+  const props = PropertiesService.getScriptProperties();
+  // Auto-limpeza: apaga os gatilhos temporários desta função (evita acúmulo).
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'resetPendenteBackground') ScriptApp.deleteTrigger(t);
+  });
+
+  const dataRef = props.getProperty('resetPendente');
+  props.deleteProperty('resetPendente');
+  if (!dataRef) return;
+
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  if (dataRef === hoje) return;                              // nada a fechar
+  if (props.getProperty('ultimoReset') === dataRef) return; // já foi fechado
+
+  try {
+    if (planilhaTemProducao()) executarReset(dataRef, props);
+    else props.deleteProperty(PROP_DATA_DADOS);
+  } catch (e) {
+    Logger.log('resetPendenteBackground falhou: ' + e.message);
+  }
 }
 
 // true se há qualquer realizado/lote > 0 na planilha (produção pendente).

@@ -4887,7 +4887,14 @@ async function lerSheetsComRetry(tentativas){
 }
 // Iniciar fonte de dados
 if(CFG.sheetsUrl){
-  lerSheetsComRetry(4).then(ok=>{ if(ok) iniciarAutoRefresh(); });
+  // Inicia o auto-refresh SEMPRE, mesmo se a carga inicial falhar. Antes ficava
+  // gated em `if(ok)`: quando a TV recarrega (28 min) e cai num cold start do
+  // Apps Script, as 4 tentativas estouram o timeout, `ok` vira false e o
+  // auto-refresh NUNCA começava — a TV ficava travada em DEMO/desconectada até a
+  // próxima recarga de 28 min (que podia falhar de novo). Começando o refresh
+  // incondicionalmente, a TV segue tentando a cada 5 min e se reconecta sozinha
+  // assim que o backend "esquenta". Não altera a URL nem o fluxo JSONP.
+  lerSheetsComRetry(4).then(()=>{ iniciarAutoRefresh(); });
   // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
   lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
