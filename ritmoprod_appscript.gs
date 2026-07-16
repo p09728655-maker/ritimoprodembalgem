@@ -311,9 +311,12 @@ function estudoSalvarProgramacao_(body) {
 
   const ncols = hdr.length;
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  // Meio-dia (12:00) de propósito: se usasse meia-noite, uma diferença de fuso
+  // entre o runtime e a planilha jogaria a data para o dia ANTERIOR (o "15/07"
+  // no lugar de "16/07"). Ao meio-dia, ±12h de fuso não muda o dia do calendário.
   const dateObj = (function () {
     const m = dataStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-    if (m) { var y = parseInt(m[3], 10); if (y < 100) y += 2000; return new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10)); }
+    if (m) { var y = parseInt(m[3], 10); if (y < 100) y += 2000; return new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10), 12, 0, 0); }
     return dataStr;
   })();
 
