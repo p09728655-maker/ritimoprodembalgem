@@ -1460,12 +1460,9 @@ function abaProgramacaoAtiva(ss) {
   return acharAbaTolerante(ss, SHEET_PROG);
 }
 
-// Lê a aba de programação ATIVA (Estudo se houver; senão a original). Detecta as
-// colunas pelo cabeçalho, tolerando os nomes reais (Data, Codigo, Qtd_cx).
-// Mantém a data crua (pode ser Date).
-function lerProgramacao() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = abaProgramacaoAtiva(ss);
+// Lê UMA aba de programação. Detecta as colunas pelo cabeçalho, tolerando os
+// nomes reais (Data, Codigo, Qtd_cx). Mantém a data crua (pode ser Date).
+function lerAbaProgramacao_(sh) {
   if (!sh) return [];
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return [];
@@ -1497,6 +1494,23 @@ function lerProgramacao() {
                foraEsteira: foraTxt !== '', foraLocal: foraTxt });
   }
   return out;
+}
+
+// Programação usada pela conferência/meta = COMBINAÇÃO das duas abas, com
+// precedência POR DIA: os dias FIRMADOS pelo Estudo (PROGRAMACAO_ESTUDO) vêm da
+// aba do Estudo (com lote); os demais dias continuam vindo da PROGRAMACAO
+// original. Assim a semana inteira aparece e a original fica intocada.
+function lerProgramacao() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const est  = lerAbaProgramacao_(acharAbaTolerante(ss, SHEET_PROG_EST));
+  const orig = lerAbaProgramacao_(acharAbaTolerante(ss, SHEET_PROG));
+  if (!est.length)  return orig;
+  if (!orig.length) return est;
+  const diasEstudo = {};
+  est.forEach(function (r) { diasEstudo[dataParaNum(r.data)] = 1; });
+  const combinado = est.slice();
+  orig.forEach(function (r) { if (!diasEstudo[dataParaNum(r.data)]) combinado.push(r); });
+  return combinado;
 }
 
 // Caixas embaladas por produto (chave = dígitos do código), separando ANTES de
