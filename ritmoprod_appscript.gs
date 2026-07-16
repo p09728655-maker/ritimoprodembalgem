@@ -811,7 +811,7 @@ function lerCatalogoProdutos() {
   const iEan    = hdr.indexOf('EAN 128');
   const iMedida = hdr.indexOf('MEDIDA DA CAIXA');
   const iVel    = hdr.indexOf('VELOCIDADE');
-  const iEntre  = hdr.indexOf('ENTRE_PECA');
+  const iEntre  = hdr.findIndex(function (h) { return h.indexOf('ENTRE_PEC') >= 0; }); // casa 'ENTRE_PECAS (mm)'
   const iPontos = hdr.indexOf('PONTOS');
   const iTroca  = hdr.indexOf('TEMPO DE TROCA MIN');
 
@@ -982,6 +982,11 @@ function getPontosDia() {
   // try/catch: nunca pode derrubar a leitura do painel.
   try { gravarMetaDiaNaPlanilha(programacao); }
   catch (e) { Logger.log('gravarMetaDiaNaPlanilha (getPontosDia) falhou (ignorado): ' + e.message); }
+
+  // Meta por hora pelo RITMO do estudo (fecha no horário real). try/catch:
+  // nunca pode derrubar a leitura do painel.
+  try { gravarMetaHoraPeloEstudo(); }
+  catch (e) { Logger.log('gravarMetaHoraPeloEstudo (getPontosDia) falhou (ignorado): ' + e.message); }
 
   // Config do ciclo de telas da TV, compartilhada via planilha (null se a aba
   // ainda não existe). A TV lê isto no refresh e se ajusta sozinha. Em try/catch
@@ -1324,6 +1329,101 @@ function lerEmbaladoPorProduto(hojeNum) {
 // código. A produção de hoje também abate o atraso mais antigo primeiro, então
 // atrasoTotal é "vivo" (cai durante o dia). faltaZerar = atraso + resto da meta
 // de hoje = o que ainda falta produzir p/ zerar tudo.
+// ════════════════════════════════════════════════════════
+// META POR HORA PELO RITMO DO ESTUDO DE TEMPO (v4.8)
+// ════════════════════════════════════════════════════════
+const FADIGA_META    = 0.15;         // 15% de fadiga (mesma do ritmoprod.)
+const ALMOCO_INI_MIN = 11 * 60;      // 11:00
+const ALMOCO_FIM_MIN = 12 * 60 + 12; // 12:12
+
+// cx/min do produto = vel×1000/(medida+entre-peça), aplicando a fadiga.
+function cxMinProduto(p) {
+  if (!p || !p.velocidade || !p.medida) return 0;
+  return ((p.velocidade * 1000) / (p.medida + (p.entrePeca || 0))) * (1 - FADIGA_META);
+}
+function hhmmMin(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2}):(\d{2})$/);
+  return m ? (Number(m[1]) * 60 + Number(m[2])) : null;
+}
+
+// Monta os segmentos [ini, fim, cx/min] em horário de relógio, na ORDEM da
+// PROGRAMACAO de hoje, pulando o almoço (11:00–12:12). Cada produto ocupa o
+// tempo que leva para embalar a sua quantidade no seu próprio ritmo.
+function segmentosEstudo(inicioMin) {
+  const cat = {};
+  lerCatalogoProdutos().forEach(function (p) { cat[codKey(p.codigo)] = p; });
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const itens = lerProgramacao()
+    .filter(function (pr) {
+      return !pr.foraEsteira && dataParaNum(pr.data) === hojeNum && (Number(pr.qtde) || 0) > 0;
+    })
+    .map(function (pr) { return { prod: cat[codKey(pr.codigo)], qtde: Number(pr.qtde) || 0 }; })
+    .filter(function (x) { return x.prod && cxMinProduto(x.prod) > 0; });
+
+  const segs = [];
+  let t = inicioMin;
+  itens.forEach(function (it) {
+    const cx = cxMinProduto(it.prod);
+    let rem = it.qtde / cx; // minutos para embalar a quantidade
+    let guard = 0;
+    while (rem > 0.01 && guard++ < 1000) {
+      if (t >= ALMOCO_INI_MIN && t < ALMOCO_FIM_MIN) { t = ALMOCO_FIM_MIN; continue; }
+      const lim = (t < ALMOCO_INI_MIN) ? Math.min(ALMOCO_INI_MIN, t + rem) : (t + rem);
+      segs.push({ ini: t, fim: lim, cx: cx });
+      rem -= (lim - t);
+      t = lim;
+    }
+  });
+  return segs;
+}
+
+// Meta ACUMULADA (caixas) do estudo até o instante t (min do dia).
+function cumMetaEstudo(segs, t) {
+  let m = 0;
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    m += Math.max(0, Math.min(t, s.fim) - s.ini) * s.cx;
+  }
+  return m;
+}
+
+// Grava a META por hora na HORA_A_HORA usando o ritmo do estudo. Só grava se
+// houver programação para hoje; se não houver, não mexe na coluna.
+// ARREDONDAMENTO CUMULATIVO: a meta de cada hora = (acumulado arredondado até o
+// FIM da hora) − (acumulado arredondado até a hora anterior). Assim cada hora é
+// sempre um número INTEIRO e a SOMA das metas bate exatamente com a quantidade
+// programada (não perde/ganha caixa no arredondamento, como acontecia ao
+// arredondar cada hora isolada).
+function gravarMetaHoraPeloEstudo() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_DADOS);
+  if (!sh) return;
+  const data = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getValues();
+  const hIdx = 3;
+  if (data.length <= hIdx) return;
+  const hdr = data[hIdx].map(function (c) { return String(c).trim().toUpperCase(); });
+  const iH = hdr.indexOf('HORA');
+  const iM = hdr.findIndex(function (c) { return c.includes('META'); });
+  if (iH < 0 || iM < 0) return;
+
+  const inicioMin = ((data[2] && Number(data[2][2])) === 5 ? 5 : 7) * 60;
+  const segs = segmentosEstudo(inicioMin);
+  if (!segs.length) return;
+
+  let acumPrev = 0;
+  for (let i = hIdx + 1; i < data.length; i++) {
+    const hv = String(data[i][iH] || '').trim();
+    if (!hv || hv.toUpperCase() === 'TOTAL') continue;
+    const p = hv.split('-');
+    const a = hhmmMin(p[0]), b = hhmmMin(p[1]);
+    if (a == null || b == null) continue;
+    const acum = Math.round(cumMetaEstudo(segs, b)); // acumulado arredondado até o fim da hora
+    const meta = Math.max(0, acum - acumPrev);
+    acumPrev = acum;
+    sh.getRange(i + 1, iM + 1).setValue(meta);
+  }
+}
+
 function calcularProgramacao() {
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
