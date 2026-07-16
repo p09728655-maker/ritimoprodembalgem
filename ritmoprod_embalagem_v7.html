@@ -5063,7 +5063,12 @@ function renderParadas(){
 // a tela some. É uma chamada JSONP separada (igual getMediaHoras): se falhar,
 // NÃO derruba os dados nem cai no DEMO — apenas mantém o estado atual.
 // ════════════════════════════════════════════════
-let PARADA_TV = null;
+// var (não let): esta seção fica DEPOIS do bloco de init, mas renderTV() —
+// chamado no load (setTab('tv') / renderAll) — usa PARADA_TV. Com `let`, o
+// acesso antecipado caía na temporal dead zone e lançava ReferenceError, que
+// abortava a inicialização inteira (a TV travava em "AGUARDANDO", sem lerSheets).
+// `var` é hoisted (vale undefined antes daqui), então nunca dá TDZ.
+var PARADA_TV = null;
 
 // Trava de segurança: uma parada aberta (sem FIM) que alguém esqueceu de dar
 // START não pode ficar presa no painel para sempre. A TV ignora a parada quando:
@@ -5072,7 +5077,7 @@ let PARADA_TV = null;
 // (Paradas de dias anteriores já não aparecem: o getParadas filtra por HOJE.)
 // Isso NÃO altera a planilha — só decide o que a TV mostra. Para o dado ficar
 // correto, o operador ainda deve dar START (ou editar o FIM na aba PARADAS).
-const PARADA_MAX_MIN = 360; // 6 h
+var PARADA_MAX_MIN = 360; // 6 h  (var: mesmo motivo do PARADA_TV — sem TDZ)
 
 function _paradaValidaTV(p){
   if(!p) return false;

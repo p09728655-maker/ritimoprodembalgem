@@ -85,6 +85,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .btn-inicio.on{border-color:var(--acc);color:var(--acc)}
 
 /* ═══ SLOT LIST (LANÇAMENTOS) ═══ */
+/* Topo congelado: status + PRODUTO ATUAL + barra SLOTS/PARADAS ficam fixos no
+   alto enquanto a lista de slots rola por baixo. */
+.lanc-frozen{position:sticky;top:0;z-index:6;background:var(--bg);display:flex;flex-direction:column;gap:14px;padding-bottom:12px;box-shadow:0 8px 12px -6px rgba(0,0,0,.6)}
+.lanc-frozen .prod-bar{position:static;box-shadow:none}
 .slot-list{display:flex;flex-direction:column;gap:8px}
 .slot-item{
   background:var(--surface);border:0.5px solid var(--border);border-radius:8px;
@@ -398,27 +402,30 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <button class="mob-btn-sair" onclick="sair()">SAIR</button>
   </div>
   <div class="mob-content">
-    <div class="status-bar">
-      <div class="dot" id="lan-dot"></div>
-      <span class="status-txt" id="lan-status">Carregando...</span>
-      <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
-    </div>
-
-    <!-- Produto atual do turno — OPCIONAL, não bloqueia lançamento -->
-    <div class="prod-bar" id="prod-bar" onclick="abrirModalProduto()">
-      <span class="prod-bar-ico">📦</span>
-      <div class="prod-bar-txt">
-        <div class="prod-bar-lbl">PRODUTO ATUAL</div>
-        <div class="prod-bar-val" id="prod-bar-val">TOCAR PARA SELECIONAR</div>
+    <!-- Topo CONGELADO: fica fixo enquanto a lista de slots rola por baixo. -->
+    <div class="lanc-frozen">
+      <div class="status-bar">
+        <div class="dot" id="lan-dot"></div>
+        <span class="status-txt" id="lan-status">Carregando...</span>
+        <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
       </div>
-      <span class="prod-bar-chev">›</span>
-    </div>
 
-    <div class="sec-lbl-row">
-      <span class="sec-lbl">SLOTS DO DIA</span>
-      <div class="row-2" style="flex:none">
-        <button class="btn-paradas" id="btn-paradas" onclick="abrirModalParadas()">⏸ PARADAS</button>
-        <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+      <!-- Produto atual do turno — OPCIONAL, não bloqueia lançamento -->
+      <div class="prod-bar" id="prod-bar" onclick="abrirModalProduto()">
+        <span class="prod-bar-ico">📦</span>
+        <div class="prod-bar-txt">
+          <div class="prod-bar-lbl">PRODUTO ATUAL</div>
+          <div class="prod-bar-val" id="prod-bar-val">TOCAR PARA SELECIONAR</div>
+        </div>
+        <span class="prod-bar-chev">›</span>
+      </div>
+
+      <div class="sec-lbl-row">
+        <span class="sec-lbl">SLOTS DO DIA</span>
+        <div class="row-2" style="flex:none">
+          <button class="btn-paradas" id="btn-paradas" onclick="abrirModalParadas()">⏸ PARADAS</button>
+          <button class="btn-inicio" id="btn-inicio" onclick="toggleInicioTurno()" style="display:none">COMEÇOU ÀS 05:00?</button>
+        </div>
       </div>
     </div>
     <div class="slot-list" id="slot-list">
