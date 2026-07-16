@@ -1561,6 +1561,53 @@ function endParada(p) {
   return { ok: false, erro: 'parada não encontrada' };
 }
 
+// Fecha as paradas que ficaram ABERTAS (sem FIM) no dia arquivado — assim uma
+// parada esquecida (sem START) não vira "em andamento" eterna. Carimba FIM = fim
+// do turno (último slot de HORA_A_HORA); se não achar, usa o próprio INÍCIO
+// (duração 0). Marca a OBS. Chamada no fechamento diário (executarReset).
+function encerrarParadasAbertas(dataRef) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PARADAS);
+  if (!sh || !dataRef) return 0;
+
+  const fimTurno = _fimDoTurno();
+  const values   = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < values.length; i++) {
+    const linhaData = String(values[i][0]);
+    const fim       = String(values[i][4] || '').trim();
+    if (linhaData === dataRef && !fim) {
+      const ini     = String(values[i][3] || '');
+      const novoFim = fimTurno || ini;
+      const obs     = String(values[i][6] || '');
+      sh.getRange(i + 1, 5).setValue(novoFim);
+      sh.getRange(i + 1, 6).setValue(calcDurMin(ini, novoFim) || '');
+      sh.getRange(i + 1, 7).setValue((obs ? obs + ' ' : '') + '(encerrada automaticamente no fechamento)');
+      n++;
+    }
+  }
+  if (n) Logger.log('Paradas encerradas automaticamente: ' + n + ' (' + dataRef + ')');
+  return n;
+}
+
+// Fim do turno = fim do ÚLTIMO slot com rótulo "HH:MM-HH:MM" em HORA_A_HORA.
+function _fimDoTurno() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_DADOS);
+  if (!sh) return '';
+  const data = sh.getDataRange().getValues();
+  const hIdx = 3;
+  if (data.length <= hIdx) return '';
+  const hdr = data[hIdx].map(c => String(c).trim().toUpperCase());
+  const iH  = hdr.indexOf('HORA');
+  if (iH < 0) return '';
+  for (let i = data.length - 1; i > hIdx; i--) {
+    const m = String(data[i][iH] || '').match(/(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})/);
+    if (m) return m[2];
+  }
+  return '';
+}
+
 // Lista editável dos TIPOS de parada (o dropdown do mobile). Fica na aba
 // TIPOS_PARADA (coluna A). Na 1ª vez cria a aba já com os padrões — daí o
 // gestor edita direto na planilha, sem mexer no código. Se a aba ficar vazia,
@@ -1798,6 +1845,11 @@ function planilhaTemProducao() {
 function executarReset(dataRef, props) {
   try { arquivarDiaAtual(dataRef); }
   catch (err) { Logger.log('Falha ao arquivar ' + dataRef + ': ' + err.message); }
+
+  // Fecha paradas que ficaram abertas (operador esqueceu de dar START) para não
+  // arrastarem "em andamento" para o dia seguinte. Nunca derruba o reset.
+  try { encerrarParadasAbertas(dataRef); }
+  catch (err) { Logger.log('Falha ao encerrar paradas abertas: ' + err.message); }
 
   limparRealizado();
   props.setProperty('ultimoReset', dataRef);

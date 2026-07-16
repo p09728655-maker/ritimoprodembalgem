@@ -5065,6 +5065,28 @@ function renderParadas(){
 // ════════════════════════════════════════════════
 let PARADA_TV = null;
 
+// Trava de segurança: uma parada aberta (sem FIM) que alguém esqueceu de dar
+// START não pode ficar presa no painel para sempre. A TV ignora a parada quando:
+//   • já passou do FIM DO TURNO (o expediente acabou), ou
+//   • está aberta há mais que PARADA_MAX_MIN (esquecida — tempo absurdo).
+// (Paradas de dias anteriores já não aparecem: o getParadas filtra por HOJE.)
+// Isso NÃO altera a planilha — só decide o que a TV mostra. Para o dado ficar
+// correto, o operador ainda deve dar START (ou editar o FIM na aba PARADAS).
+const PARADA_MAX_MIN = 360; // 6 h
+
+function _paradaValidaTV(p){
+  if(!p) return false;
+  const seg = _segDesde(p.ini);
+  if(seg != null && seg/60 > PARADA_MAX_MIN) return false;   // aberta há tempo demais
+  const fim = String(CFG.turnoFim || '');
+  if(/^\d{1,2}:\d{2}$/.test(fim)){
+    const [fh,fm] = fim.split(':').map(Number);
+    const a = new Date();
+    if(a.getHours()*60 + a.getMinutes() > fh*60 + fm) return false; // turno acabou
+  }
+  return true;
+}
+
 async function pollParadaTV(){
   if(!CFG.sheetsUrl) return;
   try{
@@ -5072,7 +5094,8 @@ async function pollParadaTV(){
     const json = await jsonpFetch(url);
     if(json && json.ok){
       const lista = json.paradas || [];
-      PARADA_TV = lista.find(p=>!p.fim || String(p.fim).trim()==='') || null;
+      const aberta = lista.find(p=>!p.fim || String(p.fim).trim()==='') || null;
+      PARADA_TV = _paradaValidaTV(aberta) ? aberta : null;
       renderParadaOverlay();
     }
   }catch(e){ /* mantém o estado atual — falha de rede não some/aparece a tela */ }
