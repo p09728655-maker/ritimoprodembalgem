@@ -1280,14 +1280,15 @@ function lerProgramacao() {
 function lerEmbaladoPorProduto(hojeNum) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PROD_LOG);
-  const antes = {}, hoje = {}, eventos = {};
+  const antes = {}, hoje = {}, eventos = {}, comLote = {};
   let inicio = 0;
-  if (!sh) return { antes: antes, hoje: hoje, eventos: eventos, inicio: hojeNum };
+  if (!sh) return { antes: antes, hoje: hoje, eventos: eventos, comLote: comLote, inicio: hojeNum };
   const values = sh.getDataRange().getValues();
   const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
   const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
+  const iLote = hdr.indexOf('LOTE'); // -1 em planilhas antigas (sem a coluna)
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
     const key = codKey(r[iCod]);
@@ -1295,16 +1296,23 @@ function lerEmbaladoPorProduto(hojeNum) {
     if (!key || !cx) continue;
     const dNum = dataParaNum(r[iData]);
     if (dNum === 0) continue;
+    const lote = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     if (inicio === 0 || dNum < inicio) inicio = dNum;
     if (dNum < hojeNum)        antes[key] = (antes[key] || 0) + cx;
     else if (dNum === hojeNum) hoje[key]  = (hoje[key]  || 0) + cx;
-    // Eventos datados (até hoje) para a alocação FIFO cronológica por lote em
-    // calcularProgramacao(): a produção só abate um lote já ABERTO na sua data,
-    // então produção anterior à abertura do lote não o credita (evita o "atraso
-    // some" por causa de produção antiga do mesmo código, de outro lote).
-    if (dNum <= hojeNum) (eventos[key] = eventos[key] || []).push({ dNum: dNum, cx: cx });
+    if (dNum <= hojeNum) {
+      if (lote) {
+        // Realizado COM lote → casamento EXATO por código+lote (novo padrão).
+        (comLote[key] = comLote[key] || {});
+        comLote[key][lote] = (comLote[key][lote] || 0) + cx;
+      } else {
+        // Sem lote (dados antigos) → FIFO cronológico por data (compatibilidade):
+        // a produção só abate um lote já ABERTO na sua data.
+        (eventos[key] = eventos[key] || []).push({ dNum: dNum, cx: cx });
+      }
+    }
   }
-  return { antes: antes, hoje: hoje, eventos: eventos, inicio: inicio || hojeNum };
+  return { antes: antes, hoje: hoje, eventos: eventos, comLote: comLote, inicio: inicio || hojeNum };
 }
 
 // Monta a lista por produto (programado hoje, atraso, embalado hoje, falta) e os
@@ -1348,6 +1356,7 @@ function calcularProgramacao() {
   const keys = {};
   Object.keys(progLinhas).forEach(k => keys[k] = 1);
   Object.keys(emb.hoje).forEach(k => keys[k] = 1);
+  Object.keys(emb.comLote).forEach(k => keys[k] = 1);
 
   const lista = [];
   const saldoLinha = {}; // "key|lote|dNum" -> saldo restante do lote (p/ o write-back)
@@ -1355,26 +1364,29 @@ function calcularProgramacao() {
 
   Object.keys(keys).forEach(key => {
     const linhas  = progLinhas[key]   || [];
-    const eventos = emb.eventos[key]  || [];
+    const eventos = emb.eventos[key]  || [];   // realizado SEM lote (compat FIFO)
+    const comLote = emb.comLote[key]  || {};   // realizado COM lote: {lote: cx}
     const eh      = emb.hoje[key]     || 0;
 
-    // FIFO cronológico: prog ABRE demanda, emb ABATE o lote aberto mais antigo.
-    // Mesma data: a demanda (prog) entra antes da produção (emb). Produção sem
-    // demanda aberta (anterior ao lote) é descartada — não credita o lote. Como
-    // a produção de HOJE também entra, ela abate primeiro o atraso mais antigo
-    // ("atraso vivo": o número cai conforme o time produz).
-    const ev = [];
-    linhas.forEach(ln => ev.push({ d: ln.dNum, t: 0, q: ln.qtde, lote: ln.lote }));
-    eventos.forEach(e  => ev.push({ d: e.dNum,  t: 1, q: e.cx }));
-    ev.sort((a, b) => (a.d - b.d) || (a.t - b.t));
+    // Demandas (lotes) abertas desta chave, na ordem da programação.
+    const fila = linhas.map(ln => ({ d: ln.dNum, rem: Number(ln.qtde) || 0, lote: String(ln.lote || '') }));
 
-    const fila = []; // demandas abertas: {d, rem, lote}
-    ev.forEach(e => {
-      if (e.t === 0) { fila.push({ d: e.d, rem: e.q, lote: e.lote }); return; }
-      let rem = e.q;
-      for (let i = 0; i < fila.length && rem > 0; i++) {
-        const take = Math.min(fila[i].rem, rem);
-        fila[i].rem -= take; rem -= take;
+    // 1) EXATO por lote: o realizado que veio COM lote abate a demanda daquele
+    //    lote exato (mais antiga primeiro). Excesso não credita outro lote.
+    Object.keys(comLote).forEach(lote => {
+      let rem = comLote[lote];
+      fila.filter(f => f.lote === String(lote)).sort((a, b) => a.d - b.d)
+        .forEach(f => { const take = Math.min(f.rem, rem); f.rem -= take; rem -= take; });
+    });
+
+    // 2) FIFO (compatibilidade): realizado SEM lote (dados antigos) abate o lote
+    //    aberto mais antigo já existente na data da produção (não credita lote futuro).
+    eventos.sort((a, b) => a.dNum - b.dNum).forEach(e => {
+      let rem = e.cx;
+      const abertas = fila.filter(f => f.d <= e.dNum && f.rem > 0).sort((a, b) => a.d - b.d);
+      for (let i = 0; i < abertas.length && rem > 0; i++) {
+        const take = Math.min(abertas[i].rem, rem);
+        abertas[i].rem -= take; rem -= take;
       }
     });
 
