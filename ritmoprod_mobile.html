@@ -217,6 +217,19 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .parada-tipo{font-family:var(--font-h);font-size:14px;font-weight:700}
 .parada-hora{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px;margin-top:2px}
 .parada-obs{font-family:var(--font-b);font-size:11px;color:var(--txt2);margin-top:2px}
+/* Estado ao vivo (RODANDO x PARADO) + botões de ação */
+.par-banner{border-radius:10px;padding:14px;text-align:center;margin:4px 0 8px}
+.par-banner-on{background:rgba(76,175,80,.12);border:0.5px solid rgba(76,175,80,.5)}
+.par-banner-off{background:rgba(244,67,54,.12);border:0.5px solid rgba(244,67,54,.55);animation:pulse 2.4s infinite}
+.par-banner-ttl{font-family:var(--font-h);font-size:16px;font-weight:800;letter-spacing:1px}
+.par-banner-on .par-banner-ttl{color:var(--ok)}
+.par-banner-off .par-banner-ttl{color:var(--red)}
+.par-banner-tipo{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--txt);margin-top:6px}
+.par-banner-obs{font-family:var(--font-b);font-size:13px;color:var(--txt2);margin-top:4px;word-break:break-word}
+.par-banner-hora{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1px;margin-top:6px}
+.par-btn-parar{width:100%;background:var(--red);color:#fff}
+.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
+.btn-paradas.parada-ativa{color:var(--red);border-color:var(--red);animation:pulse 2s infinite}
 .sel-tipo{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:15px;outline:none;
@@ -595,40 +608,16 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <div class="modal-slot-nome">PARADAS DO DIA</div>
       <div class="modal-slot-meta" id="par-data">--/--/----</div>
     </div>
-    <div class="prod-search-list" id="paradas-list" style="max-height:30vh">
+    <!-- Estado ao vivo: RODANDO (registrar parada) x PARADO (dar start).
+         Preenchido por renderParadaEstado(). -->
+    <div id="par-estado"></div>
+
+    <div class="prod-search-list" id="paradas-list" style="max-height:24vh">
       <div class="prod-search-empty">Nenhuma parada registrada.</div>
     </div>
-    <div class="inp-grp">
-      <div class="inp-lbl">TIPO DE PARADA</div>
-      <select class="sel-tipo" id="par-tipo">
-        <option>Troca de produto</option>
-        <option>Manutenção</option>
-        <option>Falta de material</option>
-        <option>Refeição/Intervalo</option>
-        <option>Limpeza</option>
-        <option>Reunião</option>
-        <option>Falta de energia</option>
-        <option>Ajuste de máquina</option>
-        <option>Outro</option>
-      </select>
-    </div>
-    <div class="row-2">
-      <div class="inp-grp">
-        <div class="inp-lbl">INÍCIO</div>
-        <input class="inp-time" id="par-ini" type="time">
-      </div>
-      <div class="inp-grp">
-        <div class="inp-lbl">FIM</div>
-        <input class="inp-time" id="par-fim" type="time">
-      </div>
-    </div>
-    <div class="inp-grp">
-      <div class="inp-lbl">OBSERVAÇÃO (OPCIONAL)</div>
-      <textarea class="inp-obs" id="par-obs" rows="2" placeholder="Detalhes da parada…"></textarea>
-    </div>
+
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModalParadas()">FECHAR</button>
-      <button class="btn-salvar" id="btn-salvar-parada" onclick="salvarParada()">REGISTRAR</button>
     </div>
   </div>
 </div>
@@ -1009,6 +998,12 @@ async function selecionarProduto(codigo){
 // ════════════════════════════════════════════════
 // PARADAS (registro do operador — reusa saveParadas/getParadas do backend)
 // ════════════════════════════════════════════════
+const PAR_TIPOS = ['Troca de produto','Manutenção','Falta de material','Refeição/Intervalo','Limpeza','Reunião','Falta de energia','Ajuste de máquina','Outro'];
+
+// Parada EM ANDAMENTO = linha sem FIM. É o que dispara a tela cheia na TV.
+function paradaAtiva(){ return PARADAS_HOJE.find(p=>!p.fim || String(p.fim).trim()===''); }
+function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
 async function carregarParadas(){
   if(!CFG.sheetsUrl) return;
   try{
@@ -1017,13 +1012,18 @@ async function carregarParadas(){
     if(json && json.ok){
       PARADAS_HOJE = json.paradas||[];
       renderParadasList();
+      renderParadaEstado();
       atualizarBadgeParadas();
     }
   }catch(e){ console.warn('carregarParadas:', e.message); }
 }
 function atualizarBadgeParadas(){
   const btn = document.getElementById('btn-paradas');
-  if(btn) btn.classList.toggle('tem-paradas', PARADAS_HOJE.length>0);
+  if(!btn) return;
+  const ativa = !!paradaAtiva();
+  btn.classList.toggle('tem-paradas', PARADAS_HOJE.length>0 && !ativa);
+  btn.classList.toggle('parada-ativa', ativa);
+  btn.textContent = ativa ? '⏸ PARADO' : '⏸ PARADAS';
 }
 function renderParadasList(){
   const el = document.getElementById('paradas-list');
@@ -1033,50 +1033,97 @@ function renderParadasList(){
     <div class="parada-item">
       <div class="parada-info">
         <div class="parada-tipo">${p.tipo||'—'}</div>
-        <div class="parada-hora">${p.ini||'--:--'} – ${p.fim||'--:--'}</div>
+        <div class="parada-hora">${p.ini||'--:--'} – ${p.fim||'<span style="color:var(--warn)">EM ANDAMENTO</span>'}</div>
         ${p.obs?`<div class="parada-obs">${p.obs}</div>`:''}
       </div>
     </div>`).join('');
 }
+// Alterna entre "PRODUÇÃO RODANDO" (form p/ registrar parada) e "PRODUÇÃO PARADA"
+// (botão grande de START). É o que o operador usa no dia a dia.
+function renderParadaEstado(){
+  const el = document.getElementById('par-estado');
+  if(!el) return;
+  const at = paradaAtiva();
+  if(at){
+    el.innerHTML = `
+      <div class="par-banner par-banner-off">
+        <div class="par-banner-ttl">⏸ PRODUÇÃO PARADA</div>
+        <div class="par-banner-tipo">${at.tipo||'—'}</div>
+        ${at.obs?`<div class="par-banner-obs">${at.obs}</div>`:''}
+        <div class="par-banner-hora">Desde ${at.ini||'--:--'}</div>
+      </div>
+      <button class="btn-salvar par-btn-start" id="btn-start-parada" onclick="darStartParada()">▶ DAR START (RETOMAR)</button>`;
+  } else {
+    el.innerHTML = `
+      <div class="par-banner par-banner-on">
+        <div class="par-banner-ttl">▶ PRODUÇÃO RODANDO</div>
+      </div>
+      <div class="inp-grp">
+        <div class="inp-lbl">TIPO DE PARADA</div>
+        <select class="sel-tipo" id="par-tipo">${PAR_TIPOS.map(t=>`<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="inp-grp">
+        <div class="inp-lbl">MOTIVO (aparece na TV)</div>
+        <textarea class="inp-obs" id="par-obs" rows="2" placeholder="Ex: máquina travou, aguardando material…"></textarea>
+      </div>
+      <button class="btn-salvar par-btn-parar" id="btn-registrar-parada" onclick="registrarParadaAgora()">⏸ REGISTRAR PARADA</button>`;
+  }
+}
 function abrirModalParadas(){
   document.getElementById('par-data').textContent = hojeStr();
-  document.getElementById('par-tipo').selectedIndex = 0;
-  document.getElementById('par-ini').value='';
-  document.getElementById('par-fim').value='';
-  document.getElementById('par-obs').value='';
   renderParadasList();
+  renderParadaEstado();
   document.getElementById('modal-paradas').classList.add('open');
   carregarParadas();
 }
 function fecharModalParadas(){
   document.getElementById('modal-paradas').classList.remove('open');
 }
-async function salvarParada(){
-  const tipo = document.getElementById('par-tipo').value;
-  const ini  = document.getElementById('par-ini').value;
-  const fim  = document.getElementById('par-fim').value;
-  const obs  = document.getElementById('par-obs').value.trim();
-  if(!ini || !fim){ alert('Informe o início e o fim da parada.'); return; }
+// Registra uma parada EM ANDAMENTO (início = agora, sem fim). Assim que grava,
+// a TV (que faz poll de getParadas) mostra a tela cheia com tipo + motivo.
+async function registrarParadaAgora(){
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+  if(paradaAtiva()){ alert('Já existe uma parada em andamento. Dê START antes de registrar outra.'); return; }
+  const tipo = (document.getElementById('par-tipo')||{}).value || 'Outro';
+  const obs  = ((document.getElementById('par-obs')||{}).value || '').trim();
+  const btn  = document.getElementById('btn-registrar-parada');
+  if(btn){ btn.textContent='REGISTRANDO...'; btn.disabled=true; }
 
-  const btn = document.getElementById('btn-salvar-parada');
-  btn.textContent='SALVANDO...'; btn.disabled=true;
-
-  const nova = { id: Date.now(), tipo, ini, fim, obs };
+  const nova = { id: Date.now(), tipo, ini: nowHHMM(), fim:'', obs };
   const params = 'action=saveParadas&paradas='+encodeURIComponent(JSON.stringify([nova]));
   const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
-
   try{
     const res = await jsonpFetch(url);
-    if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
-    document.getElementById('par-ini').value='';
-    document.getElementById('par-fim').value='';
-    document.getElementById('par-obs').value='';
+    if(res.ok===false) throw new Error(res.erro||'Erro ao registrar');
+    // Reflete na hora, sem esperar o próximo poll.
+    PARADAS_HOJE.push(nova);
+    renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
     await carregarParadas();
   }catch(e){
-    alert('Erro ao salvar parada: '+e.message);
-  }finally{
-    btn.textContent='REGISTRAR'; btn.disabled=false;
+    alert('Erro ao registrar parada: '+e.message);
+    if(btn){ btn.textContent='⏸ REGISTRAR PARADA'; btn.disabled=false; }
+  }
+}
+// Dá START: encerra a parada em andamento (carimba fim). A TV para de mostrar a
+// tela cheia no próximo poll.
+async function darStartParada(){
+  const at = paradaAtiva();
+  if(!at){ renderParadaEstado(); return; }
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+  const btn = document.getElementById('btn-start-parada');
+  if(btn){ btn.textContent='RETOMANDO...'; btn.disabled=true; }
+
+  const params = 'action=endParada&id='+encodeURIComponent(at.id)+'&fim='+encodeURIComponent(nowHHMM());
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+  try{
+    const res = await jsonpFetch(url);
+    if(res.ok===false) throw new Error(res.erro||'Erro ao dar start');
+    at.fim = nowHHMM();
+    renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
+    await carregarParadas();
+  }catch(e){
+    alert('Erro ao dar start: '+e.message);
+    if(btn){ btn.textContent='▶ DAR START (RETOMAR)'; btn.disabled=false; }
   }
 }
 
@@ -1255,6 +1302,7 @@ function iniciarRefreshAuto(){
   pararRefreshAuto();
   _refreshTimer = setInterval(()=>{
     lerSheets();
+    if(PERFIL==='operador'){ carregarParadas(); }
     if(PERFIL==='gerencial'){
       lerHistorico().then(renderHistoricoComDados);
       lerPontosDia().then(()=>renderGerencial());

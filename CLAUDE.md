@@ -29,6 +29,18 @@ via Google Apps Script (JSONP).
   é no backend, **mobile, TV e gerencial** ficam consistentes de uma vez.
   Lembre: mudar o `.gs` exige **re-deploy manual** no editor do Apps Script.
 
+## Tela cheia de PARADA (ao vivo)
+- O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
+  modal PARADAS): escolhe o tipo, escreve o **motivo** e a parada fica **em
+  andamento** (linha sem `FIM` na aba `PARADAS`). Ao voltar a produzir, dá **START**
+  (encerra → carimba `FIM`).
+- A **TV OPERACIONAL** (`ritmoprod_embalagem_v7.html`) faz *poll* de `getParadas`
+  (15s) e, havendo parada **sem FIM**, mostra uma **tela cheia** (`#tv-parada-over`,
+  dentro de `#sec-tv`) com tipo + motivo + cronômetro. Some sozinha quando o START é
+  dado. É chamada JSONP separada — se falhar, **não** derruba os dados nem cai no DEMO.
+- Backend: `saveParadas` virou **upsert por ID** e há a ação **`endParada`** (carimba
+  `FIM`/`DURACAO`). ⚠️ Mudou o `.gs` → **re-deploy manual** no Apps Script.
+
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
