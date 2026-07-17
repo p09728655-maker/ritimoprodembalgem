@@ -828,7 +828,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="ger-datebar">
     <span class="ger-datebar-lbl">DIA</span>
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(-1)" title="Dia anterior">‹</button>
-    <input type="text" id="ger-data" placeholder="HOJE" maxlength="10" oninput="maskData(this)" onchange="verGerDia()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;text-align:center">
+    <input type="text" id="ger-data" placeholder="HOJE" maxlength="10" oninput="maskData(this)" onchange="verGerDia()" onclick="abrirCal('ger-data')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;text-align:center;cursor:pointer">
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(1)" title="Próximo dia">›</button>
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="gerHoje()">HOJE (AO VIVO)</button>
     <span id="ger-modo-hist" style="display:none">◷ MODO HISTÓRICO — somente leitura</span>
@@ -1237,9 +1237,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="phFiltroRapido(30)">MÊS</button>
     </div>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-    <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" onclick="abrirCal('ph-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
     <span style="color:var(--txt2)">–</span>
-    <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" onclick="abrirCal('ph-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">AGRUPAR</span>
     <select id="ph-grupo" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="modelo">MODELO</option>
@@ -1314,9 +1314,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(30)">MÊS</button>
     </div>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-    <input type="text" id="hist-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <input type="text" id="hist-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" onclick="abrirCal('hist-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
     <span style="color:var(--txt2)">–</span>
-    <input type="text" id="hist-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+    <input type="text" id="hist-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" onclick="abrirCal('hist-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
     <span id="hist-storage-info" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px"></span>
     <div class="hdr-spacer"></div>
     <div class="export-row">
@@ -1387,9 +1387,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span class="tbl-hdr-ttl">⏸ ANÁLISE DE PARADAS</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-      <input type="text" id="par-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+      <input type="text" id="par-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" onclick="abrirCal('par-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
       <span style="color:var(--txt2)">–</span>
-      <input type="text" id="par-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+      <input type="text" id="par-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" onclick="abrirCal('par-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(7)">7 DIAS</button>
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(30)">MÊS</button>
       <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO</button>
@@ -1964,6 +1964,37 @@ function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 // ════════════════════════════════════════════════
 const p2 = n => String(n).padStart(2,'0');
 function maskData(el){let v=el.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);if(v.length>5)v=v.slice(0,5)+'/'+v.slice(5,9);el.value=v;}
+// ── Calendário nativo nos campos de data ───────────────────────────────────
+// Os campos continuam texto dd/mm/aaaa (toda a lógica de datas segue igual),
+// mas ao CLICAR abrem o seletor de calendário do navegador. Usa um <input
+// type=date> escondido e compartilhado; ao escolher, escreve dd/mm/aaaa de
+// volta no campo e dispara o onchange dele (re-renderiza a aba).
+var _calAlvo=null, _calDP=null;
+function _calPicker(){
+  if(_calDP) return _calDP;
+  const dp=document.createElement('input');
+  dp.type='date';
+  dp.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:-1;left:0;top:0;width:1px;height:1px;border:0;padding:0;margin:0';
+  dp.addEventListener('change',function(){
+    if(!_calAlvo) return;
+    const alvo=document.getElementById(_calAlvo), v=dp.value;
+    if(alvo&&v){ const pr=v.split('-'); alvo.value=pr[2]+'/'+pr[1]+'/'+pr[0]; alvo.dispatchEvent(new Event('change')); }
+    _calAlvo=null;
+  });
+  document.body.appendChild(dp);
+  _calDP=dp; return dp;
+}
+function abrirCal(id){
+  const alvo=document.getElementById(id); if(!alvo) return;
+  const dp=_calPicker();
+  if(!dp.showPicker){ return; }            // navegador antigo: mantém digitação manual
+  _calAlvo=id;
+  const m=String(alvo.value||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  dp.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
+  const r=alvo.getBoundingClientRect();
+  dp.style.left=r.left+'px'; dp.style.top=(r.top+r.height)+'px'; dp.style.width=Math.max(r.width,120)+'px';
+  try{ dp.showPicker(); }catch(e){ _calAlvo=null; }
+}
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
 const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
 const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
