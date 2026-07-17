@@ -1326,19 +1326,43 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
      o operador registra uma parada no mobile (getParadas devolve uma parada sem
      FIM). Some quando o operador dá START. Fica em nível de <body> (fora das
      seções) para aparecer tanto na TV quanto na gerencial (conferência). -->
-<div id="tv-parada-over" style="display:none;position:fixed;inset:0;z-index:9000;background:radial-gradient(ellipse at center,#2a0d0d 0%,#160404 70%,#0a0202 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:3vh 4vw;gap:1.8vh">
-  <div style="font-family:var(--font-d);font-size:clamp(18px,2.6vw,38px);letter-spacing:9px;color:#ff8a80;opacity:.85">PRODUÇÃO PARADA</div>
-  <div style="font-size:clamp(48px,8vw,120px);line-height:.9">⏸</div>
-  <div id="tv-parada-tipo" style="font-family:var(--font-h);font-weight:800;font-size:clamp(52px,9vw,170px);color:#fff;line-height:1.02">—</div>
-  <div id="tv-parada-motivo" style="font-family:var(--font-b);font-size:clamp(26px,4.4vw,68px);color:#ffd6d1;max-width:86vw;line-height:1.2"></div>
-  <div style="display:flex;align-items:baseline;gap:18px;margin-top:1vh">
-    <span style="font-family:var(--font-d);font-size:clamp(18px,2.2vw,34px);letter-spacing:3px;color:#ff8a80">PARADO HÁ</span>
-    <span id="tv-parada-cron" style="font-family:var(--font-d);font-weight:800;font-size:clamp(56px,11vw,190px);color:#ff5c4d;line-height:1;font-variant-numeric:tabular-nums">00:00</span>
+<!-- Mesmo padrão das telas A/B/C: cabeçalho (EMBALAGEM + logo + relógio), corpo e
+     rodapé. Fundo escuro do tema; o vermelho fica só como alerta de parada. -->
+<div id="tv-parada-over" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column">
+  <!-- CABEÇALHO (igual à TV) -->
+  <div class="tv-hdr">
+    <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
+      <div class="tv-setor">EMBALAGEM</div>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-width:0">
+      <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(60px,10.5vw,130px);width:auto;display:block;flex-shrink:0">
+    </div>
+    <div class="tv-clock-wrap">
+      <div class="tv-clock" id="tv-parada-clock">--:--:--</div>
+      <div class="tv-date-txt" id="tv-parada-date">--/--/----</div>
+    </div>
   </div>
-  <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(14px,1.8vw,26px);letter-spacing:2px;color:#c98a86"></div>
-  <!-- Só aparece no modo PRÉVIA (conferência na gerencial). Na parada real não há
-       botão — o operador retoma dando START no celular. -->
-  <button id="tv-parada-fechar-previa" onclick="fecharPreviaParada()" style="display:none;margin-top:2vh;background:rgba(255,255,255,.1);color:#fff;border:0.5px solid rgba(255,255,255,.4);border-radius:8px;padding:10px 22px;font-family:var(--font-d);font-size:clamp(12px,1.4vw,18px);letter-spacing:2px;cursor:pointer">✕ FECHAR PRÉVIA</button>
+
+  <!-- CORPO -->
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2.2vh;padding:2vh 5vw;min-height:0">
+    <div style="font-family:var(--font-d);font-size:clamp(18px,3.2vh,44px);letter-spacing:10px;color:var(--red);font-weight:600">⏸ PRODUÇÃO PARADA</div>
+    <div id="tv-parada-tipo" style="font-family:var(--font-h);font-weight:700;font-size:clamp(52px,12vh,200px);color:var(--txt);line-height:.95">—</div>
+    <div id="tv-parada-motivo" style="font-family:var(--font-b);font-size:clamp(24px,4.4vh,66px);color:var(--txt2);max-width:88vw;line-height:1.2"></div>
+    <div style="display:flex;align-items:baseline;gap:clamp(14px,2vw,28px);margin-top:1vh;background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.4);border-radius:clamp(10px,1.4vw,24px);padding:clamp(10px,1.8vh,32px) clamp(24px,4vw,72px)">
+      <span style="font-family:var(--font-d);font-size:clamp(16px,2.4vh,34px);letter-spacing:4px;color:var(--red)">PARADO HÁ</span>
+      <span id="tv-parada-cron" style="font-family:var(--font-h);font-weight:700;font-size:clamp(56px,15vh,210px);color:var(--red);line-height:.9;font-variant-numeric:tabular-nums">00:00</span>
+    </div>
+    <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(13px,1.7vh,24px);letter-spacing:2px;color:var(--txt3)"></div>
+    <!-- Só aparece no modo PRÉVIA (conferência na gerencial). Na parada real não há
+         botão — o operador retoma dando START no celular. -->
+    <button id="tv-parada-fechar-previa" onclick="fecharPreviaParada()" style="display:none;margin-top:1vh;background:var(--surface);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:10px 24px;font-family:var(--font-d);font-size:clamp(12px,1.4vw,18px);letter-spacing:2px;cursor:pointer">✕ FECHAR PRÉVIA</button>
+  </div>
+
+  <!-- RODAPÉ (igual à TV) -->
+  <div class="tv-foot">
+    <span style="font-family:var(--font-d);font-size:clamp(11px,1vw,16px);color:var(--red);letter-spacing:2px">⏸ AGUARDANDO RETOMADA</span>
+    <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmoprod<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
+  </div>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
@@ -4987,6 +5011,13 @@ function _tickCronParada(){
   const el=document.getElementById('tv-parada-cron');
   const cur = PARADA_PREVIEW || PARADA_TV;
   if(el && cur) el.textContent=_fmtCron(_segDesde(cur.ini));
+  // Relógio + data do cabeçalho (padrão das telas A/B/C).
+  const n=new Date();
+  const ck=document.getElementById('tv-parada-clock');
+  if(ck) ck.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+  const dt=document.getElementById('tv-parada-date');
+  if(dt){ const dias=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+    dt.textContent=dias[n.getDay()]+' · '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear(); }
 }
 // Abre a PRÉVIA da tela de parada (para conferência na gerencial).
 function previewParada(){
