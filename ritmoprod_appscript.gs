@@ -1683,7 +1683,7 @@ function getTiposParada() {
     sh = ss.insertSheet(SHEET_TIPOS_PAR);
     sh.appendRow(['TIPO_DE_PARADA', 'CLASSE']);
     sh.setFrozenRows(1);
-    PADRAO.forEach(t => sh.appendRow([t, /refei|interval|almo/i.test(t) ? 'PLANEJADA' : 'NÃO PLANEJADA']));
+    PADRAO.forEach(t => sh.appendRow([t, /refei|interval|almo/i.test(t) ? 'Programada' : 'Não Programada']));
   }
 
   // Coluna A = nome do tipo; coluna B (opcional) = CLASSE (PLANEJADA / NÃO
@@ -1697,8 +1697,10 @@ function getTiposParada() {
     tipos.push(nome);
     const cl = String(r[1] || '').trim().toUpperCase();
     if (cl) {
+      // Aceita "Programada/Não Programada" e "Planejada/Não Planejada" (e SIM/NÃO).
+      // "NÃO" tem prioridade: "Não Programada" não pode cair como programada.
       if (/N[ÃA]O/.test(cl) || cl === 'NP' || cl === 'N') classes[nome] = 'NAO';
-      else if (/PLAN/.test(cl) || cl === 'SIM' || cl === 'P') classes[nome] = 'PLANEJADA';
+      else if (/PROGRAM|PLAN/.test(cl) || cl === 'SIM' || cl === 'P') classes[nome] = 'PLANEJADA';
       else classes[nome] = 'NAO';
     }
   });

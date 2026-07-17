@@ -1430,8 +1430,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CLASSE</span>
     <select id="par-classe" class="frm-inp" onchange="renderAnaliseParadas()" style="padding:4px 8px;font-size:11px">
       <option value="">Todas</option>
-      <option value="np">Não planejada</option>
-      <option value="pl">Planejada</option>
+      <option value="np">Não programada</option>
+      <option value="pl">Programada</option>
     </select>
   </div>
 
@@ -4964,7 +4964,7 @@ async function gerarRelatorioParadas(){
 
   const linhasTipo=(st.tipos.map(t=>`<tr>
       <td style="font-weight:600;color:${t.planej?'#777':'#c62828'}">${esc(t.tipo)}</td>
-      <td style="font-size:9px;color:#999">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
+      <td style="font-size:9px;color:#999">${t.planej?'PROGRAMADA':'NÃO PROGRAMADA'}</td>
       <td class="td-mono">${t.qtd}</td>
       <td class="td-mono">${_fmtMinPar(t.min)}</td>
       <td class="td-mono">${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}</td>
@@ -5045,7 +5045,7 @@ async function gerarRelatorioParadas(){
 <div class="kpi-grid">
   <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
-  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não planejadas</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa (caixas)</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
@@ -5057,7 +5057,7 @@ async function gerarRelatorioParadas(){
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × (meta do dia ÷ ${st.horasProd.toFixed(1)}h produtivas). Refeição/intervalo/almoço = planejada (não entra na perda).</div>
+<div class="rp-note">Peças perdidas = duração × (meta do dia ÷ ${st.horasProd.toFixed(1)}h produtivas). Refeição/intervalo/almoço = programada (não entra na perda).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
@@ -5199,7 +5199,7 @@ async function renderAnaliseParadas(){
 
   const kpis=[
     {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
-    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não planejadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
@@ -5252,7 +5252,7 @@ async function renderAnaliseParadas(){
   if(tb){
     const rows=tipos.map(t=>`<tr>
       <td style="font-family:var(--font-d);font-size:11px;color:${t.planej?'var(--txt2)':'#e57373'}">${t.tipo}</td>
-      <td style="font-size:10px;color:var(--txt3)">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
+      <td style="font-size:10px;color:var(--txt3)">${t.planej?'PROGRAMADA':'NÃO PROGRAMADA'}</td>
       <td class="td-mono">${t.qtd}</td>
       <td class="td-mono">${_fmtMinPar(t.min)}</td>
       <td class="td-mono">${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}</td>
@@ -5274,14 +5274,14 @@ async function renderAnaliseParadas(){
   }
 
   // Resumo do turno (donut de disponibilidade) + Ranking das maiores causas
-  mkChart('ch-par-dispon',{type:'doughnut',data:{labels:['Produzindo','Parado (não plan.)'],datasets:[
+  mkChart('ch-par-dispon',{type:'doughnut',data:{labels:['Produzindo','Parado (não prog.)'],datasets:[
     {data:[Math.max(0,100-pctPerd),Math.max(0,pctPerd)],backgroundColor:['rgba(76,175,80,0.85)','rgba(244,67,54,0.85)'],borderWidth:0}
   ]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
   const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=dispon.toFixed(1)+'%';
   const rInfo=document.getElementById('par-resumo-info');
   if(rInfo){ const tProd=Math.max(0,Math.round(nDias*horasProd*60-totMinNP));
     rInfo.innerHTML=`<div class="par-rl"><span class="dot" style="background:rgba(76,175,80,0.85)"></span> Tempo produzindo <b>${_fmtMinPar(tProd)}</b></div>
-      <div class="par-rl"><span class="dot" style="background:rgba(244,67,54,0.85)"></span> Tempo parado (não plan.) <b>${_fmtMinPar(totMinNP)}</b></div>
+      <div class="par-rl"><span class="dot" style="background:rgba(244,67,54,0.85)"></span> Tempo parado (não prog.) <b>${_fmtMinPar(totMinNP)}</b></div>
       <div class="par-rl" style="color:var(--txt3)">Meta de disponibilidade <b style="color:var(--acc)">90,0%</b></div>`;
   }
   const rk=document.getElementById('par-ranking');
@@ -5310,17 +5310,18 @@ async function renderAnaliseParadas(){
       ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${!topT.planej&&topT.perd>0?`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`:''}.`}); }
     ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está dentro da meta (90%).`:`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está <b>abaixo</b> da meta de 90%.`});
     if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
-    if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não planejadas.`});
+    if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não programadas.`});
+    // (rótulo alinhado à planilha: "programada" = parada planejada/prevista)
     insEl.innerHTML=ins.map(x=>`<div class="par-ins"><span class="ic">${x.ic}</span><span>${x.t}</span></div>`).join('')||'<div class="par-ins"><span>Sem paradas no período.</span></div>';
   }
   const recEl=document.getElementById('par-recom');
   if(recEl){ const alvos=tipos.filter(t=>!t.planej).slice(0,2);
     if(alvos.length){ const pctJ=totT>0?Math.round(alvos.reduce((s,t)=>s+t.min,0)/totT*100):0;
       recEl.innerHTML=`Priorizar a redução de ${alvos.map(t=>`<b style="color:#e57373">${t.tipo}</b>`).join(' e ')}. Juntos respondem por <b>${pctJ}%</b> do tempo parado — pequenas melhorias nesses pontos geram o maior impacto no resultado.`;
-    } else recEl.innerHTML='Sem paradas não planejadas relevantes no período. 👏'; }
+    } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × (meta do dia ÷ '+horasProd.toFixed(1)+'h produtivas). Paradas de refeição/intervalo/almoço são tratadas como PLANEJADAS e não entram na perda.';
+  if(met) met.textContent='Peças perdidas = duração × (meta do dia ÷ '+horasProd.toFixed(1)+'h produtivas). Paradas de refeição/intervalo/almoço são tratadas como PROGRAMADAS e não entram na perda.';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
