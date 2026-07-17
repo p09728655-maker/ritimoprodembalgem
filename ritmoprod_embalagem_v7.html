@@ -4900,11 +4900,11 @@ async function renderAnaliseParadas(){
   const barCols=tipos.map(t=>t.planej?'rgba(120,120,120,0.6)':'rgba(229,115,115,0.75)');
   mkChart('ch-par-pareto',{type:'bar',data:{labels:paretoLbl,datasets:[
     {label:'Tempo (min)',data:paretoMin,backgroundColor:barCols,borderRadius:3,yAxisID:'y',order:2},
-    {label:'% acumulado',data:paretoAcc,type:'line',borderColor:'#FF5C1F',borderWidth:2,pointRadius:3,pointBackgroundColor:'#FF5C1F',fill:false,yAxisID:'y2',order:1}
-  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}},scales:{
+    {label:'% acumulado',data:paretoAcc,type:'line',borderColor:'#FF5C1F',borderWidth:2,pointRadius:3,pointBackgroundColor:'#FF5C1F',clip:false,fill:false,yAxisID:'y2',order:1}
+  ]},options:{...CHART_DEFAULTS,layout:{padding:{top:14,right:6}},plugins:{legend:{display:false}},scales:{
     x:CHART_DEFAULTS.scales.x,
     y:{...CHART_DEFAULTS.scales.y,title:{display:true,text:'min',color:'#666',font:{size:9}}},
-    y2:{position:'right',beginAtZero:true,max:100,ticks:{color:'#FF5C1F',font:{family:'IBM Plex Mono',size:9},callback:v=>v+'%'},grid:{drawOnChartArea:false}}
+    y2:{position:'right',beginAtZero:true,max:108,ticks:{stepSize:20,color:'#FF5C1F',font:{family:'IBM Plex Mono',size:9},callback:v=>v>100?'':v+'%'},grid:{drawOnChartArea:false}}
   }}});
 
   // Tendência: peças perdidas por dia
