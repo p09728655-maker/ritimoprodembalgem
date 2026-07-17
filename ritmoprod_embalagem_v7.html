@@ -828,7 +828,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="ger-datebar">
     <span class="ger-datebar-lbl">DIA</span>
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(-1)" title="Dia anterior">‹</button>
-    <input type="text" id="ger-data" placeholder="HOJE" maxlength="10" oninput="maskData(this)" onchange="verGerDia()" onclick="abrirCal('ger-data')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;text-align:center;cursor:pointer">
+    <input type="date" id="ger-data" onchange="verGerDia()" title="Escolha um dia no calendário" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(1)" title="Próximo dia">›</button>
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="gerHoje()">HOJE (AO VIVO)</button>
     <span id="ger-modo-hist" style="display:none">◷ MODO HISTÓRICO — somente leitura</span>
@@ -1237,9 +1237,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="phFiltroRapido(30)">MÊS</button>
     </div>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-    <input type="text" id="ph-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" onclick="abrirCal('ph-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+    <input type="date" id="ph-de" onchange="renderModeloPeriodo()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
     <span style="color:var(--txt2)">–</span>
-    <input type="text" id="ph-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderModeloPeriodo()" onclick="abrirCal('ph-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+    <input type="date" id="ph-ate" onchange="renderModeloPeriodo()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">AGRUPAR</span>
     <select id="ph-grupo" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="modelo">MODELO</option>
@@ -1314,9 +1314,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="filtroRapido(30)">MÊS</button>
     </div>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-    <input type="text" id="hist-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" onclick="abrirCal('hist-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+    <input type="date" id="hist-de" onchange="renderHist()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
     <span style="color:var(--txt2)">–</span>
-    <input type="text" id="hist-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderHist()" onclick="abrirCal('hist-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+    <input type="date" id="hist-ate" onchange="renderHist()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
     <span id="hist-storage-info" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px"></span>
     <div class="hdr-spacer"></div>
     <div class="export-row">
@@ -1387,9 +1387,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span class="tbl-hdr-ttl">⏸ ANÁLISE DE PARADAS</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-      <input type="text" id="par-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" onclick="abrirCal('par-de')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+      <input type="date" id="par-de" onchange="renderAnaliseParadas()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <span style="color:var(--txt2)">–</span>
-      <input type="text" id="par-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" onclick="abrirCal('par-ate')" title="Clique para abrir o calendário" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;cursor:pointer">
+      <input type="date" id="par-ate" onchange="renderAnaliseParadas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(7)">7 DIAS</button>
       <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(30)">MÊS</button>
       <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO</button>
@@ -1964,42 +1964,19 @@ function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 // ════════════════════════════════════════════════
 const p2 = n => String(n).padStart(2,'0');
 function maskData(el){let v=el.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);if(v.length>5)v=v.slice(0,5)+'/'+v.slice(5,9);el.value=v;}
-// ── Calendário nativo nos campos de data ───────────────────────────────────
-// Os campos continuam texto dd/mm/aaaa (toda a lógica de datas segue igual),
-// mas ao CLICAR abrem o seletor de calendário do navegador. Usa um <input
-// type=date> escondido e compartilhado; ao escolher, escreve dd/mm/aaaa de
-// volta no campo e dispara o onchange dele (re-renderiza a aba).
-var _calAlvo=null, _calDP=null;
-function _calPicker(){
-  if(_calDP) return _calDP;
-  const dp=document.createElement('input');
-  dp.type='date';
-  // Fica invisível (opacity:0) mas SOBRE o campo (z-index alto) — o calendário
-  // do navegador ancora na posição do elemento; se ele ficar atrás da página,
-  // o calendário abre no canto da tela. pointer-events:none p/ não bloquear.
-  dp.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:99999;left:0;top:0;width:1px;height:1px;border:0;padding:0;margin:0';
-  dp.addEventListener('change',function(){
-    if(!_calAlvo) return;
-    const alvo=document.getElementById(_calAlvo), v=dp.value;
-    if(alvo&&v){ const pr=v.split('-'); alvo.value=pr[2]+'/'+pr[1]+'/'+pr[0]; alvo.dispatchEvent(new Event('change')); }
-    _calAlvo=null;
-  });
-  document.body.appendChild(dp);
-  _calDP=dp; return dp;
+// ── Campos de data = calendário nativo (<input type=date>) ─────────────────
+// O valor nativo do input date é aaaa-mm-dd, mas todo o resto do painel usa
+// dd/mm/aaaa. dGet lê o campo já em dd/mm/aaaa; dSet grava a partir de
+// dd/mm/aaaa. Assim a lógica existente continua idêntica.
+function dGet(id){
+  const el=document.getElementById(id); if(!el) return '';
+  const m=String(el.value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?(m[3]+'/'+m[2]+'/'+m[1]):'';
 }
-function abrirCal(id){
-  const alvo=document.getElementById(id); if(!alvo) return;
-  const dp=_calPicker();
-  if(!dp.showPicker){ return; }            // navegador antigo: mantém digitação manual
-  _calAlvo=id;
-  const m=String(alvo.value||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  dp.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
-  // Posiciona o input escondido EXATAMENTE sobre o campo clicado, para o
-  // calendário abrir junto dele (e não no canto da tela).
-  const r=alvo.getBoundingClientRect();
-  dp.style.left=r.left+'px'; dp.style.top=r.top+'px';
-  dp.style.width=r.width+'px'; dp.style.height=r.height+'px';
-  try{ dp.showPicker(); }catch(e){ _calAlvo=null; }
+function dSet(id,br){
+  const el=document.getElementById(id); if(!el) return;
+  const m=String(br||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  el.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
 }
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
 const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
@@ -2748,15 +2725,14 @@ function _somaDias(dstr,delta){
 function gerNavDia(delta){
   const base=GER_DATA||hojeStr();
   const nv=_somaDias(base,delta);
-  if(nv>hojeStr()) return;             // não navega para o futuro
-  const inp=document.getElementById('ger-data');
+  const pn=nv.split('/').map(Number), ph=hojeStr().split('/').map(Number);
+  if(new Date(pn[2],pn[1]-1,pn[0]) > new Date(ph[2],ph[1]-1,ph[0])) return; // não vai p/ o futuro
   if(nv===hojeStr()){ gerHoje(); return; }
-  if(inp) inp.value=nv;
+  dSet('ger-data',nv);
   verGerDia();
 }
 async function verGerDia(){
-  const inp=document.getElementById('ger-data');
-  const v=((inp&&inp.value)||'').trim();
+  const v=dGet('ger-data');
   if(!v){ gerHoje(); return; }
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return;   // espera data completa
   if(v===hojeStr()){ gerHoje(); return; }
@@ -3054,8 +3030,8 @@ function phFiltroRapido(dias){
   let de;
   if(dias===0){ de=ate; }
   else{ const inicio=new Date(hoje); inicio.setDate(hoje.getDate()-(dias-1)); de=dtToStr(inicio); }
-  document.getElementById('ph-de').value=de;
-  document.getElementById('ph-ate').value=ate;
+  dSet('ph-de',de);
+  dSet('ph-ate',ate);
   renderModeloPeriodo();
 }
 // Metadados da métrica selecionada. mediaH (cx/h) é uma TAXA (caixas ÷ horas),
@@ -3106,8 +3082,8 @@ async function lerProducaoModeloPeriodo(de,ate){
 // ou métrica reusa os mesmos dados).
 let _phCache={key:null, itens:null};
 async function _phItensPeriodo(){
-  const de=(document.getElementById('ph-de')||{}).value||'';
-  const ate=(document.getElementById('ph-ate')||{}).value||'';
+  const de=dGet('ph-de');
+  const ate=dGet('ph-ate');
   const key=de+'|'+ate;
   if(_phCache.key===key && _phCache.itens!=null) return _phCache.itens;
   const itens = await lerProducaoModeloPeriodo(de,ate);
@@ -3266,8 +3242,8 @@ async function gerarRelatorioProducaoHora(){
   const totCx=grandAcc.caixas;
   const grand=_phVal(grandAcc,metric);
   const top=linhas[0]?{label:linhas[0].label,total:linhas[0].acc.caixas}:null;
-  const deStr=document.getElementById('ph-de').value||datas[0];
-  const ateStr=document.getElementById('ph-ate').value||datas[datas.length-1];
+  const deStr=dGet('ph-de')||datas[0];
+  const ateStr=dGet('ph-ate')||datas[datas.length-1];
 
   const html=`<!DOCTYPE html>
 <html lang="pt-BR">
@@ -3922,21 +3898,21 @@ function filtroRapido(dias){
   } else if(dias===1){
     const ontem=new Date(hoje); ontem.setDate(hoje.getDate()-1);
     de=dtToStr(ontem);
-    document.getElementById('hist-ate').value=de;
-    document.getElementById('hist-de').value=de;
+    dSet('hist-ate',de);
+    dSet('hist-de',de);
     renderHist(); return;
   } else {
     const inicio=new Date(hoje); inicio.setDate(hoje.getDate()-(dias-1));
     de=dtToStr(inicio);
   }
-  document.getElementById('hist-de').value=de;
-  document.getElementById('hist-ate').value=ate;
+  dSet('hist-de',de);
+  dSet('hist-ate',ate);
   renderHist();
 }
 async function renderHist(){
   const periodo='diario';
-  const deStr=document.getElementById('hist-de').value;
-  const ateStr=document.getElementById('hist-ate').value;
+  const deStr=dGet('hist-de');
+  const ateStr=dGet('hist-ate');
   updateStorageInfo();
 
   // Buscar do Sheets se configurado, senão usa local
@@ -4341,8 +4317,8 @@ async function _imprimirHistoricoFormatado(){
   let dias = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
 
   // Aplicar filtro do período selecionado
-  let deStr=document.getElementById('hist-de').value;
-  let ateStr=document.getElementById('hist-ate').value;
+  let deStr=dGet('hist-de');
+  let ateStr=dGet('hist-ate');
   const periodo='diario';
   // Se sem datas, usar últimos 30 dias
   if(!deStr && !ateStr){
@@ -4619,7 +4595,7 @@ async function gerarRelatorioSemanal(){
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
 
   // Determinar semana atual (seg-sex) ou semana do filtro
-  const ate=document.getElementById('hist-ate').value;
+  const ate=dGet('hist-ate');
   const refDate=ate?parseBR(ate):new Date();
   const diaSem=refDate.getDay();
   const diffSeg=diaSem===0?-6:1-diaSem;
@@ -4873,8 +4849,8 @@ async function gerarRelatorioParadas(){
 
   // Período: usa os campos da aba PARADAS; se vazios, os do Histórico; senão o mês.
   const hj=new Date();
-  let de=(document.getElementById('par-de')||{}).value||(document.getElementById('hist-de')||{}).value||'';
-  let ate=(document.getElementById('par-ate')||{}).value||(document.getElementById('hist-ate')||{}).value||'';
+  let de=dGet('par-de')||dGet('hist-de');
+  let ate=dGet('par-ate')||dGet('hist-ate');
   if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
@@ -5012,8 +4988,7 @@ const PAR_PLANEJADA=/refei|interval|almo/i;
 function _filtroParadas(dias){
   const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
   const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
-  const eD=document.getElementById('par-de'), eA=document.getElementById('par-ate');
-  if(eD) eD.value=f(de); if(eA) eA.value=f(ate);
+  dSet('par-de',f(de)); dSet('par-ate',f(ate));
   renderAnaliseParadas();
 }
 function _initFiltroParadas(){
@@ -5066,8 +5041,8 @@ async function renderAnaliseParadas(){
   if(!grid) return;
   if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
 
-  let de=(document.getElementById('par-de')||{}).value||'';
-  let ate=(document.getElementById('par-ate')||{}).value||'';
+  let de=dGet('par-de');
+  let ate=dGet('par-ate');
   if(!de||!ate){ _filtroParadas(30); return; }
 
   grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando paradas do período (pode demorar se o servidor estiver ligando)</div></div>';
@@ -5411,8 +5386,8 @@ loadCfg();
 DADOS = CFG.sheetsUrl ? [] : gerarDemo();
 const hoje=new Date();
 const um=new Date(hoje); um.setDate(um.getDate()-30);
-document.getElementById('hist-de').value=dtToStr(um);
-document.getElementById('hist-ate').value=dtToStr(hoje);
+dSet('hist-de',dtToStr(um));
+dSet('hist-ate',dtToStr(hoje));
 document.getElementById('login-empresa-sub').textContent=CFG.empresa+' · '+CFG.setor;
 renderAll();
 restaurarLogo();
