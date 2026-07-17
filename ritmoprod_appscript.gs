@@ -127,6 +127,7 @@ function doGet(e) {
     else if (act === 'addHE')         result = addHE(p);
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
+    else if (act === 'getParadasPeriodo') result = getParadasPeriodo(p);
     else if (act === 'endParada')     result = endParada(p);
     else if (act === 'getTiposParada')result = getTiposParada();
     else if (act === 'saveRealizado') result = saveRealizado(p);
@@ -1662,6 +1663,35 @@ function _dataStr(v) {
 }
 function _horaStr(v) {
   return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'HH:mm') : String(v || '').trim();
+}
+
+// Paradas de um intervalo de datas (para o relatório). de/ate em dd/MM/yyyy.
+// A duração é recalculada no front-end a partir de ini/fim (não depende da
+// coluna DURACAO, que pode ter virado fórmula/tempo na planilha).
+function getParadasPeriodo(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PARADAS);
+  if (!sh) return { ok: true, paradas: [] };
+
+  const toNum = s => { const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m ? (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]) : 0; };
+  const nDe  = toNum(p.de  || '');
+  const nAte = toNum(p.ate || '');
+
+  const paradas = sh.getDataRange().getValues().slice(1).map(r => ({
+    data: _dataStr(r[0]),
+    tipo: String(r[2] || ''),
+    ini:  _horaStr(r[3]),
+    fim:  _horaStr(r[4]),
+    obs:  String(r[6] || '')
+  })).filter(x => {
+    const n = toNum(x.data);
+    if (!n) return false;
+    if (nDe  && n < nDe)  return false;
+    if (nAte && n > nAte) return false;
+    return true;
+  });
+
+  return { ok: true, paradas };
 }
 
 function getParadas(p) {

@@ -1262,6 +1262,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div class="export-row">
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
+      <button class="btn btn-acc"   onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5)">⏸ RELATÓRIO DE PARADAS</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
     </div>
   </div>
@@ -4565,6 +4566,129 @@ ${(()=>{
 </html>`;
 
   // Escrever relatório na janela já aberta
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO DE PARADAS (por período — usa os filtros DE/ATÉ do histórico)
+// ════════════════════════════════════════════════
+async function gerarRelatorioParadas(){
+  const win=window.open('','_blank','width=1000,height=760');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório de paradas...</p></body></html>');
+
+  if(!CFG.sheetsUrl){ win.close(); alert('Relatório de paradas requer o Google Sheets configurado.'); return; }
+
+  // Período: usa os campos DE/ATÉ do histórico; se vazios, mês atual até hoje.
+  const hoje=new Date();
+  let de=(document.getElementById('hist-de')||{}).value||'';
+  let ate=(document.getElementById('hist-ate')||{}).value||'';
+  if(!de){ de=`01/${p2(hoje.getMonth()+1)}/${hoje.getFullYear()}`; }
+  if(!ate){ ate=`${p2(hoje.getDate())}/${p2(hoje.getMonth()+1)}/${hoje.getFullYear()}`; }
+
+  let paradas=[];
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const json=await jsonpFetch(url);
+    if(json && json.ok) paradas=json.paradas||[];
+  }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+
+  const durMin=(ini,fim)=>{ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null; const[h0,m0]=ini.split(':').map(Number),[h1,m1]=fim.split(':').map(Number); const d=(h1*60+m1)-(h0*60+m0); return d>=0?d:null; };
+  const fmtMin=m=>{ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; };
+  const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+  // ordena por data + início
+  const pnum=d=>{const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
+  paradas.sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+
+  const total=paradas.length;
+  let totMin=0; const porTipo={}; const dias=new Set();
+  paradas.forEach(p=>{
+    dias.add(p.data);
+    const d=durMin(p.ini,p.fim);
+    if(d!=null) totMin+=d;
+    if(!porTipo[p.tipo||'—']) porTipo[p.tipo||'—']={qtd:0,min:0};
+    porTipo[p.tipo||'—'].qtd++;
+    if(d!=null) porTipo[p.tipo||'—'].min+=d;
+  });
+  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  const medMin=total?Math.round(totMin/total):0;
+
+  const linhasTipo=tipos.map(t=>`<tr>
+      <td style="font-weight:600;color:#c62828">${esc(t.tipo)}</td>
+      <td class="td-mono">${t.qtd}</td>
+      <td class="td-mono">${fmtMin(t.min)}</td>
+      <td class="td-mono">${totMin>0?Math.round(t.min/totMin*100):0}%</td>
+    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
+
+  const linhasDet=paradas.map(p=>{
+    const d=durMin(p.ini,p.fim);
+    const emand=!p.fim||String(p.fim).trim()==='';
+    return `<tr>
+      <td class="td-mono">${esc(p.data)}</td>
+      <td style="color:#c62828">${esc(p.tipo||'—')}</td>
+      <td class="td-mono">${esc(p.ini||'--:--')}</td>
+      <td class="td-mono">${emand?'<span style="color:#e65100">em andamento</span>':esc(p.fim)}</td>
+      <td class="td-mono">${emand?'—':fmtMin(d)}</td>
+      <td style="color:#555">${esc(p.obs||'—')}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
+
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatório de Paradas — ${esc(de)} a ${esc(ate)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:16mm 18mm;font-size:11px}
+  @page{size:A4 portrait;margin:0}
+  @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
+  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;margin-bottom:18px;border-bottom:3px solid #e57373}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#111}
+  .rp-logo span{color:#FF5C1F}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
+  .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:18px 0 10px;border-bottom:.5px solid #eee;padding-bottom:6px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #e57373;border-radius:4px;padding:10px 12px}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#111}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#999;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin-top:2px}
+  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:8px 10px;border-bottom:1.5px solid #ccc;text-align:left}
+  tbody td{font-size:11px;padding:7px 10px;border-bottom:1px solid #f0f0f0;color:#111}
+  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
+  .rp-footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
+  .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+</style></head><body>
+<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+<div class="rp-header">
+  <div>
+    <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO DE PARADAS</div>
+    <div class="rp-sub">${esc(CFG.empresa)} · ${esc(CFG.setor)} · ${esc(CFG.unidade)}</div>
+  </div>
+  <div class="rp-meta">
+    <div class="rp-per">PERÍODO</div>
+    <div>${esc(de)} a ${esc(ate)}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+  </div>
+</div>
+<div class="rp-sec-ttl">RESUMO</div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-lbl">TOTAL DE PARADAS</div><div class="kpi-val">${total}</div><div class="kpi-sub">registros no período</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${fmtMin(totMin)}</div><div class="kpi-sub">soma das durações</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO</div><div class="kpi-val">${fmtMin(medMin)}</div><div class="kpi-sub">por parada</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">DIAS COM PARADA</div><div class="kpi-val">${dias.size}</div><div class="kpi-sub">dias distintos</div></div>
+</div>
+<div class="rp-sec-ttl">POR TIPO DE PARADA</div>
+<table><thead><tr><th>TIPO</th><th>QTD</th><th>TEMPO TOTAL</th><th>% DO TEMPO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
+<div class="rp-sec-ttl">DETALHAMENTO</div>
+<table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
+<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${total} parada(s) · ${fmtMin(totMin)} paradas no total</span></div>
+</body></html>`;
+
   win.document.open();
   win.document.write(html);
   win.document.close();
