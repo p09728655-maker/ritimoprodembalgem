@@ -798,6 +798,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
         <button class="btn btn-ghost" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="openHE()">＋ HORA EXTRA</button>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:#e57373;border-color:rgba(229,115,115,.4)" onclick="previewParada()">👁 PRÉVIA PARADA</button>
         <button class="btn btn-ghost" id="btn-fechar-dia" style="padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)" onclick="fecharDia()">✔ FECHAR DIA</button>
       </div>
     </div>
@@ -1335,6 +1336,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <span id="tv-parada-cron" style="font-family:var(--font-d);font-weight:800;font-size:clamp(40px,8vw,120px);color:#ff5c4d;line-height:1;font-variant-numeric:tabular-nums">00:00</span>
   </div>
   <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(12px,1.4vw,20px);letter-spacing:2px;color:#c98a86"></div>
+  <!-- Só aparece no modo PRÉVIA (conferência na gerencial). Na parada real não há
+       botão — o operador retoma dando START no celular. -->
+  <button id="tv-parada-fechar-previa" onclick="fecharPreviaParada()" style="display:none;margin-top:2vh;background:rgba(255,255,255,.1);color:#fff;border:0.5px solid rgba(255,255,255,.4);border-radius:8px;padding:10px 22px;font-family:var(--font-d);font-size:clamp(12px,1.4vw,18px);letter-spacing:2px;cursor:pointer">✕ FECHAR PRÉVIA</button>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
@@ -4872,7 +4876,7 @@ if(CFG.sheetsUrl){
   // principal — não interfere no lerSheets nem no DEMO.
   pollParadaTV();
   setInterval(pollParadaTV, 15000);
-  setInterval(()=>{ if(PARADA_TV) _tickCronParada(); }, 1000);
+  setInterval(()=>{ if(PARADA_PREVIEW || PARADA_TV) _tickCronParada(); }, 1000);
 } else {
   tentarRestaurarPasta();
 }
@@ -4944,24 +4948,45 @@ function _fmtCron(seg){
   const mm=String(m).padStart(2,'0'), ss=String(s).padStart(2,'0');
   return h>0?`${h}:${mm}:${ss}`:`${mm}:${ss}`;
 }
+// PRÉVIA (conferência na gerencial): quando setada, tem prioridade sobre a
+// parada real e mostra um botão de FECHAR. Serve para o gestor ver a tela sem
+// depender de uma parada real vinda do backend.
+var PARADA_PREVIEW = null;
+
 function renderParadaOverlay(){
   const over=document.getElementById('tv-parada-over');
   if(!over) return;
-  // Aparece em QUALQUER tela (TV ou gerencial) sempre que houver parada aberta —
-  // some sozinho quando o operador dá START. É o que o painel deve mostrar.
-  if(PARADA_TV){
-    document.getElementById('tv-parada-tipo').textContent   = PARADA_TV.tipo || 'PARADA';
-    document.getElementById('tv-parada-motivo').textContent = PARADA_TV.obs || '';
-    document.getElementById('tv-parada-desde').textContent  = PARADA_TV.ini ? ('INÍCIO '+PARADA_TV.ini) : '';
+  const cur = PARADA_PREVIEW || PARADA_TV;   // prévia tem prioridade
+  const fecharBtn = document.getElementById('tv-parada-fechar-previa');
+  // Aparece em QUALQUER tela (TV ou gerencial) sempre que houver parada aberta
+  // (ou prévia) — some sozinho quando o operador dá START (ou fecha a prévia).
+  if(cur){
+    document.getElementById('tv-parada-tipo').textContent   = cur.tipo || 'PARADA';
+    document.getElementById('tv-parada-motivo').textContent = cur.obs || '';
+    document.getElementById('tv-parada-desde').textContent  = cur.ini ? ('INÍCIO '+cur.ini) : '';
+    if(fecharBtn) fecharBtn.style.display = PARADA_PREVIEW ? 'inline-block' : 'none';
     over.style.display='flex';
     _tickCronParada();
   } else {
     over.style.display='none';
+    if(fecharBtn) fecharBtn.style.display='none';
   }
 }
 function _tickCronParada(){
   const el=document.getElementById('tv-parada-cron');
-  if(el && PARADA_TV) el.textContent=_fmtCron(_segDesde(PARADA_TV.ini));
+  const cur = PARADA_PREVIEW || PARADA_TV;
+  if(el && cur) el.textContent=_fmtCron(_segDesde(cur.ini));
+}
+// Abre a PRÉVIA da tela de parada (para conferência na gerencial).
+function previewParada(){
+  const d=new Date();
+  const ini=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  PARADA_PREVIEW = { tipo:'Manutenção', obs:'PRÉVIA — exemplo de parada (conferência)', ini };
+  renderParadaOverlay();
+}
+function fecharPreviaParada(){
+  PARADA_PREVIEW = null;
+  renderParadaOverlay();
 }
 
 // ════════════════════════════════════════════════
