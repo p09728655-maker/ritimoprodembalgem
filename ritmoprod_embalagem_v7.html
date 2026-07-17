@@ -4815,6 +4815,9 @@ renderAll();
 restaurarLogo();
 tick();
 setInterval(tick,1000);
+// Cronômetro da tela de parada: SEMPRE ativo (fora do if(CFG.sheetsUrl)) para
+// nunca congelar em 00:00, mesmo em modo demo / sem Sheets.
+setInterval(()=>{ if(typeof PARADA_PREVIEW!=='undefined' && (PARADA_PREVIEW || PARADA_TV)) _tickCronParada(); }, 1000);
 // Auto-login como operador se URL tiver ?tv (ex: para TV LG fixa)
 if(new URLSearchParams(location.search.toLowerCase()).has('tv')){
   PERFIL='operador';
@@ -4876,7 +4879,6 @@ if(CFG.sheetsUrl){
   // principal — não interfere no lerSheets nem no DEMO.
   pollParadaTV();
   setInterval(pollParadaTV, 15000);
-  setInterval(()=>{ if(PARADA_PREVIEW || PARADA_TV) _tickCronParada(); }, 1000);
 } else {
   tentarRestaurarPasta();
 }
@@ -4958,9 +4960,13 @@ function renderParadaOverlay(){
   if(!over) return;
   const cur = PARADA_PREVIEW || PARADA_TV;   // prévia tem prioridade
   const fecharBtn = document.getElementById('tv-parada-fechar-previa');
+  // NÃO cobre a tela de LOGIN/senha: enquanto o login estiver visível, o overlay
+  // fica escondido (senão a parada aparece por cima e trava a digitação da senha).
+  const lo = document.getElementById('login-over');
+  const noLogin = lo && getComputedStyle(lo).display !== 'none';
   // Aparece em QUALQUER tela (TV ou gerencial) sempre que houver parada aberta
   // (ou prévia) — some sozinho quando o operador dá START (ou fecha a prévia).
-  if(cur){
+  if(cur && !noLogin){
     document.getElementById('tv-parada-tipo').textContent   = cur.tipo || 'PARADA';
     document.getElementById('tv-parada-motivo').textContent = cur.obs || '';
     document.getElementById('tv-parada-desde').textContent  = cur.ini ? ('INÍCIO '+cur.ini) : '';
