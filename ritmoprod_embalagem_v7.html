@@ -4658,67 +4658,73 @@ ${(()=>{
   win.document.close();
 }
 
+
 // ════════════════════════════════════════════════
-// RELATÓRIO DE PARADAS (por período — usa os filtros DE/ATÉ do histórico)
+// RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
 async function gerarRelatorioParadas(){
-  const win=window.open('','_blank','width=1000,height=760');
+  const win=window.open('','_blank','width=1040,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório de paradas...</p></body></html>');
-
   if(!CFG.sheetsUrl){ win.close(); alert('Relatório de paradas requer o Google Sheets configurado.'); return; }
 
-  // Período: usa os campos DE/ATÉ do histórico; se vazios, mês atual até hoje.
-  const hoje=new Date();
-  let de=(document.getElementById('hist-de')||{}).value||'';
-  let ate=(document.getElementById('hist-ate')||{}).value||'';
-  if(!de){ de=`01/${p2(hoje.getMonth()+1)}/${hoje.getFullYear()}`; }
-  if(!ate){ ate=`${p2(hoje.getDate())}/${p2(hoje.getMonth()+1)}/${hoje.getFullYear()}`; }
+  // Período: usa os campos da aba PARADAS; se vazios, os do Histórico; senão o mês.
+  const hj=new Date();
+  let de=(document.getElementById('par-de')||{}).value||(document.getElementById('hist-de')||{}).value||'';
+  let ate=(document.getElementById('par-ate')||{}).value||(document.getElementById('hist-ate')||{}).value||'';
+  if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
+  if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
-  let paradas=[];
+  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+  let paradas, metaByDay;
   try{
-    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-    const json=await jsonpFetch(url);
-    if(json && json.ok) paradas=json.paradas||[];
+    [paradas, metaByDay]=await Promise.all([
+      jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
+      buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({}))
+    ]);
   }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
-  const durMin=(ini,fim)=>{ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null; const[h0,m0]=ini.split(':').map(Number),[h1,m1]=fim.split(':').map(Number); const d=(h1*60+m1)-(h0*60+m0); return d>=0?d:null; };
-  const fmtMin=m=>{ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; };
+  const st=_paradasStats(paradas, metaByDay);
   const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-
-  // ordena por data + início
   const pnum=d=>{const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
-  paradas.sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+  const corDisp=st.dispon>=90?'#4CAF50':st.dispon>=80?'#FF9800':'#F44336';
 
-  const total=paradas.length;
-  let totMin=0; const porTipo={}; const dias=new Set();
-  paradas.forEach(p=>{
-    dias.add(p.data);
-    const d=durMin(p.ini,p.fim);
-    if(d!=null) totMin+=d;
-    if(!porTipo[p.tipo||'—']) porTipo[p.tipo||'—']={qtd:0,min:0};
-    porTipo[p.tipo||'—'].qtd++;
-    if(d!=null) porTipo[p.tipo||'—'].min+=d;
-  });
-  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
-  const medMin=total?Math.round(totMin/total):0;
+  // Pareto (barras horizontais por tipo, maiores primeiro; planejada em cinza)
+  const totT=st.tipos.reduce((s,t)=>s+t.min,0)||1;
+  const maxMin=st.tipos.length?st.tipos[0].min:1;
+  const pareto=st.tipos.map(t=>{
+    const w=Math.max(2,Math.round(t.min/maxMin*100));
+    const col=t.planej?'#9e9e9e':'#e57373';
+    return `<div style="display:flex;align-items:center;gap:10px;margin:5px 0">
+      <div style="width:160px;font-size:10px;color:#333;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.tipo)}</div>
+      <div style="flex:1;background:#f1f1f1;border-radius:3px;height:16px"><div style="width:${w}%;background:${col};height:100%;border-radius:3px"></div></div>
+      <div style="width:150px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666">${_fmtMinPar(t.min)} · ${Math.round(t.min/totT*100)}%${t.perd>0?` · ${fmtN(t.perd)} cx`:''}</div>
+    </div>`;
+  }).join('')||'<div style="color:#999;font-size:11px">Nenhuma parada no período.</div>';
 
-  const linhasTipo=tipos.map(t=>`<tr>
-      <td style="font-weight:600;color:#c62828">${esc(t.tipo)}</td>
+  const linhasTipo=st.tipos.map(t=>`<tr>
+      <td style="font-weight:600;color:${t.planej?'#777':'#c62828'}">${esc(t.tipo)}</td>
+      <td style="font-size:9px;color:#999">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
       <td class="td-mono">${t.qtd}</td>
-      <td class="td-mono">${fmtMin(t.min)}</td>
-      <td class="td-mono">${totMin>0?Math.round(t.min/totMin*100):0}%</td>
-    </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
+      <td class="td-mono">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono">${Math.round(t.min/totT*100)}%</td>
+      <td class="td-mono" style="color:${t.perd>0?'#c62828':'#bbb'}">${t.planej?'—':fmtN(t.perd)}</td>
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
 
-  const linhasDet=paradas.map(p=>{
-    const d=durMin(p.ini,p.fim);
-    const emand=!p.fim||String(p.fim).trim()==='';
+  const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
+  const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>`<div style="font-size:12px;color:#222;margin:4px 0">▸ Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.</div>`).join('')):'';
+
+  const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+  const linhasDet=detOrd.map(p=>{
+    const d=_durMinPar(p.ini,p.fim); const emand=!p.fim||String(p.fim).trim()==='';
+    const planej=PAR_PLANEJADA.test(p.tipo||'');
     return `<tr>
       <td class="td-mono">${esc(p.data)}</td>
-      <td style="color:#c62828">${esc(p.tipo||'—')}</td>
+      <td style="color:${planej?'#777':'#c62828'}">${esc(p.tipo||'—')}</td>
       <td class="td-mono">${esc(p.ini||'--:--')}</td>
       <td class="td-mono">${emand?'<span style="color:#e65100">em andamento</span>':esc(p.fim)}</td>
-      <td class="td-mono">${emand?'—':fmtMin(d)}</td>
+      <td class="td-mono">${emand?'—':_fmtMinPar(d)}</td>
       <td style="color:#555">${esc(p.obs||'—')}</td>
     </tr>`;
   }).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
@@ -4728,26 +4734,29 @@ async function gerarRelatorioParadas(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:16mm 18mm;font-size:11px}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
   @page{size:A4 portrait;margin:0}
   @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
-  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;margin-bottom:18px;border-bottom:3px solid #e57373}
+  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;margin-bottom:16px;border-bottom:3px solid #e57373}
   .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#111}
   .rp-logo span{color:#FF5C1F}
   .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
   .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
   .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
-  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:18px 0 10px;border-bottom:.5px solid #eee;padding-bottom:6px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #e57373;border-radius:4px;padding:10px 12px}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:.5px solid #eee;padding-bottom:6px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
+  .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
   .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
   .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#111}
   .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#999;margin-top:4px}
+  .rp-chart-wrap{background:#fafafa;border:1px solid #eee;border-radius:5px;padding:12px 14px}
   table{width:100%;border-collapse:collapse;margin-top:2px}
-  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:8px 10px;border-bottom:1.5px solid #ccc;text-align:left}
-  tbody td{font-size:11px;padding:7px 10px;border-bottom:1px solid #f0f0f0;color:#111}
+  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:7px 10px;border-bottom:1.5px solid #ccc;text-align:left}
+  tbody td{font-size:11px;padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#111}
   .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
-  .rp-footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
+  .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
+  .rp-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#aaa;margin-top:8px}
   .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
 </style></head><body>
 <button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
@@ -4764,16 +4773,22 @@ async function gerarRelatorioParadas(){
 </div>
 <div class="rp-sec-ttl">RESUMO</div>
 <div class="kpi-grid">
-  <div class="kpi-card"><div class="kpi-lbl">TOTAL DE PARADAS</div><div class="kpi-val">${total}</div><div class="kpi-sub">registros no período</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${fmtMin(totMin)}</div><div class="kpi-sub">soma das durações</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO</div><div class="kpi-val">${fmtMin(medMin)}</div><div class="kpi-sub">por parada</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">DIAS COM PARADA</div><div class="kpi-val">${dias.size}</div><div class="kpi-sub">dias distintos</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não planejadas</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa (caixas)</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
 </div>
+<div class="rp-sec-ttl">PARETO — TEMPO PARADO POR TIPO (maiores ofensores)</div>
+<div class="rp-chart-wrap">${pareto}</div>
 <div class="rp-sec-ttl">POR TIPO DE PARADA</div>
-<table><thead><tr><th>TIPO</th><th>QTD</th><th>TEMPO TOTAL</th><th>% DO TEMPO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
+<table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th></tr></thead><tbody>${linhasTipo}</tbody></table>
+${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${total} parada(s) · ${fmtMin(totMin)} paradas no total</span></div>
+<div class="rp-note">Peças perdidas = duração × (meta do dia ÷ ${st.horasProd.toFixed(1)}h produtivas). Refeição/intervalo/almoço = planejada (não entra na perda).</div>
+<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
   win.document.open();
@@ -4805,37 +4820,19 @@ function _durMinPar(ini,fim){
 }
 function _fmtMinPar(m){ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
 
-async function renderAnaliseParadas(){
-  const grid=document.getElementById('par-kpi-grid');
-  if(!grid) return;
-  if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
-
-  let de=(document.getElementById('par-de')||{}).value||'';
-  let ate=(document.getElementById('par-ate')||{}).value||'';
-  if(!de||!ate){ _filtroParadas(30); return; }
-
-  grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div></div>';
-
-  // Paradas do período
-  let paradas=[];
-  try{
-    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-    const j=await jsonpFetch(url); if(j&&j.ok) paradas=j.paradas||[];
-  }catch(e){ console.warn('getParadasPeriodo:', e.message); }
-
-  // Meta do dia por data (para peças perdidas = duração × meta/hora)
-  const metaByDay={};
-  try{ (await buildDiasHistAsync()).forEach(d=>{ metaByDay[d.data]=d.meta; }); }catch(e){}
-  const hoje=hojeStr();
-  if(metaByDay[hoje]==null){ metaByDay[hoje]=getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia; }
-
+// Fonte ÚNICA de cálculo das estatísticas de parada (usada pela aba E pelo
+// relatório, p/ ficarem idênticos). Peças perdidas = duração × (meta do dia ÷
+// horas produtivas). Refeição/intervalo/almoço = planejada (não conta perda).
+function _paradasStats(paradas, metaByDay){
+  metaByDay=metaByDay||{};
   const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
   const pesoMedio=(PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0;
-
+  const hoje=hojeStr();
+  if(metaByDay[hoje]==null){ metaByDay[hoje]=getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia; }
   let totMin=0,totMinNP=0,pecas=0,nParadas=0;
   const porTipo={},porDia={},diasSet=new Set();
-  paradas.forEach(p=>{
-    const d=_durMinPar(p.ini,p.fim); if(d==null) return; // ignora abertas/inválidas
+  (paradas||[]).forEach(p=>{
+    const d=_durMinPar(p.ini,p.fim); if(d==null) return;
     nParadas++; diasSet.add(p.data); totMin+=d;
     const planej=PAR_PLANEJADA.test(p.tipo||'');
     const metaHora=(metaByDay[p.data]||CFG.metaDia)/horasProd;
@@ -4847,13 +4844,40 @@ async function renderAnaliseParadas(){
     if(!porDia[p.data]) porDia[p.data]={min:0,perd:0};
     porDia[p.data].min+=d; porDia[p.data].perd+=perd;
   });
-
   const nDias=diasSet.size||1;
   const tempoDispMin=nDias*horasProd*60;
   const dispon=tempoDispMin>0?Math.max(0,(tempoDispMin-totMinNP)/tempoDispMin*100):0;
   const pctPerd=tempoDispMin>0?(totMinNP/tempoDispMin*100):0;
   const tMed=nParadas>0?Math.round(totMin/nParadas):0;
-  const pesoPerd=Math.round(pecas*pesoMedio);
+  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  return {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd:Math.round(pecas*pesoMedio),
+          nParadas,nDias,dispon,pctPerd,tMed,tipos,porTipo,porDia};
+}
+
+async function renderAnaliseParadas(){
+  const grid=document.getElementById('par-kpi-grid');
+  if(!grid) return;
+  if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
+
+  let de=(document.getElementById('par-de')||{}).value||'';
+  let ate=(document.getElementById('par-ate')||{}).value||'';
+  if(!de||!ate){ _filtroParadas(30); return; }
+
+  grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando paradas do período (pode demorar se o servidor estiver ligando)</div></div>';
+
+  // Busca paradas + histórico EM PARALELO (mais rápido) e com tolerância a falha:
+  // paradas=null → falhou (mostra erro); {} de meta → usa a meta do dia padrão.
+  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+  const [paradas, metaByDay] = await Promise.all([
+    jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
+    buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({}))
+  ]);
+  if(paradas===null){
+    grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
+    return;
+  }
+  // Cálculo unificado (mesma fonte do relatório)
+  const {pesoMedio,totMin,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=_paradasStats(paradas, metaByDay);
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
 
   const kpis=[
