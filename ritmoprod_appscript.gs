@@ -133,6 +133,7 @@ function doGet(e) {
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
+    else if (act === 'getHoraDia')    result = getHoraDia(p);
     else if (act === 'getProdutos')   result = getProdutos();
     else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
     else if (act === 'getPontosDia')  result = getPontosDia();
@@ -777,6 +778,54 @@ function getMediaHoras() {
     amostra[h] = cont[h];
   });
   return { ok: true, medias, amostra };
+}
+
+// Devolve o hora-a-hora de UM dia específico (para a visão GERENCIAL de dias
+// passados). Fonte: HISTORICO_HORA (DATA·HORA·REALIZADO) + o agregado do dia em
+// HISTORICO (meta/real/eficiência/fechado). Somente leitura.
+function getHoraDia(p) {
+  const data = String((p && p.data) || '').trim();
+  if (!data) return { ok: false, erro: 'data ausente' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Produção por hora do dia
+  const horas = [];
+  const shH = ss.getSheetByName(SHEET_HIST_HORA);
+  if (shH && shH.getLastRow() > 1) {
+    const rows = shH.getDataRange().getValues().slice(1);
+    rows.forEach(r => {
+      if (!r[0]) return;
+      if (fmtDataBR(r[0]) !== data) return;
+      const hora = String(r[1] || '').trim();
+      if (!hora) return;
+      horas.push({ hora: hora, real: Number(r[2]) || 0 });
+    });
+  }
+
+  // Agregado do dia (HISTORICO)
+  let dia = null;
+  const shD = ss.getSheetByName(SHEET_HIST);
+  if (shD && shD.getLastRow() > 1) {
+    const rows = shD.getDataRange().getValues().slice(1);
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] || fmtDataBR(r[0]) !== data) continue;
+      dia = {
+        real:    Number(r[1]) || 0,
+        meta:    Number(r[2]) || 0,
+        ef:      Number(r[3]) || 0,
+        melhor:  Number(r[4]) || 0,
+        pior:    Number(r[5]) || 0,
+        heCount: Number(r[6]) || 0,
+        fechado: r[7] === true || String(r[7]).toLowerCase() === 'true',
+        mediaH:  Number(r[9]) || 0
+      };
+      break;
+    }
+  }
+
+  return { ok: true, data: data, horas: horas, dia: dia };
 }
 
 
