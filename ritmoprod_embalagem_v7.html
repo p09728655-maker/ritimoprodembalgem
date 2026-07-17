@@ -4699,7 +4699,11 @@ async function gerarRelatorioParadas(){
     return `<div style="display:flex;align-items:center;gap:10px;margin:5px 0">
       <div style="width:160px;font-size:10px;color:#333;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.tipo)}</div>
       <div style="flex:1;background:#f1f1f1;border-radius:3px;height:16px"><div style="width:${w}%;background:${col};height:100%;border-radius:3px"></div></div>
-      <div style="width:150px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666">${_fmtMinPar(t.min)} · ${Math.round(t.min/totT*100)}%${t.perd>0?` · ${fmtN(t.perd)} cx`:''}</div>
+      <div style="display:flex;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666">
+        <span style="width:54px;text-align:right">${_fmtMinPar(t.min)}</span>
+        <span style="width:34px;text-align:right">${Math.round(t.min/totT*100)}%</span>
+        <span style="width:60px;text-align:right;color:#c62828">${t.perd>0?fmtN(t.perd)+' cx':''}</span>
+      </div>
     </div>`;
   }).join('')||'<div style="color:#999;font-size:11px">Nenhuma parada no período.</div>';
 
