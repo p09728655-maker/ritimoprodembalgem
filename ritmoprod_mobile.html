@@ -247,6 +247,22 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .ger-parada-tipo{font-family:var(--font-h);font-size:17px;font-weight:700;color:var(--txt);margin-top:2px}
 .ger-parada-obs{font-family:var(--font-b);font-size:12px;color:var(--txt2);margin-top:2px;word-break:break-word}
 .ger-parada-tempo{font-family:var(--font-d);font-size:11px;color:var(--red);letter-spacing:1px;margin-top:5px}
+/* Paradas no gerencial: mini-KPIs + ofensores + lista */
+.par-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.par-mini{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden}
+.par-mini::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:var(--border)}
+.par-mini.ok::before{background:var(--ok)}.par-mini.warn::before{background:var(--warn)}.par-mini.red::before{background:var(--red)}
+.par-mini-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase}
+.par-mini-val{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--txt);margin-top:3px}
+.par-mini-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:2px}
+.par-sub-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1.5px;margin:8px 0 4px}
+.par-of{display:flex;align-items:center;gap:8px;padding:3px 0}
+.par-of-nome{width:104px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.par-of-bar{flex:1;height:8px;background:var(--elevated);border-radius:4px;overflow:hidden}
+.par-of-fill{height:100%;border-radius:4px}
+.par-of-t{font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap}
+.par-comp{display:flex;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
+.par-item2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-top:0.5px solid var(--border);font-size:12px}
 .sel-tipo{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:15px;outline:none;
@@ -480,6 +496,14 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="sec-lbl">KPIs DO DIA</div>
     <div class="kpi-grid" id="kpi-grid">
       <div class="loading" style="grid-column:1/-1">CARREGANDO...</div>
+    </div>
+
+    <!-- ═══ PARADAS (resumo do dia + análise) ═══ -->
+    <div class="sec-lbl" style="margin-top:2px">PARADAS DO DIA</div>
+    <div class="par-mini-grid" id="ger-par-kpis"></div>
+    <div class="card" id="ger-par-card" style="margin-top:10px;display:none">
+      <div id="ger-par-extra"></div>
+      <div id="ger-par-lista"></div>
     </div>
 
     <!-- Tabela hora a hora -->
@@ -1083,6 +1107,82 @@ function renderGerParada(){
 }
 function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 
+// ─── Análise de PARADAS no gerencial (mobile) ─────────────────────────────
+// Resumo do dia (tempo, nº, peças perdidas, disponibilidade) + alerta + top
+// ofensores + comparativo com a média do mês + lista do dia.
+const PAR_PLANEJADA_M=/refei|interval|almo/i;
+let PAR_MES=null; // paradas do mês (comparativo) — carregadas à parte
+function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
+function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
+function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+function _statsParadasMob(lista){
+  const horasProd=_horasProdMob(); const metaHora=(CFG.metaDia||0)/horasProd;
+  let totMin=0,totMinNP=0,pecas=0,n=0; const porTipo={},dias=new Set();
+  (lista||[]).forEach(p=>{
+    const d=_durMin2(p.ini,p.fim); if(d==null) return;
+    n++; dias.add(p.data); totMin+=d;
+    const planej=PAR_PLANEJADA_M.test(p.tipo||'');
+    const perd=planej?0:Math.round(d/60*metaHora);
+    if(!planej){ totMinNP+=d; pecas+=perd; }
+    const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
+  });
+  const nDias=dias.size||1; const tempoDisp=nDias*horasProd*60;
+  const dispon=tempoDisp>0?Math.max(0,(tempoDisp-totMinNP)/tempoDisp*100):100;
+  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  return {totMin,totMinNP,pecas,n,nDias,dispon,tipos};
+}
+function renderGerParadasResumo(){
+  const kg=document.getElementById('ger-par-kpis'); if(!kg) return;
+  const st=_statsParadasMob(PARADAS_HOJE);
+  const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
+  kg.innerHTML=`
+    <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${st.n} parada(s)</div></div>
+    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">do turno</div></div>
+    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">PEÇAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${st.pecas}</div><div class="par-mini-sub">estimativa (cx)</div></div>
+    <div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`;
+
+  const card=document.getElementById('ger-par-card');
+  const ex=document.getElementById('ger-par-extra');
+  const li=document.getElementById('ger-par-lista');
+  if(!card) return;
+  if(!st.n){ card.style.display='none'; return; }
+  card.style.display='';
+
+  // Top ofensores + comparativo com a média do mês
+  if(ex){
+    const maxMin=st.tipos[0]?st.tipos[0].min:1;
+    const of=st.tipos.slice(0,3).map(t=>{
+      const planej=PAR_PLANEJADA_M.test(t.tipo||'');
+      return `<div class="par-of"><span class="par-of-nome" style="color:${planej?'var(--txt2)':'var(--txt)'}">${t.tipo}</span><div class="par-of-bar"><div class="par-of-fill" style="width:${Math.max(4,Math.round(t.min/maxMin*100))}%;background:${planej?'#777':'var(--red)'}"></div></div><span class="par-of-t">${_fmtMin2(t.min)}</span></div>`;
+    }).join('');
+    let comp='';
+    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES); const media=sm.nDias>0?Math.round(sm.pecas/sm.nDias):0;
+      const seta=st.pecas>media?'▲':st.pecas<media?'▼':'=';
+      comp=`<div class="par-comp"><span>HOJE: <b style="color:${st.pecas>media?'var(--red)':'var(--ok)'}">${st.pecas} cx</b> ${seta}</span><span>MÉDIA/DIA (mês): ${media} cx</span></div>`;
+    }
+    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp;
+  }
+  // Lista do dia
+  if(li){
+    li.innerHTML='<div class="par-sub-lbl">PARADAS DE HOJE</div>'+PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>{
+      const d=_durMin2(p.ini,p.fim); const em=!p.fim||String(p.fim).trim()==='';
+      const planej=PAR_PLANEJADA_M.test(p.tipo||'');
+      return `<div class="par-item2"><div style="min-width:0"><div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;
+    }).join('');
+  }
+}
+async function carregarParadasMes(){
+  if(!CFG.sheetsUrl) return;
+  const hj=new Date();
+  const de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`;
+  const ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const j=await jsonpFetch(url);
+    if(j&&j.ok){ PAR_MES=j.paradas||[]; renderGerParadasResumo(); }
+  }catch(e){ console.warn('carregarParadasMes:', e.message); }
+}
+
 // Guarda a parada recém-registrada até o backend devolvê-la. Sem isso, um
 // getParadas defasado (logo após salvar) sobrescrevia PARADAS_HOJE SEM a parada
 // nova → a tela voltava pra "RODANDO" e o operador registrava outra, deixando
@@ -1109,7 +1209,8 @@ async function carregarParadas(){
       renderParadasList();
       renderParadaEstado();
       atualizarBadgeParadas();
-      renderGerParada();   // banner da gerencial (mobile)
+      renderGerParada();          // banner da gerencial (mobile)
+      renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
     }
   }catch(e){ console.warn('carregarParadas:', e.message); }
 }
@@ -1390,6 +1491,7 @@ function entrar(tipo){
     renderGerencial();
     carregarProdutos();   // catálogo p/ mostrar "codigo · descrição" do produto atual
     carregarParadas();    // banner de produção parada
+    carregarParadasMes(); // comparativo com a média do mês
     lerSheets().then(()=>{ renderHistorico(); renderGerProduto(); });
     lerHistorico().then(renderHistoricoComDados);
     lerMediaHoras().then(ok=>{ if(ok) renderGerencial(); });
@@ -1711,8 +1813,9 @@ function renderGerencial(){
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
 
-  renderGerProduto();   // produto embalando agora
-  renderGerParada();    // banner de produção parada
+  renderGerProduto();        // produto embalando agora
+  renderGerParada();         // banner de produção parada
+  renderGerParadasResumo();  // resumo/análise de paradas
   renderTabelaHoraHora(k.allHoje);
 }
 
