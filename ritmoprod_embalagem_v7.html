@@ -116,6 +116,45 @@ table{width:100%;border-collapse:collapse}
 th{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase;padding:9px 14px;border-bottom:0.5px solid var(--border);text-align:left;background:var(--elevated)}
 td{font-family:var(--font-b);font-size:13px;color:var(--txt);padding:9px 14px;border-bottom:0.5px solid var(--border)}
 tr:last-child td{border-bottom:none}
+
+/* ═══════════════════════════════════════════════════════════════
+   POLIMENTO VISUAL — apenas estético (profundidade, hover, cantos,
+   tipografia). NÃO altera estrutura, IDs, layout base nem a TV.
+   ═══════════════════════════════════════════════════════════════ */
+body{
+  background:
+    radial-gradient(1100px 560px at 12% -8%, rgba(255,92,31,.055), transparent 60%),
+    radial-gradient(900px 480px at 102% -4%, rgba(255,255,255,.022), transparent 55%),
+    var(--bg);
+}
+body.tv-fullscreen{ background:var(--bg); }              /* TV: fundo puro */
+
+/* Cards: leve profundidade + hover suave + cantos mais macios */
+.kpi-card,.chart-card,.tbl-wrap,.a-card{
+  background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,0)),var(--surface);
+  border-radius:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03), 0 6px 18px -12px rgba(0,0,0,.65);
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.kpi-card:hover,.a-card:hover{ transform:translateY(-2px); border-color:rgba(255,255,255,.10); box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 12px 28px -14px rgba(0,0,0,.75); }
+.chart-card:hover,.tbl-wrap:hover{ box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 12px 28px -14px rgba(0,0,0,.75); }
+.kpi-card::before{ width:3px;border-radius:0 3px 3px 0 }
+.kpi-val,.a-val{ font-variant-numeric:tabular-nums;letter-spacing:.4px }
+
+/* Botões: hover/press com feedback */
+.btn{ transition:opacity .15s, transform .1s, filter .15s, background .15s, color .15s, border-color .15s }
+.btn:active{ transform:translateY(1px) }
+.btn-acc:hover{ opacity:1;filter:brightness(1.08);box-shadow:0 4px 14px -5px rgba(255,92,31,.55) }
+.btn-ghost:hover{ opacity:1;color:var(--txt);border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.04) }
+
+/* Nav: hover e aba ativa com leve realce */
+.tab{ border-radius:6px 6px 0 0 }
+.tab:hover{ color:var(--txt);background:rgba(255,255,255,.04) }
+.tab.on{ background:linear-gradient(180deg,rgba(255,92,31,.10),transparent) }
+
+/* Tabelas: hover de linha */
+tbody tr{ transition:background .12s }
+tbody tr:hover td{ background:rgba(255,255,255,.03) }
 td.mono{font-family:var(--font-d);font-size:12px}
 td.hora-cell{font-family:var(--font-h);font-size:15px;font-weight:700}
 .badge{font-family:var(--font-d);font-size:9px;font-weight:600;padding:3px 9px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
@@ -759,6 +798,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
+  <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
 </nav>
 
@@ -1319,6 +1359,52 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
   </div>
 
+</section>
+
+<!-- ═══ PARADAS (análise: KPIs, Pareto, tendência, peças perdidas) ═══ -->
+<section id="sec-paradas" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">⏸ ANÁLISE DE PARADAS</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
+      <input type="text" id="par-de" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+      <span style="color:var(--txt2)">–</span>
+      <input type="text" id="par-ate" placeholder="DD/MM/AAAA" maxlength="10" oninput="maskData(this)" onchange="renderAnaliseParadas()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px">
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(7)">7 DIAS</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(30)">MÊS</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid c9" id="par-kpi-grid"></div>
+
+  <div class="charts-row" style="margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-ttl">PARETO — TEMPO PARADO POR TIPO (foco nos maiores ofensores)</div>
+      <div class="chart-box-lg"><canvas id="ch-par-pareto"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">PEÇAS PERDIDAS POR DIA (estimativa)</div>
+      <div class="chart-box-lg"><canvas id="ch-par-trend"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tbl-wrap" style="margin-top:14px">
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">POR TIPO DE PARADA</span></div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th></tr></thead>
+        <tbody id="par-tbl-tipo"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tbl-wrap" id="par-estudo-wrap" style="margin-top:14px;display:none">
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">💡 ESTUDO DE GANHO — se eliminássemos cada tipo</span></div>
+    <div style="padding:10px 4px" id="par-estudo"></div>
+  </div>
+
+  <div style="margin-top:10px;font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:.5px" id="par-metodo"></div>
 </section>
 
 </main>
@@ -3973,6 +4059,7 @@ function setTab(tab){
   document.querySelector(`[data-tab="${tab}"]`).classList.add('on');
   if(tab==='tv') renderTV();
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
+  if(tab==='paradas'){ _initFiltroParadas(); renderAnaliseParadas(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
@@ -4692,6 +4779,143 @@ async function gerarRelatorioParadas(){
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// ════════════════════════════════════════════════
+// ABA PARADAS — análise (KPIs, Pareto, tendência, peças perdidas)
+// ════════════════════════════════════════════════
+// Paradas planejadas (não contam como peça perdida): refeição/intervalo/almoço.
+const PAR_PLANEJADA=/refei|interval|almo/i;
+
+function _filtroParadas(dias){
+  const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
+  const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  const eD=document.getElementById('par-de'), eA=document.getElementById('par-ate');
+  if(eD) eD.value=f(de); if(eA) eA.value=f(ate);
+  renderAnaliseParadas();
+}
+function _initFiltroParadas(){
+  const eD=document.getElementById('par-de');
+  if(eD && !eD.value){ _filtroParadas(30); }
+}
+function _durMinPar(ini,fim){
+  if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null;
+  const[h0,m0]=ini.split(':').map(Number),[h1,m1]=fim.split(':').map(Number);
+  const d=(h1*60+m1)-(h0*60+m0); return d>=0?d:null;
+}
+function _fmtMinPar(m){ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+
+async function renderAnaliseParadas(){
+  const grid=document.getElementById('par-kpi-grid');
+  if(!grid) return;
+  if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
+
+  let de=(document.getElementById('par-de')||{}).value||'';
+  let ate=(document.getElementById('par-ate')||{}).value||'';
+  if(!de||!ate){ _filtroParadas(30); return; }
+
+  grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div></div>';
+
+  // Paradas do período
+  let paradas=[];
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const j=await jsonpFetch(url); if(j&&j.ok) paradas=j.paradas||[];
+  }catch(e){ console.warn('getParadasPeriodo:', e.message); }
+
+  // Meta do dia por data (para peças perdidas = duração × meta/hora)
+  const metaByDay={};
+  try{ (await buildDiasHistAsync()).forEach(d=>{ metaByDay[d.data]=d.meta; }); }catch(e){}
+  const hoje=hojeStr();
+  if(metaByDay[hoje]==null){ metaByDay[hoje]=getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia; }
+
+  const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
+  const pesoMedio=(PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0;
+
+  let totMin=0,totMinNP=0,pecas=0,nParadas=0;
+  const porTipo={},porDia={},diasSet=new Set();
+  paradas.forEach(p=>{
+    const d=_durMinPar(p.ini,p.fim); if(d==null) return; // ignora abertas/inválidas
+    nParadas++; diasSet.add(p.data); totMin+=d;
+    const planej=PAR_PLANEJADA.test(p.tipo||'');
+    const metaHora=(metaByDay[p.data]||CFG.metaDia)/horasProd;
+    const perd=planej?0:Math.round(d/60*metaHora);
+    if(!planej){ totMinNP+=d; pecas+=perd; }
+    const k=p.tipo||'—';
+    if(!porTipo[k]) porTipo[k]={qtd:0,min:0,perd:0,planej};
+    porTipo[k].qtd++; porTipo[k].min+=d; porTipo[k].perd+=perd;
+    if(!porDia[p.data]) porDia[p.data]={min:0,perd:0};
+    porDia[p.data].min+=d; porDia[p.data].perd+=perd;
+  });
+
+  const nDias=diasSet.size||1;
+  const tempoDispMin=nDias*horasProd*60;
+  const dispon=tempoDispMin>0?Math.max(0,(tempoDispMin-totMinNP)/tempoDispMin*100):0;
+  const pctPerd=tempoDispMin>0?(totMinNP/tempoDispMin*100):0;
+  const tMed=nParadas>0?Math.round(totMin/nParadas):0;
+  const pesoPerd=Math.round(pecas*pesoMedio);
+  const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
+
+  const kpis=[
+    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,c:'acc'},
+    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não planejadas',c:corDisp},
+    {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',c:corDisp},
+    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',c:'red'},
+    {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',c:'red'},
+    {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',c:'acc'},
+    {l:'TEMPO MÉDIO',v:_fmtMinPar(tMed),sub:'por parada',c:'acc'},
+  ];
+  grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  // Pareto por tipo (barras de tempo + linha % acumulado)
+  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  let acc=0; const totT=tipos.reduce((s,t)=>s+t.min,0)||1;
+  const paretoLbl=tipos.map(t=>t.tipo);
+  const paretoMin=tipos.map(t=>t.min);
+  const paretoAcc=tipos.map(t=>{ acc+=t.min; return Math.round(acc/totT*100); });
+  const barCols=tipos.map(t=>t.planej?'rgba(120,120,120,0.6)':'rgba(229,115,115,0.75)');
+  mkChart('ch-par-pareto',{type:'bar',data:{labels:paretoLbl,datasets:[
+    {label:'Tempo (min)',data:paretoMin,backgroundColor:barCols,borderRadius:3,yAxisID:'y',order:2},
+    {label:'% acumulado',data:paretoAcc,type:'line',borderColor:'#FF5C1F',borderWidth:2,pointRadius:3,pointBackgroundColor:'#FF5C1F',fill:false,yAxisID:'y2',order:1}
+  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}},scales:{
+    x:CHART_DEFAULTS.scales.x,
+    y:{...CHART_DEFAULTS.scales.y,title:{display:true,text:'min',color:'#666',font:{size:9}}},
+    y2:{position:'right',beginAtZero:true,max:100,ticks:{color:'#FF5C1F',font:{family:'IBM Plex Mono',size:9},callback:v=>v+'%'},grid:{drawOnChartArea:false}}
+  }}});
+
+  // Tendência: peças perdidas por dia
+  const diasOrd=Object.keys(porDia).sort((a,b)=>{const p=s=>{const m=s.match(/(\d+)\/(\d+)\/(\d+)/);return m?+m[3]*1e4+ +m[2]*100+ +m[1]:0};return p(a)-p(b)});
+  mkChart('ch-par-trend',{type:'bar',data:{labels:diasOrd.map(d=>d.slice(0,5)),datasets:[
+    {label:'Peças perdidas',data:diasOrd.map(d=>porDia[d].perd),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
+  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+
+  // Tabela por tipo
+  const tb=document.getElementById('par-tbl-tipo');
+  if(tb){
+    tb.innerHTML=tipos.map(t=>`<tr>
+      <td style="font-family:var(--font-d);font-size:11px;color:${t.planej?'var(--txt2)':'#e57373'}">${t.tipo}</td>
+      <td style="font-size:10px;color:var(--txt3)">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
+      <td class="td-mono">${t.qtd}</td>
+      <td class="td-mono">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono">${totT>0?Math.round(t.min/totT*100):0}%</td>
+      <td class="td-mono" style="color:${t.perd>0?'#e57373':'var(--txt3)'}">${t.planej?'—':fmtN(t.perd)}</td>
+    </tr>`).join('')||'<tr><td colspan="6" class="empty-msg">Nenhuma parada no período.</td></tr>';
+  }
+
+  // Estudo de ganho
+  const estWrap=document.getElementById('par-estudo-wrap');
+  const est=document.getElementById('par-estudo');
+  const naoPlan=tipos.filter(t=>!t.planej && t.perd>0);
+  if(est && naoPlan.length){
+    est.innerHTML=naoPlan.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 4px;font-family:var(--font-b);font-size:13px;color:var(--txt)">
+      <span style="color:#e57373;font-weight:700">▸</span>
+      Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.
+    </div>`).join('');
+    if(estWrap) estWrap.style.display='';
+  } else if(estWrap){ estWrap.style.display='none'; }
+
+  const met=document.getElementById('par-metodo');
+  if(met) met.textContent='Peças perdidas = duração × (meta do dia ÷ '+horasProd.toFixed(1)+'h produtivas). Paradas de refeição/intervalo/almoço são tratadas como PLANEJADAS e não entram na perda.';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
