@@ -87,6 +87,31 @@ body.ger-hist .ger-live-only{display:none!important}
 .kpi-grid{display:grid;gap:10px;margin-bottom:16px}
 .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
 .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+.par-sec{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt);text-transform:uppercase;margin:22px 2px 11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.par-sec-n{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--acc);color:#141414;font-size:10px;font-weight:700;flex-shrink:0;box-shadow:0 2px 6px -2px rgba(245,166,35,.6)}
+#sec-paradas .par-sec:first-of-type{margin-top:6px}
+.par-filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.par-filtros .par-q{font-size:10px;padding:4px 12px}
+.par-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.par-2col{grid-template-columns:1fr}}
+.par-resumo{display:flex;align-items:center;gap:18px;padding:8px 4px}
+.par-donut{position:relative;width:130px;height:130px;flex-shrink:0}
+.par-donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.par-donut-c b{font-family:var(--font-h);font-size:26px;font-weight:700;line-height:1;color:var(--txt)}
+.par-donut-c span{font-family:var(--font-d);font-size:8px;letter-spacing:1px;color:var(--txt2);margin-top:3px}
+.par-resumo-info{flex:1;display:flex;flex-direction:column;gap:9px;font-family:var(--font-d);font-size:11px}
+.par-rl{display:flex;align-items:center;gap:8px;color:var(--txt2)}
+.par-rl .dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.par-rl b{color:var(--txt);font-weight:600;margin-left:auto;font-size:12px}
+.par-rank-row{display:flex;align-items:center;gap:10px;padding:5px 2px;font-family:var(--font-d);font-size:11px}
+.par-rank-n{width:16px;color:var(--txt3);font-weight:700}
+.par-rank-lbl{width:150px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.par-rank-bar{flex:1;height:12px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+.par-rank-fill{height:100%;border-radius:3px}
+.par-rank-pct{width:44px;text-align:right;color:var(--txt2)}
+.par-ins{display:flex;gap:9px;padding:6px 2px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2);line-height:1.45}
+.par-ins .ic{flex-shrink:0;font-size:14px;line-height:1.2}
+.par-kdelta{font-family:var(--font-d);font-size:9px;font-weight:600;letter-spacing:.3px}
 .kpi-grid.c9{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
 .kpi-grid.c9 .kpi-card{padding:9px 12px}
 .kpi-grid.c9 .kpi-lbl{margin-bottom:4px}
@@ -1390,41 +1415,91 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <input type="date" id="par-de" onchange="renderAnaliseParadas()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <span style="color:var(--txt2)">–</span>
       <input type="date" id="par-ate" onchange="renderAnaliseParadas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
-      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(7)">7 DIAS</button>
-      <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="_filtroParadas(30)">MÊS</button>
       <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO</button>
     </div>
   </div>
 
+  <!-- Atalhos de período + filtro de classe -->
+  <div class="par-filtros">
+    <button class="btn btn-ghost par-q" onclick="_parQuick(0)">HOJE</button>
+    <button class="btn btn-ghost par-q" onclick="_parQuick(1)">ONTEM</button>
+    <button class="btn btn-ghost par-q" onclick="_filtroParadas(7)">7 DIAS</button>
+    <button class="btn btn-ghost par-q" onclick="_filtroParadas(30)">30 DIAS</button>
+    <button class="btn btn-ghost par-q" onclick="_filtroParadas(30)">MÊS</button>
+    <div style="flex:1"></div>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CLASSE</span>
+    <select id="par-classe" class="frm-inp" onchange="renderAnaliseParadas()" style="padding:4px 8px;font-size:11px">
+      <option value="">Todas</option>
+      <option value="np">Não planejada</option>
+      <option value="pl">Planejada</option>
+    </select>
+  </div>
+
+  <!-- 1 · Visão geral do período (números-chave) -->
+  <div class="par-sec"><span class="par-sec-n">1</span> VISÃO GERAL DO PERÍODO</div>
   <div class="kpi-grid c9" id="par-kpi-grid"></div>
 
-  <div class="charts-row" style="margin-top:14px">
+  <!-- 2 · Quanto a linha ficou parada e quem causou -->
+  <div class="par-sec"><span class="par-sec-n">2</span> QUANTO A LINHA FICOU PARADA — E QUEM CAUSOU</div>
+  <div class="par-2col">
+    <div class="chart-card">
+      <div class="chart-ttl">RESUMO DO TURNO — disponibilidade</div>
+      <div class="par-resumo">
+        <div class="par-donut"><canvas id="ch-par-dispon"></canvas><div class="par-donut-c"><b id="par-donut-val">—</b><span>disponível</span></div></div>
+        <div class="par-resumo-info" id="par-resumo-info"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">RANKING — MAIORES CAUSAS (% do tempo parado)</div>
+      <div id="par-ranking" style="padding:6px 2px"></div>
+    </div>
+  </div>
+
+  <!-- 3 · Onde e quando perdemos produção -->
+  <div class="par-sec"><span class="par-sec-n">3</span> ONDE E QUANDO PERDEMOS PRODUÇÃO</div>
+  <div class="charts-row">
     <div class="chart-card">
       <div class="chart-ttl">PARETO — TEMPO PARADO POR TIPO (foco nos maiores ofensores)</div>
       <div class="chart-box-lg"><canvas id="ch-par-pareto"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-ttl">PEÇAS PERDIDAS POR DIA (estimativa)</div>
+      <div class="chart-ttl" id="par-trend-ttl">PEÇAS PERDIDAS POR DIA (estimativa)</div>
       <div class="chart-box-lg"><canvas id="ch-par-trend"></canvas></div>
     </div>
   </div>
 
-  <div class="tbl-wrap" style="margin-top:14px">
-    <div class="tbl-hdr"><span class="tbl-hdr-ttl">POR TIPO DE PARADA</span></div>
+  <!-- 4 · Detalhe por tipo -->
+  <div class="par-sec"><span class="par-sec-n">4</span> DETALHE POR TIPO DE PARADA</div>
+  <div class="tbl-wrap">
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th></tr></thead>
+        <thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead>
         <tbody id="par-tbl-tipo"></tbody>
       </table>
     </div>
   </div>
 
-  <div class="tbl-wrap" id="par-estudo-wrap" style="margin-top:14px;display:none">
-    <div class="tbl-hdr"><span class="tbl-hdr-ttl">💡 ESTUDO DE GANHO — se eliminássemos cada tipo</span></div>
+  <!-- 5 · Quanto dá pra recuperar -->
+  <div class="par-sec" id="par-sec-estudo"><span class="par-sec-n">5</span> QUANTO DÁ PRA RECUPERAR</div>
+  <div class="tbl-wrap" id="par-estudo-wrap" style="display:none">
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">💡 SE ELIMINÁSSEMOS CADA TIPO DE PARADA</span></div>
     <div style="padding:10px 4px" id="par-estudo"></div>
   </div>
 
-  <div style="margin-top:10px;font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:.5px" id="par-metodo"></div>
+  <!-- 6 · Conclusões -->
+  <div class="par-sec"><span class="par-sec-n">6</span> O QUE OS NÚMEROS DIZEM</div>
+  <div class="par-2col">
+    <div class="chart-card">
+      <div class="chart-ttl">📊 INSIGHTS AUTOMÁTICOS</div>
+      <div id="par-insights" style="padding:6px 2px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-ttl">💡 RECOMENDAÇÃO</div>
+      <div id="par-recom" style="padding:6px 2px;font-family:var(--font-b);font-size:13px;color:var(--txt);line-height:1.5"></div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px;font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:.5px" id="par-metodo"></div>
 </section>
 
 </main>
@@ -4991,6 +5066,12 @@ function _filtroParadas(dias){
   dSet('par-de',f(de)); dSet('par-ate',f(ate));
   renderAnaliseParadas();
 }
+function _parQuick(diasAtras){
+  const dt=new Date(); dt.setDate(dt.getDate()-diasAtras);
+  const s=p2(dt.getDate())+'/'+p2(dt.getMonth()+1)+'/'+dt.getFullYear();
+  dSet('par-de',s); dSet('par-ate',s);
+  renderAnaliseParadas();
+}
 function _initFiltroParadas(){
   const eD=document.getElementById('par-de');
   if(eD && !eD.value){ _filtroParadas(30); }
@@ -5047,31 +5128,54 @@ async function renderAnaliseParadas(){
 
   grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando paradas do período (pode demorar se o servidor estiver ligando)</div></div>';
 
-  // Busca paradas + histórico EM PARALELO (mais rápido) e com tolerância a falha:
-  // paradas=null → falhou (mostra erro); {} de meta → usa a meta do dia padrão.
-  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  const [paradas, metaByDay] = await Promise.all([
-    jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
+  // Comparativo: período anterior de mesma duração (vs ontem / vs período anterior).
+  const classe=(document.getElementById('par-classe')||{}).value||'';
+  const _pd=de.split('/').map(Number), _pa=ate.split('/').map(Number);
+  const _dDe=new Date(_pd[2],_pd[1]-1,_pd[0]), _dAte=new Date(_pa[2],_pa[1]-1,_pa[0]);
+  const lenDias=Math.max(1,Math.round((_dAte-_dDe)/86400000)+1);
+  const _pAte=new Date(_dDe); _pAte.setDate(_pAte.getDate()-1);
+  const _pDe=new Date(_pAte); _pDe.setDate(_pDe.getDate()-(lenDias-1));
+  const _fdt=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  const mkUrlP=(d1,d2)=>CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(d1)+'&ate='+encodeURIComponent(d2);
+
+  // Busca período atual + período anterior + histórico EM PARALELO, tolerante a falha.
+  const [paradas, prevParadas, metaByDay] = await Promise.all([
+    jsonpFetch(mkUrlP(de,ate)).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
+    jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]),
     buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({}))
   ]);
   if(paradas===null){
     grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
     return;
   }
-  // Cálculo unificado (mesma fonte do relatório)
-  const {horasProd,pesoMedio,totMin,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=_paradasStats(paradas, metaByDay);
+  // Filtro de classe (Todas / Não planejada / Planejada)
+  const _filtClasse=arr=>!classe?(arr||[]):(arr||[]).filter(p=>{const pl=PAR_PLANEJADA.test(p.tipo||''); return classe==='pl'?pl:!pl;});
+  const parF=_filtClasse(paradas);
+  // Cálculo unificado (mesma fonte do relatório) + período anterior p/ comparativo
+  const st=_paradasStats(parF, metaByDay);
+  const stPrev=_paradasStats(_filtClasse(prevParadas), Object.assign({}, metaByDay));
+  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
 
+  const cmpLbl=lenDias<=1?'vs ontem':'vs período anterior';
+  const _dl=(cur,prev,higherBad,fmt)=>{
+    if(prev==null||(prev===0&&cur===0)) return '';
+    const dif=cur-prev;
+    if(Math.abs(dif)<0.05) return `<span class="par-kdelta" style="color:var(--txt3)">— ${cmpLbl}</span>`;
+    const up=dif>0, bad=higherBad?up:!up;
+    return `<span class="par-kdelta" style="color:${bad?'var(--red)':'var(--ok)'}">${up?'▲':'▼'} ${fmt(Math.abs(dif))} ${cmpLbl}</span>`;
+  };
+
   const kpis=[
-    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,c:'acc'},
-    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não planejadas',c:corDisp},
-    {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',c:corDisp},
-    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',c:'red'},
-    {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',c:'red'},
-    {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',c:'acc'},
-    {l:'TEMPO MÉDIO',v:_fmtMinPar(tMed),sub:'por parada',c:'acc'},
+    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
+    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não planejadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
+    {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
+    {l:'TEMPO MÉDIO POR PARADA',v:_fmtMinPar(tMed),sub:'por parada',d:_dl(tMed,stPrev.tMed,true,_fmtMinPar),c:'acc'},
   ];
-  grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+  grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div>${k.d?`<div style="margin-top:4px">${k.d}</div>`:''}</div>`).join('');
 
   // Pareto por tipo (barras de tempo + linha % acumulado)
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
@@ -5089,28 +5193,75 @@ async function renderAnaliseParadas(){
     y2:{position:'right',beginAtZero:true,max:108,ticks:{stepSize:20,color:'#FF5C1F',font:{family:'IBM Plex Mono',size:9},callback:v=>v>100?'':v+'%'},grid:{drawOnChartArea:false}}
   }}});
 
-  // Tendência: peças perdidas por dia
-  const diasOrd=Object.keys(porDia).sort((a,b)=>{const p=s=>{const m=s.match(/(\d+)\/(\d+)\/(\d+)/);return m?+m[3]*1e4+ +m[2]*100+ +m[1]:0};return p(a)-p(b)});
-  mkChart('ch-par-trend',{type:'bar',data:{labels:diasOrd.map(d=>d.slice(0,5)),datasets:[
-    {label:'Peças perdidas',data:diasOrd.map(d=>porDia[d].perd),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
-  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+  // Peças perdidas por HORA (quando o período é 1 dia) ou por DIA (vários dias)
+  const trendTtl=document.getElementById('par-trend-ttl');
+  if(nDias<=1){
+    if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR HORA (estimativa)';
+    const porHora={};
+    parF.forEach(p=>{ if(PAR_PLANEJADA.test(p.tipo||'')) return;
+      const dm=_durMinPar(p.ini,p.fim); if(dm==null) return;
+      const mh=(metaByDay[p.data]||CFG.metaDia)/horasProd;
+      const hh=(String(p.ini).match(/^(\d{1,2}):/)||[])[1]; if(hh==null) return;
+      const key=p2(+hh)+'h'; porHora[key]=(porHora[key]||0)+Math.round(dm/60*mh);
+    });
+    const hOrd=Object.keys(porHora).sort();
+    mkChart('ch-par-trend',{type:'bar',data:{labels:hOrd,datasets:[
+      {label:'Peças',data:hOrd.map(h=>porHora[h]),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
+    ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+  } else {
+    if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR DIA (estimativa)';
+    const diasOrd=Object.keys(porDia).sort((a,b)=>{const pf=s=>{const m=s.match(/(\d+)\/(\d+)\/(\d+)/);return m?+m[3]*1e4+ +m[2]*100+ +m[1]:0};return pf(a)-pf(b)});
+    mkChart('ch-par-trend',{type:'bar',data:{labels:diasOrd.map(d=>d.slice(0,5)),datasets:[
+      {label:'Peças perdidas',data:diasOrd.map(d=>porDia[d].perd),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
+    ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+  }
 
-  // Tabela por tipo
+  // Tabela por tipo (com tempo médio, peça e peso perdidos + linha TOTAL)
   const tb=document.getElementById('par-tbl-tipo');
   if(tb){
-    tb.innerHTML=tipos.map(t=>`<tr>
+    const rows=tipos.map(t=>`<tr>
       <td style="font-family:var(--font-d);font-size:11px;color:${t.planej?'var(--txt2)':'#e57373'}">${t.tipo}</td>
       <td style="font-size:10px;color:var(--txt3)">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
       <td class="td-mono">${t.qtd}</td>
       <td class="td-mono">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono">${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}</td>
       <td class="td-mono">${totT>0?Math.round(t.min/totT*100):0}%</td>
       <td class="td-mono" style="color:${t.perd>0?'#e57373':'var(--txt3)'}">${t.planej?'—':fmtN(t.perd)}</td>
-    </tr>`).join('')||'<tr><td colspan="6" class="empty-msg">Nenhuma parada no período.</td></tr>';
+      <td class="td-mono" style="color:${!t.planej&&t.perd>0&&pesoMedio>0?'#e57373':'var(--txt3)'}">${t.planej||pesoMedio<=0?'—':fmtN(Math.round(t.perd*pesoMedio))+' kg'}</td>
+    </tr>`).join('');
+    const total=tipos.length?`<tr style="border-top:1px solid var(--border)">
+      <td style="font-family:var(--font-d);font-size:11px;color:var(--txt);font-weight:700">TOTAL</td>
+      <td></td>
+      <td class="td-mono" style="font-weight:700">${nParadas}</td>
+      <td class="td-mono" style="font-weight:700">${_fmtMinPar(totMin)}</td>
+      <td class="td-mono" style="font-weight:700">${_fmtMinPar(tMed)}</td>
+      <td class="td-mono" style="font-weight:700">100%</td>
+      <td class="td-mono" style="color:#e57373;font-weight:700">${fmtN(pecas)}</td>
+      <td class="td-mono" style="color:${pesoMedio>0?'#e57373':'var(--txt3)'};font-weight:700">${pesoMedio>0?fmtN(pesoPerd)+' kg':'—'}</td>
+    </tr>`:'';
+    tb.innerHTML=(rows+total)||'<tr><td colspan="8" class="empty-msg">Nenhuma parada no período.</td></tr>';
   }
+
+  // Resumo do turno (donut de disponibilidade) + Ranking das maiores causas
+  mkChart('ch-par-dispon',{type:'doughnut',data:{labels:['Produzindo','Parado (não plan.)'],datasets:[
+    {data:[Math.max(0,100-pctPerd),Math.max(0,pctPerd)],backgroundColor:['rgba(76,175,80,0.85)','rgba(244,67,54,0.85)'],borderWidth:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
+  const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=dispon.toFixed(1)+'%';
+  const rInfo=document.getElementById('par-resumo-info');
+  if(rInfo){ const tProd=Math.max(0,Math.round(nDias*horasProd*60-totMinNP));
+    rInfo.innerHTML=`<div class="par-rl"><span class="dot" style="background:rgba(76,175,80,0.85)"></span> Tempo produzindo <b>${_fmtMinPar(tProd)}</b></div>
+      <div class="par-rl"><span class="dot" style="background:rgba(244,67,54,0.85)"></span> Tempo parado (não plan.) <b>${_fmtMinPar(totMinNP)}</b></div>
+      <div class="par-rl" style="color:var(--txt3)">Meta de disponibilidade <b style="color:var(--acc)">90,0%</b></div>`;
+  }
+  const rk=document.getElementById('par-ranking');
+  if(rk){ rk.innerHTML=tipos.slice(0,5).map((t,i)=>{const pct=totT>0?Math.round(t.min/totT*100):0;
+    return `<div class="par-rank-row"><span class="par-rank-n">${i+1}</span><span class="par-rank-lbl" title="${t.tipo}">${t.tipo}</span><span class="par-rank-bar"><span class="par-rank-fill" style="width:${pct}%;background:${t.planej?'rgba(120,120,120,0.7)':'rgba(244,67,54,0.75)'}"></span></span><span class="par-rank-pct">${pct}%</span></div>`;
+  }).join('')||'<div class="empty-msg" style="padding:12px">Nenhuma parada no período.</div>'; }
 
   // Estudo de ganho
   const estWrap=document.getElementById('par-estudo-wrap');
   const est=document.getElementById('par-estudo');
+  const secEst=document.getElementById('par-sec-estudo');
   const naoPlan=tipos.filter(t=>!t.planej && t.perd>0);
   if(est && naoPlan.length){
     est.innerHTML=naoPlan.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 4px;font-family:var(--font-b);font-size:13px;color:var(--txt)">
@@ -5118,7 +5269,24 @@ async function renderAnaliseParadas(){
       Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.
     </div>`).join('');
     if(estWrap) estWrap.style.display='';
-  } else if(estWrap){ estWrap.style.display='none'; }
+    if(secEst) secEst.style.display='';
+  } else { if(estWrap) estWrap.style.display='none'; if(secEst) secEst.style.display='none'; }
+
+  // Insights automáticos (texto gerado dos números)
+  const insEl=document.getElementById('par-insights');
+  if(insEl){ const ins=[]; const topT=tipos[0];
+    if(topT){ const pct=totT>0?Math.round(topT.min/totT*100):0;
+      ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${!topT.planej&&topT.perd>0?`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`:''}.`}); }
+    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está dentro da meta (90%).`:`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está <b>abaixo</b> da meta de 90%.`});
+    if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
+    if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não planejadas.`});
+    insEl.innerHTML=ins.map(x=>`<div class="par-ins"><span class="ic">${x.ic}</span><span>${x.t}</span></div>`).join('')||'<div class="par-ins"><span>Sem paradas no período.</span></div>';
+  }
+  const recEl=document.getElementById('par-recom');
+  if(recEl){ const alvos=tipos.filter(t=>!t.planej).slice(0,2);
+    if(alvos.length){ const pctJ=totT>0?Math.round(alvos.reduce((s,t)=>s+t.min,0)/totT*100):0;
+      recEl.innerHTML=`Priorizar a redução de ${alvos.map(t=>`<b style="color:#e57373">${t.tipo}</b>`).join(' e ')}. Juntos respondem por <b>${pctJ}%</b> do tempo parado — pequenas melhorias nesses pontos geram o maior impacto no resultado.`;
+    } else recEl.innerHTML='Sem paradas não planejadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
   if(met) met.textContent='Peças perdidas = duração × (meta do dia ÷ '+horasProd.toFixed(1)+'h produtivas). Paradas de refeição/intervalo/almoço são tratadas como PLANEJADAS e não entram na perda.';
