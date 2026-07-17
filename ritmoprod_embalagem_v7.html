@@ -4934,7 +4934,8 @@ async function gerarRelatorioParadas(){
   try{
     [paradas, metaByDay]=await Promise.all([
       jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-      buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({}))
+      buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({})),
+      _carregarClassesPar()
     ]);
   }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
   if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
@@ -4961,14 +4962,25 @@ async function gerarRelatorioParadas(){
     </div>`;
   }).join('')||'<div style="color:#999;font-size:11px">Nenhuma parada no período.</div>';
 
-  const linhasTipo=st.tipos.map(t=>`<tr>
+  const linhasTipo=(st.tipos.map(t=>`<tr>
       <td style="font-weight:600;color:${t.planej?'#777':'#c62828'}">${esc(t.tipo)}</td>
       <td style="font-size:9px;color:#999">${t.planej?'PLANEJADA':'NÃO PLANEJADA'}</td>
       <td class="td-mono">${t.qtd}</td>
       <td class="td-mono">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono">${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}</td>
       <td class="td-mono">${Math.round(t.min/totT*100)}%</td>
       <td class="td-mono" style="color:${t.perd>0?'#c62828':'#bbb'}">${t.planej?'—':fmtN(t.perd)}</td>
-    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
+      <td class="td-mono" style="color:${!t.planej&&t.perd>0&&st.pesoMedio>0?'#c62828':'#bbb'}">${t.planej||st.pesoMedio<=0?'—':fmtN(Math.round(t.perd*st.pesoMedio))+' kg'}</td>
+    </tr>`).join('')
+    + (st.tipos.length?`<tr style="border-top:1.5px solid #ccc">
+      <td style="font-weight:700">TOTAL</td><td></td>
+      <td class="td-mono" style="font-weight:700">${st.nParadas}</td>
+      <td class="td-mono" style="font-weight:700">${_fmtMinPar(st.totMin)}</td>
+      <td class="td-mono" style="font-weight:700">${_fmtMinPar(st.tMed)}</td>
+      <td class="td-mono" style="font-weight:700">100%</td>
+      <td class="td-mono" style="font-weight:700;color:#c62828">${fmtN(st.pecas)}</td>
+      <td class="td-mono" style="font-weight:700;color:${st.pesoMedio>0?'#c62828':'#bbb'}">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</td>
+    </tr>`:''))||'<tr><td colspan="8" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
 
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
   const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>`<div style="font-size:12px;color:#222;margin:4px 0">▸ Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.</div>`).join('')):'';
@@ -4976,7 +4988,7 @@ async function gerarRelatorioParadas(){
   const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
   const linhasDet=detOrd.map(p=>{
     const d=_durMinPar(p.ini,p.fim); const emand=!p.fim||String(p.fim).trim()==='';
-    const planej=PAR_PLANEJADA.test(p.tipo||'');
+    const planej=_ehPlanejada(p.tipo);
     return `<tr>
       <td class="td-mono">${esc(p.data)}</td>
       <td style="color:${planej?'#777':'#c62828'}">${esc(p.tipo||'—')}</td>
@@ -5041,7 +5053,7 @@ async function gerarRelatorioParadas(){
 <div class="rp-sec-ttl">PARETO — TEMPO PARADO POR TIPO (maiores ofensores)</div>
 <div class="rp-chart-wrap">${pareto}</div>
 <div class="rp-sec-ttl">POR TIPO DE PARADA</div>
-<table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th></tr></thead><tbody>${linhasTipo}</tbody></table>
+<table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
@@ -5059,6 +5071,24 @@ ${estudo}
 // ════════════════════════════════════════════════
 // Paradas planejadas (não contam como peça perdida): refeição/intervalo/almoço.
 const PAR_PLANEJADA=/refei|interval|almo/i;
+// Classe por tipo vinda da aba TIPOS_PARADA (coluna CLASSE). Quando marcada na
+// planilha, ELA manda; se vazia, cai na heurística por nome (PAR_PLANEJADA).
+var PAR_CLASSE_MAP={}, PAR_CLASSE_LOADED=false;
+async function _carregarClassesPar(){
+  if(PAR_CLASSE_LOADED || !CFG.sheetsUrl) return;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getTiposParada';
+    const j=await jsonpFetch(url);
+    if(j&&j.ok&&j.classes){ const m={}; Object.keys(j.classes).forEach(k=>{ m[String(k).trim()]=j.classes[k]; }); PAR_CLASSE_MAP=m; }
+    PAR_CLASSE_LOADED=true;
+  }catch(e){}
+}
+function _ehPlanejada(tipo){
+  const c=PAR_CLASSE_MAP[String(tipo||'').trim()];
+  if(c==='PLANEJADA') return true;
+  if(c==='NAO') return false;
+  return PAR_PLANEJADA.test(tipo||'');   // reserva: heurística por nome
+}
 
 function _filtroParadas(dias){
   const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
@@ -5097,7 +5127,7 @@ function _paradasStats(paradas, metaByDay){
   (paradas||[]).forEach(p=>{
     const d=_durMinPar(p.ini,p.fim); if(d==null) return;
     nParadas++; diasSet.add(p.data); totMin+=d;
-    const planej=PAR_PLANEJADA.test(p.tipo||'');
+    const planej=_ehPlanejada(p.tipo);
     const metaHora=(metaByDay[p.data]||CFG.metaDia)/horasProd;
     const perd=planej?0:Math.round(d/60*metaHora);
     if(!planej){ totMinNP+=d; pecas+=perd; }
@@ -5142,14 +5172,15 @@ async function renderAnaliseParadas(){
   const [paradas, prevParadas, metaByDay] = await Promise.all([
     jsonpFetch(mkUrlP(de,ate)).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
     jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]),
-    buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({}))
+    buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({})),
+    _carregarClassesPar()
   ]);
   if(paradas===null){
     grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
     return;
   }
   // Filtro de classe (Todas / Não planejada / Planejada)
-  const _filtClasse=arr=>!classe?(arr||[]):(arr||[]).filter(p=>{const pl=PAR_PLANEJADA.test(p.tipo||''); return classe==='pl'?pl:!pl;});
+  const _filtClasse=arr=>!classe?(arr||[]):(arr||[]).filter(p=>{const pl=_ehPlanejada(p.tipo); return classe==='pl'?pl:!pl;});
   const parF=_filtClasse(paradas);
   // Cálculo unificado (mesma fonte do relatório) + período anterior p/ comparativo
   const st=_paradasStats(parF, metaByDay);
@@ -5198,7 +5229,7 @@ async function renderAnaliseParadas(){
   if(nDias<=1){
     if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR HORA (estimativa)';
     const porHora={};
-    parF.forEach(p=>{ if(PAR_PLANEJADA.test(p.tipo||'')) return;
+    parF.forEach(p=>{ if(_ehPlanejada(p.tipo)) return;
       const dm=_durMinPar(p.ini,p.fim); if(dm==null) return;
       const mh=(metaByDay[p.data]||CFG.metaDia)/horasProd;
       const hh=(String(p.ini).match(/^(\d{1,2}):/)||[])[1]; if(hh==null) return;

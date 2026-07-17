@@ -1066,6 +1066,7 @@ async function carregarTiposParada(){
     const json = await jsonpFetch(url);
     if(json && json.ok && Array.isArray(json.tipos) && json.tipos.length){
       PAR_TIPOS = json.tipos;
+      if(json.classes){ const m={}; Object.keys(json.classes).forEach(k=>{ m[String(k).trim()]=json.classes[k]; }); PAR_CLASSE_MAP_M=m; }
       // Se o modal estiver aberto e rodando, atualiza o dropdown na hora.
       if(document.getElementById('modal-paradas')?.classList.contains('open') && !paradaAtiva()){
         renderParadaEstado();
@@ -1111,6 +1112,15 @@ function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'
 // Resumo do dia (tempo, nº, peças perdidas, disponibilidade) + alerta + top
 // ofensores + comparativo com a média do mês + lista do dia.
 const PAR_PLANEJADA_M=/refei|interval|almo/i;
+// Classe por tipo (coluna CLASSE da aba TIPOS_PARADA). Se marcada, manda; se
+// vazia, cai na heurística por nome.
+var PAR_CLASSE_MAP_M={};
+function _ehPlanejadaM(tipo){
+  const c=PAR_CLASSE_MAP_M[String(tipo||'').trim()];
+  if(c==='PLANEJADA') return true;
+  if(c==='NAO') return false;
+  return PAR_PLANEJADA_M.test(tipo||'');
+}
 let PAR_MES=null; // paradas do mês (comparativo) — carregadas à parte
 function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
 function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
@@ -1121,7 +1131,7 @@ function _statsParadasMob(lista){
   (lista||[]).forEach(p=>{
     const d=_durMin2(p.ini,p.fim); if(d==null) return;
     n++; dias.add(p.data); totMin+=d;
-    const planej=PAR_PLANEJADA_M.test(p.tipo||'');
+    const planej=_ehPlanejadaM(p.tipo);
     const perd=planej?0:Math.round(d/60*metaHora);
     if(!planej){ totMinNP+=d; pecas+=perd; }
     const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
@@ -1152,7 +1162,7 @@ function renderGerParadasResumo(){
   if(ex){
     const maxMin=st.tipos[0]?st.tipos[0].min:1;
     const of=st.tipos.slice(0,3).map(t=>{
-      const planej=PAR_PLANEJADA_M.test(t.tipo||'');
+      const planej=_ehPlanejadaM(t.tipo);
       return `<div class="par-of"><span class="par-of-nome" style="color:${planej?'var(--txt2)':'var(--txt)'}">${t.tipo}</span><div class="par-of-bar"><div class="par-of-fill" style="width:${Math.max(4,Math.round(t.min/maxMin*100))}%;background:${planej?'#777':'var(--red)'}"></div></div><span class="par-of-t">${_fmtMin2(t.min)}</span></div>`;
     }).join('');
     let comp='';
@@ -1166,7 +1176,7 @@ function renderGerParadasResumo(){
   if(li){
     li.innerHTML='<div class="par-sub-lbl">PARADAS DE HOJE</div>'+PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>{
       const d=_durMin2(p.ini,p.fim); const em=!p.fim||String(p.fim).trim()==='';
-      const planej=PAR_PLANEJADA_M.test(p.tipo||'');
+      const planej=_ehPlanejadaM(p.tipo);
       return `<div class="par-item2"><div style="min-width:0"><div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;
     }).join('');
   }

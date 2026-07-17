@@ -1681,17 +1681,29 @@ function getTiposParada() {
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_TIPOS_PAR);
-    sh.appendRow(['TIPO_DE_PARADA']);
+    sh.appendRow(['TIPO_DE_PARADA', 'CLASSE']);
     sh.setFrozenRows(1);
-    PADRAO.forEach(t => sh.appendRow([t]));
+    PADRAO.forEach(t => sh.appendRow([t, /refei|interval|almo/i.test(t) ? 'PLANEJADA' : 'NÃO PLANEJADA']));
   }
 
-  const tipos = sh.getDataRange().getValues()
-    .slice(1)
-    .map(r => String(r[0] || '').trim())
-    .filter(Boolean);
+  // Coluna A = nome do tipo; coluna B (opcional) = CLASSE (PLANEJADA / NÃO
+  // PLANEJADA). Quando B está vazia, o painel usa a heurística por nome.
+  const rows = sh.getDataRange().getValues().slice(1);
+  const tipos = [];
+  const classes = {}; // nome -> 'PLANEJADA' | 'NAO' (só quando marcado na planilha)
+  rows.forEach(r => {
+    const nome = String(r[0] || '').trim();
+    if (!nome) return;
+    tipos.push(nome);
+    const cl = String(r[1] || '').trim().toUpperCase();
+    if (cl) {
+      if (/N[ÃA]O/.test(cl) || cl === 'NP' || cl === 'N') classes[nome] = 'NAO';
+      else if (/PLAN/.test(cl) || cl === 'SIM' || cl === 'P') classes[nome] = 'PLANEJADA';
+      else classes[nome] = 'NAO';
+    }
+  });
 
-  return { ok: true, tipos: tipos.length ? tipos : PADRAO };
+  return { ok: true, tipos: tipos.length ? tipos : PADRAO, classes: classes };
 }
 
 // O Google Sheets frequentemente CONVERTE "17/07/2026" em objeto Data e "06:44"
