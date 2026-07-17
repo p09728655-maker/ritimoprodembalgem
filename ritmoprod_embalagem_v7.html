@@ -1974,7 +1974,10 @@ function _calPicker(){
   if(_calDP) return _calDP;
   const dp=document.createElement('input');
   dp.type='date';
-  dp.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:-1;left:0;top:0;width:1px;height:1px;border:0;padding:0;margin:0';
+  // Fica invisível (opacity:0) mas SOBRE o campo (z-index alto) — o calendário
+  // do navegador ancora na posição do elemento; se ele ficar atrás da página,
+  // o calendário abre no canto da tela. pointer-events:none p/ não bloquear.
+  dp.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:99999;left:0;top:0;width:1px;height:1px;border:0;padding:0;margin:0';
   dp.addEventListener('change',function(){
     if(!_calAlvo) return;
     const alvo=document.getElementById(_calAlvo), v=dp.value;
@@ -1991,8 +1994,11 @@ function abrirCal(id){
   _calAlvo=id;
   const m=String(alvo.value||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   dp.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
+  // Posiciona o input escondido EXATAMENTE sobre o campo clicado, para o
+  // calendário abrir junto dele (e não no canto da tela).
   const r=alvo.getBoundingClientRect();
-  dp.style.left=r.left+'px'; dp.style.top=(r.top+r.height)+'px'; dp.style.width=Math.max(r.width,120)+'px';
+  dp.style.left=r.left+'px'; dp.style.top=r.top+'px';
+  dp.style.width=r.width+'px'; dp.style.height=r.height+'px';
   try{ dp.showPicker(); }catch(e){ _calAlvo=null; }
 }
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
