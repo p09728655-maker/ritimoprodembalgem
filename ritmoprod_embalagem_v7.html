@@ -4839,9 +4839,13 @@ renderAll();
 restaurarLogo();
 tick();
 setInterval(tick,1000);
-// Cronômetro da tela de parada: SEMPRE ativo (fora do if(CFG.sheetsUrl)) para
-// nunca congelar em 00:00, mesmo em modo demo / sem Sheets.
-setInterval(()=>{ if(typeof PARADA_PREVIEW!=='undefined' && (PARADA_PREVIEW || PARADA_TV)) _tickCronParada(); }, 1000);
+// Cronômetro da tela de parada: SEMPRE ativo e baseado na VISIBILIDADE do overlay
+// (não em variáveis de estado) — enquanto a tela de parada estiver aparecendo, o
+// cronômetro e o relógio do cabeçalho atualizam a cada 1s. Nunca congela.
+setInterval(()=>{
+  const ov=document.getElementById('tv-parada-over');
+  if(ov && ov.style.display && ov.style.display!=='none'){ try{ _tickCronParada(); }catch(e){} }
+}, 1000);
 // Auto-login como operador se URL tiver ?tv (ex: para TV LG fixa)
 if(new URLSearchParams(location.search.toLowerCase()).has('tv')){
   PERFIL='operador';
