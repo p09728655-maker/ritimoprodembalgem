@@ -2470,6 +2470,8 @@ function _tickCountdown(){
   if(countdownSec===0){
     countdownSec=(window._intervaloMin||5)*60;
     if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
+    // Aba PARADAS aberta também atualiza no intervalo configurado.
+    if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas();
   } else countdownSec--;
 }
 function _atualizarLabelIntervalo(){
@@ -2482,6 +2484,7 @@ function forcarRefresh(){
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
   countdownSec=(window._intervaloMin||5)*60;
   if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
+  if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas();
 }
 function alterarIntervalo(){
   const atual=window._intervaloMin||5;
