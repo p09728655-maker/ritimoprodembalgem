@@ -83,7 +83,11 @@ body.perfil-op #sec-tv.on{ height:calc(100vh - 54px - 40px); }
 .kpi-grid{display:grid;gap:10px;margin-bottom:16px}
 .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
 .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
-.kpi-grid.c9{grid-template-columns:repeat(3,1fr)}
+.kpi-grid.c9{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.kpi-grid.c9 .kpi-card{padding:9px 12px}
+.kpi-grid.c9 .kpi-lbl{margin-bottom:4px}
+.kpi-grid.c9 .kpi-val{font-size:23px}
+.kpi-grid.c9 .kpi-sub{font-size:9px;margin-top:3px}
 .kpi-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--border)}
 .kpi-card.ok::before{background:var(--ok)}
@@ -4884,7 +4888,7 @@ async function renderAnaliseParadas(){
     return;
   }
   // Cálculo unificado (mesma fonte do relatório)
-  const {pesoMedio,totMin,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=_paradasStats(paradas, metaByDay);
+  const {horasProd,pesoMedio,totMin,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=_paradasStats(paradas, metaByDay);
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
 
   const kpis=[
