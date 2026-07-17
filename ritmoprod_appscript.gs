@@ -1518,7 +1518,7 @@ function saveParadas(p) {
   let temAbertaHoje = false;
   for (let i = 1; i < values.length; i++) {
     rowById[String(values[i][1])] = i + 1;
-    if (String(values[i][0]) === data && !String(values[i][4] || '').trim()) temAbertaHoje = true;
+    if (_dataStr(values[i][0]) === data && !_horaStr(values[i][4])) temAbertaHoje = true;
   }
 
   let salvos = 0;
@@ -1561,7 +1561,7 @@ function endParada(p) {
 
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][1]) === id) {
-      const ini = String(values[i][3] || '');
+      const ini = _horaStr(values[i][3]);
       sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
       sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
       SpreadsheetApp.flush();
@@ -1584,10 +1584,10 @@ function encerrarParadasAbertas(dataRef) {
   const values   = sh.getDataRange().getValues();
   let n = 0;
   for (let i = 1; i < values.length; i++) {
-    const linhaData = String(values[i][0]);
-    const fim       = String(values[i][4] || '').trim();
+    const linhaData = _dataStr(values[i][0]);
+    const fim       = _horaStr(values[i][4]);
     if (linhaData === dataRef && !fim) {
-      const ini     = String(values[i][3] || '');
+      const ini     = _horaStr(values[i][3]);
       const novoFim = fimTurno || ini;
       const obs     = String(values[i][6] || '');
       sh.getRange(i + 1, 5).setValue(novoFim);
@@ -1644,6 +1644,17 @@ function getTiposParada() {
   return { ok: true, tipos: tipos.length ? tipos : PADRAO };
 }
 
+// O Google Sheets frequentemente CONVERTE "17/07/2026" em objeto Data e "06:44"
+// em objeto Hora. Aí String(cel) vira "Fri Jul 17 2026..." e a comparação por
+// texto quebra (getParadas voltava VAZIO e a parada aberta não aparecia). Estes
+// normalizadores aceitam tanto texto quanto Data/Hora.
+function _dataStr(v) {
+  return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'dd/MM/yyyy') : String(v || '').trim();
+}
+function _horaStr(v) {
+  return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'HH:mm') : String(v || '').trim();
+}
+
 function getParadas(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PARADAS);
@@ -1656,12 +1667,12 @@ function getParadas(p) {
     .getDataRange()
     .getValues()
     .slice(1)
-    .filter(r => String(r[0]) === data)
+    .filter(r => _dataStr(r[0]) === data)
     .map(r => ({
       id:   Number(r[1]) || Date.now(),
       tipo: String(r[2] || ''),
-      ini:  String(r[3] || ''),
-      fim:  String(r[4] || ''),
+      ini:  _horaStr(r[3]),
+      fim:  _horaStr(r[4]),
       obs:  String(r[6] || '')
     }));
 
