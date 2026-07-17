@@ -80,6 +80,10 @@ main{flex:1;overflow:auto;min-height:0}
 body.perfil-op #sec-tv.on{ height:calc(100vh - 54px - 40px); }
 
 /* ═══ KPI GRID ═══ */
+.ger-datebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ger-datebar-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px}
+#ger-modo-hist{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px;margin-left:4px}
+body.ger-hist .ger-live-only{display:none!important}
 .kpi-grid{display:grid;gap:10px;margin-bottom:16px}
 .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
 .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
@@ -818,7 +822,19 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <p id="ph-ger-sub">—</p>
     </div>
     <div class="print-header-right" id="ph-ger-info">—</div>
-  </div>  <div class="kpi-grid c9" id="kpi-grid"></div>
+  </div>
+
+  <!-- Seletor de dia (deixa ver a GERENCIAL de um dia passado, somente leitura) -->
+  <div class="ger-datebar">
+    <span class="ger-datebar-lbl">DIA</span>
+    <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(-1)" title="Dia anterior">‹</button>
+    <input type="text" id="ger-data" placeholder="HOJE" maxlength="10" oninput="maskData(this)" onchange="verGerDia()" class="frm-inp" style="width:110px;padding:4px 8px;font-size:11px;text-align:center">
+    <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(1)" title="Próximo dia">›</button>
+    <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="gerHoje()">HOJE (AO VIVO)</button>
+    <span id="ger-modo-hist" style="display:none">◷ MODO HISTÓRICO — somente leitura</span>
+  </div>
+
+  <div class="kpi-grid c9" id="kpi-grid"></div>
 
   <div class="charts-row">
     <div class="chart-card">
@@ -837,13 +853,13 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">LANÇAMENTO HORA A HORA</span><span id="ger-leg-fraca" style="display:none;font-size:10px;margin-left:10px;letter-spacing:.5px" title="Comparação com a média histórica do mesmo horário (≥2 dias)."><span style="color:var(--ok);font-weight:600">▲ na média/acima</span><span style="color:var(--warn);font-weight:600;margin-left:10px">⚠ abaixo</span></span>
       <div style="display:flex;align-items:center;gap:8px">
-        <span id="ger-produto-atual" style="display:none;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:.5px" title="Produto selecionado pelo operador no app — opcional">📦 <span id="ger-produto-val"></span></span>
+        <span id="ger-produto-atual" class="ger-live-only" style="display:none;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:.5px" title="Produto selecionado pelo operador no app — opcional">📦 <span id="ger-produto-val"></span></span>
         <span id="tbl-data-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2)"></span>
-        <span id="dia-fechado-badge" style="display:none" class="badge b-ok">✓ DIA FECHADO</span>
-        <button class="btn btn-ghost" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
-        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="openHE()">＋ HORA EXTRA</button>
-        <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:#e57373;border-color:rgba(229,115,115,.4)" onclick="previewParada()">👁 PRÉVIA PARADA</button>
-        <button class="btn btn-ghost" id="btn-fechar-dia" style="padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)" onclick="fecharDia()">✔ FECHAR DIA</button>
+        <span id="dia-fechado-badge" style="display:none" class="badge b-ok ger-live-only">✓ DIA FECHADO</span>
+        <button class="btn btn-ghost ger-live-only" id="btn-reabrir-dia" style="display:none;padding:4px 10px;font-size:10px;color:var(--warn);border-color:rgba(255,152,0,.4)" onclick="reabrirDia()">↩ REABRIR</button>
+        <button class="btn btn-ghost ger-live-only" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="openHE()">＋ HORA EXTRA</button>
+        <button class="btn btn-ghost ger-live-only" style="padding:4px 10px;font-size:10px;color:#e57373;border-color:rgba(229,115,115,.4)" onclick="previewParada()">👁 PRÉVIA PARADA</button>
+        <button class="btn btn-ghost ger-live-only" id="btn-fechar-dia" style="padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)" onclick="fecharDia()">✔ FECHAR DIA</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -2669,7 +2685,150 @@ function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PL
 // ════════════════════════════════════════════════
 // RENDER GERENCIAL
 // ════════════════════════════════════════════════
+// ── GERENCIAL de dia passado (somente leitura) ──────────────────────────
+// GER_DATA=null → hoje/ao vivo (comportamento normal). Quando o gestor escolhe
+// um dia no seletor, busca o hora-a-hora daquele dia (getHoraDia) e renderiza
+// uma versão só-leitura da GERENCIAL, sem tocar no fluxo ao vivo.
+var GER_DATA=null;   // 'dd/MM/aaaa' do dia histórico selecionado (ou null)
+var GER_HIST=null;   // cache {data,horas:[{hora,real}],dia:{...}} do dia buscado
+
+function _setModoHist(on){
+  document.body.classList.toggle('ger-hist', !!on);
+  const b=document.getElementById('ger-modo-hist');
+  if(b) b.style.display=on?'inline':'none';
+}
+function gerHoje(){
+  GER_DATA=null; GER_HIST=null;
+  const inp=document.getElementById('ger-data'); if(inp) inp.value='';
+  _setModoHist(false);
+  renderGerencial();
+}
+function _somaDias(dstr,delta){
+  const [d,m,a]=dstr.split('/').map(Number);
+  const dt=new Date(a,m-1,d); dt.setDate(dt.getDate()+delta);
+  return ('0'+dt.getDate()).slice(-2)+'/'+('0'+(dt.getMonth()+1)).slice(-2)+'/'+dt.getFullYear();
+}
+function gerNavDia(delta){
+  const base=GER_DATA||hojeStr();
+  const nv=_somaDias(base,delta);
+  if(nv>hojeStr()) return;             // não navega para o futuro
+  const inp=document.getElementById('ger-data');
+  if(nv===hojeStr()){ gerHoje(); return; }
+  if(inp) inp.value=nv;
+  verGerDia();
+}
+async function verGerDia(){
+  const inp=document.getElementById('ger-data');
+  const v=((inp&&inp.value)||'').trim();
+  if(!v){ gerHoje(); return; }
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return;   // espera data completa
+  if(v===hojeStr()){ gerHoje(); return; }
+  if(!CFG.sheetsUrl){
+    document.getElementById('kpi-grid').innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Conecte o Google Sheets para ver dias anteriores.</div></div>';
+    return;
+  }
+  GER_DATA=v; GER_HIST=null; _setModoHist(true);
+  document.getElementById('kpi-grid').innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando produção de '+v+' (pode demorar se o servidor estiver ligando)</div></div>';
+  document.getElementById('tbl-hora-body').innerHTML='<tr><td colspan="6" class="empty-msg">Carregando…</td></tr>';
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHoraDia&data='+encodeURIComponent(v);
+    const j=await jsonpFetch(url);
+    if(!j||!j.ok) throw new Error('falha');
+    if(GER_DATA!==v) return;           // usuário mudou de dia enquanto carregava
+    GER_HIST={data:v, horas:(j.horas||[]), dia:j.dia||null};
+  }catch(e){
+    if(GER_DATA!==v) return;
+    document.getElementById('kpi-grid').innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder. Clique em ‹ / › ou digite a data de novo.</div></div>';
+    return;
+  }
+  renderGerencial();
+}
+function renderGerencialHist(){
+  _setModoHist(true);
+  const H=GER_HIST||{horas:[],dia:null};
+  const horas=(H.horas||[]).slice().sort((a,b)=>String(a.hora).localeCompare(String(b.hora)));
+  const dia=H.dia||{};
+  const nSlots=horas.length;
+  const prods=horas.map(h=>Number(h.real)||0);
+  const realSum=prods.reduce((s,v)=>s+v,0);
+  const real=dia.real||realSum;
+  const meta=dia.meta||0;
+  const metaHora=(meta>0&&nSlots>0)?meta/nSlots:(nSlots>0?Math.round(real/nSlots):0);
+  const ef=meta>0?real/meta*100:0;
+  const melhor=dia.melhor||(prods.length?Math.max(...prods):0);
+  const pior=dia.pior||(prods.length?Math.min(...prods):0);
+  const ritmo=nSlots>0?Math.round(real/nSlots):0;
+  const gap=meta-real;
+
+  // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
+  const kpis=[
+    {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:`meta ${fmtN(meta)} cx`,            c:sc(ef)},
+    {l:'META DO DIA',      v:fmtN(meta),  sub:'caixas programadas',              c:'acc'},
+    {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
+    {l:'GAP DA META',      v:fmtN(Math.abs(gap)), sub:gap<=0?'META ATINGIDA ✓':'cx faltaram', c:gap<=0?'ok':'red'},
+    {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
+    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:'horas com produção',            c:''},
+    {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
+    {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
+  ];
+  document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
+    <div class="kpi-card ${k.c}">
+      <div class="kpi-lbl">${k.l}</div>
+      <div class="kpi-val">${k.v}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // ── Análise (pico/vale/tendência do próprio dia) ──
+  const idxPico=prods.indexOf(melhor), idxVale=prods.indexOf(pior);
+  const tendStr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'↑ CRESCENDO':'↓ QUEDA'):'—';
+  const tendClr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'var(--ok)':'var(--red)'):'var(--txt2)';
+  document.getElementById('analise-row').innerHTML=`
+    <div class="a-card"><div class="a-lbl">EFICIÊNCIA DO DIA</div>
+      <div class="a-val" style="color:${ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'}">${fmtP(ef)}</div>
+      <div class="a-desc">${dia.fechado?'dia fechado':'registrado'}</div></div>
+    <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
+      <div class="a-val" style="color:${tendClr}">${tendStr}</div>
+      <div class="a-desc">últimas 2 horas do dia</div></div>
+    <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
+      <div class="a-val">${idxPico>=0?horas[idxPico].hora:'—'}</div>
+      <div class="a-desc">${fmtN(melhor)} cx neste horário</div></div>
+    <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
+      <div class="a-val" style="color:var(--red)">${idxVale>=0?horas[idxVale].hora:'—'}</div>
+      <div class="a-desc">${fmtN(pior)} cx — menor ritmo</div></div>`;
+
+  // ── Tabela hora a hora ──
+  document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'');
+  let acum=0;
+  document.getElementById('tbl-hora-body').innerHTML=horas.map(h=>{
+    const prod=Number(h.real)||0; acum+=prod;
+    const ef2=metaHora>0?prod/metaHora*100:null;
+    const s2=ef2===null?'mute':ef2>=96?'ok':ef2>=90?'warn':'red';
+    const bdg=`<span class="badge b-${s2}">${ef2===null?'—':ef2>=96?'OK':ef2>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+    return`<tr>
+      <td class="hora-cell">${h.hora}</td>
+      <td class="mono">${fmtN(prod)}</td>
+      <td class="mono">${fmtN(acum)}</td>
+      <td class="mono" style="color:var(--txt2)">${fmtN(Math.round(metaHora))}</td>
+      <td class="mono" style="color:${ef2!=null?(ef2>=96?'var(--ok)':ef2>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef2!=null?fmtP(ef2):'—'}</td>
+      <td>${bdg}</td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty-msg">Sem produção registrada neste dia (não foi arquivado no HISTÓRICO_HORA).</td></tr>';
+  const _gl=document.getElementById('ger-leg-fraca'); if(_gl) _gl.style.display='none';
+
+  // ── Gráficos do dia ──
+  const labels=horas.map(h=>h.hora);
+  const metaLn=prods.map(()=>Math.round(metaHora));
+  mkChart('ch-hora',{type:'bar',data:{labels,datasets:[
+    {label:'Realizado',data:prods,backgroundColor:prods.map(v=>v>=metaHora*0.9?'rgba(76,175,80,0.75)':v>=metaHora*0.7?'rgba(255,152,0,0.75)':'rgba(244,67,54,0.75)'),borderRadius:3},
+    {label:'Meta/h',data:metaLn,type:'line',borderColor:'#FF5C1F60',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
+  ]},options:CHART_DEFAULTS});
+  mkChart('ch-comp',{type:'bar',data:{labels,datasets:[
+    {label:'Real',data:prods,backgroundColor:'rgba(245,166,35,0.7)',borderRadius:3},
+    {label:'Meta',data:metaLn,backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3}
+  ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
+}
+
 function renderGerencial(){
+  if(GER_DATA){ renderGerencialHist(); return; }
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
   const s=sc(k.ef);
