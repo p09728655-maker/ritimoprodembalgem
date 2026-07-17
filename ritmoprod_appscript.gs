@@ -1648,11 +1648,20 @@ function getTiposParada() {
 // em objeto Hora. Aí String(cel) vira "Fri Jul 17 2026..." e a comparação por
 // texto quebra (getParadas voltava VAZIO e a parada aberta não aparecia). Estes
 // normalizadores aceitam tanto texto quanto Data/Hora.
+// IMPORTANTE: quando o Sheets converte "12:19" em valor de HORA (ou a data em
+// DATA), a leitura precisa usar o FUSO DA PRÓPRIA PLANILHA — senão o horário sai
+// deslocado (ex.: aparecia 17:19 em vez de 12:19, +5h, e o cronômetro da TV
+// travava em 00:00 porque o início ficava "no futuro"). getSpreadsheetTimeZone()
+// devolve exatamente o que está exibido na célula.
+function _ssTz() {
+  try { return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || TZ; }
+  catch (e) { return TZ; }
+}
 function _dataStr(v) {
-  return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'dd/MM/yyyy') : String(v || '').trim();
+  return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'dd/MM/yyyy') : String(v || '').trim();
 }
 function _horaStr(v) {
-  return (v instanceof Date) ? Utilities.formatDate(v, TZ, 'HH:mm') : String(v || '').trim();
+  return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'HH:mm') : String(v || '').trim();
 }
 
 function getParadas(p) {
