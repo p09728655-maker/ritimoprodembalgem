@@ -216,6 +216,13 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .prod-search-cod{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px}
 .prod-search-desc{font-family:var(--font-b);font-size:13px;margin-top:2px}
 .prod-search-empty{text-align:center;padding:20px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px}
+/* Toast de confirmação do BIPE (seleção de produto por leitor de código). */
+.scan-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
+  max-width:88%;padding:14px 20px;border-radius:10px;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:1px;
+  color:#111;background:var(--acc);box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;z-index:50;
+  transition:opacity .2s, transform .2s;text-align:center;line-height:1.3}
+.scan-toast.err{background:var(--red);color:#fff}
+.scan-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* Paradas */
 .parada-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px}
@@ -625,7 +632,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Digite o LOTE ou os números do código no teclado abaixo</div>
+      <div class="modal-slot-meta">Bipe a etiqueta, ou digite o LOTE / código no teclado abaixo</div>
     </div>
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
@@ -951,7 +958,7 @@ function aplicarMetaDiaAutomatica(){
 function atualizarProdutoBar(){
   const el = document.getElementById('prod-bar-val');
   if(!el) return;
-  if(!PROD_ATUAL){ el.textContent='TOCAR PARA SELECIONAR'; return; }
+  if(!PROD_ATUAL){ el.textContent='BIPAR OU TOCAR PARA SELECIONAR'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
   el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
 }
@@ -1050,6 +1057,93 @@ async function selecionarProduto(codigo){
     await jsonpFetch(url);
   }catch(e){ console.warn('setProdutoAtual:', e.message); }
 }
+
+// ════════════════════════════════════════════════
+// LEITOR DE CÓDIGO DE BARRAS — seleciona o produto por BIPE (não conta caixa)
+// ════════════════════════════════════════════════
+// O leitor físico pareado no tablet age como TECLADO: "digita" o conteúdo da
+// etiqueta e manda Enter no fim. A etiqueta é GS1-128 com AI (8006) = GTIN +
+// peça/total (ex.: "(8006)78985990784240102" → EAN 7898599078424, peça 01 de 02).
+// Aqui a gente extrai só o EAN e casa com o catálogo (coluna EAN 128) para
+// PREENCHER o "produto atual" — troca o "digitar lote/código no numpad" por um
+// bipe. Não grava produção; o operador segue lançando a quantidade normalmente.
+// Sempre ligado: num aparelho sem leitor nunca chega bipe, então não atrapalha.
+
+// Reduz qualquer valor (etiqueta OU a coluna EAN 128, em qualquer formato) ao
+// núcleo de 13 dígitos do EAN — tolerante a "(8006)", GTIN-14 e ao peça/total.
+function eanCore(v){
+  let s = String(v||'').replace(/\D/g,'');            // só dígitos
+  if(!s) return '';
+  if(s.length>=17 && s.slice(0,4)==='8006') s=s.slice(4); // remove o AI (8006)
+  if(s.length===17 || s.length===18) s=s.slice(0,-4);     // remove peça+total (nn/nn)
+  if(s.length===14) s=s.slice(1);                         // GTIN-14 → EAN-13
+  return s.slice(-13);                                    // núcleo p/ comparar
+}
+function produtoPorEan(raw){
+  const core = eanCore(raw);
+  if(core.length<8) return null;                          // curto demais p/ ser EAN
+  return PRODUTOS.find(p => p.ean && eanCore(p.ean)===core) || null;
+}
+
+let _toastTimer=null;
+function bipeToast(msg, ok){
+  let el=document.getElementById('scan-toast');
+  if(!el){ el=document.createElement('div'); el.id='scan-toast'; document.body.appendChild(el); }
+  el.textContent=msg;
+  el.className='scan-toast '+(ok?'':'err ')+'show';
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{ el.className='scan-toast'; }, 2600);
+}
+// Bipe curto de confirmação (agudo = achou / grave = não achou). Sem arquivo
+// externo: gera o som na hora. Se o navegador bloquear áudio, ignora em silêncio.
+let _audioCtx=null;
+function bipeSom(ok){
+  try{
+    _audioCtx = _audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(_audioCtx.state==='suspended') _audioCtx.resume();
+    const o=_audioCtx.createOscillator(), g=_audioCtx.createGain();
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.frequency.value = ok?880:220; g.gain.value=0.05;
+    o.start(); o.stop(_audioCtx.currentTime + (ok?0.09:0.22));
+  }catch(e){}
+}
+
+function processarBipe(raw){
+  const p = produtoPorEan(raw);
+  if(p){
+    selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
+    bipeToast('✓ '+p.codigo+' · '+(p.desc||''), true);
+    bipeSom(true);
+  }else{
+    const core = eanCore(raw);
+    bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
+    bipeSom(false);
+  }
+}
+
+// Captura estilo "keyboard wedge": o leitor manda os caracteres muito rápido e
+// termina com Enter. A distinção bipe × digitação humana é pela VELOCIDADE: teclas
+// em rajada (< 80 ms entre elas) são do leitor — a gente acumula e bloqueia o
+// default pra não vazar em nenhum campo. A 1ª tecla (após pausa) pode ser humana,
+// então essa deixa passar e só recomeça o buffer. Sem campo focado → o teclado
+// virtual do tablet nunca abre. Assim senha e outros campos digitados à mão seguem
+// normais (teclas lentas nunca acumulam até virar bipe).
+let _scanBuf='', _scanLast=0;
+document.addEventListener('keydown', function(e){
+  if(PERFIL!=='operador') return;                // só na tela do operador
+  const now = Date.now();
+  const rapido = (now - _scanLast) <= 80;        // veio em velocidade de leitor?
+  _scanLast = now;
+  if(e.key==='Enter'){
+    const buf=_scanBuf; _scanBuf='';
+    if(buf.length>=8){ e.preventDefault(); e.stopPropagation(); processarBipe(buf); }
+    return;                                       // Enter curto: deixa o handler normal agir
+  }
+  if(e.key && e.key.length===1){
+    if(rapido){ _scanBuf += e.key; e.preventDefault(); } // rajada do leitor: acumula, não vaza
+    else { _scanBuf = e.key; }                    // início/digitação humana: recomeça o buffer
+  }
+}, true);
 
 // ════════════════════════════════════════════════
 // PARADAS (registro do operador — reusa saveParadas/getParadas do backend)
