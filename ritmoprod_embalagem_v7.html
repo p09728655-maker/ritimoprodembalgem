@@ -5085,7 +5085,7 @@ async function gerarRelatorioParadas(){
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × (meta do dia ÷ ${st.horasProd.toFixed(1)}h produtivas). Refeição/intervalo/almoço = programada (não entra na perda).</div>
+<div class="rp-note">Peças perdidas = duração × ritmo base (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h produtivas · takt ${st.taktSeg} s/cx). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (não entra na perda).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
@@ -5155,7 +5155,14 @@ function _paradasStats(paradas, metaByDay){
   const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
   const pesoMedio=(PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0;
   const hoje=hojeStr();
-  if(metaByDay[hoje]==null){ metaByDay[hoje]=getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia; }
+  // Peças perdidas = ritmo BASE do dia (nunca a meta COM atraso). O atraso é
+  // backlog de dias anteriores — não é o ritmo que a linha teria produzido
+  // durante a parada; somá-lo inflava a perda (~2x em dias com muito atraso).
+  // Base de hoje = meta da HORA_A_HORA (o mesmo 156/h que o operador vê) →
+  // programado de hoje sem atraso → soma dos slots lançados → CFG.metaDia.
+  const _progP=PONTOS_DIA.programacao||{};
+  metaByDay[hoje]=META_HORA_A_HORA||(_progP.programadoHoje||0)
+    ||getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia;
   let totMin=0,totMinNP=0,pecas=0,nParadas=0;
   const porTipo={},porDia={},diasSet=new Set();
   (paradas||[]).forEach(p=>{
@@ -5176,9 +5183,13 @@ function _paradasStats(paradas, metaByDay){
   const dispon=tempoDispMin>0?Math.max(0,(tempoDispMin-totMinNP)/tempoDispMin*100):0;
   const pctPerd=tempoDispMin>0?(totMinNP/tempoDispMin*100):0;
   const tMed=nParadas>0?Math.round(totMin/nParadas):0;
+  // Ritmo/takt de referência: derivado da própria perda (garante coerência com o
+  // número exibido) e, sem paradas, da meta base do dia ÷ horas produtivas.
+  const ritmoHora=totMinNP>0?Math.round(pecas/(totMinNP/60)):Math.round((metaByDay[hoje]||CFG.metaDia)/horasProd);
+  const taktSeg=ritmoHora>0?Math.round(3600/ritmoHora):0;
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
   return {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd:Math.round(pecas*pesoMedio),
-          nParadas,nDias,dispon,pctPerd,tMed,tipos,porTipo,porDia};
+          nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,tipos,porTipo,porDia};
 }
 
 async function renderAnaliseParadas(){
@@ -5219,7 +5230,7 @@ async function renderAnaliseParadas(){
   // Cálculo unificado (mesma fonte do relatório) + período anterior p/ comparativo
   const st=_paradasStats(parF, metaByDay);
   const stPrev=_paradasStats(_filtClasse(prevParadas), Object.assign({}, metaByDay));
-  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,porTipo,porDia}=st;
+  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
 
   const cmpLbl=lenDias<=1?'vs ontem':'vs período anterior';
@@ -5236,6 +5247,7 @@ async function renderAnaliseParadas(){
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    {l:'TAKT (RITMO BASE)',v:taktSeg>0?taktSeg+' s/cx':'—',sub:ritmoHora>0?fmtN(ritmoHora)+' cx/h · meta do dia ÷ '+horasProd.toFixed(1)+'h':'sem ritmo',c:'acc'},
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
     {l:'TEMPO MÉDIO POR PARADA',v:_fmtMinPar(tMed),sub:'por parada',d:_dl(tMed,stPrev.tMed,true,_fmtMinPar),c:'acc'},
@@ -5373,7 +5385,7 @@ async function renderAnaliseParadas(){
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × (meta do dia ÷ '+horasProd.toFixed(1)+'h produtivas). Paradas de refeição/intervalo/almoço são tratadas como PROGRAMADAS e não entram na perda.';
+  if(met) met.textContent='Peças perdidas = duração × ritmo base ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h produtivas), takt de '+taktSeg+' s/cx. O atraso acumulado NÃO entra (é backlog de outros dias, não o ritmo da parada). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda.';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
