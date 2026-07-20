@@ -3156,6 +3156,20 @@ function _phVal(acc,metric){
 function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0}; }
 function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0; }
 function _phParseData(s){const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd);}
+// Ritmo-ALVO (takt) da LINHA em cx/h = meta base do dia (SEM atraso) ÷ horas
+// produtivas. Mesma base usada na perda de PARADAS. Serve de referência pra
+// marcar quais modelos rodam abaixo do ritmo que a linha precisa manter.
+function _ritmoAlvoHora(){
+  const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
+  const _prog=PONTOS_DIA.programacao||{};
+  const metaBase=META_HORA_A_HORA||(_prog.programadoHoje||0)||CFG.metaDia||0;
+  return metaBase>0?metaBase/horasProd:0;
+}
+// Cor do ritmo vs alvo: verde ≥ alvo, amarelo ≥ 85%, vermelho abaixo.
+function _corRitmo(cxh,alvo){
+  if(!(alvo>0)) return 'var(--acc)';
+  return cxh>=alvo?'var(--ok)':cxh>=alvo*0.85?'var(--warn)':'var(--red)';
+}
 
 // Busca a produção por modelo/dia do período no backend (novo endpoint).
 // Devolve: array de itens {data, modelo, nome, caixas, pontos, pesoKg},
@@ -3250,11 +3264,14 @@ async function renderModeloPeriodo(){
   const nDatas=datasSet.size;
   const nGrupos=Object.keys(rowAcc).length;
   const mediaHGeral=grandAcc.horas>0?Math.round(grandAcc.caixas/grandAcc.horas):0;
+  const alvoRit=_ritmoAlvoHora();
+  const taktAlvoSeg=alvoRit>0?Math.round(3600/alvoRit):0;
+  const corMed=_corRitmo(mediaHGeral,alvoRit);
   const top=sel?gInfo[sel]:(gOrd[0]||null);
   if(kpi){
     kpi.innerHTML=`
       <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
-      <div class="kpi-card ok"><div class="kpi-lbl">MÉDIA CX/H</div><div class="kpi-val">${fmtN(mediaHGeral)}</div><div class="kpi-sub">ritmo médio do período</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">MÉDIA CX/H · TAKT</div><div class="kpi-val" style="color:${corMed}">${fmtN(mediaHGeral)}</div><div class="kpi-sub">${alvoRit>0?`ritmo médio · alvo ${fmtN(Math.round(alvoRit))}/h (${taktAlvoSeg}s/cx)`:'ritmo médio do período'}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${sel?Termo:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${Termo} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
   }
@@ -3287,14 +3304,19 @@ async function renderModeloPeriodo(){
     const v1=_phVal(l.acc,metric);
     const v2=additive ? (nd?_phVal(l.acc,metric)/nd:0)
                       : Math.max(0,...datas.map(d=>cellAcc[l.key+'|'+d]?_phVal(cellAcc[l.key+'|'+d],metric):0));
-    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:var(--acc);font-weight:600">${_phFmt(v1,metric)}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
+    // No modo ritmo (cx/h), colore o modelo vs takt-alvo da linha: quem está
+    // vermelho/amarelo é quem puxa o ritmo pra baixo. Marca ▼ abaixo do alvo.
+    const corV1=metric==='mediaH'?_corRitmo(v1,alvoRit):'var(--acc)';
+    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt-alvo" style="font-size:10px">▼</span>':'';
+    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${flag}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}`;
+  const legenda=(metric==='mediaH'&&alvoRit>0)?` · ▼ = abaixo do takt-alvo (${fmtN(Math.round(alvoRit))} cx/h): puxa o ritmo pra baixo`:'';
+  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
 // Relatório do PERÍODO (janela separada p/ PDF) — comparativo modelo × dia.
