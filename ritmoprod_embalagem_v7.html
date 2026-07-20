@@ -1564,6 +1564,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 <div class="modal-over" id="modal-cfg">
   <div class="modal" style="width:560px">
     <div class="modal-ttl">⚙ CONFIGURAÇÕES</div>
+    <!-- Identificação -->
+    <div style="margin:2px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">IDENTIFICAÇÃO</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">EMPRESA</label><input class="frm-inp" id="c-empresa" type="text"></div>
       <div class="frm-grp"><label class="frm-lbl">UNIDADE</label><input class="frm-inp" id="c-unidade" type="text"></div>
@@ -1578,6 +1580,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
       </label>
     </div>
+    <!-- Turno, almoço e fechamento -->
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">TURNO, ALMOÇO E FECHAMENTO</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM TURNO</label><input class="frm-inp" id="c-t1" type="time"></div>
@@ -1586,15 +1591,28 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div class="frm-grp"><label class="frm-lbl">INÍCIO ALMOÇO</label><input class="frm-inp" id="c-a0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM ALMOÇO</label><input class="frm-inp" id="c-a1" type="time"></div>
     </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
+      <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
+    </div>
+    <!-- Senhas de acesso -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">SENHAS DE ACESSO</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">SENHA OPERADOR</label><input class="frm-inp" id="c-senha-op" type="password" placeholder="••••"></div>
       <div class="frm-grp"><label class="frm-lbl">SENHA GERENCIAL</label><input class="frm-inp" id="c-senha-ger" type="password" placeholder="••••"></div>
     </div>
+    <!-- Apontamento / leitor de código (mobile do operador) -->
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">APONTAMENTO — LEITOR DE CÓDIGO (MOBILE)</div>
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
-      <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
+        <input type="checkbox" id="c-modo-leitor" style="accent-color:var(--acc)">
+        Selecionar produto por BIPE no mobile (leitor pareado no tablet do operador)
+      </label>
+    </div>
+    <div style="font-family:var(--font-b);font-size:10px;color:var(--txt2);line-height:1.5;margin-top:4px">
+      Ligado, o operador bipa a etiqueta em vez de digitar o código. Não conta caixa — só preenche o produto. Aparelho sem leitor ignora.
     </div>
     <!-- Tela B -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
@@ -1706,6 +1724,7 @@ let CFG = {
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
   telasAtivas:{a:true,b:true,c:true},
+  modoLeitor:true, // seleção de produto por bipe no mobile (padrão ligado)
   slideBKpis:['meta','falta','proj','ef','status','peso']
 };
 let fileHandle    = null;
@@ -4179,6 +4198,7 @@ function openCfg(){
   document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
+  document.getElementById('c-modo-leitor').checked=CFG.modoLeitor!==false;
   const _telas=CFG.telasAtivas||{a:true,b:true,c:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
   document.getElementById('c-tela-b').checked=_telas.b!==false;
@@ -4239,6 +4259,7 @@ function saveCfg(){
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
+  CFG.modoLeitor=document.getElementById('c-modo-leitor').checked;
   saveCfgLocal();
   // Compartilha a config do ciclo de telas com os outros aparelhos (TV, mobile)
   // via planilha — assim mudar aqui reflete na TV sozinho.
@@ -4265,7 +4286,8 @@ function enviarConfigPainel(){
     'tempoA='+(CFG.slideAIntervalo||15),
     'tempoB='+(CFG.slideBIntervalo||15),
     'tempoC='+(CFG.slideCIntervalo||15),
-    'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(','))
+    'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
+    'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
   try{ jsonpFetch(url).catch(function(){}); }catch(e){}
@@ -4287,6 +4309,7 @@ function aplicarConfigPainel(pc){
   if(typeof pc.kpisTelaB==='string'){
     CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
   }
+  if(pc.modoLeitor!==undefined) CFG.modoLeitor = pc.modoLeitor!==false;
   saveCfgLocal();
   if(typeof _cicloTV!=='undefined') _cicloTV.reiniciar();
 }

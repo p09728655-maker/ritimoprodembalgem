@@ -1067,7 +1067,22 @@ async function selecionarProduto(codigo){
 // Aqui a gente extrai só o EAN e casa com o catálogo (coluna EAN 128) para
 // PREENCHER o "produto atual" — troca o "digitar lote/código no numpad" por um
 // bipe. Não grava produção; o operador segue lançando a quantidade normalmente.
-// Sempre ligado: num aparelho sem leitor nunca chega bipe, então não atrapalha.
+// Ligado por padrão; o gerencial liga/desliga central via CONFIG_PAINEL
+// (getConfigPainel → modoLeitor). Aparelho sem leitor nunca recebe bipe.
+let MODO_LEITOR = true;   // padrão ligado; o backend/gerencial pode desligar
+
+// Lê o flag compartilhado (aba CONFIG_PAINEL). Enquanto o .gs não for
+// re-deployado, o backend não devolve "modoLeitor" → fica no padrão (ligado).
+async function carregarConfigPainel(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getConfigPainel';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && json.painelConfig){
+      MODO_LEITOR = json.painelConfig.modoLeitor!==false;
+    }
+  }catch(e){ console.warn('carregarConfigPainel:', e.message); }
+}
 
 // Reduz qualquer valor (etiqueta OU a coluna EAN 128, em qualquer formato) ao
 // núcleo de 13 dígitos do EAN — tolerante a "(8006)", GTIN-14 e ao peça/total.
@@ -1153,6 +1168,7 @@ function processarBipe(raw){
 let _scanBuf='', _scanLast=0;
 document.addEventListener('keydown', function(e){
   if(PERFIL!=='operador') return;                // só na tela do operador
+  if(!MODO_LEITOR) return;                        // desligado no gerencial (CONFIG_PAINEL)
   const now = Date.now();
   const rapido = (now - _scanLast) <= 80;        // veio em velocidade de leitor?
   _scanLast = now;
@@ -1610,6 +1626,7 @@ function entrar(tipo){
     carregarProgramacaoHoje();
     carregarParadas();
     carregarTiposParada();
+    carregarConfigPainel();   // lê se o modo leitor está ligado (gerencial)
     lerSheets();
   } else {
     showView('view-gerencial');
@@ -1639,6 +1656,7 @@ function iniciarRefreshAuto(){
   pararRefreshAuto();
   _refreshTimer = setInterval(()=>{
     lerSheets();
+    if(PERFIL==='operador'){ carregarConfigPainel(); }   // pega mudança do toggle no gerencial
     if(PERFIL==='operador' || PERFIL==='gerencial'){ carregarParadas(); }
     if(PERFIL==='gerencial'){
       lerHistorico().then(renderHistoricoComDados);

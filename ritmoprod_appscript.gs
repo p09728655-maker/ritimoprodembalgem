@@ -933,7 +933,8 @@ function getConfigPainel() {
     tempoA: num(kv.TEMPO_A, 15),
     tempoB: num(kv.TEMPO_B, 15),
     tempoC: num(kv.TEMPO_C, 15),
-    kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null
+    kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
+    modoLeitor: bool(kv.MODO_LEITOR, true)   // seleção de produto por bipe no mobile (padrão ligado)
   };
 }
 
@@ -960,6 +961,7 @@ function setConfigPainel(p) {
     if (p.tempoB !== undefined) novos.TEMPO_B = String(parseInt(p.tempoB, 10) || 15);
     if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
+    if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};
