@@ -5006,7 +5006,12 @@ async function gerarRelatorioParadas(){
     </tr>`:''))||'<tr><td colspan="8" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
 
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
-  const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>`<div style="font-size:12px;color:#222;margin:4px 0">▸ Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.</div>`).join('')):'';
+  const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>{
+    const txt = ehSetupParada(t.tipo)
+      ? `<b style="color:#c62828">${esc(t.tipo)}</b> é troca (inevitável) — reduzir o tempo (troca rápida): ${t.qtd} troca(s) de ~${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}. Cada minuto cortado por troca ≈ <b>${fmtN(t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0)}</b> caixas no período.`
+      : `Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.`;
+    return `<div style="font-size:12px;color:#222;margin:4px 0">▸ ${txt}</div>`;
+  }).join('')):'';
 
   const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
   const linhasDet=detOrd.map(p=>{
@@ -5112,6 +5117,12 @@ function _ehPlanejada(tipo){
   if(c==='NAO') return false;
   return PAR_PLANEJADA.test(tipo||'');   // reserva: heurística por nome
 }
+
+// Paradas de TROCA/SETUP são INERENTES (troca de produto, troca de plástico…):
+// não dá para eliminar; o ganho vem de reduzir o TEMPO (troca rápida / SMED).
+// Diferente de "planejada". Editar a regex para incluir/excluir tipos.
+const PAR_TROCA = /troca|setup|regulagem|preparaç/i;
+function ehSetupParada(tipo){ return PAR_TROCA.test(String(tipo||'')); }
 
 function _filtroParadas(dias){
   const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
@@ -5318,10 +5329,19 @@ async function renderAnaliseParadas(){
   const secEst=document.getElementById('par-sec-estudo');
   const naoPlan=tipos.filter(t=>!t.planej && t.perd>0);
   if(est && naoPlan.length){
-    est.innerHTML=naoPlan.slice(0,3).map(t=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 4px;font-family:var(--font-b);font-size:13px;color:var(--txt)">
-      <span style="color:#e57373;font-weight:700">▸</span>
-      Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.
-    </div>`).join('');
+    est.innerHTML=naoPlan.slice(0,3).map(t=>{
+      let linha;
+      if(ehSetupParada(t.tipo)){
+        const tmed=Math.round(t.min/(t.qtd||1));
+        const porMin=t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0;
+        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${t.qtd} troca(s) de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
+      } else {
+        linha=`Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.`;
+      }
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 4px;font-family:var(--font-b);font-size:13px;color:var(--txt)">
+      <span style="color:#e57373;font-weight:700">▸</span><span>${linha}</span>
+    </div>`;
+    }).join('');
     if(estWrap) estWrap.style.display='';
     if(secEst) secEst.style.display='';
   } else { if(estWrap) estWrap.style.display='none'; if(secEst) secEst.style.display='none'; }
@@ -5330,7 +5350,13 @@ async function renderAnaliseParadas(){
   const insEl=document.getElementById('par-insights');
   if(insEl){ const ins=[]; const topT=tipos[0];
     if(topT){ const pct=totT>0?Math.round(topT.min/totT*100):0;
-      ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${!topT.planej&&topT.perd>0?`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`:''}.`}); }
+      let extra='';
+      if(!topT.planej && topT.perd>0){
+        if(ehSetupParada(topT.tipo)){ const tmed=Math.round(topT.min/(topT.qtd||1));
+          extra=` — é troca (inevitável); o caminho é a troca rápida (${topT.qtd} troca(s) de ~${tmed} min), reduzir o tempo`;
+        } else extra=`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`;
+      }
+      ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${extra}.`}); }
     ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está dentro da meta (90%).`:`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está <b>abaixo</b> da meta de 90%.`});
     if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
     if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não programadas.`});
@@ -5340,7 +5366,10 @@ async function renderAnaliseParadas(){
   const recEl=document.getElementById('par-recom');
   if(recEl){ const alvos=tipos.filter(t=>!t.planej).slice(0,2);
     if(alvos.length){ const pctJ=totT>0?Math.round(alvos.reduce((s,t)=>s+t.min,0)/totT*100):0;
-      recEl.innerHTML=`Priorizar a redução de ${alvos.map(t=>`<b style="color:#e57373">${t.tipo}</b>`).join(' e ')}. Juntos respondem por <b>${pctJ}%</b> do tempo parado — pequenas melhorias nesses pontos geram o maior impacto no resultado.`;
+      const txtAlvos=alvos.map(t=>ehSetupParada(t.tipo)
+        ? `acelerar a <b style="color:#e57373">${t.tipo}</b> (troca rápida)`
+        : `eliminar <b style="color:#e57373">${t.tipo}</b>`).join(' e ');
+      recEl.innerHTML=`Priorizar ${txtAlvos}. Juntos respondem por <b>${pctJ}%</b> do tempo parado — pequenas melhorias nesses pontos geram o maior impacto no resultado.`;
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
