@@ -1108,12 +1108,34 @@ function bipeSom(ok){
   }catch(e){}
 }
 
+// Abre o lançamento do slot da HORA ATUAL (bipe → digita a quantidade → salva).
+// Reusa a mesma lógica de "hora corrente" do renderLancamentos. Devolve false se
+// não há hora aberta (fora do turno / hora já fechada) — aí só a seleção vale.
+function abrirLancSlotAtivo(){
+  const hoje = hojeStr();
+  const nm = nowMin();
+  const allHoje = DADOS.filter(d=>d.data===hoje).sort((a,b)=>a.horario.localeCompare(b.horario));
+  if(!allHoje.length) return false;
+  const metaH = allHoje[0].metaHora || Math.round(CFG.metaDia/(getSlots().length||1));
+  for(const s of allHoje){
+    const ini = toMin(s.horario);
+    const fim = s.slotFim ? toMin(s.slotFim) : ini+60;
+    if(nm>=ini && nm<fim){                        // hora corrente, aceita lançamento
+      const prod = s.producaoHora;
+      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.metaHora||metaH, prod!==null?prod:null);
+      return true;
+    }
+  }
+  return false;
+}
+
 function processarBipe(raw){
   const p = produtoPorEan(raw);
   if(p){
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
     bipeToast('✓ '+p.codigo+' · '+(p.desc||''), true);
     bipeSom(true);
+    abrirLancSlotAtivo();                         // já abre a hora atual p/ digitar a quantidade
   }else{
     const core = eanCore(raw);
     bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
