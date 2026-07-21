@@ -3324,18 +3324,25 @@ async function renderModeloPeriodo(){
     const v1=_phVal(l.acc,metric);
     const v2=additive ? (nd?_phVal(l.acc,metric)/nd:0)
                       : Math.max(0,...datas.map(d=>cellAcc[l.key+'|'+d]?_phVal(cellAcc[l.key+'|'+d],metric):0));
-    // No modo ritmo (cx/h), colore o modelo vs takt ideal da linha: quem está
-    // vermelho/amarelo é quem puxa o ritmo pra baixo. Marca ▼ abaixo do alvo.
-    const corV1=metric==='mediaH'?_corRitmo(v1,alvoRit):'var(--acc)';
-    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal" style="font-size:10px">▼</span>':'';
-    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${flag}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
+    // Ritmo por PRODUTO vs o PRÓPRIO padrão: aproveitamento = média ÷ melhor dia
+    // do modelo (col MELHOR DIA). A cor da MÉD.PERÍODO sai desse %, então cada
+    // produto é julgado contra ELE MESMO (heavy/leve não distorce). O ▼ continua
+    // marcando quem está abaixo do ideal da LINHA (leitura complementar).
+    let corV1='var(--acc)', aprovTxt='';
+    if(metric==='mediaH'){
+      const aprov=v2>0?v1/v2:0;
+      corV1=aprov>=0.9?'var(--ok)':aprov>=0.75?'var(--warn)':'var(--red)';
+      if(v2>0&&v1<v2) aprovTxt=` <span title="aproveitamento do próprio melhor" style="font-size:10px;color:var(--txt3)">${Math.round(aprov*100)}%</span>`;
+    }
+    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
+    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td></tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH'&&alvoRit>0)?` · ▼ = abaixo do takt ideal (${fmtN(Math.round(alvoRit))} cx/h): puxa o ritmo pra baixo`:'';
+  const legenda=(metric==='mediaH')?` · cor = % do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90%, amarelo ≥75%${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}`:'';
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
