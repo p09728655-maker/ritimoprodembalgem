@@ -5334,13 +5334,35 @@ async function renderAnaliseParadas(){
   const parF=_filtClasse(paradas);
   // Cálculo unificado (mesma fonte do relatório) + período anterior p/ comparativo
   const st=_paradasStats(parF, metaByDay);
-  const stPrev=_paradasStats(_filtClasse(prevParadas), Object.assign({}, metaByDay));
+  // DIA EM ANDAMENTO: corta o período anterior no MESMO horário de agora. Sem isto,
+  // o dia parcial de hoje sempre "ganha" do dia inteiro de ontem nos totais que só
+  // crescem (tempo parado, peças, peso, nº paradas) — a seta fica enganosa. Só o dia
+  // do período anterior que corresponde a HOJE (o último, _pAte) é cortado; dias já
+  // fechados entram inteiros. Feito no front — não mexe no Apps Script.
+  const _emAndamento=(ate===hojeStr());
+  let prevCmp=prevParadas;
+  if(_emAndamento && Array.isArray(prevParadas)){
+    const _iniSh=toMin(CFG.turnoInicio), _fimSh=toMin(CFG.turnoFim);
+    const _ag=new Date(); let _nowM=_ag.getHours()*60+_ag.getMinutes();
+    _nowM=Math.max(_iniSh,Math.min(_fimSh,_nowM));
+    const _nowHM=p2(Math.floor(_nowM/60))+':'+p2(_nowM%60);
+    const _diaRef=_fdt(_pAte);                                    // dia do anterior que mapeia p/ hoje
+    prevCmp=prevParadas.map(p=>{
+      if(!p||p.data!==_diaRef) return p;                         // dias já fechados: inteiros
+      if(!/^\d{1,2}:\d{2}$/.test(String(p.ini))) return p;
+      if(toMin(p.ini)>=_nowM) return null;                       // começou depois de agora → fora
+      if(!/^\d{1,2}:\d{2}$/.test(String(p.fim)) || toMin(p.fim)>_nowM)
+        return Object.assign({},p,{fim:_nowHM});                 // ainda em curso nesse horário → corta agora
+      return p;
+    }).filter(Boolean);
+  }
+  const stPrev=_paradasStats(_filtClasse(prevCmp), Object.assign({}, metaByDay));
   const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
   const _ti=_taktIdeal(horasProd);                 // takt IDEAL (referência)
   const _alvoRef=_ti.ritmoHora||ritmoHora;          // ritmo ideal p/ comparar o real
 
-  const cmpLbl=lenDias<=1?'vs ontem':'vs período anterior';
+  const cmpLbl=(lenDias<=1?'vs ontem':'vs período anterior')+(_emAndamento?' (mesmo horário)':'');
   const _dl=(cur,prev,higherBad,fmt)=>{
     if(prev==null||(prev===0&&cur===0)) return '';
     const dif=cur-prev;
