@@ -1511,6 +1511,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 <!-- Mesmo padrão das telas A/B/C: cabeçalho (EMBALAGEM + logo + relógio), corpo e
      rodapé. Fundo escuro do tema; o vermelho fica só como alerta de parada. -->
 <div id="tv-parada-over" style="display:none;position:fixed;inset:0;z-index:9000;background:var(--bg);flex-direction:column">
+  <!-- FECHAR manual (só neste aparelho): garante saída se o overlay pegar em tela
+       cheia/perfil operador. Some sozinho quando a parada muda ou acaba. -->
+  <button id="tv-parada-fechar-real" onclick="fecharParadaReal()" title="Fechar só neste aparelho (ESC)" style="display:none;position:absolute;top:12px;right:14px;z-index:2;background:rgba(255,255,255,.06);color:var(--txt2);border:1px solid var(--border);border-radius:8px;padding:6px 13px;font-family:var(--font-d);font-size:13px;letter-spacing:1px;cursor:pointer;opacity:.55">✕ FECHAR</button>
   <!-- CABEÇALHO (igual à TV) -->
   <div class="tv-hdr">
     <div style="display:flex;align-items:center;gap:16px;flex-shrink:0">
@@ -5726,10 +5729,18 @@ function toggleTVFullscreen(){
   }
 }
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&document.body.classList.contains('tv-fullscreen')){
-    document.body.classList.remove('tv-fullscreen');
-    const btn=document.getElementById('btn-tv-fs');
-    if(btn) btn.textContent='⛶ PAINEL CHEIO';
+  if(e.key==='Escape'){
+    // ESC fecha a tela cheia de PARADA (dispensa só neste aparelho) se estiver visível.
+    const ov=document.getElementById('tv-parada-over');
+    if(ov && ov.style.display!=='none'){
+      if(PARADA_PREVIEW) fecharPreviaParada(); else fecharParadaReal();
+      return;
+    }
+    if(document.body.classList.contains('tv-fullscreen')){
+      document.body.classList.remove('tv-fullscreen');
+      const btn=document.getElementById('btn-tv-fs');
+      if(btn) btn.textContent='⛶ PAINEL CHEIO';
+    }
   }
 });
 document.addEventListener('fullscreenchange',()=>{
@@ -5896,12 +5907,21 @@ function _fmtCron(seg){
 // parada real e mostra um botão de FECHAR. Serve para o gestor ver a tela sem
 // depender de uma parada real vinda do backend.
 var PARADA_PREVIEW = null;
+// Dispensa manual do overlay REAL, só neste aparelho: guarda a chave (id/início) da
+// parada fechada. Some sozinho quando chega outra parada ou a atual acaba.
+var PARADA_OVER_DISMISS = null;
+function _chaveParada(p){ return p ? (p.id || p.ini || '') : ''; }
+function fecharParadaReal(){
+  PARADA_OVER_DISMISS = _chaveParada(PARADA_TV) || 'x';
+  renderParadaOverlay();
+}
 
 function renderParadaOverlay(){
   const over=document.getElementById('tv-parada-over');
   if(!over) return;
   const cur = PARADA_PREVIEW || PARADA_TV;   // prévia tem prioridade
   const fecharBtn = document.getElementById('tv-parada-fechar-previa');
+  const fecharReal = document.getElementById('tv-parada-fechar-real');
   // NÃO cobre a tela de LOGIN/senha: enquanto o login estiver visível, o overlay
   // fica escondido (senão a parada aparece por cima e trava a digitação da senha).
   const lo = document.getElementById('login-over');
@@ -5912,17 +5932,23 @@ function renderParadaOverlay(){
   // e TRAVA o gestor sem saída. Para conferir a parada na gerencial, use o botão
   // 👁 PRÉVIA PARADA (que tem FECHAR). A PRÉVIA aparece em qualquer tela.
   const naTV = document.body.classList.contains('tv-fullscreen') || document.body.classList.contains('perfil-op');
-  const mostrar = PARADA_PREVIEW ? true : (PARADA_TV && naTV);
+  // Fechar manual: se a parada mudou/acabou, reativa o overlay automaticamente.
+  const chave = _chaveParada(PARADA_TV);
+  if(PARADA_OVER_DISMISS && PARADA_OVER_DISMISS !== chave) PARADA_OVER_DISMISS = null;
+  const dispensada = !PARADA_PREVIEW && PARADA_OVER_DISMISS && PARADA_OVER_DISMISS === chave && chave!=='';
+  const mostrar = PARADA_PREVIEW ? true : (PARADA_TV && naTV && !dispensada);
   if(cur && mostrar && !noLogin){
     document.getElementById('tv-parada-tipo').textContent   = cur.tipo || 'PARADA';
     document.getElementById('tv-parada-motivo').textContent = cur.obs || '';
     document.getElementById('tv-parada-desde').textContent  = cur.ini ? ('INÍCIO '+cur.ini) : '';
     if(fecharBtn) fecharBtn.style.display = PARADA_PREVIEW ? 'inline-block' : 'none';
+    if(fecharReal) fecharReal.style.display = PARADA_PREVIEW ? 'none' : 'block';
     over.style.display='flex';
     _tickCronParada();
   } else {
     over.style.display='none';
     if(fecharBtn) fecharBtn.style.display='none';
+    if(fecharReal) fecharReal.style.display='none';
   }
 }
 function _tickCronParada(){
