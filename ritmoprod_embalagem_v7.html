@@ -1593,7 +1593,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     </div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"><div style="font-size:10px;color:var(--txt2);margin-top:4px">alvo p/ o TAKT IDEAL (ex.: 1850)</div></div>
-      <div class="frm-grp"><label class="frm-lbl">% PERDA (MOV+FADIGA)</label><input class="frm-inp" id="c-takt-perda" type="number" min="0" max="90"><div id="c-takt-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
+      <div class="frm-grp"><label class="frm-lbl">TAKT IDEAL (CALCULADO)</label><div id="c-takt-hint" style="font-size:11px;color:var(--txt2);margin-top:9px">—</div></div>
     </div>
     <!-- Turno, almoço e fechamento -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
@@ -1730,9 +1730,10 @@ let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, metaDiaManual:false, metaDiaManualData:'', metaComAtraso:false, turnoInicio:'07:00', turnoFim:'17:00',
   almocoInicio:'11:00', almocoFim:'12:12',
-  // TAKT IDEAL: takt = (tempo produtivo × (1 − perda%)) ÷ demanda. Ex.: 8,8h =
-  // 31680s − 15% (mov+fadiga) = 26928s ÷ 1850 cx ≈ 14,5 s/cx (~247 cx/h).
-  taktDemandaDia:1850, taktPerdaPct:15,
+  // TAKT IDEAL: takt = tempo produtivo ÷ demanda. Ex.: 8,8h = 31680s ÷ 1850 cx
+  // ≈ 17,1 s/cx (~210 cx/h). O desgaste de mov/fadiga é considerado já embutido
+  // no próprio tempo produtivo (não entra como desconto à parte).
+  taktDemandaDia:1850,
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
   senhaGerencial:'admin',
@@ -3174,17 +3175,15 @@ function _phVal(acc,metric){
 function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0}; }
 function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0; }
 function _phParseData(s){const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd);}
-// TAKT IDEAL: takt = (tempo produtivo × (1 − perda%)) ÷ demanda. Devolve o takt
-// em segundos/caixa e o ritmo ideal em cx/h. Ex.: 8,8h = 31680s, −15% = 26928s,
-// ÷ 1850 = 14,5 s/cx (~247 cx/h). Configurável (CFG.taktDemandaDia/taktPerdaPct).
+// TAKT IDEAL: takt = tempo produtivo ÷ demanda. Devolve o takt em segundos/caixa e
+// o ritmo ideal em cx/h. Ex.: 8,8h = 31680s ÷ 1850 = 17,1 s/cx (~210 cx/h). O 15%
+// de mov/fadiga é considerado já embutido no tempo. Configurável (CFG.taktDemandaDia).
 function _taktIdeal(horasProd){
   const hp=horasProd||Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
   const demanda=Number(CFG.taktDemandaDia)||0;
-  const perda=Math.min(90,Math.max(0,Number(CFG.taktPerdaPct)||0));
-  if(!(demanda>0)||!(hp>0)) return {taktSeg:0,ritmoHora:0,demanda,perda,hp};
-  const efetivoSeg=hp*3600*(1-perda/100);
-  const taktSeg=efetivoSeg/demanda;
-  return {taktSeg, ritmoHora:Math.round(3600/taktSeg), demanda, perda, hp};
+  if(!(demanda>0)||!(hp>0)) return {taktSeg:0,ritmoHora:0,demanda,hp};
+  const taktSeg=hp*3600/demanda;   // mov/fadiga já embutido no tempo produtivo
+  return {taktSeg, ritmoHora:Math.round(3600/taktSeg), demanda, hp};
 }
 // Ritmo-ALVO (takt) da LINHA em cx/h — referência pra colorir modelos e o real.
 // Usa o TAKT IDEAL configurado; sem demanda cadastrada, cai na meta base ÷ horas.
@@ -4241,7 +4240,6 @@ function openCfg(){
   document.getElementById('c-meta').value=CFG.metaDia;
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
-  document.getElementById('c-takt-perda').value=CFG.taktPerdaPct!=null?CFG.taktPerdaPct:15;
   { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
     if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${_ti.taktSeg.toFixed(1)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
   const _hoje=hojeStr();
@@ -4302,7 +4300,6 @@ function saveCfg(){
     CFG.metaDiaManualData=hojeStr();
   }
   CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
-  CFG.taktPerdaPct=Math.min(90,Math.max(0,parseFloat(document.getElementById('c-takt-perda').value)||0));
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
   CFG.almocoInicio=document.getElementById('c-a0').value;
@@ -5149,7 +5146,7 @@ async function gerarRelatorioParadas(){
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa (caixas)</div></div>
-  <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia − '+tiR.perda+'%':'defina a demanda'}</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
@@ -5161,7 +5158,7 @@ async function gerarRelatorioParadas(){
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). · TAKT IDEAL = (${st.horasProd.toFixed(1)}h − ${tiR.perda}% mov/fadiga) ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx. TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
+<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
@@ -5386,7 +5383,7 @@ async function renderAnaliseParadas(){
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
-    {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia − '+_ti.perda+'% (mov+fadiga)':'defina a demanda ideal nas configurações',c:'acc'},
+    {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
@@ -5525,7 +5522,7 @@ async function renderAnaliseParadas(){
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · TAKT IDEAL = ('+horasProd.toFixed(1)+'h − '+_ti.perda+'% mov/fadiga) ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx; TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
