@@ -1530,14 +1530,14 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 
   <!-- CORPO -->
   <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2.2vh;padding:2vh 5vw;min-height:0">
-    <div style="font-family:var(--font-d);font-size:clamp(18px,3.2vh,44px);letter-spacing:10px;color:var(--red);font-weight:600">⏸ PRODUÇÃO PARADA</div>
-    <div id="tv-parada-tipo" style="font-family:var(--font-h);font-weight:700;font-size:clamp(52px,12vh,200px);color:var(--txt);line-height:.95">—</div>
-    <div id="tv-parada-motivo" style="font-family:var(--font-b);font-size:clamp(24px,4.4vh,66px);color:var(--txt2);max-width:88vw;line-height:1.2"></div>
+    <div style="font-family:var(--font-d);font-size:clamp(20px,3.8vh,54px);letter-spacing:10px;color:var(--red);font-weight:600">⏸ PRODUÇÃO PARADA</div>
+    <div id="tv-parada-tipo" style="font-family:var(--font-h);font-weight:700;font-size:clamp(60px,14vh,240px);color:var(--txt);line-height:.95">—</div>
+    <div id="tv-parada-motivo" style="font-family:var(--font-b);font-size:clamp(30px,5.6vh,90px);color:var(--txt2);max-width:90vw;line-height:1.2"></div>
     <div style="display:flex;align-items:baseline;gap:clamp(14px,2vw,28px);margin-top:1vh;background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.4);border-radius:clamp(10px,1.4vw,24px);padding:clamp(10px,1.8vh,32px) clamp(24px,4vw,72px)">
-      <span style="font-family:var(--font-d);font-size:clamp(16px,2.4vh,34px);letter-spacing:4px;color:var(--red)">PARADO HÁ</span>
-      <span id="tv-parada-cron" style="font-family:var(--font-h);font-weight:700;font-size:clamp(56px,15vh,210px);color:var(--red);line-height:.9;font-variant-numeric:tabular-nums">00:00</span>
+      <span style="font-family:var(--font-d);font-size:clamp(18px,3vh,42px);letter-spacing:4px;color:var(--red)">PARADO HÁ</span>
+      <span id="tv-parada-cron" style="font-family:var(--font-h);font-weight:700;font-size:clamp(64px,18vh,260px);color:var(--red);line-height:.9;font-variant-numeric:tabular-nums">00:00</span>
     </div>
-    <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(13px,1.7vh,24px);letter-spacing:2px;color:var(--txt3)"></div>
+    <div id="tv-parada-desde" style="font-family:var(--font-d);font-size:clamp(15px,2vh,30px);letter-spacing:2px;color:var(--txt3)"></div>
     <!-- Só aparece no modo PRÉVIA (conferência na gerencial). Na parada real não há
          botão — o operador retoma dando START no celular. -->
     <button id="tv-parada-fechar-previa" onclick="fecharPreviaParada()" style="display:none;margin-top:1vh;background:var(--surface);color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:10px 24px;font-family:var(--font-d);font-size:clamp(12px,1.4vw,18px);letter-spacing:2px;cursor:pointer">✕ FECHAR PRÉVIA</button>
@@ -5356,7 +5356,7 @@ async function renderAnaliseParadas(){
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
-    {l:'TAKT IDEAL',v:_ti.taktSeg>0?_ti.taktSeg.toFixed(1)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia − '+_ti.perda+'% (mov+fadiga)':'defina a demanda ideal nas configurações',c:'acc'},
+    {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia − '+_ti.perda+'% (mov+fadiga)':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
