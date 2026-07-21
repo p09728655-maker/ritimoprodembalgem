@@ -123,6 +123,14 @@ body.ger-hist .ger-live-only{display:none!important}
 .kpi-card.warn::before{background:var(--warn)}
 .kpi-card.red::before{background:var(--red)}
 .kpi-card.acc::before{background:var(--acc)}
+/* DESTAQUE: realça um card KPI (ex.: TAKT REAL) sem brigar com a cor de status.
+   Barra lateral mais grossa + fundo levemente elevado + brilho na cor do card. */
+.kpi-card.destaque{background:var(--elevated);border-width:1px}
+.kpi-card.destaque::before{width:6px}
+.kpi-card.destaque.ok  {border-color:rgba(76,175,80,.55); box-shadow:0 0 0 1px rgba(76,175,80,.22),0 12px 30px -14px rgba(76,175,80,.5)}
+.kpi-card.destaque.warn{border-color:rgba(255,152,0,.55); box-shadow:0 0 0 1px rgba(255,152,0,.22),0 12px 30px -14px rgba(255,152,0,.5)}
+.kpi-card.destaque.red {border-color:rgba(244,67,54,.55); box-shadow:0 0 0 1px rgba(244,67,54,.22),0 12px 30px -14px rgba(244,67,54,.5)}
+.kpi-card.destaque.acc {border-color:rgba(255,92,31,.55); box-shadow:0 0 0 1px rgba(255,92,31,.22),0 12px 30px -14px rgba(255,92,31,.5)}
 .kpi-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px}
 .kpi-val{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1;color:var(--txt)}
 .kpi-sub{font-family:var(--font-d);font-size:11px;color:var(--txt2);margin-top:5px;line-height:1.4}
@@ -5348,7 +5356,7 @@ async function renderAnaliseParadas(){
     const _cor=_tr.ritmoReal>=_alvoRef?'ok':_tr.ritmoReal>=_alvoRef*0.85?'warn':'red';
     const _gap=_ti.taktSeg>0?' · '+(_tr.taktReal<=_ti.taktSeg?'no ritmo ideal ✓':'+'+Math.round(_tr.taktReal-_ti.taktSeg)+'s vs ideal'):'';
     taktRealCard={l:'TAKT REAL (RODANDO)',v:_tr.taktReal+' s/cx',
-      sub:fmtN(_tr.ritmoReal)+' cx/h · '+fmtN(_tr.cxTot)+' cx em '+_fmtMinPar(_tr.minRodTot)+' rodando'+_gap,c:_cor};
+      sub:fmtN(_tr.ritmoReal)+' cx/h · '+fmtN(_tr.cxTot)+' cx em '+_fmtMinPar(_tr.minRodTot)+' rodando'+_gap,c:_cor,hl:true};
   }
 
   const kpis=[
@@ -5362,7 +5370,7 @@ async function renderAnaliseParadas(){
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
     {l:'TEMPO MÉDIO POR PARADA',v:_fmtMinPar(tMed),sub:'por parada',d:_dl(tMed,stPrev.tMed,true,_fmtMinPar),c:'acc'},
   ];
-  grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div>${k.d?`<div style="margin-top:4px">${k.d}</div>`:''}</div>`).join('');
+  grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}${k.hl?' destaque':''}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div>${k.d?`<div style="margin-top:4px">${k.d}</div>`:''}</div>`).join('');
 
   // Pareto por tipo (barras de tempo + linha % acumulado)
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
