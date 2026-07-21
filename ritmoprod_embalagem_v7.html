@@ -5870,12 +5870,12 @@ function renderParadaOverlay(){
   // fica escondido (senão a parada aparece por cima e trava a digitação da senha).
   const lo = document.getElementById('login-over');
   const noLogin = lo && getComputedStyle(lo).display !== 'none';
-  // A parada REAL só toma a tela cheia na TV OPERACIONAL (sec-tv ativa ou painel
-  // cheio) — na GERENCIAL ela NÃO cobre (senão trava o gestor). Para conferir na
-  // gerencial, use o botão 👁 PRÉVIA PARADA (que tem FECHAR). A PRÉVIA aparece
-  // em qualquer tela.
-  const st = document.getElementById('sec-tv');
-  const naTV = (st && st.classList.contains('on')) || document.body.classList.contains('tv-fullscreen');
+  // A parada REAL só toma a tela cheia na TV DE VERDADE: modo tela cheia da parede
+  // (tv-fullscreen) OU perfil do operador (perfil-op). A simples aba TV OPERACIONAL
+  // aberta no GERENCIAL NÃO conta — senão o overlay (z-index 9000) cobre a navegação
+  // e TRAVA o gestor sem saída. Para conferir a parada na gerencial, use o botão
+  // 👁 PRÉVIA PARADA (que tem FECHAR). A PRÉVIA aparece em qualquer tela.
+  const naTV = document.body.classList.contains('tv-fullscreen') || document.body.classList.contains('perfil-op');
   const mostrar = PARADA_PREVIEW ? true : (PARADA_TV && naTV);
   if(cur && mostrar && !noLogin){
     document.getElementById('tv-parada-tipo').textContent   = cur.tipo || 'PARADA';
