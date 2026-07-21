@@ -5197,8 +5197,9 @@ function _paradasStats(paradas, metaByDay){
     const k=p.tipo||'—';
     if(!porTipo[k]) porTipo[k]={qtd:0,min:0,perd:0,planej};
     porTipo[k].qtd++; porTipo[k].min+=d; porTipo[k].perd+=perd;
-    if(!porDia[p.data]) porDia[p.data]={min:0,perd:0};
+    if(!porDia[p.data]) porDia[p.data]={min:0,minNP:0,perd:0};
     porDia[p.data].min+=d; porDia[p.data].perd+=perd;
+    if(!planej) porDia[p.data].minNP+=d;
   });
   const nDias=diasSet.size||1;
   const tempoDispMin=nDias*horasProd*60;
@@ -5236,12 +5237,13 @@ async function renderAnaliseParadas(){
   const mkUrlP=(d1,d2)=>CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(d1)+'&ate='+encodeURIComponent(d2);
 
   // Busca período atual + período anterior + histórico EM PARALELO, tolerante a falha.
-  const [paradas, prevParadas, metaByDay] = await Promise.all([
+  const [paradas, prevParadas, _hist] = await Promise.all([
     jsonpFetch(mkUrlP(de,ate)).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
     jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]),
-    buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({})),
+    buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
     _carregarClassesPar()
   ]);
+  const metaByDay=_hist.m, realByDay=_hist.r;
   if(paradas===null){
     grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
     return;
@@ -5264,12 +5266,48 @@ async function renderAnaliseParadas(){
     return `<span class="par-kdelta" style="color:${bad?'var(--red)':'var(--ok)'}">${up?'▲':'▼'} ${fmt(Math.abs(dif))} ${cmpLbl}</span>`;
   };
 
+  // TAKT REAL (rodando) conforme apontamentos: caixas realizadas ÷ tempo em que a
+  // linha de fato produziu (tempo disponível − paradas não programadas). Diferente
+  // do takt-ALVO (meta ÷ horas): este é o ritmo MEDIDO do que foi lançado.
+  //  - HOJE: caixas = realizado hora-a-hora (getDadosHoje); disponível = soma dos
+  //    minutos dos slots já lançados (parcial, o turno ainda corre).
+  //  - HISTÓRICO (dias fechados): caixas = REAL do dia (HISTORICO); disponível =
+  //    turno cheio (horasProd). Soma o período todo → ritmo real ponderado.
+  let taktRealCard=null;
+  {
+    const hojeD=hojeStr();
+    let _cxTot=0,_minRodTot=0,_minDispTot=0;
+    for(let _t=new Date(_dDe); _t<=_dAte; _t.setDate(_t.getDate()+1)){
+      const _dia=_fdt(_t);
+      const _stopNP=(porDia[_dia]&&porDia[_dia].minNP)||0;
+      let _cxDia,_dispMin;
+      if(_dia===hojeD){
+        const _dh=getDadosHoje();
+        _cxDia=_dh.reduce((s,d)=>s+(d.producaoHora||0),0);
+        _dispMin=_dh.reduce((s,d)=>s+calcMin(d.horario,d.slotFim),0);
+      }else{
+        _cxDia=realByDay[_dia]||0;
+        _dispMin=horasProd*60;
+      }
+      if(_cxDia>0){ _cxTot+=_cxDia; _minRodTot+=Math.max(1,_dispMin-_stopNP); _minDispTot+=_dispMin; }
+    }
+    if(_cxTot>0){
+      const _ritmoReal=Math.round(_cxTot/(_minRodTot/60));
+      const _taktReal=Math.round(_minRodTot*60/_cxTot);
+      const _ritmoBruto=_minDispTot>0?Math.round(_cxTot/(_minDispTot/60)):0;
+      const _cor=_ritmoReal>=ritmoHora?'ok':_ritmoReal>=ritmoHora*0.85?'warn':'red';
+      taktRealCard={l:'TAKT REAL (RODANDO)',v:_taktReal+' s/cx',
+        sub:fmtN(_ritmoReal)+' cx/h · '+fmtN(_cxTot)+' cx em '+_fmtMinPar(_minRodTot)+' rodando (c/ paradas '+fmtN(_ritmoBruto)+' cx/h)',c:_cor};
+    }
+  }
+
   const kpis=[
     {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     {l:'TAKT (RITMO BASE)',v:taktSeg>0?taktSeg+' s/cx':'—',sub:ritmoHora>0?fmtN(ritmoHora)+' cx/h · meta do dia ÷ '+horasProd.toFixed(1)+'h':'sem ritmo',c:'acc'},
+    ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
     {l:'TEMPO MÉDIO POR PARADA',v:_fmtMinPar(tMed),sub:'por parada',d:_dl(tMed,stPrev.tMed,true,_fmtMinPar),c:'acc'},
