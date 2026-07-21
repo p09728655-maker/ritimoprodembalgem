@@ -1580,6 +1580,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
         Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
       </label>
     </div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"><div style="font-size:10px;color:var(--txt2);margin-top:4px">alvo p/ o TAKT IDEAL (ex.: 1850)</div></div>
+      <div class="frm-grp"><label class="frm-lbl">% PERDA (MOV+FADIGA)</label><input class="frm-inp" id="c-takt-perda" type="number" min="0" max="90"><div id="c-takt-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
+    </div>
     <!-- Turno, almoço e fechamento -->
     <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
     <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">TURNO, ALMOÇO E FECHAMENTO</div>
@@ -1715,6 +1719,9 @@ let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, metaDiaManual:false, metaDiaManualData:'', metaComAtraso:false, turnoInicio:'07:00', turnoFim:'17:00',
   almocoInicio:'11:00', almocoFim:'12:12',
+  // TAKT IDEAL: takt = (tempo produtivo × (1 − perda%)) ÷ demanda. Ex.: 8,8h =
+  // 31680s − 15% (mov+fadiga) = 26928s ÷ 1850 cx ≈ 14,5 s/cx (~247 cx/h).
+  taktDemandaDia:1850, taktPerdaPct:15,
   sheetsUrl:'https://script.google.com/macros/s/AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A/exec',
   senhaOperador:'1234',
   senhaGerencial:'admin',
@@ -3156,10 +3163,23 @@ function _phVal(acc,metric){
 function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0}; }
 function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0; }
 function _phParseData(s){const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd);}
-// Ritmo-ALVO (takt) da LINHA em cx/h = meta base do dia (SEM atraso) ÷ horas
-// produtivas. Mesma base usada na perda de PARADAS. Serve de referência pra
-// marcar quais modelos rodam abaixo do ritmo que a linha precisa manter.
+// TAKT IDEAL: takt = (tempo produtivo × (1 − perda%)) ÷ demanda. Devolve o takt
+// em segundos/caixa e o ritmo ideal em cx/h. Ex.: 8,8h = 31680s, −15% = 26928s,
+// ÷ 1850 = 14,5 s/cx (~247 cx/h). Configurável (CFG.taktDemandaDia/taktPerdaPct).
+function _taktIdeal(horasProd){
+  const hp=horasProd||Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
+  const demanda=Number(CFG.taktDemandaDia)||0;
+  const perda=Math.min(90,Math.max(0,Number(CFG.taktPerdaPct)||0));
+  if(!(demanda>0)||!(hp>0)) return {taktSeg:0,ritmoHora:0,demanda,perda,hp};
+  const efetivoSeg=hp*3600*(1-perda/100);
+  const taktSeg=efetivoSeg/demanda;
+  return {taktSeg, ritmoHora:Math.round(3600/taktSeg), demanda, perda, hp};
+}
+// Ritmo-ALVO (takt) da LINHA em cx/h — referência pra colorir modelos e o real.
+// Usa o TAKT IDEAL configurado; sem demanda cadastrada, cai na meta base ÷ horas.
 function _ritmoAlvoHora(){
+  const _ti=_taktIdeal();
+  if(_ti.ritmoHora>0) return _ti.ritmoHora;
   const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
   const _prog=PONTOS_DIA.programacao||{};
   const metaBase=META_HORA_A_HORA||(_prog.programadoHoje||0)||CFG.metaDia||0;
@@ -3271,7 +3291,7 @@ async function renderModeloPeriodo(){
   if(kpi){
     kpi.innerHTML=`
       <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">MÉDIA CX/H · TAKT</div><div class="kpi-val" style="color:${corMed}">${fmtN(mediaHGeral)}</div><div class="kpi-sub">${alvoRit>0?`ritmo médio · alvo ${fmtN(Math.round(alvoRit))}/h (${taktAlvoSeg}s/cx)`:'ritmo médio do período'}</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">MÉDIA CX/H · TAKT</div><div class="kpi-val" style="color:${corMed}">${fmtN(mediaHGeral)}</div><div class="kpi-sub">${alvoRit>0?`ritmo médio · ideal ${fmtN(Math.round(alvoRit))}/h (${taktAlvoSeg}s/cx)`:'ritmo médio do período'}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${sel?Termo:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${Termo} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
   }
@@ -3304,10 +3324,10 @@ async function renderModeloPeriodo(){
     const v1=_phVal(l.acc,metric);
     const v2=additive ? (nd?_phVal(l.acc,metric)/nd:0)
                       : Math.max(0,...datas.map(d=>cellAcc[l.key+'|'+d]?_phVal(cellAcc[l.key+'|'+d],metric):0));
-    // No modo ritmo (cx/h), colore o modelo vs takt-alvo da linha: quem está
+    // No modo ritmo (cx/h), colore o modelo vs takt ideal da linha: quem está
     // vermelho/amarelo é quem puxa o ritmo pra baixo. Marca ▼ abaixo do alvo.
     const corV1=metric==='mediaH'?_corRitmo(v1,alvoRit):'var(--acc)';
-    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt-alvo" style="font-size:10px">▼</span>':'';
+    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal" style="font-size:10px">▼</span>':'';
     return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${flag}</td><td class="mono" style="text-align:right">${_phFmt(v2,metric)}</td></tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
@@ -3315,7 +3335,7 @@ async function renderModeloPeriodo(){
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td></tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH'&&alvoRit>0)?` · ▼ = abaixo do takt-alvo (${fmtN(Math.round(alvoRit))} cx/h): puxa o ritmo pra baixo`:'';
+  const legenda=(metric==='mediaH'&&alvoRit>0)?` · ▼ = abaixo do takt ideal (${fmtN(Math.round(alvoRit))} cx/h): puxa o ritmo pra baixo`:'';
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
@@ -4202,6 +4222,10 @@ function openCfg(){
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
+  document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
+  document.getElementById('c-takt-perda').value=CFG.taktPerdaPct!=null?CFG.taktPerdaPct:15;
+  { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
+    if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${_ti.taktSeg.toFixed(1)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
   const _hoje=hojeStr();
   const _prog=PONTOS_DIA.programacao||{};
   const _auto=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
@@ -4259,6 +4283,8 @@ function saveCfg(){
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();
   }
+  CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
+  CFG.taktPerdaPct=Math.min(90,Math.max(0,parseFloat(document.getElementById('c-takt-perda').value)||0));
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
   CFG.almocoInicio=document.getElementById('c-a0').value;
@@ -5256,6 +5282,8 @@ async function renderAnaliseParadas(){
   const stPrev=_paradasStats(_filtClasse(prevParadas), Object.assign({}, metaByDay));
   const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
+  const _ti=_taktIdeal(horasProd);                 // takt IDEAL (referência)
+  const _alvoRef=_ti.ritmoHora||ritmoHora;          // ritmo ideal p/ comparar o real
 
   const cmpLbl=lenDias<=1?'vs ontem':'vs período anterior';
   const _dl=(cur,prev,higherBad,fmt)=>{
@@ -5295,9 +5323,10 @@ async function renderAnaliseParadas(){
       const _ritmoReal=Math.round(_cxTot/(_minRodTot/60));
       const _taktReal=Math.round(_minRodTot*60/_cxTot);
       const _ritmoBruto=_minDispTot>0?Math.round(_cxTot/(_minDispTot/60)):0;
-      const _cor=_ritmoReal>=ritmoHora?'ok':_ritmoReal>=ritmoHora*0.85?'warn':'red';
+      const _cor=_ritmoReal>=_alvoRef?'ok':_ritmoReal>=_alvoRef*0.85?'warn':'red';
+      const _gap=_ti.taktSeg>0?' · '+(_taktReal<=_ti.taktSeg?'no ritmo ideal ✓':'+'+Math.round(_taktReal-_ti.taktSeg)+'s vs ideal'):'';
       taktRealCard={l:'TAKT REAL (RODANDO)',v:_taktReal+' s/cx',
-        sub:fmtN(_ritmoReal)+' cx/h · '+fmtN(_cxTot)+' cx em '+_fmtMinPar(_minRodTot)+' rodando (c/ paradas '+fmtN(_ritmoBruto)+' cx/h)',c:_cor};
+        sub:fmtN(_ritmoReal)+' cx/h · '+fmtN(_cxTot)+' cx em '+_fmtMinPar(_minRodTot)+' rodando'+_gap,c:_cor};
     }
   }
 
@@ -5306,7 +5335,7 @@ async function renderAnaliseParadas(){
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
-    {l:'TAKT (RITMO BASE)',v:taktSeg>0?taktSeg+' s/cx':'—',sub:ritmoHora>0?fmtN(ritmoHora)+' cx/h · meta do dia ÷ '+horasProd.toFixed(1)+'h':'sem ritmo',c:'acc'},
+    {l:'TAKT IDEAL',v:_ti.taktSeg>0?_ti.taktSeg.toFixed(1)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia − '+_ti.perda+'% (mov+fadiga)':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
     {l:'Nº DE PARADAS',v:fmtN(nParadas),sub:'no período',d:_dl(nParadas,stPrev.nParadas,true,x=>fmtN(Math.round(x))),c:'acc'},
@@ -5445,7 +5474,7 @@ async function renderAnaliseParadas(){
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × ritmo base ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h produtivas), takt de '+taktSeg+' s/cx. O atraso acumulado NÃO entra (é backlog de outros dias, não o ritmo da parada). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda.';
+  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · TAKT IDEAL = ('+horasProd.toFixed(1)+'h − '+_ti.perda+'% mov/fadiga) ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx; TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
