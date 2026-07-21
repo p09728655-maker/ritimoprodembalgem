@@ -127,11 +127,13 @@ function doGet(e) {
     else if (act === 'addHE')         result = addHE(p);
     else if (act === 'saveParadas')   result = saveParadas(p);
     else if (act === 'getParadas')    result = getParadas(p);
+    else if (act === 'getParadasPeriodo') result = getParadasPeriodo(p);
     else if (act === 'endParada')     result = endParada(p);
     else if (act === 'getTiposParada')result = getTiposParada();
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
+    else if (act === 'getHoraDia')    result = getHoraDia(p);
     else if (act === 'getProdutos')   result = getProdutos();
     else if (act === 'setProdutoAtual')result = setProdutoAtual(p);
     else if (act === 'getPontosDia')  result = getPontosDia();
@@ -778,6 +780,54 @@ function getMediaHoras() {
   return { ok: true, medias, amostra };
 }
 
+// Devolve o hora-a-hora de UM dia específico (para a visão GERENCIAL de dias
+// passados). Fonte: HISTORICO_HORA (DATA·HORA·REALIZADO) + o agregado do dia em
+// HISTORICO (meta/real/eficiência/fechado). Somente leitura.
+function getHoraDia(p) {
+  const data = String((p && p.data) || '').trim();
+  if (!data) return { ok: false, erro: 'data ausente' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Produção por hora do dia
+  const horas = [];
+  const shH = ss.getSheetByName(SHEET_HIST_HORA);
+  if (shH && shH.getLastRow() > 1) {
+    const rows = shH.getDataRange().getValues().slice(1);
+    rows.forEach(r => {
+      if (!r[0]) return;
+      if (fmtDataBR(r[0]) !== data) return;
+      const hora = String(r[1] || '').trim();
+      if (!hora) return;
+      horas.push({ hora: hora, real: Number(r[2]) || 0 });
+    });
+  }
+
+  // Agregado do dia (HISTORICO)
+  let dia = null;
+  const shD = ss.getSheetByName(SHEET_HIST);
+  if (shD && shD.getLastRow() > 1) {
+    const rows = shD.getDataRange().getValues().slice(1);
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r[0] || fmtDataBR(r[0]) !== data) continue;
+      dia = {
+        real:    Number(r[1]) || 0,
+        meta:    Number(r[2]) || 0,
+        ef:      Number(r[3]) || 0,
+        melhor:  Number(r[4]) || 0,
+        pior:    Number(r[5]) || 0,
+        heCount: Number(r[6]) || 0,
+        fechado: r[7] === true || String(r[7]).toLowerCase() === 'true',
+        mediaH:  Number(r[9]) || 0
+      };
+      break;
+    }
+  }
+
+  return { ok: true, data: data, horas: horas, dia: dia };
+}
+
 
 // ════════════════════════════════════════════════════════
 // PRODUTOS (catálogo PRODUTO_CODIGO) + PRODUÇÃO EM PONTOS/PESO
@@ -883,7 +933,8 @@ function getConfigPainel() {
     tempoA: num(kv.TEMPO_A, 15),
     tempoB: num(kv.TEMPO_B, 15),
     tempoC: num(kv.TEMPO_C, 15),
-    kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null
+    kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
+    modoLeitor: bool(kv.MODO_LEITOR, true)   // seleção de produto por bipe no mobile (padrão ligado)
   };
 }
 
@@ -910,6 +961,7 @@ function setConfigPainel(p) {
     if (p.tempoB !== undefined) novos.TEMPO_B = String(parseInt(p.tempoB, 10) || 15);
     if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
+    if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};
@@ -1518,7 +1570,7 @@ function saveParadas(p) {
   let temAbertaHoje = false;
   for (let i = 1; i < values.length; i++) {
     rowById[String(values[i][1])] = i + 1;
-    if (String(values[i][0]) === data && !String(values[i][4] || '').trim()) temAbertaHoje = true;
+    if (_dataStr(values[i][0]) === data && !_horaStr(values[i][4])) temAbertaHoje = true;
   }
 
   let salvos = 0;
@@ -1561,7 +1613,7 @@ function endParada(p) {
 
   for (let i = 1; i < values.length; i++) {
     if (String(values[i][1]) === id) {
-      const ini = String(values[i][3] || '');
+      const ini = _horaStr(values[i][3]);
       sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
       sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
       SpreadsheetApp.flush();
@@ -1584,10 +1636,10 @@ function encerrarParadasAbertas(dataRef) {
   const values   = sh.getDataRange().getValues();
   let n = 0;
   for (let i = 1; i < values.length; i++) {
-    const linhaData = String(values[i][0]);
-    const fim       = String(values[i][4] || '').trim();
+    const linhaData = _dataStr(values[i][0]);
+    const fim       = _horaStr(values[i][4]);
     if (linhaData === dataRef && !fim) {
-      const ini     = String(values[i][3] || '');
+      const ini     = _horaStr(values[i][3]);
       const novoFim = fimTurno || ini;
       const obs     = String(values[i][6] || '');
       sh.getRange(i + 1, 5).setValue(novoFim);
@@ -1631,17 +1683,80 @@ function getTiposParada() {
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_TIPOS_PAR);
-    sh.appendRow(['TIPO_DE_PARADA']);
+    sh.appendRow(['TIPO_DE_PARADA', 'CLASSE']);
     sh.setFrozenRows(1);
-    PADRAO.forEach(t => sh.appendRow([t]));
+    PADRAO.forEach(t => sh.appendRow([t, /refei|interval|almo/i.test(t) ? 'Programada' : 'Não Programada']));
   }
 
-  const tipos = sh.getDataRange().getValues()
-    .slice(1)
-    .map(r => String(r[0] || '').trim())
-    .filter(Boolean);
+  // Coluna A = nome do tipo; coluna B (opcional) = CLASSE (PLANEJADA / NÃO
+  // PLANEJADA). Quando B está vazia, o painel usa a heurística por nome.
+  const rows = sh.getDataRange().getValues().slice(1);
+  const tipos = [];
+  const classes = {}; // nome -> 'PLANEJADA' | 'NAO' (só quando marcado na planilha)
+  rows.forEach(r => {
+    const nome = String(r[0] || '').trim();
+    if (!nome) return;
+    tipos.push(nome);
+    const cl = String(r[1] || '').trim().toUpperCase();
+    if (cl) {
+      // Aceita "Programada/Não Programada" e "Planejada/Não Planejada" (e SIM/NÃO).
+      // "NÃO" tem prioridade: "Não Programada" não pode cair como programada.
+      if (/N[ÃA]O/.test(cl) || cl === 'NP' || cl === 'N') classes[nome] = 'NAO';
+      else if (/PROGRAM|PLAN/.test(cl) || cl === 'SIM' || cl === 'P') classes[nome] = 'PLANEJADA';
+      else classes[nome] = 'NAO';
+    }
+  });
 
-  return { ok: true, tipos: tipos.length ? tipos : PADRAO };
+  return { ok: true, tipos: tipos.length ? tipos : PADRAO, classes: classes };
+}
+
+// O Google Sheets frequentemente CONVERTE "17/07/2026" em objeto Data e "06:44"
+// em objeto Hora. Aí String(cel) vira "Fri Jul 17 2026..." e a comparação por
+// texto quebra (getParadas voltava VAZIO e a parada aberta não aparecia). Estes
+// normalizadores aceitam tanto texto quanto Data/Hora.
+// IMPORTANTE: quando o Sheets converte "12:19" em valor de HORA (ou a data em
+// DATA), a leitura precisa usar o FUSO DA PRÓPRIA PLANILHA — senão o horário sai
+// deslocado (ex.: aparecia 17:19 em vez de 12:19, +5h, e o cronômetro da TV
+// travava em 00:00 porque o início ficava "no futuro"). getSpreadsheetTimeZone()
+// devolve exatamente o que está exibido na célula.
+function _ssTz() {
+  try { return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || TZ; }
+  catch (e) { return TZ; }
+}
+function _dataStr(v) {
+  return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'dd/MM/yyyy') : String(v || '').trim();
+}
+function _horaStr(v) {
+  return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'HH:mm') : String(v || '').trim();
+}
+
+// Paradas de um intervalo de datas (para o relatório). de/ate em dd/MM/yyyy.
+// A duração é recalculada no front-end a partir de ini/fim (não depende da
+// coluna DURACAO, que pode ter virado fórmula/tempo na planilha).
+function getParadasPeriodo(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_PARADAS);
+  if (!sh) return { ok: true, paradas: [] };
+
+  const toNum = s => { const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m ? (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]) : 0; };
+  const nDe  = toNum(p.de  || '');
+  const nAte = toNum(p.ate || '');
+
+  const paradas = sh.getDataRange().getValues().slice(1).map(r => ({
+    data: _dataStr(r[0]),
+    tipo: String(r[2] || ''),
+    ini:  _horaStr(r[3]),
+    fim:  _horaStr(r[4]),
+    obs:  String(r[6] || '')
+  })).filter(x => {
+    const n = toNum(x.data);
+    if (!n) return false;
+    if (nDe  && n < nDe)  return false;
+    if (nAte && n > nAte) return false;
+    return true;
+  });
+
+  return { ok: true, paradas };
 }
 
 function getParadas(p) {
@@ -1656,12 +1771,12 @@ function getParadas(p) {
     .getDataRange()
     .getValues()
     .slice(1)
-    .filter(r => String(r[0]) === data)
+    .filter(r => _dataStr(r[0]) === data)
     .map(r => ({
       id:   Number(r[1]) || Date.now(),
       tipo: String(r[2] || ''),
-      ini:  String(r[3] || ''),
-      fim:  String(r[4] || ''),
+      ini:  _horaStr(r[3]),
+      fim:  _horaStr(r[4]),
       obs:  String(r[6] || '')
     }));
 

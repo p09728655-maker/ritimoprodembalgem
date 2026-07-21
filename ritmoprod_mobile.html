@@ -216,6 +216,13 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .prod-search-cod{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px}
 .prod-search-desc{font-family:var(--font-b);font-size:13px;margin-top:2px}
 .prod-search-empty{text-align:center;padding:20px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px}
+/* Toast de confirmação do BIPE (seleção de produto por leitor de código). */
+.scan-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
+  max-width:88%;padding:14px 20px;border-radius:10px;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:1px;
+  color:#111;background:var(--acc);box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;z-index:50;
+  transition:opacity .2s, transform .2s;text-align:center;line-height:1.3}
+.scan-toast.err{background:var(--red);color:#fff}
+.scan-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* Paradas */
 .parada-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px}
@@ -237,6 +244,32 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .btn-salvar.par-btn-parar{width:100%;background:var(--red);color:#fff}
 .btn-salvar.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
 .btn-paradas.parada-ativa{color:var(--red);border-color:var(--red);animation:pulse 2s infinite}
+/* Gerencial: produto embalando + banner de produção parada */
+.ger-prod{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px}
+.ger-prod-ico{font-size:20px;flex-shrink:0}
+.ger-prod-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+.ger-prod-val{font-family:var(--font-h);font-size:15px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ger-parada{padding:12px;border-radius:8px;background:rgba(244,67,54,.12);border:0.5px solid rgba(244,67,54,.55);animation:pulse 2.4s infinite}
+.ger-parada-ttl{font-family:var(--font-h);font-size:14px;font-weight:800;color:var(--red);letter-spacing:1.5px}
+.ger-parada-tipo{font-family:var(--font-h);font-size:17px;font-weight:700;color:var(--txt);margin-top:2px}
+.ger-parada-obs{font-family:var(--font-b);font-size:12px;color:var(--txt2);margin-top:2px;word-break:break-word}
+.ger-parada-tempo{font-family:var(--font-d);font-size:11px;color:var(--red);letter-spacing:1px;margin-top:5px}
+/* Paradas no gerencial: mini-KPIs + ofensores + lista */
+.par-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.par-mini{background:var(--surface);border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;position:relative;overflow:hidden}
+.par-mini::before{content:'';position:absolute;left:0;top:0;width:3px;height:100%;background:var(--border)}
+.par-mini.ok::before{background:var(--ok)}.par-mini.warn::before{background:var(--warn)}.par-mini.red::before{background:var(--red)}
+.par-mini-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase}
+.par-mini-val{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--txt);margin-top:3px}
+.par-mini-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:2px}
+.par-sub-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1.5px;margin:8px 0 4px}
+.par-of{display:flex;align-items:center;gap:8px;padding:3px 0}
+.par-of-nome{width:104px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.par-of-bar{flex:1;height:8px;background:var(--elevated);border-radius:4px;overflow:hidden}
+.par-of-fill{height:100%;border-radius:4px}
+.par-of-t{font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap}
+.par-comp{display:flex;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
+.par-item2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-top:0.5px solid var(--border);font-size:12px}
 .sel-tipo{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:15px;outline:none;
@@ -454,10 +487,30 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="btn-refresh" onclick="refresh()">↻ ATUALIZAR</button>
     </div>
 
+    <!-- Banner de PRODUÇÃO PARADA (só aparece quando há parada em andamento) -->
+    <div class="ger-parada" id="ger-parada-banner" style="display:none"></div>
+
+    <!-- Produto que está sendo embalado agora -->
+    <div class="ger-prod">
+      <span class="ger-prod-ico">📦</span>
+      <div style="min-width:0">
+        <div class="ger-prod-lbl">EMBALANDO AGORA</div>
+        <div class="ger-prod-val" id="ger-prod-val">—</div>
+      </div>
+    </div>
+
     <!-- KPIs -->
     <div class="sec-lbl">KPIs DO DIA</div>
     <div class="kpi-grid" id="kpi-grid">
       <div class="loading" style="grid-column:1/-1">CARREGANDO...</div>
+    </div>
+
+    <!-- ═══ PARADAS (resumo do dia + análise) ═══ -->
+    <div class="sec-lbl" style="margin-top:2px">PARADAS DO DIA</div>
+    <div class="par-mini-grid" id="ger-par-kpis"></div>
+    <div class="card" id="ger-par-card" style="margin-top:10px;display:none">
+      <div id="ger-par-extra"></div>
+      <div id="ger-par-lista"></div>
     </div>
 
     <!-- Tabela hora a hora -->
@@ -579,7 +632,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Digite o LOTE ou os números do código no teclado abaixo</div>
+      <div class="modal-slot-meta">Bipe a etiqueta, ou digite o LOTE / código no teclado abaixo</div>
     </div>
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
@@ -905,7 +958,7 @@ function aplicarMetaDiaAutomatica(){
 function atualizarProdutoBar(){
   const el = document.getElementById('prod-bar-val');
   if(!el) return;
-  if(!PROD_ATUAL){ el.textContent='TOCAR PARA SELECIONAR'; return; }
+  if(!PROD_ATUAL){ el.textContent='BIPAR OU TOCAR PARA SELECIONAR'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
   el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
 }
@@ -1006,6 +1059,131 @@ async function selecionarProduto(codigo){
 }
 
 // ════════════════════════════════════════════════
+// LEITOR DE CÓDIGO DE BARRAS — seleciona o produto por BIPE (não conta caixa)
+// ════════════════════════════════════════════════
+// O leitor físico pareado no tablet age como TECLADO: "digita" o conteúdo da
+// etiqueta e manda Enter no fim. A etiqueta é GS1-128 com AI (8006) = GTIN +
+// peça/total (ex.: "(8006)78985990784240102" → EAN 7898599078424, peça 01 de 02).
+// Aqui a gente extrai só o EAN e casa com o catálogo (coluna EAN 128) para
+// PREENCHER o "produto atual" — troca o "digitar lote/código no numpad" por um
+// bipe. Não grava produção; o operador segue lançando a quantidade normalmente.
+// Ligado por padrão; o gerencial liga/desliga central via CONFIG_PAINEL
+// (getConfigPainel → modoLeitor). Aparelho sem leitor nunca recebe bipe.
+let MODO_LEITOR = true;   // padrão ligado; o backend/gerencial pode desligar
+
+// Lê o flag compartilhado (aba CONFIG_PAINEL). Enquanto o .gs não for
+// re-deployado, o backend não devolve "modoLeitor" → fica no padrão (ligado).
+async function carregarConfigPainel(){
+  if(!CFG.sheetsUrl) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getConfigPainel';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && json.painelConfig){
+      MODO_LEITOR = json.painelConfig.modoLeitor!==false;
+    }
+  }catch(e){ console.warn('carregarConfigPainel:', e.message); }
+}
+
+// Reduz qualquer valor (etiqueta OU a coluna EAN 128, em qualquer formato) ao
+// núcleo de 13 dígitos do EAN — tolerante a "(8006)", GTIN-14 e ao peça/total.
+function eanCore(v){
+  let s = String(v||'').replace(/\D/g,'');            // só dígitos
+  if(!s) return '';
+  if(s.length>=17 && s.slice(0,4)==='8006') s=s.slice(4); // remove o AI (8006)
+  if(s.length===17 || s.length===18) s=s.slice(0,-4);     // remove peça+total (nn/nn)
+  if(s.length===14) s=s.slice(1);                         // GTIN-14 → EAN-13
+  return s.slice(-13);                                    // núcleo p/ comparar
+}
+function produtoPorEan(raw){
+  const core = eanCore(raw);
+  if(core.length<8) return null;                          // curto demais p/ ser EAN
+  return PRODUTOS.find(p => p.ean && eanCore(p.ean)===core) || null;
+}
+
+let _toastTimer=null;
+function bipeToast(msg, ok){
+  let el=document.getElementById('scan-toast');
+  if(!el){ el=document.createElement('div'); el.id='scan-toast'; document.body.appendChild(el); }
+  el.textContent=msg;
+  el.className='scan-toast '+(ok?'':'err ')+'show';
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{ el.className='scan-toast'; }, 2600);
+}
+// Bipe curto de confirmação (agudo = achou / grave = não achou). Sem arquivo
+// externo: gera o som na hora. Se o navegador bloquear áudio, ignora em silêncio.
+let _audioCtx=null;
+function bipeSom(ok){
+  try{
+    _audioCtx = _audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(_audioCtx.state==='suspended') _audioCtx.resume();
+    const o=_audioCtx.createOscillator(), g=_audioCtx.createGain();
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.frequency.value = ok?880:220; g.gain.value=0.05;
+    o.start(); o.stop(_audioCtx.currentTime + (ok?0.09:0.22));
+  }catch(e){}
+}
+
+// Abre o lançamento do slot da HORA ATUAL (bipe → digita a quantidade → salva).
+// Reusa a mesma lógica de "hora corrente" do renderLancamentos. Devolve false se
+// não há hora aberta (fora do turno / hora já fechada) — aí só a seleção vale.
+function abrirLancSlotAtivo(){
+  const hoje = hojeStr();
+  const nm = nowMin();
+  const allHoje = DADOS.filter(d=>d.data===hoje).sort((a,b)=>a.horario.localeCompare(b.horario));
+  if(!allHoje.length) return false;
+  const metaH = allHoje[0].metaHora || Math.round(CFG.metaDia/(getSlots().length||1));
+  for(const s of allHoje){
+    const ini = toMin(s.horario);
+    const fim = s.slotFim ? toMin(s.slotFim) : ini+60;
+    if(nm>=ini && nm<fim){                        // hora corrente, aceita lançamento
+      const prod = s.producaoHora;
+      abrirLanc(s.horario, s.slotFim||'', s.slotLabel||s.horario, s.metaHora||metaH, prod!==null?prod:null);
+      return true;
+    }
+  }
+  return false;
+}
+
+function processarBipe(raw){
+  const p = produtoPorEan(raw);
+  if(p){
+    selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
+    bipeToast('✓ '+p.codigo+' · '+(p.desc||''), true);
+    bipeSom(true);
+    abrirLancSlotAtivo();                         // já abre a hora atual p/ digitar a quantidade
+  }else{
+    const core = eanCore(raw);
+    bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
+    bipeSom(false);
+  }
+}
+
+// Captura estilo "keyboard wedge": o leitor manda os caracteres muito rápido e
+// termina com Enter. A distinção bipe × digitação humana é pela VELOCIDADE: teclas
+// em rajada (< 80 ms entre elas) são do leitor — a gente acumula e bloqueia o
+// default pra não vazar em nenhum campo. A 1ª tecla (após pausa) pode ser humana,
+// então essa deixa passar e só recomeça o buffer. Sem campo focado → o teclado
+// virtual do tablet nunca abre. Assim senha e outros campos digitados à mão seguem
+// normais (teclas lentas nunca acumulam até virar bipe).
+let _scanBuf='', _scanLast=0;
+document.addEventListener('keydown', function(e){
+  if(PERFIL!=='operador') return;                // só na tela do operador
+  if(!MODO_LEITOR) return;                        // desligado no gerencial (CONFIG_PAINEL)
+  const now = Date.now();
+  const rapido = (now - _scanLast) <= 80;        // veio em velocidade de leitor?
+  _scanLast = now;
+  if(e.key==='Enter'){
+    const buf=_scanBuf; _scanBuf='';
+    if(buf.length>=8){ e.preventDefault(); e.stopPropagation(); processarBipe(buf); }
+    return;                                       // Enter curto: deixa o handler normal agir
+  }
+  if(e.key && e.key.length===1){
+    if(rapido){ _scanBuf += e.key; e.preventDefault(); } // rajada do leitor: acumula, não vaza
+    else { _scanBuf = e.key; }                    // início/digitação humana: recomeça o buffer
+  }
+}, true);
+
+// ════════════════════════════════════════════════
 // PARADAS (registro do operador — reusa saveParadas/getParadas do backend)
 // ════════════════════════════════════════════════
 // Tipos de parada (dropdown). Padrões locais como fallback; a lista "de verdade"
@@ -1020,6 +1198,7 @@ async function carregarTiposParada(){
     const json = await jsonpFetch(url);
     if(json && json.ok && Array.isArray(json.tipos) && json.tipos.length){
       PAR_TIPOS = json.tipos;
+      if(json.classes){ const m={}; Object.keys(json.classes).forEach(k=>{ m[String(k).trim()]=json.classes[k]; }); PAR_CLASSE_MAP_M=m; }
       // Se o modal estiver aberto e rodando, atualiza o dropdown na hora.
       if(document.getElementById('modal-paradas')?.classList.contains('open') && !paradaAtiva()){
         renderParadaEstado();
@@ -1030,7 +1209,121 @@ async function carregarTiposParada(){
 
 // Parada EM ANDAMENTO = linha sem FIM. É o que dispara a tela cheia na TV.
 function paradaAtiva(){ return PARADAS_HOJE.find(p=>!p.fim || String(p.fim).trim()===''); }
+
+// GERENCIAL (mobile): produto embalando agora + banner de produção parada.
+function renderGerProduto(){
+  const el = document.getElementById('ger-prod-val');
+  if(!el) return;
+  if(!PROD_ATUAL){ el.textContent='— (nenhum produto selecionado)'; return; }
+  const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
+  el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+}
+function renderGerParada(){
+  const el = document.getElementById('ger-parada-banner');
+  if(!el) return;
+  const at = paradaAtiva();
+  if(!at){ el.style.display='none'; return; }
+  let tempo = '';
+  if(/^\d{1,2}:\d{2}$/.test(String(at.ini))){
+    const [h,m] = String(at.ini).split(':').map(Number);
+    const a = new Date();
+    let min = (a.getHours()*60 + a.getMinutes()) - (h*60 + m);
+    if(min < 0) min = 0;
+    tempo = min>=60 ? `${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}` : `${min} min`;
+  }
+  el.innerHTML = `
+    <div class="ger-parada-ttl">⏸ PRODUÇÃO PARADA</div>
+    <div class="ger-parada-tipo">${at.tipo||'—'}</div>
+    ${at.obs?`<div class="ger-parada-obs">${at.obs}</div>`:''}
+    <div class="ger-parada-tempo">PARADO HÁ ${tempo} · desde ${at.ini||'--:--'}</div>`;
+  el.style.display = '';
+}
 function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+// ─── Análise de PARADAS no gerencial (mobile) ─────────────────────────────
+// Resumo do dia (tempo, nº, peças perdidas, disponibilidade) + alerta + top
+// ofensores + comparativo com a média do mês + lista do dia.
+const PAR_PLANEJADA_M=/refei|interval|almo/i;
+// Classe por tipo (coluna CLASSE da aba TIPOS_PARADA). Se marcada, manda; se
+// vazia, cai na heurística por nome.
+var PAR_CLASSE_MAP_M={};
+function _ehPlanejadaM(tipo){
+  const c=PAR_CLASSE_MAP_M[String(tipo||'').trim()];
+  if(c==='PLANEJADA') return true;
+  if(c==='NAO') return false;
+  return PAR_PLANEJADA_M.test(tipo||'');
+}
+let PAR_MES=null; // paradas do mês (comparativo) — carregadas à parte
+function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
+function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
+function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+function _statsParadasMob(lista){
+  const horasProd=_horasProdMob(); const metaHora=(CFG.metaDia||0)/horasProd;
+  let totMin=0,totMinNP=0,pecas=0,n=0; const porTipo={},dias=new Set();
+  (lista||[]).forEach(p=>{
+    const d=_durMin2(p.ini,p.fim); if(d==null) return;
+    n++; dias.add(p.data); totMin+=d;
+    const planej=_ehPlanejadaM(p.tipo);
+    const perd=planej?0:Math.round(d/60*metaHora);
+    if(!planej){ totMinNP+=d; pecas+=perd; }
+    const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
+  });
+  const nDias=dias.size||1; const tempoDisp=nDias*horasProd*60;
+  const dispon=tempoDisp>0?Math.max(0,(tempoDisp-totMinNP)/tempoDisp*100):100;
+  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  return {totMin,totMinNP,pecas,n,nDias,dispon,tipos};
+}
+function renderGerParadasResumo(){
+  const kg=document.getElementById('ger-par-kpis'); if(!kg) return;
+  const st=_statsParadasMob(PARADAS_HOJE);
+  const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
+  kg.innerHTML=`
+    <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${st.n} parada(s)</div></div>
+    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">do turno</div></div>
+    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">PEÇAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${st.pecas}</div><div class="par-mini-sub">estimativa (cx)</div></div>
+    <div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`;
+
+  const card=document.getElementById('ger-par-card');
+  const ex=document.getElementById('ger-par-extra');
+  const li=document.getElementById('ger-par-lista');
+  if(!card) return;
+  if(!st.n){ card.style.display='none'; return; }
+  card.style.display='';
+
+  // Top ofensores + comparativo com a média do mês
+  if(ex){
+    const maxMin=st.tipos[0]?st.tipos[0].min:1;
+    const of=st.tipos.slice(0,3).map(t=>{
+      const planej=_ehPlanejadaM(t.tipo);
+      return `<div class="par-of"><span class="par-of-nome" style="color:${planej?'var(--txt2)':'var(--txt)'}">${t.tipo}</span><div class="par-of-bar"><div class="par-of-fill" style="width:${Math.max(4,Math.round(t.min/maxMin*100))}%;background:${planej?'#777':'var(--red)'}"></div></div><span class="par-of-t">${_fmtMin2(t.min)}</span></div>`;
+    }).join('');
+    let comp='';
+    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES); const media=sm.nDias>0?Math.round(sm.pecas/sm.nDias):0;
+      const seta=st.pecas>media?'▲':st.pecas<media?'▼':'=';
+      comp=`<div class="par-comp"><span>HOJE: <b style="color:${st.pecas>media?'var(--red)':'var(--ok)'}">${st.pecas} cx</b> ${seta}</span><span>MÉDIA/DIA (mês): ${media} cx</span></div>`;
+    }
+    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp;
+  }
+  // Lista do dia
+  if(li){
+    li.innerHTML='<div class="par-sub-lbl">PARADAS DE HOJE</div>'+PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>{
+      const d=_durMin2(p.ini,p.fim); const em=!p.fim||String(p.fim).trim()==='';
+      const planej=_ehPlanejadaM(p.tipo);
+      return `<div class="par-item2"><div style="min-width:0"><div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;
+    }).join('');
+  }
+}
+async function carregarParadasMes(){
+  if(!CFG.sheetsUrl) return;
+  const hj=new Date();
+  const de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`;
+  const ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const j=await jsonpFetch(url);
+    if(j&&j.ok){ PAR_MES=j.paradas||[]; renderGerParadasResumo(); }
+  }catch(e){ console.warn('carregarParadasMes:', e.message); }
+}
 
 // Guarda a parada recém-registrada até o backend devolvê-la. Sem isso, um
 // getParadas defasado (logo após salvar) sobrescrevia PARADAS_HOJE SEM a parada
@@ -1058,6 +1351,8 @@ async function carregarParadas(){
       renderParadasList();
       renderParadaEstado();
       atualizarBadgeParadas();
+      renderGerParada();          // banner da gerencial (mobile)
+      renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
     }
   }catch(e){ console.warn('carregarParadas:', e.message); }
 }
@@ -1288,6 +1583,7 @@ function tickClock(){
   const hoje = hojeStr();
   ['lan-clock','ger-clock'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hm; });
   ['lan-data','ger-data','ger-data-tbl'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hoje; });
+  if(PERFIL==='gerencial') renderGerParada();   // atualiza o "PARADO HÁ" do banner
 }
 
 // ════════════════════════════════════════════════
@@ -1330,12 +1626,16 @@ function entrar(tipo){
     carregarProgramacaoHoje();
     carregarParadas();
     carregarTiposParada();
+    carregarConfigPainel();   // lê se o modo leitor está ligado (gerencial)
     lerSheets();
   } else {
     showView('view-gerencial');
     iniciarRefreshAuto();
     renderGerencial();
-    lerSheets().then(()=>renderHistorico());
+    carregarProdutos();   // catálogo p/ mostrar "codigo · descrição" do produto atual
+    carregarParadas();    // banner de produção parada
+    carregarParadasMes(); // comparativo com a média do mês
+    lerSheets().then(()=>{ renderHistorico(); renderGerProduto(); });
     lerHistorico().then(renderHistoricoComDados);
     lerMediaHoras().then(ok=>{ if(ok) renderGerencial(); });
     lerPontosDia().then(()=>renderGerencial());
@@ -1356,7 +1656,8 @@ function iniciarRefreshAuto(){
   pararRefreshAuto();
   _refreshTimer = setInterval(()=>{
     lerSheets();
-    if(PERFIL==='operador'){ carregarParadas(); }
+    if(PERFIL==='operador'){ carregarConfigPainel(); }   // pega mudança do toggle no gerencial
+    if(PERFIL==='operador' || PERFIL==='gerencial'){ carregarParadas(); }
     if(PERFIL==='gerencial'){
       lerHistorico().then(renderHistoricoComDados);
       lerPontosDia().then(()=>renderGerencial());
@@ -1656,6 +1957,9 @@ function renderGerencial(){
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
 
+  renderGerProduto();        // produto embalando agora
+  renderGerParada();         // banner de produção parada
+  renderGerParadasResumo();  // resumo/análise de paradas
   renderTabelaHoraHora(k.allHoje);
 }
 
