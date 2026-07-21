@@ -5011,17 +5011,25 @@ async function gerarRelatorioParadas(){
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
   const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  let paradas, metaByDay;
+  let paradas, _hist;
   try{
-    [paradas, metaByDay]=await Promise.all([
+    [paradas, _hist]=await Promise.all([
       jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-      buildDiasHistAsync().then(dias=>{ const m={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; }); return m; }).catch(()=>({})),
+      buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
       _carregarClassesPar()
     ]);
   }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
   if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
+  const metaByDay=_hist.m, realByDay=_hist.r;
   const st=_paradasStats(paradas, metaByDay);
+  // TAKT ideal × real (mesmos cálculos da aba PARADAS)
+  const _rpd=de.split('/').map(Number), _rpa=ate.split('/').map(Number);
+  const _rDe=new Date(_rpd[2],_rpd[1]-1,_rpd[0]), _rAte=new Date(_rpa[2],_rpa[1]-1,_rpa[0]);
+  const tiR=_taktIdeal(st.horasProd);
+  const trR=_taktRealPeriodo(st.porDia, st.horasProd, _rDe, _rAte, realByDay);
+  const _alvoRp=tiR.ritmoHora||st.ritmoHora;
+  const trCls=trR?(trR.ritmoReal>=_alvoRp?'g':trR.ritmoReal>=_alvoRp*0.85?'o':'r'):'';
   const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   const pnum=d=>{const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
   const corDisp=st.dispon>=90?'#4CAF50':st.dispon>=80?'#FF9800':'#F44336';
@@ -5133,6 +5141,8 @@ async function gerarRelatorioParadas(){
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa (caixas)</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia − '+tiR.perda+'%':'defina a demanda'}</div></div>
+  <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
 </div>
@@ -5143,7 +5153,7 @@ async function gerarRelatorioParadas(){
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × ritmo base (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h produtivas · takt ${st.taktSeg} s/cx). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (não entra na perda).</div>
+<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). · TAKT IDEAL = (${st.horasProd.toFixed(1)}h − ${tiR.perda}% mov/fadiga) ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx. TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
@@ -5204,6 +5214,33 @@ function _durMinPar(ini,fim){
   const d=(h1*60+m1)-(h0*60+m0); return d>=0?d:null;
 }
 function _fmtMinPar(m){ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+
+// TAKT REAL (rodando) medido dos apontamentos, no período: caixas ÷ tempo em que a
+// linha de fato produziu (disponível − paradas não programadas). HOJE usa o
+// realizado hora-a-hora (parcial); dias fechados usam o REAL do HISTORICO + turno
+// cheio. Devolve null se não houve produção. Usado pela ABA e pelo RELATÓRIO.
+function _taktRealPeriodo(porDia, horasProd, dDe, dAte, realByDay){
+  porDia=porDia||{}; realByDay=realByDay||{};
+  const hojeD=hojeStr();
+  const fdt=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  let cxTot=0,minRodTot=0,minDispTot=0;
+  for(let t=new Date(dDe); t<=dAte; t.setDate(t.getDate()+1)){
+    const dia=fdt(t);
+    const stopNP=(porDia[dia]&&porDia[dia].minNP)||0;
+    let cxDia,dispMin;
+    if(dia===hojeD){
+      const dh=getDadosHoje();
+      cxDia=dh.reduce((s,d)=>s+(d.producaoHora||0),0);
+      dispMin=dh.reduce((s,d)=>s+calcMin(d.horario,d.slotFim),0);
+    }else{ cxDia=realByDay[dia]||0; dispMin=horasProd*60; }
+    if(cxDia>0){ cxTot+=cxDia; minRodTot+=Math.max(1,dispMin-stopNP); minDispTot+=dispMin; }
+  }
+  if(!(cxTot>0)) return null;
+  return {cxTot,minRodTot,minDispTot,
+    ritmoReal:Math.round(cxTot/(minRodTot/60)),
+    taktReal:Math.round(minRodTot*60/cxTot),
+    ritmoBruto:minDispTot>0?Math.round(cxTot/(minDispTot/60)):0};
+}
 
 // Fonte ÚNICA de cálculo das estatísticas de parada (usada pela aba E pelo
 // relatório, p/ ficarem idênticos). Peças perdidas = duração × (meta do dia ÷
@@ -5304,40 +5341,14 @@ async function renderAnaliseParadas(){
     return `<span class="par-kdelta" style="color:${bad?'var(--red)':'var(--ok)'}">${up?'▲':'▼'} ${fmt(Math.abs(dif))} ${cmpLbl}</span>`;
   };
 
-  // TAKT REAL (rodando) conforme apontamentos: caixas realizadas ÷ tempo em que a
-  // linha de fato produziu (tempo disponível − paradas não programadas). Diferente
-  // do takt-ALVO (meta ÷ horas): este é o ritmo MEDIDO do que foi lançado.
-  //  - HOJE: caixas = realizado hora-a-hora (getDadosHoje); disponível = soma dos
-  //    minutos dos slots já lançados (parcial, o turno ainda corre).
-  //  - HISTÓRICO (dias fechados): caixas = REAL do dia (HISTORICO); disponível =
-  //    turno cheio (horasProd). Soma o período todo → ritmo real ponderado.
+  // TAKT REAL (rodando) medido dos apontamentos — mesma fonte do relatório.
+  const _tr=_taktRealPeriodo(porDia, horasProd, _dDe, _dAte, realByDay);
   let taktRealCard=null;
-  {
-    const hojeD=hojeStr();
-    let _cxTot=0,_minRodTot=0,_minDispTot=0;
-    for(let _t=new Date(_dDe); _t<=_dAte; _t.setDate(_t.getDate()+1)){
-      const _dia=_fdt(_t);
-      const _stopNP=(porDia[_dia]&&porDia[_dia].minNP)||0;
-      let _cxDia,_dispMin;
-      if(_dia===hojeD){
-        const _dh=getDadosHoje();
-        _cxDia=_dh.reduce((s,d)=>s+(d.producaoHora||0),0);
-        _dispMin=_dh.reduce((s,d)=>s+calcMin(d.horario,d.slotFim),0);
-      }else{
-        _cxDia=realByDay[_dia]||0;
-        _dispMin=horasProd*60;
-      }
-      if(_cxDia>0){ _cxTot+=_cxDia; _minRodTot+=Math.max(1,_dispMin-_stopNP); _minDispTot+=_dispMin; }
-    }
-    if(_cxTot>0){
-      const _ritmoReal=Math.round(_cxTot/(_minRodTot/60));
-      const _taktReal=Math.round(_minRodTot*60/_cxTot);
-      const _ritmoBruto=_minDispTot>0?Math.round(_cxTot/(_minDispTot/60)):0;
-      const _cor=_ritmoReal>=_alvoRef?'ok':_ritmoReal>=_alvoRef*0.85?'warn':'red';
-      const _gap=_ti.taktSeg>0?' · '+(_taktReal<=_ti.taktSeg?'no ritmo ideal ✓':'+'+Math.round(_taktReal-_ti.taktSeg)+'s vs ideal'):'';
-      taktRealCard={l:'TAKT REAL (RODANDO)',v:_taktReal+' s/cx',
-        sub:fmtN(_ritmoReal)+' cx/h · '+fmtN(_cxTot)+' cx em '+_fmtMinPar(_minRodTot)+' rodando'+_gap,c:_cor};
-    }
+  if(_tr){
+    const _cor=_tr.ritmoReal>=_alvoRef?'ok':_tr.ritmoReal>=_alvoRef*0.85?'warn':'red';
+    const _gap=_ti.taktSeg>0?' · '+(_tr.taktReal<=_ti.taktSeg?'no ritmo ideal ✓':'+'+Math.round(_tr.taktReal-_ti.taktSeg)+'s vs ideal'):'';
+    taktRealCard={l:'TAKT REAL (RODANDO)',v:_tr.taktReal+' s/cx',
+      sub:fmtN(_tr.ritmoReal)+' cx/h · '+fmtN(_tr.cxTot)+' cx em '+_fmtMinPar(_tr.minRodTot)+' rodando'+_gap,c:_cor};
   }
 
   const kpis=[
