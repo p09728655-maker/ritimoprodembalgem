@@ -1379,6 +1379,9 @@ function renderParadasList(){
 }
 // Alterna entre "PRODUÇÃO RODANDO" (form p/ registrar parada) e "PRODUÇÃO PARADA"
 // (botão grande de START). É o que o operador usa no dia a dia.
+// Guarda qual layout ('parado'/'rodando') já está no DOM. Serve pra NÃO
+// reconstruir o form no meio da interação do operador.
+let _parEstadoRender = null;
 function renderParadaEstado(){
   const el = document.getElementById('par-estado');
   if(!el) return;
@@ -1392,8 +1395,26 @@ function renderParadaEstado(){
         <div class="par-banner-hora">Desde ${at.ini||'--:--'}</div>
       </div>
       <button class="btn-salvar par-btn-start" id="btn-start-parada" onclick="darStartParada()">▶ DAR START (RETOMAR)</button>`;
-  } else {
-    el.innerHTML = `
+    _parEstadoRender = 'parado';
+    return;
+  }
+  // RODANDO. Se o form já está montado, NÃO reconstruir o innerHTML: recriar o
+  // <select id="par-tipo"> fecharia o dropdown nativo no meio da escolha (o
+  // operador toca em TIPO, o poll de 60s dispara e o select voltava sempre pro
+  // 1º item) e apagaria o MOTIVO já digitado. Só atualiza as opções se o gestor
+  // mexeu na aba TIPOS_PARADA — preservando a escolha atual.
+  const selJa = document.getElementById('par-tipo');
+  const tiposKey = PAR_TIPOS.join('|');
+  if(_parEstadoRender==='rodando' && selJa){
+    if(selJa.dataset.tipos !== tiposKey){
+      const atual = selJa.value;
+      selJa.innerHTML = PAR_TIPOS.map(t=>`<option>${t}</option>`).join('');
+      if(PAR_TIPOS.includes(atual)) selJa.value = atual;
+      selJa.dataset.tipos = tiposKey;
+    }
+    return;
+  }
+  el.innerHTML = `
       <div class="par-banner par-banner-on">
         <div class="par-banner-ttl">▶ PRODUÇÃO RODANDO</div>
       </div>
@@ -1406,7 +1427,9 @@ function renderParadaEstado(){
         <textarea class="inp-obs" id="par-obs" rows="2" placeholder="Ex: máquina travou, aguardando material…"></textarea>
       </div>
       <button class="btn-salvar par-btn-parar" id="btn-registrar-parada" onclick="registrarParadaAgora()">⏸ REGISTRAR PARADA</button>`;
-  }
+  const sel = document.getElementById('par-tipo');
+  if(sel) sel.dataset.tipos = tiposKey;
+  _parEstadoRender = 'rodando';
 }
 function abrirModalParadas(){
   document.getElementById('par-data').textContent = hojeStr();
@@ -1418,6 +1441,7 @@ function abrirModalParadas(){
 }
 function fecharModalParadas(){
   document.getElementById('modal-paradas').classList.remove('open');
+  _parEstadoRender = null; // reabrir monta um form limpo (sem motivo/tipo antigos)
 }
 // Registra uma parada EM ANDAMENTO (início = agora, sem fim). Assim que grava,
 // a TV (que faz poll de getParadas) mostra a tela cheia com tipo + motivo.
