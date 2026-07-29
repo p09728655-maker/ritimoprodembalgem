@@ -90,6 +90,9 @@ body.ger-hist .ger-live-only{display:none!important}
 .par-sec{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt);text-transform:uppercase;margin:22px 2px 11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
 .par-sec-n{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--acc);color:#141414;font-size:10px;font-weight:700;flex-shrink:0;box-shadow:0 2px 6px -2px rgba(245,166,35,.6)}
 #sec-paradas .par-sec:first-of-type{margin-top:6px}
+.par-upd{margin-left:auto;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);text-transform:none}
+.par-upd.err{color:var(--warn)}
+.kpi-grid.par-atualizando{opacity:.45;transition:opacity .18s}
 .par-filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .par-filtros .par-q{font-size:10px;padding:4px 12px}
 .par-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -1444,7 +1447,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   </div>
 
   <!-- 1 · Visão geral do período (números-chave) -->
-  <div class="par-sec"><span class="par-sec-n">1</span> VISÃO GERAL DO PERÍODO</div>
+  <div class="par-sec"><span class="par-sec-n">1</span> VISÃO GERAL DO PERÍODO <span id="par-upd" class="par-upd"></span></div>
   <div class="kpi-grid c9" id="par-kpi-grid"></div>
 
   <!-- 2 · Quanto a linha ficou parada e quem causou -->
@@ -2618,7 +2621,8 @@ function _tickCountdown(){
     countdownSec=(window._intervaloMin||5)*60;
     if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
     // Aba PARADAS aberta também atualiza no intervalo configurado.
-    if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas();
+    // silent: mesmo período → mantém os KPIs na tela enquanto busca.
+    if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas({silent:true});
   } else countdownSec--;
 }
 function _atualizarLabelIntervalo(){
@@ -2630,8 +2634,9 @@ function forcarRefresh(){
   badge.style.borderColor='var(--acc)'; badge.style.color='var(--acc)';
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
   countdownSec=(window._intervaloMin||5)*60;
+  invalidarHistoricoCache();   // refresh manual = quero dado fresco, ignora o cache do histórico
   if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
-  if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas();
+  if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas({silent:true});
 }
 function alterarIntervalo(){
   const atual=window._intervaloMin||5;
@@ -3923,20 +3928,35 @@ function salvarDiaSheets(data, k, fechadoEm){
 }
 
 // ── Buscar histórico do Sheets ──
-async function lerHistoricoSheets(){
+// O histórico só muda quando um dia é arquivado (uma vez por dia), mas a aba
+// PARADAS refazia esta chamada a cada refresh — competindo com os dois
+// getParadasPeriodo do mesmo ciclo. Cache curto em memória: guardamos a
+// PROMISE (não o resultado) para que chamadas simultâneas compartilhem a mesma
+// ida ao Apps Script em vez de disparar duas.
+let _histProm=null, _histTs=0;
+const HIST_CACHE_MS=2*60*1000;
+function invalidarHistoricoCache(){ _histProm=null; _histTs=0; }
+async function lerHistoricoSheets(opts){
   if(!CFG.sheetsUrl) return null;
-  try{
-    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
-    const json=await jsonpFetch(url);
-    if(json.erro) throw new Error(json.erro);
-    const dias = json.dias||[];
-    console.log('[getHistory] retornou', dias.length, 'dias:', dias.map(d=>d.data));
-    return dias;
-  }catch(e){
-    console.warn('[getHistory] ERRO:', e.message);
-    // Retorna array vazio em vez de null — não interrompe o merge
-    return [];
-  }
+  const forcar=!!(opts&&opts.forcar);
+  if(!forcar && _histProm && (Date.now()-_histTs)<HIST_CACHE_MS) return _histProm;
+  const p=(async()=>{
+    try{
+      const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getHistory';
+      const json=await jsonpFetch(url);
+      if(json.erro) throw new Error(json.erro);
+      const dias = json.dias||[];
+      console.log('[getHistory] retornou', dias.length, 'dias:', dias.map(d=>d.data));
+      return dias;
+    }catch(e){
+      console.warn('[getHistory] ERRO:', e.message);
+      _histTs=0;   // falhou → não segura o cache; a próxima chamada tenta de novo
+      // Retorna array vazio em vez de null — não interrompe o merge
+      return [];
+    }
+  })();
+  _histProm=p; _histTs=Date.now();
+  return p;
 }
 
 // ── Constrói lista de dias: Sheets + localStorage + memória ──
@@ -5293,7 +5313,41 @@ function _paradasStats(paradas, metaByDay){
           nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,tipos,porTipo,porDia};
 }
 
-async function renderAnaliseParadas(){
+// ── Guarda de reentrância ──
+// Cada render dispara 2 getParadasPeriodo + o histórico. Se o ciclo demora mais
+// que o intervalo de refresh (o Apps Script lê a aba PARADAS inteira), as
+// chamadas se empilham e a última a responder é que pinta a tela — podendo
+// sobrescrever dados novos com dados velhos. Aqui: refresh automático que chega
+// com um ciclo em andamento simplesmente desiste (o próximo tick pega); ação do
+// usuário (mudou período/classe) fica pendente e roda assim que o ciclo termina.
+let _parBusy=false, _parPend=null;
+async function renderAnaliseParadas(opts){
+  if(_parBusy){ if(!(opts&&opts.silent)) _parPend=opts||{}; return; }
+  _parBusy=true;
+  try{ await _renderAnaliseParadasCore(opts); }
+  finally{
+    _parBusy=false;
+    // Rede de segurança: se o core morreu no meio, não deixa o grid preso em
+    // "atualizando" (opacidade baixa + rótulo) para sempre.
+    const g=document.getElementById('par-kpi-grid');
+    if(g && g.classList.contains('par-atualizando')){
+      g.classList.remove('par-atualizando');
+      _parUpd('⚠ não atualizou'+(_parUltimoOk?' — dados de '+_parUltimoOk:''),'err');
+    }
+    if(_parPend){ const o=_parPend; _parPend=null; renderAnaliseParadas(o); }
+  }
+}
+
+// Marcador discreto ao lado do título da seção 1 (substitui o "sumiço" dos KPIs)
+let _parUltimoOk='';
+function _parUpd(txt,cls){
+  const el=document.getElementById('par-upd');
+  if(!el) return;
+  el.textContent=txt||'';
+  el.className='par-upd'+(cls?' '+cls:'');
+}
+
+async function _renderAnaliseParadasCore(opts){
   const grid=document.getElementById('par-kpi-grid');
   if(!grid) return;
   if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
@@ -5302,7 +5356,18 @@ async function renderAnaliseParadas(){
   let ate=dGet('par-ate');
   if(!de||!ate){ _filtroParadas(1); return; }   // sem filtro → HOJE
 
-  grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando paradas do período (pode demorar se o servidor estiver ligando)</div></div>';
+  // Refresh do MESMO período (auto-refresh / botão): mantém os números na tela e
+  // só sinaliza "atualizando". Antes o grid era esvaziado a cada ciclo e a seção
+  // ficava em CARREGANDO enquanto o Apps Script respondia — parecia queda de
+  // conexão. Troca de período/classe continua limpando (os valores antigos são
+  // de outro recorte e confundiriam).
+  const silent=!!(opts&&opts.silent) && !!grid.querySelector('.kpi-val');
+  if(silent){ grid.classList.add('par-atualizando'); _parUpd('atualizando…'); }
+  else{
+    grid.classList.remove('par-atualizando');
+    _parUpd('');
+    grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO…</div><div class="kpi-sub">buscando paradas do período (pode demorar se o servidor estiver ligando)</div></div>';
+  }
 
   // Comparativo: período anterior de mesma duração (vs ontem / vs período anterior).
   const classe=(document.getElementById('par-classe')||{}).value||'';
@@ -5323,7 +5388,13 @@ async function renderAnaliseParadas(){
   ]);
   const metaByDay=_hist.m, realByDay=_hist.r;
   if(paradas===null){
-    grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
+    if(silent){
+      // Falhou, mas já havia números na tela: mantém os últimos bons e avisa.
+      grid.classList.remove('par-atualizando');
+      _parUpd('⚠ não atualizou'+(_parUltimoOk?' — dados de '+_parUltimoOk:''),'err');
+    }else{
+      grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
+    }
     return;
   }
   // Filtro de classe (Todas / Não planejada / Planejada)
@@ -5390,6 +5461,10 @@ async function renderAnaliseParadas(){
     {l:'TEMPO MÉDIO POR PARADA',v:_fmtMinPar(tMed),sub:'por parada',d:_dl(tMed,stPrev.tMed,true,_fmtMinPar),c:'acc'},
   ];
   grid.innerHTML=kpis.map(k=>`<div class="kpi-card ${k.c}${k.hl?' destaque':''}"><div class="kpi-lbl">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-sub">${k.sub}</div>${k.d?`<div style="margin-top:4px">${k.d}</div>`:''}</div>`).join('');
+  grid.classList.remove('par-atualizando');
+  const _hOk=new Date();
+  _parUltimoOk=p2(_hOk.getHours())+':'+p2(_hOk.getMinutes())+':'+p2(_hOk.getSeconds());
+  _parUpd('atualizado '+_parUltimoOk);
 
   // Pareto por tipo (barras de tempo + linha % acumulado)
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);

@@ -55,6 +55,19 @@ via Google Apps Script (JSONP).
     em falha mantém os últimos dados.
   - **Mitigação já aplicada:** timeout do `jsonpFetch` = **25s** e a carga inicial
     usa `lerSheetsComRetry(4)` (reconecta antes de desistir). Manter assim.
+- **Aba PARADAS "sumindo" no refresh** (seção 1 em `CARREGANDO…` enquanto o resto
+  segue com dados): **não é queda de conexão**. Cada render dispara 2×
+  `getParadasPeriodo` (período + comparativo) e o backend lê a aba `PARADAS`
+  **inteira** (`getDataRange`) antes de filtrar — o custo cresce com o histórico
+  todo, não com o período escolhido.
+  - **Mitigação já aplicada:** no refresh do mesmo período os KPIs **ficam na
+    tela** (esmaecidos + `atualizando…` ao lado do título da seção 1); só troca de
+    período/classe limpa o grid. `renderAnaliseParadas()` tem **guarda de
+    reentrância** (ciclos não se empilham) e o `getHistory` tem **cache de 2 min**
+    (`invalidarHistoricoCache()` no refresh manual).
+  - Se falhar com dados já em tela, mantém os últimos números e marca
+    `⚠ não atualizou — dados de HH:MM:SS`. **Intervalo de refresh curto (1 min)
+    piora tudo**: o ciclo não termina antes do próximo. Recomendado 5 min.
 - **Alerta de "hora fraca" (⚠)**: compara a produção de hoje (`HORA_A_HORA`) com a
   média histórica por horário (`HISTORICO_HORA`, via `action=getMediaHoras`).
   Só dispara com **≥2 dias** de amostra e produção **>15% abaixo** da média.
