@@ -68,7 +68,7 @@ const SHEET_PROG_ARQ  = 'PROGRAMACAO_CONCLUIDA'; // lotes já finalizados, tirad
 //             linhas do lote saem juntas). É o padrão.
 //   'LINHA' → arquiva cada linha assim que ela conclui (o lote sai em pedaços).
 //   'OFF'   → não arquiva nada (comportamento antigo).
-const ARQ_MODO = 'LOTE';
+const ARQ_MODO = 'LINHA';
 
 // Dias de carência antes de tirar da aba (0 = sai assim que conclui;
 // 1 = só no dia seguinte, dando margem para corrigir um lançamento errado).

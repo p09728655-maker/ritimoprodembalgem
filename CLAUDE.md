@@ -55,7 +55,7 @@ via Google Apps Script (JSONP).
   passa a creditar **outro lote do mesmo código** — que aparece produzido sem ter
   produzido, e o atraso encolhe sozinho. Medido: saldo 50 → 10 e atraso 50 → 10 cx.
   Por isso `lerProgramacao(true)` (só o cálculo) continua lendo as arquivadas.
-- Chaves no topo do `.gs`: `ARQ_MODO` (`'LOTE'` padrão / `'LINHA'` / `'OFF'`),
+- Chaves no topo do `.gs`: `ARQ_MODO` (**em produção: `'LINHA'`** — cada item sai ao concluir; `'LOTE'` espera o lote inteiro; `'OFF'` desliga),
   `ARQ_DIAS_CARENCIA` (0 = sai ao concluir) e `ARQ_EXCLUIR_SEM_COPIA` (⚠ `true`
   apaga de vez e reintroduz o erro acima).
 - **Nunca saem:** linha sem lote, linha de data futura, e lote que ainda tem
