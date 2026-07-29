@@ -45,6 +45,40 @@ const SHEET_PROD_LOG  = 'PRODUCAO_PRODUTO'; // log de caixas lançadas por hora/
 const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE (planejado por dia/produto)
 const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
 const SHEET_CONFIG    = 'CONFIG_PAINEL';        // config do ciclo de telas da TV, compartilhada entre aparelhos
+const SHEET_PROG_ARQ  = 'PROGRAMACAO_CONCLUIDA'; // lotes já finalizados, tirados da PROGRAMACAO (ver ARQ_* abaixo)
+
+// ════════════════════════════════════════════════════════
+// ARQUIVAMENTO DE LOTE CONCLUÍDO  (tira a linha da PROGRAMACAO)
+// ════════════════════════════════════════════════════════
+// Quando o lote termina, a linha sai da aba PROGRAMACAO e vai para a aba
+// PROGRAMACAO_CONCLUIDA (criada sozinha na 1ª vez), com o número final de
+// PRODUZIDO/SALDO/STATUS congelado e a data do arquivamento.
+//
+// ⚠ POR QUE MOVER E NÃO SIMPLESMENTE APAGAR: a PROGRAMACAO é a única fonte da
+// DEMANDA. A produção fica no log PRODUCAO_PRODUTO, que NÃO tem lote e nunca é
+// apagado. calcularProgramacao() casa os dois por FIFO (a produção abate o lote
+// aberto mais antigo do mesmo código). Se a linha do lote concluído some de vez,
+// a produção que ela consumiu fica "solta" e passa a abater OUTRO lote do mesmo
+// código — que aparece produzido sem ter produzido, e o atraso encolhe sozinho.
+// Por isso lerProgramacao(true) continua lendo as arquivadas SÓ para alimentar o
+// FIFO: o cálculo fica idêntico ao de antes, e a aba de trabalho fica limpa.
+//
+// ARQ_MODO:
+//   'LOTE'  → só arquiva quando TODAS as linhas do lote estão concluídas (as
+//             linhas do lote saem juntas). É o padrão.
+//   'LINHA' → arquiva cada linha assim que ela conclui (o lote sai em pedaços).
+//   'OFF'   → não arquiva nada (comportamento antigo).
+const ARQ_MODO = 'LOTE';
+
+// Dias de carência antes de tirar da aba (0 = sai assim que conclui;
+// 1 = só no dia seguinte, dando margem para corrigir um lançamento errado).
+const ARQ_DIAS_CARENCIA = 0;
+
+// ⚠ true = APAGA a linha sem guardar cópia (não alimenta mais o FIFO). É o
+// "excluir de vez": a aba fica limpa, mas os saldos e o atraso de outros lotes
+// do mesmo código passam a mudar sozinhos, e o planejado antigo se perde.
+// Só ligue sabendo disso.
+const ARQ_EXCLUIR_SEM_COPIA = false;
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -505,6 +539,9 @@ function sincronizarPlanilhaPosLancamento() {
   const prog = calcularProgramacao();
   try { gravarMetaDiaNaPlanilha(prog); }      catch (e) { Logger.log('meta sync: '  + e.message); }
   try { atualizarSaldoNaProgramacao(prog); }  catch (e) { Logger.log('saldo sync: ' + e.message); }
+  // Por último: o lote que fechou sai da aba já com o número final gravado acima.
+  // Roda sob o lock de saveRealizado (não pega lock próprio, senão trava a si mesmo).
+  try { arquivarLotesConcluidos(prog); }      catch (e) { Logger.log('arquivar lote: ' + e.message); }
 }
 
 // Item 1: grava a META DO DIA (quantidade programada para hoje) na célula B3 da
@@ -623,6 +660,183 @@ function atualizarSaldoNaProgramacao(prog) {
   OUT.forEach(function (name) {
     sh.getRange(2, outIdx[name] + 1, nRows, 1).setValues(cols[name]);
   });
+}
+
+
+// ════════════════════════════════════════════════════════
+// LOTE CONCLUÍDO SAI DA PROGRAMACAO  (ver bloco ARQ_* no topo)
+// ════════════════════════════════════════════════════════
+// Roda depois de atualizarSaldoNaProgramacao(), quando PRODUZIDO/SALDO/STATUS já
+// estão gravados — assim o que vai para o arquivo é o número final.
+//
+// Falha segura por construção: uma linha só é elegível quando o FIFO devolveu um
+// saldo <= 0 para ELA (chave codigo|lote|data). Se calcularProgramacao() falhar
+// ou vier vazio, nenhum saldo casa e nada é arquivado — nunca o contrário.
+
+function arquivarLotesConcluidos(prog) {
+  if (ARQ_MODO !== 'LOTE' && ARQ_MODO !== 'LINHA') return { ok: true, arquivadas: 0, motivo: 'ARQ_MODO=' + ARQ_MODO };
+  return _arquivarConcluidos(prog, false);
+}
+
+// Carência: quantos dias o lote precisa ter antes de sair da aba.
+function _carenciaOk(dNum, hojeNum) {
+  if (!(ARQ_DIAS_CARENCIA > 0)) return true;
+  const d = function (n) { return new Date(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100); };
+  return (d(hojeNum) - d(dNum)) / 86400000 >= ARQ_DIAS_CARENCIA;
+}
+
+// simular=true → devolve o que SAIRIA da aba sem tocar em nada.
+function _arquivarConcluidos(prog, simular) {
+  prog = prog || calcularProgramacao();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = acharAbaTolerante(ss, SHEET_PROG);
+  if (!sh) return { ok: true, arquivadas: 0 };
+
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return { ok: true, arquivadas: 0 };
+
+  const hdr  = (values[0] || []).map(c => String(c).trim().toUpperCase());
+  const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
+  const iData = acha('DATA') >= 0 ? acha('DATA') : 0;
+  const iCod  = acha('CODIGO', 'COD') >= 0 ? acha('CODIGO', 'COD') : 2;
+  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
+  const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
+  const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+  const hojeNum  = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const saldoMap = prog.saldoLinha || {};
+
+  // 1) Classifica cada linha da aba.
+  const linhas = [];
+  for (let i = 1; i < values.length; i++) {
+    const r      = values[i];
+    const codigo = String(r[iCod] || '').trim();
+    const dNum   = dataParaNum(r[iData]);
+    const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
+    const qtde   = Number(r[iQtd]) || 0;
+    const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+
+    let estado;
+    if (!codigo || !r[iData] || dNum === 0) estado = 'IGNORAR';   // linha vazia / rascunho
+    else if (!lote)        estado = 'ABERTA';   // sem lote: lançamento incompleto, nunca sai
+    else if (dNum > hojeNum) estado = 'ABERTA'; // programada para frente, ainda nem venceu
+    else if (fora)         estado = 'FORA';     // fechada fora da esteira: não prende nem conclui
+    else {
+      const s = saldoMap[codKey(codigo) + '|' + lote + '|' + dNum];
+      estado = (s != null && qtde > 0 && s <= 0) ? 'CONCLUIDA' : 'ABERTA';
+    }
+    linhas.push({ i: i, lote: lote, dNum: dNum, codigo: codigo, estado: estado });
+  }
+
+  // 2) Escolhe o que sai.
+  const alvo = {};
+  if (ARQ_MODO === 'LINHA') {
+    linhas.forEach(function (l) {
+      if (l.estado === 'CONCLUIDA' && _carenciaOk(l.dNum, hojeNum)) alvo[l.i] = true;
+    });
+  } else {
+    // Por LOTE: as linhas do lote saem juntas, e só quando nenhuma segue aberta.
+    const grupos = {};
+    linhas.forEach(function (l) {
+      if (l.estado === 'IGNORAR' || !l.lote) return;
+      const g = grupos[l.lote] = grupos[l.lote] || { itens: [], concl: 0, abertas: 0, maxD: 0 };
+      g.itens.push(l);
+      if (l.estado === 'CONCLUIDA') g.concl++;
+      else if (l.estado === 'ABERTA') g.abertas++;
+      if (l.dNum > g.maxD) g.maxD = l.dNum;
+    });
+    Object.keys(grupos).forEach(function (k) {
+      const g = grupos[k];
+      if (g.abertas > 0 || g.concl === 0) return;      // ainda tem item rodando (ou é só fora-esteira)
+      if (!_carenciaOk(g.maxD, hojeNum)) return;
+      g.itens.forEach(function (l) { alvo[l.i] = true; });
+    });
+  }
+
+  const idx = Object.keys(alvo).map(Number).sort(function (a, b) { return a - b; });
+  const detalhe = idx.map(function (i) {
+    const l = linhas[i - 1];
+    return { linha: i + 1, lote: l.lote, codigo: l.codigo, data: normalizarDataBR(values[i][iData]) };
+  });
+  if (!idx.length) return { ok: true, arquivadas: 0, itens: [] };
+  if (simular)     return { ok: true, arquivadas: idx.length, itens: detalhe, simulado: true };
+
+  // 3) Copia para o arquivo (a menos que o modo destrutivo esteja ligado).
+  if (!ARQ_EXCLUIR_SEM_COPIA) {
+    const shArq = _abaArquivoProg(ss, hdr);
+    const hdrArq = shArq.getRange(1, 1, 1, shArq.getLastColumn()).getValues()[0]
+                        .map(c => String(c).trim().toUpperCase());
+    const agora  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+    // Casa coluna por NOME: a aba de arquivo não depende da ordem das colunas da
+    // aba ativa, então mudar a PROGRAMACAO depois não desalinha o histórico.
+    const mapa = hdrArq.map(function (nome) { return nome === 'ARQUIVADO_EM' ? -2 : hdr.indexOf(nome); });
+    // Se as colunas de saída ainda estiverem vazias na linha (arquivamento
+    // chamado sem passar por atualizarSaldoNaProgramacao), preenche o número
+    // final aqui — o histórico nunca vai para o arquivo em branco.
+    const saida = idx.map(function (i) {
+      const l     = linhas[i - 1];
+      const qtde  = Number(values[i][iQtd]) || 0;
+      const saldo = Math.max(Number(saldoMap[codKey(l.codigo) + '|' + l.lote + '|' + l.dNum]) || 0, 0);
+      const prodz = Math.max(qtde - saldo, 0);
+      const calc  = { PRODUZIDO: prodz, SALDO: saldo, PERCENTUAL: qtde > 0 ? Math.round(prodz / qtde * 100) : 0,
+                      STATUS: l.estado === 'FORA' ? 'FORA DA ESTEIRA' : 'CONCLUIDO', ATUALIZADO_EM: agora };
+      return mapa.map(function (j, c) {
+        if (j === -2) return agora;
+        if (j < 0)    return '';
+        const v = values[i][j];
+        return (v === '' && calc[hdrArq[c]] !== undefined) ? calc[hdrArq[c]] : v;
+      });
+    });
+    shArq.getRange(shArq.getLastRow() + 1, 1, saida.length, hdrArq.length).setValues(saida);
+    SpreadsheetApp.flush();   // só apaga depois que a cópia está gravada de fato
+  }
+
+  // 4) Apaga da aba ativa, de baixo para cima (senão os índices andam).
+  for (let k = idx.length - 1; k >= 0; k--) sh.deleteRow(idx[k] + 1);
+
+  Logger.log('arquivarLotesConcluidos: ' + idx.length + ' linha(s) · lotes ' +
+             detalhe.map(function (d) { return d.lote; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', '));
+  return { ok: true, arquivadas: idx.length, itens: detalhe };
+}
+
+// Aba de arquivo: cria na 1ª vez com o cabeçalho da PROGRAMACAO + ARQUIVADO_EM e,
+// se a aba ativa ganhar colunas depois, acrescenta as que faltarem.
+function _abaArquivoProg(ss, hdrOrigem) {
+  let sh = acharAbaTolerante(ss, SHEET_PROG_ARQ);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_PROG_ARQ);
+    const cab = hdrOrigem.concat(['ARQUIVADO_EM']);
+    sh.getRange(1, 1, 1, cab.length).setValues([cab]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  const hdrArq = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0]
+                   .map(c => String(c).trim().toUpperCase());
+  const faltam = hdrOrigem.filter(function (n) { return n && hdrArq.indexOf(n) < 0; });
+  if (faltam.length) sh.getRange(1, hdrArq.length + 1, 1, faltam.length).setValues([faltam]);
+  return sh;
+}
+
+// ── Para rodar no editor do Apps Script ──
+// Mostra o que SAIRIA da aba, sem mexer em nada. Use antes de confiar no automático.
+function simularArquivamento() {
+  const r = _arquivarConcluidos(null, true);
+  Logger.log('Sairiam ' + r.arquivadas + ' linha(s):');
+  (r.itens || []).forEach(function (it) {
+    Logger.log('  linha ' + it.linha + ' · lote ' + it.lote + ' · ' + it.codigo + ' · ' + it.data);
+  });
+  return r;
+}
+
+// Arquiva agora (útil na 1ª limpeza, com a aba já cheia de lotes velhos).
+// Atualiza o saldo antes, para o histórico sair com o número final na linha.
+function arquivarConcluidosAgora() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const prog = calcularProgramacao();
+    try { atualizarSaldoNaProgramacao(prog); } catch (e) { Logger.log('saldo pré-arquivo: ' + e.message); }
+    return _arquivarConcluidos(prog, false);
+  } finally { lock.releaseLock(); }
 }
 
 
@@ -1286,9 +1500,21 @@ function acharAbaTolerante(ss, nome) {
 
 // Lê a aba PROGRAMACAO. Detecta as colunas pelo cabeçalho, tolerando os nomes
 // reais da planilha (Data, Codigo, Qtd_cx). Mantém a data crua (pode ser Date).
-function lerProgramacao() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = acharAbaTolerante(ss, SHEET_PROG);
+// incluirArquivadas = true → soma também as linhas já movidas para
+// PROGRAMACAO_CONCLUIDA. Só o cálculo (calcularProgramacao) pede isso: sem essas
+// linhas o FIFO perderia a demanda que a produção antiga já consumiu e passaria
+// a creditar outros lotes do mesmo código. As telas continuam vendo só a aba
+// ativa, que é o objetivo do arquivamento.
+function lerProgramacao(incluirArquivadas) {
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const out = _lerProgDaAba(acharAbaTolerante(ss, SHEET_PROG), false);
+  if (incluirArquivadas) {
+    _lerProgDaAba(acharAbaTolerante(ss, SHEET_PROG_ARQ), true).forEach(function (r) { out.push(r); });
+  }
+  return out;
+}
+
+function _lerProgDaAba(sh, arquivada) {
   if (!sh) return [];
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return [];
@@ -1317,7 +1543,8 @@ function lerProgramacao() {
     // de sempre). Com a coluna, célula preenchida tira o item da conta.
     const foraTxt = iFora >= 0 ? String(r[iFora] || '').trim() : '';
     out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote,
-               foraEsteira: foraTxt !== '', foraLocal: foraTxt });
+               foraEsteira: foraTxt !== '', foraLocal: foraTxt,
+               arquivada: !!arquivada });
   }
   return out;
 }
@@ -1377,14 +1604,17 @@ function calcularProgramacao() {
   // Guardamos as linhas por produto para alocar a produção FIFO (lote mais antigo
   // primeiro). Futuro não entra (não vira atraso nem meta de hoje). loteHoje = lote
   // mais recente <= hoje, só para rótulo do produto.
+  // incluirArquivadas=true: as linhas já tiradas da aba continuam abrindo demanda
+  // no FIFO, senão a produção que elas consumiram creditaria outro lote do mesmo
+  // código (ver bloco ARQ_* no topo). Elas não viram rótulo de "lote atual".
   const progLinhas = {}, loteHoje = {};
-  lerProgramacao().forEach(pr => {
+  lerProgramacao(true).forEach(pr => {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
     // Fechado fora da esteira: não é produção desta linha. Sai da meta/atraso.
     if (pr.foraEsteira) return;
-    if (pr.lote && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
+    if (pr.lote && !pr.arquivada && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
       loteHoje[key] = { lote: pr.lote, dNum: dNum };
     }
     if (dNum <= hojeNum) {

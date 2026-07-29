@@ -44,6 +44,27 @@ via Google Apps Script (JSONP).
   (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
   *motivo* continua **texto livre** digitado pelo operador — não se cadastra.
 
+## Lote concluído sai da PROGRAMACAO (arquivamento)
+- Quando o lote fecha, as linhas saem da aba `PROGRAMACAO` e vão para
+  **`PROGRAMACAO_CONCLUIDA`** (criada sozinha), com `PRODUZIDO`/`SALDO`/`STATUS`
+  congelados + `ARQUIVADO_EM`. Roda ao fim de `sincronizarPlanilhaPosLancamento()`.
+- **Por que mover e não apagar:** a `PROGRAMACAO` é a única fonte da **demanda**; a
+  produção fica em `PRODUCAO_PRODUTO`, que **não tem lote** e nunca é apagada.
+  `calcularProgramacao()` casa as duas por **FIFO** (produção abate o lote aberto
+  mais antigo do mesmo código). Apagando a linha, a produção dela fica solta e
+  passa a creditar **outro lote do mesmo código** — que aparece produzido sem ter
+  produzido, e o atraso encolhe sozinho. Medido: saldo 50 → 10 e atraso 50 → 10 cx.
+  Por isso `lerProgramacao(true)` (só o cálculo) continua lendo as arquivadas.
+- Chaves no topo do `.gs`: `ARQ_MODO` (`'LOTE'` padrão / `'LINHA'` / `'OFF'`),
+  `ARQ_DIAS_CARENCIA` (0 = sai ao concluir) e `ARQ_EXCLUIR_SEM_COPIA` (⚠ `true`
+  apaga de vez e reintroduz o erro acima).
+- **Nunca saem:** linha sem lote, linha de data futura, e lote que ainda tem
+  qualquer item em andamento (no modo `LOTE`). Se o cálculo falhar/vier vazio,
+  nada é apagado (falha segura).
+- Antes de confiar: rode **`simularArquivamento()`** no editor (só lista o que
+  sairia). **`arquivarConcluidosAgora()`** faz a limpeza inicial de uma vez.
+- ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
+
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
