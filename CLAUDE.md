@@ -66,22 +66,27 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 
 ## Instalar o app (PWA)
-- O app que se instala no celular é o **`/mobile`** (`ritmoprod_mobile.html` +
-  `manifest-mobile.json` + `sw-mobile.js`). A raiz `/` (v7, gerencial/TV) **não** é
-  instalável — não tem service worker, e não deve ganhar um: o SW cacheando as
-  chamadas JSONP do Apps Script faria a TV mostrar produção antiga como se fosse a
-  de agora.
+- **No celular** o app é o **`/mobile`** (`ritmoprod_mobile.html` +
+  `manifest-mobile.json` + `sw-mobile.js`).
+- **No computador** dá para instalar a raiz `/` (v7, gerencial): o Chrome atual
+  **não exige service worker** para instalar — basta `manifest.json` + ícones 192/512
+  em HTTPS (conferido com `Page.getInstallabilityErrors`: zero erros). A tela de
+  login tem o botão **💻 INSTALAR APP** (prompt nativo com 1 clique; sem prompt,
+  abre o modal `#modal-app-mobile` com o passo a passo de Chrome/Edge/Firefox + o
+  caminho do celular).
+- ⚠ A raiz **não deve ganhar service worker**: o SW cacheando as chamadas JSONP do
+  Apps Script faria a TV mostrar produção antiga como se fosse a de agora. E não
+  precisa mesmo — ela já é instalável sem ele.
 - O botão **INSTALAR APP** (tela de login) fica **sempre visível** enquanto o app
   não estiver instalado. Se o navegador oferecer o prompt nativo
   (`beforeinstallprompt`, só Chrome/Android e desktop), instala com 1 toque; se não
   (iPhone/Safari, Firefox, navegador interno do WhatsApp), abre o modal
   `#modal-instalar` com o passo a passo daquele navegador. **Não voltar a esconder
   o botão atrás do evento** — era isso que deixava iPhone e WhatsApp sem saída.
-- Causa nº 1 de "não consigo baixar o app": estar na **raiz `/`** (gerencial/TV), que
-  não instala. Por isso a tela de login da v7 tem o link **📲 INSTALAR O APP NO
-  CELULAR** → modal `#modal-app-mobile` com o endereço `/mobile`, COPIAR LINK e
-  ABRIR AGORA. Causa nº 2: link aberto **dentro do WhatsApp** — navegador embutido
-  não instala PWA, tem que abrir no Chrome/Safari primeiro.
+- Causa nº 1 de "não consigo baixar o app": link aberto **dentro do WhatsApp** —
+  navegador embutido não instala PWA, tem que abrir no Chrome/Safari primeiro.
+  Causa nº 2: procurar o app **na raiz** sem saber que no celular ele é o `/mobile`
+  (o modal da raiz mostra o endereço, COPIAR LINK e ABRIR NO CELULAR).
 - O `sw-mobile.js` só cacheia requisições **do próprio domínio**. Manter assim.
 - `manifest.webmanifest` (raiz) está **órfão** — nenhum HTML aponta para ele e o
   `start_url` (`./index.html`) nem existe. Os manifests que valem são
