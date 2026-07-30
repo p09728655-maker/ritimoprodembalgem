@@ -93,6 +93,12 @@ via Google Apps Script (JSONP).
   `manifest.json` (v7) e `manifest-mobile.json` (mobile).
 
 ## Notas / armadilhas conhecidas
+- **Coluna MOTIVO do relatório de paradas**: é o texto livre que o operador digita
+  no mobile (coluna **G** da aba `PARADAS`, campo `obs`) — opcional, ninguém é
+  obrigado a preencher. No **DETALHAMENTO** do relatório a coluna **some quando
+  nenhuma parada do período tem motivo** (senão vira uma parede de `—`); basta uma
+  única parada preenchida para ela voltar. Se mexer, manter `<th>` e `<td>` sob a
+  mesma condição — e o `colspan` do "Nenhuma parada no período" acompanha.
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
   sempre é **cold start do Apps Script**, não perda de dados. NÃO é causado por

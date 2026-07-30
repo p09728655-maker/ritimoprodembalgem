@@ -5205,6 +5205,11 @@ async function gerarRelatorioParadas(){
   }).join('')):'';
 
   const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+  // MOTIVO é texto livre e opcional (o operador digita no mobile). Se ninguém
+  // preencheu no período, a coluna vira uma parede de "—": some com ela e o
+  // detalhamento fica com 5 colunas. Basta UMA parada com motivo para voltar.
+  const temMotivo=detOrd.some(p=>String(p.obs||'').trim()!=='');
+  const nColDet=temMotivo?6:5;
   const linhasDet=detOrd.map(p=>{
     const d=_durMinPar(p.ini,p.fim); const emand=!p.fim||String(p.fim).trim()==='';
     const planej=_ehPlanejada(p.tipo);
@@ -5214,9 +5219,9 @@ async function gerarRelatorioParadas(){
       <td class="td-mono">${esc(p.ini||'--:--')}</td>
       <td class="td-mono">${emand?'<span style="color:#e65100">em andamento</span>':esc(p.fim)}</td>
       <td class="td-mono">${emand?'—':_fmtMinPar(d)}</td>
-      <td style="color:#555">${esc(p.obs||'—')}</td>
+      ${temMotivo?`<td style="color:#555">${esc(p.obs||'—')}</td>`:''}
     </tr>`;
-  }).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
+  }).join('')||`<tr><td colspan="${nColDet}" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>`;
 
   const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <title>Relatório de Paradas — ${esc(de)} a ${esc(ate)}</title>
@@ -5277,7 +5282,7 @@ async function gerarRelatorioParadas(){
 <table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
-<table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th><th>MOTIVO</th></tr></thead><tbody>${linhasDet}</tbody></table>
+<table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
 <div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
