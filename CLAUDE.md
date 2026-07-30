@@ -77,8 +77,11 @@ via Google Apps Script (JSONP).
   (iPhone/Safari, Firefox, navegador interno do WhatsApp), abre o modal
   `#modal-instalar` com o passo a passo daquele navegador. **Não voltar a esconder
   o botão atrás do evento** — era isso que deixava iPhone e WhatsApp sem saída.
-- Causa nº 1 de "não consigo baixar o app": link aberto **dentro do WhatsApp**.
-  Navegador embutido não instala PWA — tem que abrir no Chrome/Safari primeiro.
+- Causa nº 1 de "não consigo baixar o app": estar na **raiz `/`** (gerencial/TV), que
+  não instala. Por isso a tela de login da v7 tem o link **📲 INSTALAR O APP NO
+  CELULAR** → modal `#modal-app-mobile` com o endereço `/mobile`, COPIAR LINK e
+  ABRIR AGORA. Causa nº 2: link aberto **dentro do WhatsApp** — navegador embutido
+  não instala PWA, tem que abrir no Chrome/Safari primeiro.
 - O `sw-mobile.js` só cacheia requisições **do próprio domínio**. Manter assim.
 - `manifest.webmanifest` (raiz) está **órfão** — nenhum HTML aponta para ele e o
   `start_url` (`./index.html`) nem existe. Os manifests que valem são
