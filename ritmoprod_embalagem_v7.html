@@ -798,13 +798,11 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="login-btn login-btn-op"  onclick="tentarLogin('operador')">OPERADOR</button>
       <button class="login-btn login-btn-ger" onclick="tentarLogin('gerencial')">GERENCIAL</button>
     </div>
-    <!-- O app instalável é o /mobile. Esta raiz (gerencial/TV) não é instalável de
-         propósito — quem cai aqui procurando "baixar o app" precisa do caminho. -->
-    <div style="text-align:center">
-      <a href="#" onclick="abrirModalAppMobile();return false"
-         style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-decoration:none;border-bottom:0.5px dotted var(--txt3);padding-bottom:2px">
-        📲 INSTALAR O APP NO CELULAR
-      </a>
+    <!-- Instalar o painel gerencial como app no computador. No celular o app é o
+         /mobile — o modal mostra os dois caminhos. -->
+    <div class="login-btns" id="login-instalar-wrap" style="margin-top:-4px">
+      <button class="login-btn login-btn-op" style="font-size:12px;letter-spacing:1.5px"
+              onclick="instalarAppV7()">💻 INSTALAR APP</button>
     </div>
   </div>
 </div>
@@ -813,10 +811,14 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 <div id="modal-app-mobile" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;align-items:center;justify-content:center;padding:16px">
   <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;max-width:420px;width:100%;padding:24px;display:flex;flex-direction:column;gap:16px">
     <div style="font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px">INSTALAR O APP</div>
+    <!-- 1) neste computador: prompt nativo quando existe, senão o passo a passo -->
+    <div style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px">NESTE COMPUTADOR</div>
+    <div id="app-pc-passos" style="font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55"></div>
+    <!-- 2) no celular: o app é o /mobile -->
+    <div style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;border-top:0.5px solid var(--border);padding-top:14px">NO CELULAR</div>
     <div style="font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55">
-      Esta tela é o <b>painel gerencial / TV</b> e não instala.
-      O app que se instala no celular é o <b style="color:var(--acc)">RitmoProd Mobile</b>:
-      abra o endereço abaixo no <b>Chrome</b> (Android) ou no <b>Safari</b> (iPhone) e toque em
+      No celular o app é o <b style="color:var(--acc)">RitmoProd Mobile</b>: abra o endereço abaixo
+      no <b>Chrome</b> (Android) ou no <b>Safari</b> (iPhone) e toque em
       <b style="color:var(--acc)">INSTALAR APP</b> na tela de login.
     </div>
     <div id="app-mobile-url" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;padding:10px;word-break:break-all;text-align:center"></div>
@@ -824,14 +826,54 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button id="app-mobile-copiar" onclick="copiarLinkAppMobile()"
         style="flex:1;padding:13px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer">COPIAR LINK</button>
       <button onclick="window.open(location.origin+'/mobile','_blank')"
-        style="flex:1;padding:13px;background:var(--acc);border:none;border-radius:8px;color:#111;font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer">ABRIR AGORA</button>
+        style="flex:1;padding:13px;background:var(--acc);border:none;border-radius:8px;color:#111;font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer">ABRIR NO CELULAR</button>
     </div>
     <button onclick="fecharModalAppMobile()"
       style="background:none;border:none;color:var(--txt3);font-family:var(--font-d);font-size:10px;letter-spacing:1.5px;cursor:pointer">FECHAR</button>
   </div>
 </div>
 <script>
+// ── INSTALAR O PAINEL COMO APP (PWA) ────────────────────────────────────────
+// O Chrome/Edge no desktop instalam esta raiz direto (manifest.json + ícones).
+// Quando o navegador oferece o prompt nativo, instala com 1 clique; quando não
+// (Firefox, Safari, ou prompt já dispensado), o modal mostra o passo a passo.
+let _v7Prompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); _v7Prompt = e; });
+window.addEventListener('appinstalled', () => { _v7Prompt = null; _v7EscondeBotao(); fecharModalAppMobile(); });
+
+function _v7Instalado(){
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+function _v7EscondeBotao(){
+  const w = document.getElementById('login-instalar-wrap');
+  if (w) w.style.display = 'none';
+}
+async function instalarAppV7(){
+  if (_v7Prompt) {
+    _v7Prompt.prompt();
+    const r = await _v7Prompt.userChoice;
+    _v7Prompt = null;
+    if (r && r.outcome === 'accepted') _v7EscondeBotao();
+    return;
+  }
+  abrirModalAppMobile();
+}
+function _v7PassosPC(){
+  const ua = navigator.userAgent || '';
+  if (/Edg\//.test(ua)) {
+    return `No <b>Edge</b>: menu <b>···</b> (canto superior direito) →
+      <b>Aplicativos</b> → <b>“Instalar este site como um aplicativo”</b>.`;
+  }
+  if (/Firefox\//.test(ua)) {
+    return `O <b>Firefox</b> no computador não instala aplicativos web.
+      Abra este mesmo endereço no <b>Chrome</b> ou no <b>Edge</b> e clique de novo em INSTALAR APP.`;
+  }
+  return `No <b>Chrome</b>: clique no ícone de instalar (<b>⊕</b> / monitor com seta) no fim da
+    barra de endereço. Se ele não aparecer, use o menu <b>⋮</b> →
+    <b>“Transmitir, salvar e compartilhar”</b> → <b>“Instalar página como app…”</b>.`;
+}
 function abrirModalAppMobile(){
+  document.getElementById('app-pc-passos').innerHTML = _v7PassosPC();
   document.getElementById('app-mobile-url').textContent = location.origin + '/mobile';
   document.getElementById('modal-app-mobile').style.display = 'flex';
 }
@@ -856,6 +898,7 @@ function copiarLinkAppMobile(){
 document.getElementById('modal-app-mobile').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-app-mobile')) fecharModalAppMobile();
 });
+if (_v7Instalado()) _v7EscondeBotao();
 </script>
 
 <!-- ═══ HEADER ═══ -->
