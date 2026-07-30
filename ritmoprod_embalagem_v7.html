@@ -798,8 +798,65 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <button class="login-btn login-btn-op"  onclick="tentarLogin('operador')">OPERADOR</button>
       <button class="login-btn login-btn-ger" onclick="tentarLogin('gerencial')">GERENCIAL</button>
     </div>
+    <!-- O app instalável é o /mobile. Esta raiz (gerencial/TV) não é instalável de
+         propósito — quem cai aqui procurando "baixar o app" precisa do caminho. -->
+    <div style="text-align:center">
+      <a href="#" onclick="abrirModalAppMobile();return false"
+         style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-decoration:none;border-bottom:0.5px dotted var(--txt3);padding-bottom:2px">
+        📲 INSTALAR O APP NO CELULAR
+      </a>
+    </div>
   </div>
 </div>
+
+<!-- ═══ MODAL: onde fica o app instalável ═══ -->
+<div id="modal-app-mobile" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:600;align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;max-width:420px;width:100%;padding:24px;display:flex;flex-direction:column;gap:16px">
+    <div style="font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px">INSTALAR O APP</div>
+    <div style="font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55">
+      Esta tela é o <b>painel gerencial / TV</b> e não instala.
+      O app que se instala no celular é o <b style="color:var(--acc)">RitmoProd Mobile</b>:
+      abra o endereço abaixo no <b>Chrome</b> (Android) ou no <b>Safari</b> (iPhone) e toque em
+      <b style="color:var(--acc)">INSTALAR APP</b> na tela de login.
+    </div>
+    <div id="app-mobile-url" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;padding:10px;word-break:break-all;text-align:center"></div>
+    <div style="display:flex;gap:10px">
+      <button id="app-mobile-copiar" onclick="copiarLinkAppMobile()"
+        style="flex:1;padding:13px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer">COPIAR LINK</button>
+      <button onclick="window.open(location.origin+'/mobile','_blank')"
+        style="flex:1;padding:13px;background:var(--acc);border:none;border-radius:8px;color:#111;font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer">ABRIR AGORA</button>
+    </div>
+    <button onclick="fecharModalAppMobile()"
+      style="background:none;border:none;color:var(--txt3);font-family:var(--font-d);font-size:10px;letter-spacing:1.5px;cursor:pointer">FECHAR</button>
+  </div>
+</div>
+<script>
+function abrirModalAppMobile(){
+  document.getElementById('app-mobile-url').textContent = location.origin + '/mobile';
+  document.getElementById('modal-app-mobile').style.display = 'flex';
+}
+function fecharModalAppMobile(){
+  document.getElementById('modal-app-mobile').style.display = 'none';
+}
+function copiarLinkAppMobile(){
+  const url = location.origin + '/mobile';
+  const btn = document.getElementById('app-mobile-copiar');
+  const ok = () => { btn.textContent = 'LINK COPIADO'; setTimeout(()=>{ btn.textContent = 'COPIAR LINK'; }, 2000); };
+  const viaTextarea = () => {
+    const t = document.createElement('textarea');
+    t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select();
+    try { if (document.execCommand('copy')) ok(); } catch(e){}
+    document.body.removeChild(t);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(ok).catch(viaTextarea);
+  } else { viaTextarea(); }
+}
+document.getElementById('modal-app-mobile').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-app-mobile')) fecharModalAppMobile();
+});
+</script>
 
 <!-- ═══ HEADER ═══ -->
 <header>
