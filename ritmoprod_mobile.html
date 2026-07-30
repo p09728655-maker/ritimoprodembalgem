@@ -331,6 +331,15 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .btn-salvar:active:not(:disabled){opacity:.7}
 .btn-cancelar:active{opacity:.6}
 
+/* ═══ INSTALAR APP MODAL ═══ */
+#modal-instalar .cf-msg ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+#modal-instalar .cf-msg b{color:var(--acc)}
+.inst-url{
+  font-family:var(--font-d);font-size:11px;color:var(--txt2);
+  background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;
+  padding:10px;word-break:break-all;text-align:center;
+}
+
 /* ═══ SENHA MODAL ═══ */
 #modal-senha .modal-sheet{border-radius:14px}
 .modal-ttl{font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px}
@@ -418,9 +427,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="login-btns">
       <button class="login-btn login-btn-op" onclick="loginComo('operador')">OPERADOR</button>
       <button class="login-btn login-btn-ger" onclick="loginComo('gerencial')">GERENCIAL</button>
-      <button id="btn-instalar" class="login-btn login-btn-ger" style="display:none;font-size:13px;letter-spacing:2px" onclick="instalarApp()">📲 INSTALAR APP</button>
+      <button id="btn-instalar" class="login-btn login-btn-ger" style="font-size:13px;letter-spacing:2px" onclick="instalarApp()">📲 INSTALAR APP</button>
     </div>
-    <div id="ios-hint" class="login-ver" style="display:none;line-height:1.7">No iPhone: toque em <b style="color:var(--txt)">Compartilhar</b> e depois <b style="color:var(--txt)">“Adicionar à Tela de Início”</b></div>
     <div class="login-ver">v1.0 · EMBALAGEM</div>
   </div>
 </div>
@@ -562,6 +570,22 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div id="md-body"></div>
     <div class="modal-btns">
       <button class="btn-cancelar" style="flex:1" onclick="fecharModalDia()">FECHAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL INSTALAR APP ═══
+     Fallback para quando o navegador NÃO oferece o botão automático de instalar
+     (iPhone/Safari, navegador de dentro do WhatsApp, Firefox, etc.): explica o
+     passo a passo manual em vez de deixar o usuário sem saída. -->
+<div class="modal-over" id="modal-instalar">
+  <div class="modal-sheet" style="border-radius:14px;max-width:400px">
+    <div class="modal-ttl">INSTALAR O APP</div>
+    <div class="cf-msg" id="inst-passos"></div>
+    <div class="inst-url" id="inst-url"></div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="copiarLinkApp()" id="inst-btn-copiar">COPIAR LINK</button>
+      <button class="btn-salvar" style="flex:1" onclick="fecharModalInstalar()">ENTENDI</button>
     </div>
   </div>
 </div>
@@ -2136,36 +2160,119 @@ document.getElementById('modal-dia').addEventListener('click',e=>{ if(e.target==
 // ════════════════════════════════════════════════
 // INSTALAÇÃO COMO APP (PWA)
 // ════════════════════════════════════════════════
+// O botão "INSTALAR APP" fica SEMPRE visível (só some quando já está instalado).
+// Antes ele dependia do evento `beforeinstallprompt`, que só o Chrome/Android
+// dispara — no iPhone, no Firefox e no navegador interno do WhatsApp o botão
+// nunca aparecia e o usuário ficava sem nenhum caminho para instalar.
 let _deferredPrompt = null;
-// Android/Chrome: captura o evento e mostra o botão "Instalar app".
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _deferredPrompt = e;
-  const b = document.getElementById('btn-instalar');
-  if (b) b.style.display = 'block';
-});
-window.addEventListener('appinstalled', () => {
-  _deferredPrompt = null;
-  const b = document.getElementById('btn-instalar');
-  if (b) b.style.display = 'none';
-});
-async function instalarApp(){
-  if (!_deferredPrompt) return;
-  _deferredPrompt.prompt();
-  await _deferredPrompt.userChoice;
-  _deferredPrompt = null;
+
+function _appInstalado(){
+  return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+function _esconderBotaoInstalar(){
   const b = document.getElementById('btn-instalar');
   if (b) b.style.display = 'none';
 }
-// iPhone (Safari não dispara beforeinstallprompt): mostra a instrução manual.
-(function(){
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-  if (isIOS && !standalone) {
-    const h = document.getElementById('ios-hint');
-    if (h) h.style.display = 'block';
+
+// Android/Chrome: guarda o evento para poder instalar com 1 toque.
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredPrompt = e;
+});
+window.addEventListener('appinstalled', () => {
+  _deferredPrompt = null;
+  _esconderBotaoInstalar();
+  fecharModalInstalar();
+});
+if (_appInstalado()) _esconderBotaoInstalar();
+
+async function instalarApp(){
+  // Caminho feliz: Chrome/Android/desktop com o prompt nativo disponível.
+  if (_deferredPrompt) {
+    _deferredPrompt.prompt();
+    const r = await _deferredPrompt.userChoice;
+    _deferredPrompt = null;
+    if (r && r.outcome === 'accepted') _esconderBotaoInstalar();
+    return;
   }
-})();
+  // Sem prompt nativo: explica o passo a passo do navegador em uso.
+  abrirModalInstalar();
+}
+
+function _passosInstalacao(){
+  const ua = navigator.userAgent || '';
+  const isIOS = /iphone|ipad|ipod/i.test(ua) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /android/i.test(ua);
+  // Navegador embutido de outro app (WhatsApp, Instagram, Facebook, Teams...).
+  // Nenhum deles instala PWA — o primeiro passo é sair para o navegador de verdade.
+  const inApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Twitter|WhatsApp|MicroMessenger|Teams|; wv\)/i.test(ua);
+
+  if (inApp) {
+    return `Você abriu o link <b>dentro de outro aplicativo</b> (WhatsApp, Instagram, etc.).
+      Esse navegador não instala apps.
+      <ol>
+        <li>Toque no menu <b>⋮</b> (ou <b>···</b>) no canto da tela</li>
+        <li>Escolha <b>“Abrir no Chrome”</b>${isIOS ? ' ou <b>“Abrir no Safari”</b>' : ''}</li>
+        <li>Já no navegador, toque de novo em <b>INSTALAR APP</b></li>
+      </ol>`;
+  }
+  if (isIOS) {
+    return `No iPhone/iPad a instalação é manual, pelo <b>Safari</b>:
+      <ol>
+        <li>Toque no botão <b>Compartilhar</b> (quadrado com a seta ↑, embaixo)</li>
+        <li>Role a lista e escolha <b>“Adicionar à Tela de Início”</b></li>
+        <li>Confirme em <b>Adicionar</b></li>
+      </ol>
+      Se você estiver no Chrome do iPhone, abra este mesmo link no <b>Safari</b> — só ele instala.`;
+  }
+  if (isAndroid) {
+    return `Instalação pelo menu do navegador:
+      <ol>
+        <li>Toque no menu <b>⋮</b> (canto superior direito)</li>
+        <li>Escolha <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b></li>
+        <li>Confirme em <b>Instalar</b></li>
+      </ol>
+      Se não aparecer a opção, feche e abra a página no <b>Chrome</b> e tente de novo.`;
+  }
+  return `No computador:
+    <ol>
+      <li>Clique no ícone de <b>instalar</b> (⊕ / monitor com seta) na barra de endereço</li>
+      <li>Ou abra o menu <b>⋮</b> → <b>“Instalar RitmoProd”</b></li>
+    </ol>`;
+}
+
+function abrirModalInstalar(){
+  document.getElementById('inst-passos').innerHTML = _passosInstalacao();
+  document.getElementById('inst-url').textContent = location.origin + '/mobile';
+  document.getElementById('modal-instalar').classList.add('open');
+}
+function fecharModalInstalar(){
+  const m = document.getElementById('modal-instalar');
+  if (m) m.classList.remove('open');
+}
+function copiarLinkApp(){
+  const url = location.origin + '/mobile';
+  const btn = document.getElementById('inst-btn-copiar');
+  const ok = () => { if (btn) { btn.textContent = 'LINK COPIADO'; setTimeout(()=>{ btn.textContent = 'COPIAR LINK'; }, 2000); } };
+  // Fallback para WebView antiga / sem permissão de clipboard.
+  const viaTextarea = () => {
+    const t = document.createElement('textarea');
+    t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select(); t.setSelectionRange(0, url.length);
+    try { if (document.execCommand('copy')) ok(); } catch(e){}
+    document.body.removeChild(t);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(ok).catch(viaTextarea);
+  } else {
+    viaTextarea();
+  }
+}
+document.getElementById('modal-instalar').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-instalar')) fecharModalInstalar();
+});
+
 // Service worker (necessário para o app ser instalável e abrir como atalho).
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw-mobile.js').catch(()=>{});

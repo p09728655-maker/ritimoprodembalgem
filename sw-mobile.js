@@ -4,7 +4,7 @@
 // e só usa o cache como reserva quando estiver offline. Assim os deploys
 // novos aparecem normalmente, sem ficar preso em versão antiga.
 
-const CACHE = 'ritmoprod-mobile-v1';
+const CACHE = 'ritmoprod-mobile-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -18,6 +18,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Só o que é do próprio site (HTML/ícones/manifest). As chamadas ao Apps Script
+  // (JSONP) ficam de fora: cacheadas, poderiam devolver produção antiga como se
+  // fosse a de agora.
+  if (new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
