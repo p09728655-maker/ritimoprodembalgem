@@ -65,6 +65,25 @@ via Google Apps Script (JSONP).
   sairia). **`arquivarConcluidosAgora()`** faz a limpeza inicial de uma vez.
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 
+## Instalar o app (PWA)
+- O app que se instala no celular é o **`/mobile`** (`ritmoprod_mobile.html` +
+  `manifest-mobile.json` + `sw-mobile.js`). A raiz `/` (v7, gerencial/TV) **não** é
+  instalável — não tem service worker, e não deve ganhar um: o SW cacheando as
+  chamadas JSONP do Apps Script faria a TV mostrar produção antiga como se fosse a
+  de agora.
+- O botão **INSTALAR APP** (tela de login) fica **sempre visível** enquanto o app
+  não estiver instalado. Se o navegador oferecer o prompt nativo
+  (`beforeinstallprompt`, só Chrome/Android e desktop), instala com 1 toque; se não
+  (iPhone/Safari, Firefox, navegador interno do WhatsApp), abre o modal
+  `#modal-instalar` com o passo a passo daquele navegador. **Não voltar a esconder
+  o botão atrás do evento** — era isso que deixava iPhone e WhatsApp sem saída.
+- Causa nº 1 de "não consigo baixar o app": link aberto **dentro do WhatsApp**.
+  Navegador embutido não instala PWA — tem que abrir no Chrome/Safari primeiro.
+- O `sw-mobile.js` só cacheia requisições **do próprio domínio**. Manter assim.
+- `manifest.webmanifest` (raiz) está **órfão** — nenhum HTML aponta para ele e o
+  `start_url` (`./index.html`) nem existe. Os manifests que valem são
+  `manifest.json` (v7) e `manifest-mobile.json` (mobile).
+
 ## Notas / armadilhas conhecidas
 - **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
