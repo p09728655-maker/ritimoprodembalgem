@@ -7,6 +7,9 @@ via Google Apps Script (JSONP).
 ## Arquivos
 - `ritmoprod_embalagem_v7.html` — painel desktop (telas **GERENCIAL** e **TV OPERACIONAL**).
 - `ritmoprod_mobile.html` — painel mobile.
+- `paradas-calc.js` — **cálculo de paradas, implementação ÚNICA** usada pelos
+  dois painéis (`<script src="/paradas-calc.js">`). Ver a seção de paradas.
+- `paradas-calc.test.js` — teste de paridade: `node paradas-calc.test.js`.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
 - `vercel.json` — `/` → v7, `/mobile` → mobile.
@@ -81,11 +84,31 @@ via Google Apps Script (JSONP).
     meta de 20/07 (`metaByDay`, vindo do `HISTORICO`); hoje usa a meta da
     `HORA_A_HORA`. Usando só `CFG.metaDia` para tudo, o mobile dava **3.780** cx
     onde o desktop dava **3.897** no mesmo período de 30 dias.
-- **Desktop e mobile usam a MESMA conta** (`_paradasStats` no v7,
-  `_statsParadasMob` no mobile): meta por dia + base de dias trabalhados. Mexeu
-  em um, mexa no outro — senão os dois voltam a divergir e ninguém confia em
-  nenhum. Há um teste de paridade no histórico do projeto que roda as duas
-  funções com o mesmo cenário e compara campo a campo.
+- **A conta mora em `paradas-calc.js` (`RP_PARADAS`), UMA vez.** Os dois painéis
+  carregam esse arquivo e só montam as entradas (`metaByDay`, `metaHoje`,
+  `realByDay`, `classeMap`) — `_paradasStats` (v7) e `_statsParadasMob` (mobile)
+  são adaptadores finos. **Não voltar a escrever conta de parada dentro dos
+  HTMLs**: foi a duplicação que fez os dois divergirem três vezes seguidas (base
+  de dias, meta por dia, classificação). `node paradas-calc.test.js` cobre a
+  regra e ainda falha se `pecas+=perd` ou `totMinNP+=d` reaparecer nos HTMLs.
+- **`RP_PARADAS.stats()` devolve `diag`** com as entradas que valeram: ritmo,
+  horas produtivas, dias sem meta, nº de classes carregadas, tipos tratados como
+  planejados, paradas sem fim e a base de dias. `RP_PARADAS.diagTexto(diag)`
+  vira a linha que **as duas telas mostram** — é por ela que se descobre por que
+  divergiram, sem abrir o código.
+- ⚠ `paradas-calc.js` tem `Cache-Control: must-revalidate` no `vercel.json`. Sem
+  isso um deploy poderia servir a conta antiga junto com o HTML novo.
+- **As classes de parada têm que estar carregadas nos dois.** O gerencial do
+  mobile **não** chamava `carregarTiposParada()` (só o operador e o modal
+  chamavam), então o `PAR_CLASSE_MAP_M` ficava vazio e a classificação
+  planejada/não-planejada caía na heurística por nome, enquanto o desktop usava
+  a coluna CLASSE da `TIPOS_PARADA`. Tipo marcado PLANEJADA na planilha mas com
+  nome fora de `/refei|interval|almo/` (ex.: `Parada/Café`) contava como perda
+  só no mobile.
+- **Quando os números divergirem, comparar o RITMO antes de tudo.** Os dois
+  mostram a base do cálculo na tela (`duração × N cx/h — meta do dia ÷ Xh
+  produtivas`). Ritmo diferente = meta ou horas produtivas diferentes; ritmo
+  igual com total diferente = classificação de parada ou período diferente.
 - **A base da média é DIAS TRABALHADOS, não dias com parada nem dias corridos.**
   `_diasTrabalhados(n)` conta os dias do `HISTORICO` com produção dentro dos
   últimos n dias (+ hoje, se já produziu) — sábado, domingo, feriado e parada de
@@ -114,6 +137,19 @@ via Google Apps Script (JSONP).
   (`PAR_PER_CACHE`) e o histórico (`HIST_PERD_CACHE`) — e o botão **ATUALIZAR**
   derruba os dois. **Não tirar o cache**: o refresh de 1 min refaria a leitura
   toda e a seção voltaria a piscar `CARREGANDO`.
+
+## Versão do painel / aviso de atualização (desktop, raiz)
+- `APP_VER` no topo do script do `ritmoprod_embalagem_v7.html` aparece no rodapé.
+  Ao publicar mudança na raiz, suba este número.
+- **Aqui NÃO há service worker de propósito** (ver "Instalar o app"), então a
+  checagem é direta: a cada 30 min (e ao voltar para a aba) `checarVersaoV7()`
+  relê o próprio HTML com `cache:'no-store'` e compara o `APP_VER`. Se mudou,
+  sobe a barra `#upd-bar`. É uma requisição ao próprio domínio — não encosta no
+  Sheets.
+- **Na TV o aviso não aparece** (`_naTV()`): ninguém está lá para clicar, e ela
+  já se recarrega sozinha a cada 28 min.
+- O bloco de versão fica **no início** do script, não no fim: lá embaixo, um erro
+  anterior (ex.: a Chart.js não carregar) deixava o rodapé sem a versão.
 
 ## Versão do app / aviso de atualização (mobile)
 - `APP_VER` no topo do script do `ritmoprod_mobile.html` é a versão que aparece

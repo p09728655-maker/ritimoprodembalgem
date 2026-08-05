@@ -71,6 +71,21 @@ nav{background:var(--surface);border-bottom:1px solid var(--border);display:flex
 main{flex:1;overflow:auto;min-height:0}
 .sec{display:none;padding:18px 20px}
 .sec.on{display:block}
+/* Aviso de nova versão publicada (a aba aberta continua com o HTML antigo) */
+.upd-bar{
+  position:fixed;right:16px;bottom:16px;z-index:9000;max-width:min(420px,calc(100vw - 32px));
+  display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;
+  background:var(--elevated);border:1px solid var(--acc);box-shadow:0 10px 30px rgba(0,0,0,.55);
+}
+.upd-txt{flex:1;min-width:0;font-family:var(--font-b);font-size:13px;color:var(--txt);line-height:1.3}
+.upd-txt small{display:block;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:2px}
+.upd-btn{
+  flex-shrink:0;padding:8px 14px;border:none;border-radius:6px;background:var(--acc);color:#111;
+  font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;
+}
+.upd-btn:hover{opacity:.85}
+.upd-x{flex-shrink:0;background:none;border:none;color:var(--txt2);font-size:18px;line-height:1;padding:0 2px;cursor:pointer}
+body.tv-fullscreen .upd-bar{display:none!important}   /* TV não tem quem clique */
 #sec-tv.on{
   display:flex;flex-direction:column;padding:0;
   height:calc(100vh - 54px - 39px - 40px); /* viewport - header - nav - footer */
@@ -1665,13 +1680,23 @@ if (_v7Instalado()) _v7EscondeBotao();
 <footer>
   <span class="ftr-hide-mobile" style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoProd</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
-  <span class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7 · 18/06/2026</span>
+  <span id="ftr-ver" class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span id="ftr-fonte" class="ftr-hide-mobile">DEMO · Carregue um arquivo Excel para dados reais</span>
   <span style="flex:1"></span>
   <span style="font-family:'Inter',var(--font-b);font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:-0.2px">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></span>
   <span class="ftr-mobile-only" id="ftr-gs-status" style="display:none;font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1px"></span>
 </footer>
+
+<!-- ═══ AVISO DE NOVA VERSÃO ═══
+     A aba aberta continua com o HTML antigo até alguém recarregar — e esta tela
+     costuma ficar dias aberta. Sem service worker de propósito (ver o comentário
+     no fim do script). -->
+<div class="upd-bar" id="upd-bar" style="display:none">
+  <div class="upd-txt" id="upd-txt">Nova versão disponível<small>recarregue para atualizar</small></div>
+  <button class="upd-btn" id="upd-btn" onclick="atualizarAppV7()">ATUALIZAR</button>
+  <button class="upd-x" onclick="adiarAtualizacaoV7()" title="Agora não">×</button>
+</div>
 
 
 <!-- ═══ MODAL CONFIGURAÇÕES ═══ -->
@@ -1816,7 +1841,79 @@ if (_v7Instalado()) _v7EscondeBotao();
   </div>
 </div>
 
+<!-- Cálculo de paradas: MESMO arquivo usado pelo mobile. Não duplicar a conta
+     aqui — foi a duplicação que fez os dois divergirem. -->
+<script src="/paradas-calc.js"></script>
 <script>
+// ════════════════════════════════════════════════
+// VERSÃO DO PAINEL
+// ════════════════════════════════════════════════
+// Aparece no rodapé e é o que o aviso de atualização compara. Ao publicar
+// mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
+// sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
+// aviso de atualização, no fim do arquivo.)
+const APP_VER   = '7.2.0';
+const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
+
+// ════════════════════════════════════════════════
+// VERSÃO / AVISO DE ATUALIZAÇÃO (raiz)
+// ════════════════════════════════════════════════
+// Aqui NÃO dá para usar service worker: ele cachearia as chamadas JSONP do Apps
+// Script e a TV mostraria produção antiga como se fosse a de agora. Então a
+// checagem é direta — relê o próprio HTML sem cache e compara o APP_VER.
+// Barato: uma requisição ao mesmo domínio a cada 30 min, sem tocar no Sheets.
+function _naTV(){
+  const at=document.querySelector('.sec.on');
+  return (at && at.id==='sec-tv') || document.body.classList.contains('tv-fullscreen');
+}
+function mostrarAvisoAtualizacaoV7(nova){
+  const b=document.getElementById('upd-bar'); if(!b || b.dataset.adiado==='1') return;
+  // Na TV não aparece: ninguém está lá para clicar, e ela se recarrega sozinha
+  // a cada 28 min — pega a versão nova sem ajuda.
+  if(_naTV()) return;
+  const t=document.getElementById('upd-txt');
+  if(t) t.innerHTML=`Nova versão disponível${nova?` (v${nova})`:''}<small>rodando a v${APP_VER} — recarregue para atualizar</small>`;
+  b.style.display='flex';
+}
+function adiarAtualizacaoV7(){
+  const b=document.getElementById('upd-bar');
+  if(b){ b.dataset.adiado='1'; b.style.display='none'; }
+}
+function atualizarAppV7(){
+  const btn=document.getElementById('upd-btn');
+  if(btn){ btn.textContent='...'; btn.disabled=true; }
+  location.reload();
+}
+// Lê o APP_VER do HTML publicado agora (sem cache) e compara com o que está
+// rodando nesta aba.
+async function checarVersaoV7(){
+  try{
+    const r=await fetch(location.pathname+'?_v='+Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const html=await r.text();
+    const m=html.match(/const\s+APP_VER\s*=\s*'([^']+)'/);
+    if(m && m[1] && m[1]!==APP_VER) mostrarAvisoAtualizacaoV7(m[1]);
+  }catch(e){ /* offline / rede ruim: tenta de novo no próximo ciclo */ }
+}
+// Versão no rodapé + aviso de "atualizado" na 1ª abertura depois de subir.
+(function initVersaoV7(){
+  const el=document.getElementById('ftr-ver');
+  if(el) el.textContent='v'+APP_VER;
+  let ant=null;
+  try{ ant=localStorage.getItem(APP_VER_K); localStorage.setItem(APP_VER_K, APP_VER); }catch(e){}
+  if(ant && ant!==APP_VER && !_naTV()){
+    const bar=document.getElementById('upd-bar'), txt=document.getElementById('upd-txt'), btn=document.getElementById('upd-btn');
+    if(bar&&txt&&btn){
+      txt.innerHTML=`Painel atualizado para a v${APP_VER}<small>versão anterior: v${ant}</small>`;
+      btn.textContent='OK'; btn.onclick=adiarAtualizacaoV7;
+      bar.style.display='flex';
+      setTimeout(adiarAtualizacaoV7, 8000);
+    }
+  }
+  setInterval(()=>{ if(document.visibilityState==='visible') checarVersaoV7(); }, 30*60*1000);
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') checarVersaoV7(); });
+})();
+
 // ════════════════════════════════════════════════
 // ESTADO
 // ════════════════════════════════════════════════
@@ -5309,12 +5406,8 @@ async function _carregarClassesPar(){
     PAR_CLASSE_LOADED=true;
   }catch(e){}
 }
-function _ehPlanejada(tipo){
-  const c=PAR_CLASSE_MAP[String(tipo||'').trim()];
-  if(c==='PLANEJADA') return true;
-  if(c==='NAO') return false;
-  return PAR_PLANEJADA.test(tipo||'');   // reserva: heurística por nome
-}
+function _ehPlanejada(tipo){ return RP_PARADAS.ehPlanejada(tipo, PAR_CLASSE_MAP); }
+
 
 // Paradas de TROCA/SETUP são INERENTES (troca de produto, troca de plástico…):
 // não dá para eliminar; o ganho vem de reduzir o TEMPO (troca rápida / SMED).
@@ -5338,12 +5431,9 @@ function _initFiltroParadas(){
   const eD=document.getElementById('par-de');
   if(eD && !eD.value){ _filtroParadas(1); }   // padrão: HOJE (dia atual)
 }
-function _durMinPar(ini,fim){
-  if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null;
-  const[h0,m0]=ini.split(':').map(Number),[h1,m1]=fim.split(':').map(Number);
-  const d=(h1*60+m1)-(h0*60+m0); return d>=0?d:null;
-}
-function _fmtMinPar(m){ if(m==null) return '—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+// Duração/formatação/classificação: implementação ÚNICA no paradas-calc.js
+function _durMinPar(ini,fim){ return RP_PARADAS.durMin(ini,fim); }
+function _fmtMinPar(m){ return RP_PARADAS.fmtMin(m); }
 
 // TAKT REAL (rodando) medido dos apontamentos, no período: caixas ÷ tempo em que a
 // linha de fato produziu (disponível − paradas não programadas). HOJE usa o
@@ -5381,68 +5471,32 @@ function _taktRealPeriodo(porDia, horasProd, dDe, dAte, realByDay){
 // só pelos "dias que tiveram parada", esse dia sumia e a disponibilidade caía
 // sozinha (medido: 82,2% contra 90% em 30 dias). Devolve 0 sem histórico, e aí
 // quem chama cai na base antiga.
-function _diasTrabalhadosPar(realByDay, de, ate){
-  if(!realByDay) return 0;
-  const n=d=>{const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
-  const nDe=de?n(de):0, nAte=ate?n(ate):0;
-  let c=0;
-  Object.keys(realByDay).forEach(d=>{
-    const x=n(d); if(!x) return;
-    if(nDe&&x<nDe) return;
-    if(nAte&&x>nAte) return;
-    if((parseFloat(realByDay[d])||0)>0) c++;
-  });
-  return c;
-}
+function _diasTrabalhadosPar(realByDay, de, ate){ return RP_PARADAS.diasTrabalhados(realByDay, de, ate); }
+
 
 // opts.realByDay + opts.de/ate: base de dias trabalhados (ver acima). Sem eles o
 // cálculo continua igual ao antigo.
 function _paradasStats(paradas, metaByDay, opts){
-  metaByDay=metaByDay||{}; opts=opts||{};
-  const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
-  const pesoMedio=(PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0;
-  const hoje=hojeStr();
-  // Peças perdidas = ritmo BASE do dia (nunca a meta COM atraso). O atraso é
-  // backlog de dias anteriores — não é o ritmo que a linha teria produzido
-  // durante a parada; somá-lo inflava a perda (~2x em dias com muito atraso).
-  // Base de hoje = meta da HORA_A_HORA (o mesmo 156/h que o operador vê) →
-  // programado de hoje sem atraso → soma dos slots lançados → CFG.metaDia.
+  opts=opts||{};
+  // Meta de HOJE (hoje ainda não está no HISTORICO): meta da HORA_A_HORA — o
+  // mesmo valor que o operador vê nos slots — depois o programado sem atraso,
+  // depois a soma dos slots lançados. O atraso acumulado NUNCA entra: é backlog
+  // de outros dias, não o ritmo que a linha teria durante a parada.
   const _progP=PONTOS_DIA.programacao||{};
-  metaByDay[hoje]=META_HORA_A_HORA||(_progP.programadoHoje||0)
+  const metaHoje=META_HORA_A_HORA||(_progP.programadoHoje||0)
     ||getDadosHoje().reduce((s,d)=>s+(d.metaHora||0),0)||CFG.metaDia;
-  let totMin=0,totMinNP=0,pecas=0,nParadas=0;
-  const porTipo={},porDia={},diasSet=new Set();
-  (paradas||[]).forEach(p=>{
-    const d=_durMinPar(p.ini,p.fim); if(d==null) return;
-    nParadas++; diasSet.add(p.data); totMin+=d;
-    const planej=_ehPlanejada(p.tipo);
-    const metaHora=(metaByDay[p.data]||CFG.metaDia)/horasProd;
-    const perd=planej?0:Math.round(d/60*metaHora);
-    if(!planej){ totMinNP+=d; pecas+=perd; }
-    const k=p.tipo||'—';
-    if(!porTipo[k]) porTipo[k]={qtd:0,min:0,perd:0,planej};
-    porTipo[k].qtd++; porTipo[k].min+=d; porTipo[k].perd+=perd;
-    if(!porDia[p.data]) porDia[p.data]={min:0,minNP:0,perd:0};
-    porDia[p.data].min+=d; porDia[p.data].perd+=perd;
-    if(!planej) porDia[p.data].minNP+=d;
+  return RP_PARADAS.stats(paradas, {
+    cfg: CFG,
+    metaByDay: metaByDay||{},
+    metaHoje: metaHoje,
+    hoje: hojeStr(),
+    classeMap: PAR_CLASSE_MAP,
+    realByDay: opts.realByDay,
+    de: opts.de, ate: opts.ate,
+    pesoMedio: (PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0
   });
-  const nDiasParada=diasSet.size||1;
-  const nDiasTrab=_diasTrabalhadosPar(opts.realByDay, opts.de, opts.ate);
-  const baseTrab=nDiasTrab>0;
-  const nDias=baseTrab?nDiasTrab:nDiasParada;
-  const tempoDispMin=nDias*horasProd*60;
-  const dispon=tempoDispMin>0?Math.max(0,(tempoDispMin-totMinNP)/tempoDispMin*100):0;
-  const pctPerd=tempoDispMin>0?(totMinNP/tempoDispMin*100):0;
-  const tMed=nParadas>0?Math.round(totMin/nParadas):0;
-  // Ritmo/takt de referência: derivado da própria perda (garante coerência com o
-  // número exibido) e, sem paradas, da meta base do dia ÷ horas produtivas.
-  const ritmoHora=totMinNP>0?Math.round(pecas/(totMinNP/60)):Math.round((metaByDay[hoje]||CFG.metaDia)/horasProd);
-  const taktSeg=ritmoHora>0?Math.round(3600/ritmoHora):0;
-  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
-  const mediaPerd=nDias>0?Math.round(pecas/nDias):0;
-  return {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd:Math.round(pecas*pesoMedio),
-          nParadas,nDias,nDiasParada,baseTrab,mediaPerd,dispon,pctPerd,tMed,ritmoHora,taktSeg,tipos,porTipo,porDia};
 }
+
 
 // ── Guarda de reentrância ──
 // Cada render dispara 2 getParadasPeriodo + o histórico. Se o ciclo demora mais
@@ -5728,7 +5782,9 @@ async function _renderAnaliseParadasCore(opts){
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · Disponibilidade e média/dia dividem por '+nDias+' '+(baseTrab?'dia(s) TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'dia(s) com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  // A 1ª parte é o MESMO texto que o mobile mostra (RP_PARADAS.diagTexto), para
+  // dar pra comparar as duas telas batendo o olho quando os números discordarem.
+  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+nDias+' '+(baseTrab?'dia(s) TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'dia(s) com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
@@ -6734,6 +6790,7 @@ const _cicloTV = (function() {
   reiniciar();
   return { reiniciar, togglePause: _togglePause, proxima: () => _passo(1), anterior: () => _passo(-1), entrar: _entrar };
 })();
+
 
 </script>
 </body>
