@@ -110,6 +110,9 @@ body.ger-hist .ger-live-only{display:none!important}
 .kpi-grid.par-atualizando{opacity:.45;transition:opacity .18s}
 .par-filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .par-filtros .par-q{font-size:10px;padding:4px 12px}
+/* Período ativo destacado — sem isso não dava para saber qual atalho valia */
+.par-filtros .par-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+.par-per-lbl{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px;text-transform:none;margin-left:10px}
 .par-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:900px){.par-2col{grid-template-columns:1fr}}
 .par-resumo{display:flex;align-items:center;gap:18px;padding:8px 4px}
@@ -1542,20 +1545,21 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span class="tbl-hdr-ttl">⏸ ANÁLISE DE PARADAS</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
-      <input type="date" id="par-de" onchange="renderAnaliseParadas()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <input type="date" id="par-de" onchange="_parMarcaPreset(null);renderAnaliseParadas()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <span style="color:var(--txt2)">–</span>
-      <input type="date" id="par-ate" onchange="renderAnaliseParadas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <input type="date" id="par-ate" onchange="_parMarcaPreset(null);renderAnaliseParadas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO</button>
     </div>
   </div>
 
-  <!-- Atalhos de período + filtro de classe -->
+  <!-- Atalhos de período + filtro de classe. data-per marca o botão ativo;
+       editar as datas na mão apaga a marcação (período customizado). -->
   <div class="par-filtros">
-    <button class="btn btn-ghost par-q" onclick="_parQuick(0)">HOJE</button>
-    <button class="btn btn-ghost par-q" onclick="_parQuick(1)">ONTEM</button>
-    <button class="btn btn-ghost par-q" onclick="_filtroParadas(7)">7 DIAS</button>
-    <button class="btn btn-ghost par-q" onclick="_filtroParadas(30)">30 DIAS</button>
-    <button class="btn btn-ghost par-q" onclick="_filtroParadas(30)">MÊS</button>
+    <button class="btn btn-ghost par-q" data-per="hoje"  onclick="_parQuick(0,'hoje')">HOJE</button>
+    <button class="btn btn-ghost par-q" data-per="ontem" onclick="_parQuick(1,'ontem')">ONTEM</button>
+    <button class="btn btn-ghost par-q" data-per="7"     onclick="_filtroParadas(7,'7')">7 DIAS</button>
+    <button class="btn btn-ghost par-q" data-per="30"    onclick="_filtroParadas(30,'30')">30 DIAS</button>
+    <button class="btn btn-ghost par-q" data-per="mes"   onclick="_parMesAtual()">MÊS</button>
     <div style="flex:1"></div>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CLASSE</span>
     <select id="par-classe" class="frm-inp" onchange="renderAnaliseParadas()" style="padding:4px 8px;font-size:11px">
@@ -1566,7 +1570,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   </div>
 
   <!-- 1 · Visão geral do período (números-chave) -->
-  <div class="par-sec"><span class="par-sec-n">1</span> VISÃO GERAL DO PERÍODO <span id="par-upd" class="par-upd"></span></div>
+  <div class="par-sec"><span class="par-sec-n">1</span> VISÃO GERAL DO PERÍODO <span id="par-per-lbl" class="par-per-lbl"></span> <span id="par-upd" class="par-upd"></span></div>
   <div class="kpi-grid c9" id="par-kpi-grid"></div>
 
   <!-- 2 · Quanto a linha ficou parada e quem causou -->
@@ -1856,7 +1860,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.3';
+const APP_VER   = '7.3.4';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5434,21 +5438,51 @@ function _ehPlanejada(tipo){ return RP_PARADAS.ehPlanejada(tipo, PAR_CLASSE_MAP)
 const PAR_TROCA = /troca|setup|regulagem|preparaç/i;
 function ehSetupParada(tipo){ return PAR_TROCA.test(String(tipo||'')); }
 
-function _filtroParadas(dias){
+// Marca o atalho ativo. null = período customizado (datas editadas na mão).
+// Atualiza o rótulo do período JUNTO — o render respeita fila/guarda de
+// reentrância e podia demorar; o rótulo tem que responder ao clique na hora.
+function _parMarcaPreset(qual){
+  document.querySelectorAll('.par-filtros .par-q').forEach(b=>
+    b.classList.toggle('on', !!qual && b.dataset.per===qual));
+  _parRotuloPeriodo(dGet('par-de'), dGet('par-ate'));
+}
+function _filtroParadas(dias, preset){
   const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
   const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
   dSet('par-de',f(de)); dSet('par-ate',f(ate));
+  _parMarcaPreset(preset||null);
   renderAnaliseParadas();
 }
-function _parQuick(diasAtras){
+function _parQuick(diasAtras, preset){
   const dt=new Date(); dt.setDate(dt.getDate()-diasAtras);
   const s=p2(dt.getDate())+'/'+p2(dt.getMonth()+1)+'/'+dt.getFullYear();
   dSet('par-de',s); dSet('par-ate',s);
+  _parMarcaPreset(preset||null);
+  renderAnaliseParadas();
+}
+// MÊS = mês corrente (dia 1 até hoje). Antes era um clone do 30 DIAS, que
+// atravessa a virada do mês — dois botões com o mesmo resultado confundiam.
+function _parMesAtual(){
+  const hj=new Date();
+  const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  dSet('par-de','01/'+p2(hj.getMonth()+1)+'/'+hj.getFullYear());
+  dSet('par-ate',f(hj));
+  _parMarcaPreset('mes');
   renderAnaliseParadas();
 }
 function _initFiltroParadas(){
   const eD=document.getElementById('par-de');
-  if(eD && !eD.value){ _filtroParadas(1); }   // padrão: HOJE (dia atual)
+  if(eD && !eD.value){ _parQuick(0,'hoje'); }   // padrão: HOJE (dia atual)
+}
+// Rótulo do período por extenso na seção 1 ("30/07 – 05/08 · 7 dias").
+function _parRotuloPeriodo(de, ate){
+  const el=document.getElementById('par-per-lbl'); if(!el) return;
+  if(!de||!ate){ el.textContent=''; return; }
+  const n=s=>{const m=String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
+  const dDe=n(de), dAte=n(ate);
+  const nd=(dDe&&dAte)?Math.round((dAte-dDe)/86400000)+1:0;
+  const curto=s=>String(s).substring(0,5);
+  el.textContent = de===ate ? '· '+de : `· ${curto(de)} – ${curto(ate)} (${nd} dias)`;
 }
 // Duração/formatação/classificação: implementação ÚNICA no paradas-calc.js
 function _durMinPar(ini,fim){ return RP_PARADAS.durMin(ini,fim); }
@@ -5581,7 +5615,8 @@ async function _renderAnaliseParadasCore(opts){
 
   let de=dGet('par-de');
   let ate=dGet('par-ate');
-  if(!de||!ate){ _filtroParadas(1); return; }   // sem filtro → HOJE
+  if(!de||!ate){ _parQuick(0,'hoje'); return; }   // sem filtro → HOJE
+  _parRotuloPeriodo(de, ate);
 
   // Refresh do MESMO período (auto-refresh / botão): mantém os números na tela e
   // só sinaliza "atualizando". Antes o grid era esvaziado a cada ciclo e a seção
