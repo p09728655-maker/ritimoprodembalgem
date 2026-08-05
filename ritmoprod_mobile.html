@@ -772,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.0';
+const APP_VER   = '1.7.1';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1388,9 +1388,32 @@ async function carregarParadasPeriodoSel(force){
 // A conta em si NÃO mora aqui — mora no RP_PARADAS, compartilhado com o
 // desktop. Este arquivo só monta as entradas. Se voltar a aparecer conta de
 // parada nestas funções, os dois painéis voltam a divergir.
-function _horasProdMob(){ return RP_PARADAS.horasProdutivas(CFG); }
-function _durMin2(ini,fim){ return RP_PARADAS.durMin(ini,fim); }
-function _fmtMin2(m){ return RP_PARADAS.fmtMin(m); }
+//
+// ⚠ GUARDA: se o /paradas-calc.js não carregou (rede caiu entre o HTML e o JS,
+// ou cache do SW ficou com o HTML novo sem o arquivo), NADA aqui pode lançar —
+// um throw dentro do render matava o resto do login gerencial (produtos,
+// paradas, histórico) e "meia tela" parava de carregar. Sem o módulo: os cards
+// de parada avisam e o script é recarregado sozinho; o resto do app segue.
+function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
+let _rpRecarregando=false;
+function _rpRecarregar(){
+  if(_rpRecarregando || _rpOk()) return;
+  _rpRecarregando=true;
+  const s=document.createElement('script');
+  s.src='/paradas-calc.js?r='+Date.now();
+  s.onload=()=>{ _rpRecarregando=false; try{ renderGerParadasResumo(); }catch(e){} };
+  s.onerror=()=>{ setTimeout(()=>{ _rpRecarregando=false; _rpRecarregar(); }, 15000); };
+  document.head.appendChild(s);
+}
+// Fallbacks locais SÓ de formatação/parse (não é a conta de perdas):
+function _horasProdMob(){ return _rpOk()?RP_PARADAS.horasProdutivas(CFG):8.8; }
+function _durMin2(ini,fim){
+  if(_rpOk()) return RP_PARADAS.durMin(ini,fim);
+  if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null;
+  const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number);
+  const d=(c*60+e)-(a*60+b); return d>=0?d:null;
+}
+function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
 
 // Meta de CADA dia: a perda de uma parada de 20/07 usa a meta de 20/07, não a
 // de hoje. Usando só CFG.metaDia o mobile dava 3.780 cx onde o desktop dava
@@ -1419,6 +1442,7 @@ function _realByDayMob(){
 // periodoDias: 0/ausente = só hoje; 7/15/30 = últimos N dias (define o intervalo
 // usado para contar os dias trabalhados).
 function _statsParadasMob(lista, periodoDias){
+  if(!_rpOk()){ _rpRecarregar(); return null; }   // sem o módulo: quem chama trata
   const n=parseInt(periodoDias,10)||0;
   const de=n>0?_dataMenosDias(n-1):hojeStr();
   return RP_PARADAS.stats(lista, {
@@ -1449,6 +1473,11 @@ function renderGerParadasResumo(){
   // parada: sábado/domingo/feriado ficam de fora sozinhos, e o dia trabalhado
   // que rodou sem parar entra na conta puxando a média pra baixo — como deve.
   const st=_statsParadasMob(lista, ehHoje?0:parseInt(PAR_PER_SEL,10));
+  if(st===null){   // módulo de cálculo não carregou; recarrega sozinho
+    kg.innerHTML='<div class="loading" style="grid-column:1/-1">RECARREGANDO MÓDULO DE CÁLCULO…</div>';
+    if(card) card.style.display='none';
+    return;
+  }
   const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
   const rotDias=st.baseTrab?`${st.nDias} dia(s) trabalhados`:`${st.nDias} dia(s) com parada`;
   const kpi4=ehHoje
@@ -1890,13 +1919,19 @@ function entrar(tipo){
     // no cold start — o lerSheets estourava e histórico/pontos/médias nunca
     // carregavam ("não está carregando todas as informações").
     (async ()=>{
+      // Segura o ciclo automático enquanto a carga inicial roda: o tick 0 (90s
+      // pós-login) disparava as mesmas chamadas em paralelo com a cadeia ainda
+      // em voo — dobrando a fila justamente com o Apps Script frio.
+      _refreshRodando = true;
       const passo=async(nome,fn)=>{ try{ return await fn(); }catch(e){ console.warn('carga inicial · '+nome+':', e.message); } };
-      // lerSheets com retry: é o cold start que ela paga pelos demais.
-      for(let i=1;i<=3;i++){ if(await passo('lerSheets',lerSheets)!==undefined||DADOS.length) break; await new Promise(r=>setTimeout(r,1500*i)); }
-      renderGerProduto();
-      const dias=await passo('historico',lerHistorico); if(dias) renderHistoricoComDados(dias);
-      await passo('pontos',lerPontosDia); renderGerencial();
-      const okM=await passo('medias',lerMediaHoras); if(okM) renderGerencial();
+      try{
+        // lerSheets com retry: é o cold start que ela paga pelos demais.
+        for(let i=1;i<=3;i++){ if(await passo('lerSheets',lerSheets)!==undefined||DADOS.length) break; await new Promise(r=>setTimeout(r,1500*i)); }
+        renderGerProduto();
+        const dias=await passo('historico',lerHistorico); if(dias) renderHistoricoComDados(dias);
+        await passo('pontos',lerPontosDia); renderGerencial();
+        const okM=await passo('medias',lerMediaHoras); if(okM) renderGerencial();
+      }finally{ _refreshRodando = false; }
     })();
   }
 }
@@ -1926,6 +1961,7 @@ let _refreshRodando = false;
 
 function iniciarRefreshAuto(){
   pararRefreshAuto();
+  _refreshCiclo = 0;   // sair/entrar recomeça o escalonamento do zero
   _refreshTimer = setInterval(cicloRefresh, REFRESH_MS);
 }
 
@@ -1949,6 +1985,9 @@ async function cicloRefresh(){
       await passo(async()=>renderHistoricoComDados(await lerHistorico()));
       await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
       await passo(()=>carregarParadasPeriodoSel());   // respeita o cache
+      // Médias por horário (alerta de hora fraca ⚠): se a carga inicial falhou,
+      // sem isto elas nunca mais chegavam na sessão.
+      if(!Object.keys(MEDIA_HORAS).length) await passo(async()=>{ if(await lerMediaHoras()) renderGerencial(); });
     }
   }finally{ _refreshRodando = false; }
 }
@@ -2333,6 +2372,7 @@ async function carregarPerdasHistorico(periodo, datas){
 
   const pintar=lista=>{
     const el=document.getElementById('hist-rz-perd-val'); if(!el) return;
+    if(!_rpOk()){ _rpRecarregar(); el.textContent='recarregando…'; return; }
     const set=new Set(datas);
     // Base = os próprios dias do histórico (dias com turno fechado = dias
     // trabalhados), a mesma base do "Média / dia" de produção logo acima. Aqui

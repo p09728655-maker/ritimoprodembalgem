@@ -110,6 +110,19 @@ via Google Apps Script (JSONP).
   divergiram, sem abrir o código.
 - ⚠ `paradas-calc.js` tem `Cache-Control: must-revalidate` no `vercel.json`. Sem
   isso um deploy poderia servir a conta antiga junto com o HTML novo.
+- **Nada de paradas pode LANÇAR se o `paradas-calc.js` não carregar** (rede caiu
+  entre o HTML e o JS, deploy parcial, `file://`). Um throw dentro do render
+  matava o resto do login gerencial do mobile (hora a hora inclusive) e deixava
+  a aba PARADAS do desktop presa em "CARREGANDO…". Os pontos de entrada têm a
+  guarda `_rpOk()`/`_rpRecarregar()` (mostra "recarregando módulo" e busca o
+  arquivo de novo sozinho, retry de 15s). O `sw-mobile.js` **pré-cacheia** o
+  arquivo na instalação e devolve **503 explícito** em cache miss (antes
+  `respondWith(undefined)` derrubava a requisição com erro opaco).
+- **Chamadas JSONP de paradas: SEQUENCIAL com retry, nunca `Promise.all`.** O
+  Apps Script atende uma execução por vez — em paralelo as chamadas só se
+  enfileiram lá e, no cold start, estouram o timeout de 25s todas juntas (era o
+  "NÃO CARREGOU" da aba PARADAS). A 1ª chamada paga o cold start com até 3
+  tentativas e backoff; as secundárias vão depois, com o servidor quente.
 - **As classes de parada têm que estar carregadas nos dois.** O gerencial do
   mobile **não** chamava `carregarTiposParada()` (só o operador e o modal
   chamavam), então o `PAR_CLASSE_MAP_M` ficava vazio e a classificação

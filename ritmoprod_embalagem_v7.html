@@ -1852,7 +1852,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.0';
+const APP_VER   = '7.3.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5220,6 +5220,7 @@ ${(()=>{
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
 async function gerarRelatorioParadas(){
+  if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
   const win=window.open('','_blank','width=1040,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório de paradas...</p></body></html>');
@@ -5518,6 +5519,23 @@ function _paradasStats(paradas, metaByDay, opts){
 // com um ciclo em andamento simplesmente desiste (o próximo tick pega); ação do
 // usuário (mudou período/classe) fica pendente e roda assim que o ciclo termina.
 let _parBusy=false, _parPend=null;
+// ── Guarda do módulo de cálculo (paradas-calc.js) ──────────────────────────
+// Se o arquivo não carregou (deploy parcial, rede da fábrica, file://), NADA
+// de paradas pode lançar — a aba ficava presa em "CARREGANDO…" e o relatório
+// em "⏳" sem mensagem nenhuma. Sem o módulo: avisa e recarrega sozinho.
+function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
+let _rpRecarregando=false;
+function _rpRecarregar(cb){
+  if(_rpOk()){ if(cb) cb(); return; }
+  if(_rpRecarregando) return;
+  _rpRecarregando=true;
+  const s=document.createElement('script');
+  s.src='/paradas-calc.js?r='+Date.now();
+  s.onload=()=>{ _rpRecarregando=false; if(cb) cb(); };
+  s.onerror=()=>{ setTimeout(()=>{ _rpRecarregando=false; _rpRecarregar(cb); }, 15000); };
+  document.head.appendChild(s);
+}
+
 async function renderAnaliseParadas(opts){
   if(_parBusy){ if(!(opts&&opts.silent)) _parPend=opts||{}; return; }
   _parBusy=true;
@@ -5545,6 +5563,12 @@ function _parUpd(txt,cls){
 }
 
 async function _renderAnaliseParadasCore(opts){
+  if(!_rpOk()){
+    const g=document.getElementById('par-kpi-grid');
+    if(g) g.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">RECARREGANDO MÓDULO DE CÁLCULO…</div><div class="kpi-sub">o arquivo paradas-calc.js não veio no carregamento — buscando de novo sozinho</div></div>';
+    _rpRecarregar(()=>renderAnaliseParadas(opts));
+    return;
+  }
   const grid=document.getElementById('par-kpi-grid');
   if(!grid) return;
   if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
