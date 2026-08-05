@@ -73,10 +73,19 @@ via Google Apps Script (JSONP).
 - **Resumo do HISTÓRICO** ganhou o bloco **CAIXAS PERDIDAS EM PARADAS**, que
   segue o filtro 7/15/30 que já existia ali (e que **exclui hoje** — por isso o
   número dele não bate com o do card de PARADAS, que inclui hoje).
-- **Como o número sai** (igual ao desktop): `cx = duração × (metaDia ÷ horas
-  produtivas do turno)`, só para paradas **não planejadas** (refeição/intervalo/
-  almoço, ou classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em
-  andamento (sem FIM) não entra** — sem fim não há duração.
+- **Como o número sai:** `cx = duração × (meta DAQUELE DIA ÷ horas produtivas do
+  turno)`, só para paradas **não planejadas** (refeição/intervalo/almoço, ou
+  classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em andamento (sem
+  FIM) não entra** — sem fim não há duração.
+  - **É a meta de cada dia, não a de hoje.** A perda de uma parada de 20/07 usa a
+    meta de 20/07 (`metaByDay`, vindo do `HISTORICO`); hoje usa a meta da
+    `HORA_A_HORA`. Usando só `CFG.metaDia` para tudo, o mobile dava **3.780** cx
+    onde o desktop dava **3.897** no mesmo período de 30 dias.
+- **Desktop e mobile usam a MESMA conta** (`_paradasStats` no v7,
+  `_statsParadasMob` no mobile): meta por dia + base de dias trabalhados. Mexeu
+  em um, mexa no outro — senão os dois voltam a divergir e ninguém confia em
+  nenhum. Há um teste de paridade no histórico do projeto que roda as duas
+  funções com o mesmo cenário e compara campo a campo.
 - **A base da média é DIAS TRABALHADOS, não dias com parada nem dias corridos.**
   `_diasTrabalhados(n)` conta os dias do `HISTORICO` com produção dentro dos
   últimos n dias (+ hoje, se já produziu) — sábado, domingo, feriado e parada de
@@ -89,6 +98,11 @@ via Google Apps Script (JSONP).
     227 cx/dia na base errada.
   - No **HISTÓRICO** a base são os próprios dias da lista (dias com turno
     fechado), a mesma do "Média / dia" de produção logo acima.
+  - **No desktop é a mesma coisa** (`_diasTrabalhadosPar`, a partir do
+    `realByDay`): a aba PARADAS mostrava 82,2% de disponibilidade em 30 dias
+    dividindo por 14 dias com parada; com os 22 dias trabalhados dá 90%, igual
+    ao mobile. Os rótulos dizem "dia(s) trabalhados" ou "dia(s) com parada" para
+    deixar claro qual base está valendo.
   - Se o histórico ainda não carregou, `_diasTrabalhados` devolve 0 e a conta cai
     no antigo "dias com parada" — o rótulo do card diz qual base está valendo.
 - **Detalhe recolhido:** top ofensores + comparativo + lista ficam atrás do botão

@@ -5147,7 +5147,7 @@ async function gerarRelatorioParadas(){
   if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
   const metaByDay=_hist.m, realByDay=_hist.r;
-  const st=_paradasStats(paradas, metaByDay);
+  const st=_paradasStats(paradas, metaByDay, {realByDay, de, ate});
   // TAKT ideal × real (mesmos cálculos da aba PARADAS)
   const _rpd=de.split('/').map(Number), _rpa=ate.split('/').map(Number);
   const _rDe=new Date(_rpd[2],_rpd[1]-1,_rpd[0]), _rAte=new Date(_rpa[2],_rpa[1]-1,_rpa[0]);
@@ -5375,8 +5375,30 @@ function _taktRealPeriodo(porDia, horasProd, dDe, dAte, realByDay){
 // Fonte ÚNICA de cálculo das estatísticas de parada (usada pela aba E pelo
 // relatório, p/ ficarem idênticos). Peças perdidas = duração × (meta do dia ÷
 // horas produtivas). Refeição/intervalo/almoço = planejada (não conta perda).
-function _paradasStats(paradas, metaByDay){
-  metaByDay=metaByDay||{};
+// Dias TRABALHADOS no período: os que têm produção lançada (realByDay vem do
+// HISTORICO + hoje). É a base honesta da disponibilidade — o dia trabalhado que
+// rodou SEM parada esteve 100% disponível e tem que entrar na conta. Dividindo
+// só pelos "dias que tiveram parada", esse dia sumia e a disponibilidade caía
+// sozinha (medido: 82,2% contra 90% em 30 dias). Devolve 0 sem histórico, e aí
+// quem chama cai na base antiga.
+function _diasTrabalhadosPar(realByDay, de, ate){
+  if(!realByDay) return 0;
+  const n=d=>{const m=String(d).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0;};
+  const nDe=de?n(de):0, nAte=ate?n(ate):0;
+  let c=0;
+  Object.keys(realByDay).forEach(d=>{
+    const x=n(d); if(!x) return;
+    if(nDe&&x<nDe) return;
+    if(nAte&&x>nAte) return;
+    if((parseFloat(realByDay[d])||0)>0) c++;
+  });
+  return c;
+}
+
+// opts.realByDay + opts.de/ate: base de dias trabalhados (ver acima). Sem eles o
+// cálculo continua igual ao antigo.
+function _paradasStats(paradas, metaByDay, opts){
+  metaByDay=metaByDay||{}; opts=opts||{};
   const horasProd=Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60);
   const pesoMedio=(PONTOS_DIA.caixas>0)?(PONTOS_DIA.pesoKg/PONTOS_DIA.caixas):0;
   const hoje=hojeStr();
@@ -5404,7 +5426,10 @@ function _paradasStats(paradas, metaByDay){
     porDia[p.data].min+=d; porDia[p.data].perd+=perd;
     if(!planej) porDia[p.data].minNP+=d;
   });
-  const nDias=diasSet.size||1;
+  const nDiasParada=diasSet.size||1;
+  const nDiasTrab=_diasTrabalhadosPar(opts.realByDay, opts.de, opts.ate);
+  const baseTrab=nDiasTrab>0;
+  const nDias=baseTrab?nDiasTrab:nDiasParada;
   const tempoDispMin=nDias*horasProd*60;
   const dispon=tempoDispMin>0?Math.max(0,(tempoDispMin-totMinNP)/tempoDispMin*100):0;
   const pctPerd=tempoDispMin>0?(totMinNP/tempoDispMin*100):0;
@@ -5414,8 +5439,9 @@ function _paradasStats(paradas, metaByDay){
   const ritmoHora=totMinNP>0?Math.round(pecas/(totMinNP/60)):Math.round((metaByDay[hoje]||CFG.metaDia)/horasProd);
   const taktSeg=ritmoHora>0?Math.round(3600/ritmoHora):0;
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
+  const mediaPerd=nDias>0?Math.round(pecas/nDias):0;
   return {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd:Math.round(pecas*pesoMedio),
-          nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,tipos,porTipo,porDia};
+          nParadas,nDias,nDiasParada,baseTrab,mediaPerd,dispon,pctPerd,tMed,ritmoHora,taktSeg,tipos,porTipo,porDia};
 }
 
 // ── Guarda de reentrância ──
@@ -5506,7 +5532,7 @@ async function _renderAnaliseParadasCore(opts){
   const _filtClasse=arr=>!classe?(arr||[]):(arr||[]).filter(p=>{const pl=_ehPlanejada(p.tipo); return classe==='pl'?pl:!pl;});
   const parF=_filtClasse(paradas);
   // Cálculo unificado (mesma fonte do relatório) + período anterior p/ comparativo
-  const st=_paradasStats(parF, metaByDay);
+  const st=_paradasStats(parF, metaByDay, {realByDay, de, ate});
   // DIA EM ANDAMENTO: corta o período anterior no MESMO horário de agora. Sem isto,
   // o dia parcial de hoje sempre "ganha" do dia inteiro de ontem nos totais que só
   // crescem (tempo parado, peças, peso, nº paradas) — a seta fica enganosa. Só o dia
@@ -5529,8 +5555,8 @@ async function _renderAnaliseParadasCore(opts){
       return p;
     }).filter(Boolean);
   }
-  const stPrev=_paradasStats(_filtClasse(prevCmp), Object.assign({}, metaByDay));
-  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
+  const stPrev=_paradasStats(_filtClasse(prevCmp), Object.assign({}, metaByDay), {realByDay, de:_fdt(_pDe), ate:_fdt(_pAte)});
+  const {horasProd,pesoMedio,totMin,totMinNP,pecas,pesoPerd,nParadas,nDias,baseTrab,mediaPerd,dispon,pctPerd,tMed,ritmoHora,taktSeg,porTipo,porDia}=st;
   const corDisp=dispon>=90?'ok':dispon>=80?'warn':'red';
   const _ti=_taktIdeal(horasProd);                 // takt IDEAL (referência)
   const _alvoRef=_ti.ritmoHora||ritmoHora;          // ritmo ideal p/ comparar o real
@@ -5555,10 +5581,10 @@ async function _renderAnaliseParadasCore(opts){
   }
 
   const kpis=[
-    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s)`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
+    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s) ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
-    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:'estimativa (caixas)',d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa (caixas) · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
@@ -5702,7 +5728,7 @@ async function _renderAnaliseParadasCore(opts){
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
-  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  if(met) met.textContent='Peças perdidas = duração × ritmo base da meta ('+fmtN(ritmoHora)+' cx/h = meta do dia SEM atraso ÷ '+horasProd.toFixed(1)+'h). O atraso acumulado NÃO entra (é backlog de outros dias). Refeição/intervalo/almoço = PROGRAMADAS, fora da perda. · Disponibilidade e média/dia dividem por '+nDias+' '+(baseTrab?'dia(s) TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'dia(s) com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──

@@ -767,7 +767,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.3.0';
+const APP_VER   = '1.4.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1399,17 +1399,33 @@ async function carregarParadasPeriodoSel(force){
 function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
 function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
 function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+// Meta de CADA dia (mesma fonte do desktop): a perda de uma parada de 20/07 tem
+// que usar a meta de 20/07, não a de hoje. Usando só CFG.metaDia o mobile dava
+// 3.780 cx onde o desktop dava 3.897 no mesmo período.
+function _metaByDayMob(){
+  const m={};
+  (HIST_DIAS_ALL||[]).forEach(d=>{ const v=parseFloat(d.meta)||0; if(d.data&&v>0) m[d.data]=v; });
+  // Hoje ainda não está no HISTORICO: usa a meta da HORA_A_HORA (o mesmo valor
+  // que o operador vê nos slots), como o desktop faz.
+  const hj=hojeStr();
+  const metaSlots=DADOS.filter(d=>d.data===hj).reduce((s,d)=>s+(d.metaHora||0),0);
+  m[hj]=metaSlots||CFG.metaDia||0;
+  return m;
+}
+
 // nDiasBase: base de dias para a média/dia e para a disponibilidade. Passe os
 // DIAS TRABALHADOS do período — sem isso a conta divide por "dias que tiveram
 // parada", e um dia trabalhado sem nenhuma parada (o melhor dia) sumiria da
 // média, empurrando o número pra cima.
 function _statsParadasMob(lista, nDiasBase){
-  const horasProd=_horasProdMob(); const metaHora=(CFG.metaDia||0)/horasProd;
+  const horasProd=_horasProdMob();
+  const metaByDay=_metaByDayMob();
   let totMin=0,totMinNP=0,pecas=0,n=0; const porTipo={},dias=new Set();
   (lista||[]).forEach(p=>{
     const d=_durMin2(p.ini,p.fim); if(d==null) return;
     n++; dias.add(p.data); totMin+=d;
     const planej=_ehPlanejadaM(p.tipo);
+    const metaHora=(metaByDay[p.data]||CFG.metaDia||0)/horasProd;
     const perd=planej?0:Math.round(d/60*metaHora);
     if(!planej){ totMinNP+=d; pecas+=perd; }
     const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
