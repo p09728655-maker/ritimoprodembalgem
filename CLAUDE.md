@@ -237,9 +237,17 @@ via Google Apps Script (JSONP).
     (`lerSheets → lerHistorico → lerPontosDia → lerMediaHoras`); antes o
     `getHistory` saía 2× porque o `renderHistorico()` do callback refazia o
     `lerHistorico()` que já estava em voo.
-- **Ainda por fazer (exige re-deploy manual do `.gs`):** `CacheService` de 30-60s
-  nas leituras, memoizar `lerCatalogoProdutos()` dentro da execução e ler só as
-  últimas linhas da `PARADAS` em vez da aba toda.
+- **Backend v4.9 (`.gs`) tem cache de leitura** (`CACHE_TTL_LEITURA`, 20s–5min
+  por ação) com **invalidação por geração**: qualquer gravação (app ou edição
+  manual via `onEdit`) troca `rp_gen` e órfã todas as entradas — o operador
+  nunca vê dado velho depois de salvar. O `callback` JSONP fica fora da chave;
+  erro não se cacheia; resposta >100KB só deixa de ser cacheada.
+  `lerCatalogoProdutos()` é memoizado dentro da execução (o `getPontosDia` lia o
+  catálogo 3×). `instalarGatilhoAquecimento()` (rodar 1× no editor) cria gatilho
+  de 5 min contra cold start — reduz, não elimina.
+  ⚠ Tudo isso só vale **depois de colar no editor do Apps Script e re-deployar**.
+- **Ainda por fazer (exige re-deploy manual do `.gs`):** ler só as últimas
+  linhas da `PARADAS` em vez da aba toda.
 
 ## Notas / armadilhas conhecidas
 - **Coluna MOTIVO do relatório de paradas**: é o texto livre que o operador digita
