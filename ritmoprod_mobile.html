@@ -271,6 +271,14 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .par-comp{display:flex;flex-wrap:wrap;gap:2px 10px;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
 .par-item2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-top:0.5px solid var(--border);font-size:12px}
 .par-item2-dt{font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:1px}
+.par-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:none;border:none;padding:2px 0;cursor:pointer;color:var(--txt2);
+  font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+}
+.par-toggle:active{opacity:.6}
+.par-toggle-ico{font-size:12px;color:var(--acc);transition:transform .15s}
+.par-toggle.aberto .par-toggle-ico{transform:rotate(180deg)}
 /* Aviso de nova versão do app (PWA instalado só troca o HTML ao recarregar) */
 .upd-bar{
   position:fixed;left:10px;right:10px;z-index:9000;
@@ -540,9 +548,16 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       </select>
     </div>
     <div class="par-mini-grid" id="ger-par-kpis"></div>
+    <!-- Detalhe (top ofensores + lista) nasce recolhido: com 15/30 dias a lista
+         empurrava a tabela hora a hora e o histórico pra muito longe. -->
     <div class="card" id="ger-par-card" style="margin-top:10px;display:none">
-      <div id="ger-par-extra"></div>
-      <div id="ger-par-lista"></div>
+      <button class="par-toggle" id="ger-par-toggle" onclick="alternarDetalheParadas()">
+        <span id="ger-par-toggle-txt">VER DETALHES</span><span class="par-toggle-ico" id="ger-par-toggle-ico">▾</span>
+      </button>
+      <div id="ger-par-det" style="display:none">
+        <div id="ger-par-extra"></div>
+        <div id="ger-par-lista"></div>
+      </div>
     </div>
 
     <!-- Tabela hora a hora -->
@@ -752,7 +767,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.1.0';
+const APP_VER   = '1.2.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1332,6 +1347,27 @@ const PAR_PER_TTL=5*60*1000;
 let _parPerCarregando=null;        // período em voo (evita chamadas empilhadas)
 
 function _dataMenosDias(n){ const d=new Date(); d.setDate(d.getDate()-n); return dtToStr(d); }
+
+// Dias do HISTORICO (todos), p/ contar dias trabalhados no período.
+let HIST_DIAS_ALL=[];
+// Dias efetivamente TRABALHADOS dentro dos últimos N dias: os que têm produção
+// no HISTORICO, mais hoje se já produziu (hoje só entra no HISTORICO no
+// fechamento). Fim de semana, feriado e parada de fábrica ficam de fora
+// sozinhos — não têm produção lançada.
+// Se o histórico ainda não chegou, devolve 0 e quem chama cai no antigo
+// "dias com parada".
+function _diasTrabalhados(nDias){
+  const lim=_dataNum(_dataMenosDias(nDias-1));
+  const set=new Set();
+  (HIST_DIAS_ALL||[]).forEach(d=>{
+    const n=_dataNum(d.data);
+    if(n>=lim && (parseFloat(d.real)||0)>0) set.add(d.data);
+  });
+  if(!set.size) return 0;
+  const hj=hojeStr();
+  if(getDadosHoje().reduce((s,r)=>s+(r.producaoHora||0),0)>0) set.add(hj);
+  return set.size;
+}
 // Lista do período selecionado. null = ainda não chegou (mostra CARREGANDO).
 function paradasDoPeriodo(){
   if(PAR_PER_SEL==='0') return PARADAS_HOJE;
@@ -1363,7 +1399,11 @@ async function carregarParadasPeriodoSel(force){
 function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
 function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
 function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
-function _statsParadasMob(lista){
+// nDiasBase: base de dias para a média/dia e para a disponibilidade. Passe os
+// DIAS TRABALHADOS do período — sem isso a conta divide por "dias que tiveram
+// parada", e um dia trabalhado sem nenhuma parada (o melhor dia) sumiria da
+// média, empurrando o número pra cima.
+function _statsParadasMob(lista, nDiasBase){
   const horasProd=_horasProdMob(); const metaHora=(CFG.metaDia||0)/horasProd;
   let totMin=0,totMinNP=0,pecas=0,n=0; const porTipo={},dias=new Set();
   (lista||[]).forEach(p=>{
@@ -1374,10 +1414,15 @@ function _statsParadasMob(lista){
     if(!planej){ totMinNP+=d; pecas+=perd; }
     const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
   });
-  const nDias=dias.size||1; const tempoDisp=nDias*horasProd*60;
+  const nDiasParada=dias.size||1;
+  // base = dias trabalhados quando o chamador souber; senão, dias com parada
+  const nDias=(nDiasBase&&nDiasBase>0)?nDiasBase:nDiasParada;
+  const baseTrab=!!(nDiasBase&&nDiasBase>0);
+  const tempoDisp=nDias*horasProd*60;
   const dispon=tempoDisp>0?Math.max(0,(tempoDisp-totMinNP)/tempoDisp*100):100;
+  const media=nDias>0?Math.round(pecas/nDias):0;
   const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
-  return {totMin,totMinNP,pecas,n,nDias,dispon,tipos};
+  return {totMin,totMinNP,pecas,n,nDias,nDiasParada,baseTrab,media,dispon,tipos};
 }
 function renderGerParadasResumo(){
   const kg=document.getElementById('ger-par-kpis'); if(!kg) return;
@@ -1393,20 +1438,28 @@ function renderGerParadasResumo(){
     return;
   }
 
-  const st=_statsParadasMob(lista);
+  // No período a base é DIAS TRABALHADOS (produção lançada), não dias com
+  // parada: sábado/domingo/feriado ficam de fora sozinhos, e o dia trabalhado
+  // que rodou sem parar entra na conta puxando a média pra baixo — como deve.
+  const nTrab=ehHoje?0:_diasTrabalhados(parseInt(PAR_PER_SEL,10));
+  const st=_statsParadasMob(lista, nTrab);
   const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
-  const mediaPerd=st.nDias>0?Math.round(st.pecas/st.nDias):0;
+  const rotDias=st.baseTrab?`${st.nDias} dia(s) trabalhados`:`${st.nDias} dia(s) com parada`;
+  const kpi4=ehHoje
+    ? `<div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`
+    : `<div class="par-mini ${st.media>0?'red':'ok'}"><div class="par-mini-lbl">MÉDIA DIÁRIA</div><div class="par-mini-val" style="color:${st.media>0?'var(--red)':'var(--txt)'}">${fmtN(st.media)}</div><div class="par-mini-sub">cx perdidas por dia trabalhado</div></div>`;
   kg.innerHTML=`
     <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${st.n} parada(s)</div></div>
-    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">${ehHoje?'do turno':`${st.nDias} dia(s) com parada`}</div></div>
-    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':`estimativa · ~${fmtN(mediaPerd)} cx/dia`}</div></div>
-    <div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">${ehHoje?'hoje':'no período'}</div></div>`;
+    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">${ehHoje?'do turno':rotDias}</div></div>
+    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':`estimativa · ${rotDias}`}</div></div>
+    ${kpi4}`;
 
   const ex=document.getElementById('ger-par-extra');
   const li=document.getElementById('ger-par-lista');
   if(!card) return;
   if(!st.n){ card.style.display='none'; return; }
   card.style.display='';
+  aplicarDetalheParadas(st.n);
 
   // Top ofensores + comparativo com a média do mês
   if(ex){
@@ -1416,10 +1469,11 @@ function renderGerParadasResumo(){
       return `<div class="par-of"><span class="par-of-nome" style="color:${planej?'var(--txt2)':'var(--txt)'}">${t.tipo}</span><div class="par-of-bar"><div class="par-of-fill" style="width:${Math.max(4,Math.round(t.min/maxMin*100))}%;background:${planej?'#777':'var(--red)'}"></div></div><span class="par-of-t">${_fmtMin2(t.min)}</span></div>`;
     }).join('');
     let comp='';
-    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES); const media=sm.nDias>0?Math.round(sm.pecas/sm.nDias):0;
+    // Mês corrente: mesma base de dias trabalhados (do dia 1 até hoje).
+    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES, _diasTrabalhados(new Date().getDate())); const media=sm.media;
       // Em HOJE compara o dia com a média/dia do mês; no período, compara a
       // média/dia do período com a do mês (dia contra total seria enganoso).
-      const meu=ehHoje?st.pecas:mediaPerd;
+      const meu=ehHoje?st.pecas:st.media;
       const seta=meu>media?'▲':meu<media?'▼':'=';
       comp=`<div class="par-comp"><span>${ehHoje?'HOJE':'MÉDIA/DIA'}: <b style="color:${meu>media?'var(--red)':'var(--ok)'}">${fmtN(meu)} cx</b> ${seta}</span><span>${ehHoje?'MÉDIA/DIA (mês)':'MÊS'}: ${fmtN(media)} cx</span></div>`;
     }
@@ -1442,6 +1496,25 @@ function renderGerParadasResumo(){
     }).join('');
   }
 }
+// Detalhe do card de PARADAS (top ofensores + lista) recolhido por padrão. A
+// escolha do usuário fica guardada, senão o refresh de 1 min fecharia tudo de
+// volta no meio da leitura.
+let PAR_DET_ABERTO=false;
+let _parDetN=0;   // nº de paradas do período (rótulo do botão)
+function alternarDetalheParadas(){ PAR_DET_ABERTO=!PAR_DET_ABERTO; aplicarDetalheParadas(); }
+function aplicarDetalheParadas(nParadas){
+  if(nParadas!=null) _parDetN=nParadas;
+  const det=document.getElementById('ger-par-det');
+  const btn=document.getElementById('ger-par-toggle');
+  const txt=document.getElementById('ger-par-toggle-txt');
+  if(!det||!btn||!txt) return;
+  det.style.display=PAR_DET_ABERTO?'':'none';
+  btn.classList.toggle('aberto', PAR_DET_ABERTO);
+  txt.textContent=PAR_DET_ABERTO
+    ? 'OCULTAR DETALHES'
+    : `VER DETALHES${_parDetN?` · ${_parDetN} parada(s)`:''}`;
+}
+
 // dd/MM/yyyy → número comparável (ordenação da lista do período)
 function _dataNum(s){ const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0; }
 async function carregarParadasMes(){
@@ -1640,6 +1713,7 @@ async function lerHistorico(){
     try{
       const json = await jsonpFetch(url);
       if(json.erro) throw new Error(json.erro);
+      HIST_DIAS_ALL = json.dias||[];   // usado p/ contar dias trabalhados
       return json.dias||[];
     }catch(e){
       if(i===3) return [];
@@ -2196,10 +2270,11 @@ async function carregarPerdasHistorico(periodo, datas){
   const pintar=lista=>{
     const el=document.getElementById('hist-rz-perd-val'); if(!el) return;
     const set=new Set(datas);
-    const st=_statsParadasMob((lista||[]).filter(p=>set.has(p.data)));
-    const media=st.nDias>0?Math.round(st.pecas/st.nDias):0;
+    // Base = os próprios dias do histórico (dias com turno fechado = dias
+    // trabalhados), a mesma base do "Média / dia" de produção logo acima.
+    const st=_statsParadasMob((lista||[]).filter(p=>set.has(p.data)), datas.length);
     el.style.fontSize=''; el.style.color=st.pecas>0?'var(--red)':'var(--ok)';
-    el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · ~${fmtN(media)}/dia · ${st.nDias} dia(s) com parada</span>`;
+    el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · média ${fmtN(st.media)}/dia · ${datas.length} dias trabalhados</span>`;
   };
 
   if(HIST_PERD_CACHE.k===key && (Date.now()-HIST_PERD_CACHE.em)<PAR_PER_TTL){ pintar(HIST_PERD_CACHE.lista); return; }

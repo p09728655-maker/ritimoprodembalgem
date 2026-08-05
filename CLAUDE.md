@@ -77,9 +77,24 @@ via Google Apps Script (JSONP).
   produtivas do turno)`, só para paradas **não planejadas** (refeição/intervalo/
   almoço, ou classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em
   andamento (sem FIM) não entra** — sem fim não há duração.
-- **`nDias` = dias que têm parada registrada**, não dias corridos. É por isso que
-  a média/dia e a disponibilidade dizem "N dia(s) com parada" no rótulo: dia sem
-  parada não dilui o número.
+- **A base da média é DIAS TRABALHADOS, não dias com parada nem dias corridos.**
+  `_diasTrabalhados(n)` conta os dias do `HISTORICO` com produção dentro dos
+  últimos n dias (+ hoje, se já produziu) — sábado, domingo, feriado e parada de
+  fábrica ficam de fora sozinhos, porque não têm produção lançada. O KPI
+  **MÉDIA DIÁRIA** (4º card, no lugar do "nº de paradas" quando o período não é
+  HOJE) e a **disponibilidade** usam essa base.
+  - Por que não dividir por "dias com parada": o dia trabalhado que rodou sem
+    parar — o melhor dia — sumiria da conta e a média subiria sozinha. Medido:
+    15 dias com 11 trabalhados e parada em 3 → 62 cx/dia na base certa contra
+    227 cx/dia na base errada.
+  - No **HISTÓRICO** a base são os próprios dias da lista (dias com turno
+    fechado), a mesma do "Média / dia" de produção logo acima.
+  - Se o histórico ainda não carregou, `_diasTrabalhados` devolve 0 e a conta cai
+    no antigo "dias com parada" — o rótulo do card diz qual base está valendo.
+- **Detalhe recolhido:** top ofensores + comparativo + lista ficam atrás do botão
+  **VER DETALHES · N parada(s)**. Com 15/30 dias a lista empurrava a tabela hora
+  a hora e o histórico pra longe. A escolha do usuário fica guardada
+  (`PAR_DET_ABERTO`) — senão o refresh de 1 min fechava tudo no meio da leitura.
 - ⚠ `getParadasPeriodo` lê a aba `PARADAS` **inteira** antes de filtrar (ver nota
   mais abaixo). Por isso cada período fica em **cache de 5 min** — o card
   (`PAR_PER_CACHE`) e o histórico (`HIST_PERD_CACHE`) — e o botão **ATUALIZAR**
