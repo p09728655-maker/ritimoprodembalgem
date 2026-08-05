@@ -799,9 +799,10 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div style="font-family:'Inter',var(--font-b);font-size:13px;font-weight:700;color:#FAFAFA;letter-spacing:-0.3px;margin-top:10px;opacity:0.9">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></div>
     </div>
     <div class="login-sep"></div>
-    <!-- RitmoProd branding pequeno -->
+    <!-- RitmoProd branding pequeno + versão (preenchida pelo initVersaoV7) -->
     <div style="text-align:center;font-family:var(--font-d);font-size:8px;color:var(--txt3);letter-spacing:2px">
       SISTEMA <span style="color:var(--acc);font-weight:700">RITMOPROD</span>
+      <span id="login-ver-v7" style="display:block;margin-top:4px;color:var(--txt2)">v—</span>
     </div>
     <div class="login-grp" id="login-senha-grp" style="display:none">
       <label class="login-lbl">SENHA GERENCIAL</label>
@@ -1852,7 +1853,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.1';
+const APP_VER   = '7.3.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -1899,6 +1900,9 @@ async function checarVersaoV7(){
 (function initVersaoV7(){
   const el=document.getElementById('ftr-ver');
   if(el) el.textContent='v'+APP_VER;
+  // Também na tela de entrada (login) — o rodapé não aparece lá.
+  const lv=document.getElementById('login-ver-v7');
+  if(lv) lv.textContent='v'+APP_VER;
   let ant=null;
   try{ ant=localStorage.getItem(APP_VER_K); localStorage.setItem(APP_VER_K, APP_VER); }catch(e){}
   if(ant && ant!==APP_VER && !_naTV()){
