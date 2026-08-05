@@ -1886,12 +1886,18 @@ function entrar(tipo){
     // então disparar tudo junto só enfileira — e o histórico depende do CFG que
     // vem do lerSheets. Antes o getHistory saía DUAS vezes aqui (o
     // renderHistorico() do callback refazia o lerHistorico que já estava indo).
-    lerSheets()
-      .then(()=>{ renderGerProduto(); return lerHistorico(); })
-      .then(renderHistoricoComDados)
-      .then(()=>lerPontosDia()).then(()=>renderGerencial())
-      .then(()=>lerMediaHoras()).then(ok=>{ if(ok) renderGerencial(); })
-      .catch(e=>console.warn('carga inicial gerencial:', e.message));
+    // ⚠ Cada etapa é TOLERANTE: um único .catch no fim derrubava a cadeia toda
+    // no cold start — o lerSheets estourava e histórico/pontos/médias nunca
+    // carregavam ("não está carregando todas as informações").
+    (async ()=>{
+      const passo=async(nome,fn)=>{ try{ return await fn(); }catch(e){ console.warn('carga inicial · '+nome+':', e.message); } };
+      // lerSheets com retry: é o cold start que ela paga pelos demais.
+      for(let i=1;i<=3;i++){ if(await passo('lerSheets',lerSheets)!==undefined||DADOS.length) break; await new Promise(r=>setTimeout(r,1500*i)); }
+      renderGerProduto();
+      const dias=await passo('historico',lerHistorico); if(dias) renderHistoricoComDados(dias);
+      await passo('pontos',lerPontosDia); renderGerencial();
+      const okM=await passo('medias',lerMediaHoras); if(okM) renderGerencial();
+    })();
   }
 }
 
@@ -1930,19 +1936,21 @@ async function cicloRefresh(){
   if(_refreshRodando) return;
   _refreshRodando = true;
   const c = _refreshCiclo++;
+  // Cada etapa tolera a própria falha: um timeout no getParadas não pode
+  // impedir o hora a hora e o histórico de atualizarem no mesmo tick.
+  const passo=async fn=>{ try{ await fn(); }catch(e){ console.warn('cicloRefresh:', e.message); } };
   try{
-    if(PERFIL==='operador' || PERFIL==='gerencial') await carregarParadas();
+    if(PERFIL==='operador' || PERFIL==='gerencial') await passo(carregarParadas);
     if(c % A_CADA_DADOS === 0){
-      await lerSheets();
-      if(PERFIL==='operador') await carregarConfigPainel();   // toggle do modo leitor
+      await passo(lerSheets);
+      if(PERFIL==='operador') await passo(carregarConfigPainel);   // toggle do modo leitor
     }
     if(PERFIL==='gerencial' && c % A_CADA_PESADO === 0){
-      renderHistoricoComDados(await lerHistorico());
-      await lerPontosDia(); renderGerencial();
-      await carregarParadasPeriodoSel();   // respeita o cache (só recarrega se venceu)
+      await passo(async()=>renderHistoricoComDados(await lerHistorico()));
+      await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
+      await passo(()=>carregarParadasPeriodoSel());   // respeita o cache
     }
-  }catch(e){ console.warn('cicloRefresh:', e.message); }
-  _refreshRodando = false;
+  }finally{ _refreshRodando = false; }
 }
 
 function pararRefreshAuto(){
@@ -1954,17 +1962,17 @@ function pararRefreshAuto(){
 // paradas por período. Segura o ciclo automático enquanto roda, p/ não duplicar.
 async function refresh(){
   _refreshRodando = true;
+  const passo=async fn=>{ try{ await fn(); }catch(e){ console.warn('refresh:', e.message); } };
   try{
-    await lerSheets();
-    if(PERFIL==='operador' || PERFIL==='gerencial') await carregarParadas();
+    await passo(lerSheets);
+    if(PERFIL==='operador' || PERFIL==='gerencial') await passo(carregarParadas);
     if(PERFIL==='gerencial'){
       HIST_PERD_CACHE.k = null;
-      renderHistoricoComDados(await lerHistorico());   // repinta e rebusca as perdas
-      await lerPontosDia(); renderGerencial();
-      await carregarParadasPeriodoSel(true);
+      await passo(async()=>renderHistoricoComDados(await lerHistorico()));   // repinta e rebusca as perdas
+      await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
+      await passo(()=>carregarParadasPeriodoSel(true));
     }
-  }catch(e){ console.warn('refresh:', e.message); }
-  _refreshRodando = false;
+  }finally{ _refreshRodando = false; }
 }
 
 // ════════════════════════════════════════════════

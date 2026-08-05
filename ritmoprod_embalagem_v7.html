@@ -5233,13 +5233,18 @@ async function gerarRelatorioParadas(){
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
   const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  let paradas, _hist;
+  // Sequencial + retry, como na aba PARADAS: o Apps Script atende uma execução
+  // por vez — paralelo só enfileira, e no cold start tudo estoura junto.
+  let paradas=null, _hist={m:{},r:{}};
   try{
-    [paradas, _hist]=await Promise.all([
-      jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-      buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
-      _carregarClassesPar()
-    ]);
+    for(let i=1;i<=3 && paradas===null;i++){
+      try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
+      catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
+    }
+    if(paradas!==null){
+      _hist=await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
+      await _carregarClassesPar();
+    }
   }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
   if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
@@ -5571,13 +5576,30 @@ async function _renderAnaliseParadasCore(opts){
   const _fdt=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
   const mkUrlP=(d1,d2)=>CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(d1)+'&ate='+encodeURIComponent(d2);
 
-  // Busca período atual + período anterior + histórico EM PARALELO, tolerante a falha.
-  const [paradas, prevParadas, _hist] = await Promise.all([
-    jsonpFetch(mkUrlP(de,ate)).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-    jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]),
-    buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
-    _carregarClassesPar()
-  ]);
+  // EM SEQUÊNCIA, com retry na chamada principal. O Apps Script atende UMA
+  // execução por vez: as 3 chamadas em paralelo só se enfileiravam lá, e num
+  // cold start todas estouravam o timeout de 25s JUNTAS → "NÃO CARREGOU" mesmo
+  // com o servidor já acordando. Sequencial, a 1ª chamada paga o cold start e
+  // as seguintes respondem rápido; se a 1ª falhar, tenta de novo (backoff) —
+  // mesma receita do lerSheetsComRetry que já segurou esse problema no load.
+  async function _fetchParadasRetry(url, tent){
+    for(let i=1;i<=tent;i++){
+      try{ const j=await jsonpFetch(url); if(j&&j.ok) return j.paradas||[]; }
+      catch(e){ /* timeout/cold start */ }
+      if(i<tent){
+        if(!silent) grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO… ('+i+'ª tentativa)</div><div class="kpi-sub">o servidor está ligando (cold start) — reconectando sozinho</div></div>';
+        await new Promise(r=>setTimeout(r, 1500*i));
+      }
+    }
+    return null;
+  }
+  const paradas = await _fetchParadasRetry(mkUrlP(de,ate), 3);
+  // As secundárias só depois da principal (servidor já quente) e tolerantes a falha.
+  const prevParadas = paradas===null ? [] :
+    await jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]);
+  const _hist = paradas===null ? {m:{},r:{}} :
+    await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
+  await _carregarClassesPar();
   const metaByDay=_hist.m, realByDay=_hist.r;
   if(paradas===null){
     if(silent){
