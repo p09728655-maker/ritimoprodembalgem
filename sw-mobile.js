@@ -4,7 +4,11 @@
 // e só usa o cache como reserva quando estiver offline. Assim os deploys
 // novos aparecem normalmente, sem ficar preso em versão antiga.
 
-const CACHE = 'ritmoprod-mobile-v2';
+// Controle de versão: este número tem que subir junto com o APP_VER do
+// `ritmoprod_mobile.html`. É a troca do nome do cache que faz o navegador
+// instalar o SW novo — e é isso que dispara o aviso "Nova versão disponível"
+// para quem está com o app instalado.
+const CACHE = 'ritmoprod-mobile-v3';   // APP_VER 1.1.0
 
 self.addEventListener('install', () => self.skipWaiting());
 

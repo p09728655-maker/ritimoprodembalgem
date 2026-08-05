@@ -268,8 +268,24 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .par-of-bar{flex:1;height:8px;background:var(--elevated);border-radius:4px;overflow:hidden}
 .par-of-fill{height:100%;border-radius:4px}
 .par-of-t{font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap}
-.par-comp{display:flex;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
+.par-comp{display:flex;flex-wrap:wrap;gap:2px 10px;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
 .par-item2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-top:0.5px solid var(--border);font-size:12px}
+.par-item2-dt{font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:1px}
+/* Aviso de nova versão do app (PWA instalado só troca o HTML ao recarregar) */
+.upd-bar{
+  position:fixed;left:10px;right:10px;z-index:9000;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;
+  background:var(--elevated);border:1px solid var(--acc);box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+.upd-txt{flex:1;min-width:0;font-family:var(--font-b);font-size:13px;color:var(--txt);line-height:1.25}
+.upd-txt small{display:block;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:2px}
+.upd-btn{
+  flex-shrink:0;padding:9px 14px;border:none;border-radius:7px;background:var(--acc);color:#111;
+  font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:2px;cursor:pointer;
+}
+.upd-btn:active{opacity:.7}
+.upd-x{flex-shrink:0;background:none;border:none;color:var(--txt2);font-size:18px;line-height:1;padding:0 2px;cursor:pointer}
 .sel-tipo{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-b);font-size:15px;outline:none;
@@ -429,7 +445,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="login-btn login-btn-ger" onclick="loginComo('gerencial')">GERENCIAL</button>
       <button id="btn-instalar" class="login-btn login-btn-ger" style="font-size:13px;letter-spacing:2px" onclick="instalarApp()">📲 INSTALAR APP</button>
     </div>
-    <div class="login-ver">v1.0 · EMBALAGEM</div>
+    <div class="login-ver" id="login-ver">v— · EMBALAGEM</div>
   </div>
 </div>
 
@@ -513,8 +529,16 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <div class="loading" style="grid-column:1/-1">CARREGANDO...</div>
     </div>
 
-    <!-- ═══ PARADAS (resumo do dia + análise) ═══ -->
-    <div class="sec-lbl" style="margin-top:2px">PARADAS DO DIA</div>
+    <!-- ═══ PARADAS (resumo do período + análise) ═══ -->
+    <div class="sec-lbl-row" style="margin-top:2px">
+      <span class="sec-lbl" id="ger-par-lbl">PARADAS DO DIA</span>
+      <select id="par-periodo" onchange="mudarPeriodoParadas()" class="hist-sel">
+        <option value="0">Hoje</option>
+        <option value="7">7 dias</option>
+        <option value="15">15 dias</option>
+        <option value="30">30 dias</option>
+      </select>
+    </div>
     <div class="par-mini-grid" id="ger-par-kpis"></div>
     <div class="card" id="ger-par-card" style="margin-top:10px;display:none">
       <div id="ger-par-extra"></div>
@@ -709,10 +733,27 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   </div>
 </div>
 
+<!-- ═══ AVISO DE NOVA VERSÃO ═══
+     O app instalado (PWA) continua com o HTML que já estava aberto até alguém
+     recarregar. Sem este aviso o operador ficava numa versão antiga sem saber. -->
+<div class="upd-bar" id="upd-bar" style="display:none">
+  <div class="upd-txt" id="upd-txt">Nova versão disponível<small>toque para carregar</small></div>
+  <button class="upd-btn" id="upd-btn" onclick="atualizarApp()">ATUALIZAR</button>
+  <button class="upd-x" onclick="adiarAtualizacao()" title="Agora não">×</button>
+</div>
+
 <script>
 // ════════════════════════════════════════════════
-// ESTADO
+// VERSÃO DO APP
 // ════════════════════════════════════════════════
+// Controle de versão do mobile. Ao publicar uma mudança:
+//   1) suba APP_VER aqui;
+//   2) suba o CACHE do `sw-mobile.js` para o MESMO número (`ritmoprod-mobile-vX`)
+//      — é o que faz o service worker limpar o cache antigo e disparar o aviso
+//      "Nova versão disponível" em quem está com o app instalado.
+// A versão aparece na tela de login e no aviso de atualização.
+const APP_VER   = '1.1.0';
+const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
 let MEDIA_HORAS   = {};
@@ -1265,8 +1306,9 @@ function renderGerParada(){
 function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 
 // ─── Análise de PARADAS no gerencial (mobile) ─────────────────────────────
-// Resumo do dia (tempo, nº, peças perdidas, disponibilidade) + alerta + top
-// ofensores + comparativo com a média do mês + lista do dia.
+// Resumo do período (tempo, nº, caixas perdidas, disponibilidade) + top
+// ofensores + comparativo com a média do mês + lista das paradas.
+// O período vem do seletor #par-periodo: HOJE (padrão) ou últimos 7/15/30 dias.
 const PAR_PLANEJADA_M=/refei|interval|almo/i;
 // Classe por tipo (coluna CLASSE da aba TIPOS_PARADA). Se marcada, manda; se
 // vazia, cai na heurística por nome.
@@ -1278,6 +1320,46 @@ function _ehPlanejadaM(tipo){
   return PAR_PLANEJADA_M.test(tipo||'');
 }
 let PAR_MES=null; // paradas do mês (comparativo) — carregadas à parte
+
+// Período do card de PARADAS. '0' = hoje (usa PARADAS_HOJE, que já vem no
+// refresh normal); 7/15/30 = últimos N dias via getParadasPeriodo. O backend lê
+// a aba PARADAS inteira antes de filtrar (custo cresce com o histórico todo),
+// por isso cada período fica em cache — sem isso o refresh de 1 min refaria a
+// leitura e a seção ficaria piscando CARREGANDO.
+let PAR_PER_SEL='0';
+const PAR_PER_CACHE={};            // {periodo: {lista, em}}
+const PAR_PER_TTL=5*60*1000;
+let _parPerCarregando=null;        // período em voo (evita chamadas empilhadas)
+
+function _dataMenosDias(n){ const d=new Date(); d.setDate(d.getDate()-n); return dtToStr(d); }
+// Lista do período selecionado. null = ainda não chegou (mostra CARREGANDO).
+function paradasDoPeriodo(){
+  if(PAR_PER_SEL==='0') return PARADAS_HOJE;
+  const c=PAR_PER_CACHE[PAR_PER_SEL];
+  return c?c.lista:null;
+}
+function mudarPeriodoParadas(){
+  const sel=document.getElementById('par-periodo');
+  PAR_PER_SEL=String((sel&&sel.value)||'0');
+  renderGerParadasResumo();
+  if(PAR_PER_SEL!=='0') carregarParadasPeriodoSel();
+}
+async function carregarParadasPeriodoSel(force){
+  const per=PAR_PER_SEL;
+  if(per==='0'||!CFG.sheetsUrl) return;
+  const c=PAR_PER_CACHE[per];
+  if(!force && c && (Date.now()-c.em)<PAR_PER_TTL) return;
+  if(_parPerCarregando===per) return;
+  _parPerCarregando=per;
+  try{
+    const de=_dataMenosDias(parseInt(per,10)-1), ate=hojeStr();
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const j=await jsonpFetch(url);
+    if(j&&j.ok) PAR_PER_CACHE[per]={lista:j.paradas||[], em:Date.now()};
+  }catch(e){ console.warn('carregarParadasPeriodoSel:', e.message); }
+  _parPerCarregando=null;
+  if(PAR_PER_SEL===per) renderGerParadasResumo();
+}
 function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
 function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
 function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
@@ -1299,15 +1381,27 @@ function _statsParadasMob(lista){
 }
 function renderGerParadasResumo(){
   const kg=document.getElementById('ger-par-kpis'); if(!kg) return;
-  const st=_statsParadasMob(PARADAS_HOJE);
+  const ehHoje=(PAR_PER_SEL==='0');
+  const card=document.getElementById('ger-par-card');
+  const lbl=document.getElementById('ger-par-lbl');
+  if(lbl) lbl.textContent=ehHoje?'PARADAS DO DIA':`PARADAS · ${PAR_PER_SEL} DIAS`;
+
+  const lista=paradasDoPeriodo();
+  if(lista===null){   // período escolhido ainda não chegou do Sheets
+    kg.innerHTML='<div class="loading" style="grid-column:1/-1">CARREGANDO PARADAS DO PERÍODO...</div>';
+    if(card) card.style.display='none';
+    return;
+  }
+
+  const st=_statsParadasMob(lista);
   const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
+  const mediaPerd=st.nDias>0?Math.round(st.pecas/st.nDias):0;
   kg.innerHTML=`
     <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${st.n} parada(s)</div></div>
-    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">do turno</div></div>
-    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">PEÇAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${st.pecas}</div><div class="par-mini-sub">estimativa (cx)</div></div>
-    <div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`;
+    <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">${ehHoje?'do turno':`${st.nDias} dia(s) com parada`}</div></div>
+    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':`estimativa · ~${fmtN(mediaPerd)} cx/dia`}</div></div>
+    <div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">${ehHoje?'hoje':'no período'}</div></div>`;
 
-  const card=document.getElementById('ger-par-card');
   const ex=document.getElementById('ger-par-extra');
   const li=document.getElementById('ger-par-lista');
   if(!card) return;
@@ -1323,20 +1417,33 @@ function renderGerParadasResumo(){
     }).join('');
     let comp='';
     if(PAR_MES){ const sm=_statsParadasMob(PAR_MES); const media=sm.nDias>0?Math.round(sm.pecas/sm.nDias):0;
-      const seta=st.pecas>media?'▲':st.pecas<media?'▼':'=';
-      comp=`<div class="par-comp"><span>HOJE: <b style="color:${st.pecas>media?'var(--red)':'var(--ok)'}">${st.pecas} cx</b> ${seta}</span><span>MÉDIA/DIA (mês): ${media} cx</span></div>`;
+      // Em HOJE compara o dia com a média/dia do mês; no período, compara a
+      // média/dia do período com a do mês (dia contra total seria enganoso).
+      const meu=ehHoje?st.pecas:mediaPerd;
+      const seta=meu>media?'▲':meu<media?'▼':'=';
+      comp=`<div class="par-comp"><span>${ehHoje?'HOJE':'MÉDIA/DIA'}: <b style="color:${meu>media?'var(--red)':'var(--ok)'}">${fmtN(meu)} cx</b> ${seta}</span><span>${ehHoje?'MÉDIA/DIA (mês)':'MÊS'}: ${fmtN(media)} cx</span></div>`;
     }
     ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp;
   }
-  // Lista do dia
+  // Lista das paradas (no período, as mais recentes primeiro e limitada — a
+  // lista inteira de 30 dias viraria uma rolagem sem fim no celular)
   if(li){
-    li.innerHTML='<div class="par-sub-lbl">PARADAS DE HOJE</div>'+PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>{
+    const LIM=25;
+    const ord=lista.slice().sort((a,b)=> ehHoje
+      ? String(a.ini).localeCompare(String(b.ini))
+      : (_dataNum(b.data)-_dataNum(a.data)) || String(b.ini).localeCompare(String(a.ini)));
+    const mostrar=ehHoje?ord:ord.slice(0,LIM);
+    const titulo=ehHoje?'PARADAS DE HOJE':`PARADAS DO PERÍODO${ord.length>LIM?` (${LIM} de ${ord.length})`:''}`;
+    li.innerHTML=`<div class="par-sub-lbl">${titulo}</div>`+mostrar.map(p=>{
       const d=_durMin2(p.ini,p.fim); const em=!p.fim||String(p.fim).trim()==='';
       const planej=_ehPlanejadaM(p.tipo);
-      return `<div class="par-item2"><div style="min-width:0"><div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;
+      const dt=ehHoje?'':`<div class="par-item2-dt">${String(p.data||'').substring(0,5)}</div>`;
+      return `<div class="par-item2"><div style="min-width:0">${dt}<div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;
     }).join('');
   }
 }
+// dd/MM/yyyy → número comparável (ordenação da lista do período)
+function _dataNum(s){ const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m?(+m[3])*10000+(+m[2])*100+(+m[1]):0; }
 async function carregarParadasMes(){
   if(!CFG.sheetsUrl) return;
   const hj=new Date();
@@ -1709,6 +1816,7 @@ function iniciarRefreshAuto(){
     if(PERFIL==='gerencial'){
       lerHistorico().then(renderHistoricoComDados);
       lerPontosDia().then(()=>renderGerencial());
+      carregarParadasPeriodoSel();   // respeita o cache (só recarrega se venceu)
     }
   }, 60*1000);
 }
@@ -1718,6 +1826,12 @@ function pararRefreshAuto(){
 }
 
 function refresh(){
+  if(PERFIL==='gerencial'){
+    // Botão ATUALIZAR = o usuário quer o número de agora: derruba os caches de
+    // paradas por período (card + histórico) e busca de novo.
+    HIST_PERD_CACHE.k=null;
+    carregarParadasPeriodoSel(true);
+  }
   lerSheets().then(()=>{
     if(PERFIL==='gerencial') lerHistorico().then(renderHistoricoComDados);
   });
@@ -2065,6 +2179,45 @@ function mediaCxH(d){
   return horas>0 ? Math.round(real/horas) : 0;
 }
 
+// ── Caixas perdidas em paradas no período do HISTÓRICO ───────────────────
+// Segue o mesmo filtro 7/15/30 do histórico (que exclui HOJE), contando só os
+// dias que aparecem na lista. Cache de 5 min porque o getParadasPeriodo lê a
+// aba PARADAS inteira antes de filtrar — e o histórico re-renderiza a cada
+// refresh de 1 min.
+const HIST_PERD_CACHE={ k:null, lista:null, em:0 };
+let _histPerdCarregando=false;
+async function carregarPerdasHistorico(periodo, datas){
+  const val=document.getElementById('hist-rz-perd-val');
+  if(!val) return;
+  if(!datas || !datas.length || !CFG.sheetsUrl){ val.textContent='—'; val.style.color='var(--txt2)'; return; }
+  const de=datas[datas.length-1], ate=datas[0];   // lista vem do mais recente p/ o mais antigo
+  const key=periodo+'|'+de+'|'+ate;
+
+  const pintar=lista=>{
+    const el=document.getElementById('hist-rz-perd-val'); if(!el) return;
+    const set=new Set(datas);
+    const st=_statsParadasMob((lista||[]).filter(p=>set.has(p.data)));
+    const media=st.nDias>0?Math.round(st.pecas/st.nDias):0;
+    el.style.fontSize=''; el.style.color=st.pecas>0?'var(--red)':'var(--ok)';
+    el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · ~${fmtN(media)}/dia · ${st.nDias} dia(s) com parada</span>`;
+  };
+
+  if(HIST_PERD_CACHE.k===key && (Date.now()-HIST_PERD_CACHE.em)<PAR_PER_TTL){ pintar(HIST_PERD_CACHE.lista); return; }
+  if(_histPerdCarregando) return;
+  _histPerdCarregando=true;
+  try{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+    const j=await jsonpFetch(url);
+    if(j&&j.ok){ HIST_PERD_CACHE.k=key; HIST_PERD_CACHE.lista=j.paradas||[]; HIST_PERD_CACHE.em=Date.now(); pintar(HIST_PERD_CACHE.lista); }
+    else { val.textContent='—'; }
+  }catch(e){
+    console.warn('carregarPerdasHistorico:', e.message);
+    const el=document.getElementById('hist-rz-perd-val');
+    if(el){ el.style.fontSize='13px'; el.style.color='var(--warn)'; el.textContent='não carregou'; }
+  }
+  _histPerdCarregando=false;
+}
+
 let _histDias=[];   // guarda o histórico carregado p/ o detalhe do dia
 function renderHistoricoComDados(dias){
   _histDias = dias||[];
@@ -2095,7 +2248,10 @@ function renderHistoricoComDados(dias){
       <div class="hist-rz"><div class="hist-rz-lbl">Produzido (${lista.length}d)</div><div class="hist-rz-val">${fmtN(totReal)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Média / dia</div><div class="hist-rz-val">${fmtN(mediaDia)}</div></div>
       <div class="hist-rz"><div class="hist-rz-lbl">Meta período</div><div class="hist-rz-val">${fmtN(totMeta)}</div></div>
-      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>`;
+      <div class="hist-rz"><div class="hist-rz-lbl">Eficiência média</div><div class="hist-rz-val ${sc(efMed)}">${fmtP(efMed)}</div></div>
+      <div class="hist-rz" id="hist-rz-perd" style="grid-column:1/-1"><div class="hist-rz-lbl">Caixas perdidas em paradas</div><div class="hist-rz-val" id="hist-rz-perd-val" style="font-size:15px;color:var(--txt2)">calculando…</div></div>`;
+    // as caixas perdidas vêm da aba PARADAS (chamada à parte, com cache)
+    carregarPerdasHistorico(periodo, lista.map(d=>d.data));
   }
   // ── Gráfico de tendência (barras, ordem cronológica) ──
   if(elChart){
@@ -2273,9 +2429,65 @@ document.getElementById('modal-instalar').addEventListener('click', e => {
   if (e.target === document.getElementById('modal-instalar')) fecharModalInstalar();
 });
 
+// ════════════════════════════════════════════════
+// VERSÃO / ATUALIZAÇÃO DO APP
+// ════════════════════════════════════════════════
+// O app instalado (PWA) continua rodando o HTML que já estava aberto: um deploy
+// novo só aparece depois de recarregar. Aqui a gente avisa em vez de deixar o
+// operador numa versão velha sem saber.
+function mostrarAvisoAtualizacao(){
+  const b=document.getElementById('upd-bar');
+  if(b && b.dataset.adiado!=='1') b.style.display='flex';
+}
+function adiarAtualizacao(){
+  const b=document.getElementById('upd-bar');
+  if(b){ b.dataset.adiado='1'; b.style.display='none'; }
+}
+async function atualizarApp(){
+  const btn=document.getElementById('upd-btn');
+  if(btn){ btn.textContent='...'; btn.disabled=true; }
+  // Limpa o cache do service worker para garantir que o HTML novo venha da rede
+  // (só o cache do próprio site; JSONP do Apps Script nunca é cacheado).
+  try{
+    if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k))); }
+  }catch(e){ console.warn('limpar cache:', e.message); }
+  location.reload();
+}
+// Aviso curto de "atualizado" na 1ª abertura depois de subir a versão.
+function checarVersaoInstalada(){
+  const v=document.getElementById('login-ver');
+  if(v) v.textContent=`v${APP_VER} · EMBALAGEM`;
+  let ant=null;
+  try{ ant=localStorage.getItem(APP_VER_K); localStorage.setItem(APP_VER_K, APP_VER); }catch(e){}
+  if(ant && ant!==APP_VER){
+    const bar=document.getElementById('upd-bar'), txt=document.getElementById('upd-txt'), btn=document.getElementById('upd-btn');
+    if(bar&&txt&&btn){
+      txt.innerHTML=`App atualizado para a v${APP_VER}<small>versão anterior: v${ant}</small>`;
+      btn.textContent='OK'; btn.onclick=adiarAtualizacao;
+      bar.style.display='flex';
+      setTimeout(adiarAtualizacao, 8000);
+    }
+  }
+}
+
 // Service worker (necessário para o app ser instalável e abrir como atalho).
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw-mobile.js').catch(()=>{});
+  navigator.serviceWorker.register('/sw-mobile.js').then(reg=>{
+    if(!reg) return;
+    // Versão nova já esperando de uma sessão anterior.
+    if(reg.waiting && navigator.serviceWorker.controller) mostrarAvisoAtualizacao();
+    reg.addEventListener('updatefound', ()=>{
+      const sw=reg.installing; if(!sw) return;
+      sw.addEventListener('statechange', ()=>{
+        // Só avisa quando JÁ havia um service worker no comando: na primeira
+        // instalação isso não é "atualização", é o app abrindo pela 1ª vez.
+        if(sw.state==='installed' && navigator.serviceWorker.controller) mostrarAvisoAtualizacao();
+      });
+    });
+    const checar=()=>{ if(document.visibilityState==='visible') reg.update().catch(()=>{}); };
+    setInterval(checar, 30*60*1000);
+    document.addEventListener('visibilitychange', checar);
+  }).catch(()=>{});
 }
 
 // ════════════════════════════════════════════════
@@ -2283,6 +2495,7 @@ if ('serviceWorker' in navigator) {
 // ════════════════════════════════════════════════
 loadCfg();
 loadProdutoLocal();
+checarVersaoInstalada();
 tickClock();
 setInterval(tickClock, 10000);
 </script>

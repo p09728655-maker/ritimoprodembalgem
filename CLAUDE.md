@@ -65,6 +65,41 @@ via Google Apps Script (JSONP).
   sairia). **`arquivarConcluidosAgora()`** faz a limpeza inicial de uma vez.
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 
+## Caixas perdidas em parada (mobile)
+- **Card PARADAS (gerencial do mobile)** tem seletor `#par-periodo`: **HOJE**
+  (padrão, usa `PARADAS_HOJE` que já vem do `getParadas`) ou **7/15/30 dias**
+  (`getParadasPeriodo`). Os 4 mini-KPIs — tempo parado, disponibilidade,
+  **CAIXAS PERDIDAS** e nº de paradas — recalculam para o período escolhido.
+- **Resumo do HISTÓRICO** ganhou o bloco **CAIXAS PERDIDAS EM PARADAS**, que
+  segue o filtro 7/15/30 que já existia ali (e que **exclui hoje** — por isso o
+  número dele não bate com o do card de PARADAS, que inclui hoje).
+- **Como o número sai** (igual ao desktop): `cx = duração × (metaDia ÷ horas
+  produtivas do turno)`, só para paradas **não planejadas** (refeição/intervalo/
+  almoço, ou classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em
+  andamento (sem FIM) não entra** — sem fim não há duração.
+- **`nDias` = dias que têm parada registrada**, não dias corridos. É por isso que
+  a média/dia e a disponibilidade dizem "N dia(s) com parada" no rótulo: dia sem
+  parada não dilui o número.
+- ⚠ `getParadasPeriodo` lê a aba `PARADAS` **inteira** antes de filtrar (ver nota
+  mais abaixo). Por isso cada período fica em **cache de 5 min** — o card
+  (`PAR_PER_CACHE`) e o histórico (`HIST_PERD_CACHE`) — e o botão **ATUALIZAR**
+  derruba os dois. **Não tirar o cache**: o refresh de 1 min refaria a leitura
+  toda e a seção voltaria a piscar `CARREGANDO`.
+
+## Versão do app / aviso de atualização (mobile)
+- `APP_VER` no topo do script do `ritmoprod_mobile.html` é a versão que aparece
+  na tela de login. **Ao publicar mudança no mobile, suba os dois juntos:**
+  `APP_VER` **e** o `CACHE` do `sw-mobile.js` (`ritmoprod-mobile-vX`). É a troca
+  do nome do cache que faz o navegador instalar o service worker novo.
+- Quem está com o app instalado continua rodando o HTML que já estava aberto até
+  recarregar. Quando o SW novo instala (e já havia um controlando), aparece a
+  barra `#upd-bar` **"Nova versão disponível → ATUALIZAR"**; o botão limpa os
+  caches do domínio e dá `location.reload()`. Também checa update a cada 30 min e
+  quando o app volta para o primeiro plano.
+- Na 1ª abertura depois de subir a versão, a mesma barra vira o aviso
+  **"App atualizado para a vX"** (compara com `localStorage['rp_mob_ver']`) e
+  some sozinha em 8s.
+
 ## Instalar o app (PWA)
 - **No celular** o app é o **`/mobile`** (`ritmoprod_mobile.html` +
   `manifest-mobile.json` + `sw-mobile.js`).
