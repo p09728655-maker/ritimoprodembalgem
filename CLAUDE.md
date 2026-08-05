@@ -142,6 +142,30 @@ via Google Apps Script (JSONP).
   `start_url` (`./index.html`) nem existe. Os manifests que valem são
   `manifest.json` (v7) e `manifest-mobile.json` (mobile).
 
+## Custo das chamadas / auto-refresh (mobile)
+- **Toda leitura do `.gs` lê a aba INTEIRA** (`getDataRange()`, 30+ ocorrências).
+  O custo cresce com o histórico acumulado, não com o que foi pedido: 7 dias de
+  parada custam o mesmo que 30.
+- **`getPontosDia` é a chamada mais cara.** Sozinha ela lê o catálogo
+  `PRODUTO_CODIGO` **3×** na mesma execução (`:1204`, `:1218` e de novo dentro de
+  `calcularProgramacao()` em `:1599`), mais `PRODUCAO_PRODUTO` inteira, mais
+  `PROGRAMACAO` + `PROGRAMACAO_CONCLUIDA`.
+- **Ciclo do mobile (escalonado, uma chamada de cada vez):** tick base de **90s**
+  só para o `getParadas` (banner de PRODUÇÃO PARADA quase ao vivo); `lerSheets`
+  a cada 2 ticks (3 min); `getHistory` + `getPontosDia` a cada 4 ticks (6 min).
+  Dá ~90 chamadas/hora contra as 240 do ciclo antigo de 1 min. Medido no
+  navegador: login = 8 chamadas, 12 min de refresh = 16, botão ATUALIZAR = 5.
+  - `cicloRefresh()` tem **guarda de reentrância** e roda em `await` sequencial —
+    em paralelo as chamadas só se enfileiram no Apps Script (uma execução por
+    vez) e ainda competem com o que o operador está salvando.
+  - **Não voltar a disparar tudo junto no login.** A carga inicial é uma cadeia
+    (`lerSheets → lerHistorico → lerPontosDia → lerMediaHoras`); antes o
+    `getHistory` saía 2× porque o `renderHistorico()` do callback refazia o
+    `lerHistorico()` que já estava em voo.
+- **Ainda por fazer (exige re-deploy manual do `.gs`):** `CacheService` de 30-60s
+  nas leituras, memoizar `lerCatalogoProdutos()` dentro da execução e ler só as
+  últimas linhas da `PARADAS` em vez da aba toda.
+
 ## Notas / armadilhas conhecidas
 - **Coluna MOTIVO do relatório de paradas**: é o texto livre que o operador digita
   no mobile (coluna **G** da aba `PARADAS`, campo `obs`) — opcional, ninguém é

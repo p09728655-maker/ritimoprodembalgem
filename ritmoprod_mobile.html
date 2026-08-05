@@ -767,7 +767,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.2.0';
+const APP_VER   = '1.3.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1864,10 +1864,16 @@ function entrar(tipo){
     carregarProdutos();   // catálogo p/ mostrar "codigo · descrição" do produto atual
     carregarParadas();    // banner de produção parada
     carregarParadasMes(); // comparativo com a média do mês
-    lerSheets().then(()=>{ renderHistorico(); renderGerProduto(); });
-    lerHistorico().then(renderHistoricoComDados);
-    lerMediaHoras().then(ok=>{ if(ok) renderGerencial(); });
-    lerPontosDia().then(()=>renderGerencial());
+    // Em sequência, não em paralelo: o Apps Script atende uma execução por vez,
+    // então disparar tudo junto só enfileira — e o histórico depende do CFG que
+    // vem do lerSheets. Antes o getHistory saía DUAS vezes aqui (o
+    // renderHistorico() do callback refazia o lerHistorico que já estava indo).
+    lerSheets()
+      .then(()=>{ renderGerProduto(); return lerHistorico(); })
+      .then(renderHistoricoComDados)
+      .then(()=>lerPontosDia()).then(()=>renderGerencial())
+      .then(()=>lerMediaHoras()).then(ok=>{ if(ok) renderGerencial(); })
+      .catch(e=>console.warn('carga inicial gerencial:', e.message));
   }
 }
 
@@ -1881,34 +1887,66 @@ function sair(){
 // ════════════════════════════════════════════════
 // AUTO-REFRESH
 // ════════════════════════════════════════════════
+// Antes: 4 chamadas por minuto, todas de uma vez. O Apps Script relê as abas
+// INTEIRAS a cada chamada (getDataRange), então o ciclo não terminava antes do
+// próximo começar. Agora as chamadas saem ESCALONADAS e uma de cada vez.
+// O tick base é curto só por causa do banner de PRODUÇÃO PARADA, que precisa
+// ser quase ao vivo; o resto sai espaçado por cima dele.
+// Por hora: 40 getParadas + 20 getDados + 10× (getHistory, getPontosDia) = ~90
+// chamadas, contra 240 do ciclo antigo.
+const REFRESH_MS      = 90*1000;   // paradas (banner)
+const A_CADA_DADOS    = 2;         // ticks → 3 min: hora a hora
+const A_CADA_PESADO   = 4;         // ticks → 6 min: histórico + pontos/programação
+let _refreshCiclo = 0;
+let _refreshRodando = false;
+
 function iniciarRefreshAuto(){
   pararRefreshAuto();
-  _refreshTimer = setInterval(()=>{
-    lerSheets();
-    if(PERFIL==='operador'){ carregarConfigPainel(); }   // pega mudança do toggle no gerencial
-    if(PERFIL==='operador' || PERFIL==='gerencial'){ carregarParadas(); }
-    if(PERFIL==='gerencial'){
-      lerHistorico().then(renderHistoricoComDados);
-      lerPontosDia().then(()=>renderGerencial());
-      carregarParadasPeriodoSel();   // respeita o cache (só recarrega se venceu)
+  _refreshTimer = setInterval(cicloRefresh, REFRESH_MS);
+}
+
+// Uma chamada de cada vez: disparadas em paralelo elas só se enfileiram no Apps
+// Script (uma execução por vez) e ainda competem com o que o operador está
+// salvando. A guarda impede ciclos empilhados quando a planilha está lenta.
+async function cicloRefresh(){
+  if(_refreshRodando) return;
+  _refreshRodando = true;
+  const c = _refreshCiclo++;
+  try{
+    if(PERFIL==='operador' || PERFIL==='gerencial') await carregarParadas();
+    if(c % A_CADA_DADOS === 0){
+      await lerSheets();
+      if(PERFIL==='operador') await carregarConfigPainel();   // toggle do modo leitor
     }
-  }, 60*1000);
+    if(PERFIL==='gerencial' && c % A_CADA_PESADO === 0){
+      renderHistoricoComDados(await lerHistorico());
+      await lerPontosDia(); renderGerencial();
+      await carregarParadasPeriodoSel();   // respeita o cache (só recarrega se venceu)
+    }
+  }catch(e){ console.warn('cicloRefresh:', e.message); }
+  _refreshRodando = false;
 }
 
 function pararRefreshAuto(){
   if(_refreshTimer){ clearInterval(_refreshTimer); _refreshTimer=null; }
 }
 
-function refresh(){
-  if(PERFIL==='gerencial'){
-    // Botão ATUALIZAR = o usuário quer o número de agora: derruba os caches de
-    // paradas por período (card + histórico) e busca de novo.
-    HIST_PERD_CACHE.k=null;
-    carregarParadasPeriodoSel(true);
-  }
-  lerSheets().then(()=>{
-    if(PERFIL==='gerencial') lerHistorico().then(renderHistoricoComDados);
-  });
+// Botão ATUALIZAR: o usuário quer o número de AGORA, então busca tudo (inclusive
+// o que o ciclo automático só faz em ciclos alternados) e derruba os caches de
+// paradas por período. Segura o ciclo automático enquanto roda, p/ não duplicar.
+async function refresh(){
+  _refreshRodando = true;
+  try{
+    await lerSheets();
+    if(PERFIL==='operador' || PERFIL==='gerencial') await carregarParadas();
+    if(PERFIL==='gerencial'){
+      HIST_PERD_CACHE.k = null;
+      renderHistoricoComDados(await lerHistorico());   // repinta e rebusca as perdas
+      await lerPontosDia(); renderGerencial();
+      await carregarParadasPeriodoSel(true);
+    }
+  }catch(e){ console.warn('refresh:', e.message); }
+  _refreshRodando = false;
 }
 
 // ════════════════════════════════════════════════
@@ -2294,7 +2332,13 @@ async function carregarPerdasHistorico(periodo, datas){
 }
 
 let _histDias=[];   // guarda o histórico carregado p/ o detalhe do dia
+// Falha de rede devolve [] do lerHistorico: com dados já na tela, mantém os
+// últimos em vez de trocar tudo por "Sem histórico disponível".
 function renderHistoricoComDados(dias){
+  if((!dias || !dias.length) && _histDias.length) return;
+  return _renderHistoricoComDados(dias);
+}
+function _renderHistoricoComDados(dias){
   _histDias = dias||[];
   const el=document.getElementById('hist-list');
   const elRes=document.getElementById('hist-resumo');
