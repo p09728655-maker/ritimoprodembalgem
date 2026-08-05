@@ -946,8 +946,11 @@ if (_v7Instalado()) _v7EscondeBotao();
     👤 <span id="perfil-txt">—</span> &nbsp;✕
   </div>
 
-<button class="btn btn-acc" id="btn-pasta" onclick="selecionarPasta()">📁 SELECIONAR PASTA</button>
-  <button class="btn btn-ghost" id="btn-arquivo" onclick="triggerImport()" title="Selecionar arquivo avulso" style="padding:7px 10px">📄</button>
+<!-- Os botões "SELECIONAR PASTA/Google Sheets" e "arquivo avulso" (Excel local)
+     saíram do cabeçalho: os dados vêm SEMPRE do Google Sheets via Apps Script e
+     os botões só confundiam. As funções de importar Excel continuam no código
+     (selecionarPasta/triggerImport) caso um dia precise, e o input abaixo fica
+     porque handleFileInput o referencia. -->
   <button class="btn btn-icon" title="Configurações" onclick="openCfg()">⚙</button>
   <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileInput(this)">
 </header>
@@ -1683,7 +1686,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span id="ftr-ver" class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
-  <span id="ftr-fonte" class="ftr-hide-mobile">DEMO · Carregue um arquivo Excel para dados reais</span>
+  <span id="ftr-fonte" class="ftr-hide-mobile">Conectando ao Google Sheets…</span>
   <span style="flex:1"></span>
   <span style="font-family:'Inter',var(--font-b);font-size:11px;font-weight:700;color:var(--txt2);letter-spacing:-0.2px">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></span>
   <span class="ftr-mobile-only" id="ftr-gs-status" style="display:none;font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:1px"></span>
@@ -1853,7 +1856,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.2';
+const APP_VER   = '7.3.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2545,7 +2548,7 @@ function processarRespostaSheets(json){
   setStatusBadge('live','Google Sheets · '+agora);
   document.getElementById('ftr-fonte').textContent =
     `📊 ${json.planilha||'Google Sheets'} · ${novos.length} slots · Meta: ${json.metaDia} cx · ${agora}`;
-  document.getElementById('btn-pasta').textContent = '📊 Google Sheets';
+  { const _bp=document.getElementById('btn-pasta'); if(_bp) _bp.textContent='📊 Google Sheets'; }
   renderAll();
   window.dispatchEvent(new Event('rpe-sheets-loaded'));
 }
@@ -2761,7 +2764,7 @@ async function lerArquivo(){
     isLive = true;
     const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     setStatusBadge('live', file.name + ' · ' + agora);
-    document.getElementById('btn-pasta').textContent = '📄 ' + file.name;
+    { const _bp=document.getElementById('btn-pasta'); if(_bp) _bp.textContent='📄 ' + file.name; }
     document.getElementById('ftr-fonte').textContent =
       `📄 ${file.name} · ${DADOS.length} slots · Meta: ${DADOS[0]?.metaDia||CFG.metaDia} cx · ${agora}`;
     renderAll();
@@ -2785,9 +2788,8 @@ async function tentarRestaurarPasta(){
     } else {
       // Pede reconexão com 1 clique
       const nome = (await fileHandle.getFile().catch(()=>({name:'arquivo anterior'}))).name;
-      document.getElementById('btn-pasta').textContent = '🔌 RECONECTAR: ' + nome;
-      document.getElementById('btn-pasta').style.background = 'var(--warn)';
-      document.getElementById('btn-pasta').style.color = '#111';
+      const _bp=document.getElementById('btn-pasta');
+      if(_bp){ _bp.textContent='🔌 RECONECTAR: '+nome; _bp.style.background='var(--warn)'; _bp.style.color='#111'; }
     }
   }catch(e){ /* sem handle salvo */ }
 }
@@ -2863,7 +2865,7 @@ function handleFileInput(inp){
     DADOS=parseExcel(e.target.result);
     isLive=true;
     setStatusBadge('live', f.name+' (sem auto-refresh)');
-    document.getElementById('btn-pasta').textContent='📄 '+f.name;
+    { const _bp=document.getElementById('btn-pasta'); if(_bp) _bp.textContent='📄 '+f.name; }
     document.getElementById('ftr-fonte').textContent=`📄 ${f.name} · ${DADOS.length} slots`;
     renderAll();
   };
