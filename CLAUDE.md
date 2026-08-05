@@ -256,7 +256,13 @@ via Google Apps Script (JSONP).
   nenhuma parada do período tem motivo** (senão vira uma parede de `—`); basta uma
   única parada preenchida para ela voltar. Se mexer, manter `<th>` e `<td>` sob a
   mesma condição — e o `colspan` do "Nenhuma parada no período" acompanha.
-- **Modo DEMO** (botão "SELECIONAR PASTA", produção zerada, horários genéricos
+- Os botões **"SELECIONAR PASTA/Google Sheets"** e **"arquivo avulso"** (📄)
+  saíram do cabeçalho do v7 — os dados vêm sempre do Sheets e eles só
+  confundiam. As funções de Excel local (`selecionarPasta`/`triggerImport`/
+  `handleFileInput`) continuam no código, sem botão; os `getElementById`
+  de `btn-pasta` têm guarda de null (o de `processarResposta` roda a cada
+  `lerSheets` — sem guarda, quebraria o painel inteiro).
+- **Modo DEMO** (produção zerada, horários genéricos
   tipo `12:12-13:12`): aparece quando a chamada ao Sheets dá **timeout**. Quase
   sempre é **cold start do Apps Script**, não perda de dados. NÃO é causado por
   mudanças de front-end.
