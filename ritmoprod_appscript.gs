@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
+// Versão: 4.9 — CACHE DE LEITURA (CacheService) + catálogo memoizado
+//               Toda leitura lê a aba INTEIRA (getDataRange), então o custo
+//               crescia com o histórico e o painel repetia a mesma leitura a
+//               cada refresh. Agora as ações de LEITURA ficam em cache curto
+//               (20s-5min, ver CACHE_TTL_LEITURA) e QUALQUER gravação invalida
+//               tudo de uma vez (geração). O operador nunca vê dado velho após
+//               salvar; os refreshes deixam de custar leitura de planilha.
+//               + manterQuente()/instalarGatilhoAquecimento() contra cold start.
 // Versão: 4.8 — fecha o dia às 23:59 (Brasília) e zera à prova de erros
 //               + failsafe do fechamento roda em BACKGROUND (não bloqueia a
 //                 leitura da TV num cold start; ver agendarResetEmBackground)
@@ -144,14 +152,82 @@ const PROP_ULTIMA_LEITURA = 'ultimaLeitura';
 
 
 // ════════════════════════════════════════════════════════
-// WEB APP
+// WEB APP + CACHE DE LEITURA
 // ════════════════════════════════════════════════════════
+// Toda leitura relê a aba inteira (getDataRange) — o custo cresce com o
+// histórico acumulado, não com o que foi pedido. Os painéis fazem as MESMAS
+// leituras a cada refresh, então um cache curto elimina quase todo o custo.
+//
+// Como funciona:
+//   • Só ações de LEITURA entram no cache (mapa CACHE_TTL_LEITURA, TTL em s).
+//   • A chave inclui uma GERAÇÃO ('rp_gen'). Qualquer gravação — pelo app
+//     (saveDay, saveParadas, endParada, saveRealizado…) ou manual na planilha
+//     (onEdit) — troca a geração, o que órfã TODAS as entradas antigas de uma
+//     vez. Por isso os TTLs podem ser generosos sem risco de dado velho: o
+//     operador salva e a leitura seguinte já vem fresca.
+//   • O `callback` do JSONP fica FORA da chave (cacheia-se o JSON; o wrapper
+//     é montado por requisição). Respostas com erro não são cacheadas.
+//   • Entrada acima de 100KB o CacheService rejeita — o try/catch só deixa de
+//     cachear, a resposta sai normal.
+
+const CACHE_TTL_LEITURA = {
+  getDados: 30,                    // hora a hora do dia (TV faz poll disso)
+  getParadas: 20,                  // banner PARADO quase ao vivo; gravação invalida na hora
+  getHistory: 120,                 // o front já trata como cache de 2 min
+  getParadasPeriodo: 300,          // aba PARADAS inteira; front já cacheia 5 min
+  getMediaHoras: 300,
+  getHoraDia: 300,
+  getProdutos: 300,                // catálogo muda raramente
+  getTiposParada: 300,
+  getPontosDia: 60,                // a mais cara de todas (ver getPontosDia)
+  getProgramacaoHoje: 60,
+  getProgramacaoDetalhada: 60,
+  getProducaoModeloPeriodo: 300,
+  getConfigPainel: 30
+};
+
+const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
+  'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel'];
+
+function _cacheGen(cache) {
+  let g = cache.get('rp_gen');
+  if (!g) { g = String(Date.now()); try { cache.put('rp_gen', g, 21600); } catch (e) {} }
+  return g;
+}
+
+// Troca a geração → todas as entradas de leitura ficam órfãs (expiram sós).
+function invalidarCacheLeitura() {
+  try { CacheService.getScriptCache().put('rp_gen', String(Date.now()), 21600); } catch (e) {}
+}
+
+function _saidaJson(json, callback) {
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
 
 function doGet(e) {
   e = e || {};
   const p        = e.parameter || {};
   const act      = p.action   || '';
   const callback = p.callback || '';
+
+  // 1) Cache de leitura: acerto devolve sem tocar na planilha.
+  const actEf = act || 'getDados';
+  const ttl   = CACHE_TTL_LEITURA[actEf];
+  let cache = null, cacheKey = '';
+  if (ttl) {
+    try {
+      cache = CacheService.getScriptCache();
+      cacheKey = 'rp:' + _cacheGen(cache) + ':' + actEf + ':' +
+        ['data', 'de', 'ate', 'codigo', 'modelo'].map(function (k) { return p[k] || ''; }).join('|');
+      const hit = cache.get(cacheKey);
+      if (hit) return _saidaJson(hit, callback);
+    } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
+  }
 
   let result;
 
@@ -181,17 +257,18 @@ function doGet(e) {
     result = { ok: false, erro: err.message, stack: err.stack };
   }
 
+  // 2) Gravou → invalida TODAS as leituras cacheadas (mesmo se o save falhou:
+  //    invalidar demais é seguro; de menos é dado velho na tela do operador).
+  if (ACOES_ESCRITA.indexOf(act) >= 0) invalidarCacheLeitura();
+
   const json = JSON.stringify(result);
 
-  if (callback) {
-    return ContentService
-      .createTextOutput(callback + '(' + json + ')')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  // 3) Guarda leituras que deram certo (erro não se cacheia).
+  if (cache && result && result.ok !== false) {
+    try { cache.put(cacheKey, json, ttl); } catch (errPut) { /* >100KB: só não cacheia */ }
   }
 
-  return ContentService
-    .createTextOutput(json)
-    .setMimeType(ContentService.MimeType.JSON);
+  return _saidaJson(json, callback);
 }
 
 
@@ -1052,7 +1129,14 @@ function getHoraDia(p) {
 
 // Lê o catálogo detectando colunas pelo NOME do cabeçalho (robusto a reordenação),
 // no mesmo padrão de getDados/saveRealizado.
+// Memo da EXECUÇÃO: globals vivem só durante uma execução do Apps Script, então
+// isto não guarda nada entre chamadas — só evita reler a MESMA aba várias vezes
+// dentro de uma chamada. getPontosDia sozinha lia o catálogo 3× (aqui, no nome
+// dos modelos e dentro de calcularProgramacao).
+let _catalogoMemo = null;
+
 function lerCatalogoProdutos() {
+  if (_catalogoMemo) return _catalogoMemo;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PRODUTOS);
   if (!sh) return [];
@@ -1093,6 +1177,7 @@ function lerCatalogoProdutos() {
       tempoTroca: iTroca  >= 0 ? Number(row[iTroca])  || 0 : 0
     });
   }
+  _catalogoMemo = produtos;
   return produtos;
 }
 
@@ -2024,6 +2109,10 @@ function getParadas(p) {
 function onEdit(e) {
   try {
     if (!e || !e.range) return;
+    // Edição manual em QUALQUER aba invalida o cache de leitura — senão o
+    // painel poderia mostrar dado velho por até 5 min depois de uma correção
+    // feita direto na planilha.
+    invalidarCacheLeitura();
     const sh = e.range.getSheet();
     if (sh.getName() !== SHEET_DADOS) return;
     if (e.range.getRow() <= 4) return; // cabeçalho/meta nas primeiras linhas
@@ -2052,6 +2141,29 @@ function instalarGatilhos() {
     .create();
   Logger.log('Gatilho instalado: resetDiario ~' + HORA_RESET + ':' + MIN_RESET
     + ' (fuso do projeto). Confirme o fuso = ' + TZ);
+}
+
+// ════════════════════════════════════════════════════════
+// AQUECIMENTO — contra o cold start (modo DEMO por timeout)
+// ════════════════════════════════════════════════════════
+// O Apps Script "esfria" depois de um tempo sem uso e a primeira chamada paga
+// um cold start que pode estourar o timeout de 25s do painel (é o modo DEMO da
+// TV). Um gatilho a cada 5 min faz uma leitura mínima para reduzir isso.
+// Honestidade: reduz, não elimina — o Google não garante instância quente.
+// Rode instalarGatilhoAquecimento() UMA vez no editor (menu Executar).
+function manterQuente() {
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_DADOS);
+    if (sh) sh.getRange(1, 1).getValue();
+  } catch (e) { /* aquecimento nunca pode gerar erro visível */ }
+}
+
+function instalarGatilhoAquecimento() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'manterQuente') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('manterQuente').timeBased().everyMinutes(5).create();
+  Logger.log('Gatilho instalado: manterQuente a cada 5 min.');
 }
 
 // Rode AGORA (menu Executar) para fechar e zerar o painel na hora, caso ele
