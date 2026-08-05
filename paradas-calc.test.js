@@ -45,6 +45,22 @@ ok('sem CLASSE, cai na heurística por nome', RP.ehPlanejada('Almoço', {}), tru
 ok('nome fora da heurística e sem CLASSE = não planejada',
    RP.ehPlanejada('Parada/Café', {}), false);
 
+console.log('\n── almoço fora da conta (11:00-12:12) ──');
+// O almoço não é tempo disponível: as horas produtivas já o descontam. Contá-lo
+// como parada descontaria duas vezes.
+ok('parada inteira dentro do almoço = 0 min produtivos',
+   RP.durProdutiva('11:00', '12:12', CFG), 0);
+ok('parada dentro de parte do almoço = 0', RP.durProdutiva('11:10', '11:40', CFG), 0);
+// Caso real visto no relatório: Finalização de Lote 10:56 → 12:18 aparecia como
+// 1h22m. Produtivo mesmo: 4 min antes do almoço + 6 min depois.
+ok('parada que ATRAVESSA o almoço conta só as pontas (4+6)',
+   RP.durProdutiva('10:56', '12:18', CFG), 10);
+ok('parada antes do almoço não muda', RP.durProdutiva('08:00', '09:00', CFG), 60);
+ok('parada depois do almoço não muda', RP.durProdutiva('14:00', '14:30', CFG), 30);
+ok('parada que engloba o almoço inteiro (10:00-13:00 → 60+48)',
+   RP.durProdutiva('10:00', '13:00', CFG), 108);
+ok('sem fim continua sem duração', RP.durProdutiva('11:00', '', CFG), null);
+
 console.log('\n── dias trabalhados ──');
 const realByDay = { '01/08/2026': 1500, '02/08/2026': 0, '03/08/2026': 1400, '04/08/2026': 1600 };
 ok('só dias com produção contam', RP.diasTrabalhados(realByDay, '01/08/2026', '04/08/2026'), 3);
@@ -69,9 +85,23 @@ ok('usa a meta de cada dia (200 + 100)', st.pecas, 300);
 ok('tempo parado', st.totMin, 120);
 
 console.log('\n── planejada não vira perda ──');
-st = RP.stats(paradas.concat([{ data: '05/08/2026', tipo: 'ALMOÇO', ini: '11:00', fim: '12:12' }]), base);
-ok('almoço entra no tempo parado', st.totMin, 192);
+st = RP.stats(paradas.concat([{ data: '05/08/2026', tipo: 'Parada/Café', ini: '09:00', fim: '09:15' }]),
+              Object.assign({}, base, { classeMap: { 'Parada/Café': 'PLANEJADA' } }));
+ok('café planejado entra no tempo parado', st.totMin, 135);
 ok('mas não entra na perda', st.pecas, 300);
+
+console.log('\n── almoço nem no tempo parado, nem na contagem ──');
+st = RP.stats(paradas.concat([{ data: '05/08/2026', tipo: 'ALMOÇO', ini: '11:00', fim: '12:12' }]), base);
+ok('não soma no tempo parado', st.totMin, 120);
+ok('não conta como parada', st.nParadas, 2);
+ok('fica registrado no diagnóstico', st.diag.paradasNoAlmoco, 1);
+ok('e os minutos excluídos aparecem', st.diag.minAlmocoExcluidos, 72);
+
+console.log('\n── parada que atravessa o almoço entra recortada ──');
+st = RP.stats([{ data: '03/08/2026', tipo: 'Finalização de Lote', ini: '10:56', fim: '12:18' }], base);
+ok('conta 10 min, não 1h22m', st.totMin, 10);
+ok('perda pelos 10 min (200 cx/h → 33)', st.pecas, 33);
+ok('72 min de almoço fora', st.diag.minAlmocoExcluidos, 72);
 
 console.log('\n── parada em andamento (sem FIM) ──');
 st = RP.stats(paradas.concat([{ data: '05/08/2026', tipo: 'MANUTENCAO', ini: '10:00', fim: '' }]), base);

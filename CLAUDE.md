@@ -76,10 +76,22 @@ via Google Apps Script (JSONP).
 - **Resumo do HISTÓRICO** ganhou o bloco **CAIXAS PERDIDAS EM PARADAS**, que
   segue o filtro 7/15/30 que já existia ali (e que **exclui hoje** — por isso o
   número dele não bate com o do card de PARADAS, que inclui hoje).
-- **Como o número sai:** `cx = duração × (meta DAQUELE DIA ÷ horas produtivas do
-  turno)`, só para paradas **não planejadas** (refeição/intervalo/almoço, ou
-  classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em andamento (sem
-  FIM) não entra** — sem fim não há duração.
+- **O ALMOÇO (11:00–12:12) fica FORA de tudo** (`durProdutiva`). As horas
+  produtivas do turno já descontam o almoço; contá-lo como parada desconta duas
+  vezes — inflava o tempo parado, o nº de paradas e ainda punha o ALMOÇO no topo
+  dos ofensores.
+  - **Não basta excluir paradas do tipo "almoço":** o caso real era uma
+    `Finalização de Lote` das **10:56 às 12:18** contada como **1h22m**. Ela
+    *atravessa* o almoço. A regra é recortar: conta só o que cai em tempo
+    produtivo (4 min antes + 6 depois = **10 min**).
+  - Parada inteiramente dentro do almoço vira 0 e **sai da análise e da lista**
+    (nos dois painéis) — se aparecesse na lista sem entrar no KPI, a soma na tela
+    não fecharia. Quanto foi excluído aparece no `diag`
+    (`minAlmocoExcluidos`/`paradasNoAlmoco`) e na linha de diagnóstico.
+- **Como o número sai:** `cx = duração produtiva × (meta DAQUELE DIA ÷ horas
+  produtivas do turno)`, só para paradas **não planejadas** (refeição/intervalo/
+  almoço, ou classe `PLANEJADA` na `TIPOS_PARADA`, contam 0). Parada **em
+  andamento (sem FIM) não entra** — sem fim não há duração.
   - **É a meta de cada dia, não a de hoje.** A perda de uma parada de 20/07 usa a
     meta de 20/07 (`metaByDay`, vindo do `HISTORICO`); hoje usa a meta da
     `HORA_A_HORA`. Usando só `CFG.metaDia` para tudo, o mobile dava **3.780** cx

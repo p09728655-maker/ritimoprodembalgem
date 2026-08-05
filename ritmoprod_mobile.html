@@ -772,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.6.0';
+const APP_VER   = '1.7.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1492,13 +1492,18 @@ function renderGerParadasResumo(){
   // lista inteira de 30 dias viraria uma rolagem sem fim no celular)
   if(li){
     const LIM=25;
-    const ord=lista.slice().sort((a,b)=> ehHoje
+    // Fora da lista o que caiu inteiro dentro do almoço — os KPIs também não
+    // contam (o almoço já está fora das horas produtivas). Se a lista mostrasse
+    // e o KPI não, a soma na tela não fecharia.
+    const emAndamento=p=>!p.fim||String(p.fim).trim()==='';
+    const visiveis=lista.filter(p=>emAndamento(p)||RP_PARADAS.durProdutiva(p.ini,p.fim,CFG)>0);
+    const ord=visiveis.slice().sort((a,b)=> ehHoje
       ? String(a.ini).localeCompare(String(b.ini))
       : (_dataNum(b.data)-_dataNum(a.data)) || String(b.ini).localeCompare(String(a.ini)));
     const mostrar=ehHoje?ord:ord.slice(0,LIM);
     const titulo=ehHoje?'PARADAS DE HOJE':`PARADAS DO PERÍODO${ord.length>LIM?` (${LIM} de ${ord.length})`:''}`;
     li.innerHTML=`<div class="par-sub-lbl">${titulo}</div>`+mostrar.map(p=>{
-      const d=_durMin2(p.ini,p.fim); const em=!p.fim||String(p.fim).trim()==='';
+      const d=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); const em=emAndamento(p);
       const planej=_ehPlanejadaM(p.tipo);
       const dt=ehHoje?'':`<div class="par-item2-dt">${String(p.data||'').substring(0,5)}</div>`;
       return `<div class="par-item2"><div style="min-width:0">${dt}<div style="color:${planej?'var(--txt2)':'var(--txt)'};font-weight:600">${p.tipo||'—'}</div>${p.obs?`<div style="font-size:10px;color:var(--txt2)">${p.obs}</div>`:''}</div><div style="text-align:right;font-family:var(--font-d);font-size:10px;color:var(--txt2);white-space:nowrap">${p.ini||'--:--'}${em?' · <span style="color:var(--warn)">aberta</span>':' · '+_fmtMin2(d)}</div></div>`;

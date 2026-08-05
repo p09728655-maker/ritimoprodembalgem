@@ -1852,7 +1852,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.2.0';
+const APP_VER   = '7.3.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5301,14 +5301,21 @@ async function gerarRelatorioParadas(){
     return `<div style="font-size:12px;color:#222;margin:4px 0">▸ ${txt}</div>`;
   }).join('')):'';
 
-  const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+  // Fora do detalhamento o que caiu INTEIRO dentro do almoço: os KPIs acima
+  // também não contam (o almoço já está fora das horas produtivas). O que só
+  // atravessa o almoço fica, com a duração produtiva — ex.: 10:56→12:18 aparece
+  // como 10 min (4 antes + 6 depois), não 1h22m.
+  const detOrd=(paradas||[])
+    .filter(p=>!p.fim||String(p.fim).trim()===''||RP_PARADAS.durProdutiva(p.ini,p.fim,CFG)>0)
+    .sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
   // MOTIVO é texto livre e opcional (o operador digita no mobile). Se ninguém
   // preencheu no período, a coluna vira uma parede de "—": some com ela e o
   // detalhamento fica com 5 colunas. Basta UMA parada com motivo para voltar.
   const temMotivo=detOrd.some(p=>String(p.obs||'').trim()!=='');
   const nColDet=temMotivo?6:5;
   const linhasDet=detOrd.map(p=>{
-    const d=_durMinPar(p.ini,p.fim); const emand=!p.fim||String(p.fim).trim()==='';
+    // Duração PRODUTIVA (sem o almoço) — é a que entra nos KPIs acima.
+    const d=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); const emand=!p.fim||String(p.fim).trim()==='';
     const planej=_ehPlanejada(p.tipo);
     return `<tr>
       <td class="td-mono">${esc(p.data)}</td>
@@ -5673,7 +5680,7 @@ async function _renderAnaliseParadasCore(opts){
     if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR HORA (estimativa)';
     const porHora={};
     parF.forEach(p=>{ if(_ehPlanejada(p.tipo)) return;
-      const dm=_durMinPar(p.ini,p.fim); if(dm==null) return;
+      const dm=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); if(!dm) return;   // almoço fora
       const mh=(metaByDay[p.data]||CFG.metaDia)/horasProd;
       const hh=(String(p.ini).match(/^(\d{1,2}):/)||[])[1]; if(hh==null) return;
       const key=p2(+hh)+'h'; porHora[key]=(porHora[key]||0)+Math.round(dm/60*mh);
