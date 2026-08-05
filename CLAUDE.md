@@ -293,3 +293,9 @@ via Google Apps Script (JSONP).
   - Na **TV** o marcador é **só `⚠`** (sem texto `<méd>`): o texto longo quebrava a
     linha, aumentava a altura e empurrava o último horário para fora da tela.
     Na **gerencial** também é só `⚠` (média no tooltip).
+
+## Deploy (Vercel)
+- Se o painel não atualizar após um merge, conferir se a Vercel construiu a
+  `main`: o webhook do push pode falhar silenciosamente (aconteceu no #200 —
+  preview da branch buildou, produção não). Re-disparar = qualquer commit novo
+  na `main` (PR mínimo como este).
