@@ -271,6 +271,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .par-comp{display:flex;flex-wrap:wrap;gap:2px 10px;justify-content:space-between;padding:9px 0 2px;font-family:var(--font-d);font-size:11px;color:var(--txt2);border-top:0.5px solid var(--border);margin-top:8px}
 .par-item2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-top:0.5px solid var(--border);font-size:12px}
 .par-item2-dt{font-family:var(--font-d);font-size:9px;color:var(--txt3);letter-spacing:1px}
+.par-base{font-family:var(--font-d);font-size:9px;color:var(--txt3);line-height:1.4;margin-top:8px}
 .par-toggle{
   width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
   background:none;border:none;padding:2px 0;cursor:pointer;color:var(--txt2);
@@ -757,6 +758,10 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <button class="upd-x" onclick="adiarAtualizacao()" title="Agora não">×</button>
 </div>
 
+<!-- Cálculo de paradas: MESMO arquivo usado pelo painel desktop. Não duplicar a
+     conta aqui — foi a duplicação que fez os dois divergirem. Sem defer: o
+     script abaixo já usa o RP_PARADAS. -->
+<script src="/paradas-calc.js"></script>
 <script>
 // ════════════════════════════════════════════════
 // VERSÃO DO APP
@@ -767,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.4.0';
+const APP_VER   = '1.6.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1349,25 +1354,8 @@ let _parPerCarregando=null;        // período em voo (evita chamadas empilhadas
 function _dataMenosDias(n){ const d=new Date(); d.setDate(d.getDate()-n); return dtToStr(d); }
 
 // Dias do HISTORICO (todos), p/ contar dias trabalhados no período.
+// A contagem em si é do RP_PARADAS (paradas-calc.js) — ver _realByDayMob().
 let HIST_DIAS_ALL=[];
-// Dias efetivamente TRABALHADOS dentro dos últimos N dias: os que têm produção
-// no HISTORICO, mais hoje se já produziu (hoje só entra no HISTORICO no
-// fechamento). Fim de semana, feriado e parada de fábrica ficam de fora
-// sozinhos — não têm produção lançada.
-// Se o histórico ainda não chegou, devolve 0 e quem chama cai no antigo
-// "dias com parada".
-function _diasTrabalhados(nDias){
-  const lim=_dataNum(_dataMenosDias(nDias-1));
-  const set=new Set();
-  (HIST_DIAS_ALL||[]).forEach(d=>{
-    const n=_dataNum(d.data);
-    if(n>=lim && (parseFloat(d.real)||0)>0) set.add(d.data);
-  });
-  if(!set.size) return 0;
-  const hj=hojeStr();
-  if(getDadosHoje().reduce((s,r)=>s+(r.producaoHora||0),0)>0) set.add(hj);
-  return set.size;
-}
 // Lista do período selecionado. null = ainda não chegou (mostra CARREGANDO).
 function paradasDoPeriodo(){
   if(PAR_PER_SEL==='0') return PARADAS_HOJE;
@@ -1396,49 +1384,52 @@ async function carregarParadasPeriodoSel(force){
   _parPerCarregando=null;
   if(PAR_PER_SEL===per) renderGerParadasResumo();
 }
-function _horasProdMob(){ return Math.max(1,(toMin(CFG.turnoFim)-toMin(CFG.turnoInicio)-(toMin(CFG.almocoFim)-toMin(CFG.almocoInicio)))/60); }
-function _durMin2(ini,fim){ if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim)))return null; const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number); const d=(c*60+e)-(a*60+b); return d>=0?d:null; }
-function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
-// Meta de CADA dia (mesma fonte do desktop): a perda de uma parada de 20/07 tem
-// que usar a meta de 20/07, não a de hoje. Usando só CFG.metaDia o mobile dava
-// 3.780 cx onde o desktop dava 3.897 no mesmo período.
+// ── Adaptadores para o cálculo ÚNICO (paradas-calc.js) ────────────────────
+// A conta em si NÃO mora aqui — mora no RP_PARADAS, compartilhado com o
+// desktop. Este arquivo só monta as entradas. Se voltar a aparecer conta de
+// parada nestas funções, os dois painéis voltam a divergir.
+function _horasProdMob(){ return RP_PARADAS.horasProdutivas(CFG); }
+function _durMin2(ini,fim){ return RP_PARADAS.durMin(ini,fim); }
+function _fmtMin2(m){ return RP_PARADAS.fmtMin(m); }
+
+// Meta de CADA dia: a perda de uma parada de 20/07 usa a meta de 20/07, não a
+// de hoje. Usando só CFG.metaDia o mobile dava 3.780 cx onde o desktop dava
+// 3.897 no mesmo período.
 function _metaByDayMob(){
   const m={};
   (HIST_DIAS_ALL||[]).forEach(d=>{ const v=parseFloat(d.meta)||0; if(d.data&&v>0) m[d.data]=v; });
-  // Hoje ainda não está no HISTORICO: usa a meta da HORA_A_HORA (o mesmo valor
-  // que o operador vê nos slots), como o desktop faz.
-  const hj=hojeStr();
-  const metaSlots=DADOS.filter(d=>d.data===hj).reduce((s,d)=>s+(d.metaHora||0),0);
-  m[hj]=metaSlots||CFG.metaDia||0;
   return m;
 }
+// Meta de HOJE: hoje ainda não está no HISTORICO, então vem da HORA_A_HORA (o
+// mesmo valor que o operador vê nos slots) — igual ao desktop.
+function _metaHojeMob(){
+  const hj=hojeStr();
+  return DADOS.filter(d=>d.data===hj).reduce((s,d)=>s+(d.metaHora||0),0) || CFG.metaDia || 0;
+}
+// realByDay para a base de dias trabalhados, no formato que o RP_PARADAS espera.
+function _realByDayMob(){
+  const r={};
+  (HIST_DIAS_ALL||[]).forEach(d=>{ if(d.data) r[d.data]=parseFloat(d.real)||0; });
+  const hj=hojeStr();
+  const prodHoje=getDadosHoje().reduce((s,x)=>s+(x.producaoHora||0),0);
+  if(prodHoje>0) r[hj]=prodHoje;
+  return r;
+}
 
-// nDiasBase: base de dias para a média/dia e para a disponibilidade. Passe os
-// DIAS TRABALHADOS do período — sem isso a conta divide por "dias que tiveram
-// parada", e um dia trabalhado sem nenhuma parada (o melhor dia) sumiria da
-// média, empurrando o número pra cima.
-function _statsParadasMob(lista, nDiasBase){
-  const horasProd=_horasProdMob();
-  const metaByDay=_metaByDayMob();
-  let totMin=0,totMinNP=0,pecas=0,n=0; const porTipo={},dias=new Set();
-  (lista||[]).forEach(p=>{
-    const d=_durMin2(p.ini,p.fim); if(d==null) return;
-    n++; dias.add(p.data); totMin+=d;
-    const planej=_ehPlanejadaM(p.tipo);
-    const metaHora=(metaByDay[p.data]||CFG.metaDia||0)/horasProd;
-    const perd=planej?0:Math.round(d/60*metaHora);
-    if(!planej){ totMinNP+=d; pecas+=perd; }
-    const k=p.tipo||'—'; if(!porTipo[k])porTipo[k]={min:0,qtd:0,planej}; porTipo[k].min+=d; porTipo[k].qtd++;
+// periodoDias: 0/ausente = só hoje; 7/15/30 = últimos N dias (define o intervalo
+// usado para contar os dias trabalhados).
+function _statsParadasMob(lista, periodoDias){
+  const n=parseInt(periodoDias,10)||0;
+  const de=n>0?_dataMenosDias(n-1):hojeStr();
+  return RP_PARADAS.stats(lista, {
+    cfg: CFG,
+    metaByDay: _metaByDayMob(),
+    metaHoje:  _metaHojeMob(),
+    hoje:      hojeStr(),
+    classeMap: PAR_CLASSE_MAP_M,
+    realByDay: _realByDayMob(),
+    de: de, ate: hojeStr()
   });
-  const nDiasParada=dias.size||1;
-  // base = dias trabalhados quando o chamador souber; senão, dias com parada
-  const nDias=(nDiasBase&&nDiasBase>0)?nDiasBase:nDiasParada;
-  const baseTrab=!!(nDiasBase&&nDiasBase>0);
-  const tempoDisp=nDias*horasProd*60;
-  const dispon=tempoDisp>0?Math.max(0,(tempoDisp-totMinNP)/tempoDisp*100):100;
-  const media=nDias>0?Math.round(pecas/nDias):0;
-  const tipos=Object.keys(porTipo).map(t=>({tipo:t,...porTipo[t]})).sort((a,b)=>b.min-a.min);
-  return {totMin,totMinNP,pecas,n,nDias,nDiasParada,baseTrab,media,dispon,tipos};
 }
 function renderGerParadasResumo(){
   const kg=document.getElementById('ger-par-kpis'); if(!kg) return;
@@ -1457,8 +1448,7 @@ function renderGerParadasResumo(){
   // No período a base é DIAS TRABALHADOS (produção lançada), não dias com
   // parada: sábado/domingo/feriado ficam de fora sozinhos, e o dia trabalhado
   // que rodou sem parar entra na conta puxando a média pra baixo — como deve.
-  const nTrab=ehHoje?0:_diasTrabalhados(parseInt(PAR_PER_SEL,10));
-  const st=_statsParadasMob(lista, nTrab);
+  const st=_statsParadasMob(lista, ehHoje?0:parseInt(PAR_PER_SEL,10));
   const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
   const rotDias=st.baseTrab?`${st.nDias} dia(s) trabalhados`:`${st.nDias} dia(s) com parada`;
   const kpi4=ehHoje
@@ -1486,14 +1476,17 @@ function renderGerParadasResumo(){
     }).join('');
     let comp='';
     // Mês corrente: mesma base de dias trabalhados (do dia 1 até hoje).
-    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES, _diasTrabalhados(new Date().getDate())); const media=sm.media;
+    if(PAR_MES){ const sm=_statsParadasMob(PAR_MES, new Date().getDate()); const media=sm.media;
       // Em HOJE compara o dia com a média/dia do mês; no período, compara a
       // média/dia do período com a do mês (dia contra total seria enganoso).
       const meu=ehHoje?st.pecas:st.media;
       const seta=meu>media?'▲':meu<media?'▼':'=';
       comp=`<div class="par-comp"><span>${ehHoje?'HOJE':'MÉDIA/DIA'}: <b style="color:${meu>media?'var(--red)':'var(--ok)'}">${fmtN(meu)} cx</b> ${seta}</span><span>${ehHoje?'MÉDIA/DIA (mês)':'MÊS'}: ${fmtN(media)} cx</span></div>`;
     }
-    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp;
+    // Base do cálculo, idêntica à do desktop (mesma função). Quando os dois
+    // discordarem, é esta linha que mostra por quê.
+    const base=`<div class="par-base">CAIXAS PERDIDAS = ${RP_PARADAS.diagTexto(st.diag)}</div>`;
+    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp+base;
   }
   // Lista das paradas (no período, as mais recentes primeiro e limitada — a
   // lista inteira de 30 dias viraria uma rolagem sem fim no celular)
@@ -1879,6 +1872,10 @@ function entrar(tipo){
     renderGerencial();
     carregarProdutos();   // catálogo p/ mostrar "codigo · descrição" do produto atual
     carregarParadas();    // banner de produção parada
+    // Sem isto o PAR_CLASSE_MAP_M fica VAZIO no gerencial e a classificação
+    // planejada/não-planejada cai na heurística por nome — o desktop usa a
+    // coluna CLASSE da TIPOS_PARADA, e os dois divergiam nas caixas perdidas.
+    carregarTiposParada().then(()=>renderGerParadasResumo());
     carregarParadasMes(); // comparativo com a média do mês
     // Em sequência, não em paralelo: o Apps Script atende uma execução por vez,
     // então disparar tudo junto só enfileira — e o histórico depende do CFG que
@@ -2325,8 +2322,12 @@ async function carregarPerdasHistorico(periodo, datas){
     const el=document.getElementById('hist-rz-perd-val'); if(!el) return;
     const set=new Set(datas);
     // Base = os próprios dias do histórico (dias com turno fechado = dias
-    // trabalhados), a mesma base do "Média / dia" de produção logo acima.
-    const st=_statsParadasMob((lista||[]).filter(p=>set.has(p.data)), datas.length);
+    // trabalhados), a mesma base do "Média / dia" de produção logo acima. Aqui
+    // a base vai FORÇADA (nDiasBase): a lista já diz exatamente quais dias são.
+    const st=RP_PARADAS.stats((lista||[]).filter(p=>set.has(p.data)), {
+      cfg: CFG, metaByDay:_metaByDayMob(), metaHoje:_metaHojeMob(), hoje:hojeStr(),
+      classeMap: PAR_CLASSE_MAP_M, nDiasBase: datas.length, de, ate
+    });
     el.style.fontSize=''; el.style.color=st.pecas>0?'var(--red)':'var(--ok)';
     el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · média ${fmtN(st.media)}/dia · ${datas.length} dias trabalhados</span>`;
   };
