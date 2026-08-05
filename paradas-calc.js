@@ -58,6 +58,27 @@
     return m >= 60 ? Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0') + 'm' : m + ' min';
   }
 
+  // Duração PRODUTIVA: os minutos da parada que caem fora do almoço.
+  //
+  // O almoço não é tempo disponível — as horas produtivas do turno já descontam
+  // 11:00-12:12. Contar uma "parada" de almoço como tempo parado é descontar
+  // duas vezes: inflava o TEMPO TOTAL PARADO, o nº de paradas e ainda colocava
+  // o ALMOÇO no topo dos ofensores, onde ele não diz nada sobre a linha.
+  //
+  // Parada que ATRAVESSA o almoço (ex.: manutenção 10:30-12:30) não é
+  // descartada: conta só o que caiu em tempo produtivo (30 + 18 = 48 min, não
+  // 120). Parada inteiramente dentro do almoço vira 0 e sai da análise.
+  function durProdutiva(ini, fim, cfg) {
+    var bruta = durMin(ini, fim);
+    if (bruta == null) return null;
+    cfg = cfg || {};
+    var aIni = toMin(cfg.almocoInicio), aFim = toMin(cfg.almocoFim);
+    if (!isFinite(aIni) || !isFinite(aFim) || aFim <= aIni) return bruta;
+    var pIni = toMin(ini), pFim = toMin(fim);
+    var sobrepoe = Math.max(0, Math.min(pFim, aFim) - Math.max(pIni, aIni));
+    return Math.max(0, bruta - sobrepoe);
+  }
+
   // A coluna CLASSE da aba TIPOS_PARADA manda; vazia, cai na heurística.
   function ehPlanejada(tipo, classeMap) {
     var c = (classeMap || {})[String(tipo || '').trim()];
@@ -117,10 +138,15 @@
 
     var totMin = 0, totMinNP = 0, pecas = 0, nParadas = 0;
     var porTipo = {}, porDia = {}, diasSet = {}, semMeta = {}, ignoradas = 0;
+    var minAlmoco = 0, noAlmoco = 0;
 
     (paradas || []).forEach(function (p) {
-      var d = durMin(p.ini, p.fim);
-      if (d == null) { ignoradas++; return; }   // em andamento / horário inválido
+      var bruta = durMin(p.ini, p.fim);
+      if (bruta == null) { ignoradas++; return; }   // em andamento / horário inválido
+      // Só o tempo fora do almoço conta (ver durProdutiva).
+      var d = durProdutiva(p.ini, p.fim, cfg);
+      if (bruta > d) minAlmoco += (bruta - d);
+      if (d <= 0) { noAlmoco++; return; }           // parada inteira dentro do almoço
       nParadas++; diasSet[p.data] = 1; totMin += d;
 
       var planej = ehPlanejada(p.tipo, classeMap);
@@ -187,6 +213,8 @@
         classesCarregadas: Object.keys(classeMap).length,
         tiposPlanejados: tipos.filter(function (t) { return t.planej; }).map(function (t) { return t.tipo; }),
         paradasIgnoradas: ignoradas,            // sem FIM (em andamento) ou hora inválida
+        paradasNoAlmoco: noAlmoco,              // caíram inteiras dentro do almoço
+        minAlmocoExcluidos: minAlmoco,          // minutos de almoço tirados da conta
         periodo: (opts.de || '?') + ' a ' + (opts.ate || '?'),
         baseDias: baseTrab ? 'trabalhados' : 'com parada'
       }
@@ -199,6 +227,7 @@
     if (!d) return '';
     return 'duração × ' + d.ritmoHora + ' cx/h (meta do dia ÷ ' + d.horasProd.toFixed(1) + 'h produtivas)'
       + ' · ' + d.classesCarregadas + ' classe(s)'
+      + (d.minAlmocoExcluidos ? ' · almoço fora (' + fmtMin(d.minAlmocoExcluidos) + ')' : '')
       + (d.diasSemMeta.length ? ' · ' + d.diasSemMeta.length + ' dia(s) sem meta' : '')
       + (d.paradasIgnoradas ? ' · ' + d.paradasIgnoradas + ' sem fim' : '');
   }
@@ -211,6 +240,7 @@
     dataNum: dataNum,
     horasProdutivas: horasProdutivas,
     durMin: durMin,
+    durProdutiva: durProdutiva,
     fmtMin: fmtMin,
     ehPlanejada: ehPlanejada,
     diasTrabalhados: diasTrabalhados,

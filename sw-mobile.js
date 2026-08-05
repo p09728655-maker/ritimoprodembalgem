@@ -8,9 +8,15 @@
 // `ritmoprod_mobile.html`. É a troca do nome do cache que faz o navegador
 // instalar o SW novo — e é isso que dispara o aviso "Nova versão disponível"
 // para quem está com o app instalado.
-const CACHE = 'ritmoprod-mobile-v8';   // APP_VER 1.6.0
+const CACHE = 'ritmoprod-mobile-v10';   // APP_VER 1.7.1
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  // Pré-cacheia o módulo de cálculo junto com a instalação: sem isto o cache
+  // podia ficar com o HTML novo SEM o paradas-calc.js (rede caiu entre os dois)
+  // e toda abertura offline quebrava o gerencial.
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/paradas-calc.js']).catch(() => {})));
+});
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -33,6 +39,9 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(e.request))
+      // Cache miss devolvia undefined e respondWith(undefined) derruba a
+      // requisição com erro opaco. Um 503 explícito deixa o onerror da página
+      // tratar (ex.: a guarda _rpRecarregar do paradas-calc).
+      .catch(() => caches.match(e.request).then(r => r || new Response('', { status: 503, statusText: 'offline' })))
   );
 });

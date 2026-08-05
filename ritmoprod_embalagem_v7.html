@@ -1852,7 +1852,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.2.0';
+const APP_VER   = '7.3.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5220,6 +5220,7 @@ ${(()=>{
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
 async function gerarRelatorioParadas(){
+  if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
   const win=window.open('','_blank','width=1040,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório de paradas...</p></body></html>');
@@ -5233,13 +5234,18 @@ async function gerarRelatorioParadas(){
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
   const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  let paradas, _hist;
+  // Sequencial + retry, como na aba PARADAS: o Apps Script atende uma execução
+  // por vez — paralelo só enfileira, e no cold start tudo estoura junto.
+  let paradas=null, _hist={m:{},r:{}};
   try{
-    [paradas, _hist]=await Promise.all([
-      jsonpFetch(urlP).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-      buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
-      _carregarClassesPar()
-    ]);
+    for(let i=1;i<=3 && paradas===null;i++){
+      try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
+      catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
+    }
+    if(paradas!==null){
+      _hist=await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
+      await _carregarClassesPar();
+    }
   }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
   if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
@@ -5301,14 +5307,21 @@ async function gerarRelatorioParadas(){
     return `<div style="font-size:12px;color:#222;margin:4px 0">▸ ${txt}</div>`;
   }).join('')):'';
 
-  const detOrd=(paradas||[]).slice().sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
+  // Fora do detalhamento o que caiu INTEIRO dentro do almoço: os KPIs acima
+  // também não contam (o almoço já está fora das horas produtivas). O que só
+  // atravessa o almoço fica, com a duração produtiva — ex.: 10:56→12:18 aparece
+  // como 10 min (4 antes + 6 depois), não 1h22m.
+  const detOrd=(paradas||[])
+    .filter(p=>!p.fim||String(p.fim).trim()===''||RP_PARADAS.durProdutiva(p.ini,p.fim,CFG)>0)
+    .sort((a,b)=> (pnum(a.data)-pnum(b.data)) || String(a.ini).localeCompare(String(b.ini)) );
   // MOTIVO é texto livre e opcional (o operador digita no mobile). Se ninguém
   // preencheu no período, a coluna vira uma parede de "—": some com ela e o
   // detalhamento fica com 5 colunas. Basta UMA parada com motivo para voltar.
   const temMotivo=detOrd.some(p=>String(p.obs||'').trim()!=='');
   const nColDet=temMotivo?6:5;
   const linhasDet=detOrd.map(p=>{
-    const d=_durMinPar(p.ini,p.fim); const emand=!p.fim||String(p.fim).trim()==='';
+    // Duração PRODUTIVA (sem o almoço) — é a que entra nos KPIs acima.
+    const d=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); const emand=!p.fim||String(p.fim).trim()==='';
     const planej=_ehPlanejada(p.tipo);
     return `<tr>
       <td class="td-mono">${esc(p.data)}</td>
@@ -5506,6 +5519,23 @@ function _paradasStats(paradas, metaByDay, opts){
 // com um ciclo em andamento simplesmente desiste (o próximo tick pega); ação do
 // usuário (mudou período/classe) fica pendente e roda assim que o ciclo termina.
 let _parBusy=false, _parPend=null;
+// ── Guarda do módulo de cálculo (paradas-calc.js) ──────────────────────────
+// Se o arquivo não carregou (deploy parcial, rede da fábrica, file://), NADA
+// de paradas pode lançar — a aba ficava presa em "CARREGANDO…" e o relatório
+// em "⏳" sem mensagem nenhuma. Sem o módulo: avisa e recarrega sozinho.
+function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
+let _rpRecarregando=false;
+function _rpRecarregar(cb){
+  if(_rpOk()){ if(cb) cb(); return; }
+  if(_rpRecarregando) return;
+  _rpRecarregando=true;
+  const s=document.createElement('script');
+  s.src='/paradas-calc.js?r='+Date.now();
+  s.onload=()=>{ _rpRecarregando=false; if(cb) cb(); };
+  s.onerror=()=>{ setTimeout(()=>{ _rpRecarregando=false; _rpRecarregar(cb); }, 15000); };
+  document.head.appendChild(s);
+}
+
 async function renderAnaliseParadas(opts){
   if(_parBusy){ if(!(opts&&opts.silent)) _parPend=opts||{}; return; }
   _parBusy=true;
@@ -5533,6 +5563,12 @@ function _parUpd(txt,cls){
 }
 
 async function _renderAnaliseParadasCore(opts){
+  if(!_rpOk()){
+    const g=document.getElementById('par-kpi-grid');
+    if(g) g.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">RECARREGANDO MÓDULO DE CÁLCULO…</div><div class="kpi-sub">o arquivo paradas-calc.js não veio no carregamento — buscando de novo sozinho</div></div>';
+    _rpRecarregar(()=>renderAnaliseParadas(opts));
+    return;
+  }
   const grid=document.getElementById('par-kpi-grid');
   if(!grid) return;
   if(!CFG.sheetsUrl){ grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">SEM CONEXÃO</div><div class="kpi-sub">Configure o Google Sheets para ver a análise de paradas.</div></div>'; return; }
@@ -5564,13 +5600,30 @@ async function _renderAnaliseParadasCore(opts){
   const _fdt=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
   const mkUrlP=(d1,d2)=>CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(d1)+'&ate='+encodeURIComponent(d2);
 
-  // Busca período atual + período anterior + histórico EM PARALELO, tolerante a falha.
-  const [paradas, prevParadas, _hist] = await Promise.all([
-    jsonpFetch(mkUrlP(de,ate)).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>null),
-    jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]),
-    buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}})),
-    _carregarClassesPar()
-  ]);
+  // EM SEQUÊNCIA, com retry na chamada principal. O Apps Script atende UMA
+  // execução por vez: as 3 chamadas em paralelo só se enfileiravam lá, e num
+  // cold start todas estouravam o timeout de 25s JUNTAS → "NÃO CARREGOU" mesmo
+  // com o servidor já acordando. Sequencial, a 1ª chamada paga o cold start e
+  // as seguintes respondem rápido; se a 1ª falhar, tenta de novo (backoff) —
+  // mesma receita do lerSheetsComRetry que já segurou esse problema no load.
+  async function _fetchParadasRetry(url, tent){
+    for(let i=1;i<=tent;i++){
+      try{ const j=await jsonpFetch(url); if(j&&j.ok) return j.paradas||[]; }
+      catch(e){ /* timeout/cold start */ }
+      if(i<tent){
+        if(!silent) grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO… ('+i+'ª tentativa)</div><div class="kpi-sub">o servidor está ligando (cold start) — reconectando sozinho</div></div>';
+        await new Promise(r=>setTimeout(r, 1500*i));
+      }
+    }
+    return null;
+  }
+  const paradas = await _fetchParadasRetry(mkUrlP(de,ate), 3);
+  // As secundárias só depois da principal (servidor já quente) e tolerantes a falha.
+  const prevParadas = paradas===null ? [] :
+    await jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]);
+  const _hist = paradas===null ? {m:{},r:{}} :
+    await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
+  await _carregarClassesPar();
   const metaByDay=_hist.m, realByDay=_hist.r;
   if(paradas===null){
     if(silent){
@@ -5673,7 +5726,7 @@ async function _renderAnaliseParadasCore(opts){
     if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR HORA (estimativa)';
     const porHora={};
     parF.forEach(p=>{ if(_ehPlanejada(p.tipo)) return;
-      const dm=_durMinPar(p.ini,p.fim); if(dm==null) return;
+      const dm=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); if(!dm) return;   // almoço fora
       const mh=(metaByDay[p.data]||CFG.metaDia)/horasProd;
       const hh=(String(p.ini).match(/^(\d{1,2}):/)||[])[1]; if(hh==null) return;
       const key=p2(+hh)+'h'; porHora[key]=(porHora[key]||0)+Math.round(dm/60*mh);
