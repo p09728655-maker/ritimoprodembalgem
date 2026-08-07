@@ -123,6 +123,16 @@ st = RP.stats(paradas, Object.assign({}, base, { metaByDay: { '03/08/2026': 1760
 ok('lista o dia sem meta', st.diag.diasSemMeta, ['04/08/2026']);
 ok('usou o metaDia padrão nele (200 + 191)', st.pecas, 391);
 
+console.log('\n── perda a ritmo real (perdaAoRitmo) ──');
+// Mesmo tempo parado das PEÇAS PERDIDAS, valorado pelo ritmo REAL medido
+// (capacidade demonstrada) em vez da meta do dia. Caso do relatório: 21h55m
+// não programados a 203 cx/h ≈ 4.449 cx, contra 3.699 valorados pela meta.
+ok('60 min a 203 cx/h = 203', RP.perdaAoRitmo(60, 203), 203);
+ok('1315 min a 203 cx/h = 4449', RP.perdaAoRitmo(1315, 203), 4449);
+ok('sem tempo parado = 0', RP.perdaAoRitmo(0, 203), 0);
+ok('sem ritmo medido = 0', RP.perdaAoRitmo(60, 0), 0);
+ok('entrada inválida = 0', RP.perdaAoRitmo('—', null), 0);
+
 console.log('\n── os HTMLs não podem ter conta própria ──');
 // Guarda-corpo: se a conta voltar para dentro de um dos painéis, eles divergem
 // de novo. Estes trechos só existiam nas cópias antigas.

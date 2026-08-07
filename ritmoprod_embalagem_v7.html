@@ -1860,7 +1860,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.4';
+const APP_VER   = '7.3.5';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5266,6 +5266,10 @@ async function gerarRelatorioParadas(){
   const _rDe=new Date(_rpd[2],_rpd[1]-1,_rpd[0]), _rAte=new Date(_rpa[2],_rpa[1]-1,_rpa[0]);
   const tiR=_taktIdeal(st.horasProd);
   const trR=_taktRealPeriodo(st.porDia, st.horasProd, _rDe, _rAte, realByDay);
+  // Perda no ritmo REAL medido: o mesmo tempo não programado das PEÇAS PERDIDAS,
+  // valorado pela capacidade demonstrada (takt real) em vez da meta do dia.
+  // A guarda em perdaAoRitmo cobre um paradas-calc.js antigo em cache.
+  const perdaReal=(trR&&RP_PARADAS.perdaAoRitmo)?RP_PARADAS.perdaAoRitmo(st.totMinNP,trR.ritmoReal):0;
   const _alvoRp=tiR.ritmoHora||st.ritmoHora;
   const trCls=trR?(trR.ritmoReal>=_alvoRp?'g':trR.ritmoReal>=_alvoRp*0.85?'o':'r'):'';
   const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -5390,7 +5394,8 @@ async function gerarRelatorioParadas(){
   <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
-  <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa (caixas)</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">PERDA A RITMO REAL</div><div class="kpi-val" style="color:#c62828">${perdaReal>0?fmtN(perdaReal):'—'}</div><div class="kpi-sub">${perdaReal>0?_fmtMinPar(st.totMinNP)+' × '+fmtN(trR.ritmoReal)+' cx/h medidos'+(st.pesoMedio>0?' · ~'+fmtN(Math.round(perdaReal*st.pesoMedio))+' kg':''):'sem apontamento no período'}</div></div>
   <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
@@ -5403,7 +5408,7 @@ async function gerarRelatorioParadas(){
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h). Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
+<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
@@ -5727,12 +5732,22 @@ async function _renderAnaliseParadasCore(opts){
     taktRealCard={l:'TAKT REAL (RODANDO)',v:_tr.taktReal+' s/cx',
       sub:fmtN(_tr.ritmoReal)+' cx/h · '+fmtN(_tr.cxTot)+' cx em '+_fmtMinPar(_tr.minRodTot)+' rodando'+_gap,c:_cor,hl:true};
   }
+  // Perda no ritmo REAL: o mesmo tempo não programado das PEÇAS PERDIDAS,
+  // valorado pela capacidade demonstrada (takt real) em vez da meta do dia.
+  // A guarda em perdaAoRitmo cobre um paradas-calc.js antigo em cache.
+  let perdaRealCard=null;
+  if(_tr&&RP_PARADAS.perdaAoRitmo){
+    const _pr=RP_PARADAS.perdaAoRitmo(totMinNP,_tr.ritmoReal);
+    perdaRealCard={l:'PERDA A RITMO REAL',v:fmtN(_pr),
+      sub:_fmtMinPar(totMinNP)+' × '+fmtN(_tr.ritmoReal)+' cx/h medidos'+(pesoMedio>0?' · ~'+fmtN(Math.round(_pr*pesoMedio))+' kg':''),c:'red'};
+  }
 
   const kpis=[
     {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s) ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
     {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
-    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa (caixas) · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa vs meta do dia · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    ...(perdaRealCard?[perdaRealCard]:[]),
     {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
     {l:'PESO PERDIDO',v:pesoMedio>0?fmtN(pesoPerd)+' kg':'—',sub:pesoMedio>0?'caixas × peso médio':'sem peso do produto',d:pesoMedio>0?_dl(pesoPerd,stPrev.pesoPerd,true,x=>fmtN(Math.round(x))+' kg'):'',c:'red'},
