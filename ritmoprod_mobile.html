@@ -772,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.1';
+const APP_VER   = '1.7.2';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -886,6 +886,35 @@ function jsonpFetch(url, timeoutMs){
     s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
     document.head.appendChild(s);
   });
+}
+
+// ── Escrita de PARADA (registrar / dar START) ────────────────────────────────
+// É a única ação do operador que não pode falhar em silêncio — e é justamente a
+// que mais pega o Apps Script FRIO, porque o mobile fica minutos sem escrever
+// nada. Uma tentativa só, com o timeout padrão de 20s, virava
+// "Erro ao dar start: Timeout" com a parada muitas vezes JÁ ENCERRADA do outro
+// lado. Mesmo tratamento do lerSheets: 25s por tentativa e 3 tentativas com
+// espera crescente, SEMPRE em sequência (o Apps Script atende uma execução por
+// vez — em paralelo elas só se enfileiram lá e estouram todas juntas).
+// Repetir é seguro: saveParadas é upsert por ID e endParada só carimba o FIM.
+async function jsonpEscritaParada(url, onTentativa){
+  let ultimo;
+  for(let i=1; i<=3; i++){
+    try{
+      if(onTentativa) onTentativa(i);
+      const res = await jsonpFetch(url, 25000);
+      if(res && res.ok===false) throw new Error(res.erro||'Erro no servidor');
+      return res;
+    }catch(e){
+      ultimo = e;
+      // Erro de negócio (id inexistente, parada duplicada) não melhora
+      // repetindo — só timeout/rede é que vale insistir.
+      if(!/timeout|rede/i.test(e.message||'')) throw e;
+      if(i===3) break;
+      await new Promise(r=>setTimeout(r, 2000*i));
+    }
+  }
+  throw ultimo;
 }
 
 // ════════════════════════════════════════════════
@@ -1578,13 +1607,43 @@ async function carregarParadasMes(){
 // paradas abertas acumuladas. Este "seguro" mantém o estado PARADO firme.
 let _paradaLocalAberta = null;
 
+// Gravação de parada (REGISTRAR / START) em voo. Enquanto vale, o poll de 90s
+// NÃO redesenha a tela de paradas: ele trocava o botão "RETOMANDO..." (disabled)
+// por um botão novo e habilitado no meio da chamada, e o operador tocava de novo.
+let _parEscrevendo = false;
+
+// IDs de paradas que ACABAMOS de encerrar aqui, com o FIM que carimbamos. O
+// getParadas seguinte pode vir defasado (leitura que correu junto com a
+// gravação) e reabriria a parada na tela — o operador dava START, via
+// "PRODUÇÃO PARADA" de novo e dava START outra vez. É o espelho do
+// _paradaLocalAberta, que só segurava o sentido ABRIR.
+// A máscara EXPIRA em 3 min: se depois disso o backend ainda disser que está
+// aberta, quem manda é o backend (nada de parada some da tela pra sempre).
+const _parFechadasLocal = new Map();   // id -> { fim, exp }
+function _marcarFechadaLocal(id, fim){
+  _parFechadasLocal.set(String(id), { fim, exp: Date.now()+3*60*1000 });
+}
+function _aplicarFechadasLocais(lista){
+  if(!_parFechadasLocal.size) return lista;
+  const agora = Date.now();
+  return lista.map(p=>{
+    const k = String(p.id);
+    const m = _parFechadasLocal.get(k);
+    if(!m) return p;
+    // Backend já confirmou o fim, ou a máscara venceu: solta.
+    if((p.fim && String(p.fim).trim()!=='') || agora > m.exp){ _parFechadasLocal.delete(k); return p; }
+    return Object.assign({}, p, { fim: m.fim });
+  });
+}
+
 async function carregarParadas(){
   if(!CFG.sheetsUrl) return;
+  if(_parEscrevendo) return;   // não mexer na tela no meio de uma gravação
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas';
     const json = await jsonpFetch(url);
     if(json && json.ok){
-      PARADAS_HOJE = json.paradas||[];
+      PARADAS_HOJE = _aplicarFechadasLocais(json.paradas||[]);
       // Reconcilia com a parada local otimista.
       if(_paradaLocalAberta){
         const temEssa   = PARADAS_HOJE.some(p=>String(p.id)===String(_paradaLocalAberta.id));
@@ -1695,27 +1754,49 @@ function fecharModalParadas(){
 async function registrarParadaAgora(){
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
   if(paradaAtiva()){ alert('Já existe uma parada em andamento. Dê START antes de registrar outra.'); return; }
+  if(_parEscrevendo) return;   // toque duplo não dispara duas gravações
   const tipo = (document.getElementById('par-tipo')||{}).value || 'Outro';
   const obs  = ((document.getElementById('par-obs')||{}).value || '').trim();
+  const btnTxt = t=>{ const b=document.getElementById('btn-registrar-parada'); if(b) b.textContent=t; };
+  const btnOn  = ()=>{ const b=document.getElementById('btn-registrar-parada'); if(b){ b.textContent='⏸ REGISTRAR PARADA'; b.disabled=false; } };
   const btn  = document.getElementById('btn-registrar-parada');
   if(btn){ btn.textContent='REGISTRANDO...'; btn.disabled=true; }
 
   const nova = { id: Date.now(), tipo, ini: nowHHMM(), fim:'', obs };
   const params = 'action=saveParadas&paradas='+encodeURIComponent(JSON.stringify([nova]));
   const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
+  let erro = null, res = null;
+  _parEscrevendo = true;   // só aqui: nada entre a marca e o try pode escapar
   try{
-    const res = await jsonpFetch(url);
-    if(res.ok===false) throw new Error(res.erro||'Erro ao registrar');
+    res = await jsonpEscritaParada(url, i=>btnTxt(i>1?`REGISTRANDO... (${i}/3)`:'REGISTRANDO...'));
+  }catch(e){ erro = e; }
+  _parEscrevendo = false;
+
+  if(erro){
+    // Pode ter gravado mesmo com timeout (a resposta é que se perdeu). Confere
+    // no servidor ANTES de acusar erro — senão o operador registra a mesma
+    // parada de novo e o dia termina com paradas duplicadas.
+    await carregarParadas();
+    if(!paradaAtiva()){
+      alert('Não deu para registrar a parada: '+erro.message+'.\nA parada NÃO foi registrada — tente de novo.');
+      btnOn();
+      return;
+    }
+    // Gravou sim: segue o fluxo normal, sem alerta.
+  } else if(res && res.salvos===0){
+    // Backend recusou: já havia parada aberta hoje (dedupe do saveParadas).
+    await carregarParadas();
+    renderParadaEstado();
+    return;
+  } else {
     // Reflete na hora, sem esperar o próximo poll, e segura o estado PARADO até
     // o backend confirmar (evita voltar pra RODANDO e duplicar parada).
     _paradaLocalAberta = nova;
     PARADAS_HOJE.push(nova);
-    renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
-    await carregarParadas();
-  }catch(e){
-    alert('Erro ao registrar parada: '+e.message);
-    if(btn){ btn.textContent='⏸ REGISTRAR PARADA'; btn.disabled=false; }
   }
+  _parFechadasLocal.clear();   // ciclo novo: nada pendente de encerramento
+  renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
+  await carregarParadas();
 }
 // Dá START: encerra a parada em andamento (carimba fim). A TV para de mostrar a
 // tela cheia no próximo poll.
@@ -1725,25 +1806,55 @@ async function darStartParada(){
   const abertas = PARADAS_HOJE.filter(p=>!p.fim || String(p.fim).trim()==='');
   if(!abertas.length){ _paradaLocalAberta=null; renderParadaEstado(); return; }
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+  if(_parEscrevendo) return;   // toque duplo não dispara dois endParada
+  const btnTxt = t=>{ const b=document.getElementById('btn-start-parada'); if(b) b.textContent=t; };
+  const btnOn  = ()=>{ const b=document.getElementById('btn-start-parada'); if(b){ b.textContent='▶ DAR START (RETOMAR)'; b.disabled=false; } };
   const btn = document.getElementById('btn-start-parada');
   if(btn){ btn.textContent='RETOMANDO...'; btn.disabled=true; }
 
-  const fim = nowHHMM();
+  const fim  = nowHHMM();
+  const data = hojeStr();
+  let erro = null;
+  _parEscrevendo = true;   // só aqui: nada entre a marca e o try pode escapar
   try{
     for(const at of abertas){
-      const params = 'action=endParada&id='+encodeURIComponent(at.id)+'&fim='+encodeURIComponent(fim);
+      // Manda também data+INICIO: se o ID da linha estiver vazio/bagunçado na
+      // planilha (linha criada à mão, ID apagado), o getParadas inventa um id
+      // que não existe lá e o endParada respondia "parada não encontrada" —
+      // parada impossível de encerrar pelo celular. Com o fallback o backend
+      // acha a linha pelo horário de início. Backend antigo ignora os extras.
+      const params = 'action=endParada'
+        + '&id='+encodeURIComponent(at.id)
+        + '&fim='+encodeURIComponent(fim)
+        + '&data='+encodeURIComponent(data)
+        + '&ini='+encodeURIComponent(at.ini||'');
       const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
-      const res = await jsonpFetch(url);
-      if(res.ok===false) throw new Error(res.erro||'Erro ao dar start');
+      await jsonpEscritaParada(url, i=>btnTxt(i>1?`RETOMANDO... (${i}/3)`:'RETOMANDO...'));
       at.fim = fim;
+      _marcarFechadaLocal(at.id, fim);
     }
-    _paradaLocalAberta = null;
-    renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
+  }catch(e){ erro = e; }
+  _parEscrevendo = false;
+
+  if(erro){
+    // Timeout/rede não quer dizer que não gravou — o endParada só carimba o
+    // FIM. Pergunta ao servidor como a parada está AGORA antes de assustar o
+    // operador com um erro de algo que já foi feito.
     await carregarParadas();
-  }catch(e){
-    alert('Erro ao dar start: '+e.message);
-    if(btn){ btn.textContent='▶ DAR START (RETOMAR)'; btn.disabled=false; }
+    const aindaAberta = PARADAS_HOJE.some(p=>
+      abertas.some(a=>String(a.id)===String(p.id)) && (!p.fim || String(p.fim).trim()===''));
+    if(aindaAberta){
+      alert('Não deu para dar START: '+erro.message+'.\nA parada CONTINUA aberta — tente de novo em alguns segundos.');
+      btnOn();
+      return;
+    }
+    // Encerrou de verdade: segue o fluxo normal, sem alerta.
+    abertas.forEach(a=>_marcarFechadaLocal(a.id, fim));
   }
+
+  _paradaLocalAberta = null;
+  renderParadasList(); renderParadaEstado(); atualizarBadgeParadas();
+  await carregarParadas();
 }
 
 // ════════════════════════════════════════════════

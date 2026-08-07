@@ -1920,21 +1920,50 @@ function endParada(p) {
   const sh = ss.getSheetByName(SHEET_PARADAS);
   if (!sh) return { ok: false, erro: 'sem paradas' };
 
-  const id = String(p.id || '');
-  if (!id) return { ok: false, erro: 'id obrigatório' };
-
+  const id     = String(p.id || '');
   const fim    = p.fim || Utilities.formatDate(new Date(), TZ, 'HH:mm');
+  const data   = String(p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const iniRef = _horaStr(p.ini || '');
   const values = sh.getDataRange().getValues();
 
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][1]) === id) {
-      const ini = _horaStr(values[i][3]);
-      sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
-      sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
-      SpreadsheetApp.flush();
-      return { ok: true, fim };
+  // Fecha a linha i (0-based no array) e devolve a resposta padrão.
+  const fechar = function (i) {
+    const ini = _horaStr(values[i][3]);
+    sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
+    sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
+    SpreadsheetApp.flush();
+    return { ok: true, fim };
+  };
+
+  // 1) Caminho normal: casa pelo ID.
+  if (id) {
+    for (let i = 1; i < values.length; i++) {
+      if (String(values[i][1]) === id) return fechar(i);
     }
   }
+
+  // 2) Fallback por (DATA + INÍCIO), só em linha ainda ABERTA. Cobre a linha cujo
+  //    ID está vazio ou foi alterado na planilha (parada lançada à mão, coluna B
+  //    limpa): o getParadas devolve um id que não existe na aba e o operador
+  //    ficava sem conseguir encerrar a parada pelo celular — "parada não
+  //    encontrada" em todo toque no START, com a TV presa na tela cheia.
+  if (iniRef) {
+    for (let i = 1; i < values.length; i++) {
+      if (_dataStr(values[i][0]) === data && _horaStr(values[i][3]) === iniRef
+          && !_horaStr(values[i][4])) return fechar(i);
+    }
+  }
+
+  // 3) Último recurso: existe UMA única parada aberta no dia — é essa. Só age
+  //    quando não há ambiguidade; com duas abertas, devolve o erro e o operador
+  //    resolve na planilha.
+  const abertas = [];
+  for (let i = 1; i < values.length; i++) {
+    if (_dataStr(values[i][0]) === data && !_horaStr(values[i][4])) abertas.push(i);
+  }
+  if (abertas.length === 1) return fechar(abertas[0]);
+
+  if (!id && !iniRef) return { ok: false, erro: 'id obrigatório' };
   return { ok: false, erro: 'parada não encontrada' };
 }
 
@@ -2082,18 +2111,23 @@ function getParadas(p) {
 
   const data = p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
 
-  const paradas = sh
-    .getDataRange()
-    .getValues()
-    .slice(1)
-    .filter(r => _dataStr(r[0]) === data)
-    .map(r => ({
-      id:   Number(r[1]) || Date.now(),
+  const values  = sh.getDataRange().getValues();
+  const paradas = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    if (_dataStr(r[0]) !== data) continue;
+    paradas.push({
+      // Sem ID na planilha (linha lançada à mão / coluna B limpa) o id era
+      // Date.now(): mudava a cada leitura e NUNCA casava no endParada — o
+      // operador não conseguia encerrar a parada pelo celular. Agora vira um id
+      // ESTÁVEL derivado da linha; o endParada tem fallback por DATA+INÍCIO.
+      id:   Number(r[1]) || ('L' + (i + 1)),
       tipo: String(r[2] || ''),
       ini:  _horaStr(r[3]),
       fim:  _horaStr(r[4]),
       obs:  String(r[6] || '')
-    }));
+    });
+  }
 
   return { ok: true, paradas };
 }
