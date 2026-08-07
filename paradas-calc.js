@@ -106,6 +106,17 @@
     return c;
   }
 
+  // Perda estimada valorando um tempo parado (min) num ritmo qualquer (cx/h).
+  // Existe para mostrar, ao lado das PEÇAS PERDIDAS (que valoram pela meta do
+  // dia — "quanto o plano perdeu"), a perda no ritmo REAL medido da linha
+  // (caixas ÷ tempo rodando — "quanto a linha deixou de produzir na capacidade
+  // demonstrada"). São leituras diferentes do MESMO tempo parado; nenhuma
+  // substitui a outra.
+  function perdaAoRitmo(minParados, ritmoHora) {
+    var m = parseFloat(minParados) || 0, r = parseFloat(ritmoHora) || 0;
+    return (m > 0 && r > 0) ? Math.round(m / 60 * r) : 0;
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
   // stats(paradas, opts)
   //
@@ -232,7 +243,7 @@
       + (d.paradasIgnoradas ? ' · ' + d.paradasIgnoradas + ' sem fim' : '');
   }
 
-  var VERSAO = '1.0.0';
+  var VERSAO = '1.1.0';
 
   glob.RP_PARADAS = {
     VERSAO: VERSAO,
@@ -244,6 +255,7 @@
     fmtMin: fmtMin,
     ehPlanejada: ehPlanejada,
     diasTrabalhados: diasTrabalhados,
+    perdaAoRitmo: perdaAoRitmo,
     stats: stats,
     diagTexto: diagTexto
   };
