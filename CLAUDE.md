@@ -43,6 +43,36 @@ via Google Apps Script (JSONP).
   dado. É chamada JSONP separada — se falhar, **não** derruba os dados nem cai no DEMO.
 - Backend: `saveParadas` virou **upsert por ID** e há a ação **`endParada`** (carimba
   `FIM`/`DURACAO`). ⚠️ Mudou o `.gs` → **re-deploy manual** no Apps Script.
+- **Gravar parada (REGISTRAR / START) retenta — não é chamada "solta".** Eram as
+  únicas chamadas do mobile com **1 tentativa** e timeout de 20s, justamente as
+  que mais pegam o Apps Script **frio** (o app fica minutos sem escrever nada).
+  Resultado: `Erro ao dar start: Timeout` com a parada muitas vezes **já
+  encerrada** do outro lado. Agora usam `jsonpEscritaParada()` — 25s × 3
+  tentativas com espera crescente, em sequência, como o `lerSheets`. Repetir é
+  seguro: `saveParadas` é upsert por ID e `endParada` só carimba o FIM.
+  - **Falhou? Pergunta ao servidor antes de acusar erro.** Timeout ≠ não gravou.
+    Os dois caminhos fazem `carregarParadas()` e só alertam se a parada **ainda
+    estiver aberta** (ou ainda não existir). Sem isso o operador registrava a
+    mesma parada de novo e o dia fechava com paradas duplicadas.
+- **`_parEscrevendo` congela a tela de paradas durante a gravação.** O poll de
+  90s caía no meio do START, refazia o `innerHTML` e trocava o botão
+  "RETOMANDO..." (disabled) por um botão **novo e habilitado** — o operador
+  tocava outra vez. `carregarParadas()` sai cedo enquanto a flag está de pé, e
+  a flag também barra toque duplo.
+- **`_parFechadasLocal` é o espelho do `_paradaLocalAberta`.** Havia seguro só
+  para o sentido **abrir**: um `getParadas` defasado logo depois do START
+  reabria a parada na tela e o painel voltava para "PRODUÇÃO PARADA". A máscara
+  guarda `id → FIM carimbado` e **expira em 3 min** (ou quando o backend
+  confirma o FIM) — nada de parada sumir da tela para sempre.
+- **Parada sem ID na planilha não podia ser encerrada pelo celular.** Linha
+  lançada à mão (ou com a coluna B limpa): o `getParadas` devolvia
+  `id: Date.now()`, **um id novo a cada leitura**, e o `endParada` respondia
+  `parada não encontrada` em todo toque no START — com a TV presa na tela cheia.
+  Agora o id sem valor vira `'L'+linha` (**estável**) e o `endParada` tem
+  fallback: **1)** ID → **2)** `DATA`+`INICIO` em linha aberta → **3)** se só
+  existe **uma** parada aberta no dia, é essa (com duas, devolve erro em vez de
+  chutar). O mobile manda `data` e `ini` junto; backend antigo ignora os extras.
+  ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 - **Tipos de parada (dropdown) são editáveis na planilha:** aba **`TIPOS_PARADA`**
   (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
   *motivo* continua **texto livre** digitado pelo operador — não se cadastra.
