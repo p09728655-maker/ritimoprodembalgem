@@ -3642,32 +3642,37 @@ async function gerarRelatorioProducaoHora(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:12mm 14mm; font-size:11px; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:12mm 14mm; font-size:11px; }
   @page{ size:A4 landscape; margin:0; }
   @media print{ body{ padding:8mm 10mm; } .no-print{ display:none!important; } }
-  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:16px; border-bottom:3px solid #FF5C1F; }
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
   .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
   .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
-  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:16px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:16px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
   .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
-  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
-  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
-  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; line-height:1; color:#111; }
-  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+  .kpi-card{ background:#f8fafc; border:1px solid #edf2f7; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; line-height:1; color:#1a1a2e; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; margin-top:4px; }
   table{ width:100%; border-collapse:collapse; }
-  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:.6px; text-transform:uppercase; padding:6px 7px; border-bottom:1.5px solid #ccc; text-align:right; white-space:nowrap; }
+  thead th{ background:#1a1a2e; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#fff; letter-spacing:.6px; text-transform:uppercase; padding:6px 7px; border-bottom:1.5px solid #cbd5e0; text-align:right; white-space:nowrap; }
   thead th:first-child{ text-align:left; }
-  tbody td{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:5px 7px; border-bottom:1px solid #f0f0f0; color:#111; text-align:right; white-space:nowrap; }
+  tbody td{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:5px 7px; border-bottom:1px solid #edf2f7; color:#1a1a2e; text-align:right; white-space:nowrap; }
   tbody td:first-child{ font-family:'Barlow',sans-serif; text-align:left; }
   tbody tr:last-child td{ border-bottom:none; }
-  tfoot td{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; padding:6px 7px; border-top:1.5px solid #ccc; background:#fafafa; text-align:right; }
+  tfoot td{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; padding:6px 7px; border-top:1.5px solid #cbd5e0; background:#f8fafc; text-align:right; }
   tfoot td:first-child{ font-family:'Barlow Condensed',sans-serif; font-size:12px; text-align:left; }
   .col-tot{ color:#FF5C1F; font-weight:700; }
-  .rp-footer{ margin-top:18px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
-  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+  .rp-footer{ margin-top:18px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
 </head>
 <body>
@@ -3675,7 +3680,9 @@ async function gerarRelatorioProducaoHora(){
 <button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
 
 <div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
     <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR ${Termo}</div>
     <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${sel?' · '+Termo+' '+(top?top.label:sel):''}</div>
   </div>
@@ -3759,34 +3766,39 @@ function gerarRelatorioProducaoModelo(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:16mm 18mm; font-size:11px; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
   @page{ size:A4 portrait; margin:0; }
   @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
 
-  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #FF5C1F; }
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
   .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
   .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
-  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
 
   .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
-  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
-  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
-  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#111; }
-  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+  .kpi-card{ background:#f8fafc; border:1px solid #edf2f7; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#1a1a2e; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; margin-top:4px; }
 
   table{ width:100%; border-collapse:collapse; }
-  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #ccc; text-align:left; }
-  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #f0f0f0; color:#111; }
+  thead th{ background:#1a1a2e; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#fff; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #cbd5e0; text-align:left; }
+  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #edf2f7; color:#1a1a2e; }
   tbody tr:last-child td{ border-bottom:none; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
 
-  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
-  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
 </head>
 <body>
@@ -3794,7 +3806,9 @@ function gerarRelatorioProducaoModelo(){
 <button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
 
 <div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
     <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR MODELO</div>
     <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
   </div>
@@ -4775,31 +4789,36 @@ async function _imprimirHistoricoFormatado(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:12mm 14mm;font-size:10px}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:12mm 14mm;font-size:10px}
   @page{size:A4 portrait;margin:0}
   @media print{body{padding:8mm 10mm}.no-print{display:none!important} tr{page-break-inside:avoid}}
   /* HEADER */
-  .rp-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;margin-bottom:10px;border-bottom:2px solid #111}
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
   .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;margin-top:2px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#666;line-height:1.6}
-  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#111}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:2px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#4a5568;line-height:1.6}
+  .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#1a1a2e}
   /* SECTION TITLE */
-  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#aaa;letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;border-bottom:0.5px solid #eee;padding-bottom:4px;page-break-after:avoid}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;border-bottom:0.5px solid #edf2f7;padding-bottom:4px;page-break-after:avoid}
   /* KPI GRID — 6 colunas p/ caber resumo + melhor/pior dia na mesma linha */
   .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:6px;page-break-inside:avoid}
-  .kpi-card{background:#f8f8f8;border:0.5px solid #e0e0e0;border-left:3px solid #ddd;border-radius:3px;padding:7px 9px}
-  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#999;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1;color:#111}
-  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#bbb;margin-top:2px}
+  .kpi-card{background:#f8fafc;border:0.5px solid #e0e0e0;border-left:3px solid #ddd;border-radius:3px;padding:7px 9px}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#a0aec0;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1;color:#1a1a2e}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;margin-top:2px}
   /* CHART */
-  .rp-chart-wrap{background:#fafafa;border:0.5px solid #e8e8e8;border-radius:3px;padding:8px 10px;margin-bottom:6px;page-break-inside:avoid}
+  .rp-chart-wrap{background:#f8fafc;border:0.5px solid #e8e8e8;border-radius:3px;padding:8px 10px;margin-bottom:6px;page-break-inside:avoid}
   svg text{font-family:'IBM Plex Mono',monospace}
   /* TABLE */
   table{width:100%;border-collapse:collapse;page-break-inside:auto}
   thead{display:table-header-group}
-  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#555;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;border-bottom:1px solid #ccc;text-align:left;page-break-after:avoid}
-  tbody td{font-size:10px;padding:5px 8px;border-bottom:0.5px solid #f0f0f0;color:#111}
+  thead th{background:#1a1a2e;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#fff;letter-spacing:1px;text-transform:uppercase;padding:5px 8px;border-bottom:1px solid #cbd5e0;text-align:left;page-break-after:avoid}
+  tbody td{font-size:10px;padding:5px 8px;border-bottom:0.5px solid #edf2f7;color:#1a1a2e}
   tbody tr:last-child td{border-bottom:none}
   .td-mono{font-family:'IBM Plex Mono',monospace;font-size:9px}
   .td-bold{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700}
@@ -4811,11 +4830,11 @@ async function _imprimirHistoricoFormatado(){
   .ah-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;page-break-inside:avoid}
   .ah-card{border:0.5px solid #e0e0e0;border-radius:3px;padding:8px 12px;display:flex;align-items:center;gap:10px}
   .ah-icon{font-size:18px}
-  .ah-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#999;letter-spacing:1px;margin-bottom:2px}
-  .ah-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#111}
-  .ah-sub{font-size:8px;color:#999;margin-top:1px}
+  .ah-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;letter-spacing:1px;margin-bottom:2px}
+  .ah-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#1a1a2e}
+  .ah-sub{font-size:8px;color:#a0aec0;margin-top:1px}
   /* FOOTER */
-  .rp-footer{margin-top:12px;padding-top:6px;border-top:0.5px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#ccc}
+  .rp-footer{margin-top:12px;padding-top:6px;border-top:0.5px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#cbd5e0}
   .rp-print-btn{position:fixed;top:12px;right:12px;background:#FF5C1F;color:#fff;border:none;padding:8px 16px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 </style>
 </head>
@@ -4823,7 +4842,9 @@ async function _imprimirHistoricoFormatado(){
 <button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
 
 <div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
     <div class="rp-logo">RITMO<span>PROD</span> · HISTÓRICO</div>
     <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
   </div>
@@ -5060,46 +5081,51 @@ async function gerarRelatorioSemanal(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#111; padding:16mm 18mm; font-size:11px; }
+  body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
   @page{ size:A4 portrait; margin:0; }
   @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
 
   /* HEADER */
-  .rp-header{ display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:12px; margin-bottom:18px; border-bottom:3px solid #FF5C1F; }
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#111; }
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
   .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#888; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#666; line-height:1.7; }
+  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
+  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
   .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
   /* SEÇÃO */
-  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #eee; padding-bottom:6px; }
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
 
   /* KPI GRID */
   .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
-  .kpi-card{ background:#f8f8f8; border:1px solid #eee; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
-  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
-  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#111; }
-  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#999; margin-top:4px; }
+  .kpi-card{ background:#f8fafc; border:1px solid #edf2f7; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:7px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#1a1a2e; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; margin-top:4px; }
 
   /* HIGHLIGHT */
   .rp-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
-  .rp-highlight{ background:#f8f8f8; border:1px solid #eee; border-radius:4px; padding:12px 14px; display:flex; align-items:center; gap:14px; }
+  .rp-highlight{ background:#f8fafc; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; display:flex; align-items:center; gap:14px; }
   .rp-hl-icon{ font-size:22px; }
-  .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#888; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
-  .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#111; }
-  .rp-hl-sub{ font-size:10px; color:#888; margin-top:2px; }
+  .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#1a1a2e; }
+  .rp-hl-sub{ font-size:10px; color:#718096; margin-top:2px; }
 
   /* GRÁFICO SVG */
-  .rp-chart-wrap{ background:#f9f9f9; border:1px solid #eee; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
+  .rp-chart-wrap{ background:#f9f9f9; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
   svg text{ font-family:'IBM Plex Mono',monospace; }
 
   /* TABELA */
   table{ width:100%; border-collapse:collapse; }
-  thead th{ background:#f0f0f0; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#555; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #ccc; text-align:left; }
-  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #f0f0f0; color:#111; }
+  thead th{ background:#1a1a2e; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#fff; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #cbd5e0; text-align:left; }
+  tbody td{ font-size:11px; padding:8px 10px; border-bottom:1px solid #edf2f7; color:#1a1a2e; }
   tbody tr:last-child td{ border-bottom:none; }
-  tbody tr:hover{ background:#fafafa; }
+  tbody tr:hover{ background:#f8fafc; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
 
@@ -5110,10 +5136,10 @@ async function gerarRelatorioSemanal(){
   .s-red { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
 
   /* RODAPÉ */
-  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#bbb; }
+  .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
 
   /* BOTÃO IMPRIMIR */
-  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#111; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
+  .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
 </head>
 <body>
@@ -5122,7 +5148,9 @@ async function gerarRelatorioSemanal(){
 
 <!-- CABEÇALHO -->
 <div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
     <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO SEMANAL</div>
     <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
   </div>
@@ -5376,34 +5404,41 @@ async function gerarRelatorioParadas(){
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#111;padding:14mm 16mm;font-size:11px}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
   @page{size:A4 portrait;margin:0}
   @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
-  .rp-header{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:12px;margin-bottom:16px;border-bottom:3px solid #e57373}
-  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#111}
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
   .rp-logo span{color:#FF5C1F}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#888;margin-top:3px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#666;line-height:1.7}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#718096;margin-top:3px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;line-height:1.7}
   .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
-  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#888;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:.5px solid #eee;padding-bottom:6px}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c53030;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:1.5px solid #edf2f7;padding-bottom:6px}
   .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-  .kpi-card{background:#f8f8f8;border:1px solid #eee;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
+  .kpi-card{background:#f8fafc;border:1px solid #edf2f7;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
   .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
-  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#888;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
-  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#111}
-  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#999;margin-top:4px}
-  .rp-chart-wrap{background:#fafafa;border:1px solid #eee;border-radius:5px;padding:12px 14px}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}
+  .rp-chart-wrap{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:12px 14px}
   table{width:100%;border-collapse:collapse;margin-top:2px}
-  thead th{background:#f0f0f0;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#555;letter-spacing:1.2px;text-transform:uppercase;padding:7px 10px;border-bottom:1.5px solid #ccc;text-align:left}
-  tbody td{font-size:11px;padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#111}
+  thead th{background:#1a1a2e;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#fff;letter-spacing:1.2px;text-transform:uppercase;padding:7px 10px;border-bottom:1.5px solid #cbd5e0;text-align:left}
+  tbody td{font-size:11px;padding:6px 10px;border-bottom:1px solid #edf2f7;color:#1a1a2e}
   .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
-  .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#bbb}
-  .rp-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#aaa;margin-top:8px}
+  .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0}
+  .rp-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:8px}
   .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
 </style></head><body>
 <button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
 <div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
     <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO DE PARADAS</div>
     <div class="rp-sub">${esc(CFG.empresa)} · ${esc(CFG.setor)} · ${esc(CFG.unidade)}</div>
   </div>
