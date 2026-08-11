@@ -656,10 +656,19 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   section.on{ display:block!important; width:100%!important; overflow:visible!important; padding:0!important; margin:0!important; }
 
   /* ── CABEÇALHO DE IMPRESSÃO ── */
-  .print-header{ display:flex!important; border-bottom:2px solid #FF5C1F!important; margin-bottom:16px; padding-bottom:10px; }
-  .print-header-left h1{ color:#111!important; }
-  .print-header-left p{ color:#666!important; }
-  .print-header-right{ color:#666!important; white-space:pre-line; font-size:9px; }
+  /* A folha imprime em P&B de propósito (o reset * acima), mas o cabeçalho é a
+     assinatura do PPCP e vai colorido — por isso cada propriedade dele precisa
+     bater de frente com o reset. Em impressora mono a faixa sai cinza escura e
+     o texto branco continua legível. */
+  .print-header{ display:flex!important; align-items:center; gap:14px; padding:11px 16px!important;
+    margin-bottom:16px; border:none!important;
+    background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460)!important; color:#fff!important;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .print-header-logo{ background:#fff!important; }
+  .print-header-lb{ color:#f5a623!important; }
+  .print-header-left h1{ color:#fff!important; }
+  .print-header-left p{ color:#a0aec0!important; }
+  .print-header-right{ color:#a0aec0!important; white-space:pre-line; font-size:9px; }
 
   /* ── CHARTS: canvas oculto, img visível ── */
   .charts-row{ display:grid!important; grid-template-columns:1.5fr 1fr!important; gap:8px!important; margin-bottom:14px!important; }
@@ -725,27 +734,40 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   .kpi-grid + .tbl-wrap{ page-break-before:avoid; }
 }
 
-/* Cabeçalho de impressão (hidden na tela) */
+/* Cabeçalho de impressão no padrão dos painéis de PPCP (hidden na tela):
+   faixa escura em degradê, tarja PPCP em âmbar, título em branco e o logo num
+   chip branco — o logotipo é vermelho sobre claro e sumiria direto no escuro. */
 .print-header{
   display:none;
-  justify-content:space-between;
-  align-items:flex-end;
-  padding-bottom:10px;
+  align-items:center;
+  gap:14px;
+  padding:11px 16px;
   margin-bottom:12px;
-  border-bottom:2px solid #FF5C1F;
+  background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);
+  color:#fff;
+  -webkit-print-color-adjust:exact; print-color-adjust:exact;
+}
+.print-header-logo{
+  height:30px; width:auto; flex-shrink:0;
+  background:#fff; padding:4px 8px; border-radius:4px;
+}
+.print-header-lb{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:8px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#f5a623;
 }
 .print-header-left h1{
   font-family:'Barlow Condensed',sans-serif;
-  font-size:20px; font-weight:700; letter-spacing:2px; color:#111; margin:0;
+  font-size:20px; font-weight:700; letter-spacing:2px; color:#fff; margin:3px 0 2px;
 }
 .print-header-left p{
   font-family:'IBM Plex Mono',monospace;
-  font-size:9px; color:#888; margin:3px 0 0; letter-spacing:1px;
+  font-size:9px; color:#a0aec0; margin:0; letter-spacing:1px;
 }
 .print-header-right{
+  margin-left:auto;
   text-align:right;
   font-family:'IBM Plex Mono',monospace;
-  font-size:9px; color:#666; line-height:1.6;
+  font-size:9px; color:#a0aec0; line-height:1.6;
 }
 /* Rodapé de página (hidden na tela) */
 .print-page-footer{
@@ -975,7 +997,9 @@ if (_v7Instalado()) _v7EscondeBotao();
 
   <!-- Cabeçalho visível apenas no PDF -->
   <div class="print-header" id="ph-gerencial">
+    <img src="patrimar-logo.png" class="print-header-logo" alt="Patrimar móveis" onerror="this.style.display='none'">
     <div class="print-header-left">
+      <div class="print-header-lb">PPCP — Planejamento e Controle da Produção</div>
       <h1>RITMOPROD · EMBALAGEM</h1>
       <p id="ph-ger-sub">—</p>
     </div>
