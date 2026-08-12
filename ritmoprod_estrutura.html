@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png">
+<link rel="shortcut icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0A0A0B">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RitmoProd · Importar Estrutura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ═══ CARBON FORGE TOKENS (mesmos do painel v7) ═══ */
+:root{
+  --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
+  --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --font-h:'Barlow Condensed',sans-serif;
+  --font-b:'Barlow',sans-serif;
+  --font-d:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100dvh;background:var(--bg);color:var(--txt);font-family:var(--font-b)}
+body{padding:16px 16px 48px;max-width:1180px;margin:0 auto}
+
+h1{font-family:var(--font-h);font-size:26px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+h2{font-family:var(--font-h);font-size:16px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--txt2);margin-bottom:10px}
+header{display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:2px solid var(--acc);margin-bottom:20px;flex-wrap:wrap}
+header .sub{font-size:13px;color:var(--txt2);flex:1;min-width:200px}
+header a{color:var(--txt2);font-size:12px;text-decoration:none;border:1px solid var(--border);padding:6px 12px;border-radius:4px}
+header a:hover{color:var(--txt);border-color:var(--acc)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px}
+
+#drop{border:2px dashed var(--border);border-radius:8px;padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;background:var(--surface)}
+#drop:hover,#drop.over{border-color:var(--acc);background:var(--elevated)}
+#drop .big{font-family:var(--font-h);font-size:20px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+#drop .small{font-size:13px;color:var(--txt2);margin-top:8px}
+#file{display:none}
+
+.btn{font-family:var(--font-h);font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  background:var(--acc);color:#111;border:none;border-radius:4px;padding:11px 18px;cursor:pointer}
+.btn:hover{filter:brightness(1.1)}
+.btn.sec{background:transparent;color:var(--txt);border:1px solid var(--border)}
+.btn.sec:hover{border-color:var(--acc)}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+
+.selo{display:inline-block;font-family:var(--font-d);font-size:11px;font-weight:600;padding:3px 8px;border-radius:3px;letter-spacing:.5px}
+.selo.ok{background:rgba(76,175,80,.15);color:var(--ok);border:1px solid rgba(76,175,80,.4)}
+.selo.err{background:rgba(244,67,54,.15);color:var(--red);border:1px solid rgba(244,67,54,.4)}
+.selo.warn{background:rgba(255,152,0,.15);color:var(--warn);border:1px solid rgba(255,152,0,.4)}
+
+.arq{border-left:3px solid var(--border);padding:10px 0 10px 14px;margin-bottom:14px}
+.arq.ok{border-left-color:var(--ok)}
+.arq.err{border-left-color:var(--red)}
+.arq .nome{font-family:var(--font-d);font-size:12px;color:var(--txt2);word-break:break-all}
+.arq .vol{font-family:var(--font-h);font-size:19px;font-weight:600;margin:4px 0}
+.arq .cod{color:var(--acc)}
+.arq ul{list-style:none;margin-top:8px;font-size:13px;color:var(--txt2)}
+.arq li{padding:2px 0}
+.arq li b{color:var(--txt);font-family:var(--font-d);font-weight:600}
+.arq .erro{color:var(--red);font-size:13px;margin-top:6px}
+.arq .suspeita{font-family:var(--font-d);font-size:11px;color:var(--warn);word-break:break-all;padding:2px 0}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-family:var(--font-h);font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt2);
+  text-align:left;padding:8px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+td{padding:6px 8px;border-bottom:1px solid var(--elevated)}
+td.n{font-family:var(--font-d);font-size:12px}
+td.q{font-family:var(--font-d);font-size:12px;text-align:right}
+.tabwrap{max-height:460px;overflow:auto;border:1px solid var(--border);border-radius:4px}
+
+.ajuda{font-size:13px;color:var(--txt2);line-height:1.65}
+.ajuda b{color:var(--txt)}
+.ajuda ol{margin:8px 0 0 18px}
+.ajuda li{padding:3px 0}
+.ajuda code{font-family:var(--font-d);font-size:12px;background:var(--elevated);padding:1px 5px;border-radius:3px;color:var(--txt)}
+.aviso{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);border-radius:4px;padding:10px 12px;font-size:13px;color:var(--warn);margin-bottom:14px}
+.fatal{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.35);border-radius:4px;padding:12px 14px;font-size:13px;color:var(--red)}
+footer{margin-top:26px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-d);font-size:11px;color:var(--txt3);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hide{display:none}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Importar Estrutura</h1>
+  <div class="sub">Relatório <b>Estrutura Sumarizada</b> (ERP Lógica) → aba <b>ESTRUTURA</b> da planilha</div>
+  <a href="/">← Painel</a>
+</header>
+
+<div id="fatal" class="fatal hide"></div>
+
+<div id="drop">
+  <div class="big">Solte os PDFs aqui</div>
+  <div class="small">ou clique para escolher — pode mandar vários de uma vez</div>
+  <input type="file" id="file" accept="application/pdf,.pdf" multiple>
+</div>
+
+<div id="status" class="card hide"></div>
+
+<div id="resultado" class="hide">
+  <div class="card">
+    <h2>Conferência</h2>
+    <div id="arquivos"></div>
+  </div>
+
+  <div class="card">
+    <h2>Linhas para a planilha</h2>
+    <div class="acoes">
+      <button class="btn" id="btn-copiar">Copiar linhas</button>
+      <button class="btn sec" id="btn-xlsx">Baixar Excel</button>
+      <button class="btn sec" id="btn-tsv">Baixar TSV</button>
+      <button class="btn sec" id="btn-limpar">Limpar</button>
+    </div>
+    <div id="dup" class="aviso hide"></div>
+    <div class="tabwrap">
+      <table>
+        <thead><tr><th>A · COD_VOLUME</th><th>B · COD_COMPONENTE</th><th>C · QTD</th><th>D · DESCRICAO</th></tr></thead>
+        <tbody id="corpo"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card ajuda">
+    <h2>Como jogar na planilha</h2>
+    <ol>
+      <li>Clique em <b>COPIAR LINHAS</b>.</li>
+      <li>Abra a aba <code>ESTRUTURA</code> e clique na <b>coluna A da primeira linha vazia</b> (fim da aba).</li>
+      <li><code>Ctrl+V</code>. As quatro colunas caem no lugar sozinhas.</li>
+    </ol>
+    <p style="margin-top:10px">Antes de colar, confira se esse volume <b>já não está</b> na aba — colar de novo duplica.
+    Para achar: <code>Ctrl+F</code> na planilha com o código do volume sem pontos.</p>
+  </div>
+</div>
+
+<footer>
+  <span>RitmoProd · Embalagem — Patrimar Móveis</span>
+  <span id="ver"></span>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   IMPORTAR ESTRUTURA — versão
+   Sobe este número ao publicar mudança nesta página.
+   ════════════════════════════════════════════════════════════════════════ */
+const EST_VER = 'v1.0';
+document.getElementById('ver').textContent = EST_VER;
+
+/* ════════════════════════════════════════════════════════════════════════
+   LIBS EXTERNAS (pdf.js + SheetJS)
+   Carregadas com fallback de CDN: o painel já teve tela quebrada por CDN
+   fora do ar, então aqui a falha é EXPLÍCITA e não deixa a página muda.
+   ════════════════════════════════════════════════════════════════════════ */
+const PDFJS_VER = '3.11.174';
+const CDNS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VER + '/',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@' + PDFJS_VER + '/build/',
+  'https://unpkg.com/pdfjs-dist@' + PDFJS_VER + '/build/'
+];
+const CDNS_XLSX = [
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
+];
+
+function carregarScript(url){
+  return new Promise(function(ok, falhou){
+    const s = document.createElement('script');
+    s.src = url;
+    s.onload  = function(){ ok(url); };
+    s.onerror = function(){ falhou(new Error('falhou: ' + url)); };
+    document.head.appendChild(s);
+  });
+}
+
+// Tenta os CDNs em ordem; devolve a base que funcionou.
+async function carregarPdfJs(){
+  for (const base of CDNS){
+    try {
+      await carregarScript(base + 'pdf.min.js');
+      if (window.pdfjsLib){
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js';
+        return base;
+      }
+    } catch(e){ /* tenta o próximo */ }
+  }
+  throw new Error('pdf.js não carregou de nenhum CDN');
+}
+
+async function carregarXlsx(){
+  if (window.XLSX) return true;
+  for (const url of CDNS_XLSX){
+    try { await carregarScript(url); if (window.XLSX) return true; } catch(e){}
+  }
+  return false;
+}
+
+let PDFJS_PRONTO = carregarPdfJs().catch(function(err){
+  const el = document.getElementById('fatal');
+  el.textContent = 'Não deu para carregar o leitor de PDF (' + err.message + '). ' +
+                   'Confira a internet e recarregue a página (F5).';
+  el.classList.remove('hide');
+  document.getElementById('drop').style.display = 'none';
+  throw err;
+});
+
+/* ════════════════════════════════════════════════════════════════════════
+   LEITURA DO PDF → LINHAS DE TEXTO
+   Cada item do pdf.js traz posição (x,y). Agrupamos por Y para remontar a
+   linha e ordenamos por X para remontar a ordem das colunas — é isso que
+   deixa o parse confiável: a ordem "crua" do texto do PDF vem embaralhada
+   (descrição, %, total, código...), e aí não dá para saber o que é o quê.
+   O espaço só entra quando existe vão de verdade entre dois pedaços, senão
+   um número partido pelo renderizador ("23," + "15") viraria dois tokens.
+   ════════════════════════════════════════════════════════════════════════ */
+async function pdfParaLinhas(arquivo){
+  await PDFJS_PRONTO;
+  const buf = await arquivo.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+  const linhas = [];
+
+  for (let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc   = await page.getTextContent();
+    const porY = [];   // [{y, itens:[{x,w,s}]}]
+
+    tc.items.forEach(function(it){
+      if (!it.str || !it.str.trim()) return;
+      const x = it.transform[4], y = it.transform[5];
+      let grupo = null;
+      for (let i = 0; i < porY.length; i++){
+        if (Math.abs(porY[i].y - y) <= 2.5){ grupo = porY[i]; break; }
+      }
+      if (!grupo){ grupo = { y: y, itens: [] }; porY.push(grupo); }
+      grupo.itens.push({ x: x, w: it.width || 0, s: it.str, h: it.height || 8 });
+    });
+
+    porY.sort(function(a, b){ return b.y - a.y; });          // de cima para baixo
+    porY.forEach(function(g){
+      g.itens.sort(function(a, b){ return a.x - b.x; });
+      let txt = '', fim = null;
+      g.itens.forEach(function(i){
+        if (fim !== null && (i.x - fim) > Math.max(0.8, i.h * 0.18)) txt += ' ';
+        txt += i.s;
+        fim = i.x + i.w;
+      });
+      txt = txt.replace(/\s+/g, ' ').trim();
+      if (txt) linhas.push(txt);
+    });
+  }
+  return linhas;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PARSE DE UMA LINHA DE ITEM
+   O rabo da linha tem forma fixa, e é por ELE que a gente se ancora — não
+   pelo "primeiro número depois da descrição". Motivo real: existe descrição
+   com número dentro ("HDF NATURAL 2,5 MM 1850 X 2750"), e pelo começo o
+   2,5 seria lido como quantidade.
+     material: ... QTD UM QTD_ENG UM PRECO TOT_COMPRA CUSTO TOT_CUSTO % ACUM
+     peça    : ... QTD UM QTD_ENG UM %
+   Linha que não casa com nenhum dos dois NÃO é importada: vira "suspeita"
+   na tela. Errar calado aqui seria pior do que não importar.
+   ════════════════════════════════════════════════════════════════════════ */
+const RE_COD = /^\d{3}\.\d{3}\.\d{3}$/;
+const RE_NUM = /^\d{1,3}(?:\.\d{3})*,\d+$/;      // 2,0690 · 117,8000 · 1.234,5678
+const RE_UM  = /^[A-Z]{1,3}[0-9]?$/;             // UN · M2 · L · KG · M
+
+function num(s){ return parseFloat(String(s).replace(/\./g, '').replace(',', '.')); }
+
+function tokenizar(linha){
+  const out = [];
+  linha.split(/\s+/).forEach(function(t){
+    if (!t) return;
+    const m = t.match(/^(\d{1,3}(?:\.\d{3})*,\d+)([A-Za-z][A-Za-z0-9]*)$/);  // "2,0690M2" grudado
+    if (m){ out.push(m[1]); out.push(m[2].toUpperCase()); }
+    else out.push(t);
+  });
+  return out;
+}
+
+function parseItem(linha){
+  const t = tokenizar(linha);
+  const n = t.length;
+  if (!n || !RE_COD.test(t[0])) return null;
+
+  // material — 10 tokens de rabo
+  if (n >= 12 &&
+      RE_NUM.test(t[n-10]) && RE_UM.test(t[n-9]) && RE_NUM.test(t[n-8]) && RE_UM.test(t[n-7]) &&
+      RE_NUM.test(t[n-6]) && RE_NUM.test(t[n-5]) && RE_NUM.test(t[n-4]) && RE_NUM.test(t[n-3]) &&
+      RE_NUM.test(t[n-2]) && RE_NUM.test(t[n-1])){
+    return {
+      tipo: 'MATERIAL',
+      cod:  t[0],
+      desc: t.slice(1, n-10).join(' '),
+      qtd:  num(t[n-10]),
+      um:   t[n-9],
+      custoUni:   num(t[n-4]),
+      custoTotal: num(t[n-3])
+    };
+  }
+
+  // peça / componente — 5 tokens de rabo
+  if (n >= 7 &&
+      RE_NUM.test(t[n-5]) && RE_UM.test(t[n-4]) && RE_NUM.test(t[n-3]) && RE_UM.test(t[n-2]) &&
+      RE_NUM.test(t[n-1])){
+    return { tipo:'PECA', cod:t[0], desc:t.slice(1, n-5).join(' '), qtd:num(t[n-5]), um:t[n-4] };
+  }
+
+  // peça sem a coluna de % (relatório sai assim em algumas versões)
+  if (n >= 6 && RE_NUM.test(t[n-4]) && RE_UM.test(t[n-3]) && RE_NUM.test(t[n-2]) && RE_UM.test(t[n-1])){
+    return { tipo:'PECA', cod:t[0], desc:t.slice(1, n-4).join(' '), qtd:num(t[n-4]), um:t[n-3] };
+  }
+
+  return { suspeita: linha };
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   PARSE DO RELATÓRIO INTEIRO + CONFERÊNCIAS
+   ════════════════════════════════════════════════════════════════════════ */
+function parseRelatorio(linhas){
+  const r = { volume:'', volumeDesc:'', itens:[], suspeitas:[], erros:[],
+              declarado:null, somaCusto:0, custoConfere:null };
+
+  linhas.forEach(function(l){
+    if (!r.volume){
+      const m = l.match(/Produto\s*Pai:\s*(\d{3}\.\d{3}\.\d{3})\s+(.+)/i);
+      if (m){
+        r.volume = m[1];
+        r.volumeDesc = m[2].replace(/\s*(Peso Bruto|LOTE ECON|UM:|Versão).*$/i, '').trim();
+      }
+    }
+    if (r.declarado === null){
+      const m = l.match(/N[úu]m\.?\s*de\s*Produtos\s*Filho\D*(\d+)/i);
+      if (m) r.declarado = parseInt(m[1], 10);
+    }
+  });
+
+  // "Núm. de Produtos Filho" e o número às vezes caem em linhas separadas
+  if (r.declarado === null){
+    const i = linhas.findIndex(function(l){ return /N[úu]m\.?\s*de\s*Produtos\s*Filho/i.test(l); });
+    if (i >= 0){
+      for (let k = i + 1; k < Math.min(i + 4, linhas.length); k++){
+        const m = linhas[k].match(/^(\d+)$/);
+        if (m){ r.declarado = parseInt(m[1], 10); break; }
+      }
+    }
+  }
+
+  linhas.forEach(function(l){
+    const it = parseItem(l);
+    if (!it) return;
+    if (it.suspeita){ r.suspeitas.push(it.suspeita); return; }
+    r.itens.push(it);
+  });
+
+  // dedup: o cabeçalho se repete por página, mas item não — se vier repetido
+  // é releitura da mesma linha, não item novo.
+  const vistos = {};
+  r.itens = r.itens.filter(function(it){
+    const k = it.cod + '|' + it.qtd + '|' + it.desc;
+    if (vistos[k]) return false;
+    vistos[k] = 1;
+    return true;
+  });
+
+  if (!r.volume) r.erros.push('Não achei o "Produto Pai" no PDF — é mesmo a Estrutura Sumarizada?');
+  if (!r.itens.length) r.erros.push('Nenhum item lido no PDF.');
+
+  // conferência 1: qtd × custo unitário tem que fechar com o total da linha
+  const contas = r.itens.filter(function(i){ return i.tipo === 'MATERIAL'; })
+                        .filter(function(i){ return Math.abs(i.qtd * i.custoUni - i.custoTotal) > 0.01; });
+  if (contas.length){
+    r.erros.push(contas.length + ' linha(s) de material com qtd × custo diferente do total impresso — ' +
+                 'a leitura das colunas pode ter saído torta: ' +
+                 contas.slice(0, 3).map(function(i){ return i.cod; }).join(', '));
+  }
+
+  // conferência 2: nº de filhos tem que bater com o rodapé
+  if (r.declarado !== null && r.declarado !== r.itens.length){
+    r.erros.push('O rodapé diz ' + r.declarado + ' produtos filho, mas li ' + r.itens.length + '.');
+  }
+
+  r.somaCusto = r.itens.reduce(function(s, i){ return s + (i.custoTotal || 0); }, 0);
+
+  // conferência 3: a soma tem que aparecer na linha de "Totais" do relatório.
+  // Ela vem grudada no rodapé, tipo:
+  //   "Núm. de Produtos Filho 70 Totais 234,5506 190,2132 100,00"
+  // Só olhamos essa linha (ou as últimas, se o rótulo mudar de nome) para não
+  // dar confirmação à toa batendo com o total de um item qualquer.
+  const candidatas = linhas.filter(function(l){ return /Totais/i.test(l); });
+  if (!candidatas.length) candidatas.push.apply(candidatas, linhas.slice(-3));
+  candidatas.forEach(function(l){
+    if (r.custoConfere) return;
+    const achou = tokenizar(l).some(function(x){
+      return RE_NUM.test(x) && Math.abs(num(x) - r.somaCusto) < 0.02;
+    });
+    if (achou) r.custoConfere = true;
+  });
+
+  r.itens.sort(function(a, b){ return a.cod < b.cod ? -1 : a.cod > b.cod ? 1 : 0; });
+  return r;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   TELA
+   ════════════════════════════════════════════════════════════════════════ */
+let LINHAS = [];        // [{vol, cod, qtd, desc}]
+let ARQUIVOS = [];      // relatórios já lidos
+
+const $ = function(id){ return document.getElementById(id); };
+
+function qtdBR(v){
+  let s = v.toFixed(4);
+  s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s.replace('.', ',');
+}
+function semPontos(c){ return String(c).replace(/\D/g, ''); }
+
+function render(){
+  if (!ARQUIVOS.length){ $('resultado').classList.add('hide'); return; }
+  $('resultado').classList.remove('hide');
+
+  // cards de conferência
+  $('arquivos').innerHTML = ARQUIVOS.map(function(a){
+    const r = a.rel, ok = !r.erros.length;
+    const mats = r.itens.filter(function(i){ return i.tipo === 'MATERIAL'; }).length;
+    const pecs = r.itens.length - mats;
+    return '<div class="arq ' + (ok ? 'ok' : 'err') + '">' +
+      '<div class="nome">' + esc(a.nome) + '</div>' +
+      '<div class="vol"><span class="cod">' + esc(r.volume || '—') + '</span> ' + esc(r.volumeDesc) + '</div>' +
+      '<span class="selo ' + (ok ? 'ok' : 'err') + '">' + (ok ? 'CONFERIDO' : 'VERIFICAR') + '</span>' +
+      '<ul>' +
+        '<li><b>' + r.itens.length + '</b> filhos — <b>' + mats + '</b> materiais + <b>' + pecs + '</b> peças' +
+          (r.declarado !== null ? ' (rodapé do relatório: <b>' + r.declarado + '</b>)' : '') + '</li>' +
+        '<li>soma do custo: <b>' + r.somaCusto.toFixed(4).replace('.', ',') + '</b>' +
+          (r.custoConfere ? ' — bate com o total impresso' : '') + '</li>' +
+        '<li>qtd × custo unitário fecha com o total em todas as linhas de material' +
+          (r.erros.length ? ': <b>não</b>' : ': <b>sim</b>') + '</li>' +
+      '</ul>' +
+      r.erros.map(function(e){ return '<div class="erro">⚠ ' + esc(e) + '</div>'; }).join('') +
+      (r.suspeitas.length
+        ? '<div class="erro">⚠ ' + r.suspeitas.length + ' linha(s) não reconhecida(s), fora da importação:</div>' +
+          r.suspeitas.slice(0, 5).map(function(s){ return '<div class="suspeita">' + esc(s) + '</div>'; }).join('')
+        : '') +
+    '</div>';
+  }).join('');
+
+  // volume repetido entre arquivos / duplicado na mesma leitura
+  const vols = {}, dups = [];
+  ARQUIVOS.forEach(function(a){
+    const v = semPontos(a.rel.volume);
+    if (vols[v]) dups.push(v); else vols[v] = 1;
+  });
+  if (dups.length){
+    $('dup').textContent = 'Atenção: o volume ' + dups.join(', ') +
+      ' apareceu em mais de um PDF. As linhas estão repetidas na lista abaixo.';
+    $('dup').classList.remove('hide');
+  } else $('dup').classList.add('hide');
+
+  // tabela
+  $('corpo').innerHTML = LINHAS.map(function(l){
+    return '<tr><td class="n">' + l.vol + '</td><td class="n">' + l.cod + '</td>' +
+           '<td class="q">' + qtdBR(l.qtd) + '</td><td>' + esc(l.desc) + '</td></tr>';
+  }).join('');
+}
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function tsv(){
+  return LINHAS.map(function(l){ return [l.vol, l.cod, qtdBR(l.qtd), l.desc].join('\t'); }).join('\n');
+}
+
+function baixar(nome, conteudo, tipo){
+  const blob = new Blob([conteudo], { type: tipo });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+function nomeArquivo(ext){
+  const v = ARQUIVOS.length === 1 ? semPontos(ARQUIVOS[0].rel.volume) : 'varios';
+  return 'ESTRUTURA_' + v + '.' + ext;
+}
+
+/* ════════ eventos ════════ */
+const drop = $('drop'), inp = $('file');
+
+drop.addEventListener('click', function(){ inp.click(); });
+inp.addEventListener('change', function(){ processar(inp.files); inp.value = ''; });
+['dragenter', 'dragover'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); });
+});
+['dragleave', 'drop'].forEach(function(ev){
+  drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); });
+});
+drop.addEventListener('drop', function(e){
+  if (e.dataTransfer && e.dataTransfer.files) processar(e.dataTransfer.files);
+});
+
+async function processar(fileList){
+  const arqs = Array.prototype.slice.call(fileList).filter(function(f){
+    return /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+  });
+  if (!arqs.length){ aviso('Só PDF. Mande o relatório Estrutura Sumarizada do Lógica.'); return; }
+
+  for (let i = 0; i < arqs.length; i++){
+    aviso('Lendo ' + arqs[i].name + ' (' + (i + 1) + '/' + arqs.length + ')…');
+    try {
+      const rel = parseRelatorio(await pdfParaLinhas(arqs[i]));
+      ARQUIVOS.push({ nome: arqs[i].name, rel: rel });
+      const vol = semPontos(rel.volume);
+      rel.itens.forEach(function(it){
+        LINHAS.push({ vol: vol, cod: semPontos(it.cod), qtd: it.qtd, desc: it.desc });
+      });
+    } catch(err){
+      ARQUIVOS.push({ nome: arqs[i].name,
+        rel: { volume:'', volumeDesc:'', itens:[], suspeitas:[], declarado:null, somaCusto:0,
+               erros:['Não deu para ler este PDF: ' + err.message] } });
+    }
+  }
+  aviso('');
+  render();
+}
+
+function aviso(txt){
+  const el = $('status');
+  if (!txt){ el.classList.add('hide'); return; }
+  el.textContent = txt;
+  el.classList.remove('hide');
+}
+
+$('btn-copiar').addEventListener('click', async function(){
+  const txt = tsv(), btn = this;
+  try {
+    await navigator.clipboard.writeText(txt);
+  } catch(e){
+    const ta = document.createElement('textarea');   // navegador sem clipboard API
+    ta.value = txt;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e2){}
+    document.body.removeChild(ta);
+  }
+  const antes = btn.textContent;
+  btn.textContent = 'Copiado · ' + LINHAS.length + ' linhas';
+  setTimeout(function(){ btn.textContent = antes; }, 2200);
+});
+
+$('btn-tsv').addEventListener('click', function(){
+  baixar(nomeArquivo('tsv'), tsv(), 'text/tab-separated-values;charset=utf-8');
+});
+
+$('btn-xlsx').addEventListener('click', async function(){
+  const btn = this, antes = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Gerando…';
+  const temXlsx = await carregarXlsx();
+  btn.disabled = false; btn.textContent = antes;
+
+  if (!temXlsx){
+    aviso('Não deu para carregar o gerador de Excel. Use BAIXAR TSV (o Excel abre TSV) ou COPIAR LINHAS.');
+    return;
+  }
+  const aoa = [['COD_VOLUME', 'COD_COMPONENTE', 'QTD', 'DESCRICAO']];
+  LINHAS.forEach(function(l){ aoa.push([l.vol, l.cod, l.qtd, l.desc]); });
+
+  const ws = window.XLSX.utils.aoa_to_sheet(aoa);
+  // códigos como TEXTO: a aba da planilha guarda assim, e número quebraria PROCV
+  for (let r = 1; r < aoa.length; r++){
+    ['A', 'B'].forEach(function(c){
+      const cel = ws[c + (r + 1)];
+      if (cel){ cel.t = 's'; cel.z = '@'; }
+    });
+  }
+  ws['!cols'] = [{ wch: 14 }, { wch: 18 }, { wch: 10 }, { wch: 52 }];
+  const wb = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(wb, ws, 'ESTRUTURA');
+  window.XLSX.writeFile(wb, nomeArquivo('xlsx'));
+});
+
+$('btn-limpar').addEventListener('click', function(){
+  LINHAS = []; ARQUIVOS = [];
+  render();
+  $('resultado').classList.add('hide');
+});
+</script>
+</body>
+</html>

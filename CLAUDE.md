@@ -12,7 +12,9 @@ via Google Apps Script (JSONP).
 - `paradas-calc.test.js` — teste de paridade: `node paradas-calc.test.js`.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
-- `vercel.json` — `/` → v7, `/mobile` → mobile.
+- `ritmoprod_estrutura.html` — ferramenta `/estrutura`: lê o PDF da **Estrutura
+  Sumarizada** do ERP e devolve as linhas prontas para a aba `ESTRUTURA`.
+- `vercel.json` — `/` → v7, `/mobile` → mobile, `/estrutura` → importador.
 - Deploy front-end: automático pela Vercel ao dar merge na `main`.
 
 ## ⚠️ NÃO ALTERAR sem pedido explícito
@@ -246,6 +248,45 @@ via Google Apps Script (JSONP).
 - `manifest.webmanifest` (raiz) está **órfão** — nenhum HTML aponta para ele e o
   `start_url` (`./index.html`) nem existe. Os manifests que valem são
   `manifest.json` (v7) e `manifest-mobile.json` (mobile).
+
+## Importar estrutura de produto (`/estrutura`)
+- A aba **`ESTRUTURA`** da planilha guarda a lista de componentes de cada volume:
+  **A=`COD_VOLUME`, B=`COD_COMPONENTE`, C=`QTD`, D=`DESCRICAO`**, códigos **sem
+  pontos**, ordenada por código, com **peças e materiais misturados** (é o
+  relatório "Estrutura Sumarizada" do ERP Lógica achatado). Alimentada à mão até
+  aqui, um produto por vez.
+- `ritmoprod_estrutura.html` (rota **`/estrutura`**) faz isso no navegador: solta
+  o(s) PDF(s), ele lê com **pdf.js**, confere e devolve as linhas para
+  **copiar** (TSV, cola direto nas 4 colunas), **baixar Excel** (SheetJS, já
+  usado no v7) ou **baixar TSV**. **Não** grava na planilha nem chama o Apps
+  Script — nada a re-deployar.
+- **A ordem "crua" do texto do PDF vem embaralhada** (descrição, %, total,
+  código, custo…). A página remonta a linha **agrupando os itens do pdf.js por
+  Y e ordenando por X**, e só põe espaço onde existe vão de verdade — senão um
+  número partido pelo renderizador (`"23," + "15"`) viraria dois tokens.
+- **O parse se ancora no FIM da linha, não no começo.** Formato fixo:
+  `… QTD UM QTD_ENG UM PRECO TOT_COMPRA CUSTO TOT_CUSTO % ACUM` (material) e
+  `… QTD UM QTD_ENG UM %` (peça). Pegar "o primeiro número depois da descrição"
+  quebra em descrição com número dentro — o caso real é
+  `HDF NATURAL 2,5 MM 1850 X 2750`, onde o **2,5** viraria a quantidade.
+- **Linha que não casa com nenhum dos dois formatos NÃO entra**: aparece como
+  "suspeita" na tela. Errar calado aqui seria pior do que não importar.
+- **Três conferências antes de confiar**, todas na tela: nº de filhos × o
+  "Núm. de Produtos Filho" do rodapé; `qtd × custo unitário` fechando com o
+  total impresso em cada linha de material; e a soma do custo batendo com a
+  linha de **Totais** (que vem grudada no rodapé, tipo
+  `"Núm. de Produtos Filho 70 Totais 234,5506 190,2132 100,00"` — por isso a
+  busca é só nessa linha, senão confirmaria à toa com o total de um item).
+- **pdf.js e SheetJS vêm de CDN com fallback** (cdnjs → jsdelivr → unpkg) e a
+  falha é **explícita** na tela. Já houve tela quebrada aqui por CDN fora do ar
+  (ver o caso da Chart.js no bloco de versão do v7).
+- **Colar duplica**: a página não sabe o que já está na planilha. O aviso de
+  conferir o volume antes (Ctrl+F com o código sem pontos) está na própria tela.
+  Gravar direto com upsert por volume exigiria ação nova no `.gs` + re-deploy —
+  ficou de fora de propósito.
+- Validado ponta a ponta contra o PDF do volume `501.083.118`: 70 filhos
+  (46 materiais + 24 peças), soma 190,2132, e o TSV gerado **idêntico** ao que
+  foi subido à mão. `APP_VER` desta página é o `EST_VER`, no topo do script.
 
 ## Custo das chamadas / auto-refresh (mobile)
 - **Toda leitura do `.gs` lê a aba INTEIRA** (`getDataRange()`, 30+ ocorrências).
