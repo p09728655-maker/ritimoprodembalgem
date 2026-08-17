@@ -2735,14 +2735,28 @@ function testeFecharAgora() {
 //      e somente onde ela estiver VAZIA (nunca sobrescreve o que o sistema
 //      calculou sozinho).
 
-// Janela do turno normal. Fora disso é hora extra para efeito desta reconstrução.
+// Regra de hora extra para esta reconstrução, como o RH conta:
+//   • antes das 07:00
+//   • depois das 18:00
+//   • SÁBADO e DOMINGO: o dia inteiro, em qualquer horário
+// Domingo entra junto por segurança: se houver produção lançada num domingo,
+// ela é extra tanto quanto a de sábado. Em semana normal não há domingo
+// lançado, então incluir não muda número nenhum.
 const HE_TURNO_INI_MIN = 7 * 60;    // 07:00
-const HE_TURNO_FIM_MIN = 17 * 60;   // 17:00
+const HE_TURNO_FIM_MIN = 18 * 60;   // 18:00
 
 function _heMinutosDaHora(v) {
   const t = String(v || '').trim().replace(/^HE\s*/i, '');
   const m = t.match(/^(\d{1,2}):(\d{2})/);
   return m ? (+m[1]) * 60 + (+m[2]) : null;
+}
+
+// dd/MM/aaaa é fim de semana? (6 = sábado, 0 = domingo)
+function _heFimDeSemana(dataBR) {
+  const m = String(dataBR || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return false;
+  const dow = new Date(+m[3], +m[2] - 1, +m[1]).getDay();
+  return dow === 6 || dow === 0;
 }
 
 // Soma, por dia, as caixas lançadas dentro e fora da janela do turno.
@@ -2754,9 +2768,12 @@ function _heCaixasPorDiaDoLogProduto() {
     const min  = _heMinutosDaHora(vals[i][1]);
     const cx   = Number(vals[i][4]) || 0;
     if (!data || min === null || cx <= 0) continue;
-    const d = porDia[data] || (porDia[data] = { normal: 0, extra: 0, horasExtra: {} });
-    if (min < HE_TURNO_INI_MIN || min >= HE_TURNO_FIM_MIN) {
+    const d = porDia[data] || (porDia[data] = { normal: 0, extra: 0, horasExtra: {}, motivo: '' });
+    const fds  = _heFimDeSemana(data);
+    const fora = min < HE_TURNO_INI_MIN || min >= HE_TURNO_FIM_MIN;
+    if (fds || fora) {
       d.extra += cx;
+      d.motivo = fds ? 'fim de semana' : 'fora de ' + fromMinGs(HE_TURNO_INI_MIN) + '-' + fromMinGs(HE_TURNO_FIM_MIN);
       const rot = _horaStr(vals[i][1]) || String(vals[i][1]);
       d.horasExtra[rot] = (d.horasExtra[rot] || 0) + cx;
     } else {
@@ -2782,16 +2799,17 @@ function simularHoraExtraPassada() {
     linhas.push({
       data: data, heCx: d.extra, realizado: real,
       coberturaLog: cobert + '%',
+      motivo: d.motivo,
       horarios: d.horasExtra,
       status: jaTem ? 'JA PREENCHIDO (nao seria alterado)' : 'seria gravado'
     });
   }
-  Logger.log('Dias com produção fora da janela ' +
-             fromMinGs(HE_TURNO_INI_MIN) + '-' + fromMinGs(HE_TURNO_FIM_MIN) + ': ' + linhas.length);
+  Logger.log('Hora extra = antes de ' + fromMinGs(HE_TURNO_INI_MIN) + ', depois de ' +
+             fromMinGs(HE_TURNO_FIM_MIN) + ', ou sábado/domingo. Dias encontrados: ' + linhas.length);
   linhas.forEach(function (l) {
     Logger.log(l.data + ' → HE ' + l.heCx + ' cx  (realizado ' + l.realizado +
-               ', log de produto cobre ' + l.coberturaLog + ') · ' + l.status +
-               ' · horários: ' + JSON.stringify(l.horarios));
+               ', log de produto cobre ' + l.coberturaLog + ') · ' + l.motivo +
+               ' · ' + l.status + ' · horários: ' + JSON.stringify(l.horarios));
   });
   return { ok: true, dias: linhas };
 }
