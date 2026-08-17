@@ -2735,16 +2735,16 @@ function testeFecharAgora() {
 //      e somente onde ela estiver VAZIA (nunca sobrescreve o que o sistema
 //      calculou sozinho).
 
-// Regra de hora extra para esta reconstrução:
-//   • antes das 07:00
-//   • depois das 18:00
-// O critério é o HORÁRIO, todos os dias — inclusive sábado. Conferido no
-// 04/07/2026 (um sábado): a hora extra são as 388 cx lançadas às 05:00 e 06:00,
-// não o dia inteiro. Se algum dia a regra mudar e o sábado passar a contar
-// inteiro, basta ligar HE_SABADO_INTEIRO.
+// Regra de hora extra para esta reconstrução (confirmada com o PPCP):
+//   • dia útil: antes das 07:00 ou depois das 18:00
+//   • SÁBADO e DOMINGO: o dia INTEIRO, em qualquer horário — não é jornada
+//     normal, então tudo que sair ali é extra.
+// Conferido no 04/07/2026, um sábado com produção das 05:00 às 16:00: a hora
+// extra é o dia todo (1.278 cx = o REALIZADO), não apenas as 388 cx lançadas
+// antes das 07:00.
 const HE_TURNO_INI_MIN  = 7 * 60;    // 07:00
 const HE_TURNO_FIM_MIN  = 18 * 60;   // 18:00
-const HE_SABADO_INTEIRO = false;     // true = sábado/domingo contam o dia todo
+const HE_SABADO_INTEIRO = true;      // sábado/domingo contam o dia todo
 
 // A coluna HORA pode ser TEXTO ("07:00") ou HORA de verdade — e formatada como
 // hora ela chega aqui como Date ("Sat Dec 30 1899 07:00:00…"), que nenhum regex
@@ -2846,7 +2846,7 @@ function simularHoraExtraPassada() {
   }
   Logger.log('Hora extra = antes de ' + fromMinGs(HE_TURNO_INI_MIN) + ' ou depois de ' +
              fromMinGs(HE_TURNO_FIM_MIN) +
-             (HE_SABADO_INTEIRO ? ', e sábado/domingo inteiros' : ' (mesma régua todos os dias, sábado incluído)') +
+             (HE_SABADO_INTEIRO ? ', e SÁBADO/DOMINGO o dia inteiro' : ' (mesma régua todos os dias)') +
              '. Dias encontrados: ' + linhas.length);
   linhas.forEach(function (l) {
     Logger.log(l.data + ' → HE ' + l.heCx + ' cx  (realizado ' + l.realizado +

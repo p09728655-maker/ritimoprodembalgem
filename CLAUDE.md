@@ -100,14 +100,15 @@ via Google Apps Script (JSONP).
 - **Reconstruir a HE dos dias antigos: `simularHoraExtraPassada()` /
   `preencherHoraExtraPassada()`** (rodar pelo editor do Apps Script). A aba
   `PRODUCAO_PRODUTO` guarda `DATA · HORA · CAIXAS` de cada lançamento. Conta
-  como extra o que foi lançado **antes das 07:00** ou **depois das 18:00** — a
-  mesma régua **todos os dias, sábado incluído**. A soma por dia vira a `HE CX`.
-  - **17:00–18:00 é hora NORMAL** por essa régua: o turno da planilha termina
+  como extra, por dia: em **dia útil**, o lançado **antes das 07:00** ou
+  **depois das 18:00**; em **sábado e domingo, o dia INTEIRO** (não é jornada
+  normal). A soma vira a `HE CX`.
+  - **17:00–18:00 é hora NORMAL** em dia útil: o turno da planilha termina
     17:00, mas a hora extra só começa às 18:00.
-  - **Sábado NÃO conta o dia inteiro.** Conferido no 04/07/2026 (um sábado): a
-    hora extra são as **388 cx** lançadas às 05:00 e 06:00, não as 1.278 do dia.
-    A flag `HE_SABADO_INTEIRO` (padrão `false`) existe para inverter isso se a
-    regra mudar.
+  - **Sábado conta o dia todo** — confirmado com o PPCP no 04/07/2026 (sábado
+    com produção das 05:00 às 16:00): a HE é o dia inteiro (**1.278 cx**, o
+    próprio REALIZADO), não só as 388 cx lançadas antes das 07:00. A flag
+    `HE_SABADO_INTEIRO` (hoje `true`) deixa isso explícito no código.
   - Simula primeiro: a função de simulação **não grava**, só lista no log — e
     informa quantas linhas leu, quantas aproveitou e quantas tinham **HORA
     ilegível**. "0 dias" sem esse diagnóstico não distingue "não teve hora
