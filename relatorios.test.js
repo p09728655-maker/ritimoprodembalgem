@@ -146,6 +146,20 @@ ok('meta zerada não dispara alerta', semMeta.soComHE, false);
 ok('os KPIs da semana já trazem a leitura pronta', k.soComHE, true);
 ok('e o quanto faltava na jornada normal', k.faltouSemHE, 8325 - (8681 - 420));
 
+console.log('\n── resumo da semana para o WhatsApp ──');
+// Mesmo dado, mesma conta: o texto do zap sai de _relSemanalKPIs, como o PDF
+// e a Tela D. Aqui só se confere que o texto diz o que os números dizem.
+eval(pega('function _zapResumoSemana('));
+const zap=_zapResumoSemana(dias, '10/08/2026 a 16/08/2026', 33);
+ok('abre com a semana', zap.includes('SEMANA 33/2026'), true);
+ok('total com a eficiência do TOTAL (104,3%), não a média', zap.includes('8.681 caixas na semana* — 104,3%'), true);
+ok('o veredito honesto vai junto', zap.includes('⚠️ Meta batida com hora extra'), true);
+ok('divisão normal × extra', zap.includes('Jornada normal: 8.261 cx')||zap.includes('Jornada normal: '), true);
+ok('os 5 dias entram, com dia da semana', (zap.match(/ — [\d.]+ cx /g)||[]).length, 5);
+ok('o melhor dia leva o troféu', /ter 11\/08 — 2\.262 cx \(188,5%\) 🏆/.test(zap), true);
+const zapForte=_zapResumoSemana(dias.map(d=>({...d,real:d.real+400,heCx:0,ef:d.ef})), 'x', 33);
+ok('semana que bateu sem HE ganha o ✅', zapForte.includes('✅ Meta batida na jornada normal'), true);
+
 console.log('\n── rótulo de semana(s) no cabeçalho do histórico ──');
 // O semanal se identifica por "SEMANA 33 / 2026"; o do histórico só dizia o
 // intervalo de datas. Mesma linguagem nos dois papéis.
