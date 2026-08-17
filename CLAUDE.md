@@ -428,6 +428,25 @@ via Google Apps Script (JSONP).
   em `about:blank` e um `src` relativo não resolveria.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
+- **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo
+  relatório semanal E pelo do histórico). O total do período pode fechar acima da
+  meta com a **jornada normal abaixo** dela: na Semana 33/2026 foram 8.681 cx
+  contra 8.325 (104,3%), mas 1.219 vieram de HE — na jornada normal foram 7.462,
+  ou **89,6%**, faltando 863 cx. O relatório dizia "DENTRO DA META" em verde e
+  escondia isso.
+  - Quando `soComHE`, o card EFICIÊNCIA MÉDIA vira **âmbar** com
+    *"⚠ META BATIDA COM HORA EXTRA"*, o TOTAL META ganha o `sem HE: −863 cx` e
+    entra a faixa `.rp-alerta` com a frase inteira. Semana que já batia na
+    jornada normal **não** dispara nada (verde continua verde), e semana abaixo
+    da meta mesmo com HE também não — aí o relatório já está vermelho.
+  - A base é o **total** do período (realizado ÷ meta), **não** a média das
+    eficiências diárias: "meta da semana" é o somatório, e a média de percentuais
+    distorce quando a meta varia muito de um dia para o outro (a mesma semana dá
+    118,5% na média e 104,3% no total).
+- **Rodapé MÉDIA / DIA: não existe média de horário.** As colunas MELHOR H./PIOR H.
+  guardam **rótulos** (`08:00-09:00`); o rodapé somava isso como número
+  (`0 + '08:00-09:00'`) e imprimia **`NaN`** no PDF. `_slotMaisFreq(dias,campo)`
+  devolve o slot que mais se repete, com a contagem (`08:00-09:00 (2×)`).
 - `_relSemanaJanela(ate)` e `_relSemanalKPIs(dias)` saíram de dentro do
   `gerarRelatorioSemanal` para poderem ser testadas — antes, conferir a média
   da semana exigia abrir o popup e olhar. A janela é **segunda 00:00 → domingo

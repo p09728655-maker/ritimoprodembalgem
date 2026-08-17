@@ -1923,7 +1923,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.5.1';
+const APP_VER   = '7.5.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4868,6 +4868,11 @@ async function _imprimirHistoricoFormatado(){
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
   const bdgLbl=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
+  // Mesma leitura do relatório semanal: total acima da meta com a jornada
+  // normal abaixo dela = a hora extra é que bateu (ver _relMetaHE).
+  const mhe=_relMetaHE(totReal, totHEp, totMeta);
+  const corEfP  = mhe.soComHE?'#FF9800':cor(efMedia);
+  const bdgEfP  = mhe.soComHE?'⚠ meta batida com hora extra':bdgLbl(efMedia).toLowerCase();
   const periodoLabel=deStr&&ateStr?`${deStr} a ${ateStr}`:periodo.toUpperCase();
 
   const html=`<!DOCTYPE html>
@@ -4922,6 +4927,9 @@ async function _imprimirHistoricoFormatado(){
   .ah-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;letter-spacing:1px;margin-bottom:2px}
   .ah-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#1a1a2e}
   .ah-sub{font-size:8px;color:#a0aec0;margin-top:1px}
+  /* ALERTA (meta batida com hora extra) */
+  .rp-alerta{display:flex;gap:9px;align-items:flex-start;margin-top:9px;padding:8px 12px;background:#fff8ed;border:0.5px solid #ffcc80;border-left:3px solid #FF9800;border-radius:3px;font-size:9.5px;line-height:1.5;color:#7a3e00;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-alerta-ic{font-size:12px;line-height:1.2;color:#e65100}
   /* FOOTER */
   .rp-footer{margin-top:12px;padding-top:6px;border-top:0.5px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#cbd5e0}
   .rp-print-btn{position:fixed;top:12px;right:12px;background:#FF5C1F;color:#fff;border:none;padding:8px 16px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
@@ -4942,20 +4950,20 @@ ${_rpCabecalho('HISTÓRICO',
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+  <div class="kpi-card" style="border-left-color:${corEfP}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHEp?`${bdgLbl(efMedia).toLowerCase()} · sem HE ${efSemHEp.toFixed(1)}%`:bdgLbl(efMedia).toLowerCase()}</div>
+    <div class="kpi-val" style="color:${corEfP}">${efMedia.toFixed(1)}%</div>
+    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${efSemHEp.toFixed(1)}%`:bdgEfP}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
     <div class="kpi-sub">de ${dias.length} (${Math.round(comMeta/dias.length*100)}%)</div>
   </div>
-  <div class="kpi-card" style="border-left-color:#888">
+  <div class="kpi-card" style="border-left-color:${mhe.soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')}${temHEp?` · sem HE: ${(mhe.realNormal-totMeta).toLocaleString('pt-BR')}`:''} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">🏆 MELHOR DIA</div>
@@ -4968,6 +4976,14 @@ ${_rpCabecalho('HISTÓRICO',
     <div class="kpi-sub" style="color:#F44336">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
 </div>
+${mhe.soComHE?`<div class="rp-alerta">
+  <span class="rp-alerta-ic">⚠</span>
+  <div><b>A meta do período foi batida com hora extra.</b>
+  Na jornada normal foram <b>${mhe.realNormal.toLocaleString('pt-BR')} cx</b> contra a meta de
+  ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${mhe.faltouSemHE.toLocaleString('pt-BR')} cx</b>
+  (${mhe.efTotalSemHE.toFixed(1)}% da meta). A hora extra${totHorasP>0?` (${totHorasP}h)`:''} entrou com
+  ${totHEp.toLocaleString('pt-BR')} cx e levou o período a ${mhe.efTotal.toFixed(1)}%.</div>
+</div>`:''}
 
 <div class="rp-sec-ttl" style="margin-top:16px">PRODUÇÃO × META POR DIA</div>
 <div class="rp-chart-wrap">${_svgBarChart(dias)}</div>
@@ -5145,6 +5161,42 @@ function _relSemanaJanela(ateStr){
   return { seg, sex, semStr:`${fmtD(seg)} a ${fmtD(sex)}`, numSem:_numSemana(seg) };
 }
 
+// ── Horário que mais se repete como melhor/pior do dia ──────────────────────
+// A linha MÉDIA / DIA do relatório tentava tirar a MÉDIA de d.melhor/d.pior,
+// que são RÓTULOS de horário ('08:00-09:00'), não números: somar string com 0
+// dá '008:00-09:00' e o Math.round devolvia NaN — que ia impresso no PDF.
+// Média de horário não quer dizer nada; o que interessa é qual slot mais se
+// repete no período. Empate fica com o primeiro do período (ordem da lista).
+function _slotMaisFreq(dias, campo){
+  const cont = {};
+  dias.forEach(d=>{ const v=d[campo]; if(v&&v!=='—') cont[v]=(cont[v]||0)+1; });
+  const chaves = Object.keys(cont);
+  if(!chaves.length) return '—';
+  const top = chaves.reduce((a,b)=>cont[b]>cont[a]?b:a);
+  return cont[top]>1 ? `${top} <span style="color:#a0aec0">(${cont[top]}×)</span>` : top;
+}
+
+// ── A meta foi batida, ou foi a hora extra que bateu? ───────────────────────
+// Conta pura, usada pelos DOIS relatórios (semanal e histórico). O total do
+// período pode fechar acima da meta e ainda assim a JORNADA NORMAL ter ficado
+// abaixo — quem cobriu o buraco foi a hora extra. Dizer só "dentro da meta"
+// nesse caso esconde exatamente o que o PPCP precisa enxergar.
+// Base é o TOTAL do período (realizado ÷ meta), não a média das eficiências
+// diárias: "meta da semana" é o somatório, e a média de percentuais distorce
+// quando a meta varia muito de um dia para o outro.
+function _relMetaHE(totReal, totHE, totMeta){
+  const efTotal      = totMeta>0 ? totReal/totMeta*100 : 0;
+  const realNormal   = totReal - totHE;
+  const efTotalSemHE = totMeta>0 ? realNormal/totMeta*100 : 0;
+  return {
+    efTotal, efTotalSemHE, realNormal,
+    // bateu no total mas não bateria sem a hora extra
+    soComHE:     totMeta>0 && totReal>=totMeta && realNormal<totMeta,
+    // quanto faltava na jornada normal (0 quando a normal já batia)
+    faltouSemHE: Math.max(0, totMeta-realNormal)
+  };
+}
+
 // ── KPIs da semana ──────────────────────────────────────────────────────────
 // Conta pura: entra a lista de dias, sai o resumo. A base de TODA média aqui
 // são os dias COM PRODUÇÃO no período (os mesmos que o relatório lista), nunca
@@ -5174,7 +5226,8 @@ function _relSemanalKPIs(dias){
     semHE:     dias.filter(_heIndef).length,
     comMeta:   dias.filter(d=>d.ok).length,
     melhorDia: dias.reduce((a,b)=>a.ef>b.ef?a:b),
-    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b)
+    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b),
+    ..._relMetaHE(totReal, totHE, totMeta)
   };
 }
 
@@ -5208,7 +5261,8 @@ async function gerarRelatorioSemanal(){
 
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
   const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta,
-         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia} = _relSemanalKPIs(diasSem);
+         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia,
+         efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
   // "468 · 2h" na mesma célula: mostra as HORAS sem alargar a tabela com mais
   // uma coluna (o relatório já tem 10 e é A4 retrato).
   const _heCel = d => {
@@ -5222,6 +5276,11 @@ async function gerarRelatorioSemanal(){
   // Cor de status
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
+  // Meta batida só por causa da hora extra: o verde vira âmbar e o texto diz
+  // por quê. Sem isso o relatório afirma "dentro da meta" para uma semana que,
+  // dentro da própria jornada, ficou abaixo.
+  const corEf  = soComHE ? '#FF9800' : cor(efMedia);
+  const badgeEf= soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efMedia);
 
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
@@ -5266,6 +5325,10 @@ async function gerarRelatorioSemanal(){
   .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
   .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#1a1a2e; }
   .rp-hl-sub{ font-size:10px; color:#718096; margin-top:2px; }
+
+  /* ALERTA (meta batida com hora extra) */
+  .rp-alerta{ display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:10px 14px; background:#fff8ed; border:1px solid #ffcc80; border-left:3px solid #FF9800; border-radius:4px; font-size:10.5px; line-height:1.55; color:#7a3e00; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rp-alerta-ic{ font-size:14px; line-height:1.2; color:#e65100; }
 
   /* GRÁFICO SVG */
   .rp-chart-wrap{ background:#f9f9f9; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
@@ -5318,22 +5381,30 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     <div class="kpi-val" style="color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">cx/dia · meta ${Math.round(mediaMeta).toLocaleString('pt-BR')}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+  <div class="kpi-card" style="border-left-color:${corEf}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHE?`${badge(efMedia)} · sem HE ${efMediaSemHE.toFixed(1)}%`:badge(efMedia)}</div>
+    <div class="kpi-val" style="color:${corEf}">${efMedia.toFixed(1)}%</div>
+    <div class="kpi-sub">${temHE?`${badgeEf} · sem HE ${efMediaSemHE.toFixed(1)}%`:badgeEf}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
     <div class="kpi-sub">de ${diasSem.length} dias (${((comMeta/diasSem.length)*100).toFixed(0)}%)</div>
   </div>
-  <div class="kpi-card" style="border-left-color:#888">
+  <div class="kpi-card" style="border-left-color:${soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${temHE?` · sem HE: ${((totReal-totHE)-totMeta).toLocaleString('pt-BR')} cx`:''}</div>
   </div>
 </div>
+${soComHE?`<div class="rp-alerta">
+  <span class="rp-alerta-ic">⚠</span>
+  <div><b>A meta da semana foi batida com hora extra.</b>
+  Na jornada normal foram <b>${(totReal-totHE).toLocaleString('pt-BR')} cx</b> contra a meta de
+  ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${faltouSemHE.toLocaleString('pt-BR')} cx</b>
+  (${efTotalSemHE.toFixed(1)}% da meta). A hora extra${totHoras>0?` (${totHoras}h)`:''} entrou com
+  ${totHE.toLocaleString('pt-BR')} cx e levou o período a ${efTotal.toFixed(1)}%.</div>
+</div>`:''}
 
 <!-- MELHOR / PIOR -->
 <div class="rp-row2" style="margin-top:10px">
@@ -5392,8 +5463,8 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
       ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${efMediaSemHE.toFixed(1)}%</td>`:''}
-      <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:#F44336">${Math.round(diasSem.reduce((s,d)=>s+d.pior,0)/diasSem.length).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#4CAF50">${_slotMaisFreq(diasSem,'melhor')}</td>
+      <td class="td-mono" style="color:#F44336">${_slotMaisFreq(diasSem,'pior')}</td>
       <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
     </tr>
     <tr>
