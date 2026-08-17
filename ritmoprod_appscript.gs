@@ -2745,8 +2745,12 @@ function testeFecharAgora() {
 const HE_TURNO_INI_MIN = 7 * 60;    // 07:00
 const HE_TURNO_FIM_MIN = 18 * 60;   // 18:00
 
+// A coluna HORA pode ser TEXTO ("07:00") ou HORA de verdade — e formatada como
+// hora ela chega aqui como Date ("Sat Dec 30 1899 07:00:00…"), que nenhum regex
+// de "HH:MM" reconhece. _horaStr() resolve os dois casos (Date vira HH:mm no
+// fuso da planilha); sem isso a varredura ignorava TODAS as linhas em silêncio.
 function _heMinutosDaHora(v) {
-  const t = String(v || '').trim().replace(/^HE\s*/i, '');
+  const t = _horaStr(v).replace(/^HE\s*/i, '');
   const m = t.match(/^(\d{1,2}):(\d{2})/);
   return m ? (+m[1]) * 60 + (+m[2]) : null;
 }
@@ -2763,11 +2767,17 @@ function _heFimDeSemana(dataBR) {
 function _heCaixasPorDiaDoLogProduto() {
   const vals = _valores(SHEET_PROD_LOG);
   const porDia = {};
+  // Contadores de diagnóstico: sem eles, "0 dias" não distingue "não teve hora
+  // extra" de "não consegui ler a planilha".
+  const diag = { linhas: Math.max(0, vals.length - 1), semData: 0, semHora: 0, semCaixas: 0, lidas: 0 };
   for (let i = 1; i < vals.length; i++) {
     const data = _dataStr(vals[i][0]);
     const min  = _heMinutosDaHora(vals[i][1]);
     const cx   = Number(vals[i][4]) || 0;
-    if (!data || min === null || cx <= 0) continue;
+    if (!data)        { diag.semData++;   continue; }
+    if (min === null) { diag.semHora++;   continue; }
+    if (cx <= 0)      { diag.semCaixas++; continue; }
+    diag.lidas++;
     const d = porDia[data] || (porDia[data] = { normal: 0, extra: 0, horasExtra: {}, motivo: '' });
     const fds  = _heFimDeSemana(data);
     const fora = min < HE_TURNO_INI_MIN || min >= HE_TURNO_FIM_MIN;
@@ -2780,13 +2790,31 @@ function _heCaixasPorDiaDoLogProduto() {
       d.normal += cx;
     }
   }
+  porDia._diag = diag;
   return porDia;
 }
 
 // Lista o que seria gravado, sem tocar em nada.
 function simularHoraExtraPassada() {
   const porDia = _heCaixasPorDiaDoLogProduto();
+  const diag   = porDia._diag; delete porDia._diag;
+  Logger.log('PRODUCAO_PRODUTO: ' + diag.linhas + ' linhas | aproveitadas ' + diag.lidas +
+             ' | sem data ' + diag.semData + ' | HORA ilegível ' + diag.semHora +
+             ' | sem caixas ' + diag.semCaixas);
+
+  // O cruzamento é pelo HISTORICO (é lá que a HE CX é gravada), mas um dia que
+  // só existe no log também é listado — senão um dia sem linha no HISTORICO
+  // sumiria sem explicação.
   const hist   = _valores(SHEET_HIST);
+  const noHist = {};
+  for (let h = 1; h < hist.length; h++) noHist[fmtDataBR(hist[h][0])] = h;
+  Object.keys(porDia).forEach(function (dia) {
+    if (porDia[dia].extra > 0 && noHist[dia] === undefined) {
+      Logger.log('⚠ ' + dia + ' → HE ' + porDia[dia].extra +
+                 ' cx, mas NÃO existe linha desse dia no HISTORICO (nada a gravar).');
+    }
+  });
+
   const linhas = [];
   for (let i = 1; i < hist.length; i++) {
     const data = fmtDataBR(hist[i][0]);
@@ -2822,6 +2850,7 @@ function preencherHoraExtraPassada() {
   if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
 
   const porDia = _heCaixasPorDiaDoLogProduto();
+  delete porDia._diag;
   const hist   = sh.getDataRange().getValues();   // escrita: lê direto, sem memo
   let gravados = 0;
   for (let i = 1; i < hist.length; i++) {

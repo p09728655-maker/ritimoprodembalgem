@@ -104,7 +104,15 @@ via Google Apps Script (JSONP).
   **sábado/domingo o dia inteiro**, em qualquer horário. A soma por dia vira a
   `HE CX`. Note que **17:00–18:00 é hora NORMAL** por essa régua — o turno da
   planilha termina 17:00, mas a hora extra do RH só começa às 18:00.
-  - Simula primeiro: a função de simulação **não grava**, só lista no log.
+  - Simula primeiro: a função de simulação **não grava**, só lista no log — e
+    informa quantas linhas leu, quantas aproveitou e quantas tinham **HORA
+    ilegível**. "0 dias" sem esse diagnóstico não distingue "não teve hora
+    extra" de "não consegui ler a planilha".
+  - A coluna **HORA pode ser texto ou hora de verdade**: formatada como hora ela
+    chega ao script como `Date`, e o parse por regex ignorava TODAS as linhas em
+    silêncio. `_heMinutosDaHora` passa por `_horaStr()`, que trata os dois casos.
+  - Dia que só existe no log (sem linha no `HISTORICO`) é avisado com `⚠` — não
+    há onde gravar a `HE CX` dele.
   - A gravação **nunca sobrescreve** `HE CX` já preenchida, e rodar duas vezes
     não duplica.
   - ⚠ **Cobertura**: a `PRODUCAO_PRODUTO` só recebe lançamento com **produto
