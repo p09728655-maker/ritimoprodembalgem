@@ -30,6 +30,7 @@ const parseBR = s => { const [d, m, y] = s.split('/').map(Number); return new Da
 const _numSemana = () => 33;
 eval(pega('function _heIndef('));
 eval(pega('function _relSemanaJanela('));
+eval(pega('function fmtFechadoEm('));
 eval(pega('function _relDiasDaSemana('));
 eval(pega('function _relSemanaPassada('));
 eval(pega('function _slotMaisFreq('));
@@ -140,6 +141,23 @@ ok('meta zerada não dispara alerta', semMeta.soComHE, false);
 
 ok('os KPIs da semana já trazem a leitura pronta', k.soComHE, true);
 ok('e o quanto faltava na jornada normal', k.faltouSemHE, 8325 - (8681 - 420));
+
+console.log('\n── FECHADO EM: a planilha às vezes carimba em ordem americana ──');
+// Célula formatada en-US chega "08/10/2026 17:05" para o dia 10/08 — e o
+// relatório imprimia "✓ 08/10". Sozinho é ambíguo; a data da PRÓPRIA LINHA
+// desempata: fechamento acontece no dia que fecha.
+ok('carimbo americano vira BR pela data da linha',
+   fmtFechadoEm('08/10/2026 17:05:22', '10/08/2026'), '10/08/2026');
+ok('carimbo já em BR não é tocado',
+   fmtFechadoEm('10/08/2026 17:05:22', '10/08/2026'), '10/08/2026');
+ok('dia >12 dispensa desempate', fmtFechadoEm('25/08/2026', null), '25/08/2026');
+ok('mês >12 só pode ser ordem americana', fmtFechadoEm('08/25/2026', null), '25/08/2026');
+ok('dia igual ao mês não inverte à toa', fmtFechadoEm('08/08/2026', '08/08/2026'), '08/08/2026');
+ok('TRUE de linha antiga vira SIM (a célula mostra só o ✓)',
+   fmtFechadoEm(true, '10/08/2026'), 'SIM');
+ok('ISO do Apps Script continua funcionando',
+   /^10\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026'))
+     || /^11\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026')), true);
 
 console.log('\n── melhor/pior horário no rodapé do relatório ──');
 // O rodapé somava d.melhor (que é '08:00-09:00') como número e imprimia NaN

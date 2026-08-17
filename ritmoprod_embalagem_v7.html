@@ -2509,12 +2509,27 @@ function dSet(id,br){
   el.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
 }
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
-function fmtFechadoEm(v){
+// O carimbo FECHADO EM pode vir da planilha em ORDEM AMERICANA (mês/dia —
+// célula formatada em en-US) e o relatório imprimia "08/10" para o dia 10/08.
+// "10/08" e "08/10" são ambíguos sozinhos; o desempate é a DATA DA PRÓPRIA
+// LINHA (dataRef): o fechamento acontece no dia que ele fecha, então se o
+// carimbo bate com a data da linha só de trás para frente, ele está invertido.
+function fmtFechadoEm(v, dataRef){
   if(v==null||v===''||v===true||v===false) return 'SIM';
   const s=String(v).trim();
   if(/^(true|false|sim|n[ãa]o)$/i.test(s)) return 'SIM';
   const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){ const y=+m[3]<100?2000+ +m[3]:+m[3]; return `${p2(+m[1])}/${p2(+m[2])}/${y}`; }
+  if(m){
+    const y=+m[3]<100?2000+ +m[3]:+m[3];
+    let dia=+m[1], mes=+m[2];                       // padrão: BR, dia primeiro
+    if(+m[1]>12)      { dia=+m[1]; mes=+m[2]; }     // "25/08" só pode ser dia/mês
+    else if(+m[2]>12) { dia=+m[2]; mes=+m[1]; }     // "08/25" só pode ser mês/dia
+    else if(dataRef){
+      const r=String(dataRef).match(/^(\d{1,2})\/(\d{1,2})/);
+      if(r && +m[1]===+r[2] && +m[2]===+r[1] && +r[1]!==+r[2]){ dia=+m[2]; mes=+m[1]; }
+    }
+    return `${p2(dia)}/${p2(mes)}/${y}`;
+  }
   const dt=new Date(s);
   if(!isNaN(dt)) return dtToStr(dt);
   return 'SIM';
@@ -4573,7 +4588,7 @@ async function renderHist(){
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
     <td><span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
-    <td>${d.fechado?`<span class="badge b-ok" title="${fmtFechadoEm(d.fechadoEm)}">✓ ${fmtFechadoEm(d.fechadoEm).substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
+    <td>${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return `<span class="badge b-ok" title="${f}">${f==='SIM'?'✓':'✓ '+f.substring(0,5)}</span>`;})():'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
 
@@ -5128,8 +5143,8 @@ ${mhe.soComHE?`<div class="rp-alerta">
       <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${bdgCls(d.ef)}">${bdgLbl(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,10):'—'}</td>
+      <td><span class="sbadge ${bdgCls(d.ef)}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,10);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
@@ -5486,7 +5501,7 @@ async function gerarRelatorioSemanal(){
   tfoot .tf-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.2px; color:#718096; text-transform:uppercase; }
 
   /* STATUS BADGE */
-  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
+  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; white-space:nowrap; display:inline-block; }
   .s-ok  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
   .s-warn{ background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
   .s-red { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
@@ -5595,8 +5610,8 @@ ${soComHE?`<div class="rp-alerta">
       ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,5):'—'}</td>
+      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
   <tfoot>
