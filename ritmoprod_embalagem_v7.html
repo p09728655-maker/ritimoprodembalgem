@@ -2037,7 +2037,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.2';
+const APP_VER   = '7.6.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5718,6 +5718,61 @@ ${(()=>{
 
 
 // ════════════════════════════════════════════════
+// ── ANÁLISE SWOT do período de paradas ───────────────────────────────────────
+// Cada frase só entra quando o DADO do período a sustenta — nada de texto fixo
+// que diria a mesma coisa numa semana boa e numa ruim. Quadrante sem achado sai
+// com "—": inventar item para encher quadrante é o contrário de análise.
+// Conta pura (recebe tudo, não lê globals de dados) para o teste cobrir as regras.
+function _relSwotParadas({st, tiR, trR, perdaReal, temMotivo}){
+  const F=[], Q=[], O=[], A=[];
+  const topNP=(st.tipos||[]).filter(t=>!t.planej)[0];
+  const totT=(st.tipos||[]).reduce((s,t)=>s+t.min,0)||1;
+
+  // FORÇAS — o que o período mostrou de bom (interno)
+  if(trR && tiR.taktSeg>0 && trR.taktReal<=tiR.taktSeg)
+    F.push(`Rodando, a linha é <b>mais rápida que o necessário</b> (${trR.taktReal} s/cx contra ${fmt1(tiR.taktSeg)} s/cx do ideal) — velocidade não é o problema.`);
+  if(st.dispon>=90)
+    F.push(`Disponibilidade de <b>${fmtP(st.dispon)}</b>, dentro da meta de 90%.`);
+  if(st.tMed>0 && st.tMed<=10)
+    F.push(`Paradas curtas: tempo médio de <b>${_fmtMinPar(st.tMed)}</b> — a linha volta rápido.`);
+
+  // FRAQUEZAS — o que o período mostrou de ruim (interno)
+  if(st.dispon<90)
+    Q.push(`Disponibilidade de <b>${fmtP(st.dispon)}</b> (meta 90%): <b>${_fmtMinPar(st.totMin)}</b> parados em ${plural(st.nDias,'dia','dias')}.`);
+  if(topNP)
+    Q.push(`<b>${topNP.tipo}</b> concentra <b>${Math.round(topNP.min/totT*100)}%</b> do tempo parado (${_fmtMinPar(topNP.min)} em ${plural(topNP.qtd,'ocorrência','ocorrências')}).`);
+  if(trR && tiR.taktSeg>0 && trR.taktReal>tiR.taktSeg)
+    Q.push(`Mesmo rodando, o ritmo está <b>abaixo do necessário</b>: ${trR.taktReal} s/cx contra ${fmt1(tiR.taktSeg)} s/cx do ideal.`);
+  const outros=(st.tipos||[]).find(t=>/^outr/i.test(String(t.tipo||'')));
+  if(outros && outros.min/totT>=0.10)
+    Q.push(`<b>${_fmtMinPar(outros.min)}</b> parados sob "<b>${outros.tipo}</b>" — sem causa nomeada, essa fatia não tem como ser atacada.`);
+
+  // OPORTUNIDADES — o que dá para ganhar
+  if(perdaReal>0)
+    O.push(`Atacar as paradas não programadas vale <b>~${fmtN(perdaReal)} cx</b> no período, no ritmo que a linha já demonstrou.`);
+  (st.tipos||[]).filter(t=>!t.planej&&t.perd>0).slice(0,2).forEach(t=>{
+    if(ehSetupParada(t.tipo)){
+      const porMin=t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0;
+      O.push(`Troca rápida (SMED) em <b>${t.tipo}</b>: cada minuto cortado por troca ≈ <b>${fmtN(porMin)} cx</b> no período.`);
+    }else{
+      O.push(`Eliminar <b>${t.tipo}</b> devolve <b>~${fmtN(t.perd)} cx</b>.`);
+    }
+  });
+  if(!temMotivo)
+    O.push(`Nenhuma parada do período tem <b>motivo registrado</b> — preenchê-lo no app abriria a análise por causa raiz.`);
+
+  // AMEAÇAS — o que vira problema se ficar como está
+  if(topNP && st.nDias>0 && topNP.qtd>=st.nDias)
+    A.push(`<b>${topNP.tipo}</b> acontece <b>todo dia</b> (${topNP.qtd}× em ${plural(st.nDias,'dia','dias')}) — sem ação vira custo fixo de ~${fmtN(Math.round(topNP.perd/st.nDias))} cx/dia.`);
+  if(st.pctPerd>=10)
+    A.push(`<b>${fmtP(st.pctPerd)}</b> do turno perdido: mantido esse padrão, um mês de 22 dias projeta <b>~${fmtN(Math.round(st.pecas/(st.nDias||1)*22))} cx</b> não produzidas.`);
+  const semFim=(st.diag&&st.diag.paradasSemFim)||0;
+  if(semFim>0)
+    A.push(`${plural(semFim,'parada aberta','paradas abertas')} sem FIM no período — a perda real é <b>maior</b> do que o relatório consegue medir.`);
+
+  return {forcas:F, fraquezas:Q, oportunidades:O, ameacas:A};
+}
+
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
 async function gerarRelatorioParadas(){
@@ -5804,6 +5859,20 @@ async function gerarRelatorioParadas(){
       <td class="td-mono" style="font-weight:700;color:${st.pesoMedio>0?'#c62828':'#bbb'}">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</td>
     </tr>`:''))||'<tr><td colspan="8" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>';
 
+  const temMotivoSwot=(paradas||[]).some(p=>String(p.obs||'').trim()!=='');
+  const swot=_relSwotParadas({st, tiR, trR, perdaReal, temMotivo:temMotivoSwot});
+  const _sq=(titulo,cor,itens)=>`<div class="swot-q" style="border-top-color:${cor}">
+    <div class="swot-ttl" style="color:${cor}">${titulo}</div>
+    ${itens.length?itens.map(i=>`<div class="swot-item">▸ ${i}</div>`).join(''):'<div class="swot-item" style="color:#a0aec0">— nada apontado pelos dados do período</div>'}
+  </div>`;
+  const swotHtml=`<div class="rp-sec-ttl">ANÁLISE SWOT DO PERÍODO</div>
+  <div class="swot-grid">
+    ${_sq('FORÇAS','#2e7d32',swot.forcas)}
+    ${_sq('FRAQUEZAS','#c62828',swot.fraquezas)}
+    ${_sq('OPORTUNIDADES','#1565c0',swot.oportunidades)}
+    ${_sq('AMEAÇAS','#e65100',swot.ameacas)}
+  </div>`;
+
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
   const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>{
     const txt = ehSetupParada(t.tipo)
@@ -5871,6 +5940,12 @@ async function gerarRelatorioParadas(){
   .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
   .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0}
   .rp-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:8px}
+  /* SWOT: 2×2, tarja no topo com a cor do quadrante. Itens vêm dos DADOS do
+     período (função _relSwotParadas) — quadrante vazio diz "—", não inventa. */
+  .swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .swot-q{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #ccc;border-radius:5px;padding:9px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
+  .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}
   .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
 </style></head><body>
 ${_rpBotaoImprimir()}
@@ -5895,6 +5970,7 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
 <div class="rp-sec-ttl">POR TIPO DE PARADA</div>
 <table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
 ${estudo}
+${swotHtml}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
 <div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${fmt1(st.horasProd)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${fmt1(st.horasProd)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?fmt1(tiR.taktSeg):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>

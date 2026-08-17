@@ -14,7 +14,9 @@ const JS = [...src.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].
 function pega(assinatura) {
   const i = JS.indexOf(assinatura);
   if (i < 0) throw new Error('não encontrei no HTML: ' + assinatura);
-  const j = JS.indexOf('{', i);
+  // o corpo começa depois do ")" dos parâmetros — função com parâmetro
+  // desestruturado ({a,b}) tem "{" antes do corpo e quebrava a contagem
+  const j = JS.indexOf('{', JS.indexOf(')', i));
   let n = 0;
   for (let k = j; k < JS.length; k++) {
     if (JS[k] === '{') n++;
@@ -36,6 +38,7 @@ eval(pega('function _relSemanaPassada('));
 eval(pega('function _relRotuloSemanas('));
 eval(pega('function _slotMaisFreq('));
 eval(pega('function _relMetaHE('));
+eval(pega('function _relSwotParadas('));
 eval(pega('function _relSemanalKPIs('));
 
 let falhas = 0;
@@ -174,6 +177,37 @@ ok('carimbo BR de dia vizinho não é invertido à toa',
 ok('ISO do Apps Script continua funcionando',
    /^10\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026'))
      || /^11\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026')), true);
+
+console.log('\n── SWOT do relatório de paradas: só o que os dados sustentam ──');
+// Números reais do período 10–14/08: linha rápida (16 < 17,1) mas 5h47m parada.
+const PAR_TROCA=/troca|setup|regulagem|preparaç/i;
+eval(pega('function ehSetupParada('));
+const _fmtMinPar=m=>m>=60?Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')+'m':m+' min';
+const stS={dispon:88.6, pctPerd:11.4, totMin:347, totMinNP:301, pecas:805, nParadas:51,
+  nDias:5, tMed:7, pesoMedio:0, diag:{paradasSemFim:0},
+  tipos:[{tipo:'Troca de produto',min:124,qtd:18,perd:331,planej:false},
+         {tipo:'Outros',min:61,qtd:6,perd:141,planej:false},
+         {tipo:'Parada/Café',min:46,qtd:3,perd:0,planej:true}]};
+const sw=_relSwotParadas({st:stS, tiR:{taktSeg:17.1}, trR:{taktReal:16,ritmoReal:223}, perdaReal:1119, temMotivo:false});
+ok('força: a velocidade não é o problema', /mais rápida que o necessário/.test(sw.forcas[0]||''), true);
+ok('força: paradas curtas entram', sw.forcas.some(f=>/volta rápido/.test(f)), true);
+ok('fraqueza: disponibilidade abaixo de 90', /88,6%/.test(sw.fraquezas[0]||''), true);
+ok('fraqueza: o top ofensor com a fatia dele', sw.fraquezas.some(f=>/Troca de produto/.test(f)&&/54%/.test(f)), true);
+ok('fraqueza: "Outros" sem causa nomeada', sw.fraquezas.some(f=>/Outros/.test(f)), true);
+ok('oportunidade: a perda a ritmo real vira alvo', sw.oportunidades.some(o=>/1\.119/.test(o)), true);
+ok('oportunidade: troca é SMED, não eliminação', sw.oportunidades.some(o=>/SMED/.test(o)), true);
+ok('oportunidade: motivo vazio vira pedido de registro', sw.oportunidades.some(o=>/motivo registrado/.test(o)), true);
+ok('ameaça: ofensor diário vira custo fixo', sw.ameacas.some(a=>/todo dia/.test(a)), true);
+ok('ameaça: projeção do mês com o padrão atual', sw.ameacas.some(a=>/22 dias/.test(a)), true);
+
+// Período redondo: disponibilidade alta, sem perda — fraquezas/ameaças vazias.
+const swOk=_relSwotParadas({st:{dispon:95, pctPerd:3, totMin:40, totMinNP:0, pecas:0,
+  nParadas:2, nDias:5, tMed:8, pesoMedio:0, diag:{paradasSemFim:0},
+  tipos:[{tipo:'Parada/Café',min:40,qtd:2,perd:0,planej:true}]},
+  tiR:{taktSeg:17.1}, trR:{taktReal:16,ritmoReal:223}, perdaReal:0, temMotivo:true});
+ok('semana boa: nenhuma fraqueza inventada', swOk.fraquezas, []);
+ok('semana boa: nenhuma ameaça inventada', swOk.ameacas, []);
+ok('semana boa: as forças aparecem', swOk.forcas.length>=2, true);
 
 console.log('\n── melhor/pior horário no rodapé do relatório ──');
 // O rodapé somava d.melhor (que é '08:00-09:00') como número e imprimia NaN
