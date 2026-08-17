@@ -23,6 +23,21 @@ via Google Apps Script (JSONP).
   exatamente como estão na planilha `HORA_A_HORA`.
 - **A conexão com o Google Sheets** (`CFG.sheetsUrl` / lógica de `lerSheets` /
   `jsonpFetch`). Não mexer na URL nem no fluxo de conexão.
+  - Exceção registrada (17/08/2026): a implantação antiga (`AKfycbwxFFLq…`)
+    parou de responder — o painel passou a mostrar *"Erro ao carregar script —
+    URL inválida ou sem acesso"* e caiu para o cache local. Foi criada uma
+    implantação nova e a URL foi trocada nos DOIS HTMLs, a pedido do usuário.
+  - **A URL do editor não é a URL do app.** `/home/projects/<id>/edit` é a tela
+    de código; o painel precisa da URL do **App da Web**, que tem ~73 caracteres
+    de ID e termina em **`/exec`**. A tela do Apps Script mostra essa URL
+    **truncada com "…"** — copiar o texto de lá gera uma URL pela metade, que dá
+    exatamente o mesmo erro. Usar o botão **Copiar** abaixo de *URL* (não o de
+    *Código de implantação*) ou abrir o link e copiar da barra do navegador.
+  - ⚠ **`localStorage['rpe_cfg']` tem prioridade sobre a URL do código**
+    (`CFG={...CFG,...JSON.parse(s)}`). Quem já salvou uma URL nas configurações
+    do painel continua com a dele mesmo depois do deploy — nesse caso, corrigir
+    no campo *URL DO APPS SCRIPT* e salvar, ou limpar o campo para voltar ao
+    padrão do código.
 
 ## Início do turno (célula C3)
 - As linhas de **05:00** e **06:00** existem **sempre** na aba `HORA_A_HORA`. Quem
