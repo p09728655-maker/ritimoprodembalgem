@@ -320,6 +320,20 @@ via Google Apps Script (JSONP).
   derruba os dois. **Não tirar o cache**: o refresh de 1 min refaria a leitura
   toda e a seção voltaria a piscar `CARREGANDO`.
 
+## SWOT do relatório de paradas
+- Seção **ANÁLISE SWOT DO PERÍODO** (`_relSwotParadas`, conta pura + testes no
+  `relatorios.test.js`). **Cada frase só entra quando o dado do período a
+  sustenta** — semana boa fica com fraquezas/ameaças em "—", nunca texto fixo.
+  Regras principais: takt real ≤ ideal vira força ("velocidade não é o
+  problema"); top ofensor não planejado vira fraqueza com a fatia do Pareto;
+  "Outros" ≥10% do tempo vira fraqueza (sem causa nomeada não se ataca);
+  perda a ritmo real vira oportunidade; troca/setup sugere SMED (nunca
+  "eliminar"); ofensor que ocorre todo dia e %turno ≥10% viram ameaças (com
+  projeção de 22 dias).
+- ⚠ O `pega()` do `relatorios.test.js` começa a contar chaves **depois do `)`
+  dos parâmetros** — função com parâmetro desestruturado (`{a,b}`) quebrava a
+  extração.
+
 ## Versão do painel / aviso de atualização (desktop, raiz)
 - `APP_VER` no topo do script do `ritmoprod_embalagem_v7.html` aparece no rodapé.
   Ao publicar mudança na raiz, suba este número.
