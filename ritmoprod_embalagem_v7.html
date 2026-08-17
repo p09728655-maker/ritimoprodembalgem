@@ -2037,7 +2037,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.1';
+const APP_VER   = '7.6.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5048,6 +5048,7 @@ async function _imprimirHistoricoFormatado(){
   .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px}
   .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:2px;letter-spacing:1px}
   .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#4a5568;line-height:1.6}
+  .rp-semana{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#FF5C1F}
   .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#1a1a2e}
   /* SECTION TITLE */
   .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;letter-spacing:2px;text-transform:uppercase;margin:12px 0 6px;border-bottom:0.5px solid #edf2f7;padding-bottom:4px;page-break-after:avoid}
@@ -5091,9 +5092,9 @@ async function _imprimirHistoricoFormatado(){
 ${_rpBotaoImprimir()}
 
 ${_rpCabecalho('HISTÓRICO',
-   `<div class="rp-periodo">${periodoLabel}</div>
-    <div>Gerado em: ${agora}</div>
-    <div>${plural(dias.length,'dia','dias')} no período</div>`)}
+   `<div class="rp-semana">${_relRotuloSemanas(dias)}</div>
+    <div class="rp-periodo">${periodoLabel}</div>
+    <div>Gerado em: ${agora} · ${plural(dias.length,'dia','dias')} no período</div>`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -5333,6 +5334,22 @@ function _relSemanaPassada(hoje){
   return _relSemanaJanela(dtToStr(d));
 }
 
+// ── Rótulo de semana(s) para o cabeçalho dos relatórios ─────────────────────
+// O relatório semanal se identifica por "SEMANA 33 / 2026"; o do histórico só
+// dizia o intervalo de datas — dois papéis lado a lado sem a mesma linguagem.
+// Recebe os dias LISTADOS no relatório e devolve a(s) semana(s) que eles
+// cobrem: "SEMANA 33 / 2026" ou "SEMANAS 31 A 33 / 2026" (vazio sem dias).
+function _relRotuloSemanas(dias){
+  const dts=(dias||[]).map(d=>parseBR(d.data)).filter(Boolean).sort((a,b)=>a-b);
+  if(!dts.length) return '';
+  const ini=dts[0], fim=dts[dts.length-1];
+  const s1=_numSemana(ini), s2=_numSemana(fim);
+  if(ini.getFullYear()!==fim.getFullYear())
+    return `SEMANAS ${s1}/${ini.getFullYear()} A ${s2}/${fim.getFullYear()}`;
+  return s1===s2 ? `SEMANA ${s1} / ${ini.getFullYear()}`
+                 : `SEMANAS ${s1} A ${s2} / ${ini.getFullYear()}`;
+}
+
 // ── Horário que mais se repete como melhor/pior do dia ──────────────────────
 // A linha MÉDIA / DIA do relatório tentava tirar a MÉDIA de d.melhor/d.pior,
 // que são RÓTULOS de horário ('08:00-09:00'), não números: somar string com 0
@@ -5534,7 +5551,7 @@ ${_rpBotaoImprimir()}
 
 <!-- CABEÇALHO -->
 ${_rpCabecalho('RELATÓRIO SEMANAL',
-   `<div class="rp-semana">SEMANA ${numSem} / ${new Date().getFullYear()}</div>
+   `<div class="rp-semana">SEMANA ${numSem} / ${seg.getFullYear()}</div>
     <div>${semStr}</div>
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 
@@ -5868,7 +5885,7 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.pctPerd)}</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PERDA A RITMO REAL</div><div class="kpi-val" style="color:#c62828">${perdaReal>0?fmtN(perdaReal):'—'}</div><div class="kpi-sub">${perdaReal>0?_fmtMinPar(st.totMinNP)+' × '+fmtN(trR.ritmoReal)+' cx/h medidos'+(st.pesoMedio>0?' · ~'+fmtN(Math.round(perdaReal*st.pesoMedio))+' kg':''):'sem apontamento no período'}</div></div>
-  <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?fmt1(tiR.taktSeg)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')}</div></div>
