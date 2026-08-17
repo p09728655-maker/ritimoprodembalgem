@@ -2735,15 +2735,16 @@ function testeFecharAgora() {
 //      e somente onde ela estiver VAZIA (nunca sobrescreve o que o sistema
 //      calculou sozinho).
 
-// Regra de hora extra para esta reconstrução, como o RH conta:
+// Regra de hora extra para esta reconstrução:
 //   • antes das 07:00
 //   • depois das 18:00
-//   • SÁBADO e DOMINGO: o dia inteiro, em qualquer horário
-// Domingo entra junto por segurança: se houver produção lançada num domingo,
-// ela é extra tanto quanto a de sábado. Em semana normal não há domingo
-// lançado, então incluir não muda número nenhum.
-const HE_TURNO_INI_MIN = 7 * 60;    // 07:00
-const HE_TURNO_FIM_MIN = 18 * 60;   // 18:00
+// O critério é o HORÁRIO, todos os dias — inclusive sábado. Conferido no
+// 04/07/2026 (um sábado): a hora extra são as 388 cx lançadas às 05:00 e 06:00,
+// não o dia inteiro. Se algum dia a regra mudar e o sábado passar a contar
+// inteiro, basta ligar HE_SABADO_INTEIRO.
+const HE_TURNO_INI_MIN  = 7 * 60;    // 07:00
+const HE_TURNO_FIM_MIN  = 18 * 60;   // 18:00
+const HE_SABADO_INTEIRO = false;     // true = sábado/domingo contam o dia todo
 
 // A coluna HORA pode ser TEXTO ("07:00") ou HORA de verdade — e formatada como
 // hora ela chega aqui como Date ("Sat Dec 30 1899 07:00:00…"), que nenhum regex
@@ -2779,7 +2780,7 @@ function _heCaixasPorDiaDoLogProduto() {
     if (cx <= 0)      { diag.semCaixas++; continue; }
     diag.lidas++;
     const d = porDia[data] || (porDia[data] = { normal: 0, extra: 0, horasExtra: {}, motivo: '' });
-    const fds  = _heFimDeSemana(data);
+    const fds  = HE_SABADO_INTEIRO && _heFimDeSemana(data);
     const fora = min < HE_TURNO_INI_MIN || min >= HE_TURNO_FIM_MIN;
     if (fds || fora) {
       d.extra += cx;
@@ -2843,8 +2844,10 @@ function simularHoraExtraPassada() {
       status: jaTem ? 'JA PREENCHIDO (nao seria alterado)' : 'seria gravado'
     });
   }
-  Logger.log('Hora extra = antes de ' + fromMinGs(HE_TURNO_INI_MIN) + ', depois de ' +
-             fromMinGs(HE_TURNO_FIM_MIN) + ', ou sábado/domingo. Dias encontrados: ' + linhas.length);
+  Logger.log('Hora extra = antes de ' + fromMinGs(HE_TURNO_INI_MIN) + ' ou depois de ' +
+             fromMinGs(HE_TURNO_FIM_MIN) +
+             (HE_SABADO_INTEIRO ? ', e sábado/domingo inteiros' : ' (mesma régua todos os dias, sábado incluído)') +
+             '. Dias encontrados: ' + linhas.length);
   linhas.forEach(function (l) {
     Logger.log(l.data + ' → HE ' + l.heCx + ' cx  (realizado ' + l.realizado +
                ', log de produto cobre ' + l.coberturaLog + ') · ' + l.motivo +
