@@ -2715,6 +2715,118 @@ function testeFecharAgora() {
 // MANUTENÇÃO
 // ════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════
+// HORA EXTRA DOS DIAS PASSADOS (a partir da PRODUCAO_PRODUTO)
+// ════════════════════════════════════════════════════════
+// Para os dias fechados ANTES da v5.0 não existe marca de hora extra: a linha
+// ia para a HORA_A_HORA como "17:00-18:00", igual a uma hora de turno. Mas a
+// aba PRODUCAO_PRODUTO guarda DATA + HORA + CAIXAS de cada lançamento — dá para
+// somar o que foi lançado FORA da janela do turno e reconstruir o número.
+//
+// ⚠ A cobertura depende do operador ter identificado o produto: a
+// PRODUCAO_PRODUTO só recebe lançamento com código selecionado, e isso é
+// OPCIONAL no app. Por isso as funções abaixo mostram, para cada dia, quanto da
+// produção do HISTORICO está coberta pelo log de produto. Cobertura baixa =
+// número de hora extra subestimado, e é melhor lançar na mão.
+//
+// Uso, pelo editor do Apps Script:
+//   1. simularHoraExtraPassada()  → só LISTA no log, não grava nada.
+//   2. preencherHoraExtraPassada() → grava na coluna HE CX (11ª do HISTORICO),
+//      e somente onde ela estiver VAZIA (nunca sobrescreve o que o sistema
+//      calculou sozinho).
+
+// Janela do turno normal. Fora disso é hora extra para efeito desta reconstrução.
+const HE_TURNO_INI_MIN = 7 * 60;    // 07:00
+const HE_TURNO_FIM_MIN = 17 * 60;   // 17:00
+
+function _heMinutosDaHora(v) {
+  const t = String(v || '').trim().replace(/^HE\s*/i, '');
+  const m = t.match(/^(\d{1,2}):(\d{2})/);
+  return m ? (+m[1]) * 60 + (+m[2]) : null;
+}
+
+// Soma, por dia, as caixas lançadas dentro e fora da janela do turno.
+function _heCaixasPorDiaDoLogProduto() {
+  const vals = _valores(SHEET_PROD_LOG);
+  const porDia = {};
+  for (let i = 1; i < vals.length; i++) {
+    const data = _dataStr(vals[i][0]);
+    const min  = _heMinutosDaHora(vals[i][1]);
+    const cx   = Number(vals[i][4]) || 0;
+    if (!data || min === null || cx <= 0) continue;
+    const d = porDia[data] || (porDia[data] = { normal: 0, extra: 0, horasExtra: {} });
+    if (min < HE_TURNO_INI_MIN || min >= HE_TURNO_FIM_MIN) {
+      d.extra += cx;
+      const rot = _horaStr(vals[i][1]) || String(vals[i][1]);
+      d.horasExtra[rot] = (d.horasExtra[rot] || 0) + cx;
+    } else {
+      d.normal += cx;
+    }
+  }
+  return porDia;
+}
+
+// Lista o que seria gravado, sem tocar em nada.
+function simularHoraExtraPassada() {
+  const porDia = _heCaixasPorDiaDoLogProduto();
+  const hist   = _valores(SHEET_HIST);
+  const linhas = [];
+  for (let i = 1; i < hist.length; i++) {
+    const data = fmtDataBR(hist[i][0]);
+    const d = porDia[data];
+    if (!d || d.extra <= 0) continue;
+    const real     = Number(hist[i][1]) || 0;
+    const jaTem    = hist[i][10] !== '' && hist[i][10] !== null && hist[i][10] !== undefined;
+    const logTotal = d.normal + d.extra;
+    const cobert   = real > 0 ? Math.round(logTotal / real * 100) : 0;
+    linhas.push({
+      data: data, heCx: d.extra, realizado: real,
+      coberturaLog: cobert + '%',
+      horarios: d.horasExtra,
+      status: jaTem ? 'JA PREENCHIDO (nao seria alterado)' : 'seria gravado'
+    });
+  }
+  Logger.log('Dias com produção fora da janela ' +
+             fromMinGs(HE_TURNO_INI_MIN) + '-' + fromMinGs(HE_TURNO_FIM_MIN) + ': ' + linhas.length);
+  linhas.forEach(function (l) {
+    Logger.log(l.data + ' → HE ' + l.heCx + ' cx  (realizado ' + l.realizado +
+               ', log de produto cobre ' + l.coberturaLog + ') · ' + l.status +
+               ' · horários: ' + JSON.stringify(l.horarios));
+  });
+  return { ok: true, dias: linhas };
+}
+
+// Grava na coluna HE CX apenas onde ela está VAZIA.
+function preencherHoraExtraPassada() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_HIST);
+  if (!sh) return { ok: false, erro: 'Aba HISTORICO nao encontrada.' };
+  if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
+
+  const porDia = _heCaixasPorDiaDoLogProduto();
+  const hist   = sh.getDataRange().getValues();   // escrita: lê direto, sem memo
+  let gravados = 0;
+  for (let i = 1; i < hist.length; i++) {
+    const data = fmtDataBR(hist[i][0]);
+    const d = porDia[data];
+    if (!d || d.extra <= 0) continue;
+    const jaTem = hist[i][10] !== '' && hist[i][10] !== null && hist[i][10] !== undefined;
+    if (jaTem) continue;                          // nunca sobrescreve
+    sh.getRange(i + 1, 11).setValue(d.extra);
+    Logger.log('HE CX de ' + data + ' = ' + d.extra + ' cx');
+    gravados++;
+  }
+  invalidarCacheLeitura();
+  Logger.log('Total de dias preenchidos: ' + gravados);
+  return { ok: true, gravados: gravados };
+}
+
+// fromMin do painel não existe aqui; versão local só para o log.
+function fromMinGs(m) {
+  const h = Math.floor(m / 60), mm = m % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (mm < 10 ? '0' : '') + mm;
+}
+
 // Corrige datas malformadas na coluna DATA do HISTORICO (ex.: "2/6" -> "02/06/2026").
 // Rode UMA VEZ pelo editor do Apps Script (selecione a função e clique em Executar).
 function corrigirDatasHistorico() {
