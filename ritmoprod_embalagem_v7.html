@@ -1923,7 +1923,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.4.1';
+const APP_VER   = '7.4.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3730,20 +3730,12 @@ async function gerarRelatorioProducaoHora(){
 </head>
 <body>
 
-<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+${_rpBotaoImprimir()}
 
-<div class="rp-header">
-  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
-  <div>
-    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR ${Termo}</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade} · MÉTRICA: ${label}${sel?' · '+Termo+' '+(top?top.label:sel):''}</div>
-  </div>
-  <div class="rp-meta">
-    <div class="rp-dia">${deStr} — ${ateStr}</div>
-    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-</div>
+${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
+   `<div class="rp-dia">${deStr} — ${ateStr}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
+   ` · MÉTRICA: ${label}${sel?' · '+Termo+' '+(top?top.label:sel):''}`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -3856,20 +3848,11 @@ function gerarRelatorioProducaoModelo(){
 </head>
 <body>
 
-<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+${_rpBotaoImprimir()}
 
-<div class="rp-header">
-  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
-  <div>
-    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · PRODUÇÃO POR MODELO</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
-  </div>
-  <div class="rp-meta">
-    <div class="rp-dia">${hojeStr()}</div>
-    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-</div>
+${_rpCabecalho('PRODUÇÃO POR MODELO',
+   `<div class="rp-dia">${hojeStr()}</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 
 <div class="rp-sec-ttl">RESUMO DO DIA</div>
 <div class="kpi-grid">
@@ -4938,21 +4921,12 @@ async function _imprimirHistoricoFormatado(){
 </style>
 </head>
 <body>
-<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+${_rpBotaoImprimir()}
 
-<div class="rp-header">
-  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
-  <div>
-    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · HISTÓRICO</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
-  </div>
-  <div class="rp-meta">
-    <div class="rp-periodo">${periodoLabel}</div>
+${_rpCabecalho('HISTÓRICO',
+   `<div class="rp-periodo">${periodoLabel}</div>
     <div>Gerado em: ${agora}</div>
-    <div>${dias.length} dia(s) no período</div>
-  </div>
-</div>
+    <div>${dias.length} dia(s) no período</div>`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -5120,27 +5094,84 @@ window.addEventListener('afterprint', _limparAposImpressao);
 function setTxt(id,txt){ const el=document.getElementById(id); if(el) el.textContent=txt; }
 
 // ════════════════════════════════════════════════
+// PEÇAS COMUNS DOS RELATÓRIOS EM POPUP
+// ════════════════════════════════════════════════
+// A faixa do PPCP, o botão de imprimir e o escape de texto estavam escritos
+// CINCO vezes — uma em cada relatório (semanal, histórico, paradas, produção
+// por família e por modelo). Foi por isso que o #204 arrumou o cabeçalho de um
+// só e o #205 precisou repetir a mesma correção nos outros quatro. Agora é uma
+// peça só: mexeu aqui, mudou em todos.
+function _rpEsc(s){
+  return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+// O logo entra por caminho ABSOLUTO: o popup nasce em about:blank e um src
+// relativo não resolveria.
+function _rpCabecalho(titulo, metaHtml, subExtra){
+  return `<div class="rp-header">
+  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
+  <div>
+    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
+    <div class="rp-logo">RITMO<span>PROD</span> · ${titulo}</div>
+    <div class="rp-sub">${_rpEsc(CFG.empresa)} · ${_rpEsc(CFG.setor)} · ${_rpEsc(CFG.unidade)}${subExtra||''}</div>
+  </div>
+  <div class="rp-meta">${metaHtml}</div>
+</div>`;
+}
+function _rpBotaoImprimir(){
+  return '<button class="rp-print-btn no-print" onclick="window.print()">\u{1F5A8} IMPRIMIR / PDF</button>';
+}
+
+// ════════════════════════════════════════════════
 // RELATÓRIO SEMANAL
 // ════════════════════════════════════════════════
+// ── Janela da semana ────────────────────────────────────────────────────────
+// Segunda 00:00 → domingo 23:59 da semana de referência. As horas nas pontas
+// não são detalhe: sem o 00:00 a própria segunda-feira ficava de fora do
+// filtro, e sem o 23:59 o domingo entrava pela metade.
+function _relSemanaJanela(ateStr){
+  const refDate = ateStr ? parseBR(ateStr) : new Date();
+  const diaSem  = refDate.getDay();
+  const diffSeg = diaSem===0 ? -6 : 1-diaSem;   // domingo pertence à semana que começou na segunda anterior
+  const seg = new Date(refDate); seg.setDate(refDate.getDate()+diffSeg); seg.setHours(0,0,0,0);
+  const sex = new Date(seg);     sex.setDate(seg.getDate()+6);          sex.setHours(23,59,59,999);
+  const fmtD = d => `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+  return { seg, sex, semStr:`${fmtD(seg)} a ${fmtD(sex)}`, numSem:_numSemana(seg) };
+}
+
+// ── KPIs da semana ──────────────────────────────────────────────────────────
+// Conta pura: entra a lista de dias, sai o resumo. A base de TODA média aqui
+// são os dias COM PRODUÇÃO no período (os mesmos que o relatório lista), nunca
+// dias corridos — sábado, domingo e feriado não têm produção lançada e ficariam
+// puxando a média para baixo.
+function _relSemanalKPIs(dias){
+  const n = dias.length;
+  const totReal = dias.reduce((s,d)=>s+d.real,0);
+  const totMeta = dias.reduce((s,d)=>s+d.meta,0);
+  // Hora extra: dia indeterminado (heCx null) conta como normal para a soma
+  // fechar com o TOTAL; quantos são fica em semHE, que o relatório informa.
+  const totHE = dias.reduce((s,d)=>s+(_heIndef(d)?0:d.heCx),0);
+  return {
+    totReal, totMeta,
+    efMedia:   dias.reduce((s,d)=>s+d.ef,0)/n,
+    mediaReal: totReal/n,
+    mediaMeta: totMeta/n,
+    totHE,
+    temHE:     dias.some(d=>!_heIndef(d)&&d.heCx>0),
+    semHE:     dias.filter(_heIndef).length,
+    comMeta:   dias.filter(d=>d.ok).length,
+    melhorDia: dias.reduce((a,b)=>a.ef>b.ef?a:b),
+    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b)
+  };
+}
+
 async function gerarRelatorioSemanal(){
   // Abrir janela ANTES do await (evita bloqueio de pop-up)
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
 
-  // Determinar semana atual (seg-sex) ou semana do filtro
-  const ate=dGet('hist-ate');
-  const refDate=ate?parseBR(ate):new Date();
-  const diaSem=refDate.getDay();
-  const diffSeg=diaSem===0?-6:1-diaSem;
-  const seg=new Date(refDate); seg.setDate(refDate.getDate()+diffSeg);
-  seg.setHours(0,0,0,0);   // ← início do dia (fix: evita excluir segunda-feira)
-  const sex=new Date(seg); sex.setDate(seg.getDate()+6);
-  sex.setHours(23,59,59,999); // ← fim do dia
-
-  const fmtD=d=>`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
-  const semStr=`${fmtD(seg)} a ${fmtD(sex)}`;
-  const numSem=_numSemana(seg);
+  // Semana do filtro (ou a atual): segunda 00:00 até domingo 23:59.
+  const {seg, sex, semStr, numSem} = _relSemanaJanela(dGet('hist-ate'));
 
   // Buscar dados
   const todosDias=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
@@ -5161,21 +5192,9 @@ async function gerarRelatorioSemanal(){
     return;
   }
 
-  // KPIs da semana
-  const totReal=diasSem.reduce((s,d)=>s+d.real,0);
-  const totMeta=diasSem.reduce((s,d)=>s+d.meta,0);
-  const efMedia=diasSem.reduce((s,d)=>s+d.ef,0)/diasSem.length;
-  const mediaReal=totReal/diasSem.length;   // média diária realizada (base: dias com produção na semana)
-  const mediaMeta=totMeta/diasSem.length;   // média diária de meta, para comparar
-  // Hora normal × hora extra. A coluna só entra na tabela quando ALGUM dia da
-  // semana teve hora extra — senão vira uma parede de "—", mesma regra da
-  // coluna MOTIVO do relatório de paradas.
-  const totHE=diasSem.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
-  const temHE=diasSem.some(d=>!_heIndef(d)&&d.heCx>0);
-  const semHE=diasSem.filter(_heIndef).length;
-  const comMeta=diasSem.filter(d=>d.ok).length;
-  const melhorDia=diasSem.reduce((a,b)=>a.ef>b.ef?a:b);
-  const piorDia=diasSem.reduce((a,b)=>a.ef<b.ef?a:b);
+  // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
+  const {totReal, totMeta, efMedia, mediaReal, mediaMeta,
+         totHE, temHE, semHE, comMeta, melhorDia, piorDia} = _relSemanalKPIs(diasSem);
 
   // Cor de status
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
@@ -5255,22 +5274,13 @@ async function gerarRelatorioSemanal(){
 </head>
 <body>
 
-<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
+${_rpBotaoImprimir()}
 
 <!-- CABEÇALHO -->
-<div class="rp-header">
-  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
-  <div>
-    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO SEMANAL</div>
-    <div class="rp-sub">${CFG.empresa} · ${CFG.setor} · ${CFG.unidade}</div>
-  </div>
-  <div class="rp-meta">
-    <div class="rp-semana">SEMANA ${numSem} / ${new Date().getFullYear()}</div>
+${_rpCabecalho('RELATÓRIO SEMANAL',
+   `<div class="rp-semana">SEMANA ${numSem} / ${new Date().getFullYear()}</div>
     <div>${semStr}</div>
-    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
@@ -5574,20 +5584,11 @@ async function gerarRelatorioParadas(){
   .rp-note{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:8px}
   .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
 </style></head><body>
-<button class="rp-print-btn no-print" onclick="window.print()">🖨 IMPRIMIR / PDF</button>
-<div class="rp-header">
-  <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
-  <div>
-    <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · RELATÓRIO DE PARADAS</div>
-    <div class="rp-sub">${esc(CFG.empresa)} · ${esc(CFG.setor)} · ${esc(CFG.unidade)}</div>
-  </div>
-  <div class="rp-meta">
-    <div class="rp-per">PERÍODO</div>
+${_rpBotaoImprimir()}
+${_rpCabecalho('RELATÓRIO DE PARADAS',
+   `<div class="rp-per">PERÍODO</div>
     <div>${esc(de)} a ${esc(ate)}</div>
-    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
-  </div>
-</div>
+    <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 <div class="rp-sec-ttl">RESUMO</div>
 <div class="kpi-grid">
   <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>

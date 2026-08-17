@@ -16,6 +16,8 @@ via Google Apps Script (JSONP).
 - `paradas-calc.js` — **cálculo de paradas, implementação ÚNICA** usada pelos
   dois painéis (`<script src="/paradas-calc.js">`). Ver a seção de paradas.
 - `paradas-calc.test.js` — teste de paridade: `node paradas-calc.test.js`.
+- `relatorios.test.js` — contas dos relatórios (janela da semana, KPIs, hora
+  extra) + guarda-corpo das peças comuns: `node relatorios.test.js`.
 - `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
   contra o código real do `.gs`: `node hora-extra.test.js`.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
@@ -367,6 +369,23 @@ via Google Apps Script (JSONP).
   dois painéis mas **código diferente de propósito** (a TV mostra o que o
   celular não mostra; os timeouts do celular são outros). Unificar sem separar
   o que é regra do que é tela só trocaria a duplicação por um `if` gigante.
+
+## Relatórios em popup (peças comuns)
+- **A faixa do PPCP, o botão IMPRIMIR e o logo estavam escritos CINCO vezes** —
+  um por relatório (semanal, histórico, paradas, produção por família e por
+  modelo). Foi por isso que o #204 arrumou o cabeçalho de um e o #205 teve de
+  repetir a mesma correção nos outros quatro. Agora são
+  `_rpCabecalho(titulo, metaHtml, subExtra)`, `_rpBotaoImprimir()` e `_rpEsc()`.
+  O `relatorios.test.js` falha se algum deles voltar a aparecer duplicado.
+- O logo continua entrando por **URL absoluta** (`new URL(...)`): o popup nasce
+  em `about:blank` e um `src` relativo não resolveria.
+- **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
+  são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
+- `_relSemanaJanela(ate)` e `_relSemanalKPIs(dias)` saíram de dentro do
+  `gerarRelatorioSemanal` para poderem ser testadas — antes, conferir a média
+  da semana exigia abrir o popup e olhar. A janela é **segunda 00:00 → domingo
+  23:59**; as horas nas pontas não são detalhe (sem o `00:00` a própria
+  segunda-feira ficava fora do filtro).
 
 ## Notas / armadilhas conhecidas
 - **Média nos relatórios (semanal e histórico)**: a base é **dias com produção no
