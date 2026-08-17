@@ -2037,7 +2037,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.0';
+const APP_VER   = '7.6.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2524,9 +2524,18 @@ function fmtFechadoEm(v, dataRef){
     let dia=+m[1], mes=+m[2];                       // padrão: BR, dia primeiro
     if(+m[1]>12)      { dia=+m[1]; mes=+m[2]; }     // "25/08" só pode ser dia/mês
     else if(+m[2]>12) { dia=+m[2]; mes=+m[1]; }     // "08/25" só pode ser mês/dia
-    else if(dataRef){
-      const r=String(dataRef).match(/^(\d{1,2})\/(\d{1,2})/);
-      if(r && +m[1]===+r[2] && +m[2]===+r[1] && +r[1]!==+r[2]){ dia=+m[2]; mes=+m[1]; }
+    else if(dataRef && +m[1]!==+m[2]){
+      // Desempate: das duas leituras possíveis (dia/mês ou mês/dia), vale a que
+      // cai MAIS PERTO da data da linha — o fechamento acontece no próprio dia
+      // ou logo depois (dia fechado na manhã seguinte, inclusive).
+      const r=String(dataRef).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if(r){
+        const ry=+r[3]<100?2000+ +r[3]:+r[3];
+        const ref=new Date(ry, +r[2]-1, +r[1]);
+        const lBR=new Date(y, +m[2]-1, +m[1]);      // m[1] como dia
+        const lUS=new Date(y, +m[1]-1, +m[2]);      // m[1] como mês
+        if(Math.abs(lUS-ref) < Math.abs(lBR-ref)){ dia=+m[2]; mes=+m[1]; }
+      }
     }
     return `${p2(dia)}/${p2(mes)}/${y}`;
   }
@@ -5013,8 +5022,9 @@ async function _imprimirHistoricoFormatado(){
   // Mesma leitura do relatório semanal: total acima da meta com a jornada
   // normal abaixo dela = a hora extra é que bateu (ver _relMetaHE).
   const mhe=_relMetaHE(totReal, totHEp, totMeta);
-  const corEfP  = mhe.soComHE?'#FF9800':cor(efMedia);
-  const bdgEfP  = mhe.soComHE?'⚠ meta batida com hora extra':bdgLbl(efMedia).toLowerCase();
+  // Base = total do período, a mesma do relatório semanal (ver comentário lá).
+  const corEfP  = mhe.soComHE?'#FF9800':cor(mhe.efTotal);
+  const bdgEfP  = mhe.soComHE?'⚠ meta batida com hora extra':bdgLbl(mhe.efTotal).toLowerCase();
   const periodoLabel=deStr&&ateStr?`${deStr} a ${ateStr}`:periodo.toUpperCase();
 
   const html=`<!DOCTYPE html>
@@ -5093,9 +5103,9 @@ ${_rpCabecalho('HISTÓRICO',
     <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${corEfP}">
-    <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${corEfP}">${fmtP(efMedia)}</div>
-    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${fmtP(efSemHEp)}`:bdgEfP}</div>
+    <div class="kpi-lbl">EFICIÊNCIA DO PERÍODO</div>
+    <div class="kpi-val" style="color:${corEfP}">${fmtP(mhe.efTotal)}</div>
+    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${fmtP(mhe.efTotalSemHE)}`:bdgEfP}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
@@ -5434,8 +5444,13 @@ async function gerarRelatorioSemanal(){
   // Meta batida só por causa da hora extra: o verde vira âmbar e o texto diz
   // por quê. Sem isso o relatório afirma "dentro da meta" para uma semana que,
   // dentro da própria jornada, ficou abaixo.
-  const corEf  = soComHE ? '#FF9800' : cor(efMedia);
-  const badgeEf= soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efMedia);
+  // A base dos cards é o TOTAL do período (realizado ÷ meta) — a MESMA do
+  // rodapé da tabela e do aviso. Antes o card mostrava a média dos percentuais
+  // diários (118,5%) e o rodapé o total (104,3%): dois números para a mesma
+  // pergunta, e com a meta variando por dia eles divergem muito. A média
+  // diária continua na linha MÉDIA / DIA, que é o lugar dela.
+  const corEf  = soComHE ? '#FF9800' : cor(efTotal);
+  const badgeEf= soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal);
 
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
@@ -5537,14 +5552,14 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     <div class="kpi-sub">cx/dia · meta ${Math.round(mediaMeta).toLocaleString('pt-BR')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${corEf}">
-    <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${corEf}">${fmtP(efMedia)}</div>
+    <div class="kpi-lbl">EFICIÊNCIA DA SEMANA</div>
+    <div class="kpi-val" style="color:${corEf}">${fmtP(efTotal)}</div>
     <div class="kpi-sub">${badgeEf}</div>
   </div>
-  ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efMediaSemHE)}">
+  ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efTotalSemHE)}">
     <div class="kpi-lbl">EFIC. SEM H. EXTRA</div>
-    <div class="kpi-val" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</div>
-    <div class="kpi-sub">só a jornada normal</div>
+    <div class="kpi-val" style="color:${cor(efTotalSemHE)}">${fmtP(efTotalSemHE)}</div>
+    <div class="kpi-sub">${faltouSemHE>0?`faltaram ${fmtN(faltouSemHE)} cx`:'só a jornada normal'}</div>
   </div>`:''}
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">DIAS COM META</div>

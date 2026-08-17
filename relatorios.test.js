@@ -155,6 +155,10 @@ ok('mês >12 só pode ser ordem americana', fmtFechadoEm('08/25/2026', null), '2
 ok('dia igual ao mês não inverte à toa', fmtFechadoEm('08/08/2026', '08/08/2026'), '08/08/2026');
 ok('TRUE de linha antiga vira SIM (a célula mostra só o ✓)',
    fmtFechadoEm(true, '10/08/2026'), 'SIM');
+ok('dia fechado na manhã seguinte: vale a data mais próxima da linha',
+   fmtFechadoEm('08/12/2026 06:10:00', '11/08/2026'), '12/08/2026');
+ok('carimbo BR de dia vizinho não é invertido à toa',
+   fmtFechadoEm('12/08/2026 06:10:00', '11/08/2026'), '12/08/2026');
 ok('ISO do Apps Script continua funcionando',
    /^10\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026'))
      || /^11\/08\/2026$/.test(fmtFechadoEm('2026-08-10T20:05:00.000Z', '10/08/2026')), true);
