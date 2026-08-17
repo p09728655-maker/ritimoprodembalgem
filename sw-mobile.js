@@ -8,14 +8,14 @@
 // `ritmoprod_mobile.html`. É a troca do nome do cache que faz o navegador
 // instalar o SW novo — e é isso que dispara o aviso "Nova versão disponível"
 // para quem está com o app instalado.
-const CACHE = 'ritmoprod-mobile-v14';   // APP_VER 1.7.5
+const CACHE = 'ritmoprod-mobile-v15';   // APP_VER 1.7.6
 
 self.addEventListener('install', e => {
   self.skipWaiting();
   // Pré-cacheia o módulo de cálculo junto com a instalação: sem isto o cache
   // podia ficar com o HTML novo SEM o paradas-calc.js (rede caiu entre os dois)
   // e toda abertura offline quebrava o gerencial.
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/paradas-calc.js']).catch(() => {})));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/rp-core.js', '/paradas-calc.js']).catch(() => {})));
 });
 
 self.addEventListener('activate', e => {
