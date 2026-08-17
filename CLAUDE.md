@@ -7,6 +7,12 @@ via Google Apps Script (JSONP).
 ## Arquivos
 - `ritmoprod_embalagem_v7.html` — painel desktop (telas **GERENCIAL** e **TV OPERACIONAL**).
 - `ritmoprod_mobile.html` — painel mobile.
+- `rp-core.js` — **núcleo comum dos dois painéis, implementação ÚNICA**:
+  formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
+  (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`. Só função
+  **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
+  `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
+  a própria cópia.
 - `paradas-calc.js` — **cálculo de paradas, implementação ÚNICA** usada pelos
   dois painéis (`<script src="/paradas-calc.js">`). Ver a seção de paradas.
 - `paradas-calc.test.js` — teste de paridade: `node paradas-calc.test.js`.
@@ -336,6 +342,31 @@ via Google Apps Script (JSONP).
   ⚠ Tudo isso só vale **depois de colar no editor do Apps Script e re-deployar**.
 - **Ainda por fazer (exige re-deploy manual do `.gs`):** ler só as últimas
   linhas da `PARADAS` em vez da aba toda.
+
+## Núcleo comum (`rp-core.js`)
+- **As funções básicas eram escritas duas vezes**, uma em cada HTML, com o mesmo
+  código: `toMin`, `fmtN`, `hojeStr`, `normHora`, `mergeMedias`, `calcAtrasoHoras`,
+  `sc`… É a mesma armadilha que fez a conta de paradas divergir três vezes.
+  Agora moram no `rp-core.js`, carregado pelos dois **antes** do script do painel.
+- **As funções ficam no escopo global de propósito.** Os painéis já chamavam
+  `toMin(...)` direto; trocar ~500 pontos de chamada por `RP_CORE.toMin(...)`
+  seria risco sem ganho. `window.RP_CORE` existe só para o painel conferir se o
+  arquivo carregou.
+- **Guarda obrigatória**: sem o arquivo, o painel morreria com
+  `toMin is not defined` numa tela preta. O bloco inline logo após o
+  `<script src="/rp-core.js">` mostra *"Módulo base não carregou"* (div
+  `#rp-core-guarda`) e recarrega sozinho — no máximo **5 vezes**
+  (`sessionStorage['rp_core_try']`), para não martelar o servidor quando ele
+  estiver fora de verdade.
+- O `sw-mobile.js` **pré-cacheia** o `rp-core.js` na instalação e o
+  `vercel.json` serve o arquivo com `must-revalidate` — mesmas regras do
+  `paradas-calc.js`, pelo mesmo motivo: HTML novo com módulo velho é pior que
+  os dois velhos.
+- **O que NÃO foi unificado, e por quê**: `calcKPIs`, `renderGerencial`,
+  `lerSheets`, `getSlots`, `loadCfg`, `jsonpFetch` e `sl` têm o mesmo nome nos
+  dois painéis mas **código diferente de propósito** (a TV mostra o que o
+  celular não mostra; os timeouts do celular são outros). Unificar sem separar
+  o que é regra do que é tela só trocaria a duplicação por um `if` gigante.
 
 ## Notas / armadilhas conhecidas
 - **Média nos relatórios (semanal e histórico)**: a base é **dias com produção no

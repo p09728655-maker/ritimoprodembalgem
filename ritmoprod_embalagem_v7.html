@@ -1883,6 +1883,37 @@ if (_v7Instalado()) _v7EscondeBotao();
 
 <!-- Cálculo de paradas: MESMO arquivo usado pelo mobile. Não duplicar a conta
      aqui — foi a duplicação que fez os dois divergirem. -->
+<!-- Núcleo comum dos dois painéis (formatação, horário, data, média por
+     horário). Vem ANTES de tudo: o script do painel usa essas funções na
+     primeira linha que roda. Ver rp-core.js. -->
+<script src="/rp-core.js"></script>
+<script>
+// Guarda do núcleo: sem o rp-core.js o painel morreria com "toMin is not
+// defined" numa tela preta — a rede caindo entre o HTML e o JS, ou um deploy
+// parcial, bastam para isso. Aqui a falha vira uma mensagem honesta e uma nova
+// tentativa; o contador em sessionStorage evita ficar recarregando para sempre
+// quando o servidor está fora de verdade.
+(function(){
+  if (window.RP_CORE) { try{ sessionStorage.removeItem('rp_core_try'); }catch(e){} return; }
+  var n = 0;
+  try { n = parseInt(sessionStorage.getItem('rp_core_try') || '0', 10) || 0; } catch(e){}
+  var pode = n < 5;
+  try { sessionStorage.setItem('rp_core_try', String(n + 1)); } catch(e){}
+  document.addEventListener('DOMContentLoaded', function(){
+    var d = document.createElement('div');
+    d.id = 'rp-core-guarda';
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f0f12;color:#e8e8ea;' +
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;' +
+      'font-family:system-ui,sans-serif;text-align:center;padding:24px';
+    d.innerHTML = '<div style="font-size:15px;font-weight:700">Módulo base não carregou</div>' +
+      '<div style="font-size:13px;opacity:.75">' +
+      (pode ? 'Tentando de novo em instantes…' : 'Sem conexão com o servidor do painel. Recarregue a página.') +
+      '</div>';
+    document.body.appendChild(d);
+  });
+  if (pode) setTimeout(function(){ location.reload(); }, 5000);
+})();
+</script>
 <script src="/paradas-calc.js"></script>
 <script>
 // ════════════════════════════════════════════════
@@ -1892,7 +1923,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.4.0';
+const APP_VER   = '7.4.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2347,7 +2378,6 @@ function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 // ════════════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════════════
-const p2 = n => String(n).padStart(2,'0');
 function maskData(el){let v=el.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2);if(v.length>5)v=v.slice(0,5)+'/'+v.slice(5,9);el.value=v;}
 // ── Campos de data = calendário nativo (<input type=date>) ─────────────────
 // O valor nativo do input date é aaaa-mm-dd, mas todo o resto do painel usa
@@ -2364,8 +2394,6 @@ function dSet(id,br){
   el.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
 }
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
-const fmtN = n => isNaN(n)||n===null ? '—' : Number(n).toLocaleString('pt-BR');
-const fmtP = n => isNaN(n)||n===null ? '—' : n.toFixed(1)+'%';
 function fmtFechadoEm(v){
   if(v==null||v===''||v===true||v===false) return 'SIM';
   const s=String(v).trim();
@@ -2377,14 +2405,6 @@ function fmtFechadoEm(v){
   return 'SIM';
 }
 
-function hojeStr(){
-  const d=new Date();
-  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
-}
-function dtToStr(d){
-  if(!(d instanceof Date)||isNaN(d)) return '';
-  return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
-}
 function parseDataBR(s){
   if(!s) return null;
   if(s instanceof Date) return s;
@@ -2398,8 +2418,6 @@ function parseDataBR(s){
   return new Date(s);
 }
 function toISO(d){ return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
-function toMin(s){ const[h,m]=s.split(':').map(Number); return h*60+m; }
-function fromMin(m){ return `${p2(Math.floor(m/60))}:${p2(m%60)}`; }
 
 // ════════════════════════════════════════════════
 // SLOTS DE TURNO
@@ -2650,23 +2668,9 @@ async function lerSheets(){
 // Normaliza o rótulo do horário p/ comparar médias: unifica traços (-, –, —…)
 // e remove espaços, p/ "07:00-08:00" casar com "07:00 – 08:00". Sem isso, uma
 // linha digitada à mão com traço diferente vira "outro horário" e não soma.
-function normHora(s){
-  return String(s||'').replace(/[‐-―−]/g,'-').replace(/\s+/g,'').trim();
-}
 // Reagrupa medias/amostra do backend por rótulo normalizado, somando as
 // amostras (reconstrói a soma via média×amostra) p/ não perder dias quando o
 // traço difere entre linhas gravadas pelo sistema e digitadas manualmente.
-function mergeMedias(medias, amostra){
-  const soma={}, cont={};
-  Object.keys(medias||{}).forEach(k=>{
-    const nk=normHora(k), c=(amostra||{})[k]||0;
-    soma[nk]=(soma[nk]||0)+(medias[k]||0)*c;
-    cont[nk]=(cont[nk]||0)+c;
-  });
-  const M={}, A={};
-  Object.keys(cont).forEach(nk=>{ if(cont[nk]>0){ M[nk]=Math.round(soma[nk]/cont[nk]); A[nk]=cont[nk]; } });
-  return {medias:M, amostra:A};
-}
 async function lerMediaHoras(){
   if(!CFG.sheetsUrl) return false;
   try{
@@ -3017,16 +3021,6 @@ function focoHoraIdx(slots){
 // de HOJE). Calculado no cliente: metaHora/producaoHora de todas as horas do
 // dia já estão carregados de uma vez. Recalculado do zero a cada render, então
 // uma hora que supera a meta zera o atraso carregado automaticamente.
-function calcAtrasoHoras(rows){
-  let accMeta=0, accProd=0;
-  return rows.map(r=>{
-    const atrasoHora = Math.max(accMeta-accProd, 0);
-    const metaEfetivaHora = (r.metaHora||0) + atrasoHora;
-    accMeta += (r.metaHora||0);
-    accProd += (r.producaoHora!=null ? r.producaoHora : 0);
-    return { atrasoHora, metaEfetivaHora };
-  });
-}
 function calcKPIs(dh){
   const hoje=hojeStr();
   const heList=loadHE(hoje);
@@ -3094,7 +3088,6 @@ function calcKPIs(dh){
   }));
   return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
-function sc(ef){ return ef>=96?'ok':ef>=90?'warn':'red'; }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
 
 // ════════════════════════════════════════════════
