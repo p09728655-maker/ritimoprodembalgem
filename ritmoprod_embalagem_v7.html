@@ -424,7 +424,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    em número grande — nenhuma frase corrida, que a 15 m ninguém lê.
    Classes tvd-* são EXCLUSIVAS da Tela D. */
 .tvd-wrap{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.6vh,26px);width:100%;min-height:0;padding-top:clamp(6px,1.2vh,18px)}
-.tvd-band{width:100%;display:grid;grid-template-columns:1.25fr 1fr;column-gap:clamp(24px,3vw,64px);align-items:center}
+.tvd-band{width:100%;display:grid;grid-template-columns:1.1fr 1fr;column-gap:clamp(20px,2.4vw,52px);align-items:center}
 .tvd-hero{display:flex;flex-direction:column;align-items:flex-start;gap:clamp(2px,.6vh,10px);min-width:0}
 .tvd-lbl{font-family:var(--font-d);font-size:clamp(14px,1.35vw,24px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
 .tvd-hero-num{font-family:var(--font-h);font-weight:700;font-size:clamp(120px,13.5vw,290px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
@@ -444,8 +444,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-split{display:flex;align-items:center;gap:clamp(12px,1.3vw,26px);min-width:0}
 .tvd-split-fio{width:clamp(6px,.5vw,10px);align-self:stretch;border-radius:99px;flex-shrink:0}
 .tvd-split-num{font-family:var(--font-h);font-weight:700;font-size:clamp(56px,5.8vw,120px);line-height:.9;font-variant-numeric:tabular-nums;flex-shrink:0}
-.tvd-split-txt{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase;line-height:1.5;min-width:0}
-.tvd-split-txt b{color:var(--txt);font-weight:600}
+.tvd-split-txt{display:flex;flex-direction:column;gap:clamp(2px,.5vh,8px);font-family:var(--font-d);font-size:clamp(13px,1.2vw,21px);color:var(--txt2);letter-spacing:2px;line-height:1.35;min-width:0}
+.tvd-split-txt b{font-family:var(--font-h);font-weight:700;font-size:clamp(20px,1.9vw,36px);letter-spacing:3px;text-transform:uppercase;color:var(--txt);line-height:1}
+.tvd-split-txt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tvd-normal-falta:not(:empty){color:var(--warn)}
 
 /* Barra: verde (normal) + faixa listrada âmbar (hora extra) e a MARCA DA META
    como linha vertical. Se a verde parar antes da marca, quem cruzou foi a
@@ -460,8 +462,8 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-meta-marca.fim span{left:auto;right:clamp(8px,.7vw,14px);transform:none}
 
 /* Dia a dia: um cartão por dia útil, tarja no topo com a cor do resultado. */
-.tvd-dias{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:clamp(8px,.9vw,18px);min-height:0}
-.tvd-dia{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(4px,.8vh,14px);background:var(--surface);border:1px solid var(--border);border-top:clamp(4px,.55vh,9px) solid var(--txt3);border-radius:8px;padding:clamp(10px,1.8vh,28px) clamp(10px,1vw,22px);min-width:0}
+.tvd-dias{flex:0 0 auto;margin-top:auto;height:clamp(150px,29vh,330px);display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:clamp(8px,.9vw,18px)}
+.tvd-dia{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(4px,.8vh,14px);background:var(--surface);border:1px solid var(--border);border-top:clamp(4px,.55vh,9px) solid var(--txt2);border-radius:8px;padding:clamp(10px,1.8vh,28px) clamp(10px,1vw,22px);min-width:0}
 .tvd-dia.ok  {border-top-color:var(--ok)}
 .tvd-dia.he  {border-top-color:var(--warn)}
 .tvd-dia.ruim{border-top-color:var(--red)}
@@ -471,7 +473,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-dia-meio{display:flex;flex-direction:column;justify-content:center;flex:1;gap:clamp(2px,.5vh,8px);min-height:0}
 .tvd-dia-pct{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);letter-spacing:1px}
 .tvd-dia-he{font-family:var(--font-d);font-size:clamp(11px,1.05vw,19px);letter-spacing:1px;color:var(--warn);border-top:1px solid var(--border);padding-top:clamp(3px,.6vh,9px)}
-.tvd-dia-he.vazio{color:var(--txt3)}
+.tvd-dia-he.vazio{color:var(--txt2)}
 
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
@@ -1480,12 +1482,12 @@ if (_v7Instalado()) _v7EscondeBotao();
           <div class="tvd-split">
             <div class="tvd-split-fio" style="background:var(--ok)"></div>
             <div class="tvd-split-num" style="color:var(--ok)" id="tvd-normal">—</div>
-            <div class="tvd-split-txt">CAIXAS EM<br><b>JORNADA NORMAL</b><br><span id="tvd-normal-pct">—</span></div>
+            <div class="tvd-split-txt"><b>JORNADA NORMAL</b><span id="tvd-normal-pct">—</span><span id="tvd-normal-falta"></span></div>
           </div>
           <div class="tvd-split" id="tvd-linha-extra">
             <div class="tvd-split-fio" style="background:var(--warn)"></div>
             <div class="tvd-split-num" style="color:var(--warn)" id="tvd-extra">—</div>
-            <div class="tvd-split-txt">CAIXAS EM<br><b>HORA EXTRA</b><br><span id="tvd-extra-pct">—</span></div>
+            <div class="tvd-split-txt"><b>HORA EXTRA</b><span id="tvd-extra-pct">—</span></div>
           </div>
         </div>
       </div>
@@ -3363,13 +3365,13 @@ function renderGerencial(){
     {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${k.nHE} slot(s) HE`, c:'acc'}]:[]),
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
     {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef),                c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
-    {l:'HORAS PRODUTIVAS',  v:k.hProd.toFixed(1)+'h',  sub:`${k.n} slots registrados`,c:''},
+    {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
     {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
     {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
@@ -3397,7 +3399,7 @@ function renderGerencial(){
   document.getElementById('analise-row').innerHTML=`
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
       <div class="a-val" style="color:var(--warn)">${k.slotsRest>0?fmtN(k.nec)+' cx/h':'— Turno enc.'}</div>
-      <div class="a-desc">para meta em ${k.slotsRest} hora(s)</div></div>
+      <div class="a-desc">para meta em ${plural(k.slotsRest,'hora','horas')}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
       <div class="a-desc">últimas 2 horas registradas</div></div>
@@ -4186,7 +4188,7 @@ function renderTV(){
   const fill=document.getElementById('tv-prog-fill');
   fill.style.width=pct+'%';
   fill.style.background=s==='ok'?'var(--ok)':s==='warn'?'var(--warn)':'var(--red)';
-  document.getElementById('tv-prog-pct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('tv-prog-pct').textContent=fmtP(pct);
   document.getElementById('tv-meta-lbl').textContent='META: '+fmtN(k.meta);
   const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fmtN(k.meta);
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
@@ -4548,7 +4550,7 @@ async function renderHist(){
   const semBackend=dias.some(d=>d.heCxAusente)||HE_BACKEND_OK===false; // Apps Script ainda sem a marca de HE
   const heSub = semBackend
     ? '⚠ Apps Script sem HE CX — re-deploy pendente'
-    : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${semHE} dia(s) fechados sem o dado`:'');
+    : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${plural(semHE,'dia fechado','dias fechados')} sem o dado`:'');
   document.getElementById('hist-kpi-grid').innerHTML=`
     <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
@@ -4696,7 +4698,7 @@ function openCfg(){
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
   { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
-    if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${_ti.taktSeg.toFixed(1)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
+    if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${fmt1(_ti.taktSeg)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
   const _hoje=hojeStr();
   const _prog=PONTOS_DIA.programacao||{};
   const _auto=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
@@ -5066,7 +5068,7 @@ ${_rpBotaoImprimir()}
 ${_rpCabecalho('HISTÓRICO',
    `<div class="rp-periodo">${periodoLabel}</div>
     <div>Gerado em: ${agora}</div>
-    <div>${dias.length} dia(s) no período</div>`)}
+    <div>${plural(dias.length,'dia','dias')} no período</div>`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -5077,8 +5079,8 @@ ${_rpCabecalho('HISTÓRICO',
   </div>
   <div class="kpi-card" style="border-left-color:${corEfP}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${corEfP}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${efSemHEp.toFixed(1)}%`:bdgEfP}</div>
+    <div class="kpi-val" style="color:${corEfP}">${fmtP(efMedia)}</div>
+    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${fmtP(efSemHEp)}`:bdgEfP}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
@@ -5093,12 +5095,12 @@ ${_rpCabecalho('HISTÓRICO',
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">🏆 MELHOR DIA</div>
     <div class="kpi-val" style="font-size:14px">${melhorDia.data}</div>
-    <div class="kpi-sub" style="color:#4CAF50">${melhorDia.ef.toFixed(1)}% · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub" style="color:#4CAF50">${fmtP(melhorDia.ef)} · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
   <div class="kpi-card" style="border-left-color:#F44336">
     <div class="kpi-lbl">📉 DIA MAIS FRACO</div>
     <div class="kpi-val" style="font-size:14px">${piorDia.data}</div>
-    <div class="kpi-sub" style="color:#F44336">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub" style="color:#F44336">${fmtP(piorDia.ef)} · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
 </div>
 ${mhe.soComHE?`<div class="rp-alerta">
@@ -5106,8 +5108,8 @@ ${mhe.soComHE?`<div class="rp-alerta">
   <div><b>A meta do período foi batida com hora extra.</b>
   Na jornada normal foram <b>${mhe.realNormal.toLocaleString('pt-BR')} cx</b> contra a meta de
   ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${mhe.faltouSemHE.toLocaleString('pt-BR')} cx</b>
-  (${mhe.efTotalSemHE.toFixed(1)}% da meta). A hora extra${totHorasP>0?` (${totHorasP}h)`:''} entrou com
-  ${totHEp.toLocaleString('pt-BR')} cx e levou o período a ${mhe.efTotal.toFixed(1)}%.</div>
+  (${fmtP(mhe.efTotalSemHE)} da meta). A hora extra${totHorasP>0?` (${totHorasP}h)`:''} entrou com
+  ${totHEp.toLocaleString('pt-BR')} cx e levou o período a ${fmtP(mhe.efTotal)}.</div>
 </div>`:''}
 
 <div class="rp-sec-ttl" style="margin-top:16px">PRODUÇÃO × META POR DIA</div>
@@ -5123,7 +5125,7 @@ ${mhe.soComHE?`<div class="rp-alerta">
       ${temHEp?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCelP(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${bdgCls(d.ef)}">${bdgLbl(d.ef)}</span></td>
@@ -5508,7 +5510,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
 
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
-<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+<div class="kpi-grid" style="grid-template-columns:repeat(${temHE?6:5},1fr)">
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
@@ -5521,9 +5523,14 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   </div>
   <div class="kpi-card" style="border-left-color:${corEf}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${corEf}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHE?`${badgeEf} · sem HE ${efMediaSemHE.toFixed(1)}%`:badgeEf}</div>
+    <div class="kpi-val" style="color:${corEf}">${fmtP(efMedia)}</div>
+    <div class="kpi-sub">${badgeEf}</div>
   </div>
+  ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efMediaSemHE)}">
+    <div class="kpi-lbl">EFIC. SEM H. EXTRA</div>
+    <div class="kpi-val" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</div>
+    <div class="kpi-sub">só a jornada normal</div>
+  </div>`:''}
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
@@ -5540,8 +5547,8 @@ ${soComHE?`<div class="rp-alerta">
   <div><b>A meta da semana foi batida com hora extra.</b>
   Na jornada normal foram <b>${(totReal-totHE).toLocaleString('pt-BR')} cx</b> contra a meta de
   ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${faltouSemHE.toLocaleString('pt-BR')} cx</b>
-  (${efTotalSemHE.toFixed(1)}% da meta). A hora extra${totHoras>0?` (${totHoras}h)`:''} entrou com
-  ${totHE.toLocaleString('pt-BR')} cx e levou o período a ${efTotal.toFixed(1)}%.</div>
+  (${fmtP(efTotalSemHE)} da meta). A hora extra${totHoras>0?` (${totHoras}h)`:''} entrou com
+  ${totHE.toLocaleString('pt-BR')} cx e levou o período a ${fmtP(efTotal)}.</div>
 </div>`:''}
 
 <!-- MELHOR / PIOR -->
@@ -5551,7 +5558,7 @@ ${soComHE?`<div class="rp-alerta">
     <div>
       <div class="rp-hl-lbl">MELHOR DIA</div>
       <div class="rp-hl-val" style="color:#4CAF50">${melhorDia.data}</div>
-      <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${melhorDia.ef.toFixed(1)}% eficiência</div>
+      <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(melhorDia.ef)} eficiência</div>
     </div>
   </div>
   <div class="rp-highlight">
@@ -5559,7 +5566,7 @@ ${soComHE?`<div class="rp-alerta">
     <div>
       <div class="rp-hl-lbl">DIA MAIS FRACO</div>
       <div class="rp-hl-val" style="color:#F44336">${piorDia.data}</div>
-      <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${piorDia.ef.toFixed(1)}% eficiência</div>
+      <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(piorDia.ef)} eficiência</div>
     </div>
   </div>
 </div>
@@ -5584,8 +5591,8 @@ ${soComHE?`<div class="rp-alerta">
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCel(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
-      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':_efSemHE(d).toFixed(1)+'%'}</td>`:''}
+      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
@@ -5599,11 +5606,11 @@ ${soComHE?`<div class="rp-alerta">
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${efMediaSemHE.toFixed(1)}%</td>`:''}
+      <td class="td-bold" style="color:${cor(efMedia)}">${fmtP(efMedia)}</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${_slotMaisFreq(diasSem,'melhor')}</td>
       <td class="td-mono" style="color:#F44336">${_slotMaisFreq(diasSem,'pior')}</td>
-      <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
+      <td class="tf-lbl" colspan="2">base: ${plural(diasSem.length,'dia','dias')} com produção</td>
     </tr>
     <tr>
       <td class="tf-lbl">TOTAL DA SEMANA</td>
@@ -5611,9 +5618,9 @@ ${soComHE?`<div class="rp-alerta">
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
       <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${totMeta?((totReal-totHE)/totMeta*100).toFixed(1):'0.0'}%</td>`:''}
-      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${semHE} dia(s) sem separação de hora extra`:''}</td>
+      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${fmtP(totMeta?totReal/totMeta*100:0)}</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${fmtP(totMeta?(totReal-totHE)/totMeta*100:0)}</td>`:''}
+      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>
 </table>
@@ -5753,7 +5760,7 @@ async function gerarRelatorioParadas(){
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
   const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>{
     const txt = ehSetupParada(t.tipo)
-      ? `<b style="color:#c62828">${esc(t.tipo)}</b> é troca (inevitável) — reduzir o tempo (troca rápida): ${t.qtd} troca(s) de ~${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}. Cada minuto cortado por troca ≈ <b>${fmtN(t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0)}</b> caixas no período.`
+      ? `<b style="color:#c62828">${esc(t.tipo)}</b> é troca (inevitável) — reduzir o tempo (troca rápida): ${plural(t.qtd,'troca','trocas')} de ~${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}. Cada minuto cortado por troca ≈ <b>${fmtN(t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0)}</b> caixas no período.`
       : `Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.`;
     return `<div style="font-size:12px;color:#222;margin:4px 0">▸ ${txt}</div>`;
   }).join('')):'';
@@ -5826,15 +5833,15 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 <div class="rp-sec-ttl">RESUMO</div>
 <div class="kpi-grid">
-  <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>
-  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
-  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')} · ${plural(st.nDias,'dia','dias')}</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.dispon)}</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.pctPerd)}</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PERDA A RITMO REAL</div><div class="kpi-val" style="color:#c62828">${perdaReal>0?fmtN(perdaReal):'—'}</div><div class="kpi-sub">${perdaReal>0?_fmtMinPar(st.totMinNP)+' × '+fmtN(trR.ritmoReal)+' cx/h medidos'+(st.pesoMedio>0?' · ~'+fmtN(Math.round(perdaReal*st.pesoMedio))+' kg':''):'sem apontamento no período'}</div></div>
   <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')}</div></div>
 </div>
 <div class="rp-sec-ttl">PARETO — TEMPO PARADO POR TIPO (maiores ofensores)</div>
 <div class="rp-chart-wrap">${pareto}</div>
@@ -5843,8 +5850,8 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
-<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
+<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${fmt1(st.horasProd)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${fmt1(st.horasProd)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?fmt1(tiR.taktSeg):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
+<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
   win.document.open();
@@ -6178,9 +6185,9 @@ async function _renderAnaliseParadasCore(opts){
   }
 
   const kpis=[
-    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s) ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
-    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
-    {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${plural(nParadas,'parada','paradas')} · ${plural(nDias,'dia','dias')} ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
+    {l:'% DO TURNO PERDIDO',v:fmtP(pctPerd),sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'DISPONIBILIDADE',v:fmtP(dispon),sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa vs meta do dia · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     ...(perdaRealCard?[perdaRealCard]:[]),
     {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
@@ -6264,7 +6271,7 @@ async function _renderAnaliseParadasCore(opts){
   mkChart('ch-par-dispon',{type:'doughnut',data:{labels:['Produzindo','Parado (não prog.)'],datasets:[
     {data:[Math.max(0,100-pctPerd),Math.max(0,pctPerd)],backgroundColor:['rgba(76,175,80,0.85)','rgba(244,67,54,0.85)'],borderWidth:0}
   ]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
-  const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=dispon.toFixed(1)+'%';
+  const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=fmtP(dispon);
   const rInfo=document.getElementById('par-resumo-info');
   if(rInfo){ const tProd=Math.max(0,Math.round(nDias*horasProd*60-totMinNP));
     rInfo.innerHTML=`<div class="par-rl"><span class="dot" style="background:rgba(76,175,80,0.85)"></span> Tempo produzindo <b>${_fmtMinPar(tProd)}</b></div>
@@ -6287,7 +6294,7 @@ async function _renderAnaliseParadasCore(opts){
       if(ehSetupParada(t.tipo)){
         const tmed=Math.round(t.min/(t.qtd||1));
         const porMin=t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0;
-        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${t.qtd} troca(s) de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
+        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${plural(t.qtd,'troca','trocas')} de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
       } else {
         linha=`Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.`;
       }
@@ -6306,11 +6313,11 @@ async function _renderAnaliseParadasCore(opts){
       let extra='';
       if(!topT.planej && topT.perd>0){
         if(ehSetupParada(topT.tipo)){ const tmed=Math.round(topT.min/(topT.qtd||1));
-          extra=` — é troca (inevitável); o caminho é a troca rápida (${topT.qtd} troca(s) de ~${tmed} min), reduzir o tempo`;
+          extra=` — é troca (inevitável); o caminho é a troca rápida (${plural(topT.qtd,'troca','trocas')} de ~${tmed} min), reduzir o tempo`;
         } else extra=`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`;
       }
       ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${extra}.`}); }
-    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está dentro da meta (90%).`:`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está <b>abaixo</b> da meta de 90%.`});
+    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${fmtP(dispon)}</b> está dentro da meta (90%).`:`Disponibilidade de <b>${fmtP(dispon)}</b> está <b>abaixo</b> da meta de 90%.`});
     if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
     if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não programadas.`});
     // (rótulo alinhado à planilha: "programada" = parada planejada/prevista)
@@ -6328,7 +6335,7 @@ async function _renderAnaliseParadasCore(opts){
   const met=document.getElementById('par-metodo');
   // A 1ª parte é o MESMO texto que o mobile mostra (RP_PARADAS.diagTexto), para
   // dar pra comparar as duas telas batendo o olho quando os números discordarem.
-  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+nDias+' '+(baseTrab?'dia(s) TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'dia(s) com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+plural(nDias,'dia','dias')+' '+(baseTrab?'TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+fmt1(horasProd)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?fmt1(_ti.taktSeg):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
@@ -6379,7 +6386,7 @@ function _svgBarChart(dias){
     outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
 
     // Eficiência % acima
-    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.ef.toFixed(1)}%</text>`;
+    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtP(d.ef)}</text>`;
 
     // Label data embaixo
     const dd=d.data.substring(0,5);
@@ -6432,7 +6439,7 @@ function _svgDiaHora(dia){
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888">Real: <strong style="color:#111">${dia.real.toLocaleString('pt-BR')}</strong> · Meta: <strong style="color:#888">${dia.meta.toLocaleString('pt-BR')}</strong></span>
-      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${dia.ef.toFixed(1)}% — ${badge(dia.ef)}</span>
+      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${fmtP(dia.ef)} — ${badge(dia.ef)}</span>
     </div>
   </div>`;
 
@@ -7278,10 +7285,13 @@ const _cicloTV = (function() {
     set('tvd-total',   fmtN(k.totReal));
     set('tvd-normal',  fmtN(normal));
     set('tvd-extra',   fmtN(k.totHE));
-    set('tvd-normal-pct', k.totMeta ? fmtP(normal / k.totMeta * 100) + ' DA META' : '');
+    set('tvd-normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
+    // O buraco da jornada normal é a informação de ação — em linha própria e na
+    // cor de atenção, não espremido no fim de outra frase.
+    set('tvd-normal-falta', k.faltouSemHE > 0 ? `faltaram ${fmtN(k.faltouSemHE)} cx` : '');
     const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
-    set('tvd-extra-pct', k.totHoras > 0 ? `${k.totHoras} H EM ${diasComHE} DIA(S)`
-                                        : (diasComHE ? `${diasComHE} DIA(S)` : ''));
+    set('tvd-extra-pct', k.totHoras > 0 ? `${plural(k.totHoras,'hora','horas')} em ${plural(diasComHE,'dia','dias')}`
+                                        : (diasComHE ? `em ${plural(diasComHE,'dia','dias')}` : ''));
     // Semana sem nenhuma hora extra: a linha inteira sai (ela diria "0" e só
     // ocuparia metade da banda) — mesma regra do card de HE do gerencial.
     const linhaExtra = document.getElementById('tvd-linha-extra');

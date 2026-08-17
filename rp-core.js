@@ -24,9 +24,22 @@
 // ── Formatação ──────────────────────────────────────────────────────────────
 // Número vazio/indefinido vira "—", nunca 0: zero é uma afirmação ("produziu
 // nada"), e o traço é a ausência de informação. Os painéis dependem disso.
+// O separador decimal é VÍRGULA, como o milhar é PONTO no fmtN. Enquanto o fmtP
+// usava toFixed(1), a mesma tela mostrava "8.681" (ponto = milhar) ao lado de
+// "89.6%" (ponto = decimal) — o mesmo sinal com dois significados, lido de longe
+// por quem está no chão de fábrica. Quem faz a conta inversa (a barra de
+// eficiência da Tela B) já normalizava a vírgula.
 const p2   = n => String(n).padStart(2, '0');
 const fmtN = n => isNaN(n) || n === null ? '—' : Number(n).toLocaleString('pt-BR');
-const fmtP = n => isNaN(n) || n === null ? '—' : n.toFixed(1) + '%';
+const fmt1 = n => isNaN(n) || n === null ? '—'
+  : Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const fmtP = n => isNaN(n) || n === null ? '—' : fmt1(n) + '%';
+
+// "1 parada" / "2 paradas". O "(s)" de "parada(s)" é linguagem de sistema: quem
+// lê o painel é o operador e o gestor, não o banco de dados. Fica aqui porque
+// aparecia solto em ~15 lugares dos dois painéis, cada um escrevendo do seu
+// jeito. n é opcional na frase — plural(0,'dia','dias') dá "0 dias".
+const plural = (n, sing, plur) => `${fmtN(n)} ${Math.abs(Number(n)) === 1 ? sing : plur}`;
 
 // ── Horário ─────────────────────────────────────────────────────────────────
 function toMin(s){ const [h, m] = s.split(':').map(Number); return h * 60 + m; }
@@ -97,6 +110,6 @@ function sc(ef){ return ef >= 96 ? 'ok' : ef >= 90 ? 'warn' : 'red'; }
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
   versao: '1.0.0',
-  fns: ['p2', 'fmtN', 'fmtP', 'toMin', 'fromMin', 'normHora', 'hojeStr',
-        'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc']
+  fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
+        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc']
 };

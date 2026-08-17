@@ -803,7 +803,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.6';
+const APP_VER   = '1.7.7';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1526,12 +1526,12 @@ function renderGerParadasResumo(){
     return;
   }
   const cor=st.dispon>=95?'ok':st.dispon>=90?'warn':'red';
-  const rotDias=st.baseTrab?`${st.nDias} dia(s) trabalhados`:`${st.nDias} dia(s) com parada`;
+  const rotDias=st.baseTrab?`${plural(st.nDias,'dia','dias')} trabalhados`:`${plural(st.nDias,'dia','dias')} com parada`;
   const kpi4=ehHoje
     ? `<div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`
     : `<div class="par-mini ${st.media>0?'red':'ok'}"><div class="par-mini-lbl">MÉDIA DIÁRIA</div><div class="par-mini-val" style="color:${st.media>0?'var(--red)':'var(--txt)'}">${fmtN(st.media)}</div><div class="par-mini-sub">cx perdidas por dia trabalhado</div></div>`;
   kg.innerHTML=`
-    <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${st.n} parada(s)</div></div>
+    <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${plural(st.n,'parada','paradas')}</div></div>
     <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">${ehHoje?'do turno':rotDias}</div></div>
     <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':`estimativa · ${rotDias}`}</div></div>
     ${kpi4}`;
@@ -1602,7 +1602,7 @@ function aplicarDetalheParadas(nParadas){
   btn.classList.toggle('aberto', PAR_DET_ABERTO);
   txt.textContent=PAR_DET_ABERTO
     ? 'OCULTAR DETALHES'
-    : `VER DETALHES${_parDetN?` · ${_parDetN} parada(s)`:''}`;
+    : `VER DETALHES${_parDetN?` · ${plural(_parDetN,'parada','paradas')}`:''}`;
 }
 
 // dd/MM/yyyy → número comparável (ordenação da lista do período)
@@ -2387,7 +2387,7 @@ function renderGerencial(){
   // Na última hora (sem horas futuras) não repete o GAP — mostra que o
   // turno encerrou (ou META OK se já atingida).
   const necKpi = k.slotsRest>0
-    ? {l:'NEC. P/ META', v:fmtN(k.nec), sub:`cx/h — ${k.slotsRest} slot(s)`, c:k.nec<=k.ritmo?'ok':'warn'}
+    ? {l:'NEC. P/ META', v:fmtN(k.nec), sub:`cx/h — ${plural(k.slotsRest,'slot','slots')}`, c:k.nec<=k.ritmo?'ok':'warn'}
     : (k.gap>0
         ? {l:'NEC. P/ META', v:'—', sub:'turno encerrado', c:''}
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
@@ -2395,7 +2395,7 @@ function renderGerencial(){
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Só entra nos dias que tiveram hora extra — sem HE o card diria "tudo
     // normal" e só empurraria os outros KPIs para baixo na tela do celular.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${k.nHE} slot(s)`, c:'acc'}]:[]),
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')}`, c:'acc'}]:[]),
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
     {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
