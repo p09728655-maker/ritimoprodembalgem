@@ -27,12 +27,13 @@ function pega(assinatura) {
 global.window = global;   // o rp-core.js é script de navegador e escreve em window
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 const parseBR = s => { const [d, m, y] = s.split('/').map(Number); return new Date(y, m - 1, d); };
-const _numSemana = () => 33;
+eval(pega('function _numSemana('));   // a real, extraída do painel
 eval(pega('function _heIndef('));
 eval(pega('function _relSemanaJanela('));
 eval(pega('function fmtFechadoEm('));
 eval(pega('function _relDiasDaSemana('));
 eval(pega('function _relSemanaPassada('));
+eval(pega('function _relRotuloSemanas('));
 eval(pega('function _slotMaisFreq('));
 eval(pega('function _relMetaHE('));
 eval(pega('function _relSemanalKPIs('));
@@ -141,6 +142,17 @@ ok('meta zerada não dispara alerta', semMeta.soComHE, false);
 
 ok('os KPIs da semana já trazem a leitura pronta', k.soComHE, true);
 ok('e o quanto faltava na jornada normal', k.faltouSemHE, 8325 - (8681 - 420));
+
+console.log('\n── rótulo de semana(s) no cabeçalho do histórico ──');
+// O semanal se identifica por "SEMANA 33 / 2026"; o do histórico só dizia o
+// intervalo de datas. Mesma linguagem nos dois papéis.
+ok('período dentro de uma semana só',
+   _relRotuloSemanas([{ data: '10/08/2026' }, { data: '14/08/2026' }]), 'SEMANA 33 / 2026');
+ok('período que cruza semanas vira intervalo',
+   _relRotuloSemanas([{ data: '03/08/2026' }, { data: '14/08/2026' }]), 'SEMANAS 32 A 33 / 2026');
+ok('sem dias, sem rótulo', _relRotuloSemanas([]), '');
+ok('ordem dos dias não importa',
+   _relRotuloSemanas([{ data: '14/08/2026' }, { data: '10/08/2026' }]), 'SEMANA 33 / 2026');
 
 console.log('\n── FECHADO EM: a planilha às vezes carimba em ordem americana ──');
 // Célula formatada en-US chega "08/10/2026 17:05" para o dia 10/08 — e o
