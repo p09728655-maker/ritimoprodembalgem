@@ -99,8 +99,11 @@ via Google Apps Script (JSONP).
   de paradas. Se mexer, manter `<th>`, `<td>` e o rodapé sob a mesma condição.
 - **Reconstruir a HE dos dias antigos: `simularHoraExtraPassada()` /
   `preencherHoraExtraPassada()`** (rodar pelo editor do Apps Script). A aba
-  `PRODUCAO_PRODUTO` guarda `DATA · HORA · CAIXAS` de cada lançamento — as
-  linhas com hora **fora de 07:00–17:00** são somadas por dia e viram a `HE CX`.
+  `PRODUCAO_PRODUTO` guarda `DATA · HORA · CAIXAS` de cada lançamento. Conta
+  como extra (regra do RH): **antes das 07:00**, **depois das 18:00** e
+  **sábado/domingo o dia inteiro**, em qualquer horário. A soma por dia vira a
+  `HE CX`. Note que **17:00–18:00 é hora NORMAL** por essa régua — o turno da
+  planilha termina 17:00, mas a hora extra do RH só começa às 18:00.
   - Simula primeiro: a função de simulação **não grava**, só lista no log.
   - A gravação **nunca sobrescreve** `HE CX` já preenchida, e rodar duas vezes
     não duplica.
