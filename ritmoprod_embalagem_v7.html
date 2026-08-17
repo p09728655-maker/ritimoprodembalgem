@@ -384,6 +384,13 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   display:none;flex-direction:column;align-items:center;
   padding:14px 5vw 20px;text-align:center;gap:10px;
 }
+/* Tela D — mesma caixa das outras (cobre a Tela A inteira), alinhada à
+   esquerda: o conteúdo é uma leitura, não um número solto centralizado. */
+#tv-slide-d{
+  position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;
+  display:none;flex-direction:column;align-items:center;
+  padding:14px 4vw 20px;text-align:left;
+}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -410,6 +417,62 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvc-card-lbl{font-family:var(--font-d);font-size:clamp(14px,1.4vw,24px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvc-card-val{font-family:var(--font-h);font-weight:700;line-height:.95;color:var(--red);font-size:clamp(60px,6.6vw,140px)}
 .tvc-card-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+/* ═══ TELA D — FECHAMENTO DA SEMANA PASSADA ═══
+   Gestão à vista: a TV é lida de longe e de passagem, então esta tela NÃO
+   repete o texto do relatório. Sobram quatro coisas: quanto saiu, quanto foi
+   jornada normal × hora extra, se a meta fechou (e como) e o dia a dia. Tudo
+   em número grande — nenhuma frase corrida, que a 15 m ninguém lê.
+   Classes tvd-* são EXCLUSIVAS da Tela D. */
+.tvd-wrap{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.6vh,26px);width:100%;min-height:0;padding-top:clamp(6px,1.2vh,18px)}
+.tvd-band{width:100%;display:grid;grid-template-columns:1.25fr 1fr;column-gap:clamp(24px,3vw,64px);align-items:center}
+.tvd-hero{display:flex;flex-direction:column;align-items:flex-start;gap:clamp(2px,.6vh,10px);min-width:0}
+.tvd-lbl{font-family:var(--font-d);font-size:clamp(14px,1.35vw,24px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+.tvd-hero-num{font-family:var(--font-h);font-weight:700;font-size:clamp(120px,13.5vw,290px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvd-hero-unit{font-family:var(--font-d);font-size:clamp(16px,1.6vw,28px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+
+/* Badge do veredito. É o elemento que o usuário pediu para não mentir: verde só
+   quando a jornada normal sozinha bateu a meta; âmbar quando quem bateu foi a
+   hora extra; vermelho quando nem com ela deu. */
+.tvd-selo{display:inline-flex;align-items:center;gap:clamp(8px,.9vw,16px);font-family:var(--font-h);font-weight:700;font-size:clamp(22px,2.3vw,44px);letter-spacing:2px;text-transform:uppercase;padding:clamp(7px,1vh,16px) clamp(16px,1.7vw,34px);border-radius:999px;border:2px solid;line-height:1;white-space:nowrap}
+.tvd-selo.ok  {color:var(--ok);  border-color:rgba(76,175,80,.55); background:rgba(76,175,80,.10)}
+.tvd-selo.he  {color:var(--warn);border-color:rgba(255,152,0,.55); background:rgba(255,152,0,.10)}
+.tvd-selo.ruim{color:var(--red); border-color:rgba(244,67,54,.55); background:rgba(244,67,54,.10)}
+
+/* Coluna direita: jornada normal × hora extra, uma linha cada, com filete da
+   cor correspondente à barra de baixo — é o que amarra as duas leituras. */
+.tvd-splits{display:flex;flex-direction:column;gap:clamp(10px,1.8vh,30px);min-width:0}
+.tvd-split{display:flex;align-items:center;gap:clamp(12px,1.3vw,26px);min-width:0}
+.tvd-split-fio{width:clamp(6px,.5vw,10px);align-self:stretch;border-radius:99px;flex-shrink:0}
+.tvd-split-num{font-family:var(--font-h);font-weight:700;font-size:clamp(56px,5.8vw,120px);line-height:.9;font-variant-numeric:tabular-nums;flex-shrink:0}
+.tvd-split-txt{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase;line-height:1.5;min-width:0}
+.tvd-split-txt b{color:var(--txt);font-weight:600}
+
+/* Barra: verde (normal) + faixa listrada âmbar (hora extra) e a MARCA DA META
+   como linha vertical. Se a verde parar antes da marca, quem cruzou foi a
+   hora extra — dá para ver do fundo da fábrica, sem ler número nenhum. */
+.tvd-barra-wrap{position:relative;width:100%;padding-top:clamp(18px,2.6vh,40px)}
+.tvd-barra{display:flex;width:100%;height:clamp(22px,3.2vh,52px);background:var(--surface);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.tvd-barra-normal{background:var(--ok);height:100%;transition:width .5s ease}
+.tvd-barra-extra{height:100%;transition:width .5s ease;background:repeating-linear-gradient(135deg,var(--warn) 0 10px,rgba(255,152,0,.45) 10px 20px)}
+.tvd-meta-marca{position:absolute;top:0;bottom:0;width:3px;background:var(--txt);border-radius:2px;transform:translateX(-1.5px)}
+.tvd-meta-marca span{position:absolute;bottom:calc(100% - clamp(16px,2.4vh,38px));left:50%;transform:translateX(-50%);font-family:var(--font-d);font-size:clamp(12px,1.15vw,20px);letter-spacing:2px;color:var(--txt);white-space:nowrap}
+/* Marca perto da borda: o rótulo vira para dentro em vez de sair da tela. */
+.tvd-meta-marca.fim span{left:auto;right:clamp(8px,.7vw,14px);transform:none}
+
+/* Dia a dia: um cartão por dia útil, tarja no topo com a cor do resultado. */
+.tvd-dias{flex:1;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:clamp(8px,.9vw,18px);min-height:0}
+.tvd-dia{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(4px,.8vh,14px);background:var(--surface);border:1px solid var(--border);border-top:clamp(4px,.55vh,9px) solid var(--txt3);border-radius:8px;padding:clamp(10px,1.8vh,28px) clamp(10px,1vw,22px);min-width:0}
+.tvd-dia.ok  {border-top-color:var(--ok)}
+.tvd-dia.he  {border-top-color:var(--warn)}
+.tvd-dia.ruim{border-top-color:var(--red)}
+.tvd-dia-data{font-family:var(--font-h);font-weight:700;font-size:clamp(24px,2.3vw,46px);color:var(--txt);line-height:1}
+.tvd-dia-sem{font-family:var(--font-d);font-size:clamp(11px,1vw,18px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvd-dia-num{font-family:var(--font-h);font-weight:700;font-size:clamp(46px,5vw,112px);line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvd-dia-meio{display:flex;flex-direction:column;justify-content:center;flex:1;gap:clamp(2px,.5vh,8px);min-height:0}
+.tvd-dia-pct{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);letter-spacing:1px}
+.tvd-dia-he{font-family:var(--font-d);font-size:clamp(11px,1.05vw,19px);letter-spacing:1px;color:var(--warn);border-top:1px solid var(--border);padding-top:clamp(3px,.6vh,9px)}
+.tvd-dia-he.vazio{color:var(--txt3)}
+
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -1392,8 +1455,55 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 
+  <!-- ═══ TELA D — FECHAMENTO DA SEMANA PASSADA ═══
+       Só entra no ciclo quando a semana anterior tem dia fechado no HISTORICO
+       (_sincSlideD). Nenhum texto corrido: a TV é lida de longe. -->
+  <div id="tv-slide-d" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl"><span id="tvd-setor">EMBALAGEM</span> <span style="color:var(--acc)" id="tvd-semana">· SEMANA —</span></div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(56px,9vw,120px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tvd-periodo">—</div>
+    </div>
+
+    <div class="tvd-wrap">
+      <div class="tvd-band">
+        <div class="tvd-hero">
+          <div class="tvd-lbl">PRODUÇÃO DA SEMANA</div>
+          <div class="tvd-hero-num" id="tvd-total">—</div>
+          <div class="tvd-hero-unit">CAIXAS</div>
+          <div class="tvd-selo he" id="tvd-selo" style="margin-top:clamp(6px,1.2vh,20px)">—</div>
+        </div>
+
+        <div class="tvd-splits">
+          <div class="tvd-split">
+            <div class="tvd-split-fio" style="background:var(--ok)"></div>
+            <div class="tvd-split-num" style="color:var(--ok)" id="tvd-normal">—</div>
+            <div class="tvd-split-txt">CAIXAS EM<br><b>JORNADA NORMAL</b><br><span id="tvd-normal-pct">—</span></div>
+          </div>
+          <div class="tvd-split" id="tvd-linha-extra">
+            <div class="tvd-split-fio" style="background:var(--warn)"></div>
+            <div class="tvd-split-num" style="color:var(--warn)" id="tvd-extra">—</div>
+            <div class="tvd-split-txt">CAIXAS EM<br><b>HORA EXTRA</b><br><span id="tvd-extra-pct">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tvd-barra-wrap">
+        <div class="tvd-barra">
+          <div class="tvd-barra-normal" id="tvd-bar-normal" style="width:0%"></div>
+          <div class="tvd-barra-extra"  id="tvd-bar-extra"  style="width:0%"></div>
+        </div>
+        <div class="tvd-meta-marca" id="tvd-marca" style="left:100%"><span id="tvd-marca-lbl">META —</span></div>
+      </div>
+
+      <div class="tvd-dias" id="tvd-dias"></div>
+    </div>
+  </div>
+
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
-       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C. -->
+       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D. -->
   <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
     <button type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
     <button type="button" id="btn-ciclo-pause" onclick="_cicloTV.togglePause()" title="Pausar / continuar o carrossel" style="background:var(--acc);color:#111;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;min-width:120px">⏸ PAUSAR</button>
@@ -1804,12 +1914,14 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA D (segundos)</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-a" style="accent-color:var(--acc)"> TELA A — HORA A HORA</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"> TELA B — VISÃO MACRO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"> TELA D — SEMANA PASSADA (só entra se a semana anterior tiver dia fechado)</label>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -1923,7 +2035,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.5.2';
+const APP_VER   = '7.6.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2026,8 +2138,9 @@ let CFG = {
   slideAIntervalo:15,
   slideBIntervalo:15,
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
+  slideDIntervalo:20, // Tela D tem mais a ler (5 dias + barra da meta) que as outras
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
-  telasAtivas:{a:true,b:true,c:true},
+  telasAtivas:{a:true,b:true,c:true,d:true},
   modoLeitor:true, // seleção de produto por bipe no mobile (padrão ligado)
   slideBKpis:['meta','falta','proj','ef','status','peso']
 };
@@ -4602,11 +4715,13 @@ function openCfg(){
   document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
+  document.getElementById('c-slided-int').value=CFG.slideDIntervalo||20;
   document.getElementById('c-modo-leitor').checked=CFG.modoLeitor!==false;
-  const _telas=CFG.telasAtivas||{a:true,b:true,c:true};
+  const _telas=CFG.telasAtivas||{a:true,b:true,c:true,d:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
   document.getElementById('c-tela-b').checked=_telas.b!==false;
   document.getElementById('c-tela-c').checked=_telas.c!==false;
+  document.getElementById('c-tela-d').checked=_telas.d!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
   ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
@@ -4656,10 +4771,12 @@ function saveCfg(){
   CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideCIntervalo=parseInt(document.getElementById('c-slidec-int').value)||15;
+  CFG.slideDIntervalo=parseInt(document.getElementById('c-slided-int').value)||20;
   CFG.telasAtivas={
     a:document.getElementById('c-tela-a').checked,
     b:document.getElementById('c-tela-b').checked,
-    c:document.getElementById('c-tela-c').checked
+    c:document.getElementById('c-tela-c').checked,
+    d:document.getElementById('c-tela-d').checked
   };
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
@@ -4682,15 +4799,17 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 function enviarConfigPainel(){
   if(!CFG.sheetsUrl) return;
-  const t = CFG.telasAtivas||{a:true,b:true,c:true};
+  const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true};
   const params=[
     'action=setConfigPainel',
     'telaA='+(t.a!==false?1:0),
     'telaB='+(t.b!==false?1:0),
     'telaC='+(t.c!==false?1:0),
+    'telaD='+(t.d!==false?1:0),
     'tempoA='+(CFG.slideAIntervalo||15),
     'tempoB='+(CFG.slideBIntervalo||15),
     'tempoC='+(CFG.slideCIntervalo||15),
+    'tempoD='+(CFG.slideDIntervalo||20),
     'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
@@ -4707,10 +4826,16 @@ function aplicarConfigPainel(pc){
   const sig = JSON.stringify(pc);
   if(sig===_painelCfgSig) return;
   _painelCfgSig = sig;
-  CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false };
+  // telaD/tempoD só existem no backend v5.2 pra cima. Enquanto o .gs não for
+  // re-deployado, a planilha não devolve essas chaves — e aí a Tela D fica sob
+  // controle LOCAL de cada aparelho em vez de ser apagada pela config antiga.
+  const _dAtual = (CFG.telasAtivas||{}).d!==false;
+  CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false,
+                      d: pc.telaD!==undefined ? pc.telaD!==false : _dAtual };
   if(pc.tempoA) CFG.slideAIntervalo = pc.tempoA;
   if(pc.tempoB) CFG.slideBIntervalo = pc.tempoB;
   if(pc.tempoC) CFG.slideCIntervalo = pc.tempoC;
+  if(pc.tempoD) CFG.slideDIntervalo = pc.tempoD;
   if(typeof pc.kpisTelaB==='string'){
     CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
   }
@@ -5161,6 +5286,26 @@ function _relSemanaJanela(ateStr){
   return { seg, sex, semStr:`${fmtD(seg)} a ${fmtD(sex)}`, numSem:_numSemana(seg) };
 }
 
+// ── Dias que caem dentro de uma janela de semana ────────────────────────────
+// Filtra + ordena por data. Sai daqui (em vez de ficar solto dentro do
+// gerarRelatorioSemanal) porque a TELA D da TV mostra a MESMA semana e precisa
+// exatamente do mesmo recorte — duas cópias divergiriam na primeira mudança,
+// como já aconteceu com a conta de paradas.
+function _relDiasDaSemana(todos, seg, sex){
+  return (todos||[])
+    .filter(d=>{ const dt=parseBR(d.data); return dt && dt>=seg && dt<=sex; })
+    .sort((a,b)=>parseBR(a.data)-parseBR(b.data));
+}
+
+// Janela da SEMANA PASSADA: qualquer dia da semana atual menos 7 dias cai na
+// semana anterior, inclusive na segunda-feira de manhã (que é justamente
+// quando a TELA D interessa mais).
+function _relSemanaPassada(hoje){
+  const d = hoje ? new Date(hoje) : new Date();
+  d.setDate(d.getDate()-7);
+  return _relSemanaJanela(dtToStr(d));
+}
+
 // ── Horário que mais se repete como melhor/pior do dia ──────────────────────
 // A linha MÉDIA / DIA do relatório tentava tirar a MÉDIA de d.melhor/d.pior,
 // que são RÓTULOS de horário ('08:00-09:00'), não números: somar string com 0
@@ -5244,15 +5389,8 @@ async function gerarRelatorioSemanal(){
   const todosDias=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
   console.log('[RelSemanal] Total dias encontrados:', todosDias.length, todosDias.map(d=>d.data+' ('+d.fonte+')'));
 
-  // Filtrar pela semana
-  const diasSem=todosDias.filter(d=>{
-    const[dd,mm,yy]=d.data.split('/').map(Number);
-    const dt=new Date(yy,mm-1,dd);
-    return dt>=seg && dt<=sex;
-  }).sort((a,b)=>{
-    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
-    return p(a.data)-p(b.data);
-  });
+  // Filtrar pela semana (mesmo recorte que a TELA D da TV usa)
+  const diasSem=_relDiasDaSemana(todosDias, seg, sex);
 
   if(!diasSem.length){
     alert(`Nenhum dado encontrado para a semana ${semStr}.\n\nAjuste o filtro "Até" na aba Histórico para a semana desejada.`);
@@ -6965,7 +7103,7 @@ const _cicloTV = (function() {
   function _podeRodar() {
     return PERFIL !== 'gerencial' || _secTvAtiva();
   }
-  function _rotuloTela(t) { return t === 'a' ? 'TELA A' : t === 'b' ? 'TELA B' : 'TELA C'; }
+  function _rotuloTela(t) { return 'TELA ' + String(t || 'a').toUpperCase(); }
   // Atualiza os botões de controle (só existem/aparecem no gerencial).
   function _updBtn() {
     const b = document.getElementById('btn-ciclo-pause');
@@ -7096,12 +7234,123 @@ const _cicloTV = (function() {
 
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
 
+  // ── TELA D — fechamento da semana passada ────────────────────────────────
+  // O histórico só muda quando um dia é arquivado (1× por dia) e a semana em si
+  // vira uma vez por semana: buscar isso no ritmo do carrossel (a cada ~20 s)
+  // seria puro desperdício de chamada ao Apps Script. Guarda por 30 min e, se a
+  // busca falhar, mantém o que já estava na tela.
+  const TVD_TTL = 30 * 60 * 1000;
+  let _tvd = { dados: null, ts: 0, buscando: false };
+  function _tvdCarregar(forcar) {
+    if (_tvd.buscando) return;
+    if (!forcar && _tvd.dados && (Date.now() - _tvd.ts) < TVD_TTL) return;
+    _tvd.buscando = true;
+    (async () => {
+      try {
+        const todos = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
+        const { seg, sex, semStr, numSem } = _relSemanaPassada();
+        const dias = _relDiasDaSemana(todos, seg, sex);
+        // Sem dia fechado na semana passada não há o que mostrar — a tela sai do
+        // ciclo em vez de aparecer vazia (mesma regra da Tela C sem atraso).
+        _tvd.dados = dias.length ? { semStr, numSem, dias, k: _relSemanalKPIs(dias) } : null;
+        _tvd.ts = Date.now();
+        if (_tela === 'd') _sincSlideD();
+      } catch (e) {
+        console.warn('[TV D] não carregou a semana passada:', e.message);
+      } finally { _tvd.buscando = false; }
+    })();
+  }
+  function _temSemanaPassada() { return !!(_tvd.dados && _tvd.dados.dias.length); }
+
+  const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+
+  function _sincSlideD() {
+    const set  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const setH = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML  = v; };
+    _tvdCarregar();
+    const d = _tvd.dados;
+    if (!d) return;                       // ainda carregando: mantém o que está na tela
+    const k = d.k, normal = k.totReal - k.totHE;
+
+    set('tvd-setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
+    set('tvd-semana',  '· SEMANA ' + d.numSem);
+    set('tvd-periodo', d.semStr);
+    set('tvd-total',   fmtN(k.totReal));
+    set('tvd-normal',  fmtN(normal));
+    set('tvd-extra',   fmtN(k.totHE));
+    set('tvd-normal-pct', k.totMeta ? fmtP(normal / k.totMeta * 100) + ' DA META' : '');
+    const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
+    set('tvd-extra-pct', k.totHoras > 0 ? `${k.totHoras} H EM ${diasComHE} DIA(S)`
+                                        : (diasComHE ? `${diasComHE} DIA(S)` : ''));
+    // Semana sem nenhuma hora extra: a linha inteira sai (ela diria "0" e só
+    // ocuparia metade da banda) — mesma regra do card de HE do gerencial.
+    const linhaExtra = document.getElementById('tvd-linha-extra');
+    if (linhaExtra) linhaExtra.style.display = k.temHE ? '' : 'none';
+
+    // Veredito. Verde SÓ quando a jornada normal sozinha bateu a meta.
+    const selo = document.getElementById('tvd-selo');
+    if (selo) {
+      if (k.soComHE) {
+        selo.className = 'tvd-selo he';
+        selo.textContent = '⚠ META BATIDA COM HORA EXTRA';
+      } else if (k.totMeta && k.totReal >= k.totMeta) {
+        selo.className = 'tvd-selo ok';
+        selo.textContent = '✓ META BATIDA NA JORNADA NORMAL';
+      } else {
+        selo.className = 'tvd-selo ruim';
+        selo.textContent = `FALTARAM ${fmtN(Math.max(0, k.totMeta - k.totReal))} CX PARA A META`;
+      }
+      selo.style.display = k.totMeta ? '' : 'none';
+    }
+
+    // Barra: a escala é o MAIOR entre o total e a meta, para a marca da meta
+    // caber na tela nos dois casos (semana que passou e semana que não chegou).
+    const escala = Math.max(k.totReal, k.totMeta) || 1;
+    const barN = document.getElementById('tvd-bar-normal');
+    const barE = document.getElementById('tvd-bar-extra');
+    const marca = document.getElementById('tvd-marca');
+    if (barN) barN.style.width = (normal / escala * 100) + '%';
+    if (barE) barE.style.width = (k.totHE / escala * 100) + '%';
+    if (marca) {
+      const pctMeta = k.totMeta / escala * 100;
+      marca.style.left    = pctMeta + '%';
+      marca.style.display = k.totMeta ? '' : 'none';
+      marca.classList.toggle('fim', pctMeta > 80);   // rótulo vira para dentro
+    }
+    set('tvd-marca-lbl', 'META ' + fmtN(k.totMeta));
+
+    // Dia a dia. A tarja no topo diz o resultado sem depender de ler o número:
+    // verde bateu na jornada normal, âmbar bateu com hora extra, vermelho não bateu.
+    const cx = document.getElementById('tvd-dias');
+    if (cx) {
+      cx.innerHTML = d.dias.map(x => {
+        const he  = _heIndef(x) ? 0 : (x.heCx || 0);
+        const nor = x.real - he;
+        const cls = x.meta && nor >= x.meta ? 'ok' : (x.meta && x.real >= x.meta ? 'he' : 'ruim');
+        const cor = cls === 'ok' ? 'var(--ok)' : cls === 'he' ? 'var(--warn)' : 'var(--red)';
+        const dt  = parseBR(x.data);
+        return `<div class="tvd-dia ${cls}">
+          <div class="tvd-dia-data">${x.data.substring(0, 5)}</div>
+          <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
+          <div class="tvd-dia-meio">
+          <div class="tvd-dia-num">${fmtN(x.real)}</div>
+          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : '—'}</div>
+          </div>
+          <div class="tvd-dia-he${he > 0 ? '' : ' vazio'}">${_heIndef(x) ? 'HE não separada' : (he > 0 ? `${fmtN(he)} cx em hora extra` : 'sem hora extra')}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
   // Cada tela tem o SEU próprio tempo (A / B / C). Tela C, se não configurada,
   // cai no tempo da Tela B (compatibilidade com config antiga).
   function _duracaoTela(t) {
     if (t === 'a') return CFG.slideAIntervalo || 15;
     if (t === 'c') return CFG.slideCIntervalo || CFG.slideBIntervalo || 15;
+    // Tela D tem MAIS coisa para ler (5 dias + a barra da meta) que as outras:
+    // 20 s de padrão, não os 15 das demais.
+    if (t === 'd') return CFG.slideDIntervalo || 20;
     return CFG.slideBIntervalo || 15;
   }
   function _agendar() {
@@ -7110,27 +7359,30 @@ const _cicloTV = (function() {
     _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
   }
 
-  // Telas ativas no ciclo, na ordem A→B→C — configurável em CFG.telasAtivas.
-  // Tela C também exige atraso>0 (não faz sentido mostrá-la vazia). Nunca
-  // devolve lista vazia: sem nenhuma tela marcada, cai em ['a'] (fallback).
+  // Telas ativas no ciclo, na ordem A→B→C→D — configurável em CFG.telasAtivas.
+  // Tela C exige atraso>0 e Tela D exige a semana passada carregada: nenhuma das
+  // duas aparece vazia. Nunca devolve lista vazia: sem nenhuma tela marcada,
+  // cai em ['a'] (fallback).
   function _ordemTelas() {
-    const t = CFG.telasAtivas || { a: true, b: true, c: true };
+    const t = CFG.telasAtivas || { a: true, b: true, c: true, d: true };
     const ordem = [];
     if (t.a !== false) ordem.push('a');
     if (t.b !== false) ordem.push('b');
     if (t.c !== false && _temAtrasoAgora()) ordem.push('c');
+    if (t.d !== false && _temSemanaPassada()) ordem.push('d');
     return ordem.length ? ordem : ['a'];
   }
 
   // Mostra uma tela específica (esconde as outras e sincroniza a que aparece).
   function _mostrarTela(t) {
-    const slideB = document.getElementById('tv-slide-b');
-    const slideC = document.getElementById('tv-slide-c');
-    if (slideB) slideB.style.display = 'none';
-    if (slideC) slideC.style.display = 'none';
+    const slides = { b: document.getElementById('tv-slide-b'),
+                     c: document.getElementById('tv-slide-c'),
+                     d: document.getElementById('tv-slide-d') };
+    Object.keys(slides).forEach(k => { if (slides[k]) slides[k].style.display = 'none'; });
     _tela = t;
-    if (t === 'b') { _sincSlideB(); if (slideB) slideB.style.display = 'flex'; }
-    else if (t === 'c' && slideC) { _sincSlideC(); slideC.style.display = 'flex'; }
+    if (t === 'b') { _sincSlideB(); if (slides.b) slides.b.style.display = 'flex'; }
+    else if (t === 'c' && slides.c) { _sincSlideC(); slides.c.style.display = 'flex'; }
+    else if (t === 'd' && slides.d) { _sincSlideD(); slides.d.style.display = 'flex'; }
     _updBtn();
   }
 
@@ -7168,6 +7420,8 @@ const _cicloTV = (function() {
       const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : 'tvc-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
+    // A Tela D mostra o PERÍODO da semana no lugar do relógio — nada a acertar
+    // por segundo ali.
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
     // (ex.: DESMARCOU a Tela C, ou o atraso zerou), ela precisa sumir na hora —
     // sem depender do próximo saveCfg/reiniciar. Também esconde qualquer slide
@@ -7177,23 +7431,27 @@ const _cicloTV = (function() {
     if (_podeRodar() && !_pausado) {
       const ordemAtual = _ordemTelas();
       if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
-      const slideB = document.getElementById('tv-slide-b');
-      const slideC = document.getElementById('tv-slide-c');
-      if (slideB && _tela !== 'b' && slideB.style.display !== 'none') slideB.style.display = 'none';
-      if (slideC && _tela !== 'c' && slideC.style.display !== 'none') slideC.style.display = 'none';
+      ['b', 'c', 'd'].forEach(k => {
+        const el = document.getElementById('tv-slide-' + k);
+        if (el && _tela !== k && el.style.display !== 'none') el.style.display = 'none';
+      });
     }
   }, 1000);
 
   function reiniciar() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
-    const slideB = document.getElementById('tv-slide-b');
-    const slideC = document.getElementById('tv-slide-c');
+    // Busca a semana passada logo (fora do ciclo): é ela que decide se a Tela D
+    // entra na ordem. Cai no cache de 30 min, então reiniciar não vira chamada.
+    if ((CFG.telasAtivas || {}).d !== false) _tvdCarregar();
     const ordemInicial = _ordemTelas();
     _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
-    if (slideB) slideB.style.display = (_tela === 'b') ? 'flex' : 'none';
-    if (slideC) slideC.style.display = (_tela === 'c') ? 'flex' : 'none';
+    ['b', 'c', 'd'].forEach(k => {
+      const el = document.getElementById('tv-slide-' + k);
+      if (el) el.style.display = (_tela === k) ? 'flex' : 'none';
+    });
     if (_tela === 'b') _sincSlideB();
     else if (_tela === 'c') _sincSlideC();
+    else if (_tela === 'd') _sincSlideD();
     _updBtn();
     // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
     // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.
@@ -7202,7 +7460,7 @@ const _cicloTV = (function() {
       return;
     }
     _agendar(); // começa contando a duração da tela atual
-    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s)`);
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s)`);
   }
 
   reiniciar();

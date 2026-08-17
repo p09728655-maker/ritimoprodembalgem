@@ -132,6 +132,33 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` (v5.0) → **re-deploy manual** no Apps Script. Antes disso o
   front simplesmente não recebe `he`/`heCx` e as telas seguem sem a divisão.
 
+## TELA D da TV — fechamento da semana passada
+- Quarta tela do carrossel (`#tv-slide-d`), no visual do app: logomarca Patrimar
+  no topo como a Tela C e **nenhuma cor própria** — tudo sai dos tokens
+  (`--ok` jornada normal, `--warn` hora extra, `--red` abaixo, `--acc`, `--txt`).
+- **É gestão à vista, não relatório.** A TV é lida de longe e de passagem, então
+  a tela não repete o texto do PDF: só o total da semana, a divisão jornada
+  normal × hora extra, o **selo do veredito** e os 5 dias. Frase corrida a 15 m
+  ninguém lê — foi por isso que o parágrafo do relatório ficou de fora.
+  - O selo é o mesmo critério do relatório (`_relMetaHE`): **verde** só quando a
+    jornada normal sozinha bateu a meta, **âmbar** quando quem bateu foi a hora
+    extra, **vermelho** quando faltou. A barra mostra isso sem número: o verde
+    para antes da **marca da META** e quem cruza é a faixa listrada âmbar.
+- **Só entra no ciclo quando a semana anterior tem dia fechado** (mesma regra da
+  Tela C, que exige atraso>0) — nunca aparece vazia.
+- **A semana é a MESMA do relatório**: `_relSemanaPassada()` + `_relDiasDaSemana()`
+  + `_relSemanalKPIs()`, as três compartilhadas. Não reescrever o recorte dentro
+  da tela — foi a duplicação que fez a conta de paradas divergir três vezes.
+- **O histórico fica em cache de 30 min** (`_tvdCarregar`). O carrossel gira a
+  cada ~20 s; buscar o `getHistory` nesse ritmo seria chamada jogada fora, já que
+  o histórico só muda quando um dia é arquivado. Falhou a busca? Mantém o que
+  está na tela.
+- Config: **TEMPO NA TELA D** (padrão **20 s**, mais que os 15 das outras porque
+  tem mais o que ler) e o checkbox **TELA D**. ⚠ `telaD`/`tempoD` na
+  `CONFIG_PAINEL` exigem o **.gs v5.2 re-deployado**; enquanto isso não acontece,
+  `aplicarConfigPainel` **preserva** a marcação local do D em vez de apagá-la
+  (a config antiga não traz a chave, e sem esse cuidado a TV ignoraria o gestor).
+
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
   modal PARADAS): escolhe o tipo, escreve o **motivo** e a parada fica **em

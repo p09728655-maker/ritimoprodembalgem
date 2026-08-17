@@ -30,6 +30,8 @@ const parseBR = s => { const [d, m, y] = s.split('/').map(Number); return new Da
 const _numSemana = () => 33;
 eval(pega('function _heIndef('));
 eval(pega('function _relSemanaJanela('));
+eval(pega('function _relDiasDaSemana('));
+eval(pega('function _relSemanaPassada('));
 eval(pega('function _slotMaisFreq('));
 eval(pega('function _relMetaHE('));
 eval(pega('function _relSemanalKPIs('));
@@ -52,6 +54,31 @@ ok('termina 23:59 do domingo', [j.sex.getDay(), j.sex.getHours(), j.sex.getMinut
 // o relatório de domingo saltava para a semana seguinte.
 ok('domingo fica na semana que passou', _relSemanaJanela('16/08/2026').semStr, '10/08/2026 a 16/08/2026');
 ok('a própria segunda não fica de fora', _relSemanaJanela('10/08/2026').semStr, '10/08/2026 a 16/08/2026');
+
+console.log('\n── recorte da semana (relatório e TELA D usam o MESMO) ──');
+// A TELA D da TV mostra a mesma semana do relatório. Se cada uma filtrasse do
+// seu jeito, divergiriam na primeira mudança — como já aconteceu com paradas.
+const soltos = [
+  { data: '09/08/2026', real: 1 },   // domingo anterior: fora
+  { data: '10/08/2026', real: 2 },   // segunda: a janela começa 00:00 dela
+  { data: '14/08/2026', real: 3 },
+  { data: '16/08/2026', real: 4 },   // domingo: a janela vai até 23:59 dele
+  { data: '17/08/2026', real: 5 },   // segunda seguinte: fora
+];
+const jan = _relSemanaJanela('13/08/2026');
+ok('pega só os dias da janela, em ordem',
+   _relDiasDaSemana(soltos, jan.seg, jan.sex).map(d => d.data),
+   ['10/08/2026', '14/08/2026', '16/08/2026']);
+ok('lista vazia não quebra', _relDiasDaSemana([], jan.seg, jan.sex), []);
+
+// Semana passada = a anterior à de hoje, em QUALQUER dia da semana — inclusive
+// na segunda de manhã, que é justamente quando a TELA D interessa mais.
+ok('na segunda, a semana passada é a que acabou ontem',
+   _relSemanaPassada(new Date(2026, 7, 17)).semStr, '10/08/2026 a 16/08/2026');
+ok('na sexta, continua sendo a mesma semana anterior',
+   _relSemanaPassada(new Date(2026, 7, 21)).semStr, '10/08/2026 a 16/08/2026');
+ok('no domingo, também',
+   _relSemanaPassada(new Date(2026, 7, 23)).semStr, '10/08/2026 a 16/08/2026');
 
 console.log('\n── KPIs da semana ──');
 const dias = [
