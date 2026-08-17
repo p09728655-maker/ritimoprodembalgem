@@ -97,6 +97,17 @@ via Google Apps Script (JSONP).
 - **A coluna H. EXTRA some dos relatórios quando ninguém fez hora extra** no
   período (senão vira parede de `—`), mesma regra da coluna MOTIVO do relatório
   de paradas. Se mexer, manter `<th>`, `<td>` e o rodapé sob a mesma condição.
+- **Reconstruir a HE dos dias antigos: `simularHoraExtraPassada()` /
+  `preencherHoraExtraPassada()`** (rodar pelo editor do Apps Script). A aba
+  `PRODUCAO_PRODUTO` guarda `DATA · HORA · CAIXAS` de cada lançamento — as
+  linhas com hora **fora de 07:00–17:00** são somadas por dia e viram a `HE CX`.
+  - Simula primeiro: a função de simulação **não grava**, só lista no log.
+  - A gravação **nunca sobrescreve** `HE CX` já preenchida, e rodar duas vezes
+    não duplica.
+  - ⚠ **Cobertura**: a `PRODUCAO_PRODUTO` só recebe lançamento com **produto
+    identificado**, o que é opcional no app. O log mostra, por dia, quanto do
+    `REALIZADO` está coberto — cobertura baixa significa hora extra
+    subestimada, e aí é melhor lançar o número na mão.
 - ⚠ Mudou o `.gs` (v5.0) → **re-deploy manual** no Apps Script. Antes disso o
   front simplesmente não recebe `he`/`heCx` e as telas seguem sem a divisão.
 
