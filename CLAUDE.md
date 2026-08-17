@@ -20,6 +20,8 @@ via Google Apps Script (JSONP).
   extra) + guarda-corpo das peças comuns: `node relatorios.test.js`.
 - `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
   contra o código real do `.gs`: `node hora-extra.test.js`.
+- `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
+  que conta leituras: `node apps-script.test.js`.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
 - `vercel.json` — `/` → v7, `/mobile` → mobile.
@@ -342,6 +344,19 @@ via Google Apps Script (JSONP).
   catálogo 3×). `instalarGatilhoAquecimento()` (rodar 1× no editor) cria gatilho
   de 5 min contra cold start — reduz, não elimina.
   ⚠ Tudo isso só vale **depois de colar no editor do Apps Script e re-deployar**.
+- **Backend v5.1: memo de leitura POR EXECUÇÃO** (`_valores`/`_valoresDaAba`).
+  O caro não era uma leitura, era a **mesma aba lida duas vezes na mesma
+  chamada**: `getPontosDia` lia `PRODUCAO_PRODUTO` e, na sequência,
+  `calcularProgramacao() → lerEmbaladoPorProduto()` lia a mesma aba de novo.
+  - **Só função de LEITURA usa o memo.** Quem escreve (`saveDay`, `saveParadas`,
+    `endParada`, `arquivarDiaAtual`, `arquivarHorasDoDia`, `setConfigPainel`,
+    `atualizarSaldoNaProgramacao`) continua lendo direto da planilha — gravar em
+    cima de um retrato velho da aba seria perda de dado. `apps-script.test.js`
+    falha se alguma delas passar a usar o memo.
+  - `invalidarCacheLeitura()`, que já rodava em toda gravação, limpa o memo
+    junto: leitura depois de escrita nunca vem do retrato antigo.
+  - É um segundo nível, **dentro** da execução; o cache do `CacheService`
+    (20s–5min, por geração) continua valendo entre chamadas.
 - **Ainda por fazer (exige re-deploy manual do `.gs`):** ler só as últimas
   linhas da `PARADAS` em vez da aba toda.
 

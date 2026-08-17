@@ -1,5 +1,16 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
+// Versão: 5.1 — MEMO DE LEITURA POR EXECUÇÃO
+//               Toda leitura aqui é getDataRange(): traz a aba INTEIRA. O
+//               problema não era uma leitura, era a MESMA aba ser lida duas
+//               vezes na mesma chamada — getPontosDia (a ação mais cara do
+//               painel) lia PRODUCAO_PRODUTO e, logo depois,
+//               calcularProgramacao() -> lerEmbaladoPorProduto() lia a mesma
+//               aba de novo. _valores()/_valoresDaAba() guardam o retrato da
+//               aba pela execução; quem ESCREVE continua lendo direto, e
+//               invalidarCacheLeitura() (que roda em toda gravação) limpa o
+//               memo junto, para nenhuma leitura pós-escrita vir velha.
+//               Cobertura: apps-script.test.js.
 // Versão: 5.0 — CAIXAS EM HORA NORMAL × HORA EXTRA
 //               A linha de hora extra passa a nascer MARCADA na planilha:
 //               addHE grava o rótulo com o prefixo "HE " (ex.: "HE 17:00-18:00").
@@ -201,6 +212,36 @@ const CACHE_TTL_LEITURA = {
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel'];
 
+// ════════════════════════════════════════════════════════
+// LEITURA DE ABA — memo por EXECUÇÃO
+// ════════════════════════════════════════════════════════
+// Toda leitura aqui é getDataRange(): traz a aba inteira. O problema não é uma
+// leitura — é a MESMA aba ser lida duas vezes na mesma chamada. Acontecia de
+// verdade no getPontosDia, a ação mais cara do painel: ele lê PRODUCAO_PRODUTO
+// e, logo depois, calcularProgramacao() -> lerEmbaladoPorProduto() lê a MESMA
+// aba de novo. Com o memo, a segunda vem de graça.
+//
+// Escopo: só a execução atual (o Apps Script recria o ambiente a cada chamada),
+// e só em função de LEITURA. Quem escreve continua lendo direto da planilha —
+// e invalidarCacheLeitura(), chamado em toda gravação, limpa este memo junto,
+// para nenhuma leitura posterior à escrita devolver o valor antigo.
+var _valoresMemo = {};
+
+function _valoresDaAba(sh) {
+  if (!sh) return [];
+  const nome = sh.getName();
+  if (Object.prototype.hasOwnProperty.call(_valoresMemo, nome)) return _valoresMemo[nome];
+  const v = sh.getDataRange().getValues();
+  _valoresMemo[nome] = v;
+  return v;
+}
+
+function _valores(nomeAba) {
+  return _valoresDaAba(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nomeAba));
+}
+
+function _invalidarValores() { _valoresMemo = {}; }
+
 function _cacheGen(cache) {
   let g = cache.get('rp_gen');
   if (!g) { g = String(Date.now()); try { cache.put('rp_gen', g, 21600); } catch (e) {} }
@@ -209,6 +250,7 @@ function _cacheGen(cache) {
 
 // Troca a geração → todas as entradas de leitura ficam órfãs (expiram sós).
 function invalidarCacheLeitura() {
+  _invalidarValores();   // o memo da execução também não pode sobreviver a uma gravação
   try { CacheService.getScriptCache().put('rp_gen', String(Date.now()), 21600); } catch (e) {}
 }
 
@@ -1019,7 +1061,7 @@ function _somaHorasArquivadas() {
   const mapa = {};
   const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HIST_HORA);
   if (sh && sh.getLastRow() > 1) {
-    sh.getDataRange().getValues().slice(1).forEach(r => {
+    _valoresDaAba(sh).slice(1).forEach(r => {
       if (!r[0]) return;
       const d = fmtDataBR(r[0]);
       mapa[d] = (mapa[d] || 0) + (Number(r[2]) || 0);
@@ -1051,9 +1093,7 @@ function getHistory() {
 
   if (!sh) return { ok: true, dias: [] };
 
-  const dias = sh
-    .getDataRange()
-    .getValues()
+  const dias = _valoresDaAba(sh)
     .slice(1)
     .filter(r => r[0])
     .map(r => {
@@ -1117,7 +1157,7 @@ function getMediaHoras() {
   if (!sh) return { ok: true, medias: {}, amostra: {} };
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const rows = sh.getDataRange().getValues().slice(1);
+  const rows = _valoresDaAba(sh).slice(1);
   const soma = {}, cont = {};
   rows.forEach(r => {
     const data = String(r[0]).trim();
@@ -1149,7 +1189,7 @@ function getHoraDia(p) {
   const horas = [];
   const shH = ss.getSheetByName(SHEET_HIST_HORA);
   if (shH && shH.getLastRow() > 1) {
-    const rows = shH.getDataRange().getValues().slice(1);
+    const rows = _valoresDaAba(shH).slice(1);
     rows.forEach(r => {
       if (!r[0]) return;
       if (fmtDataBR(r[0]) !== data) return;
@@ -1163,7 +1203,7 @@ function getHoraDia(p) {
   let dia = null;
   const shD = ss.getSheetByName(SHEET_HIST);
   if (shD && shD.getLastRow() > 1) {
-    const rows = shD.getDataRange().getValues().slice(1);
+    const rows = _valoresDaAba(shD).slice(1);
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       if (!r[0] || fmtDataBR(r[0]) !== data) continue;
@@ -1279,7 +1319,7 @@ function getConfigPainel() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_CONFIG);
   if (!sh) return null;
-  const vals = sh.getDataRange().getValues();
+  const vals = _valoresDaAba(sh);
   const kv = {};
   for (let i = 1; i < vals.length; i++) {
     const k = String(vals[i][0] || '').trim().toUpperCase();
@@ -1411,7 +1451,7 @@ function getPontosDia() {
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
-  const values  = sh.getDataRange().getValues();
+  const values  = _valoresDaAba(sh);
 
   // Detecta as colunas pelo cabeçalho (a aba pode ter DESCRICAO/PONTOS/PESO_KG/OPERADOR
   // além de DATA/HORA/CODIGO/CAIXAS). Fallback posicional p/ o formato antigo.
@@ -1531,7 +1571,7 @@ function getProducaoModeloPeriodo(p) {
   const deNum  = p.de  ? dataParaNum(p.de)  : null;
   const ateNum = p.ate ? dataParaNum(p.ate) : null;
 
-  const values = sh.getDataRange().getValues();
+  const values = _valoresDaAba(sh);
   const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
@@ -1671,7 +1711,7 @@ function lerProgramacao(incluirArquivadas) {
 
 function _lerProgDaAba(sh, arquivada) {
   if (!sh) return [];
-  const values = sh.getDataRange().getValues();
+  const values = _valoresDaAba(sh);
   if (values.length < 2) return [];
   const hdr  = (values[0] || []).map(c => String(c).trim().toUpperCase());
   const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
@@ -1712,7 +1752,7 @@ function lerEmbaladoPorProduto(hojeNum) {
   const antes = {}, hoje = {}, eventos = {};
   let inicio = 0;
   if (!sh) return { antes: antes, hoje: hoje, eventos: eventos, inicio: hojeNum };
-  const values = sh.getDataRange().getValues();
+  const values = _valoresDaAba(sh);
   const hdr = (values[0] || []).map(c => String(c).trim().toUpperCase());
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
@@ -2174,7 +2214,7 @@ function getParadasPeriodo(p) {
   const nDe  = toNum(p.de  || '');
   const nAte = toNum(p.ate || '');
 
-  const paradas = sh.getDataRange().getValues().slice(1).map(r => ({
+  const paradas = _valoresDaAba(sh).slice(1).map(r => ({
     data: _dataStr(r[0]),
     tipo: String(r[2] || ''),
     ini:  _horaStr(r[3]),
@@ -2199,7 +2239,7 @@ function getParadas(p) {
 
   const data = p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
 
-  const values  = sh.getDataRange().getValues();
+  const values  = _valoresDaAba(sh);
   const paradas = [];
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
