@@ -1892,7 +1892,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.7';
+const APP_VER   = '7.3.8';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -1966,6 +1966,9 @@ let DADOS = [];
 // AMOSTRA_HORAS[label] = quantos dias entraram nessa média.
 let MEDIA_HORAS   = {};
 let AMOSTRA_HORAS = {};
+// O Apps Script deployado já conhece hora extra? (v5.0 devolve `he` por slot.)
+// null = ainda não sabemos (nenhuma leitura do Sheets até agora).
+let HE_BACKEND_OK = null;
 // Produção do dia em PONTOS/PESO por produto — identificação de produto é
 // OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
@@ -2563,6 +2566,11 @@ function processarRespostaSheets(json){
     document.getElementById('ftr-fonte').textContent =
       '⚠ Dados de '+json.dataRef+' — o script limpará o REALIZADO automaticamente às 06:00';
   }
+  // Um slot com a propriedade `he` prova que o deployment em uso é o v5.0.
+  // Sem isso não existe separação normal × extra em lugar nenhum do painel —
+  // e é melhor dizer isso na tela do que mostrar "—" sem explicação.
+  if(Array.isArray(json.slots) && json.slots.length)
+    HE_BACKEND_OK = Object.prototype.hasOwnProperty.call(json.slots[0],'he');
   let acum = 0;
   const novos = json.slots.filter(s=>s.metaHora>0).map(s=>{
     if(s.producaoHora!=null) acum+=s.producaoHora;
@@ -4282,9 +4290,12 @@ function _mergeDias(diasSheets){
       data:d.data, real:d.real, meta:d.meta, ef:d.ef,
       melhor:d.melhor, pior:d.pior, ok:d.ef>=100,
       fechado:true, fechadoEm:d.fechadoEm, heCount:d.heCount||0,
-      // heCx = caixas em hora extra. null = backend antigo (sem a coluna HE CX)
-      // ou dia sem hora-a-hora arquivado: a tela mostra "—", não zero.
+      // heCx = caixas em hora extra. null = não dá para separar. São DOIS
+      // motivos diferentes, e a tela precisa dizer qual: o campo nem vir (Apps
+      // Script ainda na 4.9, re-deploy pendente) ou vir null (dia fechado antes
+      // da coluna HE CX e sem hora-a-hora arquivado para derivar).
       heCx: (d.heCx===null||d.heCx===undefined)?null:Number(d.heCx),
+      heCxAusente: !Object.prototype.hasOwnProperty.call(d,'heCx'),
       fonte:'sheets'
     };
   });
@@ -4418,10 +4429,14 @@ async function renderHist(){
   const melhorDia=dias.length?dias.reduce((a,b)=>a.ef>b.ef?a:b):null;
   const fechados=dias.filter(d=>d.fechado).length;
   const totHE=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
-  const semHE=dias.filter(_heIndef).length;   // dias sem como separar (fechados antes da v5.0 do .gs)
+  const semHE=dias.filter(_heIndef).length;   // dias sem como separar
+  const semBackend=dias.some(d=>d.heCxAusente)||HE_BACKEND_OK===false; // Apps Script ainda sem a marca de HE
+  const heSub = semBackend
+    ? '⚠ Apps Script sem HE CX — re-deploy pendente'
+    : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${semHE} dia(s) fechados sem o dado`:'');
   document.getElementById('hist-kpi-grid').innerHTML=`
     <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
-    <div class="kpi-card ${totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${fmtN(totHE)}</div><div class="kpi-sub">${totReal>0?fmtP(totHE/totReal*100)+' do total':'—'}${semHE?` · ${semHE} dia(s) sem dado`:''}</div></div>
+    <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
     <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
     <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>`;
