@@ -2824,8 +2824,19 @@ function simularHoraExtraPassada() {
     const jaTem    = hist[i][10] !== '' && hist[i][10] !== null && hist[i][10] !== undefined;
     const logTotal = d.normal + d.extra;
     const cobert   = real > 0 ? Math.round(logTotal / real * 100) : 0;
+    // Teto: hora extra não pode passar a produção do dia. Quando o log de
+    // produto tem MAIS caixas que o REALIZADO (lançamento duplicado, ou o
+    // realizado ajustado depois), o número seria impossível — corta no
+    // realizado e avisa, em vez de gravar algo que não fecha.
+    const heBruto  = d.extra;
+    const heFinal  = (real > 0 && heBruto > real) ? real : heBruto;
+    if (heFinal !== heBruto) {
+      Logger.log('⚠ ' + data + ': log de produto acusa ' + heBruto + ' cx em hora extra, ' +
+                 'mas o REALIZADO do dia é ' + real + ' — limitado a ' + heFinal +
+                 ' (confira lançamento duplicado na PRODUCAO_PRODUTO).');
+    }
     linhas.push({
-      data: data, heCx: d.extra, realizado: real,
+      data: data, heCx: heFinal, realizado: real,
       coberturaLog: cobert + '%',
       motivo: d.motivo,
       horarios: d.horasExtra,
@@ -2843,7 +2854,10 @@ function simularHoraExtraPassada() {
 }
 
 // Grava na coluna HE CX apenas onde ela está VAZIA.
-function preencherHoraExtraPassada() {
+// sobrescrever=true regrava também os dias que já têm HE CX — use quando um
+// valor anterior saiu errado (foi o caso do teto pelo REALIZADO, incluído
+// depois). recalcularHoraExtraPassada() é o atalho para isso.
+function preencherHoraExtraPassada(sobrescrever) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_HIST);
   if (!sh) return { ok: false, erro: 'Aba HISTORICO nao encontrada.' };
@@ -2858,14 +2872,23 @@ function preencherHoraExtraPassada() {
     const d = porDia[data];
     if (!d || d.extra <= 0) continue;
     const jaTem = hist[i][10] !== '' && hist[i][10] !== null && hist[i][10] !== undefined;
-    if (jaTem) continue;                          // nunca sobrescreve
-    sh.getRange(i + 1, 11).setValue(d.extra);
-    Logger.log('HE CX de ' + data + ' = ' + d.extra + ' cx');
+    if (jaTem && !sobrescrever) continue;         // por padrão, nunca sobrescreve
+    const real  = Number(hist[i][1]) || 0;
+    const valor = (real > 0 && d.extra > real) ? real : d.extra;   // teto: não passa do realizado
+    sh.getRange(i + 1, 11).setValue(valor);
+    Logger.log('HE CX de ' + data + ' = ' + valor + ' cx' +
+               (valor !== d.extra ? ' (limitado ao REALIZADO ' + real + '; log acusava ' + d.extra + ')' : ''));
     gravados++;
   }
   invalidarCacheLeitura();
   Logger.log('Total de dias preenchidos: ' + gravados);
   return { ok: true, gravados: gravados };
+}
+
+// Regrava TODOS os dias, inclusive os que já têm valor. Serve para corrigir uma
+// rodada anterior que gravou número errado.
+function recalcularHoraExtraPassada() {
+  return preencherHoraExtraPassada(true);
 }
 
 // fromMin do painel não existe aqui; versão local só para o log.
