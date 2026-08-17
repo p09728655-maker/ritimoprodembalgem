@@ -102,6 +102,7 @@ body.ger-hist .ger-live-only{display:none!important}
 .kpi-grid{display:grid;gap:10px;margin-bottom:16px}
 .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
 .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+.kpi-grid.c5{grid-template-columns:repeat(5,1fr)}
 .par-sec{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt);text-transform:uppercase;margin:22px 2px 11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
 .par-sec-n{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--acc);color:#141414;font-size:10px;font-weight:700;flex-shrink:0;box-shadow:0 2px 6px -2px rgba(245,166,35,.6)}
 #sec-paradas .par-sec:first-of-type{margin-top:6px}
@@ -1156,6 +1157,10 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div>
         <div class="tv-kpi-lbl">PRODUÇÃO ACUMULADA</div>
         <div class="tv-big" id="tv-prod">—</div>
+        <!-- Normal × extra: linha de UMA linha, escondida quando não há hora
+             extra. Texto curto de propósito — na TV, linha que quebra empurra o
+             último horário da tabela para fora da tela. -->
+        <div id="tv-he-split" style="display:none;font-family:var(--font-d);font-size:clamp(11px,1.1vw,15px);letter-spacing:1px;color:var(--txt2);margin-top:4px;white-space:nowrap"></div>
       </div>
 
       <div class="tv-ef-row">
@@ -1239,7 +1244,10 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="tvb-hero">
           <div class="tvb-hero-lbl">PRODUÇÃO ACUMULADA</div>
           <div class="tvb-hero-num" id="tvb-prod">—</div>
-          <div class="tvb-hero-unit">CAIXAS</div>
+          <!-- Vira "CAIXAS · X NORMAL + Y EXTRA" nos dias com hora extra
+               (preenchido em renderTV). Continua UMA linha: na TV, linha que
+               quebra empurra o resto da tela para fora. -->
+          <div class="tvb-hero-unit" id="tvb-prod-unit">CAIXAS</div>
         </div>
         <div class="tvb2-substats">
           <div class="tvb2-substat" id="tvb-kpi-peso">
@@ -1509,7 +1517,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 
-  <div class="kpi-grid c4" id="hist-kpi-grid" style="margin-bottom:14px"></div>
+  <div class="kpi-grid c5" id="hist-kpi-grid" style="margin-bottom:14px"></div>
 
   <div class="chart-card" style="margin-bottom:14px">
     <div class="chart-ttl">EVOLUÇÃO DE PRODUÇÃO E EFICIÊNCIA</div>
@@ -1520,8 +1528,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
-        <tbody id="hist-tbl-body"><tr><td colspan="9" class="empty-msg">Nenhum dado.</td></tr></tbody>
+        <thead><tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
+        <tbody id="hist-tbl-body"><tr><td colspan="11" class="empty-msg">Nenhum dado.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1884,7 +1892,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.6';
+const APP_VER   = '7.3.7';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2561,6 +2569,9 @@ function processarRespostaSheets(json){
     return {
       data: hoje,
       horario: s.inicio, slotFim: s.fim, slotLabel: s.label,
+      // he vem do backend (rótulo "HE 17:00-18:00" na HORA_A_HORA). É o que
+      // separa caixa de hora normal de caixa de hora extra em todas as telas.
+      he: s.he===true,
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       acumulado: s.producaoHora!=null ? acum : null,
       metaHora: s.metaHora, metaDia: json.metaDia||CFG.metaDia,
@@ -2925,7 +2936,7 @@ function getEffectiveSlots(dh){
     // Sheets ou Excel: usa TODOS os slots do arquivo (inclui 11:00-12:00 etc)
     baseSlots=allHoje.map(r=>({
       inicio:r.horario, fim:r.slotFim||'', label:r.slotLabel||r.horario,
-      min:calcMin(r.horario,r.slotFim), he:false, _data:r
+      min:calcMin(r.horario,r.slotFim), he:r.he===true, _data:r
     }));
     // Remove duplicatas mantendo a ordem
     const seen=new Set();
@@ -3004,6 +3015,13 @@ function calcKPIs(dh){
   const dhAll=allHoje.filter(d=>d.producaoHora!=null);
   const n=dhAll.length;
   const real=dhAll.reduce((s,r)=>s+r.producaoHora,0);
+  // Caixas em HORA EXTRA × HORA NORMAL. Hora extra = slot marcado he (rótulo
+  // "HE ..." na planilha ou slot cadastrado no modal HORA EXTRA). Os slots
+  // 05:00/06:00 do turno estendido NÃO são hora extra aqui — são horas de
+  // turno liberadas pela célula C3.
+  const realHE=dhAll.filter(r=>r.he).reduce((s,r)=>s+r.producaoHora,0);
+  const realNormal=real-realHE;
+  const nHE=dhAll.filter(r=>r.he).length;
 
   // metaDia: no modo Sheets, CFG.metaDia já vem da PROGRAMAÇÃO (metaEfetiva,
   // ver aplicarMetaDiaAutomatica) ou de ajuste manual do usuário — não pode ser
@@ -3040,7 +3058,7 @@ function calcKPIs(dh){
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
   }));
-  return{real,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sc(ef){ return ef>=96?'ok':ef>=90?'warn':'red'; }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
@@ -3121,10 +3139,15 @@ function renderGerencialHist(){
   const pior=dia.pior||(prods.length?Math.min(...prods):0);
   const ritmo=nSlots>0?Math.round(real/nSlots):0;
   const gap=meta-real;
+  // Hora extra do dia: vem do HISTORICO (coluna HE CX ou derivada). A tabela
+  // hora a hora abaixo NÃO lista as HE — a HISTORICO_HORA só guarda as horas
+  // de turno —, por isso o card avisa.
+  const heCx=(dia.heCx===null||dia.heCx===undefined)?null:Number(dia.heCx);
 
   // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
   const kpis=[
-    {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:`meta ${fmtN(meta)} cx`,            c:sc(ef)},
+    {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
+    ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · fora da tabela abaixo`, c:'acc'}]:[]),
     {l:'META DO DIA',      v:fmtN(meta),  sub:'caixas programadas',              c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
     {l:'GAP DA META',      v:fmtN(Math.abs(gap)), sub:gap<=0?'META ATINGIDA ✓':'cx faltaram', c:gap<=0?'ok':'red'},
@@ -3197,7 +3220,10 @@ function renderGerencial(){
 
   // ── KPIs ──
   const kpis=[
-    {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
+    // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
+    // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${k.nHE} slot(s) HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
     {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef),                c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
@@ -4011,6 +4037,22 @@ function renderTV(){
   const pe=document.getElementById('tv-prod');
   pe.textContent=fmtN(k.real); pe.className=`tv-big ${s}`;
 
+  // Quebra normal × extra: só aparece nos dias que tiveram hora extra.
+  // Tela A (.tv-left só aparece no layout estreito) e Tela B (unidade do número
+  // gigante, que é a que roda na TV de verdade).
+  const temHE=!!(k.nHE&&k.realHE>0);
+  const heEl=document.getElementById('tv-he-split');
+  if(heEl){
+    if(temHE){
+      heEl.innerHTML=`${fmtN(k.realNormal)} NORMAL <span style="color:var(--acc)">+ ${fmtN(k.realHE)} HORA EXTRA</span>`;
+      heEl.style.display='block';
+    }else heEl.style.display='none';
+  }
+  const heB=document.getElementById('tvb-prod-unit');
+  if(heB) heB.innerHTML = temHE
+    ? `CAIXAS · ${fmtN(k.realNormal)} NORMAL <span style="color:var(--acc)">+ ${fmtN(k.realHE)} EXTRA</span>`
+    : 'CAIXAS';
+
   const ee=document.getElementById('tv-ef');
   ee.textContent=fmtP(k.efDia); ee.className=`tv-ef-val ${s}`;
 
@@ -4155,6 +4197,7 @@ function renderTV(){
 function salvarDiaSheets(data, k, fechadoEm){
   if(!CFG.sheetsUrl) return;
   const heCount=k.allHoje.filter(d=>d.he&&d.producaoHora!=null).length;
+  const heCx=k.realHE||0;   // caixas feitas em hora extra (coluna HE CX)
   const params=[
     'action=saveDay',
     'data='+encodeURIComponent(data),
@@ -4164,6 +4207,7 @@ function salvarDiaSheets(data, k, fechadoEm){
     'melhor='+k.melhor,
     'pior='+k.pior,
     'he='+heCount,
+    'heCx='+heCx,
     'fechadoEm='+encodeURIComponent(fechadoEm)
   ].join('&');
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
@@ -4238,6 +4282,9 @@ function _mergeDias(diasSheets){
       data:d.data, real:d.real, meta:d.meta, ef:d.ef,
       melhor:d.melhor, pior:d.pior, ok:d.ef>=100,
       fechado:true, fechadoEm:d.fechadoEm, heCount:d.heCount||0,
+      // heCx = caixas em hora extra. null = backend antigo (sem a coluna HE CX)
+      // ou dia sem hora-a-hora arquivado: a tela mostra "—", não zero.
+      heCx: (d.heCx===null||d.heCx===undefined)?null:Number(d.heCx),
       fonte:'sheets'
     };
   });
@@ -4253,10 +4300,11 @@ function _mergeDias(diasSheets){
     const ef=meta>0?(real/meta)*100:0;
     const prods=d.slots.map(sl=>sl.prod);
     const heCount=d.slots.filter(sl=>sl.he).length;
+    const heCx=d.slots.filter(sl=>sl.he).reduce((s2,sl)=>s2+(sl.prod||0),0);
     porDia[data]={data,real,meta,ef,
       melhor:prods.length?Math.max(...prods):0,
       pior:prods.length?Math.min(...prods):0,
-      ok:ef>=100, fechado:d.fechado, fechadoEm:d.fechadoEm, heCount, fonte:'local'};
+      ok:ef>=100, fechado:d.fechado, fechadoEm:d.fechadoEm, heCount, heCx, fonte:'local'};
   });
 
   // 3. DADOS em memória (apenas se NÃO estiver usando Sheets — evita dados demo)
@@ -4272,16 +4320,23 @@ function _mergeDias(diasSheets){
       const ef=d.meta>0?(real/d.meta)*100:0;
       const prods=d.regs.map(r=>r.producaoHora);
       const heCount=d.regs.filter(r=>r.he).length;
+      const heCx=d.regs.filter(r=>r.he).reduce((s2,r)=>s2+(r.producaoHora||0),0);
       porDia[d.data]={data:d.data,real,meta:d.meta,ef,
         melhor:prods.length?Math.max(...prods):0,
         pior:prods.length?Math.min(...prods):0,
-        ok:ef>=100, fechado:false, fechadoEm:null, heCount, fonte:'memoria'};
+        ok:ef>=100, fechado:false, fechadoEm:null, heCount, heCx, fonte:'memoria'};
     });
   }
 
   // Oculta dias sem produção (sábados/feriados não trabalhados, realizado = 0)
   return Object.values(porDia).filter(d=>d.real>0);
 }
+
+// Dia em que NÃO dá para separar hora normal × hora extra: heCx nulo. Acontece
+// com dia fechado antes de a coluna HE CX existir (ou backend ainda na 4.9) e
+// sem hora-a-hora arquivado para derivar. A tela mostra "—", nunca 0 — zero
+// diria "não teve hora extra", que é uma afirmação que o dado não sustenta.
+function _heIndef(d){ return d.heCx===null||d.heCx===undefined; }
 
 // Helper: formatar data em português
 function fmtDataPtBR(dateOrStr, formato){
@@ -4362,8 +4417,11 @@ async function renderHist(){
   const comMeta=dias.filter(d=>d.ok).length;
   const melhorDia=dias.length?dias.reduce((a,b)=>a.ef>b.ef?a:b):null;
   const fechados=dias.filter(d=>d.fechado).length;
+  const totHE=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
+  const semHE=dias.filter(_heIndef).length;   // dias sem como separar (fechados antes da v5.0 do .gs)
   document.getElementById('hist-kpi-grid').innerHTML=`
-    <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${dias.length} dias no período</div></div>
+    <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
+    <div class="kpi-card ${totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${fmtN(totHE)}</div><div class="kpi-sub">${totReal>0?fmtP(totHE/totReal*100)+' do total':'—'}${semHE?` · ${semHE} dia(s) sem dado`:''}</div></div>
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
     <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
     <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>`;
@@ -4372,10 +4430,12 @@ async function renderHist(){
 
   renderAnaliseHorario();
   const tbody=document.getElementById('hist-tbl-body');
-  if(!dias.length){ tbody.innerHTML='<tr><td colspan="8" class="empty-msg">Nenhum dado no período.</td></tr>'; return; }
+  if(!dias.length){ tbody.innerHTML='<tr><td colspan="11" class="empty-msg">Nenhum dado no período.</td></tr>'; return; }
   tbody.innerHTML=dias.map(d=>`<tr>
     <td class="mono">${d.data}</td>
     <td class="mono">${fmtN(d.real)}</td>
+    <td class="mono" style="color:var(--txt2)">${_heIndef(d)?'—':fmtN(d.real-d.heCx)}</td>
+    <td class="mono" style="color:${!_heIndef(d)&&d.heCx>0?'var(--acc)':'var(--txt2)'}"${_heIndef(d)?' title="Dia fechado antes da coluna HE CX existir — sem como separar"':''}>${_heIndef(d)?'—':fmtN(d.heCx)}</td>
     <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
     <td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
@@ -4775,6 +4835,9 @@ async function _imprimirHistoricoFormatado(){
   const efMedia=dias.reduce((s,d)=>s+d.ef,0)/dias.length;
   const mediaReal=totReal/dias.length;   // média diária realizada (base: dias com produção no período)
   const mediaMeta=totMeta/dias.length;
+  // Hora normal × hora extra (coluna condicional, como no relatório semanal)
+  const totHEp=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
+  const temHEp=dias.some(d=>!_heIndef(d)&&d.heCx>0);
   const comMeta=dias.filter(d=>d.ok).length;
   const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
@@ -4862,7 +4925,7 @@ async function _imprimirHistoricoFormatado(){
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">caixas · média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia</div>
+    <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE`:' · caixas'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
@@ -4896,11 +4959,13 @@ async function _imprimirHistoricoFormatado(){
 
 <div class="rp-sec-ttl" style="margin-top:16px">DETALHAMENTO POR DIA</div>
 <table>
-  <thead><tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr></thead>
+  <thead><tr><th>DATA</th><th>REALIZADO</th>${temHEp?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr></thead>
   <tbody>
     ${dias.map(d=>`<tr>
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      ${temHEp?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heIndef(d)?'—':d.heCx.toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
@@ -5068,6 +5133,12 @@ async function gerarRelatorioSemanal(){
   const efMedia=diasSem.reduce((s,d)=>s+d.ef,0)/diasSem.length;
   const mediaReal=totReal/diasSem.length;   // média diária realizada (base: dias com produção na semana)
   const mediaMeta=totMeta/diasSem.length;   // média diária de meta, para comparar
+  // Hora normal × hora extra. A coluna só entra na tabela quando ALGUM dia da
+  // semana teve hora extra — senão vira uma parede de "—", mesma regra da
+  // coluna MOTIVO do relatório de paradas.
+  const totHE=diasSem.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
+  const temHE=diasSem.some(d=>!_heIndef(d)&&d.heCx>0);
+  const semHE=diasSem.filter(_heIndef).length;
   const comMeta=diasSem.filter(d=>d.ok).length;
   const melhorDia=diasSem.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=diasSem.reduce((a,b)=>a.ef<b.ef?a:b);
@@ -5173,7 +5244,7 @@ async function gerarRelatorioSemanal(){
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">caixas na semana</div>
+    <div class="kpi-sub">${temHE?`${(totReal-totHE).toLocaleString('pt-BR')} normal + ${totHE.toLocaleString('pt-BR')} extra`:'caixas na semana'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">
     <div class="kpi-lbl">MÉDIA DIÁRIA</div>
@@ -5227,13 +5298,15 @@ async function gerarRelatorioSemanal(){
 <div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
 <table>
   <thead>
-    <tr><th>DATA</th><th>REALIZADO</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
+    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
   </thead>
   <tbody>
     ${diasSem.map(d=>`
     <tr>
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heIndef(d)?'—':d.heCx.toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
@@ -5246,6 +5319,8 @@ async function gerarRelatorioSemanal(){
     <tr>
       <td class="tf-lbl">MÉDIA / DIA</td>
       <td class="td-bold">${Math.round(mediaReal).toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
       <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
@@ -5255,9 +5330,11 @@ async function gerarRelatorioSemanal(){
     <tr>
       <td class="tf-lbl">TOTAL DA SEMANA</td>
       <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
+      ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
-      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</td>
+      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${semHE} dia(s) sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>
 </table>

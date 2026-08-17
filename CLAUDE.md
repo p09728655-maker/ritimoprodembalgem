@@ -10,6 +10,8 @@ via Google Apps Script (JSONP).
 - `paradas-calc.js` — **cálculo de paradas, implementação ÚNICA** usada pelos
   dois painéis (`<script src="/paradas-calc.js">`). Ver a seção de paradas.
 - `paradas-calc.test.js` — teste de paridade: `node paradas-calc.test.js`.
+- `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
+  contra o código real do `.gs`: `node hora-extra.test.js`.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
 - `vercel.json` — `/` → v7, `/mobile` → mobile.
@@ -31,6 +33,47 @@ via Google Apps Script (JSONP).
   slots anteriores ao início e ainda devolve `turnoInicio` no JSON. Como o filtro
   é no backend, **mobile, TV e gerencial** ficam consistentes de uma vez.
   Lembre: mudar o `.gs` exige **re-deploy manual** no editor do Apps Script.
+
+## Caixas em HORA NORMAL × HORA EXTRA
+- **Hora extra é a linha marcada, e só ela.** O botão HORA EXTRA (modal do
+  desktop) grava a linha na `HORA_A_HORA` com o rótulo **prefixado**:
+  `HE 17:00-18:00`. Os slots **05:00/06:00 NÃO são hora extra** aqui — são horas
+  de turno liberadas pela célula `C3` (ver seção acima).
+  - Antes a linha era gravada como `17:00-18:00`, **indistinguível de uma hora de
+    turno** — enquanto o resto do `.gs` já classificava por `startsWith('HE')`
+    (fechamento e limpeza diária). Resultado: a contagem `HE` do `HISTORICO`
+    fechava em 0 e a limpeza não apagava a linha extra. `_ehHoraExtra()` /
+    `_semPrefixoHE()` são a implementação única desse critério no backend; o
+    prefixo sai antes do parse do horário, senão o início viraria `HE 17:00`.
+  - A HE **nunca** é filtrada pelo início do turno: ela é extra justamente por
+    estar fora da janela (inclusive uma HE de madrugada num dia com `C3=7`).
+- `getDados` devolve **`he:true`** por slot; v7 e mobile propagam isso para
+  `DADOS`. `calcKPIs` (nos dois) devolve `realHE` / `realNormal` / `nHE` — é daí
+  que saem o card **CAIXAS EM HORA EXTRA** (gerencial e mobile), o subtítulo do
+  PRODUÇÃO REAL e o `CAIXAS · X NORMAL + Y EXTRA` da **Tela B** da TV.
+  - O card só aparece **quando o dia teve HE** — sem hora extra ele diria "tudo
+    normal" e só empurraria os outros KPIs para baixo.
+  - Na TV o texto é de **uma linha** e vai na Tela B (`#tvb-prod-unit`): a Tela A
+    tem `.tv-left{display:none}` — o `#tv-he-split` que mora lá só aparece no
+    layout estreito. Linha que quebra empurra o resto da tela para fora.
+- **Histórico: a coluna `HE CX`** (11ª da aba `HISTORICO`) guarda as caixas de
+  hora extra do dia; `arquivarDiaAtual` e `saveDay` gravam. `getHistory` e
+  `getHoraDia` devolvem `heCx` + `realNormal`.
+  - **Dia antigo (fechado antes da v5.0)**: a coluna está vazia. Aí o `.gs`
+    deriva `REALIZADO − soma(HISTORICO_HORA do dia)` — funciona porque
+    `arquivarHorasDoDia` grava **só as horas não-HE**, então a diferença É a hora
+    extra. Só deriva quando a coluna `HE` indica que houve HE; se o dia nem
+    existe na `HISTORICO_HORA`, devolve **`null`** e a tela mostra **"—"**, nunca
+    0 — zero afirmaria "não teve hora extra", coisa que o dado não sustenta
+    (`_heIndef()` no v7 é quem trata isso).
+  - Nos totais (KPI do período, rodapé do relatório), dia indeterminado entra no
+    **normal** para a soma fechar com o TOTAL, e o número de dias assim aparece
+    ao lado ("N dia(s) sem separação de hora extra").
+- **A coluna H. EXTRA some dos relatórios quando ninguém fez hora extra** no
+  período (senão vira parede de `—`), mesma regra da coluna MOTIVO do relatório
+  de paradas. Se mexer, manter `<th>`, `<td>` e o rodapé sob a mesma condição.
+- ⚠ Mudou o `.gs` (v5.0) → **re-deploy manual** no Apps Script. Antes disso o
+  front simplesmente não recebe `he`/`heCx` e as telas seguem sem a divisão.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,

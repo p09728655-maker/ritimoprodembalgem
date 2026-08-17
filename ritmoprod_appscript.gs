@@ -1,5 +1,17 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
+// Versão: 5.0 — CAIXAS EM HORA NORMAL × HORA EXTRA
+//               A linha de hora extra passa a nascer MARCADA na planilha:
+//               addHE grava o rótulo com o prefixo "HE " (ex.: "HE 17:00-18:00").
+//               Antes ela era gravada como "17:00-18:00", igual a uma hora de
+//               turno — e todo o resto do script já esperava o prefixo
+//               (startsWith('HE') no fechamento e na limpeza diária), então a
+//               contagem de HE ficava sempre em 0 e a limpeza não apagava a
+//               linha. Com a marca, getDados devolve he:true por slot e o
+//               fechamento grava HE CX (caixas feitas em hora extra) no
+//               HISTORICO. Dias antigos: heCx é derivado de
+//               REALIZADO - soma(HISTORICO_HORA do dia), só quando a coluna HE
+//               indica que houve hora extra — sem chutar número onde não há dado.
 // Versão: 4.9 — CACHE DE LEITURA (CacheService) + catálogo memoizado
 //               Toda leitura lê a aba INTEIRA (getDataRange), então o custo
 //               crescia com o histórico e o painel repetia a mesma leitura a
@@ -336,16 +348,21 @@ function getDados() {
     if (!horaVal) continue;
     if (horaVal.toUpperCase() === 'TOTAL') continue;
 
-    const parts  = horaVal.split('-');
+    // Hora extra: o rotulo vem marcado ("HE 17:00-18:00"). O prefixo sai antes
+    // do parse, senao o inicio viraria "HE 17:00" e o horario nao seria lido.
+    const ehHE   = _ehHoraExtra(horaVal);
+    const parts  = _semPrefixoHE(horaVal).split('-');
     const inicio = parts[0] ? parts[0].trim() : '';
     const fim    = parts[1] ? parts[1].trim() : '';
 
     // Respeita o inicio do turno (C3): com C3=7 os slots 05:00 e 06:00 nao vao
     // para o app; com C3=5 eles aparecem. Nao mexe nos rotulos, so filtra.
+    // Hora extra nunca e filtrada: ela e extra JUSTAMENTE por estar fora da
+    // janela do turno (inclusive uma HE de madrugada num dia com C3=7).
     const iniMin = inicio
       ? (Number(inicio.split(':')[0]) || 0) * 60 + (Number(inicio.split(':')[1]) || 0)
       : 0;
-    if (inicio && iniMin < inicioTurnoMin) continue;
+    if (!ehHE && inicio && iniMin < inicioTurnoMin) continue;
 
     const metaVal = Number(row[iM]) || 0;
     if (metaVal === 0) continue;
@@ -390,6 +407,7 @@ function getDados() {
       inicio,
       fim,
       label:        horaVal,
+      he:           ehHE,
       metaHora:     metaVal,
       producaoHora,
       lotes,
@@ -950,10 +968,11 @@ function saveDay(p) {
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_HIST);
-    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H']);
+    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX']);
     sh.setFrozenRows(1);
   }
   if (String(sh.getRange(1, 10).getValue()).trim() === '') sh.getRange(1, 10).setValue('MEDIA CX/H');
+  if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
 
   sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@');
   sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');
@@ -971,7 +990,8 @@ function saveDay(p) {
     Number(p.he || 0),
     true,
     String(p.fechadoEm || ''),
-    Number(p.mediaH || 0)
+    Number(p.mediaH || 0),
+    Number(p.heCx || 0)   // caixas produzidas em hora extra
   ];
 
   if (idx >= 0) {
@@ -988,6 +1008,43 @@ function saveDay(p) {
 // HISTÓRICO
 // ════════════════════════════════════════════════════════
 
+// Soma das horas ARQUIVADAS por dia (HISTORICO_HORA). Só entram as horas de
+// turno: arquivarHorasDoDia grava apenas as não-HE. É essa assimetria que
+// permite derivar a hora extra dos dias antigos — ver _heCxDoDia.
+// Memo da EXECUÇÃO (a aba é lida uma vez por chamada, não por dia).
+let _somaHorasMemo = null;
+
+function _somaHorasArquivadas() {
+  if (_somaHorasMemo) return _somaHorasMemo;
+  const mapa = {};
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HIST_HORA);
+  if (sh && sh.getLastRow() > 1) {
+    sh.getDataRange().getValues().slice(1).forEach(r => {
+      if (!r[0]) return;
+      const d = fmtDataBR(r[0]);
+      mapa[d] = (mapa[d] || 0) + (Number(r[2]) || 0);
+    });
+  }
+  _somaHorasMemo = mapa;
+  return mapa;
+}
+
+// Caixas feitas em HORA EXTRA num dia do histórico.
+//   1) Coluna HE CX preenchida (dias fechados a partir da v5.0) -> valor exato.
+//   2) Coluna vazia e HE = 0 -> não houve hora extra: 0, sem ler mais nada.
+//   3) Coluna vazia com HE > 0 (dia antigo) -> deriva do que a planilha guarda:
+//      REALIZADO do dia menos a soma das horas de turno arquivadas. Se o dia nem
+//      existe na HISTORICO_HORA não há de onde derivar: devolve null e o painel
+//      mostra "—" em vez de inventar um número.
+function _heCxDoDia(dataBR, real, heCount, celulaHeCx) {
+  const direto = Number(celulaHeCx);
+  if (celulaHeCx !== '' && celulaHeCx !== null && celulaHeCx !== undefined && !isNaN(direto)) return direto;
+  if (!heCount) return 0;
+  const soma = _somaHorasArquivadas()[dataBR];
+  if (soma === undefined) return null;   // sem hora-a-hora arquivado: indeterminado
+  return Math.max(0, real - soma);
+}
+
 function getHistory() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_HIST);
@@ -999,18 +1056,26 @@ function getHistory() {
     .getValues()
     .slice(1)
     .filter(r => r[0])
-    .map(r => ({
-      data:      fmtDataBR(r[0]),
-      real:      Number(r[1]) || 0,
-      meta:      Number(r[2]) || 0,
-      ef:        Number(r[3]) || 0,
-      melhor:    Number(r[4]) || 0,
-      pior:      Number(r[5]) || 0,
-      heCount:   Number(r[6]) || 0,
-      fechado:   r[7] === true || r[7] === 'TRUE' || String(r[7]).toLowerCase() === 'true',
-      fechadoEm: fmtFechadoBR(r[8]),
-      mediaH:    Number(r[9]) || 0
-    }));
+    .map(r => {
+      const data = fmtDataBR(r[0]);
+      const real = Number(r[1]) || 0;
+      const heCount = Number(r[6]) || 0;
+      const heCx = _heCxDoDia(data, real, heCount, r[10]);
+      return {
+        data:      data,
+        real:      real,
+        meta:      Number(r[2]) || 0,
+        ef:        Number(r[3]) || 0,
+        melhor:    Number(r[4]) || 0,
+        pior:      Number(r[5]) || 0,
+        heCount:   heCount,
+        fechado:   r[7] === true || r[7] === 'TRUE' || String(r[7]).toLowerCase() === 'true',
+        fechadoEm: fmtFechadoBR(r[8]),
+        mediaH:    Number(r[9]) || 0,
+        heCx:      heCx,                                  // caixas em hora extra (null = não dá para saber)
+        realNormal: heCx === null ? null : (real - heCx)  // caixas em hora normal
+      };
+    });
 
   return { ok: true, dias };
 }
@@ -1102,15 +1167,20 @@ function getHoraDia(p) {
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
       if (!r[0] || fmtDataBR(r[0]) !== data) continue;
+      const realDia  = Number(r[1]) || 0;
+      const heCntDia = Number(r[6]) || 0;
+      const heCxDia  = _heCxDoDia(data, realDia, heCntDia, r[10]);
       dia = {
-        real:    Number(r[1]) || 0,
+        real:    realDia,
         meta:    Number(r[2]) || 0,
         ef:      Number(r[3]) || 0,
         melhor:  Number(r[4]) || 0,
         pior:    Number(r[5]) || 0,
-        heCount: Number(r[6]) || 0,
+        heCount: heCntDia,
         fechado: r[7] === true || String(r[7]).toLowerCase() === 'true',
-        mediaH:  Number(r[9]) || 0
+        mediaH:  Number(r[9]) || 0,
+        heCx:    heCxDia,
+        realNormal: heCxDia === null ? null : (realDia - heCxDia)
       };
       break;
     }
@@ -1848,12 +1918,30 @@ function getProgramacaoDetalhada() {
 // ADICIONAR HORA EXTRA
 // ════════════════════════════════════════════════════════
 
+// A linha de hora extra vai para a planilha MARCADA com o prefixo "HE ", que é
+// o que o resto do script sempre esperou (fechamento e limpeza diária usam
+// startsWith('HE')). Sem a marca, a linha era indistinguível de uma hora do
+// turno: a contagem de HE fechava em 0 e a limpeza não apagava a linha extra.
+// Rótulo já marcado (planilha antiga, edição manual) não ganha prefixo duplo.
 function addHE(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_DADOS);
   if (!sh) return { ok: false, erro: 'Aba nao encontrada.' };
-  sh.appendRow([p.label || '', Number(p.meta) || 0, '']);
-  return { ok: true };
+  const bruto = String(p.label || '').trim();
+  const label = /^HE\b/i.test(bruto) ? bruto : ('HE ' + bruto);
+  sh.appendRow([label, Number(p.meta) || 0, '']);
+  return { ok: true, label: label };
+}
+
+// Rótulo de hora extra? ("HE 17:00-18:00", "HE17:00-18:00", "he ...")
+function _ehHoraExtra(rotulo) {
+  return /^HE\b|^HE\d/i.test(String(rotulo || '').trim());
+}
+
+// Tira o prefixo HE do rótulo para sobrar só "17:00-18:00" e o horário poder
+// ser lido normalmente.
+function _semPrefixoHE(rotulo) {
+  return String(rotulo || '').trim().replace(/^HE\s*/i, '').trim();
 }
 
 
@@ -2384,7 +2472,7 @@ function limparRealizado() {
 
     if (!hora || hora === 'TOTAL') continue;
 
-    if (hora.startsWith('HE')) {
+    if (_ehHoraExtra(hora)) {
       sh.deleteRow(i + 1);
       continue;
     }
@@ -2432,7 +2520,7 @@ function arquivarDiaAtual(dataRef) {
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
-  let real = 0, meta = 0, he = 0, melhor = 0, pior = null, horas = 0;
+  let real = 0, meta = 0, he = 0, heCx = 0, melhor = 0, pior = null, horas = 0;
   const horasArr = []; // {hora, real} por hora produtiva (não-HE) para a média por horário
 
   for (let i = hIdx + 1; i < data.length; i++) {
@@ -2440,7 +2528,7 @@ function arquivarDiaAtual(dataRef) {
     const hora = String(row[iH] || '').trim();
     if (!hora || hora.toUpperCase() === 'TOTAL') continue;
 
-    const ehHE    = hora.toUpperCase().startsWith('HE');
+    const ehHE    = _ehHoraExtra(hora);
     const metaVal = Number(row[iM]) || 0;
 
     // Realizado da linha = coluna REALIZADO ou, se vazia, soma apenas dos lotes.
@@ -2455,6 +2543,7 @@ function arquivarDiaAtual(dataRef) {
       real += realVal;
       if (ehHE) {
         he++;
+        heCx += realVal;   // caixas feitas em hora extra (fica na coluna HE CX)
       } else {
         horas++; // horas produtivas (não-HE) para a média cx/h
         if (realVal > melhor) melhor = realVal;
@@ -2474,11 +2563,12 @@ function arquivarDiaAtual(dataRef) {
   let shH = ss.getSheetByName(SHEET_HIST);
   if (!shH) {
     shH = ss.insertSheet(SHEET_HIST);
-    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H']);
+    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX']);
     shH.setFrozenRows(1);
   }
   // Garante o cabeçalho da coluna de média mesmo em planilhas antigas.
   if (String(shH.getRange(1, 10).getValue()).trim() === '') shH.getRange(1, 10).setValue('MEDIA CX/H');
+  if (String(shH.getRange(1, 11).getValue()).trim() === '') shH.getRange(1, 11).setValue('HE CX');
   shH.getRange(1, 1, shH.getMaxRows(), 1).setNumberFormat('@');
   shH.getRange(1, 9, shH.getMaxRows(), 1).setNumberFormat('@');
 
@@ -2502,7 +2592,8 @@ function arquivarDiaAtual(dataRef) {
     he,
     false, // arquivamento automático (não foi fechado manualmente)
     'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm'),
-    mediaH
+    mediaH,
+    heCx   // caixas produzidas nas linhas de hora extra
   ];
 
   if (idx >= 0) {

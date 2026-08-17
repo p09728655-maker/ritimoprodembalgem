@@ -180,7 +180,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .md-row:last-child{border-bottom:none}
 .md-row .k{color:var(--txt2);letter-spacing:.5px}
 .md-row .v{font-weight:600}
-.md-row .v.ok{color:var(--ok)}.md-row .v.warn{color:var(--warn)}.md-row .v.red{color:var(--red)}
+.md-row .v.ok{color:var(--ok)}.md-row .v.warn{color:var(--warn)}.md-row .v.red{color:var(--red)}.md-row .v.acc{color:var(--acc)}
 .hist-data{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 .hist-real{font-family:var(--font-h);font-size:20px;font-weight:700}
 .hist-ef{font-family:var(--font-d);font-size:10px;padding:3px 7px;border-radius:3px}
@@ -772,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.2';
+const APP_VER   = '1.7.3';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -959,6 +959,9 @@ function processarResposta(json){
     return {
       data: hoje,
       horario: s.inicio, slotFim: s.fim, slotLabel: s.label||s.inicio,
+      // he: linha marcada "HE ..." na HORA_A_HORA — é o que separa caixa de
+      // hora normal de caixa de hora extra nos KPIs do dia.
+      he: s.he===true,
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
       acumulado: s.producaoHora!=null ? acum : null,
@@ -1907,6 +1910,9 @@ function calcKPIs(){
   const dh = allHoje.filter(d=>d.producaoHora!=null);
   const n = dh.length;
   const real = dh.reduce((s,r)=>s+r.producaoHora, 0);
+  const realHE = dh.filter(r=>r.he).reduce((s,r)=>s+r.producaoHora, 0);
+  const realNormal = real-realHE;
+  const nHE = dh.filter(r=>r.he).length;
   // CFG.metaDia vem da PROGRAMAÇÃO (metaEfetiva, ver aplicarMetaDiaAutomatica)
   // e não pode ser sobrescrito pelo metaDia da aba HORA_A_HORA (dh[0].metaDia).
   const meta = CFG.metaDia || (dh.length>0 ? dh[0].metaDia : 0);
@@ -1926,7 +1932,7 @@ function calcKPIs(){
   const melhor = prods.length ? Math.max(...prods) : 0;
   const pior = prods.length ? Math.min(...prods) : 0;
   const metaH = totalSlots>0 ? Math.round(meta/totalSlots) : 0;
-  return{real,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
 }
 
 // ════════════════════════════════════════════════
@@ -2381,7 +2387,10 @@ function renderGerencial(){
         ? {l:'NEC. P/ META', v:'—', sub:'turno encerrado', c:''}
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
   const kpis=[
-    {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:`meta ${fmtN(k.meta)} cx`, c:s},
+    {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
+    // Só entra nos dias que tiveram hora extra — sem HE o card diria "tudo
+    // normal" e só empurraria os outros KPIs para baixo na tela do celular.
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${k.nHE} slot(s)`, c:'acc'}]:[]),
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
     {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
@@ -2603,6 +2612,11 @@ function abrirDia(data){
     ['MELHOR HORA', fmtN(d.melhor||0)+' CX', 'ok'],
     ['PIOR HORA', fmtN(d.pior||0)+' CX', 'red'],
   ];
+  const _heCx = (d.heCx===null||d.heCx===undefined) ? null : Number(d.heCx);
+  if(_heCx>0){
+    linhas.push(['CX EM HORA NORMAL', fmtN(real-_heCx)+' CX', '']);
+    linhas.push(['CX EM HORA EXTRA', fmtN(_heCx)+' CX', 'acc']);
+  }
   if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
   if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);
   document.getElementById('md-data').textContent=data;
