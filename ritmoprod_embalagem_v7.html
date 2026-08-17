@@ -1892,7 +1892,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.9';
+const APP_VER   = '7.4.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -1908,9 +1908,14 @@ function _naTV(){
 }
 function mostrarAvisoAtualizacaoV7(nova){
   const b=document.getElementById('upd-bar'); if(!b || b.dataset.adiado==='1') return;
-  // Na TV não aparece: ninguém está lá para clicar, e ela se recarrega sozinha
-  // a cada 28 min — pega a versão nova sem ajuda.
-  if(_naTV()) return;
+  // Na TV ninguém está lá para clicar no aviso — então ela se ATUALIZA SOZINHA.
+  // Antes só esperava o reload de 28 min; numa correção urgente (troca da URL do
+  // Apps Script, por exemplo) isso é meia hora de tela errada na fábrica.
+  if(_naTV()){
+    console.warn('[RitmoProd] TV: versão nova ('+nova+') publicada — recarregando.');
+    setTimeout(()=>location.reload(), 3000);
+    return;
+  }
   const t=document.getElementById('upd-txt');
   if(t) t.innerHTML=`Nova versão disponível${nova?` (v${nova})`:''}<small>rodando a v${APP_VER} — recarregue para atualizar</small>`;
   b.style.display='flex';
@@ -1953,7 +1958,10 @@ async function checarVersaoV7(){
       setTimeout(adiarAtualizacaoV7, 8000);
     }
   }
-  setInterval(()=>{ if(document.visibilityState==='visible') checarVersaoV7(); }, 30*60*1000);
+  // Na TV a checagem não pode depender de visibilityState (WebOS às vezes
+  // reporta 'hidden' com a tela acesa) e roda mais amiúde: é ela que traz a
+  // correção urgente sem ninguém subir na escada.
+  setInterval(()=>{ if(_naTV()||document.visibilityState==='visible') checarVersaoV7(); }, 5*60*1000);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') checarVersaoV7(); });
 })();
 
@@ -2313,8 +2321,26 @@ function aplicarPerfil(){
   try{ _cicloTV.reiniciar(); }catch(e){}
 }
 
+// Implantações do Apps Script que morreram. Quem tiver uma delas salva no
+// aparelho é migrado sozinho para a URL do código — senão a TV (e qualquer PC
+// que já configurou a URL na mão) fica presa numa implantação que não responde
+// mais, e alguém precisa ir até lá mexer nas configurações.
+const SHEETS_URL_MORTAS = [
+  'AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A'
+];
+function _urlMorta(u){
+  return SHEETS_URL_MORTAS.some(id => String(u||'').indexOf(id) >= 0);
+}
 function loadCfg(){
+  const padrao=CFG.sheetsUrl;
   try{ const s=localStorage.getItem('rpe_cfg'); if(s) CFG={...CFG,...JSON.parse(s)}; }catch(e){}
+  // URL salva morta (ou pela metade, sem /exec): volta para a do código e regrava.
+  if(CFG.sheetsUrl && CFG.sheetsUrl!==padrao &&
+     (_urlMorta(CFG.sheetsUrl) || !/\/exec\s*$/.test(CFG.sheetsUrl))){
+    console.warn('[RitmoProd] URL do Apps Script salva neste aparelho não serve mais — voltando para a do código.');
+    CFG.sheetsUrl=padrao;
+    try{ saveCfgLocal(); }catch(e){}
+  }
 }
 function saveCfgLocal(){ localStorage.setItem('rpe_cfg',JSON.stringify(CFG)); }
 

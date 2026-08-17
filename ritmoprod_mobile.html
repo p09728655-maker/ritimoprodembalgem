@@ -772,7 +772,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.4';
+const APP_VER   = '1.7.5';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -804,11 +804,23 @@ let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfe
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
 let META_HORA_A_HORA = 0;
 
+// Mesma migração do desktop: implantação morta salva no aparelho volta para a
+// URL do código. Sem isso o celular do operador fica preso numa implantação que
+// não responde e ninguém entende por que só ele não grava.
+const SHEETS_URL_MORTAS = [
+  'AKfycbwxFFLqA3cEEWlyoRDUAW3qpuYmrDgT2d4g_Ie7ubUs4NUaWf21aaXbCBP_4mvhEBTz5A'
+];
 function loadCfg(){
+  const padrao = CFG.sheetsUrl;
   try{
     const s = localStorage.getItem('rpe_cfg');
     if(s) CFG = {...CFG, ...JSON.parse(s)};
   }catch(e){}
+  const morta = SHEETS_URL_MORTAS.some(id => String(CFG.sheetsUrl||'').indexOf(id) >= 0);
+  if(CFG.sheetsUrl && CFG.sheetsUrl!==padrao && (morta || !/\/exec\s*$/.test(CFG.sheetsUrl))){
+    CFG.sheetsUrl = padrao;
+    try{ localStorage.setItem('rpe_cfg', JSON.stringify(CFG)); }catch(e){}
+  }
 }
 
 function loadProdutoLocal(){
