@@ -132,6 +132,33 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` (v5.0) → **re-deploy manual** no Apps Script. Antes disso o
   front simplesmente não recebe `he`/`heCx` e as telas seguem sem a divisão.
 
+## TELA D da TV — fechamento da semana passada
+- Quarta tela do carrossel (`#tv-slide-d`), no visual do app: logomarca Patrimar
+  no topo como a Tela C e **nenhuma cor própria** — tudo sai dos tokens
+  (`--ok` jornada normal, `--warn` hora extra, `--red` abaixo, `--acc`, `--txt`).
+- **É gestão à vista, não relatório.** A TV é lida de longe e de passagem, então
+  a tela não repete o texto do PDF: só o total da semana, a divisão jornada
+  normal × hora extra, o **selo do veredito** e os 5 dias. Frase corrida a 15 m
+  ninguém lê — foi por isso que o parágrafo do relatório ficou de fora.
+  - O selo é o mesmo critério do relatório (`_relMetaHE`): **verde** só quando a
+    jornada normal sozinha bateu a meta, **âmbar** quando quem bateu foi a hora
+    extra, **vermelho** quando faltou. A barra mostra isso sem número: o verde
+    para antes da **marca da META** e quem cruza é a faixa listrada âmbar.
+- **Só entra no ciclo quando a semana anterior tem dia fechado** (mesma regra da
+  Tela C, que exige atraso>0) — nunca aparece vazia.
+- **A semana é a MESMA do relatório**: `_relSemanaPassada()` + `_relDiasDaSemana()`
+  + `_relSemanalKPIs()`, as três compartilhadas. Não reescrever o recorte dentro
+  da tela — foi a duplicação que fez a conta de paradas divergir três vezes.
+- **O histórico fica em cache de 30 min** (`_tvdCarregar`). O carrossel gira a
+  cada ~20 s; buscar o `getHistory` nesse ritmo seria chamada jogada fora, já que
+  o histórico só muda quando um dia é arquivado. Falhou a busca? Mantém o que
+  está na tela.
+- Config: **TEMPO NA TELA D** (padrão **20 s**, mais que os 15 das outras porque
+  tem mais o que ler) e o checkbox **TELA D**. ⚠ `telaD`/`tempoD` na
+  `CONFIG_PAINEL` exigem o **.gs v5.2 re-deployado**; enquanto isso não acontece,
+  `aplicarConfigPainel` **preserva** a marcação local do D em vez de apagá-la
+  (a config antiga não traz a chave, e sem esse cuidado a TV ignoraria o gestor).
+
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
   modal PARADAS): escolhe o tipo, escreve o **motivo** e a parada fica **em
@@ -428,6 +455,25 @@ via Google Apps Script (JSONP).
   em `about:blank` e um `src` relativo não resolveria.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
+- **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo
+  relatório semanal E pelo do histórico). O total do período pode fechar acima da
+  meta com a **jornada normal abaixo** dela: na Semana 33/2026 foram 8.681 cx
+  contra 8.325 (104,3%), mas 1.219 vieram de HE — na jornada normal foram 7.462,
+  ou **89,6%**, faltando 863 cx. O relatório dizia "DENTRO DA META" em verde e
+  escondia isso.
+  - Quando `soComHE`, o card EFICIÊNCIA MÉDIA vira **âmbar** com
+    *"⚠ META BATIDA COM HORA EXTRA"*, o TOTAL META ganha o `sem HE: −863 cx` e
+    entra a faixa `.rp-alerta` com a frase inteira. Semana que já batia na
+    jornada normal **não** dispara nada (verde continua verde), e semana abaixo
+    da meta mesmo com HE também não — aí o relatório já está vermelho.
+  - A base é o **total** do período (realizado ÷ meta), **não** a média das
+    eficiências diárias: "meta da semana" é o somatório, e a média de percentuais
+    distorce quando a meta varia muito de um dia para o outro (a mesma semana dá
+    118,5% na média e 104,3% no total).
+- **Rodapé MÉDIA / DIA: não existe média de horário.** As colunas MELHOR H./PIOR H.
+  guardam **rótulos** (`08:00-09:00`); o rodapé somava isso como número
+  (`0 + '08:00-09:00'`) e imprimia **`NaN`** no PDF. `_slotMaisFreq(dias,campo)`
+  devolve o slot que mais se repete, com a contagem (`08:00-09:00 (2×)`).
 - `_relSemanaJanela(ate)` e `_relSemanalKPIs(dias)` saíram de dentro do
   `gerarRelatorioSemanal` para poderem ser testadas — antes, conferir a média
   da semana exigia abrir o popup e olhar. A janela é **segunda 00:00 → domingo

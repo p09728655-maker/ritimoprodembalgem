@@ -384,6 +384,13 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   display:none;flex-direction:column;align-items:center;
   padding:14px 5vw 20px;text-align:center;gap:10px;
 }
+/* Tela D — mesma caixa das outras (cobre a Tela A inteira), alinhada à
+   esquerda: o conteúdo é uma leitura, não um número solto centralizado. */
+#tv-slide-d{
+  position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;
+  display:none;flex-direction:column;align-items:center;
+  padding:14px 4vw 20px;text-align:left;
+}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -410,6 +417,64 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvc-card-lbl{font-family:var(--font-d);font-size:clamp(14px,1.4vw,24px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
 .tvc-card-val{font-family:var(--font-h);font-weight:700;line-height:.95;color:var(--red);font-size:clamp(60px,6.6vw,140px)}
 .tvc-card-unit{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+/* ═══ TELA D — FECHAMENTO DA SEMANA PASSADA ═══
+   Gestão à vista: a TV é lida de longe e de passagem, então esta tela NÃO
+   repete o texto do relatório. Sobram quatro coisas: quanto saiu, quanto foi
+   jornada normal × hora extra, se a meta fechou (e como) e o dia a dia. Tudo
+   em número grande — nenhuma frase corrida, que a 15 m ninguém lê.
+   Classes tvd-* são EXCLUSIVAS da Tela D. */
+.tvd-wrap{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.6vh,26px);width:100%;min-height:0;padding-top:clamp(6px,1.2vh,18px)}
+.tvd-band{width:100%;display:grid;grid-template-columns:1.1fr 1fr;column-gap:clamp(20px,2.4vw,52px);align-items:center}
+.tvd-hero{display:flex;flex-direction:column;align-items:flex-start;gap:clamp(2px,.6vh,10px);min-width:0}
+.tvd-lbl{font-family:var(--font-d);font-size:clamp(14px,1.35vw,24px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+.tvd-hero-num{font-family:var(--font-h);font-weight:700;font-size:clamp(120px,13.5vw,290px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvd-hero-unit{font-family:var(--font-d);font-size:clamp(16px,1.6vw,28px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+
+/* Badge do veredito. É o elemento que o usuário pediu para não mentir: verde só
+   quando a jornada normal sozinha bateu a meta; âmbar quando quem bateu foi a
+   hora extra; vermelho quando nem com ela deu. */
+.tvd-selo{display:inline-flex;align-items:center;gap:clamp(8px,.9vw,16px);font-family:var(--font-h);font-weight:700;font-size:clamp(22px,2.3vw,44px);letter-spacing:2px;text-transform:uppercase;padding:clamp(7px,1vh,16px) clamp(16px,1.7vw,34px);border-radius:999px;border:2px solid;line-height:1;white-space:nowrap}
+.tvd-selo.ok  {color:var(--ok);  border-color:rgba(76,175,80,.55); background:rgba(76,175,80,.10)}
+.tvd-selo.he  {color:var(--warn);border-color:rgba(255,152,0,.55); background:rgba(255,152,0,.10)}
+.tvd-selo.ruim{color:var(--red); border-color:rgba(244,67,54,.55); background:rgba(244,67,54,.10)}
+
+/* Coluna direita: jornada normal × hora extra, uma linha cada, com filete da
+   cor correspondente à barra de baixo — é o que amarra as duas leituras. */
+.tvd-splits{display:flex;flex-direction:column;gap:clamp(10px,1.8vh,30px);min-width:0}
+.tvd-split{display:flex;align-items:center;gap:clamp(12px,1.3vw,26px);min-width:0}
+.tvd-split-fio{width:clamp(6px,.5vw,10px);align-self:stretch;border-radius:99px;flex-shrink:0}
+.tvd-split-num{font-family:var(--font-h);font-weight:700;font-size:clamp(56px,5.8vw,120px);line-height:.9;font-variant-numeric:tabular-nums;flex-shrink:0}
+.tvd-split-txt{display:flex;flex-direction:column;gap:clamp(2px,.5vh,8px);font-family:var(--font-d);font-size:clamp(13px,1.2vw,21px);color:var(--txt2);letter-spacing:2px;line-height:1.35;min-width:0}
+.tvd-split-txt b{font-family:var(--font-h);font-weight:700;font-size:clamp(20px,1.9vw,36px);letter-spacing:3px;text-transform:uppercase;color:var(--txt);line-height:1}
+.tvd-split-txt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tvd-normal-falta:not(:empty){color:var(--warn)}
+
+/* Barra: verde (normal) + faixa listrada âmbar (hora extra) e a MARCA DA META
+   como linha vertical. Se a verde parar antes da marca, quem cruzou foi a
+   hora extra — dá para ver do fundo da fábrica, sem ler número nenhum. */
+.tvd-barra-wrap{position:relative;width:100%;padding-top:clamp(18px,2.6vh,40px)}
+.tvd-barra{display:flex;width:100%;height:clamp(22px,3.2vh,52px);background:var(--surface);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+.tvd-barra-normal{background:var(--ok);height:100%;transition:width .5s ease}
+.tvd-barra-extra{height:100%;transition:width .5s ease;background:repeating-linear-gradient(135deg,var(--warn) 0 10px,rgba(255,152,0,.45) 10px 20px)}
+.tvd-meta-marca{position:absolute;top:0;bottom:0;width:3px;background:var(--txt);border-radius:2px;transform:translateX(-1.5px)}
+.tvd-meta-marca span{position:absolute;bottom:calc(100% - clamp(16px,2.4vh,38px));left:50%;transform:translateX(-50%);font-family:var(--font-d);font-size:clamp(12px,1.15vw,20px);letter-spacing:2px;color:var(--txt);white-space:nowrap}
+/* Marca perto da borda: o rótulo vira para dentro em vez de sair da tela. */
+.tvd-meta-marca.fim span{left:auto;right:clamp(8px,.7vw,14px);transform:none}
+
+/* Dia a dia: um cartão por dia útil, tarja no topo com a cor do resultado. */
+.tvd-dias{flex:0 0 auto;margin-top:auto;height:clamp(150px,29vh,330px);display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:clamp(8px,.9vw,18px)}
+.tvd-dia{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(4px,.8vh,14px);background:var(--surface);border:1px solid var(--border);border-top:clamp(4px,.55vh,9px) solid var(--txt2);border-radius:8px;padding:clamp(10px,1.8vh,28px) clamp(10px,1vw,22px);min-width:0}
+.tvd-dia.ok  {border-top-color:var(--ok)}
+.tvd-dia.he  {border-top-color:var(--warn)}
+.tvd-dia.ruim{border-top-color:var(--red)}
+.tvd-dia-data{font-family:var(--font-h);font-weight:700;font-size:clamp(24px,2.3vw,46px);color:var(--txt);line-height:1}
+.tvd-dia-sem{font-family:var(--font-d);font-size:clamp(11px,1vw,18px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvd-dia-num{font-family:var(--font-h);font-weight:700;font-size:clamp(46px,5vw,112px);line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvd-dia-meio{display:flex;flex-direction:column;justify-content:center;flex:1;gap:clamp(2px,.5vh,8px);min-height:0}
+.tvd-dia-pct{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);letter-spacing:1px}
+.tvd-dia-he{font-family:var(--font-d);font-size:clamp(11px,1.05vw,19px);letter-spacing:1px;color:var(--warn);border-top:1px solid var(--border);padding-top:clamp(3px,.6vh,9px)}
+.tvd-dia-he.vazio{color:var(--txt2)}
+
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
 .tvb-clock-lbl{font-family:var(--font-d);font-size:clamp(18px,2.4vw,36px);font-weight:600;color:var(--acc);letter-spacing:3px}
@@ -1392,8 +1457,55 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 
+  <!-- ═══ TELA D — FECHAMENTO DA SEMANA PASSADA ═══
+       Só entra no ciclo quando a semana anterior tem dia fechado no HISTORICO
+       (_sincSlideD). Nenhum texto corrido: a TV é lida de longe. -->
+  <div id="tv-slide-d" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl"><span id="tvd-setor">EMBALAGEM</span> <span style="color:var(--acc)" id="tvd-semana">· SEMANA —</span></div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(56px,9vw,120px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tvd-periodo">—</div>
+    </div>
+
+    <div class="tvd-wrap">
+      <div class="tvd-band">
+        <div class="tvd-hero">
+          <div class="tvd-lbl">PRODUÇÃO DA SEMANA</div>
+          <div class="tvd-hero-num" id="tvd-total">—</div>
+          <div class="tvd-hero-unit">CAIXAS</div>
+          <div class="tvd-selo he" id="tvd-selo" style="margin-top:clamp(6px,1.2vh,20px)">—</div>
+        </div>
+
+        <div class="tvd-splits">
+          <div class="tvd-split">
+            <div class="tvd-split-fio" style="background:var(--ok)"></div>
+            <div class="tvd-split-num" style="color:var(--ok)" id="tvd-normal">—</div>
+            <div class="tvd-split-txt"><b>JORNADA NORMAL</b><span id="tvd-normal-pct">—</span><span id="tvd-normal-falta"></span></div>
+          </div>
+          <div class="tvd-split" id="tvd-linha-extra">
+            <div class="tvd-split-fio" style="background:var(--warn)"></div>
+            <div class="tvd-split-num" style="color:var(--warn)" id="tvd-extra">—</div>
+            <div class="tvd-split-txt"><b>HORA EXTRA</b><span id="tvd-extra-pct">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tvd-barra-wrap">
+        <div class="tvd-barra">
+          <div class="tvd-barra-normal" id="tvd-bar-normal" style="width:0%"></div>
+          <div class="tvd-barra-extra"  id="tvd-bar-extra"  style="width:0%"></div>
+        </div>
+        <div class="tvd-meta-marca" id="tvd-marca" style="left:100%"><span id="tvd-marca-lbl">META —</span></div>
+      </div>
+
+      <div class="tvd-dias" id="tvd-dias"></div>
+    </div>
+  </div>
+
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
-       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C. -->
+       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D. -->
   <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
     <button type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
     <button type="button" id="btn-ciclo-pause" onclick="_cicloTV.togglePause()" title="Pausar / continuar o carrossel" style="background:var(--acc);color:#111;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;min-width:120px">⏸ PAUSAR</button>
@@ -1804,12 +1916,14 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA D (segundos)</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-a" style="accent-color:var(--acc)"> TELA A — HORA A HORA</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"> TELA B — VISÃO MACRO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"> TELA D — SEMANA PASSADA (só entra se a semana anterior tiver dia fechado)</label>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -1923,7 +2037,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.5.1';
+const APP_VER   = '7.6.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2026,8 +2140,9 @@ let CFG = {
   slideAIntervalo:15,
   slideBIntervalo:15,
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
+  slideDIntervalo:20, // Tela D tem mais a ler (5 dias + barra da meta) que as outras
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
-  telasAtivas:{a:true,b:true,c:true},
+  telasAtivas:{a:true,b:true,c:true,d:true},
   modoLeitor:true, // seleção de produto por bipe no mobile (padrão ligado)
   slideBKpis:['meta','falta','proj','ef','status','peso']
 };
@@ -2394,12 +2509,27 @@ function dSet(id,br){
   el.value=m?(m[3]+'-'+m[2]+'-'+m[1]):'';
 }
 function parseBR(s){if(!s)return null;const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d);}
-function fmtFechadoEm(v){
+// O carimbo FECHADO EM pode vir da planilha em ORDEM AMERICANA (mês/dia —
+// célula formatada em en-US) e o relatório imprimia "08/10" para o dia 10/08.
+// "10/08" e "08/10" são ambíguos sozinhos; o desempate é a DATA DA PRÓPRIA
+// LINHA (dataRef): o fechamento acontece no dia que ele fecha, então se o
+// carimbo bate com a data da linha só de trás para frente, ele está invertido.
+function fmtFechadoEm(v, dataRef){
   if(v==null||v===''||v===true||v===false) return 'SIM';
   const s=String(v).trim();
   if(/^(true|false|sim|n[ãa]o)$/i.test(s)) return 'SIM';
   const m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-  if(m){ const y=+m[3]<100?2000+ +m[3]:+m[3]; return `${p2(+m[1])}/${p2(+m[2])}/${y}`; }
+  if(m){
+    const y=+m[3]<100?2000+ +m[3]:+m[3];
+    let dia=+m[1], mes=+m[2];                       // padrão: BR, dia primeiro
+    if(+m[1]>12)      { dia=+m[1]; mes=+m[2]; }     // "25/08" só pode ser dia/mês
+    else if(+m[2]>12) { dia=+m[2]; mes=+m[1]; }     // "08/25" só pode ser mês/dia
+    else if(dataRef){
+      const r=String(dataRef).match(/^(\d{1,2})\/(\d{1,2})/);
+      if(r && +m[1]===+r[2] && +m[2]===+r[1] && +r[1]!==+r[2]){ dia=+m[2]; mes=+m[1]; }
+    }
+    return `${p2(dia)}/${p2(mes)}/${y}`;
+  }
   const dt=new Date(s);
   if(!isNaN(dt)) return dtToStr(dt);
   return 'SIM';
@@ -3250,13 +3380,13 @@ function renderGerencial(){
     {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${k.nHE} slot(s) HE`, c:'acc'}]:[]),
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
     {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef),                c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
-    {l:'HORAS PRODUTIVAS',  v:k.hProd.toFixed(1)+'h',  sub:`${k.n} slots registrados`,c:''},
+    {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
     {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
     {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
@@ -3284,7 +3414,7 @@ function renderGerencial(){
   document.getElementById('analise-row').innerHTML=`
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
       <div class="a-val" style="color:var(--warn)">${k.slotsRest>0?fmtN(k.nec)+' cx/h':'— Turno enc.'}</div>
-      <div class="a-desc">para meta em ${k.slotsRest} hora(s)</div></div>
+      <div class="a-desc">para meta em ${plural(k.slotsRest,'hora','horas')}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
       <div class="a-desc">últimas 2 horas registradas</div></div>
@@ -4073,7 +4203,7 @@ function renderTV(){
   const fill=document.getElementById('tv-prog-fill');
   fill.style.width=pct+'%';
   fill.style.background=s==='ok'?'var(--ok)':s==='warn'?'var(--warn)':'var(--red)';
-  document.getElementById('tv-prog-pct').textContent=pct.toFixed(1)+'%';
+  document.getElementById('tv-prog-pct').textContent=fmtP(pct);
   document.getElementById('tv-meta-lbl').textContent='META: '+fmtN(k.meta);
   const md=document.getElementById('tv-meta-dest'); if(md) md.textContent=fmtN(k.meta);
   document.getElementById('tv-ritmo').textContent=fmtN(k.ritmo);
@@ -4435,7 +4565,7 @@ async function renderHist(){
   const semBackend=dias.some(d=>d.heCxAusente)||HE_BACKEND_OK===false; // Apps Script ainda sem a marca de HE
   const heSub = semBackend
     ? '⚠ Apps Script sem HE CX — re-deploy pendente'
-    : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${semHE} dia(s) fechados sem o dado`:'');
+    : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${plural(semHE,'dia fechado','dias fechados')} sem o dado`:'');
   document.getElementById('hist-kpi-grid').innerHTML=`
     <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
@@ -4458,7 +4588,7 @@ async function renderHist(){
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
     <td><span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
-    <td>${d.fechado?`<span class="badge b-ok" title="${fmtFechadoEm(d.fechadoEm)}">✓ ${fmtFechadoEm(d.fechadoEm).substring(0,5)||'SIM'}</span>`:'<span class="badge b-mute">—</span>'}</td>
+    <td>${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return `<span class="badge b-ok" title="${f}">${f==='SIM'?'✓':'✓ '+f.substring(0,5)}</span>`;})():'<span class="badge b-mute">—</span>'}</td>
     <td><span class="badge b-mute" style="font-size:8px">${d.fonte==='sheets'?'☁ SHEETS':d.fonte==='local'?'💾 LOCAL':'📊 MEM'}</span></td>
   </tr>`).join('');
 
@@ -4583,7 +4713,7 @@ function openCfg(){
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
   { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
-    if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${_ti.taktSeg.toFixed(1)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
+    if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${fmt1(_ti.taktSeg)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
   const _hoje=hojeStr();
   const _prog=PONTOS_DIA.programacao||{};
   const _auto=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
@@ -4602,11 +4732,13 @@ function openCfg(){
   document.getElementById('c-slidea-int').value=CFG.slideAIntervalo||15;
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
+  document.getElementById('c-slided-int').value=CFG.slideDIntervalo||20;
   document.getElementById('c-modo-leitor').checked=CFG.modoLeitor!==false;
-  const _telas=CFG.telasAtivas||{a:true,b:true,c:true};
+  const _telas=CFG.telasAtivas||{a:true,b:true,c:true,d:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
   document.getElementById('c-tela-b').checked=_telas.b!==false;
   document.getElementById('c-tela-c').checked=_telas.c!==false;
+  document.getElementById('c-tela-d').checked=_telas.d!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
   ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
@@ -4656,10 +4788,12 @@ function saveCfg(){
   CFG.slideAIntervalo=parseInt(document.getElementById('c-slidea-int').value)||15;
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideCIntervalo=parseInt(document.getElementById('c-slidec-int').value)||15;
+  CFG.slideDIntervalo=parseInt(document.getElementById('c-slided-int').value)||20;
   CFG.telasAtivas={
     a:document.getElementById('c-tela-a').checked,
     b:document.getElementById('c-tela-b').checked,
-    c:document.getElementById('c-tela-c').checked
+    c:document.getElementById('c-tela-c').checked,
+    d:document.getElementById('c-tela-d').checked
   };
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
@@ -4682,15 +4816,17 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 function enviarConfigPainel(){
   if(!CFG.sheetsUrl) return;
-  const t = CFG.telasAtivas||{a:true,b:true,c:true};
+  const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true};
   const params=[
     'action=setConfigPainel',
     'telaA='+(t.a!==false?1:0),
     'telaB='+(t.b!==false?1:0),
     'telaC='+(t.c!==false?1:0),
+    'telaD='+(t.d!==false?1:0),
     'tempoA='+(CFG.slideAIntervalo||15),
     'tempoB='+(CFG.slideBIntervalo||15),
     'tempoC='+(CFG.slideCIntervalo||15),
+    'tempoD='+(CFG.slideDIntervalo||20),
     'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
@@ -4707,10 +4843,16 @@ function aplicarConfigPainel(pc){
   const sig = JSON.stringify(pc);
   if(sig===_painelCfgSig) return;
   _painelCfgSig = sig;
-  CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false };
+  // telaD/tempoD só existem no backend v5.2 pra cima. Enquanto o .gs não for
+  // re-deployado, a planilha não devolve essas chaves — e aí a Tela D fica sob
+  // controle LOCAL de cada aparelho em vez de ser apagada pela config antiga.
+  const _dAtual = (CFG.telasAtivas||{}).d!==false;
+  CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false,
+                      d: pc.telaD!==undefined ? pc.telaD!==false : _dAtual };
   if(pc.tempoA) CFG.slideAIntervalo = pc.tempoA;
   if(pc.tempoB) CFG.slideBIntervalo = pc.tempoB;
   if(pc.tempoC) CFG.slideCIntervalo = pc.tempoC;
+  if(pc.tempoD) CFG.slideDIntervalo = pc.tempoD;
   if(typeof pc.kpisTelaB==='string'){
     CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
   }
@@ -4868,6 +5010,11 @@ async function _imprimirHistoricoFormatado(){
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const bdgCls=ef=>ef>=96?'s-ok':ef>=90?'s-warn':'s-red';
   const bdgLbl=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
+  // Mesma leitura do relatório semanal: total acima da meta com a jornada
+  // normal abaixo dela = a hora extra é que bateu (ver _relMetaHE).
+  const mhe=_relMetaHE(totReal, totHEp, totMeta);
+  const corEfP  = mhe.soComHE?'#FF9800':cor(efMedia);
+  const bdgEfP  = mhe.soComHE?'⚠ meta batida com hora extra':bdgLbl(efMedia).toLowerCase();
   const periodoLabel=deStr&&ateStr?`${deStr} a ${ateStr}`:periodo.toUpperCase();
 
   const html=`<!DOCTYPE html>
@@ -4922,6 +5069,9 @@ async function _imprimirHistoricoFormatado(){
   .ah-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;letter-spacing:1px;margin-bottom:2px}
   .ah-val{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#1a1a2e}
   .ah-sub{font-size:8px;color:#a0aec0;margin-top:1px}
+  /* ALERTA (meta batida com hora extra) */
+  .rp-alerta{display:flex;gap:9px;align-items:flex-start;margin-top:9px;padding:8px 12px;background:#fff8ed;border:0.5px solid #ffcc80;border-left:3px solid #FF9800;border-radius:3px;font-size:9.5px;line-height:1.5;color:#7a3e00;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-alerta-ic{font-size:12px;line-height:1.2;color:#e65100}
   /* FOOTER */
   .rp-footer{margin-top:12px;padding-top:6px;border-top:0.5px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#cbd5e0}
   .rp-print-btn{position:fixed;top:12px;right:12px;background:#FF5C1F;color:#fff;border:none;padding:8px 16px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
@@ -4933,7 +5083,7 @@ ${_rpBotaoImprimir()}
 ${_rpCabecalho('HISTÓRICO',
    `<div class="rp-periodo">${periodoLabel}</div>
     <div>Gerado em: ${agora}</div>
-    <div>${dias.length} dia(s) no período</div>`)}
+    <div>${plural(dias.length,'dia','dias')} no período</div>`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -4942,32 +5092,40 @@ ${_rpCabecalho('HISTÓRICO',
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+  <div class="kpi-card" style="border-left-color:${corEfP}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHEp?`${bdgLbl(efMedia).toLowerCase()} · sem HE ${efSemHEp.toFixed(1)}%`:bdgLbl(efMedia).toLowerCase()}</div>
+    <div class="kpi-val" style="color:${corEfP}">${fmtP(efMedia)}</div>
+    <div class="kpi-sub">${temHEp?`${bdgEfP} · sem HE ${fmtP(efSemHEp)}`:bdgEfP}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
     <div class="kpi-sub">de ${dias.length} (${Math.round(comMeta/dias.length*100)}%)</div>
   </div>
-  <div class="kpi-card" style="border-left-color:#888">
+  <div class="kpi-card" style="border-left-color:${mhe.soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')}${temHEp?` · sem HE: ${(mhe.realNormal-totMeta).toLocaleString('pt-BR')}`:''} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">🏆 MELHOR DIA</div>
     <div class="kpi-val" style="font-size:14px">${melhorDia.data}</div>
-    <div class="kpi-sub" style="color:#4CAF50">${melhorDia.ef.toFixed(1)}% · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub" style="color:#4CAF50">${fmtP(melhorDia.ef)} · ${melhorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
   <div class="kpi-card" style="border-left-color:#F44336">
     <div class="kpi-lbl">📉 DIA MAIS FRACO</div>
     <div class="kpi-val" style="font-size:14px">${piorDia.data}</div>
-    <div class="kpi-sub" style="color:#F44336">${piorDia.ef.toFixed(1)}% · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub" style="color:#F44336">${fmtP(piorDia.ef)} · ${piorDia.real.toLocaleString('pt-BR')} cx</div>
   </div>
 </div>
+${mhe.soComHE?`<div class="rp-alerta">
+  <span class="rp-alerta-ic">⚠</span>
+  <div><b>A meta do período foi batida com hora extra.</b>
+  Na jornada normal foram <b>${mhe.realNormal.toLocaleString('pt-BR')} cx</b> contra a meta de
+  ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${mhe.faltouSemHE.toLocaleString('pt-BR')} cx</b>
+  (${fmtP(mhe.efTotalSemHE)} da meta). A hora extra${totHorasP>0?` (${totHorasP}h)`:''} entrou com
+  ${totHEp.toLocaleString('pt-BR')} cx e levou o período a ${fmtP(mhe.efTotal)}.</div>
+</div>`:''}
 
 <div class="rp-sec-ttl" style="margin-top:16px">PRODUÇÃO × META POR DIA</div>
 <div class="rp-chart-wrap">${_svgBarChart(dias)}</div>
@@ -4982,11 +5140,11 @@ ${_rpCabecalho('HISTÓRICO',
       ${temHEp?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCelP(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${bdgCls(d.ef)}">${bdgLbl(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,10):'—'}</td>
+      <td><span class="sbadge ${bdgCls(d.ef)}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,10);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
 </table>
@@ -5145,6 +5303,62 @@ function _relSemanaJanela(ateStr){
   return { seg, sex, semStr:`${fmtD(seg)} a ${fmtD(sex)}`, numSem:_numSemana(seg) };
 }
 
+// ── Dias que caem dentro de uma janela de semana ────────────────────────────
+// Filtra + ordena por data. Sai daqui (em vez de ficar solto dentro do
+// gerarRelatorioSemanal) porque a TELA D da TV mostra a MESMA semana e precisa
+// exatamente do mesmo recorte — duas cópias divergiriam na primeira mudança,
+// como já aconteceu com a conta de paradas.
+function _relDiasDaSemana(todos, seg, sex){
+  return (todos||[])
+    .filter(d=>{ const dt=parseBR(d.data); return dt && dt>=seg && dt<=sex; })
+    .sort((a,b)=>parseBR(a.data)-parseBR(b.data));
+}
+
+// Janela da SEMANA PASSADA: qualquer dia da semana atual menos 7 dias cai na
+// semana anterior, inclusive na segunda-feira de manhã (que é justamente
+// quando a TELA D interessa mais).
+function _relSemanaPassada(hoje){
+  const d = hoje ? new Date(hoje) : new Date();
+  d.setDate(d.getDate()-7);
+  return _relSemanaJanela(dtToStr(d));
+}
+
+// ── Horário que mais se repete como melhor/pior do dia ──────────────────────
+// A linha MÉDIA / DIA do relatório tentava tirar a MÉDIA de d.melhor/d.pior,
+// que são RÓTULOS de horário ('08:00-09:00'), não números: somar string com 0
+// dá '008:00-09:00' e o Math.round devolvia NaN — que ia impresso no PDF.
+// Média de horário não quer dizer nada; o que interessa é qual slot mais se
+// repete no período. Empate fica com o primeiro do período (ordem da lista).
+function _slotMaisFreq(dias, campo){
+  const cont = {};
+  dias.forEach(d=>{ const v=d[campo]; if(v&&v!=='—') cont[v]=(cont[v]||0)+1; });
+  const chaves = Object.keys(cont);
+  if(!chaves.length) return '—';
+  const top = chaves.reduce((a,b)=>cont[b]>cont[a]?b:a);
+  return cont[top]>1 ? `${top} <span style="color:#a0aec0">(${cont[top]}×)</span>` : top;
+}
+
+// ── A meta foi batida, ou foi a hora extra que bateu? ───────────────────────
+// Conta pura, usada pelos DOIS relatórios (semanal e histórico). O total do
+// período pode fechar acima da meta e ainda assim a JORNADA NORMAL ter ficado
+// abaixo — quem cobriu o buraco foi a hora extra. Dizer só "dentro da meta"
+// nesse caso esconde exatamente o que o PPCP precisa enxergar.
+// Base é o TOTAL do período (realizado ÷ meta), não a média das eficiências
+// diárias: "meta da semana" é o somatório, e a média de percentuais distorce
+// quando a meta varia muito de um dia para o outro.
+function _relMetaHE(totReal, totHE, totMeta){
+  const efTotal      = totMeta>0 ? totReal/totMeta*100 : 0;
+  const realNormal   = totReal - totHE;
+  const efTotalSemHE = totMeta>0 ? realNormal/totMeta*100 : 0;
+  return {
+    efTotal, efTotalSemHE, realNormal,
+    // bateu no total mas não bateria sem a hora extra
+    soComHE:     totMeta>0 && totReal>=totMeta && realNormal<totMeta,
+    // quanto faltava na jornada normal (0 quando a normal já batia)
+    faltouSemHE: Math.max(0, totMeta-realNormal)
+  };
+}
+
 // ── KPIs da semana ──────────────────────────────────────────────────────────
 // Conta pura: entra a lista de dias, sai o resumo. A base de TODA média aqui
 // são os dias COM PRODUÇÃO no período (os mesmos que o relatório lista), nunca
@@ -5174,7 +5388,8 @@ function _relSemanalKPIs(dias){
     semHE:     dias.filter(_heIndef).length,
     comMeta:   dias.filter(d=>d.ok).length,
     melhorDia: dias.reduce((a,b)=>a.ef>b.ef?a:b),
-    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b)
+    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b),
+    ..._relMetaHE(totReal, totHE, totMeta)
   };
 }
 
@@ -5191,15 +5406,8 @@ async function gerarRelatorioSemanal(){
   const todosDias=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
   console.log('[RelSemanal] Total dias encontrados:', todosDias.length, todosDias.map(d=>d.data+' ('+d.fonte+')'));
 
-  // Filtrar pela semana
-  const diasSem=todosDias.filter(d=>{
-    const[dd,mm,yy]=d.data.split('/').map(Number);
-    const dt=new Date(yy,mm-1,dd);
-    return dt>=seg && dt<=sex;
-  }).sort((a,b)=>{
-    const p=s=>{const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd)};
-    return p(a.data)-p(b.data);
-  });
+  // Filtrar pela semana (mesmo recorte que a TELA D da TV usa)
+  const diasSem=_relDiasDaSemana(todosDias, seg, sex);
 
   if(!diasSem.length){
     alert(`Nenhum dado encontrado para a semana ${semStr}.\n\nAjuste o filtro "Até" na aba Histórico para a semana desejada.`);
@@ -5208,7 +5416,8 @@ async function gerarRelatorioSemanal(){
 
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
   const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta,
-         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia} = _relSemanalKPIs(diasSem);
+         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia,
+         efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
   // "468 · 2h" na mesma célula: mostra as HORAS sem alargar a tabela com mais
   // uma coluna (o relatório já tem 10 e é A4 retrato).
   const _heCel = d => {
@@ -5222,6 +5431,11 @@ async function gerarRelatorioSemanal(){
   // Cor de status
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
   const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
+  // Meta batida só por causa da hora extra: o verde vira âmbar e o texto diz
+  // por quê. Sem isso o relatório afirma "dentro da meta" para uma semana que,
+  // dentro da própria jornada, ficou abaixo.
+  const corEf  = soComHE ? '#FF9800' : cor(efMedia);
+  const badgeEf= soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efMedia);
 
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
@@ -5267,6 +5481,10 @@ async function gerarRelatorioSemanal(){
   .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#1a1a2e; }
   .rp-hl-sub{ font-size:10px; color:#718096; margin-top:2px; }
 
+  /* ALERTA (meta batida com hora extra) */
+  .rp-alerta{ display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:10px 14px; background:#fff8ed; border:1px solid #ffcc80; border-left:3px solid #FF9800; border-radius:4px; font-size:10.5px; line-height:1.55; color:#7a3e00; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rp-alerta-ic{ font-size:14px; line-height:1.2; color:#e65100; }
+
   /* GRÁFICO SVG */
   .rp-chart-wrap{ background:#f9f9f9; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
   svg text{ font-family:'IBM Plex Mono',monospace; }
@@ -5283,7 +5501,7 @@ async function gerarRelatorioSemanal(){
   tfoot .tf-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.2px; color:#718096; text-transform:uppercase; }
 
   /* STATUS BADGE */
-  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
+  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; white-space:nowrap; display:inline-block; }
   .s-ok  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
   .s-warn{ background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
   .s-red { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
@@ -5307,7 +5525,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
 
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
-<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+<div class="kpi-grid" style="grid-template-columns:repeat(${temHE?6:5},1fr)">
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
@@ -5318,22 +5536,35 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     <div class="kpi-val" style="color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">cx/dia · meta ${Math.round(mediaMeta).toLocaleString('pt-BR')}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
+  <div class="kpi-card" style="border-left-color:${corEf}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
-    <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${temHE?`${badge(efMedia)} · sem HE ${efMediaSemHE.toFixed(1)}%`:badge(efMedia)}</div>
+    <div class="kpi-val" style="color:${corEf}">${fmtP(efMedia)}</div>
+    <div class="kpi-sub">${badgeEf}</div>
   </div>
+  ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efMediaSemHE)}">
+    <div class="kpi-lbl">EFIC. SEM H. EXTRA</div>
+    <div class="kpi-val" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</div>
+    <div class="kpi-sub">só a jornada normal</div>
+  </div>`:''}
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
     <div class="kpi-sub">de ${diasSem.length} dias (${((comMeta/diasSem.length)*100).toFixed(0)}%)</div>
   </div>
-  <div class="kpi-card" style="border-left-color:#888">
+  <div class="kpi-card" style="border-left-color:${soComHE?'#FF9800':'#888'}">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${temHE?` · sem HE: ${((totReal-totHE)-totMeta).toLocaleString('pt-BR')} cx`:''}</div>
   </div>
 </div>
+${soComHE?`<div class="rp-alerta">
+  <span class="rp-alerta-ic">⚠</span>
+  <div><b>A meta da semana foi batida com hora extra.</b>
+  Na jornada normal foram <b>${(totReal-totHE).toLocaleString('pt-BR')} cx</b> contra a meta de
+  ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${faltouSemHE.toLocaleString('pt-BR')} cx</b>
+  (${fmtP(efTotalSemHE)} da meta). A hora extra${totHoras>0?` (${totHoras}h)`:''} entrou com
+  ${totHE.toLocaleString('pt-BR')} cx e levou o período a ${fmtP(efTotal)}.</div>
+</div>`:''}
 
 <!-- MELHOR / PIOR -->
 <div class="rp-row2" style="margin-top:10px">
@@ -5342,7 +5573,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     <div>
       <div class="rp-hl-lbl">MELHOR DIA</div>
       <div class="rp-hl-val" style="color:#4CAF50">${melhorDia.data}</div>
-      <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${melhorDia.ef.toFixed(1)}% eficiência</div>
+      <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(melhorDia.ef)} eficiência</div>
     </div>
   </div>
   <div class="rp-highlight">
@@ -5350,7 +5581,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
     <div>
       <div class="rp-hl-lbl">DIA MAIS FRACO</div>
       <div class="rp-hl-val" style="color:#F44336">${piorDia.data}</div>
-      <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${piorDia.ef.toFixed(1)}% eficiência</div>
+      <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(piorDia.ef)} eficiência</div>
     </div>
   </div>
 </div>
@@ -5375,12 +5606,12 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCel(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
-      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':_efSemHE(d).toFixed(1)+'%'}</td>`:''}
+      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
-      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,5):'—'}</td>
+      <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
+      <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
   <tfoot>
@@ -5390,11 +5621,11 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${efMediaSemHE.toFixed(1)}%</td>`:''}
-      <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:#F44336">${Math.round(diasSem.reduce((s,d)=>s+d.pior,0)/diasSem.length).toLocaleString('pt-BR')}</td>
-      <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
+      <td class="td-bold" style="color:${cor(efMedia)}">${fmtP(efMedia)}</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</td>`:''}
+      <td class="td-mono" style="color:#4CAF50">${_slotMaisFreq(diasSem,'melhor')}</td>
+      <td class="td-mono" style="color:#F44336">${_slotMaisFreq(diasSem,'pior')}</td>
+      <td class="tf-lbl" colspan="2">base: ${plural(diasSem.length,'dia','dias')} com produção</td>
     </tr>
     <tr>
       <td class="tf-lbl">TOTAL DA SEMANA</td>
@@ -5402,9 +5633,9 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
       <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${totMeta?((totReal-totHE)/totMeta*100).toFixed(1):'0.0'}%</td>`:''}
-      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${semHE} dia(s) sem separação de hora extra`:''}</td>
+      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${fmtP(totMeta?totReal/totMeta*100:0)}</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${fmtP(totMeta?(totReal-totHE)/totMeta*100:0)}</td>`:''}
+      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>
 </table>
@@ -5544,7 +5775,7 @@ async function gerarRelatorioParadas(){
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
   const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>{
     const txt = ehSetupParada(t.tipo)
-      ? `<b style="color:#c62828">${esc(t.tipo)}</b> é troca (inevitável) — reduzir o tempo (troca rápida): ${t.qtd} troca(s) de ~${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}. Cada minuto cortado por troca ≈ <b>${fmtN(t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0)}</b> caixas no período.`
+      ? `<b style="color:#c62828">${esc(t.tipo)}</b> é troca (inevitável) — reduzir o tempo (troca rápida): ${plural(t.qtd,'troca','trocas')} de ~${_fmtMinPar(Math.round(t.min/(t.qtd||1)))}. Cada minuto cortado por troca ≈ <b>${fmtN(t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0)}</b> caixas no período.`
       : `Eliminando <b style="color:#c62828">${esc(t.tipo)}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas${st.pesoMedio>0?` (~${fmtN(Math.round(t.perd*st.pesoMedio))} kg)`:''} no período.`;
     return `<div style="font-size:12px;color:#222;margin:4px 0">▸ ${txt}</div>`;
   }).join('')):'';
@@ -5617,15 +5848,15 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 <div class="rp-sec-ttl">RESUMO</div>
 <div class="kpi-grid">
-  <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${st.nParadas} parada(s) · ${st.nDias} dia(s)</div></div>
-  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${st.dispon.toFixed(1)}%</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
-  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${st.pctPerd.toFixed(1)}%</div><div class="kpi-sub">paradas não programadas</div></div>
+  <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')} · ${plural(st.nDias,'dia','dias')}</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.dispon)}</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
+  <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.pctPerd)}</div><div class="kpi-sub">paradas não programadas</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PERDA A RITMO REAL</div><div class="kpi-val" style="color:#c62828">${perdaReal>0?fmtN(perdaReal):'—'}</div><div class="kpi-sub">${perdaReal>0?_fmtMinPar(st.totMinNP)+' × '+fmtN(trR.ritmoReal)+' cx/h medidos'+(st.pesoMedio>0?' · ~'+fmtN(Math.round(perdaReal*st.pesoMedio))+' kg':''):'sem apontamento no período'}</div></div>
   <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?tiR.taktSeg.toFixed(1)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PESO PERDIDO</div><div class="kpi-val" style="color:#c62828">${st.pesoMedio>0?fmtN(st.pesoPerd)+' kg':'—'}</div><div class="kpi-sub">${st.pesoMedio>0?'caixas × peso médio':'sem peso do produto'}</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${st.nParadas} parada(s)</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO MÉDIO / PARADA</div><div class="kpi-val">${_fmtMinPar(st.tMed)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')}</div></div>
 </div>
 <div class="rp-sec-ttl">PARETO — TEMPO PARADO POR TIPO (maiores ofensores)</div>
 <div class="rp-chart-wrap">${pareto}</div>
@@ -5634,8 +5865,8 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
 ${estudo}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
-<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${st.horasProd.toFixed(1)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${st.horasProd.toFixed(1)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?tiR.taktSeg.toFixed(1):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
-<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${st.nParadas} parada(s) · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
+<div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${fmt1(st.horasProd)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${fmt1(st.horasProd)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?fmt1(tiR.taktSeg):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
+<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
   win.document.open();
@@ -5969,9 +6200,9 @@ async function _renderAnaliseParadasCore(opts){
   }
 
   const kpis=[
-    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${nParadas} parada(s) · ${nDias} dia(s) ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
-    {l:'% DO TURNO PERDIDO',v:pctPerd.toFixed(1)+'%',sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
-    {l:'DISPONIBILIDADE',v:dispon.toFixed(1)+'%',sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${plural(nParadas,'parada','paradas')} · ${plural(nDias,'dia','dias')} ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
+    {l:'% DO TURNO PERDIDO',v:fmtP(pctPerd),sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
+    {l:'DISPONIBILIDADE',v:fmtP(dispon),sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa vs meta do dia · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     ...(perdaRealCard?[perdaRealCard]:[]),
     {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
@@ -6055,7 +6286,7 @@ async function _renderAnaliseParadasCore(opts){
   mkChart('ch-par-dispon',{type:'doughnut',data:{labels:['Produzindo','Parado (não prog.)'],datasets:[
     {data:[Math.max(0,100-pctPerd),Math.max(0,pctPerd)],backgroundColor:['rgba(76,175,80,0.85)','rgba(244,67,54,0.85)'],borderWidth:0}
   ]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false}}}});
-  const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=dispon.toFixed(1)+'%';
+  const _dv=document.getElementById('par-donut-val'); if(_dv) _dv.textContent=fmtP(dispon);
   const rInfo=document.getElementById('par-resumo-info');
   if(rInfo){ const tProd=Math.max(0,Math.round(nDias*horasProd*60-totMinNP));
     rInfo.innerHTML=`<div class="par-rl"><span class="dot" style="background:rgba(76,175,80,0.85)"></span> Tempo produzindo <b>${_fmtMinPar(tProd)}</b></div>
@@ -6078,7 +6309,7 @@ async function _renderAnaliseParadasCore(opts){
       if(ehSetupParada(t.tipo)){
         const tmed=Math.round(t.min/(t.qtd||1));
         const porMin=t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0;
-        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${t.qtd} troca(s) de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
+        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${plural(t.qtd,'troca','trocas')} de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
       } else {
         linha=`Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.`;
       }
@@ -6097,11 +6328,11 @@ async function _renderAnaliseParadasCore(opts){
       let extra='';
       if(!topT.planej && topT.perd>0){
         if(ehSetupParada(topT.tipo)){ const tmed=Math.round(topT.min/(topT.qtd||1));
-          extra=` — é troca (inevitável); o caminho é a troca rápida (${topT.qtd} troca(s) de ~${tmed} min), reduzir o tempo`;
+          extra=` — é troca (inevitável); o caminho é a troca rápida (${plural(topT.qtd,'troca','trocas')} de ~${tmed} min), reduzir o tempo`;
         } else extra=`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`;
       }
       ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${extra}.`}); }
-    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está dentro da meta (90%).`:`Disponibilidade de <b>${dispon.toFixed(1)}%</b> está <b>abaixo</b> da meta de 90%.`});
+    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${fmtP(dispon)}</b> está dentro da meta (90%).`:`Disponibilidade de <b>${fmtP(dispon)}</b> está <b>abaixo</b> da meta de 90%.`});
     if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
     if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não programadas.`});
     // (rótulo alinhado à planilha: "programada" = parada planejada/prevista)
@@ -6119,7 +6350,7 @@ async function _renderAnaliseParadasCore(opts){
   const met=document.getElementById('par-metodo');
   // A 1ª parte é o MESMO texto que o mobile mostra (RP_PARADAS.diagTexto), para
   // dar pra comparar as duas telas batendo o olho quando os números discordarem.
-  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+nDias+' '+(baseTrab?'dia(s) TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'dia(s) com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+horasProd.toFixed(1)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?_ti.taktSeg.toFixed(1):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+plural(nDias,'dia','dias')+' '+(baseTrab?'TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+fmt1(horasProd)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?fmt1(_ti.taktSeg):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
@@ -6170,7 +6401,7 @@ function _svgBarChart(dias){
     outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
 
     // Eficiência % acima
-    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.ef.toFixed(1)}%</text>`;
+    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtP(d.ef)}</text>`;
 
     // Label data embaixo
     const dd=d.data.substring(0,5);
@@ -6223,7 +6454,7 @@ function _svgDiaHora(dia){
     </div>
     <div style="display:flex;align-items:center;gap:12px">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#888">Real: <strong style="color:#111">${dia.real.toLocaleString('pt-BR')}</strong> · Meta: <strong style="color:#888">${dia.meta.toLocaleString('pt-BR')}</strong></span>
-      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${dia.ef.toFixed(1)}% — ${badge(dia.ef)}</span>
+      <span class="sbadge ${bdgCls(dia.ef)}" style="font-size:9px">${fmtP(dia.ef)} — ${badge(dia.ef)}</span>
     </div>
   </div>`;
 
@@ -6894,7 +7125,7 @@ const _cicloTV = (function() {
   function _podeRodar() {
     return PERFIL !== 'gerencial' || _secTvAtiva();
   }
-  function _rotuloTela(t) { return t === 'a' ? 'TELA A' : t === 'b' ? 'TELA B' : 'TELA C'; }
+  function _rotuloTela(t) { return 'TELA ' + String(t || 'a').toUpperCase(); }
   // Atualiza os botões de controle (só existem/aparecem no gerencial).
   function _updBtn() {
     const b = document.getElementById('btn-ciclo-pause');
@@ -7025,12 +7256,126 @@ const _cicloTV = (function() {
 
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
 
+  // ── TELA D — fechamento da semana passada ────────────────────────────────
+  // O histórico só muda quando um dia é arquivado (1× por dia) e a semana em si
+  // vira uma vez por semana: buscar isso no ritmo do carrossel (a cada ~20 s)
+  // seria puro desperdício de chamada ao Apps Script. Guarda por 30 min e, se a
+  // busca falhar, mantém o que já estava na tela.
+  const TVD_TTL = 30 * 60 * 1000;
+  let _tvd = { dados: null, ts: 0, buscando: false };
+  function _tvdCarregar(forcar) {
+    if (_tvd.buscando) return;
+    if (!forcar && _tvd.dados && (Date.now() - _tvd.ts) < TVD_TTL) return;
+    _tvd.buscando = true;
+    (async () => {
+      try {
+        const todos = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
+        const { seg, sex, semStr, numSem } = _relSemanaPassada();
+        const dias = _relDiasDaSemana(todos, seg, sex);
+        // Sem dia fechado na semana passada não há o que mostrar — a tela sai do
+        // ciclo em vez de aparecer vazia (mesma regra da Tela C sem atraso).
+        _tvd.dados = dias.length ? { semStr, numSem, dias, k: _relSemanalKPIs(dias) } : null;
+        _tvd.ts = Date.now();
+        if (_tela === 'd') _sincSlideD();
+      } catch (e) {
+        console.warn('[TV D] não carregou a semana passada:', e.message);
+      } finally { _tvd.buscando = false; }
+    })();
+  }
+  function _temSemanaPassada() { return !!(_tvd.dados && _tvd.dados.dias.length); }
+
+  const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+
+  function _sincSlideD() {
+    const set  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const setH = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML  = v; };
+    _tvdCarregar();
+    const d = _tvd.dados;
+    if (!d) return;                       // ainda carregando: mantém o que está na tela
+    const k = d.k, normal = k.totReal - k.totHE;
+
+    set('tvd-setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
+    set('tvd-semana',  '· SEMANA ' + d.numSem);
+    set('tvd-periodo', d.semStr);
+    set('tvd-total',   fmtN(k.totReal));
+    set('tvd-normal',  fmtN(normal));
+    set('tvd-extra',   fmtN(k.totHE));
+    set('tvd-normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
+    // O buraco da jornada normal é a informação de ação — em linha própria e na
+    // cor de atenção, não espremido no fim de outra frase.
+    set('tvd-normal-falta', k.faltouSemHE > 0 ? `faltaram ${fmtN(k.faltouSemHE)} cx` : '');
+    const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
+    set('tvd-extra-pct', k.totHoras > 0 ? `${plural(k.totHoras,'hora','horas')} em ${plural(diasComHE,'dia','dias')}`
+                                        : (diasComHE ? `em ${plural(diasComHE,'dia','dias')}` : ''));
+    // Semana sem nenhuma hora extra: a linha inteira sai (ela diria "0" e só
+    // ocuparia metade da banda) — mesma regra do card de HE do gerencial.
+    const linhaExtra = document.getElementById('tvd-linha-extra');
+    if (linhaExtra) linhaExtra.style.display = k.temHE ? '' : 'none';
+
+    // Veredito. Verde SÓ quando a jornada normal sozinha bateu a meta.
+    const selo = document.getElementById('tvd-selo');
+    if (selo) {
+      if (k.soComHE) {
+        selo.className = 'tvd-selo he';
+        selo.textContent = '⚠ META BATIDA COM HORA EXTRA';
+      } else if (k.totMeta && k.totReal >= k.totMeta) {
+        selo.className = 'tvd-selo ok';
+        selo.textContent = '✓ META BATIDA NA JORNADA NORMAL';
+      } else {
+        selo.className = 'tvd-selo ruim';
+        selo.textContent = `FALTARAM ${fmtN(Math.max(0, k.totMeta - k.totReal))} CX PARA A META`;
+      }
+      selo.style.display = k.totMeta ? '' : 'none';
+    }
+
+    // Barra: a escala é o MAIOR entre o total e a meta, para a marca da meta
+    // caber na tela nos dois casos (semana que passou e semana que não chegou).
+    const escala = Math.max(k.totReal, k.totMeta) || 1;
+    const barN = document.getElementById('tvd-bar-normal');
+    const barE = document.getElementById('tvd-bar-extra');
+    const marca = document.getElementById('tvd-marca');
+    if (barN) barN.style.width = (normal / escala * 100) + '%';
+    if (barE) barE.style.width = (k.totHE / escala * 100) + '%';
+    if (marca) {
+      const pctMeta = k.totMeta / escala * 100;
+      marca.style.left    = pctMeta + '%';
+      marca.style.display = k.totMeta ? '' : 'none';
+      marca.classList.toggle('fim', pctMeta > 80);   // rótulo vira para dentro
+    }
+    set('tvd-marca-lbl', 'META ' + fmtN(k.totMeta));
+
+    // Dia a dia. A tarja no topo diz o resultado sem depender de ler o número:
+    // verde bateu na jornada normal, âmbar bateu com hora extra, vermelho não bateu.
+    const cx = document.getElementById('tvd-dias');
+    if (cx) {
+      cx.innerHTML = d.dias.map(x => {
+        const he  = _heIndef(x) ? 0 : (x.heCx || 0);
+        const nor = x.real - he;
+        const cls = x.meta && nor >= x.meta ? 'ok' : (x.meta && x.real >= x.meta ? 'he' : 'ruim');
+        const cor = cls === 'ok' ? 'var(--ok)' : cls === 'he' ? 'var(--warn)' : 'var(--red)';
+        const dt  = parseBR(x.data);
+        return `<div class="tvd-dia ${cls}">
+          <div class="tvd-dia-data">${x.data.substring(0, 5)}</div>
+          <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
+          <div class="tvd-dia-meio">
+          <div class="tvd-dia-num">${fmtN(x.real)}</div>
+          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : '—'}</div>
+          </div>
+          <div class="tvd-dia-he${he > 0 ? '' : ' vazio'}">${_heIndef(x) ? 'HE não separada' : (he > 0 ? `${fmtN(he)} cx em hora extra` : 'sem hora extra')}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
   // Cada tela tem o SEU próprio tempo (A / B / C). Tela C, se não configurada,
   // cai no tempo da Tela B (compatibilidade com config antiga).
   function _duracaoTela(t) {
     if (t === 'a') return CFG.slideAIntervalo || 15;
     if (t === 'c') return CFG.slideCIntervalo || CFG.slideBIntervalo || 15;
+    // Tela D tem MAIS coisa para ler (5 dias + a barra da meta) que as outras:
+    // 20 s de padrão, não os 15 das demais.
+    if (t === 'd') return CFG.slideDIntervalo || 20;
     return CFG.slideBIntervalo || 15;
   }
   function _agendar() {
@@ -7039,27 +7384,30 @@ const _cicloTV = (function() {
     _timer = setTimeout(_trocar, Math.max(1, seg) * 1000);
   }
 
-  // Telas ativas no ciclo, na ordem A→B→C — configurável em CFG.telasAtivas.
-  // Tela C também exige atraso>0 (não faz sentido mostrá-la vazia). Nunca
-  // devolve lista vazia: sem nenhuma tela marcada, cai em ['a'] (fallback).
+  // Telas ativas no ciclo, na ordem A→B→C→D — configurável em CFG.telasAtivas.
+  // Tela C exige atraso>0 e Tela D exige a semana passada carregada: nenhuma das
+  // duas aparece vazia. Nunca devolve lista vazia: sem nenhuma tela marcada,
+  // cai em ['a'] (fallback).
   function _ordemTelas() {
-    const t = CFG.telasAtivas || { a: true, b: true, c: true };
+    const t = CFG.telasAtivas || { a: true, b: true, c: true, d: true };
     const ordem = [];
     if (t.a !== false) ordem.push('a');
     if (t.b !== false) ordem.push('b');
     if (t.c !== false && _temAtrasoAgora()) ordem.push('c');
+    if (t.d !== false && _temSemanaPassada()) ordem.push('d');
     return ordem.length ? ordem : ['a'];
   }
 
   // Mostra uma tela específica (esconde as outras e sincroniza a que aparece).
   function _mostrarTela(t) {
-    const slideB = document.getElementById('tv-slide-b');
-    const slideC = document.getElementById('tv-slide-c');
-    if (slideB) slideB.style.display = 'none';
-    if (slideC) slideC.style.display = 'none';
+    const slides = { b: document.getElementById('tv-slide-b'),
+                     c: document.getElementById('tv-slide-c'),
+                     d: document.getElementById('tv-slide-d') };
+    Object.keys(slides).forEach(k => { if (slides[k]) slides[k].style.display = 'none'; });
     _tela = t;
-    if (t === 'b') { _sincSlideB(); if (slideB) slideB.style.display = 'flex'; }
-    else if (t === 'c' && slideC) { _sincSlideC(); slideC.style.display = 'flex'; }
+    if (t === 'b') { _sincSlideB(); if (slides.b) slides.b.style.display = 'flex'; }
+    else if (t === 'c' && slides.c) { _sincSlideC(); slides.c.style.display = 'flex'; }
+    else if (t === 'd' && slides.d) { _sincSlideD(); slides.d.style.display = 'flex'; }
     _updBtn();
   }
 
@@ -7097,6 +7445,8 @@ const _cicloTV = (function() {
       const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : 'tvc-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
+    // A Tela D mostra o PERÍODO da semana no lugar do relógio — nada a acertar
+    // por segundo ali.
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
     // (ex.: DESMARCOU a Tela C, ou o atraso zerou), ela precisa sumir na hora —
     // sem depender do próximo saveCfg/reiniciar. Também esconde qualquer slide
@@ -7106,23 +7456,27 @@ const _cicloTV = (function() {
     if (_podeRodar() && !_pausado) {
       const ordemAtual = _ordemTelas();
       if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
-      const slideB = document.getElementById('tv-slide-b');
-      const slideC = document.getElementById('tv-slide-c');
-      if (slideB && _tela !== 'b' && slideB.style.display !== 'none') slideB.style.display = 'none';
-      if (slideC && _tela !== 'c' && slideC.style.display !== 'none') slideC.style.display = 'none';
+      ['b', 'c', 'd'].forEach(k => {
+        const el = document.getElementById('tv-slide-' + k);
+        if (el && _tela !== k && el.style.display !== 'none') el.style.display = 'none';
+      });
     }
   }, 1000);
 
   function reiniciar() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
-    const slideB = document.getElementById('tv-slide-b');
-    const slideC = document.getElementById('tv-slide-c');
+    // Busca a semana passada logo (fora do ciclo): é ela que decide se a Tela D
+    // entra na ordem. Cai no cache de 30 min, então reiniciar não vira chamada.
+    if ((CFG.telasAtivas || {}).d !== false) _tvdCarregar();
     const ordemInicial = _ordemTelas();
     _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
-    if (slideB) slideB.style.display = (_tela === 'b') ? 'flex' : 'none';
-    if (slideC) slideC.style.display = (_tela === 'c') ? 'flex' : 'none';
+    ['b', 'c', 'd'].forEach(k => {
+      const el = document.getElementById('tv-slide-' + k);
+      if (el) el.style.display = (_tela === k) ? 'flex' : 'none';
+    });
     if (_tela === 'b') _sincSlideB();
     else if (_tela === 'c') _sincSlideC();
+    else if (_tela === 'd') _sincSlideD();
     _updBtn();
     // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
     // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.
@@ -7131,7 +7485,7 @@ const _cicloTV = (function() {
       return;
     }
     _agendar(); // começa contando a duração da tela atual
-    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s)`);
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s)`);
   }
 
   reiniciar();

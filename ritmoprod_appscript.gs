@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoProd · Apps Script — Google Sheets
+// Versão: 5.2 — TELA D NO CICLO DA TV (config compartilhada)
+//               getConfigPainel/setConfigPainel passam a guardar TELA_D e
+//               TEMPO_D na aba CONFIG_PAINEL, do mesmo jeito que já faziam com
+//               A/B/C. Sem isso a Tela D (fechamento da semana passada) até
+//               aparece, mas cada aparelho fica com a sua marcação: o gerente
+//               desliga no computador e a TV continua mostrando.
 // Versão: 5.1 — MEMO DE LEITURA POR EXECUÇÃO
 //               Toda leitura aqui é getDataRange(): traz a aba INTEIRA. O
 //               problema não era uma leitura, era a MESMA aba ser lida duas
@@ -1308,7 +1314,7 @@ function setProdutoAtual(p) {
 // ════════════════════════════════════════════════════════
 // CONFIG DO CICLO DE TELAS DA TV — COMPARTILHADA ENTRE APARELHOS
 // ════════════════════════════════════════════════════════
-// Guarda, na aba CONFIG_PAINEL (chave/valor), quais telas (A/B/C) entram no
+// Guarda, na aba CONFIG_PAINEL (chave/valor), quais telas (A/B/C/D) entram no
 // ciclo, o tempo de cada uma e os KPIs visíveis na Tela B. Como fica na planilha
 // (e não no localStorage de cada aparelho), mudar num lugar reflete na TV, no
 // gerencial e no mobile — mesma ideia do início do turno pela célula C3.
@@ -1339,9 +1345,11 @@ function getConfigPainel() {
     telaA:  bool(kv.TELA_A, true),
     telaB:  bool(kv.TELA_B, true),
     telaC:  bool(kv.TELA_C, true),
+    telaD:  bool(kv.TELA_D, true),   // TELA D — fechamento da semana passada
     tempoA: num(kv.TEMPO_A, 15),
     tempoB: num(kv.TEMPO_B, 15),
     tempoC: num(kv.TEMPO_C, 15),
+    tempoD: num(kv.TEMPO_D, 20),
     kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
     modoLeitor: bool(kv.MODO_LEITOR, true)   // seleção de produto por bipe no mobile (padrão ligado)
   };
@@ -1366,9 +1374,11 @@ function setConfigPainel(p) {
     if (p.telaA  !== undefined) novos.TELA_A  = b01(p.telaA);
     if (p.telaB  !== undefined) novos.TELA_B  = b01(p.telaB);
     if (p.telaC  !== undefined) novos.TELA_C  = b01(p.telaC);
+    if (p.telaD  !== undefined) novos.TELA_D  = b01(p.telaD);
     if (p.tempoA !== undefined) novos.TEMPO_A = String(parseInt(p.tempoA, 10) || 15);
     if (p.tempoB !== undefined) novos.TEMPO_B = String(parseInt(p.tempoB, 10) || 15);
     if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
+    if (p.tempoD !== undefined) novos.TEMPO_D = String(parseInt(p.tempoD, 10) || 20);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
     if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
 

@@ -29,8 +29,21 @@ console.log('\n── formatação ──');
 ok('milhar com ponto', fmtN(8681), '8.681');
 ok('nulo vira traço, não zero', fmtN(null), '—');
 ok('texto vira traço', fmtN('abc'), '—');
-ok('percentual com 1 casa', fmtP(118.53), '118.5%');
+ok('percentual com 1 casa', fmtP(118.53), '118,5%');
+// pt-BR: milhar é ponto (fmtN) e decimal é vírgula (fmtP). Com toFixed(1) a
+// mesma tela mostrava "8.681" e "89.6%" — o mesmo ponto com dois significados.
+ok('o decimal é VÍRGULA, não ponto', fmtP(89.6), '89,6%');
+ok('e o milhar continua ponto no fmtN', fmtN(8681), '8.681');
+ok('percentual de três dígitos', fmtP(104.32), '104,3%');
 ok('percentual nulo vira traço', fmtP(null), '—');
+ok('número com 1 casa também é pt-BR', fmt1(7), '7,0');
+
+console.log('\n── plural: "1 parada", não "1 parada(s)" ──');
+// O "(s)" é linguagem de sistema; quem lê o painel é o operador e o gestor.
+ok('singular', plural(1, 'parada', 'paradas'), '1 parada');
+ok('plural',   plural(2, 'parada', 'paradas'), '2 paradas');
+ok('zero é plural', plural(0, 'dia', 'dias'), '0 dias');
+ok('milhar sai formatado', plural(1200, 'caixa', 'caixas'), '1.200 caixas');
 ok('dois dígitos', p2(7), '07');
 
 console.log('\n── horário ──');
@@ -79,7 +92,7 @@ ok('89.9% é abaixo', sc(89.9), 'red');
 
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc'];
-const CONSTS = ['p2', 'fmtN', 'fmtP'];
+const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');
   ok(f + ' carrega o rp-core.js', src.includes('src="/rp-core.js"'), true);
