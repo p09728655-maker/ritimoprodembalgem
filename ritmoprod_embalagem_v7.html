@@ -429,6 +429,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-lbl{font-family:var(--font-d);font-size:clamp(14px,1.35vw,24px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
 .tvd-hero-num{font-family:var(--font-h);font-weight:700;font-size:clamp(120px,13.5vw,290px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
 .tvd-hero-unit{font-family:var(--font-d);font-size:clamp(16px,1.6vw,28px);color:var(--txt2);letter-spacing:5px;text-transform:uppercase}
+.tvd-soma{font-family:var(--font-d);font-size:clamp(12px,1.15vw,20px);color:var(--txt2);letter-spacing:2px}
 
 /* Badge do veredito. É o elemento que o usuário pediu para não mentir: verde só
    quando a jornada normal sozinha bateu a meta; âmbar quando quem bateu foi a
@@ -1474,7 +1475,8 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="tvd-hero">
           <div class="tvd-lbl">PRODUÇÃO DA SEMANA</div>
           <div class="tvd-hero-num" id="tvd-total">—</div>
-          <div class="tvd-hero-unit">CAIXAS</div>
+          <div class="tvd-hero-unit">CAIXAS NA SEMANA</div>
+          <div class="tvd-soma" id="tvd-soma"></div>
           <div class="tvd-selo he" id="tvd-selo" style="margin-top:clamp(6px,1.2vh,20px)">—</div>
         </div>
 
@@ -1624,6 +1626,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="export-row">
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
+      <button class="btn btn-acc"   onclick="enviarResumoZap()" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.5)">📲 RESUMO NO WHATSAPP</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5)">⏸ RELATÓRIO DE PARADAS</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
     </div>
@@ -2037,7 +2040,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.3';
+const APP_VER   = '7.6.4';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5420,6 +5423,54 @@ function _relSemanalKPIs(dias){
   };
 }
 
+// ── Resumo da semana em TEXTO de WhatsApp ────────────────────────────────────
+// O pessoal recebe a divulgação no grupo do zap; PDF exige abrir anexo, texto
+// todo mundo lê na hora. Formatação do WhatsApp: *negrito* e quebras simples.
+// A conta é a MESMA do relatório e da Tela D (_relSemanalKPIs), então o zap,
+// o PDF e a TV nunca contam histórias diferentes.
+function _zapResumoSemana(diasSem, semStr, numSem){
+  const k=_relSemanalKPIs(diasSem);
+  const DIA=['dom','seg','ter','qua','qui','sex','sáb'];
+  const melhor=k.melhorDia.data;
+  const L=[];
+  L.push(`📦 *EMBALAGEM · SEMANA ${numSem}/${(parseBR(diasSem[0].data)||new Date()).getFullYear()}*`);
+  L.push(semStr);
+  L.push('');
+  L.push(`*${fmtN(k.totReal)} caixas na semana* — ${fmtP(k.efTotal)} da meta (${fmtN(k.totMeta)})`);
+  if(k.soComHE)                          L.push('⚠️ Meta batida com hora extra');
+  else if(k.totMeta&&k.totReal>=k.totMeta) L.push('✅ Meta batida na jornada normal');
+  else if(k.totMeta)                     L.push(`🔴 Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta`);
+  if(k.temHE){
+    L.push(`▪ Jornada normal: ${fmtN(k.totReal-k.totHE)} cx (${fmtP(k.efTotalSemHE)})`);
+    L.push(`▪ Hora extra: ${fmtN(k.totHE)} cx${k.totHoras>0?` (${plural(k.totHoras,'hora','horas')})`:''}`);
+  }
+  L.push('');
+  L.push('*Dia a dia:*');
+  diasSem.forEach(d=>{
+    const dt=parseBR(d.data);
+    L.push(`${dt?DIA[dt.getDay()]+' ':''}${d.data.substring(0,5)} — ${fmtN(d.real)} cx (${fmtP(d.ef)})${d.data===melhor?' 🏆':''}`);
+  });
+  L.push('');
+  L.push('RitmoProd · PPCP');
+  return L.join('\n');
+}
+
+async function enviarResumoZap(){
+  // Mesma janela do relatório semanal (filtro "Até" do Histórico, ou hoje).
+  let {seg, sex, semStr, numSem}=_relSemanaJanela(dGet('hist-ate'));
+  const todos=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
+  let dias=_relDiasDaSemana(todos, seg, sex);
+  // Segunda-feira de manhã a semana atual ainda não tem dia fechado — cai
+  // sozinho na SEMANA PASSADA, que é a que se divulga.
+  if(!dias.length){
+    ({seg, sex, semStr, numSem}=_relSemanaPassada());
+    dias=_relDiasDaSemana(todos, seg, sex);
+  }
+  if(!dias.length){ alert('Nenhum dia fechado nesta semana nem na anterior.'); return; }
+  const texto=_zapResumoSemana(dias, semStr, numSem);
+  window.open('https://wa.me/?text='+encodeURIComponent(texto), '_blank');
+}
+
 async function gerarRelatorioSemanal(){
   // Abrir janela ANTES do await (evita bloqueio de pop-up)
   const win=window.open('','_blank','width=960,height=720');
@@ -7406,6 +7457,7 @@ const _cicloTV = (function() {
     set('tvd-semana',  '· SEMANA ' + d.numSem);
     set('tvd-periodo', d.semStr);
     set('tvd-total',   fmtN(k.totReal));
+    set('tvd-soma',    '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');
     set('tvd-normal',  fmtN(normal));
     set('tvd-extra',   fmtN(k.totHE));
     set('tvd-normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
