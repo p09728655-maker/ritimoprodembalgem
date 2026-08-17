@@ -129,6 +129,72 @@ SOMAS = { '21/07/2026': 2000 };
 ok('soma maior que o realizado não vira número negativo',
    _heCxDoDia('21/07/2026', 1800, 1, ''), 0);
 
+console.log('\n── reconstrução dos dias antigos (PRODUCAO_PRODUTO) ──');
+// Régua confirmada com o PPCP: dia útil conta por horário (antes das 07:00 ou
+// depois das 18:00); sábado e domingo contam o dia INTEIRO.
+const PROD_LOG = [
+  ['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR'],
+  ['04/07/2026', '05:00', 'C', 'X', 188, 0, 0, ''],   // sábado
+  ['04/07/2026', '06:00', 'C', 'X', 200, 0, 0, ''],   // sábado
+  ['04/07/2026', '09:00', 'C', 'X', 951, 0, 0, ''],   // sábado de manhã: extra também
+  ['06/07/2026', '06:00', 'C', 'X', 150, 0, 0, ''],   // segunda, antes das 07:00
+  ['06/07/2026', '09:00', 'C', 'X', 800, 0, 0, ''],   // segunda, jornada normal
+  ['06/07/2026', '19:00', 'C', 'X',  60, 0, 0, ''],   // segunda, depois das 18:00
+];
+const HIST_REC = [
+  ['DATA','REALIZADO','META','EF','MELHOR','PIOR','HE','FECHADO','FECHADO EM','MEDIA','HE CX'],
+  ['04/07/2026', 1278, 1850, 69.1, 299, 135, 0, false, '', 213, ''],
+  ['06/07/2026', 1010, 1850, 54.6, 300, 150, 0, false, '', 100, ''],
+];
+const ABAS_REC = { PRODUCAO_PRODUTO: PROD_LOG, HISTORICO: HIST_REC };
+const gravado = {};
+PLANILHA_REC = {
+  getSheetByName: n => ABAS_REC[n] ? {
+    getName: () => n,
+    getDataRange: () => ({ getValues: () => ABAS_REC[n] }),
+    getRange: (r, c) => ({ getValue: () => ABAS_REC[n][r-1] && ABAS_REC[n][r-1][c-1],
+                           setValue: v => { gravado[ABAS_REC[n][r-1][0]] = v; ABAS_REC[n][r-1][c-1] = v; } })
+  } : null
+};
+SpreadsheetApp.getActiveSpreadsheet = () => PLANILHA_REC;
+const SHEET_PROD_LOG = 'PRODUCAO_PRODUTO';
+const SHEET_HIST = 'HISTORICO';
+// Constantes da régua, lidas do próprio .gs para o teste seguir o código:
+// se alguém trocar o horário ou desligar o sábado inteiro, o teste acusa.
+const HE_TURNO_INI_MIN  = Number(/HE_TURNO_INI_MIN\s*=\s*(\d+)\s*\*\s*60/.exec(src)[1]) * 60;
+const HE_TURNO_FIM_MIN  = Number(/HE_TURNO_FIM_MIN\s*=\s*(\d+)\s*\*\s*60/.exec(src)[1]) * 60;
+const HE_SABADO_INTEIRO = /HE_SABADO_INTEIRO\s*=\s*true/.test(src);
+const CacheService = { getScriptCache: () => ({ put(){}, get(){ return null; } }) };
+const normalizarDataBR = v => String(v || '').trim();
+eval(pega('function _valoresDaAba('));
+eval(pega('function _valores('));
+eval(pega('function _invalidarValores('));
+eval(pega('function invalidarCacheLeitura('));
+eval(pega('function _dataStr('));
+eval(pega('function _horaStr('));
+eval(pega('function fmtDataBR('));
+eval(pega('function _heMinutosDaHora('));
+eval(pega('function _heFimDeSemana('));
+eval(pega('function fromMinGs('));
+eval(pega('function _heCaixasPorDiaDoLogProduto('));
+eval(pega('function simularHoraExtraPassada('));
+eval(pega('function preencherHoraExtraPassada('));
+var _valoresMemo = {};
+
+const sim = simularHoraExtraPassada().dias;
+const sab = sim.find(d => d.data === '04/07/2026');
+const seg = sim.find(d => d.data === '06/07/2026');
+ok('sábado conta o dia INTEIRO (limitado ao realizado)', sab.heCx, 1278);
+ok('e o motivo é o fim de semana', sab.motivo, 'fim de semana');
+ok('dia útil conta só fora de 07:00-18:00 (150 + 60)', seg.heCx, 210);
+ok('09:00 de dia útil não entra', Object.keys(seg.horarios).sort(), ['06:00', '19:00']);
+ok('hora extra nunca passa o realizado do dia', sab.heCx <= sab.realizado, true);
+
+_invalidarValores();
+preencherHoraExtraPassada();
+ok('grava a HE CX do sábado', gravado['04/07/2026'], 1278);
+ok('grava a HE CX do dia útil', gravado['06/07/2026'], 210);
+
 console.log('\n── a marcação precisa chegar aos painéis ──');
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const html = fs.readFileSync(path.join(__dirname, f), 'utf8');

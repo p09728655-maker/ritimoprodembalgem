@@ -1923,7 +1923,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.5.0';
+const APP_VER   = '7.5.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5365,7 +5365,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
 <div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
 <table>
   <thead>
-    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
+    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>EFICIÊNCIA</th>${temHE?'<th>EF. S/ HE</th>':''}<th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
   </thead>
   <tbody>
     ${diasSem.map(d=>`
@@ -5375,7 +5375,8 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCel(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%${(!_heIndef(d)&&d.heCx>0)?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${_efSemHE(d).toFixed(1)}%</div>`:''}</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':_efSemHE(d).toFixed(1)+'%'}</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
@@ -5389,7 +5390,8 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%${temHE?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${efMediaSemHE.toFixed(1)}%</div>`:''}</td>
+      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${efMediaSemHE.toFixed(1)}%</td>`:''}
       <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${Math.round(diasSem.reduce((s,d)=>s+d.pior,0)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
@@ -5400,7 +5402,8 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
       <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%${temHE&&totMeta?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${((totReal-totHE)/totMeta*100).toFixed(1)}%</div>`:''}</td>
+      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
+      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${totMeta?((totReal-totHE)/totMeta*100).toFixed(1):'0.0'}%</td>`:''}
       <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${semHE} dia(s) sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>
