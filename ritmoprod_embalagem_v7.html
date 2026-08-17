@@ -1884,7 +1884,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.3.5';
+const APP_VER   = '7.3.6';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4773,6 +4773,8 @@ async function _imprimirHistoricoFormatado(){
   const totReal=dias.reduce((s,d)=>s+d.real,0);
   const totMeta=dias.reduce((s,d)=>s+d.meta,0);
   const efMedia=dias.reduce((s,d)=>s+d.ef,0)/dias.length;
+  const mediaReal=totReal/dias.length;   // média diária realizada (base: dias com produção no período)
+  const mediaMeta=totMeta/dias.length;
   const comMeta=dias.filter(d=>d.ok).length;
   const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
@@ -4860,7 +4862,7 @@ async function _imprimirHistoricoFormatado(){
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">caixas · gap: ${(totReal-totMeta).toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">caixas · média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
@@ -4875,7 +4877,7 @@ async function _imprimirHistoricoFormatado(){
   <div class="kpi-card" style="border-left-color:#888">
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">${dias.length} dias no período</div>
+    <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} · méd ${Math.round(mediaMeta).toLocaleString('pt-BR')}/dia</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">🏆 MELHOR DIA</div>
@@ -5064,6 +5066,8 @@ async function gerarRelatorioSemanal(){
   const totReal=diasSem.reduce((s,d)=>s+d.real,0);
   const totMeta=diasSem.reduce((s,d)=>s+d.meta,0);
   const efMedia=diasSem.reduce((s,d)=>s+d.ef,0)/diasSem.length;
+  const mediaReal=totReal/diasSem.length;   // média diária realizada (base: dias com produção na semana)
+  const mediaMeta=totMeta/diasSem.length;   // média diária de meta, para comparar
   const comMeta=diasSem.filter(d=>d.ok).length;
   const melhorDia=diasSem.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=diasSem.reduce((a,b)=>a.ef<b.ef?a:b);
@@ -5128,6 +5132,8 @@ async function gerarRelatorioSemanal(){
   tbody tr:hover{ background:#f8fafc; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
+  tfoot td{ font-size:11px; padding:8px 10px; border-top:1.5px solid #cbd5e0; background:#f8fafc; color:#1a1a2e; }
+  tfoot .tf-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.2px; color:#718096; text-transform:uppercase; }
 
   /* STATUS BADGE */
   .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
@@ -5163,11 +5169,16 @@ async function gerarRelatorioSemanal(){
 
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
-<div class="kpi-grid">
+<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">caixas na semana</div>
+  </div>
+  <div class="kpi-card" style="border-left-color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">
+    <div class="kpi-lbl">MÉDIA DIÁRIA</div>
+    <div class="kpi-val" style="color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
+    <div class="kpi-sub">cx/dia · meta ${Math.round(mediaMeta).toLocaleString('pt-BR')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
@@ -5231,6 +5242,24 @@ async function gerarRelatorioSemanal(){
       <td class="td-mono" style="color:#888">${d.fechado?'✓ '+fmtFechadoEm(d.fechadoEm).substring(0,5):'—'}</td>
     </tr>`).join('')}
   </tbody>
+  <tfoot>
+    <tr>
+      <td class="tf-lbl">MÉDIA / DIA</td>
+      <td class="td-bold">${Math.round(mediaReal).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
+      <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#F44336">${Math.round(diasSem.reduce((s,d)=>s+d.pior,0)/diasSem.length).toLocaleString('pt-BR')}</td>
+      <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
+    </tr>
+    <tr>
+      <td class="tf-lbl">TOTAL DA SEMANA</td>
+      <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
+      <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx</td>
+    </tr>
+  </tfoot>
 </table>
 
 ${(()=>{
@@ -5984,6 +6013,8 @@ function _svgBarChart(dias){
   // Linha de meta
   const yMetaRef=sy(dias[0]?.meta||0);
 
+  let outTxt='';   // rótulos das barras: desenhados por último, sobre a linha de média
+
   dias.forEach((d,i)=>{
     const x=cx(i);
     const yM=sy(d.meta);
@@ -5996,11 +6027,12 @@ function _svgBarChart(dias){
     // Barra realizado
     out+=`<rect x="${x-barW/2}" y="${yR}" width="${barW}" height="${ch+pad.t-yR}" fill="${clr}" rx="3" opacity="0.9"/>`;
 
-    // Valor realizado no topo
-    out+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace">${d.real.toLocaleString('pt-BR')}</text>`;
+    // Valor realizado no topo (vai em outTxt: fica ACIMA da linha de média,
+    // senão o tracejado corta o número do dia que estiver perto da média)
+    outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
 
     // Eficiência % acima
-    out+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace">${d.ef.toFixed(1)}%</text>`;
+    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.ef.toFixed(1)}%</text>`;
 
     // Label data embaixo
     const dd=d.data.substring(0,5);
@@ -6011,11 +6043,20 @@ function _svgBarChart(dias){
     out+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="7" fill="#aaa" font-family="'IBM Plex Mono',monospace">${dow[diaSem]}</text>`;
   });
 
-  // Legenda
-  out+=`<rect x="${W-160}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
-    <text x="${W-146}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
-    <rect x="${W-100}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
-    <text x="${W-86}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>`;
+  // Linha de MÉDIA do realizado no período (desenhada por cima das barras)
+  const mediaReal=dias.reduce((s,d)=>s+d.real,0)/n;
+  const yMed=sy(mediaReal);
+  out+=`<line x1="${pad.l}" y1="${yMed}" x2="${W-pad.r}" y2="${yMed}" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>`;
+  out+=outTxt;
+
+  // Legenda (o valor da média vai aqui, e não sobre a linha: no topo da barra
+  // do último dia o rótulo tapava a produção/eficiência daquele dia)
+  out+=`<rect x="${W-320}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
+    <text x="${W-306}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
+    <rect x="${W-260}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
+    <text x="${W-246}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>
+    <line x1="${W-176}" y1="13" x2="${W-160}" y2="13" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.8"/>
+    <text x="${W-156}" y="17" font-size="8" fill="#666" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
 }

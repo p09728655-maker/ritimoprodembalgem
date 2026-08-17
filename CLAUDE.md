@@ -280,6 +280,14 @@ via Google Apps Script (JSONP).
   linhas da `PARADAS` em vez da aba toda.
 
 ## Notas / armadilhas conhecidas
+- **Média nos relatórios (semanal e histórico)**: a base é **dias com produção no
+  período** (as linhas que o relatório já lista), não dias corridos — mesma base
+  do "Média / dia" das outras telas; sábado/domingo/feriado não entram porque não
+  têm produção lançada. O `_svgBarChart` (usado pelos dois) desenha a **linha
+  tracejada da média do realizado** e mostra o valor **na legenda** — o rótulo
+  em cima da linha tapava a produção/eficiência do dia mais próximo dela. Pela
+  mesma razão os números das barras são desenhados **depois** da linha e com
+  halo branco (`paint-order="stroke"`).
 - **Coluna MOTIVO do relatório de paradas**: é o texto livre que o operador digita
   no mobile (coluna **G** da aba `PARADAS`, campo `obs`) — opcional, ninguém é
   obrigado a preencher. No **DETALHAMENTO** do relatório a coluna **some quando
