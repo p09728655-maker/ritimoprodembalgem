@@ -1923,7 +1923,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.4.2';
+const APP_VER   = '7.5.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4855,6 +4855,13 @@ async function _imprimirHistoricoFormatado(){
   // Hora normal × hora extra (coluna condicional, como no relatório semanal)
   const totHEp=dias.reduce((s2,d)=>s2+(_heIndef(d)?0:d.heCx),0);
   const temHEp=dias.some(d=>!_heIndef(d)&&d.heCx>0);
+  const totHorasP=dias.reduce((s2,d)=>s2+(Number(d.heCount)||0),0);
+  const efSemHEp=dias.reduce((s2,d)=>s2+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/dias.length;
+  const _heCelP=d=>{
+    if(_heIndef(d)) return '—';
+    const h=Number(d.heCount)||0;
+    return d.heCx.toLocaleString('pt-BR')+(h>0?` <span style="color:#a0aec0;font-size:8px">· ${h}h</span>`:'');
+  };
   const comMeta=dias.filter(d=>d.ok).length;
   const melhorDia=dias.reduce((a,b)=>a.ef>b.ef?a:b);
   const piorDia=dias.reduce((a,b)=>a.ef<b.ef?a:b);
@@ -4933,12 +4940,12 @@ ${_rpCabecalho('HISTÓRICO',
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE`:' · caixas'}</div>
+    <div class="kpi-sub">média ${Math.round(mediaReal).toLocaleString('pt-BR')}/dia${temHEp?` · ${totHEp.toLocaleString('pt-BR')} em HE${totHorasP>0?` (${totHorasP}h)`:''}`:' · caixas'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
     <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${bdgLbl(efMedia).toLowerCase()}</div>
+    <div class="kpi-sub">${temHEp?`${bdgLbl(efMedia).toLowerCase()} · sem HE ${efSemHEp.toFixed(1)}%`:bdgLbl(efMedia).toLowerCase()}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${comMeta>0?'#4CAF50':'#F44336'}">
     <div class="kpi-lbl">DIAS COM META</div>
@@ -4973,7 +4980,7 @@ ${_rpCabecalho('HISTÓRICO',
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHEp?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heIndef(d)?'—':d.heCx.toLocaleString('pt-BR')}</td>`:''}
+      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCelP(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
@@ -5156,6 +5163,13 @@ function _relSemanalKPIs(dias){
     mediaReal: totReal/n,
     mediaMeta: totMeta/n,
     totHE,
+    // Horas extras (coluna HE do HISTORICO): quantidade de HORAS, não de caixas.
+    totHoras:  dias.reduce((s,d)=>s+(Number(d.heCount)||0),0),
+    // Eficiência SEM hora extra: a meta é do turno normal, então produzir em HE
+    // infla o número. Esta é a leitura "limpa" — o que o turno entregou dentro
+    // da própria jornada. Dia indeterminado (heCx null) entra como se não
+    // tivesse HE, que é o mesmo critério usado no resto do relatório.
+    efMediaSemHE: dias.reduce((s,d)=>s+(d.meta>0?(d.real-(_heIndef(d)?0:d.heCx))/d.meta*100:0),0)/n,
     temHE:     dias.some(d=>!_heIndef(d)&&d.heCx>0),
     semHE:     dias.filter(_heIndef).length,
     comMeta:   dias.filter(d=>d.ok).length,
@@ -5193,8 +5207,17 @@ async function gerarRelatorioSemanal(){
   }
 
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
-  const {totReal, totMeta, efMedia, mediaReal, mediaMeta,
-         totHE, temHE, semHE, comMeta, melhorDia, piorDia} = _relSemanalKPIs(diasSem);
+  const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta,
+         totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia} = _relSemanalKPIs(diasSem);
+  // "468 · 2h" na mesma célula: mostra as HORAS sem alargar a tabela com mais
+  // uma coluna (o relatório já tem 10 e é A4 retrato).
+  const _heCel = d => {
+    if(_heIndef(d)) return '—';
+    const h = Number(d.heCount)||0;
+    return d.heCx.toLocaleString('pt-BR') + (h>0?` <span style="color:#a0aec0;font-size:9px">· ${h}h</span>`:'');
+  };
+  // Eficiência do dia sem a hora extra (a meta é do turno normal).
+  const _efSemHE = d => d.meta>0 ? (d.real-(_heIndef(d)?0:d.heCx))/d.meta*100 : 0;
 
   // Cor de status
   const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
@@ -5288,7 +5311,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   <div class="kpi-card" style="border-left-color:#FF5C1F">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
-    <div class="kpi-sub">${temHE?`${(totReal-totHE).toLocaleString('pt-BR')} normal + ${totHE.toLocaleString('pt-BR')} extra`:'caixas na semana'}</div>
+    <div class="kpi-sub">${temHE?`${(totReal-totHE).toLocaleString('pt-BR')} normal + ${totHE.toLocaleString('pt-BR')} extra${totHoras>0?` (${totHoras}h)`:''}`:'caixas na semana'}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">
     <div class="kpi-lbl">MÉDIA DIÁRIA</div>
@@ -5298,7 +5321,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   <div class="kpi-card" style="border-left-color:${cor(efMedia)}">
     <div class="kpi-lbl">EFICIÊNCIA MÉDIA</div>
     <div class="kpi-val" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</div>
-    <div class="kpi-sub">${badge(efMedia)}</div>
+    <div class="kpi-sub">${temHE?`${badge(efMedia)} · sem HE ${efMediaSemHE.toFixed(1)}%`:badge(efMedia)}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
     <div class="kpi-lbl">DIAS COM META</div>
@@ -5350,9 +5373,9 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heIndef(d)?'—':d.heCx.toLocaleString('pt-BR')}</td>`:''}
+      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCel(d)}</td>`:''}
       <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%</td>
+      <td class="td-bold" style="color:${cor(d.ef)}">${d.ef.toFixed(1)}%${(!_heIndef(d)&&d.heCx>0)?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${_efSemHE(d).toFixed(1)}%</div>`:''}</td>
       <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${badge(d.ef)}</span></td>
@@ -5366,7 +5389,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%</td>
+      <td class="td-bold" style="color:${cor(efMedia)}">${efMedia.toFixed(1)}%${temHE?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${efMediaSemHE.toFixed(1)}%</div>`:''}</td>
       <td class="td-mono" style="color:#4CAF50">${Math.round(diasSem.reduce((s,d)=>s+d.melhor,0)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:#F44336">${Math.round(diasSem.reduce((s,d)=>s+d.pior,0)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="tf-lbl" colspan="2">base: ${diasSem.length} dia(s) com produção</td>
@@ -5375,9 +5398,9 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
       <td class="tf-lbl">TOTAL DA SEMANA</td>
       <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}</td>`:''}
+      <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
       <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%</td>
+      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${totMeta?(totReal/totMeta*100).toFixed(1):'0.0'}%${temHE&&totMeta?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">s/ HE ${((totReal-totHE)/totMeta*100).toFixed(1)}%</div>`:''}</td>
       <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${semHE} dia(s) sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>

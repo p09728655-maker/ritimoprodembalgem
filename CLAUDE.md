@@ -114,7 +114,12 @@ via Google Apps Script (JSONP).
   - Dia que só existe no log (sem linha no `HISTORICO`) é avisado com `⚠` — não
     há onde gravar a `HE CX` dele.
   - A gravação **nunca sobrescreve** `HE CX` já preenchida, e rodar duas vezes
-    não duplica.
+    não duplica. Para corrigir um valor gravado errado existe
+    `recalcularHoraExtraPassada()`, que regrava tudo.
+  - **Teto pelo REALIZADO**: hora extra maior que a produção do dia é
+    impossível. Aconteceu no 04/07 (sábado, log de produto com 1.339 contra
+    1.278 de realizado — lançamento duplicado). O valor é cortado no realizado e
+    o log avisa, em vez de gravar um número que não fecha.
   - ⚠ **Cobertura**: a `PRODUCAO_PRODUTO` só recebe lançamento com **produto
     identificado**, o que é opcional no app. O log mostra, por dia, quanto do
     `REALIZADO` está coberto — cobertura baixa significa hora extra
