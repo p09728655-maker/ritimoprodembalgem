@@ -293,6 +293,91 @@ function _tetoEsteiraCxH(prod) {
   return vel * 60000 / (medida + entre);
 }
 
+// ════════════════════════════════════════════════════════
+// SIMULAÇÃO — ESTEIRA × PRODUÇÃO POR MODELO (rodar no editor, não grava)
+// ════════════════════════════════════════════════════════
+// A mesma leitura da coluna % TETO EST. do painel, em formato de relatório no
+// log: para cada produto do período, a média APARADA (sem o melhor e o pior
+// dia, 3+ dias — poda pelo ritmo, média do que sobra ponderada pelas horas,
+// MESMA regra do _phMediaAparada do painel), o melhor dia, o teto físico da
+// esteira e o % do teto. Roda direto do editor com o arquivo SALVO — não
+// depende de re-deploy. Parâmetro: nº de dias para trás (padrão 30).
+// O RESUMO sai por último, que é onde o painel do editor abre.
+function simularEsteiraPorModelo(dias) {
+  const nDias = Number(dias) || 30;
+  const de = Utilities.formatDate(new Date(Date.now() - nDias * 864e5), TZ, 'dd/MM/yyyy');
+  const r = getProducaoModeloPeriodo({ de: de });
+  const itens = (r && r.itens) || [];
+  if (!itens.length) { Logger.log('Sem produção na PRODUCAO_PRODUTO nos últimos ' + nDias + ' dias.'); return; }
+
+  const grupos = {};
+  itens.forEach(function (it) {
+    const k = it.modelo + '|' + (it.nome || '');
+    const g = grupos[k] = grupos[k] || { nome: (it.nome || it.modelo), dias: [], cxTeto: 0, hTeto: 0, caixas: 0 };
+    g.dias.push(it);
+    g.caixas += it.caixas;
+    // teto do mix: o TEMPO de esteira soma → média harmônica pelas caixas.
+    if (it.tetoCxH > 0) { g.cxTeto += it.caixas; g.hTeto += it.caixas / it.tetoCxH; }
+  });
+
+  const linhas = Object.keys(grupos).map(function (k) {
+    const g = grupos[k];
+    const ord = g.dias.slice().sort(function (a, b) { return a.mediaHora - b.mediaHora; });
+    const usados = ord.length >= 3 ? ord.slice(1, -1) : ord;
+    let cx = 0, h = 0;
+    usados.forEach(function (d) { cx += d.caixas; h += d.horas; });
+    const aparada = h > 0 ? cx / h : 0;
+    const melhor  = ord.length ? ord[ord.length - 1].mediaHora : 0;
+    const teto    = g.hTeto > 0 ? g.cxTeto / g.hTeto : 0;
+    return { nome: g.nome, n: g.dias.length, caixas: g.caixas, aparada: aparada, melhor: melhor,
+             teto: teto, pctA: teto > 0 ? aparada / teto * 100 : 0,
+             pctM: teto > 0 ? melhor / teto * 100 : 0, dias: ord };
+  }).sort(function (a, b) { return b.pctA - a.pctA || b.caixas - a.caixas; });
+
+  const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };
+  const D = function (v, n) { v = String(v); while (v.length < n) v = ' ' + v; return v; };
+  Logger.log(P('MODELO', 34) + D('dias', 5) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
+  linhas.forEach(function (l) {
+    Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
+               D(l.teto > 0 ? Math.round(l.teto) : '—', 7) + D(l.teto > 0 ? Math.round(l.pctA) + '%' : '—', 7) +
+               D(l.teto > 0 ? Math.round(l.pctM) + '%' : '—', 9));
+  });
+
+  // Dia MUITO abaixo do padrão do próprio modelo (<30% da aparada): quase
+  // sempre é apontamento errado (o 1 cx/h da DECOR 470), não produção ruim —
+  // um dia fraco de verdade (o 59 da VIVARE contra padrão 122) NÃO entra aqui.
+  const suspeitos = [];
+  linhas.forEach(function (l) {
+    l.dias.forEach(function (d) {
+      // Acima do teto físico é impossível — mais caixas do que cabem na
+      // esteira. É apontamento (hora errada, lançamento dobrado), não recorde.
+      if (l.teto > 0 && d.mediaHora > l.teto * 1.05)
+        suspeitos.push(l.nome + ' em ' + d.data + ': ' + d.mediaHora + ' cx/h ACIMA do teto físico (' + Math.round(l.teto) + ') — impossível, conferir lançamento');
+      else if (l.n >= 3 && l.aparada > 0 && d.mediaHora < l.aparada * 0.3)
+        suspeitos.push(l.nome + ' em ' + d.data + ': ' + d.mediaHora + ' cx/h contra padrão ' + Math.round(l.aparada));
+    });
+  });
+  Logger.log(suspeitos.length
+    ? '⚠ CONFERIR APONTAMENTO (dia < 30% do padrão do próprio modelo):\n  ' + suspeitos.join('\n  ')
+    : 'Nenhum dia destoando do padrão do próprio modelo.');
+
+  const comTeto = linhas.filter(function (l) { return l.teto > 0; });
+  const semTeto = linhas.length - comTeto.length;
+  if (!comTeto.length) {
+    Logger.log('RESUMO: nenhum produto com teto — confira MEDIDA DA CAIXA e VELOCIDADE na PRODUTO_CODIGO.');
+    return;
+  }
+  // O veredito da esteira ignora "melhor dia" impossível (>teto): senão um
+  // único lançamento dobrado diria que a esteira está no limite.
+  const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
+  const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
+  Logger.log('RESUMO: ' + linhas.length + ' produto(s) em ' + nDias + ' dias · % do teto (aparada) de ' +
+             Math.round(comTeto[comTeto.length - 1].pctA) + '% a ' + Math.round(comTeto[0].pctA) + '%' +
+             ' · melhor dia já chegou a ' + Math.round(melhorPct.pctM) + '% do teto (' + melhorPct.nome + ')' +
+             (semTeto ? ' · ' + semTeto + ' produto(s) sem teto (catálogo sem MEDIDA/VELOCIDADE)' : '') +
+             ' — a esteira ' + (melhorPct.pctM < 85 ? 'NÃO é o gargalo.' : 'está perto do limite físico.'));
+}
+
 // Produto de um código, com queda segura para quem não está no catálogo:
 // sem descrição não há o que separar, e o modelo (6 díg.) vira o nome.
 function produtoDoCodigo(codigo) {
