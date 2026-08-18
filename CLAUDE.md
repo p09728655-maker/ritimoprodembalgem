@@ -628,6 +628,11 @@ via Google Apps Script (JSONP).
   teto físico** para lançamento acumulado (318 cx/h com teto 300) não virar alvo.
 - Com um MODELO filtrado no seletor, cascata/cobertura/ganho **não saem** (meta
   e realizado são da linha inteira; mostrariam um pedaço como se fosse o todo).
+- **O seletor filtra por PRODUTO, o agrupamento é que abre por cor**
+  (`keyFil`/`labelFil` no `_phAgrup`): no nível MODELO + COR, escolher
+  `501149 MADERO` traz **todas as cores dele**, cada uma na sua linha. Como a
+  chave do filtro é a mesma nos dois níveis, a seleção **sobrevive** à troca
+  MODELO ↔ MODELO + COR. Na FAMÍLIA, filtro = agrupamento.
 - ⚠ **Hora parcial e lançamento acumulado distorcem o ritmo/h, não o total**:
   a PRINCESA rodando 16:15–16:50 vira "40 cx/h" (35 min contam como 1 h) e o
   318 da DECOR 470 é lançamento de várias horas numa só. Nada disso se apaga da
