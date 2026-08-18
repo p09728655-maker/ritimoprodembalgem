@@ -193,9 +193,9 @@ ok('acha as 11 grafias erradas do catálogo', corrigir.length, 11);
 // ── 5) painel: a tabela do dia agrupa por PRODUTO e junta as cores ─────────
 console.log('\n── painel: uma linha por produto, cores na coluna ──');
 let PONTOS_DIA = { porHoraModelo: [
-  { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600 },
-  { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800 },
-  { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760 },
+  { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600, tetoCxH: 376 },
+  { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800, tetoCxH: 376 },
+  { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
 ]};
 eval(pega(JS, 'function calcPorModelo('));
 const r = calcPorModelo();
@@ -204,11 +204,15 @@ ok('as cores do MESMO produto somam numa linha só', r.linhas[0].caixas, 150);
 ok('e aparecem na coluna COR', r.linhas[0].cor, 'CUMARU · OFF WHITE');
 ok('peso continua saindo do código, só somado depois', r.linhas[0].pesoKg, 1095);
 ok('a coluna COR entra quando há cor', r.temCor, true);
+ok('o teto do dia acompanha (mesma régua do período)', Math.round(r.linhas[0].teto), 376);
+ok('e a coluna % TETO EST. entra quando o backend manda teto', r.temTeto, true);
 // Backend antigo não manda cor: a coluna some, em vez de virar parede de "—".
 PONTOS_DIA = { porHoraModelo: [
   { hora: '07:00', modelo: '501130', nome: 'MESA', caixas: 10, pesoKg: 73, pontos: 560 },
 ]};
-ok('sem cor nenhuma, a coluna não entra', calcPorModelo().temCor, false);
+const rAntigo=calcPorModelo();
+ok('sem cor nenhuma, a coluna não entra', rAntigo.temCor, false);
+ok('sem teto (backend antigo), a % TETO EST. também some', rAntigo.temTeto, false);
 
 // ── 5b) teto físico da esteira por código ─────────────────────────────────
 console.log('\n── teto da esteira ──');
