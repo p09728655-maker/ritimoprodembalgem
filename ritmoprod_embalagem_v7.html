@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.1';
+const APP_VER   = '7.7.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3993,6 +3993,7 @@ async function gerarRelatorioProducaoHora(){
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k],
+      nd: accsDia.filter(a=>a&&a.caixas>0).length,
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
       teto:_phTeto(rowAcc[k]) };
@@ -4007,6 +4008,66 @@ async function gerarRelatorioProducaoHora(){
   const top=linhas[0]?{label:linhas[0].label,total:linhas[0].acc.caixas}:null;
   const deStr=dGet('ph-de')||datas[0];
   const ateStr=dGet('ph-ate')||datas[datas.length-1];
+
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
+
+  // CASCATA DO PERÍODO: junta as caixas perdidas em paradas não planejadas
+  // (RP_PARADAS, a mesma conta da aba PARADAS) com meta × realizado do
+  // HISTORICO no mesmo intervalo. Busca sequencial com retry, como o relatório
+  // de paradas; falhou → o relatório sai SEM a cascata, nunca inventa.
+  // Com um MODELO filtrado a cascata e a cobertura não fazem sentido (meta e
+  // realizado são da LINHA inteira, a tabela mostraria só um pedaço).
+  let casc=null, cascNota='', cobertura=null;
+  if(CFG.sheetsUrl && _rpOk() && !sel && typeof RP_PARADAS!=='undefined'){
+    try{
+      const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(deStr)+'&ate='+encodeURIComponent(ateStr);
+      let paradas=null;
+      for(let i=1;i<=3&&paradas===null;i++){
+        try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
+        catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
+      }
+      if(paradas!==null){
+        const diasH=await buildDiasHistAsync();
+        const mBD={},rBD={}; (diasH||[]).forEach(d=>{ mBD[d.data]=d.meta; rBD[d.data]=d.real; });
+        await _carregarClassesPar();
+        const st=_paradasStats(paradas,mBD,{realByDay:rBD,de:deStr,ate:ateStr});
+        const rDe=_phParseData(deStr), rAte=_phParseData(ateStr); rAte.setHours(23,59,59,999);
+        // Meta e realizado do intervalo: só dias COM meta entram na cascata —
+        // dia com produção mas sem meta quebraria a conta; ele é contado e
+        // avisado na nota, em vez de distorcer em silêncio.
+        let metaTot=0, realTot=0, semMeta=0, realTotAll=0;
+        (diasH||[]).forEach(d=>{ const t=_phParseData(d.data); if(!t||t<rDe||t>rAte) return;
+          realTotAll+=d.real||0;
+          if(d.meta>0){ metaTot+=d.meta; realTot+=d.real||0; } else semMeta++; });
+        const tHoje=_phParseData(hojeStr());
+        if(tHoje>=rDe&&tHoje<=rAte){
+          const kH=calcKPIs(getDadosHoje());
+          realTotAll+=kH.real||0;
+          if(kH.real>0&&kH.meta>0){ metaTot+=kH.meta; realTot+=kH.real; }
+        }
+        // Cobertura do apontamento no período: quanto do realizado TOTAL a
+        // análise por modelo enxerga (só caixa lançada com produto entra nela).
+        if(realTotAll>0) cobertura=Math.min(100, totCx/realTotAll*100);
+        casc=_relCascata({meta:metaTot, real:realTot, perdaPar:st.pecas,
+          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null});
+        if(semMeta>0) cascNota=`${plural(semMeta,'dia com produção mas sem meta ficou fora','dias com produção mas sem meta ficaram fora')} da cascata.`;
+      }
+    }catch(e){ console.warn('[CASCATA período]:', e.message); }
+  }
+
+  // GANHO JÁ DEMONSTRADO (o alvo acionável): se cada modelo com 2+ dias
+  // repetisse o próprio melhor dia nas horas que rodou, quantas caixas a mais
+  // o período teria. O melhor dia é limitado ao teto físico — um lançamento
+  // acumulado (318 cx/h com teto 300) não pode virar "alvo". % do teto é
+  // régua de comparação; o alvo perseguível é este, que a equipe já provou.
+  let ganhoDemo=0;
+  if(metric==='mediaH' && !sel){
+    linhas.forEach(l=>{
+      if(l.nd<2) return;
+      const alvo=l.teto>0?Math.min(l.v2,l.teto):l.v2;
+      if(alvo>l.v1) ganhoDemo+=(alvo-l.v1)*l.acc.horas;
+    });
+  }
 
   const html=`<!DOCTYPE html>
 <html lang="pt-BR">
@@ -4045,7 +4106,7 @@ async function gerarRelatorioProducaoHora(){
   tfoot td{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; padding:6px 7px; border-top:1.5px solid #cbd5e0; background:#f8fafc; text-align:right; }
   tfoot td:first-child{ font-family:'Barlow Condensed',sans-serif; font-size:12px; text-align:left; }
   .col-tot{ color:#FF5C1F; font-weight:700; }
-${_RP_SWOT_CSS}
+${_RP_CASC_CSS}
   .rp-footer{ margin-top:18px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
   .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
@@ -4099,7 +4160,9 @@ ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
   </tfoot>
 </table>
 
-${metric==='mediaH'?_rpSwotHtml('ANÁLISE SWOT DO PERÍODO', _relSwotProducao(linhas.map(l=>({nome:l.label, caixas:l.acc.caixas, ritmo:l.v1, teto:l.teto||0, melhor:l.v2})), 'no período')):''}
+${_rpCascataHtml('CASCATA DO PERÍODO — ONDE FICARAM AS CAIXAS', casc, cascNota)}
+${cobertura!=null?`<div class="rp-note">${cobertura<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobertura)}</b> do realizado do período${cobertura<80?' — a análise por modelo é uma AMOSTRA, não o período inteiro':''}.</div>`:''}
+${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.round(ganhoDemo))} cx</b> no período se cada modelo repetisse o próprio MELHOR DIA nas mesmas horas (estimativa; melhor dia limitado ao teto físico). É o alvo acionável — o teto da esteira é régua, não meta.</div>`:''}
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
@@ -4114,103 +4177,71 @@ ${metric==='mediaH'?_rpSwotHtml('ANÁLISE SWOT DO PERÍODO', _relSwotProducao(li
   win.document.close();
 }
 
-// ── ANÁLISE SWOT da produção por modelo ─────────────────────────────────────
-// Usada pelo RELATÓRIO DO DIA e pelo RELATÓRIO DO PERÍODO — uma conta só, como
-// a SWOT de paradas: cada frase entra apenas quando o dado a sustenta, e
-// quadrante vazio diz "—", não inventa. Entra a lista de linhas já calculadas
-// do relatório: {nome, caixas, ritmo (cx/h), teto (cx/h, 0 = sem catálogo),
-// melhor (cx/h do melhor dia — só no período, 0 no dia)}.
-// Pedido explícito do PPCP (18/08/2026): quando o mix roda longe do teto
-// físico, dizer COM TODAS AS LETRAS que a velocidade da esteira não é o
-// problema — a discussão de acelerar esteira sai da pauta.
-function _relSwotProducao(linhas, rotPer){
-  const F=[],Q=[],O=[],A=[];
-  const vazio={forcas:F,fraquezas:Q,oportunidades:O,ameacas:A};
-  const ls=(linhas||[]).filter(l=>l&&l.caixas>0);
-  const totCx=ls.reduce((s,l)=>s+l.caixas,0);
-  if(!totCx) return vazio;
-  const comTeto=ls.filter(l=>l.teto>0&&l.ritmo>0).map(l=>({ ...l, pct:l.ritmo/l.teto*100 }));
-  // Ritmo acima do teto físico é impossível (mais caixas do que cabem na
-  // esteira): é apontamento, e não pode puxar o % do mix para cima.
-  const criveis=comTeto.filter(l=>l.pct<=105);
-  const cxT=criveis.reduce((s,l)=>s+l.caixas,0);
-  const pctMix=cxT>0?criveis.reduce((s,l)=>s+l.caixas*l.pct,0)/cxT:0;
-
-  // ── o recado da esteira, com todas as letras ──
-  if(pctMix>0&&pctMix<85)
-    F.push(`<b>A velocidade da esteira NÃO é o problema</b>: o mix rodou a <b>${fmtP(pctMix)}</b> do teto físico dela — sobra ~${fmtN(Math.round((100/pctMix-1)*100))}% de esteira. O limite está antes (abastecimento, montagem, troca).`);
-  else if(pctMix>=85)
-    A.push(`O mix rodou a <b>${fmtP(pctMix)}</b> do teto físico — nesse nível a velocidade da esteira <b>começa a ser limite</b>: avanço novo passa por ela.`);
-
-  // FORÇAS — melhor aproveitamento (com volume que sustente a leitura)
-  const relev=criveis.filter(l=>l.caixas>=totCx*0.05);
-  if(relev.length){
-    const top=relev.reduce((a,b)=>a.pct>b.pct?a:b);
-    if(top.pct>=45)
-      F.push(`<b>${top.nome}</b> é o melhor aproveitamento: <b>${fmtP(top.pct)}</b> do teto (${fmtN(Math.round(top.ritmo))} de ${fmtN(Math.round(top.teto))} cx/h possíveis).`);
-  }
-  // consistência (só o período tem melhor dia)
-  ls.filter(l=>l.melhor>0&&l.ritmo>=l.melhor*0.9&&l.caixas>=totCx*0.05).slice(0,1)
-    .forEach(l=>F.push(`<b>${l.nome}</b> roda estável: a média do período é ≥90% do próprio melhor dia.`));
-
-  // FRAQUEZAS — produtos rodando longe do teto + catálogo cego.
-  // A trava anti-ruído é dupla: UM produto <30% só entra se carregar ≥10% das
-  // caixas; mas DOIS OU MAIS já entram juntos, qualquer volume — num período
-  // com 20+ modelos ninguém chega a 10% sozinho, e a primeira versão desta
-  // regra deixou passar um relatório com DEZ produtos abaixo de 30% e a
-  // fraqueza dizendo "nada apontado" (18/08/2026).
-  const baixos=criveis.filter(l=>l.pct<30);
-  if(baixos.length){
-    const cxB=baixos.reduce((s,l)=>s+l.caixas,0);
-    const pior=baixos.reduce((a,b)=>a.pct<b.pct?a:b);
-    if(baixos.length>=2||cxB>=totCx*0.10)
-      Q.push(`${plural(baixos.length,'produto rodou','produtos rodaram')} abaixo de <b>30% do teto</b> (${fmtP(cxB/totCx*100)} das caixas) — o pior é <b>${pior.nome}</b>, a <b>${fmtP(pior.pct)}</b> (${fmtN(Math.round(pior.ritmo))} de ${fmtN(Math.round(pior.teto))} cx/h).`);
-  }
-  const semTeto=ls.filter(l=>!(l.teto>0)).length;
-  if(semTeto)
-    Q.push(`${plural(semTeto,'produto','produtos')} sem MEDIDA/VELOCIDADE no catálogo — sem régua física para ${semTeto===1?'julgá-lo':'julgá-los'}.`);
-
-  // OPORTUNIDADES — ganho já demonstrado + valor de cada ponto do teto
-  ls.filter(l=>l.melhor>0&&l.ritmo>0&&l.ritmo<l.melhor*0.75&&l.caixas>=totCx*0.05)
-    .sort((a,b)=>b.caixas-a.caixas).slice(0,2)
-    .forEach(l=>O.push(`Replicar o melhor dia de <b>${l.nome}</b> (${fmtN(Math.round(l.melhor))} cx/h contra ${fmtN(Math.round(l.ritmo))} de média) — ganho já demonstrado pela própria equipe.`));
-  // Σ(cx ÷ pct) = caixas que 1 ponto percentual do teto representa no mix.
-  const cxPorPonto=Math.round(criveis.reduce((s,l)=>s+l.caixas/l.pct,0));
-  if(cxPorPonto>0&&pctMix>0&&pctMix<85)
-    O.push(`Cada ponto de % do teto no mix vale <b>~${fmtN(cxPorPonto)} cx</b> ${rotPer}.`);
-
-  // AMEAÇAS — dependência de um produto e apontamento cegando a régua
-  const top1=ls.reduce((a,b)=>a.caixas>b.caixas?a:b);
-  if(top1.caixas>=totCx*0.5&&ls.length>1)
-    A.push(`<b>${top1.nome}</b> concentrou <b>${fmtP(top1.caixas/totCx*100)}</b> das caixas — dependência de um produto só.`);
-  comTeto.filter(l=>l.pct>105).slice(0,2)
-    .forEach(l=>A.push(`<b>${l.nome}</b> marcou ${fmtN(Math.round(l.ritmo))} cx/h, ACIMA do teto físico (${fmtN(Math.round(l.teto))}) — apontamento errado cegando a régua.`));
-
-  return vazio;
+// ── CASCATA: META × PARADAS × RITMO ─────────────────────────────────────────
+// Substituiu a SWOT dos relatórios de produção (pedido do PPCP, 18/08/2026):
+// a SWOT era moldura de comunicação; a decisão precisa saber ONDE ficaram as
+// caixas que faltaram — paradas ou ritmo. A cascata junta as duas metades que
+// o app já calcula separadas: as caixas perdidas em paradas NÃO planejadas
+// (RP_PARADAS, a MESMA conta da aba PARADAS) e o realizado × meta. O resto da
+// diferença é ritmo — inclui microparadas não registradas, e o rótulo diz isso.
+// Conta pura; sem meta não há cascata (null), nunca número inventado.
+function _relCascata(e){
+  const meta=Number(e&&e.meta)||0, real=Number(e&&e.real)||0;
+  const perdaPar=Math.max(0,Number(e&&e.perdaPar)||0);
+  if(!(meta>0)) return null;
+  const resto=meta-perdaPar-real;
+  return { meta, real, perdaPar,
+           perdaRitmo: Math.max(0,resto),
+           ganhoRitmo: Math.max(0,-resto),
+           pctReal: real/meta*100,
+           minNP: Number(e&&e.minNP)||0,
+           topTipo: (e&&e.topTipo)||null };
 }
 
-// Bloco HTML da SWOT — o DIA e o PERÍODO usam este; o de paradas é anterior e
-// tem o dele. Quadrante vazio diz "—", não inventa.
-function _rpSwotHtml(titulo, sw){
-  const q=(t,cor,itens)=>`<div class="swot-q" style="border-top-color:${cor}">
-    <div class="swot-ttl" style="color:${cor}">${t}</div>
-    ${itens.length?itens.map(i=>`<div class="swot-item">▸ ${i}</div>`).join(''):'<div class="swot-item" style="color:#a0aec0">— nada apontado pelos dados</div>'}
-  </div>`;
+// Bloco HTML da cascata (DIA e PERÍODO usam o mesmo): a barra no visual da
+// Tela D — verde = realizado, âmbar listrado = perdido no ritmo, vermelho
+// listrado = perdido parado, e a MARCA DA META como linha vertical.
+function _rpCascataHtml(titulo, c, nota){
+  if(!c) return '';
+  const escala=Math.max(c.meta, c.real+c.perdaPar)||1;
+  const w=v=>Math.max(0,v/escala*100).toFixed(2)+'%';
+  const pctMeta=Math.min(100,c.meta/escala*100);
+  const linhaRitmo = c.ganhoRitmo>0
+    ? `<div class="casc-l"><span>GANHO DE RITMO</span><b style="color:#2e7d32">+${fmtN(Math.round(c.ganhoRitmo))} cx</b><i>a linha rodou acima do ritmo da meta</i></div>`
+    : `<div class="casc-l"><span>PERDIDO NO RITMO</span><b style="color:#e65100">−${fmtN(Math.round(c.perdaRitmo))} cx</b><i>ritmo abaixo do necessário — inclui microparadas não registradas</i></div>`;
   return `<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>
-  <div class="swot-grid">
-    ${q('FORÇAS','#2e7d32',sw.forcas)}${q('FRAQUEZAS','#c62828',sw.fraquezas)}
-    ${q('OPORTUNIDADES','#1565c0',sw.oportunidades)}${q('AMEAÇAS','#e65100',sw.ameacas)}
-  </div>`;
+  <div class="casc-bar">
+    <span class="casc-seg casc-real" style="width:${w(c.real)}"></span>
+    <span class="casc-seg casc-rit"  style="width:${w(c.perdaRitmo)}"></span>
+    <span class="casc-seg casc-par"  style="width:${w(c.perdaPar)}"></span>
+    <span class="casc-meta" style="left:${pctMeta}%"><b>META ${fmtN(c.meta)}</b></span>
+  </div>
+  <div class="casc-lin">
+    <div class="casc-l"><span>META</span><b>${fmtN(c.meta)} cx</b><i>o que estava programado</i></div>
+    <div class="casc-l"><span>PERDIDO PARADO</span><b style="color:#c62828">−${fmtN(Math.round(c.perdaPar))} cx</b><i>${c.minNP?_fmtMinPar(c.minNP)+' em paradas não planejadas':'paradas não planejadas'}${c.topTipo?' · maior: '+c.topTipo.tipo:''}</i></div>
+    ${linhaRitmo}
+    <div class="casc-l casc-tot"><span>REALIZADO</span><b style="color:#2e7d32">${fmtN(c.real)} cx</b><i>${fmtP(c.pctReal)} da meta</i></div>
+  </div>
+  ${nota?`<div class="rp-note">⚠ ${nota}</div>`:''}`;
 }
-const _RP_SWOT_CSS=`
-  .swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .swot-q{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #ccc;border-radius:5px;padding:9px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
-  .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
-  .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}`;
+const _RP_CASC_CSS=`
+  .casc-bar{position:relative;display:flex;height:24px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;margin:22px 0 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .casc-seg{display:block;height:100%}
+  .casc-real{background:#4CAF50;border-radius:999px 0 0 999px}
+  .casc-rit{background:repeating-linear-gradient(135deg,#FF9800 0 8px,#ffc069 8px 16px)}
+  .casc-par{background:repeating-linear-gradient(135deg,#F44336 0 8px,#ef9a9a 8px 16px);border-radius:0 999px 999px 0}
+  .casc-meta{position:absolute;top:-5px;bottom:-5px;width:2px;background:#1a1a2e}
+  .casc-meta b{position:absolute;bottom:100%;right:0;font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1px;white-space:nowrap;color:#1a1a2e;padding-bottom:2px}
+  .casc-lin{display:grid;gap:4px}
+  .casc-l{display:grid;grid-template-columns:150px 110px 1fr;gap:10px;font-size:10.5px;align-items:baseline}
+  .casc-l span{font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1.5px;color:#718096}
+  .casc-l b{font-family:'IBM Plex Mono',monospace;text-align:right}
+  .casc-l i{font-style:normal;color:#718096}
+  .casc-tot{border-top:1px solid #e2e8f0;padding-top:4px}`;
 
 // Relatório formatado (janela separada, pronta pra exportar em PDF pelo
 // navegador) — mesmo padrão visual do gerarRelatorioSemanal() do HISTÓRICO.
-function gerarRelatorioProducaoModelo(){
+async function gerarRelatorioProducaoModelo(){
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
@@ -4219,6 +4250,28 @@ function gerarRelatorioProducaoModelo(){
     win.close();
     alert('Sem produção por modelo hoje — nada pra gerar no relatório\n(o operador precisa selecionar o produto ao lançar no app).');
     return;
+  }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
+
+  // CASCATA DO DIA: meta × paradas × ritmo de HOJE. As paradas vêm do
+  // getParadas (a mesma chamada barata do banner da TV); falhou ou não há
+  // Sheets → o relatório sai SEM a cascata, nunca com número inventado.
+  let cascDia=null;
+  const kH=calcKPIs(getDadosHoje());
+  // COBERTURA DO APONTAMENTO: a tabela por modelo só vê caixa lançada COM
+  // produto (opcional no app). Quanto do realizado do dia ela cobre decide se
+  // a análise é o dia inteiro ou uma amostra — e isso precisa estar escrito.
+  const cobDia = kH.real>0 ? Math.min(100, totCx/kH.real*100) : null;
+  if(CFG.sheetsUrl && _rpOk()){
+    try{
+      const j=await jsonpFetch(CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas');
+      if(j&&j.ok){
+        await _carregarClassesPar();
+        const st=_paradasStats(j.paradas||[], {}, {de:hojeStr(), ate:hojeStr()});
+        cascDia=_relCascata({meta:kH.meta, real:kH.real, perdaPar:st.pecas,
+          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null});
+      }
+    }catch(e){ console.warn('[CASCATA dia] sem paradas:', e.message); }
   }
 
   const html=`<!DOCTYPE html>
@@ -4259,7 +4312,7 @@ function gerarRelatorioProducaoModelo(){
   tbody tr:last-child td{ border-bottom:none; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
-${_RP_SWOT_CSS}
+${_RP_CASC_CSS}
 
   .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
   .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
@@ -4316,7 +4369,8 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
   </tbody>
 </table>
 
-${_rpSwotHtml('ANÁLISE SWOT DO DIA', _relSwotProducao(linhas.map(m=>({nome:(m.modelo+(m.nome?' · '+m.nome:'')), caixas:m.caixas, ritmo:m.media, teto:m.teto||0, melhor:0})), 'no dia'))}
+${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
+${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>

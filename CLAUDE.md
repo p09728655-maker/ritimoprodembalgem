@@ -605,20 +605,34 @@ via Google Apps Script (JSONP).
   `produto-cor.test.js` roda a função real contra um log de mentira e falha se
   divergirem.
 
-## SWOT da produção por modelo (RELATÓRIO DO DIA e DO PERÍODO)
-- **`_relSwotProducao(linhas, rotPer)`**, conta pura + testes no
-  `relatorios.test.js` — mesma filosofia da SWOT de paradas: frase só entra
-  quando o dado sustenta, quadrante vazio mostra "—". O bloco HTML é
-  `_rpSwotHtml` + `_RP_SWOT_CSS`, compartilhados pelos DOIS relatórios de
-  produção (o de paradas é anterior e tem os dele).
-- **O recado da esteira é explícito, a pedido do PPCP**: mix <85% do teto →
-  FORÇA *"A velocidade da esteira NÃO é o problema"* (com o % e a sobra);
-  mix ≥85% → AMEAÇA *"a velocidade começa a ser limite"*. Ritmo acima do teto
-  (impossível) fica FORA do % do mix e vira ameaça de apontamento.
-- Regras anti-ruído: fraqueza de pior aproveitamento exige **≥10% das caixas**
-  e % <30; força de melhor aproveitamento exige ≥5% e % ≥45; "replicar o melhor
-  dia" (só o período tem melhor) exige média <75% do próprio melhor.
-- No período a SWOT só sai na métrica **MÉDIA CX/H** (as outras não têm ritmo).
+## Cascata + cobertura + ganho demonstrado (relatórios de produção)
+- **A SWOT saiu dos relatórios de produção** (pedido do PPCP, 18/08/2026 — "tira
+  swot e faz cascata"); a de PARADAS continua, que lá é nativa. No lugar, três
+  leituras, nos PDFs do DIA e do PERÍODO:
+- **CASCATA — onde ficaram as caixas** (`_relCascata`, conta pura +
+  `relatorios.test.js`): `META − perdido PARADO − perdido no RITMO = REALIZADO`.
+  O "parado" é o `pecas` do `RP_PARADAS` (a MESMA conta da aba PARADAS, buscada
+  na hora via `getParadasPeriodo`/`getParadas`); o resto da diferença é ritmo
+  (o rótulo avisa que inclui microparadas não registradas). Realizado acima do
+  ritmo da meta vira **GANHO de ritmo**, nunca perda inventada; sem meta não há
+  cascata (null); falhou a busca de paradas → o relatório sai SEM a seção.
+  Dia com produção mas **sem meta fica fora** da cascata, contado na nota.
+  A barra usa a linguagem da Tela D (verde/âmbar/vermelho + marca da META).
+- **COBERTURA DO APONTAMENTO**: a análise por modelo só vê caixa lançada COM
+  produto (opcional no app). A nota diz quanto do realizado ela cobre —
+  abaixo de 80% ganha ⚠ e a palavra AMOSTRA. Sem isso, análise sobre 60% das
+  caixas passa por análise do todo.
+- **GANHO JÁ DEMONSTRADO** (período): se cada modelo com 2+ dias repetisse o
+  próprio MELHOR DIA nas horas que rodou, +X cx. É o alvo acionável — o % do
+  teto da esteira é régua de comparação, não meta. O melhor dia é **limitado ao
+  teto físico** para lançamento acumulado (318 cx/h com teto 300) não virar alvo.
+- Com um MODELO filtrado no seletor, cascata/cobertura/ganho **não saem** (meta
+  e realizado são da linha inteira; mostrariam um pedaço como se fosse o todo).
+- ⚠ **Hora parcial e lançamento acumulado distorcem o ritmo/h, não o total**:
+  a PRINCESA rodando 16:15–16:50 vira "40 cx/h" (35 min contam como 1 h) e o
+  318 da DECOR 470 é lançamento de várias horas numa só. Nada disso se apaga da
+  `PRODUCAO_PRODUTO` — a média aparada descarta, o veredito ignora o impossível,
+  e o combinado operacional é lançar hora a hora.
 
 ## Notas / armadilhas conhecidas
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
