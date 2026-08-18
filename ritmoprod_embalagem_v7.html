@@ -1636,6 +1636,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">AGRUPAR</span>
     <select id="ph-grupo" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="modelo">MODELO</option>
+      <option value="cor">MODELO + COR</option>
       <option value="familia">FAMÍLIA</option>
     </select>
     <span id="ph-filtro-lbl" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MODELO</span>
@@ -1681,8 +1682,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr></thead>
-        <tbody id="porhora2-body"><tr><td colspan="5" class="empty-msg">Carregando…</td></tr></tbody>
+        <thead><tr><th>MODELO</th><th id="porhora2-th-cor" style="display:none">COR</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr></thead>
+        <tbody id="porhora2-body"><tr><td colspan="6" class="empty-msg">Carregando…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2129,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.6';
+const APP_VER   = '7.6.7';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3602,32 +3603,42 @@ function renderSemanaGer(){
 // PRODUÇÃO POR MODELO — TELA DEDICADA (total do dia, soma as variantes de cor
 // e as horas: um modelo por linha, não repete o mesmo modelo em várias horas)
 // ════════════════════════════════════════════════
-// Agrupa PONTOS_DIA.porHoraModelo por MODELO (soma caixas/peso/pontos do dia
+// Agrupa PONTOS_DIA.porHoraModelo por PRODUTO (soma caixas/peso/pontos do dia
 // inteiro e conta em quantas horas distintas apareceu, pra tirar a média
 // cx/h). Reaproveitado pela tela e pelo relatório (gerarRelatorioProducaoModelo).
+// A chave é modelo + NOME, não o código de 6 dígitos sozinho: há código que
+// junta produtos diferentes (o 501130 tem mesa centro 670/590, apoio 530 e
+// lateral 440, com pesos de 7,3 a 4,0 kg). As CORES do mesmo produto continuam
+// somadas numa linha só — elas vão para a coluna COR.
 function calcPorModelo(){
   const lista=(PONTOS_DIA.porHoraModelo)||[];
   const porModelo={}, ordem=[];
   lista.forEach(it=>{
-    if(!porModelo[it.modelo]){
-      porModelo[it.modelo]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set() };
-      ordem.push(it.modelo);
+    const k=it.modelo+'|'+(it.nome||'');
+    if(!porModelo[k]){
+      porModelo[k]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set(), cores:new Set() };
+      ordem.push(k);
     }
-    const m=porModelo[it.modelo];
+    const m=porModelo[k];
     m.caixas+=it.caixas; m.pesoKg+=it.pesoKg; m.pontos+=it.pontos;
     m.horas.add(it.hora);
+    if(it.cor) m.cores.add(it.cor);
   });
   ordem.sort((a,b)=>porModelo[b].caixas-porModelo[a].caixas);
-  const linhas=ordem.map(modelo=>{
-    const m=porModelo[modelo];
+  const linhas=ordem.map(k=>{
+    const m=porModelo[k];
     return { modelo:m.modelo, nome:m.nome, caixas:m.caixas,
       pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
+      cor:[...m.cores].sort().join(' · '),
       media:Math.round(m.caixas/m.horas.size) };
   });
   const totCx=linhas.reduce((s,l)=>s+l.caixas,0);
   const totPeso=Math.round(linhas.reduce((s,l)=>s+l.pesoKg,0)*10)/10;
   const totPts=linhas.reduce((s,l)=>s+l.pontos,0);
-  return { linhas, totCx, totPeso, totPts };
+  // Backend antigo (sem a coluna COR no catálogo) não manda cor nenhuma: aí a
+  // coluna some, em vez de virar uma parede de "—" (mesma regra da coluna
+  // MOTIVO no relatório de paradas).
+  return { linhas, totCx, totPeso, totPts, temCor: linhas.some(l=>!!l.cor) };
 }
 
 // Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
@@ -3637,14 +3648,17 @@ function renderProducaoPorHoraDedicada(){
   const body=document.getElementById('porhora2-body');
   const totEl=document.getElementById('porhora2-totais');
   if(!body) return;
-  const {linhas,totCx,totPeso,totPts}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor}=calcPorModelo();
+  const thCor=document.getElementById('porhora2-th-cor');
+  if(thCor) thCor.style.display=temCor?'':'none';
   if(!linhas.length){
-    body.innerHTML='<tr><td colspan="5" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
+    body.innerHTML='<tr><td colspan="6" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
     if(totEl) totEl.textContent='';
     return;
   }
   body.innerHTML=linhas.map(m=>`<tr>
       <td style="text-align:left">${m.modelo}${m.nome?' · '+m.nome:''}</td>
+      ${temCor?`<td style="text-align:left;color:var(--txt2)">${m.cor||'—'}</td>`:''}
       <td class="mono">${fmtN(m.caixas)}</td>
       <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
@@ -3783,16 +3797,10 @@ async function renderModeloPeriodo(){
     return;
   }
 
-  // Nível de agrupamento: MODELO (RACK INTENSE, RACK TOPAZIO…) ou FAMÍLIA
-  // ampla (RACK). Cada item já traz modelo, nome (limpo) e familia — a troca é
-  // toda no cliente, sem refazer a chamada.
-  const ehFam=((document.getElementById('ph-grupo')||{}).value||'modelo')==='familia';
-  const keyOf  =it=> ehFam ? (it.familia||it.modelo) : it.modelo;
-  const labelOf=it=> ehFam ? (it.familia||it.modelo) : (it.nome?(it.modelo+' · '+it.nome):it.modelo);
-  const Termo  = ehFam?'FAMÍLIA':'MODELO';
-  const Termos = ehFam?'FAMÍLIAS':'MODELOS';
-  const termoS = ehFam?'família':'modelo';
-  const termoP = ehFam?'famílias':'modelos';
+  // Nível de agrupamento (produto / produto+cor / família ampla): cada item já
+  // traz modelo, nome sem cor, cor e familia — a troca é toda no cliente, sem
+  // refazer a chamada.
+  const {ehFam,keyOf,labelOf,Termo,Termos,termoS,termoP}=_phAgrup();
   const fltLbl=document.getElementById('ph-filtro-lbl'); if(fltLbl) fltLbl.textContent=Termo;
 
   // Seletor (por total de caixas no período), preservando a seleção.
@@ -3887,14 +3895,34 @@ async function renderModeloPeriodo(){
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
+// Nível de agrupamento do comparativo — MESMA regra para a tela e para o PDF.
+// Estava escrita duas vezes (renderModeloPeriodo e gerarRelatorioProducaoHora):
+// a primeira mudança em uma só faria o relatório contar diferente da tela.
+//   modelo  → um produto por linha. A chave inclui o NOME porque o código de 6
+//             dígitos não basta: há código que junta produtos diferentes (o
+//             501130 tem mesa centro 670/590, apoio 530 e lateral 440). As
+//             cores do mesmo produto somam numa linha só.
+//   cor     → abre o produto por cor (a cor vem da coluna COR do catálogo).
+//   familia → agrupamento amplo (RACK, MESA CABECEIRA…).
+function _phAgrup(){
+  const nivel=((document.getElementById('ph-grupo')||{}).value||'modelo');
+  const ehFam=nivel==='familia', ehCor=nivel==='cor';
+  const keyOf = it => ehFam ? (it.familia||it.modelo)
+                            : it.modelo+'|'+(it.nome||'')+(ehCor?'|'+(it.cor||''):'');
+  const labelOf = it => ehFam ? (it.familia||it.modelo)
+                              : it.modelo+(it.nome?' · '+it.nome:'')+((ehCor&&it.cor)?' · '+it.cor:'');
+  return { nivel, ehFam, ehCor, keyOf, labelOf,
+           Termo:  ehFam?'FAMÍLIA' :ehCor?'MODELO + COR':'MODELO',
+           Termos: ehFam?'FAMÍLIAS':ehCor?'MODELOS + COR':'MODELOS',
+           termoS: ehFam?'família' :ehCor?'modelo/cor'   :'modelo',
+           termoP: ehFam?'famílias':ehCor?'modelos/cor'  :'modelos' };
+}
+
 // Relatório do PERÍODO (janela separada p/ PDF) — comparativo modelo × dia.
 async function gerarRelatorioProducaoHora(){
   const itens=await _phItensPeriodo();
   if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
-  const ehFam=((document.getElementById('ph-grupo')||{}).value||'modelo')==='familia';
-  const keyOf  =it=> ehFam ? (it.familia||it.modelo) : it.modelo;
-  const labelOf=it=> ehFam ? (it.familia||it.modelo) : (it.nome?(it.modelo+' · '+it.nome):it.modelo);
-  const Termo  = ehFam?'FAMÍLIA':'MODELO';
+  const {ehFam,keyOf,labelOf,Termo}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
   const itensView = sel ? itens.filter(it=>keyOf(it)===sel) : itens;
   if(!itensView.length){ alert('Sem produção no período selecionado — nada pra gerar no relatório.'); return; }
@@ -4038,7 +4066,7 @@ function gerarRelatorioProducaoModelo(){
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
-  const {linhas,totCx,totPeso,totPts}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor}=calcPorModelo();
   if(!linhas.length){
     win.close();
     alert('Sem produção por modelo hoje — nada pra gerar no relatório\n(o operador precisa selecionar o produto ao lançar no app).');
@@ -4123,12 +4151,13 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
 <div class="rp-sec-ttl" style="margin-top:18px">DETALHAMENTO POR MODELO</div>
 <table>
   <thead>
-    <tr><th>MODELO</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr>
+    <tr><th>MODELO</th>${temCor?'<th>COR</th>':''}<th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr>
   </thead>
   <tbody>
     ${linhas.map(m=>`
     <tr>
       <td>${m.modelo}${m.nome?' · '+m.nome:''}</td>
+      ${temCor?`<td>${m.cor||'—'}</td>`:''}
       <td class="td-bold">${m.caixas.toLocaleString('pt-BR')}</td>
       <td class="td-mono">${m.pesoKg.toLocaleString('pt-BR')} kg</td>
       <td class="td-mono">${m.pontos.toLocaleString('pt-BR')}</td>

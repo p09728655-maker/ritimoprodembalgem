@@ -168,6 +168,204 @@ function familiaDoNome(desc) {
   return melhor || s.split(' ')[0];
 }
 
+// ════════════════════════════════════════════════════════
+// COR × PRODUTO — a descrição do catálogo traz os dois juntos
+// ════════════════════════════════════════════════════════
+// "VOL 1/1 MESA CENTRO LUNA 670 OFF WHITE" é produto (MESA CENTRO LUNA 670) +
+// cor (OFF WHITE) no mesmo texto. Enquanto o relatório agrupava pelos 6
+// primeiros dígitos do código e tirava o nome do PREFIXO COMUM das variantes,
+// duas coisas quebravam:
+//   1) há código de 6 dígitos que junta produtos DIFERENTES — o 501130 tem
+//      MESA CENTRO LUNA 670, MESA CENTRO LUNA 590, MESA APOIO LUNA 530 e MESA
+//      LATERAL LUNA 440. Uma linha só, somando peso de 7,3 kg com o de 4,0 kg;
+//   2) com produtos diferentes no mesmo código, o prefixo comum desabava para
+//      "VOL 1/1 MESA" e, tirado o "VOL 1/1", o relatório mostrava só "MESA".
+// Agora a COR é separada do nome: agrupa-se por PRODUTO (nome sem cor) e a cor
+// vai em coluna própria. Peso e pontos continuam saindo do CÓDIGO (cada cor tem
+// o seu P B na planilha) e só depois somam — separar não mexe em conta nenhuma.
+//
+// ► Cores conhecidas. Entrou cor nova no catálogo? É só acrescentar aqui. ◄
+const CORES = [
+  'OFF','WHITE','BRANCO','PRETO','ACETINADO','CINAMOMO','CUMARU','ALECRIM',
+  'ROSA','AZUL','VERDE','CINZA','GRAFITE','NATURE','NATURAL','NOGAL',
+  'FREIJO','CARVALHO','AMENDOA','AREIA','FENDI','TERRACOTA','JATOBA','IPE',
+  'CANELA','CAFE','CHOCOLATE','MARROM','BEGE','NUDE','TURQUESA','LILAS',
+  'AMARELO','VERMELHO','SALMAO','MADEIRADO','RUSTICO','FOSCO','BRILHO'
+];
+// ⚠ MEL de propósito FORA da lista: neste catálogo ela é nome de produto
+// (PENTEADEIRA CAMARIM MEL, ao lado da ELOA e da STRASS), não acabamento.
+// A lista acima não precisa estar completa: o próprio catálogo ENSINA cor nova.
+// Palavra que fecha a descrição em MUITOS modelos diferentes é cor — nome de
+// produto não se repete assim (LUNA está em 1 modelo; WHITE, em dezenas).
+const CORES_MIN_MODELOS = 4;
+
+// Palavras da descrição, já sem o "VOL 1/1" e em MAIÚSCULAS.
+function _tokensDesc(desc) {
+  return limpaNomeModelo(desc).replace(/\s+/g, ' ').trim().split(' ').filter(String);
+}
+// "CINAMOMO/OFF" são duas cores num token só — o token só é cor se TODOS os
+// pedaços forem cor.
+function _partesToken(t) {
+  return String(t || '').split('/').filter(String);
+}
+function _ehTokenCor(t, cores) {
+  const partes = _partesToken(t);
+  return partes.length > 0 && partes.every(function (p) { return !!cores[p]; });
+}
+
+// Vocabulário de cores: a lista fixa + o que o catálogo ensina.
+// Só entra palavra que FECHA a descrição em ≥ CORES_MIN_MODELOS modelos
+// diferentes. É de propósito que a varredura não anda mais para a esquerda:
+// "RACK BRITO 137 CM MARSALA" tem CM logo antes da cor em vários modelos, e um
+// passo a mais aprenderia CM como cor, comendo a medida do nome do produto.
+// Cor composta cujo miolo não está na lista fixa fica no nome — o palpite erra
+// para o lado seguro, e a coluna COR da planilha resolve de vez.
+let _coresMemo = null;
+function coresConhecidas() {
+  if (_coresMemo) return _coresMemo;
+  const cores = {};
+  CORES.forEach(function (c) { cores[c] = true; });
+
+  const cont = {};      // palavra -> { modelo: true }
+  lerCatalogoProdutos().forEach(function (pr) {
+    const modelo = String(pr.codigo || '').slice(0, 6);
+    const tk = _tokensDesc(pr.desc);
+    if (!modelo || tk.length < 2) return;
+    _partesToken(tk[tk.length - 1]).forEach(function (p) {
+      if (/^[0-9.,]+$/.test(p)) return;        // medida ("1.8", "670") não é cor
+      (cont[p] = cont[p] || {})[modelo] = true;
+    });
+  });
+  Object.keys(cont).forEach(function (p) {
+    if (Object.keys(cont[p]).length >= CORES_MIN_MODELOS) cores[p] = true;
+  });
+
+  _coresMemo = cores;
+  return cores;
+}
+
+// Separa "MESA CENTRO LUNA 670 OFF WHITE" em { base:'MESA CENTRO LUNA 670',
+// cor:'OFF WHITE' }. Nunca devolve base vazia: se a descrição inteira for cor,
+// a primeira palavra fica como nome (melhor um nome pobre que nenhum).
+function separaCorProduto(desc) {
+  const tk = _tokensDesc(desc);
+  if (!tk.length) return { base: '', cor: '' };
+  const cores = coresConhecidas();
+  let i = tk.length;
+  while (i > 1 && _ehTokenCor(tk[i - 1], cores)) i--;
+  return { base: tk.slice(0, i).join(' '), cor: tk.slice(i).join(' ') };
+}
+
+// Mapa código -> { modelo (6 díg.), base (nome sem cor), cor }.
+// A COLUNA COR da PRODUTO_CODIGO tem prioridade: se ela está preenchida, a
+// descrição já vem sem cor e não há nada a adivinhar. A separação por texto só
+// entra na linha que ficou sem cor cadastrada (ou em planilha antiga, sem a
+// coluna) — melhor um palpite do que o nome do produto sumir do relatório.
+let _prodBaseMemo = null;
+function mapaProdutoBase() {
+  if (_prodBaseMemo) return _prodBaseMemo;
+  const m = {};
+  lerCatalogoProdutos().forEach(function (pr) {
+    const cod = String(pr.codigo || '').trim();
+    if (!cod) return;
+    const daPlanilha = String(pr.cor || '').trim();
+    if (daPlanilha) {
+      m[cod] = { modelo: cod.slice(0, 6), base: limpaNomeModelo(pr.desc), cor: daPlanilha, fonte: 'planilha' };
+    } else {
+      const sep = separaCorProduto(pr.desc);
+      m[cod] = { modelo: cod.slice(0, 6), base: sep.base, cor: sep.cor, fonte: 'texto' };
+    }
+  });
+  _prodBaseMemo = m;
+  return m;
+}
+
+// Produto de um código, com queda segura para quem não está no catálogo:
+// sem descrição não há o que separar, e o modelo (6 díg.) vira o nome.
+function produtoDoCodigo(codigo) {
+  const cod = String(codigo || '').trim();
+  const it = mapaProdutoBase()[cod];
+  if (it) return it;
+  return { modelo: cod.slice(0, 6), base: '', cor: '', fonte: 'sem catálogo' };
+}
+
+// ════════════════════════════════════════════════════════
+// SIMULAÇÃO (rodar no editor do Apps Script, não grava nada)
+// ════════════════════════════════════════════════════════
+// Mostra o que a separação faz com o catálogo REAL: quais cores foram
+// aprendidas além da lista, quais códigos de 6 dígitos passam a virar mais de
+// um produto e quais descrições ficaram com nome suspeito (uma palavra só, ou
+// sem cor num modelo em que todas as outras variantes têm). É por aqui que se
+// confere antes de acreditar no relatório.
+function simularSeparacaoPorProduto() {
+  // De onde saiu a cor de cada linha — o normal é 100% "planilha" depois que a
+  // coluna COR estiver preenchida.
+  const fonte = { planilha: 0, texto: 0 };
+  const semCor = [];
+  lerCatalogoProdutos().forEach(function (pr) {
+    const it = produtoDoCodigo(pr.codigo);
+    fonte[it.fonte] = (fonte[it.fonte] || 0) + 1;
+    if (it.fonte === 'texto') semCor.push(pr.codigo + ' ' + pr.desc);
+  });
+  Logger.log('COR: ' + fonte.planilha + ' linha(s) pela coluna COR da planilha, ' +
+             fonte.texto + ' separada(s) pelo texto da descrição.');
+  if (semCor.length) {
+    Logger.log('Linhas SEM cor cadastrada (a cor foi adivinhada pelo texto):\n  ' +
+               semCor.slice(0, 40).join('\n  ') + (semCor.length > 40 ? '\n  … (+' + (semCor.length - 40) + ')' : ''));
+  }
+
+  // Cores distintas encontradas, com quantas linhas cada uma — é aqui que
+  // aparece divergência de escrita ("BCO/AZUL" ao lado de "BRANCO/AZUL"),
+  // que dividiria a mesma cor em duas na coluna do relatório.
+  const porCor = {};
+  lerCatalogoProdutos().forEach(function (pr) {
+    const c = produtoDoCodigo(pr.codigo).cor || '(sem cor)';
+    porCor[c] = (porCor[c] || 0) + 1;
+  });
+  Logger.log('Cores distintas no catálogo: ' + Object.keys(porCor).length);
+  Object.keys(porCor).sort().forEach(function (c) {
+    Logger.log('   ' + (porCor[c] < 3 ? '⚠ ' : '  ') + c + ' — ' + porCor[c] + ' linha(s)');
+  });
+
+  const cores = coresConhecidas();
+  const fixas = {};
+  CORES.forEach(function (c) { fixas[c] = true; });
+  const aprendidas = Object.keys(cores).filter(function (c) { return !fixas[c]; }).sort();
+  Logger.log('CORES aprendidas do catálogo (além da lista fixa): ' +
+             (aprendidas.length ? aprendidas.join(', ') : '(nenhuma)'));
+
+  const porModelo = {};
+  lerCatalogoProdutos().forEach(function (pr) {
+    const it = produtoDoCodigo(pr.codigo);
+    if (!it.modelo) return;
+    const g = porModelo[it.modelo] = porModelo[it.modelo] || { bases: {}, n: 0 };
+    (g.bases[it.base] = g.bases[it.base] || []).push(it.cor || '(sem cor)');
+    g.n++;
+  });
+
+  const modelos = Object.keys(porModelo).sort();
+  const divididos = modelos.filter(function (m) { return Object.keys(porModelo[m].bases).length > 1; });
+  Logger.log('Catálogo: ' + modelos.length + ' modelos de 6 dígitos; ' +
+             divididos.length + ' passam a mostrar mais de um produto.');
+  divididos.forEach(function (m) {
+    Logger.log('  ' + m + ':');
+    Object.keys(porModelo[m].bases).forEach(function (b) {
+      Logger.log('     • ' + b + '  [' + porModelo[m].bases[b].join(' | ') + ']');
+    });
+  });
+
+  const suspeitos = [];
+  modelos.forEach(function (m) {
+    Object.keys(porModelo[m].bases).forEach(function (b) {
+      if (!b || b.split(' ').length < 2) suspeitos.push(m + ' → "' + b + '"');
+    });
+  });
+  Logger.log(suspeitos.length
+    ? 'Nomes suspeitos (uma palavra só) — conferir a DESCRICAO na PRODUTO_CODIGO:\n  ' + suspeitos.join('\n  ')
+    : 'Nenhum nome de uma palavra só.');
+}
+
+
 // Horário do fechamento automático (segue o fuso do PROJETO no gatilho).
 const HORA_RESET  = 23;  // 23h
 const MIN_RESET   = 59;  // :59  → ~23:59
@@ -1266,6 +1464,9 @@ function lerCatalogoProdutos() {
 
   const iCod    = hdr.indexOf('CODIGO');
   const iDesc   = hdr.indexOf('DESCRICAO');
+  // COR em coluna própria: quem manda é a planilha. A separação por texto
+  // (separaCorProduto) fica só como rede para a linha que vier sem cor.
+  const iCor    = hdr.indexOf('COR');
   const iPeso   = hdr.indexOf('P B');       // peso bruto (kg)
   const iEan    = hdr.indexOf('EAN 128');
   const iMedida = hdr.indexOf('MEDIDA DA CAIXA');
@@ -1284,6 +1485,7 @@ function lerCatalogoProdutos() {
     produtos.push({
       codigo,
       desc:       iDesc   >= 0 ? String(row[iDesc] || '').trim() : '',
+      cor:        iCor    >= 0 ? String(row[iCor]  || '').trim().toUpperCase() : '',
       peso:       iPeso   >= 0 ? Number(row[iPeso])   || 0 : 0,
       ean:        iEan    >= 0 ? String(row[iEan] || '').trim() : '',
       medida:     iMedida >= 0 ? Number(row[iMedida]) || 0 : 0,
@@ -1409,33 +1611,6 @@ function getPontosDia() {
   lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
   const produtoAtualDesc = catalogo[produtoAtual] ? catalogo[produtoAtual].desc : '';
 
-  // "Modelo" = 6 primeiros dígitos do código (os 3 últimos são a variante de
-  // cor/acabamento, ex.: 501094001 BRANCO / 501094002 PRETO ACETINADO são o
-  // mesmo modelo "501094"). Nome do modelo = maior prefixo de palavras comum
-  // entre as descrições das variantes, pra não depender de adivinhar onde a
-  // cor termina no texto (ex.: "VOL 1/1 MESA CABECEIRA SLEEP").
-  // PROBLEMA que isso resolve: quando alguma variante diverge logo na 2ª palavra
-  // (ou tem descrição curta/incompleta), o prefixo comum "desabava" para algo
-  // inútil tipo só "VOL", cortando o nome do produto na tela PRODUÇÃO/HORA.
-  // Solução: se o prefixo comum ficar com menos de 2 palavras, usa a descrição
-  // MAIS LONGA das variantes — melhor um nome completo (mesmo com a cor) do que "VOL".
-  const modeloDescs = {};
-  lerCatalogoProdutos().forEach(function (pr) {
-    const m = String(pr.codigo || '').slice(0, 6);
-    if (!m) return;
-    const d = String(pr.desc || '').trim();
-    if (!d) return;
-    (modeloDescs[m] = modeloDescs[m] || []).push(d);
-  });
-  const modeloNome = {};
-  Object.keys(modeloDescs).forEach(function (m) {
-    const descs = modeloDescs[m];
-    let pref = descs[0];
-    for (let i = 1; i < descs.length; i++) pref = prefixoComumPalavras(pref, descs[i]);
-    const maisLonga = descs.reduce(function (a, b) { return b.length > a.length ? b : a; }, '');
-    modeloNome[m] = (pref && pref.split(' ').filter(String).length >= 2) ? pref : maisLonga;
-  });
-
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
   const programacao = calcularProgramacao();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
@@ -1512,15 +1687,18 @@ function getPontosDia() {
     porHora.push({ hora, codigo, desc: prod.desc || '', caixas: cx, pontos: ptsR, pesoKg: kgR });
   });
 
-  // Mesma produção de porHora, agrupada por hora + modelo (soma as variantes de
-  // cor da mesma hora numa linha só) — pedido do usuário: ver "quantos SLEEP",
-  // "quantos PRINCESA" por hora, sem abrir por cor.
+  // Mesma produção de porHora, agrupada por hora + PRODUTO (nome sem cor) + cor.
+  // O painel soma as cores numa linha só — pedido do usuário: ver "quantos
+  // SLEEP", "quantos PRINCESA" por hora, sem abrir por cor —, mas quem manda o
+  // dado separado é aqui: assim a mesma resposta serve para a visão por produto
+  // e para a coluna COR, sem uma segunda chamada.
   const porHoraModeloMap = {};
   porHora.forEach(function (it) {
-    const modelo = String(it.codigo || '').slice(0, 6);
-    const key = it.hora + '|' + modelo;
+    const pr = produtoDoCodigo(it.codigo);
+    const key = it.hora + '|' + pr.modelo + '|' + pr.base + '|' + pr.cor;
     if (!porHoraModeloMap[key]) {
-      porHoraModeloMap[key] = { hora: it.hora, modelo: modelo, nome: modeloNome[modelo] || it.desc || '', caixas: 0, pontos: 0, pesoKg: 0 };
+      porHoraModeloMap[key] = { hora: it.hora, modelo: pr.modelo, nome: pr.base || it.desc || '',
+                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0 };
     }
     porHoraModeloMap[key].caixas += it.caixas;
     porHoraModeloMap[key].pontos += it.pontos;
@@ -1558,25 +1736,9 @@ function getProducaoModeloPeriodo(p) {
   const sh = ss.getSheetByName(SHEET_PROD_LOG);
   if (!sh) return { ok: true, itens: [] };
 
-  // Catálogo + nome "limpo" do modelo (mesma lógica de getPontosDia: prefixo de
-  // palavras comum entre as variantes de cor; se ficar curto demais, a descrição
-  // mais longa).
+  // Catálogo + produto sem cor (mesma separação de getPontosDia).
   const catalogo = {};
-  const modeloDescs = {};
-  lerCatalogoProdutos().forEach(function (pr) {
-    catalogo[pr.codigo] = pr;
-    const m = String(pr.codigo || '').slice(0, 6);
-    const d = String(pr.desc || '').trim();
-    if (m && d) (modeloDescs[m] = modeloDescs[m] || []).push(d);
-  });
-  const modeloNome = {};
-  Object.keys(modeloDescs).forEach(function (m) {
-    const descs = modeloDescs[m];
-    let pref = descs[0];
-    for (let i = 1; i < descs.length; i++) pref = prefixoComumPalavras(pref, descs[i]);
-    const maisLonga = descs.reduce(function (a, b) { return b.length > a.length ? b : a; }, '');
-    modeloNome[m] = (pref && pref.split(' ').filter(String).length >= 2) ? pref : maisLonga;
-  });
+  lerCatalogoProdutos().forEach(function (pr) { catalogo[pr.codigo] = pr; });
 
   const deNum  = p.de  ? dataParaNum(p.de)  : null;
   const ateNum = p.ate ? dataParaNum(p.ate) : null;
@@ -1600,17 +1762,18 @@ function getProducaoModeloPeriodo(p) {
     const cx = Number(r[iCx]) || 0;
     if (!codigo || !cx) continue;
 
-    const modelo = codigo.slice(0, 6);
+    const pr     = produtoDoCodigo(codigo);
+    const modelo = pr.modelo;
     const prod   = catalogo[codigo] || { pontos: 0, peso: 0, desc: '' };
-    // Agrupa por MODELO (6 díg.: junta só as cores de um mesmo produto) e
-    // carimba, em cada item, o NOME do modelo (limpo, sem "VOL 1/1") e a
-    // FAMÍLIA ampla — assim o painel alterna entre modelo/família sem refazer a
-    // chamada. Base do nome: prefixo comum das variantes; se faltar, o catálogo.
-    const descBase = modeloNome[modelo] || String(prod.desc || '');
-    const key = dNum + '|' + modelo;
+    // Agrupa por PRODUTO (nome sem cor) dentro do modelo de 6 díg. — o mesmo
+    // código de 6 dígitos pode ter produtos diferentes, não só cores. Cada item
+    // leva ainda a COR e a FAMÍLIA ampla, para o painel alternar entre
+    // produto / produto+cor / família sem refazer a chamada.
+    const descBase = pr.base || limpaNomeModelo(prod.desc || '');
+    const key = dNum + '|' + modelo + '|' + descBase + '|' + pr.cor;
     if (!map[key]) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
-                   nome: limpaNomeModelo(descBase),
+                   nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
                    caixas: 0, pontos: 0, pesoKg: 0, horasSet: {} };
     }
@@ -1627,7 +1790,7 @@ function getProducaoModeloPeriodo(p) {
     const it = map[k];
     const horas = Object.keys(it.horasSet).length;
     return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
-             familia: it.familia,
+             cor: it.cor, familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
              pesoKg: Math.round(it.pesoKg * 10) / 10,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
@@ -1636,19 +1799,6 @@ function getProducaoModeloPeriodo(p) {
   });
 
   return { ok: true, itens: itens };
-}
-
-// Maior prefixo de PALAVRAS comum entre duas descrições (usado pra achar o
-// "nome do modelo" sem a cor, sem precisar adivinhar onde a cor termina no texto).
-function prefixoComumPalavras(a, b) {
-  const wa = String(a || '').split(' ');
-  const wb = String(b || '').split(' ');
-  const out = [];
-  for (let i = 0; i < Math.min(wa.length, wb.length); i++) {
-    if (wa[i] !== wb[i]) break;
-    out.push(wa[i]);
-  }
-  return out.join(' ');
 }
 
 // ════════════════════════════════════════════════════════
