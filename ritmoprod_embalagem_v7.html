@@ -2129,7 +2129,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.5';
+const APP_VER   = '7.6.6';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4733,17 +4733,31 @@ function renderChartHist(dias,periodo){
     realD=labels.map(l=>mes[l].real); metaD=labels.map(l=>mes[l].meta);
     efD=labels.map(l=>parseFloat((mes[l].real/mes[l].meta*100).toFixed(1)));
   }
+  // ⚠ COR DE GRÁFICO NÃO ACEITA TOKEN CSS. O Chart.js pinta no <canvas>, e
+  // canvas não resolve var(--ok): a linha da eficiência estava declarada com o
+  // token, virava cor inválida e saía no preto padrão — quase invisível no fundo
+  // escuro (a régua da direita continuava verde porque já usava #4CAF50 na mão).
+  // Aqui é literal, sempre.
+  const EF_COR='#4CAF50';
+  // Dia com meta zerada dá Infinity/NaN: vira buraco na linha, não um pico.
+  const efPlot=efD.map(v=>Number.isFinite(v)?v:null);
+  // Teto da régua da direita ACOMPANHA O DADO. Era fixo em 150% e cortava a
+  // linha no meio do gráfico quando um dia de meta baixa fechava acima disso
+  // (13/08/2026 fechou em 179,5%). Piso de 120% para o 100% nunca encostar no
+  // topo em período fraco, e uma dezena de folga em cima do pico.
+  const efTeto=Math.max(120,Math.ceil(Math.max(0,...efPlot.filter(Number.isFinite))/10)*10+10);
   mkChart('ch-hist',{type:'bar',data:{labels,datasets:[
     {label:'Realizado',data:realD,backgroundColor:'rgba(245,166,35,0.65)',borderRadius:3,yAxisID:'y'},
     {label:'Meta',data:metaD,backgroundColor:'rgba(255,255,255,0.05)',borderRadius:3,yAxisID:'y'},
-    {label:'Ef.%',data:efD,type:'line',borderColor:'var(--ok)',borderWidth:2,pointRadius:3,pointBackgroundColor:'var(--ok)',yAxisID:'y2',fill:false}
+    {label:'Ef.%',data:efPlot,type:'line',borderColor:EF_COR,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,
+     pointBackgroundColor:EF_COR,pointBorderColor:'#0F0F0F',pointBorderWidth:1,yAxisID:'y2',fill:false,spanGaps:true}
   ]},options:{
     responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:true,labels:{color:'#666',font:{family:'IBM Plex Mono',size:9}}}},
     scales:{
       x:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'}},
       y:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'},beginAtZero:true},
-      y2:{ticks:{color:'#4CAF50',font:{family:'IBM Plex Mono',size:9}},grid:{display:false},position:'right',min:0,max:150}
+      y2:{ticks:{color:EF_COR,font:{family:'IBM Plex Mono',size:9},callback:v=>v+'%'},grid:{display:false},position:'right',min:0,max:efTeto}
     }
   }});
 }

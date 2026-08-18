@@ -518,6 +518,16 @@ via Google Apps Script (JSONP).
   segunda-feira ficava fora do filtro).
 
 ## Notas / armadilhas conhecidas
+- **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
+  que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
+  o que aconteceu com a linha **Ef.%** do gráfico do HISTÓRICO — quase invisível
+  no fundo escuro, enquanto a régua da direita continuava verde porque já usava
+  `#4CAF50` na mão. Em `mkChart`, cor é **literal**, sempre.
+  - A régua da direita (`y2`) tinha **teto fixo em 150%** e cortava a linha no
+    meio do gráfico em dia de meta baixa (13/08/2026 fechou em **179,5%**). O
+    teto acompanha o dado (dezena acima do pico), com **piso de 120%** para o
+    100% não encostar no topo em período fraco, e dia sem meta vira **buraco na
+    linha**, não pico de `Infinity`.
 - **Média nos relatórios (semanal e histórico)**: a base é **dias com produção no
   período** (as linhas que o relatório já lista), não dias corridos — mesma base
   do "Média / dia" das outras telas; sábado/domingo/feriado não entram porque não
