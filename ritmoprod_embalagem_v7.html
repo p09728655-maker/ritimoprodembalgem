@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.2';
+const APP_VER   = '7.7.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3836,12 +3836,12 @@ async function renderModeloPeriodo(){
   // Nível de agrupamento (produto / produto+cor / família ampla): cada item já
   // traz modelo, nome sem cor, cor e familia — a troca é toda no cliente, sem
   // refazer a chamada.
-  const {ehFam,keyOf,labelOf,Termo,Termos,termoS,termoP}=_phAgrup();
-  const fltLbl=document.getElementById('ph-filtro-lbl'); if(fltLbl) fltLbl.textContent=Termo;
+  const {ehFam,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil,Termos,termoS,termoP}=_phAgrup();
+  const fltLbl=document.getElementById('ph-filtro-lbl'); if(fltLbl) fltLbl.textContent=TermoFil;
 
-  // Seletor (por total de caixas no período), preservando a seleção.
+  // Seletor por PRODUTO (total de caixas no período), preservando a seleção.
   const gInfo={};
-  itens.forEach(it=>{ const k=keyOf(it); if(!gInfo[k]) gInfo[k]={key:k,label:labelOf(it),caixas:0}; gInfo[k].caixas+=it.caixas; });
+  itens.forEach(it=>{ const k=keyFil(it); if(!gInfo[k]) gInfo[k]={key:k,label:labelFil(it),caixas:0}; gInfo[k].caixas+=it.caixas; });
   const gOrd=Object.values(gInfo).sort((a,b)=>b.caixas-a.caixas);
   if(selEl){
     const selAtual=selEl.value;
@@ -3849,7 +3849,7 @@ async function renderModeloPeriodo(){
     selEl.value=(selAtual && gInfo[selAtual]) ? selAtual : '';
   }
   const sel=selEl?selEl.value:'';
-  const itensView = sel ? itens.filter(it=>keyOf(it)===sel) : itens;
+  const itensView = sel ? itens.filter(it=>keyFil(it)===sel) : itens;
   const {metric,label,unit,additive}=_phMetricInfo();
 
   // Acumuladores {caixas,pontos,pesoKg,horas} por célula (grupo|dia), por
@@ -3877,8 +3877,8 @@ async function renderModeloPeriodo(){
     kpi.innerHTML=`
       <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
       <div class="kpi-card"><div class="kpi-lbl">MÉDIA CX/H · TAKT</div><div class="kpi-val" style="color:${corMed}">${fmtN(mediaHGeral)}</div><div class="kpi-sub">${alvoRit>0?`ritmo médio · ideal ${fmtN(Math.round(alvoRit))}/h (${taktAlvoSeg}s/cx)`:'ritmo médio do período'}</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">${sel?Termo:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
-      <div class="kpi-card"><div class="kpi-lbl">${Termo} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
+      <div class="kpi-card"><div class="kpi-lbl">${sel?TermoFil:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">${TermoFil} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
   }
 
   if(!itensView.length){
@@ -3956,7 +3956,15 @@ function _phAgrup(){
                             : it.modelo+'|'+(it.nome||'')+(ehCor?'|'+(it.cor||''):'');
   const labelOf = it => ehFam ? (it.familia||it.modelo)
                               : it.modelo+(it.nome?' · '+it.nome:'')+((ehCor&&it.cor)?' · '+it.cor:'');
-  return { nivel, ehFam, ehCor, keyOf, labelOf,
+  // O FILTRO enxerga o PRODUTO inteiro: no nível MODELO + COR, escolher um
+  // item do seletor traz TODAS as cores daquele produto (pedido do PPCP,
+  // 18/08/2026) — as linhas continuam abertas por cor; só o recorte muda.
+  // Bônus: a chave do filtro é a mesma nos níveis MODELO e MODELO + COR, então
+  // a seleção sobrevive à troca de nível. Na FAMÍLIA, filtro = agrupamento.
+  const keyFil   = ehFam ? keyOf   : it => it.modelo+'|'+(it.nome||'');
+  const labelFil = ehFam ? labelOf : it => it.modelo+(it.nome?' · '+it.nome:'');
+  return { nivel, ehFam, ehCor, keyOf, labelOf, keyFil, labelFil,
+           TermoFil: ehFam?'FAMÍLIA':'MODELO',
            Termo:  ehFam?'FAMÍLIA' :ehCor?'MODELO + COR':'MODELO',
            Termos: ehFam?'FAMÍLIAS':ehCor?'MODELOS + COR':'MODELOS',
            termoS: ehFam?'família' :ehCor?'modelo/cor'   :'modelo',
@@ -3967,9 +3975,12 @@ function _phAgrup(){
 async function gerarRelatorioProducaoHora(){
   const itens=await _phItensPeriodo();
   if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
-  const {ehFam,keyOf,labelOf,Termo}=_phAgrup();
+  const {ehFam,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
-  const itensView = sel ? itens.filter(it=>keyOf(it)===sel) : itens;
+  const itensView = sel ? itens.filter(it=>keyFil(it)===sel) : itens;
+  // Rótulo do produto filtrado (o top da tabela é uma LINHA por cor — não
+  // serve de nome para o filtro, que é o produto inteiro).
+  const selLabel = sel ? (itensView[0]?labelFil(itensView[0]):sel) : '';
   if(!itensView.length){ alert('Sem produção no período selecionado — nada pra gerar no relatório.'); return; }
   const win=window.open('','_blank','width=1200,height=760');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
@@ -4118,7 +4129,7 @@ ${_rpBotaoImprimir()}
 ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
    `<div class="rp-dia">${deStr} — ${ateStr}</div>
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
-   ` · MÉTRICA: ${label}${sel?' · '+Termo+' '+(top?top.label:sel):''}`)}
+   ` · MÉTRICA: ${label}${sel?' · '+TermoFil+' '+selLabel:''}`)}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -4133,12 +4144,12 @@ ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
     <div class="kpi-sub">ritmo médio do período</div>
   </div>
   <div class="kpi-card" style="border-left-color:#888">
-    <div class="kpi-lbl">${sel?Termo:(ehFam?'FAMÍLIAS':'MODELOS')}</div>
-    <div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):linhas.length}</div>
+    <div class="kpi-lbl">${sel?TermoFil:(ehFam?'FAMÍLIAS':'MODELOS')}</div>
+    <div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?selLabel:linhas.length}</div>
     <div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(ehFam?'famílias no período':'modelos no período')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:#4CAF50">
-    <div class="kpi-lbl">${Termo} TOP</div>
+    <div class="kpi-lbl">${sel?Termo:TermoFil+' TOP'}</div>
     <div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div>
     <div class="kpi-sub">${top?top.total.toLocaleString('pt-BR')+' cx no período':'—'}</div>
   </div>

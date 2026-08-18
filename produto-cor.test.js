@@ -275,6 +275,22 @@ console.log('\n── o comparativo não pode voltar a ter duas regras ──');
 // A tela e o PDF liam o mesmo seletor com duas cópias do keyOf/labelOf: a
 // primeira mudança em uma só faria o relatório contar diferente da tela.
 ok('_phAgrup declarado uma única vez', (JS.match(/function _phAgrup\(/g) || []).length, 1);
+// O FILTRO enxerga o produto inteiro: no nível MODELO + COR, escolher o
+// 501149 MADERO traz TODAS as cores dele (as linhas seguem abertas por cor).
+const _fakeSel = nivel => { global.document = { getElementById: () => ({ value: nivel }) };
+  eval(pega(JS, 'function _phAgrup(')); return _phAgrup(); };
+const it149a = { modelo:'501149', nome:'MESA CABECEIRA MADERO', cor:'OFF WHITE/CINAMOMO', familia:'MESA CABECEIRA' };
+const it149b = { modelo:'501149', nome:'MESA CABECEIRA MADERO', cor:'BRANCO', familia:'MESA CABECEIRA' };
+const aCor = _fakeSel('cor');
+ok('agrupamento por cor separa as linhas', aCor.keyOf(it149a) === aCor.keyOf(it149b), false);
+ok('mas o filtro junta as cores do mesmo produto', aCor.keyFil(it149a), aCor.keyFil(it149b));
+ok('e o rótulo do filtro é o produto, sem cor', aCor.labelFil(it149a), '501149 · MESA CABECEIRA MADERO');
+// A chave do filtro é a MESMA nos dois níveis: a seleção sobrevive à troca.
+const aMod = _fakeSel('modelo');
+ok('trocar MODELO ↔ MODELO+COR preserva a seleção', aMod.keyFil(it149a), aCor.keyFil(it149a));
+// Na família, filtro e agrupamento continuam sendo a mesma coisa.
+const aFam = _fakeSel('familia');
+ok('na família, filtro = agrupamento', aFam.keyFil(it149a), aFam.keyOf(it149a));
 ok('tela e PDF usam ele', (JS.match(/\}=_phAgrup\(\)/g) || []).length, 2);
 ok('nenhuma cópia solta do keyOf', (JS.match(/const keyOf\s+=it=>/g) || []).length, 0);
 // O agrupamento por MODELO precisa incluir o nome — senão os quatro produtos do
