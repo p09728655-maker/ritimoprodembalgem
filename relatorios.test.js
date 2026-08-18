@@ -356,8 +356,21 @@ const swFraco = _relSwotProducao([
 ], 'no dia');
 ok('pior aproveitamento com volume vira fraqueza',
    swFraco.fraquezas.some(q => /PRODUTO LENTO/.test(q) && /23,3%/.test(q)), true);
-ok('volume pequeno (7% da LUNA 670) não vira fraqueza — regra anti-ruído',
-   swProd.fraquezas.some(q => /LUNA 670/.test(q)), false);
+// UM produto <30% com volume pequeno continua fora (anti-ruído)…
+ok('um único produto lento com 7% do volume não dispara sozinho',
+   swProd.fraquezas.some(q => /abaixo de/.test(q)), false);
+// …mas DOIS OU MAIS entram juntos, qualquer volume — foi o furo do relatório
+// de 18/08: DEZ produtos abaixo de 30% e a fraqueza dizendo "nada apontado".
+const swGrupo = _relSwotProducao([
+  { nome: 'MESA CENTRO DECOR 700', caixas:  32, ritmo:  32, teto: 344, melhor:  32 },
+  { nome: 'LIVREIRO TAURUS',       caixas:  38, ritmo:  38, teto: 203, melhor:  38 },
+  { nome: 'CAMARIM ELOA',          caixas:  60, ritmo:  60, teto: 269, melhor:  60 },
+  { nome: 'MESA CABECEIRA SLEEP',  caixas: 1816, ritmo: 182, teto: 435, melhor: 182 },
+], 'no período');
+ok('grupo de produtos <30% do teto vira fraqueza mesmo sem 10% individual',
+   swGrupo.fraquezas.some(q => /3 produtos rodaram abaixo de/.test(q)), true);
+ok('apontando o pior pelo nome e pelo %',
+   swGrupo.fraquezas.some(q => /DECOR 700/.test(q) && /9,3%/.test(q)), true);
 ok('produto sem catálogo vira fraqueza (régua cega)',
    swProd.fraquezas.some(q => /sem MEDIDA\/VELOCIDADE/.test(q)), true);
 ok('replicar o melhor dia vira oportunidade',
