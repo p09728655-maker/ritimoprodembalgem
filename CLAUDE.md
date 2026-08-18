@@ -539,9 +539,14 @@ via Google Apps Script (JSONP).
   - Nunca devolve nome vazio, e medida (`670`, `1.8`) nunca vira cor.
 - **`simularSeparacaoPorProduto()`** (rodar no editor, não grava): lista os
   modelos que passam a mostrar mais de um produto, as cores distintas com a
-  contagem, e aponta **cor rara que parece erro de escrita de uma comum** —
-  `BCO/AZUL` → `BRANCO/AZUL`, `BRANCO AC` → `BRANCO ACETINADO` (regra: as letras
-  da rara cabem, na ordem, dentro da comum; só com ≤3 linhas contra o triplo).
+  contagem, e aponta **cor escrita pela metade** — `BCO/AZUL` → `BRANCO/AZUL`,
+  `PTO AC` → `PRETO ACETINADO` (`coresParaCorrigir`, conta pura e testada).
+  - A comparação é **palavra por palavra**, não da cor inteira: palavra é
+    abreviação de outra quando suas letras cabem, na ordem, dentro dela (`PTO`
+    cabe em `PRETO`), começam com a mesma letra e a outra aparece em mais
+    linhas. Comparando a cor inteira, `PTO AC` escapava (4 linhas, logo não era
+    "rara") e `PRETO AC/NATURE` também, porque `PRETO ACETINADO/NATURE` nem
+    existe no catálogo para servir de alvo.
   O **resumo sai por último** de propósito: o painel do editor abre no fim do
   log, e era lá em cima que estava a informação que interessa.
   - Medido no catálogo real (18/08/2026): 428 códigos, **100% com cor pela
