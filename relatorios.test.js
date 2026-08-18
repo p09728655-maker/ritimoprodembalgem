@@ -353,6 +353,38 @@ ok('sem meta não há cascata (null, nunca número inventado)',
 ok('perda de parada negativa não existe',
    _relCascata({meta:100, real:90, perdaPar:-5}).perdaPar, 0);
 
+console.log('\n── cascata de um MODELO filtrado (âncora = potencial próprio) ──');
+// Com um modelo filtrado a META não serve: ela é da LINHA inteira (todos os
+// produtos do dia) e as paradas não se atribuem a um modelo. A âncora honesta
+// é o melhor dia de cada COR nas horas que ela rodou — ganho já demonstrado.
+eval(pega('function _relCascataProduto('));
+// MESA CABECEIRA MADERO, números reais do relatório (20/07–18/08):
+const madero = [
+  { label: '501149 · MADERO · OFF WHITE/CINAMOMO',   caixas: 1225, ritmo: 204, melhor: 227, teto: 414, horas: 6 },
+  { label: '501149 · MADERO · BRANCO',               caixas:  966, ritmo: 161, melhor: 210, teto: 414, horas: 6 },
+  { label: '501149 · MADERO · PRETO ACET./CINAMOMO', caixas:  576, ritmo:  96, melhor: 194, teto: 414, horas: 6 },
+  { label: '501149 · MADERO · CINZA/NATURE',         caixas:  450, ritmo:  75, melhor:  97, teto: 414, horas: 6 },
+];
+let cp = _relCascataProduto(madero);
+ok('potencial = melhor dia de cada cor × horas', cp.potencial, (227+210+194+97)*6);
+ok('realizado é a soma das cores', cp.real, 3217);
+ok('o que falta para o próprio melhor é perda de ritmo',
+   cp.perdaRitmo, (227+210+194+97)*6 - 3217);
+ok('as quatro cores entram', cp.nCores, 4);
+ok('a melhor cor é apontada', /OFF WHITE\/CINAMOMO/.test(cp.melhorCor.label), true);
+// Lançamento acumulado não pode virar alvo: melhor dia é limitado ao teto.
+cp = _relCascataProduto([{ label: 'DECOR 470', caixas: 300, ritmo: 84, melhor: 318, teto: 300, horas: 4 }]);
+ok('melhor dia impossível é cortado no teto físico', cp.potencial, 1200);
+// Cor que só rodou um dia: melhor = média, nada a cobrar dela.
+cp = _relCascataProduto([{ label: 'X', caixas: 100, ritmo: 100, melhor: 100, teto: 400, horas: 1 }]);
+ok('um dia só: potencial = realizado, sem perda inventada',
+   [cp.potencial, cp.perdaRitmo], [100, 0]);
+// Melhor dia MENOR que a média aparada (poda) não pode gerar perda negativa.
+cp = _relCascataProduto([{ label: 'Y', caixas: 200, ritmo: 100, melhor: 80, teto: 400, horas: 2 }]);
+ok('potencial nunca fica abaixo do próprio realizado', cp.perdaRitmo, 0);
+ok('sem horas não há cascata de produto',
+   _relCascataProduto([{ label: 'Z', caixas: 10, ritmo: 10, melhor: 10, teto: 0, horas: 0 }]), null);
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
 // O desenho do fechamento da semana entra na mesma regra: uma implementação só.
 ok('o cartão do dia a dia é montado num lugar só',
