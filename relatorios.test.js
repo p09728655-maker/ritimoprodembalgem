@@ -332,6 +332,60 @@ ok('backend antigo (sem tetoCxH): teto 0, coluna some', _phTeto(semTeto), 0);
 const linha = _phAcc(); _phAdd(linha, mix); _phAdd(linha, semTeto);
 ok('caixas sem teto não diluem o % do teto', Math.round(_phTeto(linha)), 267);
 
+console.log('\n── SWOT da produção por modelo (dia e período) ──');
+// Cada frase só entra quando o dado sustenta — e o pedido explícito do PPCP:
+// com o mix longe do teto físico, dizer com todas as letras que a velocidade
+// da esteira NÃO é o problema. Números reais do período de 18/08/2026.
+eval(pega('function _relSwotProducao('));
+const LP = [
+  { nome: 'PENT CAMARIM DIAMANTE', caixas: 278, ritmo: 139, teto: 263, melhor: 179 },
+  { nome: 'PENTEADEIRA PRINCESA',  caixas: 567, ritmo:  98, teto: 291, melhor: 134 },
+  { nome: 'MESA CENTRO LUNA 670',  caixas:  82, ritmo:  82, teto: 376, melhor:  82 },
+  { nome: 'LIVREIRO ENCANTO',      caixas: 185, ritmo:  93, teto:   0, melhor: 139 },
+];
+const swProd = _relSwotProducao(LP, 'no período');
+ok('o recado da esteira, com todas as letras',
+   /A velocidade da esteira NÃO é o problema/.test(swProd.forcas[0] || ''), true);
+ok('com o % do mix junto', /do teto físico/.test(swProd.forcas[0] || ''), true);
+ok('melhor aproveitamento vira força', swProd.forcas.some(f => /DIAMANTE/.test(f) && /52,9%/.test(f)), true);
+// A fraqueza exige VOLUME (≥10% das caixas) e % <30 — a LUNA 670 do período
+// real tem só 7% do volume, então de propósito NÃO dispara. Caso que dispara:
+const swFraco = _relSwotProducao([
+  { nome: 'PRODUTO LENTO',  caixas: 500, ritmo:  70, teto: 300, melhor:  80 },
+  { nome: 'PRODUTO RAPIDO', caixas: 500, ritmo: 200, teto: 300, melhor: 210 },
+], 'no dia');
+ok('pior aproveitamento com volume vira fraqueza',
+   swFraco.fraquezas.some(q => /PRODUTO LENTO/.test(q) && /23,3%/.test(q)), true);
+ok('volume pequeno (7% da LUNA 670) não vira fraqueza — regra anti-ruído',
+   swProd.fraquezas.some(q => /LUNA 670/.test(q)), false);
+ok('produto sem catálogo vira fraqueza (régua cega)',
+   swProd.fraquezas.some(q => /sem MEDIDA\/VELOCIDADE/.test(q)), true);
+ok('replicar o melhor dia vira oportunidade',
+   swProd.oportunidades.some(o => /Replicar o melhor dia/.test(o) && /PRINCESA/.test(o)), true);
+ok('dependência de um produto vira ameaça (PRINCESA tem 51%)',
+   swProd.ameacas.some(a => /PRINCESA/.test(a) && /depend/.test(a)), true);
+
+// Dia impossível (acima do teto) não infla o mix e vira ameaça de apontamento.
+const swImp = _relSwotProducao([
+  { nome: 'MESA LATERAL DECOR 470', caixas: 318, ritmo: 318, teto: 300, melhor: 318 },
+  { nome: 'CANT CAFE AURORA',       caixas: 424, ritmo: 106, teto: 260, melhor: 106 },
+], 'no dia');
+ok('ritmo acima do teto vira ameaça de apontamento',
+   swImp.ameacas.some(a => /DECOR 470/.test(a) && /ACIMA do teto/.test(a)), true);
+ok('e não empurra o mix para "esteira no limite"',
+   swImp.ameacas.some(a => /começa a ser limite/.test(a)), false);
+
+// Mix de verdade perto do teto: o recado INVERTE — velocidade vira ameaça.
+const swAlto = _relSwotProducao([{ nome: 'X', caixas: 500, ritmo: 240, teto: 260, melhor: 250 }], 'no dia');
+ok('mix a 92% do teto: aí sim a esteira vira limite',
+   swAlto.ameacas.some(a => /começa a ser limite/.test(a)), true);
+ok('e o recado de "não é o problema" NÃO aparece',
+   swAlto.forcas.some(f => /NÃO é o problema/.test(f)), false);
+
+ok('sem produção, nenhum quadrante inventa',
+   _relSwotProducao([], 'no dia'),
+   { forcas: [], fraquezas: [], oportunidades: [], ameacas: [] });
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
 // O desenho do fechamento da semana entra na mesma regra: uma implementação só.
 ok('o cartão do dia a dia é montado num lugar só',

@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.9';
+const APP_VER   = '7.7.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4045,6 +4045,7 @@ async function gerarRelatorioProducaoHora(){
   tfoot td{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; padding:6px 7px; border-top:1.5px solid #cbd5e0; background:#f8fafc; text-align:right; }
   tfoot td:first-child{ font-family:'Barlow Condensed',sans-serif; font-size:12px; text-align:left; }
   .col-tot{ color:#FF5C1F; font-weight:700; }
+${_RP_SWOT_CSS}
   .rp-footer{ margin-top:18px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
   .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
 </style>
@@ -4098,6 +4099,8 @@ ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
   </tfoot>
 </table>
 
+${metric==='mediaH'?_rpSwotHtml('ANÁLISE SWOT DO PERÍODO', _relSwotProducao(linhas.map(l=>({nome:l.label, caixas:l.acc.caixas, ritmo:l.v1, teto:l.teto||0, melhor:l.v2})), 'no período')):''}
+
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
   <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${temTeto?' · % TETO EST. = uso do teto físico da esteira':''}</span>
@@ -4110,6 +4113,94 @@ ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
   win.document.write(html);
   win.document.close();
 }
+
+// ── ANÁLISE SWOT da produção por modelo ─────────────────────────────────────
+// Usada pelo RELATÓRIO DO DIA e pelo RELATÓRIO DO PERÍODO — uma conta só, como
+// a SWOT de paradas: cada frase entra apenas quando o dado a sustenta, e
+// quadrante vazio diz "—", não inventa. Entra a lista de linhas já calculadas
+// do relatório: {nome, caixas, ritmo (cx/h), teto (cx/h, 0 = sem catálogo),
+// melhor (cx/h do melhor dia — só no período, 0 no dia)}.
+// Pedido explícito do PPCP (18/08/2026): quando o mix roda longe do teto
+// físico, dizer COM TODAS AS LETRAS que a velocidade da esteira não é o
+// problema — a discussão de acelerar esteira sai da pauta.
+function _relSwotProducao(linhas, rotPer){
+  const F=[],Q=[],O=[],A=[];
+  const vazio={forcas:F,fraquezas:Q,oportunidades:O,ameacas:A};
+  const ls=(linhas||[]).filter(l=>l&&l.caixas>0);
+  const totCx=ls.reduce((s,l)=>s+l.caixas,0);
+  if(!totCx) return vazio;
+  const comTeto=ls.filter(l=>l.teto>0&&l.ritmo>0).map(l=>({ ...l, pct:l.ritmo/l.teto*100 }));
+  // Ritmo acima do teto físico é impossível (mais caixas do que cabem na
+  // esteira): é apontamento, e não pode puxar o % do mix para cima.
+  const criveis=comTeto.filter(l=>l.pct<=105);
+  const cxT=criveis.reduce((s,l)=>s+l.caixas,0);
+  const pctMix=cxT>0?criveis.reduce((s,l)=>s+l.caixas*l.pct,0)/cxT:0;
+
+  // ── o recado da esteira, com todas as letras ──
+  if(pctMix>0&&pctMix<85)
+    F.push(`<b>A velocidade da esteira NÃO é o problema</b>: o mix rodou a <b>${fmtP(pctMix)}</b> do teto físico dela — sobra ~${fmtN(Math.round((100/pctMix-1)*100))}% de esteira. O limite está antes (abastecimento, montagem, troca).`);
+  else if(pctMix>=85)
+    A.push(`O mix rodou a <b>${fmtP(pctMix)}</b> do teto físico — nesse nível a velocidade da esteira <b>começa a ser limite</b>: avanço novo passa por ela.`);
+
+  // FORÇAS — melhor aproveitamento (com volume que sustente a leitura)
+  const relev=criveis.filter(l=>l.caixas>=totCx*0.05);
+  if(relev.length){
+    const top=relev.reduce((a,b)=>a.pct>b.pct?a:b);
+    if(top.pct>=45)
+      F.push(`<b>${top.nome}</b> é o melhor aproveitamento: <b>${fmtP(top.pct)}</b> do teto (${fmtN(Math.round(top.ritmo))} de ${fmtN(Math.round(top.teto))} cx/h possíveis).`);
+  }
+  // consistência (só o período tem melhor dia)
+  ls.filter(l=>l.melhor>0&&l.ritmo>=l.melhor*0.9&&l.caixas>=totCx*0.05).slice(0,1)
+    .forEach(l=>F.push(`<b>${l.nome}</b> roda estável: a média do período é ≥90% do próprio melhor dia.`));
+
+  // FRAQUEZAS — pior aproveitamento com volume relevante + catálogo cego
+  const relev10=criveis.filter(l=>l.caixas>=totCx*0.10);
+  if(relev10.length){
+    const pior=relev10.reduce((a,b)=>a.pct<b.pct?a:b);
+    if(pior.pct<30)
+      Q.push(`<b>${pior.nome}</b> usa só <b>${fmtP(pior.pct)}</b> do teto (${fmtN(Math.round(pior.ritmo))} de ${fmtN(Math.round(pior.teto))} cx/h) com ${fmtP(pior.caixas/totCx*100)} das caixas.`);
+  }
+  const semTeto=ls.filter(l=>!(l.teto>0)).length;
+  if(semTeto)
+    Q.push(`${plural(semTeto,'produto','produtos')} sem MEDIDA/VELOCIDADE no catálogo — sem régua física para ${semTeto===1?'julgá-lo':'julgá-los'}.`);
+
+  // OPORTUNIDADES — ganho já demonstrado + valor de cada ponto do teto
+  ls.filter(l=>l.melhor>0&&l.ritmo>0&&l.ritmo<l.melhor*0.75&&l.caixas>=totCx*0.05)
+    .sort((a,b)=>b.caixas-a.caixas).slice(0,2)
+    .forEach(l=>O.push(`Replicar o melhor dia de <b>${l.nome}</b> (${fmtN(Math.round(l.melhor))} cx/h contra ${fmtN(Math.round(l.ritmo))} de média) — ganho já demonstrado pela própria equipe.`));
+  // Σ(cx ÷ pct) = caixas que 1 ponto percentual do teto representa no mix.
+  const cxPorPonto=Math.round(criveis.reduce((s,l)=>s+l.caixas/l.pct,0));
+  if(cxPorPonto>0&&pctMix>0&&pctMix<85)
+    O.push(`Cada ponto de % do teto no mix vale <b>~${fmtN(cxPorPonto)} cx</b> ${rotPer}.`);
+
+  // AMEAÇAS — dependência de um produto e apontamento cegando a régua
+  const top1=ls.reduce((a,b)=>a.caixas>b.caixas?a:b);
+  if(top1.caixas>=totCx*0.5&&ls.length>1)
+    A.push(`<b>${top1.nome}</b> concentrou <b>${fmtP(top1.caixas/totCx*100)}</b> das caixas — dependência de um produto só.`);
+  comTeto.filter(l=>l.pct>105).slice(0,2)
+    .forEach(l=>A.push(`<b>${l.nome}</b> marcou ${fmtN(Math.round(l.ritmo))} cx/h, ACIMA do teto físico (${fmtN(Math.round(l.teto))}) — apontamento errado cegando a régua.`));
+
+  return vazio;
+}
+
+// Bloco HTML da SWOT — o DIA e o PERÍODO usam este; o de paradas é anterior e
+// tem o dele. Quadrante vazio diz "—", não inventa.
+function _rpSwotHtml(titulo, sw){
+  const q=(t,cor,itens)=>`<div class="swot-q" style="border-top-color:${cor}">
+    <div class="swot-ttl" style="color:${cor}">${t}</div>
+    ${itens.length?itens.map(i=>`<div class="swot-item">▸ ${i}</div>`).join(''):'<div class="swot-item" style="color:#a0aec0">— nada apontado pelos dados</div>'}
+  </div>`;
+  return `<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>
+  <div class="swot-grid">
+    ${q('FORÇAS','#2e7d32',sw.forcas)}${q('FRAQUEZAS','#c62828',sw.fraquezas)}
+    ${q('OPORTUNIDADES','#1565c0',sw.oportunidades)}${q('AMEAÇAS','#e65100',sw.ameacas)}
+  </div>`;
+}
+const _RP_SWOT_CSS=`
+  .swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .swot-q{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #ccc;border-radius:5px;padding:9px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid}
+  .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
+  .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}`;
 
 // Relatório formatado (janela separada, pronta pra exportar em PDF pelo
 // navegador) — mesmo padrão visual do gerarRelatorioSemanal() do HISTÓRICO.
@@ -4162,6 +4253,7 @@ function gerarRelatorioProducaoModelo(){
   tbody tr:last-child td{ border-bottom:none; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
+${_RP_SWOT_CSS}
 
   .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:8px; color:#a0aec0; }
   .rp-print-btn{ position:fixed; top:16px; right:16px; background:#FF5C1F; color:#1a1a2e; border:none; padding:10px 20px; border-radius:6px; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; letter-spacing:1.5px; cursor:pointer; z-index:999; }
@@ -4217,6 +4309,8 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
     </tr>`).join('')}
   </tbody>
 </table>
+
+${_rpSwotHtml('ANÁLISE SWOT DO DIA', _relSwotProducao(linhas.map(m=>({nome:(m.modelo+(m.nome?' · '+m.nome:'')), caixas:m.caixas, ritmo:m.media, teto:m.teto||0, melhor:0})), 'no dia'))}
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
