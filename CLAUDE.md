@@ -517,6 +517,39 @@ via Google Apps Script (JSONP).
   23:59**; as horas nas pontas não são detalhe (sem o `00:00` a própria
   segunda-feira ficava fora do filtro).
 
+## Produto × cor (relatórios por modelo)
+- **A cor mora na coluna `COR` da aba `PRODUTO_CODIGO`**, ao lado da `DESCRICAO`
+  (que ficou só com o nome do produto). `lerCatalogoProdutos` acha as colunas
+  **pelo nome do cabeçalho**, não pela posição — dá para inserir coluna no meio
+  sem quebrar nada, desde que os títulos não mudem.
+- **O agrupamento é por PRODUTO, não pelos 6 dígitos do código.** Havia código
+  de 6 dígitos com produtos diferentes dentro: o `501130` tem MESA CENTRO LUNA
+  670, CENTRO 590, APOIO 530 e LATERAL 440 (de 7,3 a 4,0 kg) numa linha só. E
+  como o nome saía do **prefixo comum** das variantes, o relatório mostrava
+  apenas **`MESA`** — o `VOL 1/1` de todas as descrições fazia o prefixo passar
+  na trava de "≥2 palavras" e depois era removido do rótulo. `produtoDoCodigo()`
+  é a implementação única disso (modelo + nome sem cor + cor).
+- **Sem a coluna COR, a separação cai no texto** (`separaCorProduto`): tira do
+  fim da descrição as palavras que são cor. O vocabulário é a lista `CORES` no
+  topo do `.gs` **mais** o que o catálogo ensina — palavra que **fecha** a
+  descrição em ≥4 modelos diferentes. Só a última palavra: andar mais para a
+  esquerda fazia o `CM` de "RACK BRITO 137 CM MARSALA" virar cor.
+  - ⚠ `MEL` fica **fora** da lista de propósito: aqui é nome de produto
+    (PENTEADEIRA CAMARIM MEL, ao lado da ELOA e da STRASS).
+  - Nunca devolve nome vazio, e medida (`670`, `1.8`) nunca vira cor.
+- **`simularSeparacaoPorProduto()`** (rodar no editor, não grava): diz quantas
+  linhas vieram pela coluna `COR`, quais foram adivinhadas pelo texto, e lista
+  todas as cores distintas com a contagem — é assim que se acha `BCO/AZUL`
+  escrito ao lado de `BRANCO/AZUL`, que viraria duas cores na tela.
+- No painel: `calcPorModelo` agrupa por **modelo + nome** e junta as cores numa
+  linha só (a coluna **COR** mostra quais rodaram); o comparativo do período tem
+  o nível **MODELO + COR** no seletor AGRUPAR. `_phAgrup()` é a regra única de
+  agrupamento — antes estava copiada na tela e no PDF do período.
+- A coluna COR **some quando nenhum item tem cor** (backend antigo), mesma regra
+  da coluna MOTIVO do relatório de paradas.
+- ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script. `node produto-cor.test.js`
+  cobre a regra, rodando contra o código real dos dois arquivos.
+
 ## Notas / armadilhas conhecidas
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
