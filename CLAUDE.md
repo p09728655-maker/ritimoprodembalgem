@@ -588,6 +588,10 @@ via Google Apps Script (JSONP).
     e o campo chegava **0 em silêncio** (teto ~25% otimista).
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
+- **O % TETO EST. também está na visão do DIA** (PRODUÇÃO POR MODELO — TOTAL DO
+  DIA e o RELATÓRIO DO DIA em PDF): `getPontosDia` manda `tetoCxH` por item de
+  `porHoraModelo` e `calcPorModelo` agrega com a MESMA harmônica. `temTeto`
+  segue a regra do `temCor`: backend antigo → a coluna some.
 - **`simularEsteiraPorModelo(dias)`** (rodar no editor, não grava, **não precisa
   de re-deploy** — função de editor roda com o arquivo salvo): imprime no log a
   mesma leitura em formato de relatório — aparada, melhor dia, teto e % do teto

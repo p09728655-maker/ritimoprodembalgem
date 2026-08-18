@@ -1851,11 +1851,15 @@ function getPontosDia() {
     const key = it.hora + '|' + pr.modelo + '|' + pr.base + '|' + pr.cor;
     if (!porHoraModeloMap[key]) {
       porHoraModeloMap[key] = { hora: it.hora, modelo: pr.modelo, nome: pr.base || it.desc || '',
-                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0 };
+                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0 };
     }
     porHoraModeloMap[key].caixas += it.caixas;
     porHoraModeloMap[key].pontos += it.pontos;
     porHoraModeloMap[key].pesoKg += it.pesoKg;
+    // Teto físico da esteira (mesma régua do comparativo por período): o tempo
+    // de esteira soma, então o mix de caixas é média harmônica pelas caixas.
+    const tetoCod = _tetoEsteiraCxH(catalogo[it.codigo]);
+    if (tetoCod > 0) { porHoraModeloMap[key].cxTeto += it.caixas; porHoraModeloMap[key].hTeto += it.caixas / tetoCod; }
   });
 
   return {
@@ -1867,7 +1871,11 @@ function getPontosDia() {
     produtoAtualDesc,
     porProduto: Object.values(porProdutoMap),
     porHora,
-    porHoraModelo: Object.values(porHoraModeloMap),
+    porHoraModelo: Object.values(porHoraModeloMap).map(function (g) {
+      return { hora: g.hora, modelo: g.modelo, nome: g.nome, cor: g.cor,
+               caixas: g.caixas, pontos: g.pontos, pesoKg: g.pesoKg,
+               tetoCxH: g.hTeto > 0 ? Math.round(g.cxTeto / g.hTeto) : 0 };
+    }),
     programacao,
     painelConfig
   };

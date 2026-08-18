@@ -1682,8 +1682,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>MODELO</th><th id="porhora2-th-cor" style="display:none">COR</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr></thead>
-        <tbody id="porhora2-body"><tr><td colspan="6" class="empty-msg">Carregando…</td></tr></tbody>
+        <thead><tr><th>MODELO</th><th id="porhora2-th-cor" style="display:none">COR</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th><th id="porhora2-th-teto" style="display:none" title="quanto do teto físico da esteira o modelo usa hoje">% TETO EST.</th></tr></thead>
+        <tbody id="porhora2-body"><tr><td colspan="7" class="empty-msg">Carregando…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.8';
+const APP_VER   = '7.6.9';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3616,13 +3616,16 @@ function calcPorModelo(){
   lista.forEach(it=>{
     const k=it.modelo+'|'+(it.nome||'');
     if(!porModelo[k]){
-      porModelo[k]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set(), cores:new Set() };
+      porModelo[k]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set(), cores:new Set(), cxTeto:0, hTeto:0 };
       ordem.push(k);
     }
     const m=porModelo[k];
     m.caixas+=it.caixas; m.pesoKg+=it.pesoKg; m.pontos+=it.pontos;
     m.horas.add(it.hora);
     if(it.cor) m.cores.add(it.cor);
+    // Teto da esteira (o backend manda tetoCxH por item): o tempo soma —
+    // harmônica pelas caixas, a mesma régua do comparativo por período.
+    if(it.tetoCxH>0){ m.cxTeto+=it.caixas; m.hTeto+=it.caixas/it.tetoCxH; }
   });
   ordem.sort((a,b)=>porModelo[b].caixas-porModelo[a].caixas);
   const linhas=ordem.map(k=>{
@@ -3630,6 +3633,7 @@ function calcPorModelo(){
     return { modelo:m.modelo, nome:m.nome, caixas:m.caixas,
       pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
       cor:[...m.cores].sort().join(' · '),
+      teto:m.hTeto>0?m.cxTeto/m.hTeto:0,
       media:Math.round(m.caixas/m.horas.size) };
   });
   const totCx=linhas.reduce((s,l)=>s+l.caixas,0);
@@ -3638,7 +3642,10 @@ function calcPorModelo(){
   // Backend antigo (sem a coluna COR no catálogo) não manda cor nenhuma: aí a
   // coluna some, em vez de virar uma parede de "—" (mesma regra da coluna
   // MOTIVO no relatório de paradas).
-  return { linhas, totCx, totPeso, totPts, temCor: linhas.some(l=>!!l.cor) };
+  // temTeto segue a mesma regra do temCor: backend antigo (sem tetoCxH) ou
+  // catálogo sem MEDIDA/VELOCIDADE → a coluna % TETO EST. some, não chuta.
+  return { linhas, totCx, totPeso, totPts, temCor: linhas.some(l=>!!l.cor),
+           temTeto: linhas.some(l=>l.teto>0) };
 }
 
 // Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
@@ -3648,11 +3655,13 @@ function renderProducaoPorHoraDedicada(){
   const body=document.getElementById('porhora2-body');
   const totEl=document.getElementById('porhora2-totais');
   if(!body) return;
-  const {linhas,totCx,totPeso,totPts,temCor}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor,temTeto}=calcPorModelo();
   const thCor=document.getElementById('porhora2-th-cor');
   if(thCor) thCor.style.display=temCor?'':'none';
+  const thTeto=document.getElementById('porhora2-th-teto');
+  if(thTeto) thTeto.style.display=temTeto?'':'none';
   if(!linhas.length){
-    body.innerHTML='<tr><td colspan="6" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
+    body.innerHTML='<tr><td colspan="7" class="empty-msg">Sem produção por modelo hoje — o operador precisa selecionar o produto ao lançar no app.</td></tr>';
     if(totEl) totEl.textContent='';
     return;
   }
@@ -3663,6 +3672,7 @@ function renderProducaoPorHoraDedicada(){
       <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
       <td class="mono">${fmtN(m.media)}</td>
+      ${temTeto?`<td class="mono" style="color:var(--txt2)" title="teto físico deste mix: ${fmtN(Math.round(m.teto))} cx/h">${m.teto>0?fmtP(m.media/m.teto*100):'—'}</td>`:''}
     </tr>`).join('');
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
 }
@@ -4107,7 +4117,7 @@ function gerarRelatorioProducaoModelo(){
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
-  const {linhas,totCx,totPeso,totPts,temCor}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor,temTeto}=calcPorModelo();
   if(!linhas.length){
     win.close();
     alert('Sem produção por modelo hoje — nada pra gerar no relatório\n(o operador precisa selecionar o produto ao lançar no app).');
@@ -4192,7 +4202,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
 <div class="rp-sec-ttl" style="margin-top:18px">DETALHAMENTO POR MODELO</div>
 <table>
   <thead>
-    <tr><th>MODELO</th>${temCor?'<th>COR</th>':''}<th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th></tr>
+    <tr><th>MODELO</th>${temCor?'<th>COR</th>':''}<th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th>${temTeto?'<th>% TETO EST.</th>':''}</tr>
   </thead>
   <tbody>
     ${linhas.map(m=>`
@@ -4203,6 +4213,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
       <td class="td-mono">${m.pesoKg.toLocaleString('pt-BR')} kg</td>
       <td class="td-mono">${m.pontos.toLocaleString('pt-BR')}</td>
       <td class="td-mono">${m.media.toLocaleString('pt-BR')}</td>
+      ${temTeto?`<td class="td-mono">${m.teto>0?fmtP(m.media/m.teto*100):'—'}</td>`:''}
     </tr>`).join('')}
   </tbody>
 </table>
