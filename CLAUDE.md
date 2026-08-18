@@ -626,8 +626,15 @@ via Google Apps Script (JSONP).
   próprio MELHOR DIA nas horas que rodou, +X cx. É o alvo acionável — o % do
   teto da esteira é régua de comparação, não meta. O melhor dia é **limitado ao
   teto físico** para lançamento acumulado (318 cx/h com teto 300) não virar alvo.
-- Com um MODELO filtrado no seletor, cascata/cobertura/ganho **não saem** (meta
-  e realizado são da linha inteira; mostrariam um pedaço como se fosse o todo).
+- **Com um MODELO filtrado a cascata TROCA DE ÂNCORA** (`_relCascataProduto`):
+  meta e paradas são da **linha inteira** e não se atribuem a um produto, então
+  a régua passa a ser o **POTENCIAL DELE MESMO** — o melhor dia de cada COR nas
+  horas que ela rodou (limitado ao teto físico, para lançamento acumulado não
+  virar alvo). `POTENCIAL − perdido no RITMO = REALIZADO`, e o rodapé explica
+  por que a meta não aparece ali. O potencial nunca fica abaixo do próprio
+  realizado (cor de um dia só → perda 0, nada inventado).
+  - **Cobertura e ganho demonstrado continuam fora** com filtro: os dois
+    comparam com o realizado da LINHA.
 - **O seletor filtra por PRODUTO, o agrupamento é que abre por cor**
   (`keyFil`/`labelFil` no `_phAgrup`): no nível MODELO + COR, escolher
   `501149 MADERO` traz **todas as cores dele**, cada uma na sua linha. Como a

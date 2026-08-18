@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.3';
+const APP_VER   = '7.7.4';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4026,9 +4026,14 @@ async function gerarRelatorioProducaoHora(){
   // (RP_PARADAS, a mesma conta da aba PARADAS) com meta × realizado do
   // HISTORICO no mesmo intervalo. Busca sequencial com retry, como o relatório
   // de paradas; falhou → o relatório sai SEM a cascata, nunca inventa.
-  // Com um MODELO filtrado a cascata e a cobertura não fazem sentido (meta e
-  // realizado são da LINHA inteira, a tabela mostraria só um pedaço).
+  // Com um MODELO filtrado a cascata muda de âncora (potencial do próprio
+  // produto): meta e paradas são da LINHA inteira e não se atribuem a um
+  // modelo. A cobertura também sai — ela compara com o realizado da linha.
   let casc=null, cascNota='', cobertura=null;
+  if(sel && metric==='mediaH'){
+    casc=_relCascataProduto(linhas.map(l=>({label:l.label, caixas:l.acc.caixas,
+      ritmo:l.v1, melhor:l.v2, teto:l.teto||0, horas:l.acc.horas})));
+  }
   if(CFG.sheetsUrl && _rpOk() && !sel && typeof RP_PARADAS!=='undefined'){
     try{
       const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(deStr)+'&ate='+encodeURIComponent(ateStr);
@@ -4209,11 +4214,54 @@ function _relCascata(e){
            topTipo: (e&&e.topTipo)||null };
 }
 
+// CASCATA DE UM PRODUTO FILTRADO — âncora diferente, de propósito.
+// Com um modelo filtrado a META não serve: ela é da LINHA inteira (todos os
+// produtos do dia), e as paradas também não são atribuíveis a um produto.
+// A âncora honesta é o POTENCIAL DELE MESMO: o melhor dia que cada cor já
+// entregou, aplicado às horas que ela rodou. Tudo que falta para lá é ritmo —
+// e é ganho JÁ DEMONSTRADO pela equipe, não teoria.
+// O melhor dia entra limitado ao TETO FÍSICO: lançamento acumulado (318 cx/h
+// com teto 300) não pode virar alvo.
+// linhas: [{label, caixas, ritmo, melhor, teto, horas}]
+function _relCascataProduto(linhas){
+  const ls=(linhas||[]).filter(l=>l&&l.horas>0&&l.caixas>0);
+  if(!ls.length) return null;
+  let potencial=0, real=0, melhorCor=null;
+  ls.forEach(l=>{
+    const alvo=l.teto>0?Math.min(l.melhor,l.teto):l.melhor;
+    potencial+=Math.max(alvo,l.ritmo)*l.horas;   // nunca menos que o próprio realizado
+    real+=l.caixas;
+    if(!melhorCor||l.ritmo>melhorCor.ritmo) melhorCor=l;
+  });
+  potencial=Math.round(potencial);
+  return { tipo:'produto', potencial, real,
+           perdaRitmo: Math.max(0,potencial-real),
+           pctReal: potencial>0?real/potencial*100:0,
+           nCores: ls.length, melhorCor };
+}
+
 // Bloco HTML da cascata (DIA e PERÍODO usam o mesmo): a barra no visual da
 // Tela D — verde = realizado, âmbar listrado = perdido no ritmo, vermelho
 // listrado = perdido parado, e a MARCA DA META como linha vertical.
 function _rpCascataHtml(titulo, c, nota){
   if(!c) return '';
+  if(c.tipo==='produto'){
+    const esc2=Math.max(c.potencial,c.real)||1;
+    const w2=v=>Math.max(0,v/esc2*100).toFixed(2)+'%';
+    return `<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>
+  <div class="casc-bar">
+    <span class="casc-seg casc-real" style="width:${w2(c.real)}"></span>
+    <span class="casc-seg casc-rit"  style="width:${w2(c.perdaRitmo)}"></span>
+    <span class="casc-meta" style="left:100%"><b>POTENCIAL ${fmtN(c.potencial)}</b></span>
+  </div>
+  <div class="casc-lin">
+    <div class="casc-l"><span>POTENCIAL PRÓPRIO</span><b>${fmtN(c.potencial)} cx</b><i>o melhor dia de ${plural(c.nCores,'cor','cada cor')} nas horas que rodou — já demonstrado pela equipe</i></div>
+    <div class="casc-l"><span>PERDIDO NO RITMO</span><b style="color:#e65100">−${fmtN(Math.round(c.perdaRitmo))} cx</b><i>diferença para o próprio melhor — inclui paradas e microparadas do período</i></div>
+    <div class="casc-l casc-tot"><span>REALIZADO</span><b style="color:#2e7d32">${fmtN(c.real)} cx</b><i>${fmtP(c.pctReal)} do potencial${c.melhorCor?` · melhor cor: ${c.melhorCor.label.replace(/^.*?·\s*/,'')}`:''}</i></div>
+  </div>
+  <div class="rp-note">Com um modelo filtrado a âncora é o POTENCIAL DELE, não a meta: meta e paradas são da LINHA inteira (todos os produtos), não deste modelo. A cascata META × PARADAS × RITMO sai no relatório sem filtro.</div>
+  ${nota?`<div class="rp-note">⚠ ${nota}</div>`:''}`;
+  }
   const escala=Math.max(c.meta, c.real+c.perdaPar)||1;
   const w=v=>Math.max(0,v/escala*100).toFixed(2)+'%';
   const pctMeta=Math.min(100,c.meta/escala*100);
