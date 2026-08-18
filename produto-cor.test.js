@@ -226,6 +226,46 @@ ok('produto fora do catálogo não quebra', _tetoEsteiraCxH(null), 0);
 ok('a leitura do catálogo busca ENTRE_PECA por prefixo',
    /indexOf\('ENTRE_PECA'\) === 0/.test(GS), true);
 
+// ── 5c) simulação da esteira no editor: mesma conta do painel ─────────────
+console.log('\n── simularEsteiraPorModelo (log do editor) ──');
+// A função roda no editor e imprime a leitura da coluna % TETO EST. em formato
+// de relatório. A média aparada dela tem que bater com a do painel
+// (_phMediaAparada): VIVARE 122, MADERO 148 — divergência aqui repetiria a
+// história da conta de paradas.
+const LOGS = [];
+const Logger = { log: m => LOGS.push(String(m)) };
+const Utilities = { formatDate: () => '01/01/2026' };
+const TZ = 'America/Sao_Paulo';
+const _mkItens = [];
+const _addDia = (nome, data, cxh, teto) => _mkItens.push({ modelo: nome.slice(0,4), nome, data,
+  caixas: cxh, horas: 1, mediaHora: cxh, tetoCxH: teto });
+[[ '23/07',118],['05/08',178],['12/08',187],['13/08',91]].forEach(([d,v])=>_addDia('MESA CABECEIRA MADERO', d, v, 291));
+[[ '24/07',59],['10/08',122],['11/08',122]].forEach(([d,v])=>_addDia('SAPATEIRA VIVARE', d, v, 310));
+[[ '13/08',2],['14/08',1],['17/08',318],['18/08',84]].forEach(([d,v])=>_addDia('MESA LATERAL DECOR 470', d, v, 300));
+[[ '04/08',139],['05/08',46]].forEach(([d,v])=>_addDia('LIVREIRO ENCANTO', d, v, 0));
+function getProducaoModeloPeriodo() { return { ok: true, itens: _mkItens }; }
+eval(pega(GS, 'function simularEsteiraPorModelo('));
+simularEsteiraPorModelo(30);
+const linha = nome => LOGS.find(l => l.indexOf(nome) === 0) || '';
+const cols = nome => linha(nome).replace(nome, '').trim().split(/\s+/);
+// colunas: dias · cx · aparada · melhor · teto · %teto · %melhor
+ok('MADERO: aparada 148 (não 164), melhor 187',
+   cols('MESA CABECEIRA MADERO').slice(2, 4), ['148', '187']);
+ok('VIVARE: aparada 122 (não 87)', cols('SAPATEIRA VIVARE')[2], '122');
+ok('% do teto da MADERO = 148/291', cols('MESA CABECEIRA MADERO')[5], '51%');
+ok('produto sem teto mostra — nas três colunas',
+   cols('LIVREIRO ENCANTO').slice(4), ['—', '—', '—']);
+ok('dia a <30% do padrão vira alerta de apontamento',
+   LOGS.some(l => /CONFERIR APONTAMENTO/.test(l) && /DECOR 470 em 13\/08: 2 cx\/h/.test(l)), true);
+// 318 cx/h com teto de 300 é fisicamente impossível: mais caixas do que cabem
+// na esteira. É lançamento errado — e não pode virar "recorde" no veredito.
+ok('dia ACIMA do teto físico é acusado como impossível',
+   LOGS.some(l => /DECOR 470 em 17\/08: 318 cx\/h ACIMA do teto físico \(300\)/.test(l)), true);
+ok('dia fraco de verdade (59 da VIVARE) NÃO é acusado',
+   LOGS.some(l => /VIVARE em 24\/07/.test(l)), false);
+ok('resumo por último — e o dia impossível não vira "esteira no limite"',
+   /RESUMO:.*NÃO é o gargalo/.test(LOGS[LOGS.length - 1]), true);
+
 // ── 6) guarda-corpo: o agrupamento do comparativo é UM só ──────────────────
 console.log('\n── o comparativo não pode voltar a ter duas regras ──');
 // A tela e o PDF liam o mesmo seletor com duas cópias do keyOf/labelOf: a

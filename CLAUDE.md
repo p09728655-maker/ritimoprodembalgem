@@ -588,6 +588,18 @@ via Google Apps Script (JSONP).
     e o campo chegava **0 em silêncio** (teto ~25% otimista).
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
+- **`simularEsteiraPorModelo(dias)`** (rodar no editor, não grava, **não precisa
+  de re-deploy** — função de editor roda com o arquivo salvo): imprime no log a
+  mesma leitura em formato de relatório — aparada, melhor dia, teto e % do teto
+  por produto (padrão 30 dias), mais os alertas de apontamento: dia **<30% do
+  padrão do próprio modelo** (o 1 cx/h da DECOR 470) e dia **ACIMA do teto
+  físico** (318 cx/h com teto 300 — impossível, lançamento errado). Dia
+  impossível **não entra** no veredito "melhor dia já chegou a X%" — senão um
+  lançamento dobrado diria que a esteira está no limite. Um dia fraco de
+  verdade (59 da VIVARE contra padrão 122) NÃO é acusado. Resumo por último.
+  A média aparada daqui segue a MESMA regra do `_phMediaAparada` do painel —
+  `produto-cor.test.js` roda a função real contra um log de mentira e falha se
+  divergirem.
 
 ## Notas / armadilhas conhecidas
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
