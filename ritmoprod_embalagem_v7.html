@@ -448,7 +448,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-split-txt{display:flex;flex-direction:column;gap:clamp(2px,.5vh,8px);font-family:var(--font-d);font-size:clamp(13px,1.2vw,21px);color:var(--txt2);letter-spacing:2px;line-height:1.35;min-width:0}
 .tvd-split-txt b{font-family:var(--font-h);font-weight:700;font-size:clamp(20px,1.9vw,36px);letter-spacing:3px;text-transform:uppercase;color:var(--txt);line-height:1}
 .tvd-split-txt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#tvd-normal-falta:not(:empty){color:var(--warn)}
+#tvd-normal-falta:not(:empty),#gsem-normal-falta:not(:empty){color:var(--warn)}
 
 /* Barra: verde (normal) + faixa listrada âmbar (hora extra) e a MARCA DA META
    como linha vertical. Se a verde parar antes da marca, quem cruzou foi a
@@ -475,6 +475,44 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-dia-pct{font-family:var(--font-d);font-size:clamp(13px,1.25vw,22px);letter-spacing:1px}
 .tvd-dia-he{font-family:var(--font-d);font-size:clamp(11px,1.05vw,19px);letter-spacing:1px;color:var(--warn);border-top:1px solid var(--border);padding-top:clamp(3px,.6vh,9px)}
 .tvd-dia-he.vazio{color:var(--txt2)}
+
+/* ═══ O MESMO FECHAMENTO, AGORA NA ABA GERENCIAL (#ger-semana) ═══
+   Mesma marcação e as mesmas classes .tvd-* da Tela D — o desenho é o do
+   RP_SEMANA, um só. O que muda aqui é a ESCALA: a Tela D é lida a 15 m e por
+   isso mede as fontes em vw; o gerencial é lido a 60 cm, dentro de um card de
+   dashboard. O dia a dia também vira grade que QUEBRA em tela estreita, em vez
+   de espremer 5 colunas fixas. */
+#ger-semana .tvd-wrap{gap:14px;padding:14px 16px 18px}
+#ger-semana .tvd-band{grid-template-columns:minmax(220px,auto) 1fr;column-gap:28px}
+#ger-semana .tvd-lbl{font-size:9px;letter-spacing:2px}
+#ger-semana .tvd-hero-num{font-size:clamp(46px,6vw,74px)}
+#ger-semana .tvd-hero-unit{font-size:9px;letter-spacing:2px}
+#ger-semana .tvd-soma{font-size:9px;letter-spacing:1px}
+#ger-semana .tvd-selo{font-size:11px;letter-spacing:1px;padding:6px 12px;border-width:1px;margin-top:8px}
+#ger-semana .tvd-splits{gap:12px}
+#ger-semana .tvd-split{gap:12px}
+#ger-semana .tvd-split-fio{width:4px}
+#ger-semana .tvd-split-num{font-size:clamp(28px,3.4vw,44px)}
+#ger-semana .tvd-split-txt{font-size:9px;letter-spacing:1px;gap:2px}
+#ger-semana .tvd-split-txt b{font-size:11px;letter-spacing:2px}
+#ger-semana .tvd-barra-wrap{padding-top:16px}
+#ger-semana .tvd-barra{height:14px}
+#ger-semana .tvd-meta-marca span{font-size:9px;letter-spacing:1px;bottom:calc(100% - 14px)}
+#ger-semana .tvd-dias{height:auto;margin-top:2px;grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+#ger-semana .tvd-dia{gap:6px;padding:10px 12px;border-top-width:3px}
+#ger-semana .tvd-dia-data{font-size:15px}
+#ger-semana .tvd-dia-sem{font-size:8px;letter-spacing:2px}
+#ger-semana .tvd-dia-num{font-size:28px}
+#ger-semana .tvd-dia-pct{font-size:9px}
+#ger-semana .tvd-dia-he{font-size:8px;padding-top:4px}
+/* Em tela larga a JORNADA NORMAL e a HORA EXTRA ficam lado a lado: empilhadas
+   (como na TV, que tem quatro vezes essa altura) sobraria meia banda vazia à
+   direita do bloco. Abaixo de 900 px a banda inteira empilha. */
+@media(min-width:1200px){
+  #ger-semana .tvd-splits{flex-direction:row;align-items:center;gap:28px}
+  #ger-semana .tvd-split{flex:1;min-width:0}
+}
+@media(max-width:900px){#ger-semana .tvd-band{grid-template-columns:1fr;row-gap:14px}}
 
 .tvb-top{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .tvb-setor-lbl{font-family:var(--font-h);font-size:clamp(15px,2vw,32px);font-weight:700;letter-spacing:6px;color:var(--txt2)}
@@ -716,6 +754,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   #btn-fechar-dia,#dia-fechado-badge,#btn-reabrir-dia,
   input[type=file],#refresh-badge,#countdown-badge,
   #hist-storage-info,
+  #ger-semana,
   .sec:not(.on){ display:none!important; }
 
   /* ── SEÇÃO ATIVA ── */
@@ -1116,6 +1155,56 @@ if (_v7Instalado()) _v7EscondeBotao();
         <thead><tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th>STATUS</th></tr></thead>
         <tbody id="tbl-hora-body"><tr><td colspan="6" class="empty-msg">Carregando dados…</td></tr></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- ═══ FECHAMENTO DA SEMANA PASSADA ═══
+       O mesmo fechamento da TELA D da TV, aqui no gerencial: o gestor não
+       precisa esperar o carrossel (nem estar na frente da TV) para ver como a
+       semana fechou. O dado e o desenho saem do RP_SEMANA — daqui vêm só os
+       ids com o prefixo gsem- e a escala de dashboard. Fica escondido enquanto
+       a semana passada não tiver dia fechado. -->
+  <div class="tbl-wrap" id="ger-semana" style="display:none;margin-top:14px">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">FECHAMENTO DA SEMANA PASSADA</span>
+      <span id="gsem-semana" style="font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px;margin-left:8px">· SEMANA —</span>
+      <div style="flex:1"></div>
+      <span id="gsem-periodo" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">—</span>
+    </div>
+
+    <div class="tvd-wrap">
+      <div class="tvd-band">
+        <div class="tvd-hero">
+          <div class="tvd-lbl">PRODUÇÃO DA SEMANA</div>
+          <div class="tvd-hero-num" id="gsem-total">—</div>
+          <div class="tvd-hero-unit">CAIXAS NA SEMANA</div>
+          <div class="tvd-soma" id="gsem-soma"></div>
+          <div class="tvd-selo he" id="gsem-selo">—</div>
+        </div>
+
+        <div class="tvd-splits">
+          <div class="tvd-split">
+            <div class="tvd-split-fio" style="background:var(--ok)"></div>
+            <div class="tvd-split-num" style="color:var(--ok)" id="gsem-normal">—</div>
+            <div class="tvd-split-txt"><b>JORNADA NORMAL</b><span id="gsem-normal-pct">—</span><span id="gsem-normal-falta"></span></div>
+          </div>
+          <div class="tvd-split" id="gsem-linha-extra">
+            <div class="tvd-split-fio" style="background:var(--warn)"></div>
+            <div class="tvd-split-num" style="color:var(--warn)" id="gsem-extra">—</div>
+            <div class="tvd-split-txt"><b>HORA EXTRA</b><span id="gsem-extra-pct">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tvd-barra-wrap">
+        <div class="tvd-barra">
+          <div class="tvd-barra-normal" id="gsem-bar-normal" style="width:0%"></div>
+          <div class="tvd-barra-extra"  id="gsem-bar-extra"  style="width:0%"></div>
+        </div>
+        <div class="tvd-meta-marca" id="gsem-marca" style="left:100%"><span id="gsem-marca-lbl">META —</span></div>
+      </div>
+
+      <div class="tvd-dias" id="gsem-dias"></div>
     </div>
   </div>
 
@@ -2040,7 +2129,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.6.4';
+const APP_VER   = '7.6.5';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3498,6 +3587,17 @@ function renderGerencial(){
   renderChartComp(dh,k.slots,k.metaH);
 }
 
+// ── FECHAMENTO DA SEMANA PASSADA (bloco do gerencial) ───────────────────────
+// Só mostra/esconde: o dado e o desenho são os do RP_SEMANA, os MESMOS da Tela
+// D da TV. Enquanto a semana passada não tiver dia fechado o bloco fica fora —
+// card vazio no meio do painel é pior que card nenhum (mesma regra da Tela D,
+// que nesse caso nem entra no ciclo).
+function renderSemanaGer(){
+  const cx=document.getElementById('ger-semana');
+  if(!cx) return;
+  cx.style.display = RP_SEMANA.pintar('gsem-') ? '' : 'none';
+}
+
 // ════════════════════════════════════════════════
 // PRODUÇÃO POR MODELO — TELA DEDICADA (total do dia, soma as variantes de cor
 // e as horas: um modelo por linha, não repete o mesmo modelo em várias horas)
@@ -4918,6 +5018,12 @@ function updateHeader(){
 
 function renderAll(){
   updateHeader();
+  // O fechamento da semana passada não depende do dia escolhido (vale para a
+  // GERENCIAL ao vivo e para o modo histórico). Vem ANTES do renderGerencial e
+  // dentro de um try: assim ele não derruba o painel se o histórico falhar, e
+  // também não some quando algo mais adiante quebra (a Chart.js não carregar,
+  // por exemplo, já deixou o rodapé sem versão pelo mesmo motivo).
+  try{ renderSemanaGer(); }catch(e){ console.warn('[SEMANA] gerencial:', e.message); }
   renderGerencial();
   autoSaveDia(); // salva snapshot automático após cada render
   // Atualizar badges/botões de fechamento
@@ -5422,6 +5528,139 @@ function _relSemanalKPIs(dias){
     ..._relMetaHE(totReal, totHE, totMeta)
   };
 }
+
+// ── FECHAMENTO DA SEMANA PASSADA — o dado e o desenho, uma implementação só ──
+// A mesma leitura aparece em DOIS lugares: a TELA D do carrossel da TV e o
+// bloco FECHAMENTO DA SEMANA PASSADA da aba GERENCIAL. Buscar e desenhar em
+// cada um seria repetir a armadilha da conta de paradas (que divergiu três
+// vezes): aqui a busca e o desenho ficam num lugar só, e cada tela passa
+// apenas o PREFIXO dos seus ids — 'tvd-' na TV, 'gsem-' no gerencial.
+const RP_SEMANA = (function() {
+  // O histórico só muda quando um dia é arquivado (1× por dia) e a semana em si
+  // vira uma vez por semana: buscar isso no ritmo do carrossel (a cada ~20 s)
+  // seria puro desperdício de chamada ao Apps Script. Guarda por 30 min e, se a
+  // busca falhar, mantém o que já estava na tela.
+  const TTL = 30 * 60 * 1000;
+  const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+  const _st = { dados: null, ts: 0, buscando: false };
+  const _subs = [];
+
+  function carregar(forcar) {
+    if (_st.buscando) return;
+    if (!forcar && _st.dados && (Date.now() - _st.ts) < TTL) return;
+    _st.buscando = true;
+    (async () => {
+      try {
+        const todos = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
+        const { seg, sex, semStr, numSem } = _relSemanaPassada();
+        const dias = _relDiasDaSemana(todos, seg, sex);
+        // Sem dia fechado na semana passada não há o que mostrar: a Tela D sai
+        // do ciclo (mesma regra da Tela C sem atraso) e o bloco do gerencial se
+        // esconde, em vez de qualquer um dos dois aparecer vazio.
+        _st.dados = dias.length ? { semStr, numSem, dias, k: _relSemanalKPIs(dias) } : null;
+        _st.ts = Date.now();
+        // A busca é assíncrona: quem está na tela se redesenha quando ela volta.
+        _subs.forEach(f => { try { f(); } catch (e) { console.warn('[SEMANA] assinante falhou:', e.message); } });
+      } catch (e) {
+        console.warn('[SEMANA] não carregou a semana passada:', e.message);
+      } finally { _st.buscando = false; }
+    })();
+  }
+  function tem() { return !!(_st.dados && _st.dados.dias.length); }
+  function aoCarregar(cb) { if (typeof cb === 'function') _subs.push(cb); }
+
+  // Desenha o fechamento nos elementos de id `pfx`+campo. Devolve false quando
+  // ainda não há semana para mostrar (quem chamou decide o que fazer: a TV já
+  // nem entra no ciclo, o gerencial esconde o bloco).
+  function pintar(pfx) {
+    const el  = s => document.getElementById(pfx + s);
+    const set = (s, v) => { const e = el(s); if (e) e.textContent = v; };
+    carregar();
+    const d = _st.dados;
+    if (!d) return false;                 // ainda carregando: mantém o que está na tela
+    const k = d.k, normal = k.totReal - k.totHE;
+
+    set('setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
+    set('semana',  '· SEMANA ' + d.numSem);
+    set('periodo', d.semStr);
+    set('total',   fmtN(k.totReal));
+    set('soma',    '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');
+    set('normal',  fmtN(normal));
+    set('extra',   fmtN(k.totHE));
+    set('normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
+    // O buraco da jornada normal é a informação de ação — em linha própria e na
+    // cor de atenção, não espremido no fim de outra frase.
+    set('normal-falta', k.faltouSemHE > 0 ? `faltaram ${fmtN(k.faltouSemHE)} cx` : '');
+    const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
+    set('extra-pct', k.totHoras > 0 ? `${plural(k.totHoras,'hora','horas')} em ${plural(diasComHE,'dia','dias')}`
+                                        : (diasComHE ? `em ${plural(diasComHE,'dia','dias')}` : ''));
+    // Semana sem nenhuma hora extra: a linha inteira sai (ela diria "0" e só
+    // ocuparia metade da banda) — mesma regra do card de HE do gerencial.
+    const linhaExtra = el('linha-extra');
+    if (linhaExtra) linhaExtra.style.display = k.temHE ? '' : 'none';
+
+    // Veredito. Verde SÓ quando a jornada normal sozinha bateu a meta.
+    const selo = el('selo');
+    if (selo) {
+      if (k.soComHE) {
+        selo.className = 'tvd-selo he';
+        selo.textContent = '⚠ META BATIDA COM HORA EXTRA';
+      } else if (k.totMeta && k.totReal >= k.totMeta) {
+        selo.className = 'tvd-selo ok';
+        selo.textContent = '✓ META BATIDA NA JORNADA NORMAL';
+      } else {
+        selo.className = 'tvd-selo ruim';
+        selo.textContent = `FALTARAM ${fmtN(Math.max(0, k.totMeta - k.totReal))} CX PARA A META`;
+      }
+      selo.style.display = k.totMeta ? '' : 'none';
+    }
+
+    // Barra: a escala é o MAIOR entre o total e a meta, para a marca da meta
+    // caber na tela nos dois casos (semana que passou e semana que não chegou).
+    const escala = Math.max(k.totReal, k.totMeta) || 1;
+    const barN = el('bar-normal');
+    const barE = el('bar-extra');
+    const marca = el('marca');
+    if (barN) barN.style.width = (normal / escala * 100) + '%';
+    if (barE) barE.style.width = (k.totHE / escala * 100) + '%';
+    if (marca) {
+      const pctMeta = k.totMeta / escala * 100;
+      marca.style.left    = pctMeta + '%';
+      marca.style.display = k.totMeta ? '' : 'none';
+      marca.classList.toggle('fim', pctMeta > 80);   // rótulo vira para dentro
+    }
+    set('marca-lbl', 'META ' + fmtN(k.totMeta));
+
+    // Dia a dia. A tarja no topo diz o resultado sem depender de ler o número:
+    // verde bateu na jornada normal, âmbar bateu com hora extra, vermelho não bateu.
+    const cx = el('dias');
+    if (cx) {
+      cx.innerHTML = d.dias.map(x => {
+        const he  = _heIndef(x) ? 0 : (x.heCx || 0);
+        const nor = x.real - he;
+        const cls = x.meta && nor >= x.meta ? 'ok' : (x.meta && x.real >= x.meta ? 'he' : 'ruim');
+        const cor = cls === 'ok' ? 'var(--ok)' : cls === 'he' ? 'var(--warn)' : 'var(--red)';
+        const dt  = parseBR(x.data);
+        return `<div class="tvd-dia ${cls}">
+          <div class="tvd-dia-data">${x.data.substring(0, 5)}</div>
+          <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
+          <div class="tvd-dia-meio">
+          <div class="tvd-dia-num">${fmtN(x.real)}</div>
+          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : '—'}</div>
+          </div>
+          <div class="tvd-dia-he${he > 0 ? '' : ' vazio'}">${_heIndef(x) ? 'HE não separada' : (he > 0 ? `${fmtN(he)} cx em hora extra` : 'sem hora extra')}</div>
+        </div>`;
+      }).join('');
+    }
+    return true;
+  }
+
+  return { carregar, tem, pintar, aoCarregar };
+})();
+
+// A busca do histórico é assíncrona: quando ela volta, o bloco do gerencial se
+// redesenha sozinho (a Tela D da TV faz o mesmo, pelo _cicloTV).
+RP_SEMANA.aoCarregar(() => { try { renderSemanaGer(); } catch (e) { console.warn('[SEMANA] gerencial:', e.message); } });
 
 // ── Resumo da semana em TEXTO de WhatsApp ────────────────────────────────────
 // O pessoal recebe a divulgação no grupo do zap; PDF exige abrir anexo, texto
@@ -7416,116 +7655,13 @@ const _cicloTV = (function() {
   function _temAtrasoAgora() { return (PONTOS_DIA.programacao?.atrasoTotal || 0) > 0; }
 
   // ── TELA D — fechamento da semana passada ────────────────────────────────
-  // O histórico só muda quando um dia é arquivado (1× por dia) e a semana em si
-  // vira uma vez por semana: buscar isso no ritmo do carrossel (a cada ~20 s)
-  // seria puro desperdício de chamada ao Apps Script. Guarda por 30 min e, se a
-  // busca falhar, mantém o que já estava na tela.
-  const TVD_TTL = 30 * 60 * 1000;
-  let _tvd = { dados: null, ts: 0, buscando: false };
-  function _tvdCarregar(forcar) {
-    if (_tvd.buscando) return;
-    if (!forcar && _tvd.dados && (Date.now() - _tvd.ts) < TVD_TTL) return;
-    _tvd.buscando = true;
-    (async () => {
-      try {
-        const todos = CFG.sheetsUrl ? await buildDiasHistAsync() : buildDiasHist();
-        const { seg, sex, semStr, numSem } = _relSemanaPassada();
-        const dias = _relDiasDaSemana(todos, seg, sex);
-        // Sem dia fechado na semana passada não há o que mostrar — a tela sai do
-        // ciclo em vez de aparecer vazia (mesma regra da Tela C sem atraso).
-        _tvd.dados = dias.length ? { semStr, numSem, dias, k: _relSemanalKPIs(dias) } : null;
-        _tvd.ts = Date.now();
-        if (_tela === 'd') _sincSlideD();
-      } catch (e) {
-        console.warn('[TV D] não carregou a semana passada:', e.message);
-      } finally { _tvd.buscando = false; }
-    })();
-  }
-  function _temSemanaPassada() { return !!(_tvd.dados && _tvd.dados.dias.length); }
-
-  const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
-
-  function _sincSlideD() {
-    const set  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    const setH = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML  = v; };
-    _tvdCarregar();
-    const d = _tvd.dados;
-    if (!d) return;                       // ainda carregando: mantém o que está na tela
-    const k = d.k, normal = k.totReal - k.totHE;
-
-    set('tvd-setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
-    set('tvd-semana',  '· SEMANA ' + d.numSem);
-    set('tvd-periodo', d.semStr);
-    set('tvd-total',   fmtN(k.totReal));
-    set('tvd-soma',    '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');
-    set('tvd-normal',  fmtN(normal));
-    set('tvd-extra',   fmtN(k.totHE));
-    set('tvd-normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
-    // O buraco da jornada normal é a informação de ação — em linha própria e na
-    // cor de atenção, não espremido no fim de outra frase.
-    set('tvd-normal-falta', k.faltouSemHE > 0 ? `faltaram ${fmtN(k.faltouSemHE)} cx` : '');
-    const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
-    set('tvd-extra-pct', k.totHoras > 0 ? `${plural(k.totHoras,'hora','horas')} em ${plural(diasComHE,'dia','dias')}`
-                                        : (diasComHE ? `em ${plural(diasComHE,'dia','dias')}` : ''));
-    // Semana sem nenhuma hora extra: a linha inteira sai (ela diria "0" e só
-    // ocuparia metade da banda) — mesma regra do card de HE do gerencial.
-    const linhaExtra = document.getElementById('tvd-linha-extra');
-    if (linhaExtra) linhaExtra.style.display = k.temHE ? '' : 'none';
-
-    // Veredito. Verde SÓ quando a jornada normal sozinha bateu a meta.
-    const selo = document.getElementById('tvd-selo');
-    if (selo) {
-      if (k.soComHE) {
-        selo.className = 'tvd-selo he';
-        selo.textContent = '⚠ META BATIDA COM HORA EXTRA';
-      } else if (k.totMeta && k.totReal >= k.totMeta) {
-        selo.className = 'tvd-selo ok';
-        selo.textContent = '✓ META BATIDA NA JORNADA NORMAL';
-      } else {
-        selo.className = 'tvd-selo ruim';
-        selo.textContent = `FALTARAM ${fmtN(Math.max(0, k.totMeta - k.totReal))} CX PARA A META`;
-      }
-      selo.style.display = k.totMeta ? '' : 'none';
-    }
-
-    // Barra: a escala é o MAIOR entre o total e a meta, para a marca da meta
-    // caber na tela nos dois casos (semana que passou e semana que não chegou).
-    const escala = Math.max(k.totReal, k.totMeta) || 1;
-    const barN = document.getElementById('tvd-bar-normal');
-    const barE = document.getElementById('tvd-bar-extra');
-    const marca = document.getElementById('tvd-marca');
-    if (barN) barN.style.width = (normal / escala * 100) + '%';
-    if (barE) barE.style.width = (k.totHE / escala * 100) + '%';
-    if (marca) {
-      const pctMeta = k.totMeta / escala * 100;
-      marca.style.left    = pctMeta + '%';
-      marca.style.display = k.totMeta ? '' : 'none';
-      marca.classList.toggle('fim', pctMeta > 80);   // rótulo vira para dentro
-    }
-    set('tvd-marca-lbl', 'META ' + fmtN(k.totMeta));
-
-    // Dia a dia. A tarja no topo diz o resultado sem depender de ler o número:
-    // verde bateu na jornada normal, âmbar bateu com hora extra, vermelho não bateu.
-    const cx = document.getElementById('tvd-dias');
-    if (cx) {
-      cx.innerHTML = d.dias.map(x => {
-        const he  = _heIndef(x) ? 0 : (x.heCx || 0);
-        const nor = x.real - he;
-        const cls = x.meta && nor >= x.meta ? 'ok' : (x.meta && x.real >= x.meta ? 'he' : 'ruim');
-        const cor = cls === 'ok' ? 'var(--ok)' : cls === 'he' ? 'var(--warn)' : 'var(--red)';
-        const dt  = parseBR(x.data);
-        return `<div class="tvd-dia ${cls}">
-          <div class="tvd-dia-data">${x.data.substring(0, 5)}</div>
-          <div class="tvd-dia-sem">${dt ? _DIA_SEM[dt.getDay()] : ''}</div>
-          <div class="tvd-dia-meio">
-          <div class="tvd-dia-num">${fmtN(x.real)}</div>
-          <div class="tvd-dia-pct" style="color:${cor}">${x.meta ? fmtP(x.real / x.meta * 100) + ' da meta' : '—'}</div>
-          </div>
-          <div class="tvd-dia-he${he > 0 ? '' : ' vazio'}">${_heIndef(x) ? 'HE não separada' : (he > 0 ? `${fmtN(he)} cx em hora extra` : 'sem hora extra')}</div>
-        </div>`;
-      }).join('');
-    }
-  }
+  // O dado (com cache de 30 min) e o desenho moram no RP_SEMANA, que a aba
+  // GERENCIAL usa igual: aqui entram só o prefixo dos ids desta tela e a regra
+  // do ciclo — sem dia fechado na semana passada, a Tela D não entra (mesma
+  // regra da Tela C sem atraso), para nunca aparecer vazia.
+  function _sincSlideD() { RP_SEMANA.pintar('tvd-'); }
+  function _temSemanaPassada() { return RP_SEMANA.tem(); }
+  RP_SEMANA.aoCarregar(() => { if (_tela === 'd') _sincSlideD(); });
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
   // Cada tela tem o SEU próprio tempo (A / B / C). Tela C, se não configurada,
@@ -7627,7 +7763,7 @@ const _cicloTV = (function() {
     if (_timer) { clearTimeout(_timer); _timer = null; }
     // Busca a semana passada logo (fora do ciclo): é ela que decide se a Tela D
     // entra na ordem. Cai no cache de 30 min, então reiniciar não vira chamada.
-    if ((CFG.telasAtivas || {}).d !== false) _tvdCarregar();
+    if ((CFG.telasAtivas || {}).d !== false) RP_SEMANA.carregar();
     const ordemInicial = _ordemTelas();
     _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
     ['b', 'c', 'd'].forEach(k => {

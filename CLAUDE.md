@@ -133,6 +133,9 @@ via Google Apps Script (JSONP).
   front simplesmente não recebe `he`/`heCx` e as telas seguem sem a divisão.
 
 ## TELA D da TV — fechamento da semana passada
+- A mesma leitura aparece em **dois lugares**: a Tela D do carrossel da TV e o
+  bloco **FECHAMENTO DA SEMANA PASSADA** no fim da aba **GERENCIAL** (`#ger-semana`)
+  — o gestor não precisa esperar o carrossel, nem estar na frente da TV.
 - Quarta tela do carrossel (`#tv-slide-d`), no visual do app: logomarca Patrimar
   no topo como a Tela C e **nenhuma cor própria** — tudo sai dos tokens
   (`--ok` jornada normal, `--warn` hora extra, `--red` abaixo, `--acc`, `--txt`).
@@ -149,10 +152,30 @@ via Google Apps Script (JSONP).
 - **A semana é a MESMA do relatório**: `_relSemanaPassada()` + `_relDiasDaSemana()`
   + `_relSemanalKPIs()`, as três compartilhadas. Não reescrever o recorte dentro
   da tela — foi a duplicação que fez a conta de paradas divergir três vezes.
-- **O histórico fica em cache de 30 min** (`_tvdCarregar`). O carrossel gira a
-  cada ~20 s; buscar o `getHistory` nesse ritmo seria chamada jogada fora, já que
-  o histórico só muda quando um dia é arquivado. Falhou a busca? Mantém o que
-  está na tela.
+- **A busca e o DESENHO moram no `RP_SEMANA`, uma implementação só.** `pintar(pfx)`
+  desenha nos elementos do prefixo que recebe — `'tvd-'` na TV, `'gsem-'` no
+  gerencial — e devolve `false` quando ainda não há semana (a Tela D nem entra
+  no ciclo, o bloco do gerencial se esconde). `_sincSlideD` e `renderSemanaGer`
+  são adaptadores de duas linhas. **Não escrever uma segunda cópia do desenho
+  dentro do HTML** — foi a duplicação que fez a conta de paradas divergir três
+  vezes; o `relatorios.test.js` roda o `pintar` real contra um DOM de mentira e
+  falha se o cartão do dia a dia ou a busca reaparecerem em outro lugar.
+  - A **marcação e as classes `.tvd-*` são as mesmas** nos dois; o que muda é a
+    **escala**, num bloco de CSS scopado por `#ger-semana` (a TV é lida a 15 m e
+    mede as fontes em `vw`; o gerencial é lido a 60 cm dentro de um card). Lá o
+    dia a dia vira grade que **quebra** em tela estreita em vez de espremer 5
+    colunas fixas.
+  - `renderSemanaGer()` roda **antes** do `renderGerencial()` dentro de um `try`:
+    não derruba o painel se o histórico falhar e não some quando algo adiante
+    quebra (a Chart.js não carregar já deixou o rodapé sem versão assim).
+  - No **PDF do dia** o bloco não vai (`#ger-semana` entra na lista de ocultos do
+    `@media print`): a semana tem o relatório semanal dedicado, e o reset P&B da
+    impressão comeria justamente as barras e o selo.
+- **O histórico fica em cache de 30 min** (`RP_SEMANA.carregar`). O carrossel gira
+  a cada ~20 s; buscar o `getHistory` nesse ritmo seria chamada jogada fora, já
+  que o histórico só muda quando um dia é arquivado. Falhou a busca? Mantém o que
+  está na tela. A busca é assíncrona: quem está em cartaz se redesenha por
+  `RP_SEMANA.aoCarregar(...)`, sem cada tela ficar sondando o dado.
 - Config: **TEMPO NA TELA D** (padrão **20 s**, mais que os 15 das outras porque
   tem mais o que ler) e o checkbox **TELA D**. ⚠ `telaD`/`tempoD` na
   `CONFIG_PAINEL` exigem o **.gs v5.2 re-deployado**; enquanto isso não acontece,
