@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.0';
+const APP_VER   = '7.7.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4153,12 +4153,18 @@ function _relSwotProducao(linhas, rotPer){
   ls.filter(l=>l.melhor>0&&l.ritmo>=l.melhor*0.9&&l.caixas>=totCx*0.05).slice(0,1)
     .forEach(l=>F.push(`<b>${l.nome}</b> roda estável: a média do período é ≥90% do próprio melhor dia.`));
 
-  // FRAQUEZAS — pior aproveitamento com volume relevante + catálogo cego
-  const relev10=criveis.filter(l=>l.caixas>=totCx*0.10);
-  if(relev10.length){
-    const pior=relev10.reduce((a,b)=>a.pct<b.pct?a:b);
-    if(pior.pct<30)
-      Q.push(`<b>${pior.nome}</b> usa só <b>${fmtP(pior.pct)}</b> do teto (${fmtN(Math.round(pior.ritmo))} de ${fmtN(Math.round(pior.teto))} cx/h) com ${fmtP(pior.caixas/totCx*100)} das caixas.`);
+  // FRAQUEZAS — produtos rodando longe do teto + catálogo cego.
+  // A trava anti-ruído é dupla: UM produto <30% só entra se carregar ≥10% das
+  // caixas; mas DOIS OU MAIS já entram juntos, qualquer volume — num período
+  // com 20+ modelos ninguém chega a 10% sozinho, e a primeira versão desta
+  // regra deixou passar um relatório com DEZ produtos abaixo de 30% e a
+  // fraqueza dizendo "nada apontado" (18/08/2026).
+  const baixos=criveis.filter(l=>l.pct<30);
+  if(baixos.length){
+    const cxB=baixos.reduce((s,l)=>s+l.caixas,0);
+    const pior=baixos.reduce((a,b)=>a.pct<b.pct?a:b);
+    if(baixos.length>=2||cxB>=totCx*0.10)
+      Q.push(`${plural(baixos.length,'produto rodou','produtos rodaram')} abaixo de <b>30% do teto</b> (${fmtP(cxB/totCx*100)} das caixas) — o pior é <b>${pior.nome}</b>, a <b>${fmtP(pior.pct)}</b> (${fmtN(Math.round(pior.ritmo))} de ${fmtN(Math.round(pior.teto))} cx/h).`);
   }
   const semTeto=ls.filter(l=>!(l.teto>0)).length;
   if(semTeto)
