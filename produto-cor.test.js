@@ -145,6 +145,22 @@ ok('código sem descrição não quebra',
    [produtoDoCodigo('501999002').base, produtoDoCodigo('501999002').cor], ['', '']);
 ok('código fora do catálogo cai no modelo', produtoDoCodigo('501777001').fonte, 'sem catálogo');
 
+// ── 4b) cor escrita de dois jeitos é typo, não cor nova ───────────────────
+console.log('\n── cor rara que parece erro de escrita ──');
+// A simulação aponta "BCO/AZUL" para "BRANCO/AZUL": as letras da rara cabem,
+// na ordem, dentro da comum. Sem isso vira duas cores na coluna do relatório.
+eval(pega(GS, 'function _soLetras('));
+eval(pega(GS, 'function _cabeDentro('));
+const cabe = (a, b) => _cabeDentro(_soLetras(a), _soLetras(b));
+ok('BCO/AZUL cabe em BRANCO/AZUL', cabe('BCO/AZUL', 'BRANCO/AZUL'), true);
+ok('BCO/ROSA cabe em BRANCO/ROSA', cabe('BCO/ROSA', 'BRANCO/ROSA'), true);
+ok('BRANCO AC cabe em BRANCO ACETINADO', cabe('BRANCO AC', 'BRANCO ACETINADO'), true);
+// Cor composta legítima NÃO pode ser apontada como erro da cor simples: a
+// comparação só vale da rara (mais curta) para a comum (mais longa).
+ok('OFF WHITE/CINAMOMO não cabe em OFF WHITE', cabe('OFF WHITE/CINAMOMO', 'OFF WHITE'), false);
+ok('ALECRIM/CINAMOMO não cabe em ALECRIM', cabe('ALECRIM/CINAMOMO', 'ALECRIM'), false);
+ok('CUMARU não cabe em CINAMOMO', cabe('CUMARU', 'CINAMOMO'), false);
+
 // ── 5) painel: a tabela do dia agrupa por PRODUTO e junta as cores ─────────
 console.log('\n── painel: uma linha por produto, cores na coluna ──');
 let PONTOS_DIA = { porHoraModelo: [
