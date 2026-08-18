@@ -145,21 +145,50 @@ ok('código sem descrição não quebra',
    [produtoDoCodigo('501999002').base, produtoDoCodigo('501999002').cor], ['', '']);
 ok('código fora do catálogo cai no modelo', produtoDoCodigo('501777001').fonte, 'sem catálogo');
 
-// ── 4b) cor escrita de dois jeitos é typo, não cor nova ───────────────────
-console.log('\n── cor rara que parece erro de escrita ──');
-// A simulação aponta "BCO/AZUL" para "BRANCO/AZUL": as letras da rara cabem,
-// na ordem, dentro da comum. Sem isso vira duas cores na coluna do relatório.
+// ── 4b) cor escrita pela metade é typo, não cor nova ──────────────────────
+console.log('\n── cor abreviada na coluna COR ──');
+// Números REAIS do catálogo (simulação de 18/08/2026): a mesma cor escrita de
+// dois jeitos vira duas colunas no relatório. A comparação é palavra por
+// palavra — é o que faz "PTO AC" aparecer mesmo com 4 linhas (não é raro) e
+// "PRETO AC/NATURE" também, mesmo sem "PRETO ACETINADO/NATURE" existir ainda.
 eval(pega(GS, 'function _soLetras('));
 eval(pega(GS, 'function _cabeDentro('));
-const cabe = (a, b) => _cabeDentro(_soLetras(a), _soLetras(b));
-ok('BCO/AZUL cabe em BRANCO/AZUL', cabe('BCO/AZUL', 'BRANCO/AZUL'), true);
-ok('BCO/ROSA cabe em BRANCO/ROSA', cabe('BCO/ROSA', 'BRANCO/ROSA'), true);
-ok('BRANCO AC cabe em BRANCO ACETINADO', cabe('BRANCO AC', 'BRANCO ACETINADO'), true);
-// Cor composta legítima NÃO pode ser apontada como erro da cor simples: a
-// comparação só vale da rara (mais curta) para a comum (mais longa).
-ok('OFF WHITE/CINAMOMO não cabe em OFF WHITE', cabe('OFF WHITE/CINAMOMO', 'OFF WHITE'), false);
-ok('ALECRIM/CINAMOMO não cabe em ALECRIM', cabe('ALECRIM/CINAMOMO', 'ALECRIM'), false);
-ok('CUMARU não cabe em CINAMOMO', cabe('CUMARU', 'CINAMOMO'), false);
+eval(pega(GS, 'function _palavrasCor('));
+eval(pega(GS, 'function coresParaCorrigir('));
+const CAT_REAL = {
+  'BRANCO': 41, 'BRANCO/AZUL': 7, 'BCO/AZUL': 2, 'BRANCO/ROSA': 7, 'BCO/ROSA': 2,
+  'BRANCO ACETINADO': 13, 'BRANCO AC': 2, 'BRANCO ACETINAD': 1,
+  'BRANCO ACETINADO/CUMARU': 4, 'BRANCO AC/CUMARU': 1,
+  'PRETO ACETINADO': 16, 'PRETO AC': 1, 'PRETO ACETINDO': 1, 'PTO AC': 4,
+  'PRETO AC/NATURE': 1, 'PRETO/CEDRO': 8,
+  'OFF WHITE': 100, 'OFF WHITE/CINAMOMO': 34, 'OFF WHITE/CINA': 1, 'OFF WHITE/CINAMO': 1,
+  'CINAMOMO': 40, 'CINAMOMO/OFF WHITE': 12, 'ALECRIM': 8, 'ALECRIM/CINAMOMO': 3,
+  'CUMARU': 20, 'ROSA': 4, 'WHISKY': 4, 'FREIJO': 6,
+};
+const corrigir = coresParaCorrigir(CAT_REAL);
+const sugestao = c => (corrigir.find(x => x.cor === c) || {}).sug;
+ok('BCO/AZUL → BRANCO/AZUL', sugestao('BCO/AZUL'), 'BRANCO/AZUL');
+ok('BCO/ROSA → BRANCO/ROSA', sugestao('BCO/ROSA'), 'BRANCO/ROSA');
+ok('BRANCO AC → BRANCO ACETINADO', sugestao('BRANCO AC'), 'BRANCO ACETINADO');
+ok('BRANCO ACETINAD → BRANCO ACETINADO', sugestao('BRANCO ACETINAD'), 'BRANCO ACETINADO');
+ok('BRANCO AC/CUMARU → BRANCO ACETINADO/CUMARU',
+   sugestao('BRANCO AC/CUMARU'), 'BRANCO ACETINADO/CUMARU');
+ok('OFF WHITE/CINA → OFF WHITE/CINAMOMO', sugestao('OFF WHITE/CINA'), 'OFF WHITE/CINAMOMO');
+ok('PRETO ACETINDO → PRETO ACETINADO', sugestao('PRETO ACETINDO'), 'PRETO ACETINADO');
+// Os dois que a regra por cor INTEIRA deixava passar:
+ok('PTO AC → PRETO ACETINADO, mesmo com 4 linhas', sugestao('PTO AC'), 'PRETO ACETINADO');
+ok('PRETO AC/NATURE é apontado mesmo sem a grafia certa existir',
+   sugestao('PRETO AC/NATURE'), 'PRETO ACETINADO/NATURE');
+ok('e o log avisa que essa grafia ainda não existe',
+   (corrigir.find(x => x.cor === 'PRETO AC/NATURE') || {}).nSug, 0);
+// Cor legítima não pode ser apontada como erro de outra.
+['BRANCO', 'PRETO ACETINADO', 'OFF WHITE', 'OFF WHITE/CINAMOMO', 'CINAMOMO/OFF WHITE',
+ 'ALECRIM/CINAMOMO', 'CUMARU', 'ROSA', 'WHISKY', 'FREIJO', 'PRETO/CEDRO'].forEach(c => {
+  ok('não mexe em ' + c, sugestao(c), undefined);
+});
+// A regra por cor INTEIRA achava 9 neste mesmo catálogo; palavra por palavra
+// acha as 11 — as duas que faltavam são PTO AC e PRETO AC/NATURE.
+ok('acha as 11 grafias erradas do catálogo', corrigir.length, 11);
 
 // ── 5) painel: a tabela do dia agrupa por PRODUTO e junta as cores ─────────
 console.log('\n── painel: uma linha por produto, cores na coluna ──');
