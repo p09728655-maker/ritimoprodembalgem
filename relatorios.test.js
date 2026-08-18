@@ -286,6 +286,52 @@ pintar('tvd-');
 ok('a mesma função desenha a Tela D', _dom['tvd-total'].textContent, '8.681');
 ok('desenhar pede a busca (que tem cache de 30 min lá dentro)', _buscas > 0, true);
 
+console.log('\n── comparativo por modelo: média aparada e teto da esteira ──');
+// A MÉD.PERÍODO descarta o melhor e o pior dia do próprio grupo (3+ dias):
+// um pico de rodada dedicada ou um apontamento capenga não podem definir o
+// padrão do modelo. Números reais que motivaram a regra (18/08/2026).
+eval(pega('function _phAcc('));
+eval(pega('function _phVal('));
+eval(pega('function _phAdd('));
+eval(pega('function _phMediaAparada('));
+eval(pega('function _phTeto('));
+const _dia = (cx, h, teto) => { const a = _phAcc(); _phAdd(a, { caixas: cx, horas: h, tetoCxH: teto || 0 }); return a; };
+
+// SAPATEIRA VIVARE: 59, 122, 122 cx/h — o dia de 59 punia o modelo.
+let ap = _phMediaAparada([_dia(59,1), _dia(122,1), _dia(122,1)], 'mediaH');
+ok('VIVARE: 87 de média vira 122 aparada', Math.round(ap.val), 122);
+ok('e avisa que aparou', ap.aparada, true);
+// MADERO: 118, 178, 187, 91 — o pico de 187 inflava a média.
+ap = _phMediaAparada([_dia(118,1), _dia(178,1), _dia(187,1), _dia(91,1)], 'mediaH');
+ok('MADERO: 164 de média vira 148 aparada', Math.round(ap.val), 148);
+// Com 2 dias não há o que descartar.
+ap = _phMediaAparada([_dia(179,1), _dia(99,1)], 'mediaH');
+ok('2 dias: média usa todos', [Math.round(ap.val), ap.aparada], [139, false]);
+// A poda é pelo RITMO do dia (10 e 200 cx/h saem; 150 cx em 3 h = 50 cx/h
+// fica) e a média dos que sobram é PONDERADA: 100+150 cx ÷ 1+3 h = 63 — não a
+// média simples dos ritmos (75), que ignoraria as horas.
+ap = _phMediaAparada([_dia(10,1), _dia(100,1), _dia(150,3), _dia(200,1)], 'mediaH');
+ok('ritmo aparado é ponderado (Σcx ÷ Σh)', Math.round(ap.val), 63);
+// Métrica aditiva: MÉD/DIA aparada é média simples dos dias que sobraram.
+ap = _phMediaAparada([_dia(100,1), _dia(300,1), _dia(200,1), _dia(900,1)], 'caixas');
+ok('méd/dia aditiva aparada', ap.val, 250);
+// Dia sem produção (célula vazia) não conta como "pior dia".
+ap = _phMediaAparada([null, _dia(100,1), undefined, _dia(300,1), _dia(200,1)], 'mediaH');
+ok('célula vazia não entra na poda', Math.round(ap.val), 200);
+
+// % do teto: o tempo de esteira SOMA (média harmônica pelas caixas), nunca a
+// média aritmética dos tetos — ela superestimaria o teto do mix.
+const mix = _phAcc();
+_phAdd(mix, { caixas: 100, horas: 1, tetoCxH: 200 });   // 0,5 h de esteira
+_phAdd(mix, { caixas: 100, horas: 1, tetoCxH: 400 });   // 0,25 h
+ok('teto do mix é harmônico (267, não 300)', Math.round(_phTeto(mix)), 267);
+const semTeto = _phAcc();
+_phAdd(semTeto, { caixas: 50, horas: 1 });
+ok('backend antigo (sem tetoCxH): teto 0, coluna some', _phTeto(semTeto), 0);
+// acc dentro de acc (linha = soma de células) preserva o par cxTeto/hTeto.
+const linha = _phAcc(); _phAdd(linha, mix); _phAdd(linha, semTeto);
+ok('caixas sem teto não diluem o % do teto', Math.round(_phTeto(linha)), 267);
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
 // O desenho do fechamento da semana entra na mesma regra: uma implementação só.
 ok('o cartão do dia a dia é montado num lugar só',

@@ -280,6 +280,19 @@ function mapaProdutoBase() {
   return m;
 }
 
+// Teto físico da ESTEIRA para um código: quantas caixas passam por hora com a
+// esteira cheia. velocidade (m/min) × 60.000 (mm/h) ÷ (medida da caixa +
+// entre-peças, em mm). É o denominador do "% do teto" do comparativo por
+// modelo — a régua que compara justo caixa grande com caixa pequena. Sem
+// medida ou velocidade não há teto (0): o painel esconde a coluna.
+function _tetoEsteiraCxH(prod) {
+  const vel    = Number(prod && prod.velocidade) || 0;
+  const medida = Number(prod && prod.medida)     || 0;
+  const entre  = Number(prod && prod.entrePeca)  || 0;
+  if (!(vel > 0) || !(medida > 0)) return 0;
+  return vel * 60000 / (medida + entre);
+}
+
 // Produto de um código, com queda segura para quem não está no catálogo:
 // sem descrição não há o que separar, e o modelo (6 díg.) vira o nome.
 function produtoDoCodigo(codigo) {
@@ -1524,7 +1537,9 @@ function lerCatalogoProdutos() {
   const iEan    = hdr.indexOf('EAN 128');
   const iMedida = hdr.indexOf('MEDIDA DA CAIXA');
   const iVel    = hdr.indexOf('VELOCIDADE');
-  const iEntre  = hdr.indexOf('ENTRE_PECA');
+  // O título real da coluna é "ENTRE_PECAS (mm)": busca por prefixo, senão o
+  // campo chega 0 e o teto da esteira sai ~25% otimista.
+  const iEntre  = hdr.findIndex(function (h) { return h.indexOf('ENTRE_PECA') === 0; });
   const iPontos = hdr.indexOf('PONTOS');
   const iTroca  = hdr.indexOf('TEMPO DE TROCA MIN');
 
@@ -1828,11 +1843,16 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pesoKg: 0, horasSet: {} };
+                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, horasSet: {} };
     }
     map[key].caixas += cx;
     map[key].pontos += cx * (prod.pontos || 0);
     map[key].pesoKg += cx * (prod.peso   || 0);
+    // Teto da esteira do grupo: o TEMPO de esteira soma (cx ÷ teto do código),
+    // então a mistura de caixas de tamanhos diferentes é média harmônica
+    // ponderada pelas caixas — nunca aritmética, que superestima o teto.
+    const tetoCod = _tetoEsteiraCxH(prod);
+    if (tetoCod > 0) { map[key].cxTeto += cx; map[key].hTeto += cx / tetoCod; }
     // Conta as HORAS distintas em que esse modelo rodou no dia — base da
     // média cx/h (ritmo). formatHoraCel normaliza texto "13:00" e Date.
     const hora = formatHoraCel(r[iHora]);
@@ -1846,6 +1866,9 @@ function getProducaoModeloPeriodo(p) {
              cor: it.cor, familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
              pesoKg: Math.round(it.pesoKg * 10) / 10,
+             // Teto físico da esteira p/ o mix do item (0 = catálogo sem
+             // medida/velocidade — o painel esconde a leitura, nunca chuta).
+             tetoCxH: it.hTeto > 0 ? Math.round(it.cxTeto / it.hTeto) : 0,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;

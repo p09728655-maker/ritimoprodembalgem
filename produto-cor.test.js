@@ -210,6 +210,22 @@ PONTOS_DIA = { porHoraModelo: [
 ]};
 ok('sem cor nenhuma, a coluna não entra', calcPorModelo().temCor, false);
 
+// ── 5b) teto físico da esteira por código ─────────────────────────────────
+console.log('\n── teto da esteira ──');
+// velocidade (m/min) × 60.000 ÷ (medida da caixa + entre-peças, mm).
+eval(pega(GS, 'function _tetoEsteiraCxH('));
+ok('caixa de 1.006 mm + 350 de vão a 8,5 m/min ≈ 376 cx/h',
+   Math.round(_tetoEsteiraCxH({ velocidade: 8.5, medida: 1006, entrePeca: 350 })), 376);
+ok('sem entre-peças o teto sobe (por isso ler a coluna importa)',
+   Math.round(_tetoEsteiraCxH({ velocidade: 8.5, medida: 1006, entrePeca: 0 })), 507);
+ok('sem medida não há teto (0, coluna some)', _tetoEsteiraCxH({ velocidade: 8.5, medida: 0 }), 0);
+ok('sem velocidade idem', _tetoEsteiraCxH({ velocidade: 0, medida: 1006 }), 0);
+ok('produto fora do catálogo não quebra', _tetoEsteiraCxH(null), 0);
+// O cabeçalho real da planilha é "ENTRE_PECAS (mm)" — a busca é por prefixo;
+// o indexOf exato devolvia -1 e o campo chegava 0 em silêncio.
+ok('a leitura do catálogo busca ENTRE_PECA por prefixo',
+   /indexOf\('ENTRE_PECA'\) === 0/.test(GS), true);
+
 // ── 6) guarda-corpo: o agrupamento do comparativo é UM só ──────────────────
 console.log('\n── o comparativo não pode voltar a ter duas regras ──');
 // A tela e o PDF liam o mesmo seletor com duas cópias do keyOf/labelOf: a
