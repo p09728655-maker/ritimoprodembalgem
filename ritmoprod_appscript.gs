@@ -298,49 +298,19 @@ function produtoDoCodigo(codigo) {
 // sem cor num modelo em que todas as outras variantes têm). É por aqui que se
 // confere antes de acreditar no relatório.
 function simularSeparacaoPorProduto() {
-  // De onde saiu a cor de cada linha — o normal é 100% "planilha" depois que a
-  // coluna COR estiver preenchida.
-  const fonte = { planilha: 0, texto: 0 };
-  const semCor = [];
-  lerCatalogoProdutos().forEach(function (pr) {
+  const catalogo = lerCatalogoProdutos();
+
+  // ── 1) o que passa a virar mais de um produto ───────────────────────────
+  const porModelo = {}, porCor = {}, fonte = { planilha: 0, texto: 0 }, semCor = [];
+  catalogo.forEach(function (pr) {
     const it = produtoDoCodigo(pr.codigo);
     fonte[it.fonte] = (fonte[it.fonte] || 0) + 1;
     if (it.fonte === 'texto') semCor.push(pr.codigo + ' ' + pr.desc);
-  });
-  Logger.log('COR: ' + fonte.planilha + ' linha(s) pela coluna COR da planilha, ' +
-             fonte.texto + ' separada(s) pelo texto da descrição.');
-  if (semCor.length) {
-    Logger.log('Linhas SEM cor cadastrada (a cor foi adivinhada pelo texto):\n  ' +
-               semCor.slice(0, 40).join('\n  ') + (semCor.length > 40 ? '\n  … (+' + (semCor.length - 40) + ')' : ''));
-  }
-
-  // Cores distintas encontradas, com quantas linhas cada uma — é aqui que
-  // aparece divergência de escrita ("BCO/AZUL" ao lado de "BRANCO/AZUL"),
-  // que dividiria a mesma cor em duas na coluna do relatório.
-  const porCor = {};
-  lerCatalogoProdutos().forEach(function (pr) {
-    const c = produtoDoCodigo(pr.codigo).cor || '(sem cor)';
+    const c = it.cor || '(sem cor)';
     porCor[c] = (porCor[c] || 0) + 1;
-  });
-  Logger.log('Cores distintas no catálogo: ' + Object.keys(porCor).length);
-  Object.keys(porCor).sort().forEach(function (c) {
-    Logger.log('   ' + (porCor[c] < 3 ? '⚠ ' : '  ') + c + ' — ' + porCor[c] + ' linha(s)');
-  });
-
-  const cores = coresConhecidas();
-  const fixas = {};
-  CORES.forEach(function (c) { fixas[c] = true; });
-  const aprendidas = Object.keys(cores).filter(function (c) { return !fixas[c]; }).sort();
-  Logger.log('CORES aprendidas do catálogo (além da lista fixa): ' +
-             (aprendidas.length ? aprendidas.join(', ') : '(nenhuma)'));
-
-  const porModelo = {};
-  lerCatalogoProdutos().forEach(function (pr) {
-    const it = produtoDoCodigo(pr.codigo);
     if (!it.modelo) return;
-    const g = porModelo[it.modelo] = porModelo[it.modelo] || { bases: {}, n: 0 };
-    (g.bases[it.base] = g.bases[it.base] || []).push(it.cor || '(sem cor)');
-    g.n++;
+    const g = porModelo[it.modelo] = porModelo[it.modelo] || { bases: {} };
+    (g.bases[it.base] = g.bases[it.base] || []).push(c);
   });
 
   const modelos = Object.keys(porModelo).sort();
@@ -354,6 +324,7 @@ function simularSeparacaoPorProduto() {
     });
   });
 
+  // ── 2) nome que ficou pobre demais ──────────────────────────────────────
   const suspeitos = [];
   modelos.forEach(function (m) {
     Object.keys(porModelo[m].bases).forEach(function (b) {
@@ -363,6 +334,61 @@ function simularSeparacaoPorProduto() {
   Logger.log(suspeitos.length
     ? 'Nomes suspeitos (uma palavra só) — conferir a DESCRICAO na PRODUTO_CODIGO:\n  ' + suspeitos.join('\n  ')
     : 'Nenhum nome de uma palavra só.');
+
+  // ── 3) cores que o catálogo ensinou (só vale sem a coluna COR) ──────────
+  const fixas = {};
+  CORES.forEach(function (c) { fixas[c] = true; });
+  const aprendidas = Object.keys(coresConhecidas()).filter(function (c) { return !fixas[c]; }).sort();
+  if (aprendidas.length) Logger.log('Cores aprendidas do texto (além da lista fixa): ' + aprendidas.join(', '));
+
+  // ── 4) cores distintas, com a contagem ──────────────────────────────────
+  const cores = Object.keys(porCor).sort();
+  Logger.log('Cores distintas no catálogo: ' + cores.length);
+  cores.forEach(function (c) {
+    Logger.log('   ' + (porCor[c] < 3 ? '⚠ ' : '  ') + c + ' — ' + porCor[c] + ' linha(s)');
+  });
+
+  // ── 5) o que fazer: cor rara que parece erro de escrita de uma comum ────
+  // "BCO/AZUL" ao lado de "BRANCO/AZUL", "BRANCO AC" ao lado de "BRANCO
+  // ACETINADO": na coluna do relatório isso vira DUAS cores. A regra é
+  // subsequência — as letras da rara aparecem, na ordem, dentro da comum
+  // (BCO cabe em BRANCO) — e só entra quando a rara tem no máximo 3 linhas e a
+  // outra tem pelo menos o triplo. É lista para conferir, não correção
+  // automática: pode ter cor legítima parecida com outra.
+  const parecidas = [];
+  cores.forEach(function (raro) {
+    if (porCor[raro] > 3) return;
+    const alvo = cores.filter(function (comum) {
+      return comum !== raro && porCor[comum] >= porCor[raro] * 3 &&
+             _soLetras(comum).length > _soLetras(raro).length &&
+             _cabeDentro(_soLetras(raro), _soLetras(comum));
+    }).sort(function (a, b) { return porCor[b] - porCor[a]; })[0];
+    if (alvo) parecidas.push('"' + raro + '" (' + porCor[raro] + ') parece ser "' +
+                             alvo + '" (' + porCor[alvo] + ')');
+  });
+  Logger.log(parecidas.length
+    ? 'CORRIGIR na coluna COR — cor rara parecida com uma comum:\n  ' + parecidas.join('\n  ')
+    : 'Nenhuma cor parecida com outra: a escrita está uniforme.');
+
+  // ── 6) o resumo por último: é a última linha que o painel do editor mostra ──
+  if (semCor.length) {
+    Logger.log('Linhas SEM cor cadastrada (a cor foi adivinhada pelo texto):\n  ' +
+               semCor.slice(0, 40).join('\n  ') + (semCor.length > 40 ? '\n  … (+' + (semCor.length - 40) + ')' : ''));
+  }
+  Logger.log('RESUMO: ' + catalogo.length + ' códigos no catálogo · ' +
+             fonte.planilha + ' com cor pela COLUNA COR · ' + fonte.texto + ' adivinhada(s) pelo texto · ' +
+             cores.length + ' cores distintas · ' + parecidas.length + ' a conferir.');
+}
+
+// Só as letras (para comparar escrita de cor sem barra, espaço ou acento).
+function _soLetras(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
+}
+// As letras de `a` aparecem dentro de `b`, na ordem? ("BCO" cabe em "BRANCO")
+function _cabeDentro(a, b) {
+  let i = 0;
+  for (let k = 0; k < b.length && i < a.length; k++) if (a[i] === b[k]) i++;
+  return i === a.length;
 }
 
 

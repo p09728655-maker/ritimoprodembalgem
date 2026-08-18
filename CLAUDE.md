@@ -537,10 +537,16 @@ via Google Apps Script (JSONP).
   - ⚠ `MEL` fica **fora** da lista de propósito: aqui é nome de produto
     (PENTEADEIRA CAMARIM MEL, ao lado da ELOA e da STRASS).
   - Nunca devolve nome vazio, e medida (`670`, `1.8`) nunca vira cor.
-- **`simularSeparacaoPorProduto()`** (rodar no editor, não grava): diz quantas
-  linhas vieram pela coluna `COR`, quais foram adivinhadas pelo texto, e lista
-  todas as cores distintas com a contagem — é assim que se acha `BCO/AZUL`
-  escrito ao lado de `BRANCO/AZUL`, que viraria duas cores na tela.
+- **`simularSeparacaoPorProduto()`** (rodar no editor, não grava): lista os
+  modelos que passam a mostrar mais de um produto, as cores distintas com a
+  contagem, e aponta **cor rara que parece erro de escrita de uma comum** —
+  `BCO/AZUL` → `BRANCO/AZUL`, `BRANCO AC` → `BRANCO ACETINADO` (regra: as letras
+  da rara cabem, na ordem, dentro da comum; só com ≤3 linhas contra o triplo).
+  O **resumo sai por último** de propósito: o painel do editor abre no fim do
+  log, e era lá em cima que estava a informação que interessa.
+  - Medido no catálogo real (18/08/2026): 428 códigos, **100% com cor pela
+    coluna** `COR`, nenhum nome de uma palavra só, 62 cores distintas — e é a
+    lista de parecidas que separa cor de verdade de erro de digitação.
 - No painel: `calcPorModelo` agrupa por **modelo + nome** e junta as cores numa
   linha só (a coluna **COR** mostra quais rodaram); o comparativo do período tem
   o nível **MODELO + COR** no seletor AGRUPAR. `_phAgrup()` é a regra única de
