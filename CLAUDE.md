@@ -605,6 +605,21 @@ via Google Apps Script (JSONP).
   `produto-cor.test.js` roda a função real contra um log de mentira e falha se
   divergirem.
 
+## SWOT da produção por modelo (RELATÓRIO DO DIA e DO PERÍODO)
+- **`_relSwotProducao(linhas, rotPer)`**, conta pura + testes no
+  `relatorios.test.js` — mesma filosofia da SWOT de paradas: frase só entra
+  quando o dado sustenta, quadrante vazio mostra "—". O bloco HTML é
+  `_rpSwotHtml` + `_RP_SWOT_CSS`, compartilhados pelos DOIS relatórios de
+  produção (o de paradas é anterior e tem os dele).
+- **O recado da esteira é explícito, a pedido do PPCP**: mix <85% do teto →
+  FORÇA *"A velocidade da esteira NÃO é o problema"* (com o % e a sobra);
+  mix ≥85% → AMEAÇA *"a velocidade começa a ser limite"*. Ritmo acima do teto
+  (impossível) fica FORA do % do mix e vira ameaça de apontamento.
+- Regras anti-ruído: fraqueza de pior aproveitamento exige **≥10% das caixas**
+  e % <30; força de melhor aproveitamento exige ≥5% e % ≥45; "replicar o melhor
+  dia" (só o período tem melhor) exige média <75% do próprio melhor.
+- No período a SWOT só sai na métrica **MÉDIA CX/H** (as outras não têm ritmo).
+
 ## Notas / armadilhas conhecidas
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
