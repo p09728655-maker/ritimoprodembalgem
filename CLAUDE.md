@@ -561,6 +561,34 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script. `node produto-cor.test.js`
   cobre a regra, rodando contra o código real dos dois arquivos.
 
+## Comparativo por modelo — média aparada e teto da esteira
+- **MÉD.PERÍODO / MÉD-DIA são APARADAS** (`_phMediaAparada`): com 3+ dias, o
+  melhor e o pior dia do próprio grupo saem da média — um pico de rodada
+  dedicada ou um apontamento capenga não podem definir o padrão do modelo
+  (pedido do PPCP em 18/08/2026: VIVARE marcava 87 por um dia de 59 e rodava
+  122; MADERO prometia 164 inflada pelo pico de 187 e o padrão honesto é 148).
+  - A poda é pelo **ritmo do dia**, e a média do que sobra continua
+    **ponderada** (Σcx ÷ Σh) — média simples de ritmos distorce quando as horas
+    variam. O **TOTAL nunca é aparado**; célula vazia não conta como "pior dia".
+- **% TETO EST.** = quanto do teto físico da esteira o modelo usa. Teto por
+  código: `velocidade (m/min) × 60.000 ÷ (medida da caixa + entre-peças, mm)` —
+  `_tetoEsteiraCxH` no `.gs`; `getProducaoModeloPeriodo` manda `tetoCxH` por
+  item. É a régua que compara justo caixa grande com caixa pequena (medido:
+  a operação roda a 22–68% do teto ⇒ **a esteira não é o gargalo**).
+  - **Mix de caixas = média HARMÔNICA ponderada pelas caixas** (o tempo de
+    esteira soma), nunca aritmética — ela superestimaria o teto. Caixa sem
+    teto (código fora do catálogo) fica fora do par `cxTeto/hTeto` para não
+    diluir o %.
+  - A coluna só existe na métrica MÉDIA CX/H e **some quando o backend não
+    manda teto** (re-deploy pendente ou catálogo sem MEDIDA/VELOCIDADE) —
+    mesma regra da coluna COR. Sem re-deploy, o painel novo mostra tudo igual
+    a antes, só com a média aparada.
+  - ⚠ O cabeçalho real da planilha é **`ENTRE_PECAS (mm)`** — a leitura busca
+    por prefixo (`indexOf('ENTRE_PECA') === 0`); o `indexOf` exato devolvia -1
+    e o campo chegava **0 em silêncio** (teto ~25% otimista).
+- Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
+  `relatorios.test.js` cobre a aparada e o teto harmônico.
+
 ## Notas / armadilhas conhecidas
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
