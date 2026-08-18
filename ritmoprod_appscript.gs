@@ -348,27 +348,14 @@ function simularSeparacaoPorProduto() {
     Logger.log('   ' + (porCor[c] < 3 ? '⚠ ' : '  ') + c + ' — ' + porCor[c] + ' linha(s)');
   });
 
-  // ── 5) o que fazer: cor rara que parece erro de escrita de uma comum ────
-  // "BCO/AZUL" ao lado de "BRANCO/AZUL", "BRANCO AC" ao lado de "BRANCO
-  // ACETINADO": na coluna do relatório isso vira DUAS cores. A regra é
-  // subsequência — as letras da rara aparecem, na ordem, dentro da comum
-  // (BCO cabe em BRANCO) — e só entra quando a rara tem no máximo 3 linhas e a
-  // outra tem pelo menos o triplo. É lista para conferir, não correção
-  // automática: pode ter cor legítima parecida com outra.
-  const parecidas = [];
-  cores.forEach(function (raro) {
-    if (porCor[raro] > 3) return;
-    const alvo = cores.filter(function (comum) {
-      return comum !== raro && porCor[comum] >= porCor[raro] * 3 &&
-             _soLetras(comum).length > _soLetras(raro).length &&
-             _cabeDentro(_soLetras(raro), _soLetras(comum));
-    }).sort(function (a, b) { return porCor[b] - porCor[a]; })[0];
-    if (alvo) parecidas.push('"' + raro + '" (' + porCor[raro] + ') parece ser "' +
-                             alvo + '" (' + porCor[alvo] + ')');
+  // ── 5) o que fazer: cor escrita pela metade ─────────────────────────────
+  const parecidas = coresParaCorrigir(porCor).map(function (x) {
+    return '"' + x.cor + '" (' + x.n + ') parece ser "' + x.sug + '"' +
+           (x.nSug ? ' (' + x.nSug + ')' : ' — grafia que ainda não existe no catálogo');
   });
   Logger.log(parecidas.length
-    ? 'CORRIGIR na coluna COR — cor rara parecida com uma comum:\n  ' + parecidas.join('\n  ')
-    : 'Nenhuma cor parecida com outra: a escrita está uniforme.');
+    ? 'CORRIGIR na coluna COR — cor escrita pela metade:\n  ' + parecidas.join('\n  ')
+    : 'Nenhuma cor abreviada: a escrita está uniforme.');
 
   // ── 6) o resumo por último: é a última linha que o painel do editor mostra ──
   if (semCor.length) {
@@ -383,6 +370,46 @@ function simularSeparacaoPorProduto() {
 // Só as letras (para comparar escrita de cor sem barra, espaço ou acento).
 function _soLetras(s) {
   return String(s || '').toUpperCase().replace(/[^A-Z]/g, '');
+}
+// Cores escritas pela metade: "PTO AC" é PRETO ACETINADO, "BCO/AZUL" é
+// BRANCO/AZUL, "OFF WHITE/CINA" é OFF WHITE/CINAMOMO. Na coluna do relatório
+// cada grafia vira uma cor diferente.
+// A comparação é PALAVRA POR PALAVRA, não da cor inteira. É isso que faz
+// "PTO AC" aparecer mesmo com 4 linhas (não é "rara") e "PRETO AC/NATURE"
+// também, mesmo que "PRETO ACETINADO/NATURE" ainda não exista no catálogo para
+// servir de alvo. Palavra é abreviação de outra quando suas letras cabem, na
+// ordem, dentro da outra (PTO cabe em PRETO), as duas começam com a mesma letra
+// e a outra aparece em MAIS linhas.
+// Entra { cor -> nº de linhas }; sai a lista do que conferir. É lista para
+// conferir, não correção automática — quem grava é o usuário, na planilha.
+function coresParaCorrigir(porCor) {
+  const cores = Object.keys(porCor).filter(function (c) { return c && c !== '(sem cor)'; });
+  const palLinhas = {};   // palavra da cor -> em quantas linhas do catálogo aparece
+  cores.forEach(function (c) {
+    _palavrasCor(c).forEach(function (w) { palLinhas[w] = (palLinhas[w] || 0) + porCor[c]; });
+  });
+  const inteira = {};     // palavra -> versão por extenso (só quando há uma)
+  Object.keys(palLinhas).forEach(function (w) {
+    let melhor = '';
+    Object.keys(palLinhas).forEach(function (v) {
+      if (v === w || v.charAt(0) !== w.charAt(0) || v.length <= w.length) return;
+      if (palLinhas[v] <= palLinhas[w] || !_cabeDentro(w, v)) return;
+      if (!melhor || palLinhas[v] > palLinhas[melhor]) melhor = v;
+    });
+    if (melhor) inteira[w] = melhor;
+  });
+  const saida = [];
+  cores.sort().forEach(function (c) {
+    const sug = c.replace(/[A-ZÀ-Ú]+/g, function (w) { return inteira[w] || w; });
+    if (sug !== c) saida.push({ cor: c, n: porCor[c], sug: sug, nSug: porCor[sug] || 0 });
+  });
+  return saida;
+}
+
+// Palavras de uma cor, sem barra nem espaço ("OFF WHITE/CINA" -> OFF, WHITE, CINA).
+// Pedaço de 1 letra fica de fora: não dá para dizer que é abreviação de nada.
+function _palavrasCor(c) {
+  return String(c || '').toUpperCase().split(/[^A-ZÀ-Ú]+/).filter(function (w) { return w.length > 1; });
 }
 // As letras de `a` aparecem dentro de `b`, na ordem? ("BCO" cabe em "BRANCO")
 function _cabeDentro(a, b) {
