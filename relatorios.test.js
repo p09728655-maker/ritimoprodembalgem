@@ -244,7 +244,59 @@ ok('um único dia: média = o próprio dia', umDia.mediaReal, 1106);
 ok('um único dia é melhor e pior ao mesmo tempo',
    [umDia.melhorDia.data, umDia.piorDia.data], ['10/08/2026', '10/08/2026']);
 
+console.log('\n── fechamento da semana: UM desenho para a TV e para o gerencial ──');
+// O mesmo fechamento aparece na TELA D da TV e no bloco do GERENCIAL. Quem
+// desenha os dois é o pintar(pfx) do RP_SEMANA — cada tela passa só o prefixo
+// dos seus ids. O teste roda a função REAL contra um DOM de mentira: se alguém
+// voltar a escrever uma segunda cópia do desenho, os guarda-corpos abaixo caem.
+const _dom = {};
+const _novoEl = () => ({ textContent: '', innerHTML: '', className: '', style: {}, classList: { toggle() {} } });
+const CAMPOS = ['semana','periodo','total','soma','normal','extra','normal-pct','normal-falta',
+                'extra-pct','linha-extra','selo','bar-normal','bar-extra','marca','marca-lbl','dias'];
+['tvd-', 'gsem-'].forEach(p => CAMPOS.forEach(c => { _dom[p + c] = _novoEl(); }));
+global.document = { getElementById: id => _dom[id] || null };
+const _st = { dados: null };
+let _buscas = 0;
+function carregar() { _buscas++; }                       // a busca de verdade é assíncrona
+const _DIA_SEM = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+eval(pega('function pintar('));
+
+// Sem semana carregada não se desenha nada: a Tela D fica fora do ciclo e o
+// bloco do gerencial se esconde — nenhum dos dois aparece vazio.
+ok('sem semana fechada, não desenha', pintar('gsem-'), false);
+ok('e não escreve nada na tela', _dom['gsem-total'].textContent, '');
+
+_st.dados = { semStr: '10/08/2026 a 16/08/2026', numSem: 33, dias, k };
+ok('com semana, desenha', pintar('gsem-'), true);
+ok('total da semana no bloco do gerencial', _dom['gsem-total'].textContent, '8.681');
+ok('jornada normal = total − hora extra', _dom['gsem-normal'].textContent, '8.261');
+ok('hora extra', _dom['gsem-extra'].textContent, '420');
+ok('diz de onde vem o total', _dom['gsem-soma'].textContent, '= soma dos 5 dias fechados ↓');
+ok('o veredito não mente sobre a hora extra',
+   [_dom['gsem-selo'].className, _dom['gsem-selo'].textContent],
+   ['tvd-selo he', '⚠ META BATIDA COM HORA EXTRA']);
+ok('marca da meta com o valor do período', _dom['gsem-marca-lbl'].textContent, 'META 8.325');
+ok('um cartão por dia fechado', (_dom['gsem-dias'].innerHTML.match(/class="tvd-dia /g) || []).length, 5);
+ok('dia sem separação de HE não vira 0', /HE não separada/.test(_dom['gsem-dias'].innerHTML), true);
+
+// A MESMA função serve a TV: só muda o prefixo. Enquanto o gerencial era
+// desenhado, os ids da TV não foram tocados — e vice-versa.
+ok('desenhar o gerencial não escreve na TV', _dom['tvd-total'].textContent, '');
+pintar('tvd-');
+ok('a mesma função desenha a Tela D', _dom['tvd-total'].textContent, '8.681');
+ok('desenhar pede a busca (que tem cache de 30 min lá dentro)', _buscas > 0, true);
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
+// O desenho do fechamento da semana entra na mesma regra: uma implementação só.
+ok('o cartão do dia a dia é montado num lugar só',
+   (JS.match(/class="tvd-dia \$\{cls\}"/g) || []).length, 1);
+ok('a busca da semana passada mora num lugar só',
+   (JS.match(/function carregar\(forcar\)/g) || []).length, 1);
+ok('TV e gerencial chamam o mesmo desenho',
+   (JS.match(/RP_SEMANA\.pintar\(/g) || []).length, 2);
+ok('cada tela tem o seu bloco no HTML',
+   [(src.match(/id="tvd-total"/g) || []).length, (src.match(/id="gsem-total"/g) || []).length], [1, 1]);
+
 // A faixa do PPCP, o botão de imprimir e o logo estavam escritos 5 vezes — foi
 // por isso que o #204 arrumou um relatório e o #205 precisou repetir em quatro.
 ok('cabeçalho declarado uma única vez',
