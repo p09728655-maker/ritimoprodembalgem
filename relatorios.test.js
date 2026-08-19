@@ -385,6 +385,37 @@ ok('potencial nunca fica abaixo do próprio realizado', cp.perdaRitmo, 0);
 ok('sem horas não há cascata de produto',
    _relCascataProduto([{ label: 'Z', caixas: 10, ritmo: 10, melhor: 10, teto: 0, horas: 0 }]), null);
 
+console.log('\n── simulador da esteira: teto recalculado pela medida média do mix ──');
+// A harmônica do teto real equivale a vel × 60.000 ÷ (medida média + vão) —
+// então o teto simulado sai EXATO da medida média, sem refazer chamada.
+eval(pega('function _phMixMm('));
+eval(pega('function _phTetoSim('));
+ok('caixa de 1.006 mm a 8,5 m/min com 350 de vão = o teto real (376)',
+   Math.round(_phTetoSim(8.5, 350, 1006)), 376);
+ok('acelerando para 10 m/min o teto sobe para 442',
+   Math.round(_phTetoSim(10, 350, 1006)), 442);
+ok('fechando o vão para 250 mm o teto vai a 406',
+   Math.round(_phTetoSim(8.5, 250, 1006)), 406);
+ok('sem medida do mix não há teto simulado', _phTetoSim(10, 350, 0), 0);
+ok('vão negativo não inventa teto maior',
+   _phTetoSim(8.5, -50, 1006), 8.5*60000/1006);
+// A medida média do mix agrega pelas caixas COM teto, nos dois níveis
+// (item do backend e acc dentro de acc), e o simulado bate com o real
+// quando os parâmetros são os da base.
+const mix2 = _phAcc();
+_phAdd(mix2, { caixas: 100, horas: 1, tetoCxH: 376, mixMm: 1006 });
+_phAdd(mix2, { caixas: 100, horas: 1, tetoCxH: 300, mixMm: 1350 });
+ok('medida média ponderada pelas caixas', Math.round(_phMixMm(mix2)), 1178);
+// Prova da equivalência: simular com os MESMOS parâmetros da base devolve o
+// teto real do mix (334 cx/h) — é o que garante que a simulação é exata.
+ok('simulado com a base = teto real do mix',
+   Math.round(_phTetoSim(8.5, 350, _phMixMm(mix2))), Math.round(_phTeto(mix2)));
+const linha2 = _phAcc(); _phAdd(linha2, mix2);
+ok('acc dentro de acc preserva a medida média', Math.round(_phMixMm(linha2)), 1178);
+const semMix = _phAcc(); _phAdd(semMix, { caixas: 50, horas: 1, tetoCxH: 300 });
+ok('backend sem mixMm (versão anterior): simulado desligado, sem chute',
+   _phTetoSim(10, 350, _phMixMm(semMix)), 0);
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
 // O desenho do fechamento da semana entra na mesma regra: uma implementação só.
 ok('o cartão do dia a dia é montado num lugar só',
