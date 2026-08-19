@@ -586,6 +586,25 @@ via Google Apps Script (JSONP).
   - ⚠ O cabeçalho real da planilha é **`ENTRE_PECAS (mm)`** — a leitura busca
     por prefixo (`indexOf('ENTRE_PECA') === 0`); o `indexOf` exato devolvia -1
     e o campo chegava **0 em silêncio** (teto ~25% otimista).
+- **O teto EXIBIDO é operacional: desconta o TEMPO DE TROCA do produto**
+  (pedido do PPCP, 19/08/2026 — "100% sem descontar a troca obrigatória não é
+  régua alcançável"). `_phTetoOper` no v7: **1 troca por dia rodado**, diluída
+  nos minutos rodados — `teto × (min − dias×troca) ÷ min`. A troca vem da
+  coluna **`TEMPO DE TROCA MIN`** da `PRODUTO_CODIGO` (o `.gs` manda `trocaMin`
+  por item no `getProducaoModeloPeriodo` e no `porHoraModelo` do `getPontosDia`,
+  maior valor entre os códigos do grupo); **backend antigo → `TROCA_MIN_PADRAO`
+  (5 min)**, que é o valor da planilha inteira hoje. Vale tela e PDF, período e
+  dia, e também no **% TETO SIM.** (a simulação desconta a mesma troca).
+  - Os **guardas continuam no teto FÍSICO** (`l.teto`): ganho demonstrado,
+    cascata do produto e o check de "dia impossível" do
+    `simularEsteiraPorModelo` — a troca não muda o que fisicamente não cabe
+    na esteira. O simulador do editor aplica a mesma régua nas colunas
+    teto/%teto (e avisa no log quando descontou).
+  - Rótulos: subtítulo da coluna virou **"físico − troca"** / **"simulado −
+    troca"**; tooltip da célula mostra o físico puro e a conta da troca.
+  - ⚠ Para o valor da planilha valer no painel (em vez do padrão 5),
+    **re-deploy manual do `.gs`**. `relatorios.test.js` cobre o `_phTetoOper`
+    e `produto-cor.test.js` cobre o desconto no dia.
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
 - **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):

@@ -332,6 +332,24 @@ ok('backend antigo (sem tetoCxH): teto 0, coluna some', _phTeto(semTeto), 0);
 const linha = _phAcc(); _phAdd(linha, mix); _phAdd(linha, semTeto);
 ok('caixas sem teto não diluem o % do teto', Math.round(_phTeto(linha)), 267);
 
+// TETO OPERACIONAL: desconta 1 troca de produto (TEMPO DE TROCA MIN) por dia
+// rodado, diluída nos minutos rodados (pedido do PPCP, 19/08/2026 — 100% sem
+// descontar a troca obrigatória não é régua alcançável).
+eval(pega('function _phTetoOper('));
+ok('8h em 2 dias: 2 trocas de 5 min saem do teto (300 → 293,75)',
+   Math.round(_phTetoOper(300, 8, 2, 5) * 100) / 100, 293.75);
+ok('sem troca, o teto físico fica intacto', _phTetoOper(300, 8, 2, 0), 300);
+ok('sem horas não há onde diluir: devolve o físico', _phTetoOper(300, 0, 2, 5), 300);
+ok('sem teto continua sem teto', _phTetoOper(0, 8, 2, 5), 0);
+ok('troca maior que o tempo rodado não vira teto negativo', _phTetoOper(300, 0.05, 1, 5), 0);
+// a troca do grupo vem do maior trocaMin dos itens; backend antigo (sem o
+// campo) deixa trocaMin null e quem vale é o TROCA_MIN_PADRAO via _phTroca.
+const comTroca = _phAcc();
+_phAdd(comTroca, { caixas: 100, horas: 1, tetoCxH: 200, trocaMin: 5 });
+_phAdd(comTroca, { caixas: 100, horas: 1, tetoCxH: 200, trocaMin: 10 });
+ok('a troca do grupo é o maior trocaMin dos itens', comTroca.trocaMin, 10);
+ok('backend antigo: trocaMin fica null (padrão decide depois)', semTeto.trocaMin, null);
+
 console.log('\n── cascata: meta × paradas × ritmo ──');
 // Substituiu a SWOT dos relatórios de produção: a decisão precisa saber ONDE
 // ficaram as caixas que faltaram. perdaPar vem do RP_PARADAS (mesma conta da
