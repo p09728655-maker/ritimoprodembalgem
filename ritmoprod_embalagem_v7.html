@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.10';
+const APP_VER   = '7.7.11';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3678,7 +3678,7 @@ function renderProducaoPorHoraDedicada(){
       <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
       <td class="mono">${fmtN(m.media)}</td>
-      ${temTeto?`<td class="mono" style="color:var(--txt2)" title="teto físico deste mix: ${fmtN(Math.round(m.teto))} cx/h">${m.teto>0?fmtP(m.media/m.teto*100):'—'}</td>`:''}
+      ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto físico deste mix: ${fmtN(Math.round(m.teto))} cx/h">${m.teto>0?fmtP(m.media/m.teto*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.teto))}/h</span>`:'—'}</td>`:''}
     </tr>`).join('');
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
 }
@@ -3985,7 +3985,7 @@ async function renderModeloPeriodo(){
     const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
-    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':'físico'} deste mix: ${fmtN(Math.round(l.tetoShow))} cx/h${simUse?` (real: ${fmtN(Math.round(l.teto))})`:''}">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+(simUse?` <span style="font-size:10px;font-weight:600;color:var(--warn)">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:''):'—'}</td>`:'';
+    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':'físico'} deste mix: ${fmtN(Math.round(l.tetoShow))} cx/h${simUse?` (real: ${fmtN(Math.round(l.teto))})`:''}">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
     return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
@@ -4235,7 +4235,7 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:9px;co
   <tbody>
     ${linhas.map(l=>{
       const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
-      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td${simUse?' style="color:#e65100;white-space:nowrap"':''}>${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+(simUse?` <span style="font-size:8px;font-weight:600;color:#e65100">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:''):'—'}</td>`:''}</tr>`;
+      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:8px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
     }).join('')}
   </tbody>
   <tfoot>
@@ -4490,7 +4490,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
       <td class="td-mono">${m.pesoKg.toLocaleString('pt-BR')} kg</td>
       <td class="td-mono">${m.pontos.toLocaleString('pt-BR')}</td>
       <td class="td-mono">${m.media.toLocaleString('pt-BR')}</td>
-      ${temTeto?`<td class="td-mono">${m.teto>0?fmtP(m.media/m.teto*100):'—'}</td>`:''}
+      ${temTeto?`<td class="td-mono" style="white-space:nowrap">${m.teto>0?fmtP(m.media/m.teto*100)+` <span style="font-size:8px;font-weight:600;color:#718096">de ${fmtN(Math.round(m.teto))}/h</span>`:'—'}</td>`:''}
     </tr>`).join('')}
   </tbody>
 </table>
