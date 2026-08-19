@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.7';
+const APP_VER   = '7.7.8';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3965,8 +3965,8 @@ async function renderModeloPeriodo(){
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
-    + `<th style="text-align:right" title="média sem o melhor e o pior dia (3+ dias)">${col1}</th><th style="text-align:right">${col2}</th>`
-    + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto físico da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças)'}">${simUse?'% TETO SIM.':'% TETO EST.'}</th>`:'')
+    + `<th style="text-align:right" title="média sem o melhor e o pior dia (3+ dias) — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:8px;color:var(--txt3);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:8px;color:var(--txt3);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
+    + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto físico da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças)'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:8px;color:${simUse?"var(--warn)":"var(--txt3)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'limite simulado':'limite físico'}</span></th>`:'')
     + `</tr>`;
 
   body.innerHTML=linhas.map(l=>{
@@ -4223,9 +4223,14 @@ ${simUse?`<div class="rp-note" style="border:1px solid #FF9800;background:#fff8e
 </div>
 
 <div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR ${Termo} — POR DIA (${label})</div>
+${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:9px;color:#4a5568;margin:0 0 8px;padding:7px 10px;background:#f8fafc;border:1px solid #edf2f7;border-radius:4px">
+  <span><b style="color:#1a1a2e">MÉD.PERÍODO</b> = padrão de agora → é a base para <b>prazo e meta do dia</b></span>
+  <span><b style="color:#1a1a2e">MELHOR DIA</b> = teto praticado (a equipe já fez) → é a <b>meta de melhoria</b> justa</span>
+  ${temTeto?`<span><b style="color:#1a1a2e">${simUse?'% TETO SIM.':'% TETO EST.'}</b> = limite ${simUse?'simulado':'físico'} da esteira → <b>régua de comparação</b>; só vira ação acima de ~85%</span>`:''}
+</div>`}
 <table>
   <thead>
-    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}</th><th>${col2}</th>${temTeto?(simUse?'<th style="color:#FF9800">% TETO SIM.</th>':'<th>% TETO EST.</th>'):''}</tr>
+    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}${additive?'':`<br><span style="font-size:6.5px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">padrão de agora</span>`}</th><th>${col2}${additive?'':`<br><span style="font-size:6.5px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">teto praticado</span>`}</th>${temTeto?(simUse?`<th style="color:#FF9800">% TETO SIM.<br><span style="font-size:6.5px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">limite simulado</span></th>`:`<th>% TETO EST.<br><span style="font-size:6.5px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">limite físico</span></th>`):''}</tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
