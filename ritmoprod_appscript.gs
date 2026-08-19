@@ -321,9 +321,11 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const grupos = {};
   itens.forEach(function (it) {
     const k = it.modelo + '|' + (it.nome || '');
-    const g = grupos[k] = grupos[k] || { nome: (it.nome || it.modelo), dias: [], cxTeto: 0, hTeto: 0, mmCx: 0, caixas: 0 };
+    const g = grupos[k] = grupos[k] || { nome: (it.nome || it.modelo), dias: [], cxTeto: 0, hTeto: 0, mmCx: 0, caixas: 0, horasTot: 0, troca: 0 };
     g.dias.push(it);
     g.caixas += it.caixas;
+    g.horasTot += it.horas || 0;
+    g.troca = Math.max(g.troca, Number(it.trocaMin) || 0);
     // teto do mix: o TEMPO de esteira soma → média harmônica pelas caixas.
     if (it.tetoCxH > 0) { g.cxTeto += it.caixas; g.hTeto += it.caixas / it.tetoCxH; g.mmCx += it.caixas * (it.mixMm || 0); }
   });
@@ -341,18 +343,27 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
       const mix = g.cxTeto > 0 ? g.mmCx / g.cxTeto : 0;
       teto = (vS > 0 && mix > 0) ? vS * 60000 / (mix + eS) : 0;
     }
+    // Teto OPERACIONAL: desconta 1 troca (TEMPO DE TROCA MIN) por dia rodado,
+    // diluída nos minutos rodados — MESMA régua do _phTetoOper do painel. O
+    // check de dia IMPOSSÍVEL continua no teto FÍSICO (l.teto): a troca não
+    // muda o que fisicamente não cabe na esteira.
+    const minTot = g.horasTot * 60;
+    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - g.dias.length * g.troca) / minTot : teto;
     return { nome: g.nome, n: g.dias.length, caixas: g.caixas, aparada: aparada, melhor: melhor,
-             teto: teto, pctA: teto > 0 ? aparada / teto * 100 : 0,
-             pctM: teto > 0 ? melhor / teto * 100 : 0, dias: ord };
+             teto: teto, tetoOper: tetoOper,
+             pctA: tetoOper > 0 ? aparada / tetoOper * 100 : 0,
+             pctM: tetoOper > 0 ? melhor / tetoOper * 100 : 0, dias: ord };
   }).sort(function (a, b) { return b.pctA - a.pctA || b.caixas - a.caixas; });
 
   const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };
   const D = function (v, n) { v = String(v); while (v.length < n) v = ' ' + v; return v; };
+  if (linhas.some(function (l) { return l.tetoOper > 0 && l.tetoOper < l.teto; }))
+    Logger.log('Teto/%teto já descontam a troca do produto (TEMPO DE TROCA MIN, 1× por dia rodado).');
   Logger.log(P('MODELO', 34) + D('dias', 5) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
   linhas.forEach(function (l) {
     Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
-               D(l.teto > 0 ? Math.round(l.teto) : '—', 7) + D(l.teto > 0 ? Math.round(l.pctA) + '%' : '—', 7) +
-               D(l.teto > 0 ? Math.round(l.pctM) + '%' : '—', 9));
+               D(l.tetoOper > 0 ? Math.round(l.tetoOper) : '—', 7) + D(l.tetoOper > 0 ? Math.round(l.pctA) + '%' : '—', 7) +
+               D(l.tetoOper > 0 ? Math.round(l.pctM) + '%' : '—', 9));
   });
 
   // Dia MUITO abaixo do padrão do próprio modelo (<30% da aparada): quase
@@ -1863,7 +1874,7 @@ function getPontosDia() {
     const key = it.hora + '|' + pr.modelo + '|' + pr.base + '|' + pr.cor;
     if (!porHoraModeloMap[key]) {
       porHoraModeloMap[key] = { hora: it.hora, modelo: pr.modelo, nome: pr.base || it.desc || '',
-                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0 };
+                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, troca: 0 };
     }
     porHoraModeloMap[key].caixas += it.caixas;
     porHoraModeloMap[key].pontos += it.pontos;
@@ -1872,6 +1883,9 @@ function getPontosDia() {
     // de esteira soma, então o mix de caixas é média harmônica pelas caixas.
     const tetoCod = _tetoEsteiraCxH(catalogo[it.codigo]);
     if (tetoCod > 0) { porHoraModeloMap[key].cxTeto += it.caixas; porHoraModeloMap[key].hTeto += it.caixas / tetoCod; }
+    // TEMPO DE TROCA MIN (o maior entre os códigos do grupo) — o painel do dia
+    // desconta 1 troca do teto exibido, mesma régua do comparativo por período.
+    porHoraModeloMap[key].troca = Math.max(porHoraModeloMap[key].troca, Number((catalogo[it.codigo] || {}).tempoTroca) || 0);
   });
 
   return {
@@ -1886,7 +1900,8 @@ function getPontosDia() {
     porHoraModelo: Object.values(porHoraModeloMap).map(function (g) {
       return { hora: g.hora, modelo: g.modelo, nome: g.nome, cor: g.cor,
                caixas: g.caixas, pontos: g.pontos, pesoKg: g.pesoKg,
-               tetoCxH: g.hTeto > 0 ? Math.round(g.cxTeto / g.hTeto) : 0 };
+               tetoCxH: g.hTeto > 0 ? Math.round(g.cxTeto / g.hTeto) : 0,
+               trocaMin: g.troca };
     }),
     programacao,
     painelConfig
@@ -1948,7 +1963,7 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, horasSet: {} };
+                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {} };
     }
     map[key].caixas += cx;
     map[key].pontos += cx * (prod.pontos || 0);
@@ -1964,6 +1979,9 @@ function getProducaoModeloPeriodo(p) {
       // harmônico equivale exatamente a vel × 60.000 ÷ (medida média + vão).
       map[key].mmCx += cx * (Number(prod.medida) || 0);
     }
+    // TEMPO DE TROCA MIN do grupo (o maior entre os códigos): o painel desconta
+    // 1 troca por dia rodado do teto exibido (_phTetoOper no v7).
+    map[key].troca = Math.max(map[key].troca, Number(prod.tempoTroca) || 0);
     // Conta as HORAS distintas em que esse modelo rodou no dia — base da
     // média cx/h (ritmo). formatHoraCel normaliza texto "13:00" e Date.
     const hora = formatHoraCel(r[iHora]);
@@ -1981,6 +1999,7 @@ function getProducaoModeloPeriodo(p) {
              // medida/velocidade — o painel esconde a leitura, nunca chuta).
              tetoCxH: it.hTeto > 0 ? Math.round(it.cxTeto / it.hTeto) : 0,
              mixMm: it.cxTeto > 0 ? Math.round(it.mmCx / it.cxTeto) : 0,
+             trocaMin: it.troca,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;

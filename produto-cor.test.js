@@ -197,6 +197,9 @@ let PONTOS_DIA = { porHoraModelo: [
   { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800, tetoCxH: 376 },
   { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
 ]};
+eval(pega(JS, 'function _phTetoOper('));
+// o valor real do padrão de troca, extraído do próprio painel (não duplicar 5 aqui)
+const TROCA_MIN_PADRAO = Number((JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/) || [])[1]);
 eval(pega(JS, 'function calcPorModelo('));
 const r = calcPorModelo();
 ok('produtos diferentes do mesmo código não somam juntos', r.linhas.length, 2);
@@ -205,6 +208,10 @@ ok('e aparecem na coluna COR', r.linhas[0].cor, 'CUMARU · OFF WHITE');
 ok('peso continua saindo do código, só somado depois', r.linhas[0].pesoKg, 1095);
 ok('a coluna COR entra quando há cor', r.temCor, true);
 ok('o teto do dia acompanha (mesma régua do período)', Math.round(r.linhas[0].teto), 376);
+// LUNA 670 rodou 2h hoje: 1 troca de 5 min (padrão, backend sem trocaMin)
+// diluída em 120 min → 376 × 115/120 = 360. O físico (l.teto) fica intacto.
+ok('o teto exibido desconta a troca do dia (376 → 360)', Math.round(r.linhas[0].tetoOper), 360);
+ok('sem trocaMin do backend vale o padrão do painel', r.linhas[0].troca, TROCA_MIN_PADRAO);
 ok('e a coluna % TETO EST. entra quando o backend manda teto', r.temTeto, true);
 // Backend antigo não manda cor: a coluna some, em vez de virar parede de "—".
 PONTOS_DIA = { porHoraModelo: [
