@@ -350,6 +350,26 @@ _phAdd(comTroca, { caixas: 100, horas: 1, tetoCxH: 200, trocaMin: 10 });
 ok('a troca do grupo é o maior trocaMin dos itens', comTroca.trocaMin, 10);
 ok('backend antigo: trocaMin fica null (padrão decide depois)', semTeto.trocaMin, null);
 
+// COR da MÉD.PERÍODO: verde e ▼ na mesma linha se contradiziam — "tudo certo"
+// ao lado de "abaixo do ideal". Verde passou a exigir as DUAS coisas, e 1 dia
+// não julga (a média É o melhor dia por definição).
+eval(pega('function _phCorRitmo('));
+const cor=(v1,v2,nd,alvo)=>_phCorRitmo(v1,v2,nd,alvo).cor;
+// SAPATEIRA VIVARE: 122 constante em 2 dias, mas o ideal da linha é 210.
+ok('regular porém lento não é verde — é âmbar', cor(122,122,2,210), 'var(--warn)');
+ok('e a nota diz por quê', /padrão fica abaixo do ideal/.test(_phCorRitmo(122,122,2,210).nota), true);
+// ESCRIVANINHA TAURUS: rodou UM dia — 100% de si mesma não prova nada.
+ok('1 dia só não vira verde', cor(124,124,1,210), 'var(--txt)');
+ok('e a nota avisa que não há base', /sem base/.test(_phCorRitmo(124,124,1,210).nota), true);
+// Regular E no ritmo da linha: aí sim é verde.
+ok('regular e no ritmo da linha é verde', cor(215,220,3,210), 'var(--ok)');
+ok('empatar com o ideal da linha já conta como no ritmo', cor(210,215,3,210), 'var(--ok)');
+// Sem takt configurado não há como exigir o ritmo da linha: volta a valer só a regularidade.
+ok('sem ideal da linha, verde só pela regularidade', cor(122,122,2,0), 'var(--ok)');
+// A variação continua mandando quando o modelo é rápido mas irregular.
+ok('varia demais continua vermelho mesmo acima do ideal', cor(150,300,4,210), 'var(--red)');
+ok('faixa do meio é âmbar', cor(240,300,4,210), 'var(--warn)');
+
 console.log('\n── cascata: meta × paradas × ritmo ──');
 // Substituiu a SWOT dos relatórios de produção: a decisão precisa saber ONDE
 // ficaram as caixas que faltaram. perdaPar vem do RP_PARADAS (mesma conta da

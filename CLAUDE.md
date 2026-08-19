@@ -586,6 +586,18 @@ via Google Apps Script (JSONP).
   - ⚠ O cabeçalho real da planilha é **`ENTRE_PECAS (mm)`** — a leitura busca
     por prefixo (`indexOf('ENTRE_PECA') === 0`); o `indexOf` exato devolvia -1
     e o campo chegava **0 em silêncio** (teto ~25% otimista).
+- **A cor da MÉD.PERÍODO não pode contradizer o ▼** (`_phCorRitmo`, regra única
+  e testada). **Verde exige as DUAS coisas**: aproveitamento ≥90% do próprio
+  melhor **E** estar no ritmo da linha. Antes só olhava a regularidade, e um
+  modelo constante porém lento saía **verde com o ▼ do lado** — "tudo certo" e
+  "abaixo do ideal" na mesma célula. Abaixo da linha o teto da cor é **âmbar**:
+  ali o problema não é a variação, é o próprio padrão do produto.
+  - **1 dia rodado não julga**: a média É o melhor dia por definição, então o
+    aproveitamento dá 100% sem comparar nada — a célula fica **branca** (sem
+    base), nunca verde. Era o caso de metade das linhas do comparativo.
+  - O `title` da célula diz em palavras por que a cor é aquela; a legenda do
+    rodapé acompanha. Sem takt configurado (`alvoRit` 0) volta a valer só a
+    regularidade — não há linha com que comparar.
 - **O teto EXIBIDO é operacional: desconta o TEMPO DE TROCA do produto**
   (pedido do PPCP, 19/08/2026 — "100% sem descontar a troca obrigatória não é
   régua alcançável"). `_phTetoOper` no v7: **1 troca por dia rodado**, diluída

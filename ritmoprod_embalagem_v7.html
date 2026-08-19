@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.8.0';
+const APP_VER   = '7.8.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3785,6 +3785,23 @@ function _phTetoOper(teto, horasTot, nDias, trocaMin){
   return teto*Math.max(0, min-(Number(nDias)||0)*(Number(trocaMin)||0))/min;
 }
 function _phTroca(acc){ return acc.trocaMin!=null ? acc.trocaMin : TROCA_MIN_PADRAO; }
+// COR da MÉD.PERÍODO (ritmo): aproveitamento do próprio melhor dia, com os dois
+// cuidados que a tela cobrava. VERDE exige as DUAS coisas — ser regular E estar
+// no ritmo da linha: um modelo constante porém lento ficava verde com o ▼ do
+// lado, dizendo "tudo certo" e "abaixo do ideal" na MESMA célula. Abaixo da
+// linha o teto da cor é âmbar: aí o problema não é a variação, é o próprio
+// padrão do produto. E com 1 DIA só não existe aproveitamento (a média É o
+// melhor dia, por definição): cor neutra, senão quem rodou uma vez nascia
+// verde sem ter provado consistência nenhuma.
+function _phCorRitmo(v1, v2, nd, alvoRit){
+  if(!(nd>=2)) return {cor:'var(--txt)', nota:'1 dia rodado — sem base para comparar com o próprio padrão'};
+  const aprov=v2>0?v1/v2:0, pct=Math.round(aprov*100)+'% do próprio melhor';
+  const abaixo=alvoRit>0&&v1<alvoRit;
+  if(aprov>=0.9) return abaixo
+    ? {cor:'var(--warn)', nota:pct+' — regular, mas o próprio padrão fica abaixo do ideal da linha'}
+    : {cor:'var(--ok)',   nota:pct+' — regular e no ritmo da linha'};
+  return {cor:aprov>=0.75?'var(--warn)':'var(--red)', nota:pct+' — varia demais entre os dias'};
+}
 function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0;
   // TEMPO DE TROCA do grupo: o maior entre os itens (null = backend antigo,
   // sem a informação — aí quem vale é o TROCA_MIN_PADRAO, via _phTroca).
@@ -4001,28 +4018,27 @@ async function renderModeloPeriodo(){
   body.innerHTML=linhas.map(l=>{
     const cells=datas.map(d=>{ const a=cellAcc[l.key+'|'+d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
     const v1=l.v1, v2=l.v2;
-    // Ritmo por PRODUTO vs o PRÓPRIO padrão: aproveitamento = média ÷ melhor dia
-    // do modelo (col MELHOR DIA). A cor da MÉD.PERÍODO sai desse %, então cada
-    // produto é julgado contra ELE MESMO (heavy/leve não distorce). O ▼ continua
-    // marcando quem está abaixo do ideal da LINHA (leitura complementar).
-    let corV1='var(--acc)', aprovTxt='';
+    // Cor da MÉD.PERÍODO: regra única em _phCorRitmo (verde só com regularidade
+    // E ritmo da linha; 1 dia não julga). O ▼ continua marcando quem está
+    // abaixo do ideal da LINHA — agora sem contradizer a cor da própria célula.
+    let corV1='var(--acc)', aprovTxt='', notaV1='';
     if(metric==='mediaH'){
-      const aprov=v2>0?v1/v2:0;
-      corV1=aprov>=0.9?'var(--ok)':aprov>=0.75?'var(--warn)':'var(--red)';
-      if(v2>0&&v1<v2) aprovTxt=` <span title="aproveitamento do próprio melhor" style="font-size:10px;color:var(--txt2)">${Math.round(aprov*100)}%</span>`;
+      const cr=_phCorRitmo(v1,v2,l.nd,alvoRit);
+      corV1=cr.cor; notaV1=cr.nota;
+      if(v2>0&&v1<v2) aprovTxt=` <span title="aproveitamento do próprio melhor" style="font-size:10px;color:var(--txt2)">${Math.round(v1/v2*100)}%</span>`;
     }
     const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
     const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando troca de ${l.troca} min × ${l.nd} dia(s) rodado(s): ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
-    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
+    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = % do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90%, amarelo ≥75%${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − troca do produto por dia rodado)'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
+  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − troca do produto por dia rodado)'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
