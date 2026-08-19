@@ -85,13 +85,33 @@ ok('produzir acima da meta não gera crédito negativo',
    calcAtrasoHoras([{ metaHora: 200, producaoHora: 300 }, { metaHora: 200, producaoHora: null }]),
    [{ atrasoHora: 0, metaEfetivaHora: 200 }, { atrasoHora: 0, metaEfetivaHora: 200 }]);
 
+console.log('\n── produto × cor ──');
+// A cor saiu da DESCRICAO para coluna própria na PRODUTO_CODIGO. Quem imprime
+// só a descrição mostra quatro linhas iguais para quatro cores diferentes —
+// era o seletor de produto do app, com o lote 25076 abrindo quatro
+// "VOL 1/2 PENTEADEIRA CAMARIM MEL" e o operador sem saber em qual tocar.
+ok('a cor entra no rótulo', nomeComCor('VOL 1/2 PENTEADEIRA CAMARIM MEL', 'OFF WHITE'),
+   'VOL 1/2 PENTEADEIRA CAMARIM MEL · OFF WHITE');
+ok('sem cor cadastrada, o nome sai como sempre saiu',
+   nomeComCor('VOL 1/2 PENTEADEIRA CAMARIM MEL', ''), 'VOL 1/2 PENTEADEIRA CAMARIM MEL');
+// Linha antiga (planilha de antes da coluna COR) traz a cor no fim da própria
+// descrição: repetir daria "MESA CENTRO LUNA 670 OFF WHITE · OFF WHITE".
+ok('descrição que já termina com a cor não a repete',
+   nomeComCor('MESA CENTRO LUNA 670 OFF WHITE', 'OFF WHITE'), 'MESA CENTRO LUNA 670 OFF WHITE');
+ok('acento não engana a comparação', nomeComCor('ARMARIO IMBUIA', 'IMBUIA'), 'ARMARIO IMBUIA');
+ok('só a cor, sem descrição', nomeComCor('', 'CUMARU'), 'CUMARU');
+ok('nada de nada vira vazio, não "undefined"', nomeComCor(null, null), '');
+ok('espaço sobrando não vira nome diferente', nomeComCor('  RACK BRITO 137 CM  ', ' MARSALA '),
+   'RACK BRITO 137 CM · MARSALA');
+
 console.log('\n── status por eficiência ──');
 ok('96% está na meta', sc(96), 'ok');
 ok('95.9% é atenção', sc(95.9), 'warn');
 ok('89.9% é abaixo', sc(89.9), 'red');
 
 console.log('\n── os painéis não podem ter cópia própria ──');
-const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc'];
+const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc',
+             'nomeComCor'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');

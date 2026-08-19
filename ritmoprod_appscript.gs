@@ -1786,6 +1786,9 @@ function getPontosDia() {
   const catalogo = {};
   lerCatalogoProdutos().forEach(pr => { catalogo[pr.codigo] = pr; });
   const produtoAtualDesc = catalogo[produtoAtual] ? catalogo[produtoAtual].desc : '';
+  // Cor do produto atual: a descrição já não a traz, e "PENTEADEIRA CAMARIM
+  // MEL" na TV não diz qual das quatro cores está rodando.
+  const produtoAtualCor  = produtoAtual ? produtoDoCodigo(produtoAtual).cor : '';
 
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
   const programacao = calcularProgramacao();
@@ -1807,7 +1810,7 @@ function getPontosDia() {
   try { painelConfig = getConfigPainel(); } catch (e) { Logger.log('getConfigPainel falhou (ignorado): ' + e.message); }
 
   if (!sh) {
-    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, porProduto: [], porHora: [], porHoraModelo: [], programacao, painelConfig };
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, produtoAtualCor, porProduto: [], porHora: [], porHoraModelo: [], programacao, painelConfig };
   }
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
@@ -1895,6 +1898,7 @@ function getPontosDia() {
     caixas,
     produtoAtual,
     produtoAtualDesc,
+    produtoAtualCor,
     porProduto: Object.values(porProdutoMap),
     porHora,
     porHoraModelo: Object.values(porHoraModeloMap).map(function (g) {
@@ -2275,9 +2279,14 @@ function calcularProgramacao() {
 // atraso (o que ele deve rodar), para seleção rápida sem varrer o catálogo todo.
 function getProgramacaoHoje() {
   const p = calcularProgramacao();
+  // A COR vai junto: com ela em coluna própria na PRODUTO_CODIGO, a DESCRICAO
+  // sozinha faz quatro cores do mesmo produto virarem quatro linhas IDÊNTICAS
+  // no seletor do app — foi o que aconteceu com o lote 25076 (quatro
+  // "VOL 1/2 PENTEADEIRA CAMARIM MEL"), e o operador sem saber em qual tocar.
   const produtos = p.lista
     .filter(x => x.programadoHoje > 0 || x.atraso > 0)
-    .map(x => ({ codigo: x.codigo, desc: x.desc, lote: x.lote, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
+    .map(x => ({ codigo: x.codigo, desc: x.desc, cor: produtoDoCodigo(x.codigo).cor,
+                 lote: x.lote, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
   return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
 }
 
@@ -2314,6 +2323,9 @@ function getProgramacaoDetalhada() {
       lote:     pr.lote || '',
       codigo:   cat ? cat.codigo : pr.codigo,
       desc:     cat ? cat.desc   : '',
+      // Mesma razão do getProgramacaoHoje: sem a cor, duas linhas do mesmo
+      // produto em cores diferentes ficam indistinguíveis na tela.
+      cor:      produtoDoCodigo(cat ? cat.codigo : pr.codigo).cor,
       qtde:     qtde,
       pesoKg:   Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
       pontos:   Math.round(qtde * (cat ? cat.pontos : 0)),

@@ -104,12 +104,29 @@ function calcAtrasoHoras(rows){
 // (a TV tem espaço para "DENTRO DA META", o celular não).
 function sc(ef){ return ef >= 96 ? 'ok' : ef >= 90 ? 'warn' : 'red'; }
 
+// ── Produto × cor ───────────────────────────────────────────────────────────
+// A COR saiu da DESCRICAO para uma coluna própria na PRODUTO_CODIGO. Quem
+// continuou imprimindo só a descrição passou a mostrar linhas IDÊNTICAS para
+// produtos diferentes: no app do operador o lote 25076 abre quatro
+// "VOL 1/2 PENTEADEIRA CAMARIM MEL", e ele não tem como saber em qual tocar.
+// Toda tela que mostra produto compõe o rótulo por aqui.
+// Linha antiga — descrição que ainda termina com a cor — não ganha a cor duas
+// vezes; sem cor cadastrada, o nome sai como sempre saiu.
+function nomeComCor(desc, cor){
+  const d = String(desc == null ? '' : desc).replace(/\s+/g, ' ').trim();
+  const c = String(cor  == null ? '' : cor ).replace(/\s+/g, ' ').trim();
+  if (!c) return d;
+  if (!d) return c;
+  const norm = s => s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return norm(d).endsWith(norm(c)) ? d : d + ' · ' + c;
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // Os painéis checam isto na abertura: se o arquivo não carregou (rede caiu
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.0.0',
+  versao: '1.1.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
-        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc']
+        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor']
 };

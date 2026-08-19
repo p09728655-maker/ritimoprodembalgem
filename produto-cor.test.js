@@ -322,6 +322,112 @@ ok('nenhuma cópia solta do keyOf', (JS.match(/const keyOf\s+=it=>/g) || []).len
 ok('a chave do comparativo carrega o produto',
    /it\.modelo\+'\|'\+\(it\.nome\|\|''\)/.test(JS), true);
 
+// ── 7) o APP do operador: sem a cor, quatro linhas IDÊNTICAS ──────────────
+// O caso que trouxe isto: o lote 25076 abre quatro produtos no seletor do
+// celular e os quatro aparecem como "PENTEADEIRA CAMARIM MEL". Com a cor em
+// coluna própria, a descrição sozinha deixou de identificar o produto — e
+// ninguém tocou no app quando a planilha mudou.
+console.log('\n── o app do operador mostra a COR ──');
+
+// nomeComCor mora no rp-core.js (implementação única dos dois painéis).
+global.window = global;
+require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
+
+const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+const MJS = [...MOB.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+
+// Catálogo do app (o que o getProdutos devolve) — as quatro linhas da foto.
+var PRODUTOS = [
+  { codigo: '501060001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: 'OFF WHITE' },
+  { codigo: '501060002', desc: 'VOL 2/2 PENTEADEIRA CAMARIM MEL', cor: 'OFF WHITE' },
+  { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: 'CUMARU'    },
+  { codigo: '501060004', desc: 'VOL 2/2 PENTEADEIRA CAMARIM MEL', cor: 'CUMARU'    }
+];
+eval(pega(MJS, 'function normTxt('));
+eval(pega(MJS, 'function corDeProduto('));
+eval(pega(MJS, 'function descRepetidas('));
+eval(pega(MJS, 'function corChipHtml('));
+eval(pega(MJS, 'function linhaProdutoHtml('));
+
+// A lista de HOJE (getProgramacaoHoje) vem sem cor enquanto o .gs não for
+// re-deployado: a cor tem de sair do catálogo, senão o operador fica sem ela
+// justamente na lista que mais usa.
+const doLote = [
+  { codigo: '501060001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', lote: 25076 },
+  { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', lote: 25076 }
+];
+ok('item sem cor busca no catálogo', corDeProduto(doLote[1]), 'CUMARU');
+ok('cor do próprio item tem prioridade',
+   corDeProduto({ codigo: '501060003', desc: 'x', cor: 'ALECRIM' }), 'ALECRIM');
+ok('código fora do catálogo não quebra', corDeProduto({ codigo: '999999' }), '');
+
+const rep = descRepetidas(doLote);
+// O item na tela = linha do código (com a etiqueta da cor) + linha do nome.
+const html = doLote.map(p => corChipHtml(p, rep) + linhaProdutoHtml(p));
+ok('as duas linhas do lote deixam de ser iguais', html[0] === html[1], false);
+ok('e a cor aparece em cada uma',
+   [/OFF WHITE/.test(html[0]), /CUMARU/.test(html[1])], [true, true]);
+ok('a cor vai em etiqueta própria, não no fim da frase',
+   /class="prod-search-cor">OFF WHITE</.test(html[0]), true);
+// A etiqueta fica na linha do CÓDIGO: pendurada no fim de um nome comprido ela
+// caía numa terceira linha e engordava o item — e a lista tem altura fixa.
+ok('e a descrição continua sozinha na linha dela',
+   /prod-search-cor/.test(linhaProdutoHtml(doLote[0])), false);
+
+// Sem cor em lugar nenhum (planilha sem a coluna preenchida): a linha repetida
+// avisa, em vez de deixar duas iguais sem explicação.
+PRODUTOS = [{ codigo: '501060001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: '' },
+            { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: '' }];
+const semCor = descRepetidas(doLote);
+ok('descrição repetida e sem cor avisa',
+   /sem cor cadastrada/.test(corChipHtml(doLote[0], semCor)), true);
+// E o aviso NÃO polui a tela quando a linha já é única por si.
+ok('linha única sem cor sai limpa',
+   corChipHtml({ codigo: '501041', desc: 'RACK BRITO 137 CM' },
+               descRepetidas([{ codigo: '501041', desc: 'RACK BRITO 137 CM' }])), '');
+
+// A barra do produto atual, o toast do bipe e o produto do gerencial usam o
+// MESMO rótulo (nomeComCor + a queda para o catálogo).
+ok('as três telas de produto do app levam a cor',
+   (MJS.match(/nomeComCor\(p\.desc, corDeProduto\(p\)\)/g) || []).length, 3);
+// Guarda-corpo: foi imprimir a descrição sozinha que causou o problema — as
+// três listas do seletor têm de passar pela etiqueta da cor.
+ok('nenhuma lista imprime a descrição sozinha',
+   (MJS.match(/\$\{corChipHtml\(p, rep(?:Cat)?\)\}/g) || []).length, 3);
+// Buscar por cor tem de achar: com a cor fora da descrição, digitar "CUMARU"
+// não acharia mais nada se a comparação continuasse só no nome.
+ok('a busca também olha a cor', /p\.cor && normTxt\(p\.cor\)\.includes\(q\)/.test(MJS), true);
+
+// ── o backend manda a cor nas ações que o app consome ─────────────────────
+console.log('\n── o backend manda a COR para o app ──');
+reset([
+  { codigo: '501060001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: 'OFF WHITE' },
+  { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor: 'CUMARU'    }
+]);
+// calcularProgramacao é a leitura da planilha inteira — aqui só o que ela
+// devolve importa, então entra de mentira.
+function calcularProgramacao() {
+  return { metaEfetiva: 300, atrasoTotal: 0, lista: [
+    { codigo: '501060001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', lote: 25076, programadoHoje: 150, atraso: 0, falta: 150 },
+    { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', lote: 25076, programadoHoje: 150, atraso: 0, falta: 150 }
+  ] };
+}
+eval(pega(GS, 'function getProgramacaoHoje('));
+const hoje = getProgramacaoHoje();
+ok('getProgramacaoHoje manda a cor de cada item',
+   hoje.produtos.map(x => x.cor), ['OFF WHITE', 'CUMARU']);
+ok('e continua mandando o resto (lote, meta, atraso)',
+   [hoje.produtos[0].lote, hoje.produtos[0].qtde, hoje.produtos[0].atraso], [25076, 150, 0]);
+// A tela de PROGRAMAÇÃO do painel e o produto atual (gerencial + Tela B da TV)
+// pedem a mesma coisa ao backend.
+ok('getProgramacaoDetalhada leva a cor junto',
+   /cor:\s+produtoDoCodigo\(cat \? cat\.codigo : pr\.codigo\)\.cor/.test(GS), true);
+ok('getPontosDia manda a cor do produto atual',
+   /const produtoAtualCor\s+= produtoAtual \? produtoDoCodigo\(produtoAtual\)\.cor : '';/.test(GS), true);
+ok('e o painel usa ela nas duas telas',
+   (JS.match(/nomeComCor\(PONTOS_DIA\.produtoAtualDesc, PONTOS_DIA\.produtoAtualCor\)/g) || []).length, 2);
+ok('a tela de programação também', /nomeComCor\(it\.desc, it\.cor\)/.test(JS), true);
+
 console.log(falhas === 0
   ? '\n✅ produto × cor ok — a planilha manda, o texto é só rede\n'
   : `\n❌ ${falhas} falha(s)\n`);

@@ -561,6 +561,44 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script. `node produto-cor.test.js`
   cobre a regra, rodando contra o código real dos dois arquivos.
 
+## A COR também tem que aparecer no APP (seletor de produto)
+- Quando a cor saiu da `DESCRICAO` para a coluna `COR`, **o app do operador ficou
+  para trás**: o seletor imprimia só a descrição, e o lote 25076 abria **quatro
+  linhas idênticas** — "VOL 1/2 PENTEADEIRA CAMARIM MEL" quatro vezes, mudando
+  só o código, sem o operador ter como saber em qual tocar.
+- **`nomeComCor(desc, cor)` mora no `rp-core.js`**, uma implementação só para os
+  dois painéis. Descrição que **já termina com a cor** (linha antiga, de antes da
+  coluna) não ganha a cor duas vezes; sem cor cadastrada o nome sai como sempre
+  saiu. `rp-core.test.js` cobre.
+- **No mobile a cor é ETIQUETA, na linha do CÓDIGO** (`.prod-search-cor`), não no
+  fim da frase: pendurada no fim de um nome comprido ela caía sozinha numa
+  terceira linha e engordava o item — e a lista tem **altura fixa** de propósito
+  (o teclado numérico abaixo não pode subir e descer conforme o nº de
+  resultados). Vale nas três listas: PRODUTOS DE HOJE, busca por LOTE e busca no
+  catálogo.
+  - `corDeProduto()` cai no **catálogo** quando o item não traz cor — a lista de
+    hoje só passou a mandá-la no `.gs` re-deployado, e sem essa queda o operador
+    ficaria sem cor justamente na lista que mais usa.
+  - **Descrição repetida e sem cor cadastrada** mostra *"sem cor cadastrada"* em
+    vez de deixar duas linhas iguais sem explicação. Linha única sem cor sai
+    limpa — o aviso não pode virar enfeite em todo item da tela.
+  - A **busca também olha a cor**: com ela fora da descrição, digitar `CUMARU`
+    não acharia mais nada.
+  - A folha do modal (`.modal-sheet`) vai a **560px** (620px no tablet): presa em
+    420px sobrava faixa preta dos dois lados e a linha do código quebrava por
+    falta de largura onde havia espaço.
+- **A barra do produto atual, o toast do bipe e o produto do gerencial** usam o
+  mesmo `nomeComCor`. No desktop: a tela de **PROGRAMAÇÃO** e o produto atual do
+  turno (gerencial + **Tela B** da TV) — "PENTEADEIRA CAMARIM MEL" na TV não diz
+  qual das quatro cores está rodando.
+- Backend: `getProgramacaoHoje` e `getProgramacaoDetalhada` mandam **`cor`** por
+  item e `getPontosDia` manda **`produtoAtualCor`** (todos por `produtoDoCodigo`,
+  que já é a regra única — coluna `COR` manda, texto é rede). ⚠ Mudou o `.gs` →
+  **re-deploy manual**; até lá o app se vira com a cor do catálogo.
+- `produto-cor.test.js` roda o **código real do mobile** (etiqueta, queda para o
+  catálogo, aviso de repetida) e o `getProgramacaoHoje` de verdade — e falha se
+  alguma lista voltar a imprimir a descrição sozinha.
+
 ## Comparativo por modelo — média aparada e teto da esteira
 - **MÉD.PERÍODO / MÉD-DIA são APARADAS** (`_phMediaAparada`): com 3+ dias, o
   melhor e o pior dia do próprio grupo saem da média — um pico de rodada

@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.8.1';
+const APP_VER   = '7.8.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2223,7 +2223,7 @@ let AMOSTRA_HORAS = {};
 let HE_BACKEND_OK = null;
 // Produção do dia em PONTOS/PESO por produto — identificação de produto é
 // OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', produtoAtualCor:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
   metaDia:1500, metaDiaManual:false, metaDiaManualData:'', metaComAtraso:false, turnoInicio:'07:00', turnoFim:'17:00',
@@ -2950,6 +2950,7 @@ async function lerPontosDia(){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
         produtoAtual: json.produtoAtual||'', produtoAtualDesc: json.produtoAtualDesc||'',
+        produtoAtualCor: json.produtoAtualCor||'',
         porProduto: json.porProduto||[], porHora: json.porHora||[], porHoraModelo: json.porHoraModelo||[],
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
       };
@@ -3537,8 +3538,9 @@ function renderGerencial(){
   const gerProdEl=document.getElementById('ger-produto-atual');
   if(gerProdEl){
     if(PONTOS_DIA.produtoAtual){
+      const nomeProd=nomeComCor(PONTOS_DIA.produtoAtualDesc, PONTOS_DIA.produtoAtualCor);
       document.getElementById('ger-produto-val').textContent =
-        PONTOS_DIA.produtoAtual+(PONTOS_DIA.produtoAtualDesc?' · '+PONTOS_DIA.produtoAtualDesc:'');
+        PONTOS_DIA.produtoAtual+(nomeProd?' · '+nomeProd:'');
       gerProdEl.style.display='inline';
     } else gerProdEl.style.display='none';
   }
@@ -4598,9 +4600,12 @@ function renderProgramacaoDetalhada(){
       // embalado quando na verdade a data nem chegou.
       const faltaCor=it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)');
       const faltaTxt=it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta));
+      // Nome COM a cor: a cor saiu da DESCRICAO para coluna própria, e sem ela
+      // duas cores do mesmo produto viram duas linhas idênticas na tela.
+      const nome=nomeComCor(it.desc, it.cor);
       return `<tr>
         <td class="mono">${it.lote||'—'}</td>
-        <td style="text-align:left">${it.codigo}${it.desc?' · '+it.desc:''}</td>
+        <td style="text-align:left">${it.codigo}${nome?' · '+nome:''}</td>
         <td class="mono">${fmtN(it.qtde)}</td>
         <td class="mono">${fmtN(it.pesoKg)} kg</td>
         <td class="mono">${fmtN(it.pontos)}</td>
@@ -7990,7 +7995,9 @@ const _cicloTV = (function() {
     // No layout novo: descrição no destaque, código numa linha própria (só aparece
     // quando o operador selecionou o produto). produtoAtual = código; produtoAtualDesc = nome.
     const temProduto = !!PONTOS_DIA.produtoAtual;
-    set('tvb-produto', temProduto ? (PONTOS_DIA.produtoAtualDesc || PONTOS_DIA.produtoAtual) : '—');
+    set('tvb-produto', temProduto
+      ? (nomeComCor(PONTOS_DIA.produtoAtualDesc, PONTOS_DIA.produtoAtualCor) || PONTOS_DIA.produtoAtual)
+      : '—');
     set('tvb-produto-cod', PONTOS_DIA.produtoAtual || '—');
     const codRow = document.getElementById('tvb-produto-codrow');
     if (codRow) codRow.style.display = temProduto ? '' : 'none';

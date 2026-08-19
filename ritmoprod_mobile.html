@@ -213,8 +213,19 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .prod-search-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto}
 .prod-search-item{padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;cursor:pointer}
 .prod-search-item:active{background:var(--border)}
-.prod-search-cod{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px}
+.prod-search-cod{display:flex;align-items:center;flex-wrap:wrap;column-gap:8px;font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px}
 .prod-search-desc{font-family:var(--font-b);font-size:13px;margin-top:2px}
+/* COR em etiqueta cheia, não no fim da frase: é ela que separa quatro linhas
+   com a MESMA descrição (o lote 25076 abre 4 "PENTEADEIRA CAMARIM MEL"), e o
+   operador escolhe de relance, com o tablet na mão.
+   Mora na linha do CÓDIGO, não na da descrição: pendurada no fim de um nome
+   comprido ela caía sozinha numa terceira linha e engordava o item — e a lista
+   tem altura FIXA de propósito (o teclado numérico abaixo não pode subir e
+   descer conforme o nº de resultados). */
+.prod-search-cor{margin-left:auto;padding:1px 7px;border-radius:4px;white-space:nowrap;
+  background:var(--acc);color:#111;font-family:var(--font-d);font-size:10px;letter-spacing:1px;
+  font-weight:700}
+.prod-search-cor.sem{background:transparent;color:var(--txt2);border:0.5px solid var(--border);font-weight:400}
 .prod-search-empty{text-align:center;padding:20px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px}
 /* Toast de confirmação do BIPE (seleção de produto por leitor de código). */
 .scan-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
@@ -315,7 +326,11 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .modal-over.open{display:flex}
 .modal-sheet{
   background:var(--surface);border-radius:14px 14px 8px 8px;
-  width:100%;max-width:420px;padding:24px;
+  /* A folha acompanha a tela: presa em 420px ela deixava faixa preta dos dois
+     lados em qualquer aparelho maior que um celular — e a linha do código
+     (com LOTE, atraso e a etiqueta da COR) quebrava por falta de largura
+     justamente onde havia espaço sobrando. */
+  width:100%;max-width:560px;padding:24px;
   display:flex;flex-direction:column;gap:18px;
   animation:slideUp .25s ease-out;
   max-height:90dvh;overflow-y:auto;
@@ -424,8 +439,12 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   .tbl th{padding:11px 14px;font-size:10px;letter-spacing:1.5px}
   .tbl td{padding:14px 14px}
 
-  /* Modais centralizados e com texto maior no tablet */
+  /* Modais centralizados, com texto maior e MAIS LARGOS no tablet: a folha
+     ficava presa nos mesmos 420px do celular e sobrava tela preta dos dois
+     lados — com a etiqueta da COR, a linha do código chegava a quebrar por
+     falta de espaço onde espaço é o que não faltava. */
   .modal-over{align-items:center}
+  .modal-sheet{max-width:620px;padding:28px}
   .modal-ttl{font-size:22px}
   .cf-msg{font-size:17px}
   .btn-cancelar,.btn-salvar{font-size:16px;padding:17px}
@@ -803,7 +822,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.7.7';
+const APP_VER   = '1.8.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1087,12 +1106,41 @@ function aplicarMetaDiaAutomatica(){
   if (novoValor > 0) CFG.metaDia = novoValor;
 }
 
+// COR do item, com queda para o catálogo. A lista de HOJE
+// (getProgramacaoHoje) só passou a mandar a cor no .gs re-deployado; o catálogo
+// (getProdutos) já a traz. Sem essa queda o operador ficaria sem a cor
+// justamente na lista que ele mais usa, até alguém re-deployar o Apps Script.
+function corDeProduto(p){
+  if(!p) return '';
+  if(p.cor) return String(p.cor).trim();
+  const c = PRODUTOS.find(x=>x.codigo===p.codigo);
+  return c && c.cor ? String(c.cor).trim() : '';
+}
+// Descrições que se REPETEM na lista mostrada. É só aí que a falta de cor deixa
+// o operador sem saída — duas linhas iguais, nada para decidir. Fora disso a
+// linha sem cor sai limpa, sem etiqueta de aviso em todo item da tela.
+function descRepetidas(lista){
+  const cont={}, rep={};
+  (lista||[]).forEach(p=>{ const k=normTxt(p&&p.desc); cont[k]=(cont[k]||0)+1; if(cont[k]>1) rep[k]=true; });
+  return rep;
+}
+// Etiqueta da COR, que vai no fim da linha do CÓDIGO. Descrição repetida e sem
+// cor cadastrada ganha o aviso, em vez de deixar linhas idênticas na tela sem
+// explicação — o operador precisa saber que ali a diferença está no código.
+function corChipHtml(p, rep){
+  const cor = corDeProduto(p);
+  if(cor) return `<span class="prod-search-cor">${cor}</span>`;
+  return (rep && rep[normTxt(p.desc)]) ? `<span class="prod-search-cor sem">sem cor cadastrada</span>` : '';
+}
+function linhaProdutoHtml(p){
+  return `<div class="prod-search-desc">${p.desc||''}</div>`;
+}
 function atualizarProdutoBar(){
   const el = document.getElementById('prod-bar-val');
   if(!el) return;
   if(!PROD_ATUAL){ el.textContent='BIPAR OU TOCAR PARA SELECIONAR'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
-  el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+  el.textContent = p ? `${p.codigo} · ${nomeComCor(p.desc, corDeProduto(p))}` : PROD_ATUAL;
 }
 
 // Remove acentos p/ a busca não depender de digitar acento certo.
@@ -1120,15 +1168,16 @@ function filtrarProdutos(){
     // Sem busca: mostra os PRODUTOS DO DIA (programados + em atraso) para toque
     // rápido. Se não houver programação, cai no aviso de digitar a busca.
     if(PROG_HOJE.length){
+      const rep = descRepetidas(PROG_HOJE);
       lista.innerHTML =
         '<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">PRODUTOS DE HOJE — toque para selecionar</div>' +
         PROG_HOJE.map(p=>{
-          const lot = p.lote ? `<span style="color:var(--acc);font-family:var(--font-d);font-size:10px;margin-left:8px">LOTE ${p.lote}</span>` : '';
-          const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px;margin-left:8px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
+          const lot = p.lote ? `<span style="color:var(--acc);font-family:var(--font-d);font-size:10px">LOTE ${p.lote}</span>` : '';
+          const atr = p.atraso>0 ? `<span style="color:var(--warn);font-family:var(--font-d);font-size:10px">⚠ ${fmtN(p.atraso)} atras.</span>` : '';
           const qtd = p.qtde>0 ? `<div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">meta ${fmtN(p.qtde)} cx</div>` : '';
           return `<div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
-            <div class="prod-search-cod">${p.codigo}${lot}${atr}</div>
-            <div class="prod-search-desc">${p.desc}</div>${qtd}
+            <div class="prod-search-cod">${p.codigo}${lot}${atr}${corChipHtml(p, rep)}</div>
+            ${linhaProdutoHtml(p)}${qtd}
           </div>`;
         }).join('');
     } else {
@@ -1142,12 +1191,13 @@ function filtrarProdutos(){
   const qd = q.replace(/[^0-9]/g,'');
   const porLote = qd ? PROG_HOJE.filter(p => p.lote && String(p.lote).replace(/[^0-9]/g,'') === qd) : [];
   if(porLote.length){
+    const rep = descRepetidas(porLote);
     lista.innerHTML =
       `<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">LOTE ${porLote[0].lote}${porLote.length>1?' — toque no produto certo':''}</div>` +
       porLote.map(p=>`
         <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
-          <div class="prod-search-cod">${p.codigo}</div>
-          <div class="prod-search-desc">${p.desc}</div>
+          <div class="prod-search-cod">${p.codigo}${corChipHtml(p, rep)}</div>
+          ${linhaProdutoHtml(p)}
         </div>`).join('');
     return;
   }
@@ -1156,13 +1206,17 @@ function filtrarProdutos(){
   // "501.041" acham o mesmo item; e também casa por descrição.
   const res = PRODUTOS.filter(p=>{
     const codD = String(p.codigo).replace(/[^0-9]/g,'');
-    return normTxt(p.codigo).includes(q) || (qd && codD.includes(qd)) || normTxt(p.desc).includes(q);
+    // Busca também pela COR: com a cor fora da descrição, "OFF WHITE" deixaria
+    // de achar qualquer coisa se a comparação continuasse só no nome.
+    return normTxt(p.codigo).includes(q) || (qd && codD.includes(qd)) ||
+           normTxt(p.desc).includes(q) || (p.cor && normTxt(p.cor).includes(q));
   }).slice(0,30);
   if(!res.length){ lista.innerHTML='<div class="prod-search-empty">Nenhum produto encontrado.</div>'; return; }
+  const repCat = descRepetidas(res);
   lista.innerHTML = res.map(p=>`
     <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
-      <div class="prod-search-cod">${p.codigo}</div>
-      <div class="prod-search-desc">${p.desc}</div>
+      <div class="prod-search-cod">${p.codigo}${corChipHtml(p, repCat)}</div>
+      ${linhaProdutoHtml(p)}
     </div>`).join('');
 }
 // Teclado numérico do seletor de produto (código é numérico — evita abrir o
@@ -1280,7 +1334,7 @@ function processarBipe(raw){
   const p = produtoPorEan(raw);
   if(p){
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
-    bipeToast('✓ '+p.codigo+' · '+(p.desc||''), true);
+    bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
     abrirLancSlotAtivo();                         // já abre a hora atual p/ digitar a quantidade
   }else{
@@ -1348,7 +1402,7 @@ function renderGerProduto(){
   if(!el) return;
   if(!PROD_ATUAL){ el.textContent='— (nenhum produto selecionado)'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
-  el.textContent = p ? `${p.codigo} · ${p.desc}` : PROD_ATUAL;
+  el.textContent = p ? `${p.codigo} · ${nomeComCor(p.desc, corDeProduto(p))}` : PROD_ATUAL;
 }
 function renderGerParada(){
   const el = document.getElementById('ger-parada-banner');
