@@ -1648,6 +1648,12 @@ if (_v7Instalado()) _v7EscondeBotao();
       <option value="pontos">PONTOS</option>
       <option value="pesoKg">PESO (KG)</option>
     </select>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px" title="Simulador: mude a velocidade ou o vão entre peças e o % do teto recalcula na hora — nada é gravado">ESTEIRA</span>
+    <input type="number" id="ph-est-vel" step="0.1" min="0.1" onchange="renderModeloPeriodo()" class="frm-inp" style="width:58px;padding:4px 6px;font-size:11px" title="Velocidade da esteira (m/min) — mude para simular">
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2)">m/min ·</span>
+    <input type="number" id="ph-est-entre" step="10" min="0" onchange="renderModeloPeriodo()" class="frm-inp" style="width:58px;padding:4px 6px;font-size:11px" title="Vão entre peças (mm) — mude para simular">
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2)">mm</span>
+    <button class="btn btn-ghost" onclick="phEsteiraReset()" title="Voltar aos valores reais da planilha" style="font-size:11px;padding:4px 8px">↺</button>
     <div class="hdr-spacer"></div>
     <div class="export-row">
       <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
@@ -2130,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.5';
+const APP_VER   = '7.7.6';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3727,7 +3733,15 @@ function _phVal(acc,metric){
   if(metric==='pesoKg') return acc.pesoKg;
   return acc.caixas;
 }
-function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0,cxTeto:0,hTeto:0}; }
+function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0,cxTeto:0,hTeto:0,mmCx:0}; }
+// Medida média do mix (mm, ponderada pelas caixas com teto) e o teto SIMULADO
+// para outra velocidade/entre-peças. A harmônica do teto real equivale a
+// vel × 60.000 ÷ (medida média + vão) — então trocar vel/vão pela conta da
+// medida média dá o teto simulado EXATO, sem refazer chamada nenhuma.
+function _phMixMm(acc){ return acc.cxTeto>0 ? acc.mmCx/acc.cxTeto : 0; }
+function _phTetoSim(vel, entre, mixMm){
+  return (vel>0 && mixMm>0) ? vel*60000/(mixMm+Math.max(0,Number(entre)||0)) : 0;
+}
 // MÉDIA DO PERÍODO APARADA: descarta o melhor e o pior dia do próprio grupo
 // antes da média (pedido do PPCP, 18/08/2026) — um dia atípico, pico de rodada
 // dedicada ou apontamento capenga (o 1 cx/h da DECOR 470), não pode definir o
@@ -3753,8 +3767,8 @@ function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc
   // Tempo de esteira soma: outro acc traz cxTeto/hTeto prontos; item do backend
   // traz tetoCxH (média harmônica do mix daquele item). Item sem teto não entra
   // — só as caixas COM teto contam no par, senão o % sairia diluído.
-  if(it.hTeto>0){ acc.cxTeto+=it.cxTeto; acc.hTeto+=it.hTeto; }
-  else if(it.tetoCxH>0&&it.caixas>0){ acc.cxTeto+=it.caixas; acc.hTeto+=it.caixas/it.tetoCxH; } }
+  if(it.hTeto>0){ acc.cxTeto+=it.cxTeto; acc.hTeto+=it.hTeto; acc.mmCx+=it.mmCx||0; }
+  else if(it.tetoCxH>0&&it.caixas>0){ acc.cxTeto+=it.caixas; acc.hTeto+=it.caixas/it.tetoCxH; acc.mmCx+=it.caixas*(it.mixMm||0); } }
 function _phParseData(s){const[dd,mm,yy]=s.split('/').map(Number);return new Date(yy,mm-1,dd);}
 // TAKT IDEAL: takt = tempo produtivo ÷ demanda. Devolve o takt em segundos/caixa e
 // o ritmo ideal em cx/h. Ex.: 8,8h = 31680s ÷ 1850 = 17,1 s/cx (~210 cx/h). O 15%
@@ -3793,9 +3807,40 @@ async function lerProducaoModeloPeriodo(de,ate){
     if(de)  url+='&de='+encodeURIComponent(de);
     if(ate) url+='&ate='+encodeURIComponent(ate);
     const json=await jsonpFetch(url);
-    if(json && json.ok && Array.isArray(json.itens)) return json.itens;
+    if(json && json.ok && Array.isArray(json.itens)){
+      // Base da esteira (velocidade/entre-peças da planilha): habilita o
+      // simulador. Backend antigo não manda → simulador fica desligado.
+      if(json.esteira && json.esteira.vel>0) ESTEIRA_BASE=json.esteira;
+      return json.itens;
+    }
   }catch(e){ console.warn('lerProducaoModeloPeriodo:', e.message); }
   return null;
+}
+// ── SIMULADOR DA ESTEIRA (campos na barra da aba PRODUÇÃO/HORA) ────────────
+// Mexer na velocidade/entre-peças NÃO grava nada: recalcula o teto na tela e
+// no PDF, marcados como SIMULAÇÃO. Os valores reais continuam na planilha
+// (PRODUTO_CODIGO) — o ↺ volta para eles.
+let ESTEIRA_BASE=null;
+function _phEsteiraSync(){
+  const vi=document.getElementById('ph-est-vel'), ei=document.getElementById('ph-est-entre');
+  if(!vi||!ei) return null;
+  if(!ESTEIRA_BASE){
+    vi.disabled=ei.disabled=true; vi.value=ei.value='';
+    vi.title=ei.title='Simulador da esteira: precisa do ritmoprod_appscript.gs re-deployado (a base vel/entre-peças não veio do backend)';
+    return null;
+  }
+  vi.disabled=ei.disabled=false;
+  if(vi.value==='') vi.value=ESTEIRA_BASE.vel;
+  if(ei.value==='') ei.value=ESTEIRA_BASE.entre;
+  const vel=parseFloat(vi.value)||0, entre=Math.max(0,parseFloat(ei.value)||0);
+  const ativo=vel>0&&(Math.abs(vel-ESTEIRA_BASE.vel)>1e-9||Math.abs(entre-ESTEIRA_BASE.entre)>1e-9);
+  vi.style.color=ei.style.color=ativo?'var(--warn)':'';
+  return ativo?{vel,entre}:null;
+}
+function phEsteiraReset(){
+  const vi=document.getElementById('ph-est-vel'), ei=document.getElementById('ph-est-entre');
+  if(ESTEIRA_BASE){ if(vi) vi.value=ESTEIRA_BASE.vel; if(ei) ei.value=ESTEIRA_BASE.entre; }
+  renderModeloPeriodo();
 }
 // Cache por intervalo (só refaz a chamada quando DE/ATÉ mudam; trocar modelo
 // ou métrica reusa os mesmos dados).
@@ -3894,13 +3939,23 @@ async function renderModeloPeriodo(){
   // A APARADA descarta o melhor e o pior dia do próprio grupo (3+ dias) — ver
   // _phMediaAparada. O TOTAL nunca é aparado: total é total.
   const datas=[...datasSet].sort((a,b)=>_phParseData(a)-_phParseData(b));
+  // Simulador da esteira: sincroniza os campos (habilita/preenche a base) e
+  // devolve {vel,entre} quando o gestor está simulando outra esteira. Só vale
+  // na métrica de ritmo — nas aditivas o teto nem aparece.
+  const simEst=_phEsteiraSync();
+  const simUse=(metric==='mediaH')?simEst:null;
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);
+    const tetoReal=_phTeto(rowAcc[k]);
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k],
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
-      aparada:ap.aparada, teto:_phTeto(rowAcc[k]) };
+      aparada:ap.aparada, teto:tetoReal,
+      // teto exibido: o simulado quando há simulação (recalculado pela medida
+      // média do mix), senão o real. GANHO DEMONSTRADO e cascata continuam no
+      // teto REAL — simulação não muda o que a equipe já provou.
+      tetoShow: simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal };
   }).sort((a,b)=>b.v1-a.v1);
 
   // % DO TETO DA ESTEIRA: só no ritmo (cx/h) e só quando o backend novo mandou
@@ -3911,7 +3966,7 @@ async function renderModeloPeriodo(){
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right" title="média sem o melhor e o pior dia (3+ dias)">${col1}</th><th style="text-align:right">${col2}</th>`
-    + (temTeto?`<th style="text-align:right" title="quanto do teto físico da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças)">% TETO EST.</th>`:'')
+    + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto físico da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças)'}">${simUse?'% TETO SIM.':'% TETO EST.'}</th>`:'')
     + `</tr>`;
 
   body.innerHTML=linhas.map(l=>{
@@ -3928,7 +3983,7 @@ async function renderModeloPeriodo(){
       if(v2>0&&v1<v2) aprovTxt=` <span title="aproveitamento do próprio melhor" style="font-size:10px;color:var(--txt3)">${Math.round(aprov*100)}%</span>`;
     }
     const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
-    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:var(--txt2)" title="teto físico deste mix: ${fmtN(Math.round(l.teto))} cx/h">${l.teto>0?fmtP(v1/l.teto*100):'—'}</td>`:'';
+    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'}" title="teto ${simUse?'SIMULADO':'físico'} deste mix: ${fmtN(Math.round(l.tetoShow))} cx/h${simUse?` (real: ${fmtN(Math.round(l.teto))})`:''}">${l.tetoShow>0?fmtP(v1/l.tetoShow*100):'—'}</td>`:'';
     return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600">${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
@@ -3936,7 +3991,7 @@ async function renderModeloPeriodo(){
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = % do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90%, amarelo ≥75%${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?' · % TETO EST. = quanto do teto físico da esteira o modelo usa':''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
+  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = % do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90%, amarelo ≥75%${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = quanto do teto físico da esteira o modelo usa'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${legenda}`;
 }
 
@@ -4000,14 +4055,18 @@ async function gerarRelatorioProducaoHora(){
   });
   // Mesmas contas da tela: MÉD aparada (sem melhor/pior dia, 3+ dias), TOTAL
   // intacto, e o % do teto físico da esteira quando o backend manda o teto.
+  const simEst=_phEsteiraSync();
+  const simUse=(metric==='mediaH')?simEst:null;
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);
+    const tetoReal=_phTeto(rowAcc[k]);
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k],
       nd: accsDia.filter(a=>a&&a.caixas>0).length,
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
-      teto:_phTeto(rowAcc[k]) };
+      teto:tetoReal,
+      tetoShow: simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal };
   }).sort((a,b)=>b.v1-a.v1);
   const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
@@ -4134,7 +4193,8 @@ ${_rpBotaoImprimir()}
 ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
    `<div class="rp-dia">${deStr} — ${ateStr}</div>
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
-   ` · MÉTRICA: ${label}${sel?' · '+TermoFil+' '+selLabel:''}`)}
+   ` · MÉTRICA: ${label}${sel?' · '+TermoFil+' '+selLabel:''}${simUse?' · ⚠ SIMULAÇÃO ESTEIRA '+simUse.vel+' m/min · '+simUse.entre+' mm':''}`)}
+${simUse?`<div class="rp-note" style="border:1px solid #FF9800;background:#fff8ec;color:#7a4a00;padding:8px 12px;border-radius:6px;margin:10px 0 0;-webkit-print-color-adjust:exact;print-color-adjust:exact">⚠ <b>SIMULAÇÃO</b>: a coluna % TETO SIM. usa esteira a <b>${simUse.vel} m/min</b> com <b>${simUse.entre} mm</b> entre peças (real na planilha: ${ESTEIRA_BASE.vel} m/min · ${ESTEIRA_BASE.entre} mm). Nada foi gravado; MÉD., MELHOR DIA, cascata e ganho demonstrado continuam nos dados reais.</div>`:''}
 
 <div class="rp-sec-ttl">RESUMO DO PERÍODO</div>
 <div class="kpi-grid">
@@ -4163,12 +4223,12 @@ ${_rpCabecalho(`PRODUÇÃO POR ${Termo}`,
 <div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR ${Termo} — POR DIA (${label})</div>
 <table>
   <thead>
-    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}</th><th>${col2}</th>${temTeto?'<th>% TETO EST.</th>':''}</tr>
+    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}</th><th>${col2}</th>${temTeto?(simUse?'<th style="color:#FF9800">% TETO SIM.</th>':'<th>% TETO EST.</th>'):''}</tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
       const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
-      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td>${l.teto>0?fmtP(l.v1/l.teto*100):'—'}</td>`:''}</tr>`;
+      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td${simUse?' style="color:#e65100"':''}>${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100):'—'}</td>`:''}</tr>`;
     }).join('')}
   </tbody>
   <tfoot>
@@ -4182,7 +4242,7 @@ ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
-  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${temTeto?' · % TETO EST. = uso do teto físico da esteira':''}</span>
+  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto físico da esteira'):''}</span>
 </div>
 
 </body>

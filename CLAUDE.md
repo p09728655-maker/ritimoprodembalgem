@@ -588,6 +588,20 @@ via Google Apps Script (JSONP).
     e o campo chegava **0 em silêncio** (teto ~25% otimista).
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
+- **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):
+  mudar velocidade/entre-peças recalcula o teto na tela e no PDF **sem gravar
+  nada** — a coluna vira **% TETO SIM.** em âmbar, a legenda e o PDF ganham o
+  aviso de SIMULAÇÃO com os valores reais ao lado, e o ↺ volta à base.
+  - A conta é exata sem nova chamada: o teto harmônico do mix equivale a
+    `vel × 60.000 ÷ (medida média + vão)`, então o backend manda `mixMm`
+    (medida média ponderada pelas caixas) por item e `esteira:{vel,entre}`
+    (base da planilha) no `getProducaoModeloPeriodo`. Sem a base (backend
+    antigo) os campos ficam **desabilitados** — nunca simula em cima de chute.
+  - GANHO DEMONSTRADO e cascata continuam no teto REAL: simulação não muda o
+    que a equipe já provou.
+  - No editor: `simularEsteiraPorModelo(30, 17, 250)` roda a mesma simulação
+    no log ("e se a esteira rodasse a 17 m/min com 250 mm?").
+  - ⚠ Exige o `.gs` re-deployado (mixMm + esteira no payload).
 - **O % TETO EST. também está na visão do DIA** (PRODUÇÃO POR MODELO — TOTAL DO
   DIA e o RELATÓRIO DO DIA em PDF): `getPontosDia` manda `tetoCxH` por item de
   `porHoraModelo` e `calcPorModelo` agrega com a MESMA harmônica. `temTeto`

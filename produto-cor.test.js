@@ -270,6 +270,23 @@ ok('dia fraco de verdade (59 da VIVARE) NÃO é acusado',
 ok('resumo por último — e o dia impossível não vira "esteira no limite"',
    /RESUMO:.*NÃO é o gargalo/.test(LOGS[LOGS.length - 1]), true);
 
+// ── simulação com OUTRA esteira: simularEsteiraPorModelo(30, 17, 350) ─────
+// O teto recalcula pela medida média do mix de cada produto; o log avisa que
+// é simulação e mostra o real da planilha ao lado.
+function _esteiraBase(){ return { vel: 8.5, entre: 350, uniforme: true }; }
+_mkItens.forEach(it => { it.mixMm = it.tetoCxH > 0 ? Math.round(8.5*60000/it.tetoCxH) - 350 : 0; });
+LOGS.length = 0;
+simularEsteiraPorModelo(30, 17, 350);
+ok('o log abre avisando que é simulação',
+   /SIMULAÇÃO ESTEIRA: 17 m\/min · 350 mm/.test(LOGS.find(l=>/SIMULAÇÃO/.test(l))||''), true);
+ok('e mostra o real da planilha ao lado', /real na planilha: 8\.5 · 350/.test(LOGS.find(l=>/SIMULAÇÃO/.test(l))||''), true);
+// Dobrando a velocidade (8,5 → 17), o teto de cada produto dobra: a MADERO
+// tinha teto 291 → vira 582.
+ok('teto da MADERO dobra com o dobro de velocidade',
+   cols('MESA CABECEIRA MADERO')[4], '582');
+ok('produto sem teto continua sem teto na simulação',
+   cols('LIVREIRO ENCANTO').slice(4), ['—', '—', '—']);
+
 // ── 6) guarda-corpo: o agrupamento do comparativo é UM só ──────────────────
 console.log('\n── o comparativo não pode voltar a ter duas regras ──');
 // A tela e o PDF liam o mesmo seletor com duas cópias do keyOf/labelOf: a
