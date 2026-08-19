@@ -2130,7 +2130,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.7.4';
+const APP_VER   = '7.7.5';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4255,7 +4255,7 @@ function _rpCascataHtml(titulo, c, nota){
     <span class="casc-meta" style="left:100%"><b>POTENCIAL ${fmtN(c.potencial)}</b></span>
   </div>
   <div class="casc-lin">
-    <div class="casc-l"><span>POTENCIAL PRÓPRIO</span><b>${fmtN(c.potencial)} cx</b><i>o melhor dia de ${plural(c.nCores,'cor','cada cor')} nas horas que rodou — já demonstrado pela equipe</i></div>
+    <div class="casc-l"><span>POTENCIAL PRÓPRIO</span><b>${fmtN(c.potencial)} cx</b><i>o melhor dia ${c.nCores===1?'da cor':'de cada uma das '+plural(c.nCores,'cor','cores')} nas horas que rodou — já demonstrado pela equipe</i></div>
     <div class="casc-l"><span>PERDIDO NO RITMO</span><b style="color:#e65100">−${fmtN(Math.round(c.perdaRitmo))} cx</b><i>diferença para o próprio melhor — inclui paradas e microparadas do período</i></div>
     <div class="casc-l casc-tot"><span>REALIZADO</span><b style="color:#2e7d32">${fmtN(c.real)} cx</b><i>${fmtP(c.pctReal)} do potencial${c.melhorCor?` · melhor cor: ${c.melhorCor.label.replace(/^.*?·\s*/,'')}`:''}</i></div>
   </div>
