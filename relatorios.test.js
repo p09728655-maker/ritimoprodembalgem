@@ -669,13 +669,30 @@ const madero = [
   { label: '501149 · MADERO · PRETO ACET./CINAMOMO', caixas:  576, ritmo:  96, melhor: 194, teto: 414, horas: 6 },
   { label: '501149 · MADERO · CINZA/NATURE',         caixas:  450, ritmo:  75, melhor:  97, teto: 414, horas: 6 },
 ];
-let cp = _relCascataProduto(madero);
+let cp = _relCascataProduto(madero, true);   // agrupado por MODELO + COR
 ok('potencial = melhor dia de cada cor × horas', cp.potencial, (227+210+194+97)*6);
 ok('realizado é a soma das cores', cp.real, 3217);
 ok('o que falta para o próprio melhor é perda de ritmo',
    cp.perdaRitmo, (227+210+194+97)*6 - 3217);
-ok('as quatro cores entram', cp.nCores, 4);
-ok('a melhor cor é apontada', /OFF WHITE\/CINAMOMO/.test(cp.melhorCor.label), true);
+ok('as quatro cores entram', cp.n, 4);
+ok('a melhor cor é apontada', /OFF WHITE\/CINAMOMO/.test(cp.melhorLinha.label), true);
+// "MELHOR COR" só existe quando as linhas SÃO cores. Agrupado por MODELO, a
+// linha é o produto — e o relatório imprimia "melhor cor: BANQUETA VERSATIL",
+// que é o nome do produto, não uma cor.
+ok('agrupado por cor, o relatório pode falar em melhor cor', cp.porCor, true);
+const cpModelo = _relCascataProduto([{ label:'501140 · BANQUETA VERSATIL', caixas:2372, ritmo:132, melhor:179, teto:317, horas:18 }], false);
+ok('agrupado por modelo, não há cor a apontar', cpModelo.porCor, false);
+const hMod = _rpCascataHtml('X', cpModelo);
+ok('e o impresso não inventa uma cor', /melhor cor/.test(hMod), false);
+ok('nem chama o produto de cor', /da cor|das cores/.test(hMod), false);
+ok('a descrição fala do próprio produto', /o melhor dia deste produto/.test(hMod), true);
+const hCor = _rpCascataHtml('X', cp);
+ok('com cores, aponta a melhor — só a cor, sem o código e o nome',
+   /melhor cor: OFF WHITE\/CINAMOMO/.test(hCor), true);
+ok('e conta quantas cores entraram', /de cada uma das 4 cores/.test(hCor), true);
+// Uma cor só, mesmo agrupando por cor: não há "melhor" entre uma.
+ok('uma linha só nunca vira "melhor cor"',
+   _relCascataProduto([{ label:'A · B · PRETO', caixas:10, ritmo:10, melhor:10, teto:0, horas:1 }], true).porCor, false);
 // Lançamento acumulado não pode virar alvo: melhor dia é limitado ao teto.
 cp = _relCascataProduto([{ label: 'DECOR 470', caixas: 300, ritmo: 84, melhor: 318, teto: 300, horas: 4 }]);
 ok('melhor dia impossível é cortado no teto físico', cp.potencial, 1200);

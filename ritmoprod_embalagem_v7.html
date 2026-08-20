@@ -2147,7 +2147,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.12.1';
+const APP_VER   = '7.12.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4497,7 +4497,7 @@ async function gerarRelatorioProducaoHora(){
   let casc=null, cascNota='', cobertura=null;
   if(sel && metric==='mediaH'){
     casc=_relCascataProduto(linhas.map(l=>({label:l.label, caixas:l.acc.caixas,
-      ritmo:l.v1, melhor:l.v2, teto:l.teto||0, horas:l.acc.horas})));
+      ritmo:l.v1, melhor:l.v2, teto:l.teto||0, horas:l.acc.horas})), ehCor);
   }
   if(CFG.sheetsUrl && _rpOk() && !sel && typeof RP_PARADAS!=='undefined'){
     try{
@@ -4702,21 +4702,28 @@ function _relCascata(e){
 // O melhor dia entra limitado ao TETO FÍSICO: lançamento acumulado (318 cx/h
 // com teto 300) não pode virar alvo.
 // linhas: [{label, caixas, ritmo, melhor, teto, horas}]
-function _relCascataProduto(linhas){
+// porCor: a tela está agrupando por MODELO + COR? Só então cada linha é uma
+// COR e faz sentido falar em "melhor cor". Agrupando por MODELO, a linha É o
+// produto — e o relatório dizia "melhor cor: BANQUETA VERSATIL", que é o nome
+// do produto (visto pelo PPCP em 20/08/2026).
+function _relCascataProduto(linhas, porCor){
   const ls=(linhas||[]).filter(l=>l&&l.horas>0&&l.caixas>0);
   if(!ls.length) return null;
-  let potencial=0, real=0, melhorCor=null;
+  let potencial=0, real=0, melhorLinha=null;
   ls.forEach(l=>{
     const alvo=l.teto>0?Math.min(l.melhor,l.teto):l.melhor;
     potencial+=Math.max(alvo,l.ritmo)*l.horas;   // nunca menos que o próprio realizado
     real+=l.caixas;
-    if(!melhorCor||l.ritmo>melhorCor.ritmo) melhorCor=l;
+    if(!melhorLinha||l.ritmo>melhorLinha.ritmo) melhorLinha=l;
   });
   potencial=Math.round(potencial);
   return { tipo:'produto', potencial, real,
            perdaRitmo: Math.max(0,potencial-real),
            pctReal: potencial>0?real/potencial*100:0,
-           nCores: ls.length, melhorCor };
+           n: ls.length,
+           // "melhor cor" só existe quando há mais de uma cor para comparar
+           porCor: !!porCor && ls.length>1,
+           melhorLinha };
 }
 
 // Bloco HTML da cascata (DIA e PERÍODO usam o mesmo): a barra no visual da
@@ -4752,13 +4759,20 @@ function _rpCascataHtml(titulo, c, nota){
   // Com um MODELO filtrado a âncora é o potencial do próprio produto: são três
   // etapas (potencial → gap → realizado), sem meta e sem paradas.
   if(c.tipo==='produto'){
+    // Uma linha só = o próprio produto; várias = as cores dele, e aí (e só aí)
+    // dá para apontar a melhor.
+    const base = c.porCor ? `o melhor dia de cada uma das ${plural(c.n,'cor','cores')} nas horas que rodou`
+               : c.n>1    ? `o melhor dia de cada uma das ${c.n} linhas nas horas que rodou`
+               :            'o melhor dia deste produto nas horas que rodou';
+    const destaque = c.porCor&&c.melhorLinha
+      ? ` · melhor cor: ${String(c.melhorLinha.label).split(' · ').pop()}` : '';
     return `${abre}
   <div class="casc-flow">
-    ${_cascPasso('casc-meta-step','POTENCIAL PRÓPRIO', fmtN(c.potencial), `o melhor dia ${c.nCores===1?'da cor':'de cada uma das '+plural(c.nCores,'cor','cores')} nas horas que rodou`)}
+    ${_cascPasso('casc-meta-step','POTENCIAL PRÓPRIO', fmtN(c.potencial), base)}
     ${_cascOp('−')}
     ${_cascPasso('casc-rit-step','GAP DE RITMO', '−'+fmtN(Math.round(c.perdaRitmo)), 'diferença estimada para o próprio melhor — inclui paradas e microparadas')}
     ${_cascOp('=')}
-    ${_cascPasso('casc-real-step','REALIZADO', fmtN(c.real), `${fmtP(c.pctReal)} do potencial${c.melhorCor?` · melhor cor: ${c.melhorCor.label.replace(/^.*?·\s*/,'')}`:''}`)}
+    ${_cascPasso('casc-real-step','REALIZADO', fmtN(c.real), `${fmtP(c.pctReal)} do potencial${destaque}`)}
   </div>
   <div class="casc-form">${fmtN(c.potencial)} − ${fmtN(Math.round(c.perdaRitmo))} = <b>${fmtN(c.real)} cx</b></div>
   ${_cascBarra(c.real, c.potencial, 'DO POTENCIAL')}

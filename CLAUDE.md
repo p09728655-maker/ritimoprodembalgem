@@ -815,6 +815,11 @@ via Google Apps Script (JSONP).
   realizado (cor de um dia só → perda 0, nada inventado).
   - **Cobertura e ganho demonstrado continuam fora** com filtro: os dois
     comparam com o realizado da LINHA.
+  - ⚠ **"melhor cor" só sai quando as linhas SÃO cores.** `_relCascataProduto`
+    recebe o `ehCor` do `_phAgrup`: agrupado por **MODELO**, a linha é o próprio
+    produto, e o relatório chegou a imprimir *"melhor cor: BANQUETA VERSATIL"* —
+    o nome do produto. Com uma linha só também não há "melhor" entre uma. E o
+    rótulo mostra **só a cor** (último trecho do label), não o código e o nome.
 - **O seletor filtra por PRODUTO, o agrupamento é que abre por cor**
   (`keyFil`/`labelFil` no `_phAgrup`): no nível MODELO + COR, escolher
   `501149 MADERO` traz **todas as cores dele**, cada uma na sua linha. Como a
