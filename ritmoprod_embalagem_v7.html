@@ -449,6 +449,13 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvd-split-txt b{font-family:var(--font-h);font-weight:700;font-size:clamp(20px,1.9vw,36px);letter-spacing:3px;text-transform:uppercase;color:var(--txt);line-height:1}
 .tvd-split-txt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tvd-normal-falta:not(:empty),#gsem-normal-falta:not(:empty){color:var(--warn)}
+/* O % da jornada normal é a leitura que decide a semana — "89,6% da meta" diz,
+   sozinho, que faltou pouco para bater SEM hora extra. Em corpo de legenda
+   (13-21px) ninguém lê isso a 15 m: ganha corpo de número, não de rótulo.
+   (pedido do PPCP, 20/08/2026) */
+#tvd-normal-pct,#gsem-normal-pct{font-family:var(--font-h);font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;letter-spacing:1px}
+#tvd-normal-pct{font-size:clamp(26px,2.7vw,52px);line-height:1.15}
+#tvd-normal-falta{font-size:clamp(15px,1.45vw,27px);font-weight:600;letter-spacing:1px}
 
 /* Barra: verde (normal) + faixa listrada âmbar (hora extra) e a MARCA DA META
    como linha vertical. Se a verde parar antes da marca, quem cruzou foi a
@@ -495,6 +502,10 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #ger-semana .tvd-split-num{font-size:clamp(28px,3.4vw,44px)}
 #ger-semana .tvd-split-txt{font-size:9px;letter-spacing:1px;gap:2px}
 #ger-semana .tvd-split-txt b{font-size:11px;letter-spacing:2px}
+/* No gerencial a mesma marcação é lida a 60 cm, dentro de um card: o % cresce
+   junto, mas na escala daqui (a da TV explodiria o bloco). */
+#ger-semana #gsem-normal-pct{font-size:17px;line-height:1.2}
+#ger-semana #gsem-normal-falta{font-size:11px;font-weight:600}
 #ger-semana .tvd-barra-wrap{padding-top:16px}
 #ger-semana .tvd-barra{height:14px}
 #ger-semana .tvd-meta-marca span{font-size:9px;letter-spacing:1px;bottom:calc(100% - 14px)}
@@ -2136,7 +2147,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.10.1';
+const APP_VER   = '7.10.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -6326,8 +6337,14 @@ const RP_SEMANA = (function() {
     set('extra',   fmtN(k.totHE));
     set('normal-pct',   k.totMeta ? fmtP(normal / k.totMeta * 100) + ' da meta' : '');
     // O buraco da jornada normal é a informação de ação — em linha própria e na
-    // cor de atenção, não espremido no fim de outra frase.
-    set('normal-falta', k.faltouSemHE > 0 ? `faltaram ${fmtN(k.faltouSemHE)} cx` : '');
+    // cor de atenção, não espremido no fim de outra frase. E vai também em
+    // CAIXAS POR DIA: "faltaram 863 cx" não diz se foi perto ou longe; "173
+    // cx/dia" a operação sabe na hora se dava para fazer sem hora extra.
+    const porDiaFalta = (k.faltouSemHE > 0 && d.dias.length)
+      ? Math.round(k.faltouSemHE / d.dias.length) : 0;
+    set('normal-falta', k.faltouSemHE > 0
+      ? `faltaram ${fmtN(k.faltouSemHE)} cx${porDiaFalta ? ` · ${fmtN(porDiaFalta)} cx/dia` : ''}`
+      : '');
     const diasComHE = d.dias.filter(x => !_heIndef(x) && x.heCx > 0).length;
     set('extra-pct', k.totHoras > 0 ? `${plural(k.totHoras,'hora','horas')} em ${plural(diasComHE,'dia','dias')}`
                                         : (diasComHE ? `em ${plural(diasComHE,'dia','dias')}` : ''));
