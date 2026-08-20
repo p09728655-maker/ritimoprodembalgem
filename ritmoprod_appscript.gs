@@ -324,6 +324,36 @@ function _entradasDia(horasGrupo, horasDia) {
   return Math.max(1, n);
 }
 
+// PREPARAÇÕES LENDO A ORDEM DAS LINHAS DO LOG (PPCP, 20/08/2026: "aponta sim
+// dois produtos na mesma hora"). A PRODUCAO_PRODUTO é append-only — cada bipe é
+// uma linha e a linha mais nova fica embaixo —, então dentro da MESMA hora dá
+// para ver a sequência, coisa que a leitura por hora não via.
+//   Bloco de linhas seguidas do mesmo produto = 1 preparação. A,A,B,B numa hora
+//   são duas preparações, mesmo sendo a mesma hora.
+//   ALTERNÂNCIA (A,B,A,B) NÃO é troca: é a esteira de dois lados rodando dois
+//   produtos ao mesmo tempo. Ninguém troca de produto a cada 20 caixas. Nessa
+//   hora vale o número de produtos DISTINTOS, não o de blocos — e a hora é
+//   marcada como paralela, para o relatório poder dizer.
+//   O primeiro bloco da hora não conta quando é continuação da hora anterior.
+function _prepDoDia(porHora, horasOrd) {
+  let prep = 0, paralelo = false, ultimo = null;
+  (horasOrd || []).forEach(function (h) {
+    const seq = porHora[h] || [];
+    if (!seq.length) return;
+    const dist = {};
+    let blocos = 0, ant = null;
+    seq.forEach(function (k) { dist[k] = 1; if (k !== ant) blocos++; ant = k; });
+    const nDist = Object.keys(dist).length;
+    const par = blocos > nDist;
+    if (par) paralelo = true;
+    let n = par ? nDist : blocos;
+    if (ultimo && seq[0] === ultimo) n = Math.max(0, n - 1);
+    prep += n;
+    ultimo = seq[seq.length - 1];
+  });
+  return { prep: prep, paralelo: paralelo };
+}
+
 // Quantas trocas a LINHA fez, dia a dia — a pergunta do PPCP em 20/08/2026
 // ("quantas trocas deram na média por dia?"). Soma as entradas de cada produto
 // no nível mais fino do log (modelo · produto · cor): mudar a cor também troca
@@ -2026,6 +2056,18 @@ function getPontosDia() {
   // SLEEP", "quantos PRINCESA" por hora, sem abrir por cor —, mas quem manda o
   // dado separado é aqui: assim a mesma resposta serve para a visão por produto
   // e para a coluna COR, sem uma segunda chamada.
+  // PREPARAÇÕES DE HOJE, na ordem dos bipes (porHora vem na ordem da planilha):
+  // é o que responde "quantas trocas já foram hoje" sem depender da premissa.
+  const seqHoje = {}, horasHoje = [];
+  porHora.forEach(function (it) {
+    const pr = produtoDoCodigo(it.codigo);
+    if (!it.hora) return;
+    if (!seqHoje[it.hora]) { seqHoje[it.hora] = []; horasHoje.push(it.hora); }
+    seqHoje[it.hora].push(pr.modelo + '|' + pr.base + '|' + pr.cor);
+  });
+  horasHoje.sort(function (a, b) { return (_heMinutosDaHora(a) || 0) - (_heMinutosDaHora(b) || 0); });
+  const prepHoje = _prepDoDia(seqHoje, horasHoje);
+
   const porHoraModeloMap = {};
   porHora.forEach(function (it) {
     const pr = produtoDoCodigo(it.codigo);
@@ -2062,6 +2104,10 @@ function getPontosDia() {
                tetoCxH: g.hTeto > 0 ? Math.round(g.cxTeto / g.hTeto) : 0,
                trocaMin: g.troca };
     }),
+    // Preparações de hoje lidas na ORDEM dos bipes (com o aviso de hora com dois
+    // produtos ao mesmo tempo). Informação para conferir a premissa de troca.
+    preparacoes: prepHoje.prep,
+    prepParalelo: prepHoje.paralelo,
     programacao,
     painelConfig
   };
@@ -2097,6 +2143,9 @@ function getProducaoModeloPeriodo(p) {
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
   const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
 
+  // Sequência dos bipes por dia/hora, na ORDEM da planilha — é ela que revela
+  // troca dentro da mesma hora e alternância (dois lados em paralelo).
+  const seqDia = {}, horasDia = {};
   const map = {}; // chave "dataNum|modelo"
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
@@ -2123,6 +2172,13 @@ function getProducaoModeloPeriodo(p) {
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
                    caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {} };
+    }
+    const dStr = fmtDataBR(r[iData]);
+    const hSeq = formatHoraCel(r[iHora]);
+    if (hSeq) {
+      const sd = seqDia[dStr] = seqDia[dStr] || {};
+      if (!sd[hSeq]) { sd[hSeq] = []; (horasDia[dStr] = horasDia[dStr] || []).push(hSeq); }
+      sd[hSeq].push(modelo + '|' + descBase + '|' + pr.cor);
     }
     map[key].caixas += cx;
     map[key].pontos += cx * (prod.pontos || 0);
@@ -2169,7 +2225,17 @@ function getProducaoModeloPeriodo(p) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;
   });
 
-  return { ok: true, esteira: _esteiraBase(), itens: itens };
+  // Preparações por dia lidas na ordem das linhas — informação para conferir a
+  // premissa de troca, não entrada do cálculo.
+  const prepDias = Object.keys(seqDia).map(function (d) {
+    const horas = (horasDia[d] || []).slice().sort(function (a, b) {
+      return (_heMinutosDaHora(a) || 0) - (_heMinutosDaHora(b) || 0);
+    });
+    const r = _prepDoDia(seqDia[d], horas);
+    return { data: d, prep: r.prep, paralelo: r.paralelo };
+  });
+
+  return { ok: true, esteira: _esteiraBase(), itens: itens, prepDias: prepDias };
 }
 
 // Velocidade e entre-peças que valem HOJE na planilha — a base que o simulador

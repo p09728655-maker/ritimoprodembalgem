@@ -313,7 +313,41 @@ eval(pega(GS, 'function _entradasDia('));
 eval(pega(GS, 'function _trocaObsMin('));
 eval(pega(GS, 'function _trocasLinhaPorDia('));
 eval(pega(GS, 'function _horasDeEntrada('));
+eval(pega(GS, 'function _prepDoDia('));
 eval(pega(GS, 'function simularEsteiraPorModelo('));
+
+// ── preparações lidas na ORDEM das linhas do log ──────────────────────────
+// Cada bipe é uma linha (20 cx) e a PRODUCAO_PRODUTO é append-only: a ordem das
+// linhas é a ordem dos fatos. Foi o PPCP que apontou (20/08/2026) que a mesma
+// hora traz mais de um produto — a leitura por hora perdia isso.
+console.log('\n── preparações pela ordem das linhas ──');
+const prep = (porHora, horas) => _prepDoDia(porHora, horas).prep;
+ok('hora inteira no mesmo produto = 1 preparação',
+   prep({ '09:00': ['A','A','A','A','A'] }, ['09:00']), 1);
+ok('trocou DENTRO da hora = 2 preparações',
+   prep({ '09:00': ['A','A','A','B','B'] }, ['09:00']), 2);
+ok('e três produtos na mesma hora = 3',
+   prep({ '09:00': ['A','A','B','B','C'] }, ['09:00']), 3);
+// Ninguém troca de produto a cada 20 caixas: alternância é a esteira de dois
+// lados rodando dois produtos ao mesmo tempo.
+ok('alternância NÃO é troca a cada bipe: conta os produtos distintos',
+   prep({ '09:00': ['A','B','A','B','A','B'] }, ['09:00']), 2);
+ok('e a hora fica marcada como paralela',
+   _prepDoDia({ '09:00': ['A','B','A','B'] }, ['09:00']).paralelo, true);
+ok('hora sem alternância não é marcada',
+   _prepDoDia({ '09:00': ['A','A','B','B'] }, ['09:00']).paralelo, false);
+// Continuação entre horas: o mesmo produto atravessando 09h→10h é UMA corrida.
+ok('produto que atravessa a hora não conta duas vezes',
+   prep({ '09:00': ['A','A'], '10:00': ['A','A'] }, ['09:00','10:00']), 1);
+ok('produto novo na hora seguinte conta',
+   prep({ '09:00': ['A','A'], '10:00': ['B','B'] }, ['09:00','10:00']), 2);
+ok('saiu e voltou = três preparações',
+   prep({ '09:00': ['A'], '10:00': ['B'], '11:00': ['A'] }, ['09:00','10:00','11:00']), 3);
+// O caso da foto: 9 bipes do mesmo produto às 09:00 e mais 5 às 10:00.
+ok('o dia da foto (mesmo produto o tempo todo) = 1 preparação',
+   prep({ '09:00': ['E','E','E','E','E','E','E','E','E'], '10:00': ['E','E','E','E','E'] },
+        ['09:00','10:00']), 1);
+ok('dia vazio não inventa preparação', prep({}, []), 0);
 simularEsteiraPorModelo(30);
 const linha = nome => LOGS.find(l => l.indexOf(nome) === 0) || '';
 const cols = nome => linha(nome).replace(nome, '').trim().split(/\s+/);

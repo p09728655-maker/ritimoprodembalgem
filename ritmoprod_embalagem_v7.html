@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.10.0';
+const APP_VER   = '7.10.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3697,7 +3697,7 @@ function renderProducaoPorHoraDedicada(){
       ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${fmtN(Math.round(m.minTroca*10)/10)} min de troca — a fatia deste produto nos ${TROCA_PREMISSA.minDia} min/dia da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min): ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
     </tr>`).join('');
   // Quantas trocas a linha já fez HOJE (o "por dia" do período, no dia de hoje).
-  const tlHoje=_phTrocasLinha(PONTOS_DIA.porHoraModelo||[]);
+  const tlHoje=_phPrepHoje();
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
     +(tlHoje.trocas?` · ${fmtN(tlHoje.trocas)} preparação(ões) hoje`:'')
     +(tlHoje.eventos&&tlHoje.eventos<tlHoje.trocas?` em ${fmtN(tlHoje.eventos)} parada(s) de esteira`:'');
@@ -3918,6 +3918,30 @@ function _phTrocasLinha(itens){
            porDia:nd?Math.round(tot/nd*10)/10:0,
            evPorDia:nd?Math.round(ev/nd*10)/10:0 };
 }
+// A CONTAGEM BOA vem do backend, lendo a ORDEM das linhas do log (PPCP,
+// 20/08/2026: "aponta sim dois produtos na mesma hora"). Cada bipe é uma linha
+// e a PRODUCAO_PRODUTO é append-only, então lá dá para ver troca DENTRO da
+// hora — e distinguir alternância (dois lados em paralelo) de troca de verdade.
+// O _phTrocasLinha daqui vira a ESTIMATIVA de reserva: backend sem re-deploy
+// não manda prepDias, e aí vale a leitura por hora, que só erra para menos.
+function _phPrepInfo(itens, prepDias){
+  const est=_phTrocasLinha(itens);
+  if(!Array.isArray(prepDias)||!prepDias.length) return est;
+  const ds=prepDias.filter(d=>d&&d.prep>0);
+  if(!ds.length) return est;
+  const tot=ds.reduce((a,d)=>a+d.prep,0);
+  return { trocas:tot, dias:ds.length, porDia:Math.round(tot/ds.length*10)/10,
+           eventos:est.eventos, evPorDia:est.evPorDia,
+           paralelo:ds.some(d=>d.paralelo), fonte:'log' };
+}
+// Mesma coisa para HOJE (o getPontosDia manda o número já calculado).
+function _phPrepHoje(){
+  const est=_phTrocasLinha(PONTOS_DIA.porHoraModelo||[]);
+  const n=Number(PONTOS_DIA.preparacoes)||0;
+  if(!n) return est;
+  return { trocas:n, dias:1, porDia:n, eventos:est.eventos, evPorDia:est.evPorDia,
+           paralelo:!!PONTOS_DIA.prepParalelo, fonte:'log' };
+}
 // As horas em que o grupo ENTROU (o _phEntradasDia conta; este diz ONDE), para
 // que duas entradas na mesma hora contem como uma parada só da esteira.
 function _phHorasDeEntrada(horasGrupo, horasDia){
@@ -3947,12 +3971,13 @@ function _phNotaTrocaHtml(tl, obs, ehDia){
   // "PARA CONFERIR": o que o apontamento mostra, ao lado da premissa. Não entra
   // na conta — serve para o PPCP ver se 6 × 5 min ainda descreve o chão.
   const conf=[];
+  const fonteTxt = (tl&&tl.fonte==='log') ? '' : ' <i>(estimativa por hora — o backend ainda não manda a leitura linha a linha)</i>';
   if(tl&&tl.trocas) conf.push(ehDia
     ? `hoje foram <b>${fmtN(tl.trocas)}</b> preparação(ões)${tl.eventos&&tl.eventos<tl.trocas?` em <b>${fmtN(tl.eventos)}</b> parada(s) de esteira`:''}`
     : `no período, <b>${fmtN(tl.porDia)}</b> preparação(ões)/dia${tl.eventos&&tl.eventos<tl.trocas?` em <b>${fmtN(tl.evPorDia)}</b> parada(s) de esteira/dia`:''}`);
   if(obs&&obs.n>0&&obs.min>0) conf.push(`as paradas de TROCA/SETUP apontadas nos últimos ${TROCA_OBS_DIAS} dias duraram <b>${fmtN(obs.min)} min</b> em média (${obs.n} amostra${obs.n===1?'':'s'})`);
   const conferir = conf.length
-    ? `${conf.join(' · ')}. Se isso descolar dos ${fmtN(P.minDia)} min/dia, é hora de rever a premissa.`
+    ? `${conf.join(' · ')}${fonteTxt}${tl&&tl.paralelo?' · houve hora com <b>dois produtos ao mesmo tempo</b> na esteira':''}. Se isso descolar dos ${fmtN(P.minDia)} min/dia, é hora de rever a premissa.`
     : `ainda não há apontamento suficiente para confrontar a premissa — quanto mais parada de troca registrada, mais cedo dá para trocar a premissa por medição.`;
   return `<div style="margin-top:12px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #718096;border-radius:4px;font-size:10.5px;color:#3d4757;line-height:1.75">
   <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:#1a1a2e;margin-bottom:5px">COMO A TROCA ENTROU NA CONTA</div>
@@ -3960,6 +3985,7 @@ function _phNotaTrocaHtml(tl, obs, ehDia){
   <div><b>COMO É RATEADA</b> — os ${fmtN(P.minDia)} min são da <b>esteira</b>, não de um produto. Cada um paga a fatia proporcional ao tempo que ocupou a linha no dia, o que dá o <b>mesmo percentual para todos</b>: num dia de 9 h, ${fmtN(P.minDia)} min são 5,6% do teto, tanto para quem rodou 1 h quanto para quem rodou 8.</div>
   <div><b>NO TETO</b> — o % é a média cx/h dividida pelo teto físico da esteira já sem esse tempo: <span style="font-family:'IBM Plex Mono',monospace">teto × (minutos rodados − minutos de troca) ÷ minutos rodados</span>. Por isso o % ficou menor que antes, quando a régua não descontava troca nenhuma.</div>
   <div><b>PARA CONFERIR</b> — ${conferir}</div>
+  <div><b>DE ONDE VEM A CONTAGEM</b> — cada bipe é uma linha do log, na ordem em que aconteceu, então a leitura enxerga troca <b>dentro da mesma hora</b>. Linhas que se <b>alternam</b> (A, B, A, B) não são troca a cada 20 caixas: são dois produtos rodando <b>ao mesmo tempo</b> nos dois lados da esteira — nessas horas conta os produtos distintos, não os blocos.</div>
   <div><b>O QUE NÃO ENXERGA</b> — troca de <b>cor</b> e troca de <b>produto</b> custam o mesmo na conta (a planilha tem um tempo de troca só); em qual <b>posto</b> a parada aconteceu; e caixa lançada <b>sem produto</b> selecionado no app, que fica fora da análise por modelo.</div>
 </div>`;
 }
@@ -4098,6 +4124,8 @@ async function lerProducaoModeloPeriodo(de,ate){
       // Base da esteira (velocidade/entre-peças da planilha): habilita o
       // simulador. Backend antigo não manda → simulador fica desligado.
       if(json.esteira && json.esteira.vel>0) ESTEIRA_BASE=json.esteira;
+      // Preparações por dia, lidas na ordem das linhas do log (backend novo).
+      PREP_PERIODO = Array.isArray(json.prepDias) ? json.prepDias : null;
       return json.itens;
     }
   }catch(e){ console.warn('lerProducaoModeloPeriodo:', e.message); }
@@ -4108,6 +4136,7 @@ async function lerProducaoModeloPeriodo(de,ate){
 // no PDF, marcados como SIMULAÇÃO. Os valores reais continuam na planilha
 // (PRODUTO_CODIGO) — o ↺ volta para eles.
 let ESTEIRA_BASE=null;
+let PREP_PERIODO=null;   // [{data, prep, paralelo}] do getProducaoModeloPeriodo
 function _phEsteiraSync(){
   const vi=document.getElementById('ph-est-vel'), ei=document.getElementById('ph-est-entre');
   if(!vi||!ei) return null;
@@ -4300,7 +4329,7 @@ async function renderModeloPeriodo(){
   const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+TROCA_PREMISSA.minDia+' min/dia de troca de produto, premissa)'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
   // Quantas trocas a linha fez por dia — conta da LINHA inteira, não muda com
   // o filtro de modelo nem com o nível de agrupamento.
-  const tLinha=_phTrocasLinhaTxt(_phTrocasLinha(itens));
+  const tLinha=_phTrocasLinhaTxt(_phPrepInfo(itens,PREP_PERIODO));
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${legenda}`;
 }
 
@@ -4342,7 +4371,7 @@ async function gerarRelatorioProducaoHora(){
   // não tem como se redesenhar depois, e sair com o valor nominal da planilha
   // seria imprimir uma régua diferente da que está na tela.
   await carregarTrocaObs();
-  const tLinha=_phTrocasLinhaTxt(_phTrocasLinha(itens));
+  const tLinha=_phTrocasLinhaTxt(_phPrepInfo(itens,PREP_PERIODO));
   if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
   const {ehFam,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
@@ -4568,7 +4597,7 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px
   </tfoot>
 </table>
 
-${temTeto?_phNotaTrocaHtml(_phTrocasLinha(itens), obsT, false):''}
+${temTeto?_phNotaTrocaHtml(_phPrepInfo(itens,PREP_PERIODO), obsT, false):''}
 ${_rpCascataHtml('CASCATA DO PERÍODO — ONDE FICARAM AS CAIXAS', casc, cascNota)}
 ${cobertura!=null?`<div class="rp-note">${cobertura<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobertura)}</b> do realizado do período${cobertura<80?' — a análise por modelo é uma AMOSTRA, não o período inteiro':''}.</div>`:''}
 ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.round(ganhoDemo))} cx</b> no período se cada modelo repetisse o próprio MELHOR DIA nas mesmas horas (estimativa; melhor dia limitado ao teto físico). É o alvo acionável — o teto da esteira é régua, não meta.</div>`:''}
@@ -4824,7 +4853,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
   </tbody>
 </table>
 
-${temTeto?_phNotaTrocaHtml(_phTrocasLinha(PONTOS_DIA.porHoraModelo||[]), trocaObs(), true):''}
+${temTeto?_phNotaTrocaHtml(_phPrepHoje(), trocaObs(), true):''}
 ${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
 ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
