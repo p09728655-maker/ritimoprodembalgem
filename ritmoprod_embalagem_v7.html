@@ -2147,7 +2147,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.12.0';
+const APP_VER   = '7.12.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4416,7 +4416,6 @@ async function gerarRelatorioProducaoHora(){
   // seria imprimir uma régua diferente da que está na tela.
   await carregarTrocaObs();
   const _tl=_phPrepInfo(itens,PREP_PERIODO);
-  const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
   const {ehFam,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
@@ -4453,6 +4452,10 @@ async function gerarRelatorioProducaoHora(){
   const obsT=trocaObs();
   const minDiaFn=_phMinDia(_tl,obsT);
   const fonteTroca=_phTrocaFonte(_tl,obsT);
+  // O texto das trocas fica AQUI, depois do fonteTroca: lá em cima ele usava a
+  // constante antes de ela existir e o popup do relatório morria antes de
+  // desenhar (a tela não quebrava porque lá a linha já ficava no fim).
+  const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);

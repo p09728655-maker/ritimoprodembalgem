@@ -720,6 +720,24 @@ const semMix = _phAcc(); _phAdd(semMix, { caixas: 50, horas: 1, tetoCxH: 300 });
 ok('backend sem mixMm (versão anterior): simulado desligado, sem chute',
    _phTetoSim(10, 350, _phMixMm(semMix)), 0);
 
+// ── guarda-corpo: constante usada ANTES de existir (TDZ) ─────────────────
+// Foi assim que o relatório do período parou de abrir: a linha do rodapé usava
+// `fonteTroca` dez linhas antes da declaração. O navegador só reclama em tempo
+// de execução — o popup morre sem desenhar nada, e nenhum teste de conta pega.
+console.log('\n── nada de constante usada antes de existir ──');
+[['gerarRelatorioProducaoHora', ['_tl','obsT','minDiaFn','fonteTroca','tLinha']],
+ ['renderModeloPeriodo',        ['_tl','obsT','minDiaFn','fonteTroca','tLinha']],
+ ['calcPorModelo',              ['obsT','_tlHoje','_fonteHoje','horasDia']],
+].forEach(([fn, nomes]) => {
+  const src = pega('function ' + fn + '(');
+  nomes.forEach(n => {
+    const decl = src.indexOf('const ' + n + '=');
+    const antes = decl < 0 ? '' : src.slice(0, decl).replace(/\/\/[^\n]*/g, '');
+    const usada = decl >= 0 && new RegExp('(?<![\\w$.])' + n.replace(/\$/g,'\\$') + '(?![\\w$])').test(antes);
+    ok(fn + ': ' + n + ' só aparece depois de declarada', usada, false);
+  });
+});
+
 console.log('\n── as peças comuns dos relatórios não podem voltar a ser copiadas ──');
 // O desenho do fechamento da semana entra na mesma regra: uma implementação só.
 ok('o cartão do dia a dia é montado num lugar só',
