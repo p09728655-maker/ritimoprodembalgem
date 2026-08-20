@@ -194,7 +194,8 @@ ok('ISO do Apps Script continua funcionando',
 
 console.log('\n── SWOT do relatório de paradas: só o que os dados sustentam ──');
 // Números reais do período 10–14/08: linha rápida (16 < 17,1) mas 5h47m parada.
-const PAR_TROCA=/troca|setup|regulagem|preparaç/i;
+// a regex de troca/setup é a do painel, não uma cópia aqui
+const PAR_TROCA=eval(JS.match(/const PAR_TROCA\s*=\s*(.+);/)[1]);
 eval(pega('function ehSetupParada('));
 const _fmtMinPar=m=>m>=60?Math.floor(m/60)+'h'+String(m%60).padStart(2,'0')+'m':m+' min';
 const stS={dispon:88.6, pctPerd:11.4, totMin:347, totMinNP:301, pecas:805, nParadas:51,
@@ -332,9 +333,9 @@ ok('backend antigo (sem tetoCxH): teto 0, coluna some', _phTeto(semTeto), 0);
 const linha = _phAcc(); _phAdd(linha, mix); _phAdd(linha, semTeto);
 ok('caixas sem teto não diluem o % do teto', Math.round(_phTeto(linha)), 267);
 
-// TETO OPERACIONAL: desconta 1 troca de produto (TEMPO DE TROCA MIN) por dia
-// rodado, diluída nos minutos rodados (pedido do PPCP, 19/08/2026 — 100% sem
-// descontar a troca obrigatória não é régua alcançável).
+// TETO OPERACIONAL: desconta as trocas do produto, diluídas nos minutos
+// rodados (pedido do PPCP, 19/08/2026 — 100% sem descontar a troca obrigatória
+// não é régua alcançável).
 eval(pega('function _phTetoOper('));
 ok('8h em 2 dias: 2 trocas de 5 min saem do teto (300 → 293,75)',
    Math.round(_phTetoOper(300, 8, 2, 5) * 100) / 100, 293.75);
@@ -349,6 +350,108 @@ _phAdd(comTroca, { caixas: 100, horas: 1, tetoCxH: 200, trocaMin: 5 });
 _phAdd(comTroca, { caixas: 100, horas: 1, tetoCxH: 200, trocaMin: 10 });
 ok('a troca do grupo é o maior trocaMin dos itens', comTroca.trocaMin, 10);
 ok('backend antigo: trocaMin fica null (padrão decide depois)', semTeto.trocaMin, null);
+
+// QUANTAS TROCAS — a régua antiga assumia 1 por dia rodado e ficava otimista.
+// Agora sai do log hora a hora: cada vez que o produto ENTRA na linha.
+const TROCA_MIN_PADRAO=Number(JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/)[1]);
+const TROCA_OBS_MIN_N=Number(JS.match(/const TROCA_OBS_MIN_N\s*=\s*(\d+)/)[1]);
+const TROCA_OBS_MAX_MIN=Number(JS.match(/const TROCA_OBS_MAX_MIN\s*=\s*(\d+)/)[1]);
+eval(pega('function _phHoraMin('));
+eval(pega('function _phEntradasDia('));
+eval(pega('function _phTrocasPeriodo('));
+eval(pega('function _phTrocaObs('));
+eval(pega('function _phTroca('));
+const LINHA_DIA=['07:00-08:00','08:00-09:00','09:00-10:00','10:00-11:00','13:00-14:00'];
+ok('rodou direto o dia todo = 1 troca (o setup inicial conta)',
+   _phEntradasDia(LINHA_DIA, LINHA_DIA), 1);
+ok('saiu, outro rodou e ele voltou = 2 trocas',
+   _phEntradasDia(['07:00-08:00','09:00-10:00'], LINHA_DIA), 2);
+ok('entrou depois de outro produto e ficou = 1 troca',
+   _phEntradasDia(['09:00-10:00','10:00-11:00'], LINHA_DIA), 1);
+// O almoço (11:00-12:12) e as paradas não aparecem como hora produzida: sem
+// isso, todo produto pagaria uma troca a mais por dia só por causa do almoço.
+ok('buraco de almoço/parada no meio NÃO é troca',
+   _phEntradasDia(['10:00-11:00','13:00-14:00'], LINHA_DIA), 1);
+ok('voltou três vezes = 3 trocas',
+   _phEntradasDia(['07:00-08:00','09:00-10:00','13:00-14:00'], LINHA_DIA), 3);
+ok('não rodou no dia = 0 trocas', _phEntradasDia([], LINHA_DIA), 0);
+// A ordem vem do horário, não da ordem em que a planilha listou as horas.
+ok('lista fora de ordem não inventa troca',
+   _phEntradasDia(['08:00-09:00','07:00-08:00'], ['09:00-10:00','07:00-08:00','08:00-09:00']), 1);
+// Traço travessão x hífen: normHora resolve — a planilha mistura os dois.
+ok('traço diferente não vira produto diferente',
+   _phEntradasDia(['07:00–08:00'], ['07:00-08:00','08:00-09:00']), 1);
+
+// No período, as trocas somam dia a dia; sem a lista de horas do backend
+// (re-deploy pendente) cada dia rodado conta 1 — exatamente a régua antiga.
+const cellAcc={}, horasLinha={};
+const cel=(k,d,horas)=>{ const a=_phAcc(); _phAdd(a,{caixas:10,horas:horas.length,horasLista:horas}); cellAcc[k+'|'+d]=a;
+  horas.forEach(h=>{ (horasLinha[d]=horasLinha[d]||{})[h]=1; }); };
+cel('A','19/08',['07:00-08:00','08:00-09:00']);
+cel('B','19/08',['09:00-10:00']);
+cel('A','20/08',['07:00-08:00']);
+horasLinha['19/08']['09:00-10:00']=1;
+ok('trocas do período = soma das entradas de cada dia',
+   _phTrocasPeriodo('A',['19/08','20/08'],cellAcc,horasLinha), 2);
+const semLista={}; const aSL=_phAcc(); _phAdd(aSL,{caixas:10,horas:2}); semLista['A|19/08']=aSL;
+ok('backend antigo: 1 troca por dia rodado (a régua antiga)',
+   _phTrocasPeriodo('A',['19/08'],semLista,{}), 1);
+ok('dia sem produção do grupo não conta troca',
+   _phTrocasPeriodo('B',['19/08','20/08'],cellAcc,horasLinha), 1);
+
+// QUANTAS POR DIA — a pergunta do PPCP. É da LINHA inteira: soma as entradas
+// de cada produto no nível mais fino do log (modelo · produto · cor).
+eval(pega('function _phTrocasLinha('));
+const itLog=[
+  // 19/08: MADERO 07h, VIVARE 08h, MADERO volta 09h → 3 trocas no dia
+  {data:'19/08',modelo:'A',nome:'MADERO',cor:'OFF WHITE',horasLista:['07:00-08:00','09:00-10:00']},
+  {data:'19/08',modelo:'B',nome:'VIVARE',cor:'BRANCO',   horasLista:['08:00-09:00']},
+  // 20/08: MADERO o dia todo, mas em duas cores → a cor também é troca
+  {data:'20/08',modelo:'A',nome:'MADERO',cor:'OFF WHITE',horasLista:['07:00-08:00']},
+  {data:'20/08',modelo:'A',nome:'MADERO',cor:'CUMARU',   horasLista:['08:00-09:00']},
+];
+const tl=_phTrocasLinha(itLog);
+ok('trocas da linha no período', tl.trocas, 5);
+ok('em quantos dias', tl.dias, 2);
+ok('média por dia', tl.porDia, 2.5);
+// Mesma função serve o dia (porHoraModelo manda hora avulsa, não lista).
+ok('serve também a lista do dia (hora avulsa)',
+   _phTrocasLinha([{hora:'07:00-08:00',modelo:'A',nome:'MADERO',cor:'OFF WHITE'},
+                   {hora:'08:00-09:00',modelo:'B',nome:'VIVARE',cor:'BRANCO'}]).trocas, 2);
+ok('sem lista de horas (backend antigo) não inventa troca', _phTrocasLinha([{data:'19/08',modelo:'A',nome:'X'}]).trocas, 0);
+
+// QUANTO DURA — média das paradas de TROCA/SETUP apontadas. Aparada: fora a
+// mais curta e a mais longa, senão uma parada esquecida define o padrão.
+const parTroca=[
+  {tipo:'Troca de produto', ini:'07:10', fim:'07:20'},   // 10
+  {tipo:'Setup',            ini:'09:00', fim:'09:15'},   // 15
+  {tipo:'Troca de plástico',ini:'11:00', fim:'11:12'},   // 12
+  {tipo:'Regulagem',        ini:'14:00', fim:'14:40'},   // 40 (maior, sai)
+  {tipo:'Troca de produto',ini:'16:00', fim:'16:05'},    // 5  (menor, sai)
+  {tipo:'Manutenção',       ini:'08:00', fim:'08:30'},   // não é troca
+  {tipo:'Troca de produto', ini:'15:00', fim:''},        // em andamento, sem fim
+];
+const obs=_phTrocaObs(parTroca);
+ok('só as paradas de troca entram', obs.n, 5);
+ok('média aparada de 10/12/15 = 12,3 min', obs.min, 12.3);
+ok('poucas amostras não viram média (devolve 0)',
+   _phTrocaObs([{tipo:'Troca', ini:'07:00', fim:'07:10'}]).min, 0);
+ok('parada esquecida aberta o dia todo não vira "a troca leva 5 h"',
+   _phTrocaObs([{tipo:'Troca',ini:'07:00',fim:'07:10'},{tipo:'Troca',ini:'08:00',fim:'08:12'},
+                {tipo:'Troca',ini:'09:00',fim:'09:14'},{tipo:'Troca',ini:'10:00',fim:'15:00'}]).n, 3);
+ok('troca que vira a meia-noite não fica negativa',
+   _phTrocaObs([{tipo:'Troca',ini:'23:50',fim:'00:05'},{tipo:'Troca',ini:'07:00',fim:'07:10'},
+                {tipo:'Troca',ini:'08:00',fim:'08:12'}]).min, 12);
+
+// A ordem da duração: medido → coluna da planilha → padrão do painel.
+ok('medido nas paradas ganha da coluna', _phTroca({trocaMin:5}, {min:12.3,n:5}), 12.3);
+ok('sem medição vale a coluna TEMPO DE TROCA MIN', _phTroca({trocaMin:8}, {min:0,n:1}), 8);
+ok('sem coluna (backend antigo) vale o padrão do painel',
+   _phTroca({trocaMin:null}, null), TROCA_MIN_PADRAO);
+// O efeito no teto: 2 trocas de 12,3 min em 8h tiram 5% do teto, contra 1% da
+// régua antiga de 1 troca de 5 min por dia.
+ok('duas trocas medidas derrubam mais o teto que uma nominal',
+   Math.round(_phTetoOper(300, 8, 2, 12.3)), 285);
 
 // COR da MÉD.PERÍODO: verde e ▼ na mesma linha se contradiziam — "tudo certo"
 // ao lado de "abaixo do ideal". Verde passou a exigir as DUAS coisas, e 1 dia

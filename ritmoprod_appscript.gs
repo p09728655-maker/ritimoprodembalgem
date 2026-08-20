@@ -293,6 +293,73 @@ function _tetoEsteiraCxH(prod) {
   return vel * 60000 / (medida + entre);
 }
 
+// ── TROCAS: quantas foram e quanto durou cada uma ─────────────────────────
+// Mesma régua do painel (_phEntradasDia / _phTrocaObs no ritmoprod_embalagem_v7),
+// escrita aqui porque o simulador do editor roda no Apps Script, longe do HTML.
+// Se mudar uma, mudar a outra — produto-cor.test.js compara as duas.
+const PAR_TROCA_RE = /troca|setup|regulagem|preparaç/i;
+const TROCA_OBS_MIN_N   = 3;    // menos que isso é anedota, não média
+const TROCA_OBS_MAX_MIN = 240;  // acima disso é apontamento esquecido, não troca
+
+// Quantas vezes o grupo ENTROU na linha no dia = quantas trocas custou. Entrou
+// quando a hora OCUPADA anterior da linha era de outro produto: rodou direto =
+// 1 (o setup inicial conta); saiu, outro rodou e ele voltou = 2. Almoço e
+// parada no meio não contam — a hora ocupada anterior continua sendo dele.
+function _entradasDia(horasGrupo, horasDia) {
+  const G = {};
+  (horasGrupo || []).forEach(function (h) { G[String(h)] = 1; });
+  if (!Object.keys(G).length) return 0;
+  const ord = (horasDia || []).slice().sort(function (a, b) {
+    return (_heMinutosDaHora(a) || 0) - (_heMinutosDaHora(b) || 0);
+  });
+  let n = 0, ant = null;
+  ord.forEach(function (h) { if (G[h] && (ant === null || !G[ant])) n++; ant = h; });
+  return Math.max(1, n);
+}
+
+// Quantas trocas a LINHA fez, dia a dia — a pergunta do PPCP em 20/08/2026
+// ("quantas trocas deram na média por dia?"). Soma as entradas de cada produto
+// no nível mais fino do log (modelo · produto · cor): mudar a cor também troca
+// o que está na esteira. Mesma régua do _phTrocasLinha do painel.
+function _trocasLinhaPorDia(itens) {
+  const porDia = {};
+  (itens || []).forEach(function (it) {
+    const d = it.data, k = it.modelo + '|' + (it.nome || '') + '|' + (it.cor || '');
+    const x = porDia[d] = porDia[d] || { linha: {}, grupos: {} };
+    (it.horasLista || []).forEach(function (h) {
+      x.linha[h] = 1; (x.grupos[k] = x.grupos[k] || {})[h] = 1;
+    });
+  });
+  const dias = Object.keys(porDia).filter(function (d) { return Object.keys(porDia[d].linha).length; });
+  let tot = 0;
+  dias.forEach(function (d) {
+    const x = porDia[d];
+    Object.keys(x.grupos).forEach(function (k) { tot += _entradasDia(Object.keys(x.grupos[k]), Object.keys(x.linha)); });
+  });
+  return { trocas: tot, dias: dias.length, porDia: dias.length ? Math.round(tot / dias.length * 10) / 10 : 0 };
+}
+
+// Duração média da troca, medida nas paradas de TROCA/SETUP apontadas. Média
+// APARADA (fora a mais curta e a mais longa): parada esquecida aberta a manhã
+// inteira não pode virar "a troca leva 3 h". Sem FIM não tem duração.
+function _trocaObsMin(paradas) {
+  const durs = [];
+  (paradas || []).forEach(function (p) {
+    if (!p || !PAR_TROCA_RE.test(String(p.tipo || ''))) return;
+    if (!p.ini || !p.fim) return;
+    const i = _heMinutosDaHora(p.ini), f = _heMinutosDaHora(p.fim);
+    if (i === null || f === null) return;
+    let d = f - i; if (d < 0) d += 1440;
+    if (!(d > 0) || d > TROCA_OBS_MAX_MIN) return;
+    durs.push(d);
+  });
+  if (durs.length < TROCA_OBS_MIN_N) return { min: 0, n: durs.length };
+  durs.sort(function (a, b) { return a - b; });
+  const us = durs.slice(1, -1);
+  const soma = us.reduce(function (a, b) { return a + b; }, 0);
+  return { min: Math.round(soma / us.length * 10) / 10, n: durs.length, usadas: us.length };
+}
+
 // ════════════════════════════════════════════════════════
 // SIMULAÇÃO — ESTEIRA × PRODUÇÃO POR MODELO (rodar no editor, não grava)
 // ════════════════════════════════════════════════════════
@@ -318,11 +385,22 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const eS = (entreSim != null && Number(entreSim) >= 0) ? Number(entreSim) : base.entre;
   if (simulando) Logger.log('⚠ SIMULAÇÃO ESTEIRA: ' + vS + ' m/min · ' + eS + ' mm entre peças (real na planilha: ' + base.vel + ' · ' + base.entre + ')');
 
+  // Quanto dura uma troca, medido nas paradas apontadas do MESMO período —
+  // o TEMPO DE TROCA MIN do catálogo é valor nominal e vira só a rede.
+  const obsTroca = _trocaObsMin((getParadasPeriodo({ de: de }) || {}).paradas);
+
   const grupos = {};
+  const ocup = {};   // ocupação da LINHA por dia: {data: {hora: 1}}
   itens.forEach(function (it) {
+    (it.horasLista || []).forEach(function (h) { (ocup[it.data] = ocup[it.data] || {})[h] = 1; });
     const k = it.modelo + '|' + (it.nome || '');
-    const g = grupos[k] = grupos[k] || { nome: (it.nome || it.modelo), dias: [], cxTeto: 0, hTeto: 0, mmCx: 0, caixas: 0, horasTot: 0, troca: 0 };
+    const g = grupos[k] = grupos[k] || { nome: (it.nome || it.modelo), dias: [], datas: {}, horasDia: {}, cxTeto: 0, hTeto: 0, mmCx: 0, caixas: 0, horasTot: 0, troca: 0 };
     g.dias.push(it);
+    // O item vem por DATA × MODELO × PRODUTO × COR: o mesmo produto em duas
+    // cores no mesmo dia são dois itens. Contar g.dias.length como "dias"
+    // inflava o nº de dias e, com ele, o desconto de troca.
+    g.datas[it.data] = 1;
+    (it.horasLista || []).forEach(function (h) { (g.horasDia[it.data] = g.horasDia[it.data] || {})[h] = 1; });
     g.caixas += it.caixas;
     g.horasTot += it.horas || 0;
     g.troca = Math.max(g.troca, Number(it.trocaMin) || 0);
@@ -343,13 +421,19 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
       const mix = g.cxTeto > 0 ? g.mmCx / g.cxTeto : 0;
       teto = (vS > 0 && mix > 0) ? vS * 60000 / (mix + eS) : 0;
     }
-    // Teto OPERACIONAL: desconta 1 troca (TEMPO DE TROCA MIN) por dia rodado,
-    // diluída nos minutos rodados — MESMA régua do _phTetoOper do painel. O
-    // check de dia IMPOSSÍVEL continua no teto FÍSICO (l.teto): a troca não
-    // muda o que fisicamente não cabe na esteira.
+    // Teto OPERACIONAL: desconta as trocas que o produto REALMENTE custou —
+    // quantas vezes entrou na linha, dia a dia — pelo tempo médio medido nas
+    // paradas de troca. MESMA régua do _phTetoOper do painel. O check de dia
+    // IMPOSSÍVEL continua no teto FÍSICO (l.teto): a troca não muda o que
+    // fisicamente não cabe na esteira.
+    const nDiasG = Object.keys(g.datas).length;
+    const trocas = Object.keys(g.horasDia).reduce(function (n, d) {
+      return n + _entradasDia(Object.keys(g.horasDia[d]), Object.keys(ocup[d] || {}));
+    }, 0) || nDiasG;
+    const trocaMin = obsTroca.min > 0 ? obsTroca.min : g.troca;
     const minTot = g.horasTot * 60;
-    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - g.dias.length * g.troca) / minTot : teto;
-    return { nome: g.nome, n: g.dias.length, caixas: g.caixas, aparada: aparada, melhor: melhor,
+    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - trocas * trocaMin) / minTot : teto;
+    return { nome: g.nome, n: nDiasG, trocas: trocas, caixas: g.caixas, aparada: aparada, melhor: melhor,
              teto: teto, tetoOper: tetoOper,
              pctA: tetoOper > 0 ? aparada / tetoOper * 100 : 0,
              pctM: tetoOper > 0 ? melhor / tetoOper * 100 : 0, dias: ord };
@@ -358,10 +442,13 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };
   const D = function (v, n) { v = String(v); while (v.length < n) v = ' ' + v; return v; };
   if (linhas.some(function (l) { return l.tetoOper > 0 && l.tetoOper < l.teto; }))
-    Logger.log('Teto/%teto já descontam a troca do produto (TEMPO DE TROCA MIN, 1× por dia rodado).');
-  Logger.log(P('MODELO', 34) + D('dias', 5) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
+    Logger.log('Teto/%teto já descontam as TROCAS do produto — a coluna "trocas" é quantas vezes ele entrou na linha, a ' +
+               (obsTroca.min > 0
+                 ? obsTroca.min + ' min por troca (média aparada de ' + obsTroca.n + ' parada(s) de troca apontada(s) no período)'
+                 : 'TEMPO DE TROCA MIN do catálogo — nenhuma parada de troca apontada no período para medir'));
+  Logger.log(P('MODELO', 34) + D('dias', 5) + D('trocas', 7) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
   linhas.forEach(function (l) {
-    Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
+    Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.trocas, 7) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
                D(l.tetoOper > 0 ? Math.round(l.tetoOper) : '—', 7) + D(l.tetoOper > 0 ? Math.round(l.pctA) + '%' : '—', 7) +
                D(l.tetoOper > 0 ? Math.round(l.pctM) + '%' : '—', 9));
   });
@@ -394,6 +481,12 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   // único lançamento dobrado diria que a esteira está no limite.
   const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
   const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
+  const tLinha = _trocasLinhaPorDia(itens);
+  if (tLinha.trocas)
+    Logger.log('TROCAS: a linha trocou ' + tLinha.trocas + '× em ' + tLinha.dias + ' dia(s) — média de ' +
+               tLinha.porDia + ' troca(s)/dia' +
+               (obsTroca.min > 0 ? ' a ' + obsTroca.min + ' min cada (medido nas paradas apontadas) = ' +
+                 Math.round(tLinha.porDia * obsTroca.min) + ' min/dia de esteira parada em troca' : ''));
   Logger.log('RESUMO: ' + linhas.length + ' produto(s) em ' + nDias + ' dias · % do teto (aparada) de ' +
              Math.round(comTeto[comTeto.length - 1].pctA) + '% a ' + Math.round(comTeto[0].pctA) + '%' +
              ' · melhor dia já chegou a ' + Math.round(melhorPct.pctM) + '% do teto (' + melhorPct.nome + ')' +
@@ -2004,6 +2097,11 @@ function getProducaoModeloPeriodo(p) {
              tetoCxH: it.hTeto > 0 ? Math.round(it.cxTeto / it.hTeto) : 0,
              mixMm: it.cxTeto > 0 ? Math.round(it.mmCx / it.cxTeto) : 0,
              trocaMin: it.troca,
+             // Os RÓTULOS das horas em que o item rodou. É com eles que o painel
+             // conta quantas VEZES o produto entrou na linha no dia — ou seja,
+             // quantas trocas ele custou. O número de horas sozinho não separa
+             // "rodou direto" de "saiu e voltou depois de outro produto".
+             horasLista: Object.keys(it.horasSet).sort(),
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;
