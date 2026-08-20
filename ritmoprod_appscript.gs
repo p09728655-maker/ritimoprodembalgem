@@ -410,7 +410,28 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
 
   const linhas = Object.keys(grupos).map(function (k) {
     const g = grupos[k];
-    const ord = g.dias.slice().sort(function (a, b) { return a.mediaHora - b.mediaHora; });
+    // Um item por DATA. O log vem por DATA × MODELO × PRODUTO × COR, então o
+    // mesmo produto em duas cores no mesmo dia chegava como DOIS "dias": a
+    // aparada podava cor em vez de dia e o log saía com "1 dia" ao lado de um
+    // "melhor dia" diferente da média — leitura impossível. O painel monta a
+    // célula do comparativo somando as cores do dia (_phMediaAparada roda sobre
+    // os dias), e aqui tem que enxergar a mesma coisa.
+    const porData = {};
+    g.dias.forEach(function (it) {
+      const d = porData[it.data] = porData[it.data] || { data: it.data, caixas: 0, horas: 0, hSet: {}, hSoma: 0 };
+      d.caixas += it.caixas;
+      d.hSoma  += it.horas || 0;
+      (it.horasLista || []).forEach(function (h) { d.hSet[h] = 1; });
+    });
+    const dias = Object.keys(porData).map(function (dk) {
+      const d = porData[dk];
+      // Horas do dia = horas DISTINTAS (duas cores na mesma hora são uma hora
+      // de esteira). Sem horasLista (backend antigo) sobra a soma.
+      d.horas = Object.keys(d.hSet).length || d.hSoma;
+      d.mediaHora = d.horas > 0 ? Math.round(d.caixas / d.horas) : 0;
+      return d;
+    });
+    const ord = dias.slice().sort(function (a, b) { return a.mediaHora - b.mediaHora; });
     const usados = ord.length >= 3 ? ord.slice(1, -1) : ord;
     let cx = 0, h = 0;
     usados.forEach(function (d) { cx += d.caixas; h += d.horas; });
@@ -426,17 +447,20 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
     // paradas de troca. MESMA régua do _phTetoOper do painel. O check de dia
     // IMPOSSÍVEL continua no teto FÍSICO (l.teto): a troca não muda o que
     // fisicamente não cabe na esteira.
-    const nDiasG = Object.keys(g.datas).length;
+    const nDiasG = dias.length;
+    // Horas rodadas = soma das horas distintas de cada dia (o g.horasTot somava
+    // item a item e contava duas vezes a hora em que duas cores rodaram).
+    const horasTot = dias.reduce(function (a, d) { return a + d.horas; }, 0);
     const trocas = Object.keys(g.horasDia).reduce(function (n, d) {
       return n + _entradasDia(Object.keys(g.horasDia[d]), Object.keys(ocup[d] || {}));
     }, 0) || nDiasG;
     const trocaMin = obsTroca.min > 0 ? obsTroca.min : g.troca;
-    const minTot = g.horasTot * 60;
+    const minTot = horasTot * 60;
     const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - trocas * trocaMin) / minTot : teto;
     return { nome: g.nome, n: nDiasG, trocas: trocas, caixas: g.caixas, aparada: aparada, melhor: melhor,
-             teto: teto, tetoOper: tetoOper,
+             teto: teto, tetoOper: tetoOper, dias: dias,
              pctA: tetoOper > 0 ? aparada / tetoOper * 100 : 0,
-             pctM: tetoOper > 0 ? melhor / tetoOper * 100 : 0, dias: ord };
+             pctM: tetoOper > 0 ? melhor / tetoOper * 100 : 0 };
   }).sort(function (a, b) { return b.pctA - a.pctA || b.caixas - a.caixas; });
 
   const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };

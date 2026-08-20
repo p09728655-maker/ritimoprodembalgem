@@ -443,6 +443,22 @@ ok('troca que vira a meia-noite não fica negativa',
    _phTrocaObs([{tipo:'Troca',ini:'23:50',fim:'00:05'},{tipo:'Troca',ini:'07:00',fim:'07:10'},
                 {tipo:'Troca',ini:'08:00',fim:'08:12'}]).min, 12);
 
+// A EXPLICAÇÃO VAI IMPRESSA: quem lê o PDF na reunião não tem tooltip.
+const TROCA_OBS_DIAS=Number(JS.match(/const TROCA_OBS_DIAS\s*=\s*(\d+)/)[1]);
+eval(pega('function _phNotaTrocaHtml('));
+const notaPer=_phNotaTrocaHtml({trocas:47,dias:22,porDia:2.1},{min:12.3,n:9},false);
+ok('a nota impressa diz quantas trocas por dia',
+   /média de <b>2,1 troca\(s\)\/dia<\/b>/.test(notaPer), true);
+ok('e de onde saiu a duração', /<b>9<\/b> parada\(s\) de TROCA\/SETUP/.test(notaPer), true);
+ok('e a janela em que mediu', new RegExp('últimos '+TROCA_OBS_DIAS+' dias').test(notaPer), true);
+ok('avisa o que a leitura NÃO enxerga', /dentro da mesma hora/.test(notaPer), true);
+ok('sem medição não finge que mediu',
+   /<b>não medida<\/b>/.test(_phNotaTrocaHtml({trocas:5,dias:2,porDia:2.5},null,false)), true);
+ok('no relatório do dia a frase é de hoje',
+   /Hoje a linha trocou <b>6×<\/b>/.test(_phNotaTrocaHtml({trocas:6,dias:1,porDia:6},{min:12,n:9},true)), true);
+ok('sem apontamento hora a hora, explica por que não conta',
+   /cada dia rodado conta 1 troca/.test(_phNotaTrocaHtml({trocas:0,dias:0,porDia:0},null,false)), true);
+
 // A ordem da duração: medido → coluna da planilha → padrão do painel.
 ok('medido nas paradas ganha da coluna', _phTroca({trocaMin:5}, {min:12.3,n:5}), 12.3);
 ok('sem medição vale a coluna TEMPO DE TROCA MIN', _phTroca({trocaMin:8}, {min:0,n:1}), 8);
@@ -577,6 +593,13 @@ ok('botão de imprimir declarado uma única vez',
 ok('logo com URL absoluta declarado uma única vez',
    (JS.match(/new URL\('patrimar-logo\.png'/g) || []).length, 1);
 
+// A nota da troca é a MESMA nos dois relatórios impressos (dia e período): se
+// virar duas cópias, a primeira correção conserta um e esquece o outro — foi a
+// história do cabeçalho no #204/#205.
+ok('a explicação da troca é montada num lugar só',
+   (JS.match(/function _phNotaTrocaHtml\(/g) || []).length, 1);
+ok('e os dois relatórios impressos chamam ela',
+   (JS.match(/_phNotaTrocaHtml\(/g) || []).length, 3);
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

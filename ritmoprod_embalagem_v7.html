@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.9.0';
+const APP_VER   = '7.9.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3871,6 +3871,29 @@ function _phTrocasLinhaTxt(tl){
   if(!tl||!tl.dias||!tl.trocas) return '';
   return `linha trocou ${fmtN(tl.trocas)}× em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)`;
 }
+// A EXPLICAÇÃO DA CONTA VAI IMPRESSA (pedido do PPCP, 20/08/2026). Quem lê o
+// PDF numa reunião não tem tooltip nem código à mão: se o % do teto encolheu
+// porque a troca entrou na conta, o papel tem que dizer QUANTAS trocas, DE
+// ONDE saiu a duração e o que a leitura NÃO enxerga. Uma implementação só —
+// o relatório do dia e o do período imprimem o mesmo texto (só muda "hoje" ×
+// "no período"), e o CSS vai inline porque cada relatório tem a folha dele.
+function _phNotaTrocaHtml(tl, obs, ehDia){
+  const medido=obs&&obs.n>0&&obs.min>0;
+  const quantas = (tl&&tl.trocas)
+    ? (ehDia ? `Hoje a linha trocou <b>${fmtN(tl.trocas)}×</b> até agora.`
+             : `No período a linha trocou <b>${fmtN(tl.trocas)}×</b> em ${tl.dias} dia${tl.dias===1?'':'s'} — média de <b>${fmtN(tl.porDia)} troca(s)/dia</b>.`)
+    : `A contagem por produto depende do apontamento hora a hora; sem ele, cada dia rodado conta 1 troca.`;
+  const dur = medido
+    ? `média de <b>${fmtN(obs.min)} min</b>, tirada de <b>${obs.n}</b> parada(s) de TROCA/SETUP apontada(s) nos últimos ${TROCA_OBS_DIAS} dias (fora a mais curta, a mais longa e as ainda abertas).`
+    : `<b>não medida</b> — não houve parada de TROCA/SETUP apontada suficiente no período, então vale o TEMPO DE TROCA MIN cadastrado na planilha.`;
+  return `<div style="margin-top:12px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #718096;border-radius:4px;font-size:8.5px;color:#4a5568;line-height:1.65">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#1a1a2e;margin-bottom:4px">COMO A TROCA ENTROU NA CONTA</div>
+  <div><b>QUANTAS</b> — conta 1 troca cada vez que o produto <b>entra na linha</b>, lido no apontamento hora a hora: rodou direto = 1; saiu, outro produto rodou e ele voltou = 2. Almoço e parada no meio <b>não</b> contam (antes e depois é o mesmo produto). Trocar a <b>cor</b> conta, que a esteira também para. ${quantas}</div>
+  <div><b>QUANTO DURA</b> — ${dur}</div>
+  <div><b>NO TETO</b> — o % é a média cx/h dividida pelo teto físico da esteira já <b>sem o tempo de troca</b>: <span style="font-family:'IBM Plex Mono',monospace">teto × (minutos rodados − trocas × duração) ÷ minutos rodados</span>. Por isso o % ficou menor que na régua antiga, que supunha 1 troca por dia a 5 min.</div>
+  <div><b>O QUE NÃO ENXERGA</b> — caixa lançada <b>sem produto</b> selecionado no app; troca e retorno <b>dentro da mesma hora</b> (a leitura é por hora, conta como uma só); e parada de troca <b>não apontada</b>, que não entra na média de duração.</div>
+</div>`;
+}
 // Quanto dura uma troca, medido nas paradas de TROCA/SETUP (ehSetupParada é a
 // MESMA regra do SWOT de paradas). Média APARADA — fora a mais curta e a mais
 // longa, a mesma poda do _phMediaAparada: parada esquecida aberta a manhã
@@ -4470,6 +4493,7 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:9px;co
   </tfoot>
 </table>
 
+${temTeto?_phNotaTrocaHtml(_phTrocasLinha(itens), obsT, false):''}
 ${_rpCascataHtml('CASCATA DO PERÍODO — ONDE FICARAM AS CAIXAS', casc, cascNota)}
 ${cobertura!=null?`<div class="rp-note">${cobertura<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobertura)}</b> do realizado do período${cobertura<80?' — a análise por modelo é uma AMOSTRA, não o período inteiro':''}.</div>`:''}
 ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.round(ganhoDemo))} cx</b> no período se cada modelo repetisse o próprio MELHOR DIA nas mesmas horas (estimativa; melhor dia limitado ao teto físico). É o alvo acionável — o teto da esteira é régua, não meta.</div>`:''}
@@ -4598,6 +4622,9 @@ async function gerarRelatorioProducaoModelo(){
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
+  // Mede a duração real da troca antes de montar: o PDF não se redesenha, e
+  // sair com o valor nominal da planilha imprimiria régua diferente da tela.
+  await carregarTrocaObs();
   const {linhas,totCx,totPeso,totPts,temCor,temTeto}=calcPorModelo();
   if(!linhas.length){
     win.close();
@@ -4722,6 +4749,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
   </tbody>
 </table>
 
+${temTeto?_phNotaTrocaHtml(_phTrocasLinha(PONTOS_DIA.porHoraModelo||[]), trocaObs(), true):''}
 ${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
 ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
