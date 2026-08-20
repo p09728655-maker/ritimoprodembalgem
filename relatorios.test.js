@@ -356,7 +356,10 @@ ok('backend antigo: trocaMin fica null (padrão decide depois)', semTeto.trocaMi
 const TROCA_MIN_PADRAO=Number(JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/)[1]);
 const TROCA_OBS_MIN_N=Number(JS.match(/const TROCA_OBS_MIN_N\s*=\s*(\d+)/)[1]);
 const TROCA_OBS_MAX_MIN=Number(JS.match(/const TROCA_OBS_MAX_MIN\s*=\s*(\d+)/)[1]);
+const TROCA_PREMISSA=eval('('+JS.match(/const TROCA_PREMISSA\s*=\s*(\{[^}]*\})/)[1]+')');
 eval(pega('function _phHoraMin('));
+eval(pega('function _phMinTrocaGrupo('));
+eval(pega('function _phMinTrocaDia('));
 eval(pega('function _phEntradasDia('));
 eval(pega('function _phTrocasPeriodo('));
 eval(pega('function _phTrocaObs('));
@@ -457,27 +460,56 @@ ok('troca que vira a meia-noite não fica negativa',
    _phTrocaObs([{tipo:'Troca',ini:'23:50',fim:'00:05'},{tipo:'Troca',ini:'07:00',fim:'07:10'},
                 {tipo:'Troca',ini:'08:00',fim:'08:12'}]).min, 12);
 
-// A EXPLICAÇÃO VAI IMPRESSA: quem lê o PDF na reunião não tem tooltip.
+// A EXPLICAÇÃO VAI IMPRESSA: quem lê o PDF na reunião não tem tooltip. E ela
+// tem que deixar claro que o número é PREMISSA, não medição — senão o papel
+// afirma mais do que sabe.
 const TROCA_OBS_DIAS=Number(JS.match(/const TROCA_OBS_DIAS\s*=\s*(\d+)/)[1]);
 eval(pega('function _phNotaTrocaHtml('));
 const notaPer=_phNotaTrocaHtml({trocas:47,eventos:28,dias:22,porDia:2.1,evPorDia:1.3},{min:12.3,n:9},false);
-ok('e separa parada de esteira de preparação',
-   /viraram <b>1,3 parada\(s\) de esteira por dia<\/b>/.test(notaPer), true);
-ok('e explica os dois lados da esteira', /dois lados/.test(notaPer), true);
-ok('e avisa que não sabe o lado da parada', /em qual <b>lado<\/b>/.test(notaPer), true);
-ok('a nota impressa diz quantas preparações por dia',
-   /<b>47 preparação\(ões\)<\/b>/.test(notaPer), true);
-ok('e de onde saiu a duração', /<b>9<\/b> parada\(s\) de TROCA\/SETUP/.test(notaPer), true);
-ok('e a janela em que mediu', new RegExp('últimos '+TROCA_OBS_DIAS+' dias').test(notaPer), true);
-ok('avisa o que a leitura NÃO enxerga', /dentro da mesma hora/.test(notaPer), true);
-ok('sem medição não finge que mediu',
-   /<b>não medida<\/b>/.test(_phNotaTrocaHtml({trocas:5,dias:2,porDia:2.5},null,false)), true);
+ok('a nota impressa abre pela premissa',
+   /<b>30 min por dia<\/b> de troca de produto \(6 trocas × 5 min\)/.test(notaPer), true);
+ok('e diz, com todas as letras, que é premissa e não medição',
+   /<b>premissa, não medição<\/b>/.test(notaPer), true);
+ok('explica o rateio pelo tempo de esteira', /mesmo percentual para todos<\/b>/.test(notaPer), true);
+ok('traz a fórmula do teto', /minutos rodados − minutos de troca/.test(notaPer), true);
+ok('e o que o apontamento mostra, para conferir a premissa',
+   /<b>2,1<\/b> preparação\(ões\)\/dia/.test(notaPer)&&/<b>12,3 min<\/b> em média/.test(notaPer), true);
+ok('com o convite a rever a premissa se descolar',
+   /rever a premissa/.test(notaPer), true);
+ok('avisa o que a leitura NÃO enxerga', /em qual <b>posto<\/b>/.test(notaPer), true);
+ok('sem apontamento, não inventa conferência',
+   /ainda não há apontamento suficiente/.test(_phNotaTrocaHtml(null,null,false)), true);
 ok('no relatório do dia a frase é de hoje',
-   /Hoje foram <b>6 preparação\(ões\)<\/b>/.test(_phNotaTrocaHtml({trocas:6,dias:1,porDia:6},{min:12,n:9},true)), true);
-ok('sem apontamento hora a hora, explica por que não conta',
-   /cada dia rodado conta 1 troca/.test(_phNotaTrocaHtml({trocas:0,dias:0,porDia:0},null,false)), true);
+   /hoje foram <b>6<\/b> preparação/.test(_phNotaTrocaHtml({trocas:6,dias:1,porDia:6},{min:12,n:9},true)), true);
 
-// A ordem da duração: medido → coluna da planilha → padrão do painel.
+// A PREMISSA É A RÉGUA: 30 min/dia de troca de produto, rateados entre os
+// produtos pelo tempo de esteira. Os 30 min são da LINHA — quem ocupou metade
+// do dia paga metade.
+ok('a premissa combinada com o PPCP', [TROCA_PREMISSA.minDia,TROCA_PREMISSA.trocasDia,TROCA_PREMISSA.min], [30,6,5]);
+ok('quem ocupou a linha inteira no dia paga os 30 min',
+   _phMinTrocaDia(['07:00-08:00','08:00-09:00'],['07:00-08:00','08:00-09:00']), 30);
+ok('quem ocupou 2 das 9 horas paga a fatia',
+   Math.round(_phMinTrocaDia(['07:00-08:00','08:00-09:00'],
+     ['07:00-08:00','08:00-09:00','09:00-10:00','10:00-11:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'])*10)/10, 6.7);
+ok('sem lista de horas cai nos 5 min do dia (régua conservadora)',
+   _phMinTrocaDia([],[]), TROCA_PREMISSA.min);
+// O rateio dá o MESMO percentual para todos — é o que faz a régua ser justa
+// entre quem rodou o dia todo e quem entrou por uma hora.
+const linhaDia9=['07:00-08:00','08:00-09:00','09:00-10:00','10:00-11:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00','17:00-18:00'];
+const pctGrande=_phTetoOper(300,8,1,_phMinTrocaDia(linhaDia9.slice(0,8),linhaDia9))/300;
+const pctPequeno=_phTetoOper(300,1,1,_phMinTrocaDia(linhaDia9.slice(0,1),linhaDia9))/300;
+ok('mesma fatia do teto para quem rodou 8 h e para quem rodou 1 h',
+   [Math.round(pctGrande*1000),Math.round(pctPequeno*1000)], [944,944]);
+const cellPrem={}, linhaPrem={};
+const celP=(k,d,horas,todas)=>{ const a=_phAcc(); _phAdd(a,{caixas:10,horas:horas.length,horasLista:horas}); cellPrem[k+'|'+d]=a;
+  todas.forEach(h=>{ (linhaPrem[d]=linhaPrem[d]||{})[h]=1; }); };
+celP('A','19/08',['07:00-08:00','08:00-09:00'],linhaDia9);
+celP('A','20/08',['07:00-08:00'],linhaDia9);
+ok('no período os minutos somam dia a dia (6,7 + 3,3)',
+   _phMinTrocaGrupo('A',['19/08','20/08'],cellPrem,linhaPrem), 10);
+
+// A duração medida virou INFORMAÇÃO: a ordem abaixo alimenta a nota de
+// conferência, não mais o teto.
 ok('medido nas paradas ganha da coluna', _phTroca({trocaMin:5}, {min:12.3,n:5}), 12.3);
 ok('sem medição vale a coluna TEMPO DE TROCA MIN', _phTroca({trocaMin:8}, {min:0,n:1}), 8);
 ok('sem coluna (backend antigo) vale o padrão do painel',

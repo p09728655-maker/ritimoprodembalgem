@@ -204,6 +204,8 @@ eval(pega(JS, 'function _phTetoOper('));
 eval(pega(JS, 'function _phTroca('));
 eval(pega(JS, 'function _phHoraMin('));
 eval(pega(JS, 'function _phEntradasDia('));
+const TROCA_PREMISSA=eval('('+JS.match(/const TROCA_PREMISSA\s*=\s*(\{[^}]*\})/)[1]+')');
+eval(pega(JS, 'function _phMinTrocaDia('));
 // o valor real do padrão de troca, extraído do próprio painel (não duplicar 5 aqui)
 const TROCA_MIN_PADRAO = Number((JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/) || [])[1]);
 // sem medição das paradas (é o caso do teste): a régua cai no valor da planilha
@@ -217,11 +219,13 @@ ok('e aparecem na coluna COR', r.linhas[0].cor, 'CUMARU · OFF WHITE');
 ok('peso continua saindo do código, só somado depois', r.linhas[0].pesoKg, 1095);
 ok('a coluna COR entra quando há cor', r.temCor, true);
 ok('o teto do dia acompanha (mesma régua do período)', Math.round(r.linhas[0].teto), 376);
-// LUNA 670 rodou 07:00 e 08:00 SEGUIDAS: entrou na linha uma vez só, então é
-// 1 troca de 5 min (padrão, backend sem trocaMin) diluída em 120 min →
-// 376 × 115/120 = 360. O físico (l.teto) fica intacto.
-ok('o teto exibido desconta a troca do dia (376 → 360)', Math.round(r.linhas[0].tetoOper), 360);
-ok('rodou direto = 1 troca', r.linhas[0].nTroc, 1);
+// A régua é a PREMISSA: 30 min/dia de troca, rateados pelo tempo de esteira.
+// A LUNA 670 ocupou as DUAS horas do dia (a LATERAL dividiu a segunda com ela),
+// então paga os 30 min inteiros: 376 × (120−30)/120 = 282. O físico (l.teto)
+// fica intacto. A contagem de entradas continua, mas como informação.
+ok('o teto exibido desconta a fatia da premissa (376 → 282)', Math.round(r.linhas[0].tetoOper), 282);
+ok('quem ocupou a linha inteira paga os 30 min', r.linhas[0].minTroca, 30);
+ok('rodou direto = 1 entrada na linha (informação)', r.linhas[0].nTroc, 1);
 ok('sem trocaMin do backend vale o padrão do painel', r.linhas[0].troca, TROCA_MIN_PADRAO);
 
 // Saiu e VOLTOU no mesmo dia: a régua antiga (1 por dia) cobrava uma troca; a
@@ -233,13 +237,15 @@ PONTOS_DIA = { porHoraModelo: [
   { hora: '09:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas:  90, pesoKg: 657, pontos: 5040, tetoCxH: 376 },
 ]};
 const rVolta = calcPorModelo();
-ok('saiu e voltou no mesmo dia = 2 trocas', rVolta.linhas[0].nTroc, 2);
-ok('e o teto exibido paga as duas (376 → 345)', Math.round(rVolta.linhas[0].tetoOper), 345);
-// A duração medida nas paradas manda no valor nominal da planilha.
+ok('saiu e voltou no mesmo dia = 2 entradas (informação)', rVolta.linhas[0].nTroc, 2);
+// Ocupou 2 das 3 horas da linha → 20 dos 30 min: 376 × (120−20)/120 = 313.
+ok('e paga a fatia proporcional da premissa (376 → 313)', Math.round(rVolta.linhas[0].tetoOper), 313);
+// A duração medida nas paradas é INFORMAÇÃO desde a premissa dos 30 min: entra
+// na nota de conferência do relatório, não na régua.
 TROCA_OBS = { min: 12, n: 9 };
 const rObs = calcPorModelo();
-ok('medida nas paradas ganha do padrão', rObs.linhas[0].troca, 12);
-ok('e o teto cai junto (2 × 12 min em 120 → 301)', Math.round(rObs.linhas[0].tetoOper), 301);
+ok('a medição continua disponível para conferir', rObs.linhas[0].troca, 12);
+ok('mas o teto segue a premissa, não a medição', Math.round(rObs.linhas[0].tetoOper), 313);
 TROCA_OBS = null;
 PONTOS_DIA = { porHoraModelo: [
   { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600, tetoCxH: 376 },
@@ -297,6 +303,10 @@ function getParadasPeriodo() { return { ok: true, paradas: _mkParadas }; }
 const PAR_TROCA_RE      = eval(GS.match(/const PAR_TROCA_RE\s*=\s*(.+);/)[1]);
 const TROCA_OBS_MIN_N   = Number(GS.match(/const TROCA_OBS_MIN_N\s*=\s*(\d+)/)[1]);
 const TROCA_OBS_MAX_MIN = Number(GS.match(/const TROCA_OBS_MAX_MIN\s*=\s*(\d+)/)[1]);
+// a premissa do backend tem que ser a MESMA do painel — o teste confere abaixo
+const TROCA_PREM_MIN_DIA = Number(GS.match(/const TROCA_PREM_MIN_DIA\s*=\s*(\d+)/)[1]);
+const TROCA_PREM_TROCAS  = Number(GS.match(/const TROCA_PREM_TROCAS\s*=\s*(\d+)/)[1]);
+const TROCA_PREM_MIN     = Number(GS.match(/const TROCA_PREM_MIN\s*=\s*(\d+)/)[1]);
 eval(pega(GS, 'function _horaStr('));
 eval(pega(GS, 'function _heMinutosDaHora('));
 eval(pega(GS, 'function _entradasDia('));
@@ -311,7 +321,10 @@ const cols = nome => linha(nome).replace(nome, '').trim().split(/\s+/);
 ok('MADERO: aparada 148 (não 164), melhor 187',
    cols('MESA CABECEIRA MADERO').slice(3, 5), ['148', '187']);
 ok('VIVARE: aparada 122 (não 87)', cols('SAPATEIRA VIVARE')[3], '122');
-ok('% do teto da MADERO = 148/291', cols('MESA CABECEIRA MADERO')[6], '51%');
+// O % é contra o teto OPERACIONAL, não o físico: sem lista de horas a premissa
+// cai nos 5 min por dia rodado (4 dias = 20 min de 240), então 291 → 267 e a
+// MADERO usa 148/267 = 55%.
+ok('% do teto da MADERO = 148/267 (teto já sem a troca)', cols('MESA CABECEIRA MADERO')[6], '55%');
 ok('produto sem teto mostra — nas três colunas',
    cols('LIVREIRO ENCANTO').slice(5), ['—', '—', '—']);
 // Sem horasLista (backend antigo) cada dia rodado conta 1 troca — a régua
@@ -339,10 +352,11 @@ simularEsteiraPorModelo(30, 17, 350);
 ok('o log abre avisando que é simulação',
    /SIMULAÇÃO ESTEIRA: 17 m\/min · 350 mm/.test(LOGS.find(l=>/SIMULAÇÃO/.test(l))||''), true);
 ok('e mostra o real da planilha ao lado', /real na planilha: 8\.5 · 350/.test(LOGS.find(l=>/SIMULAÇÃO/.test(l))||''), true);
-// Dobrando a velocidade (8,5 → 17), o teto de cada produto dobra: a MADERO
-// tinha teto 291 → vira 582.
+// Dobrando a velocidade (8,5 → 17), o teto FÍSICO de cada produto dobra: a
+// MADERO vai de 291 para 582 — e a coluna mostra o operacional, esse mesmo 582
+// já sem os 20 min de troca dos 4 dias (582 × 220/240 = 533).
 ok('teto da MADERO dobra com o dobro de velocidade',
-   cols('MESA CABECEIRA MADERO')[5], '582');
+   cols('MESA CABECEIRA MADERO')[5], '533');
 ok('produto sem teto continua sem teto na simulação',
    cols('LIVREIRO ENCANTO').slice(5), ['—', '—', '—']);
 
@@ -365,22 +379,33 @@ _mkParadas = [
   { tipo: 'Troca de produto', ini: '13:00', fim: '18:00' },
 ];
 simularEsteiraPorModelo(30);
-// a de 5 h (13:00→18:00) é apontamento esquecido, não troca: fica fora, e as
-// 3 que sobraram viram a média aparada de 12 min.
-ok('o log diz a duração medida nas paradas, não a nominal',
-   /12 min por troca .*3 parada\(s\) de troca apontada\(s\)/.test(LOGS.find(l => /descontam as TROCAS/.test(l)) || ''), true);
+// A de 5 h (13:00→18:00) é apontamento esquecido, não troca: fica fora, e as 3
+// que sobraram viram a média aparada de 12 min — que o log mostra para
+// CONFERIR a premissa, sem entrar na conta.
+ok('o log abre dizendo que a régua é a premissa',
+   /PREMISSA: teto\/%teto descontam 30 min\/dia de troca de produto \(6 × 5 min\)/.test(
+     LOGS.find(l => /^PREMISSA:/.test(l)) || ''), true);
+ok('e mostra a medição ao lado, para conferir',
+   /as paradas de troca apontadas duraram 12 min em média \(3 amostra\(s\)\)/.test(
+     LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
+// A premissa do .gs e a do painel são o MESMO número — se uma andar sem a
+// outra, tela e log do editor passam a mostrar tetos diferentes.
+ok('a premissa do backend bate com a do painel',
+   [TROCA_PREM_MIN_DIA,TROCA_PREM_TROCAS,TROCA_PREM_MIN],
+   [TROCA_PREMISSA.minDia,TROCA_PREMISSA.trocasDia,TROCA_PREMISSA.min]);
 ok('MADERO saiu e voltou: 2 trocas num dia só', cols('MESA CABECEIRA MADERO')[1], '2');
 ok('VIVARE entrou uma vez: 1 troca', cols('SAPATEIRA VIVARE')[1], '1');
-// 291 × (120 − 2×12) ÷ 120 = 233 (a régua antiga daria 291 × 115/120 = 279).
-ok('e o teto operacional paga as duas trocas medidas', cols('MESA CABECEIRA MADERO')[5], '233');
+// A MADERO ocupou 2 das 3 horas da linha no dia → 20 dos 30 min da premissa:
+// 291 × (120 − 20) ÷ 120 = 242.
+ok('e o teto operacional desconta a fatia da premissa', cols('MESA CABECEIRA MADERO')[5], '243');
 // "quantas trocas deram na média por dia?" — 2 da MADERO + 1 da VIVARE num dia.
-ok('o log responde quantas preparações a linha faz por dia',
-   /3 em 1 dia\(s\) — média de 3\/dia/.test(LOGS.find(l => /^PREPARAÇÕES:/.test(l)) || ''), true);
-// MADERO entra 07h e volta 09h, VIVARE entra 08h: três horas com entrada, então
-// aqui nada foi simultâneo e as 3 preparações são 3 paradas de esteira mesmo.
-ok('e separa a parada de esteira (nada simultâneo neste dia)',
-   /3 em 1 dia\(s\) — média de 3\/dia \(lados que mudam juntos contam uma\) a 12 min cada = 36 min\/dia/.test(
-     LOGS.find(l => /^TROCAS DE ESTEIRA:/.test(l)) || ''), true);
+// MADERO entra 07h e volta 09h, VIVARE entra 08h: 3 preparações em 3 horas
+// distintas, então nada foi simultâneo e são 3 paradas de esteira também.
+ok('o log responde quantas preparações e paradas de esteira por dia',
+   /o log mostra 3 preparação\(ões\)\/dia em 3 parada\(s\) de esteira\/dia/.test(
+     LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
+ok('e compara com a premissa em uso',
+   /36 min\/dia · premissa em uso: 30 min\/dia/.test(LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
 
 // Duas CORES do mesmo produto no mesmo dia são UM dia — o log vem por
 // data × modelo × produto × cor. Contando item, o simulador dizia "1 dia" com
