@@ -620,6 +620,43 @@ ok('sem meta não há cascata (null, nunca número inventado)',
 ok('perda de parada negativa não existe',
    _relCascata({meta:100, real:90, perdaPar:-5}).perdaPar, 0);
 
+// ── A CASCATA DESENHADA: quatro etapas, fórmula e contexto ───────────────
+// Ela é lida em pé, numa reunião de turno: tem que responder meta, paradas,
+// ritmo e realizado sem ninguém montar a conta de cabeça.
+eval(pega('function _cascPasso('));
+eval(pega('function _cascOp('));
+eval(pega('function _cascBarra('));
+eval(pega('function _rpCascataHtml('));   // _fmtMinPar já foi definido na SWOT
+const cH = _relCascata({ meta:1150, real:428, perdaPar:48, minNP:22, ritmo:86, ritmoNec:143,
+  tipos:[{tipo:'Troca de produto',min:14,planej:false},{tipo:'Almoço',min:72,planej:true}] });
+const hH = _rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cH);
+ok('a cascata abre pela meta', /META<\/div><div class="cs-n">1\.150/.test(hH), true);
+ok('depois o impacto das paradas', /IMPACTO DE PARADAS<\/div><div class="cs-n">−48/.test(hH), true);
+ok('depois o gap de ritmo', /GAP DE RITMO<\/div><div class="cs-n">−674/.test(hH), true);
+ok('e fecha no realizado, em destaque', /casc-real-step.*REALIZADO<\/div><div class="cs-n">428/.test(hH), true);
+ok('a fórmula fica explícita', /1\.150 − 48 − 674 = <b>428 cx<\/b>/.test(hH), true);
+ok('a barra é realizado ÷ meta, não composição de perdas', /width:37\.2%/.test(hH), true);
+ok('e o rótulo diz do que é o percentual', /37,2% DA META/.test(hH), true);
+ok('o contexto traz os dois ritmos e o atendimento',
+   /RITMO ATUAL <b>86 cx\/h<\/b>/.test(hH) && /RITMO NECESSÁRIO <b>143 cx\/h<\/b>/.test(hH)
+   && /ATENDIMENTO DO RITMO <b>60,1%<\/b>/.test(hH), true);
+ok('o tempo parado e o maior motivo aparecem',
+   /<b>22 min<\/b> em paradas não planejadas/.test(hH) && /maior impacto:<\/b> Troca de produto/.test(hH), true);
+ok('motivo PLANEJADO não entra na lista de impacto', /Almoço/.test(hH), false);
+// Dia acima do ritmo da meta: a etapa do meio vira GANHO e a fórmula soma.
+const hG = _rpCascataHtml('X', _relCascata({ meta:1150, real:1180, perdaPar:40 }));
+ok('dia acima da meta mostra GANHO DE RITMO, não perda inventada',
+   /GANHO DE RITMO<\/div><div class="cs-n">\+70/.test(hG), true);
+ok('e a fórmula soma em vez de subtrair', /1\.150 − 40 \+ 70 = <b>1\.180 cx<\/b>/.test(hG), true);
+ok('a barra não passa de 100% de preenchimento', /width:100\.0%/.test(hG), true);
+// Sem os ritmos (é o caso do período), a linha de contexto simplesmente não sai.
+ok('sem ritmo conhecido, não inventa a linha de contexto',
+   /RITMO ATUAL/.test(_rpCascataHtml('X', _relCascata({ meta:1000, real:800, perdaPar:50 }))), false);
+// "PERDIDO" dava a entender caixa fisicamente perdida — não pode voltar ao que
+// é IMPRESSO (o comentário do código explicando a troca pode continuar lá).
+ok('nada do que a cascata imprime fala em "PERDIDO"',
+   /PERDIDO/i.test(hH) || /PERDIDO/i.test(hG), false);
+
 console.log('\n── cascata de um MODELO filtrado (âncora = potencial próprio) ──');
 // Com um modelo filtrado a META não serve: ela é da LINHA inteira (todos os
 // produtos do dia) e as paradas não se atribuem a um modelo. A âncora honesta

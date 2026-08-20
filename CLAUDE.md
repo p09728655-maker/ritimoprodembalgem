@@ -763,6 +763,32 @@ via Google Apps Script (JSONP).
 - **A SWOT saiu dos relatórios de produção** (pedido do PPCP, 18/08/2026 — "tira
   swot e faz cascata"); a de PARADAS continua, que lá é nativa. No lugar, três
   leituras, nos PDFs do DIA e do PERÍODO:
+- **A CASCATA É UMA ESTEIRA DE ETAPAS, lida em segundos** (pedido do PPCP,
+  20/08/2026). `_rpCascataHtml` desenha quatro passos na horizontal —
+  **META − IMPACTO DE PARADAS − GAP DE RITMO = REALIZADO** —, cada um com
+  título curto, número grande, unidade e uma linha de explicação; o REALIZADO
+  fica em destaque (borda e fundo verdes, número maior). Abaixo vem a **fórmula
+  escrita** (`1.150 − 48 − 674 = 428 cx`), a barra, o contexto do ritmo e os
+  motivos de parada. **As contas não mudaram** — só a apresentação.
+  - ⚠ **"PERDIDO NO RITMO" e "PERDIDO PARADO" saíram do vocabulário**: davam a
+    entender que as caixas foram *fisicamente perdidas*. São **GAP DE RITMO**
+    ("diferença estimada entre o ritmo necessário e o ritmo realizado") e
+    **IMPACTO DE PARADAS** ("produção estimada impactada pelo tempo de parada").
+    O `relatorios.test.js` falha se a palavra voltar ao que é impresso.
+  - **A barra é só `realizado ÷ meta`.** Antes empilhava paradas e ritmo em
+    faixas listradas, e o restante parecia perda — a composição já está nas
+    etapas, repetir ali confundia. O rótulo diz de que é o percentual
+    (`37,2% DA META`).
+  - **A linha de contexto do ritmo** (`RITMO ATUAL · RITMO NECESSÁRIO ·
+    ATENDIMENTO DO RITMO`) sai do `calcKPIs` que o relatório do dia já
+    calculava (`ritmo` e `metaH`) — **não é indicador novo**, é dado que existia
+    e não aparecia. No relatório do PERÍODO ela não sai: não há hora produtiva
+    do intervalo, e inventar uma seria pior que omitir.
+  - Os **motivos de parada** mostram os 3 maiores NÃO planejados com o tempo de
+    cada um; um motivo só raramente conta a história.
+  - Dia **acima** do ritmo da meta vira **GANHO DE RITMO** (verde, `+`), e a
+    fórmula soma — nunca inventa perda. Com **modelo filtrado** são três etapas
+    (POTENCIAL PRÓPRIO − GAP DE RITMO = REALIZADO), pela mesma função.
 - **CASCATA — onde ficaram as caixas** (`_relCascata`, conta pura +
   `relatorios.test.js`): `META − perdido PARADO − perdido no RITMO = REALIZADO`.
   O "parado" é o `pecas` do `RP_PARADAS` (a MESMA conta da aba PARADAS, buscada
