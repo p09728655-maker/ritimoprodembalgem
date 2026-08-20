@@ -460,6 +460,23 @@ ok('troca que vira a meia-noite não fica negativa',
    _phTrocaObs([{tipo:'Troca',ini:'23:50',fim:'00:05'},{tipo:'Troca',ini:'07:00',fim:'07:10'},
                 {tipo:'Troca',ini:'08:00',fim:'08:12'}]).min, 12);
 
+// A CONTAGEM LINHA A LINHA: cada bipe é uma linha do log, na ordem em que
+// aconteceu, então dá para ver troca DENTRO da mesma hora — o que a leitura por
+// hora não via. Quem faz a conta é o backend (tem as linhas cruas); aqui só
+// entra o número, com a estimativa por hora como reserva.
+eval(pega('function _phPrepInfo('));
+const itHora=[{data:'19/08',modelo:'A',nome:'P',cor:'C',horasLista:['07:00-08:00']}];
+ok('sem o backend novo, vale a estimativa por hora',
+   _phPrepInfo(itHora,null).trocas, 1);
+ok('com a leitura do log, vale ela',
+   _phPrepInfo(itHora,[{data:'19/08',prep:4,paralelo:false}]).trocas, 4);
+ok('e a média por dia sai dos dias que tiveram preparação',
+   _phPrepInfo(itHora,[{data:'19/08',prep:4},{data:'20/08',prep:8},{data:'21/08',prep:0}]).porDia, 6);
+ok('a fonte fica marcada, para o relatório poder dizer',
+   _phPrepInfo(itHora,[{data:'19/08',prep:4}]).fonte, 'log');
+ok('hora com dois produtos ao mesmo tempo é sinalizada',
+   _phPrepInfo(itHora,[{data:'19/08',prep:4,paralelo:true}]).paralelo, true);
+
 // A EXPLICAÇÃO VAI IMPRESSA: quem lê o PDF na reunião não tem tooltip. E ela
 // tem que deixar claro que o número é PREMISSA, não medição — senão o papel
 // afirma mais do que sabe.
@@ -477,6 +494,20 @@ ok('e o que o apontamento mostra, para conferir a premissa',
 ok('com o convite a rever a premissa se descolar',
    /rever a premissa/.test(notaPer), true);
 ok('avisa o que a leitura NÃO enxerga', /em qual <b>posto<\/b>/.test(notaPer), true);
+// A nota tinha uma afirmação ERRADA: dizia que não via troca dentro da mesma
+// hora. Vê — o log é linha a linha. O que ela não distingue sozinha é
+// alternância (dois lados juntos) de troca, e é isso que precisa estar escrito.
+ok('e explica que a leitura é linha a linha, dentro da hora',
+   /dentro da mesma hora<\/b>/.test(notaPer), true);
+ok('com a ressalva da alternância = dois produtos ao mesmo tempo',
+   /ao mesmo tempo<\/b> nos dois lados da esteira/.test(notaPer), true);
+ok('e marca quando o número é só estimativa por hora',
+   /estimativa por hora/.test(_phNotaTrocaHtml({trocas:9,dias:3,porDia:3},null,false)), true);
+ok('sem estimativa quando veio do log',
+   /estimativa por hora/.test(_phNotaTrocaHtml({trocas:9,dias:3,porDia:3,fonte:'log'},null,false)), false);
+ok('e avisa a hora com dois produtos ao mesmo tempo',
+   /dois produtos ao mesmo tempo<\/b> na esteira/.test(
+     _phNotaTrocaHtml({trocas:9,dias:3,porDia:3,fonte:'log',paralelo:true},null,false)), true);
 ok('sem apontamento, não inventa conferência',
    /ainda não há apontamento suficiente/.test(_phNotaTrocaHtml(null,null,false)), true);
 ok('no relatório do dia a frase é de hoje',

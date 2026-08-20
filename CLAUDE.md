@@ -654,13 +654,29 @@ via Google Apps Script (JSONP).
     cai em **5 min por dia rodado**, a régua conservadora.
   - **O que é MEDIDO virou informação, não entrada da conta.** Continuam sendo
     calculados e mostrados na nota impressa e no log do editor, para conferir a
-    premissa: **preparações** (`_phEntradasDia` — quantas vezes o produto entrou
-    na linha; rodou direto = 1, saiu e voltou = 2; almoço e parada no meio não
-    contam), **paradas de esteira** (`_phTrocasLinha` — entradas na mesma hora
-    contam uma, que os dois lados da esteira mudam juntos) e a **duração média
-    das paradas de TROCA/SETUP apontadas** (`_phTrocaObs`, 30 dias, média
-    aparada, sem as abertas e sem as acima de 4 h). Se isso descolar dos 30
-    min/dia, é hora de rever a premissa — a nota impressa diz essa frase.
+    premissa: **preparações**, **paradas de esteira** (`_phTrocasLinha` —
+    entradas na mesma hora contam uma, que os dois lados da esteira mudam
+    juntos) e a **duração média das paradas de TROCA/SETUP apontadas**
+    (`_phTrocaObs`, 30 dias, média aparada, sem as abertas e sem as acima de
+    4 h). Se isso descolar dos 30 min/dia, é hora de rever a premissa — a nota
+    impressa diz essa frase.
+  - **As preparações são contadas na ORDEM DAS LINHAS do log** (`_prepDoDia` no
+    `.gs`; PPCP, 20/08/2026: *"aponta sim dois produtos na mesma hora"*). Cada
+    bipe é uma linha e a `PRODUCAO_PRODUTO` é **append-only**, então a ordem das
+    linhas é a ordem dos fatos e a leitura enxerga troca **dentro da mesma
+    hora** — coisa que a contagem por hora (`_phEntradasDia`) não via.
+    - **Bloco de linhas seguidas do mesmo produto = 1 preparação.** `A,A,B,B`
+      numa hora são duas.
+    - ⚠ **Alternância (`A,B,A,B`) NÃO é troca.** Ninguém troca de produto a
+      cada 20 caixas: é a esteira de dois lados rodando dois produtos **ao mesmo
+      tempo**. Nessa hora vale o nº de produtos DISTINTOS, e a hora sai marcada
+      como paralela (a nota impressa avisa).
+    - O primeiro bloco da hora não conta quando é **continuação** da hora
+      anterior — senão todo produto ganharia uma preparação por hora rodada.
+    - `getProducaoModeloPeriodo` devolve **`prepDias`** e `getPontosDia` devolve
+      **`preparacoes`/`prepParalelo`**. Sem re-deploy, `_phPrepInfo` cai na
+      estimativa por hora e o relatório **diz que é estimativa** — o número só
+      erra para menos, nunca para mais.
   - **A EXPLICAÇÃO VAI IMPRESSA** (`_phNotaTrocaHtml`): o bloco **COMO A TROCA
     ENTROU NA CONTA** sai no PDF do **dia** e do **período** — a premissa, o
     rateio, a fórmula, o "para conferir" e **o que a leitura não enxerga**
