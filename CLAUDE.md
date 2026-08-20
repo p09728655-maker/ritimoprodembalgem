@@ -664,6 +664,22 @@ via Google Apps Script (JSONP).
     tela **não espera** por ela: desenha com o valor da planilha e **redesenha
     uma vez** quando a média chega (`trocaObs()` já responde na segunda passada,
     então não vira laço). O **PDF espera**, que ele não se redesenha depois.
+  - **A EXPLICAÇÃO DA CONTA VAI IMPRESSA** (`_phNotaTrocaHtml`, pedido do PPCP
+    em 20/08/2026): o bloco **COMO A TROCA ENTROU NA CONTA** sai no PDF do
+    **período** e no do **dia** — quantas trocas, de onde saiu a duração, a
+    fórmula do teto e **o que a leitura não enxerga** (caixa lançada sem
+    produto, troca e retorno dentro da mesma hora, parada de troca não
+    apontada). Quem lê o PDF numa reunião não tem tooltip nem código à mão, e o
+    % do teto encolheu — o papel tem que dizer por quê. **Uma implementação
+    só** para os dois relatórios (o `relatorios.test.js` falha se virar duas).
+  - **Cada CÓDIGO da programação é uma troca.** Conferido com o PPCP em
+    20/08/2026 num conjunto real: 5 lotes, **12 códigos**, 1.150 cx → **12
+    trocas** (5 de produto + 7 de cor). É por isso que o agrupamento da contagem
+    é **modelo · produto · cor** e não só o modelo: o lote 025093 sozinho tem 4
+    cores de ESCRIVANINHA MALTA, e cada uma para a esteira. ⚠ A conta trata
+    **troca de cor e de produto como iguais** — a planilha tem um
+    `TEMPO DE TROCA MIN` só e as paradas apontadas não separam os dois; se a
+    fábrica quiser separar, é apontar com tipos de parada diferentes.
   - **"Quantas trocas por dia?"** (pergunta do PPCP em 20/08/2026) agora está na
     tela: `_phTrocasLinha` soma as entradas de cada produto no nível mais fino
     do log — **modelo · produto · COR**, porque trocar a cor também troca o que
@@ -685,10 +701,15 @@ via Google Apps Script (JSONP).
     "rodou direto" de "saiu e voltou"). **Sem re-deploy o painel não fica pior
     que antes**: cai em 1 troca por dia rodado, a régua velha. A *duração*
     medida não depende de re-deploy — sai do `getParadasPeriodo`, que já existe.
-  - ⚠ Bug corrigido junto no `simularEsteiraPorModelo`: a coluna `dias` contava
-    `g.dias.length`, que é **lançamento** (data × produto × cor), não dia — o
-    mesmo produto em duas cores no mesmo dia virava "2 dias" e descontava troca
-    a mais. Agora conta datas distintas.
+  - ⚠ Bugs corrigidos junto no `simularEsteiraPorModelo`, os dois pela mesma
+    causa: o log vem por **data × produto × cor** e a função tratava cada linha
+    como um dia. A coluna `dias` contava lançamento (o mesmo produto em duas
+    cores no mesmo dia virava "2 dias", descontando troca a mais) **e a média
+    aparada podava cor em vez de dia** — daí o log sair com `1 dia` ao lado de
+    um "melhor dia" diferente da média, leitura impossível (visto no
+    MESA CABECEIRA SLEEP). Agora agrega por data antes de tudo, como o painel
+    faz na célula do comparativo, e as horas do dia são as **distintas** (duas
+    cores na mesma hora são uma hora de esteira, não duas).
   - `relatorios.test.js` cobre entradas/duração/ordem da fonte e
     `produto-cor.test.js` cobre o dia (saiu-e-voltou = 2 trocas) e o log do
     editor.

@@ -378,6 +378,23 @@ ok('o log responde quantas trocas a linha faz por dia',
 ok('e quanto isso custa de esteira parada por dia',
    /36 min\/dia de esteira parada em troca/.test(LOGS.find(l => /^TROCAS:/.test(l)) || ''), true);
 
+// Duas CORES do mesmo produto no mesmo dia são UM dia — o log vem por
+// data × modelo × produto × cor. Contando item, o simulador dizia "1 dia" com
+// um "melhor dia" diferente da média (leitura impossível) e a aparada podava
+// cor em vez de dia, divergindo do _phMediaAparada do painel.
+LOGS.length = 0;
+_mkItens.length = 0;
+_mkParadas = [];
+_mkItens.push({ modelo: '5011', nome: 'RACK DUAS CORES', data: '21/08', cor: 'OFF WHITE', caixas: 100,
+                horas: 1, mediaHora: 100, tetoCxH: 300, trocaMin: 0, horasLista: ['07:00'] });
+_mkItens.push({ modelo: '5011', nome: 'RACK DUAS CORES', data: '21/08', cor: 'CUMARU', caixas: 80,
+                horas: 1, mediaHora: 80, tetoCxH: 300, trocaMin: 0, horasLista: ['08:00'] });
+simularEsteiraPorModelo(30);
+ok('duas cores no mesmo dia = 1 dia', cols('RACK DUAS CORES')[0], '1');
+ok('e a média do dia soma as duas cores (180 cx em 2 h)', cols('RACK DUAS CORES')[3], '90');
+ok('com um dia só, melhor dia = a própria média', cols('RACK DUAS CORES')[4], '90');
+ok('e o produto entrou na linha uma vez só', cols('RACK DUAS CORES')[1], '1');
+
 // ── 6) guarda-corpo: o agrupamento do comparativo é UM só ──────────────────
 console.log('\n── o comparativo não pode voltar a ter duas regras ──');
 // A tela e o PDF liam o mesmo seletor com duas cópias do keyOf/labelOf: a
