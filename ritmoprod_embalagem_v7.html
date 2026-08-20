@@ -2147,7 +2147,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.11.0';
+const APP_VER   = '7.12.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4527,7 +4527,8 @@ async function gerarRelatorioProducaoHora(){
         // análise por modelo enxerga (só caixa lançada com produto entra nela).
         if(realTotAll>0) cobertura=Math.min(100, totCx/realTotAll*100);
         casc=_relCascata({meta:metaTot, real:realTot, perdaPar:st.pecas,
-          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null});
+          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null,
+          tipos:st.tipos||[]});   // ritmo do período não entra: não há hora produtiva do intervalo
         if(semMeta>0) cascNota=`${plural(semMeta,'dia com produção mas sem meta ficou fora','dias com produção mas sem meta ficaram fora')} da cascata.`;
       }
     }catch(e){ console.warn('[CASCATA período]:', e.message); }
@@ -4680,7 +4681,13 @@ function _relCascata(e){
            ganhoRitmo: Math.max(0,-resto),
            pctReal: real/meta*100,
            minNP: Number(e&&e.minNP)||0,
-           topTipo: (e&&e.topTipo)||null };
+           topTipo: (e&&e.topTipo)||null,
+           // Contexto do ritmo e motivos das paradas: NÃO são conta nova — são
+           // números que o painel já tem (calcKPIs.ritmo / .metaH e os tipos do
+           // RP_PARADAS) passando adiante para a cascata poder mostrá-los.
+           ritmo: Number(e&&e.ritmo)||0,
+           ritmoNec: Number(e&&e.ritmoNec)||0,
+           tipos: (e&&e.tipos)||[] };
 }
 
 // CASCATA DE UM PRODUTO FILTRADO — âncora diferente, de propósito.
@@ -4712,60 +4719,129 @@ function _relCascataProduto(linhas){
 // Bloco HTML da cascata (DIA e PERÍODO usam o mesmo): a barra no visual da
 // Tela D — verde = realizado, âmbar listrado = perdido no ritmo, vermelho
 // listrado = perdido parado, e a MARCA DA META como linha vertical.
+// A cascata é lida em segundos, em pé, numa reunião de turno: precisa responder
+// QUAL ERA A META, QUANTO AS PARADAS TIRARAM, QUANTO O RITMO TIROU e QUANTO
+// SAIU — nessa ordem, sem obrigar ninguém a montar a conta de cabeça. Por isso
+// virou uma cascata HORIZONTAL de etapas com a fórmula escrita embaixo
+// (pedido do PPCP, 20/08/2026). As contas são as mesmas: só a apresentação
+// mudou.
+//   ⚠ "PERDIDO NO RITMO" saiu do vocabulário: dava a entender que as caixas
+//   foram fisicamente perdidas. É GAP DE RITMO — diferença entre o ritmo
+//   necessário e o realizado. O mesmo vale para "PERDIDO PARADO" → IMPACTO DE
+//   PARADAS.
+function _cascPasso(cls, titulo, valor, desc){
+  return `<div class="casc-step ${cls}"><div class="cs-t">${titulo}</div>`
+       + `<div class="cs-n">${valor}<u>cx</u></div><div class="cs-d">${desc}</div></div>`;
+}
+function _cascOp(op){ return `<div class="casc-op">${op}</div>`; }
+// Barra: representa SÓ realizado ÷ meta. Antes ela empilhava paradas e ritmo em
+// faixas listradas, o que fazia o restante parecer perda — a composição já está
+// nas etapas acima, e repetir ali confundia mais do que informava.
+function _cascBarra(real, base, rotulo){
+  const pct=base>0?Math.min(100,real/base*100):0;
+  return `<div class="casc-prog"><div class="casc-bar"><span style="width:${pct.toFixed(1)}%"></span></div>`
+       + `<b>${fmtP(base>0?real/base*100:0)} ${rotulo}</b></div>`;
+}
 function _rpCascataHtml(titulo, c, nota){
   if(!c) return '';
+  const abre=`<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>`;
+
+  // Com um MODELO filtrado a âncora é o potencial do próprio produto: são três
+  // etapas (potencial → gap → realizado), sem meta e sem paradas.
   if(c.tipo==='produto'){
-    const esc2=Math.max(c.potencial,c.real)||1;
-    const w2=v=>Math.max(0,v/esc2*100).toFixed(2)+'%';
-    return `<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>
-  <div class="casc-bar">
-    <span class="casc-seg casc-real" style="width:${w2(c.real)}"></span>
-    <span class="casc-seg casc-rit"  style="width:${w2(c.perdaRitmo)}"></span>
-    <span class="casc-meta" style="left:100%"><b>POTENCIAL ${fmtN(c.potencial)}</b></span>
+    return `${abre}
+  <div class="casc-flow">
+    ${_cascPasso('casc-meta-step','POTENCIAL PRÓPRIO', fmtN(c.potencial), `o melhor dia ${c.nCores===1?'da cor':'de cada uma das '+plural(c.nCores,'cor','cores')} nas horas que rodou`)}
+    ${_cascOp('−')}
+    ${_cascPasso('casc-rit-step','GAP DE RITMO', '−'+fmtN(Math.round(c.perdaRitmo)), 'diferença estimada para o próprio melhor — inclui paradas e microparadas')}
+    ${_cascOp('=')}
+    ${_cascPasso('casc-real-step','REALIZADO', fmtN(c.real), `${fmtP(c.pctReal)} do potencial${c.melhorCor?` · melhor cor: ${c.melhorCor.label.replace(/^.*?·\s*/,'')}`:''}`)}
   </div>
-  <div class="casc-lin">
-    <div class="casc-l"><span>POTENCIAL PRÓPRIO</span><b>${fmtN(c.potencial)} cx</b><i>o melhor dia ${c.nCores===1?'da cor':'de cada uma das '+plural(c.nCores,'cor','cores')} nas horas que rodou — já demonstrado pela equipe</i></div>
-    <div class="casc-l"><span>PERDIDO NO RITMO</span><b style="color:#e65100">−${fmtN(Math.round(c.perdaRitmo))} cx</b><i>diferença para o próprio melhor — inclui paradas e microparadas do período</i></div>
-    <div class="casc-l casc-tot"><span>REALIZADO</span><b style="color:#2e7d32">${fmtN(c.real)} cx</b><i>${fmtP(c.pctReal)} do potencial${c.melhorCor?` · melhor cor: ${c.melhorCor.label.replace(/^.*?·\s*/,'')}`:''}</i></div>
-  </div>
+  <div class="casc-form">${fmtN(c.potencial)} − ${fmtN(Math.round(c.perdaRitmo))} = <b>${fmtN(c.real)} cx</b></div>
+  ${_cascBarra(c.real, c.potencial, 'DO POTENCIAL')}
   <div class="rp-note">Com um modelo filtrado a âncora é o POTENCIAL DELE, não a meta: meta e paradas são da LINHA inteira (todos os produtos), não deste modelo. A cascata META × PARADAS × RITMO sai no relatório sem filtro.</div>
   ${nota?`<div class="rp-note">⚠ ${nota}</div>`:''}`;
   }
-  const escala=Math.max(c.meta, c.real+c.perdaPar)||1;
-  const w=v=>Math.max(0,v/escala*100).toFixed(2)+'%';
-  const pctMeta=Math.min(100,c.meta/escala*100);
-  const linhaRitmo = c.ganhoRitmo>0
-    ? `<div class="casc-l"><span>GANHO DE RITMO</span><b style="color:#2e7d32">+${fmtN(Math.round(c.ganhoRitmo))} cx</b><i>a linha rodou acima do ritmo da meta</i></div>`
-    : `<div class="casc-l"><span>PERDIDO NO RITMO</span><b style="color:#e65100">−${fmtN(Math.round(c.perdaRitmo))} cx</b><i>ritmo abaixo do necessário — inclui microparadas não registradas</i></div>`;
-  return `<div class="rp-sec-ttl" style="margin-top:16px">${titulo}</div>
-  <div class="casc-bar">
-    <span class="casc-seg casc-real" style="width:${w(c.real)}"></span>
-    <span class="casc-seg casc-rit"  style="width:${w(c.perdaRitmo)}"></span>
-    <span class="casc-seg casc-par"  style="width:${w(c.perdaPar)}"></span>
-    <span class="casc-meta" style="left:${pctMeta}%"><b>META ${fmtN(c.meta)}</b></span>
+
+  // Linha rodando ACIMA do ritmo da meta: a etapa do meio é GANHO, e a fórmula
+  // soma em vez de subtrair. Nunca inventar perda quando não houve.
+  const ganho=c.ganhoRitmo>0;
+  const vRit=Math.round(ganho?c.ganhoRitmo:c.perdaRitmo);
+  const vPar=Math.round(c.perdaPar);
+  const passoRitmo = ganho
+    ? _cascPasso('casc-ganho-step','GANHO DE RITMO','+'+fmtN(vRit),'a linha rodou acima do ritmo necessário para a meta')
+    : _cascPasso('casc-rit-step','GAP DE RITMO','−'+fmtN(vRit),'diferença estimada entre o ritmo necessário e o ritmo realizado');
+
+  // Contexto do ritmo: só entra quando o relatório sabe os dois números (é o
+  // caso do dia, que vem do calcKPIs). Sem eles a linha não aparece — nada de
+  // indicador inventado só para preencher.
+  const temRitmo=c.ritmo>0&&c.ritmoNec>0;
+  const atend=temRitmo?c.ritmo/c.ritmoNec*100:0;
+  const ctxRitmo = temRitmo ? `<div class="casc-ctx">
+    <span>RITMO ATUAL <b>${fmtN(c.ritmo)} cx/h</b></span>
+    <span>RITMO NECESSÁRIO <b>${fmtN(c.ritmoNec)} cx/h</b></span>
+    <span>ATENDIMENTO DO RITMO <b>${fmtP(atend)}</b></span>
+    <i>o ritmo atual é ${fmtP(atend)} do necessário para bater a meta</i>
+  </div>` : '';
+
+  // Paradas: quanto tempo e quais motivos pesaram. Mostra os 3 maiores não
+  // planejados quando houver — um motivo só raramente conta a história.
+  const tps=(c.tipos||[]).filter(t=>t&&!t.planej&&t.min>0).slice(0,3);
+  const listaTp = tps.length ? tps.map((t,i)=>`${i?'':'<b>maior impacto:</b> '}${t.tipo} (${_fmtMinPar(Math.round(t.min))})`).join(' · ')
+                             : (c.topTipo?`<b>maior impacto:</b> ${c.topTipo.tipo}`:'');
+  const ctxPar = (c.minNP||listaTp) ? `<div class="casc-ctx casc-ctx-par">
+    ${c.minNP?`<span><b>${_fmtMinPar(c.minNP)}</b> em paradas não planejadas</span>`:''}
+    ${listaTp?`<span>${listaTp}</span>`:''}
+  </div>` : '';
+
+  return `${abre}
+  <div class="casc-flow">
+    ${_cascPasso('casc-meta-step','META', fmtN(c.meta), 'o que estava programado')}
+    ${_cascOp('−')}
+    ${_cascPasso('casc-par-step','IMPACTO DE PARADAS','−'+fmtN(vPar),'produção estimada impactada pelo tempo de parada')}
+    ${_cascOp(ganho?'+':'−')}
+    ${passoRitmo}
+    ${_cascOp('=')}
+    ${_cascPasso('casc-real-step','REALIZADO', fmtN(c.real), `${fmtP(c.pctReal)} da meta`)}
   </div>
-  <div class="casc-lin">
-    <div class="casc-l"><span>META</span><b>${fmtN(c.meta)} cx</b><i>o que estava programado</i></div>
-    <div class="casc-l"><span>PERDIDO PARADO</span><b style="color:#c62828">−${fmtN(Math.round(c.perdaPar))} cx</b><i>${c.minNP?_fmtMinPar(c.minNP)+' em paradas não planejadas':'paradas não planejadas'}${c.topTipo?' · maior: '+c.topTipo.tipo:''}</i></div>
-    ${linhaRitmo}
-    <div class="casc-l casc-tot"><span>REALIZADO</span><b style="color:#2e7d32">${fmtN(c.real)} cx</b><i>${fmtP(c.pctReal)} da meta</i></div>
-  </div>
+  <div class="casc-form">${fmtN(c.meta)} − ${fmtN(vPar)} ${ganho?'+':'−'} ${fmtN(vRit)} = <b>${fmtN(c.real)} cx</b></div>
+  ${_cascBarra(c.real, c.meta, 'DA META')}
+  ${ctxRitmo}
+  ${ctxPar}
   ${nota?`<div class="rp-note">⚠ ${nota}</div>`:''}`;
 }
+// CSS da cascata — um lugar só, servindo os dois relatórios (dia e período).
 const _RP_CASC_CSS=`
-  .casc-bar{position:relative;display:flex;height:24px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:999px;margin:22px 0 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .casc-seg{display:block;height:100%}
-  .casc-real{background:#4CAF50;border-radius:999px 0 0 999px}
-  .casc-rit{background:repeating-linear-gradient(135deg,#FF9800 0 8px,#ffc069 8px 16px)}
-  .casc-par{background:repeating-linear-gradient(135deg,#F44336 0 8px,#ef9a9a 8px 16px);border-radius:0 999px 999px 0}
-  .casc-meta{position:absolute;top:-5px;bottom:-5px;width:2px;background:#1a1a2e}
-  .casc-meta b{position:absolute;bottom:100%;right:0;font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1px;white-space:nowrap;color:#1a1a2e;padding-bottom:2px}
-  .casc-lin{display:grid;gap:4px}
-  .casc-l{display:grid;grid-template-columns:150px 110px 1fr;gap:10px;font-size:10.5px;align-items:baseline}
-  .casc-l span{font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1.5px;color:#718096}
-  .casc-l b{font-family:'IBM Plex Mono',monospace;text-align:right}
-  .casc-l i{font-style:normal;color:#718096}
-  .casc-tot{border-top:1px solid #e2e8f0;padding-top:4px}`;
+  .casc-flow{display:flex;align-items:stretch;margin:12px 0 9px}
+  .casc-step{flex:1 1 0;min-width:0;border:1px solid #e2e8f0;border-left:3px solid #cbd5e0;border-radius:5px;padding:8px 11px 9px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .casc-step .cs-t{font:700 8px 'IBM Plex Mono',monospace;letter-spacing:1.3px;color:#718096;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .casc-step .cs-n{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:27px;line-height:1.1;color:#1a1a2e;font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:2px}
+  .casc-step .cs-n u{text-decoration:none;font-size:11px;font-weight:600;color:#a0aec0;margin-left:3px;letter-spacing:.5px}
+  .casc-step .cs-d{font-size:8.5px;color:#718096;line-height:1.35;margin-top:3px}
+  .casc-op{display:flex;align-items:center;justify-content:center;flex:0 0 auto;padding:0 9px;font:700 16px 'Barlow Condensed',sans-serif;color:#a0aec0}
+  .casc-meta-step{border-left-color:#1a1a2e}
+  .casc-par-step{border-left-color:#c62828}
+  .casc-par-step .cs-n{color:#c62828}
+  .casc-rit-step{border-left-color:#e65100}
+  .casc-rit-step .cs-n{color:#e65100}
+  .casc-ganho-step{border-left-color:#2e7d32}
+  .casc-ganho-step .cs-n{color:#2e7d32}
+  .casc-real-step{flex:1.2 1 0;border:1.5px solid #2e7d32;border-left-width:5px;background:#f3faf4}
+  .casc-real-step .cs-t{color:#2e7d32}
+  .casc-real-step .cs-n{color:#2e7d32;font-size:32px}
+  .casc-form{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#718096;letter-spacing:.5px;margin:0 0 9px}
+  .casc-form b{color:#1a1a2e;font-size:12px}
+  .casc-prog{display:flex;align-items:center;gap:10px}
+  .casc-bar{position:relative;flex:1 1 auto;height:14px;background:#eef2f6;border:1px solid #e2e8f0;border-radius:999px;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .casc-bar span{display:block;height:100%;background:#4CAF50;border-radius:999px 0 0 999px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .casc-prog b{font:700 10px 'IBM Plex Mono',monospace;letter-spacing:1px;color:#1a1a2e;white-space:nowrap}
+  .casc-ctx{display:flex;flex-wrap:wrap;gap:2px 18px;align-items:baseline;font-size:9.5px;color:#4a5568;margin-top:8px}
+  .casc-ctx span{white-space:nowrap;font:400 8px 'IBM Plex Mono',monospace;letter-spacing:1.2px;color:#718096;text-transform:uppercase}
+  .casc-ctx b{font-family:'Barlow',sans-serif;font-size:11.5px;font-weight:700;color:#1a1a2e;letter-spacing:0;text-transform:none}
+  .casc-ctx i{font-style:normal;font-size:9px;color:#a0aec0;flex-basis:100%}
+  .casc-ctx-par{margin-top:5px}
+  .casc-ctx-par span{text-transform:none;font-family:'Barlow',sans-serif;font-size:9.5px;letter-spacing:0;color:#4a5568}
+  .casc-ctx-par b{font-size:9.5px}`;
 
 // Relatório formatado (janela separada, pronta pra exportar em PDF pelo
 // navegador) — mesmo padrão visual do gerarRelatorioSemanal() do HISTÓRICO.
@@ -4800,7 +4876,10 @@ async function gerarRelatorioProducaoModelo(){
         await _carregarClassesPar();
         const st=_paradasStats(j.paradas||[], {}, {de:hojeStr(), ate:hojeStr()});
         cascDia=_relCascata({meta:kH.meta, real:kH.real, perdaPar:st.pecas,
-          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null});
+          minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null,
+          tipos:st.tipos||[],
+          // ritmo atual e ritmo necessário do dia, direto do calcKPIs
+          ritmo:kH.ritmo, ritmoNec:kH.metaH});
       }
     }catch(e){ console.warn('[CASCATA dia] sem paradas:', e.message); }
   }
