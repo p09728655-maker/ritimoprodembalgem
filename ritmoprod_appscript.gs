@@ -298,6 +298,13 @@ function _tetoEsteiraCxH(prod) {
 // escrita aqui porque o simulador do editor roda no Apps Script, longe do HTML.
 // Se mudar uma, mudar a outra — produto-cor.test.js compara as duas.
 const PAR_TROCA_RE = /troca|setup|regulagem|preparaç/i;
+// PREMISSA COMBINADA com o PPCP (20/08/2026): 30 min/dia de troca de produto
+// (6 trocas × 5 min). É a régua do teto operacional — a contagem no log e a
+// média das paradas continuam sendo calculadas, mas como INFORMAÇÃO para
+// conferir a premissa. Mesmo número do TROCA_PREMISSA no painel.
+const TROCA_PREM_MIN_DIA = 30;
+const TROCA_PREM_TROCAS  = 6;
+const TROCA_PREM_MIN     = 5;
 const TROCA_OBS_MIN_N   = 3;    // menos que isso é anedota, não média
 const TROCA_OBS_MAX_MIN = 240;  // acima disso é apontamento esquecido, não troca
 
@@ -475,9 +482,15 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
     const trocas = Object.keys(g.horasDia).reduce(function (n, d) {
       return n + _entradasDia(Object.keys(g.horasDia[d]), Object.keys(ocup[d] || {}));
     }, 0) || nDiasG;
-    const trocaMin = obsTroca.min > 0 ? obsTroca.min : g.troca;
+    // Os 30 min/dia são da ESTEIRA: cada produto paga a fatia proporcional ao
+    // tempo que ocupou a linha no dia (o que dá o mesmo % para todos). Sem a
+    // lista de horas, cai nos 5 min por dia rodado, a régua conservadora.
+    const minTroca = dias.reduce(function (a, d) {
+      const hg = Object.keys(d.hSet).length, hd = Object.keys(ocup[d.data] || {}).length;
+      return a + ((hg && hd) ? TROCA_PREM_MIN_DIA * Math.min(1, hg / hd) : TROCA_PREM_MIN);
+    }, 0);
     const minTot = horasTot * 60;
-    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - trocas * trocaMin) / minTot : teto;
+    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - minTroca) / minTot : teto;
     return { nome: g.nome, n: nDiasG, trocas: trocas, caixas: g.caixas, aparada: aparada, melhor: melhor,
              teto: teto, tetoOper: tetoOper, dias: dias,
              pctA: tetoOper > 0 ? aparada / tetoOper * 100 : 0,
@@ -487,10 +500,9 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };
   const D = function (v, n) { v = String(v); while (v.length < n) v = ' ' + v; return v; };
   if (linhas.some(function (l) { return l.tetoOper > 0 && l.tetoOper < l.teto; }))
-    Logger.log('Teto/%teto já descontam as TROCAS do produto — a coluna "trocas" é quantas vezes ele entrou na linha, a ' +
-               (obsTroca.min > 0
-                 ? obsTroca.min + ' min por troca (média aparada de ' + obsTroca.n + ' parada(s) de troca apontada(s) no período)'
-                 : 'TEMPO DE TROCA MIN do catálogo — nenhuma parada de troca apontada no período para medir'));
+    Logger.log('PREMISSA: teto/%teto descontam ' + TROCA_PREM_MIN_DIA + ' min/dia de troca de produto (' +
+               TROCA_PREM_TROCAS + ' × ' + TROCA_PREM_MIN + ' min), rateados entre os produtos pelo tempo de esteira. ' +
+               'A coluna "trocas" é o que o LOG mostra (informação, não entra na conta).');
   Logger.log(P('MODELO', 34) + D('dias', 5) + D('trocas', 7) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
   linhas.forEach(function (l) {
     Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.trocas, 7) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
@@ -527,15 +539,15 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
   const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
   const tLinha = _trocasLinhaPorDia(itens);
+  // PARA CONFERIR A PREMISSA (não entra na conta): o que o apontamento mostra.
   if (tLinha.trocas) {
-    Logger.log('PREPARAÇÕES: ' + tLinha.trocas + ' em ' + tLinha.dias + ' dia(s) — média de ' +
-               tLinha.porDia + '/dia (uma por item que entra na linha; cada código da programação exige a sua)');
-    // A esteira tem DOIS lados: itens que entram na mesma hora mudaram juntos e
-    // pararam a esteira UMA vez. É este o número que vira tempo parado.
-    Logger.log('TROCAS DE ESTEIRA: ' + tLinha.eventos + ' em ' + tLinha.dias + ' dia(s) — média de ' +
-               tLinha.evPorDia + '/dia (lados que mudam juntos contam uma)' +
-               (obsTroca.min > 0 ? ' a ' + obsTroca.min + ' min cada = ' +
-                 Math.round(tLinha.evPorDia * obsTroca.min) + ' min/dia de esteira parada em troca' : ''));
+    Logger.log('CONFERIR: o log mostra ' + tLinha.porDia + ' preparação(ões)/dia em ' +
+               tLinha.evPorDia + ' parada(s) de esteira/dia' +
+               (obsTroca.min > 0
+                 ? ', e as paradas de troca apontadas duraram ' + obsTroca.min + ' min em média (' + obsTroca.n + ' amostra(s)) → ' +
+                   Math.round(tLinha.evPorDia * obsTroca.min) + ' min/dia'
+                 : ' (sem parada de troca apontada para medir a duração)') +
+               ' · premissa em uso: ' + TROCA_PREM_MIN_DIA + ' min/dia');
   }
   Logger.log('RESUMO: ' + linhas.length + ' produto(s) em ' + nDias + ' dias · % do teto (aparada) de ' +
              Math.round(comTeto[comTeto.length - 1].pctA) + '% a ' + Math.round(comTeto[0].pctA) + '%' +

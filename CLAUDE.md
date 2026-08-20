@@ -636,94 +636,64 @@ via Google Apps Script (JSONP).
   - O `title` da célula diz em palavras por que a cor é aquela; a legenda do
     rodapé acompanha. Sem takt configurado (`alvoRit` 0) volta a valer só a
     regularidade — não há linha com que comparar.
-- **O teto EXIBIDO é operacional: desconta as TROCAS do produto**
+- **O teto EXIBIDO é operacional: desconta 30 min/dia de troca de produto**
   (pedido do PPCP, 19/08/2026 — "100% sem descontar a troca obrigatória não é
-  régua alcançável"). `_phTetoOper(teto, horas, nTrocas, trocaMin)` no v7:
-  `teto × (min − nTrocas×troca) ÷ min`. As **duas** entradas são MEDIDAS desde
-  20/08/2026 ("temos que considerar mais trocas" + "pelas paradas dá pra fazer
-  a média"); antes eram **1 troca por dia rodado × 5 min nominais**, régua
-  otimista dos dois lados.
-  - **QUANTAS: `_phEntradasDia`** conta no log hora a hora quantas vezes o
-    produto **ENTROU na linha**. Rodou direto o dia todo = 1 (o setup inicial
-    conta, como sempre contou); **saiu, outro rodou e ele voltou = 2**. Almoço
-    e parada no meio **não** viram troca — a hora *ocupada* anterior continua
-    sendo dele; sem esse cuidado o almoço somaria uma troca fantasma por dia em
-    todo produto. A base é a ocupação da **LINHA** (`horasLinha`, todos os
-    produtos), então **filtrar um modelo na tela não muda** o número de trocas
-    dele. `_phTrocasPeriodo` soma dia a dia.
-  - **QUANTO DURA: `_phTrocaObs`** tira a média das paradas de **TROCA/SETUP**
-    apontadas (`ehSetupParada`, a mesma regex do SWOT), últimos
-    `TROCA_OBS_DIAS` (30). Média **aparada** (fora a mais curta e a mais longa),
-    parada **sem FIM** fora, duração **>240 min** fora (é apontamento esquecido,
-    não troca) e **<3 amostras não vira média** — aí devolve 0 e quem decide é a
-    planilha. Ordem em `_phTroca`: **medido → coluna `TEMPO DE TROCA MIN` →
-    `TROCA_MIN_PADRAO` (5)**. Medido ganha de planejado porque a coluna é o
-    mesmo 5 para o catálogo inteiro; a parada é o que aconteceu.
-  - É **uma chamada só** (`carregarTrocaObs`, `getParadasPeriodo` de 30 dias,
-    cache de 5 min **inclusive quando vem vazia**) servindo o dia e o período. A
-    tela **não espera** por ela: desenha com o valor da planilha e **redesenha
-    uma vez** quando a média chega (`trocaObs()` já responde na segunda passada,
-    então não vira laço). O **PDF espera**, que ele não se redesenha depois.
-  - **A EXPLICAÇÃO DA CONTA VAI IMPRESSA** (`_phNotaTrocaHtml`, pedido do PPCP
-    em 20/08/2026): o bloco **COMO A TROCA ENTROU NA CONTA** sai no PDF do
-    **período** e no do **dia** — quantas trocas, de onde saiu a duração, a
-    fórmula do teto e **o que a leitura não enxerga** (caixa lançada sem
-    produto, troca e retorno dentro da mesma hora, parada de troca não
-    apontada, e **em qual lado** a parada aconteceu — a aba `PARADAS` não tem
-    essa coluna, então parada de um lado é contada como se a esteira inteira
-    tivesse parado). Quem lê o PDF numa reunião não tem tooltip nem código à
-    mão, e o % do teto encolheu — o papel tem que dizer por quê. **Uma implementação
-    só** para os dois relatórios (o `relatorios.test.js` falha se virar duas).
-  - **PREPARAÇÃO × PARADA DE ESTEIRA são dois números** (PPCP, 20/08/2026 — "1
-    esteira com dois lados mais um com um lado"). **Preparação** é uma por item
-    que entra na linha: é mão de obra, e cada código da programação exige a sua.
-    **Parada de esteira** é quantas vezes a esteira parou — os **dois lados
-    mudando juntos param a esteira UMA vez**. Sem coluna de lado na planilha, o
-    proxy é a **hora**: itens que entram na mesma hora entraram juntos
-    (`_phHorasDeEntrada`). Os 12 códigos dos lotes 025089–025093, entrando dois
-    a dois, são **12 preparações e 6 paradas de esteira** — a conta que o PPCP
-    fez na mão. É o número **menor** que vira tempo de esteira parada.
-  - **Cada CÓDIGO da programação é uma troca.** Conferido com o PPCP em
-    20/08/2026 num conjunto real: 5 lotes, **12 códigos**, 1.150 cx → **12
-    trocas** (5 de produto + 7 de cor). É por isso que o agrupamento da contagem
-    é **modelo · produto · cor** e não só o modelo: o lote 025093 sozinho tem 4
-    cores de ESCRIVANINHA MALTA, e cada uma para a esteira. ⚠ A conta trata
-    **troca de cor e de produto como iguais** — a planilha tem um
-    `TEMPO DE TROCA MIN` só e as paradas apontadas não separam os dois; se a
-    fábrica quiser separar, é apontar com tipos de parada diferentes.
-  - **"Quantas trocas por dia?"** (pergunta do PPCP em 20/08/2026) agora está na
-    tela: `_phTrocasLinha` soma as entradas de cada produto no nível mais fino
-    do log — **modelo · produto · COR**, porque trocar a cor também troca o que
-    está na esteira. Aparece no rodapé do comparativo e do PDF
-    (`linha trocou N× em D dias (X/dia)`) e no total do dia
-    (`linha trocou N× hoje`). No editor, `simularEsteiraPorModelo` loga a mesma
-    linha **e** o custo: `X troca(s)/dia a M min cada = Y min/dia de esteira
-    parada em troca`.
+  régua alcançável"). `_phTetoOper(teto, horas, n, minTroca)`:
+  `teto × (min − minTroca) ÷ min`.
+  - **A PREMISSA é a régua, e é uma só**: `TROCA_PREMISSA={minDia:30,
+    trocasDia:6, min:5}` no v7 (e `TROCA_PREM_*` no `.gs`, com
+    `produto-cor.test.js` falhando se as duas divergirem). Combinada com o PPCP
+    em 20/08/2026: **6 trocas/dia × 5 min**. Mudou o combinado? Muda **ali**,
+    num lugar só — tela, PDF e simulador seguem.
+  - **O rateio é pelo tempo de esteira** (`_phMinTrocaGrupo` / `_phMinTrocaDia`):
+    os 30 min são da LINHA, e cada produto paga a fatia proporcional às horas
+    que ocupou no dia. Isso dá o **mesmo percentual para todos** — num dia de
+    9 h, 30 min são 5,6% do teto tanto para quem rodou 1 h quanto para quem
+    rodou 8. Arredondar a fatia fazia quem rodou 1 h pagar 0,1% a mais: o
+    arredondamento é **só na exibição**. Sem `horasLista` (re-deploy pendente)
+    cai em **5 min por dia rodado**, a régua conservadora.
+  - **O que é MEDIDO virou informação, não entrada da conta.** Continuam sendo
+    calculados e mostrados na nota impressa e no log do editor, para conferir a
+    premissa: **preparações** (`_phEntradasDia` — quantas vezes o produto entrou
+    na linha; rodou direto = 1, saiu e voltou = 2; almoço e parada no meio não
+    contam), **paradas de esteira** (`_phTrocasLinha` — entradas na mesma hora
+    contam uma, que os dois lados da esteira mudam juntos) e a **duração média
+    das paradas de TROCA/SETUP apontadas** (`_phTrocaObs`, 30 dias, média
+    aparada, sem as abertas e sem as acima de 4 h). Se isso descolar dos 30
+    min/dia, é hora de rever a premissa — a nota impressa diz essa frase.
+  - **A EXPLICAÇÃO VAI IMPRESSA** (`_phNotaTrocaHtml`): o bloco **COMO A TROCA
+    ENTROU NA CONTA** sai no PDF do **dia** e do **período** — a premissa, o
+    rateio, a fórmula, o "para conferir" e **o que a leitura não enxerga**
+    (troca de cor e de produto custam igual; em qual posto a parada aconteceu;
+    caixa lançada sem produto). Quem lê o PDF numa reunião não tem tooltip nem
+    código à mão, e o % do teto encolheu — o papel tem que dizer por quê. **Uma
+    implementação só** para os dois relatórios (o `relatorios.test.js` falha se
+    virar duas).
+  - **Cada CÓDIGO da programação é uma preparação.** Conferido com o PPCP em
+    20/08/2026: 5 lotes, **12 códigos**, 1.150 cx → 12 preparações; entrando
+    dois a dois, **6 paradas de esteira**. É por isso que a contagem agrupa por
+    **modelo · produto · cor** e não só pelo modelo — o lote 025093 sozinho tem
+    4 cores de ESCRIVANINHA MALTA.
   - Os **guardas continuam no teto FÍSICO** (`l.teto`): ganho demonstrado,
     cascata do produto e o check de "dia impossível" do
-    `simularEsteiraPorModelo` — a troca não muda o que fisicamente não cabe
-    na esteira. O simulador do editor aplica a mesma régua nas colunas
-    teto/%teto (e avisa no log quantas trocas e de quantos minutos descontou).
-  - Rótulos: subtítulo da coluna virou **"físico − troca"** / **"simulado −
-    troca"**; o tooltip da célula mostra o físico puro, **quantas** trocas
-    entraram na conta e **de onde saiu a duração**.
-  - ⚠ A contagem de trocas exige o `.gs` re-deployado (o item passou a levar
-    **`horasLista`**, os rótulos das horas — só o *número* de horas não separa
-    "rodou direto" de "saiu e voltou"). **Sem re-deploy o painel não fica pior
-    que antes**: cai em 1 troca por dia rodado, a régua velha. A *duração*
-    medida não depende de re-deploy — sai do `getParadasPeriodo`, que já existe.
-  - ⚠ Bugs corrigidos junto no `simularEsteiraPorModelo`, os dois pela mesma
-    causa: o log vem por **data × produto × cor** e a função tratava cada linha
-    como um dia. A coluna `dias` contava lançamento (o mesmo produto em duas
-    cores no mesmo dia virava "2 dias", descontando troca a mais) **e a média
-    aparada podava cor em vez de dia** — daí o log sair com `1 dia` ao lado de
-    um "melhor dia" diferente da média, leitura impossível (visto no
-    MESA CABECEIRA SLEEP). Agora agrega por data antes de tudo, como o painel
-    faz na célula do comparativo, e as horas do dia são as **distintas** (duas
-    cores na mesma hora são uma hora de esteira, não duas).
-  - `relatorios.test.js` cobre entradas/duração/ordem da fonte e
-    `produto-cor.test.js` cobre o dia (saiu-e-voltou = 2 trocas) e o log do
-    editor.
+    `simularEsteiraPorModelo` — a troca não muda o que fisicamente não cabe na
+    esteira. O simulador do editor aplica a mesma régua e loga a premissa em uso
+    ao lado do que o apontamento mostra.
+  - ⚠ **Letra de impressão**: em 20/08/2026 o PPCP reclamou que o PDF estava
+    ilegível. Corpo de tabela foi para **12px** (10,5px no comparativo, que é
+    paisagem e tem uma coluna por dia), cabeçalho e título de seção para 9,5px,
+    subtítulo de coluna de 6,5 para 8px e a nota da troca para 10,5px. **Não
+    voltar a encolher** para caber mais coluna — se não couber, o corte é no
+    período, não na fonte.
+  - ⚠ A contagem (informativa) exige o `.gs` re-deployado — o item do
+    `getProducaoModeloPeriodo` leva **`horasLista`**, os rótulos das horas.
+  - ⚠ Bugs corrigidos no `simularEsteiraPorModelo`, os dois pela mesma causa: o
+    log vem por **data × produto × cor** e a função tratava cada linha como um
+    dia. A coluna `dias` contava lançamento **e a média aparada podava cor em
+    vez de dia** — daí o log sair com `1 dia` ao lado de um "melhor dia"
+    diferente da média (visto no MESA CABECEIRA SLEEP). Agora agrega por data
+    antes de tudo, como o painel faz na célula do comparativo, e as horas do dia
+    são as **distintas**.
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
 - **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):
