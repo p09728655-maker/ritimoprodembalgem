@@ -206,6 +206,11 @@ eval(pega(JS, 'function _phHoraMin('));
 eval(pega(JS, 'function _phEntradasDia('));
 const TROCA_PREMISSA=eval('('+JS.match(/const TROCA_PREMISSA\s*=\s*(\{[^}]*\})/)[1]+')');
 eval(pega(JS, 'function _phMinTrocaDia('));
+eval(pega(JS, 'function _phTrocaFonte('));
+eval(pega(JS, 'function _phHorasDeEntrada('));
+eval(pega(JS, 'function _phTrocasLinha('));
+eval(pega(JS, 'function _phPrepInfo('));
+eval(pega(JS, 'function _phPrepHoje('));
 // o valor real do padrão de troca, extraído do próprio painel (não duplicar 5 aqui)
 const TROCA_MIN_PADRAO = Number((JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/) || [])[1]);
 // sem medição das paradas (é o caso do teste): a régua cai no valor da planilha
@@ -240,12 +245,15 @@ const rVolta = calcPorModelo();
 ok('saiu e voltou no mesmo dia = 2 entradas (informação)', rVolta.linhas[0].nTroc, 2);
 // Ocupou 2 das 3 horas da linha → 20 dos 30 min: 376 × (120−20)/120 = 313.
 ok('e paga a fatia proporcional da premissa (376 → 313)', Math.round(rVolta.linhas[0].tetoOper), 313);
-// A duração medida nas paradas é INFORMAÇÃO desde a premissa dos 30 min: entra
-// na nota de conferência do relatório, não na régua.
+// Com a duração MEDIDA nas paradas, a régua deixa de ser a premissa: o dia teve
+// 3 paradas de esteira (LUNA entra 07h, LATERAL 08h, LUNA volta 09h) × 12 min =
+// 36 min, e a LUNA ocupou 2 das 3 horas → 24 min. 376 × (120−24)/120 = 301.
 TROCA_OBS = { min: 12, n: 9 };
 const rObs = calcPorModelo();
-ok('a medição continua disponível para conferir', rObs.linhas[0].troca, 12);
-ok('mas o teto segue a premissa, não a medição', Math.round(rObs.linhas[0].tetoOper), 313);
+ok('a duração medida está disponível', rObs.linhas[0].troca, 12);
+ok('e o teto passa a seguir a medição, não a premissa',
+   Math.round(rObs.linhas[0].tetoOper), 301);
+ok('a fatia do produto sai da régua do dia', Math.round(rObs.linhas[0].minTroca), 24);
 TROCA_OBS = null;
 PONTOS_DIA = { porHoraModelo: [
   { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600, tetoCxH: 376 },
@@ -416,9 +424,11 @@ simularEsteiraPorModelo(30);
 // A de 5 h (13:00→18:00) é apontamento esquecido, não troca: fica fora, e as 3
 // que sobraram viram a média aparada de 12 min — que o log mostra para
 // CONFERIR a premissa, sem entrar na conta.
-ok('o log abre dizendo que a régua é a premissa',
-   /PREMISSA: teto\/%teto descontam 30 min\/dia de troca de produto \(6 × 5 min\)/.test(
-     LOGS.find(l => /^PREMISSA:/.test(l)) || ''), true);
+// Com paradas de troca apontadas, a régua deixa de ser a premissa: 3 paradas
+// de esteira no dia × 12 min = 36 min/dia, e o log diz de onde saiu.
+ok('o log abre dizendo que a régua foi MEDIDA',
+   /RÉGUA MEDIDA: teto\/%teto descontam 36 min\/dia de troca \(3 parada\(s\) de esteira\/dia × 12 min, de 3 parada\(s\) apontada\(s\)\) — premissa combinada: 30 min\/dia/.test(
+     LOGS.find(l => /^RÉGUA MEDIDA:/.test(l)) || ''), true);
 ok('e mostra a medição ao lado, para conferir',
    /as paradas de troca apontadas duraram 12 min em média \(3 amostra\(s\)\)/.test(
      LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
@@ -429,9 +439,9 @@ ok('a premissa do backend bate com a do painel',
    [TROCA_PREMISSA.minDia,TROCA_PREMISSA.trocasDia,TROCA_PREMISSA.min]);
 ok('MADERO saiu e voltou: 2 trocas num dia só', cols('MESA CABECEIRA MADERO')[1], '2');
 ok('VIVARE entrou uma vez: 1 troca', cols('SAPATEIRA VIVARE')[1], '1');
-// A MADERO ocupou 2 das 3 horas da linha no dia → 20 dos 30 min da premissa:
-// 291 × (120 − 20) ÷ 120 = 242.
-ok('e o teto operacional desconta a fatia da premissa', cols('MESA CABECEIRA MADERO')[5], '243');
+// A MADERO ocupou 2 das 3 horas da linha no dia → 24 dos 36 min medidos:
+// 291 × (120 − 24) ÷ 120 = 233.
+ok('e o teto operacional desconta a fatia medida', cols('MESA CABECEIRA MADERO')[5], '233');
 // "quantas trocas deram na média por dia?" — 2 da MADERO + 1 da VIVARE num dia.
 // MADERO entra 07h e volta 09h, VIVARE entra 08h: 3 preparações em 3 horas
 // distintas, então nada foi simultâneo e são 3 paradas de esteira também.

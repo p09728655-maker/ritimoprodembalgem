@@ -2147,7 +2147,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.10.2';
+const APP_VER   = '7.11.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3652,6 +3652,9 @@ function calcPorModelo(){
   });
   ordem.sort((a,b)=>porModelo[b].caixas-porModelo[a].caixas);
   const obsT=trocaObs();
+  // Régua do dia: as paradas de esteira de HOJE × a duração medida nas paradas
+  // apontadas. Sem medição, a premissa. Mesma decisão do comparativo.
+  const _tlHoje=_phPrepHoje(), _fonteHoje=_phTrocaFonte(_tlHoje,obsT);
   const linhas=ordem.map(k=>{
     const m=porModelo[k];
     const teto=m.hTeto>0?m.cxTeto/m.hTeto:0;
@@ -3659,7 +3662,7 @@ function calcPorModelo(){
     // Quantas vezes o modelo ENTROU na linha hoje — informação, não régua.
     const nTroc=_phEntradasDia([...m.horas],horasDia);
     // A régua é a premissa: a fatia do modelo nos 30 min/dia de troca.
-    const minTroca=_phMinTrocaDia([...m.horas],horasDia);
+    const minTroca=_phMinTrocaDia([...m.horas],horasDia,_fonteHoje.minDia);
     return { modelo:m.modelo, nome:m.nome, caixas:m.caixas,
       pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
       cor:[...m.cores].sort().join(' · '),
@@ -3705,7 +3708,7 @@ function renderProducaoPorHoraDedicada(){
       <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
       <td class="mono">${fmtN(m.media)}</td>
-      ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${fmtN(Math.round(m.minTroca*10)/10)} min de troca — a fatia deste produto nos ${TROCA_PREMISSA.minDia} min/dia da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min): ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
+      ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${fmtN(Math.round(m.minTroca*10)/10)} min de troca — a fatia deste produto nos ${fmtN(_fonteHoje.minDia)} min/dia ${_fonteHoje.medido?'MEDIDOS hoje (paradas de esteira × duração das paradas apontadas)':'da premissa'}: ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
     </tr>`).join('');
   // Quantas trocas a linha já fez HOJE (o "por dia" do período, no dia de hoje).
   const tlHoje=_phPrepHoje();
@@ -3823,24 +3826,47 @@ const TROCA_MIN_PADRAO=5;
 // mais que uma contagem que muda de leitura conforme a cobertura do dia.
 // Mudou o combinado? Muda AQUI, num lugar só — tela, PDF e simulador seguem.
 const TROCA_PREMISSA={ minDia:30, trocasDia:6, min:5 };
-// Os 30 min são da LINHA. Cada produto paga a fatia proporcional ao tempo que
-// ocupou a esteira no dia — o que dá o MESMO percentual para todos (30 min de
-// um dia de 9 h são 5,6% do teto, para quem rodou 1 h ou 8). Sem a lista de
-// horas do backend (re-deploy pendente) não dá para saber a fatia: cai nos
-// 5 min do produto por dia rodado, a régua conservadora de antes.
-function _phMinTrocaGrupo(k, datas, cellAcc, horasLinha){
+// QUANTOS MINUTOS DE TROCA TEVE O DIA. Medido quando dá (pedido do PPCP,
+// 20/08/2026 — "pode fazer pela conta feita, fica mais real"): as **paradas de
+// esteira daquele dia** (quantas vezes a esteira parou para trocar, contadas no
+// log) × a **duração média das paradas de TROCA/SETUP apontadas**. Foi o que o
+// próprio painel mostrou: 7,1 paradas/dia × 7,3 min = ~52 min/dia, contra os
+// 30 da premissa. Sem medição — dia sem apontamento de troca, backend antigo,
+// amostra pequena — devolve a PREMISSA, que passa a ser só a rede.
+// Devolve uma FUNÇÃO do dia: cada dia paga o que ele teve, não uma média.
+function _phMinDia(tl, obs){
+  const medido = obs && obs.n>0 && obs.min>0 && tl && tl.evDia;
+  if(!medido) return () => TROCA_PREMISSA.minDia;
+  return d => { const ev=tl.evDia[d]||0; return ev>0 ? ev*obs.min : TROCA_PREMISSA.minDia; };
+}
+// Os minutos de troca do dia são da LINHA. Cada produto paga a fatia
+// proporcional ao tempo que ocupou a esteira — o que dá o MESMO percentual para
+// todos (30 min de um dia de 9 h são 5,6% do teto, para quem rodou 1 h ou 8).
+// Sem a lista de horas do backend (re-deploy pendente) não dá para saber a
+// fatia: cai nos 5 min do produto por dia rodado, a régua conservadora de antes.
+function _phMinTrocaGrupo(k, datas, cellAcc, horasLinha, minDia){
+  const md = (typeof minDia==='function') ? minDia : (()=>TROCA_PREMISSA.minDia);
   let min=0;
   (datas||[]).forEach(d=>{
     const a=cellAcc[k+'|'+d]; if(!a||!a.caixas) return;
     const hg=Object.keys(a.hSet||{}).length, hd=Object.keys((horasLinha||{})[d]||{}).length;
-    min += (hg&&hd) ? TROCA_PREMISSA.minDia*Math.min(1,hg/hd) : TROCA_PREMISSA.min;
+    min += (hg&&hd) ? md(d)*Math.min(1,hg/hd) : TROCA_PREMISSA.min;
   });
   return min;
 }
-// Mesma fatia, para a visão do DIA (um dia só).
-function _phMinTrocaDia(horasGrupo, horasDia){
+// Mesma fatia, para a visão do DIA (um dia só) — minDia aqui é o número.
+function _phMinTrocaDia(horasGrupo, horasDia, minDia){
+  const md = minDia>0 ? minDia : TROCA_PREMISSA.minDia;
   const hg=(horasGrupo||[]).length, hd=(horasDia||[]).length;
-  return (hg&&hd) ? TROCA_PREMISSA.minDia*Math.min(1,hg/hd) : TROCA_PREMISSA.min;
+  return (hg&&hd) ? md*Math.min(1,hg/hd) : TROCA_PREMISSA.min;
+}
+// Quantos minutos de troca o dia teve, e de onde saiu o número — para a tela e
+// o papel dizerem "medido" ou "premissa" sem repetir a regra.
+function _phTrocaFonte(tl, obs){
+  const medido = obs && obs.n>0 && obs.min>0 && tl && tl.evPorDia>0;
+  return medido
+    ? { medido:true, minDia:Math.round(tl.evPorDia*obs.min), ev:tl.evPorDia, min:obs.min, n:obs.n }
+    : { medido:false, minDia:TROCA_PREMISSA.minDia };
 }
 function _phTetoOper(teto, horasTot, nTrocas, trocaMin){
   if(!(teto>0)) return 0;
@@ -3913,6 +3939,7 @@ function _phTrocasLinha(itens){
   });
   const dias=Object.keys(porDia).filter(d=>Object.keys(porDia[d].linha).length);
   let tot=0, ev=0;
+  const evDia={};   // paradas de esteira POR DIA — é a base da régua medida
   dias.forEach(d=>{
     const x=porDia[d], horas=Object.keys(x.linha);
     const comEntrada={};
@@ -3922,10 +3949,11 @@ function _phTrocasLinha(itens){
       // De qual HORA foi cada entrada — é o que junta as trocas simultâneas.
       _phHorasDeEntrada(hg,horas).forEach(h=>{ comEntrada[h]=1; });
     });
-    ev+=Object.keys(comEntrada).length;
+    evDia[d]=Object.keys(comEntrada).length;
+    ev+=evDia[d];
   });
   const nd=dias.length;
-  return { trocas:tot, eventos:ev, dias:nd,
+  return { trocas:tot, eventos:ev, dias:nd, evDia,
            porDia:nd?Math.round(tot/nd*10)/10:0,
            evPorDia:nd?Math.round(ev/nd*10)/10:0 };
 }
@@ -3964,12 +3992,13 @@ function _phHorasDeEntrada(horasGrupo, horasDia){
 }
 // Frase pronta do "quantas trocas por dia" — a mesma nos três lugares que a
 // mostram (tela do comparativo, PDF do período e total do dia).
-function _phTrocasLinhaTxt(tl){
+function _phTrocasLinhaTxt(tl, fonte){
   if(!tl||!tl.dias||!tl.trocas) return '';
   const ev=(tl.eventos&&tl.eventos<tl.trocas)
     ? ` · ${fmtN(tl.eventos)} troca(s) de esteira (${fmtN(tl.evPorDia)}/dia — lados que mudam juntos contam uma)`
     : '';
-  return `${fmtN(tl.trocas)} preparação(ões) em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)${ev}`;
+  const mins = fonte ? ` · ${fmtN(fonte.minDia)} min/dia de troca (${fonte.medido?'medido':'premissa'})` : '';
+  return `${fmtN(tl.trocas)} preparação(ões) em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)${ev}${mins}`;
 }
 // A EXPLICAÇÃO DA CONTA VAI IMPRESSA (pedido do PPCP, 20/08/2026). Quem lê o
 // PDF numa reunião não tem tooltip nem código à mão: se o % do teto encolheu
@@ -3978,25 +4007,23 @@ function _phTrocasLinhaTxt(tl){
 // o relatório do dia e o do período imprimem o mesmo texto (só muda "hoje" ×
 // "no período"), e o CSS vai inline porque cada relatório tem a folha dele.
 function _phNotaTrocaHtml(tl, obs, ehDia){
-  const P=TROCA_PREMISSA;
-  // "PARA CONFERIR": o que o apontamento mostra, ao lado da premissa. Não entra
-  // na conta — serve para o PPCP ver se 6 × 5 min ainda descreve o chão.
-  const conf=[];
-  const fonteTxt = (tl&&tl.fonte==='log') ? '' : ' <i>(estimativa por hora — o backend ainda não manda a leitura linha a linha)</i>';
-  if(tl&&tl.trocas) conf.push(ehDia
-    ? `hoje foram <b>${fmtN(tl.trocas)}</b> preparação(ões)${tl.eventos&&tl.eventos<tl.trocas?` em <b>${fmtN(tl.eventos)}</b> parada(s) de esteira`:''}`
-    : `no período, <b>${fmtN(tl.porDia)}</b> preparação(ões)/dia${tl.eventos&&tl.eventos<tl.trocas?` em <b>${fmtN(tl.evPorDia)}</b> parada(s) de esteira/dia`:''}`);
-  if(obs&&obs.n>0&&obs.min>0) conf.push(`as paradas de TROCA/SETUP apontadas nos últimos ${TROCA_OBS_DIAS} dias duraram <b>${fmtN(obs.min)} min</b> em média (${obs.n} amostra${obs.n===1?'':'s'})`);
-  const conferir = conf.length
-    ? `${conf.join(' · ')}${fonteTxt}${tl&&tl.paralelo?' · houve hora com <b>dois produtos ao mesmo tempo</b> na esteira':''}. Se isso descolar dos ${fmtN(P.minDia)} min/dia, é hora de rever a premissa.`
-    : `ainda não há apontamento suficiente para confrontar a premissa — quanto mais parada de troca registrada, mais cedo dá para trocar a premissa por medição.`;
+  const P=TROCA_PREMISSA, f=_phTrocaFonte(tl, obs);
+  const fonteTxt=(tl&&tl.fonte==='log') ? '' : ' <i>(estimativa por hora — o backend ainda não manda a leitura linha a linha)</i>';
+  // A CONTA: medida quando dá, premissa quando não dá. Escrever qual das duas
+  // está valendo é o mínimo — o % do teto muda conforme a régua.
+  const conta = f.medido
+    ? `<b>${fmtN(f.minDia)} min por dia</b> de troca de produto, <b>medidos</b>: ${fmtN(f.ev)} parada(s) de esteira por dia (contadas no apontamento) × <b>${fmtN(f.min)} min</b> por troca (média aparada de ${f.n} parada(s) de TROCA/SETUP apontadas nos últimos ${TROCA_OBS_DIAS} dias). A premissa combinada com o PPCP é ${fmtN(P.minDia)} min/dia (${P.trocasDia} × ${P.min} min) — quando não há o que medir, é ela que vale.`
+    : `<b>${fmtN(P.minDia)} min por dia</b> de troca de produto (${P.trocasDia} trocas × ${P.min} min), <b>premissa</b> combinada com o PPCP. Vale enquanto não houver parada de troca apontada suficiente para medir.`;
+  const quantas = (tl&&tl.trocas)
+    ? (ehDia ? `Hoje foram <b>${fmtN(tl.trocas)}</b> preparação(ões)${tl.eventos&&tl.eventos<tl.trocas?` em <b>${fmtN(tl.eventos)}</b> parada(s) de esteira`:''}${fonteTxt}.`
+             : `No período foram <b>${fmtN(tl.trocas)}</b> preparação(ões) em ${tl.dias} dia${tl.dias===1?'':'s'} — <b>${fmtN(tl.porDia)}/dia</b>${tl.eventos&&tl.eventos<tl.trocas?`, que viraram <b>${fmtN(tl.evPorDia)}</b> parada(s) de esteira por dia`:''}${fonteTxt}.`)
+    : `Sem apontamento hora a hora no período, a contagem cai em 1 troca por dia rodado.`;
   return `<div style="margin-top:12px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #718096;border-radius:4px;font-size:10.5px;color:#3d4757;line-height:1.75">
   <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;color:#1a1a2e;margin-bottom:5px">COMO A TROCA ENTROU NA CONTA</div>
-  <div><b>A PREMISSA</b> — <b>${fmtN(P.minDia)} min por dia</b> de troca de produto (${P.trocasDia} trocas × ${P.min} min), combinada com o PPCP. É <b>premissa, não medição</b>: vale igual para todos os dias do período.</div>
-  <div><b>COMO É RATEADA</b> — os ${fmtN(P.minDia)} min são da <b>esteira</b>, não de um produto. Cada um paga a fatia proporcional ao tempo que ocupou a linha no dia, o que dá o <b>mesmo percentual para todos</b>: num dia de 9 h, ${fmtN(P.minDia)} min são 5,6% do teto, tanto para quem rodou 1 h quanto para quem rodou 8.</div>
-  <div><b>NO TETO</b> — o % é a média cx/h dividida pelo teto físico da esteira já sem esse tempo: <span style="font-family:'IBM Plex Mono',monospace">teto × (minutos rodados − minutos de troca) ÷ minutos rodados</span>. Por isso o % ficou menor que antes, quando a régua não descontava troca nenhuma.</div>
-  <div><b>PARA CONFERIR</b> — ${conferir}</div>
-  <div><b>DE ONDE VEM A CONTAGEM</b> — cada bipe é uma linha do log, na ordem em que aconteceu, então a leitura enxerga troca <b>dentro da mesma hora</b>. Linhas que se <b>alternam</b> (A, B, A, B) não são troca a cada 20 caixas: são dois produtos rodando <b>ao mesmo tempo</b> nos dois lados da esteira — nessas horas conta os produtos distintos, não os blocos.</div>
+  <div><b>A CONTA</b> — ${conta}</div>
+  <div><b>COMO É RATEADA</b> — esses minutos são da <b>esteira</b>, não de um produto. Cada um paga a fatia proporcional ao tempo que ocupou a linha no dia, o que dá o <b>mesmo percentual para todos</b>: num dia de 9 h, ${fmtN(f.minDia)} min são ${fmtP(f.minDia/540*100)} do teto, tanto para quem rodou 1 h quanto para quem rodou 8.</div>
+  <div><b>NO TETO</b> — o % é a média cx/h dividida pelo teto físico da esteira já sem esse tempo: <span style="font-family:'IBM Plex Mono',monospace">teto × (minutos rodados − minutos de troca) ÷ minutos rodados</span>.</div>
+  <div><b>QUANTAS FORAM</b> — ${quantas} Cada bipe é uma linha do log, na ordem em que aconteceu, então a leitura enxerga troca <b>dentro da mesma hora</b>. Linhas que se <b>alternam</b> (A, B, A, B) não são troca a cada 20 caixas: são dois produtos rodando <b>ao mesmo tempo</b> nos dois lados da esteira — nessas horas conta os produtos distintos, não os blocos.${tl&&tl.paralelo?' Houve hora assim no período.':''}</div>
   <div><b>O QUE NÃO ENXERGA</b> — troca de <b>cor</b> e troca de <b>produto</b> custam o mesmo na conta (a planilha tem um tempo de troca só); em qual <b>posto</b> a parada aconteceu; e caixa lançada <b>sem produto</b> selecionado no app, que fica fora da análise por modelo.</div>
 </div>`;
 }
@@ -4279,15 +4306,23 @@ async function renderModeloPeriodo(){
   // A medição da troca não segura a tela: desenha com o que tem (valor da
   // planilha) e redesenha quando a média das paradas chega. Não vira laço —
   // na segunda passada trocaObs() já responde e ninguém busca de novo.
+  // Quantas trocas a linha fez por dia — conta da LINHA inteira, não muda com
+  // o filtro de modelo nem com o nível de agrupamento. Vem antes da régua
+  // porque é dela que sai o nº de paradas de esteira de cada dia.
+  const _tl=_phPrepInfo(itens,PREP_PERIODO);
   const obsT=trocaObs();
   if(!obsT) carregarTrocaObs().then(o=>{ if(o&&o.n>0&&o.min>0) renderModeloPeriodo(); });
+  // Régua do dia: paradas de esteira daquele dia × duração medida. Sem medição
+  // cai na premissa — quem decide é o _phMinDia, um lugar só.
+  const minDiaFn=_phMinDia(_tl,obsT);
+  const fonteTroca=_phTrocaFonte(_tl,obsT);
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);
     const tetoReal=_phTeto(rowAcc[k]);
     const nd=accsDia.filter(a=>a&&a.caixas>0).length;
     const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
-    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha);
+    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
@@ -4311,7 +4346,7 @@ async function renderModeloPeriodo(){
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right" title="média sem o melhor e o pior dia (3+ dias) — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
-    + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças), já descontados os '+TROCA_PREMISSA.minDia+' min/dia de troca de produto (premissa combinada com o PPCP), rateados pelo tempo que cada produto ocupou a esteira'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:9px;color:${simUse?"var(--warn)":"var(--txt2)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'simulado − troca':'físico − troca'}</span></th>`:'')
+    + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças), já descontados os '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto ('+(fonteTroca.medido?'medidos no período':'premissa combinada com o PPCP')+'), rateados pelo tempo que cada produto ocupou a esteira'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:9px;color:${simUse?"var(--warn)":"var(--txt2)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'simulado − troca':'físico − troca'}</span></th>`:'')
     + `</tr>`;
 
   body.innerHTML=linhas.map(l=>{
@@ -4329,7 +4364,7 @@ async function renderModeloPeriodo(){
     const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
-    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando ${fmtN(Math.round(l.minTroca*10)/10)} min de troca — a fatia deste produto nos ${TROCA_PREMISSA.minDia} min/dia da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min): ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
+    const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando ${fmtN(Math.round(l.minTroca*10)/10)} min de troca — a fatia deste produto nos ${fmtN(fonteTroca.minDia)} min/dia ${fonteTroca.medido?`MEDIDOS (${fmtN(fonteTroca.ev)} paradas de esteira/dia × ${fmtN(fonteTroca.min)} min, de ${fonteTroca.n} paradas apontadas)`:`da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min)`}: ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
     return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
@@ -4337,10 +4372,8 @@ async function renderModeloPeriodo(){
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+TROCA_PREMISSA.minDia+' min/dia de troca de produto, premissa)'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
-  // Quantas trocas a linha fez por dia — conta da LINHA inteira, não muda com
-  // o filtro de modelo nem com o nível de agrupamento.
-  const tLinha=_phTrocasLinhaTxt(_phPrepInfo(itens,PREP_PERIODO));
+  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+')'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
+  const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${legenda}`;
 }
 
@@ -4382,7 +4415,8 @@ async function gerarRelatorioProducaoHora(){
   // não tem como se redesenhar depois, e sair com o valor nominal da planilha
   // seria imprimir uma régua diferente da que está na tela.
   await carregarTrocaObs();
-  const tLinha=_phTrocasLinhaTxt(_phPrepInfo(itens,PREP_PERIODO));
+  const _tl=_phPrepInfo(itens,PREP_PERIODO);
+  const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
   const {ehFam,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
@@ -4417,13 +4451,15 @@ async function gerarRelatorioProducaoHora(){
   const simEst=_phEsteiraSync();
   const simUse=(metric==='mediaH')?simEst:null;
   const obsT=trocaObs();
+  const minDiaFn=_phMinDia(_tl,obsT);
+  const fonteTroca=_phTrocaFonte(_tl,obsT);
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric);
     const tetoReal=_phTeto(rowAcc[k]);
     const nd=accsDia.filter(a=>a&&a.caixas>0).length;
     const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
-    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha);
+    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
@@ -4591,7 +4627,7 @@ ${simUse?`<div class="rp-note" style="border:1px solid #FF9800;background:#fff8e
 ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:#3d4757;margin:0 0 8px;padding:8px 11px;background:#f8fafc;border:1px solid #edf2f7;border-radius:4px">
   <span><b style="color:#1a1a2e">MÉD.PERÍODO</b> = padrão de agora → é a base para <b>prazo e meta do dia</b></span>
   <span><b style="color:#1a1a2e">MELHOR DIA</b> = teto praticado (a equipe já fez) → é a <b>meta de melhoria</b> justa</span>
-  ${temTeto?`<span><b style="color:#1a1a2e">${simUse?'% TETO SIM.':'% TETO EST.'}</b> = limite ${simUse?'simulado':'físico'} da esteira, já descontados os ${TROCA_PREMISSA.minDia} min/dia de troca de produto (premissa) → <b>régua de comparação</b>; só vira ação acima de ~85%</span>`:''}
+  ${temTeto?`<span><b style="color:#1a1a2e">${simUse?'% TETO SIM.':'% TETO EST.'}</b> = limite ${simUse?'simulado':'físico'} da esteira, já descontados os ${fmtN(fonteTroca.minDia)} min/dia de troca de produto (${fonteTroca.medido?'medidos':'premissa'}) → <b>régua de comparação</b>; só vira ação acima de ~85%</span>`:''}
 </div>`}
 <table>
   <thead>
@@ -4615,7 +4651,7 @@ ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
-  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${tLinha?' · '+tLinha:''}${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto da esteira (físico − '+TROCA_PREMISSA.minDia+' min/dia de troca)'):''}</span>
+  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${tLinha?' · '+tLinha:''}${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca)'):''}</span>
 </div>
 
 </body>
