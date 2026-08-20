@@ -197,9 +197,18 @@ let PONTOS_DIA = { porHoraModelo: [
   { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800, tetoCxH: 376 },
   { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
 ]};
+// o rp-core.js dá normHora/toMin, que a contagem de trocas usa
+global.window = global;
+require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 eval(pega(JS, 'function _phTetoOper('));
+eval(pega(JS, 'function _phTroca('));
+eval(pega(JS, 'function _phHoraMin('));
+eval(pega(JS, 'function _phEntradasDia('));
 // o valor real do padrão de troca, extraído do próprio painel (não duplicar 5 aqui)
 const TROCA_MIN_PADRAO = Number((JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)/) || [])[1]);
+// sem medição das paradas (é o caso do teste): a régua cai no valor da planilha
+let TROCA_OBS = null;
+function trocaObs(){ return TROCA_OBS; }
 eval(pega(JS, 'function calcPorModelo('));
 const r = calcPorModelo();
 ok('produtos diferentes do mesmo código não somam juntos', r.linhas.length, 2);
@@ -208,10 +217,35 @@ ok('e aparecem na coluna COR', r.linhas[0].cor, 'CUMARU · OFF WHITE');
 ok('peso continua saindo do código, só somado depois', r.linhas[0].pesoKg, 1095);
 ok('a coluna COR entra quando há cor', r.temCor, true);
 ok('o teto do dia acompanha (mesma régua do período)', Math.round(r.linhas[0].teto), 376);
-// LUNA 670 rodou 2h hoje: 1 troca de 5 min (padrão, backend sem trocaMin)
-// diluída em 120 min → 376 × 115/120 = 360. O físico (l.teto) fica intacto.
+// LUNA 670 rodou 07:00 e 08:00 SEGUIDAS: entrou na linha uma vez só, então é
+// 1 troca de 5 min (padrão, backend sem trocaMin) diluída em 120 min →
+// 376 × 115/120 = 360. O físico (l.teto) fica intacto.
 ok('o teto exibido desconta a troca do dia (376 → 360)', Math.round(r.linhas[0].tetoOper), 360);
+ok('rodou direto = 1 troca', r.linhas[0].nTroc, 1);
 ok('sem trocaMin do backend vale o padrão do painel', r.linhas[0].troca, TROCA_MIN_PADRAO);
+
+// Saiu e VOLTOU no mesmo dia: a régua antiga (1 por dia) cobrava uma troca; a
+// linha pagou duas. LUNA 670 roda 07:00, a LATERAL entra às 08:00 e a 670
+// volta às 09:00 → 2 trocas de 5 min em 120 min: 376 × 110/120 = 345.
+PONTOS_DIA = { porHoraModelo: [
+  { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600, tetoCxH: 376 },
+  { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
+  { hora: '09:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas:  90, pesoKg: 657, pontos: 5040, tetoCxH: 376 },
+]};
+const rVolta = calcPorModelo();
+ok('saiu e voltou no mesmo dia = 2 trocas', rVolta.linhas[0].nTroc, 2);
+ok('e o teto exibido paga as duas (376 → 345)', Math.round(rVolta.linhas[0].tetoOper), 345);
+// A duração medida nas paradas manda no valor nominal da planilha.
+TROCA_OBS = { min: 12, n: 9 };
+const rObs = calcPorModelo();
+ok('medida nas paradas ganha do padrão', rObs.linhas[0].troca, 12);
+ok('e o teto cai junto (2 × 12 min em 120 → 301)', Math.round(rObs.linhas[0].tetoOper), 301);
+TROCA_OBS = null;
+PONTOS_DIA = { porHoraModelo: [
+  { hora: '07:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'OFF WHITE', caixas: 100, pesoKg: 730, pontos: 5600, tetoCxH: 376 },
+  { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800, tetoCxH: 376 },
+  { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
+]};
 ok('e a coluna % TETO EST. entra quando o backend manda teto', r.temTeto, true);
 // Backend antigo não manda cor: a coluna some, em vez de virar parede de "—".
 PONTOS_DIA = { porHoraModelo: [
@@ -255,17 +289,34 @@ const _addDia = (nome, data, cxh, teto) => _mkItens.push({ modelo: nome.slice(0,
 [[ '13/08',2],['14/08',1],['17/08',318],['18/08',84]].forEach(([d,v])=>_addDia('MESA LATERAL DECOR 470', d, v, 300));
 [[ '04/08',139],['05/08',46]].forEach(([d,v])=>_addDia('LIVREIRO ENCANTO', d, v, 0));
 function getProducaoModeloPeriodo() { return { ok: true, itens: _mkItens }; }
+// Paradas do período: é daqui que sai a DURAÇÃO média da troca. Vazio = sem
+// amostra, e a régua cai no TEMPO DE TROCA MIN do catálogo.
+let _mkParadas = [];
+function getParadasPeriodo() { return { ok: true, paradas: _mkParadas }; }
+// os limites saem do próprio .gs (const dentro de eval não vaza para cá)
+const PAR_TROCA_RE      = eval(GS.match(/const PAR_TROCA_RE\s*=\s*(.+);/)[1]);
+const TROCA_OBS_MIN_N   = Number(GS.match(/const TROCA_OBS_MIN_N\s*=\s*(\d+)/)[1]);
+const TROCA_OBS_MAX_MIN = Number(GS.match(/const TROCA_OBS_MAX_MIN\s*=\s*(\d+)/)[1]);
+eval(pega(GS, 'function _horaStr('));
+eval(pega(GS, 'function _heMinutosDaHora('));
+eval(pega(GS, 'function _entradasDia('));
+eval(pega(GS, 'function _trocaObsMin('));
+eval(pega(GS, 'function _trocasLinhaPorDia('));
 eval(pega(GS, 'function simularEsteiraPorModelo('));
 simularEsteiraPorModelo(30);
 const linha = nome => LOGS.find(l => l.indexOf(nome) === 0) || '';
 const cols = nome => linha(nome).replace(nome, '').trim().split(/\s+/);
-// colunas: dias · cx · aparada · melhor · teto · %teto · %melhor
+// colunas: dias · trocas · cx · aparada · melhor · teto · %teto · %melhor
 ok('MADERO: aparada 148 (não 164), melhor 187',
-   cols('MESA CABECEIRA MADERO').slice(2, 4), ['148', '187']);
-ok('VIVARE: aparada 122 (não 87)', cols('SAPATEIRA VIVARE')[2], '122');
-ok('% do teto da MADERO = 148/291', cols('MESA CABECEIRA MADERO')[5], '51%');
+   cols('MESA CABECEIRA MADERO').slice(3, 5), ['148', '187']);
+ok('VIVARE: aparada 122 (não 87)', cols('SAPATEIRA VIVARE')[3], '122');
+ok('% do teto da MADERO = 148/291', cols('MESA CABECEIRA MADERO')[6], '51%');
 ok('produto sem teto mostra — nas três colunas',
-   cols('LIVREIRO ENCANTO').slice(4), ['—', '—', '—']);
+   cols('LIVREIRO ENCANTO').slice(5), ['—', '—', '—']);
+// Sem horasLista (backend antigo) cada dia rodado conta 1 troca — a régua
+// velha. E "dias" é dia DISTINTO: o mesmo produto em duas cores no mesmo dia
+// era contado como dois dias, inflando dias e desconto.
+ok('sem lista de horas, trocas = dias rodados', cols('MESA CABECEIRA MADERO')[1], '4');
 ok('dia a <30% do padrão vira alerta de apontamento',
    LOGS.some(l => /CONFERIR APONTAMENTO/.test(l) && /DECOR 470 em 13\/08: 2 cx\/h/.test(l)), true);
 // 318 cx/h com teto de 300 é fisicamente impossível: mais caixas do que cabem
@@ -290,9 +341,42 @@ ok('e mostra o real da planilha ao lado', /real na planilha: 8\.5 · 350/.test(L
 // Dobrando a velocidade (8,5 → 17), o teto de cada produto dobra: a MADERO
 // tinha teto 291 → vira 582.
 ok('teto da MADERO dobra com o dobro de velocidade',
-   cols('MESA CABECEIRA MADERO')[4], '582');
+   cols('MESA CABECEIRA MADERO')[5], '582');
 ok('produto sem teto continua sem teto na simulação',
-   cols('LIVREIRO ENCANTO').slice(4), ['—', '—', '—']);
+   cols('LIVREIRO ENCANTO').slice(5), ['—', '—', '—']);
+
+// ── trocas: quantas foram (log hora a hora) e quanto duraram (paradas) ────
+// 20/08: a MADERO roda às 07:00, a VIVARE entra às 08:00 e a MADERO VOLTA às
+// 09:00. A régua antiga cobrava 1 troca por dia rodado; a linha pagou 3 (2 da
+// MADERO, 1 da VIVARE). A duração sai da média aparada das paradas de troca
+// apontadas — 10, 12 e 15 min com uma esquecida de 5h fora → 12 min.
+LOGS.length = 0;
+_mkItens.length = 0;
+_mkItens.push({ modelo: '5011', nome: 'MESA CABECEIRA MADERO', data: '20/08', caixas: 200,
+                horas: 2, mediaHora: 100, tetoCxH: 291, trocaMin: 5, horasLista: ['07:00', '09:00'] });
+_mkItens.push({ modelo: '5012', nome: 'SAPATEIRA VIVARE', data: '20/08', caixas: 100,
+                horas: 1, mediaHora: 100, tetoCxH: 310, trocaMin: 5, horasLista: ['08:00'] });
+_mkParadas = [
+  { tipo: 'Troca de produto', ini: '07:55', fim: '08:07' },
+  { tipo: 'Setup',            ini: '08:50', fim: '09:00' },
+  { tipo: 'Troca de produto', ini: '10:00', fim: '10:15' },
+  { tipo: 'Almoço',           ini: '11:00', fim: '12:12' },
+  { tipo: 'Troca de produto', ini: '13:00', fim: '18:00' },
+];
+simularEsteiraPorModelo(30);
+// a de 5 h (13:00→18:00) é apontamento esquecido, não troca: fica fora, e as
+// 3 que sobraram viram a média aparada de 12 min.
+ok('o log diz a duração medida nas paradas, não a nominal',
+   /12 min por troca .*3 parada\(s\) de troca apontada\(s\)/.test(LOGS.find(l => /descontam as TROCAS/.test(l)) || ''), true);
+ok('MADERO saiu e voltou: 2 trocas num dia só', cols('MESA CABECEIRA MADERO')[1], '2');
+ok('VIVARE entrou uma vez: 1 troca', cols('SAPATEIRA VIVARE')[1], '1');
+// 291 × (120 − 2×12) ÷ 120 = 233 (a régua antiga daria 291 × 115/120 = 279).
+ok('e o teto operacional paga as duas trocas medidas', cols('MESA CABECEIRA MADERO')[5], '233');
+// "quantas trocas deram na média por dia?" — 2 da MADERO + 1 da VIVARE num dia.
+ok('o log responde quantas trocas a linha faz por dia',
+   /a linha trocou 3× em 1 dia\(s\) — média de 3 troca\(s\)\/dia a 12 min cada/.test(LOGS.find(l => /^TROCAS:/.test(l)) || ''), true);
+ok('e quanto isso custa de esteira parada por dia',
+   /36 min\/dia de esteira parada em troca/.test(LOGS.find(l => /^TROCAS:/.test(l)) || ''), true);
 
 // ── 6) guarda-corpo: o agrupamento do comparativo é UM só ──────────────────
 console.log('\n── o comparativo não pode voltar a ter duas regras ──');
@@ -329,10 +413,8 @@ ok('a chave do comparativo carrega o produto',
 // ninguém tocou no app quando a planilha mudou.
 console.log('\n── o app do operador mostra a COR ──');
 
-// nomeComCor mora no rp-core.js (implementação única dos dois painéis).
-global.window = global;
-require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
-
+// nomeComCor mora no rp-core.js (implementação única dos dois painéis) — já
+// carregado lá em cima, junto com o normHora/toMin da contagem de trocas.
 const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
 const MJS = [...MOB.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 

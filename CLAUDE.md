@@ -636,25 +636,62 @@ via Google Apps Script (JSONP).
   - O `title` da célula diz em palavras por que a cor é aquela; a legenda do
     rodapé acompanha. Sem takt configurado (`alvoRit` 0) volta a valer só a
     regularidade — não há linha com que comparar.
-- **O teto EXIBIDO é operacional: desconta o TEMPO DE TROCA do produto**
+- **O teto EXIBIDO é operacional: desconta as TROCAS do produto**
   (pedido do PPCP, 19/08/2026 — "100% sem descontar a troca obrigatória não é
-  régua alcançável"). `_phTetoOper` no v7: **1 troca por dia rodado**, diluída
-  nos minutos rodados — `teto × (min − dias×troca) ÷ min`. A troca vem da
-  coluna **`TEMPO DE TROCA MIN`** da `PRODUTO_CODIGO` (o `.gs` manda `trocaMin`
-  por item no `getProducaoModeloPeriodo` e no `porHoraModelo` do `getPontosDia`,
-  maior valor entre os códigos do grupo); **backend antigo → `TROCA_MIN_PADRAO`
-  (5 min)**, que é o valor da planilha inteira hoje. Vale tela e PDF, período e
-  dia, e também no **% TETO SIM.** (a simulação desconta a mesma troca).
+  régua alcançável"). `_phTetoOper(teto, horas, nTrocas, trocaMin)` no v7:
+  `teto × (min − nTrocas×troca) ÷ min`. As **duas** entradas são MEDIDAS desde
+  20/08/2026 ("temos que considerar mais trocas" + "pelas paradas dá pra fazer
+  a média"); antes eram **1 troca por dia rodado × 5 min nominais**, régua
+  otimista dos dois lados.
+  - **QUANTAS: `_phEntradasDia`** conta no log hora a hora quantas vezes o
+    produto **ENTROU na linha**. Rodou direto o dia todo = 1 (o setup inicial
+    conta, como sempre contou); **saiu, outro rodou e ele voltou = 2**. Almoço
+    e parada no meio **não** viram troca — a hora *ocupada* anterior continua
+    sendo dele; sem esse cuidado o almoço somaria uma troca fantasma por dia em
+    todo produto. A base é a ocupação da **LINHA** (`horasLinha`, todos os
+    produtos), então **filtrar um modelo na tela não muda** o número de trocas
+    dele. `_phTrocasPeriodo` soma dia a dia.
+  - **QUANTO DURA: `_phTrocaObs`** tira a média das paradas de **TROCA/SETUP**
+    apontadas (`ehSetupParada`, a mesma regex do SWOT), últimos
+    `TROCA_OBS_DIAS` (30). Média **aparada** (fora a mais curta e a mais longa),
+    parada **sem FIM** fora, duração **>240 min** fora (é apontamento esquecido,
+    não troca) e **<3 amostras não vira média** — aí devolve 0 e quem decide é a
+    planilha. Ordem em `_phTroca`: **medido → coluna `TEMPO DE TROCA MIN` →
+    `TROCA_MIN_PADRAO` (5)**. Medido ganha de planejado porque a coluna é o
+    mesmo 5 para o catálogo inteiro; a parada é o que aconteceu.
+  - É **uma chamada só** (`carregarTrocaObs`, `getParadasPeriodo` de 30 dias,
+    cache de 5 min **inclusive quando vem vazia**) servindo o dia e o período. A
+    tela **não espera** por ela: desenha com o valor da planilha e **redesenha
+    uma vez** quando a média chega (`trocaObs()` já responde na segunda passada,
+    então não vira laço). O **PDF espera**, que ele não se redesenha depois.
+  - **"Quantas trocas por dia?"** (pergunta do PPCP em 20/08/2026) agora está na
+    tela: `_phTrocasLinha` soma as entradas de cada produto no nível mais fino
+    do log — **modelo · produto · COR**, porque trocar a cor também troca o que
+    está na esteira. Aparece no rodapé do comparativo e do PDF
+    (`linha trocou N× em D dias (X/dia)`) e no total do dia
+    (`linha trocou N× hoje`). No editor, `simularEsteiraPorModelo` loga a mesma
+    linha **e** o custo: `X troca(s)/dia a M min cada = Y min/dia de esteira
+    parada em troca`.
   - Os **guardas continuam no teto FÍSICO** (`l.teto`): ganho demonstrado,
     cascata do produto e o check de "dia impossível" do
     `simularEsteiraPorModelo` — a troca não muda o que fisicamente não cabe
     na esteira. O simulador do editor aplica a mesma régua nas colunas
-    teto/%teto (e avisa no log quando descontou).
+    teto/%teto (e avisa no log quantas trocas e de quantos minutos descontou).
   - Rótulos: subtítulo da coluna virou **"físico − troca"** / **"simulado −
-    troca"**; tooltip da célula mostra o físico puro e a conta da troca.
-  - ⚠ Para o valor da planilha valer no painel (em vez do padrão 5),
-    **re-deploy manual do `.gs`**. `relatorios.test.js` cobre o `_phTetoOper`
-    e `produto-cor.test.js` cobre o desconto no dia.
+    troca"**; o tooltip da célula mostra o físico puro, **quantas** trocas
+    entraram na conta e **de onde saiu a duração**.
+  - ⚠ A contagem de trocas exige o `.gs` re-deployado (o item passou a levar
+    **`horasLista`**, os rótulos das horas — só o *número* de horas não separa
+    "rodou direto" de "saiu e voltou"). **Sem re-deploy o painel não fica pior
+    que antes**: cai em 1 troca por dia rodado, a régua velha. A *duração*
+    medida não depende de re-deploy — sai do `getParadasPeriodo`, que já existe.
+  - ⚠ Bug corrigido junto no `simularEsteiraPorModelo`: a coluna `dias` contava
+    `g.dias.length`, que é **lançamento** (data × produto × cor), não dia — o
+    mesmo produto em duas cores no mesmo dia virava "2 dias" e descontava troca
+    a mais. Agora conta datas distintas.
+  - `relatorios.test.js` cobre entradas/duração/ordem da fonte e
+    `produto-cor.test.js` cobre o dia (saiu-e-voltou = 2 trocas) e o log do
+    editor.
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
 - **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):
