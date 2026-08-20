@@ -2136,7 +2136,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.9.1';
+const APP_VER   = '7.9.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3698,7 +3698,8 @@ function renderProducaoPorHoraDedicada(){
   // Quantas trocas a linha já fez HOJE (o "por dia" do período, no dia de hoje).
   const tlHoje=_phTrocasLinha(PONTOS_DIA.porHoraModelo||[]);
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
-    +(tlHoje.trocas?` · linha trocou ${fmtN(tlHoje.trocas)}× hoje`:'');
+    +(tlHoje.trocas?` · ${fmtN(tlHoje.trocas)} preparação(ões) hoje`:'')
+    +(tlHoje.eventos&&tlHoje.eventos<tlHoje.trocas?` em ${fmtN(tlHoje.eventos)} parada(s) de esteira`:'');
   // Mede a duração real da troca (paradas apontadas) e redesenha UMA vez quando
   // o número chega — sem isso a régua do dia ficaria presa no valor nominal da
   // planilha. Já medido, trocaObs() responde na hora e ninguém busca de novo.
@@ -3851,6 +3852,17 @@ function _phTrocasPeriodo(k, datas, cellAcc, horasLinha){
 // entradas de cada produto no dia, no nível mais fino que o log tem (modelo ·
 // produto · cor): mudar a cor também troca o que está na esteira. Serve o
 // período (itens do getProducaoModeloPeriodo) e o dia (porHoraModelo).
+// São DOIS números, e confundir os dois foi o que me fez errar por um fator de
+// 2 na primeira versão (PPCP, 20/08/2026):
+//   PREPARAÇÕES = uma por item que entra na linha. Cada código da programação
+//     exige a sua, e ela custa mão de obra mesmo quando não para a esteira.
+//   TROCAS DE ESTEIRA = quantas VEZES a esteira parou para trocar. A operação
+//     tem 1 esteira com DOIS lados + 1 com um lado: quando os dois lados mudam
+//     juntos, a esteira parou UMA vez, não duas. Sem coluna de lado na
+//     planilha, o proxy é a HORA: itens que entram na mesma hora entraram
+//     juntos. É esse o número que vira tempo de esteira parada.
+// Ex. real: os 12 códigos dos lotes 025089–025093 são 12 preparações; se
+// entrarem dois a dois, são 6 trocas de esteira.
 function _phTrocasLinha(itens){
   const porDia={};
   (itens||[]).forEach(it=>{
@@ -3860,16 +3872,40 @@ function _phTrocasLinha(itens){
       const n=normHora(h); x.linha[n]=1; (x.grupos[k]=x.grupos[k]||{})[n]=1; });
   });
   const dias=Object.keys(porDia).filter(d=>Object.keys(porDia[d].linha).length);
-  let tot=0;
-  dias.forEach(d=>{ const x=porDia[d];
-    Object.keys(x.grupos).forEach(k=>{ tot+=_phEntradasDia(Object.keys(x.grupos[k]),Object.keys(x.linha)); }); });
-  return { trocas:tot, dias:dias.length, porDia:dias.length?Math.round(tot/dias.length*10)/10:0 };
+  let tot=0, ev=0;
+  dias.forEach(d=>{
+    const x=porDia[d], horas=Object.keys(x.linha);
+    const comEntrada={};
+    Object.keys(x.grupos).forEach(k=>{
+      const hg=Object.keys(x.grupos[k]);
+      tot+=_phEntradasDia(hg,horas);
+      // De qual HORA foi cada entrada — é o que junta as trocas simultâneas.
+      _phHorasDeEntrada(hg,horas).forEach(h=>{ comEntrada[h]=1; });
+    });
+    ev+=Object.keys(comEntrada).length;
+  });
+  const nd=dias.length;
+  return { trocas:tot, eventos:ev, dias:nd,
+           porDia:nd?Math.round(tot/nd*10)/10:0,
+           evPorDia:nd?Math.round(ev/nd*10)/10:0 };
+}
+// As horas em que o grupo ENTROU (o _phEntradasDia conta; este diz ONDE), para
+// que duas entradas na mesma hora contem como uma parada só da esteira.
+function _phHorasDeEntrada(horasGrupo, horasDia){
+  const G={}; (horasGrupo||[]).forEach(h=>{ G[normHora(h)]=1; });
+  const ord=[...new Set((horasDia||[]).map(h=>normHora(h)))].sort((a,b)=>_phHoraMin(a)-_phHoraMin(b));
+  const out=[]; let ant=null;
+  ord.forEach(h=>{ if(G[h] && (ant===null || !G[ant])) out.push(h); ant=h; });
+  return out;
 }
 // Frase pronta do "quantas trocas por dia" — a mesma nos três lugares que a
 // mostram (tela do comparativo, PDF do período e total do dia).
 function _phTrocasLinhaTxt(tl){
   if(!tl||!tl.dias||!tl.trocas) return '';
-  return `linha trocou ${fmtN(tl.trocas)}× em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)`;
+  const ev=(tl.eventos&&tl.eventos<tl.trocas)
+    ? ` · ${fmtN(tl.eventos)} troca(s) de esteira (${fmtN(tl.evPorDia)}/dia — lados que mudam juntos contam uma)`
+    : '';
+  return `${fmtN(tl.trocas)} preparação(ões) em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)${ev}`;
 }
 // A EXPLICAÇÃO DA CONTA VAI IMPRESSA (pedido do PPCP, 20/08/2026). Quem lê o
 // PDF numa reunião não tem tooltip nem código à mão: se o % do teto encolheu
@@ -3879,19 +3915,21 @@ function _phTrocasLinhaTxt(tl){
 // "no período"), e o CSS vai inline porque cada relatório tem a folha dele.
 function _phNotaTrocaHtml(tl, obs, ehDia){
   const medido=obs&&obs.n>0&&obs.min>0;
+  const ev=tl&&tl.eventos&&tl.eventos<tl.trocas;
   const quantas = (tl&&tl.trocas)
-    ? (ehDia ? `Hoje a linha trocou <b>${fmtN(tl.trocas)}×</b> até agora.`
-             : `No período a linha trocou <b>${fmtN(tl.trocas)}×</b> em ${tl.dias} dia${tl.dias===1?'':'s'} — média de <b>${fmtN(tl.porDia)} troca(s)/dia</b>.`)
+    ? (ehDia ? `Hoje foram <b>${fmtN(tl.trocas)} preparação(ões)</b>${ev?` em <b>${fmtN(tl.eventos)} parada(s) de esteira</b>`:''} até agora.`
+             : `No período foram <b>${fmtN(tl.trocas)} preparação(ões)</b> em ${tl.dias} dia${tl.dias===1?'':'s'} — <b>${fmtN(tl.porDia)}/dia</b>${ev?`, que viraram <b>${fmtN(tl.evPorDia)} parada(s) de esteira por dia</b>`:''}.`)
     : `A contagem por produto depende do apontamento hora a hora; sem ele, cada dia rodado conta 1 troca.`;
   const dur = medido
     ? `média de <b>${fmtN(obs.min)} min</b>, tirada de <b>${obs.n}</b> parada(s) de TROCA/SETUP apontada(s) nos últimos ${TROCA_OBS_DIAS} dias (fora a mais curta, a mais longa e as ainda abertas).`
     : `<b>não medida</b> — não houve parada de TROCA/SETUP apontada suficiente no período, então vale o TEMPO DE TROCA MIN cadastrado na planilha.`;
   return `<div style="margin-top:12px;padding:9px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #718096;border-radius:4px;font-size:8.5px;color:#4a5568;line-height:1.65">
   <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:#1a1a2e;margin-bottom:4px">COMO A TROCA ENTROU NA CONTA</div>
-  <div><b>QUANTAS</b> — conta 1 troca cada vez que o produto <b>entra na linha</b>, lido no apontamento hora a hora: rodou direto = 1; saiu, outro produto rodou e ele voltou = 2. Almoço e parada no meio <b>não</b> contam (antes e depois é o mesmo produto). Trocar a <b>cor</b> conta, que a esteira também para. ${quantas}</div>
+  <div><b>QUANTAS</b> — conta <b>1 preparação</b> cada vez que um item <b>entra na linha</b>, lido no apontamento hora a hora: rodou direto = 1; saiu, outro entrou e ele voltou = 2. Cada <b>código</b> da programação exige a sua, então trocar só a <b>cor</b> também conta. Almoço e parada no meio <b>não</b> contam (antes e depois é o mesmo item). ${quantas}</div>
+  <div><b>PREPARAÇÃO × PARADA DE ESTEIRA</b> — a operação tem <b>uma esteira com dois lados</b> e outra com um: quando os dois lados mudam juntos, a esteira parou <b>uma vez</b>, não duas. Sem coluna de lado na planilha, itens que entram na <b>mesma hora</b> são tratados como troca simultânea. A perda de esteira usa esse número menor; as preparações medem a mão de obra.</div>
   <div><b>QUANTO DURA</b> — ${dur}</div>
   <div><b>NO TETO</b> — o % é a média cx/h dividida pelo teto físico da esteira já <b>sem o tempo de troca</b>: <span style="font-family:'IBM Plex Mono',monospace">teto × (minutos rodados − trocas × duração) ÷ minutos rodados</span>. Por isso o % ficou menor que na régua antiga, que supunha 1 troca por dia a 5 min.</div>
-  <div><b>O QUE NÃO ENXERGA</b> — caixa lançada <b>sem produto</b> selecionado no app; troca e retorno <b>dentro da mesma hora</b> (a leitura é por hora, conta como uma só); e parada de troca <b>não apontada</b>, que não entra na média de duração.</div>
+  <div><b>O QUE NÃO ENXERGA</b> — em qual <b>lado</b> a troca ou a parada aconteceu (a aba PARADAS não tem essa coluna, então parada de um lado é contada como se a esteira inteira tivesse parado); caixa lançada <b>sem produto</b> selecionado no app; troca e retorno <b>dentro da mesma hora</b> (conta como uma só); e parada de troca <b>não apontada</b>, que fica fora da média de duração.</div>
 </div>`;
 }
 // Quanto dura uma troca, medido nas paradas de TROCA/SETUP (ehSetupParada é a
