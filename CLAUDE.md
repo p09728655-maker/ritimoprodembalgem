@@ -22,6 +22,15 @@ via Google Apps Script (JSONP).
   contra o código real do `.gs`: `node hora-extra.test.js`.
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
   que conta leituras: `node apps-script.test.js`.
+- `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
+  dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
+  um identificador que não existe, e o painel só quebra em runtime: o relatório
+  do período morreu duas vezes no *"Carregando relatório…"* por isso — `ehCor`
+  fora do `const {...}=_phAgrup()` daquela função e `_fonteHoje` usado no render
+  mas declarado dentro do `calcPorModelo`. Extrai o JS e roda o eslint só com
+  `no-undef`; o npx baixa o eslint (precisa de rede na 1ª vez) e sem npx ele
+  avisa e sai sem falhar. **Nome novo na lista `GLOBAIS` só depois de conferir
+  que ele existe mesmo** — senão a guarda vira enfeite.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
 - `vercel.json` — `/` → v7, `/mobile` → mobile.
