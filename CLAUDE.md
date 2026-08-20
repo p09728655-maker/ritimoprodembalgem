@@ -669,9 +669,20 @@ via Google Apps Script (JSONP).
     **período** e no do **dia** — quantas trocas, de onde saiu a duração, a
     fórmula do teto e **o que a leitura não enxerga** (caixa lançada sem
     produto, troca e retorno dentro da mesma hora, parada de troca não
-    apontada). Quem lê o PDF numa reunião não tem tooltip nem código à mão, e o
-    % do teto encolheu — o papel tem que dizer por quê. **Uma implementação
+    apontada, e **em qual lado** a parada aconteceu — a aba `PARADAS` não tem
+    essa coluna, então parada de um lado é contada como se a esteira inteira
+    tivesse parado). Quem lê o PDF numa reunião não tem tooltip nem código à
+    mão, e o % do teto encolheu — o papel tem que dizer por quê. **Uma implementação
     só** para os dois relatórios (o `relatorios.test.js` falha se virar duas).
+  - **PREPARAÇÃO × PARADA DE ESTEIRA são dois números** (PPCP, 20/08/2026 — "1
+    esteira com dois lados mais um com um lado"). **Preparação** é uma por item
+    que entra na linha: é mão de obra, e cada código da programação exige a sua.
+    **Parada de esteira** é quantas vezes a esteira parou — os **dois lados
+    mudando juntos param a esteira UMA vez**. Sem coluna de lado na planilha, o
+    proxy é a **hora**: itens que entram na mesma hora entraram juntos
+    (`_phHorasDeEntrada`). Os 12 códigos dos lotes 025089–025093, entrando dois
+    a dois, são **12 preparações e 6 paradas de esteira** — a conta que o PPCP
+    fez na mão. É o número **menor** que vira tempo de esteira parada.
   - **Cada CÓDIGO da programação é uma troca.** Conferido com o PPCP em
     20/08/2026 num conjunto real: 5 lotes, **12 códigos**, 1.150 cx → **12
     trocas** (5 de produto + 7 de cor). É por isso que o agrupamento da contagem

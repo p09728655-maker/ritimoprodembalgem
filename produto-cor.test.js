@@ -302,6 +302,7 @@ eval(pega(GS, 'function _heMinutosDaHora('));
 eval(pega(GS, 'function _entradasDia('));
 eval(pega(GS, 'function _trocaObsMin('));
 eval(pega(GS, 'function _trocasLinhaPorDia('));
+eval(pega(GS, 'function _horasDeEntrada('));
 eval(pega(GS, 'function simularEsteiraPorModelo('));
 simularEsteiraPorModelo(30);
 const linha = nome => LOGS.find(l => l.indexOf(nome) === 0) || '';
@@ -373,10 +374,13 @@ ok('VIVARE entrou uma vez: 1 troca', cols('SAPATEIRA VIVARE')[1], '1');
 // 291 × (120 − 2×12) ÷ 120 = 233 (a régua antiga daria 291 × 115/120 = 279).
 ok('e o teto operacional paga as duas trocas medidas', cols('MESA CABECEIRA MADERO')[5], '233');
 // "quantas trocas deram na média por dia?" — 2 da MADERO + 1 da VIVARE num dia.
-ok('o log responde quantas trocas a linha faz por dia',
-   /a linha trocou 3× em 1 dia\(s\) — média de 3 troca\(s\)\/dia a 12 min cada/.test(LOGS.find(l => /^TROCAS:/.test(l)) || ''), true);
-ok('e quanto isso custa de esteira parada por dia',
-   /36 min\/dia de esteira parada em troca/.test(LOGS.find(l => /^TROCAS:/.test(l)) || ''), true);
+ok('o log responde quantas preparações a linha faz por dia',
+   /3 em 1 dia\(s\) — média de 3\/dia/.test(LOGS.find(l => /^PREPARAÇÕES:/.test(l)) || ''), true);
+// MADERO entra 07h e volta 09h, VIVARE entra 08h: três horas com entrada, então
+// aqui nada foi simultâneo e as 3 preparações são 3 paradas de esteira mesmo.
+ok('e separa a parada de esteira (nada simultâneo neste dia)',
+   /3 em 1 dia\(s\) — média de 3\/dia \(lados que mudam juntos contam uma\) a 12 min cada = 36 min\/dia/.test(
+     LOGS.find(l => /^TROCAS DE ESTEIRA:/.test(l)) || ''), true);
 
 // Duas CORES do mesmo produto no mesmo dia são UM dia — o log vem por
 // data × modelo × produto × cor. Contando item, o simulador dizia "1 dia" com

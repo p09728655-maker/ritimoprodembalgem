@@ -331,12 +331,33 @@ function _trocasLinhaPorDia(itens) {
     });
   });
   const dias = Object.keys(porDia).filter(function (d) { return Object.keys(porDia[d].linha).length; });
-  let tot = 0;
+  let tot = 0, ev = 0;
   dias.forEach(function (d) {
-    const x = porDia[d];
-    Object.keys(x.grupos).forEach(function (k) { tot += _entradasDia(Object.keys(x.grupos[k]), Object.keys(x.linha)); });
+    const x = porDia[d], horas = Object.keys(x.linha), comEntrada = {};
+    Object.keys(x.grupos).forEach(function (k) {
+      const hg = Object.keys(x.grupos[k]);
+      tot += _entradasDia(hg, horas);
+      _horasDeEntrada(hg, horas).forEach(function (h) { comEntrada[h] = 1; });
+    });
+    ev += Object.keys(comEntrada).length;
   });
-  return { trocas: tot, dias: dias.length, porDia: dias.length ? Math.round(tot / dias.length * 10) / 10 : 0 };
+  const nd = dias.length;
+  return { trocas: tot, eventos: ev, dias: nd,
+           porDia: nd ? Math.round(tot / nd * 10) / 10 : 0,
+           evPorDia: nd ? Math.round(ev / nd * 10) / 10 : 0 };
+}
+
+// Em que HORAS o grupo entrou (o _entradasDia conta; este diz onde), para que
+// duas entradas na mesma hora contem como UMA parada de esteira.
+function _horasDeEntrada(horasGrupo, horasDia) {
+  const G = {};
+  (horasGrupo || []).forEach(function (h) { G[String(h)] = 1; });
+  const ord = (horasDia || []).slice().sort(function (a, b) {
+    return (_heMinutosDaHora(a) || 0) - (_heMinutosDaHora(b) || 0);
+  });
+  const out = []; let ant = null;
+  ord.forEach(function (h) { if (G[h] && (ant === null || !G[ant])) out.push(h); ant = h; });
+  return out;
 }
 
 // Duração média da troca, medida nas paradas de TROCA/SETUP apontadas. Média
@@ -506,11 +527,16 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
   const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
   const tLinha = _trocasLinhaPorDia(itens);
-  if (tLinha.trocas)
-    Logger.log('TROCAS: a linha trocou ' + tLinha.trocas + '× em ' + tLinha.dias + ' dia(s) — média de ' +
-               tLinha.porDia + ' troca(s)/dia' +
-               (obsTroca.min > 0 ? ' a ' + obsTroca.min + ' min cada (medido nas paradas apontadas) = ' +
-                 Math.round(tLinha.porDia * obsTroca.min) + ' min/dia de esteira parada em troca' : ''));
+  if (tLinha.trocas) {
+    Logger.log('PREPARAÇÕES: ' + tLinha.trocas + ' em ' + tLinha.dias + ' dia(s) — média de ' +
+               tLinha.porDia + '/dia (uma por item que entra na linha; cada código da programação exige a sua)');
+    // A esteira tem DOIS lados: itens que entram na mesma hora mudaram juntos e
+    // pararam a esteira UMA vez. É este o número que vira tempo parado.
+    Logger.log('TROCAS DE ESTEIRA: ' + tLinha.eventos + ' em ' + tLinha.dias + ' dia(s) — média de ' +
+               tLinha.evPorDia + '/dia (lados que mudam juntos contam uma)' +
+               (obsTroca.min > 0 ? ' a ' + obsTroca.min + ' min cada = ' +
+                 Math.round(tLinha.evPorDia * obsTroca.min) + ' min/dia de esteira parada em troca' : ''));
+  }
   Logger.log('RESUMO: ' + linhas.length + ' produto(s) em ' + nDias + ' dias · % do teto (aparada) de ' +
              Math.round(comTeto[comTeto.length - 1].pctA) + '% a ' + Math.round(comTeto[0].pctA) + '%' +
              ' · melhor dia já chegou a ' + Math.round(melhorPct.pctM) + '% do teto (' + melhorPct.nome + ')' +

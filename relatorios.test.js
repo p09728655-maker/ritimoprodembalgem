@@ -402,6 +402,7 @@ ok('dia sem produção do grupo não conta troca',
 // QUANTAS POR DIA — a pergunta do PPCP. É da LINHA inteira: soma as entradas
 // de cada produto no nível mais fino do log (modelo · produto · cor).
 eval(pega('function _phTrocasLinha('));
+eval(pega('function _phHorasDeEntrada('));
 const itLog=[
   // 19/08: MADERO 07h, VIVARE 08h, MADERO volta 09h → 3 trocas no dia
   {data:'19/08',modelo:'A',nome:'MADERO',cor:'OFF WHITE',horasLista:['07:00-08:00','09:00-10:00']},
@@ -411,9 +412,22 @@ const itLog=[
   {data:'20/08',modelo:'A',nome:'MADERO',cor:'CUMARU',   horasLista:['08:00-09:00']},
 ];
 const tl=_phTrocasLinha(itLog);
-ok('trocas da linha no período', tl.trocas, 5);
+ok('preparações da linha no período', tl.trocas, 5);
 ok('em quantos dias', tl.dias, 2);
 ok('média por dia', tl.porDia, 2.5);
+// A esteira tem DOIS lados: item que entra na mesma hora que outro mudou junto
+// e parou a esteira UMA vez. 19/08 tem entradas em 07h (MADERO), 08h (VIVARE) e
+// 09h (MADERO volta) = 3; 20/08 tem 07h e 08h = 2 → 5 preparações, 5 eventos.
+ok('sem troca simultânea, evento = preparação', tl.eventos, 5);
+// Os 12 códigos dos lotes 025089–025093 entrando DOIS A DOIS: 12 preparações,
+// 6 paradas de esteira — a conta que o PPCP fez na mão em 20/08/2026.
+const doisLados=[];
+for(let i=0;i<12;i++) doisLados.push({data:'21/08',modelo:'M'+i,nome:'P'+i,cor:'C',
+  horasLista:[(7+Math.floor(i/2))+':00-'+(8+Math.floor(i/2))+':00']});
+const tlDois=_phTrocasLinha(doisLados);
+ok('12 códigos entrando dois a dois = 12 preparações', tlDois.trocas, 12);
+ok('mas 6 paradas de esteira (os dois lados mudam juntos)', tlDois.eventos, 6);
+ok('e é o número menor que vira tempo de esteira parada', tlDois.evPorDia, 6);
 // Mesma função serve o dia (porHoraModelo manda hora avulsa, não lista).
 ok('serve também a lista do dia (hora avulsa)',
    _phTrocasLinha([{hora:'07:00-08:00',modelo:'A',nome:'MADERO',cor:'OFF WHITE'},
@@ -446,16 +460,20 @@ ok('troca que vira a meia-noite não fica negativa',
 // A EXPLICAÇÃO VAI IMPRESSA: quem lê o PDF na reunião não tem tooltip.
 const TROCA_OBS_DIAS=Number(JS.match(/const TROCA_OBS_DIAS\s*=\s*(\d+)/)[1]);
 eval(pega('function _phNotaTrocaHtml('));
-const notaPer=_phNotaTrocaHtml({trocas:47,dias:22,porDia:2.1},{min:12.3,n:9},false);
-ok('a nota impressa diz quantas trocas por dia',
-   /média de <b>2,1 troca\(s\)\/dia<\/b>/.test(notaPer), true);
+const notaPer=_phNotaTrocaHtml({trocas:47,eventos:28,dias:22,porDia:2.1,evPorDia:1.3},{min:12.3,n:9},false);
+ok('e separa parada de esteira de preparação',
+   /viraram <b>1,3 parada\(s\) de esteira por dia<\/b>/.test(notaPer), true);
+ok('e explica os dois lados da esteira', /dois lados/.test(notaPer), true);
+ok('e avisa que não sabe o lado da parada', /em qual <b>lado<\/b>/.test(notaPer), true);
+ok('a nota impressa diz quantas preparações por dia',
+   /<b>47 preparação\(ões\)<\/b>/.test(notaPer), true);
 ok('e de onde saiu a duração', /<b>9<\/b> parada\(s\) de TROCA\/SETUP/.test(notaPer), true);
 ok('e a janela em que mediu', new RegExp('últimos '+TROCA_OBS_DIAS+' dias').test(notaPer), true);
 ok('avisa o que a leitura NÃO enxerga', /dentro da mesma hora/.test(notaPer), true);
 ok('sem medição não finge que mediu',
    /<b>não medida<\/b>/.test(_phNotaTrocaHtml({trocas:5,dias:2,porDia:2.5},null,false)), true);
 ok('no relatório do dia a frase é de hoje',
-   /Hoje a linha trocou <b>6×<\/b>/.test(_phNotaTrocaHtml({trocas:6,dias:1,porDia:6},{min:12,n:9},true)), true);
+   /Hoje foram <b>6 preparação\(ões\)<\/b>/.test(_phNotaTrocaHtml({trocas:6,dias:1,porDia:6},{min:12,n:9},true)), true);
 ok('sem apontamento hora a hora, explica por que não conta',
    /cada dia rodado conta 1 troca/.test(_phNotaTrocaHtml({trocas:0,dias:0,porDia:0},null,false)), true);
 
