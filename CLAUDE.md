@@ -150,7 +150,11 @@ via Google Apps Script (JSONP).
   - **O % da jornada normal (`#tvd-normal-pct`) tem corpo de NÚMERO, não de
     rótulo** (pedido do PPCP, 20/08/2026): é ele que diz sozinho *"faltou pouco
     para bater sem hora extra"* — 89,6% da meta. Em 13–21px de legenda ninguém
-    lia isso a 15 m. O gerencial tem a mesma marcação numa escala menor
+    lia isso a 15 m; hoje vai a **34–72px**, e a linha do *faltaram* a 19–34px.
+    O **"DA META" é um `<i>` menor dentro da mesma linha** (por isso o `%` sai
+    por `innerHTML`): com a frase inteira no mesmo corpo, o número não podia
+    crescer — estourava a largura da coluna e o `nowrap` cortava justamente o
+    que interessa. O gerencial tem a mesma marcação numa escala menor
     (`#ger-semana #gsem-normal-pct`), como o resto do bloco.
   - **O buraco vai em caixas E em caixas/dia**: "faltaram 863 cx" não diz se
     dava para fazer; "173 cx/dia" a operação sabe na hora. A base é o nº de

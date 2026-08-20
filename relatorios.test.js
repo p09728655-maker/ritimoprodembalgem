@@ -280,7 +280,7 @@ ok('marca da meta com o valor do período', _dom['gsem-marca-lbl'].textContent, 
 // O % da jornada normal é a leitura da semana: diz se faltou pouco ou muito
 // para bater SEM hora extra. E o buraco vai também em caixas POR DIA — "faltaram
 // 64 cx" não diz se dava para fazer; "13 cx/dia" a operação sabe na hora.
-ok('o % da jornada normal contra a meta', _dom['gsem-normal-pct'].textContent, '99,2% da meta');
+ok('o % da jornada normal contra a meta', _dom['gsem-normal-pct'].innerHTML, '99,2%<i>da meta</i>');
 ok('e o buraco em caixas e em caixas por dia',
    _dom['gsem-normal-falta'].textContent, 'faltaram 64 cx · 13 cx/dia');
 ok('um cartão por dia fechado', (_dom['gsem-dias'].innerHTML.match(/class="tvd-dia /g) || []).length, 5);
