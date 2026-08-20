@@ -569,9 +569,16 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
   const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
   const tLinha = _trocasLinhaPorDia(itens);
+  // As preparações boas vêm da leitura LINHA A LINHA (_prepDoDia, que enxerga
+  // troca dentro da mesma hora); o _trocasLinhaPorDia continua valendo para as
+  // paradas de esteira (agrupa por hora) e como reserva.
+  const prepLog = ((r && r.prepDias) || []).filter(function (d) { return d && d.prep > 0; });
+  const prepTot = prepLog.reduce(function (a, d) { return a + d.prep; }, 0);
+  const prepDia = prepLog.length ? Math.round(prepTot / prepLog.length * 10) / 10 : 0;
   // PARA CONFERIR A PREMISSA (não entra na conta): o que o apontamento mostra.
   if (tLinha.trocas) {
-    Logger.log('CONFERIR: o log mostra ' + tLinha.porDia + ' preparação(ões)/dia em ' +
+    Logger.log('CONFERIR: o log mostra ' + (prepDia || tLinha.porDia) + ' preparação(ões)/dia' +
+               (prepDia ? '' : ' (estimativa por hora)') + ' em ' +
                tLinha.evPorDia + ' parada(s) de esteira/dia' +
                (obsTroca.min > 0
                  ? ', e as paradas de troca apontadas duraram ' + obsTroca.min + ' min em média (' + obsTroca.n + ' amostra(s)) → ' +
