@@ -147,6 +147,14 @@ via Google Apps Script (JSONP).
     jornada normal sozinha bateu a meta, **âmbar** quando quem bateu foi a hora
     extra, **vermelho** quando faltou. A barra mostra isso sem número: o verde
     para antes da **marca da META** e quem cruza é a faixa listrada âmbar.
+  - **O % da jornada normal (`#tvd-normal-pct`) tem corpo de NÚMERO, não de
+    rótulo** (pedido do PPCP, 20/08/2026): é ele que diz sozinho *"faltou pouco
+    para bater sem hora extra"* — 89,6% da meta. Em 13–21px de legenda ninguém
+    lia isso a 15 m. O gerencial tem a mesma marcação numa escala menor
+    (`#ger-semana #gsem-normal-pct`), como o resto do bloco.
+  - **O buraco vai em caixas E em caixas/dia**: "faltaram 863 cx" não diz se
+    dava para fazer; "173 cx/dia" a operação sabe na hora. A base é o nº de
+    dias fechados da própria semana.
 - **Só entra no ciclo quando a semana anterior tem dia fechado** (mesma regra da
   Tela C, que exige atraso>0) — nunca aparece vazia.
 - **A semana é a MESMA do relatório**: `_relSemanaPassada()` + `_relDiasDaSemana()`

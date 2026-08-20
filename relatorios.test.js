@@ -277,6 +277,12 @@ ok('o veredito não mente sobre a hora extra',
    [_dom['gsem-selo'].className, _dom['gsem-selo'].textContent],
    ['tvd-selo he', '⚠ META BATIDA COM HORA EXTRA']);
 ok('marca da meta com o valor do período', _dom['gsem-marca-lbl'].textContent, 'META 8.325');
+// O % da jornada normal é a leitura da semana: diz se faltou pouco ou muito
+// para bater SEM hora extra. E o buraco vai também em caixas POR DIA — "faltaram
+// 64 cx" não diz se dava para fazer; "13 cx/dia" a operação sabe na hora.
+ok('o % da jornada normal contra a meta', _dom['gsem-normal-pct'].textContent, '99,2% da meta');
+ok('e o buraco em caixas e em caixas por dia',
+   _dom['gsem-normal-falta'].textContent, 'faltaram 64 cx · 13 cx/dia');
 ok('um cartão por dia fechado', (_dom['gsem-dias'].innerHTML.match(/class="tvd-dia /g) || []).length, 5);
 ok('dia sem separação de HE não vira 0', /HE não separada/.test(_dom['gsem-dias'].innerHTML), true);
 
