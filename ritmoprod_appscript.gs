@@ -369,6 +369,7 @@ function _trocasLinhaPorDia(itens) {
   });
   const dias = Object.keys(porDia).filter(function (d) { return Object.keys(porDia[d].linha).length; });
   let tot = 0, ev = 0;
+  const evDia = {};   // paradas de esteira POR DIA — base da régua medida
   dias.forEach(function (d) {
     const x = porDia[d], horas = Object.keys(x.linha), comEntrada = {};
     Object.keys(x.grupos).forEach(function (k) {
@@ -376,10 +377,11 @@ function _trocasLinhaPorDia(itens) {
       tot += _entradasDia(hg, horas);
       _horasDeEntrada(hg, horas).forEach(function (h) { comEntrada[h] = 1; });
     });
-    ev += Object.keys(comEntrada).length;
+    evDia[d] = Object.keys(comEntrada).length;
+    ev += evDia[d];
   });
   const nd = dias.length;
-  return { trocas: tot, eventos: ev, dias: nd,
+  return { trocas: tot, eventos: ev, dias: nd, evDia: evDia,
            porDia: nd ? Math.round(tot / nd * 10) / 10 : 0,
            evPorDia: nd ? Math.round(ev / nd * 10) / 10 : 0 };
 }
@@ -446,6 +448,14 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   // Quanto dura uma troca, medido nas paradas apontadas do MESMO período —
   // o TEMPO DE TROCA MIN do catálogo é valor nominal e vira só a rede.
   const obsTroca = _trocaObsMin((getParadasPeriodo({ de: de }) || {}).paradas);
+  // RÉGUA MEDIDA (mesma do painel): paradas de esteira DAQUELE dia × duração
+  // medida nas paradas apontadas. Sem medição, vale a premissa combinada.
+  const tLinha = _trocasLinhaPorDia(itens);
+  const minDiaDe = function (d) {
+    const ev = (tLinha.evDia || {})[d] || 0;
+    return (obsTroca.min > 0 && ev > 0) ? ev * obsTroca.min : TROCA_PREM_MIN_DIA;
+  };
+  const trocaMedida = obsTroca.min > 0 && tLinha.evPorDia > 0;
 
   const grupos = {};
   const ocup = {};   // ocupação da LINHA por dia: {data: {hora: 1}}
@@ -517,7 +527,7 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
     // lista de horas, cai nos 5 min por dia rodado, a régua conservadora.
     const minTroca = dias.reduce(function (a, d) {
       const hg = Object.keys(d.hSet).length, hd = Object.keys(ocup[d.data] || {}).length;
-      return a + ((hg && hd) ? TROCA_PREM_MIN_DIA * Math.min(1, hg / hd) : TROCA_PREM_MIN);
+      return a + ((hg && hd) ? minDiaDe(d.data) * Math.min(1, hg / hd) : TROCA_PREM_MIN);
     }, 0);
     const minTot = horasTot * 60;
     const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - minTroca) / minTot : teto;
@@ -530,9 +540,13 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   const P = function (v, n) { v = String(v); while (v.length < n) v += ' '; return v; };
   const D = function (v, n) { v = String(v); while (v.length < n) v = ' ' + v; return v; };
   if (linhas.some(function (l) { return l.tetoOper > 0 && l.tetoOper < l.teto; }))
-    Logger.log('PREMISSA: teto/%teto descontam ' + TROCA_PREM_MIN_DIA + ' min/dia de troca de produto (' +
-               TROCA_PREM_TROCAS + ' × ' + TROCA_PREM_MIN + ' min), rateados entre os produtos pelo tempo de esteira. ' +
-               'A coluna "trocas" é o que o LOG mostra (informação, não entra na conta).');
+    Logger.log((trocaMedida
+                 ? 'RÉGUA MEDIDA: teto/%teto descontam ' + Math.round(tLinha.evPorDia * obsTroca.min) +
+                   ' min/dia de troca (' + tLinha.evPorDia + ' parada(s) de esteira/dia × ' + obsTroca.min +
+                   ' min, de ' + obsTroca.n + ' parada(s) apontada(s)) — premissa combinada: ' + TROCA_PREM_MIN_DIA + ' min/dia'
+                 : 'PREMISSA: teto/%teto descontam ' + TROCA_PREM_MIN_DIA + ' min/dia de troca de produto (' +
+                   TROCA_PREM_TROCAS + ' × ' + TROCA_PREM_MIN + ' min)') +
+               ', rateados entre os produtos pelo tempo de esteira.');
   Logger.log(P('MODELO', 34) + D('dias', 5) + D('trocas', 7) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
   linhas.forEach(function (l) {
     Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.trocas, 7) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +
@@ -568,7 +582,6 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
   // único lançamento dobrado diria que a esteira está no limite.
   const criveis = comTeto.filter(function (l) { return l.pctM <= 105; });
   const melhorPct = (criveis.length ? criveis : comTeto).reduce(function (a, b) { return a.pctM > b.pctM ? a : b; });
-  const tLinha = _trocasLinhaPorDia(itens);
   // As preparações boas vêm da leitura LINHA A LINHA (_prepDoDia, que enxerga
   // troca dentro da mesma hora); o _trocasLinhaPorDia continua valendo para as
   // paradas de esteira (agrupa por hora) e como reserva.

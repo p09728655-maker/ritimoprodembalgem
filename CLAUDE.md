@@ -648,11 +648,19 @@ via Google Apps Script (JSONP).
   (pedido do PPCP, 19/08/2026 — "100% sem descontar a troca obrigatória não é
   régua alcançável"). `_phTetoOper(teto, horas, n, minTroca)`:
   `teto × (min − minTroca) ÷ min`.
-  - **A PREMISSA é a régua, e é uma só**: `TROCA_PREMISSA={minDia:30,
-    trocasDia:6, min:5}` no v7 (e `TROCA_PREM_*` no `.gs`, com
-    `produto-cor.test.js` falhando se as duas divergirem). Combinada com o PPCP
-    em 20/08/2026: **6 trocas/dia × 5 min**. Mudou o combinado? Muda **ali**,
-    num lugar só — tela, PDF e simulador seguem.
+  - **A RÉGUA É MEDIDA quando dá** (`_phMinDia`, pedido do PPCP em 20/08/2026:
+    *"pode fazer pela conta feita, fica mais real"*): os minutos de troca de
+    **cada dia** são as **paradas de esteira daquele dia** (contadas no log) ×
+    a **duração média das paradas de TROCA/SETUP apontadas** (`_phTrocaObs`,
+    30 dias). Foi o próprio painel que mostrou por que: **7,1 paradas/dia ×
+    7,3 min = ~52 min/dia**, contra os 30 da premissa — e as 125 paradas
+    apontadas dão a amostra.
+  - **A PREMISSA virou a rede**: `TROCA_PREMISSA={minDia:30, trocasDia:6,
+    min:5}` no v7 (e `TROCA_PREM_*` no `.gs`, com `produto-cor.test.js` falhando
+    se as duas divergirem) vale quando **não há o que medir** — dia sem parada
+    de troca apontada, amostra < 3, backend antigo. Tela, PDF e log do editor
+    **dizem qual das duas está valendo** (`_phTrocaFonte`); trocar o combinado
+    continua sendo mexer num lugar só.
   - **O rateio é pelo tempo de esteira** (`_phMinTrocaGrupo` / `_phMinTrocaDia`):
     os 30 min são da LINHA, e cada produto paga a fatia proporcional às horas
     que ocupou no dia. Isso dá o **mesmo percentual para todos** — num dia de
