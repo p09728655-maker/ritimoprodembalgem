@@ -435,8 +435,11 @@ ok('e o teto operacional desconta a fatia da premissa', cols('MESA CABECEIRA MAD
 // "quantas trocas deram na média por dia?" — 2 da MADERO + 1 da VIVARE num dia.
 // MADERO entra 07h e volta 09h, VIVARE entra 08h: 3 preparações em 3 horas
 // distintas, então nada foi simultâneo e são 3 paradas de esteira também.
+// O getProducaoModeloPeriodo de mentira não devolve prepDias, então o log cai
+// na estimativa por hora — e DIZ que é estimativa, em vez de passar por
+// leitura linha a linha.
 ok('o log responde quantas preparações e paradas de esteira por dia',
-   /o log mostra 3 preparação\(ões\)\/dia em 3 parada\(s\) de esteira\/dia/.test(
+   /o log mostra 3 preparação\(ões\)\/dia \(estimativa por hora\) em 3 parada\(s\) de esteira\/dia/.test(
      LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
 ok('e compara com a premissa em uso',
    /36 min\/dia · premissa em uso: 30 min\/dia/.test(LOGS.find(l => /^CONFERIR:/.test(l)) || ''), true);
