@@ -1738,6 +1738,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
       <button class="btn btn-acc"   onclick="enviarResumoZap()" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.5)">📲 RESUMO NO WHATSAPP</button>
+      <button class="btn btn-acc"   onclick="publicarResumoNoMural()" style="background:rgba(219,33,38,.14);color:#ff6b70;border:0.5px solid rgba(219,33,38,.5)">📌 PUBLICAR NO MURAL</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5)">⏸ RELATÓRIO DE PARADAS</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
     </div>
@@ -2063,6 +2064,17 @@ if (_v7Instalado()) _v7EscondeBotao();
       📋 Para configurar: cole o script <strong style="color:var(--acc)">ritmoprod_appscript.gs</strong> no Google Sheets
       → <em>Extensões → Apps Script</em> → Implantar → App da Web → Qualquer pessoa → copie a URL aqui.
     </div>
+    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
+    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">MURAL — RADAR DIÁRIO</div>
+    <div class="frm-grp" style="margin-bottom:8px">
+      <label class="frm-lbl">ENDEREÇO DO RADAR (deixe vazio para esconder o botão)</label>
+      <input class="frm-inp" id="c-mural-url" type="url" placeholder="https://radar-patrimar.vercel.app">
+    </div>
+    <div style="font-family:var(--font-b);font-size:11px;color:var(--txt2);line-height:1.5;background:var(--elevated);border-radius:4px;padding:8px 10px">
+      📌 O botão <strong style="color:var(--acc)">PUBLICAR NO MURAL</strong> monta o resumo da semana e abre o Radar
+      com o recado pronto. Quem confere e confirma com a senha do mural é você, lá — a senha nunca sai do Radar.
+    </div>
+
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeCfg()">CANCELAR</button>
       <button class="btn btn-ghost" id="btn-testar-sheets" onclick="testarSheets()" style="color:var(--acc)">🔗 TESTAR URL</button>
@@ -2248,6 +2260,9 @@ let CFG = {
   // no próprio tempo produtivo (não entra como desconto à parte).
   taktDemandaDia:1850,
   sheetsUrl:'https://script.google.com/macros/s/AKfycbz0EBfrWuTnSVblkij_Hj2B6VHtPIniLlNfg45AWRKDx9F1Rg45b2dQAQ0qyIMaqLvR3Q/exec',
+  // Endereço do Radar Diário, para o botão PUBLICAR NO MURAL. Vazio = botão
+  // explica o que configurar em vez de abrir uma aba em branco.
+  muralUrl:'',
   senhaOperador:'1234',
   senhaGerencial:'admin',
   horarioFechamento:'17:05',
@@ -5736,6 +5751,7 @@ function openCfg(){
   document.getElementById('c-a0').value=CFG.almocoInicio;
   document.getElementById('c-a1').value=CFG.almocoFim;
   document.getElementById('c-sheets-url').value=CFG.sheetsUrl||'';
+  document.getElementById('c-mural-url').value=CFG.muralUrl||'';
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
@@ -5789,6 +5805,7 @@ function saveCfg(){
   CFG.almocoInicio=document.getElementById('c-a0').value;
   CFG.almocoFim=document.getElementById('c-a1').value;
   CFG.sheetsUrl=(document.getElementById('c-sheets-url').value||'').trim();
+  CFG.muralUrl=(document.getElementById('c-mural-url').value||'').trim();
   const sOp=document.getElementById('c-senha-op').value.trim();
   const sGer=document.getElementById('c-senha-ger').value.trim();
   if(sOp)  CFG.senhaOperador=sOp;
@@ -6623,6 +6640,66 @@ function _zapResumoSemana(diasSem, semStr, numSem){
   L.push('');
   L.push('RitmoProd · PPCP');
   return L.join('\n');
+}
+
+/* ── Resumo da semana para o mural do Radar ──────────────────────────────────
+   O WhatsApp aceita *negrito* e emoji; o mural é texto puro num cartão, então
+   a mesma informação vai sem marcação. A CONTA é a mesma dos dois e do PDF
+   (_relSemanalKPIs) — foi a duplicação de conta que fez as paradas divergirem
+   três vezes, e não se repete aqui. */
+function _muralResumoSemana(diasSem, semStr, numSem){
+  const k = _relSemanalKPIs(diasSem);
+  const ano = (parseBR(diasSem[0].data)||new Date()).getFullYear();
+  const L = [];
+
+  L.push(`${semStr} · ${fmtN(k.totReal)} caixas, ${fmtP(k.efTotal)} da meta de ${fmtN(k.totMeta)}.`);
+
+  /* Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF:
+     "faltaram 2.108 cx" numa sexta de manhã é quase todo o dia que ainda não
+     aconteceu. Diz que está parcial e para por aí — quem lê no mural não tem
+     a tabela ao lado para descontar isso de cabeça. */
+  if(k.abertos>0){
+    L.push(`Parcial: ${k.fechados} de ${diasSem.length} dias fechados — a semana ainda não terminou.`);
+  }else if(k.soComHE){
+    L.push('Meta batida com hora extra.');
+  }else if(k.totMeta && k.totReal>=k.totMeta){
+    L.push('Meta batida na jornada normal.');
+  }else if(k.totMeta){
+    L.push(`Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta.`);
+  }
+  if(k.temHE) L.push(`Jornada normal ${fmtN(k.totReal-k.totHE)} cx; hora extra ${fmtN(k.totHE)} cx.`);
+  L.push('');
+  L.push(`Melhor dia: ${k.melhorDia.data} (${fmtP(k.melhorDia.ef)}).`);
+  L.push(`Dias na meta: ${k.comMeta} de ${diasSem.length}.`);
+
+  return {
+    titulo: `Embalagem · Semana ${numSem}/${ano}: ${fmtN(k.totReal)} caixas`,
+    texto: L.join('\n')
+  };
+}
+
+/* Abre o Radar com o recado pronto, em vez de escrever no mural direto.
+   Chamar a API do mural daqui obrigaria a abri-la para este domínio e a senha
+   teria de viajar até aqui — ficaria guardada em dois lugares em vez de um.
+   Assim a senha nunca sai do Radar e alguém lê o que vai ser publicado. */
+async function publicarResumoNoMural(){
+  if(!CFG.muralUrl){
+    alert('Falta o endereço do Radar.\n\nConfigurações → MURAL — RADAR DIÁRIO → cole o endereço do painel.');
+    return;
+  }
+
+  let {seg, sex, semStr, numSem}=_relSemanaJanela(dGet('hist-ate'));
+  const todos=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
+  let dias=_relDiasDaSemana(todos, seg, sex);
+  if(!dias.length){
+    ({seg, sex, semStr, numSem}=_relSemanaPassada());
+    dias=_relDiasDaSemana(todos, seg, sex);
+  }
+  if(!dias.length){ alert('Nenhum dia fechado nesta semana nem na anterior.'); return; }
+
+  const { titulo, texto } = _muralResumoSemana(dias, semStr, numSem);
+  const q = new URLSearchParams({ mural:'1', titulo, texto, autor:'PCP · RitmoProd' });
+  window.open(CFG.muralUrl.replace(/\/+$/,'') + '/?' + q.toString(), '_blank');
 }
 
 async function enviarResumoZap(){

@@ -275,6 +275,28 @@ ok('e aí não há dia aberto',                     semCampo.abertos, 0);
 const soAberto = _relSemanalKPIs(sem34.map(d => ({ ...d, fechado:false })));
 ok('sem nenhum dia fechado, cai na lista toda', soAberto.piorDia.data, '21/08/2026');
 
+console.log('\n── resumo para o mural: mesma conta, sem marcação de zap ──');
+eval(pega('function _muralResumoSemana('));
+const mural = _muralResumoSemana(sem34, '17/08/2026 a 23/08/2026', 34);
+ok('título traz semana e total', mural.titulo, 'Embalagem · Semana 34/2026: 7.442 caixas');
+ok('avisa que a semana está parcial',
+   /Parcial: 4 de 5 dias fechados/.test(mural.texto), true);
+// Mesmo princípio do selo do PDF: o buraco de uma semana aberta é quase todo
+// dia que não aconteceu. No mural ninguém tem a tabela ao lado para descontar.
+ok('semana aberta não acusa quanto faltou',
+   /Faltaram/.test(mural.texto), false);
+const fechada = _muralResumoSemana(
+  sem34.slice(0,4).map(d => ({...d, fechado:true})), '17/08/2026 a 23/08/2026', 34);
+ok('semana fechada volta a dar o veredito',
+   /Meta batida na jornada normal/.test(fechada.texto), true);
+ok('melhor dia sai de dia fechado',
+   /Melhor dia: 20\/08\/2026/.test(mural.texto), true);
+ok('sem marcação de WhatsApp no mural',
+   /[*_~]|📦|✅|🔴/.test(mural.titulo + mural.texto), false);
+// A conta tem de bater com a do PDF e a do zap — uma implementação só.
+ok('total igual ao do relatório',
+   /7\.442 caixas, 77,9% da meta de 9\.550/.test(mural.texto), true);
+
 console.log('\n── uma régua só para a palavra meta ──');
 // O painel diz DENTRO DA META a partir de 96% em seis telas, mas o campo `ok`
 // exigia 100% — e é o `ok` que alimenta o cartão DIAS COM META. 19/08, com
