@@ -5387,6 +5387,18 @@ function buildDiasHist(){
   return _mergeDias([]);
 }
 
+/* ── Uma régua só para a palavra "meta" ──────────────────────────────────────
+   O painel diz DENTRO DA META a partir de 96% em seis telas (relatório do
+   período, semanal, histórico, gerencial...), mas o campo `ok` — que existe
+   só para alimentar o cartão DIAS COM META — exigia 100%. Resultado, na
+   semana 34: 19/08 com 96,5% aparecia marcado NA META na tabela e ficava de
+   fora do "3 de 5" logo acima. Mesma palavra, duas contas, no mesmo papel.
+
+   Quem estava fora do padrão era o `ok`, não os 96% — então é ele que se
+   alinha. Para mudar a régua da casa, mudar aqui e nas faixas de cor/selo. */
+const META_PCT = 96;
+function bateuMeta(ef){ return ef >= META_PCT; }
+
 function _mergeDias(diasSheets){
   const porDia={};
 
@@ -5404,7 +5416,7 @@ function _mergeDias(diasSheets){
     d.data = normData(d.data);
     porDia[d.data]={
       data:d.data, real:d.real, meta:d.meta, ef:d.ef,
-      melhor:d.melhor, pior:d.pior, ok:d.ef>=100,
+      melhor:d.melhor, pior:d.pior, ok:bateuMeta(d.ef),
       fechado:true, fechadoEm:d.fechadoEm, heCount:d.heCount||0,
       // heCx = caixas em hora extra. null = não dá para separar. São DOIS
       // motivos diferentes, e a tela precisa dizer qual: o campo nem vir (Apps
@@ -5431,7 +5443,7 @@ function _mergeDias(diasSheets){
     porDia[data]={data,real,meta,ef,
       melhor:prods.length?Math.max(...prods):0,
       pior:prods.length?Math.min(...prods):0,
-      ok:ef>=100, fechado:d.fechado, fechadoEm:d.fechadoEm, heCount, heCx, fonte:'local'};
+      ok:bateuMeta(ef), fechado:d.fechado, fechadoEm:d.fechadoEm, heCount, heCx, fonte:'local'};
   });
 
   // 3. DADOS em memória (apenas se NÃO estiver usando Sheets — evita dados demo)
@@ -5451,7 +5463,7 @@ function _mergeDias(diasSheets){
       porDia[d.data]={data:d.data,real,meta:d.meta,ef,
         melhor:prods.length?Math.max(...prods):0,
         pior:prods.length?Math.min(...prods):0,
-        ok:ef>=100, fechado:false, fechadoEm:null, heCount, heCx, fonte:'memoria'};
+        ok:bateuMeta(ef), fechado:false, fechadoEm:null, heCount, heCx, fonte:'memoria'};
     });
   }
 
@@ -6386,6 +6398,27 @@ function _relMetaHE(totReal, totHE, totMeta){
 // são os dias COM PRODUÇÃO no período (os mesmos que o relatório lista), nunca
 // dias corridos — sábado, domingo e feriado não têm produção lançada e ficariam
 // puxando a média para baixo.
+/* ── Dia fechado × dia em curso ──────────────────────────────────────────────
+   O dia que ainda está correndo tem a produção de algumas horas contra a meta
+   do dia INTEIRO. Não é um dia fraco: é um dia pela metade. Como piorDia pega
+   a menor eficiência da lista, ele ganhava o título toda vez que o relatório
+   rodava antes do fechamento — na semana 34 saiu "DIA MAIS FRACO 21/08 · 9,3%"
+   com 273 cx de uma manhã contra meta de 2.950.
+
+   Fixture de teste sem o campo `fechado` conta como fechado, para as contas
+   antigas continuarem valendo. */
+function _relDiasFechados(dias){
+  return (dias||[]).filter(d => d.fechado !== false);
+}
+
+/* Sem nenhum dia fechado, cai na lista toda: melhor ficar impreciso do que
+   deixar o relatório sem os dois cartões. */
+function _relDiaExtremo(dias, maior){
+  const fechados = _relDiasFechados(dias);
+  const lista = fechados.length ? fechados : dias;
+  return lista.reduce((a, b) => ((maior ? a.ef > b.ef : a.ef < b.ef) ? a : b));
+}
+
 function _relSemanalKPIs(dias){
   const n = dias.length;
   const totReal = dias.reduce((s,d)=>s+d.real,0);
@@ -6409,8 +6442,11 @@ function _relSemanalKPIs(dias){
     temHE:     dias.some(d=>!_heIndef(d)&&d.heCx>0),
     semHE:     dias.filter(_heIndef).length,
     comMeta:   dias.filter(d=>d.ok).length,
-    melhorDia: dias.reduce((a,b)=>a.ef>b.ef?a:b),
-    piorDia:   dias.reduce((a,b)=>a.ef<b.ef?a:b),
+    melhorDia: _relDiaExtremo(dias, true),
+    piorDia:   _relDiaExtremo(dias, false),
+    // Quantos já fecharam: o cabeçalho usa para se declarar parcial.
+    fechados:  _relDiasFechados(dias).length,
+    abertos:   dias.length - _relDiasFechados(dias).length,
     ..._relMetaHE(totReal, totHE, totMeta)
   };
 }
@@ -6629,7 +6665,14 @@ async function gerarRelatorioSemanal(){
   // KPIs da semana (conta pura, testável — ver _relSemanalKPIs)
   const {totReal, totMeta, efMedia, efMediaSemHE, mediaReal, mediaMeta,
          totHE, totHoras, temHE, semHE, comMeta, melhorDia, piorDia,
+         fechados, abertos,
          efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
+
+  /* Semana com dia em aberto não é semana fechada, e o cabeçalho tem de dizer
+     isso: o total já traz a meta cheia do dia em curso, então a eficiência sai
+     menor do que o ritmo real. Quem lê numa sexta de manhã sabe; quem recebe o
+     PDF encaminhado na segunda, não. */
+  const parcial = abertos > 0;
   // "468 · 2h" na mesma célula: mostra as HORAS sem alargar a tabela com mais
   // uma coluna (o relatório já tem 10 e é A4 retrato).
   const _heCel = d => {
@@ -6651,8 +6694,13 @@ async function gerarRelatorioSemanal(){
   // diários (118,5%) e o rodapé o total (104,3%): dois números para a mesma
   // pergunta, e com a meta variando por dia eles divergem muito. A média
   // diária continua na linha MÉDIA / DIA, que é o lugar dela.
-  const corEf  = soComHE ? '#FF9800' : cor(efTotal);
-  const badgeEf= soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal);
+  /* Semana com dia em aberto ainda traz a meta cheia do dia em curso, então o
+     total sai abaixo do ritmo real. Dizer ABAIXO ali é veredito sobre tempo que
+     não aconteceu: enquanto houver dia aberto, o cartão informa em vez de julgar. */
+  const corEf  = parcial ? '#718096' : (soComHE ? '#FF9800' : cor(efTotal));
+  const badgeEf= parcial
+    ? `PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}`
+    : (soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal));
 
   // Gerar HTML do relatório
   const html=`<!DOCTYPE html>
@@ -6738,6 +6786,7 @@ ${_rpBotaoImprimir()}
 ${_rpCabecalho('RELATÓRIO SEMANAL',
    `<div class="rp-semana">SEMANA ${numSem} / ${seg.getFullYear()}</div>
     <div>${semStr}</div>
+    ${parcial?`<div style="color:#B4650A;font-weight:700">PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}</div>`:''}
     <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)}
 
 <!-- KPIs SEMANA -->
@@ -6796,7 +6845,7 @@ ${soComHE?`<div class="rp-alerta">
   <div class="rp-highlight">
     <div class="rp-hl-icon">📉</div>
     <div>
-      <div class="rp-hl-lbl">DIA MAIS FRACO</div>
+      <div class="rp-hl-lbl">DIA MAIS FRACO${parcial?' (ENTRE OS FECHADOS)':''}</div>
       <div class="rp-hl-val" style="color:#F44336">${piorDia.data}</div>
       <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(piorDia.ef)} eficiência</div>
     </div>
