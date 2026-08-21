@@ -39,6 +39,8 @@ eval(pega('function _relRotuloSemanas('));
 eval(pega('function _slotMaisFreq('));
 eval(pega('function _relMetaHE('));
 eval(pega('function _relSwotParadas('));
+eval(pega('function _relDiasFechados('));
+eval(pega('function _relDiaExtremo('));
 eval(pega('function _relSemanalKPIs('));
 
 let falhas = 0;
@@ -244,6 +246,48 @@ const umDia = _relSemanalKPIs([dias[0]]);
 ok('um único dia: média = o próprio dia', umDia.mediaReal, 1106);
 ok('um único dia é melhor e pior ao mesmo tempo',
    [umDia.melhorDia.data, umDia.piorDia.data], ['10/08/2026', '10/08/2026']);
+
+console.log('\n── dia em curso não é dia fraco ──');
+// Semana 34/2026: o relatório rodou 21/08 às 10h, com a sexta ainda correndo.
+// 273 cx de uma manhã contra a meta cheia de 2.950 dão 9,3% e faziam o dia em
+// curso ganhar o cartão DIA MAIS FRACO toda vez que alguém gerava antes do
+// fechamento. Melhor e pior passam a sair só de dia FECHADO.
+const sem34 = [
+  { data:'17/08/2026', real:2909, meta:2600, ef:111.9, ok:true,  heCx:0, fechado:true  },
+  { data:'18/08/2026', real:1464, meta:1300, ef:112.6, ok:true,  heCx:0, fechado:true  },
+  { data:'19/08/2026', real:1495, meta:1550, ef:96.5,  ok:true,  heCx:0, fechado:true  },
+  { data:'20/08/2026', real:1301, meta:1150, ef:113.1, ok:true,  heCx:0, fechado:true  },
+  { data:'21/08/2026', real:273,  meta:2950, ef:9.3,   ok:false, heCx:0, fechado:false }
+];
+const k34 = _relSemanalKPIs(sem34);
+ok('o dia em curso não é o dia mais fraco', k34.piorDia.data, '19/08/2026');
+ok('nem entra na disputa de melhor dia',    k34.melhorDia.data, '20/08/2026');
+ok('conta quantos dias já fecharam',        k34.fechados, 4);
+ok('e quantos ainda estão abertos',         k34.abertos, 1);
+
+// Fixture antiga não traz `fechado`: continua contando como fechado, senão
+// toda conta anterior mudaria de significado sem ninguém pedir.
+const semCampo = _relSemanalKPIs(sem34.map(({fechado, ...d}) => d));
+ok('dia sem o campo fechado conta como fechado', semCampo.piorDia.data, '21/08/2026');
+ok('e aí não há dia aberto',                     semCampo.abertos, 0);
+
+// Semana inteira em aberto não pode ficar sem os dois cartões.
+const soAberto = _relSemanalKPIs(sem34.map(d => ({ ...d, fechado:false })));
+ok('sem nenhum dia fechado, cai na lista toda', soAberto.piorDia.data, '21/08/2026');
+
+console.log('\n── uma régua só para a palavra meta ──');
+// O painel diz DENTRO DA META a partir de 96% em seis telas, mas o campo `ok`
+// exigia 100% — e é o `ok` que alimenta o cartão DIAS COM META. 19/08, com
+// 96,5%, saía marcado na meta na tabela e fora da contagem logo acima.
+// META_PCT é const solta: o pega() só extrai função, e `const` dentro de eval
+// não escapa do próprio escopo (função escapa — é por isso que o resto funciona).
+// Então lê o VALOR real do painel e põe no global: mexeu na régua lá, o teste
+// acompanha em vez de conferir um número morto copiado para cá.
+global.META_PCT = Number(JS.match(/const META_PCT\s*=\s*(\d+)/)[1]);
+eval(pega('function bateuMeta('));
+ok('96,5% bate a meta, como o selo da linha já dizia', bateuMeta(96.5), true);
+ok('95,9% não bate',                                   bateuMeta(95.9), false);
+ok('a régua é a mesma do selo de status',              bateuMeta(96), true);
 
 console.log('\n── fechamento da semana: UM desenho para a TV e para o gerencial ──');
 // O mesmo fechamento aparece na TELA D da TV e no bloco do GERENCIAL. Quem
