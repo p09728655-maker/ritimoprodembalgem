@@ -392,6 +392,24 @@ ok('méd/dia aditiva aparada', ap.val, 250);
 ap = _phMediaAparada([null, _dia(100,1), undefined, _dia(300,1), _dia(200,1)], 'mediaH');
 ok('célula vazia não entra na poda', Math.round(ap.val), 200);
 
+// O FILTRO MÉDIA (pedido do PPCP, 24/08/2026: "deixar um filtro para eu
+// manipular deixar o maior e o menor"): 'completa' desliga a poda — nenhum
+// dia sai da média; omitido ou 'aparada' é a conta de sempre.
+ap = _phMediaAparada([_dia(59,1), _dia(122,1), _dia(122,1)], 'mediaH', 'completa');
+ok('COMPLETA usa todos os dias (VIVARE volta a 101)', Math.round(ap.val), 101);
+ok('e avisa que não podou', ap.aparada, false);
+ok('APARADA explícita = a conta do padrão',
+   _phMediaAparada([_dia(118,1), _dia(178,1), _dia(187,1), _dia(91,1)], 'mediaH', 'aparada').val,
+   _phMediaAparada([_dia(118,1), _dia(178,1), _dia(187,1), _dia(91,1)], 'mediaH').val);
+// O guarda: a tela e o PDF do período passam o modo do filtro — se um deles
+// voltar a chamar sem o modo, conta diferente do outro e o teste quebra.
+ok('tela e PDF passam o modo do filtro MÉDIA',
+   (JS.match(/_phMediaAparada\(accsDia,metric,mediaModo\)/g)||[]).length, 2);
+// E o TOTAL DO DIA herda a régua ÚNICA de troca do comparativo — teto do
+// mesmo produto não pode ler 318/h numa tabela e 307/h na outra.
+ok('o TOTAL DO DIA herda a régua única do comparativo',
+   /tetoOper:PH_FATOR_TROCA!=null \? teto\*PH_FATOR_TROCA/.test(JS), true);
+
 // % do teto: o tempo de esteira SOMA (média harmônica pelas caixas), nunca a
 // média aritmética dos tetos — ela superestimaria o teto do mix.
 const mix = _phAcc();
