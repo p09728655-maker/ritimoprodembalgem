@@ -476,6 +476,19 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
     if (it.tetoCxH > 0) { g.cxTeto += it.caixas; g.hTeto += it.caixas / it.tetoCxH; g.mmCx += it.caixas * (it.mixMm || 0); }
   });
 
+  // Régua ÚNICA do período (MESMA regra do _phFatorTrocaPeriodo do painel,
+  // pedido do PPCP em 24/08/2026: "o teto deveria ser igual para todas as
+  // cores"): os minutos de troca de cada dia diluídos nos minutos que a LINHA
+  // rodou, somados no período — um fator só, igual para todas as linhas. Sem
+  // horasLista (log antigo) fica null e vale a régua antiga, por linha.
+  var minLinhaTot = 0, minTrocaTot = 0;
+  Object.keys(ocup).forEach(function (d) {
+    var hd = Object.keys(ocup[d]).length;
+    if (!hd) return;
+    minLinhaTot += hd * 60; minTrocaTot += minDiaDe(d);
+  });
+  var fatorTroca = minLinhaTot > 0 ? Math.max(0, minLinhaTot - minTrocaTot) / minLinhaTot : null;
+
   const linhas = Object.keys(grupos).map(function (k) {
     const g = grupos[k];
     // Um item por DATA. O log vem por DATA × MODELO × PRODUTO × COR, então o
@@ -522,15 +535,19 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
     const trocas = Object.keys(g.horasDia).reduce(function (n, d) {
       return n + _entradasDia(Object.keys(g.horasDia[d]), Object.keys(ocup[d] || {}));
     }, 0) || nDiasG;
-    // Os 30 min/dia são da ESTEIRA: cada produto paga a fatia proporcional ao
-    // tempo que ocupou a linha no dia (o que dá o mesmo % para todos). Sem a
-    // lista de horas, cai nos 5 min por dia rodado, a régua conservadora.
+    // Os minutos de troca são da ESTEIRA: o desconto é o fator ÚNICO do
+    // período (fatorTroca), o mesmo % para todas as linhas — igual ao painel.
+    // Sem a lista de horas, cai na régua antiga por linha (5 min por dia
+    // rodado, a conservadora).
     const minTroca = dias.reduce(function (a, d) {
       const hg = Object.keys(d.hSet).length, hd = Object.keys(ocup[d.data] || {}).length;
       return a + ((hg && hd) ? minDiaDe(d.data) * Math.min(1, hg / hd) : TROCA_PREM_MIN);
     }, 0);
     const minTot = horasTot * 60;
-    const tetoOper = (teto > 0 && minTot > 0) ? teto * Math.max(0, minTot - minTroca) / minTot : teto;
+    const tetoOper = (teto > 0)
+      ? (fatorTroca != null ? teto * fatorTroca
+                            : (minTot > 0 ? teto * Math.max(0, minTot - minTroca) / minTot : teto))
+      : teto;
     return { nome: g.nome, n: nDiasG, trocas: trocas, caixas: g.caixas, aparada: aparada, melhor: melhor,
              teto: teto, tetoOper: tetoOper, dias: dias,
              pctA: tetoOper > 0 ? aparada / tetoOper * 100 : 0,
@@ -546,7 +563,7 @@ function simularEsteiraPorModelo(dias, velSim, entreSim) {
                    ' min, de ' + obsTroca.n + ' parada(s) apontada(s)) — premissa combinada: ' + TROCA_PREM_MIN_DIA + ' min/dia'
                  : 'PREMISSA: teto/%teto descontam ' + TROCA_PREM_MIN_DIA + ' min/dia de troca de produto (' +
                    TROCA_PREM_TROCAS + ' × ' + TROCA_PREM_MIN + ' min)') +
-               ', rateados entre os produtos pelo tempo de esteira.');
+               ', diluídos nas horas rodadas da linha — mesmo % para todas as linhas.');
   Logger.log(P('MODELO', 34) + D('dias', 5) + D('trocas', 7) + D('cx', 7) + D('aparada', 9) + D('melhor', 8) + D('teto', 7) + D('%teto', 7) + D('%melhor', 9));
   linhas.forEach(function (l) {
     Logger.log(P(l.nome, 34) + D(l.n, 5) + D(l.trocas, 7) + D(l.caixas, 7) + D(Math.round(l.aparada), 9) + D(Math.round(l.melhor), 8) +

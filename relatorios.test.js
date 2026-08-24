@@ -432,6 +432,7 @@ const TROCA_PREMISSA=eval('('+JS.match(/const TROCA_PREMISSA\s*=\s*(\{[^}]*\})/)
 eval(pega('function _phHoraMin('));
 eval(pega('function _phMinTrocaGrupo('));
 eval(pega('function _phMinTrocaDia('));
+eval(pega('function _phFatorTrocaPeriodo('));
 eval(pega('function _phMinDia('));
 eval(pega('function _phTrocaFonte('));
 eval(pega('function _phEntradasDia('));
@@ -566,7 +567,7 @@ ok('e diz qual é a premissa combinada, para comparar',
 ok('sem medição, a nota diz que o número é PREMISSA',
    /<b>30 min por dia<\/b> de troca de produto \(6 trocas × 5 min\), <b>premissa<\/b>/.test(
      _phNotaTrocaHtml({trocas:9,dias:3,porDia:3,fonte:'log'},null,false)), true);
-ok('explica o rateio pelo tempo de esteira', /mesmo percentual para todos<\/b>/.test(notaPer), true);
+ok('explica o rateio pelo tempo de esteira', /mesmo percentual para todas as linhas<\/b>/.test(notaPer), true);
 ok('e diz quanto isso pesa no teto de um dia de 9 h', /min são 3,0% do teto/.test(notaPer), true);
 ok('traz a fórmula do teto', /minutos rodados − minutos de troca/.test(notaPer), true);
 ok('diz quantas preparações foram', /<b>2,1\/dia<\/b>/.test(notaPer), true);
@@ -633,6 +634,25 @@ ok('no período os minutos somam dia a dia (6,7 + 3,3)',
 // com a régua medida, cada dia entra com o que ELE teve de troca
 ok('e com a medição cada dia entra com a régua dele',
    Math.round(_phMinTrocaGrupo('A',['19/08','20/08'],cellPrem,linhaPrem,mdF)*10)/10, 14.6);
+
+// A RÉGUA DO PERÍODO É UMA SÓ (pedido do PPCP, 24/08/2026: "o teto deveria ser
+// igual para todas as cores"): _phFatorTrocaPeriodo devolve UM fator para o
+// quadro inteiro — minutos de troca de cada dia ÷ minutos rodados da LINHA.
+// Antes cada linha pagava só o mix dos dias em que ELA rodou, e cores do mesmo
+// produto saíam com tetos diferentes (309–318/h no mesmo quadro).
+ok('premissa: 2 dias de 9 h pagam 30+30 min → fator 94,4%',
+   Math.round(_phFatorTrocaPeriodo(['19/08','20/08'],linhaPrem)*1000), 944);
+ok('com a medição, cada dia entra com a régua dele (51,1+29,2 min)',
+   Math.round(_phFatorTrocaPeriodo(['19/08','20/08'],linhaPrem,mdF)*1000), 926);
+ok('dia sem ocupação da linha fica fora da conta',
+   Math.round(_phFatorTrocaPeriodo(['19/08','21/08'],linhaPrem)*1000), 944);
+ok('sem a lista de horas do backend devolve null (cai na régua antiga)',
+   _phFatorTrocaPeriodo(['19/08'],{}), null);
+// O fator não depende do grupo: cores com o mesmo teto físico saem com o MESMO
+// teto exibido, rodando nos dias que rodarem. O guarda abaixo prende a tela e
+// o PDF na régua única — se algum voltar à fatia por linha, o teste quebra.
+ok('tela e PDF descontam o teto pela régua única (não pela fatia da linha)',
+   (JS.match(/tetoShow: fatorTroca!=null \? tetoBase\*fatorTroca/g)||[]).length, 2);
 
 // A duração medida virou INFORMAÇÃO: a ordem abaixo alimenta a nota de
 // conferência, não mais o teto.

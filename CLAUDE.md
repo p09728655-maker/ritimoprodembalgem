@@ -681,6 +681,18 @@ via Google Apps Script (JSONP).
     rodou 8. Arredondar a fatia fazia quem rodou 1 h pagar 0,1% a mais: o
     arredondamento é **só na exibição**. Sem `horasLista` (re-deploy pendente)
     cai em **5 min por dia rodado**, a régua conservadora.
+  - **No PERÍODO o desconto é UM fator só para o quadro inteiro**
+    (`_phFatorTrocaPeriodo`: Σ minutos de troca de cada dia ÷ Σ minutos que a
+    linha rodou, nos dias em tela) — pedido do PPCP, 24/08/2026: *"o teto
+    deveria ser igual para todas as cores"*. Antes cada linha pagava só o mix
+    dos dias em que ELA rodou (`_phMinTrocaGrupo` direto no teto): cores do
+    mesmo produto saíam com tetos **diferentes** (309–318/h no mesmo quadro da
+    MADERO) e parecia erro de conta. Cores do mesmo produto agora mostram o
+    MESMO teto; teto diferente entre modelos vem da caixa (medida), não da
+    troca. `_phMinTrocaGrupo` continua existindo como **régua de queda** (sem
+    `horasLista`) e informação. O `simularEsteiraPorModelo` do `.gs` aplica o
+    mesmo fator (função de editor: basta colar o arquivo salvo, sem re-deploy
+    do app). `relatorios.test.js` prende tela e PDF na régua única.
   - **O que é MEDIDO virou informação, não entrada da conta.** Continuam sendo
     calculados e mostrados na nota impressa e no log do editor, para conferir a
     premissa: **preparações**, **paradas de esteira** (`_phTrocasLinha` —
