@@ -594,6 +594,15 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb2-substat-line{display:flex;align-items:baseline;gap:8px}
 .tvb2-substat-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.2vw,60px);line-height:1}
 .tvb2-substat-unit{font-family:var(--font-d);font-size:clamp(14px,1.2vw,22px);color:var(--txt2);letter-spacing:1px}
+/* RITMO ATUAL é o pulso da linha (pedido do PPCP, 24/08/2026: "muito pequeno
+   na TV"): o número sobe para ~1,8× dos substats vizinhos — a 15 m lê-se o
+   ritmo primeiro; PESO/PONTOS continuam menores, que são conferência. O
+   flex-wrap centrado da linha absorve o crescimento: se não couber ao lado,
+   o ritmo desce inteiro para a linha de baixo em vez de espremer os três. */
+#tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(44px,5.6vw,104px)}
+#tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(17px,1.7vw,32px)}
+#tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(14px,1.45vw,26px)}
+#tvb-kpi-ritmo svg{width:clamp(34px,3.6vw,68px)}
 
 .tvb2-rail{display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
 .tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.6vh 0 1.6vh 2.4vw;border-top:1px solid var(--border)}
@@ -2168,7 +2177,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.13.0';
+const APP_VER   = '7.13.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════

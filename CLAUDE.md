@@ -874,6 +874,12 @@ via Google Apps Script (JSONP).
   e o combinado operacional é lançar hora a hora.
 
 ## Notas / armadilhas conhecidas
+- **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do
+  PPCP, 24/08/2026: *"ritmo atual está muito pequeno na TV"*). Os três dividem
+  o visual `.tvb2-substat`, mas `#tvb-kpi-ritmo` tem escala própria (~1,8×):
+  ritmo é o pulso da linha, peso e pontos são conferência. O `flex-wrap`
+  centrado da linha absorve o crescimento — se não couber ao lado, o ritmo
+  desce inteiro para a linha de baixo. Não voltar a igualar os três.
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
   o que aconteceu com a linha **Ef.%** do gráfico do HISTÓRICO — quase invisível
