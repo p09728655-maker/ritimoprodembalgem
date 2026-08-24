@@ -1663,6 +1663,11 @@ if (_v7Instalado()) _v7EscondeBotao();
       <option value="pontos">PONTOS</option>
       <option value="pesoKg">PESO (KG)</option>
     </select>
+    <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px" title="APARADA descarta o melhor e o pior dia do próprio grupo (3+ dias) antes da média; COMPLETA usa todos os dias">MÉDIA</span>
+    <select id="ph-media" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px" title="APARADA descarta o melhor e o pior dia do próprio grupo (3+ dias) antes da média; COMPLETA usa todos os dias">
+      <option value="aparada">APARADA</option>
+      <option value="completa">COMPLETA</option>
+    </select>
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px" title="Simulador: mude a velocidade ou o vão entre peças e o % do teto recalcula na hora — nada é gravado">ESTEIRA</span>
     <input type="number" id="ph-est-vel" step="0.1" min="0.1" onchange="renderModeloPeriodo()" class="frm-inp" style="width:58px;padding:4px 6px;font-size:11px" title="Velocidade da esteira (m/min) — mude para simular">
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2)">m/min ·</span>
@@ -2163,7 +2168,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.12.5';
+const APP_VER   = '7.13.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3686,9 +3691,13 @@ function calcPorModelo(){
       pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
       cor:[...m.cores].sort().join(' · '),
       teto, troca, nTroc, minTroca,
-      // teto exibido: o físico já sem a fatia dos 30 min/dia, diluída nas horas
-      // que o modelo rodou — MESMA regra (_phTetoOper) do comparativo.
-      tetoOper:_phTetoOper(teto, m.horas.size, 1, minTroca),
+      // teto exibido: quando o comparativo do período já publicou a régua
+      // única (PH_FATOR_TROCA), o dia usa o MESMO fator — o teto do mesmo
+      // produto não pode ler diferente nas duas tabelas da mesma aba (PPCP,
+      // 24/08/2026: 318/h × 307/h). Sem o período carregado, vale a régua do
+      // próprio dia (troca de hoje ÷ horas de hoje), como antes.
+      tetoOper:PH_FATOR_TROCA!=null ? teto*PH_FATOR_TROCA
+                                    : _phTetoOper(teto, m.horas.size, 1, minTroca),
       media:Math.round(m.caixas/m.horas.size) };
   });
   const totCx=linhas.reduce((s,l)=>s+l.caixas,0);
@@ -3729,7 +3738,7 @@ function renderProducaoPorHoraDedicada(){
       <td class="mono">${fmtN(m.pesoKg)} kg</td>
       <td class="mono">${fmtN(m.pontos)}</td>
       <td class="mono">${fmtN(m.media)}</td>
-      ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${fmtN(Math.round(m.minTroca*10)/10)} min de troca — a fatia deste produto nos ${fmtN(fonteTroca.minDia)} min/dia ${fonteTroca.medido?'MEDIDOS hoje (paradas de esteira × duração das paradas apontadas)':'da premissa'}: ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
+      ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${PH_FATOR_TROCA!=null?fmtP((1-PH_FATOR_TROCA)*100)+' de troca — a régua ÚNICA do comparativo do período acima (mesma para todas as linhas)':fmtN(Math.round(m.minTroca*10)/10)+' min de troca — a fatia deste produto nos '+fmtN(fonteTroca.minDia)+' min/dia '+(fonteTroca.medido?'MEDIDOS hoje (paradas de esteira × duração das paradas apontadas)':'da premissa')}: ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
     </tr>`).join('');
   // Quantas trocas a linha já fez HOJE (o "por dia" do período, no dia de hoje).
   const tlHoje=_phPrepHoje();
@@ -3809,15 +3818,24 @@ function _phTetoSim(vel, entre, mixMm){
 //  - no RITMO (mediaH) a média continua PONDERADA (Σcx ÷ Σh dos dias que
 //    sobraram) — média simples de ritmos distorce quando as horas variam;
 //  - nas métricas aditivas vale para a MÉD/DIA; o TOTAL continua o total.
-function _phMediaAparada(accsDia, metric){
+// O 3º parâmetro é o filtro MÉDIA da barra (pedido do PPCP, 24/08/2026:
+// "deixar um filtro para eu manipular deixar o maior e o menor"): 'aparada'
+// (padrão — poda como sempre) ou 'completa' (nenhum dia sai da média).
+// Omitido, vale 'aparada' — os chamadores antigos não mudam de conta.
+function _phMediaAparada(accsDia, metric, modo){
   const dias=(accsDia||[]).filter(a=>a&&a.caixas>0);
-  const usados=dias.length>=3
+  const poda=modo!=='completa' && dias.length>=3;
+  const usados=poda
     ? [...dias].sort((a,b)=>_phVal(a,metric)-_phVal(b,metric)).slice(1,-1)
     : dias;
   const t=_phAcc(); usados.forEach(a=>_phAdd(t,a));
-  if(metric==='mediaH') return {val:_phVal(t,metric), aparada:dias.length>=3};
-  return {val:usados.length?_phVal(t,metric)/usados.length:0, aparada:dias.length>=3};
+  if(metric==='mediaH') return {val:_phVal(t,metric), aparada:poda};
+  return {val:usados.length?_phVal(t,metric)/usados.length:0, aparada:poda};
 }
+// O filtro MÉDIA vive na barra do comparativo; o PDF lê o mesmo select, então
+// tela e papel nunca contam diferente. Sem o elemento (teste, popup órfão),
+// vale a aparada — o comportamento de sempre.
+function _phMediaModo(){ return ((document.getElementById('ph-media')||{}).value)||'aparada'; }
 // % DO TETO DA ESTEIRA do grupo: o backend manda tetoCxH por item (média
 // harmônica do mix de caixas); aqui o tempo de esteira soma de novo do mesmo
 // jeito. Devolve 0 sem catálogo (medida/velocidade) — a coluna some, não chuta.
@@ -4216,6 +4234,11 @@ async function lerProducaoModeloPeriodo(de,ate){
 // (PRODUTO_CODIGO) — o ↺ volta para eles.
 let ESTEIRA_BASE=null;
 let PREP_PERIODO=null;   // [{data, prep, paralelo}] do getProducaoModeloPeriodo
+// Fator da régua ÚNICA de troca calculado pelo comparativo do período — o
+// TOTAL DO DIA (logo abaixo dele) usa o MESMO fator, senão o teto do mesmo
+// produto lê 318/h numa tabela e 307/h na outra (PPCP, 24/08/2026). Enquanto
+// o período não carregou, fica null e o dia usa a régua própria (a de hoje).
+let PH_FATOR_TROCA=null;
 function _phEsteiraSync(){
   const vi=document.getElementById('ph-est-vel'), ei=document.getElementById('ph-est-entre');
   if(!vi||!ei) return null;
@@ -4360,9 +4383,10 @@ async function renderModeloPeriodo(){
   // Régua ÚNICA do período: o mesmo fator de troca para todas as linhas —
   // cores do mesmo produto saem com o MESMO teto (ver _phFatorTrocaPeriodo).
   const fatorTroca=_phFatorTrocaPeriodo(datas,horasLinha,minDiaFn);
+  const mediaModo=_phMediaModo();
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
-    const ap=_phMediaAparada(accsDia,metric);
+    const ap=_phMediaAparada(accsDia,metric,mediaModo);
     const tetoReal=_phTeto(rowAcc[k]);
     const nd=accsDia.filter(a=>a&&a.caixas>0).length;
     const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
@@ -4390,7 +4414,7 @@ async function renderModeloPeriodo(){
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
-    + `<th style="text-align:right" title="média sem o melhor e o pior dia (3+ dias) — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
+    + `<th style="text-align:right" title="${mediaModo==='completa'?'média com TODOS os dias do período (APARADA desligada no filtro MÉDIA)':'média sem o melhor e o pior dia (3+ dias)'} — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
     + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças), já descontados os '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto ('+(fonteTroca.medido?'medidos no período':'premissa combinada com o PPCP')+'), diluídos nas horas rodadas da linha — o desconto é o mesmo percentual para todas as linhas, então cores do mesmo produto têm o mesmo teto'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:9px;color:${simUse?"var(--warn)":"var(--txt2)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'simulado − troca':'físico − troca'}</span></th>`:'')
     + `</tr>`;
 
@@ -4417,9 +4441,18 @@ async function renderModeloPeriodo(){
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
 
-  const legenda=(metric==='mediaH')?` · méd. sem o melhor e o pior dia (3+ dias) · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+' — régua igual para todas as linhas)'):''}`:' · méd/dia sem o melhor e o pior dia (3+ dias)';
+  const mediaTxt=mediaModo==='completa'?'com todos os dias (APARADA desligada no filtro MÉDIA)':'sem o melhor e o pior dia (3+ dias)';
+  const legenda=(metric==='mediaH')?` · méd. ${mediaTxt} · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+' — régua igual para todas as linhas)'):''}`:` · méd/dia ${mediaTxt}`;
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${legenda}`;
+  // O TOTAL DO DIA usa a MESMA régua de troca deste comparativo (PPCP,
+  // 24/08/2026: 318/h numa tabela e 307/h na outra é lido como erro). Publica
+  // o fator e, se mudou, redesenha a tabela do dia — ela é local
+  // (PONTOS_DIA), redesenhar não custa chamada nenhuma.
+  if(fatorTroca!==PH_FATOR_TROCA){
+    PH_FATOR_TROCA=fatorTroca;
+    try{ renderProducaoPorHoraDedicada(); }catch(e){}
+  }
 }
 
 // Nível de agrupamento do comparativo — MESMA regra para a tela e para o PDF.
@@ -4504,9 +4537,10 @@ async function gerarRelatorioProducaoHora(){
   // Mesma régua ÚNICA da tela: um fator de troca para o quadro inteiro —
   // cores do mesmo produto imprimem o MESMO teto (ver _phFatorTrocaPeriodo).
   const fatorTroca=_phFatorTrocaPeriodo(datas,horasLinha,minDiaFn);
+  const mediaModo=_phMediaModo();
   const linhas=Object.keys(rowAcc).map(k=>{
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
-    const ap=_phMediaAparada(accsDia,metric);
+    const ap=_phMediaAparada(accsDia,metric,mediaModo);
     const tetoReal=_phTeto(rowAcc[k]);
     const nd=accsDia.filter(a=>a&&a.caixas>0).length;
     const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
@@ -4677,7 +4711,7 @@ ${simUse?`<div class="rp-note" style="border:1px solid #FF9800;background:#fff8e
 
 <div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR ${Termo} — POR DIA (${label})</div>
 ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:#3d4757;margin:0 0 8px;padding:8px 11px;background:#f8fafc;border:1px solid #edf2f7;border-radius:4px">
-  <span><b style="color:#1a1a2e">MÉD.PERÍODO</b> = padrão de agora → é a base para <b>prazo e meta do dia</b></span>
+  <span><b style="color:#1a1a2e">MÉD.PERÍODO</b> = ${mediaModo==='completa'?'média com TODOS os dias (aparada desligada)':'padrão de agora'} → é a base para <b>prazo e meta do dia</b></span>
   <span><b style="color:#1a1a2e">MELHOR DIA</b> = teto praticado (a equipe já fez) → é a <b>meta de melhoria</b> justa</span>
   ${temTeto?`<span><b style="color:#1a1a2e">${simUse?'% TETO SIM.':'% TETO EST.'}</b> = limite ${simUse?'simulado':'físico'} da esteira, já descontados os ${fmtN(fonteTroca.minDia)} min/dia de troca de produto (${fonteTroca.medido?'medidos':'premissa'}, régua igual para todas as linhas) → <b>régua de comparação</b>; só vira ação acima de ~85%</span>`:''}
 </div>`}
@@ -4703,7 +4737,7 @@ ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.
 
 <div class="rp-footer">
   <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
-  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. sem o melhor e o pior dia (3+ dias)${tLinha?' · '+tLinha:''}${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca)'):''}</span>
+  <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. ${mediaModo==='completa'?'com TODOS os dias (aparada desligada no filtro MÉDIA)':'sem o melhor e o pior dia (3+ dias)'}${tLinha?' · '+tLinha:''}${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca)'):''}</span>
 </div>
 
 </body>

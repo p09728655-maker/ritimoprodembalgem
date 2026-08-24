@@ -693,6 +693,23 @@ via Google Apps Script (JSONP).
     `horasLista`) e informação. O `simularEsteiraPorModelo` do `.gs` aplica o
     mesmo fator (função de editor: basta colar o arquivo salvo, sem re-deploy
     do app). `relatorios.test.js` prende tela e PDF na régua única.
+  - **O TOTAL DO DIA herda a régua única do comparativo** (`PH_FATOR_TROCA`,
+    publicado pelo `renderModeloPeriodo` — que redesenha a tabela do dia quando
+    o fator muda; pedido do PPCP, 24/08/2026: o mesmo produto lia **318/h no
+    período e 307/h no dia**, porque o dia descontava a troca DE HOJE sobre as
+    horas parciais DE HOJE, uma régua que flutua ao longo do dia). Enquanto o
+    período não carregou, o dia usa a régua própria (comportamento antigo) — o
+    tooltip diz qual das duas está valendo. Se ainda assim o número diferir, é
+    o FÍSICO do mix (códigos de hoje ≠ códigos do período), não a troca.
+    `produto-cor.test.js` cobre a herança no `calcPorModelo` real.
+  - **Filtro MÉDIA na barra (`#ph-media`): APARADA × COMPLETA** (pedido do
+    PPCP, 24/08/2026: *"deixar um filtro para eu manipular deixar o maior e o
+    menor"*). `_phMediaAparada` ganhou o 3º parâmetro `modo` (omitido =
+    aparada, chamador antigo não muda de conta); `_phMediaModo()` lê o select
+    — tela E PDF do período leem o MESMO, então nunca contam diferente.
+    COMPLETA desliga a poda do melhor/pior dia; cabeçalho, legenda e o resumo
+    do PDF dizem qual modo valeu. `relatorios.test.js` cobre o modo e prende
+    os dois chamadores no filtro.
   - **O que é MEDIDO virou informação, não entrada da conta.** Continuam sendo
     calculados e mostrados na nota impressa e no log do editor, para conferir a
     premissa: **preparações**, **paradas de esteira** (`_phTrocasLinha` —

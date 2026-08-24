@@ -216,6 +216,9 @@ const TROCA_MIN_PADRAO = Number((JS.match(/const TROCA_MIN_PADRAO\s*=\s*([\d.]+)
 // sem medição das paradas (é o caso do teste): a régua cai no valor da planilha
 let TROCA_OBS = null;
 function trocaObs(){ return TROCA_OBS; }
+// null = comparativo do período ainda não publicou a régua única — o dia usa a
+// régua própria (é o estado dos testes originais).
+let PH_FATOR_TROCA = null;
 eval(pega(JS, 'function calcPorModelo('));
 const r = calcPorModelo();
 ok('produtos diferentes do mesmo código não somam juntos', r.linhas.length, 2);
@@ -260,6 +263,15 @@ PONTOS_DIA = { porHoraModelo: [
   { hora: '08:00', modelo: '501130', nome: 'MESA CENTRO LUNA 670',  cor: 'CUMARU',    caixas:  50, pesoKg: 365, pontos: 2800, tetoCxH: 376 },
   { hora: '08:00', modelo: '501130', nome: 'MESA LATERAL LUNA 440', cor: 'ALECRIM',   caixas:  40, pesoKg: 160, pontos: 1760, tetoCxH: 415 },
 ]};
+// O dia HERDA a régua única do comparativo quando ela está publicada (PPCP,
+// 24/08/2026: 318/h no período e 307/h no dia era lido como erro): o teto do
+// dia vira físico × fator, o mesmo desconto percentual das linhas do período.
+PH_FATOR_TROCA = 0.9;
+const rFator = calcPorModelo();
+ok('com a régua publicada, o teto do dia é físico × fator (376 → 338)',
+   Math.round(rFator.linhas[0].tetoOper), 338);
+ok('o físico não muda com a herança', Math.round(rFator.linhas[0].teto), 376);
+PH_FATOR_TROCA = null;
 ok('e a coluna % TETO EST. entra quando o backend manda teto', r.temTeto, true);
 // Backend antigo não manda cor: a coluna some, em vez de virar parede de "—".
 PONTOS_DIA = { porHoraModelo: [
