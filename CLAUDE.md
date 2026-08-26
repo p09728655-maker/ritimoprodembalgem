@@ -800,6 +800,33 @@ via Google Apps Script (JSONP).
   A média aparada daqui segue a MESMA regra do `_phMediaAparada` do painel —
   `produto-cor.test.js` roda a função real contra um log de mentira e falha se
   divergirem.
+- **Quando o comparativo não vem: TIMEOUT não é backend velho.** A aba mostrava
+  sempre a mesma frase — *"precisa da atualização do backend — getProducaoModeloPeriodo"* —
+  para QUALQUER falha da busca do período. Em 26/08/2026 ela apareceu com o
+  `.gs` novo já publicado (a tabela do dia estava com **% TETO EST.** e com as
+  preparações, campos que só o backend novo manda, e os campos ESTEIRA da barra
+  estavam habilitados, o que só acontece depois de uma resposta boa DESSA mesma
+  chamada): o gestor foi mandado mexer no Apps Script à toa.
+  - `getProducaoModeloPeriodo` é a leitura mais **cara** do painel — o backend lê
+    a `PRODUCAO_PRODUTO` inteira e o catálogo antes de filtrar o período —, e era
+    a única chamada pesada **sem retry**. Agora são **3 tentativas em sequência**
+    com espera crescente (nunca em paralelo: o Apps Script atende uma execução
+    por vez), como o `lerSheetsComRetry` e o `_fetchParadasRetry`, e a tela diz
+    qual tentativa está rolando.
+  - `PH_FALHA` guarda **por que** falhou e `_phFalhaInfo()` é o texto único da
+    tela e do alerta do PDF: **`sem-resposta`** (timeout/cold start → "tente de
+    novo ou encurte o período", com botão ↻), **`sem-endpoint`** (respondeu e não
+    conhece a ação — o `.gs` antigo cai no `getDados()` do dispatcher: **este** é
+    o caso de re-deploy) e **`erro`** (mostra a mensagem do backend, escapada).
+  - `PH_BACKEND_OK` marca que o endpoint já respondeu **nesta sessão**: com ela
+    de pé o painel nunca mais acusa re-deploy — a função existe lá, provado.
+  - `relatorios.test.js` cobre os quatro casos e falha se a frase do re-deploy
+    voltar a ser escrita fora do `_phFalhaInfo` ou se a busca perder o retry.
+  - Com a janela mais longa (3 × 25s), chamadas para o **mesmo período**
+    compartilham a mesma requisição (`_phVoo`): trocar a métrica no meio da
+    busca, tocar ↻ duas vezes ou pedir o PDF enquanto a tela carrega não
+    dispara uma segunda leitura — ela só se enfileiraria no Apps Script,
+    atrasando a primeira.
 
 ## Cascata + cobertura + ganho demonstrado (relatórios de produção)
 - **A SWOT saiu dos relatórios de produção** (pedido do PPCP, 18/08/2026 — "tira

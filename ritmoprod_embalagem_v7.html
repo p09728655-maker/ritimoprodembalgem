@@ -2177,7 +2177,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.13.1';
+const APP_VER   = '7.13.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4215,27 +4215,95 @@ function _corRitmo(cxh,alvo){
   return cxh>=alvo?'var(--ok)':cxh>=alvo*0.85?'var(--warn)':'var(--red)';
 }
 
+// Por que a última busca do comparativo falhou — a mensagem da tela sai DAÍ, e
+// não de um chute. **Timeout não é backend velho**: acusar "falta re-deploy"
+// numa chamada que só estourou o tempo manda o gestor mexer no Apps Script à
+// toa (26/08/2026: o .gs novo já estava publicado — o % TETO EST. e as
+// preparações de hoje estavam na tela — e o comparativo mostrava o aviso de
+// re-deploy mesmo assim).
+let PH_BACKEND_OK=false;   // o endpoint já respondeu nesta sessão → ele existe
+let PH_FALHA=null;         // 'sem-resposta' | 'sem-endpoint' | 'erro'
+let PH_FALHA_ERRO='';      // detalhe (mensagem do backend ou do jsonpFetch)
+
 // Busca a produção por modelo/dia do período no backend (novo endpoint).
 // Devolve: array de itens {data, modelo, nome, caixas, pontos, pesoKg},
-//          [] se não há produção, ou null se o endpoint não respondeu (backend
-//          antigo, sem re-deploy) — a UI distingue os dois casos.
-async function lerProducaoModeloPeriodo(de,ate){
-  if(!CFG.sheetsUrl) return null;
-  try{
-    let url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProducaoModeloPeriodo';
-    if(de)  url+='&de='+encodeURIComponent(de);
-    if(ate) url+='&ate='+encodeURIComponent(ate);
-    const json=await jsonpFetch(url);
-    if(json && json.ok && Array.isArray(json.itens)){
-      // Base da esteira (velocidade/entre-peças da planilha): habilita o
-      // simulador. Backend antigo não manda → simulador fica desligado.
-      if(json.esteira && json.esteira.vel>0) ESTEIRA_BASE=json.esteira;
-      // Preparações por dia, lidas na ordem das linhas do log (backend novo).
-      PREP_PERIODO = Array.isArray(json.prepDias) ? json.prepDias : null;
-      return json.itens;
+//          [] se não há produção, ou null se a busca falhou — e aí PH_FALHA
+//          diz POR QUÊ, que é o que a UI mostra.
+// É a leitura mais CARA do painel: o backend lê a PRODUCAO_PRODUTO inteira e o
+// catálogo antes de filtrar o período. Com o Apps Script frio (cold start), ou
+// com período longo, ela estoura os 25s do jsonpFetch — uma chamada só, sem
+// retry, deixava a aba em branco. Retenta em SEQUÊNCIA, como o
+// lerSheetsComRetry e o _fetchParadasRetry (o Apps Script atende uma execução
+// por vez; em paralelo as tentativas só se enfileiram lá).
+async function lerProducaoModeloPeriodo(de,ate,onTent){
+  if(!CFG.sheetsUrl){ PH_FALHA='sem-resposta'; PH_FALHA_ERRO='sem URL do Apps Script'; return null; }
+  let url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProducaoModeloPeriodo';
+  if(de)  url+='&de='+encodeURIComponent(de);
+  if(ate) url+='&ate='+encodeURIComponent(ate);
+  const TENT=3;
+  for(let i=1;i<=TENT;i++){
+    try{
+      const json=await jsonpFetch(url);
+      if(json && json.ok && Array.isArray(json.itens)){
+        PH_BACKEND_OK=true; PH_FALHA=null; PH_FALHA_ERRO='';
+        // Base da esteira (velocidade/entre-peças da planilha): habilita o
+        // simulador. Backend antigo não manda → simulador fica desligado.
+        if(json.esteira && json.esteira.vel>0) ESTEIRA_BASE=json.esteira;
+        // Preparações por dia, lidas na ordem das linhas do log (backend novo).
+        PREP_PERIODO = Array.isArray(json.prepDias) ? json.prepDias : null;
+        return json.itens;
+      }
+      // RESPONDEU e não veio item nenhum: o deployment em uso não conhece a
+      // ação (o .gs antigo cai no getDados() do dispatcher) ou quebrou lá
+      // dentro. Retentar não muda nada — a resposta seria a mesma.
+      if(json && json.ok===false && json.erro){ PH_FALHA='erro'; PH_FALHA_ERRO=String(json.erro); }
+      else { PH_FALHA='sem-endpoint'; PH_FALHA_ERRO=''; }
+      return null;
+    }catch(e){
+      // Timeout / script não carregou: não diz NADA sobre a versão do backend.
+      console.warn('lerProducaoModeloPeriodo:', e.message);
+      PH_FALHA='sem-resposta'; PH_FALHA_ERRO=e.message;
+      if(i<TENT){ if(onTent) onTent(i); await new Promise(r=>setTimeout(r,1500*i)); }
     }
-  }catch(e){ console.warn('lerProducaoModeloPeriodo:', e.message); }
+  }
   return null;
+}
+// Texto ÚNICO da falha — a tela do comparativo e o alerta do PDF leem o mesmo
+// (senão a tela diria "timeout" e o alerta continuaria mandando re-deployar).
+function _phFalhaInfo(){
+  if(PH_FALHA==='erro') return {
+    tit:'⚠ O BACKEND RESPONDEU COM ERRO',
+    html:'O Apps Script devolveu: <b>'+_rpEsc(PH_FALHA_ERRO||'sem detalhe')+'</b>. '
+        +'O log de cada chamada fica no editor do Apps Script, em <b>Execuções</b>.',
+    retry:true };
+  if(PH_FALHA==='sem-endpoint') return PH_BACKEND_OK ? {
+    // Já respondeu nesta sessão: o .gs publicado TEM a função — a chamada é que
+    // voltou torta agora. Mandar re-deployar aqui seria acusar o que não é.
+    tit:'⚠ O SERVIDOR RESPONDEU SEM OS DADOS',
+    html:'A chamada voltou <b>sem itens</b>, mas este mesmo endpoint já respondeu nesta sessão — '
+        +'não é falta de re-deploy. Tente de novo.',
+    retry:true } : {
+    tit:'⚙️ FALTA ATUALIZAR O BACKEND',
+    html:'O servidor respondeu, mas <b>não conhece a ação</b>: o comparativo por modelo entre '
+        +'vários dias precisa da função <b>getProducaoModeloPeriodo</b> no '
+        +'<b>ritmoprod_appscript.gs</b>. Cole o arquivo atualizado no editor do Apps Script e '
+        +'faça o <b>re-deploy</b>.',
+    retry:false };
+  return {
+    tit:'⏱ O SERVIDOR NÃO RESPONDEU A TEMPO',
+    html:'Esta é a leitura mais pesada do painel — o backend lê o log de produção inteiro antes '
+        +'de filtrar o período — e ela estourou o tempo nas <b>3 tentativas</b>. Quase sempre é o '
+        +'Apps Script <b>frio</b> (cold start) ou um intervalo de datas longo demais: tente de '
+        +'novo, ou encurte o período.'
+        +(PH_BACKEND_OK
+            ? ' <b>Não é falta de re-deploy</b> — este mesmo endpoint já respondeu nesta sessão.'
+            : ' Se insistir, confira também se o <b>ritmoprod_appscript.gs</b> no Apps Script está '
+             +'atualizado e re-deployado.'),
+    retry:true };
+}
+function _phFalhaTxt(){
+  const f=_phFalhaInfo();
+  return f.tit+'\n\n'+f.html.replace(/<[^>]+>/g,'');
 }
 // ── SIMULADOR DA ESTEIRA (campos na barra da aba PRODUÇÃO/HORA) ────────────
 // Mexer na velocidade/entre-peças NÃO grava nada: recalcula o teto na tela e
@@ -4272,14 +4340,27 @@ function phEsteiraReset(){
 // Cache por intervalo (só refaz a chamada quando DE/ATÉ mudam; trocar modelo
 // ou métrica reusa os mesmos dados).
 let _phCache={key:null, itens:null};
-async function _phItensPeriodo(){
+let _phVoo={key:null, p:null};   // busca do mesmo período já em andamento
+async function _phItensPeriodo(onTent){
   const de=dGet('ph-de');
   const ate=dGet('ph-ate');
   const key=de+'|'+ate;
   if(_phCache.key===key && _phCache.itens!=null) return _phCache.itens;
-  const itens = await lerProducaoModeloPeriodo(de,ate);
-  if(itens!=null) _phCache={key, itens};
-  return itens;
+  // Duas chamadas para o MESMO período — trocar a métrica no meio de uma busca
+  // lenta, tocar TENTAR DE NOVO duas vezes, pedir o PDF enquanto a tela carrega
+  // — compartilham a MESMA requisição: com 3 tentativas de 25s a janela ficou
+  // longa, e o Apps Script atende uma execução por vez (a segunda só se
+  // enfileiraria lá, atrasando a primeira).
+  if(_phVoo.key===key && _phVoo.p) return _phVoo.p;
+  const p=(async()=>{
+    try{
+      const itens=await lerProducaoModeloPeriodo(de,ate,onTent);
+      if(itens!=null) _phCache={key, itens};
+      return itens;
+    } finally { if(_phVoo.key===key) _phVoo={key:null, p:null}; }
+  })();
+  _phVoo={key, p};
+  return p;
 }
 
 async function renderModeloPeriodo(){
@@ -4290,17 +4371,22 @@ async function renderModeloPeriodo(){
   const selEl=document.getElementById('ph-modelo');
   if(!body) return;
   body.innerHTML='<tr><td class="empty-msg">Carregando…</td></tr>';
-  const itens=await _phItensPeriodo();
+  const itens=await _phItensPeriodo(i=>{
+    body.innerHTML='<tr><td class="empty-msg">Carregando… ('+(i+1)+'ª tentativa) — '
+      +'o servidor está ligando (cold start), reconectando sozinho</td></tr>';
+  });
 
-  // Endpoint indisponível (backend antigo / sem Sheets): avisa e não quebra a aba.
+  // Busca falhou: diz o motivo REAL (timeout × backend sem a ação × erro) e
+  // não quebra a aba — a tabela do dia, logo abaixo, continua valendo.
   if(itens==null){
     if(kpi) kpi.innerHTML='';
     if(head) head.innerHTML='';
+    const f=_phFalhaInfo();
     body.innerHTML='<tr><td class="empty-msg" style="padding:20px;text-align:left;line-height:1.6">'
-      +'⚙️ O comparativo por modelo entre vários dias precisa da atualização do backend — '
-      +'a nova função <b>getProducaoModeloPeriodo</b> no <b>ritmoprod_appscript.gs</b>. '
-      +'Cole o arquivo atualizado no editor do Apps Script e faça o <b>re-deploy</b>. '
-      +'Enquanto isso, a produção por modelo <b>de hoje</b> continua na tabela abaixo.</td></tr>';
+      +'<div style="font-family:var(--font-d);font-size:11px;letter-spacing:.6px;color:var(--warn);margin-bottom:6px">'+f.tit+'</div>'
+      +f.html+' Enquanto isso, a produção por modelo <b>de hoje</b> continua na tabela abaixo.'
+      +(f.retry?'<div style="margin-top:12px"><button class="btn btn-ghost" style="font-size:10px;padding:5px 12px" onclick="renderModeloPeriodo()">↻ TENTAR DE NOVO</button></div>':'')
+      +'</td></tr>';
     if(totEl) totEl.textContent='';
     return;
   }
@@ -4498,12 +4584,14 @@ function _phAgrup(){
 // Relatório do PERÍODO (janela separada p/ PDF) — comparativo modelo × dia.
 async function gerarRelatorioProducaoHora(){
   const itens=await _phItensPeriodo();
+  // Falhou a busca: o alerta diz o mesmo que a tela (timeout × ação
+  // desconhecida × erro do backend), nunca "faça o re-deploy" por padrão.
+  if(itens==null){ alert(_phFalhaTxt()); return; }
   // Mede a duração real da troca nas paradas apontadas antes de desenhar: o PDF
   // não tem como se redesenhar depois, e sair com o valor nominal da planilha
   // seria imprimir uma régua diferente da que está na tela.
   await carregarTrocaObs();
   const _tl=_phPrepInfo(itens,PREP_PERIODO);
-  if(itens==null){ alert('O comparativo precisa da atualização do backend\n(getProducaoModeloPeriodo no ritmoprod_appscript.gs).\nFaça o re-deploy do Apps Script e tente de novo.'); return; }
   const {ehFam,ehCor,keyOf,labelOf,keyFil,labelFil,Termo,TermoFil}=_phAgrup();
   const sel=(document.getElementById('ph-modelo')||{}).value||'';
   const itensView = sel ? itens.filter(it=>keyFil(it)===sel) : itens;
