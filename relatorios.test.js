@@ -886,6 +886,62 @@ ok('a explicação da troca é montada num lugar só',
    (JS.match(/function _phNotaTrocaHtml\(/g) || []).length, 1);
 ok('e os dois relatórios impressos chamam ela',
    (JS.match(/_phNotaTrocaHtml\(/g) || []).length, 3);
+console.log('\n── por que o comparativo não veio: timeout NÃO é backend velho ──');
+// 26/08/2026: o .gs novo estava publicado (o % TETO EST. e as preparações de
+// hoje apareciam na tela, e só o backend novo manda esses campos) e mesmo assim
+// o comparativo do período mostrava "precisa da atualização do backend". A
+// chamada é a mais pesada do painel — leu o log inteiro e estourou os 25s —,
+// mas a tela acusava re-deploy: mandava mexer no Apps Script à toa.
+var PH_FALHA = null, PH_BACKEND_OK = false, PH_FALHA_ERRO = '';
+eval(pega('function _rpEsc('));
+eval(pega('function _phFalhaInfo('));
+eval(pega('function _phFalhaTxt('));
+
+PH_FALHA = 'sem-resposta'; PH_BACKEND_OK = true; PH_FALHA_ERRO = 'Timeout — verifique a URL';
+let f = _phFalhaInfo();
+ok('timeout fala de tempo, não de deploy', /NÃO RESPONDEU A TEMPO/.test(f.tit), true);
+ok('e diz que o backend já respondeu', /Não é falta de re-deploy/.test(f.html), true);
+ok('timeout oferece tentar de novo', f.retry, true);
+ok('timeout nunca manda re-deployar', /faça o <b>re-deploy<\/b>/.test(f.html), false);
+
+// Sem nenhuma resposta boa nesta sessão não dá para afirmar que o .gs está
+// publicado — aí a versão do backend entra como HIPÓTESE, no fim, e não como
+// diagnóstico.
+PH_BACKEND_OK = false;
+f = _phFalhaInfo();
+ok('sem prova, o deploy vira só uma hipótese', /confira também/.test(f.html), true);
+
+// O único caso em que o re-deploy É o diagnóstico: o servidor respondeu e não
+// conhece a ação (o .gs antigo cai no getDados() do dispatcher).
+PH_FALHA = 'sem-endpoint'; PH_BACKEND_OK = false;
+f = _phFalhaInfo();
+ok('ação desconhecida → falta re-deploy', /FALTA ATUALIZAR O BACKEND/.test(f.tit), true);
+ok('e aí tentar de novo não adianta', f.retry, false);
+
+PH_BACKEND_OK = true;   // já respondeu antes: a função existe lá
+f = _phFalhaInfo();
+ok('endpoint que já respondeu não é backend velho', /faça o <b>re-deploy<\/b>/.test(f.html), false);
+ok('resposta torta oferece tentar de novo', f.retry, true);
+
+PH_FALHA = 'erro'; PH_FALHA_ERRO = 'Aba <PRODUCAO_PRODUTO> nao encontrada';
+f = _phFalhaInfo();
+ok('erro do backend aparece na tela', /nao encontrada/.test(f.html), true);
+ok('e vai escapado (a mensagem vem do servidor)', /&lt;PRODUCAO_PRODUTO&gt;/.test(f.html), true);
+ok('o alerta do PDF sai sem marcação', /[<>]/.test(_phFalhaTxt()), false);
+
+// Uma implementação só: a tela e o alerta do PDF leem o MESMO texto. Duas
+// cópias e a próxima correção conserta uma — foi a história do cabeçalho dos
+// relatórios (#204/#205).
+ok('a frase do re-deploy mora num lugar só',
+   (JS.match(/faça o <b>re-deploy<\/b>/g) || []).length, 1);
+ok('a tela e o PDF leem a mesma explicação',
+   [(JS.match(/(?<!function )_phFalhaInfo\(\)/g) || []).length,
+    (JS.match(/(?<!function )_phFalhaTxt\(\)/g) || []).length], [2, 1]);
+// A chamada mais cara do painel não pode ter uma tentativa só: era isso que
+// transformava cold start em "falta re-deploy".
+ok('a busca do período retenta antes de desistir',
+   /for\(let i=1;i<=TENT;i\+\+\)/.test(pega('async function lerProducaoModeloPeriodo(')), true);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
