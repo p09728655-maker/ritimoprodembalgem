@@ -1268,6 +1268,18 @@ ok('a seção existe', /id="sec-perdas"/.test(src), true);
 ok('e o setTab acende a tela', /tab==='perdas'/.test(pega('function setTab(')), true);
 // A pele da tela é CSS escopado: a mesma marcação, tokens do painel.
 ok('a tela tem pele própria (CSS escopado)', /#sec-perdas \.pgq\{/.test(src), true);
+// O botão da tela abria o PDF do período da OUTRA aba (a PARADAS, que começa
+// em HOJE): a tela mostrava 30 dias e o papel, um dia — dois números para a
+// mesma pergunta. O relatório passa a aceitar o período de quem o chamou.
+ok('o relatório aceita o período de quem chamou',
+   /async function gerarRelatorioParadas\(deArg, ateArg\)/.test(JS), true);
+ok('e prefere ele aos campos da aba PARADAS',
+   /let de=deArg\|\|dGet\('par-de'\)/.test(JS), true);
+ok('o botão da tela manda o período dela',
+   /gerarRelatorioParadas\(dGet\('pg-de'\),dGet\('pg-ate'\)\)/.test(src), true);
+// O botão da aba PARADAS continua sem argumento: lê os campos dela, como antes.
+ok('o botão da aba PARADAS não muda',
+   (src.match(/onclick="gerarRelatorioParadas\(\)"/g) || []).length, 2);
 
 console.log('\n── o relatório ANTIGO continua inteiro ──');
 // O pedido do PPCP foi explícito: a camada nova é ACRÉSCIMO. Se alguma destas
