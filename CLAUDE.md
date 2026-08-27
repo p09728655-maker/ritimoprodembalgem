@@ -903,10 +903,21 @@ via Google Apps Script (JSONP).
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do
   PPCP, 24/08/2026: *"ritmo atual está muito pequeno na TV"*). Os três dividem
-  o visual `.tvb2-substat`, mas `#tvb-kpi-ritmo` tem escala própria (~1,8×):
-  ritmo é o pulso da linha, peso e pontos são conferência. O `flex-wrap`
-  centrado da linha absorve o crescimento — se não couber ao lado, o ritmo
-  desce inteiro para a linha de baixo. Não voltar a igualar os três.
+  o visual `.tvb2-substat`, mas `#tvb-kpi-ritmo` tem escala própria: ritmo é o
+  pulso da linha, peso e pontos são conferência. O `flex-wrap` centrado da
+  linha absorve o crescimento — se não couber ao lado, o ritmo desce inteiro
+  para a linha de baixo. Não voltar a igualar os três.
+  - **A escala é adaptativa pelo nº de substats ligados** (27/08/2026, mesmo
+    pedido de novo — na TV do gestor PESO e PONTOS estão desligados e o ritmo
+    continuava no tamanho pensado pros três). `_sincSlideB` põe o `data-n` na
+    `.tvb2-substats`, igual ao rail da direita: **1** ligado → ~184px em
+    1080p (era 104), **2** → ~146px, **3** → ~119px. Linha vazia some inteira,
+    senão sobraria a borda de cima sem nada embaixo.
+  - **O teto é `min(vw,vh)`, não `vw` puro.** Medido: com o número solto pela
+    largura, na janela do gerencial (mais baixa que 16:9) o bloco saía da tela.
+    Pelo mesmo motivo o `.tvb-hero-num` ganhou `min(19vw,34vh)` — em 16:9 (a TV
+    do chão de fábrica) e em tela mais alta o 19vw continua menor e **nada
+    muda**; o limite só entra onde a altura é o que falta.
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
   o que aconteceu com a linha **Ef.%** do gráfico do HISTÓRICO — quase invisível

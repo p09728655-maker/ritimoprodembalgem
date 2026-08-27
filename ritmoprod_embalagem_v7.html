@@ -538,7 +538,12 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-hero-band{width:100%;display:grid;grid-template-columns:1.5fr 1fr;column-gap:4vw;align-items:center}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
 .tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(18px,1.9vw,31px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb-hero-num{font-family:var(--font-h);font-size:clamp(165px,19vw,375px);font-weight:700;line-height:.9;color:var(--txt)}
+/* O número gigante é medido pela LARGURA (19vw). Em tela mais baixa que 16:9
+   — a janela do gerencial no preview da TV, um monitor 21:9 — ele sozinho
+   comia a altura toda e o que vem embaixo (substats/rodapé) saía da tela. O
+   `min(19vw,34vh)` só entra nesse caso: em 16:9 (a TV do chão de fábrica) e
+   em qualquer tela mais alta, 19vw continua menor e NADA muda. */
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(165px,min(19vw,34vh),375px);font-weight:700;line-height:.9;color:var(--txt)}
 .tvb-hero-unit{font-family:var(--font-d);font-size:clamp(20px,2.2vw,35px);color:var(--txt2);letter-spacing:3px}
 .tvb-kpis{width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly;row-gap:1.5vh;gap:2vw}
 .tvb-side-rail{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%}
@@ -595,14 +600,29 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb2-substat-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.2vw,60px);line-height:1}
 .tvb2-substat-unit{font-family:var(--font-d);font-size:clamp(14px,1.2vw,22px);color:var(--txt2);letter-spacing:1px}
 /* RITMO ATUAL é o pulso da linha (pedido do PPCP, 24/08/2026: "muito pequeno
-   na TV"): o número sobe para ~1,8× dos substats vizinhos — a 15 m lê-se o
-   ritmo primeiro; PESO/PONTOS continuam menores, que são conferência. O
-   flex-wrap centrado da linha absorve o crescimento: se não couber ao lado,
-   o ritmo desce inteiro para a linha de baixo em vez de espremer os três. */
-#tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(44px,5.6vw,104px)}
-#tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(17px,1.7vw,32px)}
-#tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(14px,1.45vw,26px)}
-#tvb-kpi-ritmo svg{width:clamp(34px,3.6vw,68px)}
+   na TV"; de novo em 27/08/2026, com PESO/PONTOS desligados): o número é o
+   maior da linha — a 15 m lê-se o ritmo primeiro; PESO/PONTOS continuam
+   menores, que são conferência. O flex-wrap centrado da linha absorve o
+   crescimento: se não couber ao lado, o ritmo desce inteiro para a linha de
+   baixo em vez de espremer os três.
+   ESCALA ADAPTATIVA pelo nº de substats ligados (data-n setado por
+   _sincSlideB), mesma ideia do rail da direita: com PESO e PONTOS desligados
+   o ritmo fica sozinho com a largura toda e não há motivo pra continuar no
+   tamanho pensado pros três. O teto é `min(vw,vh)` de propósito — em tela
+   baixa (janela do gerencial, TV 16:10) o número cresceria pela largura e
+   empurraria o rail/rodapé pra fora; a altura é quem manda no limite. */
+#tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(48px,min(6.6vw,11vh),124px)}
+#tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(18px,min(2vw,3.3vh),36px)}
+#tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(15px,min(1.6vw,2.7vh),29px)}
+#tvb-kpi-ritmo svg{width:clamp(38px,min(4.2vw,7vh),78px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(58px,min(8.2vw,13.5vh),156px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(20px,min(2.4vw,4vh),44px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(16px,min(1.9vw,3.1vh),34px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo svg{width:clamp(44px,min(5vw,8.2vh),92px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(72px,min(10.4vw,17vh),200px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(24px,min(3vw,5vh),56px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(18px,min(2.3vw,3.8vh),42px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo svg{width:clamp(52px,min(6.2vw,10vh),116px)}
 
 .tvb2-rail{display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
 .tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.6vh 0 1.6vh 2.4vw;border-top:1px solid var(--border)}
@@ -2177,7 +2197,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.13.2';
+const APP_VER   = '7.13.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8776,6 +8796,18 @@ const _cicloTV = (function() {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
+    // Linha dos substats (coluna esquerda, embaixo do número gigante): escala
+    // adaptativa pelo nº de KPIs ligados, igual ao rail da direita. Com PESO e
+    // PONTOS desligados o RITMO ATUAL fica sozinho e ganha a largura toda — o
+    // CSS lê este data-n. Linha vazia some inteira: senão sobraria a borda de
+    // cima e o padding sem nada embaixo.
+    const subKeys = ['peso','pontos','ritmo'].filter(k => kpis.includes(k));
+    const subs = document.querySelector('#tv-slide-b .tvb2-substats');
+    if (subs) {
+      subs.style.display = subKeys.length ? '' : 'none';
+      subs.dataset.n = subKeys.length || '';
+    }
+
     // Linha extra (embaixo) só p/ NECESSÁRIO — off por padrão. (RITMO ATUAL, PONTOS
     // e PESO ficam na coluna esquerda, junto do número grande, no visual novo.)
     const extraKeys = ['nec'].filter(k => kpis.includes(k));
