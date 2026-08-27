@@ -511,6 +511,38 @@ via Google Apps Script (JSONP).
   O `relatorios.test.js` falha se algum deles voltar a aparecer duplicado.
 - O logo continua entrando por **URL absoluta** (`new URL(...)`): o popup nasce
   em `about:blank` e um `src` relativo não resolveria.
+- ⚠ **A MARGEM DA IMPRESSÃO É DA `@page`, NUNCA do `padding` do body.** Os cinco
+  relatórios imprimiam com `@page{margin:0}` e tiravam o respiro do padding do
+  body — e padding de body existe **uma vez só**, no começo e no fim do fluxo.
+  A folha 1 ganhava margem em cima, a última embaixo, e **todas as do meio
+  saíam coladas na borda do papel**, dentro da faixa que a impressora
+  fisicamente não imprime. Era o "relatório cortando na impressão" (medido: a
+  primeira linha da folha 2 começava em `y=0`).
+  - **Não era largura.** Medido a 794px (A4 retrato), a tabela mais larga do
+    relatório de paradas pede 536px contra 688px de área útil — nada
+    transborda na horizontal. Antes de mexer em orientação ou fonte, conferir
+    de que eixo é o corte.
+  - Junto vão `tr{page-break-inside:avoid}` (linha não parte no meio) e
+    `thead{display:table-header-group}` (o cabeçalho se repete em cada folha —
+    sem ele a coluna da folha 5 vira adivinhação), mais o `page-break-after`
+    dos títulos de seção e o `page-break-inside` dos blocos que só fazem
+    sentido inteiros. `relatorios.test.js` falha se alguma `@page` voltar a
+    `margin:0` ou se algum `@media print` devolver padding ao body.
+- **Orientação: só a GESTÃO DE PERDAS é paisagem** (pedido do usuário,
+  27/08/2026). O quadro 2×2 é a capa dela e foi desenhado largo; o de PARADAS é
+  uma sequência de tabelas altas e continua em pé. O `_rpDocParadas(titulo,
+  paisagem)` é **um só** — a orientação é parâmetro, e o `size` da `@page` sai
+  dele. Copiar as ~150 regras para ter uma versão deitada seria a história do
+  cabeçalho dos cinco relatórios (#204/#205).
+  - ⚠ **Paisagem não conserta corte**: a folha deitada tem 190mm úteis de
+    altura contra 273mm do retrato, então o que não cabia continua não cabendo
+    e o documento engorda (paradas 9 → 11 folhas na tentativa inicial).
+  - **A CAPA tem de caber na folha 1**: cabeçalho + abertura + quadro. Medido,
+    davam 756px para 718px de folha — o quadro (que não pode partir ao meio)
+    pulava para a folha 2 e a 1 saía quase em branco. As regras `.deitado *`
+    tiram ~60px de **ar** da capa (nenhum número, nenhuma fonte de leitura),
+    com folga para o 6º item do plano de ação. Nada disso vale no retrato, e o
+    teste falha se alguma regra da paisagem escapar do escopo `.deitado`.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
 - **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo
