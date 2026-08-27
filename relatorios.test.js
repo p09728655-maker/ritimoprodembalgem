@@ -1281,6 +1281,35 @@ ok('o botão da tela manda o período dela',
 ok('o botão da aba PARADAS não muda',
    (src.match(/onclick="gerarRelatorioParadas\(\)"/g) || []).length, 2);
 
+console.log('\n── a tela tem o relatório DELA ──');
+// O botão da aba GESTÃO DE PERDAS abria o relatório de PARADAS: outro
+// documento, outro título, outra pergunta. Quem está na tela de gestão quer
+// imprimir o que está vendo.
+ok('existe o relatório da gestão de perdas', /async function gerarRelatorioPerdas\(/.test(JS), true);
+const _relPg = pega('async function gerarRelatorioPerdas(');
+ok('ele tem título próprio', /GESTÃO DE PERDAS — VISÃO PPCP/.test(_relPg), true);
+// Busca, contas e desenho continuam UM só — a moldura é que muda.
+ok('busca pela função compartilhada', /_pgBuscarDados\(de, ate\)/.test(_relPg), true);
+ok('calcula pelo contexto compartilhado', /_pgContexto\(\{paradas:dados\.paradas/.test(_relPg), true);
+ok('desenha pela camada compartilhada', /_pgSecaoHtml\(ctx\)/.test(_relPg), true);
+// Só a camada: nada do relatório de controle (resumo, Pareto por tipo, SWOT…).
+ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-sec-ttl">RESUMO/.test(_relPg), false);
+// O CSS dos dois relatórios é o mesmo bloco: copiar 150 regras garantiria que
+// o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
+ok('o CSS do documento é declarado uma vez só',
+   (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
+ok('e os dois relatórios usam ele',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 2);
+// A camada abre o documento no relatório dela: sem "o relatório acima" e sem
+// a quebra de página que imprimiria uma folha em branco.
+ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
+ok('e o desenho troca o texto de abertura', /soZinho\s*\?/.test(pega('function _pgSecaoHtml(')), true);
+ok('sem quebra de página quando abre o documento', /\.pg-abre\.so\{page-break-before:auto/.test(src), true);
+// Os dois botões, cada um com o seu período.
+ok('a tela oferece os dois relatórios',
+   [/gerarRelatorioPerdas\(dGet\('pg-de'\),dGet\('pg-ate'\)\)/.test(src),
+    /gerarRelatorioParadas\(dGet\('pg-de'\),dGet\('pg-ate'\)\)/.test(src)], [true, true]);
+
 console.log('\n── o relatório ANTIGO continua inteiro ──');
 // O pedido do PPCP foi explícito: a camada nova é ACRÉSCIMO. Se alguma destas
 // peças sumir, o relatório oficial perdeu função — e é isso que não pode.
