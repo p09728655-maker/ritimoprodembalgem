@@ -1118,6 +1118,40 @@ via Google Apps Script (JSONP).
     - A **variação é do NÃO PROGRAMADO** contra a janela anterior da lista, e
       **↓ é melhora**. Janela pela metade (a ponta do período) compara um pedaço
       com um inteiro — a nota avisa.
+    - ⚠ **"MÊS QUAL DIA ATÉ QUE DIA?"** (usuário, 27/08/2026). O rótulo diz
+      `AGO/26`, mas a linha quase nunca é o mês inteiro: é a parte dele que caiu
+      **dentro do período escolhido** e que teve produção lançada — e "JUL/26 ·
+      3 dias" não dizia QUAIS 3. Cada linha carrega agora a **faixa que entrou
+      nela** (`de`/`ate`/`faixa`, do primeiro ao último dia contado:
+      `29/07 → 31/07`), e o card das CAIXAS APONTADAS traz a faixa do período
+      todo. Os extremos saem da **data ordenável** (`dia`, do `_pgJanelaDe`),
+      não da ordem em que o dia apareceu na lista. `_pgFaixaDias` é o formato
+      único — dia único não vira intervalo, e sem data não inventa faixa.
+    - A **concordância vem da tabela `PG_GRAOS`** (`g`, gênero; `cap`, com
+      inicial maiúscula): as frases montam o nome do grão dentro delas e saíam
+      "uma mês com produção" e "nenhum semana".
+    - **A TABELA de uma janela mora no `_pgJanelaTabelaHtml`, uma vez.** O
+      bloco (`_pgMin1000Html`) imprime o grão em cartaz; a impressão dedicada
+      imprime as outras duas com a MESMA tabela. Nenhuma conta ali dentro —
+      tudo vem pronto do `_pgPorJanela`.
+  - **IMPRESSÃO DEDICADA — `gerarRelatorioMin1000`** (pedido do usuário,
+    27/08/2026: *"colocar uma impressão dedicada a minutos de parada /1000"*).
+    O indicador só ia ao papel **dentro** de um relatório maior: quem levava só
+    a comparação para a reunião imprimia a gestão de perdas inteira para usar
+    uma folha. O botão **🖨 IMPRIMIR ESTE** fica no próprio bloco, ao lado dos
+    grãos, e manda o período **da tela de perdas** (`pg-de`/`pg-ate`) — o
+    relatório saindo com o período da OUTRA aba já aconteceu.
+    - Busca, contas e desenho continuam **os mesmos** (`_pgBuscarDados`,
+      `_pgContexto`, `_pgMin1000Html`, `_pgJanelaTabelaHtml`); muda a moldura.
+      Saem as **três janelas** — a da tela abre o documento, as outras duas vêm
+      como conferência, **sem busca nova** (as três já vêm do contexto, e
+      `getParadasPeriodo` é a leitura mais cara daqui).
+    - **RETRATO**: são tabelas altas e estreitas, como o relatório de PARADAS.
+      Só a GESTÃO DE PERDAS é paisagem, por causa do quadro 2×2.
+    - A seção **COMO O NÚMERO SAI** é o que o papel precisa dizer sozinho: a
+      conta, de onde vêm minutos e caixas, que dias entram e o que é o não
+      programado. `relatorios.test.js` prende os três chamadores do
+      `_rpDocParadas` e do `_pgMin1000Html`.
   - ⚠ **A escala de fonte da tela é a do PAINEL, não a do papel** (correção do
     usuário, 27/08/2026: *"fontes bem pequenas, ruim de ler"* — e *"fonte só na
     tela"*). A pele nasceu copiando os corpos do PDF (8–9,5px), que se lê com o
