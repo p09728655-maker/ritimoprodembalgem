@@ -970,6 +970,34 @@ via Google Apps Script (JSONP).
   90%, tipo genérico ≤5% do tempo parado, troca de produto ≤5 min, troca de
   plástico ≤4 min, corte de 50% no genérico. Mudar o combinado é mexer numa
   constante.
+- **A meta do SMED desce sozinha quando é atingida** (`_pgMetaSmed`, pedido do
+  usuário em 27/08/2026: *"SMED, deixar automático quando atingir"*). A meta de
+  troca é **inicial**, não definitiva: sem a escada, quem chegou aos 5 min
+  ficava com *"na meta"* para sempre — o cenário de recuperação daquela troca
+  caía a zero e o relatório parava de puxar melhoria justamente onde ela
+  começou a acontecer.
+  - **O degrau novo não é inventado**: é a **média das trocas mais rápidas do
+    próprio período** (o quartil mais rápido, nunca menos de
+    `PG_SMED_RAPIDAS_MIN`=3 trocas) — tempo que a equipe já demonstrou fazer.
+    Se essa média não fica **abaixo** da meta atual, **não há degrau**: a meta
+    continua a mesma e a tela diz por quê, em vez de apertar o alvo no
+    arredondamento. Piso de `PG_SMED_PISO`=1 min (abaixo disso é ficção).
+  - **Amostra curta não move meta**: com menos de `PG_SMED_AMOSTRA`=4 trocas no
+    período, duas rápidas são sorte, não padrão — a meta fica onde está e a
+    linha do quadro explica.
+  - **`metaAtingida` (o alvo COMBINADO) é quem pinta o número de hoje**, não a
+    meta em vigor: com o degrau já um nível abaixo, comparar com ele deixaria
+    **vermelho** justamente quem acabou de bater o combinado. `dentro` continua
+    medindo contra a meta em vigor (é ela que pinta as faixas da distribuição e
+    o *"já dentro da meta"*).
+  - **Quem decide a meta é o `_pgSmed`, uma vez.** `_pgContexto` calcula o SMED
+    **antes** da recuperação e passa o alvo em vigor (`metasSmed`) para
+    `_pgRecuperacao` e `_pgPlano` — cenário simulado e plano de ação cobram o
+    MESMO alvo. O quadro é desenho: não chama `_pgMetaSmed` (o teste falha se
+    voltar a chamar).
+  - Na tela e no PDF a linha do SMED ganha a etiqueta **ALVO NOVO** e a frase de
+    onde ele saiu; a seção 5 do relatório imprime a nota **META AUTOMÁTICA** com
+    a meta anterior, a nova e o tamanho da amostra.
 - **O plano de ação não inventa responsável nem prazo** — saem "A definir".
   Preencher com nome plausível seria inventar compromisso de terceiro.
 - **A validação do apontamento só SINALIZA.** Parada sobreposta (a seguinte começa

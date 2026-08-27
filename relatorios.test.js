@@ -963,6 +963,8 @@ eval(pega('function _pgSemanas('));
 eval(pega('function _pgSemLbl('));
 eval(pega('function _pgTopCausas('));
 eval(pega('function _pgOutros('));
+eval(pega('function _pgMetaSmed('));   // a escada da meta — o _pgSmed chama
+eval(pega('function _pgFmtMin('));
 eval(pega('function _pgSmed('));
 eval(pega('function _pgMinPor1000('));
 eval(pega('function _pgRecuperacao('));
@@ -1100,6 +1102,46 @@ ok('o plástico tem meta própria', _pgSmed(pg_parTroca, PG_RE_TROCA_PLAS, CFGT,
 // Seção sem dado não é impressa com zeros — some.
 ok('tipo que não apareceu devolve null', _pgSmed([], PG_RE_TROCA_PROD, CFGT, 5), null);
 
+console.log('\n── meta SMED: atingida, ela desce sozinha ──');
+// Pedido do usuário em 27/08/2026: "SMED, deixar automático quando atingir".
+// Média 12 min contra meta 5: nada a fazer, a meta combinada continua valendo.
+ok('meta acima da média não se mexe', [pgSp.meta, pgSp.metaBase, pgSp.metaAuto, pgSp.metaAtingida],
+   [5, 5, false, false]);
+// Cinco trocas de 3, 4, 4, 5 e 6 min: média 4,4 — dentro dos 5. O degrau novo é
+// a média das 3 mais rápidas (3, 4 e 4 = 3,7), tempo que a equipe JÁ fez.
+const pg_parRapida = [
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:03'},
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'09:00', fim:'09:04'},
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'10:00', fim:'10:04'},
+  {data:'11/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:05'},
+  {data:'11/08/2026', tipo:'Troca de produto', ini:'09:00', fim:'09:06'}
+];
+const pgSr = _pgSmed(pg_parRapida, PG_RE_TROCA_PROD, CFGT, 5);
+ok('meta batida → o alvo desce para a média das mais rápidas',
+   [pgSr.metaBase, pgSr.meta, pgSr.metaAuto], [5, 3.7, true]);
+ok('o degrau sai de 3 trocas (o quartil nunca é menor que isso)',
+   [pgSr.metaAmostra, pgSr.mediaRapidas], [3, 3.7]);
+// Quem bateu o combinado não pode aparecer em vermelho por causa do degrau novo.
+ok('metaAtingida olha o alvo COMBINADO, não o degrau', [pgSr.metaAtingida, pgSr.dentro], [true, false]);
+ok('"já na meta" e excedente passam a medir contra o alvo novo',
+   [pgSr.naMeta, pgSr.excedente], [1, 4]);
+// Duas ou três trocas rápidas num período são sorte, não padrão.
+const pgSc = _pgSmed(pg_parRapida.slice(0,3), PG_RE_TROCA_PROD, CFGT, 5);
+ok('amostra curta não move a meta', [pgSc.meta, pgSc.metaAuto, pgSc.metaAtingida], [5, false, true]);
+ok('e a linha diz por que não desceu', /não se sustenta/.test(pgSc.metaNota), true);
+// A meta NÃO se aperta sozinha no arredondamento: sem troca mais rápida que o
+// alvo, não há degrau.
+const pg_iguais = ['08','09','13','14'].map(h => (
+  {data:'10/08/2026', tipo:'Troca de produto', ini:h+':00', fim:h+':04'}));
+const pgSi = _pgSmed(pg_iguais, PG_RE_TROCA_PROD, CFGT, 4);
+ok('todas as trocas no alvo não geram degrau', [pgSi.meta, pgSi.metaAuto, pgSi.metaAtingida],
+   [4, false, true]);
+ok('e diz que as mais rápidas não sustentam alvo menor', /não sustentam/.test(pgSi.metaNota), true);
+ok('meta em minutos: inteiro sem casa, degrau com uma', [_pgFmtMin(5), _pgFmtMin(3.7)], ['5','3,7']);
+// Piso: meta abaixo de 1 min é ficção, não desafio.
+ok('a meta nunca desce abaixo do piso', _pgMetaSmed([0.4,0.4,0.5,0.6,3], 2).meta, PG_SMED_PISO);
+ok('sem meta combinada não há escada', _pgMetaSmed([3,3,3,3], 0).auto, false);
+
 console.log('\n── KPI novo: minutos parados / 1.000 caixas ──');
 ok('1.736 min em 36.304 cx', Math.round(_pgMinPor1000(1736,36304)*100)/100, 47.82);
 ok('sem caixas apontadas não inventa número', _pgMinPor1000(100,0), null);
@@ -1120,6 +1162,12 @@ ok('sem ritmo medido não inventa caixas', _pgRecuperacao(pgTipos,0,{}).cx, 0);
 ok('o cenário de corte guarda o tempo real do tipo', pgRec.itens[2].min, 310);
 // Tipo que não está nos cenários do PPCP não vira meta chutada.
 ok('manutenção não ganha meta inventada', pgRec.itens.some(i=>/Manuten/.test(i.tipo)), false);
+
+// Com a meta num degrau abaixo, o cenário volta a mostrar ganho — era isso que
+// zerava para sempre na troca que já tinha batido o combinado.
+const pgRecAuto = _pgRecuperacao(pgTipos, 217, {metaProduto:3.7});
+ok('o cenário simula contra o alvo EM VIGOR', pgRecAuto.itens[0].meta, 3.7);
+ok('e o ganho cresce com o degrau novo', pgRecAuto.itens[0].ganhoMin > pgRec.itens[0].ganhoMin, true);
 
 console.log('\n── impacto no fluxo (quem define o ritmo é o gargalo) ──');
 const pgFx = _pgImpactoFluxo({taktSeg:17.1, ritmoHora:210}, {taktReal:17, ritmoReal:217}, {dispon:87.1});
@@ -1149,6 +1197,9 @@ ok('uma linha por causa do topo', pgPlano.length, 4);
 ok('responsável e prazo saem "A definir"',
    pgPlano.every(a=>a.resp==='A definir' && a.prazo==='A definir'), true);
 ok('troca vira SMED com a meta em minutos', /≤ 5 min/.test(pgPlano[0].meta), true);
+// A meta do plano é a que está EM VIGOR: descido o degrau, é ele que se cobra.
+ok('com meta automática o plano cobra o alvo novo',
+   _pgPlano(pgTop, pgOut, {produto:3.7, produtoAuto:true})[0].meta, '≤ 3,7 min/troca (alvo novo)');
 ok('o balaio genérico vira "classificar a causa"', /Classificar a causa/.test(pgPlano[2].acao), true);
 
 console.log('\n── diagnóstico PPCP ──');
@@ -1235,6 +1286,16 @@ ok('quadro e diagnóstico leem a mesma tendência',
 const _q=pega('function _pgQuadroHtml(');
 ok('o quadro não recalcula perda', /perdaDeMin|perdaAoRitmo|RP_PARADAS\.stats/.test(_q), false);
 ok('o quadro não refaz a conta das trocas', /durProdutiva/.test(_q), false);
+// A meta em vigor é decidida no _pgSmed; o quadro só desenha o que recebeu.
+ok('o quadro não decide a meta da troca', /_pgMetaSmed\(/.test(_q), false);
+ok('a escada da meta é uma implementação só',
+   (JS.match(/function _pgMetaSmed\(/g) || []).length, 1);
+ok('e só o _pgSmed a chama', (JS.match(/(?<!function )_pgMetaSmed\(/g) || []).length, 1);
+// Cenário de recuperação e plano de ação leem a MESMA meta em vigor — duas
+// leituras e o PDF cobraria um alvo e simularia outro.
+ok('o cenário e o plano recebem a meta que o SMED pôs em vigor',
+   [/metaProduto:metasSmed\.produto/.test(pega('function _pgContexto(')),
+    /_pgPlano\(top, outros, metasSmed\)/.test(pega('function _pgContexto('))], [true, true]);
 
 console.log('\n── a TELA e o PDF são o mesmo quadro ──');
 // O quadro nasceu no PDF e o PPCP pediu ele como TELA. Desenho, busca e conta

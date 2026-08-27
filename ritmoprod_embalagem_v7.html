@@ -162,6 +162,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pgq-smed-v{display:flex;align-items:baseline;gap:6px;font-family:var(--font-h);font-size:27px;font-weight:700;line-height:1}
 #sec-perdas .pgq-smed-v span{color:var(--txt2);font-size:17px}
 #sec-perdas .pgq-smed-v i{font-family:var(--font-d);font-size:9px;color:var(--txt2);font-style:normal;font-weight:400}
+#sec-perdas .pgq-smed-tag{font-family:var(--font-d);font-size:7.5px;font-weight:700;letter-spacing:1px;color:var(--ok);border:1px solid var(--ok);border-radius:3px;padding:1px 4px;font-style:normal;margin-left:2px}
 #sec-perdas .pgq-smed-g{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--ok);text-align:right}
 #sec-perdas .pgq-smed-s{grid-column:2/4;font-family:var(--font-d);font-size:8.5px;color:var(--txt2)}
 #sec-perdas .pgq-smed-tot{margin-top:9px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.2px}
@@ -2313,7 +2314,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.17.2';
+const APP_VER   = '7.18.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -7439,6 +7440,12 @@ const PG_META_OUTROS     = 5;     // teto do tempo parado sob causa não identif
 const PG_META_TROCA_PROD = 5;     // minutos por troca de produto (meta inicial SMED)
 const PG_META_TROCA_PLAS = 4;     // minutos por troca de plástico (meta inicial SMED)
 const PG_CORTE_OUTROS    = 0.5;   // cenário de recuperação: metade do "Outros"
+// Escada SMED: a meta de troca é INICIAL. Atingida, ela desce sozinha para o
+// próximo degrau — a média das trocas mais rápidas do próprio período.
+const PG_SMED_AMOSTRA    = 4;     // trocas mínimas no período para propor degrau novo
+const PG_SMED_FATIA      = 0.25;  // fatia mais rápida que vira o alvo seguinte
+const PG_SMED_RAPIDAS_MIN= 3;     // ... e nunca menos de 3 trocas nessa fatia
+const PG_SMED_PISO       = 1;     // minuto: abaixo disso a meta vira ficção
 
 // Tipo genérico = o balaio onde a causa real fica escondida. Não é "anormal"
 // nem "redutível": é DESCONHECIDO, e o relatório diz isso em vez de chutar.
@@ -7599,6 +7606,49 @@ function _pgOutros(paradas, cfg, totMin){
   };
 }
 
+// ── META SMED — atingida, ela desce sozinha ─────────────────────────────────
+// Pedido do usuário em 27/08/2026 ("SMED, deixar automático quando atingir").
+// A meta de troca é INICIAL, não definitiva: sem a escada, quem chegou aos
+// 5 min ficava com "na meta" para sempre — o cenário de recuperação daquela
+// troca caía a zero e o relatório parava de puxar melhoria justamente onde ela
+// começou a acontecer.
+//
+// O degrau novo NÃO é inventado nem escolhido no arredondamento: é a média das
+// trocas MAIS RÁPIDAS do próprio período (o quartil mais rápido, nunca menos de
+// PG_SMED_RAPIDAS_MIN trocas) — um tempo que a equipe já demonstrou fazer. Se
+// essa média não fica abaixo da meta atual, NÃO há degrau: a meta continua a
+// mesma e a tela diz por quê, em vez de apertar o alvo por conta própria.
+// Amostra curta também não move meta (PG_SMED_AMOSTRA): duas trocas rápidas
+// num período são sorte, não padrão.
+function _pgMetaSmed(durs, metaBase){
+  const base=parseFloat(metaBase)||0;
+  const d=(durs||[]).slice().sort((a,b)=>a-b);
+  const out={meta:base, base, auto:false, atingida:false, amostra:0, mediaRapidas:null, nota:''};
+  if(!(base>0) || !d.length) return out;
+  const med=d.reduce((a,b)=>a+b,0)/d.length;
+  out.atingida = med<=base;
+  if(!out.atingida) return out;                 // meta em vigor continua sendo a base
+  if(d.length<PG_SMED_AMOSTRA){
+    out.nota=`meta de ${base} min atingida — com menos de ${PG_SMED_AMOSTRA} trocas no período o alvo novo não se sustenta`;
+    return out;
+  }
+  const rap=d.slice(0, Math.max(PG_SMED_RAPIDAS_MIN, Math.round(d.length*PG_SMED_FATIA)));
+  const mr=Math.round(rap.reduce((a,b)=>a+b,0)/rap.length*10)/10;
+  out.amostra=rap.length; out.mediaRapidas=mr;
+  const alvo=Math.max(PG_SMED_PISO, mr);
+  if(!(alvo<base)){
+    out.nota=`meta de ${base} min atingida — as trocas mais rápidas ainda não sustentam um alvo menor`;
+    return out;
+  }
+  out.meta=alvo; out.auto=true;
+  out.nota=`meta de ${base} min atingida → alvo novo: média das ${rap.length} mais rápidas`;
+  return out;
+}
+
+// Meta em minutos: inteiro sai sem casa ("5 min"); o degrau automático sai com
+// uma ("4,2 min") — é tempo medido, não número redondo escolhido a dedo.
+function _pgFmtMin(v){ const n=parseFloat(v)||0; return Number.isInteger(n)?String(n):fmt1(n); }
+
 // ── SMED (troca) ────────────────────────────────────────────────────────────
 // Mesma leitura para troca de produto e troca de plástico: quantas, quanto
 // tempo, média, menor, maior, como se distribuem e como evoluíram semana a
@@ -7627,10 +7677,20 @@ function _pgSmed(paradas, re, cfg, metaMin){
       return {lbl:f[2], ate:f[1], qtd:q, pct: q/durs.length*100}; });
   const semanas=Object.keys(ev).map(k=>{ const s=ev[k]; s.med=s.min/s.qtd; return s; })
     .sort((a,b)=>a.ini-b.ini);
-  const meta=parseFloat(metaMin)||0;
+  // A meta pode ter DESCIDO sozinha — _pgMetaSmed é quem decide qual está em
+  // vigor, e tudo daqui para baixo (faixas, "já na meta", excedente e o cenário
+  // de recuperação lá fora) mede contra ela.
+  const mt=_pgMetaSmed(durs, metaMin);
+  const meta=mt.meta;
   return {
     qtd:durs.length, tot, med, menor:Math.min.apply(null,durs), maior:Math.max.apply(null,durs),
     faixas, semanas, meta,
+    // metaBase = o alvo combinado; metaAtingida diz que ELE foi batido. É por
+    // metaAtingida que o valor de hoje é pintado: com a meta já num degrau
+    // abaixo, comparar com o alvo novo pintaria de vermelho quem acabou de
+    // bater o combinado.
+    metaBase:mt.base, metaAuto:mt.auto, metaAtingida:mt.atingida,
+    metaAmostra:mt.amostra, mediaRapidas:mt.mediaRapidas, metaNota:mt.nota,
     dentro: meta>0 ? med<=meta : null,
     // quantas trocas já saem dentro da meta hoje — a meta é alcançável quando
     // parte das trocas já chega lá
@@ -7798,13 +7858,19 @@ function _pgFoco(top, outros){
 // Sai das causas do período, não de uma lista fixa. Responsável e prazo NÃO
 // estão no dado: saem "A definir" — preencher com um nome plausível seria
 // inventar compromisso de terceiro.
-function _pgPlano(top, outros){
+function _pgPlano(top, outros, metas){
+  // `metas` é o alvo EM VIGOR de cada troca (a base ou o degrau que _pgMetaSmed
+  // já fez descer). Sem ele — chamador antigo, teste — vale a meta inicial.
+  const mt=metas||{};
   const acoes=[];
   (top||[]).forEach(t=>{
     if(t.classe==='REDUTIVEL'){
-      const meta=PG_RE_TROCA_PROD.test(t.tipo)?PG_META_TROCA_PROD:(PG_RE_TROCA_PLAS.test(t.tipo)?PG_META_TROCA_PLAS:null);
+      const ehProd=PG_RE_TROCA_PROD.test(t.tipo), ehPlas=PG_RE_TROCA_PLAS.test(t.tipo);
+      const meta=ehProd?(mt.produto!=null?mt.produto:PG_META_TROCA_PROD)
+                :ehPlas?(mt.plastico!=null?mt.plastico:PG_META_TROCA_PLAS):null;
+      const auto=ehProd?!!mt.produtoAuto:ehPlas?!!mt.plasticoAuto:false;
       acoes.push({prio:t.prio, problema:t.tipo, acao:'SMED — reduzir o tempo de troca (preparação externa, kit pronto, padrão de troca)',
-        resp:'A definir', prazo:'A definir', meta: meta?`≤ ${meta} min/troca`:'reduzir o tempo médio', st:'r'});
+        resp:'A definir', prazo:'A definir', meta: meta?`≤ ${_pgFmtMin(meta)} min/troca${auto?' (alvo novo)':''}`:'reduzir o tempo médio', st:'r'});
     }else if(t.classe==='IDENTIFICAR'){
       acoes.push({prio:t.prio, problema:`${t.tipo} (causa não identificada)`, acao:'Classificar a causa no apontamento — abrir tipo próprio para o que mais se repete',
         resp:'A definir', prazo:'A definir', meta:`≤ ${PG_META_OUTROS}% do tempo parado`, st:'r'});
@@ -7902,11 +7968,14 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
   const linhaSmed=(s,rot,re)=>{
     if(!s) return `<div class="pgq-smed-l vazio">${rot}<i>nenhuma no período</i></div>`;
     const g=ganhoDe(re);
+    // O valor de hoje é pintado por metaAtingida (o alvo COMBINADO), não pela
+    // meta em vigor: com o degrau já um nível abaixo, comparar com ele deixaria
+    // vermelho justamente quem acabou de bater o combinado.
     return `<div class="pgq-smed-l">
       <div class="pgq-smed-n">${rot}</div>
-      <div class="pgq-smed-v"><b style="color:${s.dentro?'#2e7d32':'#c62828'}">${fmt1(s.med)}</b><span>→</span><b style="color:#2e7d32">${s.meta}</b><i>min</i></div>
+      <div class="pgq-smed-v"><b style="color:${s.metaAtingida?'#2e7d32':'#c62828'}">${fmt1(s.med)}</b><span>→</span><b style="color:#2e7d32">${_pgFmtMin(s.meta)}</b><i>min</i>${s.metaAuto?'<em class="pgq-smed-tag">ALVO NOVO</em>':''}</div>
       <div class="pgq-smed-g">${g&&g.cx>0?`+${fmtN(g.cx)} cx`:'na meta'}</div>
-      <div class="pgq-smed-s">${plural(s.qtd,'troca','trocas')} · ${Math.round(s.naMeta/s.qtd*100)}% já na meta</div>
+      <div class="pgq-smed-s">${plural(s.qtd,'troca','trocas')} · ${Math.round(s.naMeta/s.qtd*100)}% já na meta${s.metaNota?` · ${s.metaNota}`:''}</div>
     </div>`;
   };
   const ganhoTot=(rec&&rec.cx>0)?`<div class="pgq-smed-tot">GANHO POTENCIAL <b>${fmtN(rec.cx)} cx</b> <i>(${fmt1(rec.ganhoH)}h nos cenários simulados)</i></div>`:'';
@@ -7959,7 +8028,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
         ${barras}${setaHtml}
       </div>
       <div class="pgq-cel">
-        <div class="pgq-cel-ttl">SMED <i>tempo médio de troca — hoje → meta</i></div>
+        <div class="pgq-cel-ttl">SMED <i>tempo médio de troca — hoje → meta em vigor</i></div>
         ${linhaSmed(smedProd,'PRODUTO',PG_RE_TROCA_PROD)}
         ${linhaSmed(smedPlas,'PLÁSTICO',PG_RE_TROCA_PLAS)}
         ${ganhoTot}
@@ -8087,13 +8156,15 @@ function _pgSecaoHtml(ctx){
       <div class="pg-smed-kpis">
         <div><span>${s.qtd}</span><i>ocorrências</i></div>
         <div><span>${_fmtMinPar(s.tot)}</span><i>tempo total</i></div>
-        <div><span style="color:${s.dentro?'#2e7d32':'#c62828'}">${fmt1(s.med)} min</span><i>média (meta ≤ ${s.meta} ${unidade})</i></div>
+        <div><span style="color:${s.metaAtingida?'#2e7d32':'#c62828'}">${fmt1(s.med)} min</span><i>média (meta ≤ ${_pgFmtMin(s.meta)} ${unidade})</i></div>
         <div><span>${s.menor} min</span><i>menor</i></div>
         <div><span>${s.maior} min</span><i>maior</i></div>
         <div><span>${s.qtd>0?Math.round(s.naMeta/s.qtd*100):0}%</span><i>já dentro da meta</i></div>
       </div>
       <div style="margin-top:7px">${barra}</div>
       ${ev}
+      ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA. A meta de <b>${_pgFmtMin(s.metaBase)} min</b> foi atingida (média ${fmt1(s.med)} min), então o alvo em vigor passa a ser <b>${_pgFmtMin(s.meta)} min</b> — a média das <b>${s.metaAmostra}</b> trocas mais rápidas do período, um tempo que a equipe já fez. Não é aperto arbitrário: o degrau só desce quando o próprio desempenho o sustenta. A distribuição, o "já dentro da meta", o excedente e o cenário de recuperação já medem contra esse alvo.</div>`
+        :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)} — a meta desce sozinha só quando o desempenho sustenta o degrau novo.</div>`:'')}
       ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${s.menor} min — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
     </div>`;
   };
@@ -8394,14 +8465,25 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
   const semanas=_pgSemanas(dias, st.horasProd, PG_META_DISP);
   const top=_pgTopCausas(st.tipos, 5);
   const outros=_pgOutros(paradas, CFG, st.totMin);
-  const rec=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0, {});
+  // O SMED vem ANTES da recuperação: a meta de cada troca pode ter descido um
+  // degrau (_pgMetaSmed), e é contra o alvo EM VIGOR que o cenário simula o
+  // ganho — senão a troca que já bateu o combinado devolveria zero para sempre.
+  const smedProd=_pgSmed(paradas, PG_RE_TROCA_PROD, CFG, PG_META_TROCA_PROD);
+  const smedPlas=_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS);
+  const metasSmed={
+    produto:      smedProd?smedProd.meta:PG_META_TROCA_PROD,
+    plastico:     smedPlas?smedPlas.meta:PG_META_TROCA_PLAS,
+    produtoAuto:  !!(smedProd&&smedProd.metaAuto),
+    plasticoAuto: !!(smedPlas&&smedPlas.metaAuto)
+  };
+  const rec=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0,
+                           {metaProduto:metasSmed.produto, metaPlastico:metasSmed.plastico});
   return {
     st, dias, semanas, top, outros, rec, trR, tiR,
-    smedProd:_pgSmed(paradas, PG_RE_TROCA_PROD, CFG, PG_META_TROCA_PROD),
-    smedPlas:_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS),
+    smedProd, smedPlas, metasSmed,
     fluxo:_pgImpactoFluxo(tiR, trR, st),
     anom:_pgAnomalias(paradas, CFG, {classeMap:PAR_CLASSE_MAP}),
-    plano:_pgPlano(top, outros),
+    plano:_pgPlano(top, outros, metasSmed),
     tend:_pgTendencia(semanas),
     foco:_pgFoco(top, outros),
     minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0),
@@ -8637,6 +8719,7 @@ function _rpDocParadas(titulo, paisagem){
   .pgq-smed-v{display:flex;align-items:baseline;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1}
   .pgq-smed-v span{color:#a0aec0;font-size:15px}
   .pgq-smed-v i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;font-style:normal;font-weight:400}
+  .pgq-smed-tag{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:700;letter-spacing:1px;color:#2e7d32;border:1px solid #a5d6a7;border-radius:3px;padding:1px 4px;font-style:normal;margin-left:2px}
   .pgq-smed-g{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#2e7d32;text-align:right}
   .pgq-smed-s{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0}
   .pgq-smed-tot{margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px}
