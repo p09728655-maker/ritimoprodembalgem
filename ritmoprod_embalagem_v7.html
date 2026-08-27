@@ -2313,7 +2313,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.17.1';
+const APP_VER   = '7.17.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8452,7 +8452,9 @@ async function gerarRelatorioPerdas(deArg, ateArg){
     win.close(); alert('Não foi possível montar a gestão de perdas: '+err.message); return;
   }
 
-  const html=_rpDocParadas(`Gestão de Perdas — ${de} a ${ate}`)
+  // Paisagem: o quadro 2×2 é a capa deste relatório e em pé ele espremia as
+  // quatro células. Deitado ele fica na proporção em que foi desenhado.
+  const html=_rpDocParadas(`Gestão de Perdas — ${de} a ${ate}`, true)
     + _rpBotaoImprimir()
     + _rpCabecalho('GESTÃO DE PERDAS — VISÃO PPCP',
         `<div class="rp-per">PERÍODO</div>
@@ -8470,7 +8472,15 @@ async function gerarRelatorioPerdas(deArg, ateArg){
 // pg-* e pgq-* são as mesmas. Copiar 150 regras de CSS para o relatório novo
 // seria garantir que o próximo ajuste conserte um e esqueça o outro, que foi
 // exatamente a história do cabeçalho dos cinco relatórios (#204/#205).
-function _rpDocParadas(titulo){
+//
+// A ORIENTAÇÃO é do chamador, e é a única coisa que muda entre os dois: o
+// relatório de PARADAS é uma sequência de tabelas altas e estreitas (retrato);
+// o de GESTÃO DE PERDAS abre com o quadro 2×2, que é largo por natureza — foi
+// desenhado como um quadro de parede, não como uma folha de texto. Parametrizar
+// o `size` mantém as ~150 regras num lugar só; copiar o bloco para ter uma
+// versão deitada seria a história do cabeçalho dos cinco relatórios (#204/#205).
+function _rpDocParadas(titulo, paisagem){
+  const orient = paisagem ? 'landscape' : 'portrait';
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <title>${_rpEsc(titulo)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -8484,7 +8494,7 @@ function _rpDocParadas(titulo){
      impressora fisicamente não imprime. Era esse o corte: a primeira linha de
      cada folha (e a última) desaparecia no papel, embora aparecesse na tela.
      Na TELA o padding continua, senão o preview fica rente à janela. ── */
-  @page{size:A4 portrait;margin:12mm 14mm}
+  @page{size:A4 ${orient};margin:${paisagem?'10mm 12mm':'12mm 14mm'}}
   @media print{
     body{padding:0}
     .no-print{display:none!important}
@@ -8645,7 +8655,28 @@ function _rpDocParadas(titulo){
   .pgq-plano-band{padding:10px 13px;border-top:1.5px solid #1a1a2e}
   .pgq-plano thead th{padding:5px 8px}
   .pgq-plano tbody td{padding:5px 8px;font-size:10.5px}
-</style></head><body>`;
+  /* ── PAISAGEM (relatório da tela GESTÃO DE PERDAS) ────────────────────────
+     A folha deitada tem 210mm de altura: sobram ~190mm úteis contra 273mm do
+     retrato. O quadro é a CAPA e não pode partir ao meio (perde a função de
+     ser visto de uma vez), então cabeçalho + abertura + quadro têm de caber
+     juntos na folha 1 — senão o quadro pula para a folha 2 e a 1 sai quase em
+     branco, que foi o que a primeira tentativa de paisagem produziu.
+     Medido: 756px de conteúdo para 703px de folha. O que segue tira ~60px de
+     ar da CAPA (nenhum número, nenhuma fonte de leitura), com folga para o 6º
+     item do plano de ação. Nada aqui vale no retrato. ── */
+  .deitado .rp-header{margin-bottom:11px;padding:9px 16px}
+  .deitado .pg-abre{padding:9px 14px}
+  .deitado .pgq-top{padding:7px 13px}
+  .deitado .pgq-cel{padding:7px 13px}
+  .deitado .pgq-bars{height:74px}
+  .deitado .pgq-smed-l{padding:4px 0}
+  .deitado .pgq-plano-band{padding:6px 13px}
+  .deitado .pgq-plano thead th{padding:4px 8px}
+  .deitado .pgq-plano tbody td{padding:3.5px 8px}
+  /* Deitado, a grade do dia a dia tem largura de sobra: 5 cartões de pior dia
+     numa linha ficavam com o dobro do espaço que o texto precisa. */
+  .deitado .pg-smed-kpis{grid-template-columns:repeat(6,1fr)}
+</style></head><body${paisagem?' class="deitado"':''}>`;
 }
 
 // O relatório aceita o período de QUEM o chamou. Sem isso ele lia sempre os

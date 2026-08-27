@@ -1350,7 +1350,10 @@ ok('e valora pelo módulo (perdaAoRitmo)', /RP_PARADAS\.perdaAoRitmo\(/.test(peg
 // impressora não imprime — foi o corte reclamado nos relatórios de PARADAS e
 // de GESTÃO DE PERDAS. Vale para os CINCO relatórios em popup.
 console.log('\n── impressão: margem na @page, não no padding do body ──');
-const _pages = [...src.matchAll(/@page\s*\{([^}]*)\}/g)].map(m => m[1]);
+// O CSS mora dentro de template literal: `${...}` tem chave e quebraria a
+// varredura das regras. Troca-se cada interpolação por um marcador antes.
+const _cssSrc = src.replace(/\$\{[^{}]*\}/g, '\u00A7');
+const _pages = [..._cssSrc.matchAll(/@page\s*\{([^}]*)\}/g)].map(m => m[1]);
 ok('nenhum relatório imprime com @page margin:0',
    _pages.filter(p => /margin\s*:\s*0\s*[;}]?\s*$/.test(p.trim())).length, 0);
 ok('toda @page declara margem', _pages.filter(p => !/margin\s*:/.test(p)).length, 0);
@@ -1366,6 +1369,32 @@ ok('tabela dos relatórios quebra entre linhas',
    (src.match(/tr\s*\{\s*page-break-inside\s*:\s*avoid/g) || []).length >= 4, true);
 ok('e repete o cabeçalho em cada folha',
    (src.match(/thead\s*\{\s*display\s*:\s*table-header-group/g) || []).length >= 4, true);
+
+// ── orientação: paisagem só no relatório da GESTÃO DE PERDAS ────────────────
+// O quadro 2×2 é a capa desse relatório e foi desenhado largo. O de PARADAS é
+// uma sequência de tabelas altas e continua em pé. O que NÃO pode acontecer é
+// o CSS virar duas cópias para ter uma versão deitada — a orientação é
+// parâmetro do mesmo `_rpDocParadas`.
+console.log('\n── orientação dos relatórios de paradas e de perdas ──');
+ok('o documento dos dois continua sendo UMA implementação',
+   (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
+ok('e a orientação é parâmetro dele', /function _rpDocParadas\(titulo,\s*paisagem\)/.test(JS), true);
+ok('nenhum tamanho de página fixo dentro do documento compartilhado',
+   /size:A4 (portrait|landscape)[^`]*\}\s*\n[\s\S]{0,200}_rpDocParadas/.test(JS), false);
+const _perdas = pega('async function gerarRelatorioPerdas(');
+const _paradas = pega('async function gerarRelatorioParadas(');
+ok('GESTÃO DE PERDAS imprime deitado', /_rpDocParadas\(`Gestão de Perdas[^`]*`,\s*true\)/.test(_perdas), true);
+ok('PARADAS continua em pé', /_rpDocParadas\(`Relatório de Paradas[^`]*`\)/.test(_paradas), true);
+// A compactação da capa deitada não pode vazar para o retrato: toda regra da
+// paisagem é escopada por .deitado.
+const _cssPais = (src.match(/\n  \.deitado [^\n]*/g) || []);
+ok('a paisagem tem regras próprias', _cssPais.length > 0, true);
+ok('e todas escopadas por .deitado', _cssPais.every(r => r.trim().startsWith('.deitado ')), true);
+// A capa (cabeçalho + abertura + quadro) tem de caber na folha deitada, senão
+// o quadro pula para a folha 2 e a 1 sai quase em branco. O quadro continua
+// inteiro: partido ao meio ele perde a função de ser visto de uma vez.
+ok('o quadro continua sem partir ao meio',
+   /\.pgq\{[^}]*page-break-inside:avoid/.test(src), true);
 
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
