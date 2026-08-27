@@ -187,6 +187,11 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-mil-wrap{margin-top:16px}
 #sec-perdas .pg-mil{grid-template-columns:repeat(3,1fr);margin-bottom:0}
 #sec-perdas .pg-mil .kpi-val.v-red{color:var(--red)}
+#sec-perdas .pg-grao{margin-left:12px;display:inline-flex;gap:5px;vertical-align:middle}
+#sec-perdas .pg-grao .pg-q{font-size:10px;padding:3px 10px}
+#sec-perdas .pg-mes{margin-top:12px}
+#sec-perdas .pg-mes .v-ok{color:var(--ok);font-weight:700}
+#sec-perdas .pg-mes .v-red{color:var(--red);font-weight:700}
 #sec-perdas .pg-vazio,#sec-perdas .rp-note{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.55;margin-top:8px}
 /* O diagnóstico não cabe no quadro, mas cabe na tela: é a frase que o gestor
    leva para a reunião. No PDF ele já tem seção própria. */
@@ -1859,6 +1864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <button class="btn btn-ghost pg-q" data-per="7"   onclick="_pgFiltro(7,'7')">7 DIAS</button>
     <button class="btn btn-ghost pg-q" data-per="15"  onclick="_pgFiltro(15,'15')">15 DIAS</button>
     <button class="btn btn-ghost pg-q" data-per="30"  onclick="_pgFiltro(30,'30')">30 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="90"  onclick="_pgFiltro(90,'90')" title="Três meses — é o período que abre o MÊS A MÊS do minutos/1.000 cx">90 DIAS</button>
     <button class="btn btn-ghost pg-q" data-per="mes" onclick="_pgMesAtual()">MÊS</button>
     <span id="pg-per-lbl" class="par-per-lbl"></span>
     <div style="flex:1"></div>
@@ -2320,7 +2326,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.18.1';
+const APP_VER   = '7.19.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8055,6 +8061,74 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
   </div>`;
 }
 
+// ── MINUTOS DE PARADA / 1.000 CAIXAS por JANELA ─────────────────────────────
+// "E como vou comparar mês a mês?" — e logo depois: "compara por semana, mês,
+// quinzena" (usuário, 27/08/2026). O indicador só serve comparado, e a tela
+// mostra UM período. Em vez de uma segunda busca (o `getParadasPeriodo` lê a
+// aba PARADAS inteira: é a leitura mais cara daqui), o recorte sai do que JÁ
+// foi buscado — basta o período escolhido cobrir mais de uma janela. As três
+// são calculadas juntas e o botão da tela só troca qual está em cartaz: sem
+// chamada nova, sem espera.
+//
+// Nada é recalculado por outro método: os minutos vêm do `porDia` do
+// RP_PARADAS (os mesmos do resumo) e as caixas do `realByDay` do HISTORICO (a
+// mesma base do TAKT REAL). Janela sem produção lançada fica FORA — sem caixa
+// no denominador não existe indicador, e 0 afirmaria "não parou".
+//   ⚠ A SEMANA é a `_relSemanaJanela` (segunda→domingo), a mesma do relatório
+//     semanal, da Tela D e da evolução da disponibilidade. Não escrever outro
+//     recorte de semana aqui — foi a duplicação que fez a conta divergir.
+//   A quinzena é 1–15 e 16–fim, o corte que a fábrica usa.
+const PG_MESES=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const PG_GRAOS={semana:  {col:'SEMANA',   um:'semana',   varios:'semanas',   dica:'15 DIAS já trazem duas semanas'},
+                quinzena:{col:'QUINZENA', um:'quinzena', varios:'quinzenas', dica:'30 DIAS trazem duas quinzenas'},
+                mes:     {col:'MÊS',      um:'mês',      varios:'meses',     dica:'90 DIAS trazem três meses'}};
+
+function _pgJanelaDe(data, grao){
+  const p=String(data||'').split('/'); if(p.length<3) return null;
+  const dd=+p[0], mm=+p[1], aa=String(p[2]);
+  if(!(mm>=1&&mm<=12)) return null;
+  if(grao==='semana'){
+    const j=_relSemanaJanela(data);
+    return {chave:j.seg.getFullYear()+'-'+p2(j.seg.getMonth()+1)+'-'+p2(j.seg.getDate()),
+            lbl:_pgSemLbl({sem:j.semStr, num:j.numSem})};
+  }
+  if(grao==='quinzena'){
+    const q=dd<=15?1:2;
+    return {chave:aa+'-'+p2(mm)+'-Q'+q, lbl:q+'ªQ '+PG_MESES[mm-1]+'/'+aa.slice(2)};
+  }
+  return {chave:aa+'-'+p2(mm), lbl:PG_MESES[mm-1]+'/'+aa.slice(2)};
+}
+
+// ⚠ SÓ DIA TRABALHADO ENTRA (pedido do usuário, 27/08/2026: "tira dias não
+// trabalhados"). Dia sem produção lançada — sábado de manutenção, feriado,
+// parada de fábrica — punha os minutos dele no numerador sem pôr caixa nenhuma
+// no denominador: o indicador subia sozinho num dia em que ninguém embalou.
+// Numerador e denominador passam a olhar exatamente os MESMOS dias. O que
+// ficou de fora é devolvido (`minFora`/`diasFora`) e sai escrito embaixo da
+// tabela — o que é excluído tem de aparecer, não sumir em silêncio.
+function _pgPorJanela(dias, realByDay, grao){
+  const r=realByDay||{}, M={};
+  let minFora=0, diasFora=0;
+  (dias||[]).forEach(d=>{
+    const cx=parseFloat(r[d.data])||0;
+    if(!(cx>0)){ if((d.min||0)>0){ minFora+=d.min||0; diasFora++; } return; }
+    const j=_pgJanelaDe(d.data, grao); if(!j) return;
+    if(!M[j.chave]) M[j.chave]={chave:j.chave, lbl:j.lbl, cx:0, min:0, minNP:0, dias:0};
+    M[j.chave].min+=d.min||0; M[j.chave].minNP+=d.minNP||0;
+    M[j.chave].cx+=cx; M[j.chave].dias++;
+  });
+  const lista=Object.keys(M).sort().map(k=>M[k])
+    .map(m=>Object.assign(m,{mil:_pgMinPor1000(m.min,m.cx), milNP:_pgMinPor1000(m.minNP,m.cx)}));
+  // A variação é contra a janela ANTERIOR DA LISTA; queda é melhora.
+  lista.forEach((m,i)=>{
+    const ant=i>0?lista[i-1]:null;
+    m.delta   = ant&&ant.mil!=null&&m.mil!=null     ? Math.round((m.mil-ant.mil)*10)/10     : null;
+    m.deltaNP = ant&&ant.milNP!=null&&m.milNP!=null ? Math.round((m.milNP-ant.milNP)*10)/10 : null;
+    m.bom     = m.deltaNP!=null ? m.deltaNP<0 : null;
+  });
+  return {lista, minFora, diasFora};
+}
+
 // ── MINUTOS DE PARADA / 1.000 CAIXAS — um desenho, duas peles ───────────────
 // O KPI nasceu só no PDF (seção 6) e o gestor pediu ele NA TELA (27/08/2026):
 // é o número que compara mês contra mês sem que o período maior pareça pior.
@@ -8065,19 +8139,47 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
 //     sua e ignora a outra — assim o mesmo HTML nasce laranja/vermelho nos dois.
 // Não há conta aqui: os dois por 1.000 cx vêm prontos do _pgContexto.
 function _pgMin1000Html(ctx){
-  const {st, trR, minPor1000, minPor1000NP}=ctx;
+  const {st, trR, minPor1000, minPor1000NP, minPor1000Prog, pctNP}=ctx;
+  const grao=PG_GRAOS[ctx.grao]?ctx.grao:'mes', G=PG_GRAOS[grao];
+  const jan=((ctx.janelas||{})[grao])||{lista:[],minFora:0,diasFora:0};
+  const lista=jan.lista||[];
   const cx=trR?trR.cxTot:0;
+  const e=_rpEsc;
+  // O card do TOTAL diz que é TOTAL e mostra a divisão: lido sozinho, "minutos
+  // parados" foi entendido como "parada prevista" — e o previsto é justamente
+  // a diferença entre os dois cards, que não tem card próprio.
+  const divisao=(minPor1000!=null&&minPor1000NP!=null&&minPor1000Prog!=null)
+    ? `= ${fmt1(minPor1000Prog)} previstos + ${fmt1(minPor1000NP)} não programados` : '';
+  // A comparação só aparece quando o período cobre mais de uma janela — com uma
+  // só não há o que comparar, e a linha diz como conseguir a segunda.
+  const mesHtml=(lista.length>1)
+    ? `<table class="pgq-plano pg-mes"><thead><tr>
+        <th>${G.col}</th><th>CAIXAS</th><th>DIAS</th><th>TEMPO PARADO</th>
+        <th>MIN / 1.000 CX</th><th>NÃO PROG. / 1.000 CX</th><th>VARIAÇÃO</th>
+      </tr></thead><tbody>${lista.map(m=>`<tr>
+        <td style="font-weight:700">${e(m.lbl)}</td>
+        <td class="td-mono">${fmtN(m.cx)}</td>
+        <td class="td-mono">${m.dias}</td>
+        <td class="td-mono">${_fmtMinPar(m.min)}</td>
+        <td class="td-mono">${m.mil!=null?fmt1(m.mil):'—'}</td>
+        <td class="td-mono" style="font-weight:700">${m.milNP!=null?fmt1(m.milNP):'—'}</td>
+        <td class="td-mono ${m.bom===true?'v-ok':m.bom===false?'v-red':''}">${
+          m.deltaNP==null?'—':`${m.bom?'↓':'↑'} ${fmt1(Math.abs(m.deltaNP))} ${m.bom?'a menos':'a mais'}`}</td>
+      </tr>`).join('')}</tbody></table>
+      <div class="rp-note">Cada ${G.um} do período em uma linha, com a variação do NÃO PROGRAMADO contra ${G.um==='mês'?'o mês':'a '+G.um} anterior — <b>↓ é melhora</b> (parou menos por caixa produzida). Minutos do mesmo <b>porDia</b> do resumo, caixas do <b>HISTÓRICO</b>. <b>Só dia trabalhado entra</b> (dia sem produção lançada não tem caixa no denominador)${jan.diasFora>0?`: ${plural(jan.diasFora,'dia ficou','dias ficaram')} de fora, com ${_fmtMinPar(jan.minFora)} de parada apontada`:''}. ${G.um==='mês'?'Mês':G.um==='semana'?'Semana':'Quinzena'} pela metade — a ponta do período — compara um pedaço com um inteiro.</div>`
+    : `<div class="rp-note">O período escolhido tem <b>${lista.length?'uma '+G.um:'nenhum '+G.um} com produção</b> — não há com o que comparar. Escolha um período maior: <b>${G.dica}</b>.</div>`;
   return `<div class="kpi-grid pg-mil">
-  <div class="kpi-card a acc"><div class="kpi-lbl">MINUTOS PARADOS / 1.000 CX</div>
+  <div class="kpi-card a acc"><div class="kpi-lbl">MINUTOS PARADOS — TUDO / 1.000 CX</div>
     <div class="kpi-val">${minPor1000!=null?fmt1(minPor1000):'—'}</div>
-    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000`:'sem caixas apontadas no período'}</div></div>
+    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000<br>${divisao}`:'sem caixas apontadas no período'}</div></div>
   <div class="kpi-card r red"><div class="kpi-lbl">MINUTOS NÃO PROGRAMADOS / 1.000 CX</div>
     <div class="kpi-val v-red">${minPor1000NP!=null?fmt1(minPor1000NP):'—'}</div>
-    <div class="kpi-sub">só o que vira perda</div></div>
+    <div class="kpi-sub">só o que vira perda${pctNP!=null?` · ${fmtP(pctNP)} do tempo parado`:''}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">CAIXAS APONTADAS NO PERÍODO</div>
     <div class="kpi-val">${cx>0?fmtN(cx):'—'}</div>
-    <div class="kpi-sub">base da comparação</div></div>
-</div>`;
+    <div class="kpi-sub">base da comparação${lista.length?` · ${lista.length} ${lista.length>1?G.varios:G.um} no período`:''}</div></div>
+</div>
+${mesHtml}`;
 }
 
 // ── DESENHO da camada GESTÃO DAS PERDAS ─────────────────────────────────────
@@ -8356,6 +8458,10 @@ ${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito
 // os dois usados pelo relatório. Tela e PDF do mesmo período mostram, por
 // construção, os mesmos números.
 var PG_TELA_CACHE={}, PG_TELA_RODANDO=false, PG_TELA_ULT='';
+// Janela da comparação do minutos/1.000 cx: SEMANA · QUINZENA · MÊS. Trocar o
+// grão NÃO refaz a busca — as três já vêm calculadas no contexto; o botão só
+// redesenha o que está em cache. O PDF sai no grão que está na tela.
+var PG_GRAO='mes';
 const PG_TELA_TTL=5*60*1000;   // getParadasPeriodo lê a aba PARADAS inteira
 
 function _pgMarcaPreset(qual){
@@ -8425,13 +8531,24 @@ async function renderGestaoPerdas(forcar){
     const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
     const tiR=_taktIdeal(st.horasProd);
     const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
-    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate});
+    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate, grao:PG_GRAO});
     PG_TELA_CACHE[chave]={ctx, t:Date.now()};
     _pgPintar(ctx, Date.now());
   }catch(err){
     if(!alvo.querySelector('.pgq')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar a gestão de perdas: ${_rpEsc(err.message)}</div>`;
     else if(upd) upd.textContent='⚠ não atualizou';
   }finally{ PG_TELA_RODANDO=false; }
+}
+
+// Troca a janela da comparação (semana/quinzena/mês). O contexto em cache já
+// traz as três calculadas, então isto é só redesenhar: nada de nova busca —
+// `getParadasPeriodo` lê a aba PARADAS inteira e é a leitura mais cara daqui.
+function _pgTrocaGrao(g){
+  if(!PG_GRAOS[g] || g===PG_GRAO) return;
+  PG_GRAO=g;
+  const c=PG_TELA_CACHE[PG_TELA_ULT];
+  if(c&&c.ctx){ c.ctx.grao=g; _pgPintar(c.ctx, c.t); }
+  else renderGestaoPerdas();
 }
 
 // Desenha o quadro (o MESMO do PDF) e, embaixo dele, o diagnóstico PPCP — na
@@ -8444,7 +8561,9 @@ function _pgPintar(ctx, t){
     // O KPI por 1.000 cx entra ENTRE o quadro e o diagnóstico: ele é a régua
     // que permite comparar este período com o anterior, e é lido depois do
     // quadro (o que aconteceu) e antes do diagnóstico (o que fazer).
-    + `<div class="pg-mil-wrap"><div class="pg-diag-ttl">MINUTOS DE PARADA / 1.000 CAIXAS <i>compara períodos de volume diferente</i></div>
+    + `<div class="pg-mil-wrap"><div class="pg-diag-ttl">MINUTOS DE PARADA / 1.000 CAIXAS <i>compara períodos de volume diferente</i>
+          <span class="pg-grao">${['semana','quinzena','mes'].map(g=>
+            `<button class="btn btn-ghost pg-q${PG_GRAO===g?' on':''}" onclick="_pgTrocaGrao('${g}')">${PG_GRAOS[g].col}</button>`).join('')}</span></div>
         ${_pgMin1000Html(ctx)}
         <div class="pg-diag-nota">O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume. Base: as caixas apontadas que o TAKT REAL já usa. <b>Não substitui</b> nenhum indicador do quadro.</div></div>`
     + `<div class="pg-diag-wrap"><div class="pg-diag-ttl">DIAGNÓSTICO PPCP</div><div class="pg-diag">
@@ -8486,7 +8605,7 @@ async function _pgBuscarDados(de, ate){
 // Recebe o que a busca trouxe e devolve o contexto que o QUADRO e as seções do
 // relatório usam. Nenhuma conta nova mora aqui: tudo sai das funções _pg* e da
 // valoração do RP_PARADAS.
-function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
+function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate, grao}){
   const trab=RP_PARADAS.diasTrabalhadosLista?RP_PARADAS.diasTrabalhadosLista(realByDay,de,ate):[];
   const dias=_pgDias(st.porDia, trab, st.horasProd);
   const semanas=_pgSemanas(dias, st.horasProd, PG_META_DISP);
@@ -8513,9 +8632,19 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
     plano:_pgPlano(top, outros, metasSmed),
     tend:_pgTendencia(semanas),
     foco:_pgFoco(top, outros),
-    // Os dois por 1.000 cx saem daqui: o desenho (tela e PDF) só imprime.
+    // Os por 1.000 cx saem daqui: o desenho (tela e PDF) só imprime.
+    //   NP  = o que vira perda · PROG = a parada combinada (a diferença entre
+    //   os dois é o que o card informa, para ninguém ler o total como previsto)
     minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0),
     minPor1000NP:_pgMinPor1000(st.totMinNP, trR?trR.cxTot:0),
+    minPor1000Prog:_pgMinPor1000(Math.max(0,(st.totMin||0)-(st.totMinNP||0)), trR?trR.cxTot:0),
+    pctNP: st.totMin>0 ? st.totMinNP/st.totMin*100 : null,
+    // as três janelas saem juntas (custo desprezível): o botão da tela troca
+    // qual aparece sem refazer a busca cara do período
+    janelas:{semana:  _pgPorJanela(dias, realByDay, 'semana'),
+             quinzena:_pgPorJanela(dias, realByDay, 'quinzena'),
+             mes:     _pgPorJanela(dias, realByDay, 'mes')},
+    grao: PG_GRAOS[grao] ? grao : 'mes',
     diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), semanas}),
     temMotivo:(paradas||[]).some(p=>String(p.obs||'').trim()!=='')
   };
@@ -8554,7 +8683,7 @@ async function gerarRelatorioPerdas(deArg, ateArg){
     const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
     const tiR=_taktIdeal(st.horasProd);
     const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
-    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate});
+    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate, grao:PG_GRAO});
     ctx.soZinho=true;   // a camada ABRE o documento: sem "o relatório acima"
     corpo=_pgSecaoHtml(ctx)
       + `<div class="rp-note">Este relatório é a leitura de gestão. O <b>RELATÓRIO DE PARADAS</b> traz o controle do período — resumo, Pareto por tipo, tabela por tipo, estudo de ganho, SWOT e o detalhamento parada a parada — com as mesmas contas e o mesmo período.</div>`
@@ -8639,6 +8768,9 @@ function _rpDocParadas(titulo, paisagem){
   .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
   .pg-mil{grid-template-columns:repeat(3,1fr)}
   .kpi-val.v-red{color:#c62828}
+  .pg-mes{margin-top:10px}
+  .pg-mes .v-ok{color:#2e7d32;font-weight:700}
+  .pg-mes .v-red{color:#c62828;font-weight:700}
   .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
   .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
   .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}
@@ -8891,7 +9023,7 @@ async function gerarRelatorioParadas(deArg, ateArg){
   // ele é o oficial, e a camada é acréscimo.
   let pgHtml='';
   try{
-    pgHtml=_pgSecaoHtml(_pgContexto({paradas, st, tiR, trR, realByDay, de, ate}));
+    pgHtml=_pgSecaoHtml(_pgContexto({paradas, st, tiR, trR, realByDay, de, ate, grao:PG_GRAO}));
   }catch(err){
     pgHtml=`<div class="rp-sec-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div><div class="pg-vazio">Não foi possível montar a camada de gestão neste período (${_rpEsc(err.message)}). O relatório de controle acima está completo e não foi afetado.</div>`;
   }

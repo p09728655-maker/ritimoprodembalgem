@@ -1094,7 +1094,30 @@ via Google Apps Script (JSONP).
     tela; copiar os cartões seria a duplicação de sempre. As **duas famílias de
     modificador vão juntas no `class=`** (`a`/`r` do documento do relatório,
     `acc`/`red` do painel): cada pele lê a sua e ignora a outra. **Não há conta
-    no desenho** — `minPor1000` e `minPor1000NP` saem prontos do `_pgContexto`.
+    no desenho** — tudo sai pronto do `_pgContexto`.
+  - **O card do total diz TUDO e mostra a divisão** (`= 7,0 previstos + 39,8 não
+    programados`): lido sozinho, "MINUTOS PARADOS" foi entendido como *"parada
+    prevista"* — e o previsto é justamente a **diferença** entre os dois cards,
+    que não tem card próprio. O card do não programado leva a fatia
+    (`85,1% do tempo parado`).
+  - **A comparação tem grão: SEMANA · QUINZENA · MÊS** (`_pgPorJanela`, pedido
+    do usuário: *"compara por semana, mês, quinzena"*). O recorte sai do período
+    **já buscado** — nada de segunda chamada, que `getParadasPeriodo` lê a aba
+    `PARADAS` inteira. As **três janelas são calculadas juntas** no
+    `_pgContexto` (custo desprezível) e o botão da tela (`_pgTrocaGrao`) só
+    **redesenha o que está em cache**; o PDF sai no grão que está na tela. A
+    barra ganhou o preset **90 DIAS**, que é o que traz três meses.
+    - ⚠ A **semana é a `_relSemanaJanela`** (segunda→domingo), a mesma do
+      relatório semanal, da Tela D e da evolução da disponibilidade — não
+      escrever outro recorte de semana aqui. A **quinzena é 1–15 e 16–fim**.
+    - **Só dia trabalhado entra** (*"tira dias não trabalhados"*): dia sem
+      produção lançada punha os minutos dele no numerador **sem caixa no
+      denominador** — o indicador subia num dia em que ninguém embalou.
+      Numerador e denominador olham os MESMOS dias, e o que ficou de fora sai
+      escrito embaixo da tabela (`minFora`/`diasFora`) em vez de sumir.
+    - A **variação é do NÃO PROGRAMADO** contra a janela anterior da lista, e
+      **↓ é melhora**. Janela pela metade (a ponta do período) compara um pedaço
+      com um inteiro — a nota avisa.
   - ⚠ **A escala de fonte da tela é a do PAINEL, não a do papel** (correção do
     usuário, 27/08/2026: *"fontes bem pequenas, ruim de ler"* — e *"fonte só na
     tela"*). A pele nasceu copiando os corpos do PDF (8–9,5px), que se lê com o
