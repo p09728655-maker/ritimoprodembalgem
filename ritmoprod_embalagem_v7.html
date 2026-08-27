@@ -120,24 +120,24 @@ body.ger-hist .ger-live-only{display:none!important}
    com os tokens do painel (o PDF é claro, a tela é escura). Escrever um segundo
    desenho para a tela seria a duplicação que já fez a conta de paradas divergir
    três vezes. Se mexer no quadro, mexa nas DUAS peles — a marcação é uma só. */
-#sec-perdas .pg-q{font-size:10px;padding:4px 12px}
+#sec-perdas .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
-.pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt2)}
+.pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
 #sec-perdas .pgq{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
 #sec-perdas .pgq-top{background:var(--elevated);color:var(--txt);padding:11px 15px;border-bottom:1px solid var(--border)}
 /* O título do quadro some NA TELA: a aba e o cabeçalho da seção já dizem
    GESTÃO DE PERDAS, e três vezes o mesmo nome na mesma tela é ruído. No PDF ele
    continua — lá o quadro é uma página solta dentro de um relatório maior. */
 #sec-perdas .pgq-ttl{display:none}
-#sec-perdas .pgq-foco{font-family:var(--font-d);font-size:12px;color:var(--txt2);letter-spacing:1.5px;margin-top:0;text-transform:uppercase}
+#sec-perdas .pgq-foco{font-family:var(--font-d);font-size:13.5px;color:var(--txt2);letter-spacing:1.5px;margin-top:0;text-transform:uppercase}
 #sec-perdas .pgq-foco b{color:var(--acc)}
 #sec-perdas .pgq-grid{display:grid;grid-template-columns:1fr 1fr}
 #sec-perdas .pgq-cel{padding:13px 15px;border-right:1px solid var(--border);border-top:1px solid var(--border)}
 #sec-perdas .pgq-grid .pgq-cel:nth-child(2n){border-right:0}
-#sec-perdas .pgq-cel-ttl{font-family:var(--font-d);font-size:9.5px;font-weight:700;color:var(--acc);letter-spacing:2px;margin-bottom:9px}
-#sec-perdas .pgq-cel-ttl i{font-style:normal;font-weight:400;color:var(--txt2);letter-spacing:.5px;text-transform:none}
-#sec-perdas .pgq-na{font-size:11px;color:var(--txt2);padding:6px 0}
-#sec-perdas .pgq-nota{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);margin-top:6px}
+#sec-perdas .pgq-cel-ttl{font-family:var(--font-d);font-size:12px;font-weight:700;color:var(--acc);letter-spacing:1.8px;margin-bottom:10px}
+#sec-perdas .pgq-cel-ttl i{font-style:normal;font-weight:400;font-size:11px;color:var(--txt2);letter-spacing:.5px;text-transform:none}
+#sec-perdas .pgq-na{font-size:12.5px;color:var(--txt2);padding:6px 0}
+#sec-perdas .pgq-nota{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:7px;line-height:1.45}
 /* Na tela a barra é MAIOR que no papel: aqui sobra altura, e é a evolução que
    responde "estamos melhorando?" — a pergunta que trouxe a tela para o painel. */
 #sec-perdas .pgq-bars{display:flex;align-items:flex-end;gap:8px;height:132px}
@@ -145,56 +145,62 @@ body.ger-hist .ger-live-only{display:none!important}
    da barra verde de quem bateu a meta — verde sobre verde some. */
 #sec-perdas .pgq-meta{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.65);z-index:2}
 #sec-perdas .pgq-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
-#sec-perdas .pgq-bar-v{font-family:var(--font-h);font-size:16px;font-weight:700;line-height:1.15}
+#sec-perdas .pgq-bar-v{font-family:var(--font-h);font-size:19px;font-weight:700;line-height:1.15}
 #sec-perdas .pgq-bar-t{position:relative;flex:1;display:flex;align-items:flex-end;background:var(--elevated);border-radius:3px;overflow:hidden}
 #sec-perdas .pgq-bar-t>div{width:100%;border-radius:3px}
-#sec-perdas .pgq-bar-l{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);margin-top:3px}
-#sec-perdas .pgq-eixo{font-family:var(--font-d);font-size:8px;color:var(--txt2);margin-top:3px}
-#sec-perdas .pgq-tend{display:flex;align-items:center;gap:9px;margin-top:9px;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.4}
+#sec-perdas .pgq-bar-l{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:4px}
+#sec-perdas .pgq-eixo{font-family:var(--font-d);font-size:10px;color:var(--txt2);margin-top:5px}
+#sec-perdas .pgq-tend{display:flex;align-items:center;gap:9px;margin-top:10px;padding:8px 11px;border-radius:6px;font-size:12.5px;line-height:1.45}
 #sec-perdas .pgq-tend.g{background:rgba(76,175,80,.12);color:var(--ok)}
 #sec-perdas .pgq-tend.o{background:rgba(255,152,0,.12);color:var(--warn)}
 #sec-perdas .pgq-tend.r{background:rgba(244,67,54,.12);color:var(--red)}
 #sec-perdas .pgq-seta{font-size:22px;line-height:1;font-weight:700}
-#sec-perdas .pgq-smed-l{display:grid;grid-template-columns:72px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
-#sec-perdas .pgq-smed-l.vazio{display:block;font-size:11px;color:var(--txt2)}
+#sec-perdas .pgq-smed-l{display:grid;grid-template-columns:86px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+#sec-perdas .pgq-smed-l.vazio{display:block;font-size:12.5px;color:var(--txt2)}
 #sec-perdas .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
-#sec-perdas .pgq-smed-n{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.2px;grid-row:span 2}
+#sec-perdas .pgq-smed-n{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1.2px;grid-row:span 2}
 #sec-perdas .pgq-smed-v{display:flex;align-items:baseline;gap:6px;font-family:var(--font-h);font-size:27px;font-weight:700;line-height:1}
 #sec-perdas .pgq-smed-v span{color:var(--txt2);font-size:17px}
-#sec-perdas .pgq-smed-v i{font-family:var(--font-d);font-size:9px;color:var(--txt2);font-style:normal;font-weight:400}
-#sec-perdas .pgq-smed-tag{font-family:var(--font-d);font-size:7.5px;font-weight:700;letter-spacing:1px;color:var(--ok);border:1px solid var(--ok);border-radius:3px;padding:1px 4px;font-style:normal;margin-left:2px}
-#sec-perdas .pgq-smed-g{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--ok);text-align:right}
-#sec-perdas .pgq-smed-s{grid-column:2/4;font-family:var(--font-d);font-size:8.5px;color:var(--txt2)}
-#sec-perdas .pgq-smed-tot{margin-top:9px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.2px}
-#sec-perdas .pgq-smed-tot b{font-family:var(--font-h);font-size:19px;color:var(--ok);letter-spacing:0;margin:0 4px}
+#sec-perdas .pgq-smed-v i{font-family:var(--font-d);font-size:11px;color:var(--txt2);font-style:normal;font-weight:400}
+#sec-perdas .pgq-smed-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--ok);border:1px solid var(--ok);border-radius:3px;padding:1px 4px;font-style:normal;margin-left:2px}
+#sec-perdas .pgq-smed-g{font-family:var(--font-h);font-size:21px;font-weight:700;color:var(--ok);text-align:right}
+#sec-perdas .pgq-smed-s{grid-column:2/4;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);line-height:1.45;margin-top:2px}
+#sec-perdas .pgq-smed-tot{margin-top:10px;font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1.2px}
+#sec-perdas .pgq-smed-tot b{font-family:var(--font-h);font-size:22px;color:var(--ok);letter-spacing:0;margin:0 4px}
 #sec-perdas .pgq-smed-tot i{font-style:normal;letter-spacing:0}
 #sec-perdas .pgq-o-topo{margin-bottom:7px}
 #sec-perdas .pgq-o-topo b{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1}
-#sec-perdas .pgq-o-topo i{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);font-style:normal;margin-left:7px}
-#sec-perdas .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px;color:var(--txt)}
-#sec-perdas .pgq-l i{display:block;font-family:var(--font-d);font-size:8px;color:var(--txt2);font-style:normal;line-height:1.35}
-#sec-perdas .pgq-l b{font-family:var(--font-d);font-size:13px;color:var(--txt);white-space:nowrap}
+#sec-perdas .pgq-o-topo i{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);font-style:normal;margin-left:7px}
+#sec-perdas .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--txt)}
+#sec-perdas .pgq-l i{display:block;font-family:var(--font-d);font-size:10px;color:var(--txt2);font-style:normal;line-height:1.4;margin-top:2px}
+#sec-perdas .pgq-l b{font-family:var(--font-d);font-size:14.5px;color:var(--txt);white-space:nowrap}
 #sec-perdas .pgq-l.alerta b{color:var(--red);font-weight:700}
 #sec-perdas .pgq-l.ident span{color:#b39ddb;font-weight:600}
 #sec-perdas .pgq-plano-band{padding:13px 15px;border-top:1px solid var(--border)}
 #sec-perdas .pgq-plano{width:100%;border-collapse:collapse;margin-top:6px}
-#sec-perdas .pgq-plano th{background:var(--elevated);font-family:var(--font-d);font-size:8.5px;color:var(--txt2);letter-spacing:1.2px;text-transform:uppercase;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border)}
-#sec-perdas .pgq-plano td{font-size:11.5px;padding:7px 9px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:top}
-#sec-perdas .pgq-plano .td-mono{font-family:var(--font-d);font-size:10.5px}
-#sec-perdas .pg-sinal{font-family:var(--font-d);font-size:8px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:9px;color:#fff}
+#sec-perdas .pgq-plano th{background:var(--elevated);font-family:var(--font-d);font-size:10.5px;color:var(--txt2);letter-spacing:1.2px;text-transform:uppercase;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border)}
+#sec-perdas .pgq-plano td{font-size:13px;padding:8px 9px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:top}
+#sec-perdas .pgq-plano .td-mono{font-family:var(--font-d);font-size:12px}
+#sec-perdas .pg-sinal{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;padding:3px 9px;border-radius:9px;color:#fff}
 #sec-perdas .pg-sinal.g{background:var(--ok)}#sec-perdas .pg-sinal.o{background:var(--warn)}#sec-perdas .pg-sinal.r{background:var(--red)}
-#sec-perdas .pg-vazio,#sec-perdas .rp-note{font-family:var(--font-d);font-size:9px;color:var(--txt2);line-height:1.5;margin-top:7px}
+/* MINUTOS DE PARADA / 1.000 CAIXAS — mesma marcação do PDF, pele do painel. */
+.pg-mil-wrap{margin-top:16px}
+#sec-perdas .pg-mil{grid-template-columns:repeat(3,1fr);margin-bottom:0}
+#sec-perdas .pg-mil .kpi-val.v-red{color:var(--red)}
+#sec-perdas .pg-vazio,#sec-perdas .rp-note{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.55;margin-top:8px}
 /* O diagnóstico não cabe no quadro, mas cabe na tela: é a frase que o gestor
    leva para a reunião. No PDF ele já tem seção própria. */
 .pg-diag-wrap{margin-top:16px}
-.pg-diag-ttl{font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);margin-bottom:8px}
+.pg-diag-ttl{font-family:var(--font-d);font-size:12px;letter-spacing:1.8px;color:var(--txt2);margin-bottom:9px}
+.pg-diag-ttl i{font-style:normal;font-size:11px;letter-spacing:.5px;color:var(--txt2);margin-left:8px}
 #sec-perdas .pg-diag{border:1px solid var(--border);border-radius:8px;overflow:hidden}
 #sec-perdas .pg-diag-l{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid var(--border)}
 #sec-perdas .pg-diag-l:last-child{border-bottom:0}
-#sec-perdas .pg-diag-r{background:var(--elevated);color:var(--txt2);font-family:var(--font-d);font-size:8.5px;letter-spacing:1.5px;padding:10px 12px}
-#sec-perdas .pg-diag-v{font-size:12px;color:var(--txt);padding:10px 13px;line-height:1.5}
-.pg-diag-nota{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:9px;line-height:1.5}
+#sec-perdas .pg-diag-r{background:var(--elevated);color:var(--txt2);font-family:var(--font-d);font-size:10.5px;letter-spacing:1.5px;padding:11px 12px}
+#sec-perdas .pg-diag-v{font-size:13.5px;color:var(--txt);padding:11px 13px;line-height:1.5}
+.pg-diag-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);margin-top:10px;line-height:1.55}
 @media(max-width:900px){
+  #sec-perdas .pg-mil{grid-template-columns:1fr}
   #sec-perdas .pgq-grid{grid-template-columns:1fr}
   #sec-perdas .pgq-cel{border-right:0}
   #sec-perdas .pg-diag-l{grid-template-columns:1fr}
@@ -2314,7 +2320,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.18.0';
+const APP_VER   = '7.18.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8049,6 +8055,31 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
   </div>`;
 }
 
+// ── MINUTOS DE PARADA / 1.000 CAIXAS — um desenho, duas peles ───────────────
+// O KPI nasceu só no PDF (seção 6) e o gestor pediu ele NA TELA (27/08/2026):
+// é o número que compara mês contra mês sem que o período maior pareça pior.
+// Marcação uma só, como o quadro — copiar os três cartões para a tela seria a
+// duplicação que já fez a conta de paradas divergir três vezes.
+//   ⚠ as DUAS famílias de modificador vão juntas no class=: o documento do
+//     relatório conhece `a`/`r`, o painel conhece `acc`/`red`. Cada pele lê a
+//     sua e ignora a outra — assim o mesmo HTML nasce laranja/vermelho nos dois.
+// Não há conta aqui: os dois por 1.000 cx vêm prontos do _pgContexto.
+function _pgMin1000Html(ctx){
+  const {st, trR, minPor1000, minPor1000NP}=ctx;
+  const cx=trR?trR.cxTot:0;
+  return `<div class="kpi-grid pg-mil">
+  <div class="kpi-card a acc"><div class="kpi-lbl">MINUTOS PARADOS / 1.000 CX</div>
+    <div class="kpi-val">${minPor1000!=null?fmt1(minPor1000):'—'}</div>
+    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000`:'sem caixas apontadas no período'}</div></div>
+  <div class="kpi-card r red"><div class="kpi-lbl">MINUTOS NÃO PROGRAMADOS / 1.000 CX</div>
+    <div class="kpi-val v-red">${minPor1000NP!=null?fmt1(minPor1000NP):'—'}</div>
+    <div class="kpi-sub">só o que vira perda</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">CAIXAS APONTADAS NO PERÍODO</div>
+    <div class="kpi-val">${cx>0?fmtN(cx):'—'}</div>
+    <div class="kpi-sub">base da comparação</div></div>
+</div>`;
+}
+
 // ── DESENHO da camada GESTÃO DAS PERDAS ─────────────────────────────────────
 // Uma implementação só: o relatório de paradas é o único chamador hoje, mas o
 // desenho fica separado das contas (as funções _pg* acima) para o teste poder
@@ -8292,17 +8323,7 @@ ${smedBloco(smedProd,'TROCA DE PRODUTO','min/troca')}
 ${smedBloco(smedPlas,'TROCA DE PLÁSTICO','min/troca')}
 
 <div class="rp-sec-ttl">6 ▸ MINUTOS DE PARADA / 1.000 CAIXAS — COMPARAR PERÍODOS DE VOLUME DIFERENTE</div>
-<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-  <div class="kpi-card a"><div class="kpi-lbl">MINUTOS PARADOS / 1.000 CX</div>
-    <div class="kpi-val">${minPor1000!=null?fmt1(minPor1000):'—'}</div>
-    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(trR.cxTot)} cx × 1.000`:'sem caixas apontadas no período'}</div></div>
-  <div class="kpi-card r"><div class="kpi-lbl">MINUTOS NÃO PROGRAMADOS / 1.000 CX</div>
-    <div class="kpi-val" style="color:#c62828">${(trR&&trR.cxTot>0)?fmt1(_pgMinPor1000(st.totMinNP,trR.cxTot)):'—'}</div>
-    <div class="kpi-sub">só o que vira perda</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">CAIXAS APONTADAS NO PERÍODO</div>
-    <div class="kpi-val">${trR?fmtN(trR.cxTot):'—'}</div>
-    <div class="kpi-sub">base da comparação</div></div>
-</div>
+${_pgMin1000Html(ctx)}
 <div class="rp-note">INDICADOR NOVO — não substitui nenhum dos anteriores. O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume e permite comparar mês contra mês. Base: as caixas apontadas que o TAKT REAL já usa.</div>
 
 <div class="rp-sec-ttl">7 ▸ IMPACTO NO FLUXO — ONDE ESTÁ O GARGALO</div>
@@ -8420,6 +8441,12 @@ function _pgPintar(ctx, t){
   const d=ctx.diag||{};
   const linha=(rot,val,cor)=>`<div class="pg-diag-l"><div class="pg-diag-r">${rot}</div><div class="pg-diag-v"${cor?` style="color:${cor}"`:''}>${_rpEsc(val)}</div></div>`;
   alvo.innerHTML=_pgQuadroHtml(ctx)
+    // O KPI por 1.000 cx entra ENTRE o quadro e o diagnóstico: ele é a régua
+    // que permite comparar este período com o anterior, e é lido depois do
+    // quadro (o que aconteceu) e antes do diagnóstico (o que fazer).
+    + `<div class="pg-mil-wrap"><div class="pg-diag-ttl">MINUTOS DE PARADA / 1.000 CAIXAS <i>compara períodos de volume diferente</i></div>
+        ${_pgMin1000Html(ctx)}
+        <div class="pg-diag-nota">O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume. Base: as caixas apontadas que o TAKT REAL já usa. <b>Não substitui</b> nenhum indicador do quadro.</div></div>`
     + `<div class="pg-diag-wrap"><div class="pg-diag-ttl">DIAGNÓSTICO PPCP</div><div class="pg-diag">
         ${linha('PROBLEMA PRINCIPAL', d.problema||'—', 'var(--red)')}
         ${linha('IMPACTO', d.impacto||'—')}
@@ -8486,7 +8513,9 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
     plano:_pgPlano(top, outros, metasSmed),
     tend:_pgTendencia(semanas),
     foco:_pgFoco(top, outros),
+    // Os dois por 1.000 cx saem daqui: o desenho (tela e PDF) só imprime.
     minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0),
+    minPor1000NP:_pgMinPor1000(st.totMinNP, trR?trR.cxTot:0),
     diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), semanas}),
     temMotivo:(paradas||[]).some(p=>String(p.obs||'').trim()!=='')
   };
@@ -8608,6 +8637,8 @@ function _rpDocParadas(titulo, paisagem){
   .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
   .kpi-card{background:#f8fafc;border:1px solid #edf2f7;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
   .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
+  .pg-mil{grid-template-columns:repeat(3,1fr)}
+  .kpi-val.v-red{color:#c62828}
   .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
   .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
   .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}

@@ -1087,6 +1087,22 @@ via Google Apps Script (JSONP).
   - O **título do quadro some na tela** (a aba e o cabeçalho já dizem GESTÃO DE
     PERDAS) e a **marca da meta vira tracejado branco** — no papel ela é verde,
     e verde sobre a barra verde de quem bateu a meta desaparece.
+  - **`MINUTOS DE PARADA / 1.000 CAIXAS` também está na tela** (pedido do
+    usuário, 27/08/2026), entre o quadro e o DIAGNÓSTICO: é a régua que compara
+    mês contra mês sem que o período maior pareça pior. **`_pgMin1000Html` é o
+    desenho único** dos três cartões — o mesmo HTML serve a seção 6 do PDF e a
+    tela; copiar os cartões seria a duplicação de sempre. As **duas famílias de
+    modificador vão juntas no `class=`** (`a`/`r` do documento do relatório,
+    `acc`/`red` do painel): cada pele lê a sua e ignora a outra. **Não há conta
+    no desenho** — `minPor1000` e `minPor1000NP` saem prontos do `_pgContexto`.
+  - ⚠ **A escala de fonte da tela é a do PAINEL, não a do papel** (correção do
+    usuário, 27/08/2026: *"fontes bem pequenas, ruim de ler"* — e *"fonte só na
+    tela"*). A pele nasceu copiando os corpos do PDF (8–9,5px), que se lê com o
+    papel na mão; no monitor, a 60 cm, aquilo era ilegível. Hoje o skin
+    `#sec-perdas` anda entre **10,5 e 13,5px**, alinhado com o resto do painel
+    (`.kpi-lbl` 10px, `.kpi-sub` 11px), com o mínimo de 9,5px só nas etiquetas
+    (ALVO NOVO, ABERTO). **As fontes do PDF não foram tocadas** — lá a capa tem
+    de caber na folha 1, e é outra distância de leitura.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do

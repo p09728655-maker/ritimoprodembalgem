@@ -1297,6 +1297,16 @@ ok('o cenário e o plano recebem a meta que o SMED pôs em vigor',
    [/metaProduto:metasSmed\.produto/.test(pega('function _pgContexto(')),
     /_pgPlano\(top, outros, metasSmed\)/.test(pega('function _pgContexto('))], [true, true]);
 
+// MINUTOS DE PARADA / 1.000 CAIXAS: o KPI nasceu no PDF e foi para a tela — um
+// desenho só, e a conta continua fora dele.
+ok('o KPI por 1.000 cx é desenhado num lugar só',
+   (JS.match(/function _pgMin1000Html\(/g) || []).length, 1);
+ok('e sai nos dois — tela e PDF',
+   (JS.match(/(?<!function )_pgMin1000Html\(/g) || []).length, 2);
+ok('o desenho não refaz a conta', /_pgMinPor1000\(/.test(pega('function _pgMin1000Html(')), false);
+ok('os dois por 1.000 cx saem do contexto',
+   /minPor1000NP:_pgMinPor1000\(st\.totMinNP/.test(pega('function _pgContexto(')), true);
+
 console.log('\n── a TELA e o PDF são o mesmo quadro ──');
 // O quadro nasceu no PDF e o PPCP pediu ele como TELA. Desenho, busca e conta
 // continuam UM só: duas cópias divergiriam na primeira mexida — foi assim que a
