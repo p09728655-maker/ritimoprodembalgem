@@ -984,6 +984,29 @@ via Google Apps Script (JSONP).
   - **Sem a aba `TIPOS_PARADA` a checagem de classificação NÃO roda**: com o
     mapa vazio, todo tipo cairia como "sem classificação". Melhor não acusar do
     que acusar tudo — o quadro mostra "—" e diz por quê.
+- **O quadro é uma TELA do painel (aba GESTÃO DE PERDAS), não só uma folha do
+  PDF** (correção do PPCP em 27/08/2026: *"gestão de perda era uma tela nova"*).
+  A aba fica ao lado de PARADAS e mostra o quadro + o DIAGNÓSTICO PPCP; o
+  relatório completo continua no botão.
+  - **O desenho é o MESMO `_pgQuadroHtml`** nos dois. O que muda é a **pele**:
+    um bloco de CSS escopado por `#sec-perdas` com os tokens do painel (o PDF é
+    claro e impresso, a tela é escura e lida a 60 cm). Mexeu na marcação do
+    quadro? Confira as DUAS peles — a marcação é uma só. `relatorios.test.js`
+    falha se `_pgQuadroHtml` virar duas implementações.
+  - **A busca e as contas também são únicas**: `_pgBuscarDados` (a chamada com
+    retry, extraída de dentro do `gerarRelatorioParadas`) e `_pgContexto` (todas
+    as funções `_pg*` de uma vez). Tela e PDF do mesmo período mostram, por
+    construção, os mesmos números — o teste prende os dois chamadores.
+  - **Padrão 30 DIAS**: o quadro fala em SEMANAS (evolução, tendência, SMED
+    semana a semana); em 7 dias há uma semana só e metade da tela fica sem o que
+    mostrar.
+  - `getParadasPeriodo` lê a aba `PARADAS` inteira, então a tela tem **cache de
+    5 min por período** (`PG_TELA_CACHE`) e **guarda de reentrância**
+    (`PG_TELA_RODANDO`), como a aba PARADAS. Refresh do mesmo período **mantém o
+    que está na tela** e só marca a hora do dado; trocar de período limpa.
+  - O **título do quadro some na tela** (a aba e o cabeçalho já dizem GESTÃO DE
+    PERDAS) e a **marca da meta vira tracejado branco** — no papel ela é verde,
+    e verde sobre a barra verde de quem bateu a meta desaparece.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do

@@ -114,6 +114,91 @@ body.ger-hist .ger-live-only{display:none!important}
 /* Período ativo destacado — sem isso não dava para saber qual atalho valia */
 .par-filtros .par-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .par-per-lbl{font-family:var(--font-d);font-size:10px;color:var(--acc);letter-spacing:1px;text-transform:none;margin-left:10px}
+/* ═══ TELA GESTÃO DE PERDAS ═══
+   O desenho é o MESMO `_pgQuadroHtml` que o PDF imprime — o que muda aqui é a
+   PELE: as mesmas classes .pgq-*/.pg-*, escopadas por #sec-perdas e pintadas
+   com os tokens do painel (o PDF é claro, a tela é escura). Escrever um segundo
+   desenho para a tela seria a duplicação que já fez a conta de paradas divergir
+   três vezes. Se mexer no quadro, mexa nas DUAS peles — a marcação é uma só. */
+#sec-perdas .pg-q{font-size:10px;padding:4px 12px}
+#sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+.pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt2)}
+#sec-perdas .pgq{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+#sec-perdas .pgq-top{background:var(--elevated);color:var(--txt);padding:11px 15px;border-bottom:1px solid var(--border)}
+/* O título do quadro some NA TELA: a aba e o cabeçalho da seção já dizem
+   GESTÃO DE PERDAS, e três vezes o mesmo nome na mesma tela é ruído. No PDF ele
+   continua — lá o quadro é uma página solta dentro de um relatório maior. */
+#sec-perdas .pgq-ttl{display:none}
+#sec-perdas .pgq-foco{font-family:var(--font-d);font-size:12px;color:var(--txt2);letter-spacing:1.5px;margin-top:0;text-transform:uppercase}
+#sec-perdas .pgq-foco b{color:var(--acc)}
+#sec-perdas .pgq-grid{display:grid;grid-template-columns:1fr 1fr}
+#sec-perdas .pgq-cel{padding:13px 15px;border-right:1px solid var(--border);border-top:1px solid var(--border)}
+#sec-perdas .pgq-grid .pgq-cel:nth-child(2n){border-right:0}
+#sec-perdas .pgq-cel-ttl{font-family:var(--font-d);font-size:9.5px;font-weight:700;color:var(--acc);letter-spacing:2px;margin-bottom:9px}
+#sec-perdas .pgq-cel-ttl i{font-style:normal;font-weight:400;color:var(--txt2);letter-spacing:.5px;text-transform:none}
+#sec-perdas .pgq-na{font-size:11px;color:var(--txt2);padding:6px 0}
+#sec-perdas .pgq-nota{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);margin-top:6px}
+/* Na tela a barra é MAIOR que no papel: aqui sobra altura, e é a evolução que
+   responde "estamos melhorando?" — a pergunta que trouxe a tela para o painel. */
+#sec-perdas .pgq-bars{display:flex;align-items:flex-end;gap:8px;height:132px}
+/* No papel a marca da meta é verde; aqui ela precisa aparecer TAMBÉM por dentro
+   da barra verde de quem bateu a meta — verde sobre verde some. */
+#sec-perdas .pgq-meta{position:absolute;left:0;right:0;border-top:1px dashed rgba(255,255,255,.65);z-index:2}
+#sec-perdas .pgq-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
+#sec-perdas .pgq-bar-v{font-family:var(--font-h);font-size:16px;font-weight:700;line-height:1.15}
+#sec-perdas .pgq-bar-t{position:relative;flex:1;display:flex;align-items:flex-end;background:var(--elevated);border-radius:3px;overflow:hidden}
+#sec-perdas .pgq-bar-t>div{width:100%;border-radius:3px}
+#sec-perdas .pgq-bar-l{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);margin-top:3px}
+#sec-perdas .pgq-eixo{font-family:var(--font-d);font-size:8px;color:var(--txt2);margin-top:3px}
+#sec-perdas .pgq-tend{display:flex;align-items:center;gap:9px;margin-top:9px;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.4}
+#sec-perdas .pgq-tend.g{background:rgba(76,175,80,.12);color:var(--ok)}
+#sec-perdas .pgq-tend.o{background:rgba(255,152,0,.12);color:var(--warn)}
+#sec-perdas .pgq-tend.r{background:rgba(244,67,54,.12);color:var(--red)}
+#sec-perdas .pgq-seta{font-size:22px;line-height:1;font-weight:700}
+#sec-perdas .pgq-smed-l{display:grid;grid-template-columns:72px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+#sec-perdas .pgq-smed-l.vazio{display:block;font-size:11px;color:var(--txt2)}
+#sec-perdas .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
+#sec-perdas .pgq-smed-n{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.2px;grid-row:span 2}
+#sec-perdas .pgq-smed-v{display:flex;align-items:baseline;gap:6px;font-family:var(--font-h);font-size:27px;font-weight:700;line-height:1}
+#sec-perdas .pgq-smed-v span{color:var(--txt2);font-size:17px}
+#sec-perdas .pgq-smed-v i{font-family:var(--font-d);font-size:9px;color:var(--txt2);font-style:normal;font-weight:400}
+#sec-perdas .pgq-smed-g{font-family:var(--font-h);font-size:18px;font-weight:700;color:var(--ok);text-align:right}
+#sec-perdas .pgq-smed-s{grid-column:2/4;font-family:var(--font-d);font-size:8.5px;color:var(--txt2)}
+#sec-perdas .pgq-smed-tot{margin-top:9px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.2px}
+#sec-perdas .pgq-smed-tot b{font-family:var(--font-h);font-size:19px;color:var(--ok);letter-spacing:0;margin:0 4px}
+#sec-perdas .pgq-smed-tot i{font-style:normal;letter-spacing:0}
+#sec-perdas .pgq-o-topo{margin-bottom:7px}
+#sec-perdas .pgq-o-topo b{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1}
+#sec-perdas .pgq-o-topo i{font-family:var(--font-d);font-size:8.5px;color:var(--txt2);font-style:normal;margin-left:7px}
+#sec-perdas .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11.5px;color:var(--txt)}
+#sec-perdas .pgq-l i{display:block;font-family:var(--font-d);font-size:8px;color:var(--txt2);font-style:normal;line-height:1.35}
+#sec-perdas .pgq-l b{font-family:var(--font-d);font-size:13px;color:var(--txt);white-space:nowrap}
+#sec-perdas .pgq-l.alerta b{color:var(--red);font-weight:700}
+#sec-perdas .pgq-l.ident span{color:#b39ddb;font-weight:600}
+#sec-perdas .pgq-plano-band{padding:13px 15px;border-top:1px solid var(--border)}
+#sec-perdas .pgq-plano{width:100%;border-collapse:collapse;margin-top:6px}
+#sec-perdas .pgq-plano th{background:var(--elevated);font-family:var(--font-d);font-size:8.5px;color:var(--txt2);letter-spacing:1.2px;text-transform:uppercase;padding:7px 9px;text-align:left;border-bottom:1px solid var(--border)}
+#sec-perdas .pgq-plano td{font-size:11.5px;padding:7px 9px;border-bottom:1px solid var(--border);color:var(--txt);vertical-align:top}
+#sec-perdas .pgq-plano .td-mono{font-family:var(--font-d);font-size:10.5px}
+#sec-perdas .pg-sinal{font-family:var(--font-d);font-size:8px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:9px;color:#fff}
+#sec-perdas .pg-sinal.g{background:var(--ok)}#sec-perdas .pg-sinal.o{background:var(--warn)}#sec-perdas .pg-sinal.r{background:var(--red)}
+#sec-perdas .pg-vazio,#sec-perdas .rp-note{font-family:var(--font-d);font-size:9px;color:var(--txt2);line-height:1.5;margin-top:7px}
+/* O diagnóstico não cabe no quadro, mas cabe na tela: é a frase que o gestor
+   leva para a reunião. No PDF ele já tem seção própria. */
+.pg-diag-wrap{margin-top:16px}
+.pg-diag-ttl{font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);margin-bottom:8px}
+#sec-perdas .pg-diag{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+#sec-perdas .pg-diag-l{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid var(--border)}
+#sec-perdas .pg-diag-l:last-child{border-bottom:0}
+#sec-perdas .pg-diag-r{background:var(--elevated);color:var(--txt2);font-family:var(--font-d);font-size:8.5px;letter-spacing:1.5px;padding:10px 12px}
+#sec-perdas .pg-diag-v{font-size:12px;color:var(--txt);padding:10px 13px;line-height:1.5}
+.pg-diag-nota{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:9px;line-height:1.5}
+@media(max-width:900px){
+  #sec-perdas .pgq-grid{grid-template-columns:1fr}
+  #sec-perdas .pgq-cel{border-right:0}
+  #sec-perdas .pg-diag-l{grid-template-columns:1fr}
+  #sec-perdas .pgq-plano td,#sec-perdas .pgq-plano th{padding:6px}
+}
 .par-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:900px){.par-2col{grid-template-columns:1fr}}
 .par-resumo{display:flex;align-items:center;gap:18px;padding:8px 4px}
@@ -1137,6 +1222,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
+  <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
   <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
 </nav>
 
@@ -1744,6 +1830,35 @@ if (_v7Instalado()) _v7EscondeBotao();
   </div>
 </section>
 
+<!-- ═══ GESTÃO DE PERDAS ═══
+     A tela do quadro: EVOLUÇÃO | SMED em cima, "OUTROS" | ANOMALIAS embaixo e o
+     PLANO DE AÇÃO na faixa final. O desenho é o MESMO `_pgQuadroHtml` que o PDF
+     imprime — o que muda é a pele (CSS escopado por #sec-perdas, no tema do
+     painel). Escrever um segundo desenho aqui seria a duplicação de sempre. -->
+<section id="sec-perdas" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">🎯 GESTÃO DE PERDAS</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
+      <input type="date" id="pg-de" onchange="_pgMarcaPreset(null);renderGestaoPerdas()" title="Escolha a data inicial" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <span style="color:var(--txt2)">–</span>
+      <input type="date" id="pg-ate" onchange="_pgMarcaPreset(null);renderGestaoPerdas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <button class="btn btn-ghost" onclick="renderGestaoPerdas(true)" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO COMPLETO</button>
+    </div>
+  </div>
+  <div class="par-filtros">
+    <button class="btn btn-ghost pg-q" data-per="7"   onclick="_pgFiltro(7,'7')">7 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="15"  onclick="_pgFiltro(15,'15')">15 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="30"  onclick="_pgFiltro(30,'30')">30 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="mes" onclick="_pgMesAtual()">MÊS</button>
+    <span id="pg-per-lbl" class="par-per-lbl"></span>
+    <div style="flex:1"></div>
+    <span id="pg-upd" class="par-upd"></span>
+  </div>
+  <div id="pg-quadro"><div class="pg-carregando">CARREGANDO…</div></div>
+</section>
+
 <!-- ═══ HISTÓRICO ═══ -->
 <section id="sec-historico" class="sec">
 
@@ -2197,7 +2312,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.15.0';
+const APP_VER   = '7.16.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -6089,6 +6204,7 @@ function setTab(tab){
   if(tab==='tv') renderTV();
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
   if(tab==='paradas'){ _initFiltroParadas(); renderAnaliseParadas(); }
+  if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
@@ -8098,6 +8214,164 @@ ${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito
 
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// TELA GESTÃO DE PERDAS — o quadro dentro do painel
+// ════════════════════════════════════════════════════════════════════════════
+// O quadro nasceu no PDF; o PPCP pediu ele como TELA. O desenho é o MESMO
+// `_pgQuadroHtml` que o relatório imprime — aqui só muda a pele (CSS escopado
+// por #sec-perdas, no tema escuro do painel). Uma segunda cópia do desenho é
+// exatamente o que fez a conta de paradas divergir três vezes.
+//
+// A busca e as contas também são as mesmas: `_pgBuscarDados` + `_pgContexto`,
+// os dois usados pelo relatório. Tela e PDF do mesmo período mostram, por
+// construção, os mesmos números.
+var PG_TELA_CACHE={}, PG_TELA_RODANDO=false, PG_TELA_ULT='';
+const PG_TELA_TTL=5*60*1000;   // getParadasPeriodo lê a aba PARADAS inteira
+
+function _pgMarcaPreset(qual){
+  document.querySelectorAll('#sec-perdas .pg-q').forEach(b=>
+    b.classList.toggle('on', !!qual && b.dataset.per===qual));
+  const el=document.getElementById('pg-per-lbl');
+  if(el){
+    const de=dGet('pg-de'), ate=dGet('pg-ate');
+    const n=s=>{const m=String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
+    const dDe=n(de), dAte=n(ate);
+    const nd=(dDe&&dAte)?Math.round((dAte-dDe)/86400000)+1:0;
+    el.textContent=(de&&ate)?`· ${String(de).substring(0,5)} – ${String(ate).substring(0,5)} (${nd} dias)`:'';
+  }
+}
+function _pgFiltro(dias, preset){
+  const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
+  const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  dSet('pg-de',f(de)); dSet('pg-ate',f(ate));
+  _pgMarcaPreset(preset||null);
+  renderGestaoPerdas();
+}
+function _pgMesAtual(){
+  const hj=new Date();
+  dSet('pg-de','01/'+p2(hj.getMonth()+1)+'/'+hj.getFullYear());
+  dSet('pg-ate',p2(hj.getDate())+'/'+p2(hj.getMonth()+1)+'/'+hj.getFullYear());
+  _pgMarcaPreset('mes');
+  renderGestaoPerdas();
+}
+// Padrão 30 DIAS: o quadro fala em SEMANAS (evolução da disponibilidade,
+// tendência, SMED semana a semana) — em 7 dias há uma semana só e a metade da
+// tela não teria o que mostrar.
+function _pgInitFiltro(){
+  const e=document.getElementById('pg-de');
+  if(e && !e.value) _pgFiltro(30,'30');
+}
+
+async function renderGestaoPerdas(forcar){
+  const alvo=document.getElementById('pg-quadro');
+  if(!alvo) return;
+  // Sem o paradas-calc.js não há conta nenhuma: mesma guarda da aba PARADAS,
+  // com recarga automática do módulo em vez de tela quebrada.
+  if(!_rpOk()){ alvo.innerHTML='<div class="pg-carregando">Recarregando o módulo de cálculo…</div>'; _rpRecarregar(); return; }
+  if(!CFG.sheetsUrl){ alvo.innerHTML='<div class="pg-carregando">Configure a URL do Apps Script para ver a gestão de perdas.</div>'; return; }
+  const de=dGet('pg-de'), ate=dGet('pg-ate');
+  if(!de||!ate){ _pgInitFiltro(); return; }
+  if(PG_TELA_RODANDO) return;                       // o ciclo não se empilha
+  const chave=de+'|'+ate;
+  if(forcar) delete PG_TELA_CACHE[chave];
+  const cache=PG_TELA_CACHE[chave];
+  if(cache && (Date.now()-cache.t)<PG_TELA_TTL && !forcar){ _pgPintar(cache.ctx, cache.t); return; }
+
+  // Período novo limpa a tela; refresh do MESMO período mantém o que está no ar
+  // e só marca "atualizando" — a busca é cara e piscar CARREGANDO a cada ciclo
+  // tira a tela da frente do gestor no meio da leitura.
+  const upd=document.getElementById('pg-upd');
+  if(chave!==PG_TELA_ULT || !alvo.querySelector('.pgq')) alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>';
+  else if(upd) upd.textContent='atualizando…';
+  PG_TELA_ULT=chave; PG_TELA_RODANDO=true;
+  try{
+    const dados=await _pgBuscarDados(de, ate);
+    if(!dados){
+      if(alvo.querySelector('.pgq')){ if(upd) upd.textContent='⚠ não atualizou'; }
+      else alvo.innerHTML='<div class="pg-carregando">O servidor demorou a responder (cold start). Toque em ATUALIZAR para tentar de novo.</div>';
+      return;
+    }
+    const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
+    const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
+    const tiR=_taktIdeal(st.horasProd);
+    const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
+    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate});
+    PG_TELA_CACHE[chave]={ctx, t:Date.now()};
+    _pgPintar(ctx, Date.now());
+  }catch(err){
+    if(!alvo.querySelector('.pgq')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar a gestão de perdas: ${_rpEsc(err.message)}</div>`;
+    else if(upd) upd.textContent='⚠ não atualizou';
+  }finally{ PG_TELA_RODANDO=false; }
+}
+
+// Desenha o quadro (o MESMO do PDF) e, embaixo dele, o diagnóstico PPCP — na
+// tela sobra espaço para a frase que o quadro não cabe.
+function _pgPintar(ctx, t){
+  const alvo=document.getElementById('pg-quadro'); if(!alvo) return;
+  const d=ctx.diag||{};
+  const linha=(rot,val,cor)=>`<div class="pg-diag-l"><div class="pg-diag-r">${rot}</div><div class="pg-diag-v"${cor?` style="color:${cor}"`:''}>${_rpEsc(val)}</div></div>`;
+  alvo.innerHTML=_pgQuadroHtml(ctx)
+    + `<div class="pg-diag-wrap"><div class="pg-diag-ttl">DIAGNÓSTICO PPCP</div><div class="pg-diag">
+        ${linha('PROBLEMA PRINCIPAL', d.problema||'—', 'var(--red)')}
+        ${linha('IMPACTO', d.impacto||'—')}
+        ${linha('CAUSA PRIORITÁRIA', d.causa||'—')}
+        ${linha('AÇÃO RECOMENDADA', d.acao||'—', 'var(--acc)')}
+        ${linha('GANHO POTENCIAL', d.ganho||'—', 'var(--ok)')}
+        ${linha('PRÓXIMO FOCO', d.foco||'—')}
+      </div><div class="pg-diag-nota">O relatório completo (botão acima) traz o Pareto diário, o detalhamento das paradas e todas as seções que o PDF já imprimia — esta tela é a leitura de dez segundos.</div></div>`;
+  const upd=document.getElementById('pg-upd');
+  if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
+}
+
+// ── Busca dos dados da camada GESTÃO DAS PERDAS ─────────────────────────────
+// Sai de dentro do gerarRelatorioParadas porque a TELA (aba GESTÃO DE PERDAS)
+// precisa exatamente da mesma leitura. Duas buscas separadas divergiriam na
+// primeira mexida — foi assim que a conta de paradas divergiu três vezes.
+// Devolve null quando o servidor não respondeu (cold start), para quem chamou
+// decidir o que dizer ao usuário.
+async function _pgBuscarDados(de, ate){
+  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+  // Sequencial + retry, como na aba PARADAS: o Apps Script atende uma execução
+  // por vez — paralelo só enfileira, e no cold start tudo estoura junto.
+  let paradas=null;
+  for(let i=1;i<=3 && paradas===null;i++){
+    try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
+    catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
+  }
+  if(paradas===null) return null;
+  const _hist=await buildDiasHistAsync()
+    .then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; })
+    .catch(()=>({m:{},r:{}}));
+  await _carregarClassesPar();
+  return {paradas, metaByDay:_hist.m, realByDay:_hist.r};
+}
+
+// ── Cálculo da camada, uma implementação só ─────────────────────────────────
+// Recebe o que a busca trouxe e devolve o contexto que o QUADRO e as seções do
+// relatório usam. Nenhuma conta nova mora aqui: tudo sai das funções _pg* e da
+// valoração do RP_PARADAS.
+function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
+  const trab=RP_PARADAS.diasTrabalhadosLista?RP_PARADAS.diasTrabalhadosLista(realByDay,de,ate):[];
+  const dias=_pgDias(st.porDia, trab, st.horasProd);
+  const semanas=_pgSemanas(dias, st.horasProd, PG_META_DISP);
+  const top=_pgTopCausas(st.tipos, 5);
+  const outros=_pgOutros(paradas, CFG, st.totMin);
+  const rec=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0, {});
+  return {
+    st, dias, semanas, top, outros, rec, trR, tiR,
+    smedProd:_pgSmed(paradas, PG_RE_TROCA_PROD, CFG, PG_META_TROCA_PROD),
+    smedPlas:_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS),
+    fluxo:_pgImpactoFluxo(tiR, trR, st),
+    anom:_pgAnomalias(paradas, CFG, {classeMap:PAR_CLASSE_MAP}),
+    plano:_pgPlano(top, outros),
+    tend:_pgTendencia(semanas),
+    foco:_pgFoco(top, outros),
+    minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0),
+    diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), semanas}),
+    temMotivo:(paradas||[]).some(p=>String(p.obs||'').trim()!=='')
+  };
+}
+
 async function gerarRelatorioParadas(){
   if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
   const win=window.open('','_blank','width=1040,height=800');
@@ -8112,23 +8386,12 @@ async function gerarRelatorioParadas(){
   if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 
-  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  // Sequencial + retry, como na aba PARADAS: o Apps Script atende uma execução
-  // por vez — paralelo só enfileira, e no cold start tudo estoura junto.
-  let paradas=null, _hist={m:{},r:{}};
-  try{
-    for(let i=1;i<=3 && paradas===null;i++){
-      try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
-      catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
-    }
-    if(paradas!==null){
-      _hist=await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
-      await _carregarClassesPar();
-    }
-  }catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
-  if(paradas===null){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
+  let dados=null;
+  try{ dados=await _pgBuscarDados(de, ate); }
+  catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
-  const metaByDay=_hist.m, realByDay=_hist.r;
+  const paradas=dados.paradas, metaByDay=dados.metaByDay, realByDay=dados.realByDay;
   const st=_paradasStats(paradas, metaByDay, {realByDay, de, ate});
   // TAKT ideal × real (mesmos cálculos da aba PARADAS)
   const _rpd=de.split('/').map(Number), _rpa=ate.split('/').map(Number);
@@ -8202,23 +8465,7 @@ async function gerarRelatorioParadas(){
   // ele é o oficial, e a camada é acréscimo.
   let pgHtml='';
   try{
-    const _pgTrab=RP_PARADAS.diasTrabalhadosLista?RP_PARADAS.diasTrabalhadosLista(realByDay,de,ate):[];
-    const _pgD=_pgDias(st.porDia, _pgTrab, st.horasProd);
-    const _pgS=_pgSemanas(_pgD, st.horasProd, PG_META_DISP);
-    const _pgT=_pgTopCausas(st.tipos, 5);
-    const _pgO=_pgOutros(paradas, CFG, st.totMin);
-    const _pgSP=_pgSmed(paradas, PG_RE_TROCA_PROD, CFG, PG_META_TROCA_PROD);
-    const _pgSL=_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS);
-    const _pgR=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0, {});
-    const _pgF=_pgImpactoFluxo(tiR, trR, st);
-    const _pgAn=_pgAnomalias(paradas, CFG, {classeMap:PAR_CLASSE_MAP});
-    const _pgP=_pgPlano(_pgT, _pgO);
-    const _pgTd=_pgTendencia(_pgS);
-    const _pgDg=_pgDiagnostico({st, top:_pgT, outros:_pgO, rec:_pgR, fluxo:_pgF, semanas:_pgS});
-    pgHtml=_pgSecaoHtml({st, dias:_pgD, semanas:_pgS, top:_pgT, outros:_pgO,
-      smedProd:_pgSP, smedPlas:_pgSL, rec:_pgR, fluxo:_pgF, anom:_pgAn, plano:_pgP,
-      diag:_pgDg, minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0), trR, tiR,
-      temMotivo:temMotivoSwot, tend:_pgTd, foco:_pgFoco(_pgT, _pgO)});
+    pgHtml=_pgSecaoHtml(_pgContexto({paradas, st, tiR, trR, realByDay, de, ate}));
   }catch(err){
     pgHtml=`<div class="rp-sec-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div><div class="pg-vazio">Não foi possível montar a camada de gestão neste período (${_rpEsc(err.message)}). O relatório de controle acima está completo e não foi afetado.</div>`;
   }
