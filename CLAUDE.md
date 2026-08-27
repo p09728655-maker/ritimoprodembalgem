@@ -948,6 +948,42 @@ via Google Apps Script (JSONP).
 - **A distribuição das trocas é pintada pela META do tipo**, não por rótulo fixo:
   5 min está dentro na troca de produto (meta 5) e fora na de plástico (meta 4).
   Por isso a faixa carrega o próprio limite (`ate`).
+- **O QUADRO é a capa da camada** (`_pgQuadroHtml`, pedido do PPCP em
+  27/08/2026 com o desenho na mão): grade 2×2 — **EVOLUÇÃO | SMED** em cima,
+  **"OUTROS" | ANOMALIAS** embaixo — mais a faixa do **PLANO DE AÇÃO** e a linha
+  **FOCO ATUAL**, que sai do dado (`_pgFoco`, no máximo dois focos: uma linha
+  com cinco não é foco nenhum). É o que se lê em dez segundos numa reunião; o
+  detalhe continua nas seções numeradas abaixo.
+  - **O quadro é DESENHO, não conta**: recebe pronto o que as seções já
+    calcularam. Um número calculado ali seria o mesmo indicador com dois
+    valores no mesmo relatório — o teste falha se `perdaDeMin`/`perdaAoRitmo`/
+    `durProdutiva` aparecerem dentro dele.
+  - **O PLANO DE AÇÃO vive só no quadro.** Ele tinha seção própria também;
+    imprimir a mesma tabela duas vezes no mesmo PDF não ajuda ninguém.
+  - **A marca da META vai DENTRO de cada barra**, não numa linha solta por
+    cima: o tracejado tem de ficar na mesma escala do preenchimento, e a linha
+    solta media a caixa inteira (valor + barra + rótulo) e caía fora do lugar.
+  - **A escala das barras começa em 70%**, e o eixo escrito embaixo diz isso:
+    de 0 a 100 todas as semanas teriam quase a mesma altura e o quadro não
+    mostraria movimento nenhum.
+  - ⚠ **Crase dentro do CSS do relatório fecha o template literal** e derruba o
+    parse do arquivo inteiro (um comentário com `page-break-inside` entre
+    crases já fez isso). O `node lint-js.js` pega.
+- **`_pgTendencia` é a MESMA para a seta ↗/↘ do quadro e para a linha "ESTAMOS
+  MELHORANDO?" do diagnóstico** — duas cópias e uma apontaria para um lado e a
+  outra diria o contrário. Variação abaixo de meio ponto percentual é
+  **ESTÁVEL** (→), que é ruído de arredondamento, não melhora.
+- **`_pgAnomalias` são quatro checagens, e nenhuma altera indicador**:
+  sobreposição · sem motivo · parada acima de `PG_ANOM_LONGA` (30 min) · tipo
+  fora da aba `TIPOS_PARADA`. Parada aberta (sem FIM) entra como quinta linha
+  quando existe.
+  - **"Sem motivo" só conta onde ele FAZ FALTA**: parada de tipo genérico (sem
+    o motivo não há o que atacar) ou longa. Motivo é opcional no app — cobrar de
+    toda parada curta e nomeada viraria uma parede de alertas e ninguém olharia
+    mais. O total sem motivo aparece ao lado, como contexto.
+  - **Sem a aba `TIPOS_PARADA` a checagem de classificação NÃO roda**: com o
+    mapa vazio, todo tipo cairia como "sem classificação". Melhor não acusar do
+    que acusar tudo — o quadro mostra "—" e diz por quê.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
