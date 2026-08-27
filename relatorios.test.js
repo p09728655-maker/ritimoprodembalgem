@@ -971,6 +971,7 @@ eval(pega('function _pgFmtMin('));
 eval(pega('function _pgSmed('));
 eval(pega('function _pgMinPor1000('));
 eval(pega('function _pgJanelaDe('));
+eval(pega('function _pgFaixaDias('));
 eval(pega('function _pgPorJanela('));
 eval(pega('function _pgRecuperacao('));
 eval(pega('function _pgImpactoFluxo('));
@@ -1192,6 +1193,21 @@ ok('cair é melhora',
 ok('grão desconhecido cai no mês', _pgJanelaDe('10/08/2026','xis').lbl, 'AGO/26');
 ok('data quebrada não vira janela', _pgJanelaDe('','mes'), null);
 
+// ── "MÊS QUAL DIA ATÉ QUE DIA?" (usuário, 27/08/2026) ─────────────────────────
+// O rótulo diz AGO/26, mas a linha é só a parte do mês que caiu no período E
+// teve produção. Sem a faixa escrita, "JUL/26 · 3 dias" não dizia QUAIS 3.
+ok('a linha do mês diz de que dia a que dia ela é',
+   [pgJM[0].faixa, pgJM[0].de, pgJM[0].ate], ['10/08 → 17/08', '10/08/2026', '17/08/2026']);
+ok('a semana também', pgJSem[0].faixa, '10/08 → 16/08');
+ok('dia sem produção não estica a faixa', pgJM.map(m=>m.faixa), ['10/08 → 17/08', '20/09']);
+ok('janela de um dia só não vira intervalo', _pgFaixaDias('20/09/2026','20/09/2026'), '20/09');
+ok('sem data não inventa faixa', _pgFaixaDias(null, null), '');
+// A ordem da lista de dias não é garantida: o extremo sai da data, não da
+// posição em que o dia apareceu.
+ok('a faixa sai da data, não da ordem da lista',
+   _pgPorJanela([{data:'28/08/2026',min:10,minNP:10},{data:'03/08/2026',min:10,minNP:10}],
+                {'28/08/2026':500,'03/08/2026':500}, 'mes').lista[0].faixa, '03/08 → 28/08');
+
 console.log('\n── potencial de recuperação (simulação) ──');
 const pgRec = _pgRecuperacao(pgTipos, 217, {});
 ok('só simula os cenários definidos e existentes', pgRec.itens.map(i=>i.tipo),
@@ -1347,8 +1363,16 @@ ok('o cenário e o plano recebem a meta que o SMED pôs em vigor',
 // desenho só, e a conta continua fora dele.
 ok('o KPI por 1.000 cx é desenhado num lugar só',
    (JS.match(/function _pgMin1000Html\(/g) || []).length, 1);
-ok('e sai nos dois — tela e PDF',
-   (JS.match(/(?<!function )_pgMin1000Html\(/g) || []).length, 2);
+ok('e sai nos três — tela, relatório de perdas e impressão dedicada',
+   (JS.match(/(?<!function )_pgMin1000Html\(/g) || []).length, 3);
+// A TABELA de uma janela também é uma só: o bloco imprime o grão em cartaz e a
+// impressão dedicada imprime as outras duas — a mesma tabela nos dois.
+ok('a tabela da janela é desenhada num lugar só',
+   (JS.match(/function _pgJanelaTabelaHtml\(/g) || []).length, 1);
+ok('e o bloco e a impressão dedicada usam ela',
+   (JS.match(/(?<!function )_pgJanelaTabelaHtml\(/g) || []).length, 2);
+ok('a tabela não refaz conta nenhuma',
+   /_pgMinPor1000\(|_pgPorJanela\(|durProdutiva/.test(pega('function _pgJanelaTabelaHtml(')), false);
 ok('o desenho não refaz a conta', /_pgMinPor1000\(/.test(pega('function _pgMin1000Html(')), false);
 ok('os dois por 1.000 cx saem do contexto',
    /minPor1000NP:_pgMinPor1000\(st\.totMinNP/.test(pega('function _pgContexto(')), true);
@@ -1362,6 +1386,34 @@ ok('o desenho não recorta janela nenhuma', /_pgPorJanela\(/.test(pega('function
 // cara do painel por causa de um clique.
 ok('trocar o grão não chama o backend',
    /_pgBuscarDados|getParadasPeriodo/.test(pega('function _pgTrocaGrao(')), false);
+
+console.log('\n── impressão dedicada do minutos / 1.000 cx ──');
+// "Colocar uma impressão dedicada a minutos de parada /1000" (usuário,
+// 27/08/2026): o indicador só ia ao papel dentro de um relatório maior.
+ok('existe a impressão dedicada', /async function gerarRelatorioMin1000\(/.test(JS), true);
+const _relMil = pega('async function gerarRelatorioMin1000(');
+ok('ela tem título próprio', /MINUTOS DE PARADA \/ 1\.000 CAIXAS/.test(_relMil), true);
+// Busca, contas e desenho continuam UM só — a moldura é que muda.
+ok('busca pela função compartilhada', /_pgBuscarDados\(de, ate\)/.test(_relMil), true);
+ok('calcula pelo contexto compartilhado', /_pgContexto\(\{paradas:dados\.paradas/.test(_relMil), true);
+ok('desenha pelo bloco compartilhado', /_pgMin1000Html\(ctx\)/.test(_relMil), true);
+ok('e as outras janelas pela tabela compartilhada',
+   /_pgJanelaTabelaHtml\(ctx, g\)/.test(_relMil), true);
+ok('nenhuma conta de perda escrita dentro dela',
+   /perdaDeMin|perdaAoRitmo|durProdutiva|_pgMinPor1000\(/.test(_relMil), false);
+// As três janelas já vêm calculadas no contexto: uma segunda busca seria a
+// leitura mais cara do painel repetida por causa de um botão.
+ok('não busca janela nenhuma de novo', /_pgPorJanela\(/.test(_relMil), false);
+// A janela em cartaz abre o documento; as outras duas vêm sem repetir a dela.
+ok('imprime as três janelas, sem repetir a que abriu',
+   /\['semana','quinzena','mes'\]\.filter\(g=>g!==ctx\.grao\)/.test(_relMil), true);
+// Só a GESTÃO DE PERDAS é paisagem (o quadro 2×2 é a capa dela). Este é uma
+// sequência de tabelas altas e estreitas, como o relatório de PARADAS.
+ok('imprime em pé', /_rpDocParadas\(`Minutos de parada[^`]*`\)/.test(_relMil), true);
+// O botão fica no próprio bloco e manda o período DA TELA — o relatório do
+// período errado já aconteceu (a tela dizia 27h16m e o papel 42 min).
+ok('o botão manda o período da tela de perdas',
+   /gerarRelatorioMin1000\(dGet\('pg-de'\),dGet\('pg-ate'\)\)/.test(JS), true);
 
 console.log('\n── a TELA e o PDF são o mesmo quadro ──');
 // O quadro nasceu no PDF e o PPCP pediu ele como TELA. Desenho, busca e conta
@@ -1425,8 +1477,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os dois relatórios usam ele',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 2);
+ok('e os três relatórios usam ele',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 3);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
