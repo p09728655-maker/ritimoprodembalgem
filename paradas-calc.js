@@ -94,16 +94,37 @@
   // daqui sem regra nenhuma, porque não têm produção lançada.
   // Devolve 0 quando não há histórico; aí quem chama cai na base antiga.
   function diasTrabalhados(realByDay, de, ate) {
-    if (!realByDay) return 0;
-    var nDe = de ? dataNum(de) : 0, nAte = ate ? dataNum(ate) : 0, c = 0;
+    return diasTrabalhadosLista(realByDay, de, ate).length;
+  }
+
+  // A LISTA por trás do diasTrabalhados. A camada GESTÃO DAS PERDAS do
+  // relatório precisa saber QUAIS dias entraram, não só quantos: é essa lista
+  // que dá a base de cada dia/semana na evolução da disponibilidade. Contagem e
+  // lista saem do MESMO filtro — separadas, divergiriam na primeira mexida.
+  function diasTrabalhadosLista(realByDay, de, ate) {
+    if (!realByDay) return [];
+    var nDe = de ? dataNum(de) : 0, nAte = ate ? dataNum(ate) : 0, out = [];
     Object.keys(realByDay).forEach(function (d) {
       var x = dataNum(d);
       if (!x) return;
       if (nDe && x < nDe) return;
       if (nAte && x > nAte) return;
-      if ((parseFloat(realByDay[d]) || 0) > 0) c++;
+      if ((parseFloat(realByDay[d]) || 0) > 0) out.push(d);
     });
-    return c;
+    return out.sort(function (a, b) { return dataNum(a) - dataNum(b); });
+  }
+
+  // A FÓRMULA DA PERDA, num lugar só: minutos parados × (meta daquele dia ÷
+  // horas produtivas do turno). Saiu de dentro do stats() para a camada nova do
+  // relatório poder valorar um recorte (um dia, uma semana, um cenário de
+  // recuperação) sem escrever a conta de novo — foi a cópia da conta que fez os
+  // dois painéis divergirem três vezes. O stats() chama esta mesma função.
+  function perdaDeMin(min, metaDia, horasProd) {
+    var m = parseFloat(min) || 0;
+    var meta = parseFloat(metaDia) || 0;
+    var h = parseFloat(horasProd) || 0;
+    if (m <= 0 || meta <= 0 || h <= 0) return 0;
+    return Math.round(m / 60 * (meta / h));
   }
 
   // Perda estimada valorando um tempo parado (min) num ritmo qualquer (cx/h).
@@ -163,16 +184,24 @@
       var planej = ehPlanejada(p.tipo, classeMap);
       var metaDoDia = parseFloat(metaByDay[p.data]) || 0;
       if (!metaDoDia) { semMeta[p.data] = 1; metaDoDia = metaPadrao; }
-      var perd = planej ? 0 : Math.round(d / 60 * (metaDoDia / horasProd));
+      var perd = planej ? 0 : perdaDeMin(d, metaDoDia, horasProd);
       if (!planej) { totMinNP += d; pecas += perd; }
 
       var k = p.tipo || '—';
       if (!porTipo[k]) porTipo[k] = { qtd: 0, min: 0, perd: 0, planej: planej };
       porTipo[k].qtd++; porTipo[k].min += d; porTipo[k].perd += perd;
 
-      if (!porDia[p.data]) porDia[p.data] = { min: 0, minNP: 0, perd: 0 };
-      porDia[p.data].min += d; porDia[p.data].perd += perd;
-      if (!planej) porDia[p.data].minNP += d;
+      // porDia guarda também a QUANTIDADE e a quebra por tipo do dia: é delas
+      // que sai o Pareto diário (principal causa de cada dia) da camada GESTÃO
+      // DAS PERDAS. Campos ADICIONAIS — min/minNP/perd seguem iguais, e quem já
+      // lia só esses três não muda de comportamento.
+      if (!porDia[p.data]) porDia[p.data] = { min: 0, minNP: 0, perd: 0, qtd: 0, qtdNP: 0, tipos: {} };
+      if (!porDia[p.data].tipos) { porDia[p.data].qtd = 0; porDia[p.data].qtdNP = 0; porDia[p.data].tipos = {}; }
+      porDia[p.data].min += d; porDia[p.data].perd += perd; porDia[p.data].qtd++;
+      if (!planej) { porDia[p.data].minNP += d; porDia[p.data].qtdNP++; }
+      var td = porDia[p.data].tipos;
+      if (!td[k]) td[k] = { qtd: 0, min: 0, perd: 0, planej: planej };
+      td[k].qtd++; td[k].min += d; td[k].perd += perd;
     });
 
     var nDiasParada = Object.keys(diasSet).length || 1;
@@ -243,7 +272,7 @@
       + (d.paradasIgnoradas ? ' · ' + d.paradasIgnoradas + ' sem fim' : '');
   }
 
-  var VERSAO = '1.1.0';
+  var VERSAO = '1.2.0';
 
   glob.RP_PARADAS = {
     VERSAO: VERSAO,
@@ -255,6 +284,8 @@
     fmtMin: fmtMin,
     ehPlanejada: ehPlanejada,
     diasTrabalhados: diasTrabalhados,
+    diasTrabalhadosLista: diasTrabalhadosLista,
+    perdaDeMin: perdaDeMin,
     perdaAoRitmo: perdaAoRitmo,
     stats: stats,
     diagTexto: diagTexto

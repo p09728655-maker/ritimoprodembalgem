@@ -538,7 +538,12 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb-hero-band{width:100%;display:grid;grid-template-columns:1.5fr 1fr;column-gap:4vw;align-items:center}
 .tvb-hero{display:flex;flex-direction:column;align-items:center;gap:6px}
 .tvb-hero-lbl{font-family:var(--font-d);font-size:clamp(18px,1.9vw,31px);color:var(--txt2);letter-spacing:4px;text-transform:uppercase}
-.tvb-hero-num{font-family:var(--font-h);font-size:clamp(165px,19vw,375px);font-weight:700;line-height:.9;color:var(--txt)}
+/* O número gigante é medido pela LARGURA (19vw). Em tela mais baixa que 16:9
+   — a janela do gerencial no preview da TV, um monitor 21:9 — ele sozinho
+   comia a altura toda e o que vem embaixo (substats/rodapé) saía da tela. O
+   `min(19vw,34vh)` só entra nesse caso: em 16:9 (a TV do chão de fábrica) e
+   em qualquer tela mais alta, 19vw continua menor e NADA muda. */
+.tvb-hero-num{font-family:var(--font-h);font-size:clamp(165px,min(19vw,34vh),375px);font-weight:700;line-height:.9;color:var(--txt)}
 .tvb-hero-unit{font-family:var(--font-d);font-size:clamp(20px,2.2vw,35px);color:var(--txt2);letter-spacing:3px}
 .tvb-kpis{width:100%;display:flex;flex-wrap:wrap;justify-content:space-evenly;row-gap:1.5vh;gap:2vw}
 .tvb-side-rail{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:100%}
@@ -595,14 +600,29 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb2-substat-val{font-family:var(--font-h);font-weight:700;color:var(--txt);font-size:clamp(30px,3.2vw,60px);line-height:1}
 .tvb2-substat-unit{font-family:var(--font-d);font-size:clamp(14px,1.2vw,22px);color:var(--txt2);letter-spacing:1px}
 /* RITMO ATUAL é o pulso da linha (pedido do PPCP, 24/08/2026: "muito pequeno
-   na TV"): o número sobe para ~1,8× dos substats vizinhos — a 15 m lê-se o
-   ritmo primeiro; PESO/PONTOS continuam menores, que são conferência. O
-   flex-wrap centrado da linha absorve o crescimento: se não couber ao lado,
-   o ritmo desce inteiro para a linha de baixo em vez de espremer os três. */
-#tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(44px,5.6vw,104px)}
-#tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(17px,1.7vw,32px)}
-#tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(14px,1.45vw,26px)}
-#tvb-kpi-ritmo svg{width:clamp(34px,3.6vw,68px)}
+   na TV"; de novo em 27/08/2026, com PESO/PONTOS desligados): o número é o
+   maior da linha — a 15 m lê-se o ritmo primeiro; PESO/PONTOS continuam
+   menores, que são conferência. O flex-wrap centrado da linha absorve o
+   crescimento: se não couber ao lado, o ritmo desce inteiro para a linha de
+   baixo em vez de espremer os três.
+   ESCALA ADAPTATIVA pelo nº de substats ligados (data-n setado por
+   _sincSlideB), mesma ideia do rail da direita: com PESO e PONTOS desligados
+   o ritmo fica sozinho com a largura toda e não há motivo pra continuar no
+   tamanho pensado pros três. O teto é `min(vw,vh)` de propósito — em tela
+   baixa (janela do gerencial, TV 16:10) o número cresceria pela largura e
+   empurraria o rail/rodapé pra fora; a altura é quem manda no limite. */
+#tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(48px,min(6.6vw,11vh),124px)}
+#tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(18px,min(2vw,3.3vh),36px)}
+#tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(15px,min(1.6vw,2.7vh),29px)}
+#tvb-kpi-ritmo svg{width:clamp(38px,min(4.2vw,7vh),78px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(58px,min(8.2vw,13.5vh),156px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(20px,min(2.4vw,4vh),44px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(16px,min(1.9vw,3.1vh),34px)}
+.tvb2-substats[data-n="2"] #tvb-kpi-ritmo svg{width:clamp(44px,min(5vw,8.2vh),92px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-val{font-size:clamp(72px,min(10.4vw,17vh),200px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-unit{font-size:clamp(24px,min(3vw,5vh),56px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo .tvb2-substat-lbl{font-size:clamp(18px,min(2.3vw,3.8vh),42px)}
+.tvb2-substats[data-n="1"] #tvb-kpi-ritmo svg{width:clamp(52px,min(6.2vw,10vh),116px)}
 
 .tvb2-rail{display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--border)}
 .tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.6vh 0 1.6vh 2.4vw;border-top:1px solid var(--border)}
@@ -2177,7 +2197,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.13.2';
+const APP_VER   = '7.14.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -7242,6 +7262,623 @@ function _relSwotParadas({st, tiR, trR, perdaReal, temMotivo}){
   return {forcas:F, fraquezas:Q, oportunidades:O, ameacas:A};
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// GESTÃO DAS PERDAS — VISÃO PPCP  (camada NOVA do relatório de paradas)
+// ════════════════════════════════════════════════════════════════════════════
+// Pedido do PPCP em 27/08/2026. É uma SEGUNDA CAMADA em cima do relatório que
+// já existe: nada acima dela muda de fórmula, de nome ou de lugar. O relatório
+// de controle responde "quanto paramos"; esta camada responde "qual é o
+// problema, qual é a prioridade, quanto dá para recuperar e qual é a ação".
+//
+// Três regras que valem para tudo aqui:
+//   1. NÃO recalcular indicador antigo por outro método. Onde a leitura nova
+//      precisa de um recorte (um dia, uma semana, um cenário), a valoração sai
+//      de RP_PARADAS.perdaDeMin / perdaAoRitmo — as MESMAS contas do topo.
+//   2. NÃO inventar causa. Parada sem tipo nomeado é "CAUSA NÃO IDENTIFICADA",
+//      nunca uma causa presumida; responsável e prazo que não estão no dado
+//      saem como "A definir".
+//   3. Separar DADO de ANÁLISE de RECOMENDAÇÃO — a seção diz qual é qual.
+//
+// As funções são PURAS (recebem tudo, não leem DADOS/CFG nem tocam no DOM) para
+// o relatorios.test.js rodar as regras sem abrir o popup.
+
+const PG_META_DISP       = 90;    // disponibilidade alvo (%) — a mesma do relatório
+const PG_META_OUTROS     = 5;     // teto do tempo parado sob causa não identificada (%)
+const PG_META_TROCA_PROD = 5;     // minutos por troca de produto (meta inicial SMED)
+const PG_META_TROCA_PLAS = 4;     // minutos por troca de plástico (meta inicial SMED)
+const PG_CORTE_OUTROS    = 0.5;   // cenário de recuperação: metade do "Outros"
+
+// Tipo genérico = o balaio onde a causa real fica escondida. Não é "anormal"
+// nem "redutível": é DESCONHECIDO, e o relatório diz isso em vez de chutar.
+const PG_RE_GENERICO   = /^\s*(outr|divers|n[aã]o identific|indefinid)/i;
+const PG_RE_TROCA_PROD = /troca\W*(de\W*)?produ/i;
+const PG_RE_TROCA_PLAS = /troca\W*(de\W*)?pl[áa]stic/i;
+
+// ── Classificação GERENCIAL (2ª camada) ─────────────────────────────────────
+// A classificação original (PROGRAMADA / NÃO PROGRAMADA) continua valendo e
+// não é tocada — ela diz se a parada entra na conta de perda. Esta responde
+// outra pergunta: o que fazer com ela.
+//   PLANEJADA   parada prevista (refeição/intervalo) — nada a fazer
+//   REDUTÍVEL   necessária, mas o TEMPO cai (troca/setup) — critério é o mesmo
+//               ehSetupParada() que o ESTUDO DE GANHO já usa: um lugar só
+//   ANORMAL     não deveria acontecer (falta de material, manutenção, energia…)
+//   IDENTIFICAR tipo genérico: sem saber a causa, não dá para classificar
+function _pgClasseGer(tipo, planej){
+  if(planej) return 'PLANEJADA';
+  if(PG_RE_GENERICO.test(String(tipo||''))) return 'IDENTIFICAR';
+  if(ehSetupParada(tipo)) return 'REDUTIVEL';
+  return 'ANORMAL';
+}
+const PG_CLASSE_LBL={PLANEJADA:'PLANEJADA',REDUTIVEL:'NECESSÁRIA / REDUTÍVEL',ANORMAL:'ANORMAL',IDENTIFICAR:'A IDENTIFICAR'};
+const PG_CLASSE_COR={PLANEJADA:'#777',REDUTIVEL:'#e65100',ANORMAL:'#c62828',IDENTIFICAR:'#6b46c1'};
+
+// ── Pareto DIÁRIO ───────────────────────────────────────────────────────────
+// Uma linha por dia: tempo parado, disponibilidade, ocorrências, principal
+// causa e perda. Responde se o problema é RECORRENTE (todo dia um pouco) ou
+// CONCENTRADO (dois dias ruins puxando o mês) — coisa que o total do período
+// esconde por definição.
+//
+// A base de cada dia são as HORAS PRODUTIVAS do turno, a mesma que a
+// disponibilidade do topo usa. Dia sem produção lançada (sábado, feriado,
+// parada de fábrica) não tem base: a disponibilidade dele sai `null` e ele NÃO
+// entra na conta da semana — é assim que a soma das semanas fecha com o número
+// do resumo, em vez de virar um segundo indicador que ninguém consegue casar.
+function _pgDias(porDia, diasTrab, horasProd){
+  porDia=porDia||{};
+  const trab={}; (diasTrab||[]).forEach(d=>{ trab[d]=1; });
+  const chaves={}; Object.keys(porDia).forEach(d=>{chaves[d]=1;}); (diasTrab||[]).forEach(d=>{chaves[d]=1;});
+  const baseMin=(parseFloat(horasProd)||0)*60;
+  return Object.keys(chaves).map(d=>{
+    const o=porDia[d]||{min:0,minNP:0,perd:0,qtd:0};
+    const tps=Object.keys(o.tipos||{}).map(t=>Object.assign({tipo:t},o.tipos[t]))
+      .filter(t=>!t.planej).sort((a,b)=>b.min-a.min);
+    const temBase=!!trab[d] && baseMin>0;
+    return {
+      data:d, min:o.min||0, minNP:o.minNP||0, perd:o.perd||0, qtd:o.qtd||0,
+      trabalhado:!!trab[d],
+      dispon: temBase ? Math.max(0,(baseMin-(o.minNP||0))/baseMin*100) : null,
+      causa: tps.length?tps[0].tipo:'', causaMin: tps.length?tps[0].min:0
+    };
+  }).sort((a,b)=>RP_PARADAS.dataNum(a.data)-RP_PARADAS.dataNum(b.data));
+}
+
+// Os N dias que mais custaram — ordenados pelo tempo NÃO programado, que é o
+// que vira perda. Dia sem parada não programada fica de fora da lista.
+function _pgPioresDias(dias, n){
+  return (dias||[]).filter(d=>d.minNP>0)
+    .slice().sort((a,b)=> (b.minNP-a.minNP) || (b.perd-a.perd))
+    .slice(0, n||5);
+}
+
+// Extremos do período, para marcar na tabela. "Maior tempo parado" olha o tempo
+// TOTAL (inclusive programado) e "menor disponibilidade" olha o não programado
+// — num dia de reunião longa os dois apontam dias diferentes, e essa diferença
+// é justamente a informação.
+function _pgExtremos(dias){
+  const L=(dias||[]);
+  const pick=(cand,cmp)=>cand.reduce((m,d)=>(m===null||cmp(d,m))?d:m,null);
+  const comDisp=L.filter(d=>d.dispon!=null);
+  return {
+    maisParado: pick(L.filter(d=>d.min>0), (a,b)=>a.min>b.min),
+    menorDisp:  pick(comDisp.filter(d=>d.minNP>0), (a,b)=>a.dispon<b.dispon),
+    maisOcorr:  pick(L.filter(d=>d.qtd>0), (a,b)=>a.qtd>b.qtd),
+    maiorPerda: pick(L.filter(d=>d.perd>0), (a,b)=>a.perd>b.perd)
+  };
+}
+
+// ── Evolução da disponibilidade (semana a semana) ───────────────────────────
+// A janela da semana é a MESMA do relatório semanal (_relSemanaJanela: segunda
+// 00:00 → domingo 23:59). Escrever outro recorte aqui faria o mesmo estrago que
+// a conta de paradas duplicada já fez três vezes.
+// A base é a soma dos dias TRABALHADOS da semana — some tudo e dá exatamente o
+// tempo disponível do resumo, então a linha da semana reconcilia com o topo.
+function _pgSemanas(dias, horasProd, metaDisp){
+  const meta=parseFloat(metaDisp)||PG_META_DISP;
+  const baseMin=(parseFloat(horasProd)||0)*60;
+  const map={};
+  (dias||[]).forEach(d=>{
+    const j=_relSemanaJanela(d.data);
+    const k=j.semStr;
+    if(!map[k]) map[k]={sem:k, num:j.numSem, ini:j.seg.getTime(), minNP:0, min:0, qtd:0, perd:0, nDias:0};
+    const s=map[k];
+    s.min+=d.min; s.minNP+=d.minNP; s.qtd+=d.qtd; s.perd+=d.perd;
+    if(d.trabalhado) s.nDias++;
+  });
+  return Object.keys(map).map(k=>{
+    const s=map[k], disp=s.nDias*baseMin;
+    s.dispon = disp>0 ? Math.max(0,(disp-s.minNP)/disp*100) : null;
+    s.status = s.dispon==null?'':(s.dispon>=meta?'g':(s.dispon>=meta-5?'o':'r'));
+    return s;
+  }).sort((a,b)=>a.ini-b.ini);
+}
+
+// Rótulo curto da semana: "S33 · 10/08–16/08" (o semStr inteiro não cabe).
+function _pgSemLbl(s){
+  const m=String(s&&s.sem||'').match(/^(\d{2}\/\d{2})\/\d{4} a (\d{2}\/\d{2})\/\d{4}$/);
+  return (s&&s.num?'S'+s.num+' · ':'')+(m?`${m[1]}–${m[2]}`:String(s&&s.sem||'—'));
+}
+
+// ── TOP causas a atacar ─────────────────────────────────────────────────────
+// O Pareto de cima mostra TODOS os tipos, inclusive os programados (é o retrato
+// do turno). Este recorte é a fila de trabalho: só o que é não programado, com
+// a classe gerencial ao lado para dizer se a ação é reduzir o tempo ou eliminar
+// a causa. O % usa o MESMO denominador do Pareto original (tempo total parado),
+// senão os dois quadros diriam percentuais diferentes para a mesma parada.
+function _pgTopCausas(tipos, n){
+  const totT=(tipos||[]).reduce((s,t)=>s+t.min,0)||1;
+  return (tipos||[]).filter(t=>!t.planej).slice(0, n||5).map((t,i)=>({
+    prio:i+1, tipo:t.tipo, min:t.min, qtd:t.qtd,
+    med:Math.round(t.min/(t.qtd||1)),
+    pct:Math.round(t.min/totT*100),
+    perd:t.perd,
+    classe:_pgClasseGer(t.tipo,t.planej)
+  }));
+}
+
+// ── "OUTROS" — causa a identificar ──────────────────────────────────────────
+// Abre o balaio pelo MOTIVO que o operador digitou (texto livre, coluna G da
+// aba PARADAS). O que veio sem motivo NÃO ganha causa presumida: fica em
+// "CAUSA NÃO IDENTIFICADA", que é o dado verdadeiro.
+// O indicador novo (% do tempo parado sob tipo genérico) NÃO substitui nada do
+// relatório antigo — é um acompanhamento com meta própria.
+function _pgOutros(paradas, cfg, totMin){
+  const itens={}; let min=0, qtd=0, semMotMin=0, semMotQtd=0;
+  (paradas||[]).forEach(p=>{
+    if(!PG_RE_GENERICO.test(String(p.tipo||''))) return;
+    const d=RP_PARADAS.durProdutiva(p.ini,p.fim,cfg);
+    if(d==null||d<=0) return;
+    min+=d; qtd++;
+    const mot=String(p.obs||'').trim();
+    if(!mot){ semMotMin+=d; semMotQtd++; return; }
+    const k=mot.toLowerCase().replace(/\s+/g,' ');
+    if(!itens[k]) itens[k]={motivo:mot, qtd:0, min:0};
+    itens[k].qtd++; itens[k].min+=d;
+  });
+  const lista=Object.keys(itens).map(k=>itens[k]).sort((a,b)=>b.min-a.min);
+  const tot=parseFloat(totMin)||0;
+  return {
+    min, qtd, lista,
+    semMotivoMin:semMotMin, semMotivoQtd:semMotQtd,
+    pct: tot>0 ? min/tot*100 : 0,
+    meta: PG_META_OUTROS,
+    dentro: tot>0 ? (min/tot*100)<=PG_META_OUTROS : true,
+    // quanto do balaio JÁ tem causa escrita — é o que dá para reclassificar hoje
+    pctComMotivo: min>0 ? (min-semMotMin)/min*100 : 0
+  };
+}
+
+// ── SMED (troca) ────────────────────────────────────────────────────────────
+// Mesma leitura para troca de produto e troca de plástico: quantas, quanto
+// tempo, média, menor, maior, como se distribuem e como evoluíram semana a
+// semana. A duração é a PRODUTIVA (sem almoço), igual ao resto do relatório.
+// Devolve null quando o tipo não apareceu no período — seção que não tem dado
+// não é impressa, em vez de sair uma tabela de zeros.
+function _pgSmed(paradas, re, cfg, metaMin){
+  const ev={}; const durs=[];
+  (paradas||[]).forEach(p=>{
+    if(!re.test(String(p.tipo||''))) return;
+    const d=RP_PARADAS.durProdutiva(p.ini,p.fim,cfg);
+    if(d==null||d<=0) return;
+    durs.push(d);
+    const j=_relSemanaJanela(p.data);
+    if(!ev[j.semStr]) ev[j.semStr]={sem:j.semStr, num:j.numSem, ini:j.seg.getTime(), qtd:0, min:0};
+    ev[j.semStr].qtd++; ev[j.semStr].min+=d;
+  });
+  if(!durs.length) return null;
+  const tot=durs.reduce((a,b)=>a+b,0);
+  const med=tot/durs.length;
+  const faixas=[[0,3,'≤ 3 min'],[4,5,'4–5 min'],[6,10,'6–10 min'],[11,20,'11–20 min'],[21,Infinity,'> 20 min']]
+    .map(f=>{ const q=durs.filter(d=>d>=f[0]&&d<=f[1]).length;
+      // `ate` sai junto porque quem desenha precisa comparar a faixa com a META
+      // do tipo: 5 min é dentro na troca de produto (meta 5) e fora na de
+      // plástico (meta 4) — pintar por rótulo fixo mentiria numa das duas.
+      return {lbl:f[2], ate:f[1], qtd:q, pct: q/durs.length*100}; });
+  const semanas=Object.keys(ev).map(k=>{ const s=ev[k]; s.med=s.min/s.qtd; return s; })
+    .sort((a,b)=>a.ini-b.ini);
+  const meta=parseFloat(metaMin)||0;
+  return {
+    qtd:durs.length, tot, med, menor:Math.min.apply(null,durs), maior:Math.max.apply(null,durs),
+    faixas, semanas, meta,
+    dentro: meta>0 ? med<=meta : null,
+    // quantas trocas já saem dentro da meta hoje — a meta é alcançável quando
+    // parte das trocas já chega lá
+    naMeta: meta>0 ? durs.filter(d=>d<=meta).length : 0,
+    excedente: meta>0 ? Math.max(0, Math.round((med-meta)*durs.length)) : 0
+  };
+}
+
+// ── KPI novo: MINUTOS PARADOS / 1.000 CAIXAS ────────────────────────────────
+// Serve para comparar períodos de volume diferente — o tempo parado absoluto
+// cresce só porque o mês foi maior. NÃO substitui nenhum indicador existente.
+function _pgMinPor1000(totMin, caixas){
+  const m=parseFloat(totMin)||0, c=parseFloat(caixas)||0;
+  return c>0 ? m/c*1000 : null;
+}
+
+// ── Potencial de recuperação ────────────────────────────────────────────────
+// Simulação, não promessa: o que cada cenário devolveria SE a meta fosse
+// atingida. Só entram os cenários que o prompt do PPCP definiu e que existem no
+// período — cenário para tipo que não apareceu seria número inventado.
+// As caixas saem de RP_PARADAS.perdaAoRitmo no ritmo REAL medido: é a mesma
+// régua da PERDA A RITMO REAL do resumo, não uma terceira metodologia.
+function _pgRecuperacao(tipos, ritmoReal, opts){
+  opts=opts||{};
+  const mProd=opts.metaProduto!=null?opts.metaProduto:PG_META_TROCA_PROD;
+  const mPlas=opts.metaPlastico!=null?opts.metaPlastico:PG_META_TROCA_PLAS;
+  const corte=opts.corteOutros!=null?opts.corteOutros:PG_CORTE_OUTROS;
+  const r=parseFloat(ritmoReal)||0;
+  const out=[];
+  (tipos||[]).filter(t=>!t.planej).forEach(t=>{
+    const med=t.min/(t.qtd||1);
+    let meta=null;
+    if(PG_RE_TROCA_PROD.test(t.tipo)) meta=mProd;
+    else if(PG_RE_TROCA_PLAS.test(t.tipo)) meta=mPlas;
+    if(meta!=null){
+      const ganho=Math.max(0, Math.round((med-meta)*t.qtd));
+      out.push({tipo:t.tipo, modo:'tempo', atual:med, meta, qtd:t.qtd, min:t.min,
+                ganhoMin:ganho, cx:RP_PARADAS.perdaAoRitmo(ganho,r)});
+    }else if(PG_RE_GENERICO.test(String(t.tipo||''))){
+      const ganho=Math.max(0, Math.round(t.min*corte));
+      out.push({tipo:t.tipo, modo:'corte', pct:Math.round(corte*100), qtd:t.qtd, min:t.min,
+                ganhoMin:ganho, cx:RP_PARADAS.perdaAoRitmo(ganho,r)});
+    }
+  });
+  const ganhoMin=out.reduce((s,o)=>s+o.ganhoMin,0);
+  return {itens:out, ganhoMin, ganhoH:ganhoMin/60, cx:RP_PARADAS.perdaAoRitmo(ganhoMin,r), ritmo:r};
+}
+
+// ── Impacto no fluxo ────────────────────────────────────────────────────────
+// Quem define o ritmo é o gargalo. Com o takt REAL já dentro do ideal, mandar
+// "acelerar a linha" é atacar o lugar errado — o que falta é tempo rodando.
+// A conclusão sai do DADO (takt real × takt ideal); sem takt não há veredito.
+function _pgImpactoFluxo(tiR, trR, st){
+  if(!trR || !tiR || !(tiR.taktSeg>0)) return {veredito:null};
+  const rapida = trR.taktReal <= tiR.taktSeg;
+  return {
+    veredito: rapida?'disponibilidade':'ritmo',
+    taktReal: trR.taktReal, taktIdeal: tiR.taktSeg,
+    ritmoReal: trR.ritmoReal, ritmoIdeal: tiR.ritmoHora,
+    dispon: st.dispon, folga: rapida ? Math.round((tiR.taktSeg-trR.taktReal)*10)/10 : 0
+  };
+}
+
+// ── Detecção de apontamento sobreposto ──────────────────────────────────────
+// Duas paradas do MESMO dia em que a segunda começa antes de a primeira
+// terminar. Ou o apontamento está errado, ou houve parada simultânea em dois
+// postos — o relatório NÃO corrige nada, só sinaliza para o líder validar.
+// (Sobreposição não é descontada de nenhum indicador: mexer nisso mudaria a
+// conta antiga, que é justamente o que não se pode fazer.)
+function _pgSobrepostas(paradas){
+  const ord=(paradas||[]).filter(p=>/^\d{1,2}:\d{2}$/.test(String(p.ini))&&/^\d{1,2}:\d{2}$/.test(String(p.fim)))
+    .slice().sort((a,b)=> (RP_PARADAS.dataNum(a.data)-RP_PARADAS.dataNum(b.data)) || (toMin(a.ini)-toMin(b.ini)));
+  const out=[]; let ant=null;
+  ord.forEach(p=>{
+    if(ant && ant.data===p.data && toMin(p.ini)<toMin(ant.fim)){
+      out.push({data:p.data, min:Math.min(toMin(ant.fim),toMin(p.fim))-toMin(p.ini),
+                a:{tipo:ant.tipo,ini:ant.ini,fim:ant.fim}, b:{tipo:p.tipo,ini:p.ini,fim:p.fim}});
+    }
+    if(!ant || ant.data!==p.data || toMin(p.fim)>toMin(ant.fim)) ant=p;
+  });
+  return out;
+}
+
+// ── Plano de ação ───────────────────────────────────────────────────────────
+// Sai das causas do período, não de uma lista fixa. Responsável e prazo NÃO
+// estão no dado: saem "A definir" — preencher com um nome plausível seria
+// inventar compromisso de terceiro.
+function _pgPlano(top, outros){
+  const acoes=[];
+  (top||[]).forEach(t=>{
+    if(t.classe==='REDUTIVEL'){
+      const meta=PG_RE_TROCA_PROD.test(t.tipo)?PG_META_TROCA_PROD:(PG_RE_TROCA_PLAS.test(t.tipo)?PG_META_TROCA_PLAS:null);
+      acoes.push({prio:t.prio, problema:t.tipo, acao:'SMED — reduzir o tempo de troca (preparação externa, kit pronto, padrão de troca)',
+        resp:'A definir', prazo:'A definir', meta: meta?`≤ ${meta} min/troca`:'reduzir o tempo médio', st:'r'});
+    }else if(t.classe==='IDENTIFICAR'){
+      acoes.push({prio:t.prio, problema:`${t.tipo} (causa não identificada)`, acao:'Classificar a causa no apontamento — abrir tipo próprio para o que mais se repete',
+        resp:'A definir', prazo:'A definir', meta:`≤ ${PG_META_OUTROS}% do tempo parado`, st:'r'});
+    }else{
+      acoes.push({prio:t.prio, problema:t.tipo, acao:'Tratar a causa raiz (parada anormal — não deveria ocorrer)',
+        resp:'A definir', prazo:'A definir', meta:'eliminar a ocorrência', st:'r'});
+    }
+  });
+  if(outros && outros.pct>PG_META_OUTROS && !acoes.some(a=>/causa não identificada/.test(a.problema)))
+    acoes.push({prio:acoes.length+1, problema:'Uso de tipo genérico no apontamento', acao:'Classificar a causa no apontamento',
+      resp:'A definir', prazo:'A definir', meta:`≤ ${PG_META_OUTROS}% do tempo parado`, st:'r'});
+  return acoes;
+}
+
+// ── Diagnóstico PPCP (resumo executivo da camada nova) ──────────────────────
+// Cada linha só afirma o que o período sustenta. Sem causa nomeada no topo, o
+// PROBLEMA PRINCIPAL sai "CAUSA NÃO IDENTIFICADA" — nunca um palpite.
+function _pgDiagnostico({st, top, outros, rec, fluxo, semanas}){
+  const t0=(top||[])[0];
+  const anormal=(top||[]).filter(a=>a.classe==='ANORMAL')[0];
+  const prox=(top||[]).filter(a=>a!==t0)[0];
+  const tend=(()=>{
+    const s=(semanas||[]).filter(x=>x.dispon!=null);
+    if(s.length<2) return null;
+    const d=s[s.length-1].dispon-s[0].dispon;
+    return {delta:d, subiu:d>0.5, caiu:d<-0.5, de:s[0], ate:s[s.length-1]};
+  })();
+  return {
+    problema: t0 ? (t0.classe==='IDENTIFICAR'
+        ? `${t0.tipo} — CAUSA NÃO IDENTIFICADA (${_fmtMinPar(t0.min)}, ${t0.pct}% do tempo parado)`
+        : `${t0.tipo} — ${_fmtMinPar(t0.min)} em ${plural(t0.qtd,'ocorrência','ocorrências')} (${t0.pct}% do tempo parado)`)
+      : 'Nenhuma parada não programada no período.',
+    impacto: st ? `${_fmtMinPar(st.totMin)} parados · ${fmtN(st.pecas)} cx pela meta do dia`
+      + (st.pesoMedio>0?` · ${fmtN(st.pesoPerd)} kg`:'')
+      + ` · disponibilidade ${fmtP(st.dispon)} (meta ${PG_META_DISP}%)` : '—',
+    causa: t0 ? (t0.classe==='REDUTIVEL'
+        ? `${t0.tipo} — parada necessária com tempo acima do alvo (média ${_fmtMinPar(t0.med)})`
+        : t0.classe==='IDENTIFICAR' ? 'CAUSA NÃO IDENTIFICADA — o maior ofensor está sob tipo genérico'
+        : `${t0.tipo} — parada anormal`) : '—',
+    acao: t0 ? (t0.classe==='REDUTIVEL' ? 'SMED na troca do maior ofensor (preparação externa, kit pronto, padrão de troca)'
+        : t0.classe==='IDENTIFICAR' ? 'Classificar a causa no apontamento antes de atacar — sem causa nomeada não há ação'
+        : 'Tratar a causa raiz da parada anormal') : '—',
+    ganho: rec&&rec.ganhoMin>0 ? `${_fmtMinPar(rec.ganhoMin)} (${fmt1(rec.ganhoH)}h) ≈ ${fmtN(rec.cx)} cx nos cenários simulados` : '—',
+    foco: fluxo&&fluxo.veredito==='disponibilidade'
+        ? 'DISPONIBILIDADE — a linha já roda no ritmo necessário; o que falta é tempo rodando'
+        : (fluxo&&fluxo.veredito==='ritmo' ? 'RITMO E DISPONIBILIDADE — o takt real está acima do ideal mesmo rodando' : 'Sem takt configurado — defina a demanda para o veredito'),
+    proximo: prox ? `${prox.tipo} (${prox.pct}% do tempo parado)` : '—',
+    anormal: anormal ? `${anormal.tipo} — ${_fmtMinPar(anormal.min)} em ${plural(anormal.qtd,'ocorrência','ocorrências')}` : null,
+    tendencia: tend,
+    outros
+  };
+}
+
+// ── DESENHO da camada GESTÃO DAS PERDAS ─────────────────────────────────────
+// Uma implementação só: o relatório de paradas é o único chamador hoje, mas o
+// desenho fica separado das contas (as funções _pg* acima) para o teste poder
+// rodar a conta sem DOM e para não repetir marcação se a seção for aproveitada
+// em outro relatório. Usa as MESMAS classes do relatório antigo (kpi-card,
+// rp-sec-ttl, table) — a identidade visual não muda.
+function _pgSecaoHtml(ctx){
+  const {st, dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, sobre, plano,
+         diag, minPor1000, trR, tiR, temMotivo} = ctx;
+  const e=_rpEsc;
+  const pct=v=>fmtP(v);
+  const corDisp=v=>v==null?'#a0aec0':(v>=PG_META_DISP?'#4CAF50':v>=PG_META_DISP-5?'#FF9800':'#F44336');
+  const ex=_pgExtremos(dias);
+  const marca=(d,campo)=> (ex[campo] && ex[campo].data===d.data) ? ' pg-mark' : '';
+
+  // 1 ▸ PARETO DIÁRIO -------------------------------------------------------
+  const linhasDia=(dias||[]).filter(d=>d.qtd>0||d.trabalhado).map(d=>`<tr>
+      <td class="td-mono">${e(d.data)}</td>
+      <td class="td-mono${marca(d,'maisParado')}">${d.min>0?_fmtMinPar(d.min):'—'}</td>
+      <td class="td-mono${marca(d,'menorDisp')}" style="color:${corDisp(d.dispon)}">${d.dispon==null?'—':pct(d.dispon)}</td>
+      <td class="td-mono${marca(d,'maisOcorr')}">${d.qtd||'—'}</td>
+      <td>${d.causa?e(d.causa)+` <span style="color:#a0aec0;font-size:9px">(${_fmtMinPar(d.causaMin)})</span>`:'<span style="color:#a0aec0">—</span>'}</td>
+      <td class="td-mono${marca(d,'maiorPerda')}" style="color:${d.perd>0?'#c62828':'#bbb'}">${d.perd>0?fmtN(d.perd):'—'}</td>
+    </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:#999">Sem dia com apontamento no período.</td></tr>';
+
+  const piores=_pgPioresDias(dias,5);
+  const pioresHtml=piores.length?`<div class="pg-piores">
+    <div class="pg-piores-ttl">5 PIORES DIAS DO PERÍODO <span>(pelo tempo não programado — é o que vira perda)</span></div>
+    <div class="pg-piores-grid">${piores.map((d,i)=>`<div class="pg-pior">
+      <div class="pg-pior-pos">${i+1}º</div>
+      <div class="pg-pior-data">${e(d.data)}</div>
+      <div class="pg-pior-min">${_fmtMinPar(d.minNP)}</div>
+      <div class="pg-pior-sub">${d.dispon==null?'sem base':pct(d.dispon)+' disp.'} · ${fmtN(d.perd)} cx</div>
+      <div class="pg-pior-causa">${d.causa?e(d.causa):'—'}</div>
+    </div>`).join('')}</div></div>`:'';
+
+  // 2 ▸ EVOLUÇÃO DA DISPONIBILIDADE ----------------------------------------
+  const semHtml=(semanas||[]).length?`<table><thead><tr>
+      <th>SEMANA</th><th>DIAS</th><th>TEMPO NÃO PROGRAMADO</th><th>DISPONIBILIDADE</th><th>META</th><th>STATUS</th><th>PERDA (CX)</th>
+    </tr></thead><tbody>${semanas.map(s=>`<tr>
+      <td class="td-mono">${e(_pgSemLbl(s))}</td>
+      <td class="td-mono">${s.nDias||'—'}</td>
+      <td class="td-mono">${_fmtMinPar(s.minNP)}</td>
+      <td class="td-mono" style="font-weight:700;color:${corDisp(s.dispon)}">${s.dispon==null?'—':pct(s.dispon)}</td>
+      <td class="td-mono" style="color:#a0aec0">${PG_META_DISP}%</td>
+      <td>${s.dispon==null?'<span style="color:#a0aec0">sem base</span>':`<span class="pg-sinal ${s.status}">${s.status==='g'?'DENTRO':s.status==='o'?'ATENÇÃO':'ABAIXO'}</span>`}</td>
+      <td class="td-mono" style="color:${s.perd>0?'#c62828':'#bbb'}">${s.perd>0?fmtN(s.perd):'—'}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="rp-note">Semana = segunda 00:00 → domingo 23:59, a MESMA janela do relatório semanal. A base de cada semana são os dias trabalhados dela, então a soma das semanas fecha com a disponibilidade do resumo. Semana sem dia trabalhado no período sai "sem base".</div>`
+    :'<div class="pg-vazio">Sem dias trabalhados no período para montar a evolução.</div>';
+
+  // 3 ▸ TOP CAUSAS ----------------------------------------------------------
+  const topHtml=(top||[]).length?`<table><thead><tr>
+      <th>PRIORIDADE</th><th>CAUSA</th><th>CLASSE GERENCIAL</th><th>TEMPO</th><th>% DO TEMPO PARADO</th><th>OCORRÊNCIAS</th><th>MÉDIA</th><th>PERDA (CX)</th>
+    </tr></thead><tbody>${top.map(t=>`<tr>
+      <td class="td-mono" style="font-weight:700">${t.prio}</td>
+      <td style="font-weight:600">${e(t.tipo)}</td>
+      <td style="font-size:9px;font-weight:700;color:${PG_CLASSE_COR[t.classe]}">${PG_CLASSE_LBL[t.classe]}</td>
+      <td class="td-mono">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono">${t.pct}%</td>
+      <td class="td-mono">${t.qtd}</td>
+      <td class="td-mono">${_fmtMinPar(t.med)}</td>
+      <td class="td-mono" style="color:#c62828">${fmtN(t.perd)}</td>
+    </tr>`).join('')}</tbody></table>
+    <div class="rp-note">DADO. A classe gerencial é a 2ª camada e não altera a classificação PROGRAMADA / NÃO PROGRAMADA do relatório: <b>REDUTÍVEL</b> = troca/setup (mesmo critério do ESTUDO DE GANHO — o tempo cai, a parada não some), <b>ANORMAL</b> = não deveria ocorrer, <b>A IDENTIFICAR</b> = tipo genérico, sem causa nomeada no dado. O % usa o mesmo denominador do Pareto acima.</div>`
+    :'<div class="pg-vazio">Nenhuma parada não programada no período.</div>';
+
+  // 4 ▸ OUTROS --------------------------------------------------------------
+  const oHtml=(outros && outros.qtd>0)?`
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi-card ${outros.dentro?'g':'r'}"><div class="kpi-lbl">% DO TEMPO PARADO SEM CAUSA NOMEADA</div>
+        <div class="kpi-val" style="color:${outros.dentro?'#2e7d32':'#c62828'}">${pct(outros.pct)}</div>
+        <div class="kpi-sub">meta ≤ ${PG_META_OUTROS}% · indicador NOVO, não substitui nada</div></div>
+      <div class="kpi-card a"><div class="kpi-lbl">TEMPO SOB TIPO GENÉRICO</div>
+        <div class="kpi-val">${_fmtMinPar(outros.min)}</div><div class="kpi-sub">${plural(outros.qtd,'parada','paradas')}</div></div>
+      <div class="kpi-card"><div class="kpi-lbl">JÁ TEM MOTIVO ESCRITO</div>
+        <div class="kpi-val">${pct(outros.pctComMotivo)}</div>
+        <div class="kpi-sub">${outros.semMotivoQtd>0?plural(outros.semMotivoQtd,'parada sem motivo','paradas sem motivo'):'todas com motivo'}</div></div>
+    </div>
+    ${outros.lista.length?`<table style="margin-top:9px"><thead><tr><th>MOTIVO ESCRITO PELO OPERADOR</th><th>OCORRÊNCIAS</th><th>TEMPO</th><th>% DO GENÉRICO</th></tr></thead><tbody>
+      ${outros.lista.map(i=>`<tr><td>${e(i.motivo)}</td><td class="td-mono">${i.qtd}</td><td class="td-mono">${_fmtMinPar(i.min)}</td><td class="td-mono">${Math.round(i.min/(outros.min||1)*100)}%</td></tr>`).join('')}
+      ${outros.semMotivoMin>0?`<tr><td style="color:#6b46c1;font-weight:600">CAUSA NÃO IDENTIFICADA</td><td class="td-mono">${outros.semMotivoQtd}</td><td class="td-mono">${_fmtMinPar(outros.semMotivoMin)}</td><td class="td-mono">${Math.round(outros.semMotivoMin/(outros.min||1)*100)}%</td></tr>`:''}
+    </tbody></table>
+    <div class="rp-note">ANÁLISE. Os motivos vêm do texto livre que o operador digita no app — o relatório <b>não presume causa</b>: o que veio sem motivo fica em CAUSA NÃO IDENTIFICADA. RECOMENDAÇÃO: o motivo que mais se repete merece tipo próprio na aba TIPOS_PARADA, e aí sai do balaio.</div>`
+    :`<div class="pg-vazio">Nenhuma dessas paradas tem motivo escrito — <b>CAUSA NÃO IDENTIFICADA</b> em 100% do tempo genérico. Sem o motivo no app, essa fatia não tem como ser atacada.</div>`}`
+    :'<div class="pg-vazio">Nenhuma parada sob tipo genérico no período — todo o tempo parado tem causa nomeada.</div>';
+
+  // 5 ▸ SMED ----------------------------------------------------------------
+  const smedBloco=(s,titulo,unidade)=>{
+    if(!s) return `<div class="pg-vazio">${titulo}: nenhuma ocorrência no período.</div>`;
+    const barra=s.faixas.map(f=>`<div style="display:flex;align-items:center;gap:8px;margin:3px 0">
+      <div style="width:70px;font-size:9.5px;color:#4a5568;text-align:right">${f.lbl}</div>
+      <div style="flex:1;background:#f1f1f1;border-radius:3px;height:13px"><div style="width:${Math.max(1,Math.round(f.pct))}%;background:${f.ate<=s.meta?'#4CAF50':'#e57373'};height:100%;border-radius:3px"></div></div>
+      <div class="td-mono" style="width:78px;font-size:9px;color:#666">${f.qtd}× · ${Math.round(f.pct)}%</div>
+    </div>`).join('');
+    const ev=s.semanas.length>1?`<div style="margin-top:8px">
+      <div style="font-size:9px;color:#718096;letter-spacing:1.5px;margin-bottom:4px">EVOLUÇÃO DO TEMPO MÉDIO (semana a semana)</div>
+      <div class="pg-ev">${s.semanas.map(w=>`<div class="pg-ev-i">
+        <div class="pg-ev-v" style="color:${w.med<=s.meta?'#2e7d32':'#c62828'}">${fmt1(w.med)}</div>
+        <div class="pg-ev-l">${e(_pgSemLbl(w))}</div>
+        <div class="pg-ev-q">${w.qtd}×</div></div>`).join('')}</div></div>`:'';
+    return `<div class="pg-smed">
+      <div class="pg-smed-ttl">${titulo}</div>
+      <div class="pg-smed-kpis">
+        <div><span>${s.qtd}</span><i>ocorrências</i></div>
+        <div><span>${_fmtMinPar(s.tot)}</span><i>tempo total</i></div>
+        <div><span style="color:${s.dentro?'#2e7d32':'#c62828'}">${fmt1(s.med)} min</span><i>média (meta ≤ ${s.meta} ${unidade})</i></div>
+        <div><span>${s.menor} min</span><i>menor</i></div>
+        <div><span>${s.maior} min</span><i>maior</i></div>
+        <div><span>${s.qtd>0?Math.round(s.naMeta/s.qtd*100):0}%</span><i>já dentro da meta</i></div>
+      </div>
+      <div style="margin-top:7px">${barra}</div>
+      ${ev}
+      ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${s.menor} min — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
+    </div>`;
+  };
+
+  // 6 ▸ RECUPERAÇÃO ---------------------------------------------------------
+  const recHtml=(rec&&rec.itens.length)?`<table><thead><tr>
+      <th>CENÁRIO</th><th>HOJE</th><th>META</th><th>OCORRÊNCIAS</th><th>TEMPO RECUPERADO</th><th>HORAS</th><th>CAIXAS</th>
+    </tr></thead><tbody>${rec.itens.map(i=>`<tr>
+      <td style="font-weight:600">${e(i.tipo)}</td>
+      <td class="td-mono">${i.modo==='tempo'?fmt1(i.atual)+' min/troca':_fmtMinPar(i.min)+' no período'}</td>
+      <td class="td-mono" style="color:#2e7d32">${i.modo==='tempo'?i.meta+' min/troca':'−'+i.pct+'%'}</td>
+      <td class="td-mono">${i.qtd}</td>
+      <td class="td-mono">${_fmtMinPar(i.ganhoMin)}</td>
+      <td class="td-mono">${fmt1(i.ganhoMin/60)}h</td>
+      <td class="td-mono" style="font-weight:700;color:#2e7d32">${fmtN(i.cx)}</td>
+    </tr>`).join('')}
+    <tr style="border-top:1.5px solid #ccc"><td style="font-weight:700">TOTAL</td><td></td><td></td><td></td>
+      <td class="td-mono" style="font-weight:700">${_fmtMinPar(rec.ganhoMin)}</td>
+      <td class="td-mono" style="font-weight:700">${fmt1(rec.ganhoH)}h</td>
+      <td class="td-mono" style="font-weight:700;color:#2e7d32">${fmtN(rec.cx)}</td></tr>
+    </tbody></table>
+    <div class="rp-note">RECOMENDAÇÃO (simulação, não previsão). As caixas saem do <b>ritmo real medido</b> (${fmtN(rec.ritmo)} cx/h), a mesma régua da PERDA A RITMO REAL do resumo — o cálculo original de PEÇAS PERDIDAS continua intacto e não foi tocado. Só entram os cenários definidos pelo PPCP que existem no período; tipo que não apareceu não vira cenário.</div>`
+    :'<div class="pg-vazio">Nenhum dos cenários definidos (troca de produto, troca de plástico, tipo genérico) apareceu no período.</div>';
+
+  // 7 ▸ IMPACTO NO FLUXO ----------------------------------------------------
+  const fxHtml=(fluxo&&fluxo.veredito)?`<div class="pg-fluxo ${fluxo.veredito==='disponibilidade'?'ok':'warn'}">
+      <div class="pg-fluxo-tag">${fluxo.veredito==='disponibilidade'?'VELOCIDADE NÃO É O PROBLEMA — DISPONIBILIDADE É O FOCO.':'O RITMO TAMBÉM ESTÁ ABAIXO DO NECESSÁRIO.'}</div>
+      <div class="pg-fluxo-txt">${fluxo.veredito==='disponibilidade'
+        ? `Rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> que a demanda pede (${fmtN(fluxo.ritmoReal)} contra ${fmtN(fluxo.ritmoIdeal)} cx/h) — ela é <b>${fmt1(fluxo.folga)} s/cx mais rápida</b> que o necessário. O que falta não é velocidade, é <b>tempo rodando</b>: a disponibilidade está em ${pct(fluxo.dispon)} contra a meta de ${PG_META_DISP}%. Mandar acelerar a linha ataca o lugar errado — quem define o ritmo é o gargalo, e aqui o gargalo é a parada.`
+        : `Mesmo rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> do ideal (${fmtN(fluxo.ritmoReal)} contra ${fmtN(fluxo.ritmoIdeal)} cx/h). Aqui os dois lados pesam: além da disponibilidade de ${pct(fluxo.dispon)}, o ritmo em si não alcança a demanda.`}</div>
+      <div class="pg-fluxo-ord">PRIORIDADE PPCP: 1 disponibilidade · 2 estabilidade · 3 redução de paradas · 4 redução de troca · 5 eliminação de causas anormais · 6 redução de WIP · 7 fluxo contínuo</div>
+    </div>`
+    :'<div class="pg-vazio">Sem takt configurado (defina a demanda) — o veredito de fluxo depende do takt ideal × takt real.</div>';
+
+  // 8 ▸ PLANO DE AÇÃO -------------------------------------------------------
+  const planoHtml=(plano||[]).length?`<table><thead><tr>
+      <th>PRIORIDADE</th><th>PROBLEMA</th><th>AÇÃO</th><th>RESPONSÁVEL</th><th>PRAZO</th><th>META</th><th>STATUS</th>
+    </tr></thead><tbody>${plano.map(a=>`<tr>
+      <td class="td-mono" style="font-weight:700">${a.prio}</td>
+      <td style="font-weight:600">${e(a.problema)}</td>
+      <td style="font-size:10px">${e(a.acao)}</td>
+      <td class="td-mono" style="color:#a0aec0">${e(a.resp)}</td>
+      <td class="td-mono" style="color:#a0aec0">${e(a.prazo)}</td>
+      <td class="td-mono">${e(a.meta)}</td>
+      <td><span class="pg-sinal r">ABERTO</span></td>
+    </tr>`).join('')}</tbody></table>
+    <div class="rp-note">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
+    :'<div class="pg-vazio">Sem causa não programada no período — nada a planejar.</div>';
+
+  // 9 ▸ APONTAMENTO SOBREPOSTO ---------------------------------------------
+  const sobreHtml=(sobre||[]).length?`<div class="pg-alerta">
+      <div class="pg-alerta-ttl">⚠️ APONTAMENTO SOBREPOSTO — ${plural(sobre.length,'registro','registros')} para validar</div>
+      <div class="pg-alerta-txt">Paradas do mesmo dia em que a seguinte começa antes de a anterior terminar. Pode ser erro de apontamento ou parada simultânea em dois postos. <b>Nada foi corrigido nem descontado</b> — os indicadores acima seguem exatamente como estavam; isto é só sinalização para o líder validar.</div>
+      <table style="margin-top:6px"><thead><tr><th>DATA</th><th>PARADA A</th><th>PARADA B</th><th>SOBREPOSIÇÃO</th></tr></thead><tbody>
+      ${sobre.slice(0,12).map(s=>`<tr>
+        <td class="td-mono">${e(s.data)}</td>
+        <td>${e(s.a.tipo||'—')} <span class="td-mono" style="color:#718096">${e(s.a.ini)}–${e(s.a.fim)}</span></td>
+        <td>${e(s.b.tipo||'—')} <span class="td-mono" style="color:#718096">${e(s.b.ini)}–${e(s.b.fim)}</span></td>
+        <td class="td-mono" style="color:#c62828">${_fmtMinPar(s.min)}</td></tr>`).join('')}
+      </tbody></table>
+      ${sobre.length>12?`<div class="rp-note">+ ${sobre.length-12} ${sobre.length-12===1?'registro':'registros'} não listados.</div>`:''}
+    </div>`
+    :'<div class="pg-ok">✓ Nenhum apontamento sobreposto no período.</div>';
+
+  // 10 ▸ DIAGNÓSTICO PPCP ---------------------------------------------------
+  const linhaDiag=(rot,val,cor)=>`<div class="pg-diag-l"><div class="pg-diag-r">${rot}</div><div class="pg-diag-v" style="${cor?`color:${cor}`:''}">${val}</div></div>`;
+  const tend=diag.tendencia;
+  const diagHtml=`<div class="pg-diag">
+    ${linhaDiag('PROBLEMA PRINCIPAL', e(diag.problema), '#c62828')}
+    ${linhaDiag('IMPACTO', e(diag.impacto))}
+    ${linhaDiag('CAUSA PRIORITÁRIA', e(diag.causa))}
+    ${linhaDiag('AÇÃO RECOMENDADA', e(diag.acao), '#1565c0')}
+    ${linhaDiag('GANHO POTENCIAL', e(diag.ganho), '#2e7d32')}
+    ${linhaDiag('PRÓXIMO FOCO', e(diag.foco))}
+    ${diag.anormal?linhaDiag('CAUSA ANORMAL NO TOP', e(diag.anormal), '#c62828'):''}
+    ${linhaDiag('ESTAMOS MELHORANDO?', tend
+        ? (tend.subiu?`SIM — disponibilidade subiu ${fmt1(Math.abs(tend.delta))} p.p. da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`
+          : tend.caiu?`NÃO — disponibilidade caiu ${fmt1(Math.abs(tend.delta))} p.p. da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`
+          : `ESTÁVEL — disponibilidade praticamente igual da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`)
+        : 'Período curto demais — são precisas 2 semanas com dia trabalhado para dizer.',
+        tend?(tend.subiu?'#2e7d32':tend.caiu?'#c62828':'#e65100'):'#718096')}
+  </div>`;
+
+  // ── montagem ------------------------------------------------------------
+  return `
+<div class="pg-abre">
+  <div class="pg-abre-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div>
+  <div class="pg-abre-txt">Camada de gestão sobre o relatório de controle acima. <b>Nenhum indicador, fórmula ou critério das seções anteriores foi alterado</b> — o que vem aqui é leitura nova sobre os mesmos dados, e todo número derivado usa as mesmas contas (duração produtiva, perda pela meta do dia, perda ao ritmo real). Onde a leitura é nova, está dito. Onde o dado não sustenta, está escrito "não identificado".</div>
+</div>
+
+<div class="rp-sec-ttl">1 ▸ PARETO DIÁRIO — O PROBLEMA É RECORRENTE OU CONCENTRADO?</div>
+<table><thead><tr><th>DATA</th><th>TEMPO PARADO</th><th>DISPONIBILIDADE</th><th>PARADAS</th><th>PRINCIPAL CAUSA</th><th>PERDA ESTIMADA (CX)</th></tr></thead><tbody>${linhasDia}</tbody></table>
+<div class="rp-note">DADO. Célula marcada = extremo do período (maior tempo parado, menor disponibilidade, mais ocorrências, maior perda). A disponibilidade do dia usa a mesma base do resumo (horas produtivas do turno); dia sem produção lançada não tem base e sai "—", ficando fora da conta da semana.</div>
+${pioresHtml}
+
+<div class="rp-sec-ttl">2 ▸ EVOLUÇÃO DA DISPONIBILIDADE — META ${PG_META_DISP}%</div>
+${semHtml}
+
+<div class="rp-sec-ttl">3 ▸ TOP ${(top||[]).length||5} CAUSAS QUE DEVEM SER ATACADAS</div>
+${topHtml}
+
+<div class="rp-sec-ttl">4 ▸ "OUTROS" — CAUSA A IDENTIFICAR</div>
+${oHtml}
+
+<div class="rp-sec-ttl">5 ▸ SMED — TROCA DE PRODUTO E TROCA DE PLÁSTICO</div>
+${smedBloco(smedProd,'TROCA DE PRODUTO','min/troca')}
+${smedBloco(smedPlas,'TROCA DE PLÁSTICO','min/troca')}
+
+<div class="rp-sec-ttl">6 ▸ MINUTOS DE PARADA / 1.000 CAIXAS — COMPARAR PERÍODOS DE VOLUME DIFERENTE</div>
+<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+  <div class="kpi-card a"><div class="kpi-lbl">MINUTOS PARADOS / 1.000 CX</div>
+    <div class="kpi-val">${minPor1000!=null?fmt1(minPor1000):'—'}</div>
+    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(trR.cxTot)} cx × 1.000`:'sem caixas apontadas no período'}</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">MINUTOS NÃO PROGRAMADOS / 1.000 CX</div>
+    <div class="kpi-val" style="color:#c62828">${(trR&&trR.cxTot>0)?fmt1(_pgMinPor1000(st.totMinNP,trR.cxTot)):'—'}</div>
+    <div class="kpi-sub">só o que vira perda</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">CAIXAS APONTADAS NO PERÍODO</div>
+    <div class="kpi-val">${trR?fmtN(trR.cxTot):'—'}</div>
+    <div class="kpi-sub">base da comparação</div></div>
+</div>
+<div class="rp-note">INDICADOR NOVO — não substitui nenhum dos anteriores. O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume e permite comparar mês contra mês. Base: as caixas apontadas que o TAKT REAL já usa.</div>
+
+<div class="rp-sec-ttl">7 ▸ IMPACTO NO FLUXO — ONDE ESTÁ O GARGALO</div>
+${fxHtml}
+
+<div class="rp-sec-ttl">8 ▸ QUANTO PODEMOS RECUPERAR?</div>
+${recHtml}
+
+<div class="rp-sec-ttl">9 ▸ PLANO DE AÇÃO</div>
+${planoHtml}
+
+<div class="rp-sec-ttl">10 ▸ VALIDAÇÃO DO APONTAMENTO</div>
+${sobreHtml}
+
+<div class="rp-sec-ttl">11 ▸ DIAGNÓSTICO PPCP</div>
+${diagHtml}
+${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito. Com o motivo preenchido no app, a análise de "Outros" passa a apontar causa raiz em vez de tempo sem nome.</div>':''}
+`;
+}
+
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
 async function gerarRelatorioParadas(){
@@ -7342,6 +7979,32 @@ async function gerarRelatorioParadas(){
     ${_sq('AMEAÇAS','#e65100',swot.ameacas)}
   </div>`;
 
+  // ── GESTÃO DAS PERDAS (camada nova) — só monta as entradas; as contas moram
+  // nas funções _pg* e a valoração continua saindo do RP_PARADAS. Dentro de um
+  // try: se a camada nova quebrar, o relatório ANTIGO sai inteiro assim mesmo —
+  // ele é o oficial, e a camada é acréscimo.
+  let pgHtml='';
+  try{
+    const _pgTrab=RP_PARADAS.diasTrabalhadosLista?RP_PARADAS.diasTrabalhadosLista(realByDay,de,ate):[];
+    const _pgD=_pgDias(st.porDia, _pgTrab, st.horasProd);
+    const _pgS=_pgSemanas(_pgD, st.horasProd, PG_META_DISP);
+    const _pgT=_pgTopCausas(st.tipos, 5);
+    const _pgO=_pgOutros(paradas, CFG, st.totMin);
+    const _pgSP=_pgSmed(paradas, PG_RE_TROCA_PROD, CFG, PG_META_TROCA_PROD);
+    const _pgSL=_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS);
+    const _pgR=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0, {});
+    const _pgF=_pgImpactoFluxo(tiR, trR, st);
+    const _pgSob=_pgSobrepostas(paradas);
+    const _pgP=_pgPlano(_pgT, _pgO);
+    const _pgDg=_pgDiagnostico({st, top:_pgT, outros:_pgO, rec:_pgR, fluxo:_pgF, semanas:_pgS});
+    pgHtml=_pgSecaoHtml({st, dias:_pgD, semanas:_pgS, top:_pgT, outros:_pgO,
+      smedProd:_pgSP, smedPlas:_pgSL, rec:_pgR, fluxo:_pgF, sobre:_pgSob, plano:_pgP,
+      diag:_pgDg, minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0), trR, tiR,
+      temMotivo:temMotivoSwot});
+  }catch(err){
+    pgHtml=`<div class="rp-sec-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div><div class="pg-vazio">Não foi possível montar a camada de gestão neste período (${_rpEsc(err.message)}). O relatório de controle acima está completo e não foi afetado.</div>`;
+  }
+
   const naoPlan=st.tipos.filter(t=>!t.planej && t.perd>0).slice(0,3);
   const estudo=naoPlan.length?('<div class="rp-sec-ttl">💡 ESTUDO DE GANHO</div>'+naoPlan.map(t=>{
     const txt = ehSetupParada(t.tipo)
@@ -7416,6 +8079,54 @@ async function gerarRelatorioParadas(){
   .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
   .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}
   .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+  /* ═══ GESTÃO DAS PERDAS — camada nova. Só classes pg-*: nenhuma regra acima
+     foi alterada, então o relatório antigo imprime exatamente como imprimia.
+     Tudo com print-color-adjust, senão a impressão P&B come o que dá sentido
+     à leitura (o selo de status, a faixa do veredito). ═══ */
+  .pg-abre{margin-top:22px;padding:11px 14px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;border-radius:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-before:always}
+  .pg-abre-ttl{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;letter-spacing:2px}
+  .pg-abre-txt{font-size:10px;color:#cbd5e0;line-height:1.5;margin-top:4px}
+  .pg-vazio{font-size:11px;color:#718096;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:5px;padding:9px 12px}
+  .pg-ok{font-size:11px;color:#2e7d32;background:#f1f8f2;border:1px solid #c8e6c9;border-radius:5px;padding:8px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-mark{font-weight:700;background:#fff3e0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-sinal{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:9px;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-sinal.g{background:#4CAF50}.pg-sinal.o{background:#FF9800}.pg-sinal.r{background:#F44336}
+  .pg-piores{margin-top:9px}
+  .pg-piores-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:6px}
+  .pg-piores-ttl span{letter-spacing:0;text-transform:none;color:#a0aec0}
+  .pg-piores-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .pg-pior{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #e57373;border-radius:5px;padding:7px 9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-pior-pos{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c62828;font-weight:700}
+  .pg-pior-data{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
+  .pg-pior-min{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1.05;color:#1a1a2e}
+  .pg-pior-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096}
+  .pg-pior-causa{font-size:9px;color:#4a5568;margin-top:3px;line-height:1.25}
+  .pg-smed{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:10px 12px;margin-bottom:9px}
+  .pg-smed-ttl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:#e65100;letter-spacing:2px;margin-bottom:7px}
+  .pg-smed-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+  .pg-smed-kpis div{text-align:center}
+  .pg-smed-kpis span{display:block;font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;line-height:1;color:#1a1a2e}
+  .pg-smed-kpis i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#718096;font-style:normal;margin-top:3px;line-height:1.25}
+  .pg-ev{display:flex;gap:6px;flex-wrap:wrap}
+  .pg-ev-i{flex:1;min-width:62px;background:#fff;border:1px solid #edf2f7;border-radius:4px;padding:5px 4px;text-align:center}
+  .pg-ev-v{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;line-height:1}
+  .pg-ev-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
+  .pg-ev-q{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0}
+  .pg-fluxo{border-radius:5px;padding:11px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-fluxo.ok{background:#f1f8f2;border:1px solid #c8e6c9;border-left:4px solid #4CAF50}
+  .pg-fluxo.warn{background:#fff8e1;border:1px solid #ffe0b2;border-left:4px solid #FF9800}
+  .pg-fluxo-tag{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.2px;color:#2e7d32}
+  .pg-fluxo.warn .pg-fluxo-tag{color:#e65100}
+  .pg-fluxo-txt{font-size:11px;color:#222;line-height:1.5;margin-top:5px}
+  .pg-fluxo-ord{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:7px;letter-spacing:.4px}
+  .pg-alerta{background:#fff5f5;border:1px solid #fed7d7;border-left:4px solid #F44336;border-radius:5px;padding:10px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-alerta-ttl{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#c62828;letter-spacing:1px}
+  .pg-alerta-txt{font-size:10px;color:#4a5568;line-height:1.5;margin-top:4px}
+  .pg-diag{border:1px solid #edf2f7;border-radius:5px;overflow:hidden}
+  .pg-diag-l{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid #edf2f7}
+  .pg-diag-l:last-child{border-bottom:0}
+  .pg-diag-r{background:#1a1a2e;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.5px;padding:8px 10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-diag-v{font-size:11px;color:#1a1a2e;padding:8px 12px;line-height:1.45}
 </style></head><body>
 ${_rpBotaoImprimir()}
 ${_rpCabecalho('RELATÓRIO DE PARADAS',
@@ -7440,6 +8151,7 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
 <table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
 ${estudo}
 ${swotHtml}
+${pgHtml}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
 <div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${fmt1(st.horasProd)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${fmt1(st.horasProd)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?fmt1(tiR.taktSeg):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
@@ -8776,6 +9488,18 @@ const _cicloTV = (function() {
       const el = document.getElementById('tvb-kpi-' + k);
       if (el) el.style.display = kpis.includes(k) ? '' : 'none';
     });
+    // Linha dos substats (coluna esquerda, embaixo do número gigante): escala
+    // adaptativa pelo nº de KPIs ligados, igual ao rail da direita. Com PESO e
+    // PONTOS desligados o RITMO ATUAL fica sozinho e ganha a largura toda — o
+    // CSS lê este data-n. Linha vazia some inteira: senão sobraria a borda de
+    // cima e o padding sem nada embaixo.
+    const subKeys = ['peso','pontos','ritmo'].filter(k => kpis.includes(k));
+    const subs = document.querySelector('#tv-slide-b .tvb2-substats');
+    if (subs) {
+      subs.style.display = subKeys.length ? '' : 'none';
+      subs.dataset.n = subKeys.length || '';
+    }
+
     // Linha extra (embaixo) só p/ NECESSÁRIO — off por padrão. (RITMO ATUAL, PONTOS
     // e PESO ficam na coluna esquerda, junto do número grande, no visual novo.)
     const extraKeys = ['nec'].filter(k => kpis.includes(k));

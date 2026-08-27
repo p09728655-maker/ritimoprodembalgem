@@ -900,13 +900,77 @@ via Google Apps Script (JSONP).
   `PRODUCAO_PRODUTO` — a média aparada descarta, o veredito ignora o impossível,
   e o combinado operacional é lançar hora a hora.
 
+## GESTÃO DAS PERDAS — a 2ª camada do relatório de paradas
+- Pedido do PPCP em 27/08/2026: o relatório respondia *"quanto paramos"*; faltava
+  *"qual é o problema, qual é a prioridade, quanto dá para recuperar e qual é a
+  ação"*. A resposta foi **acrescentar uma camada**, não redesenhar: tudo que já
+  existia (RESUMO, Pareto, POR TIPO, ESTUDO DE GANHO, SWOT, DETALHAMENTO,
+  fórmulas, nomes e critérios) continua **intacto e antes** dela.
+  `relatorios.test.js` lista peça por peça do relatório antigo e falha se alguma
+  sumir — é o guarda-corpo do "não mexer no que já funciona".
+- **Onze blocos**, nesta ordem: Pareto diário (+5 piores dias) · evolução da
+  disponibilidade por semana × meta 90% · TOP 5 causas · "Outros — causa a
+  identificar" · SMED (troca de produto e de plástico) · minutos parados / 1.000
+  cx · impacto no fluxo · potencial de recuperação · plano de ação · validação do
+  apontamento · diagnóstico PPCP. Entra **depois do SWOT** e **antes do
+  DETALHAMENTO**, dentro de um `try`: se a camada nova quebrar, o relatório
+  oficial sai inteiro assim mesmo.
+- **Nenhum indicador antigo é recalculado por outro método.** Onde a leitura nova
+  precisa valorar um recorte (um dia, uma semana, um cenário), a conta sai de
+  `RP_PARADAS.perdaDeMin` (a fórmula da perda, extraída do `stats()` — o próprio
+  `stats` chama ela) ou de `RP_PARADAS.perdaAoRitmo`. **Nada de fórmula de perda
+  escrita dentro do HTML** — o teste falha se voltar.
+- **A semana é `_relSemanaJanela`**, a mesma do relatório semanal e da Tela D.
+  A base de cada semana são os **dias trabalhados** dela, então a soma das
+  semanas fecha com a disponibilidade do resumo. Semana sem dia trabalhado sai
+  **"sem base"**, nunca 0% — e dia sem produção lançada (sábado, feriado) não
+  tem turno com que comparar, então a disponibilidade dele é **"—"**.
+- **Classificação GERENCIAL é uma 2ª camada, não substitui PROGRAMADA / NÃO
+  PROGRAMADA** (essa continua decidindo o que entra na perda). São quatro:
+  `PLANEJADA` · `REDUTÍVEL` (troca/setup — critério é o **mesmo
+  `ehSetupParada`** do ESTUDO DE GANHO, um lugar só) · `ANORMAL` · **`A
+  IDENTIFICAR`**.
+  - ⚠ **"Outros" NÃO é anormal.** Sem saber a causa não dá para classificar, e
+    chutar é o contrário de análise. O balaio genérico vira `A IDENTIFICAR`, e a
+    seção 4 abre ele pelo **motivo** que o operador digitou; o que veio sem
+    motivo fica em **CAUSA NÃO IDENTIFICADA**, que é o dado verdadeiro.
+- **Metas iniciais, num lugar só** (`PG_META_*` no topo do bloco): disponibilidade
+  90%, tipo genérico ≤5% do tempo parado, troca de produto ≤5 min, troca de
+  plástico ≤4 min, corte de 50% no genérico. Mudar o combinado é mexer numa
+  constante.
+- **O plano de ação não inventa responsável nem prazo** — saem "A definir".
+  Preencher com nome plausível seria inventar compromisso de terceiro.
+- **A validação do apontamento só SINALIZA.** Parada sobreposta (a seguinte começa
+  antes de a anterior terminar, no mesmo dia) aparece numa lista para o líder
+  conferir — **nada é corrigido nem descontado**, senão a conta antiga mudaria,
+  que é justamente o que não se pode fazer. Parada encostada (fim = início) não
+  é sobreposição; parada em andamento fica fora.
+- **A distribuição das trocas é pintada pela META do tipo**, não por rótulo fixo:
+  5 min está dentro na troca de produto (meta 5) e fora na de plástico (meta 4).
+  Por isso a faixa carrega o próprio limite (`ate`).
+- **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
+  ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
+  causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
+  `diasTrabalhados()` — contagem e lista saem do mesmo filtro.
+
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do
   PPCP, 24/08/2026: *"ritmo atual está muito pequeno na TV"*). Os três dividem
-  o visual `.tvb2-substat`, mas `#tvb-kpi-ritmo` tem escala própria (~1,8×):
-  ritmo é o pulso da linha, peso e pontos são conferência. O `flex-wrap`
-  centrado da linha absorve o crescimento — se não couber ao lado, o ritmo
-  desce inteiro para a linha de baixo. Não voltar a igualar os três.
+  o visual `.tvb2-substat`, mas `#tvb-kpi-ritmo` tem escala própria: ritmo é o
+  pulso da linha, peso e pontos são conferência. O `flex-wrap` centrado da
+  linha absorve o crescimento — se não couber ao lado, o ritmo desce inteiro
+  para a linha de baixo. Não voltar a igualar os três.
+  - **A escala é adaptativa pelo nº de substats ligados** (27/08/2026, mesmo
+    pedido de novo — na TV do gestor PESO e PONTOS estão desligados e o ritmo
+    continuava no tamanho pensado pros três). `_sincSlideB` põe o `data-n` na
+    `.tvb2-substats`, igual ao rail da direita: **1** ligado → ~184px em
+    1080p (era 104), **2** → ~146px, **3** → ~119px. Linha vazia some inteira,
+    senão sobraria a borda de cima sem nada embaixo.
+  - **O teto é `min(vw,vh)`, não `vw` puro.** Medido: com o número solto pela
+    largura, na janela do gerencial (mais baixa que 16:9) o bloco saía da tela.
+    Pelo mesmo motivo o `.tvb-hero-num` ganhou `min(19vw,34vh)` — em 16:9 (a TV
+    do chão de fábrica) e em tela mais alta o 19vw continua menor e **nada
+    muda**; o limite só entra onde a altura é o que falta.
 - **Cor de gráfico do Chart.js NÃO aceita token CSS.** O desenho é no `<canvas>`,
   que não resolve `var(--ok)`: a cor vira inválida e sai no **preto padrão**. Foi
   o que aconteceu com a linha **Ef.%** do gráfico do HISTÓRICO — quase invisível

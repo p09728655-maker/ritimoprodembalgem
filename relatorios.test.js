@@ -942,6 +942,265 @@ ok('a tela e o PDF leem a mesma explicação',
 ok('a busca do período retenta antes de desistir',
    /for\(let i=1;i<=TENT;i\+\+\)/.test(pega('async function lerProducaoModeloPeriodo(')), true);
 
+// ════════════════════════════════════════════════════════════════════════════
+// GESTÃO DAS PERDAS — camada nova do relatório de paradas (27/08/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// Duas coisas são testadas aqui, e a segunda importa tanto quanto a primeira:
+//   1. as contas da camada nova;
+//   2. que o relatório ANTIGO continua inteiro — o pedido do PPCP foi explícito
+//      em não alterar, excluir ou substituir nada do que já funciona.
+require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'paradas-calc.js'), 'utf8'));
+// As constantes da camada (metas, regexes) vão para o global: `const` dentro
+// de eval fica preso ao escopo do próprio eval e as funções não o enxergam.
+[...JS.matchAll(/^const (PG_[A-Z_]+|PAR_TROCA)\s*=.*$/gm)]
+  .forEach(m => eval(m[0].replace(/^const /, 'global.')));
+// ehSetupParada e _fmtMinPar já foram carregados acima (SWOT/cascata)
+eval(pega('function _pgClasseGer('));
+eval(pega('function _pgDias('));
+eval(pega('function _pgPioresDias('));
+eval(pega('function _pgExtremos('));
+eval(pega('function _pgSemanas('));
+eval(pega('function _pgSemLbl('));
+eval(pega('function _pgTopCausas('));
+eval(pega('function _pgOutros('));
+eval(pega('function _pgSmed('));
+eval(pega('function _pgMinPor1000('));
+eval(pega('function _pgRecuperacao('));
+eval(pega('function _pgImpactoFluxo('));
+eval(pega('function _pgSobrepostas('));
+eval(pega('function _pgPlano('));
+eval(pega('function _pgDiagnostico('));
+
+console.log('\n── classificação GERENCIAL (2ª camada, não substitui a original) ──');
+ok('parada programada continua PLANEJADA', _pgClasseGer('Parada/Café', true), 'PLANEJADA');
+ok('troca de produto é REDUTÍVEL', _pgClasseGer('Troca de produto', false), 'REDUTIVEL');
+ok('troca de plástico é REDUTÍVEL', _pgClasseGer('Troca de Plastico', false), 'REDUTIVEL');
+ok('falta de material é ANORMAL', _pgClasseGer('Falta de material', false), 'ANORMAL');
+ok('manutenção é ANORMAL', _pgClasseGer('Manutenção', false), 'ANORMAL');
+// Regra 16 do pedido: nunca preencher com causa presumida. "Outros" não é
+// anormal nem redutível — é desconhecido, e o relatório diz isso.
+ok('"Outros" NÃO vira anormal — vira A IDENTIFICAR', _pgClasseGer('Outros', false), 'IDENTIFICAR');
+ok('o critério de REDUTÍVEL é o mesmo ehSetupParada do ESTUDO DE GANHO',
+   _pgClasseGer('Setup de máquina', false), 'REDUTIVEL');
+
+console.log('\n── Pareto diário ──');
+const _pd = {
+  '10/08/2026': {min:120, minNP:100, perd:300, qtd:5, tipos:{
+     'Troca de produto':{qtd:3,min:60,perd:180,planej:false},
+     'Parada/Café'     :{qtd:1,min:20,perd:0,  planej:true},
+     'Manutenção'      :{qtd:1,min:40,perd:120,planej:false}}},
+  '11/08/2026': {min:30,  minNP:30,  perd:90,  qtd:2, tipos:{
+     'Troca de produto':{qtd:2,min:30,perd:90, planej:false}}},
+  '22/08/2026': {min:45,  minNP:45,  perd:0,   qtd:1, tipos:{
+     'Manutenção':{qtd:1,min:45,perd:0,planej:false}}}   // sábado: sem produção
+};
+const _trab = ['10/08/2026','11/08/2026','12/08/2026'];   // 12/08 trabalhou e não parou
+const pgDias = _pgDias(_pd, _trab, 10);                      // 10 h produtivas = 600 min
+ok('entram os dias com parada E os dias trabalhados', pgDias.map(d=>d.data),
+   ['10/08/2026','11/08/2026','12/08/2026','22/08/2026']);
+ok('disponibilidade do dia = (600 − minNP) ÷ 600', Math.round(pgDias[0].dispon*10)/10, 83.3);
+ok('dia trabalhado sem parada dá 100%', pgDias[2].dispon, 100);
+// Sábado não tem produção lançada: não há base de turno, então a
+// disponibilidade dele é "—" e ele fica fora da conta da semana. Sem isso o
+// número da semana deixaria de fechar com o do resumo.
+ok('dia sem produção lançada não tem base', pgDias[3].dispon, null);
+ok('a principal causa é o maior NÃO programado do dia', pgDias[0].causa, 'Troca de produto');
+ok('parada programada não vira "principal causa"',
+   _pgDias({'10/08/2026':{min:20,minNP:0,perd:0,qtd:1,tipos:{'Parada/Café':{qtd:1,min:20,perd:0,planej:true}}}},
+           ['10/08/2026'], 10)[0].causa, '');
+
+console.log('\n── piores dias e extremos ──');
+ok('piores dias vêm pelo tempo NÃO programado', _pgPioresDias(pgDias,2).map(d=>d.data),
+   ['10/08/2026','22/08/2026']);
+ok('dia sem parada não programada fica fora', _pgPioresDias(pgDias,9).every(d=>d.minNP>0), true);
+const pgExt = _pgExtremos(pgDias);
+ok('maior tempo parado olha o tempo TOTAL', pgExt.maisParado.data, '10/08/2026');
+ok('menor disponibilidade só entre dias com base', pgExt.menorDisp.data, '10/08/2026');
+ok('maior perda', pgExt.maiorPerda.data, '10/08/2026');
+
+console.log('\n── evolução da disponibilidade (semana = a MESMA janela do relatório) ──');
+const pgSem = _pgSemanas(pgDias, 10, 90);
+ok('agrupa por semana de segunda a domingo', pgSem.length, 2);
+// 10, 11 e 12/08 são dias trabalhados: base 3 × 600 = 1800; parados 130.
+ok('a base da semana são os dias TRABALHADOS dela', pgSem[0].nDias, 3);
+ok('disponibilidade da semana', Math.round(pgSem[0].dispon*10)/10, 92.8);
+ok('status verde acima da meta', pgSem[0].status, 'g');
+ok('semana sem dia trabalhado não tem base', pgSem[1].dispon, null);
+// A soma das semanas TEM que fechar com o resumo: base total e tempo parado
+// total iguais aos do período. É o que permite pôr as duas leituras no mesmo
+// relatório sem o gestor ter de escolher em qual acreditar.
+const _baseSem = pgSem.reduce((s,w)=>s+w.nDias,0), _npSem = pgSem.reduce((s,w)=>s+w.minNP,0);
+ok('a soma das semanas fecha com o período', [_baseSem, _npSem], [3, 175]);
+ok('rótulo curto da semana', _pgSemLbl({sem:'10/08/2026 a 16/08/2026', num:33}), 'S33 · 10/08–16/08');
+
+console.log('\n── TOP causas a atacar ──');
+const pgTipos = [
+  {tipo:'Troca de produto', qtd:77, min:587, perd:1752, planej:false},
+  {tipo:'Troca de Plastico',qtd:55, min:357, perd:1109, planej:false},
+  {tipo:'Outros',           qtd:38, min:310, perd:1010, planej:false},
+  {tipo:'Parada/Café',      qtd:13, min:207, perd:0,    planej:true},
+  {tipo:'Manutenção',       qtd:2,  min:67,  perd:220,  planej:false}
+];
+const pgTop = _pgTopCausas(pgTipos, 5);
+ok('só entra parada não programada', pgTop.map(t=>t.tipo),
+   ['Troca de produto','Troca de Plastico','Outros','Manutenção']);
+ok('a prioridade é a ordem do Pareto', pgTop[0].prio, 1);
+// O % usa o MESMO denominador do Pareto que já existe (tempo total parado,
+// programado incluído). Denominadores diferentes fariam o mesmo tipo aparecer
+// com dois percentuais no mesmo relatório.
+ok('% bate com o Pareto original (denominador = tempo total)', pgTop[0].pct, 38);
+ok('tempo médio por ocorrência', pgTop[0].med, 8);
+ok('cada causa carrega a classe gerencial', pgTop.map(t=>t.classe),
+   ['REDUTIVEL','REDUTIVEL','IDENTIFICAR','ANORMAL']);
+
+console.log('\n── "OUTROS" — causa a identificar ──');
+const CFGT = {turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12'};
+const parOutros = [
+  {data:'10/08/2026', tipo:'Outros', ini:'08:00', fim:'08:20', obs:'aguardando aquecimento do forno'},
+  {data:'11/08/2026', tipo:'Outros', ini:'08:00', fim:'08:10', obs:'Aguardando aquecimento do forno'},
+  {data:'12/08/2026', tipo:'Outros', ini:'09:00', fim:'09:05', obs:'reunião'},
+  {data:'13/08/2026', tipo:'Outros', ini:'09:00', fim:'09:15', obs:''},
+  {data:'13/08/2026', tipo:'Troca de produto', ini:'10:00', fim:'10:08', obs:'x'}
+];
+const pgOut = _pgOutros(parOutros, CFGT, 100);
+ok('só olha o tipo genérico', pgOut.qtd, 4);
+ok('soma o tempo produtivo do balaio', pgOut.min, 50);
+ok('agrupa o motivo sem se importar com maiúscula', pgOut.lista[0].qtd, 2);
+ok('o motivo mais custoso vem primeiro', pgOut.lista[0].motivo, 'aguardando aquecimento do forno');
+// Regra 16: sem motivo escrito, o relatório NÃO chuta uma causa.
+ok('sem motivo vira CAUSA NÃO IDENTIFICADA (não some, não vira palpite)',
+   [pgOut.semMotivoQtd, pgOut.semMotivoMin], [1, 15]);
+ok('% do tempo parado sob tipo genérico', pgOut.pct, 50);
+ok('o indicador tem meta própria', [pgOut.meta, pgOut.dentro], [5, false]);
+ok('parada de tipo nomeado não entra no balaio',
+   _pgOutros([{data:'1/1/2026',tipo:'Manutenção',ini:'08:00',fim:'09:00',obs:''}], CFGT, 60).qtd, 0);
+
+console.log('\n── SMED (troca de produto / de plástico) ──');
+const pg_parTroca = [
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:10'},
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'09:00', fim:'09:04'},
+  {data:'17/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:22'},
+  {data:'17/08/2026', tipo:'Troca de Plastico',ini:'13:00', fim:'13:06'}
+];
+const pgSp = _pgSmed(pg_parTroca, PG_RE_TROCA_PROD, CFGT, 5);
+ok('conta as trocas', pgSp.qtd, 3);
+ok('tempo total', pgSp.tot, 36);
+ok('média', pgSp.med, 12);
+ok('menor e maior troca', [pgSp.menor, pgSp.maior], [4, 22]);
+ok('quantas já saem dentro da meta', pgSp.naMeta, 1);
+ok('excedente sobre a meta = (média − meta) × trocas', pgSp.excedente, 21);
+ok('distribuição por faixa', pgSp.faixas.map(f=>f.qtd), [0,1,1,0,1]);
+// A faixa carrega o próprio limite: o verde do desenho segue a META do tipo.
+// 5 min está DENTRO na troca de produto (meta 5) e FORA na de plástico (meta 4)
+// — pintar por rótulo fixo mentiria numa das duas.
+ok('a faixa sabe o próprio limite', pgSp.faixas.map(f=>f.ate), [3,5,10,20,Infinity]);
+ok('evolução semana a semana', pgSp.semanas.map(s=>s.qtd), [2,1]);
+ok('o plástico tem meta própria', _pgSmed(pg_parTroca, PG_RE_TROCA_PLAS, CFGT, 4).med, 6);
+// Seção sem dado não é impressa com zeros — some.
+ok('tipo que não apareceu devolve null', _pgSmed([], PG_RE_TROCA_PROD, CFGT, 5), null);
+
+console.log('\n── KPI novo: minutos parados / 1.000 caixas ──');
+ok('1.736 min em 36.304 cx', Math.round(_pgMinPor1000(1736,36304)*100)/100, 47.82);
+ok('sem caixas apontadas não inventa número', _pgMinPor1000(100,0), null);
+
+console.log('\n── potencial de recuperação (simulação) ──');
+const pgRec = _pgRecuperacao(pgTipos, 217, {});
+ok('só simula os cenários definidos e existentes', pgRec.itens.map(i=>i.tipo),
+   ['Troca de produto','Troca de Plastico','Outros']);
+// 587/77 = 7,62 min de média; (7,62 − 5) × 77 = 202 min
+ok('troca de produto: (média − meta) × ocorrências', pgRec.itens[0].ganhoMin, 202);
+ok('o balaio genérico entra como corte de 50%', pgRec.itens[2].ganhoMin, 155);
+ok('caixas saem do ritmo REAL, a régua que o resumo já usa',
+   pgRec.itens[0].cx, RP_PARADAS.perdaAoRitmo(202, 217));
+ok('total soma os cenários', pgRec.ganhoMin, 202+137+155);
+ok('sem ritmo medido não inventa caixas', _pgRecuperacao(pgTipos,0,{}).cx, 0);
+// O cenário de corte leva o tempo REAL do tipo: o quadro mostra de quanto
+// se está cortando, em vez de deduzir o valor a partir do ganho.
+ok('o cenário de corte guarda o tempo real do tipo', pgRec.itens[2].min, 310);
+// Tipo que não está nos cenários do PPCP não vira meta chutada.
+ok('manutenção não ganha meta inventada', pgRec.itens.some(i=>/Manuten/.test(i.tipo)), false);
+
+console.log('\n── impacto no fluxo (quem define o ritmo é o gargalo) ──');
+const pgFx = _pgImpactoFluxo({taktSeg:17.1, ritmoHora:210}, {taktReal:17, ritmoReal:217}, {dispon:87.1});
+ok('rodando mais rápido que o necessário → o foco é disponibilidade', pgFx.veredito, 'disponibilidade');
+ok('mais lento que o ideal → o ritmo também pesa',
+   _pgImpactoFluxo({taktSeg:15, ritmoHora:240}, {taktReal:20, ritmoReal:180}, {dispon:90}).veredito, 'ritmo');
+ok('sem takt configurado não há veredito',
+   _pgImpactoFluxo({taktSeg:0}, {taktReal:17}, {dispon:90}).veredito, null);
+
+console.log('\n── apontamento sobreposto (só sinaliza, não corrige) ──');
+const pgSobre = _pgSobrepostas([
+  {data:'10/08/2026', tipo:'A', ini:'08:00', fim:'08:30'},
+  {data:'10/08/2026', tipo:'B', ini:'08:20', fim:'08:40'},   // sobrepõe 10 min
+  {data:'10/08/2026', tipo:'C', ini:'08:40', fim:'09:00'},   // encosta, não sobrepõe
+  {data:'11/08/2026', tipo:'D', ini:'08:50', fim:'09:10'}    // outro dia: não é sobreposição
+]);
+ok('acha a sobreposição', pgSobre.length, 1);
+ok('mede quanto se sobrepõe', pgSobre[0].min, 10);
+ok('parada encostada (fim = início) não é sobreposição', pgSobre.some(s=>s.b.tipo==='C'), false);
+ok('dia diferente nunca sobrepõe', pgSobre.some(s=>s.data==='11/08/2026'), false);
+ok('parada em andamento (sem fim) fica fora',
+   _pgSobrepostas([{data:'1/1/2026',tipo:'A',ini:'08:00',fim:''},{data:'1/1/2026',tipo:'B',ini:'08:10',fim:'08:20'}]).length, 0);
+
+console.log('\n── plano de ação (não inventa responsável nem prazo) ──');
+const pgPlano = _pgPlano(pgTop, pgOut);
+ok('uma linha por causa do topo', pgPlano.length, 4);
+ok('responsável e prazo saem "A definir"',
+   pgPlano.every(a=>a.resp==='A definir' && a.prazo==='A definir'), true);
+ok('troca vira SMED com a meta em minutos', /≤ 5 min/.test(pgPlano[0].meta), true);
+ok('o balaio genérico vira "classificar a causa"', /Classificar a causa/.test(pgPlano[2].acao), true);
+
+console.log('\n── diagnóstico PPCP ──');
+const pgDg = _pgDiagnostico({st:{totMin:1736, pecas:4639, pesoMedio:28, pesoPerd:129920, dispon:87.1},
+                           top:pgTop, outros:pgOut, rec:pgRec, fluxo:pgFx, semanas:pgSem});
+ok('problema principal é o maior ofensor não programado', /Troca de produto/.test(pgDg.problema), true);
+ok('o foco sai do veredito de fluxo', /DISPONIBILIDADE/.test(pgDg.foco), true);
+ok('ganho potencial vem da simulação', /cx nos cenários simulados/.test(pgDg.ganho), true);
+// Sem causa nomeada no topo, o diagnóstico assume a ignorância em vez de
+// escolher um culpado plausível.
+const pgDg2 = _pgDiagnostico({st:{totMin:100,pecas:1,pesoMedio:0,pesoPerd:0,dispon:80},
+                            top:_pgTopCausas([{tipo:'Outros',qtd:5,min:100,perd:200,planej:false}],5),
+                            outros:pgOut, rec:pgRec, fluxo:pgFx, semanas:pgSem});
+ok('topo genérico → CAUSA NÃO IDENTIFICADA', /CAUSA NÃO IDENTIFICADA/.test(pgDg2.problema), true);
+ok('e a ação é classificar antes de atacar', /Classificar a causa/.test(pgDg2.acao), true);
+ok('sem parada não programada não há problema principal inventado',
+   _pgDiagnostico({st:{totMin:0,pecas:0,pesoMedio:0,pesoPerd:0,dispon:100}, top:[], outros:null,
+                   rec:{ganhoMin:0}, fluxo:{veredito:null}, semanas:[]}).problema,
+   'Nenhuma parada não programada no período.');
+
+console.log('\n── o relatório ANTIGO continua inteiro ──');
+// O pedido do PPCP foi explícito: a camada nova é ACRÉSCIMO. Se alguma destas
+// peças sumir, o relatório oficial perdeu função — e é isso que não pode.
+const _relPar = pega('async function gerarRelatorioParadas(');
+[['RESUMO','<div class="rp-sec-ttl">RESUMO</div>'],
+ ['Pareto por tipo','PARETO — TEMPO PARADO POR TIPO'],
+ ['tabela por tipo','<div class="rp-sec-ttl">POR TIPO DE PARADA</div>'],
+ ['estudo de ganho','ESTUDO DE GANHO'],
+ ['SWOT','${swotHtml}'],
+ ['detalhamento','<div class="rp-sec-ttl">DETALHAMENTO</div>'],
+ ['tempo total parado','TEMPO TOTAL PARADO'],
+ ['disponibilidade','DISPONIBILIDADE'],
+ ['% do turno perdido','% DO TURNO PERDIDO'],
+ ['peças perdidas','PEÇAS PERDIDAS'],
+ ['perda a ritmo real','PERDA A RITMO REAL'],
+ ['takt ideal','TAKT IDEAL'],
+ ['takt real','TAKT REAL (RODANDO)'],
+ ['peso perdido','PESO PERDIDO'],
+ ['tempo médio/parada','TEMPO MÉDIO / PARADA']
+].forEach(([nome,trecho]) => ok('o relatório antigo mantém: '+nome, _relPar.includes(trecho), true));
+// A camada nova entra DEPOIS do diagnóstico antigo e ANTES do detalhamento.
+ok('a camada nova entra depois do SWOT',
+   _relPar.indexOf('${swotHtml}') < _relPar.indexOf('${pgHtml}'), true);
+ok('e antes do detalhamento',
+   _relPar.indexOf('${pgHtml}') < _relPar.indexOf('<div class="rp-sec-ttl">DETALHAMENTO</div>'), true);
+// Se a camada nova quebrar, o relatório oficial sai assim mesmo.
+ok('a camada nova roda dentro de um try', /try\{[\s\S]*?_pgSecaoHtml\(/.test(_relPar), true);
+// A conta continua morando no paradas-calc.js: a camada nova valora recortes
+// pelas funções do módulo, não com fórmula própria escrita no HTML.
+ok('a camada nova não escreve fórmula de perda própria',
+   /perd\s*=\s*Math\.round\([^)]*meta[^)]*horasProd/.test(JS), false);
+ok('e valora pelo módulo (perdaAoRitmo)', /RP_PARADAS\.perdaAoRitmo\(/.test(pega('function _pgRecuperacao(')), true);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
