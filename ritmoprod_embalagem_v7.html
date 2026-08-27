@@ -2313,7 +2313,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.17.0';
+const APP_VER   = '7.17.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -4875,8 +4875,18 @@ async function gerarRelatorioProducaoHora(){
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:12mm 14mm; font-size:11px; }
-  @page{ size:A4 landscape; margin:0; }
-  @media print{ body{ padding:8mm 10mm; } .no-print{ display:none!important; } }
+  /* A margem da impressão é da PÁGINA, não do body: padding de body existe uma
+     vez só (começo e fim do fluxo), então da 2ª folha em diante o conteúdo saía
+     colado na borda do papel — dentro da faixa que a impressora não imprime.
+     Era esse o corte. Na tela o padding continua, para o preview não ficar
+     rente à janela. */
+  @page{ size:A4 landscape; margin:10mm 10mm; }
+  @media print{
+    body{ padding:0; }
+    .no-print{ display:none!important; }
+    tr{ page-break-inside:avoid; }
+    thead{ display:table-header-group; }
+  }
   .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
   .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
@@ -5225,8 +5235,18 @@ async function gerarRelatorioProducaoModelo(){
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
-  @page{ size:A4 portrait; margin:0; }
-  @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
+  /* A margem da impressão é da PÁGINA, não do body: padding de body existe uma
+     vez só (começo e fim do fluxo), então da 2ª folha em diante o conteúdo saía
+     colado na borda do papel — dentro da faixa que a impressora não imprime.
+     Era esse o corte. Na tela o padding continua, para o preview não ficar
+     rente à janela. */
+  @page{ size:A4 portrait; margin:12mm 14mm; }
+  @media print{
+    body{ padding:0; }
+    .no-print{ display:none!important; }
+    tr{ page-break-inside:avoid; }
+    thead{ display:table-header-group; }
+  }
 
   .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
@@ -6355,8 +6375,13 @@ async function _imprimirHistoricoFormatado(){
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:12mm 14mm;font-size:10px}
-  @page{size:A4 portrait;margin:0}
-  @media print{body{padding:8mm 10mm}.no-print{display:none!important} tr{page-break-inside:avoid}}
+  /* A margem da impressão é da PÁGINA, não do body: padding de body existe uma
+     vez só (começo e fim do fluxo), então da 2ª folha em diante o conteúdo saía
+     colado na borda do papel — dentro da faixa que a impressora não imprime.
+     Era esse o corte. Na tela o padding continua, para o preview não ficar
+     rente à janela. */
+  @page{size:A4 portrait;margin:10mm 10mm}
+  @media print{body{padding:0}.no-print{display:none!important} tr{page-break-inside:avoid} thead{display:table-header-group}}
   /* HEADER */
   .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
@@ -7084,8 +7109,18 @@ async function gerarRelatorioSemanal(){
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
-  @page{ size:A4 portrait; margin:0; }
-  @media print{ body{ padding:10mm 14mm; } .no-print{ display:none!important; } }
+  /* A margem da impressão é da PÁGINA, não do body: padding de body existe uma
+     vez só (começo e fim do fluxo), então da 2ª folha em diante o conteúdo saía
+     colado na borda do papel — dentro da faixa que a impressora não imprime.
+     Era esse o corte. Na tela o padding continua, para o preview não ficar
+     rente à janela. */
+  @page{ size:A4 portrait; margin:12mm 14mm; }
+  @media print{
+    body{ padding:0; }
+    .no-print{ display:none!important; }
+    tr{ page-break-inside:avoid; }
+    thead{ display:table-header-group; }
+  }
 
   /* HEADER */
   .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -8442,8 +8477,30 @@ function _rpDocParadas(titulo){
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
-  @page{size:A4 portrait;margin:0}
-  @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
+  /* ── A MARGEM DA IMPRESSÃO É DA PÁGINA, NÃO DO BODY ──────────────────────
+     Com margem zero na @page, o único respiro vinha do padding do body — e
+     padding de body existe UMA vez só: começo e fim do fluxo. Da 2ª folha em
+     diante o conteúdo saía colado na borda do papel, dentro da faixa que a
+     impressora fisicamente não imprime. Era esse o corte: a primeira linha de
+     cada folha (e a última) desaparecia no papel, embora aparecesse na tela.
+     Na TELA o padding continua, senão o preview fica rente à janela. ── */
+  @page{size:A4 portrait;margin:12mm 14mm}
+  @media print{
+    body{padding:0}
+    .no-print{display:none!important}
+    /* Linha partida ao meio pela quebra da folha é o mesmo corte visto de
+       perto: a tabela quebra ENTRE linhas, e o cabeçalho se repete na folha
+       seguinte — sem ele, a coluna da página 5 vira adivinhação. */
+    tr{page-break-inside:avoid}
+    thead{display:table-header-group}
+    /* Título de seção sozinho no pé da folha não é título de nada. */
+    .rp-sec-ttl,.pg-abre,.pg-an-ttl,.pg-piores-ttl{page-break-after:avoid}
+    /* Blocos que só fazem sentido inteiros: número em cima e rótulo embaixo
+       em folhas diferentes é ilegível. */
+    .kpi-card,.swot-q,.pg-pior,.pg-smed,.pg-fluxo,.pg-alerta,.pg-ok,.pg-vazio,
+    .pg-ev-i,.pg-diag-l,.pgq-smed-l,.pgq-tend,.pgq-bars{page-break-inside:avoid}
+    .rp-footer,.rp-note{page-break-before:avoid}
+  }
   .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
   .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}

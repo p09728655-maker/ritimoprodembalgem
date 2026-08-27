@@ -1343,6 +1343,30 @@ ok('a camada nova não escreve fórmula de perda própria',
    /perd\s*=\s*Math\.round\([^)]*meta[^)]*horasProd/.test(JS), false);
 ok('e valora pelo módulo (perdaAoRitmo)', /RP_PARADAS\.perdaAoRitmo\(/.test(pega('function _pgRecuperacao(')), true);
 
+// ── guarda-corpo: a margem da impressão é da PÁGINA ─────────────────────────
+// @page{margin:0} + padding no body dá respiro só na 1ª e na última folha:
+// padding de body existe uma vez, no começo e no fim do fluxo. Da 2ª folha em
+// diante o conteúdo sai colado na borda do papel, dentro da faixa que a
+// impressora não imprime — foi o corte reclamado nos relatórios de PARADAS e
+// de GESTÃO DE PERDAS. Vale para os CINCO relatórios em popup.
+console.log('\n── impressão: margem na @page, não no padding do body ──');
+const _pages = [...src.matchAll(/@page\s*\{([^}]*)\}/g)].map(m => m[1]);
+ok('nenhum relatório imprime com @page margin:0',
+   _pages.filter(p => /margin\s*:\s*0\s*[;}]?\s*$/.test(p.trim())).length, 0);
+ok('toda @page declara margem', _pages.filter(p => !/margin\s*:/.test(p)).length, 0);
+// O padding do body é do PREVIEW na tela; na impressão ele tem de sair, senão
+// a 1ª folha ganha margem dobrada e as outras continuam sem nenhuma.
+const _printBlocks = [...src.matchAll(/@media print\s*\{([\s\S]*?)\n  \}/g)].map(m => m[1])
+  .concat([...src.matchAll(/@media print\s*\{([^\n]*)\}\s*\n/g)].map(m => m[1]));
+ok('nenhum @media print devolve padding ao body',
+   _printBlocks.filter(b => /body\s*\{[^}]*padding\s*:\s*(?!0)/.test(b)).length, 0);
+// Tabela que quebra no meio da linha é o mesmo corte visto de perto, e sem o
+// cabeçalho repetido a coluna da folha 5 vira adivinhação.
+ok('tabela dos relatórios quebra entre linhas',
+   (src.match(/tr\s*\{\s*page-break-inside\s*:\s*avoid/g) || []).length >= 4, true);
+ok('e repete o cabeçalho em cada folha',
+   (src.match(/thead\s*\{\s*display\s*:\s*table-header-group/g) || []).length >= 4, true);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
