@@ -952,7 +952,10 @@ ok('a busca do período retenta antes de desistir',
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'paradas-calc.js'), 'utf8'));
 // As constantes da camada (metas, regexes) vão para o global: `const` dentro
 // de eval fica preso ao escopo do próprio eval e as funções não o enxergam.
-[...JS.matchAll(/^const (PG_[A-Z_]+|PAR_TROCA)\s*=.*$/gm)]
+// A declaração pode ocupar VÁRIAS linhas (PG_GRAOS é um objeto): pega até a
+// primeira linha que fecha com ";" — com o `.*$` de antes, a constante vinha
+// pela metade e o teste morria em "Unexpected end of input".
+[...JS.matchAll(/^const (PG_[A-Z_]+|PAR_TROCA)\s*=[\s\S]*?;[ \t]*(\/\/.*)?$/gm)]
   .forEach(m => eval(m[0].replace(/^const /, 'global.')));
 // ehSetupParada e _fmtMinPar já foram carregados acima (SWOT/cascata)
 eval(pega('function _pgClasseGer('));
@@ -967,6 +970,8 @@ eval(pega('function _pgMetaSmed('));   // a escada da meta — o _pgSmed chama
 eval(pega('function _pgFmtMin('));
 eval(pega('function _pgSmed('));
 eval(pega('function _pgMinPor1000('));
+eval(pega('function _pgJanelaDe('));
+eval(pega('function _pgPorJanela('));
 eval(pega('function _pgRecuperacao('));
 eval(pega('function _pgImpactoFluxo('));
 eval(pega('function _pgSobrepostas('));
@@ -1146,6 +1151,47 @@ console.log('\n── KPI novo: minutos parados / 1.000 caixas ──');
 ok('1.736 min em 36.304 cx', Math.round(_pgMinPor1000(1736,36304)*100)/100, 47.82);
 ok('sem caixas apontadas não inventa número', _pgMinPor1000(100,0), null);
 
+console.log('\n── minutos parados / 1.000 cx por SEMANA · QUINZENA · MÊS ──');
+// "Compara por semana, mês, quinzena" (usuário, 27/08/2026). O recorte sai do
+// período já buscado — nenhuma chamada nova ao backend.
+const pgJDias = [
+  {data:'10/08/2026', min:60, minNP:40},   // segunda — S33
+  {data:'16/08/2026', min:30, minNP:20},   // domingo — MESMA S33 (a semana é seg→dom)
+  {data:'17/08/2026', min:20, minNP:10},   // segunda — S34, e já é 2ª quinzena
+  {data:'05/07/2026', min:99, minNP:99},   // mês sem produção lançada
+  {data:'20/09/2026', min:50, minNP:50}
+];
+const pgJReal = {'10/08/2026':1000, '16/08/2026':1000, '17/08/2026':1000, '20/09/2026':2000};
+const pgJSem = _pgPorJanela(pgJDias, pgJReal, 'semana').lista;
+ok('domingo entra na semana que começou na segunda anterior',
+   [pgJSem.length, pgJSem[0].min, pgJSem[0].cx], [3, 90, 2000]);
+ok('o rótulo da semana é o mesmo do resto do painel', /^S33 · 10\/08–16\/08$/.test(pgJSem[0].lbl), true);
+ok('o indicador é minutos ÷ caixas × 1.000', [pgJSem[0].mil, pgJSem[0].milNP], [45, 30]);
+const pgJQ = _pgPorJanela(pgJDias, pgJReal, 'quinzena').lista;
+ok('a quinzena corta no dia 15', pgJQ.map(q=>q.lbl), ['1ªQ AGO/26','2ªQ AGO/26','2ªQ SET/26']);
+ok('e cada uma leva os dias dela', pgJQ.map(q=>q.min), [60, 50, 50]);
+const pgJMes = _pgPorJanela(pgJDias, pgJReal, 'mes');
+const pgJM = pgJMes.lista;
+ok('o mês agrupa o mês inteiro', [pgJM.map(m=>m.lbl), pgJM[0].min, pgJM[0].cx],
+   [['AGO/26','SET/26'], 110, 3000]);
+// ⚠ "tira dias não trabalhados": dia sem produção lançada punha minutos no
+// numerador sem caixa no denominador — o indicador subia num dia em que
+// ninguém embalou. Numerador e denominador olham os MESMOS dias.
+ok('dia sem produção não entra na conta', pgJM.some(m=>/JUL/.test(m.lbl)), false);
+ok('e o que ficou de fora é declarado, não some',
+   [pgJMes.diasFora, pgJMes.minFora], [1, 99]);
+ok('só dia trabalhado soma minutos',
+   _pgPorJanela([{data:'10/08/2026',min:60,minNP:40},{data:'15/08/2026',min:500,minNP:500}],
+                {'10/08/2026':1000}, 'mes').lista[0].min, 60);
+// A variação é contra a janela anterior DA LISTA, e parar menos por caixa é melhorar.
+ok('a variação compara com a janela anterior', [pgJM[0].deltaNP, pgJM[1].deltaNP], [null, 1.7]);
+ok('subir o não programado por caixa NÃO é melhora', [pgJM[0].bom, pgJM[1].bom], [null, false]);
+ok('cair é melhora',
+   _pgPorJanela([{data:'10/08/2026',min:60,minNP:60},{data:'10/09/2026',min:10,minNP:10}],
+                {'10/08/2026':1000,'10/09/2026':1000}, 'mes').lista[1].bom, true);
+ok('grão desconhecido cai no mês', _pgJanelaDe('10/08/2026','xis').lbl, 'AGO/26');
+ok('data quebrada não vira janela', _pgJanelaDe('','mes'), null);
+
 console.log('\n── potencial de recuperação (simulação) ──');
 const pgRec = _pgRecuperacao(pgTipos, 217, {});
 ok('só simula os cenários definidos e existentes', pgRec.itens.map(i=>i.tipo),
@@ -1306,6 +1352,16 @@ ok('e sai nos dois — tela e PDF',
 ok('o desenho não refaz a conta', /_pgMinPor1000\(/.test(pega('function _pgMin1000Html(')), false);
 ok('os dois por 1.000 cx saem do contexto',
    /minPor1000NP:_pgMinPor1000\(st\.totMinNP/.test(pega('function _pgContexto(')), true);
+// A semana da comparação é a MESMA do relatório semanal e da Tela D.
+ok('a janela de semana não é reescrita aqui',
+   /_relSemanaJanela\(data\)/.test(pega('function _pgJanelaDe(')), true);
+ok('as três janelas saem prontas do contexto',
+   /janelas:\{semana:\s*_pgPorJanela/.test(pega('function _pgContexto(')), true);
+ok('o desenho não recorta janela nenhuma', /_pgPorJanela\(/.test(pega('function _pgMin1000Html(')), false);
+// Trocar o grão é redesenho: refazer a busca do período seria a leitura mais
+// cara do painel por causa de um clique.
+ok('trocar o grão não chama o backend',
+   /_pgBuscarDados|getParadasPeriodo/.test(pega('function _pgTrocaGrao(')), false);
 
 console.log('\n── a TELA e o PDF são o mesmo quadro ──');
 // O quadro nasceu no PDF e o PPCP pediu ele como TELA. Desenho, busca e conta
