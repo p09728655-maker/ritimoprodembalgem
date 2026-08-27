@@ -1844,7 +1844,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span style="color:var(--txt2)">–</span>
       <input type="date" id="pg-ate" onchange="_pgMarcaPreset(null);renderGestaoPerdas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-ghost" onclick="renderGestaoPerdas(true)" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
-      <button class="btn btn-acc" onclick="gerarRelatorioParadas(dGet('pg-de'),dGet('pg-ate'))" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO COMPLETO</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioPerdas(dGet('pg-de'),dGet('pg-ate'))" style="font-size:10px;padding:4px 10px">📋 RELATÓRIO DESTA TELA</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioParadas(dGet('pg-de'),dGet('pg-ate'))" title="O relatório de controle do período: resumo, Pareto por tipo, estudo de ganho, SWOT e o detalhamento parada a parada" style="font-size:10px;padding:4px 10px">⏸ RELATÓRIO DE PARADAS</button>
     </div>
   </div>
   <div class="par-filtros">
@@ -2312,7 +2313,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.16.1';
+const APP_VER   = '7.17.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -7952,7 +7953,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
 // rp-sec-ttl, table) — a identidade visual não muda.
 function _pgSecaoHtml(ctx){
   const {st, dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, anom, plano,
-         diag, minPor1000, trR, tiR, temMotivo, tend, foco} = ctx;
+         diag, minPor1000, trR, tiR, temMotivo, tend, foco, soZinho} = ctx;
   const sobre=(anom&&anom.sobrepostas)||[];
   const e=_rpEsc;
   const pct=v=>fmtP(v);
@@ -8157,9 +8158,11 @@ function _pgSecaoHtml(ctx){
 
   // ── montagem ------------------------------------------------------------
   return `
-<div class="pg-abre">
-  <div class="pg-abre-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div>
-  <div class="pg-abre-txt">Camada de gestão sobre o relatório de controle acima. <b>Nenhum indicador, fórmula ou critério das seções anteriores foi alterado</b> — o que vem aqui é leitura nova sobre os mesmos dados, e todo número derivado usa as mesmas contas (duração produtiva, perda pela meta do dia, perda ao ritmo real). Onde a leitura é nova, está dito. Onde o dado não sustenta, está escrito "não identificado".</div>
+<div class="pg-abre${soZinho?' so':''}">
+  ${soZinho?'':'<div class="pg-abre-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div>'}
+  <div class="pg-abre-txt">${soZinho
+    ? 'As mesmas contas do relatório de paradas, lidas pela pergunta da gestão: onde estamos perdendo, o que atacar primeiro, quanto dá para recuperar e se estamos melhorando. <b>Nenhum indicador foi recalculado por outro método</b> — todo número derivado usa a duração produtiva, a perda pela meta do dia e a perda ao ritmo real do relatório de controle. Onde a leitura é nova, está dito; onde o dado não sustenta, está escrito "não identificado".'
+    : 'Camada de gestão sobre o relatório de controle acima. <b>Nenhum indicador, fórmula ou critério das seções anteriores foi alterado</b> — o que vem aqui é leitura nova sobre os mesmos dados, e todo número derivado usa as mesmas contas (duração produtiva, perda pela meta do dia, perda ao ritmo real). Onde a leitura é nova, está dito. Onde o dado não sustenta, está escrito "não identificado".'}</div>
 </div>
 
 ${_pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, rec, tend, foco})}
@@ -8318,7 +8321,7 @@ function _pgPintar(ctx, t){
         ${linha('AÇÃO RECOMENDADA', d.acao||'—', 'var(--acc)')}
         ${linha('GANHO POTENCIAL', d.ganho||'—', 'var(--ok)')}
         ${linha('PRÓXIMO FOCO', d.foco||'—')}
-      </div><div class="pg-diag-nota">O relatório completo (botão acima) traz o Pareto diário, o detalhamento das paradas e todas as seções que o PDF já imprimia — esta tela é a leitura de dez segundos.</div></div>`;
+      </div><div class="pg-diag-nota">Esta tela é a leitura de dez segundos. <b>RELATÓRIO DESTA TELA</b> imprime o quadro com as onze seções da gestão de perdas (Pareto diário, evolução, causas, SMED, recuperação, plano e validação do apontamento); <b>RELATÓRIO DE PARADAS</b> imprime o controle do período — resumo, Pareto por tipo, estudo de ganho, SWOT e o detalhamento parada a parada.</div></div>`;
   const upd=document.getElementById('pg-upd');
   if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
 }
@@ -8370,6 +8373,222 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
     diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), semanas}),
     temMotivo:(paradas||[]).some(p=>String(p.obs||'').trim()!=='')
   };
+}
+
+// ── RELATÓRIO DA GESTÃO DE PERDAS (PDF) ─────────────────────────────────────
+// O relatório DA TELA: o quadro + as onze seções da camada, e nada do
+// relatório de controle. Ele existe porque o botão da aba GESTÃO DE PERDAS
+// abria o relatório de PARADAS — outro documento, com outro título e outra
+// pergunta. Quem está na tela de gestão quer imprimir o que está vendo.
+//
+// Busca, contas e desenho continuam UM só (`_pgBuscarDados`, `_pgContexto`,
+// `_pgSecaoHtml`) — os mesmos que a tela e o relatório de paradas usam. O que
+// muda aqui é só a moldura: título, período e rodapé.
+async function gerarRelatorioPerdas(deArg, ateArg){
+  if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
+  const win=window.open('','_blank','width=1040,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">\u23F3 Montando a gestão de perdas...</p></body></html>');
+  if(!CFG.sheetsUrl){ win.close(); alert('O relatório requer o Google Sheets configurado.'); return; }
+
+  const hj=new Date();
+  let de=deArg||dGet('pg-de')||dGet('par-de');
+  let ate=ateArg||dGet('pg-ate')||dGet('par-ate');
+  if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
+  if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
+
+  let dados=null;
+  try{ dados=await _pgBuscarDados(de, ate); }
+  catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
+
+  let corpo='';
+  try{
+    const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
+    const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
+    const tiR=_taktIdeal(st.horasProd);
+    const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
+    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate});
+    ctx.soZinho=true;   // a camada ABRE o documento: sem "o relatório acima"
+    corpo=_pgSecaoHtml(ctx)
+      + `<div class="rp-note">Este relatório é a leitura de gestão. O <b>RELATÓRIO DE PARADAS</b> traz o controle do período — resumo, Pareto por tipo, tabela por tipo, estudo de ganho, SWOT e o detalhamento parada a parada — com as mesmas contas e o mesmo período.</div>`
+      + `<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>`;
+  }catch(err){
+    win.close(); alert('Não foi possível montar a gestão de perdas: '+err.message); return;
+  }
+
+  const html=_rpDocParadas(`Gestão de Perdas — ${de} a ${ate}`)
+    + _rpBotaoImprimir()
+    + _rpCabecalho('GESTÃO DE PERDAS — VISÃO PPCP',
+        `<div class="rp-per">PERÍODO</div>
+         <div>${_rpEsc(de)} a ${_rpEsc(ate)}</div>
+         <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`)
+    + corpo + '</body></html>';
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+// ── Topo do documento dos relatórios de PARADAS e de GESTÃO DE PERDAS ───────
+// Os dois imprimem o MESMO vocabulário visual — as classes rp-*, kpi-*, swot-*,
+// pg-* e pgq-* são as mesmas. Copiar 150 regras de CSS para o relatório novo
+// seria garantir que o próximo ajuste conserte um e esqueça o outro, que foi
+// exatamente a história do cabeçalho dos cinco relatórios (#204/#205).
+function _rpDocParadas(titulo){
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${_rpEsc(titulo)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
+  @page{size:A4 portrait;margin:0}
+  @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
+  .rp-logo span{color:#FF5C1F}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#718096;margin-top:3px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;line-height:1.7}
+  .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
+  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c53030;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:1.5px solid #edf2f7;padding-bottom:6px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .kpi-card{background:#f8fafc;border:1px solid #edf2f7;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
+  .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
+  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
+  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}
+  .rp-chart-wrap{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:12px 14px}
+  table{width:100%;border-collapse:collapse;margin-top:2px}
+  thead th{background:#1a1a2e;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#fff;letter-spacing:1.2px;text-transform:uppercase;padding:7px 10px;border-bottom:1.5px solid #cbd5e0;text-align:left}
+  tbody td{font-size:11px;padding:6px 10px;border-bottom:1px solid #edf2f7;color:#1a1a2e}
+  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
+  .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a94a6}
+  .rp-note{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#718096;margin-top:8px}
+  /* SWOT: 2×2, tarja no topo com a cor do quadrante. Itens vêm dos DADOS do
+     período (função _relSwotParadas) — quadrante vazio diz "—", não inventa. */
+  .swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .swot-q{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #ccc;border-radius:5px;padding:9px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
+  .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}
+  .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
+  /* ═══ GESTÃO DAS PERDAS — camada nova. Só classes pg-*: nenhuma regra acima
+     foi alterada, então o relatório antigo imprime exatamente como imprimia.
+     Tudo com print-color-adjust, senão a impressão P&B come o que dá sentido
+     à leitura (o selo de status, a faixa do veredito). ═══ */
+  .pg-abre{margin-top:22px;padding:11px 14px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;border-radius:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-before:always}
+  /* No relatório SÓ da gestão de perdas a camada abre o documento: a quebra de
+     página antes dela imprimiria uma folha em branco, e o cabeçalho logo acima
+     já diz o nome. */
+  .pg-abre.so{page-break-before:auto;margin-top:0}
+  .pg-abre-ttl{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;letter-spacing:2px}
+  .pg-abre-txt{font-size:10px;color:#cbd5e0;line-height:1.5;margin-top:4px}
+  .pg-vazio{font-size:11px;color:#718096;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:5px;padding:9px 12px}
+  .pg-ok{font-size:11px;color:#2e7d32;background:#f1f8f2;border:1px solid #c8e6c9;border-radius:5px;padding:8px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-mark{font-weight:700;background:#fff3e0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-sinal{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:9px;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-sinal.g{background:#4CAF50}.pg-sinal.o{background:#FF9800}.pg-sinal.r{background:#F44336}
+  .pg-piores{margin-top:9px}
+  .pg-piores-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:6px}
+  .pg-piores-ttl span{letter-spacing:0;text-transform:none;color:#a0aec0}
+  .pg-piores-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .pg-pior{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #e57373;border-radius:5px;padding:7px 9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-pior-pos{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c62828;font-weight:700}
+  .pg-pior-data{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
+  .pg-pior-min{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1.05;color:#1a1a2e}
+  .pg-pior-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096}
+  .pg-pior-causa{font-size:9px;color:#4a5568;margin-top:3px;line-height:1.25}
+  .pg-smed{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:10px 12px;margin-bottom:9px}
+  .pg-smed-ttl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:#e65100;letter-spacing:2px;margin-bottom:7px}
+  .pg-smed-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+  .pg-smed-kpis div{text-align:center}
+  .pg-smed-kpis span{display:block;font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;line-height:1;color:#1a1a2e}
+  .pg-smed-kpis i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#718096;font-style:normal;margin-top:3px;line-height:1.25}
+  .pg-ev{display:flex;gap:6px;flex-wrap:wrap}
+  .pg-ev-i{flex:1;min-width:62px;background:#fff;border:1px solid #edf2f7;border-radius:4px;padding:5px 4px;text-align:center}
+  .pg-ev-v{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;line-height:1}
+  .pg-ev-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
+  .pg-ev-q{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0}
+  .pg-fluxo{border-radius:5px;padding:11px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-fluxo.ok{background:#f1f8f2;border:1px solid #c8e6c9;border-left:4px solid #4CAF50}
+  .pg-fluxo.warn{background:#fff8e1;border:1px solid #ffe0b2;border-left:4px solid #FF9800}
+  .pg-fluxo-tag{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.2px;color:#2e7d32}
+  .pg-fluxo.warn .pg-fluxo-tag{color:#e65100}
+  .pg-fluxo-txt{font-size:11px;color:#222;line-height:1.5;margin-top:5px}
+  .pg-fluxo-ord{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:7px;letter-spacing:.4px}
+  .pg-alerta{background:#fff5f5;border:1px solid #fed7d7;border-left:4px solid #F44336;border-radius:5px;padding:10px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-alerta-ttl{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#c62828;letter-spacing:1px}
+  .pg-alerta-txt{font-size:10px;color:#4a5568;line-height:1.5;margin-top:4px}
+  .pg-diag{border:1px solid #edf2f7;border-radius:5px;overflow:hidden}
+  .pg-diag-l{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid #edf2f7}
+  .pg-diag-l:last-child{border-bottom:0}
+  .pg-diag-r{background:#1a1a2e;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.5px;padding:8px 10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg-diag-v{font-size:11px;color:#1a1a2e;padding:8px 12px;line-height:1.45}
+  .pg-an-bloco{margin-top:9px}
+  .pg-an-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:4px}
+  /* ── QUADRO DE GESTÃO DE PERDAS: a capa da camada, no desenho do PPCP.
+     Grade 2×2 (EVOLUÇÃO | SMED / "OUTROS" | ANOMALIAS) + faixa do PLANO. Uma
+     página, lida em dez segundos; o detalhe fica nas seções numeradas abaixo.
+     O page-break-inside:avoid está aí porque um quadro cortado ao meio pela
+     quebra da folha perde justamente a função de ser visto de uma vez. ── */
+  .pgq{border:1.5px solid #1a1a2e;border-radius:6px;overflow:hidden;margin-bottom:16px;page-break-inside:avoid}
+  .pgq-top{background:#1a1a2e;color:#fff;padding:9px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-ttl{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;line-height:1}
+  .pgq-foco{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#a0aec0;letter-spacing:1.5px;margin-top:4px;text-transform:uppercase}
+  .pgq-foco b{color:#f5a623}
+  .pgq-grid{display:grid;grid-template-columns:1fr 1fr}
+  .pgq-cel{padding:10px 13px;border-top:1px solid #edf2f7;border-right:1px solid #edf2f7}
+  .pgq-grid .pgq-cel:nth-child(2n){border-right:0}
+  .pgq-cel-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;color:#c53030;letter-spacing:2px;margin-bottom:7px}
+  .pgq-cel-ttl i{font-style:normal;font-weight:400;color:#a0aec0;letter-spacing:.5px;text-transform:none}
+  .pgq-na{font-size:10px;color:#a0aec0;padding:6px 0}
+  .pgq-nota{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;margin-top:5px}
+  /* EVOLUÇÃO — barras com a marca da meta. A escala começa em 70%: de 0 a 100
+     todas as semanas teriam quase a mesma altura e o quadro não mostraria
+     movimento nenhum. O eixo escrito embaixo diz isso, para ninguém ler o
+     dobro de altura como o dobro de disponibilidade. */
+  .pgq-bars{display:flex;align-items:flex-end;gap:6px;height:102px}
+  .pgq-meta{position:absolute;left:0;right:0;border-top:1px dashed #2e7d32;z-index:1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
+  .pgq-bar-v{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;line-height:1.1}
+  .pgq-bar-t{position:relative;flex:1;display:flex;align-items:flex-end;background:#f1f1f1;border-radius:2px;overflow:hidden}
+  .pgq-bar-t>div{width:100%;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-bar-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
+  .pgq-eixo{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#a0aec0;margin-top:2px}
+  .pgq-tend{display:flex;align-items:center;gap:7px;margin-top:7px;padding:5px 8px;border-radius:4px;font-size:9.5px;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-tend.g{background:#f1f8f2;color:#2e7d32}.pgq-tend.o{background:#fff8e1;color:#e65100}.pgq-tend.r{background:#fff5f5;color:#c62828}
+  .pgq-seta{font-size:19px;line-height:1;font-weight:700}
+  /* SMED — "hoje → meta" numa linha por tipo. */
+  .pgq-smed-l{display:grid;grid-template-columns:64px 1fr auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #f4f6f8}
+  .pgq-smed-l.vazio{display:block;font-size:9.5px;color:#a0aec0}
+  .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
+  .pgq-smed-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px;grid-row:span 2}
+  .pgq-smed-v{display:flex;align-items:baseline;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1}
+  .pgq-smed-v span{color:#a0aec0;font-size:15px}
+  .pgq-smed-v i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;font-style:normal;font-weight:400}
+  .pgq-smed-g{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#2e7d32;text-align:right}
+  .pgq-smed-s{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0}
+  .pgq-smed-tot{margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px}
+  .pgq-smed-tot b{font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#2e7d32;letter-spacing:0}
+  .pgq-smed-tot i{font-style:normal;letter-spacing:0;color:#a0aec0}
+  /* "OUTROS" e ANOMALIAS — linhas rótulo → número. */
+  .pgq-o-topo{margin-bottom:5px}
+  .pgq-o-topo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;line-height:1}
+  .pgq-o-topo i{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;font-style:normal;margin-left:6px}
+  .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:3.5px 0;border-bottom:1px solid #f4f6f8;font-size:10px;color:#2d3748}
+  .pgq-l span{min-width:0}
+  .pgq-l i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;font-style:normal;line-height:1.3}
+  .pgq-l b{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#1a1a2e;white-space:nowrap}
+  .pgq-l.alerta b{color:#c62828;font-weight:700}
+  .pgq-l.ident span{color:#6b46c1;font-weight:600}
+  .pgq-plano-band{padding:10px 13px;border-top:1.5px solid #1a1a2e}
+  .pgq-plano thead th{padding:5px 8px}
+  .pgq-plano tbody td{padding:5px 8px;font-size:10.5px}
+</style></head><body>`;
 }
 
 // O relatório aceita o período de QUEM o chamou. Sem isso ele lia sempre os
@@ -8509,155 +8728,7 @@ async function gerarRelatorioParadas(deArg, ateArg){
     </tr>`;
   }).join('')||`<tr><td colspan="${nColDet}" style="text-align:center;color:#999">Nenhuma parada no período.</td></tr>`;
 
-  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
-<title>Relatório de Paradas — ${esc(de)} a ${esc(ate)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
-  @page{size:A4 portrait;margin:0}
-  @media print{body{padding:10mm 14mm}.no-print{display:none!important}}
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
-  .rp-logo span{color:#FF5C1F}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#718096;margin-top:3px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;line-height:1.7}
-  .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
-  .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c53030;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:1.5px solid #edf2f7;padding-bottom:6px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-  .kpi-card{background:#f8fafc;border:1px solid #edf2f7;border-left:3px solid #e57373;border-radius:5px;padding:10px 12px}
-  .kpi-card.g{border-left-color:#4CAF50}.kpi-card.o{border-left-color:#FF9800}.kpi-card.r{border-left-color:#F44336}.kpi-card.a{border-left-color:#FF5C1F}
-  .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
-  .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
-  .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}
-  .rp-chart-wrap{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:12px 14px}
-  table{width:100%;border-collapse:collapse;margin-top:2px}
-  thead th{background:#1a1a2e;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#fff;letter-spacing:1.2px;text-transform:uppercase;padding:7px 10px;border-bottom:1.5px solid #cbd5e0;text-align:left}
-  tbody td{font-size:11px;padding:6px 10px;border-bottom:1px solid #edf2f7;color:#1a1a2e}
-  .td-mono{font-family:'IBM Plex Mono',monospace;font-size:10px}
-  .rp-footer{margin-top:18px;padding-top:10px;border-top:1px solid #edf2f7;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#8a94a6}
-  .rp-note{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#718096;margin-top:8px}
-  /* SWOT: 2×2, tarja no topo com a cor do quadrante. Itens vêm dos DADOS do
-     período (função _relSwotParadas) — quadrante vazio diz "—", não inventa. */
-  .swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .swot-q{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #ccc;border-radius:5px;padding:9px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .swot-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:6px}
-  .swot-item{font-size:10.5px;color:#222;line-height:1.45;margin:3px 0}
-  .rp-print-btn{position:fixed;top:16px;right:16px;background:#e57373;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1.5px;cursor:pointer;z-index:999}
-  /* ═══ GESTÃO DAS PERDAS — camada nova. Só classes pg-*: nenhuma regra acima
-     foi alterada, então o relatório antigo imprime exatamente como imprimia.
-     Tudo com print-color-adjust, senão a impressão P&B come o que dá sentido
-     à leitura (o selo de status, a faixa do veredito). ═══ */
-  .pg-abre{margin-top:22px;padding:11px 14px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;border-radius:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-before:always}
-  .pg-abre-ttl{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;letter-spacing:2px}
-  .pg-abre-txt{font-size:10px;color:#cbd5e0;line-height:1.5;margin-top:4px}
-  .pg-vazio{font-size:11px;color:#718096;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:5px;padding:9px 12px}
-  .pg-ok{font-size:11px;color:#2e7d32;background:#f1f8f2;border:1px solid #c8e6c9;border-radius:5px;padding:8px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-mark{font-weight:700;background:#fff3e0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-sinal{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:9px;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-sinal.g{background:#4CAF50}.pg-sinal.o{background:#FF9800}.pg-sinal.r{background:#F44336}
-  .pg-piores{margin-top:9px}
-  .pg-piores-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:6px}
-  .pg-piores-ttl span{letter-spacing:0;text-transform:none;color:#a0aec0}
-  .pg-piores-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
-  .pg-pior{background:#f8fafc;border:1px solid #edf2f7;border-top:3px solid #e57373;border-radius:5px;padding:7px 9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-pior-pos{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c62828;font-weight:700}
-  .pg-pior-data{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
-  .pg-pior-min{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;line-height:1.05;color:#1a1a2e}
-  .pg-pior-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096}
-  .pg-pior-causa{font-size:9px;color:#4a5568;margin-top:3px;line-height:1.25}
-  .pg-smed{background:#f8fafc;border:1px solid #edf2f7;border-radius:5px;padding:10px 12px;margin-bottom:9px}
-  .pg-smed-ttl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:#e65100;letter-spacing:2px;margin-bottom:7px}
-  .pg-smed-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
-  .pg-smed-kpis div{text-align:center}
-  .pg-smed-kpis span{display:block;font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;line-height:1;color:#1a1a2e}
-  .pg-smed-kpis i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#718096;font-style:normal;margin-top:3px;line-height:1.25}
-  .pg-ev{display:flex;gap:6px;flex-wrap:wrap}
-  .pg-ev-i{flex:1;min-width:62px;background:#fff;border:1px solid #edf2f7;border-radius:4px;padding:5px 4px;text-align:center}
-  .pg-ev-v{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;line-height:1}
-  .pg-ev-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
-  .pg-ev-q{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0}
-  .pg-fluxo{border-radius:5px;padding:11px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-fluxo.ok{background:#f1f8f2;border:1px solid #c8e6c9;border-left:4px solid #4CAF50}
-  .pg-fluxo.warn{background:#fff8e1;border:1px solid #ffe0b2;border-left:4px solid #FF9800}
-  .pg-fluxo-tag{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:1.2px;color:#2e7d32}
-  .pg-fluxo.warn .pg-fluxo-tag{color:#e65100}
-  .pg-fluxo-txt{font-size:11px;color:#222;line-height:1.5;margin-top:5px}
-  .pg-fluxo-ord{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:7px;letter-spacing:.4px}
-  .pg-alerta{background:#fff5f5;border:1px solid #fed7d7;border-left:4px solid #F44336;border-radius:5px;padding:10px 12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-alerta-ttl{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#c62828;letter-spacing:1px}
-  .pg-alerta-txt{font-size:10px;color:#4a5568;line-height:1.5;margin-top:4px}
-  .pg-diag{border:1px solid #edf2f7;border-radius:5px;overflow:hidden}
-  .pg-diag-l{display:grid;grid-template-columns:160px 1fr;border-bottom:1px solid #edf2f7}
-  .pg-diag-l:last-child{border-bottom:0}
-  .pg-diag-r{background:#1a1a2e;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.5px;padding:8px 10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pg-diag-v{font-size:11px;color:#1a1a2e;padding:8px 12px;line-height:1.45}
-  .pg-an-bloco{margin-top:9px}
-  .pg-an-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:4px}
-  /* ── QUADRO DE GESTÃO DE PERDAS: a capa da camada, no desenho do PPCP.
-     Grade 2×2 (EVOLUÇÃO | SMED / "OUTROS" | ANOMALIAS) + faixa do PLANO. Uma
-     página, lida em dez segundos; o detalhe fica nas seções numeradas abaixo.
-     O page-break-inside:avoid está aí porque um quadro cortado ao meio pela
-     quebra da folha perde justamente a função de ser visto de uma vez. ── */
-  .pgq{border:1.5px solid #1a1a2e;border-radius:6px;overflow:hidden;margin-bottom:16px;page-break-inside:avoid}
-  .pgq-top{background:#1a1a2e;color:#fff;padding:9px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pgq-ttl{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;line-height:1}
-  .pgq-foco{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#a0aec0;letter-spacing:1.5px;margin-top:4px;text-transform:uppercase}
-  .pgq-foco b{color:#f5a623}
-  .pgq-grid{display:grid;grid-template-columns:1fr 1fr}
-  .pgq-cel{padding:10px 13px;border-top:1px solid #edf2f7;border-right:1px solid #edf2f7}
-  .pgq-grid .pgq-cel:nth-child(2n){border-right:0}
-  .pgq-cel-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;color:#c53030;letter-spacing:2px;margin-bottom:7px}
-  .pgq-cel-ttl i{font-style:normal;font-weight:400;color:#a0aec0;letter-spacing:.5px;text-transform:none}
-  .pgq-na{font-size:10px;color:#a0aec0;padding:6px 0}
-  .pgq-nota{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;margin-top:5px}
-  /* EVOLUÇÃO — barras com a marca da meta. A escala começa em 70%: de 0 a 100
-     todas as semanas teriam quase a mesma altura e o quadro não mostraria
-     movimento nenhum. O eixo escrito embaixo diz isso, para ninguém ler o
-     dobro de altura como o dobro de disponibilidade. */
-  .pgq-bars{display:flex;align-items:flex-end;gap:6px;height:102px}
-  .pgq-meta{position:absolute;left:0;right:0;border-top:1px dashed #2e7d32;z-index:1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pgq-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
-  .pgq-bar-v{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;line-height:1.1}
-  .pgq-bar-t{position:relative;flex:1;display:flex;align-items:flex-end;background:#f1f1f1;border-radius:2px;overflow:hidden}
-  .pgq-bar-t>div{width:100%;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pgq-bar-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
-  .pgq-eixo{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#a0aec0;margin-top:2px}
-  .pgq-tend{display:flex;align-items:center;gap:7px;margin-top:7px;padding:5px 8px;border-radius:4px;font-size:9.5px;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pgq-tend.g{background:#f1f8f2;color:#2e7d32}.pgq-tend.o{background:#fff8e1;color:#e65100}.pgq-tend.r{background:#fff5f5;color:#c62828}
-  .pgq-seta{font-size:19px;line-height:1;font-weight:700}
-  /* SMED — "hoje → meta" numa linha por tipo. */
-  .pgq-smed-l{display:grid;grid-template-columns:64px 1fr auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #f4f6f8}
-  .pgq-smed-l.vazio{display:block;font-size:9.5px;color:#a0aec0}
-  .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
-  .pgq-smed-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px;grid-row:span 2}
-  .pgq-smed-v{display:flex;align-items:baseline;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1}
-  .pgq-smed-v span{color:#a0aec0;font-size:15px}
-  .pgq-smed-v i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;font-style:normal;font-weight:400}
-  .pgq-smed-g{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#2e7d32;text-align:right}
-  .pgq-smed-s{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0}
-  .pgq-smed-tot{margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px}
-  .pgq-smed-tot b{font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#2e7d32;letter-spacing:0}
-  .pgq-smed-tot i{font-style:normal;letter-spacing:0;color:#a0aec0}
-  /* "OUTROS" e ANOMALIAS — linhas rótulo → número. */
-  .pgq-o-topo{margin-bottom:5px}
-  .pgq-o-topo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;line-height:1}
-  .pgq-o-topo i{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;font-style:normal;margin-left:6px}
-  .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:3.5px 0;border-bottom:1px solid #f4f6f8;font-size:10px;color:#2d3748}
-  .pgq-l span{min-width:0}
-  .pgq-l i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;font-style:normal;line-height:1.3}
-  .pgq-l b{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#1a1a2e;white-space:nowrap}
-  .pgq-l.alerta b{color:#c62828;font-weight:700}
-  .pgq-l.ident span{color:#6b46c1;font-weight:600}
-  .pgq-plano-band{padding:10px 13px;border-top:1.5px solid #1a1a2e}
-  .pgq-plano thead th{padding:5px 8px}
-  .pgq-plano tbody td{padding:5px 8px;font-size:10.5px}
-</style></head><body>
+  const html=_rpDocParadas(`Relatório de Paradas — ${de} a ${ate}`)+`
 ${_rpBotaoImprimir()}
 ${_rpCabecalho('RELATÓRIO DE PARADAS',
    `<div class="rp-per">PERÍODO</div>

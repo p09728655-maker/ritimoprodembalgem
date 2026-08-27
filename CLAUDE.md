@@ -997,6 +997,21 @@ via Google Apps Script (JSONP).
     retry, extraída de dentro do `gerarRelatorioParadas`) e `_pgContexto` (todas
     as funções `_pg*` de uma vez). Tela e PDF do mesmo período mostram, por
     construção, os mesmos números — o teste prende os dois chamadores.
+  - **A tela tem o RELATÓRIO DELA** (`gerarRelatorioPerdas`): o quadro + as onze
+    seções, com título e rodapé próprios. Antes o botão abria o relatório de
+    **PARADAS** — outro documento, outro título, outra pergunta. Os dois botões
+    ficam na tela: *RELATÓRIO DESTA TELA* (a leitura de gestão) e *RELATÓRIO DE
+    PARADAS* (o controle: resumo, Pareto por tipo, estudo de ganho, SWOT e o
+    detalhamento), ambos com o período da tela.
+    - Busca, contas e desenho continuam **um só** (`_pgBuscarDados`,
+      `_pgContexto`, `_pgSecaoHtml`); o que muda é a moldura.
+    - **O `<head>` + os ~150 seletores de CSS moram no `_rpDocParadas(titulo)`**,
+      usado pelos dois. Copiar o bloco seria garantir que o próximo ajuste
+      conserte um relatório e esqueça o outro — a história do cabeçalho dos
+      cinco relatórios (#204/#205). O teste falha se virar duas cópias.
+    - `ctx.soZinho` avisa a camada de que ela **abre** o documento: sai o
+      "camada sobre o relatório acima", sai o título repetido e sai a quebra de
+      página, que imprimiria uma folha em branco na frente.
   - ⚠ **O relatório usa o período de QUEM o chamou** (`gerarRelatorioParadas(de,
     ate)`). Ele lia sempre os campos da aba PARADAS: o botão RELATÓRIO COMPLETO
     da aba GESTÃO DE PERDAS, com 30 dias na tela, abria o PDF do período da
