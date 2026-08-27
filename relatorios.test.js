@@ -1236,6 +1236,39 @@ const _q=pega('function _pgQuadroHtml(');
 ok('o quadro não recalcula perda', /perdaDeMin|perdaAoRitmo|RP_PARADAS\.stats/.test(_q), false);
 ok('o quadro não refaz a conta das trocas', /durProdutiva/.test(_q), false);
 
+console.log('\n── a TELA e o PDF são o mesmo quadro ──');
+// O quadro nasceu no PDF e o PPCP pediu ele como TELA. Desenho, busca e conta
+// continuam UM só: duas cópias divergiriam na primeira mexida — foi assim que a
+// conta de paradas divergiu três vezes.
+ok('o quadro é definido uma vez só',
+   (JS.match(/function _pgQuadroHtml\(/g) || []).length, 1);
+ok('e é desenhado nos dois — PDF e tela',
+   (JS.match(/(?<!function )_pgQuadroHtml\(/g) || []).length, 2);
+ok('a busca dos dados é uma só',
+   (JS.match(/function _pgBuscarDados\(/g) || []).length, 1);
+ok('as contas da camada são uma só',
+   (JS.match(/function _pgContexto\(/g) || []).length, 1);
+// Se a tela montasse o contexto por conta própria, tela e PDF do mesmo período
+// mostrariam números diferentes — o pior defeito possível num painel de gestão.
+ok('a tela lê o mesmo contexto do relatório',
+   /_pgContexto\(\{paradas:dados\.paradas/.test(pega('async function renderGestaoPerdas(')), true);
+ok('o relatório lê o mesmo contexto da tela',
+   /_pgSecaoHtml\(_pgContexto\(/.test(pega('async function gerarRelatorioParadas(')), true);
+ok('a tela busca pela função extraída',
+   /_pgBuscarDados\(de, ate\)/.test(pega('async function renderGestaoPerdas(')), true);
+// A busca é a leitura mais cara do painel (lê a aba PARADAS inteira): sem
+// guarda de reentrância os ciclos se empilham, e sem cache o refresh refaz tudo.
+ok('a tela não empilha buscas', /if\(PG_TELA_RODANDO\) return;/.test(pega('async function renderGestaoPerdas(')), true);
+ok('e guarda o período em cache', /PG_TELA_CACHE\[chave\]=\{ctx/.test(pega('async function renderGestaoPerdas(')), true);
+// Sem o paradas-calc.js não há conta nenhuma — mesma guarda das outras telas.
+ok('a tela tem a guarda do módulo', /_rpOk\(\)/.test(pega('async function renderGestaoPerdas(')), true);
+// A aba e a seção precisam existir e casar com o setTab.
+ok('a aba existe na navegação', /data-tab="perdas"/.test(src), true);
+ok('a seção existe', /id="sec-perdas"/.test(src), true);
+ok('e o setTab acende a tela', /tab==='perdas'/.test(pega('function setTab(')), true);
+// A pele da tela é CSS escopado: a mesma marcação, tokens do painel.
+ok('a tela tem pele própria (CSS escopado)', /#sec-perdas \.pgq\{/.test(src), true);
+
 console.log('\n── o relatório ANTIGO continua inteiro ──');
 // O pedido do PPCP foi explícito: a camada nova é ACRÉSCIMO. Se alguma destas
 // peças sumir, o relatório oficial perdeu função — e é isso que não pode.
