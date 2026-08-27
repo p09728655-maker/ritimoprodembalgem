@@ -1844,7 +1844,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span style="color:var(--txt2)">–</span>
       <input type="date" id="pg-ate" onchange="_pgMarcaPreset(null);renderGestaoPerdas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-ghost" onclick="renderGestaoPerdas(true)" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
-      <button class="btn btn-acc" onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO COMPLETO</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioParadas(dGet('pg-de'),dGet('pg-ate'))" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5);font-size:10px;padding:4px 10px">📋 RELATÓRIO COMPLETO</button>
     </div>
   </div>
   <div class="par-filtros">
@@ -2312,7 +2312,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.16.0';
+const APP_VER   = '7.16.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8372,17 +8372,22 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate}){
   };
 }
 
-async function gerarRelatorioParadas(){
+// O relatório aceita o período de QUEM o chamou. Sem isso ele lia sempre os
+// campos da aba PARADAS: o botão da aba GESTÃO DE PERDAS, com 30 dias na tela,
+// abria o PDF do período da OUTRA aba (HOJE, por padrão) — dois números
+// diferentes para a mesma pergunta, que é o pior defeito possível num painel.
+async function gerarRelatorioParadas(deArg, ateArg){
   if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
   const win=window.open('','_blank','width=1040,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório de paradas...</p></body></html>');
   if(!CFG.sheetsUrl){ win.close(); alert('Relatório de paradas requer o Google Sheets configurado.'); return; }
 
-  // Período: usa os campos da aba PARADAS; se vazios, os do Histórico; senão o mês.
+  // Período: o de quem chamou (a aba GESTÃO DE PERDAS manda o dela); sem isso,
+  // os campos da aba PARADAS; se vazios, os do Histórico; senão o mês.
   const hj=new Date();
-  let de=dGet('par-de')||dGet('hist-de');
-  let ate=dGet('par-ate')||dGet('hist-ate');
+  let de=deArg||dGet('par-de')||dGet('hist-de');
+  let ate=ateArg||dGet('par-ate')||dGet('hist-ate');
   if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 

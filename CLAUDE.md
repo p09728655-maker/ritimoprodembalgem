@@ -997,6 +997,11 @@ via Google Apps Script (JSONP).
     retry, extraída de dentro do `gerarRelatorioParadas`) e `_pgContexto` (todas
     as funções `_pg*` de uma vez). Tela e PDF do mesmo período mostram, por
     construção, os mesmos números — o teste prende os dois chamadores.
+  - ⚠ **O relatório usa o período de QUEM o chamou** (`gerarRelatorioParadas(de,
+    ate)`). Ele lia sempre os campos da aba PARADAS: o botão RELATÓRIO COMPLETO
+    da aba GESTÃO DE PERDAS, com 30 dias na tela, abria o PDF do período da
+    OUTRA aba — medido, a tela dizia 27h16m e o papel 42 min. O botão da aba
+    PARADAS continua sem argumento e lê os campos dela, como sempre.
   - **Padrão 30 DIAS**: o quadro fala em SEMANAS (evolução, tendência, SMED
     semana a semana); em 7 dias há uma semana só e metade da tela fica sem o que
     mostrar.
