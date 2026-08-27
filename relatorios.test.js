@@ -968,6 +968,7 @@ eval(pega('function _pgMinPor1000('));
 eval(pega('function _pgRecuperacao('));
 eval(pega('function _pgImpactoFluxo('));
 eval(pega('function _pgSobrepostas('));
+eval(pega('function _pgTendencia('));   // dependência do _pgDiagnostico
 eval(pega('function _pgPlano('));
 eval(pega('function _pgDiagnostico('));
 
@@ -1167,6 +1168,73 @@ ok('sem parada não programada não há problema principal inventado',
    _pgDiagnostico({st:{totMin:0,pecas:0,pesoMedio:0,pesoPerd:0,dispon:100}, top:[], outros:null,
                    rec:{ganhoMin:0}, fluxo:{veredito:null}, semanas:[]}).problema,
    'Nenhuma parada não programada no período.');
+
+console.log('\n── quadro: tendência da disponibilidade ──');
+eval(pega('function _pgAnomalias('));
+eval(pega('function _pgFoco('));
+const _sm=(n,d)=>({num:n, dispon:d, nDias:5, minNP:0, min:0, qtd:0, perd:0, ini:n});
+ok('subiu meia dúzia de pontos = MELHORA', _pgTendencia([_sm(31,83.9),_sm(32,88.3),_sm(35,90.3)]).seta, '↗');
+ok('caiu = PIORA', _pgTendencia([_sm(31,92),_sm(32,88)]).seta, '↘');
+// Meio ponto percentual é ruído de arredondamento, não melhora.
+ok('variação abaixo de meio ponto é ESTÁVEL', _pgTendencia([_sm(31,90.0),_sm(32,90.3)]).seta, '→');
+ok('uma semana só não define tendência', _pgTendencia([_sm(31,90)]), null);
+// Semana sem dia trabalhado não tem disponibilidade — não pode definir direção.
+ok('semana sem base fica fora', _pgTendencia([_sm(31,84),_sm(32,null),_sm(33,90)]).ate.num, 33);
+ok('o delta é da primeira à última', Math.round(_pgTendencia([_sm(31,84),_sm(32,90)]).delta*10)/10, 6);
+
+console.log('\n── quadro: anomalias de apontamento ──');
+const CFGA={turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12'};
+const parAn=[
+  {data:'10/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:30', obs:''},   // longa (30) e sem motivo
+  {data:'10/08/2026', tipo:'Manutenção',       ini:'08:20', fim:'08:50', obs:'x'},  // sobrepõe + longa, com motivo
+  {data:'11/08/2026', tipo:'Outros',           ini:'09:00', fim:'09:05', obs:''},   // genérica sem motivo
+  {data:'11/08/2026', tipo:'Outros',           ini:'10:00', fim:'10:05', obs:'forno'},
+  {data:'12/08/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:06', obs:''},   // curta e nomeada: não é anomalia
+  {data:'12/08/2026', tipo:'Almoço',           ini:'11:00', fim:'12:12', obs:''},   // dentro do almoço: fora de tudo
+  {data:'13/08/2026', tipo:'Robô',             ini:'09:00', fim:'',      obs:''}    // aberta
+];
+const an=_pgAnomalias(parAn, CFGA, {classeMap:{'Troca de produto':'NAO','Outros':'NAO','Manutenção':'NAO','Almoço':'PLANEJADA'}});
+ok('acha a sobreposição', an.sobrepostas.length, 1);
+ok('acha as paradas longas (≥30 min)', an.longas.map(l=>l.tipo), ['Troca de produto','Manutenção']);
+// "Sem motivo" só conta onde ele FAZ FALTA: motivo é opcional no app, e cobrar
+// de toda parada curta e nomeada viraria uma parede de alertas.
+ok('sem motivo conta só a genérica e a longa', an.semMotivo.length, 2);
+ok('mas o total sem motivo vai junto como contexto', an.semMotivoTotal, 3);
+ok('parada curta e nomeada não é anomalia', an.semMotivo.some(x=>x.min===6), false);
+ok('parada aberta (sem FIM) é apontada à parte', an.abertas.length, 1);
+ok('parada inteira dentro do almoço fica fora de tudo', an.nValidas, 5);
+// Tipo fora da aba TIPOS_PARADA = classe caiu na heurística por nome.
+ok('acusa o tipo que não está na aba', _pgAnomalias(parAn, CFGA, {classeMap:{'Outros':'NAO'}}).semClasse.map(t=>t.tipo),
+   ['Troca de produto','Manutenção']);
+// Sem a aba, TODO tipo cairia aqui: melhor não acusar do que acusar tudo.
+const semAba=_pgAnomalias(parAn, CFGA, {classeMap:{}});
+ok('sem a aba TIPOS_PARADA a checagem não roda', [semAba.temClasse, semAba.semClasse.length], [false, 0]);
+ok('o limite de parada longa é configurável', _pgAnomalias(parAn, CFGA, {longa:5}).longas.length, 5);
+
+console.log('\n── quadro: foco atual ──');
+ok('troca no topo vira "redução de trocas"', _pgFoco(pgTop, pgOut), 'redução de trocas + eliminação de "Outros"');
+ok('sem ofensor não programado o foco não é inventado', _pgFoco([], null),
+   'sem ofensor não programado no período');
+ok('só anormal no topo → causa raiz',
+   _pgFoco([{tipo:'Falta de material', classe:'ANORMAL'}], {qtd:0}), 'causa raiz de falta de material');
+// Uma linha com cinco focos não é foco nenhum.
+ok('no máximo dois focos', _pgFoco([{tipo:'Troca de produto',classe:'REDUTIVEL'},{tipo:'Troca de Plastico',classe:'REDUTIVEL'},
+   {tipo:'Outros',classe:'IDENTIFICAR'},{tipo:'Manutenção',classe:'ANORMAL'}], {qtd:9,dentro:false}).split(' + ').length, 2);
+
+console.log('\n── quadro: o desenho não pode virar duas cópias ──');
+// O PLANO DE AÇÃO tinha seção própria E entrou no quadro. Imprimir a mesma
+// tabela duas vezes no mesmo PDF não ajuda ninguém: ele vive só no quadro.
+ok('a tabela do plano é montada num lugar só',
+   (JS.match(/RESPONSÁVEL<\/th><th>PRAZO<\/th>/g) || []).length, 1);
+ok('e a seção própria do plano não existe mais', /rp-sec-ttl">\d+ ▸ PLANO DE AÇÃO/.test(JS), false);
+// A seta do quadro e a linha "ESTAMOS MELHORANDO?" do diagnóstico leem a MESMA
+// tendência — duas cópias e uma apontaria para um lado e a outra para o outro.
+ok('quadro e diagnóstico leem a mesma tendência',
+   /_pgTendencia\(semanas\)/.test(pega('function _pgDiagnostico(')), true);
+// O quadro é desenho: recebe pronto o que as seções já calcularam.
+const _q=pega('function _pgQuadroHtml(');
+ok('o quadro não recalcula perda', /perdaDeMin|perdaAoRitmo|RP_PARADAS\.stats/.test(_q), false);
+ok('o quadro não refaz a conta das trocas', /durProdutiva/.test(_q), false);
 
 console.log('\n── o relatório ANTIGO continua inteiro ──');
 // O pedido do PPCP foi explícito: a camada nova é ACRÉSCIMO. Se alguma destas

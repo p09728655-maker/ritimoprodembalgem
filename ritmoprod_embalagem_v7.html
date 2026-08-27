@@ -2197,7 +2197,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.14.0';
+const APP_VER   = '7.15.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -7562,6 +7562,86 @@ function _pgSobrepostas(paradas){
   return out;
 }
 
+// ── Tendência da disponibilidade (primeira × última semana) ─────────────────
+// Mora numa função só porque DOIS lugares dependem dela: a seta ↗/↘ do quadro
+// e a linha "ESTAMOS MELHORANDO?" do diagnóstico. Duas cópias e a próxima
+// mexida faria a seta apontar para um lado e o texto dizer o contrário.
+// Só entram semanas com base (dia trabalhado) — semana "sem base" não tem
+// disponibilidade e não pode definir tendência.
+function _pgTendencia(semanas){
+  const s=(semanas||[]).filter(x=>x.dispon!=null);
+  if(s.length<2) return null;
+  const d=s[s.length-1].dispon-s[0].dispon;
+  // Meio ponto percentual é ruído de arredondamento, não melhora: abaixo disso
+  // a leitura é ESTÁVEL, e o quadro mostra "→" em vez de fingir direção.
+  return {delta:d, subiu:d>0.5, caiu:d<-0.5, de:s[0], ate:s[s.length-1],
+          seta:d>0.5?'↗':(d<-0.5?'↘':'→'), st:d>0.5?'g':(d<-0.5?'r':'o')};
+}
+
+// ── ANOMALIAS DE APONTAMENTO ────────────────────────────────────────────────
+// Quatro coisas que pedem conferência do líder. NENHUMA delas altera indicador:
+// é validação do dado, não correção — corrigir mudaria a conta antiga.
+//   sobreposta      a seguinte começa antes de a anterior terminar (mesmo dia)
+//   sem motivo      só onde o motivo FAZ FALTA: parada genérica (sem ele não
+//                   dá para atacar) ou longa (meia hora sem uma linha de
+//                   explicação). O total sem motivo vai junto como contexto —
+//                   motivo é opcional e cobrar de toda parada viraria ruído.
+//   longa           acima de PG_ANOM_LONGA minutos
+//   sem classe      tipo que não está na aba TIPOS_PARADA: a classificação
+//                   planejada/não planejada caiu na heurística por nome. Só
+//                   acusa quando a aba respondeu — sem ela, tudo cairia aqui.
+//   aberta          parada sem FIM: não tem duração, então some de todo KPI
+const PG_ANOM_LONGA = 30;   // minutos
+
+function _pgAnomalias(paradas, cfg, opts){
+  opts=opts||{};
+  const classeMap=opts.classeMap||{};
+  const temClasse=Object.keys(classeMap).length>0;
+  const limite=parseFloat(opts.longa)||PG_ANOM_LONGA;
+  const longas=[], semMotivo=[], abertas=[], semClasse={};
+  let semMotivoTotal=0, nValidas=0;
+  (paradas||[]).forEach(p=>{
+    const bruta=RP_PARADAS.durMin(p.ini,p.fim);
+    if(bruta==null){ abertas.push({data:p.data, tipo:p.tipo, ini:p.ini}); return; }
+    const d=RP_PARADAS.durProdutiva(p.ini,p.fim,cfg);
+    if(d==null||d<=0) return;                 // inteira dentro do almoço: fora de tudo
+    nValidas++;
+    const mot=String(p.obs||'').trim();
+    const generica=PG_RE_GENERICO.test(String(p.tipo||''));
+    const longa=d>=limite;
+    if(!mot) semMotivoTotal++;
+    if(longa) longas.push({data:p.data, tipo:p.tipo, ini:p.ini, fim:p.fim, min:d, obs:mot});
+    if(!mot && (generica||longa)) semMotivo.push({data:p.data, tipo:p.tipo, min:d, generica, longa});
+    const t=String(p.tipo||'').trim();
+    if(temClasse && t && classeMap[t]===undefined){
+      if(!semClasse[t]) semClasse[t]={tipo:t, qtd:0, min:0};
+      semClasse[t].qtd++; semClasse[t].min+=d;
+    }
+  });
+  const sobrepostas=_pgSobrepostas(paradas);
+  const listaSemClasse=Object.keys(semClasse).map(k=>semClasse[k]).sort((a,b)=>b.min-a.min);
+  return {
+    sobrepostas, longas, semMotivo, abertas,
+    semClasse:listaSemClasse, temClasse,
+    semMotivoTotal, nValidas, limite,
+    total: sobrepostas.length+longas.length+semMotivo.length+abertas.length+listaSemClasse.reduce((s,t)=>s+t.qtd,0)
+  };
+}
+
+// ── FOCO ATUAL ──────────────────────────────────────────────────────────────
+// A frase do topo do quadro sai do que o período mostrou, não de um texto fixo.
+// No máximo dois focos: uma linha com cinco prioridades não é foco nenhum.
+function _pgFoco(top, outros){
+  const p=[];
+  const red=(top||[]).filter(t=>t.classe==='REDUTIVEL');
+  const ident=(top||[]).filter(t=>t.classe==='IDENTIFICAR');
+  const anor=(top||[]).filter(t=>t.classe==='ANORMAL');
+  if(red.length) p.push(red.length>1?'redução de trocas':'redução de '+red[0].tipo.toLowerCase());
+  if(ident.length || (outros && outros.qtd>0 && !outros.dentro)) p.push('eliminação de "Outros"');
+  if(!p.length && anor.length) p.push('causa raiz de '+anor[0].tipo.toLowerCase());
+  return p.slice(0,2).join(' + ') || 'sem ofensor não programado no período';
+}
+
 // ── Plano de ação ───────────────────────────────────────────────────────────
 // Sai das causas do período, não de uma lista fixa. Responsável e prazo NÃO
 // estão no dado: saem "A definir" — preencher com um nome plausível seria
@@ -7594,12 +7674,7 @@ function _pgDiagnostico({st, top, outros, rec, fluxo, semanas}){
   const t0=(top||[])[0];
   const anormal=(top||[]).filter(a=>a.classe==='ANORMAL')[0];
   const prox=(top||[]).filter(a=>a!==t0)[0];
-  const tend=(()=>{
-    const s=(semanas||[]).filter(x=>x.dispon!=null);
-    if(s.length<2) return null;
-    const d=s[s.length-1].dispon-s[0].dispon;
-    return {delta:d, subiu:d>0.5, caiu:d<-0.5, de:s[0], ate:s[s.length-1]};
-  })();
+  const tend=_pgTendencia(semanas);   // a MESMA que desenha a seta do quadro
   return {
     problema: t0 ? (t0.classe==='IDENTIFICAR'
         ? `${t0.tipo} — CAUSA NÃO IDENTIFICADA (${_fmtMinPar(t0.min)}, ${t0.pct}% do tempo parado)`
@@ -7626,6 +7701,133 @@ function _pgDiagnostico({st, top, outros, rec, fluxo, semanas}){
   };
 }
 
+// ── QUADRO DE GESTÃO DE PERDAS (a capa da camada) ───────────────────────────
+// Pedido do PPCP em 27/08/2026, com o desenho na mão: os cinco blocos numa
+// página só — EVOLUÇÃO e SMED em cima, "OUTROS" e ANOMALIAS embaixo, PLANO DE
+// AÇÃO na faixa final. É o que se lê em dez segundos numa reunião; o detalhe de
+// cada bloco continua nas seções numeradas abaixo.
+//
+// O quadro NÃO recalcula nada: recebe pronto o que as seções já usam. Se ele
+// mostrasse um número por conta própria, seria a duplicação de sempre — o
+// mesmo indicador com dois valores no mesmo relatório.
+//
+// O PLANO DE AÇÃO vive AQUI e só aqui. Ele estava numa seção própria; imprimir
+// a mesma tabela duas vezes no mesmo PDF não ajuda ninguém.
+function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, rec, tend, foco}){
+  const e=_rpEsc;
+  const cor=v=>v==null?'#a0aec0':(v>=PG_META_DISP?'#4CAF50':v>=PG_META_DISP-5?'#FF9800':'#F44336');
+
+  // EVOLUÇÃO — barras de disponibilidade por semana com a marca da META.
+  // A escala começa em 70% de propósito: entre 85% e 95% todas as barras
+  // ficariam do mesmo tamanho numa escala de 0 a 100 e o quadro não mostraria
+  // movimento nenhum. O eixo diz onde começa, para ninguém ler o dobro de
+  // altura como o dobro de disponibilidade.
+  const comBase=(semanas||[]).filter(s=>s.dispon!=null);
+  const PISO=70;
+  const alt=v=>Math.max(3, Math.min(100, (v-PISO)/(100-PISO)*100));
+  // A marca da META vai DENTRO de cada barra, não numa linha solta por cima: o
+  // tracejado tem de ficar na MESMA escala do preenchimento, e a linha solta
+  // media a caixa inteira (valor + barra + rótulo), caindo fora do lugar.
+  const barras=comBase.length?`<div class="pgq-bars">
+      ${comBase.map(s=>`<div class="pgq-bar">
+        <div class="pgq-bar-v" style="color:${cor(s.dispon)}">${fmt1(s.dispon)}</div>
+        <div class="pgq-bar-t"><span class="pgq-meta" style="bottom:${alt(PG_META_DISP)}%"></span><div style="height:${alt(s.dispon)}%;background:${cor(s.dispon)}"></div></div>
+        <div class="pgq-bar-l">S${s.num||''}</div>
+      </div>`).join('')}
+    </div>
+    <div class="pgq-eixo">escala a partir de ${PISO}% · tracejado = meta ${PG_META_DISP}%</div>`
+    :'<div class="pgq-na">Sem semana com dia trabalhado no período.</div>';
+
+  const setaHtml=tend?`<div class="pgq-tend ${tend.st}">
+      <span class="pgq-seta">${tend.seta}</span>
+      <span>${tend.subiu?'MELHORA':tend.caiu?'PIORA':'ESTÁVEL'} de <b>${fmt1(Math.abs(tend.delta))} p.p.</b> da primeira à última semana (${fmt1(tend.de.dispon)}% → ${fmt1(tend.ate.dispon)}%)</span>
+    </div>`
+    :'<div class="pgq-na">São precisas 2 semanas com dia trabalhado para dizer se melhorou.</div>';
+
+  // SMED — "hoje → meta" com o ganho de cada um. O ganho vem do mesmo
+  // _pgRecuperacao da seção 8; o quadro só procura o item pelo tipo.
+  const ganhoDe=re=>{ const i=((rec&&rec.itens)||[]).find(x=>re.test(x.tipo)); return i||null; };
+  const linhaSmed=(s,rot,re)=>{
+    if(!s) return `<div class="pgq-smed-l vazio">${rot}<i>nenhuma no período</i></div>`;
+    const g=ganhoDe(re);
+    return `<div class="pgq-smed-l">
+      <div class="pgq-smed-n">${rot}</div>
+      <div class="pgq-smed-v"><b style="color:${s.dentro?'#2e7d32':'#c62828'}">${fmt1(s.med)}</b><span>→</span><b style="color:#2e7d32">${s.meta}</b><i>min</i></div>
+      <div class="pgq-smed-g">${g&&g.cx>0?`+${fmtN(g.cx)} cx`:'na meta'}</div>
+      <div class="pgq-smed-s">${plural(s.qtd,'troca','trocas')} · ${Math.round(s.naMeta/s.qtd*100)}% já na meta</div>
+    </div>`;
+  };
+  const ganhoTot=(rec&&rec.cx>0)?`<div class="pgq-smed-tot">GANHO POTENCIAL <b>${fmtN(rec.cx)} cx</b> <i>(${fmt1(rec.ganhoH)}h nos cenários simulados)</i></div>`:'';
+
+  // "OUTROS" — as causas reais escondidas no balaio. Quatro linhas: mais que
+  // isso vira tabela, e tabela é o que já tem na seção 4.
+  const oLinhas=(outros&&outros.qtd>0)
+    ? (outros.lista.slice(0,4).map(i=>`<div class="pgq-l"><span>${e(i.motivo)}</span><b>${_fmtMinPar(i.min)}</b></div>`).join('')
+       + (outros.semMotivoMin>0?`<div class="pgq-l ident"><span>CAUSA NÃO IDENTIFICADA</span><b>${_fmtMinPar(outros.semMotivoMin)}</b></div>`:''))
+    : '<div class="pgq-na">Nenhuma parada sob tipo genérico — todo o tempo parado tem causa nomeada.</div>';
+  const oTopo=(outros&&outros.qtd>0)?`<div class="pgq-o-topo">
+      <b style="color:${outros.dentro?'#2e7d32':'#c62828'}">${fmtP(outros.pct)}</b>
+      <i>do tempo parado sem causa nomeada · meta ≤ ${PG_META_OUTROS}%</i></div>`:'';
+
+  // ANOMALIAS — contagens; a lista de cada uma fica na seção de validação.
+  const an=anom||{sobrepostas:[],semMotivo:[],longas:[],semClasse:[],abertas:[],semMotivoTotal:0,limite:PG_ANOM_LONGA,temClasse:false};
+  const nSemClasse=an.semClasse.reduce((s,t)=>s+t.qtd,0);
+  const anLinha=(rot,n,sub)=>`<div class="pgq-l ${n>0?'alerta':''}"><span>${rot}${sub?`<i>${sub}</i>`:''}</span><b>${n}</b></div>`;
+  const anomHtml=`
+    ${anLinha('Sobreposição', an.sobrepostas.length, 'a seguinte começa antes de a anterior terminar')}
+    ${anLinha('Sem motivo', an.semMotivo.length, `genérica ou longa · ${an.semMotivoTotal} sem motivo no total`)}
+    ${anLinha(`Acima de ${an.limite} min`, an.longas.length, 'parada longa pede explicação')}
+    ${an.temClasse
+      ? anLinha('Sem classificação', nSemClasse, 'tipo fora da aba TIPOS_PARADA')
+      : `<div class="pgq-l"><span>Sem classificação<i>a aba TIPOS_PARADA não respondeu — não dá para acusar</i></span><b>—</b></div>`}
+    ${an.abertas.length?anLinha('Em andamento (sem FIM)', an.abertas.length, 'sem duração: fica fora de todo KPI'):''}
+    <div class="pgq-nota">Só sinalização — nada foi corrigido nem descontado dos indicadores.</div>`;
+
+  const planoHtml=(plano||[]).length?`<table class="pgq-plano"><thead><tr>
+      <th>#</th><th>PROBLEMA</th><th>AÇÃO</th><th>RESPONSÁVEL</th><th>PRAZO</th><th>META</th><th>STATUS</th>
+    </tr></thead><tbody>${plano.map(a=>`<tr>
+      <td class="td-mono" style="font-weight:700">${a.prio}</td>
+      <td style="font-weight:600">${e(a.problema)}</td>
+      <td style="font-size:10px">${e(a.acao)}</td>
+      <td class="td-mono" style="color:#a0aec0">${e(a.resp)}</td>
+      <td class="td-mono" style="color:#a0aec0">${e(a.prazo)}</td>
+      <td class="td-mono">${e(a.meta)}</td>
+      <td><span class="pg-sinal r">ABERTO</span></td></tr>`).join('')}</tbody></table>
+    <div class="rp-note">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
+    :'<div class="pg-vazio">Sem causa não programada no período — nada a planejar.</div>';
+
+  return `<div class="pgq">
+    <div class="pgq-top">
+      <div class="pgq-ttl">GESTÃO DE PERDAS</div>
+      <div class="pgq-foco">FOCO ATUAL: <b>${e(foco)}</b></div>
+    </div>
+    <div class="pgq-grid">
+      <div class="pgq-cel">
+        <div class="pgq-cel-ttl">EVOLUÇÃO <i>disponibilidade por semana</i></div>
+        ${barras}${setaHtml}
+      </div>
+      <div class="pgq-cel">
+        <div class="pgq-cel-ttl">SMED <i>tempo médio de troca — hoje → meta</i></div>
+        ${linhaSmed(smedProd,'PRODUTO',PG_RE_TROCA_PROD)}
+        ${linhaSmed(smedPlas,'PLÁSTICO',PG_RE_TROCA_PLAS)}
+        ${ganhoTot}
+      </div>
+      <div class="pgq-cel">
+        <div class="pgq-cel-ttl">"OUTROS" <i>o que está escondido no balaio</i></div>
+        ${oTopo}${oLinhas}
+      </div>
+      <div class="pgq-cel">
+        <div class="pgq-cel-ttl">ANOMALIAS <i>apontamento a validar</i></div>
+        ${anomHtml}
+      </div>
+    </div>
+    <div class="pgq-plano-band">
+      <div class="pgq-cel-ttl">PLANO DE AÇÃO</div>
+      ${planoHtml}
+    </div>
+  </div>`;
+}
+
 // ── DESENHO da camada GESTÃO DAS PERDAS ─────────────────────────────────────
 // Uma implementação só: o relatório de paradas é o único chamador hoje, mas o
 // desenho fica separado das contas (as funções _pg* acima) para o teste poder
@@ -7633,8 +7835,9 @@ function _pgDiagnostico({st, top, outros, rec, fluxo, semanas}){
 // em outro relatório. Usa as MESMAS classes do relatório antigo (kpi-card,
 // rp-sec-ttl, table) — a identidade visual não muda.
 function _pgSecaoHtml(ctx){
-  const {st, dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, sobre, plano,
-         diag, minPor1000, trR, tiR, temMotivo} = ctx;
+  const {st, dias, semanas, top, outros, smedProd, smedPlas, rec, fluxo, anom, plano,
+         diag, minPor1000, trR, tiR, temMotivo, tend, foco} = ctx;
+  const sobre=(anom&&anom.sobrepostas)||[];
   const e=_rpEsc;
   const pct=v=>fmtP(v);
   const corDisp=v=>v==null?'#a0aec0':(v>=PG_META_DISP?'#4CAF50':v>=PG_META_DISP-5?'#FF9800':'#F44336');
@@ -7773,20 +7976,7 @@ function _pgSecaoHtml(ctx){
     </div>`
     :'<div class="pg-vazio">Sem takt configurado (defina a demanda) — o veredito de fluxo depende do takt ideal × takt real.</div>';
 
-  // 8 ▸ PLANO DE AÇÃO -------------------------------------------------------
-  const planoHtml=(plano||[]).length?`<table><thead><tr>
-      <th>PRIORIDADE</th><th>PROBLEMA</th><th>AÇÃO</th><th>RESPONSÁVEL</th><th>PRAZO</th><th>META</th><th>STATUS</th>
-    </tr></thead><tbody>${plano.map(a=>`<tr>
-      <td class="td-mono" style="font-weight:700">${a.prio}</td>
-      <td style="font-weight:600">${e(a.problema)}</td>
-      <td style="font-size:10px">${e(a.acao)}</td>
-      <td class="td-mono" style="color:#a0aec0">${e(a.resp)}</td>
-      <td class="td-mono" style="color:#a0aec0">${e(a.prazo)}</td>
-      <td class="td-mono">${e(a.meta)}</td>
-      <td><span class="pg-sinal r">ABERTO</span></td>
-    </tr>`).join('')}</tbody></table>
-    <div class="rp-note">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
-    :'<div class="pg-vazio">Sem causa não programada no período — nada a planejar.</div>';
+  // (o PLANO DE AÇÃO é desenhado no quadro, _pgQuadroHtml — um lugar só)
 
   // 9 ▸ APONTAMENTO SOBREPOSTO ---------------------------------------------
   const sobreHtml=(sobre||[]).length?`<div class="pg-alerta">
@@ -7803,9 +7993,36 @@ function _pgSecaoHtml(ctx){
     </div>`
     :'<div class="pg-ok">✓ Nenhum apontamento sobreposto no período.</div>';
 
+  // As outras três anomalias do quadro, com a lista de cada uma. Aqui também
+  // NADA é corrigido: o líder valida na planilha, o relatório só aponta onde.
+  const _an=anom||{longas:[],semMotivo:[],semClasse:[],abertas:[],semMotivoTotal:0,limite:PG_ANOM_LONGA,temClasse:false};
+  const _tabAn=(ttl,cols,linhas,vazio)=>linhas.length
+    ? `<div class="pg-an-bloco"><div class="pg-an-ttl">${ttl}</div>
+       <table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${linhas.join('')}</tbody></table></div>`
+    : `<div class="pg-ok">✓ ${vazio}</div>`;
+  const anomDet=`
+    ${_tabAn(`PARADAS ACIMA DE ${_an.limite} MIN — ${plural(_an.longas.length,'registro','registros')}`,
+       ['DATA','TIPO','INÍCIO','FIM','DURAÇÃO','MOTIVO'],
+       _an.longas.slice(0,10).map(l=>`<tr><td class="td-mono">${e(l.data)}</td><td>${e(l.tipo||'—')}</td>
+         <td class="td-mono">${e(l.ini)}</td><td class="td-mono">${e(l.fim)}</td>
+         <td class="td-mono" style="color:#c62828">${_fmtMinPar(l.min)}</td>
+         <td style="color:${l.obs?'#555':'#c62828'}">${l.obs?e(l.obs):'sem motivo'}</td></tr>`),
+       `Nenhuma parada acima de ${_an.limite} min no período.`)}
+    ${_an.longas.length>10?`<div class="rp-note">+ ${_an.longas.length-10} não ${_an.longas.length-10===1?'listada':'listadas'}.</div>`:''}
+    ${_an.temClasse
+      ? _tabAn(`TIPOS FORA DA ABA TIPOS_PARADA — a classe caiu na heurística por nome`,
+          ['TIPO','OCORRÊNCIAS','TEMPO'],
+          _an.semClasse.map(t=>`<tr><td>${e(t.tipo)}</td><td class="td-mono">${t.qtd}</td><td class="td-mono">${_fmtMinPar(t.min)}</td></tr>`),
+          'Todo tipo do período está cadastrado na aba TIPOS_PARADA.')
+      : '<div class="pg-vazio">A aba TIPOS_PARADA não respondeu nesta geração — sem ela não dá para acusar tipo sem classificação, então esta checagem não rodou.</div>'}
+    ${_an.abertas.length?`<div class="pg-alerta" style="margin-top:9px">
+        <div class="pg-alerta-ttl">⚠️ ${plural(_an.abertas.length,'parada aberta','paradas abertas')} (sem FIM)</div>
+        <div class="pg-alerta-txt">Sem fim não há duração, então elas <b>não entram em nenhum indicador</b> — a perda real do período é maior do que o relatório consegue medir. ${_an.abertas.slice(0,6).map(a=>`${e(a.data)} ${e(a.tipo||'—')} ${e(a.ini||'')}`).join(' · ')}</div>
+      </div>`:''}
+    <div class="rp-note">DADO. "Sem motivo" é contado onde ele faz falta: parada de tipo genérico (sem o motivo não há o que atacar) ou acima de ${_an.limite} min. No período foram <b>${_an.semMotivo.length}</b> ${_an.semMotivo.length===1?'assim':'assim'}, de ${_an.semMotivoTotal} sem motivo no total — motivo é opcional no app, e cobrar de toda parada viraria ruído.</div>`;
+
   // 10 ▸ DIAGNÓSTICO PPCP ---------------------------------------------------
   const linhaDiag=(rot,val,cor)=>`<div class="pg-diag-l"><div class="pg-diag-r">${rot}</div><div class="pg-diag-v" style="${cor?`color:${cor}`:''}">${val}</div></div>`;
-  const tend=diag.tendencia;
   const diagHtml=`<div class="pg-diag">
     ${linhaDiag('PROBLEMA PRINCIPAL', e(diag.problema), '#c62828')}
     ${linhaDiag('IMPACTO', e(diag.impacto))}
@@ -7828,6 +8045,8 @@ function _pgSecaoHtml(ctx){
   <div class="pg-abre-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div>
   <div class="pg-abre-txt">Camada de gestão sobre o relatório de controle acima. <b>Nenhum indicador, fórmula ou critério das seções anteriores foi alterado</b> — o que vem aqui é leitura nova sobre os mesmos dados, e todo número derivado usa as mesmas contas (duração produtiva, perda pela meta do dia, perda ao ritmo real). Onde a leitura é nova, está dito. Onde o dado não sustenta, está escrito "não identificado".</div>
 </div>
+
+${_pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, rec, tend, foco})}
 
 <div class="rp-sec-ttl">1 ▸ PARETO DIÁRIO — O PROBLEMA É RECORRENTE OU CONCENTRADO?</div>
 <table><thead><tr><th>DATA</th><th>TEMPO PARADO</th><th>DISPONIBILIDADE</th><th>PARADAS</th><th>PRINCIPAL CAUSA</th><th>PERDA ESTIMADA (CX)</th></tr></thead><tbody>${linhasDia}</tbody></table>
@@ -7867,13 +8086,11 @@ ${fxHtml}
 <div class="rp-sec-ttl">8 ▸ QUANTO PODEMOS RECUPERAR?</div>
 ${recHtml}
 
-<div class="rp-sec-ttl">9 ▸ PLANO DE AÇÃO</div>
-${planoHtml}
-
-<div class="rp-sec-ttl">10 ▸ VALIDAÇÃO DO APONTAMENTO</div>
+<div class="rp-sec-ttl">9 ▸ VALIDAÇÃO DO APONTAMENTO</div>
 ${sobreHtml}
+${anomDet}
 
-<div class="rp-sec-ttl">11 ▸ DIAGNÓSTICO PPCP</div>
+<div class="rp-sec-ttl">10 ▸ DIAGNÓSTICO PPCP</div>
 ${diagHtml}
 ${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito. Com o motivo preenchido no app, a análise de "Outros" passa a apontar causa raiz em vez de tempo sem nome.</div>':''}
 `;
@@ -7994,13 +8211,14 @@ async function gerarRelatorioParadas(){
     const _pgSL=_pgSmed(paradas, PG_RE_TROCA_PLAS, CFG, PG_META_TROCA_PLAS);
     const _pgR=_pgRecuperacao(st.tipos, trR?trR.ritmoReal:0, {});
     const _pgF=_pgImpactoFluxo(tiR, trR, st);
-    const _pgSob=_pgSobrepostas(paradas);
+    const _pgAn=_pgAnomalias(paradas, CFG, {classeMap:PAR_CLASSE_MAP});
     const _pgP=_pgPlano(_pgT, _pgO);
+    const _pgTd=_pgTendencia(_pgS);
     const _pgDg=_pgDiagnostico({st, top:_pgT, outros:_pgO, rec:_pgR, fluxo:_pgF, semanas:_pgS});
     pgHtml=_pgSecaoHtml({st, dias:_pgD, semanas:_pgS, top:_pgT, outros:_pgO,
-      smedProd:_pgSP, smedPlas:_pgSL, rec:_pgR, fluxo:_pgF, sobre:_pgSob, plano:_pgP,
+      smedProd:_pgSP, smedPlas:_pgSL, rec:_pgR, fluxo:_pgF, anom:_pgAn, plano:_pgP,
       diag:_pgDg, minPor1000:_pgMinPor1000(st.totMin, trR?trR.cxTot:0), trR, tiR,
-      temMotivo:temMotivoSwot});
+      temMotivo:temMotivoSwot, tend:_pgTd, foco:_pgFoco(_pgT, _pgO)});
   }catch(err){
     pgHtml=`<div class="rp-sec-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div><div class="pg-vazio">Não foi possível montar a camada de gestão neste período (${_rpEsc(err.message)}). O relatório de controle acima está completo e não foi afetado.</div>`;
   }
@@ -8127,6 +8345,66 @@ async function gerarRelatorioParadas(){
   .pg-diag-l:last-child{border-bottom:0}
   .pg-diag-r{background:#1a1a2e;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.5px;padding:8px 10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pg-diag-v{font-size:11px;color:#1a1a2e;padding:8px 12px;line-height:1.45}
+  .pg-an-bloco{margin-top:9px}
+  .pg-an-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.8px;margin-bottom:4px}
+  /* ── QUADRO DE GESTÃO DE PERDAS: a capa da camada, no desenho do PPCP.
+     Grade 2×2 (EVOLUÇÃO | SMED / "OUTROS" | ANOMALIAS) + faixa do PLANO. Uma
+     página, lida em dez segundos; o detalhe fica nas seções numeradas abaixo.
+     O page-break-inside:avoid está aí porque um quadro cortado ao meio pela
+     quebra da folha perde justamente a função de ser visto de uma vez. ── */
+  .pgq{border:1.5px solid #1a1a2e;border-radius:6px;overflow:hidden;margin-bottom:16px;page-break-inside:avoid}
+  .pgq-top{background:#1a1a2e;color:#fff;padding:9px 13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-ttl{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;letter-spacing:2px;line-height:1}
+  .pgq-foco{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#a0aec0;letter-spacing:1.5px;margin-top:4px;text-transform:uppercase}
+  .pgq-foco b{color:#f5a623}
+  .pgq-grid{display:grid;grid-template-columns:1fr 1fr}
+  .pgq-cel{padding:10px 13px;border-top:1px solid #edf2f7;border-right:1px solid #edf2f7}
+  .pgq-grid .pgq-cel:nth-child(2n){border-right:0}
+  .pgq-cel-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;color:#c53030;letter-spacing:2px;margin-bottom:7px}
+  .pgq-cel-ttl i{font-style:normal;font-weight:400;color:#a0aec0;letter-spacing:.5px;text-transform:none}
+  .pgq-na{font-size:10px;color:#a0aec0;padding:6px 0}
+  .pgq-nota{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;margin-top:5px}
+  /* EVOLUÇÃO — barras com a marca da meta. A escala começa em 70%: de 0 a 100
+     todas as semanas teriam quase a mesma altura e o quadro não mostraria
+     movimento nenhum. O eixo escrito embaixo diz isso, para ninguém ler o
+     dobro de altura como o dobro de disponibilidade. */
+  .pgq-bars{display:flex;align-items:flex-end;gap:6px;height:102px}
+  .pgq-meta{position:absolute;left:0;right:0;border-top:1px dashed #2e7d32;z-index:1;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center}
+  .pgq-bar-v{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;line-height:1.1}
+  .pgq-bar-t{position:relative;flex:1;display:flex;align-items:flex-end;background:#f1f1f1;border-radius:2px;overflow:hidden}
+  .pgq-bar-t>div{width:100%;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-bar-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
+  .pgq-eixo{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#a0aec0;margin-top:2px}
+  .pgq-tend{display:flex;align-items:center;gap:7px;margin-top:7px;padding:5px 8px;border-radius:4px;font-size:9.5px;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgq-tend.g{background:#f1f8f2;color:#2e7d32}.pgq-tend.o{background:#fff8e1;color:#e65100}.pgq-tend.r{background:#fff5f5;color:#c62828}
+  .pgq-seta{font-size:19px;line-height:1;font-weight:700}
+  /* SMED — "hoje → meta" numa linha por tipo. */
+  .pgq-smed-l{display:grid;grid-template-columns:64px 1fr auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #f4f6f8}
+  .pgq-smed-l.vazio{display:block;font-size:9.5px;color:#a0aec0}
+  .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
+  .pgq-smed-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px;grid-row:span 2}
+  .pgq-smed-v{display:flex;align-items:baseline;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1}
+  .pgq-smed-v span{color:#a0aec0;font-size:15px}
+  .pgq-smed-v i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;font-style:normal;font-weight:400}
+  .pgq-smed-g{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#2e7d32;text-align:right}
+  .pgq-smed-s{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0}
+  .pgq-smed-tot{margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px}
+  .pgq-smed-tot b{font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#2e7d32;letter-spacing:0}
+  .pgq-smed-tot i{font-style:normal;letter-spacing:0;color:#a0aec0}
+  /* "OUTROS" e ANOMALIAS — linhas rótulo → número. */
+  .pgq-o-topo{margin-bottom:5px}
+  .pgq-o-topo b{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;line-height:1}
+  .pgq-o-topo i{font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0;font-style:normal;margin-left:6px}
+  .pgq-l{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:3.5px 0;border-bottom:1px solid #f4f6f8;font-size:10px;color:#2d3748}
+  .pgq-l span{min-width:0}
+  .pgq-l i{display:block;font-family:'IBM Plex Mono',monospace;font-size:7px;color:#a0aec0;font-style:normal;line-height:1.3}
+  .pgq-l b{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#1a1a2e;white-space:nowrap}
+  .pgq-l.alerta b{color:#c62828;font-weight:700}
+  .pgq-l.ident span{color:#6b46c1;font-weight:600}
+  .pgq-plano-band{padding:10px 13px;border-top:1.5px solid #1a1a2e}
+  .pgq-plano thead th{padding:5px 8px}
+  .pgq-plano tbody td{padding:5px 8px;font-size:10.5px}
 </style></head><body>
 ${_rpBotaoImprimir()}
 ${_rpCabecalho('RELATÓRIO DE PARADAS',
