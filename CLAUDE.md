@@ -1194,10 +1194,11 @@ via Google Apps Script (JSONP).
   pelas paradas de `Troca de Plastico`, 327 min · 55× · 1.030 cx em 30 dias).
   Bloco no fim da aba GESTÃO DE PERDAS: o gestor marca as **causas a atacar**
   no Pareto do período (qualquer uma, não só a troca de plástico), digita o
-  cenário — % de redução, custo-hora, adicional e h/semana de HE, investimento
-  — e lê tempo/caixas recuperados por mês, R$/mês, payback, **HORA EXTRA
-  EVITÁVEL** (% da HE do mês que o ataque explica) e a disponibilidade
-  antes → depois contra a meta de 90%.
+  cenário — % de redução, custo-hora, **pessoas na embalagem**, adicional e
+  h/semana de HE, investimento — e lê tempo/caixas recuperados por mês,
+  CUSTO DA PARADA, ECONOMIA EM HE, payback, **ROI**, **HORA EXTRA EVITÁVEL**
+  (% da HE do mês que o ataque explica) e a disponibilidade antes → depois
+  contra a meta de 90%.
   - **`_pgSimulacao` é conta PURA e testada** (`relatorios.test.js`): consome o
     `min`/`perd` que o `RP_PARADAS.stats` já valorou com a meta de cada dia —
     nenhuma fórmula de perda reescrita, **zero chamada nova** (o contexto vem do
@@ -1207,9 +1208,33 @@ via Google Apps Script (JSONP).
   - **Mensalização por mês típico de 22 dias úteis** (a mesma projeção da
     SWOT): R$/mês e payback precisam de mês e o período em tela varia de 7 a
     90 dias. HE do mês = h/semana × 4,4 (22 ÷ 5).
-  - **O R$ sai em DUAS leituras e o payback é a FAIXA entre elas**: tempo pago
-    parado (custo-hora) × reposto em hora extra (custo-hora × 1+adicional).
-    Uma leitura só esconderia a premissa.
+  - **AS GRANDEZAS NÃO SE MISTURAM** (correção de 28/08/2026): o CUSTO-HORA
+    (R$ 382,89) é de **UMA HORA DE LINHA** — já contempla todas as pessoas da
+    embalagem, não é custo por pessoa; a HORA EXTRA é digitada em **HOMEM-HORA
+    por semana** (soma da equipe, e o rótulo do campo diz isso). O card HORA
+    EXTRA EVITÁVEL dividia hora de linha por homem-hora — % sem significado.
+    Daí o campo **PESSOAS NA EMBALAGEM (qtde)**: HE em hora de linha =
+    h/semana × 4,4 ÷ pessoas (`heMesHH`/`heMesLinha`; `custoHoraPessoa` =
+    custo-hora ÷ pessoas). Sem pessoas o card mostra "—" e pede a quantidade.
+  - **O R$ sai em DOIS CONCEITOS que NÃO se somam** (o menor está contido no
+    maior — somar seria contagem dupla): **CUSTO DA PARADA** = horas
+    recuperadas × custo-hora ("folha já paga — não é economia de caixa") e
+    **ECONOMIA EM HE** = as mesmas horas × custo-hora × (1+adicional)
+    ("caixa, se a produção é reposta em hora extra"). A faixa única
+    "R$ menor – maior" sugeria incerteza e escondia que eram conceitos
+    diferentes.
+  - **TETO na ECONOMIA EM HE**: não se economiza mais HE do que a praticada —
+    `horasVal = mín(recuperadas, heMesLinha)`. O **excedente NUNCA vira R$**:
+    sai como nota no card de CAIXAS RECUPERADAS ("X,Xh acima da HE praticada →
+    ganho de capacidade, não de custo"). Sem HE/pessoas informadas não há
+    teto e o valor sai marcado como **estimativa** (`heEstim`), nunca em
+    silêncio.
+  - **PAYBACK é valor ÚNICO e usa SÓ a ECONOMIA EM HE** (`pay` — `payMin`/
+    `payMax` não existem mais). **ROI ao lado do payback**: horizonte
+    selecionável no próprio rótulo do card (select 3/5 anos, padrão 5, o
+    escolhido persiste no cenário salvo); `ganhoAcum = economiaHE × anos × 12`,
+    `roi = (ganho − investimento) ÷ investimento`; **negativo sai em
+    vermelho**.
   - **Nada é gravado** (etiqueta âmbar SIMULAÇÃO, como o simulador da esteira);
     o cenário digitado persiste no `localStorage['rpe_pg_sim']` para o gestor
     não redigitar o custo-hora. `_pgSimNum` lê número em pt-BR (`382,89`,
@@ -1229,10 +1254,13 @@ via Google Apps Script (JSONP).
     (`_rpDocParadas`). As contas são as MESMAS da tela (`_pgSimEstado` +
     `_pgSimulacao`); o contexto vem do `PG_TELA_CACHE` quando fresco (papel =
     tela por construção), senão da mesma busca com retry. Sem orçamento
-    digitado, o papel imprime a régua *"cada R$ 10.000 se paga em X–Y meses"*;
-    o rodapé metodológico diz que é **simulação, não medição** — o antes ×
-    depois real sai da GESTÃO DE PERDAS dos meses seguintes.
-    `relatorios.test.js` prende conta única, retrato e o botão da tela.
+    digitado, o papel imprime a régua *"cada R$ 10.000 se paga em X meses"*
+    (sobre a economia em HE); o rodapé metodológico diz que é **simulação, não
+    medição** — o antes × depois real sai da GESTÃO DE PERDAS dos meses
+    seguintes. O papel explica a conversão **HOMEM-HORA → HORA DE LINHA**, por
+    que os dois R$ **não se somam** e o teto da economia; a seção 4 traz
+    payback único e a linha do ROI. `relatorios.test.js` prende conta única,
+    retrato, o botão da tela e as frases-chave.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do

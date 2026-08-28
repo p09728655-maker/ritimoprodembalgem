@@ -1578,7 +1578,11 @@ ok('o quadro continua sem partir ao meio',
 console.log('\n── simulador de investimento (aba GESTÃO DE PERDAS) ──');
 // A conta é pura e roda aqui contra o código real. Os números do cenário são
 // os do caso que originou o simulador (28/08/2026): Troca de Plastico com
-// 327 min · 55× · 1.030 cx em 22 dias trabalhados, custo-hora R$ 382,89.
+// 327 min · 55× · 1.030 cx em 22 dias trabalhados, custo-hora R$ 382,89 —
+// que é de UMA HORA DE LINHA (todas as pessoas juntas). A HE entra em
+// HOMEM-HORA/semana e é convertida: com 10 pessoas, 8 h/sem × 4,4 = 35,2
+// homem-hora/mês = 3,52h de linha (correção de 28/08/2026 — antes o % de HE
+// evitável dividia hora de linha por homem-hora, número sem significado).
 eval(pega('function _pgSimulacao('));
 eval(pega('function _pgSimNum('));
 const simTipos = [
@@ -1588,22 +1592,58 @@ const simTipos = [
 ];
 const simBase = { tipos: simTipos, horasProd: 8.8, nDias: 22, totMinNP: 1449 };
 let sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },
-  pctRed: 100, custoHora: 382.89, adicHE: 50, invest: 50000, heSem: 8 });
+  pctRed: 100, custoHora: 382.89, adicHE: 50, invest: 50000, heSem: 8, pessoas: 10 });
 ok('minutos do período = os do tipo marcado', sim.minPer, 327);
 ok('caixas do período = o perd que o stats já valorou', sim.cxPer, 1030);
 ok('período de 22 dias trabalhados = mês típico', sim.minMes, 327);
-ok('R$/mês do tempo pago parado', Math.round(sim.rsMes), Math.round(327 / 60 * 382.89));
-ok('R$/mês reposto em HE = parado × 1,5', Math.round(sim.rsMesHE), Math.round(327 / 60 * 382.89 * 1.5));
-ok('payback é FAIXA e a leitura HE paga antes', sim.payMin < sim.payMax, true);
+ok('CUSTO DA PARADA = horas recuperadas × custo-hora de linha',
+   Math.round(sim.rsMes), Math.round(327 / 60 * 382.89));
+ok('HE do mês em homem-hora: 8 × 4,4', Math.round(sim.heMesHH * 10) / 10, 35.2);
+ok('HE em hora de LINHA: ÷ 10 pessoas', Math.round(sim.heMesLinha * 100) / 100, 3.52);
+ok('custo-hora por pessoa = linha ÷ pessoas', Math.round(sim.custoHoraPessoa * 100) / 100, 38.29);
+// Teto: 5,45h recuperadas > 3,52h de HE praticada — só 3,52h viram R$.
+ok('horas valorizadas = mín(recuperadas, HE de linha)', Math.round(sim.horasVal * 100) / 100, 3.52);
+ok('o excedente é ganho de capacidade, nunca R$', Math.round(sim.exced * 100) / 100, 1.93);
+ok('ECONOMIA EM HE valoriza só até o teto', Math.round(sim.rsMesHE), Math.round(3.52 * 382.89 * 1.5));
+ok('payback é ÚNICO e usa só a ECONOMIA EM HE',
+   Math.round(sim.pay * 10) / 10, Math.round(50000 / (3.52 * 382.89 * 1.5) * 10) / 10);
+ok('a faixa de payback não existe mais', sim.payMin === undefined && sim.payMax === undefined, true);
 ok('disponibilidade antes: 87,5%', sim.dispAntes.toFixed(1), '87.5');
 ok('atacar a troca de plástico cruza a meta de 90%', sim.dispDepois >= 90, true);
-ok('hora extra evitável: 5,45h de 35,2h/mês ≈ 15,5%', Math.round(sim.pctHE * 10) / 10, 15.5);
+ok('hora extra evitável na base hora de linha: 5,45h ÷ 3,52h',
+   Math.round(sim.pctHE * 10) / 10, 154.8);
+
+// ROI no horizonte escolhido (3 ou 5 anos; padrão 5)
+ok('horizonte padrão = 5 anos', sim.anos, 5);
+ok('ganho acumulado = economia em HE × anos × 12',
+   Math.round(sim.ganhoAcum), Math.round(3.52 * 382.89 * 1.5 * 60));
+ok('ROI = (ganho − investimento) ÷ investimento',
+   Math.round(sim.roi * 10) / 10,
+   Math.round((3.52 * 382.89 * 1.5 * 60 - 50000) / 50000 * 1000) / 10);
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+  custoHora: 382.89, adicHE: 50, invest: 150000, heSem: 8, pessoas: 10, roiAnos: 3 });
+ok('horizonte de 3 anos', sim.anos, 3);
+ok('ROI pode ser negativo (investimento acima do ganho)', sim.roi < 0, true);
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100, custoHora: 382.89 });
+ok('sem investimento não há ROI', sim.roi, null);
+
+// Sem PESSOAS não há conversão homem-hora → hora de linha: o % fica em "—"
+// e a economia sai SEM teto, marcada como estimativa (nunca silenciosa).
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+  custoHora: 382.89, adicHE: 50, heSem: 8 });
+ok('sem pessoas não há % de HE evitável', sim.pctHE, null);
+ok('sem pessoas não há teto — valem as horas cheias',
+   Math.round(sim.rsMesHE), Math.round(327 / 60 * 382.89 * 1.5));
+ok('e a economia sai marcada como estimativa', sim.heEstim, true);
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+  custoHora: 382.89, adicHE: 50, pessoas: 10 });
+ok('sem h/semana de HE também não há teto (estimativa)', sim.heEstim, true);
 
 sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true, 'Parada/Café': true },
   pctRed: 100 });
 ok('parada PLANEJADA marcada não entra na conta', sim.minPer, 327);
 ok('sem custo-hora não há R$', sim.rsMes, null);
-ok('sem investimento não há payback', sim.payMin, null);
+ok('sem investimento não há payback', sim.pay, null);
 ok('sem h/semana de HE não há % evitável', sim.pctHE, null);
 
 sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 80 });
@@ -1634,6 +1674,27 @@ ok('ano = mês × 12 (R$ e caixas)', [Math.round(sim.rsAno), sim.cxAno],
    [Math.round(sim.rsMes * 12), sim.cxMes * 12]);
 ok('horas por ano', Math.round(sim.horasAno * 10) / 10, 65.4);
 
+// ── a tela: dois cards de R$, ROI com horizonte no rótulo, campo de pessoas ──
+const _resHtml = pega('function _pgSimResHtml(');
+ok('a tela separa CUSTO DA PARADA e ECONOMIA EM HE',
+   /CUSTO DA PARADA/.test(_resHtml) && /ECONOMIA EM HE/.test(_resHtml), true);
+ok('o card da parada avisa que é folha já paga', /folha já paga/.test(_resHtml), true);
+ok('o excedente vira nota no card de caixas',
+   /ganho de capacidade, não de custo/.test(_resHtml), true);
+ok('o ROI leva o horizonte no rótulo (select 3/5 anos)',
+   /pg-sim-roi-anos/.test(_resHtml) && /3 anos/.test(_resHtml) && /5 anos/.test(_resHtml), true);
+ok('ROI negativo sai em vermelho',
+   /r\.roi<0\?'var\(--red\)'/.test(_resHtml.replace(/\s+/g, '')), true);
+ok('sem pessoas, o card de HE pede a quantidade',
+   /informe a quantidade de pessoas/.test(_resHtml), true);
+const _simHtml = pega('function _pgSimHtml(');
+ok('o CENÁRIO pede as pessoas da embalagem',
+   /pg-sim-pessoas/.test(_simHtml) && /PESSOAS NA EMBALAGEM \(qtde\)/.test(_simHtml), true);
+ok('o rótulo da HE diz a grandeza: h/semana, total da embalagem',
+   /HORA EXTRA ATUAL \(h\/semana, total da embalagem\)/.test(_simHtml), true);
+ok('a nota de rodapé explica por que os R\$ não se somam',
+   /não se somam/.test(_simHtml), true);
+
 // ── impressão executiva (PROPOSTA DE INVESTIMENTO) ──
 const _inv = pega('async function gerarRelatorioInvestimento(');
 ok('a proposta usa a MESMA conta e o MESMO cenário da tela',
@@ -1642,6 +1703,9 @@ ok('no documento compartilhado, em retrato',
    /_rpDocParadas\(`Proposta de Investimento[^`]*`\)/.test(_inv), true);
 ok('o papel diz como o número sai', /COMO O NÚMERO SAI/.test(_inv), true);
 ok('e diz que é simulação, não medição', /simulação, não medição/.test(_inv), true);
+ok('o papel explica a conversão homem-hora → hora de linha',
+   /HOMEM-HORA → HORA DE LINHA/.test(_inv), true);
+ok('e que os dois R$ não se somam', /não se somam/.test(_inv), true);
 ok('a tela tem o botão da impressão executiva',
    /gerarRelatorioInvestimento\(/.test(pega('function _pgSimHtml(')), true);
 ok('nenhuma fórmula de perda reescrita no papel',
