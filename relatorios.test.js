@@ -1477,8 +1477,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os três relatórios usam ele',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 3);
+ok('e os quatro relatórios usam ele (paradas, perdas, min/1000, proposta de investimento)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 4);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -1626,6 +1626,26 @@ ok('ponto de milhar sem vírgula', _pgSimNum('50.000'), 50000);
 ok('ponto decimal de quem digita em en', _pgSimNum('382.89'), 382.89);
 ok('R$ e espaços não atrapalham', _pgSimNum('R$ 1.234,56'), 1234.56);
 ok('vazio é zero', _pgSimNum(''), 0);
+
+// por ano = mês típico × 12 ("colocar por ano tbm")
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },
+  pctRed: 100, custoHora: 382.89, adicHE: 50, heSem: 8 });
+ok('ano = mês × 12 (R$ e caixas)', [Math.round(sim.rsAno), sim.cxAno],
+   [Math.round(sim.rsMes * 12), sim.cxMes * 12]);
+ok('horas por ano', Math.round(sim.horasAno * 10) / 10, 65.4);
+
+// ── impressão executiva (PROPOSTA DE INVESTIMENTO) ──
+const _inv = pega('async function gerarRelatorioInvestimento(');
+ok('a proposta usa a MESMA conta e o MESMO cenário da tela',
+   /_pgSimulacao\(/.test(_inv) && /_pgSimEstado\(/.test(_inv), true);
+ok('no documento compartilhado, em retrato',
+   /_rpDocParadas\(`Proposta de Investimento[^`]*`\)/.test(_inv), true);
+ok('o papel diz como o número sai', /COMO O NÚMERO SAI/.test(_inv), true);
+ok('e diz que é simulação, não medição', /simulação, não medição/.test(_inv), true);
+ok('a tela tem o botão da impressão executiva',
+   /gerarRelatorioInvestimento\(/.test(pega('function _pgSimHtml(')), true);
+ok('nenhuma fórmula de perda reescrita no papel',
+   /perdaDeMin|perdaAoRitmo|durProdutiva\(/.test(_inv), false);
 
 // guarda-corpo: a conta é UMA, a tela chama o simulador, e ele não reescreve
 // fórmula de perda nenhuma — consome o `perd` que o RP_PARADAS.stats valorou.

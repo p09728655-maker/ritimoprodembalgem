@@ -2357,7 +2357,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.21.0';
+const APP_VER   = '7.22.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -8726,7 +8726,14 @@ function _pgSimulacao(ent){
   const tempoDisp=nDias*horasProd*60;
   const dispAntes =tempoDisp>0 ? Math.max(0,(tempoDisp-totNP)/tempoDisp*100) : null;
   const dispDepois=tempoDisp>0 ? Math.max(0,(tempoDisp-Math.max(0,totNP-minPer))/tempoDisp*100) : null;
+  // Por ANO = mês típico × 12 ("colocar por ano tbm", 28/08/2026): é o número
+  // que a diretoria compara com o orçamento do equipamento.
+  const cxAno=cxMes*12;
+  const horasAno=minMes*12/60;
+  const rsAno  =rsMes!=null  ? rsMes*12   : null;
+  const rsAnoHE=rsMesHE!=null? rsMesHE*12 : null;
   return {nSel:sel.length, pct, adic, minPer, cxPer, minMes, cxMes,
+          cxAno, horasAno, rsAno, rsAnoHE,
           rsMes, rsMesHE, invest, payMin, payMax,
           heMesH, recH, pctHE, dispAntes, dispDepois, nDias, fator};
 }
@@ -8757,11 +8764,11 @@ function _pgSimResHtml(r){
   const dispOk=r.dispDepois!=null && r.dispDepois>=PG_META_DISP;
   return `<div class="pg-sim-res">`
     + card('TEMPO RECUPERADO', fmtN(Math.round(r.minMes))+'<span> min/mês</span>',
-           _fmtMinPar(Math.round(r.minPer))+' no período · redução de '+fmtN(r.pct)+'%')
+           '≈ '+fmt1(r.horasAno)+'h/ano · '+_fmtMinPar(Math.round(r.minPer))+' no período · redução de '+fmtN(r.pct)+'%')
     + card('CAIXAS RECUPERADAS', fmtN(r.cxMes)+'<span> cx/mês</span>',
-           fmtN(r.cxPer)+' cx no período — a mesma conta de perda do painel', 'var(--ok)')
+           '≈ '+fmtN(r.cxAno)+' cx/ano · '+fmtN(r.cxPer)+' cx no período', 'var(--ok)')
     + card('R$ RECUPERADO / MÊS', r.rsMes==null?'—':rs(r.rsMes)+'<span> – </span>'+rs(r.rsMesHE),
-           r.rsMes==null?'informe o CUSTO-HORA da linha':'tempo pago parado → reposto em HE (+'+fmtN(r.adic)+'%)')
+           r.rsMes==null?'informe o CUSTO-HORA da linha':'por ano: '+rs(r.rsAno)+' – '+rs(r.rsAnoHE)+' · pago parado → reposto em HE (+'+fmtN(r.adic)+'%)')
     + card('PAYBACK', pay,
            r.payMin==null?'informe INVESTIMENTO e CUSTO-HORA':'investimento ÷ R$/mês, nas duas leituras', r.payMin!=null?'var(--acc)':null)
     + card('HORA EXTRA EVITÁVEL', r.pctHE==null?'—':fmt1(r.pctHE)+'<span>% da HE</span>',
@@ -8782,7 +8789,7 @@ function _pgSimHtml(ctx){
     return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i>${_fmtMinPar(t.min)} · ${t.qtd}×</i></label>`;
   }).join('');
   const inp=(id,rot,val,attrs)=>`<label>${rot}<input id="${id}" value="${atr(val==null?'':val)}" ${attrs} oninput="_pgSimAtualiza()"></label>`;
-  return `<div class="pg-sim-wrap"><div class="pg-diag-ttl">SIMULADOR DE INVESTIMENTO<span class="pg-sim-tag">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i></div>
+  return `<div class="pg-sim-wrap"><div class="pg-diag-ttl">SIMULADOR DE INVESTIMENTO<span class="pg-sim-tag">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i><button class="btn btn-ghost pg-imp" onclick="gerarRelatorioInvestimento(dGet('pg-de'),dGet('pg-ate'))" title="A proposta em uma página para a diretoria: problema, cenário, ganho por mês e por ano, payback e como o número sai">\u{1F5A8} IMPRESSÃO EXECUTIVA</button></div>
     <div class="pg-sim">
       <div class="pg-sim-grid">
         <div><div class="pg-sim-sub">PARADAS A ATACAR <i>· não planejadas do período em tela</i></div>${chks}</div>
@@ -8816,6 +8823,131 @@ function _pgSimAtualiza(){
   _pgSimSalva(s);
   const res=document.getElementById('pg-sim-res');
   if(res) res.innerHTML=_pgSimResHtml(_pgSimulacao(_pgSimEnt(c.ctx, s)));
+}
+
+// ── IMPRESSÃO EXECUTIVA DO SIMULADOR — proposta de investimento ─────────────
+// Pedido do PPCP (28/08/2026): o simulador vivia só na tela, e quem leva a
+// proposta para a diretoria precisa de papel. Sai no formato de proposta para
+// aprovação — headline, problema, cenário, ganho (mês E ano), payback, método
+// — em RETRATO, no documento compartilhado (_rpDocParadas, o mesmo <head> dos
+// relatórios de paradas/perdas: copiar o CSS seria a história do #204/#205).
+// As contas são as MESMAS da tela: o cenário salvo (_pgSimEstado) +
+// _pgSimulacao sobre o contexto do período. O contexto vem do cache da tela
+// quando está fresco — papel e tela idênticos por construção — senão da mesma
+// busca com retry dos outros relatórios.
+async function gerarRelatorioInvestimento(deArg, ateArg){
+  if(!_rpOk()){ alert('O módulo de cálculo (paradas-calc.js) ainda não carregou. Recarregando — tente de novo em alguns segundos.'); _rpRecarregar(); return; }
+  const s=_pgSimEstado();
+  if(!s.selec || !Object.keys(s.selec).length){ alert('Marque no simulador a(s) parada(s) a atacar antes de imprimir a proposta.'); return; }
+  const win=window.open('','_blank','width=1040,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando a proposta de investimento...</p></body></html>');
+  if(!CFG.sheetsUrl){ win.close(); alert('O relatório requer o Google Sheets configurado.'); return; }
+
+  const hj=new Date();
+  let de=deArg||dGet('pg-de')||dGet('par-de');
+  let ate=ateArg||dGet('pg-ate')||dGet('par-ate');
+  if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
+  if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
+
+  let ctx=null;
+  const cc=PG_TELA_CACHE[de+'|'+ate];
+  if(cc && (Date.now()-cc.t)<PG_TELA_TTL) ctx=cc.ctx;
+  if(!ctx){
+    let dados=null;
+    try{ dados=await _pgBuscarDados(de, ate); }
+    catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+    if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
+    const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
+    const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
+    const tiR=_taktIdeal(st.horasProd);
+    const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
+    ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate, grao:PG_GRAO});
+  }
+
+  let corpo='';
+  try{
+    const st=ctx.st;
+    const sel=(st.tipos||[]).filter(t=>!t.planej && s.selec[t.tipo]);
+    if(!sel.length){ win.close(); alert('As paradas marcadas no simulador não aparecem neste período — confira o período da tela.'); return; }
+    const r=_pgSimulacao(_pgSimEnt(ctx, s));
+    const rs=v=>'R$ '+fmtN(Math.round(v));
+    const causas=sel.map(t=>t.tipo).join(' + ');
+    const selMin=sel.reduce((a,t)=>a+(t.min||0),0);
+    const pctNPdoSel=st.totMinNP>0?selMin/st.totMinNP*100:0;
+    const investTxt=r.invest>0?rs(r.invest):null;
+    const payTxt=(r.payMin!=null&&r.payMax!=null)?(fmt1(r.payMin)===fmt1(r.payMax)?fmt1(r.payMax):fmt1(r.payMin)+' a '+fmt1(r.payMax))+' meses':null;
+
+    const headline=`Atacando <b>${_rpEsc(causas)}</b> com redução de ${fmtN(r.pct)}%, a linha recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
+      +(r.rsMes!=null?` — <b>${rs(r.rsMes)} a ${rs(r.rsMesHE)} por mês (${rs(r.rsAno)} a ${rs(r.rsAnoHE)} por ano)</b>`:'')
+      +(payTxt?`. O investimento de ${investTxt} se paga em <b>${payTxt}</b>`:'')+'.';
+
+    corpo=`<div class="pg-abre so">
+  <div class="pg-abre-ttl">A PROPOSTA EM UMA FRASE</div>
+  <div class="pg-abre-txt">${headline} Simulação sobre as paradas reais do período, com o cenário informado pelo gestor na tela — os números do problema saem do mesmo Pareto do relatório de paradas.</div>
+</div>
+
+<div class="rp-sec-ttl">1 ▸ O PROBLEMA, EM NÚMEROS DO PERÍODO</div>
+<table class="pgq-plano"><thead><tr><th>CAUSA ATACADA</th><th>OCORRÊNCIAS</th><th>TEMPO PARADO</th><th>CAIXAS PERDIDAS</th></tr></thead><tbody>
+${sel.map(t=>`<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtMinPar(t.min)}</td><td>${fmtN(t.perd)} cx</td></tr>`).join('')}
+<tr><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${fmtN(sel.reduce((a,t)=>a+(t.qtd||0),0))}×</td><td style="font-weight:700">${_fmtMinPar(selMin)}</td><td style="font-weight:700">${fmtN(sel.reduce((a,t)=>a+(t.perd||0),0))} cx</td></tr>
+</tbody></table>
+<div class="rp-note">As causas atacadas são <b>${fmtP(pctNPdoSel)} do tempo não programado</b> do período (${_fmtMinPar(st.totMinNP)}). Disponibilidade atual da linha: <b>${r.dispAntes!=null?fmt1(r.dispAntes)+'%':'—'}</b>, contra meta de ${PG_META_DISP}%.</div>
+
+<div class="rp-sec-ttl">2 ▸ O CENÁRIO SIMULADO</div>
+<table class="pgq-plano"><tbody>
+  <tr><td style="font-weight:700;width:34%">REDUÇÃO DA PARADA</td><td>${fmtN(r.pct)}% do tempo das causas atacadas</td></tr>
+  <tr><td style="font-weight:700">CUSTO-HORA DA LINHA</td><td>${r.rsMes!=null?rs(_pgSimNum(s.custoHora))+' por hora (informado pelo gestor)':'não informado — os R$ e o payback ficam de fora desta simulação'}</td></tr>
+  <tr><td style="font-weight:700">HORA EXTRA</td><td>adicional de ${fmtN(r.adic)}%${r.heMesH>0?` · HE atual: ${fmt1(_pgSimNum(s.heSem))}h/semana (${fmt1(r.heMesH)}h/mês)`:''}</td></tr>
+  <tr><td style="font-weight:700">INVESTIMENTO</td><td>${investTxt||'aguardando orçamento'}</td></tr>
+</tbody></table>
+
+<div class="rp-sec-ttl">3 ▸ O GANHO SIMULADO — POR MÊS E POR ANO</div>
+<div class="kpi-grid pg-mil">
+  <div class="kpi-card"><div class="kpi-lbl">TEMPO RECUPERADO</div><div class="kpi-val">${fmtN(Math.round(r.minMes))} min/mês</div><div class="kpi-sub">≈ ${fmt1(r.horasAno)}h por ano · ${_fmtMinPar(Math.round(r.minPer))} no período</div></div>
+  <div class="kpi-card g"><div class="kpi-lbl">CAIXAS RECUPERADAS</div><div class="kpi-val">${fmtN(r.cxMes)} cx/mês</div><div class="kpi-sub">≈ ${fmtN(r.cxAno)} cx por ano — a mesma conta de perda do painel</div></div>
+  <div class="kpi-card a acc"><div class="kpi-lbl">R$ RECUPERADO</div><div class="kpi-val">${r.rsMes!=null?rs(r.rsMes)+' – '+rs(r.rsMesHE):'—'}</div><div class="kpi-sub">${r.rsMes!=null?'por mês · por ano: '+rs(r.rsAno)+' – '+rs(r.rsAnoHE):'informe o custo-hora na tela'}</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">HORA EXTRA EVITÁVEL</div><div class="kpi-val">${r.pctHE!=null?fmt1(r.pctHE)+'% da HE':'—'}</div><div class="kpi-sub">${r.pctHE!=null?fmt1(r.recH)+'h de '+fmt1(r.heMesH)+'h de HE no mês':'informe as h/semana de HE na tela'}</div></div>
+  <div class="kpi-card${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' g':''}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val">${r.dispAntes!=null?fmt1(r.dispAntes)+'% → '+fmt1(r.dispDepois)+'%':'—'}</div><div class="kpi-sub">meta ${PG_META_DISP}%${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' — o cenário CRUZA a meta':''}</div></div>
+</div>
+
+<div class="rp-sec-ttl">4 ▸ INVESTIMENTO E PAYBACK</div>
+${payTxt
+  ? `<table class="pgq-plano"><tbody>
+  <tr><td style="font-weight:700;width:34%">INVESTIMENTO</td><td>${investTxt}</td></tr>
+  <tr><td style="font-weight:700">GANHO POR MÊS</td><td>${rs(r.rsMes)} (tempo pago parado) a ${rs(r.rsMesHE)} (reposto em hora extra)</td></tr>
+  <tr><td style="font-weight:700">GANHO POR ANO</td><td>${rs(r.rsAno)} a ${rs(r.rsAnoHE)}</td></tr>
+  <tr><td style="font-weight:700">PAYBACK</td><td><b>${payTxt}</b> — investimento ÷ ganho mensal, nas duas leituras</td></tr>
+</tbody></table>`
+  : r.rsMes!=null
+    ? `<div class="rp-note">Aguardando o orçamento. Régua para a decisão: com ganho de ${rs(r.rsMes)} a ${rs(r.rsMesHE)} por mês, <b>cada R$ 10.000 de investimento se paga em ${fmt1(10000/r.rsMesHE)} a ${fmt1(10000/r.rsMes)} meses</b>.</div>`
+    : `<div class="rp-note">Sem o custo-hora informado não há leitura em R$ — preencha o campo na tela do simulador e imprima de novo.</div>`}
+
+<div class="rp-sec-ttl">5 ▸ COMO O NÚMERO SAI</div>
+<table class="pgq-plano"><tbody>
+  <tr><td style="font-weight:700;width:34%">MINUTOS E CAIXAS</td><td>Do Pareto deste período (aba PARADAS): duração produtiva de cada parada × meta daquele dia ÷ horas produtivas — <b>a conta única do painel</b>, a mesma do relatório de paradas e da gestão de perdas. Almoço recortado; parada em andamento fora.</td></tr>
+  <tr><td style="font-weight:700">MÊS E ANO</td><td>Mês típico de <b>22 dias úteis</b> (o período em tela tem ${fmtN(r.nDias)} dia(s) trabalhado(s)); ano = mês × 12.</td></tr>
+  <tr><td style="font-weight:700">AS DUAS LEITURAS DO R$</td><td><b>Tempo pago parado</b> (custo-hora × horas recuperadas) e <b>reposição em hora extra</b> (o mesmo tempo pago de novo com o adicional). O payback é a faixa entre elas — o número real fica no meio.</td></tr>
+  <tr><td style="font-weight:700">HORA EXTRA EVITÁVEL</td><td>HE do mês = h/semana × 4,4 (mês de 22 dias úteis); o % é quanto dessa HE o tempo recuperado explica. HE também cobre pico de demanda — leia como teto, não como corte garantido.</td></tr>
+  <tr><td style="font-weight:700">O QUE ISTO NÃO É</td><td><b>É simulação, não medição</b> — e não substitui o orçamento do fornecedor. Aprovado o investimento, o antes × depois REAL sai do relatório de GESTÃO DE PERDAS dos meses seguintes: o painel já mede cada causa sozinho, com esta mesma conta.</td></tr>
+</tbody></table>
+<div class="rp-footer"><span>RITMOPROD · Embalagem — SIMULAÇÃO</span><span>${_rpEsc(causas)} · ${fmtN(Math.round(r.minMes))} min/mês · ${fmtN(r.cxMes)} cx/mês</span></div>`;
+  }catch(err){
+    win.close(); alert('Não foi possível montar a proposta: '+err.message); return;
+  }
+
+  const html=_rpDocParadas(`Proposta de Investimento — ${de} a ${ate}`)
+    + _rpBotaoImprimir()
+    + _rpCabecalho('PROPOSTA DE INVESTIMENTO',
+        `<div class="rp-per">PERÍODO</div>
+         <div>${_rpEsc(de)} a ${_rpEsc(ate)}</div>
+         <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
+        ' · SIMULAÇÃO SOBRE AS PARADAS DO PERÍODO')
+    + corpo + '</body></html>';
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 // ── Busca dos dados da camada GESTÃO DAS PERDAS ─────────────────────────────

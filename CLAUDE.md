@@ -1218,6 +1218,21 @@ via Google Apps Script (JSONP).
     nele.
   - O `oninput` redesenha **só `#pg-sim-res`** — refazer o bloco inteiro a cada
     tecla roubaria o foco do campo que o gestor está digitando.
+  - **Os valores saem POR MÊS e POR ANO** ("colocar por ano tbm", 28/08/2026):
+    ano = mês típico × 12, calculado dentro do `_pgSimulacao` (`cxAno`,
+    `horasAno`, `rsAno`, `rsAnoHE`) — é o número que a diretoria compara com o
+    orçamento.
+  - **IMPRESSÃO EXECUTIVA — `gerarRelatorioInvestimento`** (botão no título do
+    bloco): a proposta em uma página para a diretoria, no formato de proposta
+    para aprovação — headline, problema, cenário, ganho (mês e ano), payback e
+    COMO O NÚMERO SAI — em **retrato**, no documento compartilhado
+    (`_rpDocParadas`). As contas são as MESMAS da tela (`_pgSimEstado` +
+    `_pgSimulacao`); o contexto vem do `PG_TELA_CACHE` quando fresco (papel =
+    tela por construção), senão da mesma busca com retry. Sem orçamento
+    digitado, o papel imprime a régua *"cada R$ 10.000 se paga em X–Y meses"*;
+    o rodapé metodológico diz que é **simulação, não medição** — o antes ×
+    depois real sai da GESTÃO DE PERDAS dos meses seguintes.
+    `relatorios.test.js` prende conta única, retrato e o botão da tela.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
