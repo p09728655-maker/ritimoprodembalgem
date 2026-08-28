@@ -822,7 +822,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.8.0';
+const APP_VER   = '1.9.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -887,6 +887,21 @@ function loadProdutoLocal(){
 const fmtLotes = arr => (Array.isArray(arr)?arr:[]).map(fmtN).join(' · ');
 function nowMin(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
 function sl(ef){ return ef>=96?'META':ef>=90?'ATENÇÃO':'ABAIXO'; }
+
+// ── Qual hora aceita lançamento ─────────────────────────────────────────────
+// A hora RECÉM-FECHADA continua aceitando lançamento por alguns minutos.
+// Caso real (28/08/2026): o slot pós-almoço 12:12-13:00 fechou em 0 cx — o
+// operador foi lançar depois das 13:00, a hora já estava bloqueada ("só a hora
+// atual aceita lançamento") e as caixas entraram na hora seguinte. O 12:12-13:00
+// é o slot mais curto do turno (48 min, ver CLAUDE.md) e o mais fácil de perder.
+// A tolerância cobre exatamente o "fechou agora e ainda não lancei"; hora mais
+// antiga continua bloqueada — corrigir o passado é na planilha, não no app.
+const LANC_TOLERANCIA_MIN = 15;
+function slotLancavel(nm, ini, fim){
+  const ativo      = nm>=ini && nm<fim;                          // hora corrente
+  const tolerancia = !ativo && nm>=fim && (nm-fim)<LANC_TOLERANCIA_MIN;
+  return { ativo, tolerancia, lancavel: ativo||tolerancia };
+}
 
 // ════════════════════════════════════════════════
 // SLOTS
@@ -2225,8 +2240,8 @@ function renderLancamentos(){
     const fim = slot.fim ? toMin(slot.fim) : ini+60;
     const prod = slot.producaoHora;
     const temValor = prod!==null;
-    const futuro = nm<ini;
-    const ativo = nm>=ini && nm<fim;          // hora corrente, vai acumulando
+    const lc = slotLancavel(nm, ini, fim);    // regra única: hora corrente ou recém-fechada
+    const ativo = lc.ativo;                   // hora corrente, vai acumulando
     const finalizado = nm>=fim && temValor;   // hora fechada com valor
     const efSlot = temValor ? (prod/(slot.metaHora||metaH))*100 : null;
     let cls='', badgeClass='badge-pendente', badgeText='PENDENTE', nome='PENDENTE';
@@ -2238,20 +2253,27 @@ function renderLancamentos(){
       const c=sc(efSlot);
       cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
       nome = fmtN(prod)+' CX';
+    } else if(lc.tolerancia){
+      // Fechou há pouco e ninguém lançou: chama para lançar em vez de dar a
+      // hora por perdida. Sem destaque de linha ('andamento' é só da corrente,
+      // duas linhas acesas confundiriam qual é a hora de agora).
+      badgeClass='badge-andamento'; badgeText='AINDA ACEITA';
+      nome='SEM LANÇAMENTO';
     }
-    const bloqueado = !ativo; // só a hora atual aceita lançamento
+    const bloqueado = !lc.lancavel; // hora atual ou recém-fechada (tolerância)
     const disabled = bloqueado ? 'disabled' : '';
     const onclick = bloqueado ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
     const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
+    const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}` : '';
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
         <div class="slot-nome">${nome}</div>
-        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}</div>
+        <div class="slot-meta">META: ${fmtN(slot.metaHora||metaH)} CX/H${efSlot!==null?' · '+fmtP(efSlot):''}${tolTxt}</div>
         ${lotesTxt?`<div class="slot-lotes">Lotes: ${lotesTxt}</div>`:''}
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
-      ${ativo?'<span class="slot-chevron">›</span>':''}
+      ${lc.lancavel?'<span class="slot-chevron">›</span>':''}
     </div>`;
   }).join('');
 

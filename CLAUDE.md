@@ -22,6 +22,8 @@ via Google Apps Script (JSONP).
   contra o código real do `.gs`: `node hora-extra.test.js`.
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
   que conta leituras: `node apps-script.test.js`.
+- `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
+  tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -67,6 +69,33 @@ via Google Apps Script (JSONP).
   slots anteriores ao início e ainda devolve `turnoInicio` no JSON. Como o filtro
   é no backend, **mobile, TV e gerencial** ficam consistentes de uma vez.
   Lembre: mudar o `.gs` exige **re-deploy manual** no editor do Apps Script.
+
+## Lançamento na hora RECÉM-FECHADA (tolerância, mobile)
+- **A hora que acabou de fechar continua aceitando lançamento por 15 min**
+  (`LANC_TOLERANCIA_MIN` / `slotLancavel()` no `ritmoprod_mobile.html`; teste em
+  `lancamento.test.js`). Caso real (28/08/2026): o slot pós-almoço
+  **`12:12-13:00`** — o mais curto do turno, 48 min — fechou em **0 cx**. O
+  operador foi lançar depois das 13:00, a hora já estava bloqueada (a regra era
+  "só a hora atual aceita lançamento") e as caixas entraram na hora seguinte:
+  no gerencial, PIOR HORA 0, VALE DE PRODUÇÃO 12:12 e o 13:00-14:00 inflado.
+- Na lista do operador a hora em tolerância fica **clicável**, com o badge
+  `AINDA ACEITA` (quando está sem valor) e a linha *"aceita lançamento até
+  HH:MM"*. Ela **não** ganha o destaque de linha `andamento` — esse é só da
+  hora corrente, senão duas linhas acesas confundiriam qual é a hora de agora.
+- **O que continua como era:** hora mais antiga fica bloqueada (corrigir o
+  passado é na planilha, coluna de LOTE da linha — o `getDados` soma sozinho);
+  o **bipe** (`abrirLancSlotAtivo`) segue abrindo só a hora corrente — a
+  tolerância é para o toque consciente na linha, não para atribuição
+  automática, que erraria justamente na virada da hora.
+- Fim de turno: a última hora (16:00-16:59) fica lançável até ~17:14, ou seja, a
+  janela **cruza o fechamento automático das 17:05** (que grava `FECHADO=true`
+  no `HISTORICO` — e o `arquivarDiaAtual` do dia seguinte **não sobrescreve dia
+  fechado**). Lançamento nesse intervalo fica na `HORA_A_HORA` mas fora do
+  retrato do `HISTORICO` — a MESMA situação de uma HE lançada depois das 17:05,
+  que já existia. Saída igual à da HE: **FECHAR DIA de novo** (o `saveDay` é
+  upsert por data e refaz o retrato).
+- Nada no `.gs`: a regra é só de tela (o `saveRealizado` sempre aceitou
+  qualquer slot existente da `HORA_A_HORA`).
 
 ## Caixas em HORA NORMAL × HORA EXTRA
 - **Hora extra é a linha marcada, e só ela.** O botão HORA EXTRA (modal do
