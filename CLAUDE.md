@@ -1189,6 +1189,35 @@ via Google Apps Script (JSONP).
     (`.kpi-lbl` 10px, `.kpi-sub` 11px), com o mínimo de 9,5px só nas etiquetas
     (ALVO NOVO, ABERTO). **As fontes do PDF não foram tocadas** — lá a capa tem
     de caber na folha 1, e é outra distância de leitura.
+- **SIMULADOR DE INVESTIMENTO na tela** (pedido do PPCP, 28/08/2026 — o caso
+  que o originou: justificar a troca automática de bobina do termoencolhível
+  pelas paradas de `Troca de Plastico`, 327 min · 55× · 1.030 cx em 30 dias).
+  Bloco no fim da aba GESTÃO DE PERDAS: o gestor marca as **causas a atacar**
+  no Pareto do período (qualquer uma, não só a troca de plástico), digita o
+  cenário — % de redução, custo-hora, adicional e h/semana de HE, investimento
+  — e lê tempo/caixas recuperados por mês, R$/mês, payback, **HORA EXTRA
+  EVITÁVEL** (% da HE do mês que o ataque explica) e a disponibilidade
+  antes → depois contra a meta de 90%.
+  - **`_pgSimulacao` é conta PURA e testada** (`relatorios.test.js`): consome o
+    `min`/`perd` que o `RP_PARADAS.stats` já valorou com a meta de cada dia —
+    nenhuma fórmula de perda reescrita, **zero chamada nova** (o contexto vem do
+    `PG_TELA_CACHE`; o caminho do cache passou a marcar `PG_TELA_ULT`, senão
+    A→B→A dentro do TTL deixava grão e simulador lendo o contexto da outra
+    tela).
+  - **Mensalização por mês típico de 22 dias úteis** (a mesma projeção da
+    SWOT): R$/mês e payback precisam de mês e o período em tela varia de 7 a
+    90 dias. HE do mês = h/semana × 4,4 (22 ÷ 5).
+  - **O R$ sai em DUAS leituras e o payback é a FAIXA entre elas**: tempo pago
+    parado (custo-hora) × reposto em hora extra (custo-hora × 1+adicional).
+    Uma leitura só esconderia a premissa.
+  - **Nada é gravado** (etiqueta âmbar SIMULAÇÃO, como o simulador da esteira);
+    o cenário digitado persiste no `localStorage['rpe_pg_sim']` para o gestor
+    não redigitar o custo-hora. `_pgSimNum` lê número em pt-BR (`382,89`,
+    `1.234,56`, `50.000`). ⚠ **Custo-hora NÃO tem valor padrão no código de
+    propósito**: o HTML é público na Vercel e o custo real da linha não vai
+    nele.
+  - O `oninput` redesenha **só `#pg-sim-res`** — refazer o bloco inteiro a cada
+    tecla roubaria o foco do campo que o gestor está digitando.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
