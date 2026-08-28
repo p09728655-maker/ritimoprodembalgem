@@ -1575,6 +1575,65 @@ ok('e todas escopadas por .deitado', _cssPais.every(r => r.trim().startsWith('.d
 ok('o quadro continua sem partir ao meio',
    /\.pgq\{[^}]*page-break-inside:avoid/.test(src), true);
 
+console.log('\n── simulador de investimento (aba GESTÃO DE PERDAS) ──');
+// A conta é pura e roda aqui contra o código real. Os números do cenário são
+// os do caso que originou o simulador (28/08/2026): Troca de Plastico com
+// 327 min · 55× · 1.030 cx em 22 dias trabalhados, custo-hora R$ 382,89.
+eval(pega('function _pgSimulacao('));
+eval(pega('function _pgSimNum('));
+const simTipos = [
+  { tipo: 'Troca de Plastico', min: 327, qtd: 55, perd: 1030, planej: false },
+  { tipo: 'Troca de produto',  min: 568, qtd: 74, perd: 1681, planej: false },
+  { tipo: 'Parada/Café',       min: 120, qtd: 10, perd: 0,    planej: true }
+];
+const simBase = { tipos: simTipos, horasProd: 8.8, nDias: 22, totMinNP: 1449 };
+let sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },
+  pctRed: 100, custoHora: 382.89, adicHE: 50, invest: 50000, heSem: 8 });
+ok('minutos do período = os do tipo marcado', sim.minPer, 327);
+ok('caixas do período = o perd que o stats já valorou', sim.cxPer, 1030);
+ok('período de 22 dias trabalhados = mês típico', sim.minMes, 327);
+ok('R$/mês do tempo pago parado', Math.round(sim.rsMes), Math.round(327 / 60 * 382.89));
+ok('R$/mês reposto em HE = parado × 1,5', Math.round(sim.rsMesHE), Math.round(327 / 60 * 382.89 * 1.5));
+ok('payback é FAIXA e a leitura HE paga antes', sim.payMin < sim.payMax, true);
+ok('disponibilidade antes: 87,5%', sim.dispAntes.toFixed(1), '87.5');
+ok('atacar a troca de plástico cruza a meta de 90%', sim.dispDepois >= 90, true);
+ok('hora extra evitável: 5,45h de 35,2h/mês ≈ 15,5%', Math.round(sim.pctHE * 10) / 10, 15.5);
+
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true, 'Parada/Café': true },
+  pctRed: 100 });
+ok('parada PLANEJADA marcada não entra na conta', sim.minPer, 327);
+ok('sem custo-hora não há R$', sim.rsMes, null);
+ok('sem investimento não há payback', sim.payMin, null);
+ok('sem h/semana de HE não há % evitável', sim.pctHE, null);
+
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 80 });
+ok('redução de 80% corta os minutos', Math.round(sim.minPer * 10) / 10, 261.6);
+sim = _pgSimulacao({ ...simBase, nDias: 11, selec: { 'Troca de Plastico': true }, pctRed: 100 });
+ok('mensalização por 22/diasTrabalhados', sim.minMes, 654);
+sim = _pgSimulacao({ ...simBase, selec: {}, pctRed: 100 });
+ok('nada marcado → nada simulado', sim.nSel === 0 && sim.minPer === 0, true);
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 150 });
+ok('% acima de 100 vira 100', sim.minPer, 327);
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100, custoHora: 100 });
+ok('adicional de HE omitido cai no padrão 50%', Math.round(sim.rsMesHE), Math.round(327 / 60 * 100 * 1.5));
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100, custoHora: 100, adicHE: 0 });
+ok('adicional 0 digitado vale 0 (não vira 50)', sim.rsMesHE, sim.rsMes);
+
+// número digitado em pt-BR
+ok('vírgula decimal', _pgSimNum('382,89'), 382.89);
+ok('milhar + decimal', _pgSimNum('1.234,56'), 1234.56);
+ok('ponto de milhar sem vírgula', _pgSimNum('50.000'), 50000);
+ok('ponto decimal de quem digita em en', _pgSimNum('382.89'), 382.89);
+ok('R$ e espaços não atrapalham', _pgSimNum('R$ 1.234,56'), 1234.56);
+ok('vazio é zero', _pgSimNum(''), 0);
+
+// guarda-corpo: a conta é UMA, a tela chama o simulador, e ele não reescreve
+// fórmula de perda nenhuma — consome o `perd` que o RP_PARADAS.stats valorou.
+ok('o simulador é UMA implementação', (JS.match(/function _pgSimulacao\(/g) || []).length, 1);
+ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(pega('function _pgPintar(')), true);
+ok('o simulador não recalcula perda por conta própria',
+   /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
