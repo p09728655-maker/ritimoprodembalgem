@@ -848,6 +848,11 @@ let PROD_ATUAL = '';
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
+// Programação completa (passado/hoje/futuro, só linhas com lote preenchido) —
+// carregada sob demanda como fallback: cobre lote de dia futuro ou já quitado,
+// que não aparece em PROG_HOJE mas o operador pode ter em mãos fisicamente.
+let PROG_TODAS = [];
+let _progTodasCarregada = false;
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
@@ -1093,6 +1098,21 @@ async function carregarProgramacaoHoje(){
   }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
 }
 
+// Programação completa (todas as datas), usada como fallback quando a busca
+// por lote não acha nada em PROG_HOJE (lote de data futura ou já quitado).
+// Carrega uma vez só por sessão do modal — não muda com frequência.
+async function carregarProgramacaoTodas(){
+  if(!CFG.sheetsUrl || _progTodasCarregada) return;
+  try{
+    const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
+    const json = await jsonpFetch(url);
+    if(json && json.ok && Array.isArray(json.itens)){
+      PROG_TODAS = json.itens;
+      _progTodasCarregada = true;
+    }
+  }catch(e){ console.warn('carregarProgramacaoTodas:', e.message); }
+}
+
 // Produção do dia em PONTOS/PESO (aba PRODUCAO_PRODUTO), usada só no gerencial.
 async function lerPontosDia(){
   if(!CFG.sheetsUrl) return false;
@@ -1171,6 +1191,7 @@ function abrirModalProduto(){
   // O operador usa o teclado numérico próprio (ou toca no campo p/ digitar nome).
   if(!PRODUTOS.length) carregarProdutos().then(filtrarProdutos);
   carregarProgramacaoHoje().then(filtrarProdutos); // atualiza a lista do dia
+  carregarProgramacaoTodas().then(filtrarProdutos); // fallback de busca por lote
 }
 function fecharModalProduto(){
   document.getElementById('modal-produto').classList.remove('open');
@@ -1213,6 +1234,26 @@ function filtrarProdutos(){
         <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
           <div class="prod-search-cod">${p.codigo}${corChipHtml(p, rep)}</div>
           ${linhaProdutoHtml(p)}
+        </div>`).join('');
+    return;
+  }
+  // Lote não achado na programação de HOJE: tenta na programação completa
+  // (todas as datas). Cobre lote programado pra um dia futuro, ou de um produto
+  // que já bateu a meta e por isso saiu de PROG_HOJE — mesmo assim o operador
+  // pode ter a caixa física em mãos e precisar lançar contra ela.
+  const porLoteTodas = qd
+    ? PROG_TODAS.filter(p => p.lote && String(p.lote).replace(/[^0-9]/g,'') === qd)
+    : [];
+  if(porLoteTodas.length){
+    const vistos = new Set();
+    const itens = porLoteTodas.filter(p => vistos.has(p.codigo) ? false : (vistos.add(p.codigo), true));
+    lista.innerHTML =
+      `<div class="prod-search-empty" style="text-align:left;padding:4px 2px 8px;letter-spacing:1px">LOTE ${itens[0].lote} — fora da programação de hoje${itens.length>1?', toque no produto certo':''}</div>` +
+      itens.map(p=>`
+        <div class="prod-search-item" onclick="selecionarProduto('${p.codigo}')">
+          <div class="prod-search-cod">${p.codigo}</div>
+          <div class="prod-search-desc">${p.desc}</div>
+          <div style="color:var(--txt2);font-family:var(--font-d);font-size:10px;margin-top:2px">programação ${p.data}</div>
         </div>`).join('');
     return;
   }
