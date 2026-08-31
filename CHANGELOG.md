@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.29.0 / mobile 1.13.0 — 31/08/2026
+
+**Atenção** — **o verde/vermelho do painel mudou de régua, e o número da
+EFICIÊNCIA junto.** O cartão mostrava o percentual da **meta do dia** pintado
+com a cor de **outra conta**: o ritmo contra a meta/hora da aba `HORA_A_HORA`.
+Enquanto as duas metas concordam ninguém percebe. Em 31/08/2026 elas
+discordavam em 84% — a PROGRAMAÇÃO pedia **2.709 cx** no dia e a `HORA_A_HORA`
+planejava **164 cx/h** (1.476 no dia) — e a TV escreveu **49,8% em VERDE, com
+"DENTRO DA META"**, ao lado de uma PROJEÇÃO FINAL de 1.519 contra meta de 2.709.
+
+A partir daqui a régua é **uma só e é a META DO DIA**: realizado ÷ o quanto dela
+já deveria estar feito a esta altura do turno (rateio por **minutos** rodados —
+o slot pós-almoço vale 48 min — e só as horas **com lançamento**, porque hora
+que ninguém apontou não é hora atrasada). No mesmo dado de cima o cartão passa a
+mostrar **56,2% em vermelho** e *ABAIXO DO PLANEJADO*.
+
+**O que muda na tela:** o número grande da EFICIÊNCIA agora é esse ritmo, e o
+percentual da meta do dia — o que estava no número antes — continua visível, na
+linha de apoio (*"49,8% DA META DO DIA"*), na TV e no gerencial. Vale para a
+**TV (telas A e B), o gerencial do desktop e o gerencial do celular**, que agora
+julgam o mesmo instante pela mesma conta (`efNoRitmo`, no `rp-core.js`).
+
+**Nada muda** nos dias em que a meta do dia bate com a soma das metas/hora — que
+é o caso normal.
+
+---
+
 ## v7.28.0 — 31/08/2026
 
 **Atenção** — **o gráfico do relatório mudou de desenho** (semanal e histórico).

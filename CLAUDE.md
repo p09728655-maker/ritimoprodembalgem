@@ -1463,12 +1463,40 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
 
 **Ainda NÃO corrigido** (achado verificado, decisão pendente): o
 `startsWith('L')` da detecção de coluna de LOTE (ver acima — depende de conferir
-os cabeçalhos reais da `HORA_A_HORA`) · o card EFICIÊNCIA mostra `efDia` no
-número e `sl(k.ef)` na cor, duas fórmulas no mesmo card, sem a tela dizer isso
-(é deliberado — sem separar, o badge ficaria vermelho o turno inteiro) · a
+os cabeçalhos reais da `HORA_A_HORA`) · a
 COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
-erro que ainda expõem `e.message` cru nos 4 relatórios · não existe
-`CHANGELOG.md` nem `docs/glossario.md`.
+erro que ainda expõem `e.message` cru nos 4 relatórios.
+
+## EFICIÊNCIA: uma régua só, e é a META DO DIA
+- **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
+  `efDia` (realizado ÷ meta do DIA) e a cor/status vinham de `ef` (realizado ÷
+  meta das horas já lançadas, que sai da `HORA_A_HORA`). Enquanto as duas metas
+  concordam ninguém percebe. Medido em **31/08/2026**: a PROGRAMAÇÃO pedia
+  **2.709 cx** no dia e a `HORA_A_HORA` planejava **164 cx/h** (1.476 no dia) —
+  84% de diferença. A TV escreveu **49,8% em VERDE com "DENTRO DA META"**, ao
+  lado da própria **PROJEÇÃO FINAL de 1.519** contra meta de 2.709.
+- **A régua é `efNoRitmo(real, metaDia, minRodado, minTurno)` no `rp-core.js`**,
+  uma implementação para os dois painéis: realizado ÷ quanto da **meta do dia**
+  já deveria estar feito a esta altura do turno.
+  - **Rateio por MINUTOS, não por nº de horas**: o slot pós-almoço vale 48 min, e
+    contá-lo como hora cheia cobraria meta de 12 minutos que não existem.
+  - **Só entra hora COM LANÇAMENTO** — hora que ninguém apontou ainda não é hora
+    atrasada (mesma regra do `calcAtrasoHoras`).
+  - Turno sem hora lançada devolve 0, como os painéis já faziam antes.
+- **Quem usa: TV (telas A e B), gerencial do desktop e gerencial do celular.**
+  Painel que julga o mesmo instante de dois jeitos é o defeito que este projeto
+  mais pagou caro — por isso a conta saiu dos dois HTMLs para o núcleo.
+  `rp-core.test.js` cobre a conta e `relatorios.test.js` falha se `sc(k.ef)`
+  voltar a pintar alguma tela.
+- **O % da meta do dia não sumiu**: era o número grande e virou a **linha de
+  apoio** (`#tv-ef-sub` na Tela A, espelhado em `#tvb-ef-sub` na Tela B, e o
+  `sub` do card no gerencial). ⚠ A Tela A tem `.tv-left{display:none}` no layout
+  largo — **a tela que roda na TV é a B**, e ela espelha o DOM da A: linha nova
+  na A precisa de espelho no `_sincSlideB`, senão só aparece no layout estreito.
+- ⚠ **Quando as duas metas divergirem muito, o problema pode ser o DADO**: meta
+  do dia vinda da PROGRAMAÇÃO (`CFG.metaDia`, via `aplicarMetaDiaAutomatica`)
+  contra a meta/hora digitada na `HORA_A_HORA`. O painel agora acusa a diferença
+  em vez de escondê-la atrás de um verde.
 
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda

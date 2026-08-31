@@ -157,9 +157,32 @@ ok('nenhum painel gera 12:12–13:12', rotulos(slotsV7).concat(rotulos(slotsMob)
 ok('os dois recortam o turno igual', rotulos(slotsV7), rotulos(slotsMob));
 ok('a última hora do turno é inteira', rotulos(slotsV7).slice(-1), ['16:00–17:00']);
 
+console.log('\n── eficiência contra o que a meta do dia já pedia ──');
+// 31/08/2026, medido na TV: PROGRAMAÇÃO pedindo 2.709 cx no dia, HORA_A_HORA
+// planejando 164 cx/h (1.476 no dia) e 1.350 cx feitas em 8 das 9 horas. O
+// cartão escreveu 49,8% (1.350 ÷ 2.709) pintado com a cor de 102,9%
+// (1.350 ÷ 8×164) — verde, "DENTRO DA META", com projeção de 1.519.
+const _mt = 60 * 7 + 48 + 60;          // turno real: 7 horas cheias + 12:12-13:00 + a última
+const _mr = _mt - 60;                  // 8 horas lançadas, falta a última
+const rit = efNoRitmo(1350, 2709, _mr, _mt);
+ok('a meta esperada é a do DIA rateada pelo turno rodado', Math.round(rit.metaAteAgora), 2401);
+ok('e o dia que a TV pintou de verde está em 56%', Math.round(rit.ef), 56);
+ok('56% não é "dentro da meta"', sc(rit.ef), 'red');
+// O rateio é por MINUTOS: tratar o slot pós-almoço como hora cheia estica o
+// turno em 12 min que não existem e afrouxa a régua em 53 cx.
+ok('o slot de 48 min não pode entrar como hora cheia',
+   Math.round(efNoRitmo(1350, 2709, _mr, 60 * 9).metaAteAgora), 2348);
+// No dia em que as duas metas concordam, nada muda para quem já usava o painel.
+ok('meta do dia igual à soma das metas/hora: a régua é a mesma de antes',
+   Math.round(efNoRitmo(1350, 1476, _mr, _mt).ef), 103);
+ok('turno sem hora lançada não julga ninguém',
+   efNoRitmo(0, 2709, 0, _mt), { metaAteAgora: 0, ef: 0 });
+ok('sem meta do dia também não',
+   efNoRitmo(1350, 0, _mr, _mt), { metaAteAgora: 0, ef: 0 });
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc',
-             'nomeComCor', '_rpOk'];
+             'efNoRitmo', 'nomeComCor', '_rpOk'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');

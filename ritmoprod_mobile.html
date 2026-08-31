@@ -830,7 +830,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.12.0';
+const APP_VER   = '1.13.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -2047,7 +2047,23 @@ function calcKPIs(){
   // mais pagou caro. Sem hora lançada ainda, cai no rateio pelo turno.
   const metaH = n>0 ? Math.round(metaReal/n)
                     : (totalSlots>0 ? Math.round(meta/totalSlots) : 0);
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
+
+  /* ── A RÉGUA DO VERDE/VERMELHO: a META DO DIA repartida pelo turno já rodado ─
+     Mesma conta do v7 (calcKPIs de lá), pelo mesmo motivo: o card EFICIÊNCIA
+     mostrava o % da meta do DIA pintado com a cor do ritmo contra a meta/hora da
+     HORA_A_HORA. Quando as duas metas discordam — 31/08/2026: 2.709 no dia
+     contra 164 cx/h, que dão 1.476 — sai 49,8% escrito em VERDE. Aqui o celular
+     tem de dizer o MESMO que a TV: divergência entre painéis é o defeito que
+     este projeto mais pagou caro.
+     O rateio é por MINUTOS (o slot pós-almoço vale 48), e só entra hora COM
+     LANÇAMENTO — hora que ninguém apontou ainda não é hora atrasada. */
+  const minDoSlot = h => { const s0 = slots.find(x => x.inicio === h); return s0 ? s0.min : 60; };
+  const minTurno = (allHoje.length ? allHoje.map(r => r.horario) : slots.map(x => x.inicio))
+                     .reduce((soma, h) => soma + minDoSlot(h), 0);
+  const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
+  const {metaAteAgora, ef:efRitmo} = efNoRitmo(real, meta, minRodado, minTurno);
+
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
 }
 
 // ════════════════════════════════════════════════
@@ -2509,7 +2525,9 @@ async function salvarLanc(){
 // ════════════════════════════════════════════════
 function renderGerencial(){
   const k = calcKPIs();
-  const s = sc(k.ef);
+  // Verde/vermelho pela META DO DIA (efRitmo), a MESMA régua da TV e do
+  // gerencial do desktop.
+  const s = sc(k.efRitmo);
   // NEC. P/ META: nas horas restantes mostra o ritmo (cx/h) necessário.
   // Na última hora (sem horas futuras) não repete o GAP — mostra que o
   // turno encerrou (ou META OK se já atingida).
@@ -2526,7 +2544,8 @@ function renderGerencial(){
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
     {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
-    {l:'EFICIÊNCIA',     v:fmtP(k.efDia), sub:sl(k.ef), c:s},
+    // Número, cor e texto da mesma conta; o % da meta do dia inteiro fica no sub.
+    {l:'EFICIÊNCIA',     v:fmtP(k.efRitmo), sub:sl(k.efRitmo)+' · '+fmtP(k.efDia)+' do dia', c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},

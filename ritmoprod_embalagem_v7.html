@@ -425,6 +425,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tv-ef-row{display:flex;align-items:baseline;gap:14px}
 .tv-ef-val{font-family:var(--font-h);font-size:clamp(42px,4.4vw,76px);font-weight:700;line-height:1}
 .tv-ef-val.ok{color:var(--ok)} .tv-ef-val.warn{color:var(--warn)} .tv-ef-val.red{color:var(--red)}
+.tv-ef-sub{font-family:var(--font-d);font-size:clamp(11px,1.1vw,16px);letter-spacing:1px;color:var(--txt2);white-space:nowrap;margin-top:2px}
 .tv-status-badge{font-family:var(--font-h);font-size:clamp(20px,2.4vw,34px);font-weight:700;letter-spacing:2px;padding:9px 22px;border-radius:5px;display:inline-flex;align-items:center;gap:8px}
 .tv-status-badge.ok  {background:rgba(76,175,80,.12); color:var(--ok);  border:1px solid rgba(76,175,80,.35)}
 .tv-status-badge.warn{background:rgba(255,152,0,.12); color:var(--warn);border:1px solid rgba(255,152,0,.35)}
@@ -765,6 +766,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvb2-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:1.6vh 0 1.6vh 2.4vw;border-top:1px solid var(--border)}
 .tvb2-info{display:flex;flex-direction:column;gap:4px;text-align:left;min-width:0}
 .tvb2-lbl{font-family:var(--font-d);font-size:clamp(15px,1.4vw,26px);color:var(--txt2);letter-spacing:3px;text-transform:uppercase}
+.tvb2-sub{font-family:var(--font-d);font-size:clamp(13px,1.2vw,22px);color:var(--txt2);letter-spacing:2px;white-space:nowrap;margin-top:6px}
 /* Números do rail GRANDES (TV a ~15 m). Escala adaptativa: menos KPIs ligados =
    cada número maior (data-n setado por _sincSlideB conforme os KPIs do rail). */
 .tvb2-val{font-family:var(--font-h);font-weight:700;line-height:1;color:var(--txt);font-size:clamp(46px,5vw,108px)}
@@ -1518,6 +1520,10 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div>
           <div class="tv-kpi-lbl">EFICIÊNCIA</div>
           <div class="tv-ef-val" id="tv-ef">—</div>
+          <!-- O % da meta do dia era o número grande; virou a linha de apoio
+               quando o número passou a ser o ritmo. Uma linha só: linha que
+               quebra empurra o resto da tela para fora (ver #tv-he-split). -->
+          <div class="tv-ef-sub" id="tv-ef-sub"></div>
         </div>
         <span id="tv-badge" class="tv-status-badge ok">● META</span>
       </div>
@@ -1664,6 +1670,10 @@ if (_v7Instalado()) _v7EscondeBotao();
               <div class="tvb2-val" id="tvb-ef">—</div>
               <div class="tvb2-effbar" id="tvb-effbar"></div>
             </div>
+            <!-- O % da meta do dia, espelhado da Tela A. Era o número grande
+                 antes de a EFICIÊNCIA passar a ser o ritmo; continua na tela
+                 porque é o que responde "quanto do dia já saiu". Uma linha só. -->
+            <div class="tvb2-sub" id="tvb-ef-sub"></div>
           </div>
         </div>
 
@@ -2369,7 +2379,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.28.0';
+const APP_VER   = '7.29.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3650,7 +3660,25 @@ function calcKPIs(dh){
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
   }));
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+
+  /* ── A RÉGUA DO VERDE/VERMELHO: a META DO DIA repartida pelo tempo já rodado ─
+     O cartão EFICIÊNCIA mostrava `efDia` (realizado ÷ meta do DIA) pintado com a
+     cor de `ef` (realizado ÷ meta das horas lançadas, que sai da HORA_A_HORA).
+     Duas réguas na mesma célula — e em 31/08/2026 elas discordavam em 84%: a
+     PROGRAMAÇÃO pedia 2.709 cx no dia enquanto a HORA_A_HORA planejava 164 cx/h
+     (1.476 no dia). A TV escreveu 49,8% em VERDE com "DENTRO DA META" ao lado de
+     uma PROJEÇÃO FINAL de 1.519 contra meta de 2.709 — o oposto do que a própria
+     tela projetava.
+     Agora a régua é uma só e é a META DO DIA, a mesma que a tela mostra logo
+     acima: quanto dela já deveria estar feito a esta altura do turno. O rateio é
+     por MINUTOS de turno rodados, não por número de horas — o slot pós-almoço
+     vale 48 min, e contá-lo como hora cheia cobraria meta de 12 min que não
+     existem. Só entra hora COM LANÇAMENTO: hora que ninguém apontou ainda não é
+     hora atrasada (é a mesma regra do calcAtrasoHoras). */
+  const minTurno=effSlots.reduce((soma,sl)=>soma+(sl.min||60),0);
+  const {metaAteAgora, ef:efRitmo}=efNoRitmo(real, meta, hProd*60, minTurno);
+
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
 
@@ -3809,7 +3837,10 @@ function renderGerencial(){
   if(GER_DATA){ renderGerencialHist(); return; }
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
-  const s=sc(k.ef);
+  // A MESMA régua da TV: a meta do dia repartida pelo turno já rodado. Painel
+  // que julga o mesmo instante de dois jeitos é o defeito que este projeto mais
+  // pagou caro.
+  const s=sc(k.efRitmo);
 
   // ── KPIs ──
   const kpis=[
@@ -3818,15 +3849,14 @@ function renderGerencial(){
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
     ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
-    // O NÚMERO é o % da meta do DIA já cumprido (efDia); a COR e o texto vêm do
-    // ritmo ATÉ AGORA (ef) — senão o badge ficaria vermelho o turno inteiro.
-    // São duas perguntas diferentes na mesma célula, e a tela não dizia isso:
-    // 60% em âmbar "ATENÇÃO" às 09:00 parecia contradição. O sub passa a dizer
-    // as duas, e o title explica a conta.
-    {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef)+' · '+fmtP(k.ef)+' até agora',
-     t:'Número = realizado ÷ meta do DIA ('+fmtN(k.real)+' de '+fmtN(k.meta)+' cx). '
-      +'Cor e texto = realizado ÷ meta das horas JÁ LANÇADAS ('+fmtP(k.ef)+'), '
-      +'que é o ritmo de agora — sem isso o card ficaria vermelho o turno inteiro.', c:s},
+    // Número, cor e texto saem TODOS do mesmo lugar: realizado ÷ o que a meta
+    // do dia pedia até agora. Antes o número era o % do dia (efDia) e a cor o
+    // ritmo contra a meta/hora da planilha (ef) — duas réguas na mesma célula.
+    {l:'EFICIÊNCIA %',      v:fmtP(k.efRitmo),          sub:sl(k.efRitmo)+' · '+fmtP(k.efDia)+' da meta do dia',
+     t:'Realizado ÷ o que a META DO DIA pedia até agora ('+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' cx em '+fmt1(k.hProd)+'h de turno). '
+      +'A meta do dia é rateada pelos MINUTOS já rodados, então a régua não cobra hora que ainda não aconteceu. '
+      +'O sub traz o quanto da meta do dia inteiro já está feito ('+fmtP(k.efDia)+' de '+fmtN(k.meta)+' cx). '
+      +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda mais na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
@@ -5683,7 +5713,9 @@ function renderTV(){
   if(typeof renderParadaOverlay==='function') renderParadaOverlay();
   const dh=getDadosHoje();
   const k=calcKPIs(dh);
-  const s=sc(k.ef);
+  // Verde/vermelho pela META DO DIA (efRitmo), a mesma que a tela mostra ao
+  // lado — e não pela meta/hora da planilha, que pode estar pedindo outra coisa.
+  const s=sc(k.efRitmo);
   TV_TURNO_INFO = { slotsRest: k.slotsRest, metaH: k.metaH };
 
   // ⚠ Atraso da PROGRAMAÇÃO: visível na TV pra deixar claro o quanto está
@@ -5719,11 +5751,16 @@ function renderTV(){
     ? `CAIXAS · ${fmtN(k.realNormal)} NORMAL <span style="color:var(--acc)">+ ${fmtN(k.realHE)} EXTRA</span>`
     : 'CAIXAS';
 
+  // EFICIÊNCIA: número E cor da MESMA conta — realizado ÷ o que a meta do dia
+  // pedia até agora. O quanto do dia já foi feito continua na tela, na linha de
+  // baixo: é a leitura que estava no número grande antes, e ela não some.
   const ee=document.getElementById('tv-ef');
-  ee.textContent=fmtP(k.efDia); ee.className=`tv-ef-val ${s}`;
+  ee.textContent=fmtP(k.efRitmo); ee.className=`tv-ef-val ${s}`;
+  const es=document.getElementById('tv-ef-sub');
+  if(es) es.textContent = k.meta>0 ? `${fmtP(k.efDia)} DA META DO DIA` : '';
 
   const be=document.getElementById('tv-badge');
-  be.textContent='● '+sl(k.ef); be.className=`tv-status-badge ${s}`;
+  be.textContent='● '+sl(k.efRitmo); be.className=`tv-status-badge ${s}`;
 
   const pct=Math.min(100,(k.real/k.meta)*100);
   const fill=document.getElementById('tv-prog-fill');
@@ -11107,6 +11144,7 @@ const _cicloTV = (function() {
     set('tvb-prod',     get('tv-prod'));
     set('tvb-meta',     get('tv-meta-dest'));
     set('tvb-ef',       get('tv-ef'));
+    set('tvb-ef-sub',   get('tv-ef-sub'));
     set('tvb-prog-pct', get('tv-prog-pct'));
     set('tvb-ritmo',    get('tv-ritmo'));
     set('tvb-nec',      get('tv-nec'));
