@@ -98,10 +98,36 @@ via Google Apps Script (JSONP).
   qualquer slot existente da `HORA_A_HORA`).
 
 ## Caixas em HORA NORMAL × HORA EXTRA
-- **Hora extra é a linha marcada, e só ela.** O botão HORA EXTRA (modal do
-  desktop) grava a linha na `HORA_A_HORA` com o rótulo **prefixado**:
-  `HE 17:00-18:00`. Os slots **05:00/06:00 NÃO são hora extra** aqui — são horas
-  de turno liberadas pela célula `C3` (ver seção acima).
+- **A JORNADA NORMAL É 07:00–17:00. Fora dela, é hora extra** (PPCP,
+  31/08/2026: *"05:00 as 06:00, 06:00 as 07:00 sempre é hora extra, e após
+  17:00"*). O almoço 11:00–12:12 fica DENTRO da jornada. `HE_JORNADA_INI_MIN` /
+  `HE_JORNADA_FIM_MIN` são a janela, num lugar só — o backfill dos dias antigos
+  usa a MESMA (antes ele terminava às 18:00 e o fechamento não olhava horário
+  nenhum: duas réguas para o mesmo indicador, no mesmo arquivo).
+  ⚠ A janela **repete** o TURNO da configuração do painel (`CFG.turnoInicio` /
+  `CFG.turnoFim`, hoje 07:00 e 17:00). O backend não enxerga essa config — só
+  conhece o INÍCIO do turno, pela célula `C3`. Mudou o turno na tela? **Mudar as
+  duas constantes do `.gs` também**, senão a HE passa a ser contada por uma
+  janela que não existe mais.
+- **DOIS critérios, e trocá-los quebra coisas diferentes:**
+  - **`_ehHoraExtra(rótulo)` = QUE LINHA É.** Só o prefixo `HE `. Governa a
+    **limpeza diária** (que APAGA a linha marcada) e o **filtro do C3** (linha
+    marcada não é filtrada). ⚠ Alargar este critério faria a limpeza **deletar
+    as linhas de 05:00 e 06:00** — que existem sempre — e faria elas aparecerem
+    no app mesmo com `C3=7`.
+  - **`_ehHoraExtraCaixas(rótulo)` = QUE CAIXAS CONTAM.** Prefixo **ou** horário
+    fora de 07:00–17:00. É este que alimenta o `he` do payload do `getDados` (e
+    daí o `realHE`/`realNormal` e o card CAIXAS EM HORA EXTRA) e o `he`/`heCx`
+    do `arquivarDiaAtual`.
+  - **Por que existem os dois:** o fechamento contava só pelo rótulo, e a
+    madrugada **nunca é rotulada** — ela é liberada pela `C3`. Resultado medido
+    em 31/08/2026 na planilha real: **69 dias seguidos com a coluna HE do
+    HISTORICO em ZERO**, enquanto a produção das 05:00–07:00 era hora extra de
+    verdade (26/08: 167 + 240 = **407 cx** de madrugada, e a coluna gravou 0).
+    Todo valor de HE CX que existia ali veio do backfill, não do fechamento.
+  - A **META do dia continua excluindo só a linha com rótulo** (`ehHE`): a
+    madrugada não tem meta preenchida na planilha, e mexer nisso mudaria a meta
+    histórica dos dias.
   - Antes a linha era gravada como `17:00-18:00`, **indistinguível de uma hora de
     turno** — enquanto o resto do `.gs` já classificava por `startsWith('HE')`
     (fechamento e limpeza diária). Resultado: a contagem `HE` do `HISTORICO`
@@ -141,8 +167,10 @@ via Google Apps Script (JSONP).
   como extra, por dia: em **dia útil**, o lançado **antes das 07:00** ou
   **depois das 18:00**; em **sábado e domingo, o dia INTEIRO** (não é jornada
   normal). A soma vira a `HE CX`.
-  - **17:00–18:00 é hora NORMAL** em dia útil: o turno da planilha termina
-    17:00, mas a hora extra só começa às 18:00.
+  - ⚠ **17:00 em diante É hora extra** (corrigido em 31/08/2026 com o PPCP).
+    Antes a régua daqui ia até 18:00 e o 17:00–18:00 contava como jornada
+    normal — enquanto o turno da planilha termina 17:00 (último slot
+    `16:00-16:59`). Agora a janela é a mesma do fechamento.
   - **Sábado conta o dia todo** — confirmado com o PPCP no 04/07/2026 (sábado
     com produção das 05:00 às 16:00): a HE é o dia inteiro (**1.278 cx**, o
     próprio REALIZADO), não só as 388 cx lançadas antes das 07:00. A flag

@@ -992,7 +992,12 @@ function getDados() {
 
     // Hora extra: o rotulo vem marcado ("HE 17:00-18:00"). O prefixo sai antes
     // do parse, senao o inicio viraria "HE 17:00" e o horario nao seria lido.
+    // ehHE   = identidade da linha (rótulo). Governa o filtro do C3 logo abaixo.
+    // ehHEcx = as CAIXAS contam como hora extra (jornada 07:00-17:00). É este que
+    //          vai no payload, e daí saem realHE/realNormal e o card
+    //          CAIXAS EM HORA EXTRA nos dois painéis.
     const ehHE   = _ehHoraExtra(horaVal);
+    const ehHEcx = _ehHoraExtraCaixas(horaVal);
     const parts  = _semPrefixoHE(horaVal).split('-');
     const inicio = parts[0] ? parts[0].trim() : '';
     const fim    = parts[1] ? parts[1].trim() : '';
@@ -1049,7 +1054,7 @@ function getDados() {
       inicio,
       fim,
       label:        horaVal,
-      he:           ehHE,
+      he:           ehHEcx,
       metaHora:     metaVal,
       producaoHora,
       lotes,
@@ -2672,8 +2677,39 @@ function addHE(p) {
 }
 
 // Rótulo de hora extra? ("HE 17:00-18:00", "HE17:00-18:00", "he ...")
+//
+// ⚠ ESTE E O CRITERIO DE IDENTIDADE DA LINHA, e ele governa duas coisas que NAO
+// podem mudar: a LIMPEZA DIARIA (que APAGA a linha marcada) e o filtro do inicio
+// de turno da celula C3 (linha marcada nao e filtrada). Alargar este criterio
+// para incluir a madrugada faria a limpeza DELETAR as linhas de 05:00 e 06:00 --
+// que existem sempre -- e faria elas aparecerem no app mesmo com C3=7.
+// Para saber se as CAIXAS contam como hora extra, use _ehHoraExtraCaixas().
 function _ehHoraExtra(rotulo) {
   return /^HE\b|^HE\d/i.test(String(rotulo || '').trim());
+}
+
+// Janela da jornada normal. Fora dela, a caixa e hora extra.
+// Combinado com o PPCP em 31/08/2026: "05:00 as 06:00, 06:00 as 07:00 sempre e
+// hora extra, e apos 17:00". O turno da planilha termina 17:00 (ultimo slot
+// 16:00-16:59), entao tudo a partir das 17:00 e extra.
+const HE_JORNADA_INI_MIN = 7 * 60;    // 07:00
+const HE_JORNADA_FIM_MIN = 17 * 60;   // 17:00
+
+// As CAIXAS desta linha contam como hora extra?
+//
+// Diferente de _ehHoraExtra: aqui nao importa se a linha tem o rotulo "HE ", e
+// sim QUANDO ela aconteceu. Os slots 05:00-06:00 e 06:00-07:00 sao liberados
+// pela celula C3 e nunca levam o prefixo -- por isso o fechamento fechava em
+// ZERO todo dia (69 dias seguidos no HISTORICO, conferido em 31/08/2026),
+// enquanto a producao da madrugada era hora extra de verdade. Linha marcada
+// "HE " continua contando sempre, venha de onde vier.
+function _ehHoraExtraCaixas(rotulo) {
+  if (_ehHoraExtra(rotulo)) return true;
+  const ini = _semPrefixoHE(String(rotulo || '')).split('-')[0];
+  const m = String(ini || '').trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return false;
+  const min = (+m[1]) * 60 + (+m[2]);
+  return min < HE_JORNADA_INI_MIN || min >= HE_JORNADA_FIM_MIN;
 }
 
 // Tira o prefixo HE do rótulo para sobrar só "17:00-18:00" e o horário poder
@@ -3266,7 +3302,8 @@ function arquivarDiaAtual(dataRef) {
     const hora = String(row[iH] || '').trim();
     if (!hora || hora.toUpperCase() === 'TOTAL') continue;
 
-    const ehHE    = _ehHoraExtra(hora);
+    const ehHE    = _ehHoraExtra(hora);      // rótulo: exclui a linha da META
+    const ehHEcx  = _ehHoraExtraCaixas(hora); // horário: conta as CAIXAS como HE
     const metaVal = Number(row[iM]) || 0;
 
     // Realizado da linha = coluna REALIZADO ou, se vazia, soma apenas dos lotes.
@@ -3279,7 +3316,7 @@ function arquivarDiaAtual(dataRef) {
 
     if (realVal > 0) {
       real += realVal;
-      if (ehHE) {
+      if (ehHEcx) {
         he++;
         heCx += realVal;   // caixas feitas em hora extra (fica na coluna HE CX)
       } else {
@@ -3440,8 +3477,11 @@ function testeFecharAgora() {
 // Conferido no 04/07/2026, um sábado com produção das 05:00 às 16:00: a hora
 // extra é o dia todo (1.278 cx = o REALIZADO), não apenas as 388 cx lançadas
 // antes das 07:00.
-const HE_TURNO_INI_MIN  = 7 * 60;    // 07:00
-const HE_TURNO_FIM_MIN  = 18 * 60;   // 18:00
+// A janela é UMA só: a mesma que o fechamento usa (_ehHoraExtraCaixas). Antes o
+// backfill terminava às 18:00 e o fechamento não olhava horário nenhum — duas
+// réguas diferentes para o mesmo indicador, no mesmo arquivo.
+const HE_TURNO_INI_MIN  = HE_JORNADA_INI_MIN;   // 07:00
+const HE_TURNO_FIM_MIN  = HE_JORNADA_FIM_MIN;   // 17:00
 const HE_SABADO_INTEIRO = true;      // sábado/domingo contam o dia todo
 
 // A coluna HORA pode ser TEXTO ("07:00") ou HORA de verdade — e formatada como
