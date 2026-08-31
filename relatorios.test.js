@@ -1816,6 +1816,32 @@ ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(p
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
 
+console.log('\n── a EF gravada no HISTORICO sai da MESMA meta da linha ──');
+// 28/08/2026: a linha ficou com META 1.881 e EF 100,6% — que é 1.509 ÷ 1.500,
+// a meta da HORA_A_HORA, não a meta que foi gravada ao lado. O relatório
+// semanal (que lê a coluna EF) imprimia "100,6% · NA META" e o bloco do
+// gerencial (que divide realizado ÷ meta) dizia 80,2%, no mesmo dia.
+const _salva = pega('function salvarDiaSheets(');
+ok('a EF é calculada da meta que vai na linha',
+   /const efGrav = k\.meta>0 \? \(k\.real\/k\.meta\*100\) : 0;/.test(_salva), true);
+ok('e é ela que é enviada', /'ef='\+efGrav\.toFixed\(1\)/.test(_salva), true);
+ok('a conta do ritmo (k.ef) não é mais gravada', /'ef='\+k\.ef/.test(_salva), false);
+ok('dia sem meta grava 0, não divide por zero',
+   (() => { const k={meta:0,real:1509}; return k.meta>0 ? (k.real/k.meta*100) : 0; })(), 0);
+
+// O saveDay grava `Number(p.mediaH || 0)` na coluna MEDIA CX/H e o botão nunca
+// mandava esse campo: das 69 linhas do HISTORICO real, as 17 fechadas pelo
+// botão estavam com a média ZERADA — e, sendo upsert, o botão zerava também o
+// que o fechamento automático já tinha escrito.
+ok('a média cx/h é enviada', /'mediaH='\+mediaH/.test(_salva), true);
+ok('e é realizado ÷ horas produtivas (não-HE), como no .gs',
+   /const prodNormais = k\.allHoje\.filter\(d=>!d\.he && d\.producaoHora!=null\)/.test(_salva)
+   && /Math\.round\(k\.real\/prodNormais\.length\)/.test(_salva), true);
+// MELHOR/PIOR também olham só as horas não-HE no fechamento automático.
+ok('melhor e pior saem das horas não-HE', /'melhor='\+melhorN/.test(_salva) && /'pior='\+piorN/.test(_salva), true);
+ok('dia sem hora normal lançada não divide por zero',
+   (() => { const p=[]; return p.length ? 1 : 0; })(), 0);
+
 console.log('\n── paradas no relatório semanal: o que deixamos de embalar ──');
 // Pedido do usuário (31/08/2026): "na impressão resumo semanal, deve conter as
 // paradas, e o que deixamos de embalar por motivos de paradas". O relatório

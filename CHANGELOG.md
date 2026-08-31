@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.32.0 — 31/08/2026
+
+**Corrigido** — **o FECHAR DIA zerava a coluna MEDIA CX/H.** O `saveDay` grava
+`p.mediaH || 0` e o botão nunca mandava esse campo, então toda vez que o gestor
+fechava o dia na mão a média ia a **zero** — e, sendo upsert por data, apagava
+também o valor que o fechamento automático já tinha escrito. Medido na planilha
+real: das **69 linhas do `HISTORICO`, as 17 fechadas pelo botão** estavam com a
+média zerada. Agora o botão manda a média com a MESMA definição do fechamento
+automático (realizado ÷ horas produtivas, as não-HE), e **MELHOR H./PIOR H.**
+passam a olhar só as horas não-HE, como o `.gs` sempre fez.
+
+**Atenção** — **o FECHAR DIA gravava, na mesma linha do `HISTORICO`, uma meta e
+uma eficiência calculadas com metas DIFERENTES.** A coluna META recebia a meta
+do dia (que no modo Sheets vem da PROGRAMAÇÃO) e a coluna EFICIÊNCIA recebia o
+realizado ÷ meta das **horas já lançadas** (a meta/hora da `HORA_A_HORA`).
+Enquanto as duas concordam ninguém percebe. Em **28/08/2026** a linha ficou com
+**META 1.881 e EF 100,6%** — 100,6% é 1.509 ÷ 1.500 —, e por isso o relatório
+semanal (que lê a coluna EF) imprimia *"100,6% · NA META"* enquanto o bloco do
+gerencial (que divide realizado ÷ meta) mostrava **80,2%** para o mesmo dia.
+
+A partir daqui o botão grava `EF = realizado ÷ META da própria linha`, que é o
+que o **fechamento automático das 17:05 sempre fez** — quem estava fora do
+padrão era o botão. **O número gravado muda** nos dias em que as duas metas
+divergem; os dias já gravados continuam como estão (corrigir um dia antigo é
+editar a linha na planilha).
+
+---
+
 ## v7.31.0 — 31/08/2026
 
 **Novo** — o DETALHAMENTO POR DIA do relatório semanal ganhou a coluna
