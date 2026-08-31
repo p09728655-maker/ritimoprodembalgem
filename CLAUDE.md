@@ -1552,6 +1552,27 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   contra a meta/hora digitada na `HORA_A_HORA`. O painel agora acusa a diferença
   em vez de escondê-la atrás de um verde.
 
+## Dia PASSADO no gerencial: hora extra não tem meta, e a meta não se dilui
+- A `HISTORICO_HORA` guarda **só `data · hora · realizado`** — sem meta e sem
+  marca de hora extra. A tela repartia a meta do dia entre **todas** as horas
+  arquivadas, o que num dia iniciado às 05:00 dava meta a horas de HE e diluía a
+  das horas de jornada. Medido em **28/08/2026**: 1.881 ÷ 11 = **171** para
+  todas, quando as 9 horas de jornada pediam **209** — e a madrugada (96 cx)
+  saía `ABAIXO`, virando o VALE DE PRODUÇÃO do dia.
+- **`_horaEhHE(rótulo)`** é a regra no front: prefixo `HE ` **ou** horário fora
+  de `CFG.turnoInicio`–`CFG.turnoFim`. É a mesma do `_ehHoraExtraCaixas` do
+  `.gs`; a janela vem do turno configurado no painel, que o `.gs` repete nas
+  constantes `HE_JORNADA_*` (mudou o turno na tela, mudar lá também).
+- A meta/h passa a ser `meta ÷ horas de jornada`; a hora extra sai com `—` em
+  META/H e EFICIÊNCIA e ganha a etiqueta **HORA EXTRA** (`.b-acc`) no lugar do
+  veredito. **PICO e VALE** olham só as horas de jornada, e o RITMO MÉDIO usa a
+  mesma base do `arquivarDiaAtual` (realizado ÷ horas produtivas).
+- ⚠ **Por que a madrugada está na tabela**: o `arquivarHorasDoDia` só arquiva as
+  horas não-HE — mas pelo critério do `.gs` **implantado**, que ainda classifica
+  HE só pelo rótulo. Enquanto o re-deploy não acontecer, a madrugada continua
+  entrando na `HISTORICO_HORA` como se fosse hora de turno; por isso a regra
+  precisa existir também no front.
+
 ## O que é gravado no HISTORICO tem de fechar consigo mesmo
 - **O FECHAR DIA gravava META e EFICIÊNCIA de metas diferentes.** A coluna META
   levava `k.meta` (a meta do DIA — no modo Sheets, a da PROGRAMAÇÃO) e a coluna
