@@ -260,6 +260,31 @@ via Google Apps Script (JSONP).
   `aplicarConfigPainel` **preserva** a marcação local do D em vez de apagá-la
   (a config antiga não traz a chave, e sem esse cuidado a TV ignoraria o gestor).
 
+- **Divulgar a semana sai do próprio bloco** (pedido do usuário, 31/08/2026:
+  *"preciso da impressão do resultado da semana para enviar para o pessoal"*).
+  O `#ger-semana` ganhou **🖨 IMPRIMIR SEMANA** e **📲 WHATSAPP**, e os dois
+  mandam a semana **que está na tela** (`RP_SEMANA.semana()` devolve
+  `{semStr, numSem, ate}`), como o `gerarRelatorioParadas(de, ate)` já faz com o
+  período. Antes o relatório só existia na aba HISTÓRICO e saía pela data do
+  filtro **de lá** — o mesmo defeito que fazia a tela dizer 27h16m e o papel 42
+  min. `imprimirSemanaGer`/`zapSemanaGer` são adaptadores de duas linhas; o
+  relatório, o resumo e as contas continuam sendo os mesmos.
+- **`_relSemanaParaDivulgar(todos, ate, fixa)` é a regra ÚNICA de qual semana se
+  divulga**: a semana pedida e, quando ela ainda não tem dia fechado, a **semana
+  passada**. Numa **segunda-feira** — o dia em que o resultado é divulgado — a
+  semana em curso está vazia, e o PDF era o único que não tinha essa queda:
+  abria um alerta mandando *"ajustar o filtro Até"* em vez do relatório (o zap
+  já caía sozinho, com a regra copiada dentro dele). `fixa=true` **desliga a
+  queda**: quem já sabe qual semana quer — o 🖨 do bloco — não pode receber
+  outra semana de volta.
+- Pedir relatório de semana sem dado **fecha** a janela do *"Carregando
+  relatório…"*: deixá-la em branco fazia parecer pop-up travado.
+- **PUBLICAR NO MURAL foi removido** (31/08/2026): o mural do Radar não existe
+  mais. Saíram o botão, o campo *MURAL — RADAR DIÁRIO* das configurações, a
+  chave `CFG.muralUrl` e o `_muralResumoSemana` — o `relatorios.test.js` falha
+  se a palavra voltar ao painel. A divulgação da semana é o PDF e o resumo do
+  WhatsApp.
+
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
   modal PARADAS): escolhe o tipo, escreve o **motivo** e a parada fica **em

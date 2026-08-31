@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.27.0 — 31/08/2026
+
+**Novo** — o bloco **FECHAMENTO DA SEMANA PASSADA** (aba GERENCIAL) ganhou os
+botões **🖨 IMPRIMIR SEMANA** e **📲 WHATSAPP**. Divulgar a semana é o que se faz
+com esse bloco, e era justamente o que não dava para fazer dali: o relatório
+morava na aba HISTÓRICO e saía pela data do filtro **de lá**. Os dois botões
+mandam a semana que está na tela — o papel nunca sai com outra semana que não a
+que o gestor está vendo.
+
+**Corrigido** — o **RELATÓRIO SEMANAL** numa **segunda-feira**. A semana em curso
+ainda não tem nenhum dia fechado, e em vez do relatório o botão abria um alerta
+mandando ajustar o filtro *"Até"* — exatamente no dia em que o resultado da
+semana é divulgado. Agora ele cai sozinho na **semana passada**, que é a regra
+que o resumo do WhatsApp já seguia; a regra virou uma só para os dois
+(`_relSemanaParaDivulgar`). **Nenhum número muda:** para uma semana com dias
+fechados, o relatório sai igual ao de antes.
+
+**Corrigido** — pedir o relatório de uma semana sem dado deixava aberta a janela
+em branco do *"Carregando relatório…"*, que parecia pop-up travado. Agora ela
+fecha junto com o aviso.
+
+**Removido** — o botão **📌 PUBLICAR NO MURAL** e tudo que vinha com ele (campo
+*MURAL — RADAR DIÁRIO* nas configurações, a chave `muralUrl` e o resumo próprio
+do mural): o mural do Radar não existe mais, e botão de recurso removido só abre
+aba em branco.
+
+---
+
 ## v7.26.0 / mobile 1.12.0 — 31/08/2026
 
 **Atenção** — ⚠ **re-deploy**. **A hora extra passou a ser contada pelo
