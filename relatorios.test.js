@@ -1816,6 +1816,31 @@ ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(p
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
 
+console.log('\n── EFICIÊNCIA: número e cor da MESMA conta, nas três telas ──');
+// 31/08/2026: a TV mostrou 49,8% em VERDE com "DENTRO DA META". O número era a
+// meta do DIA (1.350 ÷ 2.709) e a cor era outra conta — o ritmo contra a
+// meta/hora da HORA_A_HORA (1.350 ÷ 8×164 = 102,9%). Enquanto as duas metas
+// concordam ninguém percebe; naquele dia elas discordavam em 84%.
+['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
+  const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  ok(f + ': nenhuma tela pinta pelo ritmo da meta/hora', /sc\(k\.ef\)/.test(src), false);
+  ok(f + ': a régua vem do núcleo comum, não é reescrita', /efNoRitmo\(/.test(src), true);
+});
+const _v7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+ok('TV: o número da eficiência é o mesmo que carrega a cor',
+   /tv-ef'\);\s*\n\s*ee\.textContent=fmtP\(k\.efRitmo\)/.test(_v7), true);
+ok('TV: e o status sai da mesma conta', /sl\(k\.efRitmo\)/.test(_v7), true);
+ok('TV: o % da meta do dia continua na tela, na linha de apoio',
+   /id="tv-ef-sub"/.test(_v7) && /es\.textContent = k\.meta>0/.test(_v7), true);
+// A TELA B é a que roda na TV de verdade (a Tela A tem .tv-left escondida no
+// layout largo): ela espelha o DOM da A, então a linha de apoio tem de ser
+// espelhada junto, senão o % da meta do dia sumia justamente da tela do chão
+// de fábrica.
+ok('TV: a Tela B espelha a linha de apoio',
+   /set\('tvb-ef-sub',\s*get\('tv-ef-sub'\)\)/.test(_v7) && /id="tvb-ef-sub"/.test(_v7), true);
+ok('gerencial: o card mostra a conta que pintou a cor',
+   /v:fmtP\(k\.efRitmo\),\s*sub:sl\(k\.efRitmo\)/.test(_v7), true);
+
 console.log('\n── o rótulo é CAIXAS, não PEÇAS ──');
 // Mesmo critério do vocabulário banido ("PERDIDO NO RITMO"/"PERDIDO PARADO"):
 // o mesmo st.pecas saía como PEÇAS PERDIDAS no desktop e CAIXAS PERDIDAS no

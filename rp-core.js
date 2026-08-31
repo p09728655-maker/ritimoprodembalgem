@@ -114,6 +114,33 @@ function calcAtrasoHoras(rows){
 // (a TV tem espaço para "DENTRO DA META", o celular não).
 function sc(ef){ return ef >= 96 ? 'ok' : ef >= 90 ? 'warn' : 'red'; }
 
+// ── Eficiência contra o que a META DO DIA já pedia até agora ────────────────
+// A régua do verde/vermelho dos painéis. Nasceu de um defeito medido em
+// 31/08/2026: o cartão EFICIÊNCIA mostrava o % da meta do DIA (realizado ÷ meta
+// do dia) pintado com a cor de OUTRA conta — o ritmo contra a meta/hora da aba
+// HORA_A_HORA. Enquanto as duas metas concordam ninguém percebe; naquele dia a
+// PROGRAMAÇÃO pedia 2.709 cx e a HORA_A_HORA planejava 164 cx/h (1.476 no dia),
+// e a TV escreveu **49,8% em VERDE, "DENTRO DA META"**, ao lado de uma projeção
+// de 1.519 contra meta de 2.709.
+//
+// Aqui a régua é uma só e é a META DO DIA — a mesma que a tela mostra: quanto
+// dela já deveria estar feito a esta altura do turno.
+//   • o rateio é por MINUTOS de turno, não por número de horas: o slot
+//     pós-almoço vale 48 min, e contá-lo como hora cheia cobraria 12 min que
+//     não existem;
+//   • só entram as horas COM LANÇAMENTO (quem chama passa os minutos delas) —
+//     hora que ninguém apontou ainda não é hora atrasada, a mesma regra do
+//     calcAtrasoHoras;
+//   • turno sem nenhuma hora lançada devolve 0, e quem chama decide o que
+//     mostrar (é o que os dois painéis já faziam antes desta função).
+// Mora aqui porque os DOIS painéis precisam da MESMA resposta: celular dizendo
+// "dentro da meta" enquanto a TV diz "abaixo" é o defeito que este projeto mais
+// pagou caro.
+function efNoRitmo(real, metaDia, minRodado, minTurno){
+  const metaAteAgora = minTurno > 0 ? (Number(metaDia) || 0) * (minRodado / minTurno) : 0;
+  return { metaAteAgora, ef: metaAteAgora > 0 ? (real / metaAteAgora) * 100 : 0 };
+}
+
 // ── Produto × cor ───────────────────────────────────────────────────────────
 // A COR saiu da DESCRICAO para uma coluna própria na PRODUTO_CODIGO. Quem
 // continuou imprimindo só a descrição passou a mostrar linhas IDÊNTICAS para
@@ -142,7 +169,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.1.0',
+  versao: '1.2.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
-        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor', '_rpOk']
+        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
+        'nomeComCor', '_rpOk']
 };
