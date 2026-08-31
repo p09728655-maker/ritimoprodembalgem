@@ -1816,6 +1816,66 @@ ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(p
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
 
+console.log('\n── paradas no relatório semanal: o que deixamos de embalar ──');
+// Pedido do usuário (31/08/2026): "na impressão resumo semanal, deve conter as
+// paradas, e o que deixamos de embalar por motivos de paradas". O relatório
+// contava quanto saiu e não contava o que ficou pelo caminho.
+eval(pega('function _relParadasSemanaHtml('));
+const _parSem = [
+  { data:'24/08/2026', ini:'08:10', fim:'09:10', tipo:'Manutenção Corretiva', obs:'esteira' },
+  { data:'24/08/2026', ini:'14:00', fim:'14:30', tipo:'Troca de Plastico',    obs:'' },
+  { data:'25/08/2026', ini:'11:10', fim:'11:40', tipo:'Refeição',             obs:'' },
+  { data:'25/08/2026', ini:'09:00', fim:'09:15', tipo:'Intervalo de Turno',    obs:'' },
+];
+// A valoração é a REAL (RP_PARADAS.stats) — a mesma da aba PARADAS e da GESTÃO
+// DE PERDAS. A seção do relatório é só desenho em cima disso.
+const _stSem = RP_PARADAS.stats(_parSem, {
+  cfg: { turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12', metaDia:1000 },
+  metaByDay: { '24/08/2026':1000, '25/08/2026':1000 },
+  metaHoje: 1000, hoje: '31/08/2026', classeMap: { 'Intervalo de Turno':'PLANEJADA' },
+  realByDay: { '24/08/2026':900, '25/08/2026':950 }, de:'24/08/2026', ate:'30/08/2026'
+});
+const htmlPar = _relParadasSemanaHtml(_stSem, 8381);
+ok('a seção diz quantas caixas deixaram de ser embaladas',
+   htmlPar.includes(fmtN(_stSem.pecas)) && _stSem.pecas > 0, true);
+ok('e o quanto isso pesa na meta da semana',
+   htmlPar.includes(fmtP(_stSem.pecas / 8381 * 100) + ' da meta da semana'), true);
+ok('cada motivo entra com tempo e caixas',
+   /Manutenção Corretiva[\s\S]*?1h00m/.test(htmlPar), true);
+// A parada PREVISTA entra com o tempo dela e ZERO caixa: ela estava no plano.
+// Escondê-la faria o tempo da tabela não fechar com o total.
+ok('parada prevista aparece marcada, e sem caixa perdida',
+   /Intervalo de Turno <span class="sbadge s-ok"[^>]*>PREVISTA[\s\S]*?td-bold[^>]*>—</.test(htmlPar), true);
+// A parada inteiramente dentro do almoço fica fora de tudo (as horas produtivas
+// já descontam o almoço) — é por isso que a Refeição das 11:10 não conta minuto.
+ok('o almoço não é descontado duas vezes', _stSem.diag.paradasNoAlmoco, 1);
+ok('sem paradas carregadas, o relatório sai sem a seção', _relParadasSemanaHtml(null, 8381), '');
+// DESENHO, não conta: a terceira implementação da mesma perda foi o que fez as
+// telas de paradas divergirem três vezes.
+ok('a seção não recalcula perda nenhuma',
+   /perdaDeMin|perdaAoRitmo|durProdutiva|\* *ritmo/.test(pega('function _relParadasSemanaHtml(')), false);
+const _relSem = pega('async function gerarRelatorioSemanal(');
+ok('o relatório busca as paradas com a MESMA busca das outras telas',
+   /_pgBuscarDados\(dtToStr\(seg\), dtToStr\(sex\)\)/.test(_relSem), true);
+ok('e valora com o MESMO adaptador', /_paradasStats\(_p\.paradas/.test(_relSem), true);
+ok('falhou a busca, o relatório sai inteiro assim mesmo',
+   /catch\(e\)\{ console\.warn\('\[RelSemanal\] paradas não vieram/.test(_relSem), true);
+
+console.log('\n── o relatório semanal é documento, não painel: cor só na exceção ──');
+// Pedido do usuário (31/08/2026): "capricha no layout deixar profissional menos
+// cor". Seis bordas coloridas, valores em verde/laranja e emojis competiam com
+// a única cor que informa — e ainda com o vermelho de status.
+ok('sem troféu e sem gráfico de emoji no relatório', /🏆|📉/.test(_relSem), false);
+ok('nenhuma borda decorativa de card sobrou',
+   /border-left-color:#FF5C1F|border-left-color:#4CAF50/.test(_relSem), false);
+ok('o título de seção deixou de ser vermelho',
+   /\.rp-sec-ttl\{[^}]*color:#c53030/.test(_relSem), false);
+// A cor que ficou é a que dá veredito.
+ok('o status continua colorido, com a palavra junto',
+   /s-ok|s-warn|s-red/.test(_relSem) && /NA META|ABAIXO/.test(_relSem), true);
+ok('a barra do dia só ganha cor quando o dia ficou abaixo',
+   /const clr=d\.ef>=90\?'#2F3B4A':'#B3261E'/.test(JS), true);
+
 console.log('\n── EFICIÊNCIA: número e cor da MESMA conta, nas três telas ──');
 // 31/08/2026: a TV mostrou 49,8% em VERDE com "DENTRO DA META". O número era a
 // meta do DIA (1.350 ÷ 2.709) e a cor era outra conta — o ritmo contra a

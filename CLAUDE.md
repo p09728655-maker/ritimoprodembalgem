@@ -1467,6 +1467,47 @@ os cabeçalhos reais da `HORA_A_HORA`) · a
 COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
 erro que ainda expõem `e.message` cru nos 4 relatórios.
 
+## PARADAS no relatório semanal
+- **`_relParadasSemanaHtml(st, totMeta)`** fecha o RELATÓRIO SEMANAL com o que a
+  semana deixou de embalar (pedido do usuário, 31/08/2026: *"na impressão resumo
+  semanal, deve conter as paradas, e o que deixamos de embalar por motivos de
+  paradas"*): 4 cartões (caixas perdidas + quanto pesa na meta da semana, tempo
+  parado, nº de paradas, disponibilidade) e a tabela de **motivos** com tempo,
+  fatia do parado e caixas de cada um.
+- **É DESENHO, não conta.** A busca é o `_pgBuscarDados` (o mesmo com retry da
+  aba PARADAS / GESTÃO DE PERDAS) e a valoração é o `_paradasStats` →
+  `RP_PARADAS`. Uma terceira implementação da perda foi o que fez as telas de
+  paradas divergirem três vezes; `relatorios.test.js` falha se
+  `perdaDeMin`/`perdaAoRitmo`/`durProdutiva` aparecerem dentro da função.
+- **Sem Sheets, sem `paradas-calc.js` ou com a busca falhando, o relatório sai
+  inteiro — só sem a seção** (mesma regra da cascata dos relatórios de
+  produção). Meio relatório é melhor que relatório nenhum; número de parada
+  inventado é pior que os dois.
+- Parada **prevista** entra com o tempo dela e **zero caixa** (esconder faria a
+  soma do tempo não fechar com o total); parada inteiramente dentro do almoço
+  continua fora de tudo.
+
+## O relatório semanal é DOCUMENTO, não painel
+- Pedido do usuário em 31/08/2026: *"capricha no layout deixar profissional
+  menos cor"*. O papel tinha **seis bordas coloridas de card, valores em
+  verde/laranja, título de seção em vermelho e emojis** (🏆 📉) — cor decorativa
+  disputando atenção com a única que informa, e ainda concorrendo com o vermelho
+  de status.
+- **A regra agora: cor só onde há função.** Corpo em grafite (`#1F2328`) sobre
+  branco, rótulos em `#5B6470`; status (meta, hora extra, caixas perdidas) fica
+  colorido e **sempre com a palavra junto** — nunca cor sozinha. A faixa de
+  alerta virou neutra com régua âmbar e a palavra ATENÇÃO no lugar do ⚠.
+- **No `_svgBarChart` (semanal E histórico) a barra é grafite quando o dia
+  entregou; só o dia abaixo do planejado ganha cor**, e o fantasma da meta é
+  cinza. Bater a meta é o esperado — pintar o esperado de verde gasta a atenção
+  que o dia ruim precisa. O NÚMERO da barra é fato (tinta) e o PERCENTUAL é
+  veredito (cor de status).
+- ⚠ **O cabeçalho (`_rpCabecalho`) não foi tocado**: ele é compartilhado pelos
+  cinco relatórios e é a âncora de identidade. Mexer nele é mexer em todos.
+- `@media print` do semanal: título de seção não fica órfão
+  (`page-break-after:avoid`) e KPIs, faixa de alerta e gráfico não partem ao
+  meio — mesma regra já documentada para o relatório de paradas.
+
 ## EFICIÊNCIA: uma régua só, e é a META DO DIA
 - **O cartão mostrava um número de uma conta com a cor de OUTRA.** O número era
   `efDia` (realizado ÷ meta do DIA) e a cor/status vinham de `ef` (realizado ÷
