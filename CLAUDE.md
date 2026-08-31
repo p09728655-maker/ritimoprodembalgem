@@ -1502,6 +1502,19 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   cinza. Bater a meta é o esperado — pintar o esperado de verde gasta a atenção
   que o dia ruim precisa. O NÚMERO da barra é fato (tinta) e o PERCENTUAL é
   veredito (cor de status).
+- **Segunda passada (mesmo dia, *"ainda muita cor"*): o NÚMERO é tinta, o
+  VEREDITO é o selo.** EFICIÊNCIA, EF. S/ HE, H. EXTRA e as caixas perdidas por
+  motivo saem em grafite; quem diz se o dia bateu a meta é o selo NA META /
+  ATENÇÃO / ABAIXO. No resumo sobrou **um** número colorido (a eficiência da
+  semana) e nas paradas outro (as caixas perdidas). No gráfico, **todas as
+  barras têm a mesma tinta** — quem mostra o dia abaixo é o fantasma da meta
+  aparecendo por cima da barra, e o percentual, que fica vermelho só aí.
+- **Coluna META/H** (pedido do usuário, 31/08/2026): meta do dia ÷ **horas do
+  turno** (`getSlots().length`), não ÷ horas lançadas — a meta cobre a jornada
+  normal e a hora extra não tem meta na planilha, mesma regra do fechamento. É a
+  régua de MELHOR H./PIOR H., que são caixas da maior e da menor hora do dia. A
+  conta vai **escrita embaixo da tabela**: um dia antigo pode ter rodado com
+  outro turno, e o papel tem de dizer de onde saiu o número.
 - ⚠ **O cabeçalho (`_rpCabecalho`) não foi tocado**: ele é compartilhado pelos
   cinco relatórios e é a âncora de identidade. Mexer nele é mexer em todos.
 - `@media print` do semanal: título de seção não fica órfão

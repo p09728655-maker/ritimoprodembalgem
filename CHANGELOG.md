@@ -11,6 +11,30 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.31.0 — 31/08/2026
+
+**Novo** — o DETALHAMENTO POR DIA do relatório semanal ganhou a coluna
+**META/H** (pedido do usuário): a meta do dia dividida pelas **horas do turno**.
+É a régua que faltava para as colunas MELHOR H. e PIOR H. — 300 e 109 cx são
+números soltos até se saber que a hora pedia 156. A conta vai escrita embaixo da
+tabela, porque a hora extra não tem meta na planilha e um dia antigo pode ter
+rodado com outro turno.
+
+**Atenção** — **segunda passada de cor no relatório semanal** (*"ainda muita
+cor"*). Agora **o número é sempre tinta e o veredito é o selo**: EFICIÊNCIA,
+EF. S/ HE, H. EXTRA e as caixas perdidas por motivo saem em grafite, e quem diz
+se o dia bateu a meta é o selo NA META / ATENÇÃO / ABAIXO, que continua
+colorido e com a palavra escrita. No resumo sobrou **um** número colorido — o da
+EFICIÊNCIA da semana, que é o veredito do período — e nas paradas, o das caixas
+perdidas. **Nenhum número mudou.**
+
+**Atenção** — no gráfico, **todas as barras passaram a ter a mesma tinta**. Quem
+mostra o dia que ficou abaixo é o fantasma da meta aparecendo por cima da barra
+— é o gráfico clássico de realizado × alvo — e o percentual, que fica vermelho
+só nesse caso. A faixa listrada da hora extra continua.
+
+---
+
 ## v7.30.0 — 31/08/2026
 
 **Novo** — o **RELATÓRIO SEMANAL** passou a fechar com **PARADAS DA SEMANA — O

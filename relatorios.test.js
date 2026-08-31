@@ -1873,8 +1873,24 @@ ok('o título de seção deixou de ser vermelho',
 // A cor que ficou é a que dá veredito.
 ok('o status continua colorido, com a palavra junto',
    /s-ok|s-warn|s-red/.test(_relSem) && /NA META|ABAIXO/.test(_relSem), true);
-ok('a barra do dia só ganha cor quando o dia ficou abaixo',
-   /const clr=d\.ef>=90\?'#2F3B4A':'#B3261E'/.test(JS), true);
+// Todas as barras na mesma tinta: quem conta a história é o fantasma da meta
+// aparecendo por cima da barra. A cor fica só no PERCENTUAL, e só quando o dia
+// ficou abaixo — cor é exceção, não decoração.
+ok('a barra do dia não tem cor de status', /const clr='#2F3B4A';/.test(JS), true);
+ok('e a exceção vai no percentual',
+   /const pctClr=d\.ef>=96\?'#5B6470'/.test(JS), true);
+
+console.log('\n── META/H: a régua das colunas MELHOR H. e PIOR H. ──');
+// Pedido do usuário (31/08/2026): "incluir a meta por hora normal do dia".
+// MELHOR H. 300 e PIOR H. 109 são números soltos até se saber quanto a hora
+// pedia. A meta do dia cobre a jornada normal — hora extra não tem meta na
+// planilha —, então o divisor é o nº de horas do TURNO.
+ok('a coluna existe no cabeçalho', /<th>META<\/th><th>META\/H<\/th>/.test(_relSem), true);
+ok('e sai da meta do dia dividida pelas horas do turno',
+   /const metaHoraDia = d => d\.meta>0 \? Math\.round\(d\.meta\/hTurno\) : 0/.test(_relSem), true);
+ok('dia sem meta não inventa meta por hora', /metaHoraDia\(d\)\?fmtN\(metaHoraDia\(d\)\):'—'/.test(_relSem), true);
+ok('o papel diz de onde o número saiu',
+   /<b>META\/H<\/b> = meta do dia ÷ \$\{plural\(hTurno/.test(_relSem), true);
 
 console.log('\n── EFICIÊNCIA: número e cor da MESMA conta, nas três telas ──');
 // 31/08/2026: a TV mostrou 49,8% em VERDE com "DENTRO DA META". O número era a
