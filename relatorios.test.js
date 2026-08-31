@@ -35,6 +35,7 @@ eval(pega('function _relSemanaJanela('));
 eval(pega('function fmtFechadoEm('));
 eval(pega('function _relDiasDaSemana('));
 eval(pega('function _relSemanaPassada('));
+eval(pega('function _relSemanaParaDivulgar('));
 eval(pega('function _relRotuloSemanas('));
 eval(pega('function _slotMaisFreq('));
 eval(pega('function _relMetaHE('));
@@ -86,6 +87,31 @@ ok('na sexta, continua sendo a mesma semana anterior',
    _relSemanaPassada(new Date(2026, 7, 21)).semStr, '10/08/2026 a 16/08/2026');
 ok('no domingo, também',
    _relSemanaPassada(new Date(2026, 7, 23)).semStr, '10/08/2026 a 16/08/2026');
+
+console.log('\n── a semana que se divulga (PDF, zap: a MESMA regra) ──');
+// O PDF era o único que não tinha a queda: numa segunda-feira — o dia em que a
+// semana é divulgada — a semana atual ainda não tem dia fechado, e em vez do
+// relatório abria um alerta mandando ajustar o filtro "Até" da aba Histórico.
+const _sd = _relSemanaJanela(dtToStr(_relSemanaPassada().seg));   // semana passada de verdade
+const _daSemanaPassada = [{ data: dtToStr(_sd.seg), real: 100, meta: 100, ef: 100, ok: true, heCx: 0 }];
+
+ok('semana pedida com dia fechado: é ela que sai',
+   _relSemanaParaDivulgar(soltos, '13/08/2026').semStr, '10/08/2026 a 16/08/2026');
+ok('e traz os dias dela',
+   _relSemanaParaDivulgar(soltos, '13/08/2026').dias.map(d => d.data),
+   ['10/08/2026', '14/08/2026', '16/08/2026']);
+// Segunda de manhã: a semana atual está vazia, cai na que fechou.
+ok('semana sem dia fechado cai na semana passada',
+   _relSemanaParaDivulgar(_daSemanaPassada, dtToStr(new Date())).semStr, _sd.semStr);
+ok('e a queda traz o dia que existe',
+   _relSemanaParaDivulgar(_daSemanaPassada, dtToStr(new Date())).dias.length, 1);
+// Quem já sabe qual semana quer (o 🖨 do bloco do gerencial manda a que está na
+// tela) não pode receber OUTRA semana de volta — foi assim que o relatório de
+// paradas saiu com o período da aba errada.
+ok('semana fixa não cai para outra semana',
+   _relSemanaParaDivulgar([], '13/08/2026', true).semStr, '10/08/2026 a 16/08/2026');
+ok('e volta vazia em vez de trocar de semana',
+   _relSemanaParaDivulgar([], '13/08/2026', true).dias, []);
 
 console.log('\n── KPIs da semana ──');
 const dias = [
@@ -274,28 +300,6 @@ ok('e aí não há dia aberto',                     semCampo.abertos, 0);
 // Semana inteira em aberto não pode ficar sem os dois cartões.
 const soAberto = _relSemanalKPIs(sem34.map(d => ({ ...d, fechado:false })));
 ok('sem nenhum dia fechado, cai na lista toda', soAberto.piorDia.data, '21/08/2026');
-
-console.log('\n── resumo para o mural: mesma conta, sem marcação de zap ──');
-eval(pega('function _muralResumoSemana('));
-const mural = _muralResumoSemana(sem34, '17/08/2026 a 23/08/2026', 34);
-ok('título traz semana e total', mural.titulo, 'Embalagem · Semana 34/2026: 7.442 caixas');
-ok('avisa que a semana está parcial',
-   /Parcial: 4 de 5 dias fechados/.test(mural.texto), true);
-// Mesmo princípio do selo do PDF: o buraco de uma semana aberta é quase todo
-// dia que não aconteceu. No mural ninguém tem a tabela ao lado para descontar.
-ok('semana aberta não acusa quanto faltou',
-   /Faltaram/.test(mural.texto), false);
-const fechada = _muralResumoSemana(
-  sem34.slice(0,4).map(d => ({...d, fechado:true})), '17/08/2026 a 23/08/2026', 34);
-ok('semana fechada volta a dar o veredito',
-   /Meta batida na jornada normal/.test(fechada.texto), true);
-ok('melhor dia sai de dia fechado',
-   /Melhor dia: 20\/08\/2026/.test(mural.texto), true);
-ok('sem marcação de WhatsApp no mural',
-   /[*_~]|📦|✅|🔴/.test(mural.titulo + mural.texto), false);
-// A conta tem de bater com a do PDF e a do zap — uma implementação só.
-ok('total igual ao do relatório',
-   /7\.442 caixas, 77,9% da meta de 9\.550/.test(mural.texto), true);
 
 console.log('\n── uma régua só para a palavra meta ──');
 // O painel diz DENTRO DA META a partir de 96% em seis telas, mas o campo `ok`
@@ -869,6 +873,37 @@ ok('TV e gerencial chamam o mesmo desenho',
    (JS.match(/RP_SEMANA\.pintar\(/g) || []).length, 2);
 ok('cada tela tem o seu bloco no HTML',
    [(src.match(/id="tvd-total"/g) || []).length, (src.match(/id="gsem-total"/g) || []).length], [1, 1]);
+
+// Divulgar a semana (PDF e zap) é UMA regra: a semana do filtro, com queda para
+// a semana passada quando a atual ainda não fechou nenhum dia. Escrita dentro
+// de cada botão, ela já vivia em dois lugares e faltava no terceiro.
+ok('a regra da semana que se divulga é uma só',
+   (JS.match(/function _relSemanaParaDivulgar\(/g) || []).length, 1);
+ok('e os dois que divulgam chamam ela',
+   (JS.match(/_relSemanaParaDivulgar\(/g) || []).length, 3);
+ok('nenhum deles remonta o recorte por fora',
+   /_relSemanaPassada\(\)\);\s*\n\s*dias=_relDiasDaSemana/.test(JS), false);
+
+// O relatório sai com a semana de QUEM O CHAMOU (como o gerarRelatorioParadas
+// faz com o período): o botão do bloco manda a semana que está na tela, o da
+// aba HISTÓRICO continua lendo o filtro dela.
+ok('o relatório semanal aceita a semana de quem chamou',
+   /async function gerarRelatorioSemanal\(ateArg\)/.test(JS), true);
+ok('e só cai no filtro do Histórico quando não recebe semana',
+   /_relSemanaParaDivulgar\(todosDias, ateArg\|\|dGet\('hist-ate'\), !!ateArg\)/.test(JS), true);
+ok('o bloco do gerencial imprime e manda a semana em cartaz',
+   [/onclick="imprimirSemanaGer\(\)"/.test(src),
+    /function imprimirSemanaGer\(\)[\s\S]{0,220}gerarRelatorioSemanal\(s\.ate\)/.test(JS)], [true, true]);
+ok('e o zap do bloco sai da mesma semana',
+   [/onclick="zapSemanaGer\(\)"/.test(src),
+    /function zapSemanaGer\(\)[\s\S]{0,220}enviarResumoZap\(s\.ate\)/.test(JS)], [true, true]);
+ok('quem diz qual semana está em cartaz é o RP_SEMANA',
+   (JS.match(/RP_SEMANA\.semana\(\)/g) || []).length, 2);
+
+// PUBLICAR NO MURAL saiu do painel (a função não existe mais do outro lado):
+// botão, campo de configuração, chave do CFG e resumo próprio vão junto — sobra
+// de recurso removido é botão que abre aba em branco.
+ok('nenhuma sobra do mural no painel', /mural/i.test(src), false);
 
 // A faixa do PPCP, o botão de imprimir e o logo estavam escritos 5 vezes — foi
 // por isso que o #204 arrumou um relatório e o #205 precisou repetir em quatro.

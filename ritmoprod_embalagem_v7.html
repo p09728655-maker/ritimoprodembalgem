@@ -1357,6 +1357,15 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span id="gsem-semana" style="font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px;margin-left:8px">· SEMANA —</span>
       <div style="flex:1"></div>
       <span id="gsem-periodo" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">—</span>
+      <!-- Divulgar a semana é o que se faz com este bloco, e era a única coisa
+           que não dava para fazer daqui: o relatório morava na aba HISTÓRICO e
+           saía pela data do filtro DE LÁ — numa segunda-feira, quando a semana
+           é divulgada, ele nem abria. Os dois botões mandam a semana que está
+           na tela; a conta e o desenho continuam sendo os mesmos. -->
+      <button class="btn btn-ghost" style="margin-left:12px;padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)"
+              onclick="imprimirSemanaGer()" title="Abre o RELATÓRIO SEMANAL desta semana para imprimir ou salvar em PDF">🖨 IMPRIMIR SEMANA</button>
+      <button class="btn btn-ghost" style="margin-left:6px;padding:4px 10px;font-size:10px;color:var(--ok);border-color:rgba(76,175,80,.4)"
+              onclick="zapSemanaGer()" title="Monta o resumo desta semana em texto e abre o WhatsApp">📲 WHATSAPP</button>
     </div>
 
     <div class="tvd-wrap">
@@ -1946,7 +1955,6 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button class="btn btn-ghost" onclick="imprimir()">🖨 IMPRIMIR / PDF</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioSemanal()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO SEMANAL</button>
       <button class="btn btn-acc"   onclick="enviarResumoZap()" style="background:rgba(76,175,80,.15);color:var(--ok);border:0.5px solid rgba(76,175,80,.5)">📲 RESUMO NO WHATSAPP</button>
-      <button class="btn btn-acc"   onclick="publicarResumoNoMural()" style="background:rgba(219,33,38,.14);color:#ff6b70;border:0.5px solid rgba(219,33,38,.5)">📌 PUBLICAR NO MURAL</button>
       <button class="btn btn-acc"   onclick="gerarRelatorioParadas()" style="background:rgba(229,115,115,.15);color:#e57373;border:0.5px solid rgba(229,115,115,.5)">⏸ RELATÓRIO DE PARADAS</button>
       <button class="btn btn-ghost" style="color:var(--red);border-color:rgba(244,67,54,.3)" onclick="limparHistorico()">🗑 LIMPAR</button>
     </div>
@@ -2272,16 +2280,6 @@ if (_v7Instalado()) _v7EscondeBotao();
       📋 Para configurar: cole o script <strong style="color:var(--acc)">ritmoprod_appscript.gs</strong> no Google Sheets
       → <em>Extensões → Apps Script</em> → Implantar → App da Web → Qualquer pessoa → copie a URL aqui.
     </div>
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">MURAL — RADAR DIÁRIO</div>
-    <div class="frm-grp" style="margin-bottom:8px">
-      <label class="frm-lbl">ENDEREÇO DO RADAR (deixe vazio para esconder o botão)</label>
-      <input class="frm-inp" id="c-mural-url" type="url" placeholder="https://radar-patrimar.vercel.app">
-    </div>
-    <div style="font-family:var(--font-b);font-size:11px;color:var(--txt2);line-height:1.5;background:var(--elevated);border-radius:4px;padding:8px 10px">
-      📌 O botão <strong style="color:var(--acc)">PUBLICAR NO MURAL</strong> monta o resumo da semana e abre o Radar
-      com o recado pronto. Quem confere e confirma com a senha do mural é você, lá — a senha nunca sai do Radar.
-    </div>
 
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeCfg()">CANCELAR</button>
@@ -2371,7 +2369,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.26.0';
+const APP_VER   = '7.27.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2468,9 +2466,6 @@ let CFG = {
   // no próprio tempo produtivo (não entra como desconto à parte).
   taktDemandaDia:1850,
   sheetsUrl:'https://script.google.com/macros/s/AKfycbz0EBfrWuTnSVblkij_Hj2B6VHtPIniLlNfg45AWRKDx9F1Rg45b2dQAQ0qyIMaqLvR3Q/exec',
-  // Endereço do Radar Diário, para o botão PUBLICAR NO MURAL. Vazio = botão
-  // explica o que configurar em vez de abrir uma aba em branco.
-  muralUrl:'',
   senhaOperador:'1234',
   senhaGerencial:'admin',
   horarioFechamento:'17:05',
@@ -3947,6 +3942,23 @@ function renderSemanaGer(){
   const cx=document.getElementById('ger-semana');
   if(!cx) return;
   cx.style.display = RP_SEMANA.pintar('gsem-') ? '' : 'none';
+}
+
+// 🖨 do bloco: imprime a semana QUE ESTÁ NA TELA. O relatório é o MESMO do
+// botão da aba HISTÓRICO — o que muda é só qual semana ele recebe, senão o
+// papel sairia com a semana do filtro de outra aba. Adaptador de duas linhas,
+// como o _sincSlideD da TV.
+function imprimirSemanaGer(){
+  const s=RP_SEMANA.semana();
+  if(!s){ alert('A semana passada ainda não carregou. Tente de novo em alguns segundos.'); return; }
+  gerarRelatorioSemanal(s.ate);
+}
+
+// 📲 do bloco: o mesmo resumo em texto do WhatsApp, da mesma semana em cartaz.
+function zapSemanaGer(){
+  const s=RP_SEMANA.semana();
+  if(!s){ alert('A semana passada ainda não carregou. Tente de novo em alguns segundos.'); return; }
+  enviarResumoZap(s.ate);
 }
 
 // ════════════════════════════════════════════════
@@ -6277,7 +6289,6 @@ function openCfg(){
   document.getElementById('c-a0').value=CFG.almocoInicio;
   document.getElementById('c-a1').value=CFG.almocoFim;
   document.getElementById('c-sheets-url').value=CFG.sheetsUrl||'';
-  document.getElementById('c-mural-url').value=CFG.muralUrl||'';
   document.getElementById('c-senha-op').value=CFG.senhaOperador||'';
   document.getElementById('c-senha-ger').value=CFG.senhaGerencial||'';
   document.getElementById('c-fechamento').value=CFG.horarioFechamento||'17:05';
@@ -6331,7 +6342,6 @@ function saveCfg(){
   CFG.almocoInicio=document.getElementById('c-a0').value;
   CFG.almocoFim=document.getElementById('c-a1').value;
   CFG.sheetsUrl=(document.getElementById('c-sheets-url').value||'').trim();
-  CFG.muralUrl=(document.getElementById('c-mural-url').value||'').trim();
   const sOp=document.getElementById('c-senha-op').value.trim();
   const sGer=document.getElementById('c-senha-ger').value.trim();
   if(sOp)  CFG.senhaOperador=sOp;
@@ -6903,6 +6913,28 @@ function _relSemanaPassada(hoje){
   return _relSemanaJanela(dtToStr(d));
 }
 
+// ── A SEMANA QUE SE DIVULGA — uma regra só para todos que a publicam ────────
+// Divulgar a semana é sempre a mesma pergunta: a semana do filtro; e, quando
+// ela ainda não tem dia fechado — segunda-feira de manhã, que é justamente
+// quando o resultado é divulgado —, a SEMANA PASSADA, que é a que fechou.
+// A regra estava escrita dentro do botão do WhatsApp, e o PDF era o único que
+// não a tinha: numa segunda ele abria um alerta mandando ajustar um filtro de
+// data em vez do relatório. Agora os dois leem a mesma função.
+// `fixa` = quem chamou JÁ SABE qual semana quer (o 🖨 do bloco FECHAMENTO DA
+// SEMANA PASSADA manda a semana que está na tela): aí não há queda para outra
+// semana — o papel tem de sair com a semana que o gestor está vendo. Foi por
+// não respeitar isso que o relatório de paradas saiu com o período da outra
+// aba (tela dizendo 27h16m e papel dizendo 42 min).
+function _relSemanaParaDivulgar(todos, ateStr, fixa){
+  let j = _relSemanaJanela(ateStr);
+  let dias = _relDiasDaSemana(todos, j.seg, j.sex);
+  if(!dias.length && !fixa){
+    j = _relSemanaPassada();
+    dias = _relDiasDaSemana(todos, j.seg, j.sex);
+  }
+  return { seg:j.seg, sex:j.sex, semStr:j.semStr, numSem:j.numSem, dias };
+}
+
 // ── Rótulo de semana(s) para o cabeçalho dos relatórios ─────────────────────
 // O relatório semanal se identifica por "SEMANA 33 / 2026"; o do histórico só
 // dizia o intervalo de datas — dois papéis lado a lado sem a mesma linguagem.
@@ -7041,7 +7073,11 @@ const RP_SEMANA = (function() {
         // Sem dia fechado na semana passada não há o que mostrar: a Tela D sai
         // do ciclo (mesma regra da Tela C sem atraso) e o bloco do gerencial se
         // esconde, em vez de qualquer um dos dois aparecer vazio.
-        _st.dados = dias.length ? { semStr, numSem, dias, k: _relSemanalKPIs(dias) } : null;
+        // `ate` é o domingo da semana pintada: é o que o botão de imprimir manda
+        // ao relatório, para o papel sair com a MESMA semana que está na tela.
+        _st.dados = dias.length
+          ? { semStr, numSem, ate: dtToStr(sex), dias, k: _relSemanalKPIs(dias) }
+          : null;
         _st.ts = Date.now();
         // A busca é assíncrona: quem está na tela se redesenha quando ela volta.
         _subs.forEach(f => { try { f(); } catch (e) { console.warn('[SEMANA] assinante falhou:', e.message); } });
@@ -7051,6 +7087,12 @@ const RP_SEMANA = (function() {
     })();
   }
   function tem() { return !!(_st.dados && _st.dados.dias.length); }
+  // Qual semana está em cartaz. O botão 🖨 do bloco manda ela ao relatório em
+  // vez de deixar o papel sair com a semana do filtro de OUTRA aba — foi esse
+  // o defeito do relatório de paradas, que lia o período da aba errada.
+  function semana() {
+    return _st.dados ? { semStr: _st.dados.semStr, numSem: _st.dados.numSem, ate: _st.dados.ate } : null;
+  }
   function aoCarregar(cb) { if (typeof cb === 'function') _subs.push(cb); }
 
   // Desenha o fechamento nos elementos de id `pfx`+campo. Devolve false quando
@@ -7148,7 +7190,7 @@ const RP_SEMANA = (function() {
     return true;
   }
 
-  return { carregar, tem, pintar, aoCarregar };
+  return { carregar, tem, pintar, aoCarregar, semana };
 })();
 
 // A busca do histórico é assíncrona: quando ela volta, o bloco do gerencial se
@@ -7187,100 +7229,43 @@ function _zapResumoSemana(diasSem, semStr, numSem){
   return L.join('\n');
 }
 
-/* ── Resumo da semana para o mural do Radar ──────────────────────────────────
-   O WhatsApp aceita *negrito* e emoji; o mural é texto puro num cartão, então
-   a mesma informação vai sem marcação. A CONTA é a mesma dos dois e do PDF
-   (_relSemanalKPIs) — foi a duplicação de conta que fez as paradas divergirem
-   três vezes, e não se repete aqui. */
-function _muralResumoSemana(diasSem, semStr, numSem){
-  const k = _relSemanalKPIs(diasSem);
-  const ano = (parseBR(diasSem[0].data)||new Date()).getFullYear();
-  const L = [];
-
-  L.push(`${semStr} · ${fmtN(k.totReal)} caixas, ${fmtP(k.efTotal)} da meta de ${fmtN(k.totMeta)}.`);
-
-  /* Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF:
-     "faltaram 2.108 cx" numa sexta de manhã é quase todo o dia que ainda não
-     aconteceu. Diz que está parcial e para por aí — quem lê no mural não tem
-     a tabela ao lado para descontar isso de cabeça. */
-  if(k.abertos>0){
-    L.push(`Parcial: ${k.fechados} de ${diasSem.length} dias fechados — a semana ainda não terminou.`);
-  }else if(k.soComHE){
-    L.push('Meta batida com hora extra.');
-  }else if(k.totMeta && k.totReal>=k.totMeta){
-    L.push('Meta batida na jornada normal.');
-  }else if(k.totMeta){
-    L.push(`Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta.`);
-  }
-  if(k.temHE) L.push(`Jornada normal ${fmtN(k.totReal-k.totHE)} cx; hora extra ${fmtN(k.totHE)} cx.`);
-  L.push('');
-  L.push(`Melhor dia: ${k.melhorDia.data} (${fmtP(k.melhorDia.ef)}).`);
-  L.push(`Dias na meta: ${k.comMeta} de ${diasSem.length}.`);
-
-  return {
-    titulo: `Embalagem · Semana ${numSem}/${ano}: ${fmtN(k.totReal)} caixas`,
-    texto: L.join('\n')
-  };
-}
-
-/* Abre o Radar com o recado pronto, em vez de escrever no mural direto.
-   Chamar a API do mural daqui obrigaria a abri-la para este domínio e a senha
-   teria de viajar até aqui — ficaria guardada em dois lugares em vez de um.
-   Assim a senha nunca sai do Radar e alguém lê o que vai ser publicado. */
-async function publicarResumoNoMural(){
-  if(!CFG.muralUrl){
-    alert('Falta o endereço do Radar.\n\nConfigurações → MURAL — RADAR DIÁRIO → cole o endereço do painel.');
-    return;
-  }
-
-  let {seg, sex, semStr, numSem}=_relSemanaJanela(dGet('hist-ate'));
+// `ateArg`: dia dentro da semana pedida (o bloco do gerencial manda a semana
+// que está na tela). Sem ele, a semana do filtro do Histórico — e a queda para
+// a semana passada, que é a regra do _relSemanaParaDivulgar.
+async function enviarResumoZap(ateArg){
   const todos=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
-  let dias=_relDiasDaSemana(todos, seg, sex);
-  if(!dias.length){
-    ({seg, sex, semStr, numSem}=_relSemanaPassada());
-    dias=_relDiasDaSemana(todos, seg, sex);
-  }
-  if(!dias.length){ alert('Nenhum dia fechado nesta semana nem na anterior.'); return; }
-
-  const { titulo, texto } = _muralResumoSemana(dias, semStr, numSem);
-  const q = new URLSearchParams({ mural:'1', titulo, texto, autor:'PCP · RitmoProd' });
-  window.open(CFG.muralUrl.replace(/\/+$/,'') + '/?' + q.toString(), '_blank');
-}
-
-async function enviarResumoZap(){
-  // Mesma janela do relatório semanal (filtro "Até" do Histórico, ou hoje).
-  let {seg, sex, semStr, numSem}=_relSemanaJanela(dGet('hist-ate'));
-  const todos=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
-  let dias=_relDiasDaSemana(todos, seg, sex);
-  // Segunda-feira de manhã a semana atual ainda não tem dia fechado — cai
-  // sozinho na SEMANA PASSADA, que é a que se divulga.
-  if(!dias.length){
-    ({seg, sex, semStr, numSem}=_relSemanaPassada());
-    dias=_relDiasDaSemana(todos, seg, sex);
-  }
+  const {semStr, numSem, dias}=_relSemanaParaDivulgar(todos, ateArg||dGet('hist-ate'), !!ateArg);
   if(!dias.length){ alert('Nenhum dia fechado nesta semana nem na anterior.'); return; }
   const texto=_zapResumoSemana(dias, semStr, numSem);
   window.open('https://wa.me/?text='+encodeURIComponent(texto), '_blank');
 }
 
-async function gerarRelatorioSemanal(){
+// `ateArg`: a semana de QUEM CHAMOU — o 🖨 do bloco FECHAMENTO DA SEMANA
+// PASSADA manda a semana que está na tela, como o gerarRelatorioParadas já faz
+// com o período. Sem argumento (botão da aba HISTÓRICO), vale o filtro "Até".
+async function gerarRelatorioSemanal(ateArg){
   // Abrir janela ANTES do await (evita bloqueio de pop-up)
   const win=window.open('','_blank','width=960,height=720');
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Carregando relatório...</p></body></html>');
 
-  // Semana do filtro (ou a atual): segunda 00:00 até domingo 23:59.
-  const {seg, sex, semStr, numSem} = _relSemanaJanela(dGet('hist-ate'));
-
   // Buscar dados
   const todosDias=CFG.sheetsUrl?await buildDiasHistAsync():buildDiasHist();
   console.log('[RelSemanal] Total dias encontrados:', todosDias.length, todosDias.map(d=>d.data+' ('+d.fonte+')'));
 
-  // Filtrar pela semana (mesmo recorte que a TELA D da TV usa)
-  const diasSem=_relDiasDaSemana(todosDias, seg, sex);
+  // Semana: a de quem chamou, ou a do filtro — com a queda para a semana
+  // passada quando a atual ainda não fechou nenhum dia. Mesmo recorte da TELA
+  // D da TV e do resumo do WhatsApp (_relSemanaParaDivulgar).
+  const {seg, semStr, numSem, dias:diasSem} =
+    _relSemanaParaDivulgar(todosDias, ateArg||dGet('hist-ate'), !!ateArg);
 
   if(!diasSem.length){
-    alert(`Nenhum dado encontrado para a semana ${semStr}.\n\nAjuste o filtro "Até" na aba Histórico para a semana desejada.`);
+    // Fecha a janela do "Carregando relatório…": deixá-la aberta em branco fazia
+    // parecer que o pop-up tinha travado.
+    win.close();
+    alert(ateArg
+      ? `Nenhum dia fechado na semana ${semStr}.`
+      : `Nenhum dado encontrado para a semana ${semStr}.\n\nAjuste o filtro "Até" na aba Histórico para a semana desejada.`);
     return;
   }
 
