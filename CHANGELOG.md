@@ -11,7 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.32.0 — 31/08/2026
+## v7.34.0 — 31/08/2026
+
+**Atenção** — **no gerencial de um DIA PASSADO, a meta por hora mudou e a hora
+extra deixou de ser julgada.** A tela repartia a meta do dia entre **todas** as
+horas arquivadas. Num dia que começou às 05:00 isso fazia duas coisas erradas de
+uma vez: dava meta a horas de **hora extra** — que não têm meta na planilha — e
+**diluía** a meta das horas de jornada.
+
+Medido em **28/08/2026**: 1.881 ÷ 11 = **171** para todas as horas, quando as 9
+horas de jornada pediam **209**. A madrugada (96 cx às 05:00) aparecia como
+`ABAIXO` e virava o **VALE DE PRODUÇÃO** do dia.
+
+Agora a meta do dia é repartida **só entre as horas de jornada**, e a hora extra
+aparece com `—` em META/H e EFICIÊNCIA, com a etiqueta **HORA EXTRA** no lugar
+do veredito. **PICO** e **VALE** também passam a olhar só as horas de jornada.
+**Os números por hora mudam** nos dias com produção fora do turno: no 28/08, as
+horas de jornada saem de 75,4% para 61,7% — a leitura honesta contra a meta que
+elas de fato tinham.
+
+---
+
+## v7.33.0 — 31/08/2026
 
 **Corrigido** — **o FECHAR DIA zerava a coluna MEDIA CX/H.** O `saveDay` grava
 `p.mediaH || 0` e o botão nunca mandava esse campo, então toda vez que o gestor
@@ -21,6 +42,10 @@ real: das **69 linhas do `HISTORICO`, as 17 fechadas pelo botão** estavam com a
 média zerada. Agora o botão manda a média com a MESMA definição do fechamento
 automático (realizado ÷ horas produtivas, as não-HE), e **MELHOR H./PIOR H.**
 passam a olhar só as horas não-HE, como o `.gs` sempre fez.
+
+---
+
+## v7.32.0 — 31/08/2026
 
 **Atenção** — **o FECHAR DIA gravava, na mesma linha do `HISTORICO`, uma meta e
 uma eficiência calculadas com metas DIFERENTES.** A coluna META recebia a meta
