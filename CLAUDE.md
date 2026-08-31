@@ -1566,6 +1566,19 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
     essa mesma meta. Quem estava fora do padrão era o botão do painel.
   - Hoje `salvarDiaSheets` calcula `efGrav = real ÷ k.meta` e grava ESSA.
     `relatorios.test.js` falha se `'ef='+k.ef` voltar.
+- **O mesmo botão ZERAVA a coluna MEDIA CX/H.** O `saveDay` grava
+  `Number(p.mediaH || 0)` e `salvarDiaSheets` nunca mandava esse campo — e,
+  sendo upsert por data, o botão apagava até o valor que o fechamento automático
+  já tinha escrito. **Medido na planilha real (31/08/2026): das 69 linhas do
+  `HISTORICO`, as 17 com `FECHADO=TRUE` (as do botão) tinham média zerada; as do
+  `AUTO` tinham o valor.** Hoje o botão manda `mediaH` = realizado ÷ horas
+  produtivas (não-HE), a MESMA conta do `arquivarDiaAtual`, e `melhor`/`pior`
+  passaram a olhar só as horas não-HE, como o `.gs` sempre fez.
+- ⚠ **A coluna `HE` (nº de horas extras, coluna G) está ZERADA nas 69 linhas**,
+  enquanto a `HE CX` tem caixas em 24 delas: os valores de HE CX vieram do
+  **backfill**, não do fechamento. Encher a coluna G exige o **`.gs` v7.26.0
+  re-deployado** (a contagem por HORÁRIO) — enquanto isso não acontecer, todo
+  fechamento continua gravando 0 ali.
 - ⚠ **Dia já gravado não se conserta sozinho**: a linha antiga continua com o
   par velho. Corrigir é editar a planilha (ou reabrir e FECHAR DIA de novo, que
   o `saveDay` é upsert por data).

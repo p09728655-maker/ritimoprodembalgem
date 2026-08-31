@@ -2379,7 +2379,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.32.0';
+const APP_VER   = '7.33.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5915,16 +5915,33 @@ function salvarDiaSheets(data, k, fechadoEm){
      assim — ef = real ÷ meta, a mesma meta da linha. Quem estava fora do
      padrão era este botão. */
   const efGrav = k.meta>0 ? (k.real/k.meta*100) : 0;
+  /* ── MEDIA CX/H, MELHOR e PIOR: a definição é a do fechamento automático ───
+     O `saveDay` grava `Number(p.mediaH || 0)` na coluna MEDIA CX/H — e este
+     botão NUNCA mandava esse campo, então toda vez que o gestor fechava o dia
+     na mão a coluna era gravada como ZERO (e, sendo upsert, zerava também o que
+     o fechamento automático já tinha escrito).
+     Medido na planilha real em 31/08/2026: das 69 linhas do HISTORICO, as **17
+     fechadas pelo botão** (FECHADO=TRUE) estavam com a média zerada; as
+     fechadas pelo automático tinham o valor.
+     A conta é a do `arquivarDiaAtual` no .gs: realizado ÷ horas PRODUTIVAS (as
+     não-HE). MELHOR/PIOR também olham só as horas não-HE lá — aqui iam
+     `k.melhor`/`k.pior`, que incluem os slots de hora extra. Duas definições
+     para a mesma coluna, dependendo de quem fechou o dia. */
+  const prodNormais = k.allHoje.filter(d=>!d.he && d.producaoHora!=null).map(d=>d.producaoHora);
+  const mediaH = prodNormais.length ? Math.round(k.real/prodNormais.length) : 0;
+  const melhorN = prodNormais.length ? Math.max(...prodNormais) : 0;
+  const piorN   = prodNormais.length ? Math.min(...prodNormais) : 0;
   const params=[
     'action=saveDay',
     'data='+encodeURIComponent(data),
     'real='+k.real,
     'meta='+k.meta,
     'ef='+efGrav.toFixed(1),
-    'melhor='+k.melhor,
-    'pior='+k.pior,
+    'melhor='+melhorN,
+    'pior='+piorN,
     'he='+heCount,
     'heCx='+heCx,
+    'mediaH='+mediaH,
     'fechadoEm='+encodeURIComponent(fechadoEm)
   ].join('&');
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
