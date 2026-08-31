@@ -709,7 +709,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="numpad-btn" onclick="numpad('8')">8</button>
       <button class="numpad-btn" onclick="numpad('9')">9</button>
       <button class="numpad-btn zero" onclick="numpad('0')">0</button>
-      <button class="numpad-btn del" onclick="numpadDel()">⌫</button>
+      <button aria-label="Apagar o último dígito" class="numpad-btn del" onclick="numpadDel()">⌫</button>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModalLanc()">CANCELAR</button>
@@ -747,7 +747,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="numpad-btn" onclick="prodNumpad('9')">9</button>
       <button class="numpad-btn" onclick="prodNumpad('.')">.</button>
       <button class="numpad-btn" onclick="prodNumpad('0')">0</button>
-      <button class="numpad-btn del" onclick="prodNumpadDel()">⌫</button>
+      <button aria-label="Apagar o último dígito" class="numpad-btn del" onclick="prodNumpadDel()">⌫</button>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" style="flex:1" onclick="fecharModalProduto()">FECHAR</button>
@@ -830,7 +830,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.10.0';
+const APP_VER   = '1.11.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1538,7 +1538,6 @@ async function carregarParadasPeriodoSel(force){
 // um throw dentro do render matava o resto do login gerencial (produtos,
 // paradas, histórico) e "meia tela" parava de carregar. Sem o módulo: os cards
 // de parada avisam e o script é recarregado sozinho; o resto do app segue.
-function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
 let _rpRecarregando=false;
 function _rpRecarregar(){
   if(_rpRecarregando || _rpOk()) return;
@@ -2029,11 +2028,21 @@ function calcKPIs(){
   const totalSlots = allHoje.length>0 ? allHoje.length : slots.length;
   const slotsRest = totalSlots-n;
   const proj = real+ritmo*slotsRest;
-  const nec = slotsRest>0 ? Math.ceil((meta-real)/slotsRest) : 0;
+  // Math.max(0,...): meta já batida deixava meta-real negativo e o card
+  // NEC. P/ META imprimia ritmo negativo. Mesma guarda do v7.
+  const nec = slotsRest>0 ? Math.max(0, Math.ceil((meta-real)/slotsRest)) : 0;
   const prods = dh.map(r=>r.producaoHora);
   const melhor = prods.length ? Math.max(...prods) : 0;
   const pior = prods.length ? Math.min(...prods) : 0;
-  const metaH = totalSlots>0 ? Math.round(meta/totalSlots) : 0;
+  // metaH = meta média das horas JÁ LANÇADAS, a mesma conta do v7. Aqui era
+  // `meta ÷ totalSlots`, e os dois painéis davam números diferentes para o
+  // mesmo turno: 172 × 178 num dia normal e 174 × 160 num dia com HE (o slot
+  // extra entrava no denominador sem que a meta dele entrasse no numerador).
+  // Hoje nenhuma tela do celular lê este campo — mas quem ler amanhã herdaria
+  // a divergência, e divergência entre painéis é o defeito que este projeto
+  // mais pagou caro. Sem hora lançada ainda, cai no rateio pelo turno.
+  const metaH = n>0 ? Math.round(metaReal/n)
+                    : (totalSlots>0 ? Math.round(meta/totalSlots) : 0);
   return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
 }
 

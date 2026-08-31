@@ -140,7 +140,7 @@
   }
 
   // Perda estimada valorando um tempo parado (min) num ritmo qualquer (cx/h).
-  // Existe para mostrar, ao lado das PEÇAS PERDIDAS (que valoram pela meta do
+  // Existe para mostrar, ao lado das CAIXAS PERDIDAS (que valoram pela meta do
   // dia — "quanto o plano perdeu"), a perda no ritmo REAL medido da linha
   // (caixas ÷ tempo rodando — "quanto a linha deixou de produzir na capacidade
   // demonstrada"). São leituras diferentes do MESMO tempo parado; nenhuma
@@ -178,7 +178,14 @@
     var horasProd  = horasProdutivas(cfg);
     var metaPadrao = parseFloat(cfg.metaDia) || 0;
 
-    if (hoje && (parseFloat(opts.metaHoje) || 0) > 0) metaByDay[hoje] = parseFloat(opts.metaHoje);
+    // Cópia: escrever a meta de hoje direto no metaByDay ESCREVIA NO OBJETO DO
+    // CHAMADOR. O mobile monta um objeto novo a cada chamada e não sentia, mas o
+    // v7 passa o mesmo metaByDay de fora — reaproveitado entre períodos, o 2º
+    // stats já nascia com a meta de hoje injetada num dia que não é hoje.
+    if (hoje && (parseFloat(opts.metaHoje) || 0) > 0) {
+      metaByDay = Object.assign({}, metaByDay);
+      metaByDay[hoje] = parseFloat(opts.metaHoje);
+    }
 
     var totMin = 0, totMinNP = 0, pecas = 0, nParadas = 0;
     var porTipo = {}, porDia = {}, diasSet = {}, semMeta = {}, ignoradas = 0;

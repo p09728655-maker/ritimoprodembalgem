@@ -292,10 +292,26 @@ ok('sem entre-peças o teto sobe (por isso ler a coluna importa)',
 ok('sem medida não há teto (0, coluna some)', _tetoEsteiraCxH({ velocidade: 8.5, medida: 0 }), 0);
 ok('sem velocidade idem', _tetoEsteiraCxH({ velocidade: 0, medida: 1006 }), 0);
 ok('produto fora do catálogo não quebra', _tetoEsteiraCxH(null), 0);
-// O cabeçalho real da planilha é "ENTRE_PECAS (mm)" — a busca é por prefixo;
-// o indexOf exato devolvia -1 e o campo chegava 0 em silêncio.
-ok('a leitura do catálogo busca ENTRE_PECA por prefixo',
-   /indexOf\('ENTRE_PECA'\) === 0/.test(GS), true);
+// O cabeçalho real da planilha traz a unidade junto ("ENTRE_PECAS (mm)",
+// "VELOCIDADE (m/min)"): com indexOf exato o campo chega 0 EM SILÊNCIO e o teto
+// da esteira some da tela sem dizer por quê. As TRÊS colunas do teto são lidas
+// por prefixo — o ENTRE_PECA já era, medida e velocidade tinham ficado para
+// trás. Aqui a helper real é executada contra um cabeçalho como o da planilha.
+const _pp = GS.slice(GS.indexOf('const _porPrefixo = function (pref) {'));
+const _ppSrc = _pp.slice(0, _pp.indexOf('};') + 2);
+[['MEDIDA DA CAIXA', 'MEDIDA DA CAIXA (MM)'],
+ ['VELOCIDADE',      'VELOCIDADE (M/MIN)'],
+ ['ENTRE_PECA',      'ENTRE_PECAS (MM)']].forEach(([pref, titulo]) => {
+  const hdr = ['CODIGO', 'DESCRICAO', 'COR', titulo];
+  const achar = new Function('hdr', _ppSrc + ' return _porPrefixo;')(hdr);
+  ok(`acha "${titulo}" pelo prefixo ${pref}`, achar(pref), 3);
+  // e o título exato continua funcionando (planilha sem a unidade no cabeçalho)
+  ok(`acha "${pref}" exato também`,
+     new Function('hdr', _ppSrc + ' return _porPrefixo;')(['CODIGO', pref])(pref), 1);
+});
+['MEDIDA DA CAIXA', 'VELOCIDADE', 'ENTRE_PECA'].forEach(c =>
+  ok(`a coluna ${c} é lida pela helper de prefixo`,
+     GS.includes(`_porPrefixo('${c}')`), true));
 
 // ── 5c) simulação da esteira no editor: mesma conta do painel ─────────────
 console.log('\n── simularEsteiraPorModelo (log do editor) ──');

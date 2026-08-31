@@ -1877,11 +1877,20 @@ function lerCatalogoProdutos() {
   const iCor    = hdr.indexOf('COR');
   const iPeso   = hdr.indexOf('P B');       // peso bruto (kg)
   const iEan    = hdr.indexOf('EAN 128');
-  const iMedida = hdr.indexOf('MEDIDA DA CAIXA');
-  const iVel    = hdr.indexOf('VELOCIDADE');
-  // O título real da coluna é "ENTRE_PECAS (mm)": busca por prefixo, senão o
-  // campo chega 0 e o teto da esteira sai ~25% otimista.
-  const iEntre  = hdr.findIndex(function (h) { return h.indexOf('ENTRE_PECA') === 0; });
+  // As TRES colunas do teto da esteira sao lidas por PREFIXO, pelo mesmo
+  // motivo: o titulo real na planilha costuma trazer a unidade junto
+  // ("ENTRE_PECAS (mm)", "VELOCIDADE (m/min)", "MEDIDA DA CAIXA (mm)"). Com
+  // indexOf exato o campo chega 0 EM SILENCIO -- e ai `_tetoEsteiraCxH`
+  // devolve 0, a coluna % TETO EST. some da tela e do PDF, e nada avisa por
+  // que. O ENTRE_PECA ja tinha sido endurecido sozinho; medida e velocidade
+  // haviam ficado para tras.
+  const _porPrefixo = function (pref) {
+    var i = hdr.indexOf(pref);
+    return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; });
+  };
+  const iMedida = _porPrefixo('MEDIDA DA CAIXA');
+  const iVel    = _porPrefixo('VELOCIDADE');
+  const iEntre  = _porPrefixo('ENTRE_PECA');
   const iPontos = hdr.indexOf('PONTOS');
   const iTroca  = hdr.indexOf('TEMPO DE TROCA MIN');
 
@@ -2638,8 +2647,28 @@ function addHE(p) {
   if (!sh) return { ok: false, erro: 'Aba nao encontrada.' };
   const bruto = String(p.label || '').trim();
   const label = /^HE\b/i.test(bruto) ? bruto : ('HE ' + bruto);
+
+  // UPSERT por rotulo, nao appendRow puro. O front chama isto com retry (a
+  // gravacao de HE acontece justamente fora do horario normal, quando o Apps
+  // Script esta mais frio), e um append cego criaria uma linha "HE 17:00-18:00"
+  // a cada tentativa que estourou o tempo mas chegou do outro lado -- a hora
+  // extra apareceria duplicada na HORA_A_HORA e contada duas vezes na HE CX do
+  // fechamento. Repetir agora e seguro: a 2a chamada acha a linha e so
+  // atualiza a meta, preservando o REALIZADO ja lancado nela.
+  const lastRow = sh.getLastRow();
+  if (lastRow > 0) {
+    const vals = sh.getRange(1, 1, lastRow, 1).getValues();
+    for (let i = 0; i < vals.length; i++) {
+      if (String(vals[i][0] || '').trim().toUpperCase() === label.toUpperCase()) {
+        sh.getRange(i + 1, 2).setValue(Number(p.meta) || 0);
+        invalidarCacheLeitura();
+        return { ok: true, label: label, linha: i + 1, jaExistia: true };
+      }
+    }
+  }
   sh.appendRow([label, Number(p.meta) || 0, '']);
-  return { ok: true, label: label };
+  invalidarCacheLeitura();
+  return { ok: true, label: label, jaExistia: false };
 }
 
 // Rótulo de hora extra? ("HE 17:00-18:00", "HE17:00-18:00", "he ...")

@@ -132,11 +132,17 @@ function nomeComCor(desc, cor){
 }
 
 // ── Identificação do módulo ─────────────────────────────────────────────────
+// O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
+// — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
+// as guardas _rpRecarregar de cada painel, que continuam locais (essas tocam o
+// DOM e avisam diferente em cada tela).
+function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PARADAS; }
+
 // Os painéis checam isto na abertura: se o arquivo não carregou (rede caiu
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
   versao: '1.1.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
-        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor']
+        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor', '_rpOk']
 };

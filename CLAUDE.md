@@ -1346,19 +1346,66 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
   start o operador abria o seletor e via catálogo velho sem nada dizer por quê.
   Duas tentativas, **em sequência** (o Apps Script atende uma execução por vez).
 
-**Relatado e NÃO corrigido** — decisão do gestor, cada um com o achado
-verificado: `metaH` calculado por fórmulas diferentes nos dois painéis (o mobile
-não lê o campo hoje, então não chega à tela) · `nec` negativo impresso quando
-`CFG.metaDia=0` · `addHE` e `FECHAR DIA` são as duas únicas escritas sem retry,
-e o `addHE` do backend é `appendRow` puro (não idempotente), com o `saveHE()`
-gravando no `rpe_he` local ANTES da tentativa de rede — a tela mostra a HE mesmo
-quando ela nunca chegou na planilha · cache de histórico não invalidado no
-fechar/reabrir dia · `saveCfgLocal()` sem try/catch dentro de `saveCfg()` ·
-`stats()` escreve `metaHoje` no `metaByDay` do chamador · `hProd` mede o turno
-pela duração do PRIMEIRO slot (6,0h onde a soma real é 5,8h) · `MEDIDA DA CAIXA`
-e `VELOCIDADE` lidos por `indexOf` exato enquanto `ENTRE_PECA` já foi endurecido
-para prefixo · zero atributos `aria-*` nos dois painéis · `_rpOk()` duplicado
-nos dois HTMLs (função pura, deveria estar no `rp-core.js`).
+### 2ª leva — o restante dos achados
+- **`metaH` era calculado por fórmulas diferentes nos dois painéis**: o v7 usa a
+  meta média das horas JÁ LANÇADAS (`Σ metaHora ÷ n`) e o mobile usava
+  `meta do dia ÷ totalSlots` — 172 × 178 num dia normal, 174 × 160 num dia com
+  HE (o slot extra entrava no denominador sem a meta dele entrar no numerador).
+  O mobile passou a usar a conta do v7. Nenhuma tela do celular lê esse campo
+  hoje, mas quem ler amanhã herdaria a divergência.
+- **`nec` (RITMO NECESSÁRIO) não pode ser negativo.** Com a meta já batida — ou
+  com `CFG.metaDia=0` — `meta−real` fica negativo e o gerencial e a TV imprimiam
+  **"−54 cx/h"**. Clampado em 0 nos dois painéis; o gerencial mostra **META OK**
+  em verde no lugar do número.
+- **HORA EXTRA e FECHAR DIA ganharam retry** (`jsonpEscrita`, 3× em sequência).
+  Eram as duas únicas gravações do painel com UMA tentativa, e as duas acontecem
+  com o Apps Script frio (HE fora do horário, FECHAR DIA às 17:00). O `addHE` do
+  backend virou **upsert por rótulo** — sem isso o retry criaria uma linha
+  `HE 17:00-18:00` por tentativa e a HE seria contada duas vezes na `HE CX`.
+  O `salvarDiaSheets` caía num `console.error` mudo depois de o diálogo ter
+  prometido gravar no Sheets; agora avisa na tela e diz para clicar de novo
+  (repetir é seguro, `saveDay` é upsert por data).
+- **O cache de histórico (2 min) é invalidado ao fechar/reabrir o dia.** O merge
+  dá prioridade ao registro vindo do Sheets, então no fluxo "REABRIR → corrigir →
+  FECHAR DIA de novo" a tela de HISTÓRICO podia mostrar os números do fechamento
+  ANTERIOR por até 2 min — e o gestor fechava uma terceira vez achando que não
+  tinha pego.
+- **`saveCfgLocal()` dentro de um try/catch no `saveCfg()`.** `localStorage`
+  cheio ou bloqueado lançava e matava o resto da função: `enviarConfigPainel()`,
+  `closeCfg()` e o `lerSheets()` nunca rodavam. Era justamente o caminho de
+  recuperação documentado aqui ("corrigir no campo URL DO APPS SCRIPT e salvar")
+  — o gestor achava que tinha salvo e o painel seguia em DEMO. A config vale
+  para a sessão mesmo sem gravar, e o aviso diz que ela não sobrevive ao reload.
+- **`hProd` soma os minutos REAIS das horas lançadas.** Era `n × duração do
+  PRIMEIRO slot`, o que assume hora de tamanho único — e o slot pós-almoço vale
+  48 min. Com ele entre as 6 horas lançadas, o card HORAS PRODUTIVAS dizia 6,0h
+  onde a soma real é 5,8h. O `RP_PARADAS` já fazia certo.
+- **`stats()` não escreve mais no `metaByDay` do chamador** (copia antes). O
+  mobile monta objeto novo a cada chamada e não sentia; o v7 passa o mesmo
+  objeto de fora, e reaproveitado entre períodos o 2º `stats` nascia com a meta
+  de hoje injetada num dia que não é hoje.
+- **As TRÊS colunas do teto da esteira são lidas por prefixo** (`_porPrefixo` no
+  `.gs`): o título real costuma trazer a unidade junto (`VELOCIDADE (m/min)`,
+  `MEDIDA DA CAIXA (mm)`). Só o `ENTRE_PECA` tinha sido endurecido; com
+  `indexOf` exato nas outras duas o campo chega 0 **em silêncio**, o
+  `_tetoEsteiraCxH` devolve 0 e a coluna % TETO EST. some sem dizer por quê.
+  O teste agora executa a helper real contra um cabeçalho com unidade.
+- **`_rpOk()` foi para o `rp-core.js`** (função pura, estava copiada igual nos
+  dois HTMLs). O `_rpRecarregar` continua local em cada painel — esse toca o DOM
+  e avisa diferente em cada tela. ⚠ Nome novo no `rp-core.js` exige entrar na
+  lista `GLOBAIS` do `lint-js.js`, senão o lint acusa `no-undef`.
+- **`aria-label` nos botões cujo rótulo é só um símbolo**: ⚙, ‹, ›, ◀, ▶, ↺, ✕
+  no v7 e o ⌫ dos dois teclados numéricos do mobile. Os demais botões já têm
+  texto, que é o nome acessível — não foi feita varredura cega de ARIA.
+
+**Ainda NÃO corrigido** (achado verificado, decisão pendente): o
+`startsWith('L')` da detecção de coluna de LOTE (ver acima — depende de conferir
+os cabeçalhos reais da `HORA_A_HORA`) · o card EFICIÊNCIA mostra `efDia` no
+número e `sl(k.ef)` na cor, duas fórmulas no mesmo card, sem a tela dizer isso
+(é deliberado — sem separar, o badge ficaria vermelho o turno inteiro) · a
+COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
+erro que ainda expõem `e.message` cru nos 4 relatórios · não existe
+`CHANGELOG.md` nem `docs/glossario.md`.
 
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do

@@ -1268,7 +1268,7 @@ if (_v7Instalado()) _v7EscondeBotao();
      os botões só confundiam. As funções de importar Excel continuam no código
      (selecionarPasta/triggerImport) caso um dia precise, e o input abaixo fica
      porque handleFileInput o referencia. -->
-  <button class="btn btn-icon" title="Configurações" onclick="openCfg()">⚙</button>
+  <button aria-label="Configurações" class="btn btn-icon" title="Configurações" onclick="openCfg()">⚙</button>
   <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileInput(this)">
 </header>
 
@@ -1302,9 +1302,9 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- Seletor de dia (deixa ver a GERENCIAL de um dia passado, somente leitura) -->
   <div class="ger-datebar">
     <span class="ger-datebar-lbl">DIA</span>
-    <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(-1)" title="Dia anterior">‹</button>
+    <button aria-label="Dia anterior" class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(-1)" title="Dia anterior">‹</button>
     <input type="date" id="ger-data" onchange="verGerDia()" title="Escolha um dia no calendário" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
-    <button class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(1)" title="Próximo dia">›</button>
+    <button aria-label="Próximo dia" class="btn btn-ghost" style="font-size:10px;padding:4px 9px" onclick="gerNavDia(1)" title="Próximo dia">›</button>
     <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="gerHoje()">HOJE (AO VIVO)</button>
     <span id="ger-modo-hist" style="display:none">◷ MODO HISTÓRICO — somente leitura</span>
   </div>
@@ -1785,9 +1785,9 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
        gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D. -->
   <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
-    <button type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
+    <button aria-label="Produto anterior" type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
     <button type="button" id="btn-ciclo-pause" onclick="_cicloTV.togglePause()" title="Pausar / continuar o carrossel" style="background:var(--acc);color:#111;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;min-width:120px">⏸ PAUSAR</button>
-    <button type="button" onclick="_cicloTV.proxima()" title="Próxima tela" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">▶</button>
+    <button aria-label="Próximo produto" type="button" onclick="_cicloTV.proxima()" title="Próxima tela" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">▶</button>
     <span id="tv-ciclo-tela" style="font-family:var(--font-d);font-size:12px;letter-spacing:1px;color:var(--txt2);margin-left:4px;min-width:52px;text-align:center"></span>
   </div>
 
@@ -1845,7 +1845,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2)">m/min ·</span>
     <input type="number" id="ph-est-entre" step="10" min="0" onchange="renderModeloPeriodo()" class="frm-inp" style="width:58px;padding:4px 6px;font-size:11px" title="Vão entre peças (mm) — mude para simular">
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2)">mm</span>
-    <button class="btn btn-ghost" onclick="phEsteiraReset()" title="Voltar aos valores reais da planilha" style="font-size:11px;padding:4px 8px">↺</button>
+    <button aria-label="Restaurar os valores originais da esteira" class="btn btn-ghost" onclick="phEsteiraReset()" title="Voltar aos valores reais da planilha" style="font-size:11px;padding:4px 8px">↺</button>
     <div class="hdr-spacer"></div>
     <div class="export-row">
       <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
@@ -2371,7 +2371,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.24.0';
+const APP_VER   = '7.25.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2536,6 +2536,12 @@ function fecharDia(){
   exportarExcelDia(hoje,slots,k.meta);
   // 3. Salvar no Google Sheets (se configurado)
   if(CFG.sheetsUrl) salvarDiaSheets(hoje,k,agora);
+  // O histórico fica em cache de 2 min e o merge dá prioridade ao registro
+  // vindo do Sheets: sem invalidar aqui, a tela de HISTÓRICO podia continuar
+  // mostrando os números do fechamento ANTERIOR por até 2 min depois de
+  // corrigir e fechar de novo — e o gestor fechava uma terceira vez achando
+  // que não tinha pego.
+  invalidarHistoricoCache();
   renderAll();
   renderHist();
 }
@@ -2557,6 +2563,12 @@ function fecharDiaAutomatico(){
   salvarDiaLocal(hoje,slots,k.meta,true,agora);
   // Export Excel omitido no automático (evita popup no browser)
   if(CFG.sheetsUrl) salvarDiaSheets(hoje,k,agora);
+  // O histórico fica em cache de 2 min e o merge dá prioridade ao registro
+  // vindo do Sheets: sem invalidar aqui, a tela de HISTÓRICO podia continuar
+  // mostrando os números do fechamento ANTERIOR por até 2 min depois de
+  // corrigir e fechar de novo — e o gestor fechava uma terceira vez achando
+  // que não tinha pego.
+  invalidarHistoricoCache();
   renderAll();
   renderHist();
   console.log('Fechamento automático realizado: '+hoje+' às '+agora);
@@ -2585,6 +2597,12 @@ function reabrirDia(){
     all[hoje].salvoEm=new Date().toLocaleString('pt-BR');
     saveHistAll(all);
   }
+  // O histórico fica em cache de 2 min e o merge dá prioridade ao registro
+  // vindo do Sheets: sem invalidar aqui, a tela de HISTÓRICO podia continuar
+  // mostrando os números do fechamento ANTERIOR por até 2 min depois de
+  // corrigir e fechar de novo — e o gestor fechava uma terceira vez achando
+  // que não tinha pego.
+  invalidarHistoricoCache();
   renderAll();
   renderHist();
 }
@@ -2697,11 +2715,17 @@ async function addHE(){
         'meta='+meta,
         'real='+(prod!==null?prod:'')].join('&');
       const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
-      const res=await jsonpFetch(url);
-      if(res.ok===false) throw new Error(res.erro||'Erro ao gravar HE');
+      await jsonpEscrita(url, t=>{ if(btn) btn.textContent='⏳ Gravando'+(t>1?' ('+t+'/3)':'')+'...'; });
       setStatusBadge('live','HE '+label+' gravada no Sheets');
     }catch(e){
-      alert('HE salva localmente, mas erro ao gravar no Sheets:\n'+e.message);
+      // A HE fica no rpe_he local (a tela já a mostra), mas o operador e a TV
+      // não a veem, e o fechamento não a conta na HE CX. Dizer o que fazer:
+      // remover o slot e cadastrar de novo é o caminho, porque o guarda
+      // "Slot já existe" bloqueia a re-tentativa direta.
+      alert('A hora extra '+label+' ficou salva só neste computador — o Sheets não '
+        +'respondeu depois de 3 tentativas.\n\nEla NÃO aparece no celular nem na TV, '
+        +'e não entra na contagem de hora extra do fechamento.\n\nRemova o slot na '
+        +'lista abaixo e cadastre de novo em alguns minutos.');
     }finally{
       if(btn){ btn.textContent='＋ ADICIONAR SLOT'; btn.disabled=false; }
     }
@@ -2724,7 +2748,7 @@ function renderHEList(){
     <div class="he-item">
       <span style="color:var(--acc)">▸</span>
       <span>${s.label} &nbsp;·&nbsp; META: ${s.metaHora} cx &nbsp;·&nbsp; REAL: ${s.producaoHora!=null?s.producaoHora:'—'}</span>
-      <button onclick="removeHE('${s.ini}')" title="Remover">✕</button>
+      <button aria-label="Fechar" onclick="removeHE('${s.ini}')" title="Remover">✕</button>
     </div>`).join('');
 }
 document.getElementById('modal-he').addEventListener('click',function(e){ if(e.target===this) closeHE(); });
@@ -3088,6 +3112,34 @@ function jsonpFetch(url){
     s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
     document.head.appendChild(s);
   });
+}
+
+// ── Escrita no Sheets com retry (HORA EXTRA e FECHAR DIA) ───────────────────
+// Eram as DUAS únicas gravações do painel com UMA tentativa — e as duas
+// acontecem no pior momento possível: a HE é cadastrada fora do horário normal
+// e o FECHAR DIA às 17:00, quando o Apps Script está frio há horas. O que se
+// via: "HE salva localmente, mas erro ao gravar no Sheets" com a linha nunca
+// chegando na HORA_A_HORA (e o slot já no rpe_he local, mascarando a falha e
+// bloqueando a re-tentativa com "Slot já existe"); e o FECHAR DIA caindo num
+// console.error mudo depois de o diálogo ter prometido gravar no Sheets.
+// 3 tentativas EM SEQUÊNCIA com espera crescente (o Apps Script atende uma
+// execução por vez). Repetir é seguro: saveDay é upsert por data e o addHE do
+// backend virou upsert por rótulo.
+async function jsonpEscrita(url, onTentativa){
+  let ultimo;
+  for(let i=1;i<=3;i++){
+    try{
+      if(onTentativa) onTentativa(i);
+      const res=await jsonpFetch(url);
+      if(res && res.ok===false) throw new Error(res.erro||'Erro no servidor');
+      return res;
+    }catch(e){
+      ultimo=e;
+      if(i===3) break;
+      await new Promise(r=>setTimeout(r,2000*i));
+    }
+  }
+  throw ultimo;
 }
 
 function processarRespostaSheets(json){
@@ -3566,11 +3618,24 @@ function calcKPIs(dh){
   const slotsRest=effSlots.length-n;
   const metaH=n>0?Math.round(dhAll.reduce((s,r)=>s+(r.metaHora||0),0)/n):Math.round(meta/Math.max(effSlots.length,1));
   const proj=real+ritmo*slotsRest;
-  const nec=slotsRest>0?Math.ceil((meta-real)/slotsRest):0;
+  // Math.max(0,...): com a meta já batida (ou com CFG.metaDia=0), meta-real
+  // fica negativo e a tela imprimia RITMO NECESSÁRIO "-54 cx/h" — no
+  // gerencial e na TV. Ritmo necessário negativo não existe: o que falta
+  // produzir por hora é zero. Quem mostra "META OK" é o render.
+  const nec=slotsRest>0?Math.max(0,Math.ceil((meta-real)/slotsRest)):0;
   const prods=dhAll.map(r=>r.producaoHora);
   const melhor=prods.length?Math.max(...prods):0;
   const pior=prods.length?Math.min(...prods):0;
-  const hProd=(n*(effSlots[0]?.min||60))/60;
+  // Soma os minutos REAIS das horas lançadas. Era `n × duração do PRIMEIRO
+  // slot`, o que assume que toda hora do turno tem o mesmo tamanho — e a
+  // deste turno não tem: o slot pós-almoço 12:12–13:00 vale 48 min. Com 6
+  // horas lançadas incluindo ele, o card HORAS PRODUTIVAS mostrava 6,0h
+  // onde a soma real é 5,8h (12 min a mais, 3,4%). O RP_PARADAS já fazia a
+  // conta certa (turno − almoço); era só este card que usava a régua torta.
+  const hProd=effSlots.reduce((soma,sl)=>{
+    const reg=allHoje.find(d=>d.horario===sl.inicio);
+    return soma + ((reg&&reg.producaoHora!=null) ? (sl.min||60) : 0);
+  },0)/60;
   const atrasoHoras=calcAtrasoHoras(effSlots.map(sl=>{
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
@@ -3772,7 +3837,7 @@ function renderGerencial(){
   const valeR=dh.find(r=>r.producaoHora===k.pior);
   document.getElementById('analise-row').innerHTML=`
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
-      <div class="a-val" style="color:var(--warn)">${k.slotsRest>0?fmtN(k.nec)+' cx/h':'— Turno enc.'}</div>
+      <div class="a-val" style="color:${k.slotsRest>0&&k.nec===0?'var(--ok)':'var(--warn)'}">${k.slotsRest>0?(k.nec===0?'META OK':fmtN(k.nec)+' cx/h'):'— Turno enc.'}</div>
       <div class="a-desc">para meta em ${plural(k.slotsRest,'hora','horas')}</div></div>
     <div class="a-card"><div class="a-lbl">TENDÊNCIA DO TURNO</div>
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
@@ -5734,9 +5799,20 @@ function salvarDiaSheets(data, k, fechadoEm){
     'fechadoEm='+encodeURIComponent(fechadoEm)
   ].join('&');
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
-  jsonpFetch(url)
-    .then(r=>{ if(r.ok) console.log('Histórico salvo no Sheets:', r.data); else console.warn('Sheets saveDay:', r); })
-    .catch(e=>console.error('Erro ao salvar no Sheets:', e));
+  // O diálogo de confirmação promete "salva local + Google Sheets". Quando esta
+  // chamada falhava, o erro ia só para o console: o gestor achava que tinha
+  // fechado o dia e não conferia depois. Agora retenta e o resultado APARECE.
+  jsonpEscrita(url)
+    .then(r=>{ console.log('Histórico salvo no Sheets:', r && r.data);
+               setStatusBadge('live','Dia '+data+' gravado no histórico do Sheets'); })
+    .catch(e=>{
+      console.error('Erro ao salvar no Sheets:', e);
+      setStatusBadge('warn','Dia '+data+' NÃO gravou no Sheets');
+      alert('O dia '+data+' foi fechado neste computador, mas o Sheets não respondeu '
+        +'depois de 3 tentativas.\n\nO histórico da planilha ainda não tem este dia. '
+        +'Clique em FECHAR DIA de novo em alguns minutos — repetir é seguro, a '
+        +'gravação substitui a do mesmo dia em vez de duplicar.');
+    });
 }
 
 // ── Buscar histórico do Sheets ──
@@ -6210,7 +6286,20 @@ function saveCfg(){
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
   CFG.modoLeitor=document.getElementById('c-modo-leitor').checked;
-  saveCfgLocal();
+  // ⚠ try/catch: localStorage.setItem lança (cota estourada com anos de rpe_hist
+  // acumulado, aba anônima, política do navegador) e um throw aqui matava o
+  // resto do saveCfg — enviarConfigPainel(), closeCfg() e o lerSheets() abaixo
+  // nunca rodavam. Esse é justamente o caminho de recuperação documentado no
+  // CLAUDE.md ("corrigir no campo URL DO APPS SCRIPT e salvar"): o gestor
+  // achava que tinha salvo, o modal não fechava, e o painel seguia em DEMO.
+  // A config vale para ESTA sessão mesmo sem gravar — por isso segue adiante.
+  try{ saveCfgLocal(); }
+  catch(e){
+    alert('As configurações valem para esta sessão, mas NÃO foi possível gravá-las '
+      +'neste navegador — elas voltam ao padrão quando você recarregar a página.\n\n'
+      +'Costuma ser espaço esgotado: em CONFIGURAÇÕES, limpe o histórico local antigo '
+      +'e salve de novo.');
+  }
   // Compartilha a config do ciclo de telas com os outros aparelhos (TV, mobile)
   // via planilha — assim mudar aqui reflete na TV sozinho.
   enviarConfigPainel();
@@ -9777,7 +9866,6 @@ let _parBusy=false, _parPend=null;
 // Se o arquivo não carregou (deploy parcial, rede da fábrica, file://), NADA
 // de paradas pode lançar — a aba ficava presa em "CARREGANDO…" e o relatório
 // em "⏳" sem mensagem nenhuma. Sem o módulo: avisa e recarrega sozinho.
-function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
 let _rpRecarregando=false;
 function _rpRecarregar(cb){
   if(_rpOk()){ if(cb) cb(); return; }

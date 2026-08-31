@@ -38,7 +38,7 @@ const GLOBAIS = [
   'Chart','XLSX',
   // módulos próprios (rp-core.js / paradas-calc.js)
   'RP_CORE','RP_PARADAS','RP_SEMANA','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
-  'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','nomeComCor',
+  'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','nomeComCor','_rpOk',
 ];
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rp-lint-'));
