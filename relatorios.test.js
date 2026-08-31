@@ -1502,7 +1502,11 @@ const _relPar = pega('async function gerarRelatorioParadas(');
  ['tempo total parado','TEMPO TOTAL PARADO'],
  ['disponibilidade','DISPONIBILIDADE'],
  ['% do turno perdido','% DO TURNO PERDIDO'],
- ['peças perdidas','PEÇAS PERDIDAS'],
+ // O rótulo era "PEÇAS PERDIDAS" no desktop e "CAIXAS PERDIDAS" no mobile —
+ // mesmo st.pecas, dois nomes, e o próprio desktop já dizia CAIXAS na tabela do
+ // plano de ação. O produto conta caixa; a PEÇA sumiu do vocabulário. A peça do
+ // relatório continua obrigatória, só mudou de nome.
+ ['caixas perdidas','CAIXAS PERDIDAS'],
  ['perda a ritmo real','PERDA A RITMO REAL'],
  ['takt ideal','TAKT IDEAL'],
  ['takt real','TAKT REAL (RODANDO)'],
@@ -1717,6 +1721,16 @@ ok('o simulador é UMA implementação', (JS.match(/function _pgSimulacao\(/g) |
 ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(pega('function _pgPintar(')), true);
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
+
+console.log('\n── o rótulo é CAIXAS, não PEÇAS ──');
+// Mesmo critério do vocabulário banido ("PERDIDO NO RITMO"/"PERDIDO PARADO"):
+// o mesmo st.pecas saía como PEÇAS PERDIDAS no desktop e CAIXAS PERDIDAS no
+// mobile, com o desktop se contradizendo na própria tabela do plano de ação.
+// A unidade do produto é a caixa.
+['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
+  const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  ok(f + ' não imprime "PEÇAS PERDIDAS"', src.includes('PE\u00c7AS PERDIDAS'), false);
+});
 
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'

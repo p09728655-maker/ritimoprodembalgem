@@ -84,6 +84,20 @@ ok('o que faltou é cobrado da hora seguinte',
 ok('produzir acima da meta não gera crédito negativo',
    calcAtrasoHoras([{ metaHora: 200, producaoHora: 300 }, { metaHora: 200, producaoHora: null }]),
    [{ atrasoHora: 0, metaEfetivaHora: 200 }, { atrasoHora: 0, metaEfetivaHora: 200 }]);
+// Hora AINDA NÃO LANÇADA não pode ser cobrada como se tivesse produzido zero.
+// Duas horas fechadas devendo 12 cx e duas pendentes: o atraso das pendentes
+// continua 12 — não 190 e 368, que era o que a tela mostrava às 14:30 num dia
+// que estava 12 cx atrás (a meta de cada hora futura entrava no acumulado).
+ok('hora pendente não inventa atraso',
+   calcAtrasoHoras([{ metaHora: 178, producaoHora: 190 }, { metaHora: 178, producaoHora: 154 },
+                    { metaHora: 178, producaoHora: null }, { metaHora: 178, producaoHora: null }]),
+   [{ atrasoHora: 0,  metaEfetivaHora: 178 }, { atrasoHora: 0,  metaEfetivaHora: 178 },
+    { atrasoHora: 12, metaEfetivaHora: 190 }, { atrasoHora: 12, metaEfetivaHora: 190 }]);
+// Hora que FECHOU sem produzir vem como 0 (o backend só manda null enquanto a
+// hora está aberta) e continua sendo cobrada da hora seguinte.
+ok('hora fechada em zero continua cobrada',
+   calcAtrasoHoras([{ metaHora: 200, producaoHora: 0 }, { metaHora: 200, producaoHora: null }]),
+   [{ atrasoHora: 0, metaEfetivaHora: 200 }, { atrasoHora: 200, metaEfetivaHora: 400 }]);
 
 console.log('\n── produto × cor ──');
 // A cor saiu da DESCRICAO para coluna própria na PRODUTO_CODIGO. Quem imprime
@@ -109,9 +123,43 @@ ok('96% está na meta', sc(96), 'ok');
 ok('95.9% é atenção', sc(95.9), 'warn');
 ok('89.9% é abaixo', sc(89.9), 'red');
 
+console.log('\n── o turno gerado pelos dois painéis ──');
+// getSlots NÃO é unificado de propósito (o mobile inclui as horas anteriores ao
+// turno quando o operador entra mais cedo) — mas o RECORTE tem de ser o mesmo
+// nos dois, senão os rótulos deixam de bater com a aba HORA_A_HORA. O v7 ficou
+// sem a regra do pós-almoço e gerava 12:12–13:12 … 16:12–17:00, contrariando o
+// item "NÃO ALTERAR" do CLAUDE.md e fazendo o normHora() do alerta de hora
+// fraca não achar a média histórica de nenhum horário da tarde.
+function pegaFn(arquivo, assinatura) {
+  const src = fs.readFileSync(path.join(dir, arquivo), 'utf8');
+  const i = src.indexOf(assinatura);
+  if (i < 0) throw new Error('não encontrei em ' + arquivo + ': ' + assinatura);
+  const j = src.indexOf('{', src.indexOf(')', i));
+  let n = 0;
+  for (let k = j; k < src.length; k++) {
+    if (src[k] === '{') n++;
+    else if (src[k] === '}' && --n === 0) return src.slice(i, k + 1);
+  }
+  throw new Error('função não fecha: ' + assinatura);
+}
+global.CFG = { turnoInicio: '07:00', turnoFim: '17:00', almocoInicio: '11:00', almocoFim: '12:12' };
+global.nowMin = () => 8 * 60;   // 08:00 — o mobile não estende o turno para trás
+const slotsV7  = new Function(pegaFn('ritmoprod_embalagem_v7.html', 'function getSlots(') +
+                              '; return getSlots();')();
+const slotsMob = new Function(pegaFn('ritmoprod_mobile.html', 'function getSlots(') +
+                              '; return getSlots();')();
+const rotulos = s => s.map(x => x.label);
+ok('o slot pós-almoço fecha na hora cheia (v7)',  rotulos(slotsV7).includes('12:12–13:00'), true);
+ok('o slot pós-almoço fecha na hora cheia (mobile)', rotulos(slotsMob).includes('12:12–13:00'), true);
+ok('e ele é o mais curto do turno: 48 min',
+   slotsV7.find(x => x.label === '12:12–13:00').min, 48);
+ok('nenhum painel gera 12:12–13:12', rotulos(slotsV7).concat(rotulos(slotsMob)).includes('12:12–13:12'), false);
+ok('os dois recortam o turno igual', rotulos(slotsV7), rotulos(slotsMob));
+ok('a última hora do turno é inteira', rotulos(slotsV7).slice(-1), ['16:00–17:00']);
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc',
-             'nomeComCor'];
+             'nomeComCor', '_rpOk'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');

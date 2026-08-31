@@ -133,6 +133,38 @@ ok('sem tempo parado = 0', RP.perdaAoRitmo(0, 203), 0);
 ok('sem ritmo medido = 0', RP.perdaAoRitmo(60, 0), 0);
 ok('entrada inválida = 0', RP.perdaAoRitmo('—', null), 0);
 
+console.log('\n── série de paradas curtas: arredondar só no fim ──');
+// Somar o arredondado de CADA parada joga fora a fração de todas elas, sempre
+// para menos. O stats acumula a bruta e arredonda uma vez; o total tem que
+// bater com a mesma conta feita sobre o tempo parado somado.
+function serieCurta(n, min, meta) {
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+  const ps = [];
+  for (let i = 0; i < n; i++) {                       // 07:00 em diante, longe do almoço
+    const t = 7 * 60 + i * 4;
+    ps.push({ data: '03/08/2026', tipo: 'Falha', ini: hhmm(t), fim: hhmm(t + min) });
+  }
+  return RP.stats(ps, {
+    cfg: Object.assign({}, CFG, { metaDia: meta }), metaByDay: { '03/08/2026': meta },
+    realByDay: { '03/08/2026': 1000 }, de: '03/08/2026', ate: '03/08/2026'
+  });
+}
+let sc = serieCurta(40, 1, 1600);        // 40 min a 181,8 cx/h = 121,2
+ok('40 paradas de 1 min não perdem a fração (era 120)', sc.pecas, 121);
+sc = serieCurta(30, 3, 1600);            // 90 min = 272,7
+ok('30 paradas de 3 min não perdem a fração (era 270)', sc.pecas, 273);
+// Caso extremo: com meta baixa cada parada vale 0,4999… e sumia inteira,
+// levando junto o ritmoHora do diagnóstico — a primeira linha que o CLAUDE.md
+// manda comparar quando as duas telas divergem.
+sc = serieCurta(20, 1, 264);             // 20 min a 30 cx/h = 10
+ok('meta baixa: 20 paradas de 1 min valem 10 cx, não 0', sc.pecas, 10);
+ok('e o ritmo do diagnóstico não vai a zero', sc.ritmoHora, 30);
+// A soma por tipo e por dia sai da mesma bruta, então fecha com o total.
+ok('porTipo fecha com o total', sc.porTipo['Falha'].perd, 10);
+ok('porDia fecha com o total', sc.porDia['03/08/2026'].perd, 10);
+// A função pública continua devolvendo inteiro para quem valora um recorte só.
+ok('perdaDeMin continua arredondando na ponta', RP.perdaDeMin(60, 1600, 8.8), 182);
+
 console.log('\n── os HTMLs não podem ter conta própria ──');
 // Guarda-corpo: se a conta voltar para dentro de um dos painéis, eles divergem
 // de novo. Estes trechos só existiam nas cópias antigas.

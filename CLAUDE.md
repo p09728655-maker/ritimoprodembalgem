@@ -98,10 +98,36 @@ via Google Apps Script (JSONP).
   qualquer slot existente da `HORA_A_HORA`).
 
 ## Caixas em HORA NORMAL × HORA EXTRA
-- **Hora extra é a linha marcada, e só ela.** O botão HORA EXTRA (modal do
-  desktop) grava a linha na `HORA_A_HORA` com o rótulo **prefixado**:
-  `HE 17:00-18:00`. Os slots **05:00/06:00 NÃO são hora extra** aqui — são horas
-  de turno liberadas pela célula `C3` (ver seção acima).
+- **A JORNADA NORMAL É 07:00–17:00. Fora dela, é hora extra** (PPCP,
+  31/08/2026: *"05:00 as 06:00, 06:00 as 07:00 sempre é hora extra, e após
+  17:00"*). O almoço 11:00–12:12 fica DENTRO da jornada. `HE_JORNADA_INI_MIN` /
+  `HE_JORNADA_FIM_MIN` são a janela, num lugar só — o backfill dos dias antigos
+  usa a MESMA (antes ele terminava às 18:00 e o fechamento não olhava horário
+  nenhum: duas réguas para o mesmo indicador, no mesmo arquivo).
+  ⚠ A janela **repete** o TURNO da configuração do painel (`CFG.turnoInicio` /
+  `CFG.turnoFim`, hoje 07:00 e 17:00). O backend não enxerga essa config — só
+  conhece o INÍCIO do turno, pela célula `C3`. Mudou o turno na tela? **Mudar as
+  duas constantes do `.gs` também**, senão a HE passa a ser contada por uma
+  janela que não existe mais.
+- **DOIS critérios, e trocá-los quebra coisas diferentes:**
+  - **`_ehHoraExtra(rótulo)` = QUE LINHA É.** Só o prefixo `HE `. Governa a
+    **limpeza diária** (que APAGA a linha marcada) e o **filtro do C3** (linha
+    marcada não é filtrada). ⚠ Alargar este critério faria a limpeza **deletar
+    as linhas de 05:00 e 06:00** — que existem sempre — e faria elas aparecerem
+    no app mesmo com `C3=7`.
+  - **`_ehHoraExtraCaixas(rótulo)` = QUE CAIXAS CONTAM.** Prefixo **ou** horário
+    fora de 07:00–17:00. É este que alimenta o `he` do payload do `getDados` (e
+    daí o `realHE`/`realNormal` e o card CAIXAS EM HORA EXTRA) e o `he`/`heCx`
+    do `arquivarDiaAtual`.
+  - **Por que existem os dois:** o fechamento contava só pelo rótulo, e a
+    madrugada **nunca é rotulada** — ela é liberada pela `C3`. Resultado medido
+    em 31/08/2026 na planilha real: **69 dias seguidos com a coluna HE do
+    HISTORICO em ZERO**, enquanto a produção das 05:00–07:00 era hora extra de
+    verdade (26/08: 167 + 240 = **407 cx** de madrugada, e a coluna gravou 0).
+    Todo valor de HE CX que existia ali veio do backfill, não do fechamento.
+  - A **META do dia continua excluindo só a linha com rótulo** (`ehHE`): a
+    madrugada não tem meta preenchida na planilha, e mexer nisso mudaria a meta
+    histórica dos dias.
   - Antes a linha era gravada como `17:00-18:00`, **indistinguível de uma hora de
     turno** — enquanto o resto do `.gs` já classificava por `startsWith('HE')`
     (fechamento e limpeza diária). Resultado: a contagem `HE` do `HISTORICO`
@@ -141,8 +167,10 @@ via Google Apps Script (JSONP).
   como extra, por dia: em **dia útil**, o lançado **antes das 07:00** ou
   **depois das 18:00**; em **sábado e domingo, o dia INTEIRO** (não é jornada
   normal). A soma vira a `HE CX`.
-  - **17:00–18:00 é hora NORMAL** em dia útil: o turno da planilha termina
-    17:00, mas a hora extra só começa às 18:00.
+  - ⚠ **17:00 em diante É hora extra** (corrigido em 31/08/2026 com o PPCP).
+    Antes a régua daqui ia até 18:00 e o 17:00–18:00 contava como jornada
+    normal — enquanto o turno da planilha termina 17:00 (último slot
+    `16:00-16:59`). Agora a janela é a mesma do fechamento.
   - **Sábado conta o dia todo** — confirmado com o PPCP no 04/07/2026 (sábado
     com produção das 05:00 às 16:00): a HE é o dia inteiro (**1.278 cx**, o
     próprio REALIZADO), não só as 388 cx lançadas antes das 07:00. A flag
@@ -1265,6 +1293,159 @@ via Google Apps Script (JSONP).
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
   `diasTrabalhados()` — contagem e lista saem do mesmo filtro.
+
+## Achados dos 6 revisores (31/08/2026)
+Os seis agentes de revisão (visual, UX de fábrica, código, redator, guardião de
+dados, auditor de cálculos) passaram no repositório inteiro. O que foi corrigido
+ficou registrado abaixo; o que **não** foi está no fim da seção.
+
+- **Hora ainda não lançada não pode inventar atraso** (`calcAtrasoHoras`,
+  `rp-core.js`). O acumulado somava a meta de TODA hora, e hora futura chega
+  como `producaoHora: null` (o `getDados` só devolve número depois que a hora
+  fecha) — o `|| 0` a tratava como "produziu zero". Num dia 12 cx atrás às
+  14:30, a linha das 16:00 mostrava **`(+190)`** e meta efetiva **368 cx**. Hoje
+  só entra no acumulado a hora com lançamento; hora que **fechou** em zero vem
+  como `0` (não `null`) e continua sendo cobrada. O teste antigo só cobria a
+  **primeira** hora pendente, onde o defeito ainda não aparecia.
+- **A perda das paradas arredonda uma vez só, no fim** (`paradas-calc.js`). O
+  `Math.round` era aplicado **por parada** e depois somado: a fração de cada uma
+  ia fora, sempre para menos. 30 paradas de 3 min com meta 1600 davam 270 cx em
+  vez de 273; **20 paradas de 1 min com meta 264 davam ZERO em vez de 10** (cada
+  uma cai em 0,4999… e some) — e como o `ritmoHora` do `diag` é derivado do
+  `pecas`, a linha que esta memória manda comparar primeiro quando as telas
+  divergem saía **"0 cx/h"**. `perdaBrutaDeMin` é a conta crua; `perdaDeMin`
+  continua devolvendo inteiro para quem valora um recorte só. Consequência
+  aceita: a soma das linhas da lista pode ficar 1 cx longe do total — é o mesmo
+  critério do rateio da troca ("o arredondamento é só na exibição").
+- **O `getSlots` do v7 gerava `12:12–13:12`**, contrariando o item "NÃO ALTERAR"
+  logo no topo deste arquivo. A regra do pós-almoço ("encerra na próxima hora
+  cheia") existia só no mobile; o v7 deslocava o turno inteiro da tarde e ainda
+  fazia a última hora virar `16:12–17:00`. Vale no DEMO, no import de Excel e no
+  fallback do `getEffectiveSlots` sem linha de hoje — e nesse modo os rótulos
+  não batiam com a `HORA_A_HORA`, então o `normHora()` do alerta de hora fraca
+  não achava a média histórica de nenhum horário da tarde. `rp-core.test.js`
+  agora roda os DOIS `getSlots` com o mesmo CFG e exige o mesmo recorte (as
+  funções seguem separadas de propósito — o mobile estende o turno para trás).
+- **Lançamento não é mais sobrescrito quando as colunas de LOTE acabam**
+  (`_saveRealizadoCore`, `.gs`). Sem coluna livre, o código gravava `real` **por
+  cima da última**: o valor que estava lá sumia e, como o `getDados` soma as
+  colunas de lote, o REALIZADO da hora caía sozinho — sem erro, sem log, sem
+  nada na tela. Agora **soma** na última coluna (o total da hora fica certo; o
+  que se perde é só a separação por lote dos dois últimos lançamentos) e grava
+  um `Logger.log` pedindo mais colunas de LOTE.
+  ⚠ **Ainda em aberto:** a detecção da coluna é
+  `includes('LOTE') || includes('LT') || startsWith('L')` — esse `startsWith('L')`
+  trata QUALQUER coluna depois de REALIZADO começada com L (LINHA, LIMPEZA,
+  LÍDER, LOCAL) como coluna de lote. Não foi mexido porque endurecer o critério
+  sem ver os cabeçalhos reais da `HORA_A_HORA` pode fazer o lançamento parar de
+  ser gravado. **Conferir os títulos na planilha antes de mexer.**
+- **O upload de logo do desktop estava morto.** O `onclick` do logo do login
+  chamava `getElementById('tv-logo-input').click()` e esse id **não existe** em
+  lugar nenhum (sobra de uma versão em que o upload ficava na área da TV):
+  clicar lançava `TypeError` e o `carregarLogo` nunca era chamado. Pior, o
+  `restaurarLogo()` (que roda a cada carregamento) buscava `tv-logo-img` e fazia
+  `img.src=src` **sem guarda de null** — estourava na primeira linha, o
+  `try/catch` engolia, e o bloco do `login-logo-img` logo abaixo nunca era
+  alcançado: quem tinha logo salvo em `rpe_logo` nunca mais o via voltar, em
+  silêncio. Mesma armadilha do `btn-pasta`. Hoje há o input real e o
+  `aplicarLogo()` com guarda.
+- **`--txt3` era ilegível: #3A3A3A dá 1,66:1 sobre `--bg` e 1,50:1 sobre
+  `--surface`** (mínimo de texto é 4,5:1). Não era decoração — cobria
+  `.empty-msg` ("Carregando dados…", "Nenhum dado."), o rodapé de versão, o
+  botão FECHAR do modal e o **`#tv-parada-desde`, lido a 15 m** na tela cheia de
+  PRODUÇÃO PARADA. Foi para **#838383** (4,98:1 e 4,50:1) nos dois painéis.
+  ⚠ Não existe um terceiro nível MAIS escuro que o `--txt2` (#888888) e ainda
+  legível neste fundo: a diferença entre `--txt2` e `--txt3` passa a ser de
+  corpo e peso, não de cor. Não empurrar o `--txt3` para baixo de novo.
+- **O rótulo é CAIXAS PERDIDAS, nunca PEÇAS.** O mesmo `st.pecas` saía como
+  "PEÇAS PERDIDAS" no desktop (7 lugares) e "CAIXAS PERDIDAS" no mobile — e o
+  desktop se contradizia sozinho, já usando CAIXAS na tabela do plano de ação,
+  com o `sub` do próprio card dizendo "(caixas)". O produto todo conta caixa.
+  `relatorios.test.js` falha se "PEÇAS PERDIDAS" voltar a ser impresso, mesma
+  guarda do vocabulário banido ("PERDIDO NO RITMO"/"PERDIDO PARADO").
+- **O modal de LANÇAMENTO não fecha mais no toque fora.** Era o único modal do
+  app com dado DIGITADO dentro, e a área escura ao redor é o maior alvo da tela:
+  encostar nela com a mão ocupada apagava a quantidade sem confirmação e sem
+  desfazer. Fecha pelo CANCELAR, que está ao lado do SALVAR. O `modal-dia` e o
+  `modal-instalar` mantêm o dismiss — não guardam nada digitado.
+- **As três leituras de apoio do mobile ganharam retry** (`jsonpLeituraApoio`):
+  `carregarProdutos`, `carregarProgramacaoHoje` e `carregarTiposParada` iam com
+  UMA tentativa e o timeout padrão de 20s, falhando em `console.warn` — no cold
+  start o operador abria o seletor e via catálogo velho sem nada dizer por quê.
+  Duas tentativas, **em sequência** (o Apps Script atende uma execução por vez).
+
+### 2ª leva — o restante dos achados
+- **`metaH` era calculado por fórmulas diferentes nos dois painéis**: o v7 usa a
+  meta média das horas JÁ LANÇADAS (`Σ metaHora ÷ n`) e o mobile usava
+  `meta do dia ÷ totalSlots` — 172 × 178 num dia normal, 174 × 160 num dia com
+  HE (o slot extra entrava no denominador sem a meta dele entrar no numerador).
+  O mobile passou a usar a conta do v7. Nenhuma tela do celular lê esse campo
+  hoje, mas quem ler amanhã herdaria a divergência.
+- **`nec` (RITMO NECESSÁRIO) não pode ser negativo.** Com a meta já batida — ou
+  com `CFG.metaDia=0` — `meta−real` fica negativo e o gerencial e a TV imprimiam
+  **"−54 cx/h"**. Clampado em 0 nos dois painéis; o gerencial mostra **META OK**
+  em verde no lugar do número.
+- **HORA EXTRA e FECHAR DIA ganharam retry** (`jsonpEscrita`, 3× em sequência).
+  Eram as duas únicas gravações do painel com UMA tentativa, e as duas acontecem
+  com o Apps Script frio (HE fora do horário, FECHAR DIA às 17:00). O `addHE` do
+  backend virou **upsert por rótulo** — sem isso o retry criaria uma linha
+  `HE 17:00-18:00` por tentativa e a HE seria contada duas vezes na `HE CX`.
+  O `salvarDiaSheets` caía num `console.error` mudo depois de o diálogo ter
+  prometido gravar no Sheets; agora avisa na tela e diz para clicar de novo
+  (repetir é seguro, `saveDay` é upsert por data).
+- **O cache de histórico (2 min) é invalidado ao fechar/reabrir o dia.** O merge
+  dá prioridade ao registro vindo do Sheets, então no fluxo "REABRIR → corrigir →
+  FECHAR DIA de novo" a tela de HISTÓRICO podia mostrar os números do fechamento
+  ANTERIOR por até 2 min — e o gestor fechava uma terceira vez achando que não
+  tinha pego.
+- **`saveCfgLocal()` dentro de um try/catch no `saveCfg()`.** `localStorage`
+  cheio ou bloqueado lançava e matava o resto da função: `enviarConfigPainel()`,
+  `closeCfg()` e o `lerSheets()` nunca rodavam. Era justamente o caminho de
+  recuperação documentado aqui ("corrigir no campo URL DO APPS SCRIPT e salvar")
+  — o gestor achava que tinha salvo e o painel seguia em DEMO. A config vale
+  para a sessão mesmo sem gravar, e o aviso diz que ela não sobrevive ao reload.
+- **`hProd` soma os minutos REAIS das horas lançadas.** Era `n × duração do
+  PRIMEIRO slot`, o que assume hora de tamanho único — e o slot pós-almoço vale
+  48 min. Com ele entre as 6 horas lançadas, o card HORAS PRODUTIVAS dizia 6,0h
+  onde a soma real é 5,8h. O `RP_PARADAS` já fazia certo.
+- **`stats()` não escreve mais no `metaByDay` do chamador** (copia antes). O
+  mobile monta objeto novo a cada chamada e não sentia; o v7 passa o mesmo
+  objeto de fora, e reaproveitado entre períodos o 2º `stats` nascia com a meta
+  de hoje injetada num dia que não é hoje.
+- **As TRÊS colunas do teto da esteira são lidas por prefixo** (`_porPrefixo` no
+  `.gs`): o título real costuma trazer a unidade junto (`VELOCIDADE (m/min)`,
+  `MEDIDA DA CAIXA (mm)`). Só o `ENTRE_PECA` tinha sido endurecido; com
+  `indexOf` exato nas outras duas o campo chega 0 **em silêncio**, o
+  `_tetoEsteiraCxH` devolve 0 e a coluna % TETO EST. some sem dizer por quê.
+  O teste agora executa a helper real contra um cabeçalho com unidade.
+- **`_rpOk()` foi para o `rp-core.js`** (função pura, estava copiada igual nos
+  dois HTMLs). O `_rpRecarregar` continua local em cada painel — esse toca o DOM
+  e avisa diferente em cada tela. ⚠ Nome novo no `rp-core.js` exige entrar na
+  lista `GLOBAIS` do `lint-js.js`, senão o lint acusa `no-undef`.
+- **`aria-label` nos botões cujo rótulo é só um símbolo**: ⚙, ‹, ›, ◀, ▶, ↺, ✕
+  no v7 e o ⌫ dos dois teclados numéricos do mobile. Os demais botões já têm
+  texto, que é o nome acessível — não foi feita varredura cega de ARIA.
+
+**Ainda NÃO corrigido** (achado verificado, decisão pendente): o
+`startsWith('L')` da detecção de coluna de LOTE (ver acima — depende de conferir
+os cabeçalhos reais da `HORA_A_HORA`) · o card EFICIÊNCIA mostra `efDia` no
+número e `sl(k.ef)` na cor, duas fórmulas no mesmo card, sem a tela dizer isso
+(é deliberado — sem separar, o badge ficaria vermelho o turno inteiro) · a
+COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
+erro que ainda expõem `e.message` cru nos 4 relatórios · não existe
+`CHANGELOG.md` nem `docs/glossario.md`.
+
+## Notas de versão e glossário
+- `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
+  mudança que altera número exibido ou formato de arquivo**, com o antes e o
+  depois: o gestor precisa saber por que o indicador da semana passada mudou.
+  Mudança no `.gs` vem marcada com ⚠ **re-deploy**, porque não sobe pela Vercel.
+- `docs/glossario.md` — cada indicador da interface com a fórmula **conferida no
+  código** e o `arquivo:linha` de onde ela saiu. A interface e o glossário não
+  podem divergir; se divergirem, o defeito é da interface. Nunca escrever
+  fórmula de memória aqui — ler o código.
+- Os dois nasceram em 31/08/2026: até a v7.25.0 o único rastro de versão era o
+  `APP_VER` no rodapé, e nenhum indicador tinha definição escrita fora do código.
 
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do

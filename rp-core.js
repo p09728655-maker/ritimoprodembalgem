@@ -87,13 +87,23 @@ function mergeMedias(medias, amostra){
 // meta da hora + atraso acumulado. O atraso nunca é negativo — hora que
 // produziu acima da meta abate o acumulado, mas não gera "crédito" que reduza
 // a meta das próximas.
+//
+// ⚠ SÓ HORA COM LANÇAMENTO ENTRA NO ACUMULADO. Hora ainda não lançada chega
+// como `producaoHora: null` (o backend só devolve número depois que a hora
+// FECHA — ver getDados no .gs); somar a meta dela ao accMeta equivalia a
+// afirmar que ela produziu ZERO, e o atraso das horas seguintes crescia uma
+// meta inteira por hora que ainda nem aconteceu. Medido num dia 12 cx atrás
+// às 14:30: a linha das 16:00 mostrava "(+190)" e meta efetiva 368 cx.
+// Hora que FECHOU sem produzir vem como 0 (não null) e continua cobrada.
 function calcAtrasoHoras(rows){
   let accMeta = 0, accProd = 0;
   return rows.map(r => {
     const atrasoHora = Math.max(accMeta - accProd, 0);
     const metaEfetivaHora = (r.metaHora || 0) + atrasoHora;
-    accMeta += (r.metaHora || 0);
-    accProd += (r.producaoHora != null ? r.producaoHora : 0);
+    if (r.producaoHora != null) {
+      accMeta += (r.metaHora || 0);
+      accProd += r.producaoHora;
+    }
     return { atrasoHora, metaEfetivaHora };
   });
 }
@@ -122,11 +132,17 @@ function nomeComCor(desc, cor){
 }
 
 // ── Identificação do módulo ─────────────────────────────────────────────────
+// O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
+// — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
+// as guardas _rpRecarregar de cada painel, que continuam locais (essas tocam o
+// DOM e avisam diferente em cada tela).
+function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PARADAS; }
+
 // Os painéis checam isto na abertura: se o arquivo não carregou (rede caiu
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
   versao: '1.1.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
-        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor']
+        'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'nomeComCor', '_rpOk']
 };

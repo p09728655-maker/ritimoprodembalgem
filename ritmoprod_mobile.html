@@ -19,7 +19,15 @@
 :root{
   --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
   --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
-  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#838383;
+  /* --txt3 era #3A3A3A: 1,66:1 sobre --bg e 1,50:1 sobre --surface, longe
+     dos 4,5:1 de texto legível. Não era decoração — cobria "Carregando
+     dados…"/"Nenhum dado." (.empty-msg), o rodapé de versão, o botão
+     FECHAR e o #tv-parada-desde, que é lido a 15 m na tela cheia de
+     PRODUÇÃO PARADA. Em #838383 dá 4,98:1 sobre --bg e 4,50:1 sobre
+     --surface. Não dá para ter um terceiro nível MAIS escuro que o --txt2
+     e ainda legível neste fundo: a hierarquia entre os dois passa a ser de
+     corpo e peso, não de cor. */
   --font-h:'Barlow Condensed',sans-serif;
   --font-b:'Barlow',sans-serif;
   --font-d:'IBM Plex Mono',monospace;
@@ -701,7 +709,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="numpad-btn" onclick="numpad('8')">8</button>
       <button class="numpad-btn" onclick="numpad('9')">9</button>
       <button class="numpad-btn zero" onclick="numpad('0')">0</button>
-      <button class="numpad-btn del" onclick="numpadDel()">⌫</button>
+      <button aria-label="Apagar o último dígito" class="numpad-btn del" onclick="numpadDel()">⌫</button>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" onclick="fecharModalLanc()">CANCELAR</button>
@@ -739,7 +747,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
       <button class="numpad-btn" onclick="prodNumpad('9')">9</button>
       <button class="numpad-btn" onclick="prodNumpad('.')">.</button>
       <button class="numpad-btn" onclick="prodNumpad('0')">0</button>
-      <button class="numpad-btn del" onclick="prodNumpadDel()">⌫</button>
+      <button aria-label="Apagar o último dígito" class="numpad-btn del" onclick="prodNumpadDel()">⌫</button>
     </div>
     <div class="modal-btns">
       <button class="btn-cancelar" style="flex:1" onclick="fecharModalProduto()">FECHAR</button>
@@ -822,7 +830,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.9.0';
+const APP_VER   = '1.12.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -980,6 +988,26 @@ async function jsonpEscritaParada(url, onTentativa){
   throw ultimo;
 }
 
+// ── Leitura de APOIO (catálogo, programados de hoje, tipos de parada) ────────
+// Não é o dado do turno, mas é o que o operador vê ao escolher produto ou tipo
+// de parada. Estas três iam com UMA tentativa e o timeout padrão de 20s, e
+// falhavam em console.warn: no cold start do Apps Script o operador abria o
+// seletor e via catálogo velho (ou vazio) sem nada na tela dizendo por quê.
+// Duas tentativas, EM SEQUÊNCIA — o Apps Script atende uma execução por vez, e
+// em paralelo elas só se enfileiram lá e estouram juntas. Leitura é idempotente.
+async function jsonpLeituraApoio(url){
+  let ultimo;
+  for(let i=1; i<=2; i++){
+    try{ return await jsonpFetch(url, 25000); }
+    catch(e){
+      ultimo = e;
+      if(i===2) break;
+      await new Promise(r=>setTimeout(r, 2000));
+    }
+  }
+  throw ultimo;
+}
+
 // ════════════════════════════════════════════════
 // FETCH DADOS SHEETS
 // ════════════════════════════════════════════════
@@ -1072,7 +1100,7 @@ async function carregarProdutos(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PRODUTOS = json.produtos;
       localStorage.setItem('rpe_produtos', JSON.stringify(PRODUTOS));
@@ -1086,7 +1114,7 @@ async function carregarProgramacaoHoje(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoHoje';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PROG_HOJE = json.produtos;
     }
@@ -1396,7 +1424,7 @@ async function carregarTiposParada(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getTiposParada';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.tipos) && json.tipos.length){
       PAR_TIPOS = json.tipos;
       if(json.classes){ const m={}; Object.keys(json.classes).forEach(k=>{ m[String(k).trim()]=json.classes[k]; }); PAR_CLASSE_MAP_M=m; }
@@ -1510,7 +1538,6 @@ async function carregarParadasPeriodoSel(force){
 // um throw dentro do render matava o resto do login gerencial (produtos,
 // paradas, histórico) e "meia tela" parava de carregar. Sem o módulo: os cards
 // de parada avisam e o script é recarregado sozinho; o resto do app segue.
-function _rpOk(){ return typeof window.RP_PARADAS==='object' && !!window.RP_PARADAS; }
 let _rpRecarregando=false;
 function _rpRecarregar(){
   if(_rpRecarregando || _rpOk()) return;
@@ -1865,7 +1892,9 @@ async function registrarParadaAgora(){
     // parada de novo e o dia termina com paradas duplicadas.
     await carregarParadas();
     if(!paradaAtiva()){
-      alert('Não deu para registrar a parada: '+erro.message+'.\nA parada NÃO foi registrada — tente de novo.');
+      alert('O servidor não respondeu depois de 3 tentativas.\n\n'
+        +'A parada NÃO foi registrada. Toque em REGISTRAR de novo em alguns '
+        +'segundos.');
       btnOn();
       return;
     }
@@ -1931,7 +1960,9 @@ async function darStartParada(){
     const aindaAberta = PARADAS_HOJE.some(p=>
       abertas.some(a=>String(a.id)===String(p.id)) && (!p.fim || String(p.fim).trim()===''));
     if(aindaAberta){
-      alert('Não deu para dar START: '+erro.message+'.\nA parada CONTINUA aberta — tente de novo em alguns segundos.');
+      alert('O servidor não respondeu depois de 3 tentativas.\n\n'
+        +'A parada CONTINUA aberta — nada foi perdido. Toque em START de novo '
+        +'em alguns segundos; repetir é seguro.');
       btnOn();
       return;
     }
@@ -2001,11 +2032,21 @@ function calcKPIs(){
   const totalSlots = allHoje.length>0 ? allHoje.length : slots.length;
   const slotsRest = totalSlots-n;
   const proj = real+ritmo*slotsRest;
-  const nec = slotsRest>0 ? Math.ceil((meta-real)/slotsRest) : 0;
+  // Math.max(0,...): meta já batida deixava meta-real negativo e o card
+  // NEC. P/ META imprimia ritmo negativo. Mesma guarda do v7.
+  const nec = slotsRest>0 ? Math.max(0, Math.ceil((meta-real)/slotsRest)) : 0;
   const prods = dh.map(r=>r.producaoHora);
   const melhor = prods.length ? Math.max(...prods) : 0;
   const pior = prods.length ? Math.min(...prods) : 0;
-  const metaH = totalSlots>0 ? Math.round(meta/totalSlots) : 0;
+  // metaH = meta média das horas JÁ LANÇADAS, a mesma conta do v7. Aqui era
+  // `meta ÷ totalSlots`, e os dois painéis davam números diferentes para o
+  // mesmo turno: 172 × 178 num dia normal e 174 × 160 num dia com HE (o slot
+  // extra entrava no denominador sem que a meta dele entrasse no numerador).
+  // Hoje nenhuma tela do celular lê este campo — mas quem ler amanhã herdaria
+  // a divergência, e divergência entre painéis é o defeito que este projeto
+  // mais pagou caro. Sem hora lançada ainda, cai no rateio pelo turno.
+  const metaH = n>0 ? Math.round(metaReal/n)
+                    : (totalSlots>0 ? Math.round(meta/totalSlots) : 0);
   return{real,realHE,realNormal,nHE,meta,ef,efDia,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
 }
 
@@ -2340,7 +2381,8 @@ async function toggleInicioTurno(){
       alert('Não foi possível mudar o início: '+((res&&res.erro)||'erro'));
     }
   }catch(e){
-    alert('Erro ao mudar o início: '+e.message);
+    alert('Não foi possível mudar o início do turno.\n\nTente de novo em alguns '
+          +'segundos — o horário atual continua valendo até dar certo.');
   }finally{
     _salvandoInicio = false;
     if(btn) btn.disabled = false;
@@ -2392,7 +2434,13 @@ function numpadDel(){
   inp.value=(inp.value||'').slice(0,-1);
 }
 
-document.getElementById('modal-lanc').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-lanc')) fecharModalLanc(); });
+// ⚠ SEM dismiss por toque-fora aqui, de propósito. Este é o único modal do app
+// com dado DIGITADO dentro (a quantidade de caixas), e a área escura ao redor é
+// o maior alvo da tela — encostar nela com a mão ocupada apagava o que o
+// operador tinha acabado de digitar, sem confirmação e sem desfazer. Fechar é
+// pelo botão CANCELAR, que está ali ao lado do SALVAR. Os outros modais
+// (paradas, produto) nunca tiveram este listener; o modal-dia e o
+// modal-instalar podem manter porque não guardam nada digitado.
 
 async function salvarLanc(){
   const add = parseInt(document.getElementById('ml-qtd').value);
@@ -2448,8 +2496,11 @@ async function salvarLanc(){
       if(!/timeout|rede/i.test(e.message)) break;
     }
   }
-  alert('Erro ao salvar: '+(ultimoErro?ultimoErro.message:'desconhecido')+
-        '\n\nSe o valor não aparecer, tente novamente — o sistema evita lançamento duplicado.');
+  // O operador não precisa saber o nome da exceção — precisa saber se perdeu o
+  // lançamento e o que fazer. Timeout ≠ não gravou: o valor pode ter chegado.
+  alert('O servidor não respondeu e o lançamento pode não ter sido gravado.\n\n'
+      + 'Confira a hora na lista: se o valor não aparecer, lance de novo — '
+      + 'o sistema evita lançamento duplicado, então repetir é seguro.');
   btn.textContent='ADICIONAR'; btn.disabled=false;
 }
 
