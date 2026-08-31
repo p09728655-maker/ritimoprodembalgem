@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.30.0 — 31/08/2026
+
+**Novo** — o **RELATÓRIO SEMANAL** passou a fechar com **PARADAS DA SEMANA — O
+QUE DEIXAMOS DE EMBALAR**: caixas perdidas (e quanto isso pesa na meta da
+semana), tempo parado, nº de paradas, disponibilidade e a tabela de **motivos**
+com tempo e caixas de cada um. O papel contava quanto saiu e não contava o que
+ficou pelo caminho. A busca e a conta são as **mesmas** da aba PARADAS e da
+GESTÃO DE PERDAS — nenhum número novo, nenhuma fórmula nova. Parada **prevista**
+entra com o tempo e zero caixa; parada dentro do almoço fica fora, como já era.
+Sem Google Sheets, sem o `paradas-calc.js` ou com a busca falhando, o relatório
+sai **inteiro, só sem essa seção**.
+
+**Atenção** — **o layout do relatório semanal mudou** (pedido do usuário: *"deixar
+profissional, menos cor"*). O corpo do documento virou **grafite sobre branco** e
+a cor ficou reservada para o que tem função: status de meta, hora extra e as
+caixas perdidas. Saíram as seis bordas coloridas dos cards, os valores pintados
+sem motivo, o título de seção em vermelho e os emojis (🏆 📉) — que num papel de
+reunião pesam mais que informam. **Nenhum número mudou.**
+
+**Atenção** — **o gráfico dos relatórios (semanal e histórico) seguiu a mesma
+régua**: a barra do dia é grafite quando o dia entregou e só o dia **abaixo do
+planejado** ganha cor; o fantasma da meta ficou cinza. Bater a meta é o
+esperado, e pintar o esperado de verde gasta a atenção que o dia ruim precisa.
+A faixa listrada da hora extra continua, em âmbar de impressão.
+
+**Corrigido** — o relatório não parte mais blocos ao meio na impressão: título
+de seção não fica órfão no pé da folha e o quadro de KPIs, a faixa de alerta e o
+gráfico não se dividem entre duas páginas.
+
+---
+
 ## v7.29.0 / mobile 1.13.0 — 31/08/2026
 
 **Atenção** — **o verde/vermelho do painel mudou de régua, e o número da

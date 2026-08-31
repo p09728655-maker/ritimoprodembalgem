@@ -2379,7 +2379,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.29.0';
+const APP_VER   = '7.30.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -6950,6 +6950,83 @@ function _relSemanaPassada(hoje){
   return _relSemanaJanela(dtToStr(d));
 }
 
+// ── PARADAS DA SEMANA, dentro do relatório semanal ──────────────────────────
+// Pedido do usuário (31/08/2026): "na impressão resumo semanal, deve conter as
+// paradas, e o que deixamos de embalar por motivos de paradas". O relatório
+// contava quanto saiu e não contava o que ficou pelo caminho — que é a parte
+// que a operação usa para atacar a semana seguinte.
+//
+// Isto aqui é DESENHO, não conta: tudo chega pronto do `RP_PARADAS.stats`, a
+// MESMA valoração da aba PARADAS e da GESTÃO DE PERDAS. Escrever fórmula de
+// perda aqui seria o terceiro lugar a calcular a mesma coisa — foi exatamente
+// assim que as telas de paradas divergiram três vezes. O `relatorios.test.js`
+// falha se `perdaDeMin`/`perdaAoRitmo`/`durProdutiva` aparecerem nesta função.
+//
+// A parada PLANEJADA (refeição, intervalo) entra na tabela com o tempo dela e
+// **zero caixa**: ela estava no plano, e escondê-la faria a soma do tempo não
+// fechar com o total. O almoço não entra em nada — as horas produtivas do turno
+// já o descontam, e contá-lo de novo descontaria duas vezes.
+function _relParadasSemanaHtml(st, totMeta){
+  if(!st) return '';
+  const INK2='#5B6470', RUIM='#B3261E';
+  const pctMeta = totMeta>0 ? (st.pecas/totMeta*100) : 0;
+  const tipos = (st.tipos||[]).filter(t=>t.min>0);
+  const linha = t => `<tr>
+      <td>${_rpEsc(t.tipo)}${t.planej?' <span class="sbadge s-ok" style="font-size:7.5px">PREVISTA</span>':''}</td>
+      <td class="td-mono" style="text-align:right">${fmtN(t.qtd)}</td>
+      <td class="td-mono" style="text-align:right">${_fmtMinPar(t.min)}</td>
+      <td class="td-mono" style="text-align:right;color:${INK2}">${st.totMin>0?fmtP(t.min/st.totMin*100):'—'}</td>
+      <td class="td-bold" style="text-align:right;color:${t.planej?INK2:RUIM}">${t.planej?'—':fmtN(t.perd)}</td>
+    </tr>`;
+  return `
+<div class="rp-sec-ttl">PARADAS DA SEMANA — O QUE DEIXAMOS DE EMBALAR</div>
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+  <div class="kpi-card" style="border-left-color:${RUIM}">
+    <div class="kpi-lbl">CAIXAS PERDIDAS</div>
+    <div class="kpi-val" style="color:${RUIM}">${fmtN(st.pecas)}</div>
+    <div class="kpi-sub">${totMeta>0?`${fmtP(pctMeta)} da meta da semana`:'em paradas não programadas'}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-lbl">TEMPO PARADO</div>
+    <div class="kpi-val">${_fmtMinPar(st.totMin)}</div>
+    <div class="kpi-sub">${_fmtMinPar(st.totMinNP)} não programado</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-lbl">PARADAS</div>
+    <div class="kpi-val">${fmtN(st.nParadas)}</div>
+    <div class="kpi-sub">${st.tMed>0?`${fmt1(st.tMed)} min em média`:'no período'}</div>
+  </div>
+  <div class="kpi-card"${st.dispon<90?' style="border-left-color:'+RUIM+'"':''}>
+    <div class="kpi-lbl">DISPONIBILIDADE</div>
+    <div class="kpi-val"${st.dispon<90?` style="color:${RUIM}"`:''}>${fmtP(st.dispon)}</div>
+    <div class="kpi-sub">base: ${plural(st.nDias,'dia','dias')} ${st.baseTrab?'trabalhados':'com parada'}</div>
+  </div>
+</div>
+
+<table style="margin-top:12px">
+  <thead><tr>
+    <th>MOTIVO DA PARADA</th>
+    <th style="text-align:right">Nº</th>
+    <th style="text-align:right">TEMPO</th>
+    <th style="text-align:right">% DO PARADO</th>
+    <th style="text-align:right">CAIXAS PERDIDAS</th>
+  </tr></thead>
+  <tbody>
+    ${tipos.length?tipos.map(linha).join(''):`<tr><td colspan="5" style="text-align:center;color:${INK2}">Nenhuma parada registrada na semana.</td></tr>`}
+  </tbody>
+  ${tipos.length?`<tfoot><tr>
+    <td class="tf-lbl">TOTAL</td>
+    <td class="td-mono" style="text-align:right">${fmtN(st.nParadas)}</td>
+    <td class="td-mono" style="text-align:right">${_fmtMinPar(st.totMin)}</td>
+    <td class="td-mono" style="text-align:right;color:${INK2}">100,0%</td>
+    <td class="td-bold" style="text-align:right;color:${RUIM}">${fmtN(st.pecas)}</td>
+  </tr></tfoot>`:''}
+</table>
+<div style="font-size:9.5px;color:${INK2};margin-top:8px;line-height:1.55">
+  <b>Como o número sai:</b> ${_rpEsc(RP_PARADAS.diagTexto(st.diag))}
+</div>`;
+}
+
 // ── A SEMANA QUE SE DIVULGA — uma regra só para todos que a publicam ────────
 // Divulgar a semana é sempre a mesma pergunta: a semana do filtro; e, quando
 // ela ainda não tem dia fechado — segunda-feira de manhã, que é justamente
@@ -7323,7 +7400,7 @@ async function gerarRelatorioSemanal(ateArg){
   // Semana: a de quem chamou, ou a do filtro — com a queda para a semana
   // passada quando a atual ainda não fechou nenhum dia. Mesmo recorte da TELA
   // D da TV e do resumo do WhatsApp (_relSemanaParaDivulgar).
-  const {seg, semStr, numSem, dias:diasSem} =
+  const {seg, sex, semStr, numSem, dias:diasSem} =
     _relSemanaParaDivulgar(todosDias, ateArg||dGet('hist-ate'), !!ateArg);
 
   if(!diasSem.length){
@@ -7342,6 +7419,24 @@ async function gerarRelatorioSemanal(ateArg){
          fechados, abertos,
          efTotal, efTotalSemHE, soComHE, faltouSemHE} = _relSemanalKPIs(diasSem);
 
+  /* ── Paradas da semana ────────────────────────────────────────────────────
+     O relatório contava quanto saiu e não contava o que ficou pelo caminho.
+     A busca é a MESMA da aba PARADAS / GESTÃO DE PERDAS (`_pgBuscarDados`, com
+     retry: o Apps Script lê a aba PARADAS inteira e costuma responder frio) e a
+     valoração é a MESMA (`_paradasStats` → `RP_PARADAS`).
+     Falhou a busca, faltou o Sheets ou o módulo de cálculo não carregou? O
+     relatório sai SEM a seção — a mesma regra da cascata dos relatórios de
+     produção. Meio relatório é melhor que relatório nenhum, e um número de
+     parada inventado seria pior que os dois. */
+  let stPar=null;
+  if(CFG.sheetsUrl && _rpOk()){
+    try{
+      const _p=await _pgBuscarDados(dtToStr(seg), dtToStr(sex));
+      if(_p) stPar=_paradasStats(_p.paradas, _p.metaByDay,
+                                 {realByDay:_p.realByDay, de:dtToStr(seg), ate:dtToStr(sex)});
+    }catch(e){ console.warn('[RelSemanal] paradas não vieram:', e.message); }
+  }
+
   /* Semana com dia em aberto não é semana fechada, e o cabeçalho tem de dizer
      isso: o total já traz a meta cheia do dia em curso, então a eficiência sai
      menor do que o ritmo real. Quem lê numa sexta de manhã sabe; quem recebe o
@@ -7357,8 +7452,10 @@ async function gerarRelatorioSemanal(ateArg){
   // Eficiência do dia sem a hora extra (a meta é do turno normal).
   const _efSemHE = d => d.meta>0 ? (d.real-(_heIndef(d)?0:d.heCx))/d.meta*100 : 0;
 
-  // Cor de status
-  const cor=ef=>ef>=96?'#4CAF50':ef>=90?'#FF9800':'#F44336';
+  // Cor de status do DOCUMENTO: tons de impressão, não os do painel escuro.
+  // Aparece só onde há veredito; o resto do relatório é grafite.
+  const cor=ef=>ef>=96?'#2E7D32':ef>=90?'#B4650A':'#B3261E';
+  const INK2='#5B6470', HEC='#B4650A';
   const badge=ef=>ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO';
   // Meta batida só por causa da hora extra: o verde vira âmbar e o texto diz
   // por quê. Sem isso o relatório afirma "dentro da meta" para uma semana que,
@@ -7371,7 +7468,7 @@ async function gerarRelatorioSemanal(ateArg){
   /* Semana com dia em aberto ainda traz a meta cheia do dia em curso, então o
      total sai abaixo do ritmo real. Dizer ABAIXO ali é veredito sobre tempo que
      não aconteceu: enquanto houver dia aberto, o cartão informa em vez de julgar. */
-  const corEf  = parcial ? '#718096' : (soComHE ? '#FF9800' : cor(efTotal));
+  const corEf  = parcial ? '#5B6470' : (soComHE ? '#B4650A' : cor(efTotal));
   const badgeEf= parcial
     ? `PARCIAL · ${fechados} de ${diasSem.length} ${diasSem.length===1?'dia fechado':'dias fechados'}`
     : (soComHE ? '⚠ META BATIDA COM HORA EXTRA' : badge(efTotal));
@@ -7397,6 +7494,10 @@ async function gerarRelatorioSemanal(ateArg){
     .no-print{ display:none!important; }
     tr{ page-break-inside:avoid; }
     thead{ display:table-header-group; }
+    /* Bloco que só faz sentido inteiro não parte ao meio, e título de seção não
+       fica órfão no pé da folha — a mesma regra dos relatórios de paradas. */
+    .rp-sec-ttl{ page-break-after:avoid; }
+    .kpi-grid, .rp-row2, .rp-alerta, .rp-chart-wrap{ page-break-inside:avoid; }
   }
 
   /* HEADER */
@@ -7412,27 +7513,33 @@ async function gerarRelatorioSemanal(ateArg){
   .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
   .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
+  /* ── Paleta do DOCUMENTO ───────────────────────────────────────────────
+     Papel de reunião, não painel de chão de fábrica: o corpo é grafite sobre
+     branco e a COR só entra onde carrega significado (status de meta, hora
+     extra). Card com borda colorida por enfeite fazia seis cores disputarem a
+     atenção com a única que informa — e ainda concorria com o vermelho de
+     status. Regra: exceção tem cor; o resto é tinta. */
   /* SEÇÃO */
-  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
+  .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#1F2328; letter-spacing:2.5px; text-transform:uppercase; margin:20px 0 10px; border-bottom:1px solid #D8DDE3; padding-bottom:6px; }
 
   /* KPI GRID */
   .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
-  .kpi-card{ background:#f8fafc; border:1px solid #edf2f7; border-left:3px solid #ddd; border-radius:4px; padding:10px 12px; }
-  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
-  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#1a1a2e; }
-  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#a0aec0; margin-top:4px; }
+  .kpi-card{ background:#FBFCFD; border:1px solid #E4E7EB; border-left:2px solid #C8CED6; border-radius:3px; padding:10px 12px; }
+  .kpi-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#5B6470; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .kpi-val{ font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:700; line-height:1; color:#1F2328; }
+  .kpi-sub{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#79828F; margin-top:4px; }
 
   /* HIGHLIGHT */
   .rp-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:4px; }
-  .rp-highlight{ background:#f8fafc; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; display:flex; align-items:center; gap:14px; }
-  .rp-hl-icon{ font-size:22px; }
-  .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#718096; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
-  .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#1a1a2e; }
-  .rp-hl-sub{ font-size:10px; color:#718096; margin-top:2px; }
+  .rp-highlight{ background:#FBFCFD; border:1px solid #E4E7EB; border-radius:3px; padding:12px 14px; }
+  .rp-hl-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; color:#5B6470; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:3px; }
+  .rp-hl-val{ font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; color:#1F2328; }
+  .rp-hl-sub{ font-size:10px; color:#5B6470; margin-top:2px; }
 
-  /* ALERTA (meta batida com hora extra) */
-  .rp-alerta{ display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:10px 14px; background:#fff8ed; border:1px solid #ffcc80; border-left:3px solid #FF9800; border-radius:4px; font-size:10.5px; line-height:1.55; color:#7a3e00; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rp-alerta-ic{ font-size:14px; line-height:1.2; color:#e65100; }
+  /* ALERTA (meta batida com hora extra) — a única faixa do documento, e ela
+     avisa de verdade: fica neutra, com a régua âmbar e a palavra ATENÇÃO. */
+  .rp-alerta{ display:flex; gap:10px; align-items:flex-start; margin-top:10px; padding:10px 14px; background:#FBFCFD; border:1px solid #E4E7EB; border-left:3px solid #B4650A; border-radius:3px; font-size:10.5px; line-height:1.55; color:#1F2328; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rp-alerta-ic{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; letter-spacing:1.5px; line-height:1.6; color:#B4650A; white-space:nowrap; }
 
   /* GRÁFICO SVG */
   .rp-chart-wrap{ background:#f9f9f9; border:1px solid #edf2f7; border-radius:4px; padding:12px 14px; margin-bottom:4px; }
@@ -7440,20 +7547,19 @@ async function gerarRelatorioSemanal(ateArg){
 
   /* TABELA */
   table{ width:100%; border-collapse:collapse; }
-  thead th{ background:#1a1a2e; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#fff; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; border-bottom:1.5px solid #cbd5e0; text-align:left; }
-  tbody td{ font-size:12px; padding:8px 10px; border-bottom:1px solid #edf2f7; color:#1a1a2e; }
+  thead th{ background:#1F2328; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#fff; letter-spacing:1.2px; text-transform:uppercase; padding:8px 10px; text-align:left; }
+  tbody td{ font-size:12px; padding:8px 10px; border-bottom:1px solid #EDEFF2; color:#1F2328; }
   tbody tr:last-child td{ border-bottom:none; }
-  tbody tr:hover{ background:#f8fafc; }
   .td-mono{ font-family:'IBM Plex Mono',monospace; font-size:10px; }
   .td-bold{ font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; }
-  tfoot td{ font-size:11px; padding:8px 10px; border-top:1.5px solid #cbd5e0; background:#f8fafc; color:#1a1a2e; }
-  tfoot .tf-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.2px; color:#718096; text-transform:uppercase; }
+  tfoot td{ font-size:11px; padding:8px 10px; border-top:1.5px solid #C8CED6; background:#F7F8F9; color:#1F2328; }
+  tfoot .tf-lbl{ font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:1.2px; color:#5B6470; text-transform:uppercase; }
 
-  /* STATUS BADGE */
-  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; white-space:nowrap; display:inline-block; }
-  .s-ok  { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
-  .s-warn{ background:#fff3e0; color:#e65100; border:1px solid #ffcc80; }
-  .s-red { background:#ffebee; color:#b71c1c; border:1px solid #ef9a9a; }
+  /* STATUS BADGE — chip claro com a palavra: cor + texto, nunca cor sozinha */
+  .sbadge{ font-family:'IBM Plex Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:2px; letter-spacing:1px; white-space:nowrap; display:inline-block; border:1px solid; }
+  .s-ok  { background:#F2F6F3; color:#2E7D32; border-color:#C3D9C7; }
+  .s-warn{ background:#FAF6F0; color:#B4650A; border-color:#E4D2B6; }
+  .s-red { background:#FBF3F2; color:#B3261E; border-color:#E7C6C3; }
 
   /* RODAPÉ */
   .rp-footer{ margin-top:20px; padding-top:10px; border-top:1px solid #edf2f7; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#8a94a6; }
@@ -7476,39 +7582,39 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
 <!-- KPIs SEMANA -->
 <div class="rp-sec-ttl">RESUMO DA SEMANA</div>
 <div class="kpi-grid" style="grid-template-columns:repeat(${temHE?6:5},1fr)">
-  <div class="kpi-card" style="border-left-color:#FF5C1F">
+  <div class="kpi-card">
     <div class="kpi-lbl">TOTAL PRODUZIDO</div>
     <div class="kpi-val">${totReal.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">${temHE?`${(totReal-totHE).toLocaleString('pt-BR')} normal + ${totHE.toLocaleString('pt-BR')} extra${totHoras>0?` (${totHoras}h)`:''}`:'caixas na semana'}</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">
+  <div class="kpi-card">
     <div class="kpi-lbl">MÉDIA DIÁRIA</div>
-    <div class="kpi-val" style="color:${cor(mediaMeta?mediaReal/mediaMeta*100:0)}">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
+    <div class="kpi-val">${Math.round(mediaReal).toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">cx/dia · meta ${Math.round(mediaMeta).toLocaleString('pt-BR')}</div>
   </div>
   <div class="kpi-card" style="border-left-color:${corEf}">
-    <div class="kpi-lbl">EFICIÊNCIA DA SEMANA</div>
+    <div class="kpi-lbl">EFICIÊNCIA</div>
     <div class="kpi-val" style="color:${corEf}">${fmtP(efTotal)}</div>
     <div class="kpi-sub">${badgeEf}</div>
   </div>
   ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efTotalSemHE)}">
-    <div class="kpi-lbl">EFIC. SEM H. EXTRA</div>
+    <div class="kpi-lbl">SEM HORA EXTRA</div>
     <div class="kpi-val" style="color:${cor(efTotalSemHE)}">${fmtP(efTotalSemHE)}</div>
     <div class="kpi-sub">${faltouSemHE>0?`faltaram ${fmtN(faltouSemHE)} cx`:'só a jornada normal'}</div>
   </div>`:''}
-  <div class="kpi-card" style="border-left-color:#4CAF50">
+  <div class="kpi-card">
     <div class="kpi-lbl">DIAS COM META</div>
     <div class="kpi-val">${comMeta}</div>
     <div class="kpi-sub">de ${diasSem.length} dias (${((comMeta/diasSem.length)*100).toFixed(0)}%)</div>
   </div>
-  <div class="kpi-card" style="border-left-color:${soComHE?'#FF9800':'#888'}">
+  <div class="kpi-card"${soComHE?' style="border-left-color:#B4650A"':''}>
     <div class="kpi-lbl">TOTAL META</div>
     <div class="kpi-val">${totMeta.toLocaleString('pt-BR')}</div>
     <div class="kpi-sub">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${temHE?` · sem HE: ${((totReal-totHE)-totMeta).toLocaleString('pt-BR')} cx`:''}</div>
   </div>
 </div>
 ${soComHE?`<div class="rp-alerta">
-  <span class="rp-alerta-ic">⚠</span>
+  <span class="rp-alerta-ic">ATENÇÃO</span>
   <div><b>A meta da semana foi batida com hora extra.</b>
   Na jornada normal foram <b>${(totReal-totHE).toLocaleString('pt-BR')} cx</b> contra a meta de
   ${totMeta.toLocaleString('pt-BR')} cx — faltaram <b>${faltouSemHE.toLocaleString('pt-BR')} cx</b>
@@ -7518,19 +7624,17 @@ ${soComHE?`<div class="rp-alerta">
 
 <!-- MELHOR / PIOR -->
 <div class="rp-row2" style="margin-top:10px">
-  <div class="rp-highlight">
-    <div class="rp-hl-icon">🏆</div>
+  <div class="rp-highlight" style="border-left:2px solid #2E7D32">
     <div>
       <div class="rp-hl-lbl">MELHOR DIA</div>
-      <div class="rp-hl-val" style="color:#4CAF50">${melhorDia.data}</div>
+      <div class="rp-hl-val">${melhorDia.data}</div>
       <div class="rp-hl-sub">${melhorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(melhorDia.ef)} eficiência</div>
     </div>
   </div>
-  <div class="rp-highlight">
-    <div class="rp-hl-icon">📉</div>
+  <div class="rp-highlight" style="border-left:2px solid #B3261E">
     <div>
       <div class="rp-hl-lbl">DIA MAIS FRACO${parcial?' (ENTRE OS FECHADOS)':''}</div>
-      <div class="rp-hl-val" style="color:#F44336">${piorDia.data}</div>
+      <div class="rp-hl-val">${piorDia.data}</div>
       <div class="rp-hl-sub">${piorDia.real.toLocaleString('pt-BR')} cx · ${fmtP(piorDia.ef)} eficiência</div>
     </div>
   </div>
@@ -7554,14 +7658,14 @@ ${soComHE?`<div class="rp-alerta">
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?'#FF5C1F':'#888'}">${_heCel(d)}</td>`:''}
-      <td class="td-mono" style="color:#888">${d.meta.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?HEC:INK2}">${_heCel(d)}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${d.meta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
       ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
-      <td class="td-mono" style="color:#4CAF50">${d.melhor.toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:#F44336">${d.pior.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${d.melhor.toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
-      <td class="td-mono" style="color:#888">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
+      <td class="td-mono" style="color:${INK2}">${d.fechado?(()=>{const f=fmtFechadoEm(d.fechadoEm,d.data);return f==='SIM'?'✓':'✓ '+f.substring(0,5);})():'—'}</td>
     </tr>`).join('')}
   </tbody>
   <tfoot>
@@ -7569,20 +7673,20 @@ ${soComHE?`<div class="rp-alerta">
       <td class="tf-lbl">MÉDIA / DIA</td>
       <td class="td-bold">${Math.round(mediaReal).toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:#888">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
-      <td class="td-mono" style="color:#888">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
+      <td class="td-mono" style="color:${INK2}">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(efMedia)}">${fmtP(efMedia)}</td>
       ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</td>`:''}
-      <td class="td-mono" style="color:#4CAF50">${_slotMaisFreq(diasSem,'melhor')}</td>
-      <td class="td-mono" style="color:#F44336">${_slotMaisFreq(diasSem,'pior')}</td>
+      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'melhor')}</td>
+      <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'pior')}</td>
       <td class="tf-lbl" colspan="2">base: ${plural(diasSem.length,'dia','dias')} com produção</td>
     </tr>
     <tr>
       <td class="tf-lbl">TOTAL DA SEMANA</td>
       <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:#FF5C1F">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
-      <td class="td-mono" style="color:#888">${totMeta.toLocaleString('pt-BR')}</td>
+      <td class="td-bold" style="color:${HEC}">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${totMeta.toLocaleString('pt-BR')}</td>
       <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${fmtP(totMeta?totReal/totMeta*100:0)}</td>
       ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${fmtP(totMeta?(totReal-totHE)/totMeta*100:0)}</td>`:''}
       <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
@@ -7600,24 +7704,24 @@ ${(()=>{
   return `
 <div class="rp-sec-ttl" style="margin-top:18px">ANÁLISE POR HORÁRIO · MÉDIA HISTÓRICA DE CX</div>
 <div class="rp-row2">
-  <div class="rp-highlight" style="border-left:3px solid #4CAF50">
-    <div class="rp-hl-icon">🏆</div>
+  <div class="rp-highlight" style="border-left:2px solid #2E7D32">
     <div>
       <div class="rp-hl-lbl">MELHOR HORÁRIO</div>
-      <div class="rp-hl-val" style="color:#4CAF50">${melhorH.label}</div>
+      <div class="rp-hl-val">${melhorH.label}</div>
       <div class="rp-hl-sub">${Math.round(melhorH.media).toLocaleString('pt-BR')} cx/h em média · ${melhorH.amo} dias</div>
     </div>
   </div>
-  <div class="rp-highlight" style="border-left:3px solid #F44336">
-    <div class="rp-hl-icon">⚠</div>
+  <div class="rp-highlight" style="border-left:2px solid #B3261E">
     <div>
       <div class="rp-hl-lbl">PIOR HORÁRIO</div>
-      <div class="rp-hl-val" style="color:#F44336">${piorH.label}</div>
+      <div class="rp-hl-val">${piorH.label}</div>
       <div class="rp-hl-sub">${Math.round(piorH.media).toLocaleString('pt-BR')} cx/h em média · ${piorH.amo} dias</div>
     </div>
   </div>
 </div>`;
 })()}
+
+${_relParadasSemanaHtml(stPar, totMeta)}
 
 <!-- RODAPÉ -->
 <div class="rp-footer">
@@ -10342,21 +10446,21 @@ function _svgBarChart(dias){
   // Listra da hora extra. É desenho de conteúdo (SVG), não fundo de CSS: sai na
   // impressora mesmo com "imprimir cores de fundo" desligado.
   if(temHE) out+=`<defs><pattern id="rpHeListra" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="6" height="6" fill="#FF9800"/>
+      <rect width="6" height="6" fill="#C2871F"/>
       <line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="2.2" opacity="0.55"/>
     </pattern></defs>`;
 
   // Fundo zebrado
   dias.forEach((_,i)=>{
-    if(i%2===0) out+=`<rect x="${pad.l+i*slot}" y="${pad.t}" width="${slot}" height="${ch}" fill="#f9f9f9"/>`;
+    if(i%2===0) out+=`<rect x="${pad.l+i*slot}" y="${pad.t}" width="${slot}" height="${ch}" fill="#FAFBFC"/>`;
   });
 
   // Linhas de grade horizontais
   [0,0.25,0.5,0.75,1].forEach(f=>{
     const y=sy(maxVal*f);
     const v=Math.round(maxVal*f);
-    out+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e8e8e8" stroke-width="${f===1?1.5:0.8}" stroke-dasharray="${f===1?'none':'3,3'}"/>`;
-    out+=`<text x="${pad.l-6}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#bbb" font-family="'IBM Plex Mono',monospace">${v.toLocaleString('pt-BR')}</text>`;
+    out+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#E4E7EB" stroke-width="${f===1?1.5:0.8}" stroke-dasharray="${f===1?'none':'3,3'}"/>`;
+    out+=`<text x="${pad.l-6}" y="${y+3.5}" text-anchor="end" font-size="8" fill="#97A0AC" font-family="'IBM Plex Mono',monospace">${v.toLocaleString('pt-BR')}</text>`;
   });
 
   // Linha de meta
@@ -10368,8 +10472,14 @@ function _svgBarChart(dias){
     const x=cx(i);
     const yM=sy(d.meta);
     const yR=sy(d.real);
-    const clr=d.ef>=96?'#4CAF50':d.ef>=90?'#FF9800':'#F44336';
-    const bgClr=d.ef>=96?'#e8f5e9':d.ef>=90?'#fff3e0':'#ffebee';
+    /* Documento impresso: a barra é GRAFITE quando o dia entregou e só o dia
+       abaixo do planejado ganha cor — bater a meta é o esperado, e pintar de
+       verde o esperado gasta a atenção que o dia ruim precisa. O fantasma da
+       meta fica cinza: quem conta a história é a barra ficar abaixo dele.
+       O NÚMERO é fato (tinta); o PERCENTUAL é veredito (cor de status). */
+    const clr=d.ef>=90?'#2F3B4A':'#B3261E';
+    const bgClr='#EDEFF2';
+    const pctClr=d.ef>=96?'#5B6470':d.ef>=90?'#B4650A':'#B3261E';
 
     // Barra meta (fantasma)
     out+=`<rect x="${x-barW/2-3}" y="${yM}" width="${barW+6}" height="${ch+pad.t-yM}" fill="${bgClr}" rx="3"/>`;
@@ -10388,29 +10498,29 @@ function _svgBarChart(dias){
       // ou 30 dias as barras ficam a 20px uma da outra e os textos viram borrão.
       // Aí a fatia listrada e a legenda contam a história sozinhas.
       if(slot>=58)
-        outTxt+=`<text x="${x}" y="${yR-29}" text-anchor="middle" font-size="7.5" font-weight="bold" fill="#B4650A" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtN(he)} cx em HE</text>`;
+        outTxt+=`<text x="${x}" y="${yR-29}" text-anchor="middle" font-size="7.5" font-weight="bold" fill="#8A5A0B" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtN(he)} cx em HE</text>`;
     }
 
     // Valor realizado no topo (vai em outTxt: fica ACIMA da linha de média,
     // senão o tracejado corta o número do dia que estiver perto da média)
-    outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
+    outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="#1F2328" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
 
     // Eficiência % acima
-    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtP(d.ef)}</text>`;
+    outTxt+=`<text x="${x}" y="${yR-18}" text-anchor="middle" font-size="8" fill="${pctClr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtP(d.ef)}</text>`;
 
     // Label data embaixo
     const dd=d.data.substring(0,5);
     const dow=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
     const[dd2,mm2,yy2]=d.data.split('/').map(Number);
     const diaSem=new Date(yy2,mm2-1,dd2).getDay();
-    out+=`<text x="${x}" y="${H-18}" text-anchor="middle" font-size="9" font-weight="bold" fill="#444" font-family="'IBM Plex Mono',monospace">${dd}</text>`;
-    out+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="7" fill="#aaa" font-family="'IBM Plex Mono',monospace">${dow[diaSem]}</text>`;
+    out+=`<text x="${x}" y="${H-18}" text-anchor="middle" font-size="9" font-weight="bold" fill="#1F2328" font-family="'IBM Plex Mono',monospace">${dd}</text>`;
+    out+=`<text x="${x}" y="${H-6}" text-anchor="middle" font-size="7" fill="#97A0AC" font-family="'IBM Plex Mono',monospace">${dow[diaSem]}</text>`;
   });
 
   // Linha de MÉDIA do realizado no período (desenhada por cima das barras)
   const mediaReal=dias.reduce((s,d)=>s+d.real,0)/n;
   const yMed=sy(mediaReal);
-  out+=`<line x1="${pad.l}" y1="${yMed}" x2="${W-pad.r}" y2="${yMed}" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>`;
+  out+=`<line x1="${pad.l}" y1="${yMed}" x2="${W-pad.r}" y2="${yMed}" stroke="#1F2328" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.75"/>`;
   out+=outTxt;
 
   // Legenda (o valor da média vai aqui, e não sobre a linha: no topo da barra
@@ -10419,14 +10529,14 @@ function _svgBarChart(dias){
   // linha da MÉDIA fica onde sempre esteve (é a que tem o texto mais longo) e o
   // caminho sem HE continua desenhando exatamente a legenda de antes.
   const Lg = W - (temHE ? 410 : 320);
-  out+=`<rect x="${Lg}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
-    <text x="${Lg+14}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
-    <rect x="${Lg+60}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
-    <text x="${Lg+74}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>`;
+  out+=`<rect x="${Lg}" y="8" width="10" height="10" fill="#EDEFF2" stroke="#D8DDE3" rx="2"/>
+    <text x="${Lg+14}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Meta</text>
+    <rect x="${Lg+60}" y="8" width="10" height="10" fill="#2F3B4A" rx="2"/>
+    <text x="${Lg+74}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Realizado</text>`;
   if(temHE) out+=`<rect x="${Lg+144}" y="8" width="10" height="10" fill="url(#rpHeListra)" rx="2"/>
-    <text x="${Lg+158}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Hora extra</text>`;
-  out+=`<line x1="${Lg+(temHE?234:144)}" y1="13" x2="${Lg+(temHE?250:160)}" y2="13" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.8"/>
-    <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#666" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
+    <text x="${Lg+158}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Hora extra</text>`;
+  out+=`<line x1="${Lg+(temHE?234:144)}" y1="13" x2="${Lg+(temHE?250:160)}" y2="13" stroke="#1F2328" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.75"/>
+    <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#5B6470" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
 }
