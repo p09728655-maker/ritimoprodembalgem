@@ -279,6 +279,16 @@ via Google Apps Script (JSONP).
   outra semana de volta.
 - Pedir relatório de semana sem dado **fecha** a janela do *"Carregando
   relatório…"*: deixá-la em branco fazia parecer pop-up travado.
+- **O resumo do WhatsApp NÃO leva emoji** (31/08/2026). A mensagem chegou ao
+  celular com **todos** os marcadores virados losango — 📦 do título, ⚠️ do
+  veredito, ▪ das linhas e 🏆 do melhor dia, todos como `◆` — enquanto `·`, `—`
+  e o `*negrito*` do WhatsApp chegaram intactos na MESMA mensagem: emoji depende
+  da fonte de quem recebe (e do caminho `wa.me` → app). A hierarquia sai do
+  negrito e das linhas em branco; o melhor dia é uma linha escrita, não um
+  troféu. `relatorios.test.js` falha se um caractere acima de `U+2500` voltar ao
+  resumo. **A hora extra aparece em três alturas de propósito** — veredito,
+  bloco da divisão e **cada dia que teve** (*"· 286 em hora extra"*): quem lê só
+  o dia a dia não pode achar que as caixas saíram todas dentro do turno.
 - **PUBLICAR NO MURAL foi removido** (31/08/2026): o mural do Radar não existe
   mais. Saíram o botão, o campo *MURAL — RADAR DIÁRIO* das configurações, a
   chave `CFG.muralUrl` e o `_muralResumoSemana` — o `relatorios.test.js` falha
@@ -1508,6 +1518,27 @@ erro que ainda expõem `e.message` cru nos 4 relatórios · não existe
   em cima da linha tapava a produção/eficiência do dia mais próximo dela. Pela
   mesma razão os números das barras são desenhados **depois** da linha e com
   halo branco (`paint-order="stroke"`).
+- **A barra do `_svgBarChart` mostra o que veio de HORA EXTRA** (pedido do
+  usuário, 31/08/2026: *"deixa claro as qtdes feitas nas horas extras"*): fatia
+  **listrada âmbar** no topo da barra do dia + a quantidade escrita
+  (*"264 cx em HE"*) + a legenda. A barra só dizia o total, e uma sexta com
+  100,6% parecia dia que bateu a meta dentro do turno com 264 das 1.509 caixas
+  feitas depois das 17:00 — enquanto o selo, o card EFIC. SEM H. EXTRA e a faixa
+  de alerta, **no mesmo papel**, já diziam o contrário.
+  - A fatia vai **por cima** do topo da barra, não empilhada por baixo: assim o
+    período **sem HE desenha exatamente o gráfico de antes** (mesma regra da
+    coluna H. EXTRA, que some quando ninguém fez hora extra).
+  - **Dia com `heCx` null entra INTEIRO como jornada normal** — o mesmo critério
+    dos totais do relatório. Inventar fatia ali seria afirmar o que o dado não
+    sustenta.
+  - Com HE o topo do SVG abre 26px para o 3º rótulo (`viewBox` 180 → 206) e a
+    legenda anda 90px para a esquerda; **a altura do gráfico (`ch`) não muda** e
+    a linha da MÉDIA fica onde estava, senão as barras encolheriam de um
+    relatório para o outro.
+  - **Em período longo o rótulo sai e a fatia fica** (`slot>=58`): a 15/30 dias
+    as barras ficam a ~20px uma da outra e três textos por barra viram borrão.
+  - As cores do dia continuam saindo de `d.ef` (≥96 verde, ≥90 âmbar): a fatia
+    conta de onde veio a produção, **não** muda o veredito de nenhum dia.
 - **Coluna MOTIVO do relatório de paradas**: é o texto livre que o operador digita
   no mobile (coluna **G** da aba `PARADAS`, campo `obs`) — opcional, ninguém é
   obrigado a preencher. No **DETALHAMENTO** do relatório a coluna **some quando

@@ -180,13 +180,72 @@ console.log('\n── resumo da semana para o WhatsApp ──');
 eval(pega('function _zapResumoSemana('));
 const zap=_zapResumoSemana(dias, '10/08/2026 a 16/08/2026', 33);
 ok('abre com a semana', zap.includes('SEMANA 33/2026'), true);
-ok('total com a eficiência do TOTAL (104,3%), não a média', zap.includes('8.681 caixas na semana* — 104,3%'), true);
-ok('o veredito honesto vai junto', zap.includes('⚠️ Meta batida com hora extra'), true);
-ok('divisão normal × extra', zap.includes('Jornada normal: 8.261 cx')||zap.includes('Jornada normal: '), true);
-ok('os 5 dias entram, com dia da semana', (zap.match(/ — [\d.]+ cx /g)||[]).length, 5);
-ok('o melhor dia leva o troféu', /ter 11\/08 — 2\.262 cx \(188,5%\) 🏆/.test(zap), true);
+ok('total com a eficiência do TOTAL (104,3%), não a média', zap.includes('*8.681 caixas* — 104,3%'), true);
+ok('o veredito honesto vai junto', zap.includes('*Meta batida com hora extra.*'), true);
+ok('divisão normal × extra', zap.includes('Jornada normal: 8.261 cx'), true);
+ok('os 5 dias entram, com dia da semana', (zap.match(/^\w{3} \d\d\/\d\d — /gm)||[]).length, 5);
+ok('o melhor dia sai nomeado, sem depender de ícone',
+   zap.includes('Melhor dia: ter 11/08 — 2.262 cx (188,5%)'), true);
+// 31/08/2026: o resumo chegou ao WhatsApp com TODOS os marcadores virados
+// losango (📦 ⚠️ ▪ 🏆 → ◆) enquanto `·`, `—` e o *negrito* chegaram intactos na
+// mesma mensagem. Emoji depende da fonte de quem recebe; a hierarquia aqui sai
+// do negrito e das linhas em branco.
+ok('nenhum emoji no resumo do zap',
+   [...zap].some(c => c.codePointAt(0) > 0x2500), false);
+// A hora extra tem de aparecer NO DIA: quem lê só o dia a dia não pode achar
+// que as caixas de terça saíram todas dentro do turno.
+ok('o dia que teve hora extra diz quanto foi',
+   /ter 11\/08 — 2\.262 cx \(188,5%\) · 180 em hora extra/.test(zap), true);
+ok('e o dia sem hora extra não ganha sobra nenhuma',
+   /seg 10\/08 — 1\.106 cx \(67,0%\)\n/.test(zap), true);
+ok('dia sem separação de HE não inventa número',
+   /sex 14\/08 — 1\.598 cx \(79,9%\)\n/.test(zap), true);
+ok('e o buraco da jornada normal vai escrito',
+   /Sem a hora extra teriam faltado 64 cx\./.test(zap), true);
 const zapForte=_zapResumoSemana(dias.map(d=>({...d,real:d.real+400,heCx:0,ef:d.ef})), 'x', 33);
-ok('semana que bateu sem HE ganha o ✅', zapForte.includes('✅ Meta batida na jornada normal'), true);
+ok('semana que bateu sem HE diz isso', zapForte.includes('*Meta batida na jornada normal.*'), true);
+// Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF: o
+// buraco de uma sexta de manhã é quase todo dia que ainda não aconteceu.
+const zapParcial=_zapResumoSemana(dias.map((d,i)=>({...d,fechado:i<3})), 'x', 33);
+ok('semana parcial avisa em vez de julgar',
+   [/Parcial: 3 de 5 dias fechados/.test(zapParcial), /Meta batida/.test(zapParcial)], [true, false]);
+
+console.log('\n── gráfico do relatório: a barra diz o que veio de hora extra ──');
+// O gráfico mostrava só o total do dia: sexta com 100,6% parecia dia que bateu
+// a meta dentro do turno, com 264 das caixas feitas depois das 17:00. O resto
+// do relatório (selo, EFIC. SEM H. EXTRA, faixa de alerta) já dizia isso em
+// número — a barra não dizia nada.
+eval(pega('function _svgBarChart('));
+const svgHE = _svgBarChart(dias);
+ok('a fatia de hora extra é desenhada', /url\(#rpHeListra\)/.test(svgHE), true);
+ok('e a listra é definida uma vez, dentro do próprio svg',
+   (svgHE.match(/<pattern id="rpHeListra"/g) || []).length, 1);
+ok('o dia diz quantas caixas foram em hora extra', svgHE.includes('180 cx em HE'), true);
+// Dia com heCx null entra INTEIRO como jornada normal — o mesmo critério dos
+// totais do relatório; inventar uma fatia ali seria afirmar o que o dado não diz.
+ok('dia sem separação não ganha fatia', svgHE.includes('1.598 cx em HE'), false);
+
+const semHE = _svgBarChart(dias.map(d => ({ ...d, heCx: 0 })));
+ok('período sem hora extra desenha o gráfico de antes',
+   [/rpHeListra/.test(semHE), /viewBox="0 0 720 180"/.test(semHE)], [false, true]);
+ok('com hora extra o topo abre para o rótulo, sem encolher o gráfico',
+   /viewBox="0 0 720 206"/.test(svgHE), true);
+
+// Período longo: as barras ficam a ~20px uma da outra e três rótulos por barra
+// viram borrão. A fatia listrada e a legenda continuam contando a história.
+const muitos = Array.from({ length: 20 }, (_, i) => ({
+  data: `${String(i + 1).padStart(2, '0')}/07/2026`, real: 1000, meta: 1000, ef: 100, ok: true, heCx: 100 }));
+const svgLongo = _svgBarChart(muitos);
+ok('a legenda nomeia a faixa listrada', /Hora extra<\/text>/.test(svgHE), true);
+ok('e some junto com ela quando ninguém fez hora extra',
+   /Hora extra<\/text>/.test(semHE), false);
+// A linha da MÉDIA é a de texto mais longo: ela fica onde sempre esteve e quem
+// anda é o resto da legenda, senão ela sairia pela borda direita do gráfico.
+ok('a média não muda de lugar por causa da legenda nova',
+   [semHE.includes('x1="544"'), svgHE.includes('x1="544"')], [true, true]);
+
+ok('em período longo a fatia fica e o rótulo sai',
+   [/url\(#rpHeListra\)/.test(svgLongo), /cx em HE/.test(svgLongo)], [true, false]);
 
 console.log('\n── rótulo de semana(s) no cabeçalho do histórico ──');
 // O semanal se identifica por "SEMANA 33 / 2026"; o do histórico só dizia o
