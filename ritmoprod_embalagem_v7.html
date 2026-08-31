@@ -2379,7 +2379,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.30.0';
+const APP_VER   = '7.31.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -6976,7 +6976,7 @@ function _relParadasSemanaHtml(st, totMeta){
       <td class="td-mono" style="text-align:right">${fmtN(t.qtd)}</td>
       <td class="td-mono" style="text-align:right">${_fmtMinPar(t.min)}</td>
       <td class="td-mono" style="text-align:right;color:${INK2}">${st.totMin>0?fmtP(t.min/st.totMin*100):'—'}</td>
-      <td class="td-bold" style="text-align:right;color:${t.planej?INK2:RUIM}">${t.planej?'—':fmtN(t.perd)}</td>
+      <td class="td-bold" style="text-align:right;color:${t.planej?INK2:''}">${t.planej?'—':fmtN(t.perd)}</td>
     </tr>`;
   return `
 <div class="rp-sec-ttl">PARADAS DA SEMANA — O QUE DEIXAMOS DE EMBALAR</div>
@@ -6998,7 +6998,7 @@ function _relParadasSemanaHtml(st, totMeta){
   </div>
   <div class="kpi-card"${st.dispon<90?' style="border-left-color:'+RUIM+'"':''}>
     <div class="kpi-lbl">DISPONIBILIDADE</div>
-    <div class="kpi-val"${st.dispon<90?` style="color:${RUIM}"`:''}>${fmtP(st.dispon)}</div>
+    <div class="kpi-val">${fmtP(st.dispon)}</div>
     <div class="kpi-sub">base: ${plural(st.nDias,'dia','dias')} ${st.baseTrab?'trabalhados':'com parada'}</div>
   </div>
 </div>
@@ -7449,6 +7449,17 @@ async function gerarRelatorioSemanal(ateArg){
     const h = Number(d.heCount)||0;
     return d.heCx.toLocaleString('pt-BR') + (h>0?` <span style="color:#a0aec0;font-size:9px">· ${h}h</span>`:'');
   };
+  /* META/H — a meta do dia repartida pelas horas NORMAIS do turno (pedido do
+     usuário, 31/08/2026). Sem ela as colunas MELHOR H. e PIOR H. são números
+     soltos: 300 e 109 cx não dizem nada até se saber que a hora pedia ~156.
+     A meta do dia cobre a jornada normal — hora extra não tem meta na planilha
+     (é a mesma regra do fechamento) —, então o divisor é o nº de horas do
+     TURNO, não o de horas lançadas. O turno sai da configuração do painel; a
+     nota embaixo da tabela diz a conta, porque um dia antigo pode ter rodado
+     com turno diferente. */
+  const hTurno = (typeof getSlots==='function' ? getSlots().length : 0) || 9;
+  const metaHoraDia = d => d.meta>0 ? Math.round(d.meta/hTurno) : 0;
+
   // Eficiência do dia sem a hora extra (a meta é do turno normal).
   const _efSemHE = d => d.meta>0 ? (d.real-(_heIndef(d)?0:d.heCx))/d.meta*100 : 0;
 
@@ -7599,7 +7610,7 @@ ${_rpCabecalho('RELATÓRIO SEMANAL',
   </div>
   ${temHE?`<div class="kpi-card" style="border-left-color:${cor(efTotalSemHE)}">
     <div class="kpi-lbl">SEM HORA EXTRA</div>
-    <div class="kpi-val" style="color:${cor(efTotalSemHE)}">${fmtP(efTotalSemHE)}</div>
+    <div class="kpi-val">${fmtP(efTotalSemHE)}</div>
     <div class="kpi-sub">${faltouSemHE>0?`faltaram ${fmtN(faltouSemHE)} cx`:'só a jornada normal'}</div>
   </div>`:''}
   <div class="kpi-card">
@@ -7650,7 +7661,7 @@ ${soComHE?`<div class="rp-alerta">
 <div class="rp-sec-ttl">DETALHAMENTO POR DIA</div>
 <table>
   <thead>
-    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>EFICIÊNCIA</th>${temHE?'<th>EF. S/ HE</th>':''}<th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
+    <tr><th>DATA</th><th>REALIZADO</th>${temHE?'<th>H. NORMAL</th><th>H. EXTRA</th>':''}<th>META</th><th>META/H</th><th>EFICIÊNCIA</th>${temHE?'<th>EF. S/ HE</th>':''}<th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th></tr>
   </thead>
   <tbody>
     ${diasSem.map(d=>`
@@ -7658,10 +7669,11 @@ ${soComHE?`<div class="rp-alerta">
       <td class="td-mono">${d.data}</td>
       <td class="td-bold">${d.real.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-mono">${_heIndef(d)?'—':(d.real-d.heCx).toLocaleString('pt-BR')}</td>
-      <td class="td-mono" style="color:${!_heIndef(d)&&d.heCx>0?HEC:INK2}">${_heCel(d)}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${_heCel(d)}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${d.meta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(d.ef)}">${fmtP(d.ef)}</td>
-      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?'#888':cor(_efSemHE(d))}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${metaHoraDia(d)?fmtN(metaHoraDia(d)):'—'}</td>
+      <td class="td-bold">${fmtP(d.ef)}</td>
+      ${temHE?`<td class="td-bold" style="color:${_heIndef(d)?INK2:''}">${_heIndef(d)?'—':fmtP(_efSemHE(d))}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${d.melhor.toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${INK2}">${d.pior.toLocaleString('pt-BR')}</td>
       <td><span class="sbadge ${d.ef>=96?'s-ok':d.ef>=90?'s-warn':'s-red'}">${d.ef>=96?'NA META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span></td>
@@ -7675,8 +7687,9 @@ ${soComHE?`<div class="rp-alerta">
       ${temHE?`<td class="td-mono">${Math.round((totReal-totHE)/diasSem.length).toLocaleString('pt-BR')}</td>
       <td class="td-mono" style="color:${INK2}">${Math.round(totHE/diasSem.length).toLocaleString('pt-BR')}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${Math.round(mediaMeta).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(efMedia)}">${fmtP(efMedia)}</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(efMediaSemHE)}">${fmtP(efMediaSemHE)}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${fmtN(Math.round(mediaMeta/hTurno))}</td>
+      <td class="td-bold">${fmtP(efMedia)}</td>
+      ${temHE?`<td class="td-bold">${fmtP(efMediaSemHE)}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'melhor')}</td>
       <td class="td-mono" style="color:${INK2}">${_slotMaisFreq(diasSem,'pior')}</td>
       <td class="tf-lbl" colspan="2">base: ${plural(diasSem.length,'dia','dias')} com produção</td>
@@ -7685,14 +7698,20 @@ ${soComHE?`<div class="rp-alerta">
       <td class="tf-lbl">TOTAL DA SEMANA</td>
       <td class="td-bold">${totReal.toLocaleString('pt-BR')}</td>
       ${temHE?`<td class="td-bold">${(totReal-totHE).toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${HEC}">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
+      <td class="td-bold">${totHE.toLocaleString('pt-BR')}${totHoras>0?`<div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:400;color:#a0aec0">${totHoras} h extras</div>`:''}</td>`:''}
       <td class="td-mono" style="color:${INK2}">${totMeta.toLocaleString('pt-BR')}</td>
-      <td class="td-bold" style="color:${cor(totMeta?totReal/totMeta*100:0)}">${fmtP(totMeta?totReal/totMeta*100:0)}</td>
-      ${temHE?`<td class="td-bold" style="color:${cor(totMeta?(totReal-totHE)/totMeta*100:0)}">${fmtP(totMeta?(totReal-totHE)/totMeta*100:0)}</td>`:''}
+      <td class="td-mono" style="color:${INK2}">${fmtN(Math.round(mediaMeta/hTurno))}</td>
+      <td class="td-bold">${fmtP(totMeta?totReal/totMeta*100:0)}</td>
+      ${temHE?`<td class="td-bold">${fmtP(totMeta?(totReal-totHE)/totMeta*100:0)}</td>`:''}
       <td class="tf-lbl" colspan="4">gap: ${(totReal-totMeta).toLocaleString('pt-BR')} cx${semHE?` · ${plural(semHE,'dia','dias')} sem separação de hora extra`:''}</td>
     </tr>
   </tfoot>
 </table>
+
+<div style="font-size:9.5px;color:#5B6470;margin-top:6px;line-height:1.55">
+  <b>META/H</b> = meta do dia ÷ ${plural(hTurno,'hora','horas')} do turno (jornada normal ${_rpEsc(CFG.turnoInicio)}–${_rpEsc(CFG.turnoFim)}).
+  É a régua das colunas MELHOR H. e PIOR H., que trazem a maior e a menor hora do dia em caixas.
+</div>
 
 ${(()=>{
   const slotsP=Object.keys(MEDIA_HORAS)
@@ -10472,13 +10491,13 @@ function _svgBarChart(dias){
     const x=cx(i);
     const yM=sy(d.meta);
     const yR=sy(d.real);
-    /* Documento impresso: a barra é GRAFITE quando o dia entregou e só o dia
-       abaixo do planejado ganha cor — bater a meta é o esperado, e pintar de
-       verde o esperado gasta a atenção que o dia ruim precisa. O fantasma da
-       meta fica cinza: quem conta a história é a barra ficar abaixo dele.
-       O NÚMERO é fato (tinta); o PERCENTUAL é veredito (cor de status). */
-    const clr=d.ef>=90?'#2F3B4A':'#B3261E';
-    const bgClr='#EDEFF2';
+    /* Documento impresso: TODAS as barras na mesma tinta. Quem conta a história
+       é o fantasma da meta aparecendo por cima da barra — é o gráfico clássico
+       de realizado × alvo, e não precisa de barra vermelha para isso. A cor
+       fica só no PERCENTUAL, e só quando o dia ficou abaixo: cor é exceção,
+       não decoração. O NÚMERO da barra é fato, então vai em tinta. */
+    const clr='#2F3B4A';
+    const bgClr='#E8EBEF';
     const pctClr=d.ef>=96?'#5B6470':d.ef>=90?'#B4650A':'#B3261E';
 
     // Barra meta (fantasma)
