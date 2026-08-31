@@ -21,7 +21,15 @@
 :root{
   --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
   --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
-  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#838383;
+  /* --txt3 era #3A3A3A: 1,66:1 sobre --bg e 1,50:1 sobre --surface, longe
+     dos 4,5:1 de texto legível. Não era decoração — cobria "Carregando
+     dados…"/"Nenhum dado." (.empty-msg), o rodapé de versão, o botão
+     FECHAR e o #tv-parada-desde, que é lido a 15 m na tela cheia de
+     PRODUÇÃO PARADA. Em #838383 dá 4,98:1 sobre --bg e 4,50:1 sobre
+     --surface. Não dá para ter um terceiro nível MAIS escuro que o --txt2
+     e ainda legível neste fundo: a hierarquia entre os dois passa a ser de
+     corpo e peso, não de cor. */
   --font-h:'Barlow Condensed',sans-serif;
   --font-b:'Barlow',sans-serif;
   --font-d:'IBM Plex Mono',monospace;
@@ -1094,7 +1102,12 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   <div class="login-box">
     <!-- Logo empresa -->
     <div style="text-align:center">
-      <div id="login-logo-wrap" style="margin:0 auto 12px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('tv-logo-input').click()" title="Clique para carregar logo">
+      <!-- O input mora aqui, ao lado do logo: o onclick apontava para um
+           "tv-logo-input" que não existe em lugar nenhum do arquivo (sobra de
+           uma versão em que o upload ficava na área da TV), então clicar no
+           logo lançava TypeError e o recurso estava morto. -->
+      <input type="file" id="login-logo-input" accept="image/*" style="display:none" onchange="carregarLogo(this)">
+      <div id="login-logo-wrap" style="margin:0 auto 12px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="document.getElementById('login-logo-input').click()" title="Clique para carregar logo">
         <img id="login-logo-img" src="/patrimar-logo.png" alt="Patrimar móveis" style="display:block;height:72px;width:auto;max-width:240px;object-fit:contain">
         <div id="login-logo-ph" style="display:none">LOGO<br>EMPRESA</div>
       </div>
@@ -2051,7 +2064,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="chart-box-lg"><canvas id="ch-par-pareto"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-ttl" id="par-trend-ttl">PEÇAS PERDIDAS POR DIA (estimativa)</div>
+      <div class="chart-ttl" id="par-trend-ttl">CAIXAS PERDIDAS POR DIA (estimativa)</div>
       <div class="chart-box-lg"><canvas id="ch-par-trend"></canvas></div>
     </div>
   </div>
@@ -2061,7 +2074,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tbl-wrap">
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead>
+        <thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>CAIXAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead>
         <tbody id="par-tbl-tipo"></tbody>
       </table>
     </div>
@@ -2358,7 +2371,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.23.0';
+const APP_VER   = '7.24.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -2893,7 +2906,19 @@ function getSlots(){
   const almF=toMin(CFG.almocoFim);
   while(cur<fim){
     if(cur>=almI&&cur<almF){ cur=almF; continue; }
-    const nxt=(cur<almI&&cur+60>almI) ? almI : Math.min(cur+60,fim);
+    // Primeiro slot pós-almoço: encerra na próxima hora cheia (12:12 → 13:00).
+    // Sem isto o turno inteiro fica deslocado — 12:12–13:12, 13:12–14:12 … e a
+    // última hora vira 16:12–17:00. É item "NÃO ALTERAR" do CLAUDE.md: os
+    // rótulos têm de sair iguais aos da aba HORA_A_HORA, senão o normHora() do
+    // alerta de hora fraca não acha a média histórica daquele horário. O mobile
+    // já fazia isto; o v7 tinha ficado para trás (vale no DEMO, no import de
+    // Excel e no fallback do getEffectiveSlots sem linha de hoje).
+    let nxt;
+    if(cur===almF && cur%60!==0){
+      nxt=Math.min(Math.ceil(cur/60)*60, fim);
+    } else {
+      nxt=(cur<almI&&cur+60>almI) ? almI : Math.min(cur+60,fim);
+    }
     slots.push({inicio:fromMin(cur), fim:fromMin(nxt), label:`${fromMin(cur)}–${fromMin(nxt)}`, min:nxt-cur});
     cur=nxt;
     if(cur===almI) cur=almF;
@@ -8395,7 +8420,7 @@ function _pgSecaoHtml(ctx){
       <td class="td-mono" style="font-weight:700">${fmt1(rec.ganhoH)}h</td>
       <td class="td-mono" style="font-weight:700;color:#2e7d32">${fmtN(rec.cx)}</td></tr>
     </tbody></table>
-    <div class="rp-note">RECOMENDAÇÃO (simulação, não previsão). As caixas saem do <b>ritmo real medido</b> (${fmtN(rec.ritmo)} cx/h), a mesma régua da PERDA A RITMO REAL do resumo — o cálculo original de PEÇAS PERDIDAS continua intacto e não foi tocado. Só entram os cenários definidos pelo PPCP que existem no período; tipo que não apareceu não vira cenário.</div>`
+    <div class="rp-note">RECOMENDAÇÃO (simulação, não previsão). As caixas saem do <b>ritmo real medido</b> (${fmtN(rec.ritmo)} cx/h), a mesma régua da PERDA A RITMO REAL do resumo — o cálculo original de CAIXAS PERDIDAS continua intacto e não foi tocado. Só entram os cenários definidos pelo PPCP que existem no período; tipo que não apareceu não vira cenário.</div>`
     :'<div class="pg-vazio">Nenhum dos cenários definidos (troca de produto, troca de plástico, tipo genérico) apareceu no período.</div>';
 
   // 7 ▸ IMPACTO NO FLUXO ----------------------------------------------------
@@ -9459,7 +9484,7 @@ async function gerarRelatorioParadas(deArg, ateArg){
   const _rDe=new Date(_rpd[2],_rpd[1]-1,_rpd[0]), _rAte=new Date(_rpa[2],_rpa[1]-1,_rpa[0]);
   const tiR=_taktIdeal(st.horasProd);
   const trR=_taktRealPeriodo(st.porDia, st.horasProd, _rDe, _rAte, realByDay);
-  // Perda no ritmo REAL medido: o mesmo tempo não programado das PEÇAS PERDIDAS,
+  // Perda no ritmo REAL medido: o mesmo tempo não programado das CAIXAS PERDIDAS,
   // valorado pela capacidade demonstrada (takt real) em vez da meta do dia.
   // A guarda em perdaAoRitmo cobre um paradas-calc.js antigo em cache.
   const perdaReal=(trR&&RP_PARADAS.perdaAoRitmo)?RP_PARADAS.perdaAoRitmo(st.totMinNP,trR.ritmoReal):0;
@@ -9576,7 +9601,7 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
   <div class="kpi-card a"><div class="kpi-lbl">TEMPO TOTAL PARADO</div><div class="kpi-val">${_fmtMinPar(st.totMin)}</div><div class="kpi-sub">${plural(st.nParadas,'parada','paradas')} · ${plural(st.nDias,'dia','dias')}</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">DISPONIBILIDADE</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.dispon)}</div><div class="kpi-sub">tempo produtivo / disponível</div></div>
   <div class="kpi-card" style="border-left-color:${corDisp}"><div class="kpi-lbl">% DO TURNO PERDIDO</div><div class="kpi-val" style="color:${corDisp}">${fmtP(st.pctPerd)}</div><div class="kpi-sub">paradas não programadas</div></div>
-  <div class="kpi-card r"><div class="kpi-lbl">PEÇAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
+  <div class="kpi-card r"><div class="kpi-lbl">CAIXAS PERDIDAS</div><div class="kpi-val" style="color:#c62828">${fmtN(st.pecas)}</div><div class="kpi-sub">estimativa vs meta do dia (caixas)</div></div>
   <div class="kpi-card r"><div class="kpi-lbl">PERDA A RITMO REAL</div><div class="kpi-val" style="color:#c62828">${perdaReal>0?fmtN(perdaReal):'—'}</div><div class="kpi-sub">${perdaReal>0?_fmtMinPar(st.totMinNP)+' × '+fmtN(trR.ritmoReal)+' cx/h medidos'+(st.pesoMedio>0?' · ~'+fmtN(Math.round(perdaReal*st.pesoMedio))+' kg':''):'sem apontamento no período'}</div></div>
   <div class="kpi-card a"><div class="kpi-lbl">TAKT IDEAL</div><div class="kpi-val">${tiR.taktSeg>0?fmt1(tiR.taktSeg)+' s/cx':'—'}</div><div class="kpi-sub">${tiR.taktSeg>0?fmtN(tiR.ritmoHora)+' cx/h · '+fmtN(tiR.demanda)+' cx/dia':'defina a demanda'}</div></div>
   <div class="kpi-card ${trCls}"><div class="kpi-lbl">TAKT REAL (RODANDO)</div><div class="kpi-val">${trR?trR.taktReal+' s/cx':'—'}</div><div class="kpi-sub">${trR?fmtN(trR.ritmoReal)+' cx/h · '+fmtN(trR.cxTot)+' cx em '+_fmtMinPar(trR.minRodTot)+' rodando':'sem apontamento no período'}</div></div>
@@ -9586,7 +9611,7 @@ ${_rpCabecalho('RELATÓRIO DE PARADAS',
 <div class="rp-sec-ttl">PARETO — TEMPO PARADO POR TIPO (maiores ofensores)</div>
 <div class="rp-chart-wrap">${pareto}</div>
 <div class="rp-sec-ttl">POR TIPO DE PARADA</div>
-<table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>PEÇAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
+<table><thead><tr><th>TIPO</th><th>CLASSE</th><th>QTD</th><th>TEMPO TOTAL</th><th>TEMPO MÉDIO</th><th>% TEMPO</th><th>CAIXAS PERDIDAS</th><th>PESO PERDIDO</th></tr></thead><tbody>${linhasTipo}</tbody></table>
 ${estudo}
 ${swotHtml}
 ${pgHtml}
@@ -9916,7 +9941,7 @@ async function _renderAnaliseParadasCore(opts){
     taktRealCard={l:'TAKT REAL (RODANDO)',v:_tr.taktReal+' s/cx',
       sub:fmtN(_tr.ritmoReal)+' cx/h · '+fmtN(_tr.cxTot)+' cx em '+_fmtMinPar(_tr.minRodTot)+' rodando'+_gap,c:_cor,hl:true};
   }
-  // Perda no ritmo REAL: o mesmo tempo não programado das PEÇAS PERDIDAS,
+  // Perda no ritmo REAL: o mesmo tempo não programado das CAIXAS PERDIDAS,
   // valorado pela capacidade demonstrada (takt real) em vez da meta do dia.
   // A guarda em perdaAoRitmo cobre um paradas-calc.js antigo em cache.
   let perdaRealCard=null;
@@ -9930,7 +9955,7 @@ async function _renderAnaliseParadasCore(opts){
     {l:'TEMPO TOTAL PARADO',v:_fmtMinPar(totMin),sub:`${plural(nParadas,'parada','paradas')} · ${plural(nDias,'dia','dias')} ${baseTrab?'trabalhados':'com parada'}`,d:_dl(totMin,stPrev.totMin,true,_fmtMinPar),c:'acc'},
     {l:'% DO TURNO PERDIDO',v:fmtP(pctPerd),sub:'paradas não programadas',d:_dl(pctPerd,stPrev.pctPerd,true,x=>x.toFixed(1)+' p.p.'),c:corDisp},
     {l:'DISPONIBILIDADE',v:fmtP(dispon),sub:'tempo produtivo / disponível',d:_dl(dispon,stPrev.dispon,false,x=>x.toFixed(1)+' p.p.'),c:corDisp},
-    {l:'PEÇAS PERDIDAS',v:fmtN(pecas),sub:`estimativa vs meta do dia · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
+    {l:'CAIXAS PERDIDAS',v:fmtN(pecas),sub:`estimativa vs meta do dia · ~${fmtN(mediaPerd)}/dia`,d:_dl(pecas,stPrev.pecas,true,x=>fmtN(Math.round(x))),c:'red'},
     ...(perdaRealCard?[perdaRealCard]:[]),
     {l:'TAKT IDEAL',v:_ti.taktSeg>0?Math.round(_ti.taktSeg)+' s/cx':'—',sub:_ti.taktSeg>0?fmtN(_ti.ritmoHora)+' cx/h · '+fmtN(_ti.demanda)+' cx/dia':'defina a demanda ideal nas configurações',c:'acc'},
     ...(taktRealCard?[taktRealCard]:[]),
@@ -9963,7 +9988,7 @@ async function _renderAnaliseParadasCore(opts){
   // Peças perdidas por HORA (quando o período é 1 dia) ou por DIA (vários dias)
   const trendTtl=document.getElementById('par-trend-ttl');
   if(nDias<=1){
-    if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR HORA (estimativa)';
+    if(trendTtl) trendTtl.textContent='CAIXAS PERDIDAS POR HORA (estimativa)';
     const porHora={};
     parF.forEach(p=>{ if(_ehPlanejada(p.tipo)) return;
       const dm=RP_PARADAS.durProdutiva(p.ini,p.fim,CFG); if(!dm) return;   // almoço fora
@@ -9976,7 +10001,7 @@ async function _renderAnaliseParadasCore(opts){
       {label:'Peças',data:hOrd.map(h=>porHora[h]),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
     ]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
   } else {
-    if(trendTtl) trendTtl.textContent='PEÇAS PERDIDAS POR DIA (estimativa)';
+    if(trendTtl) trendTtl.textContent='CAIXAS PERDIDAS POR DIA (estimativa)';
     const diasOrd=Object.keys(porDia).sort((a,b)=>{const pf=s=>{const m=s.match(/(\d+)\/(\d+)\/(\d+)/);return m?+m[3]*1e4+ +m[2]*100+ +m[1]:0};return pf(a)-pf(b)});
     mkChart('ch-par-trend',{type:'bar',data:{labels:diasOrd.map(d=>d.slice(0,5)),datasets:[
       {label:'Peças perdidas',data:diasOrd.map(d=>porDia[d].perd),backgroundColor:'rgba(244,67,54,0.7)',borderRadius:3}
@@ -10291,17 +10316,23 @@ function _numSemana(d){
 // ════════════════════════════════════════════════
 // TV — LOGO EMPRESA + FULLSCREEN
 // ════════════════════════════════════════════════
+// O logo customizado vive só na tela de LOGIN (o `tv-logo-img`/`tv-logo-ph`
+// que estas duas funções procuravam não existe no HTML há tempos). Sem guarda
+// de null, o `img.src=src` da primeira linha estourava, o try/catch engolia, e
+// o bloco do login logo abaixo NUNCA era alcançado: quem tinha logo salvo em
+// rpe_logo nunca mais o via voltar — em silêncio. Mesma armadilha do btn-pasta.
+function aplicarLogo(src){
+  const li=document.getElementById('login-logo-img');
+  const lp=document.getElementById('login-logo-ph');
+  if(li){ li.src=src; li.style.display='block'; }
+  if(lp) lp.style.display='none';
+}
 function carregarLogo(inp){
-  const f=inp.files[0]; if(!f) return;
+  const f=inp&&inp.files&&inp.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=e=>{
     const src=e.target.result;
-    const img=document.getElementById('tv-logo-img');
-    const ph =document.getElementById('tv-logo-ph');
-    img.src=src; img.style.display='block'; ph.style.display='none';
-    const li=document.getElementById('login-logo-img');
-    const lp=document.getElementById('login-logo-ph');
-    if(li){ li.src=src; li.style.display='block'; if(lp) lp.style.display='none'; }
+    aplicarLogo(src);
     try{ localStorage.setItem('rpe_logo',src); }catch(ex){}
   };
   r.readAsDataURL(f); inp.value='';
@@ -10309,14 +10340,7 @@ function carregarLogo(inp){
 function restaurarLogo(){
   try{
     const src=localStorage.getItem('rpe_logo'); if(!src) return;
-    // TV logo
-    const img=document.getElementById('tv-logo-img');
-    const ph =document.getElementById('tv-logo-ph');
-    img.src=src; img.style.display='block'; ph.style.display='none';
-    // Login logo
-    const li=document.getElementById('login-logo-img');
-    const lp=document.getElementById('login-logo-ph');
-    if(li){ li.src=src; li.style.display='block'; if(lp) lp.style.display='none'; }
+    aplicarLogo(src);
   }catch(e){}
 }
 function toggleTVFullscreen(){

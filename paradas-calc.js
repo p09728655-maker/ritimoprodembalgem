@@ -119,12 +119,24 @@
   // relatório poder valorar um recorte (um dia, uma semana, um cenário de
   // recuperação) sem escrever a conta de novo — foi a cópia da conta que fez os
   // dois painéis divergirem três vezes. O stats() chama esta mesma função.
-  function perdaDeMin(min, metaDia, horasProd) {
+  //
+  // ⚠ ARREDONDAR SÓ NA EXIBIÇÃO. A conta crua mora na `perdaBrutaDeMin`; quem
+  // soma várias paradas (o stats) acumula a BRUTA e arredonda no fim. Somar o
+  // arredondado de cada parada enviesa sempre para MENOS, porque a fração de
+  // cada uma é descartada uma por uma: 30 paradas de 3 min com meta 1600 e 8,8h
+  // davam 270 cx em vez de 273, e 20 paradas de 1 min com meta 264 davam
+  // ZERO em vez de 10 (cada uma cai em 0,4999… e some). Como o `ritmoHora` do
+  // diagnóstico é derivado de `pecas`, esse caso extremo fazia a linha que o
+  // CLAUDE.md manda comparar primeiro sair "0 cx/h".
+  function perdaBrutaDeMin(min, metaDia, horasProd) {
     var m = parseFloat(min) || 0;
     var meta = parseFloat(metaDia) || 0;
     var h = parseFloat(horasProd) || 0;
     if (m <= 0 || meta <= 0 || h <= 0) return 0;
-    return Math.round(m / 60 * (meta / h));
+    return m / 60 * (meta / h);
+  }
+  function perdaDeMin(min, metaDia, horasProd) {
+    return Math.round(perdaBrutaDeMin(min, metaDia, horasProd));
   }
 
   // Perda estimada valorando um tempo parado (min) num ritmo qualquer (cx/h).
@@ -184,7 +196,9 @@
       var planej = ehPlanejada(p.tipo, classeMap);
       var metaDoDia = parseFloat(metaByDay[p.data]) || 0;
       if (!metaDoDia) { semMeta[p.data] = 1; metaDoDia = metaPadrao; }
-      var perd = planej ? 0 : perdaDeMin(d, metaDoDia, horasProd);
+      // Bruta (sem arredondar) — ver perdaBrutaDeMin. Todo acumulador abaixo
+      // soma a bruta; o arredondamento é feito uma vez só, no fim.
+      var perd = planej ? 0 : perdaBrutaDeMin(d, metaDoDia, horasProd);
       if (!planej) { totMinNP += d; pecas += perd; }
 
       var k = p.tipo || '—';
@@ -202,6 +216,20 @@
       var td = porDia[p.data].tipos;
       if (!td[k]) td[k] = { qtd: 0, min: 0, perd: 0, planej: planej };
       td[k].qtd++; td[k].min += d; td[k].perd += perd;
+    });
+
+    // Arredondamento ÚNICO, aqui: até esta linha tudo é bruta. Cada total é
+    // arredondado a partir da própria soma crua, então nenhum deles carrega o
+    // viés de descartar a fração de cada parada. Consequência aceita: a soma
+    // dos valores de linha da lista (cada um arredondado na tela) pode ficar
+    // 1 cx longe do total — é o mesmo critério do rateio da troca no
+    // comparativo por modelo ("o arredondamento é só na exibição").
+    pecas = Math.round(pecas);
+    Object.keys(porTipo).forEach(function (t) { porTipo[t].perd = Math.round(porTipo[t].perd); });
+    Object.keys(porDia).forEach(function (dia) {
+      porDia[dia].perd = Math.round(porDia[dia].perd);
+      var td = porDia[dia].tipos || {};
+      Object.keys(td).forEach(function (t) { td[t].perd = Math.round(td[t].perd); });
     });
 
     var nDiasParada = Object.keys(diasSet).length || 1;

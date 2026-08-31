@@ -1190,10 +1190,22 @@ function _saveRealizadoCore(p) {
             break;
           }
         }
+        // Todas as colunas de LOTE da hora já estão ocupadas (hora de muitas
+        // trocas de produto). ANTES isto gravava `real` POR CIMA da última
+        // coluna: o valor que estava lá sumia, e como o getDados soma as
+        // colunas de lote, o REALIZADO da hora caía sozinho — sem erro, sem
+        // log, sem nada na tela do operador. Agora SOMA na última coluna: o
+        // total da hora fica certo, e o que se perde é só a separação por lote
+        // dos dois últimos lançamentos (que já não cabia mesmo).
         if (colunaEscrita < 0) {
           const ultimo = iLotes[iLotes.length - 1];
-          sh.getRange(i + 1, ultimo + 1).setValue(real);
+          const anterior = Number(data[i][ultimo]) || 0;
+          sh.getRange(i + 1, ultimo + 1).setValue(anterior + real);
           colunaEscrita = ultimo + 1;
+          Logger.log('saveRealizado: sem coluna de LOTE livre em "' + cellHora +
+                     '" (' + iLotes.length + ' coluna(s)). Somado na ultima: ' +
+                     anterior + ' + ' + real + ' = ' + (anterior + real) +
+                     '. Considere acrescentar colunas de LOTE na HORA_A_HORA.');
         }
         registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
         return { ok: true, linha: i + 1, coluna: colunaEscrita, horario: cellHora, realizado: real };

@@ -1266,6 +1266,100 @@ via Google Apps Script (JSONP).
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
   `diasTrabalhados()` — contagem e lista saem do mesmo filtro.
 
+## Achados dos 6 revisores (31/08/2026)
+Os seis agentes de revisão (visual, UX de fábrica, código, redator, guardião de
+dados, auditor de cálculos) passaram no repositório inteiro. O que foi corrigido
+ficou registrado abaixo; o que **não** foi está no fim da seção.
+
+- **Hora ainda não lançada não pode inventar atraso** (`calcAtrasoHoras`,
+  `rp-core.js`). O acumulado somava a meta de TODA hora, e hora futura chega
+  como `producaoHora: null` (o `getDados` só devolve número depois que a hora
+  fecha) — o `|| 0` a tratava como "produziu zero". Num dia 12 cx atrás às
+  14:30, a linha das 16:00 mostrava **`(+190)`** e meta efetiva **368 cx**. Hoje
+  só entra no acumulado a hora com lançamento; hora que **fechou** em zero vem
+  como `0` (não `null`) e continua sendo cobrada. O teste antigo só cobria a
+  **primeira** hora pendente, onde o defeito ainda não aparecia.
+- **A perda das paradas arredonda uma vez só, no fim** (`paradas-calc.js`). O
+  `Math.round` era aplicado **por parada** e depois somado: a fração de cada uma
+  ia fora, sempre para menos. 30 paradas de 3 min com meta 1600 davam 270 cx em
+  vez de 273; **20 paradas de 1 min com meta 264 davam ZERO em vez de 10** (cada
+  uma cai em 0,4999… e some) — e como o `ritmoHora` do `diag` é derivado do
+  `pecas`, a linha que esta memória manda comparar primeiro quando as telas
+  divergem saía **"0 cx/h"**. `perdaBrutaDeMin` é a conta crua; `perdaDeMin`
+  continua devolvendo inteiro para quem valora um recorte só. Consequência
+  aceita: a soma das linhas da lista pode ficar 1 cx longe do total — é o mesmo
+  critério do rateio da troca ("o arredondamento é só na exibição").
+- **O `getSlots` do v7 gerava `12:12–13:12`**, contrariando o item "NÃO ALTERAR"
+  logo no topo deste arquivo. A regra do pós-almoço ("encerra na próxima hora
+  cheia") existia só no mobile; o v7 deslocava o turno inteiro da tarde e ainda
+  fazia a última hora virar `16:12–17:00`. Vale no DEMO, no import de Excel e no
+  fallback do `getEffectiveSlots` sem linha de hoje — e nesse modo os rótulos
+  não batiam com a `HORA_A_HORA`, então o `normHora()` do alerta de hora fraca
+  não achava a média histórica de nenhum horário da tarde. `rp-core.test.js`
+  agora roda os DOIS `getSlots` com o mesmo CFG e exige o mesmo recorte (as
+  funções seguem separadas de propósito — o mobile estende o turno para trás).
+- **Lançamento não é mais sobrescrito quando as colunas de LOTE acabam**
+  (`_saveRealizadoCore`, `.gs`). Sem coluna livre, o código gravava `real` **por
+  cima da última**: o valor que estava lá sumia e, como o `getDados` soma as
+  colunas de lote, o REALIZADO da hora caía sozinho — sem erro, sem log, sem
+  nada na tela. Agora **soma** na última coluna (o total da hora fica certo; o
+  que se perde é só a separação por lote dos dois últimos lançamentos) e grava
+  um `Logger.log` pedindo mais colunas de LOTE.
+  ⚠ **Ainda em aberto:** a detecção da coluna é
+  `includes('LOTE') || includes('LT') || startsWith('L')` — esse `startsWith('L')`
+  trata QUALQUER coluna depois de REALIZADO começada com L (LINHA, LIMPEZA,
+  LÍDER, LOCAL) como coluna de lote. Não foi mexido porque endurecer o critério
+  sem ver os cabeçalhos reais da `HORA_A_HORA` pode fazer o lançamento parar de
+  ser gravado. **Conferir os títulos na planilha antes de mexer.**
+- **O upload de logo do desktop estava morto.** O `onclick` do logo do login
+  chamava `getElementById('tv-logo-input').click()` e esse id **não existe** em
+  lugar nenhum (sobra de uma versão em que o upload ficava na área da TV):
+  clicar lançava `TypeError` e o `carregarLogo` nunca era chamado. Pior, o
+  `restaurarLogo()` (que roda a cada carregamento) buscava `tv-logo-img` e fazia
+  `img.src=src` **sem guarda de null** — estourava na primeira linha, o
+  `try/catch` engolia, e o bloco do `login-logo-img` logo abaixo nunca era
+  alcançado: quem tinha logo salvo em `rpe_logo` nunca mais o via voltar, em
+  silêncio. Mesma armadilha do `btn-pasta`. Hoje há o input real e o
+  `aplicarLogo()` com guarda.
+- **`--txt3` era ilegível: #3A3A3A dá 1,66:1 sobre `--bg` e 1,50:1 sobre
+  `--surface`** (mínimo de texto é 4,5:1). Não era decoração — cobria
+  `.empty-msg` ("Carregando dados…", "Nenhum dado."), o rodapé de versão, o
+  botão FECHAR do modal e o **`#tv-parada-desde`, lido a 15 m** na tela cheia de
+  PRODUÇÃO PARADA. Foi para **#838383** (4,98:1 e 4,50:1) nos dois painéis.
+  ⚠ Não existe um terceiro nível MAIS escuro que o `--txt2` (#888888) e ainda
+  legível neste fundo: a diferença entre `--txt2` e `--txt3` passa a ser de
+  corpo e peso, não de cor. Não empurrar o `--txt3` para baixo de novo.
+- **O rótulo é CAIXAS PERDIDAS, nunca PEÇAS.** O mesmo `st.pecas` saía como
+  "PEÇAS PERDIDAS" no desktop (7 lugares) e "CAIXAS PERDIDAS" no mobile — e o
+  desktop se contradizia sozinho, já usando CAIXAS na tabela do plano de ação,
+  com o `sub` do próprio card dizendo "(caixas)". O produto todo conta caixa.
+  `relatorios.test.js` falha se "PEÇAS PERDIDAS" voltar a ser impresso, mesma
+  guarda do vocabulário banido ("PERDIDO NO RITMO"/"PERDIDO PARADO").
+- **O modal de LANÇAMENTO não fecha mais no toque fora.** Era o único modal do
+  app com dado DIGITADO dentro, e a área escura ao redor é o maior alvo da tela:
+  encostar nela com a mão ocupada apagava a quantidade sem confirmação e sem
+  desfazer. Fecha pelo CANCELAR, que está ao lado do SALVAR. O `modal-dia` e o
+  `modal-instalar` mantêm o dismiss — não guardam nada digitado.
+- **As três leituras de apoio do mobile ganharam retry** (`jsonpLeituraApoio`):
+  `carregarProdutos`, `carregarProgramacaoHoje` e `carregarTiposParada` iam com
+  UMA tentativa e o timeout padrão de 20s, falhando em `console.warn` — no cold
+  start o operador abria o seletor e via catálogo velho sem nada dizer por quê.
+  Duas tentativas, **em sequência** (o Apps Script atende uma execução por vez).
+
+**Relatado e NÃO corrigido** — decisão do gestor, cada um com o achado
+verificado: `metaH` calculado por fórmulas diferentes nos dois painéis (o mobile
+não lê o campo hoje, então não chega à tela) · `nec` negativo impresso quando
+`CFG.metaDia=0` · `addHE` e `FECHAR DIA` são as duas únicas escritas sem retry,
+e o `addHE` do backend é `appendRow` puro (não idempotente), com o `saveHE()`
+gravando no `rpe_he` local ANTES da tentativa de rede — a tela mostra a HE mesmo
+quando ela nunca chegou na planilha · cache de histórico não invalidado no
+fechar/reabrir dia · `saveCfgLocal()` sem try/catch dentro de `saveCfg()` ·
+`stats()` escreve `metaHoje` no `metaByDay` do chamador · `hProd` mede o turno
+pela duração do PRIMEIRO slot (6,0h onde a soma real é 5,8h) · `MEDIDA DA CAIXA`
+e `VELOCIDADE` lidos por `indexOf` exato enquanto `ENTRE_PECA` já foi endurecido
+para prefixo · zero atributos `aria-*` nos dois painéis · `_rpOk()` duplicado
+nos dois HTMLs (função pura, deveria estar no `rp-core.js`).
+
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do
   PPCP, 24/08/2026: *"ritmo atual está muito pequeno na TV"*). Os três dividem

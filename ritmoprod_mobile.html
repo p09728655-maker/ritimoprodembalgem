@@ -19,7 +19,15 @@
 :root{
   --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
   --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
-  --txt:#F5F5F5;--txt2:#888888;--txt3:#3A3A3A;
+  --txt:#F5F5F5;--txt2:#888888;--txt3:#838383;
+  /* --txt3 era #3A3A3A: 1,66:1 sobre --bg e 1,50:1 sobre --surface, longe
+     dos 4,5:1 de texto legível. Não era decoração — cobria "Carregando
+     dados…"/"Nenhum dado." (.empty-msg), o rodapé de versão, o botão
+     FECHAR e o #tv-parada-desde, que é lido a 15 m na tela cheia de
+     PRODUÇÃO PARADA. Em #838383 dá 4,98:1 sobre --bg e 4,50:1 sobre
+     --surface. Não dá para ter um terceiro nível MAIS escuro que o --txt2
+     e ainda legível neste fundo: a hierarquia entre os dois passa a ser de
+     corpo e peso, não de cor. */
   --font-h:'Barlow Condensed',sans-serif;
   --font-b:'Barlow',sans-serif;
   --font-d:'IBM Plex Mono',monospace;
@@ -822,7 +830,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.9.0';
+const APP_VER   = '1.10.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -980,6 +988,26 @@ async function jsonpEscritaParada(url, onTentativa){
   throw ultimo;
 }
 
+// ── Leitura de APOIO (catálogo, programados de hoje, tipos de parada) ────────
+// Não é o dado do turno, mas é o que o operador vê ao escolher produto ou tipo
+// de parada. Estas três iam com UMA tentativa e o timeout padrão de 20s, e
+// falhavam em console.warn: no cold start do Apps Script o operador abria o
+// seletor e via catálogo velho (ou vazio) sem nada na tela dizendo por quê.
+// Duas tentativas, EM SEQUÊNCIA — o Apps Script atende uma execução por vez, e
+// em paralelo elas só se enfileiram lá e estouram juntas. Leitura é idempotente.
+async function jsonpLeituraApoio(url){
+  let ultimo;
+  for(let i=1; i<=2; i++){
+    try{ return await jsonpFetch(url, 25000); }
+    catch(e){
+      ultimo = e;
+      if(i===2) break;
+      await new Promise(r=>setTimeout(r, 2000));
+    }
+  }
+  throw ultimo;
+}
+
 // ════════════════════════════════════════════════
 // FETCH DADOS SHEETS
 // ════════════════════════════════════════════════
@@ -1072,7 +1100,7 @@ async function carregarProdutos(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PRODUTOS = json.produtos;
       localStorage.setItem('rpe_produtos', JSON.stringify(PRODUTOS));
@@ -1086,7 +1114,7 @@ async function carregarProgramacaoHoje(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoHoje';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PROG_HOJE = json.produtos;
     }
@@ -1396,7 +1424,7 @@ async function carregarTiposParada(){
   if(!CFG.sheetsUrl) return;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getTiposParada';
-    const json = await jsonpFetch(url);
+    const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.tipos) && json.tipos.length){
       PAR_TIPOS = json.tipos;
       if(json.classes){ const m={}; Object.keys(json.classes).forEach(k=>{ m[String(k).trim()]=json.classes[k]; }); PAR_CLASSE_MAP_M=m; }
@@ -2392,7 +2420,13 @@ function numpadDel(){
   inp.value=(inp.value||'').slice(0,-1);
 }
 
-document.getElementById('modal-lanc').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-lanc')) fecharModalLanc(); });
+// ⚠ SEM dismiss por toque-fora aqui, de propósito. Este é o único modal do app
+// com dado DIGITADO dentro (a quantidade de caixas), e a área escura ao redor é
+// o maior alvo da tela — encostar nela com a mão ocupada apagava o que o
+// operador tinha acabado de digitar, sem confirmação e sem desfazer. Fechar é
+// pelo botão CANCELAR, que está ali ao lado do SALVAR. Os outros modais
+// (paradas, produto) nunca tiveram este listener; o modal-dia e o
+// modal-instalar podem manter porque não guardam nada digitado.
 
 async function salvarLanc(){
   const add = parseInt(document.getElementById('ml-qtd').value);

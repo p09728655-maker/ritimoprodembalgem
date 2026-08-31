@@ -87,13 +87,23 @@ function mergeMedias(medias, amostra){
 // meta da hora + atraso acumulado. O atraso nunca é negativo — hora que
 // produziu acima da meta abate o acumulado, mas não gera "crédito" que reduza
 // a meta das próximas.
+//
+// ⚠ SÓ HORA COM LANÇAMENTO ENTRA NO ACUMULADO. Hora ainda não lançada chega
+// como `producaoHora: null` (o backend só devolve número depois que a hora
+// FECHA — ver getDados no .gs); somar a meta dela ao accMeta equivalia a
+// afirmar que ela produziu ZERO, e o atraso das horas seguintes crescia uma
+// meta inteira por hora que ainda nem aconteceu. Medido num dia 12 cx atrás
+// às 14:30: a linha das 16:00 mostrava "(+190)" e meta efetiva 368 cx.
+// Hora que FECHOU sem produzir vem como 0 (não null) e continua cobrada.
 function calcAtrasoHoras(rows){
   let accMeta = 0, accProd = 0;
   return rows.map(r => {
     const atrasoHora = Math.max(accMeta - accProd, 0);
     const metaEfetivaHora = (r.metaHora || 0) + atrasoHora;
-    accMeta += (r.metaHora || 0);
-    accProd += (r.producaoHora != null ? r.producaoHora : 0);
+    if (r.producaoHora != null) {
+      accMeta += (r.metaHora || 0);
+      accProd += r.producaoHora;
+    }
     return { atrasoHora, metaEfetivaHora };
   });
 }
