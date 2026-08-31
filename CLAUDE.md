@@ -1552,6 +1552,29 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   contra a meta/hora digitada na `HORA_A_HORA`. O painel agora acusa a diferença
   em vez de escondê-la atrás de um verde.
 
+## O que é gravado no HISTORICO tem de fechar consigo mesmo
+- **O FECHAR DIA gravava META e EFICIÊNCIA de metas diferentes.** A coluna META
+  levava `k.meta` (a meta do DIA — no modo Sheets, a da PROGRAMAÇÃO) e a coluna
+  EFICIÊNCIA levava `k.ef` (realizado ÷ meta das horas JÁ LANÇADAS, da
+  `HORA_A_HORA`). Enquanto as duas metas concordam ninguém percebe.
+  - Medido em **28/08/2026**: a linha ficou com **META 1.881 e EF 100,6%** —
+    100,6% é 1.509 ÷ **1.500**. O relatório semanal, que imprime a coluna EF,
+    dizia *"100,6% · NA META"*; o bloco FECHAMENTO DA SEMANA PASSADA, que
+    divide `real/meta`, dizia **80,2%** para o mesmo dia.
+  - O **fechamento automático das 17:05** (`arquivarDiaAtual`, no `.gs`) sempre
+    fez certo: soma a meta das linhas não-HE e calcula `ef = real ÷ meta` com
+    essa mesma meta. Quem estava fora do padrão era o botão do painel.
+  - Hoje `salvarDiaSheets` calcula `efGrav = real ÷ k.meta` e grava ESSA.
+    `relatorios.test.js` falha se `'ef='+k.ef` voltar.
+- ⚠ **Dia já gravado não se conserta sozinho**: a linha antiga continua com o
+  par velho. Corrigir é editar a planilha (ou reabrir e FECHAR DIA de novo, que
+  o `saveDay` é upsert por data).
+- ⚠ **Duas leituras do mesmo indicador continuam existindo**: o relatório
+  semanal e o do histórico imprimem a **coluna EF** gravada; o bloco da semana e
+  a Tela D calculam `real/meta`. Enquanto a gravação estiver certa elas
+  concordam. Unificar (fazer o painel sempre recalcular na leitura) mudaria o
+  número dos dias antigos já gravados — decisão do usuário, ainda não tomada.
+
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
   mudança que altera número exibido ou formato de arquivo**, com o antes e o

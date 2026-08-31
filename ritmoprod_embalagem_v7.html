@@ -2379,7 +2379,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.31.0';
+const APP_VER   = '7.32.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -5901,12 +5901,26 @@ function salvarDiaSheets(data, k, fechadoEm){
   if(!CFG.sheetsUrl) return;
   const heCount=k.allHoje.filter(d=>d.he&&d.producaoHora!=null).length;
   const heCx=k.realHE||0;   // caixas feitas em hora extra (coluna HE CX)
+  /* ── A EF gravada sai da MESMA meta que vai na linha ───────────────────────
+     Aqui ia `k.ef`, que é OUTRA conta: realizado ÷ meta das horas JÁ LANÇADAS
+     (a meta/hora da HORA_A_HORA). Ao lado dela ia `k.meta`, a meta do DIA (que
+     no modo Sheets vem da PROGRAMAÇÃO). Enquanto as duas metas concordam
+     ninguém percebe; quando discordam, a linha do HISTORICO passa a
+     contradizer a si mesma para sempre — e as telas do painel se dividem, uma
+     lendo a coluna EF e outra dividindo realizado ÷ meta.
+     Medido em 28/08/2026: a linha ficou com META 1.881 e EF 100,6% (que é
+     1.509 ÷ 1.500, a meta da HORA_A_HORA). O relatório semanal imprimia
+     "100,6% · NA META" e o bloco do gerencial, do mesmo dia, dizia 80,2%.
+     O fechamento AUTOMÁTICO das 17:05 (`arquivarDiaAtual`, no .gs) sempre fez
+     assim — ef = real ÷ meta, a mesma meta da linha. Quem estava fora do
+     padrão era este botão. */
+  const efGrav = k.meta>0 ? (k.real/k.meta*100) : 0;
   const params=[
     'action=saveDay',
     'data='+encodeURIComponent(data),
     'real='+k.real,
     'meta='+k.meta,
-    'ef='+k.ef.toFixed(1),
+    'ef='+efGrav.toFixed(1),
     'melhor='+k.melhor,
     'pior='+k.pior,
     'he='+heCount,

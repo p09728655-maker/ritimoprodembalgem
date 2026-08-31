@@ -1816,6 +1816,19 @@ ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(p
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
 
+console.log('\n── a EF gravada no HISTORICO sai da MESMA meta da linha ──');
+// 28/08/2026: a linha ficou com META 1.881 e EF 100,6% — que é 1.509 ÷ 1.500,
+// a meta da HORA_A_HORA, não a meta que foi gravada ao lado. O relatório
+// semanal (que lê a coluna EF) imprimia "100,6% · NA META" e o bloco do
+// gerencial (que divide realizado ÷ meta) dizia 80,2%, no mesmo dia.
+const _salva = pega('function salvarDiaSheets(');
+ok('a EF é calculada da meta que vai na linha',
+   /const efGrav = k\.meta>0 \? \(k\.real\/k\.meta\*100\) : 0;/.test(_salva), true);
+ok('e é ela que é enviada', /'ef='\+efGrav\.toFixed\(1\)/.test(_salva), true);
+ok('a conta do ritmo (k.ef) não é mais gravada', /'ef='\+k\.ef/.test(_salva), false);
+ok('dia sem meta grava 0, não divide por zero',
+   (() => { const k={meta:0,real:1509}; return k.meta>0 ? (k.real/k.meta*100) : 0; })(), 0);
+
 console.log('\n── paradas no relatório semanal: o que deixamos de embalar ──');
 // Pedido do usuário (31/08/2026): "na impressão resumo semanal, deve conter as
 // paradas, e o que deixamos de embalar por motivos de paradas". O relatório
