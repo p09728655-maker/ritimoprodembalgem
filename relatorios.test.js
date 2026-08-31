@@ -1816,6 +1816,36 @@ ok('a tela da gestão de perdas desenha o simulador', /_pgSimHtml\(ctx\)/.test(p
 ok('o simulador não recalcula perda por conta própria',
    /perdaDeMin|perdaAoRitmo|durProdutiva/.test(pega('function _pgSimulacao(')), false);
 
+console.log('\n── dia passado: hora extra não é julgada, e a meta/h não é diluída ──');
+// 28/08/2026 começou às 05:00. O gerencial de dia passado repartia a meta do
+// dia entre TODAS as horas arquivadas (1.881 ÷ 11 = 171): dava meta a horas de
+// hora extra — que não têm meta na planilha — e diluía a das 9 horas de
+// jornada, que pediam 209. A madrugada, com 96 cx, saía ABAIXO e virava o VALE
+// DE PRODUÇÃO do dia.
+global.CFG = Object.assign({}, global.CFG, { turnoInicio:'07:00', turnoFim:'17:00' });
+eval(pega('function _horaEhHE('));
+ok('madrugada é hora extra',            _horaEhHE('05:00-06:00'), true);
+ok('06:00 também',                      _horaEhHE('06:00-07:00'), true);
+ok('a primeira hora do turno não é',    _horaEhHE('07:00-08:00'), false);
+ok('a última hora do turno não é',      _horaEhHE('16:00-16:59'), false);
+ok('depois das 17:00 é',                _horaEhHE('17:00-18:00'), true);
+ok('o rótulo HE manda, em qualquer horário', _horaEhHE('HE 09:00-10:00'), true);
+ok('rótulo ilegível não vira hora extra',    _horaEhHE('TOTAL'), false);
+// A meta/h do dia 28/08 sai de 9 horas, não de 11.
+const _hh = ['05:00-06:00','06:00-07:00','07:00-08:00','08:00-09:00','09:00-10:00',
+             '10:00-11:00','12:12-13:00','13:00-14:00','14:00-15:00','15:00-16:00','16:00-16:59'];
+ok('a meta do dia é repartida só entre as horas de jornada',
+   Math.round(1881 / _hh.filter(h=>!_horaEhHE(h)).length), 209);
+const _ger = pega('function renderGerencialHist(');
+ok('o divisor da meta/h são as horas normais', /const metaHora=\(meta>0&&nNorm>0\)\?meta\/nNorm/.test(_ger), true);
+ok('hora extra não recebe meta nem eficiência',
+   /const ef2=\(!ehHE&&metaHora>0\)\?prod\/metaHora\*100:null/.test(_ger)
+   && /\$\{ehHE\?'—':fmtN\(Math\.round\(metaHora\)\)\}/.test(_ger), true);
+ok('e ganha a etiqueta em vez do veredito', /badge b-acc">HORA EXTRA/.test(_ger), true);
+ok('pico e vale saem das horas de jornada',
+   /const idxPico=prodsNorm\.indexOf\(melhor\), idxVale=prodsNorm\.indexOf\(pior\)/.test(_ger), true);
+ok('a etiqueta tem estilo no painel', /\.b-acc \{background/.test(src), true);
+
 console.log('\n── a EF gravada no HISTORICO sai da MESMA meta da linha ──');
 // 28/08/2026: a linha ficou com META 1.881 e EF 100,6% — que é 1.509 ÷ 1.500,
 // a meta da HORA_A_HORA, não a meta que foi gravada ao lado. O relatório

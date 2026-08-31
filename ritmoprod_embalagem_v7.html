@@ -362,6 +362,9 @@ td.hora-cell{font-family:var(--font-h);font-size:15px;font-weight:700}
 .b-warn{background:rgba(255,152,0,.1); color:var(--warn);border:0.5px solid rgba(255,152,0,.3)}
 .b-red {background:rgba(244,67,54,.1); color:var(--red); border:0.5px solid rgba(244,67,54,.3)}
 .b-mute{background:rgba(255,255,255,.04);color:var(--txt3);border:0.5px solid var(--border)}
+/* Hora extra na tabela hora a hora de um dia passado: ela não tem meta, então
+   não recebe veredito — recebe a etiqueta que diz o que ela é. */
+.b-acc {background:rgba(245,166,35,.1); color:var(--acc); border:0.5px solid rgba(245,166,35,.35)}
 .b-he  {background:rgba(245,166,35,.12);color:var(--acc); border:0.5px solid rgba(245,166,35,.4)}
 tr.he-row td{background:rgba(245,166,35,.03)}
 .he-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--acc);margin-right:5px;vertical-align:middle}
@@ -2379,7 +2382,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.33.0';
+const APP_VER   = '7.34.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3742,6 +3745,26 @@ async function verGerDia(){
   }
   renderGerencial();
 }
+/* ── Hora extra de um dia PASSADO ────────────────────────────────────────────
+   A `HISTORICO_HORA` guarda só `data · hora · realizado`: não vem meta e não
+   vem marca de hora extra. A regra aqui é a MESMA do backend
+   (`_ehHoraExtraCaixas`): rótulo com prefixo HE, ou horário fora da jornada
+   normal. A janela sai do TURNO configurado no painel — a mesma que o `.gs`
+   repete nas constantes `HE_JORNADA_*` (ver CLAUDE.md: mudou o turno na tela,
+   mudar lá também).
+   Dia arquivado por um `.gs` antigo (que classificava HE só pelo rótulo) trouxe
+   as horas da madrugada para dentro da tabela; é por isso que esta regra
+   precisa existir também aqui. */
+function _horaEhHE(rotulo){
+  const str=String(rotulo||'').trim();
+  if(/^HE\b/i.test(str)) return true;
+  const m=str.match(/(\d{1,2}:\d{2})/);
+  if(!m) return false;
+  const ini=toMin(m[1]);
+  if(isNaN(ini)) return false;
+  return ini<toMin(CFG.turnoInicio) || ini>=toMin(CFG.turnoFim);
+}
+
 function renderGerencialHist(){
   _setModoHist(true);
   const H=GER_HIST||{horas:[],dia:null};
@@ -3752,26 +3775,40 @@ function renderGerencialHist(){
   const realSum=prods.reduce((s,v)=>s+v,0);
   const real=dia.real||realSum;
   const meta=dia.meta||0;
-  const metaHora=(meta>0&&nSlots>0)?meta/nSlots:(nSlots>0?Math.round(real/nSlots):0);
+  /* ── A meta do dia é repartida só entre as horas NORMAIS ───────────────────
+     Aqui era `meta / nSlots`, com TODAS as horas arquivadas no divisor. Num dia
+     que começou às 05:00 isso fazia duas coisas erradas ao mesmo tempo: dava
+     meta a horas de hora extra (que não têm meta na planilha) e diluía a meta
+     das horas normais. Medido em 28/08/2026: 1.881 ÷ 11 = 171 para todas as
+     horas, quando as 9 horas de jornada pediam 209 — e a madrugada, com 96 cx,
+     aparecia como ABAIXO e virava o VALE DE PRODUÇÃO do dia.
+     Hora extra não é julgada: sem meta, não há eficiência nem status. */
+  const horasNorm=horas.filter(h=>!_horaEhHE(h.hora));
+  const prodsNorm=horasNorm.map(h=>Number(h.real)||0);
+  const nNorm=horasNorm.length;
+  const temHEnaTabela=nNorm<nSlots;
+  const metaHora=(meta>0&&nNorm>0)?meta/nNorm:(nNorm>0?Math.round(real/nNorm):0);
   const ef=meta>0?real/meta*100:0;
-  const melhor=dia.melhor||(prods.length?Math.max(...prods):0);
-  const pior=dia.pior||(prods.length?Math.min(...prods):0);
-  const ritmo=nSlots>0?Math.round(real/nSlots):0;
+  // Melhor/pior hora: só entre as horas de jornada — o `.gs` faz igual ao
+  // arquivar, e comparar uma hora sem meta com as que têm não diz nada.
+  const melhor=dia.melhor||(prodsNorm.length?Math.max(...prodsNorm):0);
+  const pior=dia.pior||(prodsNorm.length?Math.min(...prodsNorm):0);
+  // Ritmo médio = realizado ÷ horas produtivas (não-HE), a conta que o
+  // arquivarDiaAtual grava na coluna MEDIA CX/H.
+  const ritmo=nNorm>0?Math.round(real/nNorm):0;
   const gap=meta-real;
-  // Hora extra do dia: vem do HISTORICO (coluna HE CX ou derivada). A tabela
-  // hora a hora abaixo NÃO lista as HE — a HISTORICO_HORA só guarda as horas
-  // de turno —, por isso o card avisa.
+  // Hora extra do dia: vem do HISTORICO (coluna HE CX ou derivada).
   const heCx=(dia.heCx===null||dia.heCx===undefined)?null:Number(dia.heCx);
 
   // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
   const kpis=[
     {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
-    ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · fora da tabela abaixo`, c:'acc'}]:[]),
+    ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · ${temHEnaTabela?'as horas de HE estão na tabela, sem meta':'fora da tabela abaixo'}`, c:'acc'}]:[]),
     {l:'META DO DIA',      v:fmtN(meta),  sub:'caixas programadas',              c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
     {l:'GAP DA META',      v:fmtN(Math.abs(gap)), sub:gap<=0?'META ATINGIDA ✓':'cx faltaram', c:gap<=0?'ok':'red'},
     {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
-    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:'horas com produção',            c:''},
+    {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
     {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
     {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
   ];
@@ -3785,7 +3822,9 @@ function renderGerencialHist(){
     </div>`).join('');
 
   // ── Análise (pico/vale/tendência do próprio dia) ──
-  const idxPico=prods.indexOf(melhor), idxVale=prods.indexOf(pior);
+  // Pico e vale saem das horas de JORNADA: a hora extra não tem meta e não
+  // disputa o título de melhor nem de pior hora do turno.
+  const idxPico=prodsNorm.indexOf(melhor), idxVale=prodsNorm.indexOf(pior);
   const tendStr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'↑ CRESCENDO':'↓ QUEDA'):'—';
   const tendClr=prods.length>=2?(prods[prods.length-1]>=prods[prods.length-2]?'var(--ok)':'var(--red)'):'var(--txt2)';
   document.getElementById('analise-row').innerHTML=`
@@ -3796,10 +3835,10 @@ function renderGerencialHist(){
       <div class="a-val" style="color:${tendClr}">${tendStr}</div>
       <div class="a-desc">últimas 2 horas do dia</div></div>
     <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
-      <div class="a-val">${idxPico>=0?horas[idxPico].hora:'—'}</div>
+      <div class="a-val">${idxPico>=0?horasNorm[idxPico].hora:'—'}</div>
       <div class="a-desc">${fmtN(melhor)} cx neste horário</div></div>
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
-      <div class="a-val" style="color:var(--red)">${idxVale>=0?horas[idxVale].hora:'—'}</div>
+      <div class="a-val" style="color:var(--red)">${idxVale>=0?horasNorm[idxVale].hora:'—'}</div>
       <div class="a-desc">${fmtN(pior)} cx — menor ritmo</div></div>`;
 
   // ── Tabela hora a hora ──
@@ -3807,14 +3846,19 @@ function renderGerencialHist(){
   let acum=0;
   document.getElementById('tbl-hora-body').innerHTML=horas.map(h=>{
     const prod=Number(h.real)||0; acum+=prod;
-    const ef2=metaHora>0?prod/metaHora*100:null;
+    // Hora extra não tem meta: não ganha meta/h, nem eficiência, nem veredito —
+    // ganha a etiqueta que diz o que ela é.
+    const ehHE=_horaEhHE(h.hora);
+    const ef2=(!ehHE&&metaHora>0)?prod/metaHora*100:null;
     const s2=ef2===null?'mute':ef2>=96?'ok':ef2>=90?'warn':'red';
-    const bdg=`<span class="badge b-${s2}">${ef2===null?'—':ef2>=96?'OK':ef2>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+    const bdg=ehHE
+      ? '<span class="badge b-acc">HORA EXTRA</span>'
+      : `<span class="badge b-${s2}">${ef2===null?'—':ef2>=96?'OK':ef2>=90?'ATENÇÃO':'ABAIXO'}</span>`;
     return`<tr>
       <td class="hora-cell">${h.hora}</td>
       <td class="mono">${fmtN(prod)}</td>
       <td class="mono">${fmtN(acum)}</td>
-      <td class="mono" style="color:var(--txt2)">${fmtN(Math.round(metaHora))}</td>
+      <td class="mono" style="color:var(--txt2)">${ehHE?'—':fmtN(Math.round(metaHora))}</td>
       <td class="mono" style="color:${ef2!=null?(ef2>=96?'var(--ok)':ef2>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef2!=null?fmtP(ef2):'—'}</td>
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Sem produção registrada neste dia (não foi arquivado no HISTÓRICO_HORA).</td></tr>';
