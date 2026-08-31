@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.28.0 — 31/08/2026
+
+**Atenção** — **o gráfico do relatório mudou de desenho** (semanal e histórico).
+A barra de cada dia agora mostra, na fatia **listrada âmbar** do topo, quanto
+daquele dia foi feito em **hora extra**, com a quantidade escrita ao lado
+(*"264 cx em HE"*) e a legenda nomeando a faixa. Antes a barra só dizia o total:
+uma sexta com 100,6% parecia dia que bateu a meta dentro do turno, com 264 das
+1.509 caixas feitas depois das 17:00 — enquanto o selo, o card EFIC. SEM
+H. EXTRA e a faixa de alerta, no mesmo papel, já diziam o contrário.
+**Nenhum número muda:** o total, a eficiência e as cores de cada dia continuam
+os mesmos. Período sem hora extra sai igual ao de antes, sem faixa nem legenda
+sobrando (mesma regra da coluna H. EXTRA). Em período longo (15/30 dias) a
+faixa fica e só o rótulo sai — a essa largura os textos viravam borrão.
+
+**Corrigido** — **o resumo do WhatsApp chegava com os ícones quebrados.** Em
+31/08/2026 a mensagem saiu com TODOS os marcadores virados losango — o 📦 do
+título, o ⚠️ do veredito, o ▪ das linhas e o 🏆 do melhor dia, todos como `◆` —
+enquanto `·`, `—` e o *negrito* chegaram intactos na mesma mensagem. Emoji
+depende da fonte de quem recebe. O resumo foi reescrito **sem nenhum emoji**: a
+hierarquia sai do negrito e das linhas em branco, o melhor dia vira uma linha
+escrita e o veredito vai em negrito.
+
+**Novo** — o resumo do WhatsApp diz **quanto de cada dia foi hora extra**
+(*"ter 25/08 — 1.993 cx (88,6%) · 286 em hora extra"*), traz o quanto teria
+faltado sem ela e avisa quando a semana ainda está **parcial** — antes ele dava
+veredito de meta sobre uma semana pela metade.
+
+---
+
 ## v7.27.0 — 31/08/2026
 
 **Novo** — o bloco **FECHAMENTO DA SEMANA PASSADA** (aba GERENCIAL) ganhou os

@@ -2369,7 +2369,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.27.0';
+const APP_VER   = '7.28.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -7199,31 +7199,61 @@ RP_SEMANA.aoCarregar(() => { try { renderSemanaGer(); } catch (e) { console.warn
 
 // ── Resumo da semana em TEXTO de WhatsApp ────────────────────────────────────
 // O pessoal recebe a divulgação no grupo do zap; PDF exige abrir anexo, texto
-// todo mundo lê na hora. Formatação do WhatsApp: *negrito* e quebras simples.
-// A conta é a MESMA do relatório e da Tela D (_relSemanalKPIs), então o zap,
-// o PDF e a TV nunca contam histórias diferentes.
+// todo mundo lê na hora. A conta é a MESMA do relatório e da Tela D
+// (_relSemanalKPIs), então o zap, o PDF e a TV nunca contam histórias
+// diferentes.
+//
+// ⚠ NADA DE EMOJI AQUI. Em 31/08/2026 o resumo chegou ao WhatsApp com TODOS os
+// marcadores virados losango — o 📦 do título, o ⚠️ do veredito, o ▪ das linhas
+// e o 🏆 do melhor dia, todos como "◆". Emoji depende da fonte de quem recebe
+// (e do caminho wa.me → app no Windows); `·`, `—` e o *negrito* do WhatsApp
+// chegaram intactos na MESMA mensagem. Um resumo que a diretoria recebe não
+// pode depender disso: a hierarquia sai do negrito e das linhas em branco.
+//
+// A HORA EXTRA aparece em três alturas, de propósito (pedido do usuário,
+// 31/08/2026: "deixa claro as qtdes feitas nas horas extras"): no veredito, no
+// bloco de divisão da semana e em CADA DIA que teve — quem lê só o dia a dia
+// não pode achar que 1.509 cx de sexta saíram todas dentro do turno.
 function _zapResumoSemana(diasSem, semStr, numSem){
   const k=_relSemanalKPIs(diasSem);
   const DIA=['dom','seg','ter','qua','qui','sex','sáb'];
-  const melhor=k.melhorDia.data;
+  const ano=(parseBR(diasSem[0].data)||new Date()).getFullYear();
+  const heDoDia=d=>_heIndef(d)?0:(Number(d.heCx)||0);
+  const diasComHE=diasSem.filter(d=>heDoDia(d)>0).length;
+  const rotulo=d=>{ const dt=parseBR(d.data); return `${dt?DIA[dt.getDay()]+' ':''}${d.data.substring(0,5)}`; };
   const L=[];
-  L.push(`📦 *EMBALAGEM · SEMANA ${numSem}/${(parseBR(diasSem[0].data)||new Date()).getFullYear()}*`);
+
+  L.push(`*EMBALAGEM · SEMANA ${numSem}/${ano}*`);
   L.push(semStr);
   L.push('');
-  L.push(`*${fmtN(k.totReal)} caixas na semana* — ${fmtP(k.efTotal)} da meta (${fmtN(k.totMeta)})`);
-  if(k.soComHE)                          L.push('⚠️ Meta batida com hora extra');
-  else if(k.totMeta&&k.totReal>=k.totMeta) L.push('✅ Meta batida na jornada normal');
-  else if(k.totMeta)                     L.push(`🔴 Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta`);
+  L.push(`*${fmtN(k.totReal)} caixas* — ${fmtP(k.efTotal)} da meta de ${fmtN(k.totMeta)} cx`);
+
+  /* Semana em aberto não recebe veredito, pelo mesmo motivo do selo do PDF:
+     "faltaram 2.108 cx" numa sexta de manhã é quase todo o dia que ainda não
+     aconteceu. Diz que está parcial e para por aí — quem recebe o resumo
+     encaminhado não tem a tabela ao lado para descontar isso de cabeça. */
+  if(k.abertos>0)                            L.push(`_Parcial: ${k.fechados} de ${diasSem.length} dias fechados._`);
+  else if(k.soComHE)                         L.push('*Meta batida com hora extra.*');
+  else if(k.totMeta&&k.totReal>=k.totMeta)   L.push('*Meta batida na jornada normal.*');
+  else if(k.totMeta)                         L.push(`*Faltaram ${fmtN(k.totMeta-k.totReal)} cx para a meta.*`);
+
   if(k.temHE){
-    L.push(`▪ Jornada normal: ${fmtN(k.totReal-k.totHE)} cx (${fmtP(k.efTotalSemHE)})`);
-    L.push(`▪ Hora extra: ${fmtN(k.totHE)} cx${k.totHoras>0?` (${plural(k.totHoras,'hora','horas')})`:''}`);
+    L.push('');
+    L.push(`Jornada normal: ${fmtN(k.totReal-k.totHE)} cx — ${fmtP(k.efTotalSemHE)} da meta`);
+    L.push(`Hora extra: ${fmtN(k.totHE)} cx${diasComHE?` em ${plural(diasComHE,'dia','dias')}`:''}${k.totHoras>0?` (${plural(k.totHoras,'hora','horas')})`:''}`);
+    if(k.faltouSemHE>0) L.push(`Sem a hora extra teriam faltado ${fmtN(k.faltouSemHE)} cx.`);
   }
+
   L.push('');
-  L.push('*Dia a dia:*');
+  L.push('*Dia a dia*');
   diasSem.forEach(d=>{
-    const dt=parseBR(d.data);
-    L.push(`${dt?DIA[dt.getDay()]+' ':''}${d.data.substring(0,5)} — ${fmtN(d.real)} cx (${fmtP(d.ef)})${d.data===melhor?' 🏆':''}`);
+    const he=heDoDia(d);
+    L.push(`${rotulo(d)} — ${fmtN(d.real)} cx (${fmtP(d.ef)})${he>0?` · ${fmtN(he)} em hora extra`:''}`);
   });
+
+  L.push('');
+  L.push(`Melhor dia: ${rotulo(k.melhorDia)} — ${fmtN(k.melhorDia.real)} cx (${fmtP(k.melhorDia.ef)})`);
+  L.push(`Dias na meta: ${k.comMeta} de ${diasSem.length}`);
   L.push('');
   L.push('RitmoProd · PPCP');
   return L.join('\n');
@@ -10245,8 +10275,23 @@ async function _renderAnaliseParadasCore(opts){
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──
+// A barra diz o realizado E DE ONDE ELE VEIO: a fatia LISTRADA ÂMBAR no topo é
+// o que foi feito em HORA EXTRA. Sem ela, o dia que só bateu a meta porque a
+// equipe ficou depois das 17:00 aparece igual ao dia que bateu dentro da
+// jornada — justamente o que o resto do relatório não deixa acontecer (o selo,
+// a EFIC. SEM H. EXTRA e a faixa de alerta dizem isso em número; o gráfico não
+// dizia nada). Mesma linguagem da barra da TELA D.
 function _svgBarChart(dias){
-  const W=720, H=180, pad={t:30,r:20,b:36,l:48};
+  // Dia com heCx null (sem separação) entra INTEIRO como jornada normal — o
+  // mesmo critério dos totais do relatório. Período sem hora extra desenha
+  // exatamente o gráfico de antes, mesma regra da coluna H. EXTRA (que some
+  // quando ninguém fez hora extra) — nada de faixa vazia nem legenda sobrando.
+  const heDoDia = d => Math.max(0, Math.min(_heIndef(d) ? 0 : (Number(d.heCx)||0), d.real));
+  const temHE = dias.some(d => heDoDia(d) > 0);
+  // Com HE a barra ganha um 3º rótulo em cima: o topo abre 26px para ele não
+  // subir em cima da legenda. A ALTURA DO GRÁFICO (ch) não muda — o que cresce
+  // é o respiro, senão as barras encolheriam de um relatório para o outro.
+  const W=720, H=temHE?206:180, pad={t:temHE?56:30,r:20,b:36,l:48};
   const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
   const n=dias.length;
   const slot=cw/n;
@@ -10256,6 +10301,13 @@ function _svgBarChart(dias){
   const cx=i=>pad.l+i*slot+slot/2;
 
   let out='';
+
+  // Listra da hora extra. É desenho de conteúdo (SVG), não fundo de CSS: sai na
+  // impressora mesmo com "imprimir cores de fundo" desligado.
+  if(temHE) out+=`<defs><pattern id="rpHeListra" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#FF9800"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="2.2" opacity="0.55"/>
+    </pattern></defs>`;
 
   // Fundo zebrado
   dias.forEach((_,i)=>{
@@ -10287,6 +10339,21 @@ function _svgBarChart(dias){
     // Barra realizado
     out+=`<rect x="${x-barW/2}" y="${yR}" width="${barW}" height="${ch+pad.t-yR}" fill="${clr}" rx="3" opacity="0.9"/>`;
 
+    // Fatia de HORA EXTRA, por cima do topo da barra (e não empilhada por
+    // baixo): assim o dia sem HE continua desenhando o mesmo retângulo de
+    // sempre. O fio branco separa a jornada normal do que veio depois dela.
+    const he=heDoDia(d);
+    if(he>0){
+      const yN=sy(d.real-he);
+      out+=`<rect x="${x-barW/2}" y="${yR}" width="${barW}" height="${yN-yR}" fill="url(#rpHeListra)" rx="3"/>`;
+      out+=`<line x1="${x-barW/2}" y1="${yN}" x2="${x+barW/2}" y2="${yN}" stroke="#fff" stroke-width="1"/>`;
+      // O rótulo só sai quando a coluna tem largura para ele: num período de 15
+      // ou 30 dias as barras ficam a 20px uma da outra e os textos viram borrão.
+      // Aí a fatia listrada e a legenda contam a história sozinhas.
+      if(slot>=58)
+        outTxt+=`<text x="${x}" y="${yR-29}" text-anchor="middle" font-size="7.5" font-weight="bold" fill="#B4650A" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${fmtN(he)} cx em HE</text>`;
+    }
+
     // Valor realizado no topo (vai em outTxt: fica ACIMA da linha de média,
     // senão o tracejado corta o número do dia que estiver perto da média)
     outTxt+=`<text x="${x}" y="${yR-7}" text-anchor="middle" font-size="9" font-weight="bold" fill="${clr}" font-family="'IBM Plex Mono',monospace" stroke="#fff" stroke-width="2.5" paint-order="stroke">${d.real.toLocaleString('pt-BR')}</text>`;
@@ -10311,12 +10378,18 @@ function _svgBarChart(dias){
 
   // Legenda (o valor da média vai aqui, e não sobre a linha: no topo da barra
   // do último dia o rótulo tapava a produção/eficiência daquele dia)
-  out+=`<rect x="${W-320}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
-    <text x="${W-306}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
-    <rect x="${W-260}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
-    <text x="${W-246}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>
-    <line x1="${W-176}" y1="13" x2="${W-160}" y2="13" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.8"/>
-    <text x="${W-156}" y="17" font-size="8" fill="#666" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
+  // A legenda inteira anda 90px para a esquerda quando entra a hora extra: a
+  // linha da MÉDIA fica onde sempre esteve (é a que tem o texto mais longo) e o
+  // caminho sem HE continua desenhando exatamente a legenda de antes.
+  const Lg = W - (temHE ? 410 : 320);
+  out+=`<rect x="${Lg}" y="8" width="10" height="10" fill="#e0e0e0" rx="2"/>
+    <text x="${Lg+14}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Meta</text>
+    <rect x="${Lg+60}" y="8" width="10" height="10" fill="#4CAF50" rx="2" opacity="0.9"/>
+    <text x="${Lg+74}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Realizado</text>`;
+  if(temHE) out+=`<rect x="${Lg+144}" y="8" width="10" height="10" fill="url(#rpHeListra)" rx="2"/>
+    <text x="${Lg+158}" y="17" font-size="8" fill="#888" font-family="'IBM Plex Mono',monospace">Hora extra</text>`;
+  out+=`<line x1="${Lg+(temHE?234:144)}" y1="13" x2="${Lg+(temHE?250:160)}" y2="13" stroke="#1a1a2e" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.8"/>
+    <text x="${Lg+(temHE?254:164)}" y="17" font-size="8" fill="#666" font-family="'IBM Plex Mono',monospace">Média ${Math.round(mediaReal).toLocaleString('pt-BR')} cx/dia</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${out}</svg>`;
 }
