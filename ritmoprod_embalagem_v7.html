@@ -3142,6 +3142,21 @@ async function jsonpEscrita(url, onTentativa){
   throw ultimo;
 }
 
+// Texto ÚNICO de falha ao montar relatório. Os quatro relatórios de paradas
+// mostravam `alert('Erro ao buscar paradas: '+e.message)` — exceção crua na cara
+// do gestor, que não diz o que fazer e ainda expõe nome de função do código.
+// O padrão é [o que aconteceu] + [o que você faz agora].
+function _rpErroRelatorio(e){
+  const msg = String((e && e.message) || '');
+  // Timeout/rede: o Apps Script estava frio ou o período é grande demais.
+  if(/timeout|rede|script/i.test(msg))
+    return 'O relatório não ficou pronto: o servidor demorou a responder.\n\n'
+         + 'Tente de novo em alguns segundos. Se repetir, escolha um período menor '
+         + '(a leitura de paradas fica mais pesada quanto maior o intervalo).';
+  return 'Não foi possível montar o relatório.\n\nTente de novo. Se repetir, '
+       + 'avise o suporte com o período que você escolheu.';
+}
+
 function processarRespostaSheets(json){
   const hoje = hojeStr();
   // Avisar se dados são de outro dia
@@ -3737,8 +3752,10 @@ function renderGerencialHist(){
     {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
     {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
   ];
+  // `t` (opcional) vira o title do card: indicador cuja conta não é óbvia
+  // explica a si mesmo no hover, sem ocupar linha no grid.
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card ${k.c}">
+    <div class="kpi-card ${k.c}"${k.t?` title="${_rpEsc(k.t)}"`:''}>
       <div class="kpi-lbl">${k.l}</div>
       <div class="kpi-val">${k.v}</div>
       <div class="kpi-sub">${k.sub}</div>
@@ -3806,7 +3823,15 @@ function renderGerencial(){
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
     ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
-    {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef),                c:s},
+    // O NÚMERO é o % da meta do DIA já cumprido (efDia); a COR e o texto vêm do
+    // ritmo ATÉ AGORA (ef) — senão o badge ficaria vermelho o turno inteiro.
+    // São duas perguntas diferentes na mesma célula, e a tela não dizia isso:
+    // 60% em âmbar "ATENÇÃO" às 09:00 parecia contradição. O sub passa a dizer
+    // as duas, e o title explica a conta.
+    {l:'EFICIÊNCIA %',      v:fmtP(k.efDia),            sub:sl(k.ef)+' · '+fmtP(k.ef)+' até agora',
+     t:'Número = realizado ÷ meta do DIA ('+fmtN(k.real)+' de '+fmtN(k.meta)+' cx). '
+      +'Cor e texto = realizado ÷ meta das horas JÁ LANÇADAS ('+fmtP(k.ef)+'), '
+      +'que é o ritmo de agora — sem isso o card ficaria vermelho o turno inteiro.', c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
@@ -3823,8 +3848,10 @@ function renderGerencial(){
   if(_prog.atrasoTotal>0){
     kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
   }
+  // `t` (opcional) vira o title do card: indicador cuja conta não é óbvia
+  // explica a si mesmo no hover, sem ocupar linha no grid.
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
-    <div class="kpi-card ${k.c}">
+    <div class="kpi-card ${k.c}"${k.t?` title="${_rpEsc(k.t)}"`:''}>
       <div class="kpi-lbl">${k.l}</div>
       <div class="kpi-val">${k.v}</div>
       <div class="kpi-sub">${k.sub}</div>
@@ -4634,6 +4661,34 @@ async function _phItensPeriodo(onTent){
   return p;
 }
 
+// Totais do período a partir do HISTORICO (+ hoje, que ainda não está lá).
+// Estava escrito dentro do gerador do PDF; a TELA precisava do mesmo número
+// para mostrar a COBERTURA, e copiar a janela de dias seria a duplicação de
+// sempre. `realTotAll` inclui dia sem meta; `metaTot`/`realTot` só os dias COM
+// meta, porque dia sem meta quebraria a cascata.
+function _phTotaisPeriodo(diasH, deStr, ateStr){
+  const rDe=_phParseData(deStr), rAte=_phParseData(ateStr);
+  if(rAte) rAte.setHours(23,59,59,999);
+  let metaTot=0, realTot=0, semMeta=0, realTotAll=0;
+  (diasH||[]).forEach(d=>{ const t=_phParseData(d.data); if(!t||t<rDe||t>rAte) return;
+    realTotAll+=d.real||0;
+    if(d.meta>0){ metaTot+=d.meta; realTot+=d.real||0; } else semMeta++; });
+  const tHoje=_phParseData(hojeStr());
+  if(tHoje>=rDe&&tHoje<=rAte){
+    const kH=calcKPIs(getDadosHoje());
+    realTotAll+=kH.real||0;
+    if(kH.real>0&&kH.meta>0){ metaTot+=kH.meta; realTot+=kH.real; }
+  }
+  return {metaTot, realTot, semMeta, realTotAll};
+}
+// Quanto do realizado a análise por modelo enxerga. Só caixa lançada COM
+// produto entra nela — o produto é opcional no app. Abaixo de 80% o número da
+// tela é AMOSTRA, não o período inteiro, e quem lê precisa saber disso ANTES de
+// decidir. Vivia só no PDF: quem olhava a aba na tela nunca via o aviso.
+function _phCobertura(totCx, realTotAll){
+  return realTotAll>0 ? Math.min(100, totCx/realTotAll*100) : null;
+}
+
 async function renderModeloPeriodo(){
   const kpi=document.getElementById('ph-kpi-grid');
   const head=document.getElementById('ph-pivot-head');
@@ -4707,9 +4762,30 @@ async function renderModeloPeriodo(){
   const taktAlvoSeg=alvoRit>0?Math.round(3600/alvoRit):0;
   const corMed=_corRitmo(mediaHGeral,alvoRit);
   const top=sel?gInfo[sel]:(gOrd[0]||null);
+
+  // COBERTURA DO APONTAMENTO na TELA (antes só saía no PDF). O gestor que olha
+  // a aba e não imprime nunca via que o comparativo pode ser amostra parcial —
+  // e desde que o produto virou opcional no lançamento, essa fatia varia muito.
+  // Falhou o histórico? Segue sem a cobertura: ela qualifica o número, não o
+  // substitui, e derrubar a tabela por causa dela seria pior.
+  let cobTela=null;
+  try{
+    const diasHc=await buildDiasHistAsync();
+    // mesmas datas da barra que o _phItensPeriodo usou para buscar
+    cobTela=_phCobertura(grandAcc.caixas,
+      _phTotaisPeriodo(diasHc, dGet('ph-de'), dGet('ph-ate')).realTotAll);
+  }catch(e){ cobTela=null; }
+  const cobBaixa = cobTela!=null && cobTela<80;
+  const cobTxt = cobTela==null ? ''
+    : ` · ${cobBaixa?'⚠ ':''}${fmtP(cobTela)} do realizado`;
+  const cobTitle = cobTela==null ? 'dias com produção lançada por produto'
+    : `A análise por modelo só enxerga caixa lançada COM produto (opcional no app). `
+      + `Ela cobre ${fmtP(cobTela)} do realizado do período`
+      + (cobBaixa ? ' — os números abaixo são uma AMOSTRA, não o período inteiro.' : '.');
+
   if(kpi){
     kpi.innerHTML=`
-      <div class="kpi-card acc"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub">${nDatas} dias com produção</div></div>
+      <div class="kpi-card acc" title="${_rpEsc(cobTitle)}"><div class="kpi-lbl">TOTAL CAIXAS</div><div class="kpi-val">${fmtN(grandAcc.caixas)}</div><div class="kpi-sub"${cobBaixa?' style="color:var(--warn)"':''}>${nDatas} dias${cobTxt}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">MÉDIA CX/H · TAKT</div><div class="kpi-val" style="color:${corMed}">${fmtN(mediaHGeral)}</div><div class="kpi-sub">${alvoRit>0?`ritmo médio · ideal ${fmtN(Math.round(alvoRit))}/h (${taktAlvoSeg}s/cx)`:'ritmo médio do período'}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${sel?TermoFil:Termos}</div><div class="kpi-val" style="${sel?'font-size:15px':''}">${sel?(top?top.label:sel):nGrupos}</div><div class="kpi-sub">${sel?(ehFam?'família filtrada':'modelo filtrado'):(termoP+' no período')}</div></div>
       <div class="kpi-card"><div class="kpi-lbl">${TermoFil} TOP</div><div class="kpi-val" style="font-size:15px">${top?top.label:'—'}</div><div class="kpi-sub">${top?fmtN(top.caixas)+' cx no período':'—'}</div></div>`;
@@ -4966,19 +5042,9 @@ async function gerarRelatorioProducaoHora(){
         // Meta e realizado do intervalo: só dias COM meta entram na cascata —
         // dia com produção mas sem meta quebraria a conta; ele é contado e
         // avisado na nota, em vez de distorcer em silêncio.
-        let metaTot=0, realTot=0, semMeta=0, realTotAll=0;
-        (diasH||[]).forEach(d=>{ const t=_phParseData(d.data); if(!t||t<rDe||t>rAte) return;
-          realTotAll+=d.real||0;
-          if(d.meta>0){ metaTot+=d.meta; realTot+=d.real||0; } else semMeta++; });
-        const tHoje=_phParseData(hojeStr());
-        if(tHoje>=rDe&&tHoje<=rAte){
-          const kH=calcKPIs(getDadosHoje());
-          realTotAll+=kH.real||0;
-          if(kH.real>0&&kH.meta>0){ metaTot+=kH.meta; realTot+=kH.real; }
-        }
-        // Cobertura do apontamento no período: quanto do realizado TOTAL a
-        // análise por modelo enxerga (só caixa lançada com produto entra nela).
-        if(realTotAll>0) cobertura=Math.min(100, totCx/realTotAll*100);
+        const _tp=_phTotaisPeriodo(diasH, deStr, ateStr);
+        const metaTot=_tp.metaTot, realTot=_tp.realTot, semMeta=_tp.semMeta;
+        cobertura=_phCobertura(totCx, _tp.realTotAll);
         casc=_relCascata({meta:metaTot, real:realTot, perdaPar:st.pecas,
           minNP:st.totMinNP, topTipo:(st.tipos||[]).filter(t=>!t.planej)[0]||null,
           tipos:st.tipos||[]});   // ritmo do período não entra: não há hora produtiva do intervalo
@@ -9013,7 +9079,7 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   if(!ctx){
     let dados=null;
     try{ dados=await _pgBuscarDados(de, ate); }
-    catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+    catch(e){ win.close(); alert(_rpErroRelatorio(e)); return; }
     if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
     const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
     const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
@@ -9096,7 +9162,7 @@ ${payTxt
 </tbody></table>
 <div class="rp-footer"><span>RITMOPROD · Embalagem — SIMULAÇÃO</span><span>${_rpEsc(causas)} · ${fmtN(Math.round(r.minMes))} min/mês · ${fmtN(r.cxMes)} cx/mês</span></div>`;
   }catch(err){
-    win.close(); alert('Não foi possível montar a proposta: '+err.message); return;
+    win.close(); alert(_rpErroRelatorio(err)); return;
   }
 
   const html=_rpDocParadas(`Proposta de Investimento — ${de} a ${ate}`)
@@ -9209,7 +9275,7 @@ async function gerarRelatorioPerdas(deArg, ateArg){
 
   let dados=null;
   try{ dados=await _pgBuscarDados(de, ate); }
-  catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  catch(e){ win.close(); alert(_rpErroRelatorio(e)); return; }
   if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
   let corpo='';
@@ -9224,7 +9290,7 @@ async function gerarRelatorioPerdas(deArg, ateArg){
       + `<div class="rp-note">Este relatório é a leitura de gestão. O <b>RELATÓRIO DE PARADAS</b> traz o controle do período — resumo, Pareto por tipo, tabela por tipo, estudo de ganho, SWOT e o detalhamento parada a parada — com as mesmas contas e o mesmo período.</div>`
       + `<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>`;
   }catch(err){
-    win.close(); alert('Não foi possível montar a gestão de perdas: '+err.message); return;
+    win.close(); alert(_rpErroRelatorio(err)); return;
   }
 
   // Paisagem: o quadro 2×2 é a capa deste relatório e em pé ele espremia as
@@ -9271,7 +9337,7 @@ async function gerarRelatorioMin1000(deArg, ateArg){
 
   let dados=null;
   try{ dados=await _pgBuscarDados(de, ate); }
-  catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  catch(e){ win.close(); alert(_rpErroRelatorio(e)); return; }
   if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
   let corpo='';
@@ -9306,7 +9372,7 @@ ${outras.map(g=>`<div class="pgq-cel-ttl" style="margin-top:14px">POR ${_rpEsc(P
 <div class="rp-note">Para o retrato completo do período — Pareto, tipos, estudo de ganho, SWOT e o detalhamento parada a parada — use o <b>RELATÓRIO DE PARADAS</b>. Para a leitura de gestão (evolução, SMED, plano de ação), o <b>RELATÓRIO DA GESTÃO DE PERDAS</b>. Os três leem o mesmo período e as mesmas contas.</div>
 <div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(trR?trR.cxTot:0)} cx apontadas</span></div>`;
   }catch(err){
-    win.close(); alert('Não foi possível montar o relatório: '+err.message); return;
+    win.close(); alert(_rpErroRelatorio(err)); return;
   }
 
   const html=_rpDocParadas(`Minutos de parada / 1.000 caixas — ${de} a ${ate}`)
@@ -9563,7 +9629,7 @@ async function gerarRelatorioParadas(deArg, ateArg){
 
   let dados=null;
   try{ dados=await _pgBuscarDados(de, ate); }
-  catch(e){ win.close(); alert('Erro ao buscar paradas: '+e.message); return; }
+  catch(e){ win.close(); alert(_rpErroRelatorio(e)); return; }
   if(!dados){ win.close(); alert('O servidor demorou a responder (cold start). Tente de novo.'); return; }
 
   const paradas=dados.paradas, metaByDay=dados.metaByDay, realByDay=dados.realByDay;

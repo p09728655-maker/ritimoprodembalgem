@@ -1892,7 +1892,9 @@ async function registrarParadaAgora(){
     // parada de novo e o dia termina com paradas duplicadas.
     await carregarParadas();
     if(!paradaAtiva()){
-      alert('Não deu para registrar a parada: '+erro.message+'.\nA parada NÃO foi registrada — tente de novo.');
+      alert('O servidor não respondeu depois de 3 tentativas.\n\n'
+        +'A parada NÃO foi registrada. Toque em REGISTRAR de novo em alguns '
+        +'segundos.');
       btnOn();
       return;
     }
@@ -1958,7 +1960,9 @@ async function darStartParada(){
     const aindaAberta = PARADAS_HOJE.some(p=>
       abertas.some(a=>String(a.id)===String(p.id)) && (!p.fim || String(p.fim).trim()===''));
     if(aindaAberta){
-      alert('Não deu para dar START: '+erro.message+'.\nA parada CONTINUA aberta — tente de novo em alguns segundos.');
+      alert('O servidor não respondeu depois de 3 tentativas.\n\n'
+        +'A parada CONTINUA aberta — nada foi perdido. Toque em START de novo '
+        +'em alguns segundos; repetir é seguro.');
       btnOn();
       return;
     }
@@ -2377,7 +2381,8 @@ async function toggleInicioTurno(){
       alert('Não foi possível mudar o início: '+((res&&res.erro)||'erro'));
     }
   }catch(e){
-    alert('Erro ao mudar o início: '+e.message);
+    alert('Não foi possível mudar o início do turno.\n\nTente de novo em alguns '
+          +'segundos — o horário atual continua valendo até dar certo.');
   }finally{
     _salvandoInicio = false;
     if(btn) btn.disabled = false;
@@ -2491,8 +2496,11 @@ async function salvarLanc(){
       if(!/timeout|rede/i.test(e.message)) break;
     }
   }
-  alert('Erro ao salvar: '+(ultimoErro?ultimoErro.message:'desconhecido')+
-        '\n\nSe o valor não aparecer, tente novamente — o sistema evita lançamento duplicado.');
+  // O operador não precisa saber o nome da exceção — precisa saber se perdeu o
+  // lançamento e o que fazer. Timeout ≠ não gravou: o valor pode ter chegado.
+  alert('O servidor não respondeu e o lançamento pode não ter sido gravado.\n\n'
+      + 'Confira a hora na lista: se o valor não aparecer, lance de novo — '
+      + 'o sistema evita lançamento duplicado, então repetir é seguro.');
   btn.textContent='ADICIONAR'; btn.disabled=false;
 }
 

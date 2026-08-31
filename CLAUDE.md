@@ -1435,6 +1435,18 @@ COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
 erro que ainda expõem `e.message` cru nos 4 relatórios · não existe
 `CHANGELOG.md` nem `docs/glossario.md`.
 
+## Notas de versão e glossário
+- `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
+  mudança que altera número exibido ou formato de arquivo**, com o antes e o
+  depois: o gestor precisa saber por que o indicador da semana passada mudou.
+  Mudança no `.gs` vem marcada com ⚠ **re-deploy**, porque não sobe pela Vercel.
+- `docs/glossario.md` — cada indicador da interface com a fórmula **conferida no
+  código** e o `arquivo:linha` de onde ela saiu. A interface e o glossário não
+  podem divergir; se divergirem, o defeito é da interface. Nunca escrever
+  fórmula de memória aqui — ler o código.
+- Os dois nasceram em 31/08/2026: até a v7.25.0 o único rastro de versão era o
+  `APP_VER` no rodapé, e nenhum indicador tinha definição escrita fora do código.
+
 ## Notas / armadilhas conhecidas
 - **O RITMO ATUAL da Tela B é maior que PESO/PONTOS de propósito** (pedido do
   PPCP, 24/08/2026: *"ritmo atual está muito pequeno na TV"*). Os três dividem
