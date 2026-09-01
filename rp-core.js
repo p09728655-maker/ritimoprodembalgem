@@ -150,6 +150,18 @@ function efNoRitmo(real, metaDia, minRodado, minTurno){
   return { metaAteAgora, ef: metaAteAgora > 0 ? (real / metaAteAgora) * 100 : 0 };
 }
 
+// ── Veredito do RITMO ───────────────────────────────────────────────────────
+// O texto que acompanha o efNoRitmo. Ao contrário do `sl()` de cada painel
+// (que fala da meta e é escrito diferente em cada tela, por causa do espaço),
+// este é o MESMO nos dois: ele responde "estamos no ritmo?", e TV, desktop e
+// celular não podem responder isso com palavras diferentes.
+//
+// ⚠ Ele existe para não repetir a palavra META ao lado do % da meta do dia.
+// Era essa colisão que confundia quem lia a TV de longe: o número grande dizia
+// 103,8% e o selo dizia "DENTRO DA META", enquanto o dia estava com 780 de
+// 2.700 cx (28,9%) — dois "%" e dois sentidos de "meta" na mesma tela.
+function slRitmo(ef){ return ef >= 96 ? 'NO RITMO' : ef >= 90 ? 'ATENÇÃO' : 'ABAIXO DO RITMO'; }
+
 // ── Produto × cor ───────────────────────────────────────────────────────────
 // A COR saiu da DESCRICAO para uma coluna própria na PRODUTO_CODIGO. Quem
 // continuou imprimindo só a descrição passou a mostrar linhas IDÊNTICAS para
@@ -178,8 +190,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.3.0',
+  versao: '1.4.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'nomeComCor', '_rpOk']
+        'slRitmo', 'nomeComCor', '_rpOk']
 };

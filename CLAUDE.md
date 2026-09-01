@@ -1537,6 +1537,23 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   - **Só entra hora COM LANÇAMENTO** — hora que ninguém apontou ainda não é hora
     atrasada (mesma regra do `calcAtrasoHoras`).
   - Turno sem hora lançada devolve 0, como os painéis já faziam antes.
+- **O NÚMERO GRANDE é o % da META DO DIA; o veredito é o selo** (pedido do
+  usuário, 01/09/2026: *"essa eficiência está confundindo as pessoas"*). A TV
+  mostrava **EFICIÊNCIA 103,8%** em verde com **DENTRO DA META** embaixo, num dia
+  de **780 cx contra meta de 2.700**: os dois números certos (103,8% é 780 ÷ 751,
+  o que a meta pedia até ali), mas **dois "%" e dois sentidos de META na mesma
+  tela** — e quem lê de longe fica com o primeiro.
+  - O número grande virou **28,9% DA META DO DIA**, em **tinta** (sem cor de
+    status): é o fato que qualquer um confere de cabeça. Mesma regra do
+    relatório semanal — *o número é tinta, o veredito é o selo*.
+  - O selo passou a falar de **RITMO**, nunca de meta: `NO RITMO` · `ATENÇÃO` ·
+    `ABAIXO DO RITMO` (**`slRitmo`**, texto ÚNICO no `rp-core.js` — TV, desktop e
+    celular não podem responder "estamos no ritmo?" com palavras diferentes).
+  - A linha de apoio traz **caixas, não um segundo percentual**: *"780 de 751 cx
+    esperadas até agora"*. A barra segmentada da Tela B enche pelo % do dia e
+    pega a **cor do selo** (antes lia a cor do número, que agora é tinta).
+  - ⚠ **A conta não mudou** — `efNoRitmo` continua sendo quem pinta a tela.
+    Trocou qual número ocupa o lugar grande.
 - **Quem usa: TV (telas A e B), gerencial do desktop e gerencial do celular.**
   Painel que julga o mesmo instante de dois jeitos é o defeito que este projeto
   mais pagou caro — por isso a conta saiu dos dois HTMLs para o núcleo.
@@ -1634,11 +1651,14 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   `AUTO` tinham o valor.** Hoje o botão manda `mediaH` = realizado ÷ horas
   produtivas (não-HE), a MESMA conta do `arquivarDiaAtual`, e `melhor`/`pior`
   passaram a olhar só as horas não-HE, como o `.gs` sempre fez.
-- ⚠ **A coluna `HE` (nº de horas extras, coluna G) está ZERADA nas 69 linhas**,
-  enquanto a `HE CX` tem caixas em 24 delas: os valores de HE CX vieram do
-  **backfill**, não do fechamento. Encher a coluna G exige o **`.gs` v7.26.0
-  re-deployado** (a contagem por HORÁRIO) — enquanto isso não acontecer, todo
-  fechamento continua gravando 0 ali.
+- ⚠ **Correção (conferido na planilha em 01/09/2026): a coluna `HE` (nº de horas
+  extras, coluna G) NÃO está zerada** — 22/07, 28/07, 05/08, 11/08, 28/08 e
+  vários outros dias têm `2`. A anotação anterior dizia o contrário e estava
+  errada. Com o `.gs` re-deployado, a contagem é por **HORÁRIO**
+  (`_ehHoraExtraCaixas`): o fechamento automático das 17:05 grava o nº de horas
+  de HE **com produção** (hoje, 05:00 e 06:00 → `HE=2`, `HE CX=660`), e o botão
+  FECHAR DIA manda o mesmo número (dia fechado na mão tem prioridade — o
+  automático não sobrescreve).
 - ⚠ **Dia já gravado não se conserta sozinho**: a linha antiga continua com o
   par velho. Corrigir é editar a planilha (ou reabrir e FECHAR DIA de novo, que
   o `saveDay` é upsert por data).

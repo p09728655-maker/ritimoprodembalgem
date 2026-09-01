@@ -38,7 +38,7 @@ const GLOBAIS = [
   'Chart','XLSX',
   // módulos próprios (rp-core.js / paradas-calc.js)
   'RP_CORE','RP_PARADAS','RP_SEMANA','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
-  'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo',
+  'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo','slRitmo',
   'nomeComCor','_rpOk',
 ];
 

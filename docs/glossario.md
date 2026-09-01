@@ -22,18 +22,22 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 ⚠ O slot pós-almoço `12:12-13:00` tem **48 min**, não 60. Por isso as horas
 produtivas somam a duração real de cada slot em vez de multiplicar por 60.
 
-## Eficiência — uma régua só, e é a META DO DIA
+## Eficiência — o número é fato, o veredito é o selo
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **EFICIÊNCIA (número, cor e texto)** | realizado ÷ o que a **meta do dia** já pedia até agora × 100 | % | `rp-core.js:148` |
-| **META ATÉ AGORA** | meta do dia × (minutos de turno já rodados ÷ minutos do turno) | cx | idem |
-| **% DA META DO DIA** (a linha de apoio) | realizado ÷ meta do **dia inteiro** × 100 | % | `v7:3637` |
+| **% DA META DO DIA** (o número grande) | realizado ÷ meta do **dia inteiro** × 100 | % | `v7:3637` |
+| **META ATÉ AGORA** (a linha de apoio) | meta do dia × (minutos de turno já rodados ÷ minutos do turno) | cx | `rp-core.js:148` |
+| **RITMO** (o selo e a cor) | realizado ÷ meta até agora × 100 → `NO RITMO` · `ATENÇÃO` · `ABAIXO DO RITMO` | % | `rp-core.js:163` |
 
-**Como ler:** o número grande diz se o **ritmo de agora** está no plano — a meta
-do dia rateada pelo tempo de turno já rodado; a linha de apoio diz quanto da meta
-do dia inteiro já está feito. Um dia pode mostrar 40% da meta do dia às 10:00 e
-ainda estar em dia no ritmo.
+**Como ler:** o número diz **quanto do dia já saiu** — 780 de 2.700 é 28,9%, e
+qualquer um confere de cabeça. O selo diz se esse ritmo **dá para bater a meta**:
+780 contra as 751 que a meta pedia até aquela hora é `NO RITMO`. Um dia pode
+mostrar 28,9% e estar verde às 07:30.
+
+⚠ A palavra **META não aparece ao lado do percentual**. Era essa colisão que
+confundia quem lia a TV de longe (01/09/2026): "103,8% · DENTRO DA META" num dia
+com 780 de 2.700 cx. Dois "%" com denominadores diferentes na mesma tela.
 
 ⚠ O rateio é por **minutos**, não por número de horas (o slot pós-almoço vale 48
 min), e só entra hora **com lançamento**. A meta/hora da `HORA_A_HORA`

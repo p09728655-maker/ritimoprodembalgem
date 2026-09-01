@@ -186,6 +186,15 @@ const rit = efNoRitmo(1350, 2709, _mr, _mt);
 ok('a meta esperada é a do DIA rateada pelo turno rodado', Math.round(rit.metaAteAgora), 2401);
 ok('e o dia que a TV pintou de verde está em 56%', Math.round(rit.ef), 56);
 ok('56% não é "dentro da meta"', sc(rit.ef), 'red');
+// O VEREDITO do ritmo é texto único do núcleo — e fala de RITMO, não de META.
+// Foi a palavra "DENTRO DA META" ao lado do % da meta do dia que confundiu quem
+// lia a TV em 01/09/2026: 103,8% verde num dia com 780 de 2.700 cx.
+ok('no ritmo',        slRitmo(103.8), 'NO RITMO');
+ok('atenção',         slRitmo(92),    'ATENÇÃO');
+ok('abaixo do ritmo', slRitmo(56),    'ABAIXO DO RITMO');
+ok('o veredito e a cor mudam de faixa no mesmo ponto',
+   [96, 95.9, 90, 89.9].map(v => [slRitmo(v), sc(v)]),
+   [['NO RITMO','ok'], ['ATENÇÃO','warn'], ['ATENÇÃO','warn'], ['ABAIXO DO RITMO','red']]);
 // O rateio é por MINUTOS: tratar o slot pós-almoço como hora cheia estica o
 // turno em 12 min que não existem e afrouxa a régua em 53 cx.
 ok('o slot de 48 min não pode entrar como hora cheia',
@@ -199,7 +208,7 @@ ok('sem meta do dia também não',
    efNoRitmo(1350, 0, _mr, _mt), { metaAteAgora: 0, ef: 0 });
 
 console.log('\n── os painéis não podem ter cópia própria ──');
-const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc',
+const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
              'efNoRitmo', 'nomeComCor', '_rpOk'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {

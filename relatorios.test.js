@@ -1948,7 +1948,7 @@ ok('dia sem meta não inventa meta por hora', /metaHoraDia\(d\)\?fmtN\(metaHoraD
 ok('o papel diz de onde o número saiu',
    /<b>META\/H<\/b> = meta do dia ÷ \$\{plural\(hTurno/.test(_relSem), true);
 
-console.log('\n── EFICIÊNCIA: número e cor da MESMA conta, nas três telas ──');
+console.log('\n── EFICIÊNCIA: o número é fato, o veredito é o selo ──');
 // 31/08/2026: a TV mostrou 49,8% em VERDE com "DENTRO DA META". O número era a
 // meta do DIA (1.350 ÷ 2.709) e a cor era outra conta — o ritmo contra a
 // meta/hora da HORA_A_HORA (1.350 ÷ 8×164 = 102,9%). Enquanto as duas metas
@@ -1958,20 +1958,39 @@ console.log('\n── EFICIÊNCIA: número e cor da MESMA conta, nas três telas
   ok(f + ': nenhuma tela pinta pelo ritmo da meta/hora', /sc\(k\.ef\)/.test(src), false);
   ok(f + ': a régua vem do núcleo comum, não é reescrita', /efNoRitmo\(/.test(src), true);
 });
+const _mob  = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+const _core = fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8');
 const _v7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
-ok('TV: o número da eficiência é o mesmo que carrega a cor',
-   /tv-ef'\);\s*\n\s*ee\.textContent=fmtP\(k\.efRitmo\)/.test(_v7), true);
-ok('TV: e o status sai da mesma conta', /sl\(k\.efRitmo\)/.test(_v7), true);
-ok('TV: o % da meta do dia continua na tela, na linha de apoio',
-   /id="tv-ef-sub"/.test(_v7) && /es\.textContent = k\.meta>0/.test(_v7), true);
+// 01/09/2026: a TV mostrava "EFICIÊNCIA 103,8%" em verde com "DENTRO DA META"
+// num dia de 780 cx contra meta de 2.700 — os dois números certos, mas dois "%"
+// e dois sentidos de META na mesma tela ("essa eficiência está confundindo as
+// pessoas"). Agora o NÚMERO é o fato que qualquer um confere de cabeça (780 de
+// 2.700 = 28,9%) e o VEREDITO é o selo, que fala de RITMO.
+ok('TV: o número grande é o % da META DO DIA',
+   /tv-ef'\);\s*\n\s*ee\.textContent = k\.meta>0 \? fmtP\(k\.efDia\)/.test(_v7), true);
+ok('TV: e ele sai em tinta, sem cor de status',
+   /ee\.className='tv-ef-val';/.test(_v7), true);
+ok('TV: quem julga é o selo, e ele fala de ritmo',
+   /be\.textContent='● '\+slRitmo\(k\.efRitmo\)/.test(_v7), true);
+ok('TV: a palavra META não volta para o lado do %', /sl\(k\.efRitmo\)/.test(_v7), false);
+ok('TV: a linha de apoio traz caixas, não um segundo %',
+   /id="tv-ef-sub"/.test(_v7) && /CX ESPERADAS ATÉ AGORA/.test(_v7), true);
+ok('TV: a barra do % pega a cor do selo, não do número',
+   /const cor = bdgB \? getComputedStyle\(bdgB\)\.color/.test(_v7), true);
+// O veredito do ritmo é texto ÚNICO no núcleo: TV, desktop e celular não podem
+// responder "estamos no ritmo?" com palavras diferentes.
+ok('o veredito do ritmo mora no núcleo comum',
+   /function slRitmo\(ef\)/.test(_core) && /slRitmo/.test(_mob), true);
 // A TELA B é a que roda na TV de verdade (a Tela A tem .tv-left escondida no
 // layout largo): ela espelha o DOM da A, então a linha de apoio tem de ser
 // espelhada junto, senão o % da meta do dia sumia justamente da tela do chão
 // de fábrica.
 ok('TV: a Tela B espelha a linha de apoio',
    /set\('tvb-ef-sub',\s*get\('tv-ef-sub'\)\)/.test(_v7) && /id="tvb-ef-sub"/.test(_v7), true);
-ok('gerencial: o card mostra a conta que pintou a cor',
-   /v:fmtP\(k\.efRitmo\),\s*sub:sl\(k\.efRitmo\)/.test(_v7), true);
+ok('gerencial: o card mostra o % do dia com o veredito do ritmo ao lado',
+   /v:fmtP\(k\.efDia\),\s*sub:slRitmo\(k\.efRitmo\)/.test(_v7), true);
+ok('celular: o card diz a mesma coisa',
+   /v:fmtP\(k\.efDia\), sub:slRitmo\(k\.efRitmo\)/.test(_mob), true);
 
 console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──');
 // 01/09/2026: o dia começou às 05:00 e o backend passou a marcar `he` por
@@ -1981,8 +2000,6 @@ console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──'
 // hora seguinte — tudo o que a v7.34.0 já tinha tirado do gerencial de dia
 // PASSADO. A régua é uma só: hora extra não tem meta, logo não tem eficiência,
 // nem veredito, nem pico/vale, nem atraso.
-const _mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
-const _core = fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8');
 ok('o atraso do núcleo pula a hora extra',
    /if \(r\.he\) return \{ atrasoHora: 0/.test(_core), true);
 ok('gerencial ao vivo: a tabela não calcula eficiência de hora extra',
