@@ -1573,6 +1573,45 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   entrando na `HISTORICO_HORA` como se fosse hora de turno; por isso a regra
   precisa existir também no front.
 
+## Dia de HOJE no gerencial: a mesma regra, ao vivo
+- **O `.gs` que classifica HE por HORÁRIO foi re-deployado em 01/09/2026** — o
+  usuário confirmou com o painel na tela (*"HE está marcando agora"*): num dia
+  com `C3=5`, as linhas de **05:00** e **06:00** chegam ao `getDados` com
+  **`he:true`** mesmo sem o rótulo `HE `. É o `_ehHoraExtraCaixas` funcionando.
+- Só que a tela **ao vivo** continuava julgando essas horas. Medido no mesmo dia,
+  às 06:55: META/H **245**, eficiência **98,0%** e **144,0%**, selo **OK**; PICO
+  **06:00** e VALE **05:00** — as duas horas de HE, num turno que ainda nem tinha
+  começado; e o `(+5)` que faltou às 05:00 sendo cobrado da hora seguinte.
+  Era a v7.34.0 valendo só para o dia passado.
+- **Agora a régua é uma só, e vale nos dois gerenciais** (desktop e celular):
+  - hora de HE sai com **`—`** em META/H e EFICIÊNCIA e ganha a etiqueta
+    **HORA EXTRA** no lugar do veredito (`b-acc`, a mesma marcação do dia
+    passado). O ponto âmbar e o fundo da linha continuam onde estavam;
+  - **PICO/VALE e MELHOR/PIOR HORA olham só as horas de jornada** (`k.nNorm`).
+    Sem hora de jornada lançada os quatro mostram **`—`** — zero afirmaria "a
+    melhor hora do turno fez 0 cx". É a MESMA base que o `arquivarDiaAtual` e o
+    botão FECHAR DIA já gravavam no `HISTORICO`;
+  - **hora extra fica fora do atraso acumulado, nos dois sentidos**
+    (`calcAtrasoHoras` pula a linha com `he`): ela não gera atraso para as horas
+    de jornada seguintes nem quita o atraso delas com caixas feitas fora do
+    turno — uma madrugada forte apagaria o atraso do turno inteiro.
+- **O que NÃO mudou:** PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA,
+  EFICIÊNCIA do card, RITMO ATUAL, PROJEÇÃO e RITMO NECESSÁRIO. As caixas da HE
+  contam para a meta do dia como sempre contaram.
+- ⚠ **A TV OPERACIONAL ficou fora, de propósito** (decisão do usuário,
+  01/09/2026): lá a meta da hora é o **ritmo que o operador acompanha** durante a
+  hora extra, não um veredito de gestão. Se um dia isso mudar, é a tabela
+  `tv-tbl-body` e a Tela A (`tva-pct`/`tva-status`) que precisam da regra.
+- ⚠ **A hora de HE só aparece no celular se tiver meta na planilha**: o mobile
+  monta o `DADOS` com `slots.filter(s=>s.metaHora>0)`. Linha de HE com a meta
+  **vazia** some da tabela do celular *e das caixas dele* — o desktop mostraria
+  as caixas e o celular não. Não foi mexido (hoje a `HORA_A_HORA` traz meta em
+  todas as linhas), mas é o primeiro lugar a olhar se os dois divergirem no
+  realizado de um dia com hora extra.
+- `relatorios.test.js` prende a regra nos dois painéis e `rp-core.test.js` cobre
+  o atraso; se a etiqueta `HE` voltar a aparecer colada num selo OK, o teste
+  falha.
+
 ## O que é gravado no HISTORICO tem de fechar consigo mesmo
 - **O FECHAR DIA gravava META e EFICIÊNCIA de metas diferentes.** A coluna META
   levava `k.meta` (a meta do DIA — no modo Sheets, a da PROGRAMAÇÃO) e a coluna

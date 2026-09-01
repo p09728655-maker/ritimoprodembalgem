@@ -95,9 +95,18 @@ function mergeMedias(medias, amostra){
 // meta inteira por hora que ainda nem aconteceu. Medido num dia 12 cx atrás
 // às 14:30: a linha das 16:00 mostrava "(+190)" e meta efetiva 368 cx.
 // Hora que FECHOU sem produzir vem como 0 (não null) e continua cobrada.
+//
+// ⚠ HORA EXTRA (`he: true`) NÃO ENTRA NO ACUMULADO — nem cobrando, nem
+// abatendo. Hora extra não tem meta (os painéis a mostram com "—"), então ela
+// não pode gerar atraso para as horas de jornada seguintes, nem quitar o
+// atraso delas com caixas feitas fora do turno. Medido em 01/09/2026: o dia
+// começou às 05:00, a hora extra das 05:00 fechou 240 contra os 245 da
+// planilha e a hora SEGUINTE já nasceu com "(+5)" — atraso herdado de uma
+// hora que ninguém cobra. Linha sem `he` se comporta exatamente como antes.
 function calcAtrasoHoras(rows){
   let accMeta = 0, accProd = 0;
   return rows.map(r => {
+    if (r.he) return { atrasoHora: 0, metaEfetivaHora: r.metaHora || 0 };
     const atrasoHora = Math.max(accMeta - accProd, 0);
     const metaEfetivaHora = (r.metaHora || 0) + atrasoHora;
     if (r.producaoHora != null) {
@@ -169,7 +178,7 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.2.0',
+  versao: '1.3.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'nomeComCor', '_rpOk']

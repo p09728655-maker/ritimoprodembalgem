@@ -10,28 +10,35 @@ Unidade padrão: **caixa (cx)**. Não existe "peça" no vocabulário do produto.
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **PRODUÇÃO REAL** | soma do realizado das horas já lançadas | cx | `v7:3618` |
-| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual) + meta das horas extras cadastradas | cx | `v7:3616` |
-| **RITMO ATUAL** | realizado ÷ nº de horas já lançadas | cx/h | `v7:3632` |
-| **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo | cx/h | `v7:3637` |
-| **META/HORA** | média da meta das horas já lançadas | cx/h | `v7:3634` |
-| **PROJEÇÃO** | realizado + ritmo atual × horas restantes | cx | `v7:3636` |
-| **HORAS PRODUTIVAS** | soma dos minutos reais das horas lançadas ÷ 60 | h | `v7:3641` |
+| **PRODUÇÃO REAL** | soma do realizado das horas já lançadas | cx | `v7:3609` |
+| **META DO DIA** | meta da PROGRAMAÇÃO (ou ajuste manual) + meta das horas extras cadastradas | cx | `v7:3629` |
+| **RITMO ATUAL** | realizado ÷ nº de horas já lançadas | cx/h | `v7:3644` |
+| **RITMO NECESSÁRIO** | (meta − realizado) ÷ horas restantes, nunca negativo | cx/h | `v7:3652` |
+| **META/HORA** | média da meta das horas já lançadas | cx/h | `v7:3646` |
+| **PROJEÇÃO** | realizado + ritmo atual × horas restantes | cx | `v7:3647` |
+| **HORAS PRODUTIVAS** | soma dos minutos reais das horas lançadas ÷ 60 | h | `v7:3673` |
+| **MELHOR / PIOR HORA** | maior e menor hora do dia, **só entre as horas de jornada** | cx | `v7:3663` |
 
 ⚠ O slot pós-almoço `12:12-13:00` tem **48 min**, não 60. Por isso as horas
 produtivas somam a duração real de cada slot em vez de multiplicar por 60.
 
-## Eficiência — duas leituras no mesmo card
+## Eficiência — uma régua só, e é a META DO DIA
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **EFICIÊNCIA % (o número)** | realizado ÷ meta do **DIA** × 100 | % | `v7:3625` |
-| **EFICIÊNCIA (a cor e o texto)** | realizado ÷ meta das **horas já lançadas** × 100 | % | `v7:3620` |
+| **EFICIÊNCIA (número, cor e texto)** | realizado ÷ o que a **meta do dia** já pedia até agora × 100 | % | `rp-core.js:148` |
+| **META ATÉ AGORA** | meta do dia × (minutos de turno já rodados ÷ minutos do turno) | cx | idem |
+| **% DA META DO DIA** (a linha de apoio) | realizado ÷ meta do **dia inteiro** × 100 | % | `v7:3637` |
 
-**Como ler:** o número diz quanto da meta do dia já foi cumprido; a cor diz se o
-**ritmo de agora** está no plano. Um dia pode mostrar 40% em verde às 10:00 — a
-meta do dia ainda está longe, mas o ritmo até aqui está em dia. Sem essa
-separação o card ficaria vermelho o turno inteiro.
+**Como ler:** o número grande diz se o **ritmo de agora** está no plano — a meta
+do dia rateada pelo tempo de turno já rodado; a linha de apoio diz quanto da meta
+do dia inteiro já está feito. Um dia pode mostrar 40% da meta do dia às 10:00 e
+ainda estar em dia no ritmo.
+
+⚠ O rateio é por **minutos**, não por número de horas (o slot pós-almoço vale 48
+min), e só entra hora **com lançamento**. A meta/hora da `HORA_A_HORA`
+(`v7:3632`) **não pinta mais nenhuma tela**: quando ela discordava da meta do dia
+— 31/08/2026, 1.476 contra 2.709 — a TV escrevia 49,8% em verde.
 
 ## Atraso hora a hora
 
@@ -45,6 +52,10 @@ contá-la como "produziu zero" fazia o atraso crescer uma meta inteira por hora
 que ainda nem tinha acontecido. Hora que **fechou** em zero vem como `0` e é
 cobrada normalmente.
 
+⚠ **Hora extra também não entra** — nem cobrando, nem abatendo. Ela não tem meta,
+então não gera atraso para as horas de jornada seguintes nem quita o atraso delas
+com caixas feitas fora do turno.
+
 ## Hora extra
 
 | Termo | Regra | Onde está |
@@ -57,6 +68,20 @@ cobrada normalmente.
 **Como ler:** 05:00–06:00 e 06:00–07:00 são sempre hora extra, mesmo sem o
 rótulo — quem as libera é a célula `C3`. Os dois critérios existem separados
 porque o de identidade governa a limpeza diária, que **apaga** a linha marcada.
+
+### A hora extra não é julgada — hoje e no dia passado
+
+| Onde | O que a hora de HE mostra |
+|---|---|
+| **META/H e EFICIÊNCIA** da linha | `—` (sem meta não há eficiência) |
+| **STATUS** da linha | etiqueta `HORA EXTRA`, nunca OK/ATENÇÃO/ABAIXO |
+| **PICO / VALE e MELHOR / PIOR HORA** | fora — só horas de jornada disputam |
+| **ATRASO acumulado** | fora, nos dois sentidos |
+| **PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA** | as caixas contam normalmente |
+
+⚠ Vale no **gerencial** (desktop e celular). A **TV OPERACIONAL** continua
+mostrando a meta da hora durante a HE — lá o número é o ritmo que o operador
+acompanha, não um veredito de gestão.
 
 ⚠ A jornada é declarada **duas vezes**: na configuração do painel (TURNO) e nas
 constantes do `.gs`. Mudou o turno na tela, mudar as constantes também.

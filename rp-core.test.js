@@ -98,6 +98,24 @@ ok('hora pendente não inventa atraso',
 ok('hora fechada em zero continua cobrada',
    calcAtrasoHoras([{ metaHora: 200, producaoHora: 0 }, { metaHora: 200, producaoHora: null }]),
    [{ atrasoHora: 0, metaEfetivaHora: 200 }, { atrasoHora: 200, metaEfetivaHora: 400 }]);
+// HORA EXTRA não entra no acumulado — nem cobrando, nem abatendo. O caso real
+// de 01/09/2026: dia começado às 05:00, a HE das 05:00 fechou 240 contra os 245
+// da planilha e a hora SEGUINTE nascia com "(+5)" — atraso vindo de uma hora que
+// o painel nem cobra (META/H e EFICIÊNCIA dela saem "—").
+ok('hora extra não gera atraso para a hora seguinte',
+   calcAtrasoHoras([{ metaHora: 245, producaoHora: 240, he: true },
+                    { metaHora: 245, producaoHora: 360, he: true },
+                    { metaHora: 245, producaoHora: null }]),
+   [{ atrasoHora: 0, metaEfetivaHora: 245 }, { atrasoHora: 0, metaEfetivaHora: 245 },
+    { atrasoHora: 0, metaEfetivaHora: 245 }]);
+// E o contrário também: as caixas feitas fora do turno não quitam o atraso das
+// horas de jornada — senão uma madrugada forte apagaria o atraso do turno.
+ok('caixas de hora extra não abatem o atraso do turno',
+   calcAtrasoHoras([{ metaHora: 245, producaoHora: 600, he: true },
+                    { metaHora: 245, producaoHora: 100 },
+                    { metaHora: 245, producaoHora: null }]),
+   [{ atrasoHora: 0, metaEfetivaHora: 245 }, { atrasoHora: 0, metaEfetivaHora: 245 },
+    { atrasoHora: 145, metaEfetivaHora: 390 }]);
 
 console.log('\n── produto × cor ──');
 // A cor saiu da DESCRICAO para coluna própria na PRODUTO_CODIGO. Quem imprime
