@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.36.0 · mobile 1.15.0 — 01/09/2026
+
+**Atenção** — **o número grande da EFICIÊNCIA virou o % da META DO DIA.** Pedido
+do usuário no mesmo dia: *"essa eficiência está confundindo as pessoas"*.
+
+A TV mostrava **EFICIÊNCIA 103,8%** em verde, com **DENTRO DA META** embaixo,
+num dia que tinha **780 cx de uma meta de 2.700**. Os dois números estavam
+certos — 103,8% é 780 ÷ **751**, o que a meta do dia pedia até aquela altura do
+turno —, mas na mesma tela havia **dois "%" e dois sentidos da palavra META**, e
+quem passa e lê de longe fica com o primeiro.
+
+Agora, nas três telas (TV, gerencial e celular):
+
+- o **número grande** é o que qualquer um confere de cabeça: **28,9% DA META DO
+  DIA** (780 ÷ 2.700), e ele sai em **tinta**, sem cor de status;
+- quem **julga** é o selo, e ele fala de **RITMO**: `NO RITMO` · `ATENÇÃO` ·
+  `ABAIXO DO RITMO` — a palavra META não aparece mais ao lado do percentual;
+- a linha de apoio traz **caixas, não um segundo percentual**: *"780 de 751 cx
+  esperadas até agora"*;
+- a barra segmentada da Tela B enche pelo % do dia e pega a **cor do selo**.
+
+**A conta não mudou.** O ritmo continua saindo do `efNoRitmo` (realizado ÷ o que
+a meta do dia pedia até agora, rateada por minutos de turno) e continua sendo
+ele quem pinta a tela — trocou **qual número ocupa o lugar grande**. O veredito
+virou texto único do núcleo (`slRitmo`, `rp-core.js`): TV, desktop e celular não
+podem responder "estamos no ritmo?" com palavras diferentes.
+
+---
+
 ## v7.35.0 · mobile 1.14.0 — 01/09/2026
 
 **Atenção** — **a hora extra deixou de ser julgada também no gerencial de HOJE.**

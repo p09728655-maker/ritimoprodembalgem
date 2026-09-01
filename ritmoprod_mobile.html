@@ -831,7 +831,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.14.0';
+const APP_VER   = '1.15.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -2553,8 +2553,10 @@ function renderGerencial(){
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
     {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
-    // Número, cor e texto da mesma conta; o % da meta do dia inteiro fica no sub.
-    {l:'EFICIÊNCIA',     v:fmtP(k.efRitmo), sub:sl(k.efRitmo)+' · '+fmtP(k.efDia)+' do dia', c:s},
+    // O número é FATO (quanto da meta do dia já saiu) e o VEREDITO é a palavra
+    // do sub + a cor, que falam de RITMO. Mesma troca do desktop e da TV
+    // (01/09/2026): dois "%" na mesma célula confundiam quem lia.
+    {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},

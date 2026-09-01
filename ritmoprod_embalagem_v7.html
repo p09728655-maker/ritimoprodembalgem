@@ -1521,11 +1521,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 
       <div class="tv-ef-row">
         <div>
-          <div class="tv-kpi-lbl">EFICIÊNCIA</div>
+          <!-- O número é FATO (quanto da meta do dia já saiu, conferível de
+               cabeça: 780 de 2.700); o VEREDITO é o selo ao lado, que fala do
+               ritmo. Foi a troca de 01/09/2026: com "EFICIÊNCIA 103,8%" em
+               verde ao lado de "28,9% DA META DO DIA", quem lia de longe ficava
+               com a primeira leitura. Uma linha só na sub: linha que quebra
+               empurra o resto da tela para fora (ver #tv-he-split). -->
+          <div class="tv-kpi-lbl">% DA META DO DIA</div>
           <div class="tv-ef-val" id="tv-ef">—</div>
-          <!-- O % da meta do dia era o número grande; virou a linha de apoio
-               quando o número passou a ser o ritmo. Uma linha só: linha que
-               quebra empurra o resto da tela para fora (ver #tv-he-split). -->
           <div class="tv-ef-sub" id="tv-ef-sub"></div>
         </div>
         <span id="tv-badge" class="tv-status-badge ok">● META</span>
@@ -1668,14 +1671,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 
         <div class="tvb2-row" id="tvb-kpi-ef">
           <div class="tvb2-info">
-            <div class="tvb2-lbl">EFICIÊNCIA</div>
+            <div class="tvb2-lbl">% DA META DO DIA</div>
             <div class="tvb2-effline">
               <div class="tvb2-val" id="tvb-ef">—</div>
               <div class="tvb2-effbar" id="tvb-effbar"></div>
             </div>
-            <!-- O % da meta do dia, espelhado da Tela A. Era o número grande
-                 antes de a EFICIÊNCIA passar a ser o ritmo; continua na tela
-                 porque é o que responde "quanto do dia já saiu". Uma linha só. -->
+            <!-- Espelhado da Tela A: quantas caixas a meta do dia já pedia a
+                 esta altura do turno. É a frase que explica o selo do ritmo sem
+                 pôr um segundo percentual na tela. Uma linha só. -->
             <div class="tvb2-sub" id="tvb-ef-sub"></div>
           </div>
         </div>
@@ -2382,7 +2385,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.35.0';
+const APP_VER   = '7.36.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3911,14 +3914,19 @@ function renderGerencial(){
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
     ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
     {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
-    // Número, cor e texto saem TODOS do mesmo lugar: realizado ÷ o que a meta
-    // do dia pedia até agora. Antes o número era o % do dia (efDia) e a cor o
-    // ritmo contra a meta/hora da planilha (ef) — duas réguas na mesma célula.
-    {l:'EFICIÊNCIA %',      v:fmtP(k.efRitmo),          sub:sl(k.efRitmo)+' · '+fmtP(k.efDia)+' da meta do dia',
-     t:'Realizado ÷ o que a META DO DIA pedia até agora ('+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' cx em '+fmt1(k.hProd)+'h de turno). '
+    /* O número é FATO (quanto da meta do dia já saiu, conferível de cabeça) e o
+       VEREDITO é a palavra do sub + a cor, que falam de RITMO — a troca feita
+       na TV em 01/09/2026, pelo mesmo motivo: dois "%" e dois sentidos da
+       palavra META na mesma célula confundiam quem lia.
+       A cor continua saindo de UMA conta só (efRitmo, o efNoRitmo do núcleo);
+       o que mudou foi qual número ocupa o lugar grande. A meta/hora da
+       HORA_A_HORA (k.ef) não pinta mais nada desde a v7.32. */
+    {l:'% DA META DO DIA',  v:fmtP(k.efDia),            sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' cx esperadas até agora',
+     t:'O número é o quanto da META DO DIA já saiu: '+fmtN(k.real)+' de '+fmtN(k.meta)+' cx. '
+      +'A palavra e a cor são o RITMO: realizado ÷ o que a meta do dia pedia até esta altura do turno ('
+      +fmtN(Math.round(k.metaAteAgora))+' cx em '+fmt1(k.hProd)+'h rodadas) = '+fmtP(k.efRitmo)+'. '
       +'A meta do dia é rateada pelos MINUTOS já rodados, então a régua não cobra hora que ainda não aconteceu. '
-      +'O sub traz o quanto da meta do dia inteiro já está feito ('+fmtP(k.efDia)+' de '+fmtN(k.meta)+' cx). '
-      +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda mais na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
+      +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
     {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
@@ -5826,16 +5834,26 @@ function renderTV(){
     ? `CAIXAS · ${fmtN(k.realNormal)} NORMAL <span style="color:var(--acc)">+ ${fmtN(k.realHE)} EXTRA</span>`
     : 'CAIXAS';
 
-  // EFICIÊNCIA: número E cor da MESMA conta — realizado ÷ o que a meta do dia
-  // pedia até agora. O quanto do dia já foi feito continua na tela, na linha de
-  // baixo: é a leitura que estava no número grande antes, e ela não some.
+  /* ── O NÚMERO é fato, o VEREDITO é o selo ─────────────────────────────────
+     Pedido do usuário em 01/09/2026 (*"essa eficiência está confundindo as
+     pessoas"*): a TV mostrava **103,8% EFICIÊNCIA** em verde, com "DENTRO DA
+     META" embaixo, num dia com 780 cx de uma meta de 2.700. Os dois números
+     estavam certos — 103,8% é 780 ÷ 751, o que a meta do dia pedia até aqui —,
+     mas na tela eram dois "%" e dois sentidos da palavra META, e quem passa e
+     lê de longe fica com o primeiro.
+     Agora o número grande é o que qualquer um confere de cabeça (780 de 2.700 =
+     28,9%) e sai em TINTA, sem cor de status — é a mesma regra do relatório
+     semanal. Quem julga é o selo, e ele fala de RITMO, não de meta. A conta do
+     ritmo (efNoRitmo) não mudou: ela pinta o selo e a barra. */
   const ee=document.getElementById('tv-ef');
-  ee.textContent=fmtP(k.efRitmo); ee.className=`tv-ef-val ${s}`;
+  ee.textContent = k.meta>0 ? fmtP(k.efDia) : '—';
+  ee.className='tv-ef-val';
   const es=document.getElementById('tv-ef-sub');
-  if(es) es.textContent = k.meta>0 ? `${fmtP(k.efDia)} DA META DO DIA` : '';
+  if(es) es.textContent = (k.meta>0 && k.metaAteAgora>0)
+    ? `${fmtN(k.real)} DE ${fmtN(Math.round(k.metaAteAgora))} CX ESPERADAS ATÉ AGORA` : '';
 
   const be=document.getElementById('tv-badge');
-  be.textContent='● '+sl(k.efRitmo); be.className=`tv-status-badge ${s}`;
+  be.textContent='● '+slRitmo(k.efRitmo); be.className=`tv-status-badge ${s}`;
 
   const pct=Math.min(100,(k.real/k.meta)*100);
   const fill=document.getElementById('tv-prog-fill');
@@ -11415,14 +11433,16 @@ const _cicloTV = (function() {
     set('tvb-pontos', fmtN(PONTOS_DIA.pontos || 0));
     set('tvb-peso',   fmtN(Math.round(PONTOS_DIA.pesoKg || 0)));
 
-    // EFICIÊNCIA em barra segmentada — enche proporcional ao % (lê o número já
-    // pronto de tvb-ef, não recalcula nada) e usa a MESMA cor do status.
+    // Barra segmentada do % DA META DO DIA — enche proporcional ao número já
+    // pronto de tvb-ef (não recalcula nada). A COR sai do SELO, não do número:
+    // desde 01/09/2026 o número é fato e vai em tinta, e quem carrega o veredito
+    // do ritmo é o selo — a barra acompanha ele, senão ficaria branca.
     const barEl = document.getElementById('tvb-effbar');
     if (barEl) {
       const pct = parseFloat(String(get('tvb-ef')).replace('%', '').replace(',', '.'));
       const N = 20;
       const on = isNaN(pct) ? 0 : Math.max(0, Math.min(N, Math.round(N * Math.min(100, pct) / 100)));
-      const cor = efB ? getComputedStyle(efB).color : 'var(--warn)';
+      const cor = bdgB ? getComputedStyle(bdgB).color : 'var(--warn)';
       let html = '';
       for (let i = 0; i < N; i++) html += `<span class="tvb2-seg" style="background:${i < on ? cor : 'var(--surface)'}"></span>`;
       barEl.innerHTML = html;
