@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.35.0 · mobile 1.14.0 — 01/09/2026
+
+**Atenção** — **a hora extra deixou de ser julgada também no gerencial de HOJE.**
+O backend passou a marcar `he` por **horário** (fora da jornada 07:00–17:00), e
+não mais só pelo rótulo `HE `: num dia liberado pela célula `C3=5`, as horas de
+**05:00** e **06:00** chegam ao painel marcadas como hora extra. Só que a tela ao
+vivo continuava cobrando meta delas — o mesmo defeito que a v7.34.0 já tinha
+tirado do gerencial de **dia passado**.
+
+Medido em **01/09/2026**, às 06:55: as duas horas de hora extra apareciam com
+**META/H 245**, eficiência **98,0%** e **144,0%** e o selo **OK**; eram, ao mesmo
+tempo, o **PICO (06:00)** e o **VALE (05:00)** de um turno que ainda nem tinha
+começado; e o `(+5)` que faltou às 05:00 era cobrado da hora seguinte.
+
+Agora, no gerencial (desktop e celular), a hora de HE aparece com **`—`** em
+META/H e EFICIÊNCIA e ganha a etiqueta **HORA EXTRA** no lugar do veredito; ela
+**não disputa** o PICO/VALE nem o MELHOR/PIOR HORA (a mesma base que o FECHAR DIA
+já gravava no `HISTORICO`); e **não entra no atraso acumulado** — nem cobrando,
+nem quitando o atraso das horas de jornada com caixas feitas fora do turno.
+
+**Os números mudam** nos dias com produção fora do turno: sem hora de jornada
+lançada, PICO/VALE e MELHOR/PIOR HORA mostram **`—`** em vez do horário de HE, e
+o atraso de cada hora cai pelo que a hora extra estava passando adiante. **O que
+NÃO mudou:** PRODUÇÃO REAL, META DO DIA, CAIXAS EM HORA EXTRA, EFICIÊNCIA do
+card, RITMO ATUAL, PROJEÇÃO e RITMO NECESSÁRIO — as caixas da HE continuam
+contando para a meta do dia, e a **TV OPERACIONAL** continua mostrando a meta da
+hora, que é o ritmo que o operador acompanha durante a hora extra.
+
+---
+
 ## v7.34.0 — 31/08/2026
 
 **Atenção** — **no gerencial de um DIA PASSADO, a meta por hora mudou e a hora

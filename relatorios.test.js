@@ -1973,6 +1973,35 @@ ok('TV: a Tela B espelha a linha de apoio',
 ok('gerencial: o card mostra a conta que pintou a cor',
    /v:fmtP\(k\.efRitmo\),\s*sub:sl\(k\.efRitmo\)/.test(_v7), true);
 
+console.log('\n── HORA EXTRA não é julgada, no dia de HOJE também ──');
+// 01/09/2026: o dia começou às 05:00 e o backend passou a marcar `he` por
+// HORÁRIO (fora de 07:00–17:00), não só pelo rótulo. As duas horas de HE
+// apareceram no gerencial AO VIVO com META/H 245, 98,0%/144,0% e o selo OK,
+// viraram o PICO e o VALE do turno e ainda passaram "(+5)" de atraso para a
+// hora seguinte — tudo o que a v7.34.0 já tinha tirado do gerencial de dia
+// PASSADO. A régua é uma só: hora extra não tem meta, logo não tem eficiência,
+// nem veredito, nem pico/vale, nem atraso.
+const _mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+const _core = fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8');
+ok('o atraso do núcleo pula a hora extra',
+   /if \(r\.he\) return \{ atrasoHora: 0/.test(_core), true);
+ok('gerencial ao vivo: a tabela não calcula eficiência de hora extra',
+   /const ef=\(!isHE&&prod!=null\)/.test(_v7), true);
+ok('gerencial ao vivo: a linha de HE ganha etiqueta, não veredito',
+   /const bdg=isHE\s*\n\s*\? '<span class="badge b-acc">HORA EXTRA<\/span>'/.test(_v7), true);
+ok('gerencial ao vivo: a etiqueta HE não volta colada no OK/ABAIXO',
+   /badge b-he" style="margin-right:5px">HE</.test(_v7), false);
+ok('gerencial ao vivo: META/H da hora extra sai "—"', /const metaCel=isHE\?'—'/.test(_v7), true);
+ok('gerencial ao vivo: pico e vale só das horas de jornada',
+   /const prodsNorm=dhAll\.filter\(r=>!r\.he\)/.test(_v7) &&
+   /dh\.find\(r=>!r\.he&&r\.producaoHora===k\.melhor\)/.test(_v7), true);
+ok('gerencial ao vivo: o `he` chega ao cálculo do atraso',
+   /he: !!\(\(reg&&reg\.he\)\|\|sl\.he\)/.test(_v7), true);
+ok('celular: a tabela hora a hora segue a mesma regra',
+   /const ehHE=r\.he===true;/.test(_mob) && /const ef2=\(!ehHE&&prod!=null/.test(_mob), true);
+ok('celular: melhor/pior também olham só a jornada',
+   /const prodsNorm = dh\.filter\(r=>!r\.he\)/.test(_mob), true);
+
 console.log('\n── o rótulo é CAIXAS, não PEÇAS ──');
 // Mesmo critério do vocabulário banido ("PERDIDO NO RITMO"/"PERDIDO PARADO"):
 // o mesmo st.pecas saía como PEÇAS PERDIDAS no desktop e CAIXAS PERDIDAS no

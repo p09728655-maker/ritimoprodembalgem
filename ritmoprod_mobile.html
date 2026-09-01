@@ -160,6 +160,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .tbl .warn{color:var(--warn)}
 .tbl .red{color:var(--red)}
 .tbl .pend{color:var(--txt2)}
+.tbl .acc{color:var(--acc)}   /* hora extra: etiqueta, não veredito */
 
 /* ═══ HISTÓRICO ═══ */
 .hist-list{display:flex;flex-direction:column;gap:6px}
@@ -830,7 +831,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.13.0';
+const APP_VER   = '1.14.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 let DADOS = [];
 // Médias históricas por horário (alerta de hora fraca — opção 2).
@@ -1050,8 +1051,10 @@ function processarResposta(json){
     return {
       data: hoje,
       horario: s.inicio, slotFim: s.fim, slotLabel: s.label||s.inicio,
-      // he: linha marcada "HE ..." na HORA_A_HORA — é o que separa caixa de
-      // hora normal de caixa de hora extra nos KPIs do dia.
+      // he: quem marca é o backend, pelo `_ehHoraExtraCaixas` do .gs — rótulo
+      // com prefixo "HE " OU horário fora da jornada 07:00–17:00 (as 05:00 e
+      // 06:00 de um dia com C3=5 entram por aqui). É o que separa caixa de hora
+      // normal de caixa de hora extra nos KPIs do dia.
       he: s.he===true,
       producaoHora: s.producaoHora!=null ? Number(s.producaoHora) : null,
       lotes: Array.isArray(s.lotes) ? s.lotes.map(Number) : [],
@@ -2035,9 +2038,15 @@ function calcKPIs(){
   // Math.max(0,...): meta já batida deixava meta-real negativo e o card
   // NEC. P/ META imprimia ritmo negativo. Mesma guarda do v7.
   const nec = slotsRest>0 ? Math.max(0, Math.ceil((meta-real)/slotsRest)) : 0;
-  const prods = dh.map(r=>r.producaoHora);
-  const melhor = prods.length ? Math.max(...prods) : 0;
-  const pior = prods.length ? Math.min(...prods) : 0;
+  // MELHOR/PIOR: só as horas de JORNADA. A hora extra não tem meta e não
+  // disputa pico nem vale — a mesma regra do v7 (calcKPIs de lá), do
+  // arquivarDiaAtual do .gs e do que o FECHAR DIA grava no HISTORICO. Nenhuma
+  // tela do celular lê estes campos hoje, mas quem ler amanhã herdaria a
+  // divergência: é o defeito que este projeto mais pagou caro.
+  const prodsNorm = dh.filter(r=>!r.he).map(r=>r.producaoHora);
+  const nNorm = prodsNorm.length;
+  const melhor = nNorm ? Math.max(...prodsNorm) : 0;
+  const pior = nNorm ? Math.min(...prodsNorm) : 0;
   // metaH = meta média das horas JÁ LANÇADAS, a mesma conta do v7. Aqui era
   // `meta ÷ totalSlots`, e os dois painéis davam números diferentes para o
   // mesmo turno: 172 × 178 num dia normal e 174 × 160 num dia com HE (o slot
@@ -2063,7 +2072,7 @@ function calcKPIs(){
   const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
   const {metaAteAgora, ef:efRitmo} = efNoRitmo(real, meta, minRodado, minTurno);
 
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,n,slotsRest,metaH,allHoje};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,nNorm,n,slotsRest,metaH,allHoje};
 }
 
 // ════════════════════════════════════════════════
@@ -2588,24 +2597,30 @@ function renderTabelaHoraHora(allHoje){
     const prod=r.producaoHora;
     if(prod!=null) acumC+=prod;
     const {atrasoHora=0, metaEfetivaHora=r.metaHora} = atrasoHoras[i]||{};
-    const ef2=prod!=null&&metaEfetivaHora>0?(prod/metaEfetivaHora)*100:null;
-    const cls=ef2!=null?sc(ef2):'pend';
-    const st=ef2!=null?sl(ef2):'—';
+    // Hora extra não é julgada: sem meta não há eficiência nem veredito — só a
+    // etiqueta que diz o que a linha é. Mesma regra do gerencial do desktop.
+    const ehHE=r.he===true;
+    const ef2=(!ehHE&&prod!=null&&metaEfetivaHora>0)?(prod/metaEfetivaHora)*100:null;
+    const cls=ehHE?'acc':(ef2!=null?sc(ef2):'pend');
+    const st=ehHE?'H. EXTRA':(ef2!=null?sl(ef2):'—');
     // Alerta de hora fraca: >15% abaixo da média histórica do mesmo horário
     // (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a META.
     // Se a META da hora for menor que a média histórica, é decisão de planejamento
     // — não mostra ícone (r.metaHora>=med).
     const _hk=normHora(r.slotLabel);
     const med=MEDIA_HORAS[_hk], amo=AMOSTRA_HORAS[_hk]||0;
-    const horaFraca = prod!=null && amo>=2 && med>0 && r.metaHora>=med && prod < med*0.85;
+    // `!ehHE`: a hora extra não é comparada com a média histórica do horário —
+    // é a mesma condição do v7, e sem ela o celular acusaria hora fraca onde o
+    // desktop não acusa.
+    const horaFraca = prod!=null && !ehHE && amo>=2 && med>0 && r.metaHora>=med && prod < med*0.85;
     const fraqMark = horaFraca
       ? ` <span style="color:var(--warn);font-weight:700" title="Abaixo da média deste horário: ${fmtN(med)} cx em ${amo} dias">⚠</span>`
       : '';
     return `<tr>
       <td style="white-space:nowrap">${r.slotLabel||r.horario}${fraqMark}</td>
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
-      <td class="td-num">${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}</td>
-      <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}${ef2!=null?`<span class="td-s-sub">${st}</span>`:''}</td>
+      <td class="td-num">${ehHE?'—':`${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}`}</td>
+      <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}${(ef2!=null||ehHE)?`<span class="td-s-sub">${st}</span>`:''}</td>
     </tr>`;
   }).join('');
 }

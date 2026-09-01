@@ -2382,7 +2382,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.34.0';
+const APP_VER   = '7.35.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -3607,10 +3607,14 @@ function calcKPIs(dh){
   const dhAll=allHoje.filter(d=>d.producaoHora!=null);
   const n=dhAll.length;
   const real=dhAll.reduce((s,r)=>s+r.producaoHora,0);
-  // Caixas em HORA EXTRA × HORA NORMAL. Hora extra = slot marcado he (rótulo
-  // "HE ..." na planilha ou slot cadastrado no modal HORA EXTRA). Os slots
-  // 05:00/06:00 do turno estendido NÃO são hora extra aqui — são horas de
-  // turno liberadas pela célula C3.
+  // Caixas em HORA EXTRA × HORA NORMAL. Hora extra = slot marcado `he`, e quem
+  // marca é o backend, pelo MESMO critério do `_ehHoraExtraCaixas` do .gs:
+  // rótulo com prefixo "HE " OU horário fora da jornada 07:00–17:00.
+  // ⚠ Os slots 05:00/06:00 SÃO hora extra (PPCP, 31/08/2026: "05:00 as 06:00,
+  // 06:00 as 07:00 sempre é hora extra, e após 17:00") — a célula C3 apenas os
+  // libera para o operador, não os transforma em hora de turno. Este comentário
+  // já disse o contrário, e era do tempo em que o .gs classificava HE só pelo
+  // rótulo; com o .gs re-deployado eles chegam aqui com `he:true`.
   const realHE=dhAll.filter(r=>r.he).reduce((s,r)=>s+r.producaoHora,0);
   const realNormal=real-realHE;
   const nHE=dhAll.filter(r=>r.he).length;
@@ -3646,9 +3650,20 @@ function calcKPIs(dh){
   // gerencial e na TV. Ritmo necessário negativo não existe: o que falta
   // produzir por hora é zero. Quem mostra "META OK" é o render.
   const nec=slotsRest>0?Math.max(0,Math.ceil((meta-real)/slotsRest)):0;
-  const prods=dhAll.map(r=>r.producaoHora);
-  const melhor=prods.length?Math.max(...prods):0;
-  const pior=prods.length?Math.min(...prods):0;
+  /* ── PICO e VALE olham só as horas de JORNADA ──────────────────────────────
+     A hora extra não tem meta e não disputa o título de melhor nem de pior hora
+     do turno. É a mesma regra de três lugares que já existiam: o
+     `arquivarDiaAtual` do .gs, o botão FECHAR DIA (que grava MELHOR H./PIOR H.
+     só das horas não-HE) e o gerencial de dia passado (v7.34.0).
+     Medido em 01/09/2026: o dia começou às 05:00 e as duas horas de hora extra
+     eram, ao mesmo tempo, o PICO (06:00, 360 cx) e o VALE (05:00, 240 cx) de um
+     turno que ainda nem tinha começado.
+     Sem hora de jornada lançada, `nNorm` é 0 e quem desenha mostra "—" — zero
+     afirmaria "a melhor hora do turno fez 0 cx". */
+  const prodsNorm=dhAll.filter(r=>!r.he).map(r=>r.producaoHora);
+  const nNorm=prodsNorm.length;
+  const melhor=nNorm?Math.max(...prodsNorm):0;
+  const pior=nNorm?Math.min(...prodsNorm):0;
   // Soma os minutos REAIS das horas lançadas. Era `n × duração do PRIMEIRO
   // slot`, o que assume que toda hora do turno tem o mesmo tamanho — e a
   // deste turno não tem: o slot pós-almoço 12:12–13:00 vale 48 min. Com 6
@@ -3659,9 +3674,12 @@ function calcKPIs(dh){
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return soma + ((reg&&reg.producaoHora!=null) ? (sl.min||60) : 0);
   },0)/60;
+  // `he` vai junto: hora extra não tem meta, então não gera atraso para as
+  // horas de jornada seguintes nem quita o atraso delas (ver calcAtrasoHoras).
   const atrasoHoras=calcAtrasoHoras(effSlots.map(sl=>{
     const reg=allHoje.find(d=>d.horario===sl.inicio);
-    return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null };
+    return { metaHora: reg?reg.metaHora:metaH, producaoHora: reg?reg.producaoHora:null,
+             he: !!((reg&&reg.he)||sl.he) };
   }));
 
   /* ── A RÉGUA DO VERDE/VERMELHO: a META DO DIA repartida pelo tempo já rodado ─
@@ -3681,7 +3699,7 @@ function calcKPIs(dh){
   const minTurno=effSlots.reduce((soma,sl)=>soma+(sl.min||60),0);
   const {metaAteAgora, ef:efRitmo}=efNoRitmo(real, meta, hProd*60, minTurno);
 
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,nNorm,hProd,metaH,metaHE,slotsRest,n,slots:effSlots,allHoje,atrasoHoras};
 }
 function sl(ef){ return ef>=96?'DENTRO DA META':ef>=90?'ATENÇÃO':'ABAIXO DO PLANEJADO'; }
 
@@ -3905,8 +3923,10 @@ function renderGerencial(){
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
     {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
-    {l:'MELHOR HORA',       v:fmtN(k.melhor),           sub:'cx — pico do turno',     c:'ok'},
-    {l:'PIOR HORA',         v:fmtN(k.pior),             sub:'cx — mínimo do turno',   c:k.pior<k.metaH*0.7?'red':''},
+    // Só horas de JORNADA: a hora extra não tem meta e não disputa pico nem vale
+    // — a mesma base que o FECHAR DIA grava nas colunas MELHOR H./PIOR H.
+    {l:'MELHOR HORA',       v:k.nNorm?fmtN(k.melhor):'—', sub:k.nNorm?'cx — pico do turno':'nenhuma hora de jornada lançada', c:k.nNorm?'ok':''},
+    {l:'PIOR HORA',         v:k.nNorm?fmtN(k.pior):'—',   sub:k.nNorm?'cx — mínimo do turno':'a hora extra não entra no pico/vale', c:(k.nNorm&&k.pior<k.metaH*0.7)?'red':''},
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
@@ -3929,8 +3949,10 @@ function renderGerencial(){
   // ── Análise ──
   const tendStr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'↑ CRESCENDO':'↓ QUEDA'):'SEM DADOS';
   const tendClr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'var(--ok)':'var(--red)'):'var(--txt2)';
-  const picoR=dh.find(r=>r.producaoHora===k.melhor);
-  const valeR=dh.find(r=>r.producaoHora===k.pior);
+  // Pico e vale saem das horas de jornada (k.melhor/k.pior já excluem a HE):
+  // uma hora sem meta não é o melhor nem o pior desempenho do turno.
+  const picoR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.melhor):null;
+  const valeR=k.nNorm?dh.find(r=>!r.he&&r.producaoHora===k.pior):null;
   document.getElementById('analise-row').innerHTML=`
     <div class="a-card"><div class="a-lbl">RITMO NECESSÁRIO</div>
       <div class="a-val" style="color:${k.slotsRest>0&&k.nec===0?'var(--ok)':'var(--warn)'}">${k.slotsRest>0?(k.nec===0?'META OK':fmtN(k.nec)+' cx/h'):'— Turno enc.'}</div>
@@ -3940,10 +3962,10 @@ function renderGerencial(){
       <div class="a-desc">últimas 2 horas registradas</div></div>
     <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
       <div class="a-val">${picoR?picoR.horario:'—'}</div>
-      <div class="a-desc">${fmtN(k.melhor)} cx neste horário</div></div>
+      <div class="a-desc">${k.nNorm?fmtN(k.melhor)+' cx neste horário':'sem hora de jornada lançada'}</div></div>
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
       <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
-      <div class="a-desc">${fmtN(k.pior)} cx — menor ritmo</div></div>`;
+      <div class="a-desc">${k.nNorm?fmtN(k.pior)+' cx — menor ritmo':'a hora extra não disputa o vale'}</div></div>`;
 
   // ── Produto atual do turno (opcional — só aparece se o operador selecionou) ──
   const gerProdEl=document.getElementById('ger-produto-atual');
@@ -3966,10 +3988,19 @@ function renderGerencial(){
     const {atrasoHora=0, metaEfetivaHora=metaSlot} = k.atrasoHoras?.[i]||{};
     const isHE=reg?.he||sl.he||false;
     if(prod!==null&&prod!==undefined) acumCalc+=prod;
-    const ef=prod!=null?(prod/(metaEfetivaHora||metaSlot)*100):null;
+    /* ── Hora extra não é julgada ──────────────────────────────────────────────
+       Sem meta não há eficiência nem veredito: a linha ganha a etiqueta que diz
+       o que ela é, exatamente como no gerencial de dia passado (v7.34.0).
+       Medido em 01/09/2026: as horas de HE das 05:00 e 06:00 apareciam com
+       META/H 245, 98,0% e 144,0% e o selo OK — cobradas contra uma meta que não
+       é delas, no mesmo painel em que o dia passado já dizia "—". */
+    const ef=(!isHE&&prod!=null)?(prod/(metaEfetivaHora||metaSlot)*100):null;
     const s2=ef===null?'mute':ef>=96?'ok':ef>=90?'warn':'red';
-    const heTag=isHE?`<span class="badge b-he" style="margin-right:5px">HE</span>`:'';
-    const bdg=`${heTag}<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+    const bdg=isHE
+      ? '<span class="badge b-acc">HORA EXTRA</span>'
+      : `<span class="badge b-${s2}">${ef===null?'PENDENTE':ef>=96?'OK':ef>=90?'ATENÇÃO':'ABAIXO'}</span>`;
+    const metaCel=isHE?'—'
+      : fmtN(metaSlot)+(atrasoHora>0?`<span style="color:var(--warn);font-size:10px;margin-left:3px" title="Meta efetiva com atraso acumulado do turno: ${fmtN(metaEfetivaHora)} cx">(+${fmtN(atrasoHora)})</span>`:'');
     // Alerta de hora fraca: produção >15% abaixo da média histórica deste mesmo
     // horário (≥2 dias de amostra). Compara SEMPRE o REALIZADO (prod), nunca a
     // META, com a média histórica.
@@ -3995,7 +4026,7 @@ function renderGerencial(){
       <td class="hora-cell">${isHE?`<span class="he-dot"></span>`:''}${sl.label}${fraqMark}</td>
       <td class="mono" style="color:${prod!=null?'var(--txt)':'var(--txt3)'}">${prod!=null?fmtN(prod):'—'}</td>
       <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
-      <td class="mono" style="color:${isHE?'var(--acc)':'var(--txt2)'}">${fmtN(metaSlot)}${atrasoHora>0?`<span style="color:var(--warn);font-size:10px;margin-left:3px" title="Meta efetiva com atraso acumulado do turno: ${fmtN(metaEfetivaHora)} cx">(+${fmtN(atrasoHora)})</span>`:''}</td>
+      <td class="mono" style="color:${isHE?'var(--txt3)':'var(--txt2)'}">${metaCel}</td>
       <td class="mono" style="color:${ef!=null?(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
