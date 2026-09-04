@@ -11,6 +11,67 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.39.0 — 04/09/2026
+
+**Atenção** — **nenhum número, fórmula ou premissa existente mudou.** O que
+entrou é um campo **opcional** (TICKET MÉDIO) e uma **terceira leitura
+financeira** (POTENCIAL DE RECEITA) que só aparece quando esse campo é
+preenchido. Sem ticket informado, a proposta sai exatamente como saía.
+
+### TICKET MÉDIO → POTENCIAL DE RECEITA
+
+Campo novo no cenário do simulador, em **R$ por caixa**, **opcional**. Quando
+informado:
+
+`caixas recuperadas × ticket médio = potencial de receita mensal` · `× 12 = anual`
+
+⚠ **Sem ticket, nada é calculado.** O painel não arbitra preço médio, não busca
+valor externo e não mostra zero — mostra *"ticket médio não informado —
+potencial de receita não calculado"*. Zero afirmaria que a capacidade não vale
+nada.
+
+### O que este número NÃO é
+
+**Caixa recuperada é capacidade produtiva, não venda.** O potencial de receita
+não é economia, não é lucro e não é faturamento garantido: ele só se realiza se
+houver demanda para absorver as caixas. E o ticket é a **média do mix do
+período** — modelos e caixas de valores diferentes entram na mesma média.
+
+⚠ **Ele NUNCA entra no payback nem no ROI**, que continuam saindo só da
+ECONOMIA EM HE. Receita potencial não é dinheiro disponível para pagar
+investimento. O teste falha se o ticket mexer em payback, ROI, economia em HE,
+custo da parada ou caixas recuperadas.
+
+### A proposta separou capacidade de dinheiro
+
+O documento passou a seguir o fluxo **PROBLEMA → CENÁRIO → CAPACIDADE →
+IMPACTO → INVESTIMENTO → RETORNO**, e as seções acompanham:
+
+- **3 · A CAPACIDADE RECUPERADA** — tempo, caixas, hora extra evitável e
+  disponibilidade, numa linha de quatro;
+- **4 · O IMPACTO ECONÔMICO — TRÊS LEITURAS QUE NÃO SE SOMAM** — custo da
+  parada (ociosidade de folha já paga), economia em HE (a única leitura de
+  caixa) e potencial de receita (o valor econômico da capacidade).
+
+O card do potencial sai com **borda tracejada**: ele costuma ser ordens de
+grandeza maior que a economia em HE e divide a linha com ela — sem essa
+diferença visual, a leitura ancora no maior número da página.
+
+### Etiquetas de natureza do dado
+
+Cada número da proposta passou a dizer de onde vem: **APONTADO** (veio do
+apontamento) · **ESTIMADO** (conta do painel sobre o apontado) · **SIMULADO**
+(depende do cenário digitado) · **POTENCIAL** (só se realiza sob condição
+externa) · **OCIOSIDADE**.
+
+⚠ **Correção importante:** ocorrências e tempo parado **são** apontamento, mas
+**caixas perdidas é conta** (duração produtiva × meta do dia ÷ horas
+produtivas). Marcar as três como "REAL" afirmaria como medido um número que é
+estimado — e é exatamente esse tipo de confusão que as etiquetas existem para
+evitar.
+
+---
+
 ## v7.38.0 — 04/09/2026
 
 **Atenção** — **o SIMULADOR DE INVESTIMENTO mudou de endereço.** Ele estava no
