@@ -11,6 +11,50 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.38.0 — 04/09/2026
+
+**Atenção** — **o SIMULADOR DE INVESTIMENTO mudou de endereço.** Ele estava no
+rodapé da aba GESTÃO DE PERDAS; agora tem **aba própria (💡 SIMULADOR)** e
+**filtro de datas próprio**. Nenhuma conta mudou — o cenário que você já tinha
+digitado (causas marcadas, custo-hora, pessoas, HE, investimento) continua
+salvo e aparece na aba nova. Na GESTÃO DE PERDAS ficou o botão **ABRIR O
+SIMULADOR** no lugar onde o bloco vivia.
+
+### Por que separar
+
+A proposta de um equipamento raramente se decide na mesma janela em que se
+acompanha a perda: a gestão olha os **30 dias rolando**, e a justificativa de um
+investimento pede o recorte que o gestor escolher — um mês fechado, um
+trimestre. Com os dois no mesmo filtro, mudar o período para montar a proposta
+mexia na tela de acompanhamento, e vice-versa.
+
+A aba nova tem o mesmo filtro das outras: **DE / ATÉ**, presets **7 · 15 · 30 ·
+90 DIAS · MÊS** (padrão **30 dias**, igual ao da gestão de perdas), **ATUALIZAR**
+e o botão **IMPRESSÃO EXECUTIVA** — que agora manda o período **desta** aba
+para o PDF.
+
+Abaixo do filtro entrou a **base da simulação**: dias trabalhados no período,
+horas produtivas por dia e o tempo de parada não programada. Na aba própria o
+gestor não tem mais o quadro da gestão de perdas ao lado para saber de que
+período se trata.
+
+### O custo das chamadas não subiu
+
+⚠ `getParadasPeriodo` lê a aba `PARADAS` **inteira** e é a leitura mais cara do
+painel. Duas abas com período próprio poderiam virar duas buscas — não viram:
+
+- o **contexto de um período é montado uma vez só** (`_pgContextoDoPeriodo`) e
+  guardado no **mesmo cache** (chaveado por `de|ate`, 5 min) que a gestão de
+  perdas sempre usou. Período igual nas duas abas = **zero chamada nova**;
+- uma requisição **em voo é compartilhada** (`PG_VOO`): se as duas telas pedirem
+  a mesma janela ao mesmo tempo, sai **uma** execução no Apps Script, não duas.
+  É o mesmo remédio do comparativo por modelo.
+
+Como os dois filtros começam em 30 dias, quem entra nas duas abas sem mexer no
+período não paga nenhuma busca a mais do que pagava antes.
+
+---
+
 ## v7.37.0 — 04/09/2026
 
 **Atenção** — **nenhum número, fórmula ou premissa mudou.** Esta versão mexe só

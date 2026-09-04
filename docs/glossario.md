@@ -124,6 +124,11 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 ## Simulador de investimento
 
+Fica na aba **💡 SIMULADOR**, com **filtro de datas próprio** — independente do da
+GESTÃO DE PERDAS. O contexto de um mesmo período é compartilhado entre as duas
+telas, então períodos iguais não geram busca nova.
+
+
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **CUSTO DA PARADA** | horas recuperadas × custo-hora da linha | R$/mês | `v7:_pgSimulacao` |

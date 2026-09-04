@@ -128,7 +128,7 @@ body.ger-hist .ger-live-only{display:none!important}
    com os tokens do painel (o PDF é claro, a tela é escura). Escrever um segundo
    desenho para a tela seria a duplicação que já fez a conta de paradas divergir
    três vezes. Se mexer no quadro, mexa nas DUAS peles — a marcação é uma só. */
-#sec-perdas .pg-q{font-size:11.5px;padding:5px 13px}
+#sec-perdas .pg-q,#sec-simulador .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
 #sec-perdas .pgq{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
@@ -197,7 +197,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pg-mil .kpi-val.v-red{color:var(--red)}
 #sec-perdas .pg-grao{margin-left:12px;display:inline-flex;gap:5px;vertical-align:middle}
 #sec-perdas .pg-grao .pg-q{font-size:10px;padding:3px 10px}
-#sec-perdas .pg-imp{font-size:10px;padding:3px 10px;margin-left:10px;vertical-align:middle}
+#sec-perdas .pg-imp,.pg-sim-wrap .pg-imp{font-size:10px;padding:3px 10px;margin-left:10px;vertical-align:middle}
 #sec-perdas .pg-mes{margin-top:12px}
 /* A faixa de dias que a linha realmente cobre — "mês qual dia até que dia?" */
 #sec-perdas .pg-mes-per{font-family:var(--font-d);font-size:10.5px;font-weight:400;color:var(--txt2);letter-spacing:.6px;margin-top:3px}
@@ -220,35 +220,40 @@ body.ger-hist .ger-live-only{display:none!important}
    É SIMULAÇÃO (etiqueta âmbar, como o simulador da esteira): nada é gravado,
    e os números vêm do MESMO período em tela — zero chamada nova. */
 .pg-sim-wrap{margin-top:16px}
-#sec-perdas .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
-#sec-perdas .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
-#sec-perdas .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
-#sec-perdas .pg-sim-sub{font-family:var(--font-d);font-size:10.5px;letter-spacing:1.2px;color:var(--txt2);margin-bottom:7px}
-#sec-perdas .pg-sim-sub i{font-style:normal;letter-spacing:.4px;text-transform:none}
-#sec-perdas .pg-sim-chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt);padding:4px 7px;border-radius:5px;cursor:pointer}
-#sec-perdas .pg-sim-chk:hover{background:var(--elevated)}
-#sec-perdas .pg-sim-chk.on{background:rgba(255,152,0,.10)}
-#sec-perdas .pg-sim-chk input{accent-color:var(--warn)}
-#sec-perdas .pg-sim-chk i{font-style:normal;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-left:auto;white-space:nowrap}
-#sec-perdas .pg-sim-inp{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}
-#sec-perdas .pg-sim-inp label{font-family:var(--font-d);font-size:10px;letter-spacing:.8px;color:var(--txt2);display:block}
-#sec-perdas .pg-sim-inp input{width:100%;margin-top:3px;background:var(--elevated);border:1px solid var(--border);border-radius:5px;color:var(--txt);font-size:13px;padding:6px 8px}
-#sec-perdas .pg-sim-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-top:14px}
-#sec-perdas .pg-sim-c{border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:var(--elevated)}
-#sec-perdas .pg-sim-c-r{font-family:var(--font-d);font-size:10px;letter-spacing:1.2px;color:var(--txt2)}
-#sec-perdas .pg-sim-c-r select{background:var(--elevated);border:1px solid var(--border);border-radius:4px;color:var(--txt);font-family:var(--font-d);font-size:10px;letter-spacing:.5px;padding:1px 3px}
-#sec-perdas .pg-sim-c-v{font-family:var(--font-h);font-size:20px;font-weight:700;line-height:1.2;margin-top:3px}
-#sec-perdas .pg-sim-c-v span{font-size:12px;color:var(--txt2);font-weight:400}
+/* A base sobre a qual a simulação roda — na aba própria o gestor não tem o
+   quadro da gestão de perdas ao lado para saber de que período se trata. */
+#sec-simulador .sim-base{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;border-left:2px solid var(--acc);padding:2px 0 2px 11px;margin-bottom:14px}
+#sec-simulador .sim-base b{color:var(--txt)}
+#sec-simulador .pg-sim-wrap{margin-top:0}
+.pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
+.pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
+.pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
+.pg-sim-wrap .pg-sim-sub{font-family:var(--font-d);font-size:10.5px;letter-spacing:1.2px;color:var(--txt2);margin-bottom:7px}
+.pg-sim-wrap .pg-sim-sub i{font-style:normal;letter-spacing:.4px;text-transform:none}
+.pg-sim-wrap .pg-sim-chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt);padding:4px 7px;border-radius:5px;cursor:pointer}
+.pg-sim-wrap .pg-sim-chk:hover{background:var(--elevated)}
+.pg-sim-wrap .pg-sim-chk.on{background:rgba(255,152,0,.10)}
+.pg-sim-wrap .pg-sim-chk input{accent-color:var(--warn)}
+.pg-sim-wrap .pg-sim-chk i{font-style:normal;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-left:auto;white-space:nowrap}
+.pg-sim-wrap .pg-sim-inp{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}
+.pg-sim-wrap .pg-sim-inp label{font-family:var(--font-d);font-size:10px;letter-spacing:.8px;color:var(--txt2);display:block}
+.pg-sim-wrap .pg-sim-inp input{width:100%;margin-top:3px;background:var(--elevated);border:1px solid var(--border);border-radius:5px;color:var(--txt);font-size:13px;padding:6px 8px}
+.pg-sim-wrap .pg-sim-res{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px;margin-top:14px}
+.pg-sim-wrap .pg-sim-c{border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:var(--elevated)}
+.pg-sim-wrap .pg-sim-c-r{font-family:var(--font-d);font-size:10px;letter-spacing:1.2px;color:var(--txt2)}
+.pg-sim-wrap .pg-sim-c-r select{background:var(--elevated);border:1px solid var(--border);border-radius:4px;color:var(--txt);font-family:var(--font-d);font-size:10px;letter-spacing:.5px;padding:1px 3px}
+.pg-sim-wrap .pg-sim-c-v{font-family:var(--font-h);font-size:20px;font-weight:700;line-height:1.2;margin-top:3px}
+.pg-sim-wrap .pg-sim-c-v span{font-size:12px;color:var(--txt2);font-weight:400}
 /* A LINHA DO ANO tem corpo de texto, não de nota (04/09/2026): é ela que se
    compara com o orçamento do equipamento, e a 10px cinza ninguém a lia. */
-#sec-perdas .pg-sim-c-a{font-family:var(--font-d);font-size:12.5px;font-weight:600;letter-spacing:.3px;color:var(--txt);margin-top:3px}
-#sec-perdas .pg-sim-c-s{font-family:var(--font-d);font-size:10px;color:var(--txt2);margin-top:2px;line-height:1.4}
+.pg-sim-wrap .pg-sim-c-a{font-family:var(--font-d);font-size:12.5px;font-weight:600;letter-spacing:.3px;color:var(--txt);margin-top:3px}
+.pg-sim-wrap .pg-sim-c-s{font-family:var(--font-d);font-size:10px;color:var(--txt2);margin-top:2px;line-height:1.4}
 /* O card da ECONOMIA EM HE é o que decide o investimento: destaque de MOLDURA,
    nunca de cor — a cor do número continua sendo o veredito. */
-#sec-perdas .pg-sim-c.dest{border-color:var(--txt2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
-#sec-perdas .pg-sim-vazio{font-family:var(--font-d);font-size:11.5px;color:var(--txt2);margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;letter-spacing:.5px}
+.pg-sim-wrap .pg-sim-c.dest{border-color:var(--txt2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.pg-sim-wrap .pg-sim-vazio{font-family:var(--font-d);font-size:11.5px;color:var(--txt2);margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;letter-spacing:.5px}
 @media(max-width:900px){
-  #sec-perdas .pg-sim-grid{grid-template-columns:1fr}
+  .pg-sim-wrap .pg-sim-grid{grid-template-columns:1fr}
 }
 @media(max-width:900px){
   #sec-perdas .pg-mil{grid-template-columns:1fr}
@@ -1291,6 +1296,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
+  <button class="tab"    data-tab="simulador" onclick="setTab('simulador')" title="Simulador de investimento — período próprio, independente da GESTÃO DE PERDAS">💡 SIMULADOR</button>
   <button class="tab"    data-tab="historico" onclick="setTab('historico')">📁 HISTÓRICO</button>
 </nav>
 
@@ -1949,6 +1955,41 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div id="pg-quadro"><div class="pg-carregando">CARREGANDO…</div></div>
 </section>
 
+<!-- ═══ SIMULADOR DE INVESTIMENTO ═══
+     Saiu do rodapé da GESTÃO DE PERDAS e ganhou ABA e PERÍODO PRÓPRIOS (pedido
+     do usuário, 04/09/2026). Justificar um equipamento quase nunca se decide na
+     mesma janela em que se acompanha a perda: a gestão olha os 30 dias
+     rolando, e a proposta pede o recorte que o gestor escolher — um mês
+     fechado, um trimestre.
+     ⚠ O CACHE É O MESMO da gestão de perdas (PG_TELA_CACHE, chaveado pelo
+     período): com o mesmo período nas duas abas não há chamada nova nenhuma,
+     que é a propriedade que o simulador sempre teve. `getParadasPeriodo` lê a
+     aba PARADAS INTEIRA e é a leitura mais cara do painel. -->
+<section id="sec-simulador" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">💡 SIMULADOR DE INVESTIMENTO</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">DE</span>
+      <input type="date" id="sim-de" onchange="_simMarcaPreset(null);renderSimulador()" title="Período que alimenta a simulação — independente do da GESTÃO DE PERDAS" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <span style="color:var(--txt2)">–</span>
+      <input type="date" id="sim-ate" onchange="_simMarcaPreset(null);renderSimulador()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <button class="btn btn-ghost" onclick="renderSimulador(true)" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioInvestimento(dGet('sim-de'),dGet('sim-ate'))" title="A proposta em uma página para a diretoria: problema, cenário, ganho por mês e por ano, investimento e retorno" style="font-size:10px;padding:4px 10px">🖨 IMPRESSÃO EXECUTIVA</button>
+    </div>
+  </div>
+  <div class="par-filtros">
+    <button class="btn btn-ghost pg-q" data-per="7"   onclick="_simFiltro(7,'7')">7 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="15"  onclick="_simFiltro(15,'15')">15 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="30"  onclick="_simFiltro(30,'30')">30 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="90"  onclick="_simFiltro(90,'90')" title="Três meses — amostra maior para uma proposta de investimento">90 DIAS</button>
+    <button class="btn btn-ghost pg-q" data-per="mes" onclick="_simMesAtual()">MÊS</button>
+    <span id="sim-per-lbl" class="par-per-lbl"></span>
+    <div style="flex:1"></div>
+    <span id="sim-upd" class="par-upd"></span>
+  </div>
+  <div id="sim-bloco"><div class="pg-carregando">CARREGANDO…</div></div>
+</section>
+
 <!-- ═══ HISTÓRICO ═══ -->
 <section id="sec-historico" class="sec">
 
@@ -2391,7 +2432,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.37.0';
+const APP_VER   = '7.38.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // ════════════════════════════════════════════════
@@ -6628,6 +6669,7 @@ function setTab(tab){
   if(tab==='historico'){ _initFiltroHist(); renderHist(); }
   if(tab==='paradas'){ _initFiltroParadas(); renderAnaliseParadas(); }
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
+  if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
@@ -9059,6 +9101,38 @@ function _pgInitFiltro(){
   if(e && !e.value) _pgFiltro(30,'30');
 }
 
+// ── UMA busca por período, compartilhada pelas DUAS telas ───────────────────
+// A GESTÃO DE PERDAS e o SIMULADOR têm períodos próprios, mas o contexto de um
+// período é o MESMO objeto: cache único (PG_TELA_CACHE, chaveado por `de|ate`)
+// e requisição única em voo (PG_VOO). Períodos iguais nas duas abas = ZERO
+// chamada nova; períodos diferentes = uma busca cada, nunca duas para a mesma
+// janela. É o mesmo remédio do `_phVoo` do comparativo por modelo: o Apps
+// Script atende UMA execução por vez e `getParadasPeriodo` lê a aba PARADAS
+// inteira — duas telas pedindo a mesma janela só se enfileirariam lá.
+var PG_VOO={};
+async function _pgContextoDoPeriodo(de, ate, forcar){
+  const chave=de+'|'+ate;
+  if(forcar) delete PG_TELA_CACHE[chave];
+  const c=PG_TELA_CACHE[chave];
+  if(c && (Date.now()-c.t)<PG_TELA_TTL && !forcar) return c;
+  if(PG_VOO[chave]) return PG_VOO[chave];
+  PG_VOO[chave]=(async()=>{
+    try{
+      const dados=await _pgBuscarDados(de, ate);
+      if(!dados) return null;
+      const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
+      const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
+      const tiR=_taktIdeal(st.horasProd);
+      const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
+      const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate, grao:PG_GRAO});
+      const reg={ctx, t:Date.now()};
+      PG_TELA_CACHE[chave]=reg;
+      return reg;
+    }finally{ delete PG_VOO[chave]; }
+  })();
+  return PG_VOO[chave];
+}
+
 async function renderGestaoPerdas(forcar){
   const alvo=document.getElementById('pg-quadro');
   if(!alvo) return;
@@ -9085,19 +9159,13 @@ async function renderGestaoPerdas(forcar){
   else if(upd) upd.textContent='atualizando…';
   PG_TELA_ULT=chave; PG_TELA_RODANDO=true;
   try{
-    const dados=await _pgBuscarDados(de, ate);
-    if(!dados){
+    const reg=await _pgContextoDoPeriodo(de, ate, forcar);
+    if(!reg){
       if(alvo.querySelector('.pgq')){ if(upd) upd.textContent='⚠ não atualizou'; }
       else alvo.innerHTML='<div class="pg-carregando">O servidor demorou a responder (cold start). Toque em ATUALIZAR para tentar de novo.</div>';
       return;
     }
-    const st=_paradasStats(dados.paradas, dados.metaByDay, {realByDay:dados.realByDay, de, ate});
-    const _d=de.split('/').map(Number), _a=ate.split('/').map(Number);
-    const tiR=_taktIdeal(st.horasProd);
-    const trR=_taktRealPeriodo(st.porDia, st.horasProd, new Date(_d[2],_d[1]-1,_d[0]), new Date(_a[2],_a[1]-1,_a[0]), dados.realByDay);
-    const ctx=_pgContexto({paradas:dados.paradas, st, tiR, trR, realByDay:dados.realByDay, de, ate, grao:PG_GRAO});
-    PG_TELA_CACHE[chave]={ctx, t:Date.now()};
-    _pgPintar(ctx, Date.now());
+    _pgPintar(reg.ctx, reg.t);
   }catch(err){
     if(!alvo.querySelector('.pgq')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar a gestão de perdas: ${_rpEsc(err.message)}</div>`;
     else if(upd) upd.textContent='⚠ não atualizou';
@@ -9139,12 +9207,106 @@ function _pgPintar(ctx, t){
         ${linha('GANHO POTENCIAL', d.ganho||'—', 'var(--ok)')}
         ${linha('PRÓXIMO FOCO', d.foco||'—')}
       </div><div class="pg-diag-nota">Esta tela é a leitura de dez segundos. <b>RELATÓRIO DESTA TELA</b> imprime o quadro com as onze seções da gestão de perdas (Pareto diário, evolução, causas, SMED, recuperação, plano e validação do apontamento); <b>RELATÓRIO DE PARADAS</b> imprime o controle do período — resumo, Pareto por tipo, estudo de ganho, SWOT e o detalhamento parada a parada.</div></div>`
-    + _pgSimHtml(ctx);
+    // O SIMULADOR mudou de endereço (04/09/2026): aba própria, período próprio.
+    // Fica o ponteiro — sem ele o gestor procura o bloco onde ele não está mais.
+    + `<div class="pg-diag-wrap"><div class="pg-diag-nota">O <b>SIMULADOR DE INVESTIMENTO</b> agora tem aba própria, com <b>período próprio</b> — a proposta de um equipamento raramente se decide na mesma janela em que se acompanha a perda. <button class="btn btn-ghost pg-imp" onclick="setTab('simulador')" style="margin-left:0">\u{1F4A1} ABRIR O SIMULADOR</button></div></div>`;
   const upd=document.getElementById('pg-upd');
   if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
 }
 
-// ── SIMULADOR DE INVESTIMENTO (aba GESTÃO DE PERDAS) ────────────────────────
+// ── ABA SIMULADOR: filtro de datas próprio ──────────────────────────────────
+// Independente do da GESTÃO DE PERDAS de propósito (pedido do usuário,
+// 04/09/2026). A gestão acompanha os 30 dias rolando; a proposta de um
+// equipamento pede o recorte que o gestor escolher — um mês fechado, um
+// trimestre — e trocar um não pode mexer no outro.
+// ⚠ O CONTEXTO é o mesmo objeto por período (`_pgContextoDoPeriodo`): período
+// igual nas duas abas não gera chamada nova nenhuma.
+var SIM_ULT='', SIM_RODANDO=false;
+
+function _simMarcaPreset(qual){
+  document.querySelectorAll('#sec-simulador .pg-q').forEach(b=>
+    b.classList.toggle('on', !!qual && b.dataset.per===qual));
+  const el=document.getElementById('sim-per-lbl');
+  if(el){
+    const de=dGet('sim-de'), ate=dGet('sim-ate');
+    const n=s=>{const m=String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
+    const dDe=n(de), dAte=n(ate);
+    const nd=(dDe&&dAte)?Math.round((dAte-dDe)/86400000)+1:0;
+    el.textContent=(de&&ate)?`· ${String(de).substring(0,5)} – ${String(ate).substring(0,5)} (${nd} dias)`:'';
+  }
+}
+function _simFiltro(dias, preset){
+  const ate=new Date(); const de=new Date(); de.setDate(ate.getDate()-dias+1);
+  const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  dSet('sim-de',f(de)); dSet('sim-ate',f(ate));
+  _simMarcaPreset(preset||null);
+  renderSimulador();
+}
+function _simMesAtual(){
+  const hj=new Date();
+  dSet('sim-de','01/'+p2(hj.getMonth()+1)+'/'+hj.getFullYear());
+  dSet('sim-ate',p2(hj.getDate())+'/'+p2(hj.getMonth()+1)+'/'+hj.getFullYear());
+  _simMarcaPreset('mes');
+  renderSimulador();
+}
+// Padrão 30 DIAS: é o mesmo da GESTÃO DE PERDAS, então quem entra nas duas
+// abas sem mexer no filtro não paga nenhuma busca a mais. Amostra menor que
+// isso raramente sustenta uma proposta de investimento.
+function _simInitFiltro(){
+  const e=document.getElementById('sim-de');
+  if(e && !e.value) _simFiltro(30,'30');
+}
+
+async function renderSimulador(forcar){
+  const alvo=document.getElementById('sim-bloco');
+  if(!alvo) return;
+  // Sem o paradas-calc.js não há conta nenhuma: mesma guarda das outras telas.
+  if(!_rpOk()){ alvo.innerHTML='<div class="pg-carregando">Recarregando o módulo de cálculo…</div>'; _rpRecarregar(); return; }
+  if(!CFG.sheetsUrl){ alvo.innerHTML='<div class="pg-carregando">Configure a URL do Apps Script para simular o investimento.</div>'; return; }
+  const de=dGet('sim-de'), ate=dGet('sim-ate');
+  if(!de||!ate){ _simInitFiltro(); return; }
+  if(SIM_RODANDO) return;                           // o ciclo não se empilha
+  const chave=de+'|'+ate;
+  if(forcar) delete PG_TELA_CACHE[chave];
+  const cache=PG_TELA_CACHE[chave];
+  // O caminho do cache TAMBÉM marca a chave em cartaz: é ela que o
+  // _pgSimAtualiza lê a cada tecla digitada no cenário.
+  if(cache && (Date.now()-cache.t)<PG_TELA_TTL && !forcar){ SIM_ULT=chave; _simPintar(cache.ctx, cache.t); return; }
+
+  // Período novo limpa a tela; refresh do MESMO período mantém o cenário
+  // digitado no ar — refazer o bloco no meio da digitação roubaria o campo.
+  const upd=document.getElementById('sim-upd');
+  if(chave!==SIM_ULT || !alvo.querySelector('.pg-sim')) alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>';
+  else if(upd) upd.textContent='atualizando…';
+  SIM_ULT=chave; SIM_RODANDO=true;
+  try{
+    const reg=await _pgContextoDoPeriodo(de, ate, forcar);
+    if(!reg){
+      if(alvo.querySelector('.pg-sim')){ if(upd) upd.textContent='⚠ não atualizou'; }
+      else alvo.innerHTML='<div class="pg-carregando">O servidor demorou a responder (cold start). Toque em ATUALIZAR para tentar de novo.</div>';
+      return;
+    }
+    _simPintar(reg.ctx, reg.t);
+  }catch(err){
+    if(!alvo.querySelector('.pg-sim')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar o simulador: ${_rpEsc(err.message)}</div>`;
+    else if(upd) upd.textContent='⚠ não atualizou';
+  }finally{ SIM_RODANDO=false; }
+}
+
+// Desenho da aba: a base do período + o MESMO `_pgSimHtml` de sempre. Nenhuma
+// conta aqui — a base sai pronta do `st` que o RP_PARADAS já valorou.
+function _simPintar(ctx, t){
+  const alvo=document.getElementById('sim-bloco'); if(!alvo) return;
+  const st=(ctx&&ctx.st)||{};
+  const bloco=_pgSimHtml(ctx);
+  alvo.innerHTML = bloco
+    ? `<div class="sim-base">Base da simulação: <b>${fmtN(st.nDias||0)}</b> dia(s) trabalhado(s) no período · <b>${fmt1(st.horasProd||0)}h</b> produtivas por dia · <b>${_fmtMinPar(st.totMinNP||0)}</b> de parada não programada. As causas abaixo são o <b>Pareto deste período</b> — a mesma conta do relatório de paradas e da gestão de perdas.</div>` + bloco
+    : '<div class="pg-carregando">Nenhuma parada não planejada neste período — não há o que simular. Escolha um período maior.</div>';
+  const upd=document.getElementById('sim-upd');
+  if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
+}
+
+// ── SIMULADOR DE INVESTIMENTO (aba SIMULADOR) ───────────────────────────────
 // Pedido do PPCP (28/08/2026): justificar investimento com os dados de parada
 // de verdade — o caso que originou foi a troca automática de bobina do
 // termoencolhível, mas serve para QUALQUER causa: o gestor marca as paradas a
@@ -9324,7 +9486,11 @@ function _pgSimHtml(ctx){
     return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i>${_fmtMinPar(t.min)} · ${t.qtd}×</i></label>`;
   }).join('');
   const inp=(id,rot,val,attrs)=>`<label>${rot}<input id="${id}" value="${atr(val==null?'':val)}" ${attrs} oninput="_pgSimAtualiza()"></label>`;
-  return `<div class="pg-sim-wrap"><div class="pg-diag-ttl">SIMULADOR DE INVESTIMENTO<span class="pg-sim-tag">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i><button class="btn btn-ghost pg-imp" onclick="gerarRelatorioInvestimento(dGet('pg-de'),dGet('pg-ate'))" title="A proposta em uma página para a diretoria: problema, cenário, ganho por mês e por ano, payback, ROI e como o número sai">\u{1F5A8} IMPRESSÃO EXECUTIVA</button></div>
+  // O título e o botão da impressão moram no CABEÇALHO DA ABA desde que o
+  // simulador ganhou tela própria (04/09/2026) — repeti-los aqui punha dois
+  // "SIMULADOR DE INVESTIMENTO" e dois botões idênticos um embaixo do outro.
+  // Ficam a etiqueta de simulação e a instrução, que são do bloco.
+  return `<div class="pg-sim-wrap"><div class="pg-diag-ttl"><span class="pg-sim-tag" style="margin-left:0">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i></div>
     <div class="pg-sim">
       <div class="pg-sim-grid">
         <div><div class="pg-sim-sub">PARADAS A ATACAR <i>· não planejadas do período em tela</i></div>${chks}</div>
@@ -9345,10 +9511,10 @@ function _pgSimHtml(ctx){
 // Lê o que o gestor digitou/marcou, guarda o cenário e redesenha SÓ o resultado
 // (com o contexto que já está em cache — nenhuma busca).
 function _pgSimAtualiza(){
-  const c=PG_TELA_CACHE[PG_TELA_ULT]; if(!c||!c.ctx) return;
+  const c=PG_TELA_CACHE[SIM_ULT]; if(!c||!c.ctx) return;
   const s=_pgSimEstado();
   const selec={};
-  document.querySelectorAll('#sec-perdas .pg-sim-chk input[type=checkbox]').forEach(ch=>{
+  document.querySelectorAll('.pg-sim-wrap .pg-sim-chk input[type=checkbox]').forEach(ch=>{
     const l=ch.closest('.pg-sim-chk'); if(l) l.classList.toggle('on', ch.checked);
     if(ch.checked) selec[ch.dataset.tipo]=true;
   });
@@ -9382,8 +9548,8 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   if(!CFG.sheetsUrl){ win.close(); alert('O relatório requer o Google Sheets configurado.'); return; }
 
   const hj=new Date();
-  let de=deArg||dGet('pg-de')||dGet('par-de');
-  let ate=ateArg||dGet('pg-ate')||dGet('par-ate');
+  let de=deArg||dGet('sim-de')||dGet('pg-de')||dGet('par-de');
+  let ate=ateArg||dGet('sim-ate')||dGet('pg-ate')||dGet('par-ate');
   if(!de){ de=`01/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
   if(!ate){ ate=`${p2(hj.getDate())}/${p2(hj.getMonth()+1)}/${hj.getFullYear()}`; }
 

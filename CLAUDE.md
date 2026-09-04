@@ -1252,7 +1252,7 @@ via Google Apps Script (JSONP).
     (`.kpi-lbl` 10px, `.kpi-sub` 11px), com o mínimo de 9,5px só nas etiquetas
     (ALVO NOVO, ABERTO). **As fontes do PDF não foram tocadas** — lá a capa tem
     de caber na folha 1, e é outra distância de leitura.
-- **SIMULADOR DE INVESTIMENTO na tela** (pedido do PPCP, 28/08/2026 — o caso
+- **SIMULADOR DE INVESTIMENTO — hoje em ABA PRÓPRIA** (pedido do PPCP, 28/08/2026 — o caso
   que o originou: justificar a troca automática de bobina do termoencolhível
   pelas paradas de `Troca de Plastico`, 327 min · 55× · 1.030 cx em 30 dias).
   Bloco no fim da aba GESTÃO DE PERDAS: o gestor marca as **causas a atacar**
@@ -1371,6 +1371,38 @@ via Google Apps Script (JSONP).
     qualificador (o selo **SIMULAÇÃO DE POTENCIAL** e a nota do quadro). Dois
     nomes para o mesmo número em tela, papel e glossário é o defeito que este
     projeto mais pagou caro.
+  - **ABA PRÓPRIA E FILTRO DE DATAS PRÓPRIO** (pedido do usuário, 04/09/2026).
+    O bloco saiu do rodapé da GESTÃO DE PERDAS e virou a aba **💡 SIMULADOR**
+    (`#sec-simulador`, `renderSimulador`/`_simPintar`), com `sim-de`/`sim-ate`,
+    os presets 7·15·30·90·MÊS e o botão da IMPRESSÃO EXECUTIVA — que manda o
+    período **desta** aba. **Por quê:** a gestão acompanha os 30 dias rolando e
+    a proposta de um equipamento pede o recorte que o gestor escolher; com um
+    filtro só, montar a proposta mexia na tela de acompanhamento.
+    - ⚠ **O CUSTO DAS CHAMADAS NÃO PODE SUBIR.** `getParadasPeriodo` lê a aba
+      `PARADAS` inteira. O contexto de um período é montado **uma vez só**
+      (`_pgContextoDoPeriodo`), guardado no **mesmo `PG_TELA_CACHE`** (chave
+      `de|ate`, TTL 5 min) que a gestão de perdas usa, e uma requisição **em
+      voo é compartilhada** (`PG_VOO`) — duas telas pedindo a mesma janela
+      viram UMA execução no Apps Script, não duas. É o mesmo remédio do
+      `_phVoo` do comparativo por modelo. Os dois filtros começam em **30
+      dias** de propósito: quem entra nas duas abas sem mexer no período não
+      paga busca nenhuma a mais. `relatorios.test.js` falha se alguma das duas
+      telas voltar a montar contexto por conta própria.
+    - **`SIM_ULT` é o ponteiro DA ABA**, separado do `PG_TELA_ULT`: é dele que
+      o `_pgSimAtualiza` lê o contexto a cada tecla do cenário. Com um ponteiro
+      só, a aba que carregasse por último mandava na conta da outra.
+    - O CSS do bloco passou de `#sec-perdas .pg-sim*` para **`.pg-sim-wrap
+      .pg-sim*`** — o skin viaja com o bloco, sem duplicar seletor por seção.
+    - **O título e o botão da impressão moram no cabeçalho da aba**, não dentro
+      do bloco: repetidos, viravam dois "SIMULADOR DE INVESTIMENTO" e dois
+      botões idênticos, um embaixo do outro.
+    - A GESTÃO DE PERDAS ficou com o **ponteiro** (`ABRIR O SIMULADOR`) no
+      lugar onde o bloco vivia — sem ele o gestor procura o simulador onde ele
+      não está mais.
+    - Abaixo do filtro vai a **base da simulação** (dias trabalhados, horas
+      produtivas/dia, parada não programada): na aba própria não há mais o
+      quadro da gestão de perdas ao lado dizendo de que período se trata.
+      Nenhuma conta no desenho — tudo sai pronto do `st`.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
