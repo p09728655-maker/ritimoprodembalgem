@@ -1788,6 +1788,35 @@ ok('ano = mês × 12 (R$ e caixas)', [Math.round(sim.rsAno), sim.cxAno],
    [Math.round(sim.rsMes * 12), sim.cxMes * 12]);
 ok('horas por ano', Math.round(sim.horasAno * 10) / 10, 65.4);
 
+// ── TICKET MÉDIO → POTENCIAL DE RECEITA (04/09/2026) ──
+// A TERCEIRA leitura financeira, e a que mais engana se mal rotulada: caixa
+// recuperada é CAPACIDADE, não venda. Regras que o teste prende:
+//   1. sem ticket, NADA é calculado (nunca arbitrar um preço médio);
+//   2. potencial = caixas recuperadas × ticket, e o ano é o mês × 12;
+//   3. ele NUNCA entra no payback nem no ROI — receita potencial não é
+//      dinheiro disponível para pagar investimento.
+sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+  custoHora: 382.89, adicHE: 50, heSem: 8, pessoas: 10 });
+ok('sem ticket médio não há potencial de receita', sim.receitaMes, null);
+ok('nem anual', sim.receitaAno, null);
+ok('e o ticket fica em zero, nunca arbitrado', sim.ticket, 0);
+const _semTicket = { ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+  custoHora: 382.89, adicHE: 50, invest: 50000, heSem: 8, pessoas: 10 };
+const _comTicket = _pgSimulacao({ ..._semTicket, ticket: 187.5 });
+ok('potencial de receita = caixas recuperadas × ticket',
+   Math.round(_comTicket.receitaMes), Math.round(_comTicket.cxMes * 187.5));
+ok('e o ano é o mês × 12',
+   Math.round(_comTicket.receitaAno), Math.round(_comTicket.receitaMes * 12));
+// ⚠ A trava mais importante: o ticket não pode mexer em payback nem em ROI.
+const _base = _pgSimulacao(_semTicket);
+ok('o ticket NÃO muda o payback', _comTicket.pay, _base.pay);
+ok('nem o ROI', _comTicket.roi, _base.roi);
+ok('nem a economia em HE', _comTicket.rsMesHE, _base.rsMesHE);
+ok('nem o custo da parada', _comTicket.rsMes, _base.rsMes);
+ok('nem as caixas recuperadas', _comTicket.cxMes, _base.cxMes);
+// Ticket digitado em pt-BR com centavos
+ok('ticket com vírgula decimal', _pgSimNum('187,50'), 187.5);
+
 // ── a tela: dois cards de R$, ROI com horizonte no rótulo, campo de pessoas ──
 const _resHtml = pega('function _pgSimResHtml(');
 ok('a tela separa CUSTO DA PARADA e ECONOMIA EM HE',
@@ -1810,9 +1839,23 @@ ok('e ela é preenchida por tempo, caixas e os dois R$',
    [/fmt1\(r\.horasAno\)\+' h por ano'/, /fmtN\(r\.cxAno\)\+' cx por ano'/,
     /rs\(r\.rsAno\)\+' por ano'/, /rs\(r\.rsAnoHE\)\+' por ano'/]
      .every(re => re.test(_resHtml)), true);
+// O card do POTENCIAL fica marcado e explica o que NÃO é; sem ticket ele diz
+// que não foi calculado, em vez de mostrar zero (zero afirmaria "não vale nada").
+ok('a tela tem o card do POTENCIAL DE RECEITA',
+   /POTENCIAL DE RECEITA/.test(_resHtml), true);
+ok('com a etiqueta POTENCIAL',
+   /pg-sim-et">POTENCIAL/.test(_resHtml), true);
+ok('e o card sai condicional na tela também',
+   /null, false, true\)/.test(_resHtml), true);
+ok('sem ticket ele diz que não foi calculado, não mostra zero',
+   /ticket médio não informado — potencial de receita não calculado/.test(_resHtml), true);
+ok('e avisa que não é economia nem faturamento garantido',
+   /não é economia nem faturamento garantido/.test(_resHtml), true);
+ok('o payback diz que a receita potencial não entra',
+   /a receita potencial não entra/.test(_resHtml), true);
 ok('o número grande continua sendo o mês',
    / min\/mês/.test(_resHtml) && / cx\/mês/.test(_resHtml)
-   && (_resHtml.match(/<span> \/mês<\/span>/g) || []).length === 2, true);
+   && (_resHtml.match(/<span> \/mês<\/span>/g) || []).length === 3, true);
 const _simHtml = pega('function _pgSimHtml(');
 ok('o CENÁRIO pede as pessoas da embalagem',
    /pg-sim-pessoas/.test(_simHtml) && /PESSOAS NA EMBALAGEM \(qtde\)/.test(_simHtml), true);
@@ -1820,6 +1863,11 @@ ok('o rótulo da HE diz a grandeza: h/semana, total da embalagem',
    /HORA EXTRA ATUAL \(h\/semana, total da embalagem\)/.test(_simHtml), true);
 ok('a nota de rodapé explica por que os R\$ não se somam',
    /não se somam/.test(_simHtml), true);
+ok('o cenário tem o campo do ticket, marcado como opcional',
+   /pg-sim-ticket/.test(_simHtml) && /TICKET MÉDIO \(R\$\/caixa · opcional\)/.test(_simHtml), true);
+ok('e a nota do bloco diz que as três leituras não se somam',
+   /três leituras financeiras diferentes/.test(_simHtml)
+   && /Payback e ROI usam só a ECONOMIA EM HE/.test(_simHtml), true);
 
 // ── impressão executiva (PROPOSTA DE INVESTIMENTO) ──
 const _inv = pega('async function gerarRelatorioInvestimento(');
@@ -1846,11 +1894,18 @@ ok('nenhuma fórmula de perda reescrita no papel',
 // PROBLEMA → CENÁRIO → GANHO → INVESTIMENTO → RETORNO, números grandes e
 // metodologia como nota técnica. O CONTEÚDO não mudou — mudou a apresentação.
 ok('o fio condutor da leitura está no papel',
-   /prop-fluxo/.test(_inv) && /O PROBLEMA<\/span>/.test(_inv)
-   && /CENÁRIO SIMULADO<\/span>/.test(_inv) && /RETORNO<\/span>/.test(_inv), true);
+   /prop-fluxo/.test(_inv) && /<span>PROBLEMA<\/span>/.test(_inv)
+   && /<span>CENÁRIO<\/span>/.test(_inv) && /<span>RETORNO<\/span>/.test(_inv), true);
 ok('os três números do problema abrem a seção 1',
-   /prop-stats/.test(_inv) && /OCORRÊNCIAS<\/em>/.test(_inv)
-   && /TEMPO PARADO<\/em>/.test(_inv) && /CAIXAS PERDIDAS<\/em>/.test(_inv), true);
+   /prop-stats/.test(_inv) && /<em>OCORRÊNCIAS/.test(_inv)
+   && /<em>TEMPO PARADO/.test(_inv) && /<em>CAIXAS PERDIDAS/.test(_inv), true);
+// ⚠ OCORRÊNCIAS e TEMPO vêm do apontamento; CAIXAS PERDIDAS é CONTA sobre ele
+// (duração produtiva × meta do dia ÷ horas produtivas). Chamar as três de
+// "REAL" seria afirmar como medido um número que é estimado.
+ok('e a natureza de cada um está marcada',
+   /<em>OCORRÊNCIAS<span class="prop-et real">APONTADO/.test(_inv)
+   && /<em>TEMPO PARADO<span class="prop-et real">APONTADO/.test(_inv)
+   && /<em>CAIXAS PERDIDAS<span class="prop-et calc">ESTIMADO/.test(_inv), true);
 ok('o cenário é uma grade de premissas, não uma tabela solta',
    /prop-prem/.test(_inv) && /REDUÇÃO DA PARADA<\/em>/.test(_inv), true);
 // O ANO ganhou linha própria dentro do card — o número grande continua sendo o
@@ -1872,10 +1927,36 @@ ok('a régua do R$ 10.000 continua a mesma',
 ok('o selo de simulação abre o documento',
    /SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO/.test(_inv), true);
 ok('capacidade recuperada não é apresentada como economia de caixa',
-   /Ganho de capacidade não é economia de caixa/.test(_inv), true);
-ok('a metodologia continua com os sete blocos',
+   /capacidade que volta para a linha/.test(_inv)
+   && /não é economia de caixa/.test(_inv), true);
+// ── o papel: as TRÊS leituras, separadas e sem soma ──
+ok('o papel separa capacidade recuperada de impacto econômico',
+   /3 ▸ A CAPACIDADE RECUPERADA/.test(_inv)
+   && /4 ▸ O IMPACTO ECONÔMICO — TRÊS LEITURAS QUE NÃO SE SOMAM/.test(_inv), true);
+ok('e o fio condutor acompanha',
+   /<span>CAPACIDADE<\/span>/.test(_inv) && /<span>IMPACTO<\/span>/.test(_inv), true);
+ok('o papel traz o POTENCIAL DE RECEITA', /POTENCIAL DE RECEITA/.test(_inv), true);
+// ⚠ Ele é ordens de grandeza maior que a economia em HE e divide a linha com
+// ela: o card sai CONDICIONAL (tracejado), senão a diretoria ancora no maior.
+ok('e ele sai marcado como condicional',
+   /<div class="kpi-card pot">/.test(_inv)
+   && /\.prop \.kpi-card\.pot\{[^}]*border-style:dashed/.test(_inv), true);
+ok('com a ressalva obrigatória quando há ticket',
+   /não representa faturamento garantido/.test(_inv), true);
+ok('e a frase certa quando não há',
+   /Ticket médio não informado\. Potencial de receita não calculado\./.test(_inv), true);
+ok('o papel repete que payback e ROI usam só a economia em HE',
+   /Payback e ROI usam só a ECONOMIA EM HE<\/b> — receita potencial não é dinheiro disponível/.test(_inv), true);
+ok('o cenário mostra o ticket, informado ou não',
+   /<em>TICKET MÉDIO<span class="prop-et pot">OPCIONAL/.test(_inv), true);
+// As etiquetas de natureza do dado separam apontado, calculado e potencial.
+ok('as etiquetas de natureza existem no papel',
+   ['prop-et real', 'prop-et calc', 'prop-et sim', 'prop-et pot']
+     .filter(c => !_inv.includes(c)).join(' | '), '');
+ok('a metodologia traz os oito blocos',
    ['MINUTOS E CAIXAS', 'MÊS E ANO', 'HOMEM-HORA → HORA DE LINHA',
-    'OS DOIS R$ (não se somam)', 'TETO DA ECONOMIA', 'HORA EXTRA EVITÁVEL',
+    'AS TRÊS LEITURAS EM R$ (não se somam)', 'TICKET MÉDIO E POTENCIAL DE RECEITA',
+    'TETO DA ECONOMIA', 'HORA EXTRA EVITÁVEL',
     'O QUE ISTO NÃO É'].filter(t => !_inv.includes('<em>' + t + '</em>')).join(' | '), '');
 
 // ⚠ A PELE DA PROPOSTA É ESCOPADA. O <head> e as ~150 regras do _rpDocParadas

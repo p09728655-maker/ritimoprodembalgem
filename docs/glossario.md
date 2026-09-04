@@ -136,8 +136,14 @@ telas, então períodos iguais não geram busca nova.
 | **PAYBACK** | investimento ÷ economia em HE mensal | meses | idem |
 | **ROI** | (economia em HE × 12 × anos − investimento) ÷ investimento × 100 | % | idem |
 | **HORA EXTRA EVITÁVEL** | horas recuperadas ÷ HE do mês convertida em hora de linha | % | idem |
+| **POTENCIAL DE RECEITA** | caixas recuperadas × ticket médio (opcional); ano = mês × 12 | R$/mês | idem |
 
-⚠ **Os dois R$ não se somam** — o menor está contido no maior. O custo-hora é de
+⚠ **As três leituras em R$ não se somam.** O CUSTO DA PARADA é ociosidade de
+folha já paga; a ECONOMIA EM HE é a única leitura de caixa e já contém aquela
+hora dentro dela; o POTENCIAL DE RECEITA é o valor econômico da **capacidade**
+recuperada — não é economia, não é lucro e não é faturamento garantido. **Payback
+e ROI usam só a ECONOMIA EM HE.** Sem ticket médio informado, o potencial de
+receita não é calculado — nenhum preço é arbitrado. O custo-hora é de
 **uma hora de linha** (toda a equipe junta); a hora extra é digitada em
 **homem-hora** por semana. Converter é obrigatório, e é para isso que existe o
 campo PESSOAS NA EMBALAGEM.

@@ -1371,6 +1371,39 @@ via Google Apps Script (JSONP).
     qualificador (o selo **SIMULAÇÃO DE POTENCIAL** e a nota do quadro). Dois
     nomes para o mesmo número em tela, papel e glossário é o defeito que este
     projeto mais pagou caro.
+  - **TICKET MÉDIO → POTENCIAL DE RECEITA, a TERCEIRA leitura financeira**
+    (pedido do usuário, 04/09/2026). Campo **opcional** em R$/caixa no cenário;
+    com ele, `caixas recuperadas × ticket` vira o potencial mensal e `× 12` o
+    anual (`ticket`/`receitaMes`/`receitaAno` no `_pgSimulacao`).
+    - ⚠ **SEM TICKET, NADA É CALCULADO.** O painel não arbitra preço médio nem
+      mostra zero — mostra *"ticket médio não informado — potencial de receita
+      não calculado"*. Zero afirmaria que a capacidade não vale nada.
+    - ⚠ **ELE NUNCA ENTRA NO PAYBACK NEM NO ROI**, que continuam saindo só da
+      ECONOMIA EM HE: receita potencial não é dinheiro disponível para pagar
+      investimento. `relatorios.test.js` roda a conta com e sem ticket e falha
+      se ele mexer em `pay`, `roi`, `rsMesHE`, `rsMes` ou `cxMes`.
+    - **Caixa recuperada é CAPACIDADE, não venda.** Não é economia, não é lucro
+      e não é faturamento garantido — só se realiza se houver demanda. E o
+      ticket é a **média do mix do período**: modelos e caixas de valores
+      diferentes entram na mesma média. As duas ressalvas vão impressas.
+    - **O card sai TRACEJADO** (`.prop .kpi-card.pot` no papel, `.cond` na
+      tela). Medido com ticket de R$ 187,50: o potencial dá **R$ 3.555.000/ano**
+      contra **R$ 46.867/ano** de economia em HE — 76× — e os dois dividem a
+      mesma linha. Sem a diferença visual, a leitura ancora no maior.
+  - **A proposta separou CAPACIDADE de DINHEIRO** (mesmo pedido): o fluxo virou
+    **PROBLEMA → CENÁRIO → CAPACIDADE → IMPACTO → INVESTIMENTO → RETORNO**, e a
+    seção 3 (A CAPACIDADE RECUPERADA, linha de quatro) ficou separada da 4 (O
+    IMPACTO ECONÔMICO — TRÊS LEITURAS QUE NÃO SE SOMAM, linha de três).
+    ⚠ Com isso a folha 1 passou a levar **capa + problema + cenário +
+    capacidade**; o impacto econômico abre a folha 2. A nota anterior, de que o
+    quadro do ganho cabia na folha 1, valia para o quadro de seis cards que não
+    existe mais.
+  - **ETIQUETAS DE NATUREZA DO DADO** (`.prop-et`): **APONTADO** · **ESTIMADO**
+    · **SIMULADO** · **POTENCIAL** · **OCIOSIDADE**.
+    ⚠ **Ocorrências e tempo parado SÃO apontamento; caixas perdidas é CONTA**
+    (duração produtiva × meta do dia ÷ horas produtivas). Marcar os três como
+    "REAL" afirmaria como medido um número que é estimado — e é exatamente essa
+    confusão que as etiquetas existem para evitar.
   - **ABA PRÓPRIA E FILTRO DE DATAS PRÓPRIO** (pedido do usuário, 04/09/2026).
     O bloco saiu do rodapé da GESTÃO DE PERDAS e virou a aba **💡 SIMULADOR**
     (`#sec-simulador`, `renderSimulador`/`_simPintar`), com `sim-de`/`sim-ate`,
