@@ -11,6 +11,60 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.37.0 — 04/09/2026
+
+**Atenção** — **nenhum número, fórmula ou premissa mudou.** Esta versão mexe só
+na **apresentação** da PROPOSTA DE INVESTIMENTO (o PDF da IMPRESSÃO EXECUTIVA)
+e na linha do **ganho anual** dentro do simulador. Quem conferir a proposta de
+ontem contra a de hoje encontra exatamente os mesmos valores.
+
+### O ganho anual saiu da nota de rodapé
+
+Pedido do usuário: *"melhorar o foco no ganho anual"*. O ano aparecia em 8–10px
+cinza, no fim da linha de explicação — e é ele que se compara com o orçamento
+de um equipamento. Agora cada card de ganho (tempo, caixas, custo da parada,
+economia em HE) tem **uma linha só para o ano**, em corpo de texto, logo abaixo
+do número grande, na tela e no papel.
+
+**O número grande continua sendo o MÊS**, de propósito: é ele que alimenta o
+payback e é a leitura do dia a dia. O ano é `mês típico × 12` — a mesma conta
+de sempre.
+
+### A proposta virou documento de diretoria
+
+O PDF foi redesenhado seguindo o roteiro **PROBLEMA → CENÁRIO SIMULADO → GANHO
+SIMULADO → INVESTIMENTO → RETORNO**, que agora aparece escrito como fio
+condutor no alto da folha 1:
+
+- **capa executiva** na folha 1: a proposta em uma frase, os três números do
+  problema (ocorrências, tempo parado, caixas perdidas) em cartões grandes, a
+  tabela de causas, as premissas do cenário e o quadro do ganho — tudo antes da
+  primeira quebra de página;
+- **INVESTIMENTO e RETORNO ganharam seção própria.** Sem orçamento, o papel diz
+  o estado em vez de esconder a lacuna: **AGUARDANDO ORÇAMENTO**, com payback e
+  ROI escritos como **"não calculado — aguardando orçamento"**. Nenhum valor é
+  estimado, e a régua de decisão (*"cada R$ 10.000 de investimento se paga em
+  X meses"*) continua com a mesma redação;
+- **a metodologia virou nota técnica** (sete blocos, texto idêntico) em vez de
+  tabela, com corpo de leitura maior;
+- **SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO** vai no alto do
+  documento, e a frase *"ganho de capacidade não é economia de caixa"* fecha o
+  quadro do ganho — capacidade recuperada não é dinheiro economizado.
+
+**Menos cor, e só onde ela tem função.** Os cards de ganho vinham com a barra
+**vermelha** do relatório de controle (lá ela marca perda); aqui o neutro é
+cinza, e sobraram o verde da capacidade, o laranja da economia em HE e o âmbar
+do selo de simulação. "Aguardando orçamento" saiu do vermelho para o âmbar: é
+estado pendente, não erro.
+
+⚠ **O CSS compartilhado não foi tocado.** O `<head>` e as ~150 regras do
+`_rpDocParadas` continuam servindo os quatro relatórios (paradas, gestão de
+perdas, minutos/1.000 e a proposta) — a pele nova é **escopada em `.prop`** e o
+`relatorios.test.js` falha se alguma regra dela escapar do escopo. Os outros
+três relatórios saem exatamente como saíam.
+
+---
+
 ## v7.36.0 · mobile 1.15.0 — 01/09/2026
 
 **Atenção** — **o número grande da EFICIÊNCIA virou o % da META DO DIA.** Pedido

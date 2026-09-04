@@ -138,3 +138,8 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 campo PESSOAS NA EMBALAGEM.
 
 **Mês típico:** 22 dias úteis. **Ano:** mês típico × 12.
+
+**Onde cada um aparece:** o **mês** é o número grande do card (é ele que alimenta
+o payback) e o **ano** tem linha própria logo abaixo — é o valor comparável ao
+orçamento de um equipamento. Vale na tela (aba GESTÃO DE PERDAS) e na PROPOSTA DE
+INVESTIMENTO em PDF, com os mesmos valores nos dois.

@@ -1785,6 +1785,18 @@ ok('ROI negativo sai em vermelho',
    /r\.roi<0\?'var\(--red\)'/.test(_resHtml.replace(/\s+/g, '')), true);
 ok('sem pessoas, o card de HE pede a quantidade',
    /informe a quantidade de pessoas/.test(_resHtml), true);
+// O ANO saiu da nota de rodapé para uma LINHA PRÓPRIA do card (04/09/2026):
+// o número grande continua sendo o mês — é ele que alimenta o payback —, mas
+// o ano é o valor que se compara com o orçamento e não podia ficar em 10px.
+ok('o ano tem linha própria nos quatro cards de ganho',
+   (_resHtml.match(/pg-sim-c-a/g) || []).length, 1);
+ok('e ela é preenchida por tempo, caixas e os dois R$',
+   [/fmt1\(r\.horasAno\)\+' h por ano'/, /fmtN\(r\.cxAno\)\+' cx por ano'/,
+    /rs\(r\.rsAno\)\+' por ano'/, /rs\(r\.rsAnoHE\)\+' por ano'/]
+     .every(re => re.test(_resHtml)), true);
+ok('o número grande continua sendo o mês',
+   / min\/mês/.test(_resHtml) && / cx\/mês/.test(_resHtml)
+   && (_resHtml.match(/<span> \/mês<\/span>/g) || []).length === 2, true);
 const _simHtml = pega('function _pgSimHtml(');
 ok('o CENÁRIO pede as pessoas da embalagem',
    /pg-sim-pessoas/.test(_simHtml) && /PESSOAS NA EMBALAGEM \(qtde\)/.test(_simHtml), true);
@@ -1808,6 +1820,57 @@ ok('a tela tem o botão da impressão executiva',
    /gerarRelatorioInvestimento\(/.test(pega('function _pgSimHtml(')), true);
 ok('nenhuma fórmula de perda reescrita no papel',
    /perdaDeMin|perdaAoRitmo|durProdutiva\(/.test(_inv), false);
+
+// ── o redesenho executivo da proposta (04/09/2026) ──
+// A proposta virou documento de diretoria: capa executiva, fio condutor
+// PROBLEMA → CENÁRIO → GANHO → INVESTIMENTO → RETORNO, números grandes e
+// metodologia como nota técnica. O CONTEÚDO não mudou — mudou a apresentação.
+ok('o fio condutor da leitura está no papel',
+   /prop-fluxo/.test(_inv) && /O PROBLEMA<\/span>/.test(_inv)
+   && /CENÁRIO SIMULADO<\/span>/.test(_inv) && /RETORNO<\/span>/.test(_inv), true);
+ok('os três números do problema abrem a seção 1',
+   /prop-stats/.test(_inv) && /OCORRÊNCIAS<\/em>/.test(_inv)
+   && /TEMPO PARADO<\/em>/.test(_inv) && /CAIXAS PERDIDAS<\/em>/.test(_inv), true);
+ok('o cenário é uma grade de premissas, não uma tabela solta',
+   /prop-prem/.test(_inv) && /REDUÇÃO DA PARADA<\/em>/.test(_inv), true);
+// O ANO ganhou linha própria dentro do card — o número grande continua sendo o
+// MÊS, que é o que alimenta o payback.
+ok('cada card de ganho traz o mês E o ano',
+   (_inv.match(/class="kpi-ano"/g) || []).length >= 4
+   && /por ano<\/div>/.test(_inv), true);
+ok('o quadro do ganho não parte entre duas folhas',
+   /\.prop \.kpi-grid\{[^}]*page-break-inside:avoid/.test(_inv), true);
+
+// SEM ORÇAMENTO o papel diz o ESTADO, nunca um número inventado.
+ok('sem orçamento, o investimento sai como AGUARDANDO ORÇAMENTO',
+   (_inv.match(/AGUARDANDO ORÇAMENTO/g) || []).length >= 2, true);
+ok('e payback e ROI saem como "não calculado"',
+   /<em>PAYBACK<\/em><b>não calculado<\/b>/.test(_inv)
+   && /<em>ROI<\/em><b>não calculado<\/b>/.test(_inv), true);
+ok('a régua do R$ 10.000 continua a mesma',
+   /cada R\$ 10\.000 de investimento se paga em \$\{fmt1\(10000\/r\.rsMesHE\)\} meses/.test(_inv), true);
+ok('o selo de simulação abre o documento',
+   /SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO/.test(_inv), true);
+ok('capacidade recuperada não é apresentada como economia de caixa',
+   /Ganho de capacidade não é economia de caixa/.test(_inv), true);
+ok('a metodologia continua com os sete blocos',
+   ['MINUTOS E CAIXAS', 'MÊS E ANO', 'HOMEM-HORA → HORA DE LINHA',
+    'OS DOIS R$ (não se somam)', 'TETO DA ECONOMIA', 'HORA EXTRA EVITÁVEL',
+    'O QUE ISTO NÃO É'].filter(t => !_inv.includes('<em>' + t + '</em>')).join(' | '), '');
+
+// ⚠ A PELE DA PROPOSTA É ESCOPADA. O <head> e as ~150 regras do _rpDocParadas
+// são dos QUATRO relatórios; uma regra solta aqui mudaria paradas, gestão de
+// perdas e minutos/1.000 junto — a história do cabeçalho dos cinco (#204/#205).
+const _skin = (_inv.match(/const skin=`<style>([\s\S]*?)<\/style>`/) || [])[1] || '';
+ok('a proposta traz uma pele própria', _skin.length > 400, true);
+const _fora = _skin.split('\n')
+  .map(l => l.trim())
+  .filter(l => l && !l.startsWith('/*') && !l.startsWith('*') && !l.startsWith('@') && l.includes('{'))
+  .map(l => l.slice(0, l.indexOf('{')).trim())
+  .filter(sel => sel && !/^\.prop/.test(sel));
+ok('e nenhuma regra dela escapa do escopo .prop', _fora.join(' | '), '');
+ok('o CSS compartilhado continua num lugar só',
+   (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
 
 // guarda-corpo: a conta é UMA, a tela chama o simulador, e ele não reescreve
 // fórmula de perda nenhuma — consome o `perd` que o RP_PARADAS.stats valorou.

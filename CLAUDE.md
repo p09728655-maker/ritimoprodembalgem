@@ -1324,6 +1324,53 @@ via Google Apps Script (JSONP).
     que os dois R$ **não se somam** e o teto da economia; a seção 4 traz
     payback único e a linha do ROI. `relatorios.test.js` prende conta única,
     retrato, o botão da tela e as frases-chave.
+  - **O GANHO ANUAL tem LINHA PRÓPRIA** (pedido do usuário, 04/09/2026:
+    *"melhorar o foco no ganho anual"*). O ano aparecia em 8–10px cinza no fim
+    da linha de explicação — e é ele que se compara com o **orçamento** de um
+    equipamento. Hoje cada card de ganho (tempo, caixas, custo da parada,
+    economia em HE) tem a linha do ano em corpo de texto (`.pg-sim-c-a` na
+    tela, `.kpi-ano` no papel), logo abaixo do número grande.
+    ⚠ **O número grande continua sendo o MÊS**, de propósito: é ele que
+    alimenta o **payback** e é a leitura do dia a dia. Inverter os dois deixaria
+    o payback (em meses) ao lado de um valor anual. Nenhuma conta mudou — `ano
+    = mês típico × 12`, como sempre.
+  - **A proposta é DOCUMENTO DE DIRETORIA, com o roteiro escrito na folha**
+    (redesenho de 04/09/2026): **PROBLEMA → CENÁRIO SIMULADO → GANHO SIMULADO →
+    INVESTIMENTO → RETORNO** (`.prop-fluxo`). A folha 1 é a capa executiva — a
+    proposta em uma frase, os três números do problema em cartões grandes
+    (`.prop-stats`: ocorrências · tempo parado · caixas perdidas, os MESMOS
+    totais da linha TOTAL da tabela), a tabela de causas, as premissas
+    (`.prop-prem`) e o quadro do ganho, tudo antes da 1ª quebra.
+    - **O ritmo vertical foi MEDIDO, não chutado**: a folha útil do A4 retrato
+      com a `@page` deste documento tem **1032px** (297mm − 24mm de margem), e
+      o quadro do ganho termina em ~1021px. Encolher fonte para caber mais não
+      vale — o que se corta é padding e entrelinha. `.prop .kpi-grid` leva
+      `page-break-inside:avoid`: se um dia não couber, ele **muda de folha
+      inteiro** em vez de partir ao meio.
+    - **INVESTIMENTO e RETORNO têm seção própria e ESTADO EXPLÍCITO.** Sem
+      orçamento o papel escreve **AGUARDANDO ORÇAMENTO** e **"não calculado —
+      aguardando orçamento"** em payback e ROI (`.prop-ret`), nunca um número
+      estimado; a régua *"cada R$ 10.000 se paga em X meses"* continua com a
+      redação de sempre. "Aguardando" é **âmbar**, não vermelho: é estado
+      pendente, não erro — para a diretoria, vermelho ali lê como problema.
+    - **A metodologia virou nota técnica** (`.prop-met`, sete blocos, texto
+      idêntico ao da tabela antiga) com corpo de leitura maior.
+    - **Cor só onde tem função.** Os cards de ganho herdavam a barra
+      **vermelha** do relatório de controle (lá ela marca perda). No escopo da
+      proposta o neutro é cinza; sobraram o verde da capacidade, o laranja da
+      economia em HE e o âmbar do selo. E a frase **"ganho de capacidade não é
+      economia de caixa"** fecha o quadro: caixa e hora recuperadas são
+      capacidade, não dinheiro economizado.
+  - ⚠ **A PELE DA PROPOSTA É ESCOPADA EM `.prop`.** O `<head>` e as ~150 regras
+    do `_rpDocParadas` são dos **quatro** relatórios — uma regra solta aqui
+    mudaria paradas, gestão de perdas e minutos/1.000 junto, que é a história do
+    cabeçalho dos cinco relatórios (#204/#205). O `relatorios.test.js` lê o
+    bloco `skin` e **falha se algum seletor dele não começar com `.prop`**.
+  - ⚠ **UM NOME POR INDICADOR.** O briefing pedia "economia potencial em HE"; o
+    card continua **ECONOMIA EM HE** e a palavra *potencial* entra como
+    qualificador (o selo **SIMULAÇÃO DE POTENCIAL** e a nota do quadro). Dois
+    nomes para o mesmo número em tela, papel e glossário é o defeito que este
+    projeto mais pagou caro.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
