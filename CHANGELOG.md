@@ -11,6 +11,104 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.38.0 — 04/09/2026
+
+**Atenção** — **o SIMULADOR DE INVESTIMENTO mudou de endereço.** Ele estava no
+rodapé da aba GESTÃO DE PERDAS; agora tem **aba própria (💡 SIMULADOR)** e
+**filtro de datas próprio**. Nenhuma conta mudou — o cenário que você já tinha
+digitado (causas marcadas, custo-hora, pessoas, HE, investimento) continua
+salvo e aparece na aba nova. Na GESTÃO DE PERDAS ficou o botão **ABRIR O
+SIMULADOR** no lugar onde o bloco vivia.
+
+### Por que separar
+
+A proposta de um equipamento raramente se decide na mesma janela em que se
+acompanha a perda: a gestão olha os **30 dias rolando**, e a justificativa de um
+investimento pede o recorte que o gestor escolher — um mês fechado, um
+trimestre. Com os dois no mesmo filtro, mudar o período para montar a proposta
+mexia na tela de acompanhamento, e vice-versa.
+
+A aba nova tem o mesmo filtro das outras: **DE / ATÉ**, presets **7 · 15 · 30 ·
+90 DIAS · MÊS** (padrão **30 dias**, igual ao da gestão de perdas), **ATUALIZAR**
+e o botão **IMPRESSÃO EXECUTIVA** — que agora manda o período **desta** aba
+para o PDF.
+
+Abaixo do filtro entrou a **base da simulação**: dias trabalhados no período,
+horas produtivas por dia e o tempo de parada não programada. Na aba própria o
+gestor não tem mais o quadro da gestão de perdas ao lado para saber de que
+período se trata.
+
+### O custo das chamadas não subiu
+
+⚠ `getParadasPeriodo` lê a aba `PARADAS` **inteira** e é a leitura mais cara do
+painel. Duas abas com período próprio poderiam virar duas buscas — não viram:
+
+- o **contexto de um período é montado uma vez só** (`_pgContextoDoPeriodo`) e
+  guardado no **mesmo cache** (chaveado por `de|ate`, 5 min) que a gestão de
+  perdas sempre usou. Período igual nas duas abas = **zero chamada nova**;
+- uma requisição **em voo é compartilhada** (`PG_VOO`): se as duas telas pedirem
+  a mesma janela ao mesmo tempo, sai **uma** execução no Apps Script, não duas.
+  É o mesmo remédio do comparativo por modelo.
+
+Como os dois filtros começam em 30 dias, quem entra nas duas abas sem mexer no
+período não paga nenhuma busca a mais do que pagava antes.
+
+---
+
+## v7.37.0 — 04/09/2026
+
+**Atenção** — **nenhum número, fórmula ou premissa mudou.** Esta versão mexe só
+na **apresentação** da PROPOSTA DE INVESTIMENTO (o PDF da IMPRESSÃO EXECUTIVA)
+e na linha do **ganho anual** dentro do simulador. Quem conferir a proposta de
+ontem contra a de hoje encontra exatamente os mesmos valores.
+
+### O ganho anual saiu da nota de rodapé
+
+Pedido do usuário: *"melhorar o foco no ganho anual"*. O ano aparecia em 8–10px
+cinza, no fim da linha de explicação — e é ele que se compara com o orçamento
+de um equipamento. Agora cada card de ganho (tempo, caixas, custo da parada,
+economia em HE) tem **uma linha só para o ano**, em corpo de texto, logo abaixo
+do número grande, na tela e no papel.
+
+**O número grande continua sendo o MÊS**, de propósito: é ele que alimenta o
+payback e é a leitura do dia a dia. O ano é `mês típico × 12` — a mesma conta
+de sempre.
+
+### A proposta virou documento de diretoria
+
+O PDF foi redesenhado seguindo o roteiro **PROBLEMA → CENÁRIO SIMULADO → GANHO
+SIMULADO → INVESTIMENTO → RETORNO**, que agora aparece escrito como fio
+condutor no alto da folha 1:
+
+- **capa executiva** na folha 1: a proposta em uma frase, os três números do
+  problema (ocorrências, tempo parado, caixas perdidas) em cartões grandes, a
+  tabela de causas, as premissas do cenário e o quadro do ganho — tudo antes da
+  primeira quebra de página;
+- **INVESTIMENTO e RETORNO ganharam seção própria.** Sem orçamento, o papel diz
+  o estado em vez de esconder a lacuna: **AGUARDANDO ORÇAMENTO**, com payback e
+  ROI escritos como **"não calculado — aguardando orçamento"**. Nenhum valor é
+  estimado, e a régua de decisão (*"cada R$ 10.000 de investimento se paga em
+  X meses"*) continua com a mesma redação;
+- **a metodologia virou nota técnica** (sete blocos, texto idêntico) em vez de
+  tabela, com corpo de leitura maior;
+- **SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO** vai no alto do
+  documento, e a frase *"ganho de capacidade não é economia de caixa"* fecha o
+  quadro do ganho — capacidade recuperada não é dinheiro economizado.
+
+**Menos cor, e só onde ela tem função.** Os cards de ganho vinham com a barra
+**vermelha** do relatório de controle (lá ela marca perda); aqui o neutro é
+cinza, e sobraram o verde da capacidade, o laranja da economia em HE e o âmbar
+do selo de simulação. "Aguardando orçamento" saiu do vermelho para o âmbar: é
+estado pendente, não erro.
+
+⚠ **O CSS compartilhado não foi tocado.** O `<head>` e as ~150 regras do
+`_rpDocParadas` continuam servindo os quatro relatórios (paradas, gestão de
+perdas, minutos/1.000 e a proposta) — a pele nova é **escopada em `.prop`** e o
+`relatorios.test.js` falha se alguma regra dela escapar do escopo. Os outros
+três relatórios saem exatamente como saíam.
+
+---
+
 ## v7.36.0 · mobile 1.15.0 — 01/09/2026
 
 **Atenção** — **o número grande da EFICIÊNCIA virou o % da META DO DIA.** Pedido

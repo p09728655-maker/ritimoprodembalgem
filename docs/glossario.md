@@ -124,6 +124,11 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 ## Simulador de investimento
 
+Fica na aba **💡 SIMULADOR**, com **filtro de datas próprio** — independente do da
+GESTÃO DE PERDAS. O contexto de um mesmo período é compartilhado entre as duas
+telas, então períodos iguais não geram busca nova.
+
+
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
 | **CUSTO DA PARADA** | horas recuperadas × custo-hora da linha | R$/mês | `v7:_pgSimulacao` |
@@ -138,3 +143,8 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 campo PESSOAS NA EMBALAGEM.
 
 **Mês típico:** 22 dias úteis. **Ano:** mês típico × 12.
+
+**Onde cada um aparece:** o **mês** é o número grande do card (é ele que alimenta
+o payback) e o **ano** tem linha própria logo abaixo — é o valor comparável ao
+orçamento de um equipamento. Vale na tela (aba GESTÃO DE PERDAS) e na PROPOSTA DE
+INVESTIMENTO em PDF, com os mesmos valores nos dois.

@@ -1252,7 +1252,7 @@ via Google Apps Script (JSONP).
     (`.kpi-lbl` 10px, `.kpi-sub` 11px), com o mínimo de 9,5px só nas etiquetas
     (ALVO NOVO, ABERTO). **As fontes do PDF não foram tocadas** — lá a capa tem
     de caber na folha 1, e é outra distância de leitura.
-- **SIMULADOR DE INVESTIMENTO na tela** (pedido do PPCP, 28/08/2026 — o caso
+- **SIMULADOR DE INVESTIMENTO — hoje em ABA PRÓPRIA** (pedido do PPCP, 28/08/2026 — o caso
   que o originou: justificar a troca automática de bobina do termoencolhível
   pelas paradas de `Troca de Plastico`, 327 min · 55× · 1.030 cx em 30 dias).
   Bloco no fim da aba GESTÃO DE PERDAS: o gestor marca as **causas a atacar**
@@ -1324,6 +1324,85 @@ via Google Apps Script (JSONP).
     que os dois R$ **não se somam** e o teto da economia; a seção 4 traz
     payback único e a linha do ROI. `relatorios.test.js` prende conta única,
     retrato, o botão da tela e as frases-chave.
+  - **O GANHO ANUAL tem LINHA PRÓPRIA** (pedido do usuário, 04/09/2026:
+    *"melhorar o foco no ganho anual"*). O ano aparecia em 8–10px cinza no fim
+    da linha de explicação — e é ele que se compara com o **orçamento** de um
+    equipamento. Hoje cada card de ganho (tempo, caixas, custo da parada,
+    economia em HE) tem a linha do ano em corpo de texto (`.pg-sim-c-a` na
+    tela, `.kpi-ano` no papel), logo abaixo do número grande.
+    ⚠ **O número grande continua sendo o MÊS**, de propósito: é ele que
+    alimenta o **payback** e é a leitura do dia a dia. Inverter os dois deixaria
+    o payback (em meses) ao lado de um valor anual. Nenhuma conta mudou — `ano
+    = mês típico × 12`, como sempre.
+  - **A proposta é DOCUMENTO DE DIRETORIA, com o roteiro escrito na folha**
+    (redesenho de 04/09/2026): **PROBLEMA → CENÁRIO SIMULADO → GANHO SIMULADO →
+    INVESTIMENTO → RETORNO** (`.prop-fluxo`). A folha 1 é a capa executiva — a
+    proposta em uma frase, os três números do problema em cartões grandes
+    (`.prop-stats`: ocorrências · tempo parado · caixas perdidas, os MESMOS
+    totais da linha TOTAL da tabela), a tabela de causas, as premissas
+    (`.prop-prem`) e o quadro do ganho, tudo antes da 1ª quebra.
+    - **O ritmo vertical foi MEDIDO, não chutado**: a folha útil do A4 retrato
+      com a `@page` deste documento tem **1032px** (297mm − 24mm de margem), e
+      o quadro do ganho termina em ~1021px. Encolher fonte para caber mais não
+      vale — o que se corta é padding e entrelinha. `.prop .kpi-grid` leva
+      `page-break-inside:avoid`: se um dia não couber, ele **muda de folha
+      inteiro** em vez de partir ao meio.
+    - **INVESTIMENTO e RETORNO têm seção própria e ESTADO EXPLÍCITO.** Sem
+      orçamento o papel escreve **AGUARDANDO ORÇAMENTO** e **"não calculado —
+      aguardando orçamento"** em payback e ROI (`.prop-ret`), nunca um número
+      estimado; a régua *"cada R$ 10.000 se paga em X meses"* continua com a
+      redação de sempre. "Aguardando" é **âmbar**, não vermelho: é estado
+      pendente, não erro — para a diretoria, vermelho ali lê como problema.
+    - **A metodologia virou nota técnica** (`.prop-met`, sete blocos, texto
+      idêntico ao da tabela antiga) com corpo de leitura maior.
+    - **Cor só onde tem função.** Os cards de ganho herdavam a barra
+      **vermelha** do relatório de controle (lá ela marca perda). No escopo da
+      proposta o neutro é cinza; sobraram o verde da capacidade, o laranja da
+      economia em HE e o âmbar do selo. E a frase **"ganho de capacidade não é
+      economia de caixa"** fecha o quadro: caixa e hora recuperadas são
+      capacidade, não dinheiro economizado.
+  - ⚠ **A PELE DA PROPOSTA É ESCOPADA EM `.prop`.** O `<head>` e as ~150 regras
+    do `_rpDocParadas` são dos **quatro** relatórios — uma regra solta aqui
+    mudaria paradas, gestão de perdas e minutos/1.000 junto, que é a história do
+    cabeçalho dos cinco relatórios (#204/#205). O `relatorios.test.js` lê o
+    bloco `skin` e **falha se algum seletor dele não começar com `.prop`**.
+  - ⚠ **UM NOME POR INDICADOR.** O briefing pedia "economia potencial em HE"; o
+    card continua **ECONOMIA EM HE** e a palavra *potencial* entra como
+    qualificador (o selo **SIMULAÇÃO DE POTENCIAL** e a nota do quadro). Dois
+    nomes para o mesmo número em tela, papel e glossário é o defeito que este
+    projeto mais pagou caro.
+  - **ABA PRÓPRIA E FILTRO DE DATAS PRÓPRIO** (pedido do usuário, 04/09/2026).
+    O bloco saiu do rodapé da GESTÃO DE PERDAS e virou a aba **💡 SIMULADOR**
+    (`#sec-simulador`, `renderSimulador`/`_simPintar`), com `sim-de`/`sim-ate`,
+    os presets 7·15·30·90·MÊS e o botão da IMPRESSÃO EXECUTIVA — que manda o
+    período **desta** aba. **Por quê:** a gestão acompanha os 30 dias rolando e
+    a proposta de um equipamento pede o recorte que o gestor escolher; com um
+    filtro só, montar a proposta mexia na tela de acompanhamento.
+    - ⚠ **O CUSTO DAS CHAMADAS NÃO PODE SUBIR.** `getParadasPeriodo` lê a aba
+      `PARADAS` inteira. O contexto de um período é montado **uma vez só**
+      (`_pgContextoDoPeriodo`), guardado no **mesmo `PG_TELA_CACHE`** (chave
+      `de|ate`, TTL 5 min) que a gestão de perdas usa, e uma requisição **em
+      voo é compartilhada** (`PG_VOO`) — duas telas pedindo a mesma janela
+      viram UMA execução no Apps Script, não duas. É o mesmo remédio do
+      `_phVoo` do comparativo por modelo. Os dois filtros começam em **30
+      dias** de propósito: quem entra nas duas abas sem mexer no período não
+      paga busca nenhuma a mais. `relatorios.test.js` falha se alguma das duas
+      telas voltar a montar contexto por conta própria.
+    - **`SIM_ULT` é o ponteiro DA ABA**, separado do `PG_TELA_ULT`: é dele que
+      o `_pgSimAtualiza` lê o contexto a cada tecla do cenário. Com um ponteiro
+      só, a aba que carregasse por último mandava na conta da outra.
+    - O CSS do bloco passou de `#sec-perdas .pg-sim*` para **`.pg-sim-wrap
+      .pg-sim*`** — o skin viaja com o bloco, sem duplicar seletor por seção.
+    - **O título e o botão da impressão moram no cabeçalho da aba**, não dentro
+      do bloco: repetidos, viravam dois "SIMULADOR DE INVESTIMENTO" e dois
+      botões idênticos, um embaixo do outro.
+    - A GESTÃO DE PERDAS ficou com o **ponteiro** (`ABRIR O SIMULADOR`) no
+      lugar onde o bloco vivia — sem ele o gestor procura o simulador onde ele
+      não está mais.
+    - Abaixo do filtro vai a **base da simulação** (dias trabalhados, horas
+      produtivas/dia, parada não programada): na aba própria não há mais o
+      quadro da gestão de perdas ao lado dizendo de que período se trata.
+      Nenhuma conta no desenho — tudo sai pronto do `st`.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
