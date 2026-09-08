@@ -1198,11 +1198,19 @@ html.sem-splash #splash{ display:none; }
 @keyframes spIn{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 @keyframes spTracar{ to{stroke-dashoffset:0} }
 @keyframes spOut{ to{opacity:0;visibility:hidden;pointer-events:none} }
-/* Quem pediu menos movimento recebe a marca parada, e por menos tempo. */
+/* MOVIMENTO REDUZIDO: NO PC A REGRA É SOLTA, NO CELULAR NÃO.
+   Pedido do usuário (08/09/2026), depois de a abertura sair sem animação no PC
+   dele: o Windows com "efeitos de animação" desligado (Acessibilidade → Efeitos
+   visuais) faz o Chrome pedir menos movimento, e o splash saía com a marca
+   PARADA por 0,7 s — literalmente sem animação, que é o que ele relatou.
+   O que fica solto é só a BATIDA, e ela não é o que o prefers-reduced-motion
+   existe para evitar: é uma linha sendo desenhada NO LUGAR — sem deslocamento,
+   sem zoom, sem parallax, sem piscar, uma vez só. O que continua desligado é a
+   ENTRADA do bloco (o translateY do spIn), que é movimento de verdade.
+   ⚠ NO CELULAR A REGRA CONTINUA INTEIRA: lá o aparelho está na mão e em
+   movimento, e o pedido foi só para o PC. Não copiar este bloco para lá. */
 @media (prefers-reduced-motion:reduce){
-  #splash{ animation:spOut .01s linear .7s forwards }
   #splash .sp-in{ animation:none }
-  #splash .sp-pulso path{ animation:none; stroke-dashoffset:0 }
 }
 </style>
 </head>

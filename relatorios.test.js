@@ -2296,12 +2296,23 @@ console.log('\n── splash de abertura ──');
   // 2) O movimento é o slogan desenhado — uma batida, uma vez. Nada mais anima.
   ok(f + ': a batida é traçada uma vez só',
      /animation:spTracar \.7s [^;]+ forwards;/.test(src), true);
-  ok(f + ': quem pediu menos movimento recebe a marca parada',
-     /@media \(prefers-reduced-motion:reduce\)\{[\s\S]{0,320}#splash \.sp-pulso path\{ animation:none/.test(src), true);
   // 3) O slogan na forma da marca: o ponto de destaque é o FINAL.
   ok(f + ': o slogan está na entrada, na forma da marca',
      /sp-slogan">Medimos o pulso da·linha<span>\.<\/span>/.test(src), true);
 });
+// ── MOVIMENTO REDUZIDO: SOLTO NO PC, INTEIRO NO CELULAR ────────────────────
+// Pedido do usuário (08/09/2026): no PC dele o Windows está com os efeitos de
+// animação desligados, e o splash saía com a marca PARADA por 0,7 s. O que
+// ficou solto é só a BATIDA — linha desenhada no lugar, sem deslocamento, zoom
+// ou parallax. A ENTRADA do bloco (translateY do spIn) continua desligada.
+ok('no PC a batida é traçada mesmo com movimento reduzido',
+   /@media \(prefers-reduced-motion:reduce\)\{\s*\n\s*#splash \.sp-in\{ animation:none \}\s*\n\}/.test(_v7), true);
+ok('e o PC não congela mais o traço nem encurta a tela',
+   /@media \(prefers-reduced-motion:reduce\)\{[\s\S]{0,400}(sp-pulso path\{ animation:none|#splash\{ animation:spOut \.01s)/.test(_v7), false);
+// ⚠ No CELULAR a regra continua inteira: o aparelho está na mão e em movimento.
+ok('o celular continua recebendo a marca parada',
+   /@media \(prefers-reduced-motion:reduce\)\{[\s\S]{0,320}#splash \.sp-pulso path\{ animation:none/.test(_mob), true);
+
 // ── O SPLASH DO PC SÓ APARECE SE A PÁGINA PINTAR ────────────────────────────
 // As duas bibliotecas de CDN do v7 (xlsx e Chart.js) moram no <head>. Sem
 // `defer` elas são SÍNCRONAS: o parser para nelas e o <body> — o splash junto —

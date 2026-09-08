@@ -55,11 +55,31 @@ fica ~1,3 s; os gráficos do gerencial continuam sendo desenhados; com o cdnjs
 bloqueado a tela de login abre normalmente e **nenhum erro de script** é
 lançado.
 
-⚠ **Se a abertura continuar sem animação no PC**, sobram duas causas, e as duas
-são do aparelho: (1) o navegador ainda está com o HTML antigo — a tela de login
-tem de mostrar **v7.42.0**; (2) o Windows está com **efeitos de animação
-desligados** (Acessibilidade → Efeitos visuais), e aí o painel respeita o
-pedido de propósito: mostra a marca **parada**, por 0,7 s.
+### E a regra de movimento reduzido ficou solta no PC
+
+Conferido no print do painel do usuário: o PC já rodava a **v7.41.0**, a versão
+que trouxe o splash — cache descartado. O que restava era o Windows com
+**efeitos de animação desligados** (Acessibilidade → Efeitos visuais): o Chrome
+passa a pedir menos movimento e a abertura saía com a marca **parada** por
+0,7 s. Sem animação, literalmente.
+
+A pedido do usuário (*"solta a regra no PC"*), no `/` a `prefers-reduced-motion`
+passa a desligar **só a entrada do bloco** (o deslocamento de 8 px); a **batida
+continua sendo traçada**, no mesmo tempo de tela. Desenhar uma linha no lugar
+não é o movimento que essa preferência existe para evitar — não há
+deslocamento, zoom, parallax nem piscada.
+
+⚠ **No celular a regra continua inteira**: lá o aparelho está na mão e em
+movimento, e o pedido foi só para o PC. Medido no Chromium com movimento
+reduzido ligado: PC traça a batida e fica 1,4 s; celular segue com a marca
+parada, 0,9 s.
+
+⚠ **Se ainda assim a abertura não aparecer no PC**, a causa provável é que a
+**janela já estava aberta**: o painel do PC é instalado como app e fica aberto o
+dia inteiro — clicar no ícone da barra de tarefas apenas dá foco na janela, e
+sem carregamento não há abertura. Feche a janela e abra de novo (ou F5) para
+ver. No celular o sistema mata o app e ele reabre do zero, e é por isso que lá
+ela aparece toda vez.
 
 ---
 

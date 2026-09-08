@@ -1794,6 +1794,18 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   no SVG). É o slogan desenhado, não efeito — nada mais se mexe.
 - **Cor só onde tem função:** o nome é branco; o laranja fica na batida e no
   ponto final do slogan. Nome em laranja disputaria com os dois.
+- ⚠ **`prefers-reduced-motion`: a regra é SOLTA no PC e INTEIRA no celular**
+  (pedido do usuário, 08/09/2026 — *"solta a regra no PC"*). O Windows com
+  **efeitos de animação desligados** (Acessibilidade → Efeitos visuais) faz o
+  Chrome pedir menos movimento, e a abertura saía com a marca **parada** por
+  0,7 s: foi a causa do *"no PC não tem animação"*. No `/` fica desligada só a
+  **entrada do bloco** (o `translateY` do `spIn`) e a **batida continua sendo
+  traçada**, no mesmo tempo de tela — desenhar uma linha no lugar não é o
+  movimento que essa preferência existe para evitar (não há deslocamento, zoom,
+  parallax nem piscada). **No `/mobile` a regra continua inteira**: lá o
+  aparelho está na mão e em movimento, e o pedido foi só para o PC. Não copiar
+  o bloco de um painel para o outro — `relatorios.test.js` falha nos dois
+  sentidos.
 - **A escala é `clamp()`, não px fixo.** Medido em 1440px, o bloco em px virava
   ilha perdida no preto — parecia diálogo, não abertura. E a hierarquia é a do
   PRODUTO: o nome é maior que o logo da empresa.
@@ -1834,10 +1846,13 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   28 min. Com `defer` ele sai do caminho da pintura, mas continua sendo baixado
   em toda abertura — carregar sob demanda é a melhoria seguinte, ainda não feita.
 - **Quando alguém disser que "não tem animação" no PC, a ordem de investigação
-  é:** versão no rodapé da tela de login (HTML velho em cache é a causa nº 1) →
-  `prefers-reduced-motion` do Windows (Acessibilidade → Efeitos visuais: com ele
-  desligado o painel mostra a marca **parada** por 0,7 s, de propósito) → rede.
-  O código do splash é o mesmo nos dois painéis.
+  é:** versão no rodapé da tela de login (HTML velho em cache) → **a janela já
+  estava aberta** (o painel do PC é instalado como app e fica aberto o dia
+  inteiro; clicar no ícone da barra de tarefas só dá foco na janela — sem
+  carregamento não há splash, e no celular o sistema mata o app e ele reabre do
+  zero, que é por que lá aparece sempre) → rede (o `defer` acima) →
+  `prefers-reduced-motion`, hoje **solto no PC** (ver o splash).
+  O código do splash é o mesmo nos dois painéis; o que muda é o de cima.
 
 ## O NOME e o SLOGAN — onde moram, e o que de propósito NÃO foi renomeado
 - **O produto é o `RitmoPatrimar`** (v7.40.0 / mobile 1.16.0, 08/09/2026). Antes
