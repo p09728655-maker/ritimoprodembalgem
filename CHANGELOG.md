@@ -11,6 +11,39 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.41.0 · mobile 1.17.0 — 08/09/2026
+
+**Atenção** — **nenhum número ou fórmula mudou.** É só a tela de abertura.
+
+### Splash de entrada, com o slogan
+
+Ao abrir o app (celular e PC) aparece por **~1s** a marca, uma **batida sendo
+traçada** e o slogan **"Medimos o pulso da·linha."**. Toque/clique pula.
+
+**A tarefa do usuário nesta tela é SAIR dela** — o operador abre o app no meio
+da hora, de pé, para lançar caixa. Por isso:
+
+- **Quem faz o splash sumir é o CSS, não o JS.** Se o script morrer, ou a rede
+  cair antes dele, a tela sai do caminho do mesmo jeito. Um overlay preso em
+  cima da tela deixaria o operador sem lançar.
+- **O app carrega por trás.** O splash é uma camada por cima, não um passo antes.
+- **O movimento significa algo.** A única animação é uma batida traçada uma vez
+  — é o slogan desenhado, não efeito. Nada mais se mexe.
+- **Cor só onde tem função:** o nome é branco (tinta); o laranja fica na batida
+  e no ponto final do slogan, que é o sinal da marca.
+- `prefers-reduced-motion` recebe a marca parada, e por menos tempo.
+
+⚠ **A TV FICA DE FORA.** Ela roda em `?tv` e se **recarrega sozinha a cada 28
+min** (anti-sleep do WebOS): com splash, a parede da fábrica piscaria a marca de
+meia em meia hora, no lugar da produção. A exclusão entra no `<html>` antes da
+primeira pintura.
+
+**Medido no navegador**, não suposto: em 320 / 430 / 1280 / 1920 / 1366×600 nada
+estoura; o splash sai sozinho (`visibility:hidden`, `pointer-events:none`) e o
+botão OPERADOR volta clicável; com `?tv` ele nem é desenhado.
+
+---
+
 ## v7.40.0 · mobile 1.16.0 — 08/09/2026
 
 **Atenção** — **nenhum número, fórmula, premissa ou nome de arquivo mudou.** É

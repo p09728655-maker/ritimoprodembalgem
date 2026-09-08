@@ -2259,7 +2259,19 @@ ok('e é UMA implementação — os 8 relatórios passam pelo _rpCabecalho',
    (_v7.match(/_rpCabecalho\(/g) || []).length, 9);   // 8 chamadas + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
-ok('a forma da tela não foi mexida', (_v7.match(/Medimos o pulso da·linha/g) || []).length, 5);
+// O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
+// número solto aqui vira enigma na próxima vez que alguém somar um lugar.
+const _slogan = 'Medimos o pulso da·linha<span';
+ok('o slogan sai igual nas seis superfícies do desktop',
+   (_v7.match(/Medimos o pulso da·linha/g) || []).length, 6);
+ok('e nenhuma delas escreve o ponto final em texto puro',
+   (_v7.match(/Medimos o pulso da·linha\./g) || []).length, 0);
+ok('as seis são: login, rodapé, 2 cabeçalhos de impressão, cabeçalho dos PDFs e splash',
+   [/margin-top:10px;opacity:0\.9">Medimos/.test(_v7),                    // login
+    /letter-spacing:-0\.2px">Medimos/.test(_v7),                          // rodapé da tela
+    (_v7.match(/class="print-header-slogan">Medimos/g)||[]).length === 2,  // impressão do painel
+    /rp-slogan"[^>]*>Medimos/.test(_v7),                                   // cabeçalho dos 8 PDFs
+    /sp-slogan">Medimos/.test(_v7)].every(Boolean), true);                 // splash
 // O nome do produto no cabeçalho comum estava PARTIDO por tag (RITMO<span>PROD)
 // — fora do alcance de qualquer busca por "RITMOPROD". É o cabeçalho dos cinco
 // relatórios: se escapasse, o PDF sairia com o nome antigo em cima da mesa.
@@ -2268,6 +2280,35 @@ ok('o cabeçalho comum leva o nome novo', /RITMO<span>PATRIMAR<\/span>/.test(_v7
 // slogan ocupa ~12px, então a paisagem devolve o mesmo em "ar" do cabeçalho.
 ok('a paisagem compensa a altura do slogan',
    /\.deitado \.rp-header\{margin-bottom:7px;padding:6px 16px\}/.test(_v7), true);
+
+console.log('\n── splash de abertura ──');
+// Pedido do usuário (08/09/2026): "entrada ao abrir o app vem o slogan".
+// Medido no Chromium headless nos dois painéis, em 5 tamanhos de tela.
+['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
+  const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  // 1) QUEM SOME É O CSS. Se a saída dependesse do JS, um erro no script (ou a
+  //    rede caindo antes dele) deixaria um overlay preso em cima da tela — e o
+  //    operador sem lançar caixa. O toque só antecipa.
+  ok(f + ': o splash sai sozinho pela animação, sem JS',
+     /#splash\{[^}]*animation:spOut [^}]*forwards/.test(src.replace(/\n\s*/g, '')), true);
+  ok(f + ': e o fim da animação libera o clique',
+     /@keyframes spOut\{ to\{opacity:0;visibility:hidden;pointer-events:none\} \}/.test(src), true);
+  // 2) O movimento é o slogan desenhado — uma batida, uma vez. Nada mais anima.
+  ok(f + ': a batida é traçada uma vez só',
+     /animation:spTracar \.7s [^;]+ forwards;/.test(src), true);
+  ok(f + ': quem pediu menos movimento recebe a marca parada',
+     /@media \(prefers-reduced-motion:reduce\)\{[\s\S]{0,320}#splash \.sp-pulso path\{ animation:none/.test(src), true);
+  // 3) O slogan na forma da marca: o ponto de destaque é o FINAL.
+  ok(f + ': o slogan está na entrada, na forma da marca',
+     /sp-slogan">Medimos o pulso da·linha<span>\.<\/span>/.test(src), true);
+});
+// A TV roda em `?tv` e se RECARREGA sozinha a cada 28 min: com splash, a parede
+// da fábrica piscaria a marca de meia em meia hora, no lugar da produção.
+ok('a TV fica de fora, e a decisão entra antes da 1ª pintura',
+   /has\('tv'\)\)\s*\n?\s*document\.documentElement\.classList\.add\('sem-splash'\)/.test(_v7), true);
+ok('e é o CSS que esconde, não o JS', /html\.sem-splash #splash\{ display:none; \}/.test(_v7), true);
+ok('o celular NÃO tem essa exclusão — lá não existe TV',
+   /sem-splash/.test(_mob), false);
 
 // O nome ANTIGO não pode voltar em nenhum dos dois painéis. A busca é sensível
 // a caixa de propósito: `ritmoprod` minúsculo continua existindo e é legítimo —

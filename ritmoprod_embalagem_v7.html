@@ -1122,9 +1122,101 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
 .login-err.on{display:block}
 .perfil-badge{ font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;padding:4px 10px;border-radius:3px;border:0.5px solid var(--border);color:var(--txt2);cursor:pointer;transition:all .15s; }
 .perfil-badge:hover{border-color:var(--red);color:var(--red)}
+/* ═══ SPLASH DE ABERTURA ═══════════════════════════════════════════════════
+   A tarefa do usuário nesta tela é SAIR dela: o operador abre o app no meio
+   da hora, de pé, para lançar caixa. Por isso ela é curta, pulável e não
+   segura nada — o app carrega por trás.
+     1) QUEM SOME É O CSS, não o JS. A animação se encerra sozinha; se o
+        script morrer (ou a rede cair antes dele), o splash sai do caminho do
+        mesmo jeito. Overlay preso em cima da tela travaria o lançamento.
+     2) O MOVIMENTO SIGNIFICA ALGO. O slogan é "medimos o pulso da linha" —
+        então a única animação é UMA BATIDA SENDO TRAÇADA, uma vez. Não é
+        efeito: é o slogan desenhado. Nada mais se mexe.
+     3) COR SÓ ONDE TEM FUNÇÃO. O nome é tinta (branco); o laranja fica na
+        batida e no ponto final do slogan, que é o sinal da marca. Nome em
+        laranja disputaria com os dois e viraria decoração.
+     4) A ESCALA ACOMPANHA A TELA (clamp). Medido em 1440px, o bloco em px
+        fixo virava uma ilha perdida no meio do preto — parecia diálogo, não
+        abertura. E a hierarquia é a do PRODUTO: o nome é maior que o logo da
+        empresa, senão a tela do sistema fica parecendo anúncio da fábrica.
+     5) CENTRO ÓPTICO, NÃO GEOMÉTRICO. Centralizado na régua, o bloco lê
+        baixo; o respiro extra embaixo sobe o conjunto.
+     6) A TV FICA DE FORA. Ela roda em `?tv` e se RECARREGA sozinha a cada
+        28 min (anti-sleep do WebOS): com splash, a parede da fábrica
+        piscaria a marca de meia em meia hora, no lugar da produção. A
+        exclusão entra no <html> ANTES da primeira pintura — ver o <head>.
+   ═════════════════════════════════════════════════════════════════════════ */
+#splash{
+  position:fixed; inset:0; z-index:9999; background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px 24px calc(24px + min(9vh,80px));
+  animation:spOut .35s ease-in .95s forwards;
+}
+html.sem-splash #splash{ display:none; }
+#splash .sp-in{ text-align:center; animation:spIn .45s cubic-bezier(.2,.7,.3,1) both; }
+#splash .sp-logo{
+  height:clamp(46px,4.6vw,76px); width:auto; max-width:56vw; object-fit:contain;
+  display:block; margin:0 auto; opacity:.92;
+}
+/* Fallback largo de propósito: a fonte web pode não ter chegado em 1s, e o
+   nome não pode remontar no meio da animação. */
+#splash .sp-marca{
+  font-family:'Barlow Condensed','Arial Narrow',var(--font-h);
+  font-size:clamp(30px,3.6vw,58px); font-weight:700; letter-spacing:clamp(4px,.42vw,7px);
+  color:var(--txt); margin-top:clamp(18px,1.9vw,30px); line-height:1;
+}
+/* A batida nasce da largura do nome — solta e estreita, virava um traço
+   decorativo debaixo do texto em vez de um sinal. */
+#splash .sp-pulso{
+  display:block; margin:clamp(14px,1.5vw,24px) auto 0; width:clamp(190px,21vw,330px); height:auto;
+  overflow:visible;
+}
+#splash .sp-pulso path{
+  fill:none; stroke:var(--acc); stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:100; stroke-dashoffset:100;
+  animation:spTracar .7s cubic-bezier(.45,0,.2,1) .2s forwards;
+}
+#splash .sp-slogan{
+  font-family:'Inter',var(--font-b); font-size:clamp(15px,1.45vw,23px); font-weight:700;
+  letter-spacing:-0.3px; color:#E8E8E8; margin-top:clamp(12px,1.2vw,19px); line-height:1.3;
+}
+#splash .sp-slogan span{ color:var(--acc); }
+@keyframes spIn{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes spTracar{ to{stroke-dashoffset:0} }
+@keyframes spOut{ to{opacity:0;visibility:hidden;pointer-events:none} }
+/* Quem pediu menos movimento recebe a marca parada, e por menos tempo. */
+@media (prefers-reduced-motion:reduce){
+  #splash{ animation:spOut .01s linear .7s forwards }
+  #splash .sp-in{ animation:none }
+  #splash .sp-pulso path{ animation:none; stroke-dashoffset:0 }
+}
 </style>
 </head>
+<script>
+// A TV roda em `?tv` (auto-login como operador) e se recarrega sozinha a cada
+// 28 min. A classe entra no <html> aqui, antes da primeira pintura: depois já
+// seria tarde — a parede piscaria a marca antes de o script decidir escondê-la.
+if(new URLSearchParams(location.search.toLowerCase()).has('tv'))
+  document.documentElement.classList.add('sem-splash');
+</script>
 <body>
+
+<!-- ═══ SPLASH DE ABERTURA (marca + slogan) ═══
+     Sai sozinho pela animação do CSS; o toque só antecipa. O porquê de cada
+     cuidado está no bloco SPLASH DE ABERTURA do CSS, lá em cima. -->
+<div id="splash" aria-hidden="true" onclick="this.remove()">
+  <div class="sp-in">
+    <img src="/patrimar-logo.png" class="sp-logo" alt="" onerror="this.style.display='none'">
+    <div class="sp-marca">RITMOPATRIMAR</div>
+    <!-- O pulso: uma batida só, traçada uma vez. pathLength=100 deixa o
+         dasharray da animação independente do tamanho real do traço. -->
+    <svg class="sp-pulso" viewBox="0 0 160 26" role="presentation" focusable="false">
+      <path pathLength="100" d="M2 13 H69 l5 -10 l6 20 l6 -13 l4 3 H158"/>
+    </svg>
+    <div class="sp-slogan">Medimos o pulso da·linha<span>.</span></div>
+  </div>
+</div>
 
 <!-- ═══ LOGIN ═══ -->
 <div class="login-over" id="login-over" style="position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;">
@@ -2447,7 +2539,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.40.0';
+const APP_VER   = '7.41.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
