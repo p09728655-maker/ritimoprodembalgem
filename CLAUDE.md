@@ -1781,6 +1781,31 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   concordam. Unificar (fazer o painel sempre recalcular na leitura) mudaria o
   número dos dias antigos já gravados — decisão do usuário, ainda não tomada.
 
+## Splash de abertura (`#splash`)
+- **~1s de marca + batida + slogan ao abrir**, no celular e no PC. A tarefa do
+  usuário nesta tela é **sair dela**: o operador abre o app no meio da hora, de
+  pé, para lançar caixa.
+- **QUEM SOME É O CSS, não o JS** (`animation:spOut … forwards`, terminando em
+  `visibility:hidden;pointer-events:none`). Se o script morrer — ou a rede cair
+  entre o HTML e ele —, o splash sai do caminho do mesmo jeito. **Não trocar por
+  `setTimeout(...remove())`**: overlay preso em cima da tela trava o lançamento.
+  O `onclick` só antecipa.
+- **A única animação é a batida, traçada uma vez** (`spTracar`, `pathLength=100`
+  no SVG). É o slogan desenhado, não efeito — nada mais se mexe.
+- **Cor só onde tem função:** o nome é branco; o laranja fica na batida e no
+  ponto final do slogan. Nome em laranja disputaria com os dois.
+- **A escala é `clamp()`, não px fixo.** Medido em 1440px, o bloco em px virava
+  ilha perdida no preto — parecia diálogo, não abertura. E a hierarquia é a do
+  PRODUTO: o nome é maior que o logo da empresa.
+- ⚠ **A TV FICA DE FORA.** Ela roda em `?tv` e se recarrega sozinha a cada 28
+  min: com splash, a parede piscaria a marca de meia em meia hora no lugar da
+  produção. A classe `sem-splash` entra no `<html>` por um script inline no
+  `<head>` — **antes da primeira pintura**; decidir isso depois já seria tarde.
+  O celular não tem essa exclusão de propósito: lá não existe TV.
+- Medido no Chromium em 320/430/1280/1920/1366×600: nada estoura, o splash sai
+  sozinho e o botão OPERADOR volta clicável. `relatorios.test.js` prende as
+  cinco regras acima nos dois painéis.
+
 ## O NOME e o SLOGAN — onde moram, e o que de propósito NÃO foi renomeado
 - **O produto é o `RitmoPatrimar`** (v7.40.0 / mobile 1.16.0, 08/09/2026). Antes
   era `RitmoProd`, escrito ~35 vezes espalhadas pelos dois HTMLs.
