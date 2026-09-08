@@ -11,6 +11,58 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.42.0 — 08/09/2026
+
+**Atenção** — **nenhum número, fórmula ou indicador mudou.** É a ordem em que o
+PC carrega o painel.
+
+### No PC o painel abria com a tela preta esperando o cdnjs
+
+Relato do usuário: *"no pc não tem animação na tela inicial"*. O splash **estava
+publicado e funcionando** (v7.41.0 em produção, conferido no Chromium a 1440 e
+1920 px) — o que faltava era a página **pintar**.
+
+As duas bibliotecas de terceiros do desktop (`xlsx.full.min.js` e
+`chart.umd.min.js`, do cdnjs) eram **scripts síncronos no `<head>`**: o parser
+para neles, e o `<body>` — o splash junto — só começa a existir depois que o
+cdnjs responder. **Medido no Chromium com o cdnjs a 3 s: primeira pintura aos
+3.132 ms.** Três segundos de tela preta, e só então a marca. Com o cdnjs
+bloqueado (rede da fábrica, firewall) a espera é a do timeout, com a mesma tela
+preta.
+
+**É defeito do PC apenas** — e é por isso que no celular a abertura aparece: o
+`/mobile` não carrega CDN nenhuma e ainda tem service worker.
+
+Agora as duas entram com **`defer`**: o parser não para mais nelas.
+
+| cdnjs | primeira pintura antes | depois |
+|---|---|---|
+| rápida | 148 ms | 148 ms |
+| a 3 s | **3.132 ms** | **196 ms** |
+| bloqueada | tela preta até o timeout | 148 ms, painel abre |
+
+**A Chart.js precisou de uma fila.** Com `defer`, o primeiro render (o
+`renderAll()` do fim do script) roda antes de a lib existir. O `mkChart`
+**enfileira** o gráfico nesse intervalo e desenha no `DOMContentLoaded`, que o
+navegador dispara depois dos scripts `defer` — o mesmo desenho, alguns
+milissegundos mais tarde. De quebra, **cdnjs fora do ar não derruba mais o
+render**: antes era um `new Chart` num nome inexistente estourando no meio do
+desenho e levando junto o que vinha depois (foi assim que a Chart.js não
+carregar já deixou o rodapé sem versão).
+
+**Conferido no navegador:** com o cdnjs a 3 s o splash aparece aos ~150 ms e
+fica ~1,3 s; os gráficos do gerencial continuam sendo desenhados; com o cdnjs
+bloqueado a tela de login abre normalmente e **nenhum erro de script** é
+lançado.
+
+⚠ **Se a abertura continuar sem animação no PC**, sobram duas causas, e as duas
+são do aparelho: (1) o navegador ainda está com o HTML antigo — a tela de login
+tem de mostrar **v7.42.0**; (2) o Windows está com **efeitos de animação
+desligados** (Acessibilidade → Efeitos visuais), e aí o painel respeita o
+pedido de propósito: mostra a marca **parada**, por 0,7 s.
+
+---
+
 ## v7.41.0 · mobile 1.17.0 — 08/09/2026
 
 **Atenção** — **nenhum número ou fórmula mudou.** É só a tela de abertura.

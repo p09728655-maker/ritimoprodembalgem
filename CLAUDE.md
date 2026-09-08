@@ -1806,6 +1806,39 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   sozinho e o botão OPERADOR volta clicável. `relatorios.test.js` prende as
   cinco regras acima nos dois painéis.
 
+## As bibliotecas de CDN do desktop são `defer` — e por que isso é do PC
+- **O `/mobile` não carrega CDN nenhuma; o `/` carrega duas** (`xlsx.full.min.js`
+  e `chart.umd.min.js`, do cdnjs), no `<head>`. Sem `defer` elas são scripts
+  **síncronos**: o parser para nelas e o `<body>` — **o splash junto** — só
+  começa a existir depois que o cdnjs responder.
+  - **Medido no Chromium** (cdnjs atrasado em 3 s): **primeira pintura aos
+    3.132 ms** contra **196 ms** com `defer`. Três segundos de tela preta antes
+    de qualquer coisa. Com o cdnjs **bloqueado** (firewall da fábrica), a espera
+    é a do timeout — e o painel inteiro ficava refém disso.
+  - Foi o que apareceu como *"no PC não tem animação na tela inicial"*
+    (08/09/2026): o splash estava publicado e funcionando; o que faltava era a
+    página **pintar**.
+- **A Chart.js exigiu uma fila, senão o `defer` abriria o painel sem gráfico.**
+  O primeiro render é o `renderAll()` do fim do script, que roda **antes** de os
+  scripts `defer` executarem. `mkChart` enfileira em `CHART_FILA` quando
+  `typeof Chart==='undefined'` e o `DOMContentLoaded` esvazia a fila — o
+  navegador dispara esse evento **depois** dos `defer`, então o desenho é o
+  mesmo, alguns milissegundos mais tarde.
+  - De quebra, **cdnjs fora do ar não derruba mais o render**: antes era um
+    `new Chart` num nome inexistente, e o throw levava junto o que vinha depois
+    (é o incidente que já deixou o rodapé sem versão, anotado no `renderAll`).
+- ⚠ **Não tirar o `defer`, e não trazer CDN para o mobile.**
+  `relatorios.test.js` falha nos dois casos e também se a fila do `mkChart`
+  sumir.
+- **O XLSX é ~1 MB para um botão de exportar**, e a TV recarrega sozinha a cada
+  28 min. Com `defer` ele sai do caminho da pintura, mas continua sendo baixado
+  em toda abertura — carregar sob demanda é a melhoria seguinte, ainda não feita.
+- **Quando alguém disser que "não tem animação" no PC, a ordem de investigação
+  é:** versão no rodapé da tela de login (HTML velho em cache é a causa nº 1) →
+  `prefers-reduced-motion` do Windows (Acessibilidade → Efeitos visuais: com ele
+  desligado o painel mostra a marca **parada** por 0,7 s, de propósito) → rede.
+  O código do splash é o mesmo nos dois painéis.
+
 ## O NOME e o SLOGAN — onde moram, e o que de propósito NÃO foi renomeado
 - **O produto é o `RitmoPatrimar`** (v7.40.0 / mobile 1.16.0, 08/09/2026). Antes
   era `RitmoProd`, escrito ~35 vezes espalhadas pelos dois HTMLs.

@@ -2302,6 +2302,29 @@ console.log('\n── splash de abertura ──');
   ok(f + ': o slogan está na entrada, na forma da marca',
      /sp-slogan">Medimos o pulso da·linha<span>\.<\/span>/.test(src), true);
 });
+// ── O SPLASH DO PC SÓ APARECE SE A PÁGINA PINTAR ────────────────────────────
+// As duas bibliotecas de CDN do v7 (xlsx e Chart.js) moram no <head>. Sem
+// `defer` elas são SÍNCRONAS: o parser para nelas e o <body> — o splash junto —
+// só nasce depois que o cdnjs responder. Medido no Chromium com o cdnjs a 3 s:
+// primeira pintura aos 3.132 ms (tela preta) contra 196 ms com `defer`. É
+// defeito só do PC: o /mobile não carrega CDN nenhuma.
+ok('as duas libs de CDN do v7 são defer',
+   (_v7.match(/<script defer src="https:\/\/cdnjs\.cloudflare\.com/g) || []).length, 2);
+ok('e nenhuma ficou síncrona no <head>',
+   /<script src="https:\/\/cdnjs\.cloudflare\.com/.test(_v7), false);
+// Com `defer`, o primeiro render (o renderAll do fim do script) roda antes de a
+// Chart.js existir. O gráfico fica na fila e é desenhado no DOMContentLoaded,
+// que o navegador dispara DEPOIS dos scripts `defer`. Sem essa fila o defer
+// deixaria o painel abrir sem gráfico — e um `new Chart` sem a lib estoura no
+// meio do render e leva junto o que vem depois.
+ok('o mkChart enfileira o gráfico enquanto a Chart.js não chegou',
+   /if\(typeof Chart==='undefined'\)\{ CHART_FILA\[id\]=cfg; return; \}/.test(_v7), true);
+ok('e a fila é desenhada no DOMContentLoaded',
+   /document\.addEventListener\('DOMContentLoaded',function\(\)\{\s*\n?\s*const fila=CHART_FILA/.test(_v7), true);
+// O mobile não tem CDN — se ganhar uma, ganha o mesmo problema.
+ok('o celular continua sem biblioteca de CDN',
+   /cdnjs\.cloudflare\.com/.test(_mob), false);
+
 // A TV roda em `?tv` e se RECARREGA sozinha a cada 28 min: com splash, a parede
 // da fábrica piscaria a marca de meia em meia hora, no lugar da produção.
 ok('a TV fica de fora, e a decisão entra antes da 1ª pintura',
