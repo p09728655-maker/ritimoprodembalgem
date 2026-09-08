@@ -1,4 +1,4 @@
-# Glossário — RitmoProd · Embalagem
+# Glossário — RitmoPatrimar · Embalagem
 
 Cada indicador que o painel mostra, com a fórmula **conferida no código** e o
 arquivo:linha de onde ela saiu. A interface e este arquivo não podem divergir —

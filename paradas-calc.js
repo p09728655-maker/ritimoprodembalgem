@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════════════
-// RitmoProd · CÁLCULO DE PARADAS — implementação ÚNICA
+// RitmoPatrimar · CÁLCULO DE PARADAS — implementação ÚNICA
 // ════════════════════════════════════════════════════════════════════════════
 // Carregado pelo painel desktop (ritmoprod_embalagem_v7.html) E pelo mobile
 // (ritmoprod_mobile.html). Antes cada um tinha a sua cópia da conta e os dois

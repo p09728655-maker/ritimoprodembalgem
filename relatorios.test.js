@@ -29,6 +29,16 @@ function pega(assinatura) {
 global.window = global;   // o rp-core.js é script de navegador e escreve em window
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 const parseBR = s => { const [d, m, y] = s.split('/').map(Number); return new Date(y, m - 1, d); };
+// O nome do produto sai do PRÓPRIO painel: os rodapés de relatório, o título do
+// popup do histórico e o resumo do WhatsApp leem a constante APP_NOME. Extrair
+// em vez de fixar o texto aqui faz o teste acompanhar a troca do nome — e falha
+// alto se a constante sumir e o nome voltar a ser literal espalhado pelo HTML.
+// (`const` dentro de eval fica preso ao escopo do eval — as funções extraídas
+// resolvem o nome pelo global, então é lá que ele tem de ficar.)
+const _nomeConst = JS.match(/const APP_NOME\s+= '([^']+)';/);
+if (!_nomeConst) throw new Error('APP_NOME não está no painel — o nome voltou a ser literal?');
+global.APP_NOME    = _nomeConst[1];
+global.APP_NOME_CX = APP_NOME.toUpperCase();
 eval(pega('function _numSemana('));   // a real, extraída do painel
 eval(pega('function _heIndef('));
 eval(pega('function _relSemanaJanela('));
@@ -2221,6 +2231,53 @@ console.log('\n── o rótulo é CAIXAS, não PEÇAS ──');
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
   ok(f + ' não imprime "PEÇAS PERDIDAS"', src.includes('PE\u00c7AS PERDIDAS'), false);
+});
+
+console.log('\n── o nome do produto sai de um lugar só ──');
+// Rename cosmético (08/09/2026): RitmoProd → RitmoPatrimar. O nome estava
+// escrito ~35 vezes; agora os pontos gerados por JS leem APP_NOME/APP_NOME_CX
+// e só os estáticos (title, meta do iOS, <h1> dos cabeçalhos de impressão e o
+// rodapé da tela) continuam literais — esses nascem antes do script.
+ok('o painel declara o nome numa constante', /const APP_NOME\s+= 'RitmoPatrimar';/.test(_v7), true);
+ok('e a versão em caixa alta deriva dela, não é digitada de novo',
+   /const APP_NOME_CX = APP_NOME\.toUpperCase\(\);/.test(_v7), true);
+ok('os rodapés de relatório leem a constante',
+   (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
+ok('os rodapés de PDF de paradas leem a constante',
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 4);
+ok('o resumo do WhatsApp assina com a constante',
+   /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
+ok('e o resumo continua sem emoji depois da troca',
+   [...zap].every(c => c.charCodeAt(0) < 0x2500), true);
+console.log('\n── o slogan vai em TODA impressão ──');
+// Pedido do usuário (08/09/2026): "colocar slogan em todas impressões".
+// O slogan já existia na tela (login e rodapé) e a forma canônica é dele: o
+// ponto de destaque é o FINAL, e o "·" do meio é texto normal.
+ok('o cabeçalho comum dos relatórios leva o slogan',
+   /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
+ok('e é UMA implementação — os 8 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 9);   // 8 chamadas + a declaração
+ok('os dois cabeçalhos de impressão do painel também levam',
+   (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
+ok('a forma da tela não foi mexida', (_v7.match(/Medimos o pulso da·linha/g) || []).length, 5);
+// O nome do produto no cabeçalho comum estava PARTIDO por tag (RITMO<span>PROD)
+// — fora do alcance de qualquer busca por "RITMOPROD". É o cabeçalho dos cinco
+// relatórios: se escapasse, o PDF sairia com o nome antigo em cima da mesa.
+ok('o cabeçalho comum leva o nome novo', /RITMO<span>PATRIMAR<\/span>/.test(_v7), true);
+// A capa da GESTÃO DE PERDAS é medida para caber na folha 1 (paisagem). O
+// slogan ocupa ~12px, então a paisagem devolve o mesmo em "ar" do cabeçalho.
+ok('a paisagem compensa a altura do slogan',
+   /\.deitado \.rp-header\{margin-bottom:7px;padding:6px 16px\}/.test(_v7), true);
+
+// O nome ANTIGO não pode voltar em nenhum dos dois painéis. A busca é sensível
+// a caixa de propósito: `ritmoprod` minúsculo continua existindo e é legítimo —
+// é o nome dos ARQUIVOS (ritmoprod_appscript.gs), o prefixo dos XLSX exportados
+// e a tag da notificação. Renomear arquivo não tem ganho e quebraria os
+// rewrites da Vercel e as sete suítes; renomear o XLSX mudaria formato de saída.
+['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
+  const src = fs.readFileSync(path.join(__dirname, f), 'utf8');
+  ok(f + ': o nome antigo não voltou',
+     src.includes('RitmoProd') || src.includes('RITMOPROD'), false);
 });
 
 console.log(falhas === 0

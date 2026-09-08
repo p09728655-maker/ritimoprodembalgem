@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   RitmoProd · núcleo comum dos painéis  —  IMPLEMENTAÇÃO ÚNICA
+   RitmoPatrimar · núcleo comum dos painéis  —  IMPLEMENTAÇÃO ÚNICA
    Carregado por ritmoprod_embalagem_v7.html (desktop/TV) e por
    ritmoprod_mobile.html, sempre ANTES do script de cada painel.
 
