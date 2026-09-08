@@ -1,4 +1,4 @@
-# Notas de versão — RitmoProd · Embalagem
+# Notas de versão — RitmoPatrimar · Embalagem
 
 Uma entrada por publicação. **Atenção** é obrigatório em toda mudança que altera
 um número exibido ou o formato de um arquivo — o gestor precisa saber por que o
@@ -8,6 +8,86 @@ O número da versão é o `APP_VER` no topo de cada painel: `v7.x` é o desktop
 (gerencial + TV), `mobile 1.x` é o app do operador. Mudança no
 `ritmoprod_appscript.gs` **não sobe pela Vercel** — exige colar no editor do
 Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
+
+---
+
+## v7.40.0 · mobile 1.16.0 — 08/09/2026
+
+**Atenção** — **nenhum número, fórmula, premissa ou nome de arquivo mudou.** É
+troca de nome na camada de apresentação: o painel passou a se chamar
+**RitmoPatrimar**. Indicador nenhum muda de valor, nenhum dado é perdido e o
+Apps Script **não precisa de re-deploy**.
+
+### O painel virou RitmoPatrimar
+
+O nome aparece agora como **RITMOPATRIMAR · EMBALAGEM** no cabeçalho de
+impressão, na tela de login, no rodapé do painel e da TV, no título da aba, no
+ícone do celular, nos rodapés dos relatórios em PDF, no título do popup do
+histórico, no resumo do WhatsApp e na notificação de lembrete.
+
+⚠ **A grafia é EMBALAGEM, com "A"** — o pedido veio escrito "EMBALGEM", como o
+nome do repositório. Nome de repositório ninguém vê; nome de produto vai para o
+rodapé de todo PDF que sobe para a diretoria.
+
+**O nome agora mora em um lugar só.** Estava escrito ~35 vezes espalhadas. Os
+pontos gerados por JS leem `APP_NOME` / `APP_NOME_CX` (declarados ao lado do
+`APP_VER`, no topo do script); só os estáticos continuam literais — `<title>`,
+a meta do iOS, os `<h1>` dos cabeçalhos de impressão e o rodapé da tela, que
+nascem antes do script rodar. A próxima troca de nome custa uma linha.
+`relatorios.test.js` prende os cinco rodapés de relatório, os quatro rodapés de
+PDF e a assinatura do WhatsApp na constante, e **falha se o nome antigo voltar**
+a qualquer um dos dois painéis.
+
+### O slogan agora vai em TODA impressão
+
+Pedido do usuário. **"Medimos o pulso da·linha."** já existia na tela — login e
+rodapé — e agora sai também no **cabeçalho dos oito relatórios em PDF** e nos
+**dois cabeçalhos de impressão do próprio painel** (gerencial e histórico).
+
+A forma é a que a marca já usava, não uma nova: o ponto de **destaque é o
+final**; o `·` do meio é texto normal. É **uma implementação** — os oito
+relatórios passam pelo `_rpCabecalho`, então o slogan foi escrito uma vez só.
+
+⚠ **O nome do produto estava PARTIDO por tag nesse cabeçalho**
+(`RITMO<span>PROD</span>`) — fora do alcance de qualquer busca por
+"RITMOPROD". Era o cabeçalho dos cinco relatórios: sem isso, o PDF sairia com
+o nome antigo em cima da mesa da reunião. Corrigido junto.
+
+⚠ **A capa da GESTÃO DE PERDAS é medida para caber na folha 1** (paisagem). O
+slogan ocupa ~12px, então `.deitado .rp-header` devolve o mesmo em **ar**
+(padding e margem, nunca fonte de leitura) — o saldo na capa é ~2px.
+
+### O que NÃO mudou, de propósito
+
+- **Nome dos arquivos** (`ritmoprod_embalagem_v7.html`, `ritmoprod_mobile.html`,
+  `ritmoprod_appscript.gs`). Ninguém os vê — a URL pública é `/` e `/mobile`.
+  Renomear quebraria os rewrites do `vercel.json` e as sete suítes de teste, e
+  os 6 textos de tela que mandam colar o `ritmoprod_appscript.gs` no editor
+  passariam a apontar para arquivo que não existe. Ganho zero.
+- **Prefixo dos XLSX exportados** (`ritmoprod_..._fechamento.xlsx`,
+  `ritmoprod_historico_....xlsx`). Trocar seria mudança de formato de saída, e
+  quebraria quem organiza pasta por prefixo. O **conteúdo** da primeira linha da
+  planilha de fechamento acompanha o nome novo.
+- **As chaves do `localStorage`** (`rpe_cfg`, `rpe_logo`, `rpe_hist`,
+  `rpe_pg_sim`, `rp_mob_ver`…). É por isso que **ninguém perde** a URL do Apps
+  Script salva no aparelho, o logo enviado nem o cenário do simulador.
+- **O `id` dos manifests** (`/` e `/mobile`). Só `name` e `short_name` mudaram:
+  mexer no `id` faria o Chrome tratar como app NOVO e o operador ficaria com
+  dois ícones, continuando a abrir o velho.
+- **A conexão com o Sheets, as abas, as colunas e o histórico gravado.**
+
+### Para quem já tem o app instalado
+
+O celular mostra a barra **"Nova versão disponível → ATUALIZAR"** (o `CACHE` do
+`sw-mobile.js` subiu para `v25`). O **nome sob o ícone** só troca quando o
+navegador relê o manifest: no Android costuma acontecer sozinho; no iPhone, só
+removendo e adicionando o atalho de novo. O app funciona igual nesse meio-tempo.
+
+⚠ **Conferir na TV e no papel:** `RITMOPATRIMAR` tem 13 caracteres contra 9 de
+`RITMOPROD`. Os três pontos apertados são o logotipo do rodapé da TV, o `<h1>`
+do cabeçalho de impressão (comum aos cinco relatórios) e o rodapé dos PDFs. Nas
+regras de CSS não há largura fixa nem `nowrap` nesses pontos, mas isso é leitura
+de código — vale olhar uma folha impressa e a TV ligada.
 
 ---
 

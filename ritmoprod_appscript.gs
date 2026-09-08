@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════
-// RitmoProd · Apps Script — Google Sheets
+// RitmoPatrimar · Apps Script — Google Sheets
 // Versão: 5.2 — TELA D NO CICLO DA TV (config compartilhada)
 //               getConfigPainel/setConfigPainel passam a guardar TELA_D e
 //               TEMPO_D na aba CONFIG_PAINEL, do mesmo jeito que já faziam com

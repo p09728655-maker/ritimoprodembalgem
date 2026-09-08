@@ -1,4 +1,4 @@
-// Service worker mínimo do RitmoProd Mobile.
+// Service worker mínimo do RitmoPatrimar Mobile.
 // Objetivo: tornar o app instalável (atalho na tela inicial / PWA).
 // Estratégia network-first: sempre tenta buscar a versão mais nova online
 // e só usa o cache como reserva quando estiver offline. Assim os deploys
@@ -8,7 +8,7 @@
 // `ritmoprod_mobile.html`. É a troca do nome do cache que faz o navegador
 // instalar o SW novo — e é isso que dispara o aviso "Nova versão disponível"
 // para quem está com o app instalado.
-const CACHE = 'ritmoprod-mobile-v24';   // APP_VER 1.15.0
+const CACHE = 'ritmoprod-mobile-v25';   // APP_VER 1.16.0
 
 self.addEventListener('install', e => {
   self.skipWaiting();

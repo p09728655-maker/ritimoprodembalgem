@@ -1,6 +1,7 @@
-# RitmoProd · Embalagem — Memória do projeto
+# RitmoPatrimar · Embalagem — Memória do projeto
 
 Painel de ritmo de produção (Patrimar Móveis · Embalagem · Jaci/SP).
+Slogan: **Medimos o pulso da·linha.**
 Front-end estático (HTML/JS) publicado na Vercel; dados vêm de um Google Sheets
 via Google Apps Script (JSONP).
 
@@ -1779,6 +1780,48 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   a Tela D calculam `real/meta`. Enquanto a gravação estiver certa elas
   concordam. Unificar (fazer o painel sempre recalcular na leitura) mudaria o
   número dos dias antigos já gravados — decisão do usuário, ainda não tomada.
+
+## O NOME e o SLOGAN — onde moram, e o que de propósito NÃO foi renomeado
+- **O produto é o `RitmoPatrimar`** (v7.40.0 / mobile 1.16.0, 08/09/2026). Antes
+  era `RitmoProd`, escrito ~35 vezes espalhadas pelos dois HTMLs.
+- **O nome mora em `APP_NOME` / `APP_NOME_CX`**, ao lado do `APP_VER` no topo do
+  script de cada painel. Tudo que é gerado por JS lê dali: os 5 rodapés de
+  relatório, os 4 rodapés de PDF de paradas, o título do popup do histórico, o
+  resumo do WhatsApp, a notificação e a 1ª linha do XLSX de fechamento.
+  **Continuam literais** só os que nascem antes do script rodar: `<title>`, a
+  meta do iOS, os `<h1>` dos cabeçalhos de impressão e o rodapé da tela.
+- ⚠ **O nome estava PARTIDO POR TAG no `_rpCabecalho`** (`RITMO<span>PROD</span>`)
+  — invisível para qualquer `grep RITMOPROD`. É o cabeçalho dos **oito**
+  relatórios: escapasse, o PDF sairia com o nome antigo na mesa da reunião.
+  Quando for procurar nome de marca, procurar também **pedaços** dele.
+- **O que NÃO se renomeia, e por quê:**
+  - **Os arquivos** (`ritmoprod_embalagem_v7.html`, `ritmoprod_mobile.html`,
+    `ritmoprod_appscript.gs`). Ninguém os vê — a URL pública é `/` e `/mobile`.
+    Renomear quebra os rewrites do `vercel.json`, as **sete** suítes de teste, o
+    `lint-js.js` e os 6 textos de tela que mandam colar o `.gs` no editor.
+  - **O prefixo dos XLSX exportados** (`ritmoprod_*.xlsx`): é formato de saída.
+  - **As chaves do `localStorage`** (`rpe_*`, `rp_mob_ver`, `rp_core_try`). É por
+    elas que a troca de nome **não perde** URL do Apps Script salva no aparelho,
+    logo enviado nem cenário do simulador. **Nunca renomear chave por estética.**
+  - **O `id` dos manifests** (`/` e `/mobile`): mudar faz o Chrome tratar como
+    app NOVO — o operador fica com dois ícones e continua abrindo o velho. Só
+    `name`/`short_name` mudam.
+  - **A tag da notificação** (`ritmoprod-lancamento`) — identificador interno.
+- **O SLOGAN é `Medimos o pulso da·linha.`** e vai em **toda impressão**: o
+  `_rpCabecalho` (uma implementação, oito relatórios) e os dois cabeçalhos de
+  impressão do painel (`#ph-gerencial`, `#ph-historico`).
+  - **A forma é da marca, não nova:** o ponto de **destaque é o FINAL**; o `·` do
+    meio é texto normal. Já era assim no login e no rodapé — não inventar outra.
+  - ⚠ **A capa da GESTÃO DE PERDAS é medida para caber na folha 1** (paisagem).
+    O slogan ocupa ~12px, então `.deitado .rp-header` devolve o mesmo em **ar**
+    (padding/margem, nunca fonte de leitura). Mexeu no cabeçalho? Refazer a conta.
+- ⚠ **Largura:** `RITMOPATRIMAR` tem 13 caracteres contra 9 de `RITMOPROD`. Os
+  pontos apertados são o logotipo do rodapé da TV, o `<h1>` do cabeçalho de
+  impressão e o rodapé dos PDFs. Não há largura fixa nem `nowrap` neles — mas
+  isso é leitura de CSS, não folha impressa conferida.
+- `relatorios.test.js` prende tudo isso: a constante, os cinco rodapés, os quatro
+  rodapés de PDF, a assinatura do WhatsApp, o slogan nas três superfícies de
+  impressão e a compensação da paisagem — e **falha se o nome antigo voltar**.
 
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda

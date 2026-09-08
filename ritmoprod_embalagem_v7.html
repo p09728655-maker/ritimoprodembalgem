@@ -7,11 +7,11 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="RitmoProd">
+<meta name="apple-mobile-web-app-title" content="RitmoPatrimar">
 <meta name="theme-color" content="#0A0A0B">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RitmoProd · Embalagem</title>
+<title>RitmoPatrimar · Embalagem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -977,6 +977,8 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   .print-header-lb{ color:#f5a623!important; }
   .print-header-left h1{ color:#fff!important; }
   .print-header-left p{ color:#a0aec0!important; }
+  .print-header-slogan{ color:#a0aec0!important; }
+  .print-header-slogan span{ color:#f5a623!important; }
   .print-header-right{ color:#a0aec0!important; white-space:pre-line; font-size:9px; }
 
   /* ── CHARTS: canvas oculto, img visível ── */
@@ -1072,6 +1074,11 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   font-family:'IBM Plex Mono',monospace;
   font-size:9px; color:#a0aec0; margin:0; letter-spacing:1px;
 }
+.print-header-slogan{
+  font-family:'Inter',var(--font-b); font-size:10px; font-weight:700;
+  color:#a0aec0; margin-top:2px; letter-spacing:-0.2px;
+}
+.print-header-slogan span{ color:var(--acc); }
 .print-header-right{
   margin-left:auto;
   text-align:right;
@@ -1138,9 +1145,9 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
       <div style="font-family:'Inter',var(--font-b);font-size:13px;font-weight:700;color:#FAFAFA;letter-spacing:-0.3px;margin-top:10px;opacity:0.9">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></div>
     </div>
     <div class="login-sep"></div>
-    <!-- RitmoProd branding pequeno + versão (preenchida pelo initVersaoV7) -->
+    <!-- RitmoPatrimar branding pequeno + versão (preenchida pelo initVersaoV7) -->
     <div style="text-align:center;font-family:var(--font-d);font-size:8px;color:var(--txt3);letter-spacing:2px">
-      SISTEMA <span style="color:var(--acc);font-weight:700">RITMOPROD</span>
+      SISTEMA <span style="color:var(--acc);font-weight:700">RITMOPATRIMAR</span>
       <span id="login-ver-v7" style="display:block;margin-top:4px;color:var(--txt2)">v—</span>
     </div>
     <div class="login-grp" id="login-senha-grp" style="display:none">
@@ -1172,7 +1179,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
     <!-- 2) no celular: o app é o /mobile -->
     <div style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;border-top:0.5px solid var(--border);padding-top:14px">NO CELULAR</div>
     <div style="font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55">
-      No celular o app é o <b style="color:var(--acc)">RitmoProd Mobile</b>: abra o endereço abaixo
+      No celular o app é o <b style="color:var(--acc)">RitmoPatrimar Mobile</b>: abra o endereço abaixo
       no <b>Chrome</b> (Android) ou no <b>Safari</b> (iPhone) e toque em
       <b style="color:var(--acc)">INSTALAR APP</b> na tela de login.
     </div>
@@ -1316,8 +1323,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     <img src="patrimar-logo.png" class="print-header-logo" alt="Patrimar móveis" onerror="this.style.display='none'">
     <div class="print-header-left">
       <div class="print-header-lb">PPCP — Planejamento e Controle da Produção</div>
-      <h1>RITMOPROD · EMBALAGEM</h1>
+      <h1>RITMOPATRIMAR · EMBALAGEM</h1>
       <p id="ph-ger-sub">—</p>
+      <div class="print-header-slogan">Medimos o pulso da·linha<span>.</span></div>
     </div>
     <div class="print-header-right" id="ph-ger-info">—</div>
   </div>
@@ -1594,7 +1602,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tv-scan-bar"></div>
   <div class="tv-foot">
     <div id="tv-paradas-resumo" style="font-family:var(--font-d);font-size:10px;color:#e57373;letter-spacing:1px"></div>
-    <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmoprod<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
+    <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmopatrimar<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
   </div>
 
   <!-- ═══ SLIDE B — visão macro, cicla com slide A a cada 90s.
@@ -2002,8 +2010,9 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- Cabeçalho visível apenas no PDF -->
   <div class="print-header" id="ph-historico">
     <div class="print-header-left">
-      <h1>RITMOPROD · HISTÓRICO</h1>
+      <h1>RITMOPATRIMAR · HISTÓRICO</h1>
       <p id="ph-hist-sub">—</p>
+      <div class="print-header-slogan">Medimos o pulso da·linha<span>.</span></div>
     </div>
     <div class="print-header-right" id="ph-hist-info">—</div>
   </div>
@@ -2224,13 +2233,13 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- RODAPÉ (igual à TV) -->
   <div class="tv-foot">
     <span style="font-family:var(--font-d);font-size:clamp(11px,1vw,16px);color:var(--red);letter-spacing:2px">⏸ AGUARDANDO RETOMADA</span>
-    <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmoprod<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
+    <span style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:-0.3px;color:#71717A;display:flex;align-items:center;gap:2px">ritmopatrimar<span style="color:#FF5C1F;font-size:16px;line-height:1">·</span></span>
   </div>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
 <footer>
-  <span class="ftr-hide-mobile" style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoProd</span>
+  <span class="ftr-hide-mobile" style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoPatrimar</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span id="ftr-ver" class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
@@ -2438,8 +2447,15 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.39.0';
+const APP_VER   = '7.40.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
+
+// Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
+// resumo do WhatsApp e a notificação leem DAQUI — trocar o nome é trocar esta
+// linha. Os pontos estáticos (title, meta do iOS, <h1> dos cabeçalhos de
+// impressão e o rodapé da tela) continuam literais: nascem antes do script.
+const APP_NOME    = 'RitmoPatrimar';
+const APP_NOME_CX = APP_NOME.toUpperCase();   // caixa alta dos rodapés de PDF
 
 // ════════════════════════════════════════════════
 // VERSÃO / AVISO DE ATUALIZAÇÃO (raiz)
@@ -2458,7 +2474,7 @@ function mostrarAvisoAtualizacaoV7(nova){
   // Antes só esperava o reload de 28 min; numa correção urgente (troca da URL do
   // Apps Script, por exemplo) isso é meia hora de tela errada na fábrica.
   if(_naTV()){
-    console.warn('[RitmoProd] TV: versão nova ('+nova+') publicada — recarregando.');
+    console.warn('[RitmoPatrimar] TV: versão nova ('+nova+') publicada — recarregando.');
     setTimeout(()=>location.reload(), 3000);
     return;
   }
@@ -2699,7 +2715,7 @@ function limparHistorico(){
 function exportarExcelDia(data,slots,metaDia){
   const[dd,mm,yy]=data.split('/');
   const rows=[
-    ['RITMOPROD — FECHAMENTO DO DIA','','','','',''],
+    [APP_NOME_CX+' — FECHAMENTO DO DIA','','','','',''],
     ['Data:',data,'Meta Dia:',metaDia,'Gerado em:',new Date().toLocaleString('pt-BR')],
     [],
     ['HORÁRIO','REALIZADO','META/H','EFICIÊNCIA %','ACUMULADO','TIPO'],
@@ -2908,7 +2924,7 @@ function loadCfg(){
   // URL salva morta (ou pela metade, sem /exec): volta para a do código e regrava.
   if(CFG.sheetsUrl && CFG.sheetsUrl!==padrao &&
      (_urlMorta(CFG.sheetsUrl) || !/\/exec\s*$/.test(CFG.sheetsUrl))){
-    console.warn('[RitmoProd] URL do Apps Script salva neste aparelho não serve mais — voltando para a do código.');
+    console.warn('[RitmoPatrimar] URL do Apps Script salva neste aparelho não serve mais — voltando para a do código.');
     CFG.sheetsUrl=padrao;
     try{ saveCfgLocal(); }catch(e){}
   }
@@ -5358,7 +5374,7 @@ ${cobertura!=null?`<div class="rp-note">${cobertura<80?'⚠ ':''}APONTAMENTO POR
 ${ganhoDemo>0?`<div class="rp-note">▲ GANHO JÁ DEMONSTRADO: ~<b>+${fmtN(Math.round(ganhoDemo))} cx</b> no período se cada modelo repetisse o próprio MELHOR DIA nas mesmas horas (estimativa; melhor dia limitado ao teto físico). É o alvo acionável — o teto da esteira é régua, não meta.</div>`:''}
 
 <div class="rp-footer">
-  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>${APP_NOME} · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
   <span>${deStr} — ${ateStr} · ${label} em ${unit} · méd. ${mediaModo==='completa'?'com TODOS os dias (aparada desligada no filtro MÉDIA)':'sem o melhor e o pior dia (3+ dias)'}${tLinha?' · '+tLinha:''}${temTeto?(simUse?' · ⚠ % TETO SIM. = SIMULAÇÃO esteira '+simUse.vel+' m/min · '+simUse.entre+' mm':' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca)'):''}</span>
 </div>
 
@@ -5715,7 +5731,7 @@ ${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
 ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
 <div class="rp-footer">
-  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>${APP_NOME} · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
   <span>${hojeStr()}</span>
 </div>
 
@@ -6820,7 +6836,7 @@ async function _imprimirHistoricoFormatado(){
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>RitmoProd · Histórico · ${periodoLabel}</title>
+<title>${APP_NOME} · Histórico · ${periodoLabel}</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -7010,7 +7026,7 @@ ${(()=>{
 })()}
 
 <div class="rp-footer">
-  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · v7</span>
+  <span>${APP_NOME} · ${CFG.empresa} · ${CFG.setor} · v7</span>
   <span>Gerado em: ${agora}</span>
 </div>
 </body></html>`;
@@ -7044,7 +7060,7 @@ function _adicionarRodapePagina(agora){
   document.querySelectorAll('.print-page-footer').forEach(e=>e.remove());
   const footer=document.createElement('div');
   footer.className='print-page-footer';
-  footer.innerHTML=`<span>RitmoProd · ${CFG.empresa} · ${CFG.setor}</span><span>Gerado em: ${agora}</span>`;
+  footer.innerHTML=`<span>${APP_NOME} · ${CFG.empresa} · ${CFG.setor}</span><span>Gerado em: ${agora}</span>`;
   const secOn=document.querySelector('.sec.on');
   if(secOn) secOn.appendChild(footer);
 }
@@ -7081,7 +7097,8 @@ function _rpCabecalho(titulo, metaHtml, subExtra){
   <img src="${new URL('patrimar-logo.png',location.href).href}" class="rp-logo-img" alt="Patrimar móveis" onerror="this.style.display='none'">
   <div>
     <div class="rp-lb">PPCP — Planejamento e Controle da Produção</div>
-    <div class="rp-logo">RITMO<span>PROD</span> · ${titulo}</div>
+    <div class="rp-logo">RITMO<span>PATRIMAR</span> · ${titulo}</div>
+    <div class="rp-sub rp-slogan" style="font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;letter-spacing:.1px;margin-top:2px">Medimos o pulso da·linha<span style="color:#FF5C1F">.</span></div>
     <div class="rp-sub">${_rpEsc(CFG.empresa)} · ${_rpEsc(CFG.setor)} · ${_rpEsc(CFG.unidade)}${subExtra||''}</div>
   </div>
   <div class="rp-meta">${metaHtml}</div>
@@ -7547,7 +7564,7 @@ function _zapResumoSemana(diasSem, semStr, numSem){
   L.push(`Melhor dia: ${rotulo(k.melhorDia)} — ${fmtN(k.melhorDia.real)} cx (${fmtP(k.melhorDia.ef)})`);
   L.push(`Dias na meta: ${k.comMeta} de ${diasSem.length}`);
   L.push('');
-  L.push('RitmoProd · PPCP');
+  L.push(APP_NOME+' · PPCP');
   return L.join('\n');
 }
 
@@ -7922,7 +7939,7 @@ ${_relParadasSemanaHtml(stPar, totMeta)}
 
 <!-- RODAPÉ -->
 <div class="rp-footer">
-  <span>RitmoProd · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
+  <span>${APP_NOME} · ${CFG.empresa} · ${CFG.setor} · Jaci/SP</span>
   <span>Semana ${numSem} · ${semStr}</span>
 </div>
 
@@ -9797,7 +9814,7 @@ ${r.rsMesHE!=null && r.rsMesHE>0
   <div><em>HORA EXTRA EVITÁVEL</em><p>HE do mês = h/semana × 4,4 (mês de 22 dias úteis), convertida para hora de linha; o % é quanto dessa HE o tempo recuperado explica. HE também cobre pico de demanda — leia como teto, não como corte garantido.</p></div>
   <div><em>O QUE ISTO NÃO É</em><p><b>É simulação, não medição</b> — e não substitui o orçamento do fornecedor. Aprovado o investimento, o antes × depois REAL sai do relatório de GESTÃO DE PERDAS dos meses seguintes: o painel já mede cada causa sozinho, com esta mesma conta.</p></div>
 </div>
-<div class="rp-footer"><span>RITMOPROD · Embalagem — SIMULAÇÃO</span><span>${_rpEsc(causas)} · ${fmtN(Math.round(r.minMes))} min/mês · ${fmtN(r.cxMes)} cx/mês</span></div>
+<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem — SIMULAÇÃO</span><span>${_rpEsc(causas)} · ${fmtN(Math.round(r.minMes))} min/mês · ${fmtN(r.cxMes)} cx/mês</span></div>
 </div>`;
   }catch(err){
     win.close(); alert(_rpErroRelatorio(err)); return;
@@ -9926,7 +9943,7 @@ async function gerarRelatorioPerdas(deArg, ateArg){
     ctx.soZinho=true;   // a camada ABRE o documento: sem "o relatório acima"
     corpo=_pgSecaoHtml(ctx)
       + `<div class="rp-note">Este relatório é a leitura de gestão. O <b>RELATÓRIO DE PARADAS</b> traz o controle do período — resumo, Pareto por tipo, tabela por tipo, estudo de ganho, SWOT e o detalhamento parada a parada — com as mesmas contas e o mesmo período.</div>`
-      + `<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>`;
+      + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>`;
   }catch(err){
     win.close(); alert(_rpErroRelatorio(err)); return;
   }
@@ -10008,7 +10025,7 @@ ${outras.map(g=>`<div class="pgq-cel-ttl" style="margin-top:14px">POR ${_rpEsc(P
   <tr><td style="font-weight:700">NÃO PROGRAMADO</td><td>É a linha que vira perda: tira as paradas de classe PLANEJADA (refeição, intervalo, almoço e o que a aba TIPOS_PARADA marcar). É por ela que a variação é medida — <b>↓ é melhora</b>.</td></tr>
 </tbody></table>
 <div class="rp-note">Para o retrato completo do período — Pareto, tipos, estudo de ganho, SWOT e o detalhamento parada a parada — use o <b>RELATÓRIO DE PARADAS</b>. Para a leitura de gestão (evolução, SMED, plano de ação), o <b>RELATÓRIO DA GESTÃO DE PERDAS</b>. Os três leem o mesmo período e as mesmas contas.</div>
-<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(trR?trR.cxTot:0)} cx apontadas</span></div>`;
+<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(trR?trR.cxTot:0)} cx apontadas</span></div>`;
   }catch(err){
     win.close(); alert(_rpErroRelatorio(err)); return;
   }
@@ -10231,7 +10248,7 @@ function _rpDocParadas(titulo, paisagem){
      Medido: 756px de conteúdo para 703px de folha. O que segue tira ~60px de
      ar da CAPA (nenhum número, nenhuma fonte de leitura), com folga para o 6º
      item do plano de ação. Nada aqui vale no retrato. ── */
-  .deitado .rp-header{margin-bottom:11px;padding:9px 16px}
+  .deitado .rp-header{margin-bottom:7px;padding:6px 16px}
   .deitado .pg-abre{padding:9px 14px}
   .deitado .pgq-top{padding:7px 13px}
   .deitado .pgq-cel{padding:7px 13px}
@@ -10411,7 +10428,7 @@ ${pgHtml}
 <div class="rp-sec-ttl">DETALHAMENTO</div>
 <table><thead><tr><th>DATA</th><th>TIPO</th><th>INÍCIO</th><th>FIM</th><th>DURAÇÃO</th>${temMotivo?'<th>MOTIVO</th>':''}</tr></thead><tbody>${linhasDet}</tbody></table>
 <div class="rp-note">Peças perdidas = duração × ritmo base da meta (${fmtN(st.ritmoHora)} cx/h = meta do dia SEM atraso ÷ ${fmt1(st.horasProd)}h) — a perda contra o PLANO. Atraso acumulado não entra. Refeição/intervalo/almoço = programada (fora da perda). PERDA A RITMO REAL = o mesmo tempo não programado (${_fmtMinPar(st.totMinNP)}) × ritmo real medido — quanto a linha deixou de produzir na capacidade demonstrada. · TAKT IDEAL = ${fmt1(st.horasProd)}h ÷ ${fmtN(tiR.demanda)} cx = ${tiR.taktSeg>0?fmt1(tiR.taktSeg):'—'} s/cx (mov/fadiga já embutido no tempo). TAKT REAL = caixas apontadas ÷ tempo rodando (disponível − paradas).</div>
-<div class="rp-footer"><span>RITMOPROD · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
+<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>${plural(st.nParadas,'parada','paradas')} · ${_fmtMinPar(st.totMin)} · ${fmtN(st.pecas)} cx perdidas</span></div>
 </body></html>`;
 
   win.document.open();
@@ -11513,7 +11530,7 @@ function fecharPreviaParada(){
   function notificarSistema(msg){
     if(!('Notification' in window)) return;
     if(Notification.permission==='granted'){
-      new Notification('RitmoProd ⏰ Lembrete',{
+      new Notification(APP_NOME+' ⏰ Lembrete',{
         body:msg, icon:'', tag:'ritmoprod-lancamento'
       });
     } else if(Notification.permission!=='denied'){
