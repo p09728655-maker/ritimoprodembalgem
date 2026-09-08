@@ -14,8 +14,21 @@
 <title>RitmoPatrimar · Embalagem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- ⚠ AS DUAS BIBLIOTECAS DE CDN SÃO `defer` — NÃO TIRAR.
+     Sem `defer` elas são scripts SÍNCRONOS no <head>: o parser PARA aqui e o
+     <body> (o splash inclusive) só começa a existir depois que o cdnjs
+     responder. Medido no Chromium com o cdnjs a 3 s: PRIMEIRA PINTURA aos
+     3.132 ms — três segundos de TELA PRETA antes de qualquer coisa, e o
+     splash aparecendo depois disso. É defeito do PC apenas: o /mobile não
+     carrega CDN nenhuma e ainda tem service worker. Com `defer` a primeira
+     pintura fica em ~150-200 ms mesmo com o cdnjs lento ou BLOQUEADO pela
+     rede da fábrica — o painel abre, e as duas libs entram quando chegarem.
+     `defer` mantém a ordem (xlsx, depois Chart) e executa antes do
+     DOMContentLoaded. Quem depende delas: o XLSX só é usado em clique
+     (exportar/importar) e a Chart.js passa pelo mkChart, que enfileira o
+     gráfico quando a lib ainda não chegou (ver mkChart). -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ═══ CARBON FORGE TOKENS ═══ */
 :root{
@@ -1185,11 +1198,19 @@ html.sem-splash #splash{ display:none; }
 @keyframes spIn{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 @keyframes spTracar{ to{stroke-dashoffset:0} }
 @keyframes spOut{ to{opacity:0;visibility:hidden;pointer-events:none} }
-/* Quem pediu menos movimento recebe a marca parada, e por menos tempo. */
+/* MOVIMENTO REDUZIDO: NO PC A REGRA É SOLTA, NO CELULAR NÃO.
+   Pedido do usuário (08/09/2026), depois de a abertura sair sem animação no PC
+   dele: o Windows com "efeitos de animação" desligado (Acessibilidade → Efeitos
+   visuais) faz o Chrome pedir menos movimento, e o splash saía com a marca
+   PARADA por 0,7 s — literalmente sem animação, que é o que ele relatou.
+   O que fica solto é só a BATIDA, e ela não é o que o prefers-reduced-motion
+   existe para evitar: é uma linha sendo desenhada NO LUGAR — sem deslocamento,
+   sem zoom, sem parallax, sem piscar, uma vez só. O que continua desligado é a
+   ENTRADA do bloco (o translateY do spIn), que é movimento de verdade.
+   ⚠ NO CELULAR A REGRA CONTINUA INTEIRA: lá o aparelho está na mão e em
+   movimento, e o pedido foi só para o PC. Não copiar este bloco para lá. */
 @media (prefers-reduced-motion:reduce){
-  #splash{ animation:spOut .01s linear .7s forwards }
   #splash .sp-in{ animation:none }
-  #splash .sp-pulso path{ animation:none; stroke-dashoffset:0 }
 }
 </style>
 </head>
@@ -2539,7 +2560,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.41.0';
+const APP_VER   = '7.42.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5914,12 +5935,28 @@ const CHART_DEFAULTS={
     y:{ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}},grid:{color:'#1E1E1E'},beginAtZero:true}
   }
 };
+// A Chart.js entra por `defer` (ver o <head>): o parser não para mais nela,
+// então o PRIMEIRO render — o renderAll() que roda no fim do script — acontece
+// com a lib ainda a caminho. O gráfico pedido nesse intervalo fica na fila e é
+// desenhado no DOMContentLoaded, que o navegador dispara DEPOIS de executar os
+// scripts `defer`: é o mesmo desenho, alguns milissegundos mais tarde.
+// E se a lib NÃO chegar (cdnjs bloqueado na rede da fábrica), a fila apenas não
+// esvazia — antes disso era um `new Chart` num nome inexistente, que estourava
+// no meio do render e levava junto o que vinha depois (foi assim que a Chart.js
+// não carregar já deixou o rodapé sem versão).
+let CHART_FILA = {};
 function mkChart(id,cfg){
   if(CHARTS[id]) CHARTS[id].destroy();
   const el=document.getElementById(id);
   if(!el) return;
+  if(typeof Chart==='undefined'){ CHART_FILA[id]=cfg; return; }
   CHARTS[id]=new Chart(el,cfg);
 }
+document.addEventListener('DOMContentLoaded',function(){
+  const fila=CHART_FILA; CHART_FILA={};
+  Object.keys(fila).forEach(id=>{ try{ mkChart(id,fila[id]); }
+    catch(e){ console.warn('[CHART] '+id+':',e.message); } });
+});
 
 function renderChartHora(dh,slots,metaH){
   const labels=slots.map(s=>s.label||s.inicio);

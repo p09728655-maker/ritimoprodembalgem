@@ -1794,6 +1794,18 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
   no SVG). É o slogan desenhado, não efeito — nada mais se mexe.
 - **Cor só onde tem função:** o nome é branco; o laranja fica na batida e no
   ponto final do slogan. Nome em laranja disputaria com os dois.
+- ⚠ **`prefers-reduced-motion`: a regra é SOLTA no PC e INTEIRA no celular**
+  (pedido do usuário, 08/09/2026 — *"solta a regra no PC"*). O Windows com
+  **efeitos de animação desligados** (Acessibilidade → Efeitos visuais) faz o
+  Chrome pedir menos movimento, e a abertura saía com a marca **parada** por
+  0,7 s: foi a causa do *"no PC não tem animação"*. No `/` fica desligada só a
+  **entrada do bloco** (o `translateY` do `spIn`) e a **batida continua sendo
+  traçada**, no mesmo tempo de tela — desenhar uma linha no lugar não é o
+  movimento que essa preferência existe para evitar (não há deslocamento, zoom,
+  parallax nem piscada). **No `/mobile` a regra continua inteira**: lá o
+  aparelho está na mão e em movimento, e o pedido foi só para o PC. Não copiar
+  o bloco de um painel para o outro — `relatorios.test.js` falha nos dois
+  sentidos.
 - **A escala é `clamp()`, não px fixo.** Medido em 1440px, o bloco em px virava
   ilha perdida no preto — parecia diálogo, não abertura. E a hierarquia é a do
   PRODUTO: o nome é maior que o logo da empresa.
@@ -1805,6 +1817,42 @@ erro que ainda expõem `e.message` cru nos 4 relatórios.
 - Medido no Chromium em 320/430/1280/1920/1366×600: nada estoura, o splash sai
   sozinho e o botão OPERADOR volta clicável. `relatorios.test.js` prende as
   cinco regras acima nos dois painéis.
+
+## As bibliotecas de CDN do desktop são `defer` — e por que isso é do PC
+- **O `/mobile` não carrega CDN nenhuma; o `/` carrega duas** (`xlsx.full.min.js`
+  e `chart.umd.min.js`, do cdnjs), no `<head>`. Sem `defer` elas são scripts
+  **síncronos**: o parser para nelas e o `<body>` — **o splash junto** — só
+  começa a existir depois que o cdnjs responder.
+  - **Medido no Chromium** (cdnjs atrasado em 3 s): **primeira pintura aos
+    3.132 ms** contra **196 ms** com `defer`. Três segundos de tela preta antes
+    de qualquer coisa. Com o cdnjs **bloqueado** (firewall da fábrica), a espera
+    é a do timeout — e o painel inteiro ficava refém disso.
+  - Foi o que apareceu como *"no PC não tem animação na tela inicial"*
+    (08/09/2026): o splash estava publicado e funcionando; o que faltava era a
+    página **pintar**.
+- **A Chart.js exigiu uma fila, senão o `defer` abriria o painel sem gráfico.**
+  O primeiro render é o `renderAll()` do fim do script, que roda **antes** de os
+  scripts `defer` executarem. `mkChart` enfileira em `CHART_FILA` quando
+  `typeof Chart==='undefined'` e o `DOMContentLoaded` esvazia a fila — o
+  navegador dispara esse evento **depois** dos `defer`, então o desenho é o
+  mesmo, alguns milissegundos mais tarde.
+  - De quebra, **cdnjs fora do ar não derruba mais o render**: antes era um
+    `new Chart` num nome inexistente, e o throw levava junto o que vinha depois
+    (é o incidente que já deixou o rodapé sem versão, anotado no `renderAll`).
+- ⚠ **Não tirar o `defer`, e não trazer CDN para o mobile.**
+  `relatorios.test.js` falha nos dois casos e também se a fila do `mkChart`
+  sumir.
+- **O XLSX é ~1 MB para um botão de exportar**, e a TV recarrega sozinha a cada
+  28 min. Com `defer` ele sai do caminho da pintura, mas continua sendo baixado
+  em toda abertura — carregar sob demanda é a melhoria seguinte, ainda não feita.
+- **Quando alguém disser que "não tem animação" no PC, a ordem de investigação
+  é:** versão no rodapé da tela de login (HTML velho em cache) → **a janela já
+  estava aberta** (o painel do PC é instalado como app e fica aberto o dia
+  inteiro; clicar no ícone da barra de tarefas só dá foco na janela — sem
+  carregamento não há splash, e no celular o sistema mata o app e ele reabre do
+  zero, que é por que lá aparece sempre) → rede (o `defer` acima) →
+  `prefers-reduced-motion`, hoje **solto no PC** (ver o splash).
+  O código do splash é o mesmo nos dois painéis; o que muda é o de cima.
 
 ## O NOME e o SLOGAN — onde moram, e o que de propósito NÃO foi renomeado
 - **O produto é o `RitmoPatrimar`** (v7.40.0 / mobile 1.16.0, 08/09/2026). Antes

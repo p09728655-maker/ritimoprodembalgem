@@ -11,6 +11,78 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.42.0 — 08/09/2026
+
+**Atenção** — **nenhum número, fórmula ou indicador mudou.** É a ordem em que o
+PC carrega o painel.
+
+### No PC o painel abria com a tela preta esperando o cdnjs
+
+Relato do usuário: *"no pc não tem animação na tela inicial"*. O splash **estava
+publicado e funcionando** (v7.41.0 em produção, conferido no Chromium a 1440 e
+1920 px) — o que faltava era a página **pintar**.
+
+As duas bibliotecas de terceiros do desktop (`xlsx.full.min.js` e
+`chart.umd.min.js`, do cdnjs) eram **scripts síncronos no `<head>`**: o parser
+para neles, e o `<body>` — o splash junto — só começa a existir depois que o
+cdnjs responder. **Medido no Chromium com o cdnjs a 3 s: primeira pintura aos
+3.132 ms.** Três segundos de tela preta, e só então a marca. Com o cdnjs
+bloqueado (rede da fábrica, firewall) a espera é a do timeout, com a mesma tela
+preta.
+
+**É defeito do PC apenas** — e é por isso que no celular a abertura aparece: o
+`/mobile` não carrega CDN nenhuma e ainda tem service worker.
+
+Agora as duas entram com **`defer`**: o parser não para mais nelas.
+
+| cdnjs | primeira pintura antes | depois |
+|---|---|---|
+| rápida | 148 ms | 148 ms |
+| a 3 s | **3.132 ms** | **196 ms** |
+| bloqueada | tela preta até o timeout | 148 ms, painel abre |
+
+**A Chart.js precisou de uma fila.** Com `defer`, o primeiro render (o
+`renderAll()` do fim do script) roda antes de a lib existir. O `mkChart`
+**enfileira** o gráfico nesse intervalo e desenha no `DOMContentLoaded`, que o
+navegador dispara depois dos scripts `defer` — o mesmo desenho, alguns
+milissegundos mais tarde. De quebra, **cdnjs fora do ar não derruba mais o
+render**: antes era um `new Chart` num nome inexistente estourando no meio do
+desenho e levando junto o que vinha depois (foi assim que a Chart.js não
+carregar já deixou o rodapé sem versão).
+
+**Conferido no navegador:** com o cdnjs a 3 s o splash aparece aos ~150 ms e
+fica ~1,3 s; os gráficos do gerencial continuam sendo desenhados; com o cdnjs
+bloqueado a tela de login abre normalmente e **nenhum erro de script** é
+lançado.
+
+### E a regra de movimento reduzido ficou solta no PC
+
+Conferido no print do painel do usuário: o PC já rodava a **v7.41.0**, a versão
+que trouxe o splash — cache descartado. O que restava era o Windows com
+**efeitos de animação desligados** (Acessibilidade → Efeitos visuais): o Chrome
+passa a pedir menos movimento e a abertura saía com a marca **parada** por
+0,7 s. Sem animação, literalmente.
+
+A pedido do usuário (*"solta a regra no PC"*), no `/` a `prefers-reduced-motion`
+passa a desligar **só a entrada do bloco** (o deslocamento de 8 px); a **batida
+continua sendo traçada**, no mesmo tempo de tela. Desenhar uma linha no lugar
+não é o movimento que essa preferência existe para evitar — não há
+deslocamento, zoom, parallax nem piscada.
+
+⚠ **No celular a regra continua inteira**: lá o aparelho está na mão e em
+movimento, e o pedido foi só para o PC. Medido no Chromium com movimento
+reduzido ligado: PC traça a batida e fica 1,4 s; celular segue com a marca
+parada, 0,9 s.
+
+⚠ **Se ainda assim a abertura não aparecer no PC**, a causa provável é que a
+**janela já estava aberta**: o painel do PC é instalado como app e fica aberto o
+dia inteiro — clicar no ícone da barra de tarefas apenas dá foco na janela, e
+sem carregamento não há abertura. Feche a janela e abra de novo (ou F5) para
+ver. No celular o sistema mata o app e ele reabre do zero, e é por isso que lá
+ela aparece toda vez.
+
+---
+
 ## v7.41.0 · mobile 1.17.0 — 08/09/2026
 
 **Atenção** — **nenhum número ou fórmula mudou.** É só a tela de abertura.
