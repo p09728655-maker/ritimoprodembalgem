@@ -342,6 +342,37 @@ via Google Apps Script (JSONP).
   (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
   *motivo* continua **texto livre** digitado pelo operador — não se cadastra.
 
+## STATUS da PROGRAMACAO: EM ANDAMENTO é do lote DE HOJE
+- Pedido do usuário (14/09/2026): *"status em andamento só lotes do dia, anterior
+  ao dia atual é em atraso"*. Um lote programado para **02/09** saía como **EM
+  ANDAMENTO** no dia **14/09** — a palavra dizia que a coisa caminha, e ela está
+  parada há doze dias.
+- Os cinco estados, em `atualizarSaldoNaProgramacao`: **`CONCLUIDO`** (saldo 0) ·
+  **`EM ATRASO`** (data anterior a hoje, não concluída) · **`EM ANDAMENTO`**
+  (lote de HOJE que já produziu) · **`PENDENTE`** (lote de HOJE que não começou) ·
+  **`FORA DA ESTEIRA`**. Data futura continua **em branco**.
+- **Quem não começou também é EM ATRASO.** A régua é a MESMA que o painel usa
+  para somar o atraso (`calcularProgramacao`: `if (lot.d < hojeNum) atraso +=
+  lot.rem`), e lá tanto faz se a linha produziu metade ou nada — a soma dos
+  `SALDO` das linhas EM ATRASO é o atraso que o painel mostra. O que distingue as
+  duas continua na linha: `PRODUZIDO`/`PERCENTUAL` em **0**.
+- ⚠ **O status muda SOZINHO na virada do dia** — e por isso o `ATUALIZADO_EM` não
+  pode olhar o texto cru. `_progFase()` trata `PENDENTE`/`EM ANDAMENTO`/`EM
+  ATRASO` como a mesma fase (**lote aberto**): só o relógio separa os três. Toda
+  mudança de verdade (entrou no cálculo, concluiu, saiu da esteira) mexe em
+  `PRODUZIDO`/`SALDO` junto, e é por ali que ela carimba. Sem isso o primeiro
+  lançamento do dia recarimbaria a aba inteira e o carimbo da v5.3 voltaria a
+  mentir.
+- **A string do STATUS não é lida por ninguém** — nem pelo painel nem pelo
+  `.gs`. O arquivamento decide pelo saldo FIFO (`l.estado`), não pelo texto; a
+  `PROGRAMACAO_CONCLUIDA` só congela o que está gravado. É leitura humana.
+- ⚠ **O status só se atualiza quando o script roda** (a cada lançamento). Antes
+  do primeiro apontamento do dia, a aba ainda mostra o retrato de ontem.
+- ⚠ Com a programação toda vencida, a aba inteira sai EM ATRASO — é o retrato da
+  carteira, não defeito da regra. Aí quem prioriza é a **DATA** e o **SALDO**.
+- ⚠ Mudou o `.gs` (v5.4) → **re-deploy manual**. `apps-script.test.js` cobre os
+  quatro status, a virada do dia sem recarimbo e a fase.
+
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
   colunas de saída (`PRODUZIDO`/`SALDO`/`PERCENTUAL`/`STATUS`/`ATUALIZADO_EM`)
