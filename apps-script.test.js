@@ -94,7 +94,11 @@ console.log('\n── o ganho real: PRODUCAO_PRODUTO lida uma vez só ──');
 // reproduzem esse encadeamento.
 const TZ = 'America/Sao_Paulo';
 const SHEET_PROD_LOG = 'PRODUCAO_PRODUTO';
-const Utilities = { formatDate: () => '10/08/2026' };
+let FAKE_AGORA = '10/08/2026 08:00:00';
+const Utilities = { formatDate: (d, tz, fmt) =>
+  fmt === 'yyyy'                      ? '2026'
+  : (fmt && fmt.indexOf('HH') >= 0)   ? FAKE_AGORA
+  :                                     '10/08/2026' };
 eval(pega('function codKey('));
 eval(pega('function dataParaNum('));
 eval(pega('function lerEmbaladoPorProduto('));
@@ -113,6 +117,63 @@ ESCRITORAS.forEach(f => {
   const corpo = pega('function ' + f + '(');
   ok(`${f} não usa o memo`, /_valores(DaAba)?\s*\(/.test(corpo), false);
 });
+
+console.log('\n── ATUALIZADO_EM da PROGRAMACAO é o carimbo da LINHA ──');
+// A função roda a CADA lançamento. Antes ela regravava `agora` em TODAS as
+// linhas: a coluna virava o relógio da sincronização (a planilha inteira com o
+// mesmo horário) em vez de dizer quando cada lote andou pela última vez.
+const SHEET_PROG = 'PROGRAMACAO';
+// Infra do Apps Script, não regra: aqui basta achar a aba pelo nome.
+function acharAbaTolerante(ss, nome) { return ss.getSheetByName(nome); }
+eval(pega('function _progIgual('));
+eval(pega('function atualizarSaldoNaProgramacao('));
+
+const PROG = [
+  ['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM'],
+  ['25136', '5/8', 1, '501.149.001', 'MESA MADERO BRANCO', 700, '', '', '', '', ''],
+  ['25136', '5/8', 1, '501.149.002', 'MESA MADERO CINZA',  300, '', '', '', '', ''],
+  ['25199', '20/8', 1, '501.149.003', 'LOTE FUTURO',       100, '', '', '', '', ''],
+];
+const abaProg = {
+  getName: () => SHEET_PROG,
+  getLastRow: () => PROG.length,
+  getLastColumn: () => PROG[0].length,
+  getDataRange: () => ({ getValues: () => PROG.map(r => r.slice()) }),
+  getRange: (row, col, nR, nC) => ({
+    setValue: v => { PROG[row - 1][col - 1] = v; },
+    setValues: m => {
+      for (let i = 0; i < m.length; i++)
+        for (let j = 0; j < m[i].length; j++) PROG[row - 1 + i][col - 1 + j] = m[i][j];
+    }
+  })
+};
+const carimbo = l => PROG[l][10];
+const saldos = (a, b) => ({ saldoLinha: { '501149001|25136|20260805': a, '501149002|25136|20260805': b } });
+
+PLANILHA = { getSheetByName: n => (n === SHEET_PROG ? abaProg : null) };
+
+FAKE_AGORA = '05/08/2026 09:00:00';
+atualizarSaldoNaProgramacao(saldos(8, 6));
+ok('1ª rodada grava o produzido da linha', [PROG[1][6], PROG[1][7], PROG[1][9]], [692, 8, 'EM ANDAMENTO']);
+ok('e carimba a hora', [carimbo(1), carimbo(2)], ['05/08/2026 09:00:00', '05/08/2026 09:00:00']);
+ok('linha de data futura continua em branco', [PROG[3][6], carimbo(3)], ['', '']);
+
+FAKE_AGORA = '05/08/2026 16:43:43';
+atualizarSaldoNaProgramacao(saldos(8, 6));
+ok('rodada sem mudança NÃO recarimba (era o defeito)',
+   [carimbo(1), carimbo(2)], ['05/08/2026 09:00:00', '05/08/2026 09:00:00']);
+
+FAKE_AGORA = '06/08/2026 07:30:00';
+atualizarSaldoNaProgramacao(saldos(0, 6));
+ok('quem andou ganha a hora nova', carimbo(1), '06/08/2026 07:30:00');
+ok('e o status acompanha', [PROG[1][6], PROG[1][7], PROG[1][9]], [700, 0, 'CONCLUIDO']);
+ok('quem não andou mantém a hora antiga', carimbo(2), '05/08/2026 09:00:00');
+
+// A célula pode voltar da planilha como texto (coluna formatada) — comparar
+// como string faria "99" ≠ 99 e recarimbaria tudo a cada rodada.
+ok('_progIgual: número e texto do mesmo valor são iguais', _progIgual('99', 99), true);
+ok('_progIgual: vazio só é igual a vazio', [_progIgual('', 0), _progIgual('', '')], [false, true]);
+ok('_progIgual: texto sem depender de caixa/espaço', _progIgual(' Concluido ', 'CONCLUIDO'), true);
 
 console.log(falhas === 0
   ? '\n✅ backend ok — a mesma aba não é lida duas vezes na mesma chamada\n'

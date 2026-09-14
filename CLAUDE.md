@@ -22,7 +22,8 @@ via Google Apps Script (JSONP).
 - `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
   contra o código real do `.gs`: `node hora-extra.test.js`.
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
-  que conta leituras: `node apps-script.test.js`.
+  que conta leituras, **e o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
+  função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
@@ -340,6 +341,31 @@ via Google Apps Script (JSONP).
 - **Tipos de parada (dropdown) são editáveis na planilha:** aba **`TIPOS_PARADA`**
   (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
   *motivo* continua **texto livre** digitado pelo operador — não se cadastra.
+
+## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
+- `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
+  colunas de saída (`PRODUZIDO`/`SALDO`/`PERCENTUAL`/`STATUS`/`ATUALIZADO_EM`)
+  em todas as linhas. Só que ela carimbava `agora` em TODAS elas, tivessem
+  mudado ou não: medido na planilha real em 14/09/2026, as 36 linhas com
+  **`11/09/2026 16:43:43`**, o mesmo segundo. A coluna virava o relógio da
+  sincronização — informação que o painel já dá — no lugar de *"este lote andou
+  às 16:43"*, que é para o que ela serve: sem isso não dá para ver qual lote
+  parou nem desde quando.
+- **A hora só muda quando a linha muda de fato**: `_progIgual` compara o que vai
+  ser gravado com o que já está na célula (número com número mesmo quando a
+  célula volta como texto; vazio só é igual a vazio). Linha parada mantém o
+  carimbo anterior, **com o valor bruto** que estava lá — célula formatada como
+  data continua data, como texto continua texto.
+  - É a mesma regra que `gravarMetaDiaNaPlanilha` já seguia ("só grava quando o
+    valor MUDA").
+  - Coluna recém-criada ou linha sem carimbo anterior ganham a hora de agora:
+    na 1ª rodada depois do re-deploy tudo é carimbado uma vez.
+  - Linha que deixa de ser elegível (data futura, sem casamento no FIFO) continua
+    ficando **em branco**, como antes.
+- ⚠ Mudou o `.gs` (v5.3) → **re-deploy manual** no Apps Script. O histórico
+  anterior não se reconstrói — a planilha nunca guardou quando cada linha andou.
+- `apps-script.test.js` roda a função REAL contra uma planilha de mentira e falha
+  se uma rodada sem mudança voltar a recarimbar.
 
 ## Lote concluído sai da PROGRAMACAO (arquivamento)
 - Quando o lote fecha, as linhas saem da aba `PROGRAMACAO` e vão para

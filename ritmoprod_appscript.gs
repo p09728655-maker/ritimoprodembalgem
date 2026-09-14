@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.3 — ATUALIZADO_EM DA PROGRAMACAO É O CARIMBO DA LINHA
+//               atualizarSaldoNaProgramacao roda a CADA lançamento e regravava
+//               `agora` em TODAS as linhas: a aba inteira ficava com o mesmo
+//               horário e a coluna dizia "a última sincronização foi às 16:43",
+//               nunca "este lote andou às 16:43" — a única pista de quando um
+//               lote parou de andar. Agora a hora só muda quando PRODUZIDO,
+//               SALDO, PERCENTUAL ou STATUS saem diferentes do que já está na
+//               célula (_progIgual); linha parada mantém o carimbo anterior.
+//               Nada mais muda: os números gravados são os mesmos.
+//               Cobertura: apps-script.test.js.
 // Versão: 5.2 — TELA D NO CICLO DA TV (config compartilhada)
 //               getConfigPainel/setConfigPainel passam a guardar TELA_D e
 //               TEMPO_D na aba CONFIG_PAINEL, do mesmo jeito que já faziam com
@@ -1331,6 +1341,24 @@ function gravarMetaDiaNaPlanilha(prog) {
 //  - Linha marcada FORA_ESTEIRA vira STATUS = "FORA DA ESTEIRA" e não conta.
 //  - Cada rodada reescreve TODAS as linhas (em branco onde não se aplica), então
 //    valores antigos são limpos automaticamente.
+//  - ATUALIZADO_EM é exceção: ele carimba a hora só quando a LINHA muda de fato
+//    (PRODUZIDO/SALDO/PERCENTUAL/STATUS diferentes do que já está na célula).
+//    Reescrever `agora` em todas as linhas a cada lançamento transformava a
+//    coluna no relógio da sincronização — ela existe para dizer quando aquele
+//    lote andou pela última vez.
+// Compara o que vai ser gravado com o que já está na célula, para decidir se a
+// linha MUDOU. Vazio só é igual a vazio; número comparado como número (a célula
+// pode voltar da planilha como texto) e texto sem depender de caixa/espaço.
+function _progIgual(a, b) {
+  const va = (a === '' || a == null), vb = (b === '' || b == null);
+  if (va || vb) return va && vb;
+  if (typeof a === 'number' || typeof b === 'number') {
+    const na = Number(a), nb = Number(b);
+    if (!isNaN(na) && !isNaN(nb)) return na === nb;
+  }
+  return String(a).trim().toUpperCase() === String(b).trim().toUpperCase();
+}
+
 function atualizarSaldoNaProgramacao(prog) {
   prog = prog || calcularProgramacao();
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1378,13 +1406,13 @@ function atualizarSaldoNaProgramacao(prog) {
     const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
 
-    let produzido = '', saldo = '', pct = '', status = '', quando = '';
+    let produzido = '', saldo = '', pct = '', status = '', escreve = false;
 
     if (!temLinha) {
       // linha vazia/rascunho: não escreve nada
     } else if (fora) {
       status = 'FORA DA ESTEIRA';
-      quando = agora;
+      escreve = true;
     } else if (dNum > 0 && dNum <= hojeNum) {
       // Lote já vencido ou de hoje: pega o saldo alocado FIFO para esta linha.
       const lk = key + '|' + lote + '|' + dNum;
@@ -1396,10 +1424,29 @@ function atualizarSaldoNaProgramacao(prog) {
         status     = (qtde > 0 && saldo <= 0) ? 'CONCLUIDO'
                    : (produzido > 0)          ? 'EM ANDAMENTO'
                    :                            'PENDENTE';
-        quando     = agora;
+        escreve    = true;
       }
     }
     // demais linhas (futuras / sem correspondência): ficam em branco
+
+    // ATUALIZADO_EM é o carimbo DA LINHA, não o da rodada: só muda quando
+    // PRODUZIDO/SALDO/PERCENTUAL/STATUS saem diferentes do que já está gravado.
+    // Antes toda rodada regravava `agora` em todas as linhas — e como a função
+    // roda a CADA lançamento, a coluna dizia "a última sincronização foi às
+    // 16:43", nunca "este lote andou às 16:43". O PPCP perdia a única pista de
+    // quando cada lote parou de andar.
+    let quando = '';
+    if (escreve) {
+      const mudou = !_progIgual(values[i][outIdx['PRODUZIDO']],  produzido) ||
+                    !_progIgual(values[i][outIdx['SALDO']],      saldo)     ||
+                    !_progIgual(values[i][outIdx['PERCENTUAL']], pct)       ||
+                    !_progIgual(values[i][outIdx['STATUS']],     status);
+      const antes = values[i][outIdx['ATUALIZADO_EM']];
+      // Sem carimbo anterior (coluna recém-criada, linha nova) carimba agora.
+      // Preservando, devolve o valor BRUTO lido — se a célula é data de verdade,
+      // continua data; se é texto, continua texto.
+      quando = (mudou || antes === '' || antes == null) ? agora : antes;
+    }
 
     cols['PRODUZIDO'].push([produzido]);
     cols['SALDO'].push([saldo]);
