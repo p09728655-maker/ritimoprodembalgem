@@ -11,6 +11,49 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script 5.3 — 14/09/2026
+
+**Atenção** — ⚠ **re-deploy**. **Nenhum número da planilha ou do painel mudou**:
+PRODUZIDO, SALDO, PERCENTUAL e STATUS continuam saindo da mesma conta. O que
+muda é a coluna **`ATUALIZADO_EM`** da aba `PROGRAMACAO`.
+
+### A hora era da sincronização, não do lote
+
+Relato do usuário, com a planilha na tela: *"a data sempre fica atual"* — as 36
+linhas da `PROGRAMACAO` com **`11/09/2026 16:43:43`**, o mesmo segundo em todas.
+
+`atualizarSaldoNaProgramacao()` roda a **cada lançamento** do operador e
+reescrevia `agora` em todas as linhas elegíveis, inclusive nas que não tinham
+mudado nada. A coluna respondia *"a última sincronização foi às 16:43"* — uma
+informação que já está no próprio painel — em vez de *"este lote andou às
+16:43"*, que é o que ela existe para dizer. Na prática o PPCP ficava sem saber
+qual lote parou e desde quando: um lote travado há três dias tem o mesmo carimbo
+do que acabou de rodar.
+
+Agora a hora só é recarimbada quando a **linha muda de fato** — PRODUZIDO,
+SALDO, PERCENTUAL ou STATUS diferentes do que já está gravado na célula
+(`_progIgual`, que compara número com número mesmo quando a célula volta como
+texto). Linha parada **mantém o carimbo anterior**, com o valor bruto que estava
+lá: célula formatada como data continua data, como texto continua texto. Mesma
+regra que a gravação da meta do dia (`gravarMetaDiaNaPlanilha`) já seguia — só
+grava quando o valor muda.
+
+| | antes | depois |
+|---|---|---|
+| lote que produziu no lançamento | hora do lançamento | hora do lançamento |
+| lote parado há 3 dias | hora do lançamento | a hora em que ele parou |
+| linha de data futura | em branco | em branco |
+
+**Na primeira rodada após o re-deploy todas as linhas ativas são carimbadas uma
+vez** (o carimbo de hoje é o que está na planilha), e a partir daí cada uma anda
+no seu tempo. O histórico anterior não dá para reconstruir — a planilha nunca o
+guardou.
+
+Cobertura: `node apps-script.test.js` roda a função real contra uma planilha de
+mentira e falha se uma rodada sem mudança voltar a recarimbar.
+
+---
+
 ## v7.42.0 — 08/09/2026
 
 **Atenção** — **nenhum número, fórmula ou indicador mudou.** É a ordem em que o
