@@ -11,6 +11,66 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script 5.4 — 14/09/2026
+
+**Atenção** — ⚠ **re-deploy**. Muda a coluna **`STATUS`** da aba `PROGRAMACAO`.
+Nenhum indicador do painel muda: `PRODUZIDO`, `SALDO` e `PERCENTUAL` saem da
+mesma conta, e o atraso que o painel calcula sempre foi o mesmo — o que muda é a
+planilha passar a dizer isso na cara.
+
+### "EM ANDAMENTO" é do lote de HOJE
+
+Pedido do usuário: *"status em andamento só lotes do dia, anterior ao dia atual é
+em atraso"*. Um lote programado para **02/09** aparecia como **EM ANDAMENTO** no
+dia **14/09** — a palavra dizia que a coisa está caminhando, quando ela está
+parada há doze dias.
+
+| situação da linha | antes | depois |
+|---|---|---|
+| data de hoje, já produziu | EM ANDAMENTO | EM ANDAMENTO |
+| data de hoje, não começou | PENDENTE | PENDENTE |
+| **data anterior, produção parcial** | EM ANDAMENTO | **EM ATRASO** |
+| **data anterior, não começou** | PENDENTE | **EM ATRASO** |
+| saldo zerado | CONCLUIDO | CONCLUIDO |
+| marcada FORA_ESTEIRA | FORA DA ESTEIRA | FORA DA ESTEIRA |
+| data futura | em branco | em branco |
+
+**Quem não começou também está em atraso.** A régua é a mesma que o painel já usa
+para somar o atraso — *programado antes de hoje que não foi embalado* —, e ali
+tanto faz se a linha produziu metade ou nada. O que distingue as duas continua na
+própria linha: `PRODUZIDO` e `PERCENTUAL` em **0** dizem que ela não saiu do
+lugar. Com isso a soma dos `SALDO` das linhas EM ATRASO é o atraso que o painel
+mostra: planilha e indicador passam a falar a mesma língua.
+
+### O carimbo não reage à virada do dia
+
+A v5.3 fez o `ATUALIZADO_EM` carimbar só quando a linha muda de fato. O status
+novo muda **sozinho na virada do dia** — um lote de hoje que ficou parcial é EM
+ATRASO amanhã, sem ninguém ter produzido nada. Sem cuidado, o primeiro lançamento
+do dia recarimbaria a aba inteira e o carimbo voltaria a mentir.
+
+`_progFase` trata `PENDENTE`, `EM ANDAMENTO` e `EM ATRASO` como a **mesma fase**
+(lote aberto): só o relógio separa os três. Toda mudança de verdade — entrou no
+cálculo, concluiu, saiu da esteira — mexe em `PRODUZIDO`/`SALDO` junto, e é por
+ali que ela carimba.
+
+### O que esperar depois do re-deploy
+
+- **No primeiro lançamento, as linhas vencidas trocam de status e são carimbadas
+  uma vez** (o status mudou de fato). Da segunda rodada em diante, só anda quem
+  produz.
+- **O status só se atualiza quando o script roda** — ou seja, a cada lançamento
+  do operador. De madrugada, antes do primeiro apontamento do dia, a aba ainda
+  mostra o retrato de ontem.
+- Se a programação estiver toda vencida, a aba inteira sai **EM ATRASO**. Não é
+  defeito da regra: é o retrato da carteira. Aí quem prioriza passa a ser a
+  **DATA** (quanto tempo de atraso) e o **SALDO**, não mais o status.
+
+Cobertura: `node apps-script.test.js` roda a função real contra uma planilha de
+mentira — os quatro status, a virada do dia sem recarimbo e a fase.
+
+---
+
 ## Apps Script 5.3 — 14/09/2026
 
 **Atenção** — ⚠ **re-deploy**. **Nenhum número da planilha ou do painel mudou**:

@@ -95,10 +95,11 @@ console.log('\n── o ganho real: PRODUCAO_PRODUTO lida uma vez só ──');
 const TZ = 'America/Sao_Paulo';
 const SHEET_PROD_LOG = 'PRODUCAO_PRODUTO';
 let FAKE_AGORA = '10/08/2026 08:00:00';
+let FAKE_HOJE  = '10/08/2026';
 const Utilities = { formatDate: (d, tz, fmt) =>
   fmt === 'yyyy'                      ? '2026'
   : (fmt && fmt.indexOf('HH') >= 0)   ? FAKE_AGORA
-  :                                     '10/08/2026' };
+  :                                     FAKE_HOJE };
 eval(pega('function codKey('));
 eval(pega('function dataParaNum('));
 eval(pega('function lerEmbaladoPorProduto('));
@@ -118,21 +119,27 @@ ESCRITORAS.forEach(f => {
   ok(`${f} não usa o memo`, /_valores(DaAba)?\s*\(/.test(corpo), false);
 });
 
-console.log('\n── ATUALIZADO_EM da PROGRAMACAO é o carimbo da LINHA ──');
-// A função roda a CADA lançamento. Antes ela regravava `agora` em TODAS as
-// linhas: a coluna virava o relógio da sincronização (a planilha inteira com o
-// mesmo horário) em vez de dizer quando cada lote andou pela última vez.
+console.log('\n── PROGRAMACAO: STATUS e o carimbo ATUALIZADO_EM ──');
+// Duas regras que vivem na mesma função:
+//   STATUS      — EM ANDAMENTO é do lote DE HOJE; data anterior não concluída é
+//                 EM ATRASO, a mesma régua do atraso que o painel já calcula.
+//   ATUALIZADO_EM — carimbo DA LINHA. A função roda a CADA lançamento; antes ela
+//                 regravava `agora` em TODAS as linhas e a coluna virava o
+//                 relógio da sincronização.
 const SHEET_PROG = 'PROGRAMACAO';
 // Infra do Apps Script, não regra: aqui basta achar a aba pelo nome.
 function acharAbaTolerante(ss, nome) { return ss.getSheetByName(nome); }
 eval(pega('function _progIgual('));
+eval(pega('function _progFase('));
 eval(pega('function atualizarSaldoNaProgramacao('));
 
 const PROG = [
   ['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM'],
-  ['25136', '5/8', 1, '501.149.001', 'MESA MADERO BRANCO', 700, '', '', '', '', ''],
-  ['25136', '5/8', 1, '501.149.002', 'MESA MADERO CINZA',  300, '', '', '', '', ''],
-  ['25199', '20/8', 1, '501.149.003', 'LOTE FUTURO',       100, '', '', '', '', ''],
+  ['25136', '10/8', 1, '501.149.001', 'HOJE, JÁ PRODUZIU',   700, '', '', '', '', ''],
+  ['25136', '10/8', 1, '501.149.002', 'HOJE, NÃO COMEÇOU',   300, '', '', '', '', ''],
+  ['25100', '5/8',  1, '501.149.003', 'VENCIDO, PARCIAL',    100, '', '', '', '', ''],
+  ['25100', '5/8',  1, '501.149.004', 'VENCIDO, NÃO COMEÇOU', 50, '', '', '', '', ''],
+  ['25199', '20/8', 1, '501.149.005', 'LOTE FUTURO',         100, '', '', '', '', ''],
 ];
 const abaProg = {
   getName: () => SHEET_PROG,
@@ -147,27 +154,52 @@ const abaProg = {
     }
   })
 };
+const status  = l => PROG[l][9];
 const carimbo = l => PROG[l][10];
-const saldos = (a, b) => ({ saldoLinha: { '501149001|25136|20260805': a, '501149002|25136|20260805': b } });
+// saldo de cada linha, na ordem da tabela acima (o FIFO do calcularProgramacao)
+const saldos = (a, b, c, d) => ({ saldoLinha: {
+  '501149001|25136|20260810': a, '501149002|25136|20260810': b,
+  '501149003|25100|20260805': c, '501149004|25100|20260805': d } });
 
 PLANILHA = { getSheetByName: n => (n === SHEET_PROG ? abaProg : null) };
 
-FAKE_AGORA = '05/08/2026 09:00:00';
-atualizarSaldoNaProgramacao(saldos(8, 6));
-ok('1ª rodada grava o produzido da linha', [PROG[1][6], PROG[1][7], PROG[1][9]], [692, 8, 'EM ANDAMENTO']);
-ok('e carimba a hora', [carimbo(1), carimbo(2)], ['05/08/2026 09:00:00', '05/08/2026 09:00:00']);
-ok('linha de data futura continua em branco', [PROG[3][6], carimbo(3)], ['', '']);
+FAKE_HOJE = '10/08/2026'; FAKE_AGORA = '10/08/2026 09:00:00';
+atualizarSaldoNaProgramacao(saldos(8, 300, 40, 50));
+ok('lote de HOJE que já produziu: EM ANDAMENTO', status(1), 'EM ANDAMENTO');
+ok('lote de HOJE que não começou: PENDENTE',     status(2), 'PENDENTE');
+ok('lote VENCIDO com produção parcial: EM ATRASO', status(3), 'EM ATRASO');
+ok('lote VENCIDO que não começou: EM ATRASO',      status(4), 'EM ATRASO');
+ok('e o produzido da linha continua saindo', [PROG[1][6], PROG[1][7], PROG[1][8]], [692, 8, 99]);
+ok('linha de data futura continua em branco', [PROG[5][6], status(5), carimbo(5)], ['', '', '']);
+ok('1ª rodada carimba a hora', [carimbo(1), carimbo(3)], ['10/08/2026 09:00:00', '10/08/2026 09:00:00']);
 
-FAKE_AGORA = '05/08/2026 16:43:43';
-atualizarSaldoNaProgramacao(saldos(8, 6));
+FAKE_AGORA = '10/08/2026 16:43:43';
+atualizarSaldoNaProgramacao(saldos(8, 300, 40, 50));
 ok('rodada sem mudança NÃO recarimba (era o defeito)',
-   [carimbo(1), carimbo(2)], ['05/08/2026 09:00:00', '05/08/2026 09:00:00']);
+   [carimbo(1), carimbo(2), carimbo(3)],
+   ['10/08/2026 09:00:00', '10/08/2026 09:00:00', '10/08/2026 09:00:00']);
 
-FAKE_AGORA = '06/08/2026 07:30:00';
-atualizarSaldoNaProgramacao(saldos(0, 6));
-ok('quem andou ganha a hora nova', carimbo(1), '06/08/2026 07:30:00');
-ok('e o status acompanha', [PROG[1][6], PROG[1][7], PROG[1][9]], [700, 0, 'CONCLUIDO']);
-ok('quem não andou mantém a hora antiga', carimbo(2), '05/08/2026 09:00:00');
+FAKE_AGORA = '10/08/2026 17:00:00';
+atualizarSaldoNaProgramacao(saldos(0, 300, 40, 50));
+ok('quem andou ganha a hora nova', carimbo(1), '10/08/2026 17:00:00');
+ok('e fecha como CONCLUIDO', [PROG[1][6], PROG[1][7], status(1)], [700, 0, 'CONCLUIDO']);
+ok('quem não andou mantém a hora antiga', carimbo(2), '10/08/2026 09:00:00');
+
+// Virada do dia: o lote de ontem passa a EM ATRASO sozinho, sem ninguém produzir.
+// O carimbo não pode reagir a isso — senão volta a dizer "andou" para um lote parado.
+FAKE_HOJE = '11/08/2026'; FAKE_AGORA = '11/08/2026 07:10:00';
+atualizarSaldoNaProgramacao(saldos(0, 300, 40, 50));
+ok('na virada do dia o lote de ontem vira EM ATRASO', status(2), 'EM ATRASO');
+ok('e o carimbo dele NÃO muda (o lote não andou)',    carimbo(2), '10/08/2026 09:00:00');
+ok('o lote já concluído segue concluído e parado',    [status(1), carimbo(1)],
+   ['CONCLUIDO', '10/08/2026 17:00:00']);
+
+ok('_progFase: os três estados de lote aberto são a mesma fase',
+   [_progFase('PENDENTE'), _progFase('EM ANDAMENTO'), _progFase('EM ATRASO')],
+   ['ABERTA', 'ABERTA', 'ABERTA']);
+ok('_progFase: concluir e sair da esteira NÃO são a mesma fase',
+   [_progFase('CONCLUIDO'), _progFase('FORA DA ESTEIRA'), _progFase('')],
+   ['CONCLUIDO', 'FORA DA ESTEIRA', '']);
 
 // A célula pode voltar da planilha como texto (coluna formatada) — comparar
 // como string faria "99" ≠ 99 e recarimbaria tudo a cada rodada.

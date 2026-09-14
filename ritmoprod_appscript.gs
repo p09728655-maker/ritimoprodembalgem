@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.4 — STATUS DA PROGRAMACAO: EM ATRASO PARA O LOTE VENCIDO
+//               "EM ANDAMENTO" é do lote DE HOJE. Linha de data anterior que
+//               ainda não fechou passa a sair como EM ATRASO — a mesma régua do
+//               atraso que o painel já calcula (programado antes de hoje que não
+//               foi embalado). Quem nem começou também é EM ATRASO: PRODUZIDO e
+//               PERCENTUAL em 0 é que dizem isso. O ATUALIZADO_EM NÃO é
+//               recarimbado quando o status muda só por virada de dia
+//               (_progFase) — senão o carimbo da v5.3 voltaria a mentir.
 // Versão: 5.3 — ATUALIZADO_EM DA PROGRAMACAO É O CARIMBO DA LINHA
 //               atualizarSaldoNaProgramacao roda a CADA lançamento e regravava
 //               `agora` em TODAS as linhas: a aba inteira ficava com o mesmo
@@ -1339,6 +1347,9 @@ function gravarMetaDiaNaPlanilha(prog) {
 //    em andamento) — mesma semântica da antiga SALDO_LOTE. Linhas de datas
 //    futuras / outros lotes ficam em branco pra não parecer já produzido.
 //  - Linha marcada FORA_ESTEIRA vira STATUS = "FORA DA ESTEIRA" e não conta.
+//  - STATUS: CONCLUIDO · EM ATRASO (data anterior a hoje, não concluída) ·
+//    EM ANDAMENTO (lote de hoje, já produziu) · PENDENTE (lote de hoje, ainda
+//    não produziu) · FORA DA ESTEIRA. Data futura fica em branco.
 //  - Cada rodada reescreve TODAS as linhas (em branco onde não se aplica), então
 //    valores antigos são limpos automaticamente.
 //  - ATUALIZADO_EM é exceção: ele carimba a hora só quando a LINHA muda de fato
@@ -1357,6 +1368,18 @@ function _progIgual(a, b) {
     if (!isNaN(na) && !isNaN(nb)) return na === nb;
   }
   return String(a).trim().toUpperCase() === String(b).trim().toUpperCase();
+}
+
+// PENDENTE, EM ANDAMENTO e EM ATRASO são a MESMA fase — lote aberto. A diferença
+// entre eles é o relógio (a data da linha ficou para trás), não o lote: na virada
+// do dia o status troca sozinho, e sem isto o ATUALIZADO_EM seria recarimbado num
+// lote que não andou — justamente o defeito que o carimbo por linha corrigiu.
+// Toda mudança de fase de verdade (entrou no cálculo, concluiu, saiu da esteira)
+// muda PRODUZIDO/SALDO junto, e é por ali que ela carimba.
+function _progFase(st) {
+  const s = String(st == null ? '' : st).trim().toUpperCase();
+  if (s === 'PENDENTE' || s === 'EM ANDAMENTO' || s === 'EM ATRASO') return 'ABERTA';
+  return s;
 }
 
 function atualizarSaldoNaProgramacao(prog) {
@@ -1421,7 +1444,14 @@ function atualizarSaldoNaProgramacao(prog) {
         saldo      = Math.max(saldoMap[lk], 0);
         produzido  = Math.max(qtde - saldo, 0);
         pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
+        // EM ANDAMENTO é do lote DE HOJE. Linha de data anterior que ainda não
+        // fechou está EM ATRASO — é exatamente o que o painel já soma como
+        // atraso (programado antes de hoje que não foi embalado), então a
+        // planilha e o indicador passam a falar a mesma língua. Quem não
+        // começou também está atrasado: o PRODUZIDO e o PERCENTUAL (0) é que
+        // dizem que ela nem saiu do lugar.
         status     = (qtde > 0 && saldo <= 0) ? 'CONCLUIDO'
+                   : (dNum < hojeNum)         ? 'EM ATRASO'
                    : (produzido > 0)          ? 'EM ANDAMENTO'
                    :                            'PENDENTE';
         escreve    = true;
@@ -1440,7 +1470,7 @@ function atualizarSaldoNaProgramacao(prog) {
       const mudou = !_progIgual(values[i][outIdx['PRODUZIDO']],  produzido) ||
                     !_progIgual(values[i][outIdx['SALDO']],      saldo)     ||
                     !_progIgual(values[i][outIdx['PERCENTUAL']], pct)       ||
-                    !_progIgual(values[i][outIdx['STATUS']],     status);
+                    !_progIgual(_progFase(values[i][outIdx['STATUS']]), _progFase(status));
       const antes = values[i][outIdx['ATUALIZADO_EM']];
       // Sem carimbo anterior (coluna recém-criada, linha nova) carimba agora.
       // Preservando, devolve o valor BRUTO lido — se a célula é data de verdade,
