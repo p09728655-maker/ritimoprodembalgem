@@ -1668,9 +1668,11 @@ com nada. Ele não é a cláusula folgada: é a única que funciona.
   nunca abriu a planilha — faria as **dez** colunas pararem de ser somadas.
 - E o estrago seria **CALADO**: sem coluna de lote, o `_saveRealizadoCore` cai
   no ramo `iLotes.length === 0`, que grava na coluna REALIZADO **apenas**
-  `if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. Com
-  REALIZADO sendo fórmula (é o caso no modelo: os valores batem exatamente com
-  a soma dos LANÇ), o operador salva, o app diz que salvou e **nada é gravado**.
+  `if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. E
+  **REALIZADO É FÓRMULA** — conferido na planilha em 15/09/2026: `C5:C15` é uma
+  `=SUM(D5:M5)` compartilhada. Ou seja, o operador salva, o app diz que salvou
+  e **nada é gravado**. Não é risco teórico: é o que aconteceria no 1º
+  lançamento depois do re-deploy.
 - `apps-script.test.js` prende o **cabeçalho real** (`HDR_REAL`): quem endurecer
   o critério quebra no teste antes de quebrar a fábrica. Conferido que a guarda
   falha com o critério apertado. O fixture do `hora-extra.test.js` também passou
@@ -1684,8 +1686,13 @@ coluna vazia e `COMO PREENCHER`, e nenhuma das duas casa. Vira problema só se
 alguém acrescentar uma coluna com esses nomes **depois** de REALIZADO.
 - Se um dia for endurecido, a forma segura é **allowlist ancorada no começo**
   (`LOTE` · `LANÇ`/`LANC` · `LT` · `L`+dígito), nunca "só LOTE/LT".
-- Antes de mexer, conferir se a planilha **de produção** tem o mesmo cabeçalho
-  do `MODELO_HORA_A_HORA` — o que foi conferido foi o modelo.
+- Conferido direto na planilha (id `1W9bK_…jcwFzg`, título `MODELO_HORA_A_HORA`
+  apesar do nome — é a de produção: o total subiu de 2.077 para 2.137 durante a
+  própria conferência). `B5` também é fórmula e distribui a meta pelas horas
+  `>= C3`, que é a mesma regra do início de turno já documentada aqui.
+- A aba de programação chama-se **`PROGRAMAÇÃO`** (com Ç e Ã) e a constante do
+  `.gs` diz `PROGRAMACAO` — isso **já está tratado** pelo `acharAbaTolerante`,
+  não é defeito aberto.
 
 ⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
 a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi

@@ -244,8 +244,9 @@ const anterior = (h) => h.includes('LOTE') || h.includes('LT') || h.startsWith('
 // somadas de uma vez. E o estrago seria CALADO: sem coluna de lote o
 // _saveRealizadoCore cai no ramo `iLotes.length === 0`, que grava na coluna
 // REALIZADO apenas `if (!cell.getFormula())` e devolve `{ok:true}` de qualquer
-// jeito. Com REALIZADO sendo fórmula, o operador salva, o app diz que salvou e
-// NADA é gravado.
+// jeito. E REALIZADO É FÓRMULA — conferido na planilha em 15/09/2026, a coluna
+// C5:C15 é uma =SUM(D5:M5) compartilhada. Ou seja: o operador salva, o app diz
+// que salvou e NADA é gravado.
 //
 // É por isso que este teste prende o cabeçalho REAL: quem for endurecer o
 // critério quebra aqui antes de quebrar a fábrica.

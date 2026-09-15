@@ -963,8 +963,9 @@ function doGet(e) {
 //
 // E o estrago é CALADO: sem coluna de lote, _saveRealizadoCore cai no ramo
 // `iLotes.length === 0`, que grava em REALIZADO apenas `if (!cell.getFormula())`
-// e devolve {ok:true} de qualquer jeito. Com REALIZADO sendo fórmula (é o caso),
-// o operador salva, o app diz que salvou e nada é gravado.
+// e devolve {ok:true} de qualquer jeito. E REALIZADO É FÓRMULA: conferido na
+// planilha em 15/09/2026, C5:C15 é =SUM(D5:M5) compartilhada. Ou seja, o
+// operador salva, o app diz que salvou e NADA é gravado.
 //
 // O que sobra é o critério aceitar DE MAIS: LINHA/LIMPEZA/LÍDER/LOCAL entram
 // pelo começo com L, e RESULTADO (resuLTado) e FALTA (faLTa) pelo LT no meio da
