@@ -11,6 +11,53 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.46.0 / mobile 1.18.0 — 15/09/2026
+
+**Atenção** — o card **PROJEÇÃO FINAL deixa de dar veredito**. O número continua
+igual; some o `▲ ACIMA DA META / ▼ ABAIXO` e a cor verde/vermelha. Nenhuma conta
+muda.
+
+### Dois cards respondiam a mesma pergunta com contas diferentes
+
+`PROJEÇÃO FINAL` e o selo do `% DA META DO DIA` respondiam **"vamos bater a meta
+hoje?"** — cada um medindo o quanto do turno já passou de um jeito:
+
+| | como mede o turno |
+|---|---|
+| **PROJEÇÃO** | em **slots** (`real + ritmo × slots restantes`, `ritmo = real ÷ nº de slots`) |
+| **SELO** | em **minutos** (`efNoRitmo`) |
+
+Só dariam igual se toda hora tivesse 60 min. **O slot pós-almoço `12:12-13:00`
+tem 48**, e é isso que descola as duas.
+
+Medido no turno real (9 slots, **527 min**, meta 1.800) com **4 horas lançadas**:
+
+```
+PROJEÇÃO cobra:  1.800 × 4/9      =  800 cx
+SELO cobra:      1.800 × 240/527  =  820 cx
+```
+
+Com a produção em **810 cx** a tela mostrava, lado a lado:
+
+```
+PROJEÇÃO FINAL   ▲ ACIMA DA META      (810 > 800)
+% DA META        ABAIXO DO RITMO      (810 < 820)
+```
+
+Dois cards vizinhos, vereditos opostos, os dois certos. E **não é caso raro**:
+acontece em **8 das 9 horas** do turno, com janela de 2 a 20 cx.
+
+**O número fica** — projetar é informação útil. Quem julga passa a ser só o selo,
+que rateia por **minuto** e é a conta mais correta. É a mesma regra do relatório
+semanal: *o número é tinta, o veredito é o selo*.
+
+⚠ A **TV nunca teve este defeito** — ela já imprimia a projeção como número puro.
+O teste prende isso para ela não ganhar um.
+
+Vale nos **dois** gerenciais (desktop e celular).
+
+---
+
 ## v7.45.0 — 15/09/2026
 
 **Atenção** — o card **GAP DA META sai do gerencial** (ao vivo e dia passado). O
