@@ -11,6 +11,51 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.43.0 — 15/09/2026
+
+**Atenção** — muda o **cabeçalho impresso do relatório de HISTÓRICO**, e só ele.
+Nenhum número muda: é a faixa de identidade do topo da folha. Os outros sete
+relatórios saem exatamente como antes.
+
+### A pele do cabeçalho passou a morar com a marcação
+
+O `_rpCabecalho` já era uma implementação só desde o #204/#205 — mas só a
+**marcação**. O **CSS que a pinta** continuou copiado em **cinco documentos**,
+um por relatório, e uma das cópias envelheceu sem ninguém ver.
+
+Medido no Chromium, antes da correção:
+
+| relatório | marca `PATRIMAR` | tamanho do logo |
+|---|---|---|
+| Produção por família/modelo | laranja `#FF5C1F` | 22px |
+| Produção por modelo | laranja `#FF5C1F` | 22px |
+| **Histórico** | **branco** | **18px** |
+| Semanal | laranja `#FF5C1F` | 22px |
+| Paradas / Perdas / Min-1000 / Investimento | laranja `#FF5C1F` | 22px |
+
+A cópia do HISTÓRICO tinha perdido a regra `.rp-logo span{color:#FF5C1F}` e
+ficado com o logo a 18px. Como `.rp-header .rp-logo` pinta o bloco inteiro de
+branco, sem aquela regra o **PATRIMAR** herdava o branco: o nome do produto saía
+sem o laranja da marca, menor, num relatório de oito.
+
+É a história do #204/#205 de novo — arrumar um documento e esquecer os outros
+quatro —, dessa vez pela pele em vez da marcação.
+
+**O que mudou no código:** o bloco de identidade do cabeçalho e o `<link>` das
+fontes viraram `_RP_HEADER_CSS` e `_RP_FONTS`, ao lado do `_rpCabecalho`,
+na seção das peças comuns. Os cinco documentos leem as constantes. O `<link>`
+do `<head>` do próprio painel não entra — ele não é relatório.
+
+O que **não** mudou: o acento de cada documento (`.rp-dia`, `.rp-semana`,
+`.rp-per`) continua local — o das paradas é vermelho de propósito.
+
+`relatorios.test.js` ganhou seis verificações: a pele declarada uma vez, os
+cinco documentos lendo a constante, ninguém redeclarando `.rp-logo`/
+`.rp-sub`/`.rp-meta`, e a regra que pinta a marca existindo — a que faltava.
+Conferido que a guarda falha quando a cópia volta.
+
+---
+
 ## Apps Script 5.4 — 14/09/2026
 
 **Atenção** — ⚠ **re-deploy**. Muda a coluna **`STATUS`** da aba `PROGRAMACAO`.

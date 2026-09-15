@@ -2560,7 +2560,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.42.0';
+const APP_VER   = '7.43.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5379,7 +5379,7 @@ async function gerarRelatorioProducaoHora(){
 <head>
 <meta charset="UTF-8">
 <title>Relatório Produção por ${ehFam?'Família':'Modelo'} — ${deStr} a ${ateStr}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+${_RP_FONTS}
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:12mm 14mm; font-size:11px; }
@@ -5395,16 +5395,7 @@ async function gerarRelatorioProducaoHora(){
     tr{ page-break-inside:avoid; }
     thead{ display:table-header-group; }
   }
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
-  .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
+${_RP_HEADER_CSS}
   .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
   .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:16px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
   .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:4px; }
@@ -5739,7 +5730,7 @@ async function gerarRelatorioProducaoModelo(){
 <head>
 <meta charset="UTF-8">
 <title>Relatório de Produção por Modelo — ${hojeStr()}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+${_RP_FONTS}
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
@@ -5756,16 +5747,7 @@ async function gerarRelatorioProducaoModelo(){
     thead{ display:table-header-group; }
   }
 
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
-  .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
+${_RP_HEADER_CSS}
   .rp-dia{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
   .rp-sec-ttl{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#c53030; letter-spacing:2.5px; text-transform:uppercase; margin:18px 0 10px; border-bottom:0.5px solid #edf2f7; padding-bottom:6px; }
@@ -6966,7 +6948,7 @@ async function _imprimirHistoricoFormatado(){
 <head>
 <meta charset="UTF-8">
 <title>${APP_NOME} · Histórico · ${periodoLabel}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+${_RP_FONTS}
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:12mm 14mm;font-size:10px}
@@ -6978,15 +6960,7 @@ async function _imprimirHistoricoFormatado(){
   @page{size:A4 portrait;margin:10mm 10mm}
   @media print{body{padding:0}.no-print{display:none!important} tr{page-break-inside:avoid} thead{display:table-header-group}}
   /* HEADER */
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;margin-top:2px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#4a5568;line-height:1.6}
+${_RP_HEADER_CSS}
   .rp-semana{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#FF5C1F}
   .rp-periodo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#1a1a2e}
   /* SECTION TITLE */
@@ -7216,6 +7190,24 @@ function setTxt(id,txt){ const el=document.getElementById(id); if(el) el.textCon
 // por família e por modelo). Foi por isso que o #204 arrumou o cabeçalho de um
 // só e o #205 precisou repetir a mesma correção nos outros quatro. Agora é uma
 // peça só: mexeu aqui, mudou em todos.
+// O <link> das fontes e a faixa de identidade do cabeçalho estavam escritos
+// CINCO vezes, um por documento. O #204/#205 unificou a MARCAÇÃO dentro do
+// _rpCabecalho, mas a PELE que a pinta continuou copiada — e foi por ali que
+// a cópia do HISTÓRICO envelheceu: ficou sem a regra `.rp-logo span` e com o
+// logo a 18px, então o mesmo cabeçalho saía com PATRIMAR em BRANCO e menor num
+// relatório e laranja a 22px nos outros sete. Marcação e pele andam juntas.
+const _RP_FONTS='<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">';
+const _RP_HEADER_CSS=`
+  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
+  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
+  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
+  .rp-header .rp-sub{color:#a0aec0}
+  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
+  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
+  .rp-logo span{color:#FF5C1F}
+  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#718096;margin-top:3px;letter-spacing:1px}
+  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;line-height:1.7}`;
 function _rpEsc(s){
   return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 }
@@ -7814,7 +7806,7 @@ async function gerarRelatorioSemanal(ateArg){
 <head>
 <meta charset="UTF-8">
 <title>Relatório Semanal — Semana ${numSem}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+${_RP_FONTS}
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ font-family:'Barlow',Arial,sans-serif; background:#fff; color:#1a1a2e; padding:16mm 18mm; font-size:11px; }
@@ -7836,16 +7828,7 @@ async function gerarRelatorioSemanal(ateArg){
   }
 
   /* HEADER */
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{ font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; letter-spacing:2px; color:#1a1a2e; }
-  .rp-logo span{ color:#FF5C1F; }
-  .rp-sub{ font-family:'IBM Plex Mono',monospace; font-size:9px; color:#718096; margin-top:3px; letter-spacing:1px; }
-  .rp-meta{ text-align:right; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4a5568; line-height:1.7; }
+${_RP_HEADER_CSS}
   .rp-semana{ font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:#FF5C1F; }
 
   /* ── Paleta do DOCUMENTO ───────────────────────────────────────────────
@@ -10189,7 +10172,7 @@ function _rpDocParadas(titulo, paisagem){
   const orient = paisagem ? 'landscape' : 'portrait';
   return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <title>${_rpEsc(titulo)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+${_RP_FONTS}
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
@@ -10217,16 +10200,7 @@ function _rpDocParadas(titulo, paisagem){
     .pg-ev-i,.pg-diag-l,.pgq-smed-l,.pgq-tend,.pgq-bars{page-break-inside:avoid}
     .rp-footer,.rp-note{page-break-before:avoid}
   }
-  .rp-header{display:flex;align-items:center;gap:14px;padding:11px 16px;margin-bottom:16px;background:linear-gradient(135deg,#1a1a2e,#16213e 60%,#0f3460);color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rp-header .rp-logo-img{height:30px;width:auto;flex-shrink:0;background:#fff;padding:4px 8px;border-radius:4px}
-  .rp-header .rp-lb{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#f5a623}
-  .rp-header .rp-logo{color:#fff;margin:3px 0 2px}
-  .rp-header .rp-sub{color:#a0aec0}
-  .rp-header .rp-meta{margin-left:auto;color:#a0aec0}
-  .rp-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
-  .rp-logo span{color:#FF5C1F}
-  .rp-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#718096;margin-top:3px;letter-spacing:1px}
-  .rp-meta{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;line-height:1.7}
+${_RP_HEADER_CSS}
   .rp-per{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#e57373}
   .rp-sec-ttl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c53030;letter-spacing:2.5px;text-transform:uppercase;margin:16px 0 9px;border-bottom:1.5px solid #edf2f7;padding-bottom:6px}
   .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}

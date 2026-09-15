@@ -659,6 +659,31 @@ via Google Apps Script (JSONP).
   repetir a mesma correção nos outros quatro. Agora são
   `_rpCabecalho(titulo, metaHtml, subExtra)`, `_rpBotaoImprimir()` e `_rpEsc()`.
   O `relatorios.test.js` falha se algum deles voltar a aparecer duplicado.
+- ⚠ **A MARCAÇÃO estava unificada; a PELE que a pinta, NÃO** — e foi por ali que
+  a história do #204/#205 se repetiu (corrigido em 15/09/2026, v7.43.0). O
+  `_rpCabecalho` era um lugar só desde o #205, mas o **CSS do cabeçalho** e o
+  `<link>` das fontes continuavam escritos **nos cinco documentos**. A cópia do
+  **HISTÓRICO** envelheceu: perdeu a regra `.rp-logo span{color:#FF5C1F}` e
+  ficou com o logo a **18px**. Como `.rp-header .rp-logo` pinta o bloco inteiro
+  de branco, sem aquela regra o **PATRIMAR herda o branco** — medido no
+  Chromium: **branco a 18px** nesse relatório contra **laranja a 22px** nos
+  outros sete, o mesmo cabeçalho.
+  - Hoje são `_RP_HEADER_CSS` e `_RP_FONTS`, ao lado do `_rpCabecalho` na
+    seção das peças comuns, lidas pelos **cinco** documentos. Seguem a forma do
+    `_RP_CASC_CSS`, que já era assim.
+  - As constantes são declaradas **depois** dos primeiros usos (L~5380 usa,
+    L~7190 declara). Não há TDZ: todo uso está **dentro de corpo de função**,
+    avaliado na chamada — é o mesmo arranjo do `_RP_CASC_CSS`, e os cinco
+    sítios estão no mesmo `<script>` (L2555–L12150).
+  - O `<link>` do `<head>` do **próprio painel** não entra na conta: ele não é
+    relatório. Por isso a guarda conta as ocorrências **dentro dos `<script>`**,
+    onde só a constante aparece.
+  - **O acento de cada documento continua LOCAL**: `.rp-dia` (produção),
+    `.rp-semana` (histórico e semanal) e `.rp-per` (paradas) — este último é
+    **vermelho de propósito**, não é cópia desatualizada dos outros.
+  - Ao procurar cópia de peça de relatório, procurar a **pele junto com a
+    marcação**: unificar só uma das duas deixa a outra livre para envelhecer, em
+    silêncio, por oito documentos.
 - O logo continua entrando por **URL absoluta** (`new URL(...)`): o popup nasce
   em `about:blank` e um `src` relativo não resolveria.
 - ⚠ **A MARGEM DA IMPRESSÃO É DA `@page`, NUNCA do `padding` do body.** Os cinco
