@@ -11,6 +11,45 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.51.0 — 15/09/2026
+
+**Atenção** — corrige um defeito da v7.50.0, publicada hoje. A aba PLANO dizia
+**"SEM CARTEIRA DATADA"** com a `PROGRAMACAO` cheia: 78 linhas datadas de 16 a
+24/09 e o painel afirmando que não havia nenhuma.
+
+### A mensagem servia para tudo
+
+`SEM CARTEIRA DATADA` aparecia igual quando não havia lote futuro **e** quando a
+leitura falhava. Como `getProgramacaoDetalhada` é das chamadas mais caras do
+backend (catálogo + `PROGRAMACAO` + FIFO) e era a **última das pesadas com uma
+tentativa só**, um cold start do Apps Script bastava para a tela mentir.
+
+É o mesmo defeito que o `PH_FALHA` do comparativo por modelo já tinha resolvido
+em 26/08/2026 — e que está escrito nesta memória com o nome *"TIMEOUT não é
+backend velho"*.
+
+### O que mudou
+
+- **Três tentativas em sequência**, com espera crescente (nunca em paralelo: o
+  Apps Script atende uma execução por vez).
+- **Cinco estados, cinco mensagens**, cada um com botão de ↻ TENTAR DE NOVO:
+
+```
+NÃO CONSEGUI LER A PROGRAMAÇÃO   timeout / cold start → tentar de novo
+BACKEND SEM getProgramacaoDetalhada   respondeu sem a ação → ESTE é re-deploy
+O BACKEND DEVOLVEU ERRO          mostra a mensagem do backend
+PAINEL SEM GOOGLE SHEETS         falta a URL do Apps Script
+SEM LOTE DATADO PARA A FRENTE    leu N linhas, a mais distante é DD/MM
+```
+
+- ⚠ A frase do **re-deploy** só sai quando o backend **provou** não conhecer a
+  ação. Mandar mexer no Apps Script por um timeout faz o gestor perder a tarde
+  no lugar errado — já aconteceu uma vez neste painel.
+- O estado vazio legítimo diz **quantas linhas leu** e **qual a data mais
+  distante**, para a afirmação ser conferível sem abrir a planilha.
+
+---
+
 ## v7.50.0 — 15/09/2026
 
 **Atenção** — nenhum indicador existente mudou de conta. A aba **PLANO** passou

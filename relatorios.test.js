@@ -2717,6 +2717,54 @@ ok('os 7 dias datados somam 13.278 cx e a dívida leva o total a 15.425',
 ok('e o nivelado passa de 2.000 cx/dia — acima do que a linha faz',
    Math.round(_aReal.nivelado) > 2000, true);
 
+// ── VAZIO NÃO É UMA COISA SÓ: por que a carteira não veio ─────────────────
+// ⚠ O defeito do 1º dia em produção (15/09/2026): a planilha tinha 78 linhas
+// datadas de 16 a 24/09 e a tela afirmava "SEM CARTEIRA DATADA". A mensagem era
+// a mesma para "não há lote futuro" e para "não consegui ler" — o MESMO defeito
+// que o `PH_FALHA` do comparativo por modelo já tinha resolvido.
+global._rpEsc = t => String(t);
+eval(pega('function _progDetFalhaInfo('));
+const _falha = (cod, msg) => { global.PROG_DET_FALHA = cod; global.PROG_DET_ERRO = msg || '';
+                               return _progDetFalhaInfo(); };
+ok('cada causa tem título próprio',
+   ['sem-resposta','sem-endpoint','erro','sem-url'].map(c => _falha(c, 'x').t),
+   ['NÃO CONSEGUI LER A PROGRAMAÇÃO','BACKEND SEM getProgramacaoDetalhada',
+    'O BACKEND DEVOLVEU ERRO','PAINEL SEM GOOGLE SHEETS']);
+ok('leitura boa não inventa falha', _falha(null), null);
+// ⚠ Mandar re-deployar sem prova faz o gestor mexer no Apps Script à toa —
+// aconteceu no comparativo por modelo (26/08/2026) e está nesta memória.
+ok('a frase do re-deploy só existe no caso em que o backend PROVOU não ter a ação',
+   [/RE-DEPLOYAR/.test(_falha('sem-endpoint').d), /RE-DEPLOY/i.test(_falha('sem-resposta').d)],
+   [true, false]);
+ok('o timeout manda tentar de novo, não mexer no backend',
+   /cold start/.test(_falha('sem-resposta').d), true);
+
+// A chamada é das mais caras do backend e era a última pesada sem retry.
+const _loaderR = pega('async function carregarProgramacaoDetalhada(');
+ok('a leitura da programação tem 3 tentativas em sequência',
+   [/for\(let t=1; t<=3; t\+\+\)/.test(_loaderR), /Promise\.all/.test(_loaderR)], [true, false]);
+ok('e cada saída marca a causa',
+   ["'sem-resposta'","'sem-endpoint'","'erro'"].every(c => _loaderR.includes(c)), true);
+
+// O diagnóstico deixa conferir a afirmação sem abrir a planilha.
+const _vaz = _cartAberta([_it('10/09/2026',300), _it('14/09/2026',200),
+                          _it('20/09/2026',100,{foraEsteira:true}), _it('21/09/2026',0)],
+                         _cartNum('15/09/2026'), 0);
+ok('a carteira vazia diz quantas linhas leu e qual a mais distante',
+   [_vaz.dias.length, _vaz.diag.lidas, _vaz.diag.fora, _vaz.diag.semQtd, _vaz.diag.ultima],
+   [0, 4, 1, 1, '21/09/2026']);
+
+const _vazDes = pega('function _cartVazioHtml(');
+ok('a falha da leitura tem prioridade sobre o "não há lote futuro"',
+   /const f = _progDetFalhaInfo\(\);[\s\S]*?if\(f\) return/.test(_vazDes), true);
+ok('e os dois caminhos oferecem TENTAR DE NOVO',
+   (_vazDes.match(/TENTAR DE NOVO/g) || []).length >= 1 && /invalidarProgDetCache/.test(_vazDes), true);
+ok('o desenho do vazio não faz conta',
+   /_qpPercentil\(|_qpCurva\(|_cartAnalise\(/.test(_vazDes), false);
+const _renderV = pega('async function renderCarteira(');
+ok('a tela escolhe entre o quadro e o vazio, sem afirmar carteira vazia por falha',
+   /a \? _cartHtml\(a, QP_REGUA\) : _cartVazioHtml\(cart\)/.test(_renderV), true);
+
 // ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
 // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para
 // uma relação só: dados o real e a meta, o % e a diferença são aritmética.
