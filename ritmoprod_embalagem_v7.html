@@ -2606,7 +2606,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.45.0';
+const APP_VER   = '7.46.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4160,7 +4160,24 @@ function renderGerencial(){
       +'A meta do dia é rateada pelos MINUTOS já rodados, então a régua não cobra hora que ainda não aconteceu. '
       +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
-    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
+    // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
+    // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
+    // a projeção media o turno em SLOTS (real + ritmo × slots restantes, e
+    // ritmo = real ÷ nº de slots) e o selo mede em MINUTOS (efNoRitmo). Só
+    // dariam igual se toda hora tivesse 60 min — mas o slot pós-almoço
+    // 12:12-13:00 tem 48, e é isso que descola as duas.
+    //
+    // Medido no turno real (9 slots, 527 min, meta 1.800): com 4 horas lançadas
+    // a projeção cobra 800 cx e o selo cobra 820. Produção em 810 fazia a tela
+    // mostrar "▲ ACIMA DA META" ao lado de "ABAIXO DO RITMO" — dois cards
+    // vizinhos com vereditos opostos, os dois certos. Acontece em 8 das 9 horas
+    // do turno, com janela de 2 a 20 cx.
+    //
+    // O número fica (projetar é informação útil); quem julga é o selo, que
+    // rateia por minuto e é a conta mais correta. Mesma regra do relatório
+    // semanal e da TV: o número é tinta, o veredito é o selo.
+    // A TV já mostrava só o número — ela nunca teve este defeito.
+    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:'cx se o ritmo de agora seguir até o fim do turno', c:'acc'},
     {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
     // Só horas de JORNADA: a hora extra não tem meta e não disputa pico nem vale
     // — a mesma base que o FECHAR DIA grava nas colunas MELHOR H./PIOR H.

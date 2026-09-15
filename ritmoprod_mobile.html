@@ -911,7 +911,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.17.0';
+const APP_VER   = '1.18.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2643,7 +2643,24 @@ function renderGerencial(){
     {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
-    {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
+    // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
+    // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
+    // a projeção media o turno em SLOTS (real + ritmo × slots restantes, e
+    // ritmo = real ÷ nº de slots) e o selo mede em MINUTOS (efNoRitmo). Só
+    // dariam igual se toda hora tivesse 60 min — mas o slot pós-almoço
+    // 12:12-13:00 tem 48, e é isso que descola as duas.
+    //
+    // Medido no turno real (9 slots, 527 min, meta 1.800): com 4 horas lançadas
+    // a projeção cobra 800 cx e o selo cobra 820. Produção em 810 fazia a tela
+    // mostrar "▲ ACIMA DA META" ao lado de "ABAIXO DO RITMO" — dois cards
+    // vizinhos com vereditos opostos, os dois certos. Acontece em 8 das 9 horas
+    // do turno, com janela de 2 a 20 cx.
+    //
+    // O número fica (projetar é informação útil); quem julga é o selo, que
+    // rateia por minuto e é a conta mais correta. Mesma regra do relatório
+    // semanal e da TV: o número é tinta, o veredito é o selo.
+    // A TV já mostrava só o número — ela nunca teve este defeito.
+    {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:'cx se o ritmo de agora seguir até o fim do turno', c:'acc'},
     necKpi,
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto.
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts — caixas × pontos/produto', c:'acc'},

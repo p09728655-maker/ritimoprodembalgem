@@ -2519,6 +2519,45 @@ ok('o card GAP DA META não existe mais nos dois grids',
 ok('e o que faltava virou o subtítulo da própria meta',
    (JS.match(/caixas programadas · /g) || []).length, 4);
 
+// ── UM VEREDITO SÓ para "vamos bater hoje?" ────────────────────────────────
+// A PROJEÇÃO FINAL e o selo do % DA META DO DIA respondiam a MESMA pergunta por
+// duas contas: a projeção mede o turno em SLOTS (real + ritmo × slots restantes,
+// ritmo = real ÷ nº de slots) e o selo mede em MINUTOS (efNoRitmo). Só dariam
+// igual se toda hora tivesse 60 min — o slot pós-almoço 12:12-13:00 tem 48.
+console.log('\n── projeção informa, selo julga ──');
+
+// A PROVA: o turno real (9 slots, 527 min) e uma meta de 1.800.
+const _SLOTS = [60, 60, 60, 60, 48, 60, 60, 60, 59];
+const _MIN = _SLOTS.reduce((a, b) => a + b, 0);
+ok('o turno tem 527 min, não 9×60', [_SLOTS.length, _MIN], [9, 527]);
+const _porSlot = n => 1800 * n / _SLOTS.length;                                  // régua da projeção
+const _porMin  = n => 1800 * _SLOTS.slice(0, n).reduce((a,b)=>a+b,0) / _MIN;     // régua do selo
+// Com 4 horas lançadas as duas cobram coisas diferentes.
+ok('com 4 horas, projeção cobra 800 e selo cobra 820',
+   [Math.round(_porSlot(4)), Math.round(_porMin(4))], [800, 820]);
+// E 810 cx cai no meio: acima para uma, abaixo para a outra.
+ok('810 cx faz as duas discordarem na MESMA tela',
+   [810 >= _porSlot(4), 810 >= _porMin(4)], [true, false]);
+// Não é caso raro: só a última hora do turno faz as duas coincidirem.
+const _discordam = _SLOTS.map((_, i) => i + 1)
+  .filter(n => Math.abs(_porSlot(n) - _porMin(n)) > 1).length;
+ok('a janela de contradição existe em 8 das 9 horas', _discordam, 8);
+
+// Por isso a projeção deixou de julgar: fica o número, sem ▲/▼ e sem cor de
+// status. Quem julga é o selo, que rateia por MINUTO. Mesma regra do relatório
+// semanal e da TV — o número é tinta, o veredito é o selo.
+[['ritmoprod_embalagem_v7.html', _v7], ['ritmoprod_mobile.html', _mob]].forEach(([nome, txt]) => {
+  ok(nome + ': a projeção não dá mais veredito',
+     /PROJEÇÃO FINAL[^\n]*ACIMA DA META'\s*:/.test(txt), false);
+  ok(nome + ': e não pinta mais cor de status',
+     /PROJEÇÃO FINAL[^\n]*k\.proj>=k\.meta\?'ok':'red'/.test(txt), false);
+  ok(nome + ': o número da projeção continua na tela',
+     /\{l:'PROJEÇÃO FINAL',\s*v:fmtN\(k\.proj\)/.test(txt), true);
+});
+// A TV já mostrava só o número — nunca teve este defeito, e não pode ganhar um.
+ok('a TV segue imprimindo a projeção sem veredito',
+   /getElementById\('tv-proj'\)\.textContent=fmtN\(k\.proj\);/.test(JS), true);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

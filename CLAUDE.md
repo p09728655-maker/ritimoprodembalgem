@@ -2115,13 +2115,25 @@ feito e dá ar de verdade ao que sobrou.
   DIA` e `GAP DA META` eram **quatro cards para uma relação só** — dados o real e
   a meta, o percentual e a diferença são aritmética. O GAP virou o subtítulo do
   card da meta, nos dois grids (ao vivo e dia passado).
-  - **Ainda em aberto, não mexido:** `PROJEÇÃO FINAL` traz `▲ ACIMA DA META / ▼
-    ABAIXO` e o selo do `% DA META DO DIA` traz `NO RITMO / ABAIXO DO RITMO`.
-    Pela álgebra é **o mesmo teste** (`proj ≥ meta ⟺ real ≥ metaAteAgora`),
-    diferindo só porque um rateia por horas e o outro por minutos — com o slot
-    de 48 min eles **podem se contradizer na mesma tela**. E `MELHOR/PIOR HORA`
-    aparece em três lugares (card, análise pico/vale e a tabela hora a hora).
-    Decisão do usuário, pendente.
+  - **A PROJEÇÃO FINAL não julga mais** (v7.46.0 / mobile 1.18.0, 15/09/2026).
+    Ela e o selo do `% DA META DO DIA` respondiam a MESMA pergunta por duas
+    contas: a projeção mede o turno em **slots** (`real + ritmo × slots
+    restantes`, `ritmo = real ÷ nº de slots`) e o selo em **minutos**
+    (`efNoRitmo`). Só dariam igual se toda hora tivesse 60 min — o slot
+    pós-almoço tem **48**.
+    - Medido no turno real (9 slots, **527 min**, meta 1.800) com 4 horas
+      lançadas: a projeção cobra **800** e o selo cobra **820**. Produção em
+      **810** mostrava `▲ ACIMA DA META` ao lado de `ABAIXO DO RITMO`, os dois
+      certos. Acontece em **8 das 9 horas**, com janela de 2 a 20 cx.
+    - O número fica (projetar é informação); o veredito é só do selo, que
+      rateia por minuto. O card perdeu o `▲/▼` e a cor de status — hoje é
+      `acc`, como o RITMO ATUAL.
+    - ⚠ A **TV nunca teve o defeito** (sempre imprimiu a projeção como número
+      puro) e o teste prende isso para ela não ganhar um.
+  - **Ainda em aberto, não mexido:** `MELHOR/PIOR HORA` aparece em três lugares
+    (card, análise pico/vale e a tabela hora a hora). Aqui **não há
+    contradição** — é repetição, então é preferência, não defeito. O usuário
+    decidiu **manter** em 15/09/2026.
 
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
