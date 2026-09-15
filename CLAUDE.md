@@ -624,8 +624,36 @@ via Google Apps Script (JSONP).
     junto: leitura depois de escrita nunca vem do retrato antigo.
   - É um segundo nível, **dentro** da execução; o cache do `CacheService`
     (20s–5min, por geração) continua valendo entre chamadas.
-- **Ainda por fazer (exige re-deploy manual do `.gs`):** ler só as últimas
-  linhas da `PARADAS` em vez da aba toda.
+- **Leitura recortada por data (`_valoresPorData`, 15/09/2026).**
+  `getProducaoModeloPeriodo` e `getParadasPeriodo` leem só a faixa de linhas do
+  período. Medido na planilha real (`PRODUCAO_PRODUTO`, 2.381 linhas × 8):
+  **7 dias −77%** de células, **30 dias −47%**, **90 dias +12%**.
+  - ⚠ **NÃO assume ordem de data.** A otimização óbvia — busca binária e ler do
+    corte em diante — perde linha **calado** quando alguém acrescenta uma parada
+    antiga à mão, e isso acontece aqui (é por isso que o `endParada` tem
+    fallback por DATA+INÍCIO). A coluna de data é varrida INTEIRA e lê-se o
+    trecho entre a primeira e a última linha que casam: fora de ordem continua
+    certo, só lê um pouco mais.
+  - ⚠ **O pior caso é real e está escrito**: a varredura custa 1/nColunas de uma
+    leitura completa e é paga sempre, então janela que cobre a aba inteira fica
+    **+12%** (+14% na `PARADAS`, que tem 7 colunas). Fica assim de propósito —
+    7 e 30 dias são o dia a dia, 90 é o preset raro.
+  - **`lerEmbaladoPorProduto` continua lendo tudo, e deve**: o FIFO precisa do
+    histórico inteiro, senão a produção antiga credita outro lote do mesmo
+    código — o erro que o arquivamento existe para evitar.
+  - O recorte **nunca entra no `_valoresMemo`** (um pedaço lá faria a próxima
+    leitura completa devolver menos linhas do que existe), e quando a aba já
+    está no memo o recorte nem acontece.
+  - ⚠ **A conversão de data é a DO CHAMADOR** (`paraNum`), nunca uma de dentro
+    do recorte. O `getParadasPeriodo` filtra por `toNum(_dataStr(...))`, que
+    formata `Date` no fuso **da planilha** (`_ssTz`), e o
+    `getProducaoModeloPeriodo` por `dataParaNum`, que usa o `TZ` constante —
+    para célula que é `Date` de verdade (as datas chegam como serial de
+    meia-noite) os dois **discordam do DIA** quando os fusos diferem. Recorte e
+    filtro discordando = linha cortada que o filtro aceitaria, sumindo calada.
+  - ⚠ Mudou o `.gs` → **re-deploy manual**. `apps-script.test.js` conta
+    **células** (não leituras) e cobre o fora de ordem, o pior caso, o memo e a
+    conversão do chamador.
 
 ## Núcleo comum (`rp-core.js`)
 - **As funções básicas eram escritas duas vezes**, uma em cada HTML, com o mesmo
@@ -975,6 +1003,23 @@ via Google Apps Script (JSONP).
     diferente da média (visto no MESA CABECEIRA SLEEP). Agora agrega por data
     antes de tudo, como o painel faz na célula do comparativo, e as horas do dia
     são as **distintas**.
+- **A régua e as linhas do período moram em `_phReguaPeriodo` e
+  `_phLinhasPeriodo`, uma implementação só** (15/09/2026). Antes a TELA
+  (`renderModeloPeriodo`) e o PDF (`gerarRelatorioProducaoHora`) montavam o
+  MESMO quadro com o mesmo código escrito duas vezes, e o teste prendia **uma**
+  das ~20 linhas (o `tetoShow:`) — as outras dezenove podiam divergir sozinhas.
+  - A única diferença entre as cópias era o campo `aparada`, que só a tela lia.
+    Ele sai para os dois: um campo a mais é mais barato que duas construções
+    que precisam concordar.
+  - `obsT` entra por **parâmetro** na régua porque a tela, quando ele ainda não
+    chegou, dispara o carregamento e **se redesenha**; o PDF não se redesenha e
+    por isso mede antes de montar.
+  - ⚠ O `ctx` de `_phLinhasPeriodo` é lido com `ctx.x`, não com parâmetro
+    desestruturado: o `pega()` do `relatorios.test.js` conta chaves depois do
+    `)` dos parâmetros e `function f({a,b})` quebra a extração.
+  - O teste **roda a função** (não conta cópias): confere `v1`, `v2`, `nd`, o
+    teto físico, o `tetoShow` igual para as duas linhas, a queda para a fatia
+    por linha sem fator, e a métrica aditiva.
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
 - **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):

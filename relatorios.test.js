@@ -474,10 +474,11 @@ ok('e avisa que não podou', ap.aparada, false);
 ok('APARADA explícita = a conta do padrão',
    _phMediaAparada([_dia(118,1), _dia(178,1), _dia(187,1), _dia(91,1)], 'mediaH', 'aparada').val,
    _phMediaAparada([_dia(118,1), _dia(178,1), _dia(187,1), _dia(91,1)], 'mediaH').val);
-// O guarda: a tela e o PDF do período passam o modo do filtro — se um deles
-// voltar a chamar sem o modo, conta diferente do outro e o teste quebra.
-ok('tela e PDF passam o modo do filtro MÉDIA',
-   (JS.match(/_phMediaAparada\(accsDia,metric,mediaModo\)/g)||[]).length, 2);
+// O guarda: o modo do filtro entra na conta em UM lugar só, e é o lugar que a
+// tela e o PDF compartilham. Antes esta linha existia duas vezes e o teste
+// exigia as duas cópias em dia — bastava alguém mexer numa.
+ok('o modo do filtro MÉDIA entra na conta num lugar só',
+   (JS.match(/_phMediaAparada\(accsDia,metric,mediaModo\)/g)||[]).length, 1);
 // E o TOTAL DO DIA herda a régua ÚNICA de troca do comparativo — teto do
 // mesmo produto não pode ler 318/h numa tabela e 307/h na outra.
 ok('o TOTAL DO DIA herda a régua única do comparativo',
@@ -740,10 +741,26 @@ ok('dia sem ocupação da linha fica fora da conta',
 ok('sem a lista de horas do backend devolve null (cai na régua antiga)',
    _phFatorTrocaPeriodo(['19/08'],{}), null);
 // O fator não depende do grupo: cores com o mesmo teto físico saem com o MESMO
-// teto exibido, rodando nos dias que rodarem. O guarda abaixo prende a tela e
-// o PDF na régua única — se algum voltar à fatia por linha, o teste quebra.
-ok('tela e PDF descontam o teto pela régua única (não pela fatia da linha)',
-   (JS.match(/tetoShow: fatorTroca!=null \? tetoBase\*fatorTroca/g)||[]).length, 2);
+// teto exibido, rodando nos dias que rodarem.
+//
+// A TELA e o PDF montavam o quadro com o MESMO código escrito duas vezes — a
+// régua e as ~20 linhas de construção. Este teste prendia UMA das vinte (o
+// `tetoShow:`), então as outras dezenove podiam divergir à vontade, que é como
+// a conta de paradas divergiu três vezes. Agora são `_phReguaPeriodo` e
+// `_phLinhasPeriodo`: uma implementação, dois chamadores.
+ok('o desconto do teto pela régua única é escrito uma vez só',
+   (JS.match(/tetoShow: fatorTroca!=null \? tetoBase\*fatorTroca/g)||[]).length, 1);
+ok('e a construção das linhas do período também',
+   (JS.match(/function _phLinhasPeriodo\(/g)||[]).length, 1);
+ok('a régua do período é uma só',
+   (JS.match(/function _phReguaPeriodo\(/g)||[]).length, 1);
+// Dois chamadores cada (tela e PDF), além da declaração.
+ok('tela e PDF chamam as duas',
+   [(JS.match(/_phLinhasPeriodo\(\{/g)||[]).length,
+    (JS.match(/_phReguaPeriodo\(_tl, datas, horasLinha, obsT\)/g)||[]).length], [2, 2]);
+// Nenhum dos dois pode voltar a montar o quadro por fora.
+ok('ninguém remonta as linhas com Object.keys(rowAcc).map',
+   (JS.match(/Object\.keys\(rowAcc\)\.map/g)||[]).length, 1);
 
 // A duração medida virou INFORMAÇÃO: a ordem abaixo alimenta a nota de
 // conferência, não mais o teto.
@@ -888,6 +905,43 @@ console.log('\n── simulador da esteira: teto recalculado pela medida média 
 // então o teto simulado sai EXATO da medida média, sem refazer chamada.
 eval(pega('function _phMixMm('));
 eval(pega('function _phTetoSim('));
+
+// ── as linhas do período: a conta, não só a contagem de cópias ──────────────
+// A guarda por grep diz que existe UMA implementação; esta roda ela e confere
+// que o quadro sai igual ao que as duas cópias faziam.
+eval(pega('function _phLinhasPeriodo('));
+{
+  const acc = (cx, h, teto) => { const a=_phAcc(); _phAdd(a,{caixas:cx,horas:h,tetoCxH:teto||0}); return a; };
+  // dois produtos, dois dias: A rodou 100 e 300 cx/h; B rodou 150 nos dois.
+  const rowAcc  = { A: acc(400,2,500), B: acc(300,2,500) };
+  const cellAcc = { 'A|19/08': acc(100,1,500), 'A|20/08': acc(300,1,500),
+                    'B|19/08': acc(150,1,500), 'B|20/08': acc(150,1,500) };
+  const base = { rowAcc, cellAcc, datas:['19/08','20/08'], labelDe:{A:'MADERO',B:'VIVARE'},
+                 metric:'mediaH', additive:false, horasLinha:{'19/08':8,'20/08':8},
+                 simUse:null, obsT:null, minDiaFn:()=>30, fatorTroca:0.9, mediaModo:'aparada' };
+  const L = _phLinhasPeriodo(base);
+  ok('uma linha por grupo, ordenada pelo v1', L.map(l=>l.label), ['MADERO','VIVARE']);
+  ok('v1 = média do período (2 dias: não há o que podar)', L.map(l=>Math.round(l.v1)), [200,150]);
+  ok('v2 = melhor dia do grupo', L.map(l=>Math.round(l.v2)), [300,150]);
+  ok('nd = dias com produção', L.map(l=>l.nd), [2,2]);
+  ok('teto continua o FÍSICO (simulação e troca não mexem nele)',
+     L.map(l=>l.teto), [500,500]);
+  // A régua ÚNICA: o mesmo fator para todos, então o teto exibido é IGUAL nos
+  // dois — foi o pedido do PPCP em 24/08/2026 ("o teto deveria ser igual para
+  // todas as cores"), e é o que a duplicação podia desfazer sem ninguém ver.
+  ok('tetoShow = teto × fator do período, igual para as duas linhas',
+     L.map(l=>l.tetoShow), [450,450]);
+  // Sem fator (backend antigo, sem horasLinha) cai na régua por linha.
+  const semFator = _phLinhasPeriodo(Object.assign({}, base, {fatorTroca:null}));
+  ok('sem fator do período cai na fatia por linha (e deixa de ser igual ao teto cheio)',
+     semFator.every(l => l.tetoShow > 0 && l.tetoShow < 500), true);
+  // O campo que só a TELA lia passa a sair para os dois — é mais barato mandar
+  // um campo a mais do que manter duas construções que precisam concordar.
+  ok('aparada sai para os dois chamadores', L.every(l => 'aparada' in l), true);
+  // Métrica aditiva troca o que é v1 e v2, como antes.
+  const adit = _phLinhasPeriodo(Object.assign({}, base, {metric:'caixas', additive:true}));
+  ok('métrica aditiva: v1 é o total do período', adit.map(l=>l.v1), [400,300]);
+}
 ok('caixa de 1.006 mm a 8,5 m/min com 350 de vão = o teto real (376)',
    Math.round(_phTetoSim(8.5, 350, 1006)), 376);
 ok('acelerando para 10 m/min o teto sobe para 442',

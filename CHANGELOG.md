@@ -11,6 +11,93 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script — 15/09/2026 (leitura recortada por data) ⚠ re-deploy
+
+**Nenhum número muda.** O que muda é quanta planilha o backend lê para responder
+a mesma coisa.
+
+### As leituras por período param de ler a aba inteira
+
+Toda leitura do `.gs` era `getDataRange()`: a aba **inteira**, com o custo
+crescendo com o histórico acumulado em vez de com o que foi pedido.
+
+Medido na planilha real:
+
+| aba | linhas | colunas | células |
+|---|---|---|---|
+| `PRODUCAO_PRODUTO` | 2.381 | 8 | 19.048 |
+| `PARADAS` | 515 | 7 | 3.605 |
+
+`getProducaoModeloPeriodo` e `getParadasPeriodo` passam a ler só a faixa de
+linhas do período (`_valoresPorData`):
+
+| janela | linhas no período | células | vs. antes |
+|---|---|---|---|
+| 7 dias | 260 | 4.468 | **−77%** |
+| 30 dias | 953 | 10.012 | **−47%** |
+| 90 dias | 2.380 | 21.428 | **+12%** |
+
+⚠ **O pior caso está escrito porque é real.** A varredura da coluna de data
+custa 1/nColunas de uma leitura completa e é paga sempre; quando a janela cobre
+a aba inteira, esse 1/n vira prejuízo. Fica assim de propósito: 7 e 30 dias são
+o uso do dia a dia e 90 é o preset raro. O teste prende o teto — nunca mais que
+"aba inteira + a coluna de data".
+
+⚠ **Não assume que a planilha está em ordem de data.** A otimização óbvia seria
+achar o corte por busca binária e ler dali em diante; ela perde linha **calado**
+quando alguém acrescenta uma parada antiga à mão — coisa que acontece nesta
+planilha (é por isso que o `endParada` tem fallback por DATA+INÍCIO). Aqui a
+coluna de data é varrida inteira e lê-se o trecho entre a primeira e a última
+linha que casam: fora de ordem continua **certo**, só lê um pouco mais. O teste
+tem o caso da linha antiga lançada no fim da aba.
+
+⚠ **A conversão de data é a do chamador.** O `getParadasPeriodo` filtra por
+`toNum(_dataStr(...))`, que formata `Date` no fuso **da planilha**, e o
+`getProducaoModeloPeriodo` por `dataParaNum`, que usa o `TZ` constante. Para
+célula que é `Date` de verdade — e as datas chegam como serial de meia-noite —
+os dois discordam do **dia** quando os fusos diferem, e o recorte cortaria uma
+linha que o filtro aceitaria. Cada chamador passa a sua própria conversão, então
+recorte e filtro concordam por construção.
+
+**O que continua lendo tudo, e deve:** `lerEmbaladoPorProduto`. O FIFO precisa
+do histórico inteiro — recortar ali creditaria produção antiga a outro lote do
+mesmo código, que é o erro que o arquivamento existe para evitar.
+
+O recorte **nunca entra no memo por execução**: o memo guarda a aba inteira, e
+um pedaço lá dentro faria a próxima leitura completa devolver menos linhas do
+que a planilha tem. E quando a aba inteira já está no memo, o recorte nem
+acontece — reler um pedaço do que já está na mão é leitura a mais, não a menos.
+
+---
+
+## v7.44.0 — 15/09/2026
+
+**Nenhum número muda.** A tela e o PDF do comparativo por modelo já mostravam os
+mesmos valores — o que mudou é que agora eles saem do mesmo código.
+
+### O quadro do período era montado duas vezes
+
+`renderModeloPeriodo` (tela) e `gerarRelatorioProducaoHora` (PDF) construíam o
+MESMO quadro com o mesmo código escrito duas vezes: a régua do período (troca
+medida ou premissa, fator de troca, modo da média) e as ~20 linhas que montam
+cada linha do comparativo.
+
+O `relatorios.test.js` prendia **uma** das vinte — o `tetoShow:` —, então as
+outras dezenove podiam divergir à vontade. É exatamente como a conta de paradas
+divergiu três vezes.
+
+Agora são **`_phReguaPeriodo`** e **`_phLinhasPeriodo`**: uma implementação, dois
+chamadores. A única diferença entre as cópias era o campo `aparada`, que só a
+tela lia — ele passa a sair para os dois, porque mandar um campo a mais é mais
+barato que manter duas construções que precisam concordar.
+
+O teste deixou de contar cópias e passou a **rodar a função**: monta dois
+produtos em dois dias e confere `v1`, `v2`, `nd`, o teto físico, o `tetoShow`
+igual para as duas linhas (a régua única que o PPCP pediu em 24/08/2026), a
+queda para a fatia por linha quando não há fator, e a métrica aditiva.
+
+---
+
 ## Apps Script — 15/09/2026 (sem mudança de comportamento)
 
 ⚠ **re-deploy** quando for conveniente. **Nenhum número muda** e nada quebra se
