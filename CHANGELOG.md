@@ -51,6 +51,14 @@ coluna de data é varrida inteira e lê-se o trecho entre a primeira e a última
 linha que casam: fora de ordem continua **certo**, só lê um pouco mais. O teste
 tem o caso da linha antiga lançada no fim da aba.
 
+⚠ **A conversão de data é a do chamador.** O `getParadasPeriodo` filtra por
+`toNum(_dataStr(...))`, que formata `Date` no fuso **da planilha**, e o
+`getProducaoModeloPeriodo` por `dataParaNum`, que usa o `TZ` constante. Para
+célula que é `Date` de verdade — e as datas chegam como serial de meia-noite —
+os dois discordam do **dia** quando os fusos diferem, e o recorte cortaria uma
+linha que o filtro aceitaria. Cada chamador passa a sua própria conversão, então
+recorte e filtro concordam por construção.
+
 **O que continua lendo tudo, e deve:** `lerEmbaladoPorProduto`. O FIFO precisa
 do histórico inteiro — recortar ali creditaria produção antiga a outro lote do
 mesmo código, que é o erro que o arquivamento existe para evitar.

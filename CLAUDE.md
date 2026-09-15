@@ -644,8 +644,16 @@ via Google Apps Script (JSONP).
   - O recorte **nunca entra no `_valoresMemo`** (um pedaço lá faria a próxima
     leitura completa devolver menos linhas do que existe), e quando a aba já
     está no memo o recorte nem acontece.
+  - ⚠ **A conversão de data é a DO CHAMADOR** (`paraNum`), nunca uma de dentro
+    do recorte. O `getParadasPeriodo` filtra por `toNum(_dataStr(...))`, que
+    formata `Date` no fuso **da planilha** (`_ssTz`), e o
+    `getProducaoModeloPeriodo` por `dataParaNum`, que usa o `TZ` constante —
+    para célula que é `Date` de verdade (as datas chegam como serial de
+    meia-noite) os dois **discordam do DIA** quando os fusos diferem. Recorte e
+    filtro discordando = linha cortada que o filtro aceitaria, sumindo calada.
   - ⚠ Mudou o `.gs` → **re-deploy manual**. `apps-script.test.js` conta
-    **células** (não leituras) e cobre o fora de ordem, o pior caso e o memo.
+    **células** (não leituras) e cobre o fora de ordem, o pior caso, o memo e a
+    conversão do chamador.
 
 ## Núcleo comum (`rp-core.js`)
 - **As funções básicas eram escritas duas vezes**, uma em cada HTML, com o mesmo

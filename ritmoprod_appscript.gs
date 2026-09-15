@@ -888,13 +888,19 @@ function _valores(nomeAba) {
 // raro, então a média pesa muito para o lado do ganho. Tentar adivinhar a
 // janela ANTES de varrer (olhando só a 1ª e a última data) só funciona se a
 // planilha estiver em ordem — e é justamente o que não se pode assumir aqui.
-function _faixaPorData(sh, iCol, deNum, ateNum) {
+// ⚠ `paraNum` é a conversão DO CHAMADOR, não uma daqui. O recorte tem de
+// concordar com o filtro do laço célula por célula: a `_dataStr` formata Date
+// no fuso DA PLANILHA (_ssTz) e a `dataParaNum` no TZ constante — para uma
+// célula que é Date de verdade (as datas chegam como serial de meia-noite) os
+// dois discordam do DIA quando os fusos diferem. Bastava isso para o recorte
+// cortar uma linha que o filtro teria aceitado, e sumir com ela calado.
+function _faixaPorData(sh, iCol, paraNum, deNum, ateNum) {
   const nLin = sh.getLastRow();
   if (nLin < 2) return { ini: 2, fim: 1 };
   const col = sh.getRange(2, iCol + 1, nLin - 1, 1).getValues();
   let ini = -1, fim = -1;
   for (let i = 0; i < col.length; i++) {
-    const n = dataParaNum(col[i][0]);
+    const n = paraNum(col[i][0]);
     if (!n) continue;
     if (deNum  && n < deNum)  continue;
     if (ateNum && n > ateNum) continue;
@@ -906,7 +912,7 @@ function _faixaPorData(sh, iCol, deNum, ateNum) {
 
 // Devolve os valores no MESMO formato do _valoresDaAba (linha 0 = cabeçalho),
 // para o chamador não mudar o laço.
-function _valoresPorData(sh, nomeColData, iPadrao, deNum, ateNum) {
+function _valoresPorData(sh, nomeColData, iPadrao, paraNum, deNum, ateNum) {
   if (!sh) return [];
   // A aba inteira já foi lida nesta execução? Então usar o memo é uma leitura a
   // MENOS, não a mais — reler um pedaço do que já está na mão é desperdício.
@@ -922,7 +928,7 @@ function _valoresPorData(sh, nomeColData, iPadrao, deNum, ateNum) {
   let iCol = titulos.indexOf(nomeColData);
   if (iCol < 0) iCol = iPadrao;
 
-  const f = _faixaPorData(sh, iCol, deNum, ateNum);
+  const f = _faixaPorData(sh, iCol, paraNum, deNum, ateNum);
   if (f.fim < f.ini) return hdr;
   return hdr.concat(sh.getRange(f.ini, 1, f.fim - f.ini + 1, nCol).getValues());
 }
@@ -2387,7 +2393,7 @@ function getProducaoModeloPeriodo(p) {
   // Recorte por data na LEITURA, não só no filtro: a aba tem milhares de linhas
   // e o período pede algumas centenas. O filtro do laço continua igual — ele é
   // a garantia de que nenhuma linha fora do período entra, venha de onde vier.
-  const values = _valoresPorData(sh, 'DATA', 0, deNum, ateNum);
+  const values = _valoresPorData(sh, 'DATA', 0, dataParaNum, deNum, ateNum);
   const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
@@ -3136,7 +3142,10 @@ function getParadasPeriodo(p) {
   const nDe  = toNum(p.de  || '');
   const nAte = toNum(p.ate || '');
 
-  const paradas = _valoresPorData(sh, 'DATA', 0, nDe, nAte).slice(1).map(r => ({
+  // A MESMA conversão do filtro abaixo (toNum sobre _dataStr, fuso da
+  // planilha) — recorte e filtro não podem discordar de qual dia é a linha.
+  const paradas = _valoresPorData(sh, 'DATA', 0, v => toNum(_dataStr(v)), nDe, nAte)
+    .slice(1).map(r => ({
     data: _dataStr(r[0]),
     tipo: String(r[2] || ''),
     ini:  _horaStr(r[3]),

@@ -302,6 +302,7 @@ ok('cabeçalho vazio não quebra', [_colunasDeLote([], 0), _ehColunaLote(null)],
 // 15/09/2026: PRODUCAO_PRODUTO tem 3.300 linhas x 8 colunas = 26.400 células, e
 // o comparativo por modelo lia todas para ficar com as do período.
 console.log('\n── leitura recortada por data ──');
+eval(pega('function dataParaNum('));
 eval(pega('function _faixaPorData('));
 eval(pega('function _valoresPorData('));
 
@@ -315,7 +316,7 @@ const TUDO = 7 * 3;   // 7 linhas x 3 colunas, se lesse a aba inteira
 
 PLANILHA = novaPlanilha(); _invalidarValores();
 let sh = PLANILHA.getSheetByName('LOG');
-let v = _valoresPorData(sh, 'DATA', 0, 20260812, 20260814);
+let v = _valoresPorData(sh, 'DATA', 0, dataParaNum, 20260812, 20260814);
 ok('devolve cabeçalho + só as linhas do período',
    [v[0][0], soDatas(v)], ['DATA', ['12/08/2026','13/08/2026','14/08/2026']]);
 ok('e lê MENOS células do que a aba inteira', celulas.LOG < TUDO, true);
@@ -329,7 +330,7 @@ ok('quantas células foram lidas', celulas.LOG, 3 + 6 + 9);
 PLANILHA = novaPlanilha(); _invalidarValores();
 ABAS.LOG.push(['11/08/2026', '501094009', 99]);   // linha antiga lançada à mão, no fim
 sh = PLANILHA.getSheetByName('LOG');
-v = _valoresPorData(sh, 'DATA', 0, 20260811, 20260812);
+v = _valoresPorData(sh, 'DATA', 0, dataParaNum, 20260811, 20260812);
 ok('fora de ordem NÃO perde a linha antiga do fim',
    soDatas(v).filter(d => d === '11/08/2026').length, 2);
 ABAS.LOG.pop();
@@ -337,13 +338,13 @@ ABAS.LOG.pop();
 // Período sem nenhuma linha: devolve só o cabeçalho, não a aba.
 PLANILHA = novaPlanilha(); _invalidarValores();
 sh = PLANILHA.getSheetByName('LOG');
-v = _valoresPorData(sh, 'DATA', 0, 20261201, 20261231);
+v = _valoresPorData(sh, 'DATA', 0, dataParaNum, 20261201, 20261231);
 ok('período vazio devolve só o cabeçalho', [v.length, v[0][0]], [1, 'DATA']);
 
 // Sem recorte pedido, leitura normal — e aí SIM alimenta o memo.
 PLANILHA = novaPlanilha(); _invalidarValores();
 sh = PLANILHA.getSheetByName('LOG');
-v = _valoresPorData(sh, 'DATA', 0, null, null);
+v = _valoresPorData(sh, 'DATA', 0, dataParaNum, null, null);
 ok('sem período, lê a aba inteira como antes', v.length, ABAS.LOG.length);
 
 // A aba inteira já no memo: reler um pedaço seria uma leitura a MAIS.
@@ -351,7 +352,7 @@ PLANILHA = novaPlanilha(); _invalidarValores();
 sh = PLANILHA.getSheetByName('LOG');
 _valoresDaAba(sh);
 const antes = celulas.LOG;
-v = _valoresPorData(sh, 'DATA', 0, 20260812, 20260814);
+v = _valoresPorData(sh, 'DATA', 0, dataParaNum, 20260812, 20260814);
 ok('com a aba já no memo, não lê de novo', celulas.LOG, antes);
 ok('e devolve a aba inteira (o laço do chamador filtra)', v.length, ABAS.LOG.length);
 
@@ -359,7 +360,7 @@ ok('e devolve a aba inteira (o laço do chamador filtra)', v.length, ABAS.LOG.le
 // próxima leitura completa devolver menos linhas do que a planilha tem.
 PLANILHA = novaPlanilha(); _invalidarValores();
 sh = PLANILHA.getSheetByName('LOG');
-_valoresPorData(sh, 'DATA', 0, 20260812, 20260812);
+_valoresPorData(sh, 'DATA', 0, dataParaNum, 20260812, 20260812);
 ok('o recorte não entra no memo', _valoresDaAba(sh).length, ABAS.LOG.length);
 
 // ⚠ O PIOR CASO, escrito: quando a janela cobre a aba inteira não há o que
@@ -370,7 +371,7 @@ ok('o recorte não entra no memo', _valoresDaAba(sh).length, ABAS.LOG.length);
 // passar de uma leitura completa + a coluna de data.
 PLANILHA = novaPlanilha(); _invalidarValores();
 sh = PLANILHA.getSheetByName('LOG');
-v = _valoresPorData(sh, 'DATA', 0, 20260810, 20260815);   // o período todo
+v = _valoresPorData(sh, 'DATA', 0, dataParaNum, 20260810, 20260815);   // o período todo
 ok('período que cobre tudo devolve tudo', v.length, ABAS.LOG.length);
 const NLIN = ABAS.LOG.length, NCOL = ABAS.LOG[0].length;
 ok('e o pior caso não passa de "aba inteira + a coluna de data"',
@@ -378,17 +379,33 @@ ok('e o pior caso não passa de "aba inteira + a coluna de data"',
 ok('o excesso do pior caso é a varredura da coluna, e só ela',
    celulas.LOG - NLIN * NCOL, NLIN - 1);
 
+// E a conversão do chamador é mesmo a que manda: com uma que enxerga o dia
+// seguinte, o recorte anda junto. É o que garante que recorte e filtro nunca
+// discordem de qual dia é a linha.
+PLANILHA = novaPlanilha(); _invalidarValores();
+sh = PLANILHA.getSheetByName('LOG');
+const umDiaDepois = v => dataParaNum(v) + 1;
+v = _valoresPorData(sh, 'DATA', 0, umDiaDepois, 20260812, 20260812);
+ok('o recorte segue a conversão do chamador, não uma própria',
+   soDatas(v), ['11/08/2026']);
+
 // Coluna de DATA achada pelo cabeçalho, não pela posição.
 PLANILHA = novaPlanilha(); _invalidarValores();
 ABAS.LOG2 = [['ID', 'DATA', 'CAIXAS'], ['a', '10/08/2026', 5], ['b', '20/08/2026', 7]];
-v = _valoresPorData(PLANILHA.getSheetByName('LOG2'), 'DATA', 0, 20260820, 20260820);
+v = _valoresPorData(PLANILHA.getSheetByName('LOG2'), 'DATA', 0, dataParaNum, 20260820, 20260820);
 ok('acha a coluna DATA pelo cabeçalho', v.slice(1).map(r => r[0]), ['b']);
 
 // Os dois chamadores usam a leitura recortada.
-ok('getProducaoModeloPeriodo lê recortado',
-   /const values = _valoresPorData\(sh, 'DATA', 0, deNum, ateNum\);/.test(src), true);
-ok('getParadasPeriodo também',
-   /_valoresPorData\(sh, 'DATA', 0, nDe, nAte\)\.slice\(1\)/.test(src), true);
+ok('getProducaoModeloPeriodo lê recortado, com a conversão DELE',
+   /_valoresPorData\(sh, 'DATA', 0, dataParaNum, deNum, ateNum\)/.test(src), true);
+// ⚠ getParadasPeriodo filtra por toNum(_dataStr(...)) — fuso DA PLANILHA — e a
+// dataParaNum usa o TZ constante. Para célula que é Date de verdade os dois
+// discordam do DIA quando os fusos diferem, e o recorte cortaria uma linha que
+// o filtro aceitaria: sumiria calada. Cada chamador passa a SUA conversão.
+ok('getParadasPeriodo recorta com a MESMA conversão do filtro dele',
+   /_valoresPorData\(sh, 'DATA', 0, v => toNum\(_dataStr\(v\)\), nDe, nAte\)/.test(src), true);
+ok('e o recorte não tem conversão própria embutida',
+   /function _faixaPorData\(sh, iCol, paraNum, deNum, ateNum\)/.test(src), true);
 // A FIFO precisa do histórico inteiro: recortar ali creditaria produção antiga
 // a outro lote do mesmo código (ver CLAUDE.md, arquivamento).
 ok('lerEmbaladoPorProduto continua lendo a aba inteira',
