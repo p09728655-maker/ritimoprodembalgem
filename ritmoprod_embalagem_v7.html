@@ -2560,7 +2560,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.43.0';
+const APP_VER   = '7.44.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4541,6 +4541,59 @@ function _phTrocaFonte(tl, obs){
     ? { medido:true, minDia:Math.round(tl.evPorDia*obs.min), ev:tl.evPorDia, min:obs.min, n:obs.n }
     : { medido:false, minDia:TROCA_PREMISSA.minDia };
 }
+// ── A RÉGUA E AS LINHAS DO PERÍODO — uma implementação, dois chamadores ────
+// A TELA (renderModeloPeriodo) e o PDF (gerarRelatorioProducaoHora) montavam o
+// MESMO quadro com o mesmo código escrito duas vezes: a régua (troca medida ou
+// premissa, fator do período, modo da média) e as ~20 linhas que constroem cada
+// linha do comparativo. O teste prendia UMA linha das vinte — o `tetoShow:` —,
+// então as outras dezenove podiam divergir à vontade, que é exatamente como a
+// conta de paradas divergiu três vezes.
+//
+// `obsT` entra por parâmetro porque a tela, quando ele ainda não chegou, dispara
+// o carregamento e se redesenha; o PDF não se redesenha e por isso mede antes.
+function _phReguaPeriodo(tl, datas, horasLinha, obsT){
+  const minDiaFn=_phMinDia(tl,obsT);
+  return {
+    obsT,
+    minDiaFn,
+    fonteTroca:_phTrocaFonte(tl,obsT),
+    // Régua ÚNICA do período: o mesmo fator de troca para TODAS as linhas —
+    // cores do mesmo produto saem com o MESMO teto (ver _phFatorTrocaPeriodo).
+    fatorTroca:_phFatorTrocaPeriodo(datas,horasLinha,minDiaFn),
+    mediaModo:_phMediaModo()
+  };
+}
+// Uma linha por grupo do comparativo, já ordenada. `aparada` sai para os dois:
+// só a tela lia o campo, e mandar um campo a mais para o PDF é mais barato que
+// manter duas construções que precisam concordar.
+function _phLinhasPeriodo(ctx){
+  const rowAcc=ctx.rowAcc, cellAcc=ctx.cellAcc, datas=ctx.datas, labelDe=ctx.labelDe;
+  const metric=ctx.metric, additive=ctx.additive, horasLinha=ctx.horasLinha;
+  const simUse=ctx.simUse, obsT=ctx.obsT, minDiaFn=ctx.minDiaFn;
+  const fatorTroca=ctx.fatorTroca, mediaModo=ctx.mediaModo;
+  return Object.keys(rowAcc).map(k=>{
+    const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
+    const ap=_phMediaAparada(accsDia,metric,mediaModo);
+    const tetoReal=_phTeto(rowAcc[k]);
+    const nd=accsDia.filter(a=>a&&a.caixas>0).length;
+    const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
+    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
+    const tetoBase=simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal;
+    return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
+      v1: additive?_phVal(rowAcc[k],metric):ap.val,
+      v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
+      aparada:ap.aparada, teto:tetoReal,
+      // teto exibido: o simulado quando há simulação (recalculado pela medida
+      // média do mix), senão o real — e SEMPRE descontada a troca pela régua
+      // ÚNICA do período (fatorTroca): o desconto é o mesmo percentual para
+      // toda linha, então cores do mesmo produto têm o mesmo teto. Sem a lista
+      // de horas do backend cai na régua antiga (fatia por linha). GANHO
+      // DEMONSTRADO e cascata continuam no teto FÍSICO — simulação e troca não
+      // mudam o que a equipe já provou nem o que é fisicamente impossível.
+      tetoShow: fatorTroca!=null ? tetoBase*fatorTroca
+                                 : _phTetoOper(tetoBase, rowAcc[k].horas, 1, minTroca) };
+  }).sort((a,b)=>b.v1-a.v1);
+}
 function _phTetoOper(teto, horasTot, nTrocas, trocaMin){
   if(!(teto>0)) return 0;
   const min=(Number(horasTot)||0)*60;
@@ -5127,34 +5180,11 @@ async function renderModeloPeriodo(){
   if(!obsT) carregarTrocaObs().then(o=>{ if(o&&o.n>0&&o.min>0) renderModeloPeriodo(); });
   // Régua do dia: paradas de esteira daquele dia × duração medida. Sem medição
   // cai na premissa — quem decide é o _phMinDia, um lugar só.
-  const minDiaFn=_phMinDia(_tl,obsT);
-  const fonteTroca=_phTrocaFonte(_tl,obsT);
-  // Régua ÚNICA do período: o mesmo fator de troca para todas as linhas —
-  // cores do mesmo produto saem com o MESMO teto (ver _phFatorTrocaPeriodo).
-  const fatorTroca=_phFatorTrocaPeriodo(datas,horasLinha,minDiaFn);
-  const mediaModo=_phMediaModo();
-  const linhas=Object.keys(rowAcc).map(k=>{
-    const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
-    const ap=_phMediaAparada(accsDia,metric,mediaModo);
-    const tetoReal=_phTeto(rowAcc[k]);
-    const nd=accsDia.filter(a=>a&&a.caixas>0).length;
-    const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
-    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
-    const tetoBase=simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal;
-    return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
-      v1: additive?_phVal(rowAcc[k],metric):ap.val,
-      v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
-      aparada:ap.aparada, teto:tetoReal,
-      // teto exibido: o simulado quando há simulação (recalculado pela medida
-      // média do mix), senão o real — e SEMPRE descontada a troca pela régua
-      // ÚNICA do período (fatorTroca): o desconto é o mesmo percentual para
-      // toda linha, então cores do mesmo produto têm o mesmo teto. Sem a lista
-      // de horas do backend cai na régua antiga (fatia por linha). GANHO
-      // DEMONSTRADO e cascata continuam no teto FÍSICO — simulação e troca não
-      // mudam o que a equipe já provou nem o que é fisicamente impossível.
-      tetoShow: fatorTroca!=null ? tetoBase*fatorTroca
-                                 : _phTetoOper(tetoBase, rowAcc[k].horas, 1, minTroca) };
-  }).sort((a,b)=>b.v1-a.v1);
+  // A régua do período e as linhas do quadro saem do MESMO lugar que o PDF usa
+  // (_phReguaPeriodo / _phLinhasPeriodo) — ver o comentário na declaração.
+  const {minDiaFn, fonteTroca, fatorTroca, mediaModo}=_phReguaPeriodo(_tl, datas, horasLinha, obsT);
+  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive,
+                                 horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
 
   // % DO TETO DA ESTEIRA: só no ritmo (cx/h) e só quando o backend novo mandou
   // o teto (catálogo com MEDIDA/VELOCIDADE) — senão a coluna some, como a COR.
@@ -5279,34 +5309,14 @@ async function gerarRelatorioProducaoHora(){
   const simEst=_phEsteiraSync();
   const simUse=(metric==='mediaH')?simEst:null;
   const obsT=trocaObs();
-  const minDiaFn=_phMinDia(_tl,obsT);
-  const fonteTroca=_phTrocaFonte(_tl,obsT);
+  // A MESMA régua e as MESMAS linhas da tela — uma implementação só.
+  const {minDiaFn, fonteTroca, fatorTroca, mediaModo}=_phReguaPeriodo(_tl, datas, horasLinha, obsT);
   // O texto das trocas fica AQUI, depois do fonteTroca: lá em cima ele usava a
   // constante antes de ela existir e o popup do relatório morria antes de
   // desenhar (a tela não quebrava porque lá a linha já ficava no fim).
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
-  // Mesma régua ÚNICA da tela: um fator de troca para o quadro inteiro —
-  // cores do mesmo produto imprimem o MESMO teto (ver _phFatorTrocaPeriodo).
-  const fatorTroca=_phFatorTrocaPeriodo(datas,horasLinha,minDiaFn);
-  const mediaModo=_phMediaModo();
-  const linhas=Object.keys(rowAcc).map(k=>{
-    const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
-    const ap=_phMediaAparada(accsDia,metric,mediaModo);
-    const tetoReal=_phTeto(rowAcc[k]);
-    const nd=accsDia.filter(a=>a&&a.caixas>0).length;
-    const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
-    const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
-    const tetoBase=simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal;
-    return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
-      v1: additive?_phVal(rowAcc[k],metric):ap.val,
-      v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
-      teto:tetoReal,
-      // mesmo teto exibido da tela: simulado ou real, sempre com a troca
-      // descontada pela régua ÚNICA do período; os caps ficam no físico.
-      // Sem a lista de horas do backend cai na régua antiga (fatia por linha).
-      tetoShow: fatorTroca!=null ? tetoBase*fatorTroca
-                                 : _phTetoOper(tetoBase, rowAcc[k].horas, 1, minTroca) };
-  }).sort((a,b)=>b.v1-a.v1);
+  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive,
+                                 horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
   const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
   const col1=additive?'TOTAL':'MÉD.PERÍODO';

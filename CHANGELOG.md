@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.44.0 — 15/09/2026
+
+**Nenhum número muda.** A tela e o PDF do comparativo por modelo já mostravam os
+mesmos valores — o que mudou é que agora eles saem do mesmo código.
+
+### O quadro do período era montado duas vezes
+
+`renderModeloPeriodo` (tela) e `gerarRelatorioProducaoHora` (PDF) construíam o
+MESMO quadro com o mesmo código escrito duas vezes: a régua do período (troca
+medida ou premissa, fator de troca, modo da média) e as ~20 linhas que montam
+cada linha do comparativo.
+
+O `relatorios.test.js` prendia **uma** das vinte — o `tetoShow:` —, então as
+outras dezenove podiam divergir à vontade. É exatamente como a conta de paradas
+divergiu três vezes.
+
+Agora são **`_phReguaPeriodo`** e **`_phLinhasPeriodo`**: uma implementação, dois
+chamadores. A única diferença entre as cópias era o campo `aparada`, que só a
+tela lia — ele passa a sair para os dois, porque mandar um campo a mais é mais
+barato que manter duas construções que precisam concordar.
+
+O teste deixou de contar cópias e passou a **rodar a função**: monta dois
+produtos em dois dias e confere `v1`, `v2`, `nd`, o teto físico, o `tetoShow`
+igual para as duas linhas (a régua única que o PPCP pediu em 24/08/2026), a
+queda para a fatia por linha quando não há fator, e a métrica aditiva.
+
+---
+
 ## Apps Script — 15/09/2026 (sem mudança de comportamento)
 
 ⚠ **re-deploy** quando for conveniente. **Nenhum número muda** e nada quebra se

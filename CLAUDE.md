@@ -975,6 +975,23 @@ via Google Apps Script (JSONP).
     diferente da média (visto no MESA CABECEIRA SLEEP). Agora agrega por data
     antes de tudo, como o painel faz na célula do comparativo, e as horas do dia
     são as **distintas**.
+- **A régua e as linhas do período moram em `_phReguaPeriodo` e
+  `_phLinhasPeriodo`, uma implementação só** (15/09/2026). Antes a TELA
+  (`renderModeloPeriodo`) e o PDF (`gerarRelatorioProducaoHora`) montavam o
+  MESMO quadro com o mesmo código escrito duas vezes, e o teste prendia **uma**
+  das ~20 linhas (o `tetoShow:`) — as outras dezenove podiam divergir sozinhas.
+  - A única diferença entre as cópias era o campo `aparada`, que só a tela lia.
+    Ele sai para os dois: um campo a mais é mais barato que duas construções
+    que precisam concordar.
+  - `obsT` entra por **parâmetro** na régua porque a tela, quando ele ainda não
+    chegou, dispara o carregamento e **se redesenha**; o PDF não se redesenha e
+    por isso mede antes de montar.
+  - ⚠ O `ctx` de `_phLinhasPeriodo` é lido com `ctx.x`, não com parâmetro
+    desestruturado: o `pega()` do `relatorios.test.js` conta chaves depois do
+    `)` dos parâmetros e `function f({a,b})` quebra a extração.
+  - O teste **roda a função** (não conta cópias): confere `v1`, `v2`, `nd`, o
+    teto físico, o `tetoShow` igual para as duas linhas, a queda para a fatia
+    por linha sem fator, e a métrica aditiva.
 - Tela e PDF usam as MESMAS contas (linhas com `v1/v2/teto` calculados uma vez);
   `relatorios.test.js` cobre a aparada e o teto harmônico.
 - **SIMULADOR DA ESTEIRA** (campos ESTEIRA na barra da aba PRODUÇÃO/HORA):
