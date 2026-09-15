@@ -2153,6 +2153,28 @@ feito e dá ar de verdade ao que sobrou.
   - A ordem inversa não é enfeite: as 5 metas mais baixas do período (900 a
     1.150 cx) foram **todas** batidas. Meta baixa demais faz o verde não
     significar nada, como a meta em p100 faz o vermelho virar paisagem.
+- ⚠ **O SVG OCUPA A LARGURA — NUNCA AMPLIA.** `viewBox` fixo com `width:100%`
+  dá **zoom**: medido a 1920px em 15/09/2026, o gráfico saía com **510px** de
+  altura (contra os **230px** do `.chart-box-lg`, a régua do painel) e a legenda
+  de 9px chegava à tela com **21,9px**, maior que o rótulo dos cards ao lado. A
+  largura vem do card (`_svgLargura`, piso 640 / teto 1400) e entra por
+  parâmetro nos dois desenhos; o `max-width` no `<svg>` é o que impede de
+  esticar de volta. Em tela estreita ele encolhe junto, como antes.
+  - A tarja atrás dos rótulos sai do **texto** (`_svgTarja`), não de um número
+    fixo — calibrada no desenho ampliado, na escala 1:1 ela sobrava e tapava
+    barra.
+- ⚠ **A LINHA DO REALIZADO PRECISA SER LEGÍVEL** (correção do usuário,
+  15/09/2026: *"a linha branca não tem como ver as qtdes"*). Só a meta tinha
+  ponto e tooltip; o realizado era traço cinza sem marcador, sem número e **sem
+  alvo de mouse** — dava para ver que as duas não se acompanham, que é o achado
+  da tela, mas não QUANTO a linha fez em nenhum dia.
+  - Ponto próprio no realizado + **faixa de toque por dia** cobrindo a coluna
+    inteira, com as duas quantidades e o % da meta. Acertar um ponto de 4px com
+    o mouse era tarefa.
+  - ⚠ A faixa é pintada **antes** das linhas: por cima, comeria o tooltip dos
+    pontos da meta.
+  - ⚠ **O corte do número impresso tem de casar com o FILTRO.** Estava em 12 e o
+    ramo era **morto** — o menor botão da barra é 15 DIAS. Hoje é 15.
 - ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`
   funcionam nele. Em `<canvas>` (Chart.js) token não resolve e sai preto; ver a
   nota do `mkChart`.
