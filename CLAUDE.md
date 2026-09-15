@@ -659,6 +659,31 @@ via Google Apps Script (JSONP).
   repetir a mesma correção nos outros quatro. Agora são
   `_rpCabecalho(titulo, metaHtml, subExtra)`, `_rpBotaoImprimir()` e `_rpEsc()`.
   O `relatorios.test.js` falha se algum deles voltar a aparecer duplicado.
+- ⚠ **A MARCAÇÃO estava unificada; a PELE que a pinta, NÃO** — e foi por ali que
+  a história do #204/#205 se repetiu (corrigido em 15/09/2026, v7.43.0). O
+  `_rpCabecalho` era um lugar só desde o #205, mas o **CSS do cabeçalho** e o
+  `<link>` das fontes continuavam escritos **nos cinco documentos**. A cópia do
+  **HISTÓRICO** envelheceu: perdeu a regra `.rp-logo span{color:#FF5C1F}` e
+  ficou com o logo a **18px**. Como `.rp-header .rp-logo` pinta o bloco inteiro
+  de branco, sem aquela regra o **PATRIMAR herda o branco** — medido no
+  Chromium: **branco a 18px** nesse relatório contra **laranja a 22px** nos
+  outros sete, o mesmo cabeçalho.
+  - Hoje são `_RP_HEADER_CSS` e `_RP_FONTS`, ao lado do `_rpCabecalho` na
+    seção das peças comuns, lidas pelos **cinco** documentos. Seguem a forma do
+    `_RP_CASC_CSS`, que já era assim.
+  - As constantes são declaradas **depois** dos primeiros usos (L~5380 usa,
+    L~7190 declara). Não há TDZ: todo uso está **dentro de corpo de função**,
+    avaliado na chamada — é o mesmo arranjo do `_RP_CASC_CSS`, e os cinco
+    sítios estão no mesmo `<script>` (L2555–L12150).
+  - O `<link>` do `<head>` do **próprio painel** não entra na conta: ele não é
+    relatório. Por isso a guarda conta as ocorrências **dentro dos `<script>`**,
+    onde só a constante aparece.
+  - **O acento de cada documento continua LOCAL**: `.rp-dia` (produção),
+    `.rp-semana` (histórico e semanal) e `.rp-per` (paradas) — este último é
+    **vermelho de propósito**, não é cópia desatualizada dos outros.
+  - Ao procurar cópia de peça de relatório, procurar a **pele junto com a
+    marcação**: unificar só uma das duas deixa a outra livre para envelhecer, em
+    silêncio, por oito documentos.
 - O logo continua entrando por **URL absoluta** (`new URL(...)`): o popup nasce
   em `about:blank` e um `src` relativo não resolveria.
 - ⚠ **A MARGEM DA IMPRESSÃO É DA `@page`, NUNCA do `padding` do body.** Os cinco
@@ -1631,11 +1656,62 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
   no v7 e o ⌫ dos dois teclados numéricos do mobile. Os demais botões já têm
   texto, que é o nome acessível — não foi feita varredura cega de ARIA.
 
-**Ainda NÃO corrigido** (achado verificado, decisão pendente): o
-`startsWith('L')` da detecção de coluna de LOTE (ver acima — depende de conferir
-os cabeçalhos reais da `HORA_A_HORA`) · a
-COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
-erro que ainda expõem `e.message` cru nos 4 relatórios.
+**Item reclassificado em 15/09/2026 — o `startsWith('L')` NÃO é para endurecer.**
+A nota anterior mandava apertar o critério "depois de conferir os cabeçalhos".
+Os cabeçalhos foram conferidos, e a conclusão é a oposta.
+
+⚠ **As colunas de lançamento da `HORA_A_HORA` chamam-se `LANÇ 1` … `LANÇ 10`.**
+Não existe coluna `LOTE` nem `LT` na planilha. Das três cláusulas do critério,
+**quem sustenta o lançamento é o `startsWith('L')`** — as outras duas não casam
+com nada. Ele não é a cláusula folgada: é a única que funciona.
+- Endurecer para "só LOTE/LT" — que é o que a leitura do código sugere a quem
+  nunca abriu a planilha — faria as **dez** colunas pararem de ser somadas.
+- E o estrago seria **CALADO**: sem coluna de lote, o `_saveRealizadoCore` cai
+  no ramo `iLotes.length === 0`, que grava na coluna REALIZADO **apenas**
+  `if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. E
+  **REALIZADO É FÓRMULA** — conferido na planilha em 15/09/2026: `C5:C15` é uma
+  `=SUM(D5:M5)` compartilhada. Ou seja, o operador salva, o app diz que salvou
+  e **nada é gravado**. Não é risco teórico: é o que aconteceria no 1º
+  lançamento depois do re-deploy.
+- `apps-script.test.js` prende o **cabeçalho real** (`HDR_REAL`): quem endurecer
+  o critério quebra no teste antes de quebrar a fábrica. Conferido que a guarda
+  falha com o critério apertado. O fixture do `hora-extra.test.js` também passou
+  a usar `LANÇ 1`, não `LOTE 1` — fixture que não espelha a planilha é armadilha.
+
+**O que sobra de verdade** (risco baixo, e agora num lugar só): o critério
+aceita de mais. `LINHA`, `LIMPEZA`, `LÍDER`, `LOCAL` entram pelo começo com L, e
+`RESULTADO` (resu**LT**ado) e `FALTA` (fa**LT**a) entram pelo `LT` no meio da
+palavra. **Hoje isso não faz mal nenhum**: depois de `LANÇ 10` só existem uma
+coluna vazia e `COMO PREENCHER`, e nenhuma das duas casa. Vira problema só se
+alguém acrescentar uma coluna com esses nomes **depois** de REALIZADO.
+- Se um dia for endurecido, a forma segura é **allowlist ancorada no começo**
+  (`LOTE` · `LANÇ`/`LANC` · `LT` · `L`+dígito), nunca "só LOTE/LT".
+- Conferido direto na planilha (id `1W9bK_…jcwFzg`, título `MODELO_HORA_A_HORA`
+  apesar do nome — é a de produção: o total subiu de 2.077 para 2.137 durante a
+  própria conferência). `B5` também é fórmula e distribui a meta pelas horas
+  `>= C3`, que é a mesma regra do início de turno já documentada aqui.
+- A aba de programação chamava-se **`PROGRAMAÇÃO`** (com Ç e Ã) contra a
+  constante `PROGRAMACAO` do `.gs`. **O usuário renomeou a aba para
+  `PROGRAMACAO` em 15/09/2026**, então hoje o `getSheetByName` casa exato.
+  - Não era defeito: o `acharAbaTolerante` já resolvia, comparando sem acento.
+    O rename foi conferido e saiu limpo — **zero** referências ao nome antigo,
+    **zero** `#REF!` e **zero** `INDIRECT()` na planilha inteira (fórmula com
+    nome de aba em texto dentro de `INDIRECT` é a única que o Google **não**
+    atualiza sozinha no rename; não havia nenhuma).
+  - ⚠ **Não apagar o `acharAbaTolerante`** por causa disso. Ele é a rede de
+    quem criar planilha nova a partir de um modelo antigo, com o acento — e o
+    sintoma de quando falta é o pior que existe aqui: programação e atraso
+    voltando **vazios, sem erro nenhum**.
+
+⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
+a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi
+feito e dá ar de verdade ao que sobrou.
+- *"COBERTURA DO APONTAMENTO só existe no PDF"* — **está na tela**: o
+  `renderModeloPeriodo` calcula `cobTela` e imprime o percentual com o ⚠
+  abaixo de 80%, ao lado da contagem de dias.
+- *"`e.message` cru nos 4 relatórios"* — **não há nenhum**: `_rpErroRelatorio`
+  trata os **sete** caminhos de erro dos relatórios e não sobrou `alert` com a
+  exceção crua.
 
 ## PARADAS no relatório semanal
 - **`_relParadasSemanaHtml(st, totMeta)`** fecha o RELATÓRIO SEMANAL com o que a

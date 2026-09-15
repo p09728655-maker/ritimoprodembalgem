@@ -945,6 +945,55 @@ function doGet(e) {
 
 
 // ════════════════════════════════════════════════════════
+// COLUNAS DE LOTE DA HORA_A_HORA
+// ════════════════════════════════════════════════════════
+
+// Quais colunas DEPOIS de REALIZADO carregam produção lançada.
+//
+// A produção é lançada NESTAS colunas e a coluna REALIZADO pode ficar vazia ou
+// parcial — sem somar os lotes, o painel mostra menos caixas do que a fábrica
+// produziu. O critério existe para somar os lotes SEM somar coluna de fórmula
+// (ACUM, %/H) que também mora depois de REALIZADO.
+//
+// ⚠⚠ NÃO ENDUREÇA ESTE CRITÉRIO PARA "SÓ LOTE/LT". Conferido na planilha em
+// 15/09/2026: as colunas de lançamento chamam-se LANÇ 1 ... LANÇ 10, e NÃO
+// existe coluna LOTE nem LT. Das três cláusulas, quem sustenta o lançamento é
+// o startsWith('L') — as outras duas não casam com nada. Tirá-lo faz as DEZ
+// colunas pararem de ser somadas.
+//
+// E o estrago é CALADO: sem coluna de lote, _saveRealizadoCore cai no ramo
+// `iLotes.length === 0`, que grava em REALIZADO apenas `if (!cell.getFormula())`
+// e devolve {ok:true} de qualquer jeito. E REALIZADO É FÓRMULA: conferido na
+// planilha em 15/09/2026, C5:C15 é =SUM(D5:M5) compartilhada. Ou seja, o
+// operador salva, o app diz que salvou e NADA é gravado.
+//
+// O que sobra é o critério aceitar DE MAIS: LINHA/LIMPEZA/LÍDER/LOCAL entram
+// pelo começo com L, e RESULTADO (resuLTado) e FALTA (faLTa) pelo LT no meio da
+// palavra. Hoje não faz mal — depois de LANÇ 10 só há coluna vazia e
+// COMO PREENCHER. Se um dia precisar apertar, a forma segura é allowlist
+// ancorada no COMEÇO (LOTE | LANÇ/LANC | LT | L+dígito), nunca "só LOTE/LT".
+// O apps-script.test.js prende o cabeçalho real e quebra antes da fábrica.
+//
+// O que mudou: o laço estava escrito em TRÊS lugares (getDados,
+// _saveRealizadoCore e arquivarDiaAtual), então endurecer significava lembrar
+// dos três e acertar nos três. Agora é um. Quando os títulos forem conferidos,
+// a correção é uma linha, aqui.
+function _ehColunaLote(titulo) {
+  const t = String(titulo == null ? '' : titulo).trim().toUpperCase();
+  return t.indexOf('LOTE') >= 0 || t.indexOf('LT') >= 0 || t.charAt(0) === 'L';
+}
+
+// Os índices das colunas de lote, da coluna seguinte a REALIZADO até o fim.
+function _colunasDeLote(hdr, iR) {
+  const out = [];
+  for (let c = iR + 1; c < (hdr || []).length; c++) {
+    if (_ehColunaLote(hdr[c])) out.push(c);
+  }
+  return out;
+}
+
+
+// ════════════════════════════════════════════════════════
 // GET DADOS
 // ════════════════════════════════════════════════════════
 
@@ -988,12 +1037,7 @@ function getDados() {
   // Colunas de lote (mesma deteccao de saveRealizado/arquivarDiaAtual). A producao
   // e lancada NESTAS colunas; a coluna REALIZADO pode ficar vazia ou parcial. Sem
   // somar os lotes, o painel mostra menos caixas do que o realmente produzido.
-  const iLotes = [];
-  for (let c = iR + 1; c < hdr.length; c++) {
-    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-      iLotes.push(c);
-    }
-  }
+  const iLotes = _colunasDeLote(hdr, iR);
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const agora    = new Date();
@@ -1176,12 +1220,7 @@ function _saveRealizadoCore(p) {
     PropertiesService.getScriptProperties()
       .setProperty(PROP_DATA_DADOS, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
-    const iLotes = [];
-    for (let c = iR + 1; c < hdr.length; c++) {
-      if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-        iLotes.push(c);
-      }
-    }
+    const iLotes = _colunasDeLote(hdr, iR);
 
     if (iLotes.length === 0) {
       for (let i = hIdx + 1; i < data.length; i++) {
@@ -3361,12 +3400,7 @@ function arquivarDiaAtual(dataRef) {
 
   // Identifica colunas de lote (mesmo critério de saveRealizado) para não somar
   // colunas de fórmula como ACUM ou %/H que aparecem após REALIZADO na planilha.
-  const iLotes = [];
-  for (let c = iR + 1; c < hdr.length; c++) {
-    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-      iLotes.push(c);
-    }
-  }
+  const iLotes = _colunasDeLote(hdr, iR);
 
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);

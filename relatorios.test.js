@@ -983,6 +983,32 @@ ok('botão de imprimir declarado uma única vez',
 ok('logo com URL absoluta declarado uma única vez',
    (JS.match(/new URL\('patrimar-logo\.png'/g) || []).length, 1);
 
+// ── e a PELE do cabeçalho vai junto com a MARCAÇÃO ──────────────────────────
+// O #204/#205 unificou o que o cabeçalho ESCREVE (_rpCabecalho), mas o CSS que
+// o PINTA continuou copiado nos cinco documentos — e uma cópia envelheceu. A do
+// HISTÓRICO ficou sem a regra `.rp-logo span` e com o logo a 18px: medido no
+// Chromium, o MESMO cabeçalho saía com PATRIMAR em BRANCO a 18px num relatório
+// e laranja a 22px nos outros sete. Marcação e pele andam juntas ou a próxima
+// correção conserta um documento e esquece os outros quatro.
+ok('a pele do cabeçalho é declarada uma única vez',
+   (JS.match(/\.rp-header\{display:flex/g) || []).length, 1);
+ok('e os 5 documentos leem a constante',
+   (JS.match(/\$\{_RP_HEADER_CSS\}/g) || []).length, 5);
+ok('nenhum documento redeclara o logo, o subtítulo ou a meta do cabeçalho',
+   [(JS.match(/^\s*\.rp-logo\{/gm) || []).length,
+    (JS.match(/^\s*\.rp-sub\{/gm)  || []).length,
+    (JS.match(/^\s*\.rp-meta\{/gm) || []).length], [1, 1, 1]);
+// Foi ESTA regra que faltou na cópia do HISTÓRICO: sem ela o span da marca
+// herda o branco do .rp-header e o nome do produto perde o laranja.
+ok('a regra que pinta a marca existe, e uma vez só',
+   (JS.match(/\.rp-logo span\{color:#FF5C1F\}/g) || []).length, 1);
+// O <link> das fontes seguia a mesma sorte: 5 cópias. A do <head> do painel
+// não está em <script>, então não entra nesta contagem — e não deve entrar.
+ok('o <link> das fontes mora num lugar só',
+   (JS.match(/fonts\.googleapis\.com\/css2/g) || []).length, 1);
+ok('e os 5 documentos leem a constante',
+   (JS.match(/\$\{_RP_FONTS\}/g) || []).length, 5);
+
 // A nota da troca é a MESMA nos dois relatórios impressos (dia e período): se
 // virar duas cópias, a primeira correção conserta um e esquece o outro — foi a
 // história do cabeçalho no #204/#205.

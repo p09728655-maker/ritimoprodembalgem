@@ -11,6 +11,96 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script — 15/09/2026 (sem mudança de comportamento)
+
+⚠ **re-deploy** quando for conveniente. **Nenhum número muda** e nada quebra se
+o re-deploy for adiado: a versão implantada continua somando exatamente igual.
+
+### A detecção da coluna de LOTE saiu de três lugares para um
+
+A produção é lançada nas colunas de **LOTE** da `HORA_A_HORA` — a coluna
+REALIZADO pode ficar vazia ou parcial, então quem soma errado ali mostra menos
+caixa do que a fábrica fez. O laço que escolhe essas colunas estava **copiado em
+três funções**: `getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`.
+
+Agora é `_ehColunaLote(titulo)` e `_colunasDeLote(hdr, iR)`, um lugar só.
+
+**O critério NÃO foi endurecido** — e, conferido o cabeçalho real da planilha,
+ele **não deve ser**.
+
+⚠ **As colunas de lançamento chamam-se `LANÇ 1` … `LANÇ 10`.** Não existe coluna
+`LOTE` nem `LT` na `HORA_A_HORA`. Das três cláusulas do critério, quem sustenta
+o lançamento é justamente o **`startsWith('L')`** — as outras duas não casam com
+nada. Endurecer para "só LOTE/LT", que é o que a leitura do código sugere a quem
+nunca abriu a planilha, faria as **dez** colunas pararem de ser somadas.
+
+E o estrago seria **calado**: sem coluna de lote, o `_saveRealizadoCore` cai no
+ramo `iLotes.length === 0`, que grava em REALIZADO **apenas**
+`if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. Com
+REALIZADO sendo fórmula, o operador salva, o app diz que salvou e **nada é
+gravado**.
+
+O `apps-script.test.js` passou a prender o **cabeçalho real** (`HDR_REAL`, as
+dez colunas `LANÇ`): quem endurecer o critério quebra no teste antes de quebrar
+a fábrica. Conferido que a guarda falha com o critério apertado. O fixture do
+`hora-extra.test.js` também passou a usar `LANÇ 1` — fixture que não espelha a
+planilha é armadilha.
+
+**O que sobra de verdade** (risco baixo, e agora num lugar só): o critério
+aceita de mais — `LINHA`/`LIMPEZA`/`LÍDER`/`LOCAL` pelo começo com L, e
+`RESULTADO` (resu**LT**ado)/`FALTA` (fa**LT**a) pelo `LT` no meio. **Hoje não
+faz mal**: depois de `LANÇ 10` só existem uma coluna vazia e `COMO PREENCHER`.
+Vira problema só se alguém acrescentar uma coluna com esses nomes depois de
+REALIZADO. Se um dia precisar apertar, a forma segura é **allowlist ancorada no
+começo** (`LOTE` · `LANÇ`/`LANC` · `LT` · `L`+dígito).
+
+---
+
+## v7.43.0 — 15/09/2026
+
+**Atenção** — muda o **cabeçalho impresso do relatório de HISTÓRICO**, e só ele.
+Nenhum número muda: é a faixa de identidade do topo da folha. Os outros sete
+relatórios saem exatamente como antes.
+
+### A pele do cabeçalho passou a morar com a marcação
+
+O `_rpCabecalho` já era uma implementação só desde o #204/#205 — mas só a
+**marcação**. O **CSS que a pinta** continuou copiado em **cinco documentos**,
+um por relatório, e uma das cópias envelheceu sem ninguém ver.
+
+Medido no Chromium, antes da correção:
+
+| relatório | marca `PATRIMAR` | tamanho do logo |
+|---|---|---|
+| Produção por família/modelo | laranja `#FF5C1F` | 22px |
+| Produção por modelo | laranja `#FF5C1F` | 22px |
+| **Histórico** | **branco** | **18px** |
+| Semanal | laranja `#FF5C1F` | 22px |
+| Paradas / Perdas / Min-1000 / Investimento | laranja `#FF5C1F` | 22px |
+
+A cópia do HISTÓRICO tinha perdido a regra `.rp-logo span{color:#FF5C1F}` e
+ficado com o logo a 18px. Como `.rp-header .rp-logo` pinta o bloco inteiro de
+branco, sem aquela regra o **PATRIMAR** herdava o branco: o nome do produto saía
+sem o laranja da marca, menor, num relatório de oito.
+
+É a história do #204/#205 de novo — arrumar um documento e esquecer os outros
+quatro —, dessa vez pela pele em vez da marcação.
+
+**O que mudou no código:** o bloco de identidade do cabeçalho e o `<link>` das
+fontes viraram `_RP_HEADER_CSS` e `_RP_FONTS`, ao lado do `_rpCabecalho`,
+na seção das peças comuns. Os cinco documentos leem as constantes. O `<link>`
+do `<head>` do próprio painel não entra — ele não é relatório.
+
+O que **não** mudou: o acento de cada documento (`.rp-dia`, `.rp-semana`,
+`.rp-per`) continua local — o das paradas é vermelho de propósito.
+
+`relatorios.test.js` ganhou seis verificações: a pele declarada uma vez, os
+cinco documentos lendo a constante, ninguém redeclarando `.rp-logo`/
+`.rp-sub`/`.rp-meta`, e a regra que pinta a marca existindo — a que faltava.
+Conferido que a guarda falha quando a cópia volta.
+
+---
+
 ## Apps Script 5.4 — 14/09/2026
 
 **Atenção** — ⚠ **re-deploy**. Muda a coluna **`STATUS`** da aba `PROGRAMACAO`.
