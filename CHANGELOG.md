@@ -11,6 +11,66 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.50.0 — 15/09/2026
+
+**Atenção** — nenhum indicador existente mudou de conta. A aba **PLANO** passou
+a ter **dois blocos**: em cima, **A CARTEIRA QUE VEM** (novo — os lotes já
+datados para os dias que ainda não chegaram); embaixo, o retrospecto de sempre,
+agora rotulado **COMO TEMOS DATADO**. A **RÉGUA** e a **FAIXA ALVO** da barra
+valem para os dois; **JULGAR** e **ORDEM**, só para o de baixo.
+
+### Por que
+
+A aba julgava só o passado. Ela diagnosticava a datação e não mudava nada — o
+dia já tinha ido. Medido na `PROGRAMACAO` real em 15/09/2026:
+
+```
+16/09   3.025 cx   p100   ← o melhor dia da linha em 79 dias é 2.909
+17/09   3.125 cx   p100   ← idem
+18/09   1.500 cx    p50
+21/09   1.800 cx    p70
+22/09   1.250 cx    p15
+23/09   1.228 cx    p15
+24/09   1.350 cx    p30
+```
+
+Os dois primeiros dias nasceram impossíveis e a semana seguinte estava com
+folga — e no dia 15 ainda dava para trocar.
+
+### O que o bloco responde
+
+- **CARTEIRA EM ABERTO** — o que a `PROGRAMACAO` ainda deve: as caixas datadas
+  para frente **mais a dívida** (atraso vivo + o que falta da meta de hoje).
+- **DIAS QUE NÃO CABEM** — e quantos passam do melhor dia já feito.
+- **PRECISA MUDAR DE DIA** — as caixas acima do que o dia comporta, ao lado do
+  **espaço livre** dos dias folgados. Se o que sai for menor que o que cabe, é
+  só re-datar — e isso não custa nada.
+- **NIVELADO SERIA** — a carga média por dia se carteira e dívida fossem
+  espalhadas, com o percentil dela.
+
+O veredito separa os dois problemas, que pedem ações opostas:
+`CARTEIRA NIVELADA` · `CARGA MAL DISTRIBUÍDA` · `DIA DATADO ACIMA DO MÁXIMO JÁ
+FEITO` (re-datar resolve) · `HORIZONTE SOBRECARREGADO` (re-datar **não**
+resolve — é dia a mais, hora extra ou empurrar).
+
+### Custo: menor que antes
+
+`getProgramacaoDetalhada` ganhou **cache de 2 min** e **requisição em voo
+compartilhada** (`PROG_DET_VOO`). Antes, cada entrada na aba PROGRAMAÇÃO
+refazia a leitura; agora as duas telas que leem a programação pagam **uma**
+execução no Apps Script, não duas. O resto do bloco sai do que o painel já
+tinha: a curva vem do `buildDiasHistAsync` (cache de 2 min) e a dívida do
+`PONTOS_DIA`. **Sem re-deploy do `.gs`.**
+
+### Atenção ao ler
+
+- A faixa alvo é uma **mediana**, não um limite físico: dia acima dela é
+  improvável, não proibido. Mova a **RÉGUA** e a **FAIXA ALVO** para testar.
+- **Nivelar não é sequenciar.** O nivelamento é a restrição de *capacidade*; a
+  ordem continua sendo a *data de corte* do cliente.
+
+---
+
 ## v7.49.0 — 15/09/2026
 
 **Atenção** — nenhum número mudou. A tabela do fim da aba **PLANO** ganhou um

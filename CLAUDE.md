@@ -2182,6 +2182,64 @@ feito e dá ar de verdade ao que sobrou.
     contradição** — é repetição, então é preferência, não defeito. O usuário
     decidiu **manter** em 15/09/2026.
 
+## A CARTEIRA QUE VEM — o bloco de cima da aba PLANO
+- **A aba julgava só o passado.** Diagnosticava a datação e não mudava nada: o
+  dia já tinha ido. O bloco de cima (v7.50.0) olha os lotes **já datados para
+  dias que ainda não chegaram**, que é onde ainda dá para agir. O de baixo
+  continua idêntico, rotulado **COMO TEMOS DATADO**.
+- Medido na `PROGRAMACAO` real em 15/09/2026: **16/09 com 3.025 cx e 17/09 com
+  3.125**, contra um melhor dia de **2.909** em 79 dias — os dois nasceram
+  impossíveis —, e 22, 23 e 24/09 entre 1.228 e 1.350, abaixo do que a linha faz
+  em 3 dias de 4. A carteira futura soma **13.278 cx em 7 dias**; com a dívida,
+  **15.425**, ou **2.204 cx/dia** (p85). Não é capacidade: é datação.
+- ⚠ **UMA RÉGUA SÓ NA ABA.** `_cartAnalise` recebe a curva e a faixa **por
+  parâmetro** — as mesmas `_qpCurva(dias, QP_REGUA)` e `QP_FAIXA` do bloco de
+  baixo. Uma segunda curva aqui faria a tela aprovar em cima o que reprova
+  embaixo, e o gestor não teria como saber qual valia. Por isso `_qpSetRegua` e
+  `_qpSetFaixa` redesenham **os dois** blocos; o teste falha se um sair.
+- ⚠ **A carteira NÃO soma o campo `falta`.** Ele vem do FIFO **por código**:
+  duas linhas do mesmo código devolvem o MESMO número e somá-las contaria o
+  saldo duas vezes. Para linha de data futura o backend zera `embalado`/`falta`
+  de propósito, então o aberto dela **é a `qtde`**. O teste falha se a palavra
+  voltar ao `_cartAberta`.
+- ⚠ **A DÍVIDA OCUPA DIA.** Atraso vivo + o que falta da meta de hoje consomem
+  capacidade dos primeiros dias antes de qualquer lote novo — por isso entram no
+  NIVELADO e na SOBRA. Fora deles o horizonte pareceria mais folgado do que é.
+  - A dívida é o `faltaZerar` do `PONTOS_DIA` (o mesmo número da Tela C da TV),
+    com queda para `atrasoTotal` em backend antigo. ⚠ A escolha é por
+    **`!= null`**, nunca por `||`: **dívida zero é valor legítimo** e o `||` a
+    trocaria pelo outro campo.
+- **UMA referência só para sair e para caber**: o **topo da faixa alvo**
+  (`alvoMax`). Acima dele o dia não comporta (`sai`), abaixo há espaço
+  (`cabe`). Duas referências dariam uma conta que não fecha na tela.
+- **O veredito separa os dois problemas, que pedem ações OPOSTAS:**
+  `CARTEIRA NIVELADA` · `CARGA MAL DISTRIBUÍDA` · `DIA DATADO ACIMA DO MÁXIMO JÁ
+  FEITO` (cabe no período → **re-datar resolve, e é de graça**) ·
+  `HORIZONTE SOBRECARREGADO` (`sobra > 0` → **re-datar não basta**: dia a mais,
+  hora extra ou empurrar para a semana seguinte). Confundir os dois faz pedir
+  investimento onde bastava mexer na data, ou o contrário.
+- **Custo MENOR que antes, não maior.** `carregarProgramacaoDetalhada` ganhou
+  **cache de 2 min** (`PROG_DET_TTL`) e **requisição em voo compartilhada**
+  (`PROG_DET_VOO`) — o mesmo remédio do `_phVoo` e do `PG_VOO`. Antes, cada
+  entrada na aba PROGRAMAÇÃO refazia a leitura; hoje as duas telas pagam **uma**
+  execução no Apps Script. O resto sai do que o painel já tem (curva do
+  `buildDiasHistAsync`, dívida do `PONTOS_DIA`). **Sem re-deploy do `.gs`.**
+- ⚠ **Lote `foraEsteira` não entra** — não passa na linha.
+- **O desenho (`_cartHtml`) não faz conta** — tudo vem pronto do `_cartAnalise`,
+  e o teste falha se `_qpPercentil`/`_qpValorNoPercentil`/`_qpCurva` aparecerem
+  dentro dele.
+- ⚠ **Barra alta leva o número DENTRO dela.** Por cima, ele batia na tarja do
+  **MELHOR DIA JÁ FEITO**, que mora justamente na altura das barras que
+  estouram — as que mais interessa ler. A tarja do teto é **alinhada à
+  direita** pelo mesmo motivo.
+- **O que o texto impresso na tela não deixa esquecer**, porque os dois erros
+  são caros:
+  - a faixa alvo é uma **mediana**, não limite físico: dia acima dela é
+    improvável, não proibido;
+  - **nivelar não é sequenciar** — o nivelamento é a restrição de *capacidade*,
+    a ordem continua sendo a *data de corte* do cliente. Encher todo dia com a
+    mesma quantidade ignorando a data só troca um problema por outro.
+
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
   mudança que altera número exibido ou formato de arquivo**, com o antes e o

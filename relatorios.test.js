@@ -2603,6 +2603,120 @@ const _qpRender = pega('async function renderQualidadePlano(');
 ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
    /buildDiasHistAsync\(\)/.test(_qpRender) && !/jsonpFetch|action=/.test(_qpRender), true);
 
+// ── A CARTEIRA QUE VEM: a programação datada contra a capacidade ──────────
+// O bloco de baixo da aba julga o PASSADO e não muda nada. Este julga o que
+// ainda está por vir, que é onde dá para agir. Medido na PROGRAMACAO real em
+// 15/09/2026: 16/09 com 3.025 cx e 17/09 com 3.125, contra um melhor dia de
+// 2.909 em 79 dias — os dois nasceram impossíveis.
+console.log('\n── a carteira que vem (programação × capacidade) ──');
+{ const m = JS.match(/const CART_DIAS_MAX\s*=\s*\d+/); if(m) eval(m[0].replace('const ','global.')+';'); }
+eval(pega('function _cartNum('));
+eval(pega('function _cartAberta('));
+eval(pega('function _cartAnalise('));
+
+ok('a data vira número ordenável, como o dataNum do backend',
+   [_cartNum('16/09/2026'), _cartNum('1/1/2026'), _cartNum('lixo')], [20260916, 20260101, 0]);
+
+const _it = (data, qtde, extra) => Object.assign({ data, dataNum:_cartNum(data), qtde }, extra||{});
+const _prog = [
+  _it('14/09/2026', 500),                    // vencida
+  _it('15/09/2026', 800),                    // hoje
+  _it('16/09/2026', 2000), _it('16/09/2026', 1025),
+  _it('18/09/2026', 1500),
+  _it('18/09/2026', 900, {foraEsteira:true}),// fora da esteira não passa na linha
+  _it('19/09/2026', 0)                       // linha sem quantidade
+];
+const _cart = _cartAberta(_prog, _cartNum('15/09/2026'), 2147);
+ok('só o que ainda NÃO venceu entra — vencido e hoje viram dívida',
+   [_cart.dias.length, _cart.futuro, _cart.divida], [2, 4525, 2147]);
+ok('linhas do mesmo dia somam e a contagem acompanha',
+   [_cart.dias[0].data, _cart.dias[0].qtde, _cart.dias[0].n], ['16/09/2026', 3025, 2]);
+ok('lote fora da esteira não entra (não passa na linha)',
+   _cart.dias[1].qtde, 1500);
+ok('e o período vai de ponta a ponta', [_cart.de, _cart.ate], ['16/09/2026','18/09/2026']);
+// ⚠ `falta` vem do FIFO POR CÓDIGO: duas linhas do mesmo código devolvem o
+// MESMO número e somá-las contaria o saldo duas vezes. O aberto de linha futura
+// é a `qtde`, que o backend garante intocada.
+ok('a carteira não soma o campo `falta` (contaria saldo duas vezes)',
+   /\bfalta\b/.test(pega('function _cartAberta(')), false);
+
+// ── a conta do que sai e do que cabe ─────────────────────────────────────
+// curva de 10 dias: 100..1000; p50=500, p60=600, melhor dia=1000
+const _c10 = [100,200,300,400,500,600,700,800,900,1000];
+const _an = _cartAnalise(_cartAberta([_it('16/09/2026',1200), _it('17/09/2026',300),
+                                      _it('18/09/2026',600)], _cartNum('15/09/2026'), 0),
+                         _c10, [50,60]);
+ok('a faixa alvo define o teto do dia (p60 = 600)', [_an.alvoMin, _an.alvoMax], [500, 600]);
+ok('o que não cabe e o espaço livre são as duas pontas da mesma conta',
+   [_an.sai, _an.cabe], [600, 300]);
+ok('dia acima do melhor dia já feito é marcado como impossível',
+   [_an.nImpossivel, _an.linhas[0].impossivel, _an.linhas[2].impossivel], [1, true, false]);
+ok('o que sobra é o excesso que as folgas do período não absorvem',
+   _an.sobra, 300);
+// ⚠ A DÍVIDA OCUPA DIA. Fora do nivelado, o período pareceria mais folgado.
+const _semD = _cartAnalise(_cartAberta([_it('16/09/2026',600),_it('17/09/2026',600)], _cartNum('15/09/2026'), 0), _c10, [50,60]);
+const _comD = _cartAnalise(_cartAberta([_it('16/09/2026',600),_it('17/09/2026',600)], _cartNum('15/09/2026'), 400), _c10, [50,60]);
+ok('a dívida entra no nivelado e no total',
+   [_semD.nivelado, _comD.nivelado, _comD.total], [600, 800, 1600]);
+ok('e é ela que faz o horizonte estourar mesmo com os dias dentro da faixa',
+   [_semD.sobra, _comD.sobra], [0, 400]);
+ok('sem dia datado à frente não há análise (nunca zero inventado)',
+   _cartAnalise(_cartAberta([_it('14/09/2026',500)], _cartNum('15/09/2026'), 0), _c10, [50,60]), null);
+
+// ── o veredito separa RE-DATAR (de graça) de CAPACIDADE (custa) ──────────
+eval(pega('function _cartVeredito('));
+global.fmtN = n => String(n);
+ok('horizonte que não comporta o total não é problema de datação',
+   _cartVeredito(_an).t, 'HORIZONTE SOBRECARREGADO');
+const _redist = _cartAnalise(_cartAberta([_it('16/09/2026',1200), _it('17/09/2026',100),
+                                          _it('18/09/2026',100), _it('19/09/2026',100)],
+                                         _cartNum('15/09/2026'), 0), _c10, [50,60]);
+ok('mas carga que cabe no período e está no dia errado, é',
+   _cartVeredito(_redist).t, 'DIA DATADO ACIMA DO MÁXIMO JÁ FEITO');
+ok('carteira dentro da faixa não inventa problema',
+   _cartVeredito(_cartAnalise(_cartAberta([_it('16/09/2026',550),_it('17/09/2026',550)],
+     _cartNum('15/09/2026'), 0), _c10, [50,60])).t, 'CARTEIRA NIVELADA');
+ok('sem carteira datada o veredito diz isso, não "tudo certo"',
+   _cartVeredito(null).t, 'SEM CARTEIRA DATADA');
+
+// ── as guardas de arquitetura ────────────────────────────────────────────
+const _cartDes = pega('function _cartHtml(');
+ok('o desenho da carteira não faz conta',
+   /_qpPercentil\(|_qpValorNoPercentil\(|_qpCurva\(/.test(_cartDes), false);
+// ⚠ UMA RÉGUA SÓ na aba: curva e faixa entram por parâmetro. Uma segunda curva
+// aqui faria a tela aprovar em cima o que reprova embaixo.
+ok('a carteira recebe a curva pronta em vez de montar a própria',
+   /_qpCurva\(/.test(pega('function _cartAnalise(')), false);
+const _cartRender = pega('async function renderCarteira(');
+ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
+   /_qpCurva\(dias, QP_REGUA\)/.test(_cartRender) && /QP_FAIXA/.test(_cartRender), true);
+ok('a busca passa pelo carregador com cache, nunca por jsonpFetch direto',
+   /carregarProgramacaoDetalhada\(\)/.test(_cartRender) && !/jsonpFetch|action=/.test(_cartRender), true);
+// ⚠ dívida ZERO é valor legítimo: `||` entre os dois campos a trocaria pelo outro.
+ok('a dívida escolhe o campo por != null, não por ||',
+   /prog\.faltaZerar != null/.test(_cartRender), true);
+// Trocar régua ou faixa tem de redesenhar os DOIS blocos.
+ok('régua e faixa redesenham a carteira junto com o retrospecto',
+   [(JS.match(/renderCarteira\(\);\s*\n?\s*renderQualidadePlano\(\)/g)||[]).length >= 2,
+    /invalidarProgDetCache\(\)/.test(JS)], [true, true]);
+// O carregador é compartilhado com a aba PROGRAMAÇÃO: duas telas, uma leitura.
+const _loader = pega('async function carregarProgramacaoDetalhada(');
+ok('o carregador tem cache e requisição em voo compartilhada',
+   [/PROG_DET_TTL/.test(_loader), /PROG_DET_VOO/.test(_loader)], [true, true]);
+
+// ── o caso REAL que originou a tela (PROGRAMACAO de 15/09/2026) ──────────
+// 7 dias datados, 13.278 cx, dívida de 2.147. Régua de 60 dias: p50=1.495,
+// p60=1.573, melhor dia 2.909.
+const _real = [[ '16/09/2026',3025],['17/09/2026',3125],['18/09/2026',1500],['21/09/2026',1800],
+               ['22/09/2026',1250],['23/09/2026',1228],['24/09/2026',1350]].map(x => _it(x[0], x[1]));
+const _cReal = [];
+for(let i=0;i<60;i++) _cReal.push(i<30 ? 1000 + i*17 : 1495 + (i-30)*47);
+const _aReal = _cartAnalise(_cartAberta(_real, _cartNum('15/09/2026'), 2147), _cReal, [50,60]);
+ok('os 7 dias datados somam 13.278 cx e a dívida leva o total a 15.425',
+   [_aReal.futuro, _aReal.total], [13278, 15425]);
+ok('e o nivelado passa de 2.000 cx/dia — acima do que a linha faz',
+   Math.round(_aReal.nivelado) > 2000, true);
+
 // ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
 // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para
 // uma relação só: dados o real e a meta, o % e a diferença são aritmética.

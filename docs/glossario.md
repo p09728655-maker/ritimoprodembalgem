@@ -102,10 +102,25 @@ meta do dia explica **8%** da variação do realizado (r = 0,28).
 | **OSCILAÇÃO DA META** | desvio padrão ÷ média das metas do período | % | `v7:_qpOscilacao` |
 | **DIAS ACIMA DA CAPACIDADE** | dias cuja meta passou de `QP_ACIMA` | dias | `v7:_qpAnalise` |
 | **META EXEQUÍVEL SERIA** | o valor da curva entre o mínimo e o máximo da **faixa alvo** escolhida na barra | cx/dia | `v7:_qpValorNoPercentil` |
+| **CARTEIRA EM ABERTO** | caixas datadas para dias futuros (`qtde` das linhas da `PROGRAMACAO`) **+ dívida** (atraso vivo + resto da meta de hoje) | cx | `v7:_cartAberta` |
+| **DIAS QUE NÃO CABEM** | dias cuja carga datada passa do topo da faixa alvo | dias | `v7:_cartAnalise` |
+| **PRECISA MUDAR DE DIA** | Σ `max(0, carga do dia − topo da faixa)` | cx | `v7:_cartAnalise` |
+| **ESPAÇO LIVRE** | Σ `max(0, topo da faixa − carga do dia)` | cx | `v7:_cartAnalise` |
+| **SOBRA (horizonte)** | `precisa mudar + dívida − espaço livre`, nunca negativo | cx | `v7:_cartAnalise` |
+| **NIVELADO SERIA** | `(carteira futura + dívida) ÷ nº de dias datados` | cx/dia | `v7:_cartAnalise` |
 | **ORDEM da tabela** | `data` → os últimos 15 dias · `alta`/`baixa` → as 15 metas de maior/menor percentil do período julgado | — | `v7:_qpOrdenar` |
 
 **Como ler:** meta em p53 quer dizer que em 53% dos dias a linha não chegaria
 lá.
+
+⚠ **A carteira em aberto NÃO soma o campo `falta`.** Ele vem do FIFO **por
+código**: duas linhas do mesmo código devolvem o mesmo número, e somá-las
+contaria o saldo duas vezes. Para linha de data futura o backend zera
+`embalado`/`falta` de propósito, então o aberto dela é a `qtde`.
+
+⚠ **A dívida ocupa dia.** Atraso e o que falta hoje consomem capacidade dos
+primeiros dias antes de qualquer lote novo — por isso entram no NIVELADO e na
+SOBRA. Fora deles, o horizonte pareceria mais folgado do que é.
 
 ⚠ **São três recortes diferentes e eles não se confundem.** **JULGAR** escolhe
 quais dias aparecem no gráfico; **RÉGUA** escolhe de quais dias sai o p50/p60/p75
