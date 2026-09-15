@@ -2162,7 +2162,14 @@ feito e dá ar de verdade ao que sobrou.
   esticar de volta. Em tela estreita ele encolhe junto, como antes.
   - A tarja atrás dos rótulos sai do **texto** (`_svgTarja`), não de um número
     fixo — calibrada no desenho ampliado, na escala 1:1 ela sobrava e tapava
-    barra.
+    barra. Ela recebe o corpo da fonte: largura e altura saem dele.
+  - ⚠ **A ESCALA É UM MEIO-TERMO MEDIDO, e levou DUAS correções do usuário no
+    mesmo dia**: *"ficou tudo muito grande"* (a 2,43×, com a legenda a 21,9px) e
+    depois *"agora ficou muito pequeno"* (a 1,00×, com ela a 9px). O corpo mora
+    na constante **`FS = 12`** dentro de cada desenho, e a altura ficou em
+    **300/320px**. `font-size` solto no SVG não volta — o teste falha.
+  - Lição: corrigir um exagero para o extremo oposto é errar duas vezes. Medir
+    os dois extremos primeiro e parar no meio custa uma rodada a menos.
 - ⚠ **A LINHA DO REALIZADO PRECISA SER LEGÍVEL** (correção do usuário,
   15/09/2026: *"a linha branca não tem como ver as qtdes"*). Só a meta tinha
   ponto e tooltip; o realizado era traço cinza sem marcador, sem número e **sem
@@ -2280,6 +2287,45 @@ feito e dá ar de verdade ao que sobrou.
   - **nivelar não é sequenciar** — o nivelamento é a restrição de *capacidade*,
     a ordem continua sendo a *data de corte* do cliente. Encher todo dia com a
     mesma quantidade ignorando a data só troca um problema por outro.
+
+## O relatório da QUALIDADE DO PLANO (🖨 IMPRIMIR na aba PLANO)
+- Pedido do usuário em 15/09/2026: *"quero uma impressão para analisar"*.
+  `gerarRelatorioPlano()`, v7.54.0. Três seções: a carteira que vem · como
+  temos datado · como o número sai.
+- ⚠ **A MARCAÇÃO É A MESMA DA TELA.** `_cartHtml` e `_qpHtml` desenham os dois
+  blocos no papel também; o que muda é a **pele**, o bloco `_PLANO_SKIN`
+  escopado em `.plano-doc`. Copiar o desenho para o papel seria a história do
+  cabeçalho dos cinco relatórios (#204/#205). O `<head>` e as ~150 regras saem
+  do `_rpDocParadas` — agora **cinco** documentos passam por ele; o
+  `relatorios.test.js` conta.
+- ⚠ **O SVG É RE-SKINADO POR TOKEN.** Os desenhos usam `var(--ok)`, `var(--bg)`…
+  que no painel vêm do tema escuro. No documento do relatório eles não
+  existiriam, e **cor inválida em SVG cai no preto**. `.plano-doc{--ok:…;
+  --red:…}` redefine os tokens para a paleta do papel e o MESMO desenho sai
+  certo. Medido no Chromium: `rgb(198, 40, 40)`. Se um desenho novo usar um
+  token que não está nessa lista, ele sai preto no papel — o teste prende a
+  lista.
+- **As duas famílias de modificador vão juntas no `class=`** dos cards
+  (`_kpiCls`: `ok g` · `warn o` · `red r` · `acc a`). O painel lê uma, o
+  documento lê a outra — a mesma regra do `_pgMin1000Html`. O teste falha se um
+  card dos dois desenhos escapar do `_kpiCls`.
+- **A carteira é OPCIONAL no papel.** Falhou a leitura da `PROGRAMACAO`? O
+  relatório sai **inteiro, só sem a seção** — a mesma regra da cascata e das
+  paradas no relatório semanal. Meio relatório é melhor que relatório nenhum;
+  número de carteira inventado é pior que os dois.
+- **A largura do desenho no papel é FIXA** (`PLANO_SVG_W` = 660, os ~178mm úteis
+  do A4 retrato), nunca `_svgLargura` — papel não tem monitor.
+- **O que só existe na tela não vai ao papel**: a dica *"passe o mouse"*
+  (classe `qp-leg-mouse`, escondida pela pele) e o botão de tentar de novo.
+- **A tarja do rótulo escolhe o LADO LIVRE** (`_svgLadoLivre`): a 660px, sempre
+  à esquerda, ela tapava o valor do 3º dia. Fica onde nenhuma barra da ponta
+  cruza a altura do rótulo; empatando, à direita, onde o olho já terminou de
+  ler. A seta aponta para dentro do gráfico a partir do lado escolhido.
+- **A dívida é lida em UM lugar** (`_planoDivida`), pela tela e pelo papel —
+  a nota do `!= null` (dívida zero é valor legítimo) mora lá. ⚠ A Tela C da TV
+  tem a **própria** leitura do `faltaZerar`, anterior a isto e com outra
+  finalidade (o card "falta zerar" da TV); a guarda do teste olha só a aba
+  PLANO, de propósito — contar o arquivo inteiro acusava a TV.
 
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda

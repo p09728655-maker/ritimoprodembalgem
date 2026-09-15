@@ -2030,6 +2030,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="alta">altura: p maior</option>
         <option value="baixa">altura: p menor</option>
       </select>
+      <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="A mesma leitura desta tela em PDF, com a metodologia escrita">🖨 IMPRIMIR</button>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
     </div>
   </div>
@@ -2642,7 +2643,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.52.0';
+const APP_VER   = '7.54.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7190,6 +7191,13 @@ async function renderQualidadePlano(){
 // Quantas linhas a tabela mostra, num lugar só.
 const QP_TAB_N = 15;
 
+// ⚠ AS DUAS FAMÍLIAS DE MODIFICADOR VÃO JUNTAS no `class=` do card — é a mesma
+// regra do `_pgMin1000Html`. O painel pinta por `ok/warn/red/acc`; o documento
+// do relatório pinta por `g/o/r/a`. Cada pele lê a sua e ignora a outra, e a
+// MARCAÇÃO continua sendo uma só para tela e papel.
+const _KPI_PAPEL = { ok:'g', warn:'o', red:'r', acc:'a' };
+function _kpiCls(c){ return c + (_KPI_PAPEL[c] ? ' ' + _KPI_PAPEL[c] : ''); }
+
 // ⚠ A LARGURA DO DESENHO ACOMPANHA O CARD — o SVG não pode dar ZOOM.
 // Com `viewBox` de 760 e `width:100%`, um monitor de 1920px ampliava tudo em
 // 2,43×: medido em 15/09/2026, o gráfico saía com 510px de altura (contra os
@@ -7203,10 +7211,24 @@ const QP_TAB_N = 15;
 // número fixo ela foi calibrada no desenho AMPLIADO e, na escala 1:1, sobrava
 // caixa preta tapando barra. `var(--font-d)` é monoespaçada — ~5,6px por
 // caractere a 9px, com folga de 10.
-function _svgTarja(x, y, txt, ancora){
-  const w = txt.length * 5.6 + 10;
-  return '<rect x="' + (ancora === 'end' ? x - w : x).toFixed(1) + '" y="' + (y - 11)
-    + '" width="' + w.toFixed(1) + '" height="13" fill="var(--bg)" opacity=".85" rx="2"/>';
+// ⚠ DE QUE LADO A TARJA CABE. Ela era sempre à esquerda (ou sempre à direita) e
+// tapava a barra que estivesse ali: no papel, a 660px, a faixa alvo cobria o
+// valor do 3º dia. Aqui o lado é escolhido pelo dado — fica onde NENHUMA das
+// barras da ponta cruza a altura do rótulo; empatando, vai para a direita, que
+// é onde o olho já terminou de ler.
+function _svgLadoLivre(valores, altura, n){
+  const k = Math.max(1, n || 3);
+  const cruza = arr => arr.filter(v => v >= altura).length;
+  const esq = cruza((valores || []).slice(0, k));
+  const dir = cruza((valores || []).slice(-k));
+  return esq < dir ? 'ini' : 'fim';
+}
+
+function _svgTarja(x, y, txt, ancora, fs){
+  const f = fs || 9;
+  const w = txt.length * f * 0.62 + 10, h = f + 5;
+  return '<rect x="' + (ancora === 'end' ? x - w : x).toFixed(1) + '" y="' + (y - h + 3).toFixed(1)
+    + '" width="' + w.toFixed(1) + '" height="' + h + '" fill="var(--bg)" opacity=".85" rx="2"/>';
 }
 
 function _svgLargura(el){
@@ -7255,7 +7277,12 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   const fMin = a.faixa[0], fMax = a.faixa[1];
   const clsPct = a.pctMedio > QP_ACIMA ? 'red' : (a.pctMedio < fMin - 15 ? 'warn' : 'ok');
   const clsOsc = a.osc == null ? '' : (a.osc > QP_OSC_RUIM ? 'red' : (a.osc > QP_OSC_OK ? 'warn' : 'ok'));
-  const W = larg || 760, H = 230, L = 46, R = 24, T = 16, B = 38;
+  const W = larg || 760, H = 320, L = 54, R = 26, T = 22, B = 46;
+  // ⚠ CORPO DOS RÓTULOS, num lugar só. Com o SVG ampliando (viewBox 760 em
+  // tela de 1920) o 9px daqui chegava a 21,9px; com o desenho a 1:1 ele
+  // chegava a 9px e sumia de relance. 12px é o meio-termo medido, no corpo
+  // do resto do painel (.kpi-lbl 10px, .kpi-sub 11px).
+  const FS = 12;
   // ── O GRÁFICO: DIA APÓS DIA, no calendário ───────────────────────────────
   // A 1ª versão tinha o PERCENTIL no eixo horizontal: os 79 dias enfileirados
   // do pior para o melhor, com a meta de cada dia pousada na curva. Era denso
@@ -7280,7 +7307,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     const cor = l.pct > QP_ACIMA ? 'var(--red)'
       : (l.pct >= fMin && l.pct <= fMax ? 'var(--ok)' : 'var(--warn)');
     return '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
-      + '" r="4" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
+      + '" r="5" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
       + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx (p' + Math.round(l.pct) + ')'
         + ' · realizado ' + fmtN(l.real) + ' cx') + '</title></circle>';
   }).join('');
@@ -7291,7 +7318,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   // em nenhum dia. Ela ganhou ponto próprio.
   const ptsReal = serie.map((l, i) =>
     '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.real).toFixed(1)
-    + '" r="2.6" fill="var(--txt)" opacity=".75"/>').join('');
+    + '" r="3.4" fill="var(--txt)" opacity=".75"/>').join('');
   // E a FAIXA DE TOQUE por dia: acertar um ponto de 4px com o mouse é tarefa,
   // e o do realizado tem 2,6. A faixa cobre a coluna inteira do dia e leva as
   // duas quantidades — é ela que responde "quanto foi neste dia?".
@@ -7310,13 +7337,13 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   // 15 dias dão 93px por dia para um rótulo de ~27px — cabe com folga.
   const cabeNum = serie.length <= 15;
   const numReal = cabeNum ? serie.map((l, i) =>
-    '<text x="' + ex(i).toFixed(1) + '" y="' + (ey(l.real) + 15).toFixed(1)
-    + '" fill="var(--txt)" opacity=".85" font-family="var(--font-d)" font-size="9" text-anchor="middle">'
+    '<text x="' + ex(i).toFixed(1) + '" y="' + (ey(l.real) + FS + 5).toFixed(1)
+    + '" fill="var(--txt)" opacity=".85" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">'
     + fmtN(l.real) + '</text>').join('') : '';
   // Rótulo de data a cada ~6 dias — todos os 30 viravam borrão.
   const passo = Math.max(1, Math.ceil(serie.length / 6));
   const datas = serie.map((l, i) => (i % passo === 0 || i === serie.length - 1)
-    ? '<text x="' + ex(i) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0, 5)) + '</text>' : '').join('');
+    ? '<text x="' + ex(i) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0, 5)) + '</text>' : '').join('');
   const yAcima = ey(a.alvoAcima), yMax = ey(a.alvoMax), yMin = ey(a.alvoMin);
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A meta e o realizado de cada dia, com a faixa onde a meta deveria ficar">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + Math.max(0, yAcima - T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7324,16 +7351,16 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMin + '" y2="' + yMin + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + toque
-    + '<path d="' + caminho('real') + '" fill="none" stroke="var(--txt)" stroke-width="2" opacity=".55"/>'
-    + '<path d="' + caminho('meta') + '" fill="none" stroke="var(--acc)" stroke-width="2.2"/>'
+    + '<path d="' + caminho('real') + '" fill="none" stroke="var(--txt)" stroke-width="2.4" opacity=".55"/>'
+    + '<path d="' + caminho('meta') + '" fill="none" stroke="var(--acc)" stroke-width="2.6"/>'
     + ptsReal + pts + numReal + datas
     // Os rótulos levam fundo próprio: por cima das linhas ficariam ilegíveis.
-    + _svgTarja(L + 3, T + 14, '\u2191 AQUI A LINHA QUASE NUNCA CHEGA')
-    + '<text x="' + (L + 8) + '" y="' + (T + 13) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9">\u2191 AQUI A LINHA QUASE NUNCA CHEGA</text>'
-    + _svgTarja(L + 3, yMax - 4, '\u2190 A META DEVERIA FICAR AQUI')
-    + '<text x="' + (L + 8) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">\u2190 A META DEVERIA FICAR AQUI</text>'
-    + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
-    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="8.5" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
+    + _svgTarja(L + 3, T + FS + 4, '\u2191 AQUI A LINHA QUASE NUNCA CHEGA', null, FS)
+    + '<text x="' + (L + 8) + '" y="' + (T + 13) + '" fill="var(--red)" font-family="var(--font-d)" font-size="' + FS + '">\u2191 AQUI A LINHA QUASE NUNCA CHEGA</text>'
+    + _svgTarja(L + 3, yMax - 4, '\u2190 A META DEVERIA FICAR AQUI', null, FS)
+    + '<text x="' + (L + 8) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="' + FS + '">\u2190 A META DEVERIA FICAR AQUI</text>'
+    + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
+    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="' + (FS-2) + '" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
     + '</svg>';
   const ord = _qpOrdenar(a.linhas, ordem);
   const tab = ord.linhas.map(l => {
@@ -7347,14 +7374,14 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   return ''
     + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
-    + '<div class="kpi-card ' + clsPct + '"><div class="kpi-lbl">ALTURA DA META</div><div class="kpi-val">p' + Math.round(a.pctMedio) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls(clsPct) + '"><div class="kpi-lbl">ALTURA DA META</div><div class="kpi-val">p' + Math.round(a.pctMedio) + '</div>'
     + '<div class="kpi-sub">a linha não chegaria lá em ' + Math.round(a.pctMedio) + '% dos dias · alvo p' + fMin + '–p' + fMax + '</div></div>'
-    + '<div class="kpi-card ' + clsOsc + '"><div class="kpi-lbl">OSCILAÇÃO DA META</div><div class="kpi-val">' + (a.osc == null ? '—' : fmtP(a.osc)) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls(clsOsc) + '"><div class="kpi-lbl">OSCILAÇÃO DA META</div><div class="kpi-val">' + (a.osc == null ? '—' : fmtP(a.osc)) + '</div>'
     + '<div class="kpi-sub">quanto a meta pula de um dia para o outro · alvo até ' + QP_OSC_OK + '%</div></div>'
-    + '<div class="kpi-card ' + (a.nAcima ? 'red' : 'ok') + '"><div class="kpi-lbl">DIAS ACIMA DA CAPACIDADE</div><div class="kpi-val">' + a.nAcima + '</div>'
+    + '<div class="kpi-card ' + _kpiCls(a.nAcima ? 'red' : 'ok') + '"><div class="kpi-lbl">DIAS ACIMA DA CAPACIDADE</div><div class="kpi-val">' + a.nAcima + '</div>'
     + '<div class="kpi-sub">de ' + a.n + ' dias a meta pediu mais do que a linha faz em p' + QP_ACIMA
     + ' · <b>' + a.nDentro + '</b> caíram dentro da faixa</div></div>'
-    + '<div class="kpi-card acc"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
     + '<div class="kpi-sub">a ' + fmtN(Math.round(a.alvoMax)) + ' cx/dia (p' + fMin + '–p' + fMax + ') · hoje a média é ' + fmtN(Math.round(a.metaMedia)) + '</div></div>'
     + '</div>'
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">A META E O QUE A LINHA PRODUZIU, DIA A DIA</div>'
@@ -7363,7 +7390,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<span><i style="background:var(--txt);opacity:.5"></i>o que a linha PRODUZIU</span>'
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a meta deveria ficar</span>'
     + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima da capacidade</span>'
-    + '<span>passe o mouse em qualquer ponto do gráfico para ver meta e produção do dia</span></div></div>'
+    + '<span class="qp-leg-mouse">passe o mouse em qualquer ponto do gráfico para ver meta e produção do dia</span></div></div>'
     + '<div class="par-sec">' + ord.titulo + '</div>'
     + (ord.nota ? '<div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:.5px;margin:-8px 2px 10px">' + _rpEsc(ord.nota.toUpperCase()) + '</div>' : '')
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
@@ -7507,13 +7534,25 @@ function _cartHtml(a, regua, larg){
   const v = _cartVeredito(a);
   if(!a) return '<div class="qp-ver"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>';
   const fMin = a.faixa[0], fMax = a.faixa[1];
-  const W = larg || 760, H = 210, L = 46, R = 24, T = 30, B = 34;
+  const W = larg || 760, H = 300, L = 54, R = 26, T = 34, B = 44;
+  const FS = 12;   // ver a nota do _qpHtml — o corpo é o mesmo nos dois
   const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => l.qtde))) * 1.08 || 1;
   const ey = y => T + (1 - y / topo) * (H - T - B);
   const passo = (W - L - R) / a.linhas.length;
   const yMax = ey(a.alvoMax), yMin = ey(a.alvoMin), yTeto = ey(a.teto);
   const _tetoTxt  = 'MELHOR DIA JÁ FEITO — ' + fmtN(a.teto) + ' CX';
-  const _cargaTxt = '← A CARGA DEVERIA FICAR AQUI';
+  const _cargaTxt = 'A CARGA DEVERIA FICAR AQUI';
+  // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
+  // seta aponta para dentro do gráfico a partir do lado escolhido.
+  const _qtds = a.linhas.map(l => l.qtde);
+  const _rot = (txt, valor, y, cor) => {
+    const fim = _svgLadoLivre(_qtds, valor) === 'fim';
+    const t = fim ? (txt + ' →') : ('← ' + txt);
+    return _svgTarja(fim ? W-R-4 : L+3, y-3, t, fim ? 'end' : null, FS)
+      + '<text x="' + (fim ? W-R-9 : L+8) + '" y="' + (y-4) + '" fill="' + cor
+      + '" font-family="var(--font-d)" font-size="' + FS + '"'
+      + (fim ? ' text-anchor="end"' : '') + '>' + _rpEsc(t) + '</text>';
+  };
   const barras = a.linhas.map((l, i) => {
     const x = L + i * passo + passo * 0.18, w = passo * 0.64;
     const y = ey(l.qtde);
@@ -7526,9 +7565,9 @@ function _cartHtml(a, regua, larg){
       // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
       // MELHOR DIA JÁ FEITO — que mora justamente na altura das barras que
       // estouram, que são as que mais interessa ler.
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 18 ? (y + 13) : (y - 4)).toFixed(1)
-      + '" fill="' + (y < T + 18 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="9" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 22 ? (y + FS + 3) : (y - 5)).toFixed(1)
+      + '" fill="' + (y < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
   }).join('');
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7536,10 +7575,8 @@ function _cartHtml(a, regua, larg){
     + barras
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
-    + _svgTarja(W-R-4, yTeto-3, _tetoTxt, 'end')
-    + '<text x="' + (W-R-9) + '" y="' + (yTeto-4) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + _rpEsc(_tetoTxt) + '</text>'
-    + _svgTarja(L+3, yMax-3, _cargaTxt)
-    + '<text x="' + (L+8) + '" y="' + (yMax-4) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">' + _rpEsc(_cargaTxt) + '</text>'
+    + _rot(_tetoTxt,  a.teto,     yTeto, 'var(--red)')
+    + _rot(_cargaTxt, a.alvoMax,  yMax,  'var(--ok)')
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + (H-B) + '" y2="' + (H-B) + '" stroke="var(--txt3)" stroke-width="1"/>'
     + '</svg>';
   const tab = a.linhas.map(l => {
@@ -7553,16 +7590,16 @@ function _cartHtml(a, regua, larg){
   return ''
     + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
-    + '<div class="kpi-card acc"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
     + '<div class="kpi-sub">' + fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)'
     + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
-    + '<div class="kpi-card ' + (a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
+    + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
     + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia já feito ('
     + fmtN(a.teto) + ' cx)</div></div>'
-    + '<div class="kpi-card ' + (a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls(a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
     + '<div class="kpi-sub">cx acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' cx nos dias livres'
     + (a.sobra > 0 ? ' · <b>sobram ' + fmtN(Math.round(a.sobra)) + '</b>' : ' · tudo cabe no período') + '</div></div>'
-    + '<div class="kpi-card acc"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
+    + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
     + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
     + '</div>'
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM</div>'
@@ -7570,7 +7607,7 @@ function _cartHtml(a, regua, larg){
     + '<div class="qp-leg"><span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
     + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
-    + '<span>passe o mouse numa barra para ver o dia</span></div></div>'
+    + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>PROGRAMADO</th><th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th></tr></thead><tbody>' + tab + '</tbody></table>'
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO. '
@@ -7621,20 +7658,168 @@ async function renderCarteira(){
       return;
     }
     await carregarProgramacaoDetalhada();
-    // ⚠ A DÍVIDA é `faltaZerar` (atraso vivo + o que falta da meta de hoje), que
-    // é o mesmo número que a Tela C da TV mostra. Backend antigo não manda o
-    // campo: aí cai no `atrasoTotal`. Não usar `||` entre os dois — dívida zero
-    // é um valor legítimo, e o `||` a trocaria pelo outro campo.
-    const prog = PONTOS_DIA.programacao || {};
-    const divida = (prog.faltaZerar != null) ? (Number(prog.faltaZerar) || 0)
-                                             : (Number(prog.atrasoTotal) || 0);
-    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), divida);
+    // A dívida (atraso vivo + o que falta hoje) sai do `_planoDivida`, a MESMA
+    // leitura do relatório em PDF — ver a nota de lá.
+    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida());
     const a = _cartAnalise(cart, curva, QP_FAIXA);
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
     // não se conseguiu lê-la é pior que não dizer nada.
     alvo.innerHTML = a ? _cartHtml(a, QP_REGUA, _svgLargura(alvo)) : _cartVazioHtml(cart);
   }finally{ CART_RODANDO = false; }
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO DA QUALIDADE DO PLANO (PDF)
+// ════════════════════════════════════════════════
+// ⚠ A MARCAÇÃO É A MESMA DA TELA. `_cartHtml` e `_qpHtml` desenham os dois
+// blocos aqui também — o que muda é a PELE, um bloco de CSS escopado por
+// `.plano-doc`. Copiar o desenho para o papel seria a história do cabeçalho dos
+// cinco relatórios (#204/#205): o próximo ajuste consertaria um e esqueceria o
+// outro. O `<head>` e as ~150 regras saem do `_rpDocParadas`, como nos outros
+// quatro documentos.
+//
+// ⚠ O SVG É RE-SKINADO POR TOKEN. Os desenhos usam `var(--ok)`, `var(--bg)`…,
+// que no painel vêm do tema escuro e no documento do relatório não existiriam —
+// cor inválida em SVG cai no preto. Redefinindo os tokens dentro de
+// `.plano-doc` o MESMO desenho sai na paleta do papel, sem uma segunda versão.
+const _PLANO_SKIN = `
+  /* os tokens que o SVG lê — é isto que re-skina o desenho para o papel */
+  .plano-doc{--bg:#fff;--txt:#1F2328;--txt2:#5B6470;--txt3:#9AA3AD;
+             --ok:#2E7D32;--warn:#B26A00;--red:#C62828;--acc:#E65100;
+             --surface:#f8fafc;--border:#e2e8f0;
+             --font-d:'IBM Plex Mono',monospace;--font-h:'Barlow Condensed',sans-serif}
+  .plano-doc svg{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plano-doc .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+  .plano-doc .qp-ver{border:1px solid #e2e8f0;border-left:3px solid #a0aec0;border-radius:5px;
+                     background:#f8fafc;padding:10px 13px;margin-bottom:11px;page-break-inside:avoid}
+  .plano-doc .qp-ver.ok{border-left-color:#2E7D32}
+  .plano-doc .qp-ver.warn{border-left-color:#B26A00}
+  .plano-doc .qp-ver.red{border-left-color:#C62828}
+  .plano-doc .qp-ver-t{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;
+                       letter-spacing:.5px;line-height:1.1;color:#1F2328}
+  .plano-doc .qp-ver-d{color:#5B6470;font-size:11px;margin-top:4px;line-height:1.45}
+  .plano-doc .qp-wrap{border:1px solid #edf2f7;border-radius:5px;padding:10px 12px;margin-top:4px;
+                      page-break-inside:avoid}
+  .plano-doc .qp-leg{display:flex;gap:13px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;
+                     font-size:8.5px;color:#718096;margin-top:7px}
+  .plano-doc .qp-leg i{display:inline-block;width:11px;height:3px;vertical-align:middle;margin-right:4px;
+                       -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plano-doc .qp-leg i.qp-dot{width:7px;height:7px;border-radius:50%}
+  .plano-doc .qp-pill{font-family:'IBM Plex Mono',monospace;font-size:9.5px;padding:1px 5px;border-radius:3px;
+                      border:1px solid #cbd5e0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plano-doc .qp-p-ok{color:#2E7D32;border-color:#2E7D32}
+  .plano-doc .qp-p-warn{color:#B26A00;border-color:#B26A00}
+  .plano-doc .qp-p-red{color:#C62828;border-color:#C62828}
+  /* a nota longa de cada bloco fica no papel: é ela que explica a leitura */
+  .plano-doc .qp-nota{font-size:10.5px;color:#4A5568;line-height:1.5;margin-top:10px;
+                      border-top:1px solid #edf2f7;padding-top:9px}
+  .plano-doc .qp-nota b{color:#1F2328}
+  .plano-doc .pl-abre{border-left:3px solid #E65100;background:#fff8f3;padding:9px 13px;border-radius:0 5px 5px 0;
+                      font-size:11px;color:#4A5568;line-height:1.5;margin-bottom:6px;
+                      -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plano-doc .pl-abre b{color:#1F2328}
+  /* o que só existe na tela não vai ao papel: o botão de tentar de novo e a
+     dica de passar o mouse — não há mouse numa folha impressa */
+  .plano-doc .qp-ver button,.plano-doc .qp-leg-mouse{display:none}
+`;
+
+// A largura do desenho no PAPEL é fixa: A4 retrato com as margens deste
+// documento dá ~178mm úteis ≈ 670px. Não é a do card da tela (`_svgLargura`),
+// que depende do monitor de quem imprimiu — papel não tem monitor.
+const PLANO_SVG_W = 660;
+
+async function gerarRelatorioPlano(){
+  const win = window.open('', '_blank', 'width=1040,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando a qualidade do plano...</p></body></html>');
+
+  let corpo = '';
+  try{
+    let dias = [];
+    try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
+    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    const curva = _qpCurva(dias, QP_REGUA);
+    if(curva.length < QP_MIN_DIAS){
+      win.close();
+      alert('São precisos ao menos ' + QP_MIN_DIAS + ' dias fechados para montar a curva de capacidade. Hoje há ' + curva.length + '.');
+      return;
+    }
+    const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
+    const a = _qpAnalise(rec, curva, QP_FAIXA);
+    if(!a){ win.close(); alert('Nenhum dia com meta no período escolhido.'); return; }
+
+    // ⚠ A CARTEIRA É OPCIONAL NO PAPEL. Se a leitura da programação falhar, o
+    // relatório sai INTEIRO, só sem a seção — a mesma regra da cascata e das
+    // paradas no relatório semanal. Meio relatório é melhor que relatório
+    // nenhum; número de carteira inventado é pior que os dois.
+    let ac = null, cart = null;
+    try{
+      await carregarProgramacaoDetalhada();
+      cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida());
+      ac = _cartAnalise(cart, curva, QP_FAIXA);
+    }catch(e){ ac = null; }
+
+    const fMin = a.faixa[0], fMax = a.faixa[1];
+    const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
+    const julgaTxt = QP_JANELA > 0 ? ('últimos ' + QP_JANELA + ' dias') : 'todo o histórico';
+    let n = 0;
+    const sec = t => '<div class="rp-sec-ttl">' + (++n) + ' ▸ ' + t + '</div>';
+
+    corpo = '<div class="plano-doc">'
+      + '<div class="pl-abre">Este relatório mede o <b>PLANO</b>, não a linha. A régua é a '
+      + '<b>capacidade demonstrada</b>: os dias já realizados, ordenados do pior para o melhor. '
+      + 'Uma meta em <b>p60</b> quer dizer que em 60% dos dias a linha não chegaria lá. '
+      + 'Régua: <b>' + _rpEsc(reguaTxt) + '</b> · faixa alvo: <b>p' + fMin + '–p' + fMax + '</b> · '
+      + 'dias julgados: <b>' + _rpEsc(julgaTxt) + '</b>.</div>'
+
+      + (ac ? (sec('A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR')
+              + '<div class="rp-note">Os lotes <b>já datados</b> para os dias que ainda não chegaram, somados por dia. '
+              + 'É a única parte desta leitura sobre a qual ainda dá para agir.</div>'
+              + _cartHtml(ac, QP_REGUA, PLANO_SVG_W))
+            : (sec('A CARTEIRA QUE VEM')
+              + '<div class="rp-note">Sem a leitura da PROGRAMACAO esta seção não sai. '
+              + 'O restante do relatório não depende dela.</div>'))
+
+      + sec('COMO TEMOS DATADO — OS DIAS QUE JÁ FECHARAM')
+      + '<div class="rp-note">O retrato da datação nos dias que já passaram. Diagnostica, mas não muda nada — o dia já foi.</div>'
+      + _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, PLANO_SVG_W)
+
+      + sec('COMO O NÚMERO SAI')
+      + '<table class="pgq-plano"><tbody>'
+      + '<tr><td style="font-weight:700;width:30%">CURVA DE CAPACIDADE</td><td>Os dias <b>com produção</b> do recorte da régua, ordenados do pior para o melhor. Dia parado não entra: não é capacidade, é ausência dela.</td></tr>'
+      + '<tr><td style="font-weight:700">ALTURA (percentil)</td><td>Onde a meta cai nessa curva — a fatia de dias que ela reprovaria. Medida no período julgado: <b>p' + Math.round(a.pctMedio) + '</b>.</td></tr>'
+      + '<tr><td style="font-weight:700">OSCILAÇÃO</td><td>Desvio padrão ÷ média das metas, em %. É um defeito <b>independente</b> da altura: a meta pode estar na altura certa e ainda pular de p0 a p100. Medida: <b>' + (a.osc == null ? '—' : fmtP(a.osc)) + '</b>, alvo até ' + QP_OSC_OK + '%.</td></tr>'
+      + '<tr><td style="font-weight:700">DOIS RECORTES</td><td><b>JULGAR</b> escolhe quais dias aparecem; <b>RÉGUA</b> escolhe de quais dias sai o padrão com que eles são comparados. São janelas diferentes de propósito.</td></tr>'
+      + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência só: o <b>topo da faixa alvo</b> (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima dele o dia não comporta; abaixo há espaço para receber. Se o que sai for menor que o espaço livre, <b>é só re-datar</b>.</td></tr>'
+             + '<tr><td style="font-weight:700">A DÍVIDA</td><td>Atraso vivo + o que falta da meta de hoje. Ocupa capacidade dos primeiros dias <b>antes</b> de qualquer lote novo, por isso entra no NIVELADO e na SOBRA.</td></tr>' : '')
+      + '<tr><td style="font-weight:700">O QUE ISTO NÃO É</td><td><b>Não é "baixar a meta".</b> A função da meta do dia é <b>sinalizar</b>: meta que a linha bate em ~metade dos dias faz o vermelho significar alguma coisa; meta que reprova quase todo dia vira paisagem e o alarme se perde. A produção sobe pelas <b>paradas</b>, pelo <b>setup</b> e pelo <b>teto da esteira</b> — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</td></tr>'
+      + '<tr><td style="font-weight:700">A FAIXA É MEDIANA</td><td>Não é limite físico: dia acima dela é <b>improvável</b>, não proibido. E <b>nivelar não é sequenciar</b> — o nivelamento é a restrição de capacidade, a ordem continua sendo a data de corte do cliente.</td></tr>'
+      + '</tbody></table>'
+      + '<div class="rp-footer"><span>' + APP_NOME_CX + ' · Embalagem</span>'
+      + '<span>' + a.n + ' dia(s) julgado(s) · régua de ' + _rpEsc(reguaTxt)
+      + (ac ? ' · carteira de ' + fmtN(Math.round(ac.total)) + ' cx' : '') + '</span></div>'
+      + '</div>';
+  }catch(err){
+    win.close(); alert(_rpErroRelatorio(err)); return;
+  }
+
+  const html = _rpDocParadas('Qualidade do Plano — ' + hojeStr())
+    + '<style>' + _PLANO_SKIN + '</style></head><body>'
+    + _rpCabecalho('QUALIDADE DO PLANO', 'A META CONTRA A CAPACIDADE DEMONSTRADA')
+    + corpo + _rpBotaoImprimir() + '</body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+// A DÍVIDA, uma leitura só para a tela e para o papel: `faltaZerar` (atraso
+// vivo + o que falta da meta de hoje), o mesmo número que a Tela C da TV mostra.
+// Backend antigo não manda o campo: aí cai no `atrasoTotal`.
+// ⚠ A escolha é por `!= null`, nunca por `||` — dívida ZERO é valor legítimo, e
+// o `||` a trocaria pelo outro campo.
+function _planoDivida(){
+  const prog = PONTOS_DIA.programacao || {};
+  return (prog.faltaZerar != null) ? (Number(prog.faltaZerar) || 0)
+                                   : (Number(prog.atrasoTotal) || 0);
 }
 
 // ════════════════════════════════════════════════
