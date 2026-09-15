@@ -2106,6 +2106,36 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ **A curva usa TODO o histórico; o filtro escolhe só quais metas são
   julgadas.** Recortar a curva junto com o período faria a régua mudar de
   tamanho a cada clique, e aí o percentil de ontem mudaria sem nada ter mudado.
+- ⚠ **O GRÁFICO É DIA A DIA, no calendário — e já foi outro.** A 1ª versão
+  (v7.45.0) punha o **percentil no eixo horizontal**: os 79 dias enfileirados do
+  pior para o melhor, com a meta de cada dia pousada na curva. **O próprio PPCP,
+  que pediu a tela, não conseguiu ler** — e tinha acabado de perguntar o que era
+  p50. Trocado na v7.47.0.
+  - Regra que isso confirma: **quando a interface e o entendimento divergem, o
+    defeito é da interface**. Tela de gestão à vista que precisa de aula falha na
+    parede, e falha primeiro com quem passa rápido.
+  - O gráfico de hoje tem **duas linhas** — meta (laranja) e realizado (cinza) —
+    e é assim que o **r²=8% aparece desenhado**: elas não se acompanham. Na
+    versão do ranking o realizado **nem era desenhado**, então o achado principal
+    da tela não aparecia.
+  - ⚠ **A RÉGUA É MÓVEL, e o padrão é 60 dias** (v7.48.0). Antes usava todo o
+    histórico e **subestimava a linha**: medido em 15/09/2026, com os 79 dias a
+    faixa dava `p50=1.548 / p60=1.602`, e só com os últimos 30 dava
+    `1.602 / 1.795` — julho (p50 de 1.466) puxava para baixo. Janela curta demais
+    pula com uma semana ruim; longa demais carrega um mês ruim que já passou.
+  - ⚠ **São DOIS recortes e eles não se confundem:** *JULGAR* escolhe quais dias
+    aparecem no gráfico; *RÉGUA* escolhe de quais dias sai o padrão com que eles
+    são comparados. O subtítulo da tela existe só para dizer isso.
+  - **A FAIXA ALVO é testável na tela** (p45–p55 … p60–p70). As constantes
+    `QP_ALVO_*` são o **ponto de partida**, não a lei: a faixa entra por
+    parâmetro no `_qpAnalise`, e **o veredito e o desenho leem dela** — senão a
+    tela julgaria por uma faixa e pintaria por outra. O card DIAS ACIMA mostra
+    quantos dias caíram **dentro** da faixa, que é o número de comparação.
+  - A escolha fica em `localStorage['rpe_qp_pref']` — calibrar leva dias, e
+    perder o ajuste a cada F5 faria ninguém calibrar. ⚠ Chave nova: **nunca
+    renomear por estética** (mesma regra das `rpe_*`).
+  - Os rótulos dentro do gráfico levam **fundo próprio** (`<rect>` atrás do
+    `<text>`): por cima das linhas ficavam ilegíveis.
 - ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`
   funcionam nele. Em `<canvas>` (Chart.js) token não resolve e sai preto; ver a
   nota do `mkChart`.
