@@ -1657,10 +1657,20 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
   texto, que é o nome acessível — não foi feita varredura cega de ARIA.
 
 **Ainda NÃO corrigido** (achado verificado, decisão pendente): o
-`startsWith('L')` da detecção de coluna de LOTE (ver acima — depende de conferir
-os cabeçalhos reais da `HORA_A_HORA`) · a
-COBERTURA DO APONTAMENTO só existe no PDF, não na tela ao vivo · mensagens de
-erro que ainda expõem `e.message` cru nos 4 relatórios.
+`startsWith('L')` da detecção de coluna de LOTE — ver acima; depende de conferir
+os cabeçalhos reais da `HORA_A_HORA`, e a regra está **copiada em 3 lugares** do
+`.gs` (`getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`), então endurecer
+exige lembrar dos três.
+
+⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
+a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi
+feito e dá ar de verdade ao que sobrou.
+- *"COBERTURA DO APONTAMENTO só existe no PDF"* — **está na tela**: o
+  `renderModeloPeriodo` calcula `cobTela` e imprime o percentual com o ⚠
+  abaixo de 80%, ao lado da contagem de dias.
+- *"`e.message` cru nos 4 relatórios"* — **não há nenhum**: `_rpErroRelatorio`
+  trata os **sete** caminhos de erro dos relatórios e não sobrou `alert` com a
+  exceção crua.
 
 ## PARADAS no relatório semanal
 - **`_relParadasSemanaHtml(st, totMeta)`** fecha o RELATÓRIO SEMANAL com o que a
