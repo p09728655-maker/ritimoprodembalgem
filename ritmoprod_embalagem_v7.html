@@ -2023,10 +2023,30 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="55-65">p55–p65</option>
         <option value="60-70">p60–p70</option>
       </select>
-      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">ORDEM</span>
+      <select id="qp-ordem" class="frm-inp" onchange="_qpSetOrdem(this.value)" style="width:126px;padding:3px 8px;font-size:11px;cursor:pointer"
+              title="Por DATA a tabela mostra os últimos dias. Por ALTURA ela mostra as metas mais altas (ou mais baixas) do período INTEIRO — é assim que se acha a meta impossível de três semanas atrás, que a cauda dos últimos dias esconde.">
+        <option value="data" selected>por data</option>
+        <option value="alta">altura: p maior</option>
+        <option value="baixa">altura: p menor</option>
+      </select>
+      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
     </div>
   </div>
-  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 12px">
+  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
+    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO
+  </div>
+
+  <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
+  <div class="par-sec" style="margin-top:0">A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR</div>
+  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-8px 2px 12px">
+    OS LOTES JÁ DATADOS PARA OS DIAS QUE AINDA NÃO CHEGARAM, SOMADOS POR DIA
+  </div>
+  <div id="qp-carteira"><div class="pg-carregando">CARREGANDO…</div></div>
+
+  <!-- ═══ 2) O QUE PASSOU: diagnóstico da datação (o dia já foi) ═══ -->
+  <div class="par-sec" style="margin-top:28px">COMO TEMOS DATADO — OS DIAS QUE JÁ FECHARAM</div>
+  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-8px 2px 12px">
     DOIS RECORTES DIFERENTES: <b>JULGAR</b> ESCOLHE QUAIS DIAS APARECEM · <b>RÉGUA</b> ESCOLHE DE QUAIS DIAS SAI O PADRÃO COM QUE ELES SÃO COMPARADOS
   </div>
   <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
@@ -2622,7 +2642,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.48.0';
+const APP_VER   = '7.50.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5934,14 +5954,30 @@ ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODU
 // PROGRAMAÇÃO — TELA DEDICADA (lote, peso, pontos, por dia)
 // ════════════════════════════════════════════════
 let PROG_DETALHADA=[];
+// ⚠ DUAS TELAS LEEM ISTO (PROGRAMAÇÃO e a CARTEIRA da aba PLANO), e
+// `getProgramacaoDetalhada` lê o catálogo + a PROGRAMACAO + o FIFO inteiro.
+// Sem cache, alternar entre as abas refazia a leitura a cada clique; sem a
+// requisição em voo compartilhada, abrir as duas seguidas dispara DUAS
+// execuções no Apps Script — que atende uma por vez, então a segunda só
+// atrasa a primeira. É o mesmo remédio do `_phVoo` e do `PG_VOO`.
+let PROG_DET_TS=0, PROG_DET_VOO=null;
+const PROG_DET_TTL=120000;   // 2 min, como o cache do histórico
+function invalidarProgDetCache(){ PROG_DET_TS=0; PROG_DET_VOO=null; }
 async function carregarProgramacaoDetalhada(){
   if(!CFG.sheetsUrl) return false;
-  try{
-    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
-    const json=await jsonpFetch(url);
-    if(json && json.ok && Array.isArray(json.itens)){ PROG_DETALHADA=json.itens; return true; }
-  }catch(e){ console.warn('carregarProgramacaoDetalhada:', e.message); }
-  return false;
+  if(PROG_DETALHADA.length && Date.now()-PROG_DET_TS < PROG_DET_TTL) return true;
+  if(PROG_DET_VOO) return PROG_DET_VOO;
+  PROG_DET_VOO=(async()=>{
+    try{
+      const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
+      const json=await jsonpFetch(url);
+      if(json && json.ok && Array.isArray(json.itens)){
+        PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now(); return true;
+      }
+    }catch(e){ console.warn('carregarProgramacaoDetalhada:', e.message); }
+    return false;
+  })();
+  try{ return await PROG_DET_VOO; } finally{ PROG_DET_VOO=null; }
 }
 function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
@@ -7035,6 +7071,10 @@ let QP_RODANDO = false;
 // com que eles são comparados. Padrão 60 dias — ver a nota do _qpCurva.
 let QP_REGUA = 60;
 let QP_FAIXA = [QP_ALVO_MIN, QP_ALVO_MAX];
+// A ORDEM da tabela: 'data' (os últimos dias) · 'alta'/'baixa' (as metas mais
+// altas / mais baixas do período julgado). Ver a nota do _qpOrdenar — a ordem
+// troca o RECORTE, não só a sequência das linhas.
+let QP_ORDEM = 'data';
 const QP_PREF_K = 'rpe_qp_pref';   // ⚠ chave nova: nunca renomear (ver CLAUDE.md)
 
 // A escolha do gestor sobrevive ao reload — calibrar a faixa leva dias, e
@@ -7046,11 +7086,12 @@ function _qpCarregarPref(){
     if(o.regua != null) QP_REGUA = Number(o.regua);
     if(Array.isArray(o.faixa) && o.faixa.length === 2) QP_FAIXA = o.faixa.map(Number);
     if(o.janela != null) QP_JANELA = Number(o.janela);
+    if(o.ordem) QP_ORDEM = String(o.ordem);
   }catch(e){}
 }
 function _qpSalvarPref(){
   try{ localStorage.setItem(QP_PREF_K,
-    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA})); }catch(e){}
+    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM})); }catch(e){}
 }
 
 function _qpFiltro(n){
@@ -7068,14 +7109,21 @@ function _qpInitFiltro(){
   if(r) r.value = String(QP_REGUA);
   const f = document.getElementById('qp-faixa');
   if(f) f.value = QP_FAIXA[0] + '-' + QP_FAIXA[1];
+  const o = document.getElementById('qp-ordem');
+  if(o) o.value = QP_ORDEM;
   document.querySelectorAll('#sec-plano .qp-q').forEach(b =>
     b.classList.toggle('on', Number(b.dataset.n) === QP_JANELA));
 }
-function _qpSetRegua(n){ QP_REGUA = Number(n); _qpSalvarPref(); renderQualidadePlano(); }
+// ⚠ RÉGUA e FAIXA mexem nos DOIS blocos: a carteira é medida contra a MESMA
+// curva. Redesenhar só um deixaria a tela aprovando em cima o que reprova
+// embaixo — e o gestor não teria como saber qual das duas estava valendo.
+function _qpSetRegua(n){ QP_REGUA = Number(n); _qpSalvarPref(); renderCarteira(); renderQualidadePlano(); }
+function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadePlano(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
   if(p.length === 2 && p[0] < p[1]) QP_FAIXA = p;
   _qpSalvarPref();
+  renderCarteira();
   renderQualidadePlano();
 }
 
@@ -7096,13 +7144,48 @@ async function renderQualidadePlano(){
     const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
     const a = _qpAnalise(rec, curva, QP_FAIXA);
     if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
-    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA);
+    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM);
   }finally{ QP_RODANDO = false; }
+}
+
+// Quantas linhas a tabela mostra, num lugar só.
+const QP_TAB_N = 15;
+
+// A ORDEM DA TABELA. Ordenar é DESENHO, mas mora em função própria por dois
+// motivos, e os dois são defeito se esquecidos:
+//   1. `a.linhas` é a MESMA lista que o gráfico usa como eixo de calendário —
+//      ordenar no lugar reordenaria o gráfico junto. Aqui sempre sai lista NOVA.
+//   2. o teste roda esta função direto, sem abrir a tela.
+//
+// ⚠ A ORDEM TROCA O RECORTE, e é de propósito — o título devolvido junto diz
+// qual recorte está valendo, senão a tabela mentiria sobre o que mostra.
+// Por DATA a tabela é a CAUDA do período (os últimos dias, o mais recente em
+// cima). Por ALTURA ela é o TOPO (ou o fundo) do período INTEIRO: reordenar só
+// os últimos 15 deixaria a meta impossível de três semanas atrás escondida —
+// que é justamente o que se foi procurar ao pedir a ordem por percentil.
+//
+// Empate de percentil: a lista chega em ordem de calendário e o sort do JS é
+// estável, então a `reverse()` antes do sort faz o dia MAIS RECENTE ficar na
+// frente entre iguais.
+function _qpOrdenar(linhas, ordem, n){
+  const L = (linhas || []).slice();
+  const lim = n || QP_TAB_N;
+  const p = l => (l && l.pct != null) ? l.pct : -1;   // sem percentil vai para o fim
+  if(ordem === 'alta' || ordem === 'baixa'){
+    const q = L.reverse().sort((x, y) => ordem === 'alta' ? p(y) - p(x) : p(x) - p(y)).slice(0, lim);
+    return { linhas:q, titulo: 'AS ' + q.length + ' METAS MAIS '
+      + (ordem === 'alta' ? 'ALTAS' : 'BAIXAS') + ' DO PERÍODO JULGADO',
+      nota: ordem === 'alta'
+        ? 'as metas que mais cobraram do que a linha faz — não são os últimos dias, são os do período inteiro'
+        : 'as metas mais folgadas do período — meta baixa demais faz o verde não significar nada' };
+  }
+  return { linhas: L.slice(-lim).reverse(),
+    titulo: 'OS ÚLTIMOS ' + Math.min(lim, L.length) + ' DIAS, UM A UM', nota:'' };
 }
 
 // O DESENHO, separado da busca — é ele que o teste roda contra um DOM de
 // mentira. Nenhuma conta aqui dentro: tudo vem pronto do _qpAnalise.
-function _qpHtml(a, curva, nTotal, regua){
+function _qpHtml(a, curva, nTotal, regua, ordem){
   const v = _qpVeredito(a);
   // A faixa vem da ANÁLISE, não das constantes: o gestor pode ter escolhido
   // outra na barra, e desenho lendo constante contradiria o próprio veredito.
@@ -7159,7 +7242,8 @@ function _qpHtml(a, curva, nTotal, regua){
     + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
     + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="8.5" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
     + '</svg>';
-  const tab = a.linhas.slice(-15).reverse().map(l => {
+  const ord = _qpOrdenar(a.linhas, ordem);
+  const tab = ord.linhas.map(l => {
     const c = l.pct > QP_ACIMA ? 'qp-p-red'
       : (l.pct >= fMin && l.pct <= fMax ? 'qp-p-ok' : 'qp-p-warn');
     return '<tr><td>' + _rpEsc(l.data) + '</td><td>' + fmtN(l.meta) + '</td>'
@@ -7187,7 +7271,8 @@ function _qpHtml(a, curva, nTotal, regua){
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a meta deveria ficar</span>'
     + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima da capacidade</span>'
     + '<span>passe o mouse num ponto para ver o dia</span></div></div>'
-    + '<div class="par-sec">OS ÚLTIMOS 15 DIAS, UM A UM</div>'
+    + '<div class="par-sec">' + ord.titulo + '</div>'
+    + (ord.nota ? '<div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:.5px;margin:-8px 2px 10px">' + _rpEsc(ord.nota.toUpperCase()) + '</div>' : '')
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
     + '<div class="qp-nota"><b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu. '
     + 'A <b>faixa verde</b> é onde a meta deveria ficar: ali ela é batida em cerca de metade dos dias, e aí o vermelho, quando aparece, quer dizer que aconteceu algo. '
@@ -7198,6 +7283,231 @@ function _qpHtml(a, curva, nTotal, regua){
     + '<b>Isto mede o PLANO, não a linha.</b> A meta do dia é a soma dos lotes datados para aquele dia, então ela herda a irregularidade da datação. '
     + 'Quando o dia fecha abaixo, o vermelho hoje cai no operador por uma variação que em boa parte não é dele.<br><br>'
     + '<b>Não é baixar a meta.</b> A produção sobe pelas paradas, pelo setup e pelo teto da esteira — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</div>';
+}
+
+// ════════════════════════════════════════════════
+// A CARTEIRA QUE VEM — a programação contra a capacidade demonstrada
+// ════════════════════════════════════════════════
+// (as contas ficam logo abaixo; a orquestração vem primeiro por ser curta)
+// O bloco de baixo julga o PASSADO: diz se a meta dos dias que já fecharam
+// estava na altura certa. Isso diagnostica e não muda nada — o dia já foi.
+// Este olha para o outro lado: os lotes JÁ DATADOS para os dias que ainda não
+// chegaram, que é onde ainda dá para agir.
+//
+// Medido na PROGRAMACAO real em 15/09/2026: 16/09 com 3.025 cx e 17/09 com
+// 3.125, enquanto o MELHOR dia da linha em 79 dias é 2.909 — os dois nasceram
+// impossíveis. E 22, 23 e 24/09 com 1.228 a 1.350, abaixo do que a linha faz em
+// 3 dias de 4. Nada disso é capacidade: é datação, e no dia 15 dava para mudar.
+//
+// ⚠ A RÉGUA É A MESMA do resto da aba (`_qpCurva` com `QP_REGUA`) e a faixa
+// alvo é a MESMA `QP_FAIXA`. Uma segunda régua aqui faria a tela aprovar em
+// cima o que reprova embaixo — o defeito que este projeto mais pagou caro.
+
+const CART_DIAS_MAX = 21;   // horizonte desenhado: além disso a datação é rascunho
+
+// dd/MM/yyyy -> yyyymmdd, a MESMA forma do `dataNum` que o backend manda
+// (`dataParaNum` no .gs). Comparar data como texto erra na virada do mês.
+function _cartNum(str){
+  const m = String(str || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m ? Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]) : 0;
+}
+
+// A carteira EM ABERTO por data. Entra só o que ainda NÃO VENCEU (data > hoje):
+// é o que dá para re-datar. Hoje já está rodando e o vencido não tem data para
+// onde voltar — os dois entram como DÍVIDA, que consome a capacidade dos
+// primeiros dias antes de qualquer lote novo.
+//
+// ⚠ Para linha de data futura o backend zera `embalado`/`falta` de propósito
+// (nada venceu ainda), então o aberto dela É a `qtde`. Não somar `falta` aqui:
+// ele vem do FIFO POR CÓDIGO, e duas linhas do mesmo código devolvem o mesmo
+// número — somadas, contariam o saldo duas vezes.
+function _cartAberta(itens, hojeNum, divida){
+  const por = {};
+  (itens || []).forEach(it => {
+    if(!it || it.foraEsteira) return;              // fora da esteira não passa aqui
+    const dn = Number(it.dataNum) || _cartNum(it.data);
+    if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
+    const q = Number(it.qtde) || 0;
+    if(q <= 0) return;
+    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, n:0 };
+    por[dn].qtde += q; por[dn].n++;
+  });
+  const dias = Object.keys(por).map(k => por[k]).sort((a,b) => a.dataNum - b.dataNum)
+                     .slice(0, CART_DIAS_MAX);
+  return {
+    dias,
+    divida: Math.max(0, Number(divida) || 0),
+    futuro: dias.reduce((a,d) => a + d.qtde, 0),
+    de:  dias.length ? dias[0].data : '',
+    ate: dias.length ? dias[dias.length - 1].data : ''
+  };
+}
+
+// A leitura: onde a datação estoura, onde sobra, e se o horizonte comporta o
+// total. UMA referência só — o TOPO DA FAIXA ALVO (`alvoMax`): acima dele o dia
+// não cabe, abaixo dele há espaço para receber. Duas referências (uma para o
+// que sai, outra para o que entra) dariam uma conta que não fecha na tela.
+function _cartAnalise(cart, curva, faixa){
+  if(!cart || !cart.dias.length || !curva || !curva.length) return null;
+  const fMin = (faixa && faixa[0]) || QP_ALVO_MIN;
+  const fMax = (faixa && faixa[1]) || QP_ALVO_MAX;
+  const alvoMin = _qpValorNoPercentil(fMin, curva);
+  const alvoMax = _qpValorNoPercentil(fMax, curva);
+  const teto    = curva[curva.length - 1];          // o melhor dia já feito
+  const linhas = cart.dias.map(d => {
+    const pct = _qpPercentil(d.qtde, curva);
+    return Object.assign({}, d, {
+      pct,
+      // acima do melhor dia da história = nasceu impossível, não é "apertado"
+      impossivel: d.qtde > teto,
+      sai:  Math.max(0, d.qtde - alvoMax),          // o que não cabe neste dia
+      cabe: Math.max(0, alvoMax - d.qtde)           // o espaço livre neste dia
+    });
+  });
+  const sai  = linhas.reduce((a,l) => a + l.sai,  0);
+  const cabe = linhas.reduce((a,l) => a + l.cabe, 0);
+  const total = cart.futuro + cart.divida;
+  return {
+    linhas, alvoMin, alvoMax, teto, faixa:[fMin, fMax],
+    n: linhas.length,
+    divida: cart.divida, futuro: cart.futuro, total,
+    de: cart.de, ate: cart.ate,
+    nivelado: total / linhas.length,               // a dívida entra: ela ocupa dia
+    pctNivelado: _qpPercentil(total / linhas.length, curva),
+    sai, cabe,
+    // ⚠ o que sobra depois de encaixar o excesso nas folgas: se for > 0, o
+    // horizonte não comporta o total e re-datar sozinho NÃO resolve.
+    sobra: Math.max(0, sai + cart.divida - cabe),
+    nImpossivel: linhas.filter(l => l.impossivel).length,
+    nAcima: linhas.filter(l => l.sai > 0).length,
+    nFolga: linhas.filter(l => l.cabe > 0).length
+  };
+}
+
+// O VEREDITO fala da DATAÇÃO, nunca da linha — e distingue os dois problemas,
+// que pedem ações opostas: re-datar (de graça) × arrumar capacidade (custa).
+function _cartVeredito(a){
+  if(!a) return { cls:'', t:'SEM CARTEIRA DATADA', d:'não há lote com data futura na PROGRAMACAO' };
+  if(a.sobra > 0) return { cls:'red', t:'HORIZONTE SOBRECARREGADO',
+    d:'mesmo espalhando a carga pelos dias livres sobram ' + fmtN(Math.round(a.sobra))
+      + ' cx que não cabem no período — aqui re-datar não basta: é dia a mais, hora extra ou empurrar para a semana seguinte' };
+  if(a.nImpossivel > 0) return { cls:'red', t:'DIA DATADO ACIMA DO MÁXIMO JÁ FEITO',
+    d:a.nImpossivel + ' dia(s) pedem mais que o melhor dia da história da linha (' + fmtN(a.teto)
+      + ' cx) — e a carga cabe no período: é redistribuir, não produzir mais' };
+  if(a.sai > 0) return { cls:'warn', t:'CARGA MAL DISTRIBUÍDA',
+    d:fmtN(Math.round(a.sai)) + ' cx estão em dias que não comportam, e há ' + fmtN(Math.round(a.cabe))
+      + ' cx de espaço nos dias livres do próprio período' };
+  return { cls:'ok', t:'CARTEIRA NIVELADA',
+    d:'todos os dias datados cabem na faixa alvo — o vermelho que aparecer vai ser da operação, não da datação' };
+}
+
+// O DESENHO. Nenhuma conta aqui dentro: tudo vem pronto do `_cartAnalise`.
+function _cartHtml(a, regua){
+  const v = _cartVeredito(a);
+  if(!a) return '<div class="qp-ver"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>';
+  const fMin = a.faixa[0], fMax = a.faixa[1];
+  const W = 760, H = 210, L = 46, R = 24, T = 30, B = 34;
+  const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => l.qtde))) * 1.08 || 1;
+  const ey = y => T + (1 - y / topo) * (H - T - B);
+  const larg = (W - L - R) / a.linhas.length;
+  const yMax = ey(a.alvoMax), yMin = ey(a.alvoMin), yTeto = ey(a.teto);
+  const barras = a.linhas.map((l, i) => {
+    const x = L + i * larg + larg * 0.18, w = larg * 0.64;
+    const y = ey(l.qtde);
+    const cor = l.sai > 0 ? 'var(--red)' : (l.qtde >= a.alvoMin ? 'var(--ok)' : 'var(--warn)');
+    return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
+      + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2">'
+      + '<title>' + _rpEsc(l.data + ' · ' + fmtN(l.qtde) + ' cx programadas (p' + Math.round(l.pct) + ')'
+        + (l.sai > 0 ? ' · ' + fmtN(Math.round(l.sai)) + ' cx não cabem' : '')
+        + ' · ' + l.n + ' linha(s)') + '</title></rect>'
+      // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
+      // MELHOR DIA JÁ FEITO — que mora justamente na altura das barras que
+      // estouram, que são as que mais interessa ler.
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 18 ? (y + 13) : (y - 4)).toFixed(1)
+      + '" fill="' + (y < T + 18 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="9" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
+  }).join('');
+  const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
+    + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
+    + '<rect x="' + L + '" y="' + yMax + '" width="' + (W-L-R) + '" height="' + Math.max(0, yMin-yMax) + '" fill="var(--ok)" opacity=".28"/>'
+    + barras
+    + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
+    + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
+    + '<rect x="' + (W-R-238) + '" y="' + (yTeto-14) + '" width="238" height="13" fill="var(--bg)" opacity=".88" rx="2"/>'
+    + '<text x="' + (W-R-4) + '" y="' + (yTeto-4) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9" text-anchor="end">MELHOR DIA JÁ FEITO — ' + fmtN(a.teto) + ' CX</text>'
+    + '<rect x="' + (L+3) + '" y="' + (yMax-14) + '" width="196" height="13" fill="var(--bg)" opacity=".82" rx="2"/>'
+    + '<text x="' + (L+7) + '" y="' + (yMax-4) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">← A CARGA DEVERIA FICAR AQUI</text>'
+    + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + (H-B) + '" y2="' + (H-B) + '" stroke="var(--txt3)" stroke-width="1"/>'
+    + '</svg>';
+  const tab = a.linhas.map(l => {
+    const c = l.sai > 0 ? 'qp-p-red' : (l.qtde >= a.alvoMin ? 'qp-p-ok' : 'qp-p-warn');
+    return '<tr><td>' + _rpEsc(l.data) + '</td><td>' + fmtN(l.qtde) + '</td>'
+      + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
+      + '<td>' + l.n + '</td>'
+      + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
+      + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td></tr>';
+  }).join('');
+  return ''
+    + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
+    + '<div class="kpi-grid c4" style="margin-bottom:16px">'
+    + '<div class="kpi-card acc"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
+    + '<div class="kpi-sub">' + fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)'
+    + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
+    + '<div class="kpi-card ' + (a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
+    + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia já feito ('
+    + fmtN(a.teto) + ' cx)</div></div>'
+    + '<div class="kpi-card ' + (a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
+    + '<div class="kpi-sub">cx acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' cx nos dias livres'
+    + (a.sobra > 0 ? ' · <b>sobram ' + fmtN(Math.round(a.sobra)) + '</b>' : ' · tudo cabe no período') + '</div></div>'
+    + '<div class="kpi-card acc"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
+    + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
+    + '</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM</div>'
+    + svg
+    + '<div class="qp-leg"><span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
+    + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
+    + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
+    + '<span>passe o mouse numa barra para ver o dia</span></div></div>'
+    + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
+    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>PROGRAMADO</th><th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th></tr></thead><tbody>' + tab + '</tbody></table>'
+    + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO. '
+    + 'A faixa verde é o que a linha entrega na altura certa; a linha vermelha tracejada é o <b>melhor dia que ela já fez</b> — barra acima dela nasceu impossível. '
+    + 'As colunas <b>NÃO CABE</b> e <b>ESPAÇO LIVRE</b> são as duas pontas da mesma conta: se o que não cabe for menor que o espaço livre, é só re-datar, e isso não custa nada.<br><br>'
+    + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
+    + '<b>Nivelar não é sequenciar.</b> Encher todo dia com a mesma quantidade ignorando data de corte do cliente só troca um problema por outro: o nivelamento é a restrição de <b>capacidade</b>, a ordem continua sendo a <b>data</b>.<br><br>'
+    + 'A régua (p' + fMin + '/p' + fMax + ') sai dos <b>' + (regua > 0 ? ('últimos ' + regua + ' dias') : 'dias todos') + '</b> de histórico — a mesma do bloco de baixo, escolhida na barra do topo. '
+    + '⚠ Ela é uma <b>mediana</b>, não um limite físico: dia acima da faixa é improvável, não proibido.</div>';
+}
+
+// A busca. Custo: o `getProgramacaoDetalhada`, que agora tem cache de 2 min e
+// requisição compartilhada com a aba PROGRAMAÇÃO — quem abre as duas paga UMA
+// leitura, não duas. A dívida sai do `PONTOS_DIA`, que o painel já carregou.
+let CART_RODANDO = false;
+async function renderCarteira(){
+  const alvo = document.getElementById('qp-carteira');
+  if(!alvo || CART_RODANDO) return;
+  CART_RODANDO = true;
+  try{
+    let dias = [];
+    try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
+    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    const curva = _qpCurva(dias, QP_REGUA);
+    if(curva.length < QP_MIN_DIAS){
+      alvo.innerHTML = '<div class="pg-carregando">Sem curva de capacidade ainda — são precisos ao menos '
+        + QP_MIN_DIAS + ' dias fechados.</div>';
+      return;
+    }
+    await carregarProgramacaoDetalhada();
+    // ⚠ A DÍVIDA é `faltaZerar` (atraso vivo + o que falta da meta de hoje), que
+    // é o mesmo número que a Tela C da TV mostra. Backend antigo não manda o
+    // campo: aí cai no `atrasoTotal`. Não usar `||` entre os dois — dívida zero
+    // é um valor legítimo, e o `||` a trocaria pelo outro campo.
+    const prog = PONTOS_DIA.programacao || {};
+    const divida = (prog.faltaZerar != null) ? (Number(prog.faltaZerar) || 0)
+                                             : (Number(prog.atrasoTotal) || 0);
+    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), divida);
+    alvo.innerHTML = _cartHtml(_cartAnalise(cart, curva, QP_FAIXA), QP_REGUA);
+  }finally{ CART_RODANDO = false; }
 }
 
 // ════════════════════════════════════════════════
@@ -7214,7 +7524,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
-  if(tab==='plano'){ _qpInitFiltro(); renderQualidadePlano(); }
+  if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
   // aba TV e (re)inicia a alternância; ao sair da aba, o ciclo se para sozinho.
