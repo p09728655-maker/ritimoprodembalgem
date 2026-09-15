@@ -1690,9 +1690,18 @@ alguém acrescentar uma coluna com esses nomes **depois** de REALIZADO.
   apesar do nome — é a de produção: o total subiu de 2.077 para 2.137 durante a
   própria conferência). `B5` também é fórmula e distribui a meta pelas horas
   `>= C3`, que é a mesma regra do início de turno já documentada aqui.
-- A aba de programação chama-se **`PROGRAMAÇÃO`** (com Ç e Ã) e a constante do
-  `.gs` diz `PROGRAMACAO` — isso **já está tratado** pelo `acharAbaTolerante`,
-  não é defeito aberto.
+- A aba de programação chamava-se **`PROGRAMAÇÃO`** (com Ç e Ã) contra a
+  constante `PROGRAMACAO` do `.gs`. **O usuário renomeou a aba para
+  `PROGRAMACAO` em 15/09/2026**, então hoje o `getSheetByName` casa exato.
+  - Não era defeito: o `acharAbaTolerante` já resolvia, comparando sem acento.
+    O rename foi conferido e saiu limpo — **zero** referências ao nome antigo,
+    **zero** `#REF!` e **zero** `INDIRECT()` na planilha inteira (fórmula com
+    nome de aba em texto dentro de `INDIRECT` é a única que o Google **não**
+    atualiza sozinha no rename; não havia nenhuma).
+  - ⚠ **Não apagar o `acharAbaTolerante`** por causa disso. Ele é a rede de
+    quem criar planilha nova a partir de um modelo antigo, com o acento — e o
+    sintoma de quando falta é o pior que existe aqui: programação e atraso
+    voltando **vazios, sem erro nenhum**.
 
 ⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
 a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi
