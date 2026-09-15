@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.53.0 — 15/09/2026
+
+**Atenção** — nenhuma conta mudou. Ajuste de escala dos gráficos da aba PLANO,
+depois de duas correções do usuário no mesmo dia.
+
+```
+                    v7.51 e antes   v7.52.0   v7.53.0
+altura do gráfico        510px        210px     300px
+corpo dos rótulos       21,9px        9,0px      12px
+veredito do usuário   "muito grande" "muito pequeno"   —
+```
+
+O corpo dos rótulos agora mora numa constante (`FS`) dentro de cada desenho, em
+vez de `font-size="9"` espalhado em doze lugares, e a tarja atrás dos rótulos
+recebe o corpo da fonte — largura e altura saem dele.
+
+---
+
 ## v7.52.0 — 15/09/2026
 
 **Atenção** — nenhuma conta mudou. Os dois gráficos da aba PLANO estavam sendo

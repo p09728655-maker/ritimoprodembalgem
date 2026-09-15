@@ -2162,7 +2162,14 @@ feito e dá ar de verdade ao que sobrou.
   esticar de volta. Em tela estreita ele encolhe junto, como antes.
   - A tarja atrás dos rótulos sai do **texto** (`_svgTarja`), não de um número
     fixo — calibrada no desenho ampliado, na escala 1:1 ela sobrava e tapava
-    barra.
+    barra. Ela recebe o corpo da fonte: largura e altura saem dele.
+  - ⚠ **A ESCALA É UM MEIO-TERMO MEDIDO, e levou DUAS correções do usuário no
+    mesmo dia**: *"ficou tudo muito grande"* (a 2,43×, com a legenda a 21,9px) e
+    depois *"agora ficou muito pequeno"* (a 1,00×, com ela a 9px). O corpo mora
+    na constante **`FS = 12`** dentro de cada desenho, e a altura ficou em
+    **300/320px**. `font-size` solto no SVG não volta — o teste falha.
+  - Lição: corrigir um exagero para o extremo oposto é errar duas vezes. Medir
+    os dois extremos primeiro e parar no meio custa uma rodada a menos.
 - ⚠ **A LINHA DO REALIZADO PRECISA SER LEGÍVEL** (correção do usuário,
   15/09/2026: *"a linha branca não tem como ver as qtdes"*). Só a meta tinha
   ponto e tooltip; o realizado era traço cinza sem marcador, sem número e **sem

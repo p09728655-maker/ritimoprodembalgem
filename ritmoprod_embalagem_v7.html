@@ -2642,7 +2642,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.52.0';
+const APP_VER   = '7.53.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7203,10 +7203,11 @@ const QP_TAB_N = 15;
 // número fixo ela foi calibrada no desenho AMPLIADO e, na escala 1:1, sobrava
 // caixa preta tapando barra. `var(--font-d)` é monoespaçada — ~5,6px por
 // caractere a 9px, com folga de 10.
-function _svgTarja(x, y, txt, ancora){
-  const w = txt.length * 5.6 + 10;
-  return '<rect x="' + (ancora === 'end' ? x - w : x).toFixed(1) + '" y="' + (y - 11)
-    + '" width="' + w.toFixed(1) + '" height="13" fill="var(--bg)" opacity=".85" rx="2"/>';
+function _svgTarja(x, y, txt, ancora, fs){
+  const f = fs || 9;
+  const w = txt.length * f * 0.62 + 10, h = f + 5;
+  return '<rect x="' + (ancora === 'end' ? x - w : x).toFixed(1) + '" y="' + (y - h + 3).toFixed(1)
+    + '" width="' + w.toFixed(1) + '" height="' + h + '" fill="var(--bg)" opacity=".85" rx="2"/>';
 }
 
 function _svgLargura(el){
@@ -7255,7 +7256,12 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   const fMin = a.faixa[0], fMax = a.faixa[1];
   const clsPct = a.pctMedio > QP_ACIMA ? 'red' : (a.pctMedio < fMin - 15 ? 'warn' : 'ok');
   const clsOsc = a.osc == null ? '' : (a.osc > QP_OSC_RUIM ? 'red' : (a.osc > QP_OSC_OK ? 'warn' : 'ok'));
-  const W = larg || 760, H = 230, L = 46, R = 24, T = 16, B = 38;
+  const W = larg || 760, H = 320, L = 54, R = 26, T = 22, B = 46;
+  // ⚠ CORPO DOS RÓTULOS, num lugar só. Com o SVG ampliando (viewBox 760 em
+  // tela de 1920) o 9px daqui chegava a 21,9px; com o desenho a 1:1 ele
+  // chegava a 9px e sumia de relance. 12px é o meio-termo medido, no corpo
+  // do resto do painel (.kpi-lbl 10px, .kpi-sub 11px).
+  const FS = 12;
   // ── O GRÁFICO: DIA APÓS DIA, no calendário ───────────────────────────────
   // A 1ª versão tinha o PERCENTIL no eixo horizontal: os 79 dias enfileirados
   // do pior para o melhor, com a meta de cada dia pousada na curva. Era denso
@@ -7280,7 +7286,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     const cor = l.pct > QP_ACIMA ? 'var(--red)'
       : (l.pct >= fMin && l.pct <= fMax ? 'var(--ok)' : 'var(--warn)');
     return '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
-      + '" r="4" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
+      + '" r="5" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
       + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx (p' + Math.round(l.pct) + ')'
         + ' · realizado ' + fmtN(l.real) + ' cx') + '</title></circle>';
   }).join('');
@@ -7291,7 +7297,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   // em nenhum dia. Ela ganhou ponto próprio.
   const ptsReal = serie.map((l, i) =>
     '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.real).toFixed(1)
-    + '" r="2.6" fill="var(--txt)" opacity=".75"/>').join('');
+    + '" r="3.4" fill="var(--txt)" opacity=".75"/>').join('');
   // E a FAIXA DE TOQUE por dia: acertar um ponto de 4px com o mouse é tarefa,
   // e o do realizado tem 2,6. A faixa cobre a coluna inteira do dia e leva as
   // duas quantidades — é ela que responde "quanto foi neste dia?".
@@ -7310,13 +7316,13 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
   // 15 dias dão 93px por dia para um rótulo de ~27px — cabe com folga.
   const cabeNum = serie.length <= 15;
   const numReal = cabeNum ? serie.map((l, i) =>
-    '<text x="' + ex(i).toFixed(1) + '" y="' + (ey(l.real) + 15).toFixed(1)
-    + '" fill="var(--txt)" opacity=".85" font-family="var(--font-d)" font-size="9" text-anchor="middle">'
+    '<text x="' + ex(i).toFixed(1) + '" y="' + (ey(l.real) + FS + 5).toFixed(1)
+    + '" fill="var(--txt)" opacity=".85" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">'
     + fmtN(l.real) + '</text>').join('') : '';
   // Rótulo de data a cada ~6 dias — todos os 30 viravam borrão.
   const passo = Math.max(1, Math.ceil(serie.length / 6));
   const datas = serie.map((l, i) => (i % passo === 0 || i === serie.length - 1)
-    ? '<text x="' + ex(i) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0, 5)) + '</text>' : '').join('');
+    ? '<text x="' + ex(i) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0, 5)) + '</text>' : '').join('');
   const yAcima = ey(a.alvoAcima), yMax = ey(a.alvoMax), yMin = ey(a.alvoMin);
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A meta e o realizado de cada dia, com a faixa onde a meta deveria ficar">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + Math.max(0, yAcima - T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7324,16 +7330,16 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMin + '" y2="' + yMin + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + toque
-    + '<path d="' + caminho('real') + '" fill="none" stroke="var(--txt)" stroke-width="2" opacity=".55"/>'
-    + '<path d="' + caminho('meta') + '" fill="none" stroke="var(--acc)" stroke-width="2.2"/>'
+    + '<path d="' + caminho('real') + '" fill="none" stroke="var(--txt)" stroke-width="2.4" opacity=".55"/>'
+    + '<path d="' + caminho('meta') + '" fill="none" stroke="var(--acc)" stroke-width="2.6"/>'
     + ptsReal + pts + numReal + datas
     // Os rótulos levam fundo próprio: por cima das linhas ficariam ilegíveis.
-    + _svgTarja(L + 3, T + 14, '\u2191 AQUI A LINHA QUASE NUNCA CHEGA')
-    + '<text x="' + (L + 8) + '" y="' + (T + 13) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9">\u2191 AQUI A LINHA QUASE NUNCA CHEGA</text>'
-    + _svgTarja(L + 3, yMax - 4, '\u2190 A META DEVERIA FICAR AQUI')
-    + '<text x="' + (L + 8) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">\u2190 A META DEVERIA FICAR AQUI</text>'
-    + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
-    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="8.5" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
+    + _svgTarja(L + 3, T + FS + 4, '\u2191 AQUI A LINHA QUASE NUNCA CHEGA', null, FS)
+    + '<text x="' + (L + 8) + '" y="' + (T + 13) + '" fill="var(--red)" font-family="var(--font-d)" font-size="' + FS + '">\u2191 AQUI A LINHA QUASE NUNCA CHEGA</text>'
+    + _svgTarja(L + 3, yMax - 4, '\u2190 A META DEVERIA FICAR AQUI', null, FS)
+    + '<text x="' + (L + 8) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="' + FS + '">\u2190 A META DEVERIA FICAR AQUI</text>'
+    + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
+    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="' + (FS-2) + '" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
     + '</svg>';
   const ord = _qpOrdenar(a.linhas, ordem);
   const tab = ord.linhas.map(l => {
@@ -7507,7 +7513,8 @@ function _cartHtml(a, regua, larg){
   const v = _cartVeredito(a);
   if(!a) return '<div class="qp-ver"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>';
   const fMin = a.faixa[0], fMax = a.faixa[1];
-  const W = larg || 760, H = 210, L = 46, R = 24, T = 30, B = 34;
+  const W = larg || 760, H = 300, L = 54, R = 26, T = 34, B = 44;
+  const FS = 12;   // ver a nota do _qpHtml — o corpo é o mesmo nos dois
   const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => l.qtde))) * 1.08 || 1;
   const ey = y => T + (1 - y / topo) * (H - T - B);
   const passo = (W - L - R) / a.linhas.length;
@@ -7526,9 +7533,9 @@ function _cartHtml(a, regua, larg){
       // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
       // MELHOR DIA JÁ FEITO — que mora justamente na altura das barras que
       // estouram, que são as que mais interessa ler.
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 18 ? (y + 13) : (y - 4)).toFixed(1)
-      + '" fill="' + (y < T + 18 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="9" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 22 ? (y + FS + 3) : (y - 5)).toFixed(1)
+      + '" fill="' + (y < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
   }).join('');
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7536,10 +7543,10 @@ function _cartHtml(a, regua, larg){
     + barras
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
-    + _svgTarja(W-R-4, yTeto-3, _tetoTxt, 'end')
-    + '<text x="' + (W-R-9) + '" y="' + (yTeto-4) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + _rpEsc(_tetoTxt) + '</text>'
-    + _svgTarja(L+3, yMax-3, _cargaTxt)
-    + '<text x="' + (L+8) + '" y="' + (yMax-4) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">' + _rpEsc(_cargaTxt) + '</text>'
+    + _svgTarja(W-R-4, yTeto-3, _tetoTxt, 'end', FS)
+    + '<text x="' + (W-R-9) + '" y="' + (yTeto-4) + '" fill="var(--red)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="end">' + _rpEsc(_tetoTxt) + '</text>'
+    + _svgTarja(L+3, yMax-3, _cargaTxt, null, FS)
+    + '<text x="' + (L+8) + '" y="' + (yMax-4) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="' + FS + '">' + _rpEsc(_cargaTxt) + '</text>'
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + (H-B) + '" y2="' + (H-B) + '" stroke="var(--txt3)" stroke-width="1"/>'
     + '</svg>';
   const tab = a.linhas.map(l => {

@@ -2786,10 +2786,25 @@ ok('a largura sai do card, com piso e teto',
 });
 // A tarja do rótulo nasce do texto — com número fixo ela sobrava na escala 1:1.
 eval(pega('function _svgTarja('));
-ok('a tarja acompanha o tamanho do texto',
-   _svgTarja(0, 20, 'ABC').includes('width="26.8"'), true);
-ok('e a ancorada à direita recua a própria largura',
-   _svgTarja(100, 20, 'ABC', 'end').includes('x="73.2"'), true);
+// Asserções de RELAÇÃO, não de pixel: largura exata muda com o corpo da fonte
+// e um teste presa nela vira manutenção sem ganho.
+const _larguraTarja = t => Number(/width="([\d.]+)"/.exec(t)[1]);
+ok('a tarja cresce com o texto',
+   _larguraTarja(_svgTarja(0,20,'ABCDEF',null,12)) > _larguraTarja(_svgTarja(0,20,'ABC',null,12)), true);
+ok('e cresce com o corpo da fonte',
+   _larguraTarja(_svgTarja(0,20,'ABC',null,12)) > _larguraTarja(_svgTarja(0,20,'ABC',null,9)), true);
+ok('a ancorada à direita recua exatamente a própria largura',
+   (()=>{ const t=_svgTarja(100,20,'ABC','end',12);
+          return Math.abs(Number(/x="([\d.]+)"/.exec(t)[1]) + _larguraTarja(t) - 100) < 0.1; })(), true);
+
+// ⚠ O CORPO DOS RÓTULOS É UM MEIO-TERMO MEDIDO, e mora numa constante.
+// 2,43× de ampliação punha a legenda a 21,9px (maior que o rótulo dos cards);
+// 1,00× a deixava a 9px e ela sumia de relance.
+['_qpHtml','_cartHtml'].forEach(f => {
+  const src = pega('function ' + f + '(');
+  ok(f + ': o corpo dos rótulos é constante, não número solto',
+     /const FS = 12;/.test(src) && !/font-size="9"/.test(src), true);
+});
 
 // ── A LINHA DO REALIZADO PRECISA SER LEGÍVEL ─────────────────────────────
 // ⚠ Correção do usuário (15/09/2026): só a meta tinha ponto e tooltip. O
