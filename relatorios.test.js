@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os quatro relatórios usam ele (paradas, perdas, min/1000, proposta de investimento)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 4);
+ok('e os cinco relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 5);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2335,8 +2335,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 8 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 9);   // 8 chamadas + a declaração
+ok('e é UMA implementação — os 9 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 10);   // 9 chamadas + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -2693,8 +2693,16 @@ ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
 ok('a busca passa pelo carregador com cache, nunca por jsonpFetch direto',
    /carregarProgramacaoDetalhada\(\)/.test(_cartRender) && !/jsonpFetch|action=/.test(_cartRender), true);
 // ⚠ dívida ZERO é valor legítimo: `||` entre os dois campos a trocaria pelo outro.
+// A dívida é lida em UM lugar (`_planoDivida`): tela e papel não podem discordar.
 ok('a dívida escolhe o campo por != null, não por ||',
-   /prog\.faltaZerar != null/.test(_cartRender), true);
+   /prog\.faltaZerar != null/.test(pega('function _planoDivida(')), true);
+ok('e a tela e o relatório leem a mesma função',
+   [/_planoDivida\(\)/.test(_cartRender), /_planoDivida\(\)/.test(pega('async function gerarRelatorioPlano('))], [true, true]);
+// ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do
+// `faltaZerar` desde antes, e não é dela que se trata. Contar o arquivo inteiro
+// acusava a TV por um código que este bloco não escreveu.
+ok('não sobrou leitura da dívida escrita à mão na tela nem no papel',
+   [/faltaZerar/.test(_cartRender), /faltaZerar/.test(pega('async function gerarRelatorioPlano('))], [false, false]);
 // Trocar régua ou faixa tem de redesenhar os DOIS blocos.
 ok('régua e faixa redesenham a carteira junto com o retrospecto',
    [(JS.match(/renderCarteira\(\);\s*\n?\s*renderQualidadePlano\(\)/g)||[]).length >= 2,
@@ -2822,6 +2830,60 @@ ok('a faixa de toque fica atrás das linhas e dos pontos',
 // porque o menor botão da barra é 15 DIAS.
 ok('o número impresso é alcançável pelo filtro de 15 dias',
    /serie\.length <= 15/.test(_qpG), true);
+
+// ── O RELATÓRIO DA QUALIDADE DO PLANO: a mesma marcação, pele de papel ────
+// Pedido do usuário (15/09/2026): "quero uma impressão para analisar".
+console.log('\n── relatório da qualidade do plano ──');
+const _relPlano = pega('async function gerarRelatorioPlano(');
+// ⚠ Os desenhos são os MESMOS da tela. Uma segunda versão para o papel seria a
+// história do cabeçalho dos cinco relatórios (#204/#205).
+ok('o papel usa os mesmos desenhos da tela',
+   [/_cartHtml\(ac, QP_REGUA, PLANO_SVG_W\)/.test(_relPlano),
+    /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM, PLANO_SVG_W\)/.test(_relPlano)], [true, true]);
+ok('e o documento compartilhado dos relatórios, não um <head> próprio',
+   /_rpDocParadas\(/.test(_relPlano) && /_rpCabecalho\(/.test(_relPlano) && /_rpBotaoImprimir\(\)/.test(_relPlano), true);
+ok('o relatório não faz conta — recebe as análises prontas',
+   [/_cartAnalise\(cart, curva, QP_FAIXA\)/.test(_relPlano), /_qpAnalise\(rec, curva, QP_FAIXA\)/.test(_relPlano)], [true, true]);
+// A carteira é opcional no papel: falhou a leitura, o relatório sai inteiro.
+ok('sem a programação o relatório sai sem a seção, não sem relatório',
+   /catch\(e\)\{ ac = null; \}/.test(_relPlano) && /\(ac \? \(sec\(/.test(_relPlano), true);
+// ⚠ A PELE É ESCOPADA em .plano-doc: regra solta mudaria os outros quatro
+// documentos que usam o _rpDocParadas.
+{
+  const m = JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/);
+  const skin = m ? m[1] : '';
+  ok('a pele do relatório existe', !!m, true);
+  const regras = skin.split('\n').map(l => l.trim()).filter(l => /^[.#a-z*]/.test(l) && /\{/.test(l));
+  ok('e todo seletor dela começa com .plano-doc',
+     regras.filter(l => !l.startsWith('.plano-doc')).length, 0);
+  // é a redefinição dos tokens que re-skina o SVG — sem ela, cor inválida vira preto
+  ok('os tokens que o SVG lê estão redefinidos para o papel',
+     ['--ok','--red','--warn','--acc','--bg','--txt','--font-d'].every(t => skin.includes(t + ':')), true);
+  ok('a dica de mouse e o botão de tentar de novo não vão ao papel',
+     /\.qp-leg-mouse\{display:none\}/.test(skin), true);
+}
+ok('a largura no papel é fixa (papel não tem monitor)',
+   /const PLANO_SVG_W = \d+;/.test(JS) && !/_svgLargura/.test(_relPlano), true);
+ok('a dica de mouse tem classe própria nos dois desenhos',
+   (JS.match(/class="qp-leg-mouse"/g) || []).length, 2);
+
+// As duas famílias de modificador no mesmo card: o painel lê ok/warn/red/acc,
+// o documento lê g/o/r/a. Uma marcação, duas peles.
+{ const m = JS.match(/const _KPI_PAPEL = \{[^}]+\};/); if(m) eval(m[0].replace('const ','global.')); }
+eval(pega('function _kpiCls('));
+ok('cada modificador do painel leva o do papel junto',
+   ['ok','warn','red','acc'].map(_kpiCls), ['ok g','warn o','red r','acc a']);
+ok('modificador desconhecido passa sem enfeite', _kpiCls('x'), 'x');
+ok('nenhum card dos dois desenhos escapa do _kpiCls',
+   /class="kpi-card (?!' \+ _kpiCls)/.test(pega('function _qpHtml(') + pega('function _cartHtml(')), false);
+
+// A tarja escolhe o lado LIVRE: no papel, a 660px, ela tapava o valor do 3º dia.
+eval(pega('function _svgLadoLivre('));
+ok('vai para onde nenhuma barra da ponta cruza a altura',
+   [_svgLadoLivre([3000,3100,1500,1800,1250,1228,1350], 1573),
+    _svgLadoLivre([1250,1228,1350,1800,1500,3000,3100], 1573)], ['fim', 'ini']);
+ok('empate vai para a direita, onde o olho já terminou de ler',
+   _svgLadoLivre([1000,1000,1000,1000], 900), 'fim');
 
 // ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
 // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para

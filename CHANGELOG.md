@@ -11,6 +11,47 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.54.0 — 15/09/2026
+
+**Atenção** — nenhuma conta mudou. A aba PLANO ganhou o botão **🖨 IMPRIMIR**
+(pedido do usuário: *"quero uma impressão para analisar"*).
+
+### O relatório
+
+Três seções, no documento compartilhado dos relatórios (`_rpDocParadas`, retrato):
+
+1. **A CARTEIRA QUE VEM** — veredito, os 4 cards, o gráfico de barras e a tabela
+   dia a dia. Se a leitura da `PROGRAMACAO` falhar, **o relatório sai inteiro,
+   só sem esta seção** — a mesma regra da cascata e das paradas no semanal.
+2. **COMO TEMOS DATADO** — veredito, os 4 cards, o gráfico meta × realizado e a
+   tabela dos dias, na ordem escolhida na tela.
+3. **COMO O NÚMERO SAI** — curva de capacidade, altura, oscilação, os dois
+   recortes, o que sai e o que cabe, a dívida, e o que isto **não** é
+   ("não é baixar a meta"; "a faixa é mediana, não limite"; "nivelar não é
+   sequenciar").
+
+### Uma marcação, duas peles
+
+Os desenhos do papel são **os mesmos da tela** (`_cartHtml`, `_qpHtml`). O que
+muda é a pele: um bloco de CSS escopado em `.plano-doc`. Os tokens que o SVG lê
+(`--ok`, `--red`, `--bg`…) são **redefinidos** ali para a paleta do papel — sem
+isso, cor inválida em SVG vira preto. Medido no Chromium: `rgb(198, 40, 40)`,
+não preto.
+
+Os cards levam as **duas famílias de modificador** no mesmo `class=`
+(`ok g`, `red r`…): o painel lê uma, o documento lê a outra — a mesma regra do
+`_pgMin1000Html`.
+
+### Ajustes que o papel expôs
+
+- A dica *"passe o mouse"* não vai ao papel (não há mouse numa folha).
+- A tarja dos rótulos do gráfico de barras passou a escolher o **lado livre**
+  (`_svgLadoLivre`): a 660px ela tapava o valor do 3º dia.
+- A leitura da dívida (atraso + o que falta hoje) mora em **um lugar**
+  (`_planoDivida`), lido pela tela e pelo papel.
+
+---
+
 ## v7.53.0 — 15/09/2026
 
 **Atenção** — nenhuma conta mudou. Ajuste de escala dos gráficos da aba PLANO,
