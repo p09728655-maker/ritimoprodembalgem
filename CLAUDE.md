@@ -2118,8 +2118,22 @@ feito e dá ar de verdade ao que sobrou.
     e é assim que o **r²=8% aparece desenhado**: elas não se acompanham. Na
     versão do ranking o realizado **nem era desenhado**, então o achado principal
     da tela não aparecia.
-  - A régua (p50/p60/p75) continua vindo de **todo** o histórico; o filtro
-    escolhe só quais dias aparecem.
+  - ⚠ **A RÉGUA É MÓVEL, e o padrão é 60 dias** (v7.48.0). Antes usava todo o
+    histórico e **subestimava a linha**: medido em 15/09/2026, com os 79 dias a
+    faixa dava `p50=1.548 / p60=1.602`, e só com os últimos 30 dava
+    `1.602 / 1.795` — julho (p50 de 1.466) puxava para baixo. Janela curta demais
+    pula com uma semana ruim; longa demais carrega um mês ruim que já passou.
+  - ⚠ **São DOIS recortes e eles não se confundem:** *JULGAR* escolhe quais dias
+    aparecem no gráfico; *RÉGUA* escolhe de quais dias sai o padrão com que eles
+    são comparados. O subtítulo da tela existe só para dizer isso.
+  - **A FAIXA ALVO é testável na tela** (p45–p55 … p60–p70). As constantes
+    `QP_ALVO_*` são o **ponto de partida**, não a lei: a faixa entra por
+    parâmetro no `_qpAnalise`, e **o veredito e o desenho leem dela** — senão a
+    tela julgaria por uma faixa e pintaria por outra. O card DIAS ACIMA mostra
+    quantos dias caíram **dentro** da faixa, que é o número de comparação.
+  - A escolha fica em `localStorage['rpe_qp_pref']` — calibrar leva dias, e
+    perder o ajuste a cada F5 faria ninguém calibrar. ⚠ Chave nova: **nunca
+    renomear por estética** (mesma regra das `rpe_*`).
   - Os rótulos dentro do gráfico levam **fundo próprio** (`<rect>` atrás do
     `<text>`): por cima das linhas ficavam ilegíveis.
 - ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`

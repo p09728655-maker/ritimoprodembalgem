@@ -2455,6 +2455,20 @@ eval(pega('function _qpVeredito('));
 const _d = (real, meta) => ({ data:'01/01', real, meta });
 // curva de 10 dias: 100,200,...,1000
 const _curva10 = _qpCurva([100,200,300,400,500,600,700,800,900,1000].map(v => _d(v, 0)));
+
+// ── A RÉGUA É MÓVEL: janela em dias, 0 = todo o histórico ─────────────────
+// Medido em 15/09/2026: com os 79 dias a faixa saía 1.548–1.602; só com os
+// últimos 30, 1.602–1.795. Julho (p50 de 1.466) puxava a régua para baixo e a
+// tela SUBESTIMAVA o que a linha faz hoje.
+const _hist = [900, 950, 1000, 1050, 1100, 2000, 2100, 2200, 2300, 2400].map(v => _d(v, 0));
+ok('sem janela a régua usa tudo', _qpCurva(_hist, 0).length, 10);
+ok('com janela usa só os últimos', _qpCurva(_hist, 5).map(x => x),
+   [2000, 2100, 2200, 2300, 2400]);
+// E é isso que muda o veredito: a mesma meta é alta contra o histórico velho
+// e normal contra o recente.
+const _velha = _qpCurva(_hist, 0), _nova = _qpCurva(_hist, 5);
+ok('a mesma meta muda de altura conforme a régua',
+   [Math.round(_qpPercentil(2100, _velha)), Math.round(_qpPercentil(2100, _nova))], [70, 40]);
 ok('a curva é o realizado ordenado, só de dia COM produção',
    [_curva10.length, _curva10[0], _curva10[9]], [10, 100, 1000]);
 ok('dia sem produção não entra na curva (não é capacidade, é ausência dela)',
@@ -2500,6 +2514,28 @@ ok('oscilação na faixa do meio não passa por exequível',
 
 // Sem base não se emite veredito — zero afirmaria que o plano está certo.
 ok('sem dias não há veredito', _qpVeredito(null).t, 'SEM BASE');
+
+// ── A FAIXA ALVO É TESTÁVEL na tela (parâmetro, não constante) ────────────
+// O gestor calibra sem deploy; as constantes QP_ALVO_* viram o ponto de
+// partida. Uma faixa mais alta cobra mais e deixa menos dias dentro.
+const _metas = [_d(500,450), _d(500,550), _d(500,650), _d(500,750)];
+const _b1 = _qpAnalise(_metas, _curva10, [40, 60]);
+const _b2 = _qpAnalise(_metas, _curva10, [60, 80]);
+ok('a faixa escolhida vai na análise', [_b1.faixa, _b2.faixa], [[40,60],[60,80]]);
+ok('e muda quantos dias caem dentro', [_b1.nDentro, _b2.nDentro], [3, 2]);
+ok('e muda o valor da meta exequível',
+   [_b1.alvoMin < _b2.alvoMin, _b1.alvoMax < _b2.alvoMax], [true, true]);
+// Sem faixa informada cai nas constantes — chamador antigo não muda de conta.
+ok('sem faixa usa o combinado das constantes',
+   _qpAnalise(_metas, _curva10).faixa, [QP_ALVO_MIN, QP_ALVO_MAX]);
+// O veredito lê a faixa da análise, não a constante: desenho e julgamento não
+// podem discordar quando o gestor escolhe outra faixa.
+ok('o veredito segue a faixa escolhida',
+   /a\.pctMedio < \(a\.faixa \? a\.faixa\[0\] : QP_ALVO_MIN\)/.test(JS), true);
+ok('e o desenho também', /const fMin = a\.faixa\[0\], fMax = a\.faixa\[1\];/.test(JS), true);
+// A escolha sobrevive ao reload — calibrar leva dias.
+ok('a preferência é guardada e relida',
+   [/localStorage\.setItem\(QP_PREF_K/.test(JS), /localStorage\.getItem\(QP_PREF_K/.test(JS)], [true, true]);
 
 // O desenho não faz conta: tudo vem pronto do _qpAnalise.
 const _qpDes = pega('function _qpHtml(');

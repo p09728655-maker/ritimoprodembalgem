@@ -11,6 +11,49 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.48.0 — 15/09/2026
+
+**Atenção** — a **régua da aba PLANO passou a ser móvel**, com padrão de **60
+dias** em vez de todo o histórico. Os percentis mudam por causa disso: com os 79
+dias a altura dava **p53**; com 60 dias dá **p55**. Nenhuma conta mudou — mudou
+de quais dias sai o padrão de comparação.
+
+### Régua móvel: a de antes subestimava a linha
+
+A faixa alvo era calculada com **todo** o histórico. Medido em 15/09/2026:
+
+```
+todo o histórico (79 dias):  p50=1.548  p60=1.602  p75=1.984
+só os últimos 30 dias:       p50=1.602  p60=1.795  p75=2.184
+```
+
+Os dias ruins de julho (p50 de **1.466** naquele mês) puxavam a régua para
+baixo, e a tela **subestimava o que a linha faz hoje** — dizia "meta exequível:
+1.548–1.602" quando o padrão recente era 1.602–1.795.
+
+Agora há um seletor **RÉGUA** (30 / 60 / 90 dias / todo o histórico). Padrão
+**60**: janela curta demais pula com uma semana ruim, longa demais carrega um
+mês ruim que já passou.
+
+⚠ **São dois recortes diferentes, e o subtítulo da tela diz isso:** *JULGAR*
+escolhe quais dias aparecem no gráfico; *RÉGUA* escolhe de quais dias sai o
+padrão com que eles são comparados.
+
+### Testar outras faixas sem deploy
+
+Seletor **FAIXA ALVO** com p45–p55, p50–p60 (padrão), p55–p65 e p60–p70. O card
+DIAS ACIMA DA CAPACIDADE passou a mostrar **quantos dias caíram dentro** da
+faixa escolhida — é o número que deixa comparar uma faixa com a outra.
+
+As constantes `QP_ALVO_*` viram o **ponto de partida**, não a lei. A faixa entra
+por parâmetro no `_qpAnalise`, e o veredito e o desenho leem dela — não da
+constante —, senão a tela julgaria por uma faixa e pintaria por outra.
+
+A escolha (régua, faixa e janela) fica no `localStorage['rpe_qp_pref']`:
+calibrar leva dias, e perder o ajuste a cada F5 faria ninguém calibrar.
+
+---
+
 ## v7.47.0 — 15/09/2026
 
 **Nenhum número muda.** Troca só o **gráfico** da aba PLANO. Os quatro cards, os
