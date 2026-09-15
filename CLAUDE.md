@@ -1657,10 +1657,26 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
   texto, que é o nome acessível — não foi feita varredura cega de ARIA.
 
 **Ainda NÃO corrigido** (achado verificado, decisão pendente): o
-`startsWith('L')` da detecção de coluna de LOTE — ver acima; depende de conferir
-os cabeçalhos reais da `HORA_A_HORA`, e a regra está **copiada em 3 lugares** do
-`.gs` (`getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`), então endurecer
-exige lembrar dos três.
+`startsWith('L')` da detecção de coluna de LOTE. Continua largo demais — o que
+mudou (15/09/2026) é que ele **saiu de três lugares para um**: era o mesmo laço
+copiado em `getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`, e agora é
+`_ehColunaLote(titulo)` / `_colunasDeLote(hdr, iR)`. Endurecer virou correção de
+**uma linha**, mas continua **dependendo de conferir os títulos reais da
+`HORA_A_HORA`** — apertar às cegas faz o lançamento deixar de ser somado e o
+REALIZADO cair sozinho, que é pior que o erro de hoje.
+- **O `LT` pega no MEIO da palavra**, não só no começo: além de LINHA / LIMPEZA
+  / LÍDER / LOCAL pelo `startsWith('L')`, passam **`RESULTADO`** (resu**LT**ado)
+  e **`FALTA`** (fa**LT**a) — nomes plausíveis numa planilha de produção. Ficam
+  escritos no `apps-script.test.js` para quem for conferir saber o que caçar.
+- O critério **acerta** em SALDO, TOTAL, PERDA, REFUGO, PARADA, OPERADOR,
+  PALETE, ACUM e %/H — não é tudo que escapa, e era justamente para excluir
+  ACUM e %/H que ele nasceu.
+- `apps-script.test.js` roda a helper real contra a matriz de títulos e compara
+  com o predicado ANTIGO, título a título: a extração não mudou veredito
+  nenhum. As duas linhas `⚠ conhecido:` são o registro do erro que sobrou —
+  quando for endurecido, são elas que mudam.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Como não muda comportamento, adiar o
+  re-deploy não quebra nada: a versão implantada segue somando igual.
 
 ⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
 a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi

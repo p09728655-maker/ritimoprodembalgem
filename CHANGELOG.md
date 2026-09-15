@@ -11,6 +11,38 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script — 15/09/2026 (sem mudança de comportamento)
+
+⚠ **re-deploy** quando for conveniente. **Nenhum número muda** e nada quebra se
+o re-deploy for adiado: a versão implantada continua somando exatamente igual.
+
+### A detecção da coluna de LOTE saiu de três lugares para um
+
+A produção é lançada nas colunas de **LOTE** da `HORA_A_HORA` — a coluna
+REALIZADO pode ficar vazia ou parcial, então quem soma errado ali mostra menos
+caixa do que a fábrica fez. O laço que escolhe essas colunas estava **copiado em
+três funções**: `getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`.
+
+Agora é `_ehColunaLote(titulo)` e `_colunasDeLote(hdr, iR)`, um lugar só.
+
+**O critério NÃO foi endurecido nesta mudança** — de propósito. Ele continua
+largo: qualquer coluna depois de REALIZADO começada com **L** (LINHA, LIMPEZA,
+LÍDER, LOCAL) entra como lote, e o `LT` ainda pega no **meio** da palavra —
+**`RESULTADO`** (resu**LT**ado) e **`FALTA`** (fa**LT**a) passam calados. São
+nomes plausíveis numa planilha de produção.
+
+Apertar o critério às cegas é pior que o erro de hoje: se o título real não
+casar, o lançamento deixa de ser somado e o REALIZADO cai sozinho, sem erro e
+sem log. **Endurecer depende de conferir os títulos reais da `HORA_A_HORA`** —
+e agora é correção de uma linha, num lugar, em vez de três.
+
+O `apps-script.test.js` roda a helper real contra uma matriz de 25 títulos e
+compara, título a título, com o predicado **antigo**: a extração não mudou
+veredito nenhum. As duas linhas `⚠ conhecido:` registram o erro que sobrou —
+quando ele for corrigido, são elas que mudam.
+
+---
+
 ## v7.43.0 — 15/09/2026
 
 **Atenção** — muda o **cabeçalho impresso do relatório de HISTÓRICO**, e só ele.

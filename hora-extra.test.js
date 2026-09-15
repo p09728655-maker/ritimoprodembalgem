@@ -87,6 +87,10 @@ src.match(/const HE_JORNADA_(?:INI|FIM)_MIN\s*=\s*[^;]+;/g)
 eval(pega('function _ehHoraExtraCaixas('));
 eval(pega('function _semPrefixoHE('));
 eval(pega('function _heCxDoDia('));
+// O getDados soma as colunas de LOTE por este critério — que saiu de dentro
+// dele (estava copiado em três funções) e agora precisa vir junto.
+eval(pega('function _ehColunaLote('));
+eval(pega('function _colunasDeLote('));
 eval(pega('function getDados()'));
 
 // _heCxDoDia lê a HISTORICO_HORA por este helper — aqui ele é controlado.

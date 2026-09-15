@@ -945,6 +945,44 @@ function doGet(e) {
 
 
 // ════════════════════════════════════════════════════════
+// COLUNAS DE LOTE DA HORA_A_HORA
+// ════════════════════════════════════════════════════════
+
+// Quais colunas DEPOIS de REALIZADO carregam produção lançada.
+//
+// A produção é lançada NESTAS colunas e a coluna REALIZADO pode ficar vazia ou
+// parcial — sem somar os lotes, o painel mostra menos caixas do que a fábrica
+// produziu. O critério existe para somar os lotes SEM somar coluna de fórmula
+// (ACUM, %/H) que também mora depois de REALIZADO.
+//
+// ⚠ ESTE CRITÉRIO É LARGO DEMAIS E ISSO É CONHECIDO. O startsWith('L') trata
+// QUALQUER coluna depois de REALIZADO começada com L (LINHA, LIMPEZA, LÍDER,
+// LOCAL) como coluna de lote, e o conteúdo dela vira produção — em silêncio,
+// sem erro e sem log. Não foi endurecido aqui porque apertar o critério às
+// cegas é pior: se o título real não casar, o lançamento deixa de ser somado e
+// o REALIZADO cai sozinho. Endurecer exige conferir os títulos reais da
+// HORA_A_HORA primeiro.
+//
+// O que mudou: o laço estava escrito em TRÊS lugares (getDados,
+// _saveRealizadoCore e arquivarDiaAtual), então endurecer significava lembrar
+// dos três e acertar nos três. Agora é um. Quando os títulos forem conferidos,
+// a correção é uma linha, aqui.
+function _ehColunaLote(titulo) {
+  const t = String(titulo == null ? '' : titulo).trim().toUpperCase();
+  return t.indexOf('LOTE') >= 0 || t.indexOf('LT') >= 0 || t.charAt(0) === 'L';
+}
+
+// Os índices das colunas de lote, da coluna seguinte a REALIZADO até o fim.
+function _colunasDeLote(hdr, iR) {
+  const out = [];
+  for (let c = iR + 1; c < (hdr || []).length; c++) {
+    if (_ehColunaLote(hdr[c])) out.push(c);
+  }
+  return out;
+}
+
+
+// ════════════════════════════════════════════════════════
 // GET DADOS
 // ════════════════════════════════════════════════════════
 
@@ -988,12 +1026,7 @@ function getDados() {
   // Colunas de lote (mesma deteccao de saveRealizado/arquivarDiaAtual). A producao
   // e lancada NESTAS colunas; a coluna REALIZADO pode ficar vazia ou parcial. Sem
   // somar os lotes, o painel mostra menos caixas do que o realmente produzido.
-  const iLotes = [];
-  for (let c = iR + 1; c < hdr.length; c++) {
-    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-      iLotes.push(c);
-    }
-  }
+  const iLotes = _colunasDeLote(hdr, iR);
 
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const agora    = new Date();
@@ -1176,12 +1209,7 @@ function _saveRealizadoCore(p) {
     PropertiesService.getScriptProperties()
       .setProperty(PROP_DATA_DADOS, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
-    const iLotes = [];
-    for (let c = iR + 1; c < hdr.length; c++) {
-      if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-        iLotes.push(c);
-      }
-    }
+    const iLotes = _colunasDeLote(hdr, iR);
 
     if (iLotes.length === 0) {
       for (let i = hIdx + 1; i < data.length; i++) {
@@ -3361,12 +3389,7 @@ function arquivarDiaAtual(dataRef) {
 
   // Identifica colunas de lote (mesmo critério de saveRealizado) para não somar
   // colunas de fórmula como ACUM ou %/H que aparecem após REALIZADO na planilha.
-  const iLotes = [];
-  for (let c = iR + 1; c < hdr.length; c++) {
-    if (hdr[c].includes('LOTE') || hdr[c].includes('LT') || hdr[c].startsWith('L')) {
-      iLotes.push(c);
-    }
-  }
+  const iLotes = _colunasDeLote(hdr, iR);
 
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);

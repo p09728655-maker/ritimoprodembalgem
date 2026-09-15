@@ -207,6 +207,51 @@ ok('_progIgual: número e texto do mesmo valor são iguais', _progIgual('99', 99
 ok('_progIgual: vazio só é igual a vazio', [_progIgual('', 0), _progIgual('', '')], [false, true]);
 ok('_progIgual: texto sem depender de caixa/espaço', _progIgual(' Concluido ', 'CONCLUIDO'), true);
 
+// ── colunas de LOTE: um critério, três chamadores ───────────────────────────
+// A produção é lançada nas colunas de LOTE e a coluna REALIZADO pode ficar
+// vazia ou parcial — quem soma errado aqui mostra menos caixa do que a fábrica
+// fez. O laço estava copiado em TRÊS lugares (getDados, _saveRealizadoCore e
+// arquivarDiaAtual): endurecer o critério significava lembrar dos três.
+console.log('\n── colunas de LOTE (um critério, três chamadores) ──');
+eval(pega('function _ehColunaLote('));
+eval(pega('function _colunasDeLote('));
+
+ok('nenhum chamador reescreve o laço',
+   (src.match(/const iLotes = _colunasDeLote\(hdr, iR\);/g) || []).length, 3);
+ok('e o critério cru não sobrou em lugar nenhum',
+   /hdr\[c\]\.includes\('LOTE'\)/.test(src), false);
+
+// Equivalência com o laço que existia: o critério NÃO foi endurecido nesta
+// mudança — só saiu de três lugares para um. Se algum destes mudar de resposta,
+// a extração mudou comportamento, que é o que ela não podia fazer.
+const anterior = (h) => h.includes('LOTE') || h.includes('LT') || h.startsWith('L');
+['LOTE 1','LOTE','LT2','L1','ACUM','%/H','REALIZADO','META','OBS','',
+ 'LINHA','LIMPEZA','LIDER','LOCAL','TURNO','CX/H','RESULTADO','FALTA',
+ 'SALDO','TOTAL','PERDA','REFUGO','PARADA','OPERADOR','PALETE'].forEach(h => {
+  ok('mesmo veredito de antes para "' + h + '"', _ehColunaLote(h), anterior(h));
+});
+
+// O que o critério PRECISA fazer (a razão de ele existir) e o que ele erra.
+const hdr = ['HORA','META','REALIZADO','LOTE 1','LT2','ACUM','%/H','LINHA'];
+ok('pega as colunas de lote depois de REALIZADO', _colunasDeLote(hdr, 2), [3, 4, 7]);
+ok('e não soma coluna de fórmula (ACUM, %/H)',
+   [_ehColunaLote('ACUM'), _ehColunaLote('%/H')], [false, false]);
+// ⚠ Item aberto, e é por isso que o teste registra o erro em vez de escondê-lo:
+// LINHA entra como lote e vira produção, em silêncio. Endurecer depende de
+// conferir os títulos reais da HORA_A_HORA — apertar às cegas faz o lançamento
+// deixar de ser somado, que é pior. Quando for endurecido, ESTA linha muda.
+ok('⚠ conhecido: LINHA ainda passa como coluna de lote', _ehColunaLote('LINHA'), true);
+// E o 'LT' pega no MEIO da palavra, não só no começo: RESULTADO (resuLTado) e
+// FALTA (faLTa) são nomes plausíveis numa planilha de produção e passam calados.
+// Ficam aqui escritos para quem for conferir os títulos reais saber o que caçar.
+ok('⚠ conhecido: RESULTADO passa pelo LT no meio da palavra', _ehColunaLote('RESULTADO'), true);
+ok('⚠ conhecido: FALTA também', _ehColunaLote('FALTA'), true);
+// Estes o critério acerta em cheio — não é tudo que escapa.
+ok('SALDO, TOTAL, PERDA e REFUGO ficam de fora',
+   ['SALDO','TOTAL','PERDA','REFUGO'].map(_ehColunaLote), [false, false, false, false]);
+ok('nada antes de REALIZADO entra', _colunasDeLote(hdr, 6), [7]);
+ok('cabeçalho vazio não quebra', [_colunasDeLote([], 0), _ehColunaLote(null)], [[], false]);
+
 console.log(falhas === 0
   ? '\n✅ backend ok — a mesma aba não é lida duas vezes na mesma chamada\n'
   : `\n❌ ${falhas} falha(s)\n`);
