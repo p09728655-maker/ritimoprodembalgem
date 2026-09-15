@@ -2131,11 +2131,28 @@ feito e dá ar de verdade ao que sobrou.
     parâmetro no `_qpAnalise`, e **o veredito e o desenho leem dela** — senão a
     tela julgaria por uma faixa e pintaria por outra. O card DIAS ACIMA mostra
     quantos dias caíram **dentro** da faixa, que é o número de comparação.
-  - A escolha fica em `localStorage['rpe_qp_pref']` — calibrar leva dias, e
-    perder o ajuste a cada F5 faria ninguém calibrar. ⚠ Chave nova: **nunca
+  - A escolha fica em `localStorage['rpe_qp_pref']` (régua, faixa, janela **e
+    ordem**) — calibrar leva dias, e perder o ajuste a cada F5 faria ninguém
+    calibrar. ⚠ Chave nova: **nunca
     renomear por estética** (mesma regra das `rpe_*`).
   - Os rótulos dentro do gráfico levam **fundo próprio** (`<rect>` atrás do
     `<text>`): por cima das linhas ficavam ilegíveis.
+- ⚠ **A ORDEM da tabela troca o RECORTE, não só a sequência** (`_qpOrdenar`,
+  v7.49.0). Por `data` a tabela é a **cauda** do período (os últimos 15 dias);
+  por `alta`/`baixa` é o **topo** (ou o fundo) do período **inteiro**.
+  Reordenar só os últimos 15 deixaria escondida a meta impossível de três
+  semanas atrás — que é o que se procura ao pedir ordem por percentil. Medido
+  em 15/09/2026 (30 dias julgados): as duas metas de **2.950 cx** (p100, acima
+  de tudo que a linha já fez) não apareciam na tabela por data. É por isso que
+  a função devolve o **título junto com as linhas** — tabela que muda de
+  recorte sem mudar de título mente sobre o que mostra.
+  - A lista é **copiada antes de ordenar**: `a.linhas` é a MESMA que o gráfico
+    usa como eixo de calendário, e ordenar no lugar reordenaria o gráfico junto.
+  - No empate de percentil o dia mais **recente** vem na frente (a `reverse()`
+    antes do sort, que em JS é estável).
+  - A ordem inversa não é enfeite: as 5 metas mais baixas do período (900 a
+    1.150 cx) foram **todas** batidas. Meta baixa demais faz o verde não
+    significar nada, como a meta em p100 faz o vermelho virar paisagem.
 - ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`
   funcionam nele. Em `<canvas>` (Chart.js) token não resolve e sai preto; ver a
   nota do `mkChart`.

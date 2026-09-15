@@ -2537,10 +2537,67 @@ ok('e o desenho também', /const fMin = a\.faixa\[0\], fMax = a\.faixa\[1\];/.te
 ok('a preferência é guardada e relida',
    [/localStorage\.setItem\(QP_PREF_K/.test(JS), /localStorage\.getItem\(QP_PREF_K/.test(JS)], [true, true]);
 
+// ── A ORDEM DA TABELA: por data ou por altura da meta ─────────────────────
+// Pedido do usuário (15/09/2026). ⚠ A ordem TROCA O RECORTE: por data a tabela
+// é a cauda do período; por altura é o topo (ou o fundo) do período INTEIRO.
+// Reordenar só os últimos 15 deixaria escondida a meta impossível de três
+// semanas atrás, que é justamente o que se procura ao pedir ordem por percentil.
+{
+  const m = JS.match(/const QP_TAB_N\s*=\s*\d+/);
+  if(m) eval(m[0].replace('const ', 'global.') + ';');
+}
+eval(pega('function _qpOrdenar('));
+// 20 dias: o percentil CRESCE com a data, então "mais altas" e "últimos dias"
+// coincidiriam. Para separar os dois recortes, o pico fica no dia 1.
+const _ordL = [];
+for(let i = 1; i <= 20; i++) _ordL.push({ data:'d' + i, pct: i === 1 ? 99 : i, meta:i, real:i });
+
+const _ordD = _qpOrdenar(_ordL, 'data');
+ok('por data a tabela é a cauda do período, o mais recente em cima',
+   [_ordD.linhas.length, _ordD.linhas[0].data, _ordD.linhas[14].data], [15, 'd20', 'd6']);
+ok('e o título diz que são os últimos dias',
+   _ordD.titulo, 'OS ÚLTIMOS 15 DIAS, UM A UM');
+// ⚠ O caso que motiva a ordem: o dia 1 tem p99 e está FORA dos últimos 15.
+ok('por data o pico antigo fica escondido',
+   _ordD.linhas.some(l => l.data === 'd1'), false);
+const _ordA = _qpOrdenar(_ordL, 'alta');
+ok('por altura ele aparece, e em primeiro',
+   [_ordA.linhas[0].data, _ordA.linhas[0].pct], ['d1', 99]);
+ok('e o título avisa que o recorte é o período inteiro',
+   _ordA.titulo, 'AS 15 METAS MAIS ALTAS DO PERÍODO JULGADO');
+const _ordB = _qpOrdenar(_ordL, 'baixa');
+ok('a ordem inversa traz as metas mais folgadas',
+   [_ordB.linhas[0].data, _ordB.titulo],
+   ['d2', 'AS 15 METAS MAIS BAIXAS DO PERÍODO JULGADO']);
+// ⚠ O gráfico lê a MESMA lista como eixo de calendário: ordenar no lugar
+// reordenaria o gráfico junto.
+ok('ordenar não mexe na lista original',
+   _ordL.map(l => l.data).join(','),
+   Array.from({length:20}, (_, i) => 'd' + (i+1)).join(','));
+// Empate de percentil: o dia mais recente vem na frente.
+const _emp = _qpOrdenar([{data:'a',pct:50},{data:'b',pct:50},{data:'c',pct:50}], 'alta');
+ok('no empate o dia mais recente vem primeiro',
+   _emp.linhas.map(l => l.data), ['c','b','a']);
+// Período curto: o título não promete 15 linhas que não existem.
+ok('com menos dias que a tabela o título acompanha',
+   [_qpOrdenar(_ordL.slice(0,4), 'data').titulo, _qpOrdenar(_ordL.slice(0,4), 'alta').titulo],
+   ['OS ÚLTIMOS 4 DIAS, UM A UM', 'AS 4 METAS MAIS ALTAS DO PERÍODO JULGADO']);
+// A escolha sobrevive ao reload, como a régua e a faixa.
+ok('a ordem entra na preferência guardada',
+   /ordem:QP_ORDEM/.test(JS) && /if\(o\.ordem\)/.test(JS), true);
+
 // O desenho não faz conta: tudo vem pronto do _qpAnalise.
 const _qpDes = pega('function _qpHtml(');
 ok('o desenho não recalcula percentil nem oscilação',
    /_qpPercentil\(|_qpOscilacao\(|_qpCurva\(/.test(_qpDes), false);
+// E não reescreve o recorte da tabela: quem decide é o _qpOrdenar, um lugar só.
+ok('o desenho pede o recorte ao _qpOrdenar em vez de fatiar por conta própria',
+   [/_qpOrdenar\(a\.linhas, ordem\)/.test(_qpDes), /a\.linhas\.slice\(-15\)/.test(_qpDes)],
+   [true, false]);
+ok('e o título da tabela vem de lá junto com as linhas',
+   /ord\.titulo/.test(_qpDes), true);
+ok('a tela passa a ordem escolhida para o desenho',
+   /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM\)/.test(JS), true);
 // A tela não pode custar chamada nova ao Apps Script.
 const _qpRender = pega('async function renderQualidadePlano(');
 ok('a tela lê o histórico que o painel já busca (sem chamada nova)',

@@ -2023,6 +2023,13 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="55-65">p55–p65</option>
         <option value="60-70">p60–p70</option>
       </select>
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">ORDEM</span>
+      <select id="qp-ordem" class="frm-inp" onchange="_qpSetOrdem(this.value)" style="width:126px;padding:3px 8px;font-size:11px;cursor:pointer"
+              title="Por DATA a tabela mostra os últimos dias. Por ALTURA ela mostra as metas mais altas (ou mais baixas) do período INTEIRO — é assim que se acha a meta impossível de três semanas atrás, que a cauda dos últimos dias esconde.">
+        <option value="data" selected>por data</option>
+        <option value="alta">altura: p maior</option>
+        <option value="baixa">altura: p menor</option>
+      </select>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
     </div>
   </div>
@@ -2622,7 +2629,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.48.0';
+const APP_VER   = '7.49.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7035,6 +7042,10 @@ let QP_RODANDO = false;
 // com que eles são comparados. Padrão 60 dias — ver a nota do _qpCurva.
 let QP_REGUA = 60;
 let QP_FAIXA = [QP_ALVO_MIN, QP_ALVO_MAX];
+// A ORDEM da tabela: 'data' (os últimos dias) · 'alta'/'baixa' (as metas mais
+// altas / mais baixas do período julgado). Ver a nota do _qpOrdenar — a ordem
+// troca o RECORTE, não só a sequência das linhas.
+let QP_ORDEM = 'data';
 const QP_PREF_K = 'rpe_qp_pref';   // ⚠ chave nova: nunca renomear (ver CLAUDE.md)
 
 // A escolha do gestor sobrevive ao reload — calibrar a faixa leva dias, e
@@ -7046,11 +7057,12 @@ function _qpCarregarPref(){
     if(o.regua != null) QP_REGUA = Number(o.regua);
     if(Array.isArray(o.faixa) && o.faixa.length === 2) QP_FAIXA = o.faixa.map(Number);
     if(o.janela != null) QP_JANELA = Number(o.janela);
+    if(o.ordem) QP_ORDEM = String(o.ordem);
   }catch(e){}
 }
 function _qpSalvarPref(){
   try{ localStorage.setItem(QP_PREF_K,
-    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA})); }catch(e){}
+    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM})); }catch(e){}
 }
 
 function _qpFiltro(n){
@@ -7068,10 +7080,13 @@ function _qpInitFiltro(){
   if(r) r.value = String(QP_REGUA);
   const f = document.getElementById('qp-faixa');
   if(f) f.value = QP_FAIXA[0] + '-' + QP_FAIXA[1];
+  const o = document.getElementById('qp-ordem');
+  if(o) o.value = QP_ORDEM;
   document.querySelectorAll('#sec-plano .qp-q').forEach(b =>
     b.classList.toggle('on', Number(b.dataset.n) === QP_JANELA));
 }
 function _qpSetRegua(n){ QP_REGUA = Number(n); _qpSalvarPref(); renderQualidadePlano(); }
+function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadePlano(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
   if(p.length === 2 && p[0] < p[1]) QP_FAIXA = p;
@@ -7096,13 +7111,48 @@ async function renderQualidadePlano(){
     const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
     const a = _qpAnalise(rec, curva, QP_FAIXA);
     if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
-    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA);
+    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM);
   }finally{ QP_RODANDO = false; }
+}
+
+// Quantas linhas a tabela mostra, num lugar só.
+const QP_TAB_N = 15;
+
+// A ORDEM DA TABELA. Ordenar é DESENHO, mas mora em função própria por dois
+// motivos, e os dois são defeito se esquecidos:
+//   1. `a.linhas` é a MESMA lista que o gráfico usa como eixo de calendário —
+//      ordenar no lugar reordenaria o gráfico junto. Aqui sempre sai lista NOVA.
+//   2. o teste roda esta função direto, sem abrir a tela.
+//
+// ⚠ A ORDEM TROCA O RECORTE, e é de propósito — o título devolvido junto diz
+// qual recorte está valendo, senão a tabela mentiria sobre o que mostra.
+// Por DATA a tabela é a CAUDA do período (os últimos dias, o mais recente em
+// cima). Por ALTURA ela é o TOPO (ou o fundo) do período INTEIRO: reordenar só
+// os últimos 15 deixaria a meta impossível de três semanas atrás escondida —
+// que é justamente o que se foi procurar ao pedir a ordem por percentil.
+//
+// Empate de percentil: a lista chega em ordem de calendário e o sort do JS é
+// estável, então a `reverse()` antes do sort faz o dia MAIS RECENTE ficar na
+// frente entre iguais.
+function _qpOrdenar(linhas, ordem, n){
+  const L = (linhas || []).slice();
+  const lim = n || QP_TAB_N;
+  const p = l => (l && l.pct != null) ? l.pct : -1;   // sem percentil vai para o fim
+  if(ordem === 'alta' || ordem === 'baixa'){
+    const q = L.reverse().sort((x, y) => ordem === 'alta' ? p(y) - p(x) : p(x) - p(y)).slice(0, lim);
+    return { linhas:q, titulo: 'AS ' + q.length + ' METAS MAIS '
+      + (ordem === 'alta' ? 'ALTAS' : 'BAIXAS') + ' DO PERÍODO JULGADO',
+      nota: ordem === 'alta'
+        ? 'as metas que mais cobraram do que a linha faz — não são os últimos dias, são os do período inteiro'
+        : 'as metas mais folgadas do período — meta baixa demais faz o verde não significar nada' };
+  }
+  return { linhas: L.slice(-lim).reverse(),
+    titulo: 'OS ÚLTIMOS ' + Math.min(lim, L.length) + ' DIAS, UM A UM', nota:'' };
 }
 
 // O DESENHO, separado da busca — é ele que o teste roda contra um DOM de
 // mentira. Nenhuma conta aqui dentro: tudo vem pronto do _qpAnalise.
-function _qpHtml(a, curva, nTotal, regua){
+function _qpHtml(a, curva, nTotal, regua, ordem){
   const v = _qpVeredito(a);
   // A faixa vem da ANÁLISE, não das constantes: o gestor pode ter escolhido
   // outra na barra, e desenho lendo constante contradiria o próprio veredito.
@@ -7159,7 +7209,8 @@ function _qpHtml(a, curva, nTotal, regua){
     + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
     + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="8.5" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
     + '</svg>';
-  const tab = a.linhas.slice(-15).reverse().map(l => {
+  const ord = _qpOrdenar(a.linhas, ordem);
+  const tab = ord.linhas.map(l => {
     const c = l.pct > QP_ACIMA ? 'qp-p-red'
       : (l.pct >= fMin && l.pct <= fMax ? 'qp-p-ok' : 'qp-p-warn');
     return '<tr><td>' + _rpEsc(l.data) + '</td><td>' + fmtN(l.meta) + '</td>'
@@ -7187,7 +7238,8 @@ function _qpHtml(a, curva, nTotal, regua){
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a meta deveria ficar</span>'
     + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima da capacidade</span>'
     + '<span>passe o mouse num ponto para ver o dia</span></div></div>'
-    + '<div class="par-sec">OS ÚLTIMOS 15 DIAS, UM A UM</div>'
+    + '<div class="par-sec">' + ord.titulo + '</div>'
+    + (ord.nota ? '<div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:.5px;margin:-8px 2px 10px">' + _rpEsc(ord.nota.toUpperCase()) + '</div>' : '')
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
     + '<div class="qp-nota"><b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu. '
     + 'A <b>faixa verde</b> é onde a meta deveria ficar: ali ela é batida em cerca de metade dos dias, e aí o vermelho, quando aparece, quer dizer que aconteceu algo. '

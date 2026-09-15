@@ -11,6 +11,52 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.49.0 — 15/09/2026
+
+**Atenção** — nenhum número mudou. A tabela do fim da aba **PLANO** ganhou um
+seletor de **ORDEM**, e por `altura` ela passa a mostrar **outro recorte**: as
+metas mais altas (ou mais baixas) do período **inteiro**, não os últimos dias.
+O título da tabela diz qual dos dois está valendo.
+
+### Por que
+
+A tabela era sempre a cauda do período — os últimos 15 dias. As metas
+impossíveis mais antigas ficavam invisíveis. Medido no `HISTORICO` real
+(30 dias julgados, régua de 60):
+
+```
+por DATA (os últimos 15 dias)      por ALTURA (o período inteiro)
+14/09  meta   900  p0              04/09  meta 2.950  p100  → produziu 1.602
+11/09  meta 1.450  p38             21/08  meta 2.950  p100  → produziu   962
+10/09  meta 1.700  p68             02/09  meta 2.750   p97  → produziu 2.537
+```
+
+Os dois dias de meta **2.950** — p100, acima de tudo que a linha já fez em 79
+dias — não apareciam em lugar nenhum da tabela.
+
+A ordem inversa responde a outra pergunta, e ela também importa: as **5 metas
+mais baixas** do período (900 a 1.150 cx) foram **todas** batidas. Meta nesse
+nível faz o verde não significar nada, do mesmo jeito que a meta em p100 faz o
+vermelho virar paisagem.
+
+### Como funciona
+
+- **ORDEM** na barra da aba: `por data` (padrão, o comportamento de antes) ·
+  `altura: p maior` · `altura: p menor`.
+- A escolha é guardada junto com a régua e a faixa (`rpe_qp_pref`).
+- ⚠ Ordenar **não mexe no gráfico** — ele continua em ordem de calendário. A
+  lista é copiada antes de ser ordenada (`_qpOrdenar` devolve lista nova); no
+  empate de percentil, o dia mais recente vem primeiro.
+
+### Também nesta versão
+
+- `docs/glossario.md`: a linha *"a curva usa todo o histórico"* estava
+  desatualizada desde a v7.48.0, que tornou a régua móvel (padrão 60 dias).
+  Corrigida, e os **três** recortes (JULGAR · RÉGUA · ORDEM) passaram a estar
+  escritos lado a lado.
+
+---
+
 ## v7.48.0 — 15/09/2026
 
 **Atenção** — a **régua da aba PLANO passou a ser móvel**, com padrão de **60
