@@ -11,6 +11,50 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.52.0 — 15/09/2026
+
+**Atenção** — nenhuma conta mudou. Os dois gráficos da aba PLANO estavam sendo
+**ampliados** em telas grandes, e a linha do realizado não tinha como ser lida.
+
+### O gráfico ocupava a tela ampliando, não desenhando
+
+`viewBox` fixo em 760px com `width:100%` faz o SVG dar **zoom**. Medido num
+monitor de 1920px em 15/09/2026:
+
+```
+                         antes          depois      régua do painel
+altura do gráfico        510px          210px       230px (.chart-box-lg)
+escala                   2,43×          1,00×
+legenda de 9px           21,9px          9,0px      10px (.qp-leg)
+altura da aba inteira   3.461px       2.824px
+```
+
+A legenda saía **maior que o rótulo dos cards ao lado**. Agora a largura do
+desenho vem do próprio card (`_svgLargura`), então o gráfico **ocupa** o espaço
+em vez de ampliar. Em tela estreita ele encolhe junto, como antes.
+
+Junto: a tarja preta atrás dos rótulos do gráfico passou a ter a largura do
+**texto** (`_svgTarja`). Ela tinha número fixo, calibrado no desenho ampliado —
+na escala 1:1 sobrava caixa preta tapando barra.
+
+### A linha do realizado não tinha número
+
+No gráfico de baixo só a **meta** tinha ponto e tooltip. O realizado era um traço
+cinza sem marcador, sem número e sem alvo de mouse: dava para ver que as duas
+linhas não se acompanham — que é o achado da tela — mas não **quanto** a linha
+produziu em nenhum dia.
+
+- O realizado ganhou **ponto próprio**.
+- Cada dia ganhou uma **faixa de toque** que cobre a coluna inteira, com as duas
+  quantidades: `03/08 · meta 1.663 cx (p68) · produziu 1.011 cx · 60,8% da meta`.
+  Acertar um ponto de 4px com o mouse era tarefa; agora qualquer ponto do
+  gráfico responde.
+- Com **15 dias** o número do realizado sai **impresso** na tela. ⚠ O corte
+  estava em 12 e o ramo era **morto**: o menor botão da barra é 15 DIAS, então o
+  número nunca chegaria à tela.
+
+---
+
 ## v7.51.0 — 15/09/2026
 
 **Atenção** — corrige um defeito da v7.50.0, publicada hoje. A aba PLANO dizia

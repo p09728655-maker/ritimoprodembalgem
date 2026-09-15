@@ -2596,8 +2596,8 @@ ok('o desenho pede o recorte ao _qpOrdenar em vez de fatiar por conta própria',
    [true, false]);
 ok('e o título da tabela vem de lá junto com as linhas',
    /ord\.titulo/.test(_qpDes), true);
-ok('a tela passa a ordem escolhida para o desenho',
-   /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM\)/.test(JS), true);
+ok('a tela passa a ordem escolhida e a largura do card para o desenho',
+   /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM, _svgLargura\(alvo\)\)/.test(JS), true);
 // A tela não pode custar chamada nova ao Apps Script.
 const _qpRender = pega('async function renderQualidadePlano(');
 ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
@@ -2763,7 +2763,50 @@ ok('o desenho do vazio não faz conta',
    /_qpPercentil\(|_qpCurva\(|_cartAnalise\(/.test(_vazDes), false);
 const _renderV = pega('async function renderCarteira(');
 ok('a tela escolhe entre o quadro e o vazio, sem afirmar carteira vazia por falha',
-   /a \? _cartHtml\(a, QP_REGUA\) : _cartVazioHtml\(cart\)/.test(_renderV), true);
+   /a \? _cartHtml\(a, QP_REGUA, _svgLargura\(alvo\)\) : _cartVazioHtml\(cart\)/.test(_renderV), true);
+
+// ── O GRÁFICO OCUPA A LARGURA, NÃO AMPLIA ────────────────────────────────
+// ⚠ Com `viewBox` fixo em 760 e `width:100%`, um monitor de 1920px ampliava o
+// desenho em 2,43×: medido em 15/09/2026, o gráfico saía com 510px de altura
+// (contra os 230px do `.chart-box-lg`, a régua do painel) e a legenda de 9px
+// chegava à tela com 21,9px, maior que o rótulo dos cards ao lado.
+console.log('\n── o gráfico ocupa a largura em vez de ampliar ──');
+eval(pega('function _svgLargura('));
+ok('a largura sai do card, com piso e teto',
+   [_svgLargura({clientWidth:1880}), _svgLargura({clientWidth:900}),
+    _svgLargura({clientWidth:300}), _svgLargura(null)],
+   [1400, 866, 640, 760]);
+// O `max-width` é o que impede o SVG de esticar de volta e ampliar tudo.
+['_qpHtml','_cartHtml'].forEach(f => {
+  const src = pega('function ' + f + '(');
+  ok(f + ': a largura entra por parâmetro, não é constante',
+     /const W = larg \|\| 760/.test(src), true);
+  ok(f + ': e o svg não estica além do que foi desenhado',
+     /max-width:' \+ W \+ 'px/.test(src), true);
+});
+// A tarja do rótulo nasce do texto — com número fixo ela sobrava na escala 1:1.
+eval(pega('function _svgTarja('));
+ok('a tarja acompanha o tamanho do texto',
+   _svgTarja(0, 20, 'ABC').includes('width="26.8"'), true);
+ok('e a ancorada à direita recua a própria largura',
+   _svgTarja(100, 20, 'ABC', 'end').includes('x="73.2"'), true);
+
+// ── A LINHA DO REALIZADO PRECISA SER LEGÍVEL ─────────────────────────────
+// ⚠ Correção do usuário (15/09/2026): só a meta tinha ponto e tooltip. O
+// realizado era um traço cinza sem marcador, sem número e sem alvo de mouse —
+// dava para ver que as duas não se acompanham, mas não QUANTO a linha fez.
+const _qpG = pega('function _qpHtml(');
+ok('o realizado ganhou ponto próprio', /const ptsReal = serie\.map/.test(_qpG), true);
+ok('e uma faixa de toque por dia, com as DUAS quantidades',
+   [/const toque = serie\.map/.test(_qpG), /produziu ' \+ fmtN\(l\.real\)/.test(_qpG)], [true, true]);
+// ⚠ A faixa é pintada ANTES das linhas: por cima, comeria o tooltip dos pontos.
+ok('a faixa de toque fica atrás das linhas e dos pontos',
+   _qpG.indexOf('+ toque') < _qpG.indexOf("caminho('real')")
+   && _qpG.indexOf("caminho('meta')") < _qpG.indexOf('ptsReal + pts'), true);
+// ⚠ O corte do número tem de casar com o FILTRO: com 12 o ramo era MORTO,
+// porque o menor botão da barra é 15 DIAS.
+ok('o número impresso é alcançável pelo filtro de 15 dias',
+   /serie\.length <= 15/.test(_qpG), true);
 
 // ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
 // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para
