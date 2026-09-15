@@ -858,6 +858,75 @@ function _valores(nomeAba) {
   return _valoresDaAba(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nomeAba));
 }
 
+// ── LEITURA RECORTADA POR DATA ─────────────────────────────────────────────
+// Toda leitura daqui era getDataRange(): a aba INTEIRA, e o custo cresce com o
+// histórico acumulado em vez de com o que foi pedido. Medido na planilha real
+// em 15/09/2026: PRODUCAO_PRODUTO tem 3.300 linhas x 8 colunas = 26.400
+// células, e o comparativo por modelo lia todas para ficar com as do período.
+//
+// ⚠ NÃO ASSUME QUE A PLANILHA ESTÁ EM ORDEM DE DATA. Seria a otimização óbvia
+// — achar o corte por busca binária e ler do corte em diante —, e ela perde
+// linha CALADO quando alguém acrescenta uma parada antiga à mão, coisa que
+// acontece nesta planilha (ver o fallback do endParada). Aqui a coluna de DATA
+// é varrida INTEIRA (uma coluna, leitura barata) e o que se lê é o trecho entre
+// a PRIMEIRA e a ÚLTIMA linha que casam. Fora de ordem continua CERTO — no pior
+// caso lê o mesmo que lia antes.
+//
+// Nunca grava no _valoresMemo: o memo guarda a aba inteira, e um pedaço lá
+// dentro faria a próxima leitura completa devolver menos linhas do que existe.
+//
+// O CUSTO, medido na planilha real (PRODUCAO_PRODUTO, 2.381 linhas x 8 col.):
+//
+//     janela  7 dias    260 linhas     -77% de células
+//     janela 30 dias    953 linhas     -47%
+//     janela 90 dias  2.380 linhas     +12%   <- pior caso
+//
+// A varredura da coluna de data custa 1/nColunas de uma leitura completa, e ela
+// é paga sempre. Quando a janela cobre a aba inteira não há o que economizar e
+// esse 1/n vira prejuízo — teto de +12% aqui, +14% na PARADAS (7 colunas).
+// Fica assim de propósito: 7 e 30 dias são o uso do dia a dia e 90 é o preset
+// raro, então a média pesa muito para o lado do ganho. Tentar adivinhar a
+// janela ANTES de varrer (olhando só a 1ª e a última data) só funciona se a
+// planilha estiver em ordem — e é justamente o que não se pode assumir aqui.
+function _faixaPorData(sh, iCol, deNum, ateNum) {
+  const nLin = sh.getLastRow();
+  if (nLin < 2) return { ini: 2, fim: 1 };
+  const col = sh.getRange(2, iCol + 1, nLin - 1, 1).getValues();
+  let ini = -1, fim = -1;
+  for (let i = 0; i < col.length; i++) {
+    const n = dataParaNum(col[i][0]);
+    if (!n) continue;
+    if (deNum  && n < deNum)  continue;
+    if (ateNum && n > ateNum) continue;
+    if (ini < 0) ini = i;
+    fim = i;
+  }
+  return ini < 0 ? { ini: 2, fim: 1 } : { ini: ini + 2, fim: fim + 2 };
+}
+
+// Devolve os valores no MESMO formato do _valoresDaAba (linha 0 = cabeçalho),
+// para o chamador não mudar o laço.
+function _valoresPorData(sh, nomeColData, iPadrao, deNum, ateNum) {
+  if (!sh) return [];
+  // A aba inteira já foi lida nesta execução? Então usar o memo é uma leitura a
+  // MENOS, não a mais — reler um pedaço do que já está na mão é desperdício.
+  const nome = sh.getName();
+  if (Object.prototype.hasOwnProperty.call(_valoresMemo, nome)) return _valoresMemo[nome];
+  // Sem recorte pedido não há o que economizar, e aí vale alimentar o memo.
+  if (!deNum && !ateNum) return _valoresDaAba(sh);
+
+  const nCol = sh.getLastColumn();
+  if (nCol < 1 || sh.getLastRow() < 1) return [];
+  const hdr = sh.getRange(1, 1, 1, nCol).getValues();
+  const titulos = (hdr[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  let iCol = titulos.indexOf(nomeColData);
+  if (iCol < 0) iCol = iPadrao;
+
+  const f = _faixaPorData(sh, iCol, deNum, ateNum);
+  if (f.fim < f.ini) return hdr;
+  return hdr.concat(sh.getRange(f.ini, 1, f.fim - f.ini + 1, nCol).getValues());
+}
+
 function _invalidarValores() { _valoresMemo = {}; }
 
 function _cacheGen(cache) {
@@ -2315,7 +2384,10 @@ function getProducaoModeloPeriodo(p) {
   const deNum  = p.de  ? dataParaNum(p.de)  : null;
   const ateNum = p.ate ? dataParaNum(p.ate) : null;
 
-  const values = _valoresDaAba(sh);
+  // Recorte por data na LEITURA, não só no filtro: a aba tem milhares de linhas
+  // e o período pede algumas centenas. O filtro do laço continua igual — ele é
+  // a garantia de que nenhuma linha fora do período entra, venha de onde vier.
+  const values = _valoresPorData(sh, 'DATA', 0, deNum, ateNum);
   const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
@@ -3064,7 +3136,7 @@ function getParadasPeriodo(p) {
   const nDe  = toNum(p.de  || '');
   const nAte = toNum(p.ate || '');
 
-  const paradas = _valoresDaAba(sh).slice(1).map(r => ({
+  const paradas = _valoresPorData(sh, 'DATA', 0, nDe, nAte).slice(1).map(r => ({
     data: _dataStr(r[0]),
     tipo: String(r[2] || ''),
     ini:  _horaStr(r[3]),

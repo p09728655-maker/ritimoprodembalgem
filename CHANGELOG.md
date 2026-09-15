@@ -11,6 +11,57 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## Apps Script — 15/09/2026 (leitura recortada por data) ⚠ re-deploy
+
+**Nenhum número muda.** O que muda é quanta planilha o backend lê para responder
+a mesma coisa.
+
+### As leituras por período param de ler a aba inteira
+
+Toda leitura do `.gs` era `getDataRange()`: a aba **inteira**, com o custo
+crescendo com o histórico acumulado em vez de com o que foi pedido.
+
+Medido na planilha real:
+
+| aba | linhas | colunas | células |
+|---|---|---|---|
+| `PRODUCAO_PRODUTO` | 2.381 | 8 | 19.048 |
+| `PARADAS` | 515 | 7 | 3.605 |
+
+`getProducaoModeloPeriodo` e `getParadasPeriodo` passam a ler só a faixa de
+linhas do período (`_valoresPorData`):
+
+| janela | linhas no período | células | vs. antes |
+|---|---|---|---|
+| 7 dias | 260 | 4.468 | **−77%** |
+| 30 dias | 953 | 10.012 | **−47%** |
+| 90 dias | 2.380 | 21.428 | **+12%** |
+
+⚠ **O pior caso está escrito porque é real.** A varredura da coluna de data
+custa 1/nColunas de uma leitura completa e é paga sempre; quando a janela cobre
+a aba inteira, esse 1/n vira prejuízo. Fica assim de propósito: 7 e 30 dias são
+o uso do dia a dia e 90 é o preset raro. O teste prende o teto — nunca mais que
+"aba inteira + a coluna de data".
+
+⚠ **Não assume que a planilha está em ordem de data.** A otimização óbvia seria
+achar o corte por busca binária e ler dali em diante; ela perde linha **calado**
+quando alguém acrescenta uma parada antiga à mão — coisa que acontece nesta
+planilha (é por isso que o `endParada` tem fallback por DATA+INÍCIO). Aqui a
+coluna de data é varrida inteira e lê-se o trecho entre a primeira e a última
+linha que casam: fora de ordem continua **certo**, só lê um pouco mais. O teste
+tem o caso da linha antiga lançada no fim da aba.
+
+**O que continua lendo tudo, e deve:** `lerEmbaladoPorProduto`. O FIFO precisa
+do histórico inteiro — recortar ali creditaria produção antiga a outro lote do
+mesmo código, que é o erro que o arquivamento existe para evitar.
+
+O recorte **nunca entra no memo por execução**: o memo guarda a aba inteira, e
+um pedaço lá dentro faria a próxima leitura completa devolver menos linhas do
+que a planilha tem. E quando a aba inteira já está no memo, o recorte nem
+acontece — reler um pedaço do que já está na mão é leitura a mais, não a menos.
+
+---
+
 ## v7.44.0 — 15/09/2026
 
 **Nenhum número muda.** A tela e o PDF do comparativo por modelo já mostravam os

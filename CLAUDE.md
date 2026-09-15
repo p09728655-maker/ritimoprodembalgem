@@ -624,8 +624,28 @@ via Google Apps Script (JSONP).
     junto: leitura depois de escrita nunca vem do retrato antigo.
   - É um segundo nível, **dentro** da execução; o cache do `CacheService`
     (20s–5min, por geração) continua valendo entre chamadas.
-- **Ainda por fazer (exige re-deploy manual do `.gs`):** ler só as últimas
-  linhas da `PARADAS` em vez da aba toda.
+- **Leitura recortada por data (`_valoresPorData`, 15/09/2026).**
+  `getProducaoModeloPeriodo` e `getParadasPeriodo` leem só a faixa de linhas do
+  período. Medido na planilha real (`PRODUCAO_PRODUTO`, 2.381 linhas × 8):
+  **7 dias −77%** de células, **30 dias −47%**, **90 dias +12%**.
+  - ⚠ **NÃO assume ordem de data.** A otimização óbvia — busca binária e ler do
+    corte em diante — perde linha **calado** quando alguém acrescenta uma parada
+    antiga à mão, e isso acontece aqui (é por isso que o `endParada` tem
+    fallback por DATA+INÍCIO). A coluna de data é varrida INTEIRA e lê-se o
+    trecho entre a primeira e a última linha que casam: fora de ordem continua
+    certo, só lê um pouco mais.
+  - ⚠ **O pior caso é real e está escrito**: a varredura custa 1/nColunas de uma
+    leitura completa e é paga sempre, então janela que cobre a aba inteira fica
+    **+12%** (+14% na `PARADAS`, que tem 7 colunas). Fica assim de propósito —
+    7 e 30 dias são o dia a dia, 90 é o preset raro.
+  - **`lerEmbaladoPorProduto` continua lendo tudo, e deve**: o FIFO precisa do
+    histórico inteiro, senão a produção antiga credita outro lote do mesmo
+    código — o erro que o arquivamento existe para evitar.
+  - O recorte **nunca entra no `_valoresMemo`** (um pedaço lá faria a próxima
+    leitura completa devolver menos linhas do que existe), e quando a aba já
+    está no memo o recorte nem acontece.
+  - ⚠ Mudou o `.gs` → **re-deploy manual**. `apps-script.test.js` conta
+    **células** (não leituras) e cobre o fora de ordem, o pior caso e o memo.
 
 ## Núcleo comum (`rp-core.js`)
 - **As funções básicas eram escritas duas vezes**, uma em cada HTML, com o mesmo
