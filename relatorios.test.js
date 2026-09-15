@@ -2435,6 +2435,90 @@ ok('o celular NÃO tem essa exclusão — lá não existe TV',
      src.includes('RitmoProd') || src.includes('RITMOPROD'), false);
 });
 
+// ── QUALIDADE DO PLANO: a meta contra a capacidade demonstrada ─────────────
+// Medido no HISTORICO real em 15/09/2026 (79 dias): a correlação entre a META
+// do dia e o REALIZADO é r=0,28 — r² de 8%. A eficiência varia de 32,6% a
+// 188,5% porque o DENOMINADOR pula, não porque a linha pule. Esta tela mede o
+// PLANO; o alvo e os limiares são combinado, e moram em constantes.
+console.log('\n── qualidade do plano (a meta contra a capacidade) ──');
+eval(pega('function _qpCurva('));
+eval(pega('function _qpPercentil('));
+eval(pega('function _qpValorNoPercentil('));
+eval(pega('function _qpOscilacao('));
+eval(pega('function _qpAnalise('));
+eval(pega('function _qpVeredito('));
+[/const QP_ALVO_MIN\s*=\s*\d+/, /const QP_ALVO_MAX\s*=\s*\d+/, /const QP_ACIMA\s*=\s*\d+/,
+ /const QP_OSC_OK\s*=\s*\d+/, /const QP_OSC_RUIM\s*=\s*\d+/].forEach(re => {
+  const m = JS.match(re); if(m) eval(m[0].replace('const ', 'global.') + ';');
+});
+
+const _d = (real, meta) => ({ data:'01/01', real, meta });
+// curva de 10 dias: 100,200,...,1000
+const _curva10 = _qpCurva([100,200,300,400,500,600,700,800,900,1000].map(v => _d(v, 0)));
+ok('a curva é o realizado ordenado, só de dia COM produção',
+   [_curva10.length, _curva10[0], _curva10[9]], [10, 100, 1000]);
+ok('dia sem produção não entra na curva (não é capacidade, é ausência dela)',
+   _qpCurva([_d(0,500), _d(300,500), _d(null,500)]).length, 1);
+
+// O percentil é a fatia de dias que a meta REPROVARIA.
+ok('meta acima de tudo = p100', _qpPercentil(9999, _curva10), 100);
+ok('meta abaixo de tudo = p0',  _qpPercentil(1, _curva10), 0);
+ok('meta no meio da curva = p50', _qpPercentil(500, _curva10), 50);
+ok('sem curva não inventa percentil', _qpPercentil(500, []), null);
+
+ok('a leitura inversa devolve o valor daquele percentil',
+   [_qpValorNoPercentil(50, _curva10), _qpValorNoPercentil(100, _curva10)], [500, 1000]);
+
+// Oscilação: dois planos com a MESMA média e estabilidades opostas.
+ok('meta estável tem oscilação baixa', Math.round(_qpOscilacao([500,500,500,500])), 0);
+ok('meta que pula tem oscilação alta', _qpOscilacao([100,900,100,900]) > 60, true);
+ok('um dia só não tem oscilação', _qpOscilacao([500]), null);
+
+// ⚠ O CASO QUE ORIGINOU A TELA: mesma média, vereditos opostos. A média das
+// metas é 500 nos dois; o que muda é o pulo. Um indicador que olhasse só a
+// altura daria o mesmo veredito para os dois.
+const estavel  = _qpAnalise([_d(500,500), _d(500,520), _d(500,480), _d(500,500)], _curva10);
+const instavel = _qpAnalise([_d(500,100), _d(500,900), _d(500,100), _d(500,900)], _curva10);
+ok('os dois planos têm a MESMA meta média',
+   [Math.round(estavel.metaMedia), Math.round(instavel.metaMedia)], [500, 500]);
+ok('mas só um é exequível',
+   [_qpVeredito(estavel).t, _qpVeredito(instavel).t], ['PLANO EXEQUÍVEL', 'META INSTÁVEL']);
+
+// Meta alta demais: reprova a maioria dos dias por construção.
+const alta = _qpAnalise([_d(500,950), _d(500,960), _d(500,940)], _curva10);
+ok('meta acima da capacidade é acusada', _qpVeredito(alta).t, 'META ACIMA DA CAPACIDADE');
+ok('e os dias acima de pQP_ACIMA são contados', alta.nAcima, 3);
+
+// ⚠ A FAIXA DO MEIO precisa de veredito próprio: sem ela, oscilação de 28% —
+// acima do combinado de 20%, abaixo do 30% que reprova — saía como PLANO
+// EXEQUÍVEL. Foi o medido na planilha real (28,3% em 79 dias).
+// CV de 24,5% — entre o combinado (20%) e o que reprova (30%). Com 380/620 dava
+// 19,6%, abaixo do limiar, e o EXEQUÍVEL estaria certo: era o teste que errava.
+const meio = _qpAnalise([_d(500,350), _d(500,500), _d(500,650), _d(500,500)], _curva10);
+ok('oscilação na faixa do meio não passa por exequível',
+   _qpVeredito(meio).t, 'META OSCILANDO');
+
+// Sem base não se emite veredito — zero afirmaria que o plano está certo.
+ok('sem dias não há veredito', _qpVeredito(null).t, 'SEM BASE');
+
+// O desenho não faz conta: tudo vem pronto do _qpAnalise.
+const _qpDes = pega('function _qpHtml(');
+ok('o desenho não recalcula percentil nem oscilação',
+   /_qpPercentil\(|_qpOscilacao\(|_qpCurva\(/.test(_qpDes), false);
+// A tela não pode custar chamada nova ao Apps Script.
+const _qpRender = pega('async function renderQualidadePlano(');
+ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
+   /buildDiasHistAsync\(\)/.test(_qpRender) && !/jsonpFetch|action=/.test(_qpRender), true);
+
+// ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
+// PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para
+// uma relação só: dados o real e a meta, o % e a diferença são aritmética.
+ok('o card GAP DA META não existe mais nos dois grids',
+   (JS.match(/\{l:'GAP DA META'/g) || []).length, 0);
+// Dois grids (ao vivo e dia passado) × dois ramos do ternário (atingida / faltam).
+ok('e o que faltava virou o subtítulo da própria meta',
+   (JS.match(/caixas programadas · /g) || []).length, 4);
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

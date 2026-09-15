@@ -2074,6 +2074,55 @@ feito e dá ar de verdade ao que sobrou.
   rodapés de PDF, a assinatura do WhatsApp, o slogan nas três superfícies de
   impressão e a compensação da paisagem — e **falha se o nome antigo voltar**.
 
+## Aba PLANO — a meta contra a capacidade demonstrada
+- **O painel media a linha e o plano com o MESMO número, e nenhum dos dois
+  aparecia.** Medido no `HISTORICO` em 15/09/2026, 79 dias: a correlação entre a
+  META do dia e o REALIZADO é **r = 0,28** — **r² de 8%**. A EFICIÊNCIA varia de
+  **32,6% a 188,5%** porque o **denominador** pula. Nos últimos 8 dias a meta foi
+  de **p0** (900 cx, abaixo de tudo que a linha já fez) a **p100** (2.950 cx).
+- **A causa está no código:** `CFG.metaDia` é a soma dos lotes datados para o
+  dia (`aplicarMetaDiaAutomatica`), então a meta herda a irregularidade da
+  **datação dos lotes**, não da operação. Atacar isso é datar contra capacidade.
+- A aba responde **duas perguntas independentes**, e é preciso as duas:
+  **ALTURA** (`_qpPercentil` — em que percentil da capacidade a meta cai) e
+  **OSCILAÇÃO** (`_qpOscilacao` — quanto ela pula). Medido: altura **p53** (boa)
+  com oscilação **34,5%** (ruim). Um indicador que olhasse só a altura aprovaria.
+- ⚠ **A FAIXA DO MEIO precisa de veredito próprio.** Sem ela, oscilação de
+  **28,3%** — acima do combinado de 20%, abaixo do 30% que reprova — saía como
+  `PLANO EXEQUÍVEL`. Hoje é `META OSCILANDO`. A oscilação vem **piorando**:
+  28,3% em 79 dias, 31,6% em 60, 34,5% em 30, 35% em 15.
+- ⚠ **NÃO é "baixar a meta", e o texto da tela diz isso.** A função da meta do
+  dia é **sinalizar**: meta que a linha bate em ~metade dos dias faz o vermelho
+  significar alguma coisa. Meta que reprova 2 em 3 dias vira paisagem e o alarme
+  se perde — é o alarme que vale dinheiro. A produção sobe pelas **paradas**,
+  pelo **setup** e pelo **teto da esteira**, e a meta sobe **atrás** da
+  capacidade demonstrada.
+- **Custo zero:** lê o `buildDiasHistAsync` (cache de 2 min) que o HISTÓRICO e a
+  cascata já usam. **Nenhuma chamada nova ao Apps Script, nenhum re-deploy.**
+- O combinado mora em constantes (`QP_ALVO_MIN` 50 · `QP_ALVO_MAX` 60 ·
+  `QP_ACIMA` 75 · `QP_OSC_OK` 20 · `QP_OSC_RUIM` 30 · `QP_MIN_DIAS` 10).
+- **O desenho (`_qpHtml`) não faz conta** — tudo vem pronto do `_qpAnalise`, e o
+  teste falha se `_qpPercentil`/`_qpOscilacao`/`_qpCurva` aparecerem dentro dele.
+- ⚠ **A curva usa TODO o histórico; o filtro escolhe só quais metas são
+  julgadas.** Recortar a curva junto com o período faria a régua mudar de
+  tamanho a cada clique, e aí o percentil de ontem mudaria sem nada ter mudado.
+- ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`
+  funcionam nele. Em `<canvas>` (Chart.js) token não resolve e sai preto; ver a
+  nota do `mkChart`.
+- ⚠ **`.kpi-grid` sozinho não tem coluna** — precisa do modificador `c3`/`c4`/`c5`,
+  senão os cards empilham um por linha.
+- **Redundância removida junto:** `PRODUÇÃO REAL`, `META DO DIA`, `% DA META DO
+  DIA` e `GAP DA META` eram **quatro cards para uma relação só** — dados o real e
+  a meta, o percentual e a diferença são aritmética. O GAP virou o subtítulo do
+  card da meta, nos dois grids (ao vivo e dia passado).
+  - **Ainda em aberto, não mexido:** `PROJEÇÃO FINAL` traz `▲ ACIMA DA META / ▼
+    ABAIXO` e o selo do `% DA META DO DIA` traz `NO RITMO / ABAIXO DO RITMO`.
+    Pela álgebra é **o mesmo teste** (`proj ≥ meta ⟺ real ≥ metaAteAgora`),
+    diferindo só porque um rateia por horas e o outro por minutos — com o slot
+    de 48 min eles **podem se contradizer na mesma tela**. E `MELHOR/PIOR HORA`
+    aparece em três lugares (card, análise pico/vale e a tabela hora a hora).
+    Decisão do usuário, pendente.
+
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
   mudança que altera número exibido ou formato de arquivo**, com o antes e o

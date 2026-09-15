@@ -11,6 +11,58 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.45.0 — 15/09/2026
+
+**Atenção** — o card **GAP DA META sai do gerencial** (ao vivo e dia passado). O
+número não some: vira o subtítulo do card META DO DIA. Nenhuma conta muda.
+
+### Aba nova: 📐 PLANO — a meta contra a capacidade demonstrada
+
+Medido no `HISTORICO`, 79 dias: a correlação entre a **META** do dia e o
+**REALIZADO** é **r = 0,28**, ou seja **r² de 8%**. A meta do dia explica 8% da
+variação do que a linha produz. A EFICIÊNCIA varia de **32,6% a 188,5%** porque
+o **denominador** pula, não porque a linha pule — nos últimos 8 dias a meta foi
+de **p0** (900 cx, abaixo de tudo que a linha já fez) a **p100** (2.950 cx,
+acima de tudo).
+
+A causa está no próprio código: `CFG.metaDia` é a soma dos lotes datados para
+aquele dia, então a meta herda a irregularidade da **datação**, não da operação.
+
+A aba mede o **plano**, não a linha, e responde duas perguntas:
+
+| | o que é | hoje (30 dias) |
+|---|---|---|
+| **ALTURA DA META** | em que percentil da capacidade demonstrada ela cai | **p53** ✓ |
+| **OSCILAÇÃO DA META** | quanto ela pula de um dia para o outro | **34,5%** ✗ |
+
+O gráfico põe o **percentil no eixo horizontal**: a curva branca é a capacidade
+que a linha já demonstrou e **cada ponto é a meta de um dia**, na altura em que
+cai. No período em cartaz os pontos estão espalhados de p0 a p100.
+
+⚠ **Não é baixar a meta.** A função da meta do dia é **sinalizar**: meta que a
+linha bate em cerca de metade dos dias faz o vermelho significar alguma coisa.
+Meta que reprova 2 em cada 3 dias vira paisagem, e aí se perde o alarme. A
+produção sobe pelas paradas, pelo setup e pelo teto da esteira — a meta sobe
+**atrás** da capacidade demonstrada, nunca na frente.
+
+O combinado fica em constantes (`QP_ALVO_MIN` 50, `QP_ALVO_MAX` 60, `QP_ACIMA`
+75, `QP_OSC_OK` 20, `QP_OSC_RUIM` 30, `QP_MIN_DIAS` 10) — mudar o alvo é mexer
+numa linha.
+
+**Custo: zero.** A tela lê o `buildDiasHistAsync`, que o HISTÓRICO e a cascata já
+usam e que tem cache de 2 min. **Nenhuma chamada nova ao Apps Script e nenhum
+re-deploy.**
+
+### GAP DA META saiu do gerencial
+
+`PRODUÇÃO REAL`, `META DO DIA`, `% DA META DO DIA` e `GAP DA META` eram **quatro
+cards para uma relação só**: dados o real e a meta, o percentual e a diferença
+são aritmética que o olho faz. O que o gap tinha de útil — quantas caixas faltam
+— virou a linha de apoio do próprio card da meta. O gerencial foi de 11 para 10
+cards sem perder informação.
+
+---
+
 ## Apps Script — 15/09/2026 (leitura recortada por data) ⚠ re-deploy
 
 **Nenhum número muda.** O que muda é quanta planilha o backend lê para responder

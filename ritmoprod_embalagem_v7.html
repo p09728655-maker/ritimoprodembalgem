@@ -141,6 +141,32 @@ body.ger-hist .ger-live-only{display:none!important}
    com os tokens do painel (o PDF é claro, a tela é escura). Escrever um segundo
    desenho para a tela seria a duplicação que já fez a conta de paradas divergir
    três vezes. Se mexer no quadro, mexa nas DUAS peles — a marcação é uma só. */
+/* ── QUALIDADE DO PLANO (aba PLANO) ─────────────────────────────────────────
+   Pele escopada em #sec-plano: reaproveita .kpi-grid/.kpi-card/.par-sec/.tbl do
+   painel e só acrescenta o que é desta tela. As cores saem dos tokens — o SVG
+   usa var(--ok)/var(--warn)/var(--red) direto, que aqui é SVG inline no DOM (e
+   não canvas, onde token não resolve — ver a nota do mkChart). */
+#sec-plano .qp-q{font-size:11.5px;padding:5px 13px}
+#sec-plano .qp-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
+#sec-plano .qp-ver{border:1px solid var(--border);border-left:3px solid var(--txt2);border-radius:6px;background:var(--surface);padding:13px 16px;margin-bottom:14px}
+#sec-plano .qp-ver.ok{border-left-color:var(--ok)}
+#sec-plano .qp-ver.warn{border-left-color:var(--warn)}
+#sec-plano .qp-ver.red{border-left-color:var(--red)}
+#sec-plano .qp-ver-t{font-family:var(--font-h);font-size:23px;font-weight:700;letter-spacing:1px;line-height:1.1;color:var(--txt)}
+#sec-plano .qp-ver.ok .qp-ver-t{color:var(--ok)}
+#sec-plano .qp-ver.warn .qp-ver-t{color:var(--warn)}
+#sec-plano .qp-ver.red .qp-ver-t{color:var(--red)}
+#sec-plano .qp-ver-d{color:var(--txt2);font-size:12.5px;margin-top:5px;line-height:1.45;max-width:78ch}
+#sec-plano .qp-wrap{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px}
+#sec-plano .qp-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10px;color:var(--txt2);margin-top:9px}
+#sec-plano .qp-leg i{display:inline-block;width:11px;height:3px;vertical-align:middle;margin-right:5px}
+#sec-plano .qp-leg i.qp-dot{width:9px;height:9px;border-radius:50%}
+#sec-plano .qp-pill{display:inline-block;font-family:var(--font-d);font-size:9.5px;letter-spacing:.8px;padding:2px 7px;border-radius:3px;border:1px solid}
+#sec-plano .qp-p-ok{color:var(--ok);border-color:#2b5c2d}
+#sec-plano .qp-p-warn{color:var(--warn);border-color:#6b4310}
+#sec-plano .qp-p-red{color:var(--red);border-color:#6d2420}
+#sec-plano .qp-nota{color:var(--txt3);font-size:11.5px;line-height:1.5;margin-top:13px;max-width:86ch}
+#sec-plano .qp-nota b{color:var(--txt2)}
 #sec-perdas .pg-q,#sec-simulador .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
@@ -1419,6 +1445,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab on" data-tab="gerencial" onclick="setTab('gerencial')">📊 GERENCIAL</button>
   <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
+  <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -1970,6 +1997,25 @@ if (_v7Instalado()) _v7EscondeBotao();
 </section>
 
 <!-- ═══ PRODUÇÃO POR MODELO (visão dedicada: total do dia, um modelo por linha) ═══ -->
+<!-- ═══ QUALIDADE DO PLANO ═══ -->
+<section id="sec-plano" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">📐 QUALIDADE DO PLANO</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">JULGAR OS ÚLTIMOS</span>
+      <button class="btn btn-ghost qp-q" data-n="15" onclick="_qpFiltro(15)">15 DIAS</button>
+      <button class="btn btn-ghost qp-q on" data-n="30" onclick="_qpFiltro(30)">30 DIAS</button>
+      <button class="btn btn-ghost qp-q" data-n="60" onclick="_qpFiltro(60)">60 DIAS</button>
+      <button class="btn btn-ghost qp-q" data-n="0" onclick="_qpFiltro(0)">TUDO</button>
+      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+    </div>
+  </div>
+  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 12px">
+    A CURVA DE CAPACIDADE USA SEMPRE TODO O HISTÓRICO — O FILTRO ESCOLHE SÓ QUAIS METAS SÃO JULGADAS
+  </div>
+  <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
+</section>
+
 <section id="sec-producaohora" class="sec">
 
   <!-- ── FILTROS DE PERÍODO ── -->
@@ -2560,7 +2606,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.44.0';
+const APP_VER   = '7.45.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4007,10 +4053,9 @@ function renderGerencialHist(){
   const kpis=[
     {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
     ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · ${temHEnaTabela?'as horas de HE estão na tabela, sem meta':'fora da tabela abaixo'}`, c:'acc'}]:[]),
-    {l:'META DO DIA',      v:fmtN(meta),  sub:'caixas programadas',              c:'acc'},
+    {l:'META DO DIA',      v:fmtN(meta),  sub:gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltaram '+fmtN(Math.abs(gap)), c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
-    {l:'GAP DA META',      v:fmtN(Math.abs(gap)), sub:gap<=0?'META ATINGIDA ✓':'cx faltaram', c:gap<=0?'ok':'red'},
-    {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
+        {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
     {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
     {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
     {l:'PIOR HORA',        v:fmtN(pior),   sub:'cx — mínimo do turno',          c:metaHora>0&&pior<metaHora*0.7?'red':''},
@@ -4095,7 +4140,12 @@ function renderGerencial(){
     // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
     ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
-    {l:'META DO DIA',       v:fmtN(k.meta),             sub:'caixas programadas',     c:'acc'},
+    // O GAP saiu de card próprio e virou o subtítulo daqui (15/09/2026).
+    // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards
+    // para uma relação só: dados o real e a meta, o % e a diferença são
+    // aritmética. O que o gap tem de útil — quantas caixas faltam — cabe na
+    // linha de apoio da própria meta, sem gastar um card do grid.
+    {l:'META DO DIA',       v:fmtN(k.meta),             sub:k.gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltam '+fmtN(k.gap), c:'acc'},
     /* O número é FATO (quanto da meta do dia já saiu, conferível de cabeça) e o
        VEREDITO é a palavra do sub + a cor, que falam de RITMO — a troca feita
        na TV em 01/09/2026, pelo mesmo motivo: dois "%" e dois sentidos da
@@ -4109,7 +4159,6 @@ function renderGerencial(){
       +fmtN(Math.round(k.metaAteAgora))+' cx em '+fmt1(k.hProd)+'h rodadas) = '+fmtP(k.efRitmo)+'. '
       +'A meta do dia é rateada pelos MINUTOS já rodados, então a régua não cobra hora que ainda não aconteceu. '
       +'A meta/hora da planilha ('+fmtP(k.ef)+' até agora) não manda na cor: ela pode estar pedindo outra coisa que a meta do dia.', c:s},
-    {l:'GAP DA META',       v:fmtN(k.gap),              sub:k.gap<=0?'META ATINGIDA ✓':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:k.proj>=k.meta?'▲ ACIMA DA META':'▼ ABAIXO', c:k.proj>=k.meta?'ok':'red'},
     {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
@@ -6801,6 +6850,234 @@ function tick(){
 }
 
 // ════════════════════════════════════════════════
+// QUALIDADE DO PLANO — a meta contra a capacidade demonstrada
+// ════════════════════════════════════════════════
+// Medido no HISTORICO em 15/09/2026, 79 dias: a correlação entre a META do dia
+// e o REALIZADO é r=0,28 — r² de 8%. Ou seja, a meta do dia explica 8% da
+// variação do que a linha produz, e a EFICIÊNCIA (realizado ÷ meta) varia de
+// 32,6% a 188,5% porque o DENOMINADOR pula, não porque a linha pule.
+//
+// A causa está no próprio código: CFG.metaDia é a soma dos lotes datados para
+// aquele dia (aplicarMetaDiaAutomatica), então a meta herda a irregularidade de
+// como os lotes foram datados. O plano é feito contra o pedido, não contra a
+// capacidade.
+//
+// Esta tela mede o PLANO, não a linha. É o indicador do PPCP: hoje, quando o
+// dia fecha abaixo, o vermelho cai no operador por uma variação que em 92% não
+// é dele.
+//
+// ⚠ NÃO é "baixar a meta". A função da meta do dia é SINALIZAR: meta que a
+// linha bate em ~metade dos dias faz o vermelho significar alguma coisa. Meta
+// em p68 (a de hoje) pinta 2 em cada 3 dias de vermelho, e vermelho que aparece
+// sempre vira paisagem — aí se perde o alarme, que é o que vale dinheiro.
+// A produção sobe pelas paradas, pelo setup e pelo teto da esteira; a meta sobe
+// ATRÁS da capacidade demonstrada, não na frente dela.
+
+// O combinado, num lugar só (mesma ideia dos PG_META_* da gestão de perdas).
+const QP_ALVO_MIN = 50;   // percentil mínimo de uma meta exequível
+const QP_ALVO_MAX = 60;   // percentil máximo
+const QP_ACIMA    = 75;   // acima disto a meta cobra o que a linha raramente faz
+const QP_OSC_OK   = 20;   // oscilação (CV %) aceitável da meta
+const QP_OSC_RUIM = 30;   // acima disto o plano é instável demais para julgar o dia
+const QP_MIN_DIAS = 10;   // curva com menos dias que isto não é régua, é palpite
+
+// A CURVA DE CAPACIDADE: os dias já realizados, ordenados do pior para o
+// melhor. É a régua. Só dia COM produção entra — dia parado não é capacidade,
+// é ausência dela (mesma base do _diasTrabalhados das paradas).
+function _qpCurva(dias){
+  return (dias||[]).filter(d => d && Number(d.real) > 0)
+                   .map(d => Number(d.real))
+                   .sort((a,b) => a-b);
+}
+
+// Onde um valor cai na curva: quantos % dos dias ficaram NESTE nível ou abaixo.
+// Lido como meta, é a fatia de dias que ela reprovaria — p68 quer dizer que em
+// 68% dos dias a linha não chegaria lá.
+function _qpPercentil(valor, curva){
+  if(!curva || !curva.length || !(Number(valor) > 0)) return null;
+  let n = 0;
+  for(let i=0; i<curva.length; i++) if(curva[i] <= valor) n++;
+  return 100 * n / curva.length;
+}
+
+// O valor da curva num percentil — a leitura inversa, para dizer QUAL meta
+// seria exequível em vez de só dizer que a de hoje não é.
+function _qpValorNoPercentil(p, curva){
+  if(!curva || !curva.length) return null;
+  const i = Math.min(curva.length - 1, Math.max(0, Math.round(curva.length * p / 100) - 1));
+  return curva[i];
+}
+
+// OSCILAÇÃO DA META: desvio padrão ÷ média, em %. É o segundo defeito e é
+// independente do primeiro — meta pode estar na altura certa e ainda assim
+// pular de p0 a p100 de um dia para o outro, que foi o medido.
+function _qpOscilacao(metas){
+  const v = (metas||[]).map(Number).filter(x => x > 0);
+  if(v.length < 2) return null;
+  const m = v.reduce((a,b) => a+b, 0) / v.length;
+  if(!(m > 0)) return null;
+  const va = v.reduce((a,b) => a + (b-m)*(b-m), 0) / (v.length - 1);
+  return 100 * Math.sqrt(va) / m;
+}
+
+// A leitura do período: percentil de cada meta, o médio, a oscilação e quantos
+// dias cobram acima da capacidade. `curva` vem de TODO o histórico (quanto mais
+// dia, melhor a régua); `dias` é só o recorte que está sendo julgado.
+function _qpAnalise(dias, curva){
+  const lin = (dias||[]).filter(d => d && Number(d.meta) > 0).map(d => {
+    const meta = Number(d.meta), real = Number(d.real) || 0;
+    const pct  = _qpPercentil(meta, curva);
+    return { data:d.data, meta, real, pct,
+             bateu: real >= meta,
+             acima: pct != null && pct > QP_ACIMA };
+  });
+  if(!lin.length) return null;
+  const comPct = lin.filter(l => l.pct != null);
+  const pctMedio = comPct.length
+    ? comPct.reduce((a,l) => a + l.pct, 0) / comPct.length : null;
+  const osc = _qpOscilacao(lin.map(l => l.meta));
+  return {
+    linhas: lin,
+    n: lin.length,
+    pctMedio, osc,
+    nAcima: lin.filter(l => l.acima).length,
+    nBateu: lin.filter(l => l.bateu).length,
+    metaMedia: lin.reduce((a,l) => a + l.meta, 0) / lin.length,
+    alvoMin: _qpValorNoPercentil(QP_ALVO_MIN, curva),
+    alvoMax: _qpValorNoPercentil(QP_ALVO_MAX, curva)
+  };
+}
+
+// O VEREDITO, e ele fala do PLANO — nunca da linha. Dois defeitos possíveis e
+// eles são independentes: altura (percentil) e estabilidade (oscilação).
+function _qpVeredito(a){
+  if(!a || a.pctMedio == null) return { cls:'', t:'SEM BASE', d:'faltam dias fechados para montar a curva de capacidade' };
+  const alto = a.pctMedio > QP_ACIMA;
+  const inst = a.osc != null && a.osc > QP_OSC_RUIM;
+  if(alto && inst) return { cls:'red',  t:'META ALTA E INSTÁVEL',
+    d:'a meta cobre o que a linha raramente faz E muda demais de um dia para o outro — o dia fechar no vermelho não diz nada sobre a operação' };
+  if(alto) return { cls:'red',  t:'META ACIMA DA CAPACIDADE',
+    d:'na maioria dos dias a meta pede mais do que a linha já demonstrou; o vermelho vira paisagem e o alarme se perde' };
+  if(inst) return { cls:'red', t:'META INSTÁVEL',
+    d:'a altura está razoável, mas a meta pula demais de um dia para o outro — não dá para saber o que é um dia bom' };
+  // ⚠ A FAIXA DO MEIO PRECISA DE VEREDITO PRÓPRIO. Sem ela, oscilação de 28%
+  // — acima do combinado de 20%, abaixo do 30% que reprova — saía como PLANO
+  // EXEQUÍVEL. Medido na planilha real: 28,3% em 79 dias contra 35% nos
+  // últimos 15, ou seja, oscilando mais a cada janela mais recente, e o painel
+  // dizendo que estava tudo certo.
+  if(a.osc != null && a.osc > QP_OSC_OK) return { cls:'warn', t:'META OSCILANDO',
+    d:'a altura está boa, mas a meta varia mais do que o combinado de ' + QP_OSC_OK + '% — ainda dá para julgar o dia, só que com ressalva' };
+  if(a.pctMedio < QP_ALVO_MIN - 15) return { cls:'warn', t:'META FOLGADA',
+    d:'a meta fica abaixo do que a linha entrega quase sempre — bater deixa de significar alguma coisa' };
+  return { cls:'ok', t:'PLANO EXEQUÍVEL',
+    d:'a meta fica na faixa que a linha bate em cerca de metade dos dias: quando o vermelho aparece, aconteceu algo' };
+}
+
+// ── A TELA ──────────────────────────────────────────────────────────────────
+// Sem chamada nova ao Apps Script: o buildDiasHistAsync já é usado pelo
+// HISTÓRICO e pela cascata, e o lerHistoricoSheets tem cache de 2 min. Esta
+// tela é leitura do que já está na mão.
+let QP_JANELA = 30;   // quantos dias são JULGADOS (a curva usa sempre tudo)
+let QP_RODANDO = false;
+
+function _qpFiltro(n){
+  QP_JANELA = n;
+  document.querySelectorAll('#sec-plano .qp-q').forEach(b =>
+    b.classList.toggle('on', Number(b.dataset.n) === n));
+  renderQualidadePlano();
+}
+
+async function renderQualidadePlano(){
+  const alvo = document.getElementById('qp-corpo');
+  if(!alvo || QP_RODANDO) return;
+  QP_RODANDO = true;
+  try{
+    let dias = [];
+    try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
+    dias = (dias||[]).filter(d => d && Number(d.real) > 0);
+    const curva = _qpCurva(dias);
+    if(curva.length < QP_MIN_DIAS){
+      alvo.innerHTML = '<div class="pg-carregando">São precisos ao menos ' + QP_MIN_DIAS
+        + ' dias fechados para montar a curva de capacidade. Hoje há ' + curva.length + '.</div>';
+      return;
+    }
+    const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
+    const a = _qpAnalise(rec, curva);
+    if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
+    alvo.innerHTML = _qpHtml(a, curva, dias.length);
+  }finally{ QP_RODANDO = false; }
+}
+
+// O DESENHO, separado da busca — é ele que o teste roda contra um DOM de
+// mentira. Nenhuma conta aqui dentro: tudo vem pronto do _qpAnalise.
+function _qpHtml(a, curva, nTotal){
+  const v = _qpVeredito(a);
+  const clsPct = a.pctMedio > QP_ACIMA ? 'red' : (a.pctMedio < QP_ALVO_MIN - 15 ? 'warn' : 'ok');
+  const clsOsc = a.osc == null ? '' : (a.osc > QP_OSC_RUIM ? 'red' : (a.osc > QP_OSC_OK ? 'warn' : 'ok'));
+  const W = 760, H = 230, L = 46, R = 24, T = 16, B = 38;
+  const max = curva[curva.length - 1];
+  const ex = p => L + (p / 100) * (W - L - R);
+  const ey = y => T + (1 - y / max) * (H - T - B);
+  const linha = curva.map((y, i) =>
+    (i ? 'L' : 'M') + ex(100 * (i + 1) / curva.length).toFixed(1) + ' ' + ey(y).toFixed(1)).join(' ');
+  const pts = a.linhas.filter(l => l.pct != null).map(l => {
+    const cor = l.pct > QP_ACIMA ? 'var(--red)'
+      : (l.pct >= QP_ALVO_MIN && l.pct <= QP_ALVO_MAX ? 'var(--ok)' : 'var(--warn)');
+    return '<circle cx="' + ex(l.pct).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
+      + '" r="4.5" fill="' + cor + '" fill-opacity=".75" stroke="var(--bg)" stroke-width="1"><title>'
+      + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx · p' + Math.round(l.pct)
+        + ' · realizado ' + fmtN(l.real)) + '</title></circle>';
+  }).join('');
+  const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Onde a meta de cada dia cai na curva de capacidade">'
+    + '<rect x="' + ex(QP_ALVO_MIN) + '" y="' + T + '" width="' + (ex(QP_ALVO_MAX) - ex(QP_ALVO_MIN)) + '" height="' + (H - T - B) + '" fill="var(--ok)" opacity=".16"/>'
+    + '<text x="' + ((ex(QP_ALVO_MIN) + ex(QP_ALVO_MAX)) / 2) + '" y="' + (T + 11) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9" text-anchor="middle">ALVO</text>'
+    + '<rect x="' + ex(QP_ACIMA) + '" y="' + T + '" width="' + (W - R - ex(QP_ACIMA)) + '" height="' + (H - T - B) + '" fill="var(--red)" opacity=".07"/>'
+    + '<text x="' + ((ex(QP_ACIMA) + W - R) / 2) + '" y="' + (T + 11) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9" text-anchor="middle">ACIMA DA CAPACIDADE</text>'
+    + '<path d="' + linha + '" fill="none" stroke="var(--txt)" stroke-width="2.2"/>'
+    + pts
+    + [0, 25, 50, 75, 100].map(p => '<text x="' + ex(p) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">p' + p + '</text>').join('')
+    + '<text x="' + (L - 6) + '" y="' + (ey(max) + 4) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(max) + '</text>'
+    + '<text x="' + (L - 6) + '" y="' + (ey(curva[0]) + 4) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(curva[0]) + '</text>'
+    + '</svg>';
+  const tab = a.linhas.slice(-15).reverse().map(l => {
+    const c = l.pct > QP_ACIMA ? 'qp-p-red'
+      : (l.pct >= QP_ALVO_MIN && l.pct <= QP_ALVO_MAX ? 'qp-p-ok' : 'qp-p-warn');
+    return '<tr><td>' + _rpEsc(l.data) + '</td><td>' + fmtN(l.meta) + '</td>'
+      + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
+      + '<td>' + fmtN(l.real) + '</td>'
+      + '<td style="color:' + (l.bateu ? 'var(--ok)' : 'var(--red)') + '">' + (l.bateu ? 'bateu' : 'abaixo') + '</td></tr>';
+  }).join('');
+  return ''
+    + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
+    + '<div class="kpi-grid c4" style="margin-bottom:16px">'
+    + '<div class="kpi-card ' + clsPct + '"><div class="kpi-lbl">ALTURA DA META</div><div class="kpi-val">p' + Math.round(a.pctMedio) + '</div>'
+    + '<div class="kpi-sub">a linha não chegaria lá em ' + Math.round(a.pctMedio) + '% dos dias · alvo p' + QP_ALVO_MIN + '–p' + QP_ALVO_MAX + '</div></div>'
+    + '<div class="kpi-card ' + clsOsc + '"><div class="kpi-lbl">OSCILAÇÃO DA META</div><div class="kpi-val">' + (a.osc == null ? '—' : fmtP(a.osc)) + '</div>'
+    + '<div class="kpi-sub">quanto a meta pula de um dia para o outro · alvo até ' + QP_OSC_OK + '%</div></div>'
+    + '<div class="kpi-card ' + (a.nAcima ? 'red' : 'ok') + '"><div class="kpi-lbl">DIAS ACIMA DA CAPACIDADE</div><div class="kpi-val">' + a.nAcima + '</div>'
+    + '<div class="kpi-sub">de ' + a.n + ' dias a meta pediu mais do que a linha faz em p' + QP_ACIMA + '</div></div>'
+    + '<div class="kpi-card acc"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
+    + '<div class="kpi-sub">a ' + fmtN(Math.round(a.alvoMax)) + ' cx/dia (p' + QP_ALVO_MIN + '–p' + QP_ALVO_MAX + ') · hoje a média é ' + fmtN(Math.round(a.metaMedia)) + '</div></div>'
+    + '</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">CURVA DE CAPACIDADE · ONDE CAIU A META DE CADA DIA</div>'
+    + svg
+    + '<div class="qp-leg"><span><i style="background:var(--txt)"></i>curva de capacidade (' + nTotal + ' dias, do pior para o melhor)</span>'
+    + '<span><i class="qp-dot" style="background:var(--ok)"></i>meta na faixa alvo</span>'
+    + '<span><i class="qp-dot" style="background:var(--warn)"></i>meta fora da faixa</span>'
+    + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima de p' + QP_ACIMA + '</span>'
+    + '<span>cada ponto é a meta de um dia — passe o mouse</span></div></div>'
+    + '<div class="par-sec">OS ÚLTIMOS 15 DIAS, UM A UM</div>'
+    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
+    + '<div class="qp-nota"><b>Como ler:</b> a curva branca são os ' + nTotal + ' dias que a linha já rodou, ordenados do pior para o melhor. '
+    + '<b>Cada ponto é a meta de um dia</b>, posto na altura em que ela cai nessa curva. '
+    + 'Ponto na <b>faixa verde</b> é meta que a linha bate em cerca de metade dos dias — aí, quando o vermelho aparece, aconteceu algo. '
+    + 'Ponto na <b>faixa vermelha</b> cobra o que a linha quase nunca faz, e vermelho que aparece sempre vira paisagem.<br><br>'
+    + '<b>Isto mede o PLANO, não a linha.</b> A meta do dia é a soma dos lotes datados para aquele dia, então ela herda a irregularidade da datação. '
+    + 'Quando o dia fecha abaixo, o vermelho hoje cai no operador por uma variação que em boa parte não é dele.<br><br>'
+    + '<b>Não é baixar a meta.</b> A produção sobe pelas paradas, pelo setup e pelo teto da esteira — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</div>';
+}
+
+// ════════════════════════════════════════════════
 // TABS
 // ════════════════════════════════════════════════
 function setTab(tab){
@@ -6814,6 +7091,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
+  if(tab==='plano') renderQualidadePlano();
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
   // Carrossel das telas: mostra os controles (pausar/passar) só p/ o gestor na
   // aba TV e (re)inicia a alternância; ao sair da aba, o ciclo se para sozinho.

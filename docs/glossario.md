@@ -90,6 +90,35 @@ acompanha, não um veredito de gestão.
 ⚠ A jornada é declarada **duas vezes**: na configuração do painel (TURNO) e nas
 constantes do `.gs`. Mudou o turno na tela, mudar as constantes também.
 
+## Qualidade do plano (aba 📐 PLANO)
+
+Mede o **plano**, não a linha. Medido no `HISTORICO` em 15/09/2026 (79 dias), a
+meta do dia explica **8%** da variação do realizado (r = 0,28).
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **CURVA DE CAPACIDADE** | os dias **com produção**, ordenados do pior para o melhor | cx/dia | `v7:_qpCurva` |
+| **ALTURA DA META** (percentil) | % dos dias cuja produção ficou **nesse nível ou abaixo** — a fatia que a meta reprovaria | p0–p100 | `v7:_qpPercentil` |
+| **OSCILAÇÃO DA META** | desvio padrão ÷ média das metas do período | % | `v7:_qpOscilacao` |
+| **DIAS ACIMA DA CAPACIDADE** | dias cuja meta passou de `QP_ACIMA` | dias | `v7:_qpAnalise` |
+| **META EXEQUÍVEL SERIA** | o valor da curva entre `QP_ALVO_MIN` e `QP_ALVO_MAX` | cx/dia | `v7:_qpValorNoPercentil` |
+
+**Como ler:** a curva usa **todo** o histórico (quanto mais dia, melhor a
+régua); o filtro escolhe só **quais metas** são julgadas. Meta em p53 quer dizer
+que em 53% dos dias a linha não chegaria lá.
+
+⚠ **Altura e oscilação são defeitos independentes.** A meta pode estar na altura
+certa e ainda assim pular de p0 a p100 — foi o medido. Por isso há veredito
+próprio para a faixa do meio (`META OSCILANDO`): sem ele, oscilação de 28%
+passava por `PLANO EXEQUÍVEL`.
+
+⚠ **Não é baixar a meta.** A meta do dia serve para **sinalizar**; meta que
+reprova quase todo dia vira paisagem e o alarme se perde. A produção sobe pelas
+paradas, pelo setup e pelo teto da esteira.
+
+O combinado está em constantes no topo do bloco (`QP_ALVO_MIN` 50, `QP_ALVO_MAX`
+60, `QP_ACIMA` 75, `QP_OSC_OK` 20, `QP_OSC_RUIM` 30, `QP_MIN_DIAS` 10).
+
 ## Paradas
 
 | Termo | Fórmula | Unidade | Onde está |
