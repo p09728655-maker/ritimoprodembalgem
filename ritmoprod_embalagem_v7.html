@@ -2642,7 +2642,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.50.0';
+const APP_VER   = '7.51.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5962,22 +5962,61 @@ let PROG_DETALHADA=[];
 // atrasa a primeira. É o mesmo remédio do `_phVoo` e do `PG_VOO`.
 let PROG_DET_TS=0, PROG_DET_VOO=null;
 const PROG_DET_TTL=120000;   // 2 min, como o cache do histórico
+// ⚠ POR QUE A LEITURA FALHOU, e não só QUE falhou. Sem isto a tela dizia
+// "SEM CARTEIRA DATADA" tanto para "não há lote futuro" quanto para "não
+// consegui ler" — e foi o que aconteceu no 1º dia em produção (15/09/2026):
+// a planilha tinha 78 linhas datadas de 16 a 24/09 e o painel afirmava que
+// não havia nenhuma. É o MESMO defeito que o `PH_FALHA` do comparativo por
+// modelo já tinha resolvido: uma frase só para todas as falhas manda o gestor
+// procurar no lugar errado.
+//   null | 'sem-resposta' (timeout/cold start) | 'sem-endpoint' (.gs antigo)
+//   | 'erro' (backend respondeu com erro) | 'sem-url' (painel sem Sheets)
+let PROG_DET_FALHA=null, PROG_DET_ERRO='';
 function invalidarProgDetCache(){ PROG_DET_TS=0; PROG_DET_VOO=null; }
 async function carregarProgramacaoDetalhada(){
-  if(!CFG.sheetsUrl) return false;
+  if(!CFG.sheetsUrl){ PROG_DET_FALHA='sem-url'; return false; }
   if(PROG_DETALHADA.length && Date.now()-PROG_DET_TS < PROG_DET_TTL) return true;
   if(PROG_DET_VOO) return PROG_DET_VOO;
   PROG_DET_VOO=(async()=>{
-    try{
-      const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
-      const json=await jsonpFetch(url);
-      if(json && json.ok && Array.isArray(json.itens)){
-        PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now(); return true;
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProgramacaoDetalhada';
+    // ⚠ CHAMADA PESADA SEM RETRY ERA O QUE SOBRAVA. Ela lê o catálogo, a
+    // PROGRAMACAO inteira e roda o FIFO — é das mais caras do backend, e era a
+    // última das pesadas com UMA tentativa. No cold start estourava o timeout e
+    // a tela ficava vazia sem dizer por quê. Três tentativas EM SEQUÊNCIA, com
+    // espera crescente: o Apps Script atende uma execução por vez, então em
+    // paralelo elas só se enfileiram lá e atrasam a primeira.
+    for(let t=1; t<=3; t++){
+      try{
+        const json=await jsonpFetch(url);
+        if(json && json.ok && Array.isArray(json.itens)){
+          PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now();
+          PROG_DET_FALHA=null; PROG_DET_ERRO=''; return true;
+        }
+        if(json && json.erro){ PROG_DET_FALHA='erro'; PROG_DET_ERRO=String(json.erro); return false; }
+        // Respondeu, sem erro e sem `itens`: o dispatcher do .gs antigo não
+        // conhece a ação e cai no getDados(). ESTE é o caso de re-deploy — e
+        // só este, senão o gestor mexe no Apps Script à toa.
+        PROG_DET_FALHA='sem-endpoint'; return false;
+      }catch(e){
+        PROG_DET_FALHA='sem-resposta'; PROG_DET_ERRO=e && e.message ? e.message : '';
+        if(t<3) await new Promise(r=>setTimeout(r, t*1500));
       }
-    }catch(e){ console.warn('carregarProgramacaoDetalhada:', e.message); }
+    }
+    console.warn('carregarProgramacaoDetalhada:', PROG_DET_ERRO);
     return false;
   })();
   try{ return await PROG_DET_VOO; } finally{ PROG_DET_VOO=null; }
+}
+// O texto da falha, UM lugar só (a carteira e quem mais precisar leem daqui).
+function _progDetFalhaInfo(){
+  if(PROG_DET_FALHA==='sem-url')    return { t:'PAINEL SEM GOOGLE SHEETS', d:'configure a URL do Apps Script nas configurações (⚙)' };
+  if(PROG_DET_FALHA==='sem-resposta') return { t:'NÃO CONSEGUI LER A PROGRAMAÇÃO',
+    d:'o Apps Script não respondeu em 3 tentativas — quase sempre é cold start. Toque em ATUALIZAR'
+      + (PROG_DET_ERRO ? ' (' + _rpEsc(PROG_DET_ERRO) + ')' : '') };
+  if(PROG_DET_FALHA==='sem-endpoint') return { t:'BACKEND SEM getProgramacaoDetalhada',
+    d:'o Apps Script respondeu mas não conhece a ação — este é o caso de colar o .gs no editor e RE-DEPLOYAR' };
+  if(PROG_DET_FALHA==='erro')       return { t:'O BACKEND DEVOLVEU ERRO', d:_rpEsc(PROG_DET_ERRO || 'sem detalhe') };
+  return null;
 }
 function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
@@ -7323,12 +7362,19 @@ function _cartNum(str){
 // número — somadas, contariam o saldo duas vezes.
 function _cartAberta(itens, hojeNum, divida){
   const por = {};
+  // ⚠ O DIAGNÓSTICO SAI JUNTO. "Nenhum dia futuro" tem três causas diferentes
+  // (não li nada · li e é tudo vencido · li e a coluna fora da esteira comeu
+  // tudo) e a tela precisa distinguir, senão manda procurar no lugar errado.
+  let lidas = 0, fora = 0, semQtd = 0, ultimaN = 0, ultima = '';
   (itens || []).forEach(it => {
-    if(!it || it.foraEsteira) return;              // fora da esteira não passa aqui
+    if(!it) return;
+    lidas++;
     const dn = Number(it.dataNum) || _cartNum(it.data);
+    if(dn > ultimaN){ ultimaN = dn; ultima = it.data; }
+    if(it.foraEsteira){ fora++; return; }          // fora da esteira não passa na linha
     if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
     const q = Number(it.qtde) || 0;
-    if(q <= 0) return;
+    if(q <= 0){ semQtd++; return; }
     if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, n:0 };
     por[dn].qtde += q; por[dn].n++;
   });
@@ -7339,7 +7385,8 @@ function _cartAberta(itens, hojeNum, divida){
     divida: Math.max(0, Number(divida) || 0),
     futuro: dias.reduce((a,d) => a + d.qtde, 0),
     de:  dias.length ? dias[0].data : '',
-    ate: dias.length ? dias[dias.length - 1].data : ''
+    ate: dias.length ? dias[dias.length - 1].data : '',
+    diag: { lidas, fora, semQtd, ultima }
   };
 }
 
@@ -7479,6 +7526,26 @@ function _cartHtml(a, regua){
     + '⚠ Ela é uma <b>mediana</b>, não um limite físico: dia acima da faixa é improvável, não proibido.</div>';
 }
 
+// O ESTADO VAZIO, com a CAUSA. Sem isto "SEM CARTEIRA DATADA" servia para tudo.
+function _cartVazioHtml(cart){
+  const f = _progDetFalhaInfo();
+  const bt = '<button class="btn btn-ghost" onclick="invalidarProgDetCache();renderCarteira()" '
+    + 'style="margin-top:10px;font-size:10px;padding:5px 12px">↻ TENTAR DE NOVO</button>';
+  if(f) return '<div class="qp-ver red"><div class="qp-ver-t">' + f.t + '</div>'
+    + '<div class="qp-ver-d">' + f.d + '</div>' + bt + '</div>';
+  const d = (cart && cart.diag) || { lidas:0, fora:0, semQtd:0, ultima:'' };
+  // Leu e não achou nada futuro: o número de linhas lidas é o que deixa
+  // conferir a afirmação sem abrir a planilha.
+  return '<div class="qp-ver"><div class="qp-ver-t">SEM LOTE DATADO PARA A FRENTE</div>'
+    + '<div class="qp-ver-d">li <b>' + fmtN(d.lidas) + '</b> linha(s) da PROGRAMACAO e nenhuma tem data depois de hoje'
+    + (d.ultima ? ' — a mais distante é <b>' + _rpEsc(d.ultima) + '</b>' : '')
+    + (d.fora ? ' · ' + fmtN(d.fora) + ' fora da esteira' : '')
+    + (d.semQtd ? ' · ' + fmtN(d.semQtd) + ' sem quantidade' : '')
+    + (d.lidas ? '. Com a carteira toda vencida não há o que re-datar: quem prioriza é a DATA e o SALDO.'
+               : '. Nenhuma linha chegou — confira se a aba PROGRAMACAO tem lote e data preenchidos.')
+    + '</div>' + bt + '</div>';
+}
+
 // A busca. Custo: o `getProgramacaoDetalhada`, que agora tem cache de 2 min e
 // requisição compartilhada com a aba PROGRAMAÇÃO — quem abre as duas paga UMA
 // leitura, não duas. A dívida sai do `PONTOS_DIA`, que o painel já carregou.
@@ -7506,7 +7573,11 @@ async function renderCarteira(){
     const divida = (prog.faltaZerar != null) ? (Number(prog.faltaZerar) || 0)
                                              : (Number(prog.atrasoTotal) || 0);
     const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), divida);
-    alvo.innerHTML = _cartHtml(_cartAnalise(cart, curva, QP_FAIXA), QP_REGUA);
+    const a = _cartAnalise(cart, curva, QP_FAIXA);
+    // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
+    // "não há lote futuro": dizer que a carteira está vazia quando na verdade
+    // não se conseguiu lê-la é pior que não dizer nada.
+    alvo.innerHTML = a ? _cartHtml(a, QP_REGUA) : _cartVazioHtml(cart);
   }finally{ CART_RODANDO = false; }
 }
 

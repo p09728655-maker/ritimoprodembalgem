@@ -2225,6 +2225,25 @@ feito e dá ar de verdade ao que sobrou.
   execução no Apps Script. O resto sai do que o painel já tem (curva do
   `buildDiasHistAsync`, dívida do `PONTOS_DIA`). **Sem re-deploy do `.gs`.**
 - ⚠ **Lote `foraEsteira` não entra** — não passa na linha.
+- ⚠ **VAZIO NÃO É UMA COISA SÓ — e este defeito já custou caro antes.** Na
+  v7.50.0 a tela dizia **SEM CARTEIRA DATADA** com a `PROGRAMACAO` cheia (78
+  linhas datadas de 16 a 24/09, medido em produção no dia do deploy): a mesma
+  frase servia para *"não há lote futuro"* e para *"não consegui ler"*. É o
+  MESMO defeito do `PH_FALHA` do comparativo por modelo — *"TIMEOUT não é
+  backend velho"*, escrito nesta memória desde 26/08/2026.
+  - `getProgramacaoDetalhada` é das leituras mais caras do backend e era a
+    **última das pesadas com UMA tentativa**. Hoje são **3 em sequência** com
+    espera crescente (em paralelo elas só se enfileiram no Apps Script).
+  - `PROG_DET_FALHA` guarda a CAUSA e **`_progDetFalhaInfo()` é o texto único**:
+    `sem-resposta` · `sem-endpoint` · `erro` · `sem-url`. O `_cartVazioHtml` lê
+    dali, e a falha tem **prioridade** sobre o "não há lote futuro".
+  - ⚠ **A frase do re-deploy só sai no `sem-endpoint`** — quando o backend
+    respondeu e provou não conhecer a ação. Acusar re-deploy por timeout manda o
+    gestor mexer no Apps Script à toa; foi exatamente isso que aconteceu no
+    comparativo por modelo.
+  - O vazio legítimo diz **quantas linhas leu** e **a data mais distante**
+    (`diag` do `_cartAberta`): afirmação que não se pode conferir na tela manda
+    abrir a planilha para checar o painel, que é o contrário do que ele serve.
 - **O desenho (`_cartHtml`) não faz conta** — tudo vem pronto do `_cartAnalise`,
   e o teste falha se `_qpPercentil`/`_qpValorNoPercentil`/`_qpCurva` aparecerem
   dentro dele.
