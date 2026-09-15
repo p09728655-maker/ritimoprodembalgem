@@ -955,13 +955,23 @@ function doGet(e) {
 // produziu. O critério existe para somar os lotes SEM somar coluna de fórmula
 // (ACUM, %/H) que também mora depois de REALIZADO.
 //
-// ⚠ ESTE CRITÉRIO É LARGO DEMAIS E ISSO É CONHECIDO. O startsWith('L') trata
-// QUALQUER coluna depois de REALIZADO começada com L (LINHA, LIMPEZA, LÍDER,
-// LOCAL) como coluna de lote, e o conteúdo dela vira produção — em silêncio,
-// sem erro e sem log. Não foi endurecido aqui porque apertar o critério às
-// cegas é pior: se o título real não casar, o lançamento deixa de ser somado e
-// o REALIZADO cai sozinho. Endurecer exige conferir os títulos reais da
-// HORA_A_HORA primeiro.
+// ⚠⚠ NÃO ENDUREÇA ESTE CRITÉRIO PARA "SÓ LOTE/LT". Conferido na planilha em
+// 15/09/2026: as colunas de lançamento chamam-se LANÇ 1 ... LANÇ 10, e NÃO
+// existe coluna LOTE nem LT. Das três cláusulas, quem sustenta o lançamento é
+// o startsWith('L') — as outras duas não casam com nada. Tirá-lo faz as DEZ
+// colunas pararem de ser somadas.
+//
+// E o estrago é CALADO: sem coluna de lote, _saveRealizadoCore cai no ramo
+// `iLotes.length === 0`, que grava em REALIZADO apenas `if (!cell.getFormula())`
+// e devolve {ok:true} de qualquer jeito. Com REALIZADO sendo fórmula (é o caso),
+// o operador salva, o app diz que salvou e nada é gravado.
+//
+// O que sobra é o critério aceitar DE MAIS: LINHA/LIMPEZA/LÍDER/LOCAL entram
+// pelo começo com L, e RESULTADO (resuLTado) e FALTA (faLTa) pelo LT no meio da
+// palavra. Hoje não faz mal — depois de LANÇ 10 só há coluna vazia e
+// COMO PREENCHER. Se um dia precisar apertar, a forma segura é allowlist
+// ancorada no COMEÇO (LOTE | LANÇ/LANC | LT | L+dígito), nunca "só LOTE/LT".
+// O apps-script.test.js prende o cabeçalho real e quebra antes da fábrica.
 //
 // O que mudou: o laço estava escrito em TRÊS lugares (getDados,
 // _saveRealizadoCore e arquivarDiaAtual), então endurecer significava lembrar

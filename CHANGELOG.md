@@ -25,21 +25,34 @@ três funções**: `getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`.
 
 Agora é `_ehColunaLote(titulo)` e `_colunasDeLote(hdr, iR)`, um lugar só.
 
-**O critério NÃO foi endurecido nesta mudança** — de propósito. Ele continua
-largo: qualquer coluna depois de REALIZADO começada com **L** (LINHA, LIMPEZA,
-LÍDER, LOCAL) entra como lote, e o `LT` ainda pega no **meio** da palavra —
-**`RESULTADO`** (resu**LT**ado) e **`FALTA`** (fa**LT**a) passam calados. São
-nomes plausíveis numa planilha de produção.
+**O critério NÃO foi endurecido** — e, conferido o cabeçalho real da planilha,
+ele **não deve ser**.
 
-Apertar o critério às cegas é pior que o erro de hoje: se o título real não
-casar, o lançamento deixa de ser somado e o REALIZADO cai sozinho, sem erro e
-sem log. **Endurecer depende de conferir os títulos reais da `HORA_A_HORA`** —
-e agora é correção de uma linha, num lugar, em vez de três.
+⚠ **As colunas de lançamento chamam-se `LANÇ 1` … `LANÇ 10`.** Não existe coluna
+`LOTE` nem `LT` na `HORA_A_HORA`. Das três cláusulas do critério, quem sustenta
+o lançamento é justamente o **`startsWith('L')`** — as outras duas não casam com
+nada. Endurecer para "só LOTE/LT", que é o que a leitura do código sugere a quem
+nunca abriu a planilha, faria as **dez** colunas pararem de ser somadas.
 
-O `apps-script.test.js` roda a helper real contra uma matriz de 25 títulos e
-compara, título a título, com o predicado **antigo**: a extração não mudou
-veredito nenhum. As duas linhas `⚠ conhecido:` registram o erro que sobrou —
-quando ele for corrigido, são elas que mudam.
+E o estrago seria **calado**: sem coluna de lote, o `_saveRealizadoCore` cai no
+ramo `iLotes.length === 0`, que grava em REALIZADO **apenas**
+`if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. Com
+REALIZADO sendo fórmula, o operador salva, o app diz que salvou e **nada é
+gravado**.
+
+O `apps-script.test.js` passou a prender o **cabeçalho real** (`HDR_REAL`, as
+dez colunas `LANÇ`): quem endurecer o critério quebra no teste antes de quebrar
+a fábrica. Conferido que a guarda falha com o critério apertado. O fixture do
+`hora-extra.test.js` também passou a usar `LANÇ 1` — fixture que não espelha a
+planilha é armadilha.
+
+**O que sobra de verdade** (risco baixo, e agora num lugar só): o critério
+aceita de mais — `LINHA`/`LIMPEZA`/`LÍDER`/`LOCAL` pelo começo com L, e
+`RESULTADO` (resu**LT**ado)/`FALTA` (fa**LT**a) pelo `LT` no meio. **Hoje não
+faz mal**: depois de `LANÇ 10` só existem uma coluna vazia e `COMO PREENCHER`.
+Vira problema só se alguém acrescentar uma coluna com esses nomes depois de
+REALIZADO. Se um dia precisar apertar, a forma segura é **allowlist ancorada no
+começo** (`LOTE` · `LANÇ`/`LANC` · `LT` · `L`+dígito).
 
 ---
 

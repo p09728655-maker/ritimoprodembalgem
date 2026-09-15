@@ -57,7 +57,7 @@ function planilha(c3) {
     ['RITMOPROD', '', ''],
     ['', ''],
     ['META DIA', 1800, c3],                 // linha 3: B3 = meta do dia, C3 = início do turno
-    ['HORA', 'META', 'REALIZADO', 'LOTE 1'],// linha 4: cabeçalho
+    ['HORA', 'META', 'REALIZADO', 'LANÇ 1'],// linha 4: cabeçalho REAL da planilha
     ['05:00-06:00', 150, '', 120],
     ['06:00-07:00', 150, '', 130],
     ['07:00-08:00', 210, '', 205],

@@ -231,9 +231,41 @@ const anterior = (h) => h.includes('LOTE') || h.includes('LT') || h.startsWith('
   ok('mesmo veredito de antes para "' + h + '"', _ehColunaLote(h), anterior(h));
 });
 
+// ⚠⚠ O CABEÇALHO REAL DA HORA_A_HORA (linha 4, conferido na planilha em
+// 15/09/2026). As colunas de lançamento chamam-se **LANÇ 1 … LANÇ 10** — NÃO
+// existe nenhuma coluna "LOTE" nem "LT" na planilha de verdade.
+//
+// Ou seja: das três cláusulas do critério, quem faz o sistema funcionar é o
+// startsWith('L'). As outras duas não casam com NADA aqui. O startsWith('L')
+// não é a cláusula folgada do critério — é a ÚNICA que sustenta o lançamento.
+//
+// Endurecer o critério para "só LOTE/LT" — que é o que a leitura do código
+// sugere a quem nunca viu a planilha — faria as DEZ colunas pararem de ser
+// somadas de uma vez. E o estrago seria CALADO: sem coluna de lote o
+// _saveRealizadoCore cai no ramo `iLotes.length === 0`, que grava na coluna
+// REALIZADO apenas `if (!cell.getFormula())` e devolve `{ok:true}` de qualquer
+// jeito. Com REALIZADO sendo fórmula, o operador salva, o app diz que salvou e
+// NADA é gravado.
+//
+// É por isso que este teste prende o cabeçalho REAL: quem for endurecer o
+// critério quebra aqui antes de quebrar a fábrica.
+const HDR_REAL = ['HORA','META','REALIZADO',
+  'LANÇ 1','LANÇ 2','LANÇ 3','LANÇ 4','LANÇ 5',
+  'LANÇ 6','LANÇ 7','LANÇ 8','LANÇ 9','LANÇ 10',
+  '','COMO PREENCHER'].map(h => h.trim().toUpperCase());
+
+ok('as 10 colunas LANÇ da planilha REAL são detectadas',
+   _colunasDeLote(HDR_REAL, 2), [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+ok('e a coluna vazia e a de ajuda ficam de fora',
+   [_ehColunaLote(''), _ehColunaLote('COMO PREENCHER')], [false, false]);
+// A cláusula que sustenta tudo: sem ela, LANÇ não casa com mais nada.
+ok('"LANÇ 1" não casa por LOTE nem por LT — só pelo começo com L',
+   ['LANÇ 1'.indexOf('LOTE') >= 0, 'LANÇ 1'.indexOf('LT') >= 0, 'LANÇ 1'.charAt(0) === 'L'],
+   [false, false, true]);
+
 // O que o critério PRECISA fazer (a razão de ele existir) e o que ele erra.
 const hdr = ['HORA','META','REALIZADO','LOTE 1','LT2','ACUM','%/H','LINHA'];
-ok('pega as colunas de lote depois de REALIZADO', _colunasDeLote(hdr, 2), [3, 4, 7]);
+ok('formato antigo (LOTE/LT) continua aceito', _colunasDeLote(hdr, 2), [3, 4, 7]);
 ok('e não soma coluna de fórmula (ACUM, %/H)',
    [_ehColunaLote('ACUM'), _ehColunaLote('%/H')], [false, false]);
 // ⚠ Item aberto, e é por isso que o teste registra o erro em vez de escondê-lo:

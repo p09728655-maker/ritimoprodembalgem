@@ -1656,27 +1656,36 @@ ficou registrado abaixo; o que **não** foi está no fim da seção.
   no v7 e o ⌫ dos dois teclados numéricos do mobile. Os demais botões já têm
   texto, que é o nome acessível — não foi feita varredura cega de ARIA.
 
-**Ainda NÃO corrigido** (achado verificado, decisão pendente): o
-`startsWith('L')` da detecção de coluna de LOTE. Continua largo demais — o que
-mudou (15/09/2026) é que ele **saiu de três lugares para um**: era o mesmo laço
-copiado em `getDados`, `_saveRealizadoCore` e `arquivarDiaAtual`, e agora é
-`_ehColunaLote(titulo)` / `_colunasDeLote(hdr, iR)`. Endurecer virou correção de
-**uma linha**, mas continua **dependendo de conferir os títulos reais da
-`HORA_A_HORA`** — apertar às cegas faz o lançamento deixar de ser somado e o
-REALIZADO cair sozinho, que é pior que o erro de hoje.
-- **O `LT` pega no MEIO da palavra**, não só no começo: além de LINHA / LIMPEZA
-  / LÍDER / LOCAL pelo `startsWith('L')`, passam **`RESULTADO`** (resu**LT**ado)
-  e **`FALTA`** (fa**LT**a) — nomes plausíveis numa planilha de produção. Ficam
-  escritos no `apps-script.test.js` para quem for conferir saber o que caçar.
-- O critério **acerta** em SALDO, TOTAL, PERDA, REFUGO, PARADA, OPERADOR,
-  PALETE, ACUM e %/H — não é tudo que escapa, e era justamente para excluir
-  ACUM e %/H que ele nasceu.
-- `apps-script.test.js` roda a helper real contra a matriz de títulos e compara
-  com o predicado ANTIGO, título a título: a extração não mudou veredito
-  nenhum. As duas linhas `⚠ conhecido:` são o registro do erro que sobrou —
-  quando for endurecido, são elas que mudam.
-- ⚠ Mudou o `.gs` → **re-deploy manual**. Como não muda comportamento, adiar o
-  re-deploy não quebra nada: a versão implantada segue somando igual.
+**Item reclassificado em 15/09/2026 — o `startsWith('L')` NÃO é para endurecer.**
+A nota anterior mandava apertar o critério "depois de conferir os cabeçalhos".
+Os cabeçalhos foram conferidos, e a conclusão é a oposta.
+
+⚠ **As colunas de lançamento da `HORA_A_HORA` chamam-se `LANÇ 1` … `LANÇ 10`.**
+Não existe coluna `LOTE` nem `LT` na planilha. Das três cláusulas do critério,
+**quem sustenta o lançamento é o `startsWith('L')`** — as outras duas não casam
+com nada. Ele não é a cláusula folgada: é a única que funciona.
+- Endurecer para "só LOTE/LT" — que é o que a leitura do código sugere a quem
+  nunca abriu a planilha — faria as **dez** colunas pararem de ser somadas.
+- E o estrago seria **CALADO**: sem coluna de lote, o `_saveRealizadoCore` cai
+  no ramo `iLotes.length === 0`, que grava na coluna REALIZADO **apenas**
+  `if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. Com
+  REALIZADO sendo fórmula (é o caso no modelo: os valores batem exatamente com
+  a soma dos LANÇ), o operador salva, o app diz que salvou e **nada é gravado**.
+- `apps-script.test.js` prende o **cabeçalho real** (`HDR_REAL`): quem endurecer
+  o critério quebra no teste antes de quebrar a fábrica. Conferido que a guarda
+  falha com o critério apertado. O fixture do `hora-extra.test.js` também passou
+  a usar `LANÇ 1`, não `LOTE 1` — fixture que não espelha a planilha é armadilha.
+
+**O que sobra de verdade** (risco baixo, e agora num lugar só): o critério
+aceita de mais. `LINHA`, `LIMPEZA`, `LÍDER`, `LOCAL` entram pelo começo com L, e
+`RESULTADO` (resu**LT**ado) e `FALTA` (fa**LT**a) entram pelo `LT` no meio da
+palavra. **Hoje isso não faz mal nenhum**: depois de `LANÇ 10` só existem uma
+coluna vazia e `COMO PREENCHER`, e nenhuma das duas casa. Vira problema só se
+alguém acrescentar uma coluna com esses nomes **depois** de REALIZADO.
+- Se um dia for endurecido, a forma segura é **allowlist ancorada no começo**
+  (`LOTE` · `LANÇ`/`LANC` · `LT` · `L`+dígito), nunca "só LOTE/LT".
+- Antes de mexer, conferir se a planilha **de produção** tem o mesmo cabeçalho
+  do `MODELO_HORA_A_HORA` — o que foi conferido foi o modelo.
 
 ⚠ **Lista conferida em 15/09/2026: os outros dois itens já estavam resolvidos** e
 a anotação continuava aqui. TODO velho custa caro — manda conferir o que já foi
