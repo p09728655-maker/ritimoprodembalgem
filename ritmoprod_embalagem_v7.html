@@ -2011,7 +2011,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 12px">
-    A CURVA DE CAPACIDADE USA SEMPRE TODO O HISTÓRICO — O FILTRO ESCOLHE SÓ QUAIS METAS SÃO JULGADAS
+    A RÉGUA DE CAPACIDADE USA SEMPRE TODO O HISTÓRICO — O FILTRO ESCOLHE SÓ QUAIS DIAS APARECEM
   </div>
   <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
 </section>
@@ -2606,7 +2606,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.46.0';
+const APP_VER   = '7.47.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6961,7 +6961,10 @@ function _qpAnalise(dias, curva){
     nBateu: lin.filter(l => l.bateu).length,
     metaMedia: lin.reduce((a,l) => a + l.meta, 0) / lin.length,
     alvoMin: _qpValorNoPercentil(QP_ALVO_MIN, curva),
-    alvoMax: _qpValorNoPercentil(QP_ALVO_MAX, curva)
+    alvoMax: _qpValorNoPercentil(QP_ALVO_MAX, curva),
+    // o valor a partir do qual a linha quase nunca chega — desenha a faixa
+    // vermelha do gráfico, e por isso sai daqui em vez de ser recalculado lá
+    alvoAcima: _qpValorNoPercentil(QP_ACIMA, curva)
   };
 }
 
@@ -7032,29 +7035,54 @@ function _qpHtml(a, curva, nTotal){
   const clsPct = a.pctMedio > QP_ACIMA ? 'red' : (a.pctMedio < QP_ALVO_MIN - 15 ? 'warn' : 'ok');
   const clsOsc = a.osc == null ? '' : (a.osc > QP_OSC_RUIM ? 'red' : (a.osc > QP_OSC_OK ? 'warn' : 'ok'));
   const W = 760, H = 230, L = 46, R = 24, T = 16, B = 38;
-  const max = curva[curva.length - 1];
-  const ex = p => L + (p / 100) * (W - L - R);
-  const ey = y => T + (1 - y / max) * (H - T - B);
-  const linha = curva.map((y, i) =>
-    (i ? 'L' : 'M') + ex(100 * (i + 1) / curva.length).toFixed(1) + ' ' + ey(y).toFixed(1)).join(' ');
-  const pts = a.linhas.filter(l => l.pct != null).map(l => {
+  // ── O GRÁFICO: DIA APÓS DIA, no calendário ───────────────────────────────
+  // A 1ª versão tinha o PERCENTIL no eixo horizontal: os 79 dias enfileirados
+  // do pior para o melhor, com a meta de cada dia pousada na curva. Era denso
+  // demais para gestão à vista — o próprio PPCP, que pediu a tela, não
+  // conseguiu ler (15/09/2026), e ele tinha acabado de perguntar o que era p50.
+  // Tela que precisa de aula falha na parede da fábrica, e falha primeiro com
+  // quem passa rápido, que é quem mais precisa dela.
+  //
+  // Aqui o eixo de baixo é o CALENDÁRIO, que ninguém precisa aprender a ler, e
+  // entram DUAS linhas: a meta e o realizado. É assim que o r²=8% aparece
+  // desenhado — as duas não se acompanham, a meta sobe quando a produção desce.
+  // Na versão do ranking o realizado nem era desenhado, então esse fato, que é
+  // o achado principal, não aparecia de jeito nenhum.
+  const serie = a.linhas;
+  const topo = Math.max.apply(null, serie.map(l => Math.max(l.meta, l.real))) * 1.06 || 1;
+  const ex = i => serie.length < 2 ? L : L + (i / (serie.length - 1)) * (W - L - R);
+  const ey = y => T + (1 - y / topo) * (H - T - B);
+  const caminho = campo => serie.map((l, i) =>
+    (i ? 'L' : 'M') + ex(i).toFixed(1) + ' ' + ey(l[campo]).toFixed(1)).join(' ');
+  const pts = serie.filter(l => l.pct != null).map(l => {
+    const i = serie.indexOf(l);
     const cor = l.pct > QP_ACIMA ? 'var(--red)'
       : (l.pct >= QP_ALVO_MIN && l.pct <= QP_ALVO_MAX ? 'var(--ok)' : 'var(--warn)');
-    return '<circle cx="' + ex(l.pct).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
-      + '" r="4.5" fill="' + cor + '" fill-opacity=".75" stroke="var(--bg)" stroke-width="1"><title>'
-      + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx · p' + Math.round(l.pct)
-        + ' · realizado ' + fmtN(l.real)) + '</title></circle>';
+    return '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
+      + '" r="4" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
+      + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx (p' + Math.round(l.pct) + ')'
+        + ' · realizado ' + fmtN(l.real) + ' cx') + '</title></circle>';
   }).join('');
-  const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Onde a meta de cada dia cai na curva de capacidade">'
-    + '<rect x="' + ex(QP_ALVO_MIN) + '" y="' + T + '" width="' + (ex(QP_ALVO_MAX) - ex(QP_ALVO_MIN)) + '" height="' + (H - T - B) + '" fill="var(--ok)" opacity=".16"/>'
-    + '<text x="' + ((ex(QP_ALVO_MIN) + ex(QP_ALVO_MAX)) / 2) + '" y="' + (T + 11) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9" text-anchor="middle">ALVO</text>'
-    + '<rect x="' + ex(QP_ACIMA) + '" y="' + T + '" width="' + (W - R - ex(QP_ACIMA)) + '" height="' + (H - T - B) + '" fill="var(--red)" opacity=".07"/>'
-    + '<text x="' + ((ex(QP_ACIMA) + W - R) / 2) + '" y="' + (T + 11) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9" text-anchor="middle">ACIMA DA CAPACIDADE</text>'
-    + '<path d="' + linha + '" fill="none" stroke="var(--txt)" stroke-width="2.2"/>'
-    + pts
-    + [0, 25, 50, 75, 100].map(p => '<text x="' + ex(p) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">p' + p + '</text>').join('')
-    + '<text x="' + (L - 6) + '" y="' + (ey(max) + 4) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(max) + '</text>'
-    + '<text x="' + (L - 6) + '" y="' + (ey(curva[0]) + 4) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(curva[0]) + '</text>'
+  // Rótulo de data a cada ~6 dias — todos os 30 viravam borrão.
+  const passo = Math.max(1, Math.ceil(serie.length / 6));
+  const datas = serie.map((l, i) => (i % passo === 0 || i === serie.length - 1)
+    ? '<text x="' + ex(i) + '" y="' + (H - B + 15) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="middle">' + _rpEsc(String(l.data).slice(0, 5)) + '</text>' : '').join('');
+  const yAcima = ey(a.alvoAcima), yMax = ey(a.alvoMax), yMin = ey(a.alvoMin);
+  const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="A meta e o realizado de cada dia, com a faixa onde a meta deveria ficar">'
+    + '<rect x="' + L + '" y="' + T + '" width="' + (W - L - R) + '" height="' + Math.max(0, yAcima - T) + '" fill="var(--red)" opacity=".07"/>'
+    + '<rect x="' + L + '" y="' + yMax + '" width="' + (W - L - R) + '" height="' + Math.max(0, yMin - yMax) + '" fill="var(--ok)" opacity=".28"/>'
+    + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
+    + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yMin + '" y2="' + yMin + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
+    + '<path d="' + caminho('real') + '" fill="none" stroke="var(--txt)" stroke-width="2" opacity=".5"/>'
+    + '<path d="' + caminho('meta') + '" fill="none" stroke="var(--acc)" stroke-width="2.2"/>'
+    + pts + datas
+    // Os rótulos levam fundo próprio: por cima das linhas ficariam ilegíveis.
+    + '<rect x="' + (L + 3) + '" y="' + (T + 3) + '" width="216" height="13" fill="var(--bg)" opacity=".82" rx="2"/>'
+    + '<text x="' + (L + 7) + '" y="' + (T + 13) + '" fill="var(--red)" font-family="var(--font-d)" font-size="9">\u2191 AQUI A LINHA QUASE NUNCA CHEGA</text>'
+    + '<rect x="' + (L + 3) + '" y="' + (yMax - 15) + '" width="190" height="13" fill="var(--bg)" opacity=".82" rx="2"/>'
+    + '<text x="' + (L + 7) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="9">\u2190 A META DEVERIA FICAR AQUI</text>'
+    + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="9" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
+    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="8.5" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
     + '</svg>';
   const tab = a.linhas.slice(-15).reverse().map(l => {
     const c = l.pct > QP_ACIMA ? 'qp-p-red'
@@ -7076,19 +7104,20 @@ function _qpHtml(a, curva, nTotal){
     + '<div class="kpi-card acc"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
     + '<div class="kpi-sub">a ' + fmtN(Math.round(a.alvoMax)) + ' cx/dia (p' + QP_ALVO_MIN + '–p' + QP_ALVO_MAX + ') · hoje a média é ' + fmtN(Math.round(a.metaMedia)) + '</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">CURVA DE CAPACIDADE · ONDE CAIU A META DE CADA DIA</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">A META E O QUE A LINHA PRODUZIU, DIA A DIA</div>'
     + svg
-    + '<div class="qp-leg"><span><i style="background:var(--txt)"></i>curva de capacidade (' + nTotal + ' dias, do pior para o melhor)</span>'
-    + '<span><i class="qp-dot" style="background:var(--ok)"></i>meta na faixa alvo</span>'
-    + '<span><i class="qp-dot" style="background:var(--warn)"></i>meta fora da faixa</span>'
-    + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima de p' + QP_ACIMA + '</span>'
-    + '<span>cada ponto é a meta de um dia — passe o mouse</span></div></div>'
+    + '<div class="qp-leg"><span><i style="background:var(--acc)"></i>a META de cada dia</span>'
+    + '<span><i style="background:var(--txt);opacity:.5"></i>o que a linha PRODUZIU</span>'
+    + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a meta deveria ficar</span>'
+    + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima da capacidade</span>'
+    + '<span>passe o mouse num ponto para ver o dia</span></div></div>'
     + '<div class="par-sec">OS ÚLTIMOS 15 DIAS, UM A UM</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
-    + '<div class="qp-nota"><b>Como ler:</b> a curva branca são os ' + nTotal + ' dias que a linha já rodou, ordenados do pior para o melhor. '
-    + '<b>Cada ponto é a meta de um dia</b>, posto na altura em que ela cai nessa curva. '
-    + 'Ponto na <b>faixa verde</b> é meta que a linha bate em cerca de metade dos dias — aí, quando o vermelho aparece, aconteceu algo. '
-    + 'Ponto na <b>faixa vermelha</b> cobra o que a linha quase nunca faz, e vermelho que aparece sempre vira paisagem.<br><br>'
+    + '<div class="qp-nota"><b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu. '
+    + 'A <b>faixa verde</b> é onde a meta deveria ficar: ali ela é batida em cerca de metade dos dias, e aí o vermelho, quando aparece, quer dizer que aconteceu algo. '
+    + 'Acima da faixa vermelha a meta cobra o que a linha quase nunca faz — e vermelho que aparece sempre vira paisagem.<br><br>'
+    + '<b>Repare se as duas linhas se acompanham.</b> Quando a meta sobe e a produção desce (ou o contrário), é sinal de que a meta não está sendo posta em função do que a linha faz. '
+    + 'A curva de capacidade usada como régua vem de <b>' + nTotal + ' dias</b> de histórico, não só dos que estão no gráfico.<br><br>'
     + '<b>Isto mede o PLANO, não a linha.</b> A meta do dia é a soma dos lotes datados para aquele dia, então ela herda a irregularidade da datação. '
     + 'Quando o dia fecha abaixo, o vermelho hoje cai no operador por uma variação que em boa parte não é dele.<br><br>'
     + '<b>Não é baixar a meta.</b> A produção sobe pelas paradas, pelo setup e pelo teto da esteira — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</div>';

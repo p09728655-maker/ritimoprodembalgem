@@ -11,6 +11,42 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.47.0 — 15/09/2026
+
+**Nenhum número muda.** Troca só o **gráfico** da aba PLANO. Os quatro cards, os
+vereditos e a tabela continuam iguais.
+
+### O gráfico da aba PLANO passou a ser dia a dia
+
+A primeira versão punha o **percentil no eixo horizontal**: os 79 dias
+enfileirados do pior para o melhor, com a meta de cada dia pousada na curva.
+
+**Não funcionou.** O próprio PPCP, que pediu a tela, não conseguiu ler — e ele
+tinha acabado de perguntar o que era p50. Tela que precisa de aula falha na
+parede da fábrica, e falha primeiro com quem passa rápido, que é quem mais
+precisa dela. Aqui a regra é a de sempre: **quando a interface e o entendimento
+divergem, o defeito é da interface.**
+
+Agora o eixo de baixo é o **calendário** — que ninguém precisa aprender a ler — e
+entram **duas linhas**:
+
+| | |
+|---|---|
+| **laranja** | a meta de cada dia |
+| **cinza** | o que a linha produziu |
+| **faixa verde** | onde a meta deveria ficar (p50–p60) |
+| **faixa vermelha** | acima daqui a linha quase nunca chega (p75) |
+
+⚠ **É assim que o `r² = 8%` aparece desenhado:** as duas linhas **não se
+acompanham** — a meta sobe quando a produção desce. Na versão do ranking o
+realizado **nem era desenhado**, então o achado principal da tela não aparecia de
+jeito nenhum.
+
+A régua (p50/p60/p75) continua vindo de **todo** o histórico; o filtro escolhe só
+quais dias aparecem no gráfico.
+
+---
+
 ## v7.46.0 / mobile 1.18.0 — 15/09/2026
 
 **Atenção** — o card **PROJEÇÃO FINAL deixa de dar veredito**. O número continua

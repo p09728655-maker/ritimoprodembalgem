@@ -2106,6 +2106,22 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ **A curva usa TODO o histórico; o filtro escolhe só quais metas são
   julgadas.** Recortar a curva junto com o período faria a régua mudar de
   tamanho a cada clique, e aí o percentil de ontem mudaria sem nada ter mudado.
+- ⚠ **O GRÁFICO É DIA A DIA, no calendário — e já foi outro.** A 1ª versão
+  (v7.45.0) punha o **percentil no eixo horizontal**: os 79 dias enfileirados do
+  pior para o melhor, com a meta de cada dia pousada na curva. **O próprio PPCP,
+  que pediu a tela, não conseguiu ler** — e tinha acabado de perguntar o que era
+  p50. Trocado na v7.47.0.
+  - Regra que isso confirma: **quando a interface e o entendimento divergem, o
+    defeito é da interface**. Tela de gestão à vista que precisa de aula falha na
+    parede, e falha primeiro com quem passa rápido.
+  - O gráfico de hoje tem **duas linhas** — meta (laranja) e realizado (cinza) —
+    e é assim que o **r²=8% aparece desenhado**: elas não se acompanham. Na
+    versão do ranking o realizado **nem era desenhado**, então o achado principal
+    da tela não aparecia.
+  - A régua (p50/p60/p75) continua vindo de **todo** o histórico; o filtro
+    escolhe só quais dias aparecem.
+  - Os rótulos dentro do gráfico levam **fundo próprio** (`<rect>` atrás do
+    `<text>`): por cima das linhas ficavam ilegíveis.
 - ⚠ **O gráfico é SVG no DOM, não canvas** — por isso `var(--ok)`/`var(--red)`
   funcionam nele. Em `<canvas>` (Chart.js) token não resolve e sai preto; ver a
   nota do `mkChart`.
