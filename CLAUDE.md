@@ -2211,6 +2211,59 @@ feito e dá ar de verdade ao que sobrou.
     contradição** — é repetição, então é preferência, não defeito. O usuário
     decidiu **manter** em 15/09/2026.
 
+## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
+- **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:
+  *"pelo histórico temos tempo de cada produto, o que dá pra fazer?"*. A régua
+  da aba é caixas/dia e caixa não é unidade de tempo: 3.000 cx a 300 cx/h são
+  10 h de esteira, 3.000 cx a 150 cx/h são 20 h, e a tela pintava as duas igual.
+- ⚠ **NÃO É "CARGA EM HORAS", e o motivo está medido.** O dado que existe é o
+  ritmo DEMONSTRADO por produto (cx ÷ horas em que o produto rodou, do log da
+  `PRODUCAO_PRODUTO`, o mesmo cx/h do comparativo), e **a esteira roda dois
+  produtos por vez**: em 21 dias, 37.085 cx a 107 cx/h dão **347 h de produto
+  contra ~185 h de linha**; nos 6 dias inteiros de julho lidos da planilha a
+  razão foi de **1,1 a 2,5 por dia** (média 1,38–1,65). Somar `qtde ÷ ritmo`
+  inflaria a carga em ~2×. **Hora de produto não é hora de linha.**
+- **O que se faz: o ritmo vira PESO RELATIVO** (`_mixRitmos` / `_mixFator`):
+  cada lote pesa `qtde × (referência ÷ ritmo do produto)`, referência = Σcx ÷
+  Σhoras de produto do MESMO período. Os dois lados da razão foram medidos do
+  mesmo jeito, então paralelismo e hora parcial se cancelam em boa parte. O
+  resultado continua em **caixas** — **a régua da aba segue UMA** (`_qpCurva`
+  com `QP_REGUA`), como manda a nota do `_cartAnalise`; o que muda é o que
+  entra na barra. `_cartAnalise` não toca no mix (o teste falha se tocar).
+- **A CONFERÊNCIA vai na tela** (`_mixDiag`): nos dias da régua, o realizado
+  convertido pelo mix daquele dia oscila menos que cru? (`_qpOscilacao`, a
+  mesma conta da oscilação da meta.) Medido em julho: **36% → 13%**. Se não
+  cair, a linha do MIX fica âmbar e manda preferir CAIXAS CRUAS. ⚠ É
+  **otimista** (os pesos saíram dos mesmos dias) — reprova um mix ruim, não
+  prova um exato. A medição de 60 dias **não pôde ser feita fora do painel**
+  (a rede da sessão bloqueia o Apps Script e a exportação do Drive corta a
+  `PRODUCAO_PRODUTO` em ~310 linhas), por isso ela mora na tela, onde os
+  dados existem.
+- **Chaves e quedas**: o fator tenta `modelo|cor`, cai em `modelo`, e sem
+  histórico é **1 e CONTADO** ("N sem base"). Fator fora de
+  `MIX_FATOR_MIN`–`MIX_FATOR_MAX` (0,33–3) é limitado e marcado "aparado": o
+  1 cx/h da DECOR 470 daria fator 107. A dívida (`faltaZerar`) continua crua —
+  ela não vem por lote.
+- **Seletor CARTEIRA** (`QP_MIX`: `mix` padrão · `cru`), na `rpe_qp_pref`. Só o
+  bloco de cima lê: o de baixo julga METAS de dias passados, cuja programação
+  o arquivamento já levou — converter meta antiga seria inventar.
+- **VAZIO NÃO É UMA COISA SÓ, de novo**: `_cartMixHtml` tem três estados —
+  cru por escolha · mix aplicado · **mix pedido e NÃO aplicado** (com a causa:
+  sem resposta · sem endpoint · erro · sem dados). O terceiro nunca passa em
+  silêncio, senão a tela diria cx de linha mostrando caixas cruas.
+- **Custo**: `_cartRitmos` lê `getProducaoModeloPeriodo` para o período da
+  régua (`QP_REGUA`, teto `CART_MIX_DIAS_MAX`=90), cache de 5 min
+  (`_cartMixCache`), voo compartilhado (`_cartMixVoo`) e reaproveita o
+  `_phCache` se a aba PRODUÇÃO/HORA já buscou o mesmo período. ⚠ Essa leitura
+  publica `PREP_PERIODO`, que é da OUTRA aba e de outro período: é guardado e
+  devolvido no `finally` (teste prende). Sem re-deploy do `.gs`.
+- **`_cartMontar(dias)` é a montagem única** (programação + dívida + mix +
+  conferência) da tela e do PDF. O relatório ganha a linha **O MIX** em COMO O
+  NÚMERO SAI.
+- Medido com os fatores de julho na carteira real de 16/09: 17/09 tinha
+  **3.125 cx de MESA CABECEIRA SLEEP** (205 cx/h) → **~2.000 cx de linha**;
+  o lote que mais pesa em cada dia sai na tabela, para escolher O QUE mover.
+
 ## A CARTEIRA QUE VEM — o bloco de cima da aba PLANO
 - **A aba julgava só o passado.** Diagnosticava a datação e não mudava nada: o
   dia já tinha ido. O bloco de cima (v7.50.0) olha os lotes **já datados para

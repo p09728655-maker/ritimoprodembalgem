@@ -2611,6 +2611,15 @@ ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
 console.log('\n── a carteira que vem (programação × capacidade) ──');
 { const m = JS.match(/const CART_DIAS_MAX\s*=\s*\d+/); if(m) eval(m[0].replace('const ','global.')+';'); }
 eval(pega('function _cartNum('));
+// o mix entra na carteira por parâmetro — as funções dele vêm antes
+[/const MIX_FATOR_MIN\s*=\s*[\d.]+/, /const MIX_FATOR_MAX\s*=\s*[\d.]+/, /const QP_MIN_DIAS\s*=\s*\d+/]
+  .forEach(re => { const m = JS.match(re); if(m) eval(m[0].replace('const ','global.')+';'); });
+eval(pega('function _mixCor('));
+eval(pega('function _mixModelo('));
+eval(pega('function _mixRotulo('));
+eval(pega('function _mixRitmos('));
+eval(pega('function _mixFator('));
+eval(pega('function _mixDiag('));
 eval(pega('function _cartAberta('));
 eval(pega('function _cartAnalise('));
 
@@ -2690,14 +2699,118 @@ ok('a carteira recebe a curva pronta em vez de montar a própria',
 const _cartRender = pega('async function renderCarteira(');
 ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
    /_qpCurva\(dias, QP_REGUA\)/.test(_cartRender) && /QP_FAIXA/.test(_cartRender), true);
+// A montagem (programação + dívida + mix) é UMA para a tela e para o papel.
+const _cartMont = pega('async function _cartMontar(');
 ok('a busca passa pelo carregador com cache, nunca por jsonpFetch direto',
-   /carregarProgramacaoDetalhada\(\)/.test(_cartRender) && !/jsonpFetch|action=/.test(_cartRender), true);
+   /carregarProgramacaoDetalhada\(\)/.test(_cartMont) && !/jsonpFetch|action=/.test(_cartMont + _cartRender), true);
+ok('tela e relatório montam a carteira pela MESMA _cartMontar',
+   [/await _cartMontar\(dias\)/.test(_cartRender), /await _cartMontar\(dias\)/.test(pega('async function gerarRelatorioPlano('))], [true, true]);
 // ⚠ dívida ZERO é valor legítimo: `||` entre os dois campos a trocaria pelo outro.
 // A dívida é lida em UM lugar (`_planoDivida`): tela e papel não podem discordar.
 ok('a dívida escolhe o campo por != null, não por ||',
    /prog\.faltaZerar != null/.test(pega('function _planoDivida(')), true);
-ok('e a tela e o relatório leem a mesma função',
-   [/_planoDivida\(\)/.test(_cartRender), /_planoDivida\(\)/.test(pega('async function gerarRelatorioPlano('))], [true, true]);
+ok('e a montagem única é quem a lê',
+   /_planoDivida\(\)/.test(_cartMont), true);
+
+// ── O MIX: a carteira em CX DE LINHA ─────────────────────────────────────
+// Caixa não é unidade de tempo: 3.000 cx de caixa pequena a 300 cx/h são 10 h
+// de esteira, as mesmas 3.000 de caixa grande a 150 cx/h são 20 h. E hora de
+// produto NÃO é hora de linha (a esteira roda dois produtos por vez — medido:
+// 347 h de produto em ~185 h de linha em 21 dias). Por isso o ritmo vira PESO
+// RELATIVO, e a régua da aba continua em caixas.
+console.log('\n── o mix: a carteira em cx de linha ──');
+// Dois produtos, 4 dias cada: A a 200 cx/h, B a 100 cx/h, com uma hora em
+// comum por dia (paralelismo) — os rótulos das horas vêm no horasLista.
+const _mixIt = (data, modelo, cor, caixas, horas, hl) => ({ data, dataNum:_cartNum(data), modelo, cor, caixas, horas, horasLista:hl });
+const _mixItens = [];
+['01/09/2026','02/09/2026','03/09/2026','04/09/2026'].forEach((d, i) => {
+  _mixItens.push(_mixIt(d, '501149', 'BRANCO', 200*4 + (i%2?40:-40), 4, ['07:00-08:00','08:00-09:00','09:00-10:00','10:00-11:00']));
+  _mixItens.push(_mixIt(d, '501088', 'PRETO',  100*3 + (i%2?-30:30), 3, ['10:00-11:00','13:00-14:00','14:00-15:00']));
+});
+const _rit = _mixRitmos(_mixItens);
+ok('a referência é Σcx ÷ Σhoras de produto', Math.round(_rit.ref), Math.round((800*4 + 300*4) / (7*4)));
+ok('o ritmo por produto é a média aparada do comparativo (melhor e pior dia fora)',
+   [Math.round(_rit.por['501149|BRANCO'].rit), Math.round(_rit.por['501088|PRETO'].rit)], [200, 100]);
+ok('o mapa tem a chave por cor E por modelo', [!!_rit.por['501149'], !!_rit.por['501088']], [true, true]);
+ok('horas de produto ÷ horas de linha vê o paralelismo (7 h de produto em 6 h de linha)',
+   Math.round(_rit.razao * 100) / 100, Math.round(7/6 * 100) / 100);
+ok('sem item com horas não há régua', _mixRitmos([{ caixas:10, horas:0, modelo:'501149' }]), null);
+
+const _fA = _mixFator(_rit, '501.149.001', 'BRANCO'), _fB = _mixFator(_rit, '501088002', 'preto ');
+ok('o fator é referência ÷ ritmo do produto (A pesa menos, B pesa mais)',
+   [Math.round(_fA.f * 100) / 100, Math.round(_fB.f * 100) / 100],
+   [Math.round(_rit.ref / 200 * 100) / 100, Math.round(_rit.ref / 100 * 100) / 100]);
+ok('a cor casa sem depender de caixa/espaço; o código pode vir com pontos', [_fA.base, _fB.base], ['cor', 'cor']);
+ok('cor sem histórico cai no MODELO', _mixFator(_rit, '501149', 'CUMARU').base, 'modelo');
+ok('produto sem histórico entra com fator 1 e base nula', [_mixFator(_rit, '999999', '').f, _mixFator(_rit, '999999', '').base], [1, null]);
+ok('sem régua o fator é 1', _mixFator(null, '501149', 'BRANCO').f, 1);
+// Apontamento capenga (1 cx/h) daria fator 100+: o teto segura e marca.
+const _ritCap = _mixRitmos(_mixItens.concat([_mixIt('05/09/2026', '501130', 'MEL', 1, 1, ['07:00-08:00'])]));
+const _fCap = _mixFator(_ritCap, '501130', 'MEL');
+ok('fator fora do plausível é limitado e marcado como aparado', [_fCap.f, _fCap.aparado], [MIX_FATOR_MAX, true]);
+ok('fator normal não é marcado', _fA.aparado, false);
+
+// A carteira pesada: o mesmo lote de 1.000 cx vale menos em A e mais em B.
+const _progMix = [
+  { data:'16/09/2026', dataNum:_cartNum('16/09/2026'), lote:'1', codigo:'501.149.001', desc:'MESA CABECEIRA MADERO', cor:'BRANCO', qtde:1000 },
+  { data:'16/09/2026', dataNum:_cartNum('16/09/2026'), lote:'1', codigo:'501.088.002', desc:'HOME ANGEL 1.6',       cor:'PRETO',  qtde:1000 },
+  { data:'17/09/2026', dataNum:_cartNum('17/09/2026'), lote:'2', codigo:'999.999.001', desc:'PRODUTO NOVO',         cor:'',       qtde:500 },
+];
+const _cMix = _cartAberta(_progMix, _cartNum('15/09/2026'), 0, _rit);
+const _d16 = _cMix.dias[0], _d17 = _cMix.dias[1];
+ok('o programado cru fica ao lado do pesado', [_d16.crua, _d16.qtde], [2000, Math.round(1000*_fA.f + 1000*_fB.f)]);
+ok('o fator do dia é pesado ÷ cru', Math.round(_d16.fator * 100) / 100, Math.round(_d16.qtde / 2000 * 100) / 100);
+ok('o lote que mais pesa no dia é o de produto lento (B)', /501\.088\.002/.test(_d16.pesa.rot), true);
+ok('e o rótulo leva a cor, como o resto do app', /HOME ANGEL 1\.6/.test(_d16.pesa.rot) && /PRETO/.test(_d16.pesa.rot), true);
+ok('produto sem histórico entra cru e é CONTADO como sem base', [_d17.qtde, _d17.semBase, _cMix.mix.semBase], [500, 1, 1]);
+ok('o total cru e o pesado saem os dois', [_cMix.futuroCru, _cMix.futuro], [2500, _d16.qtde + 500]);
+ok('a leitura do mix vai junto (referência, razão, nº de lotes)',
+   [Math.round(_cMix.mix.ref) === Math.round(_rit.ref), _cMix.mix.nLotes], [true, 3]);
+// Sem régua nada muda: é a carteira de sempre.
+const _cSem = _cartAberta(_progMix, _cartNum('15/09/2026'), 0, null);
+ok('sem régua a carteira sai crua (qtde = crua) e sem leitura de mix', [_cSem.dias[0].qtde, _cSem.dias[0].crua, _cSem.mix], [2000, 2000, null]);
+ok('e a análise carrega o mix e o cru para o desenho',
+   (() => { const an = _cartAnalise(_cMix, _c10, [50,60]); return [an.futuroCru, !!an.mix]; })(), [2500, true]);
+
+// A CONFERÊNCIA: dias em que o realizado é só "ritmo × horas" com mix
+// diferente oscilam em caixas cruas e ficam parelhos em cx de linha.
+const _confIt = [], _confDias = [];
+for(let i = 0; i < 12; i++){
+  const d = (i + 1 < 10 ? '0' : '') + (i + 1) + '/08/2026';
+  const hA = i % 2 ? 6 : 2, hB = 8 - hA;               // 8 h de linha, mix alternando
+  _confIt.push(_mixIt(d, '501149', 'BRANCO', 200 * hA, hA, []));
+  _confIt.push(_mixIt(d, '501088', 'PRETO',  100 * hB, hB, []));
+  _confDias.push({ data:d, real: 200 * hA + 100 * hB });
+}
+const _rc = _mixRitmos(_confIt);
+const _dg = _mixDiag(_confDias, _confIt, _rc);
+ok('em caixas cruas o realizado oscila (mix alterna)', _dg.oscCru > 15, true);
+ok('em cx de linha os dias ficam parelhos: o mix explica a variação', [_dg.oscMix < 1, _dg.ok, _dg.ganho > 95], [true, true, true]);
+ok('a conferência conta os dias que casaram', [_dg.n, _dg.base], [12, true]);
+ok('com menos dias que o mínimo não há base (nem veredito)',
+   (() => { const g = _mixDiag(_confDias.slice(0, 4), _confIt, _rc); return [g.base, g.ok]; })(), [false, false]);
+ok('sem régua não há conferência', _mixDiag(_confDias, _confIt, null), null);
+
+// ── guardas ──────────────────────────────────────────────────────────────
+// A régua da aba continua UMA (caixas/dia): o mix muda o que entra na barra,
+// nunca a curva — `_cartAnalise` segue recebendo a curva pronta.
+ok('o mix não toca na curva', /_mixRitmos\(|_mixFator\(/.test(pega('function _cartAnalise(')), false);
+ok('o desenho da carteira e a linha do mix não fazem conta',
+   /_mixRitmos\(|_mixFator\(|_mixDiag\(|_phMediaAparada\(/.test(_cartDes + pega('function _cartMixHtml(')), false);
+ok('a linha do mix sai no desenho (tela e papel)', /_cartMixHtml\(a\)/.test(_cartDes), true);
+ok('mix pedido e NÃO aplicado nunca passa em silêncio', /MIX NÃO APLICADO/.test(pega('function _cartMixHtml(')), true);
+const _cartRit = pega('async function _cartRitmos(');
+ok('o log de produto tem cache por período e requisição em voo compartilhada',
+   /_cartMixCache\.key === key/.test(_cartRit) && /_cartMixVoo\.key === key && _cartMixVoo\.p/.test(_cartRit), true);
+ok('e reaproveita o período que o comparativo por modelo já buscou', /_phCache\.key === key/.test(_cartRit), true);
+// ⚠ a leitura publica PREP_PERIODO, que é da aba PRODUÇÃO/HORA e de OUTRO período
+ok('a leitura devolve o PREP_PERIODO da outra aba', /finally\{ PREP_PERIODO = prepAntes; \}/.test(_cartRit), true);
+ok('com CAIXAS CRUAS não há busca', /if\(QP_MIX !== 'mix'\) return null;/.test(_cartRit), true);
+ok('o mix é só do bloco de cima: trocar não redesenha o de baixo',
+   (() => { const f = pega('function _qpSetMix('); return /renderCarteira\(\)/.test(f) && !/renderQualidadePlano\(\)/.test(f); })(), true);
+ok('a escolha do mix persiste na MESMA chave de preferências',
+   /mix:QP_MIX/.test(pega('function _qpSalvarPref(')) && /o\.mix === 'cru' \|\| o\.mix === 'mix'/.test(pega('function _qpCarregarPref(')), true);
+ok('o relatório em PDF explica o mix', /O MIX<\/td>/.test(pega('async function gerarRelatorioPlano(')), true);
 // ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do
 // `faltaZerar` desde antes, e não é dela que se trata. Contar o arquivo inteiro
 // acusava a TV por um código que este bloco não escreveu.
