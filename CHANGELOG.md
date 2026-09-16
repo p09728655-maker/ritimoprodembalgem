@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.58.0 — 16/09/2026
+
+Só a impressão da aba PLANO, aprovada pelo PPCP com o PDF na mão
+(*"deixar a impressão mais profissional, está muito carregada"*). **A tela não
+muda e nenhuma conta muda** — é a pele do papel (`_PLANO_SKIN`), como manda a
+regra do #204/#205.
+
+- **Cor só onde há função**, a mesma regra do relatório semanal: barra de dia
+  que cabe sai em **grafite**, só o dia que **não cabe** fica vermelho; a faixa
+  acima do melhor dia quase desaparece; card com borda neutra e só o card do
+  problema colorido. Na tabela sobraram duas cores: o que não cabe e o espaço
+  livre.
+- **Sai o que se repete**: os selos *PESA* dentro das barras e a legenda deles
+  (a coluna PESO DO MIX e a lista de lotes já dizem), a coluna **ALTURA** (NÃO
+  CABE e ESPAÇO LIVRE respondem em caixas), as colunas **LINHAS** e **O QUE
+  MAIS PESA** (a lista de lotes diz lote a lote) e a legenda *dia com folga*,
+  que no papel não existe mais.
+- **O peso do mix vira texto**, sem a pílula: a caixa em volta chamava mais
+  atenção que o número.
+- Cabeçalho dos dias na lista de lotes mais curto; título **CARTEIRA** e a
+  linha de meta sem quebra; fontes de card e tabela ajustadas.
+
 ## v7.57.0 — 16/09/2026
 
 Sem mudança nos números de hoje. Pedido do PPCP, 16/09/2026: *"se a linha

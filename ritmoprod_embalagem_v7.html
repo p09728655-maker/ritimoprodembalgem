@@ -2667,7 +2667,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.57.0';
+const APP_VER   = '7.58.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7898,10 +7898,10 @@ function _cartHtml(a, regua, larg){
         + '" height="' + Math.max(0, H - B - ey(l.crua)).toFixed(1) + '" fill="none" stroke="' + (l.crua > l.qtde ? 'var(--txt2)' : 'var(--bg)') + '" stroke-width="1.2" stroke-dasharray="3 3" rx="2"/>'
       : '';
     const selo = (peso && peso.cls && (H - B - y) > FS * 4)
-      ? '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y + FS * 2.4).toFixed(1) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 1) + '" font-weight="700" text-anchor="middle">PESA ' + peso.pct + '</text>'
+      ? '<text class="cb-selo" x="' + (x + w/2).toFixed(1) + '" y="' + (y + FS * 2.4).toFixed(1) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 1) + '" font-weight="700" text-anchor="middle">PESA ' + peso.pct + '</text>'
       : '';
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
-      + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2">'
+      + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2" class="' + (l.sai > 0 ? 'cb-red' : (l.qtde >= a.alvoMin ? 'cb-ok' : 'cb-warn')) + '">'
       + '<title>' + _rpEsc(l.data + ' · ' + _qtdTxt(l) + ' (p' + Math.round(l.pct) + ')'
         + (l.sai > 0 ? ' · ' + fmtN(Math.round(l.sai)) + ' cx não cabem' : '')
         + ' · ' + l.n + ' linha(s)') + '</title></rect>'
@@ -7914,7 +7914,7 @@ function _cartHtml(a, regua, larg){
       + fant + selo;
   }).join('');
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
-    + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
+    + '<rect class="cb-teto" x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
     + '<rect x="' + L + '" y="' + yMax + '" width="' + (W-L-R) + '" height="' + Math.max(0, yMin-yMax) + '" fill="var(--ok)" opacity=".28"/>'
     + barras
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
@@ -7934,14 +7934,14 @@ function _cartHtml(a, regua, larg){
       + (l.aparados ? ' · ' + l.aparados + ' lote(s) com peso limitado (apontamento suspeito)' : '')) : '';
     return '<tr><td>' + _rpEsc(l.data) + '</td>'
       + (mix ? '<td>' + fmtN(l.crua) + '</td>'
-             + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
+             + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill cl-peso ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
              + '<td><b>' + fmtN(l.qtde) + '</b></td>'
            : '<td>' + fmtN(l.qtde) + '</td>')
-      + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
-      + '<td>' + l.n + '</td>'
+      + '<td class="cl-alt"><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
+      + '<td class="cl-lin">' + l.n + '</td>'
       + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
       + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td>'
-      + (mix ? '<td style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot
+      + (mix ? '<td class="cl-pesa" style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot
              ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">· ' + fmtN(pesa.q) + ' cx · <b>' + _cartPesoTxt(pesa.f).palavra + '</b> (carga ' + fmtN(Math.round(pesa.eq)) + ')</span>'
              : '—') + '</td>' : '')
       + '</tr>';
@@ -7967,16 +7967,16 @@ function _cartHtml(a, regua, larg){
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
-    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga · PESA = peso do mix</span>' : '')
+    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga<span class="cl-selo"> · PESA = peso do mix</span></span>' : '')
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
-    + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
+    + '<span class="cl-folga"><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th>'
     + (mix ? '<th>PROGRAMADO</th><th>PESO DO MIX</th><th>CARGA</th>' : '<th>PROGRAMADO</th>')
-    + '<th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
-    + (mix ? '<th style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
+    + '<th class="cl-alt">ALTURA</th><th class="cl-lin">LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
+    + (mix ? '<th class="cl-pesa" style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
     + _cartMixHtml(a)
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
     + (mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
@@ -8039,10 +8039,9 @@ function _cartLotesHtml(a){
   const corpo = a.linhas.map(l => {
     const lotes = (l.lotes || []).slice().sort((x, y) => y.eq - x.eq);
     const pt = mix ? _cartPesoTxt(l.fator) : null;
-    const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> · ' + lotes.length + ' linha(s) · '
-      + fmtN(l.crua) + ' cx programadas'
-      + (mix ? ' · carga <b>' + fmtN(l.qtde) + '</b> (' + pt.frase + ')' : '')
-      + (l.sai > 0 ? ' · <span class="cl-red">não cabem ' + fmtN(Math.round(l.sai)) + '</span>' : (l.cabe > 0 ? ' · <span class="cl-ok">espaço para +' + fmtN(Math.round(l.cabe)) + '</span>' : ''))
+    const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> — ' + lotes.length + ' lote(s) · programado <b>' + fmtN(l.crua) + '</b>'
+      + (mix ? ' · carga <b>' + fmtN(l.qtde) + '</b>' + (pt.cls ? ' (mix ' + pt.palavra + ' ' + pt.pct + ')' : '') : '')
+      + (l.sai > 0 ? ' · <span class="cl-red">não cabem ' + fmtN(Math.round(l.sai)) + '</span>' : (l.cabe > 0 ? ' · <span class="cl-ok">espaço para +' + fmtN(Math.round(l.cabe)) + '</span>' : ' · <span class="cl-ok">no limite</span>'))
       + '</td></tr>';
     return dia + lotes.map(x => {
       const px = mix ? _cartPesoTxt(x.f) : null;
@@ -8219,6 +8218,28 @@ const _PLANO_SKIN = `
              --font-d:'IBM Plex Mono',monospace;--font-h:'Barlow Condensed',sans-serif}
   .plano-doc svg{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .plano-doc .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+  /* "deixar a impressão mais profissional, está muito carregada" (PPCP,
+     16/09/2026): no papel, COR SÓ ONDE HÁ FUNÇÃO — a mesma regra do relatório
+     semanal. Barra que cabe é grafite; só o dia que NÃO cabe fica vermelho.
+     Card tem borda neutra; só o card do problema leva cor. As colunas LINHAS
+     e O QUE MAIS PESA saem da tabela do dia a dia: a lista de lotes logo
+     abaixo já diz isso, lote a lote. A tela não muda — é a pele. */
+  .plano-doc rect.cb-ok,.plano-doc rect.cb-warn{fill:#5B6470;opacity:.75}
+  .plano-doc rect.cb-red{fill:#C62828}
+  .plano-doc rect.cb-teto{opacity:.035}
+  .plano-doc .kpi-card{border-left-color:#cbd5e0}
+  .plano-doc .kpi-card.r{border-left-color:#C62828}
+  .plano-doc .kpi-card .kpi-val{font-size:24px;color:#1F2328}
+  .plano-doc .kpi-card .kpi-sub{font-size:8.5px;color:#718096;line-height:1.45}
+  .plano-doc .kpi-card .kpi-sub b{color:#1F2328;font-weight:600}
+  .plano-doc .cl-lin,.plano-doc .cl-pesa,.plano-doc .cl-alt,.plano-doc .cl-selo,.plano-doc .cl-folga,.plano-doc .cb-selo{display:none}
+  /* o PESO DO MIX é informação, não veredito: no papel sai como texto, sem a
+     pílula da tela — a caixa em volta chamava mais atenção que o número */
+  .plano-doc .qp-pill.cl-peso{border:0;padding:0;color:#5B6470;font-size:9px;letter-spacing:.3px}
+  .plano-doc .qp-ver-t{font-size:17px}
+  .plano-doc .qp-ver-d{font-size:10px}
+  .plano-doc .qp-pill{font-size:8.5px;padding:1px 4px}
+  .plano-doc .tbl td,.plano-doc .tbl th{padding:5px 7px}
   .plano-doc .qp-ver{border:1px solid #e2e8f0;border-left:3px solid #a0aec0;border-radius:5px;
                      background:#f8fafc;padding:10px 13px;margin-bottom:11px;page-break-inside:avoid}
   .plano-doc .qp-ver.ok{border-left-color:#2E7D32}
@@ -8405,8 +8426,8 @@ async function gerarRelatorioCarteira(){
     ac.cenario = await _cartCenarioAsync(cart, dias);
     const fMin = ac.faixa[0], fMax = ac.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
-    metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax
-      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas') + ' · capacidade sem hora extra';
+    metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + (QP_REGUA > 0 ? QP_REGUA + ' dias' : 'todo o histórico') + ' s/ hora extra · p' + fMin + '–p' + fMax
+      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas');
     corpo = '<div class="plano-doc cart-doc">'
       + _cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)
       + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'
@@ -8421,7 +8442,7 @@ async function gerarRelatorioCarteira(){
 
   const html = _rpDocParadas('Carteira que vem — ' + hojeStr(), true)
     + '<style>' + _PLANO_SKIN + '</style></head><body class="deitado">'
-    + _rpCabecalho('A CARTEIRA QUE VEM', metaCab)
+    + _rpCabecalho('CARTEIRA', metaCab)
     + corpo + _rpBotaoImprimir() + '</body></html>';
   win.document.open(); win.document.write(html); win.document.close();
 }
