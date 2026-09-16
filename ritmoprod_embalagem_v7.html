@@ -2653,7 +2653,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.0';
+const APP_VER   = '7.55.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7488,7 +7488,15 @@ function _cartNum(str){
 // entre 0,5× e 1,2× da referência) e a tabela marca o lote aparado.
 const MIX_FATOR_MIN = 0.33;
 const MIX_FATOR_MAX = 3;
-const CART_MIX_DIAS_MAX = 90;   // "todo o histórico" no log de produto seria a aba inteira
+// ⚠ 90 dias NÃO RESPONDE no cold start (medido em produção, 16/09/2026, na
+// 1ª abertura da v7.55.0: MIX NÃO APLICADO, três tentativas de 25 s). É a
+// leitura mais cara do backend e 90 dias é o pior caso do recorte por data
+// (+12% de uma leitura completa). A régua do mix é uma ESCADA: 60 dias e,
+// se não responder, 30 — que é o período que a aba PRODUÇÃO/HORA já prova
+// todo dia. A tela diz qual degrau ficou valendo.
+const CART_MIX_DIAS_MAX = 60;
+const CART_MIX_ESCADA   = [60, 30];
+const CART_MIX_RETRY_S  = 30;    // espera antes de descer um degrau (o servidor já acordou)
 
 function _mixCor(c){ return String(c == null ? '' : c).replace(/\s+/g, ' ').trim().toUpperCase(); }
 function _mixModelo(codigo){ return String(codigo == null ? '' : codigo).replace(/\D/g, '').slice(0, 6); }
@@ -7670,6 +7678,7 @@ function _cartAnalise(cart, curva, faixa){
     divida: cart.divida, futuro: cart.futuro, total,
     futuroCru: cart.futuroCru != null ? cart.futuroCru : cart.futuro,
     mix: cart.mix || null, mixFalha: cart.mixFalha || null, mixModo: cart.mixModo || null,
+    mixRetry: cart.mixRetry || null,
     de: cart.de, ate: cart.ate,
     nivelado: total / linhas.length,               // a dívida entra: ela ocupa dia
     pctNivelado: _qpPercentil(total / linhas.length, curva),
@@ -7825,7 +7834,9 @@ function _cartMixHtml(a){
                 'erro':'o backend respondeu com erro na leitura do log de produto',
                 'sem-dados':'o log de produto veio sem horas rodadas no período da régua',
                 'sem-url':'sem URL do Apps Script' }[a.mixFalha] || 'não foi possível ler o log de produto';
-    return '<div class="qp-mix warn">⚠ <b>MIX NÃO APLICADO</b> — ' + _rpEsc(m) + '. A carteira acima está em <b>caixas cruas</b>.</div>';
+    return '<div class="qp-mix warn">⚠ <b>MIX NÃO APLICADO</b> — ' + _rpEsc(m) + '. A carteira acima está em <b>caixas cruas</b>.'
+      + (a.mixRetry ? ' Tentando de novo sozinho em <b>' + a.mixRetry.em + ' s</b> com a régua do mix em <b>' + a.mixRetry.dias + ' dias</b> (leitura mais leve).' : '')
+      + '</div>';
   }
   const m = a.mix, c = m.conf;
   let conf;
@@ -7836,7 +7847,7 @@ function _cartMixHtml(a){
             : '<b>o mix não explica a variação</b> — prefira CAIXAS CRUAS na barra até o apontamento por produto melhorar');
   return '<div class="qp-mix' + (c && c.base && !c.ok ? ' warn' : '') + '">'
     + '<b>CX DE LINHA</b> = cada lote × (ritmo de referência ÷ ritmo demonstrado do produto) · referência <b>' + fmtN(Math.round(m.ref)) + ' cx/h</b>'
-    + ' (Σcx ÷ Σhoras de produto, ' + m.nDias + ' dia(s) do log' + (m.regua ? ' · régua de ' + m.regua + ' dias' : '') + ')'
+    + ' (Σcx ÷ Σhoras de produto, ' + m.nDias + ' dia(s) do log' + (m.regua ? ' · régua do mix de ' + m.regua + ' dias' : '') + ')'
     + ' · ' + m.nLotes + ' lote(s), <b>' + m.semBase + ' sem base</b> (fator 1)' + (m.aparados ? ', ' + m.aparados + ' aparado(s)' : '')
     + (m.razao ? ' · horas de produto ÷ horas de linha = <b>' + m.razao.toFixed(2).replace('.', ',') + '</b> (a esteira roda mais de um produto por vez — por isso o peso é RELATIVO, não hora)' : '')
     + '<br><b>CONFERÊNCIA:</b> ' + conf + '</div>';
@@ -7873,8 +7884,18 @@ function _cartVazioHtml(cart){
 let _cartMixCache = { key:null, ts:0 };
 let _cartMixVoo   = { key:null, p:null };
 const CART_MIX_TTL = 5 * 60 * 1000;
+// O degrau atual da escada (0 = o primeiro). Sobe com a falha `sem-resposta`
+// e só volta a 0 no ATUALIZAR — voltar no sucesso faria a próxima redesenhada
+// (trocar a faixa, por exemplo) pedir os 60 dias de novo e estourar de novo.
+let CART_MIX_DEGRAU = 0;
+function _cartMixEscada(){
+  const base = QP_REGUA > 0 ? Math.min(QP_REGUA, CART_MIX_DIAS_MAX) : CART_MIX_DIAS_MAX;
+  const esc = [base].concat(CART_MIX_ESCADA.filter(d => d < base));
+  return esc.filter((d, i) => esc.indexOf(d) === i);
+}
 function _cartMixPeriodo(){
-  const nd = QP_REGUA > 0 ? Math.min(QP_REGUA, CART_MIX_DIAS_MAX) : CART_MIX_DIAS_MAX;
+  const esc = _cartMixEscada();
+  const nd = esc[Math.min(CART_MIX_DEGRAU, esc.length - 1)];
   const ate = new Date(), de = new Date();
   de.setDate(de.getDate() - nd);
   return { de: dtToStr(de), ate: dtToStr(ate), dias: nd };
@@ -7908,7 +7929,24 @@ async function _cartRitmos(){
   _cartMixVoo = { key, p };
   return p;
 }
-function invalidarMixCache(){ _cartMixCache = { key:null, ts:0 }; }
+function invalidarMixCache(){ _cartMixCache = { key:null, ts:0 }; CART_MIX_DEGRAU = 0; }
+// Sem resposta e ainda há degrau abaixo? Desce um e tenta de novo sozinho,
+// daqui a CART_MIX_RETRY_S — o servidor já pagou o cold start na tentativa
+// que estourou. Só enquanto a aba PLANO está na tela; fora dela a próxima
+// abertura recomeça. Devolve o degrau que vai valer, para a tela avisar.
+let _cartMixTimer = null;
+function _cartMixAgendar(cart){
+  if(!cart || cart.mixFalha !== 'sem-resposta') return null;
+  const esc = _cartMixEscada();
+  if(CART_MIX_DEGRAU >= esc.length - 1) return null;
+  CART_MIX_DEGRAU++;
+  clearTimeout(_cartMixTimer);
+  _cartMixTimer = setTimeout(() => {
+    const sec = document.getElementById('sec-plano');
+    if(sec && sec.classList.contains('on')) renderCarteira();
+  }, CART_MIX_RETRY_S * 1000);
+  return { em: CART_MIX_RETRY_S, dias: esc[CART_MIX_DEGRAU] };
+}
 
 // A MONTAGEM da carteira, uma só para a tela e para o papel: programação +
 // dívida + o mix (quando escolhido) + a conferência do mix nos dias da régua.
@@ -7945,6 +7983,7 @@ async function renderCarteira(){
     // A dívida (atraso vivo + o que falta hoje) sai do `_planoDivida`, a MESMA
     // leitura do relatório em PDF; a montagem (programação + mix) é `_cartMontar`.
     const cart = await _cartMontar(dias);
+    cart.mixRetry = _cartMixAgendar(cart);
     const a = _cartAnalise(cart, curva, QP_FAIXA);
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade

@@ -2251,8 +2251,15 @@ feito e dá ar de verdade ao que sobrou.
   cru por escolha · mix aplicado · **mix pedido e NÃO aplicado** (com a causa:
   sem resposta · sem endpoint · erro · sem dados). O terceiro nunca passa em
   silêncio, senão a tela diria cx de linha mostrando caixas cruas.
+- ⚠ **90 DIAS NÃO RESPONDE NO COLD START** (medido em produção na 1ª abertura
+  da v7.55.0, régua em "todo o histórico": MIX NÃO APLICADO, 3 × 25 s). A
+  régua do mix é uma **escada** (`_cartMixEscada`: 60 e, sem resposta, 30) e
+  `_cartMixAgendar` desce um degrau **sozinho, uma vez, 30 s depois**, só em
+  `sem-resposta` e só com a aba PLANO na tela. O degrau volta a 0 **apenas no
+  ATUALIZAR** — voltar no sucesso faria a próxima redesenhada pedir 60 de
+  novo. A linha do MIX diz qual régua valeu. Teste prende a escada e a guarda.
 - **Custo**: `_cartRitmos` lê `getProducaoModeloPeriodo` para o período da
-  régua (`QP_REGUA`, teto `CART_MIX_DIAS_MAX`=90), cache de 5 min
+  régua (`QP_REGUA`, teto `CART_MIX_DIAS_MAX`=60), cache de 5 min
   (`_cartMixCache`), voo compartilhado (`_cartMixVoo`) e reaproveita o
   `_phCache` se a aba PRODUÇÃO/HORA já buscou o mesmo período. ⚠ Essa leitura
   publica `PREP_PERIODO`, que é da OUTRA aba e de outro período: é guardado e
