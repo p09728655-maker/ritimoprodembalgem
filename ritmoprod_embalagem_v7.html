@@ -7898,7 +7898,7 @@ function _cartHtml(a, regua, larg){
         + '" height="' + Math.max(0, H - B - ey(l.crua)).toFixed(1) + '" fill="none" stroke="' + (l.crua > l.qtde ? 'var(--txt2)' : 'var(--bg)') + '" stroke-width="1.2" stroke-dasharray="3 3" rx="2"/>'
       : '';
     const selo = (peso && peso.cls && (H - B - y) > FS * 4)
-      ? '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y + FS * 2.4).toFixed(1) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 1) + '" font-weight="700" text-anchor="middle">PESA ' + peso.pct + '</text>'
+      ? '<text class="cb-selo" x="' + (x + w/2).toFixed(1) + '" y="' + (y + FS * 2.4).toFixed(1) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 1) + '" font-weight="700" text-anchor="middle">PESA ' + peso.pct + '</text>'
       : '';
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2" class="' + (l.sai > 0 ? 'cb-red' : (l.qtde >= a.alvoMin ? 'cb-ok' : 'cb-warn')) + '">'
@@ -7937,7 +7937,7 @@ function _cartHtml(a, regua, larg){
              + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
              + '<td><b>' + fmtN(l.qtde) + '</b></td>'
            : '<td>' + fmtN(l.qtde) + '</td>')
-      + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
+      + '<td class="cl-alt"><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
       + '<td class="cl-lin">' + l.n + '</td>'
       + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
       + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td>'
@@ -7967,15 +7967,15 @@ function _cartHtml(a, regua, larg){
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
-    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga · PESA = peso do mix</span>' : '')
+    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga<span class="cl-selo"> · PESA = peso do mix</span></span>' : '')
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
-    + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
+    + '<span class="cl-folga"><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th>'
     + (mix ? '<th>PROGRAMADO</th><th>PESO DO MIX</th><th>CARGA</th>' : '<th>PROGRAMADO</th>')
-    + '<th>ALTURA</th><th class="cl-lin">LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
+    + '<th class="cl-alt">ALTURA</th><th class="cl-lin">LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
     + (mix ? '<th class="cl-pesa" style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
     + _cartMixHtml(a)
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
@@ -8232,7 +8232,7 @@ const _PLANO_SKIN = `
   .plano-doc .kpi-card .kpi-val{font-size:24px;color:#1F2328}
   .plano-doc .kpi-card .kpi-sub{font-size:8.5px;color:#718096;line-height:1.45}
   .plano-doc .kpi-card .kpi-sub b{color:#1F2328;font-weight:600}
-  .plano-doc .cl-lin,.plano-doc .cl-pesa{display:none}
+  .plano-doc .cl-lin,.plano-doc .cl-pesa,.plano-doc .cl-alt,.plano-doc .cl-selo,.plano-doc .cl-folga,.plano-doc .cb-selo{display:none}
   .plano-doc .qp-ver-t{font-size:17px}
   .plano-doc .qp-ver-d{font-size:10px}
   .plano-doc .qp-pill{font-size:8.5px;padding:1px 4px}
