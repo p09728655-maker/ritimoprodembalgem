@@ -7934,7 +7934,7 @@ function _cartHtml(a, regua, larg){
       + (l.aparados ? ' · ' + l.aparados + ' lote(s) com peso limitado (apontamento suspeito)' : '')) : '';
     return '<tr><td>' + _rpEsc(l.data) + '</td>'
       + (mix ? '<td>' + fmtN(l.crua) + '</td>'
-             + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
+             + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill cl-peso ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
              + '<td><b>' + fmtN(l.qtde) + '</b></td>'
            : '<td>' + fmtN(l.qtde) + '</td>')
       + '<td class="cl-alt"><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
@@ -8233,6 +8233,9 @@ const _PLANO_SKIN = `
   .plano-doc .kpi-card .kpi-sub{font-size:8.5px;color:#718096;line-height:1.45}
   .plano-doc .kpi-card .kpi-sub b{color:#1F2328;font-weight:600}
   .plano-doc .cl-lin,.plano-doc .cl-pesa,.plano-doc .cl-alt,.plano-doc .cl-selo,.plano-doc .cl-folga,.plano-doc .cb-selo{display:none}
+  /* o PESO DO MIX é informação, não veredito: no papel sai como texto, sem a
+     pílula da tela — a caixa em volta chamava mais atenção que o número */
+  .plano-doc .qp-pill.cl-peso{border:0;padding:0;color:#5B6470;font-size:9px;letter-spacing:.3px}
   .plano-doc .qp-ver-t{font-size:17px}
   .plano-doc .qp-ver-d{font-size:10px}
   .plano-doc .qp-pill{font-size:8.5px;padding:1px 4px}
