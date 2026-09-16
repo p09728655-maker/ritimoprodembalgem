@@ -2806,6 +2806,22 @@ ok('e reaproveita o período que o comparativo por modelo já buscou', /_phCache
 // ⚠ a leitura publica PREP_PERIODO, que é da aba PRODUÇÃO/HORA e de OUTRO período
 ok('a leitura devolve o PREP_PERIODO da outra aba', /finally\{ PREP_PERIODO = prepAntes; \}/.test(_cartRit), true);
 ok('com CAIXAS CRUAS não há busca', /if\(QP_MIX !== 'mix'\) return null;/.test(_cartRit), true);
+// ⚠ 90 dias não respondeu no cold start (produção, 16/09/2026): a régua do mix
+// é uma ESCADA — 60 e, sem resposta, 30 — e desce sozinha uma vez.
+[/const CART_MIX_DIAS_MAX\s*=\s*\d+/, /const CART_MIX_ESCADA\s*=\s*\[[\d,\s]+\]/, /const CART_MIX_RETRY_S\s*=\s*\d+/]
+  .forEach(re => { const m = JS.match(re); if(m) eval(m[0].replace('const ','global.')+';'); });
+eval(pega('function _cartMixEscada('));
+ok('o teto da régua do mix é 60 dias, nunca 90', CART_MIX_DIAS_MAX <= 60, true);
+global.QP_REGUA = 0;  ok('todo o histórico → 60 e depois 30', _cartMixEscada(), [60, 30]);
+global.QP_REGUA = 90; ok('régua de 90 → o mix fica em 60 e depois 30', _cartMixEscada(), [60, 30]);
+global.QP_REGUA = 30; ok('régua de 30 → um degrau só (não há menor)', _cartMixEscada(), [30]);
+global.QP_REGUA = 60;
+const _cartAg = pega('function _cartMixAgendar(');
+ok('a descida automática só acontece em sem-resposta (timeout), nunca em erro ou sem-endpoint',
+   /mixFalha !== 'sem-resposta'\) return null;/.test(_cartAg), true);
+ok('e só redesenha se a aba PLANO ainda está na tela', /classList\.contains\('on'\)\) renderCarteira\(\)/.test(_cartAg), true);
+ok('a tela avisa que vai tentar de novo e com qual régua', /Tentando de novo sozinho em/.test(pega('function _cartMixHtml(')), true);
+ok('o degrau volta a 0 no ATUALIZAR', /CART_MIX_DEGRAU = 0/.test(pega('function invalidarMixCache(')), true);
 ok('o mix é só do bloco de cima: trocar não redesenha o de baixo',
    (() => { const f = pega('function _qpSetMix('); return /renderCarteira\(\)/.test(f) && !/renderQualidadePlano\(\)/.test(f); })(), true);
 ok('a escolha do mix persiste na MESMA chave de preferências',

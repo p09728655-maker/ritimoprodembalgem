@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.1 — 16/09/2026
+
+Correção da v7.55.0, medida em produção na primeira abertura: com a régua em
+**todo o histórico** o mix pedia **90 dias** do log de produto e a leitura
+(a mais cara do backend) estourou as 3 tentativas de 25 s no cold start —
+a carteira ficou em **MIX NÃO APLICADO**.
+
+- A régua do mix é uma **escada: 60 dias e, sem resposta, 30** (o período que
+  a aba PRODUÇÃO/HORA prova todo dia). A descida é **automática, uma vez,
+  30 s depois** (o servidor já acordou na tentativa que estourou) e só em
+  timeout — erro e backend sem a ação não descem. A tela avisa *"tentando de
+  novo sozinho em 30 s com a régua do mix em 30 dias"* e a linha do MIX diz
+  qual régua ficou valendo.
+- **Atenção**: com a régua da aba em 90 dias ou todo o histórico, os pesos do
+  mix saem dos últimos 60 (ou 30) dias — a linha do MIX imprime o número.
+  Nenhuma outra conta mudou.
+
 ## v7.55.0 — 16/09/2026
 
 **Atenção** — **a carteira da aba PLANO mudou de unidade: sai em CX DE LINHA**
