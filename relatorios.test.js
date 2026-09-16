@@ -2861,6 +2861,15 @@ const _skinPlano = JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/)[1];
 ok('a pele do papel esconde a nota longa e a explicação do mix (fica só o veredito)',
    /\.plano-doc \.qp-nota,\.plano-doc \.qm-como,\.plano-doc \.qm-det\{display:none\}/.test(_skinPlano), true);
 ok('e a quebra de página é da pele, não da marcação', /\.pl-quebra\{page-break-before:always/.test(_skinPlano), true);
+// ── 🖨 CARTEIRA: só a seção 1, em paisagem, com as MESMAS peças ─────────
+// (PPCP, 16/09/2026: "quero impressão só dos lotes separado do estudo de baixo"
+// + "faça teste com a impressão virada")
+const _relCart = pega('async function gerarRelatorioCarteira(');
+ok('o relatório da carteira usa as mesmas peças do estudo (montagem, desenho, lotes, pele, documento)',
+   ['_cartMontar(dias)', '_cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)', '_cartLotesHtml(ac)', '_PLANO_SKIN', "_rpDocParadas("].every(s => _relCart.includes(s)), true);
+ok('e sai em PAISAGEM', /_rpDocParadas\('Carteira que vem — ' \+ hojeStr\(\), true\)/.test(_relCart), true);
+ok('sem o estudo de baixo', /_qpHtml\(|COMO O NÚMERO SAI/.test(_relCart), false);
+ok('a barra da aba tem os dois botões', /onclick="gerarRelatorioCarteira\(\)"/.test(JS) && /onclick="gerarRelatorioPlano\(\)"/.test(JS), true);
 ok('a caixa do mix separa o veredito do resto em blocos com classe',
    ['qm-como', 'qm-conf', 'qm-det'].every(c => pega('function _cartMixHtml(').includes('class="' + c + '"')), true);
 // ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do

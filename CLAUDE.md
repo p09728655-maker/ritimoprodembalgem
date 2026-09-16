@@ -2410,6 +2410,14 @@ feito e dá ar de verdade ao que sobrou.
   com programado · carga · peso · não cabe, e os lotes do que mais pesa para o
   que menos pesa — a ordem em que se decide o que mover. Só no papel por
   enquanto; a tela tem o lote que mais pesa na tabela.
+- **🖨 CARTEIRA é um segundo documento, em PAISAGEM** (PPCP, 16/09/2026:
+  *"quero impressão só dos lotes separado do estudo de baixo"* + *"faça teste
+  com a impressão virada"*): `gerarRelatorioCarteira` imprime só a seção 1
+  (veredito, cards, gráfico a `CART_SVG_W_PAISAGEM`=980, dia a dia e lotes) com
+  as **mesmas peças** do estudo — muda a moldura e a orientação. Junto com a
+  GESTÃO DE PERDAS, são os dois únicos deitados; aqui a paisagem faz sentido
+  porque o gráfico é largo e a lista de lotes é uma linha por lote. O 🖨 do
+  estudo completo continua em retrato, rebatizado **🖨 ESTUDO**.
 - **A dívida é lida em UM lugar** (`_planoDivida`), pela tela e pelo papel —
   a nota do `!= null` (dívida zero é valor legítimo) mora lá. ⚠ A Tela C da TV
   tem a **própria** leitura do `faltaZerar`, anterior a isto e com outra
