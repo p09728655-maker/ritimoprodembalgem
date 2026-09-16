@@ -167,6 +167,10 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-plano .qp-p-red{color:var(--red);border-color:#6d2420}
 #sec-plano .qp-nota{color:var(--txt3);font-size:11.5px;line-height:1.5;margin-top:13px;max-width:86ch}
 #sec-plano .qp-nota b{color:var(--txt2)}
+#sec-plano .qp-mix{font-family:var(--font-d);font-size:10px;letter-spacing:.4px;color:var(--txt2);line-height:1.7;margin-top:12px;padding:8px 11px;border:1px dashed var(--border);border-radius:5px}
+#sec-plano .qp-mix b{color:var(--txt)}
+#sec-plano .qp-mix.warn{border-color:var(--warn);color:var(--warn)}
+#sec-plano .qp-mix.warn b{color:var(--warn)}
 #sec-perdas .pg-q,#sec-simulador .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
@@ -2030,12 +2034,18 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="alta">altura: p maior</option>
         <option value="baixa">altura: p menor</option>
       </select>
+      <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CARTEIRA</span>
+      <select id="qp-mix" class="frm-inp" onchange="_qpSetMix(this.value)" style="width:150px;padding:3px 8px;font-size:11px;cursor:pointer"
+              title="CX DE LINHA pesa cada lote pelo ritmo demonstrado do produto (o mesmo cx/h da aba PRODUÇÃO/HORA): 3.000 cx de caixa pequena não custam o mesmo que 3.000 de caixa grande. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO.">
+        <option value="mix" selected>cx de linha (mix)</option>
+        <option value="cru">caixas cruas</option>
+      </select></span>
       <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="A mesma leitura desta tela em PDF, com a metodologia escrita">🖨 IMPRIMIR</button>
-      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
-    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO
+    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO · <b>CARTEIRA</b> SÓ PARA O DE CIMA
   </div>
 
   <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
@@ -2643,7 +2653,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.54.0';
+const APP_VER   = '7.55.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7115,6 +7125,10 @@ let QP_FAIXA = [QP_ALVO_MIN, QP_ALVO_MAX];
 // altas / mais baixas do período julgado). Ver a nota do _qpOrdenar — a ordem
 // troca o RECORTE, não só a sequência das linhas.
 let QP_ORDEM = 'data';
+// A CARTEIRA em 'mix' (cx de linha — cada lote pesado pelo ritmo demonstrado
+// do produto) ou 'cru' (as quantidades como estão na PROGRAMACAO). Só o bloco
+// de cima lê isto; a régua continua sendo a MESMA para os dois — ver o `_mixRitmos`.
+let QP_MIX = 'mix';
 const QP_PREF_K = 'rpe_qp_pref';   // ⚠ chave nova: nunca renomear (ver CLAUDE.md)
 
 // A escolha do gestor sobrevive ao reload — calibrar a faixa leva dias, e
@@ -7127,11 +7141,12 @@ function _qpCarregarPref(){
     if(Array.isArray(o.faixa) && o.faixa.length === 2) QP_FAIXA = o.faixa.map(Number);
     if(o.janela != null) QP_JANELA = Number(o.janela);
     if(o.ordem) QP_ORDEM = String(o.ordem);
+    if(o.mix === 'cru' || o.mix === 'mix') QP_MIX = o.mix;
   }catch(e){}
 }
 function _qpSalvarPref(){
   try{ localStorage.setItem(QP_PREF_K,
-    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM})); }catch(e){}
+    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM, mix:QP_MIX})); }catch(e){}
 }
 
 function _qpFiltro(n){
@@ -7151,6 +7166,8 @@ function _qpInitFiltro(){
   if(f) f.value = QP_FAIXA[0] + '-' + QP_FAIXA[1];
   const o = document.getElementById('qp-ordem');
   if(o) o.value = QP_ORDEM;
+  const mx = document.getElementById('qp-mix');
+  if(mx) mx.value = QP_MIX;
   document.querySelectorAll('#sec-plano .qp-q').forEach(b =>
     b.classList.toggle('on', Number(b.dataset.n) === QP_JANELA));
 }
@@ -7159,6 +7176,10 @@ function _qpInitFiltro(){
 // embaixo — e o gestor não teria como saber qual das duas estava valendo.
 function _qpSetRegua(n){ QP_REGUA = Number(n); _qpSalvarPref(); renderCarteira(); renderQualidadePlano(); }
 function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadePlano(); }
+// Só a carteira lê o mix: o bloco de baixo julga METAS (a soma dos lotes de um
+// dia que já passou), e converter meta antiga pelo mix pediria a programação
+// daquele dia, que o arquivamento já levou. Não inventar.
+function _qpSetMix(v){ QP_MIX = (v === 'cru') ? 'cru' : 'mix'; _qpSalvarPref(); renderCarteira(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
   if(p.length === 2 && p[0] < p[1]) QP_FAIXA = p;
@@ -7432,6 +7453,135 @@ function _cartNum(str){
   return m ? Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]) : 0;
 }
 
+// ── O MIX: a carteira em CX DE LINHA ───────────────────────────────────────
+// A régua da aba é caixas/dia, e caixa não é unidade de tempo: 3.000 cx de
+// caixa pequena a 300 cx/h são 10 h de esteira, as mesmas 3.000 de caixa
+// grande a 150 cx/h são 20 h. Somar as quantidades da PROGRAMACAO e comparar
+// com o histórico da linha pinta as duas do mesmo jeito.
+//
+// ⚠ POR QUE NÃO É "CARGA EM HORAS". O dado que existe é o ritmo DEMONSTRADO
+// por produto (cx ÷ horas em que o produto rodou, do log da PRODUCAO_PRODUTO,
+// o mesmo cx/h da aba PRODUÇÃO/HORA), e a esteira roda DOIS produtos ao mesmo
+// tempo: medido em 21 dias (16/09/2026), 37.085 cx a 107 cx/h dão 347 horas de
+// produto contra ~185 horas de linha. Somar `qtde ÷ ritmo` daria uma carga em
+// horas quase duas vezes maior do que a linha rodaria — e a razão varia de
+// 1,1 a 2,5 de um dia para o outro. Hora de produto NÃO é hora de linha.
+//
+// O que se faz: o ritmo do produto vira PESO RELATIVO. Cada lote pesa
+// `qtde × (ritmo de referência ÷ ritmo do produto)`, onde a referência é o
+// Σcx ÷ Σhoras de produto do MESMO período (o "107 cx/h" da tela). Os dois
+// lados da razão foram medidos do mesmo jeito, então o paralelismo e a hora
+// parcial se cancelam em boa parte. O resultado continua em CAIXAS — a régua
+// (percentis do realizado por dia) é a mesma para os dois blocos, como manda a
+// nota do `_cartAnalise`; o que muda é o que entra na barra de cada dia.
+// Produto que não tem histórico entra com fator 1 e é CONTADO ("sem base").
+//
+// A CONFERÊNCIA vai junto (`_mixDiag`): se o mix explica a variação do
+// realizado, os dias do histórico convertidos em cx de linha oscilam MENOS
+// que em caixas cruas — é a medição que valida o peso, feita nos mesmos dados
+// que o painel já buscou, e a tela diz o resultado. Se não explica, ela manda
+// preferir CAIXAS CRUAS.
+//
+// Guardas de bom senso no fator: ritmo de 1 cx/h (apontamento capenga — o
+// caso da DECOR 470) daria fator 107 e um lote de 50 cx viraria 5.000. O
+// fator fica entre MIX_FATOR_MIN e MIX_FATOR_MAX (medido: os produtos ficam
+// entre 0,5× e 1,2× da referência) e a tabela marca o lote aparado.
+const MIX_FATOR_MIN = 0.33;
+const MIX_FATOR_MAX = 3;
+const CART_MIX_DIAS_MAX = 90;   // "todo o histórico" no log de produto seria a aba inteira
+
+function _mixCor(c){ return String(c == null ? '' : c).replace(/\s+/g, ' ').trim().toUpperCase(); }
+function _mixModelo(codigo){ return String(codigo == null ? '' : codigo).replace(/\D/g, '').slice(0, 6); }
+function _mixRotulo(it){
+  return (it.codigo ? String(it.codigo) + ' · ' : '') + nomeComCor(it.desc || it.nome || '', it.cor || '');
+}
+
+// O ritmo demonstrado por produto, do log do período da régua (os itens do
+// `getProducaoModeloPeriodo`: modelo · nome · cor · dia, com as horas rodadas).
+// Devolve a referência da linha e um mapa por `modelo|cor` E por `modelo` —
+// a carteira tenta a cor primeiro e cai no modelo. A média é a APARADA do
+// comparativo (`_phMediaAparada`), a mesma conta da tela PRODUÇÃO/HORA.
+function _mixRitmos(itens){
+  if(!Array.isArray(itens) || !itens.length) return null;
+  const porChave = {}, horasDia = {};
+  const tot = _phAcc();
+  let nItens = 0;
+  itens.forEach(it => {
+    if(!it || !(it.caixas > 0) || !(it.horas > 0)) return;
+    const modelo = _mixModelo(it.modelo);
+    if(!modelo) return;
+    nItens++;
+    _phAdd(tot, it);
+    const dia = it.dataNum || it.data;
+    [modelo + '|' + _mixCor(it.cor), modelo].forEach(k => {
+      const g = porChave[k] = porChave[k] || {};
+      _phAdd(g[dia] = g[dia] || _phAcc(), it);
+    });
+    // paralelismo: horas de PRODUTO (somam) × horas da LINHA (as distintas)
+    const hd = horasDia[it.data] = horasDia[it.data] || { linha:{}, prod:0 };
+    hd.prod += Number(it.horas) || 0;
+    (it.horasLista || []).forEach(h => { hd.linha[normHora(h)] = 1; });
+  });
+  const ref = _phVal(tot, 'mediaH');
+  if(!(ref > 0)) return null;
+  const por = {};
+  Object.keys(porChave).forEach(k => {
+    const accs = Object.keys(porChave[k]).map(d => porChave[k][d]);
+    const m = _phMediaAparada(accs, 'mediaH');
+    if(m.val > 0) por[k] = { rit: m.val, n: accs.length, aparada: m.aparada };
+  });
+  let hProd = 0, hLinha = 0;
+  Object.keys(horasDia).forEach(d => { hProd += horasDia[d].prod; hLinha += Object.keys(horasDia[d].linha).length; });
+  return { ref, por, nItens, nDias: Object.keys(horasDia).length, hProd, hLinha,
+           razao: hLinha > 0 ? hProd / hLinha : null };
+}
+
+// O fator de um lote: referência ÷ ritmo do produto. `base` diz de onde saiu
+// ('cor' · 'modelo' · null = sem histórico, fator 1). `aparado` marca o fator
+// que bateu no teto/piso.
+function _mixFator(ritmos, codigo, cor){
+  if(!ritmos || !ritmos.por) return { f:1, base:null, rit:null, n:0, aparado:false };
+  const modelo = _mixModelo(codigo);
+  const kc = modelo + '|' + _mixCor(cor);
+  const e = ritmos.por[kc] ? { e:ritmos.por[kc], base:'cor' }
+          : (ritmos.por[modelo] ? { e:ritmos.por[modelo], base:'modelo' } : null);
+  if(!e) return { f:1, base:null, rit:null, n:0, aparado:false };
+  const bruto = ritmos.ref / e.e.rit;
+  const f = Math.min(MIX_FATOR_MAX, Math.max(MIX_FATOR_MIN, bruto));
+  return { f, base:e.base, rit:e.e.rit, n:e.e.n, aparado: f !== bruto };
+}
+
+// A CONFERÊNCIA do peso, nos mesmos dias da régua: o realizado de cada dia do
+// histórico, convertido pelo mix daquele dia, oscila menos que em caixas
+// cruas? (`_qpOscilacao`, a MESMA conta da oscilação da meta.) Se o modelo do
+// mix estivesse perfeito, todo dia daria "ritmo de referência × horas rodadas"
+// e a oscilação restante seria só a das horas e do desempenho. O fator de cada
+// dia sai das caixas COM produto (a cobertura); o que foi lançado sem produto
+// recebe a média do dia — não se inventa fator para caixa sem nome.
+// ⚠ Conferência OTIMISTA: os pesos saíram destes mesmos dias. Serve para
+// reprovar um mix que não explica nada, não para provar que ele é exato.
+function _mixDiag(dias, itens, ritmos){
+  if(!ritmos || !Array.isArray(itens)) return null;
+  const porDia = {};
+  itens.forEach(it => {
+    if(!it || !(it.caixas > 0)) return;
+    const fx = _mixFator(ritmos, it.modelo, it.cor);
+    const d = porDia[it.data] = porDia[it.data] || { cx:0, eq:0 };
+    d.cx += it.caixas; d.eq += it.caixas * fx.f;
+  });
+  const cru = [], mix = [];
+  (dias || []).forEach(d => {
+    const f = d && porDia[d.data];
+    if(!f || !(f.cx > 0) || !(Number(d.real) > 0)) return;
+    cru.push(Number(d.real)); mix.push(Number(d.real) * f.eq / f.cx);
+  });
+  const oCru = _qpOscilacao(cru), oMix = _qpOscilacao(mix);
+  const base = cru.length >= QP_MIN_DIAS && oCru != null && oMix != null;
+  return { n: cru.length, oscCru: oCru, oscMix: oMix, base,
+           ganho: (base && oCru > 0) ? 100 * (1 - oMix / oCru) : null,
+           ok: base && oMix < oCru };
+}
+
 // A carteira EM ABERTO por data. Entra só o que ainda NÃO VENCEU (data > hoje):
 // é o que dá para re-datar. Hoje já está rodando e o vencido não tem data para
 // onde voltar — os dois entram como DÍVIDA, que consome a capacidade dos
@@ -7441,7 +7591,10 @@ function _cartNum(str){
 // (nada venceu ainda), então o aberto dela É a `qtde`. Não somar `falta` aqui:
 // ele vem do FIFO POR CÓDIGO, e duas linhas do mesmo código devolvem o mesmo
 // número — somadas, contariam o saldo duas vezes.
-function _cartAberta(itens, hojeNum, divida){
+// `ritmos` (o `_mixRitmos`) é opcional: com ele cada lote entra pesado pelo
+// mix e a quantidade CRUA fica ao lado (`crua`); sem ele o fator é 1 e a
+// carteira sai como sempre saiu.
+function _cartAberta(itens, hojeNum, divida, ritmos){
   const por = {};
   // ⚠ O DIAGNÓSTICO SAI JUNTO. "Nenhum dia futuro" tem três causas diferentes
   // (não li nada · li e é tudo vencido · li e a coluna fora da esteira comeu
@@ -7456,17 +7609,33 @@ function _cartAberta(itens, hojeNum, divida){
     if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
     const q = Number(it.qtde) || 0;
     if(q <= 0){ semQtd++; return; }
-    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, n:0 };
-    por[dn].qtde += q; por[dn].n++;
+    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null };
+    const d = por[dn];
+    const fx = _mixFator(ritmos, it.codigo, it.cor);
+    const eq = q * fx.f;
+    d.crua += q; d.qtde += eq; d.n++;
+    if(ritmos && !fx.base) d.semBase++;
+    if(fx.aparado) d.aparados++;
+    // o lote que mais pesa no dia, em cx de linha — é ele que se olha primeiro
+    // na hora de escolher O QUE mover, não só quanto
+    if(!d.pesa || eq > d.pesa.eq) d.pesa = { eq, q, f:fx.f, base:fx.base, rot:_mixRotulo(it) };
   });
   const dias = Object.keys(por).map(k => por[k]).sort((a,b) => a.dataNum - b.dataNum)
                      .slice(0, CART_DIAS_MAX);
+  // arredonda no FIM, uma vez por dia: desenho e totais leem inteiros
+  dias.forEach(d => { d.qtde = Math.round(d.qtde); d.fator = d.crua > 0 ? d.qtde / d.crua : 1; });
   return {
     dias,
     divida: Math.max(0, Number(divida) || 0),
     futuro: dias.reduce((a,d) => a + d.qtde, 0),
+    futuroCru: dias.reduce((a,d) => a + d.crua, 0),
     de:  dias.length ? dias[0].data : '',
     ate: dias.length ? dias[dias.length - 1].data : '',
+    // a leitura do mix, para o desenho dizer de onde o peso saiu
+    mix: ritmos ? { ref: ritmos.ref, razao: ritmos.razao, nDias: ritmos.nDias,
+                    semBase: dias.reduce((a,d) => a + d.semBase, 0),
+                    aparados: dias.reduce((a,d) => a + d.aparados, 0),
+                    nLotes: dias.reduce((a,d) => a + d.n, 0) } : null,
     diag: { lidas, fora, semQtd, ultima }
   };
 }
@@ -7499,6 +7668,8 @@ function _cartAnalise(cart, curva, faixa){
     linhas, alvoMin, alvoMax, teto, faixa:[fMin, fMax],
     n: linhas.length,
     divida: cart.divida, futuro: cart.futuro, total,
+    futuroCru: cart.futuroCru != null ? cart.futuroCru : cart.futuro,
+    mix: cart.mix || null, mixFalha: cart.mixFalha || null, mixModo: cart.mixModo || null,
     de: cart.de, ate: cart.ate,
     nivelado: total / linhas.length,               // a dívida entra: ela ocupa dia
     pctNivelado: _qpPercentil(total / linhas.length, curva),
@@ -7545,6 +7716,12 @@ function _cartHtml(a, regua, larg){
   // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
   // seta aponta para dentro do gráfico a partir do lado escolhido.
   const _qtds = a.linhas.map(l => l.qtde);
+  // Com o mix, a barra é CX DE LINHA e o programado cru vai junto no texto.
+  const mix = !!a.mix;
+  const _fx = f => '×' + (Number(f) || 1).toFixed(2).replace('.', ',');
+  const _qtdTxt = l => mix
+    ? (fmtN(l.crua) + ' cx programadas = ' + fmtN(l.qtde) + ' cx de linha (mix ' + _fx(l.fator) + ')')
+    : (fmtN(l.qtde) + ' cx programadas');
   const _rot = (txt, valor, y, cor) => {
     const fim = _svgLadoLivre(_qtds, valor) === 'fim';
     const t = fim ? (txt + ' →') : ('← ' + txt);
@@ -7559,7 +7736,7 @@ function _cartHtml(a, regua, larg){
     const cor = l.sai > 0 ? 'var(--red)' : (l.qtde >= a.alvoMin ? 'var(--ok)' : 'var(--warn)');
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2">'
-      + '<title>' + _rpEsc(l.data + ' · ' + fmtN(l.qtde) + ' cx programadas (p' + Math.round(l.pct) + ')'
+      + '<title>' + _rpEsc(l.data + ' · ' + _qtdTxt(l) + ' (p' + Math.round(l.pct) + ')'
         + (l.sai > 0 ? ' · ' + fmtN(Math.round(l.sai)) + ' cx não cabem' : '')
         + ' · ' + l.n + ' linha(s)') + '</title></rect>'
       // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
@@ -7581,17 +7758,27 @@ function _cartHtml(a, regua, larg){
     + '</svg>';
   const tab = a.linhas.map(l => {
     const c = l.sai > 0 ? 'qp-p-red' : (l.qtde >= a.alvoMin ? 'qp-p-ok' : 'qp-p-warn');
-    return '<tr><td>' + _rpEsc(l.data) + '</td><td>' + fmtN(l.qtde) + '</td>'
+    const pesa = l.pesa || {};
+    return '<tr><td>' + _rpEsc(l.data) + '</td>'
+      + (mix ? '<td>' + fmtN(l.crua) + '</td><td><b>' + fmtN(l.qtde) + '</b></td>'
+             + '<td style="color:var(--txt2)">' + _fx(l.fator)
+             + (l.semBase ? ' <span title="lote(s) sem histórico de ritmo: entram com fator 1">·' + l.semBase + ' s/base</span>' : '')
+             + (l.aparados ? ' <span title="fator fora do intervalo plausível, limitado">·' + l.aparados + ' aparado(s)</span>' : '') + '</td>'
+           : '<td>' + fmtN(l.qtde) + '</td>')
       + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
       + '<td>' + l.n + '</td>'
       + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
-      + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td></tr>';
+      + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td>'
+      + (mix ? '<td style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">' + fmtN(pesa.q) + ' cx ' + _fx(pesa.f) + ' = <b>' + fmtN(Math.round(pesa.eq)) + '</b></span>' : '—') + '</td>' : '')
+      + '</tr>';
   }).join('');
   return ''
     + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
-    + '<div class="kpi-sub">' + fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)'
+    + '<div class="kpi-sub">' + (mix
+        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas = <b>' + fmtN(Math.round(a.futuro)) + ' cx de linha</b> pelo mix, em ' + a.n + ' dia(s)'
+        : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
     + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
     + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia já feito ('
@@ -7609,14 +7796,50 @@ function _cartHtml(a, regua, larg){
     + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
-    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>PROGRAMADO</th><th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th></tr></thead><tbody>' + tab + '</tbody></table>'
-    + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO. '
+    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th>'
+    + (mix ? '<th>PROGRAMADO</th><th>CX DE LINHA</th><th>MIX</th>' : '<th>PROGRAMADO</th>')
+    + '<th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
+    + (mix ? '<th style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
+    + _cartMixHtml(a)
+    + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
+    + (mix ? ', <b>em cx de linha</b> — cada lote pesado pelo ritmo demonstrado do produto (a linha do MIX acima diz de onde o peso saiu)' : '') + '. '
     + 'A faixa verde é o que a linha entrega na altura certa; a linha vermelha tracejada é o <b>melhor dia que ela já fez</b> — barra acima dela nasceu impossível. '
     + 'As colunas <b>NÃO CABE</b> e <b>ESPAÇO LIVRE</b> são as duas pontas da mesma conta: se o que não cabe for menor que o espaço livre, é só re-datar, e isso não custa nada.<br><br>'
     + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
     + '<b>Nivelar não é sequenciar.</b> Encher todo dia com a mesma quantidade ignorando data de corte do cliente só troca um problema por outro: o nivelamento é a restrição de <b>capacidade</b>, a ordem continua sendo a <b>data</b>.<br><br>'
     + 'A régua (p' + fMin + '/p' + fMax + ') sai dos <b>' + (regua > 0 ? ('últimos ' + regua + ' dias') : 'dias todos') + '</b> de histórico — a mesma do bloco de baixo, escolhida na barra do topo. '
     + '⚠ Ela é uma <b>mediana</b>, não um limite físico: dia acima da faixa é improvável, não proibido.</div>';
+}
+
+// A LINHA DO MIX — desenho, nenhuma conta: diz em que unidade a carteira está,
+// de onde saiu o peso e o que a conferência deu. Os três estados são
+// diferentes de propósito: "cru por escolha", "mix aplicado" e "mix pedido e
+// NÃO aplicado" — este último nunca pode passar em silêncio, senão a tela
+// diria cx de linha mostrando caixas cruas.
+function _cartMixHtml(a){
+  if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — as quantidades como estão na PROGRAMACAO, sem pesar pelo produto. '
+    + 'Para pesar pelo ritmo demonstrado de cada produto, escolha <b>cx de linha (mix)</b> na barra.</div>';
+  if(!a.mix){
+    const m = { 'sem-resposta':'o log de produto não respondeu a tempo (cold start do Apps Script) — toque ATUALIZAR',
+                'sem-endpoint':'o backend não conhece a ação getProducaoModeloPeriodo — falta o re-deploy do .gs',
+                'erro':'o backend respondeu com erro na leitura do log de produto',
+                'sem-dados':'o log de produto veio sem horas rodadas no período da régua',
+                'sem-url':'sem URL do Apps Script' }[a.mixFalha] || 'não foi possível ler o log de produto';
+    return '<div class="qp-mix warn">⚠ <b>MIX NÃO APLICADO</b> — ' + _rpEsc(m) + '. A carteira acima está em <b>caixas cruas</b>.</div>';
+  }
+  const m = a.mix, c = m.conf;
+  let conf;
+  if(!c || !c.base) conf = 'conferência sem base (' + ((c && c.n) || 0) + ' dia(s) com produto na régua; precisa de ' + QP_MIN_DIAS + ')';
+  else conf = 'nos <b>' + c.n + ' dias</b> da régua o realizado oscila <b>' + fmtP(c.oscCru) + '</b> em caixas cruas e <b>'
+    + fmtP(c.oscMix) + '</b> em cx de linha → '
+    + (c.ok ? 'o mix explica <b>' + fmtP(c.ganho) + '</b> da variação'
+            : '<b>o mix não explica a variação</b> — prefira CAIXAS CRUAS na barra até o apontamento por produto melhorar');
+  return '<div class="qp-mix' + (c && c.base && !c.ok ? ' warn' : '') + '">'
+    + '<b>CX DE LINHA</b> = cada lote × (ritmo de referência ÷ ritmo demonstrado do produto) · referência <b>' + fmtN(Math.round(m.ref)) + ' cx/h</b>'
+    + ' (Σcx ÷ Σhoras de produto, ' + m.nDias + ' dia(s) do log' + (m.regua ? ' · régua de ' + m.regua + ' dias' : '') + ')'
+    + ' · ' + m.nLotes + ' lote(s), <b>' + m.semBase + ' sem base</b> (fator 1)' + (m.aparados ? ', ' + m.aparados + ' aparado(s)' : '')
+    + (m.razao ? ' · horas de produto ÷ horas de linha = <b>' + m.razao.toFixed(2).replace('.', ',') + '</b> (a esteira roda mais de um produto por vez — por isso o peso é RELATIVO, não hora)' : '')
+    + '<br><b>CONFERÊNCIA:</b> ' + conf + '</div>';
 }
 
 // O ESTADO VAZIO, com a CAUSA. Sem isto "SEM CARTEIRA DATADA" servia para tudo.
@@ -7642,6 +7865,68 @@ function _cartVazioHtml(cart){
 // A busca. Custo: o `getProgramacaoDetalhada`, que agora tem cache de 2 min e
 // requisição compartilhada com a aba PROGRAMAÇÃO — quem abre as duas paga UMA
 // leitura, não duas. A dívida sai do `PONTOS_DIA`, que o painel já carregou.
+// O log de produto do período da RÉGUA, para o mix. É a leitura mais cara do
+// painel (`getProducaoModeloPeriodo`), então: cache de 5 min por período,
+// requisição em voo compartilhada (o remédio do `_phVoo`), e antes de buscar
+// olha se o comparativo por modelo já tem EXATAMENTE este período em mãos.
+// Com CARTEIRA = caixas cruas não busca nada.
+let _cartMixCache = { key:null, ts:0 };
+let _cartMixVoo   = { key:null, p:null };
+const CART_MIX_TTL = 5 * 60 * 1000;
+function _cartMixPeriodo(){
+  const nd = QP_REGUA > 0 ? Math.min(QP_REGUA, CART_MIX_DIAS_MAX) : CART_MIX_DIAS_MAX;
+  const ate = new Date(), de = new Date();
+  de.setDate(de.getDate() - nd);
+  return { de: dtToStr(de), ate: dtToStr(ate), dias: nd };
+}
+async function _cartRitmos(){
+  if(QP_MIX !== 'mix') return null;
+  if(!CFG.sheetsUrl) return { falha:'sem-url', ritmos:null, itens:null };
+  const per = _cartMixPeriodo();
+  const key = per.de + '|' + per.ate;
+  if(_cartMixCache.key === key && Date.now() - _cartMixCache.ts < CART_MIX_TTL) return _cartMixCache;
+  if(_cartMixVoo.key === key && _cartMixVoo.p) return _cartMixVoo.p;
+  const p = (async () => {
+    try{
+      let itens = (_phCache.key === key && _phCache.itens != null) ? _phCache.itens : null;
+      if(itens == null){
+        // ⚠ `lerProducaoModeloPeriodo` publica PREP_PERIODO (as preparações
+        // do período que a aba PRODUÇÃO/HORA está mostrando). Esta leitura é
+        // de OUTRO período: guarda e devolve, senão a outra aba passaria a
+        // contar preparações de 60 dias num quadro de 30.
+        const prepAntes = PREP_PERIODO;
+        try{ itens = await lerProducaoModeloPeriodo(per.de, per.ate); }
+        finally{ PREP_PERIODO = prepAntes; }
+      }
+      const ritmos = _mixRitmos(itens);
+      const r = { key, ts:Date.now(), itens, ritmos, dias:per.dias, de:per.de, ate:per.ate,
+                  falha: itens == null ? (PH_FALHA || 'sem-resposta') : (ritmos ? null : 'sem-dados') };
+      if(itens != null) _cartMixCache = r;
+      return r;
+    } finally { if(_cartMixVoo.key === key) _cartMixVoo = { key:null, p:null }; }
+  })();
+  _cartMixVoo = { key, p };
+  return p;
+}
+function invalidarMixCache(){ _cartMixCache = { key:null, ts:0 }; }
+
+// A MONTAGEM da carteira, uma só para a tela e para o papel: programação +
+// dívida + o mix (quando escolhido) + a conferência do mix nos dias da régua.
+async function _cartMontar(dias){
+  await carregarProgramacaoDetalhada();
+  const r = await _cartRitmos();
+  const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida(), r && r.ritmos);
+  cart.mixModo = QP_MIX;
+  if(r){
+    if(cart.mix){
+      cart.mix.regua = r.dias;
+      const rec = QP_REGUA > 0 ? (dias || []).slice(-QP_REGUA) : (dias || []);
+      cart.mix.conf = _mixDiag(rec, r.itens, r.ritmos);
+    } else cart.mixFalha = r.falha || 'sem-dados';
+  }
+  return cart;
+}
+
 let CART_RODANDO = false;
 async function renderCarteira(){
   const alvo = document.getElementById('qp-carteira');
@@ -7657,10 +7942,9 @@ async function renderCarteira(){
         + QP_MIN_DIAS + ' dias fechados.</div>';
       return;
     }
-    await carregarProgramacaoDetalhada();
     // A dívida (atraso vivo + o que falta hoje) sai do `_planoDivida`, a MESMA
-    // leitura do relatório em PDF — ver a nota de lá.
-    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida());
+    // leitura do relatório em PDF; a montagem (programação + mix) é `_cartMontar`.
+    const cart = await _cartMontar(dias);
     const a = _cartAnalise(cart, curva, QP_FAIXA);
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
@@ -7715,6 +7999,11 @@ const _PLANO_SKIN = `
   .plano-doc .qp-nota{font-size:10.5px;color:#4A5568;line-height:1.5;margin-top:10px;
                       border-top:1px solid #edf2f7;padding-top:9px}
   .plano-doc .qp-nota b{color:#1F2328}
+  .plano-doc .qp-mix{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4A5568;line-height:1.6;margin-top:8px;
+                     padding:6px 9px;border:1px dashed #cbd5e0;border-radius:4px}
+  .plano-doc .qp-mix b{color:#1F2328}
+  .plano-doc .qp-mix.warn{border-color:#B26A00;color:#B26A00}
+  .plano-doc .qp-mix.warn b{color:#B26A00}
   .plano-doc .pl-abre{border-left:3px solid #E65100;background:#fff8f3;padding:9px 13px;border-radius:0 5px 5px 0;
                       font-size:11px;color:#4A5568;line-height:1.5;margin-bottom:6px;
                       -webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -7755,8 +8044,7 @@ async function gerarRelatorioPlano(){
     // nenhum; número de carteira inventado é pior que os dois.
     let ac = null, cart = null;
     try{
-      await carregarProgramacaoDetalhada();
-      cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida());
+      cart = await _cartMontar(dias);
       ac = _cartAnalise(cart, curva, QP_FAIXA);
     }catch(e){ ac = null; }
 
@@ -7792,7 +8080,13 @@ async function gerarRelatorioPlano(){
       + '<tr><td style="font-weight:700">OSCILAÇÃO</td><td>Desvio padrão ÷ média das metas, em %. É um defeito <b>independente</b> da altura: a meta pode estar na altura certa e ainda pular de p0 a p100. Medida: <b>' + (a.osc == null ? '—' : fmtP(a.osc)) + '</b>, alvo até ' + QP_OSC_OK + '%.</td></tr>'
       + '<tr><td style="font-weight:700">DOIS RECORTES</td><td><b>JULGAR</b> escolhe quais dias aparecem; <b>RÉGUA</b> escolhe de quais dias sai o padrão com que eles são comparados. São janelas diferentes de propósito.</td></tr>'
       + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência só: o <b>topo da faixa alvo</b> (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima dele o dia não comporta; abaixo há espaço para receber. Se o que sai for menor que o espaço livre, <b>é só re-datar</b>.</td></tr>'
-             + '<tr><td style="font-weight:700">A DÍVIDA</td><td>Atraso vivo + o que falta da meta de hoje. Ocupa capacidade dos primeiros dias <b>antes</b> de qualquer lote novo, por isso entra no NIVELADO e na SOBRA.</td></tr>' : '')
+             + '<tr><td style="font-weight:700">A DÍVIDA</td><td>Atraso vivo + o que falta da meta de hoje. Ocupa capacidade dos primeiros dias <b>antes</b> de qualquer lote novo, por isso entra no NIVELADO e na SOBRA.</td></tr>'
+             + '<tr><td style="font-weight:700">O MIX</td><td>' + (ac.mix
+                 ? 'A carteira está em <b>cx de linha</b>: cada lote × (ritmo de referência ÷ ritmo demonstrado do produto), referência de <b>' + fmtN(Math.round(ac.mix.ref)) + ' cx/h</b>. '
+                   + 'O ritmo é o do log de produto (o mesmo da aba PRODUÇÃO/HORA), e é <b>peso relativo</b>, não hora: a esteira roda mais de um produto por vez, e hora de produto não é hora de linha. '
+                   + 'Lote sem histórico entra com fator 1 (' + ac.mix.semBase + ' neste relatório).'
+                 : 'A carteira está em <b>caixas cruas</b>' + (ac.mixFalha ? ' — o mix foi pedido e <b>não pôde ser aplicado</b> (log de produto indisponível)' : ', por escolha na tela') + '.')
+               + '</td></tr>' : '')
       + '<tr><td style="font-weight:700">O QUE ISTO NÃO É</td><td><b>Não é "baixar a meta".</b> A função da meta do dia é <b>sinalizar</b>: meta que a linha bate em ~metade dos dias faz o vermelho significar alguma coisa; meta que reprova quase todo dia vira paisagem e o alarme se perde. A produção sobe pelas <b>paradas</b>, pelo <b>setup</b> e pelo <b>teto da esteira</b> — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</td></tr>'
       + '<tr><td style="font-weight:700">A FAIXA É MEDIANA</td><td>Não é limite físico: dia acima dela é <b>improvável</b>, não proibido. E <b>nivelar não é sequenciar</b> — o nivelamento é a restrição de capacidade, a ordem continua sendo a data de corte do cliente.</td></tr>'
       + '</tbody></table>'

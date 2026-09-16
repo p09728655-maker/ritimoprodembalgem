@@ -11,6 +11,51 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.0 — 16/09/2026
+
+**Atenção** — **a carteira da aba PLANO mudou de unidade: sai em CX DE LINHA**
+(pedido do PPCP, 16/09/2026: *"sobrecarregado; pelo histórico temos tempo de
+cada produto, o que dá pra fazer?"*). Cada lote **já datado** entra pesado pelo
+ritmo demonstrado do produto: `qtde × (ritmo de referência ÷ ritmo do produto)`.
+O ritmo é o mesmo cx/h da aba PRODUÇÃO/HORA (média aparada, log de produto do
+período da régua); a referência é o Σcx ÷ Σhoras de produto do mesmo período.
+Os números de CARTEIRA EM ABERTO, DIAS QUE NÃO CABEM, PRECISA MUDAR DE DIA,
+ESPAÇO LIVRE, NIVELADO e o veredito **passam a sair nessa unidade**; o
+programado cru fica ao lado, na tabela e no card. Medido com os fatores de
+julho na carteira de 16/09: **17/09 tem 3.125 cx programadas de MESA CABECEIRA
+SLEEP (205 cx/h, rápido) → ~2.000 cx de linha**; 3.000 cx de caixa pequena não
+custam o mesmo que 3.000 de caixa grande.
+
+- **Por que peso relativo, e não "carga em horas".** A esteira roda dois
+  produtos ao mesmo tempo: medido em 21 dias, 37.085 cx a 107 cx/h dão 347 h
+  de produto contra ~185 h de linha, e a razão varia de 1,1 a 2,5 por dia.
+  Somar `qtde ÷ ritmo` daria uma carga em horas quase 2× maior do que a linha
+  rodaria. Na razão referência ÷ ritmo os dois lados foram medidos do mesmo
+  jeito e o paralelismo se cancela em boa parte. **A régua da aba continua UMA
+  (percentis do realizado por dia)**; o que muda é o que entra em cada barra.
+- **CONFERÊNCIA na tela**: nos dias da régua, o realizado convertido pelo mix
+  de cada dia oscila menos que em caixas cruas? A linha do MIX diz os dois
+  números e quanto o mix explica. Medido nos 6 dias inteiros de julho que
+  chegaram: **36% → 13%** (explica 64%). Se não explicar, a tela manda
+  preferir CAIXAS CRUAS. É otimista de propósito (os pesos saíram dos mesmos
+  dias): serve para reprovar um mix ruim, não para provar um exato.
+- **Seletor CARTEIRA na barra**: `cx de linha (mix)` (padrão) · `caixas cruas`.
+  Persiste em `rpe_qp_pref`. Só o bloco de cima lê — o de baixo julga metas de
+  dias que já passaram, cuja programação o arquivamento já levou.
+- **Lote sem histórico entra com fator 1 e é CONTADO** ("N sem base"); fator
+  fora de 0,33×–3× é limitado e marcado ("aparado") — 1 cx/h de apontamento
+  capenga daria fator 100.
+- Tabela DIA A DIA: colunas **PROGRAMADO · CX DE LINHA · MIX · O QUE MAIS PESA
+  NO DIA** (o lote mais pesado, em cx de linha — para escolher O QUE mover).
+- **Mix pedido e não aplicado nunca passa em silêncio**: a linha do MIX diz a
+  causa (sem resposta · sem endpoint · erro · sem dados) e que a carteira está
+  crua. `_cartMontar` é a montagem única da tela e do PDF; o relatório ganha a
+  linha O MIX em COMO O NÚMERO SAI.
+- **Custo**: uma leitura de `getProducaoModeloPeriodo` para o período da régua
+  (60 dias por padrão; 90 no máximo), com cache de 5 min, requisição em voo
+  compartilhada e reaproveitando o período se a aba PRODUÇÃO/HORA já o buscou.
+  Sem re-deploy do `.gs`.
+
 ## v7.54.0 — 15/09/2026
 
 **Atenção** — nenhuma conta mudou. A aba PLANO ganhou o botão **🖨 IMPRIMIR**
