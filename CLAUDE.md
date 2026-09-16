@@ -2397,6 +2397,19 @@ feito e dá ar de verdade ao que sobrou.
   à esquerda, ela tapava o valor do 3º dia. Fica onde nenhuma barra da ponta
   cruza a altura do rótulo; empatando, à direita, onde o olho já terminou de
   ler. A seta aponta para dentro do gráfico a partir do lado escolhido.
+- **O PAPEL É NÚMERO, GRÁFICO E TABELA** (PPCP, 16/09/2026, com o PDF na mão:
+  *"muito carregada"*, *"tem muita coisa escrita"*). A pele `.plano-doc`
+  esconde a nota longa `.qp-nota` dos dois blocos e a explicação da caixa do
+  mix (`.qm-como`/`.qm-det`; fica só `.qm-conf`, o veredito); o parágrafo de
+  abertura virou a linha de meta do cabeçalho; as notas sob os títulos saíram;
+  COMO O NÚMERO SAI tem cinco linhas. **A marcação continua a da tela** — é a
+  pele que esconde, como manda a regra do #204/#205.
+- **A carteira tem folha própria** (`.pl-quebra`, `page-break-before` na pele) e
+  a lista **OS LOTES PROGRAMADOS, DIA A DIA** (`_cartLotesHtml`, desenho puro
+  sobre `linhas[].lotes`, que o `_cartAberta` guarda por dia): cabeçalho do dia
+  com programado · carga · peso · não cabe, e os lotes do que mais pesa para o
+  que menos pesa — a ordem em que se decide o que mover. Só no papel por
+  enquanto; a tela tem o lote que mais pesa na tabela.
 - **A dívida é lida em UM lugar** (`_planoDivida`), pela tela e pelo papel —
   a nota do `!= null` (dívida zero é valor legítimo) mora lá. ⚠ A Tela C da TV
   tem a **própria** leitura do `faltaZerar`, anterior a isto e com outra

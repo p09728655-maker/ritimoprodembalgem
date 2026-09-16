@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.4 — 16/09/2026
+
+Só o **relatório da QUALIDADE DO PLANO** (🖨 na aba PLANO). Pedidos do PPCP,
+16/09/2026, com o PDF na mão: *"separa a carteira do outro gráfico e insere os
+produtos programados"*, *"essa impressão está muito carregada"*, *"tem muita
+coisa escrita"*. Nenhuma conta mudou.
+
+- **A carteira tem folha própria**: a seção COMO TEMOS DATADO começa em
+  página nova.
+- **OS LOTES PROGRAMADOS, DIA A DIA**: tabela nova dentro da seção da
+  carteira — por dia (programado · carga · peso · o que não cabe), cada lote
+  com código, produto e cor, quantidade, peso em palavras e carga, do lote
+  que mais pesa para o que menos pesa.
+- **Menos texto no papel**: saíram o parágrafo de abertura (régua, faixa e
+  dias julgados foram para a linha do cabeçalho), as notas sob os títulos, a
+  nota longa "Como ler" dos dois blocos e a explicação da caixa do mix (fica
+  só o veredito da conferência). A seção COMO O NÚMERO SAI ficou com cinco
+  linhas curtas. Na tela nada disso mudou — é a pele do papel que esconde.
+- Legenda do gráfico da carteira mais curta, na tela e no papel.
+
 ## v7.55.3 — 16/09/2026
 
 Sem mudança de conta. Pedido do PPCP: *"precisa ser fácil interpretação, bater

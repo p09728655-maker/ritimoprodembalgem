@@ -2653,7 +2653,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.3';
+const APP_VER   = '7.55.4';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7617,11 +7617,14 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
     const q = Number(it.qtde) || 0;
     if(q <= 0){ semQtd++; return; }
-    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null };
+    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[] };
     const d = por[dn];
     const fx = _mixFator(ritmos, it.codigo, it.cor);
     const eq = q * fx.f;
     d.crua += q; d.qtde += eq; d.n++;
+    // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
+    // DIA" (pedido do PPCP, 16/09/2026 — "inserir os produtos programados")
+    d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado });
     if(ritmos && !fx.base) d.semBase++;
     if(fx.aparado) d.aparados++;
     // o lote que mais pesa no dia, em cx de linha — é ele que se olha primeiro
@@ -7844,7 +7847,7 @@ function _cartHtml(a, regua, larg){
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
-    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>contorno tracejado = programado na PROGRAMACAO (o número em cima) · barra cheia = carga · PESA +N% = mix lento, −N% = mix rápido</span>' : '')
+    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga · PESA = peso do mix</span>' : '')
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
     + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
@@ -7898,10 +7901,40 @@ function _cartMixHtml(a){
     + (c && c.base ? ' · oscilação da produção ' + fmtP(c.oscCru) + ' crua → ' + fmtP(c.oscMix) + ' pesada' : '')
     + (m.razao ? ' · a esteira roda ' + m.razao.toFixed(1).replace('.', ',') + ' produto(s) por vez, por isso o peso é relativo, não hora' : '');
   return '<div class="qp-mix' + (ruim ? ' warn' : '') + '">'
-    + '<b>COMO A CARGA É CALCULADA:</b> produto que roda <b>mais devagar</b> que a média da linha (' + fmtN(ref) + ' cx/h nos últimos ' + (m.regua || m.nDias) + ' dias) <b>pesa mais</b>; mais rápido pesa menos. '
-    + 'Exemplo: 1.000 cx de um produto a ' + fmtN(Math.round(ref / 2)) + ' cx/h pesam como 2.000.'
-    + '<br><b>CONFERÊNCIA:</b> ' + conf
-    + '<br><span style="opacity:.7;font-size:9.5px">' + detalhe + '</span></div>';
+    + '<div class="qm-como"><b>COMO A CARGA É CALCULADA:</b> produto que roda <b>mais devagar</b> que a média da linha (' + fmtN(ref) + ' cx/h nos últimos ' + (m.regua || m.nDias) + ' dias) <b>pesa mais</b>; mais rápido pesa menos. '
+    + 'Exemplo: 1.000 cx de um produto a ' + fmtN(Math.round(ref / 2)) + ' cx/h pesam como 2.000.</div>'
+    + '<div class="qm-conf"><b>CONFERÊNCIA:</b> ' + conf + '</div>'
+    + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + detalhe + '</div></div>';
+}
+
+// OS LOTES PROGRAMADOS, DIA A DIA — a lista que o papel precisa (pedido do
+// PPCP, 16/09/2026: "inserir os produtos programados"). Desenho puro: os lotes
+// já vêm em `linhas[].lotes` do `_cartAberta`, pesados. Por dia, do lote que
+// mais pesa para o que menos pesa — é a ordem em que se decide o que mover.
+function _cartLotesHtml(a){
+  if(!a || !a.linhas || !a.linhas.length) return '';
+  const mix = !!a.mix;
+  const cab = '<tr><th style="text-align:left">LOTE</th><th style="text-align:left">CÓDIGO</th><th style="text-align:left">PRODUTO</th><th>QTDE</th>'
+    + (mix ? '<th>PESO</th><th>CARGA</th>' : '') + '</tr>';
+  const corpo = a.linhas.map(l => {
+    const lotes = (l.lotes || []).slice().sort((x, y) => y.eq - x.eq);
+    const pt = mix ? _cartPesoTxt(l.fator) : null;
+    const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> · ' + lotes.length + ' linha(s) · '
+      + fmtN(l.crua) + ' cx programadas'
+      + (mix ? ' · carga <b>' + fmtN(l.qtde) + '</b> (' + pt.frase + ')' : '')
+      + (l.sai > 0 ? ' · <span class="cl-red">não cabem ' + fmtN(Math.round(l.sai)) + '</span>' : (l.cabe > 0 ? ' · <span class="cl-ok">espaço para +' + fmtN(Math.round(l.cabe)) + '</span>' : ''))
+      + '</td></tr>';
+    return dia + lotes.map(x => {
+      const px = mix ? _cartPesoTxt(x.f) : null;
+      return '<tr><td>' + _rpEsc(x.lote) + '</td><td>' + _rpEsc(x.codigo) + '</td>'
+        + '<td style="text-align:left">' + _rpEsc(x.rot.replace(/^.*? · /, '')) + '</td>'
+        + '<td>' + fmtN(x.q) + '</td>'
+        + (mix ? '<td>' + (x.base ? px.selo : 'sem histórico') + '</td><td><b>' + fmtN(Math.round(x.eq)) + '</b></td>' : '')
+        + '</tr>';
+    }).join('');
+  }).join('');
+  return '<table class="tbl cart-lotes"><thead>' + cab + '</thead><tbody>' + corpo + '</tbody></table>'
+    + (mix ? '<div class="rp-note">PESO: lento = produto que roda abaixo da média da linha (pesa mais); rápido = acima (pesa menos); sem histórico = entra com a quantidade programada. CARGA = quantidade × peso.</div>' : '');
 }
 
 // O ESTADO VAZIO, com a CAUSA. Sem isto "SEM CARTEIRA DATADA" servia para tudo.
@@ -8101,6 +8134,24 @@ const _PLANO_SKIN = `
   /* o que só existe na tela não vai ao papel: o botão de tentar de novo e a
      dica de passar o mouse — não há mouse numa folha impressa */
   .plano-doc .qp-ver button,.plano-doc .qp-leg-mouse{display:none}
+  /* "essa impressão está muito carregada" (PPCP, 16/09/2026): a nota longa
+     "Como ler" de cada bloco NÃO vai ao papel — a seção COMO O NÚMERO SAI já
+     diz tudo isso, uma vez. A linha técnica da caixa do mix também fica só na
+     tela. A marcação é a mesma; a pele é que esconde. */
+  .plano-doc .qp-nota,.plano-doc .qm-como,.plano-doc .qm-det{display:none}
+  .plano-doc .pl-quebra{page-break-before:always;height:0}
+  .plano-doc .pl-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:#5B6470;
+                     text-transform:uppercase;margin:16px 0 6px;page-break-after:avoid}
+  .plano-doc thead{display:table-header-group}
+  .plano-doc .cart-lotes{width:100%;border-collapse:collapse;font-size:10px}
+  .plano-doc .cart-lotes th{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:#5B6470;
+                            text-align:right;padding:5px 6px;border-bottom:1px solid #cbd5e0}
+  .plano-doc .cart-lotes td{padding:4px 6px;border-bottom:0.5px solid #edf2f7;text-align:right;color:#1F2328}
+  .plano-doc .cart-lotes td:first-child,.plano-doc .cart-lotes td:nth-child(2){text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px}
+  .plano-doc .cart-lotes tr.cl-dia td{background:#f1f5f9;text-align:left;padding:7px 6px;font-size:10.5px;
+                                      -webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid}
+  .plano-doc .cl-red{color:#C62828;font-weight:700}
+  .plano-doc .cl-ok{color:#2E7D32;font-weight:700}
 `;
 
 // A largura do desenho no PAPEL é fixa: A4 retrato com as margens deste
@@ -8113,7 +8164,7 @@ async function gerarRelatorioPlano(){
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando a qualidade do plano...</p></body></html>');
 
-  let corpo = '';
+  let corpo = '', metaCab = 'A META CONTRA A CAPACIDADE DEMONSTRADA';
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
@@ -8141,44 +8192,38 @@ async function gerarRelatorioPlano(){
     const fMin = a.faixa[0], fMax = a.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     const julgaTxt = QP_JANELA > 0 ? ('últimos ' + QP_JANELA + ' dias') : 'todo o histórico';
+    metaCab = 'régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax + ' · julgados: ' + _rpEsc(julgaTxt);
     let n = 0;
     const sec = t => '<div class="rp-sec-ttl">' + (++n) + ' ▸ ' + t + '</div>';
 
+    // "tem muita coisa escrita" (PPCP, 16/09/2026): o papel é número, gráfico
+    // e tabela. A abertura virou a linha de meta do cabeçalho; as notas sob os
+    // títulos saíram; a metodologia é a seção 3, curta.
     corpo = '<div class="plano-doc">'
-      + '<div class="pl-abre">Este relatório mede o <b>PLANO</b>, não a linha. A régua é a '
-      + '<b>capacidade demonstrada</b>: os dias já realizados, ordenados do pior para o melhor. '
-      + 'Uma meta em <b>p60</b> quer dizer que em 60% dos dias a linha não chegaria lá. '
-      + 'Régua: <b>' + _rpEsc(reguaTxt) + '</b> · faixa alvo: <b>p' + fMin + '–p' + fMax + '</b> · '
-      + 'dias julgados: <b>' + _rpEsc(julgaTxt) + '</b>.</div>'
-
       + (ac ? (sec('A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR')
-              + '<div class="rp-note">Os lotes <b>já datados</b> para os dias que ainda não chegaram, somados por dia. '
-              + 'É a única parte desta leitura sobre a qual ainda dá para agir.</div>'
-              + _cartHtml(ac, QP_REGUA, PLANO_SVG_W))
+              + _cartHtml(ac, QP_REGUA, PLANO_SVG_W)
+              + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'
+              + _cartLotesHtml(ac))
             : (sec('A CARTEIRA QUE VEM')
               + '<div class="rp-note">Sem a leitura da PROGRAMACAO esta seção não sai. '
               + 'O restante do relatório não depende dela.</div>'))
 
+      // ⚠ A carteira tem folha própria (pedido do PPCP, 16/09/2026: "separa
+      // do outro gráfico"): a seção 2 começa em página nova.
+      + '<div class="pl-quebra"></div>'
       + sec('COMO TEMOS DATADO — OS DIAS QUE JÁ FECHARAM')
-      + '<div class="rp-note">O retrato da datação nos dias que já passaram. Diagnostica, mas não muda nada — o dia já foi.</div>'
       + _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, PLANO_SVG_W)
 
       + sec('COMO O NÚMERO SAI')
       + '<table class="pgq-plano"><tbody>'
-      + '<tr><td style="font-weight:700;width:30%">CURVA DE CAPACIDADE</td><td>Os dias <b>com produção</b> do recorte da régua, ordenados do pior para o melhor. Dia parado não entra: não é capacidade, é ausência dela.</td></tr>'
-      + '<tr><td style="font-weight:700">ALTURA (percentil)</td><td>Onde a meta cai nessa curva — a fatia de dias que ela reprovaria. Medida no período julgado: <b>p' + Math.round(a.pctMedio) + '</b>.</td></tr>'
-      + '<tr><td style="font-weight:700">OSCILAÇÃO</td><td>Desvio padrão ÷ média das metas, em %. É um defeito <b>independente</b> da altura: a meta pode estar na altura certa e ainda pular de p0 a p100. Medida: <b>' + (a.osc == null ? '—' : fmtP(a.osc)) + '</b>, alvo até ' + QP_OSC_OK + '%.</td></tr>'
-      + '<tr><td style="font-weight:700">DOIS RECORTES</td><td><b>JULGAR</b> escolhe quais dias aparecem; <b>RÉGUA</b> escolhe de quais dias sai o padrão com que eles são comparados. São janelas diferentes de propósito.</td></tr>'
-      + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência só: o <b>topo da faixa alvo</b> (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima dele o dia não comporta; abaixo há espaço para receber. Se o que sai for menor que o espaço livre, <b>é só re-datar</b>.</td></tr>'
-             + '<tr><td style="font-weight:700">A DÍVIDA</td><td>Atraso vivo + o que falta da meta de hoje. Ocupa capacidade dos primeiros dias <b>antes</b> de qualquer lote novo, por isso entra no NIVELADO e na SOBRA.</td></tr>'
+      + '<tr><td style="font-weight:700;width:30%">CAPACIDADE</td><td>Os dias com produção da régua (' + _rpEsc(reguaTxt) + '), do pior para o melhor. Meta em p60 = em 60% dos dias a linha não chega lá.</td></tr>'
+      + '<tr><td style="font-weight:700">ALTURA · OSCILAÇÃO</td><td>Onde a meta cai na curva (<b>p' + Math.round(a.pctMedio) + '</b> no período julgado) e quanto ela pula de um dia para o outro (<b>' + (a.osc == null ? '—' : fmtP(a.osc)) + '</b>, alvo até ' + QP_OSC_OK + '%).</td></tr>'
+      + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência: o topo da faixa alvo (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima, o dia não comporta; abaixo, há espaço. A dívida (atraso + o que falta hoje) ocupa os primeiros dias antes de qualquer lote novo.</td></tr>'
              + '<tr><td style="font-weight:700">O MIX</td><td>' + (ac.mix
-                 ? 'A carteira está em <b>carga pelo mix</b>: cada lote × (ritmo de referência ÷ ritmo demonstrado do produto), referência de <b>' + fmtN(Math.round(ac.mix.ref)) + ' cx/h</b> — produto lento pesa mais, rápido pesa menos. '
-                   + 'O ritmo é o do log de produto (o mesmo da aba PRODUÇÃO/HORA), e é <b>peso relativo</b>, não hora: a esteira roda mais de um produto por vez, e hora de produto não é hora de linha. '
-                   + 'Lote sem histórico entra com fator 1 (' + ac.mix.semBase + ' neste relatório).'
-                 : 'A carteira está em <b>caixas cruas</b>' + (ac.mixFalha ? ' — o mix foi pedido e <b>não pôde ser aplicado</b> (log de produto indisponível)' : ', por escolha na tela') + '.')
+                 ? 'Carga = quantidade × peso do produto. Produto mais lento que a média da linha (' + fmtN(Math.round(ac.mix.ref)) + ' cx/h) pesa mais; mais rápido pesa menos. É peso relativo, não hora: a esteira roda mais de um produto por vez.' + (ac.mix.semBase ? ' ' + ac.mix.semBase + ' lote(s) sem histórico entram com a quantidade programada.' : '')
+                 : 'Carteira em caixas cruas' + (ac.mixFalha ? ' — o mix foi pedido e não pôde ser aplicado (log de produto indisponível)' : ', por escolha na tela') + '.')
                + '</td></tr>' : '')
-      + '<tr><td style="font-weight:700">O QUE ISTO NÃO É</td><td><b>Não é "baixar a meta".</b> A função da meta do dia é <b>sinalizar</b>: meta que a linha bate em ~metade dos dias faz o vermelho significar alguma coisa; meta que reprova quase todo dia vira paisagem e o alarme se perde. A produção sobe pelas <b>paradas</b>, pelo <b>setup</b> e pelo <b>teto da esteira</b> — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</td></tr>'
-      + '<tr><td style="font-weight:700">A FAIXA É MEDIANA</td><td>Não é limite físico: dia acima dela é <b>improvável</b>, não proibido. E <b>nivelar não é sequenciar</b> — o nivelamento é a restrição de capacidade, a ordem continua sendo a data de corte do cliente.</td></tr>'
+      + '<tr><td style="font-weight:700">LEIA COM CUIDADO</td><td>A faixa é mediana, não limite. Nivelar não é sequenciar: a ordem continua sendo a data de corte. E não é baixar a meta — a meta sobe atrás da capacidade, nunca na frente.</td></tr>'
       + '</tbody></table>'
       + '<div class="rp-footer"><span>' + APP_NOME_CX + ' · Embalagem</span>'
       + '<span>' + a.n + ' dia(s) julgado(s) · régua de ' + _rpEsc(reguaTxt)
@@ -8190,7 +8235,7 @@ async function gerarRelatorioPlano(){
 
   const html = _rpDocParadas('Qualidade do Plano — ' + hojeStr())
     + '<style>' + _PLANO_SKIN + '</style></head><body>'
-    + _rpCabecalho('QUALIDADE DO PLANO', 'A META CONTRA A CAPACIDADE DEMONSTRADA')
+    + _rpCabecalho('QUALIDADE DO PLANO', metaCab)
     + corpo + _rpBotaoImprimir() + '</body></html>';
   win.document.open(); win.document.write(html); win.document.close();
 }

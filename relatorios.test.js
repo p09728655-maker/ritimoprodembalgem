@@ -2843,6 +2843,26 @@ ok('o mix é só do bloco de cima: trocar não redesenha o de baixo',
 ok('a escolha do mix persiste na MESMA chave de preferências',
    /mix:QP_MIX/.test(pega('function _qpSalvarPref(')) && /o\.mix === 'cru' \|\| o\.mix === 'mix'/.test(pega('function _qpCarregarPref(')), true);
 ok('o relatório em PDF explica o mix', /O MIX<\/td>/.test(pega('async function gerarRelatorioPlano(')), true);
+// ── o papel: carteira em folha própria, lotes programados, menos texto ─────
+// (PPCP, 16/09/2026: "separa do outro gráfico e inserir os produtos
+// programados" · "essa impressão está muito carregada" · "tem muita coisa escrita")
+ok('cada dia da carteira guarda os LOTES (para a lista impressa)',
+   [_d16.lotes.length, _d16.lotes[0].lote, Math.round(_d16.lotes.reduce((a, x) => a + x.eq, 0))], [2, '1', _d16.qtde]);
+const _lotesDes = pega('function _cartLotesHtml(');
+ok('a lista de lotes é desenho, não conta',
+   /_mixRitmos\(|_mixFator\(|_mixDiag\(|_qpPercentil\(|_phMediaAparada\(/.test(_lotesDes), false);
+ok('e ordena do lote que mais pesa para o que menos pesa', /sort\(\(x, y\) => y\.eq - x\.eq\)/.test(_lotesDes), true);
+const _relPlano = pega('async function gerarRelatorioPlano(');
+ok('o PDF imprime a lista de lotes dentro da seção da carteira', /_cartLotesHtml\(ac\)/.test(_relPlano), true);
+ok('e a seção 2 começa em página nova (carteira em folha própria)', /<div class="pl-quebra"><\/div>'\s*\+ sec\('COMO TEMOS DATADO/.test(_relPlano), true);
+ok('o parágrafo de abertura e as notas sob os títulos saíram do papel',
+   /pl-abre|<div class="rp-note">Os lotes|<div class="rp-note">O retrato/.test(_relPlano), false);
+const _skinPlano = JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/)[1];
+ok('a pele do papel esconde a nota longa e a explicação do mix (fica só o veredito)',
+   /\.plano-doc \.qp-nota,\.plano-doc \.qm-como,\.plano-doc \.qm-det\{display:none\}/.test(_skinPlano), true);
+ok('e a quebra de página é da pele, não da marcação', /\.pl-quebra\{page-break-before:always/.test(_skinPlano), true);
+ok('a caixa do mix separa o veredito do resto em blocos com classe',
+   ['qm-como', 'qm-conf', 'qm-det'].every(c => pega('function _cartMixHtml(').includes('class="' + c + '"')), true);
 // ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do
 // `faltaZerar` desde antes, e não é dela que se trata. Contar o arquivo inteiro
 // acusava a TV por um código que este bloco não escreveu.
