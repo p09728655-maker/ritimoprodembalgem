@@ -2036,8 +2036,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       </select>
       <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CARTEIRA</span>
       <select id="qp-mix" class="frm-inp" onchange="_qpSetMix(this.value)" style="width:150px;padding:3px 8px;font-size:11px;cursor:pointer"
-              title="CX DE LINHA pesa cada lote pelo ritmo demonstrado do produto (o mesmo cx/h da aba PRODUÇÃO/HORA): 3.000 cx de caixa pequena não custam o mesmo que 3.000 de caixa grande. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO.">
-        <option value="mix" selected>cx de linha (mix)</option>
+              title="CARGA PELO MIX: cada lote pesa pelo ritmo do produto (o mesmo cx/h da aba PRODUÇÃO/HORA) — produto lento pesa mais, produto rápido pesa menos. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO.">
+        <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
       </select></span>
       <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="A mesma leitura desta tela em PDF, com a metodologia escrita">🖨 IMPRIMIR</button>
@@ -2653,7 +2653,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.2';
+const APP_VER   = '7.55.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7709,6 +7709,20 @@ function _cartVeredito(a){
     d:'todos os dias datados cabem na faixa alvo — o vermelho que aparecer vai ser da operação, não da datação' };
 }
 
+// O PESO EM PALAVRAS, uma implementação para barra, tooltip, tabela e card
+// (pedido do PPCP, 16/09/2026: "bater o olho e entender" — "×1,22 · 2
+// aparado(s)" é vocabulário de quem escreveu a conta). Dentro de ±5% é
+// "normal" e não ganha selo; fora, "+22% lento" (âmbar) ou "−28% rápido" (verde).
+function _cartPesoTxt(f){
+  const v = Number(f) || 1;
+  const pct = Math.round((v - 1) * 100);
+  if(Math.abs(pct) < 5) return { pct: '', palavra: 'normal', cls: '', selo: 'normal', frase: 'mix na média' };
+  const lento = pct > 0;
+  const p = (lento ? '+' : '−') + Math.abs(pct) + '%';
+  return { pct: p, palavra: lento ? 'lento' : 'rápido', cls: lento ? 'qp-p-warn' : 'qp-p-ok',
+           selo: p + ' ' + (lento ? 'lento' : 'rápido'), frase: 'mix ' + (lento ? 'lento' : 'rápido') + ', pesa ' + p };
+}
+
 // O DESENHO. Nenhuma conta aqui dentro: tudo vem pronto do `_cartAnalise`.
 function _cartHtml(a, regua, larg){
   const v = _cartVeredito(a);
@@ -7727,9 +7741,8 @@ function _cartHtml(a, regua, larg){
   const _qtds = a.linhas.map(l => l.qtde);
   // Com o mix, a barra é CX DE LINHA e o programado cru vai junto no texto.
   const mix = !!a.mix;
-  const _fx = f => '×' + (Number(f) || 1).toFixed(2).replace('.', ',');
   const _qtdTxt = l => mix
-    ? (fmtN(l.crua) + ' cx programadas = ' + fmtN(l.qtde) + ' cx de linha (mix ' + _fx(l.fator) + ')')
+    ? (fmtN(l.crua) + ' cx programadas · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
     : (fmtN(l.qtde) + ' cx programadas');
   const _rot = (txt, valor, y, cor) => {
     const fim = _svgLadoLivre(_qtds, valor) === 'fim';
@@ -7752,13 +7765,18 @@ function _cartHtml(a, regua, larg){
     // ⚠ Pintado DEPOIS da barra (o `+ fant` vai no fim): antes dela, a barra
     // tapava o número. Fantasma que cabe dentro da barra (programado menor que
     // a cx de linha) leva a cor do fundo, senão some no vermelho.
+    // O NÚMERO EM CIMA É O PROGRAMADO (o que o gestor confere na planilha);
+    // o selo dentro da barra diz em palavras por que a barra não tem essa
+    // altura: "PESA +22%". Fantasma tracejado = altura do programado.
     const temFant = mix && l.crua > 0 && Math.round(l.crua) !== Math.round(l.qtde);
+    const peso = mix ? _cartPesoTxt(l.fator) : null;
+    const yTopo = Math.min(y, temFant ? ey(l.crua) : y);
     const fant = temFant
       ? '<rect x="' + (x - 3).toFixed(1) + '" y="' + ey(l.crua).toFixed(1) + '" width="' + (w + 6).toFixed(1)
         + '" height="' + Math.max(0, H - B - ey(l.crua)).toFixed(1) + '" fill="none" stroke="' + (l.crua > l.qtde ? 'var(--txt2)' : 'var(--bg)') + '" stroke-width="1.2" stroke-dasharray="3 3" rx="2"/>'
-        + ((H - B - y) > FS * 2.6
-            ? '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B - 5) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 2) + '" text-anchor="middle" opacity=".9">prog. ' + fmtN(l.crua) + '</text>'
-            : '')
+      : '';
+    const selo = (peso && peso.cls && (H - B - y) > FS * 4)
+      ? '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y + FS * 2.4).toFixed(1) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 1) + '" font-weight="700" text-anchor="middle">PESA ' + peso.pct + '</text>'
       : '';
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2">'
@@ -7768,10 +7786,10 @@ function _cartHtml(a, regua, larg){
       // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
       // MELHOR DIA JÁ FEITO — que mora justamente na altura das barras que
       // estouram, que são as que mais interessa ler.
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 22 ? (y + FS + 3) : (y - 5)).toFixed(1)
-      + '" fill="' + (y < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (yTopo < T + 22 ? (yTopo + FS + 3) : (yTopo - 5)).toFixed(1)
+      + '" fill="' + (yTopo < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(mix ? l.crua : l.qtde) + '</text>'
       + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>'
-      + fant;
+      + fant + selo;
   }).join('');
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7786,17 +7804,24 @@ function _cartHtml(a, regua, larg){
   const tab = a.linhas.map(l => {
     const c = l.sai > 0 ? 'qp-p-red' : (l.qtde >= a.alvoMin ? 'qp-p-ok' : 'qp-p-warn');
     const pesa = l.pesa || {};
+    const pt = mix ? _cartPesoTxt(l.fator) : null;
+    // o detalhe técnico (lotes sem histórico, pesos limitados) fica no
+    // tooltip da célula — na tabela só a palavra
+    const ptTit = mix ? ('fator ' + (Number(l.fator) || 1).toFixed(2).replace('.', ',')
+      + (l.semBase ? ' · ' + l.semBase + ' lote(s) sem histórico de ritmo (peso normal)' : '')
+      + (l.aparados ? ' · ' + l.aparados + ' lote(s) com peso limitado (apontamento suspeito)' : '')) : '';
     return '<tr><td>' + _rpEsc(l.data) + '</td>'
-      + (mix ? '<td>' + fmtN(l.crua) + '</td><td><b>' + fmtN(l.qtde) + '</b></td>'
-             + '<td style="color:var(--txt2)">' + _fx(l.fator)
-             + (l.semBase ? ' <span title="lote(s) sem histórico de ritmo: entram com fator 1">·' + l.semBase + ' s/base</span>' : '')
-             + (l.aparados ? ' <span title="fator fora do intervalo plausível, limitado">·' + l.aparados + ' aparado(s)</span>' : '') + '</td>'
+      + (mix ? '<td>' + fmtN(l.crua) + '</td>'
+             + '<td title="' + _rpEsc(ptTit) + '"><span class="qp-pill ' + (pt.cls || '') + '">' + pt.selo + '</span></td>'
+             + '<td><b>' + fmtN(l.qtde) + '</b></td>'
            : '<td>' + fmtN(l.qtde) + '</td>')
       + '<td><span class="qp-pill ' + c + '">p' + Math.round(l.pct) + '</span></td>'
       + '<td>' + l.n + '</td>'
       + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
       + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td>'
-      + (mix ? '<td style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">' + fmtN(pesa.q) + ' cx ' + _fx(pesa.f) + ' = <b>' + fmtN(Math.round(pesa.eq)) + '</b></span>' : '—') + '</td>' : '')
+      + (mix ? '<td style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot
+             ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">· ' + fmtN(pesa.q) + ' cx · <b>' + _cartPesoTxt(pesa.f).palavra + '</b> (carga ' + fmtN(Math.round(pesa.eq)) + ')</span>'
+             : '—') + '</td>' : '')
       + '</tr>';
   }).join('');
   return ''
@@ -7804,7 +7829,7 @@ function _cartHtml(a, regua, larg){
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
     + '<div class="kpi-sub">' + (mix
-        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas = <b>' + fmtN(Math.round(a.futuro)) + ' cx de linha</b> pelo mix, em ' + a.n + ' dia(s)'
+        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas pesam como <b>' + fmtN(Math.round(a.futuro)) + '</b> (' + _cartPesoTxt(a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + '), em ' + a.n + ' dia(s)'
         : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
     + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
@@ -7816,22 +7841,22 @@ function _cartHtml(a, regua, larg){
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
     + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — BARRA EM CX DE LINHA · FANTASMA = PROGRAMADO' : '') + '</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
-    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>programado na PROGRAMACAO (caixas cruas — o número na base da barra)</span>' : '')
+    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>contorno tracejado = programado na PROGRAMACAO (o número em cima) · barra cheia = carga · PESA +N% = mix lento, −N% = mix rápido</span>' : '')
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
     + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th>'
-    + (mix ? '<th>PROGRAMADO</th><th>CX DE LINHA</th><th>MIX</th>' : '<th>PROGRAMADO</th>')
+    + (mix ? '<th>PROGRAMADO</th><th>PESO DO MIX</th><th>CARGA</th>' : '<th>PROGRAMADO</th>')
     + '<th>ALTURA</th><th>LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
     + (mix ? '<th style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
     + _cartMixHtml(a)
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
-    + (mix ? ', <b>em cx de linha</b> — cada lote pesado pelo ritmo demonstrado do produto (a linha do MIX acima diz de onde o peso saiu)' : '') + '. '
+    + (mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
     + 'A faixa verde é o que a linha entrega na altura certa; a linha vermelha tracejada é o <b>melhor dia que ela já fez</b> — barra acima dela nasceu impossível. '
     + 'As colunas <b>NÃO CABE</b> e <b>ESPAÇO LIVRE</b> são as duas pontas da mesma conta: se o que não cabe for menor que o espaço livre, é só re-datar, e isso não custa nada.<br><br>'
     + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
@@ -7846,8 +7871,8 @@ function _cartHtml(a, regua, larg){
 // NÃO aplicado" — este último nunca pode passar em silêncio, senão a tela
 // diria cx de linha mostrando caixas cruas.
 function _cartMixHtml(a){
-  if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — as quantidades como estão na PROGRAMACAO, sem pesar pelo produto. '
-    + 'Para pesar pelo ritmo demonstrado de cada produto, escolha <b>cx de linha (mix)</b> na barra.</div>';
+  if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — os números da PROGRAMACAO, sem olhar o produto. '
+    + 'Para pesar cada lote pelo produto, escolha <b>carga pelo mix</b> na barra.</div>';
   if(!a.mix){
     const m = { 'sem-resposta':'o log de produto não respondeu a tempo (cold start do Apps Script) — toque ATUALIZAR',
                 'sem-endpoint':'o backend não conhece a ação getProducaoModeloPeriodo — falta o re-deploy do .gs',
@@ -7858,19 +7883,25 @@ function _cartMixHtml(a){
       + (a.mixRetry ? ' Tentando de novo sozinho em <b>' + a.mixRetry.em + ' s</b> com a régua do mix em <b>' + a.mixRetry.dias + ' dias</b> (leitura mais leve).' : '')
       + '</div>';
   }
+  // Em PALAVRAS (pedido do PPCP, 16/09/2026: "precisa ser fácil interpretação,
+  // bater o olho e entender"). A conta e os diagnósticos técnicos continuam,
+  // mas em corpo menor, no fim — quem audita acha; quem passa não tropeça.
   const m = a.mix, c = m.conf;
-  let conf;
-  if(!c || !c.base) conf = 'conferência sem base (' + ((c && c.n) || 0) + ' dia(s) com produto na régua; precisa de ' + QP_MIN_DIAS + ')';
-  else conf = 'nos <b>' + c.n + ' dias</b> da régua o realizado oscila <b>' + fmtP(c.oscCru) + '</b> em caixas cruas e <b>'
-    + fmtP(c.oscMix) + '</b> em cx de linha → '
-    + (c.ok ? 'o mix explica <b>' + fmtP(c.ganho) + '</b> da variação'
-            : '<b>o mix não explica a variação</b> — prefira CAIXAS CRUAS na barra até o apontamento por produto melhorar');
-  return '<div class="qp-mix' + (c && c.base && !c.ok ? ' warn' : '') + '">'
-    + '<b>CX DE LINHA</b> = cada lote × (ritmo de referência ÷ ritmo demonstrado do produto) · referência <b>' + fmtN(Math.round(m.ref)) + ' cx/h</b>'
-    + ' (Σcx ÷ Σhoras de produto, ' + m.nDias + ' dia(s) do log' + (m.regua ? ' · régua do mix de ' + m.regua + ' dias' : '') + ')'
-    + ' · ' + m.nLotes + ' lote(s), <b>' + m.semBase + ' sem base</b> (fator 1)' + (m.aparados ? ', ' + m.aparados + ' aparado(s)' : '')
-    + (m.razao ? ' · horas de produto ÷ horas de linha = <b>' + m.razao.toFixed(2).replace('.', ',') + '</b> (a esteira roda mais de um produto por vez — por isso o peso é RELATIVO, não hora)' : '')
-    + '<br><b>CONFERÊNCIA:</b> ' + conf + '</div>';
+  const ref = Math.round(m.ref);
+  let conf, ruim = false;
+  if(!c || !c.base) conf = 'ainda sem base para conferir (' + ((c && c.n) || 0) + ' dia(s) com produto apontado; precisa de ' + QP_MIN_DIAS + ').';
+  else if(c.ok) conf = '<b>os pesos valem</b> — o mix explica <b>' + fmtP(c.ganho) + '</b> da variação da produção nos ' + c.n + ' dias da régua.';
+  else { ruim = true; conf = '<b>os pesos NÃO explicam a variação</b> da produção — prefira <b>caixas cruas</b> na barra até o apontamento por produto melhorar.'; }
+  const detalhe = m.nLotes + ' lote(s)'
+    + (m.semBase ? ' · ' + m.semBase + ' sem histórico de produto (peso normal)' : '')
+    + (m.aparados ? ' · ' + m.aparados + ' com peso limitado por apontamento suspeito (produto a menos de ⅓ ou mais de 3× da média)' : '')
+    + (c && c.base ? ' · oscilação da produção ' + fmtP(c.oscCru) + ' crua → ' + fmtP(c.oscMix) + ' pesada' : '')
+    + (m.razao ? ' · a esteira roda ' + m.razao.toFixed(1).replace('.', ',') + ' produto(s) por vez, por isso o peso é relativo, não hora' : '');
+  return '<div class="qp-mix' + (ruim ? ' warn' : '') + '">'
+    + '<b>COMO A CARGA É CALCULADA:</b> produto que roda <b>mais devagar</b> que a média da linha (' + fmtN(ref) + ' cx/h nos últimos ' + (m.regua || m.nDias) + ' dias) <b>pesa mais</b>; mais rápido pesa menos. '
+    + 'Exemplo: 1.000 cx de um produto a ' + fmtN(Math.round(ref / 2)) + ' cx/h pesam como 2.000.'
+    + '<br><b>CONFERÊNCIA:</b> ' + conf
+    + '<br><span style="opacity:.7;font-size:9.5px">' + detalhe + '</span></div>';
 }
 
 // O ESTADO VAZIO, com a CAUSA. Sem isto "SEM CARTEIRA DATADA" servia para tudo.
@@ -8141,7 +8172,7 @@ async function gerarRelatorioPlano(){
       + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência só: o <b>topo da faixa alvo</b> (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima dele o dia não comporta; abaixo há espaço para receber. Se o que sai for menor que o espaço livre, <b>é só re-datar</b>.</td></tr>'
              + '<tr><td style="font-weight:700">A DÍVIDA</td><td>Atraso vivo + o que falta da meta de hoje. Ocupa capacidade dos primeiros dias <b>antes</b> de qualquer lote novo, por isso entra no NIVELADO e na SOBRA.</td></tr>'
              + '<tr><td style="font-weight:700">O MIX</td><td>' + (ac.mix
-                 ? 'A carteira está em <b>cx de linha</b>: cada lote × (ritmo de referência ÷ ritmo demonstrado do produto), referência de <b>' + fmtN(Math.round(ac.mix.ref)) + ' cx/h</b>. '
+                 ? 'A carteira está em <b>carga pelo mix</b>: cada lote × (ritmo de referência ÷ ritmo demonstrado do produto), referência de <b>' + fmtN(Math.round(ac.mix.ref)) + ' cx/h</b> — produto lento pesa mais, rápido pesa menos. '
                    + 'O ritmo é o do log de produto (o mesmo da aba PRODUÇÃO/HORA), e é <b>peso relativo</b>, não hora: a esteira roda mais de um produto por vez, e hora de produto não é hora de linha. '
                    + 'Lote sem histórico entra com fator 1 (' + ac.mix.semBase + ' neste relatório).'
                  : 'A carteira está em <b>caixas cruas</b>' + (ac.mixFalha ? ' — o mix foi pedido e <b>não pôde ser aplicado</b> (log de produto indisponível)' : ', por escolha na tela') + '.')
