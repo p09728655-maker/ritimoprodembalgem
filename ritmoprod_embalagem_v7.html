@@ -2040,7 +2040,8 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
       </select></span>
-      <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="A mesma leitura desta tela em PDF, com a metodologia escrita">🖨 IMPRIMIR</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCarteira()" style="font-size:10px;padding:4px 10px" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO</button>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
     </div>
   </div>
@@ -2653,7 +2654,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.4';
+const APP_VER   = '7.55.5';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -8150,6 +8151,8 @@ const _PLANO_SKIN = `
   .plano-doc .cart-lotes td:first-child,.plano-doc .cart-lotes td:nth-child(2){text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9px}
   .plano-doc .cart-lotes tr.cl-dia td{background:#f1f5f9;text-align:left;padding:7px 6px;font-size:10.5px;
                                       -webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid}
+  .plano-doc.cart-doc .cart-lotes{font-size:10.5px}
+  .plano-doc.cart-doc .cart-lotes td{padding:4px 8px}
   .plano-doc .cl-red{color:#C62828;font-weight:700}
   .plano-doc .cl-ok{color:#2E7D32;font-weight:700}
 `;
@@ -8236,6 +8239,59 @@ async function gerarRelatorioPlano(){
   const html = _rpDocParadas('Qualidade do Plano — ' + hojeStr())
     + '<style>' + _PLANO_SKIN + '</style></head><body>'
     + _rpCabecalho('QUALIDADE DO PLANO', metaCab)
+    + corpo + _rpBotaoImprimir() + '</body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO SÓ DA CARTEIRA (🖨 CARTEIRA na aba PLANO) — paisagem
+// ════════════════════════════════════════════════
+// Pedido do PPCP, 16/09/2026: "quero impressão só dos lotes, separado do
+// estudo de baixo" + "faça teste com a impressão virada". É a seção 1 do
+// estudo, sozinha, deitada: o gráfico ganha a largura da folha e a lista de
+// lotes cabe numa linha por lote. As PEÇAS SÃO AS MESMAS (`_cartMontar`,
+// `_cartHtml`, `_cartLotesHtml`, `_PLANO_SKIN`, `_rpDocParadas`) — muda a
+// moldura, a orientação e a largura do desenho.
+const CART_SVG_W_PAISAGEM = 980;   // A4 deitado com as margens deste documento: ~273mm úteis
+
+async function gerarRelatorioCarteira(){
+  const win = window.open('', '_blank', 'width=1180,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando a carteira...</p></body></html>');
+
+  let corpo = '', metaCab = 'OS LOTES JÁ DATADOS PARA OS DIAS QUE VÊM';
+  try{
+    let dias = [];
+    try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
+    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    const curva = _qpCurva(dias, QP_REGUA);
+    if(curva.length < QP_MIN_DIAS){
+      win.close();
+      alert('São precisos ao menos ' + QP_MIN_DIAS + ' dias fechados para montar a curva de capacidade. Hoje há ' + curva.length + '.');
+      return;
+    }
+    const cart = await _cartMontar(dias);
+    const ac = _cartAnalise(cart, curva, QP_FAIXA);
+    if(!ac){ win.close(); alert('Não há lote com data futura na PROGRAMACAO — nada a imprimir.'); return; }
+    const fMin = ac.faixa[0], fMax = ac.faixa[1];
+    const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
+    metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax
+      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas');
+    corpo = '<div class="plano-doc cart-doc">'
+      + _cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)
+      + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'
+      + _cartLotesHtml(ac)
+      + '<div class="rp-footer"><span>' + APP_NOME_CX + ' · Embalagem</span>'
+      + '<span>' + ac.n + ' dia(s) datado(s) · ' + fmtN(Math.round(ac.futuroCru)) + ' cx programadas'
+      + (ac.divida > 0 ? ' · dívida ' + fmtN(Math.round(ac.divida)) + ' cx' : '') + '</span></div>'
+      + '</div>';
+  }catch(err){
+    win.close(); alert(_rpErroRelatorio(err)); return;
+  }
+
+  const html = _rpDocParadas('Carteira que vem — ' + hojeStr(), true)
+    + '<style>' + _PLANO_SKIN + '</style></head><body class="deitado">'
+    + _rpCabecalho('A CARTEIRA QUE VEM', metaCab)
     + corpo + _rpBotaoImprimir() + '</body></html>';
   win.document.open(); win.document.write(html); win.document.close();
 }

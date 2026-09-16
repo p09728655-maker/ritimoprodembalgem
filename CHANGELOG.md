@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.5 — 16/09/2026
+
+Só impressão. Pedidos do PPCP, 16/09/2026: *"quero impressão só dos lotes,
+separado do estudo de baixo"* e *"faça teste com a impressão virada"*.
+
+- **🖨 CARTEIRA**, botão novo na aba PLANO: só a seção da carteira (veredito,
+  cards, gráfico, dia a dia e OS LOTES PROGRAMADOS), **em paisagem** — o
+  gráfico ganha a largura da folha e cada lote cabe numa linha. O cabeçalho
+  diz o intervalo datado, a régua, a faixa alvo e se está em carga pelo mix.
+- O botão antigo virou **🖨 ESTUDO** (carteira + como temos datado + como o
+  número sai, retrato), sem mudança.
+- As peças são as mesmas nos dois (`_cartMontar`, `_cartHtml`,
+  `_cartLotesHtml`, `_PLANO_SKIN`, `_rpDocParadas`). Muda a moldura, a
+  orientação e a largura do desenho (`CART_SVG_W_PAISAGEM`).
+
 ## v7.55.4 — 16/09/2026
 
 Só o **relatório da QUALIDADE DO PLANO** (🖨 na aba PLANO). Pedidos do PPCP,
