@@ -171,6 +171,11 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-plano .qp-mix b{color:var(--txt)}
 #sec-plano .qp-mix.warn{border-color:var(--warn);color:var(--warn)}
 #sec-plano .qp-mix.warn b{color:var(--warn)}
+#sec-plano .qp-ese{font-family:var(--font-d);font-size:10.5px;letter-spacing:.3px;color:var(--txt2);line-height:1.7;margin:-4px 0 14px;padding:9px 12px;border:1px solid var(--border);border-left:3px solid var(--txt3);border-radius:5px;background:var(--surface)}
+#sec-plano .qp-ese b{color:var(--txt)}
+#sec-plano .qp-ese.ok{border-left-color:var(--ok)}
+#sec-plano .qp-ese.warn{border-left-color:var(--warn)}
+#sec-plano .qp-ese.red{border-left-color:var(--red)}
 #sec-perdas .pg-q,#sec-simulador .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
@@ -2040,6 +2045,14 @@ if (_v7Instalado()) _v7EscondeBotao();
         <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
       </select></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">E SE PARADAS</span>
+      <select id="qp-ese" class="frm-inp" onchange="_qpSetEse(this.value)" style="width:108px;padding:3px 8px;font-size:11px;cursor:pointer"
+              title="Cenário: se as paradas NÃO programadas caíssem este tanto, quanto a linha faria a mais por dia e a carteira caberia? A perda por parada é a mesma conta da aba PARADAS. Nada é gravado.">
+        <option value="0" selected>como hoje</option>
+        <option value="0.1">−10%</option>
+        <option value="0.25">−25%</option>
+        <option value="0.5">−50%</option>
+      </select></span>
       <button class="btn btn-ghost" onclick="gerarRelatorioCarteira()" style="font-size:10px;padding:4px 10px" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO</button>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
@@ -2654,7 +2667,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.56.0';
+const APP_VER   = '7.57.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7159,6 +7172,9 @@ let QP_ORDEM = 'data';
 // do produto) ou 'cru' (as quantidades como estão na PROGRAMACAO). Só o bloco
 // de cima lê isto; a régua continua sendo a MESMA para os dois — ver o `_mixRitmos`.
 let QP_MIX = 'mix';
+// E SE AS PARADAS CAÍSSEM: fração (0 · 0,1 · 0,25 · 0,5) da perda por parada
+// não programada de cada dia devolvida ao realizado. Só a carteira lê; 0 = hoje.
+let QP_ESE = 0;
 const QP_PREF_K = 'rpe_qp_pref';   // ⚠ chave nova: nunca renomear (ver CLAUDE.md)
 
 // A escolha do gestor sobrevive ao reload — calibrar a faixa leva dias, e
@@ -7172,11 +7188,12 @@ function _qpCarregarPref(){
     if(o.janela != null) QP_JANELA = Number(o.janela);
     if(o.ordem) QP_ORDEM = String(o.ordem);
     if(o.mix === 'cru' || o.mix === 'mix') QP_MIX = o.mix;
+    if(o.ese != null) QP_ESE = Math.max(0, Math.min(1, Number(o.ese) || 0));
   }catch(e){}
 }
 function _qpSalvarPref(){
   try{ localStorage.setItem(QP_PREF_K,
-    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM, mix:QP_MIX})); }catch(e){}
+    JSON.stringify({regua:QP_REGUA, faixa:QP_FAIXA, janela:QP_JANELA, ordem:QP_ORDEM, mix:QP_MIX, ese:QP_ESE})); }catch(e){}
 }
 
 function _qpFiltro(n){
@@ -7198,6 +7215,8 @@ function _qpInitFiltro(){
   if(o) o.value = QP_ORDEM;
   const mx = document.getElementById('qp-mix');
   if(mx) mx.value = QP_MIX;
+  const es = document.getElementById('qp-ese');
+  if(es) es.value = String(QP_ESE);
   document.querySelectorAll('#sec-plano .qp-q').forEach(b =>
     b.classList.toggle('on', Number(b.dataset.n) === QP_JANELA));
 }
@@ -7210,6 +7229,7 @@ function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadeP
 // dia que já passou), e converter meta antiga pelo mix pediria a programação
 // daquele dia, que o arquivamento já levou. Não inventar.
 function _qpSetMix(v){ QP_MIX = (v === 'cru') ? 'cru' : 'mix'; _qpSalvarPref(); renderCarteira(); }
+function _qpSetEse(v){ QP_ESE = Math.max(0, Math.min(1, Number(v) || 0)); _qpSalvarPref(); renderCarteira(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
   if(p.length === 2 && p[0] < p[1]) QP_FAIXA = p;
@@ -7728,6 +7748,72 @@ function _cartAnalise(cart, curva, faixa){
   };
 }
 
+// ── E SE AS PARADAS CAÍSSEM X%? ────────────────────────────────────────────
+// (PPCP, 16/09/2026: "se a linha diminuir as paradas em x%, daria ou não?")
+// A régua da carteira é o que a linha FEZ — e fez com as paradas que teve. O
+// cenário devolve a cada dia da régua uma fração da PERDA POR PARADA NÃO
+// PROGRAMADA daquele dia (`porDia[data].perd` do RP_PARADAS: a MESMA conta da
+// aba PARADAS e do SIMULADOR — duração produtiva × meta do dia ÷ horas
+// produtivas), refaz a curva e refaz a análise da carteira com a curva nova.
+// A carteira não muda; muda o que a linha comportaria. Nada de fórmula de
+// perda aqui: só se multiplica o que o RP_PARADAS já valorou.
+// ⚠ Só entra dia que tem parada apontada; dia sem apontamento fica como está.
+// A perda foi valorada ao ritmo da META do dia — o cenário assume que o tempo
+// recuperado produz nesse ritmo, o que é a premissa de todo o painel.
+function _cartDiasComMenosParadas(dias, porDia, pct){
+  const f = Math.max(0, Math.min(1, Number(pct) || 0));
+  let nCom = 0, cxRec = 0;
+  const out = (dias || []).map(d => {
+    const pd = porDia && d && porDia[d.data];
+    if(f <= 0 || !pd || !(pd.perd > 0)) return d;
+    const rec = pd.perd * f;
+    nCom++; cxRec += rec;
+    return Object.assign({}, d, { real: (Number(d.real) || 0) + rec, recuperado: rec });
+  });
+  return { dias: out, nCom, cxRec, pct: f };
+}
+function _cartCenario(cart, dias, porDia, pct, regua, faixa){
+  const b = _cartDiasComMenosParadas(dias, porDia, pct);
+  if(!(b.pct > 0)) return null;
+  const curva = _qpCurva(b.dias, regua);
+  const a = _cartAnalise(cart, curva, faixa);
+  if(!a) return null;
+  return { pct: b.pct, alvoMax: a.alvoMax, alvoMin: a.alvoMin, teto: a.teto,
+           sai: a.sai, cabe: a.cabe, sobra: a.sobra, nAcima: a.nAcima, nImpossivel: a.nImpossivel,
+           ver: _cartVeredito(a), nCom: b.nCom, nDias: b.dias.length,
+           cxRecDia: b.nCom ? b.cxRec / b.nCom : 0 };
+}
+// A busca do cenário: as paradas dos dias da régua, pelo MESMO carregador da
+// GESTÃO DE PERDAS (`_pgContextoDoPeriodo`: cache de 5 min por período, voo
+// compartilhado). Com E SE em "como hoje" não busca nada. Falhou? Devolve a
+// falha, e a tela diz que o cenário não saiu — nunca um número inventado.
+async function _cartCenarioAsync(cart, dias){
+  if(!(QP_ESE > 0) || !cart || !cart.dias || !cart.dias.length) return null;
+  if(!_rpOk() || !CFG.sheetsUrl) return { falha: 'sem-modulo' };
+  const rec = QP_REGUA > 0 ? (dias || []).slice(-QP_REGUA) : (dias || []);
+  if(!rec.length) return null;
+  try{
+    const reg = await _pgContextoDoPeriodo(rec[0].data, hojeStr());
+    const porDia = reg && reg.ctx && reg.ctx.st && reg.ctx.st.porDia;
+    if(!porDia) return { falha: 'sem-paradas' };
+    return _cartCenario(cart, dias, porDia, QP_ESE, QP_REGUA, QP_FAIXA) || { falha: 'sem-cenario' };
+  }catch(e){ return { falha: 'sem-paradas' }; }
+}
+// O desenho do cenário — nenhuma conta: tudo vem pronto do `_cartCenario`.
+function _cartESeHtml(a){
+  const c = a && a.cenario;
+  if(!c) return '';
+  if(c.falha) return '<div class="qp-ese warn">⚠ <b>E SE PARADAS:</b> o cenário não saiu — '
+    + (c.falha === 'sem-modulo' ? 'o módulo de paradas não carregou' : 'não foi possível ler as paradas dos dias da régua') + '. Toque ATUALIZAR.</div>';
+  const pctTxt = Math.round(c.pct * 100) + '%';
+  return '<div class="qp-ese ' + (c.ver.cls || '') + '">'
+    + '<b>E SE AS PARADAS NÃO PROGRAMADAS CAÍSSEM ' + pctTxt + '?</b> '
+    + 'A linha faria <b>+' + fmtN(Math.round(c.cxRecDia)) + ' cx/dia</b> (' + c.nCom + ' de ' + c.nDias + ' dias da régua têm parada apontada) · '
+    + 'o dia passaria a comportar <b>' + fmtN(Math.round(c.alvoMax)) + '</b> em vez de ' + fmtN(Math.round(a.alvoMax)) + ' · '
+    + 'não cabem <b>' + fmtN(Math.round(c.sai)) + '</b> (hoje ' + fmtN(Math.round(a.sai)) + ') · sobra <b>' + fmtN(Math.round(c.sobra)) + '</b> (hoje ' + fmtN(Math.round(a.sobra)) + ')'
+    + '<br><b>' + (c.sobra > 0 ? 'NÃO DARIA' : 'DARIA') + ':</b> ' + c.ver.t.toLowerCase() + ' — ' + c.ver.d + '</div>';
+}
+
 // O VEREDITO fala da DATAÇÃO, nunca da linha — e distingue os dois problemas,
 // que pedem ações opostas: re-datar (de graça) × arrumar capacidade (custa).
 function _cartVeredito(a){
@@ -7862,6 +7948,7 @@ function _cartHtml(a, regua, larg){
   }).join('');
   return ''
     + '<div class="qp-ver ' + v.cls + '"><div class="qp-ver-t">' + v.t + '</div><div class="qp-ver-d">' + v.d + '</div></div>'
+    + _cartESeHtml(a)
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
     + '<div class="kpi-sub">' + (mix
@@ -8102,6 +8189,7 @@ async function renderCarteira(){
     const cart = await _cartMontar(dias);
     cart.mixRetry = _cartMixAgendar(cart);
     const a = _cartAnalise(cart, curva, QP_FAIXA);
+    if(a) a.cenario = await _cartCenarioAsync(cart, dias);
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
     // não se conseguiu lê-la é pior que não dizer nada.
@@ -8160,6 +8248,13 @@ const _PLANO_SKIN = `
   .plano-doc .qp-mix b{color:#1F2328}
   .plano-doc .qp-mix.warn{border-color:#B26A00;color:#B26A00}
   .plano-doc .qp-mix.warn b{color:#B26A00}
+  .plano-doc .qp-ese{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#4A5568;line-height:1.6;margin:0 0 10px;
+                     padding:7px 10px;border:1px solid #e2e8f0;border-left:3px solid #a0aec0;border-radius:4px;background:#f8fafc;
+                     -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .plano-doc .qp-ese b{color:#1F2328}
+  .plano-doc .qp-ese.ok{border-left-color:#2E7D32}
+  .plano-doc .qp-ese.warn{border-left-color:#B26A00}
+  .plano-doc .qp-ese.red{border-left-color:#C62828}
   .plano-doc .pl-abre{border-left:3px solid #E65100;background:#fff8f3;padding:9px 13px;border-radius:0 5px 5px 0;
                       font-size:11px;color:#4A5568;line-height:1.5;margin-bottom:6px;
                       -webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -8223,6 +8318,7 @@ async function gerarRelatorioPlano(){
     try{
       cart = await _cartMontar(dias);
       ac = _cartAnalise(cart, curva, QP_FAIXA);
+      if(ac) ac.cenario = await _cartCenarioAsync(cart, dias);
     }catch(e){ ac = null; }
 
     const fMin = a.faixa[0], fMax = a.faixa[1];
@@ -8306,6 +8402,7 @@ async function gerarRelatorioCarteira(){
     const cart = await _cartMontar(dias);
     const ac = _cartAnalise(cart, curva, QP_FAIXA);
     if(!ac){ win.close(); alert('Não há lote com data futura na PROGRAMACAO — nada a imprimir.'); return; }
+    ac.cenario = await _cartCenarioAsync(cart, dias);
     const fMin = ac.faixa[0], fMax = ac.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax
