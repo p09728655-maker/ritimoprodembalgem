@@ -2286,6 +2286,14 @@ feito e dá ar de verdade ao que sobrou.
 - Medido com os fatores de julho na carteira real de 16/09: 17/09 tinha
   **3.125 cx de MESA CABECEIRA SLEEP** (205 cx/h) → **~2.000 cx de linha**;
   o lote que mais pesa em cada dia sai na tabela, para escolher O QUE mover.
+- ⚠ **RE-DATAÇÃO AUTOMÁTICA NÃO SERÁ FEITA** (decisão do usuário, 16/09/2026:
+  *"não vamos fazer isso"*). A proposta lote a lote ("mova o lote X de 21 para
+  22") foi explicada e recusada: o painel não sabe prioridade comercial, data
+  de corte, peça disponível nem ordem de expedição, e a PROGRAMACAO não tem
+  coluna que diga até quando um lote pode andar. O que a aba dá é o suficiente
+  para a decisão humana: onde estoura, onde sobra, e a lista de lotes do mais
+  pesado ao mais leve. **Não propor de novo.** Se um dia a planilha ganhar
+  data de corte por lote, aí é outra conversa.
 
 ## A CARTEIRA QUE VEM — o bloco de cima da aba PLANO
 - **A aba julgava só o passado.** Diagnosticava a datação e não mudava nada: o
