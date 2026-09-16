@@ -2427,6 +2427,16 @@ feito e dá ar de verdade ao que sobrou.
   à esquerda, ela tapava o valor do 3º dia. Fica onde nenhuma barra da ponta
   cruza a altura do rótulo; empatando, à direita, onde o olho já terminou de
   ler. A seta aponta para dentro do gráfico a partir do lado escolhido.
+- ⚠ **COR SÓ ONDE HÁ FUNÇÃO, TAMBÉM AQUI** (v7.58.0, PPCP, 16/09/2026:
+  *"deixar a impressão mais profissional, está muito carregada"*, aprovado em
+  três rodadas de PDF). No papel: barra que cabe é **grafite** e só o dia que
+  não cabe é vermelho; card com borda neutra, só o do problema colorido; o
+  peso do mix é **texto**, sem pílula. E sai tudo que se repete — selos *PESA*
+  nas barras, coluna **ALTURA**, colunas **LINHAS** e **O QUE MAIS PESA**, as
+  legendas correspondentes. Tudo por **classe escondida na pele**
+  (`.cb-selo`, `.cl-alt`, `.cl-lin`, `.cl-pesa`, `.cl-selo`, `.cl-folga`,
+  `.cl-peso`), nunca por um segundo desenho: a marcação continua a da tela,
+  onde a cor e a pílula ajudam a varrer a coluna a 60 cm.
 - **O PAPEL É NÚMERO, GRÁFICO E TABELA** (PPCP, 16/09/2026, com o PDF na mão:
   *"muito carregada"*, *"tem muita coisa escrita"*). A pele `.plano-doc`
   esconde a nota longa `.qp-nota` dos dois blocos e a explicação da caixa do
