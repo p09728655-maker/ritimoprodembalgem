@@ -2653,7 +2653,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.1';
+const APP_VER   = '7.55.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7716,7 +7716,7 @@ function _cartHtml(a, regua, larg){
   const fMin = a.faixa[0], fMax = a.faixa[1];
   const W = larg || 760, H = 300, L = 54, R = 26, T = 34, B = 44;
   const FS = 12;   // ver a nota do _qpHtml — o corpo é o mesmo nos dois
-  const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => l.qtde))) * 1.08 || 1;
+  const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => Math.max(l.qtde, l.crua || 0)))) * 1.08 || 1;
   const ey = y => T + (1 - y / topo) * (H - T - B);
   const passo = (W - L - R) / a.linhas.length;
   const yMax = ey(a.alvoMax), yMin = ey(a.alvoMin), yTeto = ey(a.teto);
@@ -7743,6 +7743,23 @@ function _cartHtml(a, regua, larg){
     const x = L + i * passo + passo * 0.18, w = passo * 0.64;
     const y = ey(l.qtde);
     const cor = l.sai > 0 ? 'var(--red)' : (l.qtde >= a.alvoMin ? 'var(--ok)' : 'var(--warn)');
+    // ⚠ COM O MIX, A BARRA NÃO É O NÚMERO DA PLANILHA — e o gestor conferiu
+    // exatamente isso (16/09/2026: "a qtde no gráfico não bate com a carteira").
+    // A barra sólida é o que a régua julga (cx de linha); o PROGRAMADO cru vai
+    // como FANTASMA tracejado atrás dela, na linguagem do fantasma da meta do
+    // _svgBarChart, com o número na base. Sem mix os dois são iguais e nada
+    // disso é desenhado — o gráfico fica exatamente o de antes.
+    // ⚠ Pintado DEPOIS da barra (o `+ fant` vai no fim): antes dela, a barra
+    // tapava o número. Fantasma que cabe dentro da barra (programado menor que
+    // a cx de linha) leva a cor do fundo, senão some no vermelho.
+    const temFant = mix && l.crua > 0 && Math.round(l.crua) !== Math.round(l.qtde);
+    const fant = temFant
+      ? '<rect x="' + (x - 3).toFixed(1) + '" y="' + ey(l.crua).toFixed(1) + '" width="' + (w + 6).toFixed(1)
+        + '" height="' + Math.max(0, H - B - ey(l.crua)).toFixed(1) + '" fill="none" stroke="' + (l.crua > l.qtde ? 'var(--txt2)' : 'var(--bg)') + '" stroke-width="1.2" stroke-dasharray="3 3" rx="2"/>'
+        + ((H - B - y) > FS * 2.6
+            ? '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B - 5) + '" fill="var(--bg)" font-family="var(--font-d)" font-size="' + (FS - 2) + '" text-anchor="middle" opacity=".9">prog. ' + fmtN(l.crua) + '</text>'
+            : '')
+      : '';
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2">'
       + '<title>' + _rpEsc(l.data + ' · ' + _qtdTxt(l) + ' (p' + Math.round(l.pct) + ')'
@@ -7753,7 +7770,8 @@ function _cartHtml(a, regua, larg){
       // estouram, que são as que mais interessa ler.
       + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (y < T + 22 ? (y + FS + 3) : (y - 5)).toFixed(1)
       + '" fill="' + (y < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(l.qtde) + '</text>'
-      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>';
+      + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>'
+      + fant;
   }).join('');
   const svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;height:auto;display:block;margin:0 auto" role="img" aria-label="A carteira datada de cada dia que vem, contra a faixa de capacidade da linha">'
     + '<rect x="' + L + '" y="' + T + '" width="' + (W-L-R) + '" height="' + Math.max(0, yTeto-T) + '" fill="var(--red)" opacity=".07"/>'
@@ -7798,9 +7816,11 @@ function _cartHtml(a, regua, larg){
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
     + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — BARRA EM CX DE LINHA · FANTASMA = PROGRAMADO' : '') + '</div>'
     + svg
-    + '<div class="qp-leg"><span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
+    + '<div class="qp-leg">'
+    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>programado na PROGRAMACAO (caixas cruas — o número na base da barra)</span>' : '')
+    + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
     + '<span><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
