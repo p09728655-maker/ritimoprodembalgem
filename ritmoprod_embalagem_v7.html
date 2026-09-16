@@ -2046,7 +2046,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
-    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO · <b>CARTEIRA</b> SÓ PARA O DE CIMA
+    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO · <b>CARTEIRA</b> SÓ PARA O DE CIMA · CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA</b>
   </div>
 
   <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
@@ -2654,7 +2654,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.55.5';
+const APP_VER   = '7.56.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7010,6 +7010,34 @@ const QP_MIN_DIAS = 10;   // curva com menos dias que isto não é régua, é pa
 // naquele mês) puxavam a régua para baixo, e a tela SUBESTIMAVA o que a linha
 // faz hoje. Janela curta demais também engana — 15 dias fazem a régua pular com
 // uma semana ruim —, por isso o padrão é 60.
+// ── A RÉGUA É A JORNADA NORMAL: HORA EXTRA FICA FORA ────────────────────────
+// (PPCP, 16/09/2026: "tem que ser justo, desconsiderar horas extras"). A
+// capacidade da aba saía do realizado TOTAL de cada dia do HISTORICO — e o
+// melhor dia (3.217 cx em 15/09) tinha 224 cx de hora extra dentro; a
+// madrugada de 05:00 entrava inteira. Assim a HE era contada duas vezes: uma
+// escondida na régua ("cabe") e outra como remédio do veredito ("é hora
+// extra"). Agora cada dia entra com `real − heCx`, a MESMA separação do card
+// CAIXAS EM HORA EXTRA e do relatório semanal. Sábado com produção (HE o dia
+// inteiro) fica com zero e sai da curva sozinho.
+// ⚠ Dia sem a separação (`heCx` nulo — fechado antes da v5.0, ou o dia de
+// hoje ainda aberto) entra INTEIRO e é CONTADO (`semSep`): a tela diz quantos.
+// Inventar a divisão seria pior. `realTotal` fica guardado para o tooltip.
+// É UMA função para os dois blocos, a tela e os dois PDFs — régua diferente em
+// cada canto é o defeito que este projeto mais pagou caro.
+function _qpRealDia(d){
+  if(!d) return 0;
+  const tot = Number(d.real) || 0;
+  const he  = (d.heCx === null || d.heCx === undefined) ? null : Number(d.heCx);
+  return (he === null || !Number.isFinite(he)) ? tot : Math.max(0, tot - he);
+}
+function _qpDiasBase(dias){
+  return (dias || []).filter(d => d && _qpRealDia(d) > 0).map(d => Object.assign({}, d, {
+    realTotal: Number(d.real) || 0,
+    real: _qpRealDia(d),
+    semSep: d.heCx === null || d.heCx === undefined
+  }));
+}
+
 function _qpCurva(dias, janela){
   const v = (dias||[]).filter(d => d && Number(d.real) > 0);
   const rec = (janela > 0) ? v.slice(-janela) : v;
@@ -7059,6 +7087,7 @@ function _qpAnalise(dias, curva, faixa){
     const meta = Number(d.meta), real = Number(d.real) || 0;
     const pct  = _qpPercentil(meta, curva);
     return { data:d.data, meta, real, pct,
+             realTotal: d.realTotal != null ? Number(d.realTotal) : real, semSep: !!d.semSep,
              bateu: real >= meta,
              acima: pct != null && pct > QP_ACIMA };
   });
@@ -7196,7 +7225,7 @@ async function renderQualidadePlano(){
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
-    dias = (dias||[]).filter(d => d && Number(d.real) > 0);
+    dias = _qpDiasBase(dias);
     const curva = _qpCurva(dias, QP_REGUA);
     if(curva.length < QP_MIN_DIAS){
       alvo.innerHTML = '<div class="pg-carregando">São precisos ao menos ' + QP_MIN_DIAS
@@ -7206,6 +7235,7 @@ async function renderQualidadePlano(){
     const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
     const a = _qpAnalise(rec, curva, QP_FAIXA);
     if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
+    a.nSemSep = dias.filter(d => d.semSep).length;
     alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, _svgLargura(alvo));
   }finally{ QP_RODANDO = false; }
 }
@@ -7331,7 +7361,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     return '<circle cx="' + ex(i).toFixed(1) + '" cy="' + ey(l.meta).toFixed(1)
       + '" r="5" fill="' + cor + '" stroke="var(--bg)" stroke-width="1"><title>'
       + _rpEsc(l.data + ' · meta ' + fmtN(l.meta) + ' cx (p' + Math.round(l.pct) + ')'
-        + ' · realizado ' + fmtN(l.real) + ' cx') + '</title></circle>';
+        + ' · realizado ' + fmtN(l.real) + ' cx sem HE' + (l.realTotal > l.real ? ' (total ' + fmtN(l.realTotal) + ')' : '')) + '</title></circle>';
   }).join('');
   // ⚠ A LINHA DO REALIZADO NÃO TINHA COMO SER LIDA (correção do usuário,
   // 15/09/2026). Só a meta tinha ponto e tooltip; o realizado era um traço
@@ -7350,7 +7380,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '" height="' + (H - T - B) + '" fill="transparent"><title>'
     + _rpEsc(l.data + '  ·  meta ' + fmtN(l.meta) + ' cx'
       + (l.pct != null ? ' (p' + Math.round(l.pct) + ')' : '')
-      + '  ·  produziu ' + fmtN(l.real) + ' cx'
+      + '  ·  produziu ' + fmtN(l.real) + ' cx sem HE' + (l.realTotal > l.real ? ' (total ' + fmtN(l.realTotal) + ')' : '')
       + (l.meta > 0 ? '  ·  ' + fmtP(100 * l.real / l.meta) + ' da meta' : '')) + '</title></rect>').join('');
   // Período curto tem espaço para o número na tela; 30 dias vira borrão, e aí
   // quem responde é a faixa de toque.
@@ -7406,17 +7436,19 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
     + '<div class="kpi-sub">a ' + fmtN(Math.round(a.alvoMax)) + ' cx/dia (p' + fMin + '–p' + fMax + ') · hoje a média é ' + fmtN(Math.round(a.metaMedia)) + '</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">A META E O QUE A LINHA PRODUZIU, DIA A DIA</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">A META E O QUE A LINHA PRODUZIU EM JORNADA NORMAL, DIA A DIA</div>'
     + svg
     + '<div class="qp-leg"><span><i style="background:var(--acc)"></i>a META de cada dia</span>'
-    + '<span><i style="background:var(--txt);opacity:.5"></i>o que a linha PRODUZIU</span>'
+    + '<span><i style="background:var(--txt);opacity:.5"></i>o que a linha PRODUZIU (sem hora extra)</span>'
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a meta deveria ficar</span>'
     + '<span><i class="qp-dot" style="background:var(--red)"></i>meta acima da capacidade</span>'
     + '<span class="qp-leg-mouse">passe o mouse em qualquer ponto do gráfico para ver meta e produção do dia</span></div></div>'
     + '<div class="par-sec">' + ord.titulo + '</div>'
     + (ord.nota ? '<div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:.5px;margin:-8px 2px 10px">' + _rpEsc(ord.nota.toUpperCase()) + '</div>' : '')
-    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
-    + '<div class="qp-nota"><b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu. '
+    + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO S/ HE</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
+    + '<div class="qp-nota"><b>Capacidade sem hora extra:</b> cada dia entra com o realizado <b>menos a hora extra</b>, a mesma separação do card CAIXAS EM HORA EXTRA; sábado com produção sai da curva sozinho'
+    + (a.nSemSep ? ' · <b>' + a.nSemSep + ' dia(s)</b> sem a separação entram inteiros' : '') + '.<br><br>'
+    + '<b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu em jornada normal. '
     + 'A <b>faixa verde</b> é onde a meta deveria ficar: ali ela é batida em cerca de metade dos dias, e aí o vermelho, quando aparece, quer dizer que aconteceu algo. '
     + 'Acima da faixa vermelha a meta cobra o que a linha quase nunca faz — e vermelho que aparece sempre vira paisagem.<br><br>'
     + '<b>Repare se as duas linhas se acompanham.</b> Quando a meta sobe e a produção desce (ou o contrário), é sinal de que a meta não está sendo posta em função do que a linha faz. '
@@ -7704,7 +7736,7 @@ function _cartVeredito(a){
     d:'mesmo espalhando a carga pelos dias livres sobram ' + fmtN(Math.round(a.sobra))
       + ' cx que não cabem no período — aqui re-datar não basta: é dia a mais, hora extra ou empurrar para a semana seguinte' };
   if(a.nImpossivel > 0) return { cls:'red', t:'DIA DATADO ACIMA DO MÁXIMO JÁ FEITO',
-    d:a.nImpossivel + ' dia(s) pedem mais que o melhor dia da história da linha (' + fmtN(a.teto)
+    d:a.nImpossivel + ' dia(s) pedem mais que o melhor dia da linha em jornada normal (' + fmtN(a.teto)
       + ' cx) — e a carga cabe no período: é redistribuir, não produzir mais' };
   if(a.sai > 0) return { cls:'warn', t:'CARGA MAL DISTRIBUÍDA',
     d:fmtN(Math.round(a.sai)) + ' cx estão em dias que não comportam, e há ' + fmtN(Math.round(a.cabe))
@@ -7738,7 +7770,7 @@ function _cartHtml(a, regua, larg){
   const ey = y => T + (1 - y / topo) * (H - T - B);
   const passo = (W - L - R) / a.linhas.length;
   const yMax = ey(a.alvoMax), yMin = ey(a.alvoMin), yTeto = ey(a.teto);
-  const _tetoTxt  = 'MELHOR DIA JÁ FEITO — ' + fmtN(a.teto) + ' CX';
+  const _tetoTxt  = 'MELHOR DIA SEM HORA EXTRA — ' + fmtN(a.teto) + ' CX';
   const _cargaTxt = 'A CARGA DEVERIA FICAR AQUI';
   // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
   // seta aponta para dentro do gráfico a partir do lado escolhido.
@@ -7837,7 +7869,7 @@ function _cartHtml(a, regua, larg){
         : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
     + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
-    + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia já feito ('
+    + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia sem hora extra ('
     + fmtN(a.teto) + ' cx)</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
     + '<div class="kpi-sub">cx acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' cx nos dias livres'
@@ -7861,7 +7893,7 @@ function _cartHtml(a, regua, larg){
     + _cartMixHtml(a)
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
     + (mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
-    + 'A faixa verde é o que a linha entrega na altura certa; a linha vermelha tracejada é o <b>melhor dia que ela já fez</b> — barra acima dela nasceu impossível. '
+    + 'A faixa verde é o que a linha entrega na altura certa <b>em jornada normal, sem hora extra</b>; a linha vermelha tracejada é o <b>melhor dia que ela já fez sem hora extra</b> — barra acima dela nasceu impossível. '
     + 'As colunas <b>NÃO CABE</b> e <b>ESPAÇO LIVRE</b> são as duas pontas da mesma conta: se o que não cabe for menor que o espaço livre, é só re-datar, e isso não custa nada.<br><br>'
     + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
     + '<b>Nivelar não é sequenciar.</b> Encher todo dia com a mesma quantidade ignorando data de corte do cliente só troca um problema por outro: o nivelamento é a restrição de <b>capacidade</b>, a ordem continua sendo a <b>data</b>.<br><br>'
@@ -8058,7 +8090,7 @@ async function renderCarteira(){
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
-    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    dias = _qpDiasBase(dias);
     const curva = _qpCurva(dias, QP_REGUA);
     if(curva.length < QP_MIN_DIAS){
       alvo.innerHTML = '<div class="pg-carregando">Sem curva de capacidade ainda — são precisos ao menos '
@@ -8171,7 +8203,7 @@ async function gerarRelatorioPlano(){
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
-    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    dias = _qpDiasBase(dias);
     const curva = _qpCurva(dias, QP_REGUA);
     if(curva.length < QP_MIN_DIAS){
       win.close();
@@ -8181,6 +8213,7 @@ async function gerarRelatorioPlano(){
     const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
     const a = _qpAnalise(rec, curva, QP_FAIXA);
     if(!a){ win.close(); alert('Nenhum dia com meta no período escolhido.'); return; }
+    a.nSemSep = dias.filter(d => d.semSep).length;
 
     // ⚠ A CARTEIRA É OPCIONAL NO PAPEL. Se a leitura da programação falhar, o
     // relatório sai INTEIRO, só sem a seção — a mesma regra da cascata e das
@@ -8195,7 +8228,7 @@ async function gerarRelatorioPlano(){
     const fMin = a.faixa[0], fMax = a.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     const julgaTxt = QP_JANELA > 0 ? ('últimos ' + QP_JANELA + ' dias') : 'todo o histórico';
-    metaCab = 'régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax + ' · julgados: ' + _rpEsc(julgaTxt);
+    metaCab = 'régua ' + _rpEsc(reguaTxt) + ' sem hora extra · faixa alvo p' + fMin + '–p' + fMax + ' · julgados: ' + _rpEsc(julgaTxt);
     let n = 0;
     const sec = t => '<div class="rp-sec-ttl">' + (++n) + ' ▸ ' + t + '</div>';
 
@@ -8219,7 +8252,7 @@ async function gerarRelatorioPlano(){
 
       + sec('COMO O NÚMERO SAI')
       + '<table class="pgq-plano"><tbody>'
-      + '<tr><td style="font-weight:700;width:30%">CAPACIDADE</td><td>Os dias com produção da régua (' + _rpEsc(reguaTxt) + '), do pior para o melhor. Meta em p60 = em 60% dos dias a linha não chega lá.</td></tr>'
+      + '<tr><td style="font-weight:700;width:30%">CAPACIDADE</td><td>Os dias com produção da régua (' + _rpEsc(reguaTxt) + ') em <b>jornada normal</b> — a hora extra de cada dia é descontada' + (a.nSemSep ? '; ' + a.nSemSep + ' dia(s) sem a separação entram inteiros' : '') + ' — do pior para o melhor. Meta em p60 = em 60% dos dias a linha não chega lá.</td></tr>'
       + '<tr><td style="font-weight:700">ALTURA · OSCILAÇÃO</td><td>Onde a meta cai na curva (<b>p' + Math.round(a.pctMedio) + '</b> no período julgado) e quanto ela pula de um dia para o outro (<b>' + (a.osc == null ? '—' : fmtP(a.osc)) + '</b>, alvo até ' + QP_OSC_OK + '%).</td></tr>'
       + (ac ? '<tr><td style="font-weight:700">O QUE SAI E O QUE CABE</td><td>Uma referência: o topo da faixa alvo (' + fmtN(Math.round(ac.alvoMax)) + ' cx). Acima, o dia não comporta; abaixo, há espaço. A dívida (atraso + o que falta hoje) ocupa os primeiros dias antes de qualquer lote novo.</td></tr>'
              + '<tr><td style="font-weight:700">O MIX</td><td>' + (ac.mix
@@ -8263,7 +8296,7 @@ async function gerarRelatorioCarteira(){
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
-    dias = (dias || []).filter(d => d && Number(d.real) > 0);
+    dias = _qpDiasBase(dias);
     const curva = _qpCurva(dias, QP_REGUA);
     if(curva.length < QP_MIN_DIAS){
       win.close();
@@ -8276,7 +8309,7 @@ async function gerarRelatorioCarteira(){
     const fMin = ac.faixa[0], fMax = ac.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + _rpEsc(reguaTxt) + ' · faixa alvo p' + fMin + '–p' + fMax
-      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas');
+      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas') + ' · capacidade sem hora extra';
     corpo = '<div class="plano-doc cart-doc">'
       + _cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)
       + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'

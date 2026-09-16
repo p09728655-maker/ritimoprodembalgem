@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.56.0 — 16/09/2026
+
+**Atenção — a capacidade da aba PLANO mudou de base: é a JORNADA NORMAL, sem
+hora extra** (pedido do PPCP, 16/09/2026: *"tem que ser justo, desconsiderar
+horas extras"*). Antes cada dia do histórico entrava com o realizado total, HE
+dentro: o melhor dia (3.217 cx em 15/09) tinha 224 cx de hora extra; a
+madrugada de 05:00 contava inteira. A HE era contada duas vezes — escondida na
+régua ("cabe") e como remédio do veredito ("é hora extra").
+
+- Cada dia entra com **realizado − HE CX**, a mesma separação do card CAIXAS
+  EM HORA EXTRA e do relatório semanal. Sábado com produção (HE o dia inteiro)
+  sai da curva sozinho.
+- **Os números mudam**: a faixa alvo, o melhor dia, ALTURA de cada meta, o
+  "cabe / não cabe" da carteira e o veredito. A meta que "batia" só com hora
+  extra passa a sair como *abaixo* no bloco COMO TEMOS DATADO — coerente com
+  o "meta batida com hora extra" do relatório semanal.
+- **Dia sem a separação** (fechado antes da v5.0, ou o dia de hoje ainda
+  aberto) entra inteiro e a tela diz quantos são.
+- Vale para os dois blocos, a tela e os dois PDFs, por uma função só
+  (`_qpDiasBase`). Rótulos: *REALIZADO S/ HE*, *MELHOR DIA SEM HORA EXTRA*,
+  *capacidade = jornada normal* na barra e no cabeçalho dos relatórios; o
+  tooltip do gráfico mostra o total ao lado.
+
 ## v7.55.5 — 16/09/2026
 
 Só impressão. Pedidos do PPCP, 16/09/2026: *"quero impressão só dos lotes,

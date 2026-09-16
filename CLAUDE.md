@@ -2083,6 +2083,16 @@ feito e dá ar de verdade ao que sobrou.
 - **A causa está no código:** `CFG.metaDia` é a soma dos lotes datados para o
   dia (`aplicarMetaDiaAutomatica`), então a meta herda a irregularidade da
   **datação dos lotes**, não da operação. Atacar isso é datar contra capacidade.
+- ⚠ **A CAPACIDADE É A JORNADA NORMAL — HORA EXTRA FICA FORA** (v7.56.0, PPCP,
+  16/09/2026: *"tem que ser justo, desconsiderar horas extras"*). A curva saía
+  do realizado TOTAL do `HISTORICO`: o melhor dia (3.217 em 15/09) tinha 224 cx
+  de HE, a madrugada de 05:00 entrava inteira, e a HE era contada duas vezes —
+  escondida na régua e como remédio do veredito. `_qpDiasBase(dias)` é a
+  base única dos dois blocos, da tela e dos dois PDFs: cada dia entra com
+  `real − heCx` (`_qpRealDia`), o total fica em `realTotal` (tooltip), sábado
+  inteiro em HE sai sozinho, e dia sem separação (`heCx` nulo) entra inteiro e
+  é contado (`semSep` → `a.nSemSep`, impresso). **Não voltar a filtrar por
+  `Number(d.real) > 0` nos chamadores** — o teste prende os quatro.
 - A aba responde **duas perguntas independentes**, e é preciso as duas:
   **ALTURA** (`_qpPercentil` — em que percentil da capacidade a meta cai) e
   **OSCILAÇÃO** (`_qpOscilacao` — quanto ela pula). Medido: altura **p53** (boa)

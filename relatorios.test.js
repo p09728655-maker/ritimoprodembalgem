@@ -2861,6 +2861,31 @@ const _skinPlano = JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/)[1];
 ok('a pele do papel esconde a nota longa e a explicação do mix (fica só o veredito)',
    /\.plano-doc \.qp-nota,\.plano-doc \.qm-como,\.plano-doc \.qm-det\{display:none\}/.test(_skinPlano), true);
 ok('e a quebra de página é da pele, não da marcação', /\.pl-quebra\{page-break-before:always/.test(_skinPlano), true);
+// ── A RÉGUA É A JORNADA NORMAL: hora extra fica fora ─────────────────────
+// (PPCP, 16/09/2026: "tem que ser justo, desconsiderar horas extras"). O
+// melhor dia real (3.217 em 15/09) tinha 224 cx de HE dentro.
+console.log('\n── capacidade sem hora extra ──');
+eval(pega('function _qpRealDia('));
+eval(pega('function _qpDiasBase('));
+ok('dia com separação entra com real − heCx', _qpRealDia({ real:3217, heCx:224 }), 2993);
+ok('dia sem separação (heCx nulo) entra inteiro', [_qpRealDia({ real:1500, heCx:null }), _qpRealDia({ real:1500 })], [1500, 1500]);
+ok('hora extra maior que o dia não vira negativo', _qpRealDia({ real:100, heCx:300 }), 0);
+const _base = _qpDiasBase([{ data:'a', real:3217, heCx:224 }, { data:'sab', real:1278, heCx:1278 }, { data:'c', real:1500 }, null]);
+ok('sábado inteiro em HE sai da curva sozinho', _base.map(d => d.data), ['a', 'c']);
+ok('o total fica guardado e o dia sem separação é marcado',
+   [_base[0].real, _base[0].realTotal, _base[0].semSep, _base[1].semSep], [2993, 3217, false, true]);
+ok('a curva lê a base já sem HE', _qpCurva(_base, 0), [1500, 2993]);
+// UMA base para os dois blocos, a tela e os dois PDFs
+[['renderCarteira', 'async function renderCarteira('], ['renderQualidadePlano', 'async function renderQualidadePlano('],
+ ['gerarRelatorioPlano', 'async function gerarRelatorioPlano('], ['gerarRelatorioCarteira', 'async function gerarRelatorioCarteira(']]
+  .forEach(([nome, ass]) => {
+    const f = pega(ass);
+    ok(nome + ' passa o histórico pela base sem HE', /dias = _qpDiasBase\(dias\);/.test(f) && !/filter\(d => d && Number\(d\.real\) > 0\)/.test(f), true);
+  });
+ok('a tela diz que a capacidade é jornada normal',
+   /CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA<\/b>/.test(JS) && /MELHOR DIA SEM HORA EXTRA/.test(pega('function _cartHtml(')), true);
+ok('e conta os dias sem separação', /nSemSep/.test(pega('function _qpHtml(')) && /a\.nSemSep = dias\.filter\(d => d\.semSep\)\.length;/.test(pega('async function renderQualidadePlano(')), true);
+
 // ── 🖨 CARTEIRA: só a seção 1, em paisagem, com as MESMAS peças ─────────
 // (PPCP, 16/09/2026: "quero impressão só dos lotes separado do estudo de baixo"
 // + "faça teste com a impressão virada")
