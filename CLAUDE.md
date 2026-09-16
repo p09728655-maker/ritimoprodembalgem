@@ -2293,6 +2293,18 @@ feito e dá ar de verdade ao que sobrou.
 - **`_cartMontar(dias)` é a montagem única** (programação + dívida + mix +
   conferência) da tela e do PDF. O relatório ganha a linha **O MIX** em COMO O
   NÚMERO SAI.
+- **E SE AS PARADAS CAÍSSEM X%** (v7.57.0, PPCP, 16/09/2026: *"se a linha
+  diminuir as paradas em x%, daria ou não?"*). A régua é o que a linha FEZ, com
+  as paradas que teve. `_cartDiasComMenosParadas` devolve a cada dia da régua
+  a fração da **perda por parada não programada** (`porDia[data].perd` do
+  `RP_PARADAS`, a MESMA conta da aba PARADAS e do SIMULADOR); `_cartCenario`
+  refaz a curva e a análise da carteira com a régua nova e devolve
+  DARIA/NÃO DARIA. **Nenhuma fórmula de perda nova** — só se multiplica o que o
+  RP_PARADAS valorou; o teste falha se `perd` aparecer no desenho. A busca
+  (`_cartCenarioAsync`) é o `_pgContextoDoPeriodo` da gestão de perdas, do 1º
+  dia da régua até hoje; com `QP_ESE`=0 não busca. Seletor `qp-ese` na barra,
+  persistido em `rpe_qp_pref`. ⚠ A perda foi valorada ao ritmo da META do dia
+  — o cenário assume que o tempo recuperado produz nesse ritmo.
 - Medido com os fatores de julho na carteira real de 16/09: 17/09 tinha
   **3.125 cx de MESA CABECEIRA SLEEP** (205 cx/h) → **~2.000 cx de linha**;
   o lote que mais pesa em cada dia sai na tabela, para escolher O QUE mover.

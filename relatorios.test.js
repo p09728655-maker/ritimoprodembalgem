@@ -2886,6 +2886,40 @@ ok('a tela diz que a capacidade é jornada normal',
    /CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA<\/b>/.test(JS) && /MELHOR DIA SEM HORA EXTRA/.test(pega('function _cartHtml(')), true);
 ok('e conta os dias sem separação', /nSemSep/.test(pega('function _qpHtml(')) && /a\.nSemSep = dias\.filter\(d => d\.semSep\)\.length;/.test(pega('async function renderQualidadePlano(')), true);
 
+// ── E SE AS PARADAS CAÍSSEM X%? ────────────────────────────────────────────
+// (PPCP, 16/09/2026: "se a linha diminuir as paradas em x%, daria ou não?")
+console.log('\n── e se as paradas caíssem ──');
+eval(pega('function _cartDiasComMenosParadas('));
+eval(pega('function _cartCenario('));
+const _eseDias = [{ data:'01/09/2026', real:1000 }, { data:'02/09/2026', real:1200 }, { data:'03/09/2026', real:900 }];
+const _esePor  = { '01/09/2026': { perd: 200 }, '03/09/2026': { perd: 100 } };
+const _eseB = _cartDiasComMenosParadas(_eseDias, _esePor, 0.5);
+ok('devolve a fração da perda ao realizado só de quem tem parada apontada',
+   [_eseB.dias[0].real, _eseB.dias[1].real, _eseB.dias[2].real, _eseB.nCom, _eseB.cxRec], [1100, 1200, 950, 2, 150]);
+ok('0% não mexe em nada', _cartDiasComMenosParadas(_eseDias, _esePor, 0).dias[0].real, 1000);
+ok('fração acima de 1 é limitada', _cartDiasComMenosParadas(_eseDias, _esePor, 3).dias[0].real, 1200);
+// curva de 10 dias, todos com 100 cx de perda: −50% sobe a régua em 50
+const _eseD10 = _c10.map((r, i) => ({ data: 'd' + i, real: r }));
+const _esePor10 = {}; _eseD10.forEach(d => { _esePor10[d.data] = { perd: 100 }; });
+const _eseCart = _cartAberta([_it('16/09/2026', 700), _it('17/09/2026', 400)], _cartNum('15/09/2026'), 0);
+const _base = _cartAnalise(_eseCart, _c10, [50, 60]);
+const _cen  = _cartCenario(_eseCart, _eseD10, _esePor10, 0.5, 0, [50, 60]);
+ok('o cenário sobe o que o dia comporta pela perda recuperada', [_base.alvoMax, _cen.alvoMax], [600, 650]);
+ok('e refaz o que sai e o que cabe com a régua nova (a carteira não muda)',
+   [_base.sai, _cen.sai, _base.cabe, _cen.cabe], [100, 50, 200, 250]);
+ok('diz quantos dias tinham parada e quanto a linha faria a mais por dia', [_cen.nCom, _cen.nDias, _cen.cxRecDia], [10, 10, 50]);
+ok('com 0% não há cenário', _cartCenario(_eseCart, _eseD10, _esePor10, 0, 0, [50, 60]), null);
+ok('o desenho do cenário não faz conta',
+   /_cartCenario\(|_qpCurva\(|_cartAnalise\(|perd/.test(pega('function _cartESeHtml(')), false);
+ok('o cenário responde DARIA / NÃO DARIA', /'NÃO DARIA' : 'DARIA'/.test(pega('function _cartESeHtml(')), true);
+const _cenAsync = pega('async function _cartCenarioAsync(');
+ok('a busca das paradas é o MESMO carregador da gestão de perdas', /_pgContextoDoPeriodo\(rec\[0\]\.data, hojeStr\(\)\)/.test(_cenAsync), true);
+ok('com E SE em "como hoje" não busca nada', /if\(!\(QP_ESE > 0\)/.test(_cenAsync), true);
+['async function renderCarteira(', 'async function gerarRelatorioPlano(', 'async function gerarRelatorioCarteira(']
+  .forEach(ass => ok(ass.replace('async function ', '').replace('(', '') + ' liga o cenário na análise', /\.cenario = await _cartCenarioAsync\(cart, dias\)/.test(pega(ass)), true));
+ok('o desenho da carteira imprime o cenário logo abaixo do veredito', /_cartESeHtml\(a\)/.test(_cartDes), true);
+ok('a escolha persiste na mesma chave de preferências', /ese:QP_ESE/.test(pega('function _qpSalvarPref(')), true);
+
 // ── 🖨 CARTEIRA: só a seção 1, em paisagem, com as MESMAS peças ─────────
 // (PPCP, 16/09/2026: "quero impressão só dos lotes separado do estudo de baixo"
 // + "faça teste com a impressão virada")

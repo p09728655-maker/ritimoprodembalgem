@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.57.0 — 16/09/2026
+
+Sem mudança nos números de hoje. Pedido do PPCP, 16/09/2026: *"se a linha
+diminuir as paradas em x%, daria ou não?"*.
+
+- **E SE PARADAS** na barra da aba PLANO: *como hoje* · −10% · −25% · −50%.
+  Com um cenário escolhido, a carteira ganha uma linha logo abaixo do veredito:
+  quanto a linha faria a mais por dia, o que o dia passaria a comportar, o que
+  não caberia e a sobra — e a resposta **DARIA / NÃO DARIA** com o veredito do
+  cenário. Sai também nos dois PDFs.
+- A conta devolve a cada dia da régua a fração escolhida da **perda por parada
+  não programada** daquele dia — a mesma conta da aba PARADAS e do SIMULADOR
+  (`RP_PARADAS`: duração produtiva × meta do dia ÷ horas produtivas). Nada de
+  fórmula nova; a carteira não muda, muda o que a linha comportaria.
+- As paradas vêm pelo mesmo carregador da GESTÃO DE PERDAS (cache de 5 min,
+  voo compartilhado). Em *como hoje* não há busca. Se a leitura falhar, a linha
+  diz que o cenário não saiu, nunca um número inventado.
+
 ## v7.56.0 — 16/09/2026
 
 **Atenção — a capacidade da aba PLANO mudou de base: é a JORNADA NORMAL, sem
