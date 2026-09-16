@@ -2271,6 +2271,15 @@ feito e dá ar de verdade ao que sobrou.
   dela) com *prog. N* na base, **pintado depois da barra** — antes dela, a
   barra tapava o número. Título e legenda dizem a unidade. Sem mix, nada disso
   existe. O teste prende o fantasma, a ordem de pintura e o título.
+- ⚠ **VOCABULÁRIO É DE QUEM LÊ, NÃO DE QUEM CALCULA** (pedido do PPCP,
+  16/09/2026: *"precisa ser fácil interpretação, bater o olho e entender"*, e
+  logo depois *"aparado?"*). Na tela é **CARGA** (nunca "cx de linha"), o peso
+  sai em **palavras** de uma função só (`_cartPesoTxt`: *+22% lento* âmbar,
+  *−28% rápido* verde, *normal* sem número dentro de ±5%), o número em cima da
+  barra é o **PROGRAMADO** (o que se confere na planilha) e o selo **PESA +N%**
+  vai dentro dela. "Fator", "aparado" e "sem base" ficam no tooltip e no corpo
+  menor da caixa do mix — quem audita acha, quem passa não tropeça. Os nomes
+  internos (`cx de linha`, `aparado`) continuam no código e nesta memória.
 - **`_cartMontar(dias)` é a montagem única** (programação + dívida + mix +
   conferência) da tela e do PDF. O relatório ganha a linha **O MIX** em COMO O
   NÚMERO SAI.

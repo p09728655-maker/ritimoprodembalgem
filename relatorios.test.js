@@ -2800,9 +2800,20 @@ ok('o desenho da carteira e a linha do mix não fazem conta',
 ok('a linha do mix sai no desenho (tela e papel)', /_cartMixHtml\(a\)/.test(_cartDes), true);
 // "a qtde no gráfico não bate com a carteira" (16/09/2026): com o mix a barra
 // é cx de linha, e o PROGRAMADO cru vai como fantasma tracejado + número na base.
-ok('com o mix, o programado cru vai como fantasma na barra', /stroke-dasharray="3 3"/.test(_cartDes) && /prog\. ' \+ fmtN\(l\.crua\)/.test(_cartDes), true);
-ok('e o fantasma é pintado DEPOIS da barra (senão ela tapa o número)', /\+ fant;\s*\}\)\.join/.test(_cartDes), true);
-ok('o título do gráfico diz a unidade quando há mix', /BARRA EM CX DE LINHA · FANTASMA = PROGRAMADO/.test(_cartDes), true);
+ok('com o mix, o programado cru vai como fantasma na barra', /stroke-dasharray="3 3"/.test(_cartDes), true);
+ok('e o fantasma e o selo são pintados DEPOIS da barra (senão ela tapa)', /\+ fant \+ selo;\s*\}\)\.join/.test(_cartDes), true);
+ok('o título do gráfico diz a unidade quando há mix', /A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX/.test(_cartDes), true);
+// "precisa ser fácil interpretação, bater o olho e entender" (16/09/2026):
+// o peso sai em PALAVRAS, de uma função só, e o número em cima da barra é o
+// PROGRAMADO — o que o gestor confere na planilha.
+eval(pega('function _cartPesoTxt('));
+ok('peso em palavras: lento', [_cartPesoTxt(1.22).selo, _cartPesoTxt(1.22).cls], ['+22% lento', 'qp-p-warn']);
+ok('peso em palavras: rápido', [_cartPesoTxt(0.72).selo, _cartPesoTxt(0.72).cls], ['−28% rápido', 'qp-p-ok']);
+ok('dentro de ±5% é normal, sem número', [_cartPesoTxt(1.03).selo, _cartPesoTxt(0.96).cls], ['normal', '']);
+ok('o número em cima da barra é o programado quando há mix', /fmtN\(mix \? l\.crua : l\.qtde\)/.test(_cartDes), true);
+ok('o selo PESA vai dentro da barra', /PESA ' \+ peso\.pct/.test(_cartDes), true);
+ok('"aparado" e "×fator" saíram da tabela — ficam no tooltip', /aparado\(s\)<\/span>|_fx\(l\.fator\)/.test(_cartDes), false);
+ok('a caixa do mix fala em palavras', /COMO A CARGA É CALCULADA/.test(pega('function _cartMixHtml(')) && /os pesos valem/.test(pega('function _cartMixHtml(')), true);
 ok('mix pedido e NÃO aplicado nunca passa em silêncio', /MIX NÃO APLICADO/.test(pega('function _cartMixHtml(')), true);
 const _cartRit = pega('async function _cartRitmos(');
 ok('o log de produto tem cache por período e requisição em voo compartilhada',

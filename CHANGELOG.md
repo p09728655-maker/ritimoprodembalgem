@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.3 — 16/09/2026
+
+Sem mudança de conta. Pedido do PPCP: *"precisa ser fácil interpretação, bater
+o olho e entender"* — a carteira com mix falava em "cx de linha", "×1,22" e
+"2 aparado(s)", vocabulário de quem escreveu a conta.
+
+- **Vocabulário**: "cx de linha" virou **CARGA**; o seletor é *carga pelo mix*
+  / *caixas cruas*.
+- **Barra**: o número em cima é o **PROGRAMADO** (o que se confere na
+  planilha); dentro da barra o selo **PESA +22%** / **PESA −28%**; o fantasma
+  tracejado continua marcando a altura do programado.
+- **Tabela**: colunas PROGRAMADO · **PESO DO MIX** (selo em palavras: *+22%
+  lento*, *−28% rápido*, *normal*) · CARGA. O detalhe técnico (lotes sem
+  histórico, pesos limitados) foi para o tooltip da célula.
+- **A caixa do mix** virou duas frases: *como a carga é calculada* (produto
+  lento pesa mais, rápido pesa menos, com exemplo) e *conferência* (*os pesos
+  valem* / *não explicam a variação*). O diagnóstico numérico ficou em corpo
+  menor no fim.
+- "Aparado" = peso do produto fora da faixa plausível (menos de ⅓ ou mais de
+  3× da média, quase sempre hora parcial no apontamento) e limitado no
+  extremo. Agora a tela diz isso em palavras.
+
 ## v7.55.2 — 16/09/2026
 
 Correção de leitura, sem mudança de conta. Com o mix ligado, o gráfico da
