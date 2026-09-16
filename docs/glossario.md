@@ -97,7 +97,7 @@ meta do dia explica **8%** da variação do realizado (r = 0,28).
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **CURVA DE CAPACIDADE** | os dias **com produção**, ordenados do pior para o melhor | cx/dia | `v7:_qpCurva` |
+| **CURVA DE CAPACIDADE** | os dias **com produção em jornada normal** (`realizado − HE CX`; dia sem a separação entra inteiro), ordenados do pior para o melhor | cx/dia | `v7:_qpDiasBase`, `v7:_qpCurva` |
 | **ALTURA DA META** (percentil) | % dos dias cuja produção ficou **nesse nível ou abaixo** — a fatia que a meta reprovaria | p0–p100 | `v7:_qpPercentil` |
 | **OSCILAÇÃO DA META** | desvio padrão ÷ média das metas do período | % | `v7:_qpOscilacao` |
 | **DIAS ACIMA DA CAPACIDADE** | dias cuja meta passou de `QP_ACIMA` | dias | `v7:_qpAnalise` |
