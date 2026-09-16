@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.55.2 — 16/09/2026
+
+Correção de leitura, sem mudança de conta. Com o mix ligado, o gráfico da
+carteira mostrava a barra em cx de linha e o gestor conferiu contra a
+PROGRAMACAO: *"a qtde de produto no gráfico não bate com a carteira"*.
+
+- O **programado cru** passa a aparecer como **fantasma tracejado** atrás de
+  cada barra (a linguagem do fantasma da meta no gráfico semanal), com o
+  número na base (*prog. 3.125*). A barra sólida continua sendo o que a régua
+  julga (cx de linha). O título do gráfico e a legenda dizem a unidade.
+- Sem mix (CAIXAS CRUAS) nada disso é desenhado — o gráfico é o de antes.
+
 ## v7.55.1 — 16/09/2026
 
 Correção da v7.55.0, medida em produção na primeira abertura: com a régua em

@@ -2798,6 +2798,11 @@ ok('o mix não toca na curva', /_mixRitmos\(|_mixFator\(/.test(pega('function _c
 ok('o desenho da carteira e a linha do mix não fazem conta',
    /_mixRitmos\(|_mixFator\(|_mixDiag\(|_phMediaAparada\(/.test(_cartDes + pega('function _cartMixHtml(')), false);
 ok('a linha do mix sai no desenho (tela e papel)', /_cartMixHtml\(a\)/.test(_cartDes), true);
+// "a qtde no gráfico não bate com a carteira" (16/09/2026): com o mix a barra
+// é cx de linha, e o PROGRAMADO cru vai como fantasma tracejado + número na base.
+ok('com o mix, o programado cru vai como fantasma na barra', /stroke-dasharray="3 3"/.test(_cartDes) && /prog\. ' \+ fmtN\(l\.crua\)/.test(_cartDes), true);
+ok('e o fantasma é pintado DEPOIS da barra (senão ela tapa o número)', /\+ fant;\s*\}\)\.join/.test(_cartDes), true);
+ok('o título do gráfico diz a unidade quando há mix', /BARRA EM CX DE LINHA · FANTASMA = PROGRAMADO/.test(_cartDes), true);
 ok('mix pedido e NÃO aplicado nunca passa em silêncio', /MIX NÃO APLICADO/.test(pega('function _cartMixHtml(')), true);
 const _cartRit = pega('async function _cartRitmos(');
 ok('o log de produto tem cache por período e requisição em voo compartilhada',

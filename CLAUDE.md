@@ -2264,6 +2264,13 @@ feito e dá ar de verdade ao que sobrou.
   `_phCache` se a aba PRODUÇÃO/HORA já buscou o mesmo período. ⚠ Essa leitura
   publica `PREP_PERIODO`, que é da OUTRA aba e de outro período: é guardado e
   devolvido no `finally` (teste prende). Sem re-deploy do `.gs`.
+- ⚠ **A BARRA NÃO É O NÚMERO DA PLANILHA, e a tela tem de dizer isso** (16/09/2026,
+  logo depois do deploy: *"a qtde de produto no gráfico não bate com a
+  carteira"*). O programado cru vai como **fantasma tracejado** atrás da barra
+  (contorno cinza quando é maior que a barra, cor do fundo quando cabe dentro
+  dela) com *prog. N* na base, **pintado depois da barra** — antes dela, a
+  barra tapava o número. Título e legenda dizem a unidade. Sem mix, nada disso
+  existe. O teste prende o fantasma, a ordem de pintura e o título.
 - **`_cartMontar(dias)` é a montagem única** (programação + dívida + mix +
   conferência) da tela e do PDF. O relatório ganha a linha **O MIX** em COMO O
   NÚMERO SAI.
