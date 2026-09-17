@@ -11,6 +11,46 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.59.0 · mobile 1.19.0 · .gs 5.5 — 17/09/2026
+
+**Paradas com SEGUNDOS — a base do estudo de microparadas.** Pedido do PPCP,
+17/09/2026, com a aba `PARADAS` na tela: *"a duração está vindo número fechado,
+ex. 8:24 a 8:25 = 1; vamos precisar pegar os segundos também, estamos estudando
+as microparadas"*. Na planilha daquele dia, três `Parada/Empilhar peças` de
+08:24→08:25, 08:39→08:39 e 08:44→08:44 valiam **1, vazio e vazio**.
+
+- **O mobile grava `INICIO` e `FIM` com segundos** (`HH:mm:ss`) no REGISTRAR e
+  no START. O `.gs` carimba o FIM do servidor também com segundos.
+- **`DURACAO_MIN` vira minuto com fração** (45 s = `0,75`), duas casas — a soma
+  em minutos na planilha continua fechando. **Nasce a coluna H `DURACAO_SEG`**
+  (segundos inteiros), para ler a microparada sem converter; o cabeçalho é
+  criado sozinho na 1ª gravação em aba antiga. ⚠ **re-deploy** do `.gs`.
+- **Linha antiga continua igual**: hora sem segundos lê como `:00`, e a célula
+  de hora sai como sempre saiu (`HH:mm`) quando não tem segundos.
+- **Cronômetro da TV e banner do celular** partem do segundo certo, e abaixo de
+  1 min mostram segundos (*"45 s"*).
+
+**Atenção — números que mudam a partir de agora (nada muda no passado):**
+- Tempo parado, caixas perdidas, disponibilidade, Pareto, SMED, minutos/1.000
+  e o simulador passam a somar a **fração de minuto** de cada parada. Uma
+  parada de 45 s que antes valia **0** (ou 1, dependendo da virada do minuto)
+  agora vale 0,75 min. No dia a dia a diferença é pequena; em dia de muitas
+  microparadas o tempo parado **sobe** — é o tempo que sempre existiu e não
+  era contado.
+- **Formato de duração:** abaixo de 1 min sai em segundos (*45 s*), minuto
+  quebrado sai *3m15s*, inteiro continua *3 min*, acima de 1 h continua *1h05m*.
+- **TEMPO MÉDIO por parada** deixa de ser inteiro (era *"0 min em média"* com
+  paradas de 40 s).
+- **Distribuição do SMED** com faixas contíguas (`≤3 · 3–5 · 5–10 · 10–20 ·
+  >20 min`): com a fração, uma troca de 3,5 min caía fora de todas.
+- Antes do re-deploy o app já manda os segundos; o backend antigo só trunca a
+  `DURACAO_MIN` e devolve a hora sem segundos — nada quebra.
+
+Testes: `paradas-calc.test.js`, `rp-core.test.js` e `apps-script.test.js`
+(roda o `endParada` real numa aba de 7 colunas). O `relatorios.test.js` estava
+quebrado na `main` desde a v7.55 (três `const` repetidos e quatro guardas que
+não acompanharam o 🖨 CARTEIRA) — consertado o teste, sem mudança de painel.
+
 ## v7.58.0 — 16/09/2026
 
 Só a impressão da aba PLANO, aprovada pelo PPCP com o PDF na mão

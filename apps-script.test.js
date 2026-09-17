@@ -121,6 +121,70 @@ const e2 = lerEmbaladoPorProduto(20260810);
 ok('PRODUCAO_PRODUTO lida 1× (antes eram 2)', leituras.PRODUCAO_PRODUTO, 1);
 ok('e o resultado é o mesmo das duas vezes', JSON.stringify(e2), JSON.stringify(e1));
 
+console.log('\n── PARADAS com segundos (v5.5, microparadas) ──');
+// Caso real (17/09/2026): 08:24→08:25 gravava DURACAO_MIN = 1 e 08:39→08:39
+// ficava em branco. Com INICIO/FIM em HH:mm:ss a duração sai com fração e a
+// coluna H (DURACAO_SEG) traz os segundos. Roda as funções REAIS do .gs.
+(function () {
+  const p2 = n => String(n).padStart(2, '0');
+  const Utilities = { formatDate: (d, tz, f) => {
+    if (f === 'ss')       return p2(d.getSeconds());
+    if (f === 'HH:mm')    return p2(d.getHours()) + ':' + p2(d.getMinutes());
+    if (f === 'HH:mm:ss') return p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+    if (f === 'dd/MM/yyyy') return p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear();
+    throw new Error('formato não esperado no teste: ' + f);
+  } };
+  function _ssTz() { return TZ; }
+  const Logger = { log() {} };
+  const SHEET_PARADAS = 'PARADAS';
+  eval(pega('function _horaEmSeg('));
+  eval(pega('function calcDurSeg('));
+  eval(pega('function calcDurMin('));
+  eval(pega('function _horaSegStr('));
+  eval(pega('function _dataStr('));
+  eval(pega('function _garantirColDuracaoSeg('));
+  eval(pega('function endParada('));
+
+  ok('08:24:10 → 08:25:00 = 50 s', calcDurSeg('08:24:10', '08:25:00'), 50);
+  ok('… e 0,83 min em DURACAO_MIN (era 1)', calcDurMin('08:24:10', '08:25:00'), 0.83);
+  ok('08:39:02 → 08:39:47 = 45 s (era vazio)', calcDurSeg('08:39:02', '08:39:47'), 45);
+  ok('linha antiga só com HH:mm continua igual: 08:24 → 08:25 = 1', calcDurMin('08:24', '08:25'), 1);
+  ok('mesmo instante continua sem duração (parada aberta não ganha 0)', calcDurMin('08:39', '08:39'), null);
+  ok('texto que não é hora não tem duração', calcDurSeg('8h', '9h'), null);
+
+  const hora = (h, m, s) => new Date(2026, 8, 17, h, m, s);
+  ok('célula de hora COM segundos sai HH:mm:ss', _horaSegStr(hora(8, 39, 15)), '08:39:15');
+  ok('célula de hora SEM segundos sai HH:mm, como sempre saiu', _horaSegStr(hora(8, 39, 0)), '08:39');
+  ok('texto passa como está', _horaSegStr(' 08:39:15 '), '08:39:15');
+  ok('vazio continua vazio (é o teste de "parada aberta")', _horaSegStr(''), '');
+
+  // endParada numa aba criada ANTES da v5.5 (7 colunas): carimba FIM com
+  // segundos, DURACAO_MIN com fração, cria o cabeçalho H e grava DURACAO_SEG.
+  const linhas = [
+    ['DATA', 'ID', 'TIPO', 'INICIO', 'FIM', 'DURACAO_MIN', 'OBS'],
+    ['17/09/2026', '1789645178327', 'Parada/Empilhar peças', '08:39:02', '', '', ''],
+  ];
+  const escritas = {};
+  const sh = {
+    getDataRange: () => ({ getValues: () => linhas.map(r => r.slice()) }),
+    getRange: (r, c) => ({
+      getValue: () => (linhas[r - 1] || [])[c - 1] || '',
+      setValue: v => { escritas[r + ',' + c] = v; }
+    })
+  };
+  const SpreadsheetApp = { getActiveSpreadsheet: () => ({ getSheetByName: () => sh }), flush() {} };
+  const res = endParada({ id: '1789645178327', fim: '08:39:47', data: '17/09/2026' });
+  ok('endParada fecha pelo ID', res.ok, true);
+  ok('FIM gravado com os segundos que vieram', escritas['2,5'], '08:39:47');
+  ok('DURACAO_MIN = 0,75 (45 s)', escritas['2,6'], 0.75);
+  ok('DURACAO_SEG = 45 na coluna H', escritas['2,8'], 45);
+  ok('cabeçalho DURACAO_SEG criado na aba antiga', escritas['1,8'], 'DURACAO_SEG');
+  // Cabeçalho já existente não é reescrito.
+  linhas[0].push('DURACAO_SEG'); delete escritas['1,8'];
+  endParada({ id: '1789645178327', fim: '08:39:47', data: '17/09/2026' });
+  ok('cabeçalho existente fica quieto', escritas['1,8'], undefined);
+})();
+
 console.log('\n── quem ESCREVE continua lendo direto da planilha ──');
 // Guarda-corpo: se alguma função de escrita passar a usar o memo, ela pode
 // gravar em cima de um retrato velho da aba.

@@ -911,7 +911,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.18.0';
+const APP_VER   = '1.19.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1540,12 +1540,13 @@ function renderGerParada(){
   const at = paradaAtiva();
   if(!at){ el.style.display='none'; return; }
   let tempo = '';
-  if(/^\d{1,2}:\d{2}$/.test(String(at.ini))){
-    const [h,m] = String(at.ini).split(':').map(Number);
+  if(/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(at.ini))){
+    const [h,m,sg] = String(at.ini).split(':').map(Number);
     const a = new Date();
-    let min = (a.getHours()*60 + a.getMinutes()) - (h*60 + m);
-    if(min < 0) min = 0;
-    tempo = min>=60 ? `${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}` : `${min} min`;
+    let seg = (a.getHours()*3600 + a.getMinutes()*60 + a.getSeconds()) - (h*3600 + m*60 + (sg||0));
+    if(seg < 0) seg = 0;
+    const min = Math.floor(seg/60);
+    tempo = seg<60 ? `${seg} s` : min>=60 ? `${Math.floor(min/60)}h${String(min%60).padStart(2,'0')}` : `${min} min`;
   }
   el.innerHTML = `
     <div class="ger-parada-ttl">⏸ PRODUÇÃO PARADA</div>
@@ -1554,7 +1555,11 @@ function renderGerParada(){
     <div class="ger-parada-tempo">PARADO HÁ ${tempo} · desde ${at.ini||'--:--'}</div>`;
   el.style.display = '';
 }
-function nowHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+// Hora COM segundos (HH:mm:ss): é o que vai para INICIO/FIM da aba PARADAS. Sem
+// os segundos, 08:24→08:25 era "1 min" e 08:39→08:39 ficava sem duração — a
+// microparada não existia na conta. Backend antigo (antes da v5.5) grava a
+// string como veio; só a coluna DURACAO_MIN dele sairia truncada até o re-deploy.
+function nowHoraSeg(){ const d=new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':'); }
 
 // ─── Análise de PARADAS no gerencial (mobile) ─────────────────────────────
 // Resumo do período (tempo, nº, caixas perdidas, disponibilidade) + top
@@ -1639,11 +1644,17 @@ function _rpRecarregar(){
 function _horasProdMob(){ return _rpOk()?RP_PARADAS.horasProdutivas(CFG):8.8; }
 function _durMin2(ini,fim){
   if(_rpOk()) return RP_PARADAS.durMin(ini,fim);
-  if(!/^\d{1,2}:\d{2}$/.test(String(ini))||!/^\d{1,2}:\d{2}$/.test(String(fim))) return null;
-  const[a,b]=ini.split(':').map(Number),[c,e]=fim.split(':').map(Number);
-  const d=(c*60+e)-(a*60+b); return d>=0?d:null;
+  const re=/^\d{1,2}:\d{2}(:\d{2})?$/;
+  if(!re.test(String(ini))||!re.test(String(fim))) return null;
+  const d=toMin(fim)-toMin(ini); return d>=0?d:null;   // toMin do rp-core lê segundos
 }
-function _fmtMin2(m){ if(m==null)return'—'; return m>=60?`${Math.floor(m/60)}h${p2(m%60)}m`:`${m} min`; }
+function _fmtMin2(m){
+  if(_rpOk()) return RP_PARADAS.fmtMin(m);
+  if(m==null)return'—';
+  const seg=Math.round((parseFloat(m)||0)*60); if(seg<60) return `${seg} s`;
+  const mm=Math.floor(seg/60), ss=seg%60;
+  return mm>=60?`${Math.floor(mm/60)}h${p2(mm%60)}m`:(ss?`${mm}m${p2(ss)}s`:`${mm} min`);
+}
 
 // Meta de CADA dia: a perda de uma parada de 20/07 usa a meta de 20/07, não a
 // de hoje. Usando só CFG.metaDia o mobile dava 3.780 cx onde o desktop dava
@@ -1963,7 +1974,7 @@ async function registrarParadaAgora(){
   const btn  = document.getElementById('btn-registrar-parada');
   if(btn){ btn.textContent='REGISTRANDO...'; btn.disabled=true; }
 
-  const nova = { id: Date.now(), tipo, ini: nowHHMM(), fim:'', obs };
+  const nova = { id: Date.now(), tipo, ini: nowHoraSeg(), fim:'', obs };
   const params = 'action=saveParadas&paradas='+encodeURIComponent(JSON.stringify([nova]));
   const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params;
   let erro = null, res = null;
@@ -2015,7 +2026,7 @@ async function darStartParada(){
   const btn = document.getElementById('btn-start-parada');
   if(btn){ btn.textContent='RETOMANDO...'; btn.disabled=true; }
 
-  const fim  = nowHHMM();
+  const fim  = nowHoraSeg();
   const data = hojeStr();
   let erro = null;
   _parEscrevendo = true;   // só aqui: nada entre a marca e o try pode escapar

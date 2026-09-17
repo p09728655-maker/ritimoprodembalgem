@@ -49,6 +49,10 @@ ok('dois dígitos', p2(7), '07');
 console.log('\n── horário ──');
 ok('07:00 = 420 min', toMin('07:00'), 420);
 ok('12:12 = 732 min', toMin('12:12'), 732);
+// A aba PARADAS grava segundos desde a v5.5 do .gs (microparadas). Ignorar o
+// terceiro campo fazia 08:39:02→08:39:47 dar ZERO minutos.
+ok('08:39:45 = 519,75 min (segundos viram fração)', toMin('08:39:45'), 519.75);
+ok('08:39:00 = 519 (segundo zero não muda nada)', toMin('08:39:00'), 519);
 ok('volta de minutos para hora', fromMin(732), '12:12');
 ok('meia-noite', fromMin(0), '00:00');
 

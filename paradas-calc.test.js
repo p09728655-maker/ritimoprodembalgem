@@ -35,6 +35,20 @@ console.log('\n── duração ──');
 ok('1h = 60 min', RP.durMin('08:00', '09:00'), 60);
 ok('parada SEM FIM não tem duração', RP.durMin('08:00', ''), null);
 ok('hora inválida não tem duração', RP.durMin('8h', '9h'), null);
+// Microparadas (v5.5 do .gs): INICIO/FIM chegam com segundos. Antes 08:24→08:25
+// era 1 min e 08:39→08:39 era 0 — a parada de 45 s não existia na conta.
+ok('08:24:10 → 08:25:00 = 50 s = 0,8333 min', Math.round(RP.durMin('08:24:10', '08:25:00') * 10000) / 10000, 0.8333);
+ok('08:39:02 → 08:39:47 = 0,75 min (antes dava 0)', RP.durMin('08:39:02', '08:39:47'), 0.75);
+ok('mistura HH:mm com HH:mm:ss lê o :00 implícito', RP.durMin('08:24', '08:25:30'), 1.5);
+ok('horaMin exporta a mesma leitura', RP.horaMin('08:39:45'), 519.75);
+
+console.log('\n── formato de duração ──');
+ok('abaixo de 1 min sai em segundos', RP.fmtMin(0.75), '45 s');
+ok('minuto quebrado sai m+s', RP.fmtMin(3.25), '3m15s');
+ok('minuto inteiro sai como sempre', RP.fmtMin(3), '3 min');
+ok('acima de 1 h sem segundos, como sempre', RP.fmtMin(65), '1h05m');
+ok('acima de 1 h a fração de minuto some (1h00m, não 1h00m30s)', RP.fmtMin(60.5), '1h00m');
+ok('null é travessão', RP.fmtMin(null), '—');
 
 console.log('\n── classificação planejada ──');
 ok('CLASSE da planilha manda sobre o nome',
@@ -164,6 +178,30 @@ ok('porTipo fecha com o total', sc.porTipo['Falha'].perd, 10);
 ok('porDia fecha com o total', sc.porDia['03/08/2026'].perd, 10);
 // A função pública continua devolvendo inteiro para quem valora um recorte só.
 ok('perdaDeMin continua arredondando na ponta', RP.perdaDeMin(60, 1600, 8.8), 182);
+
+console.log('\n── microparadas: segundos entram na conta ──');
+// Caso real da planilha (17/09/2026): Parada/Empilhar peças 08:39→08:39 e
+// 08:44→08:44 saíam sem duração; 08:24→08:25 saía como 1 min. Com segundos
+// cada uma vale o que durou, e a soma continua sendo arredondada uma vez só.
+{
+  const micro = [
+    { data: '03/08/2026', tipo: 'Parada/Empilhar peças', ini: '08:24:10', fim: '08:25:00' },  // 50 s
+    { data: '03/08/2026', tipo: 'Parada/Empilhar peças', ini: '08:39:02', fim: '08:39:47' },  // 45 s
+    { data: '03/08/2026', tipo: 'Parada/Empilhar peças', ini: '08:44:30', fim: '08:44:55' },  // 25 s
+  ];
+  const sm = RP.stats(micro, {
+    cfg: Object.assign({}, CFG, { metaDia: 1760 }), metaByDay: { '03/08/2026': 1760 },
+    realByDay: { '03/08/2026': 1000 }, de: '03/08/2026', ate: '03/08/2026'
+  });
+  ok('as três contam (antes duas tinham duração 0 e saíam)', sm.nParadas, 3);
+  ok('tempo parado = 120 s = 2 min', Math.round(sm.totMin * 1000) / 1000, 2);
+  ok('2 min a 200 cx/h = 7 cx (antes: 1 min = 3 cx)', sm.pecas, 7);
+  ok('tempo médio de 40 s, não "0 min"', sm.tMed, 0.67);
+  ok('e o texto do médio sai em segundos', RP.fmtMin(sm.tMed), '40 s');
+  // Parada de segundos inteira dentro do almoço continua fora.
+  ok('almoço continua fora mesmo com segundos',
+     RP.durProdutiva('11:30:10', '11:30:40', CFG), 0);
+}
 
 console.log('\n── os HTMLs não podem ter conta própria ──');
 // Guarda-corpo: se a conta voltar para dentro de um dos painéis, eles divergem

@@ -29,10 +29,15 @@
     return m ? (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]) : 0;
   }
 
+  // "HH:mm" ou "HH:mm:ss" → minutos (com fração quando há segundos). A aba
+  // PARADAS passou a gravar segundos (microparadas, v5.5 do .gs): 08:39:02 →
+  // 08:39:47 é 0,75 min, e antes era ZERO — a microparada não existia na conta.
+  // Rótulo de turno/almoço (HH:mm) continua dando o inteiro de sempre.
   function toMin(hhmm) {
     var p = String(hhmm || '').split(':');
-    return (+p[0]) * 60 + (+p[1]);
+    return (+p[0]) * 60 + (+p[1]) + ((+p[2]) || 0) / 60;
   }
+  var HORA_RE = /^\d{1,2}:\d{2}(:\d{2})?$/;
 
   // Horas produtivas do turno = turno − almoço. Nunca menos de 1 (evita divisão
   // por zero se o turno vier mal configurado).
@@ -48,14 +53,21 @@
   // é assim que a parada EM ANDAMENTO (sem FIM) fica de fora: sem fim não há
   // duração, e sem duração não há perda que se possa estimar.
   function durMin(ini, fim) {
-    if (!/^\d{1,2}:\d{2}$/.test(String(ini)) || !/^\d{1,2}:\d{2}$/.test(String(fim))) return null;
+    if (!HORA_RE.test(String(ini)) || !HORA_RE.test(String(fim))) return null;
     var d = toMin(fim) - toMin(ini);
     return d >= 0 ? d : null;
   }
 
+  // Minutos → texto. Com segundos na jogada a fração tem de aparecer: abaixo de
+  // 1 min sai em segundos ("45 s"), minuto quebrado sai "3m15s", inteiro sai
+  // "3 min" como sempre. Acima de 1 h os segundos somem (1h05m) — lá é resumo.
   function fmtMin(m) {
     if (m == null) return '—';
-    return m >= 60 ? Math.floor(m / 60) + 'h' + String(m % 60).padStart(2, '0') + 'm' : m + ' min';
+    var seg = Math.round((parseFloat(m) || 0) * 60);
+    if (seg < 60) return seg + ' s';
+    var mm = Math.floor(seg / 60), ss = seg % 60;
+    if (mm >= 60) return Math.floor(mm / 60) + 'h' + String(mm % 60).padStart(2, '0') + 'm';
+    return ss ? mm + 'm' + String(ss).padStart(2, '0') + 's' : mm + ' min';
   }
 
   // Duração PRODUTIVA: os minutos da parada que caem fora do almoço.
@@ -249,7 +261,9 @@
     var dispon  = tempoDispMin > 0 ? Math.max(0, (tempoDispMin - totMinNP) / tempoDispMin * 100) : 100;
     var pctPerd = tempoDispMin > 0 ? (totMinNP / tempoDispMin * 100) : 0;
     var media   = nDias > 0 ? Math.round(pecas / nDias) : 0;
-    var tMed    = nParadas > 0 ? Math.round(totMin / nParadas) : 0;
+    // Duas casas, não inteiro: com microparadas a média cai abaixo de 1 min e
+    // o inteiro dava 0 — "0 min em média" para paradas de 40 s.
+    var tMed    = nParadas > 0 ? Math.round(totMin / nParadas * 100) / 100 : 0;
 
     // Ritmo de referência: derivado da própria perda, p/ ficar coerente com o
     // número exibido. Sem parada não planejada, cai na meta de hoje ÷ horas.
@@ -307,7 +321,7 @@
       + (d.paradasIgnoradas ? ' · ' + d.paradasIgnoradas + ' sem fim' : '');
   }
 
-  var VERSAO = '1.2.0';
+  var VERSAO = '1.3.0';
 
   glob.RP_PARADAS = {
     VERSAO: VERSAO,
@@ -315,6 +329,7 @@
     dataNum: dataNum,
     horasProdutivas: horasProdutivas,
     durMin: durMin,
+    horaMin: toMin,          // HH:mm[:ss] → minutos com fração (mesma leitura do durMin)
     durProdutiva: durProdutiva,
     fmtMin: fmtMin,
     ehPlanejada: ehPlanejada,

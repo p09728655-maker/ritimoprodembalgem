@@ -42,7 +42,12 @@ const fmtP = n => isNaN(n) || n === null ? '—' : fmt1(n) + '%';
 const plural = (n, sing, plur) => `${fmtN(n)} ${Math.abs(Number(n)) === 1 ? sing : plur}`;
 
 // ── Horário ─────────────────────────────────────────────────────────────────
-function toMin(s){ const [h, m] = s.split(':').map(Number); return h * 60 + m; }
+// "HH:mm" → minutos inteiros (rótulos de slot, turno, almoço). "HH:mm:ss" → com
+// fração: é o formato que a aba PARADAS grava desde a v5.5 do .gs (microparadas
+// medidas em segundos), e ignorar o terceiro campo fazia 08:39:02→08:39:47 dar
+// ZERO minutos. Nenhum rótulo de hora do painel traz segundos, então os ~500
+// pontos de chamada continuam recebendo o inteiro de sempre.
+function toMin(s){ const [h, m, sg] = s.split(':').map(Number); return h * 60 + m + ((sg || 0) / 60); }
 function fromMin(m){ return `${p2(Math.floor(m / 60))}:${p2(m % 60)}`; }
 
 // Normaliza o rótulo de horário para comparação. A planilha traz traço comum,
