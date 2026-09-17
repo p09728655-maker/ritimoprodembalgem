@@ -297,6 +297,45 @@ via Google Apps Script (JSONP).
   se a palavra voltar ao painel. A divulgação da semana é o PDF e o resumo do
   WhatsApp.
 
+## Paradas com SEGUNDOS (microparadas)
+- Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
+  8:25 = 1; vamos precisar pegar os segundos também, estamos estudando as
+  microparadas"*. Na aba `PARADAS` daquele dia, três `Parada/Empilhar peças`
+  (08:24→08:25, 08:39→08:39, 08:44→08:44) valiam **1, vazio e vazio**.
+- **O mobile manda `HH:mm:ss`** (`nowHoraSeg()`, no REGISTRAR e no START); o
+  `.gs` (v5.5) carimba o FIM do servidor com segundos, grava **`DURACAO_MIN`
+  com fração** (45 s = `0,75`, duas casas) e a coluna **H `DURACAO_SEG`**
+  (segundos inteiros; `_garantirColDuracaoSeg` escreve o cabeçalho na aba
+  antiga na 1ª gravação). `calcDurMin` → `calcDurSeg` → `_horaEmSeg`, uma
+  leitura só, segundos **opcionais** (linha antiga lê como `:00`).
+- **`_horaSegStr` é só da `PARADAS`**: célula de hora sai `HH:mm:ss` quando tem
+  segundos e `HH:mm` quando não tem — linha antiga volta exatamente como
+  voltava. ⚠ **Não trocar o `_horaStr`** (HH:mm): ele é da `HORA_A_HORA` e do
+  log de produto, onde segundo não existe e o formato entra em rótulo.
+- **No front, `toMin` (rp-core E paradas-calc) lê o terceiro campo como
+  fração** — `08:39:45` → 519,75. Rótulo de slot nunca tem segundos, então os
+  ~500 pontos de chamada seguem recebendo o inteiro. `RP_PARADAS.durMin`
+  aceita `HH:mm(:ss)?` e devolve minuto com fração; **`fmtMin`** é o formato
+  único (*45 s* · *3m15s* · *3 min* · *1h05m*), e o `tMed` do `stats` deixou
+  de ser inteiro (era "0 min em média" com paradas de 40 s). Os `_fmtMin2` /
+  `_durMin2` do mobile são fallback sem o módulo e espelham isso.
+- **Cronômetro da TV (`_segDesde`) e banner do celular** partem do segundo
+  certo; abaixo de 1 min o banner mostra segundos. As regexes `^\d{1,2}:\d{2}$`
+  de parada nos dois HTMLs viraram `(:\d{2})?` — a sobreposição, o corte do
+  período anterior e o SMED (`menor`/`maior` agora passam pelo `_fmtMinPar`).
+- **Antes do re-deploy nada quebra**: o `.gs` antigo grava a string como veio,
+  trunca só a `DURACAO_MIN` e devolve a hora sem segundos.
+- Testes: `paradas-calc.test.js` (segundos, formato, série de microparadas),
+  `rp-core.test.js` (toMin) e `apps-script.test.js` (roda `calcDurMin`,
+  `_horaSegStr` e o `endParada` REAL numa aba de 7 colunas: FIM com segundos,
+  0,75 na F, 45 na H, cabeçalho criado uma vez).
+- ⚠ **`relatorios.test.js` estava quebrado na `main` desde a v7.55** (três
+  `const _base`/`_relPlano` repetidos → `SyntaxError`, e quatro guardas que
+  não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
+  moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
+  teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
+  sete antes de publicar.
+
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
   modal PARADAS): escolhe o tipo, escreve o **motivo** e a parada fica **em

@@ -2667,7 +2667,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.58.0';
+const APP_VER   = '7.59.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -10044,8 +10044,10 @@ function _pgSmed(paradas, re, cfg, metaMin){
   if(!durs.length) return null;
   const tot=durs.reduce((a,b)=>a+b,0);
   const med=tot/durs.length;
-  const faixas=[[0,3,'≤ 3 min'],[4,5,'4–5 min'],[6,10,'6–10 min'],[11,20,'11–20 min'],[21,Infinity,'> 20 min']]
-    .map(f=>{ const q=durs.filter(d=>d>=f[0]&&d<=f[1]).length;
+  // Faixas CONTÍGUAS (limite de cima inclusivo): com a duração em fração
+  // (segundos, v5.5), "0–3 / 4–5" deixava 3,5 min fora de todas as faixas.
+  const faixas=[[0,3,'≤ 3 min'],[3,5,'3–5 min'],[5,10,'5–10 min'],[10,20,'10–20 min'],[20,Infinity,'> 20 min']]
+    .map(f=>{ const q=durs.filter(d=>(f[0]===0?d>=0:d>f[0])&&d<=f[1]).length;
       // `ate` sai junto porque quem desenha precisa comparar a faixa com a META
       // do tipo: 5 min é dentro na troca de produto (meta 5) e fora na de
       // plástico (meta 4) — pintar por rótulo fixo mentiria numa das duas.
@@ -10136,7 +10138,7 @@ function _pgImpactoFluxo(tiR, trR, st){
 // (Sobreposição não é descontada de nenhum indicador: mexer nisso mudaria a
 // conta antiga, que é justamente o que não se pode fazer.)
 function _pgSobrepostas(paradas){
-  const ord=(paradas||[]).filter(p=>/^\d{1,2}:\d{2}$/.test(String(p.ini))&&/^\d{1,2}:\d{2}$/.test(String(p.fim)))
+  const ord=(paradas||[]).filter(p=>/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(p.ini))&&/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(p.fim)))
     .slice().sort((a,b)=> (RP_PARADAS.dataNum(a.data)-RP_PARADAS.dataNum(b.data)) || (toMin(a.ini)-toMin(b.ini)));
   const out=[]; let ant=null;
   ord.forEach(p=>{
@@ -10697,15 +10699,15 @@ function _pgSecaoHtml(ctx){
         <div><span>${s.qtd}</span><i>ocorrências</i></div>
         <div><span>${_fmtMinPar(s.tot)}</span><i>tempo total</i></div>
         <div><span style="color:${s.metaAtingida?'#2e7d32':'#c62828'}">${fmt1(s.med)} min</span><i>média (meta ≤ ${_pgFmtMin(s.meta)} ${unidade})</i></div>
-        <div><span>${s.menor} min</span><i>menor</i></div>
-        <div><span>${s.maior} min</span><i>maior</i></div>
+        <div><span>${_fmtMinPar(s.menor)}</span><i>menor</i></div>
+        <div><span>${_fmtMinPar(s.maior)}</span><i>maior</i></div>
         <div><span>${s.qtd>0?Math.round(s.naMeta/s.qtd*100):0}%</span><i>já dentro da meta</i></div>
       </div>
       <div style="margin-top:7px">${barra}</div>
       ${ev}
       ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA. A meta de <b>${_pgFmtMin(s.metaBase)} min</b> foi atingida (média ${fmt1(s.med)} min), então o alvo em vigor passa a ser <b>${_pgFmtMin(s.meta)} min</b> — a média das <b>${s.metaAmostra}</b> trocas mais rápidas do período, um tempo que a equipe já fez. Não é aperto arbitrário: o degrau só desce quando o próprio desempenho o sustenta. A distribuição, o "já dentro da meta", o excedente e o cenário de recuperação já medem contra esse alvo.</div>`
         :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)} — a meta desce sozinha só quando o desempenho sustenta o degrau novo.</div>`:'')}
-      ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${s.menor} min — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
+      ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${_fmtMinPar(s.menor)} — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
     </div>`;
   };
 
@@ -12491,9 +12493,9 @@ async function _renderAnaliseParadasCore(opts){
     const _diaRef=_fdt(_pAte);                                    // dia do anterior que mapeia p/ hoje
     prevCmp=prevParadas.map(p=>{
       if(!p||p.data!==_diaRef) return p;                         // dias já fechados: inteiros
-      if(!/^\d{1,2}:\d{2}$/.test(String(p.ini))) return p;
+      if(!/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(p.ini))) return p;
       if(toMin(p.ini)>=_nowM) return null;                       // começou depois de agora → fora
-      if(!/^\d{1,2}:\d{2}$/.test(String(p.fim)) || toMin(p.fim)>_nowM)
+      if(!/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(p.fim)) || toMin(p.fim)>_nowM)
         return Object.assign({},p,{fim:_nowHM});                 // ainda em curso nesse horário → corta agora
       return p;
     }).filter(Boolean);
@@ -13150,11 +13152,13 @@ async function pollParadaTV(){
   }catch(e){ /* mantém o estado atual — falha de rede não some/aparece a tela */ }
 }
 
+// Aceita HH:mm e HH:mm:ss (a PARADAS grava segundos desde a v5.5 do .gs): o
+// cronômetro passa a partir do segundo certo, não do minuto cheio.
 function _segDesde(hhmm){
-  if(!hhmm || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null;
-  const [h,m]=hhmm.split(':').map(Number);
+  if(!hhmm || !/^\d{1,2}:\d{2}(:\d{2})?$/.test(hhmm)) return null;
+  const [h,m,sg]=hhmm.split(':').map(Number);
   const a=new Date();
-  let s=(a.getHours()*3600+a.getMinutes()*60+a.getSeconds())-(h*3600+m*60);
+  let s=(a.getHours()*3600+a.getMinutes()*60+a.getSeconds())-(h*3600+m*60+(sg||0));
   return s<0?0:s;
 }
 function _fmtCron(seg){

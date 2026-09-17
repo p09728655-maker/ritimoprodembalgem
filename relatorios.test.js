@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os cinco relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 5);
+ok('e os seis relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 6);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2335,8 +2335,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 9 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 10);   // 9 chamadas + a declaração
+ok('e é UMA implementação — os 10 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 11);   // 10 chamadas + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -2852,11 +2852,11 @@ const _lotesDes = pega('function _cartLotesHtml(');
 ok('a lista de lotes é desenho, não conta',
    /_mixRitmos\(|_mixFator\(|_mixDiag\(|_qpPercentil\(|_phMediaAparada\(/.test(_lotesDes), false);
 ok('e ordena do lote que mais pesa para o que menos pesa', /sort\(\(x, y\) => y\.eq - x\.eq\)/.test(_lotesDes), true);
-const _relPlano = pega('async function gerarRelatorioPlano(');
-ok('o PDF imprime a lista de lotes dentro da seção da carteira', /_cartLotesHtml\(ac\)/.test(_relPlano), true);
-ok('e a seção 2 começa em página nova (carteira em folha própria)', /<div class="pl-quebra"><\/div>'\s*\+ sec\('COMO TEMOS DATADO/.test(_relPlano), true);
+const _relPlanoLotes = pega('async function gerarRelatorioPlano(');
+ok('o PDF imprime a lista de lotes dentro da seção da carteira', /_cartLotesHtml\(ac\)/.test(_relPlanoLotes), true);
+ok('e a seção 2 começa em página nova (carteira em folha própria)', /<div class="pl-quebra"><\/div>'\s*\+ sec\('COMO TEMOS DATADO/.test(_relPlanoLotes), true);
 ok('o parágrafo de abertura e as notas sob os títulos saíram do papel',
-   /pl-abre|<div class="rp-note">Os lotes|<div class="rp-note">O retrato/.test(_relPlano), false);
+   /pl-abre|<div class="rp-note">Os lotes|<div class="rp-note">O retrato/.test(_relPlanoLotes), false);
 const _skinPlano = JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/)[1];
 ok('a pele do papel esconde a nota longa e a explicação do mix (fica só o veredito)',
    /\.plano-doc \.qp-nota,\.plano-doc \.qm-como,\.plano-doc \.qm-det\{display:none\}/.test(_skinPlano), true);
@@ -2870,11 +2870,11 @@ eval(pega('function _qpDiasBase('));
 ok('dia com separação entra com real − heCx', _qpRealDia({ real:3217, heCx:224 }), 2993);
 ok('dia sem separação (heCx nulo) entra inteiro', [_qpRealDia({ real:1500, heCx:null }), _qpRealDia({ real:1500 })], [1500, 1500]);
 ok('hora extra maior que o dia não vira negativo', _qpRealDia({ real:100, heCx:300 }), 0);
-const _base = _qpDiasBase([{ data:'a', real:3217, heCx:224 }, { data:'sab', real:1278, heCx:1278 }, { data:'c', real:1500 }, null]);
-ok('sábado inteiro em HE sai da curva sozinho', _base.map(d => d.data), ['a', 'c']);
+const _baseQp = _qpDiasBase([{ data:'a', real:3217, heCx:224 }, { data:'sab', real:1278, heCx:1278 }, { data:'c', real:1500 }, null]);
+ok('sábado inteiro em HE sai da curva sozinho', _baseQp.map(d => d.data), ['a', 'c']);
 ok('o total fica guardado e o dia sem separação é marcado',
-   [_base[0].real, _base[0].realTotal, _base[0].semSep, _base[1].semSep], [2993, 3217, false, true]);
-ok('a curva lê a base já sem HE', _qpCurva(_base, 0), [1500, 2993]);
+   [_baseQp[0].real, _baseQp[0].realTotal, _baseQp[0].semSep, _baseQp[1].semSep], [2993, 3217, false, true]);
+ok('a curva lê a base já sem HE', _qpCurva(_baseQp, 0), [1500, 2993]);
 // UMA base para os dois blocos, a tela e os dois PDFs
 [['renderCarteira', 'async function renderCarteira('], ['renderQualidadePlano', 'async function renderQualidadePlano('],
  ['gerarRelatorioPlano', 'async function gerarRelatorioPlano('], ['gerarRelatorioCarteira', 'async function gerarRelatorioCarteira(']]
@@ -2883,7 +2883,7 @@ ok('a curva lê a base já sem HE', _qpCurva(_base, 0), [1500, 2993]);
     ok(nome + ' passa o histórico pela base sem HE', /dias = _qpDiasBase\(dias\);/.test(f) && !/filter\(d => d && Number\(d\.real\) > 0\)/.test(f), true);
   });
 ok('a tela diz que a capacidade é jornada normal',
-   /CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA<\/b>/.test(JS) && /MELHOR DIA SEM HORA EXTRA/.test(pega('function _cartHtml(')), true);
+   /CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA<\/b>/.test(_v7) && /MELHOR DIA SEM HORA EXTRA/.test(pega('function _cartHtml(')), true);   // o texto é da barra (HTML), não do script
 ok('e conta os dias sem separação', /nSemSep/.test(pega('function _qpHtml(')) && /a\.nSemSep = dias\.filter\(d => d\.semSep\)\.length;/.test(pega('async function renderQualidadePlano(')), true);
 
 // ── E SE AS PARADAS CAÍSSEM X%? ────────────────────────────────────────────
@@ -2902,11 +2902,11 @@ ok('fração acima de 1 é limitada', _cartDiasComMenosParadas(_eseDias, _esePor
 const _eseD10 = _c10.map((r, i) => ({ data: 'd' + i, real: r }));
 const _esePor10 = {}; _eseD10.forEach(d => { _esePor10[d.data] = { perd: 100 }; });
 const _eseCart = _cartAberta([_it('16/09/2026', 700), _it('17/09/2026', 400)], _cartNum('15/09/2026'), 0);
-const _base = _cartAnalise(_eseCart, _c10, [50, 60]);
+const _baseEse = _cartAnalise(_eseCart, _c10, [50, 60]);
 const _cen  = _cartCenario(_eseCart, _eseD10, _esePor10, 0.5, 0, [50, 60]);
-ok('o cenário sobe o que o dia comporta pela perda recuperada', [_base.alvoMax, _cen.alvoMax], [600, 650]);
+ok('o cenário sobe o que o dia comporta pela perda recuperada', [_baseEse.alvoMax, _cen.alvoMax], [600, 650]);
 ok('e refaz o que sai e o que cabe com a régua nova (a carteira não muda)',
-   [_base.sai, _cen.sai, _base.cabe, _cen.cabe], [100, 50, 200, 250]);
+   [_baseEse.sai, _cen.sai, _baseEse.cabe, _cen.cabe], [100, 50, 200, 250]);
 ok('diz quantos dias tinham parada e quanto a linha faria a mais por dia', [_cen.nCom, _cen.nDias, _cen.cxRecDia], [10, 10, 50]);
 ok('com 0% não há cenário', _cartCenario(_eseCart, _eseD10, _esePor10, 0, 0, [50, 60]), null);
 ok('o desenho do cenário não faz conta',
@@ -2928,7 +2928,7 @@ ok('o relatório da carteira usa as mesmas peças do estudo (montagem, desenho, 
    ['_cartMontar(dias)', '_cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)', '_cartLotesHtml(ac)', '_PLANO_SKIN', "_rpDocParadas("].every(s => _relCart.includes(s)), true);
 ok('e sai em PAISAGEM', /_rpDocParadas\('Carteira que vem — ' \+ hojeStr\(\), true\)/.test(_relCart), true);
 ok('sem o estudo de baixo', /_qpHtml\(|COMO O NÚMERO SAI/.test(_relCart), false);
-ok('a barra da aba tem os dois botões', /onclick="gerarRelatorioCarteira\(\)"/.test(JS) && /onclick="gerarRelatorioPlano\(\)"/.test(JS), true);
+ok('a barra da aba tem os dois botões', /onclick="gerarRelatorioCarteira\(\)"/.test(_v7) && /onclick="gerarRelatorioPlano\(\)"/.test(_v7), true);   // botões são HTML, não script
 ok('a caixa do mix separa o veredito do resto em blocos com classe',
    ['qm-como', 'qm-conf', 'qm-det'].every(c => pega('function _cartMixHtml(').includes('class="' + c + '"')), true);
 // ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do

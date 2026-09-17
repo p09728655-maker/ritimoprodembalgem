@@ -150,10 +150,11 @@ O combinado está em constantes no topo do bloco (`QP_ALVO_MIN` 50, `QP_ALVO_MAX
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **DURAÇÃO PRODUTIVA** | minutos da parada **fora** do almoço | min | `paradas-calc.js:71` |
-| **CAIXAS PERDIDAS** | duração produtiva × (meta do dia ÷ horas produtivas), só paradas **não** planejadas | cx | `paradas-calc.js:131` |
-| **DISPONIBILIDADE** | (tempo disponível − tempo parado não programado) ÷ tempo disponível × 100 | % | `paradas-calc.js:249` |
-| **RITMO DE REFERÊNCIA** | caixas perdidas ÷ (tempo parado não programado ÷ 60) | cx/h | `paradas-calc.js:256` |
+| **DURAÇÃO** | `FIM − INICIO`, em minutos **com fração** (`HH:mm:ss`, 45 s = 0,75); hora sem segundos lê como `:00` | min | `paradas-calc.js:durMin`, `.gs:calcDurMin` |
+| **DURAÇÃO PRODUTIVA** | minutos da parada **fora** do almoço | min | `paradas-calc.js:durProdutiva` |
+| **CAIXAS PERDIDAS** | duração produtiva × (meta do dia ÷ horas produtivas), só paradas **não** planejadas | cx | `paradas-calc.js:143` |
+| **DISPONIBILIDADE** | (tempo disponível − tempo parado não programado) ÷ tempo disponível × 100 | % | `paradas-calc.js:261` |
+| **RITMO DE REFERÊNCIA** | caixas perdidas ÷ (tempo parado não programado ÷ 60) | cx/h | `paradas-calc.js:270` |
 | **MIN / 1.000 CX** | minutos parados ÷ caixas × 1.000, só nos **dias trabalhados** | min | `v7:_pgPorJanela` |
 
 **Como ler:** a base é **dias trabalhados** (dias com produção lançada), nunca
@@ -162,6 +163,11 @@ melhor dia, e tirá-lo da conta faria a média subir sozinha.
 
 ⚠ O arredondamento acontece **uma vez, no fim**. Arredondar a perda de cada
 parada e somar joga fora a fração de todas elas, sempre para menos.
+
+⚠ **Segundos contam** (v7.59.0 / .gs 5.5): a aba `PARADAS` grava `INICIO`/`FIM`
+em `HH:mm:ss`, `DURACAO_MIN` com fração e `DURACAO_SEG` em segundos inteiros.
+Na tela a duração abaixo de 1 min sai em segundos (*45 s*), minuto quebrado sai
+*3m15s* (`paradas-calc.js:fmtMin`). Linha antiga (só `HH:mm`) é lida como antes.
 
 ## Esteira e comparativo por modelo
 

@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.5 — PARADAS COM SEGUNDOS (microparadas)
+//               INICIO/FIM da aba PARADAS passam a ser gravados como HH:mm:ss
+//               (o mobile manda a hora com segundos). DURACAO_MIN vira minuto
+//               com fração (0,75 = 45 s) e nasce a coluna H DURACAO_SEG, em
+//               segundos inteiros. Antes 08:24→08:25 era "1" e 08:39→08:39
+//               ficava em branco: a microparada não tinha duração. Linha antiga
+//               (HH:mm) continua lida como sempre — segundos são opcionais.
 // Versão: 5.4 — STATUS DA PROGRAMACAO: EM ATRASO PARA O LOTE VENCIDO
 //               "EM ANDAMENTO" é do lote DE HOJE. Linha de data anterior que
 //               ainda não fechou passa a sair como EM ATRASO — a mesma régua do
@@ -2928,9 +2935,10 @@ function saveParadas(p) {
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_PARADAS);
-    sh.appendRow(['DATA','ID','TIPO','INICIO','FIM','DURACAO_MIN','OBS']);
+    sh.appendRow(['DATA','ID','TIPO','INICIO','FIM','DURACAO_MIN','OBS','DURACAO_SEG']);
     sh.setFrozenRows(1);
   }
+  _garantirColDuracaoSeg(sh);
 
   const data = p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const paradas = JSON.parse(p.paradas || '[]');
@@ -2941,7 +2949,7 @@ function saveParadas(p) {
   let temAbertaHoje = false;
   for (let i = 1; i < values.length; i++) {
     rowById[String(values[i][1])] = i + 1;
-    if (_dataStr(values[i][0]) === data && !_horaStr(values[i][4])) temAbertaHoje = true;
+    if (_dataStr(values[i][0]) === data && !_horaSegStr(values[i][4])) temAbertaHoje = true;
   }
 
   let salvos = 0;
@@ -2957,9 +2965,10 @@ function saveParadas(p) {
 
     const row = [
       data, id, par.tipo || '', par.ini || '', par.fim || '',
-      calcDurMin(par.ini, par.fim) || '', par.obs || ''
+      calcDurMin(par.ini, par.fim) || '', par.obs || '',
+      calcDurSeg(par.ini, par.fim) || ''
     ];
-    if (r) sh.getRange(r, 1, 1, 7).setValues([row]);
+    if (r) sh.getRange(r, 1, 1, 8).setValues([row]);
     else { sh.appendRow(row); if (abrindo) temAbertaHoje = true; }
     salvos++;
   });
@@ -2977,16 +2986,19 @@ function endParada(p) {
   if (!sh) return { ok: false, erro: 'sem paradas' };
 
   const id     = String(p.id || '');
-  const fim    = p.fim || Utilities.formatDate(new Date(), TZ, 'HH:mm');
+  // Hora do servidor COM segundos: é o que dá duração à microparada.
+  const fim    = p.fim || Utilities.formatDate(new Date(), TZ, 'HH:mm:ss');
   const data   = String(p.data || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
-  const iniRef = _horaStr(p.ini || '');
+  const iniRef = _horaSegStr(p.ini || '');
   const values = sh.getDataRange().getValues();
+  _garantirColDuracaoSeg(sh);
 
   // Fecha a linha i (0-based no array) e devolve a resposta padrão.
   const fechar = function (i) {
-    const ini = _horaStr(values[i][3]);
+    const ini = _horaSegStr(values[i][3]);
     sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
-    sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO (col F)
+    sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO_MIN (col F)
+    sh.getRange(i + 1, 8).setValue(calcDurSeg(ini, fim) || '');   // DURACAO_SEG (col H)
     SpreadsheetApp.flush();
     return { ok: true, fim };
   };
@@ -3005,8 +3017,8 @@ function endParada(p) {
   //    encontrada" em todo toque no START, com a TV presa na tela cheia.
   if (iniRef) {
     for (let i = 1; i < values.length; i++) {
-      if (_dataStr(values[i][0]) === data && _horaStr(values[i][3]) === iniRef
-          && !_horaStr(values[i][4])) return fechar(i);
+      if (_dataStr(values[i][0]) === data && _horaSegStr(values[i][3]) === iniRef
+          && !_horaSegStr(values[i][4])) return fechar(i);
     }
   }
 
@@ -3015,7 +3027,7 @@ function endParada(p) {
   //    resolve na planilha.
   const abertas = [];
   for (let i = 1; i < values.length; i++) {
-    if (_dataStr(values[i][0]) === data && !_horaStr(values[i][4])) abertas.push(i);
+    if (_dataStr(values[i][0]) === data && !_horaSegStr(values[i][4])) abertas.push(i);
   }
   if (abertas.length === 1) return fechar(abertas[0]);
 
@@ -3034,16 +3046,18 @@ function encerrarParadasAbertas(dataRef) {
 
   const fimTurno = _fimDoTurno();
   const values   = sh.getDataRange().getValues();
+  _garantirColDuracaoSeg(sh);
   let n = 0;
   for (let i = 1; i < values.length; i++) {
     const linhaData = _dataStr(values[i][0]);
-    const fim       = _horaStr(values[i][4]);
+    const fim       = _horaSegStr(values[i][4]);
     if (linhaData === dataRef && !fim) {
-      const ini     = _horaStr(values[i][3]);
+      const ini     = _horaSegStr(values[i][3]);
       const novoFim = fimTurno || ini;
       const obs     = String(values[i][6] || '');
       sh.getRange(i + 1, 5).setValue(novoFim);
       sh.getRange(i + 1, 6).setValue(calcDurMin(ini, novoFim) || '');
+      sh.getRange(i + 1, 8).setValue(calcDurSeg(ini, novoFim) || '');
       sh.getRange(i + 1, 7).setValue((obs ? obs + ' ' : '') + '(encerrada automaticamente no fechamento)');
       n++;
     }
@@ -3129,6 +3143,25 @@ function _dataStr(v) {
 function _horaStr(v) {
   return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'HH:mm') : String(v || '').trim();
 }
+// A versão COM SEGUNDOS, só para a aba PARADAS (v5.5, microparadas). Célula de
+// hora de verdade sai como HH:mm:ss quando tem segundos e HH:mm quando não tem
+// — assim a linha antiga (gravada em HH:mm) volta EXATAMENTE como sempre
+// voltou, e a nova traz os segundos que o mobile passou a mandar. Texto passa
+// como está. O `_horaStr` (HH:mm) continua sendo o da HORA_A_HORA e do log de
+// produto: lá segundo não existe, e mudar aquele formato mexeria nos rótulos.
+function _horaSegStr(v) {
+  if (!(v instanceof Date)) return String(v || '').trim();
+  const tz = _ssTz();
+  return Utilities.formatDate(v, tz, Utilities.formatDate(v, tz, 'ss') === '00' ? 'HH:mm' : 'HH:mm:ss');
+}
+// Aba PARADAS criada antes da v5.5 tem 7 colunas; a H (DURACAO_SEG) é escrita
+// no cabeçalho na 1ª gravação em que faltar. Só o título — as linhas antigas
+// ficam em branco ali (a duração delas continua em DURACAO_MIN).
+function _garantirColDuracaoSeg(sh) {
+  try {
+    if (!String(sh.getRange(1, 8).getValue() || '').trim()) sh.getRange(1, 8).setValue('DURACAO_SEG');
+  } catch (e) { Logger.log('DURACAO_SEG: não consegui escrever o cabeçalho — ' + e); }
+}
 
 // Paradas de um intervalo de datas (para o relatório). de/ate em dd/MM/yyyy.
 // A duração é recalculada no front-end a partir de ini/fim (não depende da
@@ -3148,8 +3181,8 @@ function getParadasPeriodo(p) {
     .slice(1).map(r => ({
     data: _dataStr(r[0]),
     tipo: String(r[2] || ''),
-    ini:  _horaStr(r[3]),
-    fim:  _horaStr(r[4]),
+    ini:  _horaSegStr(r[3]),
+    fim:  _horaSegStr(r[4]),
     obs:  String(r[6] || '')
   })).filter(x => {
     const n = toNum(x.data);
@@ -3182,8 +3215,8 @@ function getParadas(p) {
       // ESTÁVEL derivado da linha; o endParada tem fallback por DATA+INÍCIO.
       id:   Number(r[1]) || ('L' + (i + 1)),
       tipo: String(r[2] || ''),
-      ini:  _horaStr(r[3]),
-      fim:  _horaStr(r[4]),
+      ini:  _horaSegStr(r[3]),
+      fim:  _horaSegStr(r[4]),
       obs:  String(r[6] || '')
     });
   }
@@ -3577,12 +3610,27 @@ function arquivarDiaAtual(dataRef) {
 // UTILS
 // ════════════════════════════════════════════════════════
 
-function calcDurMin(ini, fim) {
-  if (!ini || !fim) return null;
-  const [h0, m0] = ini.split(':').map(Number);
-  const [h1, m1] = fim.split(':').map(Number);
-  const d = (h1 * 60 + m1) - (h0 * 60 + m0);
+// "HH:mm" ou "HH:mm:ss" → segundos desde a meia-noite; null se não é hora.
+// Segundos são OPCIONAIS: a linha antiga da PARADAS (só HH:mm) lê como :00.
+function _horaEmSeg(v) {
+  const m = String(v == null ? '' : v).trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  return (+m[1]) * 3600 + (+m[2]) * 60 + (+(m[3] || 0));
+}
+// Duração em SEGUNDOS inteiros (coluna DURACAO_SEG). null quando falta hora ou
+// a duração não é positiva — parada em andamento continua sem duração.
+function calcDurSeg(ini, fim) {
+  const a = _horaEmSeg(ini), b = _horaEmSeg(fim);
+  if (a == null || b == null) return null;
+  const d = b - a;
   return d > 0 ? d : null;
+}
+// Duração em MINUTOS com fração (coluna DURACAO_MIN): 45 s = 0,75. Antes era
+// minuto inteiro e 08:39→08:39 dava vazio — a microparada não existia na conta.
+// Duas casas: a soma em minutos na planilha continua fechando.
+function calcDurMin(ini, fim) {
+  const seg = calcDurSeg(ini, fim);
+  return seg == null ? null : Math.round(seg / 60 * 100) / 100;
 }
 
 // Normaliza datas para dd/MM/yyyy. Aceita Date, "dd/MM/yyyy", "d/m", "d/m/aa".
