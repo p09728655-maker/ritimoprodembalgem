@@ -2697,8 +2697,9 @@ ok('o desenho da carteira não faz conta',
 ok('a carteira recebe a curva pronta em vez de montar a própria',
    /_qpCurva\(/.test(pega('function _cartAnalise(')), false);
 const _cartRender = pega('async function renderCarteira(');
+const _cartBloc = pega('async function _cartBlocos(');
 ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
-   /_qpCurva\(dias, QP_REGUA\)/.test(_cartRender) && /QP_FAIXA/.test(_cartRender), true);
+   /_qpCurva\(dias, QP_REGUA\)/.test(_cartRender) && /QP_FAIXA/.test(_cartBloc), true);
 // ⚠ A GUARDA DE REENTRÂNCIA NÃO PODE ENGOLIR O PEDIDO (18/09/2026 — "botão
 // atualizar não está funcionando"). A montagem encadeia três leituras caras com
 // 3×25 s de retry cada: no cold start passa de dois minutos, e nessa janela o
@@ -2719,8 +2720,44 @@ ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
 const _cartMont = pega('async function _cartMontar(');
 ok('a busca passa pelo carregador com cache, nunca por jsonpFetch direto',
    /carregarProgramacaoDetalhada\(\)/.test(_cartMont) && !/jsonpFetch|action=/.test(_cartMont + _cartRender), true);
-ok('tela e relatório montam a carteira pela MESMA _cartMontar',
-   [/await _cartMontar\(dias\)/.test(_cartRender), /await _cartMontar\(dias\)/.test(pega('async function gerarRelatorioPlano('))], [true, true]);
+// ⚠ AS DUAS RÉGUAS NUM LUGAR SÓ (`_cartBlocos`): a tela e os DOIS PDFs leem
+// daqui. Com `AS DUAS` o veredito muda entre elas (medido em 18/09/2026: pela
+// carga sobravam 2.302 cx e o E SE dizia NÃO DARIA; pelas caixas cruas, 790 e
+// DARIA) — papel e tela discordando de qual régua valeu seria o pior dos mundos.
+ok('tela e os dois relatórios montam a carteira pelo MESMO _cartBlocos',
+   ['async function renderCarteira(', 'async function gerarRelatorioPlano(', 'async function gerarRelatorioCarteira(']
+     .every(ass => /await _cartBlocos\(dias, curva/.test(pega(ass))), true);
+ok('e o _cartBlocos monta pela MESMA _cartMontar', /await _cartMontar\(dias, modo\)/.test(_cartBloc), true);
+ok('os modos são montados em SEQUÊNCIA, nunca em paralelo',
+   /for\(let i = 0; i < modos\.length; i\+\+\)/.test(_cartBloc) && !/Promise\.all/.test(_cartBloc), true);
+ok('AS DUAS é o único modo que devolve dois blocos',
+   /QP_MIX === 'ambos' \? \['mix', 'cru'\] : \[QP_MIX\]/.test(_cartBloc), true);
+// ⚠ com dois blocos a nota longa (idêntica nos dois) sai UMA vez, no último
+// ⚠ com dois blocos, o que é IDÊNTICO sai uma vez só — e por classe escondida,
+// nunca por um segundo desenho: nota longa, legenda e o sufixo do título.
+ok('os dois blocos são marcados para a pele esconder o repetido',
+   /cart-dois/.test(pega('function _cartBlocosHtml(')), true);
+['\\.cart-dois \\.cart-bloco:not\\(:last-child\\) \\.qp-nota\\{display:none\\}',
+ '\\.cart-dois \\.cart-bloco:not\\(:first-child\\) \\.qp-leg\\{display:none\\}',
+ '\\.cart-dois \\.cl-regua\\{display:none\\}'].forEach(r => {
+  ok('a tela esconde o repetido: ' + r.replace(/\\\\/g, '').slice(0, 42),
+     new RegExp(r).test(_v7), true);
+  ok('e o papel segue a MESMA regra: ' + r.replace(/\\\\/g, '').slice(0, 42),
+     new RegExp('\\.plano-doc ' + r).test(JS.match(/const _PLANO_SKIN = `([\s\S]*?)`;/)[1]), true);
+});
+ok('o sufixo da régua no título do gráfico é marcável',
+   /class="cl-regua"/.test(_cartDes), true);
+// ⚠ com o mix o topo do dia é o FANTASMA tracejado quando ele passa da carga:
+// a colisão da tarja tem de olhar o que está DESENHADO, não só a barra sólida.
+ok('a colisão da tarja olha a barra E o fantasma do programado',
+   /const _qtdsCol = a\.linhas\.map\(l => Math\.max\(l\.qtde, Number\(l\.crua\) \|\| 0\)\);/.test(_cartDes)
+   && /_svgLadoLivre\(_qtdsCol, valor, nCobre\)/.test(_cartDes), true);
+ok('o desenho dos blocos não faz conta',
+   /_cartAnalise\(|_qpCurva\(|_qpPercentil\(|_cartMontar\(/.test(pega('function _cartBlocosHtml(')), false);
+ok('o seletor da barra oferece os três modos',
+   ["value=\"mix\"", "value=\"cru\"", "value=\"ambos\""].every(v => _v7.includes(v)), true);
+ok('e a preferência guarda o modo novo',
+   /o\.mix === 'ambos'/.test(pega('function _qpCarregarPref(')) || /o\.mix === 'ambos'/.test(JS), true);
 // ⚠ dívida ZERO é valor legítimo: `||` entre os dois campos a trocaria pelo outro.
 // A dívida é lida em UM lugar (`_planoDivida`): tela e papel não podem discordar.
 ok('a dívida escolhe o campo por != null, não por ||',
@@ -2843,7 +2880,7 @@ ok('com CAIXAS CRUAS não há busca', /\(modo \|\| QP_MIX\) !== 'mix'\) return n
 // legenda saía "CARTEIRA EM CAIXAS CRUAS" embaixo de barras pesadas pelo mix.
 const _cartMontModo = pega('async function _cartMontar(');
 ok('o modo do mix é lido uma vez e viaja com a montagem',
-   /const modo = QP_MIX;/.test(_cartMontModo) && /_cartRitmos\(modo\)/.test(_cartMontModo)
+   /const modo = modoPedido \|\| \(QP_MIX === 'ambos' \? 'mix' : QP_MIX\);/.test(_cartMontModo) && /_cartRitmos\(modo\)/.test(_cartMontModo)
    && /cart\.mixModo = modo;/.test(_cartMontModo), true);
 // ⚠ 90 dias não respondeu no cold start (produção, 16/09/2026): a régua do mix
 // é uma ESCADA — 60 e, sem resposta, 30 — e desce sozinha uma vez.
@@ -2938,8 +2975,8 @@ ok('o cenário responde DARIA / NÃO DARIA', /'NÃO DARIA' : 'DARIA'/.test(pega(
 const _cenAsync = pega('async function _cartCenarioAsync(');
 ok('a busca das paradas é o MESMO carregador da gestão de perdas', /_pgContextoDoPeriodo\(rec\[0\]\.data, hojeStr\(\)\)/.test(_cenAsync), true);
 ok('com E SE em "como hoje" não busca nada', /if\(!\(QP_ESE > 0\)/.test(_cenAsync), true);
-['async function renderCarteira(', 'async function gerarRelatorioPlano(', 'async function gerarRelatorioCarteira(']
-  .forEach(ass => ok(ass.replace('async function ', '').replace('(', '') + ' liga o cenário na análise', /\.cenario = await _cartCenarioAsync\(cart, dias\)/.test(pega(ass)), true));
+ok('o cenário é ligado na análise dentro do _cartBlocos, para os três chamadores',
+   /a\.cenario = await _cartCenarioAsync\(cart, dias\)/.test(_cartBloc), true);
 ok('o desenho da carteira imprime o cenário logo abaixo do veredito', /_cartESeHtml\(a\)/.test(_cartDes), true);
 ok('a escolha persiste na mesma chave de preferências', /ese:QP_ESE/.test(pega('function _qpSalvarPref(')), true);
 
@@ -2948,7 +2985,7 @@ ok('a escolha persiste na mesma chave de preferências', /ese:QP_ESE/.test(pega(
 // + "faça teste com a impressão virada")
 const _relCart = pega('async function gerarRelatorioCarteira(');
 ok('o relatório da carteira usa as mesmas peças do estudo (montagem, desenho, lotes, pele, documento)',
-   ['_cartMontar(dias)', '_cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)', '_cartLotesHtml(ac)', '_PLANO_SKIN', "_rpDocParadas("].every(s => _relCart.includes(s)), true);
+   ['_cartBlocos(dias, curva, false)', '_cartBlocosHtml(blocos, CART_SVG_W_PAISAGEM)', '_cartLotesHtml(ac)', '_PLANO_SKIN', "_rpDocParadas("].every(s => _relCart.includes(s)), true);
 ok('e sai em PAISAGEM', /_rpDocParadas\('Carteira que vem — ' \+ hojeStr\(\), true\)/.test(_relCart), true);
 ok('sem o estudo de baixo', /_qpHtml\(|COMO O NÚMERO SAI/.test(_relCart), false);
 ok('a barra da aba tem os dois botões', /onclick="gerarRelatorioCarteira\(\)"/.test(_v7) && /onclick="gerarRelatorioPlano\(\)"/.test(_v7), true);   // botões são HTML, não script
@@ -3027,7 +3064,8 @@ ok('o desenho do vazio não faz conta',
    /_qpPercentil\(|_qpCurva\(|_cartAnalise\(/.test(_vazDes), false);
 const _renderV = pega('async function renderCarteira(');
 ok('a tela escolhe entre o quadro e o vazio, sem afirmar carteira vazia por falha',
-   /a \? _cartHtml\(a, QP_REGUA, _svgLargura\(alvo\)\) : _cartVazioHtml\(cart\)/.test(_renderV), true);
+   /_cartBlocosHtml\(await _cartBlocos\(dias, curva, true\), _svgLargura\(alvo\)\)/.test(_renderV)
+   && /if\(!blocos\.some\(b => b\.a\)\) return _cartVazioHtml\(blocos\[0\]\.cart\);/.test(pega('function _cartBlocosHtml(')), true);
 
 // ── O GRÁFICO OCUPA A LARGURA, NÃO AMPLIA ────────────────────────────────
 // ⚠ Com `viewBox` fixo em 760 e `width:100%`, um monitor de 1920px ampliava o
@@ -3094,15 +3132,16 @@ const _relPlano = pega('async function gerarRelatorioPlano(');
 // ⚠ Os desenhos são os MESMOS da tela. Uma segunda versão para o papel seria a
 // história do cabeçalho dos cinco relatórios (#204/#205).
 ok('o papel usa os mesmos desenhos da tela',
-   [/_cartHtml\(ac, QP_REGUA, PLANO_SVG_W\)/.test(_relPlano),
+   [/_cartBlocosHtml\(blocos, PLANO_SVG_W\)/.test(_relPlano),
     /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM, PLANO_SVG_W\)/.test(_relPlano)], [true, true]);
 ok('e o documento compartilhado dos relatórios, não um <head> próprio',
    /_rpDocParadas\(/.test(_relPlano) && /_rpCabecalho\(/.test(_relPlano) && /_rpBotaoImprimir\(\)/.test(_relPlano), true);
 ok('o relatório não faz conta — recebe as análises prontas',
-   [/_cartAnalise\(cart, curva, QP_FAIXA\)/.test(_relPlano), /_qpAnalise\(rec, curva, QP_FAIXA\)/.test(_relPlano)], [true, true]);
+   [/_cartBlocos\(dias, curva, false\)/.test(_relPlano) && !/_cartAnalise\(/.test(_relPlano),
+    /_qpAnalise\(rec, curva, QP_FAIXA\)/.test(_relPlano)], [true, true]);
 // A carteira é opcional no papel: falhou a leitura, o relatório sai inteiro.
 ok('sem a programação o relatório sai sem a seção, não sem relatório',
-   /catch\(e\)\{ ac = null; \}/.test(_relPlano) && /\(ac \? \(sec\(/.test(_relPlano), true);
+   /catch\(e\)\{ blocos = \[\]; ac = null; \}/.test(_relPlano) && /\(ac \? \(sec\(/.test(_relPlano), true);
 // ⚠ A PELE É ESCOPADA em .plano-doc: regra solta mudaria os outros quatro
 // documentos que usam o _rpDocParadas.
 {

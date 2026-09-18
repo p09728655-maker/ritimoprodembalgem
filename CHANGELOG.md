@@ -42,7 +42,26 @@ não está funcionando"* e *"está cobrindo a linha A CARGA DEVERIA FICAR AQUI"*
   livre, ela **sobe** para acima do número da barra, com uma **guia pontilhada**
   até a linha. Não cabendo acima, fica onde estava — nunca pior que antes.
 
-**Atenção:** nenhum número muda. As quatro correções são de tela — carteira,
+**AS DUAS RÉGUAS NA MESMA TELA.** Pedido do PPCP no mesmo dia: o seletor
+**CARTEIRA** ganhou a opção **AS DUAS** — a carteira sai em dois blocos, um sob
+o outro, *carga pelo mix* e *caixas cruas*, cada um com seu veredito, seus
+cards, seu gráfico e seu dia a dia. **É o veredito que muda entre elas**, e é
+isso que ela existe para mostrar: medido em 18/09/2026, pela carga sobravam
+2.302 cx e o cenário de −50% de paradas dizia **NÃO DARIA**; pelas caixas cruas
+sobravam 790 e ele dizia **DARIA**.
+
+- **Não dobra a chamada ao Apps Script.** A programação vem do cache (2 min, voo
+  compartilhado), o log de produto só é lido no bloco do mix e o cenário reusa o
+  contexto de paradas da gestão de perdas (5 min, voo compartilhado). O segundo
+  bloco é conta pura sobre o que o primeiro já leu.
+- **O que é idêntico nos dois sai uma vez só**: os quatro parágrafos de
+  explicação (no último bloco), a legenda do gráfico (no primeiro, que é o
+  completo) e o sufixo do título que o próprio nome do bloco já diz. Por classe
+  escondida, nunca por um segundo desenho.
+- **Os dois PDFs acompanham** — 🖨 ESTUDO e 🖨 CARTEIRA saem com os dois gráficos
+  quando AS DUAS está selecionado. A escolha fica guardada em `rpe_qp_pref`.
+
+**Atenção:** nenhum número muda. Todas as correções são de tela — carteira,
 dívida, carga pelo mix, faixa alvo e veredito continuam saindo das mesmas
 contas. **Sem re-deploy do `.gs`.**
 

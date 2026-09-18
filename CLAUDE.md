@@ -2313,6 +2313,19 @@ feito e dá ar de verdade ao que sobrou.
   `_phCache` se a aba PRODUÇÃO/HORA já buscou o mesmo período. ⚠ Essa leitura
   publica `PREP_PERIODO`, que é da OUTRA aba e de outro período: é guardado e
   devolvido no `finally` (teste prende). Sem re-deploy do `.gs`.
+- ⚠ **A TARJA DA FAIXA ALVO NÃO PODE COBRIR A BARRA** (18/09/2026:
+  *"está cobrindo a linha A CARGA DEVERIA FICAR AQUI"*). `_svgLadoLivre` escolhe
+  o lado com menos barras cruzando a linha, mas com as **duas** pontas ocupadas
+  devolve a *menos pior* — e ela cobria. Medido: esquerda 1 cruzamento, direita
+  2, e a tarja tapou a barra do 21/09 e o número 1.800 dela.
+  - O nº de barras cobertas sai da **largura da tarja** (a 1.300px são 2, não as
+    3 fixas de antes), e a colisão olha **a barra E o fantasma** do programado —
+    com o mix, o topo do dia é o tracejado quando ele passa da carga.
+  - Sem lado livre, a tarja **sobe** 18px acima do número da barra (baseline em
+    `yTopo−5`, glifo de ~0,7×FS: com os 14px da conta crua saíam encostados) e
+    uma **guia pontilhada** a liga à linha — o que ela precisa manter é o
+    vínculo, não a altura. Não cabendo acima (bateria na tarja do MELHOR DIA,
+    limite `yTeto+20`), fica onde estava: nunca pior que antes.
 - ⚠ **A BARRA NÃO É O NÚMERO DA PLANILHA, e a tela tem de dizer isso** (16/09/2026,
   logo depois do deploy: *"a qtde de produto no gráfico não bate com a
   carteira"*). O programado cru vai como **fantasma tracejado** atrás da barra
@@ -2329,9 +2342,34 @@ feito e dá ar de verdade ao que sobrou.
   vai dentro dela. "Fator", "aparado" e "sem base" ficam no tooltip e no corpo
   menor da caixa do mix — quem audita acha, quem passa não tropeça. Os nomes
   internos (`cx de linha`, `aparado`) continuam no código e nesta memória.
-- **`_cartMontar(dias)` é a montagem única** (programação + dívida + mix +
+- **`_cartMontar(dias, modo)` é a montagem única** (programação + dívida + mix +
   conferência) da tela e do PDF. O relatório ganha a linha **O MIX** em COMO O
-  NÚMERO SAI.
+  NÚMERO SAI. ⚠ **O modo é lido UMA VEZ, no começo**: a montagem espera até três
+  leituras caras, e trocando o seletor no meio o `QP_MIX` mudava debaixo dela —
+  a legenda saía *"CARTEIRA EM CAIXAS CRUAS"* embaixo de barras pesadas pelo mix.
+- **AS DUAS: os dois gráficos, um sob o outro** (v7.60.0, PPCP, 18/09/2026 —
+  *"faz um teste para aparecer as duas opções"* → *"dois gráficos separados"*).
+  O terceiro valor do seletor CARTEIRA desenha *carga pelo mix* e *caixas cruas*
+  em blocos completos. **É o VEREDITO que muda entre elas**, e é para isso que
+  serve: medido no dia, pela carga sobravam 2.302 cx e o E SE de −50% dizia
+  **NÃO DARIA**; pelas cruas, 790 e **DARIA**. Escondendo uma, a decisão fica
+  refém de qual régua estava selecionada.
+  - **`_cartBlocos(dias, curva, agendar)` é o lugar ÚNICO que decide quais
+    blocos saem** — a tela e os DOIS PDFs leem daqui, senão papel e tela
+    discordariam de qual régua valeu. `_cartBlocosHtml` é o desenho, sem conta.
+  - ⚠ **NÃO DOBRA A BUSCA**: a programação vem do cache (2 min, voo
+    compartilhado), `_cartRitmos` só lê o log de produto no modo `mix`, e o
+    cenário reusa o `_pgContextoDoPeriodo` (5 min, voo). O segundo bloco é conta
+    pura sobre o que o primeiro já leu. Em **sequência**, nunca `Promise.all`.
+  - **O que é idêntico sai uma vez só, POR CLASSE ESCONDIDA** (`.cart-dois`):
+    a nota longa no último bloco, a `.qp-leg` no primeiro (a do cru é
+    subconjunto da do mix) e o sufixo `.cl-regua` do título, que repetiria o
+    `.cart-tit`. ⚠ As regras são escopadas em **`#sec-plano`**: `#sec-plano
+    .qp-leg{display:flex}` (id + classe) vence uma regra escrita só com classes,
+    e a legenda continuava saindo nos dois.
+  - ⚠ Um segundo desenho para o modo novo seria a história do cabeçalho dos
+    cinco relatórios (#204/#205). A marcação é a MESMA; muda só o que a pele
+    esconde.
 - **E SE AS PARADAS CAÍSSEM X%** (v7.57.0, PPCP, 16/09/2026: *"se a linha
   diminuir as paradas em x%, daria ou não?"*). A régua é o que a linha FEZ, com
   as paradas que teve. `_cartDiasComMenosParadas` devolve a cada dia da régua
@@ -2392,6 +2430,19 @@ feito e dá ar de verdade ao que sobrou.
   `HORIZONTE SOBRECARREGADO` (`sobra > 0` → **re-datar não basta**: dia a mais,
   hora extra ou empurrar para a semana seguinte). Confundir os dois faz pedir
   investimento onde bastava mexer na data, ou o contrário.
+- ⚠ **O ATUALIZAR E OS SELETORES NÃO PODEM SER ENGOLIDOS** (18/09/2026:
+  *"botão atualizar não está funcionando"*). `renderCarteira` e
+  `renderQualidadePlano` tinham guarda de reentrância com `return` seco. Só que a
+  montagem encadeia até TRÊS leituras caras (programação, log de produto do mix
+  e, com o cenário ligado, as paradas dos dias da régua), cada uma com 3×25 s:
+  no cold start passa de dois minutos, e nessa janela **todo toque no ATUALIZAR e
+  toda troca de seletor sumiam em silêncio**. Medido: o seletor em CAIXAS CRUAS
+  com a tela inteira ainda pesada pelo mix.
+  - O pedido que chega durante o voo fica **pendente e roda no fim**
+    (`CART_PEND`/`QP_PEND`) — a última escolha do gestor sempre vence — e o bloco
+    **esmaece com "atualizando…"** (`_planoUpd`, `#qp-upd`), a mesma régua da aba
+    PARADAS e da GESTÃO DE PERDAS. Sem sinal nenhum, esperar um minuto é
+    indistinguível de botão quebrado.
 - **Custo MENOR que antes, não maior.** `carregarProgramacaoDetalhada` ganhou
   **cache de 2 min** (`PROG_DET_TTL`) e **requisição em voo compartilhada**
   (`PROG_DET_VOO`) — o mesmo remédio do `_phVoo` e do `PG_VOO`. Antes, cada
