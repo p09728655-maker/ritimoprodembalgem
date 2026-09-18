@@ -2699,6 +2699,22 @@ ok('a carteira recebe a curva pronta em vez de montar a própria',
 const _cartRender = pega('async function renderCarteira(');
 ok('e a tela usa a MESMA _qpCurva com a MESMA QP_REGUA do bloco de baixo',
    /_qpCurva\(dias, QP_REGUA\)/.test(_cartRender) && /QP_FAIXA/.test(_cartRender), true);
+// ⚠ A GUARDA DE REENTRÂNCIA NÃO PODE ENGOLIR O PEDIDO (18/09/2026 — "botão
+// atualizar não está funcionando"). A montagem encadeia três leituras caras com
+// 3×25 s de retry cada: no cold start passa de dois minutos, e nessa janela o
+// `return` seco descartava EM SILÊNCIO todo toque no ATUALIZAR e toda troca de
+// seletor. O pedido fica PENDENTE e roda no fim — a última escolha vence — e o
+// bloco esmaece com "atualizando…" enquanto isso.
+[['renderCarteira', 'async function renderCarteira(', 'CART'],
+ ['renderQualidadePlano', 'async function renderQualidadePlano(', 'QP']].forEach(([nome, ass, pfx]) => {
+  const f = pega(ass);
+  ok(nome + ' não descarta o pedido que chega durante o voo',
+     new RegExp('if\\(' + pfx + '_RODANDO\\)\\{ ' + pfx + '_PEND = true; return; \\}').test(f)
+     && new RegExp('if\\(' + pfx + '_PEND\\)\\{ ' + pfx + '_PEND = false; ' + nome + '\\(\\); \\}').test(f), true);
+  ok(nome + ' avisa na tela enquanto atualiza',
+     /classList\.add\('qp-atualizando'\); _planoUpd\(\);/.test(f)
+     && /classList\.remove\('qp-atualizando'\); _planoUpd\(\);/.test(f), true);
+});
 // A montagem (programação + dívida + mix) é UMA para a tela e para o papel.
 const _cartMont = pega('async function _cartMontar(');
 ok('a busca passa pelo carregador com cache, nunca por jsonpFetch direto',
@@ -2821,7 +2837,14 @@ ok('o log de produto tem cache por período e requisição em voo compartilhada'
 ok('e reaproveita o período que o comparativo por modelo já buscou', /_phCache\.key === key/.test(_cartRit), true);
 // ⚠ a leitura publica PREP_PERIODO, que é da aba PRODUÇÃO/HORA e de OUTRO período
 ok('a leitura devolve o PREP_PERIODO da outra aba', /finally\{ PREP_PERIODO = prepAntes; \}/.test(_cartRit), true);
-ok('com CAIXAS CRUAS não há busca', /if\(QP_MIX !== 'mix'\) return null;/.test(_cartRit), true);
+ok('com CAIXAS CRUAS não há busca', /\(modo \|\| QP_MIX\) !== 'mix'\) return null;/.test(_cartRit), true);
+// ⚠ O MODO É LIDO UMA VEZ, NO COMEÇO DA MONTAGEM. Trocando o seletor no meio da
+// busca (que leva minutos no cold start), o `QP_MIX` mudava debaixo dela e a
+// legenda saía "CARTEIRA EM CAIXAS CRUAS" embaixo de barras pesadas pelo mix.
+const _cartMontModo = pega('async function _cartMontar(');
+ok('o modo do mix é lido uma vez e viaja com a montagem',
+   /const modo = QP_MIX;/.test(_cartMontModo) && /_cartRitmos\(modo\)/.test(_cartMontModo)
+   && /cart\.mixModo = modo;/.test(_cartMontModo), true);
 // ⚠ 90 dias não respondeu no cold start (produção, 16/09/2026): a régua do mix
 // é uma ESCADA — 60 e, sem resposta, 30 — e desce sozinha uma vez.
 [/const CART_MIX_DIAS_MAX\s*=\s*\d+/, /const CART_MIX_ESCADA\s*=\s*\[[\d,\s]+\]/, /const CART_MIX_RETRY_S\s*=\s*\d+/]
@@ -3117,6 +3140,24 @@ ok('vai para onde nenhuma barra da ponta cruza a altura',
     _svgLadoLivre([1250,1228,1350,1800,1500,3000,3100], 1573)], ['fim', 'ini']);
 ok('empate vai para a direita, onde o olho já terminou de ler',
    _svgLadoLivre([1000,1000,1000,1000], 900), 'fim');
+// ⚠ ESCOLHER O LADO NÃO BASTA: pode não haver lado livre. Caso medido em
+// 18/09/2026 (carteira em caixas cruas, 10 dias, faixa alvo em 1.672 cx) — as
+// DUAS pontas cruzam a linha e a tarja caía em cima da barra do 21/09 e do
+// número 1.800 dela. Quantas barras ela cobre sai da LARGURA dela (a 1.300px
+// de card são 2, não as 3 fixas de antes).
+const _cartoes1809 = [1800,1250,1228,1350,1550,1150,1750,2700,2250,1400];
+ok('com as duas pontas ocupadas ainda escolhe a menos pior',
+   [_svgLadoLivre(_cartoes1809, 1672, 2), _svgLadoLivre(_cartoes1809, 1672, 3)], ['fim', 'ini']);
+ok('o nº de barras cobertas sai da largura da tarja, não de um n fixo',
+   /Math\.ceil\(\(\(txt\.length \+ 2\) \* FS \* 0\.62 \+ 10\) \/ passo\)/.test(_cartDes), true);
+ok('e a tarja SOBE para acima do número da barra quando não há lado livre',
+   /if\(alta >= valor\)/.test(_cartDes) && /const ySobe = ey\(alta\) - 18;/.test(_cartDes), true);
+ok('subindo, uma guia pontilhada mantém o vínculo com a linha',
+   /stroke-dasharray="2 2"/.test(_cartDes), true);
+ok('não cabendo acima, fica onde estava — nunca pior que antes',
+   /ySobe >= \(limSup != null \? limSup : T \+ FS \+ 8\)/.test(_cartDes), true);
+ok('a tarja da CARGA não pode subir até a do MELHOR DIA',
+   /_rot\(_cargaTxt, a\.alvoMax,  yMax,  'var\(--ok\)', yTeto \+ 20\)/.test(_cartDes), true);
 
 // ── o GAP DA META saiu do gerencial (redundância) ──────────────────────────
 // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards para

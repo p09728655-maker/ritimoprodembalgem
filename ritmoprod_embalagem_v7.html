@@ -130,6 +130,8 @@ body.ger-hist .ger-live-only{display:none!important}
 .par-upd{margin-left:auto;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);text-transform:none}
 .par-upd.err{color:var(--warn)}
 .kpi-grid.par-atualizando{opacity:.45;transition:opacity .18s}
+#qp-carteira.qp-atualizando,#qp-corpo.qp-atualizando{opacity:.45;transition:opacity .18s}
+#qp-upd{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--warn)}
 .par-filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .par-filtros .par-q{font-size:10px;padding:4px 12px}
 /* Período ativo destacado — sem isso não dava para saber qual atalho valia */
@@ -2056,6 +2058,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button class="btn btn-ghost" onclick="gerarRelatorioCarteira()" style="font-size:10px;padding:4px 10px" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO</button>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <span id="qp-upd"></span>
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
@@ -2667,7 +2670,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.59.0';
+const APP_VER   = '7.60.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7158,7 +7161,7 @@ function _qpVeredito(a){
 // HISTÓRICO e pela cascata, e o lerHistoricoSheets tem cache de 2 min. Esta
 // tela é leitura do que já está na mão.
 let QP_JANELA = 30;   // quantos dias são JULGADOS (aparecem no gráfico)
-let QP_RODANDO = false;
+let QP_RODANDO = false, QP_PEND = false;   // ver a nota do renderCarteira
 // A RÉGUA é outra janela, e são coisas diferentes de propósito: um filtro
 // escolhe quais dias você OLHA, o outro escolhe de quais dias sai o p50/p60/p75
 // com que eles são comparados. Padrão 60 dias — ver a nota do _qpCurva.
@@ -7240,8 +7243,9 @@ function _qpSetFaixa(v){
 
 async function renderQualidadePlano(){
   const alvo = document.getElementById('qp-corpo');
-  if(!alvo || QP_RODANDO) return;
-  QP_RODANDO = true;
+  if(!alvo) return;
+  if(QP_RODANDO){ QP_PEND = true; return; }
+  QP_RODANDO = true; alvo.classList.add('qp-atualizando'); _planoUpd();
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
@@ -7257,7 +7261,10 @@ async function renderQualidadePlano(){
     if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
     a.nSemSep = dias.filter(d => d.semSep).length;
     alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, _svgLargura(alvo));
-  }finally{ QP_RODANDO = false; }
+  }finally{
+    QP_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
+    if(QP_PEND){ QP_PEND = false; renderQualidadePlano(); }
+  }
 }
 
 // Quantas linhas a tabela mostra, num lugar só.
@@ -7866,11 +7873,38 @@ function _cartHtml(a, regua, larg){
   const _qtdTxt = l => mix
     ? (fmtN(l.crua) + ' cx programadas · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
     : (fmtN(l.qtde) + ' cx programadas');
-  const _rot = (txt, valor, y, cor) => {
-    const fim = _svgLadoLivre(_qtds, valor) === 'fim';
+  // ⚠ ESCOLHER O LADO NÃO BASTA — pode não haver lado livre. Com as DUAS pontas
+  // cruzando a linha, `_svgLadoLivre` devolve a MENOS pior e a tarja cai em cima
+  // da barra: medido em 18/09/2026, "← A CARGA DEVERIA FICAR AQUI" tapava a
+  // barra do 21/09 e o número 1.800 dela (esquerda 1 cruzamento, direita 2 —
+  // ganhou a esquerda, que também estava ocupada).
+  // Duas mudanças: quantas barras a tarja cobre sai da LARGURA DELA, não de um
+  // `n` fixo (3 barras contavam dias que nem estavam embaixo dela); e, se o lado
+  // escolhido ainda tiver barra na frente, a tarja SOBE para acima do número
+  // dessa barra, com uma guia pontilhada até a linha — o que ela precisa manter
+  // é o VÍNCULO com a linha, não a altura exata.
+  // Não cabendo acima (bateria na tarja de cima), fica onde estava: nunca pior
+  // que antes.
+  const _rot = (txt, valor, y, cor, limSup) => {
+    const nCobre = Math.max(1, Math.ceil(((txt.length + 2) * FS * 0.62 + 10) / passo));
+    const fim = _svgLadoLivre(_qtds, valor, nCobre) === 'fim';
     const t = fim ? (txt + ' →') : ('← ' + txt);
-    return _svgTarja(fim ? W-R-4 : L+3, y-3, t, fim ? 'end' : null, FS)
-      + '<text x="' + (fim ? W-R-9 : L+8) + '" y="' + (y-4) + '" fill="' + cor
+    const alta = Math.max.apply(null, (fim ? _qtds.slice(-nCobre) : _qtds.slice(0, nCobre)).concat([0]));
+    let yr = y, guia = '';
+    if(alta >= valor){
+      // 18px: o número em cima da barra tem baseline em `yTopo - 5` e glifo de
+      // ~0,7×FS acima dela (topo em yTopo−13,4). A tarja fecha 4,6px acima dele
+      // — com os 14px da conta crua os dois saíam encostados.
+      const ySobe = ey(alta) - 18;
+      if(ySobe >= (limSup != null ? limSup : T + FS + 8)){
+        const gx = fim ? (W - R - 44) : (L + 43);
+        yr = ySobe;
+        guia = '<line x1="' + gx + '" y1="' + (yr + 2).toFixed(1) + '" x2="' + gx + '" y2="' + (y - 1).toFixed(1)
+             + '" stroke="' + cor + '" stroke-width="1" stroke-dasharray="2 2" opacity=".55"/>';
+      }
+    }
+    return guia + _svgTarja(fim ? W-R-4 : L+3, yr-3, t, fim ? 'end' : null, FS)
+      + '<text x="' + (fim ? W-R-9 : L+8) + '" y="' + (yr-4) + '" fill="' + cor
       + '" font-family="var(--font-d)" font-size="' + FS + '"'
       + (fim ? ' text-anchor="end"' : '') + '>' + _rpEsc(t) + '</text>';
   };
@@ -7920,7 +7954,7 @@ function _cartHtml(a, regua, larg){
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + _rot(_tetoTxt,  a.teto,     yTeto, 'var(--red)')
-    + _rot(_cargaTxt, a.alvoMax,  yMax,  'var(--ok)')
+    + _rot(_cargaTxt, a.alvoMax,  yMax,  'var(--ok)', yTeto + 20)
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + (H-B) + '" y2="' + (H-B) + '" stroke="var(--txt3)" stroke-width="1"/>'
     + '</svg>';
   const tab = a.linhas.map(l => {
@@ -8103,8 +8137,8 @@ function _cartMixPeriodo(){
   de.setDate(de.getDate() - nd);
   return { de: dtToStr(de), ate: dtToStr(ate), dias: nd };
 }
-async function _cartRitmos(){
-  if(QP_MIX !== 'mix') return null;
+async function _cartRitmos(modo){
+  if((modo || QP_MIX) !== 'mix') return null;
   if(!CFG.sheetsUrl) return { falha:'sem-url', ritmos:null, itens:null };
   const per = _cartMixPeriodo();
   const key = per.de + '|' + per.ate;
@@ -8154,10 +8188,16 @@ function _cartMixAgendar(cart){
 // A MONTAGEM da carteira, uma só para a tela e para o papel: programação +
 // dívida + o mix (quando escolhido) + a conferência do mix nos dias da régua.
 async function _cartMontar(dias){
+  // ⚠ O MODO É LIDO UMA VEZ, NO COMEÇO. A montagem espera até três leituras
+  // caras; trocando o seletor no meio, `QP_MIX` mudava debaixo dela e a legenda
+  // saía dizendo "CARTEIRA EM CAIXAS CRUAS" embaixo de barras pesadas pelo mix.
+  // O modo que vale é o que a montagem USOU — o pedido novo redesenha logo
+  // depois, pela guarda do `renderCarteira`.
+  const modo = QP_MIX;
   await carregarProgramacaoDetalhada();
-  const r = await _cartRitmos();
+  const r = await _cartRitmos(modo);
   const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida(), r && r.ritmos);
-  cart.mixModo = QP_MIX;
+  cart.mixModo = modo;
   if(r){
     if(cart.mix){
       cart.mix.regua = r.dias;
@@ -8168,11 +8208,27 @@ async function _cartMontar(dias){
   return cart;
 }
 
-let CART_RODANDO = false;
+// ⚠ GUARDA DE REENTRÂNCIA QUE NÃO ENGOLE O PEDIDO (18/09/2026 — "botão
+// atualizar não está funcionando"). A montagem da carteira encadeia até TRÊS
+// leituras caras (programação detalhada, log de produto do mix e, com o cenário
+// ligado, as paradas dos dias da régua), cada uma com 3 tentativas de 25 s:
+// passa de dois minutos no cold start. Nessa janela o `return` seco descartava
+// EM SILÊNCIO todo toque no ATUALIZAR e toda troca de seletor — nada
+// redesenhava, nada avisava, e o gestor concluía que o botão estava quebrado.
+// Medido: o seletor em CAIXAS CRUAS com a tela inteira ainda pesada pelo mix.
+// Agora o pedido que chega durante o voo fica PENDENTE e roda no fim — a última
+// escolha do gestor sempre vence — e o bloco esmaece com "atualizando…"
+// enquanto isso, a mesma régua da aba PARADAS e da GESTÃO DE PERDAS.
+let CART_RODANDO = false, CART_PEND = false;
+function _planoUpd(){
+  const e = document.getElementById('qp-upd');
+  if(e) e.textContent = (CART_RODANDO || QP_RODANDO) ? 'atualizando…' : '';
+}
 async function renderCarteira(){
   const alvo = document.getElementById('qp-carteira');
-  if(!alvo || CART_RODANDO) return;
-  CART_RODANDO = true;
+  if(!alvo) return;
+  if(CART_RODANDO){ CART_PEND = true; return; }
+  CART_RODANDO = true; alvo.classList.add('qp-atualizando'); _planoUpd();
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
@@ -8193,7 +8249,10 @@ async function renderCarteira(){
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
     // não se conseguiu lê-la é pior que não dizer nada.
     alvo.innerHTML = a ? _cartHtml(a, QP_REGUA, _svgLargura(alvo)) : _cartVazioHtml(cart);
-  }finally{ CART_RODANDO = false; }
+  }finally{
+    CART_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
+    if(CART_PEND){ CART_PEND = false; renderCarteira(); }
+  }
 }
 
 // ════════════════════════════════════════════════
