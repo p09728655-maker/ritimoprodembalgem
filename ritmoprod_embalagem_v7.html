@@ -130,6 +130,27 @@ body.ger-hist .ger-live-only{display:none!important}
 .par-upd{margin-left:auto;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);text-transform:none}
 .par-upd.err{color:var(--warn)}
 .kpi-grid.par-atualizando{opacity:.45;transition:opacity .18s}
+#qp-carteira.qp-atualizando,#qp-corpo.qp-atualizando{opacity:.45;transition:opacity .18s}
+.cart-tit{font-family:var(--font-d);font-size:10px;letter-spacing:1.4px;color:var(--acc);border-top:1px solid var(--border);padding-top:12px;margin:22px 2px 12px}
+.cart-tit:first-child{border-top:0;padding-top:0;margin-top:0}
+/* ⚠ COM DOIS BLOCOS, O QUE É IDÊNTICO SAI UMA VEZ SÓ — e por CLASSE ESCONDIDA,
+   nunca por um segundo desenho (é a regra do cabeçalho dos cinco relatórios,
+   #204/#205). São três: os quatro parágrafos do `.qp-nota` (como ler · a dívida
+   entra na frente · nivelar não é sequenciar · a régua), palavra por palavra
+   iguais, que impressos duas vezes viram parede de texto entre os gráficos —
+   ficam no ÚLTIMO, fechando a seção; a `.qp-leg`, que no bloco cru é
+   subconjunto da do mix — fica no PRIMEIRO, o completo; e o sufixo `.cl-regua`
+   do título do gráfico, que repetiria o que o `.cart-tit` do bloco já diz. */
+/* ⚠ ESCOPADO EM `#sec-plano` POR ESPECIFICIDADE: `#sec-plano .qp-leg` traz
+   `display:flex` (id + classe) e vencia a regra de esconder escrita só com
+   classes — a legenda continuava saindo nos dois blocos. */
+#sec-plano .cart-dois .cart-bloco:not(:last-child) .qp-nota{display:none}
+#sec-plano .cart-dois .cart-bloco:not(:first-child) .qp-leg{display:none}
+#sec-plano .cart-dois .cl-regua{display:none}
+/* respiro entre os dois blocos: a caixa do mix do primeiro encostava no
+   título do segundo */
+#sec-plano .cart-dois .cart-bloco + .cart-bloco{margin-top:30px}
+#qp-upd{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--warn)}
 .par-filtros{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
 .par-filtros .par-q{font-size:10px;padding:4px 12px}
 /* Período ativo destacado — sem isso não dava para saber qual atalho valia */
@@ -2041,9 +2062,10 @@ if (_v7Instalado()) _v7EscondeBotao();
       </select>
       <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CARTEIRA</span>
       <select id="qp-mix" class="frm-inp" onchange="_qpSetMix(this.value)" style="width:150px;padding:3px 8px;font-size:11px;cursor:pointer"
-              title="CARGA PELO MIX: cada lote pesa pelo ritmo do produto (o mesmo cx/h da aba PRODUÇÃO/HORA) — produto lento pesa mais, produto rápido pesa menos. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO.">
+              title="CARGA PELO MIX: cada lote pesa pelo ritmo do produto (o mesmo cx/h da aba PRODUÇÃO/HORA) — produto lento pesa mais, produto rápido pesa menos. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO. AS DUAS desenha um gráfico de cada, um sob o outro: é onde se vê se o veredito muda de uma régua para a outra.">
         <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
+        <option value="ambos">as duas</option>
       </select></span>
       <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">E SE PARADAS</span>
       <select id="qp-ese" class="frm-inp" onchange="_qpSetEse(this.value)" style="width:108px;padding:3px 8px;font-size:11px;cursor:pointer"
@@ -2056,6 +2078,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button class="btn btn-ghost" onclick="gerarRelatorioCarteira()" style="font-size:10px;padding:4px 10px" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO</button>
       <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
+      <span id="qp-upd"></span>
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
@@ -2667,7 +2690,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.59.0';
+const APP_VER   = '7.60.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7158,7 +7181,7 @@ function _qpVeredito(a){
 // HISTÓRICO e pela cascata, e o lerHistoricoSheets tem cache de 2 min. Esta
 // tela é leitura do que já está na mão.
 let QP_JANELA = 30;   // quantos dias são JULGADOS (aparecem no gráfico)
-let QP_RODANDO = false;
+let QP_RODANDO = false, QP_PEND = false;   // ver a nota do renderCarteira
 // A RÉGUA é outra janela, e são coisas diferentes de propósito: um filtro
 // escolhe quais dias você OLHA, o outro escolhe de quais dias sai o p50/p60/p75
 // com que eles são comparados. Padrão 60 dias — ver a nota do _qpCurva.
@@ -7187,7 +7210,7 @@ function _qpCarregarPref(){
     if(Array.isArray(o.faixa) && o.faixa.length === 2) QP_FAIXA = o.faixa.map(Number);
     if(o.janela != null) QP_JANELA = Number(o.janela);
     if(o.ordem) QP_ORDEM = String(o.ordem);
-    if(o.mix === 'cru' || o.mix === 'mix') QP_MIX = o.mix;
+    if(o.mix === 'cru' || o.mix === 'mix' || o.mix === 'ambos') QP_MIX = o.mix;
     if(o.ese != null) QP_ESE = Math.max(0, Math.min(1, Number(o.ese) || 0));
   }catch(e){}
 }
@@ -7228,7 +7251,7 @@ function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadeP
 // Só a carteira lê o mix: o bloco de baixo julga METAS (a soma dos lotes de um
 // dia que já passou), e converter meta antiga pelo mix pediria a programação
 // daquele dia, que o arquivamento já levou. Não inventar.
-function _qpSetMix(v){ QP_MIX = (v === 'cru') ? 'cru' : 'mix'; _qpSalvarPref(); renderCarteira(); }
+function _qpSetMix(v){ QP_MIX = (v === 'cru' || v === 'ambos') ? v : 'mix'; _qpSalvarPref(); renderCarteira(); }
 function _qpSetEse(v){ QP_ESE = Math.max(0, Math.min(1, Number(v) || 0)); _qpSalvarPref(); renderCarteira(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
@@ -7240,8 +7263,9 @@ function _qpSetFaixa(v){
 
 async function renderQualidadePlano(){
   const alvo = document.getElementById('qp-corpo');
-  if(!alvo || QP_RODANDO) return;
-  QP_RODANDO = true;
+  if(!alvo) return;
+  if(QP_RODANDO){ QP_PEND = true; return; }
+  QP_RODANDO = true; alvo.classList.add('qp-atualizando'); _planoUpd();
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
@@ -7257,7 +7281,10 @@ async function renderQualidadePlano(){
     if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
     a.nSemSep = dias.filter(d => d.semSep).length;
     alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, _svgLargura(alvo));
-  }finally{ QP_RODANDO = false; }
+  }finally{
+    QP_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
+    if(QP_PEND){ QP_PEND = false; renderQualidadePlano(); }
+  }
 }
 
 // Quantas linhas a tabela mostra, num lugar só.
@@ -7861,16 +7888,47 @@ function _cartHtml(a, regua, larg){
   // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
   // seta aponta para dentro do gráfico a partir do lado escolhido.
   const _qtds = a.linhas.map(l => l.qtde);
+  // ⚠ A COLISÃO DA TARJA OLHA O QUE ESTÁ DESENHADO, e com o mix o topo do dia é
+  // o FANTASMA tracejado (o programado cru) quando ele é maior que a carga. Só
+  // com `qtde` a tarja passava por cima do contorno do 01/10 e do número dele.
+  const _qtdsCol = a.linhas.map(l => Math.max(l.qtde, Number(l.crua) || 0));
   // Com o mix, a barra é CX DE LINHA e o programado cru vai junto no texto.
   const mix = !!a.mix;
   const _qtdTxt = l => mix
     ? (fmtN(l.crua) + ' cx programadas · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
     : (fmtN(l.qtde) + ' cx programadas');
-  const _rot = (txt, valor, y, cor) => {
-    const fim = _svgLadoLivre(_qtds, valor) === 'fim';
+  // ⚠ ESCOLHER O LADO NÃO BASTA — pode não haver lado livre. Com as DUAS pontas
+  // cruzando a linha, `_svgLadoLivre` devolve a MENOS pior e a tarja cai em cima
+  // da barra: medido em 18/09/2026, "← A CARGA DEVERIA FICAR AQUI" tapava a
+  // barra do 21/09 e o número 1.800 dela (esquerda 1 cruzamento, direita 2 —
+  // ganhou a esquerda, que também estava ocupada).
+  // Duas mudanças: quantas barras a tarja cobre sai da LARGURA DELA, não de um
+  // `n` fixo (3 barras contavam dias que nem estavam embaixo dela); e, se o lado
+  // escolhido ainda tiver barra na frente, a tarja SOBE para acima do número
+  // dessa barra, com uma guia pontilhada até a linha — o que ela precisa manter
+  // é o VÍNCULO com a linha, não a altura exata.
+  // Não cabendo acima (bateria na tarja de cima), fica onde estava: nunca pior
+  // que antes.
+  const _rot = (txt, valor, y, cor, limSup) => {
+    const nCobre = Math.max(1, Math.ceil(((txt.length + 2) * FS * 0.62 + 10) / passo));
+    const fim = _svgLadoLivre(_qtdsCol, valor, nCobre) === 'fim';
     const t = fim ? (txt + ' →') : ('← ' + txt);
-    return _svgTarja(fim ? W-R-4 : L+3, y-3, t, fim ? 'end' : null, FS)
-      + '<text x="' + (fim ? W-R-9 : L+8) + '" y="' + (y-4) + '" fill="' + cor
+    const alta = Math.max.apply(null, (fim ? _qtdsCol.slice(-nCobre) : _qtdsCol.slice(0, nCobre)).concat([0]));
+    let yr = y, guia = '';
+    if(alta >= valor){
+      // 18px: o número em cima da barra tem baseline em `yTopo - 5` e glifo de
+      // ~0,7×FS acima dela (topo em yTopo−13,4). A tarja fecha 4,6px acima dele
+      // — com os 14px da conta crua os dois saíam encostados.
+      const ySobe = ey(alta) - 18;
+      if(ySobe >= (limSup != null ? limSup : T + FS + 8)){
+        const gx = fim ? (W - R - 44) : (L + 43);
+        yr = ySobe;
+        guia = '<line x1="' + gx + '" y1="' + (yr + 2).toFixed(1) + '" x2="' + gx + '" y2="' + (y - 1).toFixed(1)
+             + '" stroke="' + cor + '" stroke-width="1" stroke-dasharray="2 2" opacity=".55"/>';
+      }
+    }
+    return guia + _svgTarja(fim ? W-R-4 : L+3, yr-3, t, fim ? 'end' : null, FS)
+      + '<text x="' + (fim ? W-R-9 : L+8) + '" y="' + (yr-4) + '" fill="' + cor
       + '" font-family="var(--font-d)" font-size="' + FS + '"'
       + (fim ? ' text-anchor="end"' : '') + '>' + _rpEsc(t) + '</text>';
   };
@@ -7920,7 +7978,7 @@ function _cartHtml(a, regua, larg){
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yTeto + '" y2="' + yTeto + '" stroke="var(--red)" stroke-width="1" stroke-dasharray="4 3" opacity=".85"/>'
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + yMax + '" y2="' + yMax + '" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3" opacity=".8"/>'
     + _rot(_tetoTxt,  a.teto,     yTeto, 'var(--red)')
-    + _rot(_cargaTxt, a.alvoMax,  yMax,  'var(--ok)')
+    + _rot(_cargaTxt, a.alvoMax,  yMax,  'var(--ok)', yTeto + 20)
     + '<line x1="' + L + '" x2="' + (W-R) + '" y1="' + (H-B) + '" y2="' + (H-B) + '" stroke="var(--txt3)" stroke-width="1"/>'
     + '</svg>';
   const tab = a.linhas.map(l => {
@@ -7964,7 +8022,7 @@ function _cartHtml(a, regua, larg){
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
     + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? ' — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX' : '') + '</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? '<span class="cl-regua"> — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX</span>' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
     + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga<span class="cl-selo"> · PESA = peso do mix</span></span>' : '')
@@ -7995,7 +8053,8 @@ function _cartHtml(a, regua, larg){
 // diria cx de linha mostrando caixas cruas.
 function _cartMixHtml(a){
   if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — os números da PROGRAMACAO, sem olhar o produto. '
-    + 'Para pesar cada lote pelo produto, escolha <b>carga pelo mix</b> na barra.</div>';
+    + (a.ambos ? 'O bloco de cima é esta mesma carteira com cada lote pesado pelo ritmo do produto.'
+               : 'Para pesar cada lote pelo produto, escolha <b>carga pelo mix</b> na barra.') + '</div>';
   if(!a.mix){
     const m = { 'sem-resposta':'o log de produto não respondeu a tempo (cold start do Apps Script) — toque ATUALIZAR',
                 'sem-endpoint':'o backend não conhece a ação getProducaoModeloPeriodo — falta o re-deploy do .gs',
@@ -8103,8 +8162,8 @@ function _cartMixPeriodo(){
   de.setDate(de.getDate() - nd);
   return { de: dtToStr(de), ate: dtToStr(ate), dias: nd };
 }
-async function _cartRitmos(){
-  if(QP_MIX !== 'mix') return null;
+async function _cartRitmos(modo){
+  if((modo || QP_MIX) !== 'mix') return null;
   if(!CFG.sheetsUrl) return { falha:'sem-url', ritmos:null, itens:null };
   const per = _cartMixPeriodo();
   const key = per.de + '|' + per.ate;
@@ -8153,11 +8212,17 @@ function _cartMixAgendar(cart){
 
 // A MONTAGEM da carteira, uma só para a tela e para o papel: programação +
 // dívida + o mix (quando escolhido) + a conferência do mix nos dias da régua.
-async function _cartMontar(dias){
+async function _cartMontar(dias, modoPedido){
+  // ⚠ O MODO É LIDO UMA VEZ, NO COMEÇO. A montagem espera até três leituras
+  // caras; trocando o seletor no meio, `QP_MIX` mudava debaixo dela e a legenda
+  // saía dizendo "CARTEIRA EM CAIXAS CRUAS" embaixo de barras pesadas pelo mix.
+  // O modo que vale é o que a montagem USOU — o pedido novo redesenha logo
+  // depois, pela guarda do `renderCarteira`.
+  const modo = modoPedido || (QP_MIX === 'ambos' ? 'mix' : QP_MIX);
   await carregarProgramacaoDetalhada();
-  const r = await _cartRitmos();
+  const r = await _cartRitmos(modo);
   const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida(), r && r.ritmos);
-  cart.mixModo = QP_MIX;
+  cart.mixModo = modo;
   if(r){
     if(cart.mix){
       cart.mix.regua = r.dias;
@@ -8168,11 +8233,73 @@ async function _cartMontar(dias){
   return cart;
 }
 
-let CART_RODANDO = false;
+// ⚠ GUARDA DE REENTRÂNCIA QUE NÃO ENGOLE O PEDIDO (18/09/2026 — "botão
+// atualizar não está funcionando"). A montagem da carteira encadeia até TRÊS
+// leituras caras (programação detalhada, log de produto do mix e, com o cenário
+// ligado, as paradas dos dias da régua), cada uma com 3 tentativas de 25 s:
+// passa de dois minutos no cold start. Nessa janela o `return` seco descartava
+// EM SILÊNCIO todo toque no ATUALIZAR e toda troca de seletor — nada
+// redesenhava, nada avisava, e o gestor concluía que o botão estava quebrado.
+// Medido: o seletor em CAIXAS CRUAS com a tela inteira ainda pesada pelo mix.
+// Agora o pedido que chega durante o voo fica PENDENTE e roda no fim — a última
+// escolha do gestor sempre vence — e o bloco esmaece com "atualizando…"
+// enquanto isso, a mesma régua da aba PARADAS e da GESTÃO DE PERDAS.
+// ⚠ QUAIS BLOCOS A CARTEIRA MOSTRA, UM LUGAR SÓ — a tela e os DOIS PDFs leem
+// daqui. Com `AS DUAS` o gestor lê a mesma carteira nas duas réguas, um gráfico
+// sob o outro, porque **o veredito muda entre elas**: medido em 18/09/2026, pela
+// CARGA sobravam 2.302 cx e o cenário de −50% de paradas dizia NÃO DARIA; pelas
+// CAIXAS CRUAS sobravam 790 e ele dizia DARIA. Escondendo uma das duas, a
+// decisão fica refém de qual régua estava selecionada.
+// ⚠ E NÃO DOBRA A BUSCA. `carregarProgramacaoDetalhada` tem cache de 2 min e voo
+// compartilhado; `_cartRitmos` só lê o log de produto no modo 'mix' (o bloco cru
+// não pede nada); e o cenário E SE reusa o `_pgContextoDoPeriodo`, que tem cache
+// de 5 min por período e voo compartilhado. O segundo bloco é conta PURA sobre o
+// mesmo PROG_DETALHADA que o primeiro já leu.
+// Em SEQUÊNCIA, nunca em Promise.all: o Apps Script atende uma execução por vez.
+const CART_TIT = {
+  mix: 'CARGA PELO MIX — CADA LOTE PESADO PELO RITMO DO PRODUTO',
+  cru: 'CAIXAS CRUAS — AS QUANTIDADES COMO ESTÃO NA PROGRAMACAO'
+};
+async function _cartBlocos(dias, curva, agendar){
+  const modos = QP_MIX === 'ambos' ? ['mix', 'cru'] : [QP_MIX];
+  const out = [];
+  for(let i = 0; i < modos.length; i++){
+    const modo = modos[i];
+    const cart = await _cartMontar(dias, modo);
+    // a escada do mix é só da TELA (ela redesenha sozinha); o papel não se redesenha
+    if(agendar && modo === 'mix') cart.mixRetry = _cartMixAgendar(cart);
+    const a = _cartAnalise(cart, curva, QP_FAIXA);
+    if(a){
+      a.ambos = modos.length > 1;
+      a.cenario = await _cartCenarioAsync(cart, dias);
+    }
+    out.push({ modo, cart, a, tit: modos.length > 1 ? CART_TIT[modo] : '' });
+  }
+  return out;
+}
+// O desenho dos blocos, para a tela e para os dois PDFs. Vazio é desenhado UMA
+// vez (a causa é a mesma nos dois modos — não se diz duas vezes que a leitura
+// da PROGRAMACAO falhou).
+function _cartBlocosHtml(blocos, larg){
+  if(!blocos.length) return '';
+  if(!blocos.some(b => b.a)) return _cartVazioHtml(blocos[0].cart);
+  // ⚠ o que é idêntico nos dois sai uma vez só — pela pele `.cart-dois`
+  const corpo = blocos.map(b => '<div class="cart-bloco">'
+    + (b.tit ? '<div class="cart-tit">' + b.tit + '</div>' : '')
+    + (b.a ? _cartHtml(b.a, QP_REGUA, larg) : '') + '</div>').join('');
+  return blocos.length > 1 ? '<div class="cart-dois">' + corpo + '</div>' : corpo;
+}
+
+let CART_RODANDO = false, CART_PEND = false;
+function _planoUpd(){
+  const e = document.getElementById('qp-upd');
+  if(e) e.textContent = (CART_RODANDO || QP_RODANDO) ? 'atualizando…' : '';
+}
 async function renderCarteira(){
   const alvo = document.getElementById('qp-carteira');
-  if(!alvo || CART_RODANDO) return;
-  CART_RODANDO = true;
+  if(!alvo) return;
+  if(CART_RODANDO){ CART_PEND = true; return; }
+  CART_RODANDO = true; alvo.classList.add('qp-atualizando'); _planoUpd();
   try{
     let dias = [];
     try{ dias = await buildDiasHistAsync(); }catch(e){ dias = buildDiasHist(); }
@@ -8185,15 +8312,14 @@ async function renderCarteira(){
     }
     // A dívida (atraso vivo + o que falta hoje) sai do `_planoDivida`, a MESMA
     // leitura do relatório em PDF; a montagem (programação + mix) é `_cartMontar`.
-    const cart = await _cartMontar(dias);
-    cart.mixRetry = _cartMixAgendar(cart);
-    const a = _cartAnalise(cart, curva, QP_FAIXA);
-    if(a) a.cenario = await _cartCenarioAsync(cart, dias);
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
     // não se conseguiu lê-la é pior que não dizer nada.
-    alvo.innerHTML = a ? _cartHtml(a, QP_REGUA, _svgLargura(alvo)) : _cartVazioHtml(cart);
-  }finally{ CART_RODANDO = false; }
+    alvo.innerHTML = _cartBlocosHtml(await _cartBlocos(dias, curva, true), _svgLargura(alvo));
+  }finally{
+    CART_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
+    if(CART_PEND){ CART_PEND = false; renderCarteira(); }
+  }
 }
 
 // ════════════════════════════════════════════════
@@ -8261,6 +8387,9 @@ const _PLANO_SKIN = `
   .plano-doc .qp-p-warn{color:#B26A00;border-color:#B26A00}
   .plano-doc .qp-p-red{color:#C62828;border-color:#C62828}
   /* a nota longa de cada bloco fica no papel: é ela que explica a leitura */
+  .plano-doc .cart-dois .cart-bloco:not(:last-child) .qp-nota{display:none}
+  .plano-doc .cart-dois .cart-bloco:not(:first-child) .qp-leg{display:none}
+  .plano-doc .cart-dois .cl-regua{display:none}
   .plano-doc .qp-nota{font-size:10.5px;color:#4A5568;line-height:1.5;margin-top:10px;
                       border-top:1px solid #edf2f7;padding-top:9px}
   .plano-doc .qp-nota b{color:#1F2328}
@@ -8335,12 +8464,14 @@ async function gerarRelatorioPlano(){
     // relatório sai INTEIRO, só sem a seção — a mesma regra da cascata e das
     // paradas no relatório semanal. Meio relatório é melhor que relatório
     // nenhum; número de carteira inventado é pior que os dois.
-    let ac = null, cart = null;
+    // ⚠ OS MESMOS BLOCOS DA TELA (`_cartBlocos`): com AS DUAS o papel sai com os
+    // dois gráficos, como a tela. Papel e tela discordando do modo já aconteceu
+    // aqui — é a regra do projeto que eles saiam da mesma montagem.
+    let blocos = [], ac = null;
     try{
-      cart = await _cartMontar(dias);
-      ac = _cartAnalise(cart, curva, QP_FAIXA);
-      if(ac) ac.cenario = await _cartCenarioAsync(cart, dias);
-    }catch(e){ ac = null; }
+      blocos = await _cartBlocos(dias, curva, false);
+      ac = (blocos.find(b => b.a) || {}).a || null;
+    }catch(e){ blocos = []; ac = null; }
 
     const fMin = a.faixa[0], fMax = a.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
@@ -8353,8 +8484,10 @@ async function gerarRelatorioPlano(){
     // e tabela. A abertura virou a linha de meta do cabeçalho; as notas sob os
     // títulos saíram; a metodologia é a seção 3, curta.
     corpo = '<div class="plano-doc">'
+      // a lista de lotes sai UMA vez: os lotes são os mesmos nos dois blocos —
+      // o que muda entre eles é o peso, que já está nos gráficos acima
       + (ac ? (sec('A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR')
-              + _cartHtml(ac, QP_REGUA, PLANO_SVG_W)
+              + _cartBlocosHtml(blocos, PLANO_SVG_W)
               + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'
               + _cartLotesHtml(ac))
             : (sec('A CARTEIRA QUE VEM')
@@ -8420,16 +8553,15 @@ async function gerarRelatorioCarteira(){
       alert('São precisos ao menos ' + QP_MIN_DIAS + ' dias fechados para montar a curva de capacidade. Hoje há ' + curva.length + '.');
       return;
     }
-    const cart = await _cartMontar(dias);
-    const ac = _cartAnalise(cart, curva, QP_FAIXA);
+    const blocos = await _cartBlocos(dias, curva, false);
+    const ac = (blocos.find(b => b.a) || {}).a || null;
     if(!ac){ win.close(); alert('Não há lote com data futura na PROGRAMACAO — nada a imprimir.'); return; }
-    ac.cenario = await _cartCenarioAsync(cart, dias);
     const fMin = ac.faixa[0], fMax = ac.faixa[1];
     const reguaTxt = QP_REGUA > 0 ? ('últimos ' + QP_REGUA + ' dias') : (dias.length + ' dias de histórico');
     metaCab = _rpEsc(ac.de) + ' → ' + _rpEsc(ac.ate) + ' · régua ' + (QP_REGUA > 0 ? QP_REGUA + ' dias' : 'todo o histórico') + ' s/ hora extra · p' + fMin + '–p' + fMax
-      + (ac.mix ? ' · carga pelo mix' : ' · caixas cruas');
+      + (blocos.length > 1 ? ' · carga pelo mix E caixas cruas' : (ac.mix ? ' · carga pelo mix' : ' · caixas cruas'));
     corpo = '<div class="plano-doc cart-doc">'
-      + _cartHtml(ac, QP_REGUA, CART_SVG_W_PAISAGEM)
+      + _cartBlocosHtml(blocos, CART_SVG_W_PAISAGEM)
       + '<div class="pl-sub">OS LOTES PROGRAMADOS, DIA A DIA</div>'
       + _cartLotesHtml(ac)
       + '<div class="rp-footer"><span>' + APP_NOME_CX + ' · Embalagem</span>'

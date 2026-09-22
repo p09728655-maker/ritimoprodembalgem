@@ -11,6 +11,62 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.60.0 — 18/09/2026
+
+**O ATUALIZAR da aba PLANO engolia o toque, e a tarja da faixa alvo tapava a
+barra.** Os dois vieram do mesmo uso, com a tela na frente: *"botão atualizar
+não está funcionando"* e *"está cobrindo a linha A CARGA DEVERIA FICAR AQUI"*.
+
+- **A guarda de reentrância não descarta mais o pedido.** `renderCarteira` e
+  `renderQualidadePlano` saíam com um `return` seco enquanto um render estava em
+  voo. Só que a montagem da carteira encadeia até TRÊS leituras caras
+  (programação detalhada, log de produto do mix e, com o cenário `E SE PARADAS`
+  ligado, as paradas dos dias da régua), cada uma com 3 tentativas de 25 s: no
+  cold start passa de dois minutos. Nessa janela **todo toque no ATUALIZAR e
+  toda troca de seletor sumiam em silêncio** — nada redesenhava e nada avisava.
+  Medido: o seletor em **CAIXAS CRUAS** com a tela inteira ainda pesada pelo mix.
+  Agora o pedido que chega durante o voo fica **pendente e roda no fim** — a
+  última escolha do gestor sempre vence.
+- **E a tela diz que está atualizando**: o bloco esmaece e aparece
+  *"atualizando…"* ao lado do botão, a mesma régua da aba PARADAS e da GESTÃO DE
+  PERDAS. Sem sinal nenhum, esperar um minuto é indistinguível de botão quebrado.
+- **O modo do mix é lido UMA VEZ, no começo da montagem.** Trocando o seletor no
+  meio da busca, o `QP_MIX` mudava debaixo dela e a legenda saía dizendo
+  *"CARTEIRA EM CAIXAS CRUAS"* embaixo de barras pesadas pelo mix.
+- **A tarja `← A CARGA DEVERIA FICAR AQUI` sai de cima da barra.** Ela escolhia o
+  lado com menos barras cruzando a linha, mas quando as **duas** pontas estavam
+  ocupadas ia para a *menos pior* — e cobria. Medido em 18/09/2026 (carteira em
+  caixas cruas): esquerda com 1 cruzamento, direita com 2, e a tarja tapou a
+  barra do **21/09** e o número **1.800** dela. Agora o nº de barras cobertas sai
+  da **largura da tarja** (a 1.300px são 2, não as 3 fixas de antes) e, sem lado
+  livre, ela **sobe** para acima do número da barra, com uma **guia pontilhada**
+  até a linha. Não cabendo acima, fica onde estava — nunca pior que antes.
+
+**AS DUAS RÉGUAS NA MESMA TELA.** Pedido do PPCP no mesmo dia: o seletor
+**CARTEIRA** ganhou a opção **AS DUAS** — a carteira sai em dois blocos, um sob
+o outro, *carga pelo mix* e *caixas cruas*, cada um com seu veredito, seus
+cards, seu gráfico e seu dia a dia. **É o veredito que muda entre elas**, e é
+isso que ela existe para mostrar: medido em 18/09/2026, pela carga sobravam
+2.302 cx e o cenário de −50% de paradas dizia **NÃO DARIA**; pelas caixas cruas
+sobravam 790 e ele dizia **DARIA**.
+
+- **Não dobra a chamada ao Apps Script.** A programação vem do cache (2 min, voo
+  compartilhado), o log de produto só é lido no bloco do mix e o cenário reusa o
+  contexto de paradas da gestão de perdas (5 min, voo compartilhado). O segundo
+  bloco é conta pura sobre o que o primeiro já leu.
+- **O que é idêntico nos dois sai uma vez só**: os quatro parágrafos de
+  explicação (no último bloco), a legenda do gráfico (no primeiro, que é o
+  completo) e o sufixo do título que o próprio nome do bloco já diz. Por classe
+  escondida, nunca por um segundo desenho.
+- **Os dois PDFs acompanham** — 🖨 ESTUDO e 🖨 CARTEIRA saem com os dois gráficos
+  quando AS DUAS está selecionado. A escolha fica guardada em `rpe_qp_pref`.
+
+**Atenção:** nenhum número muda. Todas as correções são de tela — carteira,
+dívida, carga pelo mix, faixa alvo e veredito continuam saindo das mesmas
+contas. **Sem re-deploy do `.gs`.**
+
+---
+
 ## v7.59.0 · mobile 1.19.0 · .gs 5.5 — 17/09/2026
 
 **Paradas com SEGUNDOS — a base do estudo de microparadas.** Pedido do PPCP,
