@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.66.0 — 23/09/2026
+
+**SIMULADOR: a conta da hora extra aparece embaixo do campo, e um teste de
+superfície só nesta aba.**
+
+- Sob **HORA EXTRA ATUAL (h/semana, por pessoa)** a conta sai ao vivo: *8,0 h ×
+  15 pessoas = 120,0 homem-hora/semana · × 4,4 semanas = 35,2 h de linha/mês*
+  (*"onde aparece 8 h × 20 pessoas?"*). Com 0, diz que não há HE a economizar;
+  sem pessoas, pede a quantidade.
+- **Teste de superfície, só na aba SIMULADOR** (pedido: *"sim, fazer o teste"*),
+  com a MESMA paleta: fundo → bloco → card em três tons um pouco mais
+  afastados, cards sem borda (o tom já separa), mais respiro e raio maior. É um
+  bloco de CSS escopado em `#sec-simulador`; aprovado, vira regra do painel;
+  reprovado, apaga-se o bloco. Nenhum número muda.
+
+---
+
 ## v7.65.0 — 23/09/2026
 
 **SIMULADOR: a hora extra é digitada POR PESSOA.** O campo pedia o *total da
