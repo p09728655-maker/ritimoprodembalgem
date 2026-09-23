@@ -1874,6 +1874,13 @@ ok('ponto de milhar sem vírgula', _pgSimNum('50.000'), 50000);
 ok('ponto decimal de quem digita em en', _pgSimNum('382.89'), 382.89);
 ok('R$ e espaços não atrapalham', _pgSimNum('R$ 1.234,56'), 1234.56);
 ok('vazio é zero', _pgSimNum(''), 0);
+// Campos em R$ saem formatados ao sair do campo, e a conta lê o formato de volta
+eval(pega('function _pgSimRs('));
+ok('200000 vira R$ 200.000', _pgSimRs('200000').replace(/\s/g, ' '), 'R$ 200.000');
+ok('377,81 vira R$ 377,81', _pgSimRs('377,81').replace(/\s/g, ' '), 'R$ 377,81');
+ok('vazio continua vazio', _pgSimRs(''), '');
+ok('o texto formatado volta ao mesmo número',
+   [_pgSimNum(_pgSimRs('200000')), _pgSimNum(_pgSimRs('377,81')), _pgSimNum(_pgSimRs('1234567,5'))], [200000, 377.81, 1234567.5]);
 
 // por ano = mês típico × 12 ("colocar por ano tbm")
 sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },

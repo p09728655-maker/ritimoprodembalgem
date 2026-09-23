@@ -11350,6 +11350,20 @@ function _pgSimNum(v){
   return parseFloat(s)||0;
 }
 
+// Campo em R$ no formato brasileiro ("R$ 200.000", "R$ 377,81"). Formata ao
+// SAIR do campo, nunca a cada tecla (o cursor pularia no meio da digitação).
+// O _pgSimNum lê de volta o texto formatado — a conta não muda.
+function _pgSimRs(v){
+  if(v==null || String(v).trim()==='') return '';
+  const n=_pgSimNum(v);
+  return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:(n%1)?2:0, maximumFractionDigits:2});
+}
+function _pgSimFmtRs(el){
+  if(!el) return;
+  const f=_pgSimRs(el.value);
+  if(f!==el.value){ el.value=f; _pgSimAtualiza(); }
+}
+
 // A CONTA do simulador, pura e testada (relatorios.test.js). Recebe listas e
 // números prontos e devolve o cenário — sem DOM, sem DADOS/CFG.
 function _pgSimulacao(ent){
@@ -11683,14 +11697,14 @@ function _pgSimHtml(ctx){
         <div class="pg-sim-prem"><div class="pg-sim-sub">PREMISSAS DO CENÁRIO <i>· o que você supõe — não é resultado</i></div><div class="pg-sim-inp">
           ${gh('CENÁRIO E INVESTIMENTO')}
           ${inp('pg-sim-red','REDUÇÃO SIMULADA — PADRÃO (%)', s.pctRed==null?100:s.pctRed, 'type="number" min="0" max="100" step="5"', 'Vale para toda causa marcada sem % próprio. Para dar um % diferente a uma causa, digite ao lado dela na lista. É o cenário, não garantia de redução real.')}
-          ${inp('pg-sim-inv','INVESTIMENTO (R$)', s.invest||'', 'type="text" inputmode="decimal" placeholder="orçamento do equipamento"', 'Orçamento do equipamento ou da ação. É a base do payback e do ROI.', 'inv')}
+          ${inp('pg-sim-inv','INVESTIMENTO (R$)', _pgSimRs(s.invest), 'type="text" inputmode="decimal" placeholder="orçamento do equipamento" onblur="_pgSimFmtRs(this)"', 'Orçamento do equipamento ou da ação. É a base do payback e do ROI.', 'inv')}
           ${gh('CUSTO E HORA EXTRA')}
-          ${inp('pg-sim-custo','CUSTO-HORA DA LINHA (R$)', s.custoHora||'', 'type="text" inputmode="decimal" placeholder="R$ por hora parada"', 'Custo de UMA hora da linha inteira (todas as pessoas juntas), não por pessoa.')}
+          ${inp('pg-sim-custo','CUSTO-HORA DA LINHA (R$)', _pgSimRs(s.custoHora), 'type="text" inputmode="decimal" placeholder="R$ por hora parada" onblur="_pgSimFmtRs(this)"', 'Custo de UMA hora da linha inteira (todas as pessoas juntas), não por pessoa.')}
           ${inp('pg-sim-pessoas','PESSOAS NA EMBALAGEM (qtde)', s.pessoas||'', 'type="number" min="1" step="1" placeholder="pessoas na linha"', 'Multiplica a hora extra por pessoa para dar o total da equipe (homem-hora) e divide o custo-hora da linha por pessoa.')}
           ${inp('pg-sim-adic','ADICIONAL DE HE (%)', s.adicHE==null?50:s.adicHE, 'type="number" min="0" step="10"', 'Adicional pago sobre a hora extra.')}
           ${inp('pg-sim-he','HORA EXTRA ATUAL (h/semana, por pessoa)', s.hePessoa==null?'':s.hePessoa, 'type="text" inputmode="decimal" placeholder="média por pessoa · ex.: 8"', 'Horas extras que CADA pessoa faz por semana, em média (ex.: 8 = cada um fez 8 h). A conta multiplica pelas pessoas para o total da equipe. É o teto da economia: não se economiza HE que não existe. Digite 0 se não há hora extra.')}
           ${gh('RECEITA POTENCIAL (opcional)')}
-          ${inp('pg-sim-ticket','TICKET MÉDIO (R$/caixa · opcional)', s.ticket||'', 'type="text" inputmode="decimal" placeholder="deixe vazio se não souber"', 'Valor médio usado para estimar a receita potencial das caixas recuperadas. Não entra na economia, no payback nem no ROI.')}
+          ${inp('pg-sim-ticket','TICKET MÉDIO (R$/caixa · opcional)', _pgSimRs(s.ticket), 'type="text" inputmode="decimal" placeholder="deixe vazio se não souber" onblur="_pgSimFmtRs(this)"', 'Valor médio usado para estimar a receita potencial das caixas recuperadas. Não entra na economia, no payback nem no ROI.')}
         </div></div>
       </div>
       <div id="pg-sim-res">${_pgSimResHtml(r0)}</div>
