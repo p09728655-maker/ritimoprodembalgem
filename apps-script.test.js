@@ -475,6 +475,76 @@ ok('e o recorte não tem conversão própria embutida',
 ok('lerEmbaladoPorProduto continua lendo a aba inteira',
    /function lerEmbaladoPorProduto[\s\S]{0,400}_valoresDaAba\(sh\)/.test(src), true);
 
+
+
+// ── v5.6: redação da proposta com IA ────────────────────────────────────────
+// O painel manda os números; aqui só se redige, e número que não veio nos
+// dados é apontado. A chave mora em Propriedades do script — sem ela, a ação
+// devolve 'sem-chave' e não chama ninguém.
+console.log('\n── redigirProposta: guarda de números ──');
+eval(pega('function _iaNumeroPtBr('));
+eval(pega('function _iaNumerosPermitidos('));
+eval(pega('function _iaNumerosForaDaLista('));
+eval(pega('function _iaHash('));
+eval(pega('function _iaSchemaProposta('));
+eval(pega('function _iaPromptProposta('));
+eval(pega('function _iaParseJson('));
+eval(pega('function _iaChamar('));
+eval(pega('function redigirProposta('));
+const IA_MODELO = 'claude-opus-5', IA_MAX_TOKENS = 1400, IA_CHAVE_PROP = 'CLAUDE_API_KEY',
+      IA_CACHE_SEG = 21600, IA_URL = 'https://api.anthropic.com/v1/messages', IA_VERSAO_API = '2023-06-01',
+      IA_RESUMO_MAX = 320;
+ok('lê número pt-BR', [_iaNumeroPtBr('7.219'), _iaNumeroPtBr('85,6'), _iaNumeroPtBr('1.234,56'), _iaNumeroPtBr('2026')],
+   [7219, 85.6, 1234.56, 2026]);
+const dados = { investimento: { total: 'R$ 162.000' }, economiaHE: { mes: 'R$ 7.719', ano: 'R$ 92.629' },
+                retorno: { payback: '22,4 meses', roi: '60,4%' }, problema: { ocorrencias: 164, tempoParado: '15h11m' } };
+const perm = _iaNumerosPermitidos(dados);
+ok('a lista de permitidos sai dos dados (strings incluídas)',
+   [162000, 7719, 92629, 22.4, 60.4, 164, 15, 11].every(n => perm.includes(n)), true);
+ok('texto só com os números dos dados passa',
+   _iaNumerosForaDaLista('Investimento de R$ 162.000 (R$ 162 mil), economia de R$ 7.719 por mês e R$ 92.629 por ano; paga-se em 22,4 meses (22 meses), ROI de 60,4% em 3 anos, 12 meses, em 2026.', perm), []);
+ok('número inventado é apontado', _iaNumerosForaDaLista('economia de R$ 8.500 por mês', perm), ['8.500']);
+ok('percentual inventado também', _iaNumerosForaDaLista('reduz 35% das paradas', perm), ['35']);
+ok('contagem pequena e ano não são acusados', _iaNumerosForaDaLista('em 5 anos, 3 cenários, desde 2024', perm), []);
+
+console.log('\n── redigirProposta: a ação ──');
+let PROPS = {}, FETCHES = [], RESPOSTA = null, CACHE_IA = {};
+const PropertiesService = { getScriptProperties: () => ({ getProperty: k => PROPS[k] || null, setProperty: (k, v) => { PROPS[k] = v; } }) };
+const UrlFetchApp = { fetch: (url, o) => { FETCHES.push({ url, o }); return { getResponseCode: () => RESPOSTA.code, getContentText: () => RESPOSTA.body }; } };
+CacheService.getScriptCache = () => ({ get: k => CACHE_IA[k] || null, put: (k, v) => { CACHE_IA[k] = v; } });
+const _fatos = JSON.stringify(dados);
+let r0 = redigirProposta({ dados: _fatos });
+ok('sem chave: erro sem-chave e nenhuma chamada', [r0.ok, r0.erro, FETCHES.length], [false, 'sem-chave', 0]);
+PROPS.CLAUDE_API_KEY = 'sk-teste';
+RESPOSTA = { code: 200, body: JSON.stringify({ model: 'claude-opus-5', content: [{ type: 'text',
+  text: JSON.stringify({ resumo: 'Investimento de R$ 162.000; economia de R$ 7.719 por mês; paga-se em 22,4 meses.',
+    problema: '164 paradas e 15h11m parados.', solucao: 'Recupera capacidade.', riscos: 'É simulação.', recomendacao: 'Aprovar.' }) }] }) };
+let r1 = redigirProposta({ dados: _fatos });
+ok('com chave: chama a API uma vez, com a chave no header e nunca na URL',
+   [FETCHES.length, FETCHES[0].o.headers['x-api-key'], /sk-teste/.test(FETCHES[0].url)], [1, 'sk-teste', false]);
+const corpo1 = JSON.parse(FETCHES[0].o.payload);
+ok('o pedido leva o modelo, o schema dos cinco campos e os dados', 
+   [corpo1.model, Object.keys(corpo1.output_config.format.schema.properties).join(','), corpo1.messages[0].content.includes('R$ 7.719')],
+   ['claude-opus-5', 'resumo,problema,solucao,riscos,recomendacao', true]);
+ok('a resposta traz os cinco textos, o hash e nenhum número fora',
+   [r1.ok, Object.keys(r1.texto).length, r1.numerosFora, typeof r1.hash], [true, 5, [], 'string']);
+let r2 = redigirProposta({ dados: _fatos });
+ok('a mesma proposta de novo sai do cache, sem nova chamada', [FETCHES.length, r2.cache, r2.texto.resumo === r1.texto.resumo], [1, true, true]);
+CACHE_IA = {};
+RESPOSTA = { code: 200, body: JSON.stringify({ content: [{ type: 'text',
+  text: JSON.stringify({ resumo: 'Economia de R$ 9.999 por mês.', problema: 'x', solucao: 'x', riscos: 'x', recomendacao: 'x' }) }] }) };
+let r3 = redigirProposta({ dados: JSON.stringify({ ...dados, marca: 1 }) });
+ok('número inventado pelo modelo vem apontado em numerosFora', r3.numerosFora, ['9.999']);
+CACHE_IA = {}; FETCHES = [];
+RESPOSTA = { code: 400, body: JSON.stringify({ error: { message: 'output_config is not supported' } }) };
+try { redigirProposta({ dados: JSON.stringify({ ...dados, marca: 2 }) }); } catch (e) {}
+ok('sem saída estruturada na conta, refaz o pedido sem output_config pedindo só o JSON',
+   [FETCHES.length, 'output_config' in JSON.parse(FETCHES[1].o.payload), /SOMENTE com um objeto JSON/.test(JSON.parse(FETCHES[1].o.payload).messages[0].content)],
+   [2, false, true]);
+ok('o dispatcher conhece a ação', /act === 'redigirProposta'\)\s*result = redigirProposta\(p\)/.test(src), true);
+ok('e a ação NÃO entra nas ações de escrita (não invalida o cache de leitura)', /ACOES_ESCRITA = \[[^\]]*redigirProposta/.test(src), false);
+ok('a chave nunca é devolvida', JSON.stringify(r1).includes('sk-teste'), false);
+
 console.log(falhas === 0
   ? '\n✅ backend ok — a mesma aba não é lida duas vezes na mesma chamada\n'
   : `\n❌ ${falhas} falha(s)\n`);

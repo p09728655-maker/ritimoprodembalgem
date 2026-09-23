@@ -11,6 +11,88 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.69.0 — 23/09/2026 · ⚠ re-deploy (.gs v5.6)
+
+**PROPOSTA IMPRESSA: redação com IA sobre os números do painel** (passo 3 da
+análise do diretor). Na aba SIMULADOR, o bloco **REDAÇÃO DA PROPOSTA** com o
+botão **✍ REDIGIR COM IA**: o painel manda ao Apps Script os números que ele
+mesmo calculou (problema, cenário, capacidade, economia, retorno,
+sensibilidade, recomendação) e o Claude devolve cinco parágrafos — resumo
+executivo, problema, solução, riscos e recomendação.
+
+- **O modelo não calcula nada e não pode inventar número.** O `.gs` confere
+  cada número do texto contra os dados enviados; número fora da lista é
+  apontado e o texto **não vai ao papel** (a tela diz quais). Mudou um campo do
+  cenário? O texto fica **DESATUALIZADO** e sai da impressão até redigir de
+  novo.
+- Na impressão executiva: o **RESUMO EXECUTIVO** entra na capa (folha 1,
+  medida: continua fechando com as assinaturas) e os quatro parágrafos abrem a
+  folha 2 como **LEITURA DO GESTOR**, marcados como redigidos com IA e
+  revisados pelo gestor.
+- ⚠ **re-deploy do `.gs` (v5.6)** e a **chave da API** em *Configurações do
+  projeto → Propriedades do script → `CLAUDE_API_KEY`*. A chave nunca vai no
+  HTML (público na Vercel) nem volta em resposta. Sem chave, o bloco diz o que
+  falta; com o `.gs` antigo, diz que falta o re-deploy. O resultado fica em
+  cache por 6 h por cenário — reimprimir não paga de novo.
+- Correção: o `APP_VER` do rodapé não tinha subido na v7.68.0 (mostrava
+  7.67.0). Nenhum número mudou de conta.
+
+---
+
+## v7.68.0 — 23/09/2026
+
+**PROPOSTA IMPRESSA: a página 1 virou PÁGINA DE DECISÃO** (passo 2 da análise
+do diretor: *"o que é, quanto custa, o que resolve, o que economiza, quando se
+paga, e se não der o previsto?"*). Só front-end — nada muda no `.gs`.
+
+- **Página 1 (decisão)**, nesta ordem: O QUE É E QUANTO CUSTA (nome, o que faz,
+  fornecedor, prazo · investimento total · custo recorrente) · O QUE RESOLVE
+  (ocorrências, tempo parado, caixas perdidas, disponibilidade antes → depois) ·
+  ECONOMIA E RETORNO (economia em HE mês/ano, líquida da manutenção quando há,
+  payback, ROI) · **SENSIBILIDADE** · RECOMENDAÇÃO DO GESTOR e **três linhas de
+  assinatura** (Gestor PPCP · Gerência industrial · Diretoria). Medido: cabe na
+  folha 1 do A4 com e sem orçamento.
+- **SENSIBILIDADE — "e se a redução for menor?"**: a mesma conta rodada de
+  novo com redução uniforme de **50, 70 e 90%** em todas as causas atacadas,
+  mais a linha do **cenário do gestor** (com o % que ele digitou, inclusive por
+  causa). Cada linha traz tempo, caixas, economia em HE, payback, ROI e
+  disponibilidade. Nada é redigido: o painel recalcula.
+- **Página 2 (evidência)**: a tabela de causas com a redução simulada, o
+  cenário completo, a capacidade recuperada e as **outras leituras que não se
+  somam** (custo da parada, economia em HE, potencial de receita). **Anexo**:
+  metodologia e premissas, agora com os blocos INVESTIMENTO, PAYBACK E ROI e
+  SENSIBILIDADE.
+- **Atenção — nenhum número mudou de conta**: economia, payback, ROI e
+  potencial saem da mesma `_pgSimulacao` da v7.67.0. O que mudou é a ordem e a
+  folha em que cada um aparece: o **potencial de receita saiu da página 1** e
+  ficou na página 2, marcado condicional — na capa ele ancorava a leitura no
+  maior número. O documento caiu de 4 para 3 folhas.
+
+---
+
+## v7.67.0 — 23/09/2026
+
+**SIMULADOR: o investimento ganha nome, custos completos e recomendação**
+(passo 1 da análise do diretor sobre a proposta impressa: *"não diz o que está
+sendo comprado"*, *"o custo está incompleto"*, *"não há recomendação"*).
+
+- Grupo **O INVESTIMENTO** nas premissas: nome, fornecedor, prazo, **instalação/
+  frete/treinamento (R$, uma vez)**, **manutenção e consumíveis (R$/ano)**, o
+  que o equipamento faz (uma frase) e a **recomendação do gestor** (aprovar ·
+  aprovar com ressalva · adiar · não recomendar).
+- **Atenção — a conta muda quando os custos são informados:** o investimento
+  passa a ser **equipamento + instalação**, e a manutenção anual ÷ 12 é
+  **descontada da economia em HE** antes do payback e do ROI (a economia em HE
+  bruta continua a mesma no card). Com os campos vazios, todos os números são
+  os de antes. Se a manutenção consumir toda a economia, o payback sai
+  *"não calculável"*.
+- Na proposta impressa: bloco **O QUE É O INVESTIMENTO** (nome, o que faz,
+  fornecedor, prazo), linhas de instalação e manutenção na seção 5, a
+  **RECOMENDAÇÃO DO GESTOR** fechando a tabela, e o custo-hora sai com
+  centavos (era *R$ 378* num lugar e *R$ 377,81* noutro).
+
+---
+
 ## v7.66.3 — 23/09/2026
 
 **SIMULADOR e GESTÃO DE PERDAS: a falha da busca não culpa mais o "cold start".**

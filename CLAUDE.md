@@ -1649,6 +1649,47 @@ via Google Apps Script (JSONP).
       ⚠ Isso **revoga** a nota "HE digitada em HOMEM-HORA por semana" do
       SIMULADOR DE INVESTIMENTO acima: a grandeza do CUSTO-HORA (hora de linha)
       não mudou, a do campo de HE mudou.
+    - **INVESTIMENTO TOTAL E CUSTO RECORRENTE (v7.67.0)** — análise "como
+      diretor" da proposta impressa (23/09/2026). `instal` (uma vez) soma no
+      `investTotal`; `manutAno`/12 = `custoRecMes` sai da economia em HE →
+      `ecoLiqMes`, e **payback e ROI usam `investTotal` e `ecoLiqMes`**. Vazios
+      = a conta de antes (o teste prende). Campos de texto (`nome`, `forn`,
+      `prazo`, `descr`, `recom`) só vão ao papel — bloco `.prop-oque` e a linha
+      RECOMENDAÇÃO DO GESTOR.
+    - **REDAÇÃO COM IA (v7.69.0 / .gs v5.6, passo 3, 23/09/2026).** O painel
+      CALCULA, o modelo só ESCREVE. `_propMontar(ctx, s)` é a montagem ÚNICA
+      da proposta (conta, sensibilidade, textos) — o PDF e a redação leem dela.
+      `_propFatos` formata os números como o papel imprime e manda ao `.gs`
+      (`action=redigirProposta&dados=JSON`, `jsonpFetch(url, 60000)` — o `ms`
+      é opcional e o padrão continua 25 s); o `.gs` chama a API do Claude
+      (`IA_MODELO`, saída em `json_schema` com queda para "responda só o
+      JSON"), devolve `texto{resumo,problema,solucao,riscos,recomendacao}`,
+      `hash` e **`numerosFora`** (`_iaNumerosForaDaLista`: todo número do
+      texto que não está nos dados, com tolerância só para arredondamento,
+      milhar, ano e contagem ≤12). Cache por hash no `CacheService` (6 h).
+      ⚠ **A CHAVE mora em Propriedades do script (`CLAUDE_API_KEY`)** — nunca
+      no HTML (público) e nunca devolvida; o teste prende. Sem chave →
+      `erro:'sem-chave'`; `.gs` antigo → cai no `getDados()` e o painel marca
+      `sem-endpoint` (só aí acusa re-deploy). O texto fica em `s.ia` no
+      `rpe_pg_sim` com o hash dos fatos: `_propIaValida` só deixa imprimir com
+      hash igual e `numerosFora` vazio — mudou um campo, a tela diz
+      DESATUALIZADO e o papel sai sem o texto. Resumo ≤ `IA_RESUMO_MAX`=320
+      (420 estourava a capa em 4px); ele vai na capa, os outros quatro abrem a
+      folha 2 (LEITURA DO GESTOR). `testarRedacaoIA()` no editor confere a
+      chave. **A assinatura é do gestor, não do modelo** — a nota da tela diz.
+    - **PÁGINA 1 = DECISÃO (v7.68.0, passo 2, 23/09/2026).** O papel abre com
+      O QUE É E QUANTO CUSTA · O QUE RESOLVE · ECONOMIA E RETORNO ·
+      SENSIBILIDADE · RECOMENDAÇÃO E ASSINATURAS, e o fio `.prop-fluxo` segue
+      essa ordem. A evidência (causas, cenário, capacidade, outras leituras) abre
+      a folha 2 e o método vai em ANEXO — quebras por `.prop-quebra`, na pele.
+      **A SENSIBILIDADE é conta, não redação**: `PROP_SENS_PCTS=[50,70,90]` e
+      a MESMA `_pgSimulacao` roda com `pctRed:p, redCausa:{}` (redução uniforme
+      — com o % por causa ligado, "70%" não seria 70% em causa nenhuma); a linha
+      do gestor entra com o % dele e é marcada `.prop-sens-g`. ⚠ O **potencial
+      de receita saiu da capa** de propósito (ancorava no maior número) e mora
+      na seção 9 da evidência, ainda tracejado. Medido: a assinatura fecha a
+      folha 1 em ~890px dos 1032 úteis, com e sem orçamento — o que se cortou
+      foi ar (`.prop-ass` 22→14px), nunca fonte. **Nada no `.gs`.**
     - **HORA EXTRA EVITÁVEL é exibida com teto de 100%** (`Math.min(100,…)`,
       tela e papel); o `pctHE` da conta continua cru — é ele que o teste prende.
     - **Cor na tela do simulador (v7.64.0, *"está pesado as cores"*)**: número
