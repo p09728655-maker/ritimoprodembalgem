@@ -1631,9 +1631,20 @@ via Google Apps Script (JSONP).
       `heZero` na conta): zero é *"não há HE"* → teto 0, economia 0, payback não
       calculável; vazio segue como estimativa sem teto. Antes os dois caíam no
       mesmo caminho.
-    - **Ainda não feito, e é o que falta de verdade**: redução **por causa**.
-      Hoje uma redução só vale para todas as causas marcadas — o aviso do
-      cenário diz isso na tela, mas não resolve.
+    - **REDUÇÃO POR CAUSA (v7.64.0)**: `s.redCausa` (`{tipo: %}`, no mesmo
+      `rpe_pg_sim`) → `ent.redCausa` → `porCausa` no `_pgSimulacao`. Causa sem
+      % próprio usa o **padrão** (`pctRed`), então o cenário antigo dá o mesmo
+      número. `pctRes` é "o" % quando todos são iguais (senão `null`) e
+      `pctEf` a média ponderada pelo tempo; **`_pgSimPctTxt`** é o texto único
+      desse % na tela, na memória e no papel. O campo fica **dentro do
+      `<label>`** da causa e só aparece com ela marcada — clicar nele não
+      desmarca (conferido no Chromium).
+    - **HORA EXTRA EVITÁVEL é exibida com teto de 100%** (`Math.min(100,…)`,
+      tela e papel); o `pctHE` da conta continua cru — é ele que o teste prende.
+    - **Cor na tela do simulador (v7.64.0, *"está pesado as cores"*)**: número
+      é tinta; cor só na ECONOMIA EM HE, no ROI negativo e nas etiquetas
+      SIMULAÇÃO/POTENCIAL. O teste falha se `var(--acc)`/`var(--warn)` voltarem
+      aos cards.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do

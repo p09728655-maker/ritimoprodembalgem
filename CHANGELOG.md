@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.64.0 — 23/09/2026
+
+**SIMULADOR: redução POR CAUSA, e cores mais leves.**
+
+- **Cada causa marcada tem o seu % de redução**, num campo ao lado dela na
+  lista. Vazio = usa a **REDUÇÃO SIMULADA — PADRÃO** (o campo que já existia).
+  Um equipamento que elimina a troca de plástico não reduz a troca de produto
+  na mesma proporção; com um % só, o investimento era pago por causas que ele
+  não ataca. A frase do cenário, a memória de cálculo e a impressão executiva
+  (tabela do problema ganhou a coluna **REDUÇÃO SIMULADA**) mostram o % de cada
+  causa; com % diferentes, o resumo diz *"por causa (média de X% do tempo)"*.
+- O aviso *"N causas com UMA redução"* só aparece quando todas estão com o
+  mesmo %.
+- **HORA EXTRA EVITÁVEL não passa de 100%**: *"305,8% da HE"* não dizia nada.
+  Mostra 100% e escreve que as horas recuperadas passam da HE praticada.
+- **Cores** (*"está pesado as cores"*): os números passam a ser tinta. Cor só na
+  ECONOMIA EM HE (o benefício), no ROI negativo (vermelho), na etiqueta
+  SIMULAÇÃO e na POTENCIAL. Causa marcada vira uma régua laranja à esquerda, não
+  a linha inteira pintada; o aviso ficou com borda neutra.
+
+**Atenção:** com o % padrão e nenhum % próprio, todos os números são os mesmos
+de antes. HORA EXTRA EVITÁVEL acima de 100% agora aparece como 100%. Sem
+re-deploy do `.gs`.
+
+---
+
 ## v7.63.0 — 23/09/2026
 
 **SIMULADOR: evolução da tela — mesma estrutura, mesmas contas, outra leitura.**

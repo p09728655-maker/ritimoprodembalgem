@@ -301,8 +301,11 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-sim-wrap .pg-sim-sub i{font-style:normal;letter-spacing:.4px;text-transform:none}
 .pg-sim-wrap .pg-sim-chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--txt);padding:4px 7px;border-radius:5px;cursor:pointer}
 .pg-sim-wrap .pg-sim-chk:hover{background:var(--elevated)}
-.pg-sim-wrap .pg-sim-chk.on{background:rgba(255,152,0,.10)}
-.pg-sim-wrap .pg-sim-chk input{accent-color:var(--warn)}
+.pg-sim-wrap .pg-sim-chk.on{background:rgba(255,255,255,.035);box-shadow:inset 2px 0 0 var(--acc)}
+.pg-sim-wrap .pg-sim-chk input{accent-color:var(--acc)}
+.pg-sim-wrap .pg-sim-rc{visibility:hidden;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);white-space:nowrap}
+.pg-sim-wrap .pg-sim-chk.on .pg-sim-rc{visibility:visible}
+.pg-sim-wrap .pg-sim-rc input{width:48px;margin-right:2px;background:var(--elevated);border:1px solid var(--border);border-radius:4px;color:var(--txt);font-family:var(--font-d);font-size:11px;padding:1px 4px;text-align:right}
 .pg-sim-wrap .pg-sim-chk i{font-style:normal;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-left:auto;white-space:nowrap}
 .pg-sim-wrap .pg-sim-inp{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px}
 .pg-sim-wrap .pg-sim-inp label{font-family:var(--font-d);font-size:10px;letter-spacing:.8px;color:var(--txt2);display:block}
@@ -332,7 +335,7 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-sim-wrap .pg-sim-gh{grid-column:1/-1;font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:var(--txt2);border-bottom:1px solid var(--border);padding-bottom:2px;margin:3px 0 -3px}
 .pg-sim-wrap .pg-sim-gh:first-child{margin-top:0}
 .pg-sim-wrap .pg-sim-inp label.larga{grid-column:1/-1}
-.pg-sim-wrap .pg-sim-inp label.inv input{border-color:var(--acc);font-size:15px;font-weight:600}
+.pg-sim-wrap .pg-sim-inp label.inv input{border-color:var(--txt2);font-size:15px;font-weight:600}
 /* A FRASE DO CENÁRIO: o resumo que se lê antes dos cards. */
 .pg-sim-wrap .pg-sim-frase{margin-top:14px;font-size:13.5px;line-height:1.6;color:var(--txt2)}
 .pg-sim-wrap .pg-sim-frase b{color:var(--txt)}
@@ -352,7 +355,7 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-sim-wrap .pg-sim-fx.out .pg-sim-c{background:transparent}
 .pg-sim-wrap .pg-sim-fx.out .pg-sim-c-v{font-size:17px;color:var(--txt2)}
 .pg-sim-wrap .pg-sim-fx.out .pg-sim-c-a{color:var(--txt2);font-weight:400}
-.pg-sim-wrap .pg-sim-et.sim{color:var(--ok);border-color:var(--ok)}
+.pg-sim-wrap .pg-sim-et.sim{color:var(--txt2);border-color:var(--border)}
 .pg-sim-wrap .pg-sim-et.prem{color:var(--txt2);border-color:var(--border)}
 /* MEMÓRIA DE CÁLCULO — recolhida: quem decide lê as faixas, quem audita abre. */
 .pg-sim-wrap .pg-sim-mem{margin-top:16px;border-top:1px solid var(--border);padding-top:10px}
@@ -366,7 +369,8 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-sim-wrap .pg-sim-mem-t td i{font-style:normal;color:var(--txt2)}
 .pg-sim-wrap .pg-sim-mem-h td{font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:1.3px;color:var(--txt2)!important;padding-top:12px;border-bottom:1px solid var(--txt2)}
 .pg-sim-wrap .pg-sim-mem-v{font-size:12px;color:var(--txt2);margin-top:8px}
-.pg-sim-wrap .pg-sim-aviso{margin-top:14px;padding:9px 12px;border:1px solid var(--warn);border-left-width:3px;border-radius:6px;font-size:12px;line-height:1.5;color:var(--txt)}
+.pg-sim-wrap .pg-sim-aviso{margin-top:14px;padding:9px 12px;border:1px solid var(--border);border-left:3px solid var(--warn);border-radius:6px;font-size:12px;line-height:1.5;color:var(--txt2)}
+.pg-sim-wrap .pg-sim-aviso b{color:var(--txt)}
 .pg-sim-wrap .pg-sim-aviso div+div{margin-top:4px}
 .pg-sim-wrap .pg-sim-vazio{font-family:var(--font-d);font-size:11.5px;color:var(--txt2);margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;letter-spacing:.5px}
 @media(max-width:1200px){
@@ -2740,7 +2744,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.63.0';
+const APP_VER   = '7.64.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11354,8 +11358,20 @@ function _pgSimulacao(ent){
   const pct=Math.min(100, Math.max(0, parseFloat(ent.pctRed)||0));
   const minSelPer=sel.reduce((a,t)=>a+(parseFloat(t.min)||0),0);   // parada selecionada, antes da redução
   const cxSelPer=sel.reduce((a,t)=>a+(parseFloat(t.perd)||0),0);
-  const minPer=minSelPer*pct/100;
-  const cxPer =Math.round(sel.reduce((a,t)=>a+(parseFloat(t.perd)||0),0)*pct/100);
+  // REDUÇÃO POR CAUSA (23/09/2026): cada causa pode ter o seu %; a que não
+  // tem usa o padrão (pctRed). Um equipamento que elimina a troca de plástico
+  // não reduz a troca de produto na mesma proporção — com um % só para todas,
+  // o investimento era pago por causas que ele não ataca.
+  const redC=ent.redCausa||{};
+  const pctDe=t=>{ const v=redC[t.tipo]; const n=parseFloat(v);
+    return (v==null||String(v).trim()===''||!isFinite(n)) ? pct : Math.min(100, Math.max(0, n)); };
+  const porCausa=sel.map(t=>{ const m=parseFloat(t.min)||0, c=parseFloat(t.perd)||0, p=pctDe(t);
+    return {tipo:t.tipo, qtd:t.qtd, min:m, perd:c, pct:p, proprio:p!==pct||redC[t.tipo]!=null&&String(redC[t.tipo]).trim()!=='', minRec:m*p/100, cxRec:c*p/100}; });
+  const minPer=porCausa.reduce((a,c)=>a+c.minRec,0);
+  const cxPer =Math.round(porCausa.reduce((a,c)=>a+c.cxRec,0));   // arredonda uma vez, no fim
+  const pctUnica=porCausa.every(c=>c.pct===(porCausa[0]||{}).pct);
+  const pctRes=pctUnica&&porCausa.length ? porCausa[0].pct : null;  // o % quando é um só
+  const pctEf=minSelPer>0 ? minPer/minSelPer*100 : pct;              // média ponderada pelo tempo
   const nDias=parseFloat(ent.nDias)||0;
   const fator=nDias>0 ? 22/nDias : 0;                 // mês típico de 22 dias úteis
   const minMes=minPer*fator;
@@ -11419,6 +11435,7 @@ function _pgSimulacao(ent){
   const pctNP=totNP>0 ? minSelPer/totNP*100 : null;   // fatia da parada não programada
   return {nSel:sel.length, nGenerico:genericos.length, genericos, pct, adic,
           selNomes:sel.map(t=>t.tipo), minSelPer, cxSelPer, pctNP, heZero,
+          porCausa, pctUnica, pctRes, pctEf,
           custoHora, horasProd, totMinNP:totNP, minPer, cxPer, minMes, cxMes,
           cxAno, horasAno, rsAno, rsAnoHE,
           ticket, receitaMes, receitaAno,
@@ -11432,7 +11449,7 @@ function _pgSimulacao(ent){
 function _pgSimEnt(ctx, s){
   const st=(ctx&&ctx.st)||{}; s=s||{};
   return {
-    tipos: st.tipos||[], selec: s.selec||{},
+    tipos: st.tipos||[], selec: s.selec||{}, redCausa: s.redCausa||{},
     pctRed: s.pctRed==null||s.pctRed===''?100:s.pctRed,
     custoHora: _pgSimNum(s.custoHora),
     adicHE: s.adicHE==null||s.adicHE===''?50:s.adicHE,
@@ -11448,6 +11465,10 @@ function _pgSimEnt(ctx, s){
 
 // O desenho dos resultados fica separado do bloco: o oninput só redesenha
 // #pg-sim-res — refazer o bloco inteiro a cada tecla roubaria o foco do campo.
+// O % da redução em palavras — um lugar só para tela, memória e papel.
+function _pgSimPctTxt(r){
+  return r.pctRes!=null ? fmtN(r.pctRes)+'%' : 'por causa (média de '+fmt1(r.pctEf)+'% do tempo)';
+}
 // O que falta para payback/ROI saírem — só o que falta de verdade. Com o
 // CUSTO-HORA já digitado, o texto que pedia os dois campos mandava o gestor
 // procurar um campo que estava preenchido.
@@ -11464,7 +11485,7 @@ function _pgSimFalta(r){
 function _pgSimAvisos(r){
   const a=[];
   if(r.nGenerico>0) a.push('<b>Causa genérica marcada ('+_rpEsc(r.genericos.join(', '))+').</b> É parada sem causa identificada — não dá para dizer o que o investimento resolve. Abra pelo motivo na GESTÃO DE PERDAS antes de simular.');
-  if(r.nSel>1) a.push('<b>'+r.nSel+' causas com UMA redução de '+fmtN(r.pct)+'%.</b> Confira se o mesmo investimento ataca todas elas — troca de produto (SMED/processo), troca de plástico (equipamento) e manutenção pedem ações diferentes. Para a proposta de um equipamento, marque só as causas que ele elimina.');
+  if(r.nSel>1 && r.pctUnica) a.push('<b>'+r.nSel+' causas com UMA redução de '+fmtN(r.pctRes)+'%.</b> Confira se o mesmo investimento ataca todas elas — troca de produto (SMED/processo), troca de plástico (equipamento) e manutenção pedem ações diferentes. Dê a cada causa o % que o investimento de fato reduz (campo ao lado dela na lista), ou marque só as que ele elimina.');
   return a.length?`<div class="pg-sim-aviso">${a.map(x=>'<div>⚠ '+x+'</div>').join('')}</div>`:'';
 }
 // A FRASE DO CENÁRIO — o que se lê em 5 segundos antes de qualquer card:
@@ -11474,7 +11495,10 @@ function _pgSimFrase(r){
   const rs=v=>'R$ '+fmtN(Math.round(v));
   const nomes=r.selNomes.map(_rpEsc);
   const lista=nomes.length<=1?nomes.join(''):nomes.slice(0,-1).join(', ')+' e '+nomes[nomes.length-1];
-  let l1=`Reduzir em <b>${fmtN(r.pct)}%</b> as paradas de <b>${lista}</b>`
+  const listaPct=r.porCausa.map(c=>`<b>${_rpEsc(c.tipo)}</b> (${fmtN(c.pct)}%)`);
+  let l1=(r.pctRes!=null
+      ? `Reduzir em <b>${fmtN(r.pctRes)}%</b> as paradas de <b>${lista}</b>`
+      : `Reduzir as paradas de ${listaPct.length<=1?listaPct.join(''):listaPct.slice(0,-1).join(', ')+' e '+listaPct[listaPct.length-1]}`)
     +` <span>(${_fmtMinPar(Math.round(r.minSelPer))} no período${r.pctNP!=null?' · '+fmt1(r.pctNP)+'% da parada não programada':''})</span>`
     +(r.invest>0?`, com investimento de <b>${rs(r.invest)}</b>.`:'.');
   const p=[`recupera <b>≈ ${fmt1(r.recH)} h/mês</b> de linha (${fmtN(r.cxMes)} cx de capacidade)`];
@@ -11514,7 +11538,9 @@ function _pgSimResHtml(r){
   const selAnos=`<select id="pg-sim-roi-anos" onchange="_pgSimAtualiza()"><option value="3"${r.anos===3?' selected':''}>3 anos</option><option value="5"${r.anos===5?' selected':''}>5 anos</option></select>`;
   const heSub = r.heZero ? 'hora extra atual informada como 0 — não há HE a evitar'
     : r.pctHE!=null
-    ? fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)'
+    ? (r.pctHE>100
+        ? fmt1(r.recH)+'h recuperadas passam da HE praticada ('+fmt1(r.heMesLinha)+'h de linha) — toda a HE seria evitável; o resto é capacidade'
+        : fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)')
     : (r.heSem>0 ? 'informe a quantidade de pessoas' : 'informe a HORA EXTRA atual (h/semana)');
   const faixa=(tit,sub,cls,corpo)=>`<div class="pg-sim-fx ${cls}"><div class="pg-sim-fx-t">${tit}<i>${sub}</i></div>${corpo}</div>`;
   return _pgSimAvisos(r) + _pgSimFrase(r)
@@ -11532,7 +11558,7 @@ function _pgSimResHtml(r){
              r.rsMesHE>0?'var(--ok)':null, true, false,
              'horas de linha recuperadas (limitadas à HE praticada) × custo-hora × (1 + adicional de HE)')
       + card('PAYBACK', r.pay==null?'—':fmt1(r.pay)+'<span> meses</span>', '',
-             r.pay==null?_pgSimFalta(r):'investimento ÷ ECONOMIA EM HE (a receita potencial não entra)', r.pay!=null?'var(--acc)':null,
+             r.pay==null?_pgSimFalta(r):'investimento ÷ ECONOMIA EM HE (a receita potencial não entra)', null,
              false, false, 'investimento ÷ economia em HE por mês')
       + card('ROI · '+selAnos, r.roi==null?'—':fmt1(r.roi)+'<span>%</span>', '',
              r.roi==null?_pgSimFalta(r)
@@ -11544,15 +11570,17 @@ function _pgSimResHtml(r){
       `<div class="pg-sim-res">`
       + card('TEMPO RECUPERADO', fmtN(Math.round(r.minMes))+'<span> min/mês</span>',
              fmt1(r.horasAno)+' h por ano',
-             '≈ '+fmt1(r.recH)+' h/mês · '+_fmtMinPar(Math.round(r.minPer))+' no período · redução de '+fmtN(r.pct)+'%')
+             '≈ '+fmt1(r.recH)+' h/mês · '+_fmtMinPar(Math.round(r.minPer))+' no período · redução '+_pgSimPctTxt(r))
       + card('CAIXAS RECUPERADAS', fmtN(r.cxMes)+'<span> cx/mês</span>',
              fmtN(r.cxAno)+' cx por ano',
              'capacidade potencial — não é venda garantida · '+fmtN(r.cxPer)+' cx no período'
-             +(r.exced>0?'<br>'+fmt1(r.exced)+'h acima da HE praticada → ganho de capacidade, não de custo':''), 'var(--ok)')
-      + card('HORA EXTRA EVITÁVEL', r.pctHE==null?'—':fmt1(r.pctHE)+'<span>% da HE</span>', '',
-             heSub, r.pctHE!=null?'var(--warn)':null)
+             +(r.exced>0?'<br>'+fmt1(r.exced)+'h acima da HE praticada → ganho de capacidade, não de custo':''), null)
+      // Acima de 100% o número não diz nada ("305,8% da HE"): não se evita mais
+      // HE do que existe. Mostra 100% e o excedente vai escrito no sub.
+      + card('HORA EXTRA EVITÁVEL', r.pctHE==null?'—':fmt1(Math.min(100,r.pctHE))+'<span>% da HE</span>', '',
+             heSub, null)
       + card('DISPONIBILIDADE', r.dispAntes==null?'—':fmt1(r.dispAntes)+'%<span> atual → </span>'+fmt1(r.dispDepois)+'%<span> simulada</span>', '',
-             'meta '+PG_META_DISP+'% · base: '+fmtN(r.nDias)+' dia(s) trabalhado(s) → mês de 22', dispOk?'var(--ok)':null)
+             (dispOk?'atinge a meta de '+PG_META_DISP+'%':'meta '+PG_META_DISP+'%')+' · base: '+fmtN(r.nDias)+' dia(s) trabalhado(s) → mês de 22', null)
       + `</div>`)
     + faixa('OUTRAS LEITURAS', ' · não são economia de caixa e não se somam à ECONOMIA EM HE', 'out',
       `<div class="pg-sim-res">`
@@ -11593,7 +11621,8 @@ function _pgSimMemHtml(r){
       + lin('Ticket médio', r.ticket>0?rs(r.ticket)+'/cx':ni, 'só para o potencial de receita'))
     + bloco('CÁLCULO OPERACIONAL',
         lin('Parada selecionada', _fmtMinPar(Math.round(r.minSelPer))+' no período', r.nSel+' causa(s)'+(r.pctNP!=null?' · '+fmt1(r.pctNP)+'% da parada não programada':''))
-      + lin('Redução simulada', fmtN(r.pct)+'%', '→ '+_fmtMinPar(Math.round(r.minPer))+' recuperados no período')
+      + lin('Redução simulada', _pgSimPctTxt(r), '→ '+_fmtMinPar(Math.round(r.minPer))+' recuperados no período')
+      + (r.pctUnica?'':r.porCausa.map(c=>lin('&nbsp;&nbsp;· '+_rpEsc(c.tipo), fmtN(c.pct)+'%', _fmtMinPar(Math.round(c.min))+' × '+fmtN(c.pct)+'% = '+_fmtMinPar(Math.round(c.minRec))+(c.proprio?'':' · % padrão'))).join(''))
       + lin('Tempo recuperado', fmtN(Math.round(r.minMes))+' min/mês', 'período × 22 ÷ '+fmtN(r.nDias)+' dias (≈ '+fmt1(r.recH)+' h/mês)')
       + lin('Caixas recuperadas', fmtN(r.cxMes)+' cx/mês', fmtN(r.cxPer)+' cx no período (duração × meta do dia ÷ horas produtivas) × 22 ÷ '+fmtN(r.nDias)))
     + bloco('CÁLCULO FINANCEIRO',
@@ -11619,7 +11648,9 @@ function _pgSimHtml(ctx){
   const chks=tiposNP.map(t=>{
     const on=!!(s.selec&&s.selec[t.tipo]);
     const fat=totNP>0?' · <b>'+fmt1(t.min/totNP*100)+'%</b>':'';
-    return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i>${_fmtMinPar(t.min)} · ${t.qtd}×${fat}</i></label>`;
+    const rc=(s.redCausa&&s.redCausa[t.tipo]!=null)?s.redCausa[t.tipo]:'';
+    // % PRÓPRIO da causa: só aparece marcada; vazio = usa a REDUÇÃO PADRÃO.
+    return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i>${_fmtMinPar(t.min)} · ${t.qtd}×${fat}</i><span class="pg-sim-rc" title="Redução desta causa. Vazio = usa a REDUÇÃO PADRÃO."><input type="number" class="pg-sim-rc-i" data-tipo="${atr(t.tipo)}" min="0" max="100" step="5" value="${atr(rc)}" placeholder="${atr(s.pctRed==null?100:s.pctRed)}" oninput="_pgSimAtualiza()">%</span></label>`;
   }).join('');
   const inp=(id,rot,val,attrs,tip,cls)=>`<label${cls?` class="${cls}"`:''}${tip?` title="${atr(tip)}"`:''}>${rot}<input id="${id}" value="${atr(val==null?'':val)}" ${attrs} oninput="_pgSimAtualiza()"></label>`;
   const gh=t=>`<div class="pg-sim-gh">${t}</div>`;
@@ -11631,10 +11662,10 @@ function _pgSimHtml(ctx){
   return `<div class="pg-sim-wrap"><div class="pg-diag-ttl"><span class="pg-sim-tag" style="margin-left:0">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i></div>
     <div class="pg-sim">
       <div class="pg-sim-grid">
-        <div><div class="pg-sim-sub">PARADAS A ATACAR <i>· não planejadas do período em tela · tempo · ocorrências · % da parada não programada</i></div>${chks}</div>
+        <div><div class="pg-sim-sub">PARADAS A ATACAR <i>· não planejadas do período em tela · tempo · ocorrências · % da parada não programada · <b>redução</b> da causa marcada</i></div>${chks}</div>
         <div class="pg-sim-prem"><div class="pg-sim-sub">PREMISSAS DO CENÁRIO <i>· o que você supõe — não é resultado</i></div><div class="pg-sim-inp">
           ${gh('CENÁRIO E INVESTIMENTO')}
-          ${inp('pg-sim-red','REDUÇÃO SIMULADA DAS PARADAS SELECIONADAS (%)', s.pctRed==null?100:s.pctRed, 'type="number" min="0" max="100" step="5"', 'Percentual usado no cenário para estimar o tempo que poderá ser recuperado. Não é garantia de redução real.')}
+          ${inp('pg-sim-red','REDUÇÃO SIMULADA — PADRÃO (%)', s.pctRed==null?100:s.pctRed, 'type="number" min="0" max="100" step="5"', 'Vale para toda causa marcada sem % próprio. Para dar um % diferente a uma causa, digite ao lado dela na lista. É o cenário, não garantia de redução real.')}
           ${inp('pg-sim-inv','INVESTIMENTO (R$)', s.invest||'', 'type="text" inputmode="decimal" placeholder="orçamento do equipamento"', 'Orçamento do equipamento ou da ação. É a base do payback e do ROI.', 'inv')}
           ${gh('CUSTO E HORA EXTRA')}
           ${inp('pg-sim-custo','CUSTO-HORA DA LINHA (R$)', s.custoHora||'', 'type="text" inputmode="decimal" placeholder="R$ por hora parada"', 'Custo de UMA hora da linha inteira (todas as pessoas juntas), não por pessoa.')}
@@ -11664,6 +11695,13 @@ function _pgSimAtualiza(){
     if(ch.checked) selec[ch.dataset.tipo]=true;
   });
   s.selec=selec;
+  const red=document.getElementById('pg-sim-red');
+  const redCausa={};
+  document.querySelectorAll('.pg-sim-wrap .pg-sim-rc-i').forEach(i=>{
+    if(String(i.value).trim()!=='') redCausa[i.dataset.tipo]=i.value;
+    if(red) i.placeholder=red.value;               // o vazio mostra o padrão em vigor
+  });
+  s.redCausa=redCausa;
   const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
   s.pctRed=g('pg-sim-red'); s.custoHora=g('pg-sim-custo'); s.adicHE=g('pg-sim-adic');
   s.heSem=g('pg-sim-he');   s.invest=g('pg-sim-inv');     s.pessoas=g('pg-sim-pessoas');
@@ -11834,7 +11872,7 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   @media print{ .prop-stats,.prop-prem,.prop-ret,.prop-fluxo{page-break-inside:avoid} }
 </style>`;
 
-    const headline=`Atacando <b>${_rpEsc(causas)}</b> com redução de ${fmtN(r.pct)}%, a linha recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
+    const headline=`Atacando <b>${_rpEsc(causas)}</b> com redução ${r.pctRes!=null?'de '+fmtN(r.pctRes)+'%':_pgSimPctTxt(r)}, a linha recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
       +(r.rsMesHE!=null?` — <b>${rs(r.rsMesHE)} de economia em HE por mês (${rs(r.rsAnoHE)} por ano)</b>${r.heEstim?', em estimativa sem o teto da HE praticada':''}`:'')
       +(payTxt?`. O investimento de ${investTxt} se paga em <b>${payTxt}</b>`:'')
       +(r.roi!=null?` — ROI de <b>${fmt1(r.roi)}% em ${r.anos} anos</b>`:'')+'.';
@@ -11854,15 +11892,15 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   <div class="prop-stat"><em>TEMPO PARADO<span class="prop-et real">APONTADO</span></em><b>${_fmtMinPar(selMin)}</b><u>${fmtP(pctNPdoSel)} do tempo não programado (${_fmtMinPar(st.totMinNP)})</u></div>
   <div class="prop-stat"><em>CAIXAS PERDIDAS<span class="prop-et calc">ESTIMADO</span></em><b>${fmtN(cxPerd)} cx</b><u>a mesma conta de perda do painel</u></div>
 </div>
-<table class="pgq-plano"><thead><tr><th>CAUSA ATACADA</th><th>OCORRÊNCIAS</th><th>TEMPO PARADO</th><th>CAIXAS PERDIDAS</th></tr></thead><tbody>
-${sel.map(t=>`<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtMinPar(t.min)}</td><td>${fmtN(t.perd)} cx</td></tr>`).join('')}
-<tr><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${fmtN(ocor)}×</td><td style="font-weight:700">${_fmtMinPar(selMin)}</td><td style="font-weight:700">${fmtN(cxPerd)} cx</td></tr>
+<table class="pgq-plano"><thead><tr><th>CAUSA ATACADA</th><th>OCORRÊNCIAS</th><th>TEMPO PARADO</th><th>CAIXAS PERDIDAS</th><th>REDUÇÃO SIMULADA</th></tr></thead><tbody>
+${sel.map(t=>{ const pc=(r.porCausa||[]).find(c=>c.tipo===t.tipo); return `<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtMinPar(t.min)}</td><td>${fmtN(t.perd)} cx</td><td>${pc?fmtN(pc.pct)+'%':'—'}</td></tr>`; }).join('')}
+<tr><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${fmtN(ocor)}×</td><td style="font-weight:700">${_fmtMinPar(selMin)}</td><td style="font-weight:700">${fmtN(cxPerd)} cx</td><td style="font-weight:700">${_pgSimPctTxt(r)}</td></tr>
 </tbody></table>
 <div class="rp-note">Disponibilidade atual da linha: <b>${r.dispAntes!=null?fmt1(r.dispAntes)+'%':'—'}</b>, contra meta de ${PG_META_DISP}%.</div>
 
 <div class="rp-sec-ttl">2 ▸ O CENÁRIO SIMULADO<span class="prop-selo">CENÁRIO SIMULADO</span></div>
 <div class="prop-prem">
-  <div><em>REDUÇÃO DA PARADA</em><b>${fmtN(r.pct)}%</b><u>do tempo das causas atacadas</u></div>
+  <div><em>REDUÇÃO DA PARADA</em><b>${r.pctRes!=null?fmtN(r.pctRes)+'%':'por causa'}</b><u>${r.pctRes!=null?'do tempo das causas atacadas':'média de '+fmt1(r.pctEf)+'% do tempo — o % de cada causa está na tabela do problema'}</u></div>
   <div><em>CUSTO-HORA DA LINHA</em><b>${r.rsMes!=null?rs(_pgSimNum(s.custoHora)):'não informado'}</b><u>${r.rsMes!=null?'por hora de LINHA — todas as pessoas da embalagem juntas (informado pelo gestor)':'os R$, o payback e o ROI ficam de fora desta simulação'}</u></div>
   <div><em>PESSOAS NA EMBALAGEM</em><b>${r.pessoas>0?fmtN(r.pessoas)+' pessoa(s)':'não informado'}</b><u>${r.pessoas>0?'converte a HE de homem-hora para hora de linha'+(r.custoHoraPessoa!=null?` (custo-hora por pessoa: ${rs(r.custoHoraPessoa)})`:''):'sem a conversão não há % de HE evitável nem teto na economia'}</u></div>
   <div><em>HORA EXTRA</em><b>${r.heMesHH>0?fmt1(_pgSimNum(s.heSem))+' homem-hora/semana':'adicional de '+fmtN(r.adic)+'%'}</b><u>${r.heMesHH>0?`adicional de ${fmtN(r.adic)}% · ${fmt1(r.heMesHH)}h/mês${r.heMesLinha!=null?` = ${fmt1(r.heMesLinha)}h de linha`:''}`:(r.heZero?'sem hora extra praticada — nada a economizar':'HE atual não informada')}</u></div>
@@ -11874,7 +11912,7 @@ ${sel.map(t=>`<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtM
 <div class="kpi-grid g4">
   <div class="kpi-card"><div class="kpi-lbl">TEMPO RECUPERADO<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${fmtN(Math.round(r.minMes))}<span> min/mês</span></div><div class="kpi-ano">${fmt1(r.horasAno)}h por ano</div><div class="kpi-sub">${_fmtMinPar(Math.round(r.minPer))} no período medido</div></div>
   <div class="kpi-card g"><div class="kpi-lbl">CAIXAS RECUPERADAS<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${fmtN(r.cxMes)}<span> cx/mês</span></div><div class="kpi-ano">${fmtN(r.cxAno)} cx por ano</div><div class="kpi-sub">capacidade que volta para a linha${r.exced>0?` · ${fmt1(r.exced)}h acima da HE praticada`:''}</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">HORA EXTRA EVITÁVEL<span class="prop-et pot">POTENCIAL</span></div><div class="kpi-val">${r.pctHE!=null?fmt1(r.pctHE)+'%<span> da HE</span>':'—'}</div><div class="kpi-sub">${r.pctHE!=null?fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)':(r.heSem>0?'informe a quantidade de pessoas na tela':'informe as h/semana de HE na tela')}</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">HORA EXTRA EVITÁVEL<span class="prop-et pot">POTENCIAL</span></div><div class="kpi-val">${r.pctHE!=null?fmt1(Math.min(100,r.pctHE))+'%<span> da HE</span>':'—'}</div><div class="kpi-sub">${r.pctHE!=null?(r.pctHE>100?fmt1(r.recH)+'h recuperadas passam da HE praticada ('+fmt1(r.heMesLinha)+'h de linha) — toda a HE seria evitável':fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)'):(r.heSem>0?'informe a quantidade de pessoas na tela':'informe as h/semana de HE na tela')}</div></div>
   <div class="kpi-card${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' g':''}"><div class="kpi-lbl">DISPONIBILIDADE<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${r.dispAntes!=null?fmt1(r.dispAntes)+'%<span class="seta"> → </span>'+fmt1(r.dispDepois)+'%':'—'}</div><div class="kpi-sub">meta ${PG_META_DISP}%${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' — o cenário CRUZA a meta':''}</div></div>
 </div>
 <div class="rp-note">O <b>ano</b> é projeção, não medição: o período medido levado a um mês típico de <b>22 dias úteis</b> (este período tem ${fmtN(r.nDias)} dia(s) trabalhado(s)) e multiplicado por 12 — assume o mesmo padrão de paradas e o mesmo nível de hora extra ao longo dos 12 meses.</div>

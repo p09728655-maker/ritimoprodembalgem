@@ -1969,6 +1969,34 @@ ok('o número grande continua sendo o mês',
   ok('a frase usa a parada ANTES da redução e a fatia do não programado',
      [_c.minSelPer, Math.round(_c.pctNP * 10) / 10], [327, Math.round(327 / 1449 * 1000) / 10]);
 }
+// v7.64.0 — REDUÇÃO POR CAUSA
+{
+  const _s2 = { 'Troca de Plastico': true, 'Troca de produto': true };
+  const _pc = _pgSimulacao({ ...simBase, selec: _s2, pctRed: 80, redCausa: { 'Troca de produto': '10' } });
+  ok('cada causa usa o próprio %, a sem % usa o padrão',
+     _pc.porCausa.map(c => c.tipo + ':' + c.pct).join(), 'Troca de Plastico:80,Troca de produto:10');
+  ok('minutos = Σ min × % de cada causa', Math.round(_pc.minPer * 10) / 10, Math.round((327 * 0.8 + 568 * 0.1) * 10) / 10);
+  ok('caixas arredondam uma vez, no fim', _pc.cxPer, Math.round(1030 * 0.8 + 1681 * 0.1));
+  ok('com % diferentes não há "o" %', _pc.pctUnica === false && _pc.pctRes === null, true);
+  ok('e a média é ponderada pelo tempo', Math.round(_pc.pctEf * 10) / 10,
+     Math.round((327 * 0.8 + 568 * 0.1) / (327 + 568) * 1000) / 10);
+  const _pv = _pgSimulacao({ ...simBase, selec: _s2, pctRed: 80, redCausa: { 'Troca de produto': '' } });
+  ok('% vazio = padrão (e o resultado é o de antes)', [_pv.pctRes, Math.round(_pv.minPer * 10) / 10], [80, Math.round(895 * 0.8 * 10) / 10]);
+  const _pa = _pgSimulacao({ ...simBase, selec: _s2, pctRed: 80, redCausa: { 'Troca de produto': '250' } });
+  ok('% da causa acima de 100 vira 100', _pa.porCausa[1].pct, 100);
+  const _pu = _pgSimulacao({ ...simBase, selec: _s2, pctRed: 80, redCausa: { 'Troca de produto': '50', 'Troca de Plastico': '50' } });
+  ok('todas com o mesmo % próprio → é "o" %', _pu.pctRes, 50);
+}
+ok('o aviso de várias causas só sai quando o % é um só',
+   /r\.nSel>1 && r\.pctUnica/.test(pega('function _pgSimAvisos(')), true);
+ok('o papel mostra a redução de cada causa',
+   /REDUÇÃO SIMULADA<\/th>/.test(pega('async function gerarRelatorioInvestimento(')), true);
+ok('HE evitável acima de 100% não é impressa (tela e papel)',
+   (JS.match(/Math\.min\(100,r\.pctHE\)/g) || []).length, 2);
+// Cor só onde há função: na tela do simulador o número é tinta — a cor fica
+// na economia em HE (o benefício) e no ROI negativo (o alerta).
+ok('números do simulador sem cor decorativa',
+   /'var\(--acc\)'|'var\(--warn\)'/.test(_resHtml), false);
 ok('a tela separa em três faixas: decisão, operação, outras leituras',
    /O INVESTIMENTO E O RETORNO/.test(_resHtml) && /IMPACTO OPERACIONAL/.test(_resHtml)
    && /OUTRAS LEITURAS/.test(_resHtml) && /não são economia de caixa/.test(_resHtml), true);
