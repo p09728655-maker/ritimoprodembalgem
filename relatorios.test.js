@@ -1948,9 +1948,39 @@ ok('e avisa que não é economia nem faturamento garantido',
 ok('o payback diz que a receita potencial não entra',
    /a receita potencial não entra/.test(_resHtml), true);
 ok('o número grande continua sendo o mês',
-   /<span> por mês<\/span>/.test(_resHtml) && / cx\/mês/.test(_resHtml)
+   / min\/mês/.test(_resHtml) && / cx\/mês/.test(_resHtml)
    && (_resHtml.match(/<span> \/mês<\/span>/g) || []).length === 3, true);
 // v7.62.0 — revisão da tela
+// v7.63.0 — evolução da tela: HE digitada como 0, faixas e memória de cálculo
+{
+  const _b = { ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+    custoHora: 382.89, adicHE: 50, invest: 50000, pessoas: 10 };
+  const _z = _pgSimulacao({ ..._b, heSem: 0, heInformada: true });
+  ok('HE digitada como 0: não há HE a economizar', _z.rsMesHE, 0);
+  ok('e o payback não é calculável', _z.pay, null);
+  ok('e o tempo e as caixas continuam (capacidade não depende de HE)', _z.minPer, 327);
+  const _v = _pgSimulacao({ ..._b, heSem: 0 });
+  ok('HE vazia continua sendo estimativa sem teto (comportamento anterior)', _v.heEstim, true);
+  const _r0 = _pgSimulacao({ ..._b, heSem: 8, pctRed: 0 });
+  ok('redução 0% → nada recuperado, nada economizado', [_r0.minPer, _r0.cxMes, _r0.rsMesHE, _r0.pay], [0, 0, 0, null]);
+  const _t0 = _pgSimulacao({ ..._b, heSem: 8, ticket: 0 });
+  ok('ticket 0 → potencial não calculado', _t0.receitaMes, null);
+  const _c = _pgSimulacao({ ..._b, heSem: 8 });
+  ok('a frase usa a parada ANTES da redução e a fatia do não programado',
+     [_c.minSelPer, Math.round(_c.pctNP * 10) / 10], [327, Math.round(327 / 1449 * 1000) / 10]);
+}
+ok('a tela separa em três faixas: decisão, operação, outras leituras',
+   /O INVESTIMENTO E O RETORNO/.test(_resHtml) && /IMPACTO OPERACIONAL/.test(_resHtml)
+   && /OUTRAS LEITURAS/.test(_resHtml) && /não são economia de caixa/.test(_resHtml), true);
+ok('o potencial de receita fica na faixa de baixo, depois da economia',
+   _resHtml.indexOf("card('POTENCIAL DE RECEITA") > _resHtml.indexOf("card('ECONOMIA EM HE"), true);
+const _mem = pega('function _pgSimMemHtml(');
+ok('a memória de cálculo é desenho: nenhuma conta de R$ dentro',
+   /\*\s*r\.custoHora|r\.invest\s*\/|\*\s*r\.ticket/.test(_mem), false);
+ok('e fica recolhida num <details> fora do miolo que redesenha',
+   /<details class="pg-sim-mem">/.test(pega('function _pgSimHtml(')) && /pg-sim-memo/.test(pega('function _pgSimAtualiza(')), true);
+ok('o papel marca a economia em HE como SIMULADO, não POTENCIAL',
+   /ECONOMIA EM HE<span class="prop-et sim">SIMULADO/.test(JS), true);
 ok('payback/ROI pedem só o campo que falta',
    /informe INVESTIMENTO e CUSTO-HORA/.test(JS), false);
 ok('a nota não repete a frase dos R$',

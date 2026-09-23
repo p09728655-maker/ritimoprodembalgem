@@ -11,6 +11,41 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.63.0 — 23/09/2026
+
+**SIMULADOR: evolução da tela — mesma estrutura, mesmas contas, outra leitura.**
+
+- **Frase do cenário** acima dos cards: o que está sendo atacado, com quanto,
+  e o que devolve (horas, caixas, economia em HE, payback).
+- **Os resultados em três faixas**, na ordem da decisão:
+  **O INVESTIMENTO E O RETORNO** (investimento → economia em HE → payback →
+  ROI, números maiores) · **IMPACTO OPERACIONAL** (tempo, caixas, HE evitável,
+  disponibilidade *atual → simulada*) · **OUTRAS LEITURAS** (custo da parada e
+  potencial de receita, menores e com *"não são economia de caixa"* no título).
+  Antes eram nove cards numa linha só, e o potencial de receita — o maior
+  número e o que menos vale como argumento — era o que mais chamava atenção.
+- **Etiquetas**: ECONOMIA EM HE leva **SIMULADO** (depende da redução digitada)
+  e o POTENCIAL DE RECEITA leva **POTENCIAL**. No papel da impressão executiva a
+  economia também passou de POTENCIAL para SIMULADO — o mesmo selo dos dois
+  lados deixava economia e receita com a mesma etiqueta.
+- **PREMISSAS DO CENÁRIO** em grupos (cenário e investimento · custo e hora
+  extra · receita potencial), com ajuda em cada campo; o INVESTIMENTO ganhou
+  destaque.
+- **Lista de causas** mostra a fatia de cada uma na parada não programada.
+- **COMO O SIMULADOR CALCULA**: memória de cálculo recolhível com os dados de
+  entrada, o cálculo operacional e o financeiro, cada linha com a conta escrita.
+- **TEMPO RECUPERADO volta a min/mês** (como era antes da v7.62.0), com
+  *≈ X h/mês* ao lado.
+
+**Atenção — um número muda:** **HORA EXTRA ATUAL digitada como 0** agora
+significa *"não há hora extra"*: a ECONOMIA EM HE vai a **R$ 0** e o payback
+fica *não calculável*. Antes o 0 era tratado como campo vazio e a tela mostrava
+a economia cheia "em estimativa", de uma hora extra que não existe. Campo
+**vazio** continua como antes (estimativa sem teto, marcada). Vale também na
+impressão executiva. Sem re-deploy do `.gs`.
+
+---
+
 ## v7.62.0 — 23/09/2026
 
 **Revisão da aba SIMULADOR.**
