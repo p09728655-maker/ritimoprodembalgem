@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.66.1 — 23/09/2026
+
+**Branco menos duro nas telas de gestão** (*"o branco está ruim de ver, parece
+negrito muito forte"*). Em todas as abas lidas a 60 cm (gerencial, programação,
+plano, produção/hora, paradas, gestão de perdas, simulador, histórico) o texto
+principal desce de `#F5F5F5` para `#E6E6E6` — ainda ~14:1 sobre o fundo — e o
+negrito (`<b>`) vai de 700 para 600. No simulador, os pesos que estavam em 600
+(% da lista, investimento, linha do ano, frase do cenário, conta da HE) foram
+para 500, e o número grande dos cards de 700 para 600. **A TV fica de fora**: a
+15 m o branco cheio é o que se lê. Nenhum número muda.
+
+---
+
 ## v7.66.0 — 23/09/2026
 
 **SIMULADOR: a conta da hora extra aparece embaixo do campo, e um teste de
