@@ -2782,7 +2782,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.66.2';
+const APP_VER   = '7.66.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11169,6 +11169,24 @@ async function _pgContextoDoPeriodo(de, ate, forcar){
   return PG_VOO[chave];
 }
 
+// A busca do período não respondeu em 3 tentativas — na GESTÃO DE PERDAS e no
+// SIMULADOR. A frase antiga culpava o "cold start" mesmo com o painel já
+// conectado (medido em 23/09/2026: Sheets respondendo às 13:06:59 e o
+// getParadasPeriodo de 30 dias estourando 3 × 25 s): não é servidor frio, é a
+// leitura da aba PARADAS que demora. Mesma régua da aba PARADAS: botão na
+// mensagem e UMA tentativa automática 20 s depois, só com a aba na tela.
+var _pgFalhaTimer=null, _pgFalhaTentou={};
+function _pgFalhaHtml(fn, sec){
+  const auto=!_pgFalhaTentou[fn];
+  if(auto){
+    _pgFalhaTentou[fn]=true;
+    clearTimeout(_pgFalhaTimer);
+    _pgFalhaTimer=setTimeout(()=>{ const el=document.getElementById(sec); if(el&&el.classList.contains('on')) window[fn](true); },20000);
+  }
+  return '<div class="pg-carregando">A leitura das paradas do período não respondeu em 3 tentativas (a aba PARADAS é a leitura mais demorada do backend; períodos longos demoram mais).'
+    +(auto?' Tentando de novo sozinho em 20 s…':'')
+    +' <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;margin-left:6px" onclick="'+fn+'(true)">↻ TENTAR DE NOVO</button></div>';
+}
 async function renderGestaoPerdas(forcar){
   const alvo=document.getElementById('pg-quadro');
   if(!alvo) return;
@@ -11198,7 +11216,7 @@ async function renderGestaoPerdas(forcar){
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
     if(!reg){
       if(alvo.querySelector('.pgq')){ if(upd) upd.textContent='⚠ não atualizou'; }
-      else alvo.innerHTML='<div class="pg-carregando">O servidor demorou a responder (cold start). Toque em ATUALIZAR para tentar de novo.</div>';
+      else alvo.innerHTML=_pgFalhaHtml('renderGestaoPerdas','sec-perdas');
       return;
     }
     _pgPintar(reg.ctx, reg.t);
@@ -11319,9 +11337,10 @@ async function renderSimulador(forcar){
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
     if(!reg){
       if(alvo.querySelector('.pg-sim')){ if(upd) upd.textContent='⚠ não atualizou'; }
-      else alvo.innerHTML='<div class="pg-carregando">O servidor demorou a responder (cold start). Toque em ATUALIZAR para tentar de novo.</div>';
+      else alvo.innerHTML=_pgFalhaHtml('renderSimulador','sec-simulador');
       return;
     }
+    _pgFalhaTentou.renderSimulador=false;
     _simPintar(reg.ctx, reg.t);
   }catch(err){
     if(!alvo.querySelector('.pg-sim')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar o simulador: ${_rpEsc(err.message)}</div>`;
