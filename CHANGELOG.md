@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.62.0 — 23/09/2026
+
+**Revisão da aba SIMULADOR.**
+
+- **Aviso de cenário frágil**, acima dos cards: (1) causa genérica marcada
+  ("Outros", "Outro") — sem causa identificada não dá para dizer o que o
+  investimento resolve; (2) mais de uma causa com UMA redução só — o mesmo
+  investimento raramente ataca troca de produto, troca de plástico e
+  manutenção ao mesmo tempo. Só avisa: nenhuma conta muda.
+- **Payback e ROI pedem só o campo que falta.** Com o CUSTO-HORA preenchido, a
+  tela ainda dizia *"informe INVESTIMENTO e CUSTO-HORA"*.
+- **A nota do rodapé repetia a mesma frase** ("dois cards de R$ não se somam"
+  e, logo depois, "três leituras não se somam"). Ficou uma.
+
+**Atenção:** o card TEMPO RECUPERADO passou de **min/mês** para **horas e
+minutos por mês** (antes *965 min/mês*, agora *16h05m por mês*), na mesma
+unidade da linha do ano. O valor é o mesmo. Sem re-deploy do `.gs`.
+
+---
+
 ## v7.61.0 — 23/09/2026
 
 **A aba PARADAS demorava e caía em "NÃO CARREGOU" com 30 DIAS.** Ela fazia a
