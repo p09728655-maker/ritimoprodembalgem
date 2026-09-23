@@ -330,6 +330,7 @@ body.ger-hist .ger-live-only{display:none!important}
    de demanda e é ordens de grandeza maior que a economia em HE ao lado. */
 .pg-sim-wrap .pg-sim-c.cond{border-style:dashed}
 .pg-sim-wrap .pg-sim-chk i b{color:var(--txt);font-weight:600}
+.pg-sim-wrap .pg-sim-chk i.pg-sim-col{display:grid;grid-template-columns:64px 44px 52px;column-gap:6px;text-align:right;font-variant-numeric:tabular-nums}
 /* PREMISSAS: caixa de entrada, com grupos — não pode parecer resultado. */
 .pg-sim-wrap .pg-sim-prem .pg-sim-inp{border:1px dashed var(--border);border-radius:8px;padding:10px 12px}
 .pg-sim-wrap .pg-sim-gh{grid-column:1/-1;font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1.4px;color:var(--txt2);border-bottom:1px solid var(--border);padding-bottom:2px;margin:3px 0 -3px}
@@ -11661,10 +11662,12 @@ function _pgSimHtml(ctx){
   const totNP=st.totMinNP||0;
   const chks=tiposNP.map(t=>{
     const on=!!(s.selec&&s.selec[t.tipo]);
-    const fat=totNP>0?' · <b>'+fmt1(t.min/totNP*100)+'%</b>':'';
+    // Tempo · ocorrências · fatia em COLUNAS de largura fixa: com o texto
+    // corrido ("8h33m · 76×" e "4 min · 2×") nada ficava alinhado.
+    const fat=totNP>0?'<b>'+fmt1(t.min/totNP*100)+'%</b>':'<b></b>';
     const rc=(s.redCausa&&s.redCausa[t.tipo]!=null)?s.redCausa[t.tipo]:'';
     // % PRÓPRIO da causa: só aparece marcada; vazio = usa a REDUÇÃO PADRÃO.
-    return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i>${_fmtMinPar(t.min)} · ${t.qtd}×${fat}</i><span class="pg-sim-rc" title="Redução desta causa. Vazio = usa a REDUÇÃO PADRÃO."><input type="number" class="pg-sim-rc-i" data-tipo="${atr(t.tipo)}" min="0" max="100" step="5" value="${atr(rc)}" placeholder="${atr(s.pctRed==null?100:s.pctRed)}" oninput="_pgSimAtualiza()">%</span></label>`;
+    return `<label class="pg-sim-chk${on?' on':''}"><input type="checkbox" data-tipo="${atr(t.tipo)}"${on?' checked':''} onchange="_pgSimAtualiza()"> ${_rpEsc(t.tipo)}<i class="pg-sim-col"><span>${_fmtMinPar(t.min)}</span><span>${t.qtd}×</span>${fat}</i><span class="pg-sim-rc" title="Redução desta causa. Vazio = usa a REDUÇÃO PADRÃO."><input type="number" class="pg-sim-rc-i" data-tipo="${atr(t.tipo)}" min="0" max="100" step="5" value="${atr(rc)}" placeholder="${atr(s.pctRed==null?100:s.pctRed)}" oninput="_pgSimAtualiza()">%</span></label>`;
   }).join('');
   const inp=(id,rot,val,attrs,tip,cls)=>`<label${cls?` class="${cls}"`:''}${tip?` title="${atr(tip)}"`:''}>${rot}<input id="${id}" value="${atr(val==null?'':val)}" ${attrs} oninput="_pgSimAtualiza()"></label>`;
   const gh=t=>`<div class="pg-sim-gh">${t}</div>`;
