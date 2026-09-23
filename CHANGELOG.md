@@ -11,6 +11,30 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.61.0 — 23/09/2026
+
+**A aba PARADAS demorava e caía em "NÃO CARREGOU" com 30 DIAS.** Ela fazia a
+própria busca do `getParadasPeriodo` — a leitura mais cara do backend — sem
+cache e sem saber que GESTÃO DE PERDAS e SIMULADOR (que também abrem em 30 dias)
+tinham acabado de pedir a mesma janela.
+
+- **Uma busca por período para as três abas e os relatórios**
+  (`_paradasPeriodoBusca`): cache de 5 min por período e requisição em voo
+  compartilhada. Entrar em PARADAS depois de GESTÃO DE PERDAS com o mesmo
+  período não chama o servidor de novo. O refresh automático e o ↻ continuam
+  buscando dado fresco.
+- **O período anterior (comparativo) usa o cache** — está fechado, não muda.
+- **O refresh da aba vai depois do `lerSheets`**, não junto: as duas chamadas
+  disputavam o Apps Script ao mesmo tempo.
+- **Falhou? A tela não mostra mais gráficos de outro período** embaixo do
+  "NÃO CARREGOU" (o Pareto e as caixas por dia ficavam do carregamento
+  anterior). Aparece **↻ TENTAR DE NOVO** e o painel tenta sozinho **uma vez**
+  depois de 20 s.
+
+**Atenção:** nenhum número muda. Sem re-deploy do `.gs`.
+
+---
+
 ## v7.60.0 — 18/09/2026
 
 **O ATUALIZAR da aba PLANO engolia o toque, e a tarja da faixa alvo tapava a

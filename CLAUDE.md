@@ -513,6 +513,14 @@ via Google Apps Script (JSONP).
   enfileiram lá e, no cold start, estouram o timeout de 25s todas juntas (era o
   "NÃO CARREGOU" da aba PARADAS). A 1ª chamada paga o cold start com até 3
   tentativas e backoff; as secundárias vão depois, com o servidor quente.
+- **`getParadasPeriodo` tem UMA busca no desktop: `_paradasPeriodoBusca`**
+  (v7.61.0, 23/09/2026 — *"está demorando"*, aba PARADAS em 30 DIAS com
+  NÃO CARREGOU). Cache de 5 min por `de|ate` + voo compartilhado; PARADAS,
+  `_pgBuscarDados` (GESTÃO DE PERDAS, SIMULADOR, relatórios) passam por ela.
+  O refresh `silent` força dado fresco; o `forcar` do `_pgContextoDoPeriodo`
+  derruba o bruto junto (`invalidarParadasPeriodo`). Na falha, a aba limpa os
+  gráficos do carregamento anterior, oferece ↻ e tenta sozinha 1× em 20 s. O
+  refresh da aba roda **depois** do `lerSheets` (`_parDepois`).
 - **As classes de parada têm que estar carregadas nos dois.** O gerencial do
   mobile **não** chamava `carregarTiposParada()` (só o operador e o modal
   chamavam), então o `PAR_CLASSE_MAP_M` ficava vazio e a classificação

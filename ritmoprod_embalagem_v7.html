@@ -2690,7 +2690,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.60.0';
+const APP_VER   = '7.61.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3778,10 +3778,11 @@ function _tickCountdown(){
   document.getElementById('countdown-txt').textContent=m+':'+String(s).padStart(2,'0');
   if(countdownSec===0){
     countdownSec=(window._intervaloMin||5)*60;
-    if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
     // Aba PARADAS aberta também atualiza no intervalo configurado.
     // silent: mesmo período → mantém os KPIs na tela enquanto busca.
-    if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas({silent:true});
+    // Vai DEPOIS do lerSheets: disparada junto, disputava o Apps Script (uma
+    // execução por vez) e as duas chegavam perto do timeout de 25 s.
+    if(CFG.sheetsUrl){ const _ls=lerSheets(); lerPontosDia().then(()=>renderGerencial()); _parDepois(_ls); } else { lerArquivo(); _parDepois(null); }
   } else countdownSec--;
 }
 function _atualizarLabelIntervalo(){
@@ -3794,8 +3795,13 @@ function forcarRefresh(){
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
   countdownSec=(window._intervaloMin||5)*60;
   invalidarHistoricoCache();   // refresh manual = quero dado fresco, ignora o cache do histórico
-  if(CFG.sheetsUrl){ lerSheets(); lerPontosDia().then(()=>renderGerencial()); } else lerArquivo();
-  if(document.getElementById('sec-paradas') && document.getElementById('sec-paradas').classList.contains('on')) renderAnaliseParadas({silent:true});
+  if(CFG.sheetsUrl){ const _ls=lerSheets(); lerPontosDia().then(()=>renderGerencial()); _parDepois(_ls); } else { lerArquivo(); _parDepois(null); }
+}
+function _parDepois(prom){
+  Promise.resolve(prom).catch(()=>{}).then(()=>{
+    const sec=document.getElementById('sec-paradas');
+    if(sec && sec.classList.contains('on')) renderAnaliseParadas({silent:true});
+  });
 }
 function alterarIntervalo(){
   const atual=window._intervaloMin||5;
@@ -11050,7 +11056,7 @@ function _pgInitFiltro(){
 var PG_VOO={};
 async function _pgContextoDoPeriodo(de, ate, forcar){
   const chave=de+'|'+ate;
-  if(forcar) delete PG_TELA_CACHE[chave];
+  if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const c=PG_TELA_CACHE[chave];
   if(c && (Date.now()-c.t)<PG_TELA_TTL && !forcar) return c;
   if(PG_VOO[chave]) return PG_VOO[chave];
@@ -11082,7 +11088,7 @@ async function renderGestaoPerdas(forcar){
   if(!de||!ate){ _pgInitFiltro(); return; }
   if(PG_TELA_RODANDO) return;                       // o ciclo não se empilha
   const chave=de+'|'+ate;
-  if(forcar) delete PG_TELA_CACHE[chave];
+  if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
   // O caminho do cache também marca a chave em cartaz: sem isso, A→B→A dentro
   // do TTL deixava PG_TELA_ULT em B, e o grão e o simulador (que leem
@@ -11205,7 +11211,7 @@ async function renderSimulador(forcar){
   if(!de||!ate){ _simInitFiltro(); return; }
   if(SIM_RODANDO) return;                           // o ciclo não se empilha
   const chave=de+'|'+ate;
-  if(forcar) delete PG_TELA_CACHE[chave];
+  if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
   // O caminho do cache TAMBÉM marca a chave em cartaz: é ela que o
   // _pgSimAtualiza lê a cada tecla digitada no cenário.
@@ -11755,15 +11761,45 @@ ${r.rsMesHE!=null && r.rsMesHE>0
 // primeira mexida — foi assim que a conta de paradas divergiu três vezes.
 // Devolve null quando o servidor não respondeu (cold start), para quem chamou
 // decidir o que dizer ao usuário.
+// ── getParadasPeriodo: UMA busca por período para PARADAS, GESTÃO DE PERDAS,
+// SIMULADOR e relatórios ─────────────────────────────────────────────────────
+// A aba PARADAS fazia a busca dela sozinha, sem cache e sem saber que a GESTÃO
+// DE PERDAS e o SIMULADOR (os três abrem em 30 DIAS) tinham acabado de pedir a
+// MESMA janela. Cada entrada na aba pagava de novo a leitura mais cara do
+// backend — e, no cold start, 3 × 25 s até o "NÃO CARREGOU". Agora: cache de
+// 5 min por `de|ate` (mesmo TTL do backend e do PG_TELA_CACHE) e requisição em
+// voo compartilhada, o remédio do `_phVoo`/`PG_VOO`. Sequencial + retry: o Apps
+// Script atende uma execução por vez — paralelo só enfileira.
+var PAR_RAW_CACHE={}, PAR_RAW_VOO={};
+const PAR_RAW_TTL=5*60*1000;
+function invalidarParadasPeriodo(de, ate){
+  if(de&&ate) delete PAR_RAW_CACHE[de+'|'+ate]; else PAR_RAW_CACHE={};
+}
+async function _paradasPeriodoBusca(de, ate, o){
+  o=o||{};
+  const chave=de+'|'+ate;
+  const c=PAR_RAW_CACHE[chave];
+  if(!o.forcar && c && (Date.now()-c.t)<PAR_RAW_TTL) return c.paradas;
+  if(PAR_RAW_VOO[chave]) return PAR_RAW_VOO[chave];   // já tem alguém buscando: pega carona
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
+  const tent=o.tent||3;
+  PAR_RAW_VOO[chave]=(async()=>{
+    try{
+      for(let i=1;i<=tent;i++){
+        try{
+          const j=await jsonpFetch(url);
+          if(j&&j.ok){ const p=j.paradas||[]; PAR_RAW_CACHE[chave]={paradas:p, t:Date.now()}; return p; }
+        }catch(e){ /* timeout/cold start */ }
+        if(i<tent){ if(o.onTentativa) o.onTentativa(i); await new Promise(r=>setTimeout(r,1500*i)); }
+      }
+      return null;
+    }finally{ delete PAR_RAW_VOO[chave]; }
+  })();
+  return PAR_RAW_VOO[chave];
+}
+
 async function _pgBuscarDados(de, ate){
-  const urlP=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(de)+'&ate='+encodeURIComponent(ate);
-  // Sequencial + retry, como na aba PARADAS: o Apps Script atende uma execução
-  // por vez — paralelo só enfileira, e no cold start tudo estoura junto.
-  let paradas=null;
-  for(let i=1;i<=3 && paradas===null;i++){
-    try{ const j=await jsonpFetch(urlP); if(j&&j.ok) paradas=j.paradas||[]; }
-    catch(e){ if(i<3) await new Promise(r=>setTimeout(r,1500*i)); }
-  }
+  const paradas=await _paradasPeriodoBusca(de, ate);
   if(paradas===null) return null;
   const _hist=await buildDiasHistAsync()
     .then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; })
@@ -12489,6 +12525,7 @@ function _paradasStats(paradas, metaByDay, opts){
 // com um ciclo em andamento simplesmente desiste (o próximo tick pega); ação do
 // usuário (mudou período/classe) fica pendente e roda assim que o ciclo termina.
 let _parBusy=false, _parPend=null;
+let _parAutoTentou=false, _parAutoTimer=null;   // 1 retry automático por sequência de falhas
 // ── Guarda do módulo de cálculo (paradas-calc.js) ──────────────────────────
 // Se o arquivo não carregou (deploy parcial, rede da fábrica, file://), NADA
 // de paradas pode lançar — a aba ficava presa em "CARREGANDO…" e o relatório
@@ -12568,7 +12605,6 @@ async function _renderAnaliseParadasCore(opts){
   const _pAte=new Date(_dDe); _pAte.setDate(_pAte.getDate()-1);
   const _pDe=new Date(_pAte); _pDe.setDate(_pDe.getDate()-(lenDias-1));
   const _fdt=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
-  const mkUrlP=(d1,d2)=>CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadasPeriodo&de='+encodeURIComponent(d1)+'&ate='+encodeURIComponent(d2);
 
   // EM SEQUÊNCIA, com retry na chamada principal. O Apps Script atende UMA
   // execução por vez: as 3 chamadas em paralelo só se enfileiravam lá, e num
@@ -12576,21 +12612,16 @@ async function _renderAnaliseParadasCore(opts){
   // com o servidor já acordando. Sequencial, a 1ª chamada paga o cold start e
   // as seguintes respondem rápido; se a 1ª falhar, tenta de novo (backoff) —
   // mesma receita do lerSheetsComRetry que já segurou esse problema no load.
-  async function _fetchParadasRetry(url, tent){
-    for(let i=1;i<=tent;i++){
-      try{ const j=await jsonpFetch(url); if(j&&j.ok) return j.paradas||[]; }
-      catch(e){ /* timeout/cold start */ }
-      if(i<tent){
-        if(!silent) grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO… ('+i+'ª tentativa)</div><div class="kpi-sub">o servidor está ligando (cold start) — reconectando sozinho</div></div>';
-        await new Promise(r=>setTimeout(r, 1500*i));
-      }
-    }
-    return null;
-  }
-  const paradas = await _fetchParadasRetry(mkUrlP(de,ate), 3);
+  // A busca é a COMPARTILHADA (_paradasPeriodoBusca): entrar na aba depois da
+  // GESTÃO DE PERDAS / SIMULADOR com o mesmo período não chama o servidor de
+  // novo. O refresh (silent) força dado fresco — é para isso que ele existe.
+  const paradas = await _paradasPeriodoBusca(de, ate, {forcar:silent, tent:3, onTentativa:i=>{
+    if(!silent) grid.innerHTML='<div class="kpi-card" style="grid-column:1/-1"><div class="kpi-lbl">CARREGANDO… ('+i+'ª tentativa)</div><div class="kpi-sub">o servidor está ligando (cold start) — reconectando sozinho</div></div>';
+  }});
   // As secundárias só depois da principal (servidor já quente) e tolerantes a falha.
+  // O período anterior está fechado: o cache de 5 min serve mesmo no refresh.
   const prevParadas = paradas===null ? [] :
-    await jsonpFetch(mkUrlP(_fdt(_pDe),_fdt(_pAte))).then(j=>(j&&j.ok)?(j.paradas||[]):[]).catch(()=>[]);
+    ((await _paradasPeriodoBusca(_fdt(_pDe), _fdt(_pAte), {tent:1}).catch(()=>null)) || []);
   const _hist = paradas===null ? {m:{},r:{}} :
     await buildDiasHistAsync().then(dias=>{ const m={},r={}; (dias||[]).forEach(d=>{ m[d.data]=d.meta; r[d.data]=d.real; }); return {m,r}; }).catch(()=>({m:{},r:{}}));
   await _carregarClassesPar();
@@ -12601,10 +12632,30 @@ async function _renderAnaliseParadasCore(opts){
       grid.classList.remove('par-atualizando');
       _parUpd('⚠ não atualizou'+(_parUltimoOk?' — dados de '+_parUltimoOk:''),'err');
     }else{
-      grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor demorou a responder (provável cold start do Apps Script). Clique em MÊS/7 DIAS ou recarregue (Ctrl+Shift+R) para tentar de novo.</div></div>';
+      // Os gráficos e tabelas abaixo eram do carregamento ANTERIOR (outro
+      // período): ficar com eles embaixo do "NÃO CARREGOU" fazia parecer que
+      // eram deste recorte. Some tudo que não é do período pedido.
+      ['ch-par-pareto','ch-par-trend','ch-par-dispon'].forEach(id=>{ if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; } });
+      ['par-tbl-tipo','par-ranking','par-resumo-info','par-insights'].forEach(id=>{ const e=document.getElementById(id); if(e) e.innerHTML=''; });
+      const _dv0=document.getElementById('par-donut-val'); if(_dv0) _dv0.textContent='—';
+      const _auto=!_parAutoTentou;
+      grid.innerHTML='<div class="kpi-card red" style="grid-column:1/-1"><div class="kpi-lbl">⚠ NÃO CARREGOU</div><div class="kpi-sub">O servidor não respondeu em 3 tentativas (provável cold start do Apps Script).'
+        +(_auto?' Tentando de novo sozinho em 20 s…':'')
+        +' <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;margin-left:6px" onclick="renderAnaliseParadas()">↻ TENTAR DE NOVO</button></div></div>';
+      // UMA nova tentativa automática por sequência de falhas, só se a aba e o
+      // período continuarem os mesmos — o servidor costuma estar quente aí.
+      if(_auto){
+        _parAutoTentou=true;
+        clearTimeout(_parAutoTimer);
+        _parAutoTimer=setTimeout(()=>{
+          const sec=document.getElementById('sec-paradas');
+          if(sec && sec.classList.contains('on') && dGet('par-de')===de && dGet('par-ate')===ate) renderAnaliseParadas();
+        },20000);
+      }
     }
     return;
   }
+  _parAutoTentou=false; clearTimeout(_parAutoTimer);
   // Filtro de classe (Todas / Não planejada / Planejada)
   const _filtClasse=arr=>!classe?(arr||[]):(arr||[]).filter(p=>{const pl=_ehPlanejada(p.tipo); return classe==='pl'?pl:!pl;});
   const parF=_filtClasse(paradas);
