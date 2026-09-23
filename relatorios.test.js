@@ -3246,6 +3246,20 @@ ok('a janela de contradição existe em 8 das 9 horas', _discordam, 8);
 ok('a TV segue imprimindo a projeção sem veredito',
    /getElementById\('tv-proj'\)\.textContent=fmtN\(k\.proj\);/.test(JS), true);
 
+// A aba PARADAS pedia o getParadasPeriodo por conta própria, sem cache, logo
+// depois de GESTÃO DE PERDAS/SIMULADOR terem buscado o MESMO período (v7.61.0).
+{
+  const _parCore = pega('async function _renderAnaliseParadasCore(');
+  ok('a aba PARADAS usa a busca compartilhada',
+     /_paradasPeriodoBusca\(de, ate,/.test(_parCore), true);
+  ok('e não monta URL de getParadasPeriodo própria',
+     /getParadasPeriodo/.test(_parCore), false);
+  ok('a busca da gestão de perdas é a MESMA',
+     /_paradasPeriodoBusca\(de, ate\)/.test(pega('async function _pgBuscarDados(')), true);
+  ok('a busca compartilhada é definida uma vez só',
+     (JS.match(/async function _paradasPeriodoBusca\(/g) || []).length, 1);
+}
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
