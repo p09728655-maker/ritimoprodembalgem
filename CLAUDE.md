@@ -1639,6 +1639,16 @@ via Google Apps Script (JSONP).
       desse % na tela, na memória e no papel. O campo fica **dentro do
       `<label>`** da causa e só aparece com ela marcada — clicar nele não
       desmarca (conferido no Chromium).
+    - **A HE É DIGITADA POR PESSOA (v7.65.0)** — *"seria 15 × 8 hr"*: o campo
+      pedia o total da equipe e o PPCP digitou por pessoa, 15× menos HE.
+      Agora `s.hePessoa` → `ent.hePessoa`; na conta **h/semana por pessoa × 4,4
+      = hora de LINHA** (não precisa das pessoas) e × pessoas = homem-hora.
+      ⚠ O `s.heSem` antigo (total) **não é lido pela tela** e é apagado no
+      próximo `_pgSimAtualiza` — invisível, ele mudaria o resultado sem
+      ninguém ver. `ent.heSem` continua aceito na conta para os testes.
+      ⚠ Isso **revoga** a nota "HE digitada em HOMEM-HORA por semana" do
+      SIMULADOR DE INVESTIMENTO acima: a grandeza do CUSTO-HORA (hora de linha)
+      não mudou, a do campo de HE mudou.
     - **HORA EXTRA EVITÁVEL é exibida com teto de 100%** (`Math.min(100,…)`,
       tela e papel); o `pctHE` da conta continua cru — é ele que o teste prende.
     - **Cor na tela do simulador (v7.64.0, *"está pesado as cores"*)**: número

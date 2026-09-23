@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.65.0 — 23/09/2026
+
+**SIMULADOR: a hora extra é digitada POR PESSOA.** O campo pedia o *total da
+embalagem* (homem-hora) e o PPCP digitou 8 pensando em *8 h por pessoa* — a
+conta leu 8 h no total, 15× menos hora extra, e o teto da economia caiu junto
+(*"seria 15 × 8 hr"*). Agora o campo é **HORA EXTRA ATUAL (h/semana, por
+pessoa)**: 8 = cada um fez 8 h. A memória de cálculo mostra o total
+(*8 h × 15 pessoas = 120 homem-hora/semana*) e a hora de linha (8 × 4,4 =
+35,2 h/mês).
+
+**Atenção:** com 8 h/pessoa, 15 pessoas, Troca de Plástico a 80% e R$ 200.000,
+a ECONOMIA EM HE foi de **R$ 1.330 → R$ 3.151/mês**, o payback de **150,4 →
+63,5 meses** e o ROI em 5 anos de **−60,1% → −5,5%**. O valor antigo salvo no
+aparelho (que era o total) **não é reaproveitado** — o campo aparece vazio e
+precisa ser digitado de novo; lê-lo como "por pessoa" multiplicaria a HE pelo
+nº de pessoas sem ninguém ver. Vale também na impressão executiva. Sem
+re-deploy do `.gs`.
+
+---
+
 ## v7.64.0 — 23/09/2026
 
 **SIMULADOR: redução POR CAUSA, e cores mais leves.**

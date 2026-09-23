@@ -2744,7 +2744,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.64.0';
+const APP_VER   = '7.65.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11385,14 +11385,25 @@ function _pgSimulacao(ent){
   // evitável dividia hora de linha por homem-hora — número sem significado.
   const pessoas=parseFloat(ent.pessoas)||0;
   const custoHoraPessoa=(custoHora>0&&pessoas>0)?custoHora/pessoas:null;
-  const heSem=parseFloat(ent.heSem)||0;
+  // HE POR PESSOA (v7.65.0, 23/09/2026 — "seria 15 × 8 hr"): a tela pede a
+  // hora extra MÉDIA POR PESSOA por semana, que é como o PPCP pensa. O campo
+  // antigo pedia o TOTAL da equipe, e o 8 digitado por pessoa virou 8 no total
+  // — HE 15× menor, teto da economia 15× menor. Por pessoa, a conversão para
+  // hora de LINHA nem precisa das pessoas: se cada um fez 8 h, a linha fez
+  // 8 h de hora extra. `heSem` (total) continua aceito para quem chama a conta
+  // por fora (testes, integrações); a tela manda só `hePessoa`.
+  const hpInf=ent.hePessoa!=null && String(ent.hePessoa).trim()!=='';
+  const hePessoa=hpInf ? (parseFloat(ent.hePessoa)||0) : null;
+  const heSem=hePessoa!=null ? (pessoas>0 ? hePessoa*pessoas : 0) : (parseFloat(ent.heSem)||0);
   // HE digitada como ZERO é informação, não campo vazio: sem hora extra
   // praticada não há HE a economizar — o teto vira 0 e a economia também.
   // Antes o zero caía no mesmo caminho do vazio e a tela mostrava a economia
   // cheia, "em estimativa", de uma hora extra que não existe.
-  const heZero=!!ent.heInformada && heSem===0;
+  const heZero=hePessoa!=null ? hePessoa===0 : (!!ent.heInformada && heSem===0);
   const heMesHH=heSem>0 ? heSem*4.4 : 0;              // homem-hora de HE no mês
-  const heMesLinha=heZero ? 0 : ((heSem>0&&pessoas>0)?heMesHH/pessoas:null); // em hora de LINHA
+  const heMesLinha=heZero ? 0
+    : hePessoa!=null ? hePessoa*4.4                    // por pessoa = hora de LINHA
+    : ((heSem>0&&pessoas>0)?heMesHH/pessoas:null);     // total ÷ pessoas
   const pctHE=heMesLinha>0 ? recH/heMesLinha*100 : null;
   // Teto: não se economiza mais HE do que a praticada. O excedente é ganho de
   // capacidade, não de custo — vira nota no card de caixas, nunca R$. Sem
@@ -11440,7 +11451,7 @@ function _pgSimulacao(ent){
           cxAno, horasAno, rsAno, rsAnoHE,
           ticket, receitaMes, receitaAno,
           rsMes, rsMesHE, invest, pay,
-          pessoas, custoHoraPessoa, heSem, heMesHH, heMesLinha,
+          pessoas, custoHoraPessoa, heSem, hePessoa, heMesHH, heMesLinha,
           heTeto, heEstim, horasVal, exced, anos, ganhoAcum, roi,
           recH, pctHE, dispAntes, dispDepois, nDias, fator};
 }
@@ -11454,8 +11465,10 @@ function _pgSimEnt(ctx, s){
     custoHora: _pgSimNum(s.custoHora),
     adicHE: s.adicHE==null||s.adicHE===''?50:s.adicHE,
     invest: _pgSimNum(s.invest),
-    heSem: _pgSimNum(s.heSem),
-    heInformada: String(s.heSem==null?'':s.heSem).trim()!=='',
+    // Só o campo POR PESSOA vale na tela. O `heSem` antigo (total da equipe)
+    // que ficou salvo no aparelho NÃO é lido: invisível na tela, ele mudaria o
+    // resultado sem ninguém ver de onde veio.
+    hePessoa: (s.hePessoa==null||String(s.hePessoa).trim()==='') ? null : _pgSimNum(s.hePessoa),
     pessoas: _pgSimNum(s.pessoas),
     roiAnos: s.roiAnos==null||s.roiAnos===''?5:s.roiAnos,
     ticket: _pgSimNum(s.ticket),
@@ -11541,7 +11554,7 @@ function _pgSimResHtml(r){
     ? (r.pctHE>100
         ? fmt1(r.recH)+'h recuperadas passam da HE praticada ('+fmt1(r.heMesLinha)+'h de linha) — toda a HE seria evitável; o resto é capacidade'
         : fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)')
-    : (r.heSem>0 ? 'informe a quantidade de pessoas' : 'informe a HORA EXTRA atual (h/semana)');
+    : (r.heSem>0 ? 'informe a quantidade de pessoas' : 'informe a HORA EXTRA atual (h/semana por pessoa)');
   const faixa=(tit,sub,cls,corpo)=>`<div class="pg-sim-fx ${cls}"><div class="pg-sim-fx-t">${tit}<i>${sub}</i></div>${corpo}</div>`;
   return _pgSimAvisos(r) + _pgSimFrase(r)
     + faixa('O INVESTIMENTO E O RETORNO', ' · payback e ROI usam só a ECONOMIA EM HE', 'dec',
@@ -11616,7 +11629,8 @@ function _pgSimMemHtml(r){
       + lin('Horas produtivas', fmt1(r.horasProd)+' h/dia', 'turno sem o almoço')
       + lin('Custo-hora da linha', r.custoHora>0?rs(r.custoHora):ni, r.custoHoraPessoa!=null?'= '+rs(r.custoHoraPessoa)+' por pessoa':'')
       + lin('Pessoas na embalagem', r.pessoas>0?fmtN(r.pessoas):ni)
-      + lin('Hora extra atual', r.heZero?'0 h/semana':(r.heSem>0?fmt1(r.heSem)+' homem-hora/semana':ni), 'adicional de '+fmtN(r.adic)+'%')
+      + lin('Hora extra atual', r.heZero?'0 h/semana':(r.hePessoa!=null?fmt1(r.hePessoa)+' h/semana por pessoa':(r.heSem>0?fmt1(r.heSem)+' homem-hora/semana':ni)),
+            (r.hePessoa>0&&r.pessoas>0?fmt1(r.hePessoa)+' h × '+fmtN(r.pessoas)+' pessoas = '+fmt1(r.heSem)+' homem-hora/semana · ':'')+'adicional de '+fmtN(r.adic)+'%')
       + lin('Investimento', r.invest>0?rs0(r.invest):ni)
       + lin('Ticket médio', r.ticket>0?rs(r.ticket)+'/cx':ni, 'só para o potencial de receita'))
     + bloco('CÁLCULO OPERACIONAL',
@@ -11626,7 +11640,7 @@ function _pgSimMemHtml(r){
       + lin('Tempo recuperado', fmtN(Math.round(r.minMes))+' min/mês', 'período × 22 ÷ '+fmtN(r.nDias)+' dias (≈ '+fmt1(r.recH)+' h/mês)')
       + lin('Caixas recuperadas', fmtN(r.cxMes)+' cx/mês', fmtN(r.cxPer)+' cx no período (duração × meta do dia ÷ horas produtivas) × 22 ÷ '+fmtN(r.nDias)))
     + bloco('CÁLCULO FINANCEIRO',
-        lin('HE em hora de linha', r.heMesLinha!=null?fmt1(r.heMesLinha)+' h/mês':nc, r.heMesLinha!=null&&!r.heZero?fmt1(r.heSem)+' × 4,4 semanas ÷ '+fmtN(r.pessoas)+' pessoas':(r.heZero?'sem hora extra praticada':'precisa de HE e pessoas'))
+        lin('HE em hora de linha', r.heMesLinha!=null?fmt1(r.heMesLinha)+' h/mês':nc, r.heMesLinha!=null&&!r.heZero?(r.hePessoa!=null?fmt1(r.hePessoa)+' h/pessoa × 4,4 semanas (cada pessoa em HE = a linha em HE)':fmt1(r.heSem)+' × 4,4 semanas ÷ '+fmtN(r.pessoas)+' pessoas'):(r.heZero?'sem hora extra praticada':'precisa de HE e pessoas'))
       + lin('Horas valorizadas', fmt1(r.horasVal)+' h/mês', r.heTeto?'mín(recuperadas '+fmt1(r.recH)+' h ; HE praticada '+fmt1(r.heMesLinha)+' h)':'sem teto — estimativa')
       + lin('Economia em HE', r.rsMesHE!=null?rs0(r.rsMesHE)+'/mês':nc, r.rsMesHE!=null?fmt1(r.horasVal)+' h × '+rs(r.custoHora)+' × '+(1+r.adic/100).toLocaleString('pt-BR')+' · ano = × 12':'precisa do custo-hora')
       + lin('Custo da parada', r.rsMes!=null?rs0(r.rsMes)+'/mês':nc, r.rsMes!=null?fmt1(r.recH)+' h × '+rs(r.custoHora)+' — ociosidade de folha já paga':'precisa do custo-hora')
@@ -11669,9 +11683,9 @@ function _pgSimHtml(ctx){
           ${inp('pg-sim-inv','INVESTIMENTO (R$)', s.invest||'', 'type="text" inputmode="decimal" placeholder="orçamento do equipamento"', 'Orçamento do equipamento ou da ação. É a base do payback e do ROI.', 'inv')}
           ${gh('CUSTO E HORA EXTRA')}
           ${inp('pg-sim-custo','CUSTO-HORA DA LINHA (R$)', s.custoHora||'', 'type="text" inputmode="decimal" placeholder="R$ por hora parada"', 'Custo de UMA hora da linha inteira (todas as pessoas juntas), não por pessoa.')}
-          ${inp('pg-sim-pessoas','PESSOAS NA EMBALAGEM (qtde)', s.pessoas||'', 'type="number" min="1" step="1" placeholder="pessoas na linha"', 'Converte a hora extra de homem-hora para hora de linha.')}
+          ${inp('pg-sim-pessoas','PESSOAS NA EMBALAGEM (qtde)', s.pessoas||'', 'type="number" min="1" step="1" placeholder="pessoas na linha"', 'Multiplica a hora extra por pessoa para dar o total da equipe (homem-hora) e divide o custo-hora da linha por pessoa.')}
           ${inp('pg-sim-adic','ADICIONAL DE HE (%)', s.adicHE==null?50:s.adicHE, 'type="number" min="0" step="10"', 'Adicional pago sobre a hora extra.')}
-          ${inp('pg-sim-he','HORA EXTRA ATUAL (h/semana, total da embalagem)', s.heSem||'', 'type="text" inputmode="decimal" placeholder="homem-hora · ex.: 8"', 'Soma das horas extras da equipe por semana (homem-hora). É o teto da economia: não se economiza HE que não existe. Digite 0 se não há hora extra.')}
+          ${inp('pg-sim-he','HORA EXTRA ATUAL (h/semana, por pessoa)', s.hePessoa==null?'':s.hePessoa, 'type="text" inputmode="decimal" placeholder="média por pessoa · ex.: 8"', 'Horas extras que CADA pessoa faz por semana, em média (ex.: 8 = cada um fez 8 h). A conta multiplica pelas pessoas para o total da equipe. É o teto da economia: não se economiza HE que não existe. Digite 0 se não há hora extra.')}
           ${gh('RECEITA POTENCIAL (opcional)')}
           ${inp('pg-sim-ticket','TICKET MÉDIO (R$/caixa · opcional)', s.ticket||'', 'type="text" inputmode="decimal" placeholder="deixe vazio se não souber"', 'Valor médio usado para estimar a receita potencial das caixas recuperadas. Não entra na economia, no payback nem no ROI.')}
         </div></div>
@@ -11679,7 +11693,7 @@ function _pgSimHtml(ctx){
       <div id="pg-sim-res">${_pgSimResHtml(r0)}</div>
       <details class="pg-sim-mem"><summary>COMO O SIMULADOR CALCULA <i>· ver memória de cálculo</i></summary>
       <div id="pg-sim-memo">${_pgSimMemHtml(r0)}</div>
-      <div class="pg-diag-nota">Minutos e caixas por causa são os do Pareto deste período (duração produtiva × meta do dia ÷ horas produtivas — a conta única do painel). Mês típico = 22 dias úteis. O CUSTO-HORA é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é digitada em <b>homem-hora</b> — a conta converte antes de comparar (HE em hora de linha = h/semana × 4,4 ÷ pessoas). São <b>três leituras financeiras diferentes, e elas não se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga; a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada; e o POTENCIAL DE RECEITA é o valor econômico da <b>capacidade</b> recuperada (caixas × ticket médio), que <b>não é economia nem faturamento garantido</b> — capacidade recuperada só vira receita se houver demanda. <b>Payback e ROI usam só a ECONOMIA EM HE.</b> Sem ticket médio informado, o potencial de receita simplesmente não é calculado. Cada card traz o <b>mês</b> (o número grande, que alimenta o payback) e o <b>ano</b> logo abaixo — mês típico × 12, que é o valor comparável ao orçamento do equipamento. <b>Simulação de tela: nada vai para a planilha.</b></div>
+      <div class="pg-diag-nota">Minutos e caixas por causa são os do Pareto deste período (duração produtiva × meta do dia ÷ horas produtivas — a conta única do painel). Mês típico = 22 dias úteis. O CUSTO-HORA é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é digitada <b>por pessoa</b> (h/semana, em média) — e é essa a hora de linha: se cada pessoa fez 8 h, a linha fez 8 h de hora extra (HE em hora de linha no mês = h/semana por pessoa × 4,4; total da equipe = × pessoas). São <b>três leituras financeiras diferentes, e elas não se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga; a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada; e o POTENCIAL DE RECEITA é o valor econômico da <b>capacidade</b> recuperada (caixas × ticket médio), que <b>não é economia nem faturamento garantido</b> — capacidade recuperada só vira receita se houver demanda. <b>Payback e ROI usam só a ECONOMIA EM HE.</b> Sem ticket médio informado, o potencial de receita simplesmente não é calculado. Cada card traz o <b>mês</b> (o número grande, que alimenta o payback) e o <b>ano</b> logo abaixo — mês típico × 12, que é o valor comparável ao orçamento do equipamento. <b>Simulação de tela: nada vai para a planilha.</b></div>
       </details>
     </div></div>`;
 }
@@ -11704,7 +11718,7 @@ function _pgSimAtualiza(){
   s.redCausa=redCausa;
   const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
   s.pctRed=g('pg-sim-red'); s.custoHora=g('pg-sim-custo'); s.adicHE=g('pg-sim-adic');
-  s.heSem=g('pg-sim-he');   s.invest=g('pg-sim-inv');     s.pessoas=g('pg-sim-pessoas');
+  s.hePessoa=g('pg-sim-he'); delete s.heSem;   s.invest=g('pg-sim-inv');     s.pessoas=g('pg-sim-pessoas');
   s.ticket=g('pg-sim-ticket');
   const seAnos=document.getElementById('pg-sim-roi-anos'); if(seAnos) s.roiAnos=seAnos.value;
   _pgSimSalva(s);
@@ -11902,8 +11916,8 @@ ${sel.map(t=>{ const pc=(r.porCausa||[]).find(c=>c.tipo===t.tipo); return `<tr><
 <div class="prop-prem">
   <div><em>REDUÇÃO DA PARADA</em><b>${r.pctRes!=null?fmtN(r.pctRes)+'%':'por causa'}</b><u>${r.pctRes!=null?'do tempo das causas atacadas':'média de '+fmt1(r.pctEf)+'% do tempo — o % de cada causa está na tabela do problema'}</u></div>
   <div><em>CUSTO-HORA DA LINHA</em><b>${r.rsMes!=null?rs(_pgSimNum(s.custoHora)):'não informado'}</b><u>${r.rsMes!=null?'por hora de LINHA — todas as pessoas da embalagem juntas (informado pelo gestor)':'os R$, o payback e o ROI ficam de fora desta simulação'}</u></div>
-  <div><em>PESSOAS NA EMBALAGEM</em><b>${r.pessoas>0?fmtN(r.pessoas)+' pessoa(s)':'não informado'}</b><u>${r.pessoas>0?'converte a HE de homem-hora para hora de linha'+(r.custoHoraPessoa!=null?` (custo-hora por pessoa: ${rs(r.custoHoraPessoa)})`:''):'sem a conversão não há % de HE evitável nem teto na economia'}</u></div>
-  <div><em>HORA EXTRA</em><b>${r.heMesHH>0?fmt1(_pgSimNum(s.heSem))+' homem-hora/semana':'adicional de '+fmtN(r.adic)+'%'}</b><u>${r.heMesHH>0?`adicional de ${fmtN(r.adic)}% · ${fmt1(r.heMesHH)}h/mês${r.heMesLinha!=null?` = ${fmt1(r.heMesLinha)}h de linha`:''}`:(r.heZero?'sem hora extra praticada — nada a economizar':'HE atual não informada')}</u></div>
+  <div><em>PESSOAS NA EMBALAGEM</em><b>${r.pessoas>0?fmtN(r.pessoas)+' pessoa(s)':'não informado'}</b><u>${r.pessoas>0?'dá o total da equipe em hora extra (h por pessoa × pessoas)'+(r.custoHoraPessoa!=null?` (custo-hora por pessoa: ${rs(r.custoHoraPessoa)})`:''):'sem a conversão não há % de HE evitável nem teto na economia'}</u></div>
+  <div><em>HORA EXTRA</em><b>${r.heMesLinha>0?(r.hePessoa!=null?fmt1(r.hePessoa)+' h/semana por pessoa':fmt1(r.heSem)+' homem-hora/semana'):'adicional de '+fmtN(r.adic)+'%'}</b><u>${r.heMesLinha>0?`adicional de ${fmtN(r.adic)}%${r.heMesHH>0?` · ${fmt1(r.heMesHH)} homem-hora/mês`:''} = ${fmt1(r.heMesLinha)}h de linha`:(r.heZero?'sem hora extra praticada — nada a economizar':'HE atual não informada')}</u></div>
   <div><em>TICKET MÉDIO<span class="prop-et pot">OPCIONAL</span></em><b>${r.ticket>0?rs2(r.ticket)+' por caixa':'não informado'}</b><u>${r.ticket>0?'informado pelo gestor — usado só no POTENCIAL DE RECEITA, nunca no payback':'potencial de receita não calculado; a simulação operacional não depende dele'}</u></div>
   <div class="${investTxt?'':'aguarda'}"><em>INVESTIMENTO</em><b>${investTxt||'AGUARDANDO ORÇAMENTO'}</b><u>${investTxt?'orçamento informado pelo gestor':'nenhum valor foi estimado neste documento — payback e ROI ficam sem cálculo até o orçamento chegar'}</u></div>
 </div>
@@ -11947,7 +11961,7 @@ ${r.rsMesHE!=null && r.rsMesHE>0
 <div class="prop-met">
   <div><em>MINUTOS E CAIXAS</em><p>Do Pareto deste período (aba PARADAS): duração produtiva de cada parada × meta daquele dia ÷ horas produtivas — <b>a conta única do painel</b>, a mesma do relatório de paradas e da gestão de perdas. Almoço recortado; parada em andamento fora.</p></div>
   <div><em>MÊS E ANO</em><p>Mês típico de <b>22 dias úteis</b> (o período em tela tem ${fmtN(r.nDias)} dia(s) trabalhado(s)); ano = mês × 12.</p></div>
-  <div><em>HOMEM-HORA → HORA DE LINHA</em><p>O custo-hora é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é informada em <b>homem-hora</b> por semana (soma da equipe). As duas grandezas não se comparam diretamente: HE em hora de linha = h/semana × 4,4 ÷ pessoas na embalagem.</p></div>
+  <div><em>HOMEM-HORA → HORA DE LINHA</em><p>O custo-hora é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é informada <b>por pessoa</b> (h/semana, em média). Se cada pessoa faz 8 h de hora extra, a linha faz 8 h: HE em hora de linha no mês = h/semana por pessoa × 4,4; em homem-hora, × pessoas na embalagem.</p></div>
   <div><em>AS TRÊS LEITURAS EM R$ (não se somam)</em><p><b>CUSTO DA PARADA</b> = horas recuperadas × custo-hora — ociosidade de folha já paga, não é economia de caixa. <b>ECONOMIA EM HE</b> = as mesmas horas, limitadas à HE praticada, × custo-hora × (1 + adicional) — a leitura de caixa. A hora base está contida na hora extra: somar as duas seria contagem dupla. <b>POTENCIAL DE RECEITA</b> = caixas recuperadas × ticket médio — valor econômico da capacidade, não é economia, não é lucro e não é faturamento garantido. Payback e ROI usam só a ECONOMIA EM HE.</p></div>
   <div><em>TICKET MÉDIO E POTENCIAL DE RECEITA</em><p>O ticket médio é <b>opcional</b> e informado pelo gestor: sem ele o potencial de receita simplesmente <b>não é calculado</b> — nenhum preço é arbitrado. Com ele, potencial mensal = caixas recuperadas × ticket, e o anual = mensal × 12. Uma caixa recuperada é <b>capacidade produtiva</b>, não uma venda: ela só vira receita se houver demanda para absorvê-la. O ticket é ainda uma <b>média do mix do período</b> — modelos e caixas de valores diferentes entram na mesma média. Por isso este valor <b>nunca entra no payback nem no ROI</b>: receita potencial não é dinheiro disponível para pagar o investimento.</p></div>
   <div><em>TETO DA ECONOMIA</em><p>Não se economiza mais HE do que a praticada: horas valorizadas = mín(recuperadas, HE em hora de linha). O excedente vira <b>ganho de capacidade</b>, anotado no card de caixas — nunca R$. Sem HE/pessoas informadas não há teto e o valor sai como estimativa.</p></div>
