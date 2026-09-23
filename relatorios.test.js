@@ -1874,6 +1874,13 @@ ok('ponto de milhar sem vírgula', _pgSimNum('50.000'), 50000);
 ok('ponto decimal de quem digita em en', _pgSimNum('382.89'), 382.89);
 ok('R$ e espaços não atrapalham', _pgSimNum('R$ 1.234,56'), 1234.56);
 ok('vazio é zero', _pgSimNum(''), 0);
+// Campos em R$ saem formatados ao sair do campo, e a conta lê o formato de volta
+eval(pega('function _pgSimRs('));
+ok('200000 vira R$ 200.000', _pgSimRs('200000').replace(/\s/g, ' '), 'R$ 200.000');
+ok('377,81 vira R$ 377,81', _pgSimRs('377,81').replace(/\s/g, ' '), 'R$ 377,81');
+ok('vazio continua vazio', _pgSimRs(''), '');
+ok('o texto formatado volta ao mesmo número',
+   [_pgSimNum(_pgSimRs('200000')), _pgSimNum(_pgSimRs('377,81')), _pgSimNum(_pgSimRs('1234567,5'))], [200000, 377.81, 1234567.5]);
 
 // por ano = mês típico × 12 ("colocar por ano tbm")
 sim = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },
@@ -2016,8 +2023,25 @@ ok('a nota não repete a frase dos R$',
 const _simHtml = pega('function _pgSimHtml(');
 ok('o CENÁRIO pede as pessoas da embalagem',
    /pg-sim-pessoas/.test(_simHtml) && /PESSOAS NA EMBALAGEM \(qtde\)/.test(_simHtml), true);
-ok('o rótulo da HE diz a grandeza: h/semana, total da embalagem',
-   /HORA EXTRA ATUAL \(h\/semana, total da embalagem\)/.test(_simHtml), true);
+ok('o rótulo da HE diz a grandeza: h/semana, por pessoa',
+   /HORA EXTRA ATUAL \(h\/semana, por pessoa\)/.test(_simHtml), true);
+// v7.65.0 — "seria 15 × 8 hr": HE por pessoa
+{
+  const _hp = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+    custoHora: 382.89, adicHE: 50, pessoas: 15, hePessoa: 8 });
+  ok('8 h por pessoa × 15 = 120 homem-hora/semana', _hp.heSem, 120);
+  ok('em hora de LINHA: 8 × 4,4 = 35,2 h/mês', Math.round(_hp.heMesLinha * 10) / 10, 35.2);
+  ok('e dá o MESMO que o total digitado (120 ÷ 15)',
+     Math.round(_pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+       custoHora: 382.89, adicHE: 50, pessoas: 15, heSem: 120 }).heMesLinha * 10) / 10, 35.2);
+  const _hs = _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+    custoHora: 382.89, adicHE: 50, hePessoa: 8 });
+  ok('por pessoa, o teto existe mesmo sem o nº de pessoas', [_hs.heTeto, _hs.heEstim], [true, false]);
+  ok('0 por pessoa = sem HE a economizar', _pgSimulacao({ ...simBase, selec: { 'Troca de Plastico': true },
+    pctRed: 100, custoHora: 100, pessoas: 15, hePessoa: 0 }).rsMesHE, 0);
+}
+ok('a tela não lê mais o total antigo salvo no aparelho',
+   /heSem:\s*_pgSimNum\(s\.heSem\)/.test(pega('function _pgSimEnt(')), false);
 ok('a nota de rodapé explica por que os R\$ não se somam',
    /não se somam/.test(_simHtml), true);
 ok('o cenário tem o campo do ticket, marcado como opcional',
