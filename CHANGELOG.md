@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.66.3 — 23/09/2026
+
+**SIMULADOR e GESTÃO DE PERDAS: a falha da busca não culpa mais o "cold start".**
+Medido em 23/09/2026: o painel conectado ao Sheets às 13:06:59 e a leitura das
+paradas de 30 dias estourando 3 × 25 s — não era servidor frio, era a leitura
+da aba PARADAS demorando. A mensagem passa a dizer isso, ganha o botão
+**↻ TENTAR DE NOVO** e tenta sozinha uma vez 20 s depois, como a aba PARADAS
+já fazia. Nenhum número muda.
+
+---
+
 ## v7.66.2 — 23/09/2026
 
 **O "negrito muito forte" era negrito SINTÉTICO.** O painel só carregava a
