@@ -371,6 +371,20 @@ body.ger-hist .ger-live-only{display:none!important}
 .pg-sim-wrap .pg-sim-et.prem{color:var(--txt2);border-color:var(--border)}
 /* MEMÓRIA DE CÁLCULO — recolhida: quem decide lê as faixas, quem audita abre. */
 .pg-sim-wrap .pg-sim-mem{margin-top:16px;border-top:1px solid var(--border);padding-top:10px}
+.pg-sim-wrap .pg-sim-ia{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.pg-sim-wrap .pg-sim-ia-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.pg-sim-wrap .pg-sim-ia-tt{font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:1.3px;color:var(--txt);margin-right:auto}
+.pg-sim-wrap .pg-sim-ia-tt i{font-style:normal;font-weight:400;color:var(--txt2);letter-spacing:.3px}
+.pg-sim-wrap .pg-sim-ia-st{font-size:11.5px;color:var(--txt2);line-height:1.5}
+.pg-sim-wrap .pg-sim-ia-st.ok{color:var(--ok)}
+.pg-sim-wrap .pg-sim-ia-st.warn{color:var(--warn)}
+.pg-sim-wrap .pg-sim-ia-st.red{color:var(--red)}
+.pg-sim-wrap .pg-sim-ia-txt{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:10px}
+.pg-sim-wrap .pg-sim-ia-p{border-left:2px solid var(--border);padding-left:10px}
+.pg-sim-wrap .pg-sim-ia-p:first-child{grid-column:1/-1}
+.pg-sim-wrap .pg-sim-ia-p em{font-style:normal;display:block;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2);margin-bottom:3px}
+.pg-sim-wrap .pg-sim-ia-p p{font-size:12.5px;line-height:1.55;color:var(--txt);margin:0}
+@media(max-width:900px){.pg-sim-wrap .pg-sim-ia-txt{grid-template-columns:1fr}}
 .pg-sim-wrap .pg-sim-mem summary{cursor:pointer;font-family:var(--font-d);font-size:10.5px;font-weight:700;letter-spacing:1.3px;color:var(--txt)}
 .pg-sim-wrap .pg-sim-mem summary i{font-style:normal;font-weight:400;color:var(--txt2);letter-spacing:.3px}
 .pg-sim-wrap .pg-sim-mem-t{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
@@ -2782,7 +2796,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.67.0';
+const APP_VER   = '7.69.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3513,14 +3527,17 @@ let TV_TURNO_INFO = { slotsRest: 0, metaH: 0 };
 
 // JSONP — funciona em file:// sem CORS
 let _jsonpSeq = 0;
-function jsonpFetch(url){
+function jsonpFetch(url, ms){
+  // `ms` é opcional: só a redação com IA (que espera o modelo escrever) passa
+  // um valor maior. Todo o resto continua nos 25 s de sempre.
+  ms=ms||25000;
   return new Promise((res,rej)=>{
     // Nome único por chamada: Date.now() sozinho colide quando dois fetches
     // disparam no mesmo milissegundo (ex.: lerSheets + lerMediaHoras no load),
     // fazendo um sobrescrever o callback do outro e travar em "Buscando dados...".
     const cb='rpe_cb_'+Date.now()+'_'+(++_jsonpSeq);
     const s=document.createElement('script');
-    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },25000);
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },ms);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=data=>{ cleanup(); res(data); };
     s.onerror=()=>{ cleanup(); rej(new Error('Erro ao carregar script — URL inválida ou sem acesso')); };
@@ -11796,6 +11813,7 @@ function _pgSimHtml(ctx){
       <div id="pg-sim-memo">${_pgSimMemHtml(r0)}</div>
       <div class="pg-diag-nota">Minutos e caixas por causa são os do Pareto deste período (duração produtiva × meta do dia ÷ horas produtivas — a conta única do painel). Mês típico = 22 dias úteis. O CUSTO-HORA é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é digitada <b>por pessoa</b> (h/semana, em média) — e é essa a hora de linha: se cada pessoa fez 8 h, a linha fez 8 h de hora extra (HE em hora de linha no mês = h/semana por pessoa × 4,4; total da equipe = × pessoas). São <b>três leituras financeiras diferentes, e elas não se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga; a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada; e o POTENCIAL DE RECEITA é o valor econômico da <b>capacidade</b> recuperada (caixas × ticket médio), que <b>não é economia nem faturamento garantido</b> — capacidade recuperada só vira receita se houver demanda. <b>Payback e ROI usam só a ECONOMIA EM HE.</b> Sem ticket médio informado, o potencial de receita simplesmente não é calculado. Cada card traz o <b>mês</b> (o número grande, que alimenta o payback) e o <b>ano</b> logo abaixo — mês típico × 12, que é o valor comparável ao orçamento do equipamento. <b>Simulação de tela: nada vai para a planilha.</b></div>
       </details>
+      <div id="pg-sim-ia" class="pg-sim-ia">${_propIaHtml(s, null)}</div>
     </div></div>`;
 }
 
@@ -11847,6 +11865,169 @@ function _pgSimAtualiza(){
   if(mem) mem.innerHTML=_pgSimMemHtml(r);
   const hc=document.getElementById('pg-sim-he-calc');
   if(hc) hc.innerHTML=_pgSimHeCalc(r);
+  _propIaPintar();
+}
+
+// ── A PROPOSTA MONTADA UMA VEZ (papel e redação com IA) ─────────────────────
+// O PDF e a redação com IA leem os MESMOS números: quem monta é _propMontar.
+// Duas montagens divergiriam na primeira mexida — a história de sempre.
+const _propRs=v=>'R$ '+fmtN(Math.round(v));
+// O ticket é R$/caixa e costuma ter centavos: arredondar esconderia a
+// precisão que o gestor digitou.
+const _propRs2=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function _propMontar(ctx, s){
+  const st=(ctx&&ctx.st)||{};
+  const sel=(st.tipos||[]).filter(t=>!t.planej && s.selec && s.selec[t.tipo]);
+  if(!sel.length) return null;
+  const r=_pgSimulacao(_pgSimEnt(ctx, s));
+  const rs=_propRs;
+  const causas=sel.map(t=>t.tipo).join(' + ');
+  const selMin=sel.reduce((a,t)=>a+(t.min||0),0);
+  const pctNPdoSel=st.totMinNP>0?selMin/st.totMinNP*100:0;
+  const investTxt=r.investTotal>0?rs(r.investTotal):null;
+  const nomeInv=_rpEsc(String(s.nome||'').trim());
+  const RECOM={aprovar:'APROVAR',ressalva:'APROVAR COM RESSALVA',adiar:'ADIAR — PEDIR MAIS DADOS',nao:'NÃO RECOMENDAR'}[s.recom]||'';
+  const payTxt=r.pay!=null?fmt1(r.pay)+' meses':null;
+  const ocor=sel.reduce((a,t)=>a+(t.qtd||0),0);
+  const cxPerd=sel.reduce((a,t)=>a+(t.perd||0),0);
+  const ecoLiqTxt=r.ecoLiqMes!=null?rs(r.ecoLiqMes):null;
+  // ── SENSIBILIDADE (passo 2, 23/09/2026) ─────────────────────────────
+  // A diretoria pergunta "e se não der 80%?". A resposta sai do painel, não
+  // da redação: a MESMA _pgSimulacao roda três vezes com redução uniforme
+  // de 50, 70 e 90% em todas as causas atacadas (o % por causa é
+  // desligado de propósito — senão "70%" não seria 70% em nenhuma delas).
+  // O cenário do gestor entra como quarta linha, com o % que ele digitou.
+  const entBase=_pgSimEnt(ctx, s);
+  const sens=PROP_SENS_PCTS.map(p=>({pct:p, r:_pgSimulacao({...entBase, pctRed:p, redCausa:{}}), gestor:false}));
+  const _gestorIgual=r.pctRes!=null && sens.some(x=>x.pct===r.pctRes);
+  if(_gestorIgual) sens.find(x=>x.pct===r.pctRes).gestor=true;
+  const sensLinhas=(_gestorIgual?sens:sens.concat([{pct:null, r, gestor:true}])).sort((a,b)=>(a.pct==null?a.r.pctEf:a.pct)-(b.pct==null?b.r.pctEf:b.pct));
+  const headline=`<b>${nomeInv||'O investimento proposto'}</b>${investTxt?`, de <b>${investTxt}</b>`:', <b>com orçamento pendente</b>'}, ataca <b>${_rpEsc(causas)}</b> com redução ${r.pctRes!=null?'de '+fmtN(r.pctRes)+'%':_pgSimPctTxt(r)}: recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
+    +(r.rsMesHE!=null?` e economiza <b>${rs(r.rsMesHE)} de HE por mês (${rs(r.rsAnoHE)} por ano)</b>${r.custoRecMes>0?`, ${ecoLiqTxt}/mês líquidos da manutenção`:''}${r.heEstim?', em estimativa sem o teto da HE praticada':''}`:'')
+    +(payTxt?`. Paga-se em <b>${payTxt}</b>`:'')
+    +(r.roi!=null?`, com ROI de <b>${fmt1(r.roi)}% em ${r.anos} anos</b>`:'')+'.';
+  return {r, sel, sens, sensLinhas, causas, selMin, pctNPdoSel, ocor, cxPerd, investTxt, nomeInv, RECOM, payTxt, ecoLiqTxt, headline, st};
+}
+
+// ── REDAÇÃO DA PROPOSTA COM IA (passo 3, 23/09/2026) ───────────────────────
+// O painel calcula; o modelo só ESCREVE. _propFatos monta os fatos que vão ao
+// .gs (redigirProposta) — já FORMATADOS como o papel imprime, para o texto
+// sair com os mesmos "R$ 7.719" e "22,4 meses" da tabela. O .gs devolve os
+// cinco parágrafos e a lista de números que NÃO estavam nos fatos; o painel
+// guarda o texto com o hash dos fatos e só imprime quando o hash bate — número
+// mudou, texto sai da capa até o gestor redigir de novo.
+// ⚠ A chave da API mora nas Propriedades do script do Apps Script, nunca aqui.
+function _propFatos(m, s, de, ate){
+  const r=m.r, rs=_propRs, rs2=_propRs2;
+  return {
+    periodo:{de, ate, diasTrabalhados:r.nDias, horasProdutivasDia:fmt1(m.st.horasProd||0)+'h'},
+    investimento:{nome:String(s.nome||'').trim()||null, descricao:String(s.descr||'').trim()||null,
+      fornecedor:String(s.forn||'').trim()||null, prazo:String(s.prazo||'').trim()||null,
+      total:m.investTxt, equipamento:r.invest>0?rs(r.invest):null, instalacao:r.instal>0?rs(r.instal):null,
+      manutencaoAno:r.manutAno>0?rs(r.manutAno):null, manutencaoMes:r.manutAno>0?rs(r.custoRecMes):null},
+    problema:{causasAtacadas:m.sel.map(t=>({tipo:t.tipo, ocorrencias:t.qtd, tempoParado:_fmtMinPar(t.min), caixasPerdidas:fmtN(t.perd)+' cx'})),
+      ocorrencias:m.ocor, tempoParado:_fmtMinPar(m.selMin), fatiaDoNaoProgramado:fmtP(m.pctNPdoSel),
+      tempoNaoProgramadoTotal:_fmtMinPar(m.st.totMinNP||0), caixasPerdidas:fmtN(m.cxPerd)+' cx',
+      disponibilidadeAtual:r.dispAntes!=null?fmt1(r.dispAntes)+'%':null, metaDisponibilidade:PG_META_DISP+'%'},
+    cenario:{reducao:_pgSimPctTxt(r), reducaoPorCausa:(r.porCausa||[]).map(c=>({tipo:c.tipo, pct:fmtN(c.pct)+'%'})),
+      custoHoraLinha:r.rsMes!=null?rs2(_pgSimNum(s.custoHora)):null, pessoas:r.pessoas>0?r.pessoas:null,
+      horaExtraSemanaPorPessoa:r.hePessoa!=null?fmt1(r.hePessoa)+' h':null, adicionalHE:fmtN(r.adic)+'%',
+      ticketMedio:r.ticket>0?rs2(r.ticket)+' por caixa':null},
+    capacidade:{tempoMes:fmtN(Math.round(r.minMes))+' min', horasAno:fmt1(r.horasAno)+'h', caixasMes:fmtN(r.cxMes)+' cx', caixasAno:fmtN(r.cxAno)+' cx',
+      disponibilidadeSimulada:r.dispDepois!=null?fmt1(r.dispDepois)+'%':null,
+      horaExtraEvitavel:r.pctHE!=null?fmt1(Math.min(100,r.pctHE))+'% da HE':null},
+    economiaHE:{mes:r.rsMesHE!=null?rs(r.rsMesHE):null, ano:r.rsAnoHE!=null?rs(r.rsAnoHE):null,
+      liquidaMes:r.custoRecMes>0&&m.ecoLiqTxt?m.ecoLiqTxt:null, estimativaSemTeto:!!r.heEstim},
+    outrasLeituras:{custoDaParadaMes:r.rsMes!=null?rs(r.rsMes):null, custoDaParadaAno:r.rsAno!=null?rs(r.rsAno):null,
+      potencialReceitaMes:r.receitaMes!=null?rs(r.receitaMes):null, potencialReceitaAno:r.receitaAno!=null?rs(r.receitaAno):null,
+      nota:'custo da parada é ociosidade de folha já paga; potencial de receita é capacidade, não venda; nenhum dos dois se soma à economia em HE'},
+    retorno:{payback:m.payTxt, roi:r.roi!=null?fmt1(r.roi)+'%':null, horizonteAnos:r.anos, ganhoAcumulado:r.ganhoAcum!=null?rs(r.ganhoAcum):null},
+    sensibilidade:m.sensLinhas.map(x=>({reducao:x.pct!=null?fmtN(x.pct)+'%':_pgSimPctTxt(x.r), cenarioDoGestor:x.gestor,
+      tempoMes:fmtN(Math.round(x.r.minMes))+' min', caixasMes:fmtN(x.r.cxMes)+' cx', economiaHEMes:x.r.rsMesHE!=null?rs(x.r.rsMesHE):null,
+      payback:x.r.pay!=null?fmt1(x.r.pay)+' meses':null, roi:x.r.roi!=null?fmt1(x.r.roi)+'%':null,
+      disponibilidade:x.r.dispDepois!=null?fmt1(x.r.dispDepois)+'%':null})),
+    recomendacaoDoGestor:m.RECOM||null,
+    natureza:'simulação sobre as paradas apontadas no período — não é medição'
+  };
+}
+function _propHash(obj){
+  const str=JSON.stringify(obj); let h=5381;
+  for(let i=0;i<str.length;i++) h=((h<<5)+h+str.charCodeAt(i))|0;
+  return (h>>>0).toString(36);
+}
+// O texto salvo só vale para os números de agora, e sem número fora da lista.
+function _propIaValida(s, hashAtual){
+  const ia=s&&s.ia;
+  if(!ia||!ia.texto||!ia.hash) return null;
+  if(ia.hash!==hashAtual) return null;
+  if(ia.numerosFora&&ia.numerosFora.length) return null;
+  return ia;
+}
+let PROP_IA_RODANDO=false, PROP_IA_FALHA=null, PROP_IA_ERRO='';
+function _propIaFalhaInfo(){
+  if(PROP_IA_FALHA==='sem-url')      return 'configure a URL do Apps Script nas configurações (⚙)';
+  if(PROP_IA_FALHA==='sem-chave')    return 'o Apps Script não tem a chave da API: no editor, Configurações do projeto → Propriedades do script → CLAUDE_API_KEY (e re-deploy)';
+  if(PROP_IA_FALHA==='sem-endpoint') return 'o backend não conhece a ação redigirProposta — falta colar o .gs v5.6 no editor e re-deployar';
+  if(PROP_IA_FALHA==='sem-resposta') return 'o servidor não respondeu a tempo (o modelo leva até ~40 s para escrever) — tente de novo';
+  if(PROP_IA_FALHA==='erro')         return 'o backend devolveu erro: '+_rpEsc(PROP_IA_ERRO||'sem detalhe');
+  return '';
+}
+async function _propRedigir(){
+  if(PROP_IA_RODANDO) return;
+  const c=PG_TELA_CACHE[SIM_ULT]; if(!c||!c.ctx) return;
+  const s=_pgSimEstado();
+  const m=_propMontar(c.ctx, s);
+  if(!m){ alert('Marque no simulador a(s) parada(s) a atacar antes de redigir.'); return; }
+  if(!CFG.sheetsUrl){ PROP_IA_FALHA='sem-url'; _propIaPintar(); return; }
+  const de=dGet('sim-de')||'', ate=dGet('sim-ate')||'';
+  const fatos=_propFatos(m, s, de, ate);
+  const hash=_propHash(fatos);
+  PROP_IA_RODANDO=true; PROP_IA_FALHA=null; PROP_IA_ERRO=''; _propIaPintar();
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=redigirProposta&dados='+encodeURIComponent(JSON.stringify(fatos));
+  try{
+    // Duas tentativas em SEQUÊNCIA, com 60 s cada: o modelo escreve em 15–40 s
+    // e o Apps Script atende uma execução por vez. Repetir é seguro — o .gs
+    // guarda o resultado por hash, então a 2ª tentativa pega o que a 1ª gerou.
+    let json=null, ultimo=null;
+    for(let t=1;t<=2;t++){
+      try{ json=await jsonpFetch(url, 60000); break; }
+      catch(e){ ultimo=e; if(t<2) await new Promise(r=>setTimeout(r,1500)); }
+    }
+    if(!json){ PROP_IA_FALHA='sem-resposta'; PROP_IA_ERRO=ultimo&&ultimo.message?ultimo.message:''; }
+    else if(json.ok===false && json.erro==='sem-chave'){ PROP_IA_FALHA='sem-chave'; }
+    else if(json.ok===false){ PROP_IA_FALHA='erro'; PROP_IA_ERRO=String(json.erro||''); }
+    else if(!json.texto){ PROP_IA_FALHA='sem-endpoint'; }   // o .gs antigo cai no getDados()
+    else{
+      const s2=_pgSimEstado();
+      s2.ia={hash, texto:json.texto, numerosFora:json.numerosFora||[], modelo:json.modelo||'', em:json.em||'', cache:!!json.cache};
+      _pgSimSalva(s2);
+    }
+  }finally{ PROP_IA_RODANDO=false; _propIaPintar(); }
+}
+function _propIaDescartar(){ const s=_pgSimEstado(); delete s.ia; _pgSimSalva(s); _propIaPintar(); }
+function _propIaPintar(){
+  const el=document.getElementById('pg-sim-ia'); if(!el) return;
+  const c=PG_TELA_CACHE[SIM_ULT]; const s=_pgSimEstado();
+  const m=c&&c.ctx?_propMontar(c.ctx, s):null;
+  const hash=m?_propHash(_propFatos(m, s, dGet('sim-de')||'', dGet('sim-ate')||'')):null;
+  el.innerHTML=_propIaHtml(s, hash);
+}
+// DESENHO do bloco: estado + os cinco parágrafos. Nenhuma conta.
+function _propIaHtml(s, hashAtual){
+  const ia=s&&s.ia;
+  const btn=`<button class="btn btn-acc" onclick="_propRedigir()"${PROP_IA_RODANDO?' disabled':''} style="font-size:10px;padding:4px 10px">${PROP_IA_RODANDO?'✍ REDIGINDO…':(ia?'✍ REDIGIR DE NOVO':'✍ REDIGIR COM IA')}</button>`;
+  let estado='';
+  if(PROP_IA_RODANDO) estado='<span class="pg-sim-ia-st">o modelo está escrevendo — leva de 15 a 40 s</span>';
+  else if(PROP_IA_FALHA) estado='<span class="pg-sim-ia-st red">'+_propIaFalhaInfo()+'</span>';
+  else if(!ia) estado='<span class="pg-sim-ia-st">nenhum texto ainda — o modelo redige os cinco parágrafos da proposta a partir dos números desta tela, sem inventar número nenhum</span>';
+  else if(ia.numerosFora&&ia.numerosFora.length) estado='<span class="pg-sim-ia-st red">texto REPROVADO pela guarda de números: '+_rpEsc(ia.numerosFora.join(', '))+' não estão nos dados — não vai ao papel; redija de novo</span>';
+  else if(hashAtual && ia.hash!==hashAtual) estado='<span class="pg-sim-ia-st warn">texto DESATUALIZADO — os números da simulação mudaram desde a redação; ele não vai ao papel até redigir de novo</span>';
+  else estado='<span class="pg-sim-ia-st ok">texto VÁLIDO para os números de agora — vai à capa (resumo) e à página 2 da impressão executiva · '+_rpEsc(ia.modelo||'')+' · '+_rpEsc(ia.em||'')+(ia.cache?' · do cache':'')+'</span>';
+  const par=(t,k)=>`<div class="pg-sim-ia-p"><em>${t}</em><p>${_rpEsc(ia.texto[k]||'')}</p></div>`;
+  return `<div class="pg-sim-ia-hd"><span class="pg-sim-ia-tt">REDAÇÃO DA PROPOSTA <i>· IA escreve, o painel confere os números</i></span>${btn}${ia?'<button class="btn btn-ghost" onclick="_propIaDescartar()" style="font-size:10px;padding:4px 10px">DESCARTAR</button>':''}</div>
+  <div>${estado}</div>
+  ${ia?`<div class="pg-sim-ia-txt">${par('RESUMO EXECUTIVO','resumo')}${par('O PROBLEMA','problema')}${par('A SOLUÇÃO','solucao')}${par('RISCOS E RESSALVAS','riscos')}${par('RECOMENDAÇÃO','recomendacao')}</div>`:''}
+  <div class="pg-diag-nota">O texto é redigido pelo Claude no Apps Script, com a chave da API guardada lá (Propriedades do script) — nunca neste painel. Ele recebe só os números que esta tela já calculou e devolve cinco parágrafos; qualquer número que não esteja nos dados é apontado e o texto não vai ao papel. Se você mudar um campo do cenário, o texto fica desatualizado e sai da impressão até redigir de novo. Leia antes de imprimir: a assinatura é sua, não do modelo.</div>`;
 }
 
 // ── IMPRESSÃO EXECUTIVA DO SIMULADOR — proposta de investimento ─────────────
@@ -11892,23 +12073,13 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   let corpo='';
   try{
     const st=ctx.st;
-    const sel=(st.tipos||[]).filter(t=>!t.planej && s.selec[t.tipo]);
-    if(!sel.length){ win.close(); alert('As paradas marcadas no simulador não aparecem neste período — confira o período da tela.'); return; }
-    const r=_pgSimulacao(_pgSimEnt(ctx, s));
-    const rs=v=>'R$ '+fmtN(Math.round(v));
-    // O ticket é R$/caixa e costuma ter centavos: arredondar esconderia a
-    // precisão que o gestor digitou.
-    const rs2=v=>'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    const causas=sel.map(t=>t.tipo).join(' + ');
-    const selMin=sel.reduce((a,t)=>a+(t.min||0),0);
-    const pctNPdoSel=st.totMinNP>0?selMin/st.totMinNP*100:0;
-    const investTxt=r.investTotal>0?rs(r.investTotal):null;
-    const nomeInv=_rpEsc(String(s.nome||'').trim());
-    const RECOM={aprovar:'APROVAR',ressalva:'APROVAR COM RESSALVA',adiar:'ADIAR — PEDIR MAIS DADOS',nao:'NÃO RECOMENDAR'}[s.recom]||'';
-    const payTxt=r.pay!=null?fmt1(r.pay)+' meses':null;
-    const ocor=sel.reduce((a,t)=>a+(t.qtd||0),0);
-    const cxPerd=sel.reduce((a,t)=>a+(t.perd||0),0);
-
+    const m=_propMontar(ctx, s);
+    if(!m){ win.close(); alert('As paradas marcadas no simulador não aparecem neste período — confira o período da tela.'); return; }
+    const {r,sel,sensLinhas,causas,selMin,pctNPdoSel,ocor,cxPerd,investTxt,nomeInv,RECOM,payTxt,ecoLiqTxt}=m;
+    const rs=_propRs, rs2=_propRs2;
+    // A redação com IA só entra se foi feita SOBRE ESTES números (hash igual)
+    // e sem número fora da lista — senão o papel sai sem ela, e diz por quê na tela.
+    const ia=_propIaValida(s, _propHash(_propFatos(m, s, de, ate)));
     // ── PELE DA PROPOSTA (escopo .prop) ───────────────────────────────────
     // O <head> e as ~150 regras continuam no _rpDocParadas, que os QUATRO
     // relatórios dividem — copiar o bloco seria a história do cabeçalho dos
@@ -11917,7 +12088,7 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
     // acima do 8px do relatório de controle. Escopada em .prop, ela não
     // encosta em paradas, gestão de perdas nem minutos/1.000.
     const skin=`<style>
-  .prop .rp-sec-ttl{color:#1a1a2e;font-size:8.5px;letter-spacing:3px;border-bottom:1.5px solid #1a1a2e;margin:11px 0 6px}
+  .prop .rp-sec-ttl{color:#1a1a2e;font-size:8.5px;letter-spacing:3px;border-bottom:1.5px solid #1a1a2e;margin:9px 0 5px}
   .prop .rp-note{font-family:'Barlow',Arial,sans-serif;font-size:10px;color:#5b6470;line-height:1.55;margin-top:8px}
   .prop .pg-abre{padding:9px 14px}
   .prop .pg-abre-ttl{font-size:17px}
@@ -12026,36 +12197,30 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   .prop-recom.aguarda b{color:#8a5a00;font-size:13px;font-family:'Barlow',Arial,sans-serif;font-weight:600}
   /* A assinatura fecha a folha 1: medido, com 22px de respiro ela caía sozinha
      na folha 2. O que se corta é ar, nunca fonte de leitura. */
-  .prop-ass{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:14px;page-break-inside:avoid}
+  .prop-ass{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:10px;page-break-inside:avoid}
   .prop-ass div{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.6px;color:#5b6470;text-align:center}
   .prop-ass span{display:block;border-top:1px solid #1a1a2e;margin-bottom:5px}
   .prop-quebra{page-break-before:always;break-before:page;height:0}
+  /* REDAÇÃO COM IA (passo 3): o resumo cabe na capa em ~3 linhas (IA_RESUMO_MAX
+     no .gs); os quatro parágrafos abrem a folha 2, antes da evidência. */
+  .prop-ia-resumo{margin:6px 0 0;padding:5px 11px;background:rgba(255,255,255,.08);border-left:3px solid #FF5C1F;font-size:10px;line-height:1.45;color:#fff}
+  .prop-ia-resumo em{font-style:normal;display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:1.8px;color:#c8ced8;margin-right:8px}
+  .prop-et.ia{color:#1a1a2e;background:#e8ecf3;border:1px solid #c5cdda}
+  .prop-ia{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-bottom:6px}
+  .prop-ia>div{border-left:2px solid #edf2f7;padding:2px 0 2px 11px;page-break-inside:avoid}
+  .prop-ia em{font-style:normal;display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.8px;color:#5b6470;margin-bottom:3px}
+  .prop-ia p{font-size:10.5px;line-height:1.55;color:#1f2328}
   @media print{ .prop-stats,.prop-prem,.prop-ret,.prop-fluxo,.prop-recom,.prop-ass{page-break-inside:avoid} }
 </style>`;
 
-    // ── SENSIBILIDADE (passo 2, 23/09/2026) ─────────────────────────────
-    // A diretoria pergunta "e se não der 80%?". A resposta sai do painel, não
-    // da redação: a MESMA _pgSimulacao roda três vezes com redução uniforme
-    // de 50, 70 e 90% em todas as causas atacadas (o % por causa é
-    // desligado de propósito — senão "70%" não seria 70% em nenhuma delas).
-    // O cenário do gestor entra como quarta linha, com o % que ele digitou.
-    const entBase=_pgSimEnt(ctx, s);
-    const sens=PROP_SENS_PCTS.map(p=>({pct:p, r:_pgSimulacao({...entBase, pctRed:p, redCausa:{}}), gestor:false}));
-    const _gestorIgual=r.pctRes!=null && sens.some(x=>x.pct===r.pctRes);
-    if(_gestorIgual) sens.find(x=>x.pct===r.pctRes).gestor=true;
-    const sensLinhas=(_gestorIgual?sens:sens.concat([{pct:null, r, gestor:true}])).sort((a,b)=>(a.pct==null?a.r.pctEf:a.pct)-(b.pct==null?b.r.pctEf:b.pct));
-    const ecoLiqTxt=r.ecoLiqMes!=null?rs(r.ecoLiqMes):null;
-    const oQueResolve=`${_rpEsc(causas)}: ${fmtN(ocor)} paradas e ${_fmtMinPar(selMin)} parados no período (${fmtP(pctNPdoSel)} do tempo não programado), ${fmtN(cxPerd)} cx estimadas perdidas`;
-    const headline=`<b>${nomeInv||'O investimento proposto'}</b>${investTxt?`, de <b>${investTxt}</b>`:', <b>com orçamento pendente</b>'}, ataca <b>${_rpEsc(causas)}</b> com redução ${r.pctRes!=null?'de '+fmtN(r.pctRes)+'%':_pgSimPctTxt(r)}: recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
-      +(r.rsMesHE!=null?` e economiza <b>${rs(r.rsMesHE)} de HE por mês (${rs(r.rsAnoHE)} por ano)</b>${r.custoRecMes>0?`, ${ecoLiqTxt}/mês líquidos da manutenção`:''}${r.heEstim?', em estimativa sem o teto da HE praticada':''}`:'')
-      +(payTxt?`. Paga-se em <b>${payTxt}</b>`:'')
-      +(r.roi!=null?`, com ROI de <b>${fmt1(r.roi)}% em ${r.anos} anos</b>`:'')+'.';
+    const headline=m.headline;
     const sensTd=(x)=>{ const q=x.r; return `<tr${x.gestor?' class="prop-sens-g"':''}><td>${x.pct!=null?fmtN(x.pct)+'%':_pgSimPctTxt(q)}${x.gestor?' <i>cenário do gestor</i>':''}</td><td>${fmtN(Math.round(q.minMes))} min</td><td>${fmtN(q.cxMes)} cx</td><td>${q.rsMesHE!=null?rs(q.rsMesHE):'—'}</td><td>${q.pay!=null?fmt1(q.pay)+' meses':'—'}</td><td>${q.roi!=null?fmt1(q.roi)+'%':'—'}</td><td>${q.dispDepois!=null?fmt1(q.dispDepois)+'%':'—'}</td></tr>`; };
 
     corpo=skin+`<div class="prop">
 <div class="pg-abre so">
   <div class="pg-abre-ttl">A PROPOSTA EM UMA FRASE</div>
   <div class="pg-abre-txt">${headline}</div>
+  ${ia?`<div class="prop-ia-resumo"><em>RESUMO EXECUTIVO<span class="prop-et ia">REDIGIDO COM IA</span></em>${_rpEsc(ia.texto.resumo)}</div>`:''}
   <div class="prop-abre-selo">SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO · PÁGINA 1 = DECISÃO · PÁGINA 2 = EVIDÊNCIA · ANEXO = MÉTODO</div>
 </div>
 
@@ -12105,6 +12270,14 @@ ${sensLinhas.map(sensTd).join('')}
 </div>
 
 <div class="prop-quebra"></div>
+${ia?`<div class="rp-sec-ttl">LEITURA DO GESTOR<span class="prop-selo">REDIGIDA COM IA SOBRE OS NÚMEROS DO PAINEL · REVISADA PELO GESTOR</span></div>
+<div class="prop-ia">
+  <div><em>O PROBLEMA</em><p>${_rpEsc(ia.texto.problema)}</p></div>
+  <div><em>A SOLUÇÃO</em><p>${_rpEsc(ia.texto.solucao)}</p></div>
+  <div><em>RISCOS E RESSALVAS</em><p>${_rpEsc(ia.texto.riscos)}</p></div>
+  <div><em>RECOMENDAÇÃO</em><p>${_rpEsc(ia.texto.recomendacao)}</p></div>
+</div>
+<div class="rp-note">Texto redigido por IA (${_rpEsc(ia.modelo||'')}) em ${_rpEsc(ia.em||'')} a partir dos números desta simulação, sem número novo — conferido pelo painel — e revisado pelo gestor antes de imprimir. As contas são as das seções seguintes.</div>`:''}
 <div class="rp-sec-ttl">6 ▸ A EVIDÊNCIA — O PROBLEMA MEDIDO</div>
 <table class="pgq-plano"><thead><tr><th>CAUSA ATACADA</th><th>OCORRÊNCIAS</th><th>TEMPO PARADO</th><th>CAIXAS PERDIDAS</th><th>REDUÇÃO SIMULADA</th></tr></thead><tbody>
 ${sel.map(t=>{ const pc=(r.porCausa||[]).find(c=>c.tipo===t.tipo); return `<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtMinPar(t.min)}</td><td>${fmtN(t.perd)} cx</td><td>${pc?fmtN(pc.pct)+'%':'—'}</td></tr>`; }).join('')}

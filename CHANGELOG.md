@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.69.0 — 23/09/2026 · ⚠ re-deploy (.gs v5.6)
+
+**PROPOSTA IMPRESSA: redação com IA sobre os números do painel** (passo 3 da
+análise do diretor). Na aba SIMULADOR, o bloco **REDAÇÃO DA PROPOSTA** com o
+botão **✍ REDIGIR COM IA**: o painel manda ao Apps Script os números que ele
+mesmo calculou (problema, cenário, capacidade, economia, retorno,
+sensibilidade, recomendação) e o Claude devolve cinco parágrafos — resumo
+executivo, problema, solução, riscos e recomendação.
+
+- **O modelo não calcula nada e não pode inventar número.** O `.gs` confere
+  cada número do texto contra os dados enviados; número fora da lista é
+  apontado e o texto **não vai ao papel** (a tela diz quais). Mudou um campo do
+  cenário? O texto fica **DESATUALIZADO** e sai da impressão até redigir de
+  novo.
+- Na impressão executiva: o **RESUMO EXECUTIVO** entra na capa (folha 1,
+  medida: continua fechando com as assinaturas) e os quatro parágrafos abrem a
+  folha 2 como **LEITURA DO GESTOR**, marcados como redigidos com IA e
+  revisados pelo gestor.
+- ⚠ **re-deploy do `.gs` (v5.6)** e a **chave da API** em *Configurações do
+  projeto → Propriedades do script → `CLAUDE_API_KEY`*. A chave nunca vai no
+  HTML (público na Vercel) nem volta em resposta. Sem chave, o bloco diz o que
+  falta; com o `.gs` antigo, diz que falta o re-deploy. O resultado fica em
+  cache por 6 h por cenário — reimprimir não paga de novo.
+- Correção: o `APP_VER` do rodapé não tinha subido na v7.68.0 (mostrava
+  7.67.0). Nenhum número mudou de conta.
+
+---
+
 ## v7.68.0 — 23/09/2026
 
 **PROPOSTA IMPRESSA: a página 1 virou PÁGINA DE DECISÃO** (passo 2 da análise

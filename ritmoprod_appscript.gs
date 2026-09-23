@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.6 — REDAÇÃO DA PROPOSTA DE INVESTIMENTO COM IA (redigirProposta)
+//               O painel manda os NÚMEROS que ele mesmo calculou (simulador) e
+//               o Claude redige os cinco parágrafos da proposta em cima deles.
+//               A chave da API mora em Propriedades do script (CLAUDE_API_KEY)
+//               — nunca no HTML, que é público na Vercel. Número que não veio
+//               nos dados é apontado (numerosFora) e o painel não imprime o
+//               texto. Resultado em cache por 6 h, pelo hash dos dados.
+//               Sem a chave, a ação devolve erro 'sem-chave' e nada mais muda.
 // Versão: 5.5 — PARADAS COM SEGUNDOS (microparadas)
 //               INICIO/FIM da aba PARADAS passam a ser gravados como HH:mm:ss
 //               (o mobile manda a hora com segundos). DURACAO_MIN vira minuto
@@ -1006,6 +1014,7 @@ function doGet(e) {
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
     else if (act === 'getConfigPainel') result = { ok: true, painelConfig: getConfigPainel() };
+    else if (act === 'redigirProposta') result = redigirProposta(p);
     else                              result = getDados();
   } catch(err) {
     result = { ok: false, erro: err.message, stack: err.stack };
@@ -3903,5 +3912,201 @@ function corrigirDatasHistorico() {
   }
   Logger.log('Total de datas corrigidas no HISTORICO: ' + mudou);
   return { ok: true, corrigidas: mudou };
+}
+
+
+// ════════════════════════════════════════════════════════
+// REDAÇÃO DA PROPOSTA DE INVESTIMENTO COM IA (v5.6)
+// ════════════════════════════════════════════════════════
+// O painel calcula tudo (simulador: economia, payback, ROI, sensibilidade) e
+// manda os números prontos em `dados` (JSON). Aqui só se REDIGE: o modelo
+// escreve resumo executivo, problema, solução, riscos e recomendação usando
+// exclusivamente esses números. Nenhuma conta é feita aqui, e nenhum número
+// pode nascer aqui — _iaNumerosForaDaLista aponta qualquer número do texto que
+// não esteja nos dados, e o painel não imprime texto com número fora.
+//
+// CHAVE: Configurações do projeto → Propriedades do script → CLAUDE_API_KEY.
+// Não vai no código (o .gs é colado no editor, mas o HTML é público) e não é
+// devolvida em resposta nenhuma. Sem ela: {ok:false, erro:'sem-chave'}.
+//
+// Custo: uma chamada por CENÁRIO (hash dos dados) — o resultado fica no
+// CacheService por 6 h; reimprimir a mesma proposta não paga de novo.
+const IA_MODELO      = 'claude-opus-5';
+const IA_MAX_TOKENS  = 1400;
+const IA_CHAVE_PROP  = 'CLAUDE_API_KEY';
+const IA_CACHE_SEG   = 21600;                 // 6 h — o teto do CacheService
+const IA_URL         = 'https://api.anthropic.com/v1/messages';
+const IA_VERSAO_API  = '2023-06-01';
+const IA_RESUMO_MAX  = 320;                   // cabe na folha 1 (medido: 420 estourava a capa em 4px)
+
+// Schema do que o modelo devolve — cinco textos, nada mais.
+function _iaSchemaProposta() {
+  const str = function (max) { return { type: 'string', maxLength: max }; };
+  return {
+    type: 'object', additionalProperties: false,
+    required: ['resumo', 'problema', 'solucao', 'riscos', 'recomendacao'],
+    properties: {
+      resumo:       str(IA_RESUMO_MAX),
+      problema:     str(700),
+      solucao:      str(700),
+      riscos:       str(700),
+      recomendacao: str(500)
+    }
+  };
+}
+
+// Todos os números que aparecem nos dados (recursivo), em valor numérico.
+// É a lista do que o texto PODE conter.
+function _iaNumerosPermitidos(d, acc) {
+  acc = acc || [];
+  if (d == null) return acc;
+  if (typeof d === 'number' && isFinite(d)) { acc.push(d); return acc; }
+  if (typeof d === 'string') {
+    // "R$ 7.219", "85,6%", "22,4 meses" escritos nos dados também valem
+    const m = d.match(/\d[\d.]*(?:,\d+)?/g) || [];
+    m.forEach(function (t) { const n = _iaNumeroPtBr(t); if (n != null) acc.push(n); });
+    return acc;
+  }
+  if (Array.isArray(d)) { d.forEach(function (x) { _iaNumerosPermitidos(x, acc); }); return acc; }
+  if (typeof d === 'object') { Object.keys(d).forEach(function (k) { _iaNumerosPermitidos(d[k], acc); }); return acc; }
+  return acc;
+}
+function _iaNumeroPtBr(t) {
+  t = String(t).trim();
+  if (!t) return null;
+  // 1.234,56 → 1234.56 · 1.234 → 1234 · 85,6 → 85.6 · 2026 → 2026
+  const s = t.indexOf(',') >= 0 ? t.replace(/\./g, '').replace(',', '.') : t.replace(/\.(?=\d{3}(\D|$))/g, '');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+// Números do TEXTO que não estão na lista. Tolerâncias, de propósito curtas:
+// igual ao permitido (±0,05), o permitido arredondado (7.219,4 → 7.219; 22,4 → 22),
+// o permitido em milhar ("R$ 162 mil"), ano (2000–2099) e contagem pequena
+// (≤ 12: "três cenários", "12 meses", "5 anos").
+function _iaNumerosForaDaLista(texto, permitidos) {
+  const fora = [];
+  const achados = String(texto || '').match(/\d[\d.]*(?:,\d+)?/g) || [];
+  achados.forEach(function (t) {
+    const n = _iaNumeroPtBr(t);
+    if (n == null) return;
+    if (n <= 12) return;
+    if (n >= 2000 && n <= 2099 && Math.round(n) === n) return;
+    const okN = permitidos.some(function (a) {
+      if (Math.abs(a - n) < 0.05) return true;
+      if (Math.abs(Math.round(a) - n) < 0.05) return true;
+      if (Math.abs(Math.round(a * 10) / 10 - n) < 0.05) return true;
+      if (a >= 1000 && Math.abs(a / 1000 - n) < 0.05) return true;
+      if (a >= 1000 && Math.abs(Math.round(a / 1000) - n) < 0.05) return true;
+      return false;
+    });
+    if (!okN && fora.indexOf(t) < 0) fora.push(t);
+  });
+  return fora;
+}
+
+// Hash curto e estável dos dados (a chave do cache). Não é criptográfico.
+function _iaHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+// O pedido ao modelo. Os dados vão como JSON, e a instrução é curta e dura:
+// só os números recebidos, no formato em que vieram, sem inventar nada.
+function _iaPromptProposta(d) {
+  const system =
+    'Você redige propostas de investimento para a diretoria da Patrimar Móveis (fábrica de móveis, ' +
+    'linha de embalagem, Jaci/SP), a pedido do Coordenador de PPCP. Escreva em português do Brasil, ' +
+    'tom executivo, direto, sem adjetivos vazios e sem jargão de consultoria. ' +
+    'REGRAS ABSOLUTAS: (1) use SOMENTE os números que estão nos dados, escritos exatamente como vieram ' +
+    '(mesma vírgula decimal, mesmo ponto de milhar, mesma unidade); (2) não invente número, percentual, ' +
+    'prazo, fornecedor ou benefício que não esteja nos dados; (3) se um dado estiver vazio ou nulo, diga ' +
+    'que não foi informado — não estime; (4) a economia em HE é a única leitura de caixa; custo da parada ' +
+    'é ociosidade de folha já paga e potencial de receita é capacidade, não venda — nunca some os três; ' +
+    '(5) é uma SIMULAÇÃO sobre as paradas apontadas, não uma medição: diga isso uma vez; ' +
+    '(6) a recomendação final é a do gestor, informada nos dados — não a contradiga; se não houver, ' +
+    'termine com o que falta para decidir. Frases curtas. Cada campo é um parágrafo corrido, sem títulos, ' +
+    'sem listas e sem markdown.';
+  const user =
+    'DADOS DA SIMULAÇÃO (JSON):\n' + JSON.stringify(d, null, 1) + '\n\n' +
+    'Redija os cinco campos: resumo (até ' + IA_RESUMO_MAX + ' caracteres, para a capa: o que é, quanto custa, ' +
+    'o que resolve, economia e payback), problema (o que a parada custa hoje, com os números apontados), ' +
+    'solucao (o que o investimento faz e o que muda na linha, com a capacidade recuperada), ' +
+    'riscos (as ressalvas: sensibilidade, o que é estimado, dependências), recomendacao (o pedido à diretoria).';
+  return { system: system, user: user };
+}
+
+// A chamada HTTP. Devolve o texto (JSON) do modelo ou lança.
+function _iaChamar(prompt, schema, chave) {
+  const corpo = {
+    model: IA_MODELO, max_tokens: IA_MAX_TOKENS, system: prompt.system,
+    messages: [{ role: 'user', content: prompt.user }],
+    output_config: { format: { type: 'json_schema', schema: schema } }
+  };
+  const opts = function (b) {
+    return { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': chave, 'anthropic-version': IA_VERSAO_API },
+      payload: JSON.stringify(b) };
+  };
+  let resp = UrlFetchApp.fetch(IA_URL, opts(corpo));
+  let code = resp.getResponseCode();
+  // Conta sem saída estruturada? Cai no pedido "responda só o JSON" — o
+  // parse abaixo aceita os dois.
+  if (code === 400 && /output_config|json_schema/i.test(resp.getContentText())) {
+    delete corpo.output_config;
+    corpo.messages[0].content += '\n\nResponda SOMENTE com um objeto JSON com as chaves resumo, problema, solucao, riscos, recomendacao.';
+    resp = UrlFetchApp.fetch(IA_URL, opts(corpo));
+    code = resp.getResponseCode();
+  }
+  const txt = resp.getContentText();
+  if (code < 200 || code >= 300) {
+    let msg = 'HTTP ' + code;
+    try { const j = JSON.parse(txt); if (j.error && j.error.message) msg += ' — ' + j.error.message; } catch (e) {}
+    throw new Error(msg);
+  }
+  const j = JSON.parse(txt);
+  const bloco = (j.content || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text; }).join('');
+  return { texto: bloco, modelo: j.model || IA_MODELO, uso: j.usage || null };
+}
+function _iaParseJson(txt) {
+  try { return JSON.parse(txt); } catch (e) {}
+  const i = txt.indexOf('{'), j = txt.lastIndexOf('}');
+  if (i >= 0 && j > i) { try { return JSON.parse(txt.slice(i, j + 1)); } catch (e) {} }
+  return null;
+}
+
+// A AÇÃO. p.dados = JSON com os fatos do simulador (montado pelo painel).
+function redigirProposta(p) {
+  p = p || {};
+  const chave = PropertiesService.getScriptProperties().getProperty(IA_CHAVE_PROP);
+  if (!chave) return { ok: false, erro: 'sem-chave' };
+  let d = null;
+  try { d = JSON.parse(p.dados || ''); } catch (e) {}
+  if (!d || typeof d !== 'object') return { ok: false, erro: 'dados inválidos' };
+  const hash = _iaHash(JSON.stringify(d));
+  let cache = null;
+  try { cache = CacheService.getScriptCache(); const hit = cache.get('rp:ia:' + hash);
+        if (hit) { const c = JSON.parse(hit); c.cache = true; return c; } } catch (e) { cache = null; }
+
+  const r = _iaChamar(_iaPromptProposta(d), _iaSchemaProposta(), chave);
+  const texto = _iaParseJson(r.texto);
+  if (!texto) return { ok: false, erro: 'o modelo não devolveu JSON' };
+  const campos = ['resumo', 'problema', 'solucao', 'riscos', 'recomendacao'];
+  const out = {};
+  campos.forEach(function (k) { out[k] = String(texto[k] || '').trim(); });
+  const permitidos = _iaNumerosPermitidos(d);
+  const fora = _iaNumerosForaDaLista(campos.map(function (k) { return out[k]; }).join('\n'), permitidos);
+  const res = { ok: true, hash: hash, texto: out, numerosFora: fora, modelo: r.modelo,
+                em: Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm') };
+  if (cache) { try { cache.put('rp:ia:' + hash, JSON.stringify(res), IA_CACHE_SEG); } catch (e) {} }
+  return res;
+}
+
+// ── Para rodar no editor: confere a chave e faz UMA redação de teste ────────
+function testarRedacaoIA() {
+  const d = { investimento: { nome: 'Teste', total: 'R$ 100.000' }, causas: [{ tipo: 'Troca de Plastico', min: '6h38m', qtd: 88 }],
+              economiaHE: { mes: 'R$ 7.719', ano: 'R$ 92.629' }, payback: '13,0 meses', recomendacao: 'APROVAR' };
+  const r = redigirProposta({ dados: JSON.stringify(d) });
+  Logger.log(JSON.stringify(r, null, 1));
 }
 

@@ -1655,8 +1655,28 @@ via Google Apps Script (JSONP).
       `ecoLiqMes`, e **payback e ROI usam `investTotal` e `ecoLiqMes`**. Vazios
       = a conta de antes (o teste prende). Campos de texto (`nome`, `forn`,
       `prazo`, `descr`, `recom`) só vão ao papel — bloco `.prop-oque` e a linha
-      RECOMENDAÇÃO DO GESTOR. Passo 3 (redação com Claude via `.gs`, chave em
-      Script Properties) desenhado, não feito.
+      RECOMENDAÇÃO DO GESTOR.
+    - **REDAÇÃO COM IA (v7.69.0 / .gs v5.6, passo 3, 23/09/2026).** O painel
+      CALCULA, o modelo só ESCREVE. `_propMontar(ctx, s)` é a montagem ÚNICA
+      da proposta (conta, sensibilidade, textos) — o PDF e a redação leem dela.
+      `_propFatos` formata os números como o papel imprime e manda ao `.gs`
+      (`action=redigirProposta&dados=JSON`, `jsonpFetch(url, 60000)` — o `ms`
+      é opcional e o padrão continua 25 s); o `.gs` chama a API do Claude
+      (`IA_MODELO`, saída em `json_schema` com queda para "responda só o
+      JSON"), devolve `texto{resumo,problema,solucao,riscos,recomendacao}`,
+      `hash` e **`numerosFora`** (`_iaNumerosForaDaLista`: todo número do
+      texto que não está nos dados, com tolerância só para arredondamento,
+      milhar, ano e contagem ≤12). Cache por hash no `CacheService` (6 h).
+      ⚠ **A CHAVE mora em Propriedades do script (`CLAUDE_API_KEY`)** — nunca
+      no HTML (público) e nunca devolvida; o teste prende. Sem chave →
+      `erro:'sem-chave'`; `.gs` antigo → cai no `getDados()` e o painel marca
+      `sem-endpoint` (só aí acusa re-deploy). O texto fica em `s.ia` no
+      `rpe_pg_sim` com o hash dos fatos: `_propIaValida` só deixa imprimir com
+      hash igual e `numerosFora` vazio — mudou um campo, a tela diz
+      DESATUALIZADO e o papel sai sem o texto. Resumo ≤ `IA_RESUMO_MAX`=320
+      (420 estourava a capa em 4px); ele vai na capa, os outros quatro abrem a
+      folha 2 (LEITURA DO GESTOR). `testarRedacaoIA()` no editor confere a
+      chave. **A assinatura é do gestor, não do modelo** — a nota da tela diz.
     - **PÁGINA 1 = DECISÃO (v7.68.0, passo 2, 23/09/2026).** O papel abre com
       O QUE É E QUANTO CUSTA · O QUE RESOLVE · ECONOMIA E RETORNO ·
       SENSIBILIDADE · RECOMENDAÇÃO E ASSINATURAS, e o fio `.prop-fluxo` segue

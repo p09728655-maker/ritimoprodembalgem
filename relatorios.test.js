@@ -1998,8 +1998,8 @@ ok('o aviso de várias causas só sai quando o % é um só',
    /r\.nSel>1 && r\.pctUnica/.test(pega('function _pgSimAvisos(')), true);
 ok('o papel mostra a redução de cada causa',
    /REDUÇÃO SIMULADA<\/th>/.test(pega('async function gerarRelatorioInvestimento(')), true);
-ok('HE evitável acima de 100% não é impressa (tela e papel)',
-   (JS.match(/Math\.min\(100,r\.pctHE\)/g) || []).length, 2);
+ok('HE evitável acima de 100% não é impressa (tela, papel e fatos da IA)',
+   (JS.match(/Math\.min\(100,r\.pctHE\)/g) || []).length, 3);
 // Cor só onde há função: na tela do simulador o número é tinta — a cor fica
 // na economia em HE (o benefício) e no ROI negativo (o alerta).
 ok('números do simulador sem cor decorativa',
@@ -2072,8 +2072,15 @@ ok('e a nota do bloco diz que as três leituras não se somam',
 
 // ── impressão executiva (PROPOSTA DE INVESTIMENTO) ──
 const _inv = pega('async function gerarRelatorioInvestimento(');
+// v7.69.0: a montagem (conta + sensibilidade + textos) saiu para _propMontar,
+// que o PDF e a redação com IA leem — duas montagens divergiriam.
+const _mont = pega('function _propMontar(');
 ok('a proposta usa a MESMA conta e o MESMO cenário da tela',
-   /_pgSimulacao\(/.test(_inv) && /_pgSimEstado\(/.test(_inv), true);
+   /_propMontar\(ctx, s\)/.test(_inv) && /_pgSimEstado\(/.test(_inv)
+   && /_pgSimulacao\(_pgSimEnt\(ctx, s\)\)/.test(_mont), true);
+ok('a montagem é UMA implementação', (JS.match(/function _propMontar\(/g) || []).length, 1);
+ok('o PDF não recalcula a simulação por fora da montagem',
+   /_pgSimulacao\(/.test(_inv), false);
 ok('no documento compartilhado, em retrato',
    /_rpDocParadas\(`Proposta de Investimento[^`]*`\)/.test(_inv), true);
 ok('o papel diz como o número sai', /COMO O NÚMERO SAI/.test(_inv), true);
@@ -2110,7 +2117,7 @@ ok('a evidência e o anexo vêm DEPOIS, em folha própria',
 // A SENSIBILIDADE é CONTA do painel, não redação: a mesma _pgSimulacao roda
 // de novo para 50/70/90% com redução uniforme (o % por causa desligado).
 ok('a sensibilidade roda a MESMA conta três vezes',
-   /PROP_SENS_PCTS\.map\(p=>\(\{pct:p, r:_pgSimulacao\(\{\.\.\.entBase, pctRed:p, redCausa:\{\}\}\)/.test(_inv), true);
+   /PROP_SENS_PCTS\.map\(p=>\(\{pct:p, r:_pgSimulacao\(\{\.\.\.entBase, pctRed:p, redCausa:\{\}\}\)/.test(pega('function _propMontar(')), true);
 ok('e os cenários estão numa constante', /const PROP_SENS_PCTS=\[50,70,90\];/.test(JS), true);
 ok('o cenário do gestor entra na tabela, marcado',
    /cenário do gestor/.test(_inv) && /prop-sens-g/.test(_inv), true);
@@ -2178,6 +2185,51 @@ ok('a metodologia traz os oito blocos',
     'AS TRÊS LEITURAS EM R$ (não se somam)', 'TICKET MÉDIO E POTENCIAL DE RECEITA',
     'TETO DA ECONOMIA', 'HORA EXTRA EVITÁVEL',
     'O QUE ISTO NÃO É'].filter(t => !_inv.includes('<em>' + t + '</em>')).join(' | '), '');
+
+// ── PASSO 3 (v7.69.0): redação da proposta com IA ──
+// O painel CALCULA e o modelo só ESCREVE: os fatos vão formatados como o papel
+// imprime, o .gs devolve cinco parágrafos + os números fora da lista, e o texto
+// só vai ao papel se o hash dos fatos ainda bate e não há número fora.
+{
+  const _fat = pega('function _propFatos(');
+  ok('os fatos não fazem conta: só formatam o que a montagem devolveu',
+     /_pgSimulacao\(|perdaDeMin|\*\s*r\.custoHora/.test(_fat), false);
+  ok('e levam a sensibilidade, a recomendação e a natureza (simulação)',
+     /sensibilidade:m\.sensLinhas\.map/.test(_fat) && /recomendacaoDoGestor:m\.RECOM/.test(_fat)
+     && /não é medição/.test(_fat), true);
+  eval(pega('function _propHash('));
+  eval(pega('function _propIaValida('));
+  const h1 = _propHash({ a: 1, b: 'x' }), h2 = _propHash({ a: 1, b: 'x' }), h3 = _propHash({ a: 2, b: 'x' });
+  ok('o hash é estável para os mesmos fatos', h1, h2);
+  ok('e muda quando um número muda', h1 === h3, false);
+  const ia = { hash: h1, texto: { resumo: 'ok' }, numerosFora: [] };
+  ok('texto válido: mesmo hash e sem número fora', _propIaValida({ ia }, h1) === ia, true);
+  ok('texto desatualizado (números mudaram) não vai ao papel', _propIaValida({ ia }, h3), null);
+  ok('texto com número fora da lista não vai ao papel',
+     _propIaValida({ ia: { ...ia, numerosFora: ['9.999'] } }, h1), null);
+  ok('sem texto, nada', _propIaValida({}, h1), null);
+  ok('o PDF só imprime a IA pelo _propIaValida com o hash dos fatos de agora',
+     /const ia=_propIaValida\(s, _propHash\(_propFatos\(m, s, de, ate\)\)\)/.test(_inv), true);
+  ok('o resumo vai à capa e a leitura abre a folha 2, antes da evidência',
+     /prop-ia-resumo/.test(_inv)
+     && _inv.indexOf('LEITURA DO GESTOR') > _inv.indexOf('<div class="prop-quebra"></div>')
+     && _inv.indexOf('LEITURA DO GESTOR') < _inv.indexOf('6 ▸ A EVIDÊNCIA'), true);
+  ok('e o papel diz que foi IA sobre os números do painel, revisada pelo gestor',
+     /REDIGIDA COM IA SOBRE OS NÚMEROS DO PAINEL · REVISADA PELO GESTOR/.test(_inv), true);
+  const _red = pega('async function _propRedigir(');
+  ok('a redação chama a ação do .gs com os fatos, e nunca leva a chave',
+     /action=redigirProposta&dados=/.test(_red) && !/api_key|x-api-key|sk-ant/i.test(_red), true);
+  ok('com timeout maior (o modelo escreve) e duas tentativas em sequência',
+     /jsonpFetch\(url, 60000\)/.test(_red) && /t<=2/.test(_red), true);
+  ok('sem-chave, sem-endpoint, sem-resposta e erro são estados distintos',
+     ['sem-chave', 'sem-endpoint', 'sem-resposta', 'erro'].every(k => _red.includes(`'${k}'`))
+     && /CLAUDE_API_KEY/.test(pega('function _propIaFalhaInfo(')), true);
+  ok('o texto guardado leva o hash e os números fora', /s2\.ia=\{hash, texto:json\.texto, numerosFora:/.test(_red), true);
+  ok('o jsonpFetch continua nos 25 s por padrão', /ms=ms\|\|25000;/.test(pega('function jsonpFetch(')), true);
+  ok('o bloco da tela é redesenhado a cada tecla (hash muda → desatualizado)',
+     /_propIaPintar\(\);/.test(pega('function _pgSimAtualiza(')), true);
+  ok('e vive na aba do simulador', /id="pg-sim-ia"/.test(pega('function _pgSimHtml(')), true);
+}
 
 // ⚠ A PELE DA PROPOSTA É ESCOPADA. O <head> e as ~150 regras do _rpDocParadas
 // são dos QUATRO relatórios; uma regra solta aqui mudaria paradas, gestão de
