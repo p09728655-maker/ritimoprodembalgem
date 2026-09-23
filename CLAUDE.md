@@ -1611,6 +1611,29 @@ via Google Apps Script (JSONP).
       produtivas/dia, parada não programada): na aba própria não há mais o
       quadro da gestão de perdas ao lado dizendo de que período se trata.
       Nenhuma conta no desenho — tudo sai pronto do `st`.
+  - **A TELA EM TRÊS FAIXAS (v7.63.0, 23/09/2026)** — pedido do usuário com um
+    briefing longo: *"evolução profissional, sem mudar a estrutura"*. O
+    `_pgSimResHtml` desenha **O INVESTIMENTO E O RETORNO** (investimento →
+    economia em HE → payback → ROI) · **IMPACTO OPERACIONAL** · **OUTRAS
+    LEITURAS** (custo da parada e potencial de receita, com *"não são economia
+    de caixa"* no título). Mesmo `card()`, mesmos nomes, mesmas contas.
+    - ⚠ **O nome continua ECONOMIA EM HE** — o briefing pedia "economia
+      potencial de horas extras", e isso entrou no **texto** do card, não no
+      rótulo (regra UM NOME POR INDICADOR, acima). Etiqueta **SIMULADO** na
+      economia (tela e papel), **POTENCIAL** só na receita.
+    - **`_pgSimFrase`** (a frase do cenário), **`_pgSimAvisos`** (causa
+      genérica; várias causas com uma redução) e **`_pgSimMemHtml`** (memória de
+      cálculo) são DESENHO: só repetem o que o `_pgSimulacao` devolveu. A
+      memória mora num `<details>` **fora** do `#pg-sim-res`, e o
+      `_pgSimAtualiza` redesenha o miolo dela (`#pg-sim-memo`): aberta, ela não
+      fecha a cada tecla.
+    - ⚠ **HE digitada como 0 ≠ HE vazia** (`heInformada` no `_pgSimEnt`,
+      `heZero` na conta): zero é *"não há HE"* → teto 0, economia 0, payback não
+      calculável; vazio segue como estimativa sem teto. Antes os dois caíam no
+      mesmo caminho.
+    - **Ainda não feito, e é o que falta de verdade**: redução **por causa**.
+      Hoje uma redução só vale para todas as causas marcadas — o aviso do
+      cenário diz isso na tela, mas não resolve.
 - **`porDia` do `paradas-calc.js` ganhou `qtd`/`qtdNP`/`tipos`** (campos
   ADICIONAIS — `min`/`minNP`/`perd` seguem iguais): é de lá que sai a principal
   causa de cada dia. `diasTrabalhadosLista()` é a lista por trás do
