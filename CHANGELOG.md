@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.67.0 — 23/09/2026
+
+**SIMULADOR: o investimento ganha nome, custos completos e recomendação**
+(passo 1 da análise do diretor sobre a proposta impressa: *"não diz o que está
+sendo comprado"*, *"o custo está incompleto"*, *"não há recomendação"*).
+
+- Grupo **O INVESTIMENTO** nas premissas: nome, fornecedor, prazo, **instalação/
+  frete/treinamento (R$, uma vez)**, **manutenção e consumíveis (R$/ano)**, o
+  que o equipamento faz (uma frase) e a **recomendação do gestor** (aprovar ·
+  aprovar com ressalva · adiar · não recomendar).
+- **Atenção — a conta muda quando os custos são informados:** o investimento
+  passa a ser **equipamento + instalação**, e a manutenção anual ÷ 12 é
+  **descontada da economia em HE** antes do payback e do ROI (a economia em HE
+  bruta continua a mesma no card). Com os campos vazios, todos os números são
+  os de antes. Se a manutenção consumir toda a economia, o payback sai
+  *"não calculável"*.
+- Na proposta impressa: bloco **O QUE É O INVESTIMENTO** (nome, o que faz,
+  fornecedor, prazo), linhas de instalação e manutenção na seção 5, a
+  **RECOMENDAÇÃO DO GESTOR** fechando a tabela, e o custo-hora sai com
+  centavos (era *R$ 378* num lugar e *R$ 377,81* noutro).
+
+---
+
 ## v7.66.3 — 23/09/2026
 
 **SIMULADOR e GESTÃO DE PERDAS: a falha da busca não culpa mais o "cold start".**

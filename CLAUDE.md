@@ -1649,6 +1649,14 @@ via Google Apps Script (JSONP).
       ⚠ Isso **revoga** a nota "HE digitada em HOMEM-HORA por semana" do
       SIMULADOR DE INVESTIMENTO acima: a grandeza do CUSTO-HORA (hora de linha)
       não mudou, a do campo de HE mudou.
+    - **INVESTIMENTO TOTAL E CUSTO RECORRENTE (v7.67.0)** — análise "como
+      diretor" da proposta impressa (23/09/2026). `instal` (uma vez) soma no
+      `investTotal`; `manutAno`/12 = `custoRecMes` sai da economia em HE →
+      `ecoLiqMes`, e **payback e ROI usam `investTotal` e `ecoLiqMes`**. Vazios
+      = a conta de antes (o teste prende). Campos de texto (`nome`, `forn`,
+      `prazo`, `descr`, `recom`) só vão ao papel — bloco `.prop-oque` e a linha
+      RECOMENDAÇÃO DO GESTOR. Passos 2 (página 1 = decisão, com sensibilidade
+      50/70/90%) e 3 (redação com Claude via `.gs`) desenhados, não feitos.
     - **HORA EXTRA EVITÁVEL é exibida com teto de 100%** (`Math.min(100,…)`,
       tela e papel); o `pctHE` da conta continua cru — é ele que o teste prende.
     - **Cor na tela do simulador (v7.64.0, *"está pesado as cores"*)**: número

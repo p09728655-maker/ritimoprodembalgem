@@ -2004,6 +2004,26 @@ ok('HE evitável acima de 100% não é impressa (tela e papel)',
 // na economia em HE (o benefício) e no ROI negativo (o alerta).
 ok('números do simulador sem cor decorativa',
    /'var\(--acc\)'|'var\(--warn\)'/.test(_resHtml), false);
+// v7.67.0 — investimento total e custo recorrente
+{
+  const _b = { ...simBase, selec: { 'Troca de Plastico': true }, pctRed: 100,
+    custoHora: 382.89, adicHE: 50, pessoas: 10, hePessoa: 8, invest: 50000 };
+  const _s = _pgSimulacao(_b);
+  const _i = _pgSimulacao({ ..._b, instal: 10000 });
+  ok('instalação soma no investimento total', _i.investTotal, 60000);
+  ok('e o payback usa o total', Math.round(_i.pay * 100) / 100, Math.round(60000 / _s.rsMesHE * 100) / 100);
+  const _m = _pgSimulacao({ ..._b, manutAno: 12000 });
+  ok('manutenção anual sai da economia todo mês', Math.round(_m.ecoLiqMes), Math.round(_s.rsMesHE - 1000));
+  ok('a economia em HE bruta não muda', _m.rsMesHE, _s.rsMesHE);
+  ok('payback e ROI usam a economia LÍQUIDA',
+     [Math.round(_m.pay * 100) / 100, Math.round(_m.roi * 10) / 10],
+     [Math.round(50000 / (_s.rsMesHE - 1000) * 100) / 100, Math.round(((_s.rsMesHE - 1000) * 60 - 50000) / 50000 * 1000) / 10]);
+  ok('sem instalação nem manutenção, a conta é a de antes', [_s.investTotal, _s.ecoLiqMes, _s.pay], [50000, _s.rsMesHE, 50000 / _s.rsMesHE]);
+  const _z = _pgSimulacao({ ..._b, manutAno: _s.rsMesHE * 12 * 2 });
+  ok('manutenção maior que a economia: payback não calculável', _z.pay, null);
+}
+ok('o papel mostra o que é o investimento e a recomendação',
+   /O QUE É O INVESTIMENTO/.test(pega('async function gerarRelatorioInvestimento(')) && /RECOMENDAÇÃO DO GESTOR/.test(pega('async function gerarRelatorioInvestimento(')), true);
 ok('a tela separa em três faixas: decisão, operação, outras leituras',
    /O INVESTIMENTO E O RETORNO/.test(_resHtml) && /IMPACTO OPERACIONAL/.test(_resHtml)
    && /OUTRAS LEITURAS/.test(_resHtml) && /não são economia de caixa/.test(_resHtml), true);
