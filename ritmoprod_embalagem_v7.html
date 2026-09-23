@@ -326,6 +326,8 @@ body.ger-hist .ger-live-only{display:none!important}
 /* Card CONDICIONAL (potencial de receita): tracejado, porque o número depende
    de demanda e é ordens de grandeza maior que a economia em HE ao lado. */
 .pg-sim-wrap .pg-sim-c.cond{border-style:dashed}
+.pg-sim-wrap .pg-sim-aviso{margin-top:14px;padding:9px 12px;border:1px solid var(--warn);border-left-width:3px;border-radius:6px;font-size:12px;line-height:1.5;color:var(--txt)}
+.pg-sim-wrap .pg-sim-aviso div+div{margin-top:4px}
 .pg-sim-wrap .pg-sim-vazio{font-family:var(--font-d);font-size:11.5px;color:var(--txt2);margin-top:14px;padding:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;letter-spacing:.5px}
 @media(max-width:900px){
   .pg-sim-wrap .pg-sim-grid{grid-template-columns:1fr}
@@ -2690,7 +2692,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.61.0';
+const APP_VER   = '7.62.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11358,7 +11360,8 @@ function _pgSimulacao(ent){
   const ticket=parseFloat(ent.ticket)||0;
   const receitaMes=ticket>0 ? cxMes*ticket : null;
   const receitaAno=receitaMes!=null ? receitaMes*12 : null;
-  return {nSel:sel.length, pct, adic, minPer, cxPer, minMes, cxMes,
+  const genericos=sel.filter(t=>PG_RE_GENERICO.test(String(t.tipo||''))).map(t=>t.tipo);
+  return {nSel:sel.length, nGenerico:genericos.length, genericos, pct, adic, minPer, cxPer, minMes, cxMes,
           cxAno, horasAno, rsAno, rsAnoHE,
           ticket, receitaMes, receitaAno,
           rsMes, rsMesHE, invest, pay,
@@ -11386,6 +11389,23 @@ function _pgSimEnt(ctx, s){
 
 // O desenho dos resultados fica separado do bloco: o oninput só redesenha
 // #pg-sim-res — refazer o bloco inteiro a cada tecla roubaria o foco do campo.
+// O que falta para payback/ROI saírem — só o que falta de verdade. Com o
+// CUSTO-HORA já digitado, o texto que pedia os dois campos mandava o gestor
+// procurar um campo que estava preenchido.
+function _pgSimFalta(r){
+  const f=[];
+  if(!(r.invest>0)) f.push('o INVESTIMENTO');
+  if(r.rsMesHE==null) f.push('o CUSTO-HORA da linha');
+  return f.length?'informe '+f.join(' e '):'sem economia em HE para pagar o investimento';
+}
+// Avisos sobre o CENÁRIO (não sobre a conta): o simulador aceita qualquer
+// combinação, e duas delas produzem proposta que não se sustenta numa reunião.
+function _pgSimAvisos(r){
+  const a=[];
+  if(r.nGenerico>0) a.push('<b>Causa genérica marcada ('+_rpEsc(r.genericos.join(', '))+').</b> É parada sem causa identificada — não dá para dizer o que o investimento resolve. Abra pelo motivo na GESTÃO DE PERDAS antes de simular.');
+  if(r.nSel>1) a.push('<b>'+r.nSel+' causas com UMA redução de '+fmtN(r.pct)+'%.</b> Confira se o mesmo investimento ataca todas elas — troca de produto (SMED/processo), troca de plástico (equipamento) e manutenção pedem ações diferentes. Para a proposta de um equipamento, marque só as causas que ele elimina.');
+  return a.length?`<div class="pg-sim-aviso">${a.map(x=>'<div>⚠ '+x+'</div>').join('')}</div>`:'';
+}
 function _pgSimResHtml(r){
   if(!r || !r.nSel) return `<div class="pg-sim-vazio">Marque acima a(s) parada(s) a atacar — tempo, caixas, R$ por mês e por ano, payback, ROI e hora extra evitável aparecem aqui na hora.</div>`;
   // A LINHA DO ANO É PRÓPRIA, não rodapé (pedido do usuário, 04/09/2026:
@@ -11404,8 +11424,10 @@ function _pgSimResHtml(r){
   const heSub = r.pctHE!=null
     ? fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)'
     : (r.heSem>0 ? 'informe a quantidade de pessoas' : 'informe a HORA EXTRA atual (h/semana)');
-  return `<div class="pg-sim-res">`
-    + card('TEMPO RECUPERADO', fmtN(Math.round(r.minMes))+'<span> min/mês</span>',
+  // Mês e ano na MESMA unidade: "965 min/mês" ao lado de "193,1 h por ano"
+  // obrigava a converter de cabeça para comparar os dois.
+  return _pgSimAvisos(r)+`<div class="pg-sim-res">`
+    + card('TEMPO RECUPERADO', _fmtMinPar(Math.round(r.minMes))+'<span> por mês</span>',
            fmt1(r.horasAno)+' h por ano',
            _fmtMinPar(Math.round(r.minPer))+' no período · redução de '+fmtN(r.pct)+'%')
     + card('CAIXAS RECUPERADAS', fmtN(r.cxMes)+'<span> cx/mês</span>',
@@ -11431,9 +11453,9 @@ function _pgSimResHtml(r){
              :'capacidade recuperada × ticket de '+rs2(r.ticket)+'/cx · <b>não é economia nem faturamento garantido</b>',
            null, false, true)
     + card('PAYBACK', r.pay==null?'—':fmt1(r.pay)+'<span> meses</span>', '',
-           r.pay==null?'informe INVESTIMENTO e CUSTO-HORA':'investimento ÷ ECONOMIA EM HE (a receita potencial não entra)', r.pay!=null?'var(--acc)':null)
+           r.pay==null?_pgSimFalta(r):'investimento ÷ ECONOMIA EM HE (a receita potencial não entra)', r.pay!=null?'var(--acc)':null)
     + card('ROI · '+selAnos, r.roi==null?'—':fmt1(r.roi)+'<span>%</span>', '',
-           r.roi==null?(r.invest>0?'informe o CUSTO-HORA da linha':'informe o INVESTIMENTO')
+           r.roi==null?_pgSimFalta(r)
              :'ganho acumulado '+rs(r.ganhoAcum)+' · investimento '+rs(r.invest),
            r.roi!=null&&r.roi<0?'var(--red)':null)
     + card('HORA EXTRA EVITÁVEL', r.pctHE==null?'—':fmt1(r.pctHE)+'<span>% da HE</span>', '',
@@ -11473,7 +11495,7 @@ function _pgSimHtml(ctx){
         </div></div>
       </div>
       <div id="pg-sim-res">${_pgSimResHtml(_pgSimulacao(_pgSimEnt(ctx, s)))}</div>
-      <div class="pg-diag-nota">Minutos e caixas por causa são os do Pareto deste período (duração produtiva × meta do dia ÷ horas produtivas — a conta única do painel). Mês típico = 22 dias úteis. O CUSTO-HORA é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é digitada em <b>homem-hora</b> — a conta converte antes de comparar (HE em hora de linha = h/semana × 4,4 ÷ pessoas). Os dois cards de R$ <b>não se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga, e a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada. São <b>três leituras financeiras diferentes, e elas NÃO se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga; a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada; e o POTENCIAL DE RECEITA é o valor econômico da <b>capacidade</b> recuperada (caixas × ticket médio), que <b>não é economia nem faturamento garantido</b> — capacidade recuperada só vira receita se houver demanda. <b>Payback e ROI usam só a ECONOMIA EM HE.</b> Sem ticket médio informado, o potencial de receita simplesmente não é calculado. Cada card traz o <b>mês</b> (o número grande, que alimenta o payback) e o <b>ano</b> logo abaixo — mês típico × 12, que é o valor comparável ao orçamento do equipamento. <b>Simulação de tela: nada vai para a planilha.</b></div>
+      <div class="pg-diag-nota">Minutos e caixas por causa são os do Pareto deste período (duração produtiva × meta do dia ÷ horas produtivas — a conta única do painel). Mês típico = 22 dias úteis. O CUSTO-HORA é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é digitada em <b>homem-hora</b> — a conta converte antes de comparar (HE em hora de linha = h/semana × 4,4 ÷ pessoas). São <b>três leituras financeiras diferentes, e elas não se somam</b>: o CUSTO DA PARADA é ociosidade de folha já paga; a ECONOMIA EM HE — a única leitura de caixa — já contém essa hora dentro dela, limitada à HE praticada; e o POTENCIAL DE RECEITA é o valor econômico da <b>capacidade</b> recuperada (caixas × ticket médio), que <b>não é economia nem faturamento garantido</b> — capacidade recuperada só vira receita se houver demanda. <b>Payback e ROI usam só a ECONOMIA EM HE.</b> Sem ticket médio informado, o potencial de receita simplesmente não é calculado. Cada card traz o <b>mês</b> (o número grande, que alimenta o payback) e o <b>ano</b> logo abaixo — mês típico × 12, que é o valor comparável ao orçamento do equipamento. <b>Simulação de tela: nada vai para a planilha.</b></div>
     </div></div>`;
 }
 

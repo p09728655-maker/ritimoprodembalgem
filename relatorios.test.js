@@ -1787,7 +1787,11 @@ console.log('\n── simulador de investimento (aba GESTÃO DE PERDAS) ──')
 // HOMEM-HORA/semana e é convertida: com 10 pessoas, 8 h/sem × 4,4 = 35,2
 // homem-hora/mês = 3,52h de linha (correção de 28/08/2026 — antes o % de HE
 // evitável dividia hora de linha por homem-hora, número sem significado).
+global.PG_RE_GENERICO = eval(JS.match(/const PG_RE_GENERICO\s*=\s*(\/[^\n]+\/i);/)[1]);
 eval(pega('function _pgSimulacao('));
+ok('causa genérica marcada vira aviso no cenário',
+   _pgSimulacao({tipos:[{tipo:'Outros',min:60,perd:10},{tipo:'Troca de Plastico',min:60,perd:10}],
+     selec:{Outros:true,'Troca de Plastico':true},pctRed:80,nDias:20}).genericos.join(), 'Outros');
 eval(pega('function _pgSimNum('));
 const simTipos = [
   { tipo: 'Troca de Plastico', min: 327, qtd: 55, perd: 1030, planej: false },
@@ -1944,8 +1948,13 @@ ok('e avisa que não é economia nem faturamento garantido',
 ok('o payback diz que a receita potencial não entra',
    /a receita potencial não entra/.test(_resHtml), true);
 ok('o número grande continua sendo o mês',
-   / min\/mês/.test(_resHtml) && / cx\/mês/.test(_resHtml)
+   /<span> por mês<\/span>/.test(_resHtml) && / cx\/mês/.test(_resHtml)
    && (_resHtml.match(/<span> \/mês<\/span>/g) || []).length === 3, true);
+// v7.62.0 — revisão da tela
+ok('payback/ROI pedem só o campo que falta',
+   /informe INVESTIMENTO e CUSTO-HORA/.test(JS), false);
+ok('a nota não repete a frase dos R$',
+   (pega('function _pgSimHtml(').match(/limitada à HE praticada/g) || []).length, 1);
 const _simHtml = pega('function _pgSimHtml(');
 ok('o CENÁRIO pede as pessoas da embalagem',
    /pg-sim-pessoas/.test(_simHtml) && /PESSOAS NA EMBALAGEM \(qtde\)/.test(_simHtml), true);
