@@ -1655,8 +1655,21 @@ via Google Apps Script (JSONP).
       `ecoLiqMes`, e **payback e ROI usam `investTotal` e `ecoLiqMes`**. Vazios
       = a conta de antes (o teste prende). Campos de texto (`nome`, `forn`,
       `prazo`, `descr`, `recom`) só vão ao papel — bloco `.prop-oque` e a linha
-      RECOMENDAÇÃO DO GESTOR. Passos 2 (página 1 = decisão, com sensibilidade
-      50/70/90%) e 3 (redação com Claude via `.gs`) desenhados, não feitos.
+      RECOMENDAÇÃO DO GESTOR. Passo 3 (redação com Claude via `.gs`, chave em
+      Script Properties) desenhado, não feito.
+    - **PÁGINA 1 = DECISÃO (v7.68.0, passo 2, 23/09/2026).** O papel abre com
+      O QUE É E QUANTO CUSTA · O QUE RESOLVE · ECONOMIA E RETORNO ·
+      SENSIBILIDADE · RECOMENDAÇÃO E ASSINATURAS, e o fio `.prop-fluxo` segue
+      essa ordem. A evidência (causas, cenário, capacidade, outras leituras) abre
+      a folha 2 e o método vai em ANEXO — quebras por `.prop-quebra`, na pele.
+      **A SENSIBILIDADE é conta, não redação**: `PROP_SENS_PCTS=[50,70,90]` e
+      a MESMA `_pgSimulacao` roda com `pctRed:p, redCausa:{}` (redução uniforme
+      — com o % por causa ligado, "70%" não seria 70% em causa nenhuma); a linha
+      do gestor entra com o % dele e é marcada `.prop-sens-g`. ⚠ O **potencial
+      de receita saiu da capa** de propósito (ancorava no maior número) e mora
+      na seção 9 da evidência, ainda tracejado. Medido: a assinatura fecha a
+      folha 1 em ~890px dos 1032 úteis, com e sem orçamento — o que se cortou
+      foi ar (`.prop-ass` 22→14px), nunca fonte. **Nada no `.gs`.**
     - **HORA EXTRA EVITÁVEL é exibida com teto de 100%** (`Math.min(100,…)`,
       tela e papel); o `pctHE` da conta continua cru — é ele que o teste prende.
     - **Cor na tela do simulador (v7.64.0, *"está pesado as cores"*)**: número

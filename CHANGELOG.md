@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.68.0 — 23/09/2026
+
+**PROPOSTA IMPRESSA: a página 1 virou PÁGINA DE DECISÃO** (passo 2 da análise
+do diretor: *"o que é, quanto custa, o que resolve, o que economiza, quando se
+paga, e se não der o previsto?"*). Só front-end — nada muda no `.gs`.
+
+- **Página 1 (decisão)**, nesta ordem: O QUE É E QUANTO CUSTA (nome, o que faz,
+  fornecedor, prazo · investimento total · custo recorrente) · O QUE RESOLVE
+  (ocorrências, tempo parado, caixas perdidas, disponibilidade antes → depois) ·
+  ECONOMIA E RETORNO (economia em HE mês/ano, líquida da manutenção quando há,
+  payback, ROI) · **SENSIBILIDADE** · RECOMENDAÇÃO DO GESTOR e **três linhas de
+  assinatura** (Gestor PPCP · Gerência industrial · Diretoria). Medido: cabe na
+  folha 1 do A4 com e sem orçamento.
+- **SENSIBILIDADE — "e se a redução for menor?"**: a mesma conta rodada de
+  novo com redução uniforme de **50, 70 e 90%** em todas as causas atacadas,
+  mais a linha do **cenário do gestor** (com o % que ele digitou, inclusive por
+  causa). Cada linha traz tempo, caixas, economia em HE, payback, ROI e
+  disponibilidade. Nada é redigido: o painel recalcula.
+- **Página 2 (evidência)**: a tabela de causas com a redução simulada, o
+  cenário completo, a capacidade recuperada e as **outras leituras que não se
+  somam** (custo da parada, economia em HE, potencial de receita). **Anexo**:
+  metodologia e premissas, agora com os blocos INVESTIMENTO, PAYBACK E ROI e
+  SENSIBILIDADE.
+- **Atenção — nenhum número mudou de conta**: economia, payback, ROI e
+  potencial saem da mesma `_pgSimulacao` da v7.67.0. O que mudou é a ordem e a
+  folha em que cada um aparece: o **potencial de receita saiu da página 1** e
+  ficou na página 2, marcado condicional — na capa ele ancorava a leitura no
+  maior número. O documento caiu de 4 para 3 folhas.
+
+---
+
 ## v7.67.0 — 23/09/2026
 
 **SIMULADOR: o investimento ganha nome, custos completos e recomendação**

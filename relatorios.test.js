@@ -2094,9 +2094,30 @@ ok('nenhuma fórmula de perda reescrita no papel',
 // A proposta virou documento de diretoria: capa executiva, fio condutor
 // PROBLEMA → CENÁRIO → GANHO → INVESTIMENTO → RETORNO, números grandes e
 // metodologia como nota técnica. O CONTEÚDO não mudou — mudou a apresentação.
-ok('o fio condutor da leitura está no papel',
-   /prop-fluxo/.test(_inv) && /<span>PROBLEMA<\/span>/.test(_inv)
-   && /<span>CENÁRIO<\/span>/.test(_inv) && /<span>RETORNO<\/span>/.test(_inv), true);
+// PASSO 2 (23/09/2026): a página 1 é a DECISÃO — o fio condutor é o roteiro
+// dela, na ordem em que a diretoria lê.
+ok('o fio condutor da leitura está no papel, na ordem da decisão',
+   /prop-fluxo/.test(_inv) && /<span>O QUE É<\/span><span>QUANTO CUSTA<\/span><span>O QUE RESOLVE<\/span><span>ECONOMIA<\/span><span>RETORNO<\/span><span>SENSIBILIDADE<\/span><span>RECOMENDAÇÃO<\/span>/.test(_inv), true);
+ok('a página 1 traz o que é, quanto custa, o que resolve, economia e retorno, sensibilidade e recomendação',
+   ['1 ▸ O QUE É E QUANTO CUSTA', '2 ▸ O QUE RESOLVE', '3 ▸ ECONOMIA E RETORNO',
+    '4 ▸ SENSIBILIDADE — E SE A REDUÇÃO FOR MENOR?', '5 ▸ RECOMENDAÇÃO E ASSINATURAS']
+     .filter(t => !_inv.includes(t)).join(' | '), '');
+ok('a evidência e o anexo vêm DEPOIS, em folha própria',
+   _inv.indexOf('6 ▸ A EVIDÊNCIA') > _inv.indexOf('5 ▸ RECOMENDAÇÃO')
+   && _inv.indexOf('ANEXO ▸ METODOLOGIA') > _inv.indexOf('9 ▸ OUTRAS LEITURAS')
+   && (_inv.match(/<div class="prop-quebra"><\/div>/g) || []).length === 2
+   && /\.prop-quebra\{page-break-before:always/.test(_inv), true);
+// A SENSIBILIDADE é CONTA do painel, não redação: a mesma _pgSimulacao roda
+// de novo para 50/70/90% com redução uniforme (o % por causa desligado).
+ok('a sensibilidade roda a MESMA conta três vezes',
+   /PROP_SENS_PCTS\.map\(p=>\(\{pct:p, r:_pgSimulacao\(\{\.\.\.entBase, pctRed:p, redCausa:\{\}\}\)/.test(_inv), true);
+ok('e os cenários estão numa constante', /const PROP_SENS_PCTS=\[50,70,90\];/.test(JS), true);
+ok('o cenário do gestor entra na tabela, marcado',
+   /cenário do gestor/.test(_inv) && /prop-sens-g/.test(_inv), true);
+ok('a recomendação e as assinaturas fecham a página 1',
+   /<em>RECOMENDAÇÃO DO GESTOR<\/em>/.test(_inv) && /Gestor · PPCP/.test(_inv) && /Diretoria<\/div>/.test(_inv), true);
+ok('payback e ROI da página 1 saem sem número inventado',
+   (_inv.match(/<span>não calculado<\/span>/g) || []).length >= 2, true);
 ok('os três números do problema abrem a seção 1',
    /prop-stats/.test(_inv) && /<em>OCORRÊNCIAS/.test(_inv)
    && /<em>TEMPO PARADO/.test(_inv) && /<em>CAIXAS PERDIDAS/.test(_inv), true);
@@ -2131,11 +2152,9 @@ ok('capacidade recuperada não é apresentada como economia de caixa',
    /capacidade que volta para a linha/.test(_inv)
    && /não é economia de caixa/.test(_inv), true);
 // ── o papel: as TRÊS leituras, separadas e sem soma ──
-ok('o papel separa capacidade recuperada de impacto econômico',
-   /3 ▸ A CAPACIDADE RECUPERADA/.test(_inv)
-   && /4 ▸ O IMPACTO ECONÔMICO — TRÊS LEITURAS QUE NÃO SE SOMAM/.test(_inv), true);
-ok('e o fio condutor acompanha',
-   /<span>CAPACIDADE<\/span>/.test(_inv) && /<span>IMPACTO<\/span>/.test(_inv), true);
+ok('o papel separa capacidade recuperada das outras leituras (na evidência)',
+   /8 ▸ A CAPACIDADE RECUPERADA/.test(_inv)
+   && /9 ▸ OUTRAS LEITURAS — NÃO SE SOMAM À ECONOMIA/.test(_inv), true);
 ok('o papel traz o POTENCIAL DE RECEITA', /POTENCIAL DE RECEITA/.test(_inv), true);
 // ⚠ Ele é ordens de grandeza maior que a economia em HE e divide a linha com
 // ela: o card sai CONDICIONAL (tracejado), senão a diretoria ancora no maior.

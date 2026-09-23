@@ -10041,6 +10041,9 @@ function _relSwotParadas({st, tiR, trR, perdaReal, temMotivo}){
 // o relatorios.test.js rodar as regras sem abrir o popup.
 
 const PG_META_DISP       = 90;    // disponibilidade alvo (%) — a mesma do relatório
+// Cenários da SENSIBILIDADE da proposta impressa (passo 2): a mesma conta
+// rodada de novo com redução uniforme. Mudar o combinado é mexer aqui.
+const PROP_SENS_PCTS=[50,70,90];
 const PG_META_OUTROS     = 5;     // teto do tempo parado sob causa não identificada (%)
 const PG_META_TROCA_PROD = 5;     // minutos por troca de produto (meta inicial SMED)
 const PG_META_TROCA_PLAS = 4;     // minutos por troca de plástico (meta inicial SMED)
@@ -12001,89 +12004,150 @@ async function gerarRelatorioInvestimento(deArg, ateArg){
   .prop-met>div{padding:8px 0 8px 13px;border-left:2px solid #edf2f7;border-bottom:1px solid #f4f6f8;page-break-inside:avoid}
   .prop-met em{font-style:normal;display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.8px;color:#5b6470;margin-bottom:4px}
   .prop-met p{font-size:10px;line-height:1.6;color:#2d3748}
-  @media print{ .prop-stats,.prop-prem,.prop-ret,.prop-fluxo{page-break-inside:avoid} }
+  /* PÁGINA 1 = DECISÃO (passo 2, 23/09/2026). O que é, quanto custa, o que
+     resolve, economia, retorno, sensibilidade, recomendação e assinatura cabem
+     na folha 1; a evidência abre a folha 2 e o método vai em anexo. */
+  .prop .prop-dec{grid-template-columns:1fr 1fr}
+  .prop .prop-dec .prop-oque{border-top:0;padding-top:5px;border-bottom:1px solid #edf2f7}
+  .prop .prop-dec>div{padding:5px 12px}
+  .prop .prop-dec .prop-oque b{font-size:14px}
+  .prop .kpi-grid.pg-mil .kpi-val span{font-size:11px}
+  .prop .kpi-card.r{border-left-color:#c62828}
+  .prop .kpi-card.r .kpi-val{color:#c62828}
+  .prop .prop-sens tbody td{font-size:10.5px;padding:4px 9px;white-space:nowrap}
+  .prop .prop-sens thead th{padding:5px 9px;font-size:7.5px;white-space:nowrap}
+  .prop .prop-sens tr.prop-sens-g td{background:#fff8e1;font-weight:600}
+  .prop .prop-sens td i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:1.2px;color:#8a5a00;margin-left:6px}
+  .prop .prop-sens-nota{margin-top:5px}
+  .prop-recom{display:flex;align-items:center;gap:14px;border:1px solid #1a1a2e;border-radius:4px;padding:6px 13px;page-break-inside:avoid}
+  .prop-recom em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.8px;color:#5b6470}
+  .prop-recom b{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;color:#1a1a2e;letter-spacing:.5px}
+  .prop-recom.aguarda{border-color:#f0d27a;background:#fffdf6}
+  .prop-recom.aguarda b{color:#8a5a00;font-size:13px;font-family:'Barlow',Arial,sans-serif;font-weight:600}
+  /* A assinatura fecha a folha 1: medido, com 22px de respiro ela caía sozinha
+     na folha 2. O que se corta é ar, nunca fonte de leitura. */
+  .prop-ass{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:14px;page-break-inside:avoid}
+  .prop-ass div{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.6px;color:#5b6470;text-align:center}
+  .prop-ass span{display:block;border-top:1px solid #1a1a2e;margin-bottom:5px}
+  .prop-quebra{page-break-before:always;break-before:page;height:0}
+  @media print{ .prop-stats,.prop-prem,.prop-ret,.prop-fluxo,.prop-recom,.prop-ass{page-break-inside:avoid} }
 </style>`;
 
-    const headline=`Atacando <b>${_rpEsc(causas)}</b> com redução ${r.pctRes!=null?'de '+fmtN(r.pctRes)+'%':_pgSimPctTxt(r)}, a linha recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
-      +(r.rsMesHE!=null?` — <b>${rs(r.rsMesHE)} de economia em HE por mês (${rs(r.rsAnoHE)} por ano)</b>${r.heEstim?', em estimativa sem o teto da HE praticada':''}`:'')
-      +(payTxt?`. O investimento de ${investTxt} se paga em <b>${payTxt}</b>`:'')
-      +(r.roi!=null?` — ROI de <b>${fmt1(r.roi)}% em ${r.anos} anos</b>`:'')+'.';
+    // ── SENSIBILIDADE (passo 2, 23/09/2026) ─────────────────────────────
+    // A diretoria pergunta "e se não der 80%?". A resposta sai do painel, não
+    // da redação: a MESMA _pgSimulacao roda três vezes com redução uniforme
+    // de 50, 70 e 90% em todas as causas atacadas (o % por causa é
+    // desligado de propósito — senão "70%" não seria 70% em nenhuma delas).
+    // O cenário do gestor entra como quarta linha, com o % que ele digitou.
+    const entBase=_pgSimEnt(ctx, s);
+    const sens=PROP_SENS_PCTS.map(p=>({pct:p, r:_pgSimulacao({...entBase, pctRed:p, redCausa:{}}), gestor:false}));
+    const _gestorIgual=r.pctRes!=null && sens.some(x=>x.pct===r.pctRes);
+    if(_gestorIgual) sens.find(x=>x.pct===r.pctRes).gestor=true;
+    const sensLinhas=(_gestorIgual?sens:sens.concat([{pct:null, r, gestor:true}])).sort((a,b)=>(a.pct==null?a.r.pctEf:a.pct)-(b.pct==null?b.r.pctEf:b.pct));
+    const ecoLiqTxt=r.ecoLiqMes!=null?rs(r.ecoLiqMes):null;
+    const oQueResolve=`${_rpEsc(causas)}: ${fmtN(ocor)} paradas e ${_fmtMinPar(selMin)} parados no período (${fmtP(pctNPdoSel)} do tempo não programado), ${fmtN(cxPerd)} cx estimadas perdidas`;
+    const headline=`<b>${nomeInv||'O investimento proposto'}</b>${investTxt?`, de <b>${investTxt}</b>`:', <b>com orçamento pendente</b>'}, ataca <b>${_rpEsc(causas)}</b> com redução ${r.pctRes!=null?'de '+fmtN(r.pctRes)+'%':_pgSimPctTxt(r)}: recupera <b>${fmtN(Math.round(r.minMes))} min e ${fmtN(r.cxMes)} caixas por mês</b>`
+      +(r.rsMesHE!=null?` e economiza <b>${rs(r.rsMesHE)} de HE por mês (${rs(r.rsAnoHE)} por ano)</b>${r.custoRecMes>0?`, ${ecoLiqTxt}/mês líquidos da manutenção`:''}${r.heEstim?', em estimativa sem o teto da HE praticada':''}`:'')
+      +(payTxt?`. Paga-se em <b>${payTxt}</b>`:'')
+      +(r.roi!=null?`, com ROI de <b>${fmt1(r.roi)}% em ${r.anos} anos</b>`:'')+'.';
+    const sensTd=(x)=>{ const q=x.r; return `<tr${x.gestor?' class="prop-sens-g"':''}><td>${x.pct!=null?fmtN(x.pct)+'%':_pgSimPctTxt(q)}${x.gestor?' <i>cenário do gestor</i>':''}</td><td>${fmtN(Math.round(q.minMes))} min</td><td>${fmtN(q.cxMes)} cx</td><td>${q.rsMesHE!=null?rs(q.rsMesHE):'—'}</td><td>${q.pay!=null?fmt1(q.pay)+' meses':'—'}</td><td>${q.roi!=null?fmt1(q.roi)+'%':'—'}</td><td>${q.dispDepois!=null?fmt1(q.dispDepois)+'%':'—'}</td></tr>`; };
 
     corpo=skin+`<div class="prop">
 <div class="pg-abre so">
   <div class="pg-abre-ttl">A PROPOSTA EM UMA FRASE</div>
-  <div class="pg-abre-txt">${headline} Simulação sobre as paradas reais do período, com o cenário informado pelo gestor na tela — os números do problema saem do mesmo Pareto do relatório de paradas.</div>
-  <div class="prop-abre-selo">SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO</div>
+  <div class="pg-abre-txt">${headline}</div>
+  <div class="prop-abre-selo">SIMULAÇÃO DE POTENCIAL · É SIMULAÇÃO, NÃO MEDIÇÃO · PÁGINA 1 = DECISÃO · PÁGINA 2 = EVIDÊNCIA · ANEXO = MÉTODO</div>
 </div>
 
-<div class="prop-fluxo"><span>PROBLEMA</span><span>CENÁRIO</span><span>CAPACIDADE</span><span>IMPACTO</span><span>INVESTIMENTO</span><span>RETORNO</span></div>
+<div class="prop-fluxo"><span>O QUE É</span><span>QUANTO CUSTA</span><span>O QUE RESOLVE</span><span>ECONOMIA</span><span>RETORNO</span><span>SENSIBILIDADE</span><span>RECOMENDAÇÃO</span></div>
 
-<div class="rp-sec-ttl">1 ▸ O PROBLEMA — ONDE ESTÁ A PERDA</div>
+<div class="rp-sec-ttl">1 ▸ O QUE É E QUANTO CUSTA</div>
+<div class="prop-prem prop-dec">
+  <div class="prop-oque"><em>O QUE É O INVESTIMENTO</em><b>${nomeInv||'não informado — preencha o nome na tela do simulador'}</b><u>${[s.descr?_rpEsc(s.descr):'', s.forn?'fornecedor: '+_rpEsc(s.forn):'', s.prazo?'prazo: '+_rpEsc(s.prazo):''].filter(Boolean).join(' · ')||'sem descrição, fornecedor ou prazo informados'}</u></div>
+  <div class="${investTxt?'':'aguarda'}"><em>INVESTIMENTO TOTAL</em><b>${investTxt||'AGUARDANDO ORÇAMENTO'}</b><u>${investTxt?(r.instal>0?rs(r.invest)+' equipamento + '+rs(r.instal)+' instalação':'equipamento, sem instalação informada'):'nenhum valor foi estimado neste documento'}</u></div>
+  <div><em>CUSTO RECORRENTE</em><b>${r.manutAno>0?rs(r.manutAno)+' / ano':'não informado'}</b><u>${r.manutAno>0?rs(r.custoRecMes)+' por mês, descontado da economia antes do payback':'manutenção anual não informada — payback e ROI saem sem custo recorrente'}</u></div>
+</div>
+
+<div class="rp-sec-ttl">2 ▸ O QUE RESOLVE</div>
 <div class="prop-stats">
-  <div class="prop-stat"><em>OCORRÊNCIAS<span class="prop-et real">APONTADO</span></em><b>${fmtN(ocor)}×</b><u>nas causas atacadas do período</u></div>
+  <div class="prop-stat"><em>OCORRÊNCIAS<span class="prop-et real">APONTADO</span></em><b>${fmtN(ocor)}×</b><u>${_rpEsc(causas)} no período</u></div>
   <div class="prop-stat"><em>TEMPO PARADO<span class="prop-et real">APONTADO</span></em><b>${_fmtMinPar(selMin)}</b><u>${fmtP(pctNPdoSel)} do tempo não programado (${_fmtMinPar(st.totMinNP)})</u></div>
-  <div class="prop-stat"><em>CAIXAS PERDIDAS<span class="prop-et calc">ESTIMADO</span></em><b>${fmtN(cxPerd)} cx</b><u>a mesma conta de perda do painel</u></div>
+  <div class="prop-stat"><em>CAIXAS PERDIDAS<span class="prop-et calc">ESTIMADO</span></em><b>${fmtN(cxPerd)} cx</b><u>disponibilidade ${r.dispAntes!=null?fmt1(r.dispAntes)+'%':'—'} → <strong>${r.dispDepois!=null?fmt1(r.dispDepois)+'%':'—'}</strong> simulada (meta ${PG_META_DISP}%)</u></div>
 </div>
+
+<div class="rp-sec-ttl">3 ▸ ECONOMIA E RETORNO<span class="prop-selo">CENÁRIO SIMULADO · REDUÇÃO ${_pgSimPctTxt(r).toUpperCase()}</span></div>
+${r.rsMesHE!=null
+  ? `<div class="kpi-grid pg-mil">
+  <div class="kpi-card a acc"><div class="kpi-lbl">ECONOMIA EM HE<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${rs(r.rsMesHE)}<span> /mês</span></div><div class="kpi-ano">${rs(r.rsAnoHE)} por ano</div><div class="kpi-sub">${r.custoRecMes>0?'líquida da manutenção: <b>'+ecoLiqTxt+'/mês</b> · ':''}se a produção é reposta em hora extra (+${fmtN(r.adic)}%)${r.heEstim?' · estimativa, sem o teto da HE praticada':''}</div></div>
+  <div class="kpi-card${payTxt?' g':''}"><div class="kpi-lbl">PAYBACK</div><div class="kpi-val">${payTxt?fmt1(r.pay)+'<span> meses</span>':'<span>não calculado</span>'}</div><div class="kpi-ano">${payTxt?'investimento total ÷ economia'+(r.custoRecMes>0?' líquida':''):(investTxt?'economia insuficiente':'aguardando orçamento')}</div><div class="kpi-sub">${payTxt?'':(investTxt?_pgSimFalta(r):`régua: cada R$ 10.000 se paga em ${r.rsMesHE>0?fmt1(10000/r.rsMesHE)+' meses':'—'}`)}</div></div>
+  <div class="kpi-card${r.roi!=null&&r.roi<0?' r':''}"><div class="kpi-lbl">ROI EM ${r.anos} ANOS</div><div class="kpi-val">${r.roi!=null?fmt1(r.roi)+'<span> %</span>':'<span>não calculado</span>'}</div><div class="kpi-ano">${r.roi!=null?rs(r.ganhoAcum)+' acumulados':(investTxt?'economia insuficiente':'aguardando orçamento')}</div><div class="kpi-sub">${r.roi!=null?'(ganho acumulado − investimento) ÷ investimento':''}</div></div>
+</div>`
+  : `<div class="prop-ret">
+  <div class="aguarda"><em>ECONOMIA EM HE</em><b>não calculada</b><u>sem o custo-hora da linha não há leitura em R$ — preencha na tela e imprima de novo</u></div>
+  <div><em>PAYBACK</em><b>não calculado</b><u>${investTxt?'sem custo-hora':'aguardando orçamento'}</u></div>
+  <div><em>ROI</em><b>não calculado</b><u>${investTxt?'sem custo-hora':'aguardando orçamento'}</u></div>
+</div>`}
+${!investTxt && r.rsMesHE!=null && r.rsMesHE>0 && !payTxt
+  ? `<div class="rp-note">Aguardando o orçamento. Régua para a decisão: com economia em HE de ${rs(r.rsMesHE)} por mês, <b>cada R$ 10.000 de investimento se paga em ${fmt1(10000/r.rsMesHE)} meses</b>.</div>`:''}
+
+<div class="rp-sec-ttl">4 ▸ SENSIBILIDADE — E SE A REDUÇÃO FOR MENOR?</div>
+<table class="pgq-plano prop-sens"><thead><tr><th>REDUÇÃO DAS CAUSAS</th><th>TEMPO/MÊS</th><th>CAIXAS/MÊS</th><th>ECONOMIA HE/MÊS</th><th>PAYBACK</th><th>ROI ${r.anos} ANOS</th><th>DISPONIB.</th></tr></thead><tbody>
+${sensLinhas.map(sensTd).join('')}
+</tbody></table>
+<div class="rp-note prop-sens-nota">As linhas de ${PROP_SENS_PCTS.map(p=>fmtN(p)+'%').join(', ')} aplicam a MESMA redução a todas as causas atacadas, pela mesma conta do cenário do gestor${r.pctRes==null?' (que usa um % por causa)':''}. Ler assim: em qual linha a decisão deixa de valer a pena.</div>
+
+<div class="rp-sec-ttl">5 ▸ RECOMENDAÇÃO E ASSINATURAS</div>
+<div class="prop-recom${RECOM?'':' aguarda'}"><em>RECOMENDAÇÃO DO GESTOR</em><b>${RECOM||'não informada — escolha na tela do simulador'}</b></div>
+<div class="prop-ass">
+  <div><span></span>Gestor · PPCP</div>
+  <div><span></span>Gerência industrial</div>
+  <div><span></span>Diretoria</div>
+</div>
+
+<div class="prop-quebra"></div>
+<div class="rp-sec-ttl">6 ▸ A EVIDÊNCIA — O PROBLEMA MEDIDO</div>
 <table class="pgq-plano"><thead><tr><th>CAUSA ATACADA</th><th>OCORRÊNCIAS</th><th>TEMPO PARADO</th><th>CAIXAS PERDIDAS</th><th>REDUÇÃO SIMULADA</th></tr></thead><tbody>
 ${sel.map(t=>{ const pc=(r.porCausa||[]).find(c=>c.tipo===t.tipo); return `<tr><td>${_rpEsc(t.tipo)}</td><td>${fmtN(t.qtd)}×</td><td>${_fmtMinPar(t.min)}</td><td>${fmtN(t.perd)} cx</td><td>${pc?fmtN(pc.pct)+'%':'—'}</td></tr>`; }).join('')}
 <tr><td style="font-weight:700">TOTAL</td><td style="font-weight:700">${fmtN(ocor)}×</td><td style="font-weight:700">${_fmtMinPar(selMin)}</td><td style="font-weight:700">${fmtN(cxPerd)} cx</td><td style="font-weight:700">${_pgSimPctTxt(r)}</td></tr>
 </tbody></table>
-<div class="rp-note">Disponibilidade atual da linha: <b>${r.dispAntes!=null?fmt1(r.dispAntes)+'%':'—'}</b>, contra meta de ${PG_META_DISP}%.</div>
+<div class="rp-note">Período medido: ${_rpEsc(de)} a ${_rpEsc(ate)}, ${fmtN(r.nDias)} dia(s) trabalhado(s), ${fmt1(st.horasProd)}h produtivas por dia. Disponibilidade atual da linha: <b>${r.dispAntes!=null?fmt1(r.dispAntes)+'%':'—'}</b>, contra meta de ${PG_META_DISP}%. Os números saem do mesmo Pareto do relatório de paradas.</div>
 
-<div class="rp-sec-ttl">2 ▸ O CENÁRIO SIMULADO<span class="prop-selo">CENÁRIO SIMULADO</span></div>
+<div class="rp-sec-ttl">7 ▸ O CENÁRIO SIMULADO<span class="prop-selo">CENÁRIO SIMULADO</span></div>
 <div class="prop-prem">
-  <div><em>REDUÇÃO DA PARADA</em><b>${r.pctRes!=null?fmtN(r.pctRes)+'%':'por causa'}</b><u>${r.pctRes!=null?'do tempo das causas atacadas':'média de '+fmt1(r.pctEf)+'% do tempo — o % de cada causa está na tabela do problema'}</u></div>
+  <div><em>REDUÇÃO DA PARADA</em><b>${r.pctRes!=null?fmtN(r.pctRes)+'%':'por causa'}</b><u>${r.pctRes!=null?'do tempo das causas atacadas':'média de '+fmt1(r.pctEf)+'% do tempo — o % de cada causa está na tabela acima'}</u></div>
   <div><em>CUSTO-HORA DA LINHA</em><b>${r.rsMes!=null?rs2(_pgSimNum(s.custoHora)):'não informado'}</b><u>${r.rsMes!=null?'por hora de LINHA — todas as pessoas da embalagem juntas (informado pelo gestor)':'os R$, o payback e o ROI ficam de fora desta simulação'}</u></div>
   <div><em>PESSOAS NA EMBALAGEM</em><b>${r.pessoas>0?fmtN(r.pessoas)+' pessoa(s)':'não informado'}</b><u>${r.pessoas>0?'dá o total da equipe em hora extra (h por pessoa × pessoas)'+(r.custoHoraPessoa!=null?` (custo-hora por pessoa: ${rs(r.custoHoraPessoa)})`:''):'sem a conversão não há % de HE evitável nem teto na economia'}</u></div>
   <div><em>HORA EXTRA</em><b>${r.heMesLinha>0?(r.hePessoa!=null?fmt1(r.hePessoa)+' h/semana por pessoa':fmt1(r.heSem)+' homem-hora/semana'):'adicional de '+fmtN(r.adic)+'%'}</b><u>${r.heMesLinha>0?`adicional de ${fmtN(r.adic)}%${r.heMesHH>0?` · ${fmt1(r.heMesHH)} homem-hora/mês`:''} = ${fmt1(r.heMesLinha)}h de linha`:(r.heZero?'sem hora extra praticada — nada a economizar':'HE atual não informada')}</u></div>
   <div><em>TICKET MÉDIO<span class="prop-et pot">OPCIONAL</span></em><b>${r.ticket>0?rs2(r.ticket)+' por caixa':'não informado'}</b><u>${r.ticket>0?'informado pelo gestor — usado só no POTENCIAL DE RECEITA, nunca no payback':'potencial de receita não calculado; a simulação operacional não depende dele'}</u></div>
-  <div class="${investTxt?'':'aguarda'}"><em>INVESTIMENTO</em><b>${investTxt||'AGUARDANDO ORÇAMENTO'}</b><u>${investTxt?(r.instal>0?rs(r.invest)+' equipamento + '+rs(r.instal)+' instalação':'orçamento informado pelo gestor')+(r.manutAno>0?' · manutenção '+rs(r.manutAno)+'/ano, descontada da economia':' · sem manutenção informada'):'nenhum valor foi estimado neste documento — payback e ROI ficam sem cálculo até o orçamento chegar'}</u></div>
-  ${nomeInv||s.forn||s.prazo||s.descr?`<div class="prop-oque"><em>O QUE É O INVESTIMENTO</em><b>${nomeInv||'não informado'}</b><u>${[s.descr?_rpEsc(s.descr):'', s.forn?'fornecedor: '+_rpEsc(s.forn):'', s.prazo?'prazo: '+_rpEsc(s.prazo):''].filter(Boolean).join(' · ')||'—'}</u></div>`:''}
+  <div class="${investTxt?'':'aguarda'}"><em>INVESTIMENTO</em><b>${investTxt||'AGUARDANDO ORÇAMENTO'}</b><u>${investTxt?(r.instal>0?rs(r.invest)+' equipamento + '+rs(r.instal)+' instalação':'orçamento informado pelo gestor')+(r.manutAno>0?' · manutenção '+rs(r.manutAno)+'/ano, descontada da economia':' · sem manutenção informada'):'payback e ROI ficam sem cálculo até o orçamento chegar'}</u></div>
 </div>
 
-<div class="rp-sec-ttl">3 ▸ A CAPACIDADE RECUPERADA<span class="prop-selo">CENÁRIO SIMULADO</span></div>
+<div class="rp-sec-ttl">8 ▸ A CAPACIDADE RECUPERADA<span class="prop-selo">CENÁRIO SIMULADO</span></div>
 <div class="kpi-grid g4">
   <div class="kpi-card"><div class="kpi-lbl">TEMPO RECUPERADO<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${fmtN(Math.round(r.minMes))}<span> min/mês</span></div><div class="kpi-ano">${fmt1(r.horasAno)}h por ano</div><div class="kpi-sub">${_fmtMinPar(Math.round(r.minPer))} no período medido</div></div>
   <div class="kpi-card g"><div class="kpi-lbl">CAIXAS RECUPERADAS<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${fmtN(r.cxMes)}<span> cx/mês</span></div><div class="kpi-ano">${fmtN(r.cxAno)} cx por ano</div><div class="kpi-sub">capacidade que volta para a linha${r.exced>0?` · ${fmt1(r.exced)}h acima da HE praticada`:''}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">HORA EXTRA EVITÁVEL<span class="prop-et pot">POTENCIAL</span></div><div class="kpi-val">${r.pctHE!=null?fmt1(Math.min(100,r.pctHE))+'%<span> da HE</span>':'—'}</div><div class="kpi-sub">${r.pctHE!=null?(r.pctHE>100?fmt1(r.recH)+'h recuperadas passam da HE praticada ('+fmt1(r.heMesLinha)+'h de linha) — toda a HE seria evitável':fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)'):(r.heSem>0?'informe a quantidade de pessoas na tela':'informe as h/semana de HE na tela')}</div></div>
   <div class="kpi-card${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' g':''}"><div class="kpi-lbl">DISPONIBILIDADE<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${r.dispAntes!=null?fmt1(r.dispAntes)+'%<span class="seta"> → </span>'+fmt1(r.dispDepois)+'%':'—'}</div><div class="kpi-sub">meta ${PG_META_DISP}%${r.dispDepois!=null&&r.dispDepois>=PG_META_DISP?' — o cenário CRUZA a meta':''}</div></div>
 </div>
-<div class="rp-note">O <b>ano</b> é projeção, não medição: o período medido levado a um mês típico de <b>22 dias úteis</b> (este período tem ${fmtN(r.nDias)} dia(s) trabalhado(s)) e multiplicado por 12 — assume o mesmo padrão de paradas e o mesmo nível de hora extra ao longo dos 12 meses.</div>
+<div class="rp-note">O <b>ano</b> é projeção, não medição: o período medido levado a um mês típico de <b>22 dias úteis</b> (este período tem ${fmtN(r.nDias)} dia(s) trabalhado(s)) e multiplicado por 12 — assume o mesmo padrão de paradas e o mesmo nível de hora extra ao longo dos 12 meses. Capacidade recuperada <b>não é economia de caixa</b>.</div>
 
-<div class="rp-sec-ttl">4 ▸ O IMPACTO ECONÔMICO — TRÊS LEITURAS QUE NÃO SE SOMAM</div>
+<div class="rp-sec-ttl">9 ▸ OUTRAS LEITURAS — NÃO SE SOMAM À ECONOMIA</div>
 <div class="kpi-grid pg-mil">
   <div class="kpi-card"><div class="kpi-lbl">CUSTO DA PARADA<span class="prop-et calc">OCIOSIDADE</span></div><div class="kpi-val">${r.rsMes!=null?rs(r.rsMes)+'<span> /mês</span>':'—'}</div><div class="kpi-ano">${r.rsAno!=null?rs(r.rsAno)+' por ano':''}</div><div class="kpi-sub">${r.rsMes!=null?'folha já paga — não é economia de caixa':'informe o custo-hora na tela'}</div></div>
-  <div class="kpi-card a acc"><div class="kpi-lbl">ECONOMIA EM HE<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${r.rsMesHE!=null?rs(r.rsMesHE)+'<span> /mês</span>':'—'}</div><div class="kpi-ano">${r.rsAnoHE!=null?rs(r.rsAnoHE)+' por ano':''}</div><div class="kpi-sub">${r.rsMesHE!=null?'a leitura de caixa — se a produção é reposta em hora extra (+'+fmtN(r.adic)+'%)'+(r.heEstim?' · estimativa, sem o teto da HE praticada':''):'informe o custo-hora na tela'}</div></div>
-  <div class="kpi-card pot"><div class="kpi-lbl">POTENCIAL DE RECEITA<span class="prop-et pot">POTENCIAL</span></div><div class="kpi-val">${r.receitaMes!=null?rs(r.receitaMes)+'<span> /mês</span>':'—'}</div><div class="kpi-ano">${r.receitaAno!=null?rs(r.receitaAno)+' por ano':''}</div><div class="kpi-sub">${r.receitaMes!=null?'capacidade recuperada × ticket de '+rs2(r.ticket)+'/cx':'ticket médio não informado — potencial de receita não calculado'}</div></div>
+  <div class="kpi-card a acc"><div class="kpi-lbl">ECONOMIA EM HE<span class="prop-et sim">SIMULADO</span></div><div class="kpi-val">${r.rsMesHE!=null?rs(r.rsMesHE)+'<span> /mês</span>':'—'}</div><div class="kpi-ano">${r.rsAnoHE!=null?rs(r.rsAnoHE)+' por ano':''}</div><div class="kpi-sub">${r.rsMesHE!=null?'a leitura de caixa da página 1 — repetida aqui só para a comparação':'informe o custo-hora na tela'}</div></div>
+  <div class="kpi-card pot"><div class="kpi-lbl">POTENCIAL DE RECEITA<span class="prop-et pot">POTENCIAL</span></div><div class="kpi-val">${r.receitaMes!=null?rs(r.receitaMes)+'<span> /mês</span>':'—'}</div><div class="kpi-ano">${r.receitaAno!=null?rs(r.receitaAno)+' por ano':''}</div><div class="kpi-sub">${r.receitaMes!=null?'capacidade recuperada × ticket de '+rs2(r.ticket)+'/cx — condicional à demanda':'ticket médio não informado — potencial de receita não calculado'}</div></div>
 </div>
 <div class="rp-note"><b>As três não se somam — são conceitos diferentes.</b> O <b>CUSTO DA PARADA</b> é a ociosidade de uma folha que já é paga: contexto, não economia de caixa. A <b>ECONOMIA EM HE</b> é a única leitura de caixa, e já contém aquela hora dentro dela — somar as duas seria contagem dupla. O <b>POTENCIAL DE RECEITA</b> é o valor econômico da capacidade recuperada, não é economia nem lucro. ${r.receitaMes!=null?'Potencial de receita calculado sobre a capacidade recuperada e o ticket médio informado — <b>não representa faturamento garantido</b>: caixa recuperada só vira receita se houver demanda, e o ticket é a média do mix do período.':'<b>Ticket médio não informado. Potencial de receita não calculado.</b>'} <b>Payback e ROI usam só a ECONOMIA EM HE</b> — receita potencial não é dinheiro disponível para pagar investimento.</div>
 
-<div class="rp-sec-ttl">5 ▸ INVESTIMENTO E RETORNO</div>
-${payTxt
-  ? `<table class="pgq-plano"><tbody>
-  <tr><td style="font-weight:700;width:34%">INVESTIMENTO</td><td>${investTxt}${r.instal>0?' — '+rs(r.invest)+' equipamento + '+rs(r.instal)+' instalação':''}</td></tr>
-  ${r.manutAno>0?`<tr><td style="font-weight:700">MANUTENÇÃO / ANO</td><td>${rs(r.manutAno)} — ${rs(r.custoRecMes)} por mês, descontado da economia: economia líquida de <b>${rs(r.ecoLiqMes)}/mês</b></td></tr>`:''}
-  <tr><td style="font-weight:700">ECONOMIA EM HE / MÊS</td><td>${rs(r.rsMesHE)} (${rs(r.rsAnoHE)} por ano)${r.heEstim?' — estimativa, sem o teto da HE praticada':''}</td></tr>
-  <tr><td style="font-weight:700">CUSTO DA PARADA / MÊS</td><td>${rs(r.rsMes)} — ociosidade de folha já paga; contexto, não soma com a economia</td></tr>
-  <tr><td style="font-weight:700">PAYBACK</td><td><b>${payTxt}</b> — investimento ÷ ECONOMIA EM HE mensal${r.custoRecMes>0?' líquida da manutenção':''}, valor único</td></tr>
-  ${r.roi!=null?`<tr><td style="font-weight:700">ROI (${r.anos} ANOS)</td><td><b>${fmt1(r.roi)}%</b> — ganho acumulado de ${rs(r.ganhoAcum)} em ${r.anos} anos contra ${investTxt} de investimento</td></tr>`:''}
-  ${RECOM?`<tr><td style="font-weight:700">RECOMENDAÇÃO DO GESTOR</td><td><b>${RECOM}</b></td></tr>`:''}
-</tbody></table>`
-  : `<div class="prop-ret">
-  <div class="aguarda"><em>INVESTIMENTO</em><b>AGUARDANDO ORÇAMENTO</b><u>nenhum valor foi estimado neste documento</u></div>
-  <div><em>PAYBACK</em><b>não calculado</b><u>aguardando orçamento</u></div>
-  <div><em>ROI</em><b>não calculado</b><u>aguardando orçamento</u></div>
-</div>
-${r.rsMesHE!=null && r.rsMesHE>0
-  ? `<div class="rp-note">Aguardando o orçamento. Régua para a decisão: com economia em HE de ${rs(r.rsMesHE)} por mês, <b>cada R$ 10.000 de investimento se paga em ${fmt1(10000/r.rsMesHE)} meses</b>.</div>`
-  : `<div class="rp-note">Sem o custo-hora informado não há leitura em R$ — preencha o campo na tela do simulador e imprima de novo.</div>`}`}
-
-<div class="rp-sec-ttl">6 ▸ METODOLOGIA E PREMISSAS — COMO O NÚMERO SAI</div>
+<div class="prop-quebra"></div>
+<div class="rp-sec-ttl">ANEXO ▸ METODOLOGIA E PREMISSAS — COMO O NÚMERO SAI</div>
 <div class="prop-met">
   <div><em>MINUTOS E CAIXAS</em><p>Do Pareto deste período (aba PARADAS): duração produtiva de cada parada × meta daquele dia ÷ horas produtivas — <b>a conta única do painel</b>, a mesma do relatório de paradas e da gestão de perdas. Almoço recortado; parada em andamento fora.</p></div>
   <div><em>MÊS E ANO</em><p>Mês típico de <b>22 dias úteis</b> (o período em tela tem ${fmtN(r.nDias)} dia(s) trabalhado(s)); ano = mês × 12.</p></div>
   <div><em>HOMEM-HORA → HORA DE LINHA</em><p>O custo-hora é de <b>uma hora de LINHA</b> (todas as pessoas juntas); a HE é informada <b>por pessoa</b> (h/semana, em média). Se cada pessoa faz 8 h de hora extra, a linha faz 8 h: HE em hora de linha no mês = h/semana por pessoa × 4,4; em homem-hora, × pessoas na embalagem.</p></div>
   <div><em>AS TRÊS LEITURAS EM R$ (não se somam)</em><p><b>CUSTO DA PARADA</b> = horas recuperadas × custo-hora — ociosidade de folha já paga, não é economia de caixa. <b>ECONOMIA EM HE</b> = as mesmas horas, limitadas à HE praticada, × custo-hora × (1 + adicional) — a leitura de caixa. A hora base está contida na hora extra: somar as duas seria contagem dupla. <b>POTENCIAL DE RECEITA</b> = caixas recuperadas × ticket médio — valor econômico da capacidade, não é economia, não é lucro e não é faturamento garantido. Payback e ROI usam só a ECONOMIA EM HE.</p></div>
+  <div><em>INVESTIMENTO, PAYBACK E ROI</em><p>Investimento total = equipamento + instalação. Custo recorrente = manutenção anual ÷ 12, descontado da economia em HE todo mês. Payback = investimento total ÷ economia líquida mensal; ROI = (economia líquida × ${r.anos} anos × 12 − investimento total) ÷ investimento total.</p></div>
+  <div><em>SENSIBILIDADE</em><p>As linhas de ${PROP_SENS_PCTS.map(p=>fmtN(p)+'%').join(', ')} são a mesma conta com a redução uniforme em todas as causas atacadas. Nada é redigido à mão: o painel roda a simulação de novo para cada linha.</p></div>
   <div><em>TICKET MÉDIO E POTENCIAL DE RECEITA</em><p>O ticket médio é <b>opcional</b> e informado pelo gestor: sem ele o potencial de receita simplesmente <b>não é calculado</b> — nenhum preço é arbitrado. Com ele, potencial mensal = caixas recuperadas × ticket, e o anual = mensal × 12. Uma caixa recuperada é <b>capacidade produtiva</b>, não uma venda: ela só vira receita se houver demanda para absorvê-la. O ticket é ainda uma <b>média do mix do período</b> — modelos e caixas de valores diferentes entram na mesma média. Por isso este valor <b>nunca entra no payback nem no ROI</b>: receita potencial não é dinheiro disponível para pagar o investimento.</p></div>
   <div><em>TETO DA ECONOMIA</em><p>Não se economiza mais HE do que a praticada: horas valorizadas = mín(recuperadas, HE em hora de linha). O excedente vira <b>ganho de capacidade</b>, anotado no card de caixas — nunca R$. Sem HE/pessoas informadas não há teto e o valor sai como estimativa.</p></div>
   <div><em>HORA EXTRA EVITÁVEL</em><p>HE do mês = h/semana × 4,4 (mês de 22 dias úteis), convertida para hora de linha; o % é quanto dessa HE o tempo recuperado explica. HE também cobre pico de demanda — leia como teto, não como corte garantido.</p></div>
