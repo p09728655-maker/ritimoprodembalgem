@@ -29,6 +29,9 @@ Os campos em R$ (**custo-hora, investimento e ticket médio**) ficam no formato
 brasileiro ao sair do campo: *200000* vira **R$ 200.000**, *377,81* vira
 **R$ 377,81**. A conta lê o texto formatado de volta — nenhum número muda.
 
+O campo de **% por causa** ficou maior (70px, número a 13,5px, borda visível e
+laranja no foco) — a 48px/11px era ruim de acertar e de ler.
+
 **Atenção:** com 8 h/pessoa, 15 pessoas, Troca de Plástico a 80% e R$ 200.000,
 a ECONOMIA EM HE foi de **R$ 1.330 → R$ 3.151/mês**, o payback de **150,4 →
 63,5 meses** e o ROI em 5 anos de **−60,1% → −5,5%**. O valor antigo salvo no
