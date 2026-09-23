@@ -13,7 +13,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RitmoPatrimar · Embalagem</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<!-- A Barlow 600 existe de propósito: sem ela, todo <b> em Barlow (600/700)
+     era NEGRITO SINTÉTICO — o navegador engrossa a 500 na mão, e sai borrado e
+     pesado ("parece negrito muito forte", 23/09/2026). Com a face real, o 600
+     é o 600 desenhado pela fonte. -->
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <!-- ⚠ AS DUAS BIBLIOTECAS DE CDN SÃO `defer` — NÃO TIRAR.
      Sem `defer` elas são scripts SÍNCRONOS no <head>: o parser PARA aqui e o
      <body> (o splash inclusive) só começa a existir depois que o cdnjs
@@ -384,8 +388,10 @@ body.ger-hist .ger-live-only{display:none!important}
 /* ── BRANCO MENOS DURO NAS TELAS DE GESTÃO (23/09/2026: "o branco está ruim de
    ver, parece negrito muito forte"). Nas abas lidas a 60 cm o texto principal
    desce de #F5F5F5 para #E6E6E6 (ainda ~14:1 sobre o fundo) e o <b> vai de 700
-   para 600. A TV fica de fora: a 15 m o branco cheio é o que se lê. */
-.sec:not(#sec-tv){--txt:#E6E6E6}
+   para 600 — e o 600 passou a ser face REAL da Barlow (ver o <link> das fontes):
+   sem ela o navegador sintetizava o negrito, que é o que parecia "muito forte".
+   A TV fica de fora: a 15 m o branco cheio é o que se lê. */
+.sec:not(#sec-tv){--txt:#DEDEDE}
 .sec:not(#sec-tv) b,.sec:not(#sec-tv) strong{font-weight:600}
 /* ── TESTE DE SUPERFÍCIE (só #sec-simulador, 23/09/2026) ─────────────────
    Mesma paleta, outra profundidade: fundo → bloco → card em três tons um
@@ -2776,7 +2782,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.66.1';
+const APP_VER   = '7.66.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o

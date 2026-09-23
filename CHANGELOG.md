@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.66.2 — 23/09/2026
+
+**O "negrito muito forte" era negrito SINTÉTICO.** O painel só carregava a
+Barlow em 400 e 500; todo `<b>` em Barlow (600/700) era engrossado pelo
+navegador a partir do 500 — que sai borrado e pesado, e é por isso que a
+v7.66.1 "ficou igual". Agora a **Barlow 600** é carregada de verdade e o
+negrito das telas de gestão é a face desenhada pela fonte. O texto principal
+dessas telas desce mais um pouco, para `#DEDEDE`. A TV continua com o branco
+cheio. Nenhum número muda.
+
+---
+
 ## v7.66.1 — 23/09/2026
 
 **Branco menos duro nas telas de gestão** (*"o branco está ruim de ver, parece
