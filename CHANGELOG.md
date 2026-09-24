@@ -11,6 +11,16 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.92.0 — 24/09/2026
+
+**🖨 CAPACIDADE DE CADA PRODUTO** no simulador de CAPACIDADE UEP. Imprime numa
+folha só **todos os produtos do cadastro**, do mais pesado para o mais leve.
+Para cada um: código, volumes, cores, UEP por produto, produtos por dia,
+caixas por dia e produtos por hora, com ele sozinho na linha.
+- A busca da tela não filtra: sai sempre tudo.
+- Produto com volume sem UEP sai listado à parte.
+- O botão antigo virou **🖨 DIA MONTADO**.
+
 ## v7.91.0 — 24/09/2026
 
 **🖨 IMPRIMIR no simulador de CAPACIDADE UEP.** Folha em retrato com quatro
