@@ -11,6 +11,15 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.80.1 — 24/09/2026
+
+**💾 GRAVAR UEP mostra que está trabalhando.** Antes de gravar, o botão busca
+a produção do período com as caixas por hora, o que leva até 1 minuto e fica na
+fila do Apps Script atrás do comparativo da aba. Nesse tempo nada mudava na
+tela, e parecia botão quebrado. Agora ele mostra *BUSCANDO O PERÍODO…*, depois
+*GRAVANDO NO CADASTRO…*, e fica desabilitado até terminar: um segundo toque não
+dispara outra busca. Nenhum número muda.
+
 ## v7.80.0 · mobile 1.20.0 · ⚠ .gs v5.11 — 24/09/2026
 
 **UEP DO DIA no gerencial (desktop e celular).** O card mostra a UEP feita em

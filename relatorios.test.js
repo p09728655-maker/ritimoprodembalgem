@@ -3603,8 +3603,10 @@ console.log('\n── estudo de UEP ──');
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
        (pega('function _sincSlideB(') + pega('function renderTV(')).includes('uepCard'), false);
+    ok('o GRAVAR UEP mostra que está trabalhando e não dispara duas vezes',
+       [/if\(_uepGravando\) return;/.test(pega('async function gravarUepCadastro(')), /_uepBotao\('⏳ BUSCANDO/.test(pega('async function _gravarUepCadastro('))], [true, true]);
     ok('o botão GRAVAR UEP grava em lotes, em sequência, pela escrita com retry',
-       /for\(let i=0;i<lista\.length;i\+=UEP_GRAVAR_LOTE\)[\s\S]*await jsonpEscrita\(url\)/.test(pega('async function gravarUepCadastro(')), true);
+       /for\(let i=0;i<lista\.length;i\+=UEP_GRAVAR_LOTE\)[\s\S]*await jsonpEscrita\(url\)/.test(pega('async function _gravarUepCadastro(')), true);
   }
   ok('o alvo provisório é 2.300 UEP em 8 h', UEP_ALVO_PROV, 2300);
   const bonsM = eM.dias.filter(d => !d.suspeito);
