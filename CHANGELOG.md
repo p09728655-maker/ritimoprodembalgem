@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.95.0 — 24/09/2026
+
+**Simulador de capacidade UEP: limite físico da esteira** (PPCP). Cada produto
+completo passa a ter um **LIMITE ESTEIRA / DIA**: a soma do tempo de esteira
+dos volumes (medida da caixa + entre-peças, pela velocidade) em 527 min. Aparece
+na busca do simulador, no 🖨 DIA MONTADO e no 🖨 CAPACIDADE DE CADA PRODUTO.
+Novo campo **VELOCIDADE ESTEIRA (m/min)** para simular a esteira mais rápida
+(vazio = velocidade do cadastro).
+
+**Atenção:**
+- Produto em que a UEP daria mais do que a esteira comporta sai com ⚠ e a
+  capacidade (e os PONTOS / DIA) **cortada no limite**. Antes o número pela UEP
+  saía sozinho, mesmo fisicamente impossível.
+- ⚠ no produto quer dizer **UEP baixa demais ou velocidade do cadastro
+  errada** — conferir os dois antes de usar o número.
+- Produto sem MEDIDA/VELOCIDADE no cadastro não tem limite: segue como antes.
+- Nada no `.gs`.
+
+---
+
 ## v7.94.0 — 24/09/2026
 
 **UEP: entre as cores vale a MAIS RÁPIDA, nunca a média** (PPCP). A base da

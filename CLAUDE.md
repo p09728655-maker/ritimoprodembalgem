@@ -2652,6 +2652,17 @@ feito e dá ar de verdade ao que sobrou.
   - Simulador: entre as cores de um volume vale a MENOR UEP do cadastro. Pontos
     continuam pela média (ponto é tabela, não ritmo).
   - ⚠ Só vale no painel depois de um novo 💾 GRAVAR UEP.
+- **LIMITE DA ESTEIRA NO SIMULADOR** (v7.95.0, PPCP 24/09/2026). Cada volume
+  ocupa `(MEDIDA + ENTRE_PECAS) ÷ (VELOCIDADE × 60.000)` h de esteira (entre as
+  cores, a mais curta); o jogo é a soma, e `tetoDia` = jogos/h × 527 min.
+  `_capDia(p, meta, velSim)` é a conta ÚNICA da tela e dos dois PDFs: pela UEP
+  (`meta ÷ uepJogo`) e, se passar do limite, o dia é CORTADO no limite com ⚠.
+  - O campo **VELOCIDADE ESTEIRA (m/min)** simula esteira mais rápida (*"a
+    esteira eu posso aumentar a velocidade"*): vazio = velocidade do cadastro.
+    Nada é gravado.
+  - ⚠ Produto marcado = **UEP baixa demais OU velocidade do cadastro errada**.
+    Não é para "corrigir" a UEP pelo limite: é o sinal para conferir.
+  - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
