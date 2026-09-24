@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.78.0';
+const APP_VER   = '7.78.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6058,12 +6058,16 @@ async function _uepItensPeriodo(){
 }
 
 async function gerarRelatorioUEP(){
-  const itens=await _uepItensPeriodo();
-  if(itens==null){ alert(_phFalhaTxt()); return; }
-  if(!itens.length){ alert('Sem produção apontada com produto no período — nada para estudar.'); return; }
+  // A janela abre NO CLIQUE, antes da busca. A busca do estudo (com cxHora) é
+  // própria e leva segundos; aberta depois dela, o navegador já não liga a
+  // janela ao clique e bloqueia o pop-up — era o "não está imprimindo".
   const win=window.open('','_blank','width=1100,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
-  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando o estudo de UEP...</p></body></html>');
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Buscando a produção do período e montando o estudo de UEP… (pode levar até 1 min)</p></body></html>');
+  let itens=null;
+  try{ itens=await _uepItensPeriodo(); }catch(e){ itens=null; }
+  if(itens==null){ try{win.close();}catch(e){} alert(_phFalhaTxt()); return; }
+  if(!itens.length){ try{win.close();}catch(e){} alert('Sem produção apontada com produto no período — nada para estudar.'); return; }
   const datas=[...new Set(itens.map(it=>it.data))].sort((a,b)=>_phParseData(a)-_phParseData(b));
   const ctx={ de:dGet('ph-de')||datas[0], ate:dGet('ph-ate')||datas[datas.length-1], modo:_phMediaModo() };
   // Realizado de cada dia (HISTORICO, cache de 2 min) só para a COBERTURA da
