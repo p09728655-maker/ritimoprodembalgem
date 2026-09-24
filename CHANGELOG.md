@@ -11,7 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.84.0 · mobile 1.23.0 · .gs v5.15 — 24/09/2026
+## v7.85.0 — 24/09/2026
+
+**CARTEIRA EM UEP na aba PLANO.** Opção nova no seletor CARTEIRA: **em UEP**.
+Cada lote entra com a quantidade × a UEP do código no cadastro, e a faixa alvo e
+o melhor dia saem da **UEP de jornada normal gravada no HISTÓRICO**. Carga e
+régua ficam na mesma unidade. A dívida (atraso + o que falta hoje) entra pela
+UEP de cada código em atraso. Vale na tela e nos dois PDFs (🖨 ESTUDO e 🖨
+CARTEIRA).
+
+**Atenção:**
+- Os modos **carga pelo mix**, **caixas cruas** e **as duas** continuam como
+  estavam. A UEP é uma opção a mais: nada muda até ela ser escolhida no seletor.
+- O **E SE PARADAS** ainda é calculado em caixas e não sai no modo UEP. A tela
+  diz isso.
+- Código sem UEP no cadastro entra com a UEP média das linhas da carteira e é
+  contado na caixa de explicação.
+- Sem UEP na programação (`.gs` < v5.13 ou cadastro vazio), ou com menos de 10
+  dias com UEP no HISTÓRICO, a tela diz o que falta em vez de desenhar.
+
+
 
 **A meta de UEP do dia passa a ser da jornada normal inteira: 2.530 UEP.** Os
 2.300 do estudo são ritmo × 8 h, mas o dia soma a jornada inteira (527 min). Com

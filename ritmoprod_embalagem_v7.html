@@ -2235,6 +2235,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CARTEIRA</span>
       <select id="qp-mix" class="frm-inp" onchange="_qpSetMix(this.value)" style="width:150px;padding:3px 8px;font-size:11px;cursor:pointer"
               title="CARGA PELO MIX: cada lote pesa pelo ritmo do produto (o mesmo cx/h da aba PRODUÇÃO/HORA) — produto lento pesa mais, produto rápido pesa menos. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO. AS DUAS desenha um gráfico de cada, um sob o outro: é onde se vê se o veredito muda de uma régua para a outra.">
+        <option value="uep">em UEP</option>
         <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
         <option value="ambos">as duas</option>
@@ -2866,7 +2867,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.84.0';
+const APP_VER   = '7.85.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -8083,7 +8084,7 @@ function _qpCarregarPref(){
     if(Array.isArray(o.faixa) && o.faixa.length === 2) QP_FAIXA = o.faixa.map(Number);
     if(o.janela != null) QP_JANELA = Number(o.janela);
     if(o.ordem) QP_ORDEM = String(o.ordem);
-    if(o.mix === 'cru' || o.mix === 'mix' || o.mix === 'ambos') QP_MIX = o.mix;
+    if(o.mix === 'cru' || o.mix === 'mix' || o.mix === 'ambos' || o.mix === 'uep') QP_MIX = o.mix;
     if(o.ese != null) QP_ESE = Math.max(0, Math.min(1, Number(o.ese) || 0));
   }catch(e){}
 }
@@ -8124,7 +8125,7 @@ function _qpSetOrdem(v){ QP_ORDEM = String(v); _qpSalvarPref(); renderQualidadeP
 // Só a carteira lê o mix: o bloco de baixo julga METAS (a soma dos lotes de um
 // dia que já passou), e converter meta antiga pelo mix pediria a programação
 // daquele dia, que o arquivamento já levou. Não inventar.
-function _qpSetMix(v){ QP_MIX = (v === 'cru' || v === 'ambos') ? v : 'mix'; _qpSalvarPref(); renderCarteira(); }
+function _qpSetMix(v){ QP_MIX = (v === 'cru' || v === 'ambos' || v === 'uep') ? v : 'mix'; _qpSalvarPref(); renderCarteira(); }
 function _qpSetEse(v){ QP_ESE = Math.max(0, Math.min(1, Number(v) || 0)); _qpSalvarPref(); renderCarteira(); }
 function _qpSetFaixa(v){
   const p = String(v).split('-').map(Number);
@@ -8572,7 +8573,13 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     if(q <= 0){ semQtd++; return; }
     if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[] };
     const d = por[dn];
-    const fx = _mixFator(ritmos, it.codigo, it.cor);
+    // Modo UEP (v7.85.0): o "fator" é a UEP por caixa do CADASTRO (a linha da
+    // programação traz `uepCx`, .gs v5.13) e a carga sai em UEP. Código sem UEP
+    // entra com a UEP média das linhas que têm (`fallback`) e é contado.
+    const fx = (ritmos && ritmos.uep)
+      ? (Number(it.uepCx) > 0 ? { f:Number(it.uepCx), base:'uep', aparado:false }
+                               : { f:ritmos.fallback || 1, base:null, aparado:false })
+      : _mixFator(ritmos, it.codigo, it.cor);
     const eq = q * fx.f;
     d.crua += q; d.qtde += eq; d.n++;
     // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
@@ -8596,7 +8603,7 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     de:  dias.length ? dias[0].data : '',
     ate: dias.length ? dias[dias.length - 1].data : '',
     // a leitura do mix, para o desenho dizer de onde o peso saiu
-    mix: ritmos ? { ref: ritmos.ref, razao: ritmos.razao, nDias: ritmos.nDias,
+    mix: ritmos ? { ref: ritmos.ref, razao: ritmos.razao, nDias: ritmos.nDias, uep: !!ritmos.uep, fallback: ritmos.fallback,
                     semBase: dias.reduce((a,d) => a + d.semBase, 0),
                     aparados: dias.reduce((a,d) => a + d.aparados, 0),
                     nLotes: dias.reduce((a,d) => a + d.n, 0) } : null,
@@ -8703,6 +8710,7 @@ async function _cartCenarioAsync(cart, dias){
 function _cartESeHtml(a){
   const c = a && a.cenario;
   if(!c) return '';
+  if(c.falha === 'uep') return '<div class="qp-ese">ℹ <b>E SE PARADAS</b> ainda é calculado em caixas — na carteira em UEP ele não sai. Escolha <b>carga pelo mix</b> para ver o cenário.</div>';
   if(c.falha) return '<div class="qp-ese warn">⚠ <b>E SE PARADAS:</b> o cenário não saiu — '
     + (c.falha === 'sem-modulo' ? 'o módulo de paradas não carregou' : 'não foi possível ler as paradas dos dias da régua') + '. Toque ATUALIZAR.</div>';
   const pctTxt = Math.round(c.pct * 100) + '%';
@@ -8717,18 +8725,32 @@ function _cartESeHtml(a){
 // O VEREDITO fala da DATAÇÃO, nunca da linha — e distingue os dois problemas,
 // que pedem ações opostas: re-datar (de graça) × arrumar capacidade (custa).
 function _cartVeredito(a){
+  const un = _cartUn(a);
   if(!a) return { cls:'', t:'SEM CARTEIRA DATADA', d:'não há lote com data futura na PROGRAMACAO' };
   if(a.sobra > 0) return { cls:'red', t:'HORIZONTE SOBRECARREGADO',
     d:'mesmo espalhando a carga pelos dias livres sobram ' + fmtN(Math.round(a.sobra))
-      + ' cx que não cabem no período — aqui re-datar não basta: é dia a mais, hora extra ou empurrar para a semana seguinte' };
+      + ' ' + un + ' que não cabem no período — aqui re-datar não basta: é dia a mais, hora extra ou empurrar para a semana seguinte' };
   if(a.nImpossivel > 0) return { cls:'red', t:'DIA DATADO ACIMA DO MÁXIMO JÁ FEITO',
     d:a.nImpossivel + ' dia(s) pedem mais que o melhor dia da linha em jornada normal (' + fmtN(a.teto)
-      + ' cx) — e a carga cabe no período: é redistribuir, não produzir mais' };
+      + ' ' + un + ') — e a carga cabe no período: é redistribuir, não produzir mais' };
   if(a.sai > 0) return { cls:'warn', t:'CARGA MAL DISTRIBUÍDA',
-    d:fmtN(Math.round(a.sai)) + ' cx estão em dias que não comportam, e há ' + fmtN(Math.round(a.cabe))
-      + ' cx de espaço nos dias livres do próprio período' };
+    d:fmtN(Math.round(a.sai)) + ' ' + un + ' estão em dias que não comportam, e há ' + fmtN(Math.round(a.cabe))
+      + ' ' + un + ' de espaço nos dias livres do próprio período' };
   return { cls:'ok', t:'CARTEIRA NIVELADA',
     d:'todos os dias datados cabem na faixa alvo — o vermelho que aparecer vai ser da operação, não da datação' };
+}
+
+// A UNIDADE da carteira: em UEP a barra, a régua e as contas são UEP; nos
+// outros modos, caixas. Um lugar só, para nenhum texto esquecer de trocar.
+function _cartUn(a){ return a && a.mixModo === 'uep' ? 'UEP' : 'cx'; }
+// O PESO de um lote/dia em palavras. Em UEP é a UEP por caixa do cadastro
+// (número absoluto, sem selo "lento/rápido": não é relativo à média da linha).
+function _cartPeso(a, f){
+  if(a && a.mixModo === 'uep'){
+    const t = (Number(f) || 0).toFixed(2).replace('.', ',') + ' UEP/cx';
+    return { pct:'', palavra:t, cls:'', selo:t, frase:'média de ' + t };
+  }
+  return _cartPesoTxt(f);
 }
 
 // O PESO EM PALAVRAS, uma implementação para barra, tooltip, tabela e card
@@ -8752,11 +8774,12 @@ function _cartHtml(a, regua, larg){
   const fMin = a.faixa[0], fMax = a.faixa[1];
   const W = larg || 760, H = 300, L = 54, R = 26, T = 34, B = 44;
   const FS = 12;   // ver a nota do _qpHtml — o corpo é o mesmo nos dois
-  const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => Math.max(l.qtde, l.crua || 0)))) * 1.08 || 1;
+  const topo = Math.max(a.teto, Math.max.apply(null, a.linhas.map(l => a.mixModo === 'uep' ? l.qtde : Math.max(l.qtde, l.crua || 0)))) * 1.08 || 1;
   const ey = y => T + (1 - y / topo) * (H - T - B);
   const passo = (W - L - R) / a.linhas.length;
   const yMax = ey(a.alvoMax), yMin = ey(a.alvoMin), yTeto = ey(a.teto);
-  const _tetoTxt  = 'MELHOR DIA SEM HORA EXTRA — ' + fmtN(a.teto) + ' CX';
+  const un = _cartUn(a), ehU = a.mixModo === 'uep';
+  const _tetoTxt  = 'MELHOR DIA SEM HORA EXTRA — ' + fmtN(a.teto) + ' ' + un.toUpperCase();
   const _cargaTxt = 'A CARGA DEVERIA FICAR AQUI';
   // Um rótulo de linha: escolhe o lado livre, desenha a tarja e o texto, e a
   // seta aponta para dentro do gráfico a partir do lado escolhido.
@@ -8764,10 +8787,14 @@ function _cartHtml(a, regua, larg){
   // ⚠ A COLISÃO DA TARJA OLHA O QUE ESTÁ DESENHADO, e com o mix o topo do dia é
   // o FANTASMA tracejado (o programado cru) quando ele é maior que a carga. Só
   // com `qtde` a tarja passava por cima do contorno do 01/10 e do número dele.
-  const _qtdsCol = a.linhas.map(l => Math.max(l.qtde, Number(l.crua) || 0));
+  // Em UEP não há fantasma: o programado está em caixas e a barra em UEP —
+  // desenhar os dois no mesmo eixo seria misturar unidades.
+  const _qtdsCol = a.linhas.map(l => ehU ? l.qtde : Math.max(l.qtde, Number(l.crua) || 0));
   // Com o mix, a barra é CX DE LINHA e o programado cru vai junto no texto.
   const mix = !!a.mix;
-  const _qtdTxt = l => mix
+  const _qtdTxt = l => ehU
+    ? (fmtN(l.crua) + ' cx programadas × UEP do cadastro = ' + fmtN(l.qtde) + ' UEP (' + _cartPeso(a, l.fator).frase + ')')
+    : mix
     ? (fmtN(l.crua) + ' cx programadas · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
     : (fmtN(l.qtde) + ' cx programadas');
   // ⚠ ESCOLHER O LADO NÃO BASTA — pode não haver lado livre. Com as DUAS pontas
@@ -8821,8 +8848,8 @@ function _cartHtml(a, regua, larg){
     // O NÚMERO EM CIMA É O PROGRAMADO (o que o gestor confere na planilha);
     // o selo dentro da barra diz em palavras por que a barra não tem essa
     // altura: "PESA +22%". Fantasma tracejado = altura do programado.
-    const temFant = mix && l.crua > 0 && Math.round(l.crua) !== Math.round(l.qtde);
-    const peso = mix ? _cartPesoTxt(l.fator) : null;
+    const temFant = mix && !ehU && l.crua > 0 && Math.round(l.crua) !== Math.round(l.qtde);
+    const peso = mix ? _cartPeso(a, l.fator) : null;
     const yTopo = Math.min(y, temFant ? ey(l.crua) : y);
     const fant = temFant
       ? '<rect x="' + (x - 3).toFixed(1) + '" y="' + ey(l.crua).toFixed(1) + '" width="' + (w + 6).toFixed(1)
@@ -8834,13 +8861,13 @@ function _cartHtml(a, regua, larg){
     return '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1)
       + '" height="' + Math.max(0, H - B - y).toFixed(1) + '" fill="' + cor + '" opacity=".85" rx="2" class="' + (l.sai > 0 ? 'cb-red' : (l.qtde >= a.alvoMin ? 'cb-ok' : 'cb-warn')) + '">'
       + '<title>' + _rpEsc(l.data + ' · ' + _qtdTxt(l) + ' (p' + Math.round(l.pct) + ')'
-        + (l.sai > 0 ? ' · ' + fmtN(Math.round(l.sai)) + ' cx não cabem' : '')
+        + (l.sai > 0 ? ' · ' + fmtN(Math.round(l.sai)) + ' ' + un + ' não cabem' : '')
         + ' · ' + l.n + ' linha(s)') + '</title></rect>'
       // ⚠ Barra alta leva o número DENTRO dela. Por cima, ele batia na tarja do
       // MELHOR DIA JÁ FEITO — que mora justamente na altura das barras que
       // estouram, que são as que mais interessa ler.
       + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (yTopo < T + 22 ? (yTopo + FS + 3) : (yTopo - 5)).toFixed(1)
-      + '" fill="' + (yTopo < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(mix ? l.crua : l.qtde) + '</text>'
+      + '" fill="' + (yTopo < T + 22 ? 'var(--bg)' : 'var(--txt)') + '" font-family="var(--font-d)" font-size="' + FS + '" font-weight="700" text-anchor="middle">' + fmtN(mix && !ehU ? l.crua : l.qtde) + '</text>'
       + '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H - B + 14) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="middle">' + _rpEsc(String(l.data).slice(0,5)) + '</text>'
       + fant + selo;
   }).join('');
@@ -8857,11 +8884,11 @@ function _cartHtml(a, regua, larg){
   const tab = a.linhas.map(l => {
     const c = l.sai > 0 ? 'qp-p-red' : (l.qtde >= a.alvoMin ? 'qp-p-ok' : 'qp-p-warn');
     const pesa = l.pesa || {};
-    const pt = mix ? _cartPesoTxt(l.fator) : null;
+    const pt = mix ? _cartPeso(a, l.fator) : null;
     // o detalhe técnico (lotes sem histórico, pesos limitados) fica no
     // tooltip da célula — na tabela só a palavra
-    const ptTit = mix ? ('fator ' + (Number(l.fator) || 1).toFixed(2).replace('.', ',')
-      + (l.semBase ? ' · ' + l.semBase + ' lote(s) sem histórico de ritmo (peso normal)' : '')
+    const ptTit = mix ? ((ehU ? 'UEP média do dia ' : 'fator ') + (Number(l.fator) || 1).toFixed(2).replace('.', ',')
+      + (l.semBase ? ' · ' + l.semBase + (ehU ? ' lote(s) de código sem UEP no cadastro (entram com a UEP média)' : ' lote(s) sem histórico de ritmo (peso normal)') : '')
       + (l.aparados ? ' · ' + l.aparados + ' lote(s) com peso limitado (apontamento suspeito)' : '')) : '';
     return '<tr><td>' + _rpEsc(l.data) + '</td>'
       + (mix ? '<td>' + fmtN(l.crua) + '</td>'
@@ -8873,7 +8900,7 @@ function _cartHtml(a, regua, larg){
       + '<td style="color:' + (l.sai > 0 ? 'var(--red)' : 'var(--txt2)') + '">' + (l.sai > 0 ? '−' + fmtN(Math.round(l.sai)) : '—') + '</td>'
       + '<td style="color:' + (l.cabe > 0 ? 'var(--ok)' : 'var(--txt2)') + '">' + (l.cabe > 0 ? '+' + fmtN(Math.round(l.cabe)) : '—') + '</td>'
       + (mix ? '<td class="cl-pesa" style="text-align:left;font-size:10px;color:var(--txt2)">' + (pesa.rot
-             ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">· ' + fmtN(pesa.q) + ' cx · <b>' + _cartPesoTxt(pesa.f).palavra + '</b> (carga ' + fmtN(Math.round(pesa.eq)) + ')</span>'
+             ? _rpEsc(pesa.rot) + ' <span style="white-space:nowrap">· ' + fmtN(pesa.q) + ' cx · <b>' + _cartPeso(a, pesa.f).palavra + '</b> (carga ' + fmtN(Math.round(pesa.eq)) + (ehU ? ' UEP' : '') + ')</span>'
              : '—') + '</td>' : '')
       + '</tr>';
   }).join('');
@@ -8882,35 +8909,38 @@ function _cartHtml(a, regua, larg){
     + _cartESeHtml(a)
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
-    + '<div class="kpi-sub">' + (mix
+    + '<div class="kpi-sub">' + (ehU
+        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas = <b>' + fmtN(Math.round(a.futuro)) + ' UEP</b> (' + _cartPeso(a, a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + '), em ' + a.n + ' dia(s)'
+        : mix
         ? fmtN(Math.round(a.futuroCru)) + ' cx programadas pesam como <b>' + fmtN(Math.round(a.futuro)) + '</b> (' + _cartPesoTxt(a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + '), em ' + a.n + ' dia(s)'
         : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
-    + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' cx de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
+    + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' ' + un + ' de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
     + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia sem hora extra ('
-    + fmtN(a.teto) + ' cx)</div></div>'
+    + fmtN(a.teto) + ' ' + un + ')</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
-    + '<div class="kpi-sub">cx acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' cx nos dias livres'
+    + '<div class="kpi-sub">' + un + ' acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' ' + un + ' nos dias livres'
     + (a.sobra > 0 ? ' · <b>sobram ' + fmtN(Math.round(a.sobra)) + '</b>' : ' · tudo cabe no período') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
-    + '<div class="kpi-sub">cx/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
+    + '<div class="kpi-sub">' + un + '/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
     + '</div>'
-    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (mix ? '<span class="cl-regua"> — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX</span>' : '') + '</div>'
+    + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (ehU ? '<span class="cl-regua"> — A BARRA É A CARGA EM UEP</span>' : mix ? '<span class="cl-regua"> — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX</span>' : '') + '</div>'
     + svg
     + '<div class="qp-leg">'
-    + (mix ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga<span class="cl-selo"> · PESA = peso do mix</span></span>' : '')
+    + (mix && !ehU ? '<span><i style="background:none;border:1px dashed var(--txt2);height:7px"></i>tracejado = programado · barra = carga<span class="cl-selo"> · PESA = peso do mix</span></span>' : '')
     + '<span><i style="background:var(--ok);opacity:.55"></i>faixa onde a carga deveria ficar (p' + fMin + '–p' + fMax + ')</span>'
     + '<span><i style="background:var(--red)"></i>dia que não comporta a carga</span>'
     + '<span class="cl-folga"><i style="background:var(--warn)"></i>dia com folga</span>'
     + '<span class="qp-leg-mouse">passe o mouse numa barra para ver o dia</span></div></div>'
     + '<div class="par-sec">DIA A DIA — O QUE SAI E O QUE CABE</div>'
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th>'
-    + (mix ? '<th>PROGRAMADO</th><th>PESO DO MIX</th><th>CARGA</th>' : '<th>PROGRAMADO</th>')
+    + (ehU ? '<th>PROGRAMADO (CX)</th><th>UEP/CX</th><th>CARGA (UEP)</th>' : mix ? '<th>PROGRAMADO</th><th>PESO DO MIX</th><th>CARGA</th>' : '<th>PROGRAMADO</th>')
     + '<th class="cl-alt">ALTURA</th><th class="cl-lin">LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
     + (mix ? '<th class="cl-pesa" style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
     + _cartMixHtml(a)
     + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
-    + (mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
+    + (ehU ? ', <b>em UEP</b>: cada lote × a UEP por caixa do cadastro (PRODUTO_CODIGO), e a faixa verde é a UEP que a linha entregou nos dias fechados (HISTÓRICO)'
+           : mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
     + 'A faixa verde é o que a linha entrega na altura certa <b>em jornada normal, sem hora extra</b>; a linha vermelha tracejada é o <b>melhor dia que ela já fez sem hora extra</b> — barra acima dela nasceu impossível. '
     + 'As colunas <b>NÃO CABE</b> e <b>ESPAÇO LIVRE</b> são as duas pontas da mesma conta: se o que não cabe for menor que o espaço livre, é só re-datar, e isso não custa nada.<br><br>'
     + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
@@ -8925,6 +8955,13 @@ function _cartHtml(a, regua, larg){
 // NÃO aplicado" — este último nunca pode passar em silêncio, senão a tela
 // diria cx de linha mostrando caixas cruas.
 function _cartMixHtml(a){
+  if(a.mixModo === 'uep'){
+    const m = a.mix || {};
+    return '<div class="qp-mix"><div class="qm-como"><b>COMO A CARGA É CALCULADA:</b> cada lote × a <b>UEP por caixa do cadastro</b> (a mesma do card UEP DO DIA). '
+      + 'A régua é a <b>UEP de jornada normal gravada no fechamento</b> de cada dia (HISTÓRICO), nos mesmos dias da régua da barra. A dívida (atraso + o que falta hoje) entra pela UEP de cada código em atraso.</div>'
+      + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + (m.nLotes || 0) + ' lote(s)'
+      + (m.semBase ? ' · ' + m.semBase + ' de código sem UEP no cadastro, entrando com a UEP média (' + (Number(m.fallback) || 0).toFixed(2).replace('.', ',') + ')' : '') + '</div></div>';
+  }
   if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — os números da PROGRAMACAO, sem olhar o produto. '
     + (a.ambos ? 'O bloco de cima é esta mesma carteira com cada lote pesado pelo ritmo do produto.'
                : 'Para pesar cada lote pelo produto, escolha <b>carga pelo mix</b> na barra.') + '</div>';
@@ -8965,27 +9002,29 @@ function _cartMixHtml(a){
 // mais pesa para o que menos pesa — é a ordem em que se decide o que mover.
 function _cartLotesHtml(a){
   if(!a || !a.linhas || !a.linhas.length) return '';
-  const mix = !!a.mix;
+  const mix = !!a.mix, ehU = a.mixModo === 'uep';
+  const _pz = f => _cartPeso(a, f);
   const cab = '<tr><th style="text-align:left">LOTE</th><th style="text-align:left">CÓDIGO</th><th style="text-align:left">PRODUTO</th><th>QTDE</th>'
-    + (mix ? '<th>PESO</th><th>CARGA</th>' : '') + '</tr>';
+    + (mix ? (ehU ? '<th>UEP/CX</th><th>CARGA (UEP)</th>' : '<th>PESO</th><th>CARGA</th>') : '') + '</tr>';
   const corpo = a.linhas.map(l => {
     const lotes = (l.lotes || []).slice().sort((x, y) => y.eq - x.eq);
-    const pt = mix ? _cartPesoTxt(l.fator) : null;
+    const pt = mix ? _pz(l.fator) : null;
     const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> — ' + lotes.length + ' lote(s) · programado <b>' + fmtN(l.crua) + '</b>'
-      + (mix ? ' · carga <b>' + fmtN(l.qtde) + '</b>' + (pt.cls ? ' (mix ' + pt.palavra + ' ' + pt.pct + ')' : '') : '')
+      + (mix ? ' · carga <b>' + fmtN(l.qtde) + (ehU ? ' UEP' : '') + '</b>' + (pt.cls ? ' (mix ' + pt.palavra + ' ' + pt.pct + ')' : '') : '')
       + (l.sai > 0 ? ' · <span class="cl-red">não cabem ' + fmtN(Math.round(l.sai)) + '</span>' : (l.cabe > 0 ? ' · <span class="cl-ok">espaço para +' + fmtN(Math.round(l.cabe)) + '</span>' : ' · <span class="cl-ok">no limite</span>'))
       + '</td></tr>';
     return dia + lotes.map(x => {
-      const px = mix ? _cartPesoTxt(x.f) : null;
+      const px = mix ? _pz(x.f) : null;
       return '<tr><td>' + _rpEsc(x.lote) + '</td><td>' + _rpEsc(x.codigo) + '</td>'
         + '<td style="text-align:left">' + _rpEsc(x.rot.replace(/^.*? · /, '')) + '</td>'
         + '<td>' + fmtN(x.q) + '</td>'
-        + (mix ? '<td>' + (x.base ? px.selo : 'sem histórico') + '</td><td><b>' + fmtN(Math.round(x.eq)) + '</b></td>' : '')
+        + (mix ? '<td>' + (x.base ? px.selo : (ehU ? 'sem UEP (média)' : 'sem histórico')) + '</td><td><b>' + fmtN(Math.round(x.eq)) + '</b></td>' : '')
         + '</tr>';
     }).join('');
   }).join('');
   return '<table class="tbl cart-lotes"><thead>' + cab + '</thead><tbody>' + corpo + '</tbody></table>'
-    + (mix ? '<div class="rp-note">PESO: lento = produto que roda abaixo da média da linha (pesa mais); rápido = acima (pesa menos); sem histórico = entra com a quantidade programada. CARGA = quantidade × peso.</div>' : '');
+    + (ehU ? '<div class="rp-note">UEP/CX = UEP por caixa do cadastro (PRODUTO_CODIGO); sem UEP = código sem cadastro, entra com a UEP média das linhas. CARGA = quantidade × UEP/cx.</div>'
+      : mix ? '<div class="rp-note">PESO: lento = produto que roda abaixo da média da linha (pesa mais); rápido = acima (pesa menos); sem histórico = entra com a quantidade programada. CARGA = quantidade × peso.</div>' : '');
 }
 
 // O ESTADO VAZIO, com a CAUSA. Sem isto "SEM CARTEIRA DATADA" servia para tudo.
@@ -9085,6 +9124,31 @@ function _cartMixAgendar(cart){
 
 // A MONTAGEM da carteira, uma só para a tela e para o papel: programação +
 // dívida + o mix (quando escolhido) + a conferência do mix nos dias da régua.
+// UEP média por caixa das linhas da programação que têm UEP (a queda para o
+// código sem cadastro). null = nenhuma linha tem → o modo UEP não se aplica.
+function _cartUepMedia(itens){
+  let s = 0, c = 0;
+  (itens || []).forEach(it => { const u = Number(it && it.uepCx), q = Number(it && it.qtde) || 0;
+    if(u > 0 && q > 0){ s += u * q; c += q; } });
+  return c > 0 ? s / c : null;
+}
+// A DÍVIDA EM UEP: o que falta de cada código (atraso + resto de hoje, a lista
+// do calcularProgramacao — é POR CÓDIGO, então não duplica) × a UEP dele. Código
+// sem UEP usa a média; sem lista (backend antigo), a dívida em caixas × média.
+function _planoDividaUep(fb){
+  const lista = (PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [];
+  const uDe = {};
+  (PROG_DETALHADA || []).forEach(it => { if(it && Number(it.uepCx) > 0) uDe[String(it.codigo)] = Number(it.uepCx); });
+  if(!lista.length) return _planoDivida() * (fb || 1);
+  return lista.reduce((a, x) => a + (Number(x.falta) || 0) * (uDe[String(x.codigo)] || fb || 1), 0);
+}
+// A RÉGUA EM UEP: a UEP de jornada normal gravada no HISTORICO (.gs v5.14) —
+// congelada no fechamento. Dia sem UEP fica fora da curva.
+function _qpCurvaUep(dias, janela){
+  return _qpCurva((dias || []).filter(d => d && d.uep != null && Number(d.uep) > 0)
+                               .map(d => Object.assign({}, d, { real: Number(d.uep) })), janela);
+}
+
 async function _cartMontar(dias, modoPedido){
   // ⚠ O MODO É LIDO UMA VEZ, NO COMEÇO. A montagem espera até três leituras
   // caras; trocando o seletor no meio, `QP_MIX` mudava debaixo dela e a legenda
@@ -9093,6 +9157,16 @@ async function _cartMontar(dias, modoPedido){
   // depois, pela guarda do `renderCarteira`.
   const modo = modoPedido || (QP_MIX === 'ambos' ? 'mix' : QP_MIX);
   await carregarProgramacaoDetalhada();
+  if(modo === 'uep'){
+    // CARTEIRA EM UEP (v7.85.0): carga = qtde × UEP do código (cadastro), dívida
+    // convertida pela UEP dos códigos em atraso. Sem nenhuma linha com UEP (.gs
+    // antigo ou cadastro vazio), não inventa: a tela diz o que falta.
+    const fb = _cartUepMedia(PROG_DETALHADA);
+    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDividaUep(fb), fb ? { uep:true, fallback:fb } : null);
+    cart.mixModo = 'uep';
+    if(!fb) cart.uepFalha = 'sem-uep';
+    return cart;
+  }
   const r = await _cartRitmos(modo);
   const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida(), r && r.ritmos);
   cart.mixModo = modo;
@@ -9131,6 +9205,7 @@ async function _cartMontar(dias, modoPedido){
 // Em SEQUÊNCIA, nunca em Promise.all: o Apps Script atende uma execução por vez.
 const CART_TIT = {
   mix: 'CARGA PELO MIX — CADA LOTE PESADO PELO RITMO DO PRODUTO',
+  uep: 'EM UEP — CADA LOTE × A UEP DO CADASTRO',
   cru: 'CAIXAS CRUAS — AS QUANTIDADES COMO ESTÃO NA PROGRAMACAO'
 };
 async function _cartBlocos(dias, curva, agendar){
@@ -9141,10 +9216,19 @@ async function _cartBlocos(dias, curva, agendar){
     const cart = await _cartMontar(dias, modo);
     // a escada do mix é só da TELA (ela redesenha sozinha); o papel não se redesenha
     if(agendar && modo === 'mix') cart.mixRetry = _cartMixAgendar(cart);
-    const a = _cartAnalise(cart, curva, QP_FAIXA);
+    // ⚠ Em UEP a régua também é UEP — a do HISTORICO. Caixas contra UEP seria
+    // comparar unidades diferentes na mesma barra.
+    let curvaM = curva;
+    if(modo === 'uep'){
+      curvaM = _qpCurvaUep(dias, QP_REGUA);
+      if(!cart.uepFalha && curvaM.length < QP_MIN_DIAS) cart.uepFalha = 'sem-historico';
+    }
+    const a = cart.uepFalha ? null : _cartAnalise(cart, curvaM, QP_FAIXA);
     if(a){
       a.ambos = modos.length > 1;
-      a.cenario = await _cartCenarioAsync(cart, dias);
+      // O E SE valora a parada em CAIXAS (ritmo da meta do dia): em UEP ele
+      // ainda não vale, e a tela diz isso em vez de misturar as unidades.
+      a.cenario = modo === 'uep' ? (QP_ESE > 0 ? { falha:'uep' } : null) : await _cartCenarioAsync(cart, dias);
     }
     out.push({ modo, cart, a, tit: modos.length > 1 ? CART_TIT[modo] : '' });
   }
@@ -9155,6 +9239,12 @@ async function _cartBlocos(dias, curva, agendar){
 // da PROGRAMACAO falhou).
 function _cartBlocosHtml(blocos, larg){
   if(!blocos.length) return '';
+  const bu = blocos.find(b => b.cart && b.cart.uepFalha);
+  if(bu && !blocos.some(b => b.a)) return '<div class="qp-ver warn"><div class="qp-ver-t">CARTEIRA EM UEP AINDA SEM BASE</div><div class="qp-ver-d">'
+    + (bu.cart.uepFalha === 'sem-uep'
+        ? 'nenhuma linha da PROGRAMACAO veio com UEP — falta a UEP no cadastro (💾 GRAVAR UEP, aba PRODUÇÃO/HORA) ou o .gs v5.13 re-deployado'
+        : 'a régua em UEP precisa de ' + QP_MIN_DIAS + '+ dias fechados com UEP no HISTÓRICO (rode preencherUepPassada no editor ou aguarde os fechamentos)')
+    + '. Escolha <b>carga pelo mix</b> na barra enquanto isso.</div></div>';
   if(!blocos.some(b => b.a)) return _cartVazioHtml(blocos[0].cart);
   // ⚠ o que é idêntico nos dois sai uma vez só — pela pele `.cart-dois`
   const corpo = blocos.map(b => '<div class="cart-bloco">'
