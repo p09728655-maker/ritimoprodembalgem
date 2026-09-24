@@ -2456,6 +2456,11 @@ feito e dá ar de verdade ao que sobrou.
     compartilhado, `jsonpFetch` de 60 s); a chave do cache do `.gs` inclui
     `cxHora`. **Campo novo no payload de leitura pesada = conferir o tamanho
     contra os 100 KB do cache.**
+  - ⚠ **A divisão vale quando o backend MANDA o `cxHora` — basta um item**
+    (`_uepTemCxHora`, v7.78.0). Exigir TODOS os itens com `cxHora` preenchido
+    fez um único lançamento sem HORA desligar a divisão do período inteiro, em
+    silêncio (PDF de 24/09 11:17). Item sem hora fica fora do ritmo
+    (`nSemHora`); item só com `horasLista` reparte igual (`nAprox`).
   - Precisa do **`cxHora`** por item (`getProducaoModeloPeriodo`, `.gs` v5.9 —
     **re-deploy**). Sem ele (`_uepTemCxHora` falso) o estudo volta à hora
     cheia e o relatório diz que a divisão não está valendo.
