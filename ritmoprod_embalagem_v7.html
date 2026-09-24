@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.72.0';
+const APP_VER   = '7.73.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5624,8 +5624,11 @@ function _phAgrup(){
 //   · horas do dia = horas DISTINTAS (duas cores na mesma hora são uma hora de
 //     esteira — mesma regra do simularEsteiraPorModelo do .gs);
 //   · ritmo = média APARADA do filtro MÉDIA da aba (`_phMediaAparada`);
-//   · menos de UEP_MIN_DIAS dias rodados → SEM UEP e contado. Nunca 1 por
-//     padrão: fator inventado é pior que fator ausente.
+//   · menos de UEP_MIN_DIAS dias rodados → UEP PROVISÓRIA: calculada, mas com
+//     a observação na linha e contada à parte (pedido do PPCP, 24/09/2026:
+//     "pode colocar UEP mesmo com pouca caixa, mas deixe a observação"). A
+//     ÂNCORA continua exigindo a amostra — âncora de 2 dias mudaria a escala
+//     de todo mundo no próximo dia rodado. Produto sem ritmo nunca vale 1.
 // ⚠ Ritmo DEMONSTRADO não é tempo padrão: carrega desempenho, paralelismo da
 // esteira e apontamento. É o ponto de partida; a validação é a cronoanálise.
 const UEP_MIN_DIAS     = 5;
@@ -5680,11 +5683,15 @@ function _uepProdutos(itens, modo){
 function _uepEstudo(itens, modo){
   const prods=_uepProdutos(itens, modo);
   const ok=prods.filter(p=>p.amostraOk);
-  const rapido=ok.reduce((a,b)=>(!a||b.ritmo>a.ritmo)?b:a, null);
-  const volume=ok.reduce((a,b)=>(!a||b.caixas>a.caixas)?b:a, null);
+  // Âncora só entre quem tem amostra; sem nenhum, cai em todos os que têm
+  // ritmo e o relatório marca a âncora como provisória também.
+  const cand=ok.length ? ok : prods.filter(p=>p.ritmo>0);
+  const rapido=cand.reduce((a,b)=>(!a||b.ritmo>a.ritmo)?b:a, null);
+  const volume=cand.reduce((a,b)=>(!a||b.caixas>a.caixas)?b:a, null);
   prods.forEach(p=>{
-    p.uepVol=(p.amostraOk&&volume)?volume.ritmo/p.ritmo:null;
-    p.uepRap=(p.amostraOk&&rapido)?rapido.ritmo/p.ritmo:null;
+    p.provisoria=p.ritmo>0 && !p.amostraOk;
+    p.uepVol=(p.ritmo>0&&volume)?volume.ritmo/p.ritmo:null;
+    p.uepRap=(p.ritmo>0&&rapido)?rapido.ritmo/p.ritmo:null;
     p.uepPeriodo=p.uepVol!=null?p.caixas*p.uepVol:null;
   });
   const mapa={}; prods.forEach(p=>{ mapa[p.chave]=p; });
@@ -5702,7 +5709,8 @@ function _uepEstudo(itens, modo){
   });
   const dd=Object.keys(porDia).map(d=>({h:Object.keys(hLinha[d]||{}).length, ...porDia[d]})).filter(d=>d.h>0);
   prods.sort((a,b)=> (a.uepVol==null)-(b.uepVol==null) || (a.uepVol!=null ? a.uepVol-b.uepVol : b.caixas-a.caixas));
-  return { prods, rapido, volume, nOk:ok.length, nSem:prods.length-ok.length,
+  return { prods, rapido, volume, nOk:ok.length, nProv:prods.filter(p=>p.provisoria).length,
+           nSem:prods.filter(p=>p.uepVol==null).length,
            cxTot, cxCom, cobertura: cxTot>0 ? cxCom/cxTot*100 : null,
            uepTot: prods.reduce((s,p)=>s+(p.uepPeriodo||0),0),
            nDiasConf: dd.length,
@@ -5726,35 +5734,38 @@ function _uepHtml(e, ctx){
     : 'poucos dias com horas da linha para comparar';
   const linhas=e.prods.map(p=>{
     const al=[];
-    if(!p.amostraOk) al.push(`amostra curta (${p.nDias} dia${p.nDias===1?'':'s'}) — sem UEP`);
+    if(p.provisoria) al.push(`<b>UEP PROVISÓRIA</b> — amostra curta (${p.nDias} dia${p.nDias===1?'':'s'}, ${n0(p.caixas)} cx): confirmar com mais dias`);
+    else if(p.uepVol==null) al.push('sem ritmo no período — sem UEP');
     if(p.corDiverge) al.push(`cores de ${n0(p.corMin)} a ${n0(p.corMax)} cx/h`);
     if(p.acimaTeto) al.push(`${p.acimaTeto} dia(s) acima do teto físico — conferir lançamento`);
     const anc=[];
     if(e.volume&&p.chave===e.volume.chave) anc.push('BASE VOLUME');
     if(e.rapido&&p.chave===e.rapido.chave) anc.push('BASE RÁPIDO');
-    return `<tr${p.amostraOk?'':' style="color:#8a94a6"'}>
+    const pv=p.provisoria?'*':'';
+    return `<tr>
       <td>${nomeP(p)}${anc.length?` <b style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c05621">${anc.join(' · ')}</b>`:''}</td>
       <td class="td-mono" style="text-align:right">${p.nDias}</td>
       <td class="td-mono" style="text-align:right">${n0(p.caixas)}</td>
       <td class="td-mono" style="text-align:right">${p.ritmo>0?n0(p.ritmo):'—'}</td>
       <td class="td-mono" style="text-align:right">${p.melhor>0?n0(p.melhor):'—'}</td>
       <td class="td-mono" style="text-align:right">${p.teto>0?n0(p.teto):'—'}</td>
-      <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}</td>
-      <td class="td-mono" style="text-align:right">${u2(p.uepRap)}</td>
+      <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}${p.uepVol!=null?pv:''}</td>
+      <td class="td-mono" style="text-align:right">${u2(p.uepRap)}${p.uepRap!=null?pv:''}</td>
       <td class="td-mono" style="text-align:right">${p.uepPeriodo!=null?n0(p.uepPeriodo):'—'}</td>
       <td style="font-size:9.5px">${al.join(' · ')||''}</td></tr>`;
   }).join('');
   const anc=(p,lbl)=>p
     ? `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val" style="font-size:17px">${nomeP(p)}</div>
        <div class="kpi-sub">${n0(p.ritmo)} cx/h · ${p.nDias} dias · ${n0(p.caixas)} cx · vale 1,00 UEP/cx</div></div>`
-    : `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">—</div><div class="kpi-sub">nenhum produto com ${UEP_MIN_DIAS}+ dias</div></div>`;
+    : `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">—</div><div class="kpi-sub">nenhum produto com ritmo no período</div></div>`;
+  const ancOk=e.volume&&e.volume.amostraOk;
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
 
 <div class="rp-sec-ttl">1 ▸ O RESUMO</div>
 <div class="kpi-grid">
-  <div class="kpi-card"><div class="kpi-lbl">PRODUTOS COM UEP</div><div class="kpi-val">${e.nOk} de ${e.prods.length}</div>
-    <div class="kpi-sub">${e.nSem} sem amostra (menos de ${UEP_MIN_DIAS} dias rodados)</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">UEP COM AMOSTRA (${UEP_MIN_DIAS}+ DIAS)</div><div class="kpi-val">${e.nOk} de ${e.prods.length}</div>
+    <div class="kpi-sub">${e.nProv} provisória(s) (*) — menos de ${UEP_MIN_DIAS} dias rodados${e.nSem?` · ${e.nSem} sem ritmo`:''}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">CAIXAS COBERTAS</div><div class="kpi-val">${p1(e.cobertura)}</div>
     <div class="kpi-sub">${n0(e.cxCom)} de ${n0(e.cxTot)} cx apontadas com produto</div></div>
   <div class="kpi-card"><div class="kpi-lbl">OSCILAÇÃO DO RITMO DIA A DIA · CX/H → UEP/H</div><div class="kpi-val">${conf}</div>
@@ -5773,14 +5784,15 @@ function _uepHtml(e, ctx){
   <th style="text-align:right">RITMO CX/H</th><th style="text-align:right">MELHOR DIA</th><th style="text-align:right">TETO</th>
   <th style="text-align:right">UEP/CX · A</th><th style="text-align:right">UEP/CX · B</th><th style="text-align:right">UEP NO PERÍODO</th><th>CONFERIR</th>
 </tr></thead><tbody>${linhas}</tbody></table>
-<div class="rp-note">Ordem: do mais leve (menor UEP) para o mais pesado; os sem amostra vão no fim, em cinza, pelo volume. UEP/CX = ritmo da âncora ÷ ritmo do produto — 2,00 quer dizer que uma caixa dele pede o esforço de duas da âncora.</div>
+${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum produto tem ${UEP_MIN_DIAS}+ dias no período — a âncora também é provisória. Aumente o período.</div>`}
+<div class="rp-note">Ordem: do mais leve (menor UEP) para o mais pesado. <b>*</b> = UEP PROVISÓRIA: menos de ${UEP_MIN_DIAS} dias rodados — o número serve para a análise, mas pode mudar bastante com mais dias; confirmar antes de usar. UEP/CX = ritmo da âncora ÷ ritmo do produto — 2,00 quer dizer que uma caixa dele pede o esforço de duas da âncora.</div>
 
 <div class="rp-sec-ttl">3 ▸ COMO O NÚMERO SAI</div>
 <table><tbody>
   <tr><td style="font-weight:700;width:28%">A CONTA</td><td>UEP por caixa = ritmo da âncora ÷ ritmo do produto. A âncora vale 1,00. A UEP no período é caixas × UEP por caixa.</td></tr>
   <tr><td style="font-weight:700">O RITMO</td><td>Caixas ÷ horas <b>distintas</b> em que o produto rodou, dia a dia (duas cores na mesma hora são uma hora), com a média ${ctx.modo==='completa'?'COMPLETA (todos os dias)':'APARADA (sem o melhor e o pior dia, com 3+ dias)'} — a mesma do comparativo por modelo.</td></tr>
   <tr><td style="font-weight:700">POR PRODUTO, NÃO POR COR</td><td>As cores do mesmo produto somam: a cor não muda o trabalho de embalar. Quando as cores divergem muito (${UEP_COR_DIVERGE.toLocaleString('pt-BR')}× ou mais), o alerta aponta — é sinal de paralelismo, amostra ou apontamento, não de esforço diferente.</td></tr>
-  <tr><td style="font-weight:700">AMOSTRA MÍNIMA</td><td>${UEP_MIN_DIAS} dias rodados. Abaixo disso o produto fica SEM UEP e é contado — nunca recebe 1,00 por padrão.</td></tr>
+  <tr><td style="font-weight:700">AMOSTRA MÍNIMA</td><td>${UEP_MIN_DIAS} dias rodados. Abaixo disso a UEP sai <b>PROVISÓRIA</b> (marcada com * e com a observação na linha): com 1 ou 2 dias, uma hora parcial ou um lançamento acumulado muda o ritmo inteiro. A âncora só é escolhida entre os produtos com amostra.</td></tr>
   <tr><td style="font-weight:700">AS DUAS ÂNCORAS</td><td>Mudam só a <b>escala</b>: a proporção entre os produtos é a mesma nas colunas A e B. O que muda é a estabilidade — o mais rápido é o valor mais instável do período, e se ele mudar a UEP de todos muda junto.</td></tr>
   <tr><td style="font-weight:700">A CONFERÊNCIA</td><td>Ritmo da linha de cada dia (caixas ÷ horas da linha) em cx/h e em UEP/h, sobre as mesmas caixas. Se a oscilação cai em UEP, a UEP explica parte da variação causada pelo mix. É otimista: as UEP saíram destes mesmos dias — serve para reprovar, não para provar.</td></tr>
   <tr><td style="font-weight:700">O QUE ELA NÃO É</td><td>Ritmo <b>demonstrado</b> não é tempo padrão: carrega o desempenho da equipe, a esteira rodando dois produtos ao mesmo tempo e o apontamento. Produto lento por baixo desempenho ganha UEP alta — por isso a validação dos produtos de maior volume é a cronoanálise.</td></tr>

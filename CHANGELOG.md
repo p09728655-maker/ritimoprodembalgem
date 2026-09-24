@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.73.0 — 24/09/2026
+
+**ESTUDO UEP: amostra curta também ganha UEP, marcada PROVISÓRIA.** Pedido do
+PPCP logo depois da publicação. O produto com menos de 5 dias rodados agora
+sai com a UEP calculada, um **\*** ao lado do número e a observação na coluna
+CONFERIR (*"UEP PROVISÓRIA — amostra curta (2 dias, 391 cx): confirmar com
+mais dias"*). Antes ele saía em cinza e sem UEP.
+
+- A **âncora** continua sendo escolhida só entre os produtos com 5+ dias: uma
+  âncora de 2 dias mudaria a escala de todos no próximo dia rodado.
+- **Atenção:** o card do resumo passou a se chamar **UEP COM AMOSTRA (5+
+  DIAS)** e conta as provisórias à parte. CAIXAS COBERTAS, UEP NO PERÍODO e a
+  conferência agora incluem as provisórias, então os três sobem em relação à
+  v7.72.0. Sem re-deploy.
+
+---
+
 ## v7.72.0 — 24/09/2026
 
 **📐 ESTUDO UEP — relatório para análise, só no gerencial.** Na barra da aba
