@@ -2202,6 +2202,8 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tbl-wrap" style="margin-top:0">
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">PROGRAMAÇÃO POR DIA — LOTE · PESO · PONTOS · UEP</span>
+      <button class="btn btn-ghost" style="margin-left:12px;padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)"
+              onclick="abrirCapUep()" title="Quantos produtos COMPLETOS cabem no dia pela UEP — simulação, não grava nada">🧮 CAPACIDADE UEP</button>
       <div style="flex:1"></div>
       <span id="prog2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
     </div>
@@ -2805,6 +2807,24 @@ if (_v7Instalado()) _v7EscondeBotao();
 </div>
 
 <!-- ═══ MODAL HORA EXTRA ═══ -->
+<!-- SIMULADOR DE CAPACIDADE EM UEP (v7.90.0). Conta por PRODUTO COMPLETO: a UEP
+     do jogo é a soma dos volumes do cadastro. Simulação — nada é gravado. -->
+<div class="modal-over" id="modal-capuep">
+  <div class="modal" style="width:860px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="modal-ttl" style="margin:0">🧮 CAPACIDADE EM UEP · PRODUTO COMPLETO</div>
+      <span style="font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--warn);border:0.5px solid var(--warn);border-radius:3px;padding:2px 6px">SIMULAÇÃO</span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="fecharCapUep()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="frm-row" style="margin-top:12px">
+      <div class="frm-grp"><label class="frm-lbl">META DO DIA (UEP)</label><input class="frm-inp" id="cap-meta" type="text" inputmode="numeric" oninput="_capPintar()"></div>
+      <div class="frm-grp"><label class="frm-lbl">BUSCAR PRODUTO</label><input class="frm-inp" id="cap-busca" type="text" placeholder="ex.: ELOA, MADERO, 501061" oninput="_capPintar()"></div>
+    </div>
+    <div id="cap-res"><div class="empty-msg">Carregando o cadastro…</div></div>
+  </div>
+</div>
+
 <div class="modal-over" id="modal-he">
   <div class="modal" style="width:420px">
     <div class="modal-ttl">⏱ HORA EXTRA</div>
@@ -2884,7 +2904,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.89.0';
+const APP_VER   = '7.90.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6972,6 +6992,142 @@ function _progDetFalhaInfo(){
   if(PROG_DET_FALHA==='erro')       return { t:'O BACKEND DEVOLVEU ERRO', d:_rpEsc(PROG_DET_ERRO || 'sem detalhe') };
   return null;
 }
+// ── SIMULADOR DE CAPACIDADE EM UEP (v7.90.0, PPCP 24/09/2026) ──────────────
+// "Quantas ELOA faz por dia?" — e a resposta tem de ser em PRODUTO COMPLETO
+// (a penteadeira), não em caixa: a UEP do cadastro é por CÓDIGO, e cada volume
+// é um código. UEP do jogo = soma da UEP de cada volume (média entre as cores
+// quando o mesmo volume tem UEP diferente por cor). Jogos por dia = meta de UEP
+// ÷ UEP do jogo. Conta pura (_capVol/_capProdutos/_capMix) + desenho sem conta.
+// Nenhuma chamada nova no fluxo do painel: o cadastro (getProdutos) só é lido
+// quando o simulador abre, com cache de 10 min.
+function _capVol(desc){
+  const m=String(desc||'').match(/^\s*VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
+  return m?{vol:+m[1], nVol:+m[2]}:{vol:1, nVol:1};
+}
+function _capNome(desc, cor){
+  let n=String(desc||'').toUpperCase().replace(/^\s*VOL\.?\s*\d+\s*\/\s*\d+\s*/,'').replace(/\s+/g,' ').trim();
+  const c=String(cor||'').toUpperCase().trim();
+  if(c && n.endsWith(' '+c)) n=n.slice(0,-(c.length+1)).trim();   // linha antiga com a cor na descrição
+  return n;
+}
+function _capProdutos(cat){
+  const G={};
+  (cat||[]).forEach(p=>{
+    const cod=String(p.codigo||'').trim(); if(!cod) return;
+    const nome=_capNome(p.desc, p.cor); if(!nome) return;
+    const {vol,nVol}=_capVol(p.desc);
+    const k=cod.slice(0,6)+'|'+nome;
+    const g=G[k]=G[k]||{chave:k, modelo:cod.slice(0,6), nome, nVol:1, vols:{}, cores:{}, codigos:0};
+    g.nVol=Math.max(g.nVol,nVol); g.codigos++;
+    if(p.cor) g.cores[p.cor]=1;
+    const v=g.vols[vol]=g.vols[vol]||{s:0,n:0};
+    const u=Number(p.uep)||0;
+    if(u>0){ v.s+=u; v.n++; }
+  });
+  return Object.values(G).map(g=>{
+    let uep=0, faltam=[];
+    for(let v=1; v<=g.nVol; v++){
+      const x=g.vols[v];
+      if(x&&x.n) uep+=x.s/x.n; else faltam.push(v);
+    }
+    return { chave:g.chave, modelo:g.modelo, nome:g.nome, nVol:g.nVol, nCores:Object.keys(g.cores).length,
+             codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam };
+  }).sort((a,b)=>a.nome.localeCompare(b.nome));
+}
+// Mix digitado: [{chave, qtde}] contra a meta. Produto sem UEP completa fica
+// fora da soma e é contado — nunca vira zero.
+function _capMix(prods, mix, meta){
+  const M=Number(meta)>0?Number(meta):UEP_META_PADRAO;
+  const porChave={}; (prods||[]).forEach(p=>{ porChave[p.chave]=p; });
+  let usado=0; const linhas=[], semUep=[];
+  (mix||[]).forEach(it=>{
+    const p=porChave[it.chave]; const q=Math.max(0,Number(it.qtde)||0);
+    if(!p) return;
+    if(!(p.uepJogo>0)){ semUep.push(p.nome); linhas.push({p, qtde:q, uep:null}); return; }
+    const u=q*p.uepJogo; usado+=u; linhas.push({p, qtde:q, uep:u});
+  });
+  const sobra=M-usado;
+  linhas.forEach(l=>{ l.cabeMais = l.p.uepJogo>0 ? Math.max(0,Math.floor(sobra/l.p.uepJogo)) : null; });
+  return { meta:M, usado, sobra, pct:usado/M*100, linhas, semUep };
+}
+
+let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
+async function abrirCapUep(){
+  document.getElementById('modal-capuep').classList.add('on');
+  const m=document.getElementById('cap-meta');
+  if(m && !m.value) m.value=String(Number(PONTOS_DIA.metaUep)>0?PONTOS_DIA.metaUep:UEP_META_PADRAO);
+  _capPintar();
+  if(CAP_CAT && Date.now()-CAP_CAT_TS<10*60*1000) return;
+  if(!CFG.sheetsUrl){ document.getElementById('cap-res').innerHTML='<div class="empty-msg">Sem conexão com o Google Sheets.</div>'; return; }
+  const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
+  for(let t=1; t<=3; t++){           // em sequência: o Apps Script atende uma execução por vez
+    try{
+      const j=await jsonpFetch(url, 30000);
+      if(j&&j.ok&&Array.isArray(j.produtos)){ CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); break; }
+    }catch(e){}
+    if(t<3){ const r=document.getElementById('cap-res'); if(r) r.innerHTML=`<div class="empty-msg">Lendo o cadastro… tentativa ${t+1} de 3</div>`;
+      await new Promise(ok=>setTimeout(ok, 2000*t)); }
+  }
+  _capPintar();
+}
+function fecharCapUep(){ document.getElementById('modal-capuep').classList.remove('on'); }
+function _capAdd(chave){ if(!CAP_MIX.some(x=>x.chave===chave)) CAP_MIX.push({chave, qtde:0}); _capPintar(); }
+function _capDel(chave){ CAP_MIX=CAP_MIX.filter(x=>x.chave!==chave); _capPintar(); }
+// Digitar a quantidade NÃO redesenha a tabela (o campo perderia o foco a cada
+// tecla): só as células de UEP/AINDA CABEM e o total.
+function _capQtde(chave, v){
+  const it=CAP_MIX.find(x=>x.chave===chave); if(it) it.qtde=_pgSimNum(v);
+  const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
+  const r=_capMix(CAP_CAT, CAP_MIX, meta);
+  r.linhas.forEach((l,i)=>{ const u=document.getElementById('cap-u-'+i), c=document.getElementById('cap-c-'+i);
+    if(u) u.innerHTML=_capCelUep(l); if(c) c.textContent=_capCelCabe(l); });
+  const t=document.getElementById('cap-mix-tot'); if(t) t.innerHTML=_capTotHtml(r);
+}
+function _capCelUep(l){ return l.uep!=null?fmtN(Math.round(l.uep)):'<span style="color:var(--warn)">sem UEP</span>'; }
+function _capCelCabe(l){ return l.cabeMais!=null?fmtN(l.cabeMais)+' a mais':'—'; }
+function _capTotHtml(r){
+  const cor=r.pct>100?'var(--red)':r.pct>=90?'var(--warn)':'var(--ok)';
+  return `<b>${fmtN(Math.round(r.usado))}</b> de ${fmtN(r.meta)} UEP · <b style="color:${cor}">${fmtP(r.pct)}</b> do dia · `
+    +(r.sobra>=0?`sobram <b>${fmtN(Math.round(r.sobra))} UEP</b>`:`passa <b style="color:var(--red)">${fmtN(Math.round(-r.sobra))} UEP</b> da meta`)
+    +(r.semUep.length?`<div style="font-size:11px;color:var(--warn);margin-top:4px">${r.semUep.length} produto(s) sem UEP completa ficaram fora da soma.</div>`:'');
+}
+function _capPintar(){
+  const box=document.getElementById('cap-res'); if(!box) return;
+  if(!CAP_CAT){ box.innerHTML='<div class="empty-msg">Carregando o cadastro…</div>'; return; }
+  const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
+  const q=String((document.getElementById('cap-busca')||{}).value||'').toUpperCase().trim();
+  const achados=q?CAP_CAT.filter(p=>p.nome.includes(q)||p.modelo.includes(q)).slice(0,12):[];
+  const fmtU=v=>v.toFixed(2).replace('.',',');
+  const lista=!q?'<div class="empty-msg" style="padding:10px">Digite o nome ou o código do produto.</div>'
+    : !achados.length?'<div class="empty-msg" style="padding:10px">Nenhum produto com esse nome no cadastro.</div>'
+    : `<table><thead><tr><th>PRODUTO</th><th>VOLUMES</th><th>UEP / PRODUTO</th><th>SOZINHO NO DIA</th><th>POR HORA</th><th></th></tr></thead><tbody>${achados.map(p=>{
+        const jd=p.uepJogo>0?meta/p.uepJogo:null;
+        return `<tr><td>${_rpEsc(p.modelo+' · '+p.nome)}${p.nCores>1?` <span style="font-size:10px;color:var(--txt2)">${p.nCores} cores</span>`:''}</td>
+          <td class="mono">${p.nVol}</td>
+          <td class="mono">${p.uepJogo>0?fmtU(p.uepJogo):`<span style="color:var(--warn)" title="volume(s) ${p.volSemUep.join(', ')} sem UEP no cadastro">sem UEP</span>`}</td>
+          <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(Math.floor(jd)):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(Math.floor(jd)*p.nVol)} cx</span>`:''}</td>
+          <td class="mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
+          <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ MIX</button></td></tr>`; }).join('')}</tbody></table>`;
+  box.innerHTML=lista+'<div id="cap-mix" style="margin-top:14px"></div>'
+    +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
+  _capPintarMix();
+}
+function _capPintarMix(){
+  const el=document.getElementById('cap-mix'); if(!el) return;
+  if(!CAP_MIX.length){ el.innerHTML='<div style="font-size:11px;color:var(--txt2)">Monte um mix com <b>+ MIX</b> para ver quanto do dia ele ocupa.</div>'; return; }
+  const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
+  const r=_capMix(CAP_CAT, CAP_MIX, meta);
+  el.innerHTML=`<div class="frm-lbl" style="margin-bottom:6px">MIX DO DIA</div>
+  <table><thead><tr><th>PRODUTO</th><th>QTDE (PRODUTOS)</th><th>UEP</th><th>AINDA CABEM</th><th></th></tr></thead><tbody>${r.linhas.map((l,i)=>{
+    const k=_rpEsc(l.p.chave).replace(/'/g,"\\'");
+    return `<tr><td>${_rpEsc(l.p.nome)}</td>
+      <td><input class="frm-inp" style="width:90px;padding:4px 6px" type="text" inputmode="numeric" value="${l.qtde||''}" oninput="_capQtde('${k}',this.value)"></td>
+      <td class="mono" id="cap-u-${i}">${_capCelUep(l)}</td>
+      <td class="mono" id="cap-c-${i}">${_capCelCabe(l)}</td>
+      <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capDel('${k}')" aria-label="Tirar do mix">✕</button></td></tr>`; }).join('')}</tbody></table>
+  <div id="cap-mix-tot" style="margin-top:10px;font-family:var(--font-d);font-size:13px;color:var(--txt)">${_capTotHtml(r)}</div>`;
+}
+
 function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
   const totEl=document.getElementById('prog2-totais');

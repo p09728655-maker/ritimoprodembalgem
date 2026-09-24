@@ -2629,6 +2629,18 @@ feito e dá ar de verdade ao que sobrou.
   MUDOU, e o `enviarConfigPainel` manda `metaUep` uma vez. O `setConfigPainel`
   grava `META_UEP` só com número > 0. ⚠ Nunca mandar sempre: um aparelho que
   abriu antes de ler a config apagaria a meta dos outros.
+- **SIMULADOR DE CAPACIDADE EM UEP** (v7.90.0, PPCP 24/09/2026: *"tem que
+  ser para penteadeira completa"*). Botão 🧮 na aba PROGRAMAÇÃO, modal
+  `#modal-capuep`. Contas puras e testadas: `_capVol`, `_capNome`,
+  `_capProdutos`, `_capMix`.
+  - A unidade é o **PRODUTO COMPLETO**. A chave é modelo (6 dígitos) + nome
+    sem `VOL a/b` e sem cor. UEP do produto = soma dos volumes 1..N (média
+    entre as cores).
+  - Volume sem UEP → produto `null`, fora da soma e contado.
+  - O cadastro só é lido ao abrir (`getProdutos`, 3 tentativas em sequência,
+    cache de 10 min).
+  - Digitar a quantidade atualiza só as células (`_capQtde`), senão o campo
+    perde o foco.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

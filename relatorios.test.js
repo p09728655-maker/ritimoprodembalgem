@@ -3667,6 +3667,26 @@ console.log('\n── estudo de UEP ──');
     ok('META DIA (UEP) nas configurações: só envia quando o gestor mudou o valor, uma vez',
        [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
         /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);
+    // v7.90.0 — simulador de capacidade em UEP, por PRODUTO COMPLETO
+    eval(pega('function _capVol(')); eval(pega('function _capNome(')); eval(pega('function _capProdutos(')); eval(pega('function _capMix('));
+    ok('volume lido da descrição; sem VOL é 1/1', [_capVol('VOL 2/2 PENTEADEIRA').vol, _capVol('VOL 2/2 X').nVol, _capVol('MESA').nVol], [2, 2, 1]);
+    ok('nome sem VOL e sem a cor antiga no fim', _capNome('VOL 1/2 PENTEADEIRA CAMARIM ELOA ROSA', 'rosa'), 'PENTEADEIRA CAMARIM ELOA');
+    const cp = _capProdutos([
+      { codigo: '501061001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.5 },
+      { codigo: '501061002', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.02 },
+      { codigo: '501061003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.3 },
+      { codigo: '501061004', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.02 },
+      { codigo: '501099001', desc: 'VOL 1/2 RACK X', cor: 'PRETO', uep: 1.2 },
+      { codigo: '501099002', desc: 'VOL 2/2 RACK X', cor: 'PRETO', uep: 0 }]);
+    const eloa = cp.find(p => /ELOA/.test(p.nome)), rack = cp.find(p => /RACK/.test(p.nome));
+    ok('UEP do PRODUTO = soma dos volumes (média entre cores); cores contadas',
+       [eloa.nVol, eloa.uepJogo, eloa.nCores], [2, 4.42, 2]);
+    ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
+    const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
+    ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',
+       [Math.round(mx.usado), Math.round(mx.sobra), mx.linhas[0].cabeMais, mx.semUep.length], [1326, 1204, 272, 1]);
+    ok('o simulador lê o cadastro só ao abrir, com cache e tentativas em sequência',
+       [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function abrirCapUep('))], [true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
