@@ -2815,7 +2815,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="modal-ttl" style="margin:0">🧮 CAPACIDADE EM UEP · PRODUTO COMPLETO</div>
       <span style="font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--warn);border:0.5px solid var(--warn);border-radius:3px;padding:2px 6px">SIMULAÇÃO</span>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="_capLimpar()" title="Apaga a busca e o mix e volta a meta para a das configurações">↺ LIMPAR</button>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="_capLimpar()" title="Apaga a busca e o dia montado e volta a meta para a das configurações">↺ LIMPAR</button>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="fecharCapUep()" aria-label="Fechar">✕</button>
     </div>
     <div class="frm-row" style="margin-top:12px">
@@ -7095,7 +7095,7 @@ function _capCelUep(l){ return l.uep!=null?fmtN(Math.round(l.uep)):'<span style=
 function _capCelCabe(l){ return l.cabeMais!=null?fmtN(l.cabeMais)+' a mais':'—'; }
 function _capTotHtml(r){
   const cor=r.pct>100?'var(--red)':r.pct>=90?'var(--warn)':'var(--ok)';
-  return `<b>${fmtN(Math.round(r.usado))}</b> de ${fmtN(r.meta)} UEP · <b style="color:${cor}">${fmtP(r.pct)}</b> do dia · `
+  return `Dia montado: <b>${fmtN(Math.round(r.usado))}</b> de ${fmtN(r.meta)} UEP · <b style="color:${cor}">${fmtP(r.pct)}</b> do dia · `
     +(r.sobra>=0?`sobram <b>${fmtN(Math.round(r.sobra))} UEP</b>`:`passa <b style="color:var(--red)">${fmtN(Math.round(-r.sobra))} UEP</b> da meta`)
     +(r.semUep.length?`<div style="font-size:11px;color:var(--warn);margin-top:4px">${r.semUep.length} produto(s) sem UEP completa ficaram fora da soma.</div>`:'');
 }
@@ -7115,24 +7115,24 @@ function _capPintar(){
           <td class="mono">${p.uepJogo>0?fmtU(p.uepJogo):`<span style="color:var(--warn)" title="volume(s) ${p.volSemUep.join(', ')} sem UEP no cadastro">sem UEP</span>`}</td>
           <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(Math.floor(jd)):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(Math.floor(jd)*p.nVol)} cx</span>`:''}</td>
           <td class="mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
-          <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ MIX</button></td></tr>`; }).join('')}</tbody></table>`;
+          <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ ADICIONAR AO DIA</button></td></tr>`; }).join('')}</tbody></table>`;
   box.innerHTML=lista+'<div id="cap-mix" style="margin-top:14px"></div>'
     +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
   _capPintarMix();
 }
 function _capPintarMix(){
   const el=document.getElementById('cap-mix'); if(!el) return;
-  if(!CAP_MIX.length){ el.innerHTML='<div style="font-size:11px;color:var(--txt2)">Monte um mix com <b>+ MIX</b> para ver quanto do dia ele ocupa.</div>'; return; }
+  if(!CAP_MIX.length){ el.innerHTML='<div style="font-size:11px;color:var(--txt2)">Para montar um dia com vários produtos, clique em <b>+ ADICIONAR AO DIA</b> e digite a quantidade de cada um.</div>'; return; }
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
   const r=_capMix(CAP_CAT, CAP_MIX, meta);
-  el.innerHTML=`<div class="frm-lbl" style="margin-bottom:6px">MIX DO DIA</div>
-  <table><thead><tr><th>PRODUTO</th><th>QTDE (PRODUTOS)</th><th>UEP</th><th>AINDA CABEM</th><th></th></tr></thead><tbody>${r.linhas.map((l,i)=>{
+  el.innerHTML=`<div class="frm-lbl" style="margin-bottom:6px">DIA MONTADO</div>
+  <table><thead><tr><th>PRODUTO</th><th>QUANTIDADE (PRODUTOS)</th><th>UEP</th><th>CABEM MAIS DESTE</th><th></th></tr></thead><tbody>${r.linhas.map((l,i)=>{
     const k=_rpEsc(l.p.chave).replace(/'/g,"\\'");
     return `<tr><td>${_rpEsc(l.p.nome)}</td>
       <td><input class="frm-inp" style="width:90px;padding:4px 6px" type="text" inputmode="numeric" value="${l.qtde||''}" oninput="_capQtde('${k}',this.value)"></td>
       <td class="mono" id="cap-u-${i}">${_capCelUep(l)}</td>
       <td class="mono" id="cap-c-${i}">${_capCelCabe(l)}</td>
-      <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capDel('${k}')" aria-label="Tirar do mix">✕</button></td></tr>`; }).join('')}</tbody></table>
+      <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capDel('${k}')" aria-label="Tirar do dia">✕</button></td></tr>`; }).join('')}</tbody></table>
   <div id="cap-mix-tot" style="margin-top:10px;font-family:var(--font-d);font-size:13px;color:var(--txt)">${_capTotHtml(r)}</div>`;
 }
 
