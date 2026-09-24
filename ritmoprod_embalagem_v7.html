@@ -2815,6 +2815,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="modal-ttl" style="margin:0">🧮 CAPACIDADE EM UEP · PRODUTO COMPLETO</div>
       <span style="font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--warn);border:0.5px solid var(--warn);border-radius:3px;padding:2px 6px">SIMULAÇÃO</span>
       <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="gerarRelatorioCapUep()" title="Imprime o dia montado e a capacidade de cada produto">🖨 IMPRIMIR</button>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="_capLimpar()" title="Apaga a busca e o dia montado e volta a meta para a das configurações">↺ LIMPAR</button>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="fecharCapUep()" aria-label="Fechar">✕</button>
     </div>
@@ -2905,7 +2906,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.90.1';
+const APP_VER   = '7.91.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7071,6 +7072,73 @@ async function abrirCapUep(){
   }
   _capPintar();
 }
+// IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
+// contas da tela (_capMix sobre o CAP_CAT); nada é buscado de novo. Documento
+// compartilhado (_rpDocParadas), retrato. É SIMULAÇÃO e o papel diz isso.
+function gerarRelatorioCapUep(){
+  if(!CAP_CAT){ alert('O cadastro ainda está carregando. Tente em alguns segundos.'); return; }
+  if(!CAP_MIX.length){ alert('Monte o dia antes de imprimir: busque o produto e clique em + ADICIONAR AO DIA.'); return; }
+  const win=window.open('','_blank','width=960,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este endereço e tente de novo.'); return; }
+  const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
+  const r=_capMix(CAP_CAT, CAP_MIX, meta);
+  const u2=v=>v.toFixed(2).replace('.',',');
+  const INK2='#5B6470';
+  const totProd=r.linhas.reduce((a,l)=>a+l.qtde,0);
+  const totCx=r.linhas.reduce((a,l)=>a+l.qtde*l.p.nVol,0);
+  const selo=r.pct>100?['NÃO CABE NO DIA','#B3261E','#ffebee']:r.pct>=90?['CABE NO LIMITE','#B4650A','#fff3e0']:['CABE NO DIA','#2E7D32','#e8f5e9'];
+  const corpo=`
+<div class="rp-note" style="margin-top:0">SIMULAÇÃO — nada foi gravado. Meta do dia: <b>${fmtN(meta)} UEP</b> na jornada normal (${UEP_MIN_DIA} min).</div>
+
+<div class="rp-sec-ttl">1 ▸ O DIA MONTADO CABE?</div>
+<div class="kpi-grid">
+  <div class="kpi-card a"><div class="kpi-lbl">UEP DO DIA MONTADO</div><div class="kpi-val">${fmtN(Math.round(r.usado))}</div><div class="kpi-sub">de ${fmtN(meta)} UEP · ${fmtP(r.pct)} do dia</div></div>
+  <div class="kpi-card" style="border-left-color:${selo[1]}"><div class="kpi-lbl">${r.sobra>=0?'SOBRAM':'PASSA DA META'}</div><div class="kpi-val">${fmtN(Math.round(Math.abs(r.sobra)))}</div><div class="kpi-sub">UEP · <span style="font-weight:700;color:${selo[1]};background:${selo[2]};padding:1px 6px;border-radius:3px;-webkit-print-color-adjust:exact;print-color-adjust:exact">${selo[0]}</span></div></div>
+  <div class="kpi-card" style="border-left-color:#cbd5e0"><div class="kpi-lbl">PRODUTOS NO DIA</div><div class="kpi-val">${fmtN(totProd)}</div><div class="kpi-sub">${plural(r.linhas.length,'item','itens')} · ${fmtN(totCx)} caixas</div></div>
+</div>
+
+<div class="rp-sec-ttl">2 ▸ PRODUTO A PRODUTO</div>
+<table>
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>UEP / PRODUTO</th><th>QUANTIDADE</th><th>CAIXAS</th><th>UEP</th><th>% DO DIA</th><th>CABEM MAIS DESTE</th></tr></thead>
+  <tbody>${r.linhas.map(l=>`<tr>
+    <td class="td-mono">${_rpEsc(l.p.modelo)}</td><td>${_rpEsc(l.p.nome)}</td><td class="td-mono">${l.p.nVol}</td>
+    <td class="td-mono">${l.p.uepJogo>0?u2(l.p.uepJogo):'sem UEP'}</td><td class="td-bold">${fmtN(l.qtde)}</td>
+    <td class="td-mono">${fmtN(l.qtde*l.p.nVol)}</td><td class="td-bold">${l.uep!=null?fmtN(Math.round(l.uep)):'—'}</td>
+    <td class="td-mono">${l.uep!=null?fmtP(l.uep/r.meta*100):'—'}</td><td class="td-mono">${l.cabeMais!=null?fmtN(l.cabeMais):'—'}</td></tr>`).join('')}</tbody>
+  <tfoot><tr><td class="tf-lbl" colspan="4">TOTAL</td><td class="td-bold">${fmtN(totProd)}</td><td class="td-mono">${fmtN(totCx)}</td>
+    <td class="td-bold">${fmtN(Math.round(r.usado))}</td><td class="td-bold">${fmtP(r.pct)}</td><td></td></tr></tfoot>
+</table>
+${r.semUep.length?`<div class="rp-note">${plural(r.semUep.length,'produto','produtos')} sem UEP completa no cadastro ficou fora da soma: ${_rpEsc(r.semUep.join(', '))}.</div>`:''}
+
+<div class="rp-sec-ttl">3 ▸ CADA UM SOZINHO NA LINHA</div>
+<table>
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th></tr></thead>
+  <tbody>${r.linhas.map(l=>{ const jd=l.p.uepJogo>0?r.meta/l.p.uepJogo:null;
+    return `<tr><td class="td-mono">${_rpEsc(l.p.modelo)}</td><td>${_rpEsc(l.p.nome)}</td><td class="td-mono">${l.p.uepJogo>0?u2(l.p.uepJogo):'—'}</td>
+    <td class="td-bold">${jd!=null?fmtN(Math.floor(jd)):'—'}</td><td class="td-mono">${jd!=null?fmtN(Math.floor(jd)*l.p.nVol):'—'}</td>
+    <td class="td-mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td></tr>`; }).join('')}</tbody>
+</table>
+
+<div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
+<div style="font-size:10.5px;color:${INK2};line-height:1.6">
+  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média.
+  <b>UEP da linha</b> = quantidade × UEP do produto. <b>Cabem mais</b> = UEP que sobra ÷ UEP do produto.
+  <b>Sozinho na linha</b> = meta de UEP ÷ UEP do produto.<br>
+  A UEP vem do ritmo <b>demonstrado</b> da linha (o que ela já fez), não do teto da esteira. Não desconta troca de produto além do que já está na UEP,
+  e vale para a jornada normal — hora extra fica fora.
+</div>
+<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>simulação de capacidade · ${fmtN(Math.round(r.usado))} de ${fmtN(r.meta)} UEP</span></div>`;
+  const html=_rpDocParadas('Capacidade em UEP — simulação')
+    + _rpBotaoImprimir()
+    + _rpCabecalho('CAPACIDADE EM UEP · SIMULAÇÃO',
+        `<div class="rp-per">DIA MONTADO</div>
+         <div>Meta: ${fmtN(meta)} UEP</div>
+         <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
+        ' · PRODUTO COMPLETO')
+    + corpo + '</body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
 // ↺ LIMPAR: busca e mix vazios, meta de volta à das configurações.
 function _capLimpar(){
   CAP_MIX=[];

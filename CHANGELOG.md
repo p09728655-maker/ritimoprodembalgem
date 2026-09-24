@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.91.0 — 24/09/2026
+
+**🖨 IMPRIMIR no simulador de CAPACIDADE UEP.** Folha em retrato com quatro
+partes:
+1. **O dia montado cabe?** UEP usada, o que sobra (ou passa da meta) e o total
+   de produtos e caixas, com selo CABE NO DIA · CABE NO LIMITE · NÃO CABE NO
+   DIA.
+2. **Produto a produto**: código, volumes, UEP/produto, quantidade, caixas,
+   UEP, % do dia e quantos cabem a mais.
+3. **Cada um sozinho na linha**: produtos por dia, caixas por dia e produtos
+   por hora.
+4. **Como o número sai.**
+
+Mesmas contas da tela, nada é buscado de novo. O papel diz que é simulação.
+
 ## v7.90.1 — 24/09/2026
 
 **↺ LIMPAR no simulador de CAPACIDADE UEP.** Apaga a busca e o dia montado e
