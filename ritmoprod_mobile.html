@@ -912,7 +912,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.21.0';
+const APP_VER   = '1.22.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2917,6 +2917,12 @@ function abrirDia(data){
     linhas.push(['CX EM HORA EXTRA', fmtN(_heCx)+' CX', 'acc']);
   }
   if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
+  // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele dia.
+  if(d.uep!=null){
+    const _pu=Number(d.uep)/uepDiaMeta(d)*100;
+    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu), sc(_pu)]);
+    if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);
+  }
   if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);
   document.getElementById('md-data').textContent=data;
   document.getElementById('md-body').innerHTML=linhas.map(([k,v,c])=>

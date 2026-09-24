@@ -242,6 +242,16 @@ ok('sem meta do dia também não',
   ok('hora sem apontamento com produto sai "—"', uepCelula(undefined, null, 60, false).txt, '—');
 }
 
+// ── UEP dos dias fechados (uepHistResumo / uepDiaMeta) ─────────────────────
+{
+  const D = [{ uep: 2400, metaUep: 2300, uepHe: 300 }, { uep: 2100, metaUep: 2300 }, { uep: null }, { uep: 2000, metaUep: 1900 }];
+  const r = uepHistResumo(D);
+  ok('média só dos dias COM UEP; o dia sem UEP é contado à parte', [r.n, r.semUep, Math.round(r.media)], [3, 1, 2167]);
+  ok('bateu = UEP ≥ a meta DAQUELE dia (gravada no fechamento)', r.bateu, 2);
+  ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2300);
+  ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
              'efNoRitmo', 'nomeComCor', '_rpOk'];

@@ -128,6 +128,7 @@ body.ger-hist .ger-live-only{display:none!important}
 .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
 .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
 .kpi-grid.c5{grid-template-columns:repeat(5,1fr)}
+.kpi-grid.c6{grid-template-columns:repeat(6,1fr)}
 .par-sec{display:flex;align-items:center;gap:9px;font-family:var(--font-d);font-size:11px;letter-spacing:2px;color:var(--txt);text-transform:uppercase;margin:22px 2px 11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
 .par-sec-n{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;background:var(--acc);color:#141414;font-size:10px;font-weight:700;flex-shrink:0;box-shadow:0 2px 6px -2px rgba(245,166,35,.6)}
 #sec-paradas .par-sec:first-of-type{margin-top:6px}
@@ -2347,7 +2348,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>MODELO</th><th id="porhora2-th-cor" style="display:none">COR</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th><th id="porhora2-th-teto" style="display:none" title="quanto do teto físico da esteira o modelo usa hoje">% TETO EST.</th></tr></thead>
+        <thead><tr><th>MODELO</th><th id="porhora2-th-cor" style="display:none">COR</th><th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th><th id="porhora2-th-teto" style="display:none" title="quanto do teto físico da esteira o modelo usa hoje">% TETO EST.</th><th id="porhora2-th-uep" style="display:none" title="UEP do produto hoje (caixas × UEP do cadastro) e a UEP por caixa">UEP</th></tr></thead>
         <tbody id="porhora2-body"><tr><td colspan="7" class="empty-msg">Carregando…</td></tr></tbody>
       </table>
     </div>
@@ -2465,7 +2466,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th><th>EFICIÊNCIA</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
+        <thead><tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th><th>EFICIÊNCIA</th><th id="th-hist-uep" style="display:none" title="UEP feita em jornada normal no dia, gravada no fechamento, contra a meta de UEP daquele dia">UEP</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
         <tbody id="hist-tbl-body"><tr><td colspan="11" class="empty-msg">Nenhum dado.</td></tr></tbody>
       </table>
     </div>
@@ -2865,7 +2866,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.82.0';
+const APP_VER   = '7.83.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4333,6 +4334,13 @@ function renderGerencialHist(){
     ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · ${temHEnaTabela?'as horas de HE estão na tabela, sem meta':'fora da tabela abaixo'}`, c:'acc'}]:[]),
     {l:'META DO DIA',      v:fmtN(meta),  sub:gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltaram '+fmtN(Math.abs(gap)), c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
+    // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele
+    // dia. Sem ela (dia antigo ou backend anterior), o card diz isso.
+    ...(dia.uep!=null
+      ? [{l:'UEP DO DIA', v:fmtN(Math.round(dia.uep)),
+          sub:`de ${fmtN(uepDiaMeta(dia))} UEP (${fmtP(dia.uep/uepDiaMeta(dia)*100)})${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em HE':''}`,
+          c:sc(dia.uep/uepDiaMeta(dia)*100)}]
+      : (('uep' in dia)?[{l:'UEP DO DIA', v:'—', sub:'dia sem UEP gravada no fechamento', c:''}]:[])),
         {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
     {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
     {l:'MELHOR HORA',      v:fmtN(melhor), sub:'cx — pico do turno',            c:'ok'},
@@ -4632,11 +4640,14 @@ function calcPorModelo(){
   lista.forEach(it=>{
     const k=it.modelo+'|'+(it.nome||'');
     if(!porModelo[k]){
-      porModelo[k]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set(), cores:new Set(), cxTeto:0, hTeto:0, trocaMin:null };
+      porModelo[k]={ modelo:it.modelo, nome:it.nome, caixas:0, pesoKg:0, pontos:0, horas:new Set(), cores:new Set(), cxTeto:0, hTeto:0, trocaMin:null, uep:0, cxUep:0 };
       ordem.push(k);
     }
     const m=porModelo[k];
     m.caixas+=it.caixas; m.pesoKg+=it.pesoKg; m.pontos+=it.pontos;
+    // UEP (.gs v5.11: uep por item = caixas × UEP do cadastro). Só as caixas
+    // COM UEP entram no UEP/cx — sem isso um código sem cadastro puxaria a média.
+    if(Number(it.uep)>0){ m.uep+=Number(it.uep); m.cxUep+=it.caixas; }
     m.horas.add(normHora(it.hora));
     if(it.cor) m.cores.add(it.cor);
     // Teto da esteira (o backend manda tetoCxH por item): o tempo soma —
@@ -4660,6 +4671,7 @@ function calcPorModelo(){
     return { modelo:m.modelo, nome:m.nome, caixas:m.caixas,
       pesoKg:Math.round(m.pesoKg*10)/10, pontos:m.pontos,
       cor:[...m.cores].sort().join(' · '),
+      uep:m.uep, uepCx:m.cxUep>0?m.uep/m.cxUep:null, cxSemUep:m.caixas-m.cxUep,
       teto, troca, nTroc, minTroca,
       // teto exibido: quando o comparativo do período já publicou a régua
       // única (PH_FATOR_TROCA), o dia usa o MESMO fator — o teto do mesmo
@@ -4681,7 +4693,9 @@ function calcPorModelo(){
   // A fonte da régua (medida × premissa) sai junto: quem desenha a tabela
   // precisa dela no tooltip, e ela nasce aqui, com o resto da conta.
   return { linhas, totCx, totPeso, totPts, fonteTroca:_fonteHoje, temCor: linhas.some(l=>!!l.cor),
-           temTeto: linhas.some(l=>l.teto>0) };
+           temTeto: linhas.some(l=>l.teto>0),
+           // UEP (v7.83.0): a coluna some sem UEP no cadastro, como a COR.
+           temUep: linhas.some(l=>l.uep>0), totUep: linhas.reduce((s,l)=>s+l.uep,0) };
 }
 
 // Reaproveita PONTOS_DIA.porHoraModelo (já carregado por lerPontosDia() no
@@ -4691,7 +4705,8 @@ function renderProducaoPorHoraDedicada(){
   const body=document.getElementById('porhora2-body');
   const totEl=document.getElementById('porhora2-totais');
   if(!body) return;
-  const {linhas,totCx,totPeso,totPts,temCor,temTeto,fonteTroca}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor,temTeto,fonteTroca,temUep,totUep}=calcPorModelo();
+  { const _t=document.getElementById('porhora2-th-uep'); if(_t) _t.style.display=temUep?'':'none'; }
   const thCor=document.getElementById('porhora2-th-cor');
   if(thCor) thCor.style.display=temCor?'':'none';
   const thTeto=document.getElementById('porhora2-th-teto');
@@ -4709,10 +4724,12 @@ function renderProducaoPorHoraDedicada(){
       <td class="mono">${fmtN(m.pontos)}</td>
       <td class="mono">${fmtN(m.media)}</td>
       ${temTeto?`<td class="mono" style="color:var(--txt2);white-space:nowrap" title="teto deste mix já descontando ${PH_FATOR_TROCA!=null?fmtP((1-PH_FATOR_TROCA)*100)+' de troca — a régua ÚNICA do comparativo do período acima (mesma para todas as linhas)':fmtN(Math.round(m.minTroca*10)/10)+' min de troca — a fatia deste produto nos '+fmtN(fonteTroca.minDia)+' min/dia '+(fonteTroca.medido?'MEDIDOS hoje (paradas de esteira × duração das paradas apontadas)':'da premissa')}: ${fmtN(Math.round(m.tetoOper))} cx/h (físico puro: ${fmtN(Math.round(m.teto))})">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:10px;font-weight:600">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
+      ${temUep?`<td class="mono" style="white-space:nowrap" title="${m.uepCx!=null?fmtN(Math.round(m.uep))+' UEP = caixas × '+m.uepCx.toFixed(2).replace('.',',')+' UEP/cx':''}${m.cxSemUep>0?' · '+fmtN(m.cxSemUep)+' cx de código sem UEP':''}">${m.uep>0?fmtN(Math.round(m.uep))+` <span style="font-size:10px;color:var(--txt2)">${m.uepCx.toFixed(2).replace('.',',')}/cx</span>`:'—'}</td>`:''}
     </tr>`).join('');
   // Quantas trocas a linha já fez HOJE (o "por dia" do período, no dia de hoje).
   const tlHoje=_phPrepHoje();
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
+    +(temUep?` · ${fmtN(Math.round(totUep))} UEP`:'')
     +(tlHoje.trocas?` · ${fmtN(tlHoje.trocas)} preparação(ões) hoje`:'')
     +(tlHoje.eventos&&tlHoje.eventos<tlHoje.trocas?` em ${fmtN(tlHoje.eventos)} parada(s) de esteira`:'');
   // Mede a duração real da troca (paradas apontadas) e redesenha UMA vez quando
@@ -4922,6 +4939,27 @@ function _phReguaPeriodo(tl, datas, horasLinha, obsT){
 // Uma linha por grupo do comparativo, já ordenada. `aparada` sai para os dois:
 // só a tela lia o campo, e mandar um campo a mais para o PDF é mais barato que
 // manter duas construções que precisam concordar.
+// UEP por caixa de cada GRUPO do comparativo (v7.83.0). O backend manda a UEP
+// média por produto (modelo|nome, a chave do estudo); o grupo pode ser o
+// produto, uma cor dele ou uma família inteira — então a UEP do grupo é a média
+// ponderada pelas caixas dos produtos que caíram nele. Produto sem UEP fica
+// fora da média (e o grupo sem nenhum sai null → nada é mostrado).
+let PH_UEP_PROD=null;
+function _phUepPorGrupo(itens, keyOf){
+  if(!PH_UEP_PROD) return null;
+  const A={};
+  (itens||[]).forEach(it=>{
+    const u=Number(PH_UEP_PROD[_uepChave(it)]);
+    if(!(u>0) || !(it.caixas>0)) return;
+    const a=A[keyOf(it)]=A[keyOf(it)]||{s:0,c:0};
+    a.s+=it.caixas*u; a.c+=it.caixas;
+  });
+  const out={}; Object.keys(A).forEach(k=>{ out[k]=A[k].s/A[k].c; });
+  return out;
+}
+function _phUepTag(u, cor){
+  return u>0?` <span style="font-size:10px;font-weight:600;color:${cor}" title="UEP por caixa deste grupo (cadastro, média pelas caixas)">${u.toFixed(2).replace('.',',')} UEP/cx</span>`:'';
+}
 function _phLinhasPeriodo(ctx){
   const rowAcc=ctx.rowAcc, cellAcc=ctx.cellAcc, datas=ctx.datas, labelDe=ctx.labelDe;
   const metric=ctx.metric, additive=ctx.additive, horasLinha=ctx.horasLinha;
@@ -4936,6 +4974,7 @@ function _phLinhasPeriodo(ctx){
     const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
     const tetoBase=simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal;
     return { key:k, label:labelDe[k]||k, acc:rowAcc[k], nd, nTroc, minTroca, troca:_phTroca(rowAcc[k],obsT),
+      uepCx: ctx.uepGrupo&&ctx.uepGrupo[k]>0 ? ctx.uepGrupo[k] : null,
       v1: additive?_phVal(rowAcc[k],metric):ap.val,
       v2: additive?ap.val:Math.max(0,...accsDia.map(a=>a?_phVal(a,metric):0)),
       aparada:ap.aparada, teto:tetoReal,
@@ -5269,6 +5308,8 @@ async function lerProducaoModeloPeriodo(de,ate,onTent,opt){
         if(json.esteira && json.esteira.vel>0) ESTEIRA_BASE=json.esteira;
         // Preparações por dia, lidas na ordem das linhas do log (backend novo).
         PREP_PERIODO = Array.isArray(json.prepDias) ? json.prepDias : null;
+        // UEP média por caixa de cada produto (.gs v5.14): mapa pequeno.
+        if(json.uepProd && typeof json.uepProd==='object') PH_UEP_PROD=json.uepProd;
         return json.itens;
       }
       // RESPONDEU e não veio item nenhum: o deployment em uso não conhece a
@@ -5543,7 +5584,7 @@ async function renderModeloPeriodo(){
   // A régua do período e as linhas do quadro saem do MESMO lugar que o PDF usa
   // (_phReguaPeriodo / _phLinhasPeriodo) — ver o comentário na declaração.
   const {minDiaFn, fonteTroca, fatorTroca, mediaModo}=_phReguaPeriodo(_tl, datas, horasLinha, obsT);
-  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive,
+  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
                                  horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
 
   // % DO TETO DA ESTEIRA: só no ritmo (cx/h) e só quando o backend novo mandou
@@ -5573,7 +5614,7 @@ async function renderModeloPeriodo(){
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
     const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando ${fatorTroca!=null?fmtP((1-fatorTroca)*100)+' de troca — os':fmtN(Math.round(l.minTroca*10)/10)+' min de troca — a fatia deste produto nos'} ${fmtN(fonteTroca.minDia)} min/dia ${fonteTroca.medido?`MEDIDOS (${fmtN(fonteTroca.ev)} paradas de esteira/dia × ${fmtN(fonteTroca.min)} min, de ${fonteTroca.n} paradas apontadas)`:`da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min)`}${fatorTroca!=null?', diluídos nas horas da LINHA — mesma régua para todas as linhas e cores':''}: ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
-    return `<tr><td style="text-align:left">${l.label}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
+    return `<tr><td style="text-align:left">${l.label}${_phUepTag(l.uepCx,'var(--txt2)')}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
@@ -6252,7 +6293,7 @@ async function gerarRelatorioProducaoHora(){
   // constante antes de ela existir e o popup do relatório morria antes de
   // desenhar (a tela não quebrava porque lá a linha já ficava no fim).
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
-  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive,
+  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
                                  horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
   const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
@@ -6411,7 +6452,7 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px
   <tbody>
     ${linhas.map(l=>{
       const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
-      return `<tr><td>${l.label}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:9.5px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
+      return `<tr><td>${l.label}${_phUepTag(l.uepCx,'#718096')}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:9.5px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
     }).join('')}
   </tbody>
   <tfoot>
@@ -6640,7 +6681,7 @@ async function gerarRelatorioProducaoModelo(){
   // Mede a duração real da troca antes de montar: o PDF não se redesenha, e
   // sair com o valor nominal da planilha imprimiria régua diferente da tela.
   await carregarTrocaObs();
-  const {linhas,totCx,totPeso,totPts,temCor,temTeto}=calcPorModelo();
+  const {linhas,totCx,totPeso,totPts,temCor,temTeto,temUep}=calcPorModelo();
   if(!linhas.length){
     win.close();
     alert('Sem produção por modelo hoje — nada pra gerar no relatório\n(o operador precisa selecionar o produto ao lançar no app).');
@@ -6752,7 +6793,7 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
 <div class="rp-sec-ttl" style="margin-top:18px">DETALHAMENTO POR MODELO</div>
 <table>
   <thead>
-    <tr><th>MODELO</th>${temCor?'<th>COR</th>':''}<th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th>${temTeto?'<th>% TETO EST.</th>':''}</tr>
+    <tr><th>MODELO</th>${temCor?'<th>COR</th>':''}<th>CAIXAS</th><th>PESO</th><th>PONTOS</th><th>MÉDIA CX/H</th>${temTeto?'<th>% TETO EST.</th>':''}${temUep?'<th>UEP</th>':''}</tr>
   </thead>
   <tbody>
     ${linhas.map(m=>`
@@ -6764,12 +6805,16 @@ ${_rpCabecalho('PRODUÇÃO POR MODELO',
       <td class="td-mono">${m.pontos.toLocaleString('pt-BR')}</td>
       <td class="td-mono">${m.media.toLocaleString('pt-BR')}</td>
       ${temTeto?`<td class="td-mono" style="white-space:nowrap">${m.tetoOper>0?fmtP(m.media/m.tetoOper*100)+` <span style="font-size:9.5px;font-weight:600;color:#718096">de ${fmtN(Math.round(m.tetoOper))}/h</span>`:'—'}</td>`:''}
+      ${temUep?`<td class="td-mono" style="white-space:nowrap">${m.uep>0?fmtN(Math.round(m.uep))+` <span style="font-size:9.5px;color:#718096">${m.uepCx.toFixed(2).replace('.',',')}/cx</span>`:'—'}</td>`:''}
     </tr>`).join('')}
   </tbody>
 </table>
 
 ${temTeto?_phNotaTrocaHtml(_phPrepHoje(), trocaObs(), true):''}
 ${_rpCascataHtml('CASCATA DO DIA — ONDE FICARAM AS CAIXAS', cascDia)}
+${(()=>{ const u=PONTOS_DIA.uep; if(!u||!(u.codigos>0)) return '';
+  const c=uepCard(u, PONTOS_DIA.metaUep, kH.minNorm);
+  return `<div class="rp-note"><b>UEP DO DIA (jornada normal):</b> ${c.v} ${c.sub}. A UEP é caixas × UEP por caixa do cadastro (PRODUTO_CODIGO); a meta é de 8 h de jornada normal e a hora extra fica fora dela.</div>`; })()}
 ${cobDia!=null?`<div class="rp-note">${cobDia<80?'⚠ ':''}APONTAMENTO POR PRODUTO: <b>${fmtP(cobDia)}</b> do realizado de hoje (${fmtN(totCx)} de ${fmtN(kH.real)} cx)${cobDia<80?' — a tabela acima é uma AMOSTRA do dia, não o dia inteiro':''}.</div>`:''}
 
 <div class="rp-footer">
@@ -7336,6 +7381,10 @@ function _mergeDias(diasSheets){
       // da coluna HE CX e sem hora-a-hora arquivado para derivar).
       heCx: (d.heCx===null||d.heCx===undefined)?null:Number(d.heCx),
       heCxAusente: !Object.prototype.hasOwnProperty.call(d,'heCx'),
+      // UEP do dia (.gs v5.14), gravada no fechamento. null = o dia não tem.
+      uep: (d.uep===null||d.uep===undefined)?null:Number(d.uep),
+      uepHe: (d.uepHe===null||d.uepHe===undefined)?null:Number(d.uepHe),
+      metaUep: (d.metaUep===null||d.metaUep===undefined)?null:Number(d.metaUep),
       fonte:'sheets'
     };
   });
@@ -7474,12 +7523,18 @@ async function renderHist(){
   const heSub = semBackend
     ? '⚠ Apps Script sem HE CX — re-deploy pendente'
     : (totReal>0?fmtP(totHE/totReal*100)+' do total':'—')+(semHE?` · ${plural(semHE,'dia fechado','dias fechados')} sem o dado`:'');
+  // UEP dos dias fechados (.gs v5.14): card e coluna só quando algum dia tem.
+  const uR=uepHistResumo(dias);
+  const temUepHist=uR.n>0;
+  { const _th=document.getElementById('th-hist-uep'); if(_th) _th.style.display=temUepHist?'':'none';
+    const _g=document.getElementById('hist-kpi-grid'); if(_g){ _g.classList.toggle('c6',temUepHist); _g.classList.toggle('c5',!temUepHist); } }
   document.getElementById('hist-kpi-grid').innerHTML=`
     <div class="kpi-card acc"><div class="kpi-lbl">TOTAL REALIZADO</div><div class="kpi-val">${fmtN(totReal)}</div><div class="kpi-sub">${totHE>0?`${fmtN(totReal-totHE)} normal + ${fmtN(totHE)} extra`:`${dias.length} dias no período`}</div></div>
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
     <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>`;
+    <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>
+    ${temUepHist?`<div class="kpi-card ${uR.media>=uR.meta?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO)."><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(uR.meta)} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.semUep?` · ${uR.semUep} sem UEP`:''}</div></div>`:''}`;
 
   renderChartHist(dias,periodo);
 
@@ -7493,6 +7548,9 @@ async function renderHist(){
     <td class="mono" style="color:${!_heIndef(d)&&d.heCx>0?'var(--acc)':'var(--txt2)'}"${_heIndef(d)?' title="Dia fechado antes da coluna HE CX existir — sem como separar"':''}>${_heIndef(d)?'—':fmtN(d.heCx)}</td>
     <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
     <td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
+    ${temUepHist?(()=>{ if(d.uep==null) return '<td class="mono" style="color:var(--txt3)" title="dia sem UEP gravada">—</td>';
+      const pu=d.uep/uepDiaMeta(d)*100;
+      return `<td class="mono" style="color:var(--${sc(pu)})" title="${fmtN(Math.round(d.uep))} UEP de ${fmtN(uepDiaMeta(d))} (${fmtP(pu)})${d.uepHe>0?' · +'+fmtN(Math.round(d.uepHe))+' em HE':''}">${fmtN(Math.round(d.uep))}</td>`; })():''}
     <td class="mono" style="color:var(--ok)">${fmtN(d.melhor)}</td>
     <td class="mono" style="color:var(--red)">${fmtN(d.pior)}</td>
     <td><span class="badge b-${d.ef>=96?'ok':d.ef>=90?'warn':'red'}">${d.ef>=96?'✓ META':d.ef>=90?'ATENÇÃO':'ABAIXO'}</span>${d.heCount?` <span class="badge b-he">${d.heCount}HE</span>`:''}</td>
@@ -10317,6 +10375,38 @@ async function enviarResumoZap(ateArg){
 // `ateArg`: a semana de QUEM CHAMOU — o 🖨 do bloco FECHAMENTO DA SEMANA
 // PASSADA manda a semana que está na tela, como o gerarRelatorioParadas já faz
 // com o período. Sem argumento (botão da aba HISTÓRICO), vale o filtro "Até".
+// UEP DA SEMANA (v7.83.0): o que os dias fecharam em UEP de jornada normal,
+// contra a meta de UEP de cada dia (gravadas no fechamento, .gs v5.14). É
+// DESENHO: a conta mora no uepHistResumo/uepDiaMeta (rp-core). Semana sem dia
+// com UEP gravada → a seção não sai (nunca uma tabela de zeros).
+function _relUepSemanaHtml(dias){
+  const r=uepHistResumo(dias);
+  if(!r.n) return '';
+  const INK2='#5B6470';
+  const linhas=(dias||[]).map(d=>{
+    if(d.uep==null) return `<tr><td class="td-mono">${d.data}</td><td class="td-mono" style="color:${INK2}" colspan="4">sem UEP gravada</td></tr>`;
+    const m=uepDiaMeta(d), pu=Number(d.uep)/m*100;
+    return `<tr><td class="td-mono">${d.data}</td><td class="td-bold">${fmtN(Math.round(d.uep))}</td>
+      <td class="td-mono" style="color:${INK2}">${fmtN(m)}</td><td class="td-bold">${fmtP(pu)}</td>
+      <td class="td-mono" style="color:${INK2}">${Number(d.uepHe)>0?fmtN(Math.round(d.uepHe)):'—'}</td></tr>`;
+  }).join('');
+  const metaTot=(dias||[]).filter(d=>d.uep!=null).reduce((s,d)=>s+uepDiaMeta(d),0);
+  return `
+<div class="rp-sec-ttl" style="margin-top:18px">UEP DA SEMANA · JORNADA NORMAL</div>
+<table>
+  <thead><tr><th>DATA</th><th>UEP</th><th>META UEP</th><th>% DA META</th><th>UEP EM HE</th></tr></thead>
+  <tbody>${linhas}</tbody>
+  <tfoot><tr><td class="tf-lbl">TOTAL</td><td class="td-bold">${fmtN(Math.round(r.total))}</td>
+    <td class="td-mono" style="color:${INK2}">${fmtN(metaTot)}</td><td class="td-bold">${fmtP(metaTot?r.total/metaTot*100:0)}</td>
+    <td class="td-mono" style="color:${INK2}">${r.he>0?fmtN(Math.round(r.he)):'—'}</td></tr></tfoot>
+</table>
+<div style="font-size:9.5px;color:#5B6470;margin-top:6px;line-height:1.55">
+  <b>UEP</b> = caixas × UEP por caixa do cadastro, só nas horas de jornada normal, gravada no fechamento de cada dia.
+  Bateu a meta em <b>${r.bateu} de ${r.n}</b> dia(s)${r.semUep?` · ${r.semUep} dia(s) sem UEP gravada ficam fora`:''}.
+  A meta de UEP é de 8 h de jornada normal; a hora extra aparece à parte.
+</div>`;
+}
+
 async function gerarRelatorioSemanal(ateArg){
   // Abrir janela ANTES do await (evita bloqueio de pop-up)
   const win=window.open('','_blank','width=960,height=720');
@@ -10628,6 +10718,8 @@ ${soComHE?`<div class="rp-alerta">
     </tr>
   </tfoot>
 </table>
+
+${_relUepSemanaHtml(diasSem)}
 
 <div style="font-size:9.5px;color:#5B6470;margin-top:6px;line-height:1.55">
   <b>META/H</b> = meta do dia ÷ ${plural(hTurno,'hora','horas')} do turno (jornada normal ${_rpEsc(CFG.turnoInicio)}–${_rpEsc(CFG.turnoFim)}).

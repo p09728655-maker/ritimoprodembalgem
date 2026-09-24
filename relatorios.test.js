@@ -3603,6 +3603,22 @@ console.log('\n── estudo de UEP ──');
        [/uepCelula\(uepH\[sl\.inicio\]/.test(JS), /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
     ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
        /UEP \(\$\{fmtP\(pctUep\)\} da meta/.test(pega('function renderProgramacaoDetalhada(')), true);
+    eval(pega('function _phUepPorGrupo(')); eval(pega('function _uepChave('));
+    global.PH_UEP_PROD = { '501134|PENTEADEIRA PRINCESA': 1.94, '501149|MESA MADERO': 1 };
+    const ug = _phUepPorGrupo([{ modelo: '501134', nome: 'PENTEADEIRA PRINCESA', caixas: 100, fam: 'P' },
+                               { modelo: '501149', nome: 'MESA MADERO', caixas: 300, fam: 'P' },
+                               { modelo: '999', nome: 'SEM', caixas: 50, fam: 'P' }], it => it.fam);
+    ok('UEP/cx do grupo = média pelas caixas dos produtos COM UEP', Math.round(ug.P * 1000) / 1000, 1.235);
+    global.PH_UEP_PROD = null;
+    ok('sem o mapa do backend, nada de UEP no comparativo', _phUepPorGrupo([{ caixas: 1 }], () => 'x'), null);
+    ok('tela e PDF do comparativo passam o mesmo uepGrupo', (JS.match(/uepGrupo:_phUepPorGrupo\(itensView,keyOf\)/g) || []).length, 2);
+    eval(pega('function _relUepSemanaHtml('));
+    const sem = _relUepSemanaHtml([{ data: '22/09/2026', uep: 2400, metaUep: 2300 }, { data: '23/09/2026', uep: null }]);
+    ok('UEP DA SEMANA: dia sem UEP escrito, total contra a soma das metas dos dias com UEP',
+       [/sem UEP gravada/.test(sem), /2\.400<\/td>\s*<td class="td-mono" style="color:#5B6470">2\.300/.test(sem.replace(/\n/g, ' '))], [true, true]);
+    ok('semana sem UEP gravada: a seção não sai', _relUepSemanaHtml([{ uep: null }]), '');
+    ok('o relatório semanal e o do dia levam a UEP',
+       [/\$\{_relUepSemanaHtml\(diasSem\)\}/.test(JS), /UEP DO DIA \(jornada normal\)/.test(JS)], [true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

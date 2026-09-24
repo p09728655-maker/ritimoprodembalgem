@@ -640,6 +640,29 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('o getPontosDia devolve a uep nos dois caminhos (com e sem log)', (gp.match(/painelConfig, uep \}|\n    uep,/g) || []).length, 2);
   ok('a programação detalhada manda a UEP da linha (null sem UEP, nunca 0)',
      /uep:\s*cat && cat\.uep > 0 \? Math\.round\(qtde \* cat\.uep/.test(pega('function getProgramacaoDetalhada(')), true);
+  // ── v5.14: UEP do dia no HISTORICO ──
+  global.HE_JORNADA_INI_MIN = 7 * 60; global.HE_JORNADA_FIM_MIN = 17 * 60;
+  eval(pega('function _ehHoraExtra(')); eval(pega('function _semPrefixoHE('));
+  eval(pega('function _ehHoraExtraCaixas(')); eval(pega('function _uepPorDiaDoLog('));
+  eval(pega('function _celNumOuNull('));
+  const dl = _uepPorDiaDoLog([
+    { data: '24/09/2026', hora: '05:00', codigo: 'A', cx: 100 }, { data: '24/09/2026', hora: '07:00', codigo: 'A', cx: 200 },
+    { data: '24/09/2026', hora: '13:00-14:00', codigo: 'B', cx: 50 }, { data: '24/09/2026', hora: '08:00', codigo: 'X', cx: 30 },
+    { data: '23/09/2026', hora: '17:00', codigo: 'B', cx: 10 }], { A: 1, B: 1.94 });
+  ok('UEP do dia: jornada normal e HE pela mesma régua das caixas; código sem UEP à parte',
+     [dl['24/09/2026'].normal, dl['24/09/2026'].he, dl['24/09/2026'].cxSem, dl['23/09/2026'].he], [297, 100, 30, 19.4]);
+  ok('célula vazia do HISTORICO é null (dia sem UEP), número é número',
+     [_celNumOuNull(''), _celNumOuNull(0), _celNumOuNull('2.300'), _celNumOuNull('1,5')], [null, 0, 2300, 1.5]);
+  ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend',
+     [/\]\.concat\(_uepColsDoDia\(p\.data\)\)/.test(pega('function saveDay(')),
+      /\]\.concat\(_uepColsDoDia\(dataRef\)\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+  ok('getHistory e getHoraDia devolvem uep/uepHe/metaUep',
+     [/uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHistory(')), /uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHoraDia('))], [true, true]);
+  ok('a meta padrão do .gs é a mesma do rp-core',
+     Number(src.match(/const UEP_META_PADRAO_GS = (\d+)/)[1]),
+     Number(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8').match(/const UEP_META_PADRAO = (\d+)/)[1]));
+  ok('o comparativo do período manda a UEP por produto num mapa (não por item)',
+     /uepProd: uepProd/.test(pega('function getProducaoModeloPeriodo(')), true);
   ok('META_UEP vem da CONFIG_PAINEL', /metaUep: kv\.META_UEP/.test(pega('function getConfigPainel(')), true);
 }
 
