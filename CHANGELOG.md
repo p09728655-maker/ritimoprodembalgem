@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.90.0 — 24/09/2026
+
+**🧮 CAPACIDADE UEP na aba PROGRAMAÇÃO**: um simulador de quantos
+**produtos completos** cabem no dia.
+- Busca pelo nome ou pelo código. Mostra os volumes, a UEP do produto
+  (**soma dos volumes** do cadastro) e quantos cabem no dia e por hora, com o
+  produto sozinho na linha.
+- **+ MIX** monta um dia com vários produtos. Mostra a UEP usada, o % da meta,
+  o que sobra e quantos de cada ainda cabem.
+
+**Atenção:**
+- É simulação: não grava nada.
+- Produto com algum volume sem UEP no cadastro aparece "sem UEP" e fica fora
+  da soma, nunca meio produto.
+- O número é o ritmo **demonstrado** (o que a linha já fez), não o teto da
+  esteira.
+- Lê o cadastro (`getProdutos`) só quando o simulador abre, com cache de
+  10 min. Sem mudança no `.gs`.
+
 ## v7.89.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.17)
 
 **META DIA (UEP) NAS CONFIGURAÇÕES.** Campo novo no ⚙, abaixo da META DIA
