@@ -2499,6 +2499,15 @@ feito e dá ar de verdade ao que sobrou.
   da UEP em 8 h, `QP_FAIXA` da aba PLANO, `QP_MIN_DIAS`+ dias válidos).
   Leitura de 01/07–24/09 (antes do regime): capacidade p50 **2.192** / p60
   **2.223 UEP em 8 h**, oscilando **8,5%** contra **34,8%** das caixas/dia.
+- **ALVO PROVISÓRIO = 2.300 UEP em 8 h** (`UEP_ALVO_PROV`, v7.79.0, PPCP,
+  24/09/2026: *"2300 ups dia"*, confirmado *em 8 h*). Fica **acima** da faixa
+  p50–p60 de propósito (bateu 18 de 51 dias válidos, ~p65; pede 287 UEP/h
+  contra 278 da MADERO sozinha). Card + coluna ALVO na UEP POR DIA; dia
+  suspeito sai "—". Só no estudo. **Substituir pelo tempo padrão** quando a
+  cronoanálise vier: alvo = 8 h × 3.600 ÷ TP da MADERO. A folha de
+  cronoanálise (xlsx: MADERO âncora + SLEEP, CAMARIM MEL e CAMARIM ELOA para
+  conferir a proporção; a VERSATIL saiu — 4 h sozinha, 3 dias acima do teto)
+  foi entregue fora do repositório.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

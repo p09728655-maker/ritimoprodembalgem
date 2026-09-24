@@ -193,6 +193,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **RITMO USADO** | caixas ÷ horas do produto com a hora de troca repartida pelo tempo esperado (caixas ÷ ritmo em regime) | cx/h | `v7:_uepProdutos` |
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
 | **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP em 8 h dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado | UEP | `v7:_uepEstudo` |
+| **ALVO PROVISÓRIO (UEP)** | 2.300 UEP em 8 h (`UEP_ALVO_PROV`, decisão do PPCP 24/09/2026); BATEU = UEP em 8 h ≥ 2.300; % = dias válidos que bateram ÷ dias válidos (suspeito fica fora) | UEP | `v7:_uepEstudo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
 | **VALIDAÇÃO FORA DA AMOSTRA** | oscilação cx/h → UEP/h na 2ª metade dos dias, com a UEP calculada só na 1ª | % | `v7:_uepValidacao` |
 | **UEP NO PERÍODO** | caixas × UEP/cx (âncora A) | UEP | `v7:_uepEstudo` |

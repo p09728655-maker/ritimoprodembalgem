@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.79.0 — 24/09/2026
+
+**ESTUDO UEP: alvo provisório de 2.300 UEP em 8 h** (decisão do PPCP). Novo
+card ALVO PROVISÓRIO (quantos dias válidos bateram e em que percentil da
+capacidade ele cai), coluna **ALVO 2.300** na UEP POR DIA (BATEU / NÃO; dia
+suspeito sai "—") e a nota de onde veio o número. Continua só no relatório de
+estudo, sem TV, celular ou meta oficial.
+
+**Atenção:** o alvo fica **acima** da faixa sugerida (2.228–2.239 em
+01/07–24/09): nesse período a linha bateu 2.300 em 18 de 51 dias válidos
+(~p65). Vale até a cronoanálise da MADERO dar o tempo padrão.
+
 ## v7.78.1 — 24/09/2026
 
 **ESTUDO UEP voltou a abrir.** Desde a v7.77.0 o estudo faz a própria busca no
