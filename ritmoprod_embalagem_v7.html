@@ -2907,7 +2907,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.92.0';
+const APP_VER   = '7.93.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7023,18 +7023,24 @@ function _capProdutos(cat){
     const g=G[k]=G[k]||{chave:k, modelo:cod.slice(0,6), nome, nVol:1, vols:{}, cores:{}, codigos:0};
     g.nVol=Math.max(g.nVol,nVol); g.codigos++;
     if(p.cor) g.cores[p.cor]=1;
-    const v=g.vols[vol]=g.vols[vol]||{s:0,n:0};
+    const v=g.vols[vol]=g.vols[vol]||{s:0,n:0,ps:0,pn:0};
     const u=Number(p.uep)||0;
     if(u>0){ v.s+=u; v.n++; }
+    const pt=Number(p.pontos)||0;              // PONTOS do cadastro, por caixa (volume)
+    if(pt>0){ v.ps+=pt; v.pn++; }
   });
   return Object.values(G).map(g=>{
-    let uep=0, faltam=[];
+    let uep=0, faltam=[], pts=0, ptsFalta=0;
     for(let v=1; v<=g.nVol; v++){
       const x=g.vols[v];
       if(x&&x.n) uep+=x.s/x.n; else faltam.push(v);
+      if(x&&x.pn) pts+=x.ps/x.pn; else ptsFalta++;
     }
+    // Pontos do PRODUTO = soma dos volumes (média entre as cores), como a UEP.
+    // Volume sem pontos → null (nunca meio produto).
     return { chave:g.chave, modelo:g.modelo, nome:g.nome, nVol:g.nVol, nCores:Object.keys(g.cores).length,
-             codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam };
+             codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam,
+             ptsJogo: ptsFalta? null : Math.round(pts*100)/100 };
   }).sort((a,b)=>a.nome.localeCompare(b.nome));
 }
 // Mix digitado: [{chave, qtde}] contra a meta. Produto sem UEP completa fica
@@ -7160,11 +7166,12 @@ function gerarRelatorioCapTodos(){
 <div class="rp-note" style="margin-top:0">Quantos produtos <b>completos</b> cabem num dia com <b>cada produto sozinho na linha</b>, pela meta de <b>${fmtN(meta)} UEP</b> na jornada normal (${UEP_MIN_DIA} min). Todos os produtos do cadastro, do mais pesado para o mais leve.</div>
 <div class="rp-sec-ttl">CAPACIDADE DIÁRIA POR PRODUTO · ${plural(com.length,'produto','produtos')}</div>
 <table>
-  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th></tr></thead>
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>PONTOS / DIA</th></tr></thead>
   <tbody>${com.map(p=>{ const jd=meta/p.uepJogo;
     return `<tr><td class="td-mono">${_rpEsc(p.modelo)}</td><td>${_rpEsc(p.nome)}</td><td class="td-mono">${p.nVol}</td><td class="td-mono">${p.nCores||'—'}</td>
       <td class="td-mono">${u2(p.uepJogo)}</td><td class="td-bold">${fmtN(Math.floor(jd))}</td><td class="td-mono">${fmtN(Math.floor(jd)*p.nVol)}</td>
-      <td class="td-mono">${fmtN(Math.round(jd/UEP_MIN_DIA*60))}</td></tr>`; }).join('')}</tbody>
+      <td class="td-mono">${fmtN(Math.round(jd/UEP_MIN_DIA*60))}</td>
+      <td class="td-bold" title="${p.ptsJogo!=null?fmtN(Math.floor(jd))+' produtos × '+String(p.ptsJogo).replace('.',',')+' pontos por produto':'algum volume sem PONTOS no cadastro'}">${p.ptsJogo!=null?fmtN(Math.round(Math.floor(jd)*p.ptsJogo)):'—'}</td></tr>`; }).join('')}</tbody>
 </table>
 ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(sem.length,'produto','produtos')}</div>
 <div class="rp-note">Algum volume está sem UEP na coluna UEP da PRODUTO_CODIGO — sem ela não dá para dizer quantos cabem. ${sem.slice(0,60).map(p=>_rpEsc(p.modelo+' '+p.nome)+(p.volSemUep.length?` (vol. ${p.volSemUep.join(', ')})`:'')).join(' · ')}${sem.length>60?` · e mais ${sem.length-60}`:''}.</div>`:''}
@@ -7172,7 +7179,8 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
 <div style="font-size:10.5px;color:#5B6470;line-height:1.6">
   <b>UEP do produto</b> = soma da UEP de cada volume no cadastro; cores do mesmo produto entram pela média.
   <b>Produtos / dia</b> = meta de UEP ÷ UEP do produto, arredondado para baixo. <b>Caixas / dia</b> = produtos × volumes.
-  <b>Produtos / hora</b> = produtos / dia ÷ ${UEP_MIN_DIA} min × 60.<br>
+  <b>Produtos / hora</b> = produtos / dia ÷ ${UEP_MIN_DIA} min × 60.
+  <b>Pontos / dia</b> = produtos / dia × pontos do produto (soma dos PONTOS de cada volume no cadastro) — para comparar a régua de UEP com a de pontos.<br>
   É o ritmo <b>demonstrado</b> da linha, não o teto da esteira; vale para a jornada normal, sem hora extra. Num dia com vários produtos, cada um ocupa a parte dele — use o simulador (DIA MONTADO).
 </div>
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>capacidade por produto · meta ${fmtN(meta)} UEP</span></div>`;
