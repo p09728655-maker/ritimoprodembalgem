@@ -11,6 +11,14 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.90.1 — 24/09/2026
+
+**↺ LIMPAR no simulador de CAPACIDADE UEP.** Apaga a busca e o dia montado e
+volta a meta para a das configurações. O dia montado mostra o **código** e a
+**UEP por produto** de cada linha (o KIT 2 MESA CABECEIRA SLEEP e a MESA
+CABECEIRA SLEEP começavam iguais). **"MIX" saiu da tela**: o botão virou
+**+ ADICIONAR AO DIA** e o bloco virou **DIA MONTADO**. Nenhum número muda.
+
 ## v7.90.0 — 24/09/2026
 
 **🧮 CAPACIDADE UEP na aba PROGRAMAÇÃO**: um simulador de quantos
