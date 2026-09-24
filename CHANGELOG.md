@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.70.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.7)
+
+**TELA E da TV — PROGRAMAÇÃO DO DIA.** Quinta tela do carrossel: o que falta
+embalar hoje, produto a produto. No topo, três números: **PROGRAMADO HOJE ·
+ATRASO ANTERIOR · FALTA P/ ZERAR**. Embaixo, até 6 linhas com **LOTE · PRODUTO
+(código + cor) · FALTA · SITUAÇÃO** (`RODANDO AGORA` · `ATRASO · dd/mm` ·
+`A FAZER`). O que já foi concluído não ocupa linha e vira contador no rodapé,
+assim como o que não coube.
+
+- **Ordem:** o produto que está rodando, depois o atraso mais antigo, depois o
+  programado de hoje (por lote). ⚠ É **premissa do painel**: a PROGRAMACAO não
+  tem coluna de sequência.
+- **O número da linha é o FALTA, não um %.** O atraso já chega abatido pela
+  produção de hoje (FIFO), então uma barra de progresso andaria para trás.
+- **Só entra no ciclo quando há programação ou atraso.** Fica 20 s na tela
+  (configurável: TEMPO NA TELA E) e tem checkbox próprio (TELA E).
+- **Nenhuma chamada nova:** a TV já recebe a lista pelo `getPontosDia`.
+- **Atenção:** o FALTA P/ ZERAR é o mesmo número do card da Tela C, que agora
+  lê o mesmo helper (`_progFaltaZerar`). Nenhum número existente mudou.
+- ⚠ **re-deploy (.gs v5.7):** manda a **cor** e a **data do lote aberto mais
+  antigo** por item e guarda `TELA_E`/`TEMPO_E` na CONFIG_PAINEL. Antes do
+  re-deploy, a tela funciona sem cor (só o código aparece), o selo sai
+  `ATRASO` sem data e a marcação da Tela E fica local em cada aparelho.
+
+---
+
 ## v7.69.0 — 23/09/2026 · ⚠ re-deploy (.gs v5.6)
 
 **PROPOSTA IMPRESSA: redação com IA sobre os números do painel** (passo 3 da

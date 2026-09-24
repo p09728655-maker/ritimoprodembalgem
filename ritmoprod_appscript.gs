@@ -1,5 +1,10 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.7 — TELA E DA TV (PROGRAMAÇÃO DO DIA)
+//               calcularProgramacao() manda por item a COR e a data do lote
+//               aberto mais antigo (atrasoDesde, dd/MM/yyyy). getConfigPainel/
+//               setConfigPainel guardam TELA_E e TEMPO_E. Nada mais muda:
+//               a Tela E lê o mesmo getPontosDia que a TV já chama.
 // Versão: 5.6 — REDAÇÃO DA PROPOSTA DE INVESTIMENTO COM IA (redigirProposta)
 //               O painel manda os NÚMEROS que ele mesmo calculou (simulador) e
 //               o Claude redige os cinco parágrafos da proposta em cima deles.
@@ -2179,10 +2184,12 @@ function getConfigPainel() {
     telaB:  bool(kv.TELA_B, true),
     telaC:  bool(kv.TELA_C, true),
     telaD:  bool(kv.TELA_D, true),   // TELA D — fechamento da semana passada
+    telaE:  bool(kv.TELA_E, true),   // TELA E — programação do dia (v5.7)
     tempoA: num(kv.TEMPO_A, 15),
     tempoB: num(kv.TEMPO_B, 15),
     tempoC: num(kv.TEMPO_C, 15),
     tempoD: num(kv.TEMPO_D, 20),
+    tempoE: num(kv.TEMPO_E, 20),
     kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
     modoLeitor: bool(kv.MODO_LEITOR, true)   // seleção de produto por bipe no mobile (padrão ligado)
   };
@@ -2208,10 +2215,12 @@ function setConfigPainel(p) {
     if (p.telaB  !== undefined) novos.TELA_B  = b01(p.telaB);
     if (p.telaC  !== undefined) novos.TELA_C  = b01(p.telaC);
     if (p.telaD  !== undefined) novos.TELA_D  = b01(p.telaD);
+    if (p.telaE  !== undefined) novos.TELA_E  = b01(p.telaE);
     if (p.tempoA !== undefined) novos.TEMPO_A = String(parseInt(p.tempoA, 10) || 15);
     if (p.tempoB !== undefined) novos.TEMPO_B = String(parseInt(p.tempoB, 10) || 15);
     if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
     if (p.tempoD !== undefined) novos.TEMPO_D = String(parseInt(p.tempoD, 10) || 20);
+    if (p.tempoE !== undefined) novos.TEMPO_E = String(parseInt(p.tempoE, 10) || 20);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
     if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
 
@@ -2735,9 +2744,12 @@ function calcularProgramacao() {
       }
     });
 
-    let atraso = 0, hojeRest = 0, progHoje = 0;
+    let atraso = 0, hojeRest = 0, progHoje = 0, atrasoDesde = 0;
     fila.forEach(lot => {
       if (lot.d < hojeNum)       atraso   += lot.rem;
+      // Data do lote ABERTO mais antigo (v5.7, Tela E da TV: "ATRASO · 12/09").
+      // O FIFO abate a fila na ordem, então o 1º lote vencido com saldo é ele.
+      if (lot.d < hojeNum && lot.rem > 0 && !atrasoDesde) atrasoDesde = lot.d;
       else if (lot.d === hojeNum) hojeRest += lot.rem;
       const lk = key + '|' + lot.lote + '|' + lot.d;
       saldoLinha[lk] = (saldoLinha[lk] || 0) + lot.rem;
@@ -2751,6 +2763,10 @@ function calcularProgramacao() {
       codigo: prod ? prod.codigo : key,
       desc:   prod ? prod.desc   : '',
       lote:   loteHoje[key] ? loteHoje[key].lote : '',
+      // v5.7: a cor mora em coluna própria na PRODUTO_CODIGO; sem ela as cores
+      // do mesmo produto viram linhas idênticas na Tela E da TV.
+      cor:    produtoDoCodigo(prod ? prod.codigo : key).cor,
+      atrasoDesde: atrasoDesde ? _numParaDataBR(atrasoDesde) : '',
       programadoHoje: progHoje,
       atraso: atraso,
       embaladoHoje: eh,
@@ -2776,6 +2792,14 @@ function calcularProgramacao() {
 
 // Lista enxuta para o app do operador: produtos programados para hoje OU em
 // atraso (o que ele deve rodar), para seleção rápida sem varrer o catálogo todo.
+// 20260912 -> '12/09/2026' (inverso do dataParaNum).
+function _numParaDataBR(n) {
+  n = Number(n) || 0;
+  if (!n) return '';
+  const d = n % 100, m = Math.floor(n / 100) % 100, a = Math.floor(n / 10000);
+  return (d < 10 ? '0' : '') + d + '/' + (m < 10 ? '0' : '') + m + '/' + a;
+}
+
 function getProgramacaoHoje() {
   const p = calcularProgramacao();
   // A COR vai junto: com ela em coluna própria na PRODUTO_CODIGO, a DESCRICAO
