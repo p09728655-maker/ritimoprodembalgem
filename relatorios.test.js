@@ -3449,7 +3449,13 @@ console.log('\n── estudo de UEP ──');
 {
   global.UEP_MIN_DIAS = Number(JS.match(/const UEP_MIN_DIAS\s*=\s*(\d+)/)[1]);
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
+  global.UEP_VALID_MIN_DIAS = Number(JS.match(/const UEP_VALID_MIN_DIAS\s*=\s*(\d+)/)[1]);
+  if (typeof _phParseData === 'undefined') eval(pega('function _phParseData('));
+  eval(pega('function _uepTemCxHora('));
+  eval(pega('function _uepChave('));
   eval(pega('function _uepProdutos('));
+  eval(pega('function _uepDias('));
+  eval(pega('function _uepValidacao('));
   eval(pega('function _uepEstudo('));
   const it = [];
   const dia = i => p2(i + 1) + '/09/2026';
@@ -3484,9 +3490,51 @@ console.log('\n── estudo de UEP ──');
   // A âncora muda a ESCALA, não a proporção: a razão entre produtos é a mesma.
   ok('as duas âncoras mantêm a proporção', b2('LENTO').uepVol / b2('RAPIDO').uepVol, b2('LENTO').uepRap / b2('RAPIDO').uepRap);
   ok('o desenho não faz conta', /_uepProdutos|_phMediaAparada|_qpOscilacao/.test(pega('function _uepHtml(')), false);
+  ok('sem cxHora (backend antigo) a hora não é repartida', e2.dividido, false);
+
+  // ── v7.74.0: hora compartilhada repartida pelo TEMPO ESPERADO ──
+  // A roda 300/h sozinho, B 150/h sozinho. Na hora 13:00 os dois dividem a
+  // linha (troca): 150 cx de A e 75 de B → 0,5 h para cada. Hora cheia daria
+  // 250/h e 125/h; repartida volta a 300 e 150.
+  const itH = [];
+  for (let i = 0; i < 6; i++) {
+    itH.push({ data: dia(i), modelo: '500001', nome: 'A', cor: '', caixas: 750, horas: 3,
+      horasLista: ['08:00', '09:00', '13:00'], cxHora: { '08:00': 300, '09:00': 300, '13:00': 150 } });
+    itH.push({ data: dia(i), modelo: '500002', nome: 'B', cor: '', caixas: 375, horas: 3,
+      horasLista: ['10:00', '11:00', '13:00'], cxHora: { '10:00': 150, '11:00': 150, '13:00': 75 } });
+  }
+  const eH = _uepEstudo(itH, 'aparada');
+  const bH = n => eH.prods.find(p => p.nome === n);
+  ok('com cxHora a hora é repartida', eH.dividido, true);
+  ok('ritmo em regime = só as horas sozinho', [bH('A').ritmoReg, bH('B').ritmoReg], [300, 150]);
+  ok('a régua antiga (hora cheia) fica para comparação', [bH('A').ritmoCheia, bH('B').ritmoCheia], [250, 125]);
+  ok('com a hora repartida o ritmo volta ao real', [Math.round(bH('A').ritmo), Math.round(bH('B').ritmo)], [300, 150]);
+  ok('e a UEP de B é 2', Math.round(bH('B').uepVol * 100) / 100, 2);
+  // Pelas CAIXAS a hora seria 80/20; pelo tempo esperado (200/300 e 50/150) é 2/3 e 1/3.
+  const itP = [
+    { data: '01/09/2026', modelo: '1', nome: 'A', caixas: 500, horas: 2, horasLista: ['08:00', '09:00'], cxHora: { '08:00': 300, '09:00': 200 } },
+    { data: '01/09/2026', modelo: '2', nome: 'B', caixas: 200, horas: 2, horasLista: ['09:00', '10:00'], cxHora: { '09:00': 50, '10:00': 150 } }];
+  const pP = _uepProdutos(itP, 'aparada');
+  ok('a hora compartilhada é repartida pelo tempo esperado, não pelas caixas',
+     pP.map(p => Math.round(p.horas * 1000) / 1000), [1.667, 1.333]);
+  ok('produto que nunca rodou sozinho é marcado', _uepProdutos([
+    { data: '01/09/2026', modelo: '1', nome: 'A', caixas: 100, horas: 1, horasLista: ['08:00'], cxHora: { '08:00': 100 } },
+    { data: '01/09/2026', modelo: '2', nome: 'B', caixas: 50, horas: 1, horasLista: ['08:00'], cxHora: { '08:00': 50 } }], 'aparada')
+    .map(p => p.semRegime), [true, true]);
+
+  // ── UEP POR DIA e validação fora da amostra ──
+  ok('UEP por dia = soma de caixas × UEP do dia', Math.round(eH.uepDiaMed), 750 + 375 * 2);
+  ok('com o realizado, cada dia mostra a cobertura',
+     _uepEstudo(itH, 'aparada', { [dia(0)]: 2250 }).dias[0].cobDia, 50);
+  ok('6 dias não bastam para validar fora da amostra', eH.valid.ok, false);
+  const it8 = [];
+  for (let i = 0; i < 8; i++) itH.slice(0, 2).forEach(x => it8.push({ ...x, data: dia(i) }));
+  const v8 = _uepEstudo(it8, 'aparada').valid;
+  ok('com 8 dias a UEP sai da 1ª metade e é testada na 2ª', [v8.ok, v8.nA, v8.nB, v8.deB], [true, 4, 4, dia(4)]);
+
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
   // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
-  ok('a conta do estudo tem um chamador só', (JS.match(/gerarRelatorioUEP\(|_uepEstudo\(/g) || []).length, 3);
+  ok('a conta do estudo tem um chamador só', (JS.match(/(?<!function )_uepEstudo\(/g) || []).length, 1);
   ok('e um botão só, na barra da PRODUÇÃO/HORA', (src.match(/onclick="gerarRelatorioUEP\(\)"/g) || []).length, 1);
 }
 

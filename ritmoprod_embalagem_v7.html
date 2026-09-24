@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.73.0';
+const APP_VER   = '7.74.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5634,24 +5634,80 @@ function _phAgrup(){
 const UEP_MIN_DIAS     = 5;
 const UEP_COR_DIVERGE  = 1.5;   // maior ÷ menor ritmo entre cores do mesmo produto
 
+// ── A HORA COMPARTILHADA É REPARTIDA (v7.74.0 / .gs v5.9) ─────────────────
+// PPCP, 24/09/2026: "a linha roda um por vez" e "quando pega na mesma hora 2
+// produtos tem que ser proporcional". Hora com dois produtos é hora de TROCA,
+// e dar a hora inteira a cada um fazia o produto de lote pequeno (mais trocas)
+// parecer lento e ganhar UEP alta. Agora:
+//   · RITMO EM REGIME = caixas ÷ horas em que o produto rodou SOZINHO na linha
+//     (cores do mesmo produto juntas contam como sozinho);
+//   · na hora compartilhada, cada produto fica com a fatia do TEMPO ESPERADO:
+//     caixas ÷ ritmo em regime dele, sobre a soma dos dois. Pelas CAIXAS não:
+//     os dois sairiam com o ritmo da linha naquela hora e a diferença entre
+//     eles — que é o que a UEP mede — sumiria. Sem ritmo em regime, o peso usa
+//     o ritmo com a hora cheia (a régua antiga) e a linha diz isso;
+//   · a troca que aconteceu dentro da hora fica repartida entre os dois;
+//   · a hora vale 1 (o slot pós-almoço, de 48 min, também — mesma régua do
+//     comparativo por modelo).
+// Precisa do `cxHora` por item (.gs v5.9). Sem ele, vale a régua de antes
+// (hora cheia para cada um) e o relatório diz que a divisão não está valendo.
+function _uepTemCxHora(itens){
+  const v=(itens||[]).filter(it=>it&&it.caixas>0);
+  return v.length>0 && v.every(it=>it.cxHora && typeof it.cxHora==='object' && Object.keys(it.cxHora).length);
+}
+function _uepChave(it){ return it.modelo+'|'+(it.nome||''); }
+
 function _uepProdutos(itens, modo){
   const G={};
+  const dividir=_uepTemCxHora(itens);
+  const mat={};   // data → hora → produto → caixas
   (itens||[]).forEach(it=>{
     if(!it || !(it.caixas>0)) return;
-    const k=it.modelo+'|'+(it.nome||'');
+    const k=_uepChave(it);
     const g=G[k]=G[k]||{chave:k, modelo:it.modelo, nome:it.nome||it.modelo, dias:{}, cores:{}};
     _phAdd(g.dias[it.data]=g.dias[it.data]||_phAcc(), it);
     // Cor × dia já vem único do backend: as horas do item são as da cor.
     const c=g.cores[it.cor||'']=g.cores[it.cor||'']||{cor:it.cor||'', caixas:0, horas:0, dias:{}};
     c.caixas+=it.caixas; c.horas+=Number(it.horas)||0; c.dias[it.data]=1;
+    if(dividir) Object.keys(it.cxHora).forEach(h=>{
+      const cx=Number(it.cxHora[h])||0; if(!(cx>0)) return;
+      const md=mat[it.data]=mat[it.data]||{}, mh=md[normHora(h)]=md[normHora(h)]||{};
+      mh[k]=(mh[k]||0)+cx;
+    });
   });
+  // Régua ANTIGA (hora cheia para cada produto) — é o peso de queda e a
+  // coluna de comparação.
+  Object.keys(G).forEach(k=>{
+    const g=G[k];
+    Object.keys(g.dias).forEach(d=>{ const a=g.dias[d], n=Object.keys(a.hSet).length; if(n) a.horas=n; });
+    const accs=Object.keys(g.dias).map(d=>g.dias[d]);
+    g.ritmoCheia=_phMediaAparada(accs,'mediaH',modo).val;
+    g.cxSo=0; g.hSo=0; g.hComp=0;
+  });
+  if(dividir){
+    // 1) ritmo em regime: horas em que o produto está sozinho na linha
+    Object.keys(mat).forEach(d=>Object.keys(mat[d]).forEach(h=>{
+      const ks=Object.keys(mat[d][h]);
+      if(ks.length===1 && G[ks[0]]){ G[ks[0]].cxSo+=mat[d][h][ks[0]]; G[ks[0]].hSo+=1; }
+    }));
+    Object.keys(G).forEach(k=>{ const g=G[k]; g.ritmoReg=g.hSo>0?g.cxSo/g.hSo:null; });
+    // 2) horas do dia de cada produto: 1 na hora sozinho, a fatia do tempo
+    //    esperado na hora compartilhada
+    Object.keys(G).forEach(k=>Object.keys(G[k].dias).forEach(d=>{ G[k].dias[d].horas=0; }));
+    Object.keys(mat).forEach(d=>Object.keys(mat[d]).forEach(h=>{
+      const mh=mat[d][h], ks=Object.keys(mh).filter(k=>G[k]);
+      const peso=k=>{ const r=G[k].ritmoReg>0?G[k].ritmoReg:G[k].ritmoCheia; return r>0?mh[k]/r:0; };
+      const tot=ks.reduce((s,k)=>s+peso(k),0);
+      ks.forEach(k=>{
+        const f=ks.length===1?1:(tot>0?peso(k)/tot:1/ks.length);
+        const a=G[k].dias[d]; if(a) a.horas+=f;
+        if(ks.length>1) G[k].hComp+=1;
+      });
+    }));
+  }
   return Object.keys(G).map(k=>{
     const g=G[k];
-    const dias=Object.keys(g.dias).map(d=>{
-      const a=g.dias[d], n=Object.keys(a.hSet).length;
-      if(n) a.horas=n;          // horas DISTINTAS do produto no dia
-      return a;
-    });
+    const dias=Object.keys(g.dias).map(d=>g.dias[d]).filter(a=>a.horas>0);
     const tot=_phAcc(); dias.forEach(a=>_phAdd(tot,a));
     tot.horas=dias.reduce((s,a)=>s+a.horas,0);
     const rits=dias.map(a=>_phVal(a,'mediaH')).filter(v=>v>0);
@@ -5666,7 +5722,10 @@ function _uepProdutos(itens, modo){
     const corMin=cf.length>=2?Math.min(...cf.map(c=>c.rit)):null;
     const corMax=cf.length>=2?Math.max(...cf.map(c=>c.rit)):null;
     return { chave:k, modelo:g.modelo, nome:g.nome, nDias:dias.length, caixas:tot.caixas, horas:tot.horas,
-             ritmo, melhor:rits.length?Math.max(...rits):0, teto,
+             ritmo, ritmoCheia:g.ritmoCheia, ritmoReg:dividir?g.ritmoReg:null,
+             hSozinho:g.hSo, hComp:g.hComp, dividido:dividir,
+             semRegime: dividir && !(g.ritmoReg>0),
+             melhor:rits.length?Math.max(...rits):0, teto,
              acimaTeto: teto>0 ? rits.filter(r=>r>teto*1.05).length : 0,
              nCores:cores.length, corMin, corMax,
              corDiverge: corMin>0 && corMax/corMin>=UEP_COR_DIVERGE,
@@ -5674,13 +5733,49 @@ function _uepProdutos(itens, modo){
   });
 }
 
+// Ritmo da LINHA dia a dia em cx/h e em UEP/h, com uma tabela de UEP por
+// produto (`uepDe(chave)`). Horas da linha = horas distintas com lançamento.
+function _uepDias(itens, uepDe){
+  const hLinha={}, porDia={};
+  (itens||[]).forEach(it=>{
+    if(!it || !(it.caixas>0)) return;
+    (it.horasLista||[]).forEach(h=>{ (hLinha[it.data]=hLinha[it.data]||{})[normHora(h)]=1; });
+    const d=porDia[it.data]=porDia[it.data]||{data:it.data, cxTot:0, cx:0, uep:0};
+    d.cxTot+=it.caixas;
+    const u=uepDe(_uepChave(it));
+    if(u==null) return;
+    d.cx+=it.caixas; d.uep+=it.caixas*u;
+  });
+  return Object.keys(porDia).map(d=>({...porDia[d], h:Object.keys(hLinha[d]||{}).length}))
+    .filter(d=>d.h>0)
+    .sort((a,b)=>_phParseData(a.data)-_phParseData(b.data));
+}
+
+// VALIDAÇÃO FORA DA AMOSTRA: a UEP sai da 1ª metade dos dias e é testada na
+// 2ª, que ela nunca viu. Se a oscilação do ritmo da linha cai em UEP/h também
+// ali, a UEP mede esforço; se só cai na conferência de dentro, era ajuste ao
+// próprio dado. A âncora não importa (muda a escala, não a oscilação).
+const UEP_VALID_MIN_DIAS = 4;   // por metade
+function _uepValidacao(itens, modo){
+  const datas=[...new Set((itens||[]).filter(it=>it&&it.caixas>0).map(it=>it.data))]
+    .sort((a,b)=>_phParseData(a)-_phParseData(b));
+  if(datas.length<2*UEP_VALID_MIN_DIAS) return {ok:false, nDias:datas.length};
+  const meio=Math.floor(datas.length/2), A=new Set(datas.slice(0,meio));
+  const itA=itens.filter(it=>A.has(it.data)), itB=itens.filter(it=>!A.has(it.data));
+  const rit={}; _uepProdutos(itA, modo).forEach(p=>{ if(p.ritmo>0) rit[p.chave]=p.ritmo; });
+  const dd=_uepDias(itB, k=>rit[k]>0?1/rit[k]:null);
+  const cxB=itB.reduce((s,it)=>s+(it.caixas||0),0), cxCom=dd.reduce((s,d)=>s+d.cx,0);
+  return { ok:true, nA:meio, nB:datas.length-meio,
+           deA:datas[0], ateA:datas[meio-1], deB:datas[meio], ateB:datas[datas.length-1],
+           cobertura: cxB>0?cxCom/cxB*100:null,
+           oscCx:_qpOscilacao(dd.map(d=>d.cx/d.h)), oscUep:_qpOscilacao(dd.map(d=>d.uep/d.h)) };
+}
+
 // O estudo inteiro, pronto para o desenho: produtos com as duas UEP, as
-// âncoras, a cobertura e a CONFERÊNCIA — o ritmo da linha dia a dia oscila
-// menos em UEP/h do que em cx/h? Se oscila, a UEP explica parte da variação
-// que o mix causa; se não, ela não está medindo esforço. As duas séries usam
-// as MESMAS caixas (só as de produto com UEP) sobre as MESMAS horas da linha.
-// ⚠ Otimista: as UEP saíram destes mesmos dias — reprova, não prova.
-function _uepEstudo(itens, modo){
+// âncoras, a cobertura, a UEP POR DIA e as duas conferências — dentro da
+// amostra (otimista) e fora dela (a 1ª metade prevê a 2ª).
+// `realByDay` (opcional, {dd/mm/aaaa: realizado}) dá a cobertura de cada dia.
+function _uepEstudo(itens, modo, realByDay){
   const prods=_uepProdutos(itens, modo);
   const ok=prods.filter(p=>p.amostraOk);
   // Âncora só entre quem tem amostra; sem nenhum, cai em todos os que têm
@@ -5695,27 +5790,32 @@ function _uepEstudo(itens, modo){
     p.uepPeriodo=p.uepVol!=null?p.caixas*p.uepVol:null;
   });
   const mapa={}; prods.forEach(p=>{ mapa[p.chave]=p; });
-  const hLinha={}, porDia={};
-  let cxTot=0, cxCom=0;
-  (itens||[]).forEach(it=>{
-    if(!it || !(it.caixas>0)) return;
-    cxTot+=it.caixas;
-    (it.horasLista||[]).forEach(h=>{ (hLinha[it.data]=hLinha[it.data]||{})[normHora(h)]=1; });
-    const p=mapa[it.modelo+'|'+(it.nome||'')];
-    if(!p || p.uepVol==null) return;
-    cxCom+=it.caixas;
-    const d=porDia[it.data]=porDia[it.data]||{cx:0, uep:0};
-    d.cx+=it.caixas; d.uep+=it.caixas*p.uepVol;
+  const dd=_uepDias(itens, k=>mapa[k]?mapa[k].uepVol:null);
+  const rb=realByDay||{};
+  dd.forEach(d=>{
+    d.uepH=d.uep/d.h;
+    const r=Number(rb[d.data])||0;
+    d.real=r>0?r:null;
+    d.cobDia=r>0?Math.min(100, d.cxTot/r*100):null;
   });
-  const dd=Object.keys(porDia).map(d=>({h:Object.keys(hLinha[d]||{}).length, ...porDia[d]})).filter(d=>d.h>0);
+  const cxTot=dd.reduce((s,d)=>s+d.cxTot,0), cxCom=dd.reduce((s,d)=>s+d.cx,0);
+  const ueps=dd.map(d=>d.uep);
   prods.sort((a,b)=> (a.uepVol==null)-(b.uepVol==null) || (a.uepVol!=null ? a.uepVol-b.uepVol : b.caixas-a.caixas));
   return { prods, rapido, volume, nOk:ok.length, nProv:prods.filter(p=>p.provisoria).length,
            nSem:prods.filter(p=>p.uepVol==null).length,
+           dividido:_uepTemCxHora(itens),
+           nSemRegime:prods.filter(p=>p.semRegime).length,
            cxTot, cxCom, cobertura: cxTot>0 ? cxCom/cxTot*100 : null,
            uepTot: prods.reduce((s,p)=>s+(p.uepPeriodo||0),0),
-           nDiasConf: dd.length,
+           dias: dd, nDiasConf: dd.length,
+           uepDiaMed: ueps.length ? ueps.reduce((a,b)=>a+b,0)/ueps.length : null,
+           uepDiaMin: ueps.length ? Math.min(...ueps) : null,
+           uepDiaMax: ueps.length ? Math.max(...ueps) : null,
+           oscCxDia:  _qpOscilacao(dd.map(d=>d.cx)),
+           oscUepDia: _qpOscilacao(ueps),
            oscCx:  _qpOscilacao(dd.map(d=>d.cx/d.h)),
-           oscUep: _qpOscilacao(dd.map(d=>d.uep/d.h)) };
+           oscUep: _qpOscilacao(dd.map(d=>d.uep/d.h)),
+           valid: _uepValidacao(itens, modo) };
 }
 
 // Desenho do relatório — nenhuma conta aqui, tudo vem do `_uepEstudo`.
@@ -5724,18 +5824,24 @@ function _uepHtml(e, ctx){
   const u2=v=>v==null?'—':v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const p1=v=>v==null?'—':v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
   const nomeP=p=>_rpEsc(p.modelo+' · '+p.nome);
-  const oscOk=e.oscCx!=null&&e.oscUep!=null;
-  const caiu=oscOk&&e.oscUep<e.oscCx;
-  const conf=oscOk
-    ? `${p1(e.oscCx)} → ${p1(e.oscUep)}`
-    : '—';
-  const confSub=oscOk
-    ? (caiu ? 'caiu: a UEP explica parte da variação do mix' : 'NÃO caiu: a UEP não está explicando o esforço')
-    : 'poucos dias com horas da linha para comparar';
+  const dm=s=>_rpEsc(String(s||'').slice(0,5));
+  // As três conferências usam o mesmo desenho: antes → depois e o veredito.
+  const osc=(a,b,poucos)=>{
+    if(a==null||b==null) return {v:'—', s:poucos};
+    return {v:`${p1(a)} → ${p1(b)}`,
+            s: b<a ? 'caiu: a UEP explica parte da variação do mix' : 'NÃO caiu: a UEP não está explicando o esforço'};
+  };
+  const cDentro=osc(e.oscCx, e.oscUep, 'poucos dias com horas da linha para comparar');
+  const V=e.valid||{};
+  const cFora=V.ok ? osc(V.oscCx, V.oscUep, 'poucos dias na 2ª metade')
+                   : {v:'—', s:`precisa de ${2*UEP_VALID_MIN_DIAS}+ dias no período (há ${V.nDias||0})`};
+  const cDia=osc(e.oscCxDia, e.oscUepDia, 'poucos dias para comparar');
+  const div=e.dividido;
   const linhas=e.prods.map(p=>{
     const al=[];
     if(p.provisoria) al.push(`<b>UEP PROVISÓRIA</b> — amostra curta (${p.nDias} dia${p.nDias===1?'':'s'}, ${n0(p.caixas)} cx): confirmar com mais dias`);
     else if(p.uepVol==null) al.push('sem ritmo no período — sem UEP');
+    if(p.semRegime) al.push('nunca rodou uma hora sozinho — a hora de troca foi repartida pelo ritmo com a hora cheia');
     if(p.corDiverge) al.push(`cores de ${n0(p.corMin)} a ${n0(p.corMax)} cx/h`);
     if(p.acimaTeto) al.push(`${p.acimaTeto} dia(s) acima do teto físico — conferir lançamento`);
     const anc=[];
@@ -5746,9 +5852,9 @@ function _uepHtml(e, ctx){
       <td>${nomeP(p)}${anc.length?` <b style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c05621">${anc.join(' · ')}</b>`:''}</td>
       <td class="td-mono" style="text-align:right">${p.nDias}</td>
       <td class="td-mono" style="text-align:right">${n0(p.caixas)}</td>
-      <td class="td-mono" style="text-align:right">${p.ritmo>0?n0(p.ritmo):'—'}</td>
-      <td class="td-mono" style="text-align:right">${p.melhor>0?n0(p.melhor):'—'}</td>
-      <td class="td-mono" style="text-align:right">${p.teto>0?n0(p.teto):'—'}</td>
+      ${div?`<td class="td-mono" style="text-align:right">${p.ritmoReg>0?n0(p.ritmoReg):'—'}<div style="font-size:8px;color:#8a94a6">${p.hSozinho} h</div></td>
+      <td class="td-mono" style="text-align:right">${p.ritmoCheia>0?n0(p.ritmoCheia):'—'}</td>`:''}
+      <td class="td-mono" style="text-align:right;font-weight:700">${p.ritmo>0?n0(p.ritmo):'—'}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}${p.uepVol!=null?pv:''}</td>
       <td class="td-mono" style="text-align:right">${u2(p.uepRap)}${p.uepRap!=null?pv:''}</td>
       <td class="td-mono" style="text-align:right">${p.uepPeriodo!=null?n0(p.uepPeriodo):'—'}</td>
@@ -5759,8 +5865,19 @@ function _uepHtml(e, ctx){
        <div class="kpi-sub">${n0(p.ritmo)} cx/h · ${p.nDias} dias · ${n0(p.caixas)} cx · vale 1,00 UEP/cx</div></div>`
     : `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">—</div><div class="kpi-sub">nenhum produto com ritmo no período</div></div>`;
   const ancOk=e.volume&&e.volume.amostraOk;
+  const temCob=e.dias.some(d=>d.cobDia!=null);
+  const linDias=e.dias.map(d=>`<tr>
+      <td class="td-mono">${_rpEsc(d.data)}</td>
+      <td class="td-mono" style="text-align:right">${n0(d.cxTot)}</td>
+      <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep)}</td>
+      <td class="td-mono" style="text-align:right">${d.h}</td>
+      <td class="td-mono" style="text-align:right">${n0(d.uepH)}</td>
+      ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia)+(d.cobDia<80?' ⚠':''):'—'}</td>`:''}</tr>`).join('');
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
+${div
+  ? `<div class="rp-note">A linha roda <b>um produto por vez</b>: a hora em que dois produtos aparecem é hora de troca, e ela foi <b>repartida</b> entre eles pelo tempo esperado de cada um.</div>`
+  : `<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> a divisão proporcional da hora ainda não está valendo — o Apps Script precisa do <b>ritmoprod_appscript.gs v5.9</b> re-deployado. Até lá, cada produto conta a hora de troca inteira, e produto de lote pequeno sai com UEP maior do que deveria.</div>`}
 
 <div class="rp-sec-ttl">1 ▸ O RESUMO</div>
 <div class="kpi-grid">
@@ -5768,8 +5885,8 @@ function _uepHtml(e, ctx){
     <div class="kpi-sub">${e.nProv} provisória(s) (*) — menos de ${UEP_MIN_DIAS} dias rodados${e.nSem?` · ${e.nSem} sem ritmo`:''}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">CAIXAS COBERTAS</div><div class="kpi-val">${p1(e.cobertura)}</div>
     <div class="kpi-sub">${n0(e.cxCom)} de ${n0(e.cxTot)} cx apontadas com produto</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">OSCILAÇÃO DO RITMO DIA A DIA · CX/H → UEP/H</div><div class="kpi-val">${conf}</div>
-    <div class="kpi-sub">${confSub} · ${e.nDiasConf} dias</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">UEP POR DIA · ÂNCORA A</div><div class="kpi-val">${e.uepDiaMed!=null?n0(e.uepDiaMed):'—'}</div>
+    <div class="kpi-sub">${e.uepDiaMin!=null?`de ${n0(e.uepDiaMin)} a ${n0(e.uepDiaMax)} · `:''}${e.dias.length} dias · só caixas com produto</div></div>
 </div>
 <div class="kpi-grid" style="margin-top:9px">
   ${anc(e.volume,'ÂNCORA A · MAIOR VOLUME (recomendada)')}
@@ -5777,25 +5894,44 @@ function _uepHtml(e, ctx){
   <div class="kpi-card"><div class="kpi-lbl">UEP NO PERÍODO · ÂNCORA A</div><div class="kpi-val">${n0(e.uepTot)}</div>
     <div class="kpi-sub">contra ${n0(e.cxCom)} cx dos mesmos produtos</div></div>
 </div>
+<div class="kpi-grid" style="margin-top:9px">
+  <div class="kpi-card"><div class="kpi-lbl">OSCILAÇÃO DO RITMO · CX/H → UEP/H · DENTRO DA AMOSTRA</div><div class="kpi-val">${cDentro.v}</div>
+    <div class="kpi-sub">${cDentro.s} · otimista: a UEP saiu destes dias</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">VALIDAÇÃO FORA DA AMOSTRA · CX/H → UEP/H</div><div class="kpi-val">${cFora.v}</div>
+    <div class="kpi-sub">${V.ok?`UEP de ${dm(V.deA)}–${dm(V.ateA)} testada em ${dm(V.deB)}–${dm(V.ateB)} · `:''}${cFora.s}</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">OSCILAÇÃO DO DIA · CX/DIA → UEP/DIA</div><div class="kpi-val">${cDia.v}</div>
+    <div class="kpi-sub">${cDia.s} · é a régua da meta do dia</div></div>
+</div>
+${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum produto tem ${UEP_MIN_DIAS}+ dias no período — a âncora também é provisória. Aumente o período.</div>`}
 
 <div class="rp-sec-ttl">2 ▸ A UEP DE CADA PRODUTO</div>
 <table><thead><tr>
   <th>PRODUTO</th><th style="text-align:right">DIAS</th><th style="text-align:right">CAIXAS</th>
-  <th style="text-align:right">RITMO CX/H</th><th style="text-align:right">MELHOR DIA</th><th style="text-align:right">TETO</th>
+  ${div?'<th style="text-align:right">EM REGIME CX/H</th><th style="text-align:right">HORA CHEIA CX/H</th>':''}
+  <th style="text-align:right">RITMO USADO</th>
   <th style="text-align:right">UEP/CX · A</th><th style="text-align:right">UEP/CX · B</th><th style="text-align:right">UEP NO PERÍODO</th><th>CONFERIR</th>
 </tr></thead><tbody>${linhas}</tbody></table>
-${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum produto tem ${UEP_MIN_DIAS}+ dias no período — a âncora também é provisória. Aumente o período.</div>`}
-<div class="rp-note">Ordem: do mais leve (menor UEP) para o mais pesado. <b>*</b> = UEP PROVISÓRIA: menos de ${UEP_MIN_DIAS} dias rodados — o número serve para a análise, mas pode mudar bastante com mais dias; confirmar antes de usar. UEP/CX = ritmo da âncora ÷ ritmo do produto — 2,00 quer dizer que uma caixa dele pede o esforço de duas da âncora.</div>
+<div class="rp-note">Ordem: do mais leve (menor UEP) para o mais pesado. <b>*</b> = UEP PROVISÓRIA: menos de ${UEP_MIN_DIAS} dias rodados — o número serve para a análise, mas pode mudar bastante com mais dias; confirmar antes de usar. UEP/CX = ritmo da âncora ÷ ritmo usado do produto — 2,00 quer dizer que uma caixa dele pede o esforço de duas da âncora.${div?' EM REGIME = só as horas em que o produto rodou sozinho (embaixo, quantas); HORA CHEIA = a régua antiga, com a hora de troca inteira para cada um; RITMO USADO = com a hora de troca repartida — é dele que sai a UEP.':''}</div>
 
-<div class="rp-sec-ttl">3 ▸ COMO O NÚMERO SAI</div>
+<div class="rp-sec-ttl">3 ▸ UEP POR DIA</div>
+<table><thead><tr>
+  <th>DIA</th><th style="text-align:right">CAIXAS COM PRODUTO</th><th style="text-align:right">UEP · ÂNCORA A</th>
+  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th>${temCob?'<th style="text-align:right">COBERTURA</th>':''}
+</tr></thead><tbody>${linDias||'<tr><td colspan="6">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
+<div class="rp-note">É a <b>capacidade demonstrada em UEP</b> — a régua com que a meta do dia vai ser julgada. Só entram caixas apontadas <b>com produto</b>${temCob?'; COBERTURA = essas caixas ÷ o realizado do dia no HISTÓRICO, e abaixo de 80% (⚠) o dia sai com UEP menor que a real':''}. Horas da linha = horas distintas com lançamento.</div>
+
+<div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
 <table><tbody>
-  <tr><td style="font-weight:700;width:28%">A CONTA</td><td>UEP por caixa = ritmo da âncora ÷ ritmo do produto. A âncora vale 1,00. A UEP no período é caixas × UEP por caixa.</td></tr>
-  <tr><td style="font-weight:700">O RITMO</td><td>Caixas ÷ horas <b>distintas</b> em que o produto rodou, dia a dia (duas cores na mesma hora são uma hora), com a média ${ctx.modo==='completa'?'COMPLETA (todos os dias)':'APARADA (sem o melhor e o pior dia, com 3+ dias)'} — a mesma do comparativo por modelo.</td></tr>
-  <tr><td style="font-weight:700">POR PRODUTO, NÃO POR COR</td><td>As cores do mesmo produto somam: a cor não muda o trabalho de embalar. Quando as cores divergem muito (${UEP_COR_DIVERGE.toLocaleString('pt-BR')}× ou mais), o alerta aponta — é sinal de paralelismo, amostra ou apontamento, não de esforço diferente.</td></tr>
-  <tr><td style="font-weight:700">AMOSTRA MÍNIMA</td><td>${UEP_MIN_DIAS} dias rodados. Abaixo disso a UEP sai <b>PROVISÓRIA</b> (marcada com * e com a observação na linha): com 1 ou 2 dias, uma hora parcial ou um lançamento acumulado muda o ritmo inteiro. A âncora só é escolhida entre os produtos com amostra.</td></tr>
-  <tr><td style="font-weight:700">AS DUAS ÂNCORAS</td><td>Mudam só a <b>escala</b>: a proporção entre os produtos é a mesma nas colunas A e B. O que muda é a estabilidade — o mais rápido é o valor mais instável do período, e se ele mudar a UEP de todos muda junto.</td></tr>
-  <tr><td style="font-weight:700">A CONFERÊNCIA</td><td>Ritmo da linha de cada dia (caixas ÷ horas da linha) em cx/h e em UEP/h, sobre as mesmas caixas. Se a oscilação cai em UEP, a UEP explica parte da variação causada pelo mix. É otimista: as UEP saíram destes mesmos dias — serve para reprovar, não para provar.</td></tr>
-  <tr><td style="font-weight:700">O QUE ELA NÃO É</td><td>Ritmo <b>demonstrado</b> não é tempo padrão: carrega o desempenho da equipe, a esteira rodando dois produtos ao mesmo tempo e o apontamento. Produto lento por baixo desempenho ganha UEP alta — por isso a validação dos produtos de maior volume é a cronoanálise.</td></tr>
+  <tr><td style="font-weight:700;width:28%">A CONTA</td><td>UEP por caixa = ritmo da âncora ÷ ritmo do produto. A âncora vale 1,00. A UEP no período e a do dia são caixas × UEP por caixa.</td></tr>
+  <tr><td style="font-weight:700">O RITMO</td><td>Caixas ÷ horas do produto, dia a dia, com a média ${ctx.modo==='completa'?'COMPLETA (todos os dias)':'APARADA (sem o melhor e o pior dia, com 3+ dias)'} — a mesma do comparativo por modelo. Cores do mesmo produto somam e a hora delas conta uma vez.</td></tr>
+  <tr><td style="font-weight:700">A HORA DE TROCA</td><td>${div
+    ? 'A linha roda um produto por vez: hora com dois produtos é hora de troca. Ela é repartida pelo <b>tempo esperado</b> de cada um — caixas ÷ ritmo em regime (as horas em que ele rodou sozinho). Pelas caixas não: os dois sairiam com o ritmo da linha naquela hora e a diferença entre eles, que é o que a UEP mede, sumiria. O tempo da troca em si fica repartido entre os dois. A hora vale 1, inclusive o slot pós-almoço.'
+    : 'Ainda <b>não repartida</b>: cada produto conta a hora inteira (falta o .gs v5.9 re-deployado).'}</td></tr>
+  <tr><td style="font-weight:700">POR PRODUTO, NÃO POR COR</td><td>A cor não muda o trabalho de embalar. Quando as cores do mesmo produto divergem muito (${UEP_COR_DIVERGE.toLocaleString('pt-BR')}× ou mais), o alerta aponta — é sinal de amostra ou apontamento, não de esforço diferente.</td></tr>
+  <tr><td style="font-weight:700">AMOSTRA MÍNIMA</td><td>${UEP_MIN_DIAS} dias rodados. Abaixo disso a UEP sai <b>PROVISÓRIA</b> (marcada com * e com a observação na linha). A âncora só é escolhida entre os produtos com amostra.</td></tr>
+  <tr><td style="font-weight:700">AS DUAS ÂNCORAS</td><td>Mudam só a <b>escala</b>: a proporção entre os produtos é a mesma nas colunas A e B, e as conferências dão o mesmo resultado com qualquer uma. O que muda é a estabilidade — o mais rápido é o valor mais instável do período.</td></tr>
+  <tr><td style="font-weight:700">AS CONFERÊNCIAS</td><td><b>Dentro da amostra</b>: o ritmo da linha de cada dia em cx/h e em UEP/h, sobre as mesmas caixas — otimista, porque a UEP saiu desses dias. <b>Fora da amostra</b>: a UEP é calculada só com a 1ª metade dos dias e testada na 2ª, que ela não viu — é esta que diz se a UEP mede esforço. <b>Do dia</b>: caixas por dia × UEP por dia, a régua da meta.</td></tr>
+  <tr><td style="font-weight:700">O QUE ELA NÃO É</td><td>Ritmo <b>demonstrado</b> não é tempo padrão: carrega o desempenho da equipe e o apontamento. Produto lento por baixo desempenho ganha UEP alta — por isso a validação dos produtos de maior volume é a cronoanálise.</td></tr>
   <tr><td style="font-weight:700">PRÓXIMOS PASSOS</td><td>1) PPCP escolhe a âncora · 2) confere os alertas e valida os de maior volume · 3) congela a UEP no cadastro (PRODUTO_CODIGO), com data de vigência · 4) meta do dia passa a ser julgada em UEP. O operador continua vendo caixas.</td></tr>
 </tbody></table>
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · estudo de UEP</span><span>${e.prods.length} produtos · ${n0(e.cxTot)} cx · ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)}</span></div>`;
@@ -5807,10 +5943,18 @@ async function gerarRelatorioUEP(){
   if(!itens.length){ alert('Sem produção apontada com produto no período — nada para estudar.'); return; }
   const win=window.open('','_blank','width=1100,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Montando o estudo de UEP...</p></body></html>');
   const datas=[...new Set(itens.map(it=>it.data))].sort((a,b)=>_phParseData(a)-_phParseData(b));
   const ctx={ de:dGet('ph-de')||datas[0], ate:dGet('ph-ate')||datas[datas.length-1], modo:_phMediaModo() };
+  // Realizado de cada dia (HISTORICO, cache de 2 min) só para a COBERTURA da
+  // UEP por dia. Falhou? O relatório sai sem a coluna — nunca inventa.
+  const realByDay={};
+  try{
+    (await buildDiasHistAsync()||[]).forEach(d=>{ if(d&&d.data) realByDay[d.data]=d.real; });
+    const kH=calcKPIs(getDadosHoje()); if(kH&&kH.real>0) realByDay[hojeStr()]=kH.real;
+  }catch(e){}
   let corpo='';
-  try{ corpo=_uepHtml(_uepEstudo(itens, ctx.modo), ctx); }
+  try{ corpo=_uepHtml(_uepEstudo(itens, ctx.modo, realByDay), ctx); }
   catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
   const html=_rpDocParadas(`Estudo de UEP — ${ctx.de} a ${ctx.ate}`)
     + _rpBotaoImprimir()
