@@ -11,6 +11,15 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.78.1 — 24/09/2026
+
+**ESTUDO UEP voltou a abrir.** Desde a v7.77.0 o estudo faz a própria busca no
+Apps Script (com as caixas por hora), que leva segundos; a janela do relatório
+só era aberta depois dela, e o navegador bloqueava o pop-up por já não ligá-lo
+ao clique. Agora a janela abre no clique com *"Buscando a produção do
+período…"* e o estudo é desenhado nela quando os dados chegam; falhou a busca,
+a janela fecha e o alerta diz o motivo. Nenhum número muda.
+
 ## v7.78.0 — 24/09/2026
 
 **ESTUDO UEP: um lançamento sem HORA não desliga mais a divisão da hora.** O
