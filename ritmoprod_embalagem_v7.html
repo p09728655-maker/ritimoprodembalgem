@@ -7126,9 +7126,12 @@ function _capPintarMix(){
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
   const r=_capMix(CAP_CAT, CAP_MIX, meta);
   el.innerHTML=`<div class="frm-lbl" style="margin-bottom:6px">DIA MONTADO</div>
-  <table><thead><tr><th>PRODUTO</th><th>QUANTIDADE (PRODUTOS)</th><th>UEP</th><th>CABEM MAIS DESTE</th><th></th></tr></thead><tbody>${r.linhas.map((l,i)=>{
+  <table><thead><tr><th>PRODUTO</th><th>UEP / PRODUTO</th><th>QUANTIDADE (PRODUTOS)</th><th>UEP</th><th>CABEM MAIS DESTE</th><th></th></tr></thead><tbody>${r.linhas.map((l,i)=>{
     const k=_rpEsc(l.p.chave).replace(/'/g,"\\'");
-    return `<tr><td>${_rpEsc(l.p.nome)}</td>
+    // Código + nome: KIT 2 MESA CABECEIRA SLEEP (501097) e MESA CABECEIRA
+    // SLEEP (501094) começam igual, e só pelo nome não dá para ver qual entrou.
+    return `<tr><td>${_rpEsc(l.p.modelo+' · '+l.p.nome)}</td>
+      <td class="mono">${l.p.uepJogo>0?l.p.uepJogo.toFixed(2).replace('.',','):'—'}</td>
       <td><input class="frm-inp" style="width:90px;padding:4px 6px" type="text" inputmode="numeric" value="${l.qtde||''}" oninput="_capQtde('${k}',this.value)"></td>
       <td class="mono" id="cap-u-${i}">${_capCelUep(l)}</td>
       <td class="mono" id="cap-c-${i}">${_capCelCabe(l)}</td>
