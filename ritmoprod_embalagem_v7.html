@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.77.0';
+const APP_VER   = '7.78.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5672,9 +5672,24 @@ const UEP_REGIME_MIN_H = 4;
 //     comparativo por modelo).
 // Precisa do `cxHora` por item (.gs v5.9). Sem ele, vale a régua de antes
 // (hora cheia para cada um) e o relatório diz que a divisão não está valendo.
+// ⚠ v7.78.0: a divisão vale quando o backend MANDA o cxHora — basta um item
+// com ele. Antes exigia TODOS os itens com cxHora preenchido, e um único
+// lançamento sem HORA na PRODUCAO_PRODUTO (item com cxHora vazio) desligava a
+// divisão do período inteiro, calado: o PDF de 24/09 11:17 saiu com
+// "a divisão ainda não está valendo" com o .gs novo no ar.
 function _uepTemCxHora(itens){
-  const v=(itens||[]).filter(it=>it&&it.caixas>0);
-  return v.length>0 && v.every(it=>it.cxHora && typeof it.cxHora==='object' && Object.keys(it.cxHora).length);
+  return (itens||[]).some(it=>it && it.caixas>0 && it.cxHora && typeof it.cxHora==='object' && Object.keys(it.cxHora).length>0);
+}
+function _uepCxHoraOk(it){ return !!(it && it.cxHora && typeof it.cxHora==='object' && Object.keys(it.cxHora).length); }
+// As caixas por hora do item. Sem cxHora mas com as horas listadas, reparte
+// igual entre elas (aproximação, contada). Sem hora nenhuma: null — o item
+// fica FORA do ritmo (caixa sem hora não tem ritmo), mas continua na UEP do dia.
+function _uepCxHoraDe(it){
+  if(_uepCxHoraOk(it)) return it.cxHora;
+  const hl=(it&&it.horasLista)||[];
+  if(!hl.length) return null;
+  const o={}; hl.forEach(h=>{ o[h]=(Number(it.caixas)||0)/hl.length; });
+  return o;
 }
 function _uepChave(it){ return it.modelo+'|'+(it.nome||''); }
 
@@ -5684,14 +5699,16 @@ function _uepProdutos(itens, modo){
   const mat={};   // data → hora → produto → caixas
   (itens||[]).forEach(it=>{
     if(!it || !(it.caixas>0)) return;
+    const cxh = dividir ? _uepCxHoraDe(it) : null;
+    if(dividir && !cxh) return;   // sem hora nenhuma: fora do ritmo
     const k=_uepChave(it);
     const g=G[k]=G[k]||{chave:k, modelo:it.modelo, nome:it.nome||it.modelo, dias:{}, cores:{}};
     _phAdd(g.dias[it.data]=g.dias[it.data]||_phAcc(), it);
     // Cor × dia já vem único do backend: as horas do item são as da cor.
     const c=g.cores[it.cor||'']=g.cores[it.cor||'']||{cor:it.cor||'', caixas:0, horas:0, dias:{}};
     c.caixas+=it.caixas; c.horas+=Number(it.horas)||0; c.dias[it.data]=1;
-    if(dividir) Object.keys(it.cxHora).forEach(h=>{
-      const cx=Number(it.cxHora[h])||0; if(!(cx>0)) return;
+    if(dividir) Object.keys(cxh).forEach(h=>{
+      const cx=Number(cxh[h])||0; if(!(cx>0)) return;
       const md=mat[it.data]=mat[it.data]||{}, mh=md[normHora(h)]=md[normHora(h)]||{};
       mh[k]=(mh[k]||0)+cx;
     });
@@ -5865,6 +5882,8 @@ function _uepEstudo(itens, modo, realByDay, faixa){
   return { prods, rapido, volume, nOk:ok.length, nProv:prods.filter(p=>p.provisoria).length,
            nSem:prods.filter(p=>p.uepVol==null).length,
            dividido:_uepTemCxHora(itens),
+           nAprox:  _uepTemCxHora(itens) ? (itens||[]).filter(it=>it&&it.caixas>0&&!_uepCxHoraOk(it)&&(it.horasLista||[]).length).length : 0,
+           nSemHora:(itens||[]).filter(it=>it&&it.caixas>0&&!(it.horasLista||[]).length&&!_uepCxHoraOk(it)).length,
            nSemRegime:prods.filter(p=>p.semRegime).length,
            cxTot, cxCom, cobertura: cxTot>0 ? cxCom/cxTot*100 : null,
            uepTot: prods.reduce((s,p)=>s+(p.uepPeriodo||0),0),
@@ -5947,8 +5966,8 @@ function _uepHtml(e, ctx){
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
 ${div
-  ? `<div class="rp-note">A linha roda <b>um produto por vez</b>: a hora em que dois produtos aparecem é hora de troca, e ela foi <b>repartida</b> entre eles pelo tempo esperado de cada um.</div>`
-  : `<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> a divisão proporcional da hora ainda não está valendo — o Apps Script precisa do <b>ritmoprod_appscript.gs v5.9</b> re-deployado. Até lá, cada produto conta a hora de troca inteira, e produto de lote pequeno sai com UEP maior do que deveria.</div>`}
+  ? `<div class="rp-note">A linha roda <b>um produto por vez</b>: a hora em que dois produtos aparecem é hora de troca, e ela foi <b>repartida</b> entre eles pelo tempo esperado de cada um.${e.nAprox?` ${e.nAprox} lançamento(s) sem as caixas por hora tiveram as caixas repartidas igualmente entre as horas dele.`:''}${e.nSemHora?` ${e.nSemHora} lançamento(s) <b>sem HORA</b> na PRODUCAO_PRODUTO ficaram fora do ritmo (entram na UEP do dia).`:''}</div>`
+  : `<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> a divisão proporcional da hora não está valendo — o Apps Script não mandou as caixas por hora (<b>ritmoprod_appscript.gs v5.10</b> re-deployado). Até lá, cada produto conta a hora de troca inteira, e produto de lote pequeno sai com UEP maior do que deveria.</div>`}
 
 <div class="rp-sec-ttl">1 ▸ O RESUMO</div>
 <div class="kpi-grid">

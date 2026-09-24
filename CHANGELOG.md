@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.78.0 — 24/09/2026
+
+**ESTUDO UEP: um lançamento sem HORA não desliga mais a divisão da hora.** O
+PDF de 24/09 às 11:17 saiu com *"a divisão proporcional da hora ainda não está
+valendo"*, com o .gs novo no ar (às 10:44 ela valia). A regra exigia que
+**todos** os itens do período tivessem as caixas por hora, e um lançamento sem
+HORA na PRODUCAO_PRODUTO desligava a divisão do período inteiro, sem avisar.
+
+- Agora a divisão vale quando o Apps Script manda as caixas por hora.
+- O lançamento sem HORA fica **fora do ritmo** e continua na UEP do dia.
+- O lançamento sem caixas por hora, mas com as horas listadas, tem as caixas
+  repartidas igualmente entre essas horas.
+- O relatório conta os dois casos.
+- **Atenção:** os números do PDF das 11:17 eram com a hora cheia (UEP inflada,
+  39 dias suspeitos); gere de novo. Sem re-deploy.
+
+---
+
 ## v7.77.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.10)
 
 **O comparativo por modelo voltou a carregar em período longo.** Depois do

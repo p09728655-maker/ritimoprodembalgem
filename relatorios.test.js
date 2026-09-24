@@ -3459,6 +3459,8 @@ console.log('\n── estudo de UEP ──');
   if (typeof _phParseData === 'undefined') eval(pega('function _phParseData('));
   eval(pega('function _uepTemCxHora('));
   eval(pega('function _uepChave('));
+  eval(pega('function _uepCxHoraOk('));
+  eval(pega('function _uepCxHoraDe('));
   eval(pega('function _uepProdutos('));
   eval(pega('function _uepDias('));
   eval(pega('function _uepValidacao('));
@@ -3555,6 +3557,14 @@ console.log('\n── estudo de UEP ──');
   const pC = _uepEstudo(itC, 'aparada').prods.find(p => p.nome === 'A');
   ok('ritmo acima do teto físico é limitado ao teto', [Math.round(pC.ritmoBruto), pC.ritmo, pC.limitadoTeto], [300, 250, true]);
   ok('o desenho avisa o ritmo limitado', /RITMO LIMITADO AO TETO/.test(pega('function _uepHtml(')), true);
+
+  // ── v7.78.0: um lançamento sem HORA não desliga a divisão do período ──
+  const itS = itH.concat([{ data: dia(0), modelo: '500001', nome: 'A', cor: 'X', caixas: 50, horas: 0, horasLista: [], cxHora: {} }]);
+  const eS = _uepEstudo(itS, 'aparada');
+  ok('um item sem hora não desliga a divisão', [eS.dividido, eS.nSemHora], [true, 1]);
+  ok('e fica fora do ritmo', Math.round(eS.prods.find(p => p.nome === 'A').ritmo), 300);
+  const itQ = itH.map((x, i) => i === 0 ? { ...x, cxHora: undefined } : x);
+  ok('item sem cxHora mas com horas é repartido igual e contado', _uepEstudo(itQ, 'aparada').nAprox, 1);
 
   // ── v7.76.0: UEP pelo regime, sanidade pelo teto da âncora, faixa de meta ──
   ok('com 4+ h sozinho a UEP sai do ritmo em regime', [bH('A').baseRegime, bH('A').hSozinho >= UEP_REGIME_MIN_H], [true, true]);
