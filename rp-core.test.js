@@ -253,6 +253,17 @@ ok('sem meta do dia também não',
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
 }
 
+// ── R$ por UEP (uepCusto) ──────────────────────────────────────────────────
+{
+  const c = uepCusto(382.89, 2265, 527, 2530);   // 23/09/2026, dia inteiro
+  ok('R$/UEP = custo-hora × minutos ÷ UEP feita', Math.round(c.rsUep * 100) / 100, 1.48);
+  ok('R$/UEP da meta = custo-hora × jornada ÷ meta', Math.round(c.rsMeta * 100) / 100, 1.33);
+  ok('excesso = R$ pagos sem virar UEP', Math.round(c.excesso), 352);
+  ok('minutos acima da jornada não inflam o custo', Math.round(uepCusto(100, 1000, 900, 2530).custo), Math.round(100 * 527 / 60));
+  ok('sem custo-hora, sem minutos ou sem UEP → null (nunca R$ 0)',
+     [uepCusto(0, 1, 60), uepCusto(10, 1, 0), uepCusto(10, 0, 60)], [null, null, null]);
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
              'efNoRitmo', 'nomeComCor', '_rpOk'];

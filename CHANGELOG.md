@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.88.0 — 24/09/2026
+
+**R$ POR UEP no card UEP DO DIA** (gerencial do computador, hoje e dia passado).
+O card ganha `R$ 1,48/UEP (meta R$ 1,33)`. O tooltip traz a conta e quanto foi
+pago sem virar UEP até aquele momento.
+- R$/UEP = custo-hora da linha × minutos de jornada normal ÷ UEP feita.
+- Meta = custo-hora × 527 min ÷ meta de UEP.
+
+**Atenção:**
+- O custo-hora é o que foi digitado no **SIMULADOR** e vale **só no computador
+  onde foi digitado**. Ele não vai para a planilha porque a URL do Apps Script
+  está no HTML público. Sem custo-hora, o card fica como antes.
+- É custo de conversão da mão de obra da embalagem, não custo do produto. A
+  hora extra fica fora (a UEP e o custo dela).
+- Hoje, com o turno em andamento, conta só os minutos de jornada com
+  lançamento. O celular e os relatórios ainda não mostram R$.
+
 ## v7.87.0 — 24/09/2026
 
 **UEP EM DESTAQUE NA SEMANA E NAS IMPRESSÕES.**

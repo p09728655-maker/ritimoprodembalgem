@@ -3661,6 +3661,9 @@ console.log('\n── estudo de UEP ──');
     ok('o resumo do WhatsApp e o bloco da semana levam a UEP; a TV não (ids só no gerencial)',
        [/UEP \(jornada normal\)/.test(pega('function _zapResumoSemana(')), /id="gsem-linha-uep"/.test(src), /id="tvd-linha-uep"/.test(src),
         /const comUep = pfx === 'gsem-';/.test(JS)], [true, true, false, true]);
+    ok('R$/UEP: os dois cards UEP DO DIA (hoje e dia passado) passam pelo _uepComCusto; custo-hora só do Simulador',
+       [/_uepComCusto\(uepCard\(PONTOS_DIA\.uep/.test(JS), /_uepComCusto\(\{l:'UEP DO DIA'/.test(JS),
+        /_pgSimNum\(_pgSimEstado\(\)\.custoHora\)/.test(pega('function _uepComCusto(')), /382[,.]89/.test(pega('function _uepComCusto('))], [true, true, true, false]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

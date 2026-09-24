@@ -220,6 +220,24 @@ function uepCard(uep, metaCfg, minJornada){
   return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
 }
 
+// ── R$ por UEP (v7.88.0, PPCP 24/09/2026) ──────────────────────────────────
+// Quanto custou cada UEP da jornada normal: custo-hora da LINHA × minutos de
+// jornada decorridos ÷ UEP feita. A régua é o mesmo custo na meta: custo-hora ×
+// jornada inteira ÷ meta de UEP. `excesso` = R$ pagos sem virar UEP até agora
+// (custo decorrido − UEP feita × R$/UEP da meta); negativo = abaixo do custo da
+// meta. É CUSTO DE CONVERSÃO da mão de obra da embalagem, não custo do produto,
+// e a hora extra fica fora (nem a UEP de HE nem o custo dela entram).
+// Sem custo-hora, sem minutos ou sem UEP → null (o painel não mostra zero).
+function uepCusto(custoHora, uepFeito, minJornada, metaUep){
+  const ch = Number(custoHora) || 0, feito = Number(uepFeito) || 0;
+  const min = Math.min(Math.max(0, Number(minJornada) || 0), UEP_MIN_DIA);
+  const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
+  if (!(ch > 0) || !(min > 0) || !(feito > 0)) return null;
+  const custo = ch * min / 60;
+  const rsMeta = ch * UEP_MIN_DIA / 60 / meta;
+  return { custo, rsUep: custo / feito, rsMeta, excesso: custo - feito * rsMeta };
+}
+
 // ── UEP hora a hora (gerencial dos dois painéis) ────────────────────────────
 // Soma a UEP do `porHoraModelo` do getPontosDia (.gs v5.11: `uep` por item =
 // caixas × UEP do cadastro) por HORA. A chave é o início da hora (HH:MM), que
@@ -286,8 +304,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.9.0',
+  versao: '1.10.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto']
 };
