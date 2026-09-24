@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.72.0 — 24/09/2026
+
+**📐 ESTUDO UEP — relatório para análise, só no gerencial.** Na barra da aba
+PRODUÇÃO/HORA, ao lado do RELATÓRIO DO PERÍODO. Para o período da tela, dá a
+**UEP (unidade de esforço de produção)** de cada produto:
+UEP por caixa = ritmo da âncora ÷ ritmo do produto.
+
+- **Duas âncoras lado a lado:** A = produto de **maior volume** (recomendada,
+  estável) e B = o **mais rápido** (o pedido original). Elas mudam só a
+  escala; a proporção entre os produtos é a mesma.
+- **Por produto, não por cor:** as cores somam. Quando as cores do mesmo
+  produto divergem 1,5× ou mais, sai um alerta.
+- **Amostra mínima de 5 dias:** abaixo disso o produto fica **sem UEP** e é
+  contado. Nunca recebe 1,00 por padrão.
+- **Conferência:** o ritmo da linha dia a dia oscila menos em UEP/h do que em
+  cx/h? Se não cair, a UEP não está medindo esforço.
+- **Atenção:** é **estudo**. Nada vai para a TV nem para o celular, e nenhum
+  número existente mudou. Sem re-deploy.
+
+---
+
 ## v7.71.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.8)
 
 **TELA E por LOTE.** Na TV a versão por código ficou pequena: o lote 25213
