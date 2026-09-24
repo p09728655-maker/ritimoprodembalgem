@@ -3451,6 +3451,7 @@ console.log('\n── estudo de UEP ──');
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
   global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
   global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
+  global.UEP_ALVO_PROV = Number(JS.match(/const UEP_ALVO_PROV\s*=\s*(\d+)/)[1]);
   global.UEP_REGIME_MIN_H = Number(JS.match(/const UEP_REGIME_MIN_H\s*=\s*(\d+)/)[1]);
   for (const k of ['QP_ALVO_MIN', 'QP_ALVO_MAX', 'QP_MIN_DIAS'])
     if (typeof global[k] === 'undefined') global[k] = Number(JS.match(new RegExp('const ' + k + '\\s*=\\s*(\\d+)'))[1]);
@@ -3589,6 +3590,13 @@ console.log('\n── estudo de UEP ──');
   const c8 = eM.dias.filter(d => !d.suspeito).map(d => d.uep8).sort((a, b) => a - b);
   ok('a faixa de meta é p50–p60 da UEP em 8 h dos dias válidos',
      [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, c8), _qpValorNoPercentil(60, c8)]);
+  // ALVO PROVISÓRIO (PPCP, 24/09/2026): 2.300 UEP em 8 h; dia suspeito não conta.
+  ok('o alvo provisório é 2.300 UEP em 8 h', UEP_ALVO_PROV, 2300);
+  const bonsM = eM.dias.filter(d => !d.suspeito);
+  ok('o alvo conta só os dias válidos',
+     [eM.alvo.nDias, eM.alvo.nBate], [bonsM.length, bonsM.filter(d => d.uep8 >= 2300).length]);
+  ok('o percentil do alvo sai da mesma curva da faixa', eM.alvo.p, _qpPercentil(2300, c8));
+  ok('a coluna ALVO não julga dia suspeito', /d\.suspeito\?'—':d\.bateAlvo/.test(pega('function _uepHtml(')), true);
   ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada').meta.de, null);
   ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
   ok('o estudo pede cxHora e espera mais; o comparativo não pede',

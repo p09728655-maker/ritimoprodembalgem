@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.78.1';
+const APP_VER   = '7.79.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5648,6 +5648,11 @@ const UEP_HORAS_DIA    = 8;
 // equipe, e inflaria a UEP de todos os outros (a SLEEP rodou 332 cx/h sozinha
 // com teto de ~329 em 01/07–24/09/2026).
 const UEP_ANCORA_TETO_MAX = 90;
+// ALVO PROVISÓRIO do dia em UEP (PPCP, 24/09/2026: "2300 ups dia" → em 8 h).
+// Fica ACIMA da faixa p50–p60 do estudo (2.228–2.239 em 01/07–24/09): a linha
+// bateu 18 de 51 dias válidos. É alvo de ESTUDO até a cronoanálise da MADERO
+// dar o tempo padrão — não vai para TV, celular nem meta oficial.
+const UEP_ALVO_PROV    = 2300;
 // v7.76.0: com pelo menos estas horas rodando SOZINHO, a UEP sai do ritmo EM
 // REGIME. Pela teoria a UEP mede o trabalho da peça e a troca é tratada à
 // parte; o ritmo usado (hora de troca repartida) ainda carrega troca, e pesa
@@ -5874,6 +5879,14 @@ function _uepEstudo(itens, modo, realByDay, faixa){
     ? { de:_qpValorNoPercentil(fx[0], curva8), ate:_qpValorNoPercentil(fx[1], curva8),
         pDe:fx[0], pAte:fx[1], nDias:curva8.length, osc:_qpOscilacao(curva8) }
     : { de:null, ate:null, pDe:fx[0], pAte:fx[1], nDias:curva8.length, osc:null };
+  // ALVO PROVISÓRIO: quantos dias VÁLIDOS o bateram, e em que percentil da
+  // capacidade demonstrada ele cai. Dia suspeito não conta nem para bater
+  // nem para errar — o número dele não é confiável.
+  dd.forEach(d=>{ d.bateAlvo=d.uep8>=UEP_ALVO_PROV; });
+  const alvo={ v:UEP_ALVO_PROV, nDias:bons.length, nBate:bons.filter(d=>d.bateAlvo).length,
+               pct: bons.length ? bons.filter(d=>d.bateAlvo).length/bons.length*100 : null,
+               p: curva8.length ? _qpPercentil(UEP_ALVO_PROV, curva8) : null,
+               uepH: UEP_ALVO_PROV/UEP_HORAS_DIA };
   const uepSoma=dd.reduce((s,d)=>s+d.uep,0), hSoma=dd.reduce((s,d)=>s+d.h,0);
   const u8=dd.map(d=>d.uep8);
   const cxTot=dd.reduce((s,d)=>s+d.cxTot,0), cxCom=dd.reduce((s,d)=>s+d.cx,0);
@@ -5895,7 +5908,7 @@ function _uepEstudo(itens, modo, realByDay, faixa){
            hDiaMed: dd.length ? hSoma/dd.length : null,
            nAcimaAncora: dd.filter(d=>d.acimaAncora).length,
            nCobAcima: dd.filter(d=>d.cobDia>102).length,
-           nSuspeitos: dd.filter(d=>d.suspeito).length, tetoUepH, meta,
+           nSuspeitos: dd.filter(d=>d.suspeito).length, tetoUepH, meta, alvo,
            uepDiaMed: ueps.length ? ueps.reduce((a,b)=>a+b,0)/ueps.length : null,
            uepDiaMin: ueps.length ? Math.min(...ueps) : null,
            uepDiaMax: ueps.length ? Math.max(...ueps) : null,
@@ -5962,6 +5975,7 @@ function _uepHtml(e, ctx){
       <td class="td-mono" style="text-align:right">${d.h}</td>
       <td class="td-mono" style="text-align:right">${n0(d.uepH)}${d.acimaAncora?' ⚠':''}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep8)}</td>
+      <td class="td-mono" style="text-align:center">${d.suspeito?'—':d.bateAlvo?'<b style="color:#2e7d32">BATEU</b>':'<span style="color:#c62828">NÃO</span>'}</td>
       ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia)+(d.cobDia>102?' ⚠ acima':d.cobDia<80?' ⚠':''):'—'}</td>`:''}</tr>`).join('');
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
@@ -5985,6 +5999,8 @@ ${div
     <div class="kpi-sub">${e.meta.de!=null
       ? `UEP/dia · p${e.meta.pDe}–p${e.meta.pAte} de ${e.meta.nDias} dias${e.nSuspeitos?` (sem ${e.nSuspeitos} suspeito(s))`:''} · oscila ${p1(e.meta.osc)} · estudo, não é a meta oficial`
       : `precisa de ${QP_MIN_DIAS}+ dias válidos (há ${e.meta.nDias})`}</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">ALVO PROVISÓRIO · EM ${UEP_HORAS_DIA} H</div><div class="kpi-val">${n0(e.alvo.v)}</div>
+    <div class="kpi-sub">UEP/dia = ${n0(e.alvo.uepH)} UEP/h · bateu ${e.alvo.nBate} de ${e.alvo.nDias} dias válidos${e.alvo.pct!=null?` (${p1(e.alvo.pct)})`:''}${e.alvo.p!=null?` · cai no p${Math.round(e.alvo.p)} da capacidade`:''} · até a cronoanálise</div></div>
 </div>
 <div class="kpi-grid" style="margin-top:9px">
   <div class="kpi-card"><div class="kpi-lbl">OSCILAÇÃO DO RITMO · CX/H → UEP/H · DENTRO DA AMOSTRA</div><div class="kpi-val">${cDentro.v}</div>
@@ -6009,11 +6025,12 @@ ${e.foraTeto.length?`<div class="rp-note">Fora da âncora A por rodar acima de $
 <div class="rp-sec-ttl">3 ▸ UEP POR DIA</div>
 <table><thead><tr>
   <th>DIA</th><th style="text-align:right">CAIXAS COM PRODUTO</th><th style="text-align:right">UEP · ÂNCORA A</th>
-  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th><th style="text-align:right">UEP EM ${UEP_HORAS_DIA} H</th>${temCob?'<th style="text-align:right">COBERTURA</th>':''}
-</tr></thead><tbody>${linDias||'<tr><td colspan="7">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
+  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th><th style="text-align:right">UEP EM ${UEP_HORAS_DIA} H</th><th style="text-align:center">ALVO ${n0(UEP_ALVO_PROV)}</th>${temCob?'<th style="text-align:right">COBERTURA</th>':''}
+</tr></thead><tbody>${linDias||'<tr><td colspan="8">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
 <div class="rp-note">UEP EM ${UEP_HORAS_DIA} H = UEP/h × ${UEP_HORAS_DIA} h: é a <b>capacidade demonstrada em UEP</b> num dia padrão, a régua com que a meta do dia vai ser julgada — a hora extra não entra, e os dias ficam comparáveis. ⚠ O turno tem 8 h 48 min produtivas; os 48 min acima das ${UEP_HORAS_DIA} h ficam como folga. Só entram caixas apontadas <b>com produto</b>${temCob?'; COBERTURA = essas caixas ÷ o realizado do dia no HISTÓRICO — abaixo de 80% (⚠) o dia sai com UEP menor que a real, e acima de 100% (⚠ acima) houve apontamento a mais que o realizado (lançamento duplicado, ou o dia fechado antes do último lançamento)':''}. Horas da linha = horas distintas com lançamento.</div>
 ${e.nSuspeitos?`<div class="rp-note" style="color:#c05621"><b>TESTE DE SANIDADE:</b> ${e.nSuspeitos} dia(s) suspeito(s), em cinza: ${e.nAcimaAncora} com UEP/h acima do teto físico da âncora (${e.tetoUepH!=null?n0(e.tetoUepH):'—'} UEP/h, ⚠ na coluna UEP/H) e ${e.nCobAcima} com apontamento acima do realizado. Com um produto por vez, a linha não passa do teto da âncora — nesses dias houve lançamento acumulado ou a mais. Eles ficam <b>fora da faixa sugerida de meta</b>.</div>`:`<div class="rp-note"><b>TESTE DE SANIDADE:</b> nenhum dia acima do teto físico da âncora nem com apontamento acima do realizado.</div>`}
 ${e.meta.de!=null?`<div class="rp-note"><b>FAIXA SUGERIDA DE META:</b> ${n0(e.meta.de)} a ${n0(e.meta.ate)} UEP em ${UEP_HORAS_DIA} h — p${e.meta.pDe} a p${e.meta.pAte} da UEP em ${UEP_HORAS_DIA} h dos ${e.meta.nDias} dias válidos, a mesma régua da aba PLANO (meta que a linha bate em cerca de metade dos dias, para o vermelho significar alguma coisa). É estudo: a meta oficial continua em caixas até o PPCP decidir.</div>`:''}
+<div class="rp-note"><b>ALVO PROVISÓRIO: ${n0(e.alvo.v)} UEP em ${UEP_HORAS_DIA} h</b> (${n0(e.alvo.uepH)} UEP/h) — escolha do PPCP em 24/09/2026, acima da faixa sugerida de propósito: a linha bateu em ${e.alvo.nBate} de ${e.alvo.nDias} dias válidos${e.alvo.pct!=null?` (${p1(e.alvo.pct)})`:''}. Na coluna ALVO, dia suspeito sai "—" (não conta nem como acerto nem como erro). Vale até a cronoanálise da MADERO dar o tempo padrão; aí o alvo passa a ser ${UEP_HORAS_DIA} h × 3.600 ÷ tempo padrão.</div>
 
 <div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
 <table><tbody>
