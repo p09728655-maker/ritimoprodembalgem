@@ -459,6 +459,13 @@ ABAS.LOG2 = [['ID', 'DATA', 'CAIXAS'], ['a', '10/08/2026', 5], ['b', '20/08/2026
 v = _valoresPorData(PLANILHA.getSheetByName('LOG2'), 'DATA', 0, dataParaNum, 20260820, 20260820);
 ok('acha a coluna DATA pelo cabeçalho', v.slice(1).map(r => r[0]), ['b']);
 
+// v5.9: caixas de CADA hora por item — o estudo de UEP reparte a hora em que
+// dois produtos dividiram a linha (hora de troca). Sem leitura nova: sai do
+// mesmo laço que já montava o horasSet.
+ok('getProducaoModeloPeriodo acumula as caixas por hora do item',
+   /map\[key\]\.cxHora\[hora\] = \(map\[key\]\.cxHora\[hora\] \|\| 0\) \+ cx;/.test(src), true);
+ok('e devolve o cxHora no item', /cxHora: it\.cxHora,/.test(src), true);
+
 // Os dois chamadores usam a leitura recortada.
 ok('getProducaoModeloPeriodo lê recortado, com a conversão DELE',
    /_valoresPorData\(sh, 'DATA', 0, dataParaNum, deNum, ateNum\)/.test(src), true);

@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.74.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.9)
+
+**ESTUDO UEP: a hora de troca é repartida, e o relatório ganhou UEP POR DIA e
+validação fora da amostra.** O PPCP confirmou que a linha roda **um produto
+por vez**: a hora em que dois produtos aparecem é hora de troca. Antes cada um
+levava a hora inteira, e o produto de lote pequeno (mais trocas) parecia lento
+e ganhava UEP alta.
+
+- **Ritmo em regime:** caixas ÷ horas em que o produto rodou **sozinho** na
+  linha (cores do mesmo produto juntas contam como sozinho).
+- **Hora compartilhada repartida pelo tempo esperado** de cada produto
+  (caixas ÷ ritmo em regime). Pelas caixas não: os dois sairiam com o ritmo da
+  linha naquela hora. É do ritmo com a hora repartida que sai a UEP.
+- A tabela mostra **EM REGIME · HORA CHEIA · RITMO USADO** lado a lado.
+- **UEP POR DIA** (seção 3): caixas, UEP, horas da linha, UEP/h e a cobertura
+  do dia contra o realizado do HISTÓRICO. No resumo: média, menor e maior dia.
+- **Validação fora da amostra:** a UEP sai da 1ª metade dos dias e é testada
+  na 2ª. É ela que diz se a UEP mede esforço (a conferência de antes era
+  otimista, feita nos mesmos dias).
+- **Atenção:** RITMO USADO, UEP/CX e UEP NO PERÍODO mudam em relação à
+  v7.73.0 depois do re-deploy. Nenhum número fora do estudo muda.
+- ⚠ **re-deploy (.gs v5.9):** `getProducaoModeloPeriodo` manda as caixas por
+  hora de cada item (`cxHora`), sem leitura nova. Antes do re-deploy o
+  relatório avisa que a divisão da hora não está valendo e segue com a hora
+  cheia.
+
+---
+
 ## v7.73.0 — 24/09/2026
 
 **ESTUDO UEP: amostra curta também ganha UEP, marcada PROVISÓRIA.** Pedido do

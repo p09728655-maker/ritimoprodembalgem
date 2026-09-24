@@ -2431,7 +2431,30 @@ feito e dá ar de verdade ao que sobrou.
   dias mudaria a escala de todos. Sem ritmo → sem UEP, nunca 1 por padrão.
 - **Conferência:** oscilação do ritmo da linha dia a dia em cx/h × UEP/h
   (`_qpOscilacao`), mesmas caixas sobre as mesmas horas da linha. Otimista:
-  reprova, não prova.
+  reprova, não prova. Desde a v7.74.0 há a **validação fora da amostra**
+  (`_uepValidacao`): UEP da 1ª metade dos dias testada na 2ª, com
+  `UEP_VALID_MIN_DIAS`=4 por metade — é ela que conta.
+- ⚠ **A LINHA RODA UM PRODUTO POR VEZ** (PPCP, 24/09/2026). Hora com dois
+  produtos é **hora de troca** — e isso relê o que está anotado na seção do
+  mix ("a esteira roda dois produtos por vez"): o excesso de horas de produto
+  sobre horas da linha é troca dentro da hora, e a alternância `A,B,A,B` do
+  log são cores/volumes do MESMO produto (ou apontamento), não dois produtos
+  juntos. Não mexi no mix por causa disso; o estudo de UEP já usa a leitura
+  nova.
+  - **Hora compartilhada é repartida** (v7.74.0 / `.gs` v5.9, PPCP: *"quando
+    pega na mesma hora 2 produtos tem que ser proporcional"*). Proporcional ao
+    **tempo esperado** (caixas ÷ ritmo em regime), **nunca às caixas**: pelas
+    caixas os dois sairiam com o ritmo da linha naquela hora e a diferença
+    entre eles sumiria. Ritmo em regime = horas em que o produto rodou
+    sozinho; sem nenhuma, o peso usa o ritmo com hora cheia e a linha avisa.
+    A hora vale 1 (inclusive o slot de 48 min), como no comparativo.
+  - Precisa do **`cxHora`** por item (`getProducaoModeloPeriodo`, `.gs` v5.9 —
+    **re-deploy**). Sem ele (`_uepTemCxHora` falso) o estudo volta à hora
+    cheia e o relatório diz que a divisão não está valendo.
+- **UEP POR DIA** (`_uepDias`): caixas com produto × UEP, horas da linha,
+  UEP/h e cobertura contra o realizado do `HISTORICO` (`buildDiasHistAsync`,
+  cache de 2 min; falhou → a coluna some). É a capacidade em UEP, a régua da
+  meta do dia.
 - ⚠ Ritmo **demonstrado ≠ tempo padrão** (carrega desempenho, paralelismo e
   apontamento). Próximos passos combinados: PPCP escolhe a âncora → valida os
   de maior volume (cronoanálise) → congela a UEP no cadastro (`PRODUTO_CODIGO`,

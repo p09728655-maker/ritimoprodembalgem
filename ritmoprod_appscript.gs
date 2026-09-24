@@ -1,5 +1,10 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.9 — CAIXAS POR HORA NO LOG DO PERÍODO (estudo de UEP)
+//               getProducaoModeloPeriodo() manda `cxHora` ({hora: caixas})
+//               em cada item. Nenhuma leitura nova: o laço já passava por
+//               essas linhas. O painel usa para repartir a hora em que dois
+//               produtos dividiram a linha (hora de troca).
 // Versão: 5.8 — TELA E POR LOTE
 //               calcularProgramacao() devolve também `porLote`: por lote, o
 //               total programado, o que falta, a data do atraso, cores,
@@ -2458,7 +2463,7 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {} };
+                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {} };
     }
     const dStr = fmtDataBR(r[iData]);
     const hSeq = formatHoraCel(r[iHora]);
@@ -2487,7 +2492,13 @@ function getProducaoModeloPeriodo(p) {
     // Conta as HORAS distintas em que esse modelo rodou no dia — base da
     // média cx/h (ritmo). formatHoraCel normaliza texto "13:00" e Date.
     const hora = formatHoraCel(r[iHora]);
-    if (hora) map[key].horasSet[hora] = true;
+    if (hora) {
+      map[key].horasSet[hora] = true;
+      // v5.9: caixas de CADA hora (estudo de UEP). A linha roda um produto por
+      // vez; hora com dois produtos é hora de troca, e o painel reparte essa
+      // hora entre eles em vez de dar a hora inteira a cada um.
+      map[key].cxHora[hora] = (map[key].cxHora[hora] || 0) + cx;
+    }
   }
 
   const itens = Object.keys(map).map(function (k) {
@@ -2507,6 +2518,7 @@ function getProducaoModeloPeriodo(p) {
              // quantas trocas ele custou. O número de horas sozinho não separa
              // "rodou direto" de "saiu e voltou depois de outro produto".
              horasLista: Object.keys(it.horasSet).sort(),
+             cxHora: it.cxHora,   // v5.9 — {hora: caixas}, base da divisão proporcional da hora
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;
