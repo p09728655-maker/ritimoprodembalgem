@@ -39,7 +39,7 @@ const GLOBAIS = [
   // módulos próprios (rp-core.js / paradas-calc.js)
   'RP_CORE','RP_PARADAS','RP_SEMANA','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
   'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo','slRitmo',
-  'uepCard','UEP_META_PADRAO','UEP_MIN_DIA',
+  'uepCard','UEP_META_PADRAO','UEP_MIN_DIA','uepPorHora','uepCelula',
   'nomeComCor','_rpOk',
 ];
 

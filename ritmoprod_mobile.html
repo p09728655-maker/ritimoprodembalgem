@@ -680,6 +680,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
               <th class="td-num">REAL</th>
               <th class="td-num">META</th>
               <th class="td-s">%</th>
+              <th class="td-num" id="th-uep-hora" style="display:none" title="UEP da hora contra a meta de UEP repartida pelos minutos da hora">UEP</th>
             </tr>
           </thead>
           <tbody id="ger-tbl-body">
@@ -911,7 +912,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.20.0';
+const APP_VER   = '1.21.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1220,7 +1221,8 @@ async function lerPontosDia(){
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 },
         // UEP do dia (.gs v5.11) + meta da CONFIG_PAINEL: só o gerencial lê.
         // false = o backend respondeu sem o campo (antes da v5.11).
-        uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep
+        uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep,
+        porHoraModelo: json.porHoraModelo || []
       };
       aplicarMetaDiaAutomatica();
       return true;
@@ -2716,6 +2718,11 @@ function renderTabelaHoraHora(allHoje){
   }
   let acumC=0;
   const atrasoHoras=calcAtrasoHoras(allHoje);
+  // UEP hora a hora: a MESMA conta do desktop (uepPorHora/uepCelula, rp-core).
+  const temUepH=!!(PONTOS_DIA.uep && PONTOS_DIA.uep.codigos>0);
+  const uepH=temUepH?uepPorHora(PONTOS_DIA.porHoraModelo):{};
+  const _slots=getSlots();
+  { const _th=document.getElementById('th-uep-hora'); if(_th) _th.style.display=temUepH?'':'none'; }
   tbody.innerHTML=allHoje.map((r,i)=>{
     const prod=r.producaoHora;
     if(prod!=null) acumC+=prod;
@@ -2744,6 +2751,9 @@ function renderTabelaHoraHora(allHoje){
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
       <td class="td-num">${ehHE?'—':`${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}`}</td>
       <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}${(ef2!=null||ehHE)?`<span class="td-s-sub">${st}</span>`:''}</td>
+      ${temUepH?(()=>{ const _s=_slots.find(x=>x.inicio===r.horario);
+        const c=uepCelula(uepH[r.horario], PONTOS_DIA.metaUep, _s?_s.min:60, ehHE);
+        return `<td class="td-num" title="${c.title}" style="color:${c.cls?'var(--'+c.cls+')':'var(--txt2)'}">${c.txt}</td>`; })():''}
     </tr>`;
   }).join('');
 }

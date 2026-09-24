@@ -3599,6 +3599,10 @@ console.log('\n── estudo de UEP ──');
     ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo',
        [(JS.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length,
         (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [1, 1]);
+    ok('UEP hora a hora nos dois gerenciais pela conta do núcleo',
+       [/uepCelula\(uepH\[sl\.inicio\]/.test(JS), /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
+    ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
+       /UEP \(\$\{fmtP\(pctUep\)\} da meta/.test(pega('function renderProgramacaoDetalhada(')), true);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

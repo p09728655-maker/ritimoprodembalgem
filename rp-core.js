@@ -218,6 +218,40 @@ function uepCard(uep, metaCfg, minJornada){
   return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
 }
 
+// ── UEP hora a hora (gerencial dos dois painéis) ────────────────────────────
+// Soma a UEP do `porHoraModelo` do getPontosDia (.gs v5.11: `uep` por item =
+// caixas × UEP do cadastro) por HORA. A chave é o início da hora (HH:MM), que
+// casa com o `horario`/`inicio` dos slots — o log pode trazer "07:00" ou
+// "07:00-08:00". Item sem UEP (uep 0) tem as caixas contadas à parte.
+function _uepHHMM(s){
+  const x = String(s == null ? '' : s).match(/(\d{1,2}):(\d{2})/);
+  return x ? p2(+x[1]) + ':' + x[2] : '';
+}
+function uepPorHora(lista){
+  const m = {};
+  (lista || []).forEach(it => {
+    const k = _uepHHMM(it && it.hora);
+    if (!k) return;
+    const o = m[k] = m[k] || { uep: 0, cxSem: 0 };
+    const u = Number(it.uep) || 0;
+    if (u > 0) o.uep += u; else o.cxSem += Number(it.caixas) || 0;
+  });
+  return m;
+}
+// Célula da coluna UEP de uma hora. A meta da hora é a meta de UEP do dia
+// (8 h) repartida pelos MINUTOS da hora — o slot pós-almoço de 48 min pede
+// menos. Hora extra mostra o número e não é julgada (mesma regra das caixas).
+function uepCelula(h, metaCfg, minSlot, ehHE){
+  if (!h) return { txt: '—', cls: '', title: 'nenhuma caixa com produto apontada nesta hora' };
+  const meta = Number(metaCfg) > 0 ? Number(metaCfg) : UEP_META_PADRAO;
+  const metaH = meta * (Number(minSlot) || 60) / UEP_MIN_DIA;
+  const txt = fmtN(Math.round(h.uep)) + (h.cxSem > 0 ? '*' : '');
+  const title = fmtN(Math.round(h.uep)) + ' UEP'
+    + (ehHE ? ' em hora extra (fora da meta)' : ' · meta ' + fmtN(Math.round(metaH)) + ' UEP nesta hora (' + (Number(minSlot) || 60) + ' min)')
+    + (h.cxSem > 0 ? ' · * ' + fmtN(h.cxSem) + ' cx de códigos sem UEP ficaram fora' : '');
+  return { txt, title, cls: ehHE || !(h.uep > 0) ? '' : sc(h.uep / metaH * 100), metaH };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -229,8 +263,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.5.0',
+  versao: '1.6.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula']
 };
