@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.76.0 — 24/09/2026
+
+**ESTUDO UEP: UEP pelo ritmo em regime, teste de sanidade pelo teto e faixa
+sugerida de meta.** Leitura do relatório real de 01/07–24/09 com o PPCP.
+
+- **A UEP sai do ritmo EM REGIME** quando o produto tem **4 h ou mais**
+  rodando sozinho; abaixo disso, do ritmo usado. Pela teoria a UEP mede o
+  trabalho da peça e a troca fica à parte. O número que gerou a UEP sai em
+  negrito na tabela. Medido: COMODA SAPATEIRA DUBAI 110 cx/h em regime contra
+  67 no usado (UEP 4,13 → ~2,5); MADERO e PENTEADEIRA quase não mudam.
+- **Teste de sanidade corrigido:** a régua passa a ser o **teto físico** da
+  âncora, não o ritmo médio dela. Na v7.75.0 ele acusava 20 de 60 dias (dia
+  bom passa da média, e isso não é defeito); pelo teto, sobram 4. Dia com
+  apontamento acima do realizado também é suspeito. Os suspeitos saem em
+  cinza.
+- **FAIXA SUGERIDA DE META em 8 h:** p50–p60 da UEP em 8 h dos dias válidos,
+  a mesma faixa da aba PLANO. No lugar do card UEP NO PERÍODO, que foi para a
+  nota da tabela. É estudo: a meta oficial continua em caixas.
+- **Atenção:** a UEP dos produtos com 4+ h sozinho muda; a OSCILAÇÃO DO DIA
+  passa a desconsiderar os dias suspeitos. Sem re-deploy.
+
+---
+
 ## v7.75.0 — 24/09/2026
 
 **ESTUDO UEP: dia padrão de 8 h, teto da esteira e teste de sanidade.** Com o
