@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.75.0 — 24/09/2026
+
+**ESTUDO UEP: dia padrão de 8 h, teto da esteira e teste de sanidade.** Com o
+.gs v5.9 no ar, o relatório de 01/07–24/09 mostrou dois números impossíveis: a
+MESA LATERAL DECOR 470 saía com 351 cx/h (acima do teto físico) e a âncora,
+MESA CABECEIRA SLEEP, rodava a 332 cx/h sozinha com teto de ~329.
+
+- **UEP POR DIA em 8 h** (pedido do PPCP): UEP/h da linha × 8 h. Os dias
+  ficam comparáveis e a hora extra sai da capacidade. O realizado do dia
+  continua na tabela, ao lado. ⚠ O turno tem 8 h 48 min produtivas: os 48 min
+  ficam como folga (`UEP_HORAS_DIA`).
+- **Nenhum ritmo passa do teto físico** da esteira: acima dele, o ritmo é
+  limitado ao teto e a linha avisa *RITMO LIMITADO AO TETO*.
+- **Âncora A = maior volume abaixo de 90% do teto.** Produto no limite da
+  esteira mede a máquina, não a equipe. Quem ficou de fora aparece no resumo.
+- **Teste de sanidade:** dia com UEP/h acima do ritmo da âncora sai com ⚠.
+- **Cobertura sem corte em 100%:** acima do realizado sai *⚠ acima*.
+- **Atenção:** a âncora A pode mudar, e com ela a escala de toda a UEP (a
+  proporção entre os produtos não muda). O card UEP POR DIA passou a ser em
+  8 h. Sem re-deploy.
+
+---
+
 ## v7.74.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.9)
 
 **ESTUDO UEP: a hora de troca é repartida, e o relatório ganhou UEP POR DIA e

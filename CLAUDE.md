@@ -2461,6 +2461,21 @@ feito e dá ar de verdade ao que sobrou.
   com vigência) → a meta do dia passa a ser julgada em UEP. **O operador
   continua vendo caixas.** Não calcular UEP ao vivo em tela oficial: recalcular
   todo dia mudaria a meta histórica.
+- **Dia padrão de 8 h** (v7.75.0, PPCP: *"sempre considerar hora do dia 8"*):
+  `UEP_HORAS_DIA` — UEP do dia = UEP/h da linha × 8. Tira a HE da capacidade
+  e deixa os dias comparáveis. ⚠ O turno tem 8 h 48 min produtivas: os 48 min
+  ficam como folga, e isso está escrito no relatório.
+- **Teto físico manda** (v7.75.0): ritmo acima de `_phTeto` é limitado a ele
+  (`limitadoTeto`) — medido em 01/07–24/09: DECOR 470 a 351 sem nenhuma hora
+  sozinho. **Âncora A = maior volume abaixo de `UEP_ANCORA_TETO_MAX` (90%) do
+  teto**: a SLEEP rodou 332 com teto ~329 — ali a esteira limita, não a
+  equipe, e ela inflaria a UEP de todos. Teste de sanidade: dia com UEP/h
+  acima do ritmo da âncora ×1,05 sai com ⚠. Cobertura do dia **sem corte em
+  100%** (acima = apontamento a mais que o realizado).
+- Medido em 01/07–24/09/2026 (60 dias, com a hora repartida): oscilação do
+  ritmo **fora da amostra 43,8% → 22,6%** e do dia **34,0% → 14,7%** — a UEP
+  explica metade da variação; em UEP a meta do dia cabe no limite de 20% da
+  aba PLANO, em caixas não. Só 9 de 89 produtos com 5+ dias.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

@@ -3449,6 +3449,8 @@ console.log('\n── estudo de UEP ──');
 {
   global.UEP_MIN_DIAS = Number(JS.match(/const UEP_MIN_DIAS\s*=\s*(\d+)/)[1]);
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
+  global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
+  global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
   global.UEP_VALID_MIN_DIAS = Number(JS.match(/const UEP_VALID_MIN_DIAS\s*=\s*(\d+)/)[1]);
   if (typeof _phParseData === 'undefined') eval(pega('function _phParseData('));
   eval(pega('function _uepTemCxHora('));
@@ -3531,6 +3533,24 @@ console.log('\n── estudo de UEP ──');
   for (let i = 0; i < 8; i++) itH.slice(0, 2).forEach(x => it8.push({ ...x, data: dia(i) }));
   const v8 = _uepEstudo(it8, 'aparada').valid;
   ok('com 8 dias a UEP sai da 1ª metade e é testada na 2ª', [v8.ok, v8.nA, v8.nB, v8.deB], [true, 4, 4, dia(4)]);
+
+  // ── v7.75.0: dia de 8 h, teto físico, âncora abaixo do teto, sanidade ──
+  ok('o dia padrão é de 8 horas', UEP_HORAS_DIA, 8);
+  // A roda a 300 com teto 310 (97% — no limite da esteira); B a 150 com teto 400.
+  const itT = itH.map(x => ({ ...x, tetoCxH: x.nome === 'A' ? 310 : 400 }));
+  const eT = _uepEstudo(itT, 'aparada', { [dia(0)]: 1000 });
+  ok('âncora A pula quem roda acima de 90% do teto', [eT.volume.nome, eT.rapido.nome], ['B', 'A']);
+  ok('e o relatório lista quem ficou de fora', eT.foraTeto.map(p => p.nome), ['A']);
+  // Dia: A 750 cx × 0,5 + B 375 × 1 = 750 UEP em 5 horas da linha → 150 UEP/h → 1.200 em 8 h
+  ok('UEP em 8 h = UEP/h da linha × 8', [eT.dias[0].uepH, eT.dias[0].uep8, Math.round(eT.uep8Med)], [150, 1200, 1200]);
+  ok('a cobertura não é mais cortada em 100%', eT.dias[0].cobDia, 112.5);
+  ok('e o dia acima do realizado é contado', eT.nCobAcima, 1);
+  ok('sem dia acima do ritmo da âncora, o teste de sanidade passa', eT.nAcimaAncora, 0);
+  // Ritmo acima do teto físico é limitado ao teto e marcado.
+  const itC = itH.map(x => ({ ...x, tetoCxH: x.nome === 'A' ? 250 : 400 }));
+  const pC = _uepEstudo(itC, 'aparada').prods.find(p => p.nome === 'A');
+  ok('ritmo acima do teto físico é limitado ao teto', [Math.round(pC.ritmoBruto), pC.ritmo, pC.limitadoTeto], [300, 250, true]);
+  ok('o desenho avisa o ritmo limitado', /RITMO LIMITADO AO TETO/.test(pega('function _uepHtml(')), true);
 
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
   // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
