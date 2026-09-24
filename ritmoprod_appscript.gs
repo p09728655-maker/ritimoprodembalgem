@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.11 — UEP COMO PARÂMETRO DO CADASTRO
+//               Colunas UEP e UEP_VIGENCIA na PRODUTO_CODIGO (a UEP por caixa
+//               de cada código; o PPCP pode editar à mão). getPontosDia manda
+//               `uep` = UEP feita hoje em jornada normal e em hora extra (a
+//               MESMA régua do _ehHoraExtraCaixas), caixas com e sem UEP e
+//               quantos códigos têm UEP. setUepCatalogo grava a coluna a
+//               partir do estudo do painel. META_UEP na CONFIG_PAINEL é a
+//               meta de UEP do dia (8 h). Nenhuma leitura nova.
 // Versão: 5.10 — O `cxHora` SÓ VAI QUANDO PEDIDO (?cxHora=1)
 //               Com ele sempre no payload, o período de 86 dias passou de
 //               100 KB: o CacheService recusa, nenhuma chamada ficava em
@@ -864,7 +872,7 @@ const CACHE_TTL_LEITURA = {
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
-  'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel'];
+  'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1034,6 +1042,7 @@ function doGet(e) {
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
+    else if (act === 'setUepCatalogo')  result = setUepCatalogo(p);
     else if (act === 'getConfigPainel') result = { ok: true, painelConfig: getConfigPainel() };
     else if (act === 'redigirProposta') result = redigirProposta(p);
     else                              result = getDados();
@@ -2090,6 +2099,15 @@ function getHoraDia(p) {
 // dos modelos e dentro de calcularProgramacao).
 let _catalogoMemo = null;
 
+// Número que pode chegar como texto pt-BR ("0,84", "1.234,5") ou número.
+function _numBR(v) {
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return 0;
+  const n = Number(s.indexOf(',') >= 0 ? s.replace(/\./g, '').replace(',', '.') : s);
+  return isFinite(n) ? n : 0;
+}
+
 function lerCatalogoProdutos() {
   if (_catalogoMemo) return _catalogoMemo;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2126,6 +2144,11 @@ function lerCatalogoProdutos() {
   const iEntre  = _porPrefixo('ENTRE_PECA');
   const iPontos = hdr.indexOf('PONTOS');
   const iTroca  = hdr.indexOf('TEMPO DE TROCA MIN');
+  // UEP por caixa (v5.11): parâmetro do cadastro, gravado pelo estudo do
+  // painel (setUepCatalogo) ou digitado pelo PPCP. Título EXATO "UEP": por
+  // prefixo, "UEP_VIGENCIA" casaria no lugar dela.
+  const iUep    = hdr.indexOf('UEP');
+  const iUepVig = _porPrefixo('UEP_VIG');
 
   if (iCod < 0) return [];
 
@@ -2144,7 +2167,9 @@ function lerCatalogoProdutos() {
       velocidade: iVel    >= 0 ? Number(row[iVel])    || 0 : 0,
       entrePeca:  iEntre  >= 0 ? Number(row[iEntre])  || 0 : 0,
       pontos:     iPontos >= 0 ? Number(row[iPontos]) || 0 : 0,
-      tempoTroca: iTroca  >= 0 ? Number(row[iTroca])  || 0 : 0
+      tempoTroca: iTroca  >= 0 ? Number(row[iTroca])  || 0 : 0,
+      uep:        iUep    >= 0 ? _numBR(row[iUep]) : 0,
+      uepVig:     iUepVig >= 0 ? _dataStr(row[iUepVig]) : ''
     });
   }
   _catalogoMemo = produtos;
@@ -2207,7 +2232,10 @@ function getConfigPainel() {
     tempoD: num(kv.TEMPO_D, 20),
     tempoE: num(kv.TEMPO_E, 20),
     kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
-    modoLeitor: bool(kv.MODO_LEITOR, true)   // seleção de produto por bipe no mobile (padrão ligado)
+    modoLeitor: bool(kv.MODO_LEITOR, true),  // seleção de produto por bipe no mobile (padrão ligado)
+    // Meta de UEP do dia (8 h de jornada normal), v5.11. Sem a chave → null e
+    // o painel usa o padrão dele (2.300, decisão do PPCP em 24/09/2026).
+    metaUep: kv.META_UEP !== undefined && _numBR(kv.META_UEP) > 0 ? _numBR(kv.META_UEP) : null
   };
 }
 
@@ -2256,6 +2284,70 @@ function setConfigPainel(p) {
   }
 }
 
+// ════════════════════════════════════════════════════════
+// UEP NO CADASTRO (v5.11) — o estudo do painel grava, o PPCP pode editar
+// ════════════════════════════════════════════════════════
+// p.dados = JSON [[modelo, nome, uepPorCaixa], ...] — a UEP é por PRODUTO
+// (modelo + nome sem cor), a mesma chave do estudo; aqui ela desce para
+// CADA código daquele produto, pelo produtoDoCodigo (a regra única).
+// p.vig = data de vigência (dd/MM/yyyy). Só os códigos dos produtos enviados
+// são tocados: o resto da coluna fica como está. Cria as colunas UEP e
+// UEP_VIGENCIA no fim da aba se ainda não existirem. Lê a aba DIRETO (quem
+// escreve nunca usa o memo de leitura).
+function setUepCatalogo(p) {
+  let lista;
+  try { lista = JSON.parse(String(p.dados || '[]')); } catch (e) { return { ok: false, erro: 'dados inválidos' }; }
+  if (!Array.isArray(lista) || !lista.length) return { ok: false, erro: 'nenhum produto enviado' };
+  const vig = String(p.vig || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const alvo = {};
+  lista.forEach(function (r) {
+    const u = _numBR(r && r[2]);
+    if (r && u > 0) alvo[String(r[0]).trim() + '|' + String(r[1] || '').trim()] = Math.round(u * 100) / 100;
+  });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PRODUTOS);
+    if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
+    const lastRow = sh.getLastRow();
+    let lastCol = sh.getLastColumn();
+    if (lastRow < 2) return { ok: false, erro: 'cadastro vazio' };
+    const hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0]
+      .map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
+    const iCod = hdr.indexOf('CODIGO');
+    if (iCod < 0) return { ok: false, erro: 'coluna CODIGO não encontrada' };
+    let iUep = hdr.indexOf('UEP');
+    let iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
+    if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
+    if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+
+    const cods = sh.getRange(2, iCod + 1, lastRow - 1, 1).getValues();
+    const colU = sh.getRange(2, iUep + 1, lastRow - 1, 1).getValues();
+    const colV = sh.getRange(2, iVig + 1, lastRow - 1, 1).getValues();
+    const achados = {};
+    let gravados = 0;
+    for (let i = 0; i < cods.length; i++) {
+      const cod = String(cods[i][0] || '').trim();
+      if (!cod) continue;
+      const pr = produtoDoCodigo(cod);
+      const k = pr.modelo + '|' + (pr.base || '');
+      if (alvo[k] === undefined) continue;
+      colU[i][0] = alvo[k];
+      colV[i][0] = vig;
+      achados[k] = true;
+      gravados++;
+    }
+    sh.getRange(2, iUep + 1, lastRow - 1, 1).setValues(colU);
+    sh.getRange(2, iVig + 1, lastRow - 1, 1).setValues(colV);
+    _catalogoMemo = null;
+    const semCodigo = Object.keys(alvo).filter(function (k) { return !achados[k]; });
+    return { ok: true, gravados: gravados, produtos: Object.keys(achados).length, semCodigo: semCodigo };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // Produção do dia em PONTOS e PESO (kg), a partir do log PRODUCAO_PRODUTO.
 // Usada só pelo gerencial/TV (fora do caminho quente do app do operador).
 function getPontosDia() {
@@ -2289,8 +2381,14 @@ function getPontosDia() {
   let painelConfig = null;
   try { painelConfig = getConfigPainel(); } catch (e) { Logger.log('getConfigPainel falhou (ignorado): ' + e.message); }
 
+  // UEP do dia (v5.11): a UEP por caixa é parâmetro do cadastro. `codigos` diz
+  // se a coluna existe e foi preenchida — com 0, o painel pede o cadastro em
+  // vez de mostrar "0 UEP".
+  const uep = { normal: 0, he: 0, cxCom: 0, cxSem: 0,
+                codigos: Object.keys(catalogo).filter(function (c) { return catalogo[c].uep > 0; }).length };
+
   if (!sh) {
-    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, produtoAtualCor, porProduto: [], porHora: [], porHoraModelo: [], programacao, painelConfig };
+    return { ok: true, pontos: 0, pesoKg: 0, caixas: 0, produtoAtual, produtoAtualDesc, produtoAtualCor, porProduto: [], porHora: [], porHoraModelo: [], programacao, painelConfig, uep };
   }
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
@@ -2369,7 +2467,7 @@ function getPontosDia() {
     const key = it.hora + '|' + pr.modelo + '|' + pr.base + '|' + pr.cor;
     if (!porHoraModeloMap[key]) {
       porHoraModeloMap[key] = { hora: it.hora, modelo: pr.modelo, nome: pr.base || it.desc || '',
-                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, troca: 0 };
+                                cor: pr.cor, caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, troca: 0, uep: 0 };
     }
     porHoraModeloMap[key].caixas += it.caixas;
     porHoraModeloMap[key].pontos += it.pontos;
@@ -2381,7 +2479,20 @@ function getPontosDia() {
     // TEMPO DE TROCA MIN (o maior entre os códigos do grupo) — o painel do dia
     // desconta 1 troca do teto exibido, mesma régua do comparativo por período.
     porHoraModeloMap[key].troca = Math.max(porHoraModeloMap[key].troca, Number((catalogo[it.codigo] || {}).tempoTroca) || 0);
+    // UEP por CÓDIGO (o PPCP pode ter UEP diferente entre códigos do mesmo
+    // produto). Hora extra pela MESMA régua das caixas (_ehHoraExtraCaixas):
+    // a meta de UEP é de 8 h de jornada normal, a HE vai separada.
+    const uCx = Number((catalogo[it.codigo] || {}).uep) || 0;
+    if (uCx > 0) {
+      uep[_ehHoraExtraCaixas(it.hora) ? 'he' : 'normal'] += it.caixas * uCx;
+      uep.cxCom += it.caixas;
+      porHoraModeloMap[key].uep += it.caixas * uCx;
+    } else {
+      uep.cxSem += it.caixas;
+    }
   });
+  uep.normal = Math.round(uep.normal * 10) / 10;
+  uep.he     = Math.round(uep.he * 10) / 10;
 
   return {
     ok: true,
@@ -2397,8 +2508,9 @@ function getPontosDia() {
       return { hora: g.hora, modelo: g.modelo, nome: g.nome, cor: g.cor,
                caixas: g.caixas, pontos: g.pontos, pesoKg: g.pesoKg,
                tetoCxH: g.hTeto > 0 ? Math.round(g.cxTeto / g.hTeto) : 0,
-               trocaMin: g.troca };
+               trocaMin: g.troca, uep: Math.round(g.uep * 10) / 10 };
     }),
+    uep,
     // Preparações de hoje lidas na ORDEM dos bipes (com o aviso de hora com dois
     // produtos ao mesmo tempo). Informação para conferir a premissa de troca.
     preparacoes: prepHoje.prep,

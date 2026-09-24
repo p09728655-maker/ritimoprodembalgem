@@ -556,6 +556,62 @@ ok('o dispatcher conhece a ação', /act === 'redigirProposta'\)\s*result = redi
 ok('e a ação NÃO entra nas ações de escrita (não invalida o cache de leitura)', /ACOES_ESCRITA = \[[^\]]*redigirProposta/.test(src), false);
 ok('a chave nunca é devolvida', JSON.stringify(r1).includes('sk-teste'), false);
 
+// ── UEP no cadastro (v5.11) ─────────────────────────────────────────────────
+console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──');
+{
+  eval(pega('function _numBR('));
+  eval(pega('function setUepCatalogo('));
+  ok('_numBR lê número pt-BR e número de verdade',
+     [_numBR('0,84'), _numBR('1.234,5'), _numBR(2.26), _numBR(''), _numBR('x')], [0.84, 1234.5, 2.26, 0, 0]);
+  // PRODUTO_CODIGO sem as colunas: o 1º gravar cria UEP e UEP_VIGENCIA no fim.
+  const CAT = [['CODIGO', 'DESCRICAO', 'COR'],
+               ['501149001', 'MESA CABECEIRA MADERO', 'PRETO'],
+               ['501149002', 'MESA CABECEIRA MADERO', 'BRANCO'],
+               ['501061001', 'PENTEADEIRA CAMARIM ELOA', 'ROSA'],
+               ['501094001', 'MESA CABECEIRA SLEEP', 'PRETO']];
+  const cabec = [], escritas = [];
+  const shCat = {
+    getLastRow: () => CAT.length,
+    getLastColumn: () => Math.max(...CAT.map(r => r.length)),
+    getRange: (l, c, nl, nc) => ({
+      getValues: () => CAT.slice(l - 1, l - 1 + (nl || 1)).map(r => { const o = []; for (let j = 0; j < (nc || 1); j++) o.push(r[c - 1 + j] === undefined ? '' : r[c - 1 + j]); return o; }),
+      setValue: v => { CAT[l - 1][c - 1] = v; cabec.push(v); },
+      setValues: vs => { escritas.push(c); vs.forEach((r, i) => { CAT[l - 1 + i][c - 1] = r[0]; }); }
+    })
+  };
+  global.SHEET_PRODUTOS = 'PRODUTO_CODIGO';
+  global.TZ = 'America/Sao_Paulo';
+  global.LockService = { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) };
+  global.Utilities = { formatDate: () => '24/09/2026' };
+  global._catalogoMemo = 'velho';
+  global.produtoDoCodigo = c => ({ modelo: c.slice(0, 6), base: { '501149': 'MESA CABECEIRA MADERO', '501061': 'PENTEADEIRA CAMARIM ELOA', '501094': 'MESA CABECEIRA SLEEP' }[c.slice(0, 6)] });
+  const PL = PLANILHA;
+  PLANILHA = { getSheetByName: n => n === 'PRODUTO_CODIGO' ? shCat : null };
+  const r = setUepCatalogo({ vig: '24/09/2026', dados: JSON.stringify([
+    ['501149', 'MESA CABECEIRA MADERO', 1], ['501061', 'PENTEADEIRA CAMARIM ELOA', '2,26'], ['999999', 'NAO EXISTE', 1.5]]) });
+  ok('cria as colunas UEP e UEP_VIGENCIA quando faltam', cabec, ['UEP', 'UEP_VIGENCIA']);
+  ok('a UEP do PRODUTO desce para CADA código dele, com a vigência',
+     CAT.slice(1).map(l => [l[0], l[3], l[4]]),
+     [['501149001', 1, '24/09/2026'], ['501149002', 1, '24/09/2026'], ['501061001', 2.26, '24/09/2026'], ['501094001', '', '']]);
+  ok('o que não foi enviado fica como está, e o que não tem código volta avisado',
+     [r.ok, r.gravados, r.produtos, r.semCodigo], [true, 3, 2, ['999999|NAO EXISTE']]);
+  ok('grava a coluna inteira de uma vez (uma escrita por coluna) e limpa o memo do catálogo',
+     [escritas.length, _catalogoMemo], [2, null]);
+  CAT[1][3] = 0.9;   // o PPCP corrige à mão; o 2º gravar só toca o que enviou
+  setUepCatalogo({ vig: '25/09/2026', dados: JSON.stringify([['501094', 'MESA CABECEIRA SLEEP', 0.84]]) });
+  ok('o 2º gravar não recria colunas nem mexe no que não enviou', [cabec.length, CAT[1][3], CAT[4][3]], [2, 0.9, 0.84]);
+  ok('sem produto nenhum, não grava', setUepCatalogo({ dados: '[]' }).ok, false);
+  PLANILHA = PL;
+  ok('é ação de ESCRITA (invalida o cache) e o dispatcher conhece',
+     [/ACOES_ESCRITA = \[[^\]]*'setUepCatalogo'/.test(src), /act === 'setUepCatalogo'\)\s*result = setUepCatalogo\(p\)/.test(src)], [true, true]);
+  ok('o catálogo lê UEP pelo título EXATO (prefixo casaria UEP_VIGENCIA)', /iUep\s*=\s*hdr\.indexOf\('UEP'\)/.test(src), true);
+  const gp = pega('function getPontosDia(');
+  ok('a UEP do dia separa a hora extra pela MESMA régua das caixas',
+     /uep\[_ehHoraExtraCaixas\(it\.hora\) \? 'he' : 'normal'\]/.test(gp), true);
+  ok('o getPontosDia devolve a uep nos dois caminhos (com e sem log)', (gp.match(/painelConfig, uep \}|\n    uep,/g) || []).length, 2);
+  ok('META_UEP vem da CONFIG_PAINEL', /metaUep: kv\.META_UEP/.test(pega('function getConfigPainel(')), true);
+}
+
 console.log(falhas === 0
   ? '\n✅ backend ok — a mesma aba não é lida duas vezes na mesma chamada\n'
   : `\n❌ ${falhas} falha(s)\n`);

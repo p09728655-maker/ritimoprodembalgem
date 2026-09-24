@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.80.0 · mobile 1.20.0 · ⚠ .gs v5.11 — 24/09/2026
+
+**UEP DO DIA no gerencial (desktop e celular).** O card mostra a UEP feita em
+jornada normal contra a meta de UEP do dia, o selo de ritmo (esperado até
+agora = meta × minutos de jornada com lançamento ÷ 480), a UEP feita em hora
+extra, à parte, e as caixas de códigos sem UEP. Não aparece na TV nem para o
+operador.
+
+**A UEP virou parâmetro do cadastro.** Colunas **UEP** e **UEP_VIGENCIA** na
+`PRODUTO_CODIGO`. O botão **💾 GRAVAR UEP** (aba PRODUÇÃO/HORA, ao lado do
+📐 ESTUDO UEP) grava a UEP por caixa do estudo do período em cada código do
+produto, com a vigência de hoje. Depois disso a UEP pode ser corrigida à mão na
+planilha. A meta sai da `CONFIG_PAINEL` (chave **META_UEP**); sem a chave, vale
+**2.300**.
+
+**Atenção:**
+- ⚠ **re-deploy** do `.gs` v5.11. Antes dele o card diz que o backend ainda
+  não manda a UEP, e o GRAVAR UEP avisa em vez de gravar.
+- Depois do re-deploy, o card só mostra número quando a coluna UEP estiver
+  preenchida (📐 período 01/07–24/09 → 💾 GRAVAR UEP).
+- A meta é de **8 h de jornada normal**. A HE não entra nela, e depois de 8 h o
+  esperado é a meta cheia (os 48 min que sobram do turno ficam como folga).
+
 ## v7.79.0 — 24/09/2026
 
 **ESTUDO UEP: alvo provisório de 2.300 UEP em 8 h** (decisão do PPCP). Novo

@@ -2508,6 +2508,33 @@ feito e dá ar de verdade ao que sobrou.
   cronoanálise (xlsx: MADERO âncora + SLEEP, CAMARIM MEL e CAMARIM ELOA para
   conferir a proporção; a VERSATIL saiu — 4 h sozinha, 3 dias acima do teto)
   foi entregue fora do repositório.
+- **UEP DO DIA NO GERENCIAL — a UEP virou PARÂMETRO DO CADASTRO** (v7.80.0 /
+  mobile 1.20.0 / `.gs` v5.11, PPCP, 24/09/2026: *"colocar nessa tela e app
+  gerencial a meta e o que fez no dia UEP"*, e *"na aba que já existe… para
+  servir de parâmetros"* — **nada de aba nova**).
+  - Colunas **`UEP`** (título EXATO: por prefixo casaria `UEP_VIGENCIA`) e
+    **`UEP_VIGENCIA`** na `PRODUTO_CODIGO`, **por CÓDIGO** (o PPCP pode ter UEP
+    diferente dentro do mesmo produto). `lerCatalogoProdutos` lê com `_numBR`
+    (aceita `0,84`).
+  - **💾 GRAVAR UEP** (`gravarUepCadastro`, PRODUÇÃO/HORA): mesma conta do
+    estudo (`_uepEstudo`, dois chamadores); manda `[modelo, nome, uep]` por
+    produto em lotes de `UEP_GRAVAR_LOTE`=20, em sequência, por `jsonpEscrita`;
+    o `setUepCatalogo` desce para cada código pelo `produtoDoCodigo` (a chave
+    do estudo), cria as colunas se faltarem e só toca os produtos enviados.
+    Provisórias vão junto (o confirm diz quantas). **Recalcular não troca a
+    régua — só um novo GRAVAR troca**, como manda a regra de não mover meta
+    histórica.
+  - `getPontosDia` devolve **`uep`** = `{normal, he, cxCom, cxSem, codigos}`,
+    com a HE pela **mesma régua das caixas** (`_ehHoraExtraCaixas`). Nenhuma
+    leitura nova (o catálogo já era lido).
+  - **Meta = `META_UEP` da `CONFIG_PAINEL`** (`painelConfig.metaUep`), sem ela
+    `UEP_META_PADRAO`=2300 no `rp-core` — que o `UEP_ALVO_PROV` do estudo lê.
+  - **`uepCard(uep, metaCfg, minJornada)` no `rp-core`, UMA conta e UM texto**
+    para os dois gerenciais. Meta de **8 h de jornada normal**; esperado =
+    `efNoRitmo(feito, meta, min(minNorm,480), 480)` — depois de 8 h é a meta
+    cheia. `minNorm` = minutos de slots NÃO-HE com lançamento (`calcKPIs` dos
+    dois). Estados distintos: `null` aguardando · `false` backend sem o campo ·
+    `codigos:0` cadastro vazio. **TV e operador não mostram** (teste prende).
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

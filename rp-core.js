@@ -184,6 +184,40 @@ function nomeComCor(desc, cor){
   return norm(d).endsWith(norm(c)) ? d : d + ' · ' + c;
 }
 
+// ── UEP do dia (gerencial dos dois painéis) ─────────────────────────────────
+// A UEP por caixa é PARÂMETRO DO CADASTRO (coluna UEP da PRODUTO_CODIGO, .gs
+// v5.11) e a UEP feita hoje vem pronta do getPontosDia (`uep`: jornada normal,
+// hora extra, caixas com e sem UEP, nº de códigos com UEP). Aqui só se julga.
+// ⚠ A META É DE 8 H DE JORNADA NORMAL (PPCP, 24/09/2026: 2.300 UEP em 8 h). A
+// hora extra aparece separada e não entra na meta; o turno tem 8 h 48 min
+// produtivas e os 48 min acima de 8 h ficam como folga. O "esperado até agora"
+// é a meta repartida pelos minutos de JORNADA com lançamento — a mesma régua do
+// efNoRitmo —, e passa a valer a meta cheia depois das 8 h.
+// A meta pode vir da CONFIG_PAINEL (chave META_UEP); sem ela, vale o padrão.
+const UEP_META_PADRAO = 2300;
+const UEP_MIN_DIA     = 480;
+function uepCard(uep, metaCfg, minJornada){
+  const l = 'UEP DO DIA';
+  // null = a leitura do dia ainda não chegou; false/undefined = o backend
+  // respondeu SEM o campo (.gs anterior à v5.11). São coisas diferentes.
+  if (uep === null) return { l, v:'—', sub:'aguardando a leitura do dia…', c:'' };
+  if (!uep) return { l, v:'—', sub:'o backend ainda não manda a UEP (.gs v5.11 re-deployado)', c:'' };
+  if (!(uep.codigos > 0)) return { l, v:'—', sub:'sem UEP no cadastro — coluna UEP da PRODUTO_CODIGO', c:'' };
+  const meta = Number(metaCfg) > 0 ? Number(metaCfg) : UEP_META_PADRAO;
+  const feito = Number(uep.normal) || 0, he = Number(uep.he) || 0, cxSem = Number(uep.cxSem) || 0;
+  const min = Math.min(Math.max(0, Number(minJornada) || 0), UEP_MIN_DIA);
+  const { metaAteAgora, ef } = efNoRitmo(feito, meta, min, UEP_MIN_DIA);
+  const sub = 'de ' + fmtN(meta) + ' UEP (' + fmtP(feito / meta * 100) + ')'
+    + (min > 0 ? ' · ' + slRitmo(ef) + ' — ' + fmtN(Math.round(metaAteAgora)) + ' esperadas até agora' : '')
+    + (he > 0 ? ' · +' + fmtN(Math.round(he)) + ' em HE' : '')
+    + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
+  const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
+    + 'Meta de ' + fmtN(meta) + ' UEP em 8 h de jornada normal; a hora extra fica fora da meta. '
+    + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ 480.'
+    + (cxSem > 0 ? ' ' + fmtN(cxSem) + ' cx de hoje são de códigos sem UEP no cadastro e não entram na conta.' : '');
+  return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -195,8 +229,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.4.0',
+  versao: '1.5.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard']
 };

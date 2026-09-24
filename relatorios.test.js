@@ -1120,7 +1120,7 @@ ok('a frase do re-deploy mora num lugar só',
    (JS.match(/faça o <b>re-deploy<\/b>/g) || []).length, 1);
 ok('a tela e o PDF leem a mesma explicação',
    [(JS.match(/(?<!function )_phFalhaInfo\(\)/g) || []).length,
-    (JS.match(/(?<!function )_phFalhaTxt\(\)/g) || []).length], [2, 2]);   // PDF do período + estudo de UEP
+    (JS.match(/(?<!function )_phFalhaTxt\(\)/g) || []).length], [2, 3]);   // PDF do período + estudo de UEP + gravar UEP
 // A chamada mais cara do painel não pode ter uma tentativa só: era isso que
 // transformava cold start em "falta re-deploy".
 ok('a busca do período retenta antes de desistir',
@@ -3451,7 +3451,9 @@ console.log('\n── estudo de UEP ──');
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
   global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
   global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
-  global.UEP_ALVO_PROV = Number(JS.match(/const UEP_ALVO_PROV\s*=\s*(\d+)/)[1]);
+  // O alvo do estudo É a meta do card UEP DO DIA (rp-core) — um número só.
+  ok('o alvo do estudo lê a meta do núcleo', /const UEP_ALVO_PROV\s*=\s*UEP_META_PADRAO;/.test(JS), true);
+  global.UEP_ALVO_PROV = UEP_META_PADRAO;
   global.UEP_REGIME_MIN_H = Number(JS.match(/const UEP_REGIME_MIN_H\s*=\s*(\d+)/)[1]);
   for (const k of ['QP_ALVO_MIN', 'QP_ALVO_MAX', 'QP_MIN_DIAS'])
     if (typeof global[k] === 'undefined') global[k] = Number(JS.match(new RegExp('const ' + k + '\\s*=\\s*(\\d+)'))[1]);
@@ -3591,6 +3593,19 @@ console.log('\n── estudo de UEP ──');
   ok('a faixa de meta é p50–p60 da UEP em 8 h dos dias válidos',
      [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, c8), _qpValorNoPercentil(60, c8)]);
   // ALVO PROVISÓRIO (PPCP, 24/09/2026): 2.300 UEP em 8 h; dia suspeito não conta.
+  // UEP DO DIA nos dois gerenciais: a MESMA conta do núcleo, sem cópia local.
+  {
+    const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+    ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo',
+       [(JS.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length,
+        (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [1, 1]);
+    ok('nenhum painel declara a própria cópia da conta',
+       [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
+    ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
+       (pega('function _sincSlideB(') + pega('function renderTV(')).includes('uepCard'), false);
+    ok('o botão GRAVAR UEP grava em lotes, em sequência, pela escrita com retry',
+       /for\(let i=0;i<lista\.length;i\+=UEP_GRAVAR_LOTE\)[\s\S]*await jsonpEscrita\(url\)/.test(pega('async function gravarUepCadastro(')), true);
+  }
   ok('o alvo provisório é 2.300 UEP em 8 h', UEP_ALVO_PROV, 2300);
   const bonsM = eM.dias.filter(d => !d.suspeito);
   ok('o alvo conta só os dias válidos',
@@ -3607,7 +3622,7 @@ console.log('\n── estudo de UEP ──');
 
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
   // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
-  ok('a conta do estudo tem um chamador só', (JS.match(/(?<!function )_uepEstudo\(/g) || []).length, 1);
+  ok('a conta do estudo tem dois chamadores: o relatório e o GRAVAR UEP (a mesma conta)', (JS.match(/(?<!function )_uepEstudo\(/g) || []).length, 2);
   ok('e um botão só, na barra da PRODUÇÃO/HORA', (src.match(/onclick="gerarRelatorioUEP\(\)"/g) || []).length, 1);
 }
 

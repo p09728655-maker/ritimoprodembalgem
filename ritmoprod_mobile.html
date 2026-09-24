@@ -911,7 +911,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.19.0';
+const APP_VER   = '1.20.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -942,7 +942,7 @@ let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 } };
+let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
 let META_HORA_A_HORA = 0;
@@ -1217,7 +1217,10 @@ async function lerPontosDia(){
     if(json && json.ok){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
-        programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }
+        programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 },
+        // UEP do dia (.gs v5.11) + meta da CONFIG_PAINEL: só o gerencial lê.
+        // false = o backend respondeu sem o campo (antes da v5.11).
+        uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep
       };
       aplicarMetaDiaAutomatica();
       return true;
@@ -2166,8 +2169,11 @@ function calcKPIs(){
                      .reduce((soma, h) => soma + minDoSlot(h), 0);
   const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
   const {metaAteAgora, ef:efRitmo} = efNoRitmo(real, meta, minRodado, minTurno);
+  // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA (a
+  // meta de UEP é de 8 h de jornada; a hora extra fica fora dela).
+  const minNorm = dh.filter(r => !r.he).reduce((soma, r) => soma + minDoSlot(r.horario), 0);
 
-  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,nNorm,n,slotsRest,metaH,allHoje};
+  return{real,realHE,realNormal,nHE,meta,ef,efDia,efRitmo,metaAteAgora,gap,ritmo,proj,nec,melhor,pior,nNorm,n,slotsRest,metaH,allHoje,minNorm};
 }
 
 // ════════════════════════════════════════════════
@@ -2652,6 +2658,9 @@ function renderGerencial(){
     // do sub + a cor, que falam de RITMO. Mesma troca do desktop e da TV
     // (01/09/2026): dois "%" na mesma célula confundiam quem lia.
     {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
+    // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
+    // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
+    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
     {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
