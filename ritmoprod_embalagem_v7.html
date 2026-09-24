@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.74.0';
+const APP_VER   = '7.75.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5633,6 +5633,17 @@ function _phAgrup(){
 // esteira e apontamento. É o ponto de partida; a validação é a cronoanálise.
 const UEP_MIN_DIAS     = 5;
 const UEP_COR_DIVERGE  = 1.5;   // maior ÷ menor ritmo entre cores do mesmo produto
+// v7.75.0 (PPCP, 24/09/2026: "sempre considerar hora do dia 8"): a UEP do DIA
+// é o ritmo da linha em UEP/h × 8 h. Deixa os dias comparáveis e tira a hora
+// extra da capacidade (mesmo critério da aba PLANO). ⚠ O turno do painel tem
+// 8 h 48 min produtivas (07–17 menos o almoço 11:00–12:12): os 48 min que
+// sobram ficam como folga. Mudou o combinado? É esta constante.
+const UEP_HORAS_DIA    = 8;
+// A âncora A (maior volume) só entre produtos abaixo deste % do teto físico
+// da esteira: produto no limite da esteira mede a máquina, não o esforço da
+// equipe, e inflaria a UEP de todos os outros (a SLEEP rodou 332 cx/h sozinha
+// com teto de ~329 em 01/07–24/09/2026).
+const UEP_ANCORA_TETO_MAX = 90;
 
 // ── A HORA COMPARTILHADA É REPARTIDA (v7.74.0 / .gs v5.9) ─────────────────
 // PPCP, 24/09/2026: "a linha roda um por vez" e "quando pega na mesma hora 2
@@ -5711,8 +5722,13 @@ function _uepProdutos(itens, modo){
     const tot=_phAcc(); dias.forEach(a=>_phAdd(tot,a));
     tot.horas=dias.reduce((s,a)=>s+a.horas,0);
     const rits=dias.map(a=>_phVal(a,'mediaH')).filter(v=>v>0);
-    const ritmo=_phMediaAparada(dias,'mediaH',modo).val;
+    const ritmoBruto=_phMediaAparada(dias,'mediaH',modo).val;
     const teto=_phTeto(tot);
+    // Nenhum produto embala acima do teto FÍSICO da esteira. Ritmo acima dele
+    // é lançamento acumulado, ou hora de troca repartida sem base (produto que
+    // nunca rodou sozinho: a DECOR 470 foi de 201 a 351 com teto menor).
+    const limitadoTeto = teto>0 && ritmoBruto>teto;
+    const ritmo = limitadoTeto ? teto : ritmoBruto;
     const cores=Object.keys(g.cores).map(c=>{
       const x=g.cores[c];
       return {cor:x.cor, caixas:x.caixas, nDias:Object.keys(x.dias).length, rit:x.horas>0?x.caixas/x.horas:0};
@@ -5722,7 +5738,8 @@ function _uepProdutos(itens, modo){
     const corMin=cf.length>=2?Math.min(...cf.map(c=>c.rit)):null;
     const corMax=cf.length>=2?Math.max(...cf.map(c=>c.rit)):null;
     return { chave:k, modelo:g.modelo, nome:g.nome, nDias:dias.length, caixas:tot.caixas, horas:tot.horas,
-             ritmo, ritmoCheia:g.ritmoCheia, ritmoReg:dividir?g.ritmoReg:null,
+             ritmo, ritmoBruto, limitadoTeto, pctTeto: teto>0 ? ritmo/teto*100 : null,
+             ritmoCheia:g.ritmoCheia, ritmoReg:dividir?g.ritmoReg:null,
              hSozinho:g.hSo, hComp:g.hComp, dividido:dividir,
              semRegime: dividir && !(g.ritmoReg>0),
              melhor:rits.length?Math.max(...rits):0, teto,
@@ -5782,7 +5799,13 @@ function _uepEstudo(itens, modo, realByDay){
   // ritmo e o relatório marca a âncora como provisória também.
   const cand=ok.length ? ok : prods.filter(p=>p.ritmo>0);
   const rapido=cand.reduce((a,b)=>(!a||b.ritmo>a.ritmo)?b:a, null);
-  const volume=cand.reduce((a,b)=>(!a||b.caixas>a.caixas)?b:a, null);
+  // Âncora A: maior volume entre quem roda ABAIXO de UEP_ANCORA_TETO_MAX % do
+  // teto (produto sem teto cadastrado entra). Ninguém abaixo? Volta a todos e
+  // o relatório avisa.
+  const candA=cand.filter(p=>!(p.pctTeto>UEP_ANCORA_TETO_MAX));
+  const volume=(candA.length?candA:cand).reduce((a,b)=>(!a||b.caixas>a.caixas)?b:a, null);
+  const foraTeto=cand.filter(p=>p.pctTeto>UEP_ANCORA_TETO_MAX)
+    .sort((a,b)=>b.caixas-a.caixas);
   prods.forEach(p=>{
     p.provisoria=p.ritmo>0 && !p.amostraOk;
     p.uepVol=(p.ritmo>0&&volume)?volume.ritmo/p.ritmo:null;
@@ -5792,12 +5815,22 @@ function _uepEstudo(itens, modo, realByDay){
   const mapa={}; prods.forEach(p=>{ mapa[p.chave]=p; });
   const dd=_uepDias(itens, k=>mapa[k]?mapa[k].uepVol:null);
   const rb=realByDay||{};
+  // Teste de sanidade: com um produto por vez, a linha não passa do ritmo da
+  // âncora em UEP/h (a âncora vale 1 UEP/cx). Dia acima disso é UEP inflada
+  // ou lançamento acumulado. 5% de tolerância para arredondamento.
+  const tetoUepH=volume?volume.ritmo*1.05:null;
   dd.forEach(d=>{
     d.uepH=d.uep/d.h;
+    d.uep8=d.uepH*UEP_HORAS_DIA;
+    d.acimaAncora=tetoUepH!=null && d.uepH>tetoUepH;
     const r=Number(rb[d.data])||0;
     d.real=r>0?r:null;
-    d.cobDia=r>0?Math.min(100, d.cxTot/r*100):null;
+    // SEM corte em 100%: apontado acima do realizado é informação (lançamento
+    // duplicado, ou o dia fechado no HISTÓRICO antes do último lançamento).
+    d.cobDia=r>0?d.cxTot/r*100:null;
   });
+  const uepSoma=dd.reduce((s,d)=>s+d.uep,0), hSoma=dd.reduce((s,d)=>s+d.h,0);
+  const u8=dd.map(d=>d.uep8);
   const cxTot=dd.reduce((s,d)=>s+d.cxTot,0), cxCom=dd.reduce((s,d)=>s+d.cx,0);
   const ueps=dd.map(d=>d.uep);
   prods.sort((a,b)=> (a.uepVol==null)-(b.uepVol==null) || (a.uepVol!=null ? a.uepVol-b.uepVol : b.caixas-a.caixas));
@@ -5807,7 +5840,14 @@ function _uepEstudo(itens, modo, realByDay){
            nSemRegime:prods.filter(p=>p.semRegime).length,
            cxTot, cxCom, cobertura: cxTot>0 ? cxCom/cxTot*100 : null,
            uepTot: prods.reduce((s,p)=>s+(p.uepPeriodo||0),0),
-           dias: dd, nDiasConf: dd.length,
+           dias: dd, nDiasConf: dd.length, foraTeto,
+           uepH: hSoma>0 ? uepSoma/hSoma : null,
+           uep8Med: hSoma>0 ? uepSoma/hSoma*UEP_HORAS_DIA : null,
+           uep8Min: u8.length ? Math.min(...u8) : null,
+           uep8Max: u8.length ? Math.max(...u8) : null,
+           hDiaMed: dd.length ? hSoma/dd.length : null,
+           nAcimaAncora: dd.filter(d=>d.acimaAncora).length,
+           nCobAcima: dd.filter(d=>d.cobDia>102).length,
            uepDiaMed: ueps.length ? ueps.reduce((a,b)=>a+b,0)/ueps.length : null,
            uepDiaMin: ueps.length ? Math.min(...ueps) : null,
            uepDiaMax: ueps.length ? Math.max(...ueps) : null,
@@ -5843,6 +5883,7 @@ function _uepHtml(e, ctx){
     else if(p.uepVol==null) al.push('sem ritmo no período — sem UEP');
     if(p.semRegime) al.push('nunca rodou uma hora sozinho — a hora de troca foi repartida pelo ritmo com a hora cheia');
     if(p.corDiverge) al.push(`cores de ${n0(p.corMin)} a ${n0(p.corMax)} cx/h`);
+    if(p.limitadoTeto) al.push(`<b>RITMO LIMITADO AO TETO</b> — a conta deu ${n0(p.ritmoBruto)} cx/h, acima do teto físico de ${n0(p.teto)}: usado o teto`);
     if(p.acimaTeto) al.push(`${p.acimaTeto} dia(s) acima do teto físico — conferir lançamento`);
     const anc=[];
     if(e.volume&&p.chave===e.volume.chave) anc.push('BASE VOLUME');
@@ -5862,7 +5903,7 @@ function _uepHtml(e, ctx){
   }).join('');
   const anc=(p,lbl)=>p
     ? `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val" style="font-size:17px">${nomeP(p)}</div>
-       <div class="kpi-sub">${n0(p.ritmo)} cx/h · ${p.nDias} dias · ${n0(p.caixas)} cx · vale 1,00 UEP/cx</div></div>`
+       <div class="kpi-sub">${n0(p.ritmo)} cx/h · ${p.pctTeto!=null?p1(p.pctTeto)+' do teto · ':''}${p.nDias} dias · ${n0(p.caixas)} cx · vale 1,00 UEP/cx</div></div>`
     : `<div class="kpi-card"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">—</div><div class="kpi-sub">nenhum produto com ritmo no período</div></div>`;
   const ancOk=e.volume&&e.volume.amostraOk;
   const temCob=e.dias.some(d=>d.cobDia!=null);
@@ -5871,8 +5912,9 @@ function _uepHtml(e, ctx){
       <td class="td-mono" style="text-align:right">${n0(d.cxTot)}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep)}</td>
       <td class="td-mono" style="text-align:right">${d.h}</td>
-      <td class="td-mono" style="text-align:right">${n0(d.uepH)}</td>
-      ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia)+(d.cobDia<80?' ⚠':''):'—'}</td>`:''}</tr>`).join('');
+      <td class="td-mono" style="text-align:right">${n0(d.uepH)}${d.acimaAncora?' ⚠':''}</td>
+      <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep8)}</td>
+      ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia)+(d.cobDia>102?' ⚠ acima':d.cobDia<80?' ⚠':''):'—'}</td>`:''}</tr>`).join('');
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
 ${div
@@ -5885,11 +5927,11 @@ ${div
     <div class="kpi-sub">${e.nProv} provisória(s) (*) — menos de ${UEP_MIN_DIAS} dias rodados${e.nSem?` · ${e.nSem} sem ritmo`:''}</div></div>
   <div class="kpi-card"><div class="kpi-lbl">CAIXAS COBERTAS</div><div class="kpi-val">${p1(e.cobertura)}</div>
     <div class="kpi-sub">${n0(e.cxCom)} de ${n0(e.cxTot)} cx apontadas com produto</div></div>
-  <div class="kpi-card"><div class="kpi-lbl">UEP POR DIA · ÂNCORA A</div><div class="kpi-val">${e.uepDiaMed!=null?n0(e.uepDiaMed):'—'}</div>
-    <div class="kpi-sub">${e.uepDiaMin!=null?`de ${n0(e.uepDiaMin)} a ${n0(e.uepDiaMax)} · `:''}${e.dias.length} dias · só caixas com produto</div></div>
+  <div class="kpi-card"><div class="kpi-lbl">UEP POR DIA · EM ${UEP_HORAS_DIA} H · ÂNCORA A</div><div class="kpi-val">${e.uep8Med!=null?n0(e.uep8Med):'—'}</div>
+    <div class="kpi-sub">${e.uepH!=null?`${n0(e.uepH)} UEP/h × ${UEP_HORAS_DIA} h · dias de ${n0(e.uep8Min)} a ${n0(e.uep8Max)} · `:''}realizado: ${e.uepDiaMed!=null?n0(e.uepDiaMed):'—'} UEP em ${e.hDiaMed!=null?e.hDiaMed.toLocaleString('pt-BR',{maximumFractionDigits:1}):'—'} h/dia</div></div>
 </div>
 <div class="kpi-grid" style="margin-top:9px">
-  ${anc(e.volume,'ÂNCORA A · MAIOR VOLUME (recomendada)')}
+  ${anc(e.volume,`ÂNCORA A · MAIOR VOLUME ABAIXO DE ${UEP_ANCORA_TETO_MAX}% DO TETO`)}
   ${anc(e.rapido,'ÂNCORA B · MAIS RÁPIDO (pedido original)')}
   <div class="kpi-card"><div class="kpi-lbl">UEP NO PERÍODO · ÂNCORA A</div><div class="kpi-val">${n0(e.uepTot)}</div>
     <div class="kpi-sub">contra ${n0(e.cxCom)} cx dos mesmos produtos</div></div>
@@ -5903,6 +5945,7 @@ ${div
     <div class="kpi-sub">${cDia.s} · é a régua da meta do dia</div></div>
 </div>
 ${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum produto tem ${UEP_MIN_DIAS}+ dias no período — a âncora também é provisória. Aumente o período.</div>`}
+${e.foraTeto.length?`<div class="rp-note">Fora da âncora A por rodar acima de ${UEP_ANCORA_TETO_MAX}% do teto físico (ali a esteira limita, não a equipe): ${e.foraTeto.slice(0,4).map(p=>`${nomeP(p)} (${p1(p.pctTeto)})`).join(' · ')}.</div>`:''}
 
 <div class="rp-sec-ttl">2 ▸ A UEP DE CADA PRODUTO</div>
 <table><thead><tr>
@@ -5916,9 +5959,10 @@ ${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum 
 <div class="rp-sec-ttl">3 ▸ UEP POR DIA</div>
 <table><thead><tr>
   <th>DIA</th><th style="text-align:right">CAIXAS COM PRODUTO</th><th style="text-align:right">UEP · ÂNCORA A</th>
-  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th>${temCob?'<th style="text-align:right">COBERTURA</th>':''}
-</tr></thead><tbody>${linDias||'<tr><td colspan="6">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
-<div class="rp-note">É a <b>capacidade demonstrada em UEP</b> — a régua com que a meta do dia vai ser julgada. Só entram caixas apontadas <b>com produto</b>${temCob?'; COBERTURA = essas caixas ÷ o realizado do dia no HISTÓRICO, e abaixo de 80% (⚠) o dia sai com UEP menor que a real':''}. Horas da linha = horas distintas com lançamento.</div>
+  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th><th style="text-align:right">UEP EM ${UEP_HORAS_DIA} H</th>${temCob?'<th style="text-align:right">COBERTURA</th>':''}
+</tr></thead><tbody>${linDias||'<tr><td colspan="7">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
+<div class="rp-note">UEP EM ${UEP_HORAS_DIA} H = UEP/h × ${UEP_HORAS_DIA} h: é a <b>capacidade demonstrada em UEP</b> num dia padrão, a régua com que a meta do dia vai ser julgada — a hora extra não entra, e os dias ficam comparáveis. ⚠ O turno tem 8 h 48 min produtivas; os 48 min acima das ${UEP_HORAS_DIA} h ficam como folga. Só entram caixas apontadas <b>com produto</b>${temCob?'; COBERTURA = essas caixas ÷ o realizado do dia no HISTÓRICO — abaixo de 80% (⚠) o dia sai com UEP menor que a real, e acima de 100% (⚠ acima) houve apontamento a mais que o realizado (lançamento duplicado, ou o dia fechado antes do último lançamento)':''}. Horas da linha = horas distintas com lançamento.</div>
+${e.nAcimaAncora?`<div class="rp-note" style="color:#c05621"><b>TESTE DE SANIDADE:</b> ${e.nAcimaAncora} dia(s) com UEP/h acima do ritmo da âncora (⚠ na coluna UEP/H). Com um produto por vez, a linha não passa do ritmo da âncora em UEP/h — nesses dias a UEP está inflada ou houve lançamento acumulado.</div>`:`<div class="rp-note"><b>TESTE DE SANIDADE:</b> nenhum dia com UEP/h acima do ritmo da âncora.</div>`}
 
 <div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
 <table><tbody>
@@ -5929,6 +5973,7 @@ ${ancOk?'':`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> nenhum 
     : 'Ainda <b>não repartida</b>: cada produto conta a hora inteira (falta o .gs v5.9 re-deployado).'}</td></tr>
   <tr><td style="font-weight:700">POR PRODUTO, NÃO POR COR</td><td>A cor não muda o trabalho de embalar. Quando as cores do mesmo produto divergem muito (${UEP_COR_DIVERGE.toLocaleString('pt-BR')}× ou mais), o alerta aponta — é sinal de amostra ou apontamento, não de esforço diferente.</td></tr>
   <tr><td style="font-weight:700">AMOSTRA MÍNIMA</td><td>${UEP_MIN_DIAS} dias rodados. Abaixo disso a UEP sai <b>PROVISÓRIA</b> (marcada com * e com a observação na linha). A âncora só é escolhida entre os produtos com amostra.</td></tr>
+  <tr><td style="font-weight:700">O TETO DA ESTEIRA</td><td>Nenhum ritmo passa do teto físico (velocidade ÷ medida da caixa + vão): acima dele é lançamento acumulado ou hora de troca repartida sem base, e o ritmo é limitado ao teto. A âncora A é o maior volume <b>abaixo de ${UEP_ANCORA_TETO_MAX}% do teto</b> — produto no limite da esteira mede a máquina, não o esforço, e inflaria a UEP de todos.</td></tr>
   <tr><td style="font-weight:700">AS DUAS ÂNCORAS</td><td>Mudam só a <b>escala</b>: a proporção entre os produtos é a mesma nas colunas A e B, e as conferências dão o mesmo resultado com qualquer uma. O que muda é a estabilidade — o mais rápido é o valor mais instável do período.</td></tr>
   <tr><td style="font-weight:700">AS CONFERÊNCIAS</td><td><b>Dentro da amostra</b>: o ritmo da linha de cada dia em cx/h e em UEP/h, sobre as mesmas caixas — otimista, porque a UEP saiu desses dias. <b>Fora da amostra</b>: a UEP é calculada só com a 1ª metade dos dias e testada na 2ª, que ela não viu — é esta que diz se a UEP mede esforço. <b>Do dia</b>: caixas por dia × UEP por dia, a régua da meta.</td></tr>
   <tr><td style="font-weight:700">O QUE ELA NÃO É</td><td>Ritmo <b>demonstrado</b> não é tempo padrão: carrega o desempenho da equipe e o apontamento. Produto lento por baixo desempenho ganha UEP alta — por isso a validação dos produtos de maior volume é a cronoanálise.</td></tr>
