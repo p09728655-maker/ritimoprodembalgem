@@ -188,14 +188,16 @@ function nomeComCor(desc, cor){
 // A UEP por caixa é PARÂMETRO DO CADASTRO (coluna UEP da PRODUTO_CODIGO, .gs
 // v5.11) e a UEP feita hoje vem pronta do getPontosDia (`uep`: jornada normal,
 // hora extra, caixas com e sem UEP, nº de códigos com UEP). Aqui só se julga.
-// ⚠ A META É DE 8 H DE JORNADA NORMAL (PPCP, 24/09/2026: 2.300 UEP em 8 h). A
-// hora extra aparece separada e não entra na meta; o turno tem 8 h 48 min
-// produtivas e os 48 min acima de 8 h ficam como folga. O "esperado até agora"
-// é a meta repartida pelos minutos de JORNADA com lançamento — a mesma régua do
-// efNoRitmo —, e passa a valer a meta cheia depois das 8 h.
+// ⚠ A META É DA JORNADA NORMAL INTEIRA (07:00–17:00 sem o almoço = 527 min).
+// Nasceu como "2.300 UEP em 8 h" (estudo: ritmo × 8), mas o dia soma a jornada
+// INTEIRA, e com os 48 min a mais a meta ficava ~10% mais fácil que o estudo
+// (medido no HISTORICO em 24/09/2026: 6 de 7 dias acima de 2.300). O PPCP fixou
+// o equivalente: 2.530 na jornada = os mesmos ~288 UEP/h. O "esperado até
+// agora" e a meta de cada hora são essa meta repartida pelos MINUTOS de jornada
+// (a mesma régua do efNoRitmo). A hora extra aparece separada, fora da meta.
 // A meta pode vir da CONFIG_PAINEL (chave META_UEP); sem ela, vale o padrão.
-const UEP_META_PADRAO = 2300;
-const UEP_MIN_DIA     = 480;
+const UEP_META_PADRAO = 2530;
+const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
 function uepCard(uep, metaCfg, minJornada){
   const l = 'UEP DO DIA';
   // null = a leitura do dia ainda não chegou; false/undefined = o backend
@@ -212,8 +214,8 @@ function uepCard(uep, metaCfg, minJornada){
     + (he > 0 ? ' · +' + fmtN(Math.round(he)) + ' em HE' : '')
     + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
   const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
-    + 'Meta de ' + fmtN(meta) + ' UEP em 8 h de jornada normal; a hora extra fica fora da meta. '
-    + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ 480.'
+    + 'Meta de ' + fmtN(meta) + ' UEP na jornada normal (' + UEP_MIN_DIA + ' min); a hora extra fica fora da meta. '
+    + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ ' + UEP_MIN_DIA + '.'
     + (cxSem > 0 ? ' ' + fmtN(cxSem) + ' cx de hoje são de códigos sem UEP no cadastro e não entram na conta.' : '');
   return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
 }
@@ -239,7 +241,7 @@ function uepPorHora(lista){
   return m;
 }
 // Célula da coluna UEP de uma hora. A meta da hora é a meta de UEP do dia
-// (8 h) repartida pelos MINUTOS da hora — o slot pós-almoço de 48 min pede
+// (jornada normal) repartida pelos MINUTOS da hora — o slot pós-almoço de 48 min pede
 // menos. Hora extra mostra o número e não é julgada (mesma regra das caixas).
 function uepCelula(h, metaCfg, minSlot, ehHE){
   if (!h) return { txt: '—', cls: '', title: 'nenhuma caixa com produto apontada nesta hora' };
@@ -281,7 +283,7 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.7.0',
+  versao: '1.8.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo']

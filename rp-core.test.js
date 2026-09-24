@@ -214,14 +214,14 @@ ok('sem meta do dia também não',
 // ── UEP DO DIA (uepCard) ───────────────────────────────────────────────────
 {
   const U = { normal: 1150, he: 410, cxCom: 900, cxSem: 30, codigos: 400 };
-  ok('a meta padrão é 2.300 UEP em 8 h (480 min)', [UEP_META_PADRAO, UEP_MIN_DIA], [2300, 480]);
+  ok('a meta padrão é 2.530 UEP na jornada normal (527 min)', [UEP_META_PADRAO, UEP_MIN_DIA], [2530, 527]);
   const c = uepCard(U, null, 240);
-  ok('sem meta na config vale a padrão; o número é a UEP da JORNADA NORMAL', [c.meta, c.v], [2300, '1.150']);
-  ok('esperado até agora = meta × minutos de jornada ÷ 480', Math.round(c.esperado), 1150);
+  ok('sem meta na config vale a padrão; o número é a UEP da JORNADA NORMAL', [c.meta, c.v], [2530, '1.150']);
+  ok('esperado até agora = meta × minutos de jornada ÷ 527', Math.round(c.esperado), 1152);
   ok('no ritmo exato é NO RITMO e verde', [c.c, /NO RITMO/.test(c.sub)], ['ok', true]);
   ok('a HE e as caixas sem UEP aparecem no texto, fora da meta', [/\+410 em HE/.test(c.sub), /30 cx sem UEP/.test(c.sub)], [true, true]);
   ok('a meta da CONFIG_PAINEL manda quando vem', uepCard(U, 2000, 240).meta, 2000);
-  ok('depois de 8 h o esperado é a meta cheia (os 48 min são folga)', Math.round(uepCard(U, null, 527).esperado), 2300);
+  ok('com a jornada inteira lançada o esperado é a meta cheia', Math.round(uepCard(U, null, 600).esperado), 2530);
   ok('sem hora de jornada lançada não julga (cor neutra, sem selo)', [uepCard(U, null, 0).c, /RITMO/.test(uepCard(U, null, 0).sub)], ['acc', false]);
   ok('leitura ainda não chegou ≠ backend sem o campo ≠ cadastro vazio',
      [uepCard(null).sub.startsWith('aguardando'), /v5\.11/.test(uepCard(false).sub), /coluna UEP/.test(uepCard({ codigos: 0 }).sub)],
@@ -235,7 +235,7 @@ ok('sem meta do dia também não',
   const m = uepPorHora(L);
   ok('soma a UEP por INÍCIO da hora, casando "07:00", "7:00" e "07:00-08:00"', [m['07:00'].uep, m['07:00'].cxSem], [240, 20]);
   const c = uepCelula(m['07:00'], null, 60, false);
-  ok('meta da hora = meta do dia ÷ 480 × minutos (2.300 → 287,5/h)', Math.round(c.metaH * 10) / 10, 287.5);
+  ok('meta da hora = meta do dia ÷ 527 × minutos (2.530 → 288/h)', Math.round(c.metaH), 288);
   ok('hora com caixa sem UEP leva * e diz quantas no título', [c.txt, /20 cx/.test(c.title)], ['240*', true]);
   ok('o slot pós-almoço de 48 min pede menos', Math.round(uepCelula(m['12:12'], null, 48, false).metaH), 230);
   ok('hora extra mostra o número e não é julgada', uepCelula(m['12:12'], null, 60, true).cls, '');
@@ -248,7 +248,7 @@ ok('sem meta do dia também não',
   const r = uepHistResumo(D);
   ok('média só dos dias COM UEP; o dia sem UEP é contado à parte', [r.n, r.semUep, Math.round(r.media)], [3, 1, 2167]);
   ok('bateu = UEP ≥ a meta DAQUELE dia (gravada no fechamento)', r.bateu, 2);
-  ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2300);
+  ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2530);
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
 }
 

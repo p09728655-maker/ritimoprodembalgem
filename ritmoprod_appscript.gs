@@ -1,5 +1,9 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.15 — META DE UEP DA JORNADA INTEIRA
+//               O padrão passa a 2.530 UEP na jornada normal (527 min), o
+//               equivalente aos 2.300 em 8 h do estudo. regravarUepPassada()
+//               regrava a META UEP dos dias já fechados.
 // Versão: 5.14 — UEP NO HISTÓRICO
 //               O fechamento (arquivarDiaAtual e saveDay) grava três colunas
 //               novas no HISTORICO: UEP (jornada normal), UEP HE e META UEP —
@@ -1880,9 +1884,9 @@ function setTurnoInicio(p) {
 // ════════════════════════════════════════════════════════
 // UEP DO DIA NO HISTÓRICO (v5.14)
 // ════════════════════════════════════════════════════════
-// Meta padrão de UEP do dia (8 h de jornada normal) — a MESMA do rp-core
-// (UEP_META_PADRAO); a CONFIG_PAINEL (META_UEP) manda quando existe.
-const UEP_META_PADRAO_GS = 2300;
+// Meta padrão de UEP do dia (jornada normal inteira, 527 min) — a MESMA do
+// rp-core (UEP_META_PADRAO); a CONFIG_PAINEL (META_UEP) manda quando existe.
+const UEP_META_PADRAO_GS = 2530;
 
 function _celNumOuNull(v) {
   if (v === '' || v === null || v === undefined) return null;
@@ -1991,6 +1995,10 @@ function preencherUepPassada(sobrescrever) {
   invalidarCacheLeitura();
   Logger.log('RESUMO: ' + gravados + ' dia(s) gravados · ' + semLog + ' sem lançamento com produto no log · meta ' + meta + '.');
 }
+
+// Rodar no EDITOR depois de mudar a meta: regrava UEP / UEP HE / META UEP de
+// TODOS os dias (o botão Executar não passa parâmetro).
+function regravarUepPassada() { preencherUepPassada(true); }
 
 function saveDay(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();

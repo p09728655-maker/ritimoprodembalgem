@@ -11,7 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.83.0 · mobile 1.22.0 · ⚠ .gs v5.14 — 24/09/2026
+## v7.84.0 · mobile 1.23.0 · .gs v5.15 — 24/09/2026
+
+**A meta de UEP do dia passa a ser da jornada normal inteira: 2.530 UEP.** Os
+2.300 do estudo são ritmo × 8 h, mas o dia soma a jornada inteira (527 min). Com
+os 48 min a mais a meta ficava ~10% mais fácil: no HISTORICO, 6 de 7 dias da
+última semana passaram de 2.300. 2.530 na jornada dá os mesmos ~288 UEP/h.
+
+**Atenção:**
+- O card UEP DO DIA, a meta de cada hora e o histórico passam a comparar com
+  2.530. A meta da hora cheia muda de 287,5 para 288 UEP e, no slot pós-almoço,
+  continua 230.
+- Os dias já fechados estão com META UEP 2.300 gravada. Para regravar, rode
+  `regravarUepPassada()` no editor. A `CONFIG_PAINEL` (chave `META_UEP`)
+  continua mandando quando preenchida.
+- O alvo do ESTUDO UEP continua 2.300 em 8 h (é outra régua: ritmo × 8).
+
+
 
 **UEP no HISTÓRICO.** O fechamento do dia, tanto o automático das 17:05 quanto
 o botão FECHAR DIA, passa a gravar três colunas novas no `HISTORICO`: **UEP**

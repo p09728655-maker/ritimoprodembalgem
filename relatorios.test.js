@@ -3452,8 +3452,10 @@ console.log('\n── estudo de UEP ──');
   global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
   global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
   // O alvo do estudo É a meta do card UEP DO DIA (rp-core) — um número só.
-  ok('o alvo do estudo lê a meta do núcleo', /const UEP_ALVO_PROV\s*=\s*UEP_META_PADRAO;/.test(JS), true);
-  global.UEP_ALVO_PROV = UEP_META_PADRAO;
+  // O alvo do ESTUDO é ritmo × 8 h (2.300); a meta do card é da jornada inteira.
+  global.UEP_ALVO_PROV = Number(JS.match(/const UEP_ALVO_PROV\s*=\s*(\d+)/)[1]);
+  ok('alvo do estudo (8 h) × meta da jornada: os dois dão ~288 UEP/h',
+     [Math.round(UEP_ALVO_PROV / 8), Math.round(UEP_META_PADRAO / UEP_MIN_DIA * 60)], [288, 288]);
   global.UEP_REGIME_MIN_H = Number(JS.match(/const UEP_REGIME_MIN_H\s*=\s*(\d+)/)[1]);
   for (const k of ['QP_ALVO_MIN', 'QP_ALVO_MAX', 'QP_MIN_DIAS'])
     if (typeof global[k] === 'undefined') global[k] = Number(JS.match(new RegExp('const ' + k + '\\s*=\\s*(\\d+)'))[1]);
