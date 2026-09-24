@@ -83,5 +83,31 @@ ok('abrirLancSlotAtivo segue na hora corrente', /nm>=ini && nm<fim\){\s*\/\/ hor
 // E o operador vê até quando a hora recém-fechada aceita.
 ok('a linha diz até quando aceita', /aceita lançamento até \$\{fromMin\(fim\+LANC_TOLERANCIA_MIN\)\}/.test(MJS), true);
 
+console.log('\n── parada aberta na hora do almoço (avisoAlmoco) ──');
+// Caso real (21/09/2026): "Parada/Empilhar peças" 10:25:13 → 12:25:36, aberta
+// na saída para o almoço. A conta recorta o almoço; o aviso existe para o FIM
+// ser o fim real. O app PERGUNTA — nunca fecha a parada sozinho.
+eval(MJS.match(/const ALMOCO_AVISO_ANTES_MIN\s*= \d+;/)[0].replace('const ', 'var '));
+eval(MJS.match(/const ALMOCO_AVISO_DEPOIS_MIN = \d+;/)[0].replace('const ', 'var '));
+var toMin = s => { const [h, m, sg] = s.split(':').map(Number); return h * 60 + m + ((sg || 0) / 60); };
+eval(pega(MJS, 'function avisoAlmoco('));
+const aI = min('11:00'), aF = min('12:12');
+const p21 = { id: 1, tipo: 'Parada/Empillhar peças', ini: '10:25:13' };
+ok('10:40, longe do almoço → sem aviso', avisoAlmoco(p21, min('10:40'), aI, aF), null);
+ok('10:56 → "antes": dê o START antes de sair', avisoAlmoco(p21, min('10:56'), aI, aF), 'antes');
+ok('11:30 → "durante"', avisoAlmoco(p21, min('11:30'), aI, aF), 'durante');
+ok('12:15 (o operador voltou) → "volta"', avisoAlmoco(p21, min('12:15'), aI, aF), 'volta');
+ok('12:25, a hora do START real → ainda pergunta', avisoAlmoco(p21, min('12:25'), aI, aF), 'volta');
+ok('passou a janela da volta → cala', avisoAlmoco(p21, aF + ALMOCO_AVISO_DEPOIS_MIN, aI, aF), null);
+ok('parada aberta DEPOIS do almoço não é com este aviso',
+   avisoAlmoco({ ini: '12:20:00' }, min('12:30'), aI, aF), null);
+ok('parada aberta dentro do almoço → avisa', avisoAlmoco({ ini: '11:20' }, min('11:30'), aI, aF), 'durante');
+ok('sem parada aberta → nada', avisoAlmoco(null, min('10:58'), aI, aF), null);
+ok('início ilegível → nada (não chuta)', avisoAlmoco({ ini: '' }, min('10:58'), aI, aF), null);
+ok('almoço mal configurado → nada', avisoAlmoco(p21, min('11:30'), aF, aI), null);
+ok('o app não encerra parada sozinho no almoço',
+   /avisoAlmoco[\s\S]{0,4000}(darStartParada\(\)|endParada)/.test(pega(MJS, 'function renderAvisoAlmoco(')), false);
+ok('a faixa entra no ciclo do relógio', /renderAvisoAlmoco\(\);\s*\/\/ entra\/sai sozinho/.test(MJS), true);
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo passou');
 process.exit(falhas ? 1 : 0);

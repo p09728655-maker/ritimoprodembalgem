@@ -458,6 +458,30 @@ via Google Apps Script (JSONP).
   sairia). **`arquivarConcluidosAgora()`** faz a limpeza inicial de uma vez.
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 
+## Parada que CRUZA o almoço — aviso, não trava (v7.70.0 / mobile 1.20.0)
+- Caso real, 21/09/2026: `Parada/Empilhar peças` de **10:25:13 a 12:25:36**,
+  com 120,38 min na coluna F. **A conta já estava certa**: o `durProdutiva`
+  recortou o almoço e contou 48,4 min. O que faltava era trava ou aviso no
+  **apontamento**. O FIM quase sempre é START esquecido na saída para o almoço.
+- **Celular:** `avisoAlmoco(p, nm, almI, almF)` (conta pura, testada em
+  `lancamento.test.js`) devolve `'antes'` (5 min antes, `ALMOCO_AVISO_ANTES_MIN`),
+  `'durante'` ou `'volta'` (até 30 min depois, `ALMOCO_AVISO_DEPOIS_MIN`), só
+  para parada aberta que começou antes do fim do almoço. A faixa `#alm-aviso`
+  (só para o operador) roda no `tickClock` e no `carregarParadas`; o texto é
+  único (`avisoAlmocoTexto`) e também aparece no banner do modal. **CONTINUA
+  PARADA** cala o aviso daquela parada: uma vez antes/durante e outra na volta.
+  Fica só em memória, sem chave nova no `localStorage`.
+- ⚠ **Nunca fechar a parada automaticamente no almoço.** Uma manutenção que
+  continua seria encerrada errado e a TV sairia da tela de parada com a linha
+  parada. O teste falha se o aviso passar a chamar START/`endParada`.
+- **Desktop:** `_pgAnomalias` devolve `cruzaAlmoco` (bruta > produtiva e
+  produtiva > 0). No quadro vira a linha *Cruzou o almoço*, **só quando há**:
+  a capa paisagem é medida para caber na folha 1. Na seção de validação vira
+  a tabela APONTADO × CONTADO. É só sinalização: nada muda na conta.
+- A coluna `DURACAO_MIN` da planilha continua **bruta**, de propósito: o `.gs`
+  não conhece o almoço configurado no painel, e a linha tem de fechar com
+  INÍCIO/FIM.
+
 ## Caixas perdidas em parada (mobile)
 - **Card PARADAS (gerencial do mobile)** tem seletor `#par-periodo`: **HOJE**
   (padrão, usa `PARADAS_HOJE` que já vem do `getParadas`) ou **7/15/30 dias**

@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.70.0 · mobile 1.20.0 — 24/09/2026
+
+**PARADA QUE CRUZA O ALMOÇO: o app pergunta, a gestão de perdas sinaliza.**
+Caso real de 21/09: *Parada/Empilhar peças* aberta às 10:25:13 e encerrada às
+12:25:36, com 120,38 min na planilha. A conta do painel já recortava o almoço
+(contou 48,4 min), mas nada impedia nem avisava a parada aberta na saída para
+o almoço. E o FIM gravado provavelmente não é o fim real.
+
+- **Celular (operador):** com uma parada aberta, aparece uma faixa âmbar
+  5 min antes do almoço (*"dê o START antes de sair"*), durante o almoço e até
+  30 min depois dele (*"a linha ainda está parada?"*). Os botões são
+  **▶ DAR START** e **CONTINUA PARADA**; o segundo cala o aviso daquela
+  parada. O celular vibra na primeira vez. O banner do modal de paradas mostra
+  a mesma frase.
+- **O app não encerra parada sozinho.** Uma manutenção que continua depois do
+  almoço seria fechada errado.
+- **GESTÃO DE PERDAS:** nova anomalia **Cruzou o almoço**, no quadro (só
+  aparece quando há alguma) e na seção de validação. Uma tabela mostra o
+  APONTADO e o CONTADO de cada parada, para o líder conferir o FIM na planilha.
+
+**Atenção:** nenhum número muda. O almoço já estava fora da conta desde antes.
+Muda só o total de anomalias da GESTÃO DE PERDAS, que passa a contar essa
+marca.
+
+---
+
 ## v7.69.0 — 23/09/2026 · ⚠ re-deploy (.gs v5.6)
 
 **PROPOSTA IMPRESSA: redação com IA sobre os números do painel** (passo 3 da

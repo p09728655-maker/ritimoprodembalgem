@@ -2796,7 +2796,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.69.0';
+const APP_VER   = '7.70.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -10430,6 +10430,12 @@ function _pgTendencia(semanas){
 //                   planejada/não planejada caiu na heurística por nome. Só
 //                   acusa quando a aba respondeu — sem ela, tudo cairia aqui.
 //   aberta          parada sem FIM: não tem duração, então some de todo KPI
+//   cruza almoço    começou antes do almoço e terminou depois (ou dentro). A
+//                   conta já recorta o almoço (durProdutiva) — a marca é para
+//                   o líder conferir o FIM: quase sempre é START esquecido na
+//                   saída para o almoço (caso real 21/09/2026: Empilhar peças
+//                   10:25→12:25, 120 min brutos, 48 produtivos). Parada
+//                   inteira dentro do almoço não entra: já sai de tudo.
 const PG_ANOM_LONGA = 30;   // minutos
 
 function _pgAnomalias(paradas, cfg, opts){
@@ -10437,7 +10443,7 @@ function _pgAnomalias(paradas, cfg, opts){
   const classeMap=opts.classeMap||{};
   const temClasse=Object.keys(classeMap).length>0;
   const limite=parseFloat(opts.longa)||PG_ANOM_LONGA;
-  const longas=[], semMotivo=[], abertas=[], semClasse={};
+  const longas=[], semMotivo=[], abertas=[], semClasse={}, cruzaAlmoco=[];
   let semMotivoTotal=0, nValidas=0;
   (paradas||[]).forEach(p=>{
     const bruta=RP_PARADAS.durMin(p.ini,p.fim);
@@ -10446,6 +10452,7 @@ function _pgAnomalias(paradas, cfg, opts){
     if(d==null||d<=0) return;                 // inteira dentro do almoço: fora de tudo
     nValidas++;
     const mot=String(p.obs||'').trim();
+    if(bruta-d>0.01) cruzaAlmoco.push({data:p.data, tipo:p.tipo, ini:p.ini, fim:p.fim, bruta, min:d, obs:mot});
     const generica=PG_RE_GENERICO.test(String(p.tipo||''));
     const longa=d>=limite;
     if(!mot) semMotivoTotal++;
@@ -10460,10 +10467,10 @@ function _pgAnomalias(paradas, cfg, opts){
   const sobrepostas=_pgSobrepostas(paradas);
   const listaSemClasse=Object.keys(semClasse).map(k=>semClasse[k]).sort((a,b)=>b.min-a.min);
   return {
-    sobrepostas, longas, semMotivo, abertas,
+    sobrepostas, longas, semMotivo, abertas, cruzaAlmoco,
     semClasse:listaSemClasse, temClasse,
     semMotivoTotal, nValidas, limite,
-    total: sobrepostas.length+longas.length+semMotivo.length+abertas.length+listaSemClasse.reduce((s,t)=>s+t.qtd,0)
+    total: sobrepostas.length+longas.length+semMotivo.length+abertas.length+cruzaAlmoco.length+listaSemClasse.reduce((s,t)=>s+t.qtd,0)
   };
 }
 
@@ -10629,6 +10636,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
       ? anLinha('Sem classificação', nSemClasse, 'tipo fora da aba TIPOS_PARADA')
       : `<div class="pgq-l"><span>Sem classificação<i>a aba TIPOS_PARADA não respondeu — não dá para acusar</i></span><b>—</b></div>`}
     ${an.abertas.length?anLinha('Em andamento (sem FIM)', an.abertas.length, 'sem duração: fica fora de todo KPI'):''}
+    ${(an.cruzaAlmoco||[]).length?anLinha('Cruzou o almoço', an.cruzaAlmoco.length, 'conferir o FIM — START esquecido?'):''}
     <div class="pgq-nota">Só sinalização — nada foi corrigido nem descontado dos indicadores.</div>`;
 
   const planoHtml=(plano||[]).length?`<table class="pgq-plano"><thead><tr>
@@ -11030,6 +11038,16 @@ function _pgSecaoHtml(ctx){
           _an.semClasse.map(t=>`<tr><td>${e(t.tipo)}</td><td class="td-mono">${t.qtd}</td><td class="td-mono">${_fmtMinPar(t.min)}</td></tr>`),
           'Todo tipo do período está cadastrado na aba TIPOS_PARADA.')
       : '<div class="pg-vazio">A aba TIPOS_PARADA não respondeu nesta geração — sem ela não dá para acusar tipo sem classificação, então esta checagem não rodou.</div>'}
+    ${(_an.cruzaAlmoco||[]).length?_tabAn(`PARADAS QUE CRUZARAM O ALMOÇO (${e(CFG.almocoInicio)}–${e(CFG.almocoFim)}) — ${plural(_an.cruzaAlmoco.length,'registro','registros')}`,
+       ['DATA','TIPO','INÍCIO','FIM','APONTADO','CONTADO','MOTIVO'],
+       _an.cruzaAlmoco.slice(0,10).map(l=>`<tr><td class="td-mono">${e(l.data)}</td><td>${e(l.tipo||'—')}</td>
+         <td class="td-mono">${e(l.ini)}</td><td class="td-mono" style="color:#c62828">${e(l.fim)}</td>
+         <td class="td-mono">${_fmtMinPar(l.bruta)}</td>
+         <td class="td-mono">${_fmtMinPar(l.min)}</td>
+         <td style="color:#555">${l.obs?e(l.obs):'—'}</td></tr>`),'')
+       + (_an.cruzaAlmoco.length>10?`<div class="rp-note">+ ${_an.cruzaAlmoco.length-10} não ${_an.cruzaAlmoco.length-10===1?'listada':'listadas'}.</div>`:'')
+       + `<div class="rp-note">DADO. O almoço <b>já está fora da conta</b> (coluna CONTADO) — nada foi descontado a mais. A marca é para conferir o FIM na planilha: parada aberta na saída para o almoço e encerrada na volta costuma ser START esquecido, e aí o tempo antes do almoço também está inflado.</div>`
+      :''}
     ${_an.abertas.length?`<div class="pg-alerta" style="margin-top:9px">
         <div class="pg-alerta-ttl">⚠️ ${plural(_an.abertas.length,'parada aberta','paradas abertas')} (sem FIM)</div>
         <div class="pg-alerta-txt">Sem fim não há duração, então elas <b>não entram em nenhum indicador</b> — a perda real do período é maior do que o relatório consegue medir. ${_an.abertas.slice(0,6).map(a=>`${e(a.data)} ${e(a.tipo||'—')} ${e(a.ini||'')}`).join(' · ')}</div>

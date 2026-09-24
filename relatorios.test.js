@@ -1507,6 +1507,13 @@ ok('acusa o tipo que não está na aba', _pgAnomalias(parAn, CFGA, {classeMap:{'
 const semAba=_pgAnomalias(parAn, CFGA, {classeMap:{}});
 ok('sem a aba TIPOS_PARADA a checagem não roda', [semAba.temClasse, semAba.semClasse.length], [false, 0]);
 ok('o limite de parada longa é configurável', _pgAnomalias(parAn, CFGA, {longa:5}).longas.length, 5);
+// Parada que ATRAVESSA o almoço (caso real 21/09/2026: 10:25:13→12:25:36, 120
+// min brutos, 48 contados). A conta já recorta; a marca é para conferir o FIM.
+const anAlm=_pgAnomalias(parAn.concat([{data:'21/09/2026', tipo:'Parada/Empillhar peças', ini:'10:25:13', fim:'12:25:36', obs:''}]), CFGA, {});
+ok('marca a parada que cruzou o almoço', anAlm.cruzaAlmoco.map(c=>c.data), ['21/09/2026']);
+ok('mostra o apontado e o contado', [Math.round(anAlm.cruzaAlmoco[0].bruta*100)/100, Math.round(anAlm.cruzaAlmoco[0].min*100)/100], [120.38, 48.38]);
+ok('parada inteira dentro do almoço não é "cruzou"', an.cruzaAlmoco.length, 0);
+ok('cruzar o almoço entra no total de anomalias', anAlm.total-_pgAnomalias(parAn, CFGA, {}).total >= 1, true);
 
 console.log('\n── quadro: foco atual ──');
 ok('troca no topo vira "redução de trocas"', _pgFoco(pgTop, pgOut), 'redução de trocas + eliminação de "Outros"');

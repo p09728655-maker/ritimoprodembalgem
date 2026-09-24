@@ -264,6 +264,15 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .btn-salvar.par-btn-parar{width:100%;background:var(--red);color:#fff}
 .btn-salvar.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
 .btn-paradas.parada-ativa{color:var(--red);border-color:var(--red);animation:pulse 2s infinite}
+/* Parada aberta na hora do almoço (ver avisoAlmoco). Âmbar: é pergunta, não erro. */
+.alm-aviso{margin:8px 0 2px;padding:12px;border-radius:8px;background:rgba(255,152,0,.12);border:1px solid var(--warn)}
+.alm-aviso-ttl{font-family:var(--font-h);font-size:15px;font-weight:800;color:var(--warn);letter-spacing:1px}
+.alm-aviso-txt{font-family:var(--font-b);font-size:13px;color:var(--txt);margin-top:4px;line-height:1.3}
+.alm-aviso-bt{display:flex;gap:8px;margin-top:10px}
+.alm-aviso-bt button{flex:1;min-height:44px;border-radius:7px;font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.alm-aviso-start{background:var(--ok);color:#0a2a0c;border:none}
+.alm-aviso-cont{background:transparent;color:var(--txt2);border:0.5px solid var(--border)}
+.par-banner-alm{font-family:var(--font-b);font-size:13px;color:var(--warn);margin-top:8px;line-height:1.3}
 /* Gerencial: produto embalando + banner de produção parada */
 .ger-prod{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px}
 .ger-prod-ico{font-size:20px;flex-shrink:0}
@@ -596,6 +605,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
         <span class="prod-bar-chev">›</span>
       </div>
 
+      <div class="alm-aviso" id="alm-aviso" style="display:none"></div>
+
       <div class="sec-lbl-row">
         <span class="sec-lbl">SLOTS DO DIA</span>
         <div class="row-2" style="flex:none">
@@ -911,7 +922,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.19.0';
+const APP_VER   = '1.20.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -994,6 +1005,79 @@ function slotLancavel(nm, ini, fim){
   const ativo      = nm>=ini && nm<fim;                          // hora corrente
   const tolerancia = !ativo && nm>=fim && (nm-fim)<LANC_TOLERANCIA_MIN;
   return { ativo, tolerancia, lancavel: ativo||tolerancia };
+}
+
+// PARADA ABERTA NA HORA DO ALMOÇO. Caso real (21/09/2026): "Parada/Empilhar
+// peças" aberta às 10:25:13 e encerrada às 12:25:36 — 120 min na planilha. A
+// conta já recorta o almoço (durProdutiva: contou 48), mas o FIM provavelmente
+// não é o fim real: o operador saiu para almoçar com a parada aberta e deu o
+// START na volta. Nada impedia isso, e nada avisava.
+// O app PERGUNTA — não fecha sozinho. Uma manutenção que continua depois do
+// almoço seria encerrada errado e a TV sairia da tela de parada com a linha
+// parada: trocaria um erro visível por um calado.
+//   'antes'   faltam até ALMOCO_AVISO_ANTES_MIN para o almoço: dê o START antes de sair
+//   'durante' dentro do almoço, parada aberta
+//   'volta'   até ALMOCO_AVISO_DEPOIS_MIN depois do almoço, parada aberta de antes dele
+// Parada aberta DEPOIS do almoço não é com este aviso.
+const ALMOCO_AVISO_ANTES_MIN  = 5;
+const ALMOCO_AVISO_DEPOIS_MIN = 30;
+function avisoAlmoco(p, nm, almI, almF){
+  if(!p || !isFinite(almI) || !isFinite(almF) || almF<=almI) return null;
+  if(!/^\d{1,2}:\d{2}(:\d{2})?$/.test(String(p.ini||''))) return null;
+  const ini = toMin(p.ini);
+  if(ini >= almF || ini > nm) return null;
+  if(nm >= almI-ALMOCO_AVISO_ANTES_MIN && nm < almI) return 'antes';
+  if(nm >= almI && nm < almF) return 'durante';
+  if(nm >= almF && nm < almF+ALMOCO_AVISO_DEPOIS_MIN) return 'volta';
+  return null;
+}
+// Texto único do aviso — a faixa da tela do operador e o banner do modal leem daqui.
+function avisoAlmocoTexto(fase, p){
+  const tipo = p.tipo||'parada', desde = String(p.ini||'').slice(0,5), aI = CFG.almocoInicio;
+  if(fase==='antes')   return { ttl:`⚠ ALMOÇO ÀS ${aI} COM PARADA ABERTA`,
+    txt:`${tipo} desde ${desde}. Se a linha já voltou, dê o START antes de sair — senão o almoço inteiro fica apontado como parada.` };
+  if(fase==='durante') return { ttl:'⚠ PARADA ABERTA NO ALMOÇO',
+    txt:`${tipo} desde ${desde}. Se ela acabou antes do almoço, dê o START e avise o líder para corrigir o FIM na planilha.` };
+  return { ttl:'⚠ A PARADA ATRAVESSOU O ALMOÇO',
+    txt:`${tipo} aberta desde ${desde}. A linha ainda está parada? Se não, dê o START agora.` };
+}
+// "CONTINUA PARADA" cala o aviso daquela parada: uma vez antes/durante o almoço
+// e outra na volta (é outra pergunta). Só em memória — reabrir o app pergunta de novo.
+// Tipo e motivo vêm de texto digitado: escapa antes de ir para o innerHTML.
+function _almEsc(t){ return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const _almAvisoOk = new Set();
+const _almAvisoVibrou = new Set();
+function _almChave(p, fase){ return String(p.id)+'|'+(fase==='volta'?'v':'a'); }
+function _almFaseAtual(){
+  const p = paradaAtiva();
+  if(!p) return null;
+  const n = new Date();
+  const fase = avisoAlmoco(p, n.getHours()*60+n.getMinutes(), toMin(CFG.almocoInicio), toMin(CFG.almocoFim));
+  return fase ? { p, fase } : null;
+}
+function renderAvisoAlmoco(){
+  const el = document.getElementById('alm-aviso');
+  if(!el) return;
+  const a = _almFaseAtual();
+  if(!a || PERFIL!=='operador' || _almAvisoOk.has(_almChave(a.p,a.fase))){ el.style.display='none'; el.innerHTML=''; return; }
+  const k = _almChave(a.p,a.fase), t = avisoAlmocoTexto(a.fase, a.p);
+  const html = `<div class="alm-aviso-ttl">${_almEsc(t.ttl)}</div>
+    <div class="alm-aviso-txt">${_almEsc(t.txt)}</div>
+    <div class="alm-aviso-bt">
+      <button class="alm-aviso-start" onclick="abrirModalParadas()">▶ DAR START</button>
+      <button class="alm-aviso-cont" onclick="almAvisoContinua()">CONTINUA PARADA</button>
+    </div>`;
+  if(el.dataset.k!==k+a.fase){ el.innerHTML=html; el.dataset.k=k+a.fase; }
+  el.style.display='';
+  if(!_almAvisoVibrou.has(k+a.fase)){
+    _almAvisoVibrou.add(k+a.fase);
+    try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){}
+  }
+}
+function almAvisoContinua(){
+  const a = _almFaseAtual();
+  if(a) _almAvisoOk.add(_almChave(a.p,a.fase));
+  renderAvisoAlmoco();
 }
 
 // ════════════════════════════════════════════════
@@ -1870,6 +1954,7 @@ async function carregarParadas(){
       renderParadaEstado();
       atualizarBadgeParadas();
       renderGerParada();          // banner da gerencial (mobile)
+      renderAvisoAlmoco();        // parada aberta na hora do almoço (operador)
       renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
     }
   }catch(e){ console.warn('carregarParadas:', e.message); }
@@ -1911,6 +1996,7 @@ function renderParadaEstado(){
         <div class="par-banner-tipo">${at.tipo||'—'}</div>
         ${at.obs?`<div class="par-banner-obs">${at.obs}</div>`:''}
         <div class="par-banner-hora">Desde ${at.ini||'--:--'}</div>
+        ${(()=>{ const a=_almFaseAtual(); return a?`<div class="par-banner-alm">${_almEsc(avisoAlmocoTexto(a.fase,a.p).txt)}</div>`:''; })()}
       </div>
       <button class="btn-salvar par-btn-start" id="btn-start-parada" onclick="darStartParada()">▶ DAR START (RETOMAR)</button>`;
     _parEstadoRender = 'parado';
@@ -2208,6 +2294,7 @@ function tickClock(){
   ['lan-clock','ger-clock'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hm; });
   ['lan-data','ger-data','ger-data-tbl'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=hoje; });
   if(PERFIL==='gerencial') renderGerParada();   // atualiza o "PARADO HÁ" do banner
+  renderAvisoAlmoco();   // entra/sai sozinho na janela do almoço
 }
 
 // ════════════════════════════════════════════════
