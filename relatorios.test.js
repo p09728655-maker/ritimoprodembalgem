@@ -3590,7 +3590,7 @@ console.log('\n── estudo de UEP ──');
   ok('item sem cxHora mas com horas é repartido igual e contado', _uepEstudo(itQ, 'aparada').nAprox, 1);
 
   // ── v7.76.0: UEP pelo regime, sanidade pelo teto da âncora, faixa de meta ──
-  ok('com 4+ h sozinho a UEP sai do ritmo em regime', [bH('A').baseRegime, bH('A').hSozinho >= UEP_REGIME_MIN_H], [true, true]);
+  ok('com 4+ h sozinho a UEP sai do ritmo em regime (da cor, quando só há uma)', [bH('A').baseRegime || bH('A').baseCor, bH('A').hSozinho >= UEP_REGIME_MIN_H], [true, true]);
   ok('com menos, sai do ritmo usado', pP.map(p => p.baseRegime), [false, false]);
   // Regime e usado diferem: a UEP segue o regime.
   const itR = [];
@@ -3600,6 +3600,17 @@ console.log('\n── estudo de UEP ──');
   }
   const pR = _uepProdutos(itR, 'aparada').find(p => p.nome === 'X');
   ok('produto com regime usa o regime, não o usado', [pR.ritmo, pR.ritmoReg, pR.ritmoUsado !== pR.ritmoReg], [300, 300, true]);
+  // v7.94.0 — entre as cores vale a MAIS RÁPIDA em regime, nunca a média.
+  const itCorA = [];
+  for (let i = 0; i < 6; i++) {
+    itCorA.push({ data: dia(i), modelo: '3', nome: 'W', cor: 'BRANCO', caixas: 200, horas: 1, horasLista: ['08:00'], cxHora: { '08:00': 200 } });
+    itCorA.push({ data: dia(i), modelo: '3', nome: 'W', cor: 'PRETO', caixas: 120, horas: 1, horasLista: ['09:00'], cxHora: { '09:00': 120 } });
+  }
+  const pCorA = _uepProdutos(itCorA, 'aparada')[0];
+  ok('a base é a cor mais rápida em regime (200), não a média das cores (160)', [pCorA.baseCor, pCorA.corRap.cor, pCorA.ritmo], [true, 'BRANCO', 200]);
+  const itCorAorB = itCorA.filter(x => x.cor === 'BRANCO').slice(0, 3).concat(itCorA.filter(x => x.cor === 'PRETO'));
+  const pCorAorB = _uepProdutos(itCorAorB, 'aparada')[0];
+  ok('cor com menos de '+UEP_REGIME_MIN_H+' h sozinha não vira base (amostra curta)', [pCorAorB.corRap.cor, pCorAorB.ritmo], ['PRETO', 120]);
   // Faixa de meta: 12 dias, UEP em 8 h variando; 1 dia com apontamento acima do realizado sai.
   const itM = [], rbM = {};
   for (let i = 0; i < 12; i++) {
@@ -3679,8 +3690,8 @@ console.log('\n── estudo de UEP ──');
       { codigo: '501099001', desc: 'VOL 1/2 RACK X', cor: 'PRETO', uep: 1.2 },
       { codigo: '501099002', desc: 'VOL 2/2 RACK X', cor: 'PRETO', uep: 0 }]);
     const eloa = cp.find(p => /ELOA/.test(p.nome)), rack = cp.find(p => /RACK/.test(p.nome));
-    ok('UEP do PRODUTO = soma dos volumes (média entre cores); cores contadas',
-       [eloa.nVol, eloa.uepJogo, eloa.nCores], [2, 4.42, 2]);
+    ok('UEP do PRODUTO = soma dos volumes, pela cor MAIS RÁPIDA (menor UEP), nunca a média',
+       [eloa.nVol, eloa.uepJogo, eloa.nCores], [2, 4.32, 2]);
     ok('PONTOS do produto = soma dos volumes; volume sem pontos → null', [eloa.ptsJogo, rack.ptsJogo], [200, null]);
     ok('a capacidade por produto imprime DEITADA (pedido do PPCP)',
        /_rpDocParadas\('Capacidade diária por produto', true\)/.test(pega('function gerarRelatorioCapTodos(')), true);
@@ -3689,14 +3700,16 @@ console.log('\n── estudo de UEP ──');
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
     ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',
-       [Math.round(mx.usado), Math.round(mx.sobra), mx.linhas[0].cabeMais, mx.semUep.length], [1326, 1204, 272, 1]);
+       [Math.round(mx.usado), Math.round(mx.sobra), mx.linhas[0].cabeMais, mx.semUep.length], [1296, 1234, 285, 1]);
     ok('a impressão da capacidade usa a MESMA conta da tela (_capMix) e diz que é simulação',
        [/_capMix\(CAP_CAT, CAP_MIX, meta\)/.test(pega('function gerarRelatorioCapUep(')), /SIMULAÇÃO — nada foi gravado/.test(pega('function gerarRelatorioCapUep('))], [true, true]);
     ok('a tabela de capacidade por produto usa o MESMO _capProdutos, do mais pesado ao mais leve, e lista quem está sem UEP',
        [/CAP_CAT\.filter/.test(pega('function gerarRelatorioCapTodos(')), /sort\(\(a,b\)=>b\.uepJogo-a\.uepJogo/.test(pega('function gerarRelatorioCapTodos(')),
         /SEM UEP COMPLETA NO CADASTRO/.test(pega('function gerarRelatorioCapTodos('))], [true, true, true]);
     ok('o simulador lê o cadastro só ao abrir, com cache e tentativas em sequência',
-       [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function abrirCapUep('))], [true, true]);
+       [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function _capBuscar('))], [true, true]);
+    ok('cadastro que não veio NÃO fica em "carregando": diz por quê e oferece tentar de novo',
+       [/CAP_FALHA=erro/.test(pega('async function _capBuscar(')), /Não consegui ler o cadastro/.test(pega('function _capPintar(')), /TENTAR DE NOVO/.test(pega('function _capPintar('))], [true, true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

@@ -2907,7 +2907,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.93.0';
+const APP_VER   = '7.94.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5850,6 +5850,7 @@ function _uepProdutos(itens, modo){
   const G={};
   const dividir=_uepTemCxHora(itens);
   const mat={};   // data → hora → produto → caixas
+  const matCor={}; // data → hora → produto → cor → caixas
   (itens||[]).forEach(it=>{
     if(!it || !(it.caixas>0)) return;
     const cxh = dividir ? _uepCxHoraDe(it) : null;
@@ -5864,6 +5865,9 @@ function _uepProdutos(itens, modo){
       const cx=Number(cxh[h])||0; if(!(cx>0)) return;
       const md=mat[it.data]=mat[it.data]||{}, mh=md[normHora(h)]=md[normHora(h)]||{};
       mh[k]=(mh[k]||0)+cx;
+      // Por COR também: é de onde sai a cor mais rápida (v7.94.0).
+      const mc=matCor[it.data]=matCor[it.data]||{}, mch=mc[normHora(h)]=mc[normHora(h)]||{};
+      const mk=mch[k]=mch[k]||{}; mk[it.cor||'']=(mk[it.cor||'']||0)+cx;
     });
   });
   // Régua ANTIGA (hora cheia para cada produto) — é o peso de queda e a
@@ -5882,6 +5886,17 @@ function _uepProdutos(itens, modo){
       if(ks.length===1 && G[ks[0]]){ G[ks[0]].cxSo+=mat[d][h][ks[0]]; G[ks[0]].hSo+=1; }
     }));
     Object.keys(G).forEach(k=>{ const g=G[k]; g.ritmoReg=g.hSo>0?g.cxSo/g.hSo:null; });
+    // 1b) REGIME POR COR (PPCP 24/09/2026: "no caso das cores tem que pegar o
+    //     mais rápido, nunca a média"). Hora em que o produto está sozinho na
+    //     linha E só uma cor dele foi lançada. A cor mais rápida com
+    //     UEP_REGIME_MIN_H+ horas assim é a base; a média das cores não entra.
+    Object.keys(matCor).forEach(d=>Object.keys(matCor[d]).forEach(h=>{
+      const ks=Object.keys(matCor[d][h]); if(ks.length!==1 || !G[ks[0]]) return;
+      const cs=Object.keys(matCor[d][h][ks[0]]); if(cs.length!==1) return;
+      const g=G[ks[0]]; g.corSo=g.corSo||{};
+      const c=g.corSo[cs[0]]=g.corSo[cs[0]]||{cor:cs[0], cx:0, h:0};
+      c.cx+=matCor[d][h][ks[0]][cs[0]]; c.h+=1;
+    }));
     // 2) horas do dia de cada produto: 1 na hora sozinho, a fatia do tempo
     //    esperado na hora compartilhada
     Object.keys(G).forEach(k=>Object.keys(G[k].dias).forEach(d=>{ G[k].dias[d].horas=0; }));
@@ -5909,10 +5924,18 @@ function _uepProdutos(itens, modo){
     // nunca rodou sozinho: a DECOR 470 foi de 201 a 351 com teto menor).
     const cap = r => (teto>0 && r>teto) ? teto : r;
     const ritmoUsado = cap(ritmoBruto);
-    // A BASE DA UEP: regime com UEP_REGIME_MIN_H+ horas sozinho; senão o usado.
-    const baseRegime = dividir && g.hSo>=UEP_REGIME_MIN_H && g.ritmoReg>0;
-    const ritmo = baseRegime ? cap(g.ritmoReg) : ritmoUsado;
-    const limitadoTeto = teto>0 && (baseRegime ? g.ritmoReg : ritmoBruto)>teto;
+    // A BASE DA UEP, nesta ordem (v7.94.0):
+    //  1) a COR MAIS RÁPIDA em regime (UEP_REGIME_MIN_H+ h sozinha) — nunca a
+    //     média das cores;
+    //  2) o regime do produto (horas sozinho, cores misturadas na hora);
+    //  3) o ritmo usado (período, com a hora de troca repartida).
+    const corRap = dividir ? Object.values(g.corSo||{}).filter(c=>c.h>=UEP_REGIME_MIN_H&&c.cx>0)
+      .map(c=>({cor:c.cor, h:c.h, rit:c.cx/c.h})).sort((a,b)=>b.rit-a.rit)[0]||null : null;
+    const baseCor = !!corRap;
+    const baseRegime = !baseCor && dividir && g.hSo>=UEP_REGIME_MIN_H && g.ritmoReg>0;
+    const bruto = baseCor ? corRap.rit : baseRegime ? g.ritmoReg : ritmoBruto;
+    const ritmo = (baseCor||baseRegime) ? cap(bruto) : ritmoUsado;
+    const limitadoTeto = teto>0 && bruto>teto;
     const cores=Object.keys(g.cores).map(c=>{
       const x=g.cores[c];
       return {cor:x.cor, caixas:x.caixas, nDias:Object.keys(x.dias).length, rit:x.horas>0?x.caixas/x.horas:0};
@@ -5922,7 +5945,7 @@ function _uepProdutos(itens, modo){
     const corMin=cf.length>=2?Math.min(...cf.map(c=>c.rit)):null;
     const corMax=cf.length>=2?Math.max(...cf.map(c=>c.rit)):null;
     return { chave:k, modelo:g.modelo, nome:g.nome, nDias:dias.length, caixas:tot.caixas, horas:tot.horas,
-             ritmo, ritmoUsado, baseRegime, ritmoBruto: baseRegime ? g.ritmoReg : ritmoBruto,
+             ritmo, ritmoUsado, baseRegime, baseCor, corRap, ritmoBruto: bruto,
              limitadoTeto, pctTeto: teto>0 ? ritmo/teto*100 : null,
              ritmoCheia:g.ritmoCheia, ritmoReg:dividir?g.ritmoReg:null,
              hSozinho:g.hSo, hComp:g.hComp, dividido:dividir,
@@ -6090,6 +6113,8 @@ function _uepHtml(e, ctx){
     const al=[];
     if(p.provisoria) al.push(`<b>UEP PROVISÓRIA</b> — amostra curta (${p.nDias} dia${p.nDias===1?'':'s'}, ${n0(p.caixas)} cx): confirmar com mais dias`);
     else if(p.uepVol==null) al.push('sem ritmo no período — sem UEP');
+    if(p.baseCor) al.push(`base: cor <b>${_rpEsc(p.corRap.cor||'sem cor')}</b>, a mais rápida (${n0(p.corRap.rit)} cx/h em ${p.corRap.h} h sozinha)`);
+    else if(p.baseRegime) al.push('nenhuma cor com '+UEP_REGIME_MIN_H+' h sozinha: base é o regime do produto (cores misturadas)');
     if(p.semRegime) al.push('nunca rodou uma hora sozinho — a hora de troca foi repartida pelo ritmo com a hora cheia');
     if(p.corDiverge) al.push(`cores de ${n0(p.corMin)} a ${n0(p.corMax)} cx/h`);
     if(p.limitadoTeto) al.push(`<b>RITMO LIMITADO AO TETO</b> — a conta deu ${n0(p.ritmoBruto)} cx/h, acima do teto físico de ${n0(p.teto)}: usado o teto`);
@@ -6102,9 +6127,9 @@ function _uepHtml(e, ctx){
       <td>${nomeP(p)}${anc.length?` <b style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c05621">${anc.join(' · ')}</b>`:''}</td>
       <td class="td-mono" style="text-align:right">${p.nDias}</td>
       <td class="td-mono" style="text-align:right">${n0(p.caixas)}</td>
-      ${div?`<td class="td-mono" style="text-align:right${p.baseRegime?';font-weight:700':';color:#8a94a6'}">${p.ritmoReg>0?n0(p.ritmoReg):'—'}<div style="font-size:8px;color:#8a94a6;font-weight:400">${p.hSozinho} h</div></td>
+      ${div?`<td class="td-mono" style="text-align:right${(p.baseRegime||p.baseCor)?';font-weight:700':';color:#8a94a6'}">${p.baseCor?n0(p.corRap.rit):p.ritmoReg>0?n0(p.ritmoReg):'—'}<div style="font-size:8px;color:#8a94a6;font-weight:400">${p.hSozinho} h</div></td>
       <td class="td-mono" style="text-align:right;color:#8a94a6">${p.ritmoCheia>0?n0(p.ritmoCheia):'—'}</td>`:''}
-      <td class="td-mono" style="text-align:right${p.baseRegime?';color:#8a94a6':';font-weight:700'}">${p.ritmoUsado>0?n0(p.ritmoUsado):'—'}</td>
+      <td class="td-mono" style="text-align:right${(p.baseRegime||p.baseCor)?';color:#8a94a6':';font-weight:700'}">${p.ritmoUsado>0?n0(p.ritmoUsado):'—'}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}${p.uepVol!=null?pv:''}</td>
       <td class="td-mono" style="text-align:right">${u2(p.uepRap)}${p.uepRap!=null?pv:''}</td>
       <td class="td-mono" style="text-align:right">${p.uepPeriodo!=null?n0(p.uepPeriodo):'—'}</td>
@@ -6128,7 +6153,8 @@ function _uepHtml(e, ctx){
   return `
 <div class="rp-note" style="margin-top:0">Estudo para análise do PPCP — <b>nada aqui é oficial</b>: não vai para a TV, para o celular nem muda nenhum número do painel. Período ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos (o filtro de modelo da tela não se aplica).</div>
 ${div
-  ? `<div class="rp-note">A linha roda <b>um produto por vez</b>: a hora em que dois produtos aparecem é hora de troca, e ela foi <b>repartida</b> entre eles pelo tempo esperado de cada um.${e.nAprox?` ${e.nAprox} lançamento(s) sem as caixas por hora tiveram as caixas repartidas igualmente entre as horas dele.`:''}${e.nSemHora?` ${e.nSemHora} lançamento(s) <b>sem HORA</b> na PRODUCAO_PRODUTO ficaram fora do ritmo (entram na UEP do dia).`:''}</div>`
+  ? `<div class="rp-note"><b>Entre as cores vale a MAIS RÁPIDA, nunca a média</b>: a base da UEP é a cor com o maior ritmo nas horas em que ela rodou sozinha (${UEP_REGIME_MIN_H}+ h). Sem cor com horas suficientes, vale o regime do produto.</div>
+     <div class="rp-note">A linha roda <b>um produto por vez</b>: a hora em que dois produtos aparecem é hora de troca, e ela foi <b>repartida</b> entre eles pelo tempo esperado de cada um.${e.nAprox?` ${e.nAprox} lançamento(s) sem as caixas por hora tiveram as caixas repartidas igualmente entre as horas dele.`:''}${e.nSemHora?` ${e.nSemHora} lançamento(s) <b>sem HORA</b> na PRODUCAO_PRODUTO ficaram fora do ritmo (entram na UEP do dia).`:''}</div>`
   : `<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> a divisão proporcional da hora não está valendo — o Apps Script não mandou as caixas por hora (<b>ritmoprod_appscript.gs v5.10</b> re-deployado). Até lá, cada produto conta a hora de troca inteira, e produto de lote pequeno sai com UEP maior do que deveria.</div>`}
 
 <div class="rp-sec-ttl">1 ▸ O RESUMO</div>
@@ -6998,7 +7024,7 @@ function _progDetFalhaInfo(){
 // ── SIMULADOR DE CAPACIDADE EM UEP (v7.90.0, PPCP 24/09/2026) ──────────────
 // "Quantas ELOA faz por dia?" — e a resposta tem de ser em PRODUTO COMPLETO
 // (a penteadeira), não em caixa: a UEP do cadastro é por CÓDIGO, e cada volume
-// é um código. UEP do jogo = soma da UEP de cada volume (média entre as cores
+// é um código. UEP do jogo = soma da UEP de cada volume (a cor MAIS RÁPIDA — menor UEP —, nunca a média
 // quando o mesmo volume tem UEP diferente por cor). Jogos por dia = meta de UEP
 // ÷ UEP do jogo. Conta pura (_capVol/_capProdutos/_capMix) + desenho sem conta.
 // Nenhuma chamada nova no fluxo do painel: o cadastro (getProdutos) só é lido
@@ -7023,9 +7049,9 @@ function _capProdutos(cat){
     const g=G[k]=G[k]||{chave:k, modelo:cod.slice(0,6), nome, nVol:1, vols:{}, cores:{}, codigos:0};
     g.nVol=Math.max(g.nVol,nVol); g.codigos++;
     if(p.cor) g.cores[p.cor]=1;
-    const v=g.vols[vol]=g.vols[vol]||{s:0,n:0,ps:0,pn:0};
+    const v=g.vols[vol]=g.vols[vol]||{min:null,ps:0,pn:0};
     const u=Number(p.uep)||0;
-    if(u>0){ v.s+=u; v.n++; }
+    if(u>0 && (v.min==null || u<v.min)) v.min=u;   // cor MAIS RÁPIDA = menor UEP; nunca a média (PPCP)
     const pt=Number(p.pontos)||0;              // PONTOS do cadastro, por caixa (volume)
     if(pt>0){ v.ps+=pt; v.pn++; }
   });
@@ -7033,10 +7059,10 @@ function _capProdutos(cat){
     let uep=0, faltam=[], pts=0, ptsFalta=0;
     for(let v=1; v<=g.nVol; v++){
       const x=g.vols[v];
-      if(x&&x.n) uep+=x.s/x.n; else faltam.push(v);
+      if(x&&x.min!=null) uep+=x.min; else faltam.push(v);
       if(x&&x.pn) pts+=x.ps/x.pn; else ptsFalta++;
     }
-    // Pontos do PRODUTO = soma dos volumes (média entre as cores), como a UEP.
+    // Pontos do PRODUTO = soma dos volumes (média entre as cores: ponto é tabela, não ritmo).
     // Volume sem pontos → null (nunca meio produto).
     return { chave:g.chave, modelo:g.modelo, nome:g.nome, nVol:g.nVol, nCores:Object.keys(g.cores).length,
              codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam,
@@ -7061,22 +7087,52 @@ function _capMix(prods, mix, meta){
 }
 
 let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
+// Leitura do cadastro (v7.93.1). Antes, quando as 3 tentativas falhavam, a tela
+// voltava a "Carregando o cadastro…" para sempre — falha e espera tinham a
+// mesma cara. Agora: (1) o último cadastro lido fica guardado NESTE computador
+// (rpe_cap_cat, só código/descrição/cor/UEP/pontos) e abre na hora, com a hora
+// da leitura escrita; (2) a busca nova roda por trás e troca o dado quando
+// volta; (3) falhou sem nada guardado → diz por quê e oferece TENTAR DE NOVO.
+let CAP_FALHA=null, CAP_BUSCANDO=false, CAP_CAT_ORIGEM='';
+const CAP_LS='rpe_cap_cat';
+function _capGuardar(prods){
+  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,pontos:x.pontos}))})); }catch(e){}
+}
+function _capDoLocal(){
+  try{ const o=JSON.parse(localStorage.getItem(CAP_LS)||'null'); if(o&&Array.isArray(o.p)&&o.p.length) return o; }catch(e){}
+  return null;
+}
 async function abrirCapUep(){
   document.getElementById('modal-capuep').classList.add('on');
   const m=document.getElementById('cap-meta');
   if(m && !m.value) m.value=String(Number(PONTOS_DIA.metaUep)>0?PONTOS_DIA.metaUep:UEP_META_PADRAO);
+  if(!CAP_CAT){ const loc=_capDoLocal(); if(loc){ CAP_CAT=_capProdutos(loc.p); CAP_CAT_TS=0;
+    CAP_CAT_ORIGEM='cadastro guardado neste computador, lido em '+new Date(loc.ts).toLocaleString('pt-BR'); } }
   _capPintar();
-  if(CAP_CAT && Date.now()-CAP_CAT_TS<10*60*1000) return;
-  if(!CFG.sheetsUrl){ document.getElementById('cap-res').innerHTML='<div class="empty-msg">Sem conexão com o Google Sheets.</div>'; return; }
+  if(CAP_CAT && CAP_CAT_TS && Date.now()-CAP_CAT_TS<10*60*1000) return;
+  await _capBuscar();
+}
+async function _capBuscar(){
+  if(CAP_BUSCANDO) return;
+  if(!CFG.sheetsUrl){ CAP_FALHA='sem conexão com o Google Sheets (URL do Apps Script vazia)'; _capPintar(); return; }
+  CAP_BUSCANDO=true; CAP_FALHA=null; _capPintar();
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
-  for(let t=1; t<=3; t++){           // em sequência: o Apps Script atende uma execução por vez
-    try{
-      const j=await jsonpFetch(url, 30000);
-      if(j&&j.ok&&Array.isArray(j.produtos)){ CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); break; }
-    }catch(e){}
-    if(t<3){ const r=document.getElementById('cap-res'); if(r) r.innerHTML=`<div class="empty-msg">Lendo o cadastro… tentativa ${t+1} de 3</div>`;
-      await new Promise(ok=>setTimeout(ok, 2000*t)); }
-  }
+  let erro='';
+  try{
+    for(let t=1; t<=3; t++){           // em sequência: o Apps Script atende uma execução por vez
+      try{
+        const j=await jsonpFetch(url, 30000);
+        if(j&&j.ok&&Array.isArray(j.produtos)){
+          CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); CAP_CAT_ORIGEM='';
+          _capGuardar(j.produtos); erro=''; break;
+        }
+        erro=(j&&j.erro)?'o servidor respondeu: '+j.erro:'o servidor respondeu sem a lista de produtos';
+      }catch(e){ erro='o servidor não respondeu a tempo (tentativa '+t+' de 3)'; }
+      if(t<3){ const r=document.getElementById('cap-res'); if(r&&!CAP_CAT) r.innerHTML=`<div class="empty-msg">Lendo o cadastro… tentativa ${t+1} de 3</div>`;
+        await new Promise(ok=>setTimeout(ok, 2000*t)); }
+    }
+  } finally { CAP_BUSCANDO=false; }
+  if(erro) CAP_FALHA=erro;
   _capPintar();
 }
 // IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
@@ -7128,7 +7184,7 @@ ${r.semUep.length?`<div class="rp-note">${plural(r.semUep.length,'produto','prod
 
 <div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
 <div style="font-size:10.5px;color:${INK2};line-height:1.6">
-  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média.
+  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); entre as cores vale a mais rápida (menor UEP), nunca a média.
   <b>UEP da linha</b> = quantidade × UEP do produto. <b>Cabem mais</b> = UEP que sobra ÷ UEP do produto.
   <b>Sozinho na linha</b> = meta de UEP ÷ UEP do produto.<br>
   A UEP vem do ritmo <b>demonstrado</b> da linha (o que ela já fez), não do teto da esteira. Não desconta troca de produto além do que já está na UEP,
@@ -7177,7 +7233,7 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
 <div class="rp-note">Algum volume está sem UEP na coluna UEP da PRODUTO_CODIGO — sem ela não dá para dizer quantos cabem. ${sem.slice(0,60).map(p=>_rpEsc(p.modelo+' '+p.nome)+(p.volSemUep.length?` (vol. ${p.volSemUep.join(', ')})`:'')).join(' · ')}${sem.length>60?` · e mais ${sem.length-60}`:''}.</div>`:''}
 <div class="rp-sec-ttl">COMO O NÚMERO SAI</div>
 <div style="font-size:10.5px;color:#5B6470;line-height:1.6">
-  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro; cores do mesmo produto entram pela média.
+  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro; entre as cores vale a mais rápida (menor UEP), nunca a média.
   <b>Produtos / dia</b> = meta de UEP ÷ UEP do produto, arredondado para baixo. <b>Caixas / dia</b> = produtos × volumes.
   <b>Produtos / hora</b> = produtos / dia ÷ ${UEP_MIN_DIA} min × 60.
   <b>Pontos / dia</b> = produtos / dia × pontos do produto (soma dos PONTOS de cada volume no cadastro) — para comparar a régua de UEP com a de pontos.<br>
@@ -7225,7 +7281,12 @@ function _capTotHtml(r){
 }
 function _capPintar(){
   const box=document.getElementById('cap-res'); if(!box) return;
-  if(!CAP_CAT){ box.innerHTML='<div class="empty-msg">Carregando o cadastro…</div>'; return; }
+  if(!CAP_CAT){
+    box.innerHTML=CAP_FALHA&&!CAP_BUSCANDO
+      ? `<div class="empty-msg" style="color:var(--warn)">Não consegui ler o cadastro: ${_rpEsc(CAP_FALHA)}.<br>
+         <button class="btn btn-ghost" style="margin-top:10px;padding:4px 12px;font-size:11px" onclick="_capBuscar()">↻ TENTAR DE NOVO</button></div>`
+      : '<div class="empty-msg">Lendo o cadastro de produtos… (a 1ª leitura do dia pode levar até 1 minuto)</div>';
+    return; }
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
   const q=String((document.getElementById('cap-busca')||{}).value||'').toUpperCase().trim();
   const achados=q?CAP_CAT.filter(p=>p.nome.includes(q)||p.modelo.includes(q)).slice(0,12):[];
@@ -7240,8 +7301,9 @@ function _capPintar(){
           <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(Math.floor(jd)):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(Math.floor(jd)*p.nVol)} cx</span>`:''}</td>
           <td class="mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
           <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ ADICIONAR AO DIA</button></td></tr>`; }).join('')}</tbody></table>`;
-  box.innerHTML=lista+'<div id="cap-mix" style="margin-top:14px"></div>'
-    +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
+  const origem=CAP_CAT_ORIGEM?`<div style="font-size:10.5px;color:var(--txt2);margin-bottom:6px">${_rpEsc(CAP_CAT_ORIGEM)}${CAP_BUSCANDO?' · atualizando…':CAP_FALHA?' · não atualizou: '+_rpEsc(CAP_FALHA)+' <a href="#" onclick="_capBuscar();return false" style="color:var(--acc)">tentar de novo</a>':''}</div>`:'';
+  box.innerHTML=origem+lista+'<div id="cap-mix" style="margin-top:14px"></div>'
+    +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); entre as cores vale a mais rápida (menor UEP), nunca a média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
   _capPintarMix();
 }
 function _capPintarMix(){

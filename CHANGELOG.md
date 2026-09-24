@@ -11,6 +11,38 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.94.0 — 24/09/2026
+
+**UEP: entre as cores vale a MAIS RÁPIDA, nunca a média** (PPCP). A base da
+UEP de cada produto passa a ser, nesta ordem:
+1. a **cor mais rápida** nas horas em que ela rodou sozinha, com 4 h ou mais
+   assim;
+2. o ritmo em regime do produto, com as cores misturadas;
+3. o ritmo usado.
+
+O relatório do estudo diz, produto a produto, qual cor foi a base. No
+simulador de capacidade, entre as cores de um mesmo volume vale a **menor**
+UEP do cadastro.
+
+**Atenção:**
+- A UEP de quase todo produto com mais de uma cor vai **diminuir** (a base fica
+  mais rápida). A âncora (MADERO) também muda, e com ela a escala.
+- **Nada muda no cadastro sozinho**: para valer no painel, rode o estudo e
+  **💾 GRAVAR UEP** de novo. Depois disso, confira se a meta de 2.530 UEP
+  continua coerente com os primeiros dias.
+- Cor com menos de 4 h sozinha não vira base, porque 20 minutos bons não são
+  padrão.
+
+## v7.93.1 — 24/09/2026
+
+**Simulador de CAPACIDADE UEP não fica mais preso em "Carregando o cadastro…".**
+- Quando as 3 tentativas de ler o cadastro falhavam, a tela voltava a
+  "Carregando" para sempre. Agora ela diz por quê (servidor não respondeu, ou
+  respondeu com erro) e mostra **↻ TENTAR DE NOVO**.
+- O último cadastro lido fica guardado **neste computador** e abre na hora
+  (com a data da leitura escrita). A leitura nova roda por trás e troca o dado
+  quando chega.
+
 ## v7.93.0 — 24/09/2026
 
 **PONTOS / DIA na impressão CAPACIDADE DE CADA PRODUTO.** Nova última coluna:
