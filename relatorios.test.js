@@ -3672,15 +3672,20 @@ console.log('\n── estudo de UEP ──');
     ok('volume lido da descrição; sem VOL é 1/1', [_capVol('VOL 2/2 PENTEADEIRA').vol, _capVol('VOL 2/2 X').nVol, _capVol('MESA').nVol], [2, 2, 1]);
     ok('nome sem VOL e sem a cor antiga no fim', _capNome('VOL 1/2 PENTEADEIRA CAMARIM ELOA ROSA', 'rosa'), 'PENTEADEIRA CAMARIM ELOA');
     const cp = _capProdutos([
-      { codigo: '501061001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.5 },
-      { codigo: '501061002', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.02 },
-      { codigo: '501061003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.3 },
-      { codigo: '501061004', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.02 },
+      { codigo: '501061001', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.5, pontos: 120 },
+      { codigo: '501061002', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'OFF WHITE', uep: 2.02, pontos: 80 },
+      { codigo: '501061003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.3, pontos: 120 },
+      { codigo: '501061004', desc: 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor: 'ROSA', uep: 2.02, pontos: 80 },
       { codigo: '501099001', desc: 'VOL 1/2 RACK X', cor: 'PRETO', uep: 1.2 },
       { codigo: '501099002', desc: 'VOL 2/2 RACK X', cor: 'PRETO', uep: 0 }]);
     const eloa = cp.find(p => /ELOA/.test(p.nome)), rack = cp.find(p => /RACK/.test(p.nome));
     ok('UEP do PRODUTO = soma dos volumes (média entre cores); cores contadas',
        [eloa.nVol, eloa.uepJogo, eloa.nCores], [2, 4.42, 2]);
+    ok('PONTOS do produto = soma dos volumes; volume sem pontos → null', [eloa.ptsJogo, rack.ptsJogo], [200, null]);
+    ok('a capacidade por produto imprime DEITADA (pedido do PPCP)',
+       /_rpDocParadas\('Capacidade diária por produto', true\)/.test(pega('function gerarRelatorioCapTodos(')), true);
+    ok('a impressão por produto tem PONTOS / DIA na última coluna',
+       /<th>PRODUTOS \/ HORA<\/th><th>PONTOS \/ DIA<\/th><\/tr>/.test(pega('function gerarRelatorioCapTodos(')), true);
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
     ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',

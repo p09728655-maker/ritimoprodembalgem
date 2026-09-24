@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.93.0 — 24/09/2026
+
+**PONTOS / DIA na impressão CAPACIDADE DE CADA PRODUTO.** Nova última coluna:
+os produtos que cabem no dia × os pontos do produto (soma dos PONTOS de cada
+volume no cadastro, média entre as cores). Serve para comparar a régua de UEP
+com a de pontos.
+
+A folha passou a sair **deitada** (paisagem), com a tabela mais larga.
+
+**Atenção:** produto com algum volume sem PONTOS no cadastro sai com "—".
+
 ## v7.92.0 — 24/09/2026
 
 **🖨 CAPACIDADE DE CADA PRODUTO** no simulador de CAPACIDADE UEP. Imprime numa
