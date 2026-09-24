@@ -2578,6 +2578,15 @@ feito e dá ar de verdade ao que sobrou.
     `_phUepPorGrupo(itensView,keyOf)` faz a média pelas caixas para qualquer
     agrupamento (produto, cor, família) e `_phUepTag` põe o `UEP/cx` ao lado do
     nome, na tela e no PDF (os dois passam o mesmo `uepGrupo`).
+- **META DE UEP = JORNADA INTEIRA, 2.530** (v7.84.0 / `.gs` v5.15, PPCP
+  24/09/2026). `UEP_META_PADRAO`=2530 e `UEP_MIN_DIA`=527 (minutos da jornada
+  normal) no rp-core; `UEP_META_PADRAO_GS`=2530 no `.gs`. O card soma a jornada
+  inteira, então a meta tem de ser dela: 2.300 (estudo, ritmo × 8 h) contra a
+  jornada de 527 min era ~10% mais fácil (6 de 7 dias acima). Os dois dão ~288
+  UEP/h — o teste prende. ⚠ `UEP_ALVO_PROV` (estudo) continua **2300** e é
+  OUTRA régua. `regravarUepPassada()` regrava a META UEP gravada nos dias
+  fechados. As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
+  v7.80–7.83.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
