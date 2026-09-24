@@ -2855,6 +2855,7 @@ ok('sem dia datado à frente não há análise (nunca zero inventado)',
    _cartAnalise(_cartAberta([_it('14/09/2026',500)], _cartNum('15/09/2026'), 0), _c10, [50,60]), null);
 
 // ── o veredito separa RE-DATAR (de graça) de CAPACIDADE (custa) ──────────
+eval(pega('function _cartUn(')); eval(pega('function _cartPeso('));
 eval(pega('function _cartVeredito('));
 global.fmtN = n => String(n);
 ok('horizonte que não comporta o total não é problema de datação',
@@ -2932,7 +2933,7 @@ ok('o sufixo da régua no título do gráfico é marcável',
 // ⚠ com o mix o topo do dia é o FANTASMA tracejado quando ele passa da carga:
 // a colisão da tarja tem de olhar o que está DESENHADO, não só a barra sólida.
 ok('a colisão da tarja olha a barra E o fantasma do programado',
-   /const _qtdsCol = a\.linhas\.map\(l => Math\.max\(l\.qtde, Number\(l\.crua\) \|\| 0\)\);/.test(_cartDes)
+   /const _qtdsCol = a\.linhas\.map\(l => ehU \? l\.qtde : Math\.max\(l\.qtde, Number\(l\.crua\) \|\| 0\)\);/.test(_cartDes)
    && /_svgLadoLivre\(_qtdsCol, valor, nCobre\)/.test(_cartDes), true);
 ok('o desenho dos blocos não faz conta',
    /_cartAnalise\(|_qpCurva\(|_qpPercentil\(|_cartMontar\(/.test(pega('function _cartBlocosHtml(')), false);
@@ -3045,7 +3046,7 @@ eval(pega('function _cartPesoTxt('));
 ok('peso em palavras: lento', [_cartPesoTxt(1.22).selo, _cartPesoTxt(1.22).cls], ['+22% lento', 'qp-p-warn']);
 ok('peso em palavras: rápido', [_cartPesoTxt(0.72).selo, _cartPesoTxt(0.72).cls], ['−28% rápido', 'qp-p-ok']);
 ok('dentro de ±5% é normal, sem número', [_cartPesoTxt(1.03).selo, _cartPesoTxt(0.96).cls], ['normal', '']);
-ok('o número em cima da barra é o programado quando há mix', /fmtN\(mix \? l\.crua : l\.qtde\)/.test(_cartDes), true);
+ok('o número em cima da barra é o programado quando há mix (em UEP, a carga)', /fmtN\(mix && !ehU \? l\.crua : l\.qtde\)/.test(_cartDes), true);
 ok('o selo PESA vai dentro da barra', /PESA ' \+ peso\.pct/.test(_cartDes), true);
 ok('"aparado" e "×fator" saíram da tabela — ficam no tooltip', /aparado\(s\)<\/span>|_fx\(l\.fator\)/.test(_cartDes), false);
 ok('a caixa do mix fala em palavras', /COMO A CARGA É CALCULADA/.test(pega('function _cartMixHtml(')) && /os pesos valem/.test(pega('function _cartMixHtml(')), true);
@@ -3158,7 +3159,24 @@ const _cenAsync = pega('async function _cartCenarioAsync(');
 ok('a busca das paradas é o MESMO carregador da gestão de perdas', /_pgContextoDoPeriodo\(rec\[0\]\.data, hojeStr\(\)\)/.test(_cenAsync), true);
 ok('com E SE em "como hoje" não busca nada', /if\(!\(QP_ESE > 0\)/.test(_cenAsync), true);
 ok('o cenário é ligado na análise dentro do _cartBlocos, para os três chamadores',
-   /a\.cenario = await _cartCenarioAsync\(cart, dias\)/.test(_cartBloc), true);
+   /a\.cenario = modo === 'uep' \? \(QP_ESE > 0 \? \{ falha:'uep' \} : null\) : await _cartCenarioAsync\(cart, dias\)/.test(_cartBloc), true);
+// ── CARTEIRA EM UEP (v7.85.0) ──
+{
+  eval(pega('function _cartUepMedia(')); eval(pega('function _qpCurvaUep('));
+  const itU = [{ data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:100, uepCx:1.94, codigo:'A', lote:'1' },
+               { data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:300, uepCx:1, codigo:'B', lote:'1' },
+               { data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:50, codigo:'C', lote:'2' }];
+  const fb = _cartUepMedia(itU);
+  ok('UEP média da carteira = só das linhas com UEP, pela quantidade', Math.round(fb * 1000) / 1000, 1.235);
+  const cU = _cartAberta(itU, _cartNum('15/10/2026'), 0, { uep:true, fallback:fb });
+  ok('em UEP a carga é qtde × UEP do código; sem UEP entra com a média e é contado',
+     [cU.dias[0].qtde, cU.dias[0].crua, cU.mix.semBase, cU.mix.uep], [Math.round(194 + 300 + 50 * fb), 450, 1, true]);
+  ok('sem nenhuma linha com UEP, não há média (o modo não se aplica)', _cartUepMedia([{ qtde:10 }]), null);
+  ok('a régua em UEP sai da UEP gravada no HISTÓRICO, sem os dias sem UEP',
+     _qpCurvaUep([{ uep:2400 }, { uep:null, real:9999 }, { uep:2100 }], 0), [2100, 2400]);
+  ok('em UEP a unidade dos textos é UEP e o peso é UEP/cx', [_cartUn({ mixModo:'uep' }), _cartUn({ mixModo:'mix' }), _cartPeso({ mixModo:'uep' }, 1.94).selo], ['UEP', 'cx', '1,94 UEP/cx']);
+  ok('o seletor oferece EM UEP e a preferência guarda', [/<option value="uep">em UEP<\/option>/.test(src), /o\.mix === 'uep'/.test(pega('function _qpCarregarPref(') )], [true, true]);
+}
 ok('o desenho da carteira imprime o cenário logo abaixo do veredito', /_cartESeHtml\(a\)/.test(_cartDes), true);
 ok('a escolha persiste na mesma chave de preferências', /ese:QP_ESE/.test(pega('function _qpSalvarPref(')), true);
 

@@ -2587,6 +2587,19 @@ feito e dá ar de verdade ao que sobrou.
   OUTRA régua. `regravarUepPassada()` regrava a META UEP gravada nos dias
   fechados. As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
   v7.80–7.83.
+- **CARTEIRA EM UEP** (v7.85.0, item 4 do PPCP, 24/09/2026). Seletor CARTEIRA
+  ganhou `uep` (`QP_MIX`, na `rpe_qp_pref`). `_cartMontar(…,'uep')` passa ao
+  `_cartAberta` um "ritmos" `{uep:true, fallback}`: fator = `uepCx` da linha
+  da programação (.gs v5.13), sem UEP → `_cartUepMedia` (média pela qtde) e
+  conta em `semBase`. Dívida por `_planoDividaUep` (lista por CÓDIGO × UEP).
+  **A régua também é UEP**: `_qpCurvaUep` (UEP de jornada do HISTORICO, dia sem
+  UEP fora) — no `_cartBlocos`, por modo. Desenho: o MESMO `_cartHtml`, com
+  `_cartUn(a)` (unidade de TODO texto) e `_cartPeso(a,f)` (UEP/cx absoluto, sem
+  selo lento/rápido); em UEP **não há fantasma** (programado em cx num eixo de
+  UEP misturaria unidades) e o número da barra é a carga. E SE PARADAS não sai
+  em UEP (`cenario.falha:'uep'`, a perda é valorada em caixas). Sem base
+  (`uepFalha`: `sem-uep` / `sem-historico`) → aviso no `_cartBlocosHtml`, não
+  vazio. Os modos antigos não mudaram.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
