@@ -1,5 +1,10 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.8 — TELA E POR LOTE
+//               calcularProgramacao() devolve também `porLote`: por lote, o
+//               total programado, o que falta, a data do atraso, cores,
+//               produtos e os códigos de que ele é a cabeça do FIFO. Mesmo
+//               cálculo, nenhuma leitura nova.
 // Versão: 5.7 — TELA E DA TV (PROGRAMAÇÃO DO DIA)
 //               calcularProgramacao() manda por item a COR e a data do lote
 //               aberto mais antigo (atrasoDesde, dd/MM/yyyy). getConfigPainel/
@@ -2718,6 +2723,7 @@ function calcularProgramacao() {
   const lista = [];
   const saldoLinha = {}; // "key|lote|dNum" -> saldo restante do lote (p/ o write-back)
   let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0;
+  const loteMap = {}; // v5.8: Tela E por LOTE — ver _somaNoLote()
 
   Object.keys(keys).forEach(key => {
     const linhas  = progLinhas[key]   || [];
@@ -2734,15 +2740,17 @@ function calcularProgramacao() {
     eventos.forEach(e  => ev.push({ d: e.dNum,  t: 1, q: e.cx }));
     ev.sort((a, b) => (a.d - b.d) || (a.t - b.t));
 
-    const fila = []; // demandas abertas: {d, rem, lote}
+    const fila = []; // demandas abertas: {d, rem, lote, q, hojeProd}
     ev.forEach(e => {
-      if (e.t === 0) { fila.push({ d: e.d, rem: e.q, lote: e.lote }); return; }
+      if (e.t === 0) { fila.push({ d: e.d, rem: e.q, lote: e.lote, q: e.q, hojeProd: 0 }); return; }
       let rem = e.q;
       for (let i = 0; i < fila.length && rem > 0; i++) {
         const take = Math.min(fila[i].rem, rem);
         fila[i].rem -= take; rem -= take;
+        if (e.d === hojeNum) fila[i].hojeProd += take;
       }
     });
+    _somaNoLote(loteMap, fila, key, catByKey[key], hojeNum);
 
     let atraso = 0, hojeRest = 0, progHoje = 0, atrasoDesde = 0;
     fila.forEach(lot => {
@@ -2786,12 +2794,52 @@ function calcularProgramacao() {
     embaladoHoje: totEmbHoje,
     hojeRestante: totHojeRest,            // quanto da meta de hoje ainda falta
     faltaZerar: totAtraso + totHojeRest,  // total que ainda falta produzir p/ zerar tudo
+    porLote: _fecharLotes(loteMap),        // v5.8: Tela E da TV (uma linha por lote)
     saldoLinha: saldoLinha                // uso interno do write-back (removido antes de ir p/ o cliente)
   };
 }
 
 // Lista enxuta para o app do operador: produtos programados para hoje OU em
 // atraso (o que ele deve rodar), para seleção rápida sem varrer o catálogo todo.
+// ── Tela E da TV por LOTE (v5.8) ─────────────────────────────────────────────
+// Agrega, por lote, as linhas do FIFO de cada código: total programado (até
+// hoje, arquivadas incluídas — é o "tamanho do lote"), o que falta, a data do
+// trecho vencido mais antigo ainda aberto, cores e produtos. Entra o lote com
+// saldo, o datado para hoje e o que recebeu produção hoje (para contar
+// "concluído hoje"); lote velho já zerado fica de fora.
+// `cabeca`: códigos para os quais ESTE lote é o 1º aberto do FIFO — é nele que
+// a próxima caixa daquele código vai cair, então é ele o "rodando agora".
+function _somaNoLote(mapa, fila, key, prod, hojeNum) {
+  let cabeca = true;
+  fila.forEach(function (lot) {
+    const entra = lot.rem > 0 || lot.d === hojeNum || lot.hojeProd > 0;
+    if (!entra) return;
+    const id = lot.lote || '—';
+    const L = mapa[id] = mapa[id] || { lote: lot.lote || '', qtde: 0, falta: 0, hoje: false,
+                                        dAtr: 0, dMax: 0, cores: {}, prods: {}, cabeca: [] };
+    L.qtde += lot.q; L.falta += lot.rem;
+    if (lot.d === hojeNum) L.hoje = true;
+    if (lot.d > L.dMax) L.dMax = lot.d;
+    if (lot.rem > 0 && lot.d < hojeNum && (!L.dAtr || lot.d < L.dAtr)) L.dAtr = lot.d;
+    if (lot.rem > 0 && cabeca) { if (L.cabeca.indexOf(key) < 0) L.cabeca.push(key); cabeca = false; }
+    const pd = produtoDoCodigo(prod ? prod.codigo : key);
+    const nome = pd.base || (prod ? prod.desc : '') || key;
+    L.prods[nome] = (L.prods[nome] || 0) + lot.q;
+    if (pd.cor) L.cores[pd.cor] = 1;
+  });
+}
+function _fecharLotes(mapa) {
+  return Object.keys(mapa).map(function (id) {
+    const L = mapa[id];
+    const nomes = Object.keys(L.prods).sort(function (a, b) { return L.prods[b] - L.prods[a]; });
+    return { lote: L.lote, qtde: L.qtde, falta: L.falta, hoje: L.hoje,
+             atrasoDesde: L.dAtr ? _numParaDataBR(L.dAtr) : '',
+             data: _numParaDataBR(L.dAtr || L.dMax),
+             produto: nomes[0] || '', outros: nomes.slice(1),
+             cores: Object.keys(L.cores), cabeca: L.cabeca };
+  });
+}
+
 // 20260912 -> '12/09/2026' (inverso do dataParaNum).
 function _numParaDataBR(n) {
   n = Number(n) || 0;

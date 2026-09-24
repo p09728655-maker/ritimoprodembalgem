@@ -46,6 +46,11 @@ eval(pegaJs('function _telaEDataNum('));
 eval(pegaJs('function _telaEMontar('));
 eval(pegaJs('function _telaETem('));
 eval(pegaJs('function _telaEHtml('));
+const _maxL = JS.match(/const TV_E_MAX_LOTE = (\d+);/);
+if (!_maxL) throw new Error('TV_E_MAX_LOTE sumiu do painel');
+global.TV_E_MAX_LOTE = Number(_maxL[1]);
+eval(pegaJs('function _telaELotes('));
+eval(pegaJs('function _telaELotesHtml('));
 
 console.log('\n── FALTA P/ ZERAR: a mesma leitura da Tela C ──');
 ok('backend novo usa faltaZerar', _progFaltaZerar({ faltaZerar: 1304, metaEfetiva: 9, embaladoHoje: 1 }), 1304);
@@ -104,6 +109,30 @@ ok('texto da planilha é escapado', _telaEHtml({ linhas: [{ codigo: '9', desc: '
 ok('tudo concluído vira aviso, não tabela vazia', _telaEHtml({ linhas: [] }).includes('CONCLUÍDA'), true);
 ok('desenho não faz conta', /_telaEMontar|_progFaltaZerar/.test(pegaJs('function _telaEHtml(')), false);
 
+console.log('\n── por LOTE (v7.71.0) ──');
+const pl = { programadoHoje: 1350, atrasoTotal: 520, faltaZerar: 1673, porLote: [
+  { lote: '25219', qtde: 520, falta: 501, produto: 'ESCRIVANINHA MALTA', outros: [], cores: ['A','B','C','D'], cabeca: ['501150'] },
+  { lote: '25213', qtde: 900, falta: 520, produto: 'MESA COMPUTADOR MILLION', outros: [], cores: ['1','2','3','4','5','6'], atrasoDesde: '23/09/2026', cabeca: ['501116005'] },
+  { lote: '25210', qtde: 300, falta: 40, produto: 'RACK', outros: [], cores: ['X'], atrasoDesde: '20/09/2026', cabeca: [] },
+  { lote: '25215', qtde: 180, falta: 2, produto: 'MESA LATERAL EVOLUTION', outros: [], cores: ['CINAMOMO'], cabeca: ['501129004'] },
+  { lote: '25218', qtde: 650, falta: 650, produto: 'RACK BRITO 137 CM', outros: ['BANQUETA VERSATIL', 'MESA'], cores: ['A','B','C'], cabeca: [] },
+  { lote: '25200', qtde: 400, falta: 0, produto: 'CONCLUIDO', outros: [], cores: [], cabeca: [] }] };
+const ml = _telaELotes(pl, '501129004');
+ok('rodando → atraso mais antigo → hoje', ml.linhas.map(l => l.lote), ['25215', '25210', '25213', '25218']);
+ok('corte em TV_E_MAX_LOTE, resto em "fora"', [ml.linhas.length, ml.fora, ml.abertos], [4, 1, 5]);
+ok('lote zerado conta como concluído', ml.concluidos, 1);
+ok('progresso pelo total FIXO do lote', Math.round(ml.linhas[2].pct), 42);
+ok('rodando pelo código cabeça do FIFO', _telaELotes(pl, '501116005').linhas[0].lote, '25213');
+const hl = _telaELotesHtml(ml);
+ok('total do lote na tela', hl.includes('de 900 no lote'), true);
+ok('nº de cores', hl.includes('6 cores'), true);
+ok('1 cor mostra o nome da cor', hl.includes('1 cor · CINAMOMO'), true);
+ok('outro produto no lote', hl.includes('+ BANQUETA VERSATIL e mais 1'), true);
+ok('entra no ciclo com porLote', _telaETem({ porLote: [{ lote: '1' }], lista: [] }), true);
+ok('desenho do lote não faz conta', /_telaELotes\(|_progFaltaZerar/.test(pegaJs('function _telaELotesHtml(')), false);
+ok('tela escolhe por lote quando o backend manda',
+   /const lote = Array\.isArray\(prog\.porLote\);/.test(pegaJs('function _sincSlideE(')), true);
+
 console.log('\n── ciclo e config ──');
 ok('ciclo inclui a Tela E', /if \(t\.e !== false && _temProgDia\(\)\) ordem\.push\('e'\)/.test(JS), true);
 ok('tempo próprio da Tela E', /if \(t === 'e'\) return CFG\.slideEIntervalo \|\| 20;/.test(JS), true);
@@ -120,7 +149,9 @@ console.log('\n── backend: cor e data do lote aberto mais antigo ──');
   eval(pegaGs('function _numParaDataBR('));
   ok('_numParaDataBR', [_numParaDataBR(20260912), _numParaDataBR(0)], ['12/09/2026', '']);
   const lerCatalogoProdutos = () => [{ codigo: '501130', desc: 'PENTEADEIRA' }];
-  const produtoDoCodigo = c => ({ cor: c === '501130' ? 'BRANCO' : '' });
+  const produtoDoCodigo = c => ({ cor: c === '501130' ? 'BRANCO' : '', base: c === '501130' ? 'PENTEADEIRA' : '' });
+  eval(pegaGs('function _somaNoLote('));
+  eval(pegaGs('function _fecharLotes('));
   // dois lotes vencidos (10/09 e 12/09) e um de hoje; a produção abate o de 10/09 inteiro
   const lerProgramacao = () => [
     { codigo: '501130', data: '10/09/2026', qtde: 100, lote: 'L1' },
@@ -132,6 +163,18 @@ console.log('\n── backend: cor e data do lote aberto mais antigo ──');
   ok('cor por item', it.cor, 'BRANCO');
   ok('atrasoDesde = lote vencido ainda aberto (o de 10/09 já foi zerado)', it.atrasoDesde, '12/09/2026');
   ok('atraso vivo', it.atraso, 80);
+  const pls = calcularProgramacao().porLote;
+  const by = {}; pls.forEach(L => { by[L.lote] = L; });
+  ok('L1 (vencido) zerado HOJE entra, para contar como concluído', !!by.L1, true);
+  ok('L1: produziu hoje e zerou → falta 0', by.L1 && by.L1.falta, 0);
+  ok('L2: total 100, falta 80, atraso desde 12/09', by.L2 && [by.L2.qtde, by.L2.falta, by.L2.atrasoDesde], [100, 80, '12/09/2026']);
+  ok('L2 é a cabeça do FIFO do código', by.L2 && by.L2.cabeca, ['501130']);
+  ok('L3 de hoje: total 50, falta 50, sem atraso', by.L3 && [by.L3.qtde, by.L3.falta, by.L3.atrasoDesde, by.L3.hoje], [50, 50, '', true]);
+  ok('nome do produto e cor no lote', by.L2 && [by.L2.produto, by.L2.cores], ['PENTEADEIRA', ['BRANCO']]);
+  // lote antigo zerado sem produção hoje não entra
+  const velho = [{ d: 20260901, rem: 0, lote: 'V', q: 10, hojeProd: 0 }];
+  const mp = {}; _somaNoLote(mp, velho, '9', null, 20260924);
+  ok('lote velho já zerado não entra', Object.keys(mp).length, 0);
 })();
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tela E ok — a programação do dia sai do dado que a TV já tem');
