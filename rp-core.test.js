@@ -211,6 +211,23 @@ ok('turno sem hora lançada não julga ninguém',
 ok('sem meta do dia também não',
    efNoRitmo(1350, 0, _mr, _mt), { metaAteAgora: 0, ef: 0 });
 
+// ── UEP DO DIA (uepCard) ───────────────────────────────────────────────────
+{
+  const U = { normal: 1150, he: 410, cxCom: 900, cxSem: 30, codigos: 400 };
+  ok('a meta padrão é 2.300 UEP em 8 h (480 min)', [UEP_META_PADRAO, UEP_MIN_DIA], [2300, 480]);
+  const c = uepCard(U, null, 240);
+  ok('sem meta na config vale a padrão; o número é a UEP da JORNADA NORMAL', [c.meta, c.v], [2300, '1.150']);
+  ok('esperado até agora = meta × minutos de jornada ÷ 480', Math.round(c.esperado), 1150);
+  ok('no ritmo exato é NO RITMO e verde', [c.c, /NO RITMO/.test(c.sub)], ['ok', true]);
+  ok('a HE e as caixas sem UEP aparecem no texto, fora da meta', [/\+410 em HE/.test(c.sub), /30 cx sem UEP/.test(c.sub)], [true, true]);
+  ok('a meta da CONFIG_PAINEL manda quando vem', uepCard(U, 2000, 240).meta, 2000);
+  ok('depois de 8 h o esperado é a meta cheia (os 48 min são folga)', Math.round(uepCard(U, null, 527).esperado), 2300);
+  ok('sem hora de jornada lançada não julga (cor neutra, sem selo)', [uepCard(U, null, 0).c, /RITMO/.test(uepCard(U, null, 0).sub)], ['acc', false]);
+  ok('leitura ainda não chegou ≠ backend sem o campo ≠ cadastro vazio',
+     [uepCard(null).sub.startsWith('aguardando'), /v5\.11/.test(uepCard(false).sub), /coluna UEP/.test(uepCard({ codigos: 0 }).sub)],
+     [true, true, true]);
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
              'efNoRitmo', 'nomeComCor', '_rpOk'];
