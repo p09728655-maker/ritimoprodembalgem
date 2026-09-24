@@ -2907,7 +2907,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.93.0';
+const APP_VER   = '7.93.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7061,22 +7061,52 @@ function _capMix(prods, mix, meta){
 }
 
 let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
+// Leitura do cadastro (v7.93.1). Antes, quando as 3 tentativas falhavam, a tela
+// voltava a "Carregando o cadastro…" para sempre — falha e espera tinham a
+// mesma cara. Agora: (1) o último cadastro lido fica guardado NESTE computador
+// (rpe_cap_cat, só código/descrição/cor/UEP/pontos) e abre na hora, com a hora
+// da leitura escrita; (2) a busca nova roda por trás e troca o dado quando
+// volta; (3) falhou sem nada guardado → diz por quê e oferece TENTAR DE NOVO.
+let CAP_FALHA=null, CAP_BUSCANDO=false, CAP_CAT_ORIGEM='';
+const CAP_LS='rpe_cap_cat';
+function _capGuardar(prods){
+  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,pontos:x.pontos}))})); }catch(e){}
+}
+function _capDoLocal(){
+  try{ const o=JSON.parse(localStorage.getItem(CAP_LS)||'null'); if(o&&Array.isArray(o.p)&&o.p.length) return o; }catch(e){}
+  return null;
+}
 async function abrirCapUep(){
   document.getElementById('modal-capuep').classList.add('on');
   const m=document.getElementById('cap-meta');
   if(m && !m.value) m.value=String(Number(PONTOS_DIA.metaUep)>0?PONTOS_DIA.metaUep:UEP_META_PADRAO);
+  if(!CAP_CAT){ const loc=_capDoLocal(); if(loc){ CAP_CAT=_capProdutos(loc.p); CAP_CAT_TS=0;
+    CAP_CAT_ORIGEM='cadastro guardado neste computador, lido em '+new Date(loc.ts).toLocaleString('pt-BR'); } }
   _capPintar();
-  if(CAP_CAT && Date.now()-CAP_CAT_TS<10*60*1000) return;
-  if(!CFG.sheetsUrl){ document.getElementById('cap-res').innerHTML='<div class="empty-msg">Sem conexão com o Google Sheets.</div>'; return; }
+  if(CAP_CAT && CAP_CAT_TS && Date.now()-CAP_CAT_TS<10*60*1000) return;
+  await _capBuscar();
+}
+async function _capBuscar(){
+  if(CAP_BUSCANDO) return;
+  if(!CFG.sheetsUrl){ CAP_FALHA='sem conexão com o Google Sheets (URL do Apps Script vazia)'; _capPintar(); return; }
+  CAP_BUSCANDO=true; CAP_FALHA=null; _capPintar();
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProdutos';
-  for(let t=1; t<=3; t++){           // em sequência: o Apps Script atende uma execução por vez
-    try{
-      const j=await jsonpFetch(url, 30000);
-      if(j&&j.ok&&Array.isArray(j.produtos)){ CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); break; }
-    }catch(e){}
-    if(t<3){ const r=document.getElementById('cap-res'); if(r) r.innerHTML=`<div class="empty-msg">Lendo o cadastro… tentativa ${t+1} de 3</div>`;
-      await new Promise(ok=>setTimeout(ok, 2000*t)); }
-  }
+  let erro='';
+  try{
+    for(let t=1; t<=3; t++){           // em sequência: o Apps Script atende uma execução por vez
+      try{
+        const j=await jsonpFetch(url, 30000);
+        if(j&&j.ok&&Array.isArray(j.produtos)){
+          CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); CAP_CAT_ORIGEM='';
+          _capGuardar(j.produtos); erro=''; break;
+        }
+        erro=(j&&j.erro)?'o servidor respondeu: '+j.erro:'o servidor respondeu sem a lista de produtos';
+      }catch(e){ erro='o servidor não respondeu a tempo (tentativa '+t+' de 3)'; }
+      if(t<3){ const r=document.getElementById('cap-res'); if(r&&!CAP_CAT) r.innerHTML=`<div class="empty-msg">Lendo o cadastro… tentativa ${t+1} de 3</div>`;
+        await new Promise(ok=>setTimeout(ok, 2000*t)); }
+    }
+  } finally { CAP_BUSCANDO=false; }
+  if(erro) CAP_FALHA=erro;
   _capPintar();
 }
 // IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
@@ -7225,7 +7255,12 @@ function _capTotHtml(r){
 }
 function _capPintar(){
   const box=document.getElementById('cap-res'); if(!box) return;
-  if(!CAP_CAT){ box.innerHTML='<div class="empty-msg">Carregando o cadastro…</div>'; return; }
+  if(!CAP_CAT){
+    box.innerHTML=CAP_FALHA&&!CAP_BUSCANDO
+      ? `<div class="empty-msg" style="color:var(--warn)">Não consegui ler o cadastro: ${_rpEsc(CAP_FALHA)}.<br>
+         <button class="btn btn-ghost" style="margin-top:10px;padding:4px 12px;font-size:11px" onclick="_capBuscar()">↻ TENTAR DE NOVO</button></div>`
+      : '<div class="empty-msg">Lendo o cadastro de produtos… (a 1ª leitura do dia pode levar até 1 minuto)</div>';
+    return; }
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
   const q=String((document.getElementById('cap-busca')||{}).value||'').toUpperCase().trim();
   const achados=q?CAP_CAT.filter(p=>p.nome.includes(q)||p.modelo.includes(q)).slice(0,12):[];
@@ -7240,7 +7275,8 @@ function _capPintar(){
           <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(Math.floor(jd)):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(Math.floor(jd)*p.nVol)} cx</span>`:''}</td>
           <td class="mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
           <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ ADICIONAR AO DIA</button></td></tr>`; }).join('')}</tbody></table>`;
-  box.innerHTML=lista+'<div id="cap-mix" style="margin-top:14px"></div>'
+  const origem=CAP_CAT_ORIGEM?`<div style="font-size:10.5px;color:var(--txt2);margin-bottom:6px">${_rpEsc(CAP_CAT_ORIGEM)}${CAP_BUSCANDO?' · atualizando…':CAP_FALHA?' · não atualizou: '+_rpEsc(CAP_FALHA)+' <a href="#" onclick="_capBuscar();return false" style="color:var(--acc)">tentar de novo</a>':''}</div>`:'';
+  box.innerHTML=origem+lista+'<div id="cap-mix" style="margin-top:14px"></div>'
     +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); cores do mesmo produto entram pela média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
   _capPintarMix();
 }

@@ -3696,7 +3696,9 @@ console.log('\n── estudo de UEP ──');
        [/CAP_CAT\.filter/.test(pega('function gerarRelatorioCapTodos(')), /sort\(\(a,b\)=>b\.uepJogo-a\.uepJogo/.test(pega('function gerarRelatorioCapTodos(')),
         /SEM UEP COMPLETA NO CADASTRO/.test(pega('function gerarRelatorioCapTodos('))], [true, true, true]);
     ok('o simulador lê o cadastro só ao abrir, com cache e tentativas em sequência',
-       [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function abrirCapUep('))], [true, true]);
+       [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function _capBuscar('))], [true, true]);
+    ok('cadastro que não veio NÃO fica em "carregando": diz por quê e oferece tentar de novo',
+       [/CAP_FALHA=erro/.test(pega('async function _capBuscar(')), /Não consegui ler o cadastro/.test(pega('function _capPintar(')), /TENTAR DE NOVO/.test(pega('function _capPintar('))], [true, true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

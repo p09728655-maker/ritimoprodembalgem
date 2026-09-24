@@ -11,6 +11,16 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.93.1 — 24/09/2026
+
+**Simulador de CAPACIDADE UEP não fica mais preso em "Carregando o cadastro…".**
+- Quando as 3 tentativas de ler o cadastro falhavam, a tela voltava a
+  "Carregando" para sempre. Agora ela diz por quê (servidor não respondeu, ou
+  respondeu com erro) e mostra **↻ TENTAR DE NOVO**.
+- O último cadastro lido fica guardado **neste computador** e abre na hora
+  (com a data da leitura escrita). A leitura nova roda por trás e troca o dado
+  quando chega.
+
 ## v7.93.0 — 24/09/2026
 
 **PONTOS / DIA na impressão CAPACIDADE DE CADA PRODUTO.** Nova última coluna:
