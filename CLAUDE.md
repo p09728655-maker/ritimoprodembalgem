@@ -26,6 +26,9 @@ via Google Apps Script (JSONP).
   função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
+- `tela-e.test.js` — Tela E da TV (programação do dia): ordem, situação, corte
+  de linhas, entrada no ciclo, config, e a cor/`atrasoDesde` do
+  `calcularProgramacao` real: `node tela-e.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -297,6 +300,40 @@ via Google Apps Script (JSONP).
   se a palavra voltar ao painel. A divulgação da semana é o PDF e o resumo do
   WhatsApp.
 
+## TELA E da TV — programação do dia
+- Pedido do usuário (24/09/2026): *"me propõe uma tela para tv com a
+  programação do dia"* → aprovado. `#tv-slide-e`, quinta tela do carrossel
+  (v7.70.0 / `.gs` v5.7). Responde uma pergunta só: **o que falta embalar hoje,
+  e o que vem primeiro.**
+- **Custo zero de chamada**: lê `PONTOS_DIA.programacao.lista` (por PRODUTO, do
+  `calcularProgramacao`) e o `produtoAtual`, que o `getPontosDia` já entrega.
+  ⚠ Não trocar pela `getProgramacaoDetalhada` (por linha/lote) sem pensar: é
+  leitura cara e a TV recarrega a cada 28 min.
+- **Conta pura e testada**: `_telaEMontar` (ordem, situação, corte),
+  `_telaETem` (entra no ciclo), `_telaEHtml` (desenho, sem conta). O FALTA P/
+  ZERAR sai de `_progFaltaZerar`, que a **Tela C também lê** — as duas não podem
+  divergir. Mesma nota da Tela C: `!= null`, nunca `||` (zero é valor).
+- **Ordem = PREMISSA**: rodando agora → atraso mais antigo (`atrasoDesde`) →
+  programado hoje (por lote, depois maior falta). A PROGRAMACAO não tem coluna
+  de sequência; se o PPCP criar uma, a tela deve seguir ela. O rodapé da tela
+  diz a regra.
+- **FALTA, não %**: o atraso é vivo (abatido pela produção de hoje), então o
+  "total" de cada produto encolhe e uma barra de % andaria para trás.
+- **Máx. `TV_E_MAX`=6 linhas** (lidas a 15 m; conferido a 1920×1080 e
+  1366×768). Concluídos (`falta 0` com `metaEfetiva>0`) viram contador; o que
+  não coube vira "+ N itens". Produção sem demanda (`metaEfetiva 0`) não conta
+  como concluída. Tudo concluído → aviso verde, não tabela vazia.
+- `.gs` v5.7: `cor` e `atrasoDesde` (dd/MM/yyyy do lote vencido **ainda com
+  saldo** — o FIFO abate a fila em ordem, então é o 1º com `rem>0`) por item;
+  `TELA_E`/`TEMPO_E` na CONFIG_PAINEL. ⚠ **re-deploy manual**. Antes dele: sem
+  cor (só código), `ATRASO` sem data, e `aplicarConfigPainel` preserva a
+  marcação local da E (mesma regra da D).
+- `_sincSlideE` roda a cada segundo com a tela visível (relógio + dado), com
+  assinatura (`_eSig`) para só redesenhar quando o dado muda — com a E sozinha
+  no ciclo não há "volta" que a atualize.
+- ⚠ O `th` global do painel tem fundo e a `.c-lote` do td valia no th: por isso
+  o `.tve-tab th{background:none}` e o `th.c-lote` com corpo de rótulo.
+
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
   8:25 = 1; vamos precisar pegar os segundos também, estamos estudando as
@@ -334,7 +371,7 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete antes de publicar.
+  sete (hoje oito, com o `tela-e.test.js`) antes de publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,

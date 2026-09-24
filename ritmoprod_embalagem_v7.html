@@ -724,6 +724,41 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
   display:none;flex-direction:column;align-items:center;
   padding:14px 4vw 20px;text-align:left;
 }
+/* Tela E — programação do dia: mesma caixa das outras, lista à esquerda. */
+#tv-slide-e{
+  position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;
+  display:none;flex-direction:column;align-items:stretch;
+  padding:14px 4vw 16px;text-align:left;gap:clamp(8px,1.6vh,22px);
+}
+.tve-cards{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:clamp(10px,1.2vw,24px)}
+.tve-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:clamp(8px,1.4vh,18px) clamp(14px,1.4vw,28px);display:flex;align-items:baseline;gap:clamp(10px,1vw,20px);min-width:0}
+.tve-card-lbl{font-family:var(--font-d);font-size:clamp(12px,min(1.1vw,1.9vh),21px);letter-spacing:2px;color:var(--txt2);line-height:1.25;text-transform:uppercase}
+.tve-card-val{font-family:var(--font-h);font-weight:700;font-size:clamp(40px,min(4.4vw,7.6vh),88px);line-height:1;color:var(--txt);font-variant-numeric:tabular-nums}
+.tve-card-unit{font-family:var(--font-d);font-size:clamp(12px,1.05vw,20px);color:var(--txt2)}
+.tve-card.falta{border-left:6px solid var(--red)}
+.tve-card.falta .tve-card-val{color:var(--red)}
+.tve-card.falta.zero{border-left-color:var(--ok)}
+.tve-card.falta.zero .tve-card-val{color:var(--ok)}
+.tve-tab{width:100%;border-collapse:collapse;table-layout:fixed}
+.tve-tab th{font-family:var(--font-d);font-size:clamp(12px,min(1.05vw,1.8vh),20px);letter-spacing:2px;color:var(--txt2);text-align:left;font-weight:400;padding:0 clamp(8px,.9vw,18px) 6px}
+.tve-tab td{border-top:1px solid var(--border);padding:clamp(4px,.8vh,10px) clamp(8px,.9vw,18px);vertical-align:middle}
+.tve-tab .c-lote{width:10%;font-family:var(--font-d);font-size:clamp(16px,min(1.8vw,3.1vh),34px);color:var(--txt2)}
+.tve-tab .c-falta{width:13%;text-align:right;font-family:var(--font-h);font-weight:700;font-size:clamp(30px,min(3.2vw,5.6vh),62px);line-height:1;font-variant-numeric:tabular-nums}
+.tve-tab th.c-falta,.tve-tab th.c-lote{font-family:var(--font-d);font-size:clamp(12px,min(1.05vw,1.8vh),20px);font-weight:400;color:var(--txt2)}
+.tve-tab th{background:none;border:0}
+.tve-tab .c-sit{width:19%}
+.tve-nome{font-family:var(--font-h);font-weight:600;font-size:clamp(22px,min(2.4vw,4.2vh),46px);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tve-sub{font-family:var(--font-d);font-size:clamp(12px,min(1.15vw,2vh),22px);color:var(--txt2);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tve-sub b{color:var(--txt);font-weight:600}
+.tve-pill{display:inline-block;font-family:var(--font-d);font-size:clamp(12px,min(1.15vw,2vh),22px);letter-spacing:2px;padding:.3em .8em;border-radius:999px;border:1px solid;white-space:nowrap}
+.tve-pill.atr{color:var(--red);border-color:rgba(244,67,54,.5);background:rgba(244,67,54,.1)}
+.tve-pill.run{color:var(--bg);background:var(--acc);border-color:var(--acc);font-weight:600}
+.tve-pill.pen{color:var(--txt2);border-color:var(--border)}
+.tve-tab tr.run td{background:rgba(255,92,31,.10)}
+.tve-tab tr.run td:first-child{box-shadow:inset 6px 0 0 var(--acc)}
+.tve-vazio{font-family:var(--font-h);font-weight:700;font-size:clamp(34px,4vw,80px);color:var(--ok);text-align:center;padding:6vh 0;letter-spacing:2px}
+.tve-rod{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2vh),24px);color:var(--txt2);letter-spacing:1px;border-top:1px solid var(--border);padding-top:clamp(6px,1vh,14px)}
+#tve-concl:not(:empty){color:var(--ok)}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -2109,8 +2144,29 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 
+  <!-- ═══ TELA E — PROGRAMAÇÃO DO DIA ═══
+       O que falta embalar hoje, na ordem: rodando agora → atraso mais antigo →
+       programado hoje. Sai do PONTOS_DIA.programacao que a TV já recebe (nenhuma
+       chamada nova). Só entra no ciclo quando há programação ou atraso. -->
+  <div id="tv-slide-e" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl"><span id="tve-setor">EMBALAGEM</span> <span style="color:var(--acc)">· PROGRAMAÇÃO DO DIA</span></div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(40px,7vh,96px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tve-clock">--:--:--</div>
+    </div>
+    <div class="tve-cards">
+      <div class="tve-card"><div class="tve-card-lbl">PROGRAMADO<br>HOJE</div><div class="tve-card-val" id="tve-prog">—</div><div class="tve-card-unit">CX</div></div>
+      <div class="tve-card"><div class="tve-card-lbl">ATRASO<br>ANTERIOR</div><div class="tve-card-val" id="tve-atraso">—</div><div class="tve-card-unit">CX</div></div>
+      <div class="tve-card falta" id="tve-card-falta"><div class="tve-card-lbl">FALTA<br>P/ ZERAR</div><div class="tve-card-val" id="tve-falta">—</div><div class="tve-card-unit">CX</div></div>
+    </div>
+    <div id="tve-lista"></div>
+    <div class="tve-rod"><span><span id="tve-concl"></span><span id="tve-fora"></span></span><span>ordem: rodando agora → atraso mais antigo → programado hoje</span></div>
+  </div>
+
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
-       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D. -->
+       gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D/E. -->
   <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
     <button aria-label="Produto anterior" type="button" onclick="_cicloTV.anterior()" title="Tela anterior" style="background:var(--surface);color:var(--txt);border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-family:var(--font-d);font-size:14px;font-weight:700;cursor:pointer">◀</button>
     <button type="button" id="btn-ciclo-pause" onclick="_cicloTV.togglePause()" title="Pausar / continuar o carrossel" style="background:var(--acc);color:#111;border:none;border-radius:8px;padding:6px 14px;font-family:var(--font-d);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;min-width:120px">⏸ PAUSAR</button>
@@ -2675,6 +2731,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA D (segundos)</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA E (segundos)</label><input class="frm-inp" id="c-slidee-int" type="number" min="3" max="300" placeholder="20"></div>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -2682,6 +2739,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"> TELA B — VISÃO MACRO</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"> TELA D — SEMANA PASSADA (só entra se a semana anterior tiver dia fechado)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-e" style="accent-color:var(--acc)"> TELA E — PROGRAMAÇÃO DO DIA (só entra se houver programação ou atraso)</label>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -2796,7 +2854,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.69.0';
+const APP_VER   = '7.70.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -2907,8 +2965,9 @@ let CFG = {
   slideBIntervalo:15,
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideDIntervalo:20, // Tela D tem mais a ler (5 dias + barra da meta) que as outras
+  slideEIntervalo:20, // Tela E (programação do dia) — lista de até 6 produtos
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
-  telasAtivas:{a:true,b:true,c:true,d:true},
+  telasAtivas:{a:true,b:true,c:true,d:true,e:true},
   modoLeitor:true, // seleção de produto por bipe no mobile (padrão ligado)
   slideBKpis:['meta','falta','proj','ef','status','peso']
 };
@@ -6967,12 +7026,14 @@ function openCfg(){
   document.getElementById('c-slideb-int').value=CFG.slideBIntervalo||15;
   document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
   document.getElementById('c-slided-int').value=CFG.slideDIntervalo||20;
+  document.getElementById('c-slidee-int').value=CFG.slideEIntervalo||20;
   document.getElementById('c-modo-leitor').checked=CFG.modoLeitor!==false;
-  const _telas=CFG.telasAtivas||{a:true,b:true,c:true,d:true};
+  const _telas=CFG.telasAtivas||{a:true,b:true,c:true,d:true,e:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
   document.getElementById('c-tela-b').checked=_telas.b!==false;
   document.getElementById('c-tela-c').checked=_telas.c!==false;
   document.getElementById('c-tela-d').checked=_telas.d!==false;
+  document.getElementById('c-tela-e').checked=_telas.e!==false;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
   ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
@@ -7023,11 +7084,13 @@ function saveCfg(){
   CFG.slideBIntervalo=parseInt(document.getElementById('c-slideb-int').value)||15;
   CFG.slideCIntervalo=parseInt(document.getElementById('c-slidec-int').value)||15;
   CFG.slideDIntervalo=parseInt(document.getElementById('c-slided-int').value)||20;
+  CFG.slideEIntervalo=parseInt(document.getElementById('c-slidee-int').value)||20;
   CFG.telasAtivas={
     a:document.getElementById('c-tela-a').checked,
     b:document.getElementById('c-tela-b').checked,
     c:document.getElementById('c-tela-c').checked,
-    d:document.getElementById('c-tela-d').checked
+    d:document.getElementById('c-tela-d').checked,
+    e:document.getElementById('c-tela-e').checked
   };
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
@@ -7063,17 +7126,19 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 function enviarConfigPainel(){
   if(!CFG.sheetsUrl) return;
-  const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true};
+  const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true,e:true};
   const params=[
     'action=setConfigPainel',
     'telaA='+(t.a!==false?1:0),
     'telaB='+(t.b!==false?1:0),
     'telaC='+(t.c!==false?1:0),
     'telaD='+(t.d!==false?1:0),
+    'telaE='+(t.e!==false?1:0),
     'tempoA='+(CFG.slideAIntervalo||15),
     'tempoB='+(CFG.slideBIntervalo||15),
     'tempoC='+(CFG.slideCIntervalo||15),
     'tempoD='+(CFG.slideDIntervalo||20),
+    'tempoE='+(CFG.slideEIntervalo||20),
     'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
@@ -7094,12 +7159,16 @@ function aplicarConfigPainel(pc){
   // re-deployado, a planilha não devolve essas chaves — e aí a Tela D fica sob
   // controle LOCAL de cada aparelho em vez de ser apagada pela config antiga.
   const _dAtual = (CFG.telasAtivas||{}).d!==false;
+  // Mesma regra para a Tela E (telaE/tempoE só no backend v5.7 pra cima).
+  const _eAtual = (CFG.telasAtivas||{}).e!==false;
   CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false,
-                      d: pc.telaD!==undefined ? pc.telaD!==false : _dAtual };
+                      d: pc.telaD!==undefined ? pc.telaD!==false : _dAtual,
+                      e: pc.telaE!==undefined ? pc.telaE!==false : _eAtual };
   if(pc.tempoA) CFG.slideAIntervalo = pc.tempoA;
   if(pc.tempoB) CFG.slideBIntervalo = pc.tempoB;
   if(pc.tempoC) CFG.slideCIntervalo = pc.tempoC;
   if(pc.tempoD) CFG.slideDIntervalo = pc.tempoD;
+  if(pc.tempoE) CFG.slideEIntervalo = pc.tempoE;
   if(typeof pc.kpisTelaB==='string'){
     CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
   }
@@ -14270,6 +14339,90 @@ function fecharPreviaParada(){
   setTimeout(() => location.reload(), 28 * 60 * 1000);
 })();
 
+// ─── TELA E — PROGRAMAÇÃO DO DIA (conta pura, testada) ───────────────────────
+// FALTA P/ ZERAR, a MESMA leitura da Tela C (as duas não podem divergir).
+// Backend novo: faltaZerar = atraso vivo + resto de hoje, já abatido pelo FIFO.
+// Backend antigo: metaEfetiva − embaladoHoje. ⚠ `!= null`, nunca `||`: zero é
+// valor legítimo.
+function _progFaltaZerar(prog){
+  prog = prog || {};
+  if (prog.faltaZerar != null) return Number(prog.faltaZerar) || 0;
+  return Math.max((Number(prog.metaEfetiva) || 0) - (Number(prog.embaladoHoje) || 0), 0);
+}
+const TV_E_MAX = 6; // linhas que cabem lidas a 15 m; o resto vira "+ N itens"
+// 'dd/MM/yyyy' → número ordenável (yyyymmdd); vazio → 0.
+function _telaEDataNum(s){
+  const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m ? (+m[3]) * 10000 + (+m[2]) * 100 + (+m[1]) : 0;
+}
+// Lista da Tela E. Sai da lista por PRODUTO do calcularProgramacao (uma linha
+// por código; `lote` é o mais recente). Situação: RODANDO AGORA (o produto que o
+// operador selecionou) · ATRASO (tem saldo de lote vencido) · A FAZER.
+// ⚠ O número da linha é o FALTA, não um %: o atraso já vem abatido pela
+// produção de hoje, então o "total" de cada produto encolhe durante o dia e uma
+// barra de progresso andaria para trás.
+// ⚠ A ORDEM É PREMISSA do painel, não a sequência real: a PROGRAMACAO não tem
+// coluna de sequência. Rodando → atraso mais antigo → programado hoje (lote).
+function _telaEMontar(prog, produtoAtual, max){
+  prog = prog || {};
+  max = max || TV_E_MAX;
+  const dig = c => String(c || '').replace(/\D/g, '');
+  const atual = dig(produtoAtual);
+  const lista = Array.isArray(prog.lista) ? prog.lista : [];
+  const abertos = [];
+  let concluidos = 0;
+  lista.forEach(it => {
+    const falta = Number(it.falta) || 0;
+    if (falta <= 0) { if ((Number(it.metaEfetiva) || 0) > 0) concluidos++; return; }
+    const run = !!atual && dig(it.codigo) === atual;
+    const atr = (Number(it.atraso) || 0) > 0;
+    abertos.push({
+      codigo: String(it.codigo || ''), desc: String(it.desc || ''), cor: String(it.cor || ''),
+      lote: String(it.lote || ''), falta: falta,
+      sit: run ? 'run' : (atr ? 'atr' : 'pen'),
+      desde: atr ? String(it.atrasoDesde || '').slice(0, 5) : '',
+      _d: atr ? (_telaEDataNum(it.atrasoDesde) || 1) : 99999999
+    });
+  });
+  const peso = { run: 0, atr: 1, pen: 2 };
+  abertos.sort((a, b) => (peso[a.sit] - peso[b.sit]) || (a._d - b._d)
+    || a.lote.localeCompare(b.lote) || (b.falta - a.falta) || a.codigo.localeCompare(b.codigo));
+  return {
+    linhas: abertos.slice(0, max),
+    fora: Math.max(abertos.length - max, 0),
+    concluidos: concluidos,
+    abertos: abertos.length,
+    prog: Number(prog.programadoHoje) || 0,
+    atraso: Number(prog.atrasoTotal) || 0,
+    falta: _progFaltaZerar(prog)
+  };
+}
+// Entra no ciclo? Só com programação ou atraso — nunca aparece vazia de dado.
+function _telaETem(prog){
+  const l = (prog && Array.isArray(prog.lista)) ? prog.lista : [];
+  return l.some(it => (Number(it.metaEfetiva) || 0) > 0 || (Number(it.falta) || 0) > 0);
+}
+// Desenho (sem conta): tudo vem pronto do _telaEMontar.
+function _telaEHtml(m){
+  if (!m.linhas.length) return '<div class="tve-vazio">✓ PROGRAMAÇÃO DO DIA CONCLUÍDA</div>';
+  const pill = l => l.sit === 'run' ? '<span class="tve-pill run">RODANDO AGORA</span>'
+    : l.sit === 'atr' ? '<span class="tve-pill atr">ATRASO' + (l.desde ? ' · ' + _rpEsc(l.desde) : '') + '</span>'
+    : '<span class="tve-pill pen">A FAZER</span>';
+  const linha = l => {
+    // Descrição antiga já termina com a cor: não repete.
+    const corRep = l.cor && l.desc.toUpperCase().trim().endsWith(l.cor.toUpperCase().trim());
+    const sub = _rpEsc(l.codigo) + (l.cor && !corRep ? ' · <b>' + _rpEsc(l.cor) + '</b>' : '');
+    return '<tr' + (l.sit === 'run' ? ' class="run"' : '') + '>'
+      + '<td class="c-lote">' + (_rpEsc(l.lote) || '—') + '</td>'
+      + '<td><div class="tve-nome">' + _rpEsc(l.desc || l.codigo) + '</div><div class="tve-sub">' + sub + '</div></td>'
+      + '<td class="c-falta">' + fmtN(l.falta) + '</td>'
+      + '<td class="c-sit">' + pill(l) + '</td></tr>';
+  };
+  return '<table class="tve-tab"><thead><tr><th class="c-lote">LOTE</th><th>PRODUTO</th>'
+    + '<th class="c-falta">FALTA</th><th class="c-sit">SITUAÇÃO</th></tr></thead><tbody>'
+    + m.linhas.map(linha).join('') + '</tbody></table>';
+}
+
 // ─── CICLO DE TELAS TV — troca entre Slide A e Slide B ───────────────────────
 const _cicloTV = (function() {
   let _timer = null;
@@ -14416,14 +14569,9 @@ const _cicloTV = (function() {
     //   metaEfetiva; ritmo = metaEfetiva − embaladoHoje), pra Tela C não mudar
     //   enquanto o Apps Script não for re-deployado (o front sobe antes pela Vercel).
     const slotsRest = TV_TURNO_INFO.slotsRest || 0;
-    let cardValor, faltaZerar;
-    if (prog.faltaZerar != null) {
-      cardValor  = prog.faltaZerar;
-      faltaZerar = prog.faltaZerar;
-    } else {
-      cardValor  = prog.metaEfetiva || 0;
-      faltaZerar = Math.max((prog.metaEfetiva || 0) - (prog.embaladoHoje || 0), 0);
-    }
+    // O card do backend antigo continua mostrando a metaEfetiva, como sempre.
+    const faltaZerar = _progFaltaZerar(prog);
+    const cardValor  = prog.faltaZerar != null ? faltaZerar : (prog.metaEfetiva || 0);
     set('tvc-meta-efetiva', fmtN(cardValor));
     // Turno encerrado (0 slots) → "—", não faz sentido "por hora". O slot
     // pós-almoço é mais curto, mas conta como 1 hora igual ao "NECESSÁRIO" da
@@ -14439,6 +14587,30 @@ const _cicloTV = (function() {
   // do ciclo — sem dia fechado na semana passada, a Tela D não entra (mesma
   // regra da Tela C sem atraso), para nunca aparecer vazia.
   function _sincSlideD() { RP_SEMANA.pintar('tvd-'); }
+
+  // ── TELA E — programação do dia ─────────────────────────────────────────
+  // Redesenha só quando o dado muda (o relógio chama isto a cada segundo).
+  let _eSig = '';
+  function _sincSlideE() {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const st = document.getElementById('tv-setor');
+    set('tve-setor', st ? st.textContent : 'EMBALAGEM');
+    const prog = PONTOS_DIA.programacao || {};
+    const sig = JSON.stringify([prog.lista, prog.faltaZerar, prog.atrasoTotal, prog.programadoHoje, PONTOS_DIA.produtoAtual]);
+    if (sig === _eSig) return;
+    _eSig = sig;
+    const m = _telaEMontar(prog, PONTOS_DIA.produtoAtual);
+    set('tve-prog', fmtN(m.prog));
+    set('tve-atraso', fmtN(m.atraso));
+    set('tve-falta', fmtN(m.falta));
+    const cf = document.getElementById('tve-card-falta');
+    if (cf) cf.classList.toggle('zero', m.falta === 0);
+    const lst = document.getElementById('tve-lista');
+    if (lst) lst.innerHTML = _telaEHtml(m);
+    set('tve-concl', m.concluidos ? '✓ ' + m.concluidos + (m.concluidos === 1 ? ' item concluído' : ' itens concluídos') : '');
+    set('tve-fora', m.fora ? (m.concluidos ? ' · ' : '') + '+ ' + m.fora + (m.fora === 1 ? ' item a fazer não coube' : ' itens a fazer não couberam') : '');
+  }
+  function _temProgDia() { return _telaETem(PONTOS_DIA.programacao); }
   function _temSemanaPassada() { return RP_SEMANA.tem(); }
   RP_SEMANA.aoCarregar(() => { if (_tela === 'd') _sincSlideD(); });
 
@@ -14451,6 +14623,7 @@ const _cicloTV = (function() {
     // Tela D tem MAIS coisa para ler (5 dias + a barra da meta) que as outras:
     // 20 s de padrão, não os 15 das demais.
     if (t === 'd') return CFG.slideDIntervalo || 20;
+    if (t === 'e') return CFG.slideEIntervalo || 20;
     return CFG.slideBIntervalo || 15;
   }
   function _agendar() {
@@ -14464,12 +14637,13 @@ const _cicloTV = (function() {
   // duas aparece vazia. Nunca devolve lista vazia: sem nenhuma tela marcada,
   // cai em ['a'] (fallback).
   function _ordemTelas() {
-    const t = CFG.telasAtivas || { a: true, b: true, c: true, d: true };
+    const t = CFG.telasAtivas || { a: true, b: true, c: true, d: true, e: true };
     const ordem = [];
     if (t.a !== false) ordem.push('a');
     if (t.b !== false) ordem.push('b');
     if (t.c !== false && _temAtrasoAgora()) ordem.push('c');
     if (t.d !== false && _temSemanaPassada()) ordem.push('d');
+    if (t.e !== false && _temProgDia()) ordem.push('e');
     return ordem.length ? ordem : ['a'];
   }
 
@@ -14477,12 +14651,14 @@ const _cicloTV = (function() {
   function _mostrarTela(t) {
     const slides = { b: document.getElementById('tv-slide-b'),
                      c: document.getElementById('tv-slide-c'),
-                     d: document.getElementById('tv-slide-d') };
+                     d: document.getElementById('tv-slide-d'),
+                     e: document.getElementById('tv-slide-e') };
     Object.keys(slides).forEach(k => { if (slides[k]) slides[k].style.display = 'none'; });
     _tela = t;
     if (t === 'b') { _sincSlideB(); if (slides.b) slides.b.style.display = 'flex'; }
     else if (t === 'c' && slides.c) { _sincSlideC(); slides.c.style.display = 'flex'; }
     else if (t === 'd' && slides.d) { _sincSlideD(); slides.d.style.display = 'flex'; }
+    else if (t === 'e' && slides.e) { _eSig = ''; _sincSlideE(); slides.e.style.display = 'flex'; }
     _updBtn();
   }
 
@@ -14515,11 +14691,14 @@ const _cicloTV = (function() {
 
   // Atualiza relógio nas Telas B/C a cada segundo quando visíveis
   setInterval(() => {
-    if (_tela === 'b' || _tela === 'c') {
+    if (_tela === 'b' || _tela === 'c' || _tela === 'e') {
       const c = document.getElementById('tv-clock');
-      const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : 'tvc-clock');
+      const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : _tela === 'c' ? 'tvc-clock' : 'tve-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
+    // A Tela E acompanha o dado sem esperar a próxima volta do ciclo (com ela
+    // sozinha no ciclo não há volta); o _eSig faz disto um no-op sem mudança.
+    if (_tela === 'e') _sincSlideE();
     // A Tela D mostra o PERÍODO da semana no lugar do relógio — nada a acertar
     // por segundo ali.
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
@@ -14531,7 +14710,7 @@ const _cicloTV = (function() {
     if (_podeRodar() && !_pausado) {
       const ordemAtual = _ordemTelas();
       if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
-      ['b', 'c', 'd'].forEach(k => {
+      ['b', 'c', 'd', 'e'].forEach(k => {
         const el = document.getElementById('tv-slide-' + k);
         if (el && _tela !== k && el.style.display !== 'none') el.style.display = 'none';
       });
@@ -14545,13 +14724,14 @@ const _cicloTV = (function() {
     if ((CFG.telasAtivas || {}).d !== false) RP_SEMANA.carregar();
     const ordemInicial = _ordemTelas();
     _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
-    ['b', 'c', 'd'].forEach(k => {
+    ['b', 'c', 'd', 'e'].forEach(k => {
       const el = document.getElementById('tv-slide-' + k);
       if (el) el.style.display = (_tela === k) ? 'flex' : 'none';
     });
     if (_tela === 'b') _sincSlideB();
     else if (_tela === 'c') _sincSlideC();
     else if (_tela === 'd') _sincSlideD();
+    else if (_tela === 'e') { _eSig = ''; _sincSlideE(); }
     _updBtn();
     // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
     // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.
@@ -14560,7 +14740,7 @@ const _cicloTV = (function() {
       return;
     }
     _agendar(); // começa contando a duração da tela atual
-    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s)`);
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s / E:${CFG.slideEIntervalo||20}s)`);
   }
 
   reiniciar();
