@@ -1,5 +1,8 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.16 — UEP HORA A HORA DO DIA PASSADO
+//               getHoraDia devolve uepHora {HH:MM:{uep,cxSem}} (log de produto
+//               da data × UEP do cadastro ATUAL, leitura recortada pela data).
 // Versão: 5.15 — META DE UEP DA JORNADA INTEIRA
 //               O padrão passa a 2.530 UEP na jornada normal (527 min), o
 //               equivalente aos 2.300 em 8 h do estudo. regravarUepPassada()
@@ -1952,6 +1955,52 @@ function _uepLogPorDia(dataFiltro) {
   return _uepPorDiaDoLog(linhas, uepDe);
 }
 
+// Conta pura: linhas do log de UM dia [{hora, codigo, cx}] + mapa código→UEP/cx
+// → {HH:MM: {uep, cxSem}}, o MESMO formato do uepPorHora do rp-core (a tela do
+// dia passado usa a mesma uepCelula da tela ao vivo).
+function _uepPorHoraDoLog(linhas, uepDe) {
+  const H = {};
+  linhas.forEach(function (l) {
+    const m = String(l.hora || '').match(/(\d{1,2}):(\d{2})/);
+    if (!m) return;
+    const k = ('0' + Number(m[1])).slice(-2) + ':' + m[2];
+    const o = H[k] = H[k] || { uep: 0, cxSem: 0 };
+    const u = Number(uepDe[l.codigo]) || 0;
+    if (u > 0) o.uep += l.cx * u; else o.cxSem += l.cx;
+  });
+  Object.keys(H).forEach(function (k) { H[k].uep = Math.round(H[k].uep * 10) / 10; });
+  return H;
+}
+
+// UEP hora a hora de um dia passado (getHoraDia). ⚠ Usa a UEP do cadastro de
+// HOJE: o total do dia no HISTORICO foi congelado no fechamento, a hora não —
+// se a UEP mudou depois, a soma das horas pode diferir do total gravado.
+// null = sem UEP no cadastro (a coluna não aparece); {} = dia sem log.
+function _uepHoraDoDia(dataBR) {
+  const uepDe = {};
+  lerCatalogoProdutos().forEach(function (pr) { if (pr.uep > 0) uepDe[pr.codigo] = pr.uep; });
+  if (!Object.keys(uepDe).length) return null;
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROD_LOG);
+  if (!sh || sh.getLastRow() < 2) return {};
+  const alvo = dataParaNum(dataBR);
+  if (!alvo) return {};
+  const values = _valoresPorData(sh, 'DATA', 0, dataParaNum, alvo, alvo);
+  const hdr = (values[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const iData = hdr.indexOf('DATA') >= 0 ? hdr.indexOf('DATA') : 0;
+  const iHora = hdr.indexOf('HORA') >= 0 ? hdr.indexOf('HORA') : 1;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const linhas = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    if (dataParaNum(r[iData]) !== alvo) continue;
+    const cx = Number(r[iCx]) || 0, cod = String(r[iCod] || '').trim();
+    if (!cod || !cx) continue;
+    linhas.push({ hora: formatHoraCel(r[iHora]), codigo: cod, cx: cx });
+  }
+  return _uepPorHoraDoLog(linhas, uepDe);
+}
+
 // As três colunas novas de um dia: [UEP, UEP HE, META UEP]. Sem UEP no
 // cadastro → vazias (nunca 0: zero afirmaria "o dia não pediu esforço").
 function _uepColsDoDia(dataBR) {
@@ -2230,7 +2279,12 @@ function getHoraDia(p) {
     }
   }
 
-  return { ok: true, data: data, horas: horas, dia: dia };
+  // UEP hora a hora (v5.16) — leitura recortada pela data; falhou → sem campo,
+  // a tela esconde a coluna em vez de mostrar zero.
+  let uepHora = null;
+  try { uepHora = _uepHoraDoDia(data); } catch (e) { Logger.log('uepHora falhou (ignorado): ' + e.message); }
+
+  return { ok: true, data: data, horas: horas, dia: dia, uepHora: uepHora };
 }
 
 

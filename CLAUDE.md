@@ -2600,6 +2600,12 @@ feito e dá ar de verdade ao que sobrou.
   em UEP (`cenario.falha:'uep'`, a perda é valorada em caixas). Sem base
   (`uepFalha`: `sem-uep` / `sem-historico`) → aviso no `_cartBlocosHtml`, não
   vazio. Os modos antigos não mudaram.
+- **UEP hora a hora do DIA PASSADO** (v7.86.0 / `.gs` v5.16): `getHoraDia`
+  devolve `uepHora` (`_uepHoraDoDia` → `_uepPorHoraDoLog`, puro e testado,
+  mesmo formato do `uepPorHora`). A leitura é recortada pela data
+  (`_valoresPorData`). ⚠ A hora usa a UEP do cadastro **ATUAL**; o total do
+  card é o **congelado** no fechamento. Os dois podem diferir, e o tooltip diz
+  isso. Falhou ou não há UEP → `null` e a coluna some.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

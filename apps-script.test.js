@@ -656,6 +656,15 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend',
      [/\]\.concat\(_uepColsDoDia\(p\.data\)\)/.test(pega('function saveDay(')),
       /\]\.concat\(_uepColsDoDia\(dataRef\)\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+  eval(pega('function _uepPorHoraDoLog('));
+  const hl = _uepPorHoraDoLog([
+    { hora: '8:00', codigo: 'A', cx: 100 }, { hora: '08:00', codigo: 'X', cx: 20 },
+    { hora: '12:12-13:00', codigo: 'B', cx: 50 }, { hora: '', codigo: 'A', cx: 9 }], { A: 1, B: 1.94 });
+  ok('UEP hora a hora do dia passado: chave HH:MM (formato do uepPorHora), código sem UEP à parte, hora vazia fora',
+     [hl['08:00'].uep, hl['08:00'].cxSem, hl['12:12'].uep, Object.keys(hl).length], [100, 20, 97, 2]);
+  ok('getHoraDia devolve uepHora por leitura RECORTADA pela data, sem derrubar a chamada se falhar',
+     [/uepHora:\s*uepHora/.test(pega('function getHoraDia(')), /try\s*\{\s*uepHora\s*=\s*_uepHoraDoDia/.test(pega('function getHoraDia(')),
+      /_valoresPorData\(sh,\s*'DATA'/.test(pega('function _uepHoraDoDia('))], [true, true, true]);
   ok('getHistory e getHoraDia devolvem uep/uepHe/metaUep',
      [/uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHistory(')), /uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHoraDia('))], [true, true]);
   ok('a meta padrão do .gs é a mesma do rp-core',

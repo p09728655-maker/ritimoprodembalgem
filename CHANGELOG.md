@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.86.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.16)
+
+**UEP HORA A HORA NO DIA PASSADO.** No gerencial, ao escolher um dia anterior, a
+tabela LANÇAMENTO HORA A HORA ganha a coluna **UEP**, igual à de hoje: UEP da
+hora contra a meta de UEP do dia repartida pelos minutos da hora (o
+`12:12-13:00` pede menos). Hora extra mostra o número sem veredito.
+
+**Atenção:**
+- A UEP da hora sai do log de produto daquele dia × a **UEP do cadastro de
+  hoje**. O card UEP DO DIA continua sendo o valor **congelado no fechamento**.
+  Se a UEP de algum código mudou depois, a soma das horas pode não bater
+  exatamente com o card. O tooltip da célula avisa.
+- `*` = parte das caixas daquela hora sem UEP no cadastro (ficou fora).
+- Antes do re-deploy do `.gs` a coluna não aparece no dia passado. Não aparece
+  zero no lugar.
+
 ## v7.85.0 — 24/09/2026
 
 **CARTEIRA EM UEP na aba PLANO.** Opção nova no seletor CARTEIRA: **em UEP**.
