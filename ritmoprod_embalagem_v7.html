@@ -2703,6 +2703,12 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">SETOR</label><input class="frm-inp" id="c-setor" type="text"></div>
       <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"><div id="c-meta-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
     </div>
+    <!-- META DE UEP (v7.89.0): grava na CONFIG_PAINEL (chave META_UEP) e vale
+         para todos os aparelhos (gerencial, celular, histórico, relatórios). -->
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 · vale para todos os aparelhos</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
+    </div>
     <div class="frm-row">
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
         <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)" onchange="onToggleMetaComAtraso()">
@@ -2878,7 +2884,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.88.0';
+const APP_VER   = '7.89.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7759,6 +7765,11 @@ function openCfg(){
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
+  { const mu=document.getElementById('c-meta-uep');
+    if(mu){ mu.value=Number(PONTOS_DIA.metaUep)>0?String(PONTOS_DIA.metaUep):'';
+      const h=()=>{ const v=_pgSimNum(mu.value)||UEP_META_PADRAO; const e=document.getElementById('c-meta-uep-h');
+        if(e) e.textContent=`≈ ${fmtN(Math.round(v*60/UEP_MIN_DIA))} UEP/h · ${fmtN(v)} UEP em ${UEP_MIN_DIA} min`; };
+      mu.oninput=h; h(); } }
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
   { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
     if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${fmt1(_ti.taktSeg)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
@@ -7823,6 +7834,13 @@ function saveCfg(){
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();
   }
+  // Meta de UEP: só vai à planilha quando o gestor MUDOU o valor — campo vazio
+  // ou igual ao que já vale não manda nada (um aparelho que abriu antes de ler a
+  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 2530.
+  { const mu=_pgSimNum((document.getElementById('c-meta-uep')||{}).value);
+    const atual=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
+    _metaUepNova=(mu>0&&Math.round(mu)!==Math.round(atual))?Math.round(mu):null;
+    if(_metaUepNova) PONTOS_DIA.metaUep=_metaUepNova; }
   CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
@@ -7879,6 +7897,7 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // ── Config do ciclo de telas COMPARTILHADA via planilha ──────────────────────
 // Envia a config atual (telas ativas + tempos + KPIs da Tela B) para o backend,
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
+let _metaUepNova=null;   // meta de UEP digitada nas configurações, a enviar uma vez
 function enviarConfigPainel(){
   if(!CFG.sheetsUrl) return;
   const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true,e:true};
@@ -7897,6 +7916,7 @@ function enviarConfigPainel(){
     'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
+  if(_metaUepNova){ params.push('metaUep='+_metaUepNova); _metaUepNova=null; }
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
   try{ jsonpFetch(url).catch(function(){}); }catch(e){}
 }

@@ -665,6 +665,8 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('getHoraDia devolve uepHora por leitura RECORTADA pela data, sem derrubar a chamada se falhar',
      [/uepHora:\s*uepHora/.test(pega('function getHoraDia(')), /try\s*\{\s*uepHora\s*=\s*_uepHoraDoDia/.test(pega('function getHoraDia(')),
       /_valoresPorData\(sh,\s*'DATA'/.test(pega('function _uepHoraDoDia('))], [true, true, true]);
+  ok('setConfigPainel grava META_UEP só com número > 0 (vazio não apaga a meta)',
+     /if \(p\.metaUep !== undefined && _numBR\(p\.metaUep\) > 0\) novos\.META_UEP/.test(pega('function setConfigPainel(')), true);
   ok('getHistory e getHoraDia devolvem uep/uepHe/metaUep',
      [/uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHistory(')), /uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHoraDia('))], [true, true]);
   ok('a meta padrão do .gs é a mesma do rp-core',
