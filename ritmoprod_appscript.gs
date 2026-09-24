@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.12 — UEP POR VOLUME
+//               Produto de 2+ volumes: cada volume tem o seu ritmo (PPCP,
+//               24/09/2026). O estudo mede o PRODUTO (as caixas dos volumes
+//               juntas); o setUepCatalogo reparte o total do jogo entre os
+//               volumes pelo tempo de esteira de cada caixa (MEDIDA DA CAIXA +
+//               ENTRE_PECAS). O total do produto não muda. Sem medida em algum
+//               volume, fica a média, como antes.
 // Versão: 5.11 — UEP COMO PARÂMETRO DO CADASTRO
 //               Colunas UEP e UEP_VIGENCIA na PRODUTO_CODIGO (a UEP por caixa
 //               de cada código; o PPCP pode editar à mão). getPontosDia manda
@@ -2294,6 +2301,39 @@ function setConfigPainel(p) {
 // são tocados: o resto da coluna fica como está. Cria as colunas UEP e
 // UEP_VIGENCIA no fim da aba se ainda não existirem. Lê a aba DIRETO (quem
 // escreve nunca usa o memo de leitura).
+// Reparte a UEP do PRODUTO entre os VOLUMES (conta pura, testada).
+// A UEP que vem do estudo é por caixa, na média dos volumes: um jogo de N
+// volumes vale uep × N. Esse total é repartido pelo tempo de esteira de cada
+// volume (medida da caixa + vão) — caixa maior ocupa mais esteira e pede mais
+// manuseio. O total do jogo não muda. Volume sem medida em qualquer código do
+// produto → o produto fica com a média (não se reparte com dado faltando).
+// linhas: [{k, vol, nVol, esteira}] → { uep: {'k#vol': valor}, repartidos, semMedida }
+function _uepPorVolume(alvo, linhas) {
+  const G = {};
+  linhas.forEach(function (l) {
+    const g = G[l.k] = G[l.k] || { nVol: 1, vols: {}, falta: false };
+    g.nVol = Math.max(g.nVol, l.nVol || 1);
+    const v = g.vols[l.vol] = g.vols[l.vol] || { soma: 0, n: 0 };
+    if (l.esteira > 0) { v.soma += l.esteira; v.n++; } else g.falta = true;
+  });
+  const uep = {};
+  let repartidos = 0, semMedida = 0;
+  Object.keys(G).forEach(function (k) {
+    const g = G[k], u = alvo[k], vols = Object.keys(g.vols);
+    const multi = g.nVol > 1 && vols.length > 1;
+    if (!multi || g.falta) {
+      if (multi) semMedida++;
+      vols.forEach(function (v) { uep[k + '#' + v] = u; });
+      return;
+    }
+    const tempo = {}; let soma = 0;
+    vols.forEach(function (v) { tempo[v] = g.vols[v].soma / g.vols[v].n; soma += tempo[v]; });
+    vols.forEach(function (v) { uep[k + '#' + v] = Math.round(u * vols.length * tempo[v] / soma * 100) / 100; });
+    repartidos++;
+  });
+  return { uep: uep, repartidos: repartidos, semMedida: semMedida };
+}
+
 function setUepCatalogo(p) {
   let lista;
   try { lista = JSON.parse(String(p.dados || '[]')); } catch (e) { return { ok: false, erro: 'dados inválidos' }; }
@@ -2325,24 +2365,39 @@ function setUepCatalogo(p) {
     const cods = sh.getRange(2, iCod + 1, lastRow - 1, 1).getValues();
     const colU = sh.getRange(2, iUep + 1, lastRow - 1, 1).getValues();
     const colV = sh.getRange(2, iVig + 1, lastRow - 1, 1).getValues();
-    const achados = {};
-    let gravados = 0;
+    // Para repartir entre VOLUMES: descrição (VOL a/b), medida e vão.
+    const _col = function (i) { return i >= 0 ? sh.getRange(2, i + 1, lastRow - 1, 1).getValues() : null; };
+    const _pref = function (pref) { var i = hdr.indexOf(pref); return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; }); };
+    const colD = _col(hdr.indexOf('DESCRICAO'));
+    const colM = _col(_pref('MEDIDA DA CAIXA'));
+    const colE = _col(_pref('ENTRE_PECA'));
+    const linhas = [];
     for (let i = 0; i < cods.length; i++) {
       const cod = String(cods[i][0] || '').trim();
       if (!cod) continue;
       const pr = produtoDoCodigo(cod);
       const k = pr.modelo + '|' + (pr.base || '');
       if (alvo[k] === undefined) continue;
-      colU[i][0] = alvo[k];
-      colV[i][0] = vig;
-      achados[k] = true;
-      gravados++;
+      const vm = String(colD ? colD[i][0] : '').match(/VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
+      const med = colM ? _numBR(colM[i][0]) : 0;
+      linhas.push({ i: i, k: k, vol: vm ? +vm[1] : 1, nVol: vm ? +vm[2] : 1,
+                    esteira: med > 0 ? med + (colE ? _numBR(colE[i][0]) : 0) : 0 });
     }
+    const porVol = _uepPorVolume(alvo, linhas);
+    const achados = {};
+    let gravados = 0;
+    linhas.forEach(function (l) {
+      colU[l.i][0] = porVol.uep[l.k + '#' + l.vol];
+      colV[l.i][0] = vig;
+      achados[l.k] = true;
+      gravados++;
+    });
     sh.getRange(2, iUep + 1, lastRow - 1, 1).setValues(colU);
     sh.getRange(2, iVig + 1, lastRow - 1, 1).setValues(colV);
     _catalogoMemo = null;
     const semCodigo = Object.keys(alvo).filter(function (k) { return !achados[k]; });
-    return { ok: true, gravados: gravados, produtos: Object.keys(achados).length, semCodigo: semCodigo };
+    return { ok: true, gravados: gravados, produtos: Object.keys(achados).length, semCodigo: semCodigo,
+             volumes: porVol.repartidos, volumesSemMedida: porVol.semMedida };
   } finally {
     lock.releaseLock();
   }

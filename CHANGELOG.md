@@ -11,7 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.80.1 — 24/09/2026
+## v7.81.0 · ⚠ .gs v5.12 — 24/09/2026
+
+**UEP por volume.** Nos produtos de 2 ou mais volumes, cada volume passa a ter a
+sua UEP. Os volumes são embalados juntos (PPCP), então o histórico não separa o
+ritmo de cada um. O **total do produto continua o medido** e é repartido entre
+os volumes pelo tempo de esteira de cada caixa (MEDIDA DA CAIXA + ENTRE_PECAS).
+Exemplo, CRISTALEIRA ORION: 1,54 + 1,54 → **1,75 (VOL 1/2) + 1,33 (VOL 2/2)**,
+total 3,08 nos dois casos.
+
+**Atenção:**
+- ⚠ **re-deploy** do `.gs` v5.12. Vale no próximo 💾 GRAVAR UEP.
+- Produto em que falta MEDIDA DA CAIXA em algum volume fica com a média, e o
+  alerta final diz quantos são.
+- Um novo GRAVAR UEP **sobrescreve** também a UEP digitada à mão nos produtos
+  do estudo. Quando a cronoanálise de um volume sair, digite o valor depois do
+  último GRAVAR.
+
+
 
 **💾 GRAVAR UEP mostra que está trabalhando.** Antes de gravar, o botão busca
 a produção do período com as caixas por hora, o que leva até 1 minuto e fica na

@@ -560,6 +560,7 @@ ok('a chave nunca é devolvida', JSON.stringify(r1).includes('sk-teste'), false)
 console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──');
 {
   eval(pega('function _numBR('));
+  eval(pega('function _uepPorVolume('));
   eval(pega('function setUepCatalogo('));
   ok('_numBR lê número pt-BR e número de verdade',
      [_numBR('0,84'), _numBR('1.234,5'), _numBR(2.26), _numBR(''), _numBR('x')], [0.84, 1234.5, 2.26, 0, 0]);
@@ -601,6 +602,34 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   setUepCatalogo({ vig: '25/09/2026', dados: JSON.stringify([['501094', 'MESA CABECEIRA SLEEP', 0.84]]) });
   ok('o 2º gravar não recria colunas nem mexe no que não enviou', [cabec.length, CAT[1][3], CAT[4][3]], [2, 0.9, 0.84]);
   ok('sem produto nenhum, não grava', setUepCatalogo({ dados: '[]' }).ok, false);
+  // ── v5.12: produto de 2+ volumes (embalados JUNTOS — o histórico não separa)
+  const pv = _uepPorVolume({ 'A|ORION': 1.54, 'B|MESA': 1 , 'C|SEM': 2 }, [
+    { k: 'A|ORION', vol: 1, nVol: 2, esteira: 1770 + 650 }, { k: 'A|ORION', vol: 1, nVol: 2, esteira: 1770 + 650 },
+    { k: 'A|ORION', vol: 2, nVol: 2, esteira: 1195 + 650 },
+    { k: 'B|MESA',  vol: 1, nVol: 1, esteira: 1500 },
+    { k: 'C|SEM',   vol: 1, nVol: 2, esteira: 1000 }, { k: 'C|SEM', vol: 2, nVol: 2, esteira: 0 }]);
+  ok('reparte o jogo pelo tempo de esteira (medida + vão): ORION 1,54 → 1,75 + 1,33',
+     [pv.uep['A|ORION#1'], pv.uep['A|ORION#2']], [1.75, 1.33]);
+  ok('o total do jogo não muda (2 × 1,54 = 3,08)', Math.round((pv.uep['A|ORION#1'] + pv.uep['A|ORION#2']) * 100) / 100, 3.08);
+  ok('volume único fica com a UEP do produto', pv.uep['B|MESA#1'], 1);
+  ok('faltou medida em algum volume → média, e é contado', [pv.uep['C|SEM#1'], pv.uep['C|SEM#2'], pv.repartidos, pv.semMedida], [2, 2, 1, 1]);
+  {
+    const CV = [['CODIGO', 'DESCRICAO', 'MEDIDA DA CAIXA', 'ENTRE_PECAS (mm)', 'UEP', 'UEP_VIGENCIA'],
+                ['501080001', 'VOL 1/2 CRISTALEIRA ORION', 1770, 650, '', ''],
+                ['501080002', 'VOL 2/2 CRISTALEIRA ORION', 1195, 650, '', '']];
+    const shV = { getLastRow: () => CV.length, getLastColumn: () => CV[0].length,
+      getRange: (l, c, nl, nc) => ({
+        getValues: () => CV.slice(l - 1, l - 1 + (nl || 1)).map(r => r.slice(c - 1, c - 1 + (nc || 1))),
+        setValue: v => { CV[l - 1][c - 1] = v; },
+        setValues: vs => vs.forEach((r, i) => { CV[l - 1 + i][c - 1] = r[0]; }) }) };
+    global.produtoDoCodigo = c => ({ modelo: c.slice(0, 6), base: 'CRISTALEIRA ORION' });
+    const PL2 = PLANILHA;
+    PLANILHA = { getSheetByName: n => n === 'PRODUTO_CODIGO' ? shV : null };
+    const rv = setUepCatalogo({ vig: '24/09/2026', dados: JSON.stringify([['501080', 'CRISTALEIRA ORION', 1.54]]) });
+    PLANILHA = PL2;
+    ok('no cadastro real: cada volume com a sua UEP, e o retorno conta o produto repartido',
+       [CV[1][4], CV[2][4], rv.volumes, rv.volumesSemMedida], [1.75, 1.33, 1, 0]);
+  }
   PLANILHA = PL;
   ok('é ação de ESCRITA (invalida o cache) e o dispatcher conhece',
      [/ACOES_ESCRITA = \[[^\]]*'setUepCatalogo'/.test(src), /act === 'setUepCatalogo'\)\s*result = setUepCatalogo\(p\)/.test(src)], [true, true]);
