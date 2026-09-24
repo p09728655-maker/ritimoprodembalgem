@@ -2448,6 +2448,14 @@ feito e dá ar de verdade ao que sobrou.
     entre eles sumiria. Ritmo em regime = horas em que o produto rodou
     sozinho; sem nenhuma, o peso usa o ritmo com hora cheia e a linha avisa.
     A hora vale 1 (inclusive o slot de 48 min), como no comparativo.
+  - ⚠ **O `cxHora` SÓ VAI COM `?cxHora=1`** (`.gs` v5.10, v7.77.0). Sempre no
+    payload, o período de 86 dias passou de **100 KB**, o `CacheService`
+    recusou (`/* >100KB: só não cacheia */`) e o comparativo por modelo
+    estourou os 25 s em toda tentativa — com o Apps Script respondendo o resto
+    normal. Só o estudo pede (`_uepItensPeriodo`: cache próprio 5 min, voo
+    compartilhado, `jsonpFetch` de 60 s); a chave do cache do `.gs` inclui
+    `cxHora`. **Campo novo no payload de leitura pesada = conferir o tamanho
+    contra os 100 KB do cache.**
   - Precisa do **`cxHora`** por item (`getProducaoModeloPeriodo`, `.gs` v5.9 —
     **re-deploy**). Sem ele (`_uepTemCxHora` falso) o estudo volta à hora
     cheia e o relatório diz que a divisão não está valendo.

@@ -2864,7 +2864,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.76.0';
+const APP_VER   = '7.77.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5227,15 +5227,19 @@ let PH_FALHA_ERRO='';      // detalhe (mensagem do backend ou do jsonpFetch)
 // retry, deixava a aba em branco. Retenta em SEQUÊNCIA, como o
 // lerSheetsComRetry e o _fetchParadasRetry (o Apps Script atende uma execução
 // por vez; em paralelo as tentativas só se enfileiram lá).
-async function lerProducaoModeloPeriodo(de,ate,onTent){
+async function lerProducaoModeloPeriodo(de,ate,onTent,opt){
   if(!CFG.sheetsUrl){ PH_FALHA='sem-resposta'; PH_FALHA_ERRO='sem URL do Apps Script'; return null; }
   let url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProducaoModeloPeriodo';
   if(de)  url+='&de='+encodeURIComponent(de);
   if(ate) url+='&ate='+encodeURIComponent(ate);
+  // Só o estudo de UEP pede as caixas por hora (`cxHora=1`, .gs v5.10): com
+  // elas o payload de um período longo passa de 100 KB, fica fora do cache do
+  // Apps Script e demora — por isso essa chamada espera mais (opt.ms).
+  if(opt && opt.cxHora) url+='&cxHora=1';
   const TENT=3;
   for(let i=1;i<=TENT;i++){
     try{
-      const json=await jsonpFetch(url);
+      const json=await jsonpFetch(url, opt && opt.ms);
       if(json && json.ok && Array.isArray(json.itens)){
         PH_BACKEND_OK=true; PH_FALHA=null; PH_FALHA_ERRO='';
         // Base da esteira (velocidade/entre-peças da planilha): habilita o
@@ -6012,8 +6016,30 @@ ${e.meta.de!=null?`<div class="rp-note"><b>FAIXA SUGERIDA DE META:</b> ${n0(e.me
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · estudo de UEP</span><span>${e.prods.length} produtos · ${n0(e.cxTot)} cx · ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)}</span></div>`;
 }
 
+// Busca do ESTUDO DE UEP: a mesma leitura do comparativo, com as caixas por
+// hora (`cxHora=1`) e 60 s de espera. Cache próprio de 5 min por período e
+// requisição em voo compartilhada — clicar duas vezes não dispara duas
+// execuções no Apps Script. O comparativo da tela segue sem cxHora (payload
+// pequeno, cacheável lá).
+let _uepCache={key:null, itens:null, t:0};
+let _uepVoo={key:null, p:null};
+async function _uepItensPeriodo(){
+  const de=dGet('ph-de'), ate=dGet('ph-ate'), key=de+'|'+ate;
+  if(_uepCache.key===key && _uepCache.itens && Date.now()-_uepCache.t<300000) return _uepCache.itens;
+  if(_uepVoo.key===key && _uepVoo.p) return _uepVoo.p;
+  const p=(async()=>{
+    try{
+      const itens=await lerProducaoModeloPeriodo(de, ate, null, {cxHora:true, ms:60000});
+      if(itens!=null) _uepCache={key, itens, t:Date.now()};
+      return itens;
+    } finally { if(_uepVoo.key===key) _uepVoo={key:null, p:null}; }
+  })();
+  _uepVoo={key, p};
+  return p;
+}
+
 async function gerarRelatorioUEP(){
-  const itens=await _phItensPeriodo();
+  const itens=await _uepItensPeriodo();
   if(itens==null){ alert(_phFalhaTxt()); return; }
   if(!itens.length){ alert('Sem produção apontada com produto no período — nada para estudar.'); return; }
   const win=window.open('','_blank','width=1100,height=800');

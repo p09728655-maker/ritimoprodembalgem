@@ -3581,6 +3581,10 @@ console.log('\n── estudo de UEP ──');
      [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, c8), _qpValorNoPercentil(60, c8)]);
   ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada').meta.de, null);
   ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
+  ok('o estudo pede cxHora e espera mais; o comparativo não pede',
+     [/cxHora:true, ms:60000/.test(pega('async function _uepItensPeriodo(')),
+      /await _uepItensPeriodo\(\)/.test(pega('async function gerarRelatorioUEP(')),
+      /lerProducaoModeloPeriodo\(de,ate,onTent\)/.test(pega('async function _phItensPeriodo('))], [true, true, true]);
   ok('o relatório usa a faixa da aba PLANO', /_uepEstudo\(itens, ctx\.modo, realByDay, QP_FAIXA\)/.test(pega('async function gerarRelatorioUEP(')), true);
 
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);

@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.10 — O `cxHora` SÓ VAI QUANDO PEDIDO (?cxHora=1)
+//               Com ele sempre no payload, o período de 86 dias passou de
+//               100 KB: o CacheService recusa, nenhuma chamada ficava em
+//               cache e o comparativo por modelo estourava os 25 s em toda
+//               tentativa. Agora só o estudo de UEP pede, e a chave de cache
+//               separa as duas respostas.
 // Versão: 5.9 — CAIXAS POR HORA NO LOG DO PERÍODO (estudo de UEP)
 //               getProducaoModeloPeriodo() manda `cxHora` ({hora: caixas})
 //               em cada item. Nenhuma leitura nova: o laço já passava por
@@ -1000,7 +1006,7 @@ function doGet(e) {
     try {
       cache = CacheService.getScriptCache();
       cacheKey = 'rp:' + _cacheGen(cache) + ':' + actEf + ':' +
-        ['data', 'de', 'ate', 'codigo', 'modelo'].map(function (k) { return p[k] || ''; }).join('|');
+        ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora'].map(function (k) { return p[k] || ''; }).join('|');
       const hit = cache.get(cacheKey);
       if (hit) return _saidaJson(hit, callback);
     } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
@@ -2424,6 +2430,9 @@ function getProducaoModeloPeriodo(p) {
 
   const deNum  = p.de  ? dataParaNum(p.de)  : null;
   const ateNum = p.ate ? dataParaNum(p.ate) : null;
+  // v5.10: caixas por hora só para quem pede (o estudo de UEP). Sempre no
+  // payload, ele passava de 100 KB e matava o cache do comparativo.
+  const querCxHora = String(p.cxHora || '') === '1';
 
   // Recorte por data na LEITURA, não só no filtro: a aba tem milhares de linhas
   // e o período pede algumas centenas. O filtro do laço continua igual — ele é
@@ -2518,7 +2527,7 @@ function getProducaoModeloPeriodo(p) {
              // quantas trocas ele custou. O número de horas sozinho não separa
              // "rodou direto" de "saiu e voltou depois de outro produto".
              horasLista: Object.keys(it.horasSet).sort(),
-             cxHora: it.cxHora,   // v5.9 — {hora: caixas}, base da divisão proporcional da hora
+             cxHora: querCxHora ? it.cxHora : undefined,   // v5.9/5.10 — {hora: caixas}, só com ?cxHora=1
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;

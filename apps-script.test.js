@@ -464,7 +464,11 @@ ok('acha a coluna DATA pelo cabeçalho', v.slice(1).map(r => r[0]), ['b']);
 // mesmo laço que já montava o horasSet.
 ok('getProducaoModeloPeriodo acumula as caixas por hora do item',
    /map\[key\]\.cxHora\[hora\] = \(map\[key\]\.cxHora\[hora\] \|\| 0\) \+ cx;/.test(src), true);
-ok('e devolve o cxHora no item', /cxHora: it\.cxHora,/.test(src), true);
+ok('e devolve o cxHora no item SÓ quando pedido (v5.10)', /cxHora: querCxHora \? it\.cxHora : undefined,/.test(src), true);
+ok('o pedido é ?cxHora=1', /const querCxHora = String\(p\.cxHora \|\| ''\) === '1';/.test(src), true);
+// Sem o cxHora na chave, a resposta sem ele (do comparativo) seria servida ao
+// estudo de UEP — e vice-versa — pelos 5 min do cache.
+ok('a chave do cache separa com e sem cxHora', /\['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora'\]/.test(src), true);
 
 // Os dois chamadores usam a leitura recortada.
 ok('getProducaoModeloPeriodo lê recortado, com a conversão DELE',

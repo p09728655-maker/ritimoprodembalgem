@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.77.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.10)
+
+**O comparativo por modelo voltou a carregar em período longo.** Depois do
+.gs v5.9, a aba PRODUÇÃO/HORA com 01/07–24/09 dava *"O SERVIDOR NÃO RESPONDEU
+A TEMPO"* nas três tentativas, com o Apps Script respondendo normalmente às
+outras chamadas. Causa provável: as caixas por hora (`cxHora`), que só o
+estudo de UEP usa, iam em **toda** resposta. O período longo passou de 100 KB,
+o cache do Apps Script recusa acima disso, e cada chamada relia o log inteiro.
+
+- O `.gs` v5.10 só manda `cxHora` quando a chamada pede (`cxHora=1`), e a
+  chave do cache separa as duas respostas.
+- O 📐 ESTUDO UEP faz a busca própria, com `cxHora=1`, **60 s** de espera
+  (antes, 25), cache de 5 min e requisição em voo compartilhada.
+- **Atenção:** nenhum número muda.
+- ⚠ **re-deploy (.gs v5.10).** Antes dele o estudo já funciona (espera mais),
+  mas o comparativo continua pesado.
+
+---
+
 ## v7.76.0 — 24/09/2026
 
 **ESTUDO UEP: UEP pelo ritmo em regime, teste de sanidade pelo teto e faixa
