@@ -2406,6 +2406,38 @@ feito e dá ar de verdade ao que sobrou.
     contradição** — é repetição, então é preferência, não defeito. O usuário
     decidiu **manter** em 15/09/2026.
 
+## ESTUDO DE UEP — só análise, só no gerencial (v7.72.0)
+- Pedido do PPCP, 24/09/2026: *"definir a UEP de cada produto — o que mais
+  embala por hora vale uma UEP, os outros proporcional"*. Combinado com o
+  usuário: **primeiro uso previsto = META DO DIA** (a meta em caixas herda o
+  mix), e **nada é divulgado** por enquanto — é relatório para análise, botão
+  **📐 ESTUDO UEP** na aba PRODUÇÃO/HORA. TV e celular não veem.
+- `_uepProdutos` / `_uepEstudo` (conta) + `_uepHtml` (desenho, sem conta) +
+  `gerarRelatorioUEP` (usa `_phItensPeriodo`, a busca com cache/voo da aba —
+  **nenhuma chamada nova, sem re-deploy**). Documento: `_rpDocParadas`, retrato.
+- **UEP/cx = ritmo da âncora ÷ ritmo do produto.** Duas âncoras: **A = maior
+  volume** (recomendada — produto-base clássico, estável) e **B = mais rápido**
+  (o pedido; o máximo é o valor mais instável, se ele mudar a UEP de todos
+  muda). Só mudam a escala.
+- ⚠ **Por PRODUTO (modelo + nome), nunca por cor nem pelos 6 dígitos.** Na
+  tela de 24/09 a MESA CABECEIRA SLEEP ia de 112 a 313 cx/h conforme a cor:
+  ruído (paralelismo, amostra), não esforço. Divergência ≥ `UEP_COR_DIVERGE`
+  (1,5×) vira alerta. Horas do dia = **distintas** (regra do
+  `simularEsteiraPorModelo`), ritmo = `_phMediaAparada` com o filtro MÉDIA.
+- **< `UEP_MIN_DIAS` (5) dias → sem UEP e contado**, nunca 1 por padrão.
+- **Conferência:** oscilação do ritmo da linha dia a dia em cx/h × UEP/h
+  (`_qpOscilacao`), mesmas caixas sobre as mesmas horas da linha. Otimista:
+  reprova, não prova.
+- ⚠ Ritmo **demonstrado ≠ tempo padrão** (carrega desempenho, paralelismo e
+  apontamento). Próximos passos combinados: PPCP escolhe a âncora → valida os
+  de maior volume (cronoanálise) → congela a UEP no cadastro (`PRODUTO_CODIGO`,
+  com vigência) → a meta do dia passa a ser julgada em UEP. **O operador
+  continua vendo caixas.** Não calcular UEP ao vivo em tela oficial: recalcular
+  todo dia mudaria a meta histórica.
+- O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
+  chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
+  passar a ler dali — não criar uma segunda régua de esforço.
+
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:
   *"pelo histórico temos tempo de cada produto, o que dá pra fazer?"*. A régua

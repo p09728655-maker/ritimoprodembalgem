@@ -1120,7 +1120,7 @@ ok('a frase do re-deploy mora num lugar só',
    (JS.match(/faça o <b>re-deploy<\/b>/g) || []).length, 1);
 ok('a tela e o PDF leem a mesma explicação',
    [(JS.match(/(?<!function )_phFalhaInfo\(\)/g) || []).length,
-    (JS.match(/(?<!function )_phFalhaTxt\(\)/g) || []).length], [2, 1]);
+    (JS.match(/(?<!function )_phFalhaTxt\(\)/g) || []).length], [2, 2]);   // PDF do período + estudo de UEP
 // A chamada mais cara do painel não pode ter uma tentativa só: era isso que
 // transformava cold start em "falta re-deploy".
 ok('a busca do período retenta antes de desistir',
@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os seis relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 6);
+ok('e os sete relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 7);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2506,7 +2506,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 4);
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 5);   // + estudo de UEP
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2517,8 +2517,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 10 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 11);   // 10 chamadas + a declaração
+ok('e é UMA implementação — os 11 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 12);   // 11 chamadas + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -3440,6 +3440,51 @@ ok('a TV segue imprimindo a projeção sem veredito',
      /_paradasPeriodoBusca\(de, ate\)/.test(pega('async function _pgBuscarDados(')), true);
   ok('a busca compartilhada é definida uma vez só',
      (JS.match(/async function _paradasPeriodoBusca\(/g) || []).length, 1);
+}
+
+// ── ESTUDO DE UEP (v7.72.0) ─────────────────────────────────────────────────
+// UEP por caixa = ritmo da âncora ÷ ritmo do produto, POR PRODUTO (cores
+// somadas), com amostra mínima e duas âncoras. Só estudo: nenhuma tela usa.
+console.log('\n── estudo de UEP ──');
+{
+  global.UEP_MIN_DIAS = Number(JS.match(/const UEP_MIN_DIAS\s*=\s*(\d+)/)[1]);
+  global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
+  eval(pega('function _uepProdutos('));
+  eval(pega('function _uepEstudo('));
+  const it = [];
+  const dia = i => p2(i + 1) + '/09/2026';
+  // A: 300 cx/h, 6 dias, 2 h/dia · B: 150 cx/h, 6 dias, 2 h/dia, maior volume
+  // (em duas cores na MESMA hora — conta uma hora de esteira, não duas)
+  // C: 3 dias só → sem UEP
+  for (let i = 0; i < 6; i++) {
+    it.push({ data: dia(i), modelo: '500001', nome: 'RAPIDO', cor: 'BRANCO', caixas: 600, horas: 2, horasLista: ['08:00-09:00', '09:00-10:00'] });
+    it.push({ data: dia(i), modelo: '500002', nome: 'LENTO', cor: 'BRANCO', caixas: 400, horas: 2, horasLista: ['10:00-11:00', '13:00-14:00'] });
+    it.push({ data: dia(i), modelo: '500002', nome: 'LENTO', cor: 'PRETO',  caixas: 200, horas: 2, horasLista: ['10:00-11:00', '13:00-14:00'] });
+  }
+  for (let i = 0; i < 3; i++)
+    it.push({ data: dia(i), modelo: '500003', nome: 'NOVO', cor: '', caixas: 100, horas: 1, horasLista: ['14:00-15:00'] });
+  const e = _uepEstudo(it, 'aparada');
+  const by = n => e.prods.find(p => p.nome === n);
+  ok('cores do mesmo produto somam e a hora repetida conta uma vez', Math.round(by('LENTO').ritmo), 300);
+  // B tem 600 cx em 2 h = 300 → mesmo ritmo do A. Ajusta para testar a proporção.
+  const it2 = it.map(x => x.nome === 'LENTO' ? { ...x, caixas: x.caixas / 2 } : x);
+  const e2 = _uepEstudo(it2, 'aparada');
+  const b2 = n => e2.prods.find(p => p.nome === n);
+  ok('âncora rápido = o de maior ritmo', e2.rapido.nome, 'RAPIDO');
+  ok('âncora volume = o de mais caixas', e2.volume.nome, 'RAPIDO');
+  ok('produto na metade do ritmo vale 2 UEP/cx', b2('LENTO').uepRap, 2);
+  ok('a âncora vale 1', b2('RAPIDO').uepVol, 1);
+  ok('menos de 5 dias fica SEM UEP (nunca 1 por padrão)', [b2('NOVO').amostraOk, b2('NOVO').uepVol], [false, null]);
+  ok('sem amostra vai para o fim da lista', e2.prods[e2.prods.length - 1].nome, 'NOVO');
+  ok('cobertura conta só caixas de produto com UEP', Math.round(e2.cobertura), Math.round(6 * 900 / (6 * 900 + 300) * 100));
+  ok('UEP no período = caixas × UEP', b2('LENTO').uepPeriodo, 6 * 300 * 2);
+  // A âncora muda a ESCALA, não a proporção: a razão entre produtos é a mesma.
+  ok('as duas âncoras mantêm a proporção', b2('LENTO').uepVol / b2('RAPIDO').uepVol, b2('LENTO').uepRap / b2('RAPIDO').uepRap);
+  ok('o desenho não faz conta', /_uepProdutos|_phMediaAparada|_qpOscilacao/.test(pega('function _uepHtml(')), false);
+  ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
+  // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
+  ok('a conta do estudo tem um chamador só', (JS.match(/gerarRelatorioUEP\(|_uepEstudo\(/g) || []).length, 3);
+  ok('e um botão só, na barra da PRODUÇÃO/HORA', (src.match(/onclick="gerarRelatorioUEP\(\)"/g) || []).length, 1);
 }
 
 console.log(falhas === 0
