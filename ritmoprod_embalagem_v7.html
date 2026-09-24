@@ -2822,6 +2822,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div class="frm-row" style="margin-top:12px">
       <div class="frm-grp"><label class="frm-lbl">META DO DIA (UEP)</label><input class="frm-inp" id="cap-meta" type="text" inputmode="numeric" oninput="_capPintar()"></div>
+      <div class="frm-grp" style="max-width:190px"><label class="frm-lbl">VELOCIDADE ESTEIRA (m/min)</label><input class="frm-inp" id="cap-vel" type="text" inputmode="decimal" placeholder="do cadastro" oninput="_capPintar()" title="Vazio = velocidade do cadastro. Digite outra para ver o limite com a esteira mais rápida."></div>
       <div class="frm-grp"><label class="frm-lbl">BUSCAR PRODUTO</label><input class="frm-inp" id="cap-busca" type="text" placeholder="ex.: ELOA, MADERO, 501061" oninput="_capPintar()"></div>
     </div>
     <div id="cap-res"><div class="empty-msg">Carregando o cadastro…</div></div>
@@ -2907,7 +2908,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.94.0';
+const APP_VER   = '7.95.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7054,21 +7055,48 @@ function _capProdutos(cat){
     if(u>0 && (v.min==null || u<v.min)) v.min=u;   // cor MAIS RÁPIDA = menor UEP; nunca a média (PPCP)
     const pt=Number(p.pontos)||0;              // PONTOS do cadastro, por caixa (volume)
     if(pt>0){ v.ps+=pt; v.pn++; }
+    // LIMITE FÍSICO DA ESTEIRA (v7.95.0): a mesma conta do _tetoEsteiraCxH do
+    // .gs — velocidade (m/min) × 60.000 ÷ (medida da caixa + entre-peças, mm) =
+    // cx/h. Guarda o TEMPO por caixa (h/cx); entre as cores, o mais curto.
+    const vel=Number(p.velocidade)||0, med=Number(p.medida)||0, ent=Number(p.entrePeca)||0;
+    if(vel>0 && med>0){ const t=(med+ent)/(vel*60000); if(v.tMin==null || t<v.tMin){ v.tMin=t; v.mm=med+ent; v.vel=vel; } }
   });
   return Object.values(G).map(g=>{
-    let uep=0, faltam=[], pts=0, ptsFalta=0;
+    let uep=0, faltam=[], pts=0, ptsFalta=0, tJogo=0, tFalta=0, mmJogo=0, velCad=0;
     for(let v=1; v<=g.nVol; v++){
       const x=g.vols[v];
       if(x&&x.min!=null) uep+=x.min; else faltam.push(v);
       if(x&&x.pn) pts+=x.ps/x.pn; else ptsFalta++;
+      if(x&&x.tMin!=null){ tJogo+=x.tMin; mmJogo+=x.mm; velCad=Math.max(velCad,x.vel); } else tFalta++;
     }
+    // Produtos por hora que a esteira passa: os volumes do jogo em sequência.
+    // Volume sem medida/velocidade → sem limite (null), nunca um limite inventado.
+    const tetoH = (!tFalta && tJogo>0) ? 1/tJogo : null;
     // Pontos do PRODUTO = soma dos volumes (média entre as cores: ponto é tabela, não ritmo).
     // Volume sem pontos → null (nunca meio produto).
     return { chave:g.chave, modelo:g.modelo, nome:g.nome, nVol:g.nVol, nCores:Object.keys(g.cores).length,
              codigos:g.codigos, uepJogo: faltam.length? null : Math.round(uep*100)/100, volSemUep:faltam,
-             ptsJogo: ptsFalta? null : Math.round(pts*100)/100 };
+             ptsJogo: ptsFalta? null : Math.round(pts*100)/100,
+             tetoH, tetoDia: tetoH!=null ? Math.floor(tetoH*UEP_MIN_DIA/60) : null,
+             mmJogo: tetoH!=null ? mmJogo : null, velCad: tetoH!=null ? velCad : null };
   }).sort((a,b)=>a.nome.localeCompare(b.nome));
 }
+// Produtos por dia de UM produto sozinho na linha: pela UEP e pelo limite da
+// esteira. Quando a UEP promete mais do que a esteira passa, vale o limite e o
+// produto é MARCADO — é sinal de UEP baixa demais no cadastro, a conferir.
+// `velSim` (m/min, opcional): a esteira pode rodar mais rápido que o cadastro
+// (PPCP: "a esteira eu posso aumentar a velocidade"). Com ela, o limite é
+// refeito com a MESMA medida dos volumes: velSim × 60.000 ÷ mm do jogo.
+function _capDia(p, meta, velSim){
+  const M=Number(meta)>0?Number(meta):UEP_META_PADRAO;
+  const tetoDia = (p && Number(velSim)>0 && p.mmJogo>0)
+    ? Math.floor(Number(velSim)*60000/p.mmJogo*UEP_MIN_DIA/60) : (p?p.tetoDia:null);
+  const porUep = p&&p.uepJogo>0 ? Math.floor(M/p.uepJogo) : null;
+  if(porUep==null) return {porUep:null, dia:null, limitado:false, tetoDia};
+  const limitado = tetoDia!=null && porUep>tetoDia;
+  return {porUep, dia: limitado ? tetoDia : porUep, limitado, tetoDia};
+}
+function _capVel(){ return _pgSimNum((document.getElementById('cap-vel')||{}).value)||0; }
 // Mix digitado: [{chave, qtde}] contra a meta. Produto sem UEP completa fica
 // fora da soma e é contado — nunca vira zero.
 function _capMix(prods, mix, meta){
@@ -7096,7 +7124,7 @@ let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
 let CAP_FALHA=null, CAP_BUSCANDO=false, CAP_CAT_ORIGEM='';
 const CAP_LS='rpe_cap_cat';
 function _capGuardar(prods){
-  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,pontos:x.pontos}))})); }catch(e){}
+  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,pontos:x.pontos,medida:x.medida,velocidade:x.velocidade,entrePeca:x.entrePeca}))})); }catch(e){}
 }
 function _capDoLocal(){
   try{ const o=JSON.parse(localStorage.getItem(CAP_LS)||'null'); if(o&&Array.isArray(o.p)&&o.p.length) return o; }catch(e){}
@@ -7175,11 +7203,12 @@ ${r.semUep.length?`<div class="rp-note">${plural(r.semUep.length,'produto','prod
 
 <div class="rp-sec-ttl">3 ▸ CADA UM SOZINHO NA LINHA</div>
 <table>
-  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th></tr></thead>
-  <tbody>${r.linhas.map(l=>{ const jd=l.p.uepJogo>0?r.meta/l.p.uepJogo:null;
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>LIMITE ESTEIRA / DIA</th></tr></thead>
+  <tbody>${r.linhas.map(l=>{ const c=_capDia(l.p, r.meta, _capVel()), jd=c.dia;
     return `<tr><td class="td-mono">${_rpEsc(l.p.modelo)}</td><td>${_rpEsc(l.p.nome)}</td><td class="td-mono">${l.p.uepJogo>0?u2(l.p.uepJogo):'—'}</td>
-    <td class="td-bold">${jd!=null?fmtN(Math.floor(jd)):'—'}</td><td class="td-mono">${jd!=null?fmtN(Math.floor(jd)*l.p.nVol):'—'}</td>
-    <td class="td-mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td></tr>`; }).join('')}</tbody>
+    <td class="td-bold">${jd!=null?fmtN(jd):'—'}${c.limitado?` <span style="font-size:8.5px;font-weight:700;color:#B4650A">⚠ LIMITE</span>`:''}</td><td class="td-mono">${jd!=null?fmtN(jd*l.p.nVol):'—'}</td>
+    <td class="td-mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
+    <td class="td-mono">${c.tetoDia!=null?fmtN(c.tetoDia):'—'}</td></tr>`; }).join('')}</tbody>
 </table>
 
 <div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
@@ -7210,6 +7239,7 @@ ${r.semUep.length?`<div class="rp-note">${plural(r.semUep.length,'produto','prod
 function gerarRelatorioCapTodos(){
   if(!CAP_CAT){ alert('O cadastro ainda está carregando. Tente em alguns segundos.'); return; }
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
+  const velS=_capVel();   // velocidade simulada da esteira (vazio = a do cadastro)
   // DE UMA VEZ (PPCP): o cadastro inteiro, independente do que está na busca.
   const base=CAP_CAT;
   const com=CAP_CAT.filter(p=>p.uepJogo>0).sort((a,b)=>b.uepJogo-a.uepJogo||a.nome.localeCompare(b.nome));
@@ -7219,16 +7249,19 @@ function gerarRelatorioCapTodos(){
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este endereço e tente de novo.'); return; }
   const u2=v=>v.toFixed(2).replace('.',',');
   const corpo=`
-<div class="rp-note" style="margin-top:0">Quantos produtos <b>completos</b> cabem num dia com <b>cada produto sozinho na linha</b>, pela meta de <b>${fmtN(meta)} UEP</b> na jornada normal (${UEP_MIN_DIA} min). Todos os produtos do cadastro, do mais pesado para o mais leve.</div>
+<div class="rp-note" style="margin-top:0">Quantos produtos <b>completos</b> cabem num dia com <b>cada produto sozinho na linha</b>, pela meta de <b>${fmtN(meta)} UEP</b> na jornada normal (${UEP_MIN_DIA} min). Todos os produtos do cadastro, do mais pesado para o mais leve. Limite da esteira ${velS>0?`com velocidade <b>SIMULADA de ${fmtN(velS)} m/min</b>`:'com a velocidade do cadastro'}.</div>
 <div class="rp-sec-ttl">CAPACIDADE DIÁRIA POR PRODUTO · ${plural(com.length,'produto','produtos')}</div>
 <table>
-  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>PONTOS / DIA</th></tr></thead>
-  <tbody>${com.map(p=>{ const jd=meta/p.uepJogo;
-    return `<tr><td class="td-mono">${_rpEsc(p.modelo)}</td><td>${_rpEsc(p.nome)}</td><td class="td-mono">${p.nVol}</td><td class="td-mono">${p.nCores||'—'}</td>
-      <td class="td-mono">${u2(p.uepJogo)}</td><td class="td-bold">${fmtN(Math.floor(jd))}</td><td class="td-mono">${fmtN(Math.floor(jd)*p.nVol)}</td>
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>LIMITE ESTEIRA / DIA</th><th>PONTOS / DIA</th></tr></thead>
+  <tbody>${com.map(p=>{ const c=_capDia(p, meta, velS), jd=c.dia;
+    return `<tr${c.limitado?' style="background:#fff8ed;-webkit-print-color-adjust:exact;print-color-adjust:exact"':''}><td class="td-mono">${_rpEsc(p.modelo)}</td><td>${_rpEsc(p.nome)}${c.limitado?`<div style="font-size:8.5px;font-weight:700;color:#B4650A">⚠ pela UEP seriam ${fmtN(c.porUep)}/dia, a esteira ${velS>0?'a '+fmtN(velS)+' m/min':'na velocidade do cadastro'} passa ${fmtN(c.tetoDia)}</div>`:''}</td><td class="td-mono">${p.nVol}</td><td class="td-mono">${p.nCores||'—'}</td>
+      <td class="td-mono">${u2(p.uepJogo)}</td><td class="td-bold">${fmtN(jd)}</td><td class="td-mono">${fmtN(jd*p.nVol)}</td>
       <td class="td-mono">${fmtN(Math.round(jd/UEP_MIN_DIA*60))}</td>
-      <td class="td-bold" title="${p.ptsJogo!=null?fmtN(Math.floor(jd))+' produtos × '+String(p.ptsJogo).replace('.',',')+' pontos por produto':'algum volume sem PONTOS no cadastro'}">${p.ptsJogo!=null?fmtN(Math.round(Math.floor(jd)*p.ptsJogo)):'—'}</td></tr>`; }).join('')}</tbody>
+      <td class="td-mono">${c.tetoDia!=null?fmtN(c.tetoDia):'—'}</td>
+      <td class="td-bold" title="${p.ptsJogo!=null?fmtN(jd)+' produtos × '+String(p.ptsJogo).replace('.',',')+' pontos por produto':'algum volume sem PONTOS no cadastro'}">${p.ptsJogo!=null?fmtN(Math.round(jd*p.ptsJogo)):'—'}</td></tr>`; }).join('')}</tbody>
 </table>
+${(()=>{ const lim=com.filter(p=>_capDia(p, meta, velS).limitado);
+  return lim.length?`<div class="rp-note" style="color:#B4650A"><b>${plural(lim.length,'produto','produtos')} passa(m) do limite da esteira</b> ${velS>0?'a '+fmtN(velS)+' m/min':'na velocidade do cadastro'}: a capacidade saiu cortada no limite. Ou a UEP está baixa demais, ou a linha roda mais rápido que a velocidade cadastrada — nos dois casos, conferir (UEP ou VELOCIDADE na PRODUTO_CODIGO).</div>`:''; })()}
 ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(sem.length,'produto','produtos')}</div>
 <div class="rp-note">Algum volume está sem UEP na coluna UEP da PRODUTO_CODIGO — sem ela não dá para dizer quantos cabem. ${sem.slice(0,60).map(p=>_rpEsc(p.modelo+' '+p.nome)+(p.volSemUep.length?` (vol. ${p.volSemUep.join(', ')})`:'')).join(' · ')}${sem.length>60?` · e mais ${sem.length-60}`:''}.</div>`:''}
 <div class="rp-sec-ttl">COMO O NÚMERO SAI</div>
@@ -7236,6 +7269,7 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
   <b>UEP do produto</b> = soma da UEP de cada volume no cadastro; entre as cores vale a mais rápida (menor UEP), nunca a média.
   <b>Produtos / dia</b> = meta de UEP ÷ UEP do produto, arredondado para baixo. <b>Caixas / dia</b> = produtos × volumes.
   <b>Produtos / hora</b> = produtos / dia ÷ ${UEP_MIN_DIA} min × 60.
+  <b>Limite esteira / dia</b> = produtos que a esteira passa em ${UEP_MIN_DIA} min: velocidade × 60.000 ÷ (medida da caixa + entre-peças), somando o tempo de cada volume. Quando a UEP promete mais, vale o limite e a linha sai marcada. Velocidade: a do cadastro, ou a digitada no simulador.
   <b>Pontos / dia</b> = produtos / dia × pontos do produto (soma dos PONTOS de cada volume no cadastro) — para comparar a régua de UEP com a de pontos.<br>
   É o ritmo <b>demonstrado</b> da linha, não o teto da esteira; vale para a jornada normal, sem hora extra. Num dia com vários produtos, cada um ocupa a parte dele — use o simulador (DIA MONTADO).
 </div>
@@ -7294,11 +7328,11 @@ function _capPintar(){
   const lista=!q?'<div class="empty-msg" style="padding:10px">Digite o nome ou o código do produto.</div>'
     : !achados.length?'<div class="empty-msg" style="padding:10px">Nenhum produto com esse nome no cadastro.</div>'
     : `<table><thead><tr><th>PRODUTO</th><th>VOLUMES</th><th>UEP / PRODUTO</th><th>SOZINHO NO DIA</th><th>POR HORA</th><th></th></tr></thead><tbody>${achados.map(p=>{
-        const jd=p.uepJogo>0?meta/p.uepJogo:null;
-        return `<tr><td>${_rpEsc(p.modelo+' · '+p.nome)}${p.nCores>1?` <span style="font-size:10px;color:var(--txt2)">${p.nCores} cores</span>`:''}</td>
+        const cd=_capDia(p, meta, _capVel()), jd=cd.dia;
+        return `<tr><td>${_rpEsc(p.modelo+' · '+p.nome)}${p.nCores>1?` <span style="font-size:10px;color:var(--txt2)">${p.nCores} cores</span>`:''}${cd.limitado?`<div style="font-size:10px;color:var(--warn)" title="Pela UEP seriam ${fmtN(cd.porUep)} por dia; a esteira passa ${fmtN(cd.tetoDia)} (velocidade × medida da caixa + entre-peças). Conferir a UEP no cadastro.">⚠ passa do limite da esteira${_capVel()>0?' a '+fmtN(_capVel())+' m/min':' (velocidade do cadastro)'}</div>`:''}</td>
           <td class="mono">${p.nVol}</td>
           <td class="mono">${p.uepJogo>0?fmtU(p.uepJogo):`<span style="color:var(--warn)" title="volume(s) ${p.volSemUep.join(', ')} sem UEP no cadastro">sem UEP</span>`}</td>
-          <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(Math.floor(jd)):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(Math.floor(jd)*p.nVol)} cx</span>`:''}</td>
+          <td class="mono" style="color:var(--txt)"><b>${jd!=null?fmtN(jd):'—'}</b> ${jd!=null?`<span style="font-size:10px;color:var(--txt2)">produtos · ${fmtN(jd*p.nVol)} cx${cd.limitado?' · limite da esteira':''}</span>`:''}</td>
           <td class="mono">${jd!=null?fmtN(Math.round(jd/UEP_MIN_DIA*60)):'—'}</td>
           <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ ADICIONAR AO DIA</button></td></tr>`; }).join('')}</tbody></table>`;
   const origem=CAP_CAT_ORIGEM?`<div style="font-size:10.5px;color:var(--txt2);margin-bottom:6px">${_rpEsc(CAP_CAT_ORIGEM)}${CAP_BUSCANDO?' · atualizando…':CAP_FALHA?' · não atualizou: '+_rpEsc(CAP_FALHA)+' <a href="#" onclick="_capBuscar();return false" style="color:var(--acc)">tentar de novo</a>':''}</div>`:'';

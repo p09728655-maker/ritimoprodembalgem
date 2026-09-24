@@ -3695,8 +3695,25 @@ console.log('\n── estudo de UEP ──');
     ok('PONTOS do produto = soma dos volumes; volume sem pontos → null', [eloa.ptsJogo, rack.ptsJogo], [200, null]);
     ok('a capacidade por produto imprime DEITADA (pedido do PPCP)',
        /_rpDocParadas\('Capacidade diária por produto', true\)/.test(pega('function gerarRelatorioCapTodos(')), true);
+    eval(pega('function _capDia('));
+    const cpT = _capProdutos([
+      { codigo: '501094001', desc: 'VOL 1/1 MESA CABECEIRA SLEEP', cor: 'A', uep: 0.84, velocidade: 15, medida: 2400, entrePeca: 300 },
+      { codigo: '501061001', desc: 'VOL 1/2 PENTEADEIRA ELOA', cor: 'A', uep: 2.3, velocidade: 15, medida: 1200, entrePeca: 300 },
+      { codigo: '501061002', desc: 'VOL 2/2 PENTEADEIRA ELOA', cor: 'A', uep: 2.02, velocidade: 15, medida: 900, entrePeca: 300 },
+      { codigo: '501149001', desc: 'VOL 1/1 MESA MADERO', cor: 'A', uep: 1 }]);
+    const sl = cpT.find(p => /SLEEP/.test(p.nome)), el = cpT.find(p => /ELOA/.test(p.nome)), md = cpT.find(p => /MADERO/.test(p.nome));
+    ok('limite da esteira: vel × 60.000 ÷ (medida + entre-peças); volumes somam tempo',
+       [Math.round(sl.tetoH), Math.round(el.tetoH), md.tetoH], [333, 333, null]);
+    ok('UEP que promete mais do que a esteira passa: corta no limite e marca',
+       [_capDia(sl, 2530).porUep, _capDia(sl, 2530).limitado, _capDia(sl, 2530).dia === sl.tetoDia], [3011, true, true]);
+    ok('dentro do limite não marca; sem medida não inventa limite',
+       [_capDia(el, 2530).limitado, _capDia(md, 2530).limitado, _capDia(md, 2530).dia], [false, false, 2530]);
+    ok('as duas impressões e a tela usam o _capDia (não recalculam)',
+       [/_capDia\(p, meta, velS\)/.test(pega('function gerarRelatorioCapTodos(')), /_capDia\(l\.p, r\.meta, _capVel\(\)\)/.test(pega('function gerarRelatorioCapUep(')), /_capDia\(p, meta, _capVel\(\)\)/.test(pega('function _capPintar('))], [true, true, true]);
+    ok('velocidade simulada refaz o limite com a mesma medida (esteira mais rápida = limite maior)',
+       [_capDia(sl, 2530, 30).tetoDia, _capDia(sl, 2530, 30).limitado], [Math.floor(30 * 60000 / 2700 * 527 / 60), false]);
     ok('a impressão por produto tem PONTOS / DIA na última coluna',
-       /<th>PRODUTOS \/ HORA<\/th><th>PONTOS \/ DIA<\/th><\/tr>/.test(pega('function gerarRelatorioCapTodos(')), true);
+       /<th>PONTOS \/ DIA<\/th><\/tr><\/thead>/.test(pega('function gerarRelatorioCapTodos(')), true);
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
     ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',
