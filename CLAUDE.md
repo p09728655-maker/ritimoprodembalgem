@@ -2524,6 +2524,17 @@ feito e dá ar de verdade ao que sobrou.
     Provisórias vão junto (o confirm diz quantas). **Recalcular não troca a
     régua — só um novo GRAVAR troca**, como manda a regra de não mover meta
     histórica.
+  - **UEP POR VOLUME** (`.gs` v5.12, `_uepPorVolume`, PPCP 24/09/2026: *"cada
+    volume tem um ritmo, o total no produto está ok"* e *"não embala um volume
+    por vez"*). Com os volumes INTERCALADOS nenhum dado de hora separa o ritmo
+    de cada um: o estudo mede o PRODUTO (caixas dos volumes juntas), e o
+    `setUepCatalogo` reparte o jogo (`uep × nº de volumes`) pelo tempo de
+    esteira de cada volume (`MEDIDA DA CAIXA + ENTRE_PECAS`, lido do cadastro).
+    O total do produto não muda (ORION 1,54+1,54 → 1,75+1,33). Falta medida em
+    algum volume → média, contado no alerta. ⚠ Um novo GRAVAR **sobrescreve** a
+    UEP digitada à mão (cronoanálise por volume): digitar depois do último
+    GRAVAR. Não tentar "medir por volume" no histórico sem a linha passar a
+    embalar um volume por vez.
   - `getPontosDia` devolve **`uep`** = `{normal, he, cxCom, cxSem, codigos}`,
     com a HE pela **mesma régua das caixas** (`_ehHoraExtraCaixas`). Nenhuma
     leitura nova (o catálogo já era lido).

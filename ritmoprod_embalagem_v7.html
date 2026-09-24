@@ -2865,7 +2865,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.80.1';
+const APP_VER   = '7.81.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6168,7 +6168,7 @@ async function _gravarUepCadastro(){
     +'Sobrescreve a UEP desses produtos em todos os códigos deles. Os outros códigos ficam como estão.')) return;
   const lista=ps.map(p=>[p.modelo, p.nome, Math.round(p.uepVol*100)/100]);
   _uepBotao('⏳ GRAVANDO NO CADASTRO…');
-  let gravados=0, produtos=0; const semCodigo=[];
+  let gravados=0, produtos=0, volumes=0, volSemMed=0; const semCodigo=[];
   try{
     for(let i=0;i<lista.length;i+=UEP_GRAVAR_LOTE){
       const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setUepCatalogo'
@@ -6178,12 +6178,17 @@ async function _gravarUepCadastro(){
       // .gs antigo não conhece a ação e cai no getDados: responde sem `gravados`.
       if(!r || r.gravados===undefined){ alert('O Apps Script não conhece a gravação da UEP — cole o ritmoprod_appscript.gs v5.11 e re-deploye (Gerenciar implantações → Editar → Nova versão).'); return; }
       gravados+=r.gravados||0; produtos+=r.produtos||0; (r.semCodigo||[]).forEach(k=>semCodigo.push(k));
+      volumes+=r.volumes||0; volSemMed+=r.volumesSemMedida||0;
     }
   }catch(err){
     alert('A gravação não terminou: '+(err&&err.message||err)+'\nPode tocar de novo — regravar é seguro.'+(gravados?'\n('+gravados+' código(s) já tinham sido gravados.)':''));
     return;
   }
   alert('UEP gravada: '+produtos+' produto(s), '+gravados+' código(s) na PRODUTO_CODIGO.'
+    // .gs v5.12: produto de 2+ volumes tem a UEP repartida entre eles pelo
+    // tempo de esteira de cada caixa (o total do jogo não muda).
+    +(volumes?'\n'+volumes+' produto(s) de 2+ volumes: UEP repartida entre os volumes pela medida da caixa (o total do produto não muda).':'')
+    +(volSemMed?'\n'+volSemMed+' produto(s) de 2+ volumes ficaram com a média — falta MEDIDA DA CAIXA em algum volume.':'')
     +(semCodigo.length?'\n\n'+semCodigo.length+' produto(s) sem código correspondente no cadastro: '+semCodigo.slice(0,5).join(' · ')+(semCodigo.length>5?' …':''):'')
     +'\n\nO card UEP DO DIA passa a usar esta régua na próxima leitura (até ~1 min).');
   try{ await lerPontosDia(); renderGerencial(); }catch(_){}
