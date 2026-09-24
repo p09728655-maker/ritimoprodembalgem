@@ -11,6 +11,11 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.90.1 — 24/09/2026
+
+**↺ LIMPAR no simulador de CAPACIDADE UEP.** Apaga a busca e o mix e volta a
+meta para a das configurações. Nenhum número muda.
+
 ## v7.90.0 — 24/09/2026
 
 **🧮 CAPACIDADE UEP na aba PROGRAMAÇÃO**: um simulador de quantos

@@ -2815,6 +2815,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="modal-ttl" style="margin:0">🧮 CAPACIDADE EM UEP · PRODUTO COMPLETO</div>
       <span style="font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--warn);border:0.5px solid var(--warn);border-radius:3px;padding:2px 6px">SIMULAÇÃO</span>
       <div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px" onclick="_capLimpar()" title="Apaga a busca e o mix e volta a meta para a das configurações">↺ LIMPAR</button>
       <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="fecharCapUep()" aria-label="Fechar">✕</button>
     </div>
     <div class="frm-row" style="margin-top:12px">
@@ -2904,7 +2905,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.90.0';
+const APP_VER   = '7.90.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7069,6 +7070,13 @@ async function abrirCapUep(){
       await new Promise(ok=>setTimeout(ok, 2000*t)); }
   }
   _capPintar();
+}
+// ↺ LIMPAR: busca e mix vazios, meta de volta à das configurações.
+function _capLimpar(){
+  CAP_MIX=[];
+  const b=document.getElementById('cap-busca'); if(b) b.value='';
+  const m=document.getElementById('cap-meta'); if(m) m.value=String(Number(PONTOS_DIA.metaUep)>0?PONTOS_DIA.metaUep:UEP_META_PADRAO);
+  _capPintar(); if(b) b.focus();
 }
 function fecharCapUep(){ document.getElementById('modal-capuep').classList.remove('on'); }
 function _capAdd(chave){ if(!CAP_MIX.some(x=>x.chave===chave)) CAP_MIX.push({chave, qtde:0}); _capPintar(); }
