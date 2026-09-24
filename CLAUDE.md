@@ -2606,6 +2606,17 @@ feito e dá ar de verdade ao que sobrou.
   (`_valoresPorData`). ⚠ A hora usa a UEP do cadastro **ATUAL**; o total do
   card é o **congelado** no fechamento. Os dois podem diferir, e o tooltip diz
   isso. Falhou ou não há UEP → `null` e a coluna some.
+- **UEP EM DESTAQUE NA SEMANA E NAS IMPRESSÕES** (v7.87.0, PPCP 24/09/2026:
+  *"na semana tbm colocar a UEP e em todas impressões destacando"*).
+  `_rpUepFaixaHtml(dias)` é a faixa ÚNICA do relatório semanal e do histórico,
+  logo abaixo do resumo. É desenho: a conta é o `uepHistResumo`, que ganhou
+  `metaTot`, a soma das metas dos dias COM UEP. PDF do dia: 1º card
+  `uepDoc = uepCard(...)`. PDF do período: card UEP APONTADA
+  (`_phUepTotal`, todas as horas e só as caixas apontadas; não é a UEP de
+  jornada). O bloco da semana ganhou `gsem-linha-uep` e a linha de UEP por
+  dia (`comUep`, só com o prefixo `gsem-`). ⚠ O `pintar` é o mesmo da Tela D,
+  e a TV não mostra UEP porque não tem esses ids. WhatsApp: linha própria, sem
+  emoji. Paradas, perdas e simulador continuam em caixas.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
