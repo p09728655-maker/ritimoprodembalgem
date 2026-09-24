@@ -3682,6 +3682,8 @@ console.log('\n── estudo de UEP ──');
     ok('UEP do PRODUTO = soma dos volumes (média entre cores); cores contadas',
        [eloa.nVol, eloa.uepJogo, eloa.nCores], [2, 4.42, 2]);
     ok('PONTOS do produto = soma dos volumes; volume sem pontos → null', [eloa.ptsJogo, rack.ptsJogo], [200, null]);
+    ok('a capacidade por produto imprime DEITADA (pedido do PPCP)',
+       /_rpDocParadas\('Capacidade diária por produto', true\)/.test(pega('function gerarRelatorioCapTodos(')), true);
     ok('a impressão por produto tem PONTOS / DIA na última coluna',
        /<th>PRODUTOS \/ HORA<\/th><th>PONTOS \/ DIA<\/th><\/tr>/.test(pega('function gerarRelatorioCapTodos(')), true);
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);

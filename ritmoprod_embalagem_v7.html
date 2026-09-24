@@ -7184,7 +7184,7 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
   É o ritmo <b>demonstrado</b> da linha, não o teto da esteira; vale para a jornada normal, sem hora extra. Num dia com vários produtos, cada um ocupa a parte dele — use o simulador (DIA MONTADO).
 </div>
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>capacidade por produto · meta ${fmtN(meta)} UEP</span></div>`;
-  const html=_rpDocParadas('Capacidade diária por produto')
+  const html=_rpDocParadas('Capacidade diária por produto', true)   // PAISAGEM (PPCP: "pode virar a página")
     + _rpBotaoImprimir()
     + _rpCabecalho('CAPACIDADE DIÁRIA POR PRODUTO',
         `<div class="rp-per">EM UEP</div>
