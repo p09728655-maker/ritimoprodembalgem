@@ -2476,6 +2476,16 @@ feito e dá ar de verdade ao que sobrou.
   ritmo **fora da amostra 43,8% → 22,6%** e do dia **34,0% → 14,7%** — a UEP
   explica metade da variação; em UEP a meta do dia cabe no limite de 20% da
   aba PLANO, em caixas não. Só 9 de 89 produtos com 5+ dias.
+- **v7.76.0 (leitura do PDF real com o PPCP):** a UEP sai do **ritmo EM
+  REGIME** com `UEP_REGIME_MIN_H` (4) h ou mais sozinho, senão do usado
+  (`baseRegime`; o campo `ritmo` do produto É a base da UEP, `ritmoUsado` é a
+  coluna). ⚠ O **teste de sanidade é o TETO da âncora**, nunca o ritmo médio:
+  a v7.75.0 comparava com a média e acusou 20 de 60 dias — dia bom passa da
+  média; pelo teto sobraram 4. Suspeito = acima do teto da âncora OU
+  apontamento acima do realizado; sai da **faixa sugerida de meta** (p50–p60
+  da UEP em 8 h, `QP_FAIXA` da aba PLANO, `QP_MIN_DIAS`+ dias válidos).
+  Leitura de 01/07–24/09 (antes do regime): capacidade p50 **2.192** / p60
+  **2.223 UEP em 8 h**, oscilando **8,5%** contra **34,8%** das caixas/dia.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

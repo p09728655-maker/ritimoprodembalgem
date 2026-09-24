@@ -3451,6 +3451,10 @@ console.log('\n── estudo de UEP ──');
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
   global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
   global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
+  global.UEP_REGIME_MIN_H = Number(JS.match(/const UEP_REGIME_MIN_H\s*=\s*(\d+)/)[1]);
+  for (const k of ['QP_ALVO_MIN', 'QP_ALVO_MAX', 'QP_MIN_DIAS'])
+    if (typeof global[k] === 'undefined') global[k] = Number(JS.match(new RegExp('const ' + k + '\\s*=\\s*(\\d+)'))[1]);
+  if (typeof _qpValorNoPercentil === 'undefined') eval(pega('function _qpValorNoPercentil('));
   global.UEP_VALID_MIN_DIAS = Number(JS.match(/const UEP_VALID_MIN_DIAS\s*=\s*(\d+)/)[1]);
   if (typeof _phParseData === 'undefined') eval(pega('function _phParseData('));
   eval(pega('function _uepTemCxHora('));
@@ -3551,6 +3555,33 @@ console.log('\n── estudo de UEP ──');
   const pC = _uepEstudo(itC, 'aparada').prods.find(p => p.nome === 'A');
   ok('ritmo acima do teto físico é limitado ao teto', [Math.round(pC.ritmoBruto), pC.ritmo, pC.limitadoTeto], [300, 250, true]);
   ok('o desenho avisa o ritmo limitado', /RITMO LIMITADO AO TETO/.test(pega('function _uepHtml(')), true);
+
+  // ── v7.76.0: UEP pelo regime, sanidade pelo teto da âncora, faixa de meta ──
+  ok('com 4+ h sozinho a UEP sai do ritmo em regime', [bH('A').baseRegime, bH('A').hSozinho >= UEP_REGIME_MIN_H], [true, true]);
+  ok('com menos, sai do ritmo usado', pP.map(p => p.baseRegime), [false, false]);
+  // Regime e usado diferem: a UEP segue o regime.
+  const itR = [];
+  for (let i = 0; i < 6; i++) {
+    itR.push({ data: dia(i), modelo: '1', nome: 'X', caixas: 400, horas: 2, horasLista: ['08:00', '09:00'], cxHora: { '08:00': 300, '09:00': 100 } });
+    itR.push({ data: dia(i), modelo: '2', nome: 'Y', caixas: 300, horas: 2, horasLista: ['09:00', '10:00'], cxHora: { '09:00': 150, '10:00': 150 } });
+  }
+  const pR = _uepProdutos(itR, 'aparada').find(p => p.nome === 'X');
+  ok('produto com regime usa o regime, não o usado', [pR.ritmo, pR.ritmoReg, pR.ritmoUsado !== pR.ritmoReg], [300, 300, true]);
+  // Faixa de meta: 12 dias, UEP em 8 h variando; 1 dia com apontamento acima do realizado sai.
+  const itM = [], rbM = {};
+  for (let i = 0; i < 12; i++) {
+    const cx = 200 + 10 * i;
+    itM.push({ data: dia(i), modelo: '9', nome: 'Z', caixas: cx, horas: 1, horasLista: ['08:00'], cxHora: { '08:00': cx } });
+    rbM[dia(i)] = i === 11 ? cx / 2 : cx;
+  }
+  const eM = _uepEstudo(itM, 'aparada', rbM, [50, 60]);
+  ok('dia com apontamento acima do realizado é suspeito e fica fora', [eM.nSuspeitos, eM.meta.nDias], [1, 11]);
+  const c8 = eM.dias.filter(d => !d.suspeito).map(d => d.uep8).sort((a, b) => a - b);
+  ok('a faixa de meta é p50–p60 da UEP em 8 h dos dias válidos',
+     [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, c8), _qpValorNoPercentil(60, c8)]);
+  ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada').meta.de, null);
+  ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
+  ok('o relatório usa a faixa da aba PLANO', /_uepEstudo\(itens, ctx\.modo, realByDay, QP_FAIXA\)/.test(pega('async function gerarRelatorioUEP(')), true);
 
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
   // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
