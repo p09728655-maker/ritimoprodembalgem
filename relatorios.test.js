@@ -3474,9 +3474,12 @@ console.log('\n── estudo de UEP ──');
   ok('âncora volume = o de mais caixas', e2.volume.nome, 'RAPIDO');
   ok('produto na metade do ritmo vale 2 UEP/cx', b2('LENTO').uepRap, 2);
   ok('a âncora vale 1', b2('RAPIDO').uepVol, 1);
-  ok('menos de 5 dias fica SEM UEP (nunca 1 por padrão)', [b2('NOVO').amostraOk, b2('NOVO').uepVol], [false, null]);
-  ok('sem amostra vai para o fim da lista', e2.prods[e2.prods.length - 1].nome, 'NOVO');
-  ok('cobertura conta só caixas de produto com UEP', Math.round(e2.cobertura), Math.round(6 * 900 / (6 * 900 + 300) * 100));
+  // Pedido do PPCP (24/09/2026): amostra curta TAMBÉM ganha UEP, marcada provisória.
+  ok('menos de 5 dias ganha UEP PROVISÓRIA', [b2('NOVO').amostraOk, b2('NOVO').provisoria, b2('NOVO').uepVol], [false, true, 3]);
+  ok('e é contada à parte', [e2.nOk, e2.nProv, e2.nSem], [2, 1, 0]);
+  ok('a âncora continua exigindo amostra', [e2.rapido.amostraOk, e2.volume.amostraOk], [true, true]);
+  ok('o relatório escreve a observação na linha', /UEP PROVISÓRIA<\/b> — amostra curta/.test(pega('function _uepHtml(')), true);
+  ok('com provisórias a cobertura vai a 100%', Math.round(e2.cobertura), 100);
   ok('UEP no período = caixas × UEP', b2('LENTO').uepPeriodo, 6 * 300 * 2);
   // A âncora muda a ESCALA, não a proporção: a razão entre produtos é a mesma.
   ok('as duas âncoras mantêm a proporção', b2('LENTO').uepVol / b2('RAPIDO').uepVol, b2('LENTO').uepRap / b2('RAPIDO').uepRap);

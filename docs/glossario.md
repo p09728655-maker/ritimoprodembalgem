@@ -188,15 +188,16 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **UEP/CX** | ritmo da âncora ÷ ritmo do produto (a âncora vale 1,00) | UEP/cx | `v7:5686` |
+| **UEP/CX** | ritmo da âncora ÷ ritmo do produto (a âncora vale 1,00) | UEP/cx | `v7:5693` |
 | **RITMO (do estudo)** | caixas ÷ horas **distintas** do produto no dia, média do filtro MÉDIA; cores somadas | cx/h | `v7:_uepProdutos` |
 | **UEP NO PERÍODO** | caixas × UEP/cx (âncora A) | UEP | `v7:_uepEstudo` |
-| **CAIXAS COBERTAS** | caixas de produto com UEP ÷ caixas apontadas com produto × 100 | % | `v7:5706` |
-| **OSCILAÇÃO CX/H → UEP/H** | desvio ÷ média do ritmo da linha dia a dia, em cx/h e em UEP/h, sobre as mesmas caixas | % | `v7:5709` |
+| **CAIXAS COBERTAS** | caixas de produto com UEP ÷ caixas apontadas com produto × 100 | % | `v7:5714` |
+| **OSCILAÇÃO CX/H → UEP/H** | desvio ÷ média do ritmo da linha dia a dia, em cx/h e em UEP/h, sobre as mesmas caixas | % | `v7:5717` |
 
 **Como ler:** âncora A = produto com mais caixas no período; âncora B = o mais
-rápido. As duas mudam só a escala. Produto com menos de 5 dias rodados fica sem
-UEP. É estudo: nenhum número do painel usa a UEP.
+rápido. As duas mudam só a escala. Produto com menos de 5 dias rodados sai com
+UEP **PROVISÓRIA** (marcada com \*). A âncora só sai dos que têm 5+ dias. É
+estudo: nenhum número do painel usa a UEP.
 
 ## Simulador de investimento
 

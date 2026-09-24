@@ -2424,7 +2424,11 @@ feito e dá ar de verdade ao que sobrou.
   ruído (paralelismo, amostra), não esforço. Divergência ≥ `UEP_COR_DIVERGE`
   (1,5×) vira alerta. Horas do dia = **distintas** (regra do
   `simularEsteiraPorModelo`), ritmo = `_phMediaAparada` com o filtro MÉDIA.
-- **< `UEP_MIN_DIAS` (5) dias → sem UEP e contado**, nunca 1 por padrão.
+- **< `UEP_MIN_DIAS` (5) dias → UEP PROVISÓRIA** (v7.73.0, PPCP: *"pode
+  colocar UEP mesmo com pouca caixa, mas deixe a observação"*): calculada,
+  com `*` no número, observação na coluna CONFERIR e contada à parte
+  (`nProv`). ⚠ A **âncora** continua só entre quem tem amostra — âncora de 2
+  dias mudaria a escala de todos. Sem ritmo → sem UEP, nunca 1 por padrão.
 - **Conferência:** oscilação do ritmo da linha dia a dia em cx/h × UEP/h
   (`_qpOscilacao`), mesmas caixas sobre as mesmas horas da linha. Otimista:
   reprova, não prova.
