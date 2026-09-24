@@ -2641,6 +2641,17 @@ feito e dá ar de verdade ao que sobrou.
     cache de 10 min).
   - Digitar a quantidade atualiza só as células (`_capQtde`), senão o campo
     perde o foco.
+- **ENTRE AS CORES VALE A MAIS RÁPIDA, NUNCA A MÉDIA** (v7.94.0, PPCP
+  24/09/2026). Revoga a leitura anterior ("cor é ruído, UEP pela média do
+  produto").
+  - `_uepProdutos` monta o regime por COR (`matCor`): hora com o produto
+    sozinho na linha E uma cor só dele.
+  - A base da UEP é a cor mais rápida com `UEP_REGIME_MIN_H`+ h assim
+    (`baseCor`/`corRap`). Senão, o regime do produto; senão, o usado. O teto
+    físico continua limitando.
+  - Simulador: entre as cores de um volume vale a MENOR UEP do cadastro. Pontos
+    continuam pela média (ponto é tabela, não ritmo).
+  - ⚠ Só vale no painel depois de um novo 💾 GRAVAR UEP.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
