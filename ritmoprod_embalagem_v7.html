@@ -2315,7 +2315,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="export-row">
       <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUEP()" title="Estudo para análise do PPCP: UEP (unidade de esforço) de cada produto pelo ritmo demonstrado no período. Não muda nenhum número do painel.">📐 ESTUDO UEP</button>
-      <button class="btn btn-ghost" onclick="gravarUepCadastro()" title="Grava a UEP por caixa do estudo deste período na coluna UEP da PRODUTO_CODIGO (com vigência de hoje). É o parâmetro que o card UEP DO DIA do gerencial usa.">💾 GRAVAR UEP</button>
+      <button class="btn btn-ghost" id="btn-gravar-uep" onclick="gravarUepCadastro()" title="Grava a UEP por caixa do estudo deste período na coluna UEP da PRODUTO_CODIGO (com vigência de hoje). É o parâmetro que o card UEP DO DIA do gerencial usa.">💾 GRAVAR UEP</button>
     </div>
   </div>
 
@@ -2865,7 +2865,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.80.0';
+const APP_VER   = '7.80.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6133,8 +6133,24 @@ async function gerarRelatorioUEP(){
 // Em lotes de 20 produtos, em SEQUÊNCIA (URL de JSONP tem limite e o Apps
 // Script atende uma execução por vez); repetir é seguro, é sobrescrita.
 const UEP_GRAVAR_LOTE = 20;
+let _uepGravando=false;
+// O botão MOSTRA que está trabalhando: a busca do período (com as caixas por
+// hora) leva até 1 min e fica na fila do Apps Script atrás do comparativo da
+// aba. Sem sinal, esperar era igual a botão quebrado (24/09/2026: "botão
+// parece não funcionar"); e o 2º toque não dispara outra busca.
+function _uepBotao(txt){
+  const b=document.getElementById('btn-gravar-uep'); if(!b) return;
+  b.disabled=!!txt; b.textContent=txt||'💾 GRAVAR UEP';
+}
 async function gravarUepCadastro(){
+  if(_uepGravando) return;
+  _uepGravando=true;
+  try{ await _gravarUepCadastro(); }
+  finally{ _uepGravando=false; _uepBotao(''); }
+}
+async function _gravarUepCadastro(){
   if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script configurada — nada a gravar.'); return; }
+  _uepBotao('⏳ BUSCANDO O PERÍODO… (até 1 min)');
   const itens=await _uepItensPeriodo();
   if(itens==null){ alert(_phFalhaTxt()); return; }
   if(!itens.length){ alert('Sem produção apontada com produto no período — nada para gravar.'); return; }
@@ -6143,6 +6159,7 @@ async function gravarUepCadastro(){
   if(!ps.length || !e.volume){ alert('Nenhum produto com UEP no período (sem âncora com '+UEP_MIN_DIAS+'+ dias). Aumente o período.'); return; }
   const de=dGet('ph-de'), ate=dGet('ph-ate');
   const nProv=ps.filter(p=>p.provisoria).length;
+  _uepBotao('⏳ AGUARDANDO CONFIRMAÇÃO…');
   if(!confirm('Gravar a UEP por caixa de '+ps.length+' produto(s) na coluna UEP da PRODUTO_CODIGO?\n\n'
     +'Âncora (1,00): '+e.volume.modelo+' '+e.volume.nome+'\n'
     +'Estudo de '+de+' a '+ate+' · média '+(_phMediaModo()==='completa'?'COMPLETA':'APARADA')+'\n'
@@ -6150,6 +6167,7 @@ async function gravarUepCadastro(){
     +'Vigência: '+hojeStr()+'\n\n'
     +'Sobrescreve a UEP desses produtos em todos os códigos deles. Os outros códigos ficam como estão.')) return;
   const lista=ps.map(p=>[p.modelo, p.nome, Math.round(p.uepVol*100)/100]);
+  _uepBotao('⏳ GRAVANDO NO CADASTRO…');
   let gravados=0, produtos=0; const semCodigo=[];
   try{
     for(let i=0;i<lista.length;i+=UEP_GRAVAR_LOTE){
