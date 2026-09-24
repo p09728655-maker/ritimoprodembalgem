@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.71.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.8)
+
+**TELA E por LOTE.** Na TV a versão por código ficou pequena: o lote 25213
+ocupava 5 das 6 linhas com a mesma MESA COMPUTADOR MILLION em cores
+diferentes. Agora é **uma linha por lote**: nome do produto (sem "VOL 1/1" e
+sem a cor), nº de cores, **FALTA** em número grande, **"de N no lote"** (o
+total programado do lote) e uma barra de progresso do lote. Até 4 lotes na
+tela; a faixa do topo virou uma linha só para dar altura aos lotes.
+
+- A barra agora é honesta: no lote o total é **fixo** (na visão por código o
+  total encolhia com o atraso vivo, por isso lá não havia barra).
+- **RODANDO AGORA** marca o lote que é a cabeça do FIFO do produto
+  selecionado no celular — é nele que a próxima caixa cai.
+- **Atenção:** o total do lote é o programado com data **até hoje**
+  (inclusive linhas já arquivadas); linha do mesmo lote datada para o futuro
+  não entra. Nenhum número existente mudou.
+- ⚠ **re-deploy (.gs v5.8):** `calcularProgramacao` devolve `porLote` (mesmo
+  cálculo, nenhuma leitura nova). Antes do re-deploy a Tela E continua na
+  visão por código da v7.70.0.
+
+---
+
 ## v7.70.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.7)
 
 **TELA E da TV — PROGRAMAÇÃO DO DIA.** Quinta tela do carrossel: o que falta

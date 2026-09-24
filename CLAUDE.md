@@ -333,6 +333,22 @@ via Google Apps Script (JSONP).
   no ciclo não há "volta" que a atualize.
 - ⚠ O `th` global do painel tem fundo e a `.c-lote` do td valia no th: por isso
   o `.tve-tab th{background:none}` e o `th.c-lote` com corpo de rótulo.
+- **POR LOTE desde a v7.71.0 / `.gs` v5.8** (PPCP, 24/09/2026, com a TV na
+  mão: *"na tv ficou pequeno… nome do produto e qtde geral de cada lote"*). O
+  lote 25213 ocupava 5 das 6 linhas com a MESMA mesa em cores diferentes.
+  - `calcularProgramacao` devolve **`porLote`** (`_somaNoLote`/`_fecharLotes`,
+    mesmo FIFO, nenhuma leitura nova): `qtde` (programado com data ≤ hoje,
+    arquivadas incluídas), `falta`, `atrasoDesde`, `produto` (o de mais caixas,
+    `produtoDoCodigo().base` — sem VOL e sem cor), `outros`, `cores` e
+    **`cabeca`** (códigos para os quais o lote é o 1º aberto do FIFO — é o
+    RODANDO AGORA). Entra lote com saldo, lote de hoje e lote que recebeu
+    produção hoje (conta como concluído); lote velho zerado fica fora.
+  - Front: `_telaELotes` (conta) + `_telaELotesHtml` (desenho), máx.
+    `TV_E_MAX_LOTE`=4. **No lote a barra de progresso é honesta** (total fixo);
+    na visão por código continua sem barra. Sem `porLote` (backend antigo) o
+    `_sincSlideE` cai na visão por código.
+  - ⚠ Linha do mesmo lote com data FUTURA não entra no total (o FIFO só abre
+    demanda até hoje).
 
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
