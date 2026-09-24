@@ -3639,6 +3639,28 @@ console.log('\n── estudo de UEP ──');
     ok('semana sem UEP gravada: a seção não sai', _relUepSemanaHtml([{ uep: null }]), '');
     ok('o relatório semanal e o do dia levam a UEP',
        [/\$\{_relUepSemanaHtml\(diasSem\)\}/.test(JS), /UEP DO DIA \(jornada normal\)/.test(JS)], [true, true]);
+    // v7.87.0 — UEP em destaque em todas as impressões
+    eval(pega('function _rpUepFaixaHtml('));
+    const fx = _rpUepFaixaHtml([{ data: '22/09/2026', uep: 2400, metaUep: 2530, uepHe: 100 }, { data: '23/09/2026', uep: 2700, metaUep: 2530 }, { data: '24/09/2026', uep: null }]);
+    ok('faixa de UEP: total contra a soma das metas dos dias COM UEP, selo com a palavra, dia sem UEP contado',
+       [/5\.100/.test(fx), /de 5\.060 UEP/.test(fx), /NA META/.test(fx), /1 dia sem UEP/.test(fx), /\+100 UEP/.test(fx)], [true, true, true, true, true]);
+    ok('faixa de UEP: período sem UEP gravada não sai', _rpUepFaixaHtml([{ uep: null }]), '');
+    ok('a faixa destacada está no semanal e no histórico',
+       [/\$\{_rpUepFaixaHtml\(diasSem\)\}/.test(JS), /\$\{_rpUepFaixaHtml\(dias\)\}/.test(JS)], [true, true]);
+    ok('o relatório do dia abre com o card UEP DO DIA, pela mesma conta do gerencial',
+       [/const uepDoc=\(PONTOS_DIA\.uep&&PONTOS_DIA\.uep\.codigos>0\)\?uepCard\(/.test(pega('async function gerarRelatorioProducaoModelo(')),
+        /UEP DO DIA · JORNADA/.test(pega('async function gerarRelatorioProducaoModelo('))], [true, true]);
+    eval(pega('function _phUepTotal('));
+    global.PH_UEP_PROD = { '501134|PENTEADEIRA PRINCESA': 1.94, '501149|MESA MADERO': 1 };
+    const ut = _phUepTotal([{ modelo: '501134', nome: 'PENTEADEIRA PRINCESA', caixas: 100 }, { modelo: '501149', nome: 'MESA MADERO', caixas: 300 }, { modelo: '9', nome: 'X', caixas: 50 }]);
+    ok('UEP APONTADA do período: Σ caixas × UEP, caixa sem UEP à parte', [Math.round(ut.uep), ut.cxSem], [494, 50]);
+    global.PH_UEP_PROD = null;
+    ok('sem o mapa do backend, sem card de UEP no período', _phUepTotal([{ caixas: 1 }]), null);
+    ok('o relatório do período leva o card UEP APONTADA',
+       /const uepPer=_phUepTotal\(itensView\)/.test(pega('async function gerarRelatorioProducaoHora(')), true);
+    ok('o resumo do WhatsApp e o bloco da semana levam a UEP; a TV não (ids só no gerencial)',
+       [/UEP \(jornada normal\)/.test(pega('function _zapResumoSemana(')), /id="gsem-linha-uep"/.test(src), /id="tvd-linha-uep"/.test(src),
+        /const comUep = pfx === 'gsem-';/.test(JS)], [true, true, false, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',

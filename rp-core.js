@@ -269,6 +269,9 @@ function uepHistResumo(dias){
   return { n: com.length, semUep: (dias || []).length - com.length,
            total: tot, media: com.length ? tot / com.length : null,
            bateu, he: com.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
+           // Soma das metas DOS DIAS COM UEP (cada um com a sua): é contra ela
+           // que o total do período se compara, nunca meta × nº de dias do filtro.
+           metaTot: com.reduce((s, d) => s + uepDiaMeta(d), 0),
            meta: com.length ? uepDiaMeta(com[com.length - 1]) : UEP_META_PADRAO };
 }
 
@@ -283,7 +286,7 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.8.0',
+  versao: '1.9.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo']

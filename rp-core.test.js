@@ -249,6 +249,7 @@ ok('sem meta do dia também não',
   ok('média só dos dias COM UEP; o dia sem UEP é contado à parte', [r.n, r.semUep, Math.round(r.media)], [3, 1, 2167]);
   ok('bateu = UEP ≥ a meta DAQUELE dia (gravada no fechamento)', r.bateu, 2);
   ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2530);
+  ok('metaTot = soma das metas de cada dia COM UEP (não meta × dias do filtro)', r.metaTot, 6500);
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
 }
 

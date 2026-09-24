@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.87.0 — 24/09/2026
+
+**UEP EM DESTAQUE NA SEMANA E NAS IMPRESSÕES.**
+- **FECHAMENTO DA SEMANA PASSADA** (gerencial): nova coluna **UEP · JORNADA**
+  com o total da semana, o % da meta de UEP, quantos dias bateram, a média por
+  dia e a UEP em HE. Cada dia ganha a linha `2.410 UEP · 95,3%`.
+- **Relatório SEMANAL** e **relatório do HISTÓRICO**: faixa **UEP · JORNADA
+  NORMAL** logo abaixo do resumo, com total, meta, % e selo (NA META · ATENÇÃO
+  · ABAIXO DA META). O do histórico também ganha a coluna UEP no detalhamento.
+- **Relatório do DIA (produção por modelo)**: o primeiro card do resumo passa a
+  ser **UEP DO DIA · JORNADA**, com a mesma conta do card do gerencial.
+- **Relatório do PERÍODO (produção por modelo)**: card **UEP APONTADA** (caixas
+  apontadas com produto × UEP/cx do cadastro).
+- **Resumo do WhatsApp**: linha da UEP da semana e a UEP de cada dia.
+
+**Atenção:**
+- A meta da semana em UEP é a **soma das metas de cada dia com UEP gravada**.
+  Dia sem UEP fica fora da conta e é contado à parte, nunca como zero.
+- A **UEP APONTADA** do período conta **todas as horas, HE inclusive**, e só
+  as caixas apontadas com produto. Por isso não bate com a UEP de jornada do
+  HISTÓRICO.
+- A **TV não mostra UEP** (Tela D inclusive). Os relatórios de paradas, gestão
+  de perdas e simulador continuam em caixas.
+- Corrigido o texto do relatório semanal que ainda dizia "meta de UEP de 8 h"
+  (desde a v7.84.0 a meta é da jornada normal inteira).
+
 ## v7.86.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.16)
 
 **UEP HORA A HORA NO DIA PASSADO.** No gerencial, ao escolher um dia anterior, a
