@@ -2556,6 +2556,28 @@ feito e dá ar de verdade ao que sobrou.
   `rp-core`, usados pelos dois gerenciais. Só HOJE: dia passado não tem
   `porHoraModelo` (a coluna some no modo histórico). O mobile passou a guardar
   `porHoraModelo` no `PONTOS_DIA`.
+- **UEP NO HISTÓRICO, RELATÓRIOS E COMPARATIVO** (v7.83.0 / mobile 1.22.0 /
+  `.gs` v5.14, PPCP 24/09/2026). Colunas **12 UEP · 13 UEP HE · 14 META UEP**
+  no `HISTORICO`, gravadas por `arquivarDiaAtual` e `saveDay` via
+  `_uepColsDoDia` (lê o log DIRETO — é escrita — e o cadastro; HE pela régua
+  `_ehHoraExtraCaixas`; conta pura `_uepPorDiaDoLog`). **Congeladas**: mudar a
+  UEP do cadastro não reescreve dia fechado (regra de não mover meta
+  histórica). Sem UEP no cadastro → células vazias, nunca 0. `getHistory`/
+  `getHoraDia` devolvem `uep/uepHe/metaUep` (null = sem). `preencherUepPassada
+  (sobrescrever)` no editor preenche os antigos com a UEP ATUAL (a da época não
+  existe). `UEP_META_PADRAO_GS` = `UEP_META_PADRAO` do rp-core (teste prende).
+  `_numBR` lê `2.300` como milhar.
+  - Front: `uepHistResumo`/`uepDiaMeta` (rp-core) — média só dos dias com UEP,
+    bateu = UEP ≥ meta DAQUELE dia. HISTÓRICO (coluna + card, grid `c6`),
+    gerencial de dia passado (card), celular (modal do dia), relatório semanal
+    (`_relUepSemanaHtml`, seção própria — a tabela diária já é larga), PDF do
+    dia (coluna + linha pelo `uepCard`), total do dia por modelo (`calcPorModelo`
+    soma o `uep` do `porHoraModelo`; UEP/cx só das caixas COM UEP).
+  - Comparativo do período: `getProducaoModeloPeriodo` manda **`uepProd`**
+    (mapa `modelo|nome → UEP/cx`, **não** um campo por item — 100 KB do cache);
+    `_phUepPorGrupo(itensView,keyOf)` faz a média pelas caixas para qualquer
+    agrupamento (produto, cor, família) e `_phUepTag` põe o `UEP/cx` ao lado do
+    nome, na tela e no PDF (os dois passam o mesmo `uepGrupo`).
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

@@ -11,7 +11,38 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.82.0 · mobile 1.21.0 · ⚠ .gs v5.13 — 24/09/2026
+## v7.83.0 · mobile 1.22.0 · ⚠ .gs v5.14 — 24/09/2026
+
+**UEP no HISTÓRICO.** O fechamento do dia, tanto o automático das 17:05 quanto
+o botão FECHAR DIA, passa a gravar três colunas novas no `HISTORICO`: **UEP**
+(jornada normal), **UEP HE** e **META UEP**. Ficam **congeladas** com a UEP do
+cadastro e a meta daquele dia. Onde aparece:
+- **HISTÓRICO** (desktop): coluna UEP por dia, colorida contra a meta do dia, e
+  o card **UEP / DIA (JORNADA)**, com a média e em quantos dias a meta foi batida.
+- **Gerencial de dia passado**: card UEP DO DIA.
+- **Celular**: a UEP do dia no detalhe do histórico.
+- **Dias antigos**: rode `preencherUepPassada()` no editor do Apps Script. Ela
+  usa a UEP que está HOJE no cadastro (a UEP da época não foi guardada) e só
+  preenche onde a coluna está vazia.
+
+**UEP no total do dia por modelo** (PRODUÇÃO/HORA): coluna UEP com a UEP por
+caixa de cada produto, e a UEP no total.
+
+**UEP nos relatórios:** o relatório do dia (PDF) ganha a coluna UEP e a linha
+UEP DO DIA. O relatório semanal ganha a seção **UEP DA SEMANA** (dia a dia, meta
+e % da meta, UEP em HE e total).
+
+**UEP/cx no comparativo do período**, ao lado do nome de cada grupo, na tela e
+no PDF. O backend manda um mapa pequeno com a UEP por produto
+(`uepProd`), longe do limite de 100 KB do cache.
+
+**Atenção:**
+- ⚠ **re-deploy** do `.gs` v5.14.
+- Os dias fechados **antes** do re-deploy ficam sem UEP até rodar
+  `preencherUepPassada()`.
+- Dia sem UEP aparece como "—" e fica fora da média; nunca vira zero.
+
+
 
 **UEP na PROGRAMAÇÃO.** A aba PROGRAMAÇÃO ganhou a coluna **UEP** em cada linha
 (qtde × UEP do código no cadastro). No cabeçalho de cada dia aparece o total do

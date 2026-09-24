@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.14 — UEP NO HISTÓRICO
+//               O fechamento (arquivarDiaAtual e saveDay) grava três colunas
+//               novas no HISTORICO: UEP (jornada normal), UEP HE e META UEP —
+//               congeladas com a UEP do cadastro e a meta DAQUELE dia.
+//               getHistory/getHoraDia devolvem uep/uepHe/metaUep (null quando
+//               o dia não tem). preencherUepPassada() preenche os dias antigos
+//               pelo log de produto. getProducaoModeloPeriodo manda `uepProd`
+//               (UEP média por caixa de cada produto no período).
 // Versão: 5.13 — UEP NA PROGRAMAÇÃO
 //               getProgramacaoDetalhada() manda `uep` por linha (qtde × UEP
 //               do código no cadastro; null quando o código não tem UEP) e
@@ -1869,17 +1877,133 @@ function setTurnoInicio(p) {
 // SALVAR DIA (FECHAMENTO MANUAL — botão "Fechar o Dia")
 // ════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════
+// UEP DO DIA NO HISTÓRICO (v5.14)
+// ════════════════════════════════════════════════════════
+// Meta padrão de UEP do dia (8 h de jornada normal) — a MESMA do rp-core
+// (UEP_META_PADRAO); a CONFIG_PAINEL (META_UEP) manda quando existe.
+const UEP_META_PADRAO_GS = 2300;
+
+function _celNumOuNull(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = _numBR(v);
+  return isFinite(n) ? n : null;
+}
+
+function _garantirColsUepHist(sh) {
+  ['UEP', 'UEP HE', 'META UEP'].forEach(function (t, i) {
+    if (String(sh.getRange(1, 12 + i).getValue()).trim() === '') sh.getRange(1, 12 + i).setValue(t);
+  });
+}
+
+function _metaUepAtual() {
+  let m = null;
+  try { const pc = getConfigPainel(); m = pc && pc.metaUep; } catch (e) {}
+  return m > 0 ? m : UEP_META_PADRAO_GS;
+}
+
+// Conta pura: linhas do log [{data, hora, codigo, cx}] + mapa código→UEP/cx →
+// por dia {normal, he, cxCom, cxSem}. Hora extra pela MESMA régua das caixas.
+function _uepPorDiaDoLog(linhas, uepDe) {
+  const D = {};
+  linhas.forEach(function (l) {
+    const d = D[l.data] = D[l.data] || { normal: 0, he: 0, cxCom: 0, cxSem: 0 };
+    const u = Number(uepDe[l.codigo]) || 0;
+    if (u > 0) {
+      d[_ehHoraExtraCaixas(l.hora) ? 'he' : 'normal'] += l.cx * u;
+      d.cxCom += l.cx;
+    } else d.cxSem += l.cx;
+  });
+  Object.keys(D).forEach(function (k) {
+    D[k].normal = Math.round(D[k].normal * 10) / 10;
+    D[k].he = Math.round(D[k].he * 10) / 10;
+  });
+  return D;
+}
+
+// Lê o log de produto DIRETO (é chamado por quem escreve no HISTORICO) e o
+// mapa de UEP do cadastro. dataFiltro (dd/MM/yyyy) = só aquele dia.
+function _uepLogPorDia(dataFiltro) {
+  const uepDe = {};
+  lerCatalogoProdutos().forEach(function (pr) { if (pr.uep > 0) uepDe[pr.codigo] = pr.uep; });
+  if (!Object.keys(uepDe).length) return null;   // sem UEP no cadastro: nada a gravar
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROD_LOG);
+  if (!sh || sh.getLastRow() < 2) return {};
+  const values = sh.getDataRange().getValues();
+  const hdr = values[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  const iData = hdr.indexOf('DATA') >= 0 ? hdr.indexOf('DATA') : 0;
+  const iHora = hdr.indexOf('HORA') >= 0 ? hdr.indexOf('HORA') : 1;
+  const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const alvo  = dataFiltro ? dataParaNum(dataFiltro) : null;
+  const linhas = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    const dn = dataParaNum(r[iData]);
+    if (!dn || (alvo !== null && dn !== alvo)) continue;
+    const cx = Number(r[iCx]) || 0, cod = String(r[iCod] || '').trim();
+    if (!cod || !cx) continue;
+    linhas.push({ data: fmtDataBR(r[iData]), hora: formatHoraCel(r[iHora]), codigo: cod, cx: cx });
+  }
+  return _uepPorDiaDoLog(linhas, uepDe);
+}
+
+// As três colunas novas de um dia: [UEP, UEP HE, META UEP]. Sem UEP no
+// cadastro → vazias (nunca 0: zero afirmaria "o dia não pediu esforço").
+function _uepColsDoDia(dataBR) {
+  try {
+    const D = _uepLogPorDia(String(dataBR || ''));
+    if (D === null) return ['', '', ''];
+    const d = D[fmtDataBR(dataBR)] || D[String(dataBR)] || { normal: 0, he: 0 };
+    return [d.normal, d.he, _metaUepAtual()];
+  } catch (e) {
+    Logger.log('_uepColsDoDia falhou (ignorado): ' + e.message);
+    return ['', '', ''];
+  }
+}
+
+// Rodar no EDITOR: preenche UEP/UEP HE/META UEP dos dias antigos do HISTORICO
+// pelo log de produto, com a UEP que está HOJE no cadastro (os dias antigos não
+// guardaram a UEP da época — é a melhor régua que existe). Só onde a coluna UEP
+// está vazia; sobrescrever=true regrava tudo. A meta gravada é a atual.
+function preencherUepPassada(sobrescrever) {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HIST);
+  if (!sh || sh.getLastRow() < 2) { Logger.log('HISTORICO vazio.'); return; }
+  const D = _uepLogPorDia(null);
+  if (D === null) { Logger.log('Sem UEP no cadastro (coluna UEP da PRODUTO_CODIGO) — grave a UEP antes.'); return; }
+  _garantirColsUepHist(sh);
+  const n = sh.getLastRow() - 1;
+  const datas = sh.getRange(2, 1, n, 1).getValues();
+  const cols  = sh.getRange(2, 12, n, 3).getValues();
+  const meta  = _metaUepAtual();
+  let gravados = 0, semLog = 0;
+  for (let i = 0; i < n; i++) {
+    if (!datas[i][0]) continue;
+    if (!sobrescrever && cols[i][0] !== '' && cols[i][0] !== null) continue;
+    const d = D[fmtDataBR(datas[i][0])];
+    if (!d) { semLog++; continue; }
+    cols[i] = [d.normal, d.he, meta];
+    gravados++;
+    Logger.log(fmtDataBR(datas[i][0]) + ' → ' + d.normal + ' UEP (+' + d.he + ' em HE)' +
+               (d.cxSem ? ' · ' + d.cxSem + ' cx sem UEP' : ''));
+  }
+  sh.getRange(2, 12, n, 3).setValues(cols);
+  invalidarCacheLeitura();
+  Logger.log('RESUMO: ' + gravados + ' dia(s) gravados · ' + semLog + ' sem lançamento com produto no log · meta ' + meta + '.');
+}
+
 function saveDay(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh   = ss.getSheetByName(SHEET_HIST);
 
   if (!sh) {
     sh = ss.insertSheet(SHEET_HIST);
-    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX']);
+    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX','UEP','UEP HE','META UEP']);
     sh.setFrozenRows(1);
   }
   if (String(sh.getRange(1, 10).getValue()).trim() === '') sh.getRange(1, 10).setValue('MEDIA CX/H');
   if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
+  _garantirColsUepHist(sh);
 
   sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@');
   sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');
@@ -1899,7 +2023,7 @@ function saveDay(p) {
     String(p.fechadoEm || ''),
     Number(p.mediaH || 0),
     Number(p.heCx || 0)   // caixas produzidas em hora extra
-  ];
+  ].concat(_uepColsDoDia(p.data));   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
 
   if (idx >= 0) {
     sh.getRange(idx + 2, 1, 1, row.length).setValues([row]);
@@ -1978,7 +2102,11 @@ function getHistory() {
         fechadoEm: fmtFechadoBR(r[8]),
         mediaH:    Number(r[9]) || 0,
         heCx:      heCx,                                  // caixas em hora extra (null = não dá para saber)
-        realNormal: heCx === null ? null : (real - heCx)  // caixas em hora normal
+        realNormal: heCx === null ? null : (real - heCx), // caixas em hora normal
+        // UEP do dia (v5.14): null = o dia não tem (antes da coluna, ou sem UEP no cadastro)
+        uep:     _celNumOuNull(r[11]),
+        uepHe:   _celNumOuNull(r[12]),
+        metaUep: _celNumOuNull(r[13])
       };
     });
 
@@ -2085,7 +2213,10 @@ function getHoraDia(p) {
         fechado: r[7] === true || String(r[7]).toLowerCase() === 'true',
         mediaH:  Number(r[9]) || 0,
         heCx:    heCxDia,
-        realNormal: heCxDia === null ? null : (realDia - heCxDia)
+        realNormal: heCxDia === null ? null : (realDia - heCxDia),
+        uep:     _celNumOuNull(r[11]),
+        uepHe:   _celNumOuNull(r[12]),
+        metaUep: _celNumOuNull(r[13])
       };
       break;
     }
@@ -2115,7 +2246,10 @@ function _numBR(v) {
   if (typeof v === 'number') return isFinite(v) ? v : 0;
   const s = String(v == null ? '' : v).trim();
   if (!s) return 0;
-  const n = Number(s.indexOf(',') >= 0 ? s.replace(/\./g, '').replace(',', '.') : s);
+  // "1.234,5" e "0,84" (pt-BR); "2.300" com ponto de MILHAR (grupos de 3)
+  // também é pt-BR — lido como 2,3 viraria uma meta 1.000× menor.
+  const ptMilhar = /^-?\d{1,3}(\.\d{3})+$/.test(s);
+  const n = Number(s.indexOf(',') >= 0 || ptMilhar ? s.replace(/\./g, '').replace(',', '.') : s);
   return isFinite(n) ? n : 0;
 }
 
@@ -2598,6 +2732,7 @@ function getProducaoModeloPeriodo(p) {
   // Catálogo + produto sem cor (mesma separação de getPontosDia).
   const catalogo = {};
   lerCatalogoProdutos().forEach(function (pr) { catalogo[pr.codigo] = pr; });
+  const uepAcc = {};   // modelo|nome → {s: Σ cx×UEP, c: Σ cx} (v5.14)
 
   const deNum  = p.de  ? dataParaNum(p.de)  : null;
   const ateNum = p.ate ? dataParaNum(p.ate) : null;
@@ -2655,6 +2790,14 @@ function getProducaoModeloPeriodo(p) {
     map[key].caixas += cx;
     map[key].pontos += cx * (prod.pontos || 0);
     map[key].pesoKg += cx * (prod.peso   || 0);
+    // UEP média por caixa do PRODUTO no período (v5.14): um mapa pequeno no
+    // topo do payload, não um campo por item — o payload deste período já
+    // encostou nos 100 KB do cache uma vez (ver o cxHora).
+    if (prod.uep > 0) {
+      const ku = modelo + '|' + descBase;
+      const u = uepAcc[ku] = uepAcc[ku] || { s: 0, c: 0 };
+      u.s += cx * prod.uep; u.c += cx;
+    }
     // Teto da esteira do grupo: o TEMPO de esteira soma (cx ÷ teto do código),
     // então a mistura de caixas de tamanhos diferentes é média harmônica
     // ponderada pelas caixas — nunca aritmética, que superestima o teto.
@@ -2714,7 +2857,9 @@ function getProducaoModeloPeriodo(p) {
     return { data: d, prep: r.prep, paralelo: r.paralelo };
   });
 
-  return { ok: true, esteira: _esteiraBase(), itens: itens, prepDias: prepDias };
+  const uepProd = {};
+  Object.keys(uepAcc).forEach(function (k) { if (uepAcc[k].c > 0) uepProd[k] = Math.round(uepAcc[k].s / uepAcc[k].c * 100) / 100; });
+  return { ok: true, esteira: _esteiraBase(), itens: itens, prepDias: prepDias, uepProd: uepProd };
 }
 
 // Velocidade e entre-peças que valem HOJE na planilha — a base que o simulador
@@ -3840,12 +3985,13 @@ function arquivarDiaAtual(dataRef) {
   let shH = ss.getSheetByName(SHEET_HIST);
   if (!shH) {
     shH = ss.insertSheet(SHEET_HIST);
-    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX']);
+    shH.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX','UEP','UEP HE','META UEP']);
     shH.setFrozenRows(1);
   }
   // Garante o cabeçalho da coluna de média mesmo em planilhas antigas.
   if (String(shH.getRange(1, 10).getValue()).trim() === '') shH.getRange(1, 10).setValue('MEDIA CX/H');
   if (String(shH.getRange(1, 11).getValue()).trim() === '') shH.getRange(1, 11).setValue('HE CX');
+  _garantirColsUepHist(shH);
   shH.getRange(1, 1, shH.getMaxRows(), 1).setNumberFormat('@');
   shH.getRange(1, 9, shH.getMaxRows(), 1).setNumberFormat('@');
 
@@ -3871,7 +4017,7 @@ function arquivarDiaAtual(dataRef) {
     'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm'),
     mediaH,
     heCx   // caixas produzidas nas linhas de hora extra
-  ];
+  ].concat(_uepColsDoDia(dataRef));   // UEP · UEP HE · META UEP (v5.14)
 
   if (idx >= 0) {
     shH.getRange(idx + 2, 1, 1, row.length).setValues([row]);

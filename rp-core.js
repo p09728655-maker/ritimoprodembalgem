@@ -252,6 +252,24 @@ function uepCelula(h, metaCfg, minSlot, ehHE){
   return { txt, title, cls: ehHE || !(h.uep > 0) ? '' : sc(h.uep / metaH * 100), metaH };
 }
 
+// ── UEP dos dias fechados (HISTÓRICO, relatório semanal) ────────────────────
+// Cada dia do HISTORICO traz a UEP de jornada normal e a META UEP gravadas no
+// fechamento (.gs v5.14) — congeladas: mudar a UEP do cadastro hoje não reescreve
+// o dia de ontem. Dia sem UEP (null) fica FORA da média e da contagem, e é
+// contado à parte; nunca vira zero.
+function uepDiaMeta(d){
+  return d && Number(d.metaUep) > 0 ? Number(d.metaUep) : UEP_META_PADRAO;
+}
+function uepHistResumo(dias){
+  const com = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
+  const tot = com.reduce((s, d) => s + Number(d.uep), 0);
+  const bateu = com.filter(d => Number(d.uep) >= uepDiaMeta(d)).length;
+  return { n: com.length, semUep: (dias || []).length - com.length,
+           total: tot, media: com.length ? tot / com.length : null,
+           bateu, he: com.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
+           meta: com.length ? uepDiaMeta(com[com.length - 1]) : UEP_META_PADRAO };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -263,8 +281,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.6.0',
+  versao: '1.7.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo']
 };

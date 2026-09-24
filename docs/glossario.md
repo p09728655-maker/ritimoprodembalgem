@@ -195,6 +195,8 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP em 8 h dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado | UEP | `v7:_uepEstudo` |
 | **ALVO PROVISÓRIO (UEP)** | 2.300 UEP em 8 h (`UEP_ALVO_PROV`, decisão do PPCP 24/09/2026); BATEU = UEP em 8 h ≥ 2.300; % = dias válidos que bateram ÷ dias válidos (suspeito fica fora) | UEP | `v7:_uepEstudo` |
 | **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.300, 8 h). Esperado = meta × min(minutos de jornada com lançamento, 480) ÷ 480 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
+| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
+| **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
 | **VALIDAÇÃO FORA DA AMOSTRA** | oscilação cx/h → UEP/h na 2ª metade dos dias, com a UEP calculada só na 1ª | % | `v7:_uepValidacao` |
 | **UEP NO PERÍODO** | caixas × UEP/cx (âncora A) | UEP | `v7:_uepEstudo` |
