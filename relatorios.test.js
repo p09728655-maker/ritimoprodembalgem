@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os oito relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 8);
+ok('e os nove relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 9);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2506,7 +2506,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 6);   // + estudo de UEP + capacidade em UEP
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 7);   // + estudo de UEP + capacidade em UEP (2)
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2517,8 +2517,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 12 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 13);   // 12 chamadas + a declaração
+ok('e é UMA implementação — os 13 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 14);   // 13 chamadas + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -3687,6 +3687,9 @@ console.log('\n── estudo de UEP ──');
        [Math.round(mx.usado), Math.round(mx.sobra), mx.linhas[0].cabeMais, mx.semUep.length], [1326, 1204, 272, 1]);
     ok('a impressão da capacidade usa a MESMA conta da tela (_capMix) e diz que é simulação',
        [/_capMix\(CAP_CAT, CAP_MIX, meta\)/.test(pega('function gerarRelatorioCapUep(')), /SIMULAÇÃO — nada foi gravado/.test(pega('function gerarRelatorioCapUep('))], [true, true]);
+    ok('a tabela de capacidade por produto usa o MESMO _capProdutos, do mais pesado ao mais leve, e lista quem está sem UEP',
+       [/CAP_CAT\.filter/.test(pega('function gerarRelatorioCapTodos(')), /sort\(\(a,b\)=>b\.uepJogo-a\.uepJogo/.test(pega('function gerarRelatorioCapTodos(')),
+        /SEM UEP COMPLETA NO CADASTRO/.test(pega('function gerarRelatorioCapTodos('))], [true, true, true]);
     ok('o simulador lê o cadastro só ao abrir, com cache e tentativas em sequência',
        [/CAP_CAT_TS<10\*60\*1000/.test(pega('async function abrirCapUep(')), /for\(let t=1; t<=3; t\+\+\)/.test(pega('async function abrirCapUep('))], [true, true]);
     ok('nenhum painel declara a própria cópia da conta',
