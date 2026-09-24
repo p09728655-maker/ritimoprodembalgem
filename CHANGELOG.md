@@ -11,7 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.81.0 · ⚠ .gs v5.12 — 24/09/2026
+## v7.82.0 · mobile 1.21.0 · ⚠ .gs v5.13 — 24/09/2026
+
+**UEP na PROGRAMAÇÃO.** A aba PROGRAMAÇÃO ganhou a coluna **UEP** em cada linha
+(qtde × UEP do código no cadastro). No cabeçalho de cada dia aparece o total do
+dia em UEP e **quanto ele representa da meta de UEP** (padrão 2.300), em âmbar
+quando passa de 100%. No TOTAL entra a UEP da carteira. Linha de código sem UEP
+sai "—", e as caixas dela são contadas à parte ("N cx sem UEP").
+
+**UEP hora a hora no gerencial** (desktop e celular). A tabela hora a hora ganhou
+a coluna **UEP**, colorida contra a meta da hora. A meta da hora é a meta do dia
+repartida pelos minutos: 287,5 UEP numa hora cheia e 230 no slot pós-almoço de
+48 min. A hora extra mostra o número sem cor. `*` = parte das caixas daquela
+hora é de código sem UEP. Só aparece no dia de hoje.
+
+**Atenção:** ⚠ **re-deploy** do `.gs` v5.13 para a coluna da PROGRAMAÇÃO. A UEP
+hora a hora usa o que o v5.11 já manda.
+
+
 
 **UEP por volume.** Nos produtos de 2 ou mais volumes, cada volume passa a ter a
 sua UEP. Os volumes são embalados juntos (PPCP), então o histórico não separa o

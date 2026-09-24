@@ -228,6 +228,20 @@ ok('sem meta do dia também não',
      [true, true, true]);
 }
 
+// ── UEP hora a hora (uepPorHora / uepCelula) ───────────────────────────────
+{
+  const L = [{ hora: '07:00', uep: 150, caixas: 120 }, { hora: '07:00-08:00', uep: 90, caixas: 60 },
+             { hora: '7:00', uep: 0, caixas: 20 }, { hora: '12:12', uep: 200, caixas: 150 }, { hora: '', uep: 9 }];
+  const m = uepPorHora(L);
+  ok('soma a UEP por INÍCIO da hora, casando "07:00", "7:00" e "07:00-08:00"', [m['07:00'].uep, m['07:00'].cxSem], [240, 20]);
+  const c = uepCelula(m['07:00'], null, 60, false);
+  ok('meta da hora = meta do dia ÷ 480 × minutos (2.300 → 287,5/h)', Math.round(c.metaH * 10) / 10, 287.5);
+  ok('hora com caixa sem UEP leva * e diz quantas no título', [c.txt, /20 cx/.test(c.title)], ['240*', true]);
+  ok('o slot pós-almoço de 48 min pede menos', Math.round(uepCelula(m['12:12'], null, 48, false).metaH), 230);
+  ok('hora extra mostra o número e não é julgada', uepCelula(m['12:12'], null, 60, true).cls, '');
+  ok('hora sem apontamento com produto sai "—"', uepCelula(undefined, null, 60, false).txt, '—');
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
              'efNoRitmo', 'nomeComCor', '_rpOk'];

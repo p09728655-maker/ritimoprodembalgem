@@ -2546,6 +2546,16 @@ feito e dá ar de verdade ao que sobrou.
     cheia. `minNorm` = minutos de slots NÃO-HE com lançamento (`calcKPIs` dos
     dois). Estados distintos: `null` aguardando · `false` backend sem o campo ·
     `codigos:0` cadastro vazio. **TV e operador não mostram** (teste prende).
+- **UEP NA PROGRAMAÇÃO E HORA A HORA** (v7.82.0 / mobile 1.21.0 / `.gs` v5.13,
+  PPCP 24/09/2026). `getProgramacaoDetalhada` manda `uep` (qtde × UEP do
+  código; **null** sem UEP, nunca 0) e `uepCx`. A aba PROGRAMAÇÃO mostra a
+  coluna (some com backend antigo, regra da COR) e, por dia, UEP × meta de UEP
+  (âmbar > 100%) + caixas sem UEP à parte. Hora a hora: `uepPorHora` (soma o
+  `porHoraModelo` pelo INÍCIO da hora, HH:MM) e `uepCelula` (meta da hora = meta
+  do dia × minutos do slot ÷ 480; HE sem cor; `*` = caixas sem UEP), no
+  `rp-core`, usados pelos dois gerenciais. Só HOJE: dia passado não tem
+  `porHoraModelo` (a coluna some no modo histórico). O mobile passou a guardar
+  `porHoraModelo` no `PONTOS_DIA`.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

@@ -1,5 +1,9 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.13 — UEP NA PROGRAMAÇÃO
+//               getProgramacaoDetalhada() manda `uep` por linha (qtde × UEP
+//               do código no cadastro; null quando o código não tem UEP) e
+//               `uepCx`. Nenhuma leitura nova: o catálogo já era lido.
 // Versão: 5.12 — UEP POR VOLUME
 //               Produto de 2+ volumes: cada volume tem o seu ritmo (PPCP,
 //               24/09/2026). O estudo mede o PRODUTO (as caixas dos volumes
@@ -3088,6 +3092,10 @@ function getProgramacaoDetalhada() {
       qtde:     qtde,
       pesoKg:   Math.round(qtde * (cat ? cat.peso   : 0) * 10) / 10,
       pontos:   Math.round(qtde * (cat ? cat.pontos : 0)),
+      // UEP da linha (v5.13): parâmetro do cadastro. null = código sem UEP —
+      // nunca 0, que afirmaria "esta linha não pede esforço".
+      uepCx:    cat && cat.uep > 0 ? cat.uep : null,
+      uep:      cat && cat.uep > 0 ? Math.round(qtde * cat.uep * 10) / 10 : null,
       embalado: futura ? 0 : (st ? st.embaladoHoje : 0),
       falta:    futura ? 0 : (st ? st.falta         : 0),
       // metaEfetiva=0 quer dizer "nada vencendo hoje pra esse produto" (comum

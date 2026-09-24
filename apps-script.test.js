@@ -638,6 +638,8 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('a UEP do dia separa a hora extra pela MESMA régua das caixas',
      /uep\[_ehHoraExtraCaixas\(it\.hora\) \? 'he' : 'normal'\]/.test(gp), true);
   ok('o getPontosDia devolve a uep nos dois caminhos (com e sem log)', (gp.match(/painelConfig, uep \}|\n    uep,/g) || []).length, 2);
+  ok('a programação detalhada manda a UEP da linha (null sem UEP, nunca 0)',
+     /uep:\s*cat && cat\.uep > 0 \? Math\.round\(qtde \* cat\.uep/.test(pega('function getProgramacaoDetalhada(')), true);
   ok('META_UEP vem da CONFIG_PAINEL', /metaUep: kv\.META_UEP/.test(pega('function getConfigPainel(')), true);
 }
 

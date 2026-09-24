@@ -1689,7 +1689,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th>STATUS</th></tr></thead>
+        <thead><tr><th>HORÁRIO</th><th>REALIZADO</th><th>ACUMULADO</th><th>META/H</th><th>EFICIÊNCIA</th><th id="th-uep-hora" style="display:none" title="UEP da hora (caixas × UEP do cadastro) contra a meta de UEP repartida pelos minutos da hora. * = parte das caixas sem UEP no cadastro.">UEP</th><th>STATUS</th></tr></thead>
         <tbody id="tbl-hora-body"><tr><td colspan="6" class="empty-msg">Carregando dados…</td></tr></tbody>
       </table>
     </div>
@@ -2189,7 +2189,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 <section id="sec-programacao" class="sec">
   <div class="tbl-wrap" style="margin-top:0">
     <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">PROGRAMAÇÃO POR DIA — LOTE · PESO · PONTOS</span>
+      <span class="tbl-hdr-ttl">PROGRAMAÇÃO POR DIA — LOTE · PESO · PONTOS · UEP</span>
       <div style="flex:1"></div>
       <span id="prog2-totais" style="font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:.5px"></span>
     </div>
@@ -2865,7 +2865,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.81.0';
+const APP_VER   = '7.82.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4369,6 +4369,8 @@ function renderGerencialHist(){
 
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'');
+  // Dia passado: a UEP por hora só existe para HOJE (vem do getPontosDia).
+  { const _th=document.getElementById('th-uep-hora'); if(_th) _th.style.display='none'; }
   let acum=0;
   document.getElementById('tbl-hora-body').innerHTML=horas.map(h=>{
     const prod=Number(h.real)||0; acum+=prod;
@@ -4519,6 +4521,10 @@ function renderGerencial(){
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=hojeStr();
   let acumCalc=0;
+  // UEP hora a hora (v7.82.0): só com o backend v5.11 e a UEP cadastrada.
+  const temUepH=!!(PONTOS_DIA.uep && PONTOS_DIA.uep.codigos>0);
+  const uepH=temUepH?uepPorHora(PONTOS_DIA.porHoraModelo):{};
+  { const _th=document.getElementById('th-uep-hora'); if(_th) _th.style.display=temUepH?'':'none'; }
   document.getElementById('tbl-hora-body').innerHTML=k.slots.map((sl,i)=>{
     const reg=k.allHoje.find(d=>d.horario===sl.inicio);
     const prod=reg?reg.producaoHora:null;
@@ -4566,6 +4572,8 @@ function renderGerencial(){
       <td class="mono">${prod!=null?fmtN(acumCalc):'—'}</td>
       <td class="mono" style="color:${isHE?'var(--txt3)':'var(--txt2)'}">${metaCel}</td>
       <td class="mono" style="color:${ef!=null?(ef>=96?'var(--ok)':ef>=90?'var(--warn)':'var(--red)'):'var(--txt3)'}">${ef!=null?fmtP(ef):'—'}</td>
+      ${temUepH?(()=>{ const c=uepCelula(uepH[sl.inicio], PONTOS_DIA.metaUep, sl.min||60, isHE);
+        return `<td class="mono" title="${c.title}" style="color:${c.cls?'var(--'+c.cls+')':'var(--txt2)'}">${c.txt}</td>`; })():''}
       <td>${bdg}</td></tr>`;
   }).join('')||'<tr><td colspan="6" class="empty-msg">Configure o turno ou importe o Excel.</td></tr>';
   // Legenda do ⚠: aparece só quando há alguma hora fraca na tabela.
@@ -6860,12 +6868,19 @@ function renderProgramacaoDetalhada(){
     if(!porDia[it.data]){ porDia[it.data]=[]; ordem.push(it.data); }
     porDia[it.data].push(it);
   });
-  let totQtd=0, totPeso=0, totPts=0;
+  // UEP (.gs v5.13): parâmetro do cadastro, qtde × UEP do código. A coluna só
+  // existe quando o backend manda o campo (mesma regra da coluna COR). Linha de
+  // código sem UEP entra como "—" e as caixas dela são contadas à parte — o
+  // total do dia em UEP não pode fingir que as cobre.
+  const temUep=PROG_DETALHADA.some(it=>it && 'uep' in it);
+  const metaUep=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
+  let totQtd=0, totPeso=0, totPts=0, totUep=0, totSemUep=0;
   wrap.innerHTML=ordem.map(data=>{
     const itens=porDia[data];
-    let dQtd=0, dPeso=0, dPts=0;
+    let dQtd=0, dPeso=0, dPts=0, dUep=0, dSemUep=0;
     const linhas=itens.map(it=>{
       dQtd+=it.qtde; dPeso+=it.pesoKg; dPts+=it.pontos;
+      if(it.uep!=null) dUep+=it.uep; else dSemUep+=it.qtde;
       // metaEfetiva=0: nada vencendo ainda pra esse produto (comum em data
       // futura) — mostra "—" em vez de "✓ OK" pra não parecer que já foi
       // embalado quando na verdade a data nem chegou.
@@ -6880,24 +6895,33 @@ function renderProgramacaoDetalhada(){
         <td class="mono">${fmtN(it.qtde)}</td>
         <td class="mono">${fmtN(it.pesoKg)} kg</td>
         <td class="mono">${fmtN(it.pontos)}</td>
+        ${temUep?`<td class="mono" title="${it.uepCx!=null?fmtN(it.qtde)+' cx × '+String(it.uepCx).replace('.',',')+' UEP/cx':'código sem UEP no cadastro (PRODUTO_CODIGO)'}">${it.uep!=null?fmtN(Math.round(it.uep)):'—'}</td>`:''}
         <td class="mono">${fmtN(it.embalado)}</td>
         <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
       </tr>`;
     }).join('');
-    totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts;
+    totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts; totUep+=dUep; totSemUep+=dSemUep;
+    // O dia em UEP contra a meta de UEP (8 h de jornada): é aqui que o dia
+    // datado acima do que a linha comporta aparece, com o mix já considerado.
+    const pctUep=dUep/metaUep*100;
+    const uepDia=temUep
+      ? ` · <b style="color:${pctUep>100?'var(--warn)':'var(--txt)'}" title="UEP programada no dia contra a meta de ${fmtN(metaUep)} UEP em 8 h de jornada normal.">${fmtN(Math.round(dUep))} UEP (${fmtP(pctUep)} da meta ${fmtN(metaUep)})</b>`
+        +(dSemUep>0?` · <span title="caixas de códigos sem UEP no cadastro — fora da soma em UEP">${fmtN(dSemUep)} cx sem UEP</span>`:'')
+      : '';
     return `<div class="tbl-wrap" style="margin-top:14px">
       <div class="tbl-hdr">
         <span class="tbl-hdr-ttl">${data}</span>
         <div style="flex:1"></div>
-        <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(dQtd)} cx · ${fmtN(dPeso)} kg · ${fmtN(dPts)} pts</span>
+        <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(dQtd)} cx · ${fmtN(dPeso)} kg · ${fmtN(dPts)} pts${uepDia}</span>
       </div>
       <div style="overflow-x:auto"><table>
-        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th><th>EMBALADO</th><th>FALTA</th></tr></thead>
+        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th>${temUep?'<th title="qtde × UEP por caixa do cadastro">UEP</th>':''}<th>EMBALADO</th><th>FALTA</th></tr></thead>
         <tbody>${linhas}</tbody>
       </table></div>
     </div>`;
   }).join('');
-  if(totEl) totEl.textContent=`TOTAL: ${fmtN(totQtd)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`;
+  if(totEl) totEl.textContent=`TOTAL: ${fmtN(totQtd)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
+    +(temUep?` · ${fmtN(Math.round(totUep))} UEP`+(totSemUep>0?` (${fmtN(totSemUep)} cx sem UEP)`:''):'');
 }
 
 // ════════════════════════════════════════════════
