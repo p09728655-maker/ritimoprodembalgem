@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.89.0 — 24/09/2026 · ⚠ re-deploy (.gs v5.17)
+
+**META DIA (UEP) NAS CONFIGURAÇÕES.** Campo novo no ⚙, abaixo da META DIA
+(CX), com o equivalente por hora ao lado (2.530 → ~288 UEP/h). Grava na aba
+`CONFIG_PAINEL` (chave `META_UEP`) e vale para todos os aparelhos: gerencial,
+celular, histórico e relatórios.
+
+**Atenção:**
+- Só vai para a planilha quando o valor é **mudado**. Campo vazio ou igual ao
+  atual não envia nada. Para voltar ao padrão, digite 2530.
+- A meta nova vale para os dias fechados **depois** da mudança. Dia já fechado
+  mantém a META UEP gravada nele. Para regravar os antigos, rode
+  `regravarUepPassada()` no editor do Apps Script.
+- ⚠ Precisa do `.gs` v5.17 re-deployado. Antes disso, o valor digitado vale só
+  nesta tela até o próximo refresh. Dá para digitar `META_UEP` direto na aba
+  `CONFIG_PAINEL`, que funciona sem re-deploy.
+
 ## v7.88.0 — 24/09/2026
 
 **R$ POR UEP no card UEP DO DIA** (gerencial do computador, hoje e dia passado).

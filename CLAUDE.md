@@ -2624,6 +2624,11 @@ feito e dá ar de verdade ao que sobrou.
   custo-hora sai do `rpe_pg_sim` (SIMULADOR), **só deste computador**, e nunca
   da planilha: a URL do Apps Script é pública. Sem custo-hora não aparece R$
   nenhum. É custo de conversão da embalagem, não custo do produto.
+- **META DIA (UEP) NAS CONFIGURAÇÕES** (v7.89.0 / `.gs` v5.17). Campo
+  `c-meta-uep` no ⚙. O `saveCfg` põe em `_metaUepNova` só quando o valor
+  MUDOU, e o `enviarConfigPainel` manda `metaUep` uma vez. O `setConfigPainel`
+  grava `META_UEP` só com número > 0. ⚠ Nunca mandar sempre: um aparelho que
+  abriu antes de ler a config apagaria a meta dos outros.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

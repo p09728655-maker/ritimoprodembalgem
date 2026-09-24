@@ -1,5 +1,7 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.17 — META DE UEP PELAS CONFIGURAÇÕES
+//               setConfigPainel aceita metaUep e grava META_UEP na CONFIG_PAINEL.
 // Versão: 5.16 — UEP HORA A HORA DO DIA PASSADO
 //               getHoraDia devolve uepHora {HH:MM:{uep,cxSem}} (log de produto
 //               da data × UEP do cadastro ATUAL, leitura recortada pela data).
@@ -2474,6 +2476,9 @@ function setConfigPainel(p) {
     if (p.tempoE !== undefined) novos.TEMPO_E = String(parseInt(p.tempoE, 10) || 20);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
     if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
+    // META DE UEP do dia (v5.17): digitada nas CONFIGURAÇÕES do painel. Só
+    // grava número > 0 — vazio ou lixo não apaga a meta que já vale.
+    if (p.metaUep !== undefined && _numBR(p.metaUep) > 0) novos.META_UEP = String(Math.round(_numBR(p.metaUep)));
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};

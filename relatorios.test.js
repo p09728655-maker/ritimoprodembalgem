@@ -3664,6 +3664,9 @@ console.log('\n── estudo de UEP ──');
     ok('R$/UEP: os dois cards UEP DO DIA (hoje e dia passado) passam pelo _uepComCusto; custo-hora só do Simulador',
        [/_uepComCusto\(uepCard\(PONTOS_DIA\.uep/.test(JS), /_uepComCusto\(\{l:'UEP DO DIA'/.test(JS),
         /_pgSimNum\(_pgSimEstado\(\)\.custoHora\)/.test(pega('function _uepComCusto(')), /382[,.]89/.test(pega('function _uepComCusto('))], [true, true, true, false]);
+    ok('META DIA (UEP) nas configurações: só envia quando o gestor mudou o valor, uma vez',
+       [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
+        /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
     ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
