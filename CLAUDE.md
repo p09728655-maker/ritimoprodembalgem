@@ -3177,6 +3177,13 @@ feito e dá ar de verdade ao que sobrou.
   do anti-descanso não refaz a leitura). `PREP_PERIODO` guardado e devolvido.
 - Na diretoria `_naTV()` é verdadeiro e versão nova faz `location.reload()`.
 - **Aba ⚖ UEP enxuta** na mesma versão: explicação no `title`, não na tela.
+- **Retrato guardado** (v7.119.0): `_dirGuarda`/`_dirLe`/`_dirRestaura`,
+  chaves `rpe_dir_ret_sheets|pontos|hist|prog`. Do dia só no mesmo dia;
+  histórico 12 h; programação 2 h. ⚠ O `_dirRestaura` roda num `setTimeout(0)`:
+  dentro da inicialização, o `aplicarMetaDiaAutomatica`/`aplicarConfigPainel`
+  ainda tocam coisa não declarada e falhavam calados (sem hora do dado).
+- **App próprio**: `manifest-diretoria.json` (`id`/`start_url` `/diretoria`,
+  `display: fullscreen`); o `<head>` troca o `<link rel=manifest>` no modo-dir.
 - ⚠ **Na diretoria não rodam `pollParadaTV` nem `lerMediaHoras`** (v7.117.0):
   disputavam a fila do Apps Script com o `getHistory`, que estourava o tempo.
   As leituras da diretoria começam no fim do `lerSheetsComRetry`.
