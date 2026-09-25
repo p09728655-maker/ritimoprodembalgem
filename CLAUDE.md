@@ -2774,6 +2774,32 @@ feito e dá ar de verdade ao que sobrou.
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
 
+## PRÓXIMOS DIAS no gerencial — a carteira em HORAS (v7.109.0)
+- Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
+  horas"*), maquete aprovada. `#ger-prox` no fim da aba GERENCIAL, só no dia de
+  hoje (`ger-live-only`); fora do PDF do dia.
+- **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP,
+  o `_cartUepMedia` e o `_planoDividaUep` — a MESMA carteira em UEP da aba
+  PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
+  desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
+- ⚠ **A dívida (`faltaZerar`) inclui o que falta da meta de HOJE.** Só vai para
+  o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `dívida − ritmo ×
+  (527 − minNorm)`, a base da projeção da aba UEP. Pôr a dívida inteira no 1º
+  dia cobraria duas vezes o que a linha ainda faz hoje.
+- Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
+  (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
+  (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo
+  HE). Feriado não é conhecido: sai SEM LOTE DATADO.
+- **Custo:** `GPX_TTL`=15 min para reler a programação (o gerencial atualiza a
+  cada 5 e a leitura é das mais caras); falha espera 1 min antes de tentar de
+  novo (`GPX_TENT`) — o fim da leitura redesenha, e sem a espera uma falha
+  viraria laço de chamadas.
+- `_gpxHtml` é desenho (o teste falha se `_cartAberta`/`uepCx` aparecerem nele).
+- ⚠ **Nunca inventar número** (PPCP, 25/09/2026: *"sempre, jamais inventar
+  números"*). Sem UEP na programação a faixa diz que não converte; leitura que
+  falhou diz o porquê. A única estimativa é a linha sem UEP no cadastro, que
+  entra pela UEP média — e a nota da faixa conta quantas.
+
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:
   *"pelo histórico temos tempo de cada produto, o que dá pra fazer?"*. A régua

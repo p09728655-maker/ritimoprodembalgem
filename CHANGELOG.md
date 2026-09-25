@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.109.0 — 25/09/2026
+
+**Gerencial: faixa PRÓXIMOS DIAS — a programação futura em horas de linha**
+(PPCP: *"como ficaria as programações futuras como previsão… de horas"*,
+maquete aprovada). No fim da aba GERENCIAL, os próximos 5 dias úteis: quantas
+horas de linha os lotes já datados pedem contra a jornada de 8h47, o que falta
+ou sobra em cada dia, e os 2 lotes mais pesados. Âmbar quando passa até 1h45
+da jornada, vermelho (NÃO CABE) quando passa mais que isso, verde quando sobram
+3h ou mais. O atraso que não cabe no resto de hoje entra no 1º dia útil. Fim de
+semana aparece só se tiver lote, fora das somas de falta e folga.
+
+A carga é a mesma da CARTEIRA EM UEP da aba PLANO. Horas = UEP programada ÷
+288 UEP/h (o ritmo da meta, 2.530 UEP em 527 min).
+
+**Atenção:** nenhum número existente muda. A programação é relida a cada
+15 min para esta faixa (as abas PROGRAMAÇÃO e PLANO podem renovar antes). Sem
+re-deploy.
+
+---
+
 ## v7.108.0 — 25/09/2026
 
 **Aba ⚖ UEP: o mix mostra também o que rodou em hora extra** (PPCP: *"deve ter

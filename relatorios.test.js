@@ -3903,6 +3903,39 @@ console.log('\n── estudo de UEP ──');
               return [/\.uep-doc\{--bg:#fff;--txt:#1F2328[^}]*--ok:#2E7D32/.test(sk), sels.every(x => x.split(',').every(y => y.trim().startsWith('.uep-doc')))]; })(), [true, true]);
 }
 
+// ── PRÓXIMOS DIAS no gerencial (v7.109.0) — a carteira datada em horas ──────
+{
+  console.log('\n── próximos dias (horas) ──');
+  if (typeof _cartUepMedia === 'undefined') eval(pega('function _cartUepMedia('));
+  { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
+    eval(m[0].replace(/const /g, 'global.')); }
+  eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxMontar('));
+  const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
+  const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
+                 it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
+                 it('30/09/2026','25245',500,1), it('30/09/2026','25246',100,null), it('20/09/2026','25200',400,2)];
+  const G = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5);
+  ok('calendário: 5 dias úteis a partir de amanhã; sábado entra só porque tem lote',
+     G.dias.map(d => d.data.slice(0,5)), ['25/09','26/09','28/09','29/09','30/09','01/10']);
+  ok('horas = UEP ÷ ritmo da meta; o atraso que não cabe hoje vai para o 1º dia útil',
+     [Math.round(G.carry), Math.round(G.dias[0].minAtr), Math.round(G.dias[0].min), G.dias[1].minAtr], [424, 88, 567, 0]);
+  ok('estados: passa até 1h45 = âmbar, mais = NÃO CABE, folga grande = verde, sem lote = vazio, sábado à parte',
+     G.dias.map(d => d.estado), ['warn','fds','vazio','red','ok','vazio']);
+  ok('fora da esteira e lote vencido não entram; código sem UEP entra pela média',
+     [G.dias[2].uep, G.dias[4].uep, G.dias[4].semBase], [0, 693, 1]);
+  ok('totais: jornada só dos dias úteis, sábado fora da falta e da folga',
+     [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 201, 2, 1, 2]);
+  ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);
+  ok('sem nenhuma UEP na programação não converte (não inventa hora)', _gpxMontar([it('26/09/2026','1',10,null)], new Date(2026,8,25), 0, 0, 2530, 5).falha, 'sem-uep');
+  ok('dívida que cabe no resto de hoje não passa para amanhã', _gpxMontar(itens, new Date(2026,8,24), 500, 300, 2530, 5).carry, 0);
+  const GH = pega('function _gpxHtml(');
+  ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_planoDividaUep\(|uepCx/.test(GH), false);
+  const RP = pega('function renderProxDias(');
+  ok('a faixa renova a programação a cada 15 min, com 1 min entre tentativas, e só no dia de hoje',
+     [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /GER_DATA/.test(RP), /class="tbl-wrap ger-live-only" id="ger-prox"/.test(src),
+      /try\{ renderProxDias\(\); \}catch/.test(pega('function renderAll('))], [true, true, true, true, true]);
+}
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
