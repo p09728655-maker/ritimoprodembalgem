@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.99.0 / mobile 1.25.0 — 25/09/2026
+
+**Meta padrão de UEP volta a 2.530** (PPCP, 25/09/2026: a meta combinada
+continua 2.530 e foi digitada de novo no ⚙). Desfaz a troca da v7.98.0 no
+`rp-core.js`, nos testes e no texto do campo META DIA (UEP). O `.gs` volta ao
+v5.18, que já está publicado com 2.530.
+
+**Atenção:**
+- Nenhum número muda: a META_UEP da `CONFIG_PAINEL` (2.530) sempre mandou.
+- **Não colar o `.gs` v5.19** da versão anterior. Sem re-deploy.
+- No `HISTORICO`, só o dia 24/09 foi gravado com META UEP 2.500 (fechado
+  enquanto o ⚙ estava em 2.500). Corrigir à mão a célula N88 para 2530.
+
+---
+
 ## v7.98.0 / mobile 1.24.0 — 25/09/2026 · ⚠ re-deploy (.gs v5.19)
 
 **Meta padrão de UEP: 2.530 → 2.500** (PPCP, 25/09/2026). A meta digitada no

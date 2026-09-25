@@ -2714,7 +2714,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <!-- META DE UEP (v7.89.0): grava na CONFIG_PAINEL (chave META_UEP) e vale
          para todos os aparelhos (gerencial, celular, histórico, relatórios). -->
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2500"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.500 · vale para todos os aparelhos</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 · vale para todos os aparelhos</div></div>
       <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
     </div>
     <div class="frm-row">
@@ -2914,7 +2914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.98.0';
+const APP_VER   = '7.99.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5824,7 +5824,7 @@ const UEP_ANCORA_TETO_MAX = 90;
 // bateu 18 de 51 dias válidos. É alvo de ESTUDO até a cronoanálise da MADERO
 // dar o tempo padrão — não vai para TV, celular nem meta oficial.
 // ⚠ É régua DO ESTUDO (ritmo × 8 h). A meta do card/histórico é da JORNADA
-// INTEIRA (UEP_META_PADRAO = 2.500 no rp-core, ~285 UEP/h desde 25/09/2026).
+// INTEIRA (UEP_META_PADRAO = 2.530 no rp-core) — o mesmo ~288 UEP/h.
 const UEP_ALVO_PROV    = 2300;
 // v7.76.0: com pelo menos estas horas rodando SOZINHO, a UEP sai do ritmo EM
 // REGIME. Pela teoria a UEP mede o trabalho da peça e a troca é tratada à
@@ -8298,7 +8298,7 @@ function saveCfg(){
   }
   // Meta de UEP: só vai à planilha quando o gestor MUDOU o valor — campo vazio
   // ou igual ao que já vale não manda nada (um aparelho que abriu antes de ler a
-  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 2500.
+  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 2530.
   { const mu=_pgSimNum((document.getElementById('c-meta-uep')||{}).value);
     const atual=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
     _metaUepNova=(mu>0&&Math.round(mu)!==Math.round(atual))?Math.round(mu):null;
