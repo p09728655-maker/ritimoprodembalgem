@@ -225,6 +225,14 @@ ok('sem meta do dia também não',
   ok('texto: selo · feito de esperado · meta do dia, sem % da meta cheia',
      [c.sub.startsWith('NO RITMO · 1.150 de 1.152 UEP esperadas até agora · meta do dia 2.530 UEP'), /\(\d+,\d%\)/.test(c.sub)], [true, false]);
   ok('a meta da CONFIG_PAINEL manda quando vem', uepCard(U, 2000, 240).meta, 2000);
+  // v7.114.0 — a hora EM ANDAMENTO conta só os minutos que passaram
+  ok('minSlotDecorrido: hora corrente vale o que passou; fechada, futura ou sem relógio vale o slot inteiro',
+     [minSlotDecorrido('14:00', 60, 14*60+10), minSlotDecorrido('14:00', 60, 15*60), minSlotDecorrido('12:12', 48, 12*60+30),
+      minSlotDecorrido('14:00', 60, 13*60), minSlotDecorrido('14:00', 60, undefined), minSlotDecorrido('16:00', 59, 16*60+58)],
+     [10, 60, 18, 60, 60, 58]);
+  ok('os DOIS calcKPIs medem a jornada da UEP pela mesma régua (minSlotDecorrido)',
+     ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].map(f => /const minNorm\s*=[\s\S]{0,260}minSlotDecorrido\(/.test(fs.readFileSync(path.join(__dirname, f), 'utf8'))),
+     [true, true]);
   ok('com a jornada inteira lançada o esperado é a meta cheia', Math.round(uepCard(U, null, 600).esperado), 2530);
   ok('sem hora de jornada lançada não julga (cor neutra, sem selo)', [uepCard(U, null, 0).c, /RITMO/.test(uepCard(U, null, 0).sub)], ['acc', false]);
   ok('leitura ainda não chegou ≠ backend sem o campo ≠ cadastro vazio',

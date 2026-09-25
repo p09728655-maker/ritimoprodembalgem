@@ -196,6 +196,20 @@ function nomeComCor(desc, cor){
 // agora" e a meta de cada hora são essa meta repartida pelos MINUTOS de jornada
 // (a mesma régua do efNoRitmo). A hora extra aparece separada, fora da meta.
 // A meta pode vir da CONFIG_PAINEL (chave META_UEP); sem ela, vale o padrão.
+// ── Minutos que JÁ PASSARAM de um slot (v7.114.0, PPCP 25/09/2026) ─────────
+// O "esperado até agora" da UEP contava a hora CORRENTE inteira assim que ela
+// tinha o 1º lançamento: às 14:10 a régua cobrava os 60 min da hora das 14:00,
+// 50 que ainda não existiam. Aqui: hora em andamento vale só o que passou; hora
+// fechada vale o slot inteiro. `agoraMin` fora do slot (antes dele ou depois)
+// devolve o slot inteiro — hora lançada antes de começar é caso de apontamento,
+// não de relógio, e continua como sempre foi.
+function minSlotDecorrido(inicio, minSlot, agoraMin){
+  const min = Number(minSlot) || 60;
+  const ini = toMin(String(inicio || '00:00')), ag = Number(agoraMin);
+  if (!isFinite(ag) || ag < ini || ag >= ini + min) return min;
+  return ag - ini;
+}
+
 const UEP_META_PADRAO = 2530;
 const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
 function uepCard(uep, metaCfg, minJornada){
@@ -221,7 +235,7 @@ function uepCard(uep, metaCfg, minJornada){
     + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
   const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
     + 'Meta de ' + fmtN(meta) + ' UEP na jornada normal (' + UEP_MIN_DIA + ' min); a hora extra fica fora da meta. '
-    + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ ' + UEP_MIN_DIA + '.'
+    + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ ' + UEP_MIN_DIA + ' (a hora em andamento conta só os minutos que já passaram).'
     + (cxSem > 0 ? ' ' + fmtN(cxSem) + ' cx de hoje são de códigos sem UEP no cadastro e não entram na conta.' : '');
   return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
 }
@@ -329,8 +343,8 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.10.0',
+  versao: '1.11.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido']
 };

@@ -11,6 +11,58 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.114.0 · mobile 1.28.0 — 25/09/2026
+
+**Aba ⚖ UEP: leitura mais precisa, sem indicador novo** (PPCP, prompt de
+evolução do dashboard gerencial UEP; diagnóstico e plano aprovados).
+
+- **A hora em andamento não é mais julgada.** Às 14:50 a hora das 14:00 saía
+  VERMELHA com 244 UEP contra a meta de 288 da hora cheia — faltavam 10 min.
+  Agora ela aparece tracejada, sem cor de veredito, com o rótulo "até 14:50";
+  a hora que ainda não chegou fica apagada. Tela e impressão.
+- **UEP ATÉ AGORA** escreve o desvio: *"+209 UEP (110,7% do esperado) ·
+  esperado até agora 1.890"* — sai do mesmo esperado do card.
+- **PROJEÇÃO DO DIA** diz o que é: *"na média da jornada até agora · só jornada
+  normal (hora extra fora)"*. Dizia *"no ritmo de agora"*, e não é a última hora.
+- **UEP EM HORA EXTRA** diz onde entra: fora do UEP até agora, da projeção e da
+  meta; só no TOTAL DO DIA do mix.
+- **CONFIABILIDADE DA UEP virou ORIGEM DA UEP.** "100% medida" quer dizer UEP
+  do estudo (ritmo demonstrado, inclusive provisória) ou digitada — não é
+  cronoanálise, e o nome antigo prometia exatidão. Tela e papel.
+- Na tela, os blocos seguem a ordem em que aparecem: 4 ORIGEM · 5 PERÍODO ·
+  6 PRÓXIMOS DIAS (o 5 aparecia antes do 4).
+- Barras do mix em cinza (o laranja era enfeite); o critério do âmbar em DIAS
+  QUE BATERAM (metade ou mais) foi para o tooltip.
+- PRÓXIMOS DIAS: o selo (NÃO CABE / FALTAM / FOLGA / SEM LOTE) abre o cartão,
+  em destaque; o nome inteiro do lote vai no tooltip.
+
+**Atenção — muda número:** o **esperado até agora** da UEP (card UEP DO DIA do
+gerencial do PC e do celular, e aba ⚖ UEP) passa a contar a hora em andamento
+só pelos minutos que já passaram. Antes, a hora corrente entrava inteira assim
+que tinha o 1º lançamento. Exemplo às 14:10 com as horas até 14:00 lançadas:
+antes 408 min de jornada (esperado 1.959 UEP com meta 2.530); agora 358 min
+(esperado 1.719). O selo fica mais justo no começo de cada hora; a **projeção**
+e o **UEP POR HORA** sobem junto, pela mesma base; a PRÓXIMOS DIAS passa a
+descontar do resto de hoje só o tempo que de fato falta. Hora já fechada não
+muda nada, e o dia fechado (HISTORICO) não muda. **O selo em caixas (% DA META
+DO DIA) não foi mexido** — continua contando a hora corrente inteira.
+Sábado na UEP continua como está (decisão do PPCP). Sem re-deploy do `.gs`.
+
+---
+
+## v7.113.0 — 25/09/2026
+
+**Impressão executiva da UEP: seções sem número, com os nomes da tela** (PPCP:
+*"o mix na tela está 3 na impressão 5"*). A folha deitada põe os blocos numa
+ordem diferente da aba (o período sobe para a folha 1), e o papel numerava pela
+ordem dele. Agora o papel não numera, e cada seção tem o mesmo nome do bloco
+na aba: HORA A HORA EM UEP, O MIX DE HOJE, CONFIABILIDADE DA UEP, PERÍODO,
+PRÓXIMOS DIAS.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.112.0 — 25/09/2026
 
 **A impressão executiva da UEP leva o PRÓXIMOS DIAS** (PPCP: *"colocar na

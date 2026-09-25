@@ -2770,8 +2770,33 @@ feito e dá ar de verdade ao que sobrou.
       `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
       hora que bateu sai **grafite** (`.ud-horas{--ok:…}`): cor só em quem não
       bateu, a regra do relatório semanal.
+    - ⚠ **O papel NÃO numera as seções** (v7.113.0, PPCP: *"o mix na tela
+      está 3 na impressão 5"*): a ordem do papel não é a da aba (o período sobe
+      para a folha 1), então os títulos são os NOMES dos blocos da aba, sem o
+      número. Não voltar a numerar pela ordem do papel.
     - É o **retrato da tela no clique**: sem chamada nova. Histórico ou
       cadastro que não vieram → a seção diz o que faltou e o resto sai.
+- **v7.114.0 / mobile 1.28.0 — leitura, não indicador novo** (prompt de
+  evolução do dashboard UEP, plano aprovado pelo PPCP em 25/09/2026).
+  - ⚠ **A HORA EM ANDAMENTO NÃO É JULGADA.** `_uepAbaHoras(…, agoraMin)` marca
+    `andamento` (sem `cls`, rótulo `até HH:MM`, barra tracejada) e `futuro`.
+    Sem `agoraMin` nada muda. Às 14:50 a hora das 14:00 saía vermelha com 244
+    contra 288 da hora cheia.
+  - ⚠ **O ESPERADO DA UEP CONTA SÓ O MINUTO QUE PASSOU**: `minSlotDecorrido`
+    (rp-core) nos DOIS `calcKPIs` alimenta o `minNorm` — card UEP DO DIA (PC e
+    celular), aba UEP, projeção e PRÓXIMOS DIAS. ⚠ O `hProd`/`efRitmo` (selo em
+    CAIXAS) **não** foi mexido — continua contando a hora corrente inteira; a
+    mudança foi aprovada só para a UEP.
+  - **CONFIABILIDADE virou ORIGEM DA UEP** (`UEP_ORIGEM_T`): "medida" = estudo
+    ou digitada, não cronoanálise. Numeração da tela na ordem em que aparece:
+    1 hoje · 2 hora a hora · 3 mix · 4 origem · 5 período · 6 próximos dias.
+  - Cards: desvio escrito no UEP ATÉ AGORA (do mesmo `esperado`), projeção "na
+    média da jornada até agora · só jornada normal", HE "fora do UEP até agora,
+    da projeção e da meta". Barras do mix neutras.
+  - **Sábado na UEP fica como está** (PPCP): o `_uepPorDiaDoLog` separa HE só
+    pelo horário, e sábado 07–17 entraria como jornada. Não mexer sem pedido.
+  - **Maquete do ChatGPT recusada em conteúdo**: projeção somando HE, "meta do
+    período", "vs período anterior" e "% do total do dia" não existem aqui.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
