@@ -209,8 +209,14 @@ function uepCard(uep, metaCfg, minJornada){
   const feito = Number(uep.normal) || 0, he = Number(uep.he) || 0, cxSem = Number(uep.cxSem) || 0;
   const min = Math.min(Math.max(0, Number(minJornada) || 0), UEP_MIN_DIA);
   const { metaAteAgora, ef } = efNoRitmo(feito, meta, min, UEP_MIN_DIA);
-  const sub = 'de ' + fmtN(meta) + ' UEP (' + fmtP(feito / meta * 100) + ')'
-    + (min > 0 ? ' · ' + slRitmo(ef) + ' — ' + fmtN(Math.round(metaAteAgora)) + ' esperadas até agora' : '')
+  // Mesmo desenho do card % DA META DO DIA ("ATENÇÃO · 951 de 1.650 cx
+  // esperadas até agora"): selo, feito × esperado, depois a meta do dia.
+  // PPCP, 25/09/2026: "de 2.530 UEP (55,9%) · NO RITMO — 1.383 esperadas"
+  // punha dois vereditos lado a lado (55,9% parecia ruim, NO RITMO bom).
+  const sub = (min > 0
+      ? slRitmo(ef) + ' · ' + fmtN(Math.round(feito)) + ' de ' + fmtN(Math.round(metaAteAgora)) + ' UEP esperadas até agora · '
+      : '')
+    + 'meta do dia ' + fmtN(meta) + ' UEP'
     + (he > 0 ? ' · +' + fmtN(Math.round(he)) + ' em HE' : '')
     + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
   const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
