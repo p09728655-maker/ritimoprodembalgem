@@ -1615,7 +1615,11 @@ if(/^diretoria[-.]/i.test(location.hostname) || /^\/diretoria\/?$/i.test(locatio
   document.documentElement.classList.add('modo-dir');
   // APP PRÓPRIO (v7.119.0): instalado daqui, o ícone abre a diretoria em tela
   // cheia — com o manifest do painel ele abriria o "/" (id e start_url são "/")
-  const _mf = document.querySelector('link[rel="manifest"]'); if(_mf) _mf.href = '/manifest-diretoria.json';
+  // No ENDEREÇO DA DIRETORIA a página abre em "/": o manifest precisa valer para o
+  // site inteiro, senão o Chrome não oferece instalar (a página ficaria fora do
+  // escopo "/diretoria") — manifest-diretoria-site.json (v7.122.0)
+  const _mf = document.querySelector('link[rel="manifest"]');
+  if(_mf) _mf.href = /^diretoria[-.]/i.test(location.hostname) ? '/manifest-diretoria-site.json' : '/manifest-diretoria.json';
 }
 </script>
 <body>
@@ -3112,7 +3116,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.121.0';
+const APP_VER   = '7.122.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o

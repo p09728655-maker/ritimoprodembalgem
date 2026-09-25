@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.122.0 — 25/09/2026
+
+- **Instalar a diretoria pelo endereço próprio** (PPCP: *"não tem como
+  baixar"*): em `diretoria-patrimar.vercel.app` a página abre em `/`, e o
+  manifest da diretoria valia só para `/diretoria` — o Chrome não oferecia
+  instalar. Agora esse endereço usa `manifest-diretoria-site.json` (escopo o
+  site inteiro, tela cheia).
+
+**Atenção:** nenhum número muda.
+
+---
+
 ## v7.121.0 · mobile 1.31.0 — 25/09/2026
 
 **Endereço próprio da diretoria** (PPCP: *"se eles baixarem vai abrir

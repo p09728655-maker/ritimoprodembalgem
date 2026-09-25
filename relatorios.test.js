@@ -4074,7 +4074,9 @@ console.log('\n── estudo de UEP ──');
 // ── v7.119.0: diretoria abre com o último retrato; app próprio ────────────────
 { const mf = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest-diretoria.json'), 'utf8'));
   ok('app próprio da diretoria: abre em /diretoria, tela cheia, com id diferente do painel',
-     [mf.start_url, mf.id, mf.display, /_mf\.href = '\/manifest-diretoria\.json'/.test(src)], ['/diretoria', '/diretoria', 'fullscreen', true]);
+     [mf.start_url, mf.id, mf.display, /'\/manifest-diretoria-site\.json' : '\/manifest-diretoria\.json'/.test(src)], ['/diretoria', '/diretoria', 'fullscreen', true]);
+  const ms = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest-diretoria-site.json'), 'utf8'));
+  ok('no endereço da diretoria o app vale para o site inteiro (senão o Chrome não oferece instalar)', [ms.start_url, ms.scope, ms.display], ['/', '/', 'fullscreen']);
   ok('a diretoria guarda o último retrato (planilha, leitura do dia, histórico, programação) e abre com ele',
      [/if\(_modoDir\(\)\) _dirGuarda\('sheets', json\)/.test(JS), /if\(_modoDir\(\)\) _dirGuarda\('pontos', json\)/.test(JS),
       /_dirGuarda\('hist'/.test(JS), /_dirGuarda\('prog'/.test(JS), /setTimeout\(\(\) => \{ _dirRestaura\(\); renderDir\(\); \}, 0\)/.test(JS)], [true, true, true, true, true]);
