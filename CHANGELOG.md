@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.100.0 / mobile 1.26.0 — 25/09/2026
+
+**Card UEP DO DIA mais simples** (PPCP: *"a explicação … está confusa"* e
+*"pode tirar esse valor em reais daí"*).
+- **Hoje (PC e celular):** o texto segue o card % DA META DO DIA ao lado —
+  selo, feito × esperado, depois a meta.
+  Antes: `de 2.530 UEP (55,9%) · NO RITMO — 1.383 esperadas até agora · +410 em HE · R$ 1,28/UEP (meta R$ 1,31)`.
+  Agora: `NO RITMO · 1.413 de 1.383 UEP esperadas até agora · meta do dia 2.530 UEP · +410 em HE`.
+- **Dia passado:** `111,7% da meta do dia (2.530 UEP)` no lugar de
+  `de 2.530 UEP (111,7%)`.
+- **O R$/UEP saiu dos dois cards.** A conta (`uepCusto`, no `rp-core.js`)
+  continua pronta para quando ele ganhar um lugar próprio.
+
+**Atenção:** nenhum número muda; muda o texto embaixo do card, também no PDF
+do dia. Sem re-deploy.
+
+---
+
 ## v7.99.0 / mobile 1.25.0 — 25/09/2026
 
 **Meta padrão de UEP volta a 2.530** (PPCP, 25/09/2026: a meta combinada

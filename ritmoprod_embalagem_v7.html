@@ -2914,7 +2914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.99.0';
+const APP_VER   = '7.100.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4359,25 +4359,6 @@ function _horaEhHE(rotulo){
   return ini<toMin(CFG.turnoInicio) || ini>=toMin(CFG.turnoFim);
 }
 
-// R$/UEP no card UEP DO DIA (v7.88.0, PPCP 24/09/2026). A conta é o uepCusto
-// (rp-core). O CUSTO-HORA é o que o gestor digitou no SIMULADOR e fica SÓ neste
-// computador (rpe_pg_sim): não vai para a planilha porque a URL do Apps Script
-// está no HTML público e qualquer um com ela leria o custo. Sem custo-hora o
-// card fica como era — nada de R$ 0,00.
-function _uepComCusto(card, uepFeito, minJornada, metaUep){
-  let c=null, ch=0;
-  try{ ch=_pgSimNum(_pgSimEstado().custoHora); c=uepCusto(ch, uepFeito, minJornada, metaUep); }catch(e){}
-  if(!c||!card) return card;
-  const rs=v=>'R$ '+v.toFixed(2).replace('.',',');
-  return {...card,
-    sub: card.sub+` · ${rs(c.rsUep)}/UEP (meta ${rs(c.rsMeta)})`,
-    t: (card.t?card.t+' ':'')+`R$/UEP = custo-hora da linha (${rs(ch)}) × minutos de jornada normal ÷ UEP feita; `
-      +`meta = custo-hora × ${UEP_MIN_DIA} min ÷ meta de UEP. `
-      +(c.excesso>0?`${rs(c.excesso)} pagos sem virar UEP até aqui. `:'Abaixo do custo da meta. ')
-      +'É custo de conversão da mão de obra da embalagem, não custo do produto; a hora extra fica fora. '
-      +'O custo-hora vem do SIMULADOR e vale só neste computador.'};
-}
-
 function renderGerencialHist(){
   _setModoHist(true);
   const H=GER_HIST||{horas:[],dia:null};
@@ -4422,9 +4403,9 @@ function renderGerencialHist(){
     // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele
     // dia. Sem ela (dia antigo ou backend anterior), o card diz isso.
     ...(dia.uep!=null
-      ? [_uepComCusto({l:'UEP DO DIA', v:fmtN(Math.round(dia.uep)),
-          sub:`de ${fmtN(uepDiaMeta(dia))} UEP (${fmtP(dia.uep/uepDiaMeta(dia)*100)})${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em HE':''}`,
-          c:sc(dia.uep/uepDiaMeta(dia)*100)}, dia.uep, UEP_MIN_DIA, uepDiaMeta(dia))]
+      ? [{l:'UEP DO DIA', v:fmtN(Math.round(dia.uep)),
+          sub:`${fmtP(dia.uep/uepDiaMeta(dia)*100)} da meta do dia (${fmtN(uepDiaMeta(dia))} UEP)${dia.uepHe>0?' · +'+fmtN(Math.round(dia.uepHe))+' em HE':''}`,
+          c:sc(dia.uep/uepDiaMeta(dia)*100)}]
       : (('uep' in dia)?[{l:'UEP DO DIA', v:'—', sub:'dia sem UEP gravada no fechamento', c:''}]:[])),
         {l:'RITMO MÉDIO',      v:fmtN(dia.mediaH||ritmo), sub:'média cx/hora no turno', c:'acc'},
     {l:'SLOTS PRODUZIDOS', v:fmtN(nSlots), sub:temHEnaTabela?`${plural(nNorm,'hora','horas')} de jornada + ${plural(nSlots-nNorm,'de hora extra','de hora extra')}`:'horas com produção', c:''},
@@ -4545,7 +4526,7 @@ function renderGerencial(){
     // UEP DO DIA (v7.80.0, PPCP 24/09/2026): o que a linha fez em ESFORÇO, não
     // em caixas. A UEP por caixa é parâmetro do cadastro; a conta e o texto
     // moram no rp-core (uepCard), os mesmos do gerencial do celular.
-    _uepComCusto(uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm), PONTOS_DIA.uep&&PONTOS_DIA.uep.normal, k.minNorm, PONTOS_DIA.metaUep),
+    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
     // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:

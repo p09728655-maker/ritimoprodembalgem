@@ -2629,6 +2629,15 @@ feito e dá ar de verdade ao que sobrou.
   dia (`comUep`, só com o prefixo `gsem-`). ⚠ O `pintar` é o mesmo da Tela D,
   e a TV não mostra UEP porque não tem esses ids. WhatsApp: linha própria, sem
   emoji. Paradas, perdas e simulador continuam em caixas.
+- **R$ POR UEP SAIU DOS CARDS** (v7.100.0, PPCP 25/09/2026: *"pode tirar
+  esse valor em reais daí, precisa ser em um lugar estratégico"*). O
+  `_uepComCusto` foi apagado; o `uepCusto` fica no rp-core, testado, até o
+  lugar ser escolhido. O `relatorios.test.js` falha se o R$ voltar ao card.
+  A nota abaixo descreve a v7.88–7.99.
+- **TEXTO DO CARD UEP DO DIA = o do % DA META DO DIA** (v7.100.0, PPCP:
+  *"está confuso"*): `NO RITMO · 1.413 de 1.383 UEP esperadas até agora ·
+  meta do dia 2.530 UEP · +410 em HE`. Um veredito só (o selo); o `(55,9%)`
+  da meta cheia saiu porque parecia contradizer o NO RITMO.
 - **R$ POR UEP** (v7.88.0, PPCP 24/09/2026). Conta: `uepCusto(custoHora,
   uepFeito, minJornada, metaUep)` no rp-core. R$/UEP = custo-hora × min ÷ UEP;
   meta = custo-hora × 527 ÷ meta; `excesso` = R$ pagos sem virar UEP. Os dois

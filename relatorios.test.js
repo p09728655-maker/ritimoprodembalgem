@@ -3690,9 +3690,10 @@ console.log('\n── estudo de UEP ──');
     ok('o resumo do WhatsApp e o bloco da semana levam a UEP; a TV não (ids só no gerencial)',
        [/UEP \(jornada normal\)/.test(pega('function _zapResumoSemana(')), /id="gsem-linha-uep"/.test(src), /id="tvd-linha-uep"/.test(src),
         /const comUep = pfx === 'gsem-';/.test(JS)], [true, true, false, true]);
-    ok('R$/UEP: os dois cards UEP DO DIA (hoje e dia passado) passam pelo _uepComCusto; custo-hora só do Simulador',
-       [/_uepComCusto\(uepCard\(PONTOS_DIA\.uep/.test(JS), /_uepComCusto\(\{l:'UEP DO DIA'/.test(JS),
-        /_pgSimNum\(_pgSimEstado\(\)\.custoHora\)/.test(pega('function _uepComCusto(')), /382[,.]89/.test(pega('function _uepComCusto('))], [true, true, true, false]);
+    // PPCP, 25/09/2026: "pode tirar esse valor em reais daí". O uepCusto
+    // continua no núcleo (testado) até o R$/UEP ganhar lugar próprio.
+    ok('R$/UEP saiu dos cards UEP DO DIA (hoje e dia passado)',
+       [/_uepComCusto/.test(JS), /uepCusto\(/.test(JS)], [false, false]);
     ok('META DIA (UEP) nas configurações: só envia quando o gestor mudou o valor, uma vez',
        [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
         /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);

@@ -220,6 +220,10 @@ ok('sem meta do dia também não',
   ok('esperado até agora = meta × minutos de jornada ÷ 527', Math.round(c.esperado), 1152);
   ok('no ritmo exato é NO RITMO e verde', [c.c, /NO RITMO/.test(c.sub)], ['ok', true]);
   ok('a HE e as caixas sem UEP aparecem no texto, fora da meta', [/\+410 em HE/.test(c.sub), /30 cx sem UEP/.test(c.sub)], [true, true]);
+  // PPCP, 25/09/2026: o texto segue o card % DA META DO DIA — um veredito só
+  // (o selo), feito × esperado, e a meta do dia depois; sem o "(55,9%)".
+  ok('texto: selo · feito de esperado · meta do dia, sem % da meta cheia',
+     [c.sub.startsWith('NO RITMO · 1.150 de 1.152 UEP esperadas até agora · meta do dia 2.530 UEP'), /\(\d+,\d%\)/.test(c.sub)], [true, false]);
   ok('a meta da CONFIG_PAINEL manda quando vem', uepCard(U, 2000, 240).meta, 2000);
   ok('com a jornada inteira lançada o esperado é a meta cheia', Math.round(uepCard(U, null, 600).esperado), 2530);
   ok('sem hora de jornada lançada não julga (cor neutra, sem selo)', [uepCard(U, null, 0).c, /RITMO/.test(uepCard(U, null, 0).sub)], ['acc', false]);
