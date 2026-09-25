@@ -492,8 +492,27 @@ via Google Apps Script (JSONP).
   fábrica toda.
 - **Quando a meta do dia parecer baixa, conferir primeiro se linhas sumiram**
   (soma por DATA nas duas abas × o que o PPCP programou) antes de mexer em
-  código. Proposta em aberto (não feita): o `.gs` guardar a lista de linhas do
-  dia e acusar na tela linha que some sem passar pelo arquivamento.
+  código.
+- ⏸ **STAND BY até 09/10/2026** (pedido do usuário). **A exclusão é de
+  propósito**: *"não fecha o lote pelo app, tem lote que fica aberto, aí tenho
+  que excluir a linha"*. Por isso o alarme de "linha sumiu" foi recusado — ele
+  acusaria a limpeza que o PPCP faz de propósito. O que falta é um jeito de
+  **ENCERRAR** a linha que não fecha, sem apagar (a meta do dia e o FIFO
+  continuam com ela; o saldo deixa de ser cobrado; o arquivamento leva com
+  STATUS de encerrado e o motivo). Ainda não desenhado nem feito.
+  - Medido na planilha de 25/09 (17:05), as linhas abertas e vencidas:
+    25218 LUNA 440 CUMARU 31 de 50 · 25220 PRINCESA ROSA 339 de 350 · 25228
+    URBAN OFF WHITE 84 de 115 · **25229 SLIM BRANCO 0 de 300, enquanto o SLIM
+    OFF WHITE (501128002) fez 444 cx hoje para um lote de 150** — e o URBAN
+    501152001 fez 33 sem linha. Cobertura do apontamento com produto: 100% em
+    15–25/09.
+  - Ou seja, **dois motivos diferentes para "não fechar"**: sobra pequena de
+    verdade (11, 19, 31 cx) e **caixa apontada no código da cor irmã**. O
+    segundo não se resolve encerrando — o painel teria de mostrar a troca
+    (sobra num código, falta no irmão do mesmo lote/modelo). Conferir com o
+    PPCP antes de desenhar.
+  - O HISTORICO de 25/09 foi corrigido à mão pelo usuário para META 1.550
+    (a EF da coluna D precisava ir junto para 123,9).
 
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
