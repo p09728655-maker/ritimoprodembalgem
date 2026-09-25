@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.104.0 — 25/09/2026
+
+**Aba ⚖ UEP abre mais rápido** (PPCP: os blocos 4 · PERÍODO e 5 ·
+CONFIABILIDADE ficavam em "Lendo…"). O histórico e o cadastro esperavam uma
+leitura do dia nova (a mais cara do backend, até 3 × 30 s) que o gerencial já
+tinha feito. Agora a aba lê, uma de cada vez: o **histórico** primeiro (em cache
+de 2 min), a leitura do dia **só se ela ainda não existir** e o **cadastro** por
+último.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.103.0 — 25/09/2026
 
 **Aba ⚖ UEP: bloco 4 · PERÍODO** (a 2ª etapa da maquete, aprovada pelo PPCP).

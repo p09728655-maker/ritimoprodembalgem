@@ -2714,7 +2714,12 @@ feito e dá ar de verdade ao que sobrou.
   FECHADOS com UEP nos últimos n dias corridos (hoje fora), média e bateu pelo
   `uepHistResumo`, oscilação em UEP × caixas de jornada pelo `_qpOscilacao`/
   `_qpRealDia` da aba PLANO. Filtro 7/15/30 (`rpe_uep_per`, padrão 15); o
-  histórico vem do `buildDiasHistAsync` (`UEP_HIST`, carregado no setTab). Contas puras e testadas no
+  histórico vem do `buildDiasHistAsync` (`UEP_HIST`, carregado no setTab).
+  - **Ordem ao abrir a aba (`_uepAbaCarregar`, v7.104.0):** histórico →
+    `lerPontosDia` **só se `PONTOS_DIA.uep` ainda não existe** → cadastro, em
+    sequência. Encadear o histórico atrás de um `getPontosDia` novo deixava os
+    blocos 4 e 5 em "Lendo…" por até ~1,5 min; o refresh do gerencial já mantém
+    o `PONTOS_DIA` fresco. Contas puras e testadas no
   `relatorios.test.js`: `_uepAbaHoras`, `_uepAbaMix`, `_uepAbaConf`,
   `_uepAbaProj`; `renderUep` é desenho e usa o `uepCard` (mesma régua do card
   UEP DO DIA). Redesenha junto com o `renderGerencial` quando a aba está

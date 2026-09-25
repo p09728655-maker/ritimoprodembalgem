@@ -3837,6 +3837,10 @@ console.log('\n── estudo de UEP ──');
   ok('período: média e dias batidos pela régua do HISTÓRICO (uepHistResumo)', [Math.round(PP.res.media), PP.res.bateu, PP.abaixo], [2689, 8, ['11/09/2026','23/09/2026']]);
   ok('período: a UEP oscila bem menos que as caixas de jornada nos mesmos dias', [Math.round(PP.oscUep), Math.round(PP.oscCx)], [10, 45]);
   ok('janela de 7 dias corridos pega só os dias dela', _uepAbaPeriodo(DH, 7, new Date(2026, 8, 25)).dias.map(d => d.data.slice(0,5)), ['18/09','21/09','22/09','23/09','24/09']);
+  const CARR = pega('async function _uepAbaCarregar(');
+  ok('ao abrir a aba: histórico → leitura do dia (só se faltar) → cadastro, em sequência',
+     [CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('lerPontosDia') && CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaCatCarregar'),
+      /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(R), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(R.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
