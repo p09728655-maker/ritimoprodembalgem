@@ -4028,7 +4028,12 @@ console.log('\n── estudo de UEP ──');
   ok('SEMANA: histórico não lido ≠ semana sem dia fechado ≠ pontos não lidos (nunca zero)',
      [_dirSemana(null), _dirSemana([], new Date(2026, 8, 25)), _dirSemana(dias, new Date(2026, 8, 25), null).pts], [undefined, null, null]);
   ok('últimos dias: só FECHADOS com UEP, em ordem, hoje fora', _dirUltimos(dias.concat([{ data:'25/09/2026', uep:900 }]), new Date(2026, 8, 25), 3).map(d => d.data), ['17/09/2026','18/09/2026','21/09/2026']);
-  ok('pontos da semana: guarda só a soma (pontos e caixas apontadas)', _dirSomaPts([{ pontos:10, caixas:3 }, { pontos:5, caixas:2 }, {}]), { pts:15, cx:5 });
+  ok('pontos da semana: guarda só a soma (pontos e caixas apontadas); sem pontosHe no backend, a HE fica null (não rateia)', _dirSomaPts([{ pontos:10, caixas:3 }, { pontos:5, caixas:2 }, {}]), { pts:15, cx:5, ptsHe:null });
+  ok('com o pontosHe do .gs v5.20 a semana separa pontos sem e com HE, exato',
+     [_dirSomaPts([{ pontos:10, caixas:3, pontosHe:4 }, { pontos:5, caixas:2, pontosHe:0 }]).ptsHe,
+      /PONTOS <i>sem HE<\/i><\/span>\$\{_dirComHe\(S\.pts\)\}<\/div><div class="dir-kv">\$\{f\(S\.pts - S\.ptsHe\)\}/.test(pega('function _dirSemanaHtml(')),
+      /if \(_ehHoraExtraCaixas\(hora\)\) map\[key\]\.pontosHe \+= cx \* \(prod\.pontos \|\| 0\);/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8'))],
+     [4, true, true]);
   // UM VEREDITO: só a UEP tem selo; caixas e pontos são número
   const HH = _dirHojeHtml(H), SH = _dirSemanaHtml(S, [], false, null);
   ok('um veredito só: o selo e a cor são da UEP; caixas e pontos saem sem classe de status',
@@ -4049,6 +4054,8 @@ console.log('\n── estudo de UEP ──');
   ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
      [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /if\(!_modoDir\(\)\)\{\s*lerMediaHorasComRetry/.test(JS),
       /iniciarAutoRefresh\(\); if\(_modoDir\(\)\) lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\);/.test(JS)], [true, true, true]);
+  ok('o gráfico da diretoria mede a CAIXA e se refaz quando ela muda de tamanho',
+     [/new ResizeObserver\(/.test(JS), /function _dirAjustaGraf\(\)/.test(JS), /box\.clientHeight/.test(pega('function _dirAjustaGraf('))], [true, true, true]);
   ok('a logomarca da Patrimar abre o topo da diretoria', /<img class="dir-logo" src="\/patrimar-logo\.png"/.test(pega('function _dirMoldura(')), true);
 }
 

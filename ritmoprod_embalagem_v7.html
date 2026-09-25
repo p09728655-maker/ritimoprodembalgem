@@ -369,7 +369,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-lin b{color:var(--txt)} #sec-dir .dir-lin b.he{color:var(--warn)}
 #sec-dir .dir-graf{flex:1;min-height:0;display:flex;flex-direction:column}
 #sec-dir .dir-graf svg{flex:1;min-height:0;width:100%}
-#sec-dir .dir-graf-h{flex:1;min-height:0}
+#sec-dir .dir-graf-h{flex:1;min-height:calc(var(--u)*12)}
 #sec-dir .dir-graf-h svg{max-width:none!important;height:100%}
 #sec-dir .dir-msg{font-family:var(--font-d);font-size:calc(var(--u)*1.8);color:var(--txt2);text-align:center}
 #sec-dir .dir-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:calc(var(--u)*1.1);align-items:stretch}
@@ -3116,7 +3116,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.122.0';
+const APP_VER   = '7.123.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11158,13 +11158,17 @@ const DIR_N = 3;
 const DIR_COB_MIN = 95;           // abaixo disto os pontos avisam que são parte das caixas
 const DIR_HIST_TTL = 30*60000;    // histórico: só muda quando um dia fecha
 const DIR_PTS_TTL = 6*3600000;
-let DIR_TELA = 0, DIR_TIMER = null, DIR_CARREGANDO = false;
+let DIR_TELA = 0, DIR_TIMER = null, DIR_CARREGANDO = false, DIR_RS_T = null;
 const DIR_PTS_LS = 'rpe_dir_pts';   // ⚠ chave nova: nunca renomear por estética
 let DIR_PTS = { key:null, soma:null, ts:0, falha:false };
 try{ const x = JSON.parse(localStorage.getItem(DIR_PTS_LS) || 'null'); if(x && x.key && x.soma) DIR_PTS = { key:x.key, soma:x.soma, ts:Number(x.ts) || 0, falha:false }; }catch(e){}
 // soma dos pontos e das caixas apontadas com produto nos itens do período
 function _dirSomaPts(itens){
-  return { pts: itens.reduce((a,i) => a + (Number(i && i.pontos) || 0), 0), cx: itens.reduce((a,i) => a + (Number(i && i.caixas) || 0), 0) };
+  // pontosHe (.gs v5.20): pontos das horas de HE, somados na leitura. Sem ele
+  // (backend antigo) fica null — a tela diz "sem HE não separado", não rateia.
+  const temHe = itens.some(i => i && i.pontosHe !== undefined && i.pontosHe !== null);
+  return { pts: itens.reduce((a,i) => a + (Number(i && i.pontos) || 0), 0), cx: itens.reduce((a,i) => a + (Number(i && i.caixas) || 0), 0),
+           ptsHe: temHe ? itens.reduce((a,i) => a + (Number(i && i.pontosHe) || 0), 0) : null };
 }
 function _modoDir(){ return document.documentElement.classList.contains('modo-dir'); }
 function _dirSemKey(){ const J = _relSemanaPassada(); return J.semStr.split(' a ').join('|'); }
@@ -11200,14 +11204,16 @@ function _dirSemana(dias, hoje, somaPts){
   const cxTot = sem.reduce((a,d) => a + (Number(d.real) || 0), 0);
   const cx = sem.reduce((a,d) => a + _qpRealDia(d), 0);
   let pts = null, cob = null;
+  let ptsHe = null;
   if(somaPts && isFinite(Number(somaPts.pts))){
     pts = Number(somaPts.pts);
+    if(somaPts.ptsHe != null && isFinite(Number(somaPts.ptsHe))) ptsHe = Number(somaPts.ptsHe);
     cob = cxTot > 0 ? Math.min(100, (Number(somaPts.cx) || 0) / cxTot * 100) : null;
   }
   return { de:sem[0].data, ate:sem[sem.length-1].data, nDias:sem.length, nUep:res.n, semUep:res.semUep,
            uep:res.total, meta:res.metaTot, heUep:res.he, bateu:res.bateu,
            pct: res.metaTot > 0 ? res.total / res.metaTot * 100 : null,
-           cx, heCx: Math.max(0, cxTot - cx), pts, cob };
+           cx, heCx: Math.max(0, cxTot - cx), pts, ptsHe, cob };
 }
 // Os últimos n dias FECHADOS com UEP (hoje fica fora — não fechou).
 function _dirUltimos(dias, hoje, n){
@@ -11269,7 +11275,9 @@ function _dirSemanaHtml(S, U, falhaHist, ptsEst){
         <div class="dir-bl"><span>${S.pct != null ? fmtP(S.pct) + ' da meta' : ''}</span><span>${S.nUep ? `${S.bateu} de ${S.nUep} dias` : ''}</span></div>
         ${S.semUep ? `<div class="dir-ks av">${plural(S.semUep, 'dia sem UEP gravada', 'dias sem UEP gravada')}, fora da soma</div>` : ''}</div>
       <div class="dir-k"><div class="dir-kl"><span>CAIXAS <i>sem HE</i></span>${_dirComHe(S.cx + S.heCx)}</div><div class="dir-kv">${f(S.cx)}</div></div>
-      <div class="dir-k"><div class="dir-kl">PONTOS <i>com HE</i></div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>
+      ${S.ptsHe != null
+        ? `<div class="dir-k"><div class="dir-kl"><span>PONTOS <i>sem HE</i></span>${_dirComHe(S.pts)}</div><div class="dir-kv">${f(S.pts - S.ptsHe)}</div>${S.cob != null && S.cob < DIR_COB_MIN ? `<div class="dir-ks av">${fmtP(S.cob)} das cx</div>` : ''}</div>`
+        : `<div class="dir-k"><div class="dir-kl"><span>PONTOS <i>com HE</i></span></div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>`}
     </div>
     ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP SEM HE · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
 `;
@@ -11336,15 +11344,34 @@ function renderDir(){
     }
   }catch(e){ corpo = _dirMsg('Não consegui montar esta tela: ' + _rpEsc(e.message)); }
   el.innerHTML = _dirMoldura(t, corpo, tit, ts);
-  if(t === 0){
-    const g = el.querySelector('.dir-graf-h svg');
-    if(g){ const r = g.getBoundingClientRect(), k = Math.max(1.3, r.width / 900);   // k: a letra do gráfico cresce com a tela (~2× a da aba em 1920)
-      if(r.width > 0 && r.height > 0 && hojeH && hojeH.horas) g.outerHTML = _uepAbaSvg(hojeH.horas, Math.round(r.width / k), Math.round(r.height / k)); }
+  DIR_GRAF = { t, horas: hojeH && hojeH.horas, dias: t === 1 && UEP_HIST ? _dirUltimos(UEP_HIST, null, 10) : null };
+  _dirAjustaGraf();
+}
+// O GRÁFICO NA MEDIDA DA CAIXA (v7.123.0). Media-se o próprio SVG, e o
+// tamanho dele dependia do desenho anterior: no app instalado a janela abre
+// aos poucos (e as fontes chegam depois), a medida saía errada e o gráfico
+// ficava miúdo no meio da caixa. Agora mede-se a CAIXA (menos o título), o SVG
+// é desenhado nessa proporção com altura fixa, e tudo se refaz sempre que a
+// tela muda de tamanho (ResizeObserver) ou as fontes terminam de carregar.
+let DIR_GRAF = null;
+function _dirAjustaGraf(){
+  const el = document.getElementById('dir-palco'); if(!el || !DIR_GRAF) return;
+  const box = el.querySelector('.dir-graf'); if(!box) return;
+  const g = box.querySelector('svg'), tt = box.querySelector('.dir-kl'), cs = getComputedStyle(box);
+  const w = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const h = box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - (tt ? tt.offsetHeight : 0) - (parseFloat(cs.rowGap) || 0);
+  if(!g || !(w > 50) || !(h > 50)) return;
+  let novo = '';
+  if(DIR_GRAF.t === 0 && DIR_GRAF.horas){
+    const k = Math.max(1.3, w / 900);     // a letra do gráfico cresce com a tela (~2× a da aba em 1920)
+    novo = _uepAbaSvg(DIR_GRAF.horas, Math.round(w / k), Math.round(h / k));
+  } else if(DIR_GRAF.t === 1 && DIR_GRAF.dias){
+    novo = _dirSemSvg(DIR_GRAF.dias, w / h * 260);
   }
-  if(t === 1 && UEP_HIST){
-    const g = el.querySelector('.dir-graf svg');
-    if(g){ const r = g.getBoundingClientRect(); if(r.width > 0 && r.height > 0) g.outerHTML = _dirSemSvg(_dirUltimos(UEP_HIST, null, 10), r.width / r.height * 260); }
-  }
+  if(!novo) return;
+  g.outerHTML = novo;
+  const n = box.querySelector('svg');
+  if(n){ n.style.width = w + 'px'; n.style.height = h + 'px'; n.style.maxWidth = 'none'; n.style.flex = 'none'; }
 }
 // Leituras, uma de cada vez (o Apps Script atende uma execução por vez), só
 // quando vencem: histórico 30 min, programação 15 min (GPX_TTL, falha espera
@@ -11365,7 +11392,8 @@ async function _dirCarregar(){
       renderDir();
     }
     const key = _dirSemKey(), [de, ate] = key.split('|');
-    const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > DIR_PTS_TTL : Date.now() - DIR_PTS.ts > 10*60000);
+    const semHe = DIR_PTS.soma && DIR_PTS.soma.ptsHe == null;   // backend sem pontosHe: confere de novo em 30 min
+    const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > (semHe ? 30*60000 : DIR_PTS_TTL) : Date.now() - DIR_PTS.ts > 10*60000);
     if(vencido){
       // essa leitura publica PREP_PERIODO, que é de outra aba: guarda e devolve
       const prep = PREP_PERIODO;
@@ -11418,6 +11446,9 @@ function iniciarDiretoria(){
   document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
   document.getElementById('sec-dir').classList.add('on');
   renderDir();
+  // a caixa do gráfico mudou de tamanho (janela abrindo, tela cheia, fontes) → redesenha
+  try{ new ResizeObserver(() => { clearTimeout(DIR_RS_T); DIR_RS_T = setTimeout(_dirAjustaGraf, 120); }).observe(document.getElementById('sec-dir')); }catch(e){}
+  try{ document.fonts && document.fonts.ready.then(() => _dirAjustaGraf()); }catch(e){}
   // passa a tela a cada 20 s; a cada passagem ela é redesenhada com o dado do momento
   DIR_TIMER = setInterval(() => { DIR_TELA = (DIR_TELA + 1) % DIR_N; renderDir(); }, DIR_TEMPO);
   // a 1ª leitura sai do fim da carga inicial (ver "Iniciar fonte de dados");

@@ -33,7 +33,7 @@ const GLOBAIS = [
   'setInterval','clearInterval','requestAnimationFrame','performance','screen','history',
   'URL','URLSearchParams','Blob','FileReader','Image','Notification','MouseEvent','Event',
   'CustomEvent','AbortController','matchMedia','getComputedStyle','indexedDB','btoa','atob',
-  'caches','serviceWorker',
+  'caches','serviceWorker','ResizeObserver',
   // bibliotecas por CDN
   'Chart','XLSX',
   // módulos próprios (rp-core.js / paradas-calc.js)

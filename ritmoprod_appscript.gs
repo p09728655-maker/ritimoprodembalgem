@@ -2929,7 +2929,7 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {} };
+                   caixas: 0, pontos: 0, pontosHe: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {} };
     }
     const dStr = fmtDataBR(r[iData]);
     const hSeq = formatHoraCel(r[iHora]);
@@ -2972,6 +2972,10 @@ function getProducaoModeloPeriodo(p) {
       // vez; hora com dois produtos é hora de troca, e o painel reparte essa
       // hora entre eles em vez de dar a hora inteira a cada um.
       map[key].cxHora[hora] = (map[key].cxHora[hora] || 0) + cx;
+      // v5.20: PONTOS EM HORA EXTRA, pela MESMA régua das caixas
+      // (_ehHoraExtraCaixas: fora de 07:00–17:00). Soma exata na leitura — o
+      // painel da diretoria mostra pontos sem HE e com HE sem ratear nada.
+      if (_ehHoraExtraCaixas(hora)) map[key].pontosHe += cx * (prod.pontos || 0);
     }
   }
 
@@ -2981,6 +2985,7 @@ function getProducaoModeloPeriodo(p) {
     return { data: it.data, dataNum: it.dataNum, modelo: it.modelo, nome: it.nome,
              cor: it.cor, familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
+             pontosHe: Math.round(it.pontosHe),   // v5.20 — pontos das horas fora da jornada
              pesoKg: Math.round(it.pesoKg * 10) / 10,
              // Teto físico da esteira p/ o mix do item (0 = catálogo sem
              // medida/velocidade — o painel esconde a leitura, nunca chuta).
