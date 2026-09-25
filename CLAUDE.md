@@ -2709,8 +2709,12 @@ feito e dá ar de verdade ao que sobrou.
   - É **estimativa**: a faixa min–max dos quocientes vai no confirm. Faixa
     larga = a caixa explica pouco o ritmo (a operação roda a 22–68% do teto).
 - **ABA ⚖ UEP no gerencial do PC** (v7.102.0, maquete aprovada pelo PPCP em
-  25/09/2026). Blocos 1 (hoje), 2 (hora a hora), 3 (mix) e 5 (confiabilidade);
-  o **4 (período) é a 2ª etapa**, ainda não feita. Contas puras e testadas no
+  25/09/2026). Blocos 1 (hoje), 2 (hora a hora), 3 (mix), 5 (confiabilidade) e
+  **4 (período, v7.103.0)**: `_uepAbaPeriodo(dias, n, hoje)` — dias
+  FECHADOS com UEP nos últimos n dias corridos (hoje fora), média e bateu pelo
+  `uepHistResumo`, oscilação em UEP × caixas de jornada pelo `_qpOscilacao`/
+  `_qpRealDia` da aba PLANO. Filtro 7/15/30 (`rpe_uep_per`, padrão 15); o
+  histórico vem do `buildDiasHistAsync` (`UEP_HIST`, carregado no setTab). Contas puras e testadas no
   `relatorios.test.js`: `_uepAbaHoras`, `_uepAbaMix`, `_uepAbaConf`,
   `_uepAbaProj`; `renderUep` é desenho e usa o `uepCard` (mesma régua do card
   UEP DO DIA). Redesenha junto com o `renderGerencial` quando a aba está

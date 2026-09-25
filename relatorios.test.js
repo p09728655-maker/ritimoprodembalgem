@@ -3823,6 +3823,20 @@ console.log('\n── estudo de UEP ──');
   ok('projeção: UEP por minuto de jornada lançada até o fim da jornada', [Math.round(P.porHora), Math.round(P.fim), P.restMin], [294, 2586, 239]);
   ok('sem jornada lançada não projeta', _uepAbaProj(100, 0), null);
 
+  // 4 · PERÍODO (v7.103.0) — dias reais do HISTORICO de 11/09 a 24/09/2026
+  if (typeof _qpOscilacao === 'undefined') eval(pega('function _qpOscilacao('));
+  if (typeof _qpRealDia === 'undefined') eval(pega('function _qpRealDia('));
+  eval(pega('function _uepAbaPeriodo('));
+  const DH = [['11/09/2026',2416.1,1561,326],['14/09/2026',2720.5,1272,0],['15/09/2026',3255.3,3217,224],['16/09/2026',2731.1,1797,285],
+              ['17/09/2026',2721.6,3913,673],['18/09/2026',2575.4,1684,471],['21/09/2026',2818.1,1794,0],['22/09/2026',2606.4,1579,245],
+              ['23/09/2026',2263,1180,153],['24/09/2026',2784.4,1844,348]]
+    .map(([data,uep,real,heCx]) => ({ data, uep, real, heCx, metaUep: 2530 }));
+  DH.push({ data:'25/09/2026', uep:1413, real:951, heCx:198, metaUep:2530 }, { data:'10/09/2026', uep:null, real:1273 });
+  const PP = _uepAbaPeriodo(DH, 15, new Date(2026, 8, 25));
+  ok('período: só dias fechados COM UEP; hoje fica fora (não fechou)', [PP.n, PP.dias[0].data, PP.dias[PP.n-1].data], [10, '11/09/2026', '24/09/2026']);
+  ok('período: média e dias batidos pela régua do HISTÓRICO (uepHistResumo)', [Math.round(PP.res.media), PP.res.bateu, PP.abaixo], [2689, 8, ['11/09/2026','23/09/2026']]);
+  ok('período: a UEP oscila bem menos que as caixas de jornada nos mesmos dias', [Math.round(PP.oscUep), Math.round(PP.oscCx)], [10, 45]);
+  ok('janela de 7 dias corridos pega só os dias dela', _uepAbaPeriodo(DH, 7, new Date(2026, 8, 25)).dias.map(d => d.data.slice(0,5)), ['18/09','21/09','22/09','23/09','24/09']);
   const R = pega('function renderUep(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(R), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(R.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
