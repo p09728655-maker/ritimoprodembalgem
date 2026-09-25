@@ -2762,9 +2762,9 @@ feito e dá ar de verdade ao que sobrou.
       no `_uepAbaPeriodo` — card e papel leem o mesmo número.
     - **Folha 1 = o resultado**: resumo de hoje e do período lado a lado (selo
       + frase), e embaixo de cada um os cards e o gráfico dele. **Folha 2 = o
-      porquê**: mix (máx. `UEP_DOC_MIX_MAX`=8, resto em "demais"), confiabilidade
-      e COMO LER. Medido no Chromium: 2 folhas, a 1ª fecha em ~661 dos 718 px
-      úteis da folha deitada.
+      porquê**: PRÓXIMOS DIAS (v7.112.0), mix (máx. `UEP_DOC_MIX_MAX`=8, resto
+      em "demais") e confiabilidade; **folha 3 = ANEXO — COMO LER**. Medido no
+      Chromium: a 1ª fecha em ~661 e a 2ª em ~690 dos 718 px úteis.
     - Os gráficos são os MESMOS `_uepAbaSvg`/`_uepAbaPerSvg`, a
       `UEP_DOC_SVG_W`=480 (meia folha), re-skinados por token na
       `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
@@ -2784,6 +2784,13 @@ feito e dá ar de verdade ao que sobrou.
   (`_abaOn('uep')`) — o gerencial não lê mais a programação.
 - ⚠ **A cor segue o número EXIBIDO** (`Math.round(exc)`): 105,3 min aparece
   "1h45" e, com a conta crua, saía vermelho contra a legenda "até 1h45".
+- **Vai na impressão executiva da UEP** (v7.112.0): `_gpxDoPainel()` é a
+  montagem única (tela e `_uepAbaDados().prox`); o papel chama o MESMO
+  `_gpxHtml(P, 50)` — o 2º parâmetro é a altura do trilho — com a pele
+  `.uep-doc .ud-prox .gpx-*`. Abre a folha 2; o COMO LER virou ANEXO (folha 3),
+  porque medido no Chromium a folha 2 não comportava os dois. No papel a nota da
+  fórmula e a lista SEM UEP ficam escondidas (a fórmula vai no anexo; a lista
+  sai inteira na CONFIABILIDADE).
 - **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP
   (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
