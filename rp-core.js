@@ -228,9 +228,10 @@ function uepCard(uep, metaCfg, minJornada){
   // PPCP, 25/09/2026: "de 2.530 UEP (55,9%) · NO RITMO — 1.383 esperadas"
   // punha dois vereditos lado a lado (55,9% parecia ruim, NO RITMO bom).
   const sub = (min > 0
-      ? slRitmo(ef) + ' · ' + fmtN(Math.round(feito)) + ' de ' + fmtN(Math.round(metaAteAgora)) + ' UEP esperadas até agora · '
+      ? slRitmo(ef) + ' · ' + fmtN(Math.round(feito)) + ' de ' + fmtN(Math.round(metaAteAgora)) + ' esperadas · '
       : '')
-    + 'meta do dia ' + fmtN(meta) + ' UEP'
+    // enxuto (v7.120.0): a unidade já está no rótulo do card; a explicação, no `t`
+    + 'meta ' + fmtN(meta)
     + (he > 0 ? ' · +' + fmtN(Math.round(he)) + ' em HE' : '')
     + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
   const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
@@ -343,7 +344,7 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.11.0',
+  versao: '1.12.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido']

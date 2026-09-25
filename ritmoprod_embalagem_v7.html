@@ -2776,7 +2776,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="par-sec"><span class="par-sec-n">3</span> ONDE E QUANDO PERDEMOS PRODUÇÃO</div>
   <div class="charts-row">
     <div class="chart-card">
-      <div class="chart-ttl">PARETO — TEMPO PARADO POR TIPO (foco nos maiores ofensores)</div>
+      <div class="chart-ttl">PARETO — TEMPO PARADO POR TIPO</div>
       <div class="chart-box-lg"><canvas id="ch-par-pareto"></canvas></div>
     </div>
     <div class="chart-card">
@@ -2799,7 +2799,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <!-- 5 · Quanto dá pra recuperar -->
   <div class="par-sec" id="par-sec-estudo"><span class="par-sec-n">5</span> QUANTO DÁ PRA RECUPERAR</div>
   <div class="tbl-wrap" id="par-estudo-wrap" style="display:none">
-    <div class="tbl-hdr"><span class="tbl-hdr-ttl">💡 SE ELIMINÁSSEMOS CADA TIPO DE PARADA</span></div>
+    <div class="tbl-hdr"><span class="tbl-hdr-ttl">💡 GANHO POR CAUSA</span></div>
     <div style="padding:10px 4px" id="par-estudo"></div>
   </div>
 
@@ -3107,7 +3107,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.119.0';
+const APP_VER   = '7.120.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3361,7 +3361,7 @@ function updateStorageInfo(){
     const fechados=Object.values(all).filter(d=>d.fechado).length;
     const kb=(new Blob([localStorage.getItem('rpe_hist')||'']).size/1024).toFixed(1);
     const el=document.getElementById('hist-storage-info');
-    if(el) el.textContent=`💾 ${dias} dias · ${fechados} fechados · ${kb}KB`;
+    if(el){ el.textContent='💾'; el.title=`${dias} dias guardados neste computador · ${fechados} fechados · ${kb}KB`; }
   }catch(e){}
 }
 
@@ -5242,7 +5242,7 @@ function renderGerencialHist(){
   // ── KPIs (subconjunto que faz sentido para um dia já encerrado) ──
   const kpis=[
     {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
-    ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:`${fmtN(real-heCx)} cx em hora normal · ${temHEnaTabela?'as horas de HE estão na tabela, sem meta':'fora da tabela abaixo'}`, c:'acc'}]:[]),
+    ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:temHEnaTabela?'HE na tabela, sem meta':'fora da tabela abaixo', t:`${fmtN(real-heCx)} cx em hora normal`, c:'acc'}]:[]),
     {l:'META DO DIA',      v:fmtN(meta),  sub:gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltaram '+fmtN(Math.abs(gap)), c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
     // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele
@@ -5281,10 +5281,10 @@ function renderGerencialHist(){
       <div class="a-desc">últimas 2 horas do dia</div></div>
     <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
       <div class="a-val">${idxPico>=0?horasNorm[idxPico].hora:'—'}</div>
-      <div class="a-desc">${fmtN(melhor)} cx neste horário</div></div>
+      <div class="a-desc">${fmtN(melhor)} cx</div></div>
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
       <div class="a-val" style="color:var(--red)">${idxVale>=0?horasNorm[idxVale].hora:'—'}</div>
-      <div class="a-desc">${fmtN(pior)} cx — menor ritmo</div></div>`;
+      <div class="a-desc">${fmtN(pior)} cx</div></div>`;
 
   // ── Tabela hora a hora ──
   document.getElementById('tbl-data-lbl').textContent=H.data+(dia.fechado?' · DIA FECHADO':'');
@@ -5348,7 +5348,7 @@ function renderGerencial(){
     {l:'PRODUÇÃO REAL',     v:fmtN(k.real),            sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Hora normal × hora extra só aparece quando o dia TEM hora extra lançada —
     // sem HE o card diria "tudo normal" e só ocuparia espaço no grid.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')} HE`, c:'acc'}]:[]),
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${plural(k.nHE,'hora','horas')} de HE`, t:`${fmtN(k.realNormal)} cx em hora normal`, c:'acc'}]:[]),
     // O GAP saiu de card próprio e virou o subtítulo daqui (15/09/2026).
     // PRODUÇÃO REAL, META DO DIA, % DA META e GAP DA META eram QUATRO cards
     // para uma relação só: dados o real e a meta, o % e a diferença são
@@ -5390,15 +5390,15 @@ function renderGerencial(){
     // rateia por minuto e é a conta mais correta. Mesma regra do relatório
     // semanal e da TV: o número é tinta, o veredito é o selo.
     // A TV já mostrava só o número — ela nunca teve este defeito.
-    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:'cx se o ritmo de agora seguir até o fim do turno', c:'acc'},
+    {l:'PROJEÇÃO FINAL',    v:fmtN(k.proj),             sub:'cx no ritmo atual', t:'caixas se o ritmo de agora seguir até o fim do turno', c:'acc'},
     {l:'HORAS PRODUTIVAS',  v:fmt1(k.hProd)+'h',  sub:`${k.n} slots registrados`,c:''},
     // Só horas de JORNADA: a hora extra não tem meta e não disputa pico nem vale
     // — a mesma base que o FECHAR DIA grava nas colunas MELHOR H./PIOR H.
     {l:'MELHOR HORA',       v:k.nNorm?fmtN(k.melhor):'—', sub:k.nNorm?'cx — pico do turno':'nenhuma hora de jornada lançada', c:k.nNorm?'ok':''},
     {l:'PIOR HORA',         v:k.nNorm?fmtN(k.pior):'—',   sub:k.nNorm?'cx — mínimo do turno':'a hora extra não entra no pico/vale', c:(k.nNorm&&k.pior<k.metaH*0.7)?'red':''},
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto no app.
-    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts — caixas × pontos/produto', c:'acc'},
-    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto', c:'acc'},
+    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),  sub:'pts', t:'caixas × pontos do produto', c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'', t:'caixas × peso bruto do produto', c:'acc'},
   ];
   // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
   // quando há atraso acumulado de dias anteriores ainda não embalado.
@@ -5433,10 +5433,10 @@ function renderGerencial(){
       <div class="a-desc">últimas 2 horas registradas</div></div>
     <div class="a-card"><div class="a-lbl">PICO DE PRODUÇÃO</div>
       <div class="a-val">${picoR?picoR.horario:'—'}</div>
-      <div class="a-desc">${k.nNorm?fmtN(k.melhor)+' cx neste horário':'sem hora de jornada lançada'}</div></div>
+      <div class="a-desc">${k.nNorm?fmtN(k.melhor)+' cx':'sem hora de jornada lançada'}</div></div>
     <div class="a-card"><div class="a-lbl">VALE DE PRODUÇÃO</div>
       <div class="a-val" style="color:var(--red)">${valeR?valeR.horario:'—'}</div>
-      <div class="a-desc">${k.nNorm?fmtN(k.pior)+' cx — menor ritmo':'a hora extra não disputa o vale'}</div></div>`;
+      <div class="a-desc">${k.nNorm?fmtN(k.pior)+' cx':'a hora extra não disputa o vale'}</div></div>`;
 
   // ── Produto atual do turno (opcional — só aparece se o operador selecionou) ──
   const gerProdEl=document.getElementById('ger-produto-atual');
@@ -5653,8 +5653,8 @@ function renderProducaoPorHoraDedicada(){
   const tlHoje=_phPrepHoje();
   if(totEl) totEl.textContent=`${fmtN(totCx)} cx · ${fmtN(totPeso)} kg · ${fmtN(totPts)} pts`
     +(temUep?` · ${fmtN(Math.round(totUep))} UEP`:'')
-    +(tlHoje.trocas?` · ${fmtN(tlHoje.trocas)} preparação(ões) hoje`:'')
-    +(tlHoje.eventos&&tlHoje.eventos<tlHoje.trocas?` em ${fmtN(tlHoje.eventos)} parada(s) de esteira`:'');
+    +(tlHoje.trocas?` · ${fmtN(tlHoje.trocas)} prep. hoje`:'')
+    +(tlHoje.eventos&&tlHoje.eventos<tlHoje.trocas?` (${fmtN(tlHoje.eventos)} paradas de esteira)`:'');
   // Mede a duração real da troca (paradas apontadas) e redesenha UMA vez quando
   // o número chega — sem isso a régua do dia ficaria presa no valor nominal da
   // planilha. Já medido, trocaObs() responde na hora e ninguém busca de novo.
@@ -6052,7 +6052,7 @@ function _phHorasDeEntrada(horasGrupo, horasDia){
 function _phTrocasLinhaTxt(tl, fonte){
   if(!tl||!tl.dias||!tl.trocas) return '';
   const ev=(tl.eventos&&tl.eventos<tl.trocas)
-    ? ` · ${fmtN(tl.eventos)} troca(s) de esteira (${fmtN(tl.evPorDia)}/dia — lados que mudam juntos contam uma)`
+    ? ` · ${fmtN(tl.eventos)} troca(s) de esteira (${fmtN(tl.evPorDia)}/dia)`
     : '';
   const mins = fonte ? ` · ${fmtN(fonte.minDia)} min/dia de troca (${fonte.medido?'medido':'premissa'})` : '';
   return `${fmtN(tl.trocas)} preparação(ões) em ${tl.dias} dia${tl.dias===1?'':'s'} (${fmtN(tl.porDia)}/dia)${ev}${mins}`;
@@ -6560,7 +6560,10 @@ async function renderModeloPeriodo(){
   const mediaTxt=mediaModo==='completa'?'com todos os dias (APARADA desligada no filtro MÉDIA)':'sem o melhor e o pior dia (3+ dias)';
   const legenda=(metric==='mediaH')?` · méd. ${mediaTxt} · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+' — régua igual para todas as linhas)'):''}`:` · méd/dia ${mediaTxt}`;
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
-  if(totEl) totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${legenda}`;
+  if(totEl){
+    totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${simUse?` · ⚠ SIMULAÇÃO ${simUse.vel} m/min — nada é gravado`:''}${legenda?' · ⓘ':''}`;
+    totEl.title=legenda.replace(/^ · /,'').split(' · ').join('\n');   // a legenda inteira, passando o mouse
+  }
   // O TOTAL DO DIA usa a MESMA régua de troca deste comparativo (PPCP,
   // 24/08/2026: 318/h numa tabela e 307/h na outra é lido como erro). Publica
   // o fator e, se mudou, redesenha a tabela do dia — ela é local
@@ -7894,7 +7897,10 @@ async function carregarProgramacaoDetalhada(){
     // paralelo elas só se enfileiram lá e atrasam a primeira.
     for(let t=1; t<=3; t++){
       try{
-        const json=await jsonpFetch(url);
+        // na DIRETORIA ninguém espera na frente da tela e ela disputa a fila com o
+        // refresh da planilha: 60 s por tentativa (v7.120.0 — a tela PRÓXIMOS
+        // DIAS dizia "não consegui ler a programação" com 25 s)
+        const json=await jsonpFetch(url, _modoDir() ? 60000 : undefined);
         if(json && json.ok && Array.isArray(json.itens)){
           PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now();
           PROG_DET_FALHA=null; PROG_DET_ERRO=''; return true;
@@ -8244,12 +8250,12 @@ function _capPintar(){
           <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="_capAdd('${_rpEsc(p.chave).replace(/'/g,"\\'")}')">+ ADICIONAR AO DIA</button></td></tr>`; }).join('')}</tbody></table>`;
   const origem=CAP_CAT_ORIGEM?`<div style="font-size:10.5px;color:var(--txt2);margin-bottom:6px">${_rpEsc(CAP_CAT_ORIGEM)}${CAP_BUSCANDO?' · atualizando…':CAP_FALHA?' · não atualizou: '+_rpEsc(CAP_FALHA)+' <a href="#" onclick="_capBuscar();return false" style="color:var(--acc)">tentar de novo</a>':''}</div>`:'';
   box.innerHTML=origem+lista+'<div id="cap-mix" style="margin-top:14px"></div>'
-    +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5">UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); entre as cores vale a mais rápida (menor UEP), nunca a média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo <b>demonstrado</b> da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.</div>`;
+    +`<div style="font-size:10.5px;color:var(--txt2);margin-top:10px;line-height:1.5;cursor:help" title="UEP do produto = soma da UEP de cada volume no cadastro (PRODUTO_CODIGO); entre as cores vale a mais rápida (menor UEP), nunca a média. Produtos por dia = meta de UEP ÷ UEP do produto, na jornada normal (${UEP_MIN_DIA} min). É o ritmo demonstrado da linha, não o teto da esteira, e não desconta troca de produto além do que já está na UEP.">ⓘ como é a conta · ritmo <b>demonstrado</b>, não o teto da esteira</div>`;
   _capPintarMix();
 }
 function _capPintarMix(){
   const el=document.getElementById('cap-mix'); if(!el) return;
-  if(!CAP_MIX.length){ el.innerHTML='<div style="font-size:11px;color:var(--txt2)">Para montar um dia com vários produtos, clique em <b>+ ADICIONAR AO DIA</b> e digite a quantidade de cada um.</div>'; return; }
+  if(!CAP_MIX.length){ el.innerHTML='<div style="font-size:11px;color:var(--txt2)"><b>+ ADICIONAR AO DIA</b> para montar um dia com vários produtos.</div>'; return; }
   const meta=_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO;
   const r=_capMix(CAP_CAT, CAP_MIX, meta);
   el.innerHTML=`<div class="frm-lbl" style="margin-bottom:6px">DIA MONTADO</div>
@@ -8901,7 +8907,7 @@ async function renderHist(){
     <div class="kpi-card ${semBackend?'red':totHE>0?'acc':''}"><div class="kpi-lbl">CAIXAS EM HORA EXTRA</div><div class="kpi-val">${semBackend?'—':fmtN(totHE)}</div><div class="kpi-sub">${heSub}</div></div>
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
     <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
-    <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'} · ${fechados} fechados</div></div>
+    <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'}</div></div>
     ${temUepHist?`<div class="kpi-card ${uR.media>=uR.meta?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO)."><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(uR.meta)} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.semUep?` · ${uR.semUep} sem UEP`:''}</div></div>`:''}`;
 
   renderChartHist(dias,periodo);
@@ -11281,7 +11287,7 @@ function _gpxCartaoHtml(d, pf){
     ${pes ? `<div class="${c('dl')}" title="${_rpEsc((pes.lote ? 'lote ' + pes.lote + ' · ' : '') + (pes.nome || pes.rot))}">Mais pesado: <b>${_rpEsc(pes.lote || '—')}</b> ${_rpEsc(pes.rot)} ${_fmtHM(pes.min)}</div>` : ''}</div>`;
 }
 function _dirCartHtml(P, falha){
-  if(!P) return falha ? _dirMsg(`${falha.t} — tento de novo sozinho.`) : _dirMsg('Lendo a programação…');
+  if(!P) return falha ? _dirMsg(PROG_DET_FALHA === 'sem-resposta' ? 'A programação ainda não respondeu (servidor lento) — tento de novo em 1 min.' : `${falha.t} — tento de novo sozinho.`) : _dirMsg('Lendo a programação…');
   if(P.falha === 'sem-uep') return _dirMsg('A programação não traz UEP — não dá para converter em horas.');
   const f = _dirF;
   const cards = P.dias.map(d => _gpxCartaoHtml(d, 'dir')).join('');
@@ -16257,9 +16263,9 @@ async function _renderAnaliseParadasCore(opts){
       if(ehSetupParada(t.tipo)){
         const tmed=Math.round(t.min/(t.qtd||1));
         const porMin=t.min>0?Math.round(t.perd*(t.qtd||1)/t.min):0;
-        linha=`<b style="color:#e57373">${t.tipo}</b> é troca (inevitável) — o ganho é fazer mais rápido: ${plural(t.qtd,'troca','trocas')} de ~${tmed} min. Cada minuto cortado por troca ≈ <b>${fmtN(porMin)}</b> caixas no período.`;
+        linha=`<b style="color:#e57373">${t.tipo}</b> (troca): ${t.qtd}× ~${tmed} min · −1 min/troca ≈ <b>+${fmtN(porMin)}</b> cx`;
       } else {
-        linha=`Eliminando <b style="color:#e57373">${t.tipo}</b>, recuperaríamos ~<b>${fmtN(t.perd)}</b> caixas no período${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}.`;
+        linha=`Sem <b style="color:#e57373">${t.tipo}</b>: <b>+${fmtN(t.perd)}</b> cx${pesoMedio>0?` (~${fmtN(Math.round(t.perd*pesoMedio))} kg)`:''}`;
       }
       return `<div style="display:flex;align-items:flex-start;gap:10px;padding:6px 4px;font-family:var(--font-b);font-size:13px;color:var(--txt)">
       <span style="color:#e57373;font-weight:700">▸</span><span>${linha}</span>
@@ -16276,13 +16282,11 @@ async function _renderAnaliseParadasCore(opts){
       let extra='';
       if(!topT.planej && topT.perd>0){
         if(ehSetupParada(topT.tipo)){ const tmed=Math.round(topT.min/(topT.qtd||1));
-          extra=` — é troca (inevitável); o caminho é a troca rápida (${plural(topT.qtd,'troca','trocas')} de ~${tmed} min), reduzir o tempo`;
-        } else extra=`. Reduzir pela metade recuperaria ~<b>${fmtN(Math.round(topT.perd/2))}</b> caixas no período`;
+          extra=` — troca: ${topT.qtd}× ~${tmed} min, o caminho é a troca rápida`;
+        } else extra=` · pela metade: <b>+${fmtN(Math.round(topT.perd/2))}</b> cx`;
       }
       ins.push({ic:'⚠',t:`<b>${topT.tipo}</b> representa <b>${pct}%</b> do tempo parado${extra}.`}); }
-    ins.push({ic:dispon>=90?'✅':'📉',t:dispon>=90?`Disponibilidade de <b>${fmtP(dispon)}</b> está dentro da meta (90%).`:`Disponibilidade de <b>${fmtP(dispon)}</b> está <b>abaixo</b> da meta de 90%.`});
-    if(stPrev.totMin>0){ const dif=totMin-stPrev.totMin; ins.push({ic:dif<=0?'📈':'📉',t:`Tempo parado ${dif<=0?'caiu':'subiu'} <b>${_fmtMinPar(Math.abs(Math.round(dif)))}</b> ${cmpLbl}.`}); }
-    if(pecas>0) ins.push({ic:'📦',t:`No período foram perdidas ~<b>${fmtN(pecas)}</b> caixas${pesoMedio>0?` (~<b>${fmtN(pesoPerd)} kg</b>)`:''} por paradas não programadas.`});
+    // (disponibilidade, tempo parado e caixas perdidas já estão nos cards — v7.120.0)
     // (rótulo alinhado à planilha: "programada" = parada planejada/prevista)
     insEl.innerHTML=ins.map(x=>`<div class="par-ins"><span class="ic">${x.ic}</span><span>${x.t}</span></div>`).join('')||'<div class="par-ins"><span>Sem paradas no período.</span></div>';
   }
@@ -16292,13 +16296,13 @@ async function _renderAnaliseParadasCore(opts){
       const txtAlvos=alvos.map(t=>ehSetupParada(t.tipo)
         ? `acelerar a <b style="color:#e57373">${t.tipo}</b> (troca rápida)`
         : `eliminar <b style="color:#e57373">${t.tipo}</b>`).join(' e ');
-      recEl.innerHTML=`Priorizar ${txtAlvos}. Juntos respondem por <b>${pctJ}%</b> do tempo parado — pequenas melhorias nesses pontos geram o maior impacto no resultado.`;
+      recEl.innerHTML=`Priorizar ${txtAlvos} (<b>${pctJ}%</b> do tempo parado).`;
     } else recEl.innerHTML='Sem paradas não programadas relevantes no período. 👏'; }
 
   const met=document.getElementById('par-metodo');
   // A 1ª parte é o MESMO texto que o mobile mostra (RP_PARADAS.diagTexto), para
   // dar pra comparar as duas telas batendo o olho quando os números discordarem.
-  if(met) met.textContent='Peças perdidas = '+RP_PARADAS.diagTexto(st.diag)+'. O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+plural(nDias,'dia','dias')+' '+(baseTrab?'TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+fmt1(horasProd)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?fmt1(_ti.taktSeg):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).';
+  if(met){ met.textContent='Caixas perdidas = '+RP_PARADAS.diagTexto(st.diag)+' · ⓘ'; met.title='O atraso acumulado NÃO entra (é backlog de outros dias). · Disponibilidade e média/dia dividem por '+plural(nDias,'dia','dias')+' '+(baseTrab?'TRABALHADOS (com produção lançada) — dia trabalhado sem parada conta como 100% disponível':'com parada (histórico ainda não carregou)')+'. · TAKT IDEAL = '+fmt1(horasProd)+'h ÷ '+fmtN(_ti.demanda)+' cx = '+(_ti.taktSeg>0?fmt1(_ti.taktSeg):'—')+' s/cx (mov/fadiga já no tempo); TAKT REAL medido dos apontamentos (caixas ÷ tempo rodando).'; }
 }
 
 // ── Gráfico semanal resumido (barra por dia) ──

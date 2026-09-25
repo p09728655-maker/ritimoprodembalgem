@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.120.0 · mobile 1.30.0 — 25/09/2026
+
+**Enxugamento, blocos B e C** (PPCP: *"segue com tudo"*). Nenhum número saiu;
+avisos de falha e de estado ficaram; explicação foi para o tooltip.
+- **GERENCIAL:** subtítulos de HORA EXTRA, PROJEÇÃO, PONTOS e PESO curtos
+  (a conta no tooltip); PICO/VALE só com as caixas.
+- **PARADAS:** os três "insights" que repetiam os cards (disponibilidade, tempo
+  parado, caixas perdidas) saíram — fica a causa nº 1; recomendação e ganho por
+  causa em uma linha; a linha do método mostra só a conta que se compara com o
+  celular (o resto no tooltip) e diz **CAIXAS** perdidas.
+- **PRODUÇÃO/HORA:** a linha de totais fica com os números; a legenda de cor,
+  ▼ e % TETO vai para o tooltip (o aviso de SIMULAÇÃO continua visível).
+- **PROGRAMAÇÃO** (modal de capacidade) e **HISTÓRICO**: notas curtas.
+- **Celular (gerencial):** o card **GAP DA META saiu** — o "faltam X cx" foi
+  para o card META DO DIA, como no PC; subtítulos curtos; paradas e histórico
+  mais enxutos. **Operador:** só a instrução do produto e a confirmação do
+  início às 05:00 ficaram mais curtas.
+- **Card UEP DO DIA (PC e celular, texto único):** *"NO RITMO · 1.150 de 1.152
+  esperadas · meta 2.530"*.
+
+**Diretoria:** a programação espera até 60 s por tentativa (a tela PRÓXIMOS
+DIAS dizia "não consegui ler a programação" com 25 s), e o aviso de servidor
+lento é mais claro.
+
+**Atenção:** nenhum número muda. Celular sobe para 1.30.0 (barra de
+atualização). Sem re-deploy.
+
+---
+
 ## v7.119.0 — 25/09/2026
 
 - **Diretoria abre na hora** (PPCP: *"está demorando a leitura"*). A cada
