@@ -3778,6 +3778,56 @@ console.log('\n── estudo de UEP ──');
   ok('e um botão só, na barra da PRODUÇÃO/HORA', (src.match(/onclick="gerarRelatorioUEP\(\)"/g) || []).length, 1);
 }
 
+// ── ABA UEP (v7.102.0) — maquete aprovada pelo PPCP em 25/09/2026 ────────────
+{
+  console.log('\n── aba UEP ──');
+  global.CFG = Object.assign({}, global.CFG, { turnoInicio:'07:00', turnoFim:'17:00' });
+  eval(pega('function _horaEhHE('));
+  eval(pega('function _uepAbaHoras(')); eval(pega('function _uepAbaMix('));
+  eval(pega('function _uepAbaConf(')); eval(pega('function _uepAbaProj('));
+  global._horaEhHE = _horaEhHE;
+
+  const slots = [{ inicio:'06:00', label:'06:00-07:00', min:60, he:true }, { inicio:'07:00', label:'07:00-08:00', min:60 },
+                 { inicio:'12:12', label:'12:12-13:00', min:48 }, { inicio:'13:00', label:'13:00-14:00', min:60 },
+                 { inicio:'14:00', label:'14:00-15:00', min:60 }];
+  const all = [{ horario:'06:00', producaoHora:320, he:true }, { horario:'07:00', producaoHora:117 },
+               { horario:'12:12', producaoHora:44 }, { horario:'13:00', producaoHora:90 }];
+  const uepH = { '06:00':{ uep:320, cxSem:0 }, '07:00':{ uep:300, cxSem:0 }, '12:12':{ uep:200, cxSem:10 } };
+  const H = _uepAbaHoras(slots, all, uepH, 2530);
+  ok('hora a hora: meta da hora = meta × minutos ÷ 527; hora extra sem meta nem cor',
+     [H[0].metaH, H[0].cls, Math.round(H[1].metaH), Math.round(H[2].metaH), H[1].cls], [null, '', 288, 230, 'ok']);
+  ok('hora lançada SEM caixa com produto não vira 0 UEP vermelho; hora futura fica pendente',
+     [H[3].lancada, H[3].uep, H[3].cls, H[4].lancada, H[4].uep], [true, null, '', false, null]);
+  ok('as caixas sem UEP da hora aparecem', H[2].cxSem, 10);
+
+  const phm = [{ hora:'06:00', modelo:'501118', nome:'ESCRIVANINHA TAURUS', caixas:100, uep:162 },
+               { hora:'07:00', modelo:'501118', nome:'ESCRIVANINHA TAURUS', caixas:200, uep:324 },
+               { hora:'08:00', modelo:'501134', nome:'PENTEADEIRA PRINCESA', caixas:100, uep:245 },
+               { hora:'08:00', modelo:'501999', nome:'SEM UEP', caixas:30, uep:0 }];
+  const M = _uepAbaMix(phm);
+  ok('mix: só jornada normal (a HE fica fora, como na meta), ordenado pela UEP',
+     [M.uep, M.cx, M.cxCom, M.linhas[0].modelo, M.linhas[0].cx], [569, 330, 300, '501118', 200]);
+  ok('mix: UEP/cx do produto e fatia do dia; produto sem UEP fica com UEP/cx nulo',
+     [M.linhas[0].uepCx, Math.round(M.linhas[1].pct), M.linhas[2].uepCx], [1.62, 43, null]);
+
+  const cat = [{ codigo:'501.118.005', uep:1.62, uepVig:'24/09/2026' }, { codigo:'501134002', uep:2.45, uepVig:'25/09/2026 EST' },
+               { codigo:'501999001', uep:0, uepVig:'' }];
+  const ph = [{ codigo:'501118005', caixas:60 }, { codigo:'501134002', caixas:30 }, { codigo:'501999001', caixas:10 }];
+  const C = _uepAbaConf(ph, cat);
+  ok('confiabilidade: medida × estimada (vigência EST) × sem UEP, pelas caixas de hoje',
+     [C.pMed, C.pEst, C.pSem, C.tot], [60, 30, 10, 100]);
+  ok('cadastro sem a vigência (cache antigo) não inventa a divisão',
+     [_uepAbaConf(ph, [{ codigo:'501118005', uep:1 }]), _uepAbaConf(ph, null)], [null, null]);
+
+  const P = _uepAbaProj(1413, 288);
+  ok('projeção: UEP por minuto de jornada lançada até o fim da jornada', [Math.round(P.porHora), Math.round(P.fim), P.restMin], [294, 2586, 239]);
+  ok('sem jornada lançada não projeta', _uepAbaProj(100, 0), null);
+
+  const R = pega('function renderUep(');
+  ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(R), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(R.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
+  ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
+}
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

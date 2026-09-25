@@ -299,6 +299,31 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-simulador .sim-base{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;border-left:2px solid var(--acc);padding:2px 0 2px 11px;margin-bottom:14px}
 #sec-simulador .sim-base b{color:var(--txt)}
 #sec-simulador .pg-sim-wrap{margin-top:0}
+/* ── ABA UEP (v7.102.0) ── */
+#sec-uep .uep-sec{font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);margin:18px 0 8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+#sec-uep .uep-sec b{color:var(--txt)}
+#sec-uep .uep-alerta{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:10px 14px;font-family:var(--font-d);font-size:12px;line-height:1.5;margin-bottom:12px}
+#sec-uep .uep-alerta b{color:var(--warn)}
+#sec-uep .uep-2{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}
+#sec-uep .uep-2>div{min-width:0}
+#sec-uep .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
+#sec-uep .uep-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:8px}
+#sec-uep .uep-leg span::before{content:'';display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--c);border-radius:2px}
+#sec-uep .uep-leg .tr::before{height:0;border-top:2px dashed var(--txt);width:14px;background:none;vertical-align:3px}
+#sec-uep table{width:100%;border-collapse:collapse}
+#sec-uep th{background:none;font-family:var(--font-d);font-size:10px;letter-spacing:1.5px;color:var(--txt2);text-align:left;font-weight:400;padding:6px 8px;border-bottom:1px solid var(--border)}
+#sec-uep td{padding:8px;border-bottom:0.5px solid var(--border);font-size:13px}
+#sec-uep .n{text-align:right;font-family:var(--font-d)}
+#sec-uep .mono{font-family:var(--font-d);color:var(--txt2);font-size:11px}
+#sec-uep tfoot td{font-family:var(--font-d);font-weight:600;border-bottom:none}
+#sec-uep .uep-mb{display:inline-block;width:64px;height:6px;background:var(--elevated);border-radius:3px;margin-right:6px;vertical-align:middle}
+#sec-uep .uep-mb i{display:block;height:100%;background:var(--acc);border-radius:3px}
+#sec-uep .uep-conf{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:4px 0 8px;background:var(--elevated)}
+#sec-uep .uep-conf i{display:block}
+#sec-uep .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
+#sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
+#sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
+@media (max-width:900px){#sec-uep .uep-2{grid-template-columns:1fr}}
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
 .pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
@@ -1634,6 +1659,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="tv"        onclick="setTab('tv')">📺 TV OPERACIONAL</button>
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
+  <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido">⚖ UEP</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -2416,6 +2442,18 @@ if (_v7Instalado()) _v7EscondeBotao();
      período): com o mesmo período nas duas abas não há chamada nova nenhuma,
      que é a propriedade que o simulador sempre teve. `getParadasPeriodo` lê a
      aba PARADAS INTEIRA e é a leitura mais cara do painel. -->
+<!-- ═══ ABA UEP (v7.102.0) — maquete aprovada pelo PPCP em 25/09/2026 ═══
+     Só o gerencial do PC: TV e app do operador continuam em caixas. Blocos 1
+     (hoje), 2 (hora a hora), 3 (mix) e 5 (confiabilidade); o 4 (período) é a
+     2ª etapa. Contas: as mesmas do card UEP DO DIA (uepCard/uepCelula). -->
+<section id="sec-uep" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
+    <span id="uep-upd" class="par-upd"></span>
+  </div>
+  <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
+</section>
+
 <section id="sec-simulador" class="sec">
   <div class="tbl-hdr" style="margin-bottom:14px">
     <span class="tbl-hdr-ttl">💡 SIMULADOR DE INVESTIMENTO</span>
@@ -2914,7 +2952,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.101.0';
+const APP_VER   = '7.102.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4359,6 +4397,186 @@ function _horaEhHE(rotulo){
   return ini<toMin(CFG.turnoInicio) || ini>=toMin(CFG.turnoFim);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// ABA UEP (v7.102.0) — maquete aprovada pelo PPCP em 25/09/2026
+// ════════════════════════════════════════════════════════════════════════════
+// A pergunta: a linha está entregando trabalho, independente do mix? E quando
+// não entrega, onde perdeu — na hora, no produto ou no dado?
+// Contas puras e testadas (_uepAba*), desenho sem conta (renderUep). A régua é a
+// do card UEP DO DIA: uepCard (ritmo e esperado) e uepCelula (meta da hora).
+// Nenhuma chamada nova: PONTOS_DIA (getPontosDia) + o cadastro do simulador.
+const UEP_ALERTA_EST=20, UEP_ALERTA_SEM=5;   // % das caixas de hoje que acendem o alerta
+function _abaOn(t){ const e=document.getElementById('sec-'+t); return !!(e&&e.classList.contains('on')); }
+
+// Hora a hora: UEP de cada slot contra a meta da hora (meta do dia × minutos ÷
+// 527). Hora extra sem meta. Hora lançada sem caixa com produto não vira 0 UEP
+// vermelho: é falta de dado, não de ritmo.
+function _uepAbaHoras(slots, allHoje, uepH, metaUep){
+  const meta=Number(metaUep)>0?Number(metaUep):UEP_META_PADRAO;
+  return (slots||[]).map(sl=>{
+    const reg=(allHoje||[]).find(d=>d.horario===sl.inicio);
+    const he=!!((reg&&reg.he)||sl.he);
+    const lancada=!!(reg&&reg.producaoHora!=null);
+    const h=(uepH||{})[sl.inicio]||null;
+    const metaH=he?null:meta*(sl.min||60)/UEP_MIN_DIA;
+    const uep=h&&h.uep>0?h.uep:null;
+    return { label:sl.label, inicio:sl.inicio, he, lancada, uep, cxSem:h?h.cxSem:0, metaH,
+             cls: he||uep==null||!metaH ? '' : sc(uep/metaH*100) };
+  });
+}
+
+// O mix da JORNADA NORMAL (a mesma base do card): por produto, caixas, UEP e
+// UEP/cx. A hora extra fica fora, como na meta.
+function _uepAbaMix(porHoraModelo){
+  const G={};
+  (porHoraModelo||[]).forEach(it=>{
+    if(_horaEhHE(it.hora)) return;
+    const k=(it.modelo||'')+'|'+(it.nome||'');
+    const g=G[k]=G[k]||{modelo:it.modelo||'', nome:it.nome||'', cx:0, cxCom:0, uep:0};
+    const c=Number(it.caixas)||0, u=Number(it.uep)||0;
+    g.cx+=c; if(u>0){ g.cxCom+=c; g.uep+=u; }
+  });
+  const linhas=Object.values(G).map(g=>({...g, uepCx:g.cxCom>0?g.uep/g.cxCom:null}));
+  const uep=linhas.reduce((a,l)=>a+l.uep,0);
+  linhas.forEach(l=>{ l.pct=uep>0?l.uep/uep*100:0; });
+  linhas.sort((a,b)=>b.uep-a.uep||b.cx-a.cx);
+  return { linhas, uep, cx:linhas.reduce((a,l)=>a+l.cx,0), cxCom:linhas.reduce((a,l)=>a+l.cxCom,0) };
+}
+
+// Confiabilidade: quanto das caixas de HOJE tem UEP medida (estudo), estimada
+// pela esteira (vigência com " EST") ou nenhuma. null = sem cadastro com a
+// vigência (não inventa a divisão).
+function _uepAbaConf(porHora, cat){
+  if(!Array.isArray(cat)) return null;
+  const m={}; let temVig=false;
+  cat.forEach(p=>{ const c=String(p&&p.codigo||'').replace(/\D/g,''); if(!c) return; if('uepVig' in p) temVig=true; m[c]=p; });
+  if(!temVig) return null;
+  let med=0, est=0, sem=0;
+  (porHora||[]).forEach(it=>{
+    const c=Number(it.caixas)||0; if(!c) return;
+    const p=m[String(it.codigo||'').replace(/\D/g,'')];
+    if(!p||!(Number(p.uep)>0)) sem+=c;
+    else if(/\bEST\s*$/i.test(String(p.uepVig||'').trim())) est+=c;
+    else med+=c;
+  });
+  const tot=med+est+sem; if(!tot) return null;
+  return { med, est, sem, tot, pMed:med/tot*100, pEst:est/tot*100, pSem:sem/tot*100 };
+}
+
+// Projeção: o ritmo de UEP por minuto de jornada lançada, até o fim da jornada.
+function _uepAbaProj(feito, minNorm){
+  const f=Number(feito)||0, m=Math.min(Math.max(0,Number(minNorm)||0), UEP_MIN_DIA);
+  if(!(m>0)) return null;
+  const porMin=f/m;
+  return { porHora:porMin*60, fim:f+porMin*(UEP_MIN_DIA-m), restMin:UEP_MIN_DIA-m };
+}
+
+function _uepAbaCatCarregar(){
+  if(CAP_RAW && CAP_CAT_TS && Date.now()-CAP_CAT_TS<10*60*1000) return;
+  if(!CAP_RAW){ const loc=_capDoLocal(); if(loc) CAP_RAW=loc.p; }
+  _capBuscar();                                    // no fim ela redesenha a aba
+}
+
+function _uepAbaSvg(horas, largura){
+  const FS=12, W=largura||760, H=250, pl=40, pb=28, pt=22;
+  const n=Math.max(horas.length,1), bw=(W-pl-10)/n;
+  const mx=Math.max(1, ...horas.map(h=>Math.max(h.uep||0, h.metaH||0)))*1.15;
+  const y=v=>pt+(H-pt-pb)*(1-v/mx);
+  const grade=[0,.25,.5,.75,1].map(f=>Math.round(mx*f/50)*50).filter((v,i,a)=>a.indexOf(v)===i&&v<mx);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block" role="img" aria-label="UEP por hora contra a meta da hora">`
+    +'<defs><pattern id="uepLis" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--warn)" opacity=".35"/><rect width="3" height="6" fill="var(--warn)"/></pattern></defs>';
+  grade.forEach(g=>{ s+=`<line x1="${pl}" x2="${W-10}" y1="${y(g).toFixed(1)}" y2="${y(g).toFixed(1)}" stroke="var(--border)"/><text x="${pl-6}" y="${(y(g)+4).toFixed(1)}" text-anchor="end" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${fmtN(g)}</text>`; });
+  horas.forEach((h,i)=>{
+    const x=pl+i*bw+bw*.18, w=bw*.64, cx=pl+i*bw+bw/2;
+    const tip=_rpEsc(h.label+' · '+(h.uep!=null?fmtN(Math.round(h.uep))+' UEP':(h.lancada?'caixas sem produto apontado':'ainda não lançada'))
+      +(h.he?' (hora extra, sem meta)':(h.metaH?' · meta '+fmtN(Math.round(h.metaH)):''))+(h.cxSem>0?' · '+fmtN(h.cxSem)+' cx sem UEP':''));
+    if(h.uep!=null){
+      const fill=h.he?'url(#uepLis)':`var(--${h.cls||'txt2'})`;
+      s+=`<rect x="${x.toFixed(1)}" y="${y(h.uep).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.uep)).toFixed(1)}" rx="2" fill="${fill}" opacity="${h.he?1:.9}"><title>${tip}</title></rect>`
+        +`<text x="${cx.toFixed(1)}" y="${(y(h.uep)-6).toFixed(1)}" text-anchor="middle" font-size="${FS-1}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(h.uep))}${h.cxSem>0?'*':''}</text>`;
+    } else if(h.metaH){
+      s+=`<rect x="${x.toFixed(1)}" y="${y(h.metaH).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.metaH)).toFixed(1)}" rx="2" fill="none" stroke="var(--border)" stroke-dasharray="3 3"><title>${tip}</title></rect>`;
+      if(h.lancada) s+=`<text x="${cx.toFixed(1)}" y="${(y(0)-8).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">s/ prod.</text>`;
+    }
+    if(h.metaH) s+=`<line x1="${(x-3).toFixed(1)}" x2="${(x+w+3).toFixed(1)}" y1="${y(h.metaH).toFixed(1)}" y2="${y(h.metaH).toFixed(1)}" stroke="var(--txt)" stroke-width="2" stroke-dasharray="4 3"/>`;
+    s+=`<text x="${cx.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(String(h.inicio||h.label||''))}</text>`;
+  });
+  return s+'</svg>';
+}
+
+function renderUep(){
+  const el=document.getElementById('uep-bloco'); if(!el) return;
+  const U=PONTOS_DIA.uep;
+  if(U===null||U===undefined){ el.innerHTML='<div class="empty-msg">Aguardando a leitura do dia…</div>'; return; }
+  if(U===false){ el.innerHTML='<div class="empty-msg">O backend ainda não manda a UEP (.gs v5.11 re-deployado).</div>'; return; }
+  if(!(U.codigos>0)){ el.innerHTML='<div class="empty-msg">Sem UEP no cadastro — coluna UEP da PRODUTO_CODIGO (💾 GRAVAR UEP na aba PRODUÇÃO/HORA).</div>'; return; }
+  const k=calcKPIs(getDadosHoje());
+  const card=uepCard(U, PONTOS_DIA.metaUep, k.minNorm);
+  const meta=card.meta, feito=Number(U.normal)||0, he=Number(U.he)||0;
+  const proj=_uepAbaProj(feito, k.minNorm);
+  const horas=_uepAbaHoras(k.slots, k.allHoje, uepPorHora(PONTOS_DIA.porHoraModelo), meta);
+  const mix=_uepAbaMix(PONTOS_DIA.porHoraModelo);
+  const conf=_uepAbaConf(PONTOS_DIA.porHora, CAP_RAW);
+  const pSemGs=(U.cxCom+U.cxSem)>0?U.cxSem/(U.cxCom+U.cxSem)*100:0;
+  const fimTxt=CFG.turnoFim||'17:00';
+
+  // 1 · HOJE — o alerta de dado só aparece quando há problema.
+  const avisos=[];
+  if(conf&&conf.pEst>=UEP_ALERTA_EST) avisos.push(`${fmtP(conf.pEst)} das caixas de hoje têm UEP <b>ESTIMADA</b> pela esteira (EST), não medida`);
+  const pSem=conf?conf.pSem:pSemGs;
+  if(pSem>=UEP_ALERTA_SEM) avisos.push(`${fmtN(conf?conf.sem:U.cxSem)} cx (${fmtP(pSem)}) estão <b>sem UEP</b> e não entram na conta`);
+  const alerta=avisos.length?`<div class="uep-alerta"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de UEP de hoje é indicação, não medição.</div>`:'';
+  const cards=[
+    {l:'UEP ATÉ AGORA', v:fmtN(Math.round(feito)), c:card.c,
+     sub:k.minNorm>0?`${slRitmo(card.ef)} · ${fmtN(Math.round(feito))} de ${fmtN(Math.round(card.esperado))} esperadas até agora`:'nenhuma hora de jornada lançada ainda', t:card.t},
+    {l:'PROJEÇÃO DO DIA', v:proj?fmtN(Math.round(proj.fim))+' <small>UEP</small>':'—', c:'acc',
+     sub:proj?`no ritmo de agora até ${_rpEsc(fimTxt)} · meta ${fmtN(meta)}`:'sem hora de jornada lançada',
+     t:'UEP feita ÷ minutos de jornada já lançados × minutos de jornada que faltam, somado ao que já foi feito. É projeção, não veredito — quem julga é o selo do primeiro card.'},
+    {l:'UEP POR HORA', v:proj?fmtN(Math.round(proj.porHora))+' <small>/h</small>':'—', c:'',
+     sub:`média da jornada · meta ~${fmtN(Math.round(meta/UEP_MIN_DIA*60))}/h`},
+    {l:'UEP EM HORA EXTRA', v:fmtN(Math.round(he)), c:he>0?'warn':'',
+     sub:he>0?'fora da meta do dia':'sem hora extra hoje'}
+  ];
+  const kpis=`<div class="kpi-grid c4">${cards.map(c=>`<div class="kpi-card ${c.c||''}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`;
+
+  // 2 · HORA A HORA
+  const box=document.getElementById('uep-g-box');
+  const svg=_uepAbaSvg(horas, box?_svgLargura(box):760);
+  const b2=`<div><div class="uep-sec"><b>2 · HORA A HORA EM UEP</b> onde a UEP se perdeu</div><div class="uep-card" id="uep-g-box">${svg}
+    <div class="uep-leg"><span style="--c:var(--ok)">na meta</span><span style="--c:var(--warn)">atenção</span><span style="--c:var(--red)">abaixo</span><span style="--c:var(--warn);opacity:.7">hora extra (sem meta)</span><span class="tr">meta da hora</span></div>
+    ${horas.some(h=>h.cxSem>0)?'<div class="uep-nota">* hora com caixas de códigos sem UEP — ficaram fora da conta.</div>':''}</div></div>`;
+
+  // 3 · MIX
+  const linhas=mix.linhas.map(l=>`<tr><td class="mono">${_rpEsc(l.modelo)}</td><td>${_rpEsc(l.nome||'—')}</td><td class="n">${fmtN(l.cx)}</td><td class="n">${l.uepCx!=null?l.uepCx.toFixed(2).replace('.',','):'—'}</td><td class="n"><b>${l.uep>0?fmtN(Math.round(l.uep)):'—'}</b></td><td><span class="uep-mb"><i style="width:${l.pct.toFixed(0)}%"></i></span><span class="mono">${l.uep>0?fmtP(l.pct):'sem UEP'}</span></td></tr>`).join('');
+  const b3=`<div><div class="uep-sec"><b>3 · O MIX DE HOJE</b> por que a UEP é essa · jornada normal</div><div class="uep-card" style="overflow-x:auto">`
+    +(mix.linhas.length?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
+      <tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?(mix.uep/mix.cxCom).toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr></tfoot></table>
+      <div class="uep-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo. É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
+     :'<div class="empty-msg">Nenhuma caixa com produto apontado na jornada de hoje.</div>')+'</div></div>';
+
+  // 5 · CONFIABILIDADE
+  let b5;
+  if(conf){
+    b5=`<div class="uep-card"><div class="uep-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:var(--ok)"></i><i style="width:${conf.pEst.toFixed(1)}%;background:var(--warn)"></i><i style="width:${conf.pSem.toFixed(1)}%;background:var(--red)"></i></div>
+      <div class="uep-leg" style="margin-top:0"><span style="--c:var(--ok)">${fmtP(conf.pMed)} UEP MEDIDA (estudo)</span><span style="--c:var(--warn)">${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span style="--c:var(--red)">${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
+      <div class="uep-nota">Pelas ${fmtN(conf.tot)} caixas apontadas hoje, com a vigência do cadastro. Enquanto a parte estimada for grande, a UEP é indicação, não medição — ela diminui quando o 💾 GRAVAR UEP troca a estimativa pela medida de quem rodou.</div></div>`;
+  } else if(CAP_FALHA&&!CAP_BUSCANDO){
+    b5=`<div class="uep-card"><div class="uep-nota" style="margin-top:0;color:var(--warn)">Não consegui ler o cadastro: ${_rpEsc(CAP_FALHA)}. <button class="btn btn-ghost" style="padding:3px 10px;font-size:10px" onclick="_capBuscar()">↻ TENTAR DE NOVO</button></div></div>`;
+  } else {
+    b5='<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo o cadastro para separar UEP medida de estimada…</div></div>';
+  }
+
+  el.innerHTML=`<div class="uep-sec" style="margin-top:0"><b>1 · HOJE</b> ${_rpEsc(hojeStr())} · jornada normal ${_rpEsc(CFG.turnoInicio||'07:00')}–${_rpEsc(fimTxt)} · meta ${fmtN(meta)} UEP</div>`
+    +alerta+kpis
+    +`<div class="uep-2">${b2}${b3}</div>`
+    +`<div class="uep-sec"><b>5 · CONFIABILIDADE DA UEP</b> quanto do número é medido</div>${b5}`
+    +`<div class="uep-rod">A meta de ${fmtN(meta)} UEP é o ritmo DEMONSTRADO pela linha (estudo de UEP), não tempo padrão — até a cronoanálise. Tela só do gerencial: TV e app do operador continuam em caixas. As contas são as do card UEP DO DIA (uepCard / uepCelula) — nenhuma régua nova. O período (UEP por dia contra a meta) é a 2ª etapa desta aba.</div>`;
+  // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
+  // redesenha só o SVG na largura certa.
+  if(!box){ const nb=document.getElementById('uep-g-box'); if(nb){ const sv=nb.querySelector('svg'); if(sv) sv.outerHTML=_uepAbaSvg(horas, _svgLargura(nb)); } }
+  const upd=document.getElementById('uep-upd'); if(upd) upd.textContent='dados de '+new Date().toLocaleTimeString('pt-BR');
+}
+
 function renderGerencialHist(){
   _setModoHist(true);
   const H=GER_HIST||{horas:[],dia:null};
@@ -4569,6 +4787,8 @@ function renderGerencial(){
       <div class="kpi-val">${k.v}</div>
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
+  // A aba UEP lê o mesmo PONTOS_DIA: redesenha junto no refresh.
+  if(_abaOn('uep')) renderUep();
 
   // ── Análise ──
   const tendStr=k.n>=2?(dh[k.n-1].producaoHora>=dh[k.n-2].producaoHora?'↑ CRESCENDO':'↓ QUEDA'):'SEM DADOS';
@@ -7171,6 +7391,9 @@ function _capMix(prods, mix, meta){
 }
 
 let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
+// O cadastro CRU (com a vigência da UEP): a aba UEP separa UEP medida de
+// estimada (EST) por ele. Mesma leitura do simulador, nenhuma a mais.
+let CAP_RAW=null;
 // Leitura do cadastro (v7.93.1). Antes, quando as 3 tentativas falhavam, a tela
 // voltava a "Carregando o cadastro…" para sempre — falha e espera tinham a
 // mesma cara. Agora: (1) o último cadastro lido fica guardado NESTE computador
@@ -7180,7 +7403,7 @@ let CAP_CAT=null, CAP_CAT_TS=0, CAP_MIX=[];
 let CAP_FALHA=null, CAP_BUSCANDO=false, CAP_CAT_ORIGEM='';
 const CAP_LS='rpe_cap_cat';
 function _capGuardar(prods){
-  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,pontos:x.pontos,medida:x.medida,velocidade:x.velocidade,entrePeca:x.entrePeca}))})); }catch(e){}
+  try{ localStorage.setItem(CAP_LS, JSON.stringify({ts:Date.now(), p:prods.map(x=>({codigo:x.codigo,desc:x.desc,cor:x.cor,uep:x.uep,uepVig:x.uepVig,pontos:x.pontos,medida:x.medida,velocidade:x.velocidade,entrePeca:x.entrePeca}))})); }catch(e){}
 }
 function _capDoLocal(){
   try{ const o=JSON.parse(localStorage.getItem(CAP_LS)||'null'); if(o&&Array.isArray(o.p)&&o.p.length) return o; }catch(e){}
@@ -7207,7 +7430,7 @@ async function _capBuscar(){
       try{
         const j=await jsonpFetch(url, 30000);
         if(j&&j.ok&&Array.isArray(j.produtos)){
-          CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); CAP_CAT_ORIGEM='';
+          CAP_CAT=_capProdutos(j.produtos); CAP_CAT_TS=Date.now(); CAP_CAT_ORIGEM=''; CAP_RAW=j.produtos;
           _capGuardar(j.produtos); erro=''; break;
         }
         erro=(j&&j.erro)?'o servidor respondeu: '+j.erro:'o servidor respondeu sem a lista de produtos';
@@ -7218,6 +7441,7 @@ async function _capBuscar(){
   } finally { CAP_BUSCANDO=false; }
   if(erro) CAP_FALHA=erro;
   _capPintar();
+  if(_abaOn('uep')) renderUep();                    // a aba UEP também lê o cadastro
 }
 // IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
 // contas da tela (_capMix sobre o CAP_CAT); nada é buscado de novo. Documento
@@ -10094,6 +10318,7 @@ function setTab(tab){
   if(tab==='paradas'){ _initFiltroParadas(); renderAnaliseParadas(); }
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
+  if(tab==='uep'){ renderUep(); lerPontosDia().then(()=>{ renderUep(); _uepAbaCatCarregar(); }); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
