@@ -3142,6 +3142,23 @@ feito e dá ar de verdade ao que sobrou.
   finalidade (o card "falta zerar" da TV); a guarda do teste olha só a aba
   PLANO, de propósito — contar o arquivo inteiro acusava a TV.
 
+## Cores do painel — azul-marinho, TV preta (v7.115.0 / mobile 1.29.0)
+- Pedido do PPCP, 25/09/2026, a partir de uma maquete do ChatGPT — **só a
+  cor foi adotada**, o conteúdo da maquete não (ver aba UEP v7.114.0).
+- Os tokens do `:root` dos dois HTMLs: `--bg:#0B1622 --surface:#111F30
+  --elevated:#16273B --border:#223550 --txt2/--txt3:#8FA0B5 --ok:#2ECC71
+  --red:#F5554A`. O `--red` foi clareado porque o `#F44336` dava 4,1:1 como
+  texto sobre o `--elevated` azul.
+- ⚠ **A TV CONTINUA PRETA** (*"tv mantém"*): `html.sem-splash, #sec-tv,
+  body.tv-fullscreen` devolvem os tokens antigos e o fundo `#111111`. A TV é
+  lida a 15 m e o contraste dela foi medido no preto. `relatorios.test.js`
+  prende as duas coisas.
+- O `#sec-simulador` tinha cinzas próprios (teste de superfície); viraram os
+  mesmos degraus em azul. Cor literal do Chart.js (grade `#1E1E1E`) não segue
+  token — ficou como estava, discreta nos dois fundos.
+- **Não adotar borda colorida por card** (a maquete pintava cada card de uma
+  cor sem significado): cor só onde há função.
+
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda
   mudança que altera número exibido ou formato de arquivo**, com o antes e o

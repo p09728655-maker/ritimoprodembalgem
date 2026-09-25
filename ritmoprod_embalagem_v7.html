@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RitmoPatrimar">
-<meta name="theme-color" content="#0A0A0B">
+<meta name="theme-color" content="#0B1622">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>RitmoPatrimar · Embalagem</title>
@@ -36,9 +36,15 @@
 <style>
 /* ═══ CARBON FORGE TOKENS ═══ */
 :root{
-  --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
-  --acc:#FF5C1F;--ok:#4CAF50;--warn:#FF9800;--red:#F44336;
-  --txt:#F5F5F5;--txt2:#888888;--txt3:#838383;
+  /* AZUL-MARINHO (v7.115.0 / mobile 1.29.0, PPCP 25/09/2026, teste aprovado
+     com as capturas). Só a BASE mudou: fundo, cards, borda, texto secundário;
+     verde e vermelho um pouco mais vivos, clareados até passar de 4,5:1 como
+     TEXTO sobre o card (o #F44336 dava 4,1 no --elevated). O laranja da marca
+     e a regra "cor só onde há função" continuam. --txt2/--txt3 #8FA0B5: 5,9:1
+     sobre o card (era 4,8 no preto). */
+  --bg:#0B1622;--surface:#111F30;--elevated:#16273B;--border:#223550;
+  --acc:#FF5C1F;--ok:#2ECC71;--warn:#FF9800;--red:#F5554A;
+  --txt:#F5F5F5;--txt2:#8FA0B5;--txt3:#8FA0B5;
   /* --txt3 era #3A3A3A: 1,66:1 sobre --bg e 1,50:1 sobre --surface, longe
      dos 4,5:1 de texto legível. Não era decoração — cobria "Carregando
      dados…"/"Nenhum dado." (.empty-msg), o rodapé de versão, o botão
@@ -451,7 +457,7 @@ body.ger-hist .ger-live-only{display:none!important}
    Mesma paleta, outra profundidade: fundo → bloco → card em três tons um
    pouco mais afastados, cards sem borda (o tom já separa), mais respiro e
    raio maior. Se aprovado, vira regra do painel; se não, apaga-se este bloco. */
-#sec-simulador{--surface:#1B1B1B;--elevated:#242424;--border:#303030}
+#sec-simulador{--surface:#132338;--elevated:#1B2E47;--border:#284060}   /* azul (v7.115.0): os mesmos degraus, na base nova */
 #sec-simulador .pg-sim{border:0;padding:18px 20px;border-radius:12px}
 #sec-simulador .pg-sim-prem .pg-sim-inp{border:0;background:var(--elevated);padding:14px 16px;border-radius:10px}
 #sec-simulador .pg-sim-inp input{background:#1B1B1B;border-color:#333}
@@ -462,8 +468,8 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-simulador .pg-sim-fx{margin-top:20px}
 #sec-simulador .pg-sim-res{gap:14px}
 #sec-simulador .pg-sim-chk{padding:5px 9px;border-radius:7px}
-#sec-simulador .pg-sim-chk.on{background:#242424}
-#sec-simulador .pg-sim-aviso{border:0;background:#242424;border-left:3px solid var(--warn)}
+#sec-simulador .pg-sim-chk.on{background:var(--elevated)}
+#sec-simulador .pg-sim-aviso{border:0;background:var(--elevated);border-left:3px solid var(--warn)}
 #sec-simulador .pg-sim-mem{border-top-color:#303030}
 @media(max-width:1200px){
   .pg-sim-wrap .pg-sim-fx.dec .pg-sim-res,.pg-sim-wrap .pg-sim-fx.op .pg-sim-res{grid-template-columns:repeat(2,1fr)}
@@ -1455,6 +1461,14 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   padding:24px 24px calc(24px + min(9vh,80px));
   animation:spOut .35s ease-in .95s forwards;
 }
+/* ⚠ A TV CONTINUA PRETA (PPCP, 25/09/2026: "tv mantém"). É lida a 15 m e o
+   contraste dela foi medido no preto. Os tokens antigos valem na TV física
+   (`?tv` → html.sem-splash), na aba TV OPERACIONAL e na tela cheia. */
+html.sem-splash, #sec-tv, body.tv-fullscreen{
+  --bg:#111111;--surface:#1C1C1C;--elevated:#222222;--border:#2A2A2A;
+  --ok:#4CAF50;--red:#F44336;--txt2:#888888;--txt3:#838383;
+}
+html.sem-splash body, body.tv-fullscreen, #sec-tv{ background:#111111; }
 html.sem-splash #splash{ display:none; }
 #splash .sp-in{ text-align:center; animation:spIn .45s cubic-bezier(.2,.7,.3,1) both; }
 #splash .sp-logo{
@@ -3006,7 +3020,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.114.0';
+const APP_VER   = '7.115.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
