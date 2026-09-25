@@ -155,7 +155,7 @@ body.ger-hist .ger-live-only{display:none!important}
 /* ⚠ ESCOPADO EM `#sec-plano` POR ESPECIFICIDADE: `#sec-plano .qp-leg` traz
    `display:flex` (id + classe) e vencia a regra de esconder escrita só com
    classes — a legenda continuava saindo nos dois blocos. */
-#sec-plano .cart-dois .cart-bloco:not(:last-child) .qp-nota{display:none}
+#sec-plano .cart-dois .cart-bloco:not(:last-child) .qp-nota,#sec-plano .cart-dois .cart-bloco:not(:last-child) .qp-lembra{display:none}
 #sec-plano .cart-dois .cart-bloco:not(:first-child) .qp-leg{display:none}
 #sec-plano .cart-dois .cl-regua{display:none}
 /* respiro entre os dois blocos: a caixa do mix do primeiro encostava no
@@ -197,7 +197,11 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-plano .qp-p-ok{color:var(--ok);border-color:#2b5c2d}
 #sec-plano .qp-p-warn{color:var(--warn);border-color:#6b4310}
 #sec-plano .qp-p-red{color:var(--red);border-color:#6d2420}
-#sec-plano .qp-nota{color:var(--txt3);font-size:11.5px;line-height:1.5;margin-top:13px;max-width:86ch}
+#sec-plano .qp-nota{color:var(--txt3);font-size:11.5px;line-height:1.5;margin-top:8px;max-width:86ch}
+#sec-plano .qp-nota summary{cursor:pointer;font-family:var(--font-d);font-size:10.5px;letter-spacing:1px;color:var(--txt2);list-style:none}
+#sec-plano .qp-nota[open] summary{margin-bottom:6px}
+#sec-plano .qp-lembra{font-family:var(--font-d);font-size:11px;color:var(--txt2);margin-top:12px}
+#sec-plano .qp-lembra b{color:var(--txt)}
 #sec-plano .qp-nota b{color:var(--txt2)}
 #sec-plano .qp-mix{font-family:var(--font-d);font-size:10px;letter-spacing:.4px;color:var(--txt2);line-height:1.7;margin-top:12px;padding:8px 11px;border:1px dashed var(--border);border-radius:5px}
 #sec-plano .qp-mix b{color:var(--txt)}
@@ -208,6 +212,9 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-plano .qp-ese.ok{border-left-color:var(--ok)}
 #sec-plano .qp-ese.warn{border-left-color:var(--warn)}
 #sec-plano .qp-ese.red{border-left-color:var(--red)}
+/* TELA × PAPEL (v7.118.0, enxugamento): a MESMA marcação leva as duas versões de
+   um texto — a curta aparece na tela, a longa no PDF (o _rpDocParadas esconde .so-tela) */
+#sec-perdas .so-papel,#sec-simulador .so-papel{display:none}
 #sec-perdas .pg-q,#sec-simulador .pg-q{font-size:11.5px;padding:5px 13px}
 #sec-perdas .pg-q.on{background:var(--acc);color:#111;border-color:var(--acc);font-weight:700}
 .pg-carregando{padding:34px 12px;text-align:center;font-family:var(--font-d);font-size:12.5px;letter-spacing:2px;color:var(--txt2)}
@@ -342,17 +349,28 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-kl{font-family:var(--font-d);font-size:calc(var(--u)*1.1);letter-spacing:calc(var(--u)*.3);color:var(--txt2)}
 #sec-dir .dir-kv{font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*6.2);line-height:.95}
 #sec-dir .dir-k.dest .dir-kv{font-size:calc(var(--u)*8)}
+/* semana: cards mais baixos — o espaço vai para o gráfico dos dias (PPCP: destacar as UEPs) */
+#sec-dir .dir-g3.comp .dir-kv{font-size:calc(var(--u)*4.6)}
+#sec-dir .dir-g3.comp .dir-k.dest .dir-kv{font-size:calc(var(--u)*5.6)}
+#sec-dir .dir-g3.comp .dir-k{padding:calc(var(--u)*1) calc(var(--u)*1.4);gap:calc(var(--u)*.4)}
+#sec-dir .dir-kl{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--u)*1)}
+#sec-dir .dir-he{font-family:var(--font-d);font-size:calc(var(--u)*1.3);letter-spacing:0;color:var(--txt2);white-space:nowrap}
+#sec-dir .dir-he b{color:var(--warn);font-weight:600}
+#sec-dir .dir-kl i{font-style:normal;opacity:.7;letter-spacing:calc(var(--u)*.1)}
 #sec-dir .dir-ks{font-family:var(--font-d);font-size:calc(var(--u)*1.05);color:var(--txt2)}
 #sec-dir .dir-ks.av{color:var(--warn)}
 #sec-dir .dir-barra{height:calc(var(--u)*1.1);background:var(--elevated);border-radius:calc(var(--u)*.3);position:relative;margin-top:auto}
 #sec-dir .dir-barra i{position:absolute;left:0;top:0;bottom:0;background:var(--txt2);border-radius:calc(var(--u)*.3)}
 #sec-dir .dir-barra.ok i{background:var(--ok)} #sec-dir .dir-barra.warn i{background:var(--warn)} #sec-dir .dir-barra.red i{background:var(--red)}
 #sec-dir .dir-barra u{position:absolute;top:calc(var(--u)*-.5);bottom:calc(var(--u)*-.5);border-left:calc(var(--u)*.22) dashed var(--txt)}
-#sec-dir .dir-bl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:calc(var(--u)*1);color:var(--txt2)}
+#sec-dir .dir-bl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:calc(var(--u)*1.1);color:var(--txt2)}
+#sec-dir .dir-bl b{color:var(--txt)}
 #sec-dir .dir-lin{font-family:var(--font-d);font-size:calc(var(--u)*1.3);color:var(--txt2);background:var(--surface);border:1px solid var(--border);border-radius:calc(var(--u)*.5);padding:calc(var(--u)*.8) calc(var(--u)*1.2)}
 #sec-dir .dir-lin b{color:var(--txt)} #sec-dir .dir-lin b.he{color:var(--warn)}
 #sec-dir .dir-graf{flex:1;min-height:0;display:flex;flex-direction:column}
 #sec-dir .dir-graf svg{flex:1;min-height:0;width:100%}
+#sec-dir .dir-graf-h{flex:1;min-height:0}
+#sec-dir .dir-graf-h svg{max-width:none!important;height:100%}
 #sec-dir .dir-msg{font-family:var(--font-d);font-size:calc(var(--u)*1.8);color:var(--txt2);text-align:center}
 #sec-dir .dir-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:calc(var(--u)*1.1);align-items:stretch}
 #sec-dir .dir-dia{background:var(--surface);border:1px solid var(--border);border-top:calc(var(--u)*.45) solid var(--border);border-radius:calc(var(--u)*.6);padding:calc(var(--u)*1.3) calc(var(--u)*1.2);display:flex;flex-direction:column;gap:calc(var(--u)*.9);min-width:0}
@@ -2431,20 +2449,17 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
-    <b>RÉGUA</b> E <b>FAIXA ALVO</b> VALEM PARA OS DOIS BLOCOS · <b>JULGAR</b> E <b>ORDEM</b> SÓ PARA O DE BAIXO · <b>CARTEIRA</b> SÓ PARA O DE CIMA · CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA</b>
+    <span title="RÉGUA e FAIXA ALVO valem para os dois blocos · JULGAR e ORDEM só para o de baixo · CARTEIRA só para o de cima">CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA</b> ⓘ</span>
   </div>
 
   <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
   <div class="par-sec" style="margin-top:0">A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR</div>
-  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-8px 2px 12px">
-    OS LOTES JÁ DATADOS PARA OS DIAS QUE AINDA NÃO CHEGARAM, SOMADOS POR DIA
-  </div>
   <div id="qp-carteira"><div class="pg-carregando">CARREGANDO…</div></div>
 
   <!-- ═══ 2) O QUE PASSOU: diagnóstico da datação (o dia já foi) ═══ -->
   <div class="par-sec" style="margin-top:28px">COMO TEMOS DATADO — OS DIAS QUE JÁ FECHARAM</div>
   <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-8px 2px 12px">
-    DOIS RECORTES DIFERENTES: <b>JULGAR</b> ESCOLHE QUAIS DIAS APARECEM · <b>RÉGUA</b> ESCOLHE DE QUAIS DIAS SAI O PADRÃO COM QUE ELES SÃO COMPARADOS
+    <b>JULGAR</b> = QUAIS DIAS APARECEM · <b>RÉGUA</b> = DE ONDE SAI O PADRÃO
   </div>
   <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
 </section>
@@ -2546,7 +2561,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span style="color:var(--txt2)">–</span>
       <input type="date" id="pg-ate" onchange="_pgMarcaPreset(null);renderGestaoPerdas()" title="Escolha a data final" class="frm-inp" style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
       <button class="btn btn-ghost" onclick="renderGestaoPerdas(true)" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
-      <button class="btn btn-acc" onclick="gerarRelatorioPerdas(dGet('pg-de'),dGet('pg-ate'))" style="font-size:10px;padding:4px 10px">📋 RELATÓRIO DESTA TELA</button>
+      <button class="btn btn-acc" onclick="gerarRelatorioPerdas(dGet('pg-de'),dGet('pg-ate'))" title="O quadro com as onze seções da gestão de perdas: Pareto diário, evolução, causas, SMED, recuperação, plano e validação do apontamento" style="font-size:10px;padding:4px 10px">📋 RELATÓRIO DESTA TELA</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioParadas(dGet('pg-de'),dGet('pg-ate'))" title="O relatório de controle do período: resumo, Pareto por tipo, estudo de ganho, SWOT e o detalhamento parada a parada" style="font-size:10px;padding:4px 10px">⏸ RELATÓRIO DE PARADAS</button>
     </div>
   </div>
@@ -3088,7 +3103,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.117.0';
+const APP_VER   = '7.118.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4769,7 +4784,9 @@ function _uepAbaSvg(horas, largura, altura){
       // em andamento: sem cor de veredito, só o contorno — a hora ainda não fechou
       const fill=h.he?'url(#uepLis)':(h.andamento?'var(--elevated,var(--surface))':`var(--${h.cls||'txt2'})`);
       s+=`<rect x="${x.toFixed(1)}" y="${y(h.uep).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.uep)).toFixed(1)}" rx="2" fill="${fill}" opacity="${h.he?1:.9}"${h.andamento&&!h.he?' stroke="var(--txt2)" stroke-width="1.5" stroke-dasharray="4 2"':''}><title>${tip}</title></rect>`
-        +`<text x="${cx.toFixed(1)}" y="${(y(h.uep)-6).toFixed(1)}" text-anchor="middle" font-size="${FS-1}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(h.uep))}${h.cxSem>0?'*':''}</text>`;
+        // o número sobe acima da META quando a barra fica abaixo dela: senão o
+        // tracejado passa por cima do número (v7.118.0)
+        +`<text x="${cx.toFixed(1)}" y="${(Math.min(y(h.uep), h.metaH?y(h.metaH):y(h.uep))-6).toFixed(1)}" text-anchor="middle" font-size="${FS-1}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(h.uep))}${h.cxSem>0?'*':''}</text>`;
     } else if(h.metaH){
       s+=`<rect x="${x.toFixed(1)}" y="${y(h.metaH).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.metaH)).toFixed(1)}" rx="2" fill="none" stroke="var(--border)" stroke-dasharray="3 3"><title>${tip}</title></rect>`;
       if(h.lancada) s+=`<text x="${cx.toFixed(1)}" y="${(y(0)-8).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">s/ prod.</text>`;
@@ -9385,22 +9402,22 @@ function _qpVeredito(a){
   const alto = a.pctMedio > QP_ACIMA;
   const inst = a.osc != null && a.osc > QP_OSC_RUIM;
   if(alto && inst) return { cls:'red',  t:'META ALTA E INSTÁVEL',
-    d:'a meta cobre o que a linha raramente faz E muda demais de um dia para o outro — o dia fechar no vermelho não diz nada sobre a operação' };
+    d:'pede o que a linha raramente faz e pula demais — o vermelho não diz nada' };
   if(alto) return { cls:'red',  t:'META ACIMA DA CAPACIDADE',
-    d:'na maioria dos dias a meta pede mais do que a linha já demonstrou; o vermelho vira paisagem e o alarme se perde' };
+    d:'pede mais que a linha faz na maioria dos dias — o vermelho vira paisagem' };
   if(inst) return { cls:'red', t:'META INSTÁVEL',
-    d:'a altura está razoável, mas a meta pula demais de um dia para o outro — não dá para saber o que é um dia bom' };
+    d:'altura razoável, mas pula demais de um dia para o outro' };
   // ⚠ A FAIXA DO MEIO PRECISA DE VEREDITO PRÓPRIO. Sem ela, oscilação de 28%
   // — acima do combinado de 20%, abaixo do 30% que reprova — saía como PLANO
   // EXEQUÍVEL. Medido na planilha real: 28,3% em 79 dias contra 35% nos
   // últimos 15, ou seja, oscilando mais a cada janela mais recente, e o painel
   // dizendo que estava tudo certo.
   if(a.osc != null && a.osc > QP_OSC_OK) return { cls:'warn', t:'META OSCILANDO',
-    d:'a altura está boa, mas a meta varia mais do que o combinado de ' + QP_OSC_OK + '% — ainda dá para julgar o dia, só que com ressalva' };
+    d:'altura boa, mas varia mais que ' + QP_OSC_OK + '% — julgar com ressalva' };
   if(a.pctMedio < (a.faixa ? a.faixa[0] : QP_ALVO_MIN) - 15) return { cls:'warn', t:'META FOLGADA',
-    d:'a meta fica abaixo do que a linha entrega quase sempre — bater deixa de significar alguma coisa' };
+    d:'abaixo do que a linha entrega quase sempre — bater não significa nada' };
   return { cls:'ok', t:'PLANO EXEQUÍVEL',
-    d:'a meta fica na faixa que a linha bate em cerca de metade dos dias: quando o vermelho aparece, aconteceu algo' };
+    d:'na faixa que a linha bate em metade dos dias — o vermelho quer dizer algo' };
 }
 
 // ── A TELA ──────────────────────────────────────────────────────────────────
@@ -9686,7 +9703,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + _svgTarja(L + 3, yMax - 4, '\u2190 A META DEVERIA FICAR AQUI', null, FS)
     + '<text x="' + (L + 8) + '" y="' + (yMax - 5) + '" fill="var(--ok)" font-family="var(--font-d)" font-size="' + FS + '">\u2190 A META DEVERIA FICAR AQUI</text>'
     + '<text x="' + (L - 6) + '" y="' + (T + 10) + '" fill="var(--txt2)" font-family="var(--font-d)" font-size="' + FS + '" text-anchor="end">' + fmtN(Math.round(topo)) + '</text>'
-    + '<text x="' + (W / 2) + '" y="' + (H - 4) + '" fill="var(--txt3)" font-family="var(--font-d)" font-size="' + (FS-2) + '" text-anchor="middle">OS DIAS DO PERÍODO, EM ORDEM DE CALEND\u00c1RIO</text>'
+    + ''
     + '</svg>';
   const ord = _qpOrdenar(a.linhas, ordem);
   const tab = ord.linhas.map(l => {
@@ -9703,10 +9720,9 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<div class="kpi-card ' + _kpiCls(clsPct) + '"><div class="kpi-lbl">ALTURA DA META</div><div class="kpi-val">p' + Math.round(a.pctMedio) + '</div>'
     + '<div class="kpi-sub">a linha não chegaria lá em ' + Math.round(a.pctMedio) + '% dos dias · alvo p' + fMin + '–p' + fMax + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(clsOsc) + '"><div class="kpi-lbl">OSCILAÇÃO DA META</div><div class="kpi-val">' + (a.osc == null ? '—' : fmtP(a.osc)) + '</div>'
-    + '<div class="kpi-sub">quanto a meta pula de um dia para o outro · alvo até ' + QP_OSC_OK + '%</div></div>'
+    + '<div class="kpi-sub" title="quanto a meta pula de um dia para o outro">alvo até ' + QP_OSC_OK + '%</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nAcima ? 'red' : 'ok') + '"><div class="kpi-lbl">DIAS ACIMA DA CAPACIDADE</div><div class="kpi-val">' + a.nAcima + '</div>'
-    + '<div class="kpi-sub">de ' + a.n + ' dias a meta pediu mais do que a linha faz em p' + QP_ACIMA
-    + ' · <b>' + a.nDentro + '</b> caíram dentro da faixa</div></div>'
+    + '<div class="kpi-sub" title="dias em que a meta pediu mais do que a linha faz em p' + QP_ACIMA + '">de ' + a.n + ' · <b>' + a.nDentro + '</b> dentro da faixa</div></div>'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">META EXEQUÍVEL SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.alvoMin)) + '</div>'
     + '<div class="kpi-sub">a ' + fmtN(Math.round(a.alvoMax)) + ' cx/dia (p' + fMin + '–p' + fMax + ') · hoje a média é ' + fmtN(Math.round(a.metaMedia)) + '</div></div>'
     + '</div>'
@@ -9720,7 +9736,9 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + '<div class="par-sec">' + ord.titulo + '</div>'
     + (ord.nota ? '<div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:.5px;margin:-8px 2px 10px">' + _rpEsc(ord.nota.toUpperCase()) + '</div>' : '')
     + '<table class="tbl"><thead><tr><th style="text-align:left">DATA</th><th>META</th><th>ALTURA</th><th>REALIZADO S/ HE</th><th>RESULTADO</th></tr></thead><tbody>' + tab + '</tbody></table>'
-    + '<div class="qp-nota"><b>Capacidade sem hora extra:</b> cada dia entra com o realizado <b>menos a hora extra</b>, a mesma separação do card CAIXAS EM HORA EXTRA; sábado com produção sai da curva sozinho'
+    + '<div class="qp-lembra"><b>Isto mede o PLANO, não a linha.</b> · <b>Não é baixar a meta</b>: ela sobe atrás da capacidade demonstrada.'
+    + (a.nSemSep ? ' · <b>' + a.nSemSep + ' dia(s)</b> sem separação de HE entram inteiros.' : '') + '</div>'
+    + '<details class="qp-nota"><summary>ⓘ COMO LER</summary><b>Capacidade sem hora extra:</b> cada dia entra com o realizado <b>menos a hora extra</b>, a mesma separação do card CAIXAS EM HORA EXTRA; sábado com produção sai da curva sozinho'
     + (a.nSemSep ? ' · <b>' + a.nSemSep + ' dia(s)</b> sem a separação entram inteiros' : '') + '.<br><br>'
     + '<b>Como ler:</b> a linha <b>laranja</b> é a meta de cada dia e a <b>cinza</b> é o que a linha produziu em jornada normal. '
     + 'A <b>faixa verde</b> é onde a meta deveria ficar: ali ela é batida em cerca de metade dos dias, e aí o vermelho, quando aparece, quer dizer que aconteceu algo. '
@@ -9730,7 +9748,7 @@ function _qpHtml(a, curva, nTotal, regua, ordem, larg){
     + 'Régua longa demais inclui um mês ruim que já passou; curta demais pula com uma semana ruim.<br><br>'
     + '<b>Isto mede o PLANO, não a linha.</b> A meta do dia é a soma dos lotes datados para aquele dia, então ela herda a irregularidade da datação. '
     + 'Quando o dia fecha abaixo, o vermelho hoje cai no operador por uma variação que em boa parte não é dele.<br><br>'
-    + '<b>Não é baixar a meta.</b> A produção sobe pelas paradas, pelo setup e pelo teto da esteira — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</div>';
+    + '<b>Não é baixar a meta.</b> A produção sobe pelas paradas, pelo setup e pelo teto da esteira — e a meta sobe <b>atrás</b> da capacidade demonstrada, nunca na frente dela.</details>';
 }
 
 // ════════════════════════════════════════════════
@@ -10073,7 +10091,7 @@ function _cartESeHtml(a){
   const pctTxt = Math.round(c.pct * 100) + '%';
   return '<div class="qp-ese ' + (c.ver.cls || '') + '">'
     + '<b>E SE AS PARADAS NÃO PROGRAMADAS CAÍSSEM ' + pctTxt + '?</b> '
-    + 'A linha faria <b>+' + fmtN(Math.round(c.cxRecDia)) + ' cx/dia</b> (' + c.nCom + ' de ' + c.nDias + ' dias da régua têm parada apontada) · '
+    + 'A linha faria <b title="' + c.nCom + ' de ' + c.nDias + ' dias da régua têm parada apontada">+' + fmtN(Math.round(c.cxRecDia)) + ' cx/dia</b> · '
     + 'o dia passaria a comportar <b>' + fmtN(Math.round(c.alvoMax)) + '</b> em vez de ' + fmtN(Math.round(a.alvoMax)) + ' · '
     + 'não cabem <b>' + fmtN(Math.round(c.sai)) + '</b> (hoje ' + fmtN(Math.round(a.sai)) + ') · sobra <b>' + fmtN(Math.round(c.sobra)) + '</b> (hoje ' + fmtN(Math.round(a.sobra)) + ')'
     + '<br><b>' + (c.sobra > 0 ? 'NÃO DARIA' : 'DARIA') + ':</b> ' + c.ver.t.toLowerCase() + ' — ' + c.ver.d + '</div>';
@@ -10085,16 +10103,13 @@ function _cartVeredito(a){
   const un = _cartUn(a);
   if(!a) return { cls:'', t:'SEM CARTEIRA DATADA', d:'não há lote com data futura na PROGRAMACAO' };
   if(a.sobra > 0) return { cls:'red', t:'HORIZONTE SOBRECARREGADO',
-    d:'mesmo espalhando a carga pelos dias livres sobram ' + fmtN(Math.round(a.sobra))
-      + ' ' + un + ' que não cabem no período — aqui re-datar não basta: é dia a mais, hora extra ou empurrar para a semana seguinte' };
+    d:'sobram ' + fmtN(Math.round(a.sobra)) + ' ' + un + ' mesmo espalhando — re-datar não basta (dia a mais, HE ou semana seguinte)' };
   if(a.nImpossivel > 0) return { cls:'red', t:'DIA DATADO ACIMA DO MÁXIMO JÁ FEITO',
-    d:a.nImpossivel + ' dia(s) pedem mais que o melhor dia da linha em jornada normal (' + fmtN(a.teto)
-      + ' ' + un + ') — e a carga cabe no período: é redistribuir, não produzir mais' };
+    d:a.nImpossivel + ' dia(s) acima do melhor dia sem HE (' + fmtN(a.teto) + ' ' + un + ') — cabe no período: é redistribuir' };
   if(a.sai > 0) return { cls:'warn', t:'CARGA MAL DISTRIBUÍDA',
-    d:fmtN(Math.round(a.sai)) + ' ' + un + ' estão em dias que não comportam, e há ' + fmtN(Math.round(a.cabe))
-      + ' ' + un + ' de espaço nos dias livres do próprio período' };
+    d:fmtN(Math.round(a.sai)) + ' ' + un + ' em dias que não comportam · ' + fmtN(Math.round(a.cabe)) + ' ' + un + ' livres no período' };
   return { cls:'ok', t:'CARTEIRA NIVELADA',
-    d:'todos os dias datados cabem na faixa alvo — o vermelho que aparecer vai ser da operação, não da datação' };
+    d:'todos os dias cabem na faixa alvo' };
 }
 
 // A UNIDADE da carteira: em UEP a barra, a régua e as contas são UEP; nos
@@ -10267,19 +10282,18 @@ function _cartHtml(a, regua, larg){
     + '<div class="kpi-grid c4" style="margin-bottom:16px">'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">CARTEIRA EM ABERTO</div><div class="kpi-val">' + fmtN(Math.round(a.total)) + '</div>'
     + '<div class="kpi-sub">' + (ehU
-        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas = <b>' + fmtN(Math.round(a.futuro)) + ' UEP</b> (' + _cartPeso(a, a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + '), em ' + a.n + ' dia(s)'
+        ? fmtN(Math.round(a.futuroCru)) + ' cx prog. · ' + _cartPeso(a, a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + ' · ' + a.n + ' dia(s)'
         : mix
-        ? fmtN(Math.round(a.futuroCru)) + ' cx programadas pesam como <b>' + fmtN(Math.round(a.futuro)) + '</b> (' + _cartPesoTxt(a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + '), em ' + a.n + ' dia(s)'
+        ? fmtN(Math.round(a.futuroCru)) + ' cx prog. · ' + _cartPesoTxt(a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + ' · ' + a.n + ' dia(s)'
         : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
-    + (a.divida > 0 ? ' · <b>+' + fmtN(Math.round(a.divida)) + ' ' + un + ' de dívida</b> (atraso + o que falta hoje)' : ' · sem dívida atrasada') + '</div></div>'
+    + (a.divida > 0 ? ' · <b title="atraso + o que falta hoje">+' + fmtN(Math.round(a.divida)) + ' de dívida</b>' : ' · sem dívida') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
-    + '<div class="kpi-sub">de ' + a.n + ' dias datados · <b>' + a.nImpossivel + '</b> acima do melhor dia sem hora extra ('
-    + fmtN(a.teto) + ' ' + un + ')</div></div>'
+    + '<div class="kpi-sub">de ' + a.n + ' · <b>' + a.nImpossivel + '</b> acima do máx. sem HE (' + fmtN(a.teto) + ')</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
-    + '<div class="kpi-sub">' + un + ' acima do que o dia comporta · cabe ' + fmtN(Math.round(a.cabe)) + ' ' + un + ' nos dias livres'
-    + (a.sobra > 0 ? ' · <b>sobram ' + fmtN(Math.round(a.sobra)) + '</b>' : ' · tudo cabe no período') + '</div></div>'
+    + '<div class="kpi-sub">cabe ' + fmtN(Math.round(a.cabe)) + ' nos dias livres'
+    + (a.sobra > 0 ? ' · <b>sobram ' + fmtN(Math.round(a.sobra)) + '</b>' : ' · tudo cabe') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls('acc') + '"><div class="kpi-lbl">NIVELADO SERIA</div><div class="kpi-val">' + fmtN(Math.round(a.nivelado)) + '</div>'
-    + '<div class="kpi-sub">' + un + '/dia (p' + Math.round(a.pctNivelado) + ') se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias</div></div>'
+    + '<div class="kpi-sub" title="se a carteira e a dívida fossem espalhadas pelos ' + a.n + ' dias">' + un + '/dia (p' + Math.round(a.pctNivelado) + ') espalhando</div></div>'
     + '</div>'
     + '<div class="qp-wrap"><div class="par-sec" style="margin-top:0">O QUE ESTÁ DATADO PARA CADA DIA QUE VEM' + (ehU ? '<span class="cl-regua"> — A BARRA É A CARGA EM UEP</span>' : mix ? '<span class="cl-regua"> — A BARRA É A CARGA: O PROGRAMADO PESADO PELO MIX</span>' : '') + '</div>'
     + svg
@@ -10295,7 +10309,8 @@ function _cartHtml(a, regua, larg){
     + '<th class="cl-alt">ALTURA</th><th class="cl-lin">LINHAS</th><th>NÃO CABE</th><th>ESPAÇO LIVRE</th>'
     + (mix ? '<th class="cl-pesa" style="text-align:left">O QUE MAIS PESA NO DIA</th>' : '') + '</tr></thead><tbody>' + tab + '</tbody></table>'
     + _cartMixHtml(a)
-    + '<div class="qp-nota"><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
+    + '<div class="qp-lembra">⚠ A faixa é uma <b>mediana</b>, não limite físico · <b>nivelar não é sequenciar</b>: a ordem continua sendo a data.</div>'
+    + '<details class="qp-nota"><summary>ⓘ COMO LER</summary><b>Como ler:</b> cada barra é a soma dos lotes <b>já datados</b> para aquele dia na PROGRAMACAO'
     + (ehU ? ', <b>em UEP</b>: cada lote × a UEP por caixa do cadastro (PRODUTO_CODIGO), e a faixa verde é a UEP que a linha entregou nos dias fechados (HISTÓRICO)'
            : mix ? ', <b>pesada pelo mix</b>: produto lento pesa mais, produto rápido pesa menos (a caixa acima diz como)' : '') + '. '
     + 'A faixa verde é o que a linha entrega na altura certa <b>em jornada normal, sem hora extra</b>; a linha vermelha tracejada é o <b>melhor dia que ela já fez sem hora extra</b> — barra acima dela nasceu impossível. '
@@ -10303,7 +10318,7 @@ function _cartHtml(a, regua, larg){
     + '<b>A dívida entra na frente.</b> Atraso e o que falta hoje ocupam capacidade dos primeiros dias antes de qualquer lote novo — por isso ela entra no NIVELADO. Ignorá-la faria o período parecer mais folgado do que é.<br><br>'
     + '<b>Nivelar não é sequenciar.</b> Encher todo dia com a mesma quantidade ignorando data de corte do cliente só troca um problema por outro: o nivelamento é a restrição de <b>capacidade</b>, a ordem continua sendo a <b>data</b>.<br><br>'
     + 'A régua (p' + fMin + '/p' + fMax + ') sai dos <b>' + (regua > 0 ? ('últimos ' + regua + ' dias') : 'dias todos') + '</b> de histórico — a mesma do bloco de baixo, escolhida na barra do topo. '
-    + '⚠ Ela é uma <b>mediana</b>, não um limite físico: dia acima da faixa é improvável, não proibido.</div>';
+    + '⚠ Ela é uma <b>mediana</b>, não um limite físico: dia acima da faixa é improvável, não proibido.</details>';
 }
 
 // A LINHA DO MIX — desenho, nenhuma conta: diz em que unidade a carteira está,
@@ -10314,8 +10329,7 @@ function _cartHtml(a, regua, larg){
 function _cartMixHtml(a){
   if(a.mixModo === 'uep'){
     const m = a.mix || {};
-    return '<div class="qp-mix"><div class="qm-como"><b>COMO A CARGA É CALCULADA:</b> cada lote × a <b>UEP por caixa do cadastro</b> (a mesma do card UEP DO DIA). '
-      + 'A régua é a <b>UEP de jornada normal gravada no fechamento</b> de cada dia (HISTÓRICO), nos mesmos dias da régua da barra. A dívida (atraso + o que falta hoje) entra pela UEP de cada código em atraso.</div>'
+    return '<div class="qp-mix"><div class="qm-como" title="Cada lote × a UEP por caixa do cadastro (a mesma do card UEP DO DIA). A régua é a UEP de jornada normal gravada no fechamento de cada dia (HISTÓRICO), nos mesmos dias da régua da barra. A dívida (atraso + o que falta hoje) entra pela UEP de cada código em atraso."><b>COMO A CARGA É CALCULADA:</b> lote × UEP por caixa do cadastro ⓘ</div>'
       + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + (m.nLotes || 0) + ' lote(s) com UEP'
       + ((a.semUep && a.semUep.length) ? ' · ' + a.semUep.length + ' linha(s) sem UEP fora da carga — ver a lista abaixo' : '') + '</div></div>'
       + _cartSemUepHtml(a.semUep, a.divSemUep);
@@ -10348,10 +10362,9 @@ function _cartMixHtml(a){
     + (c && c.base ? ' · oscilação da produção ' + fmtP(c.oscCru) + ' crua → ' + fmtP(c.oscMix) + ' pesada' : '')
     + (m.razao ? ' · a esteira roda ' + m.razao.toFixed(1).replace('.', ',') + ' produto(s) por vez, por isso o peso é relativo, não hora' : '');
   return '<div class="qp-mix' + (ruim ? ' warn' : '') + '">'
-    + '<div class="qm-como"><b>COMO A CARGA É CALCULADA:</b> produto que roda <b>mais devagar</b> que a média da linha (' + fmtN(ref) + ' cx/h nos últimos ' + (m.regua || m.nDias) + ' dias) <b>pesa mais</b>; mais rápido pesa menos. '
-    + 'Exemplo: 1.000 cx de um produto a ' + fmtN(Math.round(ref / 2)) + ' cx/h pesam como 2.000.</div>'
+    + '<div class="qm-como" title="' + _rpEsc('Produto que roda mais devagar que a média da linha (' + fmtN(ref) + ' cx/h nos últimos ' + (m.regua || m.nDias) + ' dias) pesa mais; mais rápido pesa menos. Exemplo: 1.000 cx de um produto a ' + fmtN(Math.round(ref / 2)) + ' cx/h pesam como 2.000.') + '"><b>COMO A CARGA É CALCULADA:</b> produto lento pesa mais, rápido pesa menos ⓘ</div>'
     + '<div class="qm-conf"><b>CONFERÊNCIA:</b> ' + conf + '</div>'
-    + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + detalhe + '</div></div>';
+    + '<div class="qm-det" style="opacity:.7;font-size:9.5px" title="' + _rpEsc(detalhe) + '">' + m.nLotes + ' lote(s) ⓘ</div></div>';
 }
 
 // OS LOTES PROGRAMADOS, DIA A DIA — a lista que o papel precisa (pedido do
@@ -10763,6 +10776,7 @@ const _PLANO_SKIN = `
      diz tudo isso, uma vez. A linha técnica da caixa do mix também fica só na
      tela. A marcação é a mesma; a pele é que esconde. */
   .plano-doc .qp-nota,.plano-doc .qm-como,.plano-doc .qm-det{display:none}
+  .plano-doc .qp-lembra{display:none}
   .plano-doc .pl-quebra{page-break-before:always;height:0}
   .plano-doc .pl-sub{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:#5B6470;
                      text-transform:uppercase;margin:16px 0 6px;page-break-after:avoid}
@@ -11148,7 +11162,8 @@ function _dirHoje(D, k, porHoraModelo){
   return { estado:'ok', iniciou,
            selo: iniciou ? { c:D.card.c, t:slRitmo(D.card.ef) } : { c:'', t:'AGUARDANDO A JORNADA' },
            uep:D.feito, esperado:D.card.esperado, meta:D.meta, proj:D.proj ? D.proj.fim : null,
-           heUep:D.he, cx:cxJ, heCx:cxH, pts:temPts ? ptsJ : null, hePts:temPts ? ptsH : null, cob };
+           heUep:D.he, cx:cxJ, heCx:cxH, pts:temPts ? ptsJ : null, hePts:temPts ? ptsH : null, cob,
+           horas: D.horas || [] };
 }
 // SEMANA PASSADA: a mesma janela da Tela D e do relatório semanal.
 // undefined = histórico não lido; null = nenhum dia fechado na semana.
@@ -11180,28 +11195,30 @@ function _dirUltimos(dias, hoje, n){
 // ── desenho (nenhuma conta) ──────────────────────────────────────────────────
 function _dirF(v){ return v === null || v === undefined || !isFinite(Number(v)) ? '—' : fmtN(Math.round(Number(v))); }
 function _dirMsg(t){ return `<div class="dir-msg">${t}</div>`; }
+// a mesma quantidade COM a hora extra, embaixo do número sem HE (PPCP, 25/09/2026)
+function _dirComHe(v){ return `<span class="dir-he">com HE <b>${_dirF(v)}</b></span>`; }
 function _dirHojeHtml(H){
   if(!H || H.estado !== 'ok') return _dirMsg(H ? H.msg : 'Aguardando a leitura do dia…');
   const f = _dirF, c = H.selo.c;
   const pF = H.meta > 0 ? Math.min(100, H.uep / H.meta * 100) : 0, pE = H.meta > 0 ? Math.min(100, H.esperado / H.meta * 100) : 0;
   const cobAv = H.pts != null && H.cob != null && H.cob < DIR_COB_MIN;
-  const he = H.heUep > 0 || H.heCx > 0;
   return `<span class="dir-selo ${c}">● ${H.selo.t}</span>
-    <div class="dir-g3">
-      <div class="dir-k dest ${c}"><div class="dir-kl">UEP</div><div class="dir-kv">${f(H.uep)}</div>
+    <div class="dir-g3 comp">
+      <div class="dir-k dest ${c}"><div class="dir-kl"><span>UEP <i>sem HE</i></span>${_dirComHe(H.uep + H.heUep)}</div><div class="dir-kv">${f(H.uep)}</div>
         <div class="dir-barra ${c}"><i style="width:${pF.toFixed(1)}%"></i>${H.iniciou ? `<u style="left:${pE.toFixed(1)}%"></u>` : ''}</div>
-        <div class="dir-bl"><span>${H.iniciou ? 'esperado ' + f(H.esperado) : ''}</span><span>meta ${f(H.meta)}</span></div></div>
-      <div class="dir-k"><div class="dir-kl">CAIXAS</div><div class="dir-kv">${f(H.cx)}</div></div>
-      <div class="dir-k"><div class="dir-kl">PONTOS</div><div class="dir-kv">${f(H.pts)}</div>${cobAv ? `<div class="dir-ks av">de ${fmtP(H.cob)} das caixas (as com produto)</div>` : ''}</div>
+        <div class="dir-bl"><span>${H.iniciou ? 'esperado ' + f(H.esperado) : ''}</span>${H.proj != null ? `<span>projeção <b>${f(H.proj)}</b></span>` : ''}<span>meta ${f(H.meta)}</span></div></div>
+      <div class="dir-k"><div class="dir-kl"><span>CAIXAS <i>sem HE</i></span>${_dirComHe(H.cx + H.heCx)}</div><div class="dir-kv">${f(H.cx)}</div></div>
+      <div class="dir-k"><div class="dir-kl"><span>PONTOS <i>sem HE</i></span>${H.pts != null ? _dirComHe(H.pts + (H.hePts || 0)) : ''}</div><div class="dir-kv">${f(H.pts)}</div>${cobAv ? `<div class="dir-ks av">de ${fmtP(H.cob)} das caixas (as com produto)</div>` : ''}</div>
     </div>
-    ${H.proj != null || he ? `<div class="dir-lin">${H.proj != null ? `PROJEÇÃO <b>${f(H.proj)} UEP</b>` : ''}${H.proj != null && he ? ' &nbsp;·&nbsp; ' : ''}${he ? `HORA EXTRA <b class="he">${f(H.heUep)} UEP · ${f(H.heCx)} cx${H.hePts != null ? ' · ' + f(H.hePts) + ' pts' : ''}</b>` : ''}</div>` : ''}`;
+    ${H.horas && H.horas.length ? `<div class="dir-k dir-graf dir-graf-h"><div class="dir-kl">HORA A HORA · UEP SEM HE · - - - META DA HORA</div>${_uepAbaSvg(H.horas)}</div>` : ''}
+`;
 }
 function _dirSemSvg(U, W){
   if(!U.length) return '';
   // a largura acompanha a proporção da caixa (o renderDir mede e redesenha) —
   // com viewBox fixo, o 'meet' encolheria o gráfico numa caixa larga e baixa
   W = Math.max(700, Math.min(3200, Math.round(W || 1600)));
-  const H = 260, base = 222, topo = 34;
+  const H = 260, base = 226, topo = 48;
   const mx = Math.max(1, ...U.map(d => Math.max(Number(d.uep) || 0, uepDiaMeta(d)))) * 1.08;
   const y = v => base - (base - topo) * v / mx, passo = (W - 40) / U.length, bw = Math.min(90, passo * .6);
   let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="UEP dos últimos dias contra a meta"><line x1="20" x2="${W-10}" y1="${base}" y2="${base}" stroke="var(--border)"/>`;
@@ -11209,8 +11226,8 @@ function _dirSemSvg(U, W){
     const u = Number(d.uep) || 0, m = uepDiaMeta(d), x = 20 + i * passo + (passo - bw) / 2, cx = x + bw / 2;
     s += `<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - y(u)).toFixed(1)}" rx="3" fill="${u >= m ? '#5d6b7e' : 'var(--red)'}"/>`
       + `<line x1="${(x-4).toFixed(1)}" x2="${(x+bw+4).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--txt)" stroke-width="2.5" stroke-dasharray="9 6"/>`
-      + `<text x="${cx.toFixed(1)}" y="${(Math.min(y(u), y(m)) - 9).toFixed(1)}" font-size="22" fill="var(--txt)" text-anchor="middle" font-family="IBM Plex Mono">${fmtN(Math.round(u))}</text>`
-      + `<text x="${cx.toFixed(1)}" y="252" font-size="22" fill="var(--txt2)" text-anchor="middle" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
+      + `<text x="${cx.toFixed(1)}" y="${(Math.min(y(u), y(m)) - 10).toFixed(1)}" font-size="34" font-weight="600" fill="var(--txt)" text-anchor="middle" style="font-family:var(--font-d)">${fmtN(Math.round(u))}</text>`
+      + `<text x="${cx.toFixed(1)}" y="254" font-size="24" fill="var(--txt2)" text-anchor="middle" style="font-family:var(--font-d)">${_rpEsc(String(d.data).slice(0,5))}</text>`;
   });
   return s + '</svg>';
 }
@@ -11219,18 +11236,19 @@ function _dirSemanaHtml(S, U, falhaHist, ptsEst){
   if(S === null) return _dirMsg('Nenhum dia fechado na semana passada.');
   const f = _dirF, ok = S.pct != null && S.pct >= 100;
   const selo = S.nUep ? `<span class="dir-selo ${ok ? 'ok' : 'red'}">● ${ok ? 'META BATIDA' : 'ABAIXO DA META'}</span>` : '<span class="dir-selo">SEM UEP GRAVADA NA SEMANA</span>';
+  // o período não separa os pontos por hora: sem HE não se sabe, e não se inventa
   const ptsSub = S.pts == null ? (ptsEst === 'falha' ? 'não consegui ler' : 'lendo…')
-               : 'inclui hora extra' + (S.cob != null && S.cob < DIR_COB_MIN ? ` · de ${fmtP(S.cob)} das caixas` : '');
+               : 'sem HE não separado' + (S.cob != null && S.cob < DIR_COB_MIN ? ` · ${fmtP(S.cob)} das cx` : '');
   return `${selo}
-    <div class="dir-g3">
-      <div class="dir-k dest ${S.nUep ? (ok ? 'ok' : 'red') : ''}"><div class="dir-kl">UEP</div><div class="dir-kv">${S.nUep ? f(S.uep) : '—'}</div>
+    <div class="dir-g3 comp">
+      <div class="dir-k dest ${S.nUep ? (ok ? 'ok' : 'red') : ''}"><div class="dir-kl"><span>UEP <i>sem HE</i></span>${S.nUep ? _dirComHe(S.uep + S.heUep) : ''}</div><div class="dir-kv">${S.nUep ? f(S.uep) : '—'}</div>
         <div class="dir-bl"><span>${S.pct != null ? fmtP(S.pct) + ' da meta' : ''}</span><span>${S.nUep ? `${S.bateu} de ${S.nUep} dias` : ''}</span></div>
         ${S.semUep ? `<div class="dir-ks av">${plural(S.semUep, 'dia sem UEP gravada', 'dias sem UEP gravada')}, fora da soma</div>` : ''}</div>
-      <div class="dir-k"><div class="dir-kl">CAIXAS</div><div class="dir-kv">${f(S.cx)}</div></div>
-      <div class="dir-k"><div class="dir-kl">PONTOS</div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>
+      <div class="dir-k"><div class="dir-kl"><span>CAIXAS <i>sem HE</i></span>${_dirComHe(S.cx + S.heCx)}</div><div class="dir-kv">${f(S.cx)}</div></div>
+      <div class="dir-k"><div class="dir-kl">PONTOS <i>com HE</i></div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>
     </div>
-    ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
-    ${S.heUep > 0 || S.heCx > 0 ? `<div class="dir-lin">HORA EXTRA NA SEMANA <b class="he">${f(S.heUep)} UEP · ${f(S.heCx)} cx</b></div>` : ''}`;
+    ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP SEM HE · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
+`;
 }
 // O CARTÃO DE UM DIA dos PRÓXIMOS DIAS — formato do PPCP (25/09/2026, com a
 // imagem na mão): faixa de status em cima, selo CHEIO (FALTA / FOLGA — é ele que
@@ -11277,12 +11295,13 @@ function renderDir(){
   const el = document.getElementById('dir-palco');
   if(!el || !_modoDir()) return;
   const t = DIR_TELA % DIR_N;
-  let corpo = '', tit = '', ts = 0;
+  let corpo = '', tit = '', ts = 0, hojeH = null;
   try{
     if(t === 0){
       tit = '<b>HOJE</b>'; ts = PONTOS_DIA_TS;
       const D = _uepAbaDados();
-      corpo = _dirHojeHtml(_dirHoje(D, D.k, PONTOS_DIA.porHoraModelo));
+      hojeH = _dirHoje(D, D.k, PONTOS_DIA.porHoraModelo);
+      corpo = _dirHojeHtml(hojeH);
     } else if(t === 1){
       const S = _dirSemana(UEP_HIST, null, DIR_PTS.key === _dirSemKey() ? DIR_PTS.soma : null);
       tit = '<b>SEMANA PASSADA</b>' + (S ? ` · ${_rpEsc(S.de.slice(0,5))} A ${_rpEsc(S.ate.slice(0,5))}` : ''); ts = UEP_HIST_TS;
@@ -11293,6 +11312,11 @@ function renderDir(){
     }
   }catch(e){ corpo = _dirMsg('Não consegui montar esta tela: ' + _rpEsc(e.message)); }
   el.innerHTML = _dirMoldura(t, corpo, tit, ts);
+  if(t === 0){
+    const g = el.querySelector('.dir-graf-h svg');
+    if(g){ const r = g.getBoundingClientRect(), k = Math.max(1.3, r.width / 900);   // k: a letra do gráfico cresce com a tela (~2× a da aba em 1920)
+      if(r.width > 0 && r.height > 0 && hojeH && hojeH.horas) g.outerHTML = _uepAbaSvg(hojeH.horas, Math.round(r.width / k), Math.round(r.height / k)); }
+  }
   if(t === 1 && UEP_HIST){
     const g = el.querySelector('.dir-graf svg');
     if(g){ const r = g.getBoundingClientRect(); if(r.width > 0 && r.height > 0) g.outerHTML = _dirSemSvg(_dirUltimos(UEP_HIST, null, 10), r.width / r.height * 260); }
@@ -13311,7 +13335,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
 
   const setaHtml=tend?`<div class="pgq-tend ${tend.st}">
       <span class="pgq-seta">${tend.seta}</span>
-      <span>${tend.subiu?'MELHORA':tend.caiu?'PIORA':'ESTÁVEL'} de <b>${fmt1(Math.abs(tend.delta))} p.p.</b> da primeira à última semana (${fmt1(tend.de.dispon)}% → ${fmt1(tend.ate.dispon)}%)</span>
+      <span>${tend.subiu?'MELHORA':tend.caiu?'PIORA':'ESTÁVEL'} <b>${tend.subiu?'+':tend.caiu?'−':''}${fmt1(Math.abs(tend.delta))} p.p.</b> (${fmt1(tend.de.dispon)}% → ${fmt1(tend.ate.dispon)}%)</span>
     </div>`
     :'<div class="pgq-na">São precisas 2 semanas com dia trabalhado para dizer se melhorou.</div>';
 
@@ -13346,7 +13370,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
   // ANOMALIAS — contagens; a lista de cada uma fica na seção de validação.
   const an=anom||{sobrepostas:[],semMotivo:[],longas:[],semClasse:[],abertas:[],semMotivoTotal:0,limite:PG_ANOM_LONGA,temClasse:false};
   const nSemClasse=an.semClasse.reduce((s,t)=>s+t.qtd,0);
-  const anLinha=(rot,n,sub)=>`<div class="pgq-l ${n>0?'alerta':''}"><span>${rot}${sub?`<i>${sub}</i>`:''}</span><b>${n}</b></div>`;
+  const anLinha=(rot,n,sub)=>`<div class="pgq-l ${n>0?'alerta':''}"${sub?` title="${_rpEsc(sub)}"`:''}><span>${rot}${sub?`<i class="so-papel">${sub}</i>`:''}</span><b>${n}</b></div>`;
   const anomHtml=`
     ${anLinha('Sobreposição', an.sobrepostas.length, 'a seguinte começa antes de a anterior terminar')}
     ${anLinha('Sem motivo', an.semMotivo.length, `genérica ou longa · ${an.semMotivoTotal} sem motivo no total`)}
@@ -13367,7 +13391,8 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
       <td class="td-mono" style="color:#a0aec0">${e(a.prazo)}</td>
       <td class="td-mono">${e(a.meta)}</td>
       <td><span class="pg-sinal r">ABERTO</span></td></tr>`).join('')}</tbody></table>
-    <div class="rp-note">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
+    <div class="rp-note so-tela">Responsável e prazo: <b>a definir</b> (não vêm do dado)</div>
+    <div class="rp-note so-papel">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
     :'<div class="pg-vazio">Sem causa não programada no período — nada a planejar.</div>';
 
   return `<div class="pgq">
@@ -13387,7 +13412,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
         ${ganhoTot}
       </div>
       <div class="pgq-cel">
-        <div class="pgq-cel-ttl">"OUTROS" <i>o que está escondido no balaio</i></div>
+        <div class="pgq-cel-ttl">"OUTROS" <i class="so-papel">o que está escondido no balaio</i></div>
         ${oTopo}${oLinhas}
       </div>
       <div class="pgq-cel">
@@ -13532,7 +13557,8 @@ function _pgJanelaTabelaHtml(ctx, grao){
         <td class="td-mono ${m.bom===true?'v-ok':m.bom===false?'v-red':''}">${
           m.deltaNP==null?'—':`${m.bom?'↓':'↑'} ${fmt1(Math.abs(m.deltaNP))} ${m.bom?'a menos':'a mais'}`}</td>
       </tr>`).join('')}</tbody></table>
-      <div class="rp-note">Cada ${G.um} do período em uma linha, com a variação do NÃO PROGRAMADO contra ${o} ${G.um} anterior — <b>↓ é melhora</b> (parou menos por caixa produzida). <b>A data embaixo do rótulo é a faixa que entrou na linha</b>: do primeiro ao último dia COM PRODUÇÃO dentro do período escolhido, e não ${o} ${G.um} inteir${o}. Minutos do mesmo <b>porDia</b> do resumo, caixas do <b>HISTÓRICO</b>. <b>Só dia trabalhado entra</b> (dia sem produção lançada não tem caixa no denominador)${jan.diasFora>0?`: ${plural(jan.diasFora,'dia ficou','dias ficaram')} de fora, com ${_fmtMinPar(jan.minFora)} de parada apontada`:''}. ${G.cap} pela metade — a ponta do período — compara um pedaço com um inteiro.</div>`;
+      <div class="rp-note so-tela"><b>↓ é melhora</b> · só dias com produção${jan.diasFora>0?` · ${plural(jan.diasFora,'dia','dias')} fora (${_fmtMinPar(jan.minFora)} apontadas)`:''}</div>
+      <div class="rp-note so-papel">Cada ${G.um} do período em uma linha, com a variação do NÃO PROGRAMADO contra ${o} ${G.um} anterior — <b>↓ é melhora</b> (parou menos por caixa produzida). <b>A data embaixo do rótulo é a faixa que entrou na linha</b>: do primeiro ao último dia COM PRODUÇÃO dentro do período escolhido, e não ${o} ${G.um} inteir${o}. Minutos do mesmo <b>porDia</b> do resumo, caixas do <b>HISTÓRICO</b>. <b>Só dia trabalhado entra</b> (dia sem produção lançada não tem caixa no denominador)${jan.diasFora>0?`: ${plural(jan.diasFora,'dia ficou','dias ficaram')} de fora, com ${_fmtMinPar(jan.minFora)} de parada apontada`:''}. ${G.cap} pela metade — a ponta do período — compara um pedaço com um inteiro.</div>`;
 }
 
 // Não há conta aqui: os dois por 1.000 cx vêm prontos do _pgContexto.
@@ -13556,7 +13582,7 @@ function _pgMin1000Html(ctx){
   return `<div class="kpi-grid pg-mil">
   <div class="kpi-card a acc"><div class="kpi-lbl">MINUTOS PARADOS — TUDO / 1.000 CX</div>
     <div class="kpi-val">${minPor1000!=null?fmt1(minPor1000):'—'}</div>
-    <div class="kpi-sub">${minPor1000!=null?`${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000<br>${divisao}`:'sem caixas apontadas no período'}</div></div>
+    <div class="kpi-sub"${minPor1000!=null?` title="${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000"`:''}>${minPor1000!=null?`<span class="so-papel">${_fmtMinPar(st.totMin)} ÷ ${fmtN(cx)} cx × 1.000<br></span>${divisao}`:'sem caixas apontadas no período'}</div></div>
   <div class="kpi-card r red"><div class="kpi-lbl">MINUTOS NÃO PROGRAMADOS / 1.000 CX</div>
     <div class="kpi-val v-red">${minPor1000NP!=null?fmt1(minPor1000NP):'—'}</div>
     <div class="kpi-sub">só o que vira perda${pctNP!=null?` · ${fmtP(pctNP)} do tempo parado`:''}</div></div>
@@ -13998,7 +14024,7 @@ function _pgPintar(ctx, t){
             `<button class="btn btn-ghost pg-q${PG_GRAO===g?' on':''}" onclick="_pgTrocaGrao('${g}')">${PG_GRAOS[g].col}</button>`).join('')}</span>
           <button class="btn btn-ghost pg-imp" onclick="gerarRelatorioMin1000(dGet('pg-de'),dGet('pg-ate'))" title="Imprime só este indicador — as três janelas do mesmo período, sem o resto do relatório">\u{1F5A8} IMPRIMIR ESTE</button></div>
         ${_pgMin1000Html(ctx)}
-        <div class="pg-diag-nota">O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume. Base: as caixas apontadas que o TAKT REAL já usa. <b>Não substitui</b> nenhum indicador do quadro.</div></div>`
+</div>`
     + `<div class="pg-diag-wrap"><div class="pg-diag-ttl">DIAGNÓSTICO PPCP</div><div class="pg-diag">
         ${linha('PROBLEMA PRINCIPAL', d.problema||'—', 'var(--red)')}
         ${linha('IMPACTO', d.impacto||'—')}
@@ -14006,10 +14032,10 @@ function _pgPintar(ctx, t){
         ${linha('AÇÃO RECOMENDADA', d.acao||'—', 'var(--acc)')}
         ${linha('GANHO POTENCIAL', d.ganho||'—', 'var(--ok)')}
         ${linha('PRÓXIMO FOCO', d.foco||'—')}
-      </div><div class="pg-diag-nota">Esta tela é a leitura de dez segundos. <b>RELATÓRIO DESTA TELA</b> imprime o quadro com as onze seções da gestão de perdas (Pareto diário, evolução, causas, SMED, recuperação, plano e validação do apontamento); <b>RELATÓRIO DE PARADAS</b> imprime o controle do período — resumo, Pareto por tipo, estudo de ganho, SWOT e o detalhamento parada a parada.</div></div>`
+      </div></div>`
     // O SIMULADOR mudou de endereço (04/09/2026): aba própria, período próprio.
     // Fica o ponteiro — sem ele o gestor procura o bloco onde ele não está mais.
-    + `<div class="pg-diag-wrap"><div class="pg-diag-nota">O <b>SIMULADOR DE INVESTIMENTO</b> agora tem aba própria, com <b>período próprio</b> — a proposta de um equipamento raramente se decide na mesma janela em que se acompanha a perda. <button class="btn btn-ghost pg-imp" onclick="setTab('simulador')" style="margin-left:0">\u{1F4A1} ABRIR O SIMULADOR</button></div></div>`;
+    + `<div class="pg-diag-wrap"><div class="pg-diag-nota">SIMULADOR DE INVESTIMENTO: aba própria, com período próprio. <button class="btn btn-ghost pg-imp" onclick="setTab('simulador')" style="margin-left:0">\u{1F4A1} ABRIR O SIMULADOR</button></div></div>`;
   const upd=document.getElementById('pg-upd');
   if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
 }
@@ -14106,7 +14132,7 @@ function _simPintar(ctx, t){
   const st=(ctx&&ctx.st)||{};
   const bloco=_pgSimHtml(ctx);
   alvo.innerHTML = bloco
-    ? `<div id="sim-uep" class="sim-base"></div><div class="sim-base">Base da simulação: <b>${fmtN(st.nDias||0)}</b> dia(s) trabalhado(s) no período · <b>${fmt1(st.horasProd||0)}h</b> produtivas por dia · <b>${_fmtMinPar(st.totMinNP||0)}</b> de parada não programada. As causas abaixo são o <b>Pareto deste período</b> — a mesma conta do relatório de paradas e da gestão de perdas.</div>` + bloco
+    ? `<div id="sim-uep" class="sim-base"></div><div class="sim-base" title="As causas abaixo são o Pareto deste período — a mesma conta do relatório de paradas e da gestão de perdas.">Base da simulação: <b>${fmtN(st.nDias||0)}</b> dia(s) trabalhado(s) no período · <b>${fmt1(st.horasProd||0)}h</b> produtivas por dia · <b>${_fmtMinPar(st.totMinNP||0)}</b> de parada não programada.</div>` + bloco
     : '<div class="pg-carregando">Nenhuma parada não planejada neste período — não há o que simular. Escolha um período maior.</div>';
   const upd=document.getElementById('sim-upd');
   if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
@@ -14135,7 +14161,7 @@ function _simUepPintar(){
   let ch=0; try{ ch=_pgSimNum(_pgSimEstado().custoHora); }catch(e){}
   const c=uepCustoPeriodo(ch, SIM_UEP.dias);
   const rs=v=>'R$ '+v.toFixed(2).replace('.',',');
-  if(!(ch>0)){ el.innerHTML='<b>CUSTO POR UEP</b> · digite o CUSTO-HORA no cenário abaixo para ver quanto custou cada UEP no período.'; return; }
+  if(!(ch>0)){ el.innerHTML='<b>CUSTO POR UEP</b> · digite o CUSTO-HORA abaixo.'; return; }
   if(!c){ el.innerHTML='<b>CUSTO POR UEP</b> · nenhum dia fechado com UEP gravada neste período.'; return; }
   const acima=c.rsUep>c.rsMeta;
   el.innerHTML=`<b>CUSTO POR UEP</b> · <b>${rs(c.rsUep)}</b>/UEP no período contra ${rs(c.rsMeta)} da meta · `
@@ -14402,7 +14428,7 @@ function _pgSimFrase(r){
 //      com a frase "não são economia de caixa" no título da faixa.
 // Os indicadores, os nomes e as contas são os mesmos de antes.
 function _pgSimResHtml(r){
-  if(!r || !r.nSel) return `<div class="pg-sim-vazio">Marque acima a(s) parada(s) a atacar — tempo, caixas, R$ por mês e por ano, payback, ROI e hora extra evitável aparecem aqui na hora.</div>`;
+  if(!r || !r.nSel) return `<div class="pg-sim-vazio">Marque acima as paradas a atacar.</div>`;
   // A LINHA DO ANO É PRÓPRIA, não rodapé (pedido do usuário, 04/09/2026:
   // "melhorar o foco no ganho anual"). O número grande continua sendo o MÊS —
   // é ele que alimenta o payback e é a leitura do dia a dia —, mas o ano saiu
@@ -14419,7 +14445,7 @@ function _pgSimResHtml(r){
   const heSub = r.heZero ? 'hora extra atual informada como 0 — não há HE a evitar'
     : r.pctHE!=null
     ? (r.pctHE>100
-        ? fmt1(r.recH)+'h recuperadas passam da HE praticada ('+fmt1(r.heMesLinha)+'h de linha) — toda a HE seria evitável; o resto é capacidade'
+        ? 'toda a HE ('+fmt1(r.heMesLinha)+'h) · excedente = capacidade'
         : fmt1(r.recH)+'h de '+fmt1(r.heMesLinha)+'h de HE no mês (base hora de linha)')
     : (r.heSem>0 ? 'informe a quantidade de pessoas' : 'informe a HORA EXTRA atual (h/semana por pessoa)');
   const faixa=(tit,sub,cls,corpo)=>`<div class="pg-sim-fx ${cls}"><div class="pg-sim-fx-t">${tit}<i>${sub}</i></div>${corpo}</div>`;
@@ -14435,21 +14461,21 @@ function _pgSimResHtml(r){
       + card('ECONOMIA EM HE<span class="pg-sim-et sim">SIMULADO</span>', r.rsMesHE==null?'—':rs(r.rsMesHE)+'<span> /mês</span>',
              r.rsAnoHE==null?'':rs(r.rsAnoHE)+' por ano',
              r.rsMesHE==null?'informe o CUSTO-HORA da linha'
-               :'economia potencial de horas extras — estimativa pelas premissas do cenário, se a produção perdida hoje é reposta em hora extra (+'+fmtN(r.adic)+'%)'
+               :'economia potencial de horas extras · reposição em HE (+'+fmtN(r.adic)+'%)'
                 +(r.heZero?'<br><b>sem hora extra praticada — nada a economizar</b>':'')
                 +(r.heEstim?'<br><b>estimativa — sem HE/pessoas não há teto</b>':''),
              r.rsMesHE>0?'var(--ok)':null, true, false,
              'horas de linha recuperadas (limitadas à HE praticada) × custo-hora × (1 + adicional de HE)')
       + card('PAYBACK', r.pay==null?'—':fmt1(r.pay)+'<span> meses</span>', '',
-             r.pay==null?_pgSimFalta(r):'investimento ÷ ECONOMIA EM HE'+(r.custoRecMes>0?' líquida da manutenção ('+rs(r.ecoLiqMes)+'/mês)':'')+' (a receita potencial não entra)', null,
-             false, false, 'investimento ÷ economia em HE por mês')
+             r.pay==null?_pgSimFalta(r):(r.custoRecMes>0?'líquida da manutenção ('+rs(r.ecoLiqMes)+'/mês)':''), null,
+             false, false, 'investimento ÷ economia em HE por mês (a receita potencial não entra)')
       + card('ROI · '+selAnos, r.roi==null?'—':fmt1(r.roi)+'<span>%</span>', '',
              r.roi==null?_pgSimFalta(r)
                :'ganho acumulado '+rs(r.ganhoAcum)+(r.custoRecMes>0?' (líquido da manutenção)':'')+' · investimento '+rs(r.investTotal),
              r.roi!=null&&r.roi<0?'var(--red)':null,
              false, false, '(economia em HE × 12 × anos − investimento) ÷ investimento')
       + `</div>`)
-    + faixa('IMPACTO OPERACIONAL', ' · capacidade recuperada pelo cenário', 'op',
+    + faixa('IMPACTO OPERACIONAL', '', 'op',
       `<div class="pg-sim-res">`
       + card('TEMPO RECUPERADO', fmtN(Math.round(r.minMes))+'<span> min/mês</span>',
              fmt1(r.horasAno)+' h por ano',
@@ -14463,13 +14489,13 @@ function _pgSimResHtml(r){
       + card('HORA EXTRA EVITÁVEL', r.pctHE==null?'—':fmt1(Math.min(100,r.pctHE))+'<span>% da HE</span>', '',
              heSub, null)
       + card('DISPONIBILIDADE', r.dispAntes==null?'—':fmt1(r.dispAntes)+'%<span> atual → </span>'+fmt1(r.dispDepois)+'%<span> simulada</span>', '',
-             (dispOk?'atinge a meta de '+PG_META_DISP+'%':'meta '+PG_META_DISP+'%')+' · base: '+fmtN(r.nDias)+' dia(s) trabalhado(s) → mês de 22', null)
+             'meta '+PG_META_DISP+'%'+(dispOk?' ✓':''), null)
       + `</div>`)
-    + faixa('OUTRAS LEITURAS', ' · não são economia de caixa e não se somam à ECONOMIA EM HE', 'out',
+    + faixa('OUTRAS LEITURAS', ' · não são economia de caixa', 'out',
       `<div class="pg-sim-res">`
       + card('CUSTO DA PARADA', r.rsMes==null?'—':rs(r.rsMes)+'<span> /mês</span>',
              r.rsAno==null?'':rs(r.rsAno)+' por ano',
-             r.rsMes==null?'informe o CUSTO-HORA da linha':'estimativa do custo da ociosidade nas paradas — folha já paga — não é economia de caixa')
+             r.rsMes==null?'informe o CUSTO-HORA da linha':'ociosidade nas paradas · folha já paga')
       // A TERCEIRA leitura financeira, e a que mais engana se mal rotulada:
       // caixa recuperada é CAPACIDADE, não venda. Fica marcada POTENCIAL, não
       // entra no payback e não se soma às outras duas.
@@ -14477,7 +14503,7 @@ function _pgSimResHtml(r){
              r.receitaMes==null?'—':rs(r.receitaMes)+'<span> /mês</span>',
              r.receitaAno==null?'':rs(r.receitaAno)+' por ano',
              r.receitaMes==null?'ticket médio não informado — potencial de receita não calculado'
-               :'faturamento adicional SE a capacidade recuperada for usada e houver demanda · capacidade recuperada × ticket de '+rs2(r.ticket)+'/cx · <b>não é economia nem faturamento garantido</b>',
+               :'× ticket '+rs2(r.ticket)+'/cx · <b>não é economia nem faturamento garantido</b>',
              null, false, true)
       + `</div>`);
 }
@@ -14550,12 +14576,12 @@ function _pgSimHtml(ctx){
   return `<div class="pg-sim-wrap"><div class="pg-diag-ttl"><span class="pg-sim-tag" style="margin-left:0">SIMULAÇÃO — NADA É GRAVADO</span><i>marque as causas a atacar e digite o cenário</i></div>
     <div class="pg-sim">
       <div class="pg-sim-grid">
-        <div><div class="pg-sim-sub">PARADAS A ATACAR <i>· não planejadas do período em tela · tempo · ocorrências · % da parada não programada · <b>redução</b> da causa marcada</i></div>${chks}</div>
+        <div><div class="pg-sim-sub" title="Paradas não planejadas do período em tela: tempo · ocorrências · % da parada não programada · redução da causa marcada">PARADAS A ATACAR <i>· tempo · ocorr. · % NP · redução</i></div>${chks}</div>
         <div class="pg-sim-prem"><div class="pg-sim-sub">PREMISSAS DO CENÁRIO <i>· o que você supõe — não é resultado</i></div><div class="pg-sim-inp">
           ${gh('CENÁRIO E INVESTIMENTO')}
           ${inp('pg-sim-red','REDUÇÃO SIMULADA — PADRÃO (%)', s.pctRed==null?100:s.pctRed, 'type="number" min="0" max="100" step="5"', 'Vale para toda causa marcada sem % próprio. Para dar um % diferente a uma causa, digite ao lado dela na lista. É o cenário, não garantia de redução real.')}
           ${inp('pg-sim-inv','INVESTIMENTO — EQUIPAMENTO (R$)', _pgSimRs(s.invest), 'type="text" inputmode="decimal" placeholder="orçamento do equipamento" onblur="_pgSimFmtRs(this)"', 'Orçamento do equipamento ou da ação. Com a instalação, é a base do payback e do ROI.', 'inv')}
-          ${gh('O INVESTIMENTO · o que a diretoria pergunta antes do número')}
+          ${gh('O INVESTIMENTO')}
           ${inp('pg-sim-nome','NOME DO INVESTIMENTO', s.nome||'', 'type="text" placeholder="ex.: troca automática de bobina do termoencolhível"', 'O que está sendo comprado, em poucas palavras. É a primeira coisa que o diretor procura.', 'larga')}
           ${inp('pg-sim-forn','FORNECEDOR', s.forn||'', 'type="text" placeholder="quem orçou"', 'Fornecedor do orçamento.')}
           ${inp('pg-sim-prazo','PRAZO DE ENTREGA / INSTALAÇÃO', s.prazo||'', 'type="text" placeholder="ex.: 45 dias"', 'Prazo informado pelo fornecedor.')}
@@ -14784,15 +14810,15 @@ function _propIaHtml(s, hashAtual){
   let estado='';
   if(PROP_IA_RODANDO) estado='<span class="pg-sim-ia-st">o modelo está escrevendo — leva de 15 a 40 s</span>';
   else if(PROP_IA_FALHA) estado='<span class="pg-sim-ia-st red">'+_propIaFalhaInfo()+'</span>';
-  else if(!ia) estado='<span class="pg-sim-ia-st">nenhum texto ainda — o modelo redige os cinco parágrafos da proposta a partir dos números desta tela, sem inventar número nenhum</span>';
+  else if(!ia) estado='<span class="pg-sim-ia-st">sem texto ainda</span>';
   else if(ia.numerosFora&&ia.numerosFora.length) estado='<span class="pg-sim-ia-st red">texto REPROVADO pela guarda de números: '+_rpEsc(ia.numerosFora.join(', '))+' não estão nos dados — não vai ao papel; redija de novo</span>';
   else if(hashAtual && ia.hash!==hashAtual) estado='<span class="pg-sim-ia-st warn">texto DESATUALIZADO — os números da simulação mudaram desde a redação; ele não vai ao papel até redigir de novo</span>';
-  else estado='<span class="pg-sim-ia-st ok">texto VÁLIDO para os números de agora — vai à capa (resumo) e à página 2 da impressão executiva · '+_rpEsc(ia.modelo||'')+' · '+_rpEsc(ia.em||'')+(ia.cache?' · do cache':'')+'</span>';
+  else estado='<span class="pg-sim-ia-st ok" title="vai à capa (resumo) e à página 2 da impressão executiva">✓ texto válido · '+_rpEsc(ia.modelo||'')+' · '+_rpEsc(ia.em||'')+(ia.cache?' · do cache':'')+'</span>';
   const par=(t,k)=>`<div class="pg-sim-ia-p"><em>${t}</em><p>${_rpEsc(ia.texto[k]||'')}</p></div>`;
   return `<div class="pg-sim-ia-hd"><span class="pg-sim-ia-tt">REDAÇÃO DA PROPOSTA <i>· IA escreve, o painel confere os números</i></span>${btn}${ia?'<button class="btn btn-ghost" onclick="_propIaDescartar()" style="font-size:10px;padding:4px 10px">DESCARTAR</button>':''}</div>
   <div>${estado}</div>
   ${ia?`<div class="pg-sim-ia-txt">${par('RESUMO EXECUTIVO','resumo')}${par('O PROBLEMA','problema')}${par('A SOLUÇÃO','solucao')}${par('RISCOS E RESSALVAS','riscos')}${par('RECOMENDAÇÃO','recomendacao')}</div>`:''}
-  <div class="pg-diag-nota">O texto é redigido pelo Claude no Apps Script, com a chave da API guardada lá (Propriedades do script) — nunca neste painel. Ele recebe só os números que esta tela já calculou e devolve cinco parágrafos; qualquer número que não esteja nos dados é apontado e o texto não vai ao papel. Se você mudar um campo do cenário, o texto fica desatualizado e sai da impressão até redigir de novo. Leia antes de imprimir: a assinatura é sua, não do modelo.</div>`;
+  <div class="pg-diag-nota" title="O texto é redigido pelo Claude no Apps Script, com a chave da API guardada lá (Propriedades do script) — nunca neste painel. Ele recebe só os números que esta tela já calculou; qualquer número que não esteja nos dados é apontado e o texto não vai ao papel. Mudou um campo do cenário, o texto fica desatualizado e sai da impressão até redigir de novo.">A IA só redige com os números da tela; número fora dos dados reprova o texto. <b>Leia antes de imprimir: a assinatura é sua, não do modelo.</b></div>`;
 }
 
 // ── IMPRESSÃO EXECUTIVA DO SIMULADOR — proposta de investimento ─────────────
@@ -15370,6 +15396,7 @@ function _rpDocParadas(titulo, paisagem){
 ${_RP_FONTS}
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
+  .so-tela{display:none}   /* versão curta de um texto, só para a tela do painel */
   body{font-family:'Barlow',Arial,sans-serif;background:#fff;color:#1a1a2e;padding:14mm 16mm;font-size:11px}
   /* ── A MARGEM DA IMPRESSÃO É DA PÁGINA, NÃO DO BODY ──────────────────────
      Com margem zero na @page, o único respiro vinha do padding do body — e

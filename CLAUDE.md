@@ -3142,6 +3142,19 @@ feito e dá ar de verdade ao que sobrou.
   finalidade (o card "falta zerar" da TV); a guarda do teste olha só a aba
   PLANO, de propósito — contar o arquivo inteiro acusava a TV.
 
+## Enxugamento das telas (v7.118.0 em diante)
+- Pedido do PPCP (25/09/2026): *"tem muita coisa escrita"*, no app inteiro.
+  Regra: número nunca sai; aviso de falha/estado fica; texto que evita uma
+  confusão documentada fica em UMA linha visível. O resto vai para o tooltip
+  (`title`) no PC ou para um `<details>` (ⓘ COMO LER).
+- ⚠ **Função que desenha TELA e PAPEL não perde texto no papel.** Use
+  `.so-tela` (versão curta) + `.so-papel` (versão longa): a tela esconde
+  `.so-papel` (`#sec-perdas`/`#sec-simulador`) e o `_rpDocParadas` esconde
+  `.so-tela`. No PLANO o papel já escondia `.qp-nota` e agora esconde
+  `.qp-lembra`.
+- Blocos: **A** (PLANO, GESTÃO DE PERDAS, SIMULADOR — v7.118.0) · **B**
+  (PARADAS, PRODUÇÃO/HORA, GERENCIAL, PROGRAMAÇÃO, HISTÓRICO) · **C** (celular).
+
 ## TELA DA DIRETORIA — `/diretoria` (v7.116.0)
 - Pedido do PPCP (25/09/2026): *"uma tela para a sala do diretor"*, com UEP,
   caixas e pontos, pouco texto, link separado. Rota no `vercel.json` para o
