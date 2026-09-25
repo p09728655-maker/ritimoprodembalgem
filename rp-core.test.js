@@ -223,7 +223,7 @@ ok('sem meta do dia também não',
   // PPCP, 25/09/2026: o texto segue o card % DA META DO DIA — um veredito só
   // (o selo), feito × esperado, e a meta do dia depois; sem o "(55,9%)".
   ok('texto: selo · feito de esperado · meta do dia, sem % da meta cheia',
-     [c.sub.startsWith('NO RITMO · 1.150 de 1.152 UEP esperadas até agora · meta do dia 2.530 UEP'), /\(\d+,\d%\)/.test(c.sub)], [true, false]);
+     [c.sub.startsWith('NO RITMO · 1.150 de 1.152 esperadas · meta 2.530'), /\(\d+,\d%\)/.test(c.sub)], [true, false]);
   ok('a meta da CONFIG_PAINEL manda quando vem', uepCard(U, 2000, 240).meta, 2000);
   // v7.114.0 — a hora EM ANDAMENTO conta só os minutos que passaram
   ok('minSlotDecorrido: hora corrente vale o que passou; fechada, futura ou sem relógio vale o slot inteiro',

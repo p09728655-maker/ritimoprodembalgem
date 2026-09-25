@@ -3153,7 +3153,12 @@ feito e dá ar de verdade ao que sobrou.
   `.so-tela`. No PLANO o papel já escondia `.qp-nota` e agora esconde
   `.qp-lembra`.
 - Blocos: **A** (PLANO, GESTÃO DE PERDAS, SIMULADOR — v7.118.0) · **B**
-  (PARADAS, PRODUÇÃO/HORA, GERENCIAL, PROGRAMAÇÃO, HISTÓRICO) · **C** (celular).
+  (PARADAS, PRODUÇÃO/HORA, GERENCIAL, PROGRAMAÇÃO, HISTÓRICO) · **C** (celular)
+  — B e C na v7.120.0 / mobile 1.30.0. No celular o card GAP DA META saiu (o
+  "faltam X" está no card da meta, como no PC). O `uepCard` (rp-core 1.12.0)
+  diz "NO RITMO · X de Y esperadas · meta Z" — o teste prende o começo.
+- ⚠ Na diretoria a `getProgramacaoDetalhada` espera 60 s por tentativa
+  (`jsonpFetch(url, _modoDir()?60000:…)`); nas outras telas continua 25 s.
 
 ## TELA DA DIRETORIA — `/diretoria` (v7.116.0)
 - Pedido do PPCP (25/09/2026): *"uma tela para a sala do diretor"*, com UEP,

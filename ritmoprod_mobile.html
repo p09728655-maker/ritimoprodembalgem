@@ -811,7 +811,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   <div class="modal-sheet">
     <div class="modal-slot-info">
       <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Bipe a etiqueta, ou digite o LOTE / código no teclado abaixo</div>
+      <div class="modal-slot-meta">Bipe a etiqueta ou digite LOTE / código</div>
     </div>
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
@@ -918,7 +918,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.29.0';
+const APP_VER   = '1.30.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1541,7 +1541,7 @@ function paradaAtiva(){ return PARADAS_HOJE.find(p=>!p.fim || String(p.fim).trim
 function renderGerProduto(){
   const el = document.getElementById('ger-prod-val');
   if(!el) return;
-  if(!PROD_ATUAL){ el.textContent='— (nenhum produto selecionado)'; return; }
+  if(!PROD_ATUAL){ el.textContent='— nenhum'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
   el.textContent = p ? `${p.codigo} · ${nomeComCor(p.desc, corDeProduto(p))}` : PROD_ATUAL;
 }
@@ -1734,11 +1734,11 @@ function renderGerParadasResumo(){
   const rotDias=st.baseTrab?`${plural(st.nDias,'dia','dias')} trabalhados`:`${plural(st.nDias,'dia','dias')} com parada`;
   const kpi4=ehHoje
     ? `<div class="par-mini"><div class="par-mini-lbl">Nº DE PARADAS</div><div class="par-mini-val">${st.n}</div><div class="par-mini-sub">hoje</div></div>`
-    : `<div class="par-mini ${st.media>0?'red':'ok'}"><div class="par-mini-lbl">MÉDIA DIÁRIA</div><div class="par-mini-val" style="color:${st.media>0?'var(--red)':'var(--txt)'}">${fmtN(st.media)}</div><div class="par-mini-sub">cx perdidas por dia trabalhado</div></div>`;
+    : `<div class="par-mini ${st.media>0?'red':'ok'}"><div class="par-mini-lbl">MÉDIA DIÁRIA</div><div class="par-mini-val" style="color:${st.media>0?'var(--red)':'var(--txt)'}">${fmtN(st.media)}</div><div class="par-mini-sub">cx perdidas/dia</div></div>`;
   kg.innerHTML=`
     <div class="par-mini"><div class="par-mini-lbl">TEMPO PARADO</div><div class="par-mini-val">${_fmtMin2(st.totMin)}</div><div class="par-mini-sub">${plural(st.n,'parada','paradas')}</div></div>
     <div class="par-mini ${cor}"><div class="par-mini-lbl">DISPONIBILIDADE</div><div class="par-mini-val" style="color:var(--${cor})">${st.dispon.toFixed(0)}%</div><div class="par-mini-sub">${ehHoje?'do turno':rotDias}</div></div>
-    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':`estimativa · ${rotDias}`}</div></div>
+    <div class="par-mini ${st.pecas>0?'red':'ok'}"><div class="par-mini-lbl">CAIXAS PERDIDAS</div><div class="par-mini-val" style="color:${st.pecas>0?'var(--red)':'var(--txt)'}">${fmtN(st.pecas)}</div><div class="par-mini-sub">${ehHoje?'estimativa (cx)':'estimativa'}</div></div>
     ${kpi4}`;
 
   const ex=document.getElementById('ger-par-extra');
@@ -1767,7 +1767,7 @@ function renderGerParadasResumo(){
     // Base do cálculo, idêntica à do desktop (mesma função). Quando os dois
     // discordarem, é esta linha que mostra por quê.
     const base=`<div class="par-base">CAIXAS PERDIDAS = ${RP_PARADAS.diagTexto(st.diag)}</div>`;
-    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES (tempo parado)</div>${of}`:'')+comp+base;
+    ex.innerHTML=(of?`<div class="par-sub-lbl">TOP OFENSORES</div>${of}`:'')+comp+base;
   }
   // Lista das paradas (no período, as mais recentes primeiro e limitada — a
   // lista inteira de 30 dias viraria uma rolagem sem fim no celular)
@@ -2468,7 +2468,7 @@ function atualizarBtnInicio(){
   if(!btn) return;
   const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
   btn.classList.toggle('on', cedo);
-  btn.textContent = cedo ? '✓ INÍCIO 05:00 · MUDAR P/ 07:00' : 'COMEÇOU ÀS 05:00?';
+  btn.textContent = cedo ? '✓ INÍCIO 05:00' : 'COMEÇOU ÀS 05:00?';
   btn.style.display = '';
 }
 
@@ -2498,7 +2498,7 @@ async function toggleInicioTurno(){
   const cedo = toMin(CFG.turnoInicio) <= toMin('05:00');
   const novo = cedo ? 7 : 5;   // alterna entre 05:00 e 07:00
   const ok = await confirmarModal(novo===5
-    ? {titulo:'INÍCIO ÀS 05:00', msg:'Confirmar que o turno começou às 05:00? Os horários 05:00 e 06:00 vão aparecer para lançamento.', ok:'SIM, INÍCIO 05:00'}
+    ? {titulo:'INÍCIO ÀS 05:00', msg:'05:00 e 06:00 vão aparecer para lançamento.', ok:'SIM, INÍCIO 05:00'}
     : {titulo:'INÍCIO ÀS 07:00', msg:'Voltar o início do turno para 07:00? Os horários 05:00 e 06:00 vão sair da lista.', ok:'VOLTAR P/ 07:00'});
   if(!ok) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
@@ -2661,10 +2661,10 @@ function renderGerencial(){
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Só entra nos dias que tiveram hora extra — sem HE o card diria "tudo
     // normal" e só empurraria os outros KPIs para baixo na tela do celular.
-    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${fmtN(k.realNormal)} cx em hora normal · ${plural(k.nHE,'slot','slots')}`, c:'acc'}]:[]),
+    ...(k.nHE?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(k.realHE), sub:`${plural(k.nHE,'hora','horas')} de HE`, c:'acc'}]:[]),
     // META DO DIA: mesma fonte/lógica do painel HTML (k.meta = CFG.metaDia,
     // vindo da PROGRAMAÇÃO via aplicarMetaDiaAutomatica). Garante valor idêntico.
-    {l:'META DO DIA',    v:fmtN(k.meta),  sub:'caixas programadas', c:'acc'},
+    {l:'META DO DIA',    v:fmtN(k.meta),  sub:k.gap<=0?'META ATINGIDA':'faltam '+fmtN(k.gap)+' cx', c:k.gap<=0?'ok':'acc'},
     // O número é FATO (quanto da meta do dia já saiu) e o VEREDITO é a palavra
     // do sub + a cor, que falam de RITMO. Mesma troca do desktop e da TV
     // (01/09/2026): dois "%" na mesma célula confundiam quem lia.
@@ -2672,7 +2672,6 @@ function renderGerencial(){
     // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
     // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
     uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
-    {l:'GAP DA META',    v:fmtN(k.gap),   sub:k.gap<=0?'META ATINGIDA':'cx restantes', c:k.gap<=0?'ok':'red'},
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
     // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
@@ -2691,17 +2690,17 @@ function renderGerencial(){
     // rateia por minuto e é a conta mais correta. Mesma regra do relatório
     // semanal e da TV: o número é tinta, o veredito é o selo.
     // A TV já mostrava só o número — ela nunca teve este defeito.
-    {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:'cx se o ritmo de agora seguir até o fim do turno', c:'acc'},
+    {l:'PROJEÇÃO FINAL', v:fmtN(k.proj),  sub:'cx no ritmo atual', c:'acc'},
     necKpi,
     // Identificação de produto é OPCIONAL: fica em 0 se ninguém selecionou produto.
-    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts — caixas × pontos/produto', c:'acc'},
-    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'caixas × peso bruto/produto',   c:'acc'},
+    {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts', c:'acc'},
+    {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'',   c:'acc'},
   ];
   // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
   // quando há atraso acumulado de dias anteriores ainda não embalado.
   const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
   if(_prog.atrasoTotal>0){
-    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx de dias anteriores + meta efetiva ${fmtN(_prog.metaEfetiva)} cx`, c:'red'});
+    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx atrasadas · meta efetiva ${fmtN(_prog.metaEfetiva)}`, c:'red'});
   }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
@@ -2810,7 +2809,7 @@ async function carregarPerdasHistorico(periodo, datas){
       classeMap: PAR_CLASSE_MAP_M, nDiasBase: datas.length, de, ate
     });
     el.style.fontSize=''; el.style.color=st.pecas>0?'var(--red)':'var(--ok)';
-    el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · média ${fmtN(st.media)}/dia · ${datas.length} dias trabalhados</span>`;
+    el.innerHTML=`${fmtN(st.pecas)} <span style="font-family:var(--font-d);font-size:11px;color:var(--txt2)">cx · média ${fmtN(st.media)}/dia</span>`;
   };
 
   if(HIST_PERD_CACHE.k===key && (Date.now()-HIST_PERD_CACHE.em)<PAR_PER_TTL){ pintar(HIST_PERD_CACHE.lista); return; }
