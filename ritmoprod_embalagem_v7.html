@@ -2908,7 +2908,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.95.0';
+const APP_VER   = '7.96.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6294,6 +6294,33 @@ async function gerarRelatorioUEP(){
 // Em lotes de 20 produtos, em SEQUÊNCIA (URL de JSONP tem limite e o Apps
 // Script atende uma execução por vez); repetir é seguro, é sobrescrita.
 const UEP_GRAVAR_LOTE = 20;
+// UEP DE TODO O CADASTRO (v7.96.0 / .gs v5.18, PPCP 25/09/2026: "fazer a UEP
+// de todos produtos"). O estudo só mede quem RODOU no período; o resto do
+// cadastro ficava sem UEP e as caixas dele caíam em "sem UEP". Para esses, a
+// UEP sai do TEMPO DE ESTEIRA da caixa, calibrado aqui:
+//   UEP física do produto = teto da âncora ÷ teto do produto (cx/h, esteira
+//   cheia) — é a UEP que a medida da caixa daria sozinha;
+//   k = MEDIANA de (UEP medida ÷ UEP física) nos produtos MEDIDOS com amostra
+//   (poucos com amostra → entram os provisórios). Mediana, não média: um
+//   produto no limite da esteira ou mal apontado não arrasta a régua.
+// O .gs aplica k × teto da âncora ÷ teto de cada código SÓ onde a UEP está
+// vazia ou já era estimada (vigência " EST") — medida e digitada à mão ficam.
+// ⚠ Estimativa, não medição: a faixa (min–max) dos quocientes vai no confirm
+// para o PPCP ver quanto a medida da caixa explica o ritmo. Quando o produto
+// rodar, o próximo GRAVAR troca a estimativa pela UEP medida.
+const UEP_CALIB_MIN = 3;
+function _uepCalibEsteira(e){
+  const anc=e&&e.volume;
+  if(!anc || !(anc.teto>0)) return null;
+  const com=p=>p.uepVol>0 && p.teto>0;
+  let base=(e.prods||[]).filter(p=>p.amostraOk && com(p)), prov=false;
+  if(base.length<UEP_CALIB_MIN){ base=(e.prods||[]).filter(com); prov=true; }
+  if(base.length<UEP_CALIB_MIN) return null;
+  const q=base.map(p=>p.uepVol*p.teto/anc.teto).sort((a,b)=>a-b);
+  const m=Math.floor(q.length/2);
+  const k=q.length%2 ? q[m] : (q[m-1]+q[m])/2;
+  return { k, tetoAnc:anc.teto, n:q.length, min:q[0], max:q[q.length-1], provisoria:prov };
+}
 let _uepGravando=false;
 // O botão MOSTRA que está trabalhando: a busca do período (com as caixas por
 // hora) leva até 1 min e fica na fila do Apps Script atrás do comparativo da
@@ -6320,13 +6347,19 @@ async function _gravarUepCadastro(){
   if(!ps.length || !e.volume){ alert('Nenhum produto com UEP no período (sem âncora com '+UEP_MIN_DIAS+'+ dias). Aumente o período.'); return; }
   const de=dGet('ph-de'), ate=dGet('ph-ate');
   const nProv=ps.filter(p=>p.provisoria).length;
+  const cal=_uepCalibEsteira(e);
+  const u2c=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   _uepBotao('⏳ AGUARDANDO CONFIRMAÇÃO…');
   if(!confirm('Gravar a UEP por caixa de '+ps.length+' produto(s) na coluna UEP da PRODUTO_CODIGO?\n\n'
     +'Âncora (1,00): '+e.volume.modelo+' '+e.volume.nome+'\n'
     +'Estudo de '+de+' a '+ate+' · média '+(_phMediaModo()==='completa'?'COMPLETA':'APARADA')+'\n'
     +(nProv?nProv+' UEP provisória(s) (menos de '+UEP_MIN_DIAS+' dias rodados) vão junto.\n':'')
     +'Vigência: '+hojeStr()+'\n\n'
-    +'Sobrescreve a UEP desses produtos em todos os códigos deles. Os outros códigos ficam como estão.')) return;
+    +'Sobrescreve a UEP desses produtos em todos os códigos deles.\n\n'
+    +(cal ? 'DEMAIS PRODUTOS DO CADASTRO (não rodaram no período): UEP ESTIMADA pela medida da caixa na esteira, '
+        +'calibrada em '+cal.n+' produto(s) medido(s)'+(cal.provisoria?' (inclui provisórios)':'')+' — fator '+u2c(cal.k)
+        +' (faixa '+u2c(cal.min)+' a '+u2c(cal.max)+'). Só preenche UEP vazia ou já estimada (vigência "EST"); UEP medida ou digitada fica.'
+      : 'DEMAIS PRODUTOS DO CADASTRO: sem estimativa — faltam '+UEP_CALIB_MIN+' produtos medidos com teto da esteira para calibrar. Ficam como estão.'))) return;
   const lista=ps.map(p=>[p.modelo, p.nome, Math.round(p.uepVol*100)/100]);
   _uepBotao('⏳ GRAVANDO NO CADASTRO…');
   let gravados=0, produtos=0, volumes=0, volSemMed=0; const semCodigo=[];
@@ -6345,7 +6378,25 @@ async function _gravarUepCadastro(){
     alert('A gravação não terminou: '+(err&&err.message||err)+'\nPode tocar de novo — regravar é seguro.'+(gravados?'\n('+gravados+' código(s) já tinham sido gravados.)':''));
     return;
   }
+  // Estimativa do resto do cadastro: DEPOIS da medida (ela só preenche o que
+  // ficou vazio). Falhou? A medida já está gravada — o aviso diz isso.
+  let est=null, estErro='';
+  if(cal){
+    _uepBotao('⏳ ESTIMANDO O RESTO DO CADASTRO…');
+    try{
+      const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setUepCatalogo&estimar=1'
+        +'&vig='+encodeURIComponent(hojeStr())
+        +'&k='+encodeURIComponent(cal.k.toFixed(4))+'&tetoAnc='+encodeURIComponent(cal.tetoAnc.toFixed(2));
+      const r=await jsonpEscrita(url);
+      if(r && r.estimados!==undefined) est=r;
+      else estErro=(r&&r.erro&&r.erro!=='nenhum produto enviado')?'o servidor respondeu: '+r.erro
+        :'o Apps Script ainda não conhece a estimativa — cole o ritmoprod_appscript.gs v5.18 e re-deploye';
+    }catch(err){ estErro=(err&&err.message)||String(err); }
+  }
   alert('UEP gravada: '+produtos+' produto(s), '+gravados+' código(s) na PRODUTO_CODIGO.'
+    +(est?'\n\nESTIMADA pela esteira: '+est.estimados+' código(s) (vigência com "EST").'
+        +(est.semMedida?'\n'+est.semMedida+' código(s) sem MEDIDA DA CAIXA ficaram sem UEP: '+(est.semMedidaCod||[]).slice(0,8).join(' · ')+(est.semMedida>8?' …':''):''):'')
+    +(estErro?'\n\nA estimativa do resto do cadastro NÃO foi gravada: '+estErro+'. A UEP medida acima está gravada.':'')
     // .gs v5.12: produto de 2+ volumes tem a UEP repartida entre eles pelo
     // tempo de esteira de cada caixa (o total do jogo não muda).
     +(volumes?'\n'+volumes+' produto(s) de 2+ volumes: UEP repartida entre os volumes pela medida da caixa (o total do produto não muda).':'')

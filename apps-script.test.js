@@ -630,6 +630,39 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
     ok('no cadastro real: cada volume com a sua UEP, e o retorno conta o produto repartido',
        [CV[1][4], CV[2][4], rv.volumes, rv.volumesSemMedida], [1.75, 1.33, 1, 0]);
   }
+  // ── v5.18: UEP ESTIMADA para o resto do cadastro ───────────────────────
+  {
+    eval(pega('function _tetoEsteiraCxH('));
+    eval(pega('function _uepEstimada('));
+    eval(pega('function _uepEhEstimada('));
+    eval(pega('function _uepEstimarCatalogo('));
+    global._dataStr = v => String(v || '').trim();
+    ok('UEP estimada = k × teto da âncora ÷ teto do código',
+       _uepEstimada(1.2, 300, { velocidade: 15, medida: 1350, entrePeca: 150 }), 0.6);   // teto 600 → 1,2×300/600
+    ok('sem medida não há estimativa', _uepEstimada(1, 300, { velocidade: 15, medida: 0 }), null);
+    ok('velocidade vazia usa a do cadastro (mediana)', _uepEstimada(1, 300, { medida: 1350, entrePeca: 150 }, 15), 0.5);
+    ok('"EST" no fim da vigência marca estimada', [_uepEhEstimada('24/09/2026 EST'), _uepEhEstimada('24/09/2026'), _uepEhEstimada('')], [true, false, false]);
+    const CE = [['CODIGO', 'DESCRICAO', 'MEDIDA DA CAIXA (mm)', 'ENTRE_PECAS (mm)', 'VELOCIDADE (m/min)', 'UEP', 'UEP_VIGENCIA'],
+                ['1', 'MEDIDO',          1350, 150, 15, 0.9, '24/09/2026'],      // medido: fica
+                ['2', 'DIGITADO',        1350, 150, 15, 1.7, ''],                // à mão: fica
+                ['3', 'VAZIO',           1350, 150, 15, '', ''],                 // estima
+                ['4', 'ESTIMADO ANTES',  2850, 150, '', 0.4, '20/09/2026 EST'],  // re-estima (vel da mediana)
+                ['5', 'SEM MEDIDA',      '',   150, 15, '', '']];                // fica sem
+    const shE = { getLastRow: () => CE.length, getLastColumn: () => CE[0].length,
+      getRange: (l, c, nl, nc) => ({
+        getValues: () => CE.slice(l - 1, l - 1 + (nl || 1)).map(r => r.slice(c - 1, c - 1 + (nc || 1))),
+        setValue: v => { CE[l - 1][c - 1] = v; },
+        setValues: vs => vs.forEach((r, i) => { CE[l - 1 + i][c - 1] = r[0]; }) }) };
+    const PL3 = PLANILHA;
+    PLANILHA = { getSheetByName: n => n === 'PRODUTO_CODIGO' ? shE : null };
+    const re = setUepCatalogo({ estimar: '1', k: '1.2', tetoAnc: '300', vig: '25/09/2026', dados: '[]' });
+    PLANILHA = PL3;
+    ok('só preenche vazia ou já estimada; medida e digitada ficam',
+       CE.slice(1).map(l => [l[5], l[6]]),
+       [[0.9, '24/09/2026'], [1.7, ''], [0.6, '25/09/2026 EST'], [1.2, '25/09/2026 EST'], ['', '']]);
+    ok('o retorno conta estimados, mantidos e sem medida', [re.ok, re.estimados, re.mantidos, re.semMedida, re.semMedidaCod], [true, 2, 2, 1, ['5']]);
+    ok('calibração inválida não grava nada', setUepCatalogo({ estimar: '1', k: '0', tetoAnc: '300' }).ok, false);
+  }
   PLANILHA = PL;
   ok('é ação de ESCRITA (invalida o cache) e o dispatcher conhece',
      [/ACOES_ESCRITA = \[[^\]]*'setUepCatalogo'/.test(src), /act === 'setUepCatalogo'\)\s*result = setUepCatalogo\(p\)/.test(src)], [true, true]);

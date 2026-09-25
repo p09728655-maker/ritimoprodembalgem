@@ -2663,6 +2663,22 @@ feito e dá ar de verdade ao que sobrou.
   - ⚠ Produto marcado = **UEP baixa demais OU velocidade do cadastro errada**.
     Não é para "corrigir" a UEP pelo limite: é o sinal para conferir.
   - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
+- **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
+  PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
+  medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`
+  (front, pura): `k` = **mediana** de `uepVol × teto ÷ teto da âncora` nos
+  medidos com amostra (menos de `UEP_CALIB_MIN`=3 → entram os provisórios;
+  ainda menos → sem estimativa). `.gs`: `_uepEstimada` = `k × tetoAnc ÷
+  _tetoEsteiraCxH(código)`, por código (a repartição entre volumes sai sozinha
+  pela medida de cada caixa); velocidade vazia → mediana do cadastro; sem
+  medida → sem UEP, contado. Vigência com sufixo **`EST`**.
+  - ⚠ **Só grava onde a UEP está vazia ou já é `EST`** (`_uepEhEstimada`) —
+    medida e digitada à mão ficam. Rodou o produto → o próximo GRAVAR troca a
+    estimativa pela medida (a medida sobrescreve, como sempre).
+  - ⚠ `k`/`tetoAnc` são lidos com `Number`, **não `_numBR`**: `"312.456"` como
+    pt-BR viraria milhar.
+  - É **estimativa**: a faixa min–max dos quocientes vai no confirm. Faixa
+    larga = a caixa explica pouco o ritmo (a operação roda a 22–68% do teto).
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

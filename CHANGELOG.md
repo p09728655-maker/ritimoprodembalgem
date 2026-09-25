@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.96.0 — 25/09/2026 · ⚠ re-deploy (.gs v5.18)
+
+**UEP de todos os produtos do cadastro** (PPCP: *"fazer a UEP de todos
+produtos"*). O 💾 GRAVAR UEP continua gravando a UEP **medida** de quem rodou
+no período e, em seguida, preenche o **resto do cadastro** com uma UEP
+**ESTIMADA** pelo tempo de esteira da caixa:
+`UEP estimada = k × teto da âncora ÷ teto do código`, com `k` = mediana de
+(UEP medida ÷ UEP física) nos produtos medidos com amostra (mínimo 3).
+
+**Atenção:**
+- A vigência da UEP estimada vai com o sufixo **`EST`** (`25/09/2026 EST`).
+  Só é gravada onde a UEP está **vazia ou já era estimada** — UEP medida ou
+  digitada à mão nunca é tocada. Quando o produto rodar, o próximo GRAVAR troca
+  a estimativa pela medida.
+- O card **UEP DO DIA**, a coluna UEP da PROGRAMAÇÃO, a CARTEIRA em UEP e o
+  simulador de capacidade passam a contar esses produtos: as caixas que antes
+  apareciam como *"sem UEP"* passam a ter UEP. O UEP do dia **sobe** em dia com
+  produto que nunca tinha sido medido.
+- Código **sem MEDIDA DA CAIXA** continua sem UEP (listado no aviso) — sem
+  medida não há o que estimar.
+- É estimativa, não medição: a faixa dos quocientes aparece na confirmação.
+  Faixa larga = a medida da caixa explica pouco do ritmo; conferir os produtos
+  de mais volume antes de usar em meta.
+- ⚠ **re-deploy** do `.gs` v5.18. Sem ele a UEP medida grava normalmente e o
+  aviso diz que a estimativa não foi gravada.
+
 ## v7.95.0 — 24/09/2026
 
 **Simulador de capacidade UEP: limite físico da esteira** (PPCP). Cada produto
