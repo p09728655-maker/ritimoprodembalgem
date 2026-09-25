@@ -3988,6 +3988,14 @@ console.log('\n── estudo de UEP ──');
   ok('a cor segue o número exibido: 1h45 é âmbar, não NÃO CABE', [_fmtHM(G2.dias[0].exc), G2.dias[0].estado], ['1h45', 'warn']);
 }
 
+// ── Azul-marinho no PC e no celular; a TV continua PRETA (v7.115.0) ──────────
+{ const raiz = t => (t.match(/:root\{[\s\S]*?\n\}/) || [''])[0];
+  ok('PC e celular com a base azul-marinho nos tokens do :root',
+     [/--bg:#0B1622/.test(raiz(src)), /--bg:#0B1622/.test(raiz(_mob))], [true, true]);
+  ok('a TV fica preta: TV física (?tv), aba TV OPERACIONAL e tela cheia voltam aos tokens antigos',
+     [/html\.sem-splash, #sec-tv, body\.tv-fullscreen\{\s*--bg:#111111;--surface:#1C1C1C/.test(src),
+      /html\.sem-splash body, body\.tv-fullscreen, #sec-tv\{ background:#111111; \}/.test(src)], [true, true]); }
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

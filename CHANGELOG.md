@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.115.0 · mobile 1.29.0 — 25/09/2026
+
+**Painel em azul-marinho no PC e no celular; a TV continua preta** (PPCP: *"eu
+gostei da cor dessa imagem"*, teste com capturas aprovado). Trocou só a base —
+fundo, cards, bordas e texto secundário —, com verde e vermelho um pouco mais
+vivos (o vermelho clareado para passar de 4,5:1 como texto sobre o card). O
+laranja da marca e a regra "cor só onde há função" continuam: nenhuma borda
+colorida de enfeite. A TV física (`?tv`), a aba TV OPERACIONAL e a tela cheia
+mantêm o preto, onde o contraste a 15 m foi medido. Impressões continuam
+brancas.
+
+**Atenção:** nenhum número muda. Celular sobe para 1.29.0 (barra de
+atualização). Sem re-deploy.
+
+---
+
 ## v7.114.0 · mobile 1.28.0 — 25/09/2026
 
 **Aba ⚖ UEP: leitura mais precisa, sem indicador novo** (PPCP, prompt de
