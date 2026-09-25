@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.98.0 / mobile 1.24.0 — 25/09/2026 · ⚠ re-deploy (.gs v5.19)
+
+**Meta padrão de UEP: 2.530 → 2.500** (PPCP, 25/09/2026). A meta digitada no
+⚙ (META DIA UEP) já é 2.500; o padrão do código (`UEP_META_PADRAO` no
+`rp-core.js`, `UEP_META_PADRAO_GS` no `.gs`) acompanhou para não voltar a
+2.530 calado se a chave `META_UEP` sumir da `CONFIG_PAINEL`.
+
+**Atenção:**
+- Com a META_UEP da `CONFIG_PAINEL` preenchida (como está hoje), **nenhum
+  número muda** por causa deste deploy — ela sempre mandou sobre o padrão.
+- A META UEP gravada no `HISTORICO` dos dias até 23/09 é **2.530** (preenchida
+  de uma vez em 24/09, com o padrão da época); o 24/09 foi gravado com 2.500.
+  Alinhar à mão a coluna N (META UEP) para 2500 — **não** usar
+  `regravarUepPassada()`, que recalcula também a UEP dos dias com o cadastro
+  de hoje (com as estimadas `EST`).
+- A meta passa de ~288 para **~285 UEP/h**. O alvo do ESTUDO UEP continua
+  2.300 em 8 h (~288/h): são réguas diferentes.
+- ⚠ **re-deploy** do `.gs` para o padrão do backend valer.
+
+---
+
 ## v7.97.0 — 25/09/2026
 
 **A semana do FECHAMENTO DA SEMANA PASSADA ficou legível** (PPCP: *"não

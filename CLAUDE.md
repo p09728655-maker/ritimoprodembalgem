@@ -2594,6 +2594,12 @@ feito e dá ar de verdade ao que sobrou.
   OUTRA régua. `regravarUepPassada()` regrava a META UEP gravada nos dias
   fechados. As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
   v7.80–7.83.
+- **META PADRÃO DE UEP = 2.500** (v7.98.0 / `.gs` v5.19, PPCP 25/09/2026 —
+  digitou 2.500 no ⚙). `UEP_META_PADRAO` e `UEP_META_PADRAO_GS` acompanham
+  (~285 UEP/h). Revoga o "2.530" das notas acima como padrão; o
+  `UEP_ALVO_PROV` do estudo continua 2.300. A META UEP dos dias até 23/09
+  no `HISTORICO` foi gravada com 2.530 e se alinha **à mão** (coluna N) —
+  `regravarUepPassada` recalcularia a UEP dos dias com o cadastro atual.
 - **CARTEIRA EM UEP** (v7.85.0, item 4 do PPCP, 24/09/2026). Seletor CARTEIRA
   ganhou `uep` (`QP_MIX`, na `rpe_qp_pref`). `_cartMontar(…,'uep')` passa ao
   `_cartAberta` um "ritmos" `{uep:true, fallback}`: fator = `uepCx` da linha

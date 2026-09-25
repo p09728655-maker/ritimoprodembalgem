@@ -192,11 +192,13 @@ function nomeComCor(desc, cor){
 // Nasceu como "2.300 UEP em 8 h" (estudo: ritmo × 8), mas o dia soma a jornada
 // INTEIRA, e com os 48 min a mais a meta ficava ~10% mais fácil que o estudo
 // (medido no HISTORICO em 24/09/2026: 6 de 7 dias acima de 2.300). O PPCP fixou
-// o equivalente: 2.530 na jornada = os mesmos ~288 UEP/h. O "esperado até
+// o equivalente: 2.530 na jornada = os mesmos ~288 UEP/h. Em 25/09/2026 o PPCP
+// fixou 2.500 (~285 UEP/h) na configuração do painel, e o padrão acompanhou —
+// senão, sumindo a META_UEP da CONFIG_PAINEL, a régua voltaria calada. O "esperado até
 // agora" e a meta de cada hora são essa meta repartida pelos MINUTOS de jornada
 // (a mesma régua do efNoRitmo). A hora extra aparece separada, fora da meta.
 // A meta pode vir da CONFIG_PAINEL (chave META_UEP); sem ela, vale o padrão.
-const UEP_META_PADRAO = 2530;
+const UEP_META_PADRAO = 2500;
 const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
 function uepCard(uep, metaCfg, minJornada){
   const l = 'UEP DO DIA';

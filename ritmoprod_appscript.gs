@@ -1,5 +1,9 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.19 — META PADRÃO DE UEP = 2.500 (PPCP, 25/09/2026)
+//               Acompanha a meta digitada nas configurações do painel e o
+//               UEP_META_PADRAO do rp-core. Só vale quando a CONFIG_PAINEL não
+//               tem META_UEP.
 // Versão: 5.18 — UEP ESTIMADA PARA TODO O CADASTRO
 //               setUepCatalogo com estimar=1 preenche a UEP dos códigos que
 //               ficaram sem ela (produto que não rodou no período do estudo)
@@ -1897,7 +1901,7 @@ function setTurnoInicio(p) {
 // ════════════════════════════════════════════════════════
 // Meta padrão de UEP do dia (jornada normal inteira, 527 min) — a MESMA do
 // rp-core (UEP_META_PADRAO); a CONFIG_PAINEL (META_UEP) manda quando existe.
-const UEP_META_PADRAO_GS = 2530;
+const UEP_META_PADRAO_GS = 2500;
 
 function _celNumOuNull(v) {
   if (v === '' || v === null || v === undefined) return null;
