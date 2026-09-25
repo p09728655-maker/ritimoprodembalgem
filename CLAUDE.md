@@ -2719,7 +2719,13 @@ feito e dá ar de verdade ao que sobrou.
     `lerPontosDia` **só se `PONTOS_DIA.uep` ainda não existe** → cadastro, em
     sequência. Encadear o histórico atrás de um `getPontosDia` novo deixava os
     blocos 4 e 5 em "Lendo…" por até ~1,5 min; o refresh do gerencial já mantém
-    o `PONTOS_DIA` fresco. Contas puras e testadas no
+    o `PONTOS_DIA` fresco.
+  - **Histórico vazio × falha (v7.105.0):** o `lerHistoricoSheets` devolve `[]`
+    na falha, e o merge traz só os dias locais (sem UEP) — a aba dizia "nenhum
+    dia fechado com UEP" com a planilha cheia. `_uepHistDaPlanilha` (algum dia
+    com `fonte:'sheets'`) separa os dois; `_uepAbaHistCarregar` tenta 3× em
+    sequência, voo compartilhado, e na falha a tela diz e tenta de novo em
+    20 s. Renova a cada 2 min com a aba aberta. Contas puras e testadas no
   `relatorios.test.js`: `_uepAbaHoras`, `_uepAbaMix`, `_uepAbaConf`,
   `_uepAbaProj`; `renderUep` é desenho e usa o `uepCard` (mesma régua do card
   UEP DO DIA). Redesenha junto com o `renderGerencial` quando a aba está
