@@ -305,7 +305,10 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-uep .uep-alerta{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:10px 14px;font-family:var(--font-d);font-size:12px;line-height:1.5;margin-bottom:12px}
 #sec-uep .uep-alerta b{color:var(--warn)}
 #sec-uep .uep-2{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}
-#sec-uep .uep-2>div{min-width:0}
+#sec-uep .uep-2>div{min-width:0;display:flex;flex-direction:column}
+/* As duas colunas terminam na mesma linha (PPCP, 25/09/2026: "esse espaço no
+   meio ficou feio"): o card que sobra de cada coluna estica até o fim dela. */
+#sec-uep .uep-2 .uep-grow{flex:1}
 #sec-uep .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
 #sec-uep .uep-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:8px}
 #sec-uep .uep-leg span::before{content:'';display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--c);border-radius:2px}
@@ -2958,7 +2961,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.106.0';
+const APP_VER   = '7.107.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4572,8 +4575,9 @@ async function _uepAbaCarregar(){
   finally{ UEP_CARREGANDO=false; }
 }
 
-function _uepAbaSvg(horas, largura){
-  const FS=12, W=largura||760, H=250, pl=40, pb=28, pt=22;
+const UEP_G_H_MAX=520;   // teto da altura do hora a hora quando ele estica
+function _uepAbaSvg(horas, largura, altura){
+  const FS=12, W=largura||760, H=altura||250, pl=40, pb=28, pt=22;
   const n=Math.max(horas.length,1), bw=(W-pl-10)/n;
   const mx=Math.max(1, ...horas.map(h=>Math.max(h.uep||0, h.metaH||0)))*1.15;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
@@ -4660,17 +4664,20 @@ function renderUep(){
   // 2 · HORA A HORA
   const box=document.getElementById('uep-g-box');
   const svg=_uepAbaSvg(horas, box?_svgLargura(box):760);
-  const b2=`<div><div class="uep-sec"><b>2 · HORA A HORA EM UEP</b> onde a UEP se perdeu</div><div class="uep-card" id="uep-g-box">${svg}
+  const b2=`<div><div class="uep-sec"><b>2 · HORA A HORA EM UEP</b> onde a UEP se perdeu</div><div class="uep-card uep-grow" id="uep-g-box">${svg}
     <div class="uep-leg"><span style="--c:var(--ok)">na meta</span><span style="--c:var(--warn)">atenção</span><span style="--c:var(--red)">abaixo</span><span style="--c:var(--warn);opacity:.7">hora extra (sem meta)</span><span class="tr">meta da hora</span></div>
     ${horas.some(h=>h.cxSem>0)?'<div class="uep-nota">* hora com caixas de códigos sem UEP — ficaram fora da conta.</div>':''}</div></div>`;
 
   // 3 · MIX
   const linhas=mix.linhas.map(l=>`<tr><td class="mono">${_rpEsc(l.modelo)}</td><td>${_rpEsc(l.nome||'—')}</td><td class="n">${fmtN(l.cx)}</td><td class="n">${l.uepCx!=null?l.uepCx.toFixed(2).replace('.',','):'—'}</td><td class="n"><b>${l.uep>0?fmtN(Math.round(l.uep)):'—'}</b></td><td><span class="uep-mb"><i style="width:${l.pct.toFixed(0)}%"></i></span><span class="mono">${l.uep>0?fmtP(l.pct):'sem UEP'}</span></td></tr>`).join('');
-  const b3=`<div><div class="uep-sec"><b>3 · O MIX DE HOJE</b> por que a UEP é essa · jornada normal</div><div class="uep-card" style="overflow-x:auto">`
+  // O mix e a confiabilidade dividem a coluna da direita: o mix de um dia
+  // normal (3 a 6 produtos) é mais baixo que o gráfico, e a coluna sobrava
+  // vazia embaixo.
+  const b3=`<div class="uep-sec"><b>3 · O MIX DE HOJE</b> por que a UEP é essa · jornada normal</div><div class="uep-card uep-grow" style="overflow-x:auto">`
     +(mix.linhas.length?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
       <tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?(mix.uep/mix.cxCom).toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr></tfoot></table>
       <div class="uep-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo. É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
-     :'<div class="empty-msg">Nenhuma caixa com produto apontado na jornada de hoje.</div>')+'</div></div>';
+     :'<div class="empty-msg">Nenhuma caixa com produto apontado na jornada de hoje.</div>')+'</div>';
 
   // 5 · CONFIABILIDADE
   let b5;
@@ -4709,13 +4716,28 @@ function renderUep(){
 
   el.innerHTML=`<div class="uep-sec" style="margin-top:0"><b>1 · HOJE</b> ${_rpEsc(hojeStr())} · jornada normal ${_rpEsc(CFG.turnoInicio||'07:00')}–${_rpEsc(fimTxt)} · meta ${fmtN(meta)} UEP</div>`
     +alerta+kpis
-    +`<div class="uep-2">${b2}${b3}</div>`
-    +`<div class="uep-sec"><b>5 · CONFIABILIDADE DA UEP</b> quanto do número é medido</div>${b5}`
+    +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec"><b>5 · CONFIABILIDADE DA UEP</b> quanto do número é medido</div>${b5}</div></div>`
     +`<div class="uep-sec"><b>4 · PERÍODO</b> dias fechados ${botoes}</div>${b4}`
     +`<div class="uep-rod">A meta de ${fmtN(meta)} UEP é o ritmo DEMONSTRADO pela linha (estudo de UEP), não tempo padrão — até a cronoanálise. Tela só do gerencial: TV e app do operador continuam em caixas. As contas são as do card UEP DO DIA (uepCard / uepCelula) — nenhuma régua nova.</div>`;
   // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
   // redesenha só o SVG na largura certa.
   if(!box){ const nb=document.getElementById('uep-g-box'); if(nb){ const sv=nb.querySelector('svg'); if(sv) sv.outerHTML=_uepAbaSvg(horas, _svgLargura(nb)); } }
+  // Altura: o card do gráfico estica até o fim da coluna quando o mix do lado
+  // é mais alto, e o gráfico ocupa o que sobra em vez de deixar um vazio
+  // embaixo da legenda (PPCP, 25/09/2026: "esse espaço no meio ficou feio").
+  // Em tela estreita as colunas empilham, não há sobra e nada muda.
+  { const nb=document.getElementById('uep-g-box'), sv=nb&&nb.querySelector('svg');
+    if(sv){
+      const cs=getComputedStyle(nb);
+      let usado=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+      [...nb.children].forEach(c=>{ const m=getComputedStyle(c); usado+=c.getBoundingClientRect().height+parseFloat(m.marginTop)+parseFloat(m.marginBottom); });
+      const sobra=nb.clientHeight-usado, r=sv.getBoundingClientRect(), w=sv.viewBox.baseVal.width||_svgLargura(nb);
+      if(sobra>24 && r.width>0){
+        const esc=r.width/w;
+        sv.outerHTML=_uepAbaSvg(horas, w, Math.min(UEP_G_H_MAX, Math.round((r.height+sobra)/esc)));
+      }
+    }
+  }
   { const pb=document.getElementById('uep-p-box'); if(pb&&UEP_HIST){ const sv=pb.querySelector('svg'); if(sv&&Math.abs((sv.viewBox.baseVal.width||0)-_svgLargura(pb))>2) sv.outerHTML=_uepAbaPerSvg(_uepAbaPeriodo(UEP_HIST,_uepPerN()).dias, _svgLargura(pb)); } }
   const upd=document.getElementById('uep-upd'); if(upd) upd.textContent='dados de '+new Date().toLocaleTimeString('pt-BR');
 }
