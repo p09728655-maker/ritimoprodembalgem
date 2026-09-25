@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.102.0 — 25/09/2026
+
+**Aba ⚖ UEP no gerencial do PC** (maquete aprovada pelo PPCP). Responde: a
+linha está entregando trabalho, independente do mix? E quando não entrega,
+onde perdeu — na hora, no produto ou no dado?
+- **1 · Hoje:** UEP até agora (o mesmo selo do card UEP DO DIA), projeção do
+  dia, UEP por hora e UEP em hora extra. Faixa **ATENÇÃO AO DADO** só quando
+  ≥ 20% das caixas têm UEP estimada ou ≥ 5% estão sem UEP.
+- **2 · Hora a hora em UEP:** barra por hora contra a meta da hora (meta do dia
+  × minutos do slot ÷ 527 — ~288, ~230 no slot de 48 min). Hora extra
+  listrada, sem meta. Hora lançada sem caixa com produto não vira barra
+  vermelha: é falta de dado, não de ritmo.
+- **3 · Mix de hoje:** por produto, caixas, UEP/cx, UEP e fatia do dia —
+  jornada normal, a mesma base do card.
+- **5 · Confiabilidade:** % das caixas de hoje com UEP medida, estimada (`EST`)
+  e sem UEP.
+- O bloco **4 · período** fica para a 2ª etapa.
+
+**Atenção:** indicadores novos, só nesta aba (TV e app do operador continuam
+em caixas). Nenhuma chamada nova além do cadastro que o simulador de
+capacidade já lê (cache de 10 min); sem re-deploy. A confiabilidade precisa do
+cadastro lido depois desta versão — até lá a aba diz que está lendo. O
+glossário também corrige a linha do UEP DO DIA, que ainda dizia 2.300 em 480 min.
+
+---
+
 ## v7.101.0 / mobile 1.27.0 — 25/09/2026
 
 **CUSTO POR UEP na aba SIMULADOR** (PPCP: o R$/UEP que saiu do card do dia

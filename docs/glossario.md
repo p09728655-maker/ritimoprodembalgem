@@ -194,7 +194,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
 | **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP em 8 h dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado | UEP | `v7:_uepEstudo` |
 | **ALVO PROVISÓRIO (UEP)** | 2.300 UEP em 8 h (`UEP_ALVO_PROV`, decisão do PPCP 24/09/2026); BATEU = UEP em 8 h ≥ 2.300; % = dias válidos que bateram ÷ dias válidos (suspeito fica fora) | UEP | `v7:_uepEstudo` |
-| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.300, 8 h). Esperado = meta × min(minutos de jornada com lançamento, 480) ÷ 480 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
+| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
 | **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
 | **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
@@ -202,6 +202,20 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **UEP NO PERÍODO** | caixas × UEP/cx (âncora A) | UEP | `v7:_uepEstudo` |
 | **CAIXAS COBERTAS** | caixas de produto com UEP ÷ caixas apontadas com produto × 100 | % | `v7:5865` |
 | **OSCILAÇÃO CX/H → UEP/H** | desvio ÷ média do ritmo da linha dia a dia, em cx/h e em UEP/h, sobre as mesmas caixas | % | `v7:5881` |
+
+## Aba ⚖ UEP (gerencial do PC) — hoje
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **UEP ATÉ AGORA** | o mesmo número e selo do card UEP DO DIA (`uepCard`): UEP de jornada normal × esperado até agora | UEP | `rp-core:uepCard` |
+| **PROJEÇÃO DO DIA** | UEP feita + (UEP feita ÷ minutos de jornada lançados) × minutos de jornada que faltam (de 527) | UEP | `v7:_uepAbaProj` |
+| **UEP POR HORA** | UEP feita ÷ minutos de jornada lançados × 60; meta/h = meta do dia ÷ 527 × 60 | UEP/h | `v7:_uepAbaProj` |
+| **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
+| **MIX DE HOJE** | por produto (modelo + nome), só jornada normal: caixas, UEP, UEP/cx = UEP ÷ caixas com UEP, % = UEP do produto ÷ UEP do dia | UEP | `v7:_uepAbaMix` |
+| **CONFIABILIDADE** | caixas de hoje por código: UEP medida (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
+
+**Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
+hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SEM`).
 
 **Como ler:** âncora A = produto com mais caixas no período; âncora B = o mais
 rápido. As duas mudam só a escala. Produto com menos de 5 dias rodados sai com

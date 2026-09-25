@@ -2708,6 +2708,22 @@ feito e dá ar de verdade ao que sobrou.
     pt-BR viraria milhar.
   - É **estimativa**: a faixa min–max dos quocientes vai no confirm. Faixa
     larga = a caixa explica pouco o ritmo (a operação roda a 22–68% do teto).
+- **ABA ⚖ UEP no gerencial do PC** (v7.102.0, maquete aprovada pelo PPCP em
+  25/09/2026). Blocos 1 (hoje), 2 (hora a hora), 3 (mix) e 5 (confiabilidade);
+  o **4 (período) é a 2ª etapa**, ainda não feita. Contas puras e testadas no
+  `relatorios.test.js`: `_uepAbaHoras`, `_uepAbaMix`, `_uepAbaConf`,
+  `_uepAbaProj`; `renderUep` é desenho e usa o `uepCard` (mesma régua do card
+  UEP DO DIA). Redesenha junto com o `renderGerencial` quando a aba está
+  aberta (`_abaOn('uep')`).
+  - A confiabilidade separa **medida × estimada** pela vigência (`EST`) do
+    cadastro cru `CAP_RAW` — a MESMA leitura do simulador de capacidade
+    (`_capBuscar`, que agora guarda o cru e o `uepVig` no `rpe_cap_cat`).
+    Cadastro sem `uepVig` (cache antigo) → `null`, nunca uma divisão
+    inventada.
+  - Hora lançada sem caixa com produto **não vira 0 UEP vermelho**: é falta de
+    dado, não de ritmo.
+  - Mix e card usam a MESMA base (jornada normal; `_horaEhHE` = janela do
+    turno do ⚙, a mesma do `_ehHoraExtraCaixas` do `.gs`).
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
