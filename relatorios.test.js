@@ -4056,6 +4056,8 @@ console.log('\n── estudo de UEP ──');
       /iniciarAutoRefresh\(\); if\(_modoDir\(\)\) lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\);/.test(JS)], [true, true, true]);
   ok('o gráfico da diretoria mede a CAIXA e se refaz quando ela muda de tamanho',
      [/new ResizeObserver\(/.test(JS), /function _dirAjustaGraf\(\)/.test(JS), /box\.clientHeight/.test(pega('function _dirAjustaGraf('))], [true, true, true]);
+  ok('pausa discreta: bolinha leva à tela e pausa; ⏸ alterna; guardada no aparelho; pausada não troca de tela',
+     [/onclick="_dirIr\(\$\{i\}\)"/.test(JS), /onclick="_dirPausa\(\)"/.test(JS), /if\(!DIR_PAUSA\) DIR_TELA = \(DIR_TELA \+ 1\) % DIR_N; renderDir\(\);/.test(JS), /localStorage\.setItem\(DIR_PAUSA_LS/.test(JS)], [true, true, true, true]);
   ok('a logomarca da Patrimar abre o topo da diretoria', /<img class="dir-logo" src="\/patrimar-logo\.png"/.test(pega('function _dirMoldura(')), true);
 }
 

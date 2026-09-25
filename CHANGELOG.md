@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.124.0 — 25/09/2026
+
+- **Diretoria: pausa discreta** (PPCP). As bolinhas do rodapé levam direto à
+  tela e param nela; o botão ⏸ (apagado, acende com o mouse) para e retoma. A
+  escolha fica guardada no aparelho — as recargas automáticas voltam para a
+  mesma tela, parada. Pausada, a tela continua atualizando o dado.
+
+**Atenção:** nenhum número muda.
+
+---
+
 ## v7.123.0 — 25/09/2026
 
 - **Diretoria no app instalado: o gráfico ficava miúdo** no meio da caixa. Ele

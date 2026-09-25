@@ -336,6 +336,11 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-rod{display:flex;gap:calc(var(--u)*.8);padding:calc(var(--u)*.9) calc(var(--u)*2.2);border-top:1px solid var(--border)}
 #sec-dir .dir-rod i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:var(--border)}
 #sec-dir .dir-rod i.on{background:var(--acc)}
+#sec-dir .dir-rod i{cursor:pointer}
+/* discreto: some na parede, aparece para quem chega perto com o mouse */
+#sec-dir .dir-pausa{margin-left:calc(var(--u)*1);background:none;border:1px solid var(--border);border-radius:calc(var(--u)*.4);color:var(--txt2);font-family:var(--font-d);font-size:calc(var(--u)*.9);letter-spacing:calc(var(--u)*.1);padding:calc(var(--u)*.2) calc(var(--u)*.6);cursor:pointer;opacity:.35;transition:opacity .2s}
+#sec-dir .dir-pausa:hover{opacity:1}
+#sec-dir .dir-pausa.on{opacity:.8;color:var(--warn);border-color:var(--warn)}
 #sec-dir .dir-selo{align-self:flex-start;font-family:var(--font-d);font-weight:600;font-size:calc(var(--u)*2.2);letter-spacing:calc(var(--u)*.25);padding:calc(var(--u)*.55) calc(var(--u)*1.4);border-radius:calc(var(--u)*.5);border:calc(var(--u)*.2) solid var(--border);color:var(--txt2)}
 #sec-dir .dir-selo.ok{color:var(--ok);border-color:var(--ok)}
 #sec-dir .dir-selo.warn{color:var(--warn);border-color:var(--warn)}
@@ -3116,7 +3121,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.123.0';
+const APP_VER   = '7.124.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11159,6 +11164,15 @@ const DIR_COB_MIN = 95;           // abaixo disto os pontos avisam que são part
 const DIR_HIST_TTL = 30*60000;    // histórico: só muda quando um dia fecha
 const DIR_PTS_TTL = 6*3600000;
 let DIR_TELA = 0, DIR_TIMER = null, DIR_CARREGANDO = false, DIR_RS_T = null;
+// PAUSA (v7.124.0, PPCP: "um pause discreto caso queira deixar em uma tela só").
+// Fica guardada NO APARELHO: a recarga de 28 min e a de versão nova voltam para
+// a mesma tela, parada. Pausada, a tela continua se redesenhando com o dado novo.
+const DIR_PAUSA_LS = 'rpe_dir_pausa';   // ⚠ chave nova: nunca renomear por estética
+let DIR_PAUSA = false;
+try{ const x = JSON.parse(localStorage.getItem(DIR_PAUSA_LS) || 'null'); if(x && x.p){ DIR_PAUSA = true; DIR_TELA = Math.max(0, Math.min(2, Number(x.t) || 0)); } }catch(e){}
+function _dirPausaGuarda(){ try{ localStorage.setItem(DIR_PAUSA_LS, JSON.stringify({ p:DIR_PAUSA, t:DIR_TELA })); }catch(e){} }
+function _dirPausa(){ DIR_PAUSA = !DIR_PAUSA; _dirPausaGuarda(); renderDir(); }
+function _dirIr(i){ DIR_TELA = i; DIR_PAUSA = true; _dirPausaGuarda(); renderDir(); }
 const DIR_PTS_LS = 'rpe_dir_pts';   // ⚠ chave nova: nunca renomear por estética
 let DIR_PTS = { key:null, soma:null, ts:0, falha:false };
 try{ const x = JSON.parse(localStorage.getItem(DIR_PTS_LS) || 'null'); if(x && x.key && x.soma) DIR_PTS = { key:x.key, soma:x.soma, ts:Number(x.ts) || 0, falha:false }; }catch(e){}
@@ -11321,7 +11335,8 @@ function _dirMoldura(t, corpo, tit, dadoTs){
   const dado = dadoTs ? `<small class="${velho ? 'velho' : ''}">${velho ? '⚠ ' : ''}dados de ${new Date(dadoTs).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small>` : '';
   return `<div class="dir-top"><img class="dir-logo" src="/patrimar-logo.png" alt="Patrimar móveis" onerror="this.style.display='none'"><div class="dir-tit">${tit}</div><div class="dir-marca">Ritmo<span>Patrimar</span></div><div class="dir-rel">${hm}${dado}</div></div>
     <div class="dir-corpo">${corpo}</div>
-    <div class="dir-rod">${Array.from({length:DIR_N}, (_, i) => `<i class="${i === t ? 'on' : ''}"></i>`).join('')}</div>`;
+    <div class="dir-rod">${Array.from({length:DIR_N}, (_, i) => `<i class="${i === t ? 'on' : ''}" onclick="_dirIr(${i})" title="ir para esta tela (e parar nela)"></i>`).join('')}
+      <button class="dir-pausa${DIR_PAUSA ? ' on' : ''}" onclick="_dirPausa()" title="${DIR_PAUSA ? 'retomar o carrossel' : 'parar nesta tela'}">${DIR_PAUSA ? '▶ PAUSADO' : '⏸'}</button></div>`;
 }
 function renderDir(){
   const el = document.getElementById('dir-palco');
@@ -11450,7 +11465,7 @@ function iniciarDiretoria(){
   try{ new ResizeObserver(() => { clearTimeout(DIR_RS_T); DIR_RS_T = setTimeout(_dirAjustaGraf, 120); }).observe(document.getElementById('sec-dir')); }catch(e){}
   try{ document.fonts && document.fonts.ready.then(() => _dirAjustaGraf()); }catch(e){}
   // passa a tela a cada 20 s; a cada passagem ela é redesenhada com o dado do momento
-  DIR_TIMER = setInterval(() => { DIR_TELA = (DIR_TELA + 1) % DIR_N; renderDir(); }, DIR_TEMPO);
+  DIR_TIMER = setInterval(() => { if(!DIR_PAUSA) DIR_TELA = (DIR_TELA + 1) % DIR_N; renderDir(); }, DIR_TEMPO);
   // a 1ª leitura sai do fim da carga inicial (ver "Iniciar fonte de dados");
   // depois, a cada minuto confere o que venceu
   setInterval(_dirCarregar, 60000);
