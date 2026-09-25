@@ -2604,6 +2604,8 @@ feito e dá ar de verdade ao que sobrou.
   `_cartAberta` um "ritmos" `{uep:true, fallback}`: fator = `uepCx` da linha
   da programação (.gs v5.13), sem UEP → `_cartUepMedia` (média pela qtde) e
   conta em `semBase`. Dívida por `_planoDividaUep` (lista por CÓDIGO × UEP).
+  ⚠ **Revogado na v7.110.0**: sem UEP não entra mais pela média — ver
+  PRÓXIMOS DIAS no gerencial (`_cartSemUep`/`_gpxDivida`).
   **A régua também é UEP**: `_qpCurvaUep` (UEP de jornada do HISTORICO, dia sem
   UEP fora) — no `_cartBlocos`, por modo. Desenho: o MESMO `_cartHtml`, com
   `_cartUn(a)` (unidade de TODO texto) e `_cartPeso(a,f)` (UEP/cx absoluto, sem
@@ -2800,8 +2802,15 @@ feito e dá ar de verdade ao que sobrou.
   (*"apontar as linhas que estão sem UEP"*): sai das horas e é listada
   (`semUep`: data, lote, código, caixas); o atraso de código sem UEP idem
   (`_gpxDivida`, que não usa o `_planoDividaUep` porque ele cai na média).
-  ⚠ A aba PLANO continua com a média — são leituras diferentes de propósito:
-  lá é distribuição de carga, aqui é hora afirmada.
+  **Desde a v7.110.0 a aba PLANO segue a MESMA regra** (PPCP: *"faz ajuste"*):
+  o `_planoDividaUep` (que caía na média) foi apagado; a carteira em UEP usa
+  `_gpxDivida` + `_cartSemUep`, e a lista sai pelo `_cartSemUepHtml` — UM
+  desenho para a tela do PLANO, os dois PDFs e a faixa do gerencial. O teste
+  falha se `_planoDividaUep` voltar. A **aba ⚖ UEP** (bloco 5) e a impressão
+  executiva mostram a mesma lista, mais os **códigos de hoje sem UEP**
+  (`_uepAbaSemUepHoje`, pelo cadastro cru `CAP_RAW`; sem cadastro → `null`,
+  não acusa). A programação entra por último no `_uepAbaCarregar`, só se a
+  leitura tiver mais de 15 min (`GPX_TTL`).
 
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:
