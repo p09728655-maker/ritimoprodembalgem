@@ -2727,8 +2727,8 @@ feito e dá ar de verdade ao que sobrou.
     sequência, voo compartilhado, e na falha a tela diz e tenta de novo em
     20 s. Renova a cada 2 min com a aba aberta. Contas puras e testadas no
   `relatorios.test.js`: `_uepAbaHoras`, `_uepAbaMix`, `_uepAbaConf`,
-  `_uepAbaProj`; `renderUep` é desenho e usa o `uepCard` (mesma régua do card
-  UEP DO DIA). Redesenha junto com o `renderGerencial` quando a aba está
+  `_uepAbaProj`; `renderUep` é desenho — quem monta tudo (e chama o `uepCard`,
+  mesma régua do card UEP DO DIA) é o `_uepAbaDados` (v7.106.0). Redesenha junto com o `renderGerencial` quando a aba está
   aberta (`_abaOn('uep')`).
   - A confiabilidade separa **medida × estimada** pela vigência (`EST`) do
     cadastro cru `CAP_RAW` — a MESMA leitura do simulador de capacidade
@@ -2739,6 +2739,26 @@ feito e dá ar de verdade ao que sobrou.
     dado, não de ritmo.
   - Mix e card usam a MESMA base (jornada normal; `_horaEhHE` = janela do
     turno do ⚙, a mesma do `_ehHoraExtraCaixas` do `.gs`).
+  - **🖨 IMPRIMIR — versão executiva, DEITADA** (v7.106.0, PPCP 25/09/2026:
+    *"impressão com relação a UEPs"* → *"versão executiva"* → *"pode imprimir
+    folha deitada"*). `gerarRelatorioUepAba` → `_uepDocHtml(D, ctx)`.
+    - **Tela e papel leem a MESMA montagem, `_uepAbaDados()`** (estado +
+      cards + horas + mix + conf + período). O teste falha se o `renderUep`
+      voltar a montar por conta própria ou se o desenho do papel chamar conta
+      (`uepCard`, `efNoRitmo`, `_uepAbaPeriodo`…). O `pctMeta` do período mora
+      no `_uepAbaPeriodo` — card e papel leem o mesmo número.
+    - **Folha 1 = o resultado**: resumo de hoje e do período lado a lado (selo
+      + frase), e embaixo de cada um os cards e o gráfico dele. **Folha 2 = o
+      porquê**: mix (máx. `UEP_DOC_MIX_MAX`=8, resto em "demais"), confiabilidade
+      e COMO LER. Medido no Chromium: 2 folhas, a 1ª fecha em ~661 dos 718 px
+      úteis da folha deitada.
+    - Os gráficos são os MESMOS `_uepAbaSvg`/`_uepAbaPerSvg`, a
+      `UEP_DOC_SVG_W`=480 (meia folha), re-skinados por token na
+      `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
+      hora que bateu sai **grafite** (`.ud-horas{--ok:…}`): cor só em quem não
+      bateu, a regra do relatório semanal.
+    - É o **retrato da tela no clique**: sem chamada nova. Histórico ou
+      cadastro que não vieram → a seção diz o que faltou e o resto sai.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.

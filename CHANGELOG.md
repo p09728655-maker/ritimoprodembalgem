@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.106.0 — 25/09/2026
+
+**Aba ⚖ UEP ganhou 🖨 IMPRIMIR — versão executiva, folha deitada** (PPCP:
+*"faça uma impressão com relação a UEPs"* → *"versão executiva"* → *"pode
+imprimir folha deitada"*). Duas folhas A4 em paisagem:
+- **Folha 1 — o resultado.** Lado a lado, HOJE e o PERÍODO (o filtro 7/15/30
+  da aba), cada um com um **selo** (NO RITMO / ATENÇÃO / ABAIXO DO RITMO;
+  *N DE M DIAS NA META*) e uma frase com os números. Embaixo, os cards e o
+  gráfico de cada um: hoje com o hora a hora, o período com os dias fechados.
+- **Folha 2 — o porquê.** O mix de hoje (8 produtos, o resto em "demais"), a
+  confiabilidade do dado (medida × estimada × sem UEP) e o COMO LER.
+
+É o retrato da tela no instante do clique: mesma montagem e mesmos gráficos,
+nenhuma conta nova e nenhuma chamada nova. Histórico ou cadastro que não
+vieram → o relatório sai inteiro e diz o que faltou. No gráfico do período, com
+muitos dias, as datas passam a sair uma a cada N (antes se atropelavam) — vale
+também para a tela.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.105.0 — 25/09/2026
 
 **Aba ⚖ UEP: o bloco 4 · PERÍODO não diz mais "nenhum dia" quando não
