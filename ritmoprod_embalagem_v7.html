@@ -545,7 +545,6 @@ body.ger-hist .ger-live-only{display:none!important}
 .tbl-hdr-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 #ger-semana .tbl-hdr{flex-wrap:wrap;row-gap:8px}
 /* PRÓXIMOS DIAS (v7.109.0) — a carteira datada em HORAS DE LINHA */
-#ger-prox .gpx-sub{font-family:var(--font-d);font-size:10px;letter-spacing:1px;color:var(--txt2);margin-left:10px}
 #ger-prox .gpx-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:12px;padding:14px 16px 4px}
 #ger-prox .gpx-dia{background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:12px 12px 10px;min-width:0}
 #ger-prox .gpx-dia.red{border-color:rgba(244,67,54,.55)}
@@ -1849,19 +1848,6 @@ if (_v7Instalado()) _v7EscondeBotao();
     </div>
   </div>
 
-  <!-- ═══ PRÓXIMOS DIAS (v7.109.0) ═══ a carteira já datada em HORAS DE LINHA
-       contra a jornada. É um olhar de relance: a análise (faixa de capacidade,
-       lotes para mover) continua na aba PLANO. Só no dia de hoje. -->
-  <div class="tbl-wrap ger-live-only" id="ger-prox" style="display:none;margin-top:14px">
-    <div class="tbl-hdr">
-      <span class="tbl-hdr-ttl">PRÓXIMOS DIAS</span>
-      <span class="gpx-sub" id="gpx-sub">horas de linha que a carteira programada pede</span>
-      <div style="flex:1"></div>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button>
-    </div>
-    <div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div>
-  </div>
-
 </section>
 
 <!-- ═══ TV OPERACIONAL ═══ -->
@@ -3019,7 +3005,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.110.0';
+const APP_VER   = '7.111.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4820,6 +4806,8 @@ function renderUep(){
     +alerta+kpis
     +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec"><b>5 · CONFIABILIDADE DA UEP</b> quanto do número é medido</div>${b5}</div></div>`
     +`<div class="uep-sec"><b>4 · PERÍODO</b> dias fechados ${botoes}</div>${b4}`
+    +`<div class="uep-sec"><b>6 · PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha que a carteira pede</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
+      <div class="tbl-wrap" id="ger-prox"><div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div></div>`
     +`<div class="uep-rod">A meta de ${fmtN(meta)} UEP é o ritmo DEMONSTRADO pela linha (estudo de UEP), não tempo padrão — até a cronoanálise. Tela só do gerencial: TV e app do operador continuam em caixas. As contas são as do card UEP DO DIA (uepCard / uepCelula) — nenhuma régua nova.</div>`;
   // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
   // redesenha só o SVG na largura certa.
@@ -4841,6 +4829,7 @@ function renderUep(){
     }
   }
   { const pb=document.getElementById('uep-p-box'); if(pb&&UEP_HIST){ const sv=pb.querySelector('svg'); if(sv&&Math.abs((sv.viewBox.baseVal.width||0)-_svgLargura(pb))>2) sv.outerHTML=_uepAbaPerSvg(_uepAbaPeriodo(UEP_HIST,_uepPerN()).dias, _svgLargura(pb)); } }
+  try{ renderProxDias(); }catch(e){ console.warn('[UEP] próximos dias:', e.message); }
   const upd=document.getElementById('uep-upd'); if(upd) upd.textContent='dados de '+new Date().toLocaleTimeString('pt-BR');
 }
 
@@ -10799,8 +10788,10 @@ function _planoDivida(){
 }
 
 // ════════════════════════════════════════════════
-// PRÓXIMOS DIAS NO GERENCIAL (v7.109.0, PPCP 25/09/2026: "como ficaria as
-// programações futuras como previsão… de horas" → maquete aprovada)
+// PRÓXIMOS DIAS (v7.109.0, PPCP 25/09/2026: "como ficaria as programações
+// futuras como previsão… de horas" → maquete aprovada). Nasceu no fim da aba
+// GERENCIAL e foi para a aba ⚖ UEP na v7.111.0 ("próximo dia vai para aba
+// uep"): é o bloco 6 de lá, desenhado pelo renderUep.
 // ════════════════════════════════════════════════
 // A carteira datada dos próximos dias úteis em HORAS DE LINHA contra a jornada.
 // A carga é a MESMA da CARTEIRA EM UEP da aba PLANO (`_cartAberta` em modo UEP,
@@ -10888,7 +10879,10 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     const curto = r => String(r || '').replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), min:g.eq / porMin }));
     const vazio = !d && !(atr > 0) && !sem.length;
-    const estado = vazio ? 'vazio' : fds ? 'fds' : exc > GPX_EXC_MAX ? 'red' : exc > 0 ? 'warn' : (-exc >= GPX_FOLGA_OK ? 'ok' : '');
+    // a cor segue o número que a tela MOSTRA (minuto inteiro): 105,3 min sai
+    // "1h45", e com a conta crua ele virava vermelho contra a legenda "até 1h45"
+    const excR = Math.round(exc);
+    const estado = vazio ? 'vazio' : fds ? 'fds' : excR > GPX_EXC_MAX ? 'red' : excR > 0 ? 'warn' : (-excR >= GPX_FOLGA_OK ? 'ok' : '');
     return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, min, minAtr, exc, estado, lotes,
              semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0) };
   });
@@ -10943,7 +10937,8 @@ let GPX_CARREGANDO = false, GPX_TENT = 0;
 function renderProxDias(){
   const box = document.getElementById('ger-prox'), corpo = document.getElementById('gpx-corpo');
   if(!box || !corpo) return;
-  if(!CFG.sheetsUrl || GER_DATA){ box.style.display = 'none'; return; }
+  if(!CFG.sheetsUrl){ box.style.display = 'none'; return; }
+  if(!_abaOn('uep')) return;          // mora na aba ⚖ UEP (v7.111.0)
   // a leitura da programação é das mais caras do backend: aqui ela só se renova
   // a cada 15 min (as abas PROGRAMAÇÃO e PLANO podem renovar antes — e a faixa
   // aproveita). Em voo, o fim da leitura redesenha.
@@ -10967,7 +10962,7 @@ function renderProxDias(){
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
   corpo.innerHTML = _gpxHtml(P);
   const sub = document.getElementById('gpx-sub');
-  if(sub) sub.textContent = 'horas de linha que a carteira programada pede · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(sub) sub.textContent = 'horas de linha que a carteira pede · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ════════════════════════════════════════════════
@@ -11013,7 +11008,6 @@ function renderAll(){
   // também não some quando algo mais adiante quebra (a Chart.js não carregar,
   // por exemplo, já deixou o rodapé sem versão pelo mesmo motivo).
   try{ renderSemanaGer(); }catch(e){ console.warn('[SEMANA] gerencial:', e.message); }
-  try{ renderProxDias(); }catch(e){ console.warn('[PRÓXIMOS DIAS] gerencial:', e.message); }
   renderGerencial();
   autoSaveDia(); // salva snapshot automático após cada render
   // Atualizar badges/botões de fechamento

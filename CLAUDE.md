@@ -2776,10 +2776,14 @@ feito e dá ar de verdade ao que sobrou.
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
 
-## PRÓXIMOS DIAS no gerencial — a carteira em HORAS (v7.109.0)
+## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
-  horas"*), maquete aprovada. `#ger-prox` no fim da aba GERENCIAL, só no dia de
-  hoje (`ger-live-only`); fora do PDF do dia.
+  horas"*), maquete aprovada. Nasceu no fim do GERENCIAL e foi para a **aba ⚖
+  UEP como bloco 6** (*"próximo dia vai para aba uep"*): o `renderUep` desenha
+  o `#ger-prox` e chama o `renderProxDias`, que só trabalha com a aba aberta
+  (`_abaOn('uep')`) — o gerencial não lê mais a programação.
+- ⚠ **A cor segue o número EXIBIDO** (`Math.round(exc)`): 105,3 min aparece
+  "1h45" e, com a conta crua, saía vermelho contra a legenda "até 1h45".
 - **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP
   (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).

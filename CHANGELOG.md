@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.111.0 — 25/09/2026
+
+**PRÓXIMOS DIAS saiu do GERENCIAL e foi para a aba ⚖ UEP** (PPCP: *"próximo
+dia vai para aba uep"*), como bloco **6 · PRÓXIMOS DIAS**, depois do PERÍODO.
+Mesma conta, mesmo desenho. A programação só é lida com a aba UEP aberta, então
+o gerencial deixa de fazer essa leitura.
+
+**A cor do dia segue o número que aparece.** Um dia com 105,3 min acima da
+jornada aparecia como *"NÃO CABE · FALTAM 1h45"* em vermelho, enquanto a
+legenda diz âmbar até 1h45. A comparação agora usa o minuto inteiro, o mesmo
+que a tela mostra.
+
+**Atenção:** a faixa não aparece mais no gerencial. Nenhum número muda, exceto
+a cor de um dia que caia exatamente no limite. Sem re-deploy.
+
+---
+
 ## v7.110.0 — 25/09/2026
 
 **Aba PLANO, carteira EM UEP: código sem UEP no cadastro não entra mais pela

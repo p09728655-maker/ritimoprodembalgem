@@ -3957,9 +3957,13 @@ console.log('\n── estudo de UEP ──');
   const GH = pega('function _gpxHtml(');
   ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_gpxDivida\(|uepCx/.test(GH), false);
   const RP = pega('function renderProxDias(');
-  ok('a faixa renova a programação a cada 15 min, com 1 min entre tentativas, e só no dia de hoje',
-     [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /GER_DATA/.test(RP), /class="tbl-wrap ger-live-only" id="ger-prox"/.test(src),
-      /try\{ renderProxDias\(\); \}catch/.test(pega('function renderAll('))], [true, true, true, true, true]);
+  ok('a faixa mora na aba ⚖ UEP (bloco 6), renova a programação a cada 15 min e espera 1 min entre tentativas',
+     [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /_abaOn\('uep'\)/.test(RP),
+      /6 · PRÓXIMOS DIAS/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),
+      /renderProxDias/.test(pega('function renderAll(')), /id="ger-prox" style="display:none/.test(src)], [true, true, true, true, false, false]);
+  // 10h32 − 8h47 = 105,3 min: a tela mostra "1h45", e a cor tem de ser a da legenda "até 1h45"
+  const G2 = _gpxMontar([it('25/09/2026','1',1000,3.033)], new Date(2026, 8, 24), 0, 0, 2530, 1);
+  ok('a cor segue o número exibido: 1h45 é âmbar, não NÃO CABE', [_fmtHM(G2.dias[0].exc), G2.dias[0].estado], ['1h45', 'warn']);
 }
 
 console.log(falhas === 0
