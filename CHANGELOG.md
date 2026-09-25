@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.119.0 — 25/09/2026
+
+- **Diretoria abre na hora** (PPCP: *"está demorando a leitura"*). A cada
+  recarga (versão nova, anti-descanso de 28 min) a tela HOJE ficava mais de um
+  minuto em "Aguardando a leitura do dia…" com o Apps Script frio. Agora o
+  último retrato bom (planilha do dia, leitura do dia, histórico, programação)
+  fica no aparelho e a tela abre com ele; a leitura nova troca quando chega. A
+  hora do dado continua no topo e fica **âmbar com ⚠** passados 15 min. O do dia
+  só vale no mesmo dia.
+- **App próprio da diretoria**: instalado a partir de `/diretoria` (ícone de
+  instalar na barra do Chrome/Edge), abre direto na diretoria em tela cheia
+  (`manifest-diretoria.json`). Antes, instalar dali abria o painel normal.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.118.0 — 25/09/2026
 
 **Enxugamento, bloco A — PLANO, GESTÃO DE PERDAS e SIMULADOR** (PPCP: *"tem

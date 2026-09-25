@@ -1606,8 +1606,12 @@ if(new URLSearchParams(location.search.toLowerCase()).has('tv'))
   document.documentElement.classList.add('sem-splash');
 // TELA DA DIRETORIA (v7.116.0): endereço próprio, /diretoria (ou ?dir). Também
 // antes da 1ª pintura — sem splash, sem login, sem cabeçalho do painel.
-if(/^\/diretoria\/?$/i.test(location.pathname) || new URLSearchParams(location.search.toLowerCase()).has('dir'))
+if(/^\/diretoria\/?$/i.test(location.pathname) || new URLSearchParams(location.search.toLowerCase()).has('dir')){
   document.documentElement.classList.add('modo-dir');
+  // APP PRÓPRIO (v7.119.0): instalado daqui, o ícone abre a diretoria em tela
+  // cheia — com o manifest do painel ele abriria o "/" (id e start_url são "/")
+  const _mf = document.querySelector('link[rel="manifest"]'); if(_mf) _mf.href = '/manifest-diretoria.json';
+}
 </script>
 <body>
 
@@ -3103,7 +3107,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.118.0';
+const APP_VER   = '7.119.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3949,6 +3953,7 @@ async function lerSheets(){
     const json = await jsonpFetch(url);
     if(json.erro) throw new Error(json.erro);
     processarRespostaSheets(json);
+    if(_modoDir()) _dirGuarda('sheets', json);
     return true;
   }catch(e){
     console.error('lerSheets:', e);
@@ -4024,6 +4029,17 @@ async function _lerPontosDiaUma(){
     const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
     const json=await jsonpFetch(url, 30000);
     if(json && json.ok){
+      _aplicarPontosDia(json);
+      PONTOS_DIA_TS = Date.now();
+      if(_modoDir()) _dirGuarda('pontos', json);
+      return true;
+    }
+  }catch(e){
+    console.warn('lerPontosDia:', e.message);
+  }
+  return false;
+}
+function _aplicarPontosDia(json){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
         produtoAtual: json.produtoAtual||'', produtoAtualDesc: json.produtoAtualDesc||'',
@@ -4034,17 +4050,10 @@ async function _lerPontosDiaUma(){
         // gerencial lê (card UEP DO DIA). Backend antigo: uep undefined.
         uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep
       };
-      PONTOS_DIA_TS = Date.now();
       aplicarMetaDiaAutomatica();
       // Config do ciclo de telas compartilhada via planilha: se veio do backend,
       // aplica (a TV se ajusta sozinha quando muda em qualquer aparelho).
       if(json.painelConfig) aplicarConfigPainel(json.painelConfig);
-      return true;
-    }
-  }catch(e){
-    console.warn('lerPontosDia:', e.message);
-  }
-  return false;
 }
 
 // Meta do dia automática: puxa da PROGRAMAÇÃO em vez de digitar toda vez. Por
@@ -11329,9 +11338,16 @@ async function _dirCarregar(){
   if(DIR_CARREGANDO || !_modoDir() || !CFG.sheetsUrl) return;
   DIR_CARREGANDO = true;
   try{
-    if(!UEP_HIST_TS || Date.now() - UEP_HIST_TS > (UEP_HIST_FALHA ? 20000 : DIR_HIST_TTL)){ await _uepAbaHistCarregar(); renderDir(); }
+    // o retrato guardado conta como "já lido" pelo TTL dele; a leitura nova troca
+    if(!UEP_HIST_TS || Date.now() - UEP_HIST_TS > (UEP_HIST_FALHA ? 20000 : DIR_HIST_TTL)){
+      await _uepAbaHistCarregar();
+      if(UEP_HIST && !UEP_HIST_FALHA) _dirGuarda('hist', UEP_HIST.filter(d => d && d.fonte === 'sheets'));
+      renderDir();
+    }
     if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL) && Date.now() - GPX_TENT > 60000){
-      GPX_TENT = Date.now(); await carregarProgramacaoDetalhada(); renderDir();
+      GPX_TENT = Date.now(); const antes = PROG_DET_TS; await carregarProgramacaoDetalhada();
+      if(PROG_DET_TS && PROG_DET_TS !== antes && Array.isArray(PROG_DETALHADA)) _dirGuarda('prog', PROG_DETALHADA);
+      renderDir();
     }
     const key = _dirSemKey(), [de, ate] = key.split('|');
     const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > DIR_PTS_TTL : Date.now() - DIR_PTS.ts > 10*60000);
@@ -11349,9 +11365,40 @@ async function _dirCarregar(){
   }catch(e){ console.warn('[DIRETORIA] leitura:', e.message); }
   finally{ DIR_CARREGANDO = false; }
 }
+// O ÚLTIMO RETRATO FICA NO APARELHO (v7.119.0, PPCP: "está demorando a
+// leitura"). A diretoria recarrega sozinha (versão nova, anti-descanso de 28
+// min) e cada abertura pegava o Apps Script frio: a tela HOJE ficava mais de um
+// minuto em "Aguardando a leitura do dia…". Agora ela abre com o último dado
+// bom e troca quando a leitura nova chega. A hora do dado continua na tela e
+// fica âmbar passados 15 min — retrato velho nunca passa por dado ao vivo.
+// O do dia (planilha e getPontosDia) só vale NO MESMO DIA; histórico 12 h;
+// programação 2 h. ⚠ Chaves novas: nunca renomear por estética.
+const DIR_RET_LS = 'rpe_dir_ret_';
+function _dirGuarda(k, dado){ try{ localStorage.setItem(DIR_RET_LS + k, JSON.stringify({ dia:hojeStr(), ts:Date.now(), dado })); }catch(e){} }
+function _dirLe(k, maxMs, mesmoDia){
+  try{ const x = JSON.parse(localStorage.getItem(DIR_RET_LS + k) || 'null');
+    if(!x || !x.dado) return null;
+    if(mesmoDia && x.dia !== hojeStr()) return null;
+    if(maxMs && Date.now() - x.ts > maxMs) return null;
+    return x; }catch(e){ return null; }
+}
+function _dirRestaura(){
+  const sh = _dirLe('sheets', 0, true);
+  if(sh){ try{ processarRespostaSheets(sh.dado); }catch(e){} }
+  const pd = _dirLe('pontos', 0, true);
+  if(pd){ PONTOS_DIA_TS = pd.ts; try{ _aplicarPontosDia(pd.dado); }catch(e){ console.warn('[DIRETORIA] retrato:', e.message); } }
+  const hi = _dirLe('hist', 12*3600000, false);
+  if(hi && !UEP_HIST && Array.isArray(hi.dado)){ UEP_HIST = hi.dado; UEP_HIST_TS = hi.ts; }
+  const pr = _dirLe('prog', 2*3600000, false);
+  if(pr && !PROG_DET_TS && Array.isArray(pr.dado)){ PROG_DETALHADA = pr.dado; PROG_DET_TS = pr.ts; }
+}
 function iniciarDiretoria(){
   if(!_modoDir()) return;
   PERFIL = 'diretoria';
+  // o retrato entra logo DEPOIS da carga do script: aqui, no meio da
+  // inicialização, parte do que ele toca (meta automática, config do ciclo)
+  // ainda não existe e falhava calada — sem a hora do dado na tela
+  setTimeout(() => { _dirRestaura(); renderDir(); }, 0);
   const lo = document.getElementById('login-over'); if(lo) lo.style.display = 'none';
   document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
   document.getElementById('sec-dir').classList.add('on');

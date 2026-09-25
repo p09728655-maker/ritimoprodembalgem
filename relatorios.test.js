@@ -4009,7 +4009,7 @@ console.log('\n── estudo de UEP ──');
   ok('endereço próprio: /diretoria aponta para o painel, sem cache velho',
      [vj.rewrites.some(r => r.source === '/diretoria' && r.destination === '/ritmoprod_embalagem_v7.html'), vj.headers.some(h => h.source === '/diretoria')], [true, true]);
   ok('o modo é ligado ANTES da 1ª pintura (sem splash, sem login) e só pelo endereço /diretoria ou ?dir',
-     [/\/\^\\\/diretoria\\\/\?\$\/i\.test\(location\.pathname\)[^\n]*has\('dir'\)\)\s*\n\s*document\.documentElement\.classList\.add\('modo-dir'\)/.test(src),
+     [/\/\^\\\/diretoria\\\/\?\$\/i\.test\(location\.pathname\)[^\n]*has\('dir'\)\)\{\s*\n\s*document\.documentElement\.classList\.add\('modo-dir'\)/.test(src),
       /html\.modo-dir #splash, html\.modo-dir \.login-over/.test(src)], [true, true]);
   // HOJE: a mesma montagem da aba UEP; pontos de jornada × hora extra pela régua da hora
   const D = { estado:'ok', feito:1790, he:410, meta:2530, proj:{ fim:2635 }, card:{ c:'ok', ef:104.1, esperado:1719 }, mix:{ cx:1020 } };
@@ -4069,6 +4069,17 @@ console.log('\n── estudo de UEP ──');
      [/_uepAbaSvg\(H\.horas\)/.test(pega('function _dirHojeHtml(')), /horas: D\.horas/.test(pega('function _dirHoje('))], [true, true]);
   ok('diretoria: pontos da semana não se separam por hora — diz isso, não inventa o "sem HE"',
      /sem HE não separado/.test(_dirSemanaHtml(_dirSemana([{ data:'14/09/2026', uep:2500, real:1500, heCx:100, metaUep:2530 }], new Date(2026, 8, 25), { pts:900, cx:1400 }), [], false, null)), true);
+}
+
+// ── v7.119.0: diretoria abre com o último retrato; app próprio ────────────────
+{ const mf = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest-diretoria.json'), 'utf8'));
+  ok('app próprio da diretoria: abre em /diretoria, tela cheia, com id diferente do painel',
+     [mf.start_url, mf.id, mf.display, /_mf\.href = '\/manifest-diretoria\.json'/.test(src)], ['/diretoria', '/diretoria', 'fullscreen', true]);
+  ok('a diretoria guarda o último retrato (planilha, leitura do dia, histórico, programação) e abre com ele',
+     [/if\(_modoDir\(\)\) _dirGuarda\('sheets', json\)/.test(JS), /if\(_modoDir\(\)\) _dirGuarda\('pontos', json\)/.test(JS),
+      /_dirGuarda\('hist'/.test(JS), /_dirGuarda\('prog'/.test(JS), /setTimeout\(\(\) => \{ _dirRestaura\(\); renderDir\(\); \}, 0\)/.test(JS)], [true, true, true, true, true]);
+  ok('o retrato do dia só vale no mesmo dia, e a hora do dado continua na tela (âmbar depois de 15 min)',
+     [/const sh = _dirLe\('sheets', 0, true\)/.test(JS), /const pd = _dirLe\('pontos', 0, true\)/.test(JS), /Date\.now\(\) - dadoTs > 15\*60000/.test(JS)], [true, true, true]);
 }
 
 console.log(falhas === 0
