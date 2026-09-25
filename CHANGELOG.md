@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.108.0 — 25/09/2026
+
+**Aba ⚖ UEP: o mix mostra também o que rodou em hora extra** (PPCP: *"deve ter
+mais produtos"*). A tabela do mix é da jornada normal, a mesma base da meta e
+do card. Por isso fechava em 870 cx num dia com 1.068 apontadas, e o produto
+que só rodou de madrugada não aparecia em lugar nenhum. Embaixo da linha
+JORNADA NORMAL agora vêm **EM HORA EXTRA (fora da meta)**, com caixas, UEP e
+quais produtos, e o **TOTAL DO DIA**, que fecha com as caixas da
+confiabilidade. As linhas dos produtos e a coluna DO DIA continuam só da
+jornada. Vale na tela e na impressão.
+
+**Atenção:** nenhum número muda — a hora extra continua fora da meta e do
+card UEP DO DIA. Sem re-deploy.
+
+---
+
 ## v7.107.0 — 25/09/2026
 
 **Aba ⚖ UEP sem o buraco no meio** (PPCP: *"esse espaço no meio ficou feio"*).

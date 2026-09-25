@@ -319,6 +319,10 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-uep .n{text-align:right;font-family:var(--font-d)}
 #sec-uep .mono{font-family:var(--font-d);color:var(--txt2);font-size:11px}
 #sec-uep tfoot td{font-family:var(--font-d);font-weight:600;border-bottom:none}
+#sec-uep tfoot tr.uep-he td{color:var(--txt2);font-weight:400;border-top:0.5px solid var(--border)}
+#sec-uep tfoot tr.uep-he .uep-he-t{font-size:9.5px;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:0 5px;margin-left:6px}
+#sec-uep tfoot tr.uep-he-p td{font-size:11px;color:var(--txt2);font-weight:400;padding-top:0;line-height:1.5}
+#sec-uep tfoot tr.uep-dia td{border-top:1px solid var(--border)}
 #sec-uep .uep-mb{display:inline-block;width:64px;height:6px;background:var(--elevated);border-radius:3px;margin-right:6px;vertical-align:middle}
 #sec-uep .uep-mb i{display:block;height:100%;background:var(--acc);border-radius:3px}
 #sec-uep .uep-conf{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:4px 0 8px;background:var(--elevated)}
@@ -2961,7 +2965,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.107.0';
+const APP_VER   = '7.108.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4435,21 +4439,30 @@ function _uepAbaHoras(slots, allHoje, uepH, metaUep){
 }
 
 // O mix da JORNADA NORMAL (a mesma base do card): por produto, caixas, UEP e
-// UEP/cx. A hora extra fica fora, como na meta.
+// UEP/cx. A hora extra fica fora das linhas e da fatia, como na meta — mas NÃO
+// some: vem à parte em `he` (v7.108.0, PPCP 25/09/2026: "deve ter mais
+// produtos"). Sem ela a tabela fechava em 870 cx com 1.068 apontadas no dia, e
+// o produto que só rodou de madrugada parecia não existir. `dia` = jornada +
+// hora extra, que é o que fecha com as caixas da confiabilidade.
 function _uepAbaMix(porHoraModelo){
-  const G={};
+  const G={}, HE={};
   (porHoraModelo||[]).forEach(it=>{
-    if(_horaEhHE(it.hora)) return;
+    const alvo=_horaEhHE(it.hora)?HE:G;
     const k=(it.modelo||'')+'|'+(it.nome||'');
-    const g=G[k]=G[k]||{modelo:it.modelo||'', nome:it.nome||'', cx:0, cxCom:0, uep:0};
+    const g=alvo[k]=alvo[k]||{modelo:it.modelo||'', nome:it.nome||'', cx:0, cxCom:0, uep:0};
     const c=Number(it.caixas)||0, u=Number(it.uep)||0;
     g.cx+=c; if(u>0){ g.cxCom+=c; g.uep+=u; }
   });
+  const soma=(L,c)=>L.reduce((a,l)=>a+l[c],0);
   const linhas=Object.values(G).map(g=>({...g, uepCx:g.cxCom>0?g.uep/g.cxCom:null}));
-  const uep=linhas.reduce((a,l)=>a+l.uep,0);
+  const uep=soma(linhas,'uep');
   linhas.forEach(l=>{ l.pct=uep>0?l.uep/uep*100:0; });
   linhas.sort((a,b)=>b.uep-a.uep||b.cx-a.cx);
-  return { linhas, uep, cx:linhas.reduce((a,l)=>a+l.cx,0), cxCom:linhas.reduce((a,l)=>a+l.cxCom,0) };
+  const heL=Object.values(HE).sort((a,b)=>b.cx-a.cx||b.uep-a.uep);
+  const he={ linhas:heL, cx:soma(heL,'cx'), cxCom:soma(heL,'cxCom'), uep:soma(heL,'uep') };
+  he.uepCx=he.cxCom>0?he.uep/he.cxCom:null;
+  const cx=soma(linhas,'cx');
+  return { linhas, uep, cx, cxCom:soma(linhas,'cxCom'), he, dia:{ cx:cx+he.cx, uep:uep+he.uep } };
 }
 
 // Confiabilidade: quanto das caixas de HOJE tem UEP medida (estudo), estimada
@@ -4674,8 +4687,11 @@ function renderUep(){
   // normal (3 a 6 produtos) é mais baixo que o gráfico, e a coluna sobrava
   // vazia embaixo.
   const b3=`<div class="uep-sec"><b>3 · O MIX DE HOJE</b> por que a UEP é essa · jornada normal</div><div class="uep-card uep-grow" style="overflow-x:auto">`
-    +(mix.linhas.length?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
-      <tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?(mix.uep/mix.cxCom).toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr></tfoot></table>
+    +(mix.linhas.length||mix.he.cx>0?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
+      <tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?(mix.uep/mix.cxCom).toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr>
+      ${mix.he.cx>0?`<tr class="uep-he"><td></td><td>EM HORA EXTRA<span class="uep-he-t">FORA DA META</span></td><td class="n">${fmtN(mix.he.cx)}</td><td class="n">${mix.he.uepCx!=null?mix.he.uepCx.toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.he.uep))}</td><td></td></tr>
+        <tr class="uep-he-p"><td></td><td colspan="5">${mix.he.linhas.map(l=>`${_rpEsc(l.nome||l.modelo)} ${fmtN(l.cx)} cx`).join(' · ')}</td></tr>
+        <tr class="uep-dia"><td></td><td>TOTAL DO DIA</td><td class="n">${fmtN(mix.dia.cx)}</td><td></td><td class="n">${fmtN(Math.round(mix.dia.uep))}</td><td></td></tr>`:''}</tfoot></table>
       <div class="uep-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo. É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
      :'<div class="empty-msg">Nenhuma caixa com produto apontado na jornada de hoje.</div>')+'</div>';
 
@@ -4810,6 +4826,8 @@ const _UEP_DOC_SKIN = `
   .uep-doc table.ud-mix td{font-size:10.5px;padding:5px 9px}
   .uep-doc table.ud-mix tr.ud-dem td{color:#5B6470;font-style:italic}
   .uep-doc table.ud-mix tfoot td{font-weight:700;border-top:1.5px solid #cbd5e0;padding:6px 9px;font-size:10.5px}
+  .uep-doc table.ud-mix tfoot tr.ud-he td{font-weight:400;color:#5B6470;border-top:1px solid #edf2f7}
+  .uep-doc table.ud-mix tfoot tr.ud-he-p td{font-weight:400;color:#718096;font-size:9.5px;border-top:0;padding-top:0}
   .uep-doc .ud-mb{display:inline-block;width:56px;height:6px;background:#edf2f7;border-radius:3px;vertical-align:middle;
                   margin-right:6px;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .uep-doc .ud-mb i{display:block;height:100%;background:#5B6470}
@@ -4874,11 +4892,15 @@ function _uepDocHtml(D, ctx){
   const mostra=mix.linhas.slice(0, UEP_DOC_MIX_MAX), resto=mix.linhas.slice(UEP_DOC_MIX_MAX);
   const lin=l=>`<tr><td class="td-mono">${_rpEsc(l.modelo)}</td><td>${_rpEsc(l.nome||'—')}</td><td class="n">${fmtN(l.cx)}</td><td class="n">${u2(l.uepCx)}</td><td class="n"><b>${l.uep>0?fmtN(Math.round(l.uep)):'—'}</b></td><td><span class="ud-mb"><i style="width:${l.pct.toFixed(0)}%"></i></span>${l.uep>0?fmtP(l.pct):'sem UEP'}</td></tr>`;
   const b4=sec('O MIX DE HOJE — POR QUE A UEP É ESSA')
-    +(mix.linhas.length
+    +(mix.linhas.length||mix.he.cx>0
       ? `<table class="ud-mix"><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>`
         +mostra.map(lin).join('')
         +(resto.length?`<tr class="ud-dem"><td></td><td>demais ${plural(resto.length,'produto','produtos')}</td><td class="n">${fmtN(resto.reduce((a,l)=>a+l.cx,0))}</td><td></td><td class="n">${fmtN(Math.round(resto.reduce((a,l)=>a+l.uep,0)))}</td><td>${fmtP(resto.reduce((a,l)=>a+l.pct,0))}</td></tr>`:'')
-        +`</tbody><tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?u2(mix.uep/mix.cxCom):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr></tfoot></table>
+        +`</tbody><tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?u2(mix.uep/mix.cxCom):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr>`
+        +(mix.he.cx>0?`<tr class="ud-he"><td></td><td>EM HORA EXTRA (fora da meta)</td><td class="n">${fmtN(mix.he.cx)}</td><td class="n">${u2(mix.he.uepCx)}</td><td class="n">${fmtN(Math.round(mix.he.uep))}</td><td></td></tr>
+          <tr class="ud-he-p"><td></td><td colspan="5">${mix.he.linhas.map(l=>`${_rpEsc(l.nome||l.modelo)} ${fmtN(l.cx)} cx`).join(' · ')}</td></tr>
+          <tr><td></td><td>TOTAL DO DIA</td><td class="n">${fmtN(mix.dia.cx)}</td><td></td><td class="n">${fmtN(Math.round(mix.dia.uep))}</td><td></td></tr>`:'')
+        +`</tfoot></table>
         <div class="ud-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo. É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
       : '<div class="ud-vazio">Nenhuma caixa com produto apontado na jornada de hoje.</div>');
 
