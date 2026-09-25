@@ -25,6 +25,13 @@ semana aparece só se tiver lote, fora das somas de falta e folga.
 A carga é a mesma da CARTEIRA EM UEP da aba PLANO. Horas = UEP programada ÷
 288 UEP/h (o ritmo da meta, 2.530 UEP em 527 min).
 
+**Linha sem UEP no cadastro não vira hora** (PPCP: *"jamais inventar números"*,
+*"apontar as linhas que estão sem UEP"*). Ela sai da conta e é listada embaixo
+da faixa (data, lote, código, produto, caixas), e o card do dia diz quantas
+caixas ficaram fora. Atraso de código sem UEP também não entra no 1º dia e
+aparece na mesma lista. A aba PLANO continua usando a UEP média para esses
+códigos, como antes.
+
 **Atenção:** nenhum número existente muda. A programação é relida a cada
 15 min para esta faixa (as abas PROGRAMAÇÃO e PLANO podem renovar antes). Sem
 re-deploy.

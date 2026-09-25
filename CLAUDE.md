@@ -2778,9 +2778,8 @@ feito e dá ar de verdade ao que sobrou.
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
   horas"*), maquete aprovada. `#ger-prox` no fim da aba GERENCIAL, só no dia de
   hoje (`ger-live-only`); fora do PDF do dia.
-- **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP,
-  o `_cartUepMedia` e o `_planoDividaUep` — a MESMA carteira em UEP da aba
-  PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
+- **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP
+  (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
 - ⚠ **A dívida (`faltaZerar`) inclui o que falta da meta de HOJE.** Só vai para
   o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `dívida − ritmo ×
@@ -2797,8 +2796,12 @@ feito e dá ar de verdade ao que sobrou.
 - `_gpxHtml` é desenho (o teste falha se `_cartAberta`/`uepCx` aparecerem nele).
 - ⚠ **Nunca inventar número** (PPCP, 25/09/2026: *"sempre, jamais inventar
   números"*). Sem UEP na programação a faixa diz que não converte; leitura que
-  falhou diz o porquê. A única estimativa é a linha sem UEP no cadastro, que
-  entra pela UEP média — e a nota da faixa conta quantas.
+  falhou diz o porquê. **Linha sem UEP no cadastro NÃO entra pela média**
+  (*"apontar as linhas que estão sem UEP"*): sai das horas e é listada
+  (`semUep`: data, lote, código, caixas); o atraso de código sem UEP idem
+  (`_gpxDivida`, que não usa o `_planoDividaUep` porque ele cai na média).
+  ⚠ A aba PLANO continua com a média — são leituras diferentes de propósito:
+  lá é distribuição de carga, aqui é hora afirmada.
 
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:

@@ -3909,7 +3909,7 @@ console.log('\n── estudo de UEP ──');
   if (typeof _cartUepMedia === 'undefined') eval(pega('function _cartUepMedia('));
   { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
     eval(m[0].replace(/const /g, 'global.')); }
-  eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxMontar('));
+  eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida(')); eval(pega('function _gpxMontar('));
   const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
   const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
                  it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
@@ -3921,8 +3921,12 @@ console.log('\n── estudo de UEP ──');
      [Math.round(G.carry), Math.round(G.dias[0].minAtr), Math.round(G.dias[0].min), G.dias[1].minAtr], [424, 88, 567, 0]);
   ok('estados: passa até 1h45 = âmbar, mais = NÃO CABE, folga grande = verde, sem lote = vazio, sábado à parte',
      G.dias.map(d => d.estado), ['warn','fds','vazio','red','ok','vazio']);
-  ok('fora da esteira e lote vencido não entram; código sem UEP entra pela média',
-     [G.dias[2].uep, G.dias[4].uep, G.dias[4].semBase], [0, 693, 1]);
+  ok('fora da esteira e vencido não entram; linha sem UEP NÃO vira hora — sai da conta e é apontada',
+     [G.dias[2].uep, G.dias[4].uep, G.dias[4].cxSemUep, G.semUep.map(x => [x.data.slice(0,5), x.lote, x.cx])],
+     [0, 500, 100, [['30/09', '25246', 100]]]);
+  const DV = _gpxDivida([{ codigo:'501125230', falta:300 }, { codigo:'999', falta:40, descricao:'SEM CADASTRO' }], itens, 340);
+  ok('atraso: código com UEP vira UEP, sem UEP é apontado (nunca pela média)', [DV.uep, DV.semUep.map(x => [x.codigo, x.cx])], [600, [['999', 40]]]);
+  ok('backend sem a lista por código: o atraso inteiro fica sem UEP e é apontado', [_gpxDivida([], itens, 340).uep, _gpxDivida([], itens, 340).semUep[0].cx], [0, 340]);
   ok('totais: jornada só dos dias úteis, sábado fora da falta e da folga',
      [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 201, 2, 1, 2]);
   ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);

@@ -572,6 +572,10 @@ body.ger-hist .ger-live-only{display:none!important}
 #ger-prox .gpx-tot{display:flex;gap:26px;flex-wrap:wrap;margin:12px 16px 0;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-d);font-size:12px;color:var(--txt2)}
 #ger-prox .gpx-tot b{color:var(--txt);font-size:14px}
 #ger-prox .gpx-tot .r b{color:var(--red)}
+#ger-prox .gpx-sem{margin:0 16px 16px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
+#ger-prox .gpx-sem b{color:var(--warn)}
+#ger-prox .gpx-sem ul{margin:4px 0 0 16px}
+#ger-prox .gpx-sem li b{color:var(--txt)}
 #ger-prox .gpx-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;padding:10px 16px 16px}
 @media (max-width:900px){#ger-prox .gpx-dias{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){#ger-prox .gpx-dias{grid-template-columns:1fr}}
@@ -10768,21 +10772,49 @@ function _gpxCalendario(hoje, n, comLote){
   }
   return out;
 }
+// A DÍVIDA EM UEP, SEM MÉDIA: o que falta de cada código (a lista do
+// calcularProgramacao, por CÓDIGO) × a UEP dele na programação. Código sem UEP
+// não vira número — volta em `semUep` para a faixa apontar. Sem a lista
+// (backend antigo) a dívida inteira fica sem UEP.
+function _gpxDivida(lista, itens, dividaCx){
+  const uDe = {};
+  (itens || []).forEach(it => { if(it && Number(it.uepCx) > 0) uDe[String(it.codigo)] = Number(it.uepCx); });
+  if(!Array.isArray(lista) || !lista.length)
+    return { uep:0, semUep: (Number(dividaCx) > 0) ? [{ codigo:'', cx:Number(dividaCx), rot:'atraso total (backend sem a lista por código)' }] : [] };
+  let uep = 0; const semUep = [];
+  lista.forEach(x => { const f = Number(x.falta) || 0; if(f <= 0) return;
+    const u = uDe[String(x.codigo)];
+    if(u > 0) uep += f * u; else semUep.push({ codigo:String(x.codigo || ''), cx:f, rot:String(x.descricao || x.desc || x.nome || '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '') }); });
+  return { uep, semUep };
+}
 // Conta pura: itens da programação detalhada → os dias da faixa.
+// ⚠ NUNCA INVENTAR NÚMERO (PPCP, 25/09/2026): linha sem UEP no cadastro NÃO
+// entra nas horas pela média — sai da conta e é APONTADA (`semUep`), com data,
+// lote, código e caixas, para alguém cadastrar a UEP.
 function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
-  const fb = _cartUepMedia(itens);
-  if(!fb) return { falha:'sem-uep' };
+  if(!(itens || []).some(it => it && Number(it.uepCx) > 0)) return { falha:'sem-uep' };
   const hojeNum = _cartNum(p2(hoje.getDate()) + '/' + p2(hoje.getMonth()+1) + '/' + hoje.getFullYear());
-  const cart = _cartAberta(itens, hojeNum, 0, { uep:true, fallback:fb });
+  const comUep = (itens || []).filter(it => it && Number(it.uepCx) > 0);
+  const cart = _cartAberta(comUep, hojeNum, 0, { uep:true, fallback:0 });
   const porNum = {}; cart.dias.forEach(d => { porNum[d.dataNum] = d; });
   const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
   const porMin = meta / UEP_MIN_DIA;                         // UEP por minuto de jornada
   const resto = Math.min(UEP_MIN_DIA, Math.max(0, Number(minRestHoje) || 0));
   const carry = Math.max(0, (Number(dividaUep) || 0) - porMin * resto);
-  const cal = _gpxCalendario(hoje, n || GPX_DIAS, porNum);
+  // as linhas sem UEP também marcam o dia (sábado com lote sem UEP aparece)
+  const semPorNum = {};
+  (itens || []).forEach(it => {
+    if(!it || it.foraEsteira || Number(it.uepCx) > 0) return;
+    const dn = Number(it.dataNum) || _cartNum(it.data), q = Number(it.qtde) || 0;
+    if(!(dn > hojeNum) || q <= 0) return;
+    (semPorNum[dn] = semPorNum[dn] || []).push({ data:it.data, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
+      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q });
+  });
+  const marca = Object.assign({}, semPorNum, porNum);
+  const cal = _gpxCalendario(hoje, n || GPX_DIAS, marca);
   let primeiro = true;
   const dias = cal.map(c => {
-    const d = porNum[c.dataNum];
+    const d = porNum[c.dataNum], sem = semPorNum[c.dataNum] || [];
     // fim de semana não tem jornada: é todo hora extra (a regra do HE_SABADO_
     // INTEIRO do .gs). Mostra as horas, mas não entra em falta nem folga, e o
     // atraso vai para o 1º dia ÚTIL.
@@ -10798,9 +10830,10 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     // no rótulo curto sai o código e o "VOL 1/1": na faixa só cabe lote + produto
     const curto = r => String(r || '').replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), min:g.eq / porMin }));
-    const vazio = !d && !(atr > 0);
+    const vazio = !d && !(atr > 0) && !sem.length;
     const estado = vazio ? 'vazio' : fds ? 'fds' : exc > GPX_EXC_MAX ? 'red' : exc > 0 ? 'warn' : (-exc >= GPX_FOLGA_OK ? 'ok' : '');
-    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, min, minAtr, exc, estado, lotes, semBase: d ? d.semBase : 0 };
+    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, min, minAtr, exc, estado, lotes,
+             semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0) };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
   return {
@@ -10813,7 +10846,8 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     sobra: comDado.filter(d => d.exc < 0).reduce((a,d) => a - d.exc, 0),
     nSobra: comDado.filter(d => d.exc < 0).length,
     nVazio: dias.filter(d => d.estado === 'vazio').length,
-    semBase: dias.reduce((a,d) => a + d.semBase, 0)
+    // só as linhas dos dias da faixa (o que está além dela não é desta leitura)
+    semUep: dias.reduce((a,d) => a.concat(d.semUep), [])
   };
 }
 // Desenho: nenhuma conta de carga aqui, só escala da barra e texto.
@@ -10836,7 +10870,7 @@ function _gpxHtml(P){
       <div class="gpx-trilho"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div>
         <div class="gpx-barra" style="height:${(+atrPx + +lotPx + +excPx).toFixed(1)}px">${d.minAtr > 0 ? `<i class="gpx-atr" style="height:${atrPx}px"></i>` : ''}<i class="gpx-lote" style="height:${lotPx}px"></i>${d.exc > 0 && !d.fds ? `<i class="gpx-exc" style="height:${excPx}px"></i>` : ''}</div></div>
       <div class="gpx-h">${_fmtHM(d.min)}</div>${selo}
-      <div class="gpx-s">${d.minAtr > 0 ? `inclui atraso de ${_fmtHM(d.minAtr)}<br>` : ''}${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx</div>
+      <div class="gpx-s">${d.minAtr > 0 ? `inclui atraso de ${_fmtHM(d.minAtr)}<br>` : ''}${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx${d.cxSemUep ? `<br><span style="color:var(--warn)">+ ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas</span>` : ''}</div>
       ${d.lotes.length ? `<div class="gpx-lotes">mais pesados: ${d.lotes.map(l => `<b>${_rpEsc(l.lote || '—')}</b> ${_rpEsc(l.rot)} ${_fmtHM(l.min)}`).join(' · ')}</div>` : ''}</div>`;
   }).join('');
   return `<div class="gpx-dias" style="--n:${P.dias.length}">${cards}</div>
@@ -10845,7 +10879,10 @@ function _gpxHtml(P){
       + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
       + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '') + `</div>
-    <div class="gpx-nota">Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.${P.semBase ? ` ${plural(P.semBase,'linha sem UEP no cadastro entrou','linhas sem UEP no cadastro entraram')} pela UEP média.` : ''} A análise completa é na aba PLANO.</div>`;
+    <div class="gpx-nota">Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga. A análise completa é na aba PLANO.</div>`
+    + ((P.semUep.length || (P.divSemUep && P.divSemUep.length)) ? `<div class="gpx-sem"><b>⚠ SEM UEP NO CADASTRO — FORA DAS HORAS</b> (cadastrar a UEP na PRODUTO_CODIGO, coluna UEP, ou rodar o 💾 GRAVAR UEP):
+        <ul>${P.semUep.map(x => `<li>${_rpEsc(x.data.slice(0,5))} · lote <b>${_rpEsc(x.lote || '—')}</b> · ${_rpEsc(x.codigo)} ${_rpEsc(x.rot)} · ${fmtN(x.cx)} cx</li>`).join('')}
+        ${(P.divSemUep || []).map(x => `<li>atraso · ${_rpEsc(x.codigo)} ${_rpEsc(x.rot)} · ${fmtN(x.cx)} cx — não entrou no 1º dia</li>`).join('')}</ul></div>` : '');
 }
 let GPX_CARREGANDO = false, GPX_TENT = 0;
 function renderProxDias(){
@@ -10869,8 +10906,9 @@ function renderProxDias(){
     return;
   }
   const k = calcKPIs(getDadosHoje());
-  const fb = _cartUepMedia(PROG_DETALHADA);
-  const P = _gpxMontar(PROG_DETALHADA, new Date(), _planoDividaUep(fb), UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS);
+  const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
+  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS);
+  if(!P.falha) P.divSemUep = dv.semUep;
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
   corpo.innerHTML = _gpxHtml(P);
   const sub = document.getElementById('gpx-sub');
