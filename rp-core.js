@@ -244,6 +244,25 @@ function uepCusto(custoHora, uepFeito, minJornada, metaUep){
   return { custo, rsUep: custo / feito, rsMeta, excesso: custo - feito * rsMeta };
 }
 
+// ── R$ por UEP no PERÍODO (aba SIMULADOR, v7.101.0, PPCP 25/09/2026) ────────
+// Saiu do card do dia ("pode tirar esse valor em reais daí, precisa ser em um
+// lugar estratégico") e foi para onde o custo-hora é digitado. Dias FECHADOS do
+// HISTORICO com UEP gravada; cada um paga a jornada normal INTEIRA (527 min),
+// que é a mesma base da meta de UEP. A régua é a mesma do uepCusto: custo da
+// jornada ÷ UEP feita contra custo da jornada ÷ meta de UEP de cada dia.
+// `excesso` = R$ pagos sem virar UEP (negativo = abaixo do custo da meta).
+function uepCustoPeriodo(custoHora, dias){
+  const ch = Number(custoHora) || 0;
+  const com = (dias || []).filter(d => d && Number(d.uep) > 0);
+  if (!(ch > 0) || !com.length) return null;
+  const custo = ch * UEP_MIN_DIA / 60 * com.length;
+  const uep = com.reduce((s, d) => s + Number(d.uep), 0);
+  const metaTot = com.reduce((s, d) => s + uepDiaMeta(d), 0);
+  const rsMeta = custo / metaTot;
+  return { n: com.length, custo, uep, metaTot, rsUep: custo / uep, rsMeta,
+           excesso: custo - uep * rsMeta };
+}
+
 // ── UEP hora a hora (gerencial dos dois painéis) ────────────────────────────
 // Soma a UEP do `porHoraModelo` do getPontosDia (.gs v5.11: `uep` por item =
 // caixas × UEP do cadastro) por HORA. A chave é o início da hora (HH:MM), que
@@ -313,5 +332,5 @@ window.RP_CORE = {
   versao: '1.10.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo']
 };
