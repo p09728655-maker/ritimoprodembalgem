@@ -3882,11 +3882,13 @@ console.log('\n── estudo de UEP ──');
   ok('o % da meta do período é UMA conta (pctMeta), lida pelo card e pelo papel',
      [Math.round(PP.pctMeta*10)/10, _uepAbaPerCards(PP)[0].sub.startsWith(fmtP(PP.pctMeta)), DOC.includes('('+fmtP(PP.pctMeta)+' da meta)')], [106.3, true, true]);
   ok('folha 1 = hoje (hora a hora) e período lado a lado; a folha 2 (mix, confiabilidade) começa em página nova',
-     [DOC.indexOf('HORA A HORA') < DOC.indexOf('O PERÍODO'), DOC.indexOf('O PERÍODO') < DOC.indexOf('ud-quebra'),
+     [DOC.indexOf('HORA A HORA EM UEP') < DOC.indexOf('PERÍODO — DIAS FECHADOS'), DOC.indexOf('PERÍODO — DIAS FECHADOS') < DOC.indexOf('ud-quebra'),
       DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-cols"/.test(DOC)], [true, true, true, true]);
   ok('tela e papel mostram a linha da hora extra e o total do dia quando houve HE',
      [DOC.includes('EM HORA EXTRA (fora da meta)'), DOC.includes('TOTAL DO DIA'), /mix\.he\.cx>0\?`<tr class="uep-he">/.test(R),
       _uepDocHtml(Object.assign({}, Dd, { mix: _uepAbaMix(phm.slice(1)) }), ctxD).includes('TOTAL DO DIA')], [true, true, true, false]);
+  ok('o papel não numera as seções (a ordem dele não é a da tela) e usa os nomes da aba',
+     [/rp-sec-ttl">\d+ ▸/.test(DOC), ['HORA A HORA EM UEP', 'O MIX DE HOJE', 'CONFIABILIDADE DA UEP'].every(t => DOC.includes(t))], [false, true]);
   ok('o mix no papel mostra 8 produtos e junta o resto em "demais"', [(DOC.match(/<tr><td class="td-mono">/g) || []).length, /demais 4 produtos/.test(DOC)], [8, true]);
   const DOCsem = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null, conf:null }), Object.assign({}, ctxD, { hist:'falha', cadFalha:true }));
   ok('histórico ou cadastro que não vieram: o relatório sai inteiro e diz o que faltou (nunca zero)',

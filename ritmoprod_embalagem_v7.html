@@ -3005,7 +3005,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.112.0';
+const APP_VER   = '7.113.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4953,8 +4953,11 @@ function _uepDocHtml(D, ctx){
   const W=ctx.W||UEP_DOC_SVG_W;
   const u2=v=>v!=null?v.toFixed(2).replace('.',','):'—';
   const kpi=c=>`<div class="kpi-card ${_kpiCls(c.c||'')}"><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`;
-  let n=0;
-  const sec=t=>`<div class="rp-sec-ttl">${++n} ▸ ${t}</div>`;
+  // SEM NÚMERO NO PAPEL (PPCP, 25/09/2026: "o mix na tela está 3 na
+  // impressão 5"). A folha deitada põe os blocos noutra ordem (o período sobe
+  // para a folha 1), então numerar pela ordem do papel dava números diferentes
+  // dos da tela. O papel usa os MESMOS NOMES da aba — é pelo nome que se acha.
+  const sec=t=>`<div class="rp-sec-ttl">${t}</div>`;
 
   // O RESUMO — o selo é o veredito, a frase repete os números dos cards.
   const hojeTem=k.minNorm>0;
@@ -4982,13 +4985,13 @@ function _uepDocHtml(D, ctx){
     +(avisos.length?`<div class="ud-alerta"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de hoje é indicação, não medição.</div>`:'');
 
   // 2 · HORA A HORA
-  const b2=sec('HOJE, HORA A HORA — ONDE A UEP SE PERDEU')
+  const b2=sec('HORA A HORA EM UEP — ONDE A UEP SE PERDEU')
     +`<div class="ud-g ud-horas">${_uepAbaSvg(horas, W)}
       <div class="ud-leg"><span><i style="background:#5B6470"></i>na meta</span><span><i style="background:#B26A00"></i>atenção</span><span><i style="background:#C62828"></i>abaixo</span><span><i class="he"></i>hora extra (sem meta)</span><span><i class="tr"></i>meta da hora</span></div>
       <div class="ud-nota">Meta da hora = meta do dia × minutos da hora ÷ ${UEP_MIN_DIA}.${horas.some(h=>h.cxSem>0)?' <b>*</b> hora com caixas de códigos sem UEP — ficaram fora da conta.':''}</div></div>`;
 
   // 3 · O PERÍODO
-  let b3=sec(`O PERÍODO — ÚLTIMOS ${nPer} DIAS, DIAS FECHADOS`);
+  let b3=sec(`PERÍODO — DIAS FECHADOS, ÚLTIMOS ${nPer} DIAS`);
   if(!P) b3+=`<div class="ud-vazio">${ctx.hist==='falha'?'Não consegui ler o histórico — o servidor não respondeu em 3 tentativas.':'O histórico ainda estava sendo lido quando o relatório foi gerado.'} Gere de novo em instantes para ter esta seção.</div>`;
   else if(!P.n) b3+=`<div class="ud-vazio">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias corridos.</div>`;
   else b3+=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`
@@ -5020,7 +5023,7 @@ function _uepDocHtml(D, ctx){
       : '<div class="ud-vazio">Nenhuma caixa com produto apontado na jornada de hoje.</div>');
 
   // 5 · CONFIABILIDADE
-  const b5=sec('CONFIABILIDADE — QUANTO DO NÚMERO DE HOJE É MEDIDO')
+  const b5=sec('CONFIABILIDADE DA UEP — QUANTO DO NÚMERO É MEDIDO')
     +(conf
       ? `<div class="ud-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:#2E7D32"></i><i style="width:${conf.pEst.toFixed(1)}%;background:#B26A00"></i><i style="width:${conf.pSem.toFixed(1)}%;background:#C62828"></i></div>
         <div class="ud-leg"><span><i style="background:#2E7D32"></i>${fmtP(conf.pMed)} UEP MEDIDA (estudo)</span><span><i style="background:#B26A00"></i>${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span><i style="background:#C62828"></i>${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>

@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.113.0 — 25/09/2026
+
+**Impressão executiva da UEP: seções sem número, com os nomes da tela** (PPCP:
+*"o mix na tela está 3 na impressão 5"*). A folha deitada põe os blocos numa
+ordem diferente da aba (o período sobe para a folha 1), e o papel numerava pela
+ordem dele. Agora o papel não numera, e cada seção tem o mesmo nome do bloco
+na aba: HORA A HORA EM UEP, O MIX DE HOJE, CONFIABILIDADE DA UEP, PERÍODO,
+PRÓXIMOS DIAS.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.112.0 — 25/09/2026
 
 **A impressão executiva da UEP leva o PRÓXIMOS DIAS** (PPCP: *"colocar na

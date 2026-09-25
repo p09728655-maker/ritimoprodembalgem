@@ -2770,6 +2770,10 @@ feito e dá ar de verdade ao que sobrou.
       `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
       hora que bateu sai **grafite** (`.ud-horas{--ok:…}`): cor só em quem não
       bateu, a regra do relatório semanal.
+    - ⚠ **O papel NÃO numera as seções** (v7.113.0, PPCP: *"o mix na tela
+      está 3 na impressão 5"*): a ordem do papel não é a da aba (o período sobe
+      para a folha 1), então os títulos são os NOMES dos blocos da aba, sem o
+      número. Não voltar a numerar pela ordem do papel.
     - É o **retrato da tela no clique**: sem chamada nova. Histórico ou
       cadastro que não vieram → a seção diz o que faltou e o resto sai.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
