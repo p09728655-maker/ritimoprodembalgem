@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.123.0 — 25/09/2026
+
+- **Diretoria no app instalado: o gráfico ficava miúdo** no meio da caixa. Ele
+  media o próprio desenho no instante em que a janela abria (e as fontes ainda
+  chegavam). Agora mede a CAIXA e se redesenha sempre que ela muda de tamanho
+  (janela, tela cheia, fontes).
+- Semana: o rótulo "PONTOS com HE" não fica mais separado.
+- **Pontos da semana com e sem hora extra** (PPCP: *"pontos não separou?"*) —
+  ⚠ **re-deploy do `.gs` v5.20**. A leitura do período passa a somar os pontos
+  das horas fora de 07:00–17:00 (`pontosHe`, mesma régua das caixas), exato,
+  sem rateio. Até o re-deploy o card continua dizendo "sem HE não separado".
+  (O número v5.19 foi pulado: é o de uma versão que nunca deve ser colada.)
+
+**Atenção:** nenhum número muda.
+
+---
+
 ## v7.122.0 — 25/09/2026
 
 - **Instalar a diretoria pelo endereço próprio** (PPCP: *"não tem como

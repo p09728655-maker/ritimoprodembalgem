@@ -3182,6 +3182,10 @@ feito e dá ar de verdade ao que sobrou.
   do anti-descanso não refaz a leitura). `PREP_PERIODO` guardado e devolvido.
 - Na diretoria `_naTV()` é verdadeiro e versão nova faz `location.reload()`.
 - **Aba ⚖ UEP enxuta** na mesma versão: explicação no `title`, não na tela.
+- **Pontos da semana sem/com HE** (v7.123.0 / `.gs` v5.20): o
+  `getProducaoModeloPeriodo` devolve `pontosHe` por item (soma exata das horas
+  `_ehHoraExtraCaixas`). Sem o campo, o card diz "sem HE não separado" — nunca
+  rateia. ⚠ O `.gs` pulou o número **v5.19** (versão proibida, ver META PADRÃO).
 - **Retrato guardado** (v7.119.0): `_dirGuarda`/`_dirLe`/`_dirRestaura`,
   chaves `rpe_dir_ret_sheets|pontos|hist|prog`. Do dia só no mesmo dia;
   histórico 12 h; programação 2 h. ⚠ O `_dirRestaura` roda num `setTimeout(0)`:
