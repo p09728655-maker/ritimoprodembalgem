@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.18 — UEP ESTIMADA PARA TODO O CADASTRO
+//               setUepCatalogo com estimar=1 preenche a UEP dos códigos que
+//               ficaram sem ela (produto que não rodou no período do estudo)
+//               pelo TEMPO DE ESTEIRA da caixa, calibrado nos produtos medidos
+//               (fator k do painel). Vigência gravada com o sufixo " EST".
+//               Nunca toca UEP medida nem digitada à mão.
 // Versão: 5.17 — META DE UEP PELAS CONFIGURAÇÕES
 //               setConfigPainel aceita metaUep e grava META_UEP na CONFIG_PAINEL.
 // Versão: 5.16 — UEP HORA A HORA DO DIA PASSADO
@@ -2539,7 +2545,85 @@ function _uepPorVolume(alvo, linhas) {
   return { uep: uep, repartidos: repartidos, semMedida: semMedida };
 }
 
+// ── UEP ESTIMADA (v5.18) — o cadastro INTEIRO com UEP ─────────────────────
+// Pedido do PPCP (25/09/2026): "fazer a UEP de todos os produtos". O estudo só
+// mede quem rodou; o resto do cadastro ficava sem UEP e as caixas dele caíam
+// em "sem UEP". Para esses, a UEP sai do TEMPO DE ESTEIRA da caixa:
+//   UEP estimada = k × teto da âncora ÷ teto do código
+// (teto = _tetoEsteiraCxH, cx/h com a esteira cheia). O teto da âncora ÷ teto
+// do código é a UEP que a FÍSICA daria; k (mediana, calculada no painel sobre
+// os produtos MEDIDOS) corrige para o ritmo que a equipe demonstra. Caixa de
+// cada volume com a sua medida: a repartição entre volumes é a mesma do
+// _uepPorVolume (pelo tempo de esteira), sem conta à parte.
+// ⚠ É ESTIMATIVA: a vigência vai com " EST". Só grava onde a UEP está VAZIA
+// ou já era estimada — UEP medida (estudo) ou digitada pelo PPCP nunca é
+// tocada. Sem medida da caixa → sem estimativa (contado e listado): UEP
+// inventada seria pior que a falta dela. Velocidade vazia usa a mediana do
+// cadastro (a esteira é uma só).
+function _uepEstimada(k, tetoAnc, prod, velPad) {
+  const med = Number(prod && prod.medida) || 0;
+  if (!(k > 0) || !(tetoAnc > 0) || !(med > 0)) return null;
+  const vel = Number(prod.velocidade) > 0 ? Number(prod.velocidade) : Number(velPad) || 0;
+  const teto = _tetoEsteiraCxH({ velocidade: vel, medida: med, entrePeca: prod.entrePeca });
+  if (!(teto > 0)) return null;
+  return Math.max(0.01, Math.round(k * tetoAnc / teto * 100) / 100);
+}
+function _uepEhEstimada(vig) { return /\bEST\s*$/i.test(String(vig || '').trim()); }
+
+function _uepEstimarCatalogo(p) {
+  // Number, não _numBR: o painel manda com ponto decimal, e "312.456" lido
+  // como pt-BR viraria milhar.
+  const k = Number(p.k), tetoAnc = Number(p.tetoAnc);
+  if (!(k > 0) || !(tetoAnc > 0)) return { ok: false, erro: 'calibração inválida (k/tetoAnc)' };
+  const vig = String(p.vig || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy')).replace(/\s*EST\s*$/i, '') + ' EST';
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PRODUTOS);
+    if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
+    const lastRow = sh.getLastRow();
+    let lastCol = sh.getLastColumn();
+    if (lastRow < 2) return { ok: false, erro: 'cadastro vazio' };
+    const hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0]
+      .map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
+    const iCod = hdr.indexOf('CODIGO');
+    if (iCod < 0) return { ok: false, erro: 'coluna CODIGO não encontrada' };
+    let iUep = hdr.indexOf('UEP');
+    let iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
+    if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
+    if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+    const _pref = function (pref) { var i = hdr.indexOf(pref); return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; }); };
+    const _col = function (i) { return i >= 0 ? sh.getRange(2, i + 1, lastRow - 1, 1).getValues() : null; };
+    const cods = _col(iCod), colU = _col(iUep), colV = _col(iVig);
+    const colM = _col(_pref('MEDIDA DA CAIXA')), colE = _col(_pref('ENTRE_PECA')), colVel = _col(_pref('VELOCIDADE'));
+    const vels = (colVel || []).map(function (r) { return _numBR(r[0]); }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
+    const velPad = vels.length ? vels[Math.floor(vels.length / 2)] : 0;
+    let estimados = 0, mantidos = 0;
+    const semMedida = [];
+    for (let i = 0; i < cods.length; i++) {
+      const cod = String(cods[i][0] || '').trim();
+      if (!cod) continue;
+      const temUep = _numBR(colU[i][0]) > 0;
+      if (temUep && !_uepEhEstimada(_dataStr(colV[i][0]))) { mantidos++; continue; }
+      const u = _uepEstimada(k, tetoAnc, {
+        medida: colM ? _numBR(colM[i][0]) : 0,
+        entrePeca: colE ? _numBR(colE[i][0]) : 0,
+        velocidade: colVel ? _numBR(colVel[i][0]) : 0 }, velPad);
+      if (u == null) { semMedida.push(cod); continue; }
+      colU[i][0] = u; colV[i][0] = vig; estimados++;
+    }
+    sh.getRange(2, iUep + 1, lastRow - 1, 1).setValues(colU);
+    sh.getRange(2, iVig + 1, lastRow - 1, 1).setValues(colV);
+    _catalogoMemo = null;
+    return { ok: true, estimados: estimados, mantidos: mantidos,
+             semMedida: semMedida.length, semMedidaCod: semMedida.slice(0, 20), velPad: velPad };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function setUepCatalogo(p) {
+  if (String(p.estimar || '') === '1') return _uepEstimarCatalogo(p);
   let lista;
   try { lista = JSON.parse(String(p.dados || '[]')); } catch (e) { return { ok: false, erro: 'dados inválidos' }; }
   if (!Array.isArray(lista) || !lista.length) return { ok: false, erro: 'nenhum produto enviado' };

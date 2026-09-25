@@ -3522,6 +3522,24 @@ console.log('\n── estudo de UEP ──');
   ok('as duas âncoras mantêm a proporção', b2('LENTO').uepVol / b2('RAPIDO').uepVol, b2('LENTO').uepRap / b2('RAPIDO').uepRap);
   ok('o desenho não faz conta', /_uepProdutos|_phMediaAparada|_qpOscilacao/.test(pega('function _uepHtml(')), false);
   ok('sem cxHora (backend antigo) a hora não é repartida', e2.dividido, false);
+  // v7.96.0: UEP de TODO o cadastro — calibração pelo tempo de esteira.
+  global.UEP_CALIB_MIN = Number(JS.match(/const UEP_CALIB_MIN\s*=\s*(\d+)/)[1]);
+  eval(pega('function _uepCalibEsteira('));
+  const eC = { volume: { teto: 300 }, prods: [
+    { uepVol: 1,   teto: 300, amostraOk: true },    // âncora: quociente 1
+    { uepVol: 2,   teto: 150, amostraOk: true },    // física 2, medida 2 → 1
+    { uepVol: 1.5, teto: 200, amostraOk: true },    // física 1,5 → 1
+    { uepVol: 3,   teto: 300, amostraOk: true },    // fora da curva: 3
+    { uepVol: 9,   teto: 100, amostraOk: false }] };// provisório não entra
+  const cC = _uepCalibEsteira(eC);
+  ok('k = MEDIANA de (UEP medida ÷ UEP física) dos medidos com amostra', [cC.k, cC.n, cC.min, cC.max, cC.provisoria], [1, 4, 1, 3, false]);
+  ok('a âncora sem teto não calibra (sem medida não há estimativa)', _uepCalibEsteira({ volume: { teto: 0 }, prods: eC.prods }), null);
+  ok('poucos com amostra → entram os provisórios, e é marcado',
+     _uepCalibEsteira({ volume: { teto: 300 }, prods: [eC.prods[0], eC.prods[1], eC.prods[4]] }).provisoria, true);
+  ok('menos de 3 produtos medidos → sem calibração', _uepCalibEsteira({ volume: { teto: 300 }, prods: eC.prods.slice(0, 2).map(p => ({ ...p, amostraOk: false })) }), null);
+  const gUep = pega('async function _gravarUepCadastro(');
+  ok('a estimativa vai DEPOIS da UEP medida, pela mesma ação, com k e teto da âncora',
+     [gUep.indexOf('estimar=1') > gUep.indexOf("action=setUepCatalogo'"), /&k='\+encodeURIComponent\(cal\.k/.test(gUep)], [true, true]);
 
   // ── v7.74.0: hora compartilhada repartida pelo TEMPO ESPERADO ──
   // A roda 300/h sozinho, B 150/h sozinho. Na hora 13:00 os dois dividem a
