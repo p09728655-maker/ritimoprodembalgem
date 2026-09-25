@@ -2955,7 +2955,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.103.0';
+const APP_VER   = '7.104.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4522,9 +4522,28 @@ function _uepAbaPerSvg(dias, largura){
 }
 
 function _uepAbaCatCarregar(){
-  if(CAP_RAW && CAP_CAT_TS && Date.now()-CAP_CAT_TS<10*60*1000) return;
+  if(CAP_RAW && CAP_CAT_TS && Date.now()-CAP_CAT_TS<10*60*1000) return Promise.resolve();
   if(!CAP_RAW){ const loc=_capDoLocal(); if(loc) CAP_RAW=loc.p; }
-  _capBuscar();                                    // no fim ela redesenha a aba
+  return _capBuscar();                             // no fim ela redesenha a aba
+}
+
+// ORDEM DAS LEITURAS AO ABRIR A ABA (v7.104.0, PPCP 25/09/2026 — a aba abria
+// com os blocos 4 e 5 em "Lendo…"). Antes o histórico e o cadastro esperavam
+// um getPontosDia NOVO, a leitura mais cara do backend (até 3 × 30 s), que o
+// gerencial já tinha feito. Agora, uma de cada vez (o Apps Script atende uma
+// execução por vez), da mais barata para a mais cara: o histórico (cache de
+// 2 min aqui e no .gs), a leitura do dia SÓ se ela ainda não existe (o refresh
+// do painel a mantém fresca) e por último o cadastro.
+let UEP_CARREGANDO=false;
+async function _uepAbaCarregar(){
+  if(UEP_CARREGANDO) return;
+  UEP_CARREGANDO=true;
+  try{
+    await _uepAbaHistCarregar();
+    if(PONTOS_DIA.uep===null||PONTOS_DIA.uep===undefined){ await lerPontosDia(); if(_abaOn('uep')) renderUep(); }
+    await _uepAbaCatCarregar();
+  }catch(e){ console.warn('[UEP] aba:', e.message); }
+  finally{ UEP_CARREGANDO=false; }
 }
 
 function _uepAbaSvg(horas, largura){
@@ -10397,7 +10416,7 @@ function setTab(tab){
   if(tab==='paradas'){ _initFiltroParadas(); renderAnaliseParadas(); }
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
-  if(tab==='uep'){ renderUep(); lerPontosDia().then(()=>{ renderUep(); _uepAbaCatCarregar(); return _uepAbaHistCarregar(); }); }
+  if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
