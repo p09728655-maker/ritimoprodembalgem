@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.116.0 — 25/09/2026
+
+**TELA DA DIRETORIA — endereço próprio: `/diretoria`** (PPCP, maquete
+aprovada). Carrossel de 3 telas, 20 s cada, lido a 3–4 m, sem login, fundo
+azul: **HOJE** (selo de ritmo, UEP com esperado e meta, caixas e pontos da
+jornada, projeção e hora extra), **SEMANA PASSADA** (selo META BATIDA / ABAIXO
+DA META, UEP, caixas de jornada e pontos, e os últimos 10 dias fechados contra a
+meta) e **PRÓXIMOS DIAS** (cartão por dia com FALTA / FOLGA, horas previstas,
+UEP · caixas · pontos, lotes e o mais pesado).
+- Um veredito só: selo e cor são da UEP; caixas e pontos são número.
+- Nenhuma conta nova: hoje é a montagem da aba ⚖ UEP, a semana é a mesma do
+  relatório semanal, a carteira é o PRÓXIMOS DIAS. A única leitura a mais é a
+  dos PONTOS da semana passada (getProducaoModeloPeriodo), a cada 6 h, guardada
+  no aparelho.
+- Pontos só enxergam caixas lançadas **com produto**: quando cobrem menos de
+  95% das caixas, a tela diz quanto. Pontos da semana incluem hora extra.
+- Versão nova recarrega sozinha; a TV da sala não apaga (mesmo anti-descanso da
+  TV da fábrica).
+
+**Aba ⚖ UEP enxuta** (PPCP: *"tem muita coisa escrita"*): frases de apoio
+dos títulos, notas longas e o rodapé saíram da tela; as explicações foram para
+o tooltip. Nenhum número saiu.
+
+**Atenção:** nenhum número muda. Sem re-deploy do `.gs` (o getProducaoModeloPeriodo
+já manda os pontos). A carteira passou a somar os pontos da programação por dia
+(campo adicional, só a diretoria lê).
+
+---
+
 ## v7.115.0 · mobile 1.29.0 — 25/09/2026
 
 **Painel em azul-marinho no PC e no celular; a TV continua preta** (PPCP: *"eu

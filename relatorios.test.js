@@ -3854,8 +3854,8 @@ console.log('\n── estudo de UEP ──');
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
-  ok('tela e impressão leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
-     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [2, false]);
+  ok('tela, impressão e diretoria leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
+     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [3, false]);   // tela, papel e a tela da diretoria (v7.116.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
      [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),
@@ -3904,7 +3904,7 @@ console.log('\n── estudo de UEP ──');
     ok('o desenho escreve "até 14:50" e diz no tooltip que a hora não é julgada',
        [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]); }
   ok('o card UEP ATÉ AGORA escreve a diferença e o % do esperado; projeção diz "média da jornada" e hora extra fora',
-     [/difEsp>=0\?'\+':'−'/.test(DAD), /do esperado\)/.test(DAD), /no ritmo de agora/.test(DAD), /na média da jornada até agora/.test(DAD), /fora do UEP até agora, da projeção e da meta/.test(DAD)],
+     [/difEsp>=0\?'\+':'−'/.test(DAD), /do esperado\)/.test(DAD), /no ritmo de agora/.test(DAD), /na média da jornada/.test(DAD), /sub:he>0\?'fora da meta'/.test(DAD) && /Não entra no UEP ATÉ AGORA, na PROJEÇÃO nem na meta/.test(DAD)],
      [true, true, false, true, true]);
   ok('o mix no papel mostra 8 produtos e junta o resto em "demais"', [(DOC.match(/<tr><td class="td-mono">/g) || []).length, /demais 4 produtos/.test(DOC)], [8, true]);
   const DOCsem = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null, conf:null }), Object.assign({}, ctxD, { hist:'falha', cadFalha:true }));
@@ -3995,6 +3995,52 @@ console.log('\n── estudo de UEP ──');
   ok('a TV fica preta: TV física (?tv), aba TV OPERACIONAL e tela cheia voltam aos tokens antigos',
      [/html\.sem-splash, #sec-tv, body\.tv-fullscreen\{\s*--bg:#111111;--surface:#1C1C1C/.test(src),
       /html\.sem-splash body, body\.tv-fullscreen, #sec-tv\{ background:#111111; \}/.test(src)], [true, true]); }
+
+// ── TELA DA DIRETORIA — /diretoria (v7.116.0) ────────────────────────────────
+{ const vm = require('vm');
+  const need = f => { const nome = f.match(/function (\w+)/)[1]; if (typeof global[nome] !== 'function') vm.runInThisContext(pega(f).replace(/^function (\w+)/, 'global.$1 = function $1')); };
+  ['function parseBR(', 'function _relSemanaJanela(', 'function _relDiasDaSemana(', 'function _relSemanaPassada(', 'function _numSemana(',
+   'function _qpRealDia(', 'function _horaEhHE(', 'function _dirHoje(', 'function _dirSemana(', 'function _dirUltimos(',
+   'function _dirF(', 'function _dirMsg(', 'function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirSemSvg(', 'function _dirSomaPts('].forEach(need);
+  global.CFG = global.CFG || {}; CFG.turnoInicio = CFG.turnoInicio || '07:00'; CFG.turnoFim = CFG.turnoFim || '17:00';
+  global.DIR_COB_MIN = 95;
+  global._rpEsc = global._rpEsc || (x => String(x));
+  const vj = JSON.parse(fs.readFileSync(path.join(__dirname, 'vercel.json'), 'utf8'));
+  ok('endereço próprio: /diretoria aponta para o painel, sem cache velho',
+     [vj.rewrites.some(r => r.source === '/diretoria' && r.destination === '/ritmoprod_embalagem_v7.html'), vj.headers.some(h => h.source === '/diretoria')], [true, true]);
+  ok('o modo é ligado ANTES da 1ª pintura (sem splash, sem login) e só pelo endereço /diretoria ou ?dir',
+     [/\/\^\\\/diretoria\\\/\?\$\/i\.test\(location\.pathname\)[^\n]*has\('dir'\)\)\s*\n\s*document\.documentElement\.classList\.add\('modo-dir'\)/.test(src),
+      /html\.modo-dir #splash, html\.modo-dir \.login-over/.test(src)], [true, true]);
+  // HOJE: a mesma montagem da aba UEP; pontos de jornada × hora extra pela régua da hora
+  const D = { estado:'ok', feito:1790, he:410, meta:2530, proj:{ fim:2635 }, card:{ c:'ok', ef:104.1, esperado:1719 }, mix:{ cx:1020 } };
+  const H = _dirHoje(D, { minNorm:358, realNormal:1020, realHE:198 },
+    [{ hora:'07:00', pontos:1800 }, { hora:'09:00', pontos:1260 }, { hora:'05:00', pontos:594 }]);
+  ok('HOJE: UEP e selo do card, caixas da jornada, pontos separados em jornada e hora extra',
+     [H.selo.t, H.uep, H.cx, H.pts, H.hePts, H.heCx, Math.round(H.cob)], ['NO RITMO', 1790, 1020, 3060, 594, 198, 100]);
+  ok('HOJE: sem hora de jornada lançada não julga; sem pontos no backend não inventa zero',
+     [_dirHoje(D, { minNorm:0, realNormal:0 }, []).selo.t, _dirHoje(D, { minNorm:0 }, []).pts, _dirHoje({ estado:'aguardando', msg:'x' }).estado], ['AGUARDANDO A JORNADA', null, 'aguardando']);
+  // SEMANA PASSADA: 25/09/2026 (sex) → 14 a 20/09
+  const dias = [['11/09/2026',2250],['14/09/2026',2480],['15/09/2026',2610],['16/09/2026',2395],['17/09/2026',2702],['18/09/2026',2566],['21/09/2026',2818]]
+    .map(([data, uep]) => ({ data, uep, uepHe:224, real:1500, heCx:108, metaUep:2530 }));
+  const S = _dirSemana(dias, new Date(2026, 8, 25), { pts:20850, cx:6950 });
+  ok('SEMANA: só a semana passada; UEP e meta pelos dias com UEP; caixas de JORNADA; pontos da leitura do período',
+     [S.nDias, S.uep, S.meta, S.bateu, Math.round(S.pct*10)/10, S.cx, S.heCx, S.pts, S.heUep], [5, 12753, 12650, 3, 100.8, 6960, 540, 20850, 1120]);
+  ok('SEMANA: histórico não lido ≠ semana sem dia fechado ≠ pontos não lidos (nunca zero)',
+     [_dirSemana(null), _dirSemana([], new Date(2026, 8, 25)), _dirSemana(dias, new Date(2026, 8, 25), null).pts], [undefined, null, null]);
+  ok('últimos dias: só FECHADOS com UEP, em ordem, hoje fora', _dirUltimos(dias.concat([{ data:'25/09/2026', uep:900 }]), new Date(2026, 8, 25), 3).map(d => d.data), ['17/09/2026','18/09/2026','21/09/2026']);
+  ok('pontos da semana: guarda só a soma (pontos e caixas apontadas)', _dirSomaPts([{ pontos:10, caixas:3 }, { pontos:5, caixas:2 }, {}]), { pts:15, cx:5 });
+  // UM VEREDITO: só a UEP tem selo; caixas e pontos são número
+  const HH = _dirHojeHtml(H), SH = _dirSemanaHtml(S, [], false, null);
+  ok('um veredito só: o selo e a cor são da UEP; caixas e pontos saem sem classe de status',
+     [/dir-selo ok/.test(HH), /<div class="dir-k"><div class="dir-kl">CAIXAS/.test(HH), /<div class="dir-k"><div class="dir-kl">PONTOS/.test(HH), /META BATIDA/.test(SH)], [true, true, true, true]);
+  ok('o desenho da diretoria não faz conta (lê o que _dirHoje/_dirSemana/_gpxDoPainel montaram)',
+     ['function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirCartHtml('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|uepHistResumo\(|_cartAberta\(|_gpxMontar\(/.test(pega(f))), [false, false, false]);
+  ok('a carteira soma os pontos da programação por dia, e linha sem o campo não vira zero',
+     [/if\(it\.pontos === undefined \|\| it\.pontos === null\) d\.semPts\+\+; else d\.pts \+= Number\(it\.pontos\) \|\| 0;/.test(JS), /pts: d \? \(d\.semPts \? null : d\.pts\) : 0/.test(JS)], [true, true]);
+  ok('na diretoria ninguém clica: versão nova recarrega sozinha, e o anti-descanso de tela vale lá também',
+     [/if\(document\.documentElement\.classList\.contains\('modo-dir'\)\)\{ location\.reload\(\); return; \}/.test(JS),
+      /has\('tv'\) && !document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(JS)], [true, true]);
+}
 
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'

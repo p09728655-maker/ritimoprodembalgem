@@ -3142,6 +3142,29 @@ feito e dá ar de verdade ao que sobrou.
   finalidade (o card "falta zerar" da TV); a guarda do teste olha só a aba
   PLANO, de propósito — contar o arquivo inteiro acusava a TV.
 
+## TELA DA DIRETORIA — `/diretoria` (v7.116.0)
+- Pedido do PPCP (25/09/2026): *"uma tela para a sala do diretor"*, com UEP,
+  caixas e pontos, pouco texto, link separado. Rota no `vercel.json` para o
+  MESMO HTML; o `<head>` põe `html.modo-dir` (também `?dir`) antes da 1ª
+  pintura — sem splash, login, cabeçalho, rodapé nem barra de versão.
+  `iniciarDiretoria()` liga a `#sec-dir` e o carrossel (`DIR_TEMPO` 20 s).
+- **Um veredito só: a UEP.** Caixas e pontos são tinta. Selo da semana:
+  META BATIDA (UEP ≥ Σ metas dos dias com UEP) ou ABAIXO DA META.
+- **Contas**: `_dirHoje` (lê `_uepAbaDados` — é o 3º leitor dela, o teste conta),
+  `_dirSemana` (`_relSemanaPassada` + `uepHistResumo` + `_qpRealDia`),
+  `_dirUltimos`, e `_gpxDoPainel` para a carteira. `_dir*Html` são desenho (o
+  teste falha se chamarem conta).
+- **Pontos**: hoje pelo `porHoraModelo` (jornada × HE pela hora); semana pelo
+  `getProducaoModeloPeriodo` (inclui HE — o período não separa por hora sem o
+  `cxHora`); carteira pelo `pontos` da programação (`d.pts` no `_cartAberta`,
+  campo ADICIONAL; linha sem o campo → `null`, nunca zero). Pontos só veem caixa
+  lançada com produto: cobertura < `DIR_COB_MIN` (95%) é escrita na tela.
+- **Custo**: histórico 30 min, programação 15 min (`GPX_TTL`), pontos da semana
+  6 h com a soma guardada em `localStorage['rpe_dir_pts']` (a recarga de 28 min
+  do anti-descanso não refaz a leitura). `PREP_PERIODO` guardado e devolvido.
+- Na diretoria `_naTV()` é verdadeiro e versão nova faz `location.reload()`.
+- **Aba ⚖ UEP enxuta** na mesma versão: explicação no `title`, não na tela.
+
 ## Cores do painel — azul-marinho, TV preta (v7.115.0 / mobile 1.29.0)
 - Pedido do PPCP, 25/09/2026, a partir de uma maquete do ChatGPT — **só a
   cor foi adotada**, o conteúdo da maquete não (ver aba UEP v7.114.0).
