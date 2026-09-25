@@ -505,6 +505,9 @@ body.ger-hist .ger-live-only{display:none!important}
 .tbl-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;overflow:hidden}
 .tbl-hdr{padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .tbl-hdr-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+#ger-semana .tbl-hdr{flex-wrap:wrap;row-gap:8px}
+#ger-semana .gsem-selo{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--acc);letter-spacing:2px;margin-left:12px;padding:3px 10px;border:1px solid rgba(245,166,35,.5);border-radius:4px;white-space:nowrap}
+#ger-semana .gsem-per{font-family:var(--font-d);font-size:13px;color:var(--txt);letter-spacing:1px;margin-left:10px;white-space:nowrap}
 table{width:100%;border-collapse:collapse}
 th{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase;padding:9px 14px;border-bottom:0.5px solid var(--border);text-align:left;background:var(--elevated)}
 td{font-family:var(--font-b);font-size:13px;color:var(--txt);padding:9px 14px;border-bottom:0.5px solid var(--border)}
@@ -1710,9 +1713,12 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tbl-wrap" id="ger-semana" style="display:none;margin-top:14px">
     <div class="tbl-hdr">
       <span class="tbl-hdr-ttl">FECHAMENTO DA SEMANA PASSADA</span>
-      <span id="gsem-semana" style="font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px;margin-left:8px">· SEMANA —</span>
+      <!-- A semana e as datas são o que diz DE QUAL resultado se trata: em
+           9px no canto elas não eram lidas (PPCP, 25/09/2026 — "não visível a
+           semana que está o resultado"). Vão como selo, ao lado do título. -->
+      <span id="gsem-semana" class="gsem-selo">SEMANA —</span>
+      <span id="gsem-periodo" class="gsem-per">—</span>
       <div style="flex:1"></div>
-      <span id="gsem-periodo" style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">—</span>
       <!-- Divulgar a semana é o que se faz com este bloco, e era a única coisa
            que não dava para fazer daqui: o relatório morava na aba HISTÓRICO e
            saía pela data do filtro DE LÁ — numa segunda-feira, quando a semana
@@ -2121,7 +2127,7 @@ if (_v7Instalado()) _v7EscondeBotao();
        (_sincSlideD). Nenhum texto corrido: a TV é lida de longe. -->
   <div id="tv-slide-d" style="display:none">
     <div class="tvb-top">
-      <div class="tvb-setor-lbl"><span id="tvd-setor">EMBALAGEM</span> <span style="color:var(--acc)" id="tvd-semana">· SEMANA —</span></div>
+      <div class="tvb-setor-lbl"><span id="tvd-setor">EMBALAGEM</span> <span style="color:var(--acc)">· <span id="tvd-semana">SEMANA —</span></span></div>
       <div style="text-align:center;line-height:1">
         <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(56px,9vw,120px);width:auto;display:inline-block;vertical-align:middle">
       </div>
@@ -2908,7 +2914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.96.0';
+const APP_VER   = '7.97.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3803,11 +3809,29 @@ async function lerMediaHorasComRetry(tentativas){
 // Produção do dia em PONTOS/PESO por produto (identificação de produto é
 // OPCIONAL). Chamada separada, fora do caminho quente de getDados, igual a
 // getMediaHoras — não afeta o timeout/cold-start do painel principal.
-async function lerPontosDia(){
-  if(!CFG.sheetsUrl) return false;
+// ⚠ É a leitura MAIS CARA do backend e era chamada com UMA tentativa: no cold
+// start ela estourava os 25 s e o card UEP DO DIA ficava em "aguardando a
+// leitura do dia…" até o próximo refresh — 5 min depois (PPCP, 25/09/2026:
+// "para ler as UEPs está lento"). Hoje: 3 tentativas EM SEQUÊNCIA com espera
+// crescente (como o lerSheetsComRetry) e voo compartilhado — o load, o refresh
+// e a aba PRODUÇÃO/HORA pedindo juntos viram UMA execução no Apps Script.
+let _pontosVoo=null;
+function lerPontosDia(){
+  if(!CFG.sheetsUrl) return Promise.resolve(false);
+  if(_pontosVoo) return _pontosVoo;
+  _pontosVoo=(async()=>{
+    for(let t=1;t<=3;t++){
+      if(await _lerPontosDiaUma()) return true;
+      if(t<3) await new Promise(ok=>setTimeout(ok,2000*t));
+    }
+    return false;
+  })().finally(()=>{ _pontosVoo=null; });
+  return _pontosVoo;
+}
+async function _lerPontosDiaUma(){
   try{
     const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
-    const json=await jsonpFetch(url);
+    const json=await jsonpFetch(url, 30000);
     if(json && json.ok){
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
@@ -10827,7 +10851,7 @@ const RP_SEMANA = (function() {
     const k = d.k, normal = k.totReal - k.totHE;
 
     set('setor',   (document.getElementById('tv-setor') || {}).textContent || 'EMBALAGEM');
-    set('semana',  '· SEMANA ' + d.numSem);
+    set('semana',  'SEMANA ' + d.numSem);
     set('periodo', d.semStr);
     set('total',   fmtN(k.totReal));
     set('soma',    '= soma dos ' + plural(d.dias.length,'dia fechado','dias fechados') + ' ↓');

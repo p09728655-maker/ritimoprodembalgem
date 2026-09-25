@@ -265,6 +265,10 @@ via Google Apps Script (JSONP).
   `aplicarConfigPainel` **preserva** a marcação local do D em vez de apagá-la
   (a config antiga não traz a chave, e sem esse cuidado a TV ignoraria o gestor).
 
+- **A SEMANA vai em SELO no cabeçalho do `#ger-semana`** (v7.97.0, PPCP:
+  *"não visível a semana que está o resultado"*): `.gsem-selo` (15px) +
+  `.gsem-per` (datas, 13px) ao lado do título. O `pintar` escreve
+  `SEMANA N` **sem** o `· ` — o ponto separador da TV mora na marcação dela.
 - **Divulgar a semana sai do próprio bloco** (pedido do usuário, 31/08/2026:
   *"preciso da impressão do resultado da semana para enviar para o pessoal"*).
   O `#ger-semana` ganhou **🖨 IMPRIMIR SEMANA** e **📲 WHATSAPP**, e os dois
@@ -686,6 +690,9 @@ via Google Apps Script (JSONP).
 - **Toda leitura do `.gs` lê a aba INTEIRA** (`getDataRange()`, 30+ ocorrências).
   O custo cresce com o histórico acumulado, não com o que foi pedido: 7 dias de
   parada custam o mesmo que 30.
+- **No desktop, `lerPontosDia` tem 3 tentativas em sequência (30 s) e voo
+  compartilhado (`_pontosVoo`)** (v7.97.0): com uma tentativa só, o cold start
+  deixava o card UEP DO DIA em "aguardando" até o próximo refresh (5 min).
 - **`getPontosDia` é a chamada mais cara.** Sozinha ela lê o catálogo
   `PRODUTO_CODIGO` **3×** na mesma execução (`:1204`, `:1218` e de novo dentro de
   `calcularProgramacao()` em `:1599`), mais `PRODUCAO_PRODUTO` inteira, mais

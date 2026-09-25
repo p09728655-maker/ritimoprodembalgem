@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.97.0 — 25/09/2026
+
+**A semana do FECHAMENTO DA SEMANA PASSADA ficou legível** (PPCP: *"não
+visível a semana que está o resultado"*). No gerencial, a semana virou um selo
+(**SEMANA 38**, 15px, laranja com borda) logo ao lado do título, com as datas
+(`14/09/2026 a 20/09/2026`) em 13px do lado — antes eram 9px, e as datas
+ficavam soltas no canto direito. A Tela D da TV não muda.
+
+**UEP DO DIA no gerencial não fica mais preso em "aguardando"** (PPCP: *"para
+ler as UEPs está lento"*). O card depende do `getPontosDia`, a leitura mais
+cara do backend, que ia com **uma** tentativa de 25 s: no cold start ela
+estourava e o card só aparecia no refresh seguinte, 5 min depois. Agora são
+3 tentativas em sequência (30 s cada, espera crescente) e as chamadas
+simultâneas (abertura, refresh, aba PRODUÇÃO/HORA) compartilham uma execução.
+
+**Atenção:** nenhum número muda. O tempo de resposta do Apps Script em si não
+mudou — o que mudou é que uma falha não deixa mais o card vazio por 5 min.
+
+---
+
 ## v7.96.0 — 25/09/2026 · ⚠ re-deploy (.gs v5.18)
 
 **UEP de todos os produtos do cadastro** (PPCP: *"fazer a UEP de todos
