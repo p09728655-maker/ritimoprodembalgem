@@ -3121,7 +3121,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.124.0';
+const APP_VER   = '7.125.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11407,8 +11407,8 @@ async function _dirCarregar(){
       renderDir();
     }
     const key = _dirSemKey(), [de, ate] = key.split('|');
-    const semHe = DIR_PTS.soma && DIR_PTS.soma.ptsHe == null;   // backend sem pontosHe: confere de novo em 30 min
-    const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > (semHe ? 30*60000 : DIR_PTS_TTL) : Date.now() - DIR_PTS.ts > 10*60000);
+    const semHe = DIR_PTS.soma && DIR_PTS.soma.ptsHe == null;   // leitura sem pontosHe (antes do .gs v5.20): confere de novo em 5 min
+    const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > (semHe ? 5*60000 : DIR_PTS_TTL) : Date.now() - DIR_PTS.ts > 5*60000);
     if(vencido){
       // essa leitura publica PREP_PERIODO, que é de outra aba: guarda e devolve
       const prep = PREP_PERIODO;

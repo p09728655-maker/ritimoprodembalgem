@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.125.0 — 25/09/2026
+
+- Diretoria: enquanto os pontos da semana chegam sem a separação de hora extra
+  (leitura feita antes do `.gs` v5.20), a tela confere de novo a cada **5 min**
+  (eram 30). Com a separação, a leitura continua valendo 6 h — semana fechada
+  não muda. Falha de leitura tenta de novo em 5 min (eram 10).
+
+**Atenção:** nenhum número muda.
+
+---
+
 ## v7.124.0 — 25/09/2026
 
 - **Diretoria: pausa discreta** (PPCP). As bolinhas do rodapé levam direto à
