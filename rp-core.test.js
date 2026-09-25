@@ -257,6 +257,17 @@ ok('sem meta do dia também não',
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
 }
 
+// ── R$ por UEP no período (uepCustoPeriodo) ────────────────────────────────
+{
+  const D = [{ data: '22/09/2026', uep: 2606.4, metaUep: 2530 }, { data: '23/09/2026', uep: 2263, metaUep: 2530 },
+             { data: '19/09/2026', uep: null }, { data: '20/09/2026', uep: 0 }];
+  const c = uepCustoPeriodo(382.89, D);
+  ok('só dias com UEP entram; cada um paga a jornada inteira', [c.n, Math.round(c.custo)], [2, Math.round(382.89 * 527 / 60 * 2)]);
+  ok('R$/UEP do período = custo ÷ UEP feita; meta = custo ÷ soma das metas',
+     [Math.round(c.rsUep * 100) / 100, Math.round(c.rsMeta * 100) / 100], [1.38, 1.33]);
+  ok('sem custo-hora ou sem dia com UEP não há conta', [uepCustoPeriodo(0, D), uepCustoPeriodo(10, [{ uep: null }])], [null, null]);
+}
+
 // ── R$ por UEP (uepCusto) ──────────────────────────────────────────────────
 {
   const c = uepCusto(382.89, 2265, 527, 2530);   // 23/09/2026, dia inteiro

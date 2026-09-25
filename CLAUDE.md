@@ -2634,6 +2634,14 @@ feito e dá ar de verdade ao que sobrou.
   `_uepComCusto` foi apagado; o `uepCusto` fica no rp-core, testado, até o
   lugar ser escolhido. O `relatorios.test.js` falha se o R$ voltar ao card.
   A nota abaixo descreve a v7.88–7.99.
+- **CUSTO POR UEP mora na aba SIMULADOR** (v7.101.0, PPCP escolheu o lugar
+  recomendado). `uepCustoPeriodo(custoHora, dias)` no rp-core: dias FECHADOS
+  do período com UEP, cada um pagando a jornada inteira (527 min) — a mesma
+  base da meta —, contra custo ÷ Σ metas de UEP dos dias. Faixa `#sim-uep`
+  acima da base da simulação, desenho puro (`_simUepPintar`), redesenhada no
+  `_pgSimAtualiza` (o custo-hora muda enquanto se digita). Dias do
+  `buildDiasHistAsync` filtrados pelo `sim-de`/`sim-ate` (`SIM_UEP`), sem
+  chamada nova. Hoje não entra: não fechou.
 - **TEXTO DO CARD UEP DO DIA = o do % DA META DO DIA** (v7.100.0, PPCP:
   *"está confuso"*): `NO RITMO · 1.413 de 1.383 UEP esperadas até agora ·
   meta do dia 2.530 UEP · +410 em HE`. Um veredito só (o selo); o `(55,9%)`

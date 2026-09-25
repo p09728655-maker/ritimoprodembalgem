@@ -3692,6 +3692,9 @@ console.log('\n── estudo de UEP ──');
         /const comUep = pfx === 'gsem-';/.test(JS)], [true, true, false, true]);
     // PPCP, 25/09/2026: "pode tirar esse valor em reais daí". O uepCusto
     // continua no núcleo (testado) até o R$/UEP ganhar lugar próprio.
+    ok('R$/UEP mora na aba SIMULADOR: desenho sobre o uepCustoPeriodo, sem conta própria',
+       [/uepCustoPeriodo\(/.test(pega('function _simUepPintar(')), /\/\s*60/.test(pega('function _simUepPintar(')),
+        /_simUepPintar\(\)/.test(pega('function _pgSimAtualiza('))], [true, false, true]);
     ok('R$/UEP saiu dos cards UEP DO DIA (hoje e dia passado)',
        [/_uepComCusto/.test(JS), /uepCusto\(/.test(JS)], [false, false]);
     ok('META DIA (UEP) nas configurações: só envia quando o gestor mudou o valor, uma vez',

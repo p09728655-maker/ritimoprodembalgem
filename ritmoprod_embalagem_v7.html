@@ -2914,7 +2914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.100.0';
+const APP_VER   = '7.101.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -12762,6 +12762,10 @@ function _pgPintar(ctx, t){
 // ⚠ O CONTEXTO é o mesmo objeto por período (`_pgContextoDoPeriodo`): período
 // igual nas duas abas não gera chamada nova nenhuma.
 var SIM_ULT='', SIM_RODANDO=false;
+// Dias FECHADOS do período com UEP, para o CUSTO POR UEP da aba (v7.101.0).
+// Vêm do buildDiasHistAsync (cache de 2 min, a mesma leitura do HISTÓRICO):
+// nenhuma chamada nova ao Apps Script.
+var SIM_UEP={chave:'', dias:null};
 
 function _simMarcaPreset(qual){
   document.querySelectorAll('#sec-simulador .pg-q').forEach(b=>
@@ -12811,6 +12815,7 @@ async function renderSimulador(forcar){
   const cache=PG_TELA_CACHE[chave];
   // O caminho do cache TAMBÉM marca a chave em cartaz: é ela que o
   // _pgSimAtualiza lê a cada tecla digitada no cenário.
+  _simUepCarregar(de, ate);
   if(cache && (Date.now()-cache.t)<PG_TELA_TTL && !forcar){ SIM_ULT=chave; _simPintar(cache.ctx, cache.t); return; }
 
   // Período novo limpa a tela; refresh do MESMO período mantém o cenário
@@ -12841,10 +12846,43 @@ function _simPintar(ctx, t){
   const st=(ctx&&ctx.st)||{};
   const bloco=_pgSimHtml(ctx);
   alvo.innerHTML = bloco
-    ? `<div class="sim-base">Base da simulação: <b>${fmtN(st.nDias||0)}</b> dia(s) trabalhado(s) no período · <b>${fmt1(st.horasProd||0)}h</b> produtivas por dia · <b>${_fmtMinPar(st.totMinNP||0)}</b> de parada não programada. As causas abaixo são o <b>Pareto deste período</b> — a mesma conta do relatório de paradas e da gestão de perdas.</div>` + bloco
+    ? `<div id="sim-uep" class="sim-base"></div><div class="sim-base">Base da simulação: <b>${fmtN(st.nDias||0)}</b> dia(s) trabalhado(s) no período · <b>${fmt1(st.horasProd||0)}h</b> produtivas por dia · <b>${_fmtMinPar(st.totMinNP||0)}</b> de parada não programada. As causas abaixo são o <b>Pareto deste período</b> — a mesma conta do relatório de paradas e da gestão de perdas.</div>` + bloco
     : '<div class="pg-carregando">Nenhuma parada não planejada neste período — não há o que simular. Escolha um período maior.</div>';
   const upd=document.getElementById('sim-upd');
   if(upd) upd.textContent='dados de '+new Date(t).toLocaleTimeString('pt-BR');
+  _simUepPintar();
+}
+
+// ── CUSTO POR UEP NO PERÍODO (v7.101.0, PPCP 25/09/2026) ────────────────────
+// Saiu do card UEP DO DIA ("precisa ser em um lugar estratégico") e mora aqui,
+// onde o custo-hora é digitado. Conta: uepCustoPeriodo (rp-core). Desenho só.
+async function _simUepCarregar(de, ate){
+  const chave=de+'|'+ate;
+  if(SIM_UEP.chave===chave && SIM_UEP.dias) return _simUepPintar();
+  SIM_UEP={chave, dias:null};
+  let dias=null;
+  try{
+    const a=parseBR(de), b=parseBR(ate);
+    dias=(await buildDiasHistAsync()||[]).filter(d=>{ const dt=parseBR(d.data); return dt && dt>=a && dt<=b; });
+  }catch(e){ dias=[]; }
+  if(SIM_UEP.chave!==chave) return;                  // o período mudou no meio da busca
+  SIM_UEP.dias=dias;
+  _simUepPintar();
+}
+function _simUepPintar(){
+  const el=document.getElementById('sim-uep'); if(!el) return;
+  if(!SIM_UEP.dias){ el.innerHTML='CUSTO POR UEP: lendo o histórico…'; return; }
+  let ch=0; try{ ch=_pgSimNum(_pgSimEstado().custoHora); }catch(e){}
+  const c=uepCustoPeriodo(ch, SIM_UEP.dias);
+  const rs=v=>'R$ '+v.toFixed(2).replace('.',',');
+  if(!(ch>0)){ el.innerHTML='<b>CUSTO POR UEP</b> · digite o CUSTO-HORA no cenário abaixo para ver quanto custou cada UEP no período.'; return; }
+  if(!c){ el.innerHTML='<b>CUSTO POR UEP</b> · nenhum dia fechado com UEP gravada neste período.'; return; }
+  const acima=c.rsUep>c.rsMeta;
+  el.innerHTML=`<b>CUSTO POR UEP</b> · <b>${rs(c.rsUep)}</b>/UEP no período contra ${rs(c.rsMeta)} da meta · `
+    +`<span style="color:var(${acima?'--red':'--ok'})">${acima?'ACIMA':'ABAIXO'} DO CUSTO DA META</span>`
+    +(acima?` — R$ ${fmtN(Math.round(c.excesso))} pagos sem virar UEP`:'')
+    +` · ${plural(c.n,'dia fechado','dias fechados')} com UEP. `
+    +`<span title="custo-hora do cenário × ${UEP_MIN_DIA} min de jornada normal por dia ÷ UEP feita (a hora extra fica fora). É custo de conversão da mão de obra da embalagem, não custo do produto. O custo-hora vale só neste computador.">Custo-hora ${rs(ch)} × ${UEP_MIN_DIA} min por dia ÷ UEP de jornada.</span>`;
 }
 
 // ── SIMULADOR DE INVESTIMENTO (aba SIMULADOR) ───────────────────────────────
@@ -13323,6 +13361,7 @@ function _pgSimAtualiza(){
   const seAnos=document.getElementById('pg-sim-roi-anos'); if(seAnos) s.roiAnos=seAnos.value;
   _pgSimSalva(s);
   const r=_pgSimulacao(_pgSimEnt(c.ctx, s));
+  _simUepPintar();                                  // o custo-hora pode ter mudado
   const res=document.getElementById('pg-sim-res');
   if(res) res.innerHTML=_pgSimResHtml(r);
   // A memória fica num <details> FORA do #pg-sim-res: redesenhar só o miolo

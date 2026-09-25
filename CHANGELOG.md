@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.101.0 / mobile 1.27.0 — 25/09/2026
+
+**CUSTO POR UEP na aba SIMULADOR** (PPCP: o R$/UEP que saiu do card do dia
+vai para *"um lugar estratégico"*). Faixa no topo da aba, com o período do
+filtro dela: `R$ 1,38/UEP no período contra R$ 1,33 da meta · ACIMA DO CUSTO
+DA META — R$ 253 pagos sem virar UEP · 2 dias fechados com UEP`.
+- Conta: custo-hora do cenário × 527 min de jornada normal por dia fechado ÷
+  UEP de jornada gravada no `HISTORICO`; a meta é o mesmo custo ÷ soma das
+  metas de UEP dos dias (`uepCustoPeriodo`, no `rp-core.js`).
+- Sem custo-hora digitado, a faixa pede o custo-hora; sem dia com UEP no
+  período, diz isso. Nunca mostra R$ 0.
+- Atualiza enquanto o custo-hora é digitado no cenário.
+
+**Atenção:** indicador novo, só nesta aba. Lê o histórico que o painel já
+carrega (cache de 2 min) — nenhuma chamada nova ao Apps Script, sem re-deploy.
+O custo-hora continua só neste computador. Dia de hoje não entra (ainda não
+fechou). Cada dia paga a jornada inteira de 527 min, a mesma base da meta de
+UEP.
+
+---
+
 ## v7.100.0 / mobile 1.26.0 — 25/09/2026
 
 **Card UEP DO DIA mais simples** (PPCP: *"a explicação … está confusa"* e
