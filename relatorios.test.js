@@ -4032,7 +4032,7 @@ console.log('\n── estudo de UEP ──');
   // UM VEREDITO: só a UEP tem selo; caixas e pontos são número
   const HH = _dirHojeHtml(H), SH = _dirSemanaHtml(S, [], false, null);
   ok('um veredito só: o selo e a cor são da UEP; caixas e pontos saem sem classe de status',
-     [/dir-selo ok/.test(HH), /<div class="dir-k"><div class="dir-kl">CAIXAS/.test(HH), /<div class="dir-k"><div class="dir-kl">PONTOS/.test(HH), /META BATIDA/.test(SH)], [true, true, true, true]);
+     [/dir-selo ok/.test(HH), /<div class="dir-k"><div class="dir-kl"><span>CAIXAS/.test(HH), /<div class="dir-k"><div class="dir-kl"><span>PONTOS/.test(HH), /META BATIDA/.test(SH)], [true, true, true, true]);
   ok('o desenho da diretoria não faz conta (lê o que _dirHoje/_dirSemana/_gpxDoPainel montaram)',
      ['function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirCartHtml('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|uepHistResumo\(|_cartAberta\(|_gpxMontar\(/.test(pega(f))), [false, false, false]);
   ok('a carteira soma os pontos da programação por dia, e linha sem o campo não vira zero',
@@ -4065,6 +4065,8 @@ console.log('\n── estudo de UEP ──');
       { minNorm:358, realNormal:1020, realHE:198 }, [{ hora:'07:00', pontos:3060 }, { hora:'05:00', pontos:594 }]));
   ok('diretoria: cada quantidade sem HE com o total COM HE embaixo (UEP, caixas, pontos)',
      [/com HE <b>2\.200<\/b>/.test(HH2), /com HE <b>1\.218<\/b>/.test(HH2), /com HE <b>3\.654<\/b>/.test(HH2)], [true, true, true]);
+  ok('diretoria HOJE: o hora a hora é o MESMO desenho da aba UEP (_uepAbaSvg), com os dados da mesma montagem',
+     [/_uepAbaSvg\(H\.horas\)/.test(pega('function _dirHojeHtml(')), /horas: D\.horas/.test(pega('function _dirHoje('))], [true, true]);
   ok('diretoria: pontos da semana não se separam por hora — diz isso, não inventa o "sem HE"',
      /sem HE não separado/.test(_dirSemanaHtml(_dirSemana([{ data:'14/09/2026', uep:2500, real:1500, heCx:100, metaUep:2530 }], new Date(2026, 8, 25), { pts:900, cx:1400 }), [], false, null)), true);
 }

@@ -32,6 +32,13 @@ semana não se separam por hora: o card diz *"sem HE não separado"* em vez de
 inventar. Na semana, o gráfico dos últimos dias ganhou espaço e números
 maiores.
 
+**Diretoria, tela HOJE: o gráfico HORA A HORA em UEP** (PPCP: *"coloca na
+tela hoje"*) — o mesmo desenho da aba ⚖ UEP (hora em andamento sem veredito,
+HE listrada), na proporção da TV. O "com HE" subiu para a linha do rótulo de
+cada card e a projeção foi para dentro do card da UEP, para o gráfico caber. No
+gráfico (aba e diretoria), o número de uma barra abaixo da meta sobe acima do
+tracejado — antes a linha passava por cima dele.
+
 **Atenção:** nenhum número muda. Sem re-deploy.
 
 ---

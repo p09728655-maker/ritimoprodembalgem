@@ -353,7 +353,8 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-g3.comp .dir-kv{font-size:calc(var(--u)*4.6)}
 #sec-dir .dir-g3.comp .dir-k.dest .dir-kv{font-size:calc(var(--u)*5.6)}
 #sec-dir .dir-g3.comp .dir-k{padding:calc(var(--u)*1) calc(var(--u)*1.4);gap:calc(var(--u)*.4)}
-#sec-dir .dir-he{font-family:var(--font-d);font-size:calc(var(--u)*1.25);color:var(--txt2)}
+#sec-dir .dir-kl{display:flex;justify-content:space-between;align-items:baseline;gap:calc(var(--u)*1)}
+#sec-dir .dir-he{font-family:var(--font-d);font-size:calc(var(--u)*1.3);letter-spacing:0;color:var(--txt2);white-space:nowrap}
 #sec-dir .dir-he b{color:var(--warn);font-weight:600}
 #sec-dir .dir-kl i{font-style:normal;opacity:.7;letter-spacing:calc(var(--u)*.1)}
 #sec-dir .dir-ks{font-family:var(--font-d);font-size:calc(var(--u)*1.05);color:var(--txt2)}
@@ -362,11 +363,14 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-barra i{position:absolute;left:0;top:0;bottom:0;background:var(--txt2);border-radius:calc(var(--u)*.3)}
 #sec-dir .dir-barra.ok i{background:var(--ok)} #sec-dir .dir-barra.warn i{background:var(--warn)} #sec-dir .dir-barra.red i{background:var(--red)}
 #sec-dir .dir-barra u{position:absolute;top:calc(var(--u)*-.5);bottom:calc(var(--u)*-.5);border-left:calc(var(--u)*.22) dashed var(--txt)}
-#sec-dir .dir-bl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:calc(var(--u)*1);color:var(--txt2)}
+#sec-dir .dir-bl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:calc(var(--u)*1.1);color:var(--txt2)}
+#sec-dir .dir-bl b{color:var(--txt)}
 #sec-dir .dir-lin{font-family:var(--font-d);font-size:calc(var(--u)*1.3);color:var(--txt2);background:var(--surface);border:1px solid var(--border);border-radius:calc(var(--u)*.5);padding:calc(var(--u)*.8) calc(var(--u)*1.2)}
 #sec-dir .dir-lin b{color:var(--txt)} #sec-dir .dir-lin b.he{color:var(--warn)}
 #sec-dir .dir-graf{flex:1;min-height:0;display:flex;flex-direction:column}
 #sec-dir .dir-graf svg{flex:1;min-height:0;width:100%}
+#sec-dir .dir-graf-h{flex:1;min-height:0}
+#sec-dir .dir-graf-h svg{max-width:none!important;height:100%}
 #sec-dir .dir-msg{font-family:var(--font-d);font-size:calc(var(--u)*1.8);color:var(--txt2);text-align:center}
 #sec-dir .dir-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:calc(var(--u)*1.1);align-items:stretch}
 #sec-dir .dir-dia{background:var(--surface);border:1px solid var(--border);border-top:calc(var(--u)*.45) solid var(--border);border-radius:calc(var(--u)*.6);padding:calc(var(--u)*1.3) calc(var(--u)*1.2);display:flex;flex-direction:column;gap:calc(var(--u)*.9);min-width:0}
@@ -4780,7 +4784,9 @@ function _uepAbaSvg(horas, largura, altura){
       // em andamento: sem cor de veredito, só o contorno — a hora ainda não fechou
       const fill=h.he?'url(#uepLis)':(h.andamento?'var(--elevated,var(--surface))':`var(--${h.cls||'txt2'})`);
       s+=`<rect x="${x.toFixed(1)}" y="${y(h.uep).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.uep)).toFixed(1)}" rx="2" fill="${fill}" opacity="${h.he?1:.9}"${h.andamento&&!h.he?' stroke="var(--txt2)" stroke-width="1.5" stroke-dasharray="4 2"':''}><title>${tip}</title></rect>`
-        +`<text x="${cx.toFixed(1)}" y="${(y(h.uep)-6).toFixed(1)}" text-anchor="middle" font-size="${FS-1}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(h.uep))}${h.cxSem>0?'*':''}</text>`;
+        // o número sobe acima da META quando a barra fica abaixo dela: senão o
+        // tracejado passa por cima do número (v7.118.0)
+        +`<text x="${cx.toFixed(1)}" y="${(Math.min(y(h.uep), h.metaH?y(h.metaH):y(h.uep))-6).toFixed(1)}" text-anchor="middle" font-size="${FS-1}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(h.uep))}${h.cxSem>0?'*':''}</text>`;
     } else if(h.metaH){
       s+=`<rect x="${x.toFixed(1)}" y="${y(h.metaH).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.metaH)).toFixed(1)}" rx="2" fill="none" stroke="var(--border)" stroke-dasharray="3 3"><title>${tip}</title></rect>`;
       if(h.lancada) s+=`<text x="${cx.toFixed(1)}" y="${(y(0)-8).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">s/ prod.</text>`;
@@ -11156,7 +11162,8 @@ function _dirHoje(D, k, porHoraModelo){
   return { estado:'ok', iniciou,
            selo: iniciou ? { c:D.card.c, t:slRitmo(D.card.ef) } : { c:'', t:'AGUARDANDO A JORNADA' },
            uep:D.feito, esperado:D.card.esperado, meta:D.meta, proj:D.proj ? D.proj.fim : null,
-           heUep:D.he, cx:cxJ, heCx:cxH, pts:temPts ? ptsJ : null, hePts:temPts ? ptsH : null, cob };
+           heUep:D.he, cx:cxJ, heCx:cxH, pts:temPts ? ptsJ : null, hePts:temPts ? ptsH : null, cob,
+           horas: D.horas || [] };
 }
 // SEMANA PASSADA: a mesma janela da Tela D e do relatório semanal.
 // undefined = histórico não lido; null = nenhum dia fechado na semana.
@@ -11189,22 +11196,22 @@ function _dirUltimos(dias, hoje, n){
 function _dirF(v){ return v === null || v === undefined || !isFinite(Number(v)) ? '—' : fmtN(Math.round(Number(v))); }
 function _dirMsg(t){ return `<div class="dir-msg">${t}</div>`; }
 // a mesma quantidade COM a hora extra, embaixo do número sem HE (PPCP, 25/09/2026)
-function _dirComHe(v){ return `<div class="dir-he">com HE <b>${_dirF(v)}</b></div>`; }
+function _dirComHe(v){ return `<span class="dir-he">com HE <b>${_dirF(v)}</b></span>`; }
 function _dirHojeHtml(H){
   if(!H || H.estado !== 'ok') return _dirMsg(H ? H.msg : 'Aguardando a leitura do dia…');
   const f = _dirF, c = H.selo.c;
   const pF = H.meta > 0 ? Math.min(100, H.uep / H.meta * 100) : 0, pE = H.meta > 0 ? Math.min(100, H.esperado / H.meta * 100) : 0;
   const cobAv = H.pts != null && H.cob != null && H.cob < DIR_COB_MIN;
-  const he = H.heUep > 0 || H.heCx > 0;
   return `<span class="dir-selo ${c}">● ${H.selo.t}</span>
-    <div class="dir-g3">
-      <div class="dir-k dest ${c}"><div class="dir-kl">UEP <i>sem HE</i></div><div class="dir-kv">${f(H.uep)}</div>
+    <div class="dir-g3 comp">
+      <div class="dir-k dest ${c}"><div class="dir-kl"><span>UEP <i>sem HE</i></span>${_dirComHe(H.uep + H.heUep)}</div><div class="dir-kv">${f(H.uep)}</div>
         <div class="dir-barra ${c}"><i style="width:${pF.toFixed(1)}%"></i>${H.iniciou ? `<u style="left:${pE.toFixed(1)}%"></u>` : ''}</div>
-        <div class="dir-bl"><span>${H.iniciou ? 'esperado ' + f(H.esperado) : ''}</span><span>meta ${f(H.meta)}</span></div>${_dirComHe(H.uep + H.heUep)}</div>
-      <div class="dir-k"><div class="dir-kl">CAIXAS <i>sem HE</i></div><div class="dir-kv">${f(H.cx)}</div>${_dirComHe(H.cx + H.heCx)}</div>
-      <div class="dir-k"><div class="dir-kl">PONTOS <i>sem HE</i></div><div class="dir-kv">${f(H.pts)}</div>${H.pts != null ? _dirComHe(H.pts + (H.hePts || 0)) : ''}${cobAv ? `<div class="dir-ks av">de ${fmtP(H.cob)} das caixas (as com produto)</div>` : ''}</div>
+        <div class="dir-bl"><span>${H.iniciou ? 'esperado ' + f(H.esperado) : ''}</span>${H.proj != null ? `<span>projeção <b>${f(H.proj)}</b></span>` : ''}<span>meta ${f(H.meta)}</span></div></div>
+      <div class="dir-k"><div class="dir-kl"><span>CAIXAS <i>sem HE</i></span>${_dirComHe(H.cx + H.heCx)}</div><div class="dir-kv">${f(H.cx)}</div></div>
+      <div class="dir-k"><div class="dir-kl"><span>PONTOS <i>sem HE</i></span>${H.pts != null ? _dirComHe(H.pts + (H.hePts || 0)) : ''}</div><div class="dir-kv">${f(H.pts)}</div>${cobAv ? `<div class="dir-ks av">de ${fmtP(H.cob)} das caixas (as com produto)</div>` : ''}</div>
     </div>
-    ${H.proj != null ? `<div class="dir-lin">PROJEÇÃO <b>${f(H.proj)} UEP</b> sem HE${he ? ` &nbsp;·&nbsp; HORA EXTRA <b class="he">${f(H.heUep)} UEP · ${f(H.heCx)} cx${H.hePts != null ? ' · ' + f(H.hePts) + ' pts' : ''}</b>` : ''}</div>` : ''}`;
+    ${H.horas && H.horas.length ? `<div class="dir-k dir-graf dir-graf-h"><div class="dir-kl">HORA A HORA · UEP SEM HE · - - - META DA HORA</div>${_uepAbaSvg(H.horas)}</div>` : ''}
+`;
 }
 function _dirSemSvg(U, W){
   if(!U.length) return '';
@@ -11234,10 +11241,10 @@ function _dirSemanaHtml(S, U, falhaHist, ptsEst){
                : 'sem HE não separado' + (S.cob != null && S.cob < DIR_COB_MIN ? ` · ${fmtP(S.cob)} das cx` : '');
   return `${selo}
     <div class="dir-g3 comp">
-      <div class="dir-k dest ${S.nUep ? (ok ? 'ok' : 'red') : ''}"><div class="dir-kl">UEP <i>sem HE</i></div><div class="dir-kv">${S.nUep ? f(S.uep) : '—'}</div>
-        <div class="dir-bl"><span>${S.pct != null ? fmtP(S.pct) + ' da meta' : ''}</span><span>${S.nUep ? `${S.bateu} de ${S.nUep} dias` : ''}</span></div>${S.nUep ? _dirComHe(S.uep + S.heUep) : ''}
+      <div class="dir-k dest ${S.nUep ? (ok ? 'ok' : 'red') : ''}"><div class="dir-kl"><span>UEP <i>sem HE</i></span>${S.nUep ? _dirComHe(S.uep + S.heUep) : ''}</div><div class="dir-kv">${S.nUep ? f(S.uep) : '—'}</div>
+        <div class="dir-bl"><span>${S.pct != null ? fmtP(S.pct) + ' da meta' : ''}</span><span>${S.nUep ? `${S.bateu} de ${S.nUep} dias` : ''}</span></div>
         ${S.semUep ? `<div class="dir-ks av">${plural(S.semUep, 'dia sem UEP gravada', 'dias sem UEP gravada')}, fora da soma</div>` : ''}</div>
-      <div class="dir-k"><div class="dir-kl">CAIXAS <i>sem HE</i></div><div class="dir-kv">${f(S.cx)}</div>${_dirComHe(S.cx + S.heCx)}</div>
+      <div class="dir-k"><div class="dir-kl"><span>CAIXAS <i>sem HE</i></span>${_dirComHe(S.cx + S.heCx)}</div><div class="dir-kv">${f(S.cx)}</div></div>
       <div class="dir-k"><div class="dir-kl">PONTOS <i>com HE</i></div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>
     </div>
     ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP SEM HE · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
@@ -11288,12 +11295,13 @@ function renderDir(){
   const el = document.getElementById('dir-palco');
   if(!el || !_modoDir()) return;
   const t = DIR_TELA % DIR_N;
-  let corpo = '', tit = '', ts = 0;
+  let corpo = '', tit = '', ts = 0, hojeH = null;
   try{
     if(t === 0){
       tit = '<b>HOJE</b>'; ts = PONTOS_DIA_TS;
       const D = _uepAbaDados();
-      corpo = _dirHojeHtml(_dirHoje(D, D.k, PONTOS_DIA.porHoraModelo));
+      hojeH = _dirHoje(D, D.k, PONTOS_DIA.porHoraModelo);
+      corpo = _dirHojeHtml(hojeH);
     } else if(t === 1){
       const S = _dirSemana(UEP_HIST, null, DIR_PTS.key === _dirSemKey() ? DIR_PTS.soma : null);
       tit = '<b>SEMANA PASSADA</b>' + (S ? ` · ${_rpEsc(S.de.slice(0,5))} A ${_rpEsc(S.ate.slice(0,5))}` : ''); ts = UEP_HIST_TS;
@@ -11304,6 +11312,11 @@ function renderDir(){
     }
   }catch(e){ corpo = _dirMsg('Não consegui montar esta tela: ' + _rpEsc(e.message)); }
   el.innerHTML = _dirMoldura(t, corpo, tit, ts);
+  if(t === 0){
+    const g = el.querySelector('.dir-graf-h svg');
+    if(g){ const r = g.getBoundingClientRect(), k = Math.max(1.3, r.width / 900);   // k: a letra do gráfico cresce com a tela (~2× a da aba em 1920)
+      if(r.width > 0 && r.height > 0 && hojeH && hojeH.horas) g.outerHTML = _uepAbaSvg(hojeH.horas, Math.round(r.width / k), Math.round(r.height / k)); }
+  }
   if(t === 1 && UEP_HIST){
     const g = el.querySelector('.dir-graf svg');
     if(g){ const r = g.getBoundingClientRect(); if(r.width > 0 && r.height > 0) g.outerHTML = _dirSemSvg(_dirUltimos(UEP_HIST, null, 10), r.width / r.height * 260); }
