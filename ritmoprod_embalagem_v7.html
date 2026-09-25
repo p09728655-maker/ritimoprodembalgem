@@ -3123,7 +3123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.126.0';
+const APP_VER   = '7.127.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3867,7 +3867,9 @@ function jsonpFetch(url, ms){
     // fazendo um sobrescrever o callback do outro e travar em "Buscando dados...".
     const cb='rpe_cb_'+Date.now()+'_'+(++_jsonpSeq);
     const s=document.createElement('script');
-    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — verifique a URL')); },ms);
+    // "Timeout" não é URL errada: com a URL certa o servidor só está demorando
+    // (cold start ou fila). A URL errada cai no onerror logo abaixo.
+    const t=setTimeout(()=>{ cleanup(); rej(new Error('Timeout — o Apps Script não respondeu em '+Math.round(ms/1000)+' s')); },ms);
     function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
     window[cb]=data=>{ cleanup(); res(data); };
     s.onerror=()=>{ cleanup(); rej(new Error('Erro ao carregar script — URL inválida ou sem acesso')); };
@@ -4027,33 +4029,88 @@ async function lerMediaHorasComRetry(tentativas){
 // "para ler as UEPs está lento"). Hoje: 3 tentativas EM SEQUÊNCIA com espera
 // crescente (como o lerSheetsComRetry) e voo compartilhado — o load, o refresh
 // e a aba PRODUÇÃO/HORA pedindo juntos viram UMA execução no Apps Script.
+//
+// ⚠ O TEMPO DE CADA TENTATIVA CRESCE (v7.127.0, PPCP 25/09/2026 — a aba UEP
+// parada em "Aguardando a leitura do dia…" com o selo "Sheets: Timeout"). O
+// JSONP não cancela nada no servidor: quando o cliente desiste aos 30 s, o
+// Apps Script continua calculando. Com o servidor levando mais que isso, três
+// tentativas de 30 s falhavam TODAS e ainda triplicavam a fila. 30 → 45 → 60 s
+// dá à 2ª e à 3ª tempo de terminar.
+// PONTOS_LEIT diz à tela o que está acontecendo: "aguardando" sozinho não
+// separava "lendo agora" de "não respondeu" (VAZIO NÃO É UMA COISA SÓ).
+const PONTOS_TIMEOUT=[30000,45000,60000];
 let _pontosVoo=null;
+let PONTOS_LEIT={ tent:0, falha:null, erro:'', ts:0, auto:false, agendado:false };
 function lerPontosDia(){
   if(!CFG.sheetsUrl) return Promise.resolve(false);
   if(_pontosVoo) return _pontosVoo;
   _pontosVoo=(async()=>{
-    for(let t=1;t<=3;t++){
-      if(await _lerPontosDiaUma()) return true;
-      if(t<3) await new Promise(ok=>setTimeout(ok,2000*t));
+    PONTOS_LEIT.falha=null; PONTOS_LEIT.erro='';
+    for(let t=1;t<=PONTOS_TIMEOUT.length;t++){
+      PONTOS_LEIT.tent=t; _pontosAvisa();
+      if(await _lerPontosDiaUma(PONTOS_TIMEOUT[t-1])){
+        PONTOS_LEIT.tent=0; PONTOS_LEIT.auto=false; PONTOS_LEIT.ts=Date.now();
+        return true;
+      }
+      if(t<PONTOS_TIMEOUT.length) await new Promise(ok=>setTimeout(ok,2000*t));
     }
+    PONTOS_LEIT.tent=0; PONTOS_LEIT.falha=PONTOS_LEIT.erro&&!/timeout|script/i.test(PONTOS_LEIT.erro)?'erro':'sem-resposta';
+    PONTOS_LEIT.ts=Date.now();
+    _pontosRetentar();
+    _pontosAvisa();
     return false;
   })().finally(()=>{ _pontosVoo=null; });
   return _pontosVoo;
 }
-async function _lerPontosDiaUma(){
+async function _lerPontosDiaUma(ms){
   try{
     const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
-    const json=await jsonpFetch(url, 30000);
+    const json=await jsonpFetch(url, ms||30000);
     if(json && json.ok){
       _aplicarPontosDia(json);
       PONTOS_DIA_TS = Date.now();
       if(_modoDir()) _dirGuarda('pontos', json);
       return true;
     }
+    PONTOS_LEIT.erro=String((json&&json.erro)||'resposta sem ok');
   }catch(e){
+    PONTOS_LEIT.erro=e.message;
     console.warn('lerPontosDia:', e.message);
   }
   return false;
+}
+// Sem a leitura do dia, a aba UEP inteira fica sem nada. Falhou com ela aberta:
+// UMA nova tentativa sozinha em 30 s (depois, só o refresh ou o ↻) — um laço
+// de retentativas num Apps Script já ocupado só aumentaria a fila.
+function _pontosRetentar(){
+  if(PONTOS_LEIT.auto || !_abaOn('uep') || PONTOS_DIA.uep!=null) return;
+  PONTOS_LEIT.auto=true; PONTOS_LEIT.agendado=true;
+  setTimeout(()=>{ PONTOS_LEIT.agendado=false; if(_abaOn('uep') && PONTOS_DIA.uep==null) _pontosTentarAgora(); }, 30000);
+}
+// O ↻ da aba UEP e a retentativa automática: a mesma leitura (voo compartilhado).
+function _pontosTentarAgora(){
+  return lerPontosDia().then(ok=>{ if(ok) renderGerencial(); if(_abaOn('uep')) renderUep(); });
+}
+// Redesenha só quem mostra o estado da leitura (a aba UEP sem dado).
+function _pontosAvisa(){
+  try{ if(_abaOn('uep') && PONTOS_DIA.uep==null) renderUep(); }catch(e){}
+}
+// null = a leitura do dia ainda não chegou: o card diz se está lendo ou se ela
+// falhou, em vez de "aguardando" para sempre. O texto do rp-core fica igual
+// (o celular não tem este estado).
+function _uepCardLeitura(c){ if(PONTOS_DIA.uep===null && c) c.sub=_pontosEstadoTxt(true); return c; }
+// Texto único do estado da leitura do dia — aba UEP (longo) e card UEP DO DIA
+// do gerencial (curto). Com dado na mão ninguém chama.
+function _pontosEstadoTxt(curto){
+  const L=PONTOS_LEIT, n=PONTOS_TIMEOUT.length;
+  if(!CFG.sheetsUrl) return curto?'sem Apps Script configurado':'Sem a URL do Apps Script nas configurações — a leitura do dia não tem de onde vir.';
+  if(L.tent>1) return curto?`lendo… tentativa ${L.tent} de ${n}`:`Lendo a produção do dia — tentativa ${L.tent} de ${n}. O Apps Script está demorando (fila ou cold start); esta tentativa espera até ${PONTOS_TIMEOUT[L.tent-1]/1000} s.`;
+  if(L.tent===1) return curto?'lendo a produção do dia…':'Lendo a produção do dia…';
+  if(L.falha==='erro') return curto?'a leitura do dia deu erro':`A leitura do dia voltou com erro do backend: ${_rpEsc(L.erro)}.`;
+  if(L.falha) return curto?`a leitura do dia não respondeu (${n} tentativas)`:
+    `A leitura do dia não respondeu em ${n} tentativas — o Apps Script está ocupado ou frio, não é a URL.`
+    +(L.agendado?' Nova tentativa sozinha em 30 s.':' Nova tentativa no próximo refresh.');
+  return curto?'aguardando a leitura do dia…':'Aguardando a leitura do dia…';
 }
 function _aplicarPontosDia(json){
       PONTOS_DIA = {
@@ -4248,7 +4305,7 @@ function _tickCountdown(){
     // silent: mesmo período → mantém os KPIs na tela enquanto busca.
     // Vai DEPOIS do lerSheets: disparada junto, disputava o Apps Script (uma
     // execução por vez) e as duas chegavam perto do timeout de 25 s.
-    if(CFG.sheetsUrl){ const _ls=lerSheets(); lerPontosDia().then(()=>renderGerencial()); _parDepois(_ls); } else { lerArquivo(); _parDepois(null); }
+    _cicloLeitura();
   } else countdownSec--;
 }
 function _atualizarLabelIntervalo(){
@@ -4261,13 +4318,24 @@ function forcarRefresh(){
   setTimeout(()=>{ badge.style.borderColor=''; badge.style.color='var(--txt2)'; },700);
   countdownSec=(window._intervaloMin||5)*60;
   invalidarHistoricoCache();   // refresh manual = quero dado fresco, ignora o cache do histórico
-  if(CFG.sheetsUrl){ const _ls=lerSheets(); lerPontosDia().then(()=>renderGerencial()); _parDepois(_ls); } else { lerArquivo(); _parDepois(null); }
+  _cicloLeitura();
+}
+// Ciclo do refresh (tick e ⟳ manual): UMA chamada de cada vez, na ordem do que
+// está na tela — getDados (o painel inteiro), a aba PARADAS se estiver aberta e
+// por último a leitura do dia (getPontosDia, a mais cara). Antes o getPontosDia
+// saía JUNTO com o getDados: os dois disputavam o Apps Script, o getDados
+// estourava os 25 s ("Sheets: Timeout" no selo) e a aba UEP ficava parada em
+// "Aguardando a leitura do dia…" (v7.127.0, PPCP 25/09/2026).
+function _cicloLeitura(){
+  if(!CFG.sheetsUrl){ lerArquivo(); _parDepois(null); return; }
+  const _ls=lerSheets();
+  _parDepois(_ls).then(()=>lerPontosDia()).then(()=>renderGerencial());
 }
 function _parDepois(prom){
-  Promise.resolve(prom).catch(()=>{}).then(()=>{
+  return Promise.resolve(prom).catch(()=>{}).then(()=>{
     const sec=document.getElementById('sec-paradas');
-    if(sec && sec.classList.contains('on')) renderAnaliseParadas({silent:true});
-  });
+    if(sec && sec.classList.contains('on')) return renderAnaliseParadas({silent:true});
+  }).catch(()=>{});
 }
 function alterarIntervalo(){
   const atual=window._intervaloMin||5;
@@ -4770,18 +4838,20 @@ function _uepAbaCatCarregar(){
 
 // ORDEM DAS LEITURAS AO ABRIR A ABA (v7.104.0, PPCP 25/09/2026 — a aba abria
 // com os blocos 4 e 5 em "Lendo…"). Antes o histórico e o cadastro esperavam
-// um getPontosDia NOVO, a leitura mais cara do backend (até 3 × 30 s), que o
-// gerencial já tinha feito. Agora, uma de cada vez (o Apps Script atende uma
-// execução por vez), da mais barata para a mais cara: o histórico (cache de
-// 2 min aqui e no .gs), a leitura do dia SÓ se ela ainda não existe (o refresh
-// do painel a mantém fresca) e por último o cadastro.
+// um getPontosDia NOVO, a leitura mais cara do backend, que o gerencial já
+// tinha feito. Agora, uma de cada vez (o Apps Script atende uma execução por
+// vez): a leitura do dia SÓ se ela ainda não existe (o refresh do painel a
+// mantém fresca), o histórico (cache de 2 min aqui e no .gs) e o cadastro.
+// ⚠ Quando falta, a leitura do dia vem PRIMEIRO (v7.127.0): sem ela a aba não
+// desenha bloco nenhum (renderUep sai no "aguardando"), então ler o histórico
+// antes só atrasava a tela — os blocos 4 e 5 nem apareciam.
 let UEP_CARREGANDO=false;
 async function _uepAbaCarregar(){
   if(UEP_CARREGANDO) return;
   UEP_CARREGANDO=true;
   try{
-    await _uepAbaHistCarregar();
     if(PONTOS_DIA.uep===null||PONTOS_DIA.uep===undefined){ await lerPontosDia(); if(_abaOn('uep')) renderUep(); }
+    await _uepAbaHistCarregar();
     await _uepAbaCatCarregar();
     // por último, a programação (a mais cara): só para apontar código sem UEP.
     // Reaproveita a leitura das outras abas se tiver menos de 15 min.
@@ -4826,7 +4896,7 @@ function _uepAbaSvg(horas, largura, altura){
 // (gerarRelatorioUepAba) leem daqui — dois desenhos, nenhuma conta duplicada.
 function _uepAbaDados(){
   const U=PONTOS_DIA.uep;
-  if(U===null||U===undefined) return { estado:'aguardando', msg:'Aguardando a leitura do dia…' };
+  if(U===null||U===undefined) return { estado:'aguardando', msg:_pontosEstadoTxt() };
   if(U===false) return { estado:'sem-backend', msg:'O backend ainda não manda a UEP (.gs v5.11 re-deployado).' };
   if(!(U.codigos>0)) return { estado:'sem-cadastro', msg:'Sem UEP no cadastro — coluna UEP da PRODUTO_CODIGO (💾 GRAVAR UEP na aba PRODUÇÃO/HORA).' };
   const k=calcKPIs(getDadosHoje());
@@ -4887,7 +4957,11 @@ function _uepAbaPerCards(P){
 function renderUep(){
   const el=document.getElementById('uep-bloco'); if(!el) return;
   const D=_uepAbaDados();
-  if(D.estado!=='ok'){ el.innerHTML=`<div class="empty-msg">${D.msg}</div>`; return; }
+  if(D.estado!=='ok'){
+    const tentar=D.estado==='aguardando' && PONTOS_LEIT.falha && !_pontosVoo
+      ? ` <button class="btn btn-ghost" onclick="_pontosTentarAgora()" style="font-size:10px;padding:3px 10px;margin-left:6px">↻ TENTAR AGORA</button>` : '';
+    el.innerHTML=`<div class="empty-msg">${D.msg}${tentar}</div>`; return;
+  }
   const {k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt}=D;
   const alerta=avisos.length?`<div class="uep-alerta"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de UEP de hoje é indicação, não medição.</div>`:'';
   const kpis=`<div class="kpi-grid c4">${cards.map(c=>`<div class="kpi-card ${c.c||''}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`;
@@ -5387,7 +5461,7 @@ function renderGerencial(){
     // UEP DO DIA (v7.80.0, PPCP 24/09/2026): o que a linha fez em ESFORÇO, não
     // em caixas. A UEP por caixa é parâmetro do cadastro; a conta e o texto
     // moram no rp-core (uepCard), os mesmos do gerencial do celular.
-    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
+    _uepCardLeitura(uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm)),
     {l:'RITMO ATUAL',       v:fmtN(k.ritmo),            sub:'média cx/hora no turno', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
     // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
@@ -16670,6 +16744,7 @@ function toggleTVFullscreen(){
   } else {
     body.classList.add('tv-fullscreen');
     btn.textContent='✕ FECHAR PAINEL';
+    pollParadaTV();   // fora da TV o poll não roda: pede a parada aberta agora
     if(document.documentElement.requestFullscreen)
       document.documentElement.requestFullscreen().catch(()=>{});
   }
@@ -16773,16 +16848,19 @@ if(CFG.sheetsUrl){
   // getHistory disputava a fila do Apps Script com o poll de paradas de 15 s e as
   // médias por horário, estourava o tempo e a SEMANA PASSADA dizia "não consegui
   // ler o histórico" (PPCP, 25/09/2026).
-  lerSheetsComRetry(4).then(()=>{ iniciarAutoRefresh(); if(_modoDir()) lerPontosDia().finally(()=>{ renderDir(); _dirCarregar(); }); });
-  // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
-  // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
-  if(!_modoDir()){
-    lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
-    setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
-  }
-  // PONTOS/PESO por produto (identificação de produto é OPCIONAL): busca no load
-  // e renova junto com o refresh normal (_tickCountdown/forcarRefresh acima).
-  if(!_modoDir()) lerPontosDia().then(()=>renderGerencial());
+  // Painel e TV (v7.127.0): a leitura do dia (PONTOS/PESO/UEP, a mais cara) e
+  // as médias por horário também saem DEPOIS da carga inicial, uma de cada vez.
+  // Saíam as três junto com o getDados e se atrapalhavam na fila do Apps Script
+  // — a mesma correção que a diretoria ganhou na v7.117.0. A leitura do dia
+  // renova no refresh normal (_cicloLeitura); as médias só mudam quando um dia
+  // é fechado, então renovam de hora em hora.
+  lerSheetsComRetry(4).then(async ()=>{
+    iniciarAutoRefresh();
+    if(_modoDir()){ lerPontosDia().finally(()=>{ renderDir(); _dirCarregar(); }); return; }
+    await lerPontosDia(); renderGerencial();
+    if(await lerMediaHorasComRetry(4)){ renderAll(); renderAnaliseHorario(); }
+  });
+  if(!_modoDir()) setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
   // TELA CHEIA DE PARADA: poll rápido (15s) p/ a TV reagir logo quando o operador
   // registra/encerra a parada no mobile. Chamada JSONP leve e separada do fluxo
   // principal — não interfere no lerSheets nem no DEMO.
@@ -16834,8 +16912,16 @@ function _paradaValidaTV(p){
   return true;
 }
 
+// A tela cheia de parada só aparece na TV DE VERDADE: tela cheia da parede OU
+// perfil do operador (ver renderParadaOverlay). Regra única do overlay e do poll.
+function _paradaNaTV(){ return document.body.classList.contains('tv-fullscreen') || document.body.classList.contains('perfil-op'); }
 async function pollParadaTV(){
   if(!CFG.sheetsUrl) return;
+  // Fora da TV o overlay nunca aparece, e o poll de 15 s era 240 chamadas por
+  // hora de cada janela do gerencial na fila do Apps Script (v7.127.0). Sem
+  // poll o estado não pode ficar velho à espera: some, e entrar na tela cheia
+  // pede de novo na hora (toggleTVFullscreen).
+  if(!_paradaNaTV()){ PARADA_TV=null; return; }
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getParadas';
     const json = await jsonpFetch(url);
@@ -16891,7 +16977,7 @@ function renderParadaOverlay(){
   // aberta no GERENCIAL NÃO conta — senão o overlay (z-index 9000) cobre a navegação
   // e TRAVA o gestor sem saída. Para conferir a parada na gerencial, use o botão
   // 👁 PRÉVIA PARADA (que tem FECHAR). A PRÉVIA aparece em qualquer tela.
-  const naTV = document.body.classList.contains('tv-fullscreen') || document.body.classList.contains('perfil-op');
+  const naTV = _paradaNaTV();
   // Fechar manual: se a parada mudou/acabou, reativa o overlay automaticamente.
   const chave = _chaveParada(PARADA_TV);
   if(PARADA_OVER_DISMISS && PARADA_OVER_DISMISS !== chave) PARADA_OVER_DISMISS = null;
