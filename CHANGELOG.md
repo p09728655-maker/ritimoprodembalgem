@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.127.0 — 25/09/2026
+
+- **Aba ⚖ UEP presa em "Aguardando a leitura do dia…" com o selo "Sheets:
+  Timeout"** (PPCP, 16:54). Três causas no painel, corrigidas:
+  - O refresh (5 min e ⟳) disparava o `getDados` e o `getPontosDia` — a
+    leitura mais cara — **ao mesmo tempo**, e na abertura ainda saíam junto as
+    médias por horário. Na fila do Apps Script o `getDados` estourava os 25 s.
+    Agora é **uma chamada de cada vez**: getDados → aba PARADAS (se aberta) →
+    leitura do dia; na abertura, a leitura do dia e as médias depois da carga
+    inicial (a diretoria já era assim desde a v7.117.0).
+  - A leitura do dia tentava 3 × 30 s. O servidor não para quando o navegador
+    desiste, então com ele levando mais que isso as três falhavam e ainda
+    empilhavam trabalho. Agora **30 → 45 → 60 s**.
+  - A aba não separava "lendo" de "falhou": ficava em "Aguardando" até o
+    próximo refresh. Agora diz **qual tentativa** está rodando, diz quando
+    **não respondeu**, tenta de novo **uma vez sozinha em 30 s** e oferece
+    **↻ TENTAR AGORA**. O card UEP DO DIA do gerencial diz o mesmo. Quando a
+    leitura do dia falta, a aba lê ela **primeiro** (sem ela nada é desenhado).
+- O **poll de parada de 15 s** só roda onde a tela cheia de PARADA aparece (TV
+  da parede e perfil do operador). No gerencial ele nunca mostrava nada e eram
+  240 chamadas por hora disputando o Apps Script. Entrar em ⛶ PAINEL CHEIO pede
+  a parada aberta na hora.
+- O timeout não manda mais "verifique a URL": diz que o Apps Script não
+  respondeu em N s. URL errada continua caindo no "Erro ao carregar script".
+
+**Atenção:** nenhum número muda. Muda a ordem em que o painel pede os dados e o
+que a tela diz enquanto espera.
+
 ## v7.126.0 — 25/09/2026
 
 - **Diretoria: a versão em uso no rodapé** (PPCP: *"colocar a versão que

@@ -469,6 +469,51 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` (v5.4) → **re-deploy manual**. `apps-script.test.js` cobre os
   quatro status, a virada do dia sem recarimbo e a fase.
 
+## Linhas SOMEM da PROGRAMACAO fora do script (medido em 25/09/2026)
+- PPCP: *"meta de hoje 615? hj era 1550 caixas"*. Na planilha, as linhas com
+  DATA 25/09 somavam **585 cx** nas DUAS abas (PROGRAMACAO 115 + 300 ·
+  PROGRAMACAO_CONCLUIDA 20 + 150) — o painel estava certo sobre o que havia lá.
+  A produção do dia tinha códigos **sem linha em aba nenhuma** (ESCRIVANINHA
+  TAURUS 501118005 395 cx e 501118001 275 cx, 501114009 160, 501114007 81,
+  501152001 33 = ~944 cx; 585 + isso ≈ os 1.550). A Ordem 2 do dia não existe.
+- **O script não apaga linha sem copiar**: o `_arquivarConcluidos` só remove
+  linha CONCLUÍDA, depois de gravar a cópia na CONCLUIDA, sob o lock do
+  `saveRealizado`, e `ARQ_EXCLUIR_SEM_COPIA` é `false`. Sem duplicadas na
+  CONCLUIDA (seria o rastro de índice errado). Quem tira linha é mão humana ou
+  a colagem do extrato do ERP por cima da aba.
+- ⚠ **Não é só hoje**: em quase todo dia útil de setembro, as linhas que
+  sobraram com aquela DATA somam muito menos que a META gravada no HISTORICO
+  (22/09: meta 1.250, sobraram 60 cx; 03, 11 e 18/09: nada).
+- Efeito: a meta do dia (`programadoHoje`) **encolhe durante o dia** conforme
+  as linhas somem, a EF infla (25/09 fechou 312,4%) e o FIFO perde demanda —
+  a produção de um código sem linha aberta é descartada ou credita outro lote
+  do mesmo código (a razão de o arquivamento existir).
+- Os lotes "faltando" na numeração **não são prova**: o ERP numera os lotes da
+  fábrica toda.
+- **Quando a meta do dia parecer baixa, conferir primeiro se linhas sumiram**
+  (soma por DATA nas duas abas × o que o PPCP programou) antes de mexer em
+  código.
+- ⏸ **STAND BY até 09/10/2026** (pedido do usuário). **A exclusão é de
+  propósito**: *"não fecha o lote pelo app, tem lote que fica aberto, aí tenho
+  que excluir a linha"*. Por isso o alarme de "linha sumiu" foi recusado — ele
+  acusaria a limpeza que o PPCP faz de propósito. O que falta é um jeito de
+  **ENCERRAR** a linha que não fecha, sem apagar (a meta do dia e o FIFO
+  continuam com ela; o saldo deixa de ser cobrado; o arquivamento leva com
+  STATUS de encerrado e o motivo). Ainda não desenhado nem feito.
+  - Medido na planilha de 25/09 (17:05), as linhas abertas e vencidas:
+    25218 LUNA 440 CUMARU 31 de 50 · 25220 PRINCESA ROSA 339 de 350 · 25228
+    URBAN OFF WHITE 84 de 115 · **25229 SLIM BRANCO 0 de 300, enquanto o SLIM
+    OFF WHITE (501128002) fez 444 cx hoje para um lote de 150** — e o URBAN
+    501152001 fez 33 sem linha. Cobertura do apontamento com produto: 100% em
+    15–25/09.
+  - Ou seja, **dois motivos diferentes para "não fechar"**: sobra pequena de
+    verdade (11, 19, 31 cx) e **caixa apontada no código da cor irmã**. O
+    segundo não se resolve encerrando — o painel teria de mostrar a troca
+    (sobra num código, falta no irmão do mesmo lote/modelo). Conferir com o
+    PPCP antes de desenhar.
+  - O HISTORICO de 25/09 foi corrigido à mão pelo usuário para META 1.550
+    (a EF da coluna D precisava ir junto para 123,9).
+
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
   colunas de saída (`PRODUZIDO`/`SALDO`/`PERCENTUAL`/`STATUS`/`ATUALIZADO_EM`)
@@ -690,9 +735,29 @@ via Google Apps Script (JSONP).
 - **Toda leitura do `.gs` lê a aba INTEIRA** (`getDataRange()`, 30+ ocorrências).
   O custo cresce com o histórico acumulado, não com o que foi pedido: 7 dias de
   parada custam o mesmo que 30.
-- **No desktop, `lerPontosDia` tem 3 tentativas em sequência (30 s) e voo
+- **No desktop, `lerPontosDia` tem 3 tentativas em sequência e voo
   compartilhado (`_pontosVoo`)** (v7.97.0): com uma tentativa só, o cold start
   deixava o card UEP DO DIA em "aguardando" até o próximo refresh (5 min).
+  - ⚠ **O tempo de cada tentativa CRESCE: 30 → 45 → 60 s** (`PONTOS_TIMEOUT`,
+    v7.127.0). O JSONP não cancela nada no servidor: o Apps Script continua
+    calculando depois que o navegador desiste. Três tentativas iguais e curtas
+    falhavam todas e ainda empilhavam execução na fila.
+  - **`PONTOS_LEIT` é o estado da leitura** (tentativa em curso · falhou ·
+    erro do backend) e `_pontosEstadoTxt` o texto ÚNICO da aba UEP e do card
+    UEP DO DIA. "Aguardando" sozinho não separava *lendo* de *não respondeu*.
+    Falhou com a aba UEP aberta: **UMA** retentativa sozinha em 30 s
+    (`_pontosRetentar`) e o botão ↻ — laço de retentativa num Apps Script
+    ocupado só aumenta a fila.
+- **O ciclo do refresh do desktop é SEQUENCIAL** (`_cicloLeitura`, v7.127.0):
+  getDados → aba PARADAS (se aberta) → `getPontosDia`. O `getPontosDia` saía
+  JUNTO com o getDados, os dois disputavam a fila e o getDados estourava os
+  25 s — o *"Sheets: Timeout"* do selo com a aba UEP parada em *"Aguardando"*
+  (25/09/2026). Na abertura, a leitura do dia e as médias por horário também
+  esperam a carga inicial. **Não voltar a disparar leitura em paralelo.**
+- **O poll de parada (15 s) só roda na TV** (`_paradaNaTV`: tela cheia ou
+  perfil do operador — a MESMA regra que decide se o overlay aparece). No
+  gerencial ele nunca mostrava nada e eram 240 chamadas/hora por janela.
+  Entrar em ⛶ PAINEL CHEIO dispara um poll na hora.
 - **`getPontosDia` é a chamada mais cara.** Sozinha ela lê o catálogo
   `PRODUTO_CODIGO` **3×** na mesma execução (`:1204`, `:1218` e de novo dentro de
   `calcularProgramacao()` em `:1599`), mais `PRODUCAO_PRODUTO` inteira, mais
@@ -2717,9 +2782,11 @@ feito e dá ar de verdade ao que sobrou.
   `uepHistResumo`, oscilação em UEP × caixas de jornada pelo `_qpOscilacao`/
   `_qpRealDia` da aba PLANO. Filtro 7/15/30 (`rpe_uep_per`, padrão 15); o
   histórico vem do `buildDiasHistAsync` (`UEP_HIST`, carregado no setTab).
-  - **Ordem ao abrir a aba (`_uepAbaCarregar`, v7.104.0):** histórico →
-    `lerPontosDia` **só se `PONTOS_DIA.uep` ainda não existe** → cadastro, em
-    sequência. Encadear o histórico atrás de um `getPontosDia` novo deixava os
+  - **Ordem ao abrir a aba (`_uepAbaCarregar`, v7.104.0):** `lerPontosDia`
+    **só se `PONTOS_DIA.uep` ainda não existe** → histórico → cadastro, em
+    sequência. ⚠ Quando falta, a leitura do dia vem PRIMEIRO (v7.127.0): sem
+    ela o `renderUep` não desenha bloco nenhum, e ler o histórico antes só
+    atrasava a tela. Encadear o histórico atrás de um `getPontosDia` novo deixava os
     blocos 4 e 5 em "Lendo…" por até ~1,5 min; o refresh do gerencial já mantém
     o `PONTOS_DIA` fresco.
   - **Histórico vazio × falha (v7.105.0):** o `lerHistoricoSheets` devolve `[]`

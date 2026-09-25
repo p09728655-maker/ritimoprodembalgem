@@ -3849,8 +3849,9 @@ console.log('\n── estudo de UEP ──');
   ok('a leitura do histórico da aba tenta 3 vezes e a tela diz quando não conseguiu',
      [/t<=3/.test(LH), /UEP_HIST_FALHA=!dias/.test(LH), /Não consegui ler o histórico/.test(pega('function renderUep('))], [true, true, true]);
   const CARR = pega('async function _uepAbaCarregar(');
-  ok('ao abrir a aba: histórico → leitura do dia (só se faltar) → cadastro, em sequência',
-     [CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('lerPontosDia') && CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaCatCarregar'),
+  // v7.127.0: sem a leitura do dia a aba não desenha nada — quando ela falta, vem PRIMEIRO
+  ok('ao abrir a aba: leitura do dia (só se faltar) → histórico → cadastro, em sequência',
+     [CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaHistCarregar') && CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('_uepAbaCatCarregar'),
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
@@ -4047,13 +4048,50 @@ console.log('\n── estudo de UEP ──');
       /has\('tv'\) && !document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(JS)], [true, true]);
 }
 
+// ── v7.127.0: leituras do painel uma de cada vez, e a aba UEP diz se a leitura do dia falhou ─
+{ const CIC = pega('function _cicloLeitura('), TICK = pega('function _tickCountdown('), FOR = pega('function forcarRefresh(');
+  ok('refresh: getDados → aba PARADAS (se aberta) → leitura do dia, encadeados; nunca o getPontosDia junto do getDados',
+     [/const _ls=lerSheets\(\);\s*_parDepois\(_ls\)\.then\(\(\)=>lerPontosDia\(\)\)\.then\(\(\)=>renderGerencial\(\)\);/.test(CIC),
+      /_cicloLeitura\(\)/.test(TICK), /_cicloLeitura\(\)/.test(FOR), /lerPontosDia\(/.test(TICK + FOR),
+      /return Promise\.resolve\(prom\)/.test(pega('function _parDepois(')), /return renderAnaliseParadas\(/.test(pega('function _parDepois('))],
+     [true, true, true, false, true, true]);
+  ok('carga inicial: nada de getPontosDia/médias saindo junto com o getDados (fora do .then da carga)',
+     /\n  if\(!_modoDir\(\)\) lerPontosDia\(\)|\n    lerMediaHorasComRetry\(4\)\.then/.test(JS), false);
+  const LPD = pega('function lerPontosDia(');
+  ok('leitura do dia: 3 tentativas com tempo crescente (o JSONP não cancela o servidor) e estado para a tela',
+     [/const PONTOS_TIMEOUT=\[30000,45000,60000\];/.test(JS), /_lerPontosDiaUma\(PONTOS_TIMEOUT\[t-1\]\)/.test(LPD),
+      /PONTOS_LEIT\.tent=t;/.test(LPD), /PONTOS_LEIT\.falha=/.test(LPD), /_pontosRetentar\(\);/.test(LPD)], [true, true, true, true, true]);
+  // o texto do estado, rodando a função real
+  global.PONTOS_TIMEOUT = [30000,45000,60000]; global._pontosVoo = null;
+  global.CFG = global.CFG || {}; const urlAntes = CFG.sheetsUrl; CFG.sheetsUrl = 'https://x/exec';
+  if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
+  eval(pega('function _pontosEstadoTxt('));
+  const est = L => { global.PONTOS_LEIT = Object.assign({ tent:0, falha:null, erro:'', auto:false, agendado:false }, L); return [_pontosEstadoTxt(), _pontosEstadoTxt(true)]; };
+  ok('estado: aguardando ≠ lendo ≠ não respondeu ≠ erro do backend',
+     [est({})[1], est({ tent:1 })[1], est({ tent:2 })[1], est({ falha:'sem-resposta' })[1], est({ falha:'erro', erro:'x' })[1]],
+     ['aguardando a leitura do dia…', 'lendo a produção do dia…', 'lendo… tentativa 2 de 3', 'a leitura do dia não respondeu (3 tentativas)', 'a leitura do dia deu erro']);
+  ok('timeout não manda conferir a URL, e a tela diz quando tenta de novo',
+     [/URL/.test(est({ falha:'sem-resposta' })[0].replace('não é a URL','')), /sozinha em 30 s/.test(est({ falha:'sem-resposta', agendado:true })[0]),
+      /próximo refresh/.test(est({ falha:'sem-resposta' })[0]), /<b>/.test(est({ falha:'erro', erro:'<b>' })[0])], [false, true, true, false]);
+  CFG.sheetsUrl = urlAntes;
+  ok('a aba UEP e o card UEP DO DIA leem o estado; a aba oferece ↻ quando falhou',
+     [/msg:_pontosEstadoTxt\(\)/.test(pega('function _uepAbaDados(')), /_pontosTentarAgora\(\)/.test(pega('function renderUep(')),
+      /_uepCardLeitura\(uepCard\(PONTOS_DIA\.uep/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
+  ok('só UMA retentativa automática por falha, e só com a aba UEP aberta',
+     [/if\(PONTOS_LEIT\.auto \|\| !_abaOn\('uep'\)/.test(pega('function _pontosRetentar(')), /PONTOS_LEIT\.auto=false/.test(LPD)], [true, true]);
+  const POLL = pega('async function pollParadaTV(');
+  ok('poll de parada (15 s) só onde a tela cheia pode aparecer; entrar na tela cheia pede na hora',
+     [/if\(!_paradaNaTV\(\)\)\{ PARADA_TV=null; return; \}/.test(POLL), /const naTV = _paradaNaTV\(\);/.test(pega('function renderParadaOverlay(')),
+      /pollParadaTV\(\);/.test(pega('function toggleTVFullscreen('))], [true, true, true]);
+}
+
 // ── v7.117.0: cartão único dos PRÓXIMOS DIAS e diretoria sem disputa de fila ─
 { ok('o cartão do dia é UM desenho: diretoria, aba UEP e papel passam pelo _gpxCartaoHtml',
      [/_gpxCartaoHtml\(d, 'gpx'\)/.test(pega('function _gpxHtml(')), /_gpxCartaoHtml\(d, 'dir'\)/.test(pega('function _dirCartHtml(')),
       /gpx-trilho|gpx-barra/.test(pega('function _gpxHtml(')), /_cartAberta\(|_gpxMontar\(/.test(pega('function _gpxCartaoHtml('))], [true, true, false, false]);
   ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
-     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /if\(!_modoDir\(\)\)\{\s*lerMediaHorasComRetry/.test(JS),
-      /iniciarAutoRefresh\(\); if\(_modoDir\(\)\) lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\);/.test(JS)], [true, true, true]);
+     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),
+      /iniciarAutoRefresh\(\);\s*if\(_modoDir\(\)\)\{ lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\); return; \}/.test(JS)], [true, true, true]);
   ok('o gráfico da diretoria mede a CAIXA e se refaz quando ela muda de tamanho',
      [/new ResizeObserver\(/.test(JS), /function _dirAjustaGraf\(\)/.test(JS), /box\.clientHeight/.test(pega('function _dirAjustaGraf('))], [true, true, true]);
   ok('pausa discreta: bolinha leva à tela e pausa; ⏸ alterna; guardada no aparelho; pausada não troca de tela',
