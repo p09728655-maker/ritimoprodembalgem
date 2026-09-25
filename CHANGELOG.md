@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.107.0 — 25/09/2026
+
+**Aba ⚖ UEP sem o buraco no meio** (PPCP: *"esse espaço no meio ficou feio"*).
+O gráfico hora a hora é mais alto que o mix de um dia normal, e a coluna da
+direita sobrava vazia embaixo. A **CONFIABILIDADE** (bloco 5) subiu para baixo
+do mix, e as duas colunas agora terminam na mesma linha. Quando o mix é
+comprido e a coluna da direita fica mais alta, o **gráfico hora a hora cresce**
+para ocupar a altura em vez de deixar o vazio do outro lado. Em tela estreita
+tudo continua empilhado como antes.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.106.0 — 25/09/2026
 
 **Aba ⚖ UEP ganhou 🖨 IMPRIMIR — versão executiva, folha deitada** (PPCP:

@@ -2739,6 +2739,12 @@ feito e dá ar de verdade ao que sobrou.
     dado, não de ritmo.
   - Mix e card usam a MESMA base (jornada normal; `_horaEhHE` = janela do
     turno do ⚙, a mesma do `_ehHoraExtraCaixas` do `.gs`).
+  - **Layout sem buraco** (v7.107.0, PPCP: *"esse espaço no meio ficou
+    feio"*): a CONFIABILIDADE (5) mora na coluna do mix (3), as colunas do
+    `.uep-2` são flex e o último card de cada uma estica (`.uep-grow`). Se o mix
+    for mais alto, o `renderUep` mede a sobra do card do gráfico e redesenha o
+    `_uepAbaSvg(horas, w, altura)` para ocupar (teto `UEP_G_H_MAX`=520). ⚠ A
+    impressão chama `_uepAbaSvg` sem altura — continua 250.
   - **🖨 IMPRIMIR — versão executiva, DEITADA** (v7.106.0, PPCP 25/09/2026:
     *"impressão com relação a UEPs"* → *"versão executiva"* → *"pode imprimir
     folha deitada"*). `gerarRelatorioUepAba` → `_uepDocHtml(D, ctx)`.

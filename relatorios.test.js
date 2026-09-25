@@ -3852,6 +3852,10 @@ console.log('\n── estudo de UEP ──');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('tela e impressão leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
      [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [2, false]);
+  ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
+     [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec"><b>5 · CONFIABILIDADE/.test(R),
+      /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),
+      /_uepAbaSvg\(horas, w, Math\.min\(UEP_G_H_MAX/.test(R)], [true, true, true, true]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
 
   // IMPRESSÃO EXECUTIVA (v7.106.0) — o papel é o que está na tela.
