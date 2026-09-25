@@ -3187,6 +3187,11 @@ feito e dá ar de verdade ao que sobrou.
   histórico 12 h; programação 2 h. ⚠ O `_dirRestaura` roda num `setTimeout(0)`:
   dentro da inicialização, o `aplicarMetaDiaAutomatica`/`aplicarConfigPainel`
   ainda tocam coisa não declarada e falhavam calados (sem hora do dado).
+- **Endereço próprio** (v7.121.0): host que começa com `diretoria` (domínio
+  `diretoria-patrimar.vercel.app`, alias do MESMO projeto na Vercel) liga o
+  modo-dir em QUALQUER caminho; o mobile redireciona para `/diretoria`. Cada
+  deploy vale para os dois endereços. Não é segurança do dado (Apps Script
+  público) — separa a tela.
 - **App próprio**: `manifest-diretoria.json` (`id`/`start_url` `/diretoria`,
   `display: fullscreen`); o `<head>` troca o `<link rel=manifest>` no modo-dir.
 - ⚠ **Na diretoria não rodam `pollParadaTV` nem `lerMediaHoras`** (v7.117.0):

@@ -4082,6 +4082,11 @@ console.log('\n── estudo de UEP ──');
      [/const sh = _dirLe\('sheets', 0, true\)/.test(JS), /const pd = _dirLe\('pontos', 0, true\)/.test(JS), /Date\.now\(\) - dadoTs > 15\*60000/.test(JS)], [true, true, true]);
 }
 
+// ── v7.121.0: endereço próprio da diretoria (host "diretoria…") ─────────────
+{ const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  ok('pelo endereço da diretoria o painel só mostra a diretoria, e o celular vai para ela',
+     [/if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\) \|\| /.test(src), /if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\)\) location\.replace\('\/diretoria'\);/.test(mob)], [true, true]); }
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
