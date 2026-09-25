@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.103.0 — 25/09/2026
+
+**Aba ⚖ UEP: bloco 4 · PERÍODO** (a 2ª etapa da maquete, aprovada pelo PPCP).
+Filtro **7 · 15 · 30 DIAS** (padrão 15, guardado neste computador):
+- **MÉDIA POR DIA** em UEP e o % da meta do período (soma das metas dos dias).
+- **DIAS QUE BATERAM** a meta, com as datas dos que ficaram abaixo.
+- **OSCILAÇÃO DIA A DIA** em UEP contra a das caixas de jornada nos mesmos
+  dias — a mesma conta da oscilação da aba PLANO. Medido de 11/09 a 24/09:
+  **9,8% em UEP contra 45,1% em caixas**.
+- Gráfico de barras por dia, com a meta de cada dia tracejada; o dia abaixo da
+  meta fica vermelho.
+
+**Atenção:** entram só os dias **fechados** com UEP gravada; hoje fica fora.
+A UEP de cada dia é a **congelada no fechamento**, com o cadastro daquela data
+— a de hoje usa o cadastro atual (com as estimadas `EST`); o rodapé do bloco
+avisa. Média e "bateu" são a régua do HISTÓRICO (`uepHistResumo`). Nenhuma
+chamada nova (histórico com cache de 2 min), sem re-deploy.
+
+---
+
 ## v7.102.0 — 25/09/2026
 
 **Aba ⚖ UEP no gerencial do PC** (maquete aprovada pelo PPCP). Responde: a
