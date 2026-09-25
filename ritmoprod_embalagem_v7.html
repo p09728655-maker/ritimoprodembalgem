@@ -324,7 +324,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-uep tfoot tr.uep-he-p td{font-size:11px;color:var(--txt2);font-weight:400;padding-top:0;line-height:1.5}
 #sec-uep tfoot tr.uep-dia td{border-top:1px solid var(--border)}
 #sec-uep .uep-mb{display:inline-block;width:64px;height:6px;background:var(--elevated);border-radius:3px;margin-right:6px;vertical-align:middle}
-#sec-uep .uep-mb i{display:block;height:100%;background:var(--acc);border-radius:3px}
+#sec-uep .uep-mb i{display:block;height:100%;background:var(--txt2);border-radius:3px}
 #sec-uep .uep-conf{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:4px 0 8px;background:var(--elevated)}
 #sec-uep .uep-conf i{display:block}
 #sec-uep .uep-sem{margin-top:10px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
@@ -561,7 +561,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #ger-prox .gpx-exc{background:var(--red)}
 #ger-prox .gpx-dia.warn .gpx-exc{background:var(--warn)}
 #ger-prox .gpx-h{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1}
-#ger-prox .gpx-selo{display:inline-block;margin-top:6px;font-family:var(--font-d);font-size:10.5px;letter-spacing:1px;padding:2px 7px;border-radius:3px;border:1px solid var(--border);color:var(--txt2)}
+#ger-prox .gpx-selo{display:inline-block;margin-top:7px;font-family:var(--font-d);font-size:12px;font-weight:600;letter-spacing:1px;padding:3px 8px;border-radius:3px;border:1px solid var(--border);color:var(--txt2)}
 #ger-prox .gpx-selo.red{color:var(--red);border-color:var(--red)}
 #ger-prox .gpx-selo.warn{color:var(--warn);border-color:var(--warn)}
 #ger-prox .gpx-selo.ok{color:var(--ok);border-color:var(--ok)}
@@ -3005,7 +3005,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.113.0';
+const APP_VER   = '7.114.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4335,11 +4335,13 @@ function calcKPIs(dh){
     const reg=allHoje.find(d=>d.horario===sl.inicio);
     return soma + ((reg&&reg.producaoHora!=null) ? (sl.min||60) : 0);
   },0)/60;
-  // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA, cuja
-  // meta é de 8 h de jornada (a hora extra fica fora dela).
+  // Minutos de JORNADA NORMAL com lançamento — a régua do card UEP DO DIA e da
+  // aba ⚖ UEP (a hora extra fica fora). A hora EM ANDAMENTO conta só os minutos
+  // que já passaram (minSlotDecorrido, v7.114.0): às 14:10 ela cobrava os 60.
+  const agoraMin=(()=>{ const a=new Date(); return a.getHours()*60+a.getMinutes(); })();
   const minNorm=effSlots.reduce((soma,sl)=>{
     const reg=allHoje.find(d=>d.horario===sl.inicio);
-    return soma + ((reg&&reg.producaoHora!=null&&!(reg.he||sl.he)) ? (sl.min||60) : 0);
+    return soma + ((reg&&reg.producaoHora!=null&&!(reg.he||sl.he)) ? minSlotDecorrido(sl.inicio, sl.min||60, agoraMin) : 0);
   },0);
   // `he` vai junto: hora extra não tem meta, então não gera atraso para as
   // horas de jornada seguintes nem quita o atraso delas (ver calcAtrasoHoras).
@@ -4927,7 +4929,7 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-prox .gpx-exc{background:#C62828}
   .uep-doc .ud-prox .gpx-dia.warn .gpx-exc{background:#B26A00}
   .uep-doc .ud-prox .gpx-h{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1F2328;line-height:1}
-  .uep-doc .ud-prox .gpx-selo{display:inline-block;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#5B6470}
+  .uep-doc .ud-prox .gpx-selo{display:inline-block;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#5B6470}
   .uep-doc .ud-prox .gpx-selo.red{color:#C62828;border-color:#C62828}
   .uep-doc .ud-prox .gpx-selo.warn{color:#B26A00;border-color:#B26A00}
   .uep-doc .ud-prox .gpx-selo.ok{color:#2E7D32;border-color:#2E7D32}
@@ -10925,7 +10927,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
       g.eq += l.eq; if(l.eq > g.maior){ g.maior = l.eq; g.rot = l.rot; } });
     // no rótulo curto sai o código e o "VOL 1/1": na faixa só cabe lote + produto
     const curto = r => String(r || '').replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
-    const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), min:g.eq / porMin }));
+    const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), nome:g.rot, min:g.eq / porMin }));
     const vazio = !d && !(atr > 0) && !sem.length;
     // a cor segue o número que a tela MOSTRA (minuto inteiro): 105,3 min sai
     // "1h45", e com a conta crua ele virava vermelho contra a legenda "até 1h45"
@@ -10957,20 +10959,22 @@ function _gpxHtml(P, alt){
   const jornPx = px(UEP_MIN_DIA);
   const cards = P.dias.map(d => {
     const nome = `<div class="gpx-nome"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
-    if(d.estado === 'vazio') return `<div class="gpx-dia gpx-vazio">${nome}<div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div></div>
-      <div class="gpx-h">—</div><span class="gpx-selo">SEM LOTE DATADO</span></div>`;
+    // O VEREDITO VEM PRIMEIRO (v7.114.0): o selo abre o cartão, logo abaixo do
+    // dia — é ele que se procura de relance; as horas e o trilho explicam.
+    if(d.estado === 'vazio') return `<div class="gpx-dia gpx-vazio">${nome}<span class="gpx-selo">SEM LOTE DATADO</span><div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div></div>
+      <div class="gpx-h">—</div></div>`;
     const lotes = d.min - d.minAtr, dentro = d.fds ? d.min : Math.min(d.min, UEP_MIN_DIA);
     // pilha: atraso embaixo, lotes em cima; o que passa da jornada é pintado à parte
     const atrPx = px(Math.min(d.minAtr, dentro)), lotPx = px(Math.max(0, dentro - d.minAtr)), excPx = d.fds ? '0.0' : px(Math.max(0, d.exc));
     const selo = d.fds ? '<span class="gpx-selo">FIM DE SEMANA · HORA EXTRA</span>' : d.exc > 0 ? `<span class="gpx-selo ${d.estado}">${d.estado === 'red' ? 'NÃO CABE · ' : ''}FALTAM ${_fmtHM(d.exc)}</span>`
                            : `<span class="gpx-selo ${d.estado}">FOLGA ${_fmtHM(-d.exc)}</span>`;
     const tip = _rpEsc(`${d.data}: ${_fmtHM(lotes)} dos lotes (${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx)` + (d.minAtr > 0 ? ` + ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + ` · jornada ${_fmtHM(UEP_MIN_DIA)}`);
-    return `<div class="gpx-dia ${d.estado}" title="${tip}">${nome}
+    return `<div class="gpx-dia ${d.estado}" title="${tip}">${nome}${selo}
       <div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div>
         <div class="gpx-barra" style="height:${(+atrPx + +lotPx + +excPx).toFixed(1)}px">${d.minAtr > 0 ? `<i class="gpx-atr" style="height:${atrPx}px"></i>` : ''}<i class="gpx-lote" style="height:${lotPx}px"></i>${d.exc > 0 && !d.fds ? `<i class="gpx-exc" style="height:${excPx}px"></i>` : ''}</div></div>
-      <div class="gpx-h">${_fmtHM(d.min)}</div>${selo}
+      <div class="gpx-h">${_fmtHM(d.min)}</div>
       <div class="gpx-s">${d.minAtr > 0 ? `inclui atraso de ${_fmtHM(d.minAtr)}<br>` : ''}${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx${d.cxSemUep ? `<br><span style="color:var(--warn)">+ ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas</span>` : ''}</div>
-      ${d.lotes.length ? `<div class="gpx-lotes">mais pesados: ${d.lotes.map(l => `<b>${_rpEsc(l.lote || '—')}</b> ${_rpEsc(l.rot)} ${_fmtHM(l.min)}`).join(' · ')}</div>` : ''}</div>`;
+      ${d.lotes.length ? `<div class="gpx-lotes">mais pesados: ${d.lotes.map(l => `<span title="${_rpEsc((l.lote ? 'lote ' + l.lote + ' · ' : '') + (l.nome || l.rot))}"><b>${_rpEsc(l.lote || '—')}</b> ${_rpEsc(l.rot)} ${_fmtHM(l.min)}</span>`).join(' · ')}</div>` : ''}</div>`;
   }).join('');
   return `<div class="gpx-dias" style="--n:${P.dias.length}">${cards}</div>
     <div class="gpx-leg"><span><i style="background:#6b6b6b"></i>lotes do dia</span>${P.carry > 0 ? '<span><i style="background:repeating-linear-gradient(45deg,#9a9a9a 0 3px,#6b6b6b 3px 6px)"></i>atraso que não cabe hoje (entra no 1º dia)</span>' : ''}<span><i style="background:var(--warn)"></i>passa da jornada até ${_fmtHM(GPX_EXC_MAX)}</span><span><i style="background:var(--red)"></i>passa mais que isso</span><span><i style="height:0;border-top:2px dashed var(--txt);width:14px;vertical-align:3px"></i>jornada normal</span></div>
