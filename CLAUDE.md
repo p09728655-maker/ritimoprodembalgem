@@ -2739,6 +2739,11 @@ feito e dá ar de verdade ao que sobrou.
     dado, não de ritmo.
   - Mix e card usam a MESMA base (jornada normal; `_horaEhHE` = janela do
     turno do ⚙, a mesma do `_ehHoraExtraCaixas` do `.gs`).
+  - **O mix mostra a HORA EXTRA à parte** (v7.108.0, PPCP: *"deve ter mais
+    produtos"*). `_uepAbaMix` devolve `he` (linhas, cx, uep, uepCx) e `dia`
+    (jornada + HE); as linhas e a fatia `pct` continuam só da jornada — a
+    mesma base da meta. Tela e papel imprimem EM HORA EXTRA + TOTAL DO DIA só
+    quando houve HE; o total fecha com as caixas da confiabilidade.
   - **Layout sem buraco** (v7.107.0, PPCP: *"esse espaço no meio ficou
     feio"*): a CONFIABILIDADE (5) mora na coluna do mix (3), as colunas do
     `.uep-2` são flex e o último card de cada uma estica (`.uep-grow`). Se o mix

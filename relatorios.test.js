@@ -3809,6 +3809,10 @@ console.log('\n── estudo de UEP ──');
      [M.uep, M.cx, M.cxCom, M.linhas[0].modelo, M.linhas[0].cx], [569, 330, 300, '501118', 200]);
   ok('mix: UEP/cx do produto e fatia do dia; produto sem UEP fica com UEP/cx nulo',
      [M.linhas[0].uepCx, Math.round(M.linhas[1].pct), M.linhas[2].uepCx], [1.62, 43, null]);
+  ok('mix: a hora extra não entra nas linhas nem na fatia, mas vem à parte e fecha o dia',
+     [M.he.cx, M.he.uep, M.he.uepCx, M.he.linhas.map(l => l.nome), M.dia.cx, M.dia.uep, M.linhas.some(l => l.cx === 300)],
+     [100, 162, 1.62, ['ESCRIVANINHA TAURUS'], 430, 731, false]);
+  ok('mix sem hora extra: he zerado, dia = jornada', [_uepAbaMix(phm.slice(1)).he.cx, _uepAbaMix(phm.slice(1)).dia.cx], [0, 330]);
 
   const cat = [{ codigo:'501.118.005', uep:1.62, uepVig:'24/09/2026' }, { codigo:'501134002', uep:2.45, uepVig:'25/09/2026 EST' },
                { codigo:'501999001', uep:0, uepVig:'' }];
@@ -3879,6 +3883,9 @@ console.log('\n── estudo de UEP ──');
   ok('folha 1 = hoje (hora a hora) e período lado a lado; a folha 2 (mix, confiabilidade) começa em página nova',
      [DOC.indexOf('HORA A HORA') < DOC.indexOf('O PERÍODO'), DOC.indexOf('O PERÍODO') < DOC.indexOf('ud-quebra'),
       DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-cols"/.test(DOC)], [true, true, true, true]);
+  ok('tela e papel mostram a linha da hora extra e o total do dia quando houve HE',
+     [DOC.includes('EM HORA EXTRA (fora da meta)'), DOC.includes('TOTAL DO DIA'), /mix\.he\.cx>0\?`<tr class="uep-he">/.test(R),
+      _uepDocHtml(Object.assign({}, Dd, { mix: _uepAbaMix(phm.slice(1)) }), ctxD).includes('TOTAL DO DIA')], [true, true, true, false]);
   ok('o mix no papel mostra 8 produtos e junta o resto em "demais"', [(DOC.match(/<tr><td class="td-mono">/g) || []).length, /demais 4 produtos/.test(DOC)], [8, true]);
   const DOCsem = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null, conf:null }), Object.assign({}, ctxD, { hist:'falha', cadFalha:true }));
   ok('histórico ou cadastro que não vieram: o relatório sai inteiro e diz o que faltou (nunca zero)',
