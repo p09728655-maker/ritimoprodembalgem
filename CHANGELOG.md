@@ -21,6 +21,12 @@ PRÓXIMOS DIAS do gerencial: essas linhas saem da conta e aparecem listadas
 (data, lote, código, produto, caixas) no bloco da carteira, na tela e nos dois
 PDFs (🖨 ESTUDO e 🖨 CARTEIRA).
 
+**Aba ⚖ UEP e a impressão executiva também apontam** (PPCP: *"colocar na tela
+UEP"*): embaixo da CONFIABILIDADE sai a mesma lista — os **códigos que rodaram
+hoje sem UEP** (antes só o percentual) e as **linhas da programação futura sem
+UEP**. Nada faltando → *"✓ Nenhum código sem UEP"*. A programação é lida por
+último ao abrir a aba, e reaproveitada das outras abas se tiver menos de 15 min.
+
 **Atenção:** com código sem UEP na programação, a carga em UEP da aba PLANO
 **cai** (antes a linha entrava pela média; agora fica fora e é listada). Com o
 cadastro completo, nada muda. Os modos CARGA PELO MIX e CAIXAS CRUAS não

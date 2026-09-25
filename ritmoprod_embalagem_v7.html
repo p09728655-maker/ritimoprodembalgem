@@ -327,6 +327,9 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-uep .uep-mb i{display:block;height:100%;background:var(--acc);border-radius:3px}
 #sec-uep .uep-conf{display:flex;height:14px;border-radius:4px;overflow:hidden;margin:4px 0 8px;background:var(--elevated)}
 #sec-uep .uep-conf i{display:block}
+#sec-uep .uep-sem{margin-top:10px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
+#sec-uep .uep-sem b{color:var(--warn)}
+#sec-uep .uep-sem li b{color:var(--txt)}
 #sec-uep .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
 #sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
 #sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
@@ -4536,6 +4539,25 @@ function _uepAbaConf(porHora, cat){
   return { med, est, sem, tot, pMed:med/tot*100, pEst:est/tot*100, pSem:sem/tot*100 };
 }
 
+// Os CÓDIGOS que rodaram hoje sem UEP no cadastro (v7.110.0, PPCP: "apontar as
+// linhas sem UEP… colocar na tela UEP"). A confiabilidade só dava o %; aqui sai
+// quais são, para cadastrar. null = sem cadastro lido (não acusa às cegas).
+function _uepAbaSemUepHoje(porHora, cat){
+  if(!Array.isArray(cat) || !cat.length) return null;
+  const m = {};
+  cat.forEach(p => { const c = String(p && p.codigo || '').replace(/\D/g,''); if(c) m[c] = p; });
+  const G = {};
+  (porHora || []).forEach(it => {
+    const cx = Number(it && it.caixas) || 0; if(!cx) return;
+    const c = String(it.codigo || '').replace(/\D/g,''), p = m[c];
+    if(p && Number(p.uep) > 0) return;
+    const g = G[c] = G[c] || { codigo:String(it.codigo || c), rot:'', cx:0 };
+    g.cx += cx;
+    if(!g.rot) g.rot = String(nomeComCor((p && p.desc) || it.descricao || it.desc || '', (p && p.cor) || '')).replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
+  });
+  return Object.values(G).sort((a,b) => b.cx - a.cx);
+}
+
 // Projeção: o ritmo de UEP por minuto de jornada lançada, até o fim da jornada.
 function _uepAbaProj(feito, minNorm){
   const f=Number(feito)||0, m=Math.min(Math.max(0,Number(minNorm)||0), UEP_MIN_DIA);
@@ -4635,6 +4657,9 @@ async function _uepAbaCarregar(){
     await _uepAbaHistCarregar();
     if(PONTOS_DIA.uep===null||PONTOS_DIA.uep===undefined){ await lerPontosDia(); if(_abaOn('uep')) renderUep(); }
     await _uepAbaCatCarregar();
+    // por último, a programação (a mais cara): só para apontar código sem UEP.
+    // Reaproveita a leitura das outras abas se tiver menos de 15 min.
+    if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
   }catch(e){ console.warn('[UEP] aba:', e.message); }
   finally{ UEP_CARREGANDO=false; }
 }
@@ -4702,7 +4727,11 @@ function _uepAbaDados(){
   ];
   const nPer=_uepPerN();
   const P=UEP_HIST?_uepAbaPeriodo(UEP_HIST, nPer):null;
-  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt,
+  // o que falta cadastrar: hoje (pelo cadastro cru) e a programação futura
+  // (só quando ela já foi lida — null é "não sei", nunca "nada falta")
+  const semHoje=_uepAbaSemUepHoje(PONTOS_DIA.porHora, CAP_RAW);
+  const semFut=PROG_DET_TS?_cartSemUep(PROG_DETALHADA, _cartNum(hojeStr())):null;
+  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut,
            nPer, P, perCards:P&&P.n?_uepAbaPerCards(P):null };
 }
 function _uepAbaPerCards(P){
@@ -4757,6 +4786,12 @@ function renderUep(){
   } else {
     b5='<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo o cadastro para separar UEP medida de estimada…</div></div>';
   }
+
+  // O QUE FALTA CADASTRAR — a mesma lista do PLANO e da faixa do gerencial.
+  { const faltam=_cartSemUepHtml(D.semFut||[], [], 'uep-sem', D.semHoje||[]);
+    b5+= faltam
+      || ((D.semHoje && D.semFut) ? '<div class="uep-nota" style="color:var(--ok)">✓ Nenhum código sem UEP no cadastro — nem hoje, nem na programação futura.</div>'
+          : '<div class="uep-nota">Lendo o cadastro e a programação para apontar códigos sem UEP…</div>'); }
 
   // 4 · PERÍODO — dias fechados, UEP congelada no fechamento.
   const nPer=D.nPer;
@@ -4961,7 +4996,8 @@ function _uepDocHtml(D, ctx){
       ? `<div class="ud-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:#2E7D32"></i><i style="width:${conf.pEst.toFixed(1)}%;background:#B26A00"></i><i style="width:${conf.pSem.toFixed(1)}%;background:#C62828"></i></div>
         <div class="ud-leg"><span><i style="background:#2E7D32"></i>${fmtP(conf.pMed)} UEP MEDIDA (estudo)</span><span><i style="background:#B26A00"></i>${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span><i style="background:#C62828"></i>${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
         <div class="ud-nota">Pelas ${fmtN(conf.tot)} caixas apontadas hoje, com a vigência do cadastro. A parte estimada diminui quando o GRAVAR UEP troca a estimativa pela medida de quem rodou.</div>`
-      : `<div class="ud-vazio">${ctx.cadFalha?'Não consegui ler o cadastro':'O cadastro com a vigência ainda não tinha sido lido'} — a divisão entre UEP medida e estimada não sai nesta impressão.</div>`);
+      : `<div class="ud-vazio">${ctx.cadFalha?'Não consegui ler o cadastro':'O cadastro com a vigência ainda não tinha sido lido'} — a divisão entre UEP medida e estimada não sai nesta impressão.</div>`)
+    +_cartSemUepHtml(D.semFut||[], [], 'ud-alerta', D.semHoje||[]);
 
   // 6 · COMO LER
   const b6=sec('COMO LER')
@@ -10335,9 +10371,10 @@ function _cartSemUep(itens, hojeNum){
 }
 // A lista, desenhada UMA vez: a tela do PLANO, os dois PDFs da carteira e a
 // faixa PRÓXIMOS DIAS do gerencial leem daqui.
-function _cartSemUepHtml(lin, div, cls){
-  if(!(lin && lin.length) && !(div && div.length)) return '';
+function _cartSemUepHtml(lin, div, cls, hoje){
+  if(!(lin && lin.length) && !(div && div.length) && !(hoje && hoje.length)) return '';
   return '<div class="' + (cls || 'qp-mix warn') + '"><b>⚠ SEM UEP NO CADASTRO — FORA DA CONTA</b> (cadastrar a UEP na PRODUTO_CODIGO, coluna UEP, ou rodar o 💾 GRAVAR UEP):<ul style="margin:4px 0 0 16px">'
+    + (hoje || []).map(x => '<li>hoje · <b>' + _rpEsc(x.codigo) + '</b> ' + _rpEsc(x.rot) + ' · ' + fmtN(x.cx) + ' cx — fora da UEP de hoje</li>').join('')
     + (lin || []).map(x => '<li>' + _rpEsc(x.data.slice(0,5)) + ' · lote <b>' + _rpEsc(x.lote || '—') + '</b> · ' + _rpEsc(x.codigo) + ' ' + _rpEsc(x.rot) + ' · ' + fmtN(x.cx) + ' cx</li>').join('')
     + (div || []).map(x => '<li>atraso · ' + _rpEsc(x.codigo) + ' ' + _rpEsc(x.rot) + ' · ' + fmtN(x.cx) + ' cx — não entrou na dívida</li>').join('')
     + '</ul></div>';

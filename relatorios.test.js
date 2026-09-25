@@ -3869,6 +3869,7 @@ console.log('\n── estudo de UEP ──');
   if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
   { const m = JS.match(/const UEP_DOC_SVG_W = \d+;/), m2 = JS.match(/const UEP_DOC_MIX_MAX = \d+;/);
     eval(m[0].replace('const ','global.')); eval(m2[0].replace('const ','global.')); }
+  eval(pega('function _cartSemUepHtml(')); global._cartSemUepHtml = _cartSemUepHtml;
   eval(pega('function _uepDocHtml('));
   const card = { c:'ok', ef:102.2, meta:2530, esperado:1383 };
   const mixG = _uepAbaMix(phm.concat(Array.from({ length: 9 }, (_, i) => ({ hora:'09:00', modelo:'50120'+i, nome:'P'+i, caixas:10, uep:10 }))));
@@ -3940,6 +3941,15 @@ console.log('\n── estudo de UEP ──');
   const SH = _cartSemUepHtml(SU, [{ codigo:'999', rot:'X', cx:40 }]);
   ok('a lista desenhada: linha e atraso sem UEP, e nada quando não falta UEP',
      [/lote <b>25246<\/b>/.test(SH), /não entrou na dívida/.test(SH), _cartSemUepHtml([], [])], [true, true, '']);
+  eval(pega('function _uepAbaSemUepHoje('));
+  const SH2 = _uepAbaSemUepHoje([{ codigo:'501.118.005', caixas:60 }, { codigo:'501999001', caixas:10 }, { codigo:'501999001', caixas:5, descricao:'VOL 1/1 BANQUETA' }, { codigo:'501777', caixas:3 }],
+                                 [{ codigo:'501118005', uep:1.6 }, { codigo:'501999001', uep:0, desc:'VOL 1/1 BANQUETA NOVA', cor:'PRETO' }]);
+  ok('aba UEP: códigos de hoje sem UEP (zerada ou fora do cadastro), somados e do maior para o menor; sem cadastro não acusa',
+     [SH2.map(x => [x.codigo, x.cx]), SH2[0].rot, _uepAbaSemUepHoje([{ codigo:'1', caixas:1 }], null)],
+     [[['501999001', 15], ['501777', 3]], 'BANQUETA NOVA · PRETO', null]);
+  ok('a lista aparece na aba UEP e na impressão executiva, pelo mesmo desenho',
+     [/_cartSemUepHtml\(D\.semFut\|\|\[\], \[\], 'uep-sem', D\.semHoje\|\|\[\]\)/.test(pega('function renderUep(')),
+      /_cartSemUepHtml\(D\.semFut\|\|\[\], \[\], 'ud-alerta', D\.semHoje\|\|\[\]\)/.test(pega('function _uepDocHtml('))], [true, true]);
   const CM = pega('async function _cartMontar(');
   ok('PLANO em UEP: a carga só leva linha com UEP e a dívida vem do _gpxDivida (sem média)',
      [/uepCx\) > 0\), hojeNum, dv\.uep, \{ uep:true, fallback:0 \}/.test(CM), /_planoDividaUep/.test(JS), /_cartSemUepHtml\(a\.semUep, a\.divSemUep\)/.test(pega('function _cartMixHtml('))],

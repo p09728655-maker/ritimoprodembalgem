@@ -2806,7 +2806,11 @@ feito e dá ar de verdade ao que sobrou.
   o `_planoDividaUep` (que caía na média) foi apagado; a carteira em UEP usa
   `_gpxDivida` + `_cartSemUep`, e a lista sai pelo `_cartSemUepHtml` — UM
   desenho para a tela do PLANO, os dois PDFs e a faixa do gerencial. O teste
-  falha se `_planoDividaUep` voltar.
+  falha se `_planoDividaUep` voltar. A **aba ⚖ UEP** (bloco 5) e a impressão
+  executiva mostram a mesma lista, mais os **códigos de hoje sem UEP**
+  (`_uepAbaSemUepHoje`, pelo cadastro cru `CAP_RAW`; sem cadastro → `null`,
+  não acusa). A programação entra por último no `_uepAbaCarregar`, só se a
+  leitura tiver mais de 15 min (`GPX_TTL`).
 
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:
