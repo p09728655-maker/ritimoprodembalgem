@@ -317,11 +317,12 @@ html.modo-dir body{overflow:hidden}
 #sec-dir{--u:min(1vw,1.7778vh);position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:50}
 html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-top{display:flex;align-items:center;gap:calc(var(--u)*1.6);padding:calc(var(--u)*1.3) calc(var(--u)*2.2);border-bottom:1px solid var(--border)}
-#sec-dir .dir-marca{font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*2.1)}
+#sec-dir .dir-logo{height:calc(var(--u)*4.4);width:auto;display:block;flex-shrink:0}
+#sec-dir .dir-marca{margin-left:auto;font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*1.6);opacity:.9}
 #sec-dir .dir-marca span{color:var(--acc)}
 #sec-dir .dir-tit{font-family:var(--font-d);font-size:calc(var(--u)*1.3);letter-spacing:calc(var(--u)*.35);color:var(--txt2)}
 #sec-dir .dir-tit b{color:var(--txt)}
-#sec-dir .dir-rel{margin-left:auto;text-align:right;font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*2.5)}
+#sec-dir .dir-rel{margin-left:calc(var(--u)*2);text-align:right;font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*2.5)}
 #sec-dir .dir-rel small{display:block;font-family:var(--font-d);font-weight:400;font-size:calc(var(--u)*.95);color:var(--txt2)}
 #sec-dir .dir-rel small.velho{color:var(--warn)}
 #sec-dir .dir-corpo{flex:1;min-height:0;padding:calc(var(--u)*1.8) calc(var(--u)*2.2);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*2)}
@@ -372,6 +373,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-dh small{display:block;font-size:calc(var(--u)*1.3);color:var(--txt2);font-weight:600;margin-top:calc(var(--u)*.3)}
 #sec-dir .dir-dl{font-family:var(--font-d);font-size:calc(var(--u)*1);color:var(--txt2);line-height:1.45;border-top:1px dashed var(--border);padding-top:calc(var(--u)*.6)}
 #sec-dir .dir-dl b{color:var(--txt);font-weight:600}
+#sec-dir .dir-av{color:var(--warn)}
 #sec-dir .dir-dx{font-family:var(--font-d);font-size:calc(var(--u)*1.1);color:var(--txt2);line-height:1.5}
 #sec-dir .dir-dx b{color:var(--txt)}
 #sec-dir .dir-tot{display:flex;gap:calc(var(--u)*3);flex-wrap:wrap;font-family:var(--font-d);font-size:calc(var(--u)*1.3);color:var(--txt2)}
@@ -623,31 +625,21 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-semana .tbl-hdr{flex-wrap:wrap;row-gap:8px}
 /* PRÓXIMOS DIAS (v7.109.0) — a carteira datada em HORAS DE LINHA */
 #ger-prox .gpx-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:12px;padding:14px 16px 4px}
-#ger-prox .gpx-dia{background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:12px 12px 10px;min-width:0}
-#ger-prox .gpx-dia.red{border-color:rgba(244,67,54,.55)}
-#ger-prox .gpx-dia.warn{border-color:rgba(255,152,0,.5)}
-#ger-prox .gpx-nome{font-family:var(--font-d);font-size:11px;letter-spacing:1.5px;color:var(--txt2)}
-#ger-prox .gpx-nome b{color:var(--txt);font-weight:600}
-#ger-prox .gpx-trilho{position:relative;height:110px;margin:12px 0 10px;border-bottom:1px solid var(--border)}
-#ger-prox .gpx-jorn{position:absolute;left:-4px;right:-4px;border-top:2px dashed var(--txt);opacity:.8}
-#ger-prox .gpx-jorn span{position:absolute;right:0;top:-15px;font-family:var(--font-d);font-size:9px;color:var(--txt2);background:var(--elevated);padding:0 3px}
-#ger-prox .gpx-barra{position:absolute;bottom:0;left:22%;width:56%;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden}
-#ger-prox .gpx-barra i{display:block}
-#ger-prox .gpx-lote{background:#6b6b6b}
-#ger-prox .gpx-atr{background:repeating-linear-gradient(45deg,#9a9a9a 0 3px,#6b6b6b 3px 6px)}
-#ger-prox .gpx-exc{background:var(--red)}
-#ger-prox .gpx-dia.warn .gpx-exc{background:var(--warn)}
-#ger-prox .gpx-h{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1}
-#ger-prox .gpx-selo{display:inline-block;margin-top:7px;font-family:var(--font-d);font-size:12px;font-weight:600;letter-spacing:1px;padding:3px 8px;border-radius:3px;border:1px solid var(--border);color:var(--txt2)}
-#ger-prox .gpx-selo.red{color:var(--red);border-color:var(--red)}
-#ger-prox .gpx-selo.warn{color:var(--warn);border-color:var(--warn)}
-#ger-prox .gpx-selo.ok{color:var(--ok);border-color:var(--ok)}
-#ger-prox .gpx-s{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:7px;line-height:1.5}
-#ger-prox .gpx-lotes{margin-top:8px;border-top:1px dashed var(--border);padding-top:7px;font-family:var(--font-d);font-size:10px;color:var(--txt2);line-height:1.55}
-#ger-prox .gpx-lotes b{color:var(--txt);font-weight:600}
-#ger-prox .gpx-vazio .gpx-h{color:var(--txt2)}
-#ger-prox .gpx-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);padding:8px 16px 0}
-#ger-prox .gpx-leg i{display:inline-block;width:11px;height:10px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+#ger-prox .gpx-dias{align-items:stretch}
+#ger-prox .gpx-dia{background:var(--elevated);border:1px solid var(--border);border-top:4px solid var(--border);border-radius:6px;padding:12px 12px 10px;min-width:0;display:flex;flex-direction:column;gap:7px}
+#ger-prox .gpx-dia.red{border-top-color:var(--red)} #ger-prox .gpx-dia.warn{border-top-color:var(--warn)} #ger-prox .gpx-dia.ok{border-top-color:var(--ok)}
+#ger-prox .gpx-dn{font-family:var(--font-d);font-size:11px;letter-spacing:1.5px;color:var(--txt2)}
+#ger-prox .gpx-dn b{color:var(--txt);font-weight:600}
+/* selo CHEIO: o fundo é o veredito, o texto escuro passa de 4,5:1 */
+#ger-prox .gpx-ds{align-self:flex-start;white-space:nowrap;font-family:var(--font-d);font-size:11.5px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:4px;background:var(--surface);color:var(--txt)}
+#ger-prox .gpx-ds.red{background:var(--red);color:#1a0806} #ger-prox .gpx-ds.warn{background:var(--warn);color:#1f1300} #ger-prox .gpx-ds.ok{background:var(--ok);color:#06200f}
+#ger-prox .gpx-dh{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1;margin-top:2px}
+#ger-prox .gpx-dh small{display:block;font-size:11px;color:var(--txt2);font-weight:600;margin-top:2px}
+#ger-prox .gpx-dx{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);line-height:1.5}
+#ger-prox .gpx-dx b{color:var(--txt);font-weight:600}
+#ger-prox .gpx-av{color:var(--warn)}
+#ger-prox .gpx-dl{border-top:1px dashed var(--border);padding-top:6px;font-family:var(--font-d);font-size:10px;color:var(--txt2);line-height:1.5}
+#ger-prox .gpx-dl b{color:var(--txt);font-weight:600}
 #ger-prox .gpx-tot{display:flex;gap:26px;flex-wrap:wrap;margin:12px 16px 0;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-d);font-size:12px;color:var(--txt2)}
 #ger-prox .gpx-tot b{color:var(--txt);font-size:14px}
 #ger-prox .gpx-tot .r b{color:var(--red)}
@@ -3096,7 +3088,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.116.0';
+const APP_VER   = '7.117.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5029,29 +5021,17 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-conf i{display:block;height:100%}
   /* PRÓXIMOS DIAS no papel: a marcação é a da aba (.gpx-*); aqui só a pele */
   .uep-doc .ud-prox .gpx-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:8px}
-  .uep-doc .ud-prox .gpx-dia{border:1px solid #e2e8f0;border-radius:5px;padding:7px 9px;page-break-inside:avoid}
-  .uep-doc .ud-prox .gpx-dia.red{border-color:#C62828}
-  .uep-doc .ud-prox .gpx-dia.warn{border-color:#B26A00}
-  .uep-doc .ud-prox .gpx-nome{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:#5B6470}
-  .uep-doc .ud-prox .gpx-nome b{color:#1F2328}
-  .uep-doc .ud-prox .gpx-trilho{position:relative;margin:6px 0;border-bottom:1px solid #cbd5e0}
-  .uep-doc .ud-prox .gpx-jorn{position:absolute;left:-3px;right:-3px;border-top:2px dashed #1F2328}
-  .uep-doc .ud-prox .gpx-jorn span{display:none}
-  .uep-doc .ud-prox .gpx-barra{position:absolute;bottom:0;left:22%;width:56%;display:flex;flex-direction:column-reverse}
-  .uep-doc .ud-prox .gpx-barra i{display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .uep-doc .ud-prox .gpx-lote{background:#8a929c}
-  .uep-doc .ud-prox .gpx-atr{background:repeating-linear-gradient(45deg,#b8bec6 0 3px,#8a929c 3px 6px)}
-  .uep-doc .ud-prox .gpx-exc{background:#C62828}
-  .uep-doc .ud-prox .gpx-dia.warn .gpx-exc{background:#B26A00}
-  .uep-doc .ud-prox .gpx-h{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1F2328;line-height:1}
-  .uep-doc .ud-prox .gpx-selo{display:inline-block;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#5B6470}
-  .uep-doc .ud-prox .gpx-selo.red{color:#C62828;border-color:#C62828}
-  .uep-doc .ud-prox .gpx-selo.warn{color:#B26A00;border-color:#B26A00}
-  .uep-doc .ud-prox .gpx-selo.ok{color:#2E7D32;border-color:#2E7D32}
-  .uep-doc .ud-prox .gpx-s,.uep-doc .ud-prox .gpx-lotes{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#5B6470;margin-top:4px;line-height:1.45}
-  .uep-doc .ud-prox .gpx-lotes b{color:#1F2328}
-  .uep-doc .ud-prox .gpx-s span{color:#B26A00!important}
-  .uep-doc .ud-prox .gpx-leg{display:none}
+  .uep-doc .ud-prox .gpx-dia{border:1px solid #e2e8f0;border-top:3px solid #cbd5e0;border-radius:5px;padding:6px 8px;page-break-inside:avoid;display:flex;flex-direction:column;gap:3px}
+  .uep-doc .ud-prox .gpx-dia.red{border-top-color:#C62828} .uep-doc .ud-prox .gpx-dia.warn{border-top-color:#B26A00} .uep-doc .ud-prox .gpx-dia.ok{border-top-color:#2E7D32}
+  .uep-doc .ud-prox .gpx-dn{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:#5B6470}
+  .uep-doc .ud-prox .gpx-dn b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-ds{align-self:flex-start;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#1F2328;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .uep-doc .ud-prox .gpx-ds.red{background:#C62828;border-color:#C62828;color:#fff} .uep-doc .ud-prox .gpx-ds.warn{background:#B26A00;border-color:#B26A00;color:#fff} .uep-doc .ud-prox .gpx-ds.ok{color:#2E7D32;border-color:#2E7D32}
+  .uep-doc .ud-prox .gpx-dh{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1F2328;line-height:1}
+  .uep-doc .ud-prox .gpx-dh small{font-size:9px;color:#5B6470;font-weight:600}
+  .uep-doc .ud-prox .gpx-dx,.uep-doc .ud-prox .gpx-dl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#5B6470;line-height:1.45}
+  .uep-doc .ud-prox .gpx-dx b,.uep-doc .ud-prox .gpx-dl b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-av{color:#B26A00}
   .uep-doc .ud-prox .gpx-tot{display:flex;gap:18px;flex-wrap:wrap;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470}
   .uep-doc .ud-prox .gpx-tot b{color:#1F2328}
   .uep-doc .ud-prox .gpx-tot .r b{color:#C62828}
@@ -11073,31 +11053,9 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
 }
 // Desenho: nenhuma conta de carga aqui, só escala da barra e texto.
 const GPX_DOW = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-function _gpxHtml(P, alt){
-  const escMax = Math.max(12*60, ...P.dias.map(d => d.min)) * 1.02;   // o trilho mostra até 12 h (mais, se precisar)
-  const H = alt || 110, px = v => (v / escMax * H).toFixed(1);
-  const jornPx = px(UEP_MIN_DIA);
-  const cards = P.dias.map(d => {
-    const nome = `<div class="gpx-nome"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
-    // O VEREDITO VEM PRIMEIRO (v7.114.0): o selo abre o cartão, logo abaixo do
-    // dia — é ele que se procura de relance; as horas e o trilho explicam.
-    if(d.estado === 'vazio') return `<div class="gpx-dia gpx-vazio">${nome}<span class="gpx-selo">SEM LOTE DATADO</span><div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div></div>
-      <div class="gpx-h">—</div></div>`;
-    const lotes = d.min - d.minAtr, dentro = d.fds ? d.min : Math.min(d.min, UEP_MIN_DIA);
-    // pilha: atraso embaixo, lotes em cima; o que passa da jornada é pintado à parte
-    const atrPx = px(Math.min(d.minAtr, dentro)), lotPx = px(Math.max(0, dentro - d.minAtr)), excPx = d.fds ? '0.0' : px(Math.max(0, d.exc));
-    const selo = d.fds ? '<span class="gpx-selo">FIM DE SEMANA · HORA EXTRA</span>' : d.exc > 0 ? `<span class="gpx-selo ${d.estado}">${d.estado === 'red' ? 'NÃO CABE · ' : ''}FALTAM ${_fmtHM(d.exc)}</span>`
-                           : `<span class="gpx-selo ${d.estado}">FOLGA ${_fmtHM(-d.exc)}</span>`;
-    const tip = _rpEsc(`${d.data}: ${_fmtHM(lotes)} dos lotes (${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx)` + (d.minAtr > 0 ? ` + ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + ` · jornada ${_fmtHM(UEP_MIN_DIA)}`);
-    return `<div class="gpx-dia ${d.estado}" title="${tip}">${nome}${selo}
-      <div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div>
-        <div class="gpx-barra" style="height:${(+atrPx + +lotPx + +excPx).toFixed(1)}px">${d.minAtr > 0 ? `<i class="gpx-atr" style="height:${atrPx}px"></i>` : ''}<i class="gpx-lote" style="height:${lotPx}px"></i>${d.exc > 0 && !d.fds ? `<i class="gpx-exc" style="height:${excPx}px"></i>` : ''}</div></div>
-      <div class="gpx-h">${_fmtHM(d.min)}</div>
-      <div class="gpx-s">${d.minAtr > 0 ? `inclui atraso de ${_fmtHM(d.minAtr)}<br>` : ''}${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx${d.cxSemUep ? `<br><span style="color:var(--warn)">+ ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas</span>` : ''}</div>
-      ${d.lotes.length ? `<div class="gpx-lotes">mais pesados: ${d.lotes.map(l => `<span title="${_rpEsc((l.lote ? 'lote ' + l.lote + ' · ' : '') + (l.nome || l.rot))}"><b>${_rpEsc(l.lote || '—')}</b> ${_rpEsc(l.rot)} ${_fmtHM(l.min)}</span>`).join(' · ')}</div>` : ''}</div>`;
-  }).join('');
+function _gpxHtml(P, alt){   // `alt` era a altura do trilho; o cartão novo não tem trilho
+  const cards = P.dias.map(d => _gpxCartaoHtml(d, 'gpx')).join('');
   return `<div class="gpx-dias" style="--n:${P.dias.length}">${cards}</div>
-    <div class="gpx-leg"><span><i style="background:#6b6b6b"></i>lotes do dia</span>${P.carry > 0 ? '<span><i style="background:repeating-linear-gradient(45deg,#9a9a9a 0 3px,#6b6b6b 3px 6px)"></i>atraso que não cabe hoje (entra no 1º dia)</span>' : ''}<span><i style="background:var(--warn)"></i>passa da jornada até ${_fmtHM(GPX_EXC_MAX)}</span><span><i style="background:var(--red)"></i>passa mais que isso</span><span><i style="height:0;border-top:2px dashed var(--txt);width:14px;vertical-align:3px"></i>jornada normal</span></div>
     <div class="gpx-tot"><span>${plural(P.dias.length,'dia pede','dias pedem')} <b>${_fmtHM(P.minPede)}</b> para <b>${_fmtHM(P.minJorn)}</b> de jornada em ${plural(P.nUteis,'dia útil','dias úteis')}</span>`
       + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
@@ -11142,7 +11100,7 @@ function renderProxDias(){
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
   corpo.innerHTML = _gpxHtml(P);
   const sub = document.getElementById('gpx-sub');
-  if(sub) sub.textContent = 'horas de linha que a carteira pede · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -11274,26 +11232,32 @@ function _dirSemanaHtml(S, U, falhaHist, ptsEst){
     ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
     ${S.heUep > 0 || S.heCx > 0 ? `<div class="dir-lin">HORA EXTRA NA SEMANA <b class="he">${f(S.heUep)} UEP · ${f(S.heCx)} cx</b></div>` : ''}`;
 }
+// O CARTÃO DE UM DIA dos PRÓXIMOS DIAS — formato do PPCP (25/09/2026, com a
+// imagem na mão): faixa de status em cima, selo CHEIO (FALTA / FOLGA — é ele que
+// se lê de longe), horas previstas, UEP · caixas · pontos, lotes e o mais
+// pesado. UM desenho para a diretoria, a aba ⚖ UEP e a impressão; o prefixo só
+// escolhe a pele (`dir` ou `gpx`). Nenhuma conta: tudo vem do _gpxMontar.
+function _gpxCartaoHtml(d, pf){
+  const f = _dirF, c = n => pf + '-' + n;
+  const nome = `<div class="${c('dn')}"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
+  if(d.estado === 'vazio') return `<div class="${c('dia')}">${nome}<span class="${c('ds')}">SEM LOTE DATADO</span><div class="${c('dh')}" style="color:var(--txt2)">—</div></div>`;
+  const cls = d.fds ? '' : d.estado;
+  const selo = d.fds ? 'FIM DE SEMANA'
+    : d.exc > 0 ? 'FALTA ' + _fmtHM(d.exc)          // âmbar até 1h45, vermelho acima: a cor é o veredito
+    : (Math.round(d.exc) === 0 ? 'DENTRO DA JORNADA' : 'FOLGA ' + _fmtHM(-d.exc));
+  const tip = _rpEsc(`${d.data}: ${_fmtHM(d.min)} de linha para ${_fmtHM(UEP_MIN_DIA)} de jornada` + (d.minAtr > 0 ? ` · inclui ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + (d.cxSemUep ? ` · + ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas` : ''));
+  const pes = d.lotes[0];
+  return `<div class="${c('dia')} ${cls}" title="${tip}">${nome}<span class="${c('ds')} ${cls}">${selo}</span>
+    <div class="${c('dh')}">${_fmtHM(d.min)}<small> previstas</small></div>
+    <div class="${c('dx')}"><b>${f(d.uep)}</b> UEP · ${f(d.cx)} cx${d.pts !== undefined ? ' · ' + f(d.pts) + ' pts' : ''}${d.minAtr > 0 ? `<br>inclui atraso de ${_fmtHM(d.minAtr)}` : ''}${d.cxSemUep ? `<br><span class="${c('av')}">+ ${fmtN(d.cxSemUep)} cx sem UEP</span>` : ''}</div>
+    ${d.lotesDia && d.lotesDia.length ? `<div class="${c('dl')}">Lotes: <b>${d.lotesDia.slice(0, 4).map(_rpEsc).join(', ')}${d.lotesDia.length > 4 ? ` +${d.lotesDia.length - 4}` : ''}</b></div>` : ''}
+    ${pes ? `<div class="${c('dl')}" title="${_rpEsc((pes.lote ? 'lote ' + pes.lote + ' · ' : '') + (pes.nome || pes.rot))}">Mais pesado: <b>${_rpEsc(pes.lote || '—')}</b> ${_rpEsc(pes.rot)} ${_fmtHM(pes.min)}</div>` : ''}</div>`;
+}
 function _dirCartHtml(P, falha){
   if(!P) return falha ? _dirMsg(`${falha.t} — tento de novo sozinho.`) : _dirMsg('Lendo a programação…');
   if(P.falha === 'sem-uep') return _dirMsg('A programação não traz UEP — não dá para converter em horas.');
   const f = _dirF;
-  // FORMATO DO PPCP (25/09/2026, com a imagem na mão): cartão com faixa de
-  // status em cima e selo CHEIO — é o selo que se lê da porta. Sem trilho.
-  const cards = P.dias.map(d => {
-    const nome = `<div class="dir-dn"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
-    if(d.estado === 'vazio') return `<div class="dir-dia">${nome}<span class="dir-ds">SEM LOTE DATADO</span><div class="dir-dh" style="color:var(--txt2)">—</div></div>`;
-    const cls = d.fds ? '' : d.estado;
-    const selo = d.fds ? 'FIM DE SEMANA'
-      : d.exc > 0 ? 'FALTA ' + _fmtHM(d.exc)   // âmbar até 1h45, vermelho acima (a cor é o veredito)
-      : (Math.round(d.exc) === 0 ? 'DENTRO DA JORNADA' : 'FOLGA ' + _fmtHM(-d.exc));
-    const pes = d.lotes[0];
-    return `<div class="dir-dia ${cls}">${nome}<span class="dir-ds ${cls}">${selo}</span>
-      <div class="dir-dh">${_fmtHM(d.min)}<small> previstas</small></div>
-      <div class="dir-dx"><b>${f(d.uep)}</b> UEP · ${f(d.cx)} cx · ${f(d.pts)} pts${d.minAtr > 0 ? `<br>inclui atraso de ${_fmtHM(d.minAtr)}` : ''}</div>
-      ${d.lotesDia && d.lotesDia.length ? `<div class="dir-dl">Lotes: <b>${d.lotesDia.slice(0, 4).map(_rpEsc).join(', ')}${d.lotesDia.length > 4 ? ` +${d.lotesDia.length - 4}` : ''}</b></div>` : ''}
-      ${pes ? `<div class="dir-dl">Mais pesado: <b>${_rpEsc(pes.lote || '—')}</b> ${_rpEsc(pes.rot)} ${_fmtHM(pes.min)}</div>` : ''}</div>`;
-  }).join('');
+  const cards = P.dias.map(d => _gpxCartaoHtml(d, 'dir')).join('');
   const semU = (P.semUep || []).length + (P.divSemUep || []).length;
   return `<div class="dir-dias" style="--n:${P.dias.length}">${cards}</div>
     <div class="dir-tot">${P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b></span>` : '<span>nenhum dia passa da jornada</span>'}
@@ -11305,7 +11269,7 @@ function _dirMoldura(t, corpo, tit, dadoTs){
   const ag = new Date(), hm = p2(ag.getHours()) + ':' + p2(ag.getMinutes());
   const velho = dadoTs && Date.now() - dadoTs > 15*60000;
   const dado = dadoTs ? `<small class="${velho ? 'velho' : ''}">${velho ? '⚠ ' : ''}dados de ${new Date(dadoTs).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small>` : '';
-  return `<div class="dir-top"><div class="dir-marca">Ritmo<span>Patrimar</span></div><div class="dir-tit">${tit}</div><div class="dir-rel">${hm}${dado}</div></div>
+  return `<div class="dir-top"><img class="dir-logo" src="/patrimar-logo.png" alt="Patrimar móveis" onerror="this.style.display='none'"><div class="dir-tit">${tit}</div><div class="dir-marca">Ritmo<span>Patrimar</span></div><div class="dir-rel">${hm}${dado}</div></div>
     <div class="dir-corpo">${corpo}</div>
     <div class="dir-rod">${Array.from({length:DIR_N}, (_, i) => `<i class="${i === t ? 'on' : ''}"></i>`).join('')}</div>`;
 }
@@ -11370,7 +11334,8 @@ function iniciarDiretoria(){
   renderDir();
   // passa a tela a cada 20 s; a cada passagem ela é redesenhada com o dado do momento
   DIR_TIMER = setInterval(() => { DIR_TELA = (DIR_TELA + 1) % DIR_N; renderDir(); }, DIR_TEMPO);
-  setTimeout(_dirCarregar, 4000);
+  // a 1ª leitura sai do fim da carga inicial (ver "Iniciar fonte de dados");
+  // depois, a cada minuto confere o que venceu
   setInterval(_dirCarregar, 60000);
 }
 
@@ -16657,19 +16622,28 @@ if(CFG.sheetsUrl){
   // próxima recarga de 28 min (que podia falhar de novo). Começando o refresh
   // incondicionalmente, a TV segue tentando a cada 5 min e se reconecta sozinha
   // assim que o backend "esquenta". Não altera a URL nem o fluxo JSONP.
-  lerSheetsComRetry(4).then(()=>{ iniciarAutoRefresh(); });
+  // Na DIRETORIA as leituras dela (histórico, programação, pontos) só começam
+  // DEPOIS da carga inicial, e o que é da TV da fábrica não roda (v7.117.0): o
+  // getHistory disputava a fila do Apps Script com o poll de paradas de 15 s e as
+  // médias por horário, estourava o tempo e a SEMANA PASSADA dizia "não consegui
+  // ler o histórico" (PPCP, 25/09/2026).
+  lerSheetsComRetry(4).then(()=>{ iniciarAutoRefresh(); if(_modoDir()) lerPontosDia().finally(()=>{ renderDir(); _dirCarregar(); }); });
   // Médias históricas por horário (alerta de hora fraca). Buscadas uma vez no
   // carregamento e renovadas de hora em hora — só mudam quando um dia é fechado.
-  lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
-  setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
+  if(!_modoDir()){
+    lerMediaHorasComRetry(4).then(ok=>{ if(ok){ renderAll(); renderAnaliseHorario(); } });
+    setInterval(()=>{ lerMediaHoras(); }, 60*60*1000);
+  }
   // PONTOS/PESO por produto (identificação de produto é OPCIONAL): busca no load
   // e renova junto com o refresh normal (_tickCountdown/forcarRefresh acima).
-  lerPontosDia().then(()=>renderGerencial());
+  if(!_modoDir()) lerPontosDia().then(()=>renderGerencial());
   // TELA CHEIA DE PARADA: poll rápido (15s) p/ a TV reagir logo quando o operador
   // registra/encerra a parada no mobile. Chamada JSONP leve e separada do fluxo
   // principal — não interfere no lerSheets nem no DEMO.
-  pollParadaTV();
-  setInterval(pollParadaTV, 15000);
+  if(!_modoDir()){
+    pollParadaTV();
+    setInterval(pollParadaTV, 15000);
+  }
 } else {
   tentarRestaurarPasta();
 }

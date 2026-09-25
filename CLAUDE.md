@@ -3164,6 +3164,12 @@ feito e dá ar de verdade ao que sobrou.
   do anti-descanso não refaz a leitura). `PREP_PERIODO` guardado e devolvido.
 - Na diretoria `_naTV()` é verdadeiro e versão nova faz `location.reload()`.
 - **Aba ⚖ UEP enxuta** na mesma versão: explicação no `title`, não na tela.
+- ⚠ **Na diretoria não rodam `pollParadaTV` nem `lerMediaHoras`** (v7.117.0):
+  disputavam a fila do Apps Script com o `getHistory`, que estourava o tempo.
+  As leituras da diretoria começam no fim do `lerSheetsComRetry`.
+- **O cartão do dia dos PRÓXIMOS DIAS é UM desenho** (`_gpxCartaoHtml(d, pf)`,
+  v7.117.0): `pf='dir'` na diretoria, `pf='gpx'` na aba e no papel — muda só a
+  pele. O trilho de barras saiu dos três.
 
 ## Cores do painel — azul-marinho, TV preta (v7.115.0 / mobile 1.29.0)
 - Pedido do PPCP, 25/09/2026, a partir de uma maquete do ChatGPT — **só a

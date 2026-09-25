@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.117.0 — 25/09/2026
+
+- **Diretoria: "não consegui ler o histórico" corrigido.** No `/diretoria` o
+  painel disparava, junto com a leitura do histórico, chamadas que só servem à
+  TV da fábrica (poll de paradas a cada 15 s, médias por horário). O Apps
+  Script atende uma chamada por vez e o `getHistory` estourava o tempo. Agora
+  elas não rodam na diretoria, e as leituras dela só começam depois da carga
+  inicial.
+- **Logomarca da Patrimar** no topo das três telas da diretoria.
+- **PRÓXIMOS DIAS no formato de cartão também na aba ⚖ UEP e na impressão**
+  (PPCP: *"esqueceu disso"*): faixa de status, selo cheio FALTA / FOLGA, horas
+  previstas, UEP · caixas · pontos, lotes e o mais pesado. O trilho de barras
+  saiu. UM desenho (`_gpxCartaoHtml`) para diretoria, aba e papel.
+
+**Atenção:** nenhum número muda. O selo vermelho diz "FALTA Xh" (era "NÃO
+CABE · FALTA"): a cor continua sendo o veredito (âmbar até 1h45, vermelho
+acima). Sem re-deploy.
+
+---
+
 ## v7.116.0 — 25/09/2026
 
 **TELA DA DIRETORIA — endereço próprio: `/diretoria`** (PPCP, maquete
