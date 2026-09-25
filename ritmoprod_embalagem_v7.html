@@ -306,6 +306,76 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-simulador .sim-base b{color:var(--txt)}
 #sec-simulador .pg-sim-wrap{margin-top:0}
 /* ── ABA UEP (v7.102.0) ── */
+/* ══ TELA DA DIRETORIA (/diretoria, v7.116.0) ═════════════════════════════
+   Lida a 3–4 m numa TV 16:9: a unidade --u é 1% da largura, limitada pela
+   altura (16:9), então a tela cabe inteira em qualquer proporção. Cor só no
+   selo e na barra da UEP; caixas e pontos são tinta (três vereditos para a
+   mesma produção se contradiriam). Fundo azul — a sala não é chão de fábrica. */
+html.modo-dir #splash, html.modo-dir .login-over, html.modo-dir header, html.modo-dir nav,
+html.modo-dir footer, html.modo-dir #upd-bar{display:none!important}
+html.modo-dir body{overflow:hidden}
+#sec-dir{--u:min(1vw,1.7778vh);position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:50}
+html.modo-dir #sec-dir.on{display:flex}
+#sec-dir .dir-top{display:flex;align-items:center;gap:calc(var(--u)*1.6);padding:calc(var(--u)*1.3) calc(var(--u)*2.2);border-bottom:1px solid var(--border)}
+#sec-dir .dir-marca{font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*2.1)}
+#sec-dir .dir-marca span{color:var(--acc)}
+#sec-dir .dir-tit{font-family:var(--font-d);font-size:calc(var(--u)*1.3);letter-spacing:calc(var(--u)*.35);color:var(--txt2)}
+#sec-dir .dir-tit b{color:var(--txt)}
+#sec-dir .dir-rel{margin-left:auto;text-align:right;font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*2.5)}
+#sec-dir .dir-rel small{display:block;font-family:var(--font-d);font-weight:400;font-size:calc(var(--u)*.95);color:var(--txt2)}
+#sec-dir .dir-rel small.velho{color:var(--warn)}
+#sec-dir .dir-corpo{flex:1;min-height:0;padding:calc(var(--u)*1.8) calc(var(--u)*2.2);display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*2)}
+#sec-dir .dir-rod{display:flex;gap:calc(var(--u)*.8);padding:calc(var(--u)*.9) calc(var(--u)*2.2);border-top:1px solid var(--border)}
+#sec-dir .dir-rod i{width:calc(var(--u)*.8);height:calc(var(--u)*.8);border-radius:50%;background:var(--border)}
+#sec-dir .dir-rod i.on{background:var(--acc)}
+#sec-dir .dir-selo{align-self:flex-start;font-family:var(--font-d);font-weight:600;font-size:calc(var(--u)*2.2);letter-spacing:calc(var(--u)*.25);padding:calc(var(--u)*.55) calc(var(--u)*1.4);border-radius:calc(var(--u)*.5);border:calc(var(--u)*.2) solid var(--border);color:var(--txt2)}
+#sec-dir .dir-selo.ok{color:var(--ok);border-color:var(--ok)}
+#sec-dir .dir-selo.warn{color:var(--warn);border-color:var(--warn)}
+#sec-dir .dir-selo.red{color:var(--red);border-color:var(--red)}
+#sec-dir .dir-g3{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:calc(var(--u)*1.4)}
+#sec-dir .dir-k{background:var(--surface);border:1px solid var(--border);border-radius:calc(var(--u)*.7);padding:calc(var(--u)*1.4) calc(var(--u)*1.6);display:flex;flex-direction:column;gap:calc(var(--u)*.6);min-width:0}
+#sec-dir .dir-k.dest{border-left:calc(var(--u)*.45) solid var(--border)}
+#sec-dir .dir-k.dest.ok{border-left-color:var(--ok)}
+#sec-dir .dir-k.dest.warn{border-left-color:var(--warn)}
+#sec-dir .dir-k.dest.red{border-left-color:var(--red)}
+#sec-dir .dir-kl{font-family:var(--font-d);font-size:calc(var(--u)*1.1);letter-spacing:calc(var(--u)*.3);color:var(--txt2)}
+#sec-dir .dir-kv{font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*6.2);line-height:.95}
+#sec-dir .dir-k.dest .dir-kv{font-size:calc(var(--u)*8)}
+#sec-dir .dir-ks{font-family:var(--font-d);font-size:calc(var(--u)*1.05);color:var(--txt2)}
+#sec-dir .dir-ks.av{color:var(--warn)}
+#sec-dir .dir-barra{height:calc(var(--u)*1.1);background:var(--elevated);border-radius:calc(var(--u)*.3);position:relative;margin-top:auto}
+#sec-dir .dir-barra i{position:absolute;left:0;top:0;bottom:0;background:var(--txt2);border-radius:calc(var(--u)*.3)}
+#sec-dir .dir-barra.ok i{background:var(--ok)} #sec-dir .dir-barra.warn i{background:var(--warn)} #sec-dir .dir-barra.red i{background:var(--red)}
+#sec-dir .dir-barra u{position:absolute;top:calc(var(--u)*-.5);bottom:calc(var(--u)*-.5);border-left:calc(var(--u)*.22) dashed var(--txt)}
+#sec-dir .dir-bl{display:flex;justify-content:space-between;font-family:var(--font-d);font-size:calc(var(--u)*1);color:var(--txt2)}
+#sec-dir .dir-lin{font-family:var(--font-d);font-size:calc(var(--u)*1.3);color:var(--txt2);background:var(--surface);border:1px solid var(--border);border-radius:calc(var(--u)*.5);padding:calc(var(--u)*.8) calc(var(--u)*1.2)}
+#sec-dir .dir-lin b{color:var(--txt)} #sec-dir .dir-lin b.he{color:var(--warn)}
+#sec-dir .dir-graf{flex:1;min-height:0;display:flex;flex-direction:column}
+#sec-dir .dir-graf svg{flex:1;min-height:0;width:100%}
+#sec-dir .dir-msg{font-family:var(--font-d);font-size:calc(var(--u)*1.8);color:var(--txt2);text-align:center}
+#sec-dir .dir-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:calc(var(--u)*1.1);align-items:stretch}
+#sec-dir .dir-dia{background:var(--surface);border:1px solid var(--border);border-top:calc(var(--u)*.45) solid var(--border);border-radius:calc(var(--u)*.6);padding:calc(var(--u)*1.3) calc(var(--u)*1.2);display:flex;flex-direction:column;gap:calc(var(--u)*.9);min-width:0}
+#sec-dir .dir-dia.red{border-top-color:var(--red)} #sec-dir .dir-dia.warn{border-top-color:var(--warn)} #sec-dir .dir-dia.ok{border-top-color:var(--ok)}
+#sec-dir .dir-dn{font-family:var(--font-d);font-size:calc(var(--u)*1.2);letter-spacing:calc(var(--u)*.2);color:var(--txt2)}
+#sec-dir .dir-dn b{color:var(--txt)}
+/* selo CHEIO: a cor de fundo é o veredito; o texto escuro sobre ele passa de 4,5:1 */
+#sec-dir .dir-ds{align-self:flex-start;white-space:nowrap;font-family:var(--font-d);font-weight:700;font-size:calc(var(--u)*1.3);padding:calc(var(--u)*.4) calc(var(--u)*.8);border-radius:calc(var(--u)*.35);background:var(--elevated);color:var(--txt)}
+#sec-dir .dir-ds.red{background:var(--red);color:#1a0806} #sec-dir .dir-ds.warn{background:var(--warn);color:#1f1300} #sec-dir .dir-ds.ok{background:var(--ok);color:#06200f}
+#sec-dir .dir-tr{position:relative;flex:1;min-height:calc(var(--u)*5);border-bottom:1px solid var(--border);margin:calc(var(--u)*.4) 0}
+#sec-dir .dir-jorn{position:absolute;left:calc(var(--u)*-.3);right:calc(var(--u)*-.3);border-top:calc(var(--u)*.18) dashed var(--txt);opacity:.85}
+#sec-dir .dir-pi{position:absolute;bottom:0;left:24%;width:52%;display:flex;flex-direction:column-reverse;overflow:hidden;border-radius:calc(var(--u)*.25) calc(var(--u)*.25) 0 0}
+#sec-dir .dir-pi i{display:block}
+#sec-dir .dir-pl{background:#5d6b7e}
+#sec-dir .dir-pa{background:repeating-linear-gradient(45deg,#8a98ab 0 4px,#5d6b7e 4px 8px)}
+#sec-dir .dir-pe{background:var(--red)} #sec-dir .dir-dia.warn .dir-pe{background:var(--warn)}
+#sec-dir .dir-dh{font-family:var(--font-h);font-weight:700;font-size:calc(var(--u)*4.2);line-height:1;margin-top:calc(var(--u)*.6)}
+#sec-dir .dir-dh small{display:block;font-size:calc(var(--u)*1.3);color:var(--txt2);font-weight:600;margin-top:calc(var(--u)*.3)}
+#sec-dir .dir-dl{font-family:var(--font-d);font-size:calc(var(--u)*1);color:var(--txt2);line-height:1.45;border-top:1px dashed var(--border);padding-top:calc(var(--u)*.6)}
+#sec-dir .dir-dl b{color:var(--txt);font-weight:600}
+#sec-dir .dir-dx{font-family:var(--font-d);font-size:calc(var(--u)*1.1);color:var(--txt2);line-height:1.5}
+#sec-dir .dir-dx b{color:var(--txt)}
+#sec-dir .dir-tot{display:flex;gap:calc(var(--u)*3);flex-wrap:wrap;font-family:var(--font-d);font-size:calc(var(--u)*1.3);color:var(--txt2)}
+#sec-dir .dir-tot b{color:var(--txt);font-size:calc(var(--u)*1.6)} #sec-dir .dir-tot .r b{color:var(--red)} #sec-dir .dir-tot .av{color:var(--warn)}
 #sec-uep .uep-sec{font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);margin:18px 0 8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 #sec-uep .uep-sec b{color:var(--txt)}
 #sec-uep .uep-alerta{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:10px 14px;font-family:var(--font-d);font-size:12px;line-height:1.5;margin-bottom:12px}
@@ -1524,6 +1594,10 @@ html.sem-splash #splash{ display:none; }
 // seria tarde — a parede piscaria a marca antes de o script decidir escondê-la.
 if(new URLSearchParams(location.search.toLowerCase()).has('tv'))
   document.documentElement.classList.add('sem-splash');
+// TELA DA DIRETORIA (v7.116.0): endereço próprio, /diretoria (ou ?dir). Também
+// antes da 1ª pintura — sem splash, sem login, sem cabeçalho do painel.
+if(/^\/diretoria\/?$/i.test(location.pathname) || new URLSearchParams(location.search.toLowerCase()).has('dir'))
+  document.documentElement.classList.add('modo-dir');
 </script>
 <body>
 
@@ -2511,6 +2585,8 @@ if (_v7Instalado()) _v7EscondeBotao();
      Só o gerencial do PC: TV e app do operador continuam em caixas. Blocos 1
      (hoje), 2 (hora a hora), 3 (mix), 4 (origem da UEP), 5 (período) e 6 (próximos dias).
      Contas: as mesmas do card UEP DO DIA (uepCard/uepCelula/uepHistResumo). -->
+<!-- TELA DA DIRETORIA (/diretoria): só aparece no modo-dir; o desenho é o renderDir -->
+<section id="sec-dir" class="sec" aria-live="polite"><div id="dir-palco" style="display:contents"></div></section>
 <section id="sec-uep" class="sec">
   <div class="tbl-hdr" style="margin-bottom:14px">
     <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
@@ -3020,7 +3096,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.115.0';
+const APP_VER   = '7.116.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3038,6 +3114,7 @@ const APP_NOME_CX = APP_NOME.toUpperCase();   // caixa alta dos rodapés de PDF
 // checagem é direta — relê o próprio HTML sem cache e compara o APP_VER.
 // Barato: uma requisição ao mesmo domínio a cada 30 min, sem tocar no Sheets.
 function _naTV(){
+  if(document.documentElement.classList.contains('modo-dir')) return true;   // tela da diretoria: ninguém para clicar
   const at=document.querySelector('.sec.on');
   return (at && at.id==='sec-tv') || document.body.classList.contains('tv-fullscreen');
 }
@@ -3072,7 +3149,7 @@ async function checarVersaoV7(){
     if(!r.ok) return;
     const html=await r.text();
     const m=html.match(/const\s+APP_VER\s*=\s*'([^']+)'/);
-    if(m && m[1] && m[1]!==APP_VER) mostrarAvisoAtualizacaoV7(m[1]);
+    if(m && m[1] && m[1]!==APP_VER){ if(document.documentElement.classList.contains('modo-dir')){ location.reload(); return; } mostrarAvisoAtualizacaoV7(m[1]); }
   }catch(e){ /* offline / rede ruim: tenta de novo no próximo ciclo */ }
 }
 // Versão no rodapé + aviso de "atualizado" na 1ª abertura depois de subir.
@@ -3114,6 +3191,7 @@ let AMOSTRA_HORAS = {};
 let HE_BACKEND_OK = null;
 // Produção do dia em PONTOS/PESO por produto — identificação de produto é
 // OPCIONAL, então tudo aqui pode ficar zerado se ninguém selecionou produto.
+let PONTOS_DIA_TS = 0;   // quando o getPontosDia respondeu (a tela da diretoria mostra a hora do dado)
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, produtoAtual:'', produtoAtualDesc:'', produtoAtualCor:'', porProduto:[], porHora:[], porHoraModelo:[], programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
 let CFG = {
   empresa:'PATRIMAR MÓVEIS', unidade:'JACI/SP', setor:'EMBALAGEM',
@@ -3949,6 +4027,7 @@ async function _lerPontosDiaUma(){
         // gerencial lê (card UEP DO DIA). Backend antigo: uep undefined.
         uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep
       };
+      PONTOS_DIA_TS = Date.now();
       aplicarMetaDiaAutomatica();
       // Config do ciclo de telas compartilhada via planilha: se veio do backend,
       // aplica (a TV se ajusta sozinha quando muda em qualquer aparelho).
@@ -4737,14 +4816,15 @@ function _uepAbaDados(){
     // A diferença para o esperado sai do MESMO esperado do uepCard — nenhuma
     // régua nova, só o desvio escrito (v7.114.0).
     {l:'UEP ATÉ AGORA', v:fmtN(Math.round(feito)), c:card.c,
-     sub:k.minNorm>0?`${slRitmo(card.ef)} · ${difEsp>=0?'+':'−'}${fmtN(Math.abs(Math.round(difEsp)))} UEP (${fmtP(card.ef)} do esperado) · esperado até agora ${fmtN(Math.round(card.esperado))}`:'nenhuma hora de jornada lançada ainda', t:card.t},
+     sub:k.minNorm>0?`${slRitmo(card.ef)} · ${difEsp>=0?'+':'−'}${fmtN(Math.abs(Math.round(difEsp)))} (${fmtP(card.ef)} do esperado)`:'nenhuma hora de jornada lançada ainda',
+     t:card.t+(k.minNorm>0?` Esperado até agora: ${fmtN(Math.round(card.esperado))} UEP.`:'')},
     {l:'PROJEÇÃO DO DIA', v:proj?fmtN(Math.round(proj.fim))+' <small>UEP</small>':'—', c:'acc',
-     sub:proj?`na média da jornada até agora, até ${_rpEsc(fimTxt)} · só jornada normal (hora extra fora) · meta ${fmtN(meta)}`:'sem hora de jornada lançada',
+     sub:proj?`na média da jornada · meta ${fmtN(meta)}`:'sem hora de jornada lançada',
      t:'UEP feita na jornada ÷ minutos de jornada já decorridos × minutos de jornada que faltam, somado ao que já foi feito. É a MÉDIA da jornada, não a última hora. A hora extra não entra. É projeção, não veredito — quem julga é o selo do primeiro card.'},
     {l:'UEP POR HORA', v:proj?fmtN(Math.round(proj.porHora))+' <small>/h</small>':'—', c:'',
-     sub:`média da jornada · meta ~${fmtN(Math.round(meta/UEP_MIN_DIA*60))}/h`},
+     sub:`meta ~${fmtN(Math.round(meta/UEP_MIN_DIA*60))}/h`, t:'UEP feita na jornada ÷ minutos de jornada já decorridos × 60 — a média da jornada, não a última hora.'},
     {l:'UEP EM HORA EXTRA', v:fmtN(Math.round(he)), c:he>0?'warn':'',
-     sub:he>0?'fora do UEP até agora, da projeção e da meta · entra no TOTAL DO DIA do mix':'sem hora extra hoje',
+     sub:he>0?'fora da meta':'sem hora extra hoje',
      t:'UEP feita fora da jornada 07:00–17:00 (antes das 07:00 e depois das 17:00). Não entra no UEP ATÉ AGORA, na PROJEÇÃO nem na meta; aparece somada só no TOTAL DO DIA do mix.'}
   ];
   const nPer=_uepPerN();
@@ -4765,7 +4845,7 @@ function _uepAbaPerCards(P){
      sub:P.abaixo.length?'abaixo: '+P.abaixo.map(x=>x.slice(0,5)).join(', '):'todos na meta',
      t:'Verde: todos os dias bateram a meta daquele dia. Âmbar: metade ou mais bateu. Vermelho: menos da metade.'},
     {l:'OSCILAÇÃO DIA A DIA', v:P.oscUep!=null?fmtP(P.oscUep)+' <small>UEP</small>':'—', c:'acc',
-     sub:P.oscUep!=null&&P.oscCx!=null?`contra ${fmtP(P.oscCx)} em caixas de jornada, nos mesmos dias`:'precisa de 2 dias ou mais',
+     sub:P.oscUep!=null&&P.oscCx!=null?`${fmtP(P.oscCx)} em caixas`:'precisa de 2 dias ou mais',
      t:'Desvio ÷ média dos dias (a mesma conta da oscilação da aba PLANO). Em caixas a produção pula com o mix; em UEP o mix já está descontado.'}
   ];
 }
@@ -4781,7 +4861,7 @@ function renderUep(){
   // 2 · HORA A HORA
   const box=document.getElementById('uep-g-box');
   const svg=_uepAbaSvg(horas, box?_svgLargura(box):760);
-  const b2=`<div><div class="uep-sec"><b>2 · HORA A HORA EM UEP</b> onde a UEP se perdeu</div><div class="uep-card uep-grow" id="uep-g-box">${svg}
+  const b2=`<div><div class="uep-sec"><b>2 · HORA A HORA EM UEP</b></div><div class="uep-card uep-grow" id="uep-g-box">${svg}
     <div class="uep-leg"><span style="--c:var(--ok)">na meta</span><span style="--c:var(--warn)">atenção</span><span style="--c:var(--red)">abaixo</span><span style="--c:var(--warn);opacity:.7">hora extra (sem meta)</span><span class="anda">em andamento (não julgada)</span><span class="tr">meta da hora</span></div>
     ${horas.some(h=>h.cxSem>0)?'<div class="uep-nota">* hora com caixas de códigos sem UEP — ficaram fora da conta.</div>':''}</div></div>`;
 
@@ -4790,13 +4870,13 @@ function renderUep(){
   // O mix e a confiabilidade dividem a coluna da direita: o mix de um dia
   // normal (3 a 6 produtos) é mais baixo que o gráfico, e a coluna sobrava
   // vazia embaixo.
-  const b3=`<div class="uep-sec"><b>3 · O MIX DE HOJE</b> por que a UEP é essa · jornada normal</div><div class="uep-card uep-grow" style="overflow-x:auto">`
-    +(mix.linhas.length||mix.he.cx>0?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
+  const b3=`<div class="uep-sec"><b>3 · O MIX DE HOJE</b> jornada normal</div><div class="uep-card uep-grow" style="overflow-x:auto">`
+    +(mix.linhas.length||mix.he.cx>0?`<table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n">CX</th><th class="n" title="UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo — é o que explica poucas caixas com a UEP batida, e o contrário.">UEP/CX</th><th class="n">UEP</th><th>DO DIA</th></tr></thead><tbody>${linhas}</tbody>
       <tfoot><tr><td></td><td>JORNADA NORMAL</td><td class="n">${fmtN(mix.cx)}</td><td class="n">${mix.cxCom>0?(mix.uep/mix.cxCom).toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.uep))}</td><td></td></tr>
       ${mix.he.cx>0?`<tr class="uep-he"><td></td><td>EM HORA EXTRA<span class="uep-he-t">FORA DA META</span></td><td class="n">${fmtN(mix.he.cx)}</td><td class="n">${mix.he.uepCx!=null?mix.he.uepCx.toFixed(2).replace('.',','):'—'}</td><td class="n">${fmtN(Math.round(mix.he.uep))}</td><td></td></tr>
         <tr class="uep-he-p"><td></td><td colspan="5">${mix.he.linhas.map(l=>`${_rpEsc(l.nome||l.modelo)} ${fmtN(l.cx)} cx`).join(' · ')}</td></tr>
         <tr class="uep-dia"><td></td><td>TOTAL DO DIA</td><td class="n">${fmtN(mix.dia.cx)}</td><td></td><td class="n">${fmtN(Math.round(mix.dia.uep))}</td><td></td></tr>`:''}</tfoot></table>
-      <div class="uep-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a âncora do estudo. É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
+      ${mix.cx>mix.cxCom?`<div class="uep-nota">${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.</div>`:''}`
      :'<div class="empty-msg">Nenhuma caixa com produto apontado na jornada de hoje.</div>')+'</div>';
 
   // 4 · ORIGEM DA UEP (era CONFIABILIDADE)
@@ -4804,7 +4884,7 @@ function renderUep(){
   if(conf){
     b5=`<div class="uep-card"><div class="uep-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:var(--ok)"></i><i style="width:${conf.pEst.toFixed(1)}%;background:var(--warn)"></i><i style="width:${conf.pSem.toFixed(1)}%;background:var(--red)"></i></div>
       <div class="uep-leg" style="margin-top:0"><span style="--c:var(--ok)" title="${_rpEsc(UEP_ORIGEM_T)}">${fmtP(conf.pMed)} UEP MEDIDA (estudo ou cadastro)</span><span style="--c:var(--warn)">${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span style="--c:var(--red)">${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
-      <div class="uep-nota">Pelas ${fmtN(conf.tot)} caixas apontadas hoje, com a vigência do cadastro. MEDIDA quer dizer ritmo demonstrado pelo estudo (ou digitada), não cronoanálise — 100% medida não é 100% exata. Enquanto a parte estimada for grande, a UEP é indicação, não medição.</div></div>`;
+      <div class="uep-nota">${fmtN(conf.tot)} cx de hoje · medida não é cronoanálise</div></div>`;
   } else if(CAP_FALHA&&!CAP_BUSCANDO){
     b5=`<div class="uep-card"><div class="uep-nota" style="margin-top:0;color:var(--warn)">Não consegui ler o cadastro: ${_rpEsc(CAP_FALHA)}. <button class="btn btn-ghost" style="padding:3px 10px;font-size:10px" onclick="_capBuscar()">↻ TENTAR DE NOVO</button></div></div>`;
   } else {
@@ -4836,17 +4916,17 @@ function renderUep(){
       b4=`<div class="kpi-grid c3">${pc.map(c=>`<div class="kpi-card ${c.c}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`
         +`<div class="uep-card" id="uep-p-box">${_uepAbaPerSvg(P.dias, box?_svgLargura(box):760)}
           <div class="uep-leg"><span style="--c:var(--txt2)">bateu a meta</span><span style="--c:var(--red)">abaixo da meta</span><span class="tr" style="--c:var(--acc)">meta do dia</span></div>
-          <div class="uep-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a UEP de hoje usa o cadastro atual (inclusive as estimadas EST). A base pode diferir um pouco.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div></div>`;
+          ${P.res.he>0?`<div class="uep-nota" title="A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a de hoje usa o cadastro atual. A base pode diferir um pouco.">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra, fora da conta</div>`:''}</div>`;
     }
   }
 
-  el.innerHTML=`<div class="uep-sec" style="margin-top:0"><b>1 · HOJE</b> ${_rpEsc(hojeStr())} · jornada normal ${_rpEsc(CFG.turnoInicio||'07:00')}–${_rpEsc(fimTxt)} · meta ${fmtN(meta)} UEP</div>`
+  el.innerHTML=`<div class="uep-sec" style="margin-top:0"><b>1 · HOJE</b> ${_rpEsc(hojeStr())} · meta ${fmtN(meta)} UEP</div>`
     +alerta+kpis
-    +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec" title="${_rpEsc(UEP_ORIGEM_T)}"><b>4 · ORIGEM DA UEP</b> de onde vem a UEP de cada caixa</div>${b5}</div></div>`
+    +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec" title="${_rpEsc(UEP_ORIGEM_T)}"><b>4 · ORIGEM DA UEP</b></div>${b5}</div></div>`
     +`<div class="uep-sec"><b>5 · PERÍODO</b> dias fechados ${botoes}</div>${b4}`
-    +`<div class="uep-sec"><b>6 · PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha que a carteira pede</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
+    +`<div class="uep-sec"><b>6 · PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
       <div class="tbl-wrap" id="ger-prox"><div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div></div>`
-    +`<div class="uep-rod">A meta de ${fmtN(meta)} UEP é o ritmo DEMONSTRADO pela linha (estudo de UEP), não tempo padrão — até a cronoanálise. Tela só do gerencial: TV e app do operador continuam em caixas. As contas são as do card UEP DO DIA (uepCard / uepCelula) — nenhuma régua nova.</div>`;
+    +'';
   // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
   // redesenha só o SVG na largura certa.
   if(!box){ const nb=document.getElementById('uep-g-box'); if(nb){ const sv=nb.querySelector('svg'); if(sv) sv.outerHTML=_uepAbaSvg(horas, _svgLargura(nb)); } }
@@ -9864,7 +9944,7 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
     const q = Number(it.qtde) || 0;
     if(q <= 0){ semQtd++; return; }
-    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[] };
+    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[], pts:0, semPts:0 };
     const d = por[dn];
     // Modo UEP (v7.85.0): o "fator" é a UEP por caixa do CADASTRO (a linha da
     // programação traz `uepCx`, .gs v5.13) e a carga sai em UEP. Código sem UEP
@@ -9875,6 +9955,9 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
       : _mixFator(ritmos, it.codigo, it.cor);
     const eq = q * fx.f;
     d.crua += q; d.qtde += eq; d.n++;
+    // pontos da linha (qtde × pontos do cadastro, .gs): só a tela da diretoria lê.
+    // Linha sem o campo (backend antigo) é contada — nunca vira zero calado.
+    if(it.pontos === undefined || it.pontos === null) d.semPts++; else d.pts += Number(it.pontos) || 0;
     // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
     // DIA" (pedido do PPCP, 16/09/2026 — "inserir os produtos programados")
     d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado });
@@ -10964,12 +11047,13 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     // no rótulo curto sai o código e o "VOL 1/1": na faixa só cabe lote + produto
     const curto = r => String(r || '').replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), nome:g.rot, min:g.eq / porMin }));
+    const lotesDia = Object.values(L).sort((a,b) => b.eq - a.eq).map(g => g.lote).filter(Boolean);   // todos, do mais pesado (tela da diretoria)
     const vazio = !d && !(atr > 0) && !sem.length;
     // a cor segue o número que a tela MOSTRA (minuto inteiro): 105,3 min sai
     // "1h45", e com a conta crua ele virava vermelho contra a legenda "até 1h45"
     const excR = Math.round(exc);
     const estado = vazio ? 'vazio' : fds ? 'fds' : excR > GPX_EXC_MAX ? 'red' : excR > 0 ? 'warn' : (-excR >= GPX_FOLGA_OK ? 'ok' : '');
-    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, min, minAtr, exc, estado, lotes,
+    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, minAtr, exc, estado, lotes, lotesDia,
              semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0) };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
@@ -11018,7 +11102,7 @@ function _gpxHtml(P, alt){
       + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
       + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '') + `</div>
-    <div class="gpx-nota">Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga. A análise completa é na aba PLANO.</div>`
+    <div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
 let GPX_CARREGANDO = false, GPX_TENT = 0;
@@ -11060,6 +11144,236 @@ function renderProxDias(){
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha que a carteira pede · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TELA DA DIRETORIA — /diretoria (v7.116.0, PPCP 25/09/2026, maquete aprovada)
+// ────────────────────────────────────────────────────────────────────────────
+// Carrossel de 3 telas para a sala do diretor, lido a 3–4 m: HOJE · SEMANA
+// PASSADA · PRÓXIMOS DIAS. Três unidades (UEP, caixas, pontos), mas UM veredito:
+// só a UEP tem selo e cor — caixa e ponto são outra medida da mesma produção, e
+// três selos na mesma tela se contradiriam num dia de mix pesado.
+// NENHUMA CONTA NOVA: hoje é o `_uepAbaDados` (a aba ⚖ UEP e o card UEP DO DIA),
+// a semana é o `_relSemanaPassada` + `uepHistResumo` + `_qpRealDia`, a carteira é
+// o `_gpxDoPainel`. As funções `_dir*Html` são desenho. A única leitura a mais é
+// o getProducaoModeloPeriodo da semana passada (só pelos PONTOS), uma vez a cada
+// 6 h — a semana fechada não muda.
+const DIR_TEMPO = 20000;          // cada tela fica 20 s
+const DIR_N = 3;
+const DIR_COB_MIN = 95;           // abaixo disto os pontos avisam que são parte das caixas
+const DIR_HIST_TTL = 30*60000;    // histórico: só muda quando um dia fecha
+const DIR_PTS_TTL = 6*3600000;
+let DIR_TELA = 0, DIR_TIMER = null, DIR_CARREGANDO = false;
+const DIR_PTS_LS = 'rpe_dir_pts';   // ⚠ chave nova: nunca renomear por estética
+let DIR_PTS = { key:null, soma:null, ts:0, falha:false };
+try{ const x = JSON.parse(localStorage.getItem(DIR_PTS_LS) || 'null'); if(x && x.key && x.soma) DIR_PTS = { key:x.key, soma:x.soma, ts:Number(x.ts) || 0, falha:false }; }catch(e){}
+// soma dos pontos e das caixas apontadas com produto nos itens do período
+function _dirSomaPts(itens){
+  return { pts: itens.reduce((a,i) => a + (Number(i && i.pontos) || 0), 0), cx: itens.reduce((a,i) => a + (Number(i && i.caixas) || 0), 0) };
+}
+function _modoDir(){ return document.documentElement.classList.contains('modo-dir'); }
+function _dirSemKey(){ const J = _relSemanaPassada(); return J.semStr.split(' a ').join('|'); }
+
+// HOJE: tudo vem da montagem da aba UEP; aqui só se escolhe o que vai à parede.
+function _dirHoje(D, k, porHoraModelo){
+  if(!D || D.estado !== 'ok') return { estado: D ? D.estado : 'aguardando', msg: D ? D.msg : 'Aguardando a leitura do dia…' };
+  let ptsJ = 0, ptsH = 0, temPts = false;
+  (porHoraModelo || []).forEach(it => {
+    if(!it || it.pontos === undefined || it.pontos === null) return;
+    temPts = true;
+    if(_horaEhHE(it.hora)) ptsH += Number(it.pontos) || 0; else ptsJ += Number(it.pontos) || 0;
+  });
+  const cxJ = Number(k && k.realNormal) || 0, cxH = Number(k && k.realHE) || 0;
+  // os pontos saem das caixas lançadas COM produto (opcional no app): a
+  // cobertura diz quanto das caixas da jornada eles enxergam
+  const cob = cxJ > 0 && D.mix ? Math.min(100, D.mix.cx / cxJ * 100) : null;
+  const iniciou = !!(k && k.minNorm > 0);
+  return { estado:'ok', iniciou,
+           selo: iniciou ? { c:D.card.c, t:slRitmo(D.card.ef) } : { c:'', t:'AGUARDANDO A JORNADA' },
+           uep:D.feito, esperado:D.card.esperado, meta:D.meta, proj:D.proj ? D.proj.fim : null,
+           heUep:D.he, cx:cxJ, heCx:cxH, pts:temPts ? ptsJ : null, hePts:temPts ? ptsH : null, cob };
+}
+// SEMANA PASSADA: a mesma janela da Tela D e do relatório semanal.
+// undefined = histórico não lido; null = nenhum dia fechado na semana.
+function _dirSemana(dias, hoje, somaPts){
+  if(!Array.isArray(dias)) return undefined;
+  const J = _relSemanaPassada(hoje);
+  const sem = _relDiasDaSemana(dias, J.seg, J.sex).filter(d => (Number(d.real) || 0) > 0 || d.uep != null);
+  if(!sem.length) return null;
+  const res = uepHistResumo(sem);
+  const cxTot = sem.reduce((a,d) => a + (Number(d.real) || 0), 0);
+  const cx = sem.reduce((a,d) => a + _qpRealDia(d), 0);
+  let pts = null, cob = null;
+  if(somaPts && isFinite(Number(somaPts.pts))){
+    pts = Number(somaPts.pts);
+    cob = cxTot > 0 ? Math.min(100, (Number(somaPts.cx) || 0) / cxTot * 100) : null;
+  }
+  return { de:sem[0].data, ate:sem[sem.length-1].data, nDias:sem.length, nUep:res.n, semUep:res.semUep,
+           uep:res.total, meta:res.metaTot, heUep:res.he, bateu:res.bateu,
+           pct: res.metaTot > 0 ? res.total / res.metaTot * 100 : null,
+           cx, heCx: Math.max(0, cxTot - cx), pts, cob };
+}
+// Os últimos n dias FECHADOS com UEP (hoje fica fora — não fechou).
+function _dirUltimos(dias, hoje, n){
+  const h = hoje ? new Date(hoje) : new Date(); h.setHours(0,0,0,0);
+  return (dias || []).filter(d => { const dt = parseBR(d && d.data); return dt && dt < h && d.uep != null && isFinite(Number(d.uep)); })
+    .sort((a,b) => parseBR(a.data) - parseBR(b.data)).slice(-(n || 10));
+}
+
+// ── desenho (nenhuma conta) ──────────────────────────────────────────────────
+function _dirF(v){ return v === null || v === undefined || !isFinite(Number(v)) ? '—' : fmtN(Math.round(Number(v))); }
+function _dirMsg(t){ return `<div class="dir-msg">${t}</div>`; }
+function _dirHojeHtml(H){
+  if(!H || H.estado !== 'ok') return _dirMsg(H ? H.msg : 'Aguardando a leitura do dia…');
+  const f = _dirF, c = H.selo.c;
+  const pF = H.meta > 0 ? Math.min(100, H.uep / H.meta * 100) : 0, pE = H.meta > 0 ? Math.min(100, H.esperado / H.meta * 100) : 0;
+  const cobAv = H.pts != null && H.cob != null && H.cob < DIR_COB_MIN;
+  const he = H.heUep > 0 || H.heCx > 0;
+  return `<span class="dir-selo ${c}">● ${H.selo.t}</span>
+    <div class="dir-g3">
+      <div class="dir-k dest ${c}"><div class="dir-kl">UEP</div><div class="dir-kv">${f(H.uep)}</div>
+        <div class="dir-barra ${c}"><i style="width:${pF.toFixed(1)}%"></i>${H.iniciou ? `<u style="left:${pE.toFixed(1)}%"></u>` : ''}</div>
+        <div class="dir-bl"><span>${H.iniciou ? 'esperado ' + f(H.esperado) : ''}</span><span>meta ${f(H.meta)}</span></div></div>
+      <div class="dir-k"><div class="dir-kl">CAIXAS</div><div class="dir-kv">${f(H.cx)}</div></div>
+      <div class="dir-k"><div class="dir-kl">PONTOS</div><div class="dir-kv">${f(H.pts)}</div>${cobAv ? `<div class="dir-ks av">de ${fmtP(H.cob)} das caixas (as com produto)</div>` : ''}</div>
+    </div>
+    ${H.proj != null || he ? `<div class="dir-lin">${H.proj != null ? `PROJEÇÃO <b>${f(H.proj)} UEP</b>` : ''}${H.proj != null && he ? ' &nbsp;·&nbsp; ' : ''}${he ? `HORA EXTRA <b class="he">${f(H.heUep)} UEP · ${f(H.heCx)} cx${H.hePts != null ? ' · ' + f(H.hePts) + ' pts' : ''}</b>` : ''}</div>` : ''}`;
+}
+function _dirSemSvg(U, W){
+  if(!U.length) return '';
+  // a largura acompanha a proporção da caixa (o renderDir mede e redesenha) —
+  // com viewBox fixo, o 'meet' encolheria o gráfico numa caixa larga e baixa
+  W = Math.max(700, Math.min(3200, Math.round(W || 1600)));
+  const H = 260, base = 222, topo = 34;
+  const mx = Math.max(1, ...U.map(d => Math.max(Number(d.uep) || 0, uepDiaMeta(d)))) * 1.08;
+  const y = v => base - (base - topo) * v / mx, passo = (W - 40) / U.length, bw = Math.min(90, passo * .6);
+  let s = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="UEP dos últimos dias contra a meta"><line x1="20" x2="${W-10}" y1="${base}" y2="${base}" stroke="var(--border)"/>`;
+  U.forEach((d,i) => {
+    const u = Number(d.uep) || 0, m = uepDiaMeta(d), x = 20 + i * passo + (passo - bw) / 2, cx = x + bw / 2;
+    s += `<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${bw.toFixed(1)}" height="${(base - y(u)).toFixed(1)}" rx="3" fill="${u >= m ? '#5d6b7e' : 'var(--red)'}"/>`
+      + `<line x1="${(x-4).toFixed(1)}" x2="${(x+bw+4).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--txt)" stroke-width="2.5" stroke-dasharray="9 6"/>`
+      + `<text x="${cx.toFixed(1)}" y="${(Math.min(y(u), y(m)) - 9).toFixed(1)}" font-size="22" fill="var(--txt)" text-anchor="middle" font-family="IBM Plex Mono">${fmtN(Math.round(u))}</text>`
+      + `<text x="${cx.toFixed(1)}" y="252" font-size="22" fill="var(--txt2)" text-anchor="middle" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
+  });
+  return s + '</svg>';
+}
+function _dirSemanaHtml(S, U, falhaHist, ptsEst){
+  if(S === undefined) return _dirMsg(falhaHist ? 'Não consegui ler o histórico — tento de novo sozinho.' : 'Lendo o histórico…');
+  if(S === null) return _dirMsg('Nenhum dia fechado na semana passada.');
+  const f = _dirF, ok = S.pct != null && S.pct >= 100;
+  const selo = S.nUep ? `<span class="dir-selo ${ok ? 'ok' : 'red'}">● ${ok ? 'META BATIDA' : 'ABAIXO DA META'}</span>` : '<span class="dir-selo">SEM UEP GRAVADA NA SEMANA</span>';
+  const ptsSub = S.pts == null ? (ptsEst === 'falha' ? 'não consegui ler' : 'lendo…')
+               : 'inclui hora extra' + (S.cob != null && S.cob < DIR_COB_MIN ? ` · de ${fmtP(S.cob)} das caixas` : '');
+  return `${selo}
+    <div class="dir-g3">
+      <div class="dir-k dest ${S.nUep ? (ok ? 'ok' : 'red') : ''}"><div class="dir-kl">UEP</div><div class="dir-kv">${S.nUep ? f(S.uep) : '—'}</div>
+        <div class="dir-bl"><span>${S.pct != null ? fmtP(S.pct) + ' da meta' : ''}</span><span>${S.nUep ? `${S.bateu} de ${S.nUep} dias` : ''}</span></div>
+        ${S.semUep ? `<div class="dir-ks av">${plural(S.semUep, 'dia sem UEP gravada', 'dias sem UEP gravada')}, fora da soma</div>` : ''}</div>
+      <div class="dir-k"><div class="dir-kl">CAIXAS</div><div class="dir-kv">${f(S.cx)}</div></div>
+      <div class="dir-k"><div class="dir-kl">PONTOS</div><div class="dir-kv">${f(S.pts)}</div><div class="dir-ks${S.cob != null && S.cob < DIR_COB_MIN ? ' av' : ''}">${ptsSub}</div></div>
+    </div>
+    ${U.length ? `<div class="dir-k dir-graf"><div class="dir-kl">ÚLTIMOS ${U.length} DIAS · UEP · - - - META</div>${_dirSemSvg(U)}</div>` : ''}
+    ${S.heUep > 0 || S.heCx > 0 ? `<div class="dir-lin">HORA EXTRA NA SEMANA <b class="he">${f(S.heUep)} UEP · ${f(S.heCx)} cx</b></div>` : ''}`;
+}
+function _dirCartHtml(P, falha){
+  if(!P) return falha ? _dirMsg(`${falha.t} — tento de novo sozinho.`) : _dirMsg('Lendo a programação…');
+  if(P.falha === 'sem-uep') return _dirMsg('A programação não traz UEP — não dá para converter em horas.');
+  const f = _dirF;
+  // FORMATO DO PPCP (25/09/2026, com a imagem na mão): cartão com faixa de
+  // status em cima e selo CHEIO — é o selo que se lê da porta. Sem trilho.
+  const cards = P.dias.map(d => {
+    const nome = `<div class="dir-dn"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
+    if(d.estado === 'vazio') return `<div class="dir-dia">${nome}<span class="dir-ds">SEM LOTE DATADO</span><div class="dir-dh" style="color:var(--txt2)">—</div></div>`;
+    const cls = d.fds ? '' : d.estado;
+    const selo = d.fds ? 'FIM DE SEMANA'
+      : d.exc > 0 ? 'FALTA ' + _fmtHM(d.exc)   // âmbar até 1h45, vermelho acima (a cor é o veredito)
+      : (Math.round(d.exc) === 0 ? 'DENTRO DA JORNADA' : 'FOLGA ' + _fmtHM(-d.exc));
+    const pes = d.lotes[0];
+    return `<div class="dir-dia ${cls}">${nome}<span class="dir-ds ${cls}">${selo}</span>
+      <div class="dir-dh">${_fmtHM(d.min)}<small> previstas</small></div>
+      <div class="dir-dx"><b>${f(d.uep)}</b> UEP · ${f(d.cx)} cx · ${f(d.pts)} pts${d.minAtr > 0 ? `<br>inclui atraso de ${_fmtHM(d.minAtr)}` : ''}</div>
+      ${d.lotesDia && d.lotesDia.length ? `<div class="dir-dl">Lotes: <b>${d.lotesDia.slice(0, 4).map(_rpEsc).join(', ')}${d.lotesDia.length > 4 ? ` +${d.lotesDia.length - 4}` : ''}</b></div>` : ''}
+      ${pes ? `<div class="dir-dl">Mais pesado: <b>${_rpEsc(pes.lote || '—')}</b> ${_rpEsc(pes.rot)} ${_fmtHM(pes.min)}</div>` : ''}</div>`;
+  }).join('');
+  const semU = (P.semUep || []).length + (P.divSemUep || []).length;
+  return `<div class="dir-dias" style="--n:${P.dias.length}">${cards}</div>
+    <div class="dir-tot">${P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b></span>` : '<span>nenhum dia passa da jornada</span>'}
+      ${P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b></span>` : ''}
+      ${semU ? `<span class="av">⚠ ${plural(semU, 'linha sem UEP', 'linhas sem UEP')} fora das horas</span>` : ''}
+      <span style="margin-left:auto">jornada ${_fmtHM(UEP_MIN_DIA)}</span></div>`;
+}
+function _dirMoldura(t, corpo, tit, dadoTs){
+  const ag = new Date(), hm = p2(ag.getHours()) + ':' + p2(ag.getMinutes());
+  const velho = dadoTs && Date.now() - dadoTs > 15*60000;
+  const dado = dadoTs ? `<small class="${velho ? 'velho' : ''}">${velho ? '⚠ ' : ''}dados de ${new Date(dadoTs).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small>` : '';
+  return `<div class="dir-top"><div class="dir-marca">Ritmo<span>Patrimar</span></div><div class="dir-tit">${tit}</div><div class="dir-rel">${hm}${dado}</div></div>
+    <div class="dir-corpo">${corpo}</div>
+    <div class="dir-rod">${Array.from({length:DIR_N}, (_, i) => `<i class="${i === t ? 'on' : ''}"></i>`).join('')}</div>`;
+}
+function renderDir(){
+  const el = document.getElementById('dir-palco');
+  if(!el || !_modoDir()) return;
+  const t = DIR_TELA % DIR_N;
+  let corpo = '', tit = '', ts = 0;
+  try{
+    if(t === 0){
+      tit = '<b>HOJE</b>'; ts = PONTOS_DIA_TS;
+      const D = _uepAbaDados();
+      corpo = _dirHojeHtml(_dirHoje(D, D.k, PONTOS_DIA.porHoraModelo));
+    } else if(t === 1){
+      const S = _dirSemana(UEP_HIST, null, DIR_PTS.key === _dirSemKey() ? DIR_PTS.soma : null);
+      tit = '<b>SEMANA PASSADA</b>' + (S ? ` · ${_rpEsc(S.de.slice(0,5))} A ${_rpEsc(S.ate.slice(0,5))}` : ''); ts = UEP_HIST_TS;
+      corpo = _dirSemanaHtml(S, UEP_HIST ? _dirUltimos(UEP_HIST, null, 10) : [], UEP_HIST_FALHA, DIR_PTS.falha ? 'falha' : null);
+    } else {
+      tit = '<b>PRÓXIMOS DIAS</b> · HORAS DE LINHA'; ts = PROG_DET_TS;
+      corpo = _dirCartHtml(_gpxDoPainel(), !PROG_DET_TS && PROG_DET_FALHA ? _progDetFalhaInfo() : null);
+    }
+  }catch(e){ corpo = _dirMsg('Não consegui montar esta tela: ' + _rpEsc(e.message)); }
+  el.innerHTML = _dirMoldura(t, corpo, tit, ts);
+  if(t === 1 && UEP_HIST){
+    const g = el.querySelector('.dir-graf svg');
+    if(g){ const r = g.getBoundingClientRect(); if(r.width > 0 && r.height > 0) g.outerHTML = _dirSemSvg(_dirUltimos(UEP_HIST, null, 10), r.width / r.height * 260); }
+  }
+}
+// Leituras, uma de cada vez (o Apps Script atende uma execução por vez), só
+// quando vencem: histórico 30 min, programação 15 min (GPX_TTL, falha espera
+// 1 min), pontos da semana passada 6 h (falha espera 10 min).
+async function _dirCarregar(){
+  if(DIR_CARREGANDO || !_modoDir() || !CFG.sheetsUrl) return;
+  DIR_CARREGANDO = true;
+  try{
+    if(!UEP_HIST_TS || Date.now() - UEP_HIST_TS > (UEP_HIST_FALHA ? 20000 : DIR_HIST_TTL)){ await _uepAbaHistCarregar(); renderDir(); }
+    if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL) && Date.now() - GPX_TENT > 60000){
+      GPX_TENT = Date.now(); await carregarProgramacaoDetalhada(); renderDir();
+    }
+    const key = _dirSemKey(), [de, ate] = key.split('|');
+    const vencido = DIR_PTS.key !== key || (DIR_PTS.soma ? Date.now() - DIR_PTS.ts > DIR_PTS_TTL : Date.now() - DIR_PTS.ts > 10*60000);
+    if(vencido){
+      // essa leitura publica PREP_PERIODO, que é de outra aba: guarda e devolve
+      const prep = PREP_PERIODO;
+      try{
+        const itens = await lerProducaoModeloPeriodo(de, ate);
+        const ok = Array.isArray(itens);
+        DIR_PTS = { key, soma: ok ? _dirSomaPts(itens) : (DIR_PTS.key === key ? DIR_PTS.soma : null), ts:Date.now(), falha:!ok };
+        if(ok){ try{ localStorage.setItem(DIR_PTS_LS, JSON.stringify({ key, soma:DIR_PTS.soma, ts:DIR_PTS.ts })); }catch(e){} }
+      } finally { PREP_PERIODO = prep; }
+      renderDir();
+    }
+  }catch(e){ console.warn('[DIRETORIA] leitura:', e.message); }
+  finally{ DIR_CARREGANDO = false; }
+}
+function iniciarDiretoria(){
+  if(!_modoDir()) return;
+  PERFIL = 'diretoria';
+  const lo = document.getElementById('login-over'); if(lo) lo.style.display = 'none';
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  document.getElementById('sec-dir').classList.add('on');
+  renderDir();
+  // passa a tela a cada 20 s; a cada passagem ela é redesenhada com o dado do momento
+  DIR_TIMER = setInterval(() => { DIR_TELA = (DIR_TELA + 1) % DIR_N; renderDir(); }, DIR_TEMPO);
+  setTimeout(_dirCarregar, 4000);
+  setInterval(_dirCarregar, 60000);
+}
+
 
 // ════════════════════════════════════════════════
 // TABS
@@ -16300,6 +16614,8 @@ if(new URLSearchParams(location.search.toLowerCase()).has('tv')){
   aplicarPerfil();
   setTab('tv');
 }
+// /diretoria (ou ?dir): carrossel da sala do diretor, sem login (v7.116.0)
+iniciarDiretoria();
 // ?resetsenha → restaura senhas ao padrão (sem apagar histórico ou outras configs)
 if(new URLSearchParams(location.search).has('resetsenha')){
   CFG.senhaOperador='1234';
@@ -16679,7 +16995,8 @@ function fecharPreviaParada(){
 // Só roda em modo TV (?tv na URL). Em máquinas normais isso causava
 // reload a cada 28 min, deslogando o usuário (PERFIL só vive em memória).
 (function() {
-  if (!new URLSearchParams(location.search.toLowerCase()).has('tv')) return;
+  // também na tela da diretoria (/diretoria): é outra TV, sem ninguém mexendo nela
+  if (!new URLSearchParams(location.search.toLowerCase()).has('tv') && !document.documentElement.classList.contains('modo-dir')) return;
   // 1. Screen Wake Lock API (W3C)
   let _wl = null;
   async function _pedirWakeLock() {
