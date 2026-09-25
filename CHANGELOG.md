@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.105.0 — 25/09/2026
+
+**Aba ⚖ UEP: o bloco 4 · PERÍODO não diz mais "nenhum dia" quando não
+conseguiu ler o histórico** (PPCP, com o `HISTORICO` cheio de UEP na planilha).
+A leitura do histórico tem uma tentativa só e, quando falha, devolve lista
+vazia sem avisar — sobravam os dias guardados neste computador, que não têm
+UEP. Agora a aba reconhece a falha (nenhum dia veio da planilha), tenta **3
+vezes em sequência**, e se ainda assim não conseguir diz **"Não consegui ler o
+histórico"**, com ↻ e nova tentativa sozinha em 20 s. O histórico da aba também
+se renova a cada 2 min enquanto ela está aberta.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.104.0 — 25/09/2026
 
 **Aba ⚖ UEP abre mais rápido** (PPCP: os blocos 4 · PERÍODO e 5 ·

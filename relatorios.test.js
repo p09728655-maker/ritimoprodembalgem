@@ -3837,6 +3837,13 @@ console.log('\n── estudo de UEP ──');
   ok('período: média e dias batidos pela régua do HISTÓRICO (uepHistResumo)', [Math.round(PP.res.media), PP.res.bateu, PP.abaixo], [2689, 8, ['11/09/2026','23/09/2026']]);
   ok('período: a UEP oscila bem menos que as caixas de jornada nos mesmos dias', [Math.round(PP.oscUep), Math.round(PP.oscCx)], [10, 45]);
   ok('janela de 7 dias corridos pega só os dias dela', _uepAbaPeriodo(DH, 7, new Date(2026, 8, 25)).dias.map(d => d.data.slice(0,5)), ['18/09','21/09','22/09','23/09','24/09']);
+  eval(pega('function _uepHistDaPlanilha('));
+  ok('histórico só com dias deste computador é FALHA de leitura, não histórico vazio',
+     [_uepHistDaPlanilha([{ data:'24/09/2026', fonte:'local' }]), _uepHistDaPlanilha([]), _uepHistDaPlanilha(null),
+      _uepHistDaPlanilha([{ fonte:'local' }, { fonte:'sheets', uep: 1 }])], [false, false, false, true]);
+  const LH = pega('function _uepAbaHistCarregar(');
+  ok('a leitura do histórico da aba tenta 3 vezes e a tela diz quando não conseguiu',
+     [/t<=3/.test(LH), /UEP_HIST_FALHA=!dias/.test(LH), /Não consegui ler o histórico/.test(pega('function renderUep('))], [true, true, true]);
   const CARR = pega('async function _uepAbaCarregar(');
   ok('ao abrir a aba: histórico → leitura do dia (só se faltar) → cadastro, em sequência',
      [CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('lerPontosDia') && CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaCatCarregar'),

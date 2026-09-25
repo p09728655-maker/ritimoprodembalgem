@@ -2955,7 +2955,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.104.0';
+const APP_VER   = '7.105.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4497,9 +4497,31 @@ function _uepPerN(){
 }
 function _uepPerSet(n){ try{ localStorage.setItem(UEP_PER_LS, String(n)); }catch(e){} renderUep(); }
 let UEP_HIST=null;          // dias do histórico (buildDiasHistAsync, cache de 2 min)
-async function _uepAbaHistCarregar(){
-  try{ UEP_HIST=await buildDiasHistAsync()||[]; }catch(e){ UEP_HIST=UEP_HIST||[]; }
-  if(_abaOn('uep')) renderUep();
+// ⚠ VAZIO NÃO É UMA COISA SÓ (v7.105.0, PPCP 25/09/2026: a aba disse "nenhum dia
+// fechado com UEP" com o HISTORICO cheio). O getHistory tem UMA tentativa e, na
+// falha, devolve [] em silêncio; o merge então só traz os dias guardados neste
+// computador, que não têm UEP. Aqui: lista sem nenhum dia vindo da planilha
+// (`fonte:'sheets'`) é FALHA de leitura, não histórico vazio — 3 tentativas em
+// sequência e, se ainda assim falhar, a tela diz isso e tenta de novo sozinha.
+let UEP_HIST_TS=0, UEP_HIST_FALHA=false, UEP_HIST_VOO=null;
+function _uepHistDaPlanilha(d){ return Array.isArray(d) && d.some(x=>x&&x.fonte==='sheets'); }
+function _uepAbaHistCarregar(){
+  if(UEP_HIST_VOO) return UEP_HIST_VOO;
+  UEP_HIST_VOO=(async()=>{
+    let dias=null;
+    for(let t=1;t<=3;t++){
+      try{ const d=await buildDiasHistAsync(); if(_uepHistDaPlanilha(d)){ dias=d; break; } }catch(e){}
+      if(t<3) await new Promise(ok=>setTimeout(ok,3000*t));
+    }
+    UEP_HIST_FALHA=!dias;
+    if(dias) UEP_HIST=dias;
+    // Falhou: a próxima tentativa sai do renderUep (checagem de 20 s); este
+    // timer só garante que ele rode mesmo sem refresh do painel no meio.
+    else setTimeout(()=>{ if(_abaOn('uep')) renderUep(); }, 20500);
+    UEP_HIST_TS=Date.now();
+    if(_abaOn('uep')) renderUep();
+  })().finally(()=>{ UEP_HIST_VOO=null; });
+  return UEP_HIST_VOO;
 }
 function _uepAbaPerSvg(dias, largura){
   const FS=12, W=largura||760, H=230, pl=46, pb=28, pt=24;
@@ -4639,7 +4661,12 @@ function renderUep(){
   const nPer=_uepPerN();
   const botoes=`<span class="uep-per">${UEP_PER_OPC.map(n=>`<button class="${n===nPer?'on':''}" onclick="_uepPerSet(${n})">${n} DIAS</button>`).join('')}</span>`;
   let b4;
-  if(!UEP_HIST){ b4='<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo o histórico…</div></div>'; }
+  // Histórico velho (2 min) ou leitura que falhou (20 s): renova sozinho, sem
+  // redesenhar a tela no meio — quem pinta é o fim da leitura.
+  if(UEP_HIST_TS && !UEP_HIST_VOO && Date.now()-UEP_HIST_TS>(UEP_HIST_FALHA?20000:120000)) _uepAbaHistCarregar();
+  if(!UEP_HIST){ b4=UEP_HIST_FALHA
+      ? '<div class="uep-card"><div class="uep-nota" style="margin-top:0;color:var(--warn)">Não consegui ler o histórico — o servidor não respondeu em 3 tentativas. Tento de novo sozinho em 20 s. <button class="btn btn-ghost" style="padding:3px 10px;font-size:10px" onclick="_uepAbaHistCarregar()">↻ TENTAR AGORA</button></div></div>'
+      : '<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo o histórico…</div></div>'; }
   else {
     const P=_uepAbaPeriodo(UEP_HIST, nPer);
     if(!P.n){ b4=`<div class="uep-card"><div class="uep-nota" style="margin-top:0">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias.</div></div>`; }
