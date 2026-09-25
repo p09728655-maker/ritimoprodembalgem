@@ -4042,6 +4042,16 @@ console.log('\n── estudo de UEP ──');
       /has\('tv'\) && !document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(JS)], [true, true]);
 }
 
+// ── v7.117.0: cartão único dos PRÓXIMOS DIAS e diretoria sem disputa de fila ─
+{ ok('o cartão do dia é UM desenho: diretoria, aba UEP e papel passam pelo _gpxCartaoHtml',
+     [/_gpxCartaoHtml\(d, 'gpx'\)/.test(pega('function _gpxHtml(')), /_gpxCartaoHtml\(d, 'dir'\)/.test(pega('function _dirCartHtml(')),
+      /gpx-trilho|gpx-barra/.test(pega('function _gpxHtml(')), /_cartAberta\(|_gpxMontar\(/.test(pega('function _gpxCartaoHtml('))], [true, true, false, false]);
+  ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
+     [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /if\(!_modoDir\(\)\)\{\s*lerMediaHorasComRetry/.test(JS),
+      /iniciarAutoRefresh\(\); if\(_modoDir\(\)\) lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\);/.test(JS)], [true, true, true]);
+  ok('a logomarca da Patrimar abre o topo da diretoria', /<img class="dir-logo" src="\/patrimar-logo\.png"/.test(pega('function _dirMoldura(')), true);
+}
+
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);
