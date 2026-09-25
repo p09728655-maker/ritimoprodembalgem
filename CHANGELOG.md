@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.118.0 — 25/09/2026
+
+**Enxugamento, bloco A — PLANO, GESTÃO DE PERDAS e SIMULADOR** (PPCP: *"tem
+muita coisa escrita"*). Nenhum número saiu; avisos de falha e de estado ficaram.
+- **PLANO:** os dois parágrafos "Como ler" ficam recolhidos atrás de **ⓘ COMO
+  LER**. Visível, em uma linha, o que não pode ser esquecido: *isto mede o
+  PLANO, não a linha · não é baixar a meta* e *a faixa é uma mediana · nivelar
+  não é sequenciar*. Descrições dos vereditos e subtítulos dos cards curtos;
+  a explicação do mix foi para o tooltip.
+- **GESTÃO DE PERDAS:** notas longas saíram da tela (os botões ganharam
+  tooltip); a nota da tabela por semana/mês e a do plano de ação têm versão curta
+  na tela — **o PDF continua com o texto inteiro** (`.so-tela` / `.so-papel`).
+- **SIMULADOR:** subtítulos dos cards e das faixas curtos; a nota da IA virou
+  uma linha, e *"a assinatura é sua, não do modelo"* continua na tela.
+
+**Tela da diretoria:** cada quantidade mostra **sem hora extra** (número
+grande) e **com hora extra** embaixo — UEP, caixas e pontos. Os pontos da
+semana não se separam por hora: o card diz *"sem HE não separado"* em vez de
+inventar. Na semana, o gráfico dos últimos dias ganhou espaço e números
+maiores.
+
+**Atenção:** nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.117.0 — 25/09/2026
 
 - **Diretoria: "não consegui ler o histórico" corrigido.** No `/diretoria` o

@@ -4001,7 +4001,7 @@ console.log('\n── estudo de UEP ──');
   const need = f => { const nome = f.match(/function (\w+)/)[1]; if (typeof global[nome] !== 'function') vm.runInThisContext(pega(f).replace(/^function (\w+)/, 'global.$1 = function $1')); };
   ['function parseBR(', 'function _relSemanaJanela(', 'function _relDiasDaSemana(', 'function _relSemanaPassada(', 'function _numSemana(',
    'function _qpRealDia(', 'function _horaEhHE(', 'function _dirHoje(', 'function _dirSemana(', 'function _dirUltimos(',
-   'function _dirF(', 'function _dirMsg(', 'function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirSemSvg(', 'function _dirSomaPts('].forEach(need);
+   'function _dirF(', 'function _dirMsg(', 'function _dirComHe(', 'function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirSemSvg(', 'function _dirSomaPts('].forEach(need);
   global.CFG = global.CFG || {}; CFG.turnoInicio = CFG.turnoInicio || '07:00'; CFG.turnoFim = CFG.turnoFim || '17:00';
   global.DIR_COB_MIN = 95;
   global._rpEsc = global._rpEsc || (x => String(x));
@@ -4050,6 +4050,23 @@ console.log('\n── estudo de UEP ──');
      [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /if\(!_modoDir\(\)\)\{\s*lerMediaHorasComRetry/.test(JS),
       /iniciarAutoRefresh\(\); if\(_modoDir\(\)\) lerPontosDia\(\)\.finally\(\(\)=>\{ renderDir\(\); _dirCarregar\(\); \}\);/.test(JS)], [true, true, true]);
   ok('a logomarca da Patrimar abre o topo da diretoria', /<img class="dir-logo" src="\/patrimar-logo\.png"/.test(pega('function _dirMoldura(')), true);
+}
+
+// ── v7.118.0: enxugamento do bloco A (PLANO, GESTÃO DE PERDAS, SIMULADOR) e HE na diretoria ─
+{ ok('PLANO: os "Como ler" ficam recolhidos e o que não pode ser esquecido fica numa linha visível',
+     [/<details class="qp-nota"><summary>ⓘ COMO LER<\/summary>/.test(pega('function _qpHtml(')), /<details class="qp-nota"><summary>ⓘ COMO LER<\/summary>/.test(pega('function _cartHtml(')),
+      /qp-lembra[^\n]*mede o PLANO, não a linha[^\n]*Não é baixar a meta/.test(pega('function _qpHtml(')), /qp-lembra[^\n]*mediana[^\n]*nivelar não é sequenciar/.test(pega('function _cartHtml(')),
+      /\.plano-doc \.qp-lembra\{display:none\}/.test(src)], [true, true, true, true, true]);
+  ok('GESTÃO DE PERDAS: a versão longa continua no PDF (.so-papel) e a tela mostra a curta (.so-tela)',
+     [/#sec-perdas \.so-papel,#sec-simulador \.so-papel\{display:none\}/.test(src), /\.so-tela\{display:none\}/.test(pega('function _rpDocParadas(')),
+      /rp-note so-papel">RECOMENDAÇÃO\. Responsável e prazo/.test(JS), /rp-note so-papel">Cada \$\{G\.um\} do período em uma linha/.test(JS)], [true, true, true, true]);
+  ok('SIMULADOR: a assinatura continua escrita na tela', /a assinatura é sua, não do modelo/.test(JS), true);
+  const HH2 = _dirHojeHtml(_dirHoje({ estado:'ok', feito:1790, he:410, meta:2530, proj:{ fim:2635 }, card:{ c:'ok', ef:104, esperado:1719 }, mix:{ cx:1020 } },
+      { minNorm:358, realNormal:1020, realHE:198 }, [{ hora:'07:00', pontos:3060 }, { hora:'05:00', pontos:594 }]));
+  ok('diretoria: cada quantidade sem HE com o total COM HE embaixo (UEP, caixas, pontos)',
+     [/com HE <b>2\.200<\/b>/.test(HH2), /com HE <b>1\.218<\/b>/.test(HH2), /com HE <b>3\.654<\/b>/.test(HH2)], [true, true, true]);
+  ok('diretoria: pontos da semana não se separam por hora — diz isso, não inventa o "sem HE"',
+     /sem HE não separado/.test(_dirSemanaHtml(_dirSemana([{ data:'14/09/2026', uep:2500, real:1500, heCx:100, metaUep:2530 }], new Date(2026, 8, 25), { pts:900, cx:1400 }), [], false, null)), true);
 }
 
 console.log(falhas === 0
