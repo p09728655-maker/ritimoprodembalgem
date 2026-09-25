@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os nove relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 9);
+ok('e os dez relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, e a UEP executiva)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 10);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2506,7 +2506,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 7);   // + estudo de UEP + capacidade em UEP (2)
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 8);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2517,8 +2517,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 13 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 14);   // 13 chamadas + a declaração
+ok('e é UMA implementação — os 14 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 15);   // 14 chamadas (+ UEP executiva) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -3848,9 +3848,48 @@ console.log('\n── estudo de UEP ──');
   ok('ao abrir a aba: histórico → leitura do dia (só se faltar) → cadastro, em sequência',
      [CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('lerPontosDia') && CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaCatCarregar'),
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
-  const R = pega('function renderUep(');
-  ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(R), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(R.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
+  const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
+  ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
+  ok('tela e impressão leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
+     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [2, false]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
+
+  // IMPRESSÃO EXECUTIVA (v7.106.0) — o papel é o que está na tela.
+  eval(pega('function _uepAbaPerCards('));
+  eval(pega('function _uepAbaSvg(')); eval(pega('function _uepAbaPerSvg('));
+  if (typeof _kpiCls === 'undefined') { const m = JS.match(/const _KPI_PAPEL = \{[^}]+\};/); if (m) eval(m[0].replace('const ','global.')); eval(pega('function _kpiCls(')); }
+  if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
+  { const m = JS.match(/const UEP_DOC_SVG_W = \d+;/), m2 = JS.match(/const UEP_DOC_MIX_MAX = \d+;/);
+    eval(m[0].replace('const ','global.')); eval(m2[0].replace('const ','global.')); }
+  eval(pega('function _uepDocHtml('));
+  const card = { c:'ok', ef:102.2, meta:2530, esperado:1383 };
+  const mixG = _uepAbaMix(phm.concat(Array.from({ length: 9 }, (_, i) => ({ hora:'09:00', modelo:'50120'+i, nome:'P'+i, caixas:10, uep:10 }))));
+  const Dd = { k:{ minNorm:288 }, card, meta:2530, feito:1413, he:410, proj:_uepAbaProj(1413, 288), horas:H, mix:mixG, conf:C,
+               avisos:[], cards:[{ l:'UEP ATÉ AGORA', v:'1.413', c:'ok', sub:'x' }], nPer:15, P:PP, perCards:_uepAbaPerCards(PP) };
+  const ctxD = { data:'25/09/2026', hora:'13:05', hist:'ok', cadFalha:false, ini:'07:00', fim:'17:00' };
+  const DOC = _uepDocHtml(Dd, ctxD);
+  ok('folha 1: selo de hoje e do período, com os números dos cards',
+     [DOC.includes('NO RITMO'), DOC.includes('8 DE 10 DIAS NA META'), DOC.includes('<b>1.413 UEP</b>'), DOC.includes('<b>2.586</b>'), DOC.includes('Mais 410 UEP em hora extra')], [true, true, true, true, true]);
+  ok('o % da meta do período é UMA conta (pctMeta), lida pelo card e pelo papel',
+     [Math.round(PP.pctMeta*10)/10, _uepAbaPerCards(PP)[0].sub.startsWith(fmtP(PP.pctMeta)), DOC.includes('('+fmtP(PP.pctMeta)+' da meta)')], [106.3, true, true]);
+  ok('folha 1 = hoje (hora a hora) e período lado a lado; a folha 2 (mix, confiabilidade) começa em página nova',
+     [DOC.indexOf('HORA A HORA') < DOC.indexOf('O PERÍODO'), DOC.indexOf('O PERÍODO') < DOC.indexOf('ud-quebra'),
+      DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-cols"/.test(DOC)], [true, true, true, true]);
+  ok('o mix no papel mostra 8 produtos e junta o resto em "demais"', [(DOC.match(/<tr><td class="td-mono">/g) || []).length, /demais 4 produtos/.test(DOC)], [8, true]);
+  const DOCsem = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null, conf:null }), Object.assign({}, ctxD, { hist:'falha', cadFalha:true }));
+  ok('histórico ou cadastro que não vieram: o relatório sai inteiro e diz o que faltou (nunca zero)',
+     [DOCsem.includes('HISTÓRICO NÃO LIDO'), DOCsem.includes('Não consegui ler o cadastro'), DOCsem.includes('HORA A HORA')], [true, true, true]);
+  const DOCzero = _uepDocHtml(Object.assign({}, Dd, { k:{ minNorm:0 }, proj:null }), ctxD);
+  ok('sem hora de jornada lançada não há veredito', [DOCzero.includes('SEM HORA DE JORNADA LANÇADA'), DOCzero.includes('NO RITMO')], [true, false]);
+  const RUD = pega('function _uepDocHtml('), GUA = pega('function gerarRelatorioUepAba(');
+  ok('o desenho do papel não faz conta de UEP (nenhuma régua nova)',
+     /uepCard\(|efNoRitmo\(|_uepAbaProj\(|_uepAbaPeriodo\(|uepHistResumo\(|_qpOscilacao\(/.test(RUD), false);
+  ok('imprime DEITADO no documento compartilhado, com o botão na aba UEP',
+     [/_rpDocParadas\(`UEP — [^`]*`, true\)/.test(GUA), (src.match(/onclick="gerarRelatorioUepAba\(\)"/g) || []).length], [true, 1]);
+  ok('o SVG é re-skinado por token e a pele é escopada em .uep-doc',
+     (() => { const sk = (JS.match(/const _UEP_DOC_SKIN = `([\s\S]*?)`;/) || [])[1] || '';
+              const sels = sk.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+(?=\{)/g) || [];
+              return [/\.uep-doc\{--bg:#fff;--txt:#1F2328[^}]*--ok:#2E7D32/.test(sk), sels.every(x => x.split(',').every(y => y.trim().startsWith('.uep-doc')))]; })(), [true, true]);
 }
 
 console.log(falhas === 0
