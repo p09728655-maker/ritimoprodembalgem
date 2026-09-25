@@ -3957,6 +3957,9 @@ console.log('\n── estudo de UEP ──');
   const GH = pega('function _gpxHtml(');
   ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_gpxDivida\(|uepCx/.test(GH), false);
   const RP = pega('function renderProxDias(');
+  ok('a impressão executiva leva o PRÓXIMOS DIAS pela MESMA montagem e o MESMO desenho da aba',
+     [/_gpxDoPainel\(\)/.test(RP), /prox=_gpxDoPainel\(\)/.test(pega('function _uepAbaDados(')),
+      /_gpxHtml\(PX, 50\)/.test(pega('function _uepDocHtml(')), /PRÓXIMOS DIAS/.test(pega('function _uepDocHtml('))], [true, true, true, true]);
   ok('a faixa mora na aba ⚖ UEP (bloco 6), renova a programação a cada 15 min e espera 1 min entre tentativas',
      [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /_abaOn\('uep'\)/.test(RP),
       /6 · PRÓXIMOS DIAS/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),

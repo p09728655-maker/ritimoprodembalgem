@@ -3005,7 +3005,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.111.0';
+const APP_VER   = '7.112.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4717,7 +4717,8 @@ function _uepAbaDados(){
   // (só quando ela já foi lida — null é "não sei", nunca "nada falta")
   const semHoje=_uepAbaSemUepHoje(PONTOS_DIA.porHora, CAP_RAW);
   const semFut=PROG_DET_TS?_cartSemUep(PROG_DETALHADA, _cartNum(hojeStr())):null;
-  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut,
+  let prox=null; try{ prox=_gpxDoPainel(); }catch(e){ prox=null; }
+  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut, prox,
            nPer, P, perCards:P&&P.n?_uepAbaPerCards(P):null };
 }
 function _uepAbaPerCards(P){
@@ -4909,6 +4910,38 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-conf{display:flex;height:12px;border-radius:3px;overflow:hidden;background:#edf2f7;margin-top:4px;
                     -webkit-print-color-adjust:exact;print-color-adjust:exact}
   .uep-doc .ud-conf i{display:block;height:100%}
+  /* PRÓXIMOS DIAS no papel: a marcação é a da aba (.gpx-*); aqui só a pele */
+  .uep-doc .ud-prox .gpx-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:8px}
+  .uep-doc .ud-prox .gpx-dia{border:1px solid #e2e8f0;border-radius:5px;padding:7px 9px;page-break-inside:avoid}
+  .uep-doc .ud-prox .gpx-dia.red{border-color:#C62828}
+  .uep-doc .ud-prox .gpx-dia.warn{border-color:#B26A00}
+  .uep-doc .ud-prox .gpx-nome{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:#5B6470}
+  .uep-doc .ud-prox .gpx-nome b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-trilho{position:relative;margin:6px 0;border-bottom:1px solid #cbd5e0}
+  .uep-doc .ud-prox .gpx-jorn{position:absolute;left:-3px;right:-3px;border-top:2px dashed #1F2328}
+  .uep-doc .ud-prox .gpx-jorn span{display:none}
+  .uep-doc .ud-prox .gpx-barra{position:absolute;bottom:0;left:22%;width:56%;display:flex;flex-direction:column-reverse}
+  .uep-doc .ud-prox .gpx-barra i{display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .uep-doc .ud-prox .gpx-lote{background:#8a929c}
+  .uep-doc .ud-prox .gpx-atr{background:repeating-linear-gradient(45deg,#b8bec6 0 3px,#8a929c 3px 6px)}
+  .uep-doc .ud-prox .gpx-exc{background:#C62828}
+  .uep-doc .ud-prox .gpx-dia.warn .gpx-exc{background:#B26A00}
+  .uep-doc .ud-prox .gpx-h{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1F2328;line-height:1}
+  .uep-doc .ud-prox .gpx-selo{display:inline-block;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#5B6470}
+  .uep-doc .ud-prox .gpx-selo.red{color:#C62828;border-color:#C62828}
+  .uep-doc .ud-prox .gpx-selo.warn{color:#B26A00;border-color:#B26A00}
+  .uep-doc .ud-prox .gpx-selo.ok{color:#2E7D32;border-color:#2E7D32}
+  .uep-doc .ud-prox .gpx-s,.uep-doc .ud-prox .gpx-lotes{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#5B6470;margin-top:4px;line-height:1.45}
+  .uep-doc .ud-prox .gpx-lotes b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-s span{color:#B26A00!important}
+  .uep-doc .ud-prox .gpx-leg{display:none}
+  .uep-doc .ud-prox .gpx-tot{display:flex;gap:18px;flex-wrap:wrap;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470}
+  .uep-doc .ud-prox .gpx-tot b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-tot .r b{color:#C62828}
+  .uep-doc .ud-prox .gpx-nota{display:none}   /* a fórmula vai no ANEXO — COMO LER */
+  /* a lista SEM UEP já sai inteira na CONFIABILIDADE, logo abaixo — no papel
+     ela não se repete aqui */
+  .uep-doc .ud-prox .gpx-sem{display:none}
   .uep-doc table.ud-como td{font-size:10px;line-height:1.45;vertical-align:top;padding:6px 9px}
   .uep-doc table.ud-como td:first-child{font-weight:700;width:24%;white-space:nowrap}
 `;
@@ -4963,6 +4996,13 @@ function _uepDocHtml(D, ctx){
       <div class="ud-leg"><span><i style="background:#5B6470"></i>bateu a meta</span><span><i style="background:#C62828"></i>abaixo da meta</span><span><i class="tr" style="border-top-color:#E65100"></i>meta do dia</span></div>
       <div class="ud-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div></div>`;
 
+  // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxHtml), com a pele do papel.
+  const PX=D.prox;
+  const bProx=sec('PRÓXIMOS DIAS — HORAS DE LINHA QUE A CARTEIRA PEDE'+(PX&&PX.lidaEm?` · programação de ${new Date(PX.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:''))
+    +(!PX ? '<div class="ud-vazio">A programação ainda não tinha sido lida quando o relatório foi gerado (abra a aba ⚖ UEP e espere o bloco 6).</div>'
+        : PX.falha ? '<div class="ud-vazio">A programação não traz UEP — sem ela não há como converter a carteira em horas.</div>'
+        : `<div class="ud-prox">${_gpxHtml(PX, 50)}</div>`);
+
   // 4 · O MIX
   const mostra=mix.linhas.slice(0, UEP_DOC_MIX_MAX), resto=mix.linhas.slice(UEP_DOC_MIX_MAX);
   const lin=l=>`<tr><td class="td-mono">${_rpEsc(l.modelo)}</td><td>${_rpEsc(l.nome||'—')}</td><td class="n">${fmtN(l.cx)}</td><td class="n">${u2(l.uepCx)}</td><td class="n"><b>${l.uep>0?fmtN(Math.round(l.uep)):'—'}</b></td><td><span class="ud-mb"><i style="width:${l.pct.toFixed(0)}%"></i></span>${l.uep>0?fmtP(l.pct):'sem UEP'}</td></tr>`;
@@ -4989,19 +5029,24 @@ function _uepDocHtml(D, ctx){
     +_cartSemUepHtml(D.semFut||[], [], 'ud-alerta', D.semHoje||[]);
 
   // 6 · COMO LER
-  const b6=sec('COMO LER')
+  const b6=sec('ANEXO — COMO LER')
     +`<table class="ud-como"><tbody>
       <tr><td>A UEP</td><td>Caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). Produto que dá mais trabalho por caixa vale mais UEP — é o que torna comparáveis dias de mix diferente.</td></tr>
       <tr><td>A META</td><td>${fmtN(meta)} UEP na jornada normal (${UEP_MIN_DIA} min). Esperado até agora = meta × minutos de jornada lançados ÷ ${UEP_MIN_DIA}. A hora extra fica fora da meta. A meta é o ritmo <b>demonstrado</b> pela linha (estudo de UEP), não tempo padrão — até a cronoanálise.</td></tr>
       <tr><td>PROJEÇÃO</td><td>UEP por minuto de jornada lançado × minutos que faltam. É projeção, não veredito: quem julga é o selo.</td></tr>
       <tr><td>HOJE × PERÍODO</td><td>O dia fechado leva a UEP gravada no fechamento; hoje usa o cadastro atual, inclusive as estimadas (EST). A base pode diferir um pouco.</td></tr>
+      <tr><td>PRÓXIMOS DIAS</td><td>Horas = UEP programada ÷ ${fmtN(Math.round(meta/UEP_MIN_DIA*60))} UEP/h (o ritmo da meta). São horas de LINHA — a UEP já desconta o mix. O atraso que não cabe no resto de hoje entra no 1º dia útil. Linha sem UEP no cadastro fica fora e é listada. Faltar horas não é ordem de hora extra: pode ser mover lote para um dia com folga.</td></tr>
       <tr><td>OSCILAÇÃO</td><td>Desvio ÷ média dos dias — a mesma conta da aba PLANO. Em caixas a produção pula com o mix; em UEP o mix já está descontado.</td></tr>
     </tbody></table>`;
 
   return `<div class="ud-res">${resHoje}${resPer}</div>`
     +`<div class="ud-cols"><div>${b1}${b2}</div><div>${b3}</div></div>`
     +'<div class="ud-quebra"></div>'
-    +`<div class="ud-cols ud-cols-2"><div>${b4}</div><div>${b5}${b6}</div></div>`
+    +bProx
+    +`<div class="ud-cols ud-cols-2"><div>${b4}</div><div>${b5}</div></div>`
+    // o COMO LER vira anexo: com o PRÓXIMOS DIAS a folha 2 não o comporta
+    // (medido no Chromium: 3 folhas de qualquer jeito, e ele partido ao meio)
+    +'<div class="ud-quebra"></div>'+b6
     +`<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · UEP</span><span>retrato de ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · meta ${fmtN(meta)} UEP · só gerencial — TV e operador seguem em caixas</span></div>`;
 }
 
@@ -10903,13 +10948,13 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
 }
 // Desenho: nenhuma conta de carga aqui, só escala da barra e texto.
 const GPX_DOW = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-function _gpxHtml(P){
+function _gpxHtml(P, alt){
   const escMax = Math.max(12*60, ...P.dias.map(d => d.min)) * 1.02;   // o trilho mostra até 12 h (mais, se precisar)
-  const H = 110, px = v => (v / escMax * H).toFixed(1);
+  const H = alt || 110, px = v => (v / escMax * H).toFixed(1);
   const jornPx = px(UEP_MIN_DIA);
   const cards = P.dias.map(d => {
     const nome = `<div class="gpx-nome"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
-    if(d.estado === 'vazio') return `<div class="gpx-dia gpx-vazio">${nome}<div class="gpx-trilho"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div></div>
+    if(d.estado === 'vazio') return `<div class="gpx-dia gpx-vazio">${nome}<div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div></div>
       <div class="gpx-h">—</div><span class="gpx-selo">SEM LOTE DATADO</span></div>`;
     const lotes = d.min - d.minAtr, dentro = d.fds ? d.min : Math.min(d.min, UEP_MIN_DIA);
     // pilha: atraso embaixo, lotes em cima; o que passa da jornada é pintado à parte
@@ -10918,7 +10963,7 @@ function _gpxHtml(P){
                            : `<span class="gpx-selo ${d.estado}">FOLGA ${_fmtHM(-d.exc)}</span>`;
     const tip = _rpEsc(`${d.data}: ${_fmtHM(lotes)} dos lotes (${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx)` + (d.minAtr > 0 ? ` + ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + ` · jornada ${_fmtHM(UEP_MIN_DIA)}`);
     return `<div class="gpx-dia ${d.estado}" title="${tip}">${nome}
-      <div class="gpx-trilho"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div>
+      <div class="gpx-trilho" style="height:${H}px"><div class="gpx-jorn" style="bottom:${jornPx}px"><span>${_fmtHM(UEP_MIN_DIA)}</span></div>
         <div class="gpx-barra" style="height:${(+atrPx + +lotPx + +excPx).toFixed(1)}px">${d.minAtr > 0 ? `<i class="gpx-atr" style="height:${atrPx}px"></i>` : ''}<i class="gpx-lote" style="height:${lotPx}px"></i>${d.exc > 0 && !d.fds ? `<i class="gpx-exc" style="height:${excPx}px"></i>` : ''}</div></div>
       <div class="gpx-h">${_fmtHM(d.min)}</div>${selo}
       <div class="gpx-s">${d.minAtr > 0 ? `inclui atraso de ${_fmtHM(d.minAtr)}<br>` : ''}${fmtN(d.uep)} UEP · ${fmtN(d.cx)} cx${d.cxSemUep ? `<br><span style="color:var(--warn)">+ ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas</span>` : ''}</div>
@@ -10934,6 +10979,17 @@ function _gpxHtml(P){
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
 let GPX_CARREGANDO = false, GPX_TENT = 0;
+// A montagem com os dados do painel, UMA vez: a tela (renderProxDias) e a
+// impressão executiva da UEP (_uepAbaDados → _uepDocHtml) leem daqui.
+// null = a programação ainda não foi lida.
+function _gpxDoPainel(){
+  if(!PROG_DET_TS) return null;
+  const k = calcKPIs(getDadosHoje());
+  const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
+  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS);
+  if(!P.falha){ P.divSemUep = dv.semUep; P.lidaEm = PROG_DET_TS; }
+  return P;
+}
 function renderProxDias(){
   const box = document.getElementById('ger-prox'), corpo = document.getElementById('gpx-corpo');
   if(!box || !corpo) return;
@@ -10955,10 +11011,7 @@ function renderProxDias(){
                         : '<div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div>';
     return;
   }
-  const k = calcKPIs(getDadosHoje());
-  const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
-  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS);
-  if(!P.falha) P.divSemUep = dv.semUep;
+  const P = _gpxDoPainel();
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
   corpo.innerHTML = _gpxHtml(P);
   const sub = document.getElementById('gpx-sub');

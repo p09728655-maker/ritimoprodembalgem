@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.112.0 — 25/09/2026
+
+**A impressão executiva da UEP leva o PRÓXIMOS DIAS** (PPCP: *"colocar na
+impressão próximos dias"*). Ele abre a folha 2, com as horas de cada dia, o
+que falta ou sobra, os lotes mais pesados e o total dos 5 dias. É o mesmo
+desenho da aba, com a pele do papel. O COMO LER virou **anexo** na folha 3 e
+ganhou uma linha explicando a conta do PRÓXIMOS DIAS: com o bloco novo, ele não
+cabia mais na folha 2.
+
+**Atenção:** a impressão passa de 2 para 3 folhas (a 3ª é só o COMO LER).
+Nenhum número muda. Sem re-deploy.
+
+---
+
 ## v7.111.0 — 25/09/2026
 
 **PRÓXIMOS DIAS saiu do GERENCIAL e foi para a aba ⚖ UEP** (PPCP: *"próximo
