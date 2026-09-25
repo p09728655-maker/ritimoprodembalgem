@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.121.0 · mobile 1.31.0 — 25/09/2026
+
+**Endereço próprio da diretoria** (PPCP: *"se eles baixarem vai abrir
+tudo"*). Aberto por um endereço que começa com `diretoria` (o novo
+`diretoria-patrimar.vercel.app`), o site **só mostra a diretoria** — qualquer
+caminho, sem login, sem abas; o app do celular também cai nela. Apagar o
+`/diretoria` do endereço não leva ao painel. O endereço de sempre não muda.
+⚠ Separa a TELA, não é segurança da informação: o dado vem do Apps Script, cujo
+endereço é público.
+
+**Atenção:** nenhum número muda. Sem re-deploy do `.gs`.
+
+---
+
 ## v7.120.0 · mobile 1.30.0 — 25/09/2026
 
 **Enxugamento, blocos B e C** (PPCP: *"segue com tudo"*). Nenhum número saiu;
