@@ -4059,6 +4059,15 @@ console.log('\n── estudo de UEP ──');
   ok('pausa discreta: bolinha leva à tela e pausa; ⏸ alterna; guardada no aparelho; pausada não troca de tela',
      [/onclick="_dirIr\(\$\{i\}\)"/.test(JS), /onclick="_dirPausa\(\)"/.test(JS), /if\(!DIR_PAUSA\) DIR_TELA = \(DIR_TELA \+ 1\) % DIR_N; renderDir\(\);/.test(JS), /localStorage\.setItem\(DIR_PAUSA_LS/.test(JS)], [true, true, true, true]);
   ok('a logomarca da Patrimar abre o topo da diretoria', /<img class="dir-logo" src="\/patrimar-logo\.png"/.test(pega('function _dirMoldura(')), true);
+  // v7.126.0: a versão em uso no rodapé, e o âmbar do "dados de" pelo intervalo da leitura DE CADA TELA
+  { const vm = require('vm');
+    vm.runInThisContext(pega('function _dirVelhoMs(').replace(/^function (\w+)/, 'global.$1 = function $1'));
+    global.DIR_HIST_TTL = 30*60000; global.GPX_TTL = 15*60000;
+    ok('âmbar só quando a leitura atrasou: HOJE 15 min, SEMANA 30+15 (histórico), PRÓXIMOS DIAS 15+15 (programação)',
+       [0, 1, 2].map(t => _dirVelhoMs(t) / 60000), [15, 45, 30]);
+    ok('o "dados de" julga pelo limite da tela, não por 15 min fixos',
+       [/Date\.now\(\) - dadoTs > _dirVelhoMs\(t\)/.test(pega('function _dirMoldura(')), /dadoTs > 15\*60000/.test(pega('function _dirMoldura('))], [true, false]);
+    ok('a versão em uso aparece no rodapé da diretoria', /<span class="dir-ver"[^>]*>v\$\{APP_VER\}<\/span>/.test(pega('function _dirMoldura(')), true); }
 }
 
 // ── v7.118.0: enxugamento do bloco A (PLANO, GESTÃO DE PERDAS, SIMULADOR) e HE na diretoria ─
@@ -4089,8 +4098,8 @@ console.log('\n── estudo de UEP ──');
   ok('a diretoria guarda o último retrato (planilha, leitura do dia, histórico, programação) e abre com ele',
      [/if\(_modoDir\(\)\) _dirGuarda\('sheets', json\)/.test(JS), /if\(_modoDir\(\)\) _dirGuarda\('pontos', json\)/.test(JS),
       /_dirGuarda\('hist'/.test(JS), /_dirGuarda\('prog'/.test(JS), /setTimeout\(\(\) => \{ _dirRestaura\(\); renderDir\(\); \}, 0\)/.test(JS)], [true, true, true, true, true]);
-  ok('o retrato do dia só vale no mesmo dia, e a hora do dado continua na tela (âmbar depois de 15 min)',
-     [/const sh = _dirLe\('sheets', 0, true\)/.test(JS), /const pd = _dirLe\('pontos', 0, true\)/.test(JS), /Date\.now\(\) - dadoTs > 15\*60000/.test(JS)], [true, true, true]);
+  ok('o retrato do dia só vale no mesmo dia, e a hora do dado continua na tela (âmbar quando a leitura DAQUELA tela atrasou)',
+     [/const sh = _dirLe\('sheets', 0, true\)/.test(JS), /const pd = _dirLe\('pontos', 0, true\)/.test(JS), /Date\.now\(\) - dadoTs > _dirVelhoMs\(t\)/.test(JS)], [true, true, true]);
 }
 
 // ── v7.121.0: endereço próprio da diretoria (host "diretoria…") ─────────────

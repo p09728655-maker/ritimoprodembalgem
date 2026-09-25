@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.126.0 — 25/09/2026
+
+- **Diretoria: a versão em uso no rodapé** (PPCP: *"colocar a versão que
+  está"*), discreta no canto direito — dá para conferir de longe se a parede
+  já pegou a versão nova.
+- **Diretoria: o "dados de HH:MM" só fica âmbar quando a leitura DAQUELA tela
+  atrasou.** Com o limite único de 15 min, a SEMANA PASSADA ficava âmbar aos 16
+  min de um histórico que é relido a cada 30 — alarme falso. Agora: HOJE 15 min
+  (relido a cada 5), SEMANA PASSADA 45 min (histórico a cada 30), PRÓXIMOS DIAS
+  30 min (programação a cada 15).
+
+**Atenção:** nenhum número muda. Muda só quando a hora do dado fica âmbar.
+
+---
+
 ## v7.125.0 — 25/09/2026
 
 - Diretoria: enquanto os pontos da semana chegam sem a separação de hora extra

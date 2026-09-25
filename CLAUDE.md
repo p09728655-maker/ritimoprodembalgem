@@ -3201,6 +3201,10 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ **Na diretoria não rodam `pollParadaTV` nem `lerMediaHoras`** (v7.117.0):
   disputavam a fila do Apps Script com o `getHistory`, que estourava o tempo.
   As leituras da diretoria começam no fim do `lerSheetsComRetry`.
+- **Âmbar do "dados de" POR TELA** (v7.126.0, `_dirVelhoMs`): o intervalo da
+  própria leitura + 15 min — HOJE 15, SEMANA 45 (`DIR_HIST_TTL`), PRÓXIMOS DIAS
+  30 (`GPX_TTL`). Com 15 min fixos a SEMANA ficava âmbar com a leitura em dia.
+  A versão em uso (`APP_VER`) fica no canto do rodapé (`.dir-ver`).
 - **O cartão do dia dos PRÓXIMOS DIAS é UM desenho** (`_gpxCartaoHtml(d, pf)`,
   v7.117.0): `pf='dir'` na diretoria, `pf='gpx'` na aba e no papel — muda só a
   pele. O trilho de barras saiu dos três.
