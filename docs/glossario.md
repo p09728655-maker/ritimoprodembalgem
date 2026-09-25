@@ -207,12 +207,12 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 | Indicador | Fórmula | Unidade | Onde |
 |---|---|---|---|
-| **UEP ATÉ AGORA** | o mesmo número e selo do card UEP DO DIA (`uepCard`): UEP de jornada normal × esperado até agora | UEP | `rp-core:uepCard` |
-| **PROJEÇÃO DO DIA** | UEP feita + (UEP feita ÷ minutos de jornada lançados) × minutos de jornada que faltam (de 527) | UEP | `v7:_uepAbaProj` |
-| **UEP POR HORA** | UEP feita ÷ minutos de jornada lançados × 60; meta/h = meta do dia ÷ 527 × 60 | UEP/h | `v7:_uepAbaProj` |
-| **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
+| **UEP ATÉ AGORA** | o mesmo número e selo do card UEP DO DIA (`uepCard`): UEP de jornada normal × esperado até agora; diferença = feito − esperado, e o % = feito ÷ esperado. Esperado = meta × minutos de jornada **já decorridos** ÷ 527 — a hora em andamento conta só o que passou (`minSlotDecorrido`, v7.114.0) | UEP | `rp-core:uepCard` + `rp-core:minSlotDecorrido` |
+| **PROJEÇÃO DO DIA** | UEP feita + (UEP feita ÷ minutos de jornada decorridos) × minutos de jornada que faltam (de 527) — a média da jornada, não a última hora; hora extra fora | UEP | `v7:_uepAbaProj` |
+| **UEP POR HORA** | UEP feita ÷ minutos de jornada decorridos × 60; meta/h = meta do dia ÷ 527 × 60 | UEP/h | `v7:_uepAbaProj` |
+| **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta; a hora em andamento aparece sem cor ("até HH:MM"), não é julgada | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
 | **MIX DE HOJE** | por produto (modelo + nome), só jornada normal: caixas, UEP, UEP/cx = UEP ÷ caixas com UEP, % = UEP do produto ÷ UEP do dia | UEP | `v7:_uepAbaMix` |
-| **CONFIABILIDADE** | caixas de hoje por código: UEP medida (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
+| **ORIGEM DA UEP** (era CONFIABILIDADE) | caixas de hoje por código: UEP medida — estudo ou digitada, **não é cronoanálise** (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
 | **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos dias fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
 | **DIAS QUE BATERAM** (período) | dias com UEP ≥ META UEP daquele dia | dias | `rp-core:uepHistResumo` |
 | **OSCILAÇÃO DIA A DIA** (período) | desvio padrão ÷ média, dia a dia, em UEP e em caixas de jornada (realizado − HE) dos mesmos dias | % | `v7:_qpOscilacao` + `v7:_uepAbaPeriodo` |

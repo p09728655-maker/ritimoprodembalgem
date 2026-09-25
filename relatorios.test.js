@@ -3857,7 +3857,7 @@ console.log('\n── estudo de UEP ──');
   ok('tela e impressão leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
      [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [2, false]);
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
-     [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec"><b>5 · CONFIABILIDADE/.test(R),
+     [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),
       /_uepAbaSvg\(horas, w, Math\.min\(UEP_G_H_MAX/.test(R)], [true, true, true, true]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
@@ -3888,7 +3888,24 @@ console.log('\n── estudo de UEP ──');
      [DOC.includes('EM HORA EXTRA (fora da meta)'), DOC.includes('TOTAL DO DIA'), /mix\.he\.cx>0\?`<tr class="uep-he">/.test(R),
       _uepDocHtml(Object.assign({}, Dd, { mix: _uepAbaMix(phm.slice(1)) }), ctxD).includes('TOTAL DO DIA')], [true, true, true, false]);
   ok('o papel não numera as seções (a ordem dele não é a da tela) e usa os nomes da aba',
-     [/rp-sec-ttl">\d+ ▸/.test(DOC), ['HORA A HORA EM UEP', 'O MIX DE HOJE', 'CONFIABILIDADE DA UEP'].every(t => DOC.includes(t))], [false, true]);
+     [/rp-sec-ttl">\d+ ▸/.test(DOC), ['HORA A HORA EM UEP', 'O MIX DE HOJE', 'ORIGEM DA UEP'].every(t => DOC.includes(t))], [false, true]);
+  // v7.114.0 — o nome CONFIABILIDADE prometia exatidão; é a ORIGEM da UEP
+  ok('o bloco se chama ORIGEM DA UEP na tela e no papel, e diz que medida não é cronoanálise',
+     [/CONFIABILIDADE DA UEP/.test(DOC + R), DOC.includes('ORIGEM DA UEP'), /não (é )?cronoanálise/i.test(DOC), /NÃO é cronoanálise/.test(JS)], [false, true, true, true]);
+  ok('na tela os blocos são numerados na ordem em que aparecem (4 origem, 5 período, 6 próximos)',
+     [R.indexOf('4 · ORIGEM DA UEP') < R.indexOf('5 · PERÍODO'), R.indexOf('5 · PERÍODO') < R.indexOf('6 · PRÓXIMOS DIAS')], [true, true]);
+  // hora em andamento não é julgada (v7.114.0: 14:00 vermelho às 14:50)
+  { const sl = [{ inicio:'13:00', label:'13:00-14:00', min:60 }, { inicio:'14:00', label:'14:00-15:00', min:60 }, { inicio:'15:00', label:'15:00-16:00', min:60 }];
+    const reg = [{ horario:'13:00', producaoHora:100 }, { horario:'14:00', producaoHora:80 }];
+    const uH = { '13:00':{ uep:200, cxSem:0 }, '14:00':{ uep:244, cxSem:0 } };
+    const A = _uepAbaHoras(sl, reg, uH, 2530, 14*60+50), V = _uepAbaHoras(sl, reg, uH, 2530);
+    ok('hora em andamento sai sem cor de veredito, com "até"; hora futura marcada; sem relógio nada muda',
+       [A[0].cls, A[1].andamento, A[1].cls, A[1].ate, A[2].futuro, V[1].cls, V[1].andamento], ['red', true, '', '14:50', true, 'red', false]);
+    ok('o desenho escreve "até 14:50" e diz no tooltip que a hora não é julgada',
+       [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]); }
+  ok('o card UEP ATÉ AGORA escreve a diferença e o % do esperado; projeção diz "média da jornada" e hora extra fora',
+     [/difEsp>=0\?'\+':'−'/.test(DAD), /do esperado\)/.test(DAD), /no ritmo de agora/.test(DAD), /na média da jornada até agora/.test(DAD), /fora do UEP até agora, da projeção e da meta/.test(DAD)],
+     [true, true, false, true, true]);
   ok('o mix no papel mostra 8 produtos e junta o resto em "demais"', [(DOC.match(/<tr><td class="td-mono">/g) || []).length, /demais 4 produtos/.test(DOC)], [8, true]);
   const DOCsem = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null, conf:null }), Object.assign({}, ctxD, { hist:'falha', cadFalha:true }));
   ok('histórico ou cadastro que não vieram: o relatório sai inteiro e diz o que faltou (nunca zero)',
