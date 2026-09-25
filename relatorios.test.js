@@ -3909,7 +3909,8 @@ console.log('\n── estudo de UEP ──');
   if (typeof _cartUepMedia === 'undefined') eval(pega('function _cartUepMedia('));
   { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
     eval(m[0].replace(/const /g, 'global.')); }
-  eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida(')); eval(pega('function _gpxMontar('));
+  eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida('));
+  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxMontar('));
   const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
   const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
                  it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
@@ -3932,8 +3933,19 @@ console.log('\n── estudo de UEP ──');
   ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);
   ok('sem nenhuma UEP na programação não converte (não inventa hora)', _gpxMontar([it('26/09/2026','1',10,null)], new Date(2026,8,25), 0, 0, 2530, 5).falha, 'sem-uep');
   ok('dívida que cabe no resto de hoje não passa para amanhã', _gpxMontar(itens, new Date(2026,8,24), 500, 300, 2530, 5).carry, 0);
+  // v7.110.0 — a MESMA regra na aba PLANO: sem UEP não entra pela média
+  const SU = _cartSemUep(itens, 20260924);
+  ok('linhas futuras sem UEP (fora da esteira e vencida não contam), em ordem de data',
+     SU.map(x => [x.data.slice(0,5), x.lote, x.codigo, x.cx]), [['30/09', '25246', '501125246', 100]]);
+  const SH = _cartSemUepHtml(SU, [{ codigo:'999', rot:'X', cx:40 }]);
+  ok('a lista desenhada: linha e atraso sem UEP, e nada quando não falta UEP',
+     [/lote <b>25246<\/b>/.test(SH), /não entrou na dívida/.test(SH), _cartSemUepHtml([], [])], [true, true, '']);
+  const CM = pega('async function _cartMontar(');
+  ok('PLANO em UEP: a carga só leva linha com UEP e a dívida vem do _gpxDivida (sem média)',
+     [/uepCx\) > 0\), hojeNum, dv\.uep, \{ uep:true, fallback:0 \}/.test(CM), /_planoDividaUep/.test(JS), /_cartSemUepHtml\(a\.semUep, a\.divSemUep\)/.test(pega('function _cartMixHtml('))],
+     [true, false, true]);
   const GH = pega('function _gpxHtml(');
-  ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_planoDividaUep\(|uepCx/.test(GH), false);
+  ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_gpxDivida\(|uepCx/.test(GH), false);
   const RP = pega('function renderProxDias(');
   ok('a faixa renova a programação a cada 15 min, com 1 min entre tentativas, e só no dia de hoje',
      [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /GER_DATA/.test(RP), /class="tbl-wrap ger-live-only" id="ger-prox"/.test(src),

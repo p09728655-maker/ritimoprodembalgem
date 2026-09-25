@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.110.0 — 25/09/2026
+
+**Aba PLANO, carteira EM UEP: código sem UEP no cadastro não entra mais pela
+média** (PPCP: *"jamais inventar números"* → *"faz ajuste"*). Era a última
+tela que ainda estimava: lote de código sem UEP entrava na carga com a UEP
+média das outras linhas, e o atraso também. Agora a regra é a mesma da faixa
+PRÓXIMOS DIAS do gerencial: essas linhas saem da conta e aparecem listadas
+(data, lote, código, produto, caixas) no bloco da carteira, na tela e nos dois
+PDFs (🖨 ESTUDO e 🖨 CARTEIRA).
+
+**Atenção:** com código sem UEP na programação, a carga em UEP da aba PLANO
+**cai** (antes a linha entrava pela média; agora fica fora e é listada). Com o
+cadastro completo, nada muda. Os modos CARGA PELO MIX e CAIXAS CRUAS não
+mudaram. Sem re-deploy.
+
+---
+
 ## v7.109.0 — 25/09/2026
 
 **Gerencial: faixa PRÓXIMOS DIAS — a programação futura em horas de linha**

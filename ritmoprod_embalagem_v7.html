@@ -3016,7 +3016,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.109.0';
+const APP_VER   = '7.110.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -9824,6 +9824,7 @@ function _cartAnalise(cart, curva, faixa){
     futuroCru: cart.futuroCru != null ? cart.futuroCru : cart.futuro,
     mix: cart.mix || null, mixFalha: cart.mixFalha || null, mixModo: cart.mixModo || null,
     mixRetry: cart.mixRetry || null,
+    semUep: cart.semUep || [], divSemUep: cart.divSemUep || [],
     de: cart.de, ate: cart.ate,
     nivelado: total / linhas.length,               // a dívida entra: ela ocupa dia
     pctNivelado: _qpPercentil(total / linhas.length, curva),
@@ -10070,7 +10071,7 @@ function _cartHtml(a, regua, larg){
     // o detalhe técnico (lotes sem histórico, pesos limitados) fica no
     // tooltip da célula — na tabela só a palavra
     const ptTit = mix ? ((ehU ? 'UEP média do dia ' : 'fator ') + (Number(l.fator) || 1).toFixed(2).replace('.', ',')
-      + (l.semBase ? ' · ' + l.semBase + (ehU ? ' lote(s) de código sem UEP no cadastro (entram com a UEP média)' : ' lote(s) sem histórico de ritmo (peso normal)') : '')
+      + (l.semBase && !ehU ? ' · ' + l.semBase + ' lote(s) sem histórico de ritmo (peso normal)' : '')
       + (l.aparados ? ' · ' + l.aparados + ' lote(s) com peso limitado (apontamento suspeito)' : '')) : '';
     return '<tr><td>' + _rpEsc(l.data) + '</td>'
       + (mix ? '<td>' + fmtN(l.crua) + '</td>'
@@ -10141,8 +10142,9 @@ function _cartMixHtml(a){
     const m = a.mix || {};
     return '<div class="qp-mix"><div class="qm-como"><b>COMO A CARGA É CALCULADA:</b> cada lote × a <b>UEP por caixa do cadastro</b> (a mesma do card UEP DO DIA). '
       + 'A régua é a <b>UEP de jornada normal gravada no fechamento</b> de cada dia (HISTÓRICO), nos mesmos dias da régua da barra. A dívida (atraso + o que falta hoje) entra pela UEP de cada código em atraso.</div>'
-      + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + (m.nLotes || 0) + ' lote(s)'
-      + (m.semBase ? ' · ' + m.semBase + ' de código sem UEP no cadastro, entrando com a UEP média (' + (Number(m.fallback) || 0).toFixed(2).replace('.', ',') + ')' : '') + '</div></div>';
+      + '<div class="qm-det" style="opacity:.7;font-size:9.5px">' + (m.nLotes || 0) + ' lote(s) com UEP'
+      + ((a.semUep && a.semUep.length) ? ' · ' + a.semUep.length + ' linha(s) sem UEP fora da carga — ver a lista abaixo' : '') + '</div></div>'
+      + _cartSemUepHtml(a.semUep, a.divSemUep);
   }
   if(a.mixModo === 'cru') return '<div class="qp-mix">CARTEIRA EM <b>CAIXAS CRUAS</b> — os números da PROGRAMACAO, sem olhar o produto. '
     + (a.ambos ? 'O bloco de cima é esta mesma carteira com cada lote pesado pelo ritmo do produto.'
@@ -10314,15 +10316,31 @@ function _cartUepMedia(itens){
     if(u > 0 && q > 0){ s += u * q; c += q; } });
   return c > 0 ? s / c : null;
 }
-// A DÍVIDA EM UEP: o que falta de cada código (atraso + resto de hoje, a lista
-// do calcularProgramacao — é POR CÓDIGO, então não duplica) × a UEP dele. Código
-// sem UEP usa a média; sem lista (backend antigo), a dívida em caixas × média.
-function _planoDividaUep(fb){
-  const lista = (PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [];
-  const uDe = {};
-  (PROG_DETALHADA || []).forEach(it => { if(it && Number(it.uepCx) > 0) uDe[String(it.codigo)] = Number(it.uepCx); });
-  if(!lista.length) return _planoDivida() * (fb || 1);
-  return lista.reduce((a, x) => a + (Number(x.falta) || 0) * (uDe[String(x.codigo)] || fb || 1), 0);
+// ⚠ SEM UEP NÃO VIRA NÚMERO (v7.110.0, PPCP 25/09/2026: "jamais inventar
+// números" → "faz ajuste" também no PLANO). Até a v7.109 a carteira em UEP
+// punha o código sem UEP no cadastro pela UEP MÉDIA, e a dívida também. Hoje as
+// duas telas (PLANO e PRÓXIMOS DIAS do gerencial) seguem a mesma regra: a linha
+// sai da carga e é APONTADA. `_cartSemUep` lista as linhas futuras sem UEP;
+// a dívida em UEP é o `_gpxDivida` (que devolve os códigos sem UEP à parte).
+function _cartSemUep(itens, hojeNum){
+  const out = [];
+  (itens || []).forEach(it => {
+    if(!it || it.foraEsteira || Number(it.uepCx) > 0) return;
+    const dn = Number(it.dataNum) || _cartNum(it.data), q = Number(it.qtde) || 0;
+    if(!(dn > hojeNum) || q <= 0) return;
+    out.push({ data:String(it.data || ''), dataNum:dn, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
+      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q });
+  });
+  return out.sort((a,b) => a.dataNum - b.dataNum);
+}
+// A lista, desenhada UMA vez: a tela do PLANO, os dois PDFs da carteira e a
+// faixa PRÓXIMOS DIAS do gerencial leem daqui.
+function _cartSemUepHtml(lin, div, cls){
+  if(!(lin && lin.length) && !(div && div.length)) return '';
+  return '<div class="' + (cls || 'qp-mix warn') + '"><b>⚠ SEM UEP NO CADASTRO — FORA DA CONTA</b> (cadastrar a UEP na PRODUTO_CODIGO, coluna UEP, ou rodar o 💾 GRAVAR UEP):<ul style="margin:4px 0 0 16px">'
+    + (lin || []).map(x => '<li>' + _rpEsc(x.data.slice(0,5)) + ' · lote <b>' + _rpEsc(x.lote || '—') + '</b> · ' + _rpEsc(x.codigo) + ' ' + _rpEsc(x.rot) + ' · ' + fmtN(x.cx) + ' cx</li>').join('')
+    + (div || []).map(x => '<li>atraso · ' + _rpEsc(x.codigo) + ' ' + _rpEsc(x.rot) + ' · ' + fmtN(x.cx) + ' cx — não entrou na dívida</li>').join('')
+    + '</ul></div>';
 }
 // A RÉGUA EM UEP: a UEP de jornada normal gravada no HISTORICO (.gs v5.14) —
 // congelada no fechamento. Dia sem UEP fica fora da curva.
@@ -10343,10 +10361,18 @@ async function _cartMontar(dias, modoPedido){
     // CARTEIRA EM UEP (v7.85.0): carga = qtde × UEP do código (cadastro), dívida
     // convertida pela UEP dos códigos em atraso. Sem nenhuma linha com UEP (.gs
     // antigo ou cadastro vazio), não inventa: a tela diz o que falta.
+    // v7.110.0: linha e código de atraso SEM UEP ficam fora e são apontados.
     const fb = _cartUepMedia(PROG_DETALHADA);
-    const cart = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDividaUep(fb), fb ? { uep:true, fallback:fb } : null);
+    if(!fb){
+      const c0 = _cartAberta(PROG_DETALHADA, _cartNum(hojeStr()), _planoDivida(), null);
+      c0.mixModo = 'uep'; c0.uepFalha = 'sem-uep'; return c0;
+    }
+    const hojeNum = _cartNum(hojeStr());
+    const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
+    const cart = _cartAberta(PROG_DETALHADA.filter(it => it && Number(it.uepCx) > 0), hojeNum, dv.uep, { uep:true, fallback:0 });
     cart.mixModo = 'uep';
-    if(!fb) cart.uepFalha = 'sem-uep';
+    cart.semUep = _cartSemUep(PROG_DETALHADA, hojeNum);
+    cart.divSemUep = dv.semUep;
     return cart;
   }
   const r = await _cartRitmos(modo);
@@ -10741,7 +10767,7 @@ function _planoDivida(){
 // ════════════════════════════════════════════════
 // A carteira datada dos próximos dias úteis em HORAS DE LINHA contra a jornada.
 // A carga é a MESMA da CARTEIRA EM UEP da aba PLANO (`_cartAberta` em modo UEP,
-// `_cartUepMedia`, `_planoDividaUep`) — nenhuma conta de carga nova. Horas =
+// `_cartSemUep`, `_gpxDivida`) — nenhuma conta de carga nova. Horas =
 // UEP ÷ o ritmo da meta (meta de UEP ÷ 527 min): são horas de LINHA, porque a
 // UEP já desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2× as horas).
 // A DÍVIDA (atraso + o que falta hoje) só vai para o 1º dia no que NÃO cabe no
@@ -10803,13 +10829,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
   const carry = Math.max(0, (Number(dividaUep) || 0) - porMin * resto);
   // as linhas sem UEP também marcam o dia (sábado com lote sem UEP aparece)
   const semPorNum = {};
-  (itens || []).forEach(it => {
-    if(!it || it.foraEsteira || Number(it.uepCx) > 0) return;
-    const dn = Number(it.dataNum) || _cartNum(it.data), q = Number(it.qtde) || 0;
-    if(!(dn > hojeNum) || q <= 0) return;
-    (semPorNum[dn] = semPorNum[dn] || []).push({ data:it.data, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
-      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q });
-  });
+  _cartSemUep(itens, hojeNum).forEach(x => { (semPorNum[x.dataNum] = semPorNum[x.dataNum] || []).push(x); });
   const marca = Object.assign({}, semPorNum, porNum);
   const cal = _gpxCalendario(hoje, n || GPX_DIAS, marca);
   let primeiro = true;
@@ -10880,9 +10900,7 @@ function _gpxHtml(P){
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
       + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '') + `</div>
     <div class="gpx-nota">Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga. A análise completa é na aba PLANO.</div>`
-    + ((P.semUep.length || (P.divSemUep && P.divSemUep.length)) ? `<div class="gpx-sem"><b>⚠ SEM UEP NO CADASTRO — FORA DAS HORAS</b> (cadastrar a UEP na PRODUTO_CODIGO, coluna UEP, ou rodar o 💾 GRAVAR UEP):
-        <ul>${P.semUep.map(x => `<li>${_rpEsc(x.data.slice(0,5))} · lote <b>${_rpEsc(x.lote || '—')}</b> · ${_rpEsc(x.codigo)} ${_rpEsc(x.rot)} · ${fmtN(x.cx)} cx</li>`).join('')}
-        ${(P.divSemUep || []).map(x => `<li>atraso · ${_rpEsc(x.codigo)} ${_rpEsc(x.rot)} · ${fmtN(x.cx)} cx — não entrou no 1º dia</li>`).join('')}</ul></div>` : '');
+    + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
 let GPX_CARREGANDO = false, GPX_TENT = 0;
 function renderProxDias(){
