@@ -67,14 +67,22 @@ O que muda:
   app do operador não lista o lote encerrado de hoje como "a fazer".
 
 **Atenção — números que mudam depois do re-deploy:**
-- **Atraso da programação cai.** Na planilha de 09/10: **3.770 → 2.054 cx**;
-  falta p/ zerar **5.420 → 3.077**. A meta do dia **não muda** (1.650 nos dois)
-  — a não ser com a opção de somar o atraso à meta ligada no painel: aí a meta
-  cai junto com o atraso.
-- **Parte desses 1.716 cx pode ser cor errada, não adiantamento.** No 1º
-  lançamento, **2 linhas** saem para a CONCLUIDA e **7 ficam na aba como
-  CONCLUIDO (ADIANTADO)** — saem no dia útil seguinte. Conferir essas 7:
-  rodar `simularArquivamento()` no editor mostra a lista.
+- **Atraso da programação cai.** Na planilha de 09/10 às 07h: **3.770 → 2.054
+  cx**; falta p/ zerar **5.420 → 3.077**. A meta do dia **não muda** (1.650 nos
+  dois) — a não ser com a opção de somar o atraso à meta ligada no painel: aí a
+  meta cai junto com o atraso.
+- ⚠ **Entre 07h e 08h30 de 09/10 o PPCP apagou 48 linhas vencidas da
+  PROGRAMACAO** (7.815 cx programadas, de 24/09 a 07/10), e decidiu **manter
+  assim**. Pela regra nova, 5 delas já estavam feitas (1.015 cx) e 43 tinham
+  saldo de verdade (1.830 cx — a maioria sobras de 1 a 7 cx, mais 25249 SLEEP
+  OFF WHITE 650, 25241 VERSATIL OFF WHITE 311, 25229 SLIM BRANCO 300 e 25247
+  PRISM BRANCO AC 230). Esses lotes não estão na CONCLUIDA. Com a planilha das
+  08h30, o re-deploy leva o atraso de **533 → 224 cx** e a falta p/ zerar de
+  **2.027 → 1.091**; a meta segue 1.650.
+- **Parte do que a regra trata como adiantamento pode ser cor errada.** Com a
+  planilha das 08h30, o 1º lançamento leva **1 linha** para a CONCLUIDA (25272)
+  e deixa **3 na aba como CONCLUIDO (ADIANTADO)** (25273, de hoje) — saem no dia
+  útil seguinte. `simularArquivamento()` no editor mostra a lista.
 - Linha que no FIFO antigo estava CONCLUIDO pode voltar a **EM ATRASO** quando
   divide a data com uma linha já arquivada do mesmo código (a arquivada passa a
   ser servida primeiro, e a caixa deixa de contar duas vezes). Na planilha de

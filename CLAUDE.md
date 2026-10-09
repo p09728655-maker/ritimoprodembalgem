@@ -557,10 +557,28 @@ via Google Apps Script (JSONP).
     o backend alocar o crédito por linha futura — nunca no front pela `falta`
     por código).
   - O consumo de crédito **não** entra no `hojeProd` (não é produção de hoje).
-  - Efeito medido no 1º run (planilha de 09/10): atraso **3.770 → 2.054**,
-    falta p/ zerar 5.420 → 3.077, meta do dia 1.650 → **1.650**; **2 linhas
-    arquivam** e **7 ficam na aba como CONCLUIDO (ADIANTADO)** para conferência
-    (saem no dia útil seguinte). Nenhuma linha volta da CONCLUIDA.
+  - Efeito medido no 1º run (planilha de 09/10 às 07h): atraso **3.770 →
+    2.054**, falta p/ zerar 5.420 → 3.077, meta do dia 1.650 → **1.650**; **2
+    linhas arquivam** e **7 ficam na aba como CONCLUIDO (ADIANTADO)** para
+    conferência (saem no dia útil seguinte). Nenhuma linha volta da CONCLUIDA.
+  - ⚠ **Entre 07h e 08h30 de 09/10, antes do re-deploy, o usuário apagou 48
+    linhas vencidas** (7.815 cx, de 24/09 a 07/10 — 5 já feitas, 43 com 1.830 cx
+    de saldo real, entre elas 25249 SLEEP OFF WHITE 650 e 25229 SLIM BRANCO 300)
+    e **decidiu manter assim** (*"vamos manter assim"*). Os lotes não estão na
+    CONCLUIDA; o retrato das 07h ficou fora do repositório. Com a planilha das
+    08h30 a simulação no editor deu 1 linha saindo (25272) e 3 ADIANTADO (25273)
+    — conferida aqui com o `.gs` real, idêntica —, e o atraso 533 → 224 cx.
+    Atraso que despenca nesse dia é a exclusão, não a regra.
+  - ⚠ **Rodar função no editor**: a busca do Chrome (Ctrl+F fora do código, a
+    caixa "0/0") não enxerga o código, porque o editor só desenha as linhas da
+    tela; e a lista ao lado do Executar segue a ordem do arquivo (a
+    `simularArquivamento` é a ~50ª de 158, logo depois de `_abaArquivoProg`).
+    Saída que funcionou: um arquivo `Conferir.gs` com
+    `function conferirArquivamento() { simularArquivamento(); }`. E conferir o
+    projeto antes de colar: o backend é o **RitmoProd** (arquivo
+    `RITMOPROD.gs`), aberto pela planilha MODELO_HORA_A_HORA — em 09/10 o `.gs`
+    foi colado primeiro por engano no `CargaPlanoMestre.gs` de outro projeto
+    (restaurado do repositório `garcia-oderli-resultado`).
 - **CONCLUIDO (ADIANTADO)** — linha que fechou com **metade ou mais vinda de
   crédito** (`adiLinha`). STATUS próprio e **fica pelo menos um dia na aba**:
   o `_arquivarConcluidos` só a leva quando o STATUS já está gravado como
