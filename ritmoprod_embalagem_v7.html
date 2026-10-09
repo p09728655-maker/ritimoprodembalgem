@@ -3123,7 +3123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.128.0';
+const APP_VER   = '7.129.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5983,9 +5983,13 @@ function _phUepTotal(itens){
   });
   return cxCom>0 ? { uep, cxCom, cxSem, uepCx: uep/cxCom } : null;
 }
-function _phUepTag(u, cor){
-  return u>0?` <span style="font-size:10px;font-weight:600;color:${cor}" title="UEP por caixa deste grupo (cadastro, média pelas caixas)">${u.toFixed(2).replace('.',',')} UEP/cx</span>`:'';
-}
+// UEP/cx do grupo em COLUNA PRÓPRIA (v7.129.0, PPCP: *"está tudo
+// desalinhado na frente da descrição"*). Colado no fim do nome, o número caía
+// numa altura diferente a cada linha e não dava para correr o olho na coluna.
+// A coluna some quando nenhum grupo tem UEP (backend antigo / cadastro vazio),
+// a mesma regra da COR; grupo sem UEP no meio dos outros sai "—", nunca 0.
+const PH_UEP_TIT='UEP por caixa deste grupo (cadastro, média pelas caixas)';
+function _phUepTxt(u){ return u>0 ? u.toFixed(2).replace('.',',') : '—'; }
 function _phLinhasPeriodo(ctx){
   const rowAcc=ctx.rowAcc, cellAcc=ctx.cellAcc, datas=ctx.datas, labelDe=ctx.labelDe;
   const metric=ctx.metric, additive=ctx.additive, horasLinha=ctx.horasLinha;
@@ -6616,9 +6620,11 @@ async function renderModeloPeriodo(){
   // % DO TETO DA ESTEIRA: só no ritmo (cx/h) e só quando o backend novo mandou
   // o teto (catálogo com MEDIDA/VELOCIDADE) — senão a coluna some, como a COR.
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
+  const temUep = linhas.some(l=>l.uepCx>0);
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
+    + (temUep?`<th style="text-align:right" title="${PH_UEP_TIT}">UEP/CX<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">cadastro</span></th>`:'')
     + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right" title="${mediaModo==='completa'?'média com TODOS os dias do período (APARADA desligada no filtro MÉDIA)':'média sem o melhor e o pior dia (3+ dias)'} — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
     + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças), já descontados os '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto ('+(fonteTroca.medido?'medidos no período':'premissa combinada com o PPCP')+'), diluídos nas horas rodadas da linha — o desconto é o mesmo percentual para todas as linhas, então cores do mesmo produto têm o mesmo teto'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:9px;color:${simUse?"var(--warn)":"var(--txt2)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'simulado − troca':'físico − troca'}</span></th>`:'')
@@ -6640,9 +6646,10 @@ async function renderModeloPeriodo(){
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
     const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando ${fatorTroca!=null?fmtP((1-fatorTroca)*100)+' de troca — os':fmtN(Math.round(l.minTroca*10)/10)+' min de troca — a fatia deste produto nos'} ${fmtN(fonteTroca.minDia)} min/dia ${fonteTroca.medido?`MEDIDOS (${fmtN(fonteTroca.ev)} paradas de esteira/dia × ${fmtN(fonteTroca.min)} min, de ${fonteTroca.n} paradas apontadas)`:`da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min)`}${fatorTroca!=null?', diluídos nas horas da LINHA — mesma régua para todas as linhas e cores':''}: ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
-    return `<tr><td style="text-align:left">${l.label}${_phUepTag(l.uepCx,'var(--txt2)')}</td>${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
+    const tdUep=temUep?`<td class="mono" style="text-align:right;color:var(--txt2)" title="${PH_UEP_TIT}">${_phUepTxt(l.uepCx)}</td>`:'';
+    return `<tr><td style="text-align:left">${l.label}</td>${tdUep}${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
-    + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>`
+    + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${temUep?'<td></td>':''}`
     + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
@@ -7406,6 +7413,7 @@ async function gerarRelatorioProducaoHora(){
                                  horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
   const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
+  const temUep = linhas.some(l=>l.uepCx>0);
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
 
@@ -7561,16 +7569,16 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px
 </div>`}
 <table>
   <thead>
-    <tr><th>${Termo}</th>${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">padrão de agora</span>`}</th><th>${col2}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">teto praticado</span>`}</th>${temTeto?(simUse?`<th style="color:#FF9800">% TETO SIM.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">simulado − troca</span></th>`:`<th>% TETO EST.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">físico − troca</span></th>`):''}</tr>
+    <tr><th>${Termo}</th>${temUep?`<th title="${PH_UEP_TIT}">UEP/CX<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">cadastro</span></th>`:''}${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">padrão de agora</span>`}</th><th>${col2}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">teto praticado</span>`}</th>${temTeto?(simUse?`<th style="color:#FF9800">% TETO SIM.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">simulado − troca</span></th>`:`<th>% TETO EST.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">físico − troca</span></th>`):''}</tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
       const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
-      return `<tr><td>${l.label}${_phUepTag(l.uepCx,'#718096')}</td>${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:9.5px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
+      return `<tr><td>${l.label}</td>${temUep?`<td style="color:#718096">${_phUepTxt(l.uepCx)}</td>`:''}${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:9.5px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
     }).join('')}
   </tbody>
   <tfoot>
-    <tr><td>${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td>${has?fmt(_phVal(a,metric)):'·'}</td>`; }).join('')}<td class="col-tot">${fmt(grand)}</td><td></td>${temTeto?'<td></td>':''}</tr>
+    <tr><td>${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${temUep?'<td></td>':''}${datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td>${has?fmt(_phVal(a,metric)):'·'}</td>`; }).join('')}<td class="col-tot">${fmt(grand)}</td><td></td>${temTeto?'<td></td>':''}</tr>
   </tfoot>
 </table>
 

@@ -2829,8 +2829,12 @@ feito e dá ar de verdade ao que sobrou.
   - Comparativo do período: `getProducaoModeloPeriodo` manda **`uepProd`**
     (mapa `modelo|nome → UEP/cx`, **não** um campo por item — 100 KB do cache);
     `_phUepPorGrupo(itensView,keyOf)` faz a média pelas caixas para qualquer
-    agrupamento (produto, cor, família) e `_phUepTag` põe o `UEP/cx` ao lado do
-    nome, na tela e no PDF (os dois passam o mesmo `uepGrupo`).
+    agrupamento (produto, cor, família). O `UEP/cx` vai numa **coluna própria
+    `UEP/CX`** logo depois do nome, na tela e no PDF (os dois passam o mesmo
+    `uepGrupo`; texto por `_phUepTxt`, "—" sem UEP, coluna some com `temUep`
+    falso). ⚠ **Não voltar a colar no fim do nome** (v7.129.0, PPCP: *"está
+    tudo desalinhado na frente da descrição"*): cada nome tem um comprimento e
+    o número ficava numa altura diferente a cada linha. O teste prende.
 - **META DE UEP = JORNADA INTEIRA, 2.530** (v7.84.0 / `.gs` v5.15, PPCP
   24/09/2026). `UEP_META_PADRAO`=2530 e `UEP_MIN_DIA`=527 (minutos da jornada
   normal) no rp-core; `UEP_META_PADRAO_GS`=2530 no `.gs`. O card soma a jornada

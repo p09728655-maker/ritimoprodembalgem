@@ -3661,6 +3661,14 @@ console.log('\n── estudo de UEP ──');
     global.PH_UEP_PROD = null;
     ok('sem o mapa do backend, nada de UEP no comparativo', _phUepPorGrupo([{ caixas: 1 }], () => 'x'), null);
     ok('tela e PDF do comparativo passam o mesmo uepGrupo', (JS.match(/uepGrupo:_phUepPorGrupo\(itensView,keyOf\)/g) || []).length, 2);
+    // v7.129.0 — UEP/cx em COLUNA PRÓPRIA: colado no fim do nome ficava
+    // desalinhado (PPCP, 09/10/2026). A coluna some sem UEP; grupo sem UEP = "—".
+    eval(pega('function _phUepTxt('));
+    ok('UEP/cx do comparativo: número com vírgula, sem UEP vira "—" (nunca 0)', [_phUepTxt(1.704), _phUepTxt(null), _phUepTxt(0)], ['1,70', '—', '—']);
+    ok('UEP/cx em coluna própria na tela e no PDF, nunca colado no nome',
+       [/_phUepTag/.test(JS), (JS.match(/\$\{l\.label\}<\/td>\$\{tdUep\}/g) || []).length,
+        (JS.match(/\$\{l\.label\}<\/td>\$\{temUep\?/g) || []).length, (JS.match(/const temUep = linhas\.some\(l=>l\.uepCx>0\)/g) || []).length],
+       [false, 1, 1, 2]);
     eval(pega('function _relUepSemanaHtml('));
     const sem = _relUepSemanaHtml([{ data: '22/09/2026', uep: 2400, metaUep: 2300 }, { data: '23/09/2026', uep: null }]);
     ok('UEP DA SEMANA: dia sem UEP escrito, total contra a soma das metas dos dias com UEP',
