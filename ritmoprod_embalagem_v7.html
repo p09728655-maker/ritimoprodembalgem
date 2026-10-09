@@ -8397,7 +8397,7 @@ function renderProgramacaoDetalhada(){
       // o FALTA da coluna é do PRODUTO, não da linha — sem este ramo a linha
       // fechada saía "✓ OK" verde, ou com a falta de OUTRA linha do mesmo código
       // em vermelho. A qtde continua nos totais do dia: é o programado.
-      const fechada=it.encerrada?'ENCERRADO':(it.foraEsteira?'FORA DA ESTEIRA':'');
+      const fechada=it.foraEsteira?'FORA DA ESTEIRA':(it.encerrada?'ENCERRADO':'');
       const faltaCor=fechada?'var(--txt2)':(it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)'));
       const faltaTxt=fechada||(it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta)));
       // Nome COM a cor: a cor saiu da DESCRICAO para coluna própria, e sem ela
@@ -17356,10 +17356,12 @@ function _telaELotes(prog, produtoAtual, max){
   const atual = String(produtoAtual || '').replace(/\D/g, '');
   const lotes = Array.isArray(prog.porLote) ? prog.porLote : [];
   const abertos = [];
-  let concluidos = 0;
+  // Lote com linha ENCERRADA (X do PPCP, .gs v5.21) fechou SEM completar: não é
+  // "concluído" — a META do dia continua com a quantidade dele.
+  let concluidos = 0, encerrados = 0;
   lotes.forEach(L => {
     const falta = Number(L.falta) || 0, qtde = Number(L.qtde) || 0;
-    if (falta <= 0) { if (qtde > 0) concluidos++; return; }
+    if (falta <= 0) { if ((Number(L.encerradas) || 0) > 0) encerrados++; else if (qtde > 0) concluidos++; return; }
     const run = !!atual && Array.isArray(L.cabeca) && L.cabeca.map(String).indexOf(atual) >= 0;
     const atr = !!L.atrasoDesde;
     abertos.push({
@@ -17382,6 +17384,7 @@ function _telaELotes(prog, produtoAtual, max){
     linhas: abertos.slice(0, max),
     fora: Math.max(abertos.length - max, 0),
     concluidos: concluidos,
+    encerrados: encerrados,
     abertos: abertos.length,
     prog: Number(prog.programadoHoje) || 0,
     atraso: Number(prog.atrasoTotal) || 0,
@@ -17390,7 +17393,8 @@ function _telaELotes(prog, produtoAtual, max){
 }
 // Desenho (sem conta): tudo vem pronto do _telaELotes.
 function _telaELotesHtml(m){
-  if (!m.linhas.length) return '<div class="tve-vazio">✓ PROGRAMAÇÃO DO DIA CONCLUÍDA</div>';
+  // Com lote encerrado sem completar, "CONCLUÍDA" mentiria ao lado da meta.
+  if (!m.linhas.length) return '<div class="tve-vazio">' + (m.encerrados ? '✓ NADA EM ABERTO HOJE' : '✓ PROGRAMAÇÃO DO DIA CONCLUÍDA') + '</div>';
   const pill = l => l.sit === 'run' ? '<span class="tve-pill run">RODANDO AGORA</span>'
     : l.sit === 'atr' ? '<span class="tve-pill atr">ATRASO' + (l.desde ? ' · ' + _rpEsc(l.desde) : '') + '</span>'
     : '<span class="tve-pill pen">A FAZER</span>';
@@ -17625,8 +17629,10 @@ const _cicloTV = (function() {
     if (lst) lst.innerHTML = lote ? _telaELotesHtml(m) : _telaEHtml(m);
     const un = lote ? ['lote concluído', 'lotes concluídos', 'lote a fazer não coube', 'lotes a fazer não couberam']
                     : ['item concluído', 'itens concluídos', 'item a fazer não coube', 'itens a fazer não couberam'];
-    set('tve-concl', m.concluidos ? '✓ ' + m.concluidos + ' ' + (m.concluidos === 1 ? un[0] : un[1]) : '');
-    set('tve-fora', m.fora ? (m.concluidos ? ' · ' : '') + '+ ' + m.fora + ' ' + (m.fora === 1 ? un[2] : un[3]) : '');
+    const enc = m.encerrados ? m.encerrados + (m.encerrados === 1 ? ' lote encerrado sem completar' : ' lotes encerrados sem completar') : '';
+    set('tve-concl', (m.concluidos ? '✓ ' + m.concluidos + ' ' + (m.concluidos === 1 ? un[0] : un[1]) : '')
+                   + (enc ? (m.concluidos ? ' · ' : '') + enc : ''));
+    set('tve-fora', m.fora ? (m.concluidos || m.encerrados ? ' · ' : '') + '+ ' + m.fora + ' ' + (m.fora === 1 ? un[2] : un[3]) : '');
     set('tve-ordem', lote ? 'ordem: rodando agora → atraso mais antigo → lote de hoje'
                           : 'ordem: rodando agora → atraso mais antigo → programado hoje');
   }

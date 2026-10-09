@@ -130,6 +130,14 @@ ok('1 cor mostra o nome da cor', hl.includes('1 cor · CINAMOMO'), true);
 ok('outro produto no lote', hl.includes('+ BANQUETA VERSATIL e mais 1'), true);
 ok('entra no ciclo com porLote', _telaETem({ porLote: [{ lote: '1' }], lista: [] }), true);
 ok('desenho do lote não faz conta', /_telaELotes\(|_progFaltaZerar/.test(pegaJs('function _telaELotesHtml(')), false);
+// v5.21: lote com linha ENCERRADA (X) fechou sem completar — não é "concluído".
+const me = _telaELotes({ programadoHoje: 600, porLote: [
+  { lote: 'A', qtde: 100, falta: 0, produto: 'FEITO', cabeca: [] },
+  { lote: 'B', qtde: 0, falta: 0, produto: 'ENCERRADO', cabeca: [], encerradas: 1 }] }, '');
+ok('lote encerrado conta à parte, não como concluído', [me.concluidos, me.encerrados, me.linhas.length], [1, 1, 0]);
+ok('e a tela não diz "PROGRAMAÇÃO DO DIA CONCLUÍDA" ao lado da meta que faltou',
+   [_telaELotesHtml(me).includes('CONCLUÍDA'), _telaELotesHtml(me).includes('NADA EM ABERTO HOJE')], [false, true]);
+ok('sem encerrado, o aviso de sempre', _telaELotesHtml({ linhas: [], encerrados: 0 }).includes('PROGRAMAÇÃO DO DIA CONCLUÍDA'), true);
 ok('tela escolhe por lote quando o backend manda',
    /const lote = Array\.isArray\(prog\.porLote\);/.test(pegaJs('function _sincSlideE(')), true);
 

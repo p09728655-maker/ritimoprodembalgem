@@ -30,27 +30,55 @@ O que muda:
   aberto vira crédito para o próximo lote **do mesmo código** que abrir em até
   **2 dias úteis** (sexta → segunda conta 1). Mais cedo que isso continua
   descartada.
+- ⚠ **re-deploy** — **Lote fechado por produção adiantada fica um dia na aba**
+  com o STATUS **CONCLUIDO (ADIANTADO)** antes de ir para a CONCLUIDA. O
+  sistema não distingue adiantamento de verdade de sobra de cor errada (ou de
+  lançamento dobrado) creditando o lote seguinte: o PPCP confere.
 - ⚠ **re-deploy** — **Coluna ENCERRAR na PROGRAMACAO** (o script cria, no fim da
   aba). X numa linha **vencida ou de hoje** fecha com o que ela já produziu: o
   resto deixa de ser cobrado, a linha vai para a CONCLUIDA como **ENCERRADO** e
   a **meta do dia não muda**. É isso no lugar de apagar a linha. Para cancelar
   um lote que ainda não chegou, apagar a linha continua certo (ele não tem
   produção ligada).
+  - Linha de **hoje** marcada antes do 1º lançamento do dia, ou linha cujo
+    PRODUZIDO não bate com ela (extrato do ERP colado por cima), fecha só com o
+    que tinha **até ontem** — o lançamento do dia não entra nela.
+  - **Apagar o X na CONCLUIDA desfaz**: a linha volta para a PROGRAMACAO.
+- ⚠ **re-deploy** — **Linha arquivada que volta a ter saldo volta para a aba**
+  (log corrigido depois, linha mais antiga do código acrescentada). Antes o
+  atraso dela aparecia no painel sem nenhuma linha na aba que o explicasse.
+- ⚠ **re-deploy** — Duas linhas iguais (mesmo código, lote e data) passam a ter
+  cada uma o **seu** PRODUZIDO/SALDO. Antes as duas mostravam a soma.
 - **App do operador: CONFERIR A COR.** Antes de gravar, se as caixas passam do
-  saldo do código e outra cor do mesmo produto tem saldo, o app pergunta. O
-  botão em destaque é **TROCAR A COR** (abre o seletor e mantém a quantidade);
-  **COR CERTA** grava. Código com lote nos próximos 2 dias úteis não dispara o
-  aviso (é adiantamento).
+  que o código ainda aceita (o saldo de hoje mais o lote dele nos próximos 2
+  dias úteis) em **10 cx ou mais** e outra cor do mesmo produto tem saldo, o app
+  pergunta. O botão em destaque é **TROCAR A COR**, à direita (onde estava o
+  ADICIONAR); tocar ou bipar a cor certa troca só o produto e mantém a hora e a
+  quantidade. **COR CERTA** grava e não pergunta mais por aquele código no dia.
+  ⚠ **Só funciona depois do re-deploy do `.gs`** — antes dele o app não avisa.
+- **Bipe com o lançamento aberto só troca o produto.** Antes ele reabria o
+  lançamento na hora corrente e apagava a quantidade digitada — na hora
+  recém-fechada em tolerância, as caixas iam para a hora seguinte.
 - Aba PROGRAMAÇÃO do painel: linha encerrada mostra **ENCERRADO**, e não "✓ OK"
-  ou a falta de outra linha do mesmo código. O mesmo para FORA DA ESTEIRA.
+  ou a falta de outra linha do mesmo código. FORA DA ESTEIRA vence o ENCERRADO,
+  como na planilha.
+- **Tela E da TV**: lote encerrado sem completar não conta como concluído, e a
+  tela diz **NADA EM ABERTO HOJE** em vez de "PROGRAMAÇÃO DO DIA CONCLUÍDA". O
+  app do operador não lista o lote encerrado de hoje como "a fazer".
 
 **Atenção — números que mudam depois do re-deploy:**
 - **Atraso da programação cai.** Na planilha de 09/10: **3.770 → 2.054 cx**;
-  falta p/ zerar **5.420 → 3.077**. A meta do dia **não muda** (1.650 nos dois).
-- **No 1º lançamento, 9 linhas saem da PROGRAMACAO** para a CONCLUIDA como
-  CONCLUIDO — já estavam embaladas, só não eram reconhecidas (inclusive três do
-  lote 25273 de hoje, embalado em 07/10). Rodar `simularArquivamento()` no editor
-  antes, se quiser ver a lista.
+  falta p/ zerar **5.420 → 3.077**. A meta do dia **não muda** (1.650 nos dois)
+  — a não ser com a opção de somar o atraso à meta ligada no painel: aí a meta
+  cai junto com o atraso.
+- **Parte desses 1.716 cx pode ser cor errada, não adiantamento.** No 1º
+  lançamento, **2 linhas** saem para a CONCLUIDA e **7 ficam na aba como
+  CONCLUIDO (ADIANTADO)** — saem no dia útil seguinte. Conferir essas 7:
+  rodar `simularArquivamento()` no editor mostra a lista.
+- Linha que no FIFO antigo estava CONCLUIDO pode voltar a **EM ATRASO** quando
+  divide a data com uma linha já arquivada do mesmo código (a arquivada passa a
+  ser servida primeiro, e a caixa deixa de contar duas vezes). Na planilha de
+  09/10 isso não aconteceu.
 - **ENCERRAR não reconstrói o passado**: linha já apagada não volta, e a
   produção que ficou órfã dela continua sem lote.
 - A carteira do PLANO, o PRÓXIMOS DIAS e a diretoria ainda contam a quantidade
