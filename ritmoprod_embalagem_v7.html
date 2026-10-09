@@ -3123,7 +3123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.129.0';
+const APP_VER   = '7.130.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -10076,7 +10076,8 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     if(it.pontos === undefined || it.pontos === null) d.semPts++; else d.pts += Number(it.pontos) || 0;
     // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
     // DIA" (pedido do PPCP, 16/09/2026 — "inserir os produtos programados")
-    d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado });
+    d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado,
+                   desc: String(it.desc || it.nome || ''), cor: String(it.cor || '') });   // o rótulo do lote no PRÓXIMOS DIAS (_gpxRotLote)
     if(ritmos && !fx.base) d.semBase++;
     if(fx.aparado) d.aparados++;
     // o lote que mais pesa no dia, em cx de linha — é ele que se olha primeiro
@@ -11122,6 +11123,27 @@ function _gpxDivida(lista, itens, dividaCx){
     if(u > 0) uep += f * u; else semUep.push({ codigo:String(x.codigo || ''), cx:f, rot:String(x.descricao || x.desc || x.nome || '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '') }); });
   return { uep, semUep };
 }
+// O rótulo do lote no "Mais pesado" (v7.130.0, PPCP, 09/10/2026). As horas são
+// do LOTE inteiro, e o rótulo levava a cor da maior linha: em 15/10 saía
+// "KIT 2 MESA CABECEIRA SLEEP · OFF WHITE/NATURE 6h34" — o lote 25297 tem 5
+// cores e 1.100 cx, o OFF WHITE/NATURE 750 (4h29). Lido de longe, parecia o
+// mesmo lote de 13/10, que é SÓ dessa cor. Regra:
+//   uma cor            → produto · cor (como antes)
+//   várias cores       → produto · N cores
+//   produtos distintos → o de mais carga + N produto(s)
+// No rótulo curto não vai o código nem o "VOL 1/1"; o `nome` (tooltip) abre as
+// cores com as caixas de cada uma (todos os volumes somados).
+function _gpxRotLote(linhas, rotMaior){
+  const semVol = r => String(r || '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '').replace(/\s+/g, ' ').trim();
+  const curto = semVol(String(rotMaior || '').replace(/^\S+\s·\s/, ''));
+  const P = {}, C = {};
+  (linhas || []).forEach(l => { const p = semVol(l.desc); P[p] = (P[p] || 0) + (l.eq || 0);
+    const c = String(l.cor || '').trim(); if(c) C[c] = (C[c] || 0) + (l.q || 0); });
+  const prods = Object.keys(P).sort((a,b) => P[b] - P[a]), cores = Object.keys(C).sort((a,b) => C[b] - C[a]);
+  if(!prods[0] || (prods.length === 1 && cores.length <= 1)) return { rot: curto, nome: rotMaior };
+  const rot = prods.length > 1 ? `${prods[0]} + ${plural(prods.length - 1, 'produto', 'produtos')}` : `${prods[0]} · ${cores.length} cores`;
+  return { rot, nome: rot + (cores.length ? ': ' + cores.map(c => `${c} ${fmtN(C[c])} cx`).join(' · ') : '') };
+}
 // Conta pura: itens da programação detalhada → os dias da faixa.
 // ⚠ NUNCA INVENTAR NÚMERO (PPCP, 25/09/2026): linha sem UEP no cadastro NÃO
 // entra nas horas pela média — sai da conta e é APONTADA (`semUep`), com data,
@@ -11154,11 +11176,9 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     const exc = min - UEP_MIN_DIA;
     // os lotes mais pesados do dia, somados por LOTE (uma linha por código)
     const L = {};
-    (d ? d.lotes : []).forEach(l => { const k = l.lote || l.codigo; const g = L[k] = L[k] || { lote:l.lote, rot:l.rot, eq:0, maior:0 };
-      g.eq += l.eq; if(l.eq > g.maior){ g.maior = l.eq; g.rot = l.rot; } });
-    // no rótulo curto sai o código e o "VOL 1/1": na faixa só cabe lote + produto
-    const curto = r => String(r || '').replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '');
-    const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => ({ lote:g.lote, rot:curto(g.rot), nome:g.rot, min:g.eq / porMin }));
+    (d ? d.lotes : []).forEach(l => { const k = l.lote || l.codigo; const g = L[k] = L[k] || { lote:l.lote, rot:l.rot, eq:0, maior:0, linhas:[] };
+      g.eq += l.eq; g.linhas.push(l); if(l.eq > g.maior){ g.maior = l.eq; g.rot = l.rot; } });
+    const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => Object.assign({ lote:g.lote, min:g.eq / porMin }, _gpxRotLote(g.linhas, g.rot)));
     const lotesDia = Object.values(L).sort((a,b) => b.eq - a.eq).map(g => g.lote).filter(Boolean);   // todos, do mais pesado (tela da diretoria)
     const vazio = !d && !(atr > 0) && !sem.length;
     // a cor segue o número que a tela MOSTRA (minuto inteiro): 105,3 min sai
