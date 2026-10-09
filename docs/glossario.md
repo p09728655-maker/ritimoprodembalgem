@@ -90,6 +90,26 @@ acompanha, não um veredito de gestão.
 ⚠ A jornada é declarada **duas vezes**: na configuração do painel (TURNO) e nas
 constantes do `.gs`. Mudou o turno na tela, mudar as constantes também.
 
+## Programação — atraso e situação de cada linha
+
+A produção (log `PRODUCAO_PRODUTO`, sem lote) é casada com a demanda (linhas da
+`PROGRAMACAO` + `PROGRAMACAO_CONCLUIDA`) por **FIFO, por código**: cada caixa
+abate o lote aberto **mais antigo** do mesmo código.
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **ATRASO** (atraso vivo) | Σ do saldo dos lotes com data **anterior a hoje** depois do FIFO — cai durante o dia conforme a linha embala | cx | `.gs:3361` |
+| **PROGRAMADO HOJE** (meta do dia) | Σ `QTDE` das linhas datadas para hoje, **arquivadas e encerradas incluídas** | cx | `.gs:3369` |
+| **FALTA P/ ZERAR** | atraso + o que falta das linhas de hoje | cx | `.gs:3400` |
+| **PRODUÇÃO ADIANTADA** | caixa embalada sem lote aberto vira crédito e abate o próximo lote **do mesmo código** que abrir em até `ANTEC_DIAS_UTEIS` (**2**) dias úteis; depois disso é descartada | cx | `.gs:239`, `.gs:3347` |
+| **DIAS ÚTEIS** | seg–sex depois da data da produção até a data do lote (sexta → segunda = 1); feriado conta como útil | dias | `.gs:3105` |
+| **ENCERRAR** | X na coluna `ENCERRAR`: a linha fica com o que já recebeu do FIFO, o resto deixa de ser cobrado (não é atraso). Depois do 1º fechamento a demanda dela é o `PRODUZIDO` congelado. Só vale para linha vencida ou de hoje | — | `.gs:3294` |
+| **STATUS** | `CONCLUIDO` (saldo 0) · `EM ATRASO` (data anterior, aberta) · `EM ANDAMENTO` (hoje, já produziu) · `PENDENTE` (hoje, não começou) · `FORA DA ESTEIRA` · `ENCERRADO` (fechada pelo PPCP; o `PERCENTUAL` mostra o que ficou para trás, arredondado para baixo) | — | `.gs:1664-1691` |
+
+⚠ **Linha apagada à mão some da demanda**: a produção dela passa a abater
+outro lote do mesmo código ou é descartada, e a meta do dia encolhe. Para
+fechar uma linha que não vai completar, é **ENCERRAR**, não apagar.
+
 ## Qualidade do plano (aba 📐 PLANO)
 
 Mede o **plano**, não a linha. Medido no `HISTORICO` em 15/09/2026 (79 dias), a

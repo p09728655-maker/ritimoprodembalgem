@@ -1,5 +1,16 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.21 — LOTE ADIANTADO E ENCERRAR
+//               (1) Produção embalada ATÉ 2 DIAS ÚTEIS antes da data do lote
+//               abate o lote quando a data dele chega (ANTEC_DIAS_UTEIS). Antes
+//               ela era descartada, e o lote ficava aberto com tudo embalado —
+//               o motivo nº 1 de linha excluída à mão (medido em 09/10/2026).
+//               (2) Coluna ENCERRAR na PROGRAMACAO: X fecha a linha com o que
+//               ela já tinha produzido; o saldo deixa de ser cobrado, a META
+//               do dia continua com a quantidade original, STATUS = ENCERRADO
+//               e o arquivamento leva a linha para a PROGRAMACAO_CONCLUIDA.
+//               (3) getProgramacaoHoje manda `proximos` (códigos com lote nos
+//               próximos 2 dias úteis) para o aviso de cor errada do app.
 // Versão: 5.18 — UEP ESTIMADA PARA TODO O CADASTRO
 //               setUepCatalogo com estimar=1 preenche a UEP dos códigos que
 //               ficaram sem ela (produto que não rodou no período do estudo)
@@ -212,6 +223,20 @@ const ARQ_DIAS_CARENCIA = 0;
 // do mesmo código passam a mudar sozinhos, e o planejado antigo se perde.
 // Só ligue sabendo disso.
 const ARQ_EXCLUIR_SEM_COPIA = false;
+
+// ── PRODUÇÃO ADIANTADA (v5.21) ──
+// A embalagem embala lote ANTES da data dele (medido em 09/10/2026: 219 cx de
+// 501106005 em 06/10 para o lote de 07/10; 167 de 501141007 em 07/10 para o de
+// 08/10). O FIFO só abatia lote já ABERTO, então essa produção era descartada e
+// o lote ficava aberto com tudo embalado — 1.716 das 3.770 cx de "falta" das
+// linhas vencidas, e o motivo nº 1 de o PPCP excluir linha à mão.
+// Agora a sobra vira CRÉDITO e abate o próximo lote do MESMO código que abrir em
+// até ANTEC_DIAS_UTEIS dias úteis (seg–sex; feriado conta como útil — a janela
+// fica um pouco mais curta, nunca mais longa). Passado isso, é descartada como
+// antes: a janela curta é o que impede produção de outro lote, antiga, de
+// "zerar" um lote novo — o motivo de a regra original existir.
+// 0 desliga (comportamento antigo).
+const ANTEC_DIAS_UTEIS = 2;
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -1592,6 +1617,7 @@ function atualizarSaldoNaProgramacao(prog) {
   const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+  const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
   // Garante as colunas de saída. Se faltarem, cria à DIREITA (contíguas), nunca
@@ -1604,12 +1630,18 @@ function atualizarSaldoNaProgramacao(prog) {
     if (j < 0) { j = nCols++; sh.getRange(1, j + 1).setValue(name); }
     outIdx[name] = j;
   });
+  // A coluna de ENTRADA ENCERRAR (v5.21) também nasce aqui, no FIM da aba e com
+  // o título exato: o LOTE é achado por "contém LOTE", e uma coluna digitada à
+  // mão como "ENCERRAR LOTE" à esquerda dele viraria o LOTE nos três leitores,
+  // sem erro nenhum. Só o título; quem preenche é o PPCP.
+  if (iEnc < 0) sh.getRange(1, nCols + 1).setValue('ENCERRAR');
 
   // Saldo POR LOTE, vindo da alocação FIFO de calcularProgramacao() (chave
   // "digitosDoCodigo|lote|dataNum"). Cada linha de lote recebe o SEU saldo — então
   // somar a coluna SALDO passa a bater com o total (antes só a linha do lote ativo
   // recebia valor, e o produzido era só o de hoje, o que não fechava).
   const saldoMap = prog.saldoLinha || {};
+  const encMap   = prog.encLinha   || {};
 
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   const cols = {}; OUT.forEach(function (n) { cols[n] = []; });
@@ -1620,6 +1652,7 @@ function atualizarSaldoNaProgramacao(prog) {
     const key    = codKey(codigo);
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const enc    = iEnc  >= 0 ? String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '' : false;
     const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
 
@@ -1630,6 +1663,17 @@ function atualizarSaldoNaProgramacao(prog) {
     } else if (fora) {
       status = 'FORA DA ESTEIRA';
       escreve = true;
+    } else if (enc && dNum > 0 && dNum <= hojeNum && encMap[key + '|' + lote + '|' + dNum] != null) {
+      // ENCERRADA (v5.21): o produzido é o que ela recebeu do FIFO (o saldo
+      // forçado a 0 não pode virar "produziu tudo" pela conta qtde − saldo).
+      // O que ficou para trás aparece no PERCENTUAL abaixo de 100 — arredondado
+      // PARA BAIXO: 219 de 220 em "100" leria como lote completo.
+      const qtde = Number(r[iQtd]) || 0;
+      produzido  = Math.max(0, encMap[key + '|' + lote + '|' + dNum]);
+      saldo      = 0;
+      pct        = qtde > 0 ? Math.floor(produzido / qtde * 100) : 0;
+      status     = 'ENCERRADO';
+      escreve    = true;
     } else if (dNum > 0 && dNum <= hojeNum) {
       // Lote já vencido ou de hoje: pega o saldo alocado FIFO para esta linha.
       const lk = key + '|' + lote + '|' + dNum;
@@ -1727,8 +1771,10 @@ function _arquivarConcluidos(prog, simular) {
   const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+  const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
   const hojeNum  = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
   const saldoMap = prog.saldoLinha || {};
+  const encMap   = prog.encLinha   || {};
 
   // 1) Classifica cada linha da aba.
   const linhas = [];
@@ -1739,6 +1785,7 @@ function _arquivarConcluidos(prog, simular) {
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     const qtde   = Number(r[iQtd]) || 0;
     const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const enc    = iEnc  >= 0 ? String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '' : false;
 
     let estado;
     if (!codigo || !r[iData] || dNum === 0) estado = 'IGNORAR';   // linha vazia / rascunho
@@ -1749,7 +1796,7 @@ function _arquivarConcluidos(prog, simular) {
       const s = saldoMap[codKey(codigo) + '|' + lote + '|' + dNum];
       estado = (s != null && qtde > 0 && s <= 0) ? 'CONCLUIDA' : 'ABERTA';
     }
-    linhas.push({ i: i, lote: lote, dNum: dNum, codigo: codigo, estado: estado });
+    linhas.push({ i: i, lote: lote, dNum: dNum, codigo: codigo, estado: estado, enc: enc });
   }
 
   // 2) Escolhe o que sai.
@@ -1800,10 +1847,12 @@ function _arquivarConcluidos(prog, simular) {
     const saida = idx.map(function (i) {
       const l     = linhas[i - 1];
       const qtde  = Number(values[i][iQtd]) || 0;
-      const saldo = Math.max(Number(saldoMap[codKey(l.codigo) + '|' + l.lote + '|' + l.dNum]) || 0, 0);
-      const prodz = Math.max(qtde - saldo, 0);
-      const calc  = { PRODUZIDO: prodz, SALDO: saldo, PERCENTUAL: qtde > 0 ? Math.round(prodz / qtde * 100) : 0,
-                      STATUS: l.estado === 'FORA' ? 'FORA DA ESTEIRA' : 'CONCLUIDO', ATUALIZADO_EM: agora };
+      const lk    = codKey(l.codigo) + '|' + l.lote + '|' + l.dNum;
+      const saldo = Math.max(Number(saldoMap[lk]) || 0, 0);
+      // ENCERRADA: o produzido é o que ela recebeu, não qtde − saldo (saldo 0).
+      const prodz = (l.enc && encMap[lk] != null) ? Math.max(0, encMap[lk]) : Math.max(qtde - saldo, 0);
+      const calc  = { PRODUZIDO: prodz, SALDO: saldo, PERCENTUAL: qtde > 0 ? (l.enc ? Math.floor : Math.round)(prodz / qtde * 100) : 0,
+                      STATUS: l.estado === 'FORA' ? 'FORA DA ESTEIRA' : (l.enc ? 'ENCERRADO' : 'CONCLUIDO'), ATUALIZADO_EM: agora };
       return mapa.map(function (j, c) {
         if (j === -2) return agora;
         if (j < 0)    return '';
@@ -2710,7 +2759,7 @@ function getPontosDia() {
   const programacao = calcularProgramacao();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
   // não precisa ir no JSON do painel — remove para manter o payload enxuto.
-  try { delete programacao.saldoLinha; } catch (e) {}
+  try { delete programacao.saldoLinha; delete programacao.encLinha; } catch (e) {}
 
   // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
   // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
@@ -3045,6 +3094,23 @@ function _esteiraBase() {
 
 // Converte uma célula de data (Date, "dd/MM/yyyy" ou "dd/MM") -> número yyyymmdd
 // para comparar datas (0 se inválida). Sem ano ("dd/MM") assume o ano atual.
+// Dia absoluto (dias desde 01/01/1970) de um 20261009 — para contar dias sem
+// depender do fuso do projeto.
+function _diaAbs(n) {
+  n = Number(n) || 0;
+  return Math.round(Date.UTC(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100) / 86400000);
+}
+// Dias ÚTEIS (seg–sex) depois de `aNum` até `bNum`, inclusive: sexta → segunda
+// = 1, quarta → sexta = 2. Feriado não é conhecido e conta como útil.
+function _diasUteisEntre(aNum, bNum) {
+  const a = _diaAbs(aNum), b = _diaAbs(bNum);
+  if (!(b > a)) return 0;
+  if (b - a > 31) return 99;   // muito além de qualquer janela de adiantamento
+  let n = 0;
+  for (let d = a + 1; d <= b; d++) { const w = (d + 4) % 7; if (w !== 0 && w !== 6) n++; }   // 01/01/1970 foi quinta
+  return n;
+}
+
 function dataParaNum(v) {
   let s;
   if (v instanceof Date) s = Utilities.formatDate(v, TZ, 'dd/MM/yyyy');
@@ -3115,6 +3181,11 @@ function _lerProgDaAba(sh, arquivada) {
   // Coluna opcional: marca "fechado fora da esteira" (FORA_ESTEIRA, FORA DA
   // ESTEIRA, FORA...). Qualquer célula PREENCHIDA = item não é da esteira.
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
+  // ENCERRAR (v5.21): qualquer coisa escrita fecha a linha com o que ela já
+  // produziu. PRODUZIDO e STATUS são as colunas de saída que o script grava.
+  const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
+  const iProd = hdr.indexOf('PRODUZIDO');
+  const iStat = hdr.indexOf('STATUS');
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -3129,9 +3200,18 @@ function _lerProgDaAba(sh, arquivada) {
     // FORA_ESTEIRA é opcional: sem a coluna, tudo é da esteira (comportamento
     // de sempre). Com a coluna, célula preenchida tira o item da conta.
     const foraTxt = iFora >= 0 ? String(r[iFora] || '').trim() : '';
+    const encerrada = iEnc >= 0 && String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '';
+    // CONGELADA = o script já fechou a linha numa rodada anterior (STATUS
+    // ENCERRADO gravado). Só aí o PRODUZIDO da célula é a régua: na 1ª rodada
+    // depois do X ele ainda é o número da rodada de ANTES — e, logo depois do
+    // re-deploy, o da regra antiga (sem o adiantamento), que fecharia com 0 uma
+    // linha que foi embalada inteira um dia antes.
+    const congelada = encerrada && iStat >= 0 && String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() === 'ENCERRADO';
     out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote,
                foraEsteira: foraTxt !== '', foraLocal: foraTxt,
-               arquivada: !!arquivada });
+               arquivada: !!arquivada,
+               encerrada: encerrada, congelada: congelada,
+               produzido: iProd >= 0 ? (Number(r[iProd]) || 0) : 0 });
   }
   return out;
 }
@@ -3201,11 +3281,18 @@ function calcularProgramacao() {
     if (!key || dNum === 0) return;
     // Fechado fora da esteira: não é produção desta linha. Sai da meta/atraso.
     if (pr.foraEsteira) return;
-    if (pr.lote && !pr.arquivada && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
+    if (pr.lote && !pr.arquivada && !pr.encerrada && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
       loteHoje[key] = { lote: pr.lote, dNum: dNum };
     }
     if (dNum <= hojeNum) {
-      (progLinhas[key] = progLinhas[key] || []).push({ dNum: dNum, qtde: Number(pr.qtde) || 0, lote: pr.lote || '' });
+      const qtde = Number(pr.qtde) || 0;
+      // ENCERRADA (v5.21): na 1ª rodada depois do X a linha passa pelo FIFO
+      // inteira e recebe o que a produção cobre; dali em diante (STATUS
+      // ENCERRADO gravado, inclusive na CONCLUIDA) pede só esse PRODUZIDO
+      // congelado — produção nova do código vai para os outros lotes. A META do
+      // dia continua com a QTDE original (progHoje).
+      const qFifo = pr.congelada ? Math.min(qtde, Math.max(0, Number(pr.produzido) || 0)) : qtde;
+      (progLinhas[key] = progLinhas[key] || []).push({ dNum: dNum, qtde: qtde, qFifo: qFifo, enc: !!pr.encerrada, lote: pr.lote || '' });
     }
   });
 
@@ -3215,6 +3302,7 @@ function calcularProgramacao() {
 
   const lista = [];
   const saldoLinha = {}; // "key|lote|dNum" -> saldo restante do lote (p/ o write-back)
+  const encLinha   = {}; // "key|lote|dNum" -> produzido da linha ENCERRADA (o saldo dela é 0)
   let totMeta = 0, totProgHoje = 0, totAtraso = 0, totEmbHoje = 0, totHojeRest = 0;
   const loteMap = {}; // v5.8: Tela E por LOTE — ver _somaNoLote()
 
@@ -3229,19 +3317,42 @@ function calcularProgramacao() {
     // a produção de HOJE também entra, ela abate primeiro o atraso mais antigo
     // ("atraso vivo": o número cai conforme o time produz).
     const ev = [];
-    linhas.forEach(ln => ev.push({ d: ln.dNum, t: 0, q: ln.qtde, lote: ln.lote }));
+    linhas.forEach(ln => ev.push({ d: ln.dNum, t: 0, q: ln.qFifo, qOrig: ln.qtde, enc: ln.enc, lote: ln.lote }));
     eventos.forEach(e  => ev.push({ d: e.dNum,  t: 1, q: e.cx }));
     ev.sort((a, b) => (a.d - b.d) || (a.t - b.t));
 
-    const fila = []; // demandas abertas: {d, rem, lote, q, hojeProd}
+    // fila: demandas abertas {d, rem, lote, q (qtde original), qf (pedido ao FIFO), enc, hojeProd}
+    // cred: produção sem lote aberto, à espera de um lote do código que abra em
+    //       até ANTEC_DIAS_UTEIS dias úteis (produção ADIANTADA, v5.21)
+    const fila = [];
+    let cred = [];
     ev.forEach(e => {
-      if (e.t === 0) { fila.push({ d: e.d, rem: e.q, lote: e.lote, q: e.q, hojeProd: 0 }); return; }
+      if (e.t === 0) {
+        const lot = { d: e.d, rem: e.q, lote: e.lote, q: e.qOrig, qf: e.q, enc: e.enc, hojeProd: 0 };
+        if (cred.length) {
+          cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, e.d) <= ANTEC_DIAS_UTEIS);
+          for (let i = 0; i < cred.length && lot.rem > 0; i++) {
+            const take = Math.min(lot.rem, cred[i].rem);
+            lot.rem -= take; cred[i].rem -= take;
+          }
+        }
+        fila.push(lot); return;
+      }
       let rem = e.q;
       for (let i = 0; i < fila.length && rem > 0; i++) {
         const take = Math.min(fila[i].rem, rem);
         fila[i].rem -= take; rem -= take;
         if (e.d === hojeNum) fila[i].hojeProd += take;
       }
+      if (rem > 0 && ANTEC_DIAS_UTEIS > 0) cred.push({ d: e.d, rem: rem });
+    });
+    // Linha ENCERRADA: o que ela recebeu é o produzido dela; o resto não é cobrado.
+    fila.forEach(lot => {
+      if (!lot.enc) return;
+      const lk = key + '|' + lot.lote + '|' + lot.d;
+      encLinha[lk] = (encLinha[lk] || 0) + (lot.qf - lot.rem);
+      lot.q = lot.qf - lot.rem;   // Tela E: o tamanho da linha passa a ser o que ela produziu
+      lot.rem = 0;
     });
     _somaNoLote(loteMap, fila, key, catByKey[key], hojeNum);
 
@@ -3288,7 +3399,8 @@ function calcularProgramacao() {
     hojeRestante: totHojeRest,            // quanto da meta de hoje ainda falta
     faltaZerar: totAtraso + totHojeRest,  // total que ainda falta produzir p/ zerar tudo
     porLote: _fecharLotes(loteMap),        // v5.8: Tela E da TV (uma linha por lote)
-    saldoLinha: saldoLinha                // uso interno do write-back (removido antes de ir p/ o cliente)
+    saldoLinha: saldoLinha,               // uso interno do write-back (removido antes de ir p/ o cliente)
+    encLinha: encLinha                    // idem: produzido das linhas ENCERRADAS (v5.21)
   };
 }
 
@@ -3351,7 +3463,24 @@ function getProgramacaoHoje() {
     .filter(x => x.programadoHoje > 0 || x.atraso > 0)
     .map(x => ({ codigo: x.codigo, desc: x.desc, cor: produtoDoCodigo(x.codigo).cor,
                  lote: x.lote, qtde: x.programadoHoje, atraso: x.atraso, falta: x.falta }));
-  return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
+  // v5.21: códigos com lote nos próximos dias úteis (ver _codigosProximos).
+  // Falhou? A lista do app sai como sempre saiu, só sem o campo.
+  let proximos = [];
+  try { proximos = _codigosProximos(); } catch (e) { Logger.log('proximos (ignorado): ' + e.message); }
+  return { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal, proximos: proximos };
+}
+
+// Códigos (só dígitos) com lote datado nos próximos ANTEC_DIAS_UTEIS dias úteis.
+// Embalar esse código agora é ADIANTAMENTO, não cor errada — o app usa a lista
+// para não disparar o aviso de cor errada à toa (v5.21).
+function _codigosProximos() {
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const prox = {};
+  lerProgramacao().forEach(function (pr) {
+    const d = dataParaNum(pr.data), k = codKey(pr.codigo);
+    if (k && d > hojeNum && !pr.foraEsteira && !pr.encerrada && _diasUteisEntre(hojeNum, d) <= ANTEC_DIAS_UTEIS) prox[k] = 1;
+  });
+  return Object.keys(prox);
 }
 
 // Programação linha a linha (sem agregar por produto), para a tela dedicada:
@@ -3405,7 +3534,11 @@ function getProgramacaoDetalhada() {
       metaEfetiva: futura ? 0 : (st ? st.metaEfetiva : 0),
       // Fechado fora da esteira: registrado, mas fora da meta/pendentes.
       foraEsteira: !!pr.foraEsteira,
-      foraLocal:   pr.foraLocal || ''
+      foraLocal:   pr.foraLocal || '',
+      // ENCERRADA pelo PPCP (v5.21): conta na meta do dia, mas não é pendência.
+      // Costuma sair da aba no próximo lançamento (arquivamento). Só vale para
+      // linha vencida ou de hoje — em data futura a marca espera a data chegar.
+      encerrada:   !!pr.encerrada && !futura
     };
   // Só entram linhas com lote preenchido: pedido do usuário, pra tela ficar mais
   // confiável (linhas sem lote costumam ser lançamento incompleto/rascunho).

@@ -11,6 +11,53 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.128.0 · mobile 1.32.0 · `.gs` v5.21 — 09/10/2026
+
+Por que o PPCP excluía linha da PROGRAMACAO: o lote "não fechava pelo app".
+Medido na planilha de hoje, eram **58 linhas vencidas abertas, 3.770 cx**:
+
+- **~1.716 cx eram caixa embalada 1 a 2 dias ANTES da data do lote.** O FIFO
+  só abatia lote já aberto e descartava o resto. Ex.: lote 25268 (07/10), 219 cx
+  de 501106005 embaladas em 06/10 — o lote aparecia com 0.
+- **101 cx em 36 linhas eram sobras de 1 a 10 cx.**
+- **~1.350 cx eram cor errada no app**: a cor irmã do mesmo produto com caixa
+  sobrando (25/09, MESA CENTRO SLIM: OFF WHITE 444 cx num lote de 150, BRANCO
+  0 de 300).
+
+O que muda:
+
+- ⚠ **re-deploy** — **Produção adiantada abate o lote.** Caixa embalada sem lote
+  aberto vira crédito para o próximo lote **do mesmo código** que abrir em até
+  **2 dias úteis** (sexta → segunda conta 1). Mais cedo que isso continua
+  descartada.
+- ⚠ **re-deploy** — **Coluna ENCERRAR na PROGRAMACAO** (o script cria, no fim da
+  aba). X numa linha **vencida ou de hoje** fecha com o que ela já produziu: o
+  resto deixa de ser cobrado, a linha vai para a CONCLUIDA como **ENCERRADO** e
+  a **meta do dia não muda**. É isso no lugar de apagar a linha. Para cancelar
+  um lote que ainda não chegou, apagar a linha continua certo (ele não tem
+  produção ligada).
+- **App do operador: CONFERIR A COR.** Antes de gravar, se as caixas passam do
+  saldo do código e outra cor do mesmo produto tem saldo, o app pergunta. O
+  botão em destaque é **TROCAR A COR** (abre o seletor e mantém a quantidade);
+  **COR CERTA** grava. Código com lote nos próximos 2 dias úteis não dispara o
+  aviso (é adiantamento).
+- Aba PROGRAMAÇÃO do painel: linha encerrada mostra **ENCERRADO**, e não "✓ OK"
+  ou a falta de outra linha do mesmo código. O mesmo para FORA DA ESTEIRA.
+
+**Atenção — números que mudam depois do re-deploy:**
+- **Atraso da programação cai.** Na planilha de 09/10: **3.770 → 2.054 cx**;
+  falta p/ zerar **5.420 → 3.077**. A meta do dia **não muda** (1.650 nos dois).
+- **No 1º lançamento, 9 linhas saem da PROGRAMACAO** para a CONCLUIDA como
+  CONCLUIDO — já estavam embaladas, só não eram reconhecidas (inclusive três do
+  lote 25273 de hoje, embalado em 07/10). Rodar `simularArquivamento()` no editor
+  antes, se quiser ver a lista.
+- **ENCERRAR não reconstrói o passado**: linha já apagada não volta, e a
+  produção que ficou órfã dela continua sem lote.
+- A carteira do PLANO, o PRÓXIMOS DIAS e a diretoria ainda contam a quantidade
+  cheia de um lote **futuro** que já foi adiantado; ele cai quando a data chega.
+
+---
+
 ## v7.127.0 — 25/09/2026
 
 - **Aba ⚖ UEP presa em "Aguardando a leitura do dia…" com o selo "Sheets:

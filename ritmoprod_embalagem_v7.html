@@ -3123,7 +3123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.127.0';
+const APP_VER   = '7.128.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -8393,8 +8393,13 @@ function renderProgramacaoDetalhada(){
       // metaEfetiva=0: nada vencendo ainda pra esse produto (comum em data
       // futura) — mostra "—" em vez de "✓ OK" pra não parecer que já foi
       // embalado quando na verdade a data nem chegou.
-      const faltaCor=it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)');
-      const faltaTxt=it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta));
+      // ENCERRADA pelo PPCP (coluna ENCERRAR, .gs v5.21) e FORA DA ESTEIRA:
+      // o FALTA da coluna é do PRODUTO, não da linha — sem este ramo a linha
+      // fechada saía "✓ OK" verde, ou com a falta de OUTRA linha do mesmo código
+      // em vermelho. A qtde continua nos totais do dia: é o programado.
+      const fechada=it.encerrada?'ENCERRADO':(it.foraEsteira?'FORA DA ESTEIRA':'');
+      const faltaCor=fechada?'var(--txt2)':(it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)'));
+      const faltaTxt=fechada||(it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta)));
       // Nome COM a cor: a cor saiu da DESCRICAO para coluna própria, e sem ela
       // duas cores do mesmo produto viram duas linhas idênticas na tela.
       const nome=nomeComCor(it.desc, it.cor);
