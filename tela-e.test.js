@@ -152,6 +152,10 @@ console.log('\n── backend: cor e data do lote aberto mais antigo ──');
   const produtoDoCodigo = c => ({ cor: c === '501130' ? 'BRANCO' : '', base: c === '501130' ? 'PENTEADEIRA' : '' });
   eval(pegaGs('function _somaNoLote('));
   eval(pegaGs('function _fecharLotes('));
+  // v5.21: crédito de produção adiantada — sem isto, fixture com sobra de produção estoura
+  eval(pegaGs('function _diaAbs('));
+  eval(pegaGs('function _diasUteisEntre('));
+  const ANTEC_DIAS_UTEIS = Number((gs.match(/const ANTEC_DIAS_UTEIS = (\d+);/) || [])[1]);
   // dois lotes vencidos (10/09 e 12/09) e um de hoje; a produção abate o de 10/09 inteiro
   const lerProgramacao = () => [
     { codigo: '501130', data: '10/09/2026', qtde: 100, lote: 'L1' },

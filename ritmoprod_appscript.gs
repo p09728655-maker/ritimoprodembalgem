@@ -1652,7 +1652,7 @@ function atualizarSaldoNaProgramacao(prog) {
     const key    = codKey(codigo);
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
-    const enc    = iEnc  >= 0 ? String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '' : false;
+    const enc    = iEnc  >= 0 && _marcado(r[iEnc]);
     const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
 
@@ -1785,7 +1785,7 @@ function _arquivarConcluidos(prog, simular) {
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     const qtde   = Number(r[iQtd]) || 0;
     const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
-    const enc    = iEnc  >= 0 ? String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '' : false;
+    const enc    = iEnc  >= 0 && _marcado(r[iEnc]);
 
     let estado;
     if (!codigo || !r[iData] || dNum === 0) estado = 'IGNORAR';   // linha vazia / rascunho
@@ -3094,6 +3094,17 @@ function _esteiraBase() {
 
 // Converte uma célula de data (Date, "dd/MM/yyyy" ou "dd/MM") -> número yyyymmdd
 // para comparar datas (0 se inválida). Sem ano ("dd/MM") assume o ano atual.
+// Célula de MARCA (coluna ENCERRAR, v5.21): vale qualquer coisa escrita, MENOS o
+// que quer dizer "não". Caixa de seleção desmarcada chega como FALSE — com
+// String(v) !== '' a coluna inteira de FALSE fecharia (e arquivaria) a
+// programação toda no lançamento seguinte.
+function _marcado(v) {
+  if (v === true) return true;
+  if (v === false || v == null) return false;
+  const s = String(v).trim().toUpperCase();
+  return s !== '' && ['FALSE', 'FALSO', '0', 'N', 'NAO', 'NÃO', '-'].indexOf(s) < 0;
+}
+
 // Dia absoluto (dias desde 01/01/1970) de um 20261009 — para contar dias sem
 // depender do fuso do projeto.
 function _diaAbs(n) {
@@ -3181,11 +3192,10 @@ function _lerProgDaAba(sh, arquivada) {
   // Coluna opcional: marca "fechado fora da esteira" (FORA_ESTEIRA, FORA DA
   // ESTEIRA, FORA...). Qualquer célula PREENCHIDA = item não é da esteira.
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
-  // ENCERRAR (v5.21): qualquer coisa escrita fecha a linha com o que ela já
-  // produziu. PRODUZIDO e STATUS são as colunas de saída que o script grava.
+  // ENCERRAR (v5.21): a marca fecha a linha com o que ela já produziu —
+  // PRODUZIDO é a coluna de saída que o próprio script grava a cada lançamento.
   const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
   const iProd = hdr.indexOf('PRODUZIDO');
-  const iStat = hdr.indexOf('STATUS');
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -3200,18 +3210,15 @@ function _lerProgDaAba(sh, arquivada) {
     // FORA_ESTEIRA é opcional: sem a coluna, tudo é da esteira (comportamento
     // de sempre). Com a coluna, célula preenchida tira o item da conta.
     const foraTxt = iFora >= 0 ? String(r[iFora] || '').trim() : '';
-    const encerrada = iEnc >= 0 && String(r[iEnc] == null ? '' : r[iEnc]).trim() !== '';
-    // CONGELADA = o script já fechou a linha numa rodada anterior (STATUS
-    // ENCERRADO gravado). Só aí o PRODUZIDO da célula é a régua: na 1ª rodada
-    // depois do X ele ainda é o número da rodada de ANTES — e, logo depois do
-    // re-deploy, o da regra antiga (sem o adiantamento), que fecharia com 0 uma
-    // linha que foi embalada inteira um dia antes.
-    const congelada = encerrada && iStat >= 0 && String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() === 'ENCERRADO';
+    const encerrada = iEnc >= 0 && _marcado(r[iEnc]);
+    // PRODUZIDO vazio = a linha nunca passou por um cálculo (colada agora):
+    // null, não 0 — senão o X fecharia com 0 uma linha que já tinha produção.
+    const prodCel = iProd >= 0 ? r[iProd] : '';
     out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote,
                foraEsteira: foraTxt !== '', foraLocal: foraTxt,
                arquivada: !!arquivada,
-               encerrada: encerrada, congelada: congelada,
-               produzido: iProd >= 0 ? (Number(r[iProd]) || 0) : 0 });
+               encerrada: encerrada,
+               produzido: (prodCel === '' || prodCel == null) ? null : (Number(prodCel) || 0) });
   }
   return out;
 }
@@ -3240,9 +3247,10 @@ function lerEmbaladoPorProduto(hojeNum) {
     if (dNum < hojeNum)        antes[key] = (antes[key] || 0) + cx;
     else if (dNum === hojeNum) hoje[key]  = (hoje[key]  || 0) + cx;
     // Eventos datados (até hoje) para a alocação FIFO cronológica por lote em
-    // calcularProgramacao(): a produção só abate um lote já ABERTO na sua data,
-    // então produção anterior à abertura do lote não o credita (evita o "atraso
-    // some" por causa de produção antiga do mesmo código, de outro lote).
+    // calcularProgramacao(): a produção abate o lote já ABERTO na sua data; a
+    // sobra só credita um lote que abra em até ANTEC_DIAS_UTEIS dias úteis
+    // (v5.21) — produção mais antiga não credita (evita o "atraso some" por
+    // causa de produção velha do mesmo código, de outro lote).
     if (dNum <= hojeNum) (eventos[key] = eventos[key] || []).push({ dNum: dNum, cx: cx });
   }
   return { antes: antes, hoje: hoje, eventos: eventos, inicio: inicio || hojeNum };
@@ -3252,9 +3260,9 @@ function lerEmbaladoPorProduto(hojeNum) {
 // totais + "meta efetiva" (programado de hoje + atraso).
 // O atraso é apurado por ALOCAÇÃO FIFO por lote/data (não mais um simples
 // max(programado−embalado) por código): a produção abate o lote aberto mais
-// ANTIGO, e produção anterior à abertura de um lote NÃO o credita. Assim, um lote
-// programado num dia não é "zerado" por produção antiga de outro lote do mesmo
-// código. A produção de hoje também abate o atraso mais antigo primeiro, então
+// ANTIGO, e a sobra só credita um lote que abra em até ANTEC_DIAS_UTEIS dias
+// úteis depois dela (produção adiantada, v5.21). Assim, um lote programado num
+// dia não é "zerado" por produção antiga de outro lote do mesmo código. A produção de hoje também abate o atraso mais antigo primeiro, então
 // atrasoTotal é "vivo" (cai durante o dia). faltaZerar = atraso + resto da meta
 // de hoje = o que ainda falta produzir p/ zerar tudo.
 function calcularProgramacao() {
@@ -3286,12 +3294,17 @@ function calcularProgramacao() {
     }
     if (dNum <= hojeNum) {
       const qtde = Number(pr.qtde) || 0;
-      // ENCERRADA (v5.21): na 1ª rodada depois do X a linha passa pelo FIFO
-      // inteira e recebe o que a produção cobre; dali em diante (STATUS
-      // ENCERRADO gravado, inclusive na CONCLUIDA) pede só esse PRODUZIDO
-      // congelado — produção nova do código vai para os outros lotes. A META do
-      // dia continua com a QTDE original (progHoje).
-      const qFifo = pr.congelada ? Math.min(qtde, Math.max(0, Number(pr.produzido) || 0)) : qtde;
+      // ENCERRADA (v5.21): para o FIFO a linha pede só o que já tinha quando o
+      // PPCP fechou — o PRODUZIDO gravado no lançamento anterior. Produção nova
+      // do código, inclusive a do lançamento que dispara esta rodada, vai para
+      // os outros lotes (com a QTDE cheia, a encerrada mais velha comeria um
+      // lançamento inteiro de um lote novo). PRODUZIDO vazio (linha nunca
+      // calculada) passa inteira. A META do dia continua com a QTDE original.
+      // ⚠ A régua é a célula: ela tem de ser da regra NOVA. É por isso que a
+      // coluna ENCERRAR nasce do próprio script, na mesma rodada que regrava
+      // o PRODUZIDO de todas as linhas — criada à mão antes do re-deploy, o X
+      // congelaria o número da regra antiga (sem o adiantamento).
+      const qFifo = (pr.encerrada && pr.produzido != null) ? Math.min(qtde, Math.max(0, pr.produzido)) : qtde;
       (progLinhas[key] = progLinhas[key] || []).push({ dNum: dNum, qtde: qtde, qFifo: qFifo, enc: !!pr.encerrada, lote: pr.lote || '' });
     }
   });
@@ -3313,7 +3326,8 @@ function calcularProgramacao() {
 
     // FIFO cronológico: prog ABRE demanda, emb ABATE o lote aberto mais antigo.
     // Mesma data: a demanda (prog) entra antes da produção (emb). Produção sem
-    // demanda aberta (anterior ao lote) é descartada — não credita o lote. Como
+    // demanda aberta vira CRÉDITO para o próximo lote do código que abrir em até
+    // ANTEC_DIAS_UTEIS dias úteis (v5.21); mais velha que isso é descartada. Como
     // a produção de HOJE também entra, ela abate primeiro o atraso mais antigo
     // ("atraso vivo": o número cai conforme o time produz).
     const ev = [];

@@ -959,6 +959,11 @@ let PROG_HOJE = [];
 // Códigos (só dígitos) com lote nos próximos dias úteis (.gs v5.21). null =
 // backend antigo, sem a informação.
 let PROG_PROX = null;
+// De quando é a lista: o aviso de cor errada não julga com a lista de ontem
+// (app aberto de um dia para o outro), e ela é relida depois de um lançamento
+// quando passou de PROG_HOJE_TTL (lote novo que o PPCP datou depois do login).
+let PROG_HOJE_DIA = '', PROG_HOJE_TS = 0;
+const PROG_HOJE_TTL = 15*60*1000;
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
@@ -1223,6 +1228,7 @@ async function carregarProgramacaoHoje(){
     if(json && json.ok && Array.isArray(json.produtos)){
       PROG_HOJE = json.produtos;
       PROG_PROX = Array.isArray(json.proximos) ? json.proximos : null;
+      PROG_HOJE_DIA = hojeStr(); PROG_HOJE_TS = Date.now();
     }
   }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
 }
@@ -2623,8 +2629,10 @@ function avisoCorErrada(codigo, add, prog, proximos){
   if(!irmas.length) return null;
   return { falta, irmas, cor: corDeProduto(ref) || ref.codigo };
 }
+// Sem o número do lote: o `lote` da lista é o último lote do código, não
+// necessariamente o que tem o saldo (que pode ser um atraso mais velho).
 function avisoCorErradaTxt(a, add){
-  const ir = a.irmas.map(p=>`${corDeProduto(p)||p.codigo} (${fmtN(Number(p.falta)||0)} cx${p.lote?' · lote '+p.lote:''})`).join(', ');
+  const ir = a.irmas.map(p=>`${corDeProduto(p)||p.codigo} (${fmtN(Number(p.falta)||0)} cx)`).join(', ');
   return (a.falta>0
       ? `${a.cor}: só ${fmtN(a.falta)} cx em aberto, e você vai lançar ${fmtN(add)}.`
       : `${a.cor}: nenhuma caixa em aberto na programação.`)
@@ -2640,14 +2648,18 @@ async function salvarLanc(){
   // Cor errada? Pergunta uma vez por lançamento. O destaque é TROCAR A COR:
   // abre o seletor de produto POR CIMA do lançamento (vem depois no HTML), a
   // quantidade digitada fica, e o ADICIONAR seguinte confere a cor nova.
-  if(PROD_ATUAL && _slotAtivo._corOk!==add){
-    const av = avisoCorErrada(PROD_ATUAL, add, PROG_HOJE, PROG_PROX);
+  // O código e o slot são guardados ANTES da pergunta: com ela aberta, um bipe
+  // troca o PROD_ATUAL e o refresh pode trocar também — gravar depois com o
+  // produto novo seria lançar a cor que ninguém conferiu.
+  const codLanc = PROD_ATUAL, slotLanc = _slotAtivo;
+  if(codLanc && slotLanc._corOk!==add && PROG_HOJE_DIA===hojeStr()){
+    const av = avisoCorErrada(codLanc, add, PROG_HOJE, PROG_PROX);
     if(av){
       const seguir = await confirmarModal({titulo:'CONFERIR A COR', msg:avisoCorErradaTxt(av, add),
                                            ok:'COR CERTA', cancelar:'TROCAR A COR', seguro:'cancelar'});
-      if(!_slotAtivo) return;
+      if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta: confere de novo
       if(!seguir){ abrirModalProduto(); return; }
-      _slotAtivo._corOk = add;
+      slotLanc._corOk = add;
     }
   }
 
@@ -2677,7 +2689,7 @@ async function salvarLanc(){
   ];
   // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
   // (sem produto) — não bloqueia a produção.
-  if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
+  if(codLanc) params.push('produto='+encodeURIComponent(codLanc));
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
   // Auto-retry: como o lançamento agora é idempotente (mesmo lancId não grava 2x),
@@ -2692,10 +2704,12 @@ async function salvarLanc(){
       if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
       // A lista do dia só é relida ao abrir o seletor: sem descontar aqui, o
       // aviso de cor errada não veria o lote fechar ao longo dos lançamentos.
-      if(PROD_ATUAL){
-        const k=String(PROD_ATUAL).replace(/\D/g,'');
+      if(codLanc){
+        const k=String(codLanc).replace(/\D/g,'');
         const it=PROG_HOJE.find(p=>String(p.codigo).replace(/\D/g,'')===k);
         if(it) it.falta=Math.max(0,(Number(it.falta)||0)-add);
+        // lista velha (lote novo datado depois do login): relê em 2º plano
+        if(Date.now()-PROG_HOJE_TS > PROG_HOJE_TTL) carregarProgramacaoHoje();
       }
       fecharModalLanc();
       await lerSheets();

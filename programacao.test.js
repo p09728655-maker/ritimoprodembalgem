@@ -33,7 +33,7 @@ function montar(prog, log, opts) {
   opts = opts || {};
   const ABAS = {
     PROGRAMACAO: [HDR_PROG].concat(prog.map(l => [l.lote, l.data, 1, l.cod, 'X', l.qtde,
-      l.prod == null ? '' : l.prod, '', '', l.status || '', '', l.enc || ''])),
+      l.prod == null ? '' : l.prod, '', '', l.status || '', '', l.enc === undefined ? '' : l.enc])),
     PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS']].concat(log.map(e => [e[0], '08:00', e[1], 'X', e[2]])),
     PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR']],
   };
@@ -60,9 +60,10 @@ function montar(prog, log, opts) {
                insertSheet: nome => { ABAS[nome] = [['']]; return aba(nome); }, getName: () => 'teste' };
   let src = GS;
   if (opts.antec != null) src = src.replace(/const ANTEC_DIAS_UTEIS = \d+;/, 'const ANTEC_DIAS_UTEIS = ' + opts.antec + ';');
+  const hoje = opts.hoje || '09/10/2026';
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
-    Utilities: { formatDate: (d, tz, f) => f === 'yyyy' ? '2026' : (/HH/.test(f) ? '09/10/2026 07:30:00' : '09/10/2026') },
+    Utilities: { formatDate: (d, tz, f) => f === 'yyyy' ? '2026' : (/HH/.test(f) ? hoje + ' 07:30:00' : hoje) },
     CacheService: { getScriptCache: () => ({ get: () => null, put: () => {}, remove: () => {} }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: () => null, setProperty: () => {} }) },
     LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
@@ -70,9 +71,13 @@ function montar(prog, log, opts) {
   };
   vm.createContext(ctx);
   vm.runInContext(src, ctx);
+  // O caminho REAL do lançamento: sincronizarPlanilhaPosLancamento passa o MESMO
+  // cálculo para gravar o saldo e para arquivar. Quantas linhas saíram = a
+  // diferença de tamanho da aba.
   const rodar = () => vm.runInContext(
-    '(function(){ _invalidarValores(); var p = calcularProgramacao(); atualizarSaldoNaProgramacao(p); ' +
-    'var a = _arquivarConcluidos(calcularProgramacao(), false); _invalidarValores(); return { p: calcularProgramacao(), a: a }; })()', ctx);
+    '(function(){ _invalidarValores(); var n = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("PROGRAMACAO").getLastRow(); ' +
+    'sincronizarPlanilhaPosLancamento(); _invalidarValores(); ' +
+    'return { p: calcularProgramacao(), a: { arquivadas: n - SpreadsheetApp.getActiveSpreadsheet().getSheetByName("PROGRAMACAO").getLastRow() } }; })()', ctx);
   const calc = () => vm.runInContext('(function(){ _invalidarValores(); return calcularProgramacao(); })()', ctx);
   return { ABAS, ctx, rodar, calc };
 }
@@ -118,8 +123,8 @@ console.log('\n── produção ADIANTADA ──');
 console.log('\n── ENCERRAR ──');
 {
   const prog = [
-    // adiantado, com a célula ainda no número da regra ANTIGA (0): fechar não pode perder as 219
-    { lote: 'L1', data: '07/10/2026', cod: '501106005', qtde: 220, prod: 0, status: 'EM ATRASO', enc: 'X' },
+    // célula PRODUZIDO vazia (linha nunca calculada): passa inteira pelo FIFO, com o adiantamento
+    { lote: 'L1', data: '07/10/2026', cod: '501106005', qtde: 220, enc: 'X' },
     // atraso real que não vai ser feito
     { lote: 'L2', data: '29/09/2026', cod: '501140002', qtde: 410, prod: 99, status: 'EM ATRASO', enc: 'X' },
     // lote DE HOJE encerrado com 60 de 100
@@ -137,7 +142,7 @@ console.log('\n── ENCERRAR ──');
   const r1 = m.rodar();
   const A = m.ABAS.PROGRAMACAO_CONCLUIDA, P = m.ABAS.PROGRAMACAO;
   const NOMES = ['QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ENCERRAR'];
-  ok('o adiantado sai com 219 produzidas (o 0 da célula era da regra antiga)', campos(A, linha(A, 'L1', '501106005'), NOMES), [220, 219, 0, 99, 'ENCERRADO', 'X']);
+  ok('célula vazia: passa inteira e sai com as 219 adiantadas', campos(A, linha(A, 'L1', '501106005'), NOMES), [220, 219, 0, 99, 'ENCERRADO', 'X']);
   ok('o atraso real sai com o que fez (99 de 410)', campos(A, linha(A, 'L2', '501140002'), NOMES), [410, 99, 0, 24, 'ENCERRADO', 'X']);
   ok('o de hoje sai com 60 de 100', campos(A, linha(A, 'L3', '501147002'), NOMES), [100, 60, 0, 60, 'ENCERRADO', 'x']);
   ok('as três saem da PROGRAMACAO; a futura e a normal ficam', [r1.a.arquivadas, !!linha(P, 'L4', '501060004'), !!linha(P, 'L5', '501061001')], [3, true, true]);
@@ -149,6 +154,44 @@ console.log('\n── ENCERRAR ──');
   const it = c => r2.p.lista.find(x => x.codigo === c) || {};
   ok('caixa nova de código encerrado não reabre a linha (atraso continua 0)', [r2.p.atrasoTotal, it('501140002').falta, it('501106005').falta], [0, 0, 0]);
   ok('e a CONCLUIDA não muda', campos(A, linha(A, 'L2', '501140002'), ['PRODUZIDO', 'STATUS']), [99, 'ENCERRADO']);
+}
+
+console.log('\n── ENCERRAR congela no PRODUZIDO do lançamento anterior ──');
+{
+  // lote velho com 40 de 100 já gravados; o PPCP marca X; o lançamento que
+  // dispara a rodada traz 30 cx do MESMO código, para o lote de hoje
+  const prog = [
+    { lote: 'L6', data: '01/10/2026', cod: '501134001', qtde: 100, prod: 40, status: 'EM ATRASO', enc: 'X' },
+    { lote: 'L7', data: '09/10/2026', cod: '501134001', qtde: 100 },
+  ];
+  const m = montar(prog, [['01/10/2026', '501134001', 40], ['09/10/2026', '501134001', 30]]);
+  m.rodar();
+  const A = m.ABAS.PROGRAMACAO_CONCLUIDA, P = m.ABAS.PROGRAMACAO;
+  ok('a encerrada fecha com os 40 que tinha — não come o lançamento novo', campos(A, linha(A, 'L6', '501134001'), ['PRODUZIDO', 'STATUS']), [40, 'ENCERRADO']);
+  ok('as 30 caixas novas vão para o lote de hoje', campos(P, linha(P, 'L7', '501134001'), ['PRODUZIDO', 'SALDO', 'STATUS']), [30, 70, 'EM ANDAMENTO']);
+}
+
+console.log('\n── marca que quer dizer "não" não encerra ──');
+{
+  const prog = [false, 'FALSE', 0, 'não', true].map((v, i) => ({ lote: 'M' + i, data: '08/10/2026', cod: '50100000' + i, qtde: 10, enc: v }));
+  const m = montar(prog, prog.map((l, i) => ['08/10/2026', l.cod, 4]));
+  m.rodar();
+  const P = m.ABAS.PROGRAMACAO;
+  ok('caixa de seleção desmarcada (FALSE), "0" e "não" deixam a linha aberta; TRUE encerra',
+     prog.map(l => (campos(P, linha(P, l.lote, l.cod), ['STATUS']) || ['(arquivada)'])[0]),
+     ['EM ATRASO', 'EM ATRASO', 'EM ATRASO', 'EM ATRASO', '(arquivada)']);
+}
+
+console.log('\n── o crédito espera a data do lote ──');
+{
+  const prog = [{ lote: 'L8', data: '09/10/2026', cod: '501070005', qtde: 180 }];
+  const log = [['07/10/2026', '501070005', 180]];
+  const ontem = montar(prog, log, { hoje: '08/10/2026' }).calc();
+  ok('na véspera o lote ainda não existe para o FIFO (data futura)', ontem.saldoLinha['501070005|L8|20261009'], undefined);
+  const hoje = montar(prog, log, { hoje: '09/10/2026' }).calc();
+  ok('no dia dele, o crédito de 07/10 abate o lote inteiro', hoje.saldoLinha['501070005|L8|20261009'], 0);
+  const tarde = montar(prog, log, { hoje: '13/10/2026' }).calc();
+  ok('o resultado não muda com o passar dos dias (a janela é produção × data do lote, não × hoje)', tarde.saldoLinha['501070005|L8|20261009'], 0);
 }
 
 console.log('\n── a coluna ENCERRAR nasce sozinha ──');
@@ -205,7 +248,8 @@ function pegaMob(assinatura) {
   ];
   const a = avisoCorErrada('501.128.002', 20, prog, []);
   ok('lote do código fechado e cor irmã com saldo → avisa, apontando a irmã', a && [a.falta, a.cor, a.irmas.map(p => p.cor)], [0, 'OFF WHITE', ['BRANCO']]);
-  ok('o texto diz a cor irmã, o saldo e o lote', /BRANCO \(300 cx · lote 25229\)/.test(avisoCorErradaTxt(a, 20)), true);
+  ok('o texto diz a cor irmã e o saldo (sem número de lote, que pode não ser o do saldo)',
+     [/BRANCO \(300 cx\)/.test(avisoCorErradaTxt(a, 20)), /lote/.test(avisoCorErradaTxt(a, 20))], [true, false]);
   ok('dentro do saldo do próprio código → não avisa',
      avisoCorErrada('501.128.001', 20, prog, []), null);
   ok('código com lote nos próximos dias úteis é ADIANTAMENTO → não avisa',
@@ -220,11 +264,16 @@ function pegaMob(assinatura) {
      avisoCorErrada('501.128.001', 320, prog, []), null);
   const SL = pegaMob('async function salvarLanc(');
   ok('o aviso vem ANTES do SALVANDO; TROCAR A COR não grava e abre o seletor',
-     [SL.indexOf('avisoCorErrada(PROD_ATUAL') > 0 && SL.indexOf('avisoCorErrada(PROD_ATUAL') < SL.indexOf("btn.textContent='SALVANDO...'"),
+     [SL.indexOf('avisoCorErrada(codLanc') > 0 && SL.indexOf('avisoCorErrada(codLanc') < SL.indexOf("btn.textContent='SALVANDO...'"),
       /if\(!seguir\)\{ abrirModalProduto\(\); return; \}/.test(SL)], [true, true]);
   ok('o destaque (laranja) fica no TROCAR A COR, não no seguir em frente',
      [/cancelar:'TROCAR A COR', seguro:'cancelar'/.test(SL), /document\.getElementById\('cf-cancel'\)\.className = inv \? 'btn-salvar'/.test(MJS)], [true, true]);
   ok('depois de gravar, o saldo local do código desconta o lançado', /it\.falta=Math\.max\(0,\(Number\(it\.falta\)\|\|0\)-add\)/.test(SL), true);
+  ok('código e slot guardados antes da pergunta; mudou durante ela, não grava',
+     [/const codLanc = PROD_ATUAL, slotLanc = _slotAtivo;/.test(SL), /if\(_slotAtivo!==slotLanc \|\| PROD_ATUAL!==codLanc\) return;/.test(SL),
+      /params\.push\('produto='\+encodeURIComponent\(codLanc\)\)/.test(SL)], [true, true, true]);
+  ok('não julga com a lista de outro dia, e relê a lista velha depois de gravar',
+     [/PROG_HOJE_DIA===hojeStr\(\)/.test(SL), /if\(Date\.now\(\)-PROG_HOJE_TS > PROG_HOJE_TTL\) carregarProgramacaoHoje\(\);/.test(SL)], [true, true]);
   ok('o confirmar abre POR CIMA do modal de lançamento', /#modal-confirma\{z-index:120\}/.test(MOB), true);
   ok('o app guarda os próximos dias úteis do backend', /PROG_PROX = Array\.isArray\(json\.proximos\) \? json\.proximos : null;/.test(MJS), true);
 }

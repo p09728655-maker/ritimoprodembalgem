@@ -560,14 +560,22 @@ via Google Apps Script (JSONP).
   sozinho). Coluna de ENTRADA `ENCERRAR` na `PROGRAMACAO`, **criada pelo
   script** no fim da aba (o LOTE é achado por "contém LOTE" — uma coluna
   digitada como "ENCERRAR LOTE" à esquerda viraria o LOTE nos três leitores).
-  - Qualquer coisa escrita fecha a linha. **Só vale para linha vencida ou de
-    hoje**; em data futura a marca espera a data (para CANCELAR lote futuro,
+  - A marca é `_marcado()`: qualquer coisa escrita, **menos o que quer dizer
+    "não"** (`FALSE`, `0`, `N`, `NÃO`). ⚠ Caixa de seleção desmarcada chega
+    como `FALSE` — com "não vazio" a coluna inteira fecharia e ARQUIVARIA a
+    programação toda no lançamento seguinte. **Só vale para linha vencida ou
+    de hoje**; em data futura a marca espera a data (para CANCELAR lote futuro,
     apagar a linha continua certo — não há produção ligada a ele).
-  - ⚠ **A 1ª rodada depois do X passa a linha INTEIRA pelo FIFO**; só depois
-    que o STATUS ENCERRADO está gravado (`congelada`) a demanda dela vira
-    `min(QTDE, PRODUZIDO)`. Usar o PRODUZIDO da célula já na 1ª rodada era a
-    armadilha: logo depois do re-deploy ele é o número da regra ANTIGA (o
-    501106005 tinha 0 e fecharia com 0, perdendo as 219 cx).
+  - **Desde o 1º X a demanda dela no FIFO é `min(QTDE, PRODUZIDO da célula)`**
+    — o que ela tinha no lançamento anterior. Com a QTDE cheia na 1ª rodada, a
+    encerrada (mais velha) comia o lançamento que dispara a rodada, roubando de
+    um lote novo do mesmo código. PRODUZIDO **vazio** (linha nunca calculada)
+    passa inteira.
+  - ⚠ A régua é a célula, então ela tem de ser da regra NOVA: logo depois do
+    re-deploy o PRODUZIDO ainda é o da regra antiga (o 501106005 tinha 0 com
+    219 cx adiantadas). É por isso que a coluna **nasce do script**, na mesma
+    rodada que regrava o PRODUZIDO de todas as linhas. **Não criar a coluna à
+    mão antes do re-deploy.**
   - O PRODUZIDO da encerrada é o **recebido do FIFO** (`encLinha`), nunca
     `qtde − saldo` — com o saldo forçado a 0 isso daria a QTDE inteira e
     realimentaria o FIFO na rodada seguinte. Mesmo cuidado no fallback do
@@ -591,6 +599,15 @@ via Google Apps Script (JSONP).
     lançamento com a quantidade mantida; **COR CERTA** é o neutro. Na pressa o
     operador bate no laranja, e o laranja tem de ser o caminho seguro
     (`confirmarModal({seguro:'cancelar'})`).
+  - Código e slot são guardados **antes** da pergunta (`codLanc`/`slotLanc`):
+    com ela aberta, um bipe troca o PROD_ATUAL. Mudou durante a pergunta → não
+    grava (o operador confere de novo).
+  - Não julga com a lista de outro dia (`PROG_HOJE_DIA`), e a lista com mais
+    de 15 min é relida em 2º plano depois de um lançamento (`PROG_HOJE_TTL`) —
+    lote novo datado depois do login. Nunca buscar o `getProgramacaoHoje`
+    ANTES de gravar: é leitura cara e o operador esperaria o cold start.
+  - O texto **não cita o lote**: o `lote` da lista é o último lote do código,
+    não necessariamente o que tem o saldo.
   - ⚠ O `#modal-confirma` vem ANTES do `#modal-lanc` no HTML com o mesmo
     z-index: aberto por cima, ficava escondido. Hoje `z-index:120`.
   - Corrigir a cor dos dias passados é à mão, na `PRODUCAO_PRODUTO` (trocar o
