@@ -207,6 +207,8 @@ const SHEET_PROG = 'PROGRAMACAO';
 function acharAbaTolerante(ss, nome) { return ss.getSheetByName(nome); }
 eval(pega('function _progIgual('));
 eval(pega('function _progFase('));
+eval(pega('function _marcado('));   // v5.21: a coluna ENCERRAR passa a existir depois da 1ª rodada
+eval(pega('function _progStatus('));  // v5.21: o STATUS sai de um lugar só (write-back e volta da CONCLUIDA)
 eval(pega('function atualizarSaldoNaProgramacao('));
 
 const PROG = [

@@ -29,6 +29,10 @@ via Google Apps Script (JSONP).
 - `tela-e.test.js` — Tela E da TV (programação do dia): ordem, situação, corte
   de linhas, entrada no ciclo, config, e a cor/`atrasoDesde` do
   `calcularProgramacao` real: `node tela-e.test.js`.
+- `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
+  errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
+  caminho real (calcular → gravar saldo → arquivar → recalcular):
+  `node programacao.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -391,7 +395,8 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje oito, com o `tela-e.test.js`) antes de publicar.
+  sete (hoje nove, com o `tela-e.test.js` e o `programacao.test.js`) antes de
+  publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
@@ -443,10 +448,13 @@ via Google Apps Script (JSONP).
   ao dia atual é em atraso"*. Um lote programado para **02/09** saía como **EM
   ANDAMENTO** no dia **14/09** — a palavra dizia que a coisa caminha, e ela está
   parada há doze dias.
-- Os cinco estados, em `atualizarSaldoNaProgramacao`: **`CONCLUIDO`** (saldo 0) ·
-  **`EM ATRASO`** (data anterior a hoje, não concluída) · **`EM ANDAMENTO`**
-  (lote de HOJE que já produziu) · **`PENDENTE`** (lote de HOJE que não começou) ·
-  **`FORA DA ESTEIRA`**. Data futura continua **em branco**.
+- Os estados, em `_progStatus`/`atualizarSaldoNaProgramacao`: **`CONCLUIDO`**
+  (saldo 0) · **`CONCLUIDO (ADIANTADO)`** (saldo 0 com metade ou mais vinda de
+  produção adiantada, v5.21) · **`EM ATRASO`** (data anterior a hoje, não
+  concluída) · **`EM ANDAMENTO`** (lote de HOJE que já produziu) · **`PENDENTE`**
+  (lote de HOJE que não começou) · **`FORA DA ESTEIRA`** · **`ENCERRADO`** (X na
+  coluna ENCERRAR, v5.21 — ver *Por que o lote não fechava*). Data futura
+  continua **em branco**.
 - **Quem não começou também é EM ATRASO.** A régua é a MESMA que o painel usa
   para somar o atraso (`calcularProgramacao`: `if (lot.d < hojeNum) atraso +=
   lot.rem`), e lá tanto faz se a linha produziu metade ou nada — a soma dos
@@ -459,9 +467,10 @@ via Google Apps Script (JSONP).
   `PRODUZIDO`/`SALDO` junto, e é por ali que ela carimba. Sem isso o primeiro
   lançamento do dia recarimbaria a aba inteira e o carimbo da v5.3 voltaria a
   mentir.
-- **A string do STATUS não é lida por ninguém** — nem pelo painel nem pelo
-  `.gs`. O arquivamento decide pelo saldo FIFO (`l.estado`), não pelo texto; a
-  `PROGRAMACAO_CONCLUIDA` só congela o que está gravado. É leitura humana.
+- ~~A string do STATUS não é lida por ninguém~~ — **revogado na v5.21**: o
+  `.gs` lê `ENCERRADO` e `CONCLUIDO (ADIANTADO)` (ver *Por que o lote não
+  fechava*). O painel continua sem ler. O arquivamento segue decidindo pelo
+  saldo FIFO; o texto só segura o ADIANTADO um dia.
 - ⚠ **O status só se atualiza quando o script roda** (a cada lançamento). Antes
   do primeiro apontamento do dia, a aba ainda mostra o retrato de ontem.
 - ⚠ Com a programação toda vencida, a aba inteira sai EM ATRASO — é o retrato da
@@ -493,13 +502,12 @@ via Google Apps Script (JSONP).
 - **Quando a meta do dia parecer baixa, conferir primeiro se linhas sumiram**
   (soma por DATA nas duas abas × o que o PPCP programou) antes de mexer em
   código.
-- ⏸ **STAND BY até 09/10/2026** (pedido do usuário). **A exclusão é de
-  propósito**: *"não fecha o lote pelo app, tem lote que fica aberto, aí tenho
-  que excluir a linha"*. Por isso o alarme de "linha sumiu" foi recusado — ele
-  acusaria a limpeza que o PPCP faz de propósito. O que falta é um jeito de
-  **ENCERRAR** a linha que não fecha, sem apagar (a meta do dia e o FIFO
-  continuam com ela; o saldo deixa de ser cobrado; o arquivamento leva com
-  STATUS de encerrado e o motivo). Ainda não desenhado nem feito.
+- **A exclusão era de propósito** (usuário, 25/09): *"não fecha o lote pelo
+  app, tem lote que fica aberto, aí tenho que excluir a linha"*. Por isso o
+  alarme de "linha sumiu" foi recusado — acusaria a limpeza que o PPCP fazia.
+- **Resolvido na v7.128.0 / mobile 1.32.0 / `.gs` v5.21 (09/10/2026)** — ver
+  a seção *Por que o lote não fechava* logo abaixo. Medido de 28/09 a 08/10:
+  nenhuma linha sumiu (a soma das linhas de cada dia = META gravada).
   - Medido na planilha de 25/09 (17:05), as linhas abertas e vencidas:
     25218 LUNA 440 CUMARU 31 de 50 · 25220 PRINCESA ROSA 339 de 350 · 25228
     URBAN OFF WHITE 84 de 115 · **25229 SLIM BRANCO 0 de 300, enquanto o SLIM
@@ -511,8 +519,174 @@ via Google Apps Script (JSONP).
     segundo não se resolve encerrando — o painel teria de mostrar a troca
     (sobra num código, falta no irmão do mesmo lote/modelo). Conferir com o
     PPCP antes de desenhar.
-  - O HISTORICO de 25/09 foi corrigido à mão pelo usuário para META 1.550
-    (a EF da coluna D precisava ir junto para 123,9).
+  - O HISTORICO de 25/09 foi corrigido à mão pelo usuário: META 1.550 e EF
+    123,9 (conferido na planilha em 09/10).
+
+## Por que o lote não fechava — adiantamento, ENCERRAR e cor errada (v5.21)
+- Medido na planilha em 09/10/2026: **58 linhas vencidas abertas, 3.770 cx**.
+  Refazendo o FIFO do `.gs` linha a linha, três causas (decididas com o PPCP
+  no mesmo dia, com os números na mão):
+  - **~1.716 cx: caixa embalada 1–2 dias ANTES da data do lote.** O FIFO só
+    abatia lote já ABERTO e descartava o resto — 501106005: 219 cx em 06/10
+    para o lote de 07/10, que ficava com 0. **Era a causa nº 1.**
+  - **101 cx em 36 linhas: sobras de 1 a 10 cx.**
+  - **~1.350 cx em 9 linhas: cor IRMÃ do mesmo produto com caixa sobrando** —
+    cor errada no app (confirmado pelo PPCP). Ex.: 25229 SLIM BRANCO 0 de 300 ×
+    OFF WHITE 444 cx num lote de 150; 25249 501094004 falta 650 × 501094003
+    com 643 a mais.
+  - ~600 cx sem explicação ficaram como atraso real.
+  - ⚠ **Os 1.716 cx são o que a regra CLASSIFICA como adiantamento** — e ela não
+    distingue adiantamento de verdade de sobra sem dono (cor errada, lançamento
+    dobrado, linha apagada à mão em setembro) creditando o lote seguinte do
+    mesmo código. É por isso que existe o **CONCLUIDO (ADIANTADO)** abaixo.
+- **PRODUÇÃO ADIANTADA** (`ANTEC_DIAS_UTEIS`=2, decisão do PPCP: *"até 2 dias
+  úteis"*). No FIFO do `calcularProgramacao`, a sobra de uma produção vira
+  **crédito** (`cred`) e é consumida quando um lote **do mesmo código** abre
+  em até 2 dias úteis depois dela (`_diasUteisEntre`: seg–sex, sexta → segunda
+  = 1, feriado conta como útil). Passou da janela, é descartada como antes.
+  - ⚠ **A janela compara a data da PRODUÇÃO com a data do LOTE, nunca com
+    hoje.** O FIFO é refeito do zero a cada execução; comparando com hoje, o
+    saldo de lote antigo mudaria com o passar dos dias.
+  - **A regra original existia por um motivo** (produção antiga de OUTRO lote
+    zerando um lote novo do mesmo código). A janela curta é o que segura isso;
+    **não alargar sem medir**. O crédito nunca atravessa código — é por isso
+    que a cor errada precisa do aviso no app.
+  - Linha FUTURA continua fora do FIFO: o crédito espera a data dela. Por isso
+    a carteira do PLANO, o PRÓXIMOS DIAS e a diretoria ainda contam a qtde
+    cheia de um lote futuro já adiantado (limitação aceita; descontar exigiria
+    o backend alocar o crédito por linha futura — nunca no front pela `falta`
+    por código).
+  - O consumo de crédito **não** entra no `hojeProd` (não é produção de hoje).
+  - Efeito medido no 1º run (planilha de 09/10): atraso **3.770 → 2.054**,
+    falta p/ zerar 5.420 → 3.077, meta do dia 1.650 → **1.650**; **2 linhas
+    arquivam** e **7 ficam na aba como CONCLUIDO (ADIANTADO)** para conferência
+    (saem no dia útil seguinte). Nenhuma linha volta da CONCLUIDA.
+- **CONCLUIDO (ADIANTADO)** — linha que fechou com **metade ou mais vinda de
+  crédito** (`adiLinha`). STATUS próprio e **fica pelo menos um dia na aba**:
+  o `_arquivarConcluidos` só a leva quando o STATUS já está gravado como
+  ADIANTADO **e** o `ATUALIZADO_EM` (`_diaDoCarimbo`) é de antes de hoje — na
+  1ª rodada depois do re-deploy o write-back acabou de carimbar a mudança, então
+  ela segura também. O `simularArquivamento()` lista essas linhas à parte
+  ("conferir"). Crédito pequeno (sobra de 20 cx do lote anterior) não marca.
+- **LINHA ARQUIVADA VOLTA PARA A ABA** (`_desarquivar`, roda no fim do
+  `_arquivarConcluidos`). Linha da CONCLUIDA **não encerrada** que o FIFO dá
+  com saldo de novo — log corrigido depois, linha mais antiga do código
+  acrescentada — volta para a PROGRAMACAO com PRODUZIDO/SALDO/STATUS
+  recalculados (`_progStatus`, o mesmo do write-back). Sem isso o atraso dela
+  aparecia no painel **sem nenhuma linha na aba que o explicasse**.
+  - A linha é conferida (código, lote, data) antes de sair da CONCLUIDA; se a
+    aba mudou desde o cálculo, fica onde está. Roda também com a PROGRAMACAO
+    vazia (tudo arquivado).
+  - ⚠ Não é mais verdade que "lote arquivado continua concluído": continua
+    enquanto o log e a programação não mudarem para trás. Quando mudam, ele
+    reaparece na aba — é a intenção.
+- **Mesma data no FIFO: quem já fechou entra primeiro** (`fecho`: arquivada →
+  encerrada → aberta, cada grupo na ordem da aba). Antes o empate seguia a
+  ordem de leitura (aba ativa antes da CONCLUIDA): ao arquivar, a linha passava
+  para trás da irmã da mesma data, a irmã levava a produção dela e a caixa
+  contava duas vezes.
+- **ENCERRAR** (decisão do PPCP: *"marca ENCERRAR na planilha"*, nada fecha
+  sozinho). Coluna de ENTRADA `ENCERRAR` na `PROGRAMACAO`, **criada pelo
+  script** no fim da aba (o LOTE é achado por "contém LOTE" — uma coluna
+  digitada como "ENCERRAR LOTE" à esquerda viraria o LOTE nos três leitores).
+  - A marca é `_marcado()`: qualquer coisa escrita, **menos o que quer dizer
+    "não"** (`FALSE`, `0`, `N`, `NÃO`). ⚠ Caixa de seleção desmarcada chega
+    como `FALSE` — com "não vazio" a coluna inteira fecharia e ARQUIVARIA a
+    programação toda no lançamento seguinte. **Só vale para linha vencida ou
+    de hoje**; em data futura a marca espera a data (para CANCELAR lote futuro,
+    apagar a linha continua certo — não há produção ligada a ele).
+  - **O teto é o PRODUZIDO da própria linha, só quando a célula é DELA**
+    (`_produzidoConfiavel`: `PRODUZIDO + SALDO = QTDE`, ou `ENCERRADO` com saldo
+    0). Aí a demanda no FIFO é `min(QTDE, PRODUZIDO)` e ela é **servida antes**
+    de qualquer lote aberto (1ª passada do laço de produção): na ordem normal
+    recebe o mesmo de sempre, e uma linha mais antiga do código acrescentada
+    depois não toma as caixas dela.
+  - **Sem PRODUZIDO confiável ela recebe só o que veio ANTES de hoje**
+    (`ateOntem`: crédito e produção de dias anteriores). Os dois casos: a linha
+    de HOJE marcada antes do 1º lançamento do dia (a célula está vazia — ontem
+    ela era futura, e o write-back deixa futura em branco) e o extrato do ERP
+    colado por cima das colunas de entrada (a célula é de OUTRA linha). Com a
+    QTDE cheia, o X dado de manhã comia o 1º lançamento do dia, que era
+    adiantamento de outro lote.
+  - ⚠ A régua é a célula, então ela tem de ser da regra NOVA: logo depois do
+    re-deploy o PRODUZIDO ainda é o da regra antiga (o 501106005 tinha 0 com
+    219 cx adiantadas). É por isso que a coluna **nasce do script**, na mesma
+    rodada que regrava o PRODUZIDO de todas as linhas. **Não criar a coluna à
+    mão antes do re-deploy.**
+  - O PRODUZIDO da encerrada é o **recebido do FIFO** (`encLinha`), nunca
+    `qtde − saldo` — com o saldo forçado a 0 isso daria a QTDE inteira e
+    realimentaria o FIFO na rodada seguinte. Mesmo cuidado no fallback do
+    arquivamento. `PERCENTUAL` arredondado **para baixo** (219/220 não é 100).
+  - **Tudo POR LINHA da aba** (`saldoRow`/`encLinha`/`adiLinha`, chave
+    `código|lote|data|linha`). Duas ORDENS do mesmo lote (código, lote e data
+    iguais) recebiam a SOMA pela chave: 100 e 20 viravam 20/80 nas duas, e com
+    o X cada uma congelava em 20 e soltava 80 cx de crédito para o lote
+    seguinte. A soma pela chave (`saldoLinha`) ficou só de rede, para a linha
+    que não casou (aba mudou entre o cálculo e a gravação). Encerrada sem valor
+    para a linha fica **em branco** — nunca CONCLUIDO pela conta `qtde − 0`.
+  - A META do dia (`programadoHoje`) continua com a QTDE original, inclusive
+    de linha encerrada e arquivada no dia. O saldo dela não é atraso nem
+    `hojeRestante`. Fora da meta, o encerrado sai do "a fazer": o
+    `getProgramacaoHoje` lista pelo `progHojeAberto` (o app do operador não
+    mostra o lote fechado com a meta cheia) e o `porLote` manda `encerradas` —
+    a Tela E conta o lote à parte e diz **NADA EM ABERTO HOJE**, nunca
+    "PROGRAMAÇÃO DO DIA CONCLUÍDA" ao lado da meta que faltou.
+  - Vai para a CONCLUIDA como `ENCERRADO`, com o X junto (a cópia casa por
+    nome e o `_abaArquivoProg` acrescenta a coluna). **Apagar o X na CONCLUIDA
+    DESFAZ o encerramento**: a linha volta para a PROGRAMACAO, recalculada
+    (`desfez`, pelo STATUS `ENCERRADO` sem X). É o caminho quando a cor errada
+    é descoberta depois do X.
+  - FORA DA ESTEIRA vence o ENCERRAR, nos dois lados (planilha e aba
+    PROGRAMAÇÃO do painel): um rótulo só para a mesma linha.
+- ⚠ **O STATUS passou a ser LIDO pelo `.gs`** (revoga o "não é lido por
+  ninguém" da seção do STATUS): `ENCERRADO` no `_produzidoConfiavel` e no
+  desfazer da CONCLUIDA, `CONCLUIDO (ADIANTADO)` na segura do arquivamento.
+  Editar o STATUS à mão muda o FIFO e o arquivamento.
+- **AVISO DE COR ERRADA no app** (`avisoCorErrada`/`avisoCorErradaTxt`, no
+  `salvarLanc`). Dispara só com os sinais juntos: as caixas passam do que o
+  código ainda aceita — o saldo de hoje (`PROG_HOJE.falta`, descontado
+  localmente a cada lançamento) **mais** o lote dele nos próximos 2 dias úteis
+  (`proximosQtde`, adiantamento legítimo) — por pelo menos `COR_AVISO_MIN`=10
+  cx ou `COR_AVISO_PCT`=10% do lançamento, **e** outra cor do **mesmo
+  produto** — mesma `desc`, que inclui o VOL; **nunca os 6 dígitos** (o 501130
+  tem quatro mesas) — tem saldo.
+  - **Sem a lista dos próximos dias não avisa** (`PROG_PROX` null: backend
+    antigo ou leitura que falhou — o `.gs` NÃO manda lista vazia nesse caso).
+    Sem ela todo adiantamento viraria acusação. O aviso só funciona **depois
+    do re-deploy do `.gs`**.
+  - O destaque (laranja) é **TROCAR A COR**, e ele fica **à direita**, onde
+    estava o ADICIONAR (`row-reverse` no `confirmarModal({seguro:'cancelar'})`).
+    Só trocar a cor deixava o COR CERTA debaixo do dedo: medido no Chromium,
+    toque duplo no ADICIONAR confirmava a cor errada. E toque nos primeiros
+    `CONFIRMA_TRAVA_MS`=400 ms depois de abrir não responde (`_confirmaClique`).
+  - **COR CERTA vale para o código o resto do dia** (`COR_OK`): quem continua
+    no código depois de fechar o lote tomaria o aviso a cada caixa.
+  - TROCAR A COR abre o seletor POR CIMA do lançamento. **Tocar ou BIPAR** a
+    cor certa troca só o produto: o `processarBipe` com o lançamento aberto não
+    chama mais o `abrirLancSlotAtivo` (que reabria na hora corrente, apagava a
+    quantidade e, com a hora recém-fechada em tolerância, jogava as caixas na
+    hora seguinte — o caso de 28/08). Bipe com o CONFERIR A COR aberto responde
+    TROCAR A COR (`_confirmaTag`).
+  - Código e slot são guardados **antes** da pergunta (`codLanc`/`slotLanc`):
+    com ela aberta, um bipe troca o PROD_ATUAL. Mudou durante a pergunta → não
+    grava (o operador confere de novo).
+  - Só julga com a lista DE HOJE e de no máximo `PROG_HOJE_MAX`=30 min (lote
+    datado ou encerrado pelo PPCP depois). O **ciclo do operador** relê a lista
+    a cada `PROG_HOJE_TTL`=15 min, **em sequência** com o `lerSheets`. Nunca
+    buscar o `getProgramacaoHoje` antes de gravar (o operador esperaria o cold
+    start) nem em paralelo depois (as duas JSONP só se enfileiram no Apps Script).
+  - O texto **não cita o número do lote**: o `lote` da lista é o último lote do
+    código, não necessariamente o que tem o saldo.
+  - ⚠ O `#modal-confirma` vem ANTES do `#modal-lanc` no HTML com o mesmo
+    z-index: aberto por cima, ficava escondido. Hoje `z-index:120`.
+- **Corrigir a cor de um lançamento passado** é na `PRODUCAO_PRODUTO` (trocar o
+  CODIGO das linhas erradas). **Ordem:** corrigir o log **antes** de marcar o X —
+  encerrada não recebe correção depois. Feito depois, o FIFO refaz sozinho:
+  linha arquivada que volta a ter saldo reaparece na aba; linha **encerrada**
+  só volta se o X for apagado (na PROGRAMACAO ou na CONCLUIDA).
+- Limitação aceita: linha mais antiga acrescentada depois re-aloca o FIFO, como
+  sempre foi — para linha arquivada **não encerrada** isso a traz de volta para
+  a aba (correto: ela passou a ter saldo).
 
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
@@ -556,8 +730,15 @@ via Google Apps Script (JSONP).
 - **Nunca saem:** linha sem lote, linha de data futura, e lote que ainda tem
   qualquer item em andamento (no modo `LOTE`). Se o cálculo falhar/vier vazio,
   nada é apagado (falha segura).
+- Linha **ENCERRADA** (v5.21) sai pelo mesmo caminho, com STATUS `ENCERRADO` e
+  o PRODUZIDO recebido do FIFO; na CONCLUIDA ela pede só esse PRODUZIDO.
+- **CONCLUIDO (ADIANTADO)** (v5.21) espera um dia na aba antes de sair, e linha
+  da CONCLUIDA que volta a ter saldo (ou perde o X lá) **volta para a aba**
+  (`_desarquivar`) — o arquivamento deixou de ser só de ida. Ver *Por que o
+  lote não fechava*.
 - Antes de confiar: rode **`simularArquivamento()`** no editor (só lista o que
-  sairia). **`arquivarConcluidosAgora()`** faz a limpeza inicial de uma vez.
+  sairia, o que fica como ADIANTADO e o que voltaria). **`arquivarConcluidosAgora()`**
+  faz a limpeza inicial de uma vez.
 - ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
 
 ## Caixas perdidas em parada (mobile)

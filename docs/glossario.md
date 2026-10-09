@@ -90,6 +90,29 @@ acompanha, não um veredito de gestão.
 ⚠ A jornada é declarada **duas vezes**: na configuração do painel (TURNO) e nas
 constantes do `.gs`. Mudou o turno na tela, mudar as constantes também.
 
+## Programação — atraso e situação de cada linha
+
+A produção (log `PRODUCAO_PRODUTO`, sem lote) é casada com a demanda (linhas da
+`PROGRAMACAO` + `PROGRAMACAO_CONCLUIDA`) por **FIFO, por código**: cada caixa
+abate o lote aberto **mais antigo** do mesmo código.
+
+| Termo | Fórmula | Unidade | Onde está |
+|---|---|---|---|
+| **ATRASO** (atraso vivo) | Σ do saldo dos lotes com data **anterior a hoje** depois do FIFO — cai durante o dia conforme a linha embala | cx | `.gs:3611` |
+| **PROGRAMADO HOJE** (meta do dia) | Σ `QTDE` das linhas datadas para hoje, **arquivadas e encerradas incluídas** | cx | `.gs:3622` |
+| **FALTA P/ ZERAR** | atraso + o que falta das linhas de hoje | cx | `.gs:3654` |
+| **PRODUÇÃO ADIANTADA** | caixa embalada sem lote aberto vira crédito e abate o próximo lote **do mesmo código** que abrir em até `ANTEC_DIAS_UTEIS` (**2**) dias úteis; depois disso é descartada | cx | `.gs:250`, `.gs:3584` |
+| **DIAS ÚTEIS** | seg–sex depois da data da produção até a data do lote (sexta → segunda = 1); feriado conta como útil | dias | `.gs:3270` |
+| **MESMA DATA** | no empate de data, a linha que já fechou entra primeiro: arquivada → encerrada → aberta (cada grupo na ordem da aba) | — | `.gs:3540` |
+| **ENCERRAR** | X na coluna `ENCERRAR`: a linha fica com o que já recebeu do FIFO, o resto deixa de ser cobrado (não é atraso). O teto é o `PRODUZIDO` da própria linha **quando ele fecha com ela** (`PRODUZIDO + SALDO = QTDE`, ou `ENCERRADO` com saldo 0), e ela é servida antes dos lotes abertos; sem isso (célula vazia ou de outra linha) recebe só o que veio **antes de hoje**. Só vale para linha vencida ou de hoje. Apagar o X na CONCLUIDA desfaz | — | `.gs:3396`, `.gs:3495`, `.gs:3576` |
+| **CONCLUIDO (ADIANTADO)** | saldo 0 com **metade ou mais** vinda de produção adiantada; fica **um dia** na aba antes de ir para a CONCLUIDA (o sistema não separa adiantamento de sobra de cor errada) | — | `.gs:3605`, `.gs:1850` |
+| **VOLTA DA CONCLUIDA** | linha arquivada, não encerrada, que o FIFO dá com saldo de novo (log corrigido, linha mais antiga acrescentada) — ou que perdeu o X na CONCLUIDA — volta para a PROGRAMACAO recalculada | — | `.gs:1952` |
+| **STATUS** | `CONCLUIDO` (saldo 0) · `CONCLUIDO (ADIANTADO)` · `EM ATRASO` (data anterior, aberta) · `EM ANDAMENTO` (hoje, já produziu) · `PENDENTE` (hoje, não começou) · `FORA DA ESTEIRA` · `ENCERRADO` (fechada pelo PPCP; o `PERCENTUAL` mostra o que ficou para trás, arredondado para baixo) | — | `.gs:1627` |
+
+⚠ **Linha apagada à mão some da demanda**: a produção dela passa a abater
+outro lote do mesmo código ou é descartada, e a meta do dia encolhe. Para
+fechar uma linha que não vai completar, é **ENCERRAR**, não apagar.
+
 ## Qualidade do plano (aba 📐 PLANO)
 
 Mede o **plano**, não a linha. Medido no `HISTORICO` em 15/09/2026 (79 dias), a

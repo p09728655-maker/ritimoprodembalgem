@@ -404,6 +404,9 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 #modal-senha .modal-sheet{border-radius:14px}
 .modal-ttl{font-family:var(--font-h);font-size:18px;font-weight:700;letter-spacing:2px}
 .cf-msg{font-family:var(--font-b);font-size:14px;color:var(--txt);line-height:1.55}
+/* O confirmar vem ANTES do modal de lançamento no HTML e os dois têm z-index
+   100: aberto por cima dele (aviso de cor errada), ficava ESCONDIDO atrás. */
+#modal-confirma{z-index:120}
 .senha-inp{
   width:100%;padding:14px;background:var(--elevated);border:1px solid var(--border);
   border-radius:8px;color:var(--txt);font-family:var(--font-d);font-size:16px;
@@ -771,8 +774,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="modal-ttl" id="cf-ttl">CONFIRMAR</div>
     <div class="cf-msg" id="cf-msg"></div>
     <div class="modal-btns">
-      <button class="btn-cancelar" onclick="_confirmaResolve(false)">CANCELAR</button>
-      <button class="btn-salvar" id="cf-ok" onclick="_confirmaResolve(true)">CONFIRMAR</button>
+      <button class="btn-cancelar" id="cf-cancel" onclick="_confirmaClique(false)">CANCELAR</button>
+      <button class="btn-salvar" id="cf-ok" onclick="_confirmaClique(true)">CONFIRMAR</button>
     </div>
   </div>
 </div>
@@ -923,7 +926,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.31.0';
+const APP_VER   = '1.32.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -953,6 +956,22 @@ let PROD_ATUAL = '';
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
+// Códigos (só dígitos) com lote nos próximos dias úteis e a quantidade desses
+// lotes (.gs v5.21). null = backend antigo ou leitura que falhou: sem a lista
+// não dá para separar adiantamento de cor errada, e o aviso não sai.
+let PROG_PROX = null, PROG_PROX_QTD = null;
+// De quando é a lista: o aviso de cor errada não julga com a lista de ontem
+// (app aberto de um dia para o outro) nem com uma de mais de PROG_HOJE_MAX (lote
+// novo que o PPCP datou depois). O ciclo do operador relê a cada PROG_HOJE_TTL.
+let PROG_HOJE_DIA = '', PROG_HOJE_TS = 0;
+const PROG_HOJE_TTL = 15*60*1000, PROG_HOJE_MAX = 30*60*1000;
+// Aviso de cor errada só com excedente que importa: pelo menos COR_AVISO_MIN cx
+// acima do que o código ainda aceita, ou COR_AVISO_PCT% do lançamento (o maior).
+// Sobra de 1–10 cx é ruído de apontamento; o caso real (25/09) foi 294 cx.
+const COR_AVISO_MIN = 10, COR_AVISO_PCT = 10;
+// Código que o operador já confirmou (COR CERTA) hoje não é perguntado de novo:
+// quem continua no código depois de fechar o lote tomaria o aviso a cada caixa.
+let COR_OK = { dia:'', cod:{} };
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
 let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
@@ -1216,6 +1235,9 @@ async function carregarProgramacaoHoje(){
     const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PROG_HOJE = json.produtos;
+      PROG_PROX = Array.isArray(json.proximos) ? json.proximos : null;
+      PROG_PROX_QTD = (json.proximosQtde && typeof json.proximosQtde==='object') ? json.proximosQtde : null;
+      PROG_HOJE_DIA = hojeStr(); PROG_HOJE_TS = Date.now();
     }
   }catch(e){ console.warn('carregarProgramacaoHoje:', e.message); }
 }
@@ -1479,10 +1501,16 @@ function abrirLancSlotAtivo(){
 function processarBipe(raw){
   const p = produtoPorEan(raw);
   if(p){
+    // Lançamento já aberto (com a hora escolhida e a quantidade digitada): o
+    // bipe só TROCA O PRODUTO. Reabrir na hora corrente apagava a quantidade e,
+    // com a hora recém-fechada em tolerância, jogava as caixas na hora seguinte
+    // — o caso de 28/08. Bipar com o CONFERIR A COR aberto = trocar a cor.
+    const lancAberto = !!_slotAtivo && document.getElementById('modal-lanc').classList.contains('open');
+    if(_confirmaCb && _confirmaTag==='cor') _confirmaResolve(false);
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
     bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
-    abrirLancSlotAtivo();                         // já abre a hora atual p/ digitar a quantidade
+    if(!lancAberto) abrirLancSlotAtivo();         // já abre a hora atual p/ digitar a quantidade
   }else{
     const core = eanCore(raw);
     bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
@@ -2354,6 +2382,9 @@ async function cicloRefresh(){
     if(c % A_CADA_DADOS === 0){
       await passo(lerSheets);
       if(PERFIL==='operador') await passo(carregarConfigPainel);   // toggle do modo leitor
+      // Lista do dia para o aviso de cor errada: lote datado ou ENCERRADO pelo
+      // PPCP depois do login. Em sequência, e só quando passou do TTL.
+      if(PERFIL==='operador' && Date.now()-PROG_HOJE_TS > PROG_HOJE_TTL) await passo(carregarProgramacaoHoje);
     }
     if(PERFIL==='gerencial' && c % A_CADA_PESADO === 0){
       await passo(async()=>renderHistoricoComDados(await lerHistorico()));
@@ -2479,22 +2510,40 @@ function atualizarBtnInicio(){
 
 // Modal de confirmação próprio (substitui o confirm() nativo, que mostra o
 // domínio e destoa do app). Retorna Promise<boolean>.
-let _confirmaCb = null;
+let _confirmaCb = null, _confirmaTag = '', _confirmaDesde = 0;
+// Toque que chega logo depois de o modal abrir é o 2º toque de um duplo (luva,
+// pressa) no botão que estava ali embaixo — não é resposta a uma pergunta que
+// ninguém leu.
+const CONFIRMA_TRAVA_MS = 400;
+// `seguro:'cancelar'` põe o DESTAQUE (laranja, o maior alvo) no botão de voltar
+// E o leva para a DIREITA, onde estava o botão que abriu a pergunta (ADICIONAR):
+// é para quando seguir em frente é o que provavelmente está errado (aviso de cor
+// errada). Só trocar a cor deixava o COR CERTA debaixo do dedo do ADICIONAR.
 function confirmarModal(opts){
   opts = opts || {};
   document.getElementById('cf-ttl').textContent = opts.titulo || 'CONFIRMAR';
   document.getElementById('cf-msg').textContent = opts.msg || '';
   document.getElementById('cf-ok').textContent  = opts.ok  || 'CONFIRMAR';
+  document.getElementById('cf-cancel').textContent = opts.cancelar || 'CANCELAR';
+  const inv = opts.seguro === 'cancelar';
+  document.getElementById('cf-ok').className     = inv ? 'btn-cancelar' : 'btn-salvar';
+  document.getElementById('cf-cancel').className = inv ? 'btn-salvar'   : 'btn-cancelar';
+  document.getElementById('cf-ok').parentNode.style.flexDirection = inv ? 'row-reverse' : '';
+  _confirmaTag = opts.tag || ''; _confirmaDesde = Date.now();
   document.getElementById('modal-confirma').classList.add('open');
   return new Promise(res => { _confirmaCb = res; });
 }
+function _confirmaClique(v){
+  if(Date.now() - _confirmaDesde < CONFIRMA_TRAVA_MS) return;
+  _confirmaResolve(v);
+}
 function _confirmaResolve(v){
   document.getElementById('modal-confirma').classList.remove('open');
-  const cb = _confirmaCb; _confirmaCb = null;
+  const cb = _confirmaCb; _confirmaCb = null; _confirmaTag = '';
   if(cb) cb(v);
 }
 document.getElementById('modal-confirma').addEventListener('click', e=>{
-  if(e.target === document.getElementById('modal-confirma')) _confirmaResolve(false);
+  if(e.target === document.getElementById('modal-confirma')) _confirmaClique(false);
 });
 
 let _salvandoInicio = false;
@@ -2584,11 +2633,80 @@ function numpadDel(){
 // (paradas, produto) nunca tiveram este listener; o modal-dia e o
 // modal-instalar podem manter porque não guardam nada digitado.
 
+// ── AVISO DE COR ERRADA (v1.32.0, .gs v5.21) ──
+// Medido na planilha em 09/10/2026: 9 linhas vencidas tinham a cor IRMÃ do mesmo
+// produto com caixa sobrando — 25/09, MESA CENTRO SLIM: OFF WHITE com 444 cx para
+// um lote de 150 e o BRANCO do mesmo lote em 0 de 300. O PPCP confirmou: cor
+// errada no app. O aviso pergunta ANTES de gravar, só quando os sinais vêm
+// juntos: as caixas passam do saldo do código escolhido E outra cor do MESMO
+// produto (mesma descrição, que inclui o VOL) tem saldo. Não é pelos 6 dígitos:
+// o 501130 tem quatro mesas diferentes. Lote do código nos próximos dias úteis
+// é ADIANTAMENTO (o .gs credita) até a quantidade desses lotes — passou disso, a
+// sobra não vai para lote nenhum. Sem produto, sem aviso. Sem a lista dos
+// próximos dias (backend antigo, leitura que falhou) também não: aí todo
+// adiantamento viraria acusação.
+function avisoCorErrada(codigo, add, prog, proximos, proxQtd){
+  const dig = v => String(v==null?'':v).replace(/\D/g,'');
+  const k = dig(codigo);
+  if(!k || !(add>0)) return null;
+  if(!Array.isArray(proximos)) return null;
+  let prox = 0;
+  if(proximos.indexOf(k)>=0){
+    if(!proxQtd || proxQtd[k]==null) return null;   // sem a quantidade: não dá para medir
+    prox = Math.max(0, Number(proxQtd[k])||0);
+  }
+  const lista = Array.isArray(prog) ? prog : [];
+  const meu = lista.find(p=>dig(p.codigo)===k) || null;
+  const ref = meu || PRODUTOS.find(p=>dig(p.codigo)===k) || null;
+  const desc = normTxt(ref && ref.desc).trim();
+  if(!desc) return null;
+  const falta = meu ? Math.max(0, Number(meu.falta)||0) : 0;
+  const exc = add - falta - prox;
+  if(exc < Math.max(COR_AVISO_MIN, Math.ceil(add*COR_AVISO_PCT/100))) return null;
+  const irmas = lista.filter(p=>dig(p.codigo)!==k && normTxt(p.desc).trim()===desc && (Number(p.falta)||0)>0);
+  if(!irmas.length) return null;
+  return { falta, prox, exc, irmas, cor: corDeProduto(ref) || ref.codigo };
+}
+// Sem o número do lote: o `lote` da lista é o último lote do código, não
+// necessariamente o que tem o saldo (que pode ser um atraso mais velho).
+function avisoCorErradaTxt(a, add){
+  const ir = a.irmas.map(p=>`${corDeProduto(p)||p.codigo} (${fmtN(Number(p.falta)||0)} cx)`).join(', ');
+  const tem = a.falta>0 ? `só ${fmtN(a.falta)} cx em aberto hoje` : 'nenhuma caixa em aberto hoje';
+  const vem = a.prox>0 ? ` e ${fmtN(a.prox)} programadas para os próximos dias` : '';
+  return `${a.cor}: ${tem}${vem}, e você vai lançar ${fmtN(add)}.`
+    + ` Do mesmo produto, ainda em aberto: ${ir}. Confira a cor na caixa antes de salvar.`;
+}
+
 async function salvarLanc(){
   const add = parseInt(document.getElementById('ml-qtd').value);
   if(isNaN(add)||add<=0){ alert('Informe a quantidade a adicionar.'); return; }
   if(!_slotAtivo) return;
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+
+  // Cor errada? O destaque é TROCAR A COR: abre o seletor de produto POR CIMA
+  // do lançamento (vem depois no HTML) — tocar ou bipar a cor certa troca só o
+  // produto, a hora e a quantidade digitadas ficam, e o ADICIONAR seguinte
+  // confere a cor nova. COR CERTA vale para o código o resto do dia.
+  // O código e o slot são guardados ANTES da pergunta: com ela aberta, um bipe
+  // troca o PROD_ATUAL e o refresh pode trocar também — gravar depois com o
+  // produto novo seria lançar a cor que ninguém conferiu.
+  // Só julga com a lista DE HOJE e de no máximo PROG_HOJE_MAX: lista velha não
+  // vê o lote que o PPCP datou ou encerrou depois, e acusaria à toa.
+  const codLanc = PROD_ATUAL, slotLanc = _slotAtivo;
+  const kLanc = String(codLanc||'').replace(/\D/g,'');
+  const listaOk = PROG_HOJE_DIA===hojeStr() && Date.now()-PROG_HOJE_TS <= PROG_HOJE_MAX;
+  const jaConf = COR_OK.dia===hojeStr() && !!COR_OK.cod[kLanc];
+  if(codLanc && listaOk && !jaConf){
+    const av = avisoCorErrada(codLanc, add, PROG_HOJE, PROG_PROX, PROG_PROX_QTD);
+    if(av){
+      const seguir = await confirmarModal({titulo:'CONFERIR A COR', msg:avisoCorErradaTxt(av, add),
+                                           ok:'COR CERTA', cancelar:'TROCAR A COR', seguro:'cancelar', tag:'cor'});
+      if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta: confere de novo
+      if(!seguir){ abrirModalProduto(); return; }
+      if(COR_OK.dia!==hojeStr()) COR_OK = { dia:hojeStr(), cod:{} };
+      COR_OK.cod[kLanc] = 1;
+    }
+  }
 
   const btn=document.getElementById('btn-salvar');
   btn.textContent='SALVANDO...'; btn.disabled=true;
@@ -2616,7 +2734,7 @@ async function salvarLanc(){
   ];
   // Produto é OPCIONAL: se o operador não selecionou nenhum, lança normalmente
   // (sem produto) — não bloqueia a produção.
-  if(PROD_ATUAL) params.push('produto='+encodeURIComponent(PROD_ATUAL));
+  if(codLanc) params.push('produto='+encodeURIComponent(codLanc));
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
 
   // Auto-retry: como o lançamento agora é idempotente (mesmo lancId não grava 2x),
@@ -2629,6 +2747,15 @@ async function salvarLanc(){
       if(i>1) btn.textContent='RECONECTANDO '+i+'/'+TENTATIVAS+'...';
       const res=await jsonpFetch(url, TIMEOUT);
       if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
+      // A lista do dia só é relida ao abrir o seletor: sem descontar aqui, o
+      // aviso de cor errada não veria o lote fechar ao longo dos lançamentos.
+      if(codLanc){
+        const k=String(codLanc).replace(/\D/g,'');
+        const it=PROG_HOJE.find(p=>String(p.codigo).replace(/\D/g,'')===k);
+        if(it) it.falta=Math.max(0,(Number(it.falta)||0)-add);
+        // A lista é relida no ciclo do operador, em sequência com o resto —
+        // nunca em paralelo com o lerSheets logo abaixo.
+      }
       fecharModalLanc();
       await lerSheets();
       return;
