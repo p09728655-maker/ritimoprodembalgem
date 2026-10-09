@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.130.0 — 09/10/2026
+
+- **PRÓXIMOS DIAS: o "Mais pesado" diz quantas cores o lote tem** (aba ⚖ UEP,
+  impressão executiva da UEP e tela da diretoria). As horas são do **lote
+  inteiro**, mas o texto levava só a cor da maior linha: em 15/10 saía
+  *"25297 KIT 2 MESA CABECEIRA SLEEP · OFF WHITE/NATURE 6h34"*, quando o lote
+  tem 5 cores e 1.100 cx (750 delas OFF WHITE/NATURE). Parecia o lote de 13/10,
+  que é só dessa cor.
+  - Agora: uma cor → `produto · cor` (como antes); várias cores →
+    `produto · N cores`; produtos diferentes no mesmo lote → o de mais carga
+    `+ N produto(s)`. Passando o mouse, o tooltip lista as cores com as caixas.
+  - **Atenção:** nenhum número mudou (horas, UEP, caixas e pontos iguais); só o
+    texto do lote. Nada no `.gs`.
+
+---
+
 ## v7.129.0 — 09/10/2026
 
 - **UEP/cx do comparativo por modelo em coluna própria** (aba PRODUÇÃO/HORA e

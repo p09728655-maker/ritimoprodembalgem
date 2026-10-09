@@ -3084,6 +3084,17 @@ feito e dá ar de verdade ao que sobrou.
   novo (`GPX_TENT`) — o fim da leitura redesenha, e sem a espera uma falha
   viraria laço de chamadas.
 - `_gpxHtml` é desenho (o teste falha se `_cartAberta`/`uepCx` aparecerem nele).
+- ⚠ **O "Mais pesado" é o LOTE inteiro** (`_gpxRotLote`, v7.130.0, PPCP
+  09/10/2026): uma cor → `produto · cor`; várias → `produto · N cores`;
+  produtos distintos → o de mais carga `+ N produto(s)`. Com a cor da maior
+  linha, *"OFF WHITE/NATURE 6h34"* lia-se como se a cor sozinha fosse 6h34 (o
+  lote 25297 tem 5 cores). O `_cartAberta` guarda `desc`/`cor` por linha só
+  para isso (campos ADICIONAIS).
+- ⚠ **A UEP é POR CAIXA (por volume)** — conferido com o PPCP em 09/10/2026. A
+  planilha de programação do PPCP calculava `jogos × UEP/cx` e contava metade
+  da ORION (2 volumes): 3.828 contra os 4.148 do app em 15/10, diferença
+  exata de 320 UEP. O app está certo (Σ caixas de cada volume × UEP do volume);
+  não "corrigir" o app para bater com a planilha.
 - ⚠ **Nunca inventar número** (PPCP, 25/09/2026: *"sempre, jamais inventar
   números"*). Sem UEP na programação a faixa diz que não converte; leitura que
   falhou diz o porquê. **Linha sem UEP no cadastro NÃO entra pela média**

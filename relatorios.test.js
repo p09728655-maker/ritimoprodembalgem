@@ -3939,7 +3939,7 @@ console.log('\n── estudo de UEP ──');
   { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
     eval(m[0].replace(/const /g, 'global.')); }
   eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida('));
-  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxMontar('));
+  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxRotLote(')); eval(pega('function _gpxMontar('));
   const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
   const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
                  it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
@@ -3992,6 +3992,21 @@ console.log('\n── estudo de UEP ──');
      [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /_abaOn\('uep'\)/.test(RP),
       /6 · PRÓXIMOS DIAS/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),
       /renderProxDias/.test(pega('function renderAll(')), /id="ger-prox" style="display:none/.test(src)], [true, true, true, true, false, false]);
+  // v7.130.0 — o "Mais pesado" é o LOTE inteiro: com várias cores, nada de nome
+  // de uma cor só (caso real: 13/10 lote 25282 só OFF WHITE/NATURE 1.100 cx ×
+  // 15/10 lote 25297 com 5 cores, 750 delas OFF WHITE/NATURE — os dois 6h34).
+  { const K = (lote, cod, cor, q, desc) => ({ data:'15/10/2026', lote, codigo:cod, desc: desc || 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor, qtde:q, uepCx:1.72 });
+    const GL = _gpxMontar([K('25282','501097004','OFF WHITE/NATURE',1100, null), K('25297','501097001','BRANCO',100), K('25297','501097002','PRETO ACETINADO',100),
+                           K('25297','501097003','CINZA/NATURE',50), K('25297','501097004','OFF WHITE/NATURE',750), K('25297','501097005','PRETO ACETINADO/NATURE',100)]
+                           .map((x, i) => i === 0 ? Object.assign(x, { data:'13/10/2026' }) : x), new Date(2026, 9, 9), 0, 0, 2530, 5);
+    const l13 = GL.dias.find(d => d.data.startsWith('13/10')).lotes[0], l15 = GL.dias.find(d => d.data.startsWith('15/10')).lotes[0];
+    ok('lote de uma cor só: produto · cor, sem código e sem VOL (como antes)', [l13.rot, _fmtHM(l13.min)], ['KIT 2 MESA CABECEIRA SLEEP · OFF WHITE/NATURE', '6h34']);
+    ok('lote de várias cores: produto · N cores, e o tooltip abre as cores com as caixas',
+       [l15.rot, _fmtHM(l15.min), /OFF WHITE\/NATURE 750 cx · BRANCO 100 cx/.test(l15.nome)], ['KIT 2 MESA CABECEIRA SLEEP · 5 cores', '6h34', true]);
+    const OR = _gpxRotLote([{ desc:'VOL 1/2 CRISTALEIRA ORION', cor:'OFF WHITE', q:35, eq:64 }, { desc:'VOL 2/2 CRISTALEIRA ORION', cor:'OFF WHITE', q:35, eq:48 }], '501080001 · VOL 1/2 CRISTALEIRA ORION · OFF WHITE');
+    const MX = _gpxRotLote([{ desc:'VOL 1/1 BANQUETA VERSATIL', cor:'BRANCO', q:280, eq:291 }, { desc:'VOL 1/1 BUFFET 2 PT PRISM', cor:'BRANCO', q:50, eq:100 }], 'x');
+    ok('dois volumes da MESMA cor são um produto e uma cor; produtos diferentes no lote → o de mais carga + N',
+       [OR.rot, MX.rot], ['CRISTALEIRA ORION · OFF WHITE', 'BANQUETA VERSATIL + 1 produto']); }
   // 10h32 − 8h47 = 105,3 min: a tela mostra "1h45", e a cor tem de ser a da legenda "até 1h45"
   const G2 = _gpxMontar([it('25/09/2026','1',1000,3.033)], new Date(2026, 8, 24), 0, 0, 2530, 1);
   ok('a cor segue o número exibido: 1h45 é âmbar, não NÃO CABE', [_fmtHM(G2.dias[0].exc), G2.dias[0].estado], ['1h45', 'warn']);
