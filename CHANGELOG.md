@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.129.0 — 09/10/2026
+
+- **UEP/cx do comparativo por modelo em coluna própria** (aba PRODUÇÃO/HORA e
+  o PDF *Produção por Modelo*). O número vinha colado no fim do nome
+  (`MESA CABECEIRA MADERO 1,00 UEP/cx`) e caía numa altura diferente a cada
+  linha — não dava para correr o olho e comparar. Agora é a coluna **UEP/CX**
+  logo depois de MODELO, alinhada à direita.
+  - Produto sem UEP no cadastro sai **"—"** na coluna (antes não aparecia nada).
+  - A coluna **some** quando nenhum grupo tem UEP (backend antigo ou cadastro
+    vazio) — a mesma regra da COR.
+  - **Atenção:** nenhum número mudou; é só a posição. Nada no `.gs`.
+
+---
+
 ## v7.128.0 · mobile 1.32.0 · `.gs` v5.21 — 09/10/2026
 
 Por que o PPCP excluía linha da PROGRAMACAO: o lote "não fechava pelo app".
