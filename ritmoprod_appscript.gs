@@ -1,5 +1,16 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.23 — COLUNA ADIANTADO_CX NA PROGRAMACAO E NA CONCLUIDA
+//               PPCP, 14/10/2026: "tem como na aba programação concluída
+//               colocar também que foi embalado adiantado?". O STATUS
+//               CONCLUIDO (ADIANTADO) só diz SIM/NÃO, e só a partir de metade
+//               da linha. A coluna nova diz QUANTO: as caixas da linha que
+//               vieram de produção feita ANTES da data do lote (o crédito do
+//               FIFO, `cred`). Criada pelo script no fim da aba; vai para a
+//               CONCLUIDA junto com a linha (cópia por nome) e fica congelada
+//               lá. 0 = calculada, sem adiantamento; vazia = não calculada
+//               (linha arquivada antes desta versão, futura sem adiantamento,
+//               fora da esteira). Não mexe em nenhum número existente.
 // Versão: 5.22 — O LOTE DE AMANHÃ JÁ BAIXA O ADIANTADO
 //               PPCP, 14/10/2026: "está entrando lt 25295 mas não baixa, esse
 //               lote é de amanhã". A caixa embalada antes da data do lote
@@ -1677,7 +1688,10 @@ function atualizarSaldoNaProgramacao(prog) {
 
   // Garante as colunas de saída. Se faltarem, cria à DIREITA (contíguas), nunca
   // no meio das colunas de entrada. Reaproveita as que já existem.
-  const OUT = ['PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM'];
+  // ADIANTADO_CX (v5.23): caixas da linha vindas de produção feita ANTES da
+  // data do lote. Na planilha de hoje ela nasce depois do ENCERRAR — à direita
+  // de tudo, como as outras de saída.
+  const OUT = ['PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM', 'ADIANTADO_CX'];
   let nCols = hdr.length;
   const outIdx = {};
   OUT.forEach(function (name) {
@@ -1703,6 +1717,7 @@ function atualizarSaldoNaProgramacao(prog) {
   const encMap   = prog.encLinha   || {};
   const adiMap   = prog.adiLinha   || {};
   const futMap   = prog.adiFut     || {};
+  const credMap  = prog.credRow    || {};
 
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   const cols = {}; OUT.forEach(function (n) { cols[n] = []; });
@@ -1717,7 +1732,7 @@ function atualizarSaldoNaProgramacao(prog) {
     const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
 
-    let produzido = '', saldo = '', pct = '', status = '', escreve = false;
+    let produzido = '', saldo = '', pct = '', status = '', escreve = false, adiCx = '';
 
     if (!temLinha) {
       // linha vazia/rascunho: não escreve nada
@@ -1741,6 +1756,7 @@ function atualizarSaldoNaProgramacao(prog) {
         pct        = qtde > 0 ? Math.floor(produzido / qtde * 100) : 0;
         status     = 'ENCERRADO';
         escreve    = true;
+        if (credMap[ek] != null) adiCx = Math.min(credMap[ek], produzido);
       }
     } else if (dNum > 0 && dNum <= hojeNum) {
       // Lote já vencido ou de hoje: pega o saldo alocado FIFO para esta linha.
@@ -1753,6 +1769,9 @@ function atualizarSaldoNaProgramacao(prog) {
         pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
         status     = _progStatus(qtde, saldo, produzido, dNum, hojeNum, !!adiMap[rk]);
         escreve    = true;
+        // só a linha casada pela LINHA tem o crédito dela; a que caiu na soma
+        // pela chave (aba mudou no meio) fica em branco, nunca com o de outra
+        if (saldoRow[rk] != null && credMap[rk] != null) adiCx = Math.min(credMap[rk], produzido);
       }
     } else if (dNum > hojeNum) {
       // Lote de AMANHÃ (ou dos próximos dias úteis) que já recebeu caixa
@@ -1766,6 +1785,7 @@ function atualizarSaldoNaProgramacao(prog) {
         pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
         status     = _progStatus(qtde, saldo, produzido, dNum, hojeNum, true);
         escreve    = true;
+        adiCx      = produzido;   // linha futura: tudo que ela tem veio adiantado
       }
     }
     // demais linhas (futuras sem adiantamento / sem correspondência): em branco
@@ -1794,6 +1814,11 @@ function atualizarSaldoNaProgramacao(prog) {
     cols['PERCENTUAL'].push([pct]);
     cols['STATUS'].push([status]);
     cols['ATUALIZADO_EM'].push([quando]);
+    // ⚠ Fora do `mudou` acima de propósito: na 1ª rodada a coluna nasce vazia e
+    // recebe valor em TODAS as linhas — contando isso como "a linha andou", o
+    // carimbo de 14/09 voltaria a ser o relógio da sincronização. A caixa
+    // adiantada só muda junto com o PRODUZIDO, que já carimba.
+    cols['ADIANTADO_CX'].push([adiCx]);
   }
 
   // Escreve UMA COLUNA POR VEZ — jamais um bloco que possa cair sobre colunas de
@@ -1856,6 +1881,7 @@ function _arquivarConcluidos(prog, simular) {
   const saldoRow = prog.saldoRow   || {};   // por LINHA: "key|lote|dNum|i" (v5.21)
   const encMap   = prog.encLinha   || {};
   const adiMap   = prog.adiLinha   || {};
+  const credMap  = prog.credRow    || {};   // ADIANTADO_CX, por linha (v5.23)
   const segura   = [];                      // ADIANTADO que fica um dia na aba
 
   // 1) Classifica cada linha da aba.
@@ -1957,7 +1983,8 @@ function _arquivarConcluidos(prog, simular) {
       const prodz = (l.enc && encMap[ek] != null) ? Math.max(0, encMap[ek]) : Math.max(qtde - saldo, 0);
       const calc  = { PRODUZIDO: prodz, SALDO: saldo, PERCENTUAL: qtde > 0 ? (l.enc ? Math.floor : Math.round)(prodz / qtde * 100) : 0,
                       STATUS: l.estado === 'FORA' ? 'FORA DA ESTEIRA' : (l.enc ? 'ENCERRADO' : (adiMap[ek] ? 'CONCLUIDO (ADIANTADO)' : 'CONCLUIDO')),
-                      ATUALIZADO_EM: agora };
+                      ATUALIZADO_EM: agora,
+                      ADIANTADO_CX: (l.estado !== 'FORA' && saldoRow[ek] != null && credMap[ek] != null) ? Math.min(credMap[ek], prodz) : '' };
       return mapa.map(function (j, c) {
         if (j === -2) return agora;
         if (j < 0)    return '';
@@ -1990,6 +2017,7 @@ function _arquivarConcluidos(prog, simular) {
 // CONCLUIDA — se a aba mudou desde o cálculo, fica onde está.
 function _desarquivar(ss, prog, hojeNum, simular) {
   const mapa = (prog && prog.reabrirArq) || {};
+  const credA = (prog && prog.credArq) || {};
   const ks = Object.keys(mapa);
   if (!ks.length) return [];
   const shArq = acharAbaTolerante(ss, SHEET_PROG_ARQ);
@@ -2008,7 +2036,7 @@ function _desarquivar(ss, prog, hojeNum, simular) {
     if (!r || !(row >= 1)) return;
     const lote = iLote >= 0 ? String(r[iLote] || '').trim() : '';
     if (codKey(r[iCod]) !== p[0] || lote !== p[1] || dataParaNum(r[iData]) !== Number(p[2])) return;
-    sai.push({ row: row, r: r, rem: Math.max(0, Number(mapa[k]) || 0), dNum: Number(p[2]),
+    sai.push({ row: row, r: r, rem: Math.max(0, Number(mapa[k]) || 0), cred: credA[k], dNum: Number(p[2]),
                linha: row + 1, lote: lote, codigo: String(r[iCod] || '').trim(), data: normalizarDataBR(r[iData]) });
   });
   const detalhe = sai.map(function (o) { return { linha: o.linha, lote: o.lote, codigo: o.codigo, data: o.data, saldo: o.rem }; });
@@ -2022,7 +2050,9 @@ function _desarquivar(ss, prog, hojeNum, simular) {
   const novas = sai.map(function (o) {
     const qtde = Number(o.r[iQtd]) || 0, prodz = Math.max(qtde - o.rem, 0);
     const calc = { PRODUZIDO: prodz, SALDO: o.rem, PERCENTUAL: qtde > 0 ? Math.round(prodz / qtde * 100) : 0,
-                   STATUS: _progStatus(qtde, o.rem, prodz, o.dNum, hojeNum, false), ATUALIZADO_EM: agora };
+                   STATUS: _progStatus(qtde, o.rem, prodz, o.dNum, hojeNum, false), ATUALIZADO_EM: agora,
+                   // o da CONCLUIDA é do retrato antigo; volta recalculado (v5.23)
+                   ADIANTADO_CX: o.cred != null ? Math.min(Number(o.cred) || 0, prodz) : '' };
     return hp.map(function (nome) {
       if (calc[nome] !== undefined) return calc[nome];
       const j = ha.indexOf(nome);
@@ -2952,7 +2982,7 @@ function getPontosDia() {
   const programacao = calcularProgramacao();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
   // não precisa ir no JSON do painel — remove para manter o payload enxuto.
-  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
+  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'credRow', 'credArq', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
 
   // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
   // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
@@ -3567,6 +3597,12 @@ function calcularProgramacao() {
   // ela (v5.22). É o que o FIFO vai dar a ela quando a data chegar, se nada mais
   // for lançado do código até lá.
   const adiFut     = {};
+  // Caixas da linha que vieram de CRÉDITO — produção feita antes da data do
+  // lote (v5.23, coluna ADIANTADO_CX). Por linha da aba ativa; as da CONCLUIDA
+  // que voltam para a aba vão em `credArq`, pela linha de lá (as duas abas têm
+  // números de linha próprios — juntas, colidiriam).
+  const credRow    = {};
+  const credArq    = {};
   // Linha da CONCLUIDA ("key|lote|dNum|linha da CONCLUIDA") que voltou a ter
   // saldo — log corrigido depois, linha mais antiga acrescentada — ou cujo X
   // foi apagado lá: volta para a PROGRAMACAO (_desarquivar). Sem isso o atraso
@@ -3671,10 +3707,11 @@ function calcularProgramacao() {
     fila.forEach(lot => {
       const rk = key + '|' + lot.lote + '|' + lot.d + '|' + lot.row;
       if (lot.arq) {
-        if (!lot.enc && (lot.rem > 0 || lot.desfez)) reabrirArq[rk] = lot.rem;
+        if (!lot.enc && (lot.rem > 0 || lot.desfez)) { reabrirArq[rk] = lot.rem; credArq[rk] = lot.cred; }
         return;
       }
       saldoRow[rk] = lot.rem;
+      credRow[rk]  = lot.cred;
       // Fechou com a maior parte vinda de CRÉDITO: pode ser adiantamento de
       // verdade ou sobra sem dono (cor errada, lançamento dobrado, linha
       // apagada). O FIFO não distingue — a linha ganha STATUS próprio e segura
@@ -3735,6 +3772,8 @@ function calcularProgramacao() {
     encLinha: encLinha,                   // idem: produzido das linhas ENCERRADAS, por linha (v5.21)
     adiLinha: adiLinha,                   // idem: linha fechada por produção ADIANTADA, por linha (v5.21)
     adiFut: adiFut,                       // idem: caixas adiantadas por linha FUTURA (v5.22)
+    credRow: credRow,                     // idem: caixas vindas de crédito, por linha (v5.23, ADIANTADO_CX)
+    credArq: credArq,                     // idem: o mesmo para a linha da CONCLUIDA que volta (v5.23)
     reabrirArq: reabrirArq                // idem: linha da CONCLUIDA que volta para a aba (v5.21)
   };
 }
