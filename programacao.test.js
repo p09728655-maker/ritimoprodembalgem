@@ -34,7 +34,9 @@ function montar(prog, log, opts) {
   const ABAS = {
     // SALDO como o write-back grava (QTDE − PRODUZIDO), salvo quando o caso
     // pede outro número (célula de outra linha, depois de colar o extrato).
-    PROGRAMACAO: [HDR_PROG].concat(prog.map(l => [l.lote, l.data, 1, l.cod, 'X', l.qtde,
+    // cópia: o script acrescenta colunas no cabeçalho (ENCERRAR, ADIANTADO_CX),
+    // e o mesmo array em todos os casos vazaria a coluna de um caso para o outro
+    PROGRAMACAO: [HDR_PROG.slice()].concat(prog.map(l => [l.lote, l.data, 1, l.cod, 'X', l.qtde,
       l.prod == null ? '' : l.prod, l.saldo !== undefined ? l.saldo : (l.prod == null ? '' : l.qtde - l.prod),
       '', l.status || '', '', l.enc === undefined ? '' : l.enc])),
     PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS']].concat(log.map(e => [e[0], '08:00', e[1], 'X', e[2]])),
@@ -526,6 +528,75 @@ console.log('\n── o lote de AMANHÃ já baixa o adiantado (v5.22) ──');
   ok('log corrigido → a linha futura volta ao branco', campos(P, linha(P, '25295', '501.142.002'), ['PRODUZIDO', 'STATUS', 'ATUALIZADO_EM']), ['', '', '']);
   ok('ANTEC_DIAS_UTEIS = 0 desliga a prévia junto com o crédito',
      Object.keys(montar(prog, [['14/10/2026', '501142002', 450]], { hoje: '14/10/2026', antec: 0 }).calc().adiFut), []);
+}
+
+console.log('\n── ADIANTADO_CX: quantas caixas vieram adiantadas (v5.23) ──');
+{
+  // PPCP, 14/10/2026: "na aba programação concluída colocar também que foi
+  // embalado adiantado" → coluna com QUANTO, não só a etiqueta.
+  const prog = [
+    { lote: '25291', data: '14/10/2026', cod: '501.060.005', qtde: 80 },    // feito no próprio dia
+    { lote: '25295', data: '15/10/2026', cod: '501.142.001', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 },
+    { lote: '25300', data: '15/10/2026', cod: '501.153.001', qtde: 200 },   // 20 adiantadas + 180 no dia
+  ];
+  const log = [['14/10/2026', '501060005', 78], ['14/10/2026', '501142001', 64], ['14/10/2026', '501142002', 450],
+               ['14/10/2026', '501153001', 20]];
+  const m = montar(prog, log, { hoje: '14/10/2026' });
+  m.rodar();
+  const P = m.ABAS.PROGRAMACAO, A = () => m.ABAS.PROGRAMACAO_CONCLUIDA;
+  const ADI = ['PRODUZIDO', 'STATUS', 'ADIANTADO_CX'];
+  ok('a coluna nasce sozinha no FIM da aba (depois do ENCERRAR)', P[0][P[0].length - 1], 'ADIANTADO_CX');
+  ok('hoje: o lote de hoje feito no dia é 0; o de amanhã mostra o adiantado',
+     [campos(P, linha(P, '25291', '501.060.005'), ADI), campos(P, linha(P, '25295', '501.142.002'), ADI), campos(P, linha(P, '25300', '501.153.001'), ADI)],
+     [[78, 'EM ANDAMENTO', 0], [450, 'CONCLUIDO (ADIANTADO)', 450], [20, 'ADIANTADO', 20]]);
+  m.setHoje('15/10/2026');
+  m.ABAS.PRODUCAO_PRODUTO.push(['15/10/2026', '07:00', '501142001', 'X', 1], ['15/10/2026', '07:00', '501153001', 'X', 180]);
+  m.rodar();
+  ok('no dia do lote: fecha com o que faltou, e o número diz quanto veio antes',
+     [campos(P, linha(P, '25295', '501.142.001'), ADI)], [[65, 'CONCLUIDO (ADIANTADO)', 64]]);
+  ok('adiantamento PEQUENO: STATUS só CONCLUIDO (e já sai), mas a CONCLUIDA guarda as 20',
+     [!!linha(P, '25300', '501.153.001'), campos(A(), linha(A(), '25300', '501.153.001'), ADI)], [false, [200, 'CONCLUIDO', 20]]);
+  m.setHoje('16/10/2026');
+  m.rodar();
+  ok('o CONCLUIDO (ADIANTADO) chega na CONCLUIDA com a quantidade',
+     ['501.142.001', '501.142.002'].map(c => campos(A(), linha(A(), '25295', c), ADI)),
+     [[65, 'CONCLUIDO (ADIANTADO)', 64], [450, 'CONCLUIDO (ADIANTADO)', 450]]);
+}
+{
+  // ENCERRADA: o adiantado nunca passa do que ela produziu
+  const m = montar([{ lote: 'L1', data: '07/10/2026', cod: '501106005', qtde: 220, enc: 'X' }], [['06/10/2026', '501106005', 219]]);
+  m.rodar();
+  const A = m.ABAS.PROGRAMACAO_CONCLUIDA;
+  ok('encerrada vai com as 219 adiantadas', campos(A, linha(A, 'L1', '501106005'), ['PRODUZIDO', 'STATUS', 'ADIANTADO_CX']), [219, 'ENCERRADO', 219]);
+}
+{
+  // Volta da CONCLUIDA: o número de lá é do retrato antigo — volta recalculado
+  const prog = [
+    { lote: 'A', data: '05/10/2026', cod: '501128002', qtde: 100 },
+    { lote: 'S', data: '05/10/2026', cod: '501128001', qtde: 200 },
+    { lote: 'B', data: '07/10/2026', cod: '501128002', qtde: 200 },
+  ];
+  const m = montar(prog, [['05/10/2026', '501128002', 300]], { hoje: '07/10/2026' });
+  m.rodar(); m.setHoje('08/10/2026'); m.rodar();
+  const P = m.ABAS.PROGRAMACAO, A = () => m.ABAS.PROGRAMACAO_CONCLUIDA;
+  ok('arquivado com 200 adiantadas', campos(A(), linha(A(), 'B', '501128002'), ['ADIANTADO_CX']), [200]);
+  m.ABAS.PRODUCAO_PRODUTO.splice(1, 1, ['05/10/2026', '08:00', '501128002', 'X', 100], ['05/10/2026', '08:00', '501128001', 'X', 200]);
+  m.rodar();
+  ok('log corrigido: volta para a aba com 0 adiantado, não com as 200 de antes',
+     campos(P, linha(P, 'B', '501128002'), ['PRODUZIDO', 'SALDO', 'ADIANTADO_CX']), [0, 200, 0]);
+}
+{
+  // Aba como está na planilha: linhas já calculadas e carimbadas, SEM a coluna.
+  // A 1ª rodada depois do re-deploy cria a coluna e enche tudo — e isso não
+  // pode recarimbar o ATUALIZADO_EM de quem não andou (a regra de 14/09).
+  const prog = [{ lote: 'L1', data: '13/10/2026', cod: '501128002', qtde: 150, prod: 100, status: 'EM ATRASO' }];
+  const m = montar(prog, [['13/10/2026', '501128002', 100]], { hoje: '14/10/2026' });
+  const P = m.ABAS.PROGRAMACAO;
+  linha(P, 'L1', '501128002')[col(P, 'PERCENTUAL')] = 67;   // como o write-back deixou ontem
+  linha(P, 'L1', '501128002')[col(P, 'ATUALIZADO_EM')] = '13/10/2026 15:00:00';
+  m.rodar();
+  ok('a coluna nova não recarimba a linha parada', campos(P, linha(P, 'L1', '501128002'), ['ADIANTADO_CX', 'ATUALIZADO_EM']), [0, '13/10/2026 15:00:00']);
 }
 
 console.log('\n── a coluna ENCERRAR nasce sozinha ──');

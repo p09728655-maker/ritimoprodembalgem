@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## `.gs` v5.23 — 14/10/2026
+
+- ⚠ **re-deploy** — **Coluna `ADIANTADO_CX` na PROGRAMACAO e na
+  PROGRAMACAO_CONCLUIDA**: quantas caixas de cada linha foram embaladas
+  **antes da data do lote**. O STATUS CONCLUIDO (ADIANTADO) só diz sim ou não,
+  e só quando o adiantado passa de metade da linha; a coluna diz quanto, em
+  qualquer linha.
+  - O script cria a coluna sozinho no fim da aba, depois do ENCERRAR, no
+    primeiro lançamento depois do re-deploy. **Não criar à mão.**
+  - Vai para a CONCLUIDA junto com a linha e fica congelada lá.
+  - **0** = calculado, nada adiantado. **Vazio** = não calculado: linha
+    arquivada antes desta versão, lote futuro sem adiantamento ou fora da
+    esteira.
+  - Ex.: lote de 200 com 20 cx embaladas na véspera e 180 no dia sai como
+    CONCLUIDO (abaixo de metade) com `ADIANTADO_CX` = **20**.
+  - Linha que volta da CONCLUIDA (log corrigido) volta com o número
+    recalculado, não com o da cópia antiga.
+- **Atenção:** nenhum número existente muda — PRODUZIDO, SALDO, STATUS, meta,
+  atraso e o painel são os mesmos. O ATUALIZADO_EM **não** é recarimbado pela
+  criação da coluna. Nada no painel nem no app (sem versão nova de front).
+
+---
+
 ## v7.131.0 · mobile 1.33.0 · `.gs` v5.22 — 14/10/2026
 
 - ⚠ **re-deploy** — **O lote de amanhã já baixa o que foi adiantado.** Caso

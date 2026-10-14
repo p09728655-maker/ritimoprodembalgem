@@ -744,6 +744,35 @@ via Google Apps Script (JSONP).
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o painel e o app seguem
   como antes (sem o campo, `_cartQtdAberta` devolve a qtde).
 
+## Coluna ADIANTADO_CX — quanto da linha veio adiantado (`.gs` v5.23)
+- PPCP, 14/10/2026: *"tem como na aba programação concluída colocar também que
+  foi embalado adiantado?"* → escolheu a coluna com a **quantidade** (opção 2)
+  em vez de só baixar o limite da etiqueta. O STATUS CONCLUIDO (ADIANTADO) é
+  sim/não e só a partir de metade da linha (`cred × 2 ≥ q`); a coluna diz
+  QUANTO, em toda linha.
+- **É o `lot.cred` do FIFO** — caixas que a linha recebeu de crédito ao abrir.
+  Como o lote abre antes da produção do próprio dia, crédito é sempre produção
+  de dia ANTERIOR à data do lote. Mapas internos `credRow` (aba ativa, por
+  linha) e `credArq` (linha da CONCLUIDA que volta, pela linha de lá — as duas
+  abas têm numeração própria e juntas colidiriam). Os dois entram na lista de
+  apagar do `getPontosDia` (o teste prende).
+- **Write-back**: `ADIANTADO_CX` é a 6ª coluna de saída do `OUT`, criada no fim
+  da aba (na planilha real, depois do ENCERRAR). Valor por caso: lote ≤ hoje
+  casado POR LINHA → `min(cred, produzido)`; encerrada → idem; futura com
+  `adiFut` → o próprio produzido (tudo veio adiantado); o resto (fora da
+  esteira, futura sem adiantamento, linha que caiu na soma pela chave) → vazio.
+  **0 é "calculado, nada adiantado"; vazio é "não calculado"** — linha
+  arquivada antes da v5.23 fica vazia, nunca 0.
+  - ⚠ **Fora do `mudou` do ATUALIZADO_EM, de propósito**: na 1ª rodada a coluna
+    nasce vazia e recebe valor em TODAS as linhas; contar isso como "andou"
+    recarimbaria a aba inteira (o defeito de 14/09). O teste falha se ela
+    entrar no `mudou` — conferido com o `.gs` mutado.
+- **Arquivamento**: a cópia é por nome e o `_abaArquivoProg` acrescenta a coluna
+  na CONCLUIDA; a célula vazia é preenchida pelo `calc` (mesma regra). **Volta
+  da CONCLUIDA** (`_desarquivar`) traz o número recalculado (`credArq`), nunca o
+  do retrato antigo.
+- Nada no painel nem no app. ⚠ **re-deploy manual**.
+
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco
   colunas de saída (`PRODUZIDO`/`SALDO`/`PERCENTUAL`/`STATUS`/`ATUALIZADO_EM`)
