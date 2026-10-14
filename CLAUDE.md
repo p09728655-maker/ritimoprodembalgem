@@ -551,11 +551,9 @@ via Google Apps Script (JSONP).
     zerando um lote novo do mesmo código). A janela curta é o que segura isso;
     **não alargar sem medir**. O crédito nunca atravessa código — é por isso
     que a cor errada precisa do aviso no app.
-  - Linha FUTURA continua fora do FIFO: o crédito espera a data dela. Por isso
-    a carteira do PLANO, o PRÓXIMOS DIAS e a diretoria ainda contam a qtde
-    cheia de um lote futuro já adiantado (limitação aceita; descontar exigiria
-    o backend alocar o crédito por linha futura — nunca no front pela `falta`
-    por código).
+  - ~~Linha FUTURA continua fora do FIFO: o crédito espera a data dela~~ —
+    **resolvido na v7.131.0 / mobile 1.33.0 / `.gs` v5.22**, ver a seção
+    *O lote de amanhã já baixa o adiantado* logo abaixo.
   - O consumo de crédito **não** entra no `hojeProd` (não é produção de hoje).
   - Efeito medido no 1º run (planilha de 09/10): atraso **3.770 → 2.054**,
     falta p/ zerar 5.420 → 3.077, meta do dia 1.650 → **1.650**; **2 linhas
@@ -687,6 +685,64 @@ via Google Apps Script (JSONP).
 - Limitação aceita: linha mais antiga acrescentada depois re-aloca o FIFO, como
   sempre foi — para linha arquivada **não encerrada** isso a traz de volta para
   a aba (correto: ela passou a ter saldo).
+
+## O lote de amanhã já baixa o adiantado (v7.131.0 / mobile 1.33.0 / `.gs` v5.22)
+- PPCP, 14/10/2026, com a aba na mão: *"está entrando lt 25295 mas não baixa,
+  esse lote é de amanhã"* → *"tem que ter essa função de atualizar lote que
+  adiantou"*. A linha rodou o 25295 (15/10) o dia todo — 501142002 450 de 450,
+  501142004 267 de 270… — e as linhas ficaram **em branco**: o crédito da v5.21
+  só abatia o lote quando a data dele chegava, e o write-back deixava futura em
+  branco. Para o PPCP, o lote parecia nem ter começado.
+- **`adiFut` no `calcularProgramacao`** ("key|lote|dNum|linha" → cx): depois do
+  FIFO, o crédito que SOBROU é alocado às linhas FUTURAS da aba ativa do mesmo
+  código, na ordem de data (na mesma data, a encerrada antes — o `fecho`), com
+  a mesma janela (data da produção → data do LOTE). Toda produção é ≤ hoje,
+  então a linha futura abre DEPOIS dela no FIFO de amanhã: é **exatamente** o
+  que ela vai receber quando a data chegar, se nada mais mudar. O teste roda o
+  dia seguinte e confere o mesmo número.
+  - ⚠ **Nada do que é ≤ hoje muda**: atraso, meta, `hojeRestante`,
+    `faltaZerar`, Tela E (`porLote`) e `saldoLinha`/`saldoRow` (que o
+    arquivamento lê) são os mesmos. A linha futura só pega crédito que nenhuma
+    vencida ou de hoje pegaria. O teste compara com o cálculo sem as futuras.
+  - Código só com linha futura também entra no laço quando tem produção (feito
+    ONTEM para o lote de AMANHÃ, nada hoje) — antes ele nem passava pelo FIFO.
+  - É **prévia**: muda se o log for corrigido, se entrar linha mais antiga do
+    código ou se a produção de amanhã cobrir um vencido primeiro. O write-back
+    regrava a cada lançamento; sem caixa adiantada a linha volta ao branco.
+- **Write-back**: linha futura com `adiFut` grava PRODUZIDO/SALDO/PERCENTUAL e
+  STATUS **`ADIANTADO`** (parcial) ou **`CONCLUIDO (ADIANTADO)`**. Futura sem
+  caixa adiantada continua em branco. `ADIANTADO` é da fase **ABERTA** no
+  `_progFase` — na virada do dia ele vira EM ANDAMENTO sem recarimbar o
+  `ATUALIZADO_EM`. **EM ANDAMENTO continua sendo só do lote de hoje.**
+  - Linha futura **nunca sai da aba** (o `_arquivarConcluidos` já marca futura
+    como ABERTA); a CONCLUIDO (ADIANTADO) fica a véspera + o dia dela e sai no
+    dia útil seguinte (o carimbo é da véspera).
+  - X numa futura adiantada: a marca continua esperando a data; quando ela
+    chega, o PRODUZIDO gravado na véspera fecha com a linha
+    (`_produzidoConfiavel`) e vira o teto — o lançamento do dia não entra.
+    A nota do ENCERRAR de que "toda linha de hoje chega vazia ao 1º lançamento"
+    deixou de valer para a linha que foi adiantada.
+- **`getProgramacaoDetalhada` manda `adiantado` por linha futura** (do próprio
+  FIFO, por linha — somar não conta duas vezes, ao contrário do `falta` por
+  código). `_cartQtdAberta(it)` = `qtde − adiantado` é o que a carteira do
+  PLANO, o PRÓXIMOS DIAS (aba ⚖ UEP e impressão) e a diretoria cobram; o
+  adiantado fica **contado à parte** (`adi` no dia, `adiantado` no total, linha
+  "N cx já adiantadas" no card e no cartão do dia). Dia todo adiantado continua
+  existindo com 0 de carga — "SEM LOTE DATADO" seria mentira. Backend antigo
+  não manda o campo → a qtde, como sempre.
+  - Aba PROGRAMAÇÃO: a linha futura adiantada mostra EMBALADO = adiantado e
+    FALTA = `qtde − adiantado` em cinza (não venceu) ou **✓ ADIANTADO** em verde.
+- **`proximosQtde` do app = o que os lotes ainda ACEITAM** (`_codigosProximos(
+  adiFut)`): o lote de 450 já todo feito não aceita mais 450 cx do código sem o
+  aviso de cor errada. O app também desconta localmente, a cada gravação, o que
+  passou do saldo de hoje (`PROG_PROX_QTD`), e o texto diz *"ainda em aberto
+  nos próximos dias"*.
+- ⚠ **A META de amanhã continua com a qtde cheia** (regra do `programadoHoje`,
+  igual à da linha encerrada). Os 850 cx do 25295 feitos em 14/10 contam no
+  realizado de 14/10 e estão na meta de 15/10: a EF de 15/10 só fecha se a
+  linha adiantar o lote de 16/10. Não mexido — mudar mudaria a meta histórica.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o painel e o app seguem
+  como antes (sem o campo, `_cartQtdAberta` devolve a qtde).
 
 ## `ATUALIZADO_EM` da PROGRAMACAO é o carimbo DA LINHA
 - `atualizarSaldoNaProgramacao()` roda a **cada lançamento** e reescreve as cinco

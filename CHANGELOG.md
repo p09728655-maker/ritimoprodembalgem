@@ -11,6 +11,53 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.131.0 · mobile 1.33.0 · `.gs` v5.22 — 14/10/2026
+
+- ⚠ **re-deploy** — **O lote de amanhã já baixa o que foi adiantado.** Caso
+  real: o lote **25295** (data 15/10) rodou o dia 14/10 inteiro — 501142002
+  450 de 450, 501142004 267 de 270, 501142001 64 de 65, 501142003 63 de 65 — e
+  as linhas da PROGRAMACAO ficaram **em branco**. A caixa adiantada só abatia o
+  lote quando a data dele chegava; até lá parecia que nada tinha sido feito.
+  - Agora a linha futura que recebeu caixa adiantada mostra **PRODUZIDO**,
+    **SALDO**, **PERCENTUAL** e o STATUS novo **ADIANTADO** (parcial) ou
+    **CONCLUIDO (ADIANTADO)** (completa), já no dia em que a caixa foi
+    embalada. Lote futuro sem nada embalado continua em branco.
+  - A regra de quem recebe é a mesma da v5.21: só o **mesmo código**, só o que
+    sobrou depois de cobrir atraso e o lote de hoje, e só para lote que abre em
+    até **2 dias úteis** depois da produção. É o número que o lote vai ter
+    quando a data chegar (o teste roda o dia seguinte e confere).
+  - **EM ANDAMENTO continua sendo só do lote de hoje**; no dia do lote o
+    ADIANTADO vira EM ANDAMENTO sozinho, sem recarimbar o ATUALIZADO_EM.
+  - A linha futura **nunca sai da aba**; o CONCLUIDO (ADIANTADO) sai no dia
+    útil seguinte à data dele, como já era.
+  - Se o log for corrigido (a caixa era de outro código), a linha volta ao
+    branco no lançamento seguinte.
+- **Carteira do PLANO, PRÓXIMOS DIAS (aba ⚖ UEP e impressão) e diretoria
+  descontam o adiantado.** O dia de amanhã deixava de pedir as horas das caixas
+  já feitas. O que saiu da conta aparece escrito: *"N cx já adiantadas"* no
+  card CARTEIRA EM ABERTO e no cartão do dia; dia todo adiantado aparece com 0 h
+  (não como "sem lote datado").
+- **Aba PROGRAMAÇÃO**: linha futura adiantada mostra EMBALADO = o que entrou e
+  FALTA = o resto (cinza, ainda não venceu) ou **✓ ADIANTADO** (verde).
+- **App do operador (aviso de cor errada)**: o lote dos próximos dias aceita só
+  o que ainda falta dele. Antes, um lote de 450 já todo embalado continuava
+  aceitando mais 450 cx do mesmo código sem perguntar a cor. O app também
+  desconta isso a cada lançamento, e o texto diz *"ainda em aberto nos próximos
+  dias"*.
+- **Atenção:**
+  - A **meta, o atraso, a falta p/ zerar e a Tela E não mudam** — nada do que é
+    de hoje ou vencido foi tocado.
+  - **Mudam**: a carteira em aberto do PLANO, as horas do PRÓXIMOS DIAS e da
+    diretoria, e a coluna EMBALADO/FALTA das linhas futuras na aba PROGRAMAÇÃO
+    — todas passam a descontar o adiantado. Ex.: 15/10 deixa de cobrar as
+    ~850 cx do 25295 já embaladas em 14/10.
+  - A **meta de amanhã continua com a quantidade cheia** do lote (as 850 cx
+    estão na meta de 15/10 e no realizado de 14/10). Isso não mudou.
+  - Antes do re-deploy do `.gs` nada disso aparece: o painel e o app seguem
+    exatamente como estavam.
+
+---
+
 ## v7.130.0 — 09/10/2026
 
 - **PRÓXIMOS DIAS: o "Mais pesado" diz quantas cores o lote tem** (aba ⚖ UEP,

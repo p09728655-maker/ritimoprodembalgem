@@ -3123,7 +3123,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.130.0';
+const APP_VER   = '7.131.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -8406,8 +8406,14 @@ function renderProgramacaoDetalhada(){
       // fechada saía "✓ OK" verde, ou com a falta de OUTRA linha do mesmo código
       // em vermelho. A qtde continua nos totais do dia: é o programado.
       const fechada=it.foraEsteira?'FORA DA ESTEIRA':(it.encerrada?'ENCERRADO':'');
-      const faltaCor=fechada?'var(--txt2)':(it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)'));
-      const faltaTxt=fechada||(it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta)));
+      // Lote FUTURO com caixa já embalada ADIANTADA (.gs v5.22, PPCP 14/10/2026:
+      // "está entrando lt 25295 mas não baixa"). O `adiantado` é DESTA linha (o
+      // backend aloca pelo FIFO, linha a linha), então aqui sim a falta é da
+      // linha. Sem vermelho: o lote ainda não venceu.
+      const adi=fechada?0:Math.min(Number(it.adiantado)||0, Number(it.qtde)||0);
+      const faltaCor=fechada?'var(--txt2)':(adi>0?(adi>=it.qtde?'var(--ok)':'var(--txt2)'):(it.metaEfetiva<=0?'var(--txt3)':(it.falta<=0?'var(--ok)':'var(--red)')));
+      const faltaTxt=fechada||(adi>0?(adi>=it.qtde?'✓ ADIANTADO':fmtN(it.qtde-adi)):(it.metaEfetiva<=0?'—':(it.falta<=0?'✓ OK':fmtN(it.falta))));
+      const adiTip=adi>0?` title="${fmtN(adi)} de ${fmtN(it.qtde)} cx já embaladas antes da data do lote (adiantado)"`:'';
       // Nome COM a cor: a cor saiu da DESCRICAO para coluna própria, e sem ela
       // duas cores do mesmo produto viram duas linhas idênticas na tela.
       const nome=nomeComCor(it.desc, it.cor);
@@ -8418,8 +8424,8 @@ function renderProgramacaoDetalhada(){
         <td class="mono">${fmtN(it.pesoKg)} kg</td>
         <td class="mono">${fmtN(it.pontos)}</td>
         ${temUep?`<td class="mono" title="${it.uepCx!=null?fmtN(it.qtde)+' cx × '+String(it.uepCx).replace('.',',')+' UEP/cx':'código sem UEP no cadastro (PRODUTO_CODIGO)'}">${it.uep!=null?fmtN(Math.round(it.uep)):'—'}</td>`:''}
-        <td class="mono">${fmtN(it.embalado)}</td>
-        <td class="mono" style="color:${faltaCor};font-weight:700">${faltaTxt}</td>
+        <td class="mono"${adiTip}>${fmtN(adi>0?adi:it.embalado)}</td>
+        <td class="mono" style="color:${faltaCor};font-weight:700"${adiTip}>${faltaTxt}</td>
       </tr>`;
     }).join('');
     totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts; totUep+=dUep; totSemUep+=dSemUep;
@@ -10045,12 +10051,23 @@ function _mixDiag(dias, itens, ritmos){
 // `ritmos` (o `_mixRitmos`) é opcional: com ele cada lote entra pesado pelo
 // mix e a quantidade CRUA fica ao lado (`crua`); sem ele o fator é 1 e a
 // carteira sai como sempre saiu.
+// LOTE FUTURO JÁ ADIANTADO (v7.131.0 / .gs v5.22, PPCP 14/10/2026: "está
+// entrando lt 25295 mas não baixa, esse lote é de amanhã"). O backend manda
+// `adiantado` POR LINHA — o que o próprio FIFO já deu a ela da produção feita
+// antes da data. O que a linha ainda pede é `qtde − adiantado`; é isso que
+// entra na carga. Backend antigo não manda o campo → a qtde, como sempre.
+// O adiantado fica contado à parte (`adi` no dia, `adiantado` no total): a
+// tela diz quanto saiu da conta, nunca some calado.
+function _cartQtdAberta(it){
+  const q = Number(it && it.qtde) || 0;
+  return Math.max(0, q - Math.max(0, Number(it && it.adiantado) || 0));
+}
 function _cartAberta(itens, hojeNum, divida, ritmos){
   const por = {};
   // ⚠ O DIAGNÓSTICO SAI JUNTO. "Nenhum dia futuro" tem três causas diferentes
   // (não li nada · li e é tudo vencido · li e a coluna fora da esteira comeu
   // tudo) e a tela precisa distinguir, senão manda procurar no lugar errado.
-  let lidas = 0, fora = 0, semQtd = 0, ultimaN = 0, ultima = '';
+  let lidas = 0, fora = 0, semQtd = 0, nAdi = 0, ultimaN = 0, ultima = '';
   (itens || []).forEach(it => {
     if(!it) return;
     lidas++;
@@ -10058,10 +10075,15 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     if(dn > ultimaN){ ultimaN = dn; ultima = it.data; }
     if(it.foraEsteira){ fora++; return; }          // fora da esteira não passa na linha
     if(!(dn > hojeNum)) return;                    // vencido e hoje entram como dívida
-    const q = Number(it.qtde) || 0;
-    if(q <= 0){ semQtd++; return; }
-    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[], pts:0, semPts:0 };
+    const q0 = Number(it.qtde) || 0;
+    if(q0 <= 0){ semQtd++; return; }
+    if(!por[dn]) por[dn] = { dataNum:dn, data:it.data, qtde:0, crua:0, adi:0, n:0, semBase:0, aparados:0, pesa:null, lotes:[], pts:0, semPts:0 };
     const d = por[dn];
+    // o dia existe mesmo com tudo já adiantado: "0 h, 850 cx já feitas" é a
+    // verdade; "sem lote datado" não seria
+    const q = _cartQtdAberta(it);
+    if(q < q0){ d.adi += q0 - q; nAdi++; }
+    if(q <= 0) return;
     // Modo UEP (v7.85.0): o "fator" é a UEP por caixa do CADASTRO (a linha da
     // programação traz `uepCx`, .gs v5.13) e a carga sai em UEP. Código sem UEP
     // entra com a UEP média das linhas que têm (`fallback`) e é contado.
@@ -10073,7 +10095,7 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     d.crua += q; d.qtde += eq; d.n++;
     // pontos da linha (qtde × pontos do cadastro, .gs): só a tela da diretoria lê.
     // Linha sem o campo (backend antigo) é contada — nunca vira zero calado.
-    if(it.pontos === undefined || it.pontos === null) d.semPts++; else d.pts += Number(it.pontos) || 0;
+    if(it.pontos === undefined || it.pontos === null) d.semPts++; else d.pts += (Number(it.pontos) || 0) * q / q0;
     // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
     // DIA" (pedido do PPCP, 16/09/2026 — "inserir os produtos programados")
     d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado,
@@ -10087,12 +10109,13 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
   const dias = Object.keys(por).map(k => por[k]).sort((a,b) => a.dataNum - b.dataNum)
                      .slice(0, CART_DIAS_MAX);
   // arredonda no FIM, uma vez por dia: desenho e totais leem inteiros
-  dias.forEach(d => { d.qtde = Math.round(d.qtde); d.fator = d.crua > 0 ? d.qtde / d.crua : 1; });
+  dias.forEach(d => { d.qtde = Math.round(d.qtde); d.pts = Math.round(d.pts); d.fator = d.crua > 0 ? d.qtde / d.crua : 1; });
   return {
     dias,
     divida: Math.max(0, Number(divida) || 0),
     futuro: dias.reduce((a,d) => a + d.qtde, 0),
     futuroCru: dias.reduce((a,d) => a + d.crua, 0),
+    adiantado: dias.reduce((a,d) => a + d.adi, 0),    // cx já embaladas para estes dias, fora da carga
     de:  dias.length ? dias[0].data : '',
     ate: dias.length ? dias[dias.length - 1].data : '',
     // a leitura do mix, para o desenho dizer de onde o peso saiu
@@ -10100,7 +10123,7 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
                     semBase: dias.reduce((a,d) => a + d.semBase, 0),
                     aparados: dias.reduce((a,d) => a + d.aparados, 0),
                     nLotes: dias.reduce((a,d) => a + d.n, 0) } : null,
-    diag: { lidas, fora, semQtd, ultima }
+    diag: { lidas, fora, semQtd, nAdi, ultima }
   };
 }
 
@@ -10283,11 +10306,14 @@ function _cartHtml(a, regua, larg){
   const _qtdsCol = a.linhas.map(l => ehU ? l.qtde : Math.max(l.qtde, Number(l.crua) || 0));
   // Com o mix, a barra é CX DE LINHA e o programado cru vai junto no texto.
   const mix = !!a.mix;
-  const _qtdTxt = l => ehU
-    ? (fmtN(l.crua) + ' cx programadas × UEP do cadastro = ' + fmtN(l.qtde) + ' UEP (' + _cartPeso(a, l.fator).frase + ')')
+  // com caixa já adiantada o número é o que FALTA, não o programado
+  const _cxProg = l => l.adi > 0 ? ' cx em aberto' : ' cx programadas';
+  const _qtdTxt = l => (ehU
+    ? (fmtN(l.crua) + _cxProg(l) + ' × UEP do cadastro = ' + fmtN(l.qtde) + ' UEP (' + _cartPeso(a, l.fator).frase + ')')
     : mix
-    ? (fmtN(l.crua) + ' cx programadas · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
-    : (fmtN(l.qtde) + ' cx programadas');
+    ? (fmtN(l.crua) + _cxProg(l) + ' · ' + _cartPesoTxt(l.fator).frase + ' → carga de ' + fmtN(l.qtde))
+    : (fmtN(l.qtde) + _cxProg(l))
+    ) + (l.adi > 0 ? ' (fora ' + fmtN(l.adi) + ' cx já embaladas adiantadas)' : '');
   // ⚠ ESCOLHER O LADO NÃO BASTA — pode não haver lado livre. Com as DUAS pontas
   // cruzando a linha, `_svgLadoLivre` devolve a MENOS pior e a tarja cai em cima
   // da barra: medido em 18/09/2026, "← A CARGA DEVERIA FICAR AQUI" tapava a
@@ -10405,7 +10431,8 @@ function _cartHtml(a, regua, larg){
         : mix
         ? fmtN(Math.round(a.futuroCru)) + ' cx prog. · ' + _cartPesoTxt(a.futuroCru > 0 ? a.futuro / a.futuroCru : 1).frase + ' · ' + a.n + ' dia(s)'
         : fmtN(Math.round(a.futuro)) + ' cx datadas para ' + a.n + ' dia(s)')
-    + (a.divida > 0 ? ' · <b title="atraso + o que falta hoje">+' + fmtN(Math.round(a.divida)) + ' de dívida</b>' : ' · sem dívida') + '</div></div>'
+    + (a.divida > 0 ? ' · <b title="atraso + o que falta hoje">+' + fmtN(Math.round(a.divida)) + ' de dívida</b>' : ' · sem dívida')
+    + (a.adiantado > 0 ? ' · <span title="caixas já embaladas ADIANTADAS para estes lotes (a planilha mostra na linha) — fora da carga">' + fmtN(Math.round(a.adiantado)) + ' cx já adiantadas</span>' : '') + '</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.nImpossivel ? 'red' : (a.nAcima ? 'warn' : 'ok')) + '"><div class="kpi-lbl">DIAS QUE NÃO CABEM</div><div class="kpi-val">' + a.nAcima + '</div>'
     + '<div class="kpi-sub">de ' + a.n + ' · <b>' + a.nImpossivel + '</b> acima do máx. sem HE (' + fmtN(a.teto) + ')</div></div>'
     + '<div class="kpi-card ' + _kpiCls(a.sobra > 0 ? 'red' : 'ok') + '"><div class="kpi-lbl">PRECISA MUDAR DE DIA</div><div class="kpi-val">' + fmtN(Math.round(a.sai)) + '</div>'
@@ -10499,8 +10526,9 @@ function _cartLotesHtml(a){
   const corpo = a.linhas.map(l => {
     const lotes = (l.lotes || []).slice().sort((x, y) => y.eq - x.eq);
     const pt = mix ? _pz(l.fator) : null;
-    const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> — ' + lotes.length + ' lote(s) · programado <b>' + fmtN(l.crua) + '</b>'
+    const dia = '<tr class="cl-dia"><td colspan="' + (mix ? 6 : 4) + '"><b>' + _rpEsc(l.data) + '</b> — ' + lotes.length + ' lote(s) · ' + (l.adi > 0 ? 'em aberto' : 'programado') + ' <b>' + fmtN(l.crua) + '</b>'
       + (mix ? ' · carga <b>' + fmtN(l.qtde) + (ehU ? ' UEP' : '') + '</b>' + (pt.cls ? ' (mix ' + pt.palavra + ' ' + pt.pct + ')' : '') : '')
+      + (l.adi > 0 ? ' · ' + fmtN(l.adi) + ' já embaladas adiantadas (fora)' : '')
       + (l.sai > 0 ? ' · <span class="cl-red">não cabem ' + fmtN(Math.round(l.sai)) + '</span>' : (l.cabe > 0 ? ' · <span class="cl-ok">espaço para +' + fmtN(Math.round(l.cabe)) + '</span>' : ' · <span class="cl-ok">no limite</span>'))
       + '</td></tr>';
     return dia + lotes.map(x => {
@@ -10532,6 +10560,7 @@ function _cartVazioHtml(cart){
     + (d.ultima ? ' — a mais distante é <b>' + _rpEsc(d.ultima) + '</b>' : '')
     + (d.fora ? ' · ' + fmtN(d.fora) + ' fora da esteira' : '')
     + (d.semQtd ? ' · ' + fmtN(d.semQtd) + ' sem quantidade' : '')
+    + (d.nAdi ? ' · ' + fmtN(d.nAdi) + ' com caixa já adiantada' : '')
     + (d.lidas ? '. Com a carteira toda vencida não há o que re-datar: quem prioriza é a DATA e o SALDO.'
                : '. Nenhuma linha chegou — confira se a aba PROGRAMACAO tem lote e data preenchidos.')
     + '</div>' + bt + '</div>';
@@ -10632,7 +10661,7 @@ function _cartSemUep(itens, hojeNum){
   const out = [];
   (itens || []).forEach(it => {
     if(!it || it.foraEsteira || Number(it.uepCx) > 0) return;
-    const dn = Number(it.dataNum) || _cartNum(it.data), q = Number(it.qtde) || 0;
+    const dn = Number(it.dataNum) || _cartNum(it.data), q = _cartQtdAberta(it);   // já adiantado não falta
     if(!(dn > hojeNum) || q <= 0) return;
     out.push({ data:String(it.data || ''), dataNum:dn, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
       rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q });
@@ -11185,7 +11214,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n){
     // "1h45", e com a conta crua ele virava vermelho contra a legenda "até 1h45"
     const excR = Math.round(exc);
     const estado = vazio ? 'vazio' : fds ? 'fds' : excR > GPX_EXC_MAX ? 'red' : excR > 0 ? 'warn' : (-excR >= GPX_FOLGA_OK ? 'ok' : '');
-    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, minAtr, exc, estado, lotes, lotesDia,
+    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, minAtr, exc, estado, lotes, lotesDia,
              semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0) };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
@@ -11418,11 +11447,11 @@ function _gpxCartaoHtml(d, pf){
   const selo = d.fds ? 'FIM DE SEMANA'
     : d.exc > 0 ? 'FALTA ' + _fmtHM(d.exc)          // âmbar até 1h45, vermelho acima: a cor é o veredito
     : (Math.round(d.exc) === 0 ? 'DENTRO DA JORNADA' : 'FOLGA ' + _fmtHM(-d.exc));
-  const tip = _rpEsc(`${d.data}: ${_fmtHM(d.min)} de linha para ${_fmtHM(UEP_MIN_DIA)} de jornada` + (d.minAtr > 0 ? ` · inclui ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + (d.cxSemUep ? ` · + ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas` : ''));
+  const tip = _rpEsc(`${d.data}: ${_fmtHM(d.min)} de linha para ${_fmtHM(UEP_MIN_DIA)} de jornada` + (d.minAtr > 0 ? ` · inclui ${_fmtHM(d.minAtr)} de atraso que não cabe hoje` : '') + (d.cxSemUep ? ` · + ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas` : '') + (d.cxAdi ? ` · ${fmtN(d.cxAdi)} cx já embaladas adiantadas, fora das horas` : ''));
   const pes = d.lotes[0];
   return `<div class="${c('dia')} ${cls}" title="${tip}">${nome}<span class="${c('ds')} ${cls}">${selo}</span>
     <div class="${c('dh')}">${_fmtHM(d.min)}<small> previstas</small></div>
-    <div class="${c('dx')}"><b>${f(d.uep)}</b> UEP · ${f(d.cx)} cx${d.pts !== undefined ? ' · ' + f(d.pts) + ' pts' : ''}${d.minAtr > 0 ? `<br>inclui atraso de ${_fmtHM(d.minAtr)}` : ''}${d.cxSemUep ? `<br><span class="${c('av')}">+ ${fmtN(d.cxSemUep)} cx sem UEP</span>` : ''}</div>
+    <div class="${c('dx')}"><b>${f(d.uep)}</b> UEP · ${f(d.cx)} cx${d.pts !== undefined ? ' · ' + f(d.pts) + ' pts' : ''}${d.minAtr > 0 ? `<br>inclui atraso de ${_fmtHM(d.minAtr)}` : ''}${d.cxAdi ? `<br>${fmtN(d.cxAdi)} cx já adiantadas` : ''}${d.cxSemUep ? `<br><span class="${c('av')}">+ ${fmtN(d.cxSemUep)} cx sem UEP</span>` : ''}</div>
     ${d.lotesDia && d.lotesDia.length ? `<div class="${c('dl')}">Lotes: <b>${d.lotesDia.slice(0, 4).map(_rpEsc).join(', ')}${d.lotesDia.length > 4 ? ` +${d.lotesDia.length - 4}` : ''}</b></div>` : ''}
     ${pes ? `<div class="${c('dl')}" title="${_rpEsc((pes.lote ? 'lote ' + pes.lote + ' · ' : '') + (pes.nome || pes.rot))}">Mais pesado: <b>${_rpEsc(pes.lote || '—')}</b> ${_rpEsc(pes.rot)} ${_fmtHM(pes.min)}</div>` : ''}</div>`;
 }
