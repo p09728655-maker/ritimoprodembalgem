@@ -926,7 +926,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.32.0';
+const APP_VER   = '1.33.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2672,7 +2672,7 @@ function avisoCorErrada(codigo, add, prog, proximos, proxQtd){
 function avisoCorErradaTxt(a, add){
   const ir = a.irmas.map(p=>`${corDeProduto(p)||p.codigo} (${fmtN(Number(p.falta)||0)} cx)`).join(', ');
   const tem = a.falta>0 ? `só ${fmtN(a.falta)} cx em aberto hoje` : 'nenhuma caixa em aberto hoje';
-  const vem = a.prox>0 ? ` e ${fmtN(a.prox)} programadas para os próximos dias` : '';
+  const vem = a.prox>0 ? ` e ${fmtN(a.prox)} ainda em aberto nos próximos dias` : '';
   return `${a.cor}: ${tem}${vem}, e você vai lançar ${fmtN(add)}.`
     + ` Do mesmo produto, ainda em aberto: ${ir}. Confira a cor na caixa antes de salvar.`;
 }
@@ -2752,7 +2752,13 @@ async function salvarLanc(){
       if(codLanc){
         const k=String(codLanc).replace(/\D/g,'');
         const it=PROG_HOJE.find(p=>String(p.codigo).replace(/\D/g,'')===k);
+        const antes=it?Math.max(0,Number(it.falta)||0):0;
         if(it) it.falta=Math.max(0,(Number(it.falta)||0)-add);
+        // O que passou do saldo de hoje vai ADIANTADO para o lote dos próximos
+        // dias (o FIFO do .gs faz o mesmo, v5.22): o que ele ainda aceita
+        // encolhe junto — senão o lote de 450 já feito aceitaria mais 450.
+        if(PROG_PROX_QTD && PROG_PROX_QTD[k]!=null)
+          PROG_PROX_QTD[k]=Math.max(0,(Number(PROG_PROX_QTD[k])||0)-Math.max(0,add-antes));
         // A lista é relida no ciclo do operador, em sequência com o resto —
         // nunca em paralelo com o lerSheets logo abaixo.
       }

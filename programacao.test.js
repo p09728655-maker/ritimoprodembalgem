@@ -436,6 +436,96 @@ console.log('\n── o crédito espera a data do lote ──');
   ok('no dia dele, o crédito de 07/10 abate o lote inteiro', hoje.saldoLinha['501070005|L8|20261009'], 0);
   const tarde = montar(prog, log, { hoje: '13/10/2026' }).calc();
   ok('o resultado não muda com o passar dos dias (a janela é produção × data do lote, não × hoje)', tarde.saldoLinha['501070005|L8|20261009'], 0);
+  ok('mas na véspera a PRÉVIA já sai por linha (v5.22) — fora do saldo, que é só de linha vencida ou de hoje',
+     ontem.adiFut['501070005|L8|20261009|1'], 180);
+}
+
+console.log('\n── o lote de AMANHÃ já baixa o adiantado (v5.22) ──');
+{
+  // O caso de 14/10/2026 (quarta): "está entrando lt 25295 mas não baixa, esse
+  // lote é de amanhã". A linha rodou o 25295 (15/10) o dia todo e a aba ficou
+  // em branco — o crédito só abatia o lote na data dele.
+  const prog = [
+    { lote: '25291', data: '14/10/2026', cod: '501.060.005', qtde: 80 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.001', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.003', qtde: 65 },
+    { lote: '25295', data: '15/10/2026', cod: '501.142.004', qtde: 270 },
+    { lote: '25304', data: '16/10/2026', cod: '501.142.002', qtde: 100 },   // sexta = 2 dias úteis: recebe a sobra
+    { lote: '25310', data: '19/10/2026', cod: '501.142.002', qtde: 100 },   // segunda = 3: fora da janela
+    { lote: '25311', data: '16/10/2026', cod: '501.136.001', qtde: 170 },   // futura sem nada embalado
+  ];
+  const log = [['14/10/2026', '501060005', 78],
+               ['14/10/2026', '501142001', 64], ['14/10/2026', '501142002', 270], ['14/10/2026', '501142002', 180],
+               ['14/10/2026', '501142004', 90], ['14/10/2026', '501142003', 63], ['14/10/2026', '501142004', 177],
+               ['14/10/2026', '501142002', 30]];
+  const m = montar(prog, log, { hoje: '14/10/2026' });
+  const sem = montar(prog.filter(l => l.data === '14/10/2026'), log, { hoje: '14/10/2026' }).calc();
+  const r = m.rodar();
+  const P = m.ABAS.PROGRAMACAO;
+  const NOMES = ['PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS'];
+  ok('o 25295 baixa hoje: cada cor com o que entrou dela',
+     ['501.142.001', '501.142.002', '501.142.003', '501.142.004'].map(c => campos(P, linha(P, '25295', c), NOMES)),
+     [[64, 1, 98, 'ADIANTADO'], [450, 0, 100, 'CONCLUIDO (ADIANTADO)'], [63, 2, 97, 'ADIANTADO'], [267, 3, 99, 'ADIANTADO']]);
+  ok('a sobra do 501142002 vai para o lote de sexta (2 dias úteis); segunda (3) fica em branco',
+     [campos(P, linha(P, '25304', '501.142.002'), NOMES), campos(P, linha(P, '25310', '501.142.002'), NOMES)],
+     [[30, 70, 30, 'ADIANTADO'], ['', '', '', '']]);
+  ok('lote futuro sem nada embalado continua em branco', campos(P, linha(P, '25311', '501.136.001'), [...NOMES, 'ATUALIZADO_EM']), ['', '', '', '', '']);
+  ok('a linha adiantada ganha o carimbo da hora em que andou', campos(P, linha(P, '25295', '501.142.002'), ['ATUALIZADO_EM']), ['14/10/2026 07:30:00']);
+  ok('nada do que é de hoje muda: meta, falta de hoje, atraso e a Tela E são os mesmos sem as linhas futuras',
+     [r.p.programadoHoje, r.p.hojeRestante, r.p.atrasoTotal, r.p.faltaZerar, r.p.porLote.map(L => L.lote)],
+     [sem.programadoHoje, sem.hojeRestante, sem.atrasoTotal, sem.faltaZerar, sem.porLote.map(L => L.lote)]);
+  ok('linha futura nunca sai da aba, nem a CONCLUIDO (ADIANTADO)', [r.a.arquivadas, !!linha(P, '25295', '501.142.002')], [0, true]);
+  const h = vm.runInContext('getProgramacaoHoje()', m.ctx);
+  ok('o app recebe o que os lotes ainda ACEITAM (450 já feitas não aceitam mais 450)',
+     [h.proximosQtde['501142002'], h.proximosQtde['501142004'], h.proximosQtde['501136001']], [70, 3, 170]);
+  const det = vm.runInContext('getProgramacaoDetalhada()', m.ctx).itens;
+  const dl = (lote, cod) => (det.find(it => it.lote === lote && it.codigo === cod) || {}).adiantado;
+  ok('a programação detalhada manda o adiantado POR LINHA futura (0 na de hoje)',
+     [dl('25295', '501.142.002'), dl('25304', '501.142.002'), dl('25310', '501.142.002'), dl('25291', '501.060.005')], [450, 30, 0, 0]);
+
+  // amanhã (15/10): o lote abre de verdade e o FIFO dá o MESMO número
+  m.setHoje('15/10/2026');
+  const r2 = m.rodar();
+  ok('no dia do lote o número é o mesmo da prévia — a prévia não inventou nada',
+     ['501.142.001', '501.142.002', '501.142.003', '501.142.004'].map(c => campos(P, linha(P, '25295', c), ['PRODUZIDO', 'SALDO', 'STATUS'])),
+     [[64, 1, 'EM ANDAMENTO'], [450, 0, 'CONCLUIDO (ADIANTADO)'], [63, 2, 'EM ANDAMENTO'], [267, 3, 'EM ANDAMENTO']]);
+  ok('ADIANTADO → EM ANDAMENTO é a virada do dia, não o lote andando: o carimbo fica',
+     campos(P, linha(P, '25295', '501.142.004'), ['ATUALIZADO_EM']), ['14/10/2026 07:30:00']);
+  ok('a meta de 15/10 continua com a qtde cheia (o adiantamento não mexe na meta)', r2.p.programadoHoje, 850);
+  m.setHoje('16/10/2026');
+  m.rodar();
+  ok('o concluído adiantado fica a véspera e o dia dele na aba, e sai no seguinte',
+     [!!linha(P, '25295', '501.142.002'), campos(m.ABAS.PROGRAMACAO_CONCLUIDA, linha(m.ABAS.PROGRAMACAO_CONCLUIDA, '25295', '501.142.002'), ['PRODUZIDO', 'STATUS'])],
+     [false, [450, 'CONCLUIDO (ADIANTADO)']]);
+}
+{
+  // X numa linha futura adiantada: a marca espera a data e, quando ela chega,
+  // o PRODUZIDO gravado na véspera é DESTA linha (PRODUZIDO + SALDO = QTDE).
+  const prog = [{ lote: '25295', data: '15/10/2026', cod: '501.142.003', qtde: 65, enc: 'X' }];
+  const m = montar(prog, [['14/10/2026', '501142003', 63]], { hoje: '14/10/2026' });
+  m.rodar();
+  const P = m.ABAS.PROGRAMACAO;
+  ok('com o X, a véspera mostra o adiantado e a linha espera a data', campos(P, linha(P, '25295', '501.142.003'), ['PRODUZIDO', 'SALDO', 'STATUS']), [63, 2, 'ADIANTADO']);
+  m.setHoje('15/10/2026');
+  m.ABAS.PRODUCAO_PRODUTO.push(['15/10/2026', '07:00', '501142003', 'X', 40]);
+  m.rodar();
+  const A = m.ABAS.PROGRAMACAO_CONCLUIDA;
+  ok('no dia, encerra com as 63 adiantadas — o lançamento do dia não entra na linha fechada',
+     campos(A, linha(A, '25295', '501.142.003'), ['PRODUZIDO', 'SALDO', 'STATUS']), [63, 0, 'ENCERRADO']);
+}
+{
+  // Log corrigido (a caixa era de outro código): a prévia some e a linha volta
+  // ao branco de antes — não fica um número velho na aba.
+  const prog = [{ lote: '25295', data: '15/10/2026', cod: '501.142.002', qtde: 450 }];
+  const m = montar(prog, [['14/10/2026', '501142002', 450]], { hoje: '14/10/2026' });
+  m.rodar();
+  m.ABAS.PRODUCAO_PRODUTO.splice(1, 1, ['14/10/2026', '08:00', '501142099', 'X', 450]);
+  m.rodar();
+  const P = m.ABAS.PROGRAMACAO;
+  ok('log corrigido → a linha futura volta ao branco', campos(P, linha(P, '25295', '501.142.002'), ['PRODUZIDO', 'STATUS', 'ATUALIZADO_EM']), ['', '', '']);
+  ok('ANTEC_DIAS_UTEIS = 0 desliga a prévia junto com o crédito',
+     Object.keys(montar(prog, [['14/10/2026', '501142002', 450]], { hoje: '14/10/2026', antec: 0 }).calc().adiFut), []);
 }
 
 console.log('\n── a coluna ENCERRAR nasce sozinha ──');
@@ -508,7 +598,7 @@ function pegaMob(assinatura) {
       avisoCorErrada('501.128.002', 200, prog, ['501128002'], { '501128002': 200 })], [null, null]);
   const alem = avisoCorErrada('501.128.002', 444, prog, ['501128002'], { '501128002': 200 });
   ok('passou até do lote dos próximos dias (444 contra 200) → avisa, e o texto diz o que vem',
-     alem && [alem.prox, alem.exc, /200 programadas para os próximos dias/.test(avisoCorErradaTxt(alem, 444))], [200, 244, true]);
+     alem && [alem.prox, alem.exc, /200 ainda em aberto nos próximos dias/.test(avisoCorErradaTxt(alem, 444))], [200, 244, true]);
   ok('sem a lista dos próximos dias (backend antigo, leitura que falhou) → não acusa',
      [avisoCorErrada('501.128.002', 20, prog, null), avisoCorErrada('501.128.002', 20, prog, ['501128002'])], [null, null]);
   ok('excedente pequeno (lança 50 com 48 em aberto) → não avisa',
@@ -574,6 +664,12 @@ console.log('\n── painel: aba PROGRAMAÇÃO ──');
   ok('linha encerrada mostra ENCERRADO, nunca "✓ OK" nem a falta de outra linha; FORA DA ESTEIRA vence, como na planilha',
      /const fechada=it\.foraEsteira\?'FORA DA ESTEIRA':\(it\.encerrada\?'ENCERRADO':''\);/.test(JS7) && /const faltaTxt=fechada\|\|/.test(JS7), true);
   ok('o backend só marca encerrada linha vencida ou de hoje, e fora da esteira não', /encerrada:\s+!!pr\.encerrada && !futura && !pr\.foraEsteira/.test(GS), true);
+  ok('lote futuro adiantado: a falta é DA LINHA (adiantado por linha), sem vermelho, e fechada/fora vence',
+     [/const adi=fechada\?0:Math\.min\(Number\(it\.adiantado\)\|\|0, Number\(it\.qtde\)\|\|0\);/.test(JS7),
+      /adi>0\?\(adi>=it\.qtde\?'✓ ADIANTADO':fmtN\(it\.qtde-adi\)\)/.test(JS7),
+      /adi>0\?\(adi>=it\.qtde\?'var\(--ok\)':'var\(--txt2\)'\)/.test(JS7)], [true, true, true]);
+  ok('o app desconta o que passou do saldo de hoje do que os próximos dias ainda aceitam',
+     /PROG_PROX_QTD\[k\]=Math\.max\(0,\(Number\(PROG_PROX_QTD\[k\]\)\|\|0\)-Math\.max\(0,add-antes\)\);/.test(MJS), true);
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ programação ok — adiantamento abate o lote, ENCERRAR fecha sem apagar, o app pergunta a cor');

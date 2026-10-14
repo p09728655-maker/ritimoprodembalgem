@@ -2802,6 +2802,7 @@ eval(pega('function _mixRotulo('));
 eval(pega('function _mixRitmos('));
 eval(pega('function _mixFator('));
 eval(pega('function _mixDiag('));
+eval(pega('function _cartQtdAberta('));
 eval(pega('function _cartAberta('));
 eval(pega('function _cartAnalise('));
 
@@ -2830,6 +2831,23 @@ ok('e o período vai de ponta a ponta', [_cart.de, _cart.ate], ['16/09/2026','18
 // é a `qtde`, que o backend garante intocada.
 ok('a carteira não soma o campo `falta` (contaria saldo duas vezes)',
    /\bfalta\b/.test(pega('function _cartAberta(')), false);
+// v7.131.0 / .gs v5.22 — LOTE FUTURO JÁ ADIANTADO (PPCP 14/10/2026: "está
+// entrando lt 25295 mas não baixa, esse lote é de amanhã"). O backend manda
+// `adiantado` POR LINHA; a carga é o que a linha ainda pede.
+{
+  const c = _cartAberta([_it('16/09/2026', 450, { adiantado:450, pontos:900 }), _it('16/09/2026', 270, { adiantado:267, pontos:540 }),
+                         _it('17/09/2026', 300, { adiantado:0, pontos:600 }), _it('18/09/2026', 100, { adiantado:100, pontos:200 })],
+                        _cartNum('15/09/2026'), 0);
+  ok('lote futuro adiantado: entra só o que falta; o adiantado fica contado à parte (nunca some calado)',
+     [c.dias.map(d => [d.data.slice(0,5), d.qtde, d.adi, d.n]), c.futuro, c.adiantado, c.diag.nAdi],
+     [[['16/09', 3, 717, 1], ['17/09', 300, 0, 1], ['18/09', 0, 100, 0]], 303, 817, 3]);
+  ok('o dia todo adiantado continua existindo (0 de carga), não vira "sem lote datado"', c.dias[2].qtde, 0);
+  ok('os pontos acompanham o que falta (540 × 3/270)', [c.dias[0].pts, c.dias[1].pts], [6, 600]);
+  ok('backend antigo, sem o campo: a qtde inteira, como sempre',
+     [_cartAberta([_it('16/09/2026', 450)], _cartNum('15/09/2026'), 0).futuro, _cartAberta([_it('16/09/2026', 450)], _cartNum('15/09/2026'), 0).adiantado], [450, 0]);
+  ok('o adiantado nunca passa da qtde nem fica negativo',
+     [_cartQtdAberta({ qtde:100, adiantado:150 }), _cartQtdAberta({ qtde:100, adiantado:-5 }), _cartQtdAberta({ qtde:'100' })], [0, 100, 100]);
+}
 
 // ── a conta do que sai e do que cabe ─────────────────────────────────────
 // curva de 10 dias: 100..1000; p50=500, p60=600, melhor dia=1000
@@ -3962,6 +3980,13 @@ console.log('\n── estudo de UEP ──');
   ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);
   ok('sem nenhuma UEP na programação não converte (não inventa hora)', _gpxMontar([it('26/09/2026','1',10,null)], new Date(2026,8,25), 0, 0, 2530, 5).falha, 'sem-uep');
   ok('dívida que cabe no resto de hoje não passa para amanhã', _gpxMontar(itens, new Date(2026,8,24), 500, 300, 2530, 5).carry, 0);
+  // v7.131.0 — o lote de amanhã já embalado não pede hora de novo
+  const GA = _gpxMontar([it('25/09/2026','25295',450,1,{ adiantado:450 }), it('25/09/2026','25296',100,1,{ adiantado:40 }),
+                         it('25/09/2026','25297',30,null,{ adiantado:30 }), it('25/09/2026','25298',20,null,{ adiantado:5 })], new Date(2026,8,24), 0, 0, 2530, 1);
+  ok('PRÓXIMOS DIAS: o adiantado sai das horas e o dia diz quanto já foi feito',
+     [GA.dias[0].uep, GA.dias[0].cx, GA.dias[0].cxAdi, GA.dias[0].estado], [60, 60, 490, 'ok']);
+  ok('linha sem UEP já toda adiantada não é apontada; a parcial aponta só o que falta',
+     GA.semUep.map(x => [x.lote, x.cx]), [['25298', 15]]);
   // v7.110.0 — a MESMA regra na aba PLANO: sem UEP não entra pela média
   const SU = _cartSemUep(itens, 20260924);
   ok('linhas futuras sem UEP (fora da esteira e vencida não contam), em ordem de data',
@@ -4065,7 +4090,7 @@ console.log('\n── estudo de UEP ──');
   ok('o desenho da diretoria não faz conta (lê o que _dirHoje/_dirSemana/_gpxDoPainel montaram)',
      ['function _dirHojeHtml(', 'function _dirSemanaHtml(', 'function _dirCartHtml('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|uepHistResumo\(|_cartAberta\(|_gpxMontar\(/.test(pega(f))), [false, false, false]);
   ok('a carteira soma os pontos da programação por dia, e linha sem o campo não vira zero',
-     [/if\(it\.pontos === undefined \|\| it\.pontos === null\) d\.semPts\+\+; else d\.pts \+= Number\(it\.pontos\) \|\| 0;/.test(JS), /pts: d \? \(d\.semPts \? null : d\.pts\) : 0/.test(JS)], [true, true]);
+     [/if\(it\.pontos === undefined \|\| it\.pontos === null\) d\.semPts\+\+; else d\.pts \+= \(Number\(it\.pontos\) \|\| 0\) \* q \/ q0;/.test(JS), /pts: d \? \(d\.semPts \? null : d\.pts\) : 0/.test(JS)], [true, true]);
   ok('na diretoria ninguém clica: versão nova recarrega sozinha, e o anti-descanso de tela vale lá também',
      [/if\(document\.documentElement\.classList\.contains\('modo-dir'\)\)\{ location\.reload\(\); return; \}/.test(JS),
       /has\('tv'\) && !document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(JS)], [true, true]);

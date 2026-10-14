@@ -105,9 +105,10 @@ abate o lote aberto **mais antigo** do mesmo código.
 | **DIAS ÚTEIS** | seg–sex depois da data da produção até a data do lote (sexta → segunda = 1); feriado conta como útil | dias | `.gs:3270` |
 | **MESMA DATA** | no empate de data, a linha que já fechou entra primeiro: arquivada → encerrada → aberta (cada grupo na ordem da aba) | — | `.gs:3540` |
 | **ENCERRAR** | X na coluna `ENCERRAR`: a linha fica com o que já recebeu do FIFO, o resto deixa de ser cobrado (não é atraso). O teto é o `PRODUZIDO` da própria linha **quando ele fecha com ela** (`PRODUZIDO + SALDO = QTDE`, ou `ENCERRADO` com saldo 0), e ela é servida antes dos lotes abertos; sem isso (célula vazia ou de outra linha) recebe só o que veio **antes de hoje**. Só vale para linha vencida ou de hoje. Apagar o X na CONCLUIDA desfaz | — | `.gs:3396`, `.gs:3495`, `.gs:3576` |
+| **ADIANTADO** (linha futura) | linha de data **futura** que já recebeu caixa embalada antes da data dela: o crédito que sobra no fim do FIFO é alocado às linhas futuras do mesmo código, na ordem de data, com a **mesma janela** de `ANTEC_DIAS_UTEIS` dias úteis (data da produção → data do lote). A linha mostra `PRODUZIDO`/`SALDO` já hoje. É uma **prévia**: o número que vale é o do dia do lote (igual, se nada mais mudar). Não entra em atraso, meta nem falta de hoje | cx | `.gs:3651`, `.gs:1757` |
 | **CONCLUIDO (ADIANTADO)** | saldo 0 com **metade ou mais** vinda de produção adiantada; fica **um dia** na aba antes de ir para a CONCLUIDA (o sistema não separa adiantamento de sobra de cor errada) | — | `.gs:3605`, `.gs:1850` |
 | **VOLTA DA CONCLUIDA** | linha arquivada, não encerrada, que o FIFO dá com saldo de novo (log corrigido, linha mais antiga acrescentada) — ou que perdeu o X na CONCLUIDA — volta para a PROGRAMACAO recalculada | — | `.gs:1952` |
-| **STATUS** | `CONCLUIDO` (saldo 0) · `CONCLUIDO (ADIANTADO)` · `EM ATRASO` (data anterior, aberta) · `EM ANDAMENTO` (hoje, já produziu) · `PENDENTE` (hoje, não começou) · `FORA DA ESTEIRA` · `ENCERRADO` (fechada pelo PPCP; o `PERCENTUAL` mostra o que ficou para trás, arredondado para baixo) | — | `.gs:1627` |
+| **STATUS** | `CONCLUIDO` (saldo 0) · `CONCLUIDO (ADIANTADO)` · `EM ATRASO` (data anterior, aberta) · `EM ANDAMENTO` (hoje, já produziu) · `PENDENTE` (hoje, não começou) · `ADIANTADO` (data futura, já recebeu parte) · `FORA DA ESTEIRA` · `ENCERRADO` (fechada pelo PPCP; o `PERCENTUAL` mostra o que ficou para trás, arredondado para baixo) | — | `.gs:1627` |
 
 ⚠ **Linha apagada à mão some da demanda**: a produção dela passa a abater
 outro lote do mesmo código ou é descartada, e a meta do dia encolhe. Para
@@ -125,7 +126,7 @@ meta do dia explica **8%** da variação do realizado (r = 0,28).
 | **OSCILAÇÃO DA META** | desvio padrão ÷ média das metas do período | % | `v7:_qpOscilacao` |
 | **DIAS ACIMA DA CAPACIDADE** | dias cuja meta passou de `QP_ACIMA` | dias | `v7:_qpAnalise` |
 | **META EXEQUÍVEL SERIA** | o valor da curva entre o mínimo e o máximo da **faixa alvo** escolhida na barra | cx/dia | `v7:_qpValorNoPercentil` |
-| **CARTEIRA EM ABERTO** | caixas datadas para dias futuros (`qtde` das linhas da `PROGRAMACAO`) **+ dívida** (atraso vivo + resto da meta de hoje). Com CARTEIRA = `cx de linha (mix)`, cada lote entra pesado (linha abaixo) e o cru fica ao lado | cx | `v7:_cartAberta` |
+| **CARTEIRA EM ABERTO** | caixas datadas para dias futuros (`qtde − adiantado` de cada linha da `PROGRAMACAO`; o `adiantado` vem do backend por linha e é mostrado à parte) **+ dívida** (atraso vivo + resto da meta de hoje). Com CARTEIRA = `cx de linha (mix)`, cada lote entra pesado (linha abaixo) e o cru fica ao lado | cx | `v7:_cartAberta` |
 | **CARGA** (carga pelo mix; no código, *cx de linha*) | `qtde × (ritmo de referência ÷ ritmo demonstrado do produto)`; referência = Σcx ÷ Σhoras de produto do período da régua; ritmo do produto = média aparada do cx/h do log (`modelo\|cor`, queda para `modelo`, sem histórico = fator 1); fator limitado a 0,33–3 | cx | `v7:_mixRitmos`, `v7:_mixFator` |
 | **CONFERÊNCIA DO MIX** | oscilação (`_qpOscilacao`) do realizado dos dias da régua **em caixas cruas** × **convertido pelo mix do dia** (`real × Σcx·fator ÷ Σcx`); "explica" = `1 − osc_mix ÷ osc_cru` | % | `v7:_mixDiag` |
 | **HORAS DE PRODUTO ÷ HORAS DE LINHA** | Σ horas rodadas por produto ÷ nº de horas distintas da linha, no período da régua — acima de 1 é a esteira rodando mais de um produto por vez | razão | `v7:_mixRitmos` |
@@ -143,7 +144,9 @@ lá.
 ⚠ **A carteira em aberto NÃO soma o campo `falta`.** Ele vem do FIFO **por
 código**: duas linhas do mesmo código devolvem o mesmo número, e somá-las
 contaria o saldo duas vezes. Para linha de data futura o backend zera
-`embalado`/`falta` de propósito, então o aberto dela é a `qtde`.
+`embalado`/`falta` de propósito, então o aberto dela é a `qtde` menos o
+`adiantado` — este sim **por linha** (o próprio FIFO aloca), então somar não
+conta nada duas vezes (`.gs` v5.22 / v7.131.0).
 
 ⚠ **A dívida ocupa dia.** Atraso e o que falta hoje consomem capacidade dos
 primeiros dias antes de qualquer lote novo — por isso entram no NIVELADO e na

@@ -1,5 +1,19 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.22 — O LOTE DE AMANHÃ JÁ BAIXA O ADIANTADO
+//               PPCP, 14/10/2026: "está entrando lt 25295 mas não baixa, esse
+//               lote é de amanhã". A caixa embalada antes da data do lote
+//               virava crédito e só aparecia na linha quando a data chegava —
+//               até lá a linha futura ficava em BRANCO, como se nada tivesse
+//               sido feito. Agora o crédito que sobra no fim do FIFO é alocado
+//               às linhas FUTURAS do mesmo código, pela MESMA regra (data do
+//               lote, ANTEC_DIAS_UTEIS dias úteis): a linha mostra PRODUZIDO,
+//               SALDO e STATUS ADIANTADO / CONCLUIDO (ADIANTADO) já hoje.
+//               Não mexe em nada do que é ≤ hoje (atraso, meta, falta, Tela E):
+//               a linha futura entra DEPOIS de toda a produção, então só pega o
+//               crédito que nenhuma linha vencida ou de hoje pegaria.
+//               getProgramacaoDetalhada manda `adiantado` por linha futura e o
+//               `proximosQtde` do app passa a ser o que os lotes ainda aceitam.
 // Versão: 5.21 — LOTE ADIANTADO E ENCERRAR
 //               (1) Produção embalada ATÉ 2 DIAS ÚTEIS antes da data do lote
 //               abate o lote quando a data dele chega (ANTEC_DIAS_UTEIS). Antes
@@ -247,6 +261,9 @@ const ARQ_EXCLUIR_SEM_COPIA = false;
 // antes: a janela curta é o que impede produção de outro lote, antiga, de
 // "zerar" um lote novo — o motivo de a regra original existir.
 // 0 desliga (comportamento antigo).
+// v5.22: o crédito não espera mais a data para APARECER — a linha futura que
+// vai recebê-lo mostra o adiantamento já hoje (ver `adiFut` no cálculo). A
+// regra de quem recebe é a mesma; só o momento de mostrar mudou.
 const ANTEC_DIAS_UTEIS = 2;
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
@@ -1581,7 +1598,9 @@ function gravarMetaDiaNaPlanilha(prog) {
 //    de produção de dias anteriores à data dele, v5.21) · EM ATRASO (data
 //    anterior a hoje, não concluída) · EM ANDAMENTO (lote de hoje, já produziu)
 //    · PENDENTE (lote de hoje, ainda não produziu) · ENCERRADO (X na coluna
-//    ENCERRAR, v5.21) · FORA DA ESTEIRA. Data futura fica em branco.
+//    ENCERRAR, v5.21) · FORA DA ESTEIRA. Data futura fica em branco — salvo
+//    a que já recebeu caixa ADIANTADA (v5.22): mostra o que entrou, com STATUS
+//    ADIANTADO ou CONCLUIDO (ADIANTADO).
 //  - Cada rodada reescreve TODAS as linhas (em branco onde não se aplica), então
 //    valores antigos são limpos automaticamente.
 //  - ATUALIZADO_EM é exceção: ele carimba a hora só quando a LINHA muda de fato
@@ -1608,9 +1627,11 @@ function _progIgual(a, b) {
 // lote que não andou — justamente o defeito que o carimbo por linha corrigiu.
 // Toda mudança de fase de verdade (entrou no cálculo, concluiu, saiu da esteira)
 // muda PRODUZIDO/SALDO junto, e é por ali que ela carimba.
+// ADIANTADO (v5.22, linha futura que já recebeu parte) é a mesma fase: quando a
+// data chega ela vira EM ANDAMENTO sozinha, sem o lote ter andado.
 function _progFase(st) {
   const s = String(st == null ? '' : st).trim().toUpperCase();
-  if (s === 'PENDENTE' || s === 'EM ANDAMENTO' || s === 'EM ATRASO') return 'ABERTA';
+  if (s === 'PENDENTE' || s === 'EM ANDAMENTO' || s === 'EM ATRASO' || s === 'ADIANTADO') return 'ABERTA';
   return s;
 }
 
@@ -1624,9 +1645,13 @@ function _progFase(st) {
 // CONCLUIDO (ADIANTADO): fechou com a maior parte vinda de produção de dias
 // anteriores à data dele (crédito, v5.21) — o PPCP confere se foi adiantamento
 // ou sobra de outra linha (cor errada, lançamento dobrado).
+// ADIANTADO (v5.22): linha de data FUTURA que já recebeu parte — EM ANDAMENTO
+// continua sendo só do lote de hoje (pedido do usuário, 14/09/2026). Linha
+// futura só chega aqui com caixa adiantada, então a fechada é sempre ADIANTADO.
 function _progStatus(qtde, saldo, produzido, dNum, hojeNum, adiantado) {
-  return (qtde > 0 && saldo <= 0) ? (adiantado ? 'CONCLUIDO (ADIANTADO)' : 'CONCLUIDO')
+  return (qtde > 0 && saldo <= 0) ? ((adiantado || dNum > hojeNum) ? 'CONCLUIDO (ADIANTADO)' : 'CONCLUIDO')
        : (dNum < hojeNum)         ? 'EM ATRASO'
+       : (dNum > hojeNum)         ? 'ADIANTADO'
        : (produzido > 0)          ? 'EM ANDAMENTO'
        :                            'PENDENTE';
 }
@@ -1677,6 +1702,7 @@ function atualizarSaldoNaProgramacao(prog) {
   const saldoRow = prog.saldoRow   || {};
   const encMap   = prog.encLinha   || {};
   const adiMap   = prog.adiLinha   || {};
+  const futMap   = prog.adiFut     || {};
 
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   const cols = {}; OUT.forEach(function (n) { cols[n] = []; });
@@ -1728,8 +1754,21 @@ function atualizarSaldoNaProgramacao(prog) {
         status     = _progStatus(qtde, saldo, produzido, dNum, hojeNum, !!adiMap[rk]);
         escreve    = true;
       }
+    } else if (dNum > hojeNum) {
+      // Lote de AMANHÃ (ou dos próximos dias úteis) que já recebeu caixa
+      // embalada ADIANTADA (v5.22). Por LINHA, como o resto: a prévia do que o
+      // FIFO dá a ela quando a data chegar. Sem caixa adiantada, em branco.
+      const fv = futMap[key + '|' + lote + '|' + dNum + '|' + i];
+      if (fv > 0) {
+        const qtde = Number(r[iQtd]) || 0;
+        produzido  = Math.min(fv, qtde);
+        saldo      = Math.max(qtde - produzido, 0);
+        pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
+        status     = _progStatus(qtde, saldo, produzido, dNum, hojeNum, true);
+        escreve    = true;
+      }
     }
-    // demais linhas (futuras / sem correspondência): ficam em branco
+    // demais linhas (futuras sem adiantamento / sem correspondência): em branco
 
     // ATUALIZADO_EM é o carimbo DA LINHA, não o da rodada: só muda quando
     // PRODUZIDO/SALDO/PERCENTUAL/STATUS saem diferentes do que já está gravado.
@@ -2913,7 +2952,7 @@ function getPontosDia() {
   const programacao = calcularProgramacao();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
   // não precisa ir no JSON do painel — remove para manter o payload enxuto.
-  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
+  try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
 
   // Item 1: ao abrir/atualizar o gerencial, garante que a META DO DIA gravada na
   // planilha (B3) reflete a quantidade programada para hoje — assim "definir o
@@ -3465,12 +3504,19 @@ function calcularProgramacao() {
   // no FIFO, senão a produção que elas consumiram creditaria outro lote do mesmo
   // código (ver bloco ARQ_* no topo). Elas não viram rótulo de "lote atual".
   const progLinhas = {}, loteHoje = {};
+  // v5.22: linhas FUTURAS da aba ativa, só para mostrar o adiantamento (adiFut).
+  // Nunca viram demanda do FIFO de hoje: não são atraso, nem meta, nem falta.
+  const progFut = {};
   lerProgramacao(true).forEach(pr => {
     const key  = codKey(pr.codigo);
     const dNum = dataParaNum(pr.data);
     if (!key || dNum === 0) return;
     // Fechado fora da esteira: não é produção desta linha. Sai da meta/atraso.
     if (pr.foraEsteira) return;
+    if (dNum > hojeNum && !pr.arquivada) {
+      (progFut[key] = progFut[key] || []).push({ dNum: dNum, qtde: Number(pr.qtde) || 0,
+        enc: !!pr.encerrada, row: pr.row, lote: pr.lote || '' });
+    }
     if (pr.lote && !pr.arquivada && !pr.encerrada && dNum <= hojeNum && (!loteHoje[key] || dNum >= loteHoje[key].dNum)) {
       loteHoje[key] = { lote: pr.lote, dNum: dNum };
     }
@@ -3503,6 +3549,10 @@ function calcularProgramacao() {
   const keys = {};
   Object.keys(progLinhas).forEach(k => keys[k] = 1);
   Object.keys(emb.hoje).forEach(k => keys[k] = 1);
+  // v5.22: código só com linha FUTURA também passa pelo FIFO — embalado ontem
+  // para o lote de amanhã, sem nada hoje, ele não entrava aqui e a prévia do
+  // adiantamento não saía. Não vai para a `lista` (nada a mostrar hoje).
+  Object.keys(progFut).forEach(k => { if (emb.eventos[k]) keys[k] = 1; });
 
   const lista = [];
   const saldoLinha = {}; // "key|lote|dNum" -> saldo restante do lote, somado pela chave
@@ -3513,6 +3563,10 @@ function calcularProgramacao() {
   const saldoRow   = {}; // saldo da linha
   const encLinha   = {}; // produzido da linha ENCERRADA (o saldo dela é 0)
   const adiLinha   = {}; // true: fechou com a maior parte vinda de CRÉDITO
+  // Linha FUTURA ("key|lote|dNum|linha") → caixas já embaladas ADIANTADAS para
+  // ela (v5.22). É o que o FIFO vai dar a ela quando a data chegar, se nada mais
+  // for lançado do código até lá.
+  const adiFut     = {};
   // Linha da CONCLUIDA ("key|lote|dNum|linha da CONCLUIDA") que voltou a ter
   // saldo — log corrigido depois, linha mais antiga acrescentada — ou cujo X
   // foi apagado lá: volta para a PROGRAMACAO (_desarquivar). Sem isso o atraso
@@ -3583,6 +3637,29 @@ function calcularProgramacao() {
       }
       if (rem > 0 && ANTEC_DIAS_UTEIS > 0) cred.push({ d: e.d, rem: rem });
     });
+    // ADIANTAMENTO NA LINHA FUTURA (v5.22, PPCP 14/10/2026: "está entrando lt
+    // 25295 mas não baixa, esse lote é de amanhã"). O crédito que sobrou acima
+    // é exatamente o que o FIFO de amanhã vai dar aos lotes do código quando
+    // eles abrirem: toda produção é ≤ hoje, então a linha futura só pode abrir
+    // DEPOIS dela — não toma nada de lote vencido nem de hoje. Mesma ordem do
+    // FIFO (data; na mesma data, a encerrada antes — o `fecho` acima) e mesma
+    // janela, contada da data da produção até a data DO LOTE.
+    // É uma PRÉVIA: o número que vale é o do dia do lote. Muda se aparecer uma
+    // linha mais antiga do código, se o log for corrigido ou se a produção de
+    // amanhã cobrir um lote vencido primeiro — o write-back regrava a cada
+    // lançamento.
+    const fut = progFut[key] || [];
+    if (fut.length && cred.length) {
+      fut.slice().sort((a, b) => (a.dNum - b.dNum) || ((a.enc ? 0 : 1) - (b.enc ? 0 : 1))).forEach(ln => {
+        cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, ln.dNum) <= ANTEC_DIAS_UTEIS);
+        let rem = ln.qtde, tomou = 0;
+        for (let i = 0; i < cred.length && rem > 0; i++) {
+          const take = Math.min(rem, cred[i].rem);
+          rem -= take; cred[i].rem -= take; tomou += take;
+        }
+        if (tomou > 0) adiFut[key + '|' + ln.lote + '|' + ln.dNum + '|' + ln.row] = tomou;
+      });
+    }
     // Linha ENCERRADA: o que ela recebeu é o produzido dela; o resto não é cobrado.
     // Só a linha da aba ATIVA vai para o write-back (a arquivada está congelada).
     fila.forEach(lot => {
@@ -3657,6 +3734,7 @@ function calcularProgramacao() {
     saldoRow: saldoRow,                   // idem, por LINHA da aba (v5.21)
     encLinha: encLinha,                   // idem: produzido das linhas ENCERRADAS, por linha (v5.21)
     adiLinha: adiLinha,                   // idem: linha fechada por produção ADIANTADA, por linha (v5.21)
+    adiFut: adiFut,                       // idem: caixas adiantadas por linha FUTURA (v5.22)
     reabrirArq: reabrirArq                // idem: linha da CONCLUIDA que volta para a aba (v5.21)
   };
 }
@@ -3729,7 +3807,7 @@ function getProgramacaoHoje() {
   // adiantamento de cor errada com a lista, e uma lista vazia diria "nenhum
   // código tem lote nos próximos dias" — aí todo adiantamento viraria aviso.
   let prox = null;
-  try { prox = _codigosProximos(); } catch (e) { Logger.log('proximos (ignorado): ' + e.message); }
+  try { prox = _codigosProximos(p.adiFut); } catch (e) { Logger.log('proximos (ignorado): ' + e.message); }
   const r = { ok: true, produtos, metaEfetiva: p.metaEfetiva, atrasoTotal: p.atrasoTotal };
   if (prox) { r.proximos = Object.keys(prox); r.proximosQtde = prox; }
   return r;
@@ -3740,13 +3818,19 @@ function getProgramacaoHoje() {
 // é ADIANTAMENTO, não cor errada — mas só até a quantidade dos lotes que vêm (o
 // FIFO não credita mais que isso). O app usa para não avisar à toa e para
 // avisar quando passa até disso (v5.21).
-function _codigosProximos() {
+// v5.22: descontado do que JÁ foi adiantado para cada linha (`adiFut`, do
+// cálculo) — é o que os lotes ainda aceitam. Sem isso, um lote de 450 já todo
+// embalado hoje continuava aceitando mais 450 cx do mesmo código sem aviso.
+// O código continua na lista mesmo com 0: o app lê "nada mais a adiantar".
+function _codigosProximos(adiFut) {
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
-  const prox = {};
+  const prox = {}, ja = adiFut || {};
   lerProgramacao().forEach(function (pr) {
     const d = dataParaNum(pr.data), k = codKey(pr.codigo);
-    if (k && d > hojeNum && !pr.foraEsteira && !pr.encerrada && _diasUteisEntre(hojeNum, d) <= ANTEC_DIAS_UTEIS)
-      prox[k] = (prox[k] || 0) + (Number(pr.qtde) || 0);
+    if (k && d > hojeNum && !pr.foraEsteira && !pr.encerrada && _diasUteisEntre(hojeNum, d) <= ANTEC_DIAS_UTEIS) {
+      const q = Number(pr.qtde) || 0, a = Number(ja[k + '|' + (pr.lote || '') + '|' + d + '|' + pr.row]) || 0;
+      prox[k] = (prox[k] || 0) + Math.max(0, q - a);
+    }
   });
   return prox;
 }
@@ -3762,7 +3846,9 @@ function getProgramacaoDetalhada() {
   lerCatalogoProdutos().forEach(pr => { catByKey[codKey(pr.codigo)] = pr; });
 
   const statusByKey = {};
-  calcularProgramacao().lista.forEach(function (x) { statusByKey[codKey(x.codigo)] = x; });
+  const calc = calcularProgramacao();
+  calc.lista.forEach(function (x) { statusByKey[codKey(x.codigo)] = x; });
+  const adiFut = calc.adiFut || {};
 
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
 
@@ -3800,6 +3886,11 @@ function getProgramacaoDetalhada() {
       // em linha de data futura) — o app usa isso pra não mostrar "✓ OK" como
       // se já tivesse sido embalado quando na verdade ainda nem venceu.
       metaEfetiva: futura ? 0 : (st ? st.metaEfetiva : 0),
+      // v5.22: caixas já embaladas ADIANTADAS para esta linha FUTURA — POR
+      // LINHA, do próprio FIFO (não o total do código, que contaria duas
+      // vezes em duas linhas do mesmo código). O que ela ainda pede é
+      // qtde − adiantado: é o que a carteira e o PRÓXIMOS DIAS descontam.
+      adiantado:   futura ? (adiFut[key + '|' + (pr.lote || '') + '|' + dNum + '|' + pr.row] || 0) : 0,
       // Fechado fora da esteira: registrado, mas fora da meta/pendentes.
       foraEsteira: !!pr.foraEsteira,
       foraLocal:   pr.foraLocal || '',
