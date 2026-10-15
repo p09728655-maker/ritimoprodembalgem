@@ -2846,6 +2846,26 @@ feito e dá ar de verdade ao que sobrou.
   cronoanálise (xlsx: MADERO âncora + SLEEP, CAMARIM MEL e CAMARIM ELOA para
   conferir a proporção; a VERSATIL saiu — 4 h sozinha, 3 dias acima do teto)
   foi entregue fora do repositório.
+  - ⚠ **REVOGADO na v7.132.0 — o alvo provisório SAIU do estudo** (PPCP,
+    15/10/2026, com as duas telas na mão). Ele julgava a UEP DO ESTUDO, que é
+    **refeita a cada período com a âncora do período**, e por isso dava o
+    veredito na escala errada: 16/09/2026 saía **NÃO** no estudo (1.799 em 8 h
+    contra 2.300) e **BATEU** no HISTÓRICO (2.731 contra 2.530). Por caixa, o
+    estudo deu 1,38 UEP/cx e o cadastro ~1,81 no mesmo dia — ~31% de escala.
+    - No lugar: coluna **UEP GRAVADA · % META** na UEP POR DIA (a oficial do
+      HISTÓRICO, só jornada, com a cor `sc` da aba HISTÓRICO) e o card **UEP
+      GRAVADA · BATEU A META** (`uepHistResumo`). `_uepEstudo` ganhou o 5º
+      parâmetro `histDias` (o `buildDiasHistAsync` que o relatório já lia).
+    - A **FAIXA SUGERIDA DE META sai da UEP GRAVADA** (p50–p60 dos dias válidos
+      com UEP gravada), não mais da UEP em 8 h do estudo: é contra a META UEP
+      que ela se compara. Diz em que percentil a meta atual cai.
+    - **A UEP do estudo NÃO se compara com meta nenhuma** — colunas renomeadas
+      `UEP ESTUDO`. O teste falha se `UEP_ALVO_PROV`/`bateAlvo` voltarem.
+    - As notas do relatório foram enxugadas (pedido do PPCP: *"cuidado com as
+      notas, tem muita coisa"*): uma linha cada; o método mora só no quadro
+      COMO O NÚMERO SAI. O item "POR PRODUTO, NÃO POR COR" dele estava
+      desatualizado desde a v7.94.0 (a base é a cor mais rápida) e foi
+      corrigido.
 - **UEP DO DIA NO GERENCIAL — a UEP virou PARÂMETRO DO CADASTRO** (v7.80.0 /
   mobile 1.20.0 / `.gs` v5.11, PPCP, 24/09/2026: *"colocar nessa tela e app
   gerencial a meta e o que fez no dia UEP"*, e *"na aba que já existe… para
@@ -2877,7 +2897,7 @@ feito e dá ar de verdade ao que sobrou.
     com a HE pela **mesma régua das caixas** (`_ehHoraExtraCaixas`). Nenhuma
     leitura nova (o catálogo já era lido).
   - **Meta = `META_UEP` da `CONFIG_PAINEL`** (`painelConfig.metaUep`), sem ela
-    `UEP_META_PADRAO`=2300 no `rp-core` — que o `UEP_ALVO_PROV` do estudo lê.
+    `UEP_META_PADRAO`=2300 no `rp-core` (hoje 2.530, ver abaixo).
   - **`uepCard(uep, metaCfg, minJornada)` no `rp-core`, UMA conta e UM texto**
     para os dois gerenciais. Meta de **8 h de jornada normal**; esperado =
     `efNoRitmo(feito, meta, min(minNorm,480), 480)` — depois de 8 h é a meta
@@ -2925,8 +2945,7 @@ feito e dá ar de verdade ao que sobrou.
   normal) no rp-core; `UEP_META_PADRAO_GS`=2530 no `.gs`. O card soma a jornada
   inteira, então a meta tem de ser dela: 2.300 (estudo, ritmo × 8 h) contra a
   jornada de 527 min era ~10% mais fácil (6 de 7 dias acima). Os dois dão ~288
-  UEP/h — o teste prende. ⚠ `UEP_ALVO_PROV` (estudo) continua **2300** e é
-  OUTRA régua. `regravarUepPassada()` regrava a META UEP gravada nos dias
+  UEP/h. O `UEP_ALVO_PROV` (estudo) saiu na v7.132.0. `regravarUepPassada()` regrava a META UEP gravada nos dias
   fechados. As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
   v7.80–7.83.
 - **A META PADRÃO FICA EM 2.530** — a v7.98.0 a levou a 2.500 e a v7.99.0

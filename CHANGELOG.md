@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.132.0 — 15/10/2026
+
+- **ESTUDO DE UEP: o veredito do dia passa a ser o oficial.** O estudo julgava
+  a UEP que ele mesmo recalcula a cada período (com a âncora do período)
+  contra o alvo provisório de 2.300 em 8 h — outra escala que a do cadastro.
+  Caso real, 16/09/2026: **NÃO** no estudo (1.799 em 8 h) e **BATEU** na aba
+  HISTÓRICO (2.731 UEP contra 2.530).
+  - Saíram a coluna **ALVO 2.300**, o card **ALVO PROVISÓRIO** e a nota dele.
+  - Entrou a coluna **UEP GRAVADA · % META**: o número oficial do dia, o
+    mesmo da aba HISTÓRICO, na mesma cor. Entrou o card **UEP GRAVADA ·
+    BATEU A META**.
+  - As colunas da UEP do estudo passaram a se chamar **UEP ESTUDO**.
+  - Notas enxugadas: uma linha cada; o método fica em COMO O NÚMERO SAI.
+- **Atenção:** a **FAIXA SUGERIDA DE META** muda de número. Antes era p50–p60
+  da UEP em 8 h do estudo; agora é p50–p60 da **UEP gravada** (jornada, escala
+  do cadastro), a mesma régua da META UEP. Sem dias com UEP gravada no período
+  ela sai "—". Nenhum outro número do painel muda.
+
+---
+
 ## `.gs` v5.23 — 14/10/2026
 
 - ⚠ **re-deploy** — **Coluna `ADIANTADO_CX` na PROGRAMACAO e na

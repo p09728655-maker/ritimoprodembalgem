@@ -219,8 +219,8 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **RITMO EM REGIME** | caixas ÷ horas em que o produto rodou sozinho na linha | cx/h | `v7:_uepProdutos` |
 | **RITMO USADO** | caixas ÷ horas do produto com a hora de troca repartida pelo tempo esperado (caixas ÷ ritmo em regime) | cx/h | `v7:_uepProdutos` |
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
-| **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP em 8 h dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado | UEP | `v7:_uepEstudo` |
-| **ALVO PROVISÓRIO (UEP)** | 2.300 UEP em 8 h (`UEP_ALVO_PROV`, decisão do PPCP 24/09/2026); BATEU = UEP em 8 h ≥ 2.300; % = dias válidos que bateram ÷ dias válidos (suspeito fica fora) | UEP | `v7:_uepEstudo` |
+| **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP GRAVADA (coluna UEP do HISTORICO, jornada) dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado; mesma escala da META UEP | UEP | `v7:_uepEstudo` |
+| **UEP GRAVADA** (estudo de UEP) | a UEP oficial do dia (coluna UEP do HISTORICO) e % = UEP ÷ META UEP do dia, cor `sc` como na aba HISTÓRICO; BATEU A META = `uepHistResumo` (UEP ≥ meta do dia). A UEP ESTUDO da mesma linha está na escala do período e não se compara com meta | UEP | `v7:_uepEstudo` |
 | **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
 | **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
 | **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
