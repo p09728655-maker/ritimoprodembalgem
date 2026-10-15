@@ -3487,11 +3487,10 @@ console.log('\n── estudo de UEP ──');
   global.UEP_COR_DIVERGE = Number(JS.match(/const UEP_COR_DIVERGE\s*=\s*([\d.]+)/)[1]);
   global.UEP_HORAS_DIA = Number(JS.match(/const UEP_HORAS_DIA\s*=\s*(\d+)/)[1]);
   global.UEP_ANCORA_TETO_MAX = Number(JS.match(/const UEP_ANCORA_TETO_MAX\s*=\s*(\d+)/)[1]);
-  // O alvo do estudo É a meta do card UEP DO DIA (rp-core) — um número só.
-  // O alvo do ESTUDO é ritmo × 8 h (2.300); a meta do card é da jornada inteira.
-  global.UEP_ALVO_PROV = Number(JS.match(/const UEP_ALVO_PROV\s*=\s*(\d+)/)[1]);
-  ok('alvo do estudo (8 h) × meta da jornada: os dois dão ~288 UEP/h',
-     [Math.round(UEP_ALVO_PROV / 8), Math.round(UEP_META_PADRAO / UEP_MIN_DIA * 60)], [288, 288]);
+  // v7.132.0: o ALVO PROVISÓRIO (2.300 em 8 h) saiu — julgava a UEP do
+  // estudo, que está na escala do período, e contradizia o HISTÓRICO
+  // (16/09/2026: NÃO no estudo, BATEU no HISTÓRICO). Não pode voltar.
+  ok('o alvo provisório do estudo não existe mais', /UEP_ALVO_PROV|bateAlvo/.test(JS), false);
   global.UEP_REGIME_MIN_H = Number(JS.match(/const UEP_REGIME_MIN_H\s*=\s*(\d+)/)[1]);
   for (const k of ['QP_ALVO_MIN', 'QP_ALVO_MAX', 'QP_MIN_DIAS'])
     if (typeof global[k] === 'undefined') global[k] = Number(JS.match(new RegExp('const ' + k + '\\s*=\\s*(\\d+)'))[1]);
@@ -3654,12 +3653,24 @@ console.log('\n── estudo de UEP ──');
     itM.push({ data: dia(i), modelo: '9', nome: 'Z', caixas: cx, horas: 1, horasLista: ['08:00'], cxHora: { '08:00': cx } });
     rbM[dia(i)] = i === 11 ? cx / 2 : cx;
   }
-  const eM = _uepEstudo(itM, 'aparada', rbM, [50, 60]);
-  ok('dia com apontamento acima do realizado é suspeito e fica fora', [eM.nSuspeitos, eM.meta.nDias], [1, 11]);
-  const c8 = eM.dias.filter(d => !d.suspeito).map(d => d.uep8).sort((a, b) => a - b);
-  ok('a faixa de meta é p50–p60 da UEP em 8 h dos dias válidos',
-     [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, c8), _qpValorNoPercentil(60, c8)]);
-  // ALVO PROVISÓRIO (PPCP, 24/09/2026): 2.300 UEP em 8 h; dia suspeito não conta.
+  // UEP GRAVADA (HISTORICO): escala do cadastro, diferente da do estudo de
+  // propósito (×1,3), e meta 2.530 menos no dia 0, que gravou 2.500.
+  const histM = itM.map((x, i) => ({ data: x.data, uep: Math.round(x.caixas * 1.3 * 10), metaUep: i === 0 ? 2500 : 2530 }));
+  const eM = _uepEstudo(itM, 'aparada', rbM, [50, 60], histM);
+  ok('dia com apontamento acima do realizado é suspeito e fica fora', [eM.nSuspeitos, eM.meta.nDias, eM.meta.nFora], [1, 11, 1]);
+  const cG = eM.dias.filter(d => !d.suspeito).map(d => d.gravada.uep).sort((a, b) => a - b);
+  ok('a faixa de meta é p50–p60 da UEP GRAVADA dos dias válidos (escala da META UEP), não da UEP em 8 h do estudo',
+     [eM.meta.de, eM.meta.ate], [_qpValorNoPercentil(50, cG), _qpValorNoPercentil(60, cG)]);
+  ok('a faixa diz onde a meta oficial (a do último dia) cai na curva',
+     [eM.meta.metaOf, eM.meta.pMeta], [2530, _qpPercentil(2530, cG)]);
+  ok('cada dia leva a UEP GRAVADA com a meta DAQUELE dia',
+     [eM.dias[0].gravada.uep, eM.dias[0].gravada.meta, eM.dias[0].gravada.bateu, eM.dias[0].gravada.pct],
+     [2600, 2500, true, 104]);
+  ok('o "bateu" do estudo é o uepHistResumo, a mesma conta da aba HISTÓRICO (suspeito conta: o número é oficial)',
+     [eM.oficial.n, eM.oficial.bateu], [uepHistResumo(histM).n, uepHistResumo(histM).bateu]);
+  const eSemH = _uepEstudo(itM, 'aparada', rbM, [50, 60]);
+  ok('sem o HISTORICO: sem faixa, sem UEP gravada, nunca zero',
+     [eSemH.meta.de, eSemH.oficial.n, eSemH.dias.some(d => d.gravada)], [null, 0, false]);
   // UEP DO DIA nos dois gerenciais: a MESMA conta do núcleo, sem cópia local.
   {
     const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
@@ -3784,19 +3795,16 @@ console.log('\n── estudo de UEP ──');
     ok('o botão GRAVAR UEP grava em lotes, em sequência, pela escrita com retry',
        /for\(let i=0;i<lista\.length;i\+=UEP_GRAVAR_LOTE\)[\s\S]*await jsonpEscrita\(url\)/.test(pega('async function _gravarUepCadastro(')), true);
   }
-  ok('o alvo provisório é 2.300 UEP em 8 h', UEP_ALVO_PROV, 2300);
-  const bonsM = eM.dias.filter(d => !d.suspeito);
-  ok('o alvo conta só os dias válidos',
-     [eM.alvo.nDias, eM.alvo.nBate], [bonsM.length, bonsM.filter(d => d.uep8 >= 2300).length]);
-  ok('o percentil do alvo sai da mesma curva da faixa', eM.alvo.p, _qpPercentil(2300, c8));
-  ok('a coluna ALVO não julga dia suspeito', /d\.suspeito\?'—':d\.bateAlvo/.test(pega('function _uepHtml(')), true);
-  ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada').meta.de, null);
+  ok('a UEP GRAVADA usa a cor da aba HISTÓRICO (sc do % da meta)',
+     /corSc\[sc\(d\.gravada\.pct\)\]/.test(pega('function _uepHtml(')), true);
+  ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada', rbM, [50, 60], histM).meta.de, null);
   ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
   ok('o estudo pede cxHora e espera mais; o comparativo não pede',
      [/cxHora:true, ms:60000/.test(pega('async function _uepItensPeriodo(')),
       /await _uepItensPeriodo\(\)/.test(pega('async function gerarRelatorioUEP(')),
       /lerProducaoModeloPeriodo\(de,ate,onTent\)/.test(pega('async function _phItensPeriodo('))], [true, true, true]);
-  ok('o relatório usa a faixa da aba PLANO', /_uepEstudo\(itens, ctx\.modo, realByDay, QP_FAIXA\)/.test(pega('async function gerarRelatorioUEP(')), true);
+  ok('o relatório usa a faixa da aba PLANO e a UEP gravada do HISTÓRICO',
+     /_uepEstudo\(itens, ctx\.modo, realByDay, QP_FAIXA, histDias\)/.test(pega('async function gerarRelatorioUEP(')), true);
 
   ok('o relatório imprime em pé no documento compartilhado', /_rpDocParadas\(`Estudo de UEP[^`]*`\)/.test(pega('async function gerarRelatorioUEP(')), true);
   // Declarações + a única chamada da conta; o botão mora só na aba PRODUÇÃO/HORA.
