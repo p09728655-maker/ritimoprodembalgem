@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.136.0 — 16/10/2026
+
+- **A BASE DA UEP É FIXA: MESA CABECEIRA MADERO (501149) vale 1,00 sempre.**
+  Antes o estudo escolhia a âncora sozinho a cada período (o maior volume
+  abaixo de 90% do teto). No GRAVAR de 16/10 10:43 ela virou o KIT 2 MESA
+  CABECEIRA SLEEP: 64 produtos foram para a escala nova e 44 que não rodaram
+  no período ficaram na antiga — duas escalas no mesmo cadastro, ~22% de
+  diferença entre elas.
+- O **💾 GRAVAR UEP só grava com a MADERO medida no período** (5+ dias). Sem
+  ela, para e diz quantos dias ela rodou; nada é gravado.
+- Relatório do estudo: o card A virou **BASE FIXA**, a coluna B (mais rápido)
+  fica só para comparar, e há aviso quando a base roda acima de 90% do teto.
+- **Atenção:** o próximo GRAVAR mede **todos** os produtos contra a MADERO.
+  Quem estava na escala do KIT 2 SLEEP sobe ~22%. Fazer o GRAVAR com o
+  período **mais longo** possível (01/07 até hoje), para pegar os produtos
+  que não rodaram no último mês, e ajustar a META DIA (UEP) pela meta
+  equivalente que o confirm mostra.
+
+---
+
 ## mobile 1.34.0 · `.gs` v5.25 — 16/10/2026
 
 - **EXCLUIR LANÇAMENTO no app.** Toque numa hora já fechada que tenha

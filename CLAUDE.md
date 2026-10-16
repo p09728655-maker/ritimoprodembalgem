@@ -2820,6 +2820,8 @@ feito e dá ar de verdade ao que sobrou.
   volume** (recomendada — produto-base clássico, estável) e **B = mais rápido**
   (o pedido; o máximo é o valor mais instável, se ele mudar a UEP de todos
   muda). Só mudam a escala.
+  ⚠ **Desde a v7.136.0 a A é a BASE FIXA (MESA CABECEIRA MADERO)**, não mais o
+  maior volume do período — ver *UEP PADRÃO VERSIONADA*, item BASE FIXA.
 - ⚠ **Por PRODUTO (modelo + nome), nunca por cor nem pelos 6 dígitos.** Na
   tela de 24/09 a MESA CABECEIRA SLEEP ia de 112 a 313 cx/h conforme a cor:
   ruído (paralelismo, amostra), não esforço. Divergência ≥ `UEP_COR_DIVERGE`
@@ -3367,6 +3369,30 @@ feito e dá ar de verdade ao que sobrou.
     conta quantos: `sem lançamento com produto no log`).
   - Mudar de escala DE NOVO no futuro traz o mesmo problema de volta. A saída é
     a mesma (regravar), e é por isso que o confirm agora mostra a escala.
+- **BASE FIXA: MESA CABECEIRA MADERO (v7.136.0, PPCP 16/10/2026: *"a base
+  tem que ser um só"*).** A âncora A do estudo era escolhida sozinha a cada
+  período (o maior volume abaixo de 90% do teto). No GRAVAR de 16/10 10:43 ela
+  virou o KIT 2 MESA CABECEIRA SLEEP: 64 grupos foram para a escala nova e os
+  44 que não rodaram no período ficaram na da MADERO — **duas escalas no mesmo
+  cadastro**, ~22% de diferença. Ex. da aba: 1,72 → 1,41 num código que só
+  mudou de régua.
+  - `UEP_BASE = {modelo:'501149', nome:'MESA CABECEIRA MADERO'}` e
+    `_uepEhBase(p)` (modelo + nome do `produtoDoCodigo().base`, sem VOL e sem
+    cor; a caixa e o espaço não importam). Com a base no período, **ela é a
+    `volume`** do `_uepEstudo` mesmo sem ser o maior volume, e o `foraTeto`
+    fica vazio. Sem ela, a automática continua — só para LER — e o estudo
+    devolve `baseFixa:false`.
+  - **O GRAVAR exige `e.baseOk`** (a base com `UEP_MIN_DIAS`+ dias), ANTES de
+    simular; o aviso é o `_uepBaseFaltaTxt`. Base de 3 dias também não grava:
+    UEP de todos medida contra uma base provisória mudaria no próximo GRAVAR.
+  - Base acima de 90% do teto continua sendo a base (trocar seria trocar a
+    escala); o relatório avisa que ali a esteira limita.
+  - A coluna **B** (mais rápido) ficou só para comparar.
+  - ⚠ **Trocar a base troca a escala inteira**: é regravar o cadastro todo,
+    mudar a meta e regravar o HISTORICO. Não mexer na constante sem isso.
+  - Para sair das duas escalas: um GRAVAR com o período **mais longo** (01/07
+    até hoje), ajustar a META DIA (UEP) pela meta equivalente do confirm,
+    renomear a `UEP_VERSOES` nova e rodar o `regravarUepPassada`.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
