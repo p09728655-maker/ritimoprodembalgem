@@ -238,6 +238,16 @@ ok('sem meta do dia também não',
   ok('leitura ainda não chegou ≠ backend sem o campo ≠ cadastro vazio',
      [uepCard(null).sub.startsWith('aguardando'), /v5\.11/.test(uepCard(false).sub), /coluna UEP/.test(uepCard({ codigos: 0 }).sub)],
      [true, true, true]);
+  // v7.133.0 — COBERTURA: caixa sem produto não vira UEP; abaixo de 95% o card não julga
+  const cb = uepCard({ normal: 576, he: 0, cxCom: 400, cxSem: 0, codigos: 400 }, null, 240, 800);
+  ok('cobertura baixa (50%): sem cor, sem ABAIXO DO RITMO, com o aviso e as caixas sem produto',
+     [cb.c, cb.cobBaixa, Math.round(cb.cob), /ABAIXO/.test(cb.sub), cb.sub.startsWith('⚠ SÓ 50,0% DAS CAIXAS COM UEP'), /400 cx sem produto/.test(cb.sub)],
+     ['', true, 50, false, true, true]);
+  const cOk = uepCard(U, null, 240, 930);
+  ok('cobertura alta julga como sempre; sem o realizado (chamador antigo) nada muda',
+     [cOk.c, cOk.cobBaixa, Math.round(cOk.cob), uepCard(U, null, 240).cob, uepCard(U, null, 240).c], ['ok', false, 97, null, 'ok']);
+  ok('a régua do "bateu" de UEP é a das caixas (96%) e a do vermelho é a do sc (90%)',
+     [UEP_BATEU_PCT, uepBateu(2430, 2530), uepBateu(2420, 2530), UEP_COB_MIN], [96, true, false, 95]);
 }
 
 // ── UEP hora a hora (uepPorHora / uepCelula) ───────────────────────────────
@@ -252,6 +262,15 @@ ok('sem meta do dia também não',
   ok('o slot pós-almoço de 48 min pede menos', Math.round(uepCelula(m['12:12'], null, 48, false).metaH), 230);
   ok('hora extra mostra o número e não é julgada', uepCelula(m['12:12'], null, 60, true).cls, '');
   ok('hora sem apontamento com produto sai "—"', uepCelula(undefined, null, 60, false).txt, '—');
+  // v7.133.0
+  ok('hora EM ANDAMENTO mostra o número e não é julgada', [uepCelula(m['07:00'], null, 60, false, { andamento: true }).cls,
+     /em andamento/.test(uepCelula(m['07:00'], null, 60, false, { andamento: true }).title)], ['', true]);
+  ok('hora que FECHOU sem caixa é 0 de verdade e é julgada; em andamento ou HE não',
+     [uepCelula(undefined, null, 60, false, { zero: true }).txt, uepCelula(undefined, null, 60, false, { zero: true }).cls,
+      uepCelula(undefined, null, 60, false, { zero: true, andamento: true }).txt, uepCelula(undefined, null, 60, true, { zero: true }).cls],
+     ['0', 'red', '—', '']);
+  const m2 = uepPorHora([{ hora: '08:00', uep: 120, caixas: 200, cxSemUep: 100 }]);
+  ok('grupo com volume sem UEP (cxSemUep, .gs v5.24): a caixa sem UEP não some da hora', [m2['08:00'].uep, m2['08:00'].cxSem], [120, 100]);
 }
 
 // ── UEP dos dias fechados (uepHistResumo / uepDiaMeta) ─────────────────────
@@ -263,6 +282,16 @@ ok('sem meta do dia também não',
   ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2530);
   ok('metaTot = soma das metas de cada dia COM UEP (não meta × dias do filtro)', r.metaTot, 6500);
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
+  // v7.133.0 — régua de 96% e cobertura baixa fora
+  const D2 = [{ uep: 2454, metaUep: 2530 }, { uep: 2300, metaUep: 2530 }, { uep: 1300, metaUep: 2530, uepCob: 50 },
+              { uep: 2600, metaUep: 2530, uepCob: 99 }, { uep: null }];
+  const r2 = uepHistResumo(D2);
+  ok('bateu = 96% da meta do dia (2.454 de 2.530 = 97% bateu; 2.300 = 90,9% não)', r2.bateu, 2);
+  ok('dia com cobertura baixa fica fora da média e do "bateu" e é contado à parte',
+     [r2.n, r2.cobBaixa, r2.semUep, Math.round(r2.media)], [3, 1, 1, Math.round((2454 + 2300 + 2600) / 3)]);
+  ok('o período tem % e veredito pela mesma régua (96% da soma das metas)',
+     [Math.round(r2.pct * 10) / 10, r2.bateuPeriodo], [96.9, true]);
+  ok('dia antigo sem a coluna de cobertura continua valendo', [uepCobBaixa({ uep: 1, uepCob: null }), uepDiaValido({ uep: 1 })], [false, true]);
 }
 
 // ── R$ por UEP no período (uepCustoPeriodo) ────────────────────────────────
@@ -274,6 +303,8 @@ ok('sem meta do dia também não',
   ok('R$/UEP do período = custo ÷ UEP feita; meta = custo ÷ soma das metas',
      [Math.round(c.rsUep * 100) / 100, Math.round(c.rsMeta * 100) / 100], [1.38, 1.33]);
   ok('sem custo-hora ou sem dia com UEP não há conta', [uepCustoPeriodo(0, D), uepCustoPeriodo(10, [{ uep: null }])], [null, null]);
+  ok('dia com cobertura baixa fica fora do custo por UEP (a UEP dele está subestimada)',
+     uepCustoPeriodo(382.89, D.concat([{ data: '24/09/2026', uep: 900, metaUep: 2530, uepCob: 40 }])).n, 2);
 }
 
 // ── R$ por UEP (uepCusto) ──────────────────────────────────────────────────

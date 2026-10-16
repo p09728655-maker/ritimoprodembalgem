@@ -127,13 +127,13 @@ meta do dia explica **8%** da variação do realizado (r = 0,28).
 | **OSCILAÇÃO DA META** | desvio padrão ÷ média das metas do período | % | `v7:_qpOscilacao` |
 | **DIAS ACIMA DA CAPACIDADE** | dias cuja meta passou de `QP_ACIMA` | dias | `v7:_qpAnalise` |
 | **META EXEQUÍVEL SERIA** | o valor da curva entre o mínimo e o máximo da **faixa alvo** escolhida na barra | cx/dia | `v7:_qpValorNoPercentil` |
-| **CARTEIRA EM ABERTO** | caixas datadas para dias futuros (`qtde − adiantado` de cada linha da `PROGRAMACAO`; o `adiantado` vem do backend por linha e é mostrado à parte) **+ dívida** (atraso vivo + resto da meta de hoje). Com CARTEIRA = `cx de linha (mix)`, cada lote entra pesado (linha abaixo) e o cru fica ao lado | cx | `v7:_cartAberta` |
+| **CARTEIRA EM ABERTO** | caixas datadas para dias futuros (`qtde − adiantado` de cada linha da `PROGRAMACAO`; o `adiantado` vem do backend por linha e é mostrado à parte) **+ dívida** (atraso vivo + resto da meta de hoje), **menos o que ainda cabe no resto da jornada de hoje** ao ritmo da meta, pelo relógio (sábado e domingo = 0; v7.133.0). Com CARTEIRA = `cx de linha (mix)`, cada lote entra pesado (linha abaixo) e o cru fica ao lado | cx | `v7:_cartAberta` |
 | **CARGA** (carga pelo mix; no código, *cx de linha*) | `qtde × (ritmo de referência ÷ ritmo demonstrado do produto)`; referência = Σcx ÷ Σhoras de produto do período da régua; ritmo do produto = média aparada do cx/h do log (`modelo\|cor`, queda para `modelo`, sem histórico = fator 1); fator limitado a 0,33–3 | cx | `v7:_mixRitmos`, `v7:_mixFator` |
 | **CONFERÊNCIA DO MIX** | oscilação (`_qpOscilacao`) do realizado dos dias da régua **em caixas cruas** × **convertido pelo mix do dia** (`real × Σcx·fator ÷ Σcx`); "explica" = `1 − osc_mix ÷ osc_cru` | % | `v7:_mixDiag` |
 | **HORAS DE PRODUTO ÷ HORAS DE LINHA** | Σ horas rodadas por produto ÷ nº de horas distintas da linha, no período da régua — acima de 1 é a esteira rodando mais de um produto por vez | razão | `v7:_mixRitmos` |
 | **DIAS QUE NÃO CABEM** | dias cuja carga datada passa do topo da faixa alvo | dias | `v7:_cartAnalise` |
 | **PRECISA MUDAR DE DIA** | Σ `max(0, carga do dia − topo da faixa)` | cx | `v7:_cartAnalise` |
-| **ESPAÇO LIVRE** | Σ `max(0, topo da faixa − carga do dia)` | cx | `v7:_cartAnalise` |
+| **ESPAÇO LIVRE** | Σ `max(0, topo da faixa − carga do dia)`; sábado, domingo e (em UEP) dia com caixa sem UEP entram com **0** — não há jornada / a carga está incompleta | cx | `v7:_cartAnalise` |
 | **E SE PARADAS −X%** | cada dia da régua entra com `realizado sem HE + X% × caixas perdidas em paradas não programadas daquele dia` (a perda do `RP_PARADAS`); a curva e a análise da carteira são refeitas com essa régua | cx | `v7:_cartDiasComMenosParadas`, `v7:_cartCenario` |
 | **SOBRA (horizonte)** | `precisa mudar + dívida − espaço livre`, nunca negativo | cx | `v7:_cartAnalise` |
 | **NIVELADO SERIA** | `(carteira futura + dívida) ÷ nº de dias datados` | cx/dia | `v7:_cartAnalise` |
@@ -220,10 +220,11 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **RITMO USADO** | caixas ÷ horas do produto com a hora de troca repartida pelo tempo esperado (caixas ÷ ritmo em regime) | cx/h | `v7:_uepProdutos` |
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
 | **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP GRAVADA (coluna UEP do HISTORICO, jornada) dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado; mesma escala da META UEP | UEP | `v7:_uepEstudo` |
-| **UEP GRAVADA** (estudo de UEP) | a UEP oficial do dia (coluna UEP do HISTORICO) e % = UEP ÷ META UEP do dia, cor `sc` como na aba HISTÓRICO; BATEU A META = `uepHistResumo` (UEP ≥ meta do dia). A UEP ESTUDO da mesma linha está na escala do período e não se compara com meta | UEP | `v7:_uepEstudo` |
-| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
-| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
-| **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
+| **UEP GRAVADA** (estudo de UEP) | a UEP oficial do dia (coluna UEP do HISTORICO) e % = UEP ÷ META UEP do dia, cor `sc` como na aba HISTÓRICO; BATEU A META = `uepHistResumo` (UEP ≥ **96%** da meta do dia). A UEP ESTUDO da mesma linha está na escala do período e não se compara com meta | UEP | `v7:_uepEstudo` |
+| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, jornada normal de 527 min). Esperado = meta × min(minutos de jornada decorridos, 527) ÷ 527, com os minutos **do instante da leitura** (`PONTOS_DIA.leit`). Cobertura = caixas com UEP ÷ realizado do mesmo instante; abaixo de 95% o card avisa e fica sem cor | UEP | `.gs:getPontosDia` + `rp-core:uepCard` + `v7:_uepCardHoje` |
+| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP e cobertura ≥ 95% (dia sem a coluna vale); bateu = UEP ≥ **96%** da META UEP daquele dia (`uepBateu`, a régua das caixas) | UEP | `rp-core:uepHistResumo` |
+| **COBERTURA UEP %** (HISTORICO, coluna 15) | caixas com UEP ÷ REALIZADO do dia × 100, gravada no fechamento. Abaixo de `UEP_COB_MIN` (95%) o dia sai da média, do bateu, da régua do PLANO e do custo por UEP | % | `.gs:_uepCobertura` + `rp-core:uepCobBaixa` |
+| **UEP/cx do grupo** (comparativo) | Σ(caixas com UEP × UEP/cx do produto) ÷ Σ caixas com UEP no grupo; caixa de código sem UEP (`cxSemUep`, `.gs` v5.24) fica fora | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
 | **VALIDAÇÃO FORA DA AMOSTRA** | oscilação cx/h → UEP/h na 2ª metade dos dias, com a UEP calculada só na 1ª | % | `v7:_uepValidacao` |
 | **UEP NO PERÍODO** | caixas × UEP/cx (âncora A) | UEP | `v7:_uepEstudo` |
@@ -237,11 +238,11 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **UEP ATÉ AGORA** | o mesmo número e selo do card UEP DO DIA (`uepCard`): UEP de jornada normal × esperado até agora; diferença = feito − esperado, e o % = feito ÷ esperado. Esperado = meta × minutos de jornada **já decorridos** ÷ 527 — a hora em andamento conta só o que passou (`minSlotDecorrido`, v7.114.0) | UEP | `rp-core:uepCard` + `rp-core:minSlotDecorrido` |
 | **PROJEÇÃO DO DIA** | UEP feita + (UEP feita ÷ minutos de jornada decorridos) × minutos de jornada que faltam (de 527) — a média da jornada, não a última hora; hora extra fora | UEP | `v7:_uepAbaProj` |
 | **UEP POR HORA** | UEP feita ÷ minutos de jornada decorridos × 60; meta/h = meta do dia ÷ 527 × 60 | UEP/h | `v7:_uepAbaProj` |
-| **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta; a hora em andamento aparece sem cor ("até HH:MM"), não é julgada | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
+| **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta; a hora em andamento aparece sem cor ("até HH:MM"), não é julgada; a hora que fechou com 0 cx é 0 UEP e é julgada | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
 | **MIX DE HOJE** | por produto (modelo + nome), só jornada normal: caixas, UEP, UEP/cx = UEP ÷ caixas com UEP, % = UEP do produto ÷ UEP do dia | UEP | `v7:_uepAbaMix` |
 | **ORIGEM DA UEP** (era CONFIABILIDADE) | caixas de hoje por código: UEP medida — estudo ou digitada, **não é cronoanálise** (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
-| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos dias fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
-| **DIAS QUE BATERAM** (período) | dias com UEP ≥ META UEP daquele dia | dias | `rp-core:uepHistResumo` |
+| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos dias fechados com UEP (cobertura ≥ 95%) ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
+| **DIAS QUE BATERAM** (período) | dias com UEP ≥ **96%** da META UEP daquele dia | dias | `rp-core:uepBateu` |
 | **OSCILAÇÃO DIA A DIA** (período) | desvio padrão ÷ média, dia a dia, em UEP e em caixas de jornada (realizado − HE) dos mesmos dias | % | `v7:_qpOscilacao` + `v7:_uepAbaPeriodo` |
 
 **Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
@@ -249,8 +250,10 @@ hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SE
 
 **Como ler:** âncora A = produto com mais caixas no período; âncora B = o mais
 rápido. As duas mudam só a escala. Produto com menos de 5 dias rodados sai com
-UEP **PROVISÓRIA** (marcada com \*). A âncora só sai dos que têm 5+ dias. É
-estudo: nenhum número do painel usa a UEP.
+UEP **PROVISÓRIA** (marcada com \*). A âncora só sai dos que têm 5+ dias. A
+UEP do estudo só vira régua pelo 💾 GRAVAR UEP, que **mantém a escala do
+cadastro**: grava `UEP do estudo × s`, `s = Σcx × UEP do cadastro ÷ Σcx × UEP
+do estudo` nos produtos com 5+ dias que têm as duas (`v7:_uepEscala`).
 
 ## Simulador de investimento
 

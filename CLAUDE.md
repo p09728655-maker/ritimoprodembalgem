@@ -2920,13 +2920,14 @@ feito e dá ar de verdade ao que sobrou.
   `_uepColsDoDia` (lê o log DIRETO — é escrita — e o cadastro; HE pela régua
   `_ehHoraExtraCaixas`; conta pura `_uepPorDiaDoLog`). **Congeladas**: mudar a
   UEP do cadastro não reescreve dia fechado (regra de não mover meta
-  histórica). Sem UEP no cadastro → células vazias, nunca 0. `getHistory`/
+  histórica). Sem UEP no cadastro **ou sem caixa com UEP no dia** (v5.24) →
+  células vazias, nunca 0. `getHistory`/
   `getHoraDia` devolvem `uep/uepHe/metaUep` (null = sem). `preencherUepPassada
   (sobrescrever)` no editor preenche os antigos com a UEP ATUAL (a da época não
   existe). `UEP_META_PADRAO_GS` = `UEP_META_PADRAO` do rp-core (teste prende).
   `_numBR` lê `2.300` como milhar.
   - Front: `uepHistResumo`/`uepDiaMeta` (rp-core) — média só dos dias com UEP,
-    bateu = UEP ≥ meta DAQUELE dia. HISTÓRICO (coluna + card, grid `c6`),
+    bateu = UEP ≥ **96%** da meta DAQUELE dia (v7.133.0, ver REVISÃO DA UEP). HISTÓRICO (coluna + card, grid `c6`),
     gerencial de dia passado (card), celular (modal do dia), relatório semanal
     (`_relUepSemanaHtml`, seção própria — a tabela diária já é larga), PDF do
     dia (coluna + linha pelo `uepCard`), total do dia por modelo (`calcPorModelo`
@@ -2945,8 +2946,8 @@ feito e dá ar de verdade ao que sobrou.
   normal) no rp-core; `UEP_META_PADRAO_GS`=2530 no `.gs`. O card soma a jornada
   inteira, então a meta tem de ser dela: 2.300 (estudo, ritmo × 8 h) contra a
   jornada de 527 min era ~10% mais fácil (6 de 7 dias acima). Os dois dão ~288
-  UEP/h. O `UEP_ALVO_PROV` (estudo) saiu na v7.132.0. `regravarUepPassada()` regrava a META UEP gravada nos dias
-  fechados. As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
+  UEP/h. O `UEP_ALVO_PROV` (estudo) saiu na v7.132.0. `regravarUepPassada()` regrava
+  **só** a META UEP dos dias fechados (v5.24: antes regravava a UEP também). As notas acima que dizem "2.300 em 8 h" / "÷ 480" no card são da
   v7.80–7.83.
 - **A META PADRÃO FICA EM 2.530** — a v7.98.0 a levou a 2.500 e a v7.99.0
   voltou no mesmo dia (PPCP, 25/09/2026: digitou 2.500 no ⚙ e depois voltou
@@ -3048,6 +3049,9 @@ feito e dá ar de verdade ao que sobrou.
   - ⚠ Produto marcado = **UEP baixa demais OU velocidade do cadastro errada**.
     Não é para "corrigir" a UEP pelo limite: é o sinal para conferir.
   - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
+  - **O MIX do dia também passa pela esteira** (v7.133.0, `_capMinJogo`): o
+    "cabem mais" é o menor entre a UEP e o tempo de esteira; produto sem
+    medida fica fora da soma e a conta sai `(parcial)`.
 - **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
   PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
   medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`
@@ -3153,6 +3157,34 @@ feito e dá ar de verdade ao que sobrou.
     pelo horário, e sábado 07–17 entraria como jornada. Não mexer sem pedido.
   - **Maquete do ChatGPT recusada em conteúdo**: projeção somando HE, "meta do
     período", "vs período anterior" e "% do total do dia" não existem aqui.
+- **REVISÃO DA UEP** (v7.133.0 / mobile 1.34.0 / `.gs` v5.24, PPCP
+  16/10/2026: *"analisar tudo sobre uep e revisar"*). Decisões do PPCP:
+  - **BATEU = 96% da meta do dia** (`UEP_BATEU_PCT`/`uepBateu`), a régua das
+    caixas. ⚠ Não usar `uep >= meta` em lugar nenhum — o teste prende.
+  - **COBERTURA** (coluna **15** do `HISTORICO`, `_uepCobertura`): caixas com
+    UEP ÷ realizado. Abaixo de `UEP_COB_MIN`=95% o dia **não é julgado**
+    (`uepDiaValido`/`uepCobBaixa`): fora da média, do bateu, da régua do PLANO
+    e do custo por UEP, contado à parte. Sem a coluna → o dia vale.
+  - **ESCALA TRAVADA** (`_uepEscala`): o GRAVAR grava `UEP do estudo × s`,
+    `s = Σcx·UEP do cadastro ÷ Σcx·UEP do estudo` (produtos com 5+ dias e UEP
+    nas duas); muda só a proporção. < `UEP_ESCALA_MIN`=3 em comum ou nenhum
+    produto com 5+ dias → **não grava**. 1ª gravação (cadastro vazio) = s 1.
+  - **DÍVIDA PELO RELÓGIO** (`_minJornadaRestante` + `_dividaAposHoje`, uma
+    conta para PLANO e PRÓXIMOS DIAS): só vai para os próximos dias o que não
+    cabe no resto da jornada de hoje; sábado/domingo = 0. Sábado, domingo e
+    dia com caixa sem UEP não dão espaço livre (`_cartAnalise`) nem folga
+    (`parcial` no `_gpxMontar`).
+  - **LEITURA PAREADA** (`PONTOS_DIA.leit`, `_uepCardHoje` nos dois painéis):
+    o card usa os minutos e o realizado do instante em que a UEP chegou;
+    leitura de outro dia não vale.
+  - Hora a hora: hora fechada em 0 cx = **0 UEP julgada**; em andamento não
+    (`uepCelula(..., op)` no rp-core). `cxSemUep` (`.gs`) tira as caixas de
+    código sem UEP do divisor da UEP/cx (comparativo, total do dia, mix).
+  - `.gs`: `_uepMapaCatalogo` (código repetido → a última linha, em todas as
+    leituras); coluna `UEP_EST` na PRODUTO_CODIGO protege a UEP digitada da
+    estimativa; `_numBR('0.845')` = 0,845; `META_UEP` < 100 recusada.
+  - ⚠ Depois do re-deploy, `preencherCoberturaUep()` no editor preenche a
+    coluna 15 dos dias antigos.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
@@ -3176,9 +3208,11 @@ feito e dá ar de verdade ao que sobrou.
   (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
 - ⚠ **A dívida (`faltaZerar`) inclui o que falta da meta de HOJE.** Só vai para
-  o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `dívida − ritmo ×
-  (527 − minNorm)`, a base da projeção da aba UEP. Pôr a dívida inteira no 1º
-  dia cobraria duas vezes o que a linha ainda faz hoje.
+  o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `_dividaAposHoje
+  (dívida, ritmo, _minJornadaRestante(slots, agora))` — o resto **pelo
+  relógio**, 0 no fim de semana (v7.133.0; era `527 − minNorm`, que num sábado
+  abatia a jornada inteira). O PLANO usa a MESMA conta. Pôr a dívida inteira no
+  1º dia cobraria duas vezes o que a linha ainda faz hoje.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo
