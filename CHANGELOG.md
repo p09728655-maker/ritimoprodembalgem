@@ -11,6 +11,79 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.133.0 · mobile 1.34.0 · `.gs` v5.24 — 16/10/2026
+
+Revisão de tudo o que é UEP (PPCP: *"analisar tudo sobre uep e revisar"*).
+Quatro decisões do PPCP e as correções de conta que a revisão achou.
+
+- **"Bateu a meta de UEP" = 96% da meta do dia**, a mesma régua das caixas
+  (`UEP_BATEU_PCT`, `uepBateu` no `rp-core`). Antes o "bateu" era 100% e a cor
+  era 96/90: o mesmo dia saía verde e "não bateu". Vale no HISTÓRICO, na aba ⚖
+  UEP (período), na diretoria, no estudo, na faixa dos relatórios e no resumo
+  da semana.
+- **Cobertura da UEP** (⚠ **re-deploy**). Coluna **15 COBERTURA UEP %** no
+  `HISTORICO`: caixas com UEP ÷ realizado do dia, gravada no fechamento. Dia
+  abaixo de **95%** (`UEP_COB_MIN`) tem a UEP subestimada (caixa sem produto
+  não vira UEP): o card diz *"⚠ só X% das caixas com UEP"*, fica sem cor e o
+  dia sai da média, do "bateu", da régua do PLANO e do custo por UEP — contado
+  à parte. Dia sem a coluna (fechado antes) continua valendo.
+  `preencherCoberturaUep()` no editor preenche os dias antigos.
+- **💾 GRAVAR UEP mantém a escala do cadastro.** As UEP do estudo são
+  multiplicadas por `s = Σcx × UEP do cadastro ÷ Σcx × UEP nova` (produtos com
+  5+ dias que têm as duas): muda só a proporção entre os produtos. Antes cada
+  período punha o cadastro numa escala nova, com a META 2.530 e o histórico na
+  antiga. Recusa gravar com menos de 3 produtos em comum ou sem nenhum produto
+  com 5+ dias (o atalho HOJE recalibrava tudo por um dia). A estimativa pela
+  esteira usa o mesmo fator.
+- **Card UEP DO DIA: feito e esperado do MESMO instante.** O feito vinha da
+  leitura (até 6 min atrás) e o esperado do relógio de agora: às 15:03 a linha
+  no ritmo saía ABAIXO DO RITMO. Leitura de outro dia não vale mais para hoje.
+- **Hora a hora da UEP** (aba UEP, gerencial, celular): a hora em andamento não
+  é julgada; a hora que **fechou em 0 cx** é **0 UEP** e é julgada (saía "s/
+  prod." e a pior hora sumia).
+- **Caixas de código sem UEP ficam à parte** (⚠ **re-deploy**, `cxSemUep`): no
+  comparativo, no total do dia por modelo e no mix, a UEP/cx do produto não é
+  mais aplicada à cor ou ao volume sem UEP.
+- **PLANO e PRÓXIMOS DIAS: a mesma dívida, pelo relógio.** O que sobra do
+  atraso vai para os dias seguintes só no que não cabe no resto da jornada de
+  hoje, contado pelo relógio (sábado e domingo = 0). O PLANO cobrava a dívida
+  inteira; o PRÓXIMOS DIAS descontava `527 − minutos lançados`, e num sábado
+  abatia a jornada inteira.
+  - Sábado, domingo e dia com caixa sem UEP **não oferecem espaço livre** na
+    carteira (saem "fds" / "não medida"). No PRÓXIMOS DIAS o dia com caixa sem
+    UEP sai **FOLGA NÃO MEDIDA**, fora do "sobram".
+- **Simulador de capacidade: o dia montado passa pela esteira.** O "cabem mais"
+  é o menor entre a UEP e o tempo de esteira; 3.000 SLEEP davam *"99,6% · cabem
+  mais 11"* com um limite de 2.927/dia.
+- **Backend** (⚠ **re-deploy**): dia sem caixa com UEP grava UEP **vazia**, nunca
+  0; `regravarUepPassada()` regrava **só a META UEP** (a UEP de dia fechado
+  fica congelada); UEP digitada à mão não é sobrescrita pela estimativa (coluna
+  nova `UEP_EST` na `PRODUTO_CODIGO`); código repetido no cadastro → todas as
+  leituras pegam a mesma linha; `0.845` lê como 0,845 (era 845); hora
+  `05:00:00` é hora extra; `META_UEP` abaixo de 100 é recusada.
+- Celular e dia passado do PC: a meta de UEP da hora das 16:00 é **283**
+  (59 min), como ao vivo no PC (era 288). Falha de leitura do histórico não é mais "sem UEP gravada"
+  (simulador e PLANO, como a aba UEP já fazia).
+- **Atenção — números que mudam:**
+  - **Dias que bateram a meta de UEP sobem**: dia entre 96% e 100% passa a
+    contar (ex.: 2.440 de 2.530 = 96,4% → bateu).
+  - Depois do re-deploy e do `preencherCoberturaUep()`, **média e "bateu" do
+    período podem mudar**: dia com cobertura < 95% sai das contas.
+  - **PLANO** em dia útil: a dívida passa a descontar o que ainda cabe hoje →
+    o horizonte pode sair menos sobrecarregado (às 08:00 até ~89% de uma meta
+    do dia sai da dívida). Fim de semana não abate mais nada. O veredito pode trocar
+    de *"re-datar resolve"* para *"sobrecarregado"* quando a folga estava num
+    sábado.
+  - **PRÓXIMOS DIAS**: dia com caixa sem UEP deixa de somar folga.
+  - Comparativo/UEP apontada: produto com cor ou volume sem UEP mostra
+    **menos UEP** (antes a média do produto era aplicada às caixas sem UEP).
+  - O próximo **GRAVAR UEP** grava UEP **na escala do cadastro atual**, não na
+    da âncora do período.
+  - Formato: `HISTORICO` ganha a coluna 15; `PRODUTO_CODIGO` ganha `UEP_EST`
+    (o script cria as duas).
+
+---
+
 ## v7.132.0 — 15/10/2026
 
 - **ESTUDO DE UEP: o veredito do dia passa a ser o oficial.** O estudo julgava

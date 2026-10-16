@@ -40,6 +40,7 @@ const GLOBAIS = [
   'RP_CORE','RP_PARADAS','RP_SEMANA','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
   'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo','slRitmo',
   'uepCard','UEP_META_PADRAO','UEP_MIN_DIA','uepPorHora','_uepHHMM','uepCelula','uepDiaMeta','uepHistResumo','uepCusto','uepCustoPeriodo','minSlotDecorrido',
+  'UEP_BATEU_PCT','UEP_COB_MIN','uepPct','uepBateu','uepCobBaixa','uepDiaValido',
   'nomeComCor','_rpOk',
 ];
 

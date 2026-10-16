@@ -24,6 +24,18 @@ function pega(assinatura) {
   }
   throw new Error('função não fecha: ' + assinatura);
 }
+// O mesmo, num texto qualquer (o HTML do celular, por exemplo).
+function pegaDe(txt, assinatura) {
+  const i = txt.indexOf(assinatura);
+  if (i < 0) throw new Error('não encontrei: ' + assinatura);
+  const j = txt.indexOf('{', txt.indexOf(')', i));
+  let n = 0;
+  for (let k = j; k < txt.length; k++) {
+    if (txt[k] === '{') n++;
+    else if (txt[k] === '}' && --n === 0) return txt.slice(i, k + 1);
+  }
+  throw new Error('função não fecha: ' + assinatura);
+}
 
 // dependências que as funções extraídas usam
 global.window = global;   // o rp-core.js é script de navegador e escreve em window
@@ -2869,6 +2881,17 @@ ok('a dívida entra no nivelado e no total',
    [_semD.nivelado, _comD.nivelado, _comD.total], [600, 800, 1600]);
 ok('e é ela que faz o horizonte estourar mesmo com os dias dentro da faixa',
    [_semD.sobra, _comD.sobra], [0, 400]);
+// v7.133.0 — sábado e domingo não têm jornada, e o dia com caixa sem UEP não
+// tem a carga medida: nenhum dos dois oferece espaço livre (antes 200 UEP no
+// sábado davam 2.420 de "espaço" e o veredito virava "re-datar resolve").
+const _fds = _cartAnalise(_cartAberta([_it('18/09/2026',1200), _it('19/09/2026',100), _it('20/09/2026',100)], _cartNum('15/09/2026'), 0), _c10, [50,60]);
+ok('fim de semana não oferece espaço livre: o excesso da sexta não "cabe" no sábado',
+   [_fds.linhas[1].fds, _fds.linhas[1].cabe, _fds.linhas[2].cabe, _fds.cabe, _fds.sobra], [true, 0, 0, 0, 600]);
+const _cSU = _cartAberta([_it('16/09/2026',1200), _it('17/09/2026',100)], _cartNum('15/09/2026'), 0);
+_cSU.semUep = [{ data:'17/09/2026', cx:2000 }];
+const _aSU = _cartAnalise(_cSU, _c10, [50,60]);
+ok('dia com caixa sem UEP: a folga não é medida — não entra no espaço livre',
+   [_aSU.linhas[1].semMedida, _aSU.linhas[1].cabe, _aSU.sobra], [true, 0, 600]);
 ok('sem dia datado à frente não há análise (nunca zero inventado)',
    _cartAnalise(_cartAberta([_it('14/09/2026',500)], _cartNum('15/09/2026'), 0), _c10, [50,60]), null);
 
@@ -3556,7 +3579,7 @@ console.log('\n── estudo de UEP ──');
   ok('menos de 3 produtos medidos → sem calibração', _uepCalibEsteira({ volume: { teto: 300 }, prods: eC.prods.slice(0, 2).map(p => ({ ...p, amostraOk: false })) }), null);
   const gUep = pega('async function _gravarUepCadastro(');
   ok('a estimativa vai DEPOIS da UEP medida, pela mesma ação, com k e teto da âncora',
-     [gUep.indexOf('estimar=1') > gUep.indexOf("action=setUepCatalogo'"), /&k='\+encodeURIComponent\(cal\.k/.test(gUep)], [true, true]);
+     [gUep.indexOf('estimar=1') > gUep.indexOf("action=setUepCatalogo'"), /&k='\+encodeURIComponent\(\(cal\.k\*esc\.s\)/.test(gUep)], [true, true]);
 
   // ── v7.74.0: hora compartilhada repartida pelo TEMPO ESPERADO ──
   // A roda 300/h sozinho, B 150/h sozinho. Na hora 13:00 os dois dividem a
@@ -3668,15 +3691,43 @@ console.log('\n── estudo de UEP ──');
      [2600, 2500, true, 104]);
   ok('o "bateu" do estudo é o uepHistResumo, a mesma conta da aba HISTÓRICO (suspeito conta: o número é oficial)',
      [eM.oficial.n, eM.oficial.bateu], [uepHistResumo(histM).n, uepHistResumo(histM).bateu]);
+  // v7.133.0 — ESCALA TRAVADA: o GRAVAR muda só a proporção entre os produtos
+  eval(pega('function _uepEscala('));
+  if (typeof UEP_ESCALA_MIN === 'undefined') global.UEP_ESCALA_MIN = Number(JS.match(/const UEP_ESCALA_MIN = (\d+);/)[1]);
+  {
+    const pr = [{ chave:'A|1', amostraOk:true, uepVol:1, caixas:1000 }, { chave:'B|1', amostraOk:true, uepVol:2, caixas:500 },
+                { chave:'C|1', amostraOk:true, uepVol:0.5, caixas:200 }, { chave:'D|1', amostraOk:false, uepVol:3, caixas:900 }];
+    const cad = { 'A|1':1.3, 'B|1':2.6, 'C|1':0.65, 'D|1':9 };
+    const es = _uepEscala(pr, cad);
+    ok('escala = Σcx·UEP do cadastro ÷ Σcx·UEP nova, só nos produtos com amostra', [Math.round(es.s * 1000) / 1000, es.n, es.primeira], [1.3, 3, false]);
+    ok('cadastro vazio = 1ª gravação (escala da âncora); sem o mapa ou com menos de ' + UEP_ESCALA_MIN + ' em comum = não grava',
+       [_uepEscala(pr, {}).primeira, _uepEscala(pr, {}).s, _uepEscala(pr, null), _uepEscala(pr.slice(0, 2), cad)], [true, 1, null, null]);
+    const G = pega('async function _gravarUepCadastro(');
+    ok('o GRAVAR multiplica pela escala, recusa sem escala e não grava com âncora provisória',
+       [/Math\.round\(p\.uepVol\*esc\.s\*100\)\/100/.test(G), /if\(!esc\)\{ alert\(/.test(G), /!\(e\.nOk>0\)/.test(G)], [true, true, true]);
+  }
   const eSemH = _uepEstudo(itM, 'aparada', rbM, [50, 60]);
   ok('sem o HISTORICO: sem faixa, sem UEP gravada, nunca zero',
      [eSemH.meta.de, eSemH.oficial.n, eSemH.dias.some(d => d.gravada)], [null, 0, false]);
   // UEP DO DIA nos dois gerenciais: a MESMA conta do núcleo, sem cópia local.
   {
     const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
-    ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo',
-       [(JS.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length,
-        (MOB.match(/uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, k\.minNorm\)/g) || []).length], [1, 1]);
+    // v7.133.0 / mobile 1.34.0 — feito e esperado do MESMO instante (o retrato
+    // da leitura) e cobertura sobre o realizado desse instante, nos dois painéis.
+    const UC = /uepCard\(PONTOS_DIA\.uep, PONTOS_DIA\.metaUep, L\.minNorm!=null\?L\.minNorm:k\.minNorm, L\.real!=null\?L\.real:k\.real\)/;
+    ok('o gerencial do desktop e o do celular mostram o card pelo uepCard do núcleo, com a leitura pareada',
+       [UC.test(pega('function _uepCardHoje(')), UC.test(pegaDe(MOB, 'function _uepCardHoje(')),
+        (JS.match(/uepCard\(PONTOS_DIA\.uep/g) || []).length, (MOB.match(/uepCard\(PONTOS_DIA\.uep/g) || []).length], [true, true, 1, 1]);
+    ok('leitura de OUTRO dia não vale (PC aberto de um dia para o outro): o card volta a aguardar',
+       [/PONTOS_DIA\.uep && !_uepLeitHoje\(\)\) return uepCard\(null\)/.test(pega('function _uepCardHoje(')),
+        /PONTOS_DIA\.uep && !_uepLeitHoje\(\)\) return uepCard\(null\)/.test(pegaDe(MOB, 'function _uepCardHoje('))], [true, true]);
+    // mobile 1.34.0 — minutos da hora pelo RÓTULO da planilha (16:00-16:59 = 59)
+    eval(pegaDe(MOB, 'function _minDaLinha('));
+    ok('celular: minutos da hora pelo fim que o backend manda; sem fim, o slot; sem nada, 60',
+       [_minDaLinha({ horario:'16:00', slotFim:'16:59' }, []), _minDaLinha({ horario:'12:12', slotFim:'13:00' }, []),
+        _minDaLinha({ horario:'12:12' }, [{ inicio:'12:12', min:48 }]), _minDaLinha({ horario:'09:00' }, [])], [59, 48, 48, 60]);
+    ok('celular: a hora em andamento não é julgada e a que fechou em 0 é 0 UEP (a mesma régua do PC)',
+       /uepCelula\(uepH\[r\.horario\], PONTOS_DIA\.metaUep, _m, ehHE, \{ andamento:_agM>=_ini&&_agM<_ini\+_m, zero:prod===0&&_agM>=_ini\+_m \}\)/.test(MOB), true);
     ok('UEP hora a hora nos dois gerenciais pela conta do núcleo',
        [/uepCelula\(uepH\[sl\.inicio\]/.test(JS), /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
     ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
@@ -3687,6 +3738,13 @@ console.log('\n── estudo de UEP ──');
                                { modelo: '501149', nome: 'MESA MADERO', caixas: 300, fam: 'P' },
                                { modelo: '999', nome: 'SEM', caixas: 50, fam: 'P' }], it => it.fam);
     ok('UEP/cx do grupo = média pelas caixas dos produtos COM UEP', Math.round(ug.P * 1000) / 1000, 1.235);
+    ok('a cor/volume sem UEP (cxSemUep, .gs v5.24) não herda a UEP média do produto',
+       _phUepPorGrupo([{ modelo: '501134', nome: 'PENTEADEIRA PRINCESA', caixas: 100, cxSemUep: 40, fam: 'P' }], it => it.fam).P, 1.94);
+    eval(pega('function _phUepTotal('));
+    const utS = _phUepTotal([{ modelo: '501134', nome: 'PENTEADEIRA PRINCESA', caixas: 100, cxSemUep: 40 },
+                            { modelo: '999', nome: 'SEM', caixas: 50 }]);
+    ok('UEP apontada: só as caixas COM UEP viram UEP; as sem UEP ficam à parte',
+       [Math.round(utS.uep * 10) / 10, utS.cxCom, utS.cxSem], [116.4, 60, 90]);
     global.PH_UEP_PROD = null;
     ok('sem o mapa do backend, nada de UEP no comparativo', _phUepPorGrupo([{ caixas: 1 }], () => 'x'), null);
     ok('tela e PDF do comparativo passam o mesmo uepGrupo', (JS.match(/uepGrupo:_phUepPorGrupo\(itensView,keyOf\)/g) || []).length, 2);
@@ -3714,7 +3772,7 @@ console.log('\n── estudo de UEP ──');
     ok('a faixa destacada está no semanal e no histórico',
        [/\$\{_rpUepFaixaHtml\(diasSem\)\}/.test(JS), /\$\{_rpUepFaixaHtml\(dias\)\}/.test(JS)], [true, true]);
     ok('o relatório do dia abre com o card UEP DO DIA, pela mesma conta do gerencial',
-       [/const uepDoc=\(PONTOS_DIA\.uep&&PONTOS_DIA\.uep\.codigos>0\)\?uepCard\(/.test(pega('async function gerarRelatorioProducaoModelo(')),
+       [/const uepDoc=\(PONTOS_DIA\.uep&&PONTOS_DIA\.uep\.codigos>0&&_uepLeitHoje\(\)\)\?_uepCardHoje\(kH\)/.test(pega('async function gerarRelatorioProducaoModelo(')),
         /UEP DO DIA · JORNADA/.test(pega('async function gerarRelatorioProducaoModelo('))], [true, true]);
     eval(pega('function _phUepTotal('));
     global.PH_UEP_PROD = { '501134|PENTEADEIRA PRINCESA': 1.94, '501149|MESA MADERO': 1 };
@@ -3738,7 +3796,7 @@ console.log('\n── estudo de UEP ──');
        [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
         /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);
     // v7.90.0 — simulador de capacidade em UEP, por PRODUTO COMPLETO
-    eval(pega('function _capVol(')); eval(pega('function _capNome(')); eval(pega('function _capProdutos(')); eval(pega('function _capMix('));
+    eval(pega('function _capVol(')); eval(pega('function _capNome(')); eval(pega('function _capProdutos(')); eval(pega('function _capDia(')); eval(pega('function _capMinJogo(')); eval(pega('function _capMix('));
     ok('volume lido da descrição; sem VOL é 1/1', [_capVol('VOL 2/2 PENTEADEIRA').vol, _capVol('VOL 2/2 X').nVol, _capVol('MESA').nVol], [2, 2, 1]);
     ok('nome sem VOL e sem a cor antiga no fim', _capNome('VOL 1/2 PENTEADEIRA CAMARIM ELOA ROSA', 'rosa'), 'PENTEADEIRA CAMARIM ELOA');
     const cp = _capProdutos([
@@ -3777,8 +3835,19 @@ console.log('\n── estudo de UEP ──');
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
     ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',
        [Math.round(mx.usado), Math.round(mx.sobra), mx.linhas[0].cabeMais, mx.semUep.length], [1296, 1234, 285, 1]);
+    ok('mix sem MEDIDA/VELOCIDADE: a esteira não entra e a conta da esteira sai PARCIAL (nunca inventa)',
+       [mx.minEst, mx.estParcial, mx.passaEst], [0, true, false]);
+    {
+      const mxE = _capMix(cpT, [{ chave: sl.chave, qtde: 3000 }], 2530);
+      ok('o DIA montado passa pela esteira: 3.000 SLEEP (limite ' + sl.tetoDia + '/dia) estoura a jornada e não cabe mais nenhum',
+         [mxE.passaEst, mxE.linhas[0].cabeMais, mxE.linhas[0].limEst, Math.round(mxE.pctEst) > 100], [true, 0, true, true]);
+      const mxM = _capMix(cpT, [{ chave: el.chave, qtde: 100 }], 2530);
+      const pelaUep = Math.floor((2530 - 100 * el.uepJogo) / el.uepJogo);
+      ok('dentro da esteira o "cabem mais" é o menor entre UEP e esteira',
+         [mxM.passaEst, mxM.linhas[0].cabeMais <= pelaUep, mxM.estParcial], [false, true, false]);
+    }
     ok('a impressão da capacidade usa a MESMA conta da tela (_capMix) e diz que é simulação',
-       [/_capMix\(CAP_CAT, CAP_MIX, meta\)/.test(pega('function gerarRelatorioCapUep(')), /SIMULAÇÃO — nada foi gravado/.test(pega('function gerarRelatorioCapUep('))], [true, true]);
+       [/_capMix\(CAP_CAT, CAP_MIX, meta, _capVel\(\)\)/.test(pega('function gerarRelatorioCapUep(')), /SIMULAÇÃO — nada foi gravado/.test(pega('function gerarRelatorioCapUep('))], [true, true]);
     ok('a tabela de capacidade por produto usa o MESMO _capProdutos, do mais pesado ao mais leve, e lista quem está sem UEP',
        [/CAP_CAT\.filter/.test(pega('function gerarRelatorioCapTodos(')), /sort\(\(a,b\)=>b\.uepJogo-a\.uepJogo/.test(pega('function gerarRelatorioCapTodos(')),
         /SEM UEP COMPLETA NO CADASTRO/.test(pega('function gerarRelatorioCapTodos('))], [true, true, true]);
@@ -3833,6 +3902,15 @@ console.log('\n── estudo de UEP ──');
   ok('hora lançada SEM caixa com produto não vira 0 UEP vermelho; hora futura fica pendente',
      [H[3].lancada, H[3].uep, H[3].cls, H[4].lancada, H[4].uep], [true, null, '', false, null]);
   ok('as caixas sem UEP da hora aparecem', H[2].cxSem, 10);
+  // v7.133.0 — hora que FECHOU com 0 caixas é 0 UEP julgada; em andamento não
+  {
+    const allZ = all.concat([{ horario:'14:00', producaoHora:0 }]);
+    const HZ = _uepAbaHoras(slots, allZ, uepH, 2530, toMin('15:30'));
+    ok('hora que fechou com 0 caixas é 0 UEP e é julgada (a pior hora não some)', [HZ[4].zero, HZ[4].uep, HZ[4].cls], [true, 0, 'red']);
+    const HA = _uepAbaHoras(slots, allZ, uepH, 2530, toMin('14:30'));
+    ok('a mesma hora em andamento não é zero nem julgada', [HA[4].zero, HA[4].uep, HA[4].andamento, HA[4].cls], [false, null, true, '']);
+    ok('hora com caixa e sem produto apontado continua sem número (falta de dado)', [HZ[3].zero, HZ[3].uep], [false, null]);
+  }
 
   const phm = [{ hora:'06:00', modelo:'501118', nome:'ESCRIVANINHA TAURUS', caixas:100, uep:162 },
                { hora:'07:00', modelo:'501118', nome:'ESCRIVANINHA TAURUS', caixas:200, uep:324 },
@@ -3847,6 +3925,8 @@ console.log('\n── estudo de UEP ──');
      [M.he.cx, M.he.uep, M.he.uepCx, M.he.linhas.map(l => l.nome), M.dia.cx, M.dia.uep, M.linhas.some(l => l.cx === 300)],
      [100, 162, 1.62, ['ESCRIVANINHA TAURUS'], 430, 731, false]);
   ok('mix sem hora extra: he zerado, dia = jornada', [_uepAbaMix(phm.slice(1)).he.cx, _uepAbaMix(phm.slice(1)).dia.cx], [0, 330]);
+  ok('mix: caixa de código sem UEP dentro do produto (.gs v5.24 cxSemUep) não entra no divisor da UEP/cx',
+     _uepAbaMix([{ hora:'08:00', modelo:'501134', nome:'PENTEADEIRA PRINCESA', caixas:100, uep:200, cxSemUep:20 }]).linhas[0].uepCx, 2.5);
 
   const cat = [{ codigo:'501.118.005', uep:1.62, uepVig:'24/09/2026' }, { codigo:'501134002', uep:2.45, uepVig:'25/09/2026 EST' },
                { codigo:'501999001', uep:0, uepVig:'' }];
@@ -3875,6 +3955,15 @@ console.log('\n── estudo de UEP ──');
   ok('período: média e dias batidos pela régua do HISTÓRICO (uepHistResumo)', [Math.round(PP.res.media), PP.res.bateu, PP.abaixo], [2689, 8, ['11/09/2026','23/09/2026']]);
   ok('período: a UEP oscila bem menos que as caixas de jornada nos mesmos dias', [Math.round(PP.oscUep), Math.round(PP.oscCx)], [10, 45]);
   ok('janela de 7 dias corridos pega só os dias dela', _uepAbaPeriodo(DH, 7, new Date(2026, 8, 25)).dias.map(d => d.data.slice(0,5)), ['18/09','21/09','22/09','23/09','24/09']);
+  // v7.133.0 — régua ÚNICA (96% da meta do dia, a das caixas) e cobertura
+  {
+    const D96 = [{ data:'22/09/2026', uep:2440, metaUep:2530, real:1500 },           // 96,4% → bateu
+                 { data:'23/09/2026', uep:2420, metaUep:2530, real:1500 },           // 95,7% → não
+                 { data:'24/09/2026', uep:1300, metaUep:2530, real:1500, uepCob:52 }]; // cobertura baixa → fora
+    const P96 = _uepAbaPeriodo(D96, 15, new Date(2026, 8, 25));
+    ok('período: bateu = 96% da meta do dia; dia com cobertura baixa sai e é contado',
+       [P96.n, P96.res.bateu, P96.abaixo, P96.cobBaixa], [2, 1, ['23/09/2026'], 1]);
+  }
   eval(pega('function _uepHistDaPlanilha('));
   ok('histórico só com dias deste computador é FALHA de leitura, não histórico vazio',
      [_uepHistDaPlanilha([{ data:'24/09/2026', fonte:'local' }]), _uepHistDaPlanilha([]), _uepHistDaPlanilha(null),
@@ -3888,7 +3977,7 @@ console.log('\n── estudo de UEP ──');
      [CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaHistCarregar') && CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('_uepAbaCatCarregar'),
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
-  ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
+  ok('a aba usa a régua do card (uepCard, pelo retrato da leitura) e não reescreve conta', [/_uepCardHoje\(k\)/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('tela, impressão e diretoria leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
      [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [3, false]);   // tela, papel e a tela da diretoria (v7.116.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
@@ -3965,7 +4054,7 @@ console.log('\n── estudo de UEP ──');
   { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
     eval(m[0].replace(/const /g, 'global.')); }
   eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida('));
-  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxRotLote(')); eval(pega('function _gpxMontar('));
+  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxRotLote(')); eval(pega('function _dividaAposHoje(')); eval(pega('function _gpxMontar('));
   const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
   const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
                  it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
@@ -3976,7 +4065,7 @@ console.log('\n── estudo de UEP ──');
   ok('horas = UEP ÷ ritmo da meta; o atraso que não cabe hoje vai para o 1º dia útil',
      [Math.round(G.carry), Math.round(G.dias[0].minAtr), Math.round(G.dias[0].min), G.dias[1].minAtr], [424, 88, 567, 0]);
   ok('estados: passa até 1h45 = âmbar, mais = NÃO CABE, folga grande = verde, sem lote = vazio, sábado à parte',
-     G.dias.map(d => d.estado), ['warn','fds','vazio','red','ok','vazio']);
+     G.dias.map(d => d.estado), ['warn','fds','vazio','red','parcial','vazio']);
   ok('fora da esteira e vencido não entram; linha sem UEP NÃO vira hora — sai da conta e é apontada',
      [G.dias[2].uep, G.dias[4].uep, G.dias[4].cxSemUep, G.semUep.map(x => [x.data.slice(0,5), x.lote, x.cx])],
      [0, 500, 100, [['30/09', '25246', 100]]]);
@@ -3984,7 +4073,11 @@ console.log('\n── estudo de UEP ──');
   ok('atraso: código com UEP vira UEP, sem UEP é apontado (nunca pela média)', [DV.uep, DV.semUep.map(x => [x.codigo, x.cx])], [600, [['999', 40]]]);
   ok('backend sem a lista por código: o atraso inteiro fica sem UEP e é apontado', [_gpxDivida([], itens, 340).uep, _gpxDivida([], itens, 340).semUep[0].cx], [0, 340]);
   ok('totais: jornada só dos dias úteis, sábado fora da falta e da folga',
-     [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 201, 2, 1, 2]);
+     [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 201, 2, 0, 2]);
+  // v7.133.0 — dia com caixa SEM UEP não tem folga medida: as horas são só das
+  // linhas com UEP, e 2.000 cx sem UEP saíam "FOLGA 8h47" em verde.
+  ok('dia com caixa sem UEP: FOLGA NÃO MEDIDA, fora do "sobram" (a falta continua valendo)',
+     [G.dias[4].estado, G.nParcial, G.sobra], ['parcial', 1, 0]);
   ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);
   ok('sem nenhuma UEP na programação não converte (não inventa hora)', _gpxMontar([it('26/09/2026','1',10,null)], new Date(2026,8,25), 0, 0, 2530, 5).falha, 'sem-uep');
   ok('dívida que cabe no resto de hoje não passa para amanhã', _gpxMontar(itens, new Date(2026,8,24), 500, 300, 2530, 5).carry, 0);
@@ -3992,7 +4085,7 @@ console.log('\n── estudo de UEP ──');
   const GA = _gpxMontar([it('25/09/2026','25295',450,1,{ adiantado:450 }), it('25/09/2026','25296',100,1,{ adiantado:40 }),
                          it('25/09/2026','25297',30,null,{ adiantado:30 }), it('25/09/2026','25298',20,null,{ adiantado:5 })], new Date(2026,8,24), 0, 0, 2530, 1);
   ok('PRÓXIMOS DIAS: o adiantado sai das horas e o dia diz quanto já foi feito',
-     [GA.dias[0].uep, GA.dias[0].cx, GA.dias[0].cxAdi, GA.dias[0].estado], [60, 60, 490, 'ok']);
+     [GA.dias[0].uep, GA.dias[0].cx, GA.dias[0].cxAdi, GA.dias[0].estado], [60, 60, 490, 'parcial']);
   ok('linha sem UEP já toda adiantada não é apontada; a parcial aponta só o que falta',
      GA.semUep.map(x => [x.lote, x.cx]), [['25298', 15]]);
   // v7.110.0 — a MESMA regra na aba PLANO: sem UEP não entra pela média
@@ -4013,8 +4106,28 @@ console.log('\n── estudo de UEP ──');
       /_cartSemUepHtml\(D\.semFut\|\|\[\], \[\], 'ud-alerta', D\.semHoje\|\|\[\]\)/.test(pega('function _uepDocHtml('))], [true, true]);
   const CM = pega('async function _cartMontar(');
   ok('PLANO em UEP: a carga só leva linha com UEP e a dívida vem do _gpxDivida (sem média)',
-     [/uepCx\) > 0\), hojeNum, dv\.uep, \{ uep:true, fallback:0 \}/.test(CM), /_planoDividaUep/.test(JS), /_cartSemUepHtml\(a\.semUep, a\.divSemUep\)/.test(pega('function _cartMixHtml('))],
-     [true, false, true]);
+     [/uepCx\) > 0\), hojeNum, divU, \{ uep:true, fallback:0 \}/.test(CM), /_dividaAposHoje\(dv\.uep, metaU \/ UEP_MIN_DIA, _planoRestoHoje\(\)\)/.test(CM),
+      /_planoDividaUep/.test(JS), /_cartSemUepHtml\(a\.semUep, a\.divSemUep\)/.test(pega('function _cartMixHtml('))],
+     [true, true, false, true]);
+  // v7.133.0 — a MESMA dívida no PLANO e no PRÓXIMOS DIAS, pelo relógio
+  ok('PLANO em caixas desconta o resto de hoje pela MESMA conta (ritmo da meta do dia em caixas)',
+     /_dividaAposHoje\(_planoDivida\(\), metaCx \/ UEP_MIN_DIA, _planoRestoHoje\(\)\)/.test(CM), true);
+  ok('PRÓXIMOS DIAS usa o resto da jornada pelo RELÓGIO, não 527 − minutos lançados',
+     [/_minJornadaRestante\(k\.slots, agora\)/.test(pega('function _gpxDoPainel(')), /UEP_MIN_DIA\s*-\s*k\.minNorm/.test(pega('function _gpxDoPainel('))], [true, false]);
+  eval(pega('function _horaEhHE(')); eval(pega('function _minJornadaRestante('));
+  {
+    const SL = [['07:00',60],['08:00',60],['09:00',60],['10:00',60],['12:12',48],['13:00',60],['14:00',60],['15:00',60],['16:00',59]]
+      .map(([inicio, min]) => ({ inicio, label: inicio, min }));
+    const SLhe = [{ inicio:'05:00', label:'05:00', min:60, he:true }].concat(SL);
+    const em = (d, h, m) => new Date(2026, 9, d, h, m, 0);     // out/2026: 16 = sexta, 17 = sábado
+    ok('resto da jornada pelo relógio: antes do turno = 527; 12:30 = o que falta do pós-almoço + a tarde; depois das 17 = 0',
+       [_minJornadaRestante(SL, em(16, 6, 0)), Math.round(_minJornadaRestante(SL, em(16, 12, 30))), _minJornadaRestante(SL, em(16, 18, 0))], [527, 269, 0]);
+    ok('sábado e domingo = 0 (não há jornada normal): o sábado não abate a meta da dívida',
+       [_minJornadaRestante(SL, em(17, 8, 0)), _minJornadaRestante(SL, em(18, 8, 0))], [0, 0]);
+    ok('a madrugada (HE) não entra no resto da jornada', _minJornadaRestante(SLhe, em(16, 5, 0)), 527);
+    ok('dívida após hoje: só o que não cabe no resto da jornada, nunca negativo, teto de 527 min',
+       [_dividaAposHoje(3000, 2530 / 527, 527), _dividaAposHoje(1000, 2530 / 527, 527), _dividaAposHoje(3000, 2530 / 527, 0), _dividaAposHoje(3000, 2530 / 527, 9999)], [470, 0, 3000, 470]);
+  }
   const GH = pega('function _gpxHtml(');
   ok('o desenho não refaz a carga (nenhuma conta da carteira dentro dele)', /_cartAberta\(|_cartUepMedia\(|_gpxDivida\(|uepCx/.test(GH), false);
   const RP = pega('function renderProxDias(');
@@ -4081,7 +4194,8 @@ console.log('\n── estudo de UEP ──');
     .map(([data, uep]) => ({ data, uep, uepHe:224, real:1500, heCx:108, metaUep:2530 }));
   const S = _dirSemana(dias, new Date(2026, 8, 25), { pts:20850, cx:6950 });
   ok('SEMANA: só a semana passada; UEP e meta pelos dias com UEP; caixas de JORNADA; pontos da leitura do período',
-     [S.nDias, S.uep, S.meta, S.bateu, Math.round(S.pct*10)/10, S.cx, S.heCx, S.pts, S.heUep], [5, 12753, 12650, 3, 100.8, 6960, 540, 20850, 1120]);
+     // v7.133.0: bateu = 96% da meta (2.480 de 2.530 = 98% passou a bater) → 4
+     [S.nDias, S.uep, S.meta, S.bateu, Math.round(S.pct*10)/10, S.cx, S.heCx, S.pts, S.heUep, S.bateuSem], [5, 12753, 12650, 4, 100.8, 6960, 540, 20850, 1120, true]);
   ok('SEMANA: histórico não lido ≠ semana sem dia fechado ≠ pontos não lidos (nunca zero)',
      [_dirSemana(null), _dirSemana([], new Date(2026, 8, 25)), _dirSemana(dias, new Date(2026, 8, 25), null).pts], [undefined, null, null]);
   ok('últimos dias: só FECHADOS com UEP, em ordem, hoje fora', _dirUltimos(dias.concat([{ data:'25/09/2026', uep:900 }]), new Date(2026, 8, 25), 3).map(d => d.data), ['17/09/2026','18/09/2026','21/09/2026']);
@@ -4132,7 +4246,7 @@ console.log('\n── estudo de UEP ──');
   CFG.sheetsUrl = urlAntes;
   ok('a aba UEP e o card UEP DO DIA leem o estado; a aba oferece ↻ quando falhou',
      [/msg:_pontosEstadoTxt\(\)/.test(pega('function _uepAbaDados(')), /_pontosTentarAgora\(\)/.test(pega('function renderUep(')),
-      /_uepCardLeitura\(uepCard\(PONTOS_DIA\.uep/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
+      /_uepCardLeitura\(_uepCardHoje\(k\)\)/.test(JS), /Timeout — verifique a URL/.test(JS)], [true, true, true, false]);
   ok('só UMA retentativa automática por falha, e só com a aba UEP aberta',
      [/if\(PONTOS_LEIT\.auto \|\| !_abaOn\('uep'\)/.test(pega('function _pontosRetentar(')), /PONTOS_LEIT\.auto=false/.test(LPD)], [true, true]);
   const POLL = pega('async function pollParadaTV(');

@@ -664,6 +664,17 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
        [[0.9, '24/09/2026'], [1.7, ''], [0.6, '25/09/2026 EST'], [1.2, '25/09/2026 EST'], ['', '']]);
     ok('o retorno conta estimados, mantidos e sem medida', [re.ok, re.estimados, re.mantidos, re.semMedida, re.semMedidaCod], [true, 2, 2, 1, ['5']]);
     ok('calibração inválida não grava nada', setUepCatalogo({ estimar: '1', k: '0', tetoAnc: '300' }).ok, false);
+    // v5.24: UEP DIGITADA por cima de uma estimada, sem trocar a vigência, FICA.
+    const iEstCol = CE[0].indexOf('UEP_EST');
+    ok('a estimativa cria a coluna UEP_EST e guarda nela o valor que gravou',
+       [iEstCol > 0, CE[3][iEstCol], CE[4][iEstCol], CE[1][iEstCol] || ''], [true, 0.6, 1.2, '']);
+    global.Logger = global.Logger || { log() {} };
+    CE[4][5] = 0.95;   // o PPCP digita a cronoanálise e deixa a vigência "EST"
+    PLANILHA = { getSheetByName: n => n === 'PRODUTO_CODIGO' ? shE : null };
+    const re2 = setUepCatalogo({ estimar: '1', k: '1.3', tetoAnc: '300', vig: '26/09/2026', dados: '[]' });
+    PLANILHA = PL3;
+    ok('UEP digitada por cima da estimada não é sobrescrita; a estimada intacta é refeita',
+       [CE[4][5], CE[3][5], re2.digitadas], [0.95, 0.65, 1]);
   }
   PLANILHA = PL;
   ok('é ação de ESCRITA (invalida o cache) e o dispatcher conhece',
@@ -688,9 +699,56 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
      [dl['24/09/2026'].normal, dl['24/09/2026'].he, dl['24/09/2026'].cxSem, dl['23/09/2026'].he], [297, 100, 30, 19.4]);
   ok('célula vazia do HISTORICO é null (dia sem UEP), número é número',
      [_celNumOuNull(''), _celNumOuNull(0), _celNumOuNull('2.300'), _celNumOuNull('1,5')], [null, 0, 2300, 1.5]);
-  ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend',
-     [/\]\.concat\(_uepColsDoDia\(p\.data\)\)/.test(pega('function saveDay(')),
-      /\]\.concat\(_uepColsDoDia\(dataRef\)\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+  ok('fechamento automático e FECHAR DIA gravam as colunas de UEP calculadas no backend, com o realizado do dia',
+     [/\]\.concat\(_uepColsDoDia\(p\.data, Number\(p\.real\) \|\| 0\)\)/.test(pega('function saveDay(')),
+      /\]\.concat\(_uepColsDoDia\(dataRef, real\)\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+  // ── v5.24: revisão da UEP ──
+  {
+    eval(pega('function _uepCobertura('));
+    const _logOrig = global._uepLogPorDia, _metaOrig = global._metaUepAtual, _fmtOrig = global.fmtDataBR;
+    global.fmtDataBR = global.fmtDataBR || (v => String(v));
+    global.Logger = global.Logger || { log() {} };
+    global._metaUepAtual = () => 2530;
+    global._uepLogPorDia = () => ({ '15/10/2026': { normal: 2731, he: 410, cxCom: 1797, cxSem: 0 },
+                                    '14/10/2026': { normal: 0, he: 0, cxCom: 0, cxSem: 500 } });
+    eval(pega('function _uepColsDoDia('));
+    ok('dia com caixa com UEP: UEP, UEP HE, META e COBERTURA (caixas com UEP ÷ realizado)',
+       _uepColsDoDia('15/10/2026', 1797), [2731, 410, 2530, 100]);
+    ok('dia só com código sem UEP: UEP VAZIA (nunca 0) e cobertura 0',
+       _uepColsDoDia('14/10/2026', 500), ['', '', '', 0]);
+    ok('dia sem linha no log: UEP vazia', _uepColsDoDia('13/10/2026', 1500), ['', '', '', 0]);
+    global._uepLogPorDia = () => null;
+    ok('cadastro sem UEP: tudo vazio', _uepColsDoDia('15/10/2026', 1797), ['', '', '', '']);
+    global._uepLogPorDia = _logOrig; global._metaUepAtual = _metaOrig; global.fmtDataBR = _fmtOrig;
+    ok('a cobertura arredonda em 1 casa e sem realizado fica vazia', [_uepCobertura(900, 1000), _uepCobertura(1, 3), _uepCobertura(5, 0)], [90, 33.3, '']);
+    ok('texto que não é número no HISTORICO lê como vazio, não 0',
+       [_celNumOuNull('—'), _celNumOuNull('n/d'), _celNumOuNull(' 12 '), _celNumOuNull('0')], [null, null, 12, 0]);
+    eval(pega('function _numBR('));
+    ok('"0.845" é decimal (0,845); "2.530" continua milhar; "1.5" decimal',
+       [_numBR('0.845'), _numBR('2.530'), _numBR('1.5'), _numBR('0,84'), _numBR('12.345.678')], [0.845, 2530, 1.5, 0.84, 12345678]);
+    ok('hora com segundos em texto também é hora extra fora da jornada',
+       [_ehHoraExtraCaixas('05:00:00'), _ehHoraExtraCaixas('08:00:00'), _ehHoraExtraCaixas('17:00')], [true, false, true]);
+    const rg = pega('function regravarUepPassada(');
+    ok('regravarUepPassada regrava SÓ a META UEP (coluna 14), sem reescrever a UEP congelada',
+       [/preencherUepPassada\(true\)/.test(rg), /getRange\(2, 14, n, 1\)\.setValues/.test(rg), /getRange\(2, 12, n, 4\)\.setValues/.test(rg)], [false, true, false]);
+    ok('preencherUepPassada deixa vazio o dia sem caixa com UEP (a regra do fechamento) e grava a cobertura',
+       [/!\(d\.cxCom > 0\)/.test(pega('function preencherUepPassada(')), /_uepCobertura\(/.test(pega('function preencherUepPassada('))], [true, true]);
+    ok('preencherCoberturaUep existe e só preenche a coluna 15', /getRange\(2, 15, n, 1\)\.setValues/.test(pega('function preencherCoberturaUep(')), true);
+    ok('getHistory e getHoraDia devolvem a cobertura (coluna 15)',
+       [/uepCob:\s*_celNumOuNull\(r\[14\]\)/.test(pega('function getHistory(')), /uepCob:\s*_celNumOuNull\(r\[14\]\)/.test(pega('function getHoraDia('))], [true, true]);
+    const lerOrig = global.lerCatalogoProdutos;
+    global.lerCatalogoProdutos = () => [{ codigo: 'A', uep: 0.8 }, { codigo: 'A', uep: 0 }, { codigo: 'B', uep: 1.2 }];
+    eval(pega('function _uepMapaCatalogo('));
+    ok('código repetido no cadastro: vale a ÚLTIMA linha (a mesma do card, do período e da programação)', _uepMapaCatalogo(), { B: 1.2 });
+    global.lerCatalogoProdutos = lerOrig;
+    ok('fechamento e hora a hora do dia passado usam o mapa único',
+       [/_uepMapaCatalogo\(\)/.test(pega('function _uepLogPorDia(')), /_uepMapaCatalogo\(\)/.test(pega('function _uepHoraDoDia('))], [true, true]);
+    ok('caixas de código sem UEP vão à parte no período e no hora a hora (cxSemUep)',
+       [/map\[key\]\.cxSemUep = \(map\[key\]\.cxSemUep \|\| 0\) \+ cx/.test(pega('function getProducaoModeloPeriodo(')),
+        /cxSemUep: it\.cxSemUep \|\| undefined/.test(pega('function getProducaoModeloPeriodo(')),
+        /porHoraModeloMap\[key\]\.cxSemUep = /.test(pega('function getPontosDia(')),
+        /cxSemUep: g\.cxSemUep \|\| undefined/.test(pega('function getPontosDia('))], [true, true, true, true]);
+  }
   eval(pega('function _uepPorHoraDoLog('));
   const hl = _uepPorHoraDoLog([
     { hora: '8:00', codigo: 'A', cx: 100 }, { hora: '08:00', codigo: 'X', cx: 20 },
@@ -700,8 +758,10 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('getHoraDia devolve uepHora por leitura RECORTADA pela data, sem derrubar a chamada se falhar',
      [/uepHora:\s*uepHora/.test(pega('function getHoraDia(')), /try\s*\{\s*uepHora\s*=\s*_uepHoraDoDia/.test(pega('function getHoraDia(')),
       /_valoresPorData\(sh,\s*'DATA'/.test(pega('function _uepHoraDoDia('))], [true, true, true]);
-  ok('setConfigPainel grava META_UEP só com número > 0 (vazio não apaga a meta)',
-     /if \(p\.metaUep !== undefined && _numBR\(p\.metaUep\) > 0\) novos\.META_UEP/.test(pega('function setConfigPainel(')), true);
+  ok('setConfigPainel grava META_UEP só com número de verdade (vazio não apaga; "2,530" que virou 2,53 é recusado)',
+     [/if \(p\.metaUep !== undefined && _numBR\(p\.metaUep\) >= UEP_META_MIN\) novos\.META_UEP/.test(pega('function setConfigPainel(')),
+      /_numBR\(kv\.META_UEP\) >= UEP_META_MIN/.test(pega('function getConfigPainel(')),
+      Number(src.match(/const UEP_META_MIN = (\d+)/)[1])], [true, true, 100]);
   ok('getHistory e getHoraDia devolvem uep/uepHe/metaUep',
      [/uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHistory(')), /uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHoraDia('))], [true, true]);
   ok('a meta padrão do .gs é a mesma do rp-core',

@@ -212,7 +212,31 @@ function minSlotDecorrido(inicio, minSlot, agoraMin){
 
 const UEP_META_PADRAO = 2530;
 const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
-function uepCard(uep, metaCfg, minJornada){
+// ── A RÉGUA DO "BATEU" (v7.133.0, PPCP 16/10/2026: "96%, como as caixas") ──
+// A cor do dia saía do `sc` (verde a partir de 96%) e a contagem "bateu" exigia
+// 100%: o mesmo dia ficava verde na aba HISTÓRICO e vermelho na aba UEP e na
+// diretoria. Agora é UMA régua, a mesma das caixas (META_PCT do painel): bateu
+// = UEP ≥ 96% da meta DAQUELE dia; abaixo de 90% é vermelho (o `sc`).
+const UEP_BATEU_PCT = 96;
+// ── COBERTURA (v7.133.0, PPCP: "avisar e gravar") ──────────────────────────
+// Caixa lançada sem produto não vira UEP, mas o tempo dela é cobrado: dia com
+// metade das caixas apontadas aparecia com metade da UEP e era julgado lento.
+// Abaixo de UEP_COB_MIN % (caixas com UEP ÷ realizado) o dia não é julgado:
+// o card avisa em vez de pintar vermelho, e no HISTÓRICO o dia fica fora da
+// média e do "bateu" (contado à parte).
+const UEP_COB_MIN = 95;
+function uepPct(uep, meta){
+  const m = Number(meta) > 0 ? Number(meta) : UEP_META_PADRAO;
+  return Number(uep) / m * 100;
+}
+function uepBateu(uep, meta){ return uepPct(uep, meta) >= UEP_BATEU_PCT; }
+// Dia do HISTORICO com cobertura gravada abaixo do mínimo. Sem a coluna (dia
+// fechado antes da .gs v5.24) a cobertura é desconhecida: o dia continua valendo.
+function uepCobBaixa(d){ return !!d && d.uepCob != null && isFinite(Number(d.uepCob)) && Number(d.uepCob) < UEP_COB_MIN; }
+// Dia que ENTRA nas contas de UEP do passado: tem UEP gravada e a cobertura
+// não é baixa. Uma regra só para o resumo, o custo por UEP e a régua do PLANO.
+function uepDiaValido(d){ return !!d && d.uep != null && isFinite(Number(d.uep)) && !uepCobBaixa(d); }
+function uepCard(uep, metaCfg, minJornada, realCx){
   const l = 'UEP DO DIA';
   // null = a leitura do dia ainda não chegou; false/undefined = o backend
   // respondeu SEM o campo (.gs anterior à v5.11). São coisas diferentes.
@@ -223,22 +247,33 @@ function uepCard(uep, metaCfg, minJornada){
   const feito = Number(uep.normal) || 0, he = Number(uep.he) || 0, cxSem = Number(uep.cxSem) || 0;
   const min = Math.min(Math.max(0, Number(minJornada) || 0), UEP_MIN_DIA);
   const { metaAteAgora, ef } = efNoRitmo(feito, meta, min, UEP_MIN_DIA);
+  // Cobertura: caixas valoradas em UEP ÷ realizado do dia (as duas com HE).
+  // `realCx` ausente (chamador antigo) = não mede e não muda nada.
+  const real = Number(realCx) || 0, cxCom = Number(uep.cxCom) || 0;
+  const cob = real > 0 ? cxCom / real * 100 : null;
+  const cobBaixa = cob != null && cob < UEP_COB_MIN && min > 0;
+  const semProd = real > 0 ? Math.max(0, Math.round(real - cxCom - cxSem)) : 0;
   // Mesmo desenho do card % DA META DO DIA ("ATENÇÃO · 951 de 1.650 cx
   // esperadas até agora"): selo, feito × esperado, depois a meta do dia.
   // PPCP, 25/09/2026: "de 2.530 UEP (55,9%) · NO RITMO — 1.383 esperadas"
   // punha dois vereditos lado a lado (55,9% parecia ruim, NO RITMO bom).
+  // Cobertura baixa NÃO julga: o selo vira o aviso, e o número fica sem cor.
+  const selo = cobBaixa ? '⚠ SÓ ' + fmtP(cob) + ' DAS CAIXAS COM UEP' : slRitmo(ef);
   const sub = (min > 0
-      ? slRitmo(ef) + ' · ' + fmtN(Math.round(feito)) + ' de ' + fmtN(Math.round(metaAteAgora)) + ' esperadas · '
+      ? selo + ' · ' + fmtN(Math.round(feito)) + ' de ' + fmtN(Math.round(metaAteAgora)) + ' esperadas · '
       : '')
     // enxuto (v7.120.0): a unidade já está no rótulo do card; a explicação, no `t`
     + 'meta ' + fmtN(meta)
     + (he > 0 ? ' · +' + fmtN(Math.round(he)) + ' em HE' : '')
-    + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '');
+    + (cxSem > 0 ? ' · ' + fmtN(cxSem) + ' cx sem UEP' : '')
+    + (semProd > 0 ? ' · ' + fmtN(semProd) + ' cx sem produto' : '');
   const t = 'UEP feita em jornada normal: caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). '
     + 'Meta de ' + fmtN(meta) + ' UEP na jornada normal (' + UEP_MIN_DIA + ' min); a hora extra fica fora da meta. '
     + 'Esperado até agora = meta × minutos de jornada com lançamento ÷ ' + UEP_MIN_DIA + ' (a hora em andamento conta só os minutos que já passaram).'
-    + (cxSem > 0 ? ' ' + fmtN(cxSem) + ' cx de hoje são de códigos sem UEP no cadastro e não entram na conta.' : '');
-  return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 ? sc(ef) : 'acc', ef, meta, esperado: metaAteAgora };
+    + (cxSem > 0 ? ' ' + fmtN(cxSem) + ' cx de hoje são de códigos sem UEP no cadastro e não entram na conta.' : '')
+    + (cob != null ? ' Cobertura: ' + fmtP(cob) + ' das caixas do dia têm UEP' + (cobBaixa ? ' — abaixo de ' + UEP_COB_MIN + '% a UEP sai menor que a real e o card não julga o ritmo.' : '.') : '');
+  return { l, v: fmtN(Math.round(feito)), sub, t, c: min > 0 && !cobBaixa ? sc(ef) : (cobBaixa ? '' : 'acc'),
+           ef, meta, esperado: metaAteAgora, cob, cobBaixa };
 }
 
 // ── R$ por UEP (v7.88.0, PPCP 24/09/2026) ──────────────────────────────────
@@ -268,7 +303,9 @@ function uepCusto(custoHora, uepFeito, minJornada, metaUep){
 // `excesso` = R$ pagos sem virar UEP (negativo = abaixo do custo da meta).
 function uepCustoPeriodo(custoHora, dias){
   const ch = Number(custoHora) || 0;
-  const com = (dias || []).filter(d => d && Number(d.uep) > 0);
+  // Dia com cobertura baixa fica fora (v7.133.0): a UEP dele está subestimada
+  // e inflaria o R$/UEP.
+  const com = (dias || []).filter(d => uepDiaValido(d) && Number(d.uep) > 0);
   if (!(ch > 0) || !com.length) return null;
   const custo = ch * UEP_MIN_DIA / 60 * com.length;
   const uep = com.reduce((s, d) => s + Number(d.uep), 0);
@@ -294,22 +331,35 @@ function uepPorHora(lista){
     if (!k) return;
     const o = m[k] = m[k] || { uep: 0, cxSem: 0 };
     const u = Number(it.uep) || 0;
-    if (u > 0) o.uep += u; else o.cxSem += Number(it.caixas) || 0;
+    // O grupo junta volumes e cores do produto (.gs v5.24 manda `cxSemUep`):
+    // a caixa do código sem UEP dentro de um produto que tem não pode sumir.
+    if (u > 0) { o.uep += u; o.cxSem += Number(it.cxSemUep) || 0; }
+    else o.cxSem += Number(it.caixas) || 0;
   });
   return m;
 }
 // Célula da coluna UEP de uma hora. A meta da hora é a meta de UEP do dia
 // (jornada normal) repartida pelos MINUTOS da hora — o slot pós-almoço de 48 min pede
 // menos. Hora extra mostra o número e não é julgada (mesma regra das caixas).
-function uepCelula(h, metaCfg, minSlot, ehHE){
-  if (!h) return { txt: '—', cls: '', title: 'nenhuma caixa com produto apontada nesta hora' };
+// `op` (v7.133.0): `andamento` = hora corrente, ainda não fechou — mostra e não
+// julga (às 14:10 a hora das 14:00 saía vermelha contra a meta da hora cheia;
+// a aba UEP já não julgava). `zero` = a hora FECHOU sem caixa: é 0 de verdade,
+// não "sem produto", e é julgada.
+function uepCelula(h, metaCfg, minSlot, ehHE, op){
+  op = op || {};
   const meta = Number(metaCfg) > 0 ? Number(metaCfg) : UEP_META_PADRAO;
   const metaH = meta * (Number(minSlot) || 60) / UEP_MIN_DIA;
+  if (!h) {
+    if (op.zero && !op.andamento) return { txt: '0', cls: ehHE ? '' : 'red', metaH,
+      title: 'hora fechada sem caixa' + (ehHE ? ' (hora extra)' : ' · meta ' + fmtN(Math.round(metaH)) + ' UEP nesta hora') };
+    return { txt: '—', cls: '', title: op.andamento ? 'hora em andamento — ainda sem caixa com produto' : 'nenhuma caixa com produto apontada nesta hora' };
+  }
   const txt = fmtN(Math.round(h.uep)) + (h.cxSem > 0 ? '*' : '');
   const title = fmtN(Math.round(h.uep)) + ' UEP'
     + (ehHE ? ' em hora extra (fora da meta)' : ' · meta ' + fmtN(Math.round(metaH)) + ' UEP nesta hora (' + (Number(minSlot) || 60) + ' min)')
+    + (op.andamento ? ' · hora em andamento, ainda não julgada' : '')
     + (h.cxSem > 0 ? ' · * ' + fmtN(h.cxSem) + ' cx de códigos sem UEP ficaram fora' : '');
-  return { txt, title, cls: ehHE || !(h.uep > 0) ? '' : sc(h.uep / metaH * 100), metaH };
+  return { txt, title, cls: ehHE || op.andamento || !(h.uep > 0) ? '' : sc(h.uep / metaH * 100), metaH };
 }
 
 // ── UEP dos dias fechados (HISTÓRICO, relatório semanal) ────────────────────
@@ -321,15 +371,23 @@ function uepDiaMeta(d){
   return d && Number(d.metaUep) > 0 ? Number(d.metaUep) : UEP_META_PADRAO;
 }
 function uepHistResumo(dias){
-  const com = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
+  const lista = dias || [];
+  // Dia com cobertura baixa (v7.133.0) fica fora da média e do "bateu" e é
+  // contado à parte (`cobBaixa`): a UEP dele está subestimada.
+  const com = lista.filter(uepDiaValido);
+  const cobBaixa = lista.filter(d => d && d.uep != null && uepCobBaixa(d)).length;
   const tot = com.reduce((s, d) => s + Number(d.uep), 0);
-  const bateu = com.filter(d => Number(d.uep) >= uepDiaMeta(d)).length;
-  return { n: com.length, semUep: (dias || []).length - com.length,
+  const bateu = com.filter(d => uepBateu(d.uep, uepDiaMeta(d))).length;
+  // Soma das metas DOS DIAS COM UEP (cada um com a sua): é contra ela que o
+  // total do período se compara, nunca meta × nº de dias do filtro.
+  const metaTot = com.reduce((s, d) => s + uepDiaMeta(d), 0);
+  const pct = metaTot > 0 ? tot / metaTot * 100 : null;
+  return { n: com.length, semUep: lista.length - com.length - cobBaixa, cobBaixa,
            total: tot, media: com.length ? tot / com.length : null,
            bateu, he: com.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
-           // Soma das metas DOS DIAS COM UEP (cada um com a sua): é contra ela
-           // que o total do período se compara, nunca meta × nº de dias do filtro.
-           metaTot: com.reduce((s, d) => s + uepDiaMeta(d), 0),
+           metaTot, pct,
+           // O PERÍODO bateu pela MESMA régua do dia (96% da soma das metas).
+           bateuPeriodo: pct != null && pct >= UEP_BATEU_PCT,
            meta: com.length ? uepDiaMeta(com[com.length - 1]) : UEP_META_PADRAO };
 }
 
@@ -344,8 +402,9 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.12.0',
+  versao: '1.13.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
+        'uepPct', 'uepBateu', 'uepCobBaixa', 'uepDiaValido']
 };

@@ -926,7 +926,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.33.0';
+const APP_VER   = '1.34.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1257,6 +1257,12 @@ async function lerPontosDia(){
         uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep,
         porHoraModelo: json.porHoraModelo || []
       };
+      // O RETRATO DA LEITURA (v1.34.0, o mesmo do desktop): minutos de jornada
+      // e realizado do INSTANTE em que a UEP chegou. O ciclo lê o getDados a
+      // cada 3 min e a UEP a cada 6: nos ciclos do meio o card juntava a UEP
+      // velha com o relógio novo e saía ABAIXO DO RITMO sem ser.
+      try{ const kL=calcKPIs(); PONTOS_DIA.leit={ data:hojeStr(), minNorm:kL.minNorm, real:kL.real }; }
+      catch(e){ PONTOS_DIA.leit={ data:hojeStr(), minNorm:null, real:null }; }
       aplicarMetaDiaAutomatica();
       return true;
     }
@@ -2150,6 +2156,23 @@ function getDadosHoje(){
 // de HOJE). Calculado no cliente: metaHora/producaoHora de todas as horas do
 // dia já estão carregados de uma vez. Recalculado do zero a cada render, então
 // uma hora que supera a meta zera o atraso carregado automaticamente.
+// A leitura da UEP é de HOJE? (aparelho aberto de um dia para o outro.)
+function _uepLeitHoje(){ const L=PONTOS_DIA.leit; return !L || L.data===hojeStr(); }
+// O card UEP DO DIA com o feito e o esperado do MESMO instante e a cobertura
+// sobre o realizado desse instante — a mesma conta do desktop (_uepCardHoje).
+function _uepCardHoje(k){
+  if(PONTOS_DIA.uep && !_uepLeitHoje()) return uepCard(null);
+  const L=PONTOS_DIA.leit||{};
+  return uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, L.minNorm!=null?L.minNorm:k.minNorm, L.real!=null?L.real:k.real);
+}
+// Minutos de um slot pelo RÓTULO da planilha (o fim vem do backend): a última
+// hora é 16:00-16:59 = 59 min, e os 9 slots somam os 527 min da jornada. O
+// getSlots de contingência gera 16:00–17:00 (60) — o celular cobrava a meta
+// de UEP da hora como 288 onde o desktop cobrava 283 (v1.34.0).
+function _minDaLinha(r, slots){
+  if(r && r.slotFim){ const d=toMin(r.slotFim)-toMin(r.horario); if(d>0 && d<=120) return d; }
+  const s0=(slots||[]).find(x=>r && x.inicio===r.horario); return s0 ? s0.min : 60;
+}
 function calcKPIs(){
   const hoje = hojeStr();
   const slots = getSlots();
@@ -2205,7 +2228,7 @@ function calcKPIs(){
      este projeto mais pagou caro.
      O rateio é por MINUTOS (o slot pós-almoço vale 48), e só entra hora COM
      LANÇAMENTO — hora que ninguém apontou ainda não é hora atrasada. */
-  const minDoSlot = h => { const s0 = slots.find(x => x.inicio === h); return s0 ? s0.min : 60; };
+  const minDoSlot = h => _minDaLinha(allHoje.find(x => x.horario === h) || { horario: h }, slots);
   const minTurno = (allHoje.length ? allHoje.map(r => r.horario) : slots.map(x => x.inicio))
                      .reduce((soma, h) => soma + minDoSlot(h), 0);
   const minRodado = dh.reduce((soma, r) => soma + minDoSlot(r.horario), 0);
@@ -2809,7 +2832,7 @@ function renderGerencial(){
     {l:'% DA META DO DIA', v:fmtP(k.efDia), sub:slRitmo(k.efRitmo)+' · '+fmtN(k.real)+' de '+fmtN(Math.round(k.metaAteAgora))+' até agora', c:s},
     // UEP DO DIA: a MESMA conta e o MESMO texto do gerencial do desktop
     // (uepCard, rp-core). A UEP por caixa é parâmetro do cadastro.
-    uepCard(PONTOS_DIA.uep, PONTOS_DIA.metaUep, k.minNorm),
+    _uepCardHoje(k),
     {l:'RITMO ATUAL',    v:fmtN(k.ritmo), sub:'cx/hora', c:'acc'},
     // ⚠ A PROJEÇÃO NÃO DÁ VEREDITO — o selo do % DA META DO DIA dá (15/09/2026).
     // Os dois respondiam a MESMA pergunta ("vamos bater hoje?") por duas contas:
@@ -2865,9 +2888,10 @@ function renderTabelaHoraHora(allHoje){
   let acumC=0;
   const atrasoHoras=calcAtrasoHoras(allHoje);
   // UEP hora a hora: a MESMA conta do desktop (uepPorHora/uepCelula, rp-core).
-  const temUepH=!!(PONTOS_DIA.uep && PONTOS_DIA.uep.codigos>0);
+  const temUepH=!!(PONTOS_DIA.uep && PONTOS_DIA.uep.codigos>0) && _uepLeitHoje();
   const uepH=temUepH?uepPorHora(PONTOS_DIA.porHoraModelo):{};
   const _slots=getSlots();
+  const _agM=(()=>{ const a=new Date(); return a.getHours()*60+a.getMinutes(); })();
   { const _th=document.getElementById('th-uep-hora'); if(_th) _th.style.display=temUepH?'':'none'; }
   tbody.innerHTML=allHoje.map((r,i)=>{
     const prod=r.producaoHora;
@@ -2897,8 +2921,9 @@ function renderTabelaHoraHora(allHoje){
       <td class="td-num">${prod!=null?fmtN(prod):'—'}</td>
       <td class="td-num">${ehHE?'—':`${fmtN(r.metaHora)}${atrasoHora>0?`<span style="color:var(--warn);font-size:9px;margin-left:2px" title="Meta efetiva com atraso acumulado: ${fmtN(metaEfetivaHora)} cx">+${fmtN(atrasoHora)}</span>`:''}`}</td>
       <td class="td-s ${cls}">${ef2!=null?fmtP(ef2):'—'}${(ef2!=null||ehHE)?`<span class="td-s-sub">${st}</span>`:''}</td>
-      ${temUepH?(()=>{ const _s=_slots.find(x=>x.inicio===r.horario);
-        const c=uepCelula(uepH[r.horario], PONTOS_DIA.metaUep, _s?_s.min:60, ehHE);
+      ${temUepH?(()=>{ const _m=_minDaLinha(r, _slots), _ini=toMin(r.horario);
+        // hora em andamento não é julgada; hora que FECHOU em 0 é 0 (v1.34.0)
+        const c=uepCelula(uepH[r.horario], PONTOS_DIA.metaUep, _m, ehHE, { andamento:_agM>=_ini&&_agM<_ini+_m, zero:prod===0&&_agM>=_ini+_m });
         return `<td class="td-num" title="${c.title}" style="color:${c.cls?'var(--'+c.cls+')':'var(--txt2)'}">${c.txt}</td>`; })():''}
     </tr>`;
   }).join('');
@@ -3065,8 +3090,9 @@ function abrirDia(data){
   if(d.heCount) linhas.push(['HORAS EXTRAS', d.heCount+'', '']);
   // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele dia.
   if(d.uep!=null){
-    const _pu=Number(d.uep)/uepDiaMeta(d)*100;
-    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu), sc(_pu)]);
+    const _pu=uepPct(d.uep, uepDiaMeta(d)), _cb=uepCobBaixa(d);
+    // cobertura baixa (v1.34.0): a UEP do dia está subestimada — sem cor, e dito
+    linhas.push(['UEP (JORNADA)', fmtN(Math.round(d.uep))+' de '+fmtN(uepDiaMeta(d))+' · '+fmtP(_pu)+(_cb?' · ⚠ só '+fmtP(d.uepCob)+' das cx com UEP':''), _cb?'':sc(_pu)]);
     if(Number(d.uepHe)>0) linhas.push(['UEP EM HORA EXTRA', fmtN(Math.round(d.uepHe)), 'acc']);
   }
   if(d.fechadoEm) linhas.push(['FECHADO', d.fechadoEm, '']);
