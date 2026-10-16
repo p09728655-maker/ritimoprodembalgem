@@ -591,8 +591,9 @@ ok('linha única sem cor sai limpa',
 
 // A barra do produto atual, o toast do bipe e o produto do gerencial usam o
 // MESMO rótulo (nomeComCor + a queda para o catálogo).
-ok('as três telas de produto do app levam a cor',
-   (MJS.match(/nomeComCor\(p\.desc, corDeProduto\(p\)\)/g) || []).length, 3);
+// v1.34.0: o aviso de LANÇAMENTO REPETIDO (_nomeProdLanc) é o 4º — mesmo rótulo.
+ok('as telas de produto do app levam a cor',
+   (MJS.match(/nomeComCor\(p\.desc, corDeProduto\(p\)\)/g) || []).length, 4);
 // Guarda-corpo: foi imprimir a descrição sozinha que causou o problema — as
 // três listas do seletor têm de passar pela etiqueta da cor.
 ok('nenhuma lista imprime a descrição sozinha',
