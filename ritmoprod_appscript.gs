@@ -1,5 +1,19 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.24 — UEP PADRÃO VERSIONADA E TRAVA NO GRAVAR UEP
+//               PPCP, 16/10/2026: "não pode alterar sozinha sem autorização"
+//               e "a uep que está hoje tornar padrão". (1) Aba UEP_VERSOES,
+//               só acréscimo: cada mudança da UEP de um código (GRAVAR UEP,
+//               estimativa EST ou digitação na coluna UEP do cadastro, pelo
+//               onEdit) vira uma linha com a vigência. A 1ª mudança cria a aba
+//               com a SEMENTE: o cadastro como estava, valendo desde sempre —
+//               a UEP de hoje é a padrão inicial. (2) O GRAVAR UEP não
+//               sobrescreve mais UEP medida ou digitada sem `substituir=1`; a
+//               ação simularUepCatalogo devolve o antes → depois sem gravar,
+//               para o painel pedir a autorização. (3) getProducaoModeloPeriodo
+//               com ?uepVer=1 manda a UEP de cada hora pela UEP PADRÃO
+//               VIGENTE NA DATA (uepHora/semUepHora/uepVigDe) — base do
+//               histórico por produto da aba ⚖ UEP. Nada no HISTORICO muda.
 // Versão: 5.23 — COLUNA ADIANTADO_CX NA PROGRAMACAO E NA CONCLUIDA
 //               PPCP, 14/10/2026: "tem como na aba programação concluída
 //               colocar também que foi embalado adiantado?". O STATUS
@@ -226,6 +240,7 @@ const SHEET_PROG      = 'PROGRAMACAO';      // programação: DATA, CODIGO, QTDE
 const SHEET_HIST_FAM  = 'HISTORICO_MEDIA_FAMILIA'; // item 5: histórico de produtividade por família (append-only)
 const SHEET_CONFIG    = 'CONFIG_PAINEL';        // config do ciclo de telas da TV, compartilhada entre aparelhos
 const SHEET_PROG_ARQ  = 'PROGRAMACAO_CONCLUIDA'; // lotes já finalizados, tirados da PROGRAMACAO (ver ARQ_* abaixo)
+const SHEET_UEP_VER   = 'UEP_VERSOES';      // histórico da UEP padrão por código (v5.24, só acréscimo)
 
 // ════════════════════════════════════════════════════════
 // ARQUIVAMENTO DE LOTE CONCLUÍDO  (tira a linha da PROGRAMACAO)
@@ -1112,7 +1127,7 @@ function doGet(e) {
     try {
       cache = CacheService.getScriptCache();
       cacheKey = 'rp:' + _cacheGen(cache) + ':' + actEf + ':' +
-        ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora'].map(function (k) { return p[k] || ''; }).join('|');
+        ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer'].map(function (k) { return p[k] || ''; }).join('|');
       const hit = cache.get(cacheKey);
       if (hit) return _saidaJson(hit, callback);
     } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
@@ -1141,6 +1156,7 @@ function doGet(e) {
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
     else if (act === 'setUepCatalogo')  result = setUepCatalogo(p);
+    else if (act === 'simularUepCatalogo') result = simularUepCatalogo(p);   // v5.24: antes → depois, sem gravar
     else if (act === 'getConfigPainel') result = { ok: true, painelConfig: getConfigPainel() };
     else if (act === 'redigirProposta') result = redigirProposta(p);
     else                              result = getDados();
@@ -2848,10 +2864,12 @@ function _uepEstimarCatalogo(p) {
   const k = Number(p.k), tetoAnc = Number(p.tetoAnc);
   if (!(k > 0) || !(tetoAnc > 0)) return { ok: false, erro: 'calibração inválida (k/tetoAnc)' };
   const vig = String(p.vig || Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy')).replace(/\s*EST\s*$/i, '') + ' EST';
+  const simular = p._simular === true;   // v5.24 (simularUepCatalogo): conta sem gravar
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
-    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PRODUTOS);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_PRODUTOS);
     if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
     const lastRow = sh.getLastRow();
     let lastCol = sh.getLastColumn();
@@ -2862,16 +2880,21 @@ function _uepEstimarCatalogo(p) {
     if (iCod < 0) return { ok: false, erro: 'coluna CODIGO não encontrada' };
     let iUep = hdr.indexOf('UEP');
     let iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
-    if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
-    if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+    if (!simular) {
+      if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
+      if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+    }
     const _pref = function (pref) { var i = hdr.indexOf(pref); return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; }); };
     const _col = function (i) { return i >= 0 ? sh.getRange(2, i + 1, lastRow - 1, 1).getValues() : null; };
-    const cods = _col(iCod), colU = _col(iUep), colV = _col(iVig);
+    const cods = _col(iCod);
+    const _vaz = function () { return cods.map(function () { return ['']; }); };
+    const colU = iUep >= 0 ? _col(iUep) : _vaz(), colV = iVig >= 0 ? _col(iVig) : _vaz();
+    const antesU = colU.map(function (r) { return r[0]; }), antesV = colV.map(function (r) { return r[0]; });
     const colM = _col(_pref('MEDIDA DA CAIXA')), colE = _col(_pref('ENTRE_PECA')), colVel = _col(_pref('VELOCIDADE'));
     const vels = (colVel || []).map(function (r) { return _numBR(r[0]); }).filter(function (v) { return v > 0; }).sort(function (a, b) { return a - b; });
     const velPad = vels.length ? vels[Math.floor(vels.length / 2)] : 0;
-    let estimados = 0, mantidos = 0;
-    const semMedida = [];
+    let estimados = 0, mantidos = 0, estNovos = 0, estMudam = 0, estIguais = 0;
+    const semMedida = [], mudancas = [], estNovosCod = [], estMudamCod = [];
     for (let i = 0; i < cods.length; i++) {
       const cod = String(cods[i][0] || '').trim();
       if (!cod) continue;
@@ -2882,20 +2905,200 @@ function _uepEstimarCatalogo(p) {
         entrePeca: colE ? _numBR(colE[i][0]) : 0,
         velocidade: colVel ? _numBR(colVel[i][0]) : 0 }, velPad);
       if (u == null) { semMedida.push(cod); continue; }
+      const antes = _numBR(colU[i][0]);
+      if (!temUep) { estNovos++; estNovosCod.push(cod); }
+      else if (_uepIgual(antes, u)) estIguais++;
+      else { estMudam++; estMudamCod.push(cod); }
+      if (!_uepIgual(antes, u)) mudancas.push([cod, antes, u]);
       colU[i][0] = u; colV[i][0] = vig; estimados++;
     }
+    const base = { ok: true, estimados: estimados, mantidos: mantidos, estNovos: estNovos, estMudam: estMudam, estIguais: estIguais,
+                   semMedida: semMedida.length, semMedidaCod: semMedida.slice(0, 20), velPad: velPad };
+    if (simular) { base.simulado = true; base.estNovosCod = estNovosCod.slice(0, 500); base.estMudamCod = estMudamCod.slice(0, 500); return base; }
     sh.getRange(2, iUep + 1, lastRow - 1, 1).setValues(colU);
     sh.getRange(2, iVig + 1, lastRow - 1, 1).setValues(colV);
     _catalogoMemo = null;
-    return { ok: true, estimados: estimados, mantidos: mantidos,
-             semMedida: semMedida.length, semMedidaCod: semMedida.slice(0, 20), velPad: velPad };
+    try {
+      const semente = [];
+      antesU.forEach(function (x, ix) { const c = String(cods[ix][0] || '').trim(); if (c && _numBR(x) > 0) semente.push([c, _numBR(x), antesV[ix]]); });
+      base.versoes = _uepVerRegistrar(ss, mudancas, vig, 'GRAVAR UEP · EST', semente);
+    } catch (e) { base.versaoErro = e.message; }
+    return base;
   } finally {
     lock.releaseLock();
   }
 }
 
+// ════════════════════════════════════════════════════════
+// UEP PADRÃO VERSIONADA (v5.24)
+// ════════════════════════════════════════════════════════
+// PPCP, 16/10/2026: "não pode alterar sozinha sem autorização" e "a uep que
+// está hoje tornar padrão". A coluna UEP da PRODUTO_CODIGO guarda só o valor
+// ATUAL: quando o GRAVAR UEP (ou a mão) trocava o número, o anterior se perdia
+// — e com ele a régua com que um dia passado tem de ser lido.
+// A aba UEP_VERSOES recebe UMA LINHA POR MUDANÇA e nunca é reescrita: código,
+// UEP nova, VIGENCIA (o dia em que passou a valer), origem, quando, anterior.
+//   • A 1ª mudança cria a aba com a SEMENTE: o cadastro como estava ANTES dela,
+//     com VIGENCIA vazia = vale desde sempre. É a UEP de hoje virando a padrão.
+//   • Só entra o que MUDOU (duas casas): regravar o mesmo número não é versão.
+//   • Quem lê (_uepVigente): no dia D vale a última versão com vigência ≤ D.
+//   • Sem a aba (nada mudou desde a v5.24), o cadastro é a única versão.
+// Corrigir uma vigência lançada errada é editar a célula da aba — à mão.
+const UEP_VER_HDR = ['CODIGO', 'UEP', 'VIGENCIA', 'ORIGEM', 'GRAVADO_EM', 'ANTERIOR'];
+function _uepIgual(a, b) { return Math.round((Number(a) || 0) * 100) === Math.round((Number(b) || 0) * 100); }
+function _uepVerDataNum(v) {
+  if (v === '' || v === null || v === undefined) return 0;
+  return dataParaNum(v instanceof Date ? v : String(v).replace(/\s*EST\s*$/i, '').trim());
+}
+// semente: [[codigo, uep, vigência que estava no cadastro]] — só UEP > 0.
+function _uepVerAba(ss, semente) {
+  let sh = ss.getSheetByName(SHEET_UEP_VER);
+  if (sh) return sh;
+  sh = ss.insertSheet(SHEET_UEP_VER);
+  // CODIGO e VIGENCIA como TEXTO: sem isso o Sheets vira a data em Date e o
+  // código em número. A UEP fica número (texto "1.25" leria como milhar).
+  try { sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@'); sh.getRange(1, 3, sh.getMaxRows(), 1).setNumberFormat('@'); } catch (e) {}
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm');
+  const linhas = [UEP_VER_HDR].concat((semente || []).map(function (s) {
+    const v = _dataStr(s[2]);
+    return [String(s[0]), s[1], '', 'PADRÃO INICIAL' + (v ? ' · cadastro ' + v : ''), agora, ''];
+  }));
+  sh.getRange(1, 1, linhas.length, UEP_VER_HDR.length).setValues(linhas);
+  try { sh.setFrozenRows(1); } catch (e) {}
+  return sh;
+}
+// mudancas: [[codigo, antes, depois]] → uma linha nova cada. Devolve quantas.
+function _uepVerRegistrar(ss, mudancas, vig, origem, semente) {
+  if (!mudancas || !mudancas.length) return 0;
+  const sh = _uepVerAba(ss, semente);
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm');
+  const v = String(vig || '').replace(/\s*EST\s*$/i, '').trim();
+  const linhas = mudancas.map(function (m) {
+    return [String(m[0]), Number(m[2]) > 0 ? m[2] : '', v, origem, agora, Number(m[1]) > 0 ? m[1] : ''];
+  });
+  sh.getRange(sh.getLastRow() + 1, 1, linhas.length, UEP_VER_HDR.length).setValues(linhas);
+  return linhas.length;
+}
+// código → [{de, uep, origem}] na ordem de vigência (empate: a ordem da aba,
+// a última gravada vale). null = a aba ainda não existe. `direto`: quem
+// escreve lê da planilha, nunca do memo de leitura.
+function _uepVersoesMapa(ss, direto) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_UEP_VER);
+  if (!sh) return null;
+  const v = direto ? sh.getDataRange().getValues() : _valoresDaAba(sh);
+  if (!v.length) return {};
+  const hdr = v[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  const iCod = hdr.indexOf('CODIGO'), iUep = hdr.indexOf('UEP'), iVig = hdr.indexOf('VIGENCIA'), iOri = hdr.indexOf('ORIGEM');
+  if (iCod < 0 || iUep < 0) return {};
+  const M = {};
+  for (let i = 1; i < v.length; i++) {
+    const cod = String(v[i][iCod] == null ? '' : v[i][iCod]).trim();
+    if (!cod) continue;
+    (M[cod] = M[cod] || []).push({ de: iVig >= 0 ? _uepVerDataNum(v[i][iVig]) : 0, uep: _numBR(v[i][iUep]), ordem: i,
+                                   origem: iOri >= 0 ? String(v[i][iOri] || '') : '' });
+  }
+  Object.keys(M).forEach(function (k) { M[k].sort(function (a, b) { return a.de - b.de || a.ordem - b.ordem; }); });
+  return M;
+}
+// Conta pura: a UEP padrão de um código no dia dNum (yyyymmdd). Vale a última
+// versão com vigência ≤ dia. Antes da 1ª versão vale a 1ª (`antes`) — o código
+// ganhou UEP depois da semente, e é a mesma régua que preencheu o HISTORICO
+// (preencherUepPassada). Sem versão nenhuma, o cadastro.
+function _uepVigente(lista, dNum, uepCadastro) {
+  if (!lista || !lista.length) return { uep: Number(uepCadastro) || 0, de: 0, antes: false };
+  let pick = null;
+  for (let i = 0; i < lista.length; i++) if (lista[i].de <= dNum) pick = lista[i];
+  if (!pick) return { uep: lista[0].uep, de: lista[0].de, antes: true };
+  return { uep: pick.uep, de: pick.de, antes: false };
+}
+function _uepArred1(m) {
+  const o = {};
+  Object.keys(m || {}).forEach(function (k) { o[k] = Math.round(m[k] * 10) / 10; });
+  return o;
+}
+function _uepVerDiverge(verM) {
+  let n = 0;
+  lerCatalogoProdutos().forEach(function (pr) {
+    const l = verM[pr.codigo];
+    const ult = l && l.length ? l[l.length - 1].uep : 0;
+    if (!_uepIgual(ult, pr.uep)) n++;
+  });
+  return n;
+}
+
+// Edição À MÃO na coluna UEP da PRODUTO_CODIGO (onEdit) vira versão, com a
+// vigência do dia. Só a célula única traz o valor anterior (e.oldValue); numa
+// colagem de várias linhas o anterior sai da última versão do código. Com a
+// aba ainda inexistente, a semente é o cadastro de agora — menos as linhas
+// editadas, que entram com o valor de ANTES (célula única) ou ficam de fora.
+function _uepVerDaEdicao(e, sh) {
+  const r = e.range;
+  const lastCol = sh.getLastColumn();
+  const hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0]
+    .map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
+  const iUep = hdr.indexOf('UEP'), iCod = hdr.indexOf('CODIGO');
+  if (iUep < 0 || iCod < 0) return 0;
+  const c0 = r.getColumn(), c1 = c0 + r.getNumColumns() - 1;
+  if (iUep + 1 < c0 || iUep + 1 > c1) return 0;              // não tocou a coluna UEP
+  const l0 = Math.max(2, r.getRow()), l1 = r.getRow() + r.getNumRows() - 1;
+  if (l1 < l0) return 0;
+  const umaCelula = r.getNumRows() === 1 && r.getNumColumns() === 1;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const M = _uepVersoesMapa(ss, true);
+  const cods = sh.getRange(l0, iCod + 1, l1 - l0 + 1, 1).getValues();
+  const novos = sh.getRange(l0, iUep + 1, l1 - l0 + 1, 1).getValues();
+  const editados = {}, mud = [];
+  for (let i = 0; i < cods.length; i++) {
+    const cod = String(cods[i][0] || '').trim();
+    if (!cod) continue;
+    editados[cod] = true;
+    const novo = _numBR(novos[i][0]);
+    const lst = M && M[cod];
+    const antes = lst && lst.length ? lst[lst.length - 1].uep
+      : (umaCelula && e.oldValue !== undefined ? _numBR(e.oldValue) : null);
+    if (antes !== null && _uepIgual(antes, novo)) continue;
+    mud.push([cod, antes === null ? '' : antes, novo]);
+  }
+  if (!mud.length) return 0;
+  let semente = [];
+  if (!M) {
+    const n = sh.getLastRow() - 1;
+    const iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
+    const tc = n > 0 ? sh.getRange(2, iCod + 1, n, 1).getValues() : [];
+    const tu = n > 0 ? sh.getRange(2, iUep + 1, n, 1).getValues() : [];
+    const tv = n > 0 && iVig >= 0 ? sh.getRange(2, iVig + 1, n, 1).getValues() : [];
+    for (let i = 0; i < tc.length; i++) {
+      const cod = String(tc[i][0] || '').trim();
+      if (!cod || editados[cod]) continue;
+      const u = _numBR(tu[i][0]);
+      if (u > 0) semente.push([cod, u, tv[i] ? tv[i][0] : '']);
+    }
+    mud.forEach(function (m) { if (Number(m[1]) > 0) semente.push([m[0], m[1], '']); });
+  }
+  return _uepVerRegistrar(ss, mud, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'), 'DIGITADA', semente);
+}
+
+// v5.24: a MESMA conta do GRAVAR, sem gravar nada — o antes → depois de cada
+// código, para o painel pedir a autorização. Ação própria de propósito: o .gs
+// antigo não conhece `simularUepCatalogo`, cai no getDados e não grava; um
+// parâmetro `simular` no setUepCatalogo seria ignorado por ele — e GRAVARIA.
+function simularUepCatalogo(p) {
+  const q = {};
+  Object.keys(p || {}).forEach(function (k) { q[k] = p[k]; });
+  q._simular = true;   // booleano: pela URL só chega texto, então não se liga de fora
+  return setUepCatalogo(q);
+}
+
+// ⚠ TRAVA (v5.24): UEP já MEDIDA ou DIGITADA (não "EST") não é sobrescrita
+// sem `substituir=1`. Antes o GRAVAR passava por cima de tudo — inclusive da
+// UEP digitada à mão a partir de cronoanálise — e a confirmação só dizia
+// "sobrescreve". Vazia e estimada continuam sendo preenchidas. Toda mudança
+// de valor vira versão na UEP_VERSOES (ORIGEM GRAVAR UEP).
 function setUepCatalogo(p) {
   if (String(p.estimar || '') === '1') return _uepEstimarCatalogo(p);
+  const simular = p._simular === true;
+  const substituir = String(p.substituir || '') === '1';
   let lista;
   try { lista = JSON.parse(String(p.dados || '[]')); } catch (e) { return { ok: false, erro: 'dados inválidos' }; }
   if (!Array.isArray(lista) || !lista.length) return { ok: false, erro: 'nenhum produto enviado' };
@@ -2909,7 +3112,8 @@ function setUepCatalogo(p) {
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
   try {
-    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PRODUTOS);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_PRODUTOS);
     if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
     const lastRow = sh.getLastRow();
     let lastCol = sh.getLastColumn();
@@ -2920,12 +3124,17 @@ function setUepCatalogo(p) {
     if (iCod < 0) return { ok: false, erro: 'coluna CODIGO não encontrada' };
     let iUep = hdr.indexOf('UEP');
     let iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
-    if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
-    if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+    // Simular não cria coluna: sem ela, todo código conta como sem UEP.
+    if (!simular) {
+      if (iUep < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP'); iUep = lastCol - 1; }
+      if (iVig < 0) { lastCol++; sh.getRange(1, lastCol).setValue('UEP_VIGENCIA'); iVig = lastCol - 1; }
+    }
 
+    const vazia = function () { return sh.getRange(2, 1, lastRow - 1, 1).getValues().map(function () { return ['']; }); };
     const cods = sh.getRange(2, iCod + 1, lastRow - 1, 1).getValues();
-    const colU = sh.getRange(2, iUep + 1, lastRow - 1, 1).getValues();
-    const colV = sh.getRange(2, iVig + 1, lastRow - 1, 1).getValues();
+    const colU = iUep >= 0 ? sh.getRange(2, iUep + 1, lastRow - 1, 1).getValues() : vazia();
+    const colV = iVig >= 0 ? sh.getRange(2, iVig + 1, lastRow - 1, 1).getValues() : vazia();
+    const antesU = colU.map(function (r) { return r[0]; }), antesV = colV.map(function (r) { return r[0]; });
     // Para repartir entre VOLUMES: descrição (VOL a/b), medida e vão.
     const _col = function (i) { return i >= 0 ? sh.getRange(2, i + 1, lastRow - 1, 1).getValues() : null; };
     const _pref = function (pref) { var i = hdr.indexOf(pref); return i >= 0 ? i : hdr.findIndex(function (h) { return h.indexOf(pref) === 0; }); };
@@ -2941,24 +3150,53 @@ function setUepCatalogo(p) {
       if (alvo[k] === undefined) continue;
       const vm = String(colD ? colD[i][0] : '').match(/VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
       const med = colM ? _numBR(colM[i][0]) : 0;
-      linhas.push({ i: i, k: k, vol: vm ? +vm[1] : 1, nVol: vm ? +vm[2] : 1,
+      linhas.push({ i: i, k: k, cod: cod, vol: vm ? +vm[1] : 1, nVol: vm ? +vm[2] : 1,
                     esteira: med > 0 ? med + (colE ? _numBR(colE[i][0]) : 0) : 0 });
     }
     const porVol = _uepPorVolume(alvo, linhas);
     const achados = {};
-    let gravados = 0;
+    const mudancas = [], existentes = [], escritosCod = [];
+    let gravados = 0, novos = 0, deEst = 0, iguais = 0, substituidos = 0, protegidos = 0;
     linhas.forEach(function (l) {
-      colU[l.i][0] = porVol.uep[l.k + '#' + l.vol];
-      colV[l.i][0] = vig;
       achados[l.k] = true;
+      const novo = porVol.uep[l.k + '#' + l.vol];
+      const antes = _numBR(antesU[l.i]);
+      const est = _uepEhEstimada(_dataStr(antesV[l.i]));
+      const medida = antes > 0 && !est;            // medida pelo estudo ou digitada
+      if (medida && _uepIgual(antes, novo)) { iguais++; return; }
+      if (medida) {
+        existentes.push([l.cod, antes, novo, _dataStr(antesV[l.i])]);
+        if (!substituir) { protegidos++; return; }
+        substituidos++;
+      } else if (antes > 0) deEst++; else novos++;
+      colU[l.i][0] = novo;
+      colV[l.i][0] = vig;
       gravados++;
+      escritosCod.push(l.cod);
+      if (!_uepIgual(antes, novo)) mudancas.push([l.cod, antes, novo]);
     });
+    const semCodigo = Object.keys(alvo).filter(function (k) { return !achados[k]; });
+    const base = { ok: true, produtos: Object.keys(achados).length, semCodigo: semCodigo,
+                   volumes: porVol.repartidos, volumesSemMedida: porVol.semMedida,
+                   novos: novos, deEst: deEst, iguais: iguais, existentes: existentes.slice(0, 200), nExistentes: existentes.length,
+                   // os códigos que ESTE passo grava: a estimativa roda depois e
+                   // não toca neles — o painel desconta da simulação dela.
+                   escritosCod: escritosCod.slice(0, 500) };
+    if (simular) { base.simulado = true; return base; }
     sh.getRange(2, iUep + 1, lastRow - 1, 1).setValues(colU);
     sh.getRange(2, iVig + 1, lastRow - 1, 1).setValues(colV);
     _catalogoMemo = null;
-    const semCodigo = Object.keys(alvo).filter(function (k) { return !achados[k]; });
-    return { ok: true, gravados: gravados, produtos: Object.keys(achados).length, semCodigo: semCodigo,
-             volumes: porVol.repartidos, volumesSemMedida: porVol.semMedida };
+    // A versão vem DEPOIS do cadastro: se ela falhar, a resposta diz — o
+    // painel avisa que a mudança ficou sem registro, em vez de calar.
+    let versoes = 0, versaoErro = '';
+    try {
+      const semente = [];
+      antesU.forEach(function (u, i) { const c = String(cods[i][0] || '').trim(); if (c && _numBR(u) > 0) semente.push([c, _numBR(u), antesV[i]]); });
+      versoes = _uepVerRegistrar(ss, mudancas, vig, 'GRAVAR UEP', semente);
+    } catch (e) { versaoErro = e.message; }
+    base.gravados = gravados; base.substituidos = substituidos; base.protegidos = protegidos;
+    base.versoes = versoes; if (versaoErro) base.versaoErro = versaoErro;
+    return base;
   } finally {
     lock.releaseLock();
   }
@@ -3162,6 +3400,12 @@ function getProducaoModeloPeriodo(p) {
   // v5.10: caixas por hora só para quem pede (o estudo de UEP). Sempre no
   // payload, ele passava de 100 KB e matava o cache do comparativo.
   const querCxHora = String(p.cxHora || '') === '1';
+  // v5.24: a UEP de cada hora pela UEP PADRÃO VIGENTE NA DATA (UEP_VERSOES),
+  // só para quem pede (o histórico por produto da aba ⚖ UEP). É ela que deixa
+  // o dia de setembro ser lido com a régua de setembro, mesmo que o cadastro
+  // mude depois. Sem a aba de versões, o cadastro de hoje vale para todos.
+  const querUepVer = String(p.uepVer || '') === '1';
+  const verM = querUepVer ? _uepVersoesMapa(ss) : null;
 
   // Recorte por data na LEITURA, não só no filtro: a aba tem milhares de linhas
   // e o período pede algumas centenas. O filtro do laço continua igual — ele é
@@ -3201,7 +3445,8 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pontosHe: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {} };
+                   caixas: 0, pontos: 0, pontosHe: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {},
+                   uepHora: {}, semUepHora: {}, uepVigDe: 0, uepAntes: false };
     }
     const dStr = fmtDataBR(r[iData]);
     const hSeq = formatHoraCel(r[iHora]);
@@ -3248,6 +3493,14 @@ function getProducaoModeloPeriodo(p) {
       // (_ehHoraExtraCaixas: fora de 07:00–17:00). Soma exata na leitura — o
       // painel da diretoria mostra pontos sem HE e com HE sem ratear nada.
       if (_ehHoraExtraCaixas(hora)) map[key].pontosHe += cx * (prod.pontos || 0);
+      if (querUepVer) {
+        const vg = _uepVigente(verM && verM[codigo], dNum, prod.uep);
+        const it = map[key];
+        if (vg.uep > 0) it.uepHora[hora] = (it.uepHora[hora] || 0) + cx * vg.uep;
+        else it.semUepHora[hora] = (it.semUepHora[hora] || 0) + cx;
+        if (vg.de > it.uepVigDe) it.uepVigDe = vg.de;
+        if (vg.antes) it.uepAntes = true;
+      }
     }
   }
 
@@ -3270,6 +3523,12 @@ function getProducaoModeloPeriodo(p) {
              // "rodou direto" de "saiu e voltou depois de outro produto".
              horasLista: Object.keys(it.horasSet).sort(),
              cxHora: querCxHora ? it.cxHora : undefined,   // v5.9/5.10 — {hora: caixas}, só com ?cxHora=1
+             // v5.24 (?uepVer=1): UEP de cada hora pela padrão vigente na data,
+             // caixas de código sem UEP na hora, e a vigência mais nova que valeu.
+             uepHora: querUepVer ? _uepArred1(it.uepHora) : undefined,
+             semUepHora: querUepVer && Object.keys(it.semUepHora).length ? it.semUepHora : undefined,
+             uepVigDe: querUepVer ? it.uepVigDe : undefined,
+             uepAntes: querUepVer && it.uepAntes ? true : undefined,
              horas: horas, mediaHora: horas > 0 ? Math.round(it.caixas / horas) : 0 };
   }).sort(function (a, b) {
     return a.dataNum - b.dataNum || b.caixas - a.caixas;
@@ -3287,7 +3546,12 @@ function getProducaoModeloPeriodo(p) {
 
   const uepProd = {};
   Object.keys(uepAcc).forEach(function (k) { if (uepAcc[k].c > 0) uepProd[k] = Math.round(uepAcc[k].s / uepAcc[k].c * 100) / 100; });
-  return { ok: true, esteira: _esteiraBase(), itens: itens, prepDias: prepDias, uepProd: uepProd };
+  const out = { ok: true, esteira: _esteiraBase(), itens: itens, prepDias: prepDias, uepProd: uepProd };
+  // registrado=false: nenhuma mudança desde a v5.24 (a padrão é o cadastro).
+  // diverge: códigos cujo cadastro de hoje não bate com a última versão — mudou
+  // por um caminho que não deixou registro (o onEdit falhou, script de fora).
+  if (querUepVer) out.uepVer = { registrado: verM !== null, diverge: verM ? _uepVerDiverge(verM) : 0 };
+  return out;
 }
 
 // Velocidade e entre-peças que valem HOJE na planilha — a base que o simulador
@@ -4351,6 +4615,12 @@ function onEdit(e) {
     // feita direto na planilha.
     invalidarCacheLeitura();
     const sh = e.range.getSheet();
+    // v5.24: UEP digitada à mão no cadastro vira versão (UEP_VERSOES). Falhar
+    // aqui não pode travar a edição — o catch de baixo engole, como sempre.
+    if (sh.getName() === SHEET_PRODUTOS) {
+      try { _uepVerDaEdicao(e, sh); } catch (errV) { Logger.log('UEP_VERSOES (onEdit) falhou: ' + errV.message); }
+      return;
+    }
     if (sh.getName() !== SHEET_DADOS) return;
     if (e.range.getRow() <= 4) return; // cabeçalho/meta nas primeiras linhas
 

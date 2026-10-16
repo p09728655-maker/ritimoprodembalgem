@@ -11,6 +11,42 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.133.0 · `.gs` v5.24 — 16/10/2026
+
+- ⚠ **re-deploy** — **A UEP padrão passa a ter histórico, e só muda com
+  autorização.** A UEP gravada no HISTÓRICO já não mudava sozinha depois do
+  fechamento; o que não tinha registro era o **cadastro**: quando a UEP de um
+  código mudava, a anterior se perdia, e o GRAVAR UEP passava por cima de
+  tudo, inclusive da UEP digitada à mão.
+  - **Aba nova `UEP_VERSOES`**, criada pelo script na 1ª mudança. A UEP que
+    está hoje no cadastro vira a **padrão inicial**, valendo para todos os
+    dias. Daí em diante, cada mudança vira uma linha com vigência, origem
+    (GRAVAR UEP, estimativa, DIGITADA) e o valor anterior. Digitar na coluna
+    UEP da PRODUTO_CODIGO também registra.
+  - **GRAVAR UEP com trava:** primeiro o painel confere o que muda (nada é
+    gravado). UEP que já existe (medida ou digitada) só é substituída com um
+    **segundo OK**, que mostra a lista antes → depois. Cancelar no segundo
+    passo mantém as atuais e grava só o resto.
+  - **Bloco 7 na aba ⚖ UEP — PADRÃO × REALIZADO POR PRODUTO:** por produto e
+    por dia fechado (15/30/60 dias), a UEP feita contra a que o ritmo da meta
+    pede nas mesmas horas, com a UEP padrão que valia no dia. ABAIXO (< 90%) ·
+    NO PADRÃO (90–110%) · ACIMA (> 110%). Toque no produto abre o dia a dia;
+    dia em que a UEP padrão mudou sai marcado **PADRÃO ALTERADO**.
+- **Atenção:**
+  - Nenhum número existente muda: HISTÓRICO, card UEP DO DIA, aba ⚖ UEP
+    (blocos 1–6), estudo e relatórios são os mesmos.
+  - **Até o re-deploy do `.gs`, o 💾 GRAVAR UEP não grava nada**: ele para com
+    o aviso de re-deploy (de propósito: sem a conferência não há como pedir a
+    autorização). O bloco 7 também pede o re-deploy.
+  - **O GRAVAR UEP mudou de comportamento:** antes ele substituía toda UEP dos
+    produtos do estudo; agora a UEP existente fica, a menos que o segundo OK
+    seja dado. A estimativa (EST) continua preenchendo só vazia ou estimada.
+  - No bloco 7, produto com **menos de 2 h** num dia não é julgado (`< 2 H`).
+    Hora em que dois produtos rodaram é repartida pelo tempo padrão de cada
+    um, então os dois saem com o mesmo % naquela hora.
+
+---
+
 ## v7.132.0 — 15/10/2026
 
 - **ESTUDO DE UEP: o veredito do dia passa a ser o oficial.** O estudo julgava

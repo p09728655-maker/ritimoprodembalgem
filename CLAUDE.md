@@ -33,6 +33,9 @@ via Google Apps Script (JSONP).
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
   `node programacao.test.js`.
+- `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
+  UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto). Carrega o
+  `.gs` **inteiro** e a conta do painel: `node uep-padrao.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -395,8 +398,8 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje nove, com o `tela-e.test.js` e o `programacao.test.js`) antes de
-  publicar.
+  sete (hoje dez, com o `tela-e.test.js`, o `programacao.test.js` e o
+  `uep-padrao.test.js`) antes de publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
@@ -2889,10 +2892,11 @@ feito e dá ar de verdade ao que sobrou.
     `setUepCatalogo` reparte o jogo (`uep × nº de volumes`) pelo tempo de
     esteira de cada volume (`MEDIDA DA CAIXA + ENTRE_PECAS`, lido do cadastro).
     O total do produto não muda (ORION 1,54+1,54 → 1,75+1,33). Falta medida em
-    algum volume → média, contado no alerta. ⚠ Um novo GRAVAR **sobrescreve** a
-    UEP digitada à mão (cronoanálise por volume): digitar depois do último
-    GRAVAR. Não tentar "medir por volume" no histórico sem a linha passar a
-    embalar um volume por vez.
+    algum volume → média, contado no alerta. ~~Um novo GRAVAR sobrescreve a UEP
+    digitada à mão~~ — **revogado na v7.133.0 / `.gs` v5.24**: UEP medida ou
+    digitada é PROTEGIDA e só troca com o 2º OK do GRAVAR (ver *UEP PADRÃO
+    VERSIONADA*). Não tentar "medir por volume" no histórico sem a linha passar
+    a embalar um volume por vez.
   - `getPontosDia` devolve **`uep`** = `{normal, he, cxCom, cxSem, codigos}`,
     com a HE pela **mesma régua das caixas** (`_ehHoraExtraCaixas`). Nenhuma
     leitura nova (o catálogo já era lido).
@@ -3156,6 +3160,88 @@ feito e dá ar de verdade ao que sobrou.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
   chave por modelo de 6 dígitos; quando a UEP virar cadastro, é ele que deve
   passar a ler dali — não criar uma segunda régua de esforço.
+
+## UEP PADRÃO VERSIONADA, TRAVA DO GRAVAR E PADRÃO × REALIZADO (v7.133.0 / `.gs` v5.24)
+- PPCP, 16/10/2026, perguntando se a UEP gravada mudava sozinha: *"não pode
+  alterar sozinha sem autorização"*, *"montar histórico de produto comparando a
+  uep padrão e ver no dia se cumpriu a padrão ou teve alteração"* e *"a uep que
+  está hoje tornar padrão"*.
+- **O que já era verdade (conferido no código):** a UEP gravada no `HISTORICO`
+  é calculada **uma vez**, no fechamento (`_uepColsDoDia`), e nada a reescreve
+  sozinho — o FECHAR DIA só vale para hoje e o `regravarUepPassada` é manual.
+  O que muda com o período é a **UEP DO ESTUDO**, por construção. O furo era
+  outro: o **cadastro** não guardava a UEP anterior, e o GRAVAR passava por cima
+  de tudo, inclusive da UEP digitada à mão.
+- **Aba `UEP_VERSOES` (só acréscimo)**: `CODIGO · UEP · VIGENCIA · ORIGEM ·
+  GRAVADO_EM · ANTERIOR`. Toda mudança de valor vira linha: GRAVAR UEP
+  (`GRAVAR UEP`), estimativa (`GRAVAR UEP · EST`) e digitação na coluna UEP da
+  `PRODUTO_CODIGO` (`DIGITADA`, pelo `onEdit` → `_uepVerDaEdicao`).
+  - **A 1ª mudança cria a aba com a SEMENTE**: o cadastro como estava ANTES
+    dela, **vigência vazia = vale desde sempre**, ORIGEM `PADRÃO INICIAL ·
+    cadastro <vigência antiga>`. É a "UEP de hoje vira a padrão". Sem a aba
+    (nada mudou desde o re-deploy), o cadastro é a única versão.
+  - Só entra o que **mudou** (duas casas, `_uepIgual`). Regravar o mesmo número
+    não cria linha nem mexe na vigência.
+  - `_uepVigente(lista, dia, cadastro)`: no dia vale a última versão com
+    vigência ≤ dia; antes da 1ª versão de um código vale a 1ª (`antes`).
+  - CODIGO e VIGENCIA são gravados como **texto** (`setNumberFormat('@')`); a
+    UEP fica número — texto "1.25" leria como milhar no `_numBR`.
+  - A versão é gravada **depois** do cadastro; se falhar, o retorno traz
+    `versaoErro` e o painel avisa *"A MUDANÇA NÃO FICOU REGISTRADA"*. O
+    `onEdit` engole a falha (não pode travar a edição) e loga.
+  - `getProducaoModeloPeriodo` com `?uepVer=1` devolve `uepVer.diverge`:
+    códigos cujo cadastro de hoje não bate com a última versão — mudança que
+    escapou do registro. O bloco 7 mostra o aviso.
+  - Corrigir uma vigência lançada errada é editar a célula da aba, à mão.
+- **TRAVA no GRAVAR UEP** (`_gravarUepCadastro`): três passos.
+  1. **Simular** (`simularUepCatalogo`, ação PRÓPRIA): a mesma conta do
+     `setUepCatalogo`, sem gravar e sem criar coluna; devolve `novos`, `deEst`,
+     `iguais`, `existentes` (antes → depois) e os códigos que este passo
+     grava (`escritosCod`), para descontar da simulação da estimativa.
+     ⚠ **Ação própria de propósito**: o `.gs` antigo não conhece a ação, cai no
+     `getDados` e NÃO grava. Um parâmetro `simular` seria ignorado lá e
+     **gravaria**. Sem `simulado:true` na resposta o painel para e pede o
+     re-deploy — o botão não grava nada antes do `.gs` v5.24.
+  2. **Autorizar**: o 1º confirm diz o que muda; UEP que JÁ EXISTE (medida ou
+     digitada — não `EST`) só troca com um **2º OK** (`_uepTravaTxt`, lista
+     antes → depois, maior mudança primeiro). Cancelar no 2º = mantém as atuais
+     e grava só o resto.
+  3. **Gravar** com `substituir=1|0`. No `.gs`, sem `substituir=1` a UEP
+     existente fica (`protegidos`). `_simular` é booleano — pela URL só chega
+     texto, então a simulação não se liga de fora.
+  - A estimativa (EST) continua sem trava própria: ela só toca vazia ou `EST`
+    — e o confirm diz quantas recebem e quantas são re-estimadas.
+- **Bloco 7 da aba ⚖ UEP — PADRÃO × REALIZADO POR PRODUTO** (`_uepPadHist`
+  conta, `_uepPadHtml` desenho, `_uepPadCarregar` leitura). Dias fechados
+  (hoje fora), 15/30/60 dias (`rpe_uep_pad_per`, padrão 30).
+  - **Padrão** = ritmo da META: META UEP do dia ÷ 527 min (~288 UEP/h). Em
+    caixas, 288 ÷ UEP por caixa. A META é a **gravada no HISTORICO** daquele
+    dia (`uepDiaMeta`); a do ⚙ só vale para dia que não está lá.
+  - A UEP de cada caixa vem pronta do `.gs` pela **padrão vigente na data**
+    (`uepHora`): mudar o cadastro amanhã não muda o dia de hoje.
+  - **Hora com troca** é repartida pelo **tempo padrão** (UEP de cada
+    produto) — mesma ideia do estudo, com o padrão no lugar do ritmo em
+    regime. Consequência honesta: na hora dividida os dois saem com o MESMO %.
+    Hora com caixa de código sem UEP sai da conta dos produtos dela.
+  - **Faixa 90–110%** (decisão do PPCP): ABAIXO · NO PADRÃO · ACIMA (acima é
+    alerta — UEP alta demais ou apontamento). **Menos de 2 h** somadas no dia
+    (`UEP_PAD_MIN_MIN`=120) não é julgado: 1 hora é quase toda borda (80 cx
+    numa hora de início de rodada saíam ABAIXO, 27,8%).
+  - ⚠ **Ponto flutuante**: `60 × u ÷ u` pode dar 59,999… e o dia de 2 h exatas
+    caía fora. Hora de um produto só leva o slot inteiro, e a comparação tem
+    folga de 1e-6. O teste usa 286,52, que reproduz.
+  - **% do período** = Σ UEP feita ÷ Σ UEP pedida nos dias julgados, nunca
+    média de %.
+  - **PADRÃO ALTERADO**: a vigência mais nova entre os códigos do produto
+    (`uepVigDe`) mudou em relação ao dia anterior em que ele rodou.
+  - **Custo**: UMA leitura (`getProducaoModeloPeriodo&cxHora=1&uepVer=1`), a
+    última da fila do `_uepAbaCarregar`, cache de 15 min, voo compartilhado, 3
+    tentativas; falhou → nova tentativa em 1 min. A chave do cache do `.gs`
+    inclui `uepVer`. Sem `?uepVer=1` o payload do comparativo não muda.
+  - Não vai na impressão executiva da aba nem na TV/app.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o GRAVAR UEP para com o
+  aviso de re-deploy (não grava nada) e o bloco 7 diz que o backend não manda a
+  UEP por data. Nada no `HISTORICO` muda.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
