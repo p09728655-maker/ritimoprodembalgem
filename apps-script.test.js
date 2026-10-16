@@ -189,7 +189,9 @@ console.log('\n── quem ESCREVE continua lendo direto da planilha ──');
 // Guarda-corpo: se alguma função de escrita passar a usar o memo, ela pode
 // gravar em cima de um retrato velho da aba.
 const ESCRITORAS = ['saveDay', 'saveParadas', 'endParada', 'arquivarDiaAtual',
-                    'arquivarHorasDoDia', 'setConfigPainel', 'atualizarSaldoNaProgramacao'];
+                    'arquivarHorasDoDia', 'setConfigPainel', 'atualizarSaldoNaProgramacao',
+                    // v5.24: cadastro de UEP e o histórico de versões dela
+                    'setUepCatalogo', '_uepEstimarCatalogo', '_uepVerAba', '_uepVerRegistrar', '_uepVerDaEdicao'];
 ESCRITORAS.forEach(f => {
   const corpo = pega('function ' + f + '(');
   ok(`${f} não usa o memo`, /_valores(DaAba)?\s*\(/.test(corpo), false);
@@ -470,7 +472,7 @@ ok('e devolve o cxHora no item SÓ quando pedido (v5.10)', /cxHora: querCxHora \
 ok('o pedido é ?cxHora=1', /const querCxHora = String\(p\.cxHora \|\| ''\) === '1';/.test(src), true);
 // Sem o cxHora na chave, a resposta sem ele (do comparativo) seria servida ao
 // estudo de UEP — e vice-versa — pelos 5 min do cache.
-ok('a chave do cache separa com e sem cxHora', /\['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora'\]/.test(src), true);
+ok('a chave do cache separa com e sem cxHora (e com e sem uepVer, v5.24)', /\['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer'\]/.test(src), true);
 
 // Os dois chamadores usam a leitura recortada.
 ok('getProducaoModeloPeriodo lê recortado, com a conversão DELE',
@@ -564,6 +566,16 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   eval(pega('function _numBR('));
   eval(pega('function _uepPorVolume('));
   eval(pega('function setUepCatalogo('));
+  // v5.24: a trava e o registro de versão (cobertos a fundo no uep-padrao.test.js,
+  // que roda o .gs inteiro). Aqui a planilha de mentira não cria aba: a versão
+  // falha e o retorno diz (versaoErro) — o cadastro é gravado igual.
+  eval(pega('function _uepEhEstimada('));   // uma linha: o pega leva o _uepEstimarCatalogo junto
+  eval(pega('function _uepIgual('));        // idem, com o _uepVerDataNum
+  eval(pega('function _uepVerAba('));
+  eval(pega('function _uepVerRegistrar('));
+  global._dataStr = v => String(v || '').trim();
+  global.SHEET_UEP_VER = 'UEP_VERSOES';
+  global.UEP_VER_HDR = eval(src.match(/const UEP_VER_HDR = (\[[^\]]*\]);/)[1]);
   ok('_numBR lê número pt-BR e número de verdade',
      [_numBR('0,84'), _numBR('1.234,5'), _numBR(2.26), _numBR(''), _numBR('x')], [0.84, 1234.5, 2.26, 0, 0]);
   // PRODUTO_CODIGO sem as colunas: o 1º gravar cria UEP e UEP_VIGENCIA no fim.

@@ -243,6 +243,12 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos dias fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
 | **DIAS QUE BATERAM** (período) | dias com UEP ≥ META UEP daquele dia | dias | `rp-core:uepHistResumo` |
 | **OSCILAÇÃO DIA A DIA** (período) | desvio padrão ÷ média, dia a dia, em UEP e em caixas de jornada (realizado − HE) dos mesmos dias | % | `v7:_qpOscilacao` + `v7:_uepAbaPeriodo` |
+| **UEP PADRÃO** (bloco 7) | a UEP por caixa do código **vigente na data**: a última versão da aba `UEP_VERSOES` com vigência ≤ dia; sem a aba, o cadastro de hoje. A semente (1ª mudança) é o cadastro como estava, valendo desde sempre | UEP/cx | `.gs:_uepVigente` + `.gs:getProducaoModeloPeriodo` (`?uepVer=1`) |
+| **CX/H PADRÃO** (bloco 7) | ritmo da meta ÷ UEP por caixa = (META UEP do dia ÷ 527 × 60) ÷ (UEP do dia ÷ caixas do produto) | cx/h | `v7:_uepPadHist` |
+| **% DO PADRÃO** (dia) | UEP feita pelo produto ÷ (META UEP do dia ÷ 527 × minutos do produto) × 100. Minutos = horas em que rodou; hora com troca repartida pelo tempo padrão (UEP de cada um); hora com caixa de código sem UEP fica fora. META UEP = a gravada no HISTORICO daquele dia (a do ⚙ se o dia não está lá) | % | `v7:_uepPadHist` |
+| **SITUAÇÃO** (dia) | ABAIXO < 90% · NO PADRÃO 90–110% · ACIMA > 110% (alerta: UEP alta demais ou apontamento) · `< 2 H` = menos de 120 min do produto no dia, não julgado | — | `v7:_uepPadSt` + `UEP_PAD_MIN_MIN` |
+| **% DO PADRÃO** (período) | Σ UEP feita ÷ Σ UEP pedida nos dias julgados (não é média de %) | % | `v7:_uepPadHist` |
+| **PADRÃO ALTERADO** | a vigência mais nova entre os códigos do produto mudou em relação ao dia anterior em que ele rodou | — | `v7:_uepPadHist` (`uepVigDe`) |
 
 **Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
 hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SEM`).

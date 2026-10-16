@@ -440,6 +440,15 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
 #sec-uep .uep-per button{font-family:var(--font-d);font-size:10px;letter-spacing:1px;padding:3px 9px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--txt2);cursor:pointer}
 #sec-uep .uep-per button.on{border-color:var(--acc);color:var(--acc)}
+#sec-uep .uep-pad-l{cursor:pointer}
+#sec-uep .uep-pad-l:hover td{background:var(--elevated)}
+#sec-uep .uep-pad-l.on td{background:var(--elevated);border-bottom-color:transparent}
+#sec-uep .uep-pad-det>td{background:var(--elevated);padding:4px 10px 12px}
+#sec-uep .uep-pad-det td{font-size:12px}
+#sec-uep .uep-pad-ok{color:var(--ok)} #sec-uep .uep-pad-warn{color:var(--warn)} #sec-uep .uep-pad-red{color:var(--red)}
+#sec-uep .uep-pad-st{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--txt2)}
+#sec-uep .uep-pad-st.ok{color:var(--ok);border-color:var(--ok)} #sec-uep .uep-pad-st.warn{color:var(--warn);border-color:var(--warn)} #sec-uep .uep-pad-st.red{color:var(--red);border-color:var(--red)}
+#sec-uep .uep-pad-alt{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:0 5px;margin-left:4px}
 @media (max-width:900px){#sec-uep .uep-2{grid-template-columns:1fr}}
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
@@ -2528,7 +2537,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="export-row">
       <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUEP()" title="Estudo para análise do PPCP: UEP (unidade de esforço) de cada produto pelo ritmo demonstrado no período. Não muda nenhum número do painel.">📐 ESTUDO UEP</button>
-      <button class="btn btn-ghost" id="btn-gravar-uep" onclick="gravarUepCadastro()" title="Grava a UEP por caixa do estudo deste período na coluna UEP da PRODUTO_CODIGO (com vigência de hoje). É o parâmetro que o card UEP DO DIA do gerencial usa.">💾 GRAVAR UEP</button>
+      <button class="btn btn-ghost" id="btn-gravar-uep" onclick="gravarUepCadastro()" title="Grava a UEP por caixa do estudo deste período na coluna UEP da PRODUTO_CODIGO (com vigência de hoje). Antes, mostra o que muda: UEP que já existe só é trocada com um segundo OK, e toda mudança fica na aba UEP_VERSOES. É o parâmetro que o card UEP DO DIA do gerencial usa.">💾 GRAVAR UEP</button>
     </div>
   </div>
 
@@ -2610,7 +2619,8 @@ if (_v7Instalado()) _v7EscondeBotao();
      aba PARADAS INTEIRA e é a leitura mais cara do painel. -->
 <!-- ═══ ABA UEP (v7.102.0) — maquete aprovada pelo PPCP em 25/09/2026 ═══
      Só o gerencial do PC: TV e app do operador continuam em caixas. Blocos 1
-     (hoje), 2 (hora a hora), 3 (mix), 4 (origem da UEP), 5 (período) e 6 (próximos dias).
+     (hoje), 2 (hora a hora), 3 (mix), 4 (origem da UEP), 5 (período), 6 (próximos
+     dias) e 7 (padrão × realizado por produto, v7.133.0 — não vai na impressão).
      Contas: as mesmas do card UEP DO DIA (uepCard/uepCelula/uepHistResumo). -->
 <!-- TELA DA DIRETORIA (/diretoria): só aparece no modo-dir; o desenho é o renderDir -->
 <section id="sec-dir" class="sec" aria-live="polite"><div id="dir-palco" style="display:contents"></div></section>
@@ -3123,7 +3133,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.132.0';
+const APP_VER   = '7.133.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4653,7 +4663,9 @@ function _horaEhHE(rotulo){
 // não entrega, onde perdeu — na hora, no produto ou no dado?
 // Contas puras e testadas (_uepAba*), desenho sem conta (renderUep). A régua é a
 // do card UEP DO DIA: uepCard (ritmo e esperado) e uepCelula (meta da hora).
-// Nenhuma chamada nova: PONTOS_DIA (getPontosDia) + o cadastro do simulador.
+// Blocos 1–6 sem chamada nova: PONTOS_DIA (getPontosDia) + o cadastro do
+// simulador + histórico/programação das outras abas. O bloco 7 (v7.133.0) faz
+// UMA leitura própria, a última da fila: o período com a UEP da data (?uepVer=1).
 const UEP_ALERTA_EST=20, UEP_ALERTA_SEM=5;   // % das caixas de hoje que acendem o alerta
 function _abaOn(t){ const e=document.getElementById('sec-'+t); return !!(e&&e.classList.contains('on')); }
 
@@ -4856,6 +4868,8 @@ async function _uepAbaCarregar(){
     // por último, a programação (a mais cara): só para apontar código sem UEP.
     // Reaproveita a leitura das outras abas se tiver menos de 15 min.
     if(!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL){ await carregarProgramacaoDetalhada(); if(_abaOn('uep')) renderUep(); }
+    // e o histórico por produto (bloco 7, o último da tela): o log do período com a hora.
+    await _uepPadCarregar();
   }catch(e){ console.warn('[UEP] aba:', e.message); }
   finally{ UEP_CARREGANDO=false; }
 }
@@ -4954,6 +4968,193 @@ function _uepAbaPerCards(P){
   ];
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// 7 · PADRÃO × REALIZADO POR PRODUTO (v7.133.0 / .gs v5.24)
+// ════════════════════════════════════════════════════════════════════════════
+// PPCP, 16/10/2026: "montar histórico de produto comparando a uep padrão e ver
+// no dia se cumpriu a padrão ou teve alteração" — e "a uep que está hoje tornar
+// padrão". A UEP padrão fica parada; o que se mede todo dia é o DESVIO dela.
+//   PADRÃO do produto no dia = ritmo da META (meta UEP do dia ÷ 527 min, ~288
+//   UEP/h) — em caixas, 288 ÷ UEP por caixa. Cumpriu = a UEP que o produto fez
+//   nas horas em que rodou, contra a que o ritmo da meta pede nessas horas.
+//   A UEP de cada caixa é a PADRÃO VIGENTE NA DATA (UEP_VERSOES, o .gs manda
+//   pronta em `uepHora`): mudar o cadastro amanhã não muda o dia de hoje.
+//   A meta é a GRAVADA no HISTORICO daquele dia (uepDiaMeta) — a do ⚙ só vale
+//   para o dia que não está lá.
+// ⚠ HORA COM TROCA: a linha roda um produto por vez; hora com dois produtos é
+// repartida pelo TEMPO PADRÃO de cada um (caixas × UEP ÷ ritmo da meta) — a
+// mesma ideia do estudo (proporcional ao tempo esperado, nunca às caixas),
+// com o padrão no lugar do ritmo em regime. Consequência honesta: numa hora
+// dividida os dois saem com o MESMO % — o dado da hora não diz qual foi lento.
+// Hora com caixa de código SEM UEP não reparte (o tempo dele é desconhecido):
+// sai da conta para os produtos dela, e é contada.
+// ⚠ Menos de `UEP_PAD_MIN_MIN` (2 h) somados no dia não é julgado: produto de
+// 1 hora é quase todo borda — começou no meio do slot, terminou no meio de
+// outro — e a hora inteira entra na conta (medido no print de 16/10: 80 cx
+// numa hora de início de rodada saíam ABAIXO, com 27,8%).
+// Faixa 90–110% (decisão do PPCP): acima de 110% é alerta — UEP alta demais
+// para o produto ou apontamento errado, não "ótimo".
+const UEP_PAD_OPC=[15,30,60], UEP_PAD_LS='rpe_uep_pad_per';
+const UEP_PAD_FAIXA=[90,110];
+const UEP_PAD_MIN_MIN=120;
+const UEP_PAD_TTL=15*60*1000;
+const UEP_PAD_ST={ abaixo:{t:'ABAIXO', c:'red'}, no:{t:'NO PADRÃO', c:'ok'}, acima:{t:'ACIMA', c:'warn'}, curto:{t:'< '+UEP_PAD_MIN_MIN/60+' H', c:''} };
+function _uepPadSt(pct){ return pct<UEP_PAD_FAIXA[0] ? 'abaixo' : (pct>UEP_PAD_FAIXA[1] ? 'acima' : 'no'); }
+// Minutos de cada hora pelo início (HH:MM): os slots da jornada pelo turno do ⚙
+// (o pós-almoço vale 48); hora fora dele (madrugada, depois das 17:00) vale 60.
+function _uepPadMinSlot(slots){ const m={}; (slots||[]).forEach(sl=>{ m[sl.inicio]=Number(sl.min)||60; }); return m; }
+// Conta pura e testada. itens: getProducaoModeloPeriodo(?cxHora=1&uepVer=1).
+// metaDe: {dd/MM/yyyy: meta UEP do dia}; metaAtual: a do ⚙ para dia sem registro.
+function _uepPadHist(itens, metaDe, metaAtual, minSlot){
+  const mAt=Number(metaAtual)>0?Number(metaAtual):UEP_META_PADRAO;
+  const D={}, NOME={};
+  let cxSemHora=0;
+  (itens||[]).forEach(it=>{
+    const k=(it.modelo||'')+'|'+(it.nome||'');
+    NOME[k]=NOME[k]||{modelo:it.modelo||'', nome:it.nome||''};
+    const cxH=it.cxHora||{}, uH=it.uepHora||{}, sH=it.semUepHora||{};
+    const hs=[...new Set([...Object.keys(cxH), ...Object.keys(uH), ...Object.keys(sH)])].map(h=>[h,_uepHHMM(h)]).filter(x=>x[1]);
+    if(!hs.length){ cxSemHora+=Number(it.caixas)||0; return; }
+    const d=D[it.data]=D[it.data]||{data:it.data, num:Number(it.dataNum)||0, horas:{}, vig:{}, antes:{}};
+    d.vig[k]=Math.max(d.vig[k]||0, Number(it.uepVigDe)||0);
+    if(it.uepAntes) d.antes[k]=true;
+    hs.forEach(([h,hh])=>{
+      const H=d.horas[hh]=d.horas[hh]||{p:{}, sem:0};
+      const sem=Number(sH[h])||0, cx=Math.max(0,(Number(cxH[h])||0)-sem), u=Number(uH[h])||0;
+      const q=H.p[k]=H.p[k]||{cx:0, uep:0};
+      q.cx+=cx; q.uep+=u; H.sem+=sem;
+    });
+  });
+  const P={};
+  let hSemBase=0;
+  Object.values(D).sort((a,b)=>a.num-b.num).forEach(d=>{
+    const meta=Number(metaDe&&metaDe[d.data])>0?Number(metaDe[d.data]):mAt;
+    const R=meta/UEP_MIN_DIA;                       // UEP por minuto no ritmo da meta
+    const acc={};
+    Object.keys(d.horas).forEach(hh=>{
+      const H=d.horas[hh], ks=Object.keys(H.p).filter(k=>H.p[k].cx>0||H.p[k].uep>0);
+      if(!ks.length) return;
+      const a=k=>acc[k]=acc[k]||{cx:0, uep:0, min:0, semBase:0};
+      if(H.sem>0){ hSemBase++; ks.forEach(k=>{ a(k).semBase++; }); return; }
+      const M=(minSlot&&minSlot[hh])||60;
+      const tot=ks.reduce((s,k)=>s+H.p[k].uep,0);
+      if(!(tot>0)) return;
+      // um produto só na hora leva o slot inteiro — M×u÷u em ponto flutuante dá
+      // 59,999… e o dia de 2 h exatas caía abaixo do mínimo (visto no print)
+      ks.forEach(k=>{ const x=a(k); x.cx+=H.p[k].cx; x.uep+=H.p[k].uep; x.min+=ks.length===1?M:M*H.p[k].uep/tot; });
+    });
+    Object.keys(acc).forEach(k=>{
+      const x=acc[k], pad=R*x.min;
+      const julg=x.min>=UEP_PAD_MIN_MIN-1e-6 && pad>0;
+      const pct=pad>0?x.uep/pad*100:null;
+      const g=P[k]=P[k]||{key:k, modelo:NOME[k].modelo, nome:NOME[k].nome, dias:[], cx:0, uep:0, pad:0, nJulg:0, abaixo:0, no:0, acima:0, alterou:false, antes:false};
+      const prev=g.dias.length?g.dias[g.dias.length-1]:null;
+      const alterado=!!(prev && prev.vig!==d.vig[k]);
+      const st=julg?_uepPadSt(pct):'curto';
+      g.dias.push({ data:d.data, cx:x.cx, uep:x.uep, min:x.min, meta, pad, pct, st, julg, semBase:x.semBase,
+                    cxh:x.min>0?x.cx/(x.min/60):null, cxhPad:x.uep>0?R*60*x.cx/x.uep:null,
+                    uepCx:x.cx>0?x.uep/x.cx:null, vig:d.vig[k], alterado, antes:!!d.antes[k] });
+      g.cx+=x.cx;
+      if(julg){ g.nJulg++; g[st]++; g.uep+=x.uep; g.pad+=pad; }
+      if(alterado) g.alterou=true;
+      if(d.antes[k]) g.antes=true;
+    });
+  });
+  const prods=Object.values(P).map(g=>{
+    const u=g.dias[g.dias.length-1];
+    const pct=g.pad>0?g.uep/g.pad*100:null;
+    return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u, uepCx:u.uepCx, cxhPad:u.cxhPad });
+  }).sort((a,b)=>b.cx-a.cx);
+  return { prods, julgados:prods.filter(g=>g.nJulg>0), soCurtos:prods.filter(g=>!g.nJulg).length,
+           hSemBase, cxSemHora, nDias:Object.keys(D).length, metaAtual:mAt, ritmoMetaH:mAt/UEP_MIN_DIA*60 };
+}
+
+let UEP_PAD=null, UEP_PAD_KEY='', UEP_PAD_TS=0, UEP_PAD_VOO=null, UEP_PAD_FALHA=null, UEP_PAD_SEL=null;
+function _uepPadN(){
+  let v=30; try{ const x=Number(localStorage.getItem(UEP_PAD_LS)); if(UEP_PAD_OPC.includes(x)) v=x; }catch(e){}
+  return v;
+}
+function _uepPadSet(n){ try{ localStorage.setItem(UEP_PAD_LS, String(n)); }catch(e){} UEP_PAD_FALHA=null; UEP_PAD_SEL=null; renderUep(); _uepPadCarregar(); }
+function _uepPadSel(i){ const g=(_uepPadMontar()||{julgados:[]}).julgados[i]; UEP_PAD_SEL=g&&UEP_PAD_SEL!==g.key?g.key:null; renderUep(); }
+function _uepPadInvalidar(){ UEP_PAD_TS=0; UEP_PAD_KEY=''; }
+// Hoje fica FORA (não fechou, e a hora em andamento distorce): de hoje−n até ontem.
+function _uepPadJanela(n, hoje){
+  const f=hoje?new Date(hoje):new Date(); f.setHours(0,0,0,0);
+  const ate=new Date(f); ate.setDate(ate.getDate()-1);
+  const de=new Date(f); de.setDate(de.getDate()-n);
+  return { de:dtToStr(de), ate:dtToStr(ate) };
+}
+// Uma leitura cara (o log de produto do período com a hora): cache de 15 min,
+// voo compartilhado, 3 tentativas em sequência. Falhou → tenta de novo em 1 min.
+function _uepPadCarregar(forcar){
+  if(!CFG.sheetsUrl) return Promise.resolve();
+  const n=_uepPadN(), J=_uepPadJanela(n), key=J.de+'|'+J.ate;
+  if(!forcar && UEP_PAD_KEY===key && UEP_PAD_TS && Date.now()-UEP_PAD_TS<(UEP_PAD_FALHA?60000:UEP_PAD_TTL)) return Promise.resolve();
+  if(UEP_PAD_VOO && UEP_PAD_VOO.key===key) return UEP_PAD_VOO.p;
+  const p=(async()=>{
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getProducaoModeloPeriodo'
+      +'&de='+encodeURIComponent(J.de)+'&ate='+encodeURIComponent(J.ate)+'&cxHora=1&uepVer=1';
+    let falha='sem-resposta', erro='';
+    for(let t=1;t<=3;t++){
+      try{
+        const r=await jsonpFetch(url, 60000);
+        if(r && r.ok && Array.isArray(r.itens)){
+          // .gs anterior à v5.24: responde o período, mas sem a UEP da data
+          if(!r.uepVer){ falha='sem-endpoint'; break; }
+          UEP_PAD={ itens:r.itens, uepVer:r.uepVer, de:J.de, ate:J.ate, n }; falha=null; break;
+        }
+        if(r && r.ok===false){ falha='erro'; erro=String(r.erro||''); break; }
+        falha='sem-endpoint'; break;
+      }catch(e){ falha='sem-resposta'; erro=e.message; if(t<3) await new Promise(ok=>setTimeout(ok,2000*t)); }
+    }
+    UEP_PAD_FALHA=falha?{tipo:falha, erro}:null;
+    UEP_PAD_KEY=key; UEP_PAD_TS=Date.now();
+    if(_abaOn('uep')) renderUep();
+  })().finally(()=>{ UEP_PAD_VOO=null; });
+  UEP_PAD_VOO={key, p};
+  return p;
+}
+// A montagem que a tela lê (uma só): os itens lidos + a meta gravada de cada dia.
+function _uepPadMontar(){
+  if(!UEP_PAD) return null;
+  const metaDe={};
+  (UEP_HIST||[]).forEach(d=>{ if(d&&d.data&&Number(d.metaUep)>0) metaDe[d.data]=Number(d.metaUep); });
+  return _uepPadHist(UEP_PAD.itens, metaDe, PONTOS_DIA.metaUep, _uepPadMinSlot(getSlots()));
+}
+// Desenho, sem conta: tudo vem pronto do _uepPadHist.
+function _uepPadHtml(H, sel, V){
+  const u2=v=>v!=null?v.toFixed(2).replace('.',','):'—';
+  const nn=v=>v!=null&&isFinite(v)?fmtN(Math.round(v)):'—';
+  const pctTd=(pct,st)=>`<td class="n"><b class="uep-pad-${UEP_PAD_ST[st]?UEP_PAD_ST[st].c:''}">${pct!=null?fmtP(pct):'—'}</b></td>`;
+  const selo=st=>`<span class="uep-pad-st ${UEP_PAD_ST[st].c}">${UEP_PAD_ST[st].t}</span>`;
+  if(!H.julgados.length) return `<div class="uep-card"><div class="uep-nota" style="margin-top:0">Nenhum produto com ${UEP_PAD_MIN_MIN/60} h ou mais num dia do período${H.prods.length?` (${plural(H.prods.length,'produto rodou','produtos rodaram')} só em hora curta)`:''}.</div></div>`;
+  const linhas=H.julgados.map((g,i)=>{
+    const ab=g.key===sel;
+    let r=`<tr class="uep-pad-l${ab?' on':''}" onclick="_uepPadSel(${i})" title="Toque para ver o dia a dia"><td class="mono">${_rpEsc(g.modelo)}</td><td>${_rpEsc(g.nome||'—')}${g.alterou?' <span class="uep-pad-alt">PADRÃO ALTERADO</span>':''}</td>`
+      +`<td class="n">${u2(g.uepCx)}</td><td class="n">${nn(g.cxhPad)}</td><td class="n">${g.nJulg}</td>`
+      +`<td class="n">${g.abaixo||'—'}</td><td class="n">${g.no||'—'}</td><td class="n">${g.acima||'—'}</td>${pctTd(g.pct,g.st)}`
+      +`<td>${g.ultimo.julg?selo(g.ultimo.st):selo('curto')} <span class="mono">${_rpEsc(String(g.ultimo.data).slice(0,5))}</span></td></tr>`;
+    if(ab){
+      r+=`<tr class="uep-pad-det"><td colspan="10"><table><thead><tr><th>DIA</th><th class="n">CX</th><th class="n">HORAS</th><th class="n">CX/H</th><th class="n">CX/H PADRÃO</th><th class="n">UEP/CX</th><th class="n">% DO PADRÃO</th><th>SITUAÇÃO</th></tr></thead><tbody>`
+        +g.dias.slice().reverse().map(d=>`<tr><td class="mono">${_rpEsc(d.data)}</td><td class="n">${fmtN(d.cx)}</td><td class="n">${(d.min/60).toFixed(1).replace('.',',')}</td>`
+          +`<td class="n">${nn(d.cxh)}</td><td class="n">${nn(d.cxhPad)}</td><td class="n">${u2(d.uepCx)}</td>${d.julg?pctTd(d.pct,d.st):'<td class="n">—</td>'}`
+          +`<td>${selo(d.st)}${d.alterado?' <span class="uep-pad-alt" title="A UEP padrão de algum código do produto mudou neste dia (aba UEP_VERSOES)">PADRÃO ALTERADO</span>':''}`
+          +`${d.semBase?` <span class="mono" title="Hora com caixa de código sem UEP: o tempo dela não se reparte e ficou fora">${plural(d.semBase,'hora fora','horas fora')}</span>`:''}</td></tr>`).join('')
+        +'</tbody></table></td></tr>';
+    }
+    return r;
+  }).join('');
+  const notas=[];
+  if(H.soCurtos) notas.push(`${plural(H.soCurtos,'produto não chegou','produtos não chegaram')} a ${UEP_PAD_MIN_MIN/60} h em nenhum dia — fora`);
+  if(H.hSemBase) notas.push(`${plural(H.hSemBase,'hora ficou fora','horas ficaram fora')} por ter caixa de código sem UEP`);
+  if(H.cxSemHora) notas.push(`${fmtN(H.cxSemHora)} cx sem hora no apontamento — fora`);
+  if(H.prods.some(g=>g.antes)) notas.push('dia anterior à 1ª UEP registrada de um código usa a 1ª');
+  const reg=V&&V.registrado===false?'<div class="uep-nota">Nenhuma mudança de UEP registrada ainda: a padrão de todos os dias é o cadastro de hoje.</div>':'';
+  const div=V&&V.diverge>0?`<div class="uep-nota" style="color:var(--warn)">⚠ ${plural(V.diverge,'código está','códigos estão')} com a UEP do cadastro diferente da última versão da aba UEP_VERSOES — mudou sem registro. Confira na planilha.</div>`:'';
+  return `<div class="uep-card" style="overflow-x:auto"><table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th>ÚLTIMO DIA</th></tr></thead><tbody>${linhas}</tbody></table>`
+    +`<div class="uep-nota">Padrão = ritmo da meta (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h) com a UEP vigente em cada dia · faixa ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · hora com troca repartida pelo tempo padrão${notas.length?' · '+notas.join(' · '):''}</div>${reg}${div}</div>`;
+}
+
 function renderUep(){
   const el=document.getElementById('uep-bloco'); if(!el) return;
   const D=_uepAbaDados();
@@ -5028,13 +5229,33 @@ function renderUep(){
     }
   }
 
+  // 7 · PADRÃO × REALIZADO POR PRODUTO — UEP padrão vigente em cada dia.
+  const nPad=_uepPadN();
+  const botoesPad=`<span class="uep-per">${UEP_PAD_OPC.map(n=>`<button class="${n===nPad?'on':''}" onclick="_uepPadSet(${n})">${n} DIAS</button>`).join('')}</span>`;
+  if(UEP_PAD_TS && !UEP_PAD_VOO && Date.now()-UEP_PAD_TS>(UEP_PAD_FALHA?60000:UEP_PAD_TTL)) _uepPadCarregar();
+  let b7;
+  const padOk=UEP_PAD && UEP_PAD.n===nPad;
+  if(UEP_PAD_FALHA && !UEP_PAD_VOO){
+    const F=UEP_PAD_FALHA;
+    b7=`<div class="uep-card"><div class="uep-nota" style="margin-top:0;color:var(--warn)">${F.tipo==='sem-endpoint'
+        ? 'O Apps Script ainda não manda a UEP padrão por data — cole o ritmoprod_appscript.gs v5.24 e re-deploye.'
+        : (F.tipo==='erro' ? 'O Apps Script respondeu com erro: '+_rpEsc(F.erro||'sem detalhe')+'.'
+           : 'Não consegui ler a produção do período — o servidor não respondeu em 3 tentativas. Tento de novo sozinho em 1 min.')}
+      <button class="btn btn-ghost" style="padding:3px 10px;font-size:10px" onclick="_uepPadCarregar(true)">↻ TENTAR AGORA</button></div></div>`;
+  } else if(!padOk){
+    b7='<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo a produção por produto do período (até 1 min)…</div></div>';
+  } else {
+    let H=null; try{ H=_uepPadMontar(); }catch(e){ console.warn('[UEP] padrão:', e.message); }
+    b7=H?_uepPadHtml(H, UEP_PAD_SEL, UEP_PAD.uepVer):'<div class="uep-card"><div class="uep-nota" style="margin-top:0">Não consegui montar o histórico por produto.</div></div>';
+  }
+
   el.innerHTML=`<div class="uep-sec" style="margin-top:0"><b>1 · HOJE</b> ${_rpEsc(hojeStr())} · meta ${fmtN(meta)} UEP</div>`
     +alerta+kpis
     +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec" title="${_rpEsc(UEP_ORIGEM_T)}"><b>4 · ORIGEM DA UEP</b></div>${b5}</div></div>`
     +`<div class="uep-sec"><b>5 · PERÍODO</b> dias fechados ${botoes}</div>${b4}`
     +`<div class="uep-sec"><b>6 · PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
       <div class="tbl-wrap" id="ger-prox"><div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div></div>`
-    +'';
+    +`<div class="uep-sec" title="A UEP padrão de cada dia é a vigente nele (aba UEP_VERSOES); hoje fica fora. Toque num produto para ver o dia a dia."><b>7 · PADRÃO × REALIZADO POR PRODUTO</b> dias fechados ${botoesPad}</div>${b7}`;
   // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
   // redesenha só o SVG na largura certa.
   if(!box){ const nb=document.getElementById('uep-g-box'); if(nb){ const sv=nb.querySelector('svg'); if(sv) sv.outerHTML=_uepAbaSvg(horas, _svgLargura(nb)); } }
@@ -7308,6 +7529,72 @@ async function gravarUepCadastro(){
   try{ await _gravarUepCadastro(); }
   finally{ _uepGravando=false; _uepBotao(''); }
 }
+// ── TRAVA DO GRAVAR UEP (v7.133.0 / .gs v5.24, PPCP 16/10/2026: "não pode
+// alterar sozinha sem autorização") ────────────────────────────────────────
+// Antes o botão passava por cima de TODA UEP dos produtos do estudo — inclusive
+// a digitada à mão a partir de cronoanálise — e o confirm só dizia
+// "sobrescreve". Agora são três passos: (1) SIMULAR no servidor, que devolve o
+// antes → depois de cada código sem gravar nada; (2) o confirm diz o que muda
+// e (3) UEP que JÁ EXISTE (medida ou digitada) só é trocada com um SEGUNDO
+// "OK" explícito, com a lista na tela. Toda mudança vira versão na aba
+// UEP_VERSOES — dia passado continua sendo lido com a régua dele.
+// ⚠ A simulação é uma AÇÃO PRÓPRIA (simularUepCatalogo): no .gs antigo ela cai
+// no getDados e NÃO grava — um parâmetro `simular` seria ignorado lá e gravaria.
+async function _uepSimular(lista, cal){
+  const S={ novos:0, deEst:0, iguais:0, existentes:[], nExist:0, escritos:new Set(), estNovos:0, estMudam:0 };
+  for(let i=0;i<lista.length;i+=UEP_GRAVAR_LOTE){
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=simularUepCatalogo'
+      +'&vig='+encodeURIComponent(hojeStr())
+      +'&dados='+encodeURIComponent(JSON.stringify(lista.slice(i,i+UEP_GRAVAR_LOTE)));
+    const r=await jsonpEscrita(url);
+    if(!r || r.simulado!==true) return null;          // .gs anterior à v5.24
+    S.novos+=r.novos||0; S.deEst+=r.deEst||0; S.iguais+=r.iguais||0; S.nExist+=r.nExistentes||0;
+    (r.existentes||[]).forEach(x=>S.existentes.push(x)); (r.escritosCod||[]).forEach(c=>S.escritos.add(String(c)));
+  }
+  if(cal){
+    const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=simularUepCatalogo&estimar=1'
+      +'&vig='+encodeURIComponent(hojeStr())
+      +'&k='+encodeURIComponent(cal.k.toFixed(4))+'&tetoAnc='+encodeURIComponent(cal.tetoAnc.toFixed(2));
+    const r=await jsonpEscrita(url);
+    if(r && r.simulado===true){
+      // a estimativa roda DEPOIS da medida e não toca no que ela gravou
+      S.estNovos=(r.estNovosCod||[]).filter(c=>!S.escritos.has(String(c))).length;
+      S.estMudam=(r.estMudamCod||[]).filter(c=>!S.escritos.has(String(c))).length;
+    }
+  }
+  return S;
+}
+// Os dois textos da autorização (puro, testado). `sim` = _uepSimular.
+const UEP_TRAVA_LISTA = 15;
+function _uepTravaTxt(sim, ctx){
+  const u2=v=>Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const lin=[];
+  if(sim.novos) lin.push('• '+plural(sim.novos,'código sem UEP recebe','códigos sem UEP recebem')+' a UEP do estudo');
+  if(sim.deEst) lin.push('• '+plural(sim.deEst,'código com UEP ESTIMADA passa','códigos com UEP ESTIMADA passam')+' a ter a do estudo');
+  if(sim.iguais) lin.push('• '+plural(sim.iguais,'código já está','códigos já estão')+' com esse valor — nada muda');
+  if(sim.nExist) lin.push('• '+plural(sim.nExist,'código JÁ TEM','códigos JÁ TÊM')+' UEP (medida ou digitada) e mudaria — você decide no próximo passo');
+  if(ctx.cal) lin.push('• Resto do cadastro (fator '+u2(ctx.cal.k)+'): '
+    +(sim.estNovos||sim.estMudam
+      ? [sim.estNovos?plural(sim.estNovos,'sem UEP recebe','sem UEP recebem')+' a ESTIMADA':'', sim.estMudam?plural(sim.estMudam,'estimada é re-estimada','estimadas são re-estimadas'):''].filter(Boolean).join('; ')
+      : 'nenhuma estimativa muda'));
+  const t1='GRAVAR UEP — confira antes de autorizar\n\n'
+    +'Estudo de '+ctx.de+' a '+ctx.ate+' · média '+ctx.modo+'\n'
+    +'Âncora (1,00): '+ctx.ancora+'\n'
+    +(ctx.nProv?ctx.nProv+' UEP provisória(s) (menos de '+UEP_MIN_DIAS+' dias rodados) vão junto.\n':'')
+    +'\nO QUE MUDA NO CADASTRO (vigência '+ctx.vig+'):\n'+(lin.length?lin.join('\n'):'• nada')+'\n\n'
+    +'A UEP de hoje é a padrão: toda mudança fica registrada na aba UEP_VERSOES, e o dia passado continua lido com a UEP que valia nele. Dia já fechado no HISTÓRICO não muda.\n\n'
+    +'OK = continuar · Cancelar = não gravar nada';
+  let t2=null;
+  if(sim.nExist){
+    const ex=sim.existentes.slice().sort((a,b)=>Math.abs(b[2]/b[1]-1)-Math.abs(a[2]/a[1]-1));
+    t2=plural(sim.nExist,'código JÁ TEM','códigos JÁ TÊM')+' UEP padrão e mudaria:\n\n'
+      +ex.slice(0,UEP_TRAVA_LISTA).map(x=>x[0]+'  '+u2(x[1])+' → '+u2(x[2])+'  ('+(x[2]>=x[1]?'+':'−')+fmtP(Math.abs(x[2]/x[1]-1)*100)+')'+(x[3]?'  · vig. '+x[3]:'')).join('\n')
+      +(sim.nExist>UEP_TRAVA_LISTA?'\n… e mais '+(sim.nExist-UEP_TRAVA_LISTA):'')+'\n\n'
+      +'OK = SUBSTITUIR estas '+sim.nExist+' (a anterior fica guardada na aba UEP_VERSOES)\n'
+      +'Cancelar = MANTER as atuais e gravar só o resto';
+  }
+  return { t1, t2, nada: !sim.novos && !sim.deEst && !sim.nExist && !sim.estNovos && !sim.estMudam };
+}
 async function _gravarUepCadastro(){
   if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script configurada — nada a gravar.'); return; }
   _uepBotao('⏳ BUSCANDO O PERÍODO… (até 1 min)');
@@ -7320,31 +7607,37 @@ async function _gravarUepCadastro(){
   const de=dGet('ph-de'), ate=dGet('ph-ate');
   const nProv=ps.filter(p=>p.provisoria).length;
   const cal=_uepCalibEsteira(e);
-  const u2c=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  _uepBotao('⏳ AGUARDANDO CONFIRMAÇÃO…');
-  if(!confirm('Gravar a UEP por caixa de '+ps.length+' produto(s) na coluna UEP da PRODUTO_CODIGO?\n\n'
-    +'Âncora (1,00): '+e.volume.modelo+' '+e.volume.nome+'\n'
-    +'Estudo de '+de+' a '+ate+' · média '+(_phMediaModo()==='completa'?'COMPLETA':'APARADA')+'\n'
-    +(nProv?nProv+' UEP provisória(s) (menos de '+UEP_MIN_DIAS+' dias rodados) vão junto.\n':'')
-    +'Vigência: '+hojeStr()+'\n\n'
-    +'Sobrescreve a UEP desses produtos em todos os códigos deles.\n\n'
-    +(cal ? 'DEMAIS PRODUTOS DO CADASTRO (não rodaram no período): UEP ESTIMADA pela medida da caixa na esteira, '
-        +'calibrada em '+cal.n+' produto(s) medido(s)'+(cal.provisoria?' (inclui provisórios)':'')+' — fator '+u2c(cal.k)
-        +' (faixa '+u2c(cal.min)+' a '+u2c(cal.max)+'). Só preenche UEP vazia ou já estimada (vigência "EST"); UEP medida ou digitada fica.'
-      : 'DEMAIS PRODUTOS DO CADASTRO: sem estimativa — faltam '+UEP_CALIB_MIN+' produtos medidos com teto da esteira para calibrar. Ficam como estão.'))) return;
   const lista=ps.map(p=>[p.modelo, p.nome, Math.round(p.uepVol*100)/100]);
+  // 1 · SIMULAR — nada é gravado aqui.
+  _uepBotao('⏳ CONFERINDO O QUE MUDA…');
+  let sim;
+  try{ sim=await _uepSimular(lista, cal); }
+  catch(err){ alert('Não consegui conferir o que muda no cadastro: '+(err&&err.message||err)+'\nNada foi gravado. Tente de novo.'); return; }
+  if(!sim){ alert('O Apps Script ainda não conhece a conferência da UEP — cole o ritmoprod_appscript.gs v5.24 e re-deploye (Gerenciar implantações → Editar → Nova versão).\n\nNada foi gravado.'); return; }
+  const tx=_uepTravaTxt(sim, { de, ate, modo:_phMediaModo()==='completa'?'COMPLETA':'APARADA',
+    ancora:e.volume.modelo+' '+e.volume.nome, nProv, vig:hojeStr(), cal });
+  if(tx.nada){ alert('Nada a gravar: o cadastro já está com a UEP deste estudo.'); return; }
+  // 2 · AUTORIZAR — e a UEP que já existe só troca com um segundo OK.
+  _uepBotao('⏳ AGUARDANDO AUTORIZAÇÃO…');
+  if(!confirm(tx.t1)) return;
+  const substituir = tx.t2 ? confirm(tx.t2) : false;
+  if(!substituir && !sim.novos && !sim.deEst && !sim.estNovos && !sim.estMudam){ alert('Nada gravado: as UEP existentes foram mantidas e não sobrou outra mudança.'); return; }
+  // 3 · GRAVAR
   _uepBotao('⏳ GRAVANDO NO CADASTRO…');
-  let gravados=0, produtos=0, volumes=0, volSemMed=0; const semCodigo=[];
+  let gravados=0, produtos=0, volumes=0, volSemMed=0, protegidos=0, substituidos=0, versoes=0; const semCodigo=[], verErros=[];
   try{
     for(let i=0;i<lista.length;i+=UEP_GRAVAR_LOTE){
       const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setUepCatalogo'
         +'&vig='+encodeURIComponent(hojeStr())
+        +'&substituir='+(substituir?'1':'0')
         +'&dados='+encodeURIComponent(JSON.stringify(lista.slice(i,i+UEP_GRAVAR_LOTE)));
       const r=await jsonpEscrita(url);
       // .gs antigo não conhece a ação e cai no getDados: responde sem `gravados`.
-      if(!r || r.gravados===undefined){ alert('O Apps Script não conhece a gravação da UEP — cole o ritmoprod_appscript.gs v5.11 e re-deploye (Gerenciar implantações → Editar → Nova versão).'); return; }
+      if(!r || r.gravados===undefined){ alert('O Apps Script não conhece a gravação da UEP — cole o ritmoprod_appscript.gs v5.24 e re-deploye (Gerenciar implantações → Editar → Nova versão).'); return; }
       gravados+=r.gravados||0; produtos+=r.produtos||0; (r.semCodigo||[]).forEach(k=>semCodigo.push(k));
       volumes+=r.volumes||0; volSemMed+=r.volumesSemMedida||0;
+      protegidos+=r.protegidos||0; substituidos+=r.substituidos||0; versoes+=r.versoes||0;
+      if(r.versaoErro) verErros.push(r.versaoErro);
     }
   }catch(err){
     alert('A gravação não terminou: '+(err&&err.message||err)+'\nPode tocar de novo — regravar é seguro.'+(gravados?'\n('+gravados+' código(s) já tinham sido gravados.)':''));
@@ -7353,19 +7646,21 @@ async function _gravarUepCadastro(){
   // Estimativa do resto do cadastro: DEPOIS da medida (ela só preenche o que
   // ficou vazio). Falhou? A medida já está gravada — o aviso diz isso.
   let est=null, estErro='';
-  if(cal){
+  if(cal && (sim.estNovos || sim.estMudam)){
     _uepBotao('⏳ ESTIMANDO O RESTO DO CADASTRO…');
     try{
       const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=setUepCatalogo&estimar=1'
         +'&vig='+encodeURIComponent(hojeStr())
         +'&k='+encodeURIComponent(cal.k.toFixed(4))+'&tetoAnc='+encodeURIComponent(cal.tetoAnc.toFixed(2));
       const r=await jsonpEscrita(url);
-      if(r && r.estimados!==undefined) est=r;
+      if(r && r.estimados!==undefined){ est=r; versoes+=r.versoes||0; if(r.versaoErro) verErros.push(r.versaoErro); }
       else estErro=(r&&r.erro&&r.erro!=='nenhum produto enviado')?'o servidor respondeu: '+r.erro
-        :'o Apps Script ainda não conhece a estimativa — cole o ritmoprod_appscript.gs v5.18 e re-deploye';
+        :'o Apps Script ainda não conhece a estimativa — cole o ritmoprod_appscript.gs v5.24 e re-deploye';
     }catch(err){ estErro=(err&&err.message)||String(err); }
   }
-  alert('UEP gravada: '+produtos+' produto(s), '+gravados+' código(s) na PRODUTO_CODIGO.'
+  alert('UEP gravada: '+gravados+' código(s) de '+produtos+' produto(s) na PRODUTO_CODIGO.'
+    +(substituidos?'\n'+substituidos+' UEP existente(s) SUBSTITUÍDA(s), com autorização.':'')
+    +(protegidos?'\n'+protegidos+' UEP existente(s) MANTIDA(s) — não foram tocadas.':'')
     +(est?'\n\nESTIMADA pela esteira: '+est.estimados+' código(s) (vigência com "EST").'
         +(est.semMedida?'\n'+est.semMedida+' código(s) sem MEDIDA DA CAIXA ficaram sem UEP: '+(est.semMedidaCod||[]).slice(0,8).join(' · ')+(est.semMedida>8?' …':''):''):'')
     +(estErro?'\n\nA estimativa do resto do cadastro NÃO foi gravada: '+estErro+'. A UEP medida acima está gravada.':'')
@@ -7374,7 +7669,11 @@ async function _gravarUepCadastro(){
     +(volumes?'\n'+volumes+' produto(s) de 2+ volumes: UEP repartida entre os volumes pela medida da caixa (o total do produto não muda).':'')
     +(volSemMed?'\n'+volSemMed+' produto(s) de 2+ volumes ficaram com a média — falta MEDIDA DA CAIXA em algum volume.':'')
     +(semCodigo.length?'\n\n'+semCodigo.length+' produto(s) sem código correspondente no cadastro: '+semCodigo.slice(0,5).join(' · ')+(semCodigo.length>5?' …':''):'')
+    +'\n\n'+(verErros.length
+      ? '⚠ A MUDANÇA NÃO FICOU REGISTRADA na aba UEP_VERSOES ('+verErros[0]+'). O cadastro foi gravado; anote o que mudou.'
+      : (versoes?versoes+' mudança(s) registrada(s) na aba UEP_VERSOES.':'Nenhum valor mudou — nada a registrar.'))
     +'\n\nO card UEP DO DIA passa a usar esta régua na próxima leitura (até ~1 min).');
+  _uepPadInvalidar();
   try{ await lerPontosDia(); renderGerencial(); }catch(_){}
 }
 
