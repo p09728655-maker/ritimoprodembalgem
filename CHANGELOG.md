@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.34.0 · `.gs` v5.25 — 16/10/2026
+
+- **EXCLUIR LANÇAMENTO no app.** Toque numa hora já fechada que tenha
+  lançamento (✎), ou em **✎ CORRIGIR UM LANÇAMENTO** no modal da hora atual. A
+  tela lista o que foi lançado na hora, com o produto de cada um. EXCLUIR pede
+  confirmação e tira o lançamento das três abas onde ele mora: hora a hora,
+  registro de produto e histórico por família. A programação se recalcula na
+  hora (o lote volta a ter essas caixas em aberto). Vale para qualquer hora de
+  hoje, até o dia entrar no HISTÓRICO. Cada exclusão fica registrada na aba
+  nova **LANC_EXCLUIDOS**.
+- **Aviso de lançamento repetido.** Mandar o mesmo produto, quantidade e hora
+  em até 10 min pelo mesmo aparelho pergunta antes: *"Às 10:42 este aparelho
+  já mandou 60 cx… para esta hora"*.
+- Motivo: em 16/10 um 60 de LIVREIRO ENCANTO entrou duas vezes na hora 10:00
+  (279 em vez de 219). Corrigido na planilha no mesmo dia.
+- **Atenção:** a hora corrigida mostra o total novo, e o registro de produto
+  perde a linha excluída. UEP, pontos e baixa de lote do dia acompanham.
+- ⚠ **re-deploy** do `.gs` v5.25. Antes dele, a correção avisa que o Apps
+  Script ainda não tem a exclusão; o aviso de repetido já funciona.
+
+---
+
 ## v7.135.0 — 16/10/2026
 
 - **GRAVAR UEP mostra o EFEITO NA UEP DA LINHA antes de autorizar.** O 1º

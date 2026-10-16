@@ -1,5 +1,16 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.25 — EXCLUIR LANÇAMENTO PELO APP
+//               PPCP, 16/10/2026: "no lançamento eu preciso ter como excluir
+//               um lançamento", "porque envolve o produto que ele estava
+//               fazendo". Um lançamento grava em TRÊS abas (coluna LANÇ da
+//               HORA_A_HORA, linha da PRODUCAO_PRODUTO e da
+//               HISTORICO_MEDIA_FAMILIA) — apagar só a hora deixava o produto
+//               baixando lote e somando UEP. getLancamentosHora lista a hora
+//               com o produto de cada lançamento; excluirLancamento tira das
+//               três, registra na aba LANC_EXCLUIDOS, recalcula a programação
+//               e é idempotente (exclId: repetir por timeout não apaga duas
+//               vezes). Só dia que ainda não está no HISTORICO.
 // Versão: 5.24 — UEP PADRÃO VERSIONADA E TRAVA NO GRAVAR UEP
 //               PPCP, 16/10/2026: "não pode alterar sozinha sem autorização"
 //               e "a uep que está hoje tornar padrão". (1) Aba UEP_VERSOES,
@@ -985,7 +996,8 @@ const CACHE_TTL_LEITURA = {
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
-  'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo'];
+  'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
+  'excluirLancamento'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1145,6 +1157,8 @@ function doGet(e) {
     else if (act === 'endParada')     result = endParada(p);
     else if (act === 'getTiposParada')result = getTiposParada();
     else if (act === 'saveRealizado') result = saveRealizado(p);
+    else if (act === 'getLancamentosHora') result = getLancamentosHora(p);   // v5.25
+    else if (act === 'excluirLancamento')  result = excluirLancamento(p);    // v5.25
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else if (act === 'getHoraDia')    result = getHoraDia(p);
@@ -1571,6 +1585,232 @@ function registrarHistoricoFamilia(codigo, horaInicio, caixas, desc, pontos, pes
   const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const cx   = Number(caixas) || 0;
   sh.appendRow([hoje, horaInicio, fam, desc || '', cx, Number(pesoKg) || 0, Number(pontos) || 0, cx]);
+}
+
+
+// ════════════════════════════════════════════════════════
+// EXCLUIR LANÇAMENTO (v5.25)
+// ════════════════════════════════════════════════════════
+// PPCP, 16/10/2026: um 60 de LIVREIRO ENCANTO entrou DUAS vezes na hora 10:00
+// (o operador relançou com o modal reaberto — o lancId novo não segura) e o
+// app não tinha como tirar. Um lançamento mora em TRÊS abas: o número na
+// coluna LANÇ da HORA_A_HORA, a linha da PRODUCAO_PRODUTO (de onde saem UEP,
+// pontos e a baixa dos lotes pelo FIFO) e a da HISTORICO_MEDIA_FAMILIA.
+// Apagar só a hora deixava o produto contado.
+//
+// A HORA_A_HORA só guarda o NÚMERO; o produto mora no log, e nenhum id liga os
+// dois. Nem precisa: na hora, células de mesmo valor são intercambiáveis (o
+// total é a soma), e no log linhas de mesma data, hora, código e caixas também.
+// A exclusão casa por VALOR — limpa a ÚLTIMA célula da hora com aquelas caixas
+// e apaga a ÚLTIMA linha do log com aquele produto e caixas.
+const SHEET_LANC_EXCL = 'LANC_EXCLUIDOS';
+const LANC_EXCL_HDR = ['EXCLUIDO_EM', 'DATA', 'HORA', 'CAIXAS', 'CODIGO', 'DESCRICAO', 'ORIGEM', 'TOTAL_HORA_DEPOIS'];
+
+// "HH:MM" de qualquer rótulo de hora ("10:00", "10:00-11:00", "HE 17:00", Date
+// do Sheets). O log grava o INÍCIO da hora; a HORA_A_HORA, o rótulo inteiro.
+function _lancHHMM(v) {
+  const m = formatHoraCel(v).match(/(\d{1,2}):(\d{2})/);
+  return m ? ('0' + Number(m[1])).slice(-2) + ':' + m[2] : '';
+}
+
+// Conta pura: casa os lançamentos da hora (células LANÇ, na ordem) com as
+// linhas do log da mesma hora (na ordem). Cada célula pega a 1ª linha livre de
+// mesma quantidade. Célula sem linha = lançamento sem produto. Linha sem
+// célula = SÓ NO LOG (alguém limpou a hora à mão): ela ainda baixa lote e soma
+// UEP, então aparece para poder ser excluída também.
+function _casarLancamentos(lotes, logs) {
+  const usado = {};
+  const lancs = lotes.map(function (l) {
+    for (let j = 0; j < logs.length; j++) {
+      if (!usado[j] && Number(logs[j].cx) === Number(l.cx)) {
+        usado[j] = 1;
+        return { cx: Number(l.cx), codigo: logs[j].codigo, desc: logs[j].desc };
+      }
+    }
+    return { cx: Number(l.cx), codigo: '', desc: '' };
+  });
+  const soLog = logs.filter(function (_, j) { return !usado[j]; })
+    .map(function (x) { return { cx: Number(x.cx), codigo: x.codigo, desc: x.desc }; });
+  return { lancs: lancs, soLog: soLog };
+}
+
+// Dia já no HISTORICO = fechado (FECHAR DIA ou o arquivamento automático). O
+// retrato do dia está gravado e a exclusão pelo app não o refaria: a correção
+// é na planilha + FECHAR DIA de novo (o saveDay é upsert por data).
+function _lancDiaFechado(ss, hoje) {
+  const sh = ss.getSheetByName(SHEET_HIST);
+  if (!sh || sh.getLastRow() < 2) return false;
+  const v = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < v.length; i++) if (fmtDataBR(v[i][0]) === hoje) return true;
+  return false;
+}
+
+// A linha da hora na HORA_A_HORA (leitura DIRETA — serve à escrita também).
+function _lancLinhaDaHora(ss, horario) {
+  const sh = ss.getSheetByName(SHEET_DADOS);
+  if (!sh) return null;
+  const data = sh.getDataRange().getValues();
+  let hIdx = -1;
+  for (let i = 0; i < data.length; i++) {
+    const r = data[i].map(function (c) { return String(c).trim().toUpperCase(); });
+    if (r.indexOf('HORA') >= 0 && r.indexOf('REALIZADO') >= 0) { hIdx = i; break; }
+  }
+  if (hIdx < 0) return null;
+  const hdr = data[hIdx].map(function (c) { return String(c).trim().toUpperCase(); });
+  const iH = hdr.indexOf('HORA'), iR = hdr.indexOf('REALIZADO');
+  const iLotes = _colunasDeLote(hdr, iR);
+  const alvo = String(horario || '').trim();
+  for (let i = hIdx + 1; i < data.length; i++) {
+    const cellHora = String(data[i][iH]).trim();
+    const inicio = cellHora.split('-')[0].trim();
+    if (cellHora && (cellHora === alvo || inicio === alvo)) {
+      const lotes = [];
+      iLotes.forEach(function (c) {
+        const v = data[i][c];
+        if (v !== '' && v !== null && v !== undefined && Number(v) > 0) lotes.push({ col: c, cx: Number(v) });
+      });
+      return { sh: sh, linha: i + 1, label: cellHora, inicio: inicio, lotes: lotes };
+    }
+  }
+  return null;
+}
+
+// Linhas do log de HOJE nesta hora, na ordem da aba. `values` = cabeçalho +
+// linhas; `i` é o índice nele (na leitura direta, a linha da aba é i + 1).
+function _lancLogDaHora(values, hoje, hh) {
+  if (!values || values.length < 2) return [];
+  const hdr = values[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  const col = function (n, d) { const k = hdr.indexOf(n); return k >= 0 ? k : d; };
+  const iData = col('DATA', 0), iHora = col('HORA', 1), iCod = col('CODIGO', 2), iDesc = col('DESCRICAO', 3), iCx = col('CAIXAS', 4);
+  const out = [];
+  for (let i = 1; i < values.length; i++) {
+    const r = values[i];
+    if (fmtDataBR(r[iData]) !== hoje || _lancHHMM(r[iHora]) !== hh) continue;
+    const cx = Number(r[iCx]) || 0, cod = String(r[iCod] || '').trim();
+    if (!cod || !cx) continue;
+    out.push({ i: i, codigo: cod, desc: String(r[iDesc] || ''), cx: cx });
+  }
+  return out;
+}
+
+// Leitura: os lançamentos de UMA hora de hoje, com o produto de cada um. O app
+// chama ao abrir a correção — o getDados (a cada 3 min) não paga essa leitura.
+function getLancamentosHora(p) {
+  p = p || {};
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const H = _lancLinhaDaHora(ss, p.horario);
+  if (!H) return { ok: false, erro: 'Hora não encontrada: ' + (p.horario || '') };
+  const shLog = ss.getSheetByName(SHEET_PROD_LOG);
+  const n = dataParaNum(hoje);
+  const logs = shLog && shLog.getLastRow() >= 2
+    ? _lancLogDaHora(_valoresPorData(shLog, 'DATA', 0, dataParaNum, n, n), hoje, _lancHHMM(H.inicio)) : [];
+  const c = _casarLancamentos(H.lotes, logs);
+  const comCor = function (x) { x.cor = x.codigo ? (produtoDoCodigo(x.codigo).cor || '') : ''; return x; };
+  return { ok: true, horario: H.inicio, label: H.label,
+           total: H.lotes.reduce(function (s, l) { return s + l.cx; }, 0),
+           lancs: c.lancs.map(comCor), soLog: c.soLog.map(comCor),
+           fechado: _lancDiaFechado(ss, hoje) };
+}
+
+// Escrita: tira UM lançamento das três abas. `soLog=1` apaga só a linha do log
+// (a que já não tem célula na hora). Idempotente pelo exclId: a resposta que
+// se perde num timeout não faz a 2ª tentativa apagar o OUTRO 60 da hora.
+function excluirLancamento(p) {
+  p = p || {};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const exclId = String(p.exclId || '').trim();
+    const cache  = exclId ? CacheService.getScriptCache() : null;
+    if (cache) {
+      const prev = cache.get('excl_' + exclId);
+      if (prev) { const r = JSON.parse(prev); r.duplicado = true; return r; }
+    }
+    const r = _excluirLancamentoCore(p);
+    if (cache && r && r.ok) cache.put('excl_' + exclId, JSON.stringify(r), 7200);
+    if (r && r.ok) {
+      // O FIFO refaz do zero: lote que só fechava por causa do lançamento
+      // excluído volta a ter saldo (e volta da CONCLUIDA, se foi arquivado).
+      try { _invalidarValores(); sincronizarPlanilhaPosLancamento(); }
+      catch (e) { Logger.log('sincronizarPlanilha após exclusão falhou (ignorado): ' + e.message); }
+    }
+    return r;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _excluirLancamentoCore(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  if (_lancDiaFechado(ss, hoje)) {
+    return { ok: false, erro: 'dia-fechado',
+             msg: 'O dia de hoje já está fechado no HISTÓRICO. Corrija na planilha e use FECHAR DIA de novo.' };
+  }
+  const cx = Number(p.caixas) || 0;
+  const cod = String(p.produto || '').trim();
+  const soLog = String(p.soLog || '') === '1';
+  if (!(cx > 0)) return { ok: false, erro: 'Quantidade inválida.' };
+  if (soLog && !cod) return { ok: false, erro: 'Sem produto para excluir do registro.' };
+  const H = _lancLinhaDaHora(ss, p.horario);
+  if (!H) return { ok: false, erro: 'Hora não encontrada: ' + (p.horario || '') };
+  const hh = _lancHHMM(H.inicio);
+
+  // Tudo é CONFERIDO antes de qualquer gravação: achou só metade, não mexe em nada.
+  let col = -1;
+  if (!soLog) {
+    for (let k = H.lotes.length - 1; k >= 0; k--) if (H.lotes[k].cx === cx) { col = H.lotes[k].col; break; }
+    if (col < 0) return { ok: false, erro: 'nao-encontrado',
+                          msg: 'Não achei ' + cx + ' cx na hora ' + H.label + '. Ele pode já ter sido excluído — atualize a tela.' };
+  }
+  const shLog = ss.getSheetByName(SHEET_PROD_LOG);
+  let linhaLog = -1, desc = '';
+  if (cod) {
+    const logs = _lancLogDaHora(shLog ? shLog.getDataRange().getValues() : [], hoje, hh);
+    for (let j = logs.length - 1; j >= 0; j--) {
+      if (codKey(logs[j].codigo) === codKey(cod) && logs[j].cx === cx) { linhaLog = logs[j].i + 1; desc = logs[j].desc; break; }
+    }
+    if (linhaLog < 0) return { ok: false, erro: 'nao-encontrado',
+                               msg: 'Não achei ' + cx + ' cx de ' + cod + ' no registro de produto da hora ' + H.label + '. Nada foi excluído.' };
+  }
+
+  if (col >= 0) H.sh.getRange(H.linha, col + 1).setValue('');
+  if (linhaLog > 0) shLog.deleteRow(linhaLog);
+  if (cod) {
+    try { _lancTiraFamilia(ss, hoje, hh, cod, cx); }
+    catch (e) { Logger.log('excluirLancamento: HISTORICO_MEDIA_FAMILIA não ajustada: ' + e.message); }
+  }
+  const total = H.lotes.reduce(function (s, l) { return s + l.cx; }, 0) - (col >= 0 ? cx : 0);
+  try {
+    _lancRegistrarExclusao(ss, [Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss'), hoje, H.label, cx,
+                                cod, desc, String(p.operador || 'Mobile'), total]);
+  } catch (e) { Logger.log('excluirLancamento: registro em ' + SHEET_LANC_EXCL + ' falhou: ' + e.message); }
+  return { ok: true, horario: H.inicio, label: H.label, caixas: cx, produto: cod, soLog: soLog, totalHora: total };
+}
+
+// A linha da HISTORICO_MEDIA_FAMILIA do mesmo lançamento (a última que casa).
+// Ela é só análise: não achar não desfaz a exclusão.
+function _lancTiraFamilia(ss, hoje, hh, cod, cx) {
+  const sh = ss.getSheetByName(SHEET_HIST_FAM);
+  if (!sh || sh.getLastRow() < 2) return false;
+  const v = sh.getDataRange().getValues();
+  const fam = codKey(cod).slice(0, 6);
+  for (let i = v.length - 1; i >= 1; i--) {
+    if (fmtDataBR(v[i][0]) === hoje && _lancHHMM(v[i][1]) === hh &&
+        codKey(v[i][2]) === fam && Number(v[i][4]) === cx) { sh.deleteRow(i + 1); return true; }
+  }
+  return false;
+}
+
+function _lancRegistrarExclusao(ss, linha) {
+  let sh = ss.getSheetByName(SHEET_LANC_EXCL);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_LANC_EXCL);
+    sh.appendRow(LANC_EXCL_HDR);
+    sh.setFrozenRows(1);
+  }
+  sh.appendRow(linha);
 }
 
 

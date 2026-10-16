@@ -26,6 +26,10 @@ via Google Apps Script (JSONP).
   função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
+- `exclusao.test.js` — EXCLUIR LANÇAMENTO: `getLancamentosHora` e
+  `excluirLancamento` rodando o `.gs` inteiro numa planilha de mentira (as três
+  abas, o tudo-ou-nada, o exclId, o dia fechado) e o aviso de lançamento
+  repetido, a lista e a confirmação do celular: `node exclusao.test.js`.
 - `tela-e.test.js` — Tela E da TV (programação do dia): ordem, situação, corte
   de linhas, entrada no ciclo, config, e a cor/`atrasoDesde` do
   `calcularProgramacao` real: `node tela-e.test.js`.
@@ -94,8 +98,10 @@ via Google Apps Script (JSONP).
   `AINDA ACEITA` (quando está sem valor) e a linha *"aceita lançamento até
   HH:MM"*. Ela **não** ganha o destaque de linha `andamento` — esse é só da
   hora corrente, senão duas linhas acesas confundiriam qual é a hora de agora.
-- **O que continua como era:** hora mais antiga fica bloqueada (corrigir o
-  passado é na planilha, coluna de LOTE da linha — o `getDados` soma sozinho);
+- **O que continua como era:** hora mais antiga fica bloqueada para LANÇAR
+  (somar caixa no passado é na planilha, coluna de LOTE da linha — o `getDados`
+  soma sozinho). **EXCLUIR** um lançamento errado vale para qualquer hora de
+  hoje desde a v1.34.0 — ver *Excluir lançamento pelo app*;
   o **bipe** (`abrirLancSlotAtivo`) segue abrindo só a hora corrente — a
   tolerância é para o toque consciente na linha, não para atribuição
   automática, que erraria justamente na virada da hora.
@@ -108,6 +114,60 @@ via Google Apps Script (JSONP).
   upsert por data e refaz o retrato).
 - Nada no `.gs`: a regra é só de tela (o `saveRealizado` sempre aceitou
   qualquer slot existente da `HORA_A_HORA`).
+
+## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
+- PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas
+  vezes, é um só"* → *"no lançamento eu preciso ter como excluir um
+  lançamento"*, *"porque envolve o produto que ele estava fazendo"*. Na
+  planilha: 501136004 LIVREIRO ENCANTO 60 + 60 na hora 10:00 (279 em vez de
+  219). Corrigido à mão no mesmo dia (célula G10, PRODUCAO_PRODUTO e
+  HISTORICO_MEDIA_FAMILIA). Há outro caso igual em 13/10 15:00 (501094001,
+  60 + 60) que não foi conferido.
+- **Um lançamento mora em TRÊS abas**: o número na coluna LANÇ da
+  `HORA_A_HORA`, a linha da `PRODUCAO_PRODUTO` (UEP, pontos e a baixa dos
+  lotes pelo FIFO) e a da `HISTORICO_MEDIA_FAMILIA`. Apagar só a hora deixa o
+  produto contado — é por isso que a exclusão é do backend, não da planilha.
+- **Casa por VALOR, sem id.** A `HORA_A_HORA` só guarda o número e nada liga
+  a célula à linha do log. Nem precisa: células de mesmo valor na hora são
+  intercambiáveis (o total é a soma), e linhas do log de mesma data, hora,
+  código e caixas também. `excluirLancamento` limpa a ÚLTIMA célula da hora com
+  aquelas caixas e apaga a ÚLTIMA linha do log com aquele produto e caixas.
+  - **Tudo ou nada**: confere célula E linha do log antes de gravar. Achou só
+    metade → não mexe em nada e diz o que não achou.
+  - **Idempotente pelo `exclId`** (cache 2 h, mesmo esquema do `lancId`): a
+    retentativa por timeout NÃO apaga o OUTRO 60 da hora.
+  - Depois: `_invalidarValores()` + `sincronizarPlanilhaPosLancamento()` — o
+    FIFO refaz do zero, e lote que fechava só por causa do lançamento volta a
+    ter saldo (e volta da CONCLUIDA, pelo `_desarquivar`).
+  - Registro em **`LANC_EXCLUIDOS`** (criada na 1ª exclusão): quando, data,
+    hora, caixas, código, descrição, origem e o total da hora depois.
+  - A `HISTORICO_MEDIA_FAMILIA` é análise: não achar a linha lá não desfaz a
+    exclusão (loga).
+- **`getLancamentosHora`** lista a hora com o produto de cada lançamento
+  (`_casarLancamentos`, conta pura: cada célula pega a 1ª linha livre do log de
+  mesma quantidade). Célula sem linha = **sem produto**; linha sem célula =
+  **SÓ NO REGISTRO DE PRODUTO** (alguém limpou a hora à mão — ainda baixa lote
+  e soma UEP), excluível com `soLog=1`. É lida **ao abrir a correção**: o
+  `getDados` (a cada 3 min) não paga essa leitura. Sem cache de leitura.
+- **Decisões do PPCP:** qualquer hora de HOJE, enquanto o dia não está no
+  `HISTORICO` (`_lancDiaFechado`: FECHAR DIA ou arquivamento automático —
+  depois disso, planilha + FECHAR DIA de novo); o **operador** exclui, com
+  confirmação. ⚠ O REABRIR do desktop é só local: com o dia no HISTORICO a
+  exclusão continua bloqueada.
+- **Celular:** hora fechada COM lançamento fica tocável (✎) e abre a
+  correção; a hora atual tem **✎ CORRIGIR UM LANÇAMENTO** no modal. A
+  confirmação diz produto, caixas e como a hora fica, com **VOLTAR** em
+  destaque à direita (`seguro:'cancelar'`). Sem resposta ≠ não excluiu: relê a
+  hora e decide pelo que ela mostra (`_corrConta`).
+- **AVISO DE LANÇAMENTO REPETIDO** (`lancRepetido`, `LANC_REPETIDO_MIN`=10):
+  o `lancId` só protege a retentativa DENTRO do mesmo modal — o 60 de 16/10
+  entrou de novo com o modal reaberto. O aparelho guarda o que MANDOU
+  (`rp_lanc_rec`, gravado antes da resposta: timeout não prova que não gravou)
+  e pergunta antes de mandar o mesmo produto, quantidade e hora. NÃO, JÁ FOI
+  fecha o modal. Só o mesmo aparelho: acusar o lançamento de outro seria
+  barulho.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, a correção diz que o
+  Apps Script ainda não tem a exclusão; o aviso de repetido já funciona.
 
 ## Caixas em HORA NORMAL × HORA EXTRA
 - **A JORNADA NORMAL É 07:00–17:00. Fora dela, é hora extra** (PPCP,
@@ -398,8 +458,8 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje dez, com o `tela-e.test.js`, o `programacao.test.js` e o
-  `uep-padrao.test.js`) antes de publicar.
+  sete (hoje onze, com o `tela-e.test.js`, o `programacao.test.js`, o
+  `uep-padrao.test.js` e o `exclusao.test.js`) antes de publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,

@@ -364,6 +364,21 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .modal-slot-acum .un{font-size:10px;color:var(--txt2);font-weight:400}
 .modal-slot-lotes{font-family:var(--font-d);font-size:11px;color:var(--acc);letter-spacing:.5px;margin-top:8px;line-height:1.4;word-break:break-word}
 .modal-slot-lotes .lbl{display:block;color:var(--txt2);font-size:9px;letter-spacing:1px;margin-bottom:2px}
+/* CORRIGIR LANÇAMENTO (v1.34.0): a lista da hora com o produto de cada um. O
+   EXCLUIR é contorno vermelho, não botão cheio — o destaque da tela é FECHAR,
+   e excluir sempre pede confirmação. Alvo de 44px: luva e pressa. */
+.corr-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px}
+.corr-cx{font-family:var(--font-h);font-size:20px;font-weight:700;min-width:70px;white-space:nowrap}
+.corr-cx .un{font-size:10px;color:var(--txt2);font-weight:400}
+.corr-prod{flex:1;min-width:0}
+.corr-prod .prod-search-desc{margin-top:2px}
+.corr-btn{min-height:44px;padding:0 14px;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;flex-shrink:0}
+.corr-btn:disabled{opacity:.4;cursor:default}
+.corr-sub{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);margin-top:6px;line-height:1.5}
+.corr-aviso{font-family:var(--font-b);font-size:13px;color:var(--warn);line-height:1.5}
+.corr-abrir{display:block;margin-top:10px;min-height:40px;padding:0 12px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px;cursor:pointer}
+.slot-item.disabled.corr{cursor:pointer}
+.slot-corr{color:var(--txt2);font-size:15px;flex-shrink:0}
 .inp-grp{display:flex;flex-direction:column;gap:8px}
 .inp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
 .inp-num{
@@ -814,6 +829,21 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   </div>
 </div>
 
+<!-- ═══ MODAL CORRIGIR LANÇAMENTO (v1.34.0) ═══ -->
+<div class="modal-over" id="modal-corr">
+  <div class="modal-sheet">
+    <div class="modal-slot-info">
+      <div class="modal-slot-hora" id="mc-hora">--:-- – --:--</div>
+      <div class="modal-slot-nome">CORRIGIR LANÇAMENTO</div>
+      <div class="modal-slot-meta">Toque EXCLUIR no lançamento errado.</div>
+    </div>
+    <div id="mc-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-salvar" onclick="fecharCorrecao()">FECHAR</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODAL PRODUTO (busca por código/descrição) ═══ -->
 <div class="modal-over" id="modal-produto">
   <div class="modal-sheet">
@@ -926,7 +956,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.33.0';
+const APP_VER   = '1.34.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2475,8 +2505,14 @@ function renderLancamentos(){
       nome='SEM LANÇAMENTO';
     }
     const bloqueado = !lc.lancavel; // hora atual ou recém-fechada (tolerância)
-    const disabled = bloqueado ? 'disabled' : '';
-    const onclick = bloqueado ? '' : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
+    // Hora fechada COM lançamento abre a CORREÇÃO (v1.34.0): lançar nela
+    // continua bloqueado, mas excluir o errado vale para qualquer hora de hoje
+    // — o 60 duplicado de 16/10 foi notado duas horas depois.
+    const corrigivel = bloqueado && !!(slot.lotes&&slot.lotes.length);
+    const disabled = bloqueado ? 'disabled'+(corrigivel?' corr':'') : '';
+    const onclick = bloqueado
+      ? (corrigivel ? `onclick="abrirCorrecao('${slot.inicio}','${slot.label}')"` : '')
+      : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
     const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
     const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}` : '';
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
@@ -2487,7 +2523,7 @@ function renderLancamentos(){
         ${lotesTxt?`<div class="slot-lotes">Lotes: ${lotesTxt}</div>`:''}
       </div>
       <span class="${badgeClass} slot-badge">${badgeText}</span>
-      ${lc.lancavel?'<span class="slot-chevron">›</span>':''}
+      ${lc.lancavel?'<span class="slot-chevron">›</span>':(corrigivel?'<span class="slot-corr" aria-label="Corrigir lançamento">✎</span>':'')}
     </div>`;
   }).join('');
 
@@ -2597,7 +2633,10 @@ function abrirLanc(inicio, fim, label, meta, prodAtual){
   const lotesAtuais = (slotDados && slotDados.lotes) ? slotDados.lotes : [];
   const elLotes = document.getElementById('ml-lotes');
   if(lotesAtuais.length){
-    elLotes.innerHTML = `<span class="lbl">LANÇADO NESTA HORA</span>${fmtLotes(lotesAtuais)}`;
+    // Corrigir é daqui também: o lançamento errado quase sempre é da hora que
+    // o operador está lançando agora (o 60 que entrou duas vezes).
+    elLotes.innerHTML = `<span class="lbl">LANÇADO NESTA HORA</span>${fmtLotes(lotesAtuais)}`
+      + `<button class="corr-abrir" onclick="_corrDoLanc()">✎ CORRIGIR UM LANÇAMENTO</button>`;
     elLotes.style.display = 'block';
   } else {
     elLotes.style.display = 'none';
@@ -2623,6 +2662,194 @@ function numpad(d){
 function numpadDel(){
   const inp=document.getElementById('ml-qtd');
   inp.value=(inp.value||'').slice(0,-1);
+}
+
+// ── LANÇAMENTO REPETIDO (v1.34.0) ──
+// O que ESTE aparelho mandou hoje (hora, produto, caixas, quando), guardado
+// no envio — antes da resposta, porque timeout não prova que não gravou.
+// Conta só o mesmo aparelho: dois operadores lançando o mesmo número na mesma
+// hora é raro, e acusar o lançamento de outro seria barulho.
+const LANC_REPETIDO_MIN = 10;
+const LANC_REC_K = 'rp_lanc_rec';
+function _lancRecentes(){
+  try{
+    const o = JSON.parse(localStorage.getItem(LANC_REC_K)||'null');
+    return (o && o.dia===hojeStr() && Array.isArray(o.itens)) ? o.itens : [];
+  }catch(e){ return []; }
+}
+function _lancGuardar(ini, cod, cx){
+  try{
+    const agora = Date.now();
+    const itens = _lancRecentes().filter(x=>agora-x.t <= LANC_REPETIDO_MIN*60000);
+    itens.push({ini, cod:String(cod||''), cx:Number(cx)||0, t:agora});
+    localStorage.setItem(LANC_REC_K, JSON.stringify({dia:hojeStr(), itens}));
+  }catch(e){}
+}
+// Conta pura: o envio IGUAL (mesma hora, produto e caixas) mais recente dos
+// últimos `janelaMin` minutos, ou null.
+function lancRepetido(recs, ini, cod, cx, agora, janelaMin){
+  const c = String(cod||''), lim = (Number(janelaMin)||0)*60000;
+  let achou = null;
+  (recs||[]).forEach(x=>{
+    if(!x || x.ini!==ini || String(x.cod||'')!==c || Number(x.cx)!==Number(cx)) return;
+    const d = agora - x.t;
+    if(d>=0 && d<=lim && (!achou || x.t>achou.t)) achou = x;
+  });
+  return achou;
+}
+function lancRepetidoTxt(rep, cx, nomeProd){
+  const d = new Date(rep.t);
+  return `Às ${p2(d.getHours())}:${p2(d.getMinutes())} este aparelho já mandou ${fmtN(cx)} cx`
+    + (nomeProd ? ` de ${nomeProd}` : '') + ' para esta hora. Confira em LANÇADO NESTA HORA:'
+    + ' se o valor já está lá, não lance de novo — em dobro, a hora e o lote do produto contam duas vezes.';
+}
+function _nomeProdLanc(cod){
+  if(!cod) return '';
+  const p = PRODUTOS.find(x=>x.codigo===cod);
+  return p ? nomeComCor(p.desc, corDeProduto(p)) : String(cod);
+}
+
+// ════════════════════════════════════════════════
+// CORRIGIR LANÇAMENTO (v1.34.0 / .gs v5.25)
+// ════════════════════════════════════════════════
+// PPCP, 16/10/2026: "no lançamento eu preciso ter como excluir um lançamento",
+// "porque envolve o produto que ele estava fazendo". Um lançamento grava em
+// três abas — a hora, o registro de produto (baixa de lote, UEP, pontos) e o
+// histórico por família —, e a exclusão sai das três pelo backend.
+// Decisões do PPCP: QUALQUER hora de hoje, enquanto o dia não está no
+// HISTÓRICO; o OPERADOR exclui, com confirmação; cada exclusão fica na aba
+// LANC_EXCLUIDOS. A lista vem do backend ao abrir (getLancamentosHora): só ele
+// sabe o produto de cada lançamento, e o getDados não paga essa leitura.
+function _escH(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let _corr = null;   // {inicio, label, res, excluindo}
+function abrirCorrecao(inicio, label){
+  _corr = {inicio, label, res:null, excluindo:false};
+  document.getElementById('mc-hora').textContent = label;
+  document.getElementById('mc-lista').innerHTML = '<div class="prod-search-empty">BUSCANDO OS LANÇAMENTOS DA HORA…</div>';
+  document.getElementById('modal-corr').classList.add('open');
+  _corrCarregar();
+}
+function _corrDoLanc(){
+  const s = _slotAtivo; if(!s) return;
+  fecharModalLanc();
+  abrirCorrecao(s.inicio, s.label);
+}
+function fecharCorrecao(){
+  document.getElementById('modal-corr').classList.remove('open');
+  _corr = null;
+}
+function _corrMsg(t){
+  const el = document.getElementById('mc-lista');
+  if(el) el.innerHTML = '<div class="corr-aviso">'+_escH(t)+'</div>';
+}
+function _corrRender(){
+  const c = _corr; if(!c || !c.res) return;
+  document.getElementById('mc-lista').innerHTML = corrListaHtml(c.res, c.excluindo);
+}
+// true = leu; false = não leu (a tela diz por quê). Relê sem apagar a lista.
+async function _corrCarregar(){
+  const c = _corr; if(!c) return false;
+  if(!CFG.sheetsUrl){ _corrMsg('URL do Google Sheets não configurada.'); return false; }
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getLancamentosHora&horario='+encodeURIComponent(c.inicio);
+  let res = null;
+  try{ res = await jsonpLeituraApoio(url); }catch(e){ res = null; }
+  if(_corr!==c) return false;   // fechou no meio
+  if(!res){ _corrMsg('O servidor não respondeu. Feche e abra de novo em alguns segundos.'); return false; }
+  // .gs anterior à v5.25: a ação cai no getDados e volta sem `lancs`.
+  if(!Array.isArray(res.lancs)){
+    _corrMsg(res.ok===false && res.erro ? res.erro
+      : 'O Apps Script ainda não tem a exclusão de lançamento — cole o ritmoprod_appscript.gs v5.25 e re-deploye.');
+    return false;
+  }
+  c.res = res; _corrRender();
+  return true;
+}
+// Desenho puro (testado): a lista da hora, com o produto de cada lançamento.
+function corrListaHtml(res, excluindo){
+  const item = (x, i, so)=>{
+    const prod = x.codigo
+      ? `<div class="prod-search-cod">${_escH(x.codigo)}${x.cor?`<span class="prod-search-cor">${_escH(x.cor)}</span>`:''}</div>`
+        + `<div class="prod-search-desc">${_escH(x.desc||x.codigo)}</div>`
+      : '<div class="prod-search-desc" style="color:var(--txt2)">sem produto</div>';
+    const btn = res.fechado ? ''
+      : `<button class="corr-btn" ${excluindo?'disabled':''} onclick="excluirLanc(${i},${so?1:0})">EXCLUIR</button>`;
+    return `<div class="corr-item"><div class="corr-cx">${fmtN(x.cx)} <span class="un">CX</span></div>`
+      + `<div class="corr-prod">${prod}</div>${btn}</div>`;
+  };
+  const lancs = res.lancs||[], so = res.soLog||[];
+  let h = lancs.length ? lancs.map((x,i)=>item(x,i,false)).join('')
+                       : '<div class="prod-search-empty">NENHUM LANÇAMENTO NESTA HORA</div>';
+  if(so.length) h += '<div class="corr-sub">SÓ NO REGISTRO DE PRODUTO — a hora já foi corrigida na planilha,'
+    + ' mas estas caixas ainda baixam lote e somam UEP</div>' + so.map((x,i)=>item(x,i,true)).join('');
+  if(res.fechado) h = '<div class="corr-aviso">O dia já está fechado no HISTÓRICO. Excluir agora só pela planilha,'
+    + ' e depois FECHAR DIA de novo.</div>' + h;
+  if(excluindo) h = '<div class="corr-sub">EXCLUINDO… (até 1 min se o servidor estiver parado)</div>' + h;
+  return h;
+}
+// Texto puro (testado) da confirmação: o que sai e como a hora fica.
+function corrConfirmaTxt(label, x, so, total){
+  const nome = x.codigo ? nomeComCor(x.desc||x.codigo, x.cor) : 'sem produto';
+  if(so) return `Excluir ${fmtN(x.cx)} cx de ${nome} do registro de produto da hora ${label}?`
+    + ` A hora não muda (${fmtN(total)} cx): só sai da baixa dos lotes e da UEP.`;
+  return `Excluir ${fmtN(x.cx)} cx de ${nome} da hora ${label}?`
+    + ` A hora cai de ${fmtN(total)} para ${fmtN(Math.max(0,total-x.cx))} cx`
+    + (x.codigo ? ' e essas caixas voltam a faltar no lote do produto.' : '.');
+}
+function _corrConta(res, x, so){
+  const l = ((so ? res.soLog : res.lancs) || []);
+  return l.filter(y=>Number(y.cx)===Number(x.cx) && String(y.codigo||'')===String(x.codigo||'')).length;
+}
+// 3 tentativas EM SEQUÊNCIA, como as outras escritas. Repetir é seguro: o
+// exclId é o mesmo em todas, e o backend não exclui duas vezes pelo mesmo id.
+async function _corrEnviar(url){
+  let ultimo;
+  for(let i=1; i<=3; i++){
+    try{ return await jsonpFetch(url, 25000); }
+    catch(e){ ultimo = e; if(i===3) break; await new Promise(r=>setTimeout(r, 2000*i)); }
+  }
+  throw ultimo;
+}
+async function excluirLanc(i, so){
+  const c = _corr; if(!c || !c.res || c.excluindo || c.res.fechado) return;
+  const x = ((so ? c.res.soLog : c.res.lancs) || [])[i]; if(!x) return;
+  const ok = await confirmarModal({titulo:'EXCLUIR LANÇAMENTO', msg:corrConfirmaTxt(c.label, x, so, c.res.total),
+                                   ok:'EXCLUIR', cancelar:'VOLTAR', seguro:'cancelar', tag:'excl'});
+  if(!ok || _corr!==c) return;
+  const antes = _corrConta(c.res, x, so);
+  c.excluindo = true; _corrRender();
+  const exclId = 'X'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const params = ['action=excluirLancamento', 'horario='+encodeURIComponent(c.inicio), 'caixas='+x.cx,
+                  'exclId='+encodeURIComponent(exclId), 'operador='+encodeURIComponent('Mobile')];
+  if(x.codigo) params.push('produto='+encodeURIComponent(x.codigo));
+  if(so) params.push('soLog=1');
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
+  let res = null;
+  try{ res = await _corrEnviar(url); }catch(e){ res = null; }
+  c.excluindo = false;
+  if(res && res.ok===false){
+    alert(res.msg || res.erro || 'Não foi possível excluir.');
+    if(_corr===c) await _corrCarregar();
+    return;
+  }
+  // Sem resposta ≠ não excluiu: relê a hora e decide pelo que ela mostra.
+  const leu = _corr===c ? await _corrCarregar() : false;
+  const saiu = !!(res && res.ok) || (leu && _corrConta(c.res, x, so) < antes);
+  if(saiu){
+    bipeToast('✓ Excluído: '+fmtN(x.cx)+' cx'+(x.codigo?' · '+x.codigo:''), true);
+    // A falta de hoje volta já (o aviso de cor errada lê dela até a lista ser relida).
+    if(x.codigo){
+      const k = String(x.codigo).replace(/\D/g,'');
+      const it = PROG_HOJE.find(p=>String(p.codigo).replace(/\D/g,'')===k);
+      if(it) it.falta = (Number(it.falta)||0) + x.cx;
+    }
+    await lerSheets();
+  } else {
+    alert(leu ? 'O servidor não respondeu e o lançamento continua na lista. Tente excluir de novo.'
+              : 'O servidor não respondeu. Abra a hora de novo e confira se o lançamento saiu antes de tentar outra vez.');
+    if(_corr===c) _corrRender();
+  }
 }
 
 // ⚠ SEM dismiss por toque-fora aqui, de propósito. Este é o único modal do app
@@ -2694,6 +2921,17 @@ async function salvarLanc(){
   // vê o lote que o PPCP datou ou encerrou depois, e acusaria à toa.
   const codLanc = PROD_ATUAL, slotLanc = _slotAtivo;
   const kLanc = String(codLanc||'').replace(/\D/g,'');
+  // Lançamento REPETIDO? (v1.34.0) Em 16/10 um 60 de LIVREIRO ENCANTO entrou
+  // duas vezes na hora 10:00: o lancId protege a retentativa DENTRO do mesmo
+  // modal, e o operador fechou e lançou de novo — modal novo, id novo, o
+  // backend grava. Este aparelho lembra o que mandou e pergunta antes.
+  const rep = lancRepetido(_lancRecentes(), slotLanc.inicio, codLanc, add, Date.now(), LANC_REPETIDO_MIN);
+  if(rep){
+    const seguir = await confirmarModal({titulo:'LANÇAMENTO REPETIDO?', msg:lancRepetidoTxt(rep, add, _nomeProdLanc(codLanc)),
+                                         ok:'LANÇAR DE NOVO', cancelar:'NÃO, JÁ FOI', seguro:'cancelar', tag:'rep'});
+    if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta
+    if(!seguir){ fecharModalLanc(); return; }
+  }
   const listaOk = PROG_HOJE_DIA===hojeStr() && Date.now()-PROG_HOJE_TS <= PROG_HOJE_MAX;
   const jaConf = COR_OK.dia===hojeStr() && !!COR_OK.cod[kLanc];
   if(codLanc && listaOk && !jaConf){
@@ -2721,6 +2959,7 @@ async function salvarLanc(){
     _slotAtivo._lancQtd = add;
   }
   const lancId = _slotAtivo._lancId;
+  _lancGuardar(_slotAtivo.inicio, codLanc, add);
 
   // O backend grava cada lançamento numa coluna de LOTE separada e SOMA os lotes
   // ao montar o REALIZADO da hora. Por isso enviamos só o INCREMENTO (não o total)

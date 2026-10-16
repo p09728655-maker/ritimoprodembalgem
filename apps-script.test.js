@@ -191,7 +191,9 @@ console.log('\n── quem ESCREVE continua lendo direto da planilha ──');
 const ESCRITORAS = ['saveDay', 'saveParadas', 'endParada', 'arquivarDiaAtual',
                     'arquivarHorasDoDia', 'setConfigPainel', 'atualizarSaldoNaProgramacao',
                     // v5.24: cadastro de UEP e o histórico de versões dela
-                    'setUepCatalogo', '_uepEstimarCatalogo', '_uepVerAba', '_uepVerRegistrar', '_uepVerDaEdicao'];
+                    'setUepCatalogo', '_uepEstimarCatalogo', '_uepVerAba', '_uepVerRegistrar', '_uepVerDaEdicao',
+                    // v5.25: excluir lançamento (lê a hora e o log DIRETO antes de apagar)
+                    '_excluirLancamentoCore', '_lancLinhaDaHora', '_lancTiraFamilia', '_lancRegistrarExclusao'];
 ESCRITORAS.forEach(f => {
   const corpo = pega('function ' + f + '(');
   ok(`${f} não usa o memo`, /_valores(DaAba)?\s*\(/.test(corpo), false);
@@ -296,8 +298,10 @@ console.log('\n── colunas de LOTE (um critério, três chamadores) ──');
 eval(pega('function _ehColunaLote('));
 eval(pega('function _colunasDeLote('));
 
+// v5.25: a exclusão de lançamento (_lancLinhaDaHora) é o 4º chamador — e usa
+// o mesmo critério, que é o que esta guarda prende.
 ok('nenhum chamador reescreve o laço',
-   (src.match(/const iLotes = _colunasDeLote\(hdr, iR\);/g) || []).length, 3);
+   (src.match(/const iLotes = _colunasDeLote\(hdr, iR\);/g) || []).length, 4);
 ok('e o critério cru não sobrou em lugar nenhum',
    /hdr\[c\]\.includes\('LOTE'\)/.test(src), false);
 
