@@ -19,15 +19,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   CABECEIRA SLEEP: 64 produtos foram para a escala nova e 44 que não rodaram
   no período ficaram na antiga — duas escalas no mesmo cadastro, ~22% de
   diferença entre elas.
-- O **💾 GRAVAR UEP só grava com a MADERO medida no período** (5+ dias). Sem
-  ela, para e diz quantos dias ela rodou; nada é gravado.
+- O **💾 GRAVAR UEP só grava com a MADERO medida no período**: 5+ dias **e
+  abaixo de 90% do teto da esteira**. Sem isso, para e diz o motivo; nada é
+  gravado. Medido: em 01/09–15/10 a MADERO deu 343 cx/h contra teto de 333
+  (lançamento acumulado) — gravar ali poria o cadastro numa escala 15,6% acima
+  da de 01/07–15/10 (288 cx/h, 86,5% do teto, 12 dias).
+- O teste de sanidade do estudo deixou de usar o teto da própria base (sem
+  folga quando ela roda no limite, 17 de 30 dias saíam suspeitos) e usa o do
+  produto de referência na escala da base — a mesma classificação de antes.
+- O 2º passo do GRAVAR avisa que **Cancelar** deixa as UEP mantidas na escala
+  anterior (duas escalas), e o alerta final repete se isso acontecer.
 - Relatório do estudo: o card A virou **BASE FIXA**, a coluna B (mais rápido)
-  fica só para comparar, e há aviso quando a base roda acima de 90% do teto.
+  fica só para comparar e não é mais chamada de BASE.
 - **Atenção:** o próximo GRAVAR mede **todos** os produtos contra a MADERO.
-  Quem estava na escala do KIT 2 SLEEP sobe ~22%. Fazer o GRAVAR com o
-  período **mais longo** possível (01/07 até hoje), para pegar os produtos
-  que não rodaram no último mês, e ajustar a META DIA (UEP) pela meta
-  equivalente que o confirm mostra.
+  Quem estava na escala do KIT 2 SLEEP sobe ~22%. Passo a passo da migração:
+  1. GRAVAR com o período **01/07 até hoje** e dar **OK no SUBSTITUIR** (sem
+     ele, quem estava na escala do KIT continua lá);
+  2. ajustar a META DIA (UEP) no ⚙ pela meta equivalente do confirm;
+  3. renomear a aba `UEP_VERSOES` que o GRAVAR cria (ela nasce com a semente
+     do cadastro misto) e rodar `regravarUepPassada` no editor.
 
 ---
 

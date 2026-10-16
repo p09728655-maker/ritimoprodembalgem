@@ -3382,17 +3382,45 @@ feito e dá ar de verdade ao que sobrou.
     `volume`** do `_uepEstudo` mesmo sem ser o maior volume, e o `foraTeto`
     fica vazio. Sem ela, a automática continua — só para LER — e o estudo
     devolve `baseFixa:false`.
-  - **O GRAVAR exige `e.baseOk`** (a base com `UEP_MIN_DIAS`+ dias), ANTES de
-    simular; o aviso é o `_uepBaseFaltaTxt`. Base de 3 dias também não grava:
+  - **O GRAVAR exige `e.baseOk`** (a base com `UEP_MIN_DIAS`+ dias **e
+    abaixo de `UEP_ANCORA_TETO_MAX`% do teto**), ANTES de simular; o aviso é o
+    `_uepBaseFaltaTxt` (diz qual dos dois motivos). Base de 3 dias não grava:
     UEP de todos medida contra uma base provisória mudaria no próximo GRAVAR.
-  - Base acima de 90% do teto continua sendo a base (trocar seria trocar a
-    escala); o relatório avisa que ali a esteira limita.
-  - A coluna **B** (mais rápido) ficou só para comparar.
+  - **Base no limite da esteira continua sendo a A do estudo, mas não grava**
+    (`baseNoTeto`). Medido na planilha real (revisão de 16/10/2026): em
+    01/09–15/10 a MADERO deu 343,8 cx/h (cor OFF WHITE/CINAMOMO, 8 h sozinha)
+    contra teto de 333 — ritmo cortado no teto, escala 15,6% acima da de
+    01/07–15/10 (288 cx/h, 86,5%, 12 dias). Gravar ali faria de novo duas
+    escalas. A regra antiga (âncora só abaixo de 90%) garantia isso por
+    construção; a base fixa precisa da trava.
+  - ⚠ **O teste de sanidade NÃO usa o teto da própria base** (`ref`, no
+    `_uepEstudo`): é o teto da âncora AUTOMÁTICA (garantida abaixo de 90%)
+    convertido para a escala da base, `tRef × volume.ritmo ÷ ref.ritmo`. Com o
+    teto da base, a base no limite deixava a régua sem folga — 17 de 30 dias
+    suspeitos em 01/09–15/10, contra 0 da regra anterior. A conversão mantém
+    EXATAMENTE a classificação de antes, e a UEP gravada não lê a sanidade.
+  - A coluna **B** (mais rápido) ficou só para comparar; na tabela é
+    `B · MAIS RÁPIDO`, nunca "BASE".
+  - **Cancelar no 2º passo do GRAVAR na migração deixa duas escalas**: os
+    protegidos ficam na anterior, os novos e as estimadas vão para a da base.
+    O t2 diz isso quando a escala muda ≥ `UEP_IMP_ALERTA`, e o alerta final
+    repete. ⚠ Não bloquear a estimativa por causa disso: ela está certa na
+    escala da base, e bloquear deixaria mais códigos na escala errada.
   - ⚠ **Trocar a base troca a escala inteira**: é regravar o cadastro todo,
     mudar a meta e regravar o HISTORICO. Não mexer na constante sem isso.
   - Para sair das duas escalas: um GRAVAR com o período **mais longo** (01/07
-    até hoje), ajustar a META DIA (UEP) pela meta equivalente do confirm,
-    renomear a `UEP_VERSOES` nova e rodar o `regravarUepPassada`.
+    até hoje) com **OK no SUBSTITUIR**, ajustar a META DIA (UEP) pela meta
+    equivalente do confirm, renomear a `UEP_VERSOES` nova e rodar o
+    `regravarUepPassada`.
+    - ⚠ **Por que renomear a aba que o próprio GRAVAR criou**: sem a
+      `UEP_VERSOES` (renomeada para `UEP_VERSOES_TESTE`), o `setUepCatalogo`
+      cria a aba com a SEMENTE = o cadastro de ANTES do GRAVAR (o misto), com
+      vigência vazia — e o `_uepVigente` leria todo dia até ontem nessa escala
+      misturada no bloco 7. O `regravarUepPassada` usa o cadastro atual, não as
+      versões: sem renomear, HISTÓRICO e bloco 7 discordariam.
+    - ⚠ Em 16/10/2026 a `CONFIG_PAINEL` estava com **META_UEP 2.300**, mas o
+      HISTÓRICO foi regravado com **2.100**: a meta equivalente do confirm sai
+      da que está no ⚙ na hora do GRAVAR — conferir qual vale antes.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de

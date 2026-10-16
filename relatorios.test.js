@@ -3634,8 +3634,19 @@ console.log('\n── estudo de UEP ──');
   const eB3 = _uepEstudo(itT.concat(madero(3, 400)), 'aparada');
   ok('base com menos de ' + UEP_MIN_DIAS + ' dias: ainda é a A, mas NÃO libera o GRAVAR', [eB3.volume.nome, eB3.baseFixa, eB3.baseOk, eB3.baseDias], ['MESA CABECEIRA MADERO', true, false, 3]);
   const eBT = _uepEstudo(itT.concat(madero(6, 210)), 'aparada');
-  ok('base no limite da esteira continua sendo a base (o relatório avisa)', [eBT.volume.nome, eBT.volume.pctTeto > UEP_ANCORA_TETO_MAX], ['MESA CABECEIRA MADERO', true]);
-  ok('e o aviso do teto da base existe no relatório', /e\.baseFixa&&e\.volume\.pctTeto>UEP_ANCORA_TETO_MAX/.test(pega('function _uepHtml(')), true);
+  ok('base no limite da esteira continua sendo a base, mas NÃO libera o GRAVAR', [eBT.volume.nome, eBT.volume.pctTeto > UEP_ANCORA_TETO_MAX, eBT.baseNoTeto, eBT.baseOk], ['MESA CABECEIRA MADERO', true, true, false]);
+  ok('e o relatório diz por quê', /e\.baseNoTeto\?/.test(pega('function _uepHtml(')), true);
+  // Base cortada no teto (a conta deu 200 cx/h, teto 190): a régua da sanidade
+  // não pode ser o teto dela (sem folga, quase todo dia sairia suspeito). É o
+  // teto da referência automática na escala da base — a mesma classificação
+  // de antes da base fixa. (01/09–15/10/2026: 17 de 30 dias × 0.)
+  const eBC = _uepEstudo(itT.concat(madero(6, 190)), 'aparada');
+  ok('base cortada no teto: limitada, bloqueia o GRAVAR e a sanidade não acusa dia normal',
+     [eBC.volume.limitadoTeto, eBC.baseNoTeto, eBC.baseOk, eBC.nAcimaAncora], [true, true, false, 0]);
+  ok('a régua da sanidade é o teto da referência na escala da base (B: teto 400 × 190 ÷ 150)', Math.round(eBC.tetoUepH * 10) / 10, 506.7);
+  ok('o aviso do bloqueio pelo teto diz o motivo e que nada foi gravado',
+     [/limite da esteira/.test(_uepBaseFaltaTxt(eBC)), /a conta deu 200 cx\/h, acima do teto de 190/.test(_uepBaseFaltaTxt(eBC)), /Nada foi gravado/.test(_uepBaseFaltaTxt(eBC))], [true, true, true]);
+  ok('o produto mais rápido não é chamado de BASE na tabela', /'BASE RÁPIDO'/.test(pega('function _uepHtml(')), false);
   ok('o nome da base casa sem diferença de caixa/espaço', _uepEhBase({ modelo: '501149', nome: ' mesa cabeceira madero ' }), true);
   ok('outro produto do mesmo modelo de 6 dígitos não é a base', _uepEhBase({ modelo: '501149', nome: 'MESA CABECEIRA MADERO KIT' }), false);
   ok('o aviso diz quantos dias a base rodou', /rodou só 3 dias/.test(_uepBaseFaltaTxt(eB3)), true);
@@ -3834,7 +3845,7 @@ console.log('\n── estudo de UEP ──');
   ok('a UEP GRAVADA usa a cor da aba HISTÓRICO (sc do % da meta)',
      /corSc\[sc\(d\.gravada\.pct\)\]/.test(pega('function _uepHtml(')), true);
   ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada', rbM, [50, 60], histM).meta.de, null);
-  ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
+  ok('a sanidade usa o TETO da âncora (a referência), não o ritmo médio', /ref\.teto>0\?ref\.teto/.test(pega('function _uepEstudo(')), true);
   ok('o estudo pede cxHora e espera mais; o comparativo não pede',
      [/cxHora:true, ms:60000/.test(pega('async function _uepItensPeriodo(')),
       /await _uepItensPeriodo\(\)/.test(pega('async function gerarRelatorioUEP(')),

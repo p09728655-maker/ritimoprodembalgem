@@ -215,11 +215,11 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **UEP/CX** | ritmo da âncora ÷ ritmo do produto (a âncora vale 1,00); o ritmo é o EM REGIME com 4+ h sozinho, senão o usado | UEP/cx | `v7:5822` |
+| **UEP/CX** | ritmo da base fixa (MADERO; sem ela no período, a âncora do período) ÷ ritmo do produto (a base vale 1,00); o ritmo é o EM REGIME com 4+ h sozinho, senão o usado | UEP/cx | `v7:5822` |
 | **RITMO EM REGIME** | caixas ÷ horas em que o produto rodou sozinho na linha | cx/h | `v7:_uepProdutos` |
 | **RITMO USADO** | caixas ÷ horas do produto com a hora de troca repartida pelo tempo esperado (caixas ÷ ritmo em regime) | cx/h | `v7:_uepProdutos` |
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
-| **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP GRAVADA (coluna UEP do HISTORICO, jornada) dos dias válidos — sem os dias acima do teto físico da âncora ou com apontamento acima do realizado; mesma escala da META UEP | UEP | `v7:_uepEstudo` |
+| **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP GRAVADA (coluna UEP do HISTORICO, jornada) dos dias válidos — sem os dias acima do limite físico (teto do produto de referência na escala da base) ou com apontamento acima do realizado; mesma escala da META UEP | UEP | `v7:_uepEstudo` |
 | **UEP GRAVADA** (estudo de UEP) | a UEP oficial do dia (coluna UEP do HISTORICO) e % = UEP ÷ META UEP do dia, cor `sc` como na aba HISTÓRICO; BATEU A META = `uepHistResumo` (UEP ≥ meta do dia). A UEP ESTUDO da mesma linha está na escala do período e não se compara com meta | UEP | `v7:_uepEstudo` |
 | **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
 | **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
@@ -254,10 +254,14 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 **Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
 hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SEM`).
 
-**Como ler:** âncora A = produto com mais caixas no período; âncora B = o mais
-rápido. As duas mudam só a escala. Produto com menos de 5 dias rodados sai com
-UEP **PROVISÓRIA** (marcada com \*). A âncora só sai dos que têm 5+ dias. É
-estudo: nenhum número do painel usa a UEP.
+**Como ler:** A = a **BASE FIXA** `UEP_BASE` (501149 MESA CABECEIRA MADERO),
+que vale 1,00 em todo estudo quando rodou no período (v7.136.0). Sem ela no
+período, a A é — só para leitura — a âncora do período (o produto com mais
+caixas abaixo de 90% do teto, entre os que têm 5+ dias). B = o mais rápido do
+período, só para comparar. As duas mudam só a escala. Produto com menos de 5
+dias rodados sai com UEP **PROVISÓRIA** (marcada com \*). O 💾 GRAVAR UEP só
+grava com a base medida no período: 5+ dias e abaixo de 90% do teto
+(`baseOk`; o motivo do bloqueio é o `_uepBaseFaltaTxt`).
 
 ## Simulador de investimento
 
