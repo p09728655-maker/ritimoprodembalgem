@@ -279,6 +279,55 @@ console.log('\n── bloco 7: padrão × realizado por produto (conta pura) ─
      (V7JS.match(/_uepPadHtml\(/g) || []).length], [false, 2]);
 }
 
+console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134.0) ──');
+{
+  ['UEP_PAD_COLS', 'APP_NOME'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
+  vm.runInContext('var APP_NOME_CX = APP_NOME.toUpperCase();', F);
+  ['function _rpEsc(', 'function _uepPadColgroup(', 'function _uepPadU2(', 'function _uepPadNn(', 'function _uepPadPctTd(',
+   'function _uepPadSelo(', 'function _uepPadThead(', 'function _uepPadCelsProd(', 'function _uepPadDiasRows(',
+   'function _uepPadNotas(', 'function _uepPadHtml(', 'function _uepPadDocHtml(']
+    .forEach(f => vm.runInContext(pegaV7(f), F));
+  const A = (data, num, mod, nome, cxH, uH, vig) => ({ data, dataNum: num, modelo: mod, nome, caixas: 1, cxHora: cxH, uepHora: uH, uepVigDe: vig || 0 });
+  const itens = [
+    A('01/10/2026', 20261001, '501149', 'MESA CABECEIRA MADERO', { '07:00': 288, '08:00': 288 }, { '07:00': 288, '08:00': 288 }),
+    A('02/10/2026', 20261002, '501149', 'MESA CABECEIRA MADERO', { '07:00': 200, '08:00': 200 }, { '07:00': 200, '08:00': 200 }, 20261002),
+    A('01/10/2026', 20261001, '501061', 'PENTEADEIRA CAMARIM ELOA', { '09:00': 70, '10:00': 70 }, { '09:00': 360, '10:00': 360 }),   // 720 de 576 = 125%: ACIMA
+    A('02/10/2026', 20261002, '501094', 'MESA CABECEIRA SLEEP', { '13:00': 80 }, { '13:00': 80 }),   // só 1 h: não julgado
+  ];
+  const H = hist(itens, {}, 2530, {});
+  ok('totais da capa = soma das colunas dos produtos julgados', H.tot, { dias: 3, abaixo: 1, no: 1, acima: 1 });
+  // conta as colunas de cada <tr>: td/th + colspan−1. Toda linha tem de ter 11.
+  const colunas = html => [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map(m =>
+    [...m[1].matchAll(/<t[dh]([^>]*)>/g)].reduce((n, c) => n + (Number((c[1].match(/colspan="(\d+)"/) || [])[1]) || 1), 0));
+  const tela = vm.runInContext('_uepPadHtml(' + JSON.stringify(H) + ', "501149|MESA CABECEIRA MADERO", {registrado:true, diverge:0})', F);
+  ok('tela: as larguras são fixas (colgroup de 11 + table-layout) e o dia a dia aberto usa as MESMAS 11 colunas',
+     [vm.runInContext('UEP_PAD_COLS.length', F), vm.runInContext('UEP_PAD_COLS.reduce((a,b)=>a+b,0)', F), (tela.match(/<col /g) || []).length,
+      [...new Set(colunas(tela))], /uep-pad-det|<table><thead><tr><th>DIA/.test(tela)], [11, 100, 11, [11], false]);
+  ok('tela: o dia a dia abre embaixo do produto, com a própria linha de rótulos',
+     [(tela.match(/class="uep-pad-dh"/g) || []).length, (tela.match(/class="uep-pad-d"/g) || []).length], [1, 2]);
+  ok('o selo tem largura fixa na tela e no papel (a data não anda em zigue-zague)',
+     [/#sec-uep \.uep-pad-st\{display:inline-block;min-width:\d+px/.test(V7), /\.pad-doc \.uep-pad-st\{display:inline-block;min-width:\d+px/.test(V7)], [true, true]);
+  const doc = vm.runInContext('_uepPadDocHtml(' + JSON.stringify(H) + ', {registrado:false, diverge:2}, {de:"16/09/2026", ate:"15/10/2026", data:"16/10/2026", hora:"10:51"})', F);
+  ok('papel: toda linha com as 11 colunas, nas duas tabelas de produto', [...new Set(colunas(doc.slice(0, doc.indexOf('3 ▸ COMO O NÚMERO SAI'))).filter(n => n > 2))], [11]);
+  ok('papel: o resumo e o dia a dia de TODOS os produtos julgados (na tela abre um por vez)',
+     [(doc.match(/MESA CABECEIRA MADERO/g) || []).length, (doc.match(/PENTEADEIRA CAMARIM ELOA/g) || []).length,
+      (doc.match(/class="uep-pad-dh"/g) || []).length, (doc.match(/class="uep-pad-d"/g) || []).length, /MESA CABECEIRA SLEEP/.test(doc)],
+     [2, 2, 2, 3, false]);
+  ok('papel: a capa traz os totais, as notas e os avisos de registro',
+     [/DIAS JULGADOS<\/div><div class="kpi-val">3</.test(doc), /Nenhuma mudança de UEP registrada ainda/.test(doc), /2 códigos estão com a UEP do cadastro diferente/.test(doc),
+      /1 produto não chegou a 2 h/.test(doc), /3 ▸ COMO O NÚMERO SAI/.test(doc)], [true, true, true, true, true]);
+  ok('o desenho do papel e as células não fazem conta', ['function _uepPadDocHtml(', 'function _uepPadCelsProd(', 'function _uepPadDiasRows(']
+     .map(f => /_uepPadHist\(|_uepPadSt\(|uepDiaMeta\(|_uepVigente/.test(pegaV7(f))), [false, false, false]);
+  const ger = pegaV7('function gerarRelatorioUepPadrao(');
+  ok('a impressão é o retrato da tela: mesma montagem, mesmos dados, DEITADA, sem leitura nova',
+     [/_uepPadMontar\(\)/.test(ger), /_uepPadDocHtml\(H, UEP_PAD\.uepVer, ctx\)/.test(ger), /_rpDocParadas\([^;]*, true\)/.test(ger), /jsonpFetch|_uepPadCarregar/.test(ger)],
+     [true, true, true, false]);
+  ok('o botão 🖨 IMPRIMIR mora no cabeçalho do bloco 7', /7 · PADRÃO × REALIZADO POR PRODUTO<\/b>[^`]*onclick="gerarRelatorioUepPadrao\(\)"/.test(V7), true);
+  const skin = V7.match(/const _UEP_PAD_DOC_SKIN = `([\s\S]*?)`;/)[1];
+  ok('a pele do papel é escopada em .pad-doc (não mexe nos outros relatórios do _rpDocParadas)',
+     skin.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.pad-doc ')), true);
+}
+
 console.log('\n── GRAVAR UEP: a autorização ──');
 {
   const sim = { novos: 2, deEst: 1, iguais: 3, nExist: 2, estNovos: 5, estMudam: 0,
