@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.135.0 — 16/10/2026
+
+- **GRAVAR UEP mostra o EFEITO NA UEP DA LINHA antes de autorizar.** O 1º
+  passo do confirm relê a mesma produção do período do estudo (só jornada,
+  hoje fora) com a UEP de hoje e com a que vai ser gravada: média UEP/dia
+  antes → depois, a mudança de escala nas mesmas caixas, quantos dias bateram
+  a meta antes → depois e a **meta equivalente** na régua nova. O 2º passo
+  (substituir UEP existente) repete a escala; o aviso final pede o ajuste da
+  META DIA (UEP) no ⚙ quando a escala mudou 5% ou mais.
+- Motivo: no GRAVAR de 16/10 10:43 o confirm listava o antes → depois de cada
+  código, e a escala da linha caiu 21,6% sem nada dizer isso.
+- **Atenção:** nenhum número exibido muda; é texto novo no confirm. Nada no
+  `.gs` (sem re-deploy).
+
+---
+
 ## v7.134.0 — 16/10/2026
 
 - **Bloco 7 da aba ⚖ UEP (PADRÃO × REALIZADO POR PRODUTO): colunas alinhadas.**
