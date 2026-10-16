@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.134.0 — 16/10/2026
+
+- **Bloco 7 da aba ⚖ UEP (PADRÃO × REALIZADO POR PRODUTO): colunas alinhadas.**
+  O selo do último dia (NO PADRÃO, ABAIXO, ACIMA, < 2 H) tem largura fixa e a
+  data ganhou coluna própria; antes ela andava em zigue-zague. O dia a dia de
+  um produto abre nas **mesmas colunas** do resumo: UEP/CX, CX/H PADRÃO e % DO
+  PADRÃO do dia ficam embaixo dos do produto, e o CX/H do dia ao lado do CX/H
+  PADRÃO.
+- **🖨 IMPRIMIR no bloco 7** — impressão dedicada, em folha deitada: totais
+  (produtos e dias julgados, quantos NO PADRÃO, ABAIXO e ACIMA), o resumo por
+  produto, o dia a dia de **todos** os produtos do período (na tela abre um
+  por vez) e o COMO O NÚMERO SAI. É o retrato do que está na tela: sem leitura
+  nova.
+- **Atenção:** nenhum número muda. Nada no `.gs` (sem re-deploy).
+
+---
+
 ## v7.133.0 · `.gs` v5.24 — 16/10/2026
 
 - ⚠ **re-deploy** — **A UEP padrão passa a ter histórico, e só muda com

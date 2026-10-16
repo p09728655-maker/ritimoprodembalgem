@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os dez relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, e a UEP executiva)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 10);
+ok('e os onze relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva e o padrão × realizado por produto)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 11);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2506,7 +2506,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 8);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 9);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2517,8 +2517,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 14 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 15);   // 14 chamadas (+ UEP executiva) + a declaração
+ok('e é UMA implementação — os 15 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 16);   // 15 chamadas (+ UEP executiva + padrão × realizado) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —

@@ -3239,9 +3239,38 @@ feito e dá ar de verdade ao que sobrou.
     tentativas; falhou → nova tentativa em 1 min. A chave do cache do `.gs`
     inclui `uepVer`. Sem `?uepVer=1` o payload do comparativo não muda.
   - Não vai na impressão executiva da aba nem na TV/app.
+  - **Colunas alinhadas e impressão dedicada (v7.134.0, PPCP 16/10/2026:
+    *"alinhar as colunas, colocar impressão dedicada"*).** As larguras moram em
+    `UEP_PAD_COLS` (11 colunas, % da tabela, `table-layout:fixed`) e o selo do
+    último dia tem **largura fixa** — antes a data andava em zigue-zague porque
+    NO PADRÃO é mais largo que ACIMA. O dia a dia aberto usa **as mesmas 11
+    colunas** do resumo, com uma linha de rótulos própria (`uep-pad-dh`): o
+    UEP/CX, o CX/H PADRÃO e o % do dia ficam embaixo dos do produto, e o CX/H do
+    dia ao lado do CX/H PADRÃO. Antes era uma tabela dentro da célula.
+  - **As células são UMA implementação** (`_uepPadCelsProd`, `_uepPadDiasRows`,
+    `_uepPadThead`, `_uepPadColgroup`, `_uepPadNotas`): a tela (`_uepPadHtml`)
+    e o papel (`_uepPadDocHtml`) mudam só a moldura e a pele. 🖨 IMPRIMIR no
+    cabeçalho do bloco → `gerarRelatorioUepPadrao`: retrato da tela (os MESMOS
+    `UEP_PAD` e `_uepPadMontar`, sem leitura nova), **deitado** (11 colunas),
+    pele `_UEP_PAD_DOC_SKIN` escopada em `.pad-doc`. Folha 1: totais
+    (`H.tot`, produto × dia) e o resumo; depois o dia a dia de **todos** os
+    produtos julgados e o COMO O NÚMERO SAI.
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o GRAVAR UEP para com o
   aviso de re-deploy (não grava nada) e o bloco 7 diz que o backend não manda a
   UEP por data. Nada no `HISTORICO` muda.
+- **O 1º GRAVAR com a trava, medido na planilha (16/10/2026 10:43):** a aba
+  `UEP_VERSOES` nasceu com 429 linhas de semente e 296 mudanças — **196 UEP
+  medidas SUBSTITUÍDAS** (o 2º OK foi dado; mediana −18%, de −53% a +130%) e
+  98 estimadas re-estimadas (todas −19%, o fator `k` mudou). Refazendo os 20
+  dias fechados de 16/09 a 15/10 com a MESMA produção (jornada): **2.804 →
+  2.199 UEP/dia (−21,6%)**, oscilação **12,3% → 7,4%** (dentro da amostra:
+  otimista), dias ≥ 2.530: **16 → 2**. O "antes" recalculado bate com a UEP
+  gravada no HISTORICO (15/10: 2.987 × 2.986,5). Com a escala nova, a META UEP
+  de 2.530 deixou de ser a mesma régua: a equivalente é **~1.984** e a faixa
+  p50–p60 da escala nova, **~2.180–2.210**. ⚠ **O confirm do GRAVAR mostra o
+  antes → depois por código, mas não o efeito na UEP da linha nem na meta** —
+  foi assim que uma troca de escala de −21,6% passou. É a próxima melhoria da
+  trava.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de

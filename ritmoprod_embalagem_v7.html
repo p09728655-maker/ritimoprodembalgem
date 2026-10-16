@@ -440,15 +440,16 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
 #sec-uep .uep-per button{font-family:var(--font-d);font-size:10px;letter-spacing:1px;padding:3px 9px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--txt2);cursor:pointer}
 #sec-uep .uep-per button.on{border-color:var(--acc);color:var(--acc)}
+#sec-uep .uep-pad-tab{table-layout:fixed;min-width:980px}
 #sec-uep .uep-pad-l{cursor:pointer}
 #sec-uep .uep-pad-l:hover td{background:var(--elevated)}
 #sec-uep .uep-pad-l.on td{background:var(--elevated);border-bottom-color:transparent}
-#sec-uep .uep-pad-det>td{background:var(--elevated);padding:4px 10px 12px}
-#sec-uep .uep-pad-det td{font-size:12px}
+#sec-uep tr.uep-pad-dh td{background:var(--elevated);font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2);padding:6px 8px 4px;border-bottom:0.5px solid var(--border)}
+#sec-uep tr.uep-pad-d td{background:var(--elevated);font-size:12px;padding:6px 8px}
 #sec-uep .uep-pad-ok{color:var(--ok)} #sec-uep .uep-pad-warn{color:var(--warn)} #sec-uep .uep-pad-red{color:var(--red)}
-#sec-uep .uep-pad-st{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--txt2)}
+#sec-uep .uep-pad-st{display:inline-block;min-width:82px;text-align:center;font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--txt2)}
 #sec-uep .uep-pad-st.ok{color:var(--ok);border-color:var(--ok)} #sec-uep .uep-pad-st.warn{color:var(--warn);border-color:var(--warn)} #sec-uep .uep-pad-st.red{color:var(--red);border-color:var(--red)}
-#sec-uep .uep-pad-alt{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:0 5px;margin-left:4px}
+#sec-uep .uep-pad-alt{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:0 5px;margin-left:4px;white-space:nowrap;display:inline-block}
 @media (max-width:900px){#sec-uep .uep-2{grid-template-columns:1fr}}
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
@@ -3133,7 +3134,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.133.0';
+const APP_VER   = '7.134.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5065,7 +5066,10 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
     const pct=g.pad>0?g.uep/g.pad*100:null;
     return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u, uepCx:u.uepCx, cxhPad:u.cxhPad });
   }).sort((a,b)=>b.cx-a.cx);
-  return { prods, julgados:prods.filter(g=>g.nJulg>0), soCurtos:prods.filter(g=>!g.nJulg).length,
+  const julgados=prods.filter(g=>g.nJulg>0);
+  // Totais de produto × dia julgado (a capa da impressão): a soma das colunas.
+  const tot=julgados.reduce((t,g)=>{ t.dias+=g.nJulg; t.abaixo+=g.abaixo; t.no+=g.no; t.acima+=g.acima; return t; }, {dias:0, abaixo:0, no:0, acima:0});
+  return { prods, julgados, tot, soCurtos:prods.filter(g=>!g.nJulg).length,
            hSemBase, cxSemHora, nDias:Object.keys(D).length, metaAtual:mAt, ritmoMetaH:mAt/UEP_MIN_DIA*60 };
 }
 
@@ -5122,37 +5126,149 @@ function _uepPadMontar(){
   return _uepPadHist(UEP_PAD.itens, metaDe, PONTOS_DIA.metaUep, _uepPadMinSlot(getSlots()));
 }
 // Desenho, sem conta: tudo vem pronto do _uepPadHist.
+// ── O DESENHO DA TABELA É UM SÓ, NA TELA E NO PAPEL (v7.134.0) ─────────────
+// PPCP, 16/10/2026, com a tela na mão: "alinhar as colunas, colocar impressão
+// dedicada". Duas coisas desalinhavam: o selo do último dia tinha largura
+// variável (NO PADRÃO é mais largo que ACIMA), e a data depois dele andava em
+// zigue-zague; e o dia a dia aberto era uma tabela DENTRO da célula, com
+// colunas próprias que não casavam com as do resumo.
+//   • As larguras moram em UEP_PAD_COLS (% da tabela, table-layout:fixed) e o
+//     selo tem largura fixa: o mesmo número cai sempre na mesma coluna.
+//   • O dia a dia usa AS MESMAS 11 colunas do resumo, com uma linha de rótulos
+//     própria: UEP/CX, CX/H PADRÃO e % DO PADRÃO do dia ficam embaixo das do
+//     produto, e o CX/H do dia fica ao lado do CX/H PADRÃO, onde se compara.
+//   • A impressão (_uepPadDocHtml) monta as linhas com as MESMAS peças — muda
+//     a moldura e a pele (.pad-doc), nunca as células.
+const UEP_PAD_COLS=[6,22,6,8,5,6,7,6,8,9,17];   // MOD · PRODUTO · UEP/CX · CX/H PAD · DIAS · ABAIXO · NO · ACIMA · % · SELO · DIA
+function _uepPadColgroup(){ return '<colgroup>'+UEP_PAD_COLS.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup>'; }
+function _uepPadU2(v){ return v!=null&&isFinite(v)?v.toFixed(2).replace('.',','):'—'; }
+function _uepPadNn(v){ return v!=null&&isFinite(v)?fmtN(Math.round(v)):'—'; }
+function _uepPadPctTd(pct, st){ return `<td class="n"><b class="uep-pad-${UEP_PAD_ST[st]?UEP_PAD_ST[st].c:''}">${pct!=null?fmtP(pct):'—'}</b></td>`; }
+function _uepPadSelo(st){ return `<span class="uep-pad-st ${UEP_PAD_ST[st].c}">${UEP_PAD_ST[st].t}</span>`; }
+function _uepPadThead(){
+  return `<thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th colspan="2">ÚLTIMO DIA</th></tr></thead>`;
+}
+// As 11 células da linha do produto.
+function _uepPadCelsProd(g){
+  return `<td class="mono">${_rpEsc(g.modelo)}</td><td>${_rpEsc(g.nome||'—')}${g.alterou?' <span class="uep-pad-alt">PADRÃO ALTERADO</span>':''}</td>`
+    +`<td class="n">${_uepPadU2(g.uepCx)}</td><td class="n">${_uepPadNn(g.cxhPad)}</td><td class="n">${g.nJulg}</td>`
+    +`<td class="n">${g.abaixo||'—'}</td><td class="n">${g.no||'—'}</td><td class="n">${g.acima||'—'}</td>${_uepPadPctTd(g.pct,g.st)}`
+    +`<td>${_uepPadSelo(g.ultimo.julg?g.ultimo.st:'curto')}</td><td class="mono">${_rpEsc(String(g.ultimo.data).slice(0,5))}</td>`;
+}
+// O dia a dia de um produto: a linha de rótulos + um dia por linha, do mais
+// recente ao mais antigo, nas MESMAS 11 colunas.
+function _uepPadDiasRows(g){
+  return `<tr class="uep-pad-dh"><td></td><td>DIA</td><td class="n">UEP/CX</td><td class="n">CX/H PADRÃO</td><td class="n">CX/H</td><td class="n">CX</td><td class="n">HORAS</td><td></td><td class="n">% DO PADRÃO</td><td>SITUAÇÃO</td><td></td></tr>`
+    +g.dias.slice().reverse().map(d=>`<tr class="uep-pad-d"><td></td><td class="mono">${_rpEsc(d.data)}</td>`
+      +`<td class="n">${_uepPadU2(d.uepCx)}</td><td class="n">${_uepPadNn(d.cxhPad)}</td><td class="n">${_uepPadNn(d.cxh)}</td>`
+      +`<td class="n">${fmtN(d.cx)}</td><td class="n">${(d.min/60).toFixed(1).replace('.',',')}</td><td></td>`
+      +`${d.julg?_uepPadPctTd(d.pct,d.st):'<td class="n">—</td>'}<td>${_uepPadSelo(d.st)}</td>`
+      +`<td>${d.alterado?'<span class="uep-pad-alt" title="A UEP padrão de algum código do produto mudou neste dia (aba UEP_VERSOES)">PADRÃO ALTERADO</span> ':''}`
+      +`${d.semBase?`<span class="mono" title="Hora com caixa de código sem UEP: o tempo dela não se reparte e ficou fora">${plural(d.semBase,'hora fora','horas fora')}</span>`:''}</td></tr>`).join('');
+}
+// As notas de rodapé (texto, sem conta): a tela e o papel embrulham cada uma.
+function _uepPadNotas(H, V){
+  const extra=[];
+  if(H.soCurtos) extra.push(`${plural(H.soCurtos,'produto não chegou','produtos não chegaram')} a ${UEP_PAD_MIN_MIN/60} h em nenhum dia — fora`);
+  if(H.hSemBase) extra.push(`${plural(H.hSemBase,'hora ficou fora','horas ficaram fora')} por ter caixa de código sem UEP`);
+  if(H.cxSemHora) extra.push(`${fmtN(H.cxSemHora)} cx sem hora no apontamento — fora`);
+  if(H.prods.some(g=>g.antes)) extra.push('dia anterior à 1ª UEP registrada de um código usa a 1ª');
+  return { regra:`Padrão = ritmo da meta (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h) com a UEP vigente em cada dia · faixa ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · hora com troca repartida pelo tempo padrão${extra.length?' · '+extra.join(' · '):''}`,
+           reg: V&&V.registrado===false ? 'Nenhuma mudança de UEP registrada ainda: a padrão de todos os dias é o cadastro de hoje.' : '',
+           div: V&&V.diverge>0 ? `⚠ ${plural(V.diverge,'código está','códigos estão')} com a UEP do cadastro diferente da última versão da aba UEP_VERSOES — mudou sem registro. Confira na planilha.` : '' };
+}
 function _uepPadHtml(H, sel, V){
-  const u2=v=>v!=null?v.toFixed(2).replace('.',','):'—';
-  const nn=v=>v!=null&&isFinite(v)?fmtN(Math.round(v)):'—';
-  const pctTd=(pct,st)=>`<td class="n"><b class="uep-pad-${UEP_PAD_ST[st]?UEP_PAD_ST[st].c:''}">${pct!=null?fmtP(pct):'—'}</b></td>`;
-  const selo=st=>`<span class="uep-pad-st ${UEP_PAD_ST[st].c}">${UEP_PAD_ST[st].t}</span>`;
   if(!H.julgados.length) return `<div class="uep-card"><div class="uep-nota" style="margin-top:0">Nenhum produto com ${UEP_PAD_MIN_MIN/60} h ou mais num dia do período${H.prods.length?` (${plural(H.prods.length,'produto rodou','produtos rodaram')} só em hora curta)`:''}.</div></div>`;
   const linhas=H.julgados.map((g,i)=>{
     const ab=g.key===sel;
-    let r=`<tr class="uep-pad-l${ab?' on':''}" onclick="_uepPadSel(${i})" title="Toque para ver o dia a dia"><td class="mono">${_rpEsc(g.modelo)}</td><td>${_rpEsc(g.nome||'—')}${g.alterou?' <span class="uep-pad-alt">PADRÃO ALTERADO</span>':''}</td>`
-      +`<td class="n">${u2(g.uepCx)}</td><td class="n">${nn(g.cxhPad)}</td><td class="n">${g.nJulg}</td>`
-      +`<td class="n">${g.abaixo||'—'}</td><td class="n">${g.no||'—'}</td><td class="n">${g.acima||'—'}</td>${pctTd(g.pct,g.st)}`
-      +`<td>${g.ultimo.julg?selo(g.ultimo.st):selo('curto')} <span class="mono">${_rpEsc(String(g.ultimo.data).slice(0,5))}</span></td></tr>`;
-    if(ab){
-      r+=`<tr class="uep-pad-det"><td colspan="10"><table><thead><tr><th>DIA</th><th class="n">CX</th><th class="n">HORAS</th><th class="n">CX/H</th><th class="n">CX/H PADRÃO</th><th class="n">UEP/CX</th><th class="n">% DO PADRÃO</th><th>SITUAÇÃO</th></tr></thead><tbody>`
-        +g.dias.slice().reverse().map(d=>`<tr><td class="mono">${_rpEsc(d.data)}</td><td class="n">${fmtN(d.cx)}</td><td class="n">${(d.min/60).toFixed(1).replace('.',',')}</td>`
-          +`<td class="n">${nn(d.cxh)}</td><td class="n">${nn(d.cxhPad)}</td><td class="n">${u2(d.uepCx)}</td>${d.julg?pctTd(d.pct,d.st):'<td class="n">—</td>'}`
-          +`<td>${selo(d.st)}${d.alterado?' <span class="uep-pad-alt" title="A UEP padrão de algum código do produto mudou neste dia (aba UEP_VERSOES)">PADRÃO ALTERADO</span>':''}`
-          +`${d.semBase?` <span class="mono" title="Hora com caixa de código sem UEP: o tempo dela não se reparte e ficou fora">${plural(d.semBase,'hora fora','horas fora')}</span>`:''}</td></tr>`).join('')
-        +'</tbody></table></td></tr>';
-    }
-    return r;
+    return `<tr class="uep-pad-l${ab?' on':''}" onclick="_uepPadSel(${i})" title="Toque para ver o dia a dia">${_uepPadCelsProd(g)}</tr>`+(ab?_uepPadDiasRows(g):'');
   }).join('');
-  const notas=[];
-  if(H.soCurtos) notas.push(`${plural(H.soCurtos,'produto não chegou','produtos não chegaram')} a ${UEP_PAD_MIN_MIN/60} h em nenhum dia — fora`);
-  if(H.hSemBase) notas.push(`${plural(H.hSemBase,'hora ficou fora','horas ficaram fora')} por ter caixa de código sem UEP`);
-  if(H.cxSemHora) notas.push(`${fmtN(H.cxSemHora)} cx sem hora no apontamento — fora`);
-  if(H.prods.some(g=>g.antes)) notas.push('dia anterior à 1ª UEP registrada de um código usa a 1ª');
-  const reg=V&&V.registrado===false?'<div class="uep-nota">Nenhuma mudança de UEP registrada ainda: a padrão de todos os dias é o cadastro de hoje.</div>':'';
-  const div=V&&V.diverge>0?`<div class="uep-nota" style="color:var(--warn)">⚠ ${plural(V.diverge,'código está','códigos estão')} com a UEP do cadastro diferente da última versão da aba UEP_VERSOES — mudou sem registro. Confira na planilha.</div>`:'';
-  return `<div class="uep-card" style="overflow-x:auto"><table><thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th>ÚLTIMO DIA</th></tr></thead><tbody>${linhas}</tbody></table>`
-    +`<div class="uep-nota">Padrão = ritmo da meta (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h) com a UEP vigente em cada dia · faixa ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · hora com troca repartida pelo tempo padrão${notas.length?' · '+notas.join(' · '):''}</div>${reg}${div}</div>`;
+  const N=_uepPadNotas(H, V);
+  return `<div class="uep-card" style="overflow-x:auto"><table class="uep-pad-tab">${_uepPadColgroup()}${_uepPadThead()}<tbody>${linhas}</tbody></table>`
+    +`<div class="uep-nota">${N.regra}</div>${N.reg?`<div class="uep-nota">${N.reg}</div>`:''}${N.div?`<div class="uep-nota" style="color:var(--warn)">${N.div}</div>`:''}</div>`;
+}
+
+// ── IMPRESSÃO DEDICADA DO BLOCO 7 (v7.134.0) ──────────────────────────────
+// O retrato do que está na tela no clique: os MESMOS dados (UEP_PAD, sem
+// leitura nova), a MESMA conta (_uepPadMontar) e as MESMAS células. DEITADA:
+// são 11 colunas, e em pé o nome do produto quebraria em três linhas.
+// Folha 1: os totais e o resumo por produto. Depois, o dia a dia de TODOS os
+// produtos julgados (na tela só abre um por vez) e o COMO O NÚMERO SAI.
+const _UEP_PAD_DOC_SKIN = `
+.pad-doc .kpi-grid{grid-template-columns:repeat(5,1fr)}
+.pad-doc table{table-layout:fixed}
+.pad-doc th.n,.pad-doc td.n{text-align:right}
+.pad-doc td.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
+.pad-doc tbody td{padding:5px 8px}
+.pad-doc thead th{padding:6px 8px}
+.pad-doc .uep-pad-ok{color:#2f855a}
+.pad-doc .uep-pad-warn{color:#b7791f}
+.pad-doc .uep-pad-red{color:#c53030}
+.pad-doc .uep-pad-st{display:inline-block;min-width:70px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;border:1px solid #cbd5e0;border-radius:3px;padding:1px 4px;color:#718096}
+.pad-doc .uep-pad-st.ok{color:#2f855a;border-color:#2f855a}
+.pad-doc .uep-pad-st.warn{color:#b7791f;border-color:#b7791f}
+.pad-doc .uep-pad-st.red{color:#c53030;border-color:#c53030}
+.pad-doc .uep-pad-alt{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1px;color:#c05621;border:1px solid #c05621;border-radius:3px;padding:0 4px;white-space:nowrap}
+.pad-doc tr.uep-pad-g td{font-weight:700;background:#f1f5f9;border-top:1.5px solid #cbd5e0}
+.pad-doc tr.uep-pad-dh td{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1px;color:#718096;padding-top:3px;padding-bottom:3px}
+.pad-doc tr.uep-pad-d td{font-size:10.5px}
+`;
+function _uepPadDocHtml(H, V, ctx){
+  const T=H.tot, pc=n=>T.dias?fmtP(n/T.dias*100):'—';
+  const card=(l,v,sub,c)=>`<div class="kpi-card ${c||''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const N=_uepPadNotas(H, V);
+  const resumo=H.julgados.map(g=>`<tr>${_uepPadCelsProd(g)}</tr>`).join('');
+  const diaADia=H.julgados.map(g=>`<tr class="uep-pad-g">${_uepPadCelsProd(g)}</tr>${_uepPadDiasRows(g)}`).join('');
+  return `<div class="kpi-grid">`
+    +card('PRODUTOS JULGADOS', fmtN(H.julgados.length), H.soCurtos?`${fmtN(H.soCurtos)} sem dia de ${UEP_PAD_MIN_MIN/60} h`:`com ${UEP_PAD_MIN_MIN/60} h ou mais num dia`)
+    +card('DIAS JULGADOS', fmtN(T.dias), 'produto × dia, somados')
+    +card('NO PADRÃO', fmtN(T.no), pc(T.no)+` dos dias · ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%`, 'g')
+    +card('ABAIXO', fmtN(T.abaixo), pc(T.abaixo)+` dos dias · < ${UEP_PAD_FAIXA[0]}%`, 'r')
+    +card('ACIMA', fmtN(T.acima), pc(T.acima)+` dos dias · > ${UEP_PAD_FAIXA[1]}%`, 'o')
+    +`</div>`
+    +`<div class="rp-note">${N.regra}</div>${N.reg?`<div class="rp-note">${N.reg}</div>`:''}${N.div?`<div class="rp-note" style="color:#c05621">${N.div}</div>`:''}`
+    +`<div class="rp-sec-ttl">1 ▸ RESUMO POR PRODUTO · DO QUE MAIS EMBALOU AO QUE MENOS</div>`
+    +`<table>${_uepPadColgroup()}${_uepPadThead()}<tbody>${resumo}</tbody></table>`
+    +`<div class="rp-sec-ttl" style="page-break-before:always">2 ▸ DIA A DIA DE CADA PRODUTO</div>`
+    +`<table>${_uepPadColgroup()}${_uepPadThead()}<tbody>${diaADia}</tbody></table>`
+    +`<div class="rp-sec-ttl">3 ▸ COMO O NÚMERO SAI</div>`
+    +`<table><tbody>`
+    +`<tr><td style="font-weight:700;width:24%">O PADRÃO</td><td>O ritmo da meta: META UEP do dia ÷ ${UEP_MIN_DIA} min de jornada (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h). Em caixas, esse ritmo ÷ a UEP por caixa do produto — o CX/H PADRÃO. A META é a gravada no HISTÓRICO daquele dia.</td></tr>`
+    +`<tr><td style="font-weight:700">A UEP DE CADA DIA</td><td>A UEP padrão que VALIA no dia (aba UEP_VERSOES): mudar o cadastro depois não muda o dia. Antes da 1ª mudança registrada, a padrão é o cadastro de hoje.</td></tr>`
+    +`<tr><td style="font-weight:700">% DO PADRÃO</td><td>UEP feita pelo produto ÷ UEP que o ritmo da meta pede nas mesmas horas. No período, Σ UEP feita ÷ Σ UEP pedida nos dias julgados — não é média de percentuais.</td></tr>`
+    +`<tr><td style="font-weight:700">A HORA DE TROCA</td><td>A linha roda um produto por vez; hora com dois produtos é repartida pelo tempo padrão de cada um (UEP de cada um). Nessa hora os dois saem com o mesmo %: o apontamento por hora não diz qual foi o lento. Hora com caixa de código sem UEP sai da conta dos produtos dela.</td></tr>`
+    +`<tr><td style="font-weight:700">QUEM É JULGADO</td><td>Produto com ${UEP_PAD_MIN_MIN/60} h ou mais somadas no dia. Menos que isso é quase só borda de rodada (começou ou terminou no meio da hora) e sai como &lt; ${UEP_PAD_MIN_MIN/60} H. Hoje fica fora: o dia não fechou.</td></tr>`
+    +`<tr><td style="font-weight:700">A FAIXA</td><td>ABAIXO &lt; ${UEP_PAD_FAIXA[0]}% · NO PADRÃO ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · ACIMA &gt; ${UEP_PAD_FAIXA[1]}%. Acima é ALERTA, não "ótimo": produto que sai acima dia após dia tem a UEP alta demais para ele (ou apontamento errado), e infla a UEP da linha.</td></tr>`
+    +`<tr><td style="font-weight:700">O QUE ELE NÃO É</td><td>A UEP medida saiu do ritmo demonstrado pela linha, não de cronoanálise; a estimada (EST), da medida da caixa na esteira. Desvio repetido num produto é o sinal para revisar a UEP dele — com autorização, pelo 💾 GRAVAR UEP.</td></tr>`
+    +`</tbody></table>`
+    +`<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · padrão × realizado por produto</span><span>${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+}
+function gerarRelatorioUepPadrao(){
+  if(!UEP_PAD || UEP_PAD.n!==_uepPadN()){ alert('A produção por produto do período ainda está sendo lida. Tente de novo em alguns segundos.'); return; }
+  let H=null;
+  try{ H=_uepPadMontar(); }catch(err){ alert(_rpErroRelatorio(err)); return; }
+  if(!H || !H.julgados.length){ alert(`Nenhum produto com ${UEP_PAD_MIN_MIN/60} h ou mais num dia do período — nada para imprimir.`); return; }
+  const win=window.open('','_blank','width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  const agora=new Date();
+  const ctx={ de:UEP_PAD.de, ate:UEP_PAD.ate, n:UEP_PAD.n, data:hojeStr(),
+              hora:agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) };
+  let corpo='';
+  try{ corpo=_uepPadDocHtml(H, UEP_PAD.uepVer, ctx); }
+  catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html=_rpDocParadas(`Padrão × realizado — ${ctx.de} a ${ctx.ate}`, true)
+    + '<style>' + _UEP_PAD_DOC_SKIN + '</style>'
+    + _rpBotaoImprimir()
+    + '<div class="pad-doc">'
+    + _rpCabecalho('PADRÃO × REALIZADO POR PRODUTO',
+        `<div class="rp-per">UEP PADRÃO</div>
+         <div>${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)}</div>
+         <div>últimos ${ctx.n} dias · hoje fora</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 
 function renderUep(){
@@ -5255,7 +5371,7 @@ function renderUep(){
     +`<div class="uep-sec"><b>5 · PERÍODO</b> dias fechados ${botoes}</div>${b4}`
     +`<div class="uep-sec"><b>6 · PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
       <div class="tbl-wrap" id="ger-prox"><div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div></div>`
-    +`<div class="uep-sec" title="A UEP padrão de cada dia é a vigente nele (aba UEP_VERSOES); hoje fica fora. Toque num produto para ver o dia a dia."><b>7 · PADRÃO × REALIZADO POR PRODUTO</b> dias fechados ${botoesPad}</div>${b7}`;
+    +`<div class="uep-sec" title="A UEP padrão de cada dia é a vigente nele (aba UEP_VERSOES); hoje fica fora. Toque num produto para ver o dia a dia."><b>7 · PADRÃO × REALIZADO POR PRODUTO</b> dias fechados ${botoesPad}<button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px" onclick="gerarRelatorioUepPadrao()" title="Impressão dedicada deste bloco, em folha deitada: o resumo por produto e o dia a dia de todos os produtos do período">🖨 IMPRIMIR</button></div>${b7}`;
   // Largura do gráfico: na 1ª pintura o card ainda não existia; com ele no DOM,
   // redesenha só o SVG na largura certa.
   if(!box){ const nb=document.getElementById('uep-g-box'); if(nb){ const sv=nb.querySelector('svg'); if(sv) sv.outerHTML=_uepAbaSvg(horas, _svgLargura(nb)); } }
