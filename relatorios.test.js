@@ -3504,6 +3504,9 @@ console.log('\n── estudo de UEP ──');
   eval(pega('function _uepProdutos('));
   eval(pega('function _uepDias('));
   eval(pega('function _uepValidacao('));
+  eval(pega('function _uepEhBase('));
+  global.UEP_BASE = eval('(' + JS.match(/const UEP_BASE\s*=\s*(\{[^}]*\})/)[1] + ')');
+  eval(pega('function _uepBaseFaltaTxt('));
   eval(pega('function _uepEstudo('));
   const it = [];
   const dia = i => p2(i + 1) + '/09/2026';
@@ -3610,6 +3613,50 @@ console.log('\n── estudo de UEP ──');
   ok('a cobertura não é mais cortada em 100%', eT.dias[0].cobDia, 112.5);
   ok('e o dia acima do realizado é contado', eT.nCobAcima, 1);
   ok('sem dia acima do ritmo da âncora, o teste de sanidade passa', eT.nAcimaAncora, 0);
+  ok('sem a base fixa no período, a âncora é a automática e vem marcada', [eT.baseFixa, eT.baseOk], [false, false]);
+
+  // ── v7.136.0: BASE FIXA = MESA CABECEIRA MADERO (PPCP, 16/10/2026: "a base
+  // tem que ser um só"). A escolha automática virou a âncora para o KIT 2
+  // SLEEP no GRAVAR de 16/10 e deixou o cadastro com duas escalas.
+  ok('a base fixa é a MESA CABECEIRA MADERO (501149)', [UEP_BASE.modelo, UEP_BASE.nome], ['501149', 'MESA CABECEIRA MADERO']);
+  const madero = (n, teto) => {
+    const r = [];
+    for (let i = 0; i < n; i++) r.push({ data: dia(i), modelo: '501149', nome: 'MESA CABECEIRA MADERO', cor: 'BRANCO', caixas: 400, horas: 2,
+      horasLista: ['14:00', '15:00'], cxHora: { '14:00': 200, '15:00': 200 }, tetoCxH: teto });
+    return r;
+  };
+  const eB = _uepEstudo(itT.concat(madero(6, 400)), 'aparada');
+  const bB = n => eB.prods.find(p => p.nome === n);
+  ok('com a base no período, ELA é a A — mesmo sem ser o maior volume', [eB.volume.nome, eB.baseFixa, eB.baseOk], ['MESA CABECEIRA MADERO', true, true]);
+  ok('a base vale 1,00 e os outros saem contra ela', [bB('MESA CABECEIRA MADERO').uepVol, bB('A').uepVol, Math.round(bB('B').uepVol * 1000) / 1000], [1, 200 / 300, 1.333]);
+  ok('com a base, ninguém é "fora da âncora" (a regra do teto não escolhe mais)', eB.foraTeto, []);
+  ok('a B (mais rápido) continua só para comparar', eB.rapido.nome, 'A');
+  const eB3 = _uepEstudo(itT.concat(madero(3, 400)), 'aparada');
+  ok('base com menos de ' + UEP_MIN_DIAS + ' dias: ainda é a A, mas NÃO libera o GRAVAR', [eB3.volume.nome, eB3.baseFixa, eB3.baseOk, eB3.baseDias], ['MESA CABECEIRA MADERO', true, false, 3]);
+  const eBT = _uepEstudo(itT.concat(madero(6, 210)), 'aparada');
+  ok('base no limite da esteira continua sendo a base, mas NÃO libera o GRAVAR', [eBT.volume.nome, eBT.volume.pctTeto > UEP_ANCORA_TETO_MAX, eBT.baseNoTeto, eBT.baseOk], ['MESA CABECEIRA MADERO', true, true, false]);
+  ok('e o relatório diz por quê', /e\.baseNoTeto\?/.test(pega('function _uepHtml(')), true);
+  // Base cortada no teto (a conta deu 200 cx/h, teto 190): a régua da sanidade
+  // não pode ser o teto dela (sem folga, quase todo dia sairia suspeito). É o
+  // teto da referência automática na escala da base — a mesma classificação
+  // de antes da base fixa. (01/09–15/10/2026: 17 de 30 dias × 0.)
+  const eBC = _uepEstudo(itT.concat(madero(6, 190)), 'aparada');
+  ok('base cortada no teto: limitada, bloqueia o GRAVAR e a sanidade não acusa dia normal',
+     [eBC.volume.limitadoTeto, eBC.baseNoTeto, eBC.baseOk, eBC.nAcimaAncora], [true, true, false, 0]);
+  ok('a régua da sanidade é o teto da referência na escala da base (B: teto 400 × 190 ÷ 150)', Math.round(eBC.tetoUepH * 10) / 10, 506.7);
+  ok('o aviso do bloqueio pelo teto diz o motivo e que nada foi gravado',
+     [/limite da esteira/.test(_uepBaseFaltaTxt(eBC)), /a conta deu 200 cx\/h, acima do teto de 190/.test(_uepBaseFaltaTxt(eBC)), /Nada foi gravado/.test(_uepBaseFaltaTxt(eBC))], [true, true, true]);
+  ok('o produto mais rápido não é chamado de BASE na tabela', /'BASE RÁPIDO'/.test(pega('function _uepHtml(')), false);
+  ok('o nome da base casa sem diferença de caixa/espaço', _uepEhBase({ modelo: '501149', nome: ' mesa cabeceira madero ' }), true);
+  ok('outro produto do mesmo modelo de 6 dígitos não é a base', _uepEhBase({ modelo: '501149', nome: 'MESA CABECEIRA MADERO KIT' }), false);
+  ok('o aviso diz quantos dias a base rodou', /rodou só 3 dias/.test(_uepBaseFaltaTxt(eB3)), true);
+  ok('sem a base, diz que não rodou e que nada foi gravado', [/não rodou/.test(_uepBaseFaltaTxt(eT)), /Nada foi gravado/.test(_uepBaseFaltaTxt(eT))], [true, true]);
+  {
+    const i0 = JS.indexOf('async function _gravarUepCadastro(');
+    const g = JS.slice(i0, JS.indexOf('\n}\n', i0));
+    ok('o GRAVAR para sem a base medida — ANTES de simular', g.indexOf('if(!e.baseOk){ alert(_uepBaseFaltaTxt(e)); return; }') > 0
+      && g.indexOf('if(!e.baseOk)') < g.indexOf('_uepSimular('), true);
+  }
   // Ritmo acima do teto físico é limitado ao teto e marcado.
   const itC = itH.map(x => ({ ...x, tetoCxH: x.nome === 'A' ? 250 : 400 }));
   const pC = _uepEstudo(itC, 'aparada').prods.find(p => p.nome === 'A');
@@ -3798,7 +3845,7 @@ console.log('\n── estudo de UEP ──');
   ok('a UEP GRAVADA usa a cor da aba HISTÓRICO (sc do % da meta)',
      /corSc\[sc\(d\.gravada\.pct\)\]/.test(pega('function _uepHtml(')), true);
   ok('com menos de 10 dias válidos não há faixa', _uepEstudo(itM.slice(0, 5), 'aparada', rbM, [50, 60], histM).meta.de, null);
-  ok('a sanidade usa o TETO da âncora, não o ritmo médio', /volume\.teto>0\?volume\.teto/.test(pega('function _uepEstudo(')), true);
+  ok('a sanidade usa o TETO da âncora (a referência), não o ritmo médio', /ref\.teto>0\?ref\.teto/.test(pega('function _uepEstudo(')), true);
   ok('o estudo pede cxHora e espera mais; o comparativo não pede',
      [/cxHora:true, ms:60000/.test(pega('async function _uepItensPeriodo(')),
       /await _uepItensPeriodo\(\)/.test(pega('async function gerarRelatorioUEP(')),

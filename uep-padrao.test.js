@@ -392,6 +392,11 @@ console.log('\n── GRAVAR UEP: o efeito na UEP da LINHA (v7.135.0) ──');
       /uepProd:PH_UEP_PROD/.test(pegaV7('async function _uepItensPeriodo('))], [true, true, true]);
   ok('o aviso final de ajustar a meta só sai quando o efeito inteiro entrou',
      /imp && Math\.abs\(imp\.escala\)>=UEP_IMP_ALERTA && \(substituir \|\| !sim\.nExist\)/.test(g), true);
+  // v7.136.0: cancelar o 2º passo com a escala mudando deixa DUAS escalas.
+  ok('o 2º passo diz que Cancelar deixa duas escalas', TT.t2.includes('o cadastro fica com DUAS escalas'), true);
+  ok('e o alerta final avisa quando o Cancelar deixou duas escalas',
+     /imp && Math\.abs\(imp\.escala\)>=UEP_IMP_ALERTA && !substituir && sim\.nExist/.test(g) && /o cadastro ficou com DUAS escalas/.test(g), true);
+  ok('o GRAVAR para sem a base medida (dias e teto)', /if\(!e\.baseOk\)\{ alert\(_uepBaseFaltaTxt\(e\)\); return; \}/.test(g), true);
 }
 
 console.log(falhas === 0
