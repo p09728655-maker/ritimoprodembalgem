@@ -3647,6 +3647,13 @@ console.log('\n── estudo de UEP ──');
   ok('o aviso do bloqueio pelo teto diz o motivo e que nada foi gravado',
      [/limite da esteira/.test(_uepBaseFaltaTxt(eBC)), /a conta deu 200 cx\/h, acima do teto de 190/.test(_uepBaseFaltaTxt(eBC)), /Nada foi gravado/.test(_uepBaseFaltaTxt(eBC))], [true, true, true]);
   ok('o produto mais rápido não é chamado de BASE na tabela', /'BASE RÁPIDO'/.test(pega('function _uepHtml(')), false);
+  // v7.137.0: a coluna B (escala do mais rápido) SAIU do estudo — o PPCP leu o
+  // 1,00 da SLEEP e o 1,20 da MADERO na coluna B como se fossem a UEP gravada.
+  ok('alinhamento: a marca (* e ⚠) mora numa casa fixa, também no cabeçalho, e as larguras são fixas',
+     ['${u2(p.uepVol)}${sx(p.uepVol!=null?pv:\'\')}', "${n0(d.uepH)}${sx(d.acimaAncora?'⚠':'')}", 'UEP/CX${sx(\'\')}', 'table-layout:fixed">${cols(div?']
+       .map(x => pega('function _uepHtml(').includes(x)), [true, true, true, true]);
+  ok('o estudo mostra UMA UEP/CX só (a da base): a coluna B não volta',
+     /uepRap|UEP\/CX · B|anc\(e\.rapido/.test(pega('function _uepHtml(')), false);
   ok('o nome da base casa sem diferença de caixa/espaço', _uepEhBase({ modelo: '501149', nome: ' mesa cabeceira madero ' }), true);
   ok('outro produto do mesmo modelo de 6 dígitos não é a base', _uepEhBase({ modelo: '501149', nome: 'MESA CABECEIRA MADERO KIT' }), false);
   ok('o aviso diz quantos dias a base rodou', /rodou só 3 dias/.test(_uepBaseFaltaTxt(eB3)), true);
@@ -3656,7 +3663,32 @@ console.log('\n── estudo de UEP ──');
     const g = JS.slice(i0, JS.indexOf('\n}\n', i0));
     ok('o GRAVAR para sem a base medida — ANTES de simular', g.indexOf('if(!e.baseOk){ alert(_uepBaseFaltaTxt(e)); return; }') > 0
       && g.indexOf('if(!e.baseOk)') < g.indexOf('_uepSimular('), true);
+    // v7.137.0 — UEP TRAVADA (PPCP, 16/10/2026: "trava as UEP como está,
+    // depois só com a cronoanálise"). O GRAVAR para antes de LER o período.
+    ok('UEP travada: o GRAVAR para antes de buscar, simular ou gravar',
+       g.indexOf('if(UEP_TRAVADA_DESDE){ alert(_uepTravadaTxt()); return; }') > 0
+       && g.indexOf('if(UEP_TRAVADA_DESDE)') < g.indexOf('_uepItensPeriodo(')
+       && g.indexOf('if(UEP_TRAVADA_DESDE)') < g.indexOf('_uepSimular('), true);
   }
+  global.UEP_TRAVADA_DESDE = (JS.match(/const UEP_TRAVADA_DESDE\s*=\s*'([^']*)'/) || [])[1];
+  ok('a trava está ligada desde 16/10/2026', UEP_TRAVADA_DESDE, '16/10/2026');
+  eval(pega('function _uepTravadaTxt('));
+  eval(pega('function _uepBaseNoCadastro('));
+  eval(pega('function _uepBaseLinha('));
+  ok('o aviso da trava diz o caminho (cronoanálise digitada, UEP_VERSOES), a base e que nada foi gravado',
+     ['CRONOANÁLISE', 'coluna UEP da PRODUTO_CODIGO', 'UEP_VERSOES', '501149 MESA CABECEIRA MADERO = 1,00', 'Nada foi gravado'].map(x => _uepTravadaTxt().includes(x)), [true, true, true, true, true]);
+  const catB = v => [1, 2, 3, 4].map(i => ({ codigo: '50114900' + i, desc: 'VOL 1/1 MESA CABECEIRA MADERO', cor: 'BRANCO', uep: i === 4 ? v : 1 }))
+    .concat([{ codigo: '501097001', desc: 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor: 'BRANCO', uep: 1 }]);
+  ok('a base no cadastro: os 4 códigos da MADERO em 1,00 → ok (o KIT 2 SLEEP não é a base)', _uepBaseNoCadastro(catB(1)), { n: 4, vals: [1], ok: true });
+  ok('um código da base digitado diferente → avisa com os valores', _uepBaseNoCadastro(catB(1.1)), { n: 4, vals: [1, 1.1], ok: false });
+  ok('sem cadastro lido → null (não acusa às cegas)', [_uepBaseNoCadastro(null), _uepBaseNoCadastro([])], [null, null]);
+  ok('a linha da base diz a base, a trava e o desvio do cadastro',
+     [/MESA CABECEIRA MADERO = 1,00 UEP\/cx/.test(_uepBaseLinha(_uepBaseNoCadastro(catB(1)))), /travada desde 16\/10\/2026/.test(_uepBaseLinha(null)),
+      /no cadastro a base está 1,00 \/ 1,10/.test(_uepBaseLinha(_uepBaseNoCadastro(catB(1.1))))], [true, true, true]);
+  ok('a linha da base é a MESMA na aba ⚖ UEP e no papel, e vem da montagem única',
+     [/_uepBaseLinha\(D\.base\)/.test(pega('function renderUep(')), /_uepBaseLinha\(D\.base\)/.test(pega('function _uepDocHtml(')),
+      /base=_uepBaseNoCadastro\(CAP_RAW\)/.test(pega('function _uepAbaDados('))], [true, true, true]);
+  ok('o botão diz que a UEP está travada', /id="btn-gravar-uep"[^>]*>🔒 UEP TRAVADA<\/button>/.test(src) && /UEP_TRAVADA_DESDE\?'🔒 UEP TRAVADA':'💾 GRAVAR UEP'/.test(pega('function _uepBotao(')), true);
   // Ritmo acima do teto físico é limitado ao teto e marcado.
   const itC = itH.map(x => ({ ...x, tetoCxH: x.nome === 'A' ? 250 : 400 }));
   const pC = _uepEstudo(itC, 'aparada').prods.find(p => p.nome === 'A');
