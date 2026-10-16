@@ -3134,7 +3134,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.134.0';
+const APP_VER   = '7.135.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7547,7 +7547,9 @@ async function _uepItensPeriodo(){
   const p=(async()=>{
     try{
       const itens=await lerProducaoModeloPeriodo(de, ate, null, {cxHora:true, ms:60000});
-      if(itens!=null) _uepCache={key, itens, t:Date.now()};
+      // uepProd DESTA leitura (o global é sobrescrito por qualquer outra) —
+      // é o "antes" do efeito na UEP da linha no confirm do GRAVAR.
+      if(itens!=null) _uepCache={key, itens, t:Date.now(), uepProd:PH_UEP_PROD};
       return itens;
     } finally { if(_uepVoo.key===key) _uepVoo={key:null, p:null}; }
   })();
@@ -7680,6 +7682,60 @@ async function _uepSimular(lista, cal){
   }
   return S;
 }
+// ── EFEITO NA UEP DA LINHA (v7.135.0, PPCP 16/10/2026) ─────────────────────
+// O confirm mostrava o antes → depois POR CÓDIGO e nada sobre o que isso faz
+// com a UEP da LINHA. Foi assim que uma troca de escala de −21,6% passou no
+// 1º GRAVAR com trava (16/10 10:43, 196 UEP substituídas): a meta de 2.530
+// seguiu valendo numa régua que tinha encolhido. Aqui a MESMA produção do
+// período do estudo (só jornada; hoje fica fora, está pela metade) é lida com
+// a UEP do cadastro (antes) e com a UEP que o estudo grava (depois).
+//   antes  = uepProd da própria leitura do estudo (Σ cx × UEP do cadastro ÷
+//            Σ cx, por produto — o .gs manda pronto);
+//   depois = a UEP/cx do estudo. O .gs reparte o jogo entre os volumes sem
+//            mudar o total do produto, então a média por caixa é ela.
+// A ESCALA compara só produtos com UEP antes E depois (as mesmas caixas);
+// caixa que só ganha UEP agora é cobertura, contada à parte. A estimativa do
+// resto do cadastro fica fora: ela toca produto que não rodou no período.
+const UEP_IMP_ALERTA = 5;   // % de mudança de escala que pede ajuste da meta
+function _uepImpacto(itens, lista, uepProd, meta, hojeS){
+  if(!uepProd || typeof uepProd!=='object') return null;
+  const dep={}; (lista||[]).forEach(x=>{ if(Number(x[2])>0) dep[x[0]+'|'+x[1]]=Number(x[2]); });
+  const D={};
+  let sa=0, sd=0, cxNovos=0, semHora=false;
+  (itens||[]).forEach(it=>{
+    if(!it || it.data===hojeS) return;
+    let cx=0;
+    if(it.cxHora && typeof it.cxHora==='object') Object.keys(it.cxHora).forEach(h=>{ if(!_horaEhHE(h)) cx+=Number(it.cxHora[h])||0; });
+    else { cx=Number(it.caixas)||0; semHora=true; }
+    if(!(cx>0)) return;
+    const k=_uepChave(it), a=Number(uepProd[k])||0, d=dep[k]!=null?dep[k]:a;
+    if(!(a>0) && !(d>0)) return;
+    const o=D[it.data]=D[it.data]||{a:0, d:0};
+    if(a>0) o.a+=cx*a;
+    if(d>0) o.d+=cx*d;
+    if(a>0 && d>0){ sa+=cx*a; sd+=cx*d; }
+    else if(d>0) cxNovos+=cx;
+  });
+  const dias=Object.keys(D);
+  if(!dias.length || !(sa>0)) return null;
+  const m=Number(meta)>0?Number(meta):UEP_META_PADRAO, f=sd/sa;
+  let ta=0, td=0, na=0, nd=0;
+  dias.forEach(k=>{ ta+=D[k].a; td+=D[k].d; if(D[k].a>=m) na++; if(D[k].d>=m) nd++; });
+  return { n:dias.length, mediaA:ta/dias.length, mediaD:td/dias.length, escala:(f-1)*100,
+           meta:m, metaEq:Math.round(m*f), diasA:na, diasD:nd, cxNovos, semHora };
+}
+function _uepImpactoTxt(I){
+  if(I===undefined) return '';
+  if(!I) return '\n\nEFEITO NA UEP DA LINHA: não calculado — a leitura do período não trouxe a UEP do cadastro para as caixas dele.';
+  const n0=v=>fmtN(Math.round(v)), muda=Math.abs(I.escala)>=UEP_IMP_ALERTA;
+  return '\n\nEFEITO NA UEP DA LINHA — a MESMA produção de '+plural(I.n,'dia','dias')+' do estudo, só jornada'+(I.semHora?' (sem as caixas por hora: HE junto)':'')+', se autorizar tudo:\n'
+    +'• média '+n0(I.mediaA)+' → '+n0(I.mediaD)+' UEP/dia\n'
+    +'• escala '+(I.escala>=0?'+':'−')+fmtP(Math.abs(I.escala))+' nas mesmas caixas'+(I.cxNovos?' (+'+n0(I.cxNovos)+' cx passam a ter UEP)':'')+'\n'
+    +'• dias na meta de '+n0(I.meta)+': '+I.diasA+' → '+I.diasD+' de '+I.n+'\n'
+    +(muda
+      ? '⚠ A ESCALA MUDA. Na régua nova a meta equivalente é ~'+n0(I.metaEq)+' UEP. Sem ajustar a META DIA (UEP) no ⚙, o dia passa a ser julgado por outra régua, e o HISTÓRICO fica com dias de duas escalas.'
+      : 'Escala praticamente igual: a meta de '+n0(I.meta)+' continua valendo.');
+}
 // Os dois textos da autorização (puro, testado). `sim` = _uepSimular.
 const UEP_TRAVA_LISTA = 15;
 function _uepTravaTxt(sim, ctx){
@@ -7698,7 +7754,8 @@ function _uepTravaTxt(sim, ctx){
     +'Âncora (1,00): '+ctx.ancora+'\n'
     +(ctx.nProv?ctx.nProv+' UEP provisória(s) (menos de '+UEP_MIN_DIAS+' dias rodados) vão junto.\n':'')
     +'\nO QUE MUDA NO CADASTRO (vigência '+ctx.vig+'):\n'+(lin.length?lin.join('\n'):'• nada')+'\n\n'
-    +'A UEP de hoje é a padrão: toda mudança fica registrada na aba UEP_VERSOES, e o dia passado continua lido com a UEP que valia nele. Dia já fechado no HISTÓRICO não muda.\n\n'
+    +'A UEP de hoje é a padrão: toda mudança fica registrada na aba UEP_VERSOES, e o dia passado continua lido com a UEP que valia nele. Dia já fechado no HISTÓRICO não muda.'
+    +_uepImpactoTxt(ctx.imp)+'\n\n'
     +'OK = continuar · Cancelar = não gravar nada';
   let t2=null;
   if(sim.nExist){
@@ -7706,6 +7763,10 @@ function _uepTravaTxt(sim, ctx){
     t2=plural(sim.nExist,'código JÁ TEM','códigos JÁ TÊM')+' UEP padrão e mudaria:\n\n'
       +ex.slice(0,UEP_TRAVA_LISTA).map(x=>x[0]+'  '+u2(x[1])+' → '+u2(x[2])+'  ('+(x[2]>=x[1]?'+':'−')+fmtP(Math.abs(x[2]/x[1]-1)*100)+')'+(x[3]?'  · vig. '+x[3]:'')).join('\n')
       +(sim.nExist>UEP_TRAVA_LISTA?'\n… e mais '+(sim.nExist-UEP_TRAVA_LISTA):'')+'\n\n'
+      +(ctx.imp && Math.abs(ctx.imp.escala)>=UEP_IMP_ALERTA
+        ? '⚠ Substituindo, a escala da linha muda '+(ctx.imp.escala>=0?'+':'−')+fmtP(Math.abs(ctx.imp.escala))
+          +': a meta equivalente fica ~'+fmtN(ctx.imp.metaEq)+' UEP (hoje '+fmtN(ctx.imp.meta)+').\n\n'
+        : '')
       +'OK = SUBSTITUIR estas '+sim.nExist+' (a anterior fica guardada na aba UEP_VERSOES)\n'
       +'Cancelar = MANTER as atuais e gravar só o resto';
   }
@@ -7730,8 +7791,11 @@ async function _gravarUepCadastro(){
   try{ sim=await _uepSimular(lista, cal); }
   catch(err){ alert('Não consegui conferir o que muda no cadastro: '+(err&&err.message||err)+'\nNada foi gravado. Tente de novo.'); return; }
   if(!sim){ alert('O Apps Script ainda não conhece a conferência da UEP — cole o ritmoprod_appscript.gs v5.24 e re-deploye (Gerenciar implantações → Editar → Nova versão).\n\nNada foi gravado.'); return; }
+  // O antes da escala é a UEP do cadastro NA MESMA leitura do estudo (o
+  // PH_UEP_PROD global é de quem leu por último — pode ser outro período).
+  const imp=_uepImpacto(itens, lista, _uepCache.key===de+'|'+ate?_uepCache.uepProd:null, PONTOS_DIA.metaUep, hojeStr());
   const tx=_uepTravaTxt(sim, { de, ate, modo:_phMediaModo()==='completa'?'COMPLETA':'APARADA',
-    ancora:e.volume.modelo+' '+e.volume.nome, nProv, vig:hojeStr(), cal });
+    ancora:e.volume.modelo+' '+e.volume.nome, nProv, vig:hojeStr(), cal, imp });
   if(tx.nada){ alert('Nada a gravar: o cadastro já está com a UEP deste estudo.'); return; }
   // 2 · AUTORIZAR — e a UEP que já existe só troca com um segundo OK.
   _uepBotao('⏳ AGUARDANDO AUTORIZAÇÃO…');
@@ -7788,6 +7852,11 @@ async function _gravarUepCadastro(){
     +'\n\n'+(verErros.length
       ? '⚠ A MUDANÇA NÃO FICOU REGISTRADA na aba UEP_VERSOES ('+verErros[0]+'). O cadastro foi gravado; anote o que mudou.'
       : (versoes?versoes+' mudança(s) registrada(s) na aba UEP_VERSOES.':'Nenhum valor mudou — nada a registrar.'))
+    // Só quando o efeito do confirm foi o que de fato entrou (sem existente
+    // mantida, que deixaria a escala no meio do caminho).
+    +(imp && Math.abs(imp.escala)>=UEP_IMP_ALERTA && (substituir || !sim.nExist)
+      ? '\n\n⚠ A escala da linha mudou '+(imp.escala>=0?'+':'−')+fmtP(Math.abs(imp.escala))+': ajuste a META DIA (UEP) no ⚙ para ~'+fmtN(imp.metaEq)+' UEP.'
+      : '')
     +'\n\nO card UEP DO DIA passa a usar esta régua na próxima leitura (até ~1 min).');
   _uepPadInvalidar();
   try{ await lerPontosDia(); renderGerencial(); }catch(_){}

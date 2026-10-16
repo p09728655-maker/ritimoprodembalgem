@@ -3267,10 +3267,46 @@ feito e dá ar de verdade ao que sobrou.
   otimista), dias ≥ 2.530: **16 → 2**. O "antes" recalculado bate com a UEP
   gravada no HISTORICO (15/10: 2.987 × 2.986,5). Com a escala nova, a META UEP
   de 2.530 deixou de ser a mesma régua: a equivalente é **~1.984** e a faixa
-  p50–p60 da escala nova, **~2.180–2.210**. ⚠ **O confirm do GRAVAR mostra o
-  antes → depois por código, mas não o efeito na UEP da linha nem na meta** —
-  foi assim que uma troca de escala de −21,6% passou. É a próxima melhoria da
-  trava.
+  p50–p60 da escala nova, **~2.180–2.210**. O confirm mostrava o antes →
+  depois por código e não o efeito na UEP da linha nem na meta — foi assim que
+  a troca de escala de −21,6% passou. **Resolvido na v7.135.0** (abaixo).
+- **EFEITO NA UEP DA LINHA no confirm do GRAVAR** (v7.135.0, só tela, sem
+  re-deploy). `_uepImpacto` (conta pura) relê a MESMA produção do período do
+  estudo (só jornada, hoje fora) com a UEP do cadastro (antes) e com a que o
+  estudo grava (depois): média UEP/dia antes → depois, **escala** (só caixas
+  com UEP antes E depois — caixa que só ganha UEP é cobertura, contada à
+  parte), dias na meta antes → depois e a **meta equivalente**
+  (meta × depois ÷ antes). `_uepImpactoTxt` é o texto ÚNICO do 1º passo; o 2º
+  passo repete a escala antes do SUBSTITUIR; o alerta final pede o ajuste da
+  meta no ⚙ quando o efeito inteiro entrou. `UEP_IMP_ALERTA`=5%: abaixo disso
+  diz que a meta continua valendo.
+  - O **antes** é o `uepProd` DA PRÓPRIA LEITURA do estudo (`_uepCache.uepProd`).
+    O `PH_UEP_PROD` global é de quem leu por último — o bloco 7 lê 30 dias, o
+    comparativo outro período — e o efeito sairia de outra produção.
+  - O **depois** é a UEP/cx do produto: o `.gs` reparte o jogo entre os volumes
+    sem mudar o total, então a média por caixa do produto é ela. A estimativa
+    do resto do cadastro fica fora (toca produto que não rodou no período).
+  - Sem o `uepProd` da leitura, o confirm **diz** "não calculado" — nunca um
+    número inventado.
+- **O PASSADO FOI TESTE — decisão do PPCP, 16/10/2026** (*"o importante é
+  daqui para frente usar a padrão, até agora são testes"*). Por isso a
+  conversão automática dos dias de escala antiga (UEP × meta de hoje ÷ meta do
+  dia, na régua da aba PLANO, na faixa do estudo e na média do bloco 5) **não
+  foi feita**: era aproximada (dependia de a meta acompanhar a escala) e ficaria
+  no código para sempre. O caminho é pôr o histórico na régua padrão UMA vez,
+  pelo editor:
+  1. ⚙ META DIA (UEP) com a meta nova (recomendada **2.100**, a neutra) e
+     salvar — o `regravarUepPassada` grava a meta ATUAL em todos os dias;
+  2. renomear a aba `UEP_VERSOES` (ex.: `UEP_VERSOES_TESTE`) — sem ela o
+     cadastro de hoje vale para todas as datas e o bloco 7 lê o passado na mesma
+     régua que o HISTORICO regravado. A próxima mudança cria a semente nova;
+  3. editor → `regravarUepPassada` → Executar.
+  - ⚠ Sem o passo 2, o bloco 7 leria o passado com a semente (escala antiga)
+    contra a meta nova — dias de setembro sairiam ACIMA do padrão.
+  - ⚠ Dia sem lançamento com produto no log fica como estava (o log do editor
+    conta quantos: `sem lançamento com produto no log`).
+  - Mudar de escala DE NOVO no futuro traz o mesmo problema de volta. A saída é
+    a mesma (regravar), e é por isso que o confirm agora mostra a escala.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de

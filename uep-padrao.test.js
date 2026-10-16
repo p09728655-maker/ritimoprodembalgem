@@ -219,9 +219,11 @@ const F = { window: {} };
 F.window = F;
 vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
-['UEP_PAD_FAIXA', 'UEP_PAD_MIN_MIN', 'UEP_TRAVA_LISTA', 'UEP_MIN_DIAS'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
+['UEP_PAD_FAIXA', 'UEP_PAD_MIN_MIN', 'UEP_TRAVA_LISTA', 'UEP_MIN_DIAS', 'UEP_IMP_ALERTA'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
+vm.runInContext("var CFG = { turnoInicio: '07:00', turnoFim: '17:00' };", F);
 vm.runInContext('var UEP_PAD_ST = ' + V7JS.match(/const UEP_PAD_ST=(\{[^\n]*\});/)[1] + ';', F);
-['function _uepPadSt(', 'function _uepPadMinSlot(', 'function _uepPadHist(', 'function _uepTravaTxt(', 'function _uepPadJanela(']
+['function _uepPadSt(', 'function _uepPadMinSlot(', 'function _uepPadHist(', 'function _uepTravaTxt(', 'function _uepPadJanela(',
+ 'function _horaEhHE(', 'function _uepChave(', 'function _uepImpacto(', 'function _uepImpactoTxt(']
   .forEach(f => vm.runInContext(pegaV7(f), F));
 const hist = (itens, metaDe, metaAt, minSlot) => vm.runInContext('_uepPadHist(' + JSON.stringify(itens) + ',' + JSON.stringify(metaDe || {}) + ',' + JSON.stringify(metaAt) + ',' + JSON.stringify(minSlot || {}) + ')', F);
 
@@ -349,6 +351,47 @@ console.log('\n── GRAVAR UEP: a autorização ──');
   const sm = pegaV7('async function _uepSimular(');
   ok('a simulação usa a AÇÃO PRÓPRIA (o .gs antigo cai no getDados e não grava)',
      [/action=simularUepCatalogo/.test(sm), /action=setUepCatalogo/.test(sm), /r\.simulado!==true\) return null/.test(sm)], [true, false, true]);
+}
+
+console.log('\n── GRAVAR UEP: o efeito na UEP da LINHA (v7.135.0) ──');
+{
+  const it = (data, modelo, nome, cxHora, extra) => Object.assign({ data, modelo, nome, cor: '', caixas: 1, cxHora }, extra || {});
+  const itens = [
+    it('14/10/2026', '501149', 'MADERO', { '06:00': 200, '07:00': 1000 }),   // a madrugada é HE: fica fora
+    it('14/10/2026', '501061', 'ORION', { '08:00': 800 }),
+    it('14/10/2026', '501200', 'NOVO', { '09:00': 100 }),                   // sem UEP antes: é cobertura
+    it('15/10/2026', '501149', 'MADERO', { '07:00': 1500 }),
+    it('16/10/2026', '501149', 'MADERO', { '07:00': 999 }),                 // hoje: pela metade, fica fora
+  ];
+  const lista = [['501149', 'MADERO', 0.8], ['501200', 'NOVO', 1.5]];      // a ORION não está no estudo: fica como está
+  const up = { '501149|MADERO': 1, '501061|ORION': 2 };
+  const imp = (i, l, u, m) => vm.runInContext('_uepImpacto(' + [i, l, u, m].map(x => JSON.stringify(x)).join(',') + ",'16/10/2026')", F);
+  const I = imp(itens, lista, up, 2560);
+  ok('a mesma produção com a UEP de antes e a de depois (só jornada, hoje fora)',
+     [I.n, I.mediaA, I.mediaD, Math.round(I.escala * 1000) / 1000, I.metaEq, I.diasA, I.diasD, I.cxNovos, I.semHora],
+     [2, 2050, 1875, -12.195, 2248, 1, 0, 100, false]);
+  ok('a escala só compara caixas com UEP antes E depois (a nova não puxa a escala)', Math.round(imp(itens, [['501149', 'MADERO', 1]], up, 2560).escala * 1000) / 1000, 0);
+  ok('sem a UEP do cadastro da leitura → não calculado (nunca um número inventado)', imp(itens, lista, null, 2560), null);
+  ok('sem as caixas por hora → usa o total e AVISA que a HE foi junto', imp([it('14/10/2026', '501149', 'MADERO', null, { caixas: 500 })], lista, up, 2560).semHora, true);
+  const T = vm.runInContext('_uepImpactoTxt(' + JSON.stringify(I) + ')', F);
+  ok('o texto dá média, escala, dias na meta, cobertura e a meta equivalente',
+     ['2.050 → 1.875 UEP/dia', 'escala −12,2%', '+100 cx passam a ter UEP', 'dias na meta de 2.560: 1 → 0 de 2', 'meta equivalente é ~2.248'].map(x => T.includes(x)), [true, true, true, true, true]);
+  ok('escala abaixo de ' + vm.runInContext('UEP_IMP_ALERTA', F) + '% não pede ajuste da meta',
+     vm.runInContext('_uepImpactoTxt(' + JSON.stringify(Object.assign({}, I, { escala: -3 })) + ')', F).includes('a meta de 2.560 continua valendo'), true);
+  ok('sem cálculo, o confirm DIZ que não calculou', vm.runInContext('_uepImpactoTxt(null)', F).includes('não calculado'), true);
+  const sim = { novos: 0, deEst: 0, iguais: 0, nExist: 1, estNovos: 0, estMudam: 0, existentes: [['501149001', 1, 0.8, '']] };
+  const ctx = { de: '', ate: '', modo: '', ancora: '', nProv: 0, vig: '', cal: null, imp: I };
+  const TT = vm.runInContext('_uepTravaTxt(' + JSON.stringify(sim) + ',' + JSON.stringify(ctx) + ')', F);
+  ok('o 1º passo leva o efeito na linha e o 2º repete a escala ANTES do SUBSTITUIR',
+     [TT.t1.includes('EFEITO NA UEP DA LINHA'), TT.t1.indexOf('EFEITO NA UEP DA LINHA') < TT.t1.indexOf('OK = continuar'),
+      TT.t2.includes('a escala da linha muda −12,2%: a meta equivalente fica ~2.248 UEP (hoje 2.560)'), TT.t2.indexOf('−12,2%') < TT.t2.indexOf('OK = SUBSTITUIR')],
+     [true, true, true, true]);
+  const g = pegaV7('async function _gravarUepCadastro(');
+  ok('o "antes" é a UEP do cadastro DA LEITURA DO ESTUDO, não o global de quem leu por último',
+     [/_uepImpacto\(itens, lista, _uepCache\.key===de\+'\|'\+ate\?_uepCache\.uepProd:null/.test(g), /cal, imp \}\)/.test(g),
+      /uepProd:PH_UEP_PROD/.test(pegaV7('async function _uepItensPeriodo('))], [true, true, true]);
+  ok('o aviso final de ajustar a meta só sai quando o efeito inteiro entrou',
+     /imp && Math\.abs\(imp\.escala\)>=UEP_IMP_ALERTA && \(substituir \|\| !sim\.nExist\)/.test(g), true);
 }
 
 console.log(falhas === 0

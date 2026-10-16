@@ -249,6 +249,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **SITUAÇÃO** (dia) | ABAIXO < 90% · NO PADRÃO 90–110% · ACIMA > 110% (alerta: UEP alta demais ou apontamento) · `< 2 H` = menos de 120 min do produto no dia, não julgado | — | `v7:_uepPadSt` + `UEP_PAD_MIN_MIN` |
 | **% DO PADRÃO** (período) | Σ UEP feita ÷ Σ UEP pedida nos dias julgados (não é média de %) | % | `v7:_uepPadHist` |
 | **PADRÃO ALTERADO** | a vigência mais nova entre os códigos do produto mudou em relação ao dia anterior em que ele rodou | — | `v7:_uepPadHist` (`uepVigDe`) |
+| **EFEITO NA UEP DA LINHA** (confirm do GRAVAR UEP) | a produção de jornada do período do estudo (hoje fora) × UEP/cx de cada produto, antes (cadastro, `uepProd` da leitura) e depois (UEP do estudo). Média = Σ UEP ÷ dias. **Escala** = Σ cx×depois ÷ Σ cx×antes − 1, só produtos com UEP nos dois. **Meta equivalente** = meta × (1 + escala) | UEP/dia · % | `v7:_uepImpacto` + `v7:_uepImpactoTxt` |
 
 **Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
 hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SEM`).
