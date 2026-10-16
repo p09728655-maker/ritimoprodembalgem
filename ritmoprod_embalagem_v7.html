@@ -2538,7 +2538,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="export-row">
       <button class="btn btn-acc" onclick="gerarRelatorioProducaoHora()" style="background:rgba(245,166,35,.15);color:var(--acc);border:0.5px solid rgba(245,166,35,.5)">📋 RELATÓRIO DO PERÍODO</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUEP()" title="Estudo para análise do PPCP: UEP (unidade de esforço) de cada produto pelo ritmo demonstrado no período. Não muda nenhum número do painel.">📐 ESTUDO UEP</button>
-      <button class="btn btn-ghost" id="btn-gravar-uep" onclick="gravarUepCadastro()" title="Grava a UEP por caixa do estudo deste período na coluna UEP da PRODUTO_CODIGO (com vigência de hoje). Antes, mostra o que muda: UEP que já existe só é trocada com um segundo OK, e toda mudança fica na aba UEP_VERSOES. É o parâmetro que o card UEP DO DIA do gerencial usa.">💾 GRAVAR UEP</button>
+      <button class="btn btn-ghost" id="btn-gravar-uep" onclick="gravarUepCadastro()" title="UEP travada desde 16/10/2026: o cadastro só muda com a cronoanálise (UEP digitada na coluna UEP da PRODUTO_CODIGO, registrada na aba UEP_VERSOES). Base: 501149 MESA CABECEIRA MADERO = 1,00.">🔒 UEP TRAVADA</button>
     </div>
   </div>
 
@@ -3134,7 +3134,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.136.0';
+const APP_VER   = '7.137.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4953,7 +4953,8 @@ function _uepAbaDados(){
   const semHoje=_uepAbaSemUepHoje(PONTOS_DIA.porHora, CAP_RAW);
   const semFut=PROG_DET_TS?_cartSemUep(PROG_DETALHADA, _cartNum(hojeStr())):null;
   let prox=null; try{ prox=_gpxDoPainel(); }catch(e){ prox=null; }
-  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut, prox,
+  const base=_uepBaseNoCadastro(CAP_RAW);
+  return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut, prox, base,
            nPer, P, perCards:P&&P.n?_uepAbaPerCards(P):null };
 }
 function _uepAbaPerCards(P){
@@ -5306,6 +5307,7 @@ function renderUep(){
 
   // 4 · ORIGEM DA UEP (era CONFIABILIDADE)
   let b5;
+  const baseLin=`<div class="uep-nota" style="margin:0 0 6px">${_uepBaseLinha(D.base)}</div>`;
   if(conf){
     b5=`<div class="uep-card"><div class="uep-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:var(--ok)"></i><i style="width:${conf.pEst.toFixed(1)}%;background:var(--warn)"></i><i style="width:${conf.pSem.toFixed(1)}%;background:var(--red)"></i></div>
       <div class="uep-leg" style="margin-top:0"><span style="--c:var(--ok)" title="${_rpEsc(UEP_ORIGEM_T)}">${fmtP(conf.pMed)} UEP MEDIDA (estudo ou cadastro)</span><span style="--c:var(--warn)">${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span style="--c:var(--red)">${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
@@ -5315,6 +5317,7 @@ function renderUep(){
   } else {
     b5='<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo o cadastro para separar UEP medida de estimada…</div></div>';
   }
+  b5=baseLin+b5;
 
   // O QUE FALTA CADASTRAR — a mesma lista do PLANO e da faixa do gerencial.
   { const faltam=_cartSemUepHtml(D.semFut||[], [], 'uep-sem', D.semHoje||[]);
@@ -5574,6 +5577,7 @@ function _uepDocHtml(D, ctx){
 
   // ORIGEM DA UEP (era CONFIABILIDADE)
   const b5=sec('ORIGEM DA UEP — DE ONDE VEM A UEP DE CADA CAIXA')
+    +`<div class="ud-nota" style="margin:0 0 6px">${_uepBaseLinha(D.base)}</div>`
     +(conf
       ? `<div class="ud-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:#2E7D32"></i><i style="width:${conf.pEst.toFixed(1)}%;background:#B26A00"></i><i style="width:${conf.pSem.toFixed(1)}%;background:#C62828"></i></div>
         <div class="ud-leg"><span><i style="background:#2E7D32"></i>${fmtP(conf.pMed)} UEP MEDIDA (estudo ou cadastro)</span><span><i style="background:#B26A00"></i>${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span><i style="background:#C62828"></i>${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
@@ -7118,6 +7122,47 @@ function _uepBaseFaltaTxt(e){
     +'Gravando sem ela, a UEP sairia noutra escala e o cadastro ficaria com duas.\n\n'
     +'Aumente o período (De/Até) e grave de novo. Nada foi gravado.';
 }
+// UEP TRAVADA (v7.137.0, PPCP 16/10/2026: "não vamos alterar mais nada, trava
+// as UEP como está, depois só com a cronoanálise"). Com a data aqui, o 💾
+// GRAVAR UEP não grava nada: nem a UEP medida pelo ritmo, nem a estimativa da
+// esteira. A UEP só muda DIGITADA na coluna UEP da PRODUTO_CODIGO — que é como
+// o valor da cronoanálise entra — e a mudança fica na aba UEP_VERSOES (origem
+// DIGITADA, pelo onEdit). ⚠ Destravar (null) é decisão do PPCP, não ajuste:
+// um GRAVAR mede contra o ritmo do período e muda a escala.
+// O cadastro travado foi conferido na planilha: 429 códigos numa escala só (a
+// da MADERO, a mesma de 25/09) e o HISTORICO regravado com META UEP 2.530.
+const UEP_TRAVADA_DESDE = '16/10/2026';
+function _uepTravadaTxt(){
+  return 'UEP TRAVADA desde '+UEP_TRAVADA_DESDE+' (decisão do PPCP).\n\n'
+    +'A UEP do cadastro só muda com a CRONOANÁLISE: o valor medido é digitado na coluna UEP da PRODUTO_CODIGO, '
+    +'e a mudança fica registrada na aba UEP_VERSOES (origem DIGITADA).\n\n'
+    +'Base: '+UEP_BASE.modelo+' '+UEP_BASE.nome+' = 1,00 UEP/cx.\n'
+    +'Produto novo fica SEM UEP (aparece na lista da aba ⚖ UEP) até ter a UEP digitada.\n\n'
+    +'O 📐 ESTUDO UEP continua para análise — ele não grava nada. Nada foi gravado.';
+}
+// A base no CADASTRO (puro, testado): os códigos da base e a UEP de cada um.
+// `ok` só quando todos estão em 1,00 — alguém digitar outro valor na base muda
+// a escala de tudo, e a aba avisa. null = cadastro não lido (não acusa às cegas).
+function _uepBaseNoCadastro(cat){
+  if(!Array.isArray(cat) || !cat.length) return null;
+  const cods=cat.filter(p=>{
+    const c=String(p&&p.codigo||'').replace(/\D/g,'');
+    if(c.slice(0,6)!==UEP_BASE.modelo) return false;
+    const d=String(p.desc||'').toUpperCase().replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/,'').trim();
+    const cor=String(p.cor||'').toUpperCase().trim();
+    return d===UEP_BASE.nome || (cor && d===UEP_BASE.nome+' '+cor);
+  });
+  const vals=[...new Set(cods.map(p=>Math.round((Number(p.uep)||0)*100)/100))];
+  return { n:cods.length, vals, ok:cods.length>0 && vals.length===1 && vals[0]===1 };
+}
+// A linha da BASE (desenho, sem conta) — a MESMA na aba ⚖ UEP e no papel.
+function _uepBaseLinha(base){
+  const u2=v=>Number(v).toFixed(2).replace('.',',');
+  return `BASE DA UEP: <b>${_rpEsc(UEP_BASE.modelo+' '+UEP_BASE.nome)} = 1,00 UEP/cx</b>`
+    +(UEP_TRAVADA_DESDE?` · 🔒 travada desde ${UEP_TRAVADA_DESDE} — muda só com cronoanálise`:'')
+    +(base && base.n && !base.ok?` · <b style="color:var(--warn)">⚠ no cadastro a base está ${base.vals.map(u2).join(' / ')} — conferir a coluna UEP da PRODUTO_CODIGO</b>`:'')
+    +(base && !base.n?` · <b style="color:var(--warn)">⚠ a base não foi achada no cadastro</b>`:'');
+}
 // ⚠ O ALVO PROVISÓRIO de 2.300 UEP em 8 h (v7.79.0) SAIU na v7.132.0. Ele
 // julgava a UEP do ESTUDO — refeita a cada período, com a âncora do período —
 // e por isso aprovava/reprovava dia na escala errada: 16/09/2026 saía NÃO no
@@ -7451,6 +7496,12 @@ function _uepHtml(e, ctx){
   const p1=v=>v==null?'—':v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
   const nomeP=p=>_rpEsc(p.modelo+' · '+p.nome);
   const dm=s=>_rpEsc(String(s||'').slice(0,5));
+  // ALINHAMENTO (v7.137.0, PPCP: "está todo desalinhado"): a marca ao lado do
+  // número (* provisória, ⚠) mora numa casa de largura FIXA, também no
+  // cabeçalho — com ela solta, o número que tinha marca andava para a
+  // esquerda e a coluna saía em zigue-zague. As larguras são fixas (colgroup).
+  const sx=t=>`<span style="display:inline-block;width:1.3em;text-align:left">${t||''}</span>`;
+  const cols=ws=>`<colgroup>${ws.map(w=>`<col style="width:${w}%">`).join('')}</colgroup>`;
   // As três conferências usam o mesmo desenho: antes → depois e o veredito.
   const osc=(a,b,poucos)=>{
     if(a==null||b==null) return {v:'—', s:poucos};
@@ -7475,7 +7526,6 @@ function _uepHtml(e, ctx){
     if(p.acimaTeto) al.push(`${p.acimaTeto} dia(s) acima do teto físico — conferir lançamento`);
     const anc=[];
     if(e.volume&&p.chave===e.volume.chave) anc.push(e.baseFixa?'BASE FIXA':'ÂNCORA DO PERÍODO');
-    if(e.rapido&&p.chave===e.rapido.chave) anc.push('B · MAIS RÁPIDO');
     const pv=p.provisoria?'*':'';
     return `<tr>
       <td>${nomeP(p)}${anc.length?` <b style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#c05621">${anc.join(' · ')}</b>`:''}</td>
@@ -7484,8 +7534,7 @@ function _uepHtml(e, ctx){
       ${div?`<td class="td-mono" style="text-align:right${(p.baseRegime||p.baseCor)?';font-weight:700':';color:#8a94a6'}">${p.baseCor?n0(p.corRap.rit):p.ritmoReg>0?n0(p.ritmoReg):'—'}<div style="font-size:8px;color:#8a94a6;font-weight:400">${p.hSozinho} h</div></td>
       <td class="td-mono" style="text-align:right;color:#8a94a6">${p.ritmoCheia>0?n0(p.ritmoCheia):'—'}</td>`:''}
       <td class="td-mono" style="text-align:right${(p.baseRegime||p.baseCor)?';color:#8a94a6':';font-weight:700'}">${p.ritmoUsado>0?n0(p.ritmoUsado):'—'}</td>
-      <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}${p.uepVol!=null?pv:''}</td>
-      <td class="td-mono" style="text-align:right">${u2(p.uepRap)}${p.uepRap!=null?pv:''}</td>
+      <td class="td-mono" style="text-align:right;font-weight:700">${u2(p.uepVol)}${sx(p.uepVol!=null?pv:'')}</td>
       <td class="td-mono" style="text-align:right">${p.uepPeriodo!=null?n0(p.uepPeriodo):'—'}</td>
       <td style="font-size:9.5px">${al.join(' · ')||''}</td></tr>`;
   }).join('');
@@ -7504,12 +7553,14 @@ function _uepHtml(e, ctx){
       <td class="td-mono" style="text-align:right">${n0(d.cxTot)}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep)}</td>
       <td class="td-mono" style="text-align:right">${d.h}</td>
-      <td class="td-mono" style="text-align:right">${n0(d.uepH)}${d.acimaAncora?' ⚠':''}</td>
+      <td class="td-mono" style="text-align:right">${n0(d.uepH)}${sx(d.acimaAncora?'⚠':'')}</td>
       <td class="td-mono" style="text-align:right;font-weight:700">${n0(d.uep8)}</td>
-      ${temGrav?`<td class="td-mono" style="text-align:right">${d.gravada?`<b>${n0(d.gravada.uep)}</b> <span style="color:${corSc[sc(d.gravada.pct)]}">${p1(d.gravada.pct)}</span>`:'—'}</td>`:''}
-      ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia)+(d.cobDia>102?' ⚠ acima':d.cobDia<80?' ⚠':''):'—'}</td>`:''}</tr>`).join('');
+      ${temGrav?`<td class="td-mono" style="text-align:right;font-weight:700">${d.gravada?n0(d.gravada.uep):'—'}</td>
+      <td class="td-mono" style="text-align:right">${d.gravada?`<span style="color:${corSc[sc(d.gravada.pct)]}">${p1(d.gravada.pct)}</span>`:'—'}</td>`:''}
+      ${temCob?`<td class="td-mono" style="text-align:right">${d.cobDia!=null?p1(d.cobDia):'—'}${sx(d.cobDia!=null&&(d.cobDia>102||d.cobDia<80)?'⚠':'')}</td>`:''}</tr>`).join('');
+  const nColDia=6+(temGrav?2:0)+(temCob?1:0);
   return `
-<div class="rp-note" style="margin-top:0">Estudo para análise do PPCP · ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos. A UEP do estudo é <b>refeita com o período</b>${e.volume?` (${e.baseFixa?'base fixa':'âncora do período'} = ${nomeP(e.volume)}, ${n0(e.volume.ritmo)} cx/h${e.baseFixa?'':' — a base fixa não rodou'})`:''} e <b>não se compara com meta</b>: a oficial é a coluna UEP GRAVADA, na tabela 3.</div>
+<div class="rp-note" style="margin-top:0">Estudo para análise do PPCP · ${_rpEsc(ctx.de)} a ${_rpEsc(ctx.ate)} · média ${_rpEsc(ctx.modo==='completa'?'COMPLETA':'APARADA')} · todos os produtos. A UEP do estudo é <b>refeita com o período</b>${e.volume?` (${e.baseFixa?'base fixa':'âncora do período'} = ${nomeP(e.volume)}, ${n0(e.volume.ritmo)} cx/h${e.baseFixa?'':' — a base fixa não rodou'})`:''} e <b>não se compara com meta</b>: a oficial é a coluna UEP GRAVADA, na tabela 3.${UEP_TRAVADA_DESDE?` <b>O cadastro está travado desde ${UEP_TRAVADA_DESDE}</b> — este estudo é só leitura; a UEP muda só com cronoanálise.`:''}</div>
 ${div
   ? ((e.nAprox||e.nSemHora)?`<div class="rp-note">${e.nAprox?`${e.nAprox} lançamento(s) sem as caixas por hora: repartidos igualmente entre as horas dele. `:''}${e.nSemHora?`${e.nSemHora} lançamento(s) <b>sem HORA</b>: fora do ritmo, dentro da UEP do dia.`:''}</div>`:'')
   : `<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> hora de troca não repartida — falta o <b>ritmoprod_appscript.gs v5.10</b> re-deployado; produto de lote pequeno sai com UEP maior.</div>`}
@@ -7524,8 +7575,7 @@ ${div
     <div class="kpi-sub">${e.uepH!=null?`${n0(e.uepH)} UEP/h × ${UEP_HORAS_DIA} h · dias de ${n0(e.uep8Min)} a ${n0(e.uep8Max)} · `:''}realizado: ${e.uepDiaMed!=null?n0(e.uepDiaMed):'—'} UEP em ${e.hDiaMed!=null?e.hDiaMed.toLocaleString('pt-BR',{maximumFractionDigits:1}):'—'} h/dia</div></div>
 </div>
 <div class="kpi-grid" style="margin-top:9px">
-  ${anc(e.volume, e.baseFixa ? 'A · BASE FIXA — VALE 1,00 EM TODO ESTUDO' : 'A · ÂNCORA DO PERÍODO — A BASE FIXA NÃO RODOU')}
-  ${anc(e.rapido,'B · MAIS RÁPIDO DO PERÍODO (só comparação)')}
+  ${anc(e.volume, e.baseFixa ? 'BASE FIXA — VALE 1,00 EM TODO ESTUDO' : 'ÂNCORA DO PERÍODO — A BASE FIXA NÃO RODOU')}
   <div class="kpi-card"><div class="kpi-lbl">FAIXA SUGERIDA DE META · UEP GRAVADA</div><div class="kpi-val">${e.meta.de!=null?`${n0(e.meta.de)} – ${n0(e.meta.ate)}`:'—'}</div>
     <div class="kpi-sub">${e.meta.de!=null
       ? `UEP de jornada/dia · p${e.meta.pDe}–p${e.meta.pAte} de ${e.meta.nDias} dias${e.meta.nFora?` (sem ${e.meta.nFora} suspeito(s))`:''}${e.meta.pMeta!=null?` · a meta atual (${n0(e.meta.metaOf)}) cai no p${Math.round(e.meta.pMeta)}`:''} · oscila ${p1(e.meta.osc)}`
@@ -7548,25 +7598,25 @@ ${e.baseNoTeto?`<div class="rp-note" style="color:#c05621"><b>ATENÇÃO:</b> a b
 ${e.foraTeto.length?`<div class="rp-note">Fora da âncora do período por rodar acima de ${UEP_ANCORA_TETO_MAX}% do teto físico (ali a esteira limita, não a equipe): ${e.foraTeto.slice(0,4).map(p=>`${nomeP(p)} (${p1(p.pctTeto)})`).join(' · ')}.</div>`:''}
 
 <div class="rp-sec-ttl">2 ▸ A UEP DE CADA PRODUTO</div>
-<table><thead><tr>
+<table style="table-layout:fixed">${cols(div?[21,5,7,7,7,7,8,8,30]:[24,5,8,8,8,9,38])}<thead><tr>
   <th>PRODUTO</th><th style="text-align:right">DIAS</th><th style="text-align:right">CAIXAS</th>
   ${div?'<th style="text-align:right">EM REGIME CX/H</th><th style="text-align:right">HORA CHEIA CX/H</th>':''}
   <th style="text-align:right">RITMO USADO</th>
-  <th style="text-align:right">UEP/CX · A</th><th style="text-align:right">UEP/CX · B</th><th style="text-align:right">UEP NO PERÍODO</th><th>CONFERIR</th>
+  <th style="text-align:right">UEP/CX${sx('')}</th><th style="text-align:right">UEP NO PERÍODO</th><th>CONFERIR</th>
 </tr></thead><tbody>${linhas}</tbody></table>
 <div class="rp-note">UEP NO PERÍODO: <b>${n0(e.uepTot)}</b> em ${n0(e.cxCom)} cx · do mais leve ao mais pesado · <b>*</b> = provisória (menos de ${UEP_MIN_DIAS} dias) · a UEP sai do ritmo em negrito.</div>
 
 <div class="rp-sec-ttl">3 ▸ UEP POR DIA</div>
-<table><thead><tr>
-  <th>DIA</th><th style="text-align:right">CAIXAS COM PRODUTO</th><th style="text-align:right">UEP ESTUDO · A</th>
-  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H</th><th style="text-align:right">UEP ESTUDO EM ${UEP_HORAS_DIA} H</th>${temGrav?'<th style="text-align:right">UEP GRAVADA · % META</th>':''}${temCob?'<th style="text-align:right">COBERTURA</th>':''}
-</tr></thead><tbody>${linDias||'<tr><td colspan="8">Sem dias com horas da linha no período.</td></tr>'}</tbody></table>
+<table style="table-layout:fixed">${cols([13].concat(Array(nColDia-1).fill(87/(nColDia-1))))}<thead><tr>
+  <th>DIA</th><th style="text-align:right">CAIXAS COM PRODUTO</th><th style="text-align:right">UEP ESTUDO</th>
+  <th style="text-align:right">HORAS DA LINHA</th><th style="text-align:right">UEP/H${sx('')}</th><th style="text-align:right">UEP ESTUDO EM ${UEP_HORAS_DIA} H</th>${temGrav?'<th style="text-align:right">UEP GRAVADA</th><th style="text-align:right">% META</th>':''}${temCob?`<th style="text-align:right">COBERTURA${sx('')}</th>`:''}
+</tr></thead><tbody>${linDias||`<tr><td colspan="${nColDia}">Sem dias com horas da linha no período.</td></tr>`}</tbody></table>
 <div class="rp-note">UEP ESTUDO = caixas do dia (hora extra inclusive) × UEP do estudo; EM ${UEP_HORAS_DIA} H = UEP/h × ${UEP_HORAS_DIA}, só para comparar os dias.${temGrav?' UEP GRAVADA = a oficial (aba HISTÓRICO): jornada normal, UEP do cadastro, % da meta do dia; dia não fechado sai "—".':''}${temCob?' COBERTURA = caixas com produto ÷ realizado (⚠ abaixo de 80% ou acima de 100%).':''}</div>
 ${e.nSuspeitos?`<div class="rp-note" style="color:#c05621"><b>TESTE DE SANIDADE:</b> ${e.nSuspeitos} dia(s) suspeito(s), em cinza — ${e.nAcimaAncora} acima do limite físico (${e.tetoUepH!=null?n0(e.tetoUepH):'—'} UEP/h, ⚠) e ${e.nCobAcima} com apontamento acima do realizado. Ficam fora da faixa de meta.</div>`:`<div class="rp-note"><b>TESTE DE SANIDADE:</b> nenhum dia suspeito.</div>`}
 
 <div class="rp-sec-ttl">4 ▸ COMO O NÚMERO SAI</div>
 <table><tbody>
-  <tr><td style="font-weight:700;width:28%">A CONTA</td><td>UEP por caixa = ritmo da base ÷ ritmo do produto. A <b>base é fixa</b> — ${_rpEsc(UEP_BASE.modelo+' '+UEP_BASE.nome)} — e vale 1,00 em todo estudo: produto que não rodou no período continua certo no cadastro, porque a régua não mudou. Trocar a base troca a escala inteira (regravar tudo e mudar a meta).${e.baseFixa?'':` <b>Neste período a base não rodou</b>: a coluna A usa a âncora do período${e.volume?` (${nomeP(e.volume)})`:''}, noutra escala, e não pode ser gravada.`} A UEP no período e a do dia são caixas × UEP por caixa.</td></tr>
+  <tr><td style="font-weight:700;width:28%">A CONTA</td><td>UEP por caixa = ritmo da base ÷ ritmo do produto. A <b>base é fixa</b> — ${_rpEsc(UEP_BASE.modelo+' '+UEP_BASE.nome)} — e vale 1,00 em todo estudo: produto que não rodou no período continua certo no cadastro, porque a régua não mudou. Trocar a base troca a escala inteira (regravar tudo e mudar a meta).${e.baseFixa?'':` <b>Neste período a base não rodou</b>: a UEP/CX usa a âncora do período${e.volume?` (${nomeP(e.volume)})`:''}, noutra escala, e não pode ser gravada.`} A UEP no período e a do dia são caixas × UEP por caixa.</td></tr>
   <tr><td style="font-weight:700">O RITMO</td><td>Caixas ÷ horas do produto, dia a dia, com a média ${ctx.modo==='completa'?'COMPLETA (todos os dias)':'APARADA (sem o melhor e o pior dia, com 3+ dias)'} — a mesma do comparativo por modelo. Cores do mesmo produto somam e a hora delas conta uma vez.</td></tr>
   <tr><td style="font-weight:700">A HORA DE TROCA</td><td>${div
     ? 'A linha roda um produto por vez: hora com dois produtos é hora de troca. Ela é repartida pelo <b>tempo esperado</b> de cada um — caixas ÷ ritmo em regime (as horas em que ele rodou sozinho). Pelas caixas não: os dois sairiam com o ritmo da linha naquela hora e a diferença entre eles, que é o que a UEP mede, sumiria. O tempo da troca em si fica repartido entre os dois. A hora vale 1, inclusive o slot pós-almoço. HORA CHEIA = a régua antiga, com a hora de troca inteira para cada um.'
@@ -7576,7 +7626,7 @@ ${e.nSuspeitos?`<div class="rp-note" style="color:#c05621"><b>TESTE DE SANIDADE:
   <tr><td style="font-weight:700">EM REGIME OU USADO</td><td>Com ${UEP_REGIME_MIN_H} h ou mais rodando <b>sozinho</b>, a UEP sai do ritmo em regime: pela teoria a UEP mede o trabalho da peça e a troca é tratada à parte. Abaixo disso, do ritmo usado (hora de troca repartida), que ainda carrega parte da troca.</td></tr>
   <tr><td style="font-weight:700">A FAIXA DE META</td><td>Percentis p${e.meta.pDe}–p${e.meta.pAte} da UEP GRAVADA (jornada, escala do cadastro — a da META UEP), sem os dias suspeitos (UEP/h acima do limite físico — o teto do produto de referência, o de mais caixas abaixo de ${UEP_ANCORA_TETO_MAX}% do teto, na escala da base — ou apontamento acima do realizado) — a faixa alvo da aba PLANO. Precisa de ${QP_MIN_DIAS}+ dias válidos com UEP gravada. É sugestão: a meta oficial muda só no ⚙ (META DIA UEP).</td></tr>
   <tr><td style="font-weight:700">O TETO DA ESTEIRA</td><td>Nenhum ritmo passa do teto físico (velocidade ÷ medida da caixa + vão): acima dele é lançamento acumulado ou hora de troca repartida sem base, e o ritmo é limitado ao teto. A base precisa rodar <b>abaixo de ${UEP_ANCORA_TETO_MAX}% do teto</b> — no limite da esteira ela mede a máquina, não o esforço, e a escala mudaria com o período. Acima disso o 💾 GRAVAR UEP fica bloqueado.</td></tr>
-  <tr><td style="font-weight:700">COLUNAS A E B</td><td>${e.baseFixa?'<b>A</b> = a base fixa, a que é gravada.':'<b>A</b> = a âncora do período (a base fixa não rodou), só para leitura: o GRAVAR fica bloqueado.'} <b>B</b> = o mais rápido do período (o pedido original), só para comparar: muda a cada período. A proporção entre os produtos é a mesma nas duas — o que muda é a escala.</td></tr>
+  <tr><td style="font-weight:700">UMA COLUNA SÓ</td><td>A UEP/CX é medida contra a base fixa. O estudo não mostra outra escala (a do produto mais rápido, que existia até a v7.136.0): dois números de UEP para o mesmo produto confundiam a leitura.</td></tr>
   <tr><td style="font-weight:700">AS CONFERÊNCIAS</td><td><b>Dentro da amostra</b>: o ritmo da linha de cada dia em cx/h e em UEP/h, sobre as mesmas caixas — otimista, porque a UEP saiu desses dias. <b>Fora da amostra</b>: a UEP é calculada só com a 1ª metade dos dias e testada na 2ª, que ela não viu — é esta que diz se a UEP mede esforço. <b>Do dia</b>: caixas por dia × UEP por dia, a régua da meta.</td></tr>
   <tr><td style="font-weight:700">O QUE ELA NÃO É</td><td>Ritmo <b>demonstrado</b> não é tempo padrão: carrega o desempenho da equipe e o apontamento. Produto lento por baixo desempenho ganha UEP alta — por isso a validação dos produtos de maior volume é a cronoanálise.</td></tr>
   <tr><td style="font-weight:700">PARA QUE SERVE</td><td>A UEP oficial já está no cadastro (💾 GRAVAR UEP) e a meta do dia já é julgada em UEP. O estudo serve para recalibrar: conferir os alertas, validar os de maior volume pela cronoanálise e gravar de novo. O operador continua vendo caixas.</td></tr>
@@ -7690,8 +7740,9 @@ let _uepGravando=false;
 // parece não funcionar"); e o 2º toque não dispara outra busca.
 function _uepBotao(txt){
   const b=document.getElementById('btn-gravar-uep'); if(!b) return;
-  b.disabled=!!txt; b.textContent=txt||'💾 GRAVAR UEP';
+  b.disabled=!!txt; b.textContent=txt||(UEP_TRAVADA_DESDE?'🔒 UEP TRAVADA':'💾 GRAVAR UEP');
 }
+_uepBotao('');
 async function gravarUepCadastro(){
   if(_uepGravando) return;
   _uepGravando=true;
@@ -7825,6 +7876,8 @@ function _uepTravaTxt(sim, ctx){
   return { t1, t2, nada: !sim.novos && !sim.deEst && !sim.nExist && !sim.estNovos && !sim.estMudam };
 }
 async function _gravarUepCadastro(){
+  // UEP TRAVADA: para ANTES de buscar o período — nada é lido nem gravado.
+  if(UEP_TRAVADA_DESDE){ alert(_uepTravadaTxt()); return; }
   if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script configurada — nada a gravar.'); return; }
   _uepBotao('⏳ BUSCANDO O PERÍODO… (até 1 min)');
   const itens=await _uepItensPeriodo();

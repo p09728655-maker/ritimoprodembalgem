@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.137.0 — 16/10/2026
+
+- **UEP TRAVADA.** Decisão do PPCP depois da migração para a base fixa: *"não
+  vamos alterar mais nada, trava as UEP como está, depois só com a
+  cronoanálise"*. O botão virou **🔒 UEP TRAVADA** e não grava nada: nem a UEP
+  pelo ritmo, nem a estimativa da esteira. A UEP só muda **digitada** na coluna
+  UEP da PRODUTO_CODIGO (o valor da cronoanálise), e a mudança fica na aba
+  `UEP_VERSOES` com origem DIGITADA.
+- **A base aparece na aba ⚖ UEP** (bloco ORIGEM DA UEP e impressão): *501149
+  MESA CABECEIRA MADERO = 1,00 UEP/cx · travada desde 16/10/2026*. Se alguém
+  digitar outro valor nos códigos da base, a linha avisa.
+- **O estudo de UEP mostra uma UEP/CX só.** A coluna B (escala do produto mais
+  rápido) saiu: lida como UEP gravada, ela dizia SLEEP = 1,00 e MADERO = 1,20.
+- **Tabelas do estudo alinhadas** (PPCP: *"está todo desalinhado"*): a marca
+  ao lado do número (`*` provisória, `⚠`) ganhou casa de largura fixa — antes o
+  número com marca andava para a esquerda —, as colunas têm largura fixa, os
+  nomes dos produtos cabem numa linha e a UEP GRAVADA e o % DA META viraram duas
+  colunas.
+- O que ficou gravado (conferido na planilha): 429 códigos numa escala só, a da
+  MADERO, e o HISTÓRICO inteiro regravado com META UEP **2.530** (batida em 43
+  de 73 dias e em 15 dos últimos 20).
+- **Atenção:** produto novo no cadastro fica SEM UEP (aparece na lista da aba
+  ⚖ UEP) até ter a UEP digitada — a estimativa automática pela esteira também
+  está travada.
+
+---
+
 ## v7.136.0 — 16/10/2026
 
 - **A BASE DA UEP É FIXA: MESA CABECEIRA MADERO (501149) vale 1,00 sempre.**

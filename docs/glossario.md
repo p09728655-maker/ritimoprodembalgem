@@ -257,11 +257,13 @@ hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SE
 **Como ler:** A = a **BASE FIXA** `UEP_BASE` (501149 MESA CABECEIRA MADERO),
 que vale 1,00 em todo estudo quando rodou no período (v7.136.0). Sem ela no
 período, a A é — só para leitura — a âncora do período (o produto com mais
-caixas abaixo de 90% do teto, entre os que têm 5+ dias). B = o mais rápido do
-período, só para comparar. As duas mudam só a escala. Produto com menos de 5
+caixas abaixo de 90% do teto, entre os que têm 5+ dias). Desde a v7.137.0 o
+estudo mostra UMA UEP/CX só (a coluna B, do mais rápido, saiu). Produto com menos de 5
 dias rodados sai com UEP **PROVISÓRIA** (marcada com \*). O 💾 GRAVAR UEP só
 grava com a base medida no período: 5+ dias e abaixo de 90% do teto
-(`baseOk`; o motivo do bloqueio é o `_uepBaseFaltaTxt`).
+(`baseOk`; o motivo do bloqueio é o `_uepBaseFaltaTxt`). **Desde 16/10/2026 o cadastro está TRAVADO**
+(`UEP_TRAVADA_DESDE`): o GRAVAR não grava nada, e a UEP só muda digitada na
+coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
 ## Simulador de investimento
 

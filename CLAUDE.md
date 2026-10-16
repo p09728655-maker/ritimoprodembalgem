@@ -3399,8 +3399,11 @@ feito e dá ar de verdade ao que sobrou.
     teto da base, a base no limite deixava a régua sem folga — 17 de 30 dias
     suspeitos em 01/09–15/10, contra 0 da regra anterior. A conversão mantém
     EXATAMENTE a classificação de antes, e a UEP gravada não lê a sanidade.
-  - A coluna **B** (mais rápido) ficou só para comparar; na tabela é
-    `B · MAIS RÁPIDO`, nunca "BASE".
+  - ~~A coluna **B** (mais rápido) ficou só para comparar~~ — **saiu na
+    v7.137.0**: o PPCP leu o 1,00 da SLEEP e o 1,20 da MADERO na coluna B como
+    UEP gravada. O estudo mostra UMA UEP/CX (a da base). O `rapido`/`uepRap`
+    continuam calculados (os testes de proporção leem), só não são desenhados;
+    o teste falha se a coluna voltar.
   - **Cancelar no 2º passo do GRAVAR na migração deixa duas escalas**: os
     protegidos ficam na anterior, os novos e as estimadas vão para a da base.
     O t2 diz isso quando a escala muda ≥ `UEP_IMP_ALERTA`, e o alerta final
@@ -3421,6 +3424,32 @@ feito e dá ar de verdade ao que sobrou.
     - ⚠ Em 16/10/2026 a `CONFIG_PAINEL` estava com **META_UEP 2.300**, mas o
       HISTÓRICO foi regravado com **2.100**: a meta equivalente do confirm sai
       da que está no ⚙ na hora do GRAVAR — conferir qual vale antes.
+  - **Feito em 16/10/2026, 13:26–13:3x** (conferido na planilha): GRAVAR com
+    01/07–16/10 e SUBSTITUIR → 217 medidas + 98 estimadas regravadas, nenhum
+    código ficou na escala do KIT; cadastro vs semente de 25/09: mediana 1,00.
+    `UEP_VERSOES` nova renomeada para `UEP_VERSOES_TESTE3`; `regravarUepPassada`
+    com o ⚙ em **2.530**. ⚠ A "meta equivalente" do confirm (~2.430, sobre
+    01/07–15/10) NÃO era a certa: os 2.100 tinham sido escolhidos sobre os
+    últimos 20 dias (15 de 20 batendo), e na régua nova quem repete isso é
+    2.530. Meta equivalente depende do período em que a meta foi calibrada.
+- **UEP TRAVADA desde 16/10/2026 (v7.137.0, PPCP: *"não vamos alterar mais
+  nada, trava as UEP como está, depois só com a cronoanálise"*).**
+  `UEP_TRAVADA_DESDE='16/10/2026'`: o `_gravarUepCadastro` para na 1ª linha
+  (`_uepTravadaTxt`), antes de ler o período — nada é simulado nem gravado,
+  nem a estimativa EST. O botão é **🔒 UEP TRAVADA** (`_uepBotao`).
+  - **O caminho que fica é a DIGITAÇÃO**: o valor da cronoanálise é digitado
+    na coluna UEP da `PRODUTO_CODIGO` e vira versão `DIGITADA` na
+    `UEP_VERSOES` (`onEdit` → `_uepVerDaEdicao`). Nada no `.gs` mudou: a trava
+    é do painel (o único que chama o `setUepCatalogo`).
+  - ⚠ **Produto novo fica SEM UEP** até ser digitado — a estimativa pela
+    esteira também está travada. Ele aparece na lista SEM UEP da aba ⚖ UEP.
+  - **A base aparece na aba ⚖ UEP** (bloco ORIGEM DA UEP, tela e papel):
+    `_uepBaseLinha(D.base)`, com `_uepBaseNoCadastro(CAP_RAW)` conferindo se os
+    códigos da MADERO estão em 1,00 no cadastro (avisa se alguém digitar outro
+    valor — mudar a base muda a escala de tudo).
+  - ⚠ **Destravar é decisão do PPCP, não ajuste** (`UEP_TRAVADA_DESDE=null`):
+    um GRAVAR mede contra o ritmo do período e mexe na escala. Não propor
+    regravar a UEP pelo ritmo enquanto a cronoanálise não vier.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
