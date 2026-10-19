@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.144.1 — 19/10/2026
+
+- **Aba ⏱ CRONOANÁLISE com visual novo** (pedido do PPCP: *"modernize somente
+  a tela de CRONOANÁLISE → UEP"*). Só layout, cores, tipografia e espaçamento,
+  só nesta aba: campos e FIXAR SLEEP na mesma linha e altura; orientações em
+  linhas rotuladas (TEMPO A USAR · MÉTODO · AMOSTRA); os quatro cartões com
+  números maiores e faixa de cor no topo (UEP EQUIVALENTE em azul; DIFERENÇA
+  verde quando confere, laranja quando não); **NÃO PRECISA TROCAR / PARA
+  TROCAR** em área própria, com o valor e os códigos uma linha por volume;
+  RÉGUA e GRAVAÇÃO no rodapé.
+- **Atenção:** nenhuma conta, tolerância, valor, texto ou botão mudou.
+
+---
+
 ## v7.144.0 — 19/10/2026
 
 - **⏱ CRONOANÁLISE ganhou aba própria** (pedido do PPCP: *"colocar uma tela

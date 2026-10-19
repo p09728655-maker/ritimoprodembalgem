@@ -435,20 +435,56 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-sem b{color:var(--warn)}
 #sec-uep .uep-sem li b{color:var(--txt)}
 #sec-uep .uep-nota,#sec-crono .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
-#sec-crono .uep-conv{margin-bottom:12px}
-#sec-crono .uep-conv-f{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-#sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2)}
-#sec-crono .uep-conv-f .frm-inp{width:130px;padding:6px 9px}
-#sec-crono .uep-conv-f #uep-conv-prod{width:min(360px,80vw)}
-#sec-crono .uep-conv-tit{font-family:var(--font-d);font-size:12px;color:var(--txt2);margin:14px 0 8px}
-#sec-crono .uep-conv-tit b{color:var(--txt)}
-#sec-crono .uep-conv-dig{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px}
-#sec-crono .uep-conv-dig ul{margin:4px 0 0 18px;padding:0}
-#sec-crono .uep-conv-dig li{color:var(--txt2)}
-#sec-crono .uep-conv-dig li b{color:var(--txt)}
-#sec-crono .uep-conv-av{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px;border-left:3px solid var(--warn);padding-left:10px}
+/* ⏱ CRONOANÁLISE → UEP (v7.144.1, PPCP 19/10/2026: "modernize somente a tela").
+   Só visual: tokens do painel + um azul local (--ucv-azul) para o resultado. */
+#sec-crono{--ucv-azul:#5AA9F0}
+#sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
+#sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) auto;gap:14px;align-items:end}
+#sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
+#sec-crono .uep-conv-f .frm-inp{width:100%;height:42px;padding:0 13px;font-size:15px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
+#sec-crono .uep-conv-f .frm-inp:focus{border-color:var(--ucv-azul);box-shadow:0 0 0 3px rgba(90,169,240,.15)}
+#sec-crono #uep-conv-fixar{height:42px;padding:0 18px;font-size:10.5px;letter-spacing:1.2px;border:1px solid rgba(255,92,31,.5);border-radius:7px;color:var(--txt);white-space:nowrap}
+#sec-crono #uep-conv-fixar:hover:not(:disabled){border-color:var(--acc);background:rgba(255,92,31,.08)}
+#sec-crono #uep-conv-guia{margin:0}
+#sec-crono .ucv-info{display:grid;grid-template-columns:120px 1fr;gap:7px 16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+#sec-crono .ucv-info>span{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);padding-top:3px}
+#sec-crono .ucv-info>p{margin:0;font-family:var(--font-b);font-size:13.5px;line-height:1.55;color:var(--txt)}
+#sec-crono .ucv-info b{color:var(--txt);font-weight:700}
+#sec-crono #uep-conv-res{margin-top:22px}
+#sec-crono #uep-conv-res>.uep-nota{font-family:var(--font-b);font-size:13.5px;color:var(--txt2);margin:0 0 4px}
+#sec-crono #uep-conv-res>.ucv-info{margin-top:18px}
+#sec-crono .uep-conv-tit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;font-family:var(--font-h);font-size:24px;font-weight:700;letter-spacing:.4px;color:var(--txt)}
+#sec-crono .ucv-chip{font-family:var(--font-d);font-size:10px;font-weight:400;letter-spacing:1px;color:var(--txt2);border:1px solid var(--border);border-radius:20px;padding:3px 11px}
+#sec-crono .ucv-chip.base{color:var(--acc);border-color:rgba(255,92,31,.45)}
+#sec-crono .ucv-cards{gap:14px;margin-bottom:16px}
+#sec-crono .ucv-cards .kpi-card{border-radius:10px;padding:16px 18px 15px;min-height:118px;border:1px solid var(--border)}
+#sec-crono .ucv-cards .kpi-card::before{top:0;left:0;width:100%;height:3px;border-radius:0}
+#sec-crono .ucv-cards .kpi-card.ucv-azul{background:var(--elevated)}
+#sec-crono .ucv-cards .kpi-card.ucv-azul::before{background:var(--ucv-azul)}
+#sec-crono .ucv-cards .kpi-lbl{font-size:10px;letter-spacing:2px;margin-bottom:12px}
+#sec-crono .ucv-cards .kpi-val{font-size:42px}
+#sec-crono .ucv-cards .kpi-val small{font-size:19px;font-weight:600;color:var(--txt2);margin-left:1px}
+#sec-crono .ucv-cards .kpi-sub{font-size:11.5px;margin-top:10px;line-height:1.55}
+#sec-crono .ucv-pill{display:inline-block;font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;padding:2px 9px;border-radius:20px;border:1px solid;vertical-align:1px}
+#sec-crono .ucv-pill.ok{color:var(--ok);border-color:rgba(46,204,113,.45);background:rgba(46,204,113,.08)}
+#sec-crono .ucv-pill.warn{color:var(--warn);border-color:rgba(255,152,0,.45);background:rgba(255,152,0,.08)}
+#sec-crono .uep-conv-av{display:flex;gap:10px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-family:var(--font-b);font-size:13.5px;line-height:1.55;margin:0 0 16px;padding:11px 16px;border:1px solid rgba(255,152,0,.35);border-left:4px solid var(--warn);border-radius:8px;background:rgba(255,152,0,.06)}
+#sec-crono .uep-conv-av>span{flex:1 1 420px}
 #sec-crono .uep-conv-av b{color:var(--warn)}
+#sec-crono .uep-conv-av .btn{white-space:nowrap}
+#sec-crono .ucv-acao{border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:10px;background:rgba(255,152,0,.05);padding:16px 20px}
+#sec-crono .ucv-acao.ok{border-left-color:var(--ok);background:rgba(46,204,113,.05)}
+#sec-crono .ucv-acao.base{border-left-color:var(--acc);background:rgba(255,92,31,.05)}
+#sec-crono .ucv-acao-t{font-family:var(--font-h);font-size:21px;font-weight:700;letter-spacing:.8px;color:var(--warn);margin-bottom:6px}
+#sec-crono .ucv-acao.ok .ucv-acao-t{color:var(--ok)}
+#sec-crono .ucv-acao p{margin:0;font-family:var(--font-b);font-size:13.5px;line-height:1.55;color:var(--txt)}
+#sec-crono .ucv-lista{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+#sec-crono .ucv-lista li{display:flex;gap:6px 14px;align-items:baseline;flex-wrap:wrap;font-family:var(--font-d);font-size:11.5px;color:var(--txt2);padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px}
+#sec-crono .ucv-lista li b{font-family:var(--font-h);font-size:20px;color:var(--txt);min-width:44px}
+#sec-crono .ucv-lista .ucv-vol{font-size:10px;letter-spacing:1px;color:var(--txt2);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+@media (max-width:1100px){#sec-crono .uep-conv-f{grid-template-columns:1fr 1fr}#sec-crono .uep-conv-f label:first-child{grid-column:1/-1}}
 @media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){#sec-crono .uep-conv-f,#sec-crono .ucv-info{grid-template-columns:1fr}#sec-crono .uep-conv .kpi-grid{grid-template-columns:1fr}}
 #sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
 #sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
@@ -2756,12 +2792,12 @@ if (_v7Instalado()) _v7EscondeBotao();
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
         <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
         <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Sem ela, o campo mostra a régua da meta (527 min × 60 ÷ META UEP, 10,4 s com 3.048). O que for digitado ou fixado fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
-        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)" style="font-size:10px;padding:7px 12px">📌 FIXAR SLEEP</button>
+        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR SLEEP</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota" id="uep-conv-guia"></div>
-      <div id="uep-conv-res"></div>
     </div>
+    <div id="uep-conv-res"></div>
   </div>
 </section>
 
@@ -3270,7 +3306,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.144.0';
+const APP_VER   = '7.144.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5830,15 +5866,17 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
 // Desenho (sem conta): tudo vem pronto do _uepConvMontar.
 function _uepConvHtml(R){
   const u2 = x => x.toFixed(2).replace('.', ',');
+  const sg = t => _taktTxt(t).replace(/ s$/, '<small> s</small>');   // só o desenho da unidade
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const notas = linhas => '<div class="ucv-info">' + linhas.map(l => `<span>${l[0]}</span><p>${l[1]}</p>`).join('') + '</div>';
   const regua = `${_taktTxt(R.base.seg)} por UEP — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : `a ${_uepBaseCurto()} cronometrada, digitada em s/VOLUME DA BASE`}`;
   // v7.142.1: o campo fica guardado neste computador — com valor, ele muda TODA
   // conversão, então fica à vista (o 17,6 do próprio Encanto foi digitado ali).
-  const avBase = R.base.daMeta ? '' : `<div class="uep-conv-av"><b>BASE DIGITADA: ${_taktTxt(R.base.seg)} POR VOLUME DA ${_uepBaseCurto()}</b>`
+  const avBase = R.base.daMeta ? '' : `<div class="uep-conv-av"><span><b>BASE DIGITADA: ${_taktTxt(R.base.seg)} POR VOLUME DA ${_uepBaseCurto()}</b>`
     + ` — ${R.base.difMeta > 0 ? '+' : ''}${fmtP(R.base.difMeta)} da régua da meta (${_taktTxt(R.base.metaSeg)}). ${R.base.suspeita
       ? `<b>Mais lenta que a régua da meta, que tem as paradas dentro: não parece a ${_uepBaseCurto()} com a linha rodando — confira.</b>`
-      : `Só vale com a ${_uepBaseCurto()} cronometrada com a linha rodando; com outro tempo, toda conversão sai errada.`}`
-    + ` <button class="btn btn-ghost" onclick="_uepConvLimparBase()" style="font-size:10px;padding:2px 9px;margin-left:4px">VOLTAR À RÉGUA DA META</button></div>`;
+      : `Só vale com a ${_uepBaseCurto()} cronometrada com a linha rodando; com outro tempo, toda conversão sai errada.`}</span>`
+    + `<button class="btn btn-ghost" onclick="_uepConvLimparBase()" style="font-size:10px;padding:4px 11px">VOLTAR À RÉGUA DA META</button></div>`;
   if(R.estado === 'sem-cadastro') return '<div class="uep-nota">O cadastro de UEP ainda não foi lido — a lista de produtos aparece quando a aba terminar de carregar.</div>';
   if(R.estado === 'sem-produto') return avBase + `<div class="uep-nota">${!R.txt ? 'Escolha o produto e digite o tempo por volume da medição.'
     : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>`;
@@ -5847,28 +5885,31 @@ function _uepConvHtml(R){
   const cadSub = R.volCad != null
     ? `prevê ${_taktTxt(R.prevSeg)} por volume · ${_rpEsc(R.origem)}${R.vols.some(v => v.difCor) ? ' · média das cores' : ''}`
     : `${_rpEsc(R.origem)} · volume sem UEP no cadastro`;
-  const tit = avBase + `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${vTxt}${R.ehBase ? ' · <b>A BASE DA UEP</b> (1,00 por definição)' : ''}</div>`;
+  const tit = avBase + `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${p.nVol > 1 ? `<span class="ucv-chip">${p.nVol} volumes</span>` : ''}`
+    + `${R.ehBase ? '<span class="ucv-chip base">A BASE DA UEP · 1,00 por definição</span>' : ''}</div>`;
   if(R.estado !== 'ok') return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
     : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>`;
-  const nota = `<div class="uep-nota">Régua: ${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base digitada, o tempo é o COM A LINHA RODANDO (paradas fora).'} Nada é gravado aqui.</div>`;
-  if(R.ehBase) return tit + '<div class="kpi-grid c3">'
-    + card('MEDIDO', _taktTxt(R.seg), 'por volume')
-    + card('A RÉGUA DA META', _taktTxt(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`)
+  const nota = notas([['RÉGUA', `${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base digitada, o tempo é o COM A LINHA RODANDO (paradas fora).'}`],
+                      ['GRAVAÇÃO', 'Nada é gravado aqui.']]);
+  if(R.ehBase) return tit + '<div class="kpi-grid c3 ucv-cards">'
+    + card('MEDIDO', sg(R.seg), 'por volume')
+    + card('A RÉGUA DA META', sg(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`, 'ucv-azul')
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
-    + `<div class="uep-conv-dig">A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base: daí em diante, cada produto entra com o tempo rodando dele.</div>` + nota;
+    + `<div class="ucv-acao base"><p>A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base: daí em diante, cada produto entra com o tempo rodando dele.</p></div>` + nota;
   const difSub = R.difPct == null ? 'sem UEP no cadastro para comparar'
-    : R.confere ? `CONFERE — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
-    : R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro';
-  return tit + '<div class="kpi-grid c4">'
-    + card('MEDIDO', _taktTxt(R.seg), 'por volume' + vTxt)
-    + card('UEP EQUIVALENTE', u2(R.uepVol), `por volume · ${_taktTxt(R.seg)} ÷ ${_taktTxt(R.base.seg)}${p.nVol > 1 ? ` · jogo ${u2(R.uepJogo)}` : ''}`)
+    : R.confere ? `<span class="ucv-pill ok">CONFERE</span> — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
+    : `<span class="ucv-pill warn">${R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro'}</span>`;
+  return tit + '<div class="kpi-grid c4 ucv-cards">'
+    + card('MEDIDO', sg(R.seg), 'por volume' + vTxt)
+    + card('UEP EQUIVALENTE', u2(R.uepVol), `por volume · ${_taktTxt(R.seg)} ÷ ${_taktTxt(R.base.seg)}${p.nVol > 1 ? ` · jogo ${u2(R.uepJogo)}` : ''}`, 'ucv-azul')
     + card('NO CADASTRO', cad, cadSub)
     + card('DIFERENÇA', R.difPct == null ? '—' : (R.difPct > 0 ? '+' : '') + fmtP(R.difPct), difSub, R.difPct == null ? '' : R.confere ? 'ok' : 'warn')
     + '</div>'
-    + (R.confRegua ? `<div class="uep-conv-av"><b>CONFIRA O TEMPO ANTES DE TROCAR</b> — o tempo é o POR VOLUME NO PERÍODO (paradas dentro)? O COM A LINHA RODANDO deixa o produto mais leve do que é: a base pela meta tem as paradas dentro.</div>` : '')
-    + `<div class="uep-conv-dig"><b>${R.confere ? 'NÃO PRECISA TROCAR' : 'PARA TROCAR'}</b> — ${R.confere ? 'a UEP do cadastro confere com a medição. Se quiser registrar a cronoanálise mesmo assim, digite' : 'digite'} na coluna <b>UEP</b> da aba PRODUTO_CODIGO (a vigência vira DIGITADA)${p.nVol > 1 && R.completo ? ', repartido entre os volumes como já está no cadastro' : ''}:<ul>`
-    + R.digitar.map(g => `<li>${p.nVol > 1 ? 'VOL ' + g.vol + ' · ' : ''}<b>${u2(g.uep)}</b> — ${g.cods.map(c => _uepConvCod(c.cod) + (c.cor ? ' ' + _rpEsc(c.cor) : '')).join(' · ')}</li>`).join('')
+    + (R.confRegua ? '<div class="uep-conv-av"><span><b>CONFIRA O TEMPO ANTES DE TROCAR</b> — o tempo é o POR VOLUME NO PERÍODO (paradas dentro)? O COM A LINHA RODANDO deixa o produto mais leve do que é: a base pela meta tem as paradas dentro.</span></div>' : '')
+    + `<div class="ucv-acao ${R.confere ? 'ok' : 'troca'}"><div class="ucv-acao-t">${R.confere ? '✓ NÃO PRECISA TROCAR' : 'PARA TROCAR'}</div>`
+    + `<p>${R.confere ? 'A UEP do cadastro confere com a medição. Se quiser registrar a cronoanálise mesmo assim, digite' : 'Digite'} na coluna <b>UEP</b> da aba PRODUTO_CODIGO (a vigência vira DIGITADA)${p.nVol > 1 && R.completo ? ', repartido entre os volumes como já está no cadastro' : ''}:</p><ul class="ucv-lista">`
+    + R.digitar.map(g => `<li>${p.nVol > 1 ? `<span class="ucv-vol">VOL ${g.vol}</span>` : ''}<b>${u2(g.uep)}</b><span>${g.cods.map(c => _uepConvCod(c.cod) + (c.cor ? ' ' + _rpEsc(c.cor) : '')).join(' · ')}</span></li>`).join('')
     + '</ul></div>' + nota;
 }
 // A orientação de qual tempo digitar (v7.142.2, PPCP: "as paradas são evitáveis
@@ -5877,9 +5918,13 @@ function _uepConvHtml(R){
 // régua é a da meta (paradas dentro) e o tempo é o do período — um remendo.
 function _uepConvGuia(daMeta){
   const b = _uepBaseCurto();
-  return daMeta
-    ? `Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>. O método certo é cronometrar a ${b} <b>com a linha rodando</b> e digitar o tempo dela em s/VOLUME DA BASE — parada evitável é perda da linha, não esforço do produto. Medição de poucos minutos não basta para trocar a UEP.`
-    : `Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b} — parada evitável é perda da linha, não esforço do produto. Medição de poucos minutos não basta para trocar a UEP.`;
+  // v7.144.1: os mesmos textos, em linhas rotuladas (só desenho)
+  return '<div class="ucv-info">' + (daMeta
+    ? `<span>TEMPO A USAR</span><p>Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>.</p>`
+      + `<span>MÉTODO</span><p>O método certo é cronometrar a ${b} <b>com a linha rodando</b> e digitar o tempo dela em s/VOLUME DA BASE — parada evitável é perda da linha, não esforço do produto.</p>`
+    : `<span>TEMPO A USAR</span><p>Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b}.</p>`
+      + '<span>MÉTODO</span><p>Parada evitável é perda da linha, não esforço do produto.</p>')
+    + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
 }
 let UEP_CONV_CAT = null, UEP_CONV_PRODS = [], UEP_CONV_INI = false;
 // Só o resultado é redesenhado: os campos e a lista ficam (o datalist só é
