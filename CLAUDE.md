@@ -3729,7 +3729,17 @@ feito e dá ar de verdade ao que sobrou.
     - Revisão: fora de 0–100% ou sem algarismo → padrão com aviso
       (`base.tolFora`; o `_pgSimNum` daria 0 calado, por isso as entradas
       mandam NaN); 0% → `tpSeg` null (sem "+0%"); `tolFator` arredondado a 4
-      casas (1 + 14/100 = 1,1400000000000001); `onblur` refaz o campo.
+      casas (1 + 14/100 = 1,1400000000000001); `onblur` refaz o campo. A
+      régua e o cabeçalho do papel dizem *medido* ao lado do número da base
+      (eram 8,7 no cabeçalho e 10,0 no cartão, sem dizer qual era qual). O
+      teste confere o tempo padrão com 30% (só o 15% — o padrão — deixava
+      passar a conta que ignora o digitado) e a persistência com um
+      localStorage de mentira; conferido por mutação.
+    - ⚠ **Decisão em aberto (PPCP)**: a guarda `base.suspeita` e o cartão
+      DIFERENÇA da base comparam o tempo CRU com a régua da meta. Pela
+      premissa da tolerância a régua já tem fadiga dentro — a comparação
+      coerente seria o TEMPO PADRÃO da base contra a régua (a sobra é o espaço
+      das paradas). Não mexido: muda o número do cartão e o limite do aviso.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

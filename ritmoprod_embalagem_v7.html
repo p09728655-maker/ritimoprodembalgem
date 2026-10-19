@@ -5888,7 +5888,8 @@ function _uepConvHtml(R){
   const sg = t => _taktTxt(t).replace(/ s$/, '<small> s</small>');   // só o desenho da unidade
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
   const notas = linhas => '<div class="ucv-info">' + linhas.map(l => `<span>${l[0]}</span><p>${l[1]}</p>`).join('') + '</div>';
-  const regua = `${_taktTxt(R.base.seg)} por UEP — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : `a ${_uepBaseCurto()} cronometrada, digitada em s/VOLUME DA BASE`}`;
+  // com a tolerância, a base tem DOIS números: o medido (a conta) e o tempo padrão (a ficha)
+  const regua = `${_taktTxt(R.base.seg)} por UEP${R.base.tpSeg != null ? ` medido (tempo padrão ${_taktTxt(R.base.tpSeg)})` : ''} — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : `a ${_uepBaseCurto()} cronometrada, digitada em s/VOLUME DA BASE`}`;
   // v7.142.1: o campo fica guardado neste computador — com valor, ele muda TODA
   // conversão, então fica à vista (o 17,6 do próprio Encanto foi digitado ali).
   const avBase = R.base.daMeta ? '' : `<div class="uep-conv-av"><span><b>BASE DIGITADA: ${_taktTxt(R.base.seg)} POR VOLUME DA ${_uepBaseCurto()}</b>`
@@ -6128,7 +6129,7 @@ function gerarRelatorioCrono(){
   const html = _rpDocParadas(_uepConvDocTitulo(R, ctx), false)
     + '<style>' + _UCV_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="ucv-doc">'
     + _rpCabecalho('CRONOANÁLISE → UEP',
-        `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
+        `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP${R.base.tpSeg != null ? ' medido' : ''}</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
     + corpo + '</div></body></html>';
   win.document.open(); win.document.write(html); win.document.close();

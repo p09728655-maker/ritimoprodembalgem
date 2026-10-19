@@ -422,6 +422,12 @@ ok('tempo padrão = medido × 1,15 no produto (17,6 → 20,2) e na base (8,7 →
 const TM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 15);
 ok('com a régua da meta a tolerância NÃO entra (ela já tem fadiga e paradas dentro): sem tempo padrão, UEP igual',
    [TM.base.tolAplica, TM.tpSeg, TM.uepVol.toFixed(4)], [false, null, _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 0).uepVol.toFixed(4)]);
+// Revisão da v7.146.0: só o 15% (que é o padrão) era conferido — trocar a conta
+// por "sempre o padrão" passava. O tempo padrão tem de seguir o que foi DIGITADO.
+ok('o tempo padrão segue a tolerância digitada (30% → 17,6 × 1,3 = 22,88; base 8,7 × 1,3 = 11,31)',
+   [T30.tpSeg.toFixed(2), T30.base.tpSeg.toFixed(2), T30.base.tolFator], ['22.88', '11.31', 1.3]);
+ok('com a tolerância, a RÉGUA diz qual número da base é o medido e qual é o tempo padrão',
+   [_uepConvHtml(T15).includes('8,7 s por UEP medido (tempo padrão 10,0 s)'), _uepConvHtml(TM).includes(' medido (tempo padrão')], [true, false]);
 ok('tolerância vazia ou fora de 0–100 vira o padrão; 0 é zero',
    [_uepConvMontar(PRODS, 'X', 1, 8.7, 3048, undefined).base.tol, _uepConvMontar(PRODS, 'X', 1, 8.7, 3048, 150).base.tol, T0.base.tol], [15, 15, 0]);
 const HT = _uepConvHtml(T15), HM = _uepConvHtml(TM);
@@ -461,6 +467,24 @@ eval.call(global, pegaJs('function _uepConvGuia('));
 ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância (nas duas réguas)',
    [_uepConvGuia(false).includes('sem somar tolerância'), _uepConvGuia(true).includes('sem somar tolerância'),
     /title="[^"]*sem somar tolerância[^"]*">s\/VOLUME MEDIDO/.test(html)], [true, true, true]);
+{ // a tolerância digitada fica no computador e volta no campo vazio (F5)
+  eval.call(global, pegaJs('function _uepConvTol('));
+  const docAntes = global.document, lsAntes = global.localStorage, atAntes = global._uepConvAtualiza, pdAntes = global.PONTOS_DIA;
+  const mem = {}; global.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
+  global._uepConvAtualiza = () => {};
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': { value: '', dataset: {} }, 'uep-conv-tol': { value: '20' } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  _uepConvTol();
+  const salvo = mem[UEP_CONV_TOL_LS];
+  campos['uep-conv-tol'].value = '';                         // F5: o campo nasce vazio
+  const eF5 = _uepConvEntradas();
+  campos['uep-conv-tol'].value = ''; _uepConvTol();          // apagou: some do computador, volta o padrão
+  const eLimpo = _uepConvEntradas();
+  ok('a tolerância digitada fica no computador e volta depois do F5; apagada, volta o padrão',
+     [salvo, eF5.tol, campos['uep-conv-tol'].value === '15' && !(UEP_CONV_TOL_LS in mem), eLimpo.tol], ['20', 20, true, 15]);
+  global.document = docAntes; global.localStorage = lsAntes; global._uepConvAtualiza = atAntes; global.PONTOS_DIA = pdAntes;
+}
 ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrão)',
    /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
 
