@@ -39,7 +39,8 @@ via Google Apps Script (JSONP).
   desligada por padrão (painel e `.gs`): `node tela-uep.test.js`.
 - `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
   ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
-  (5 discordâncias, todas pela meta em caixas alta): `node uep-relatorios.test.js`.
+  (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
+  (Armário Encanto de 19/10: 27,8 s → 2,22): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
@@ -558,6 +559,33 @@ via Google Apps Script (JSONP).
     propósito: lá o card MÉDIA CX/H · TAKT e o ▼ já usam o TAKT IDEAL, e dois
     takts no mesmo papel é o defeito de dois vereditos.
   - Sem UEP → "—", nunca 0.
+- **⏱ CRONOANÁLISE → UEP** (v7.142.0, PPCP 19/10/2026: *"onde podemos fazer a
+  transformação de 17,6 segundos para UEP?"* → *"faz o campo"*). `<details
+  id="uep-conv">` no topo da aba ⚖ UEP: produto (datalist do `CAP_RAW`, chave
+  modelo + `_capNome` como a FILA), s/VOLUME MEDIDO e SEGUNDOS DA BASE.
+  `_uepConvMontar` (conta) / `_uepConvHtml` (desenho) / `_uepConvAtualiza`.
+  - **UEP = segundos por volume ÷ segundos da base por volume.** Base vazia =
+    `_taktUep(1, meta)` (12,5 s com 2.530) — o ritmo da MADERO **com as paradas
+    dentro**, então o tempo é o **NO PERÍODO** do Volume a volume (app de
+    cronoanálise, `crono-analise`). Caso real: ARMÁRIO ENCANTO 27,8 s → 2,22,
+    cadastro 2,23; os 17,6 s com a linha rodando dariam 1,41 (37% mais leve).
+    ⚠ Não trocar o padrão para o tempo rodando: é misturar régua.
+  - ⚠ **A base pela meta só vale enquanto META UEP = ritmo da MADERO × 527
+    min** (hoje 288/h × 527 = 2.530, coincidência de calibração). Mudou a meta
+    sem mudar a escala? A conversão anda junto e o produto parece mudar de
+    peso — é para isso que existe o SEGUNDOS DA BASE (MADERO cronometrada,
+    `localStorage['rpe_uep_conv']`).
+  - CONFERE = `UEP_PAD_FAIXA` (90–110%, a do bloco 7) — nenhuma régua nova. O
+    número a digitar mantém a repartição do cadastro entre volumes e cores.
+    A base não ganha UEP nova: a tela mostra a distância da cronoanálise para a
+    régua da meta. Mais leve que a faixa com a base pela meta → aviso CONFIRA
+    O TEMPO ANTES DE TROCAR (`confRegua`): é o sinal do tempo rodando digitado.
+  - **Nada é gravado** (a UEP está TRAVADA): a tela diz o número e os códigos;
+    a troca é digitar na coluna UEP da PRODUTO_CODIGO (versão DIGITADA).
+  - ⚠ **Fora do `#uep-bloco` de propósito**: o `renderUep` refaz o bloco a cada
+    refresh e levaria o que está sendo digitado. O `renderUep` chama o
+    `_uepConvAtualiza()` ANTES de sair no "aguardando" (o conversor só precisa
+    do cadastro). Teste em `uep-relatorios.test.js`.
 
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
