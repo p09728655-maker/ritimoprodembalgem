@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.142.1 — 19/10/2026
+
+- **⏱ CRONOANÁLISE → UEP: o Tab não joga mais a tela para baixo** (PPCP:
+  *"quando dá tab cai para baixo"*). Depois do último campo, o próximo foco da
+  página era o botão 7 DIAS do bloco 5, e a tela rolava até ele. Agora o Tab no
+  último campo volta ao PRODUTO.
+- **O campo da base diz de quem é o tempo**: SEGUNDOS DA BASE virou **s/VOLUME
+  DA MADERO (BASE)**. Com valor, aparece a faixa **BASE DIGITADA** em laranja,
+  com o tempo, a diferença para a régua da meta (12,5 s) e o botão **VOLTAR À
+  RÉGUA DA META**. O campo fica guardado no computador e muda toda conversão;
+  no uso real, o 17,6 s do próprio Encanto foi digitado ali e a tela deu 1,58.
+- **Atenção:** nenhuma conta mudou. Quem tem um valor guardado no campo da base
+  passa a ver a faixa até apagar o campo.
+
+---
+
 ## v7.142.0 — 19/10/2026
 
 - **⏱ CRONOANÁLISE → UEP na aba ⚖ UEP** (pedido do PPCP: *"onde podemos fazer a

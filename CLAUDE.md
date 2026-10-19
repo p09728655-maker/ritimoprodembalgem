@@ -562,7 +562,7 @@ via Google Apps Script (JSONP).
 - **⏱ CRONOANÁLISE → UEP** (v7.142.0, PPCP 19/10/2026: *"onde podemos fazer a
   transformação de 17,6 segundos para UEP?"* → *"faz o campo"*). `<details
   id="uep-conv">` no topo da aba ⚖ UEP: produto (datalist do `CAP_RAW`, chave
-  modelo + `_capNome` como a FILA), s/VOLUME MEDIDO e SEGUNDOS DA BASE.
+  modelo + `_capNome` como a FILA), s/VOLUME MEDIDO e s/VOLUME DA MADERO (BASE).
   `_uepConvMontar` (conta) / `_uepConvHtml` (desenho) / `_uepConvAtualiza`.
   - **UEP = segundos por volume ÷ segundos da base por volume.** Base vazia =
     `_taktUep(1, meta)` (12,5 s com 2.530) — o ritmo da MADERO **com as paradas
@@ -573,7 +573,7 @@ via Google Apps Script (JSONP).
   - ⚠ **A base pela meta só vale enquanto META UEP = ritmo da MADERO × 527
     min** (hoje 288/h × 527 = 2.530, coincidência de calibração). Mudou a meta
     sem mudar a escala? A conversão anda junto e o produto parece mudar de
-    peso — é para isso que existe o SEGUNDOS DA BASE (MADERO cronometrada,
+    peso — é para isso que existe o s/VOLUME DA MADERO (MADERO cronometrada,
     `localStorage['rpe_uep_conv']`).
   - CONFERE = `UEP_PAD_FAIXA` (90–110%, a do bloco 7) — nenhuma régua nova. O
     número a digitar mantém a repartição do cadastro entre volumes e cores.
@@ -586,6 +586,13 @@ via Google Apps Script (JSONP).
     refresh e levaria o que está sendo digitado. O `renderUep` chama o
     `_uepConvAtualiza()` ANTES de sair no "aguardando" (o conversor só precisa
     do cadastro). Teste em `uep-relatorios.test.js`.
+  - **v7.142.1 (uso real, mesmo dia)**: o PPCP digitou o 17,6 s do PRÓPRIO
+    Encanto no campo da base (deu 1,58, depois 0,06). O rótulo virou **s/VOLUME
+    DA MADERO (BASE)** e, com valor, a faixa **BASE DIGITADA** fica à vista
+    (tempo, diferença para a régua da meta, botão VOLTAR À RÉGUA DA META) — o
+    campo é guardado e muda TODA conversão. E o **Tab** no último campo volta
+    ao PRODUTO (`_uepConvTecla`): o próximo foco da página era o 7 DIAS do
+    bloco 5 e o `<main>` rolava 2.400 px.
 
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a

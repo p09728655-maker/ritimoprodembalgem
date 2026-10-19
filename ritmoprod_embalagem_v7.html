@@ -2744,7 +2744,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
         <label title="O POR VOLUME NO PERÍODO do Volume a volume (paradas dentro). O COM A LINHA RODANDO só vale se a base também foi medida rodando.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
-        <label title="Segundos por volume da base (MESA CABECEIRA MADERO, 1,00). Vazio = a régua da meta (527 min × 60 ÷ META UEP). Preencha só com a MADERO cronometrada do mesmo jeito — fica guardado neste computador.">SEGUNDOS DA BASE<input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="_uepConvBase()"></label>
+        <label title="O tempo por volume da MESA CABECEIRA MADERO (a base, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Vazio = a régua da meta (527 min × 60 ÷ META UEP). Fica guardado neste computador.">s/VOLUME DA MADERO (BASE)<input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="_uepConvBase()" onkeydown="_uepConvTecla(event)"></label>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota">Use o tempo <b>NO PERÍODO</b> (paradas dentro): é a régua da base e da meta. Medição de poucos minutos não basta para trocar a UEP de um produto.</div>
@@ -3259,7 +3259,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.142.0';
+const APP_VER   = '7.142.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5702,7 +5702,7 @@ async function gerarRelatorioFilaCrono(){
 // COM A LINHA RODANDO deixa o produto mais leve do que é. Medido em 19/10:
 // Encanto no período 27,8 s → 2,22 (cadastro 2,23); rodando 17,6 s → 1,41.
 // Para usar o rodando, cronometrar a MADERO do mesmo jeito e pôr o tempo dela
-// em SEGUNDOS DA BASE (guardado neste computador, rpe_uep_conv).
+// em s/VOLUME DA MADERO (guardado neste computador, rpe_uep_conv).
 // ⚠ Nada é gravado: a UEP está TRAVADA e só muda digitada na coluna UEP da
 // PRODUTO_CODIGO (vira versão DIGITADA). O campo diz o número e onde digitar.
 // CONFERE = medido dentro da faixa do bloco 7 (UEP_PAD_FAIXA, 90–110%).
@@ -5743,6 +5743,7 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
   const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
   const metaSeg = _taktUep(1, meta), daMeta = !(Number(baseSeg) > 0);
   const base = { seg:daMeta ? metaSeg : Number(baseSeg), daMeta, metaSeg, meta };
+  base.difMeta = daMeta ? 0 : (base.seg / metaSeg - 1) * 100;
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
   if(!a.p) return { estado:'sem-produto', base, txt:String(txt || '').trim(), n:a.n };
@@ -5788,16 +5789,21 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
 function _uepConvHtml(R){
   const u2 = x => x.toFixed(2).replace('.', ',');
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
-  const regua = `${_taktTxt(R.base.seg)} por UEP — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : 'a base cronometrada, digitada em SEGUNDOS DA BASE'}`;
+  const regua = `${_taktTxt(R.base.seg)} por UEP — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : 'a MADERO cronometrada, digitada em s/VOLUME DA MADERO'}`;
+  // v7.142.1: o campo fica guardado neste computador — com valor, ele muda TODA
+  // conversão, então fica à vista (o 17,6 do próprio Encanto foi digitado ali).
+  const avBase = R.base.daMeta ? '' : `<div class="uep-conv-av"><b>BASE DIGITADA: ${_taktTxt(R.base.seg)} POR VOLUME DA MADERO</b>`
+    + ` — ${R.base.difMeta > 0 ? '+' : ''}${fmtP(R.base.difMeta)} da régua da meta (${_taktTxt(R.base.metaSeg)}). Só vale com a MADERO cronometrada do mesmo jeito que o produto; com outro tempo, toda conversão sai errada.`
+    + ` <button class="btn btn-ghost" onclick="_uepConvLimparBase()" style="font-size:10px;padding:2px 9px;margin-left:4px">VOLTAR À RÉGUA DA META</button></div>`;
   if(R.estado === 'sem-cadastro') return '<div class="uep-nota">O cadastro de UEP ainda não foi lido — a lista de produtos aparece quando a aba terminar de carregar.</div>';
-  if(R.estado === 'sem-produto') return `<div class="uep-nota">${!R.txt ? 'Escolha o produto e digite o tempo por volume da medição.'
+  if(R.estado === 'sem-produto') return avBase + `<div class="uep-nota">${!R.txt ? 'Escolha o produto e digite o tempo por volume da medição.'
     : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>`;
   const p = R.p, vTxt = p.nVol > 1 ? ` · ${p.nVol} volumes` : '';
   const cad = R.volCad != null ? u2(R.volCad) : '—';
   const cadSub = R.volCad != null
     ? `prevê ${_taktTxt(R.prevSeg)} por volume · ${_rpEsc(R.origem)}${R.vols.some(v => v.difCor) ? ' · média das cores' : ''}`
     : `${_rpEsc(R.origem)} · volume sem UEP no cadastro`;
-  const tit = `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${vTxt}${R.ehBase ? ' · <b>A BASE DA UEP</b> (1,00 por definição)' : ''}</div>`;
+  const tit = avBase + `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${vTxt}${R.ehBase ? ' · <b>A BASE DA UEP</b> (1,00 por definição)' : ''}</div>`;
   if(R.estado !== 'ok') return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
     : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>`;
   const nota = `<div class="uep-nota">Régua: ${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ''} Nada é gravado aqui.</div>`;
@@ -5806,7 +5812,7 @@ function _uepConvHtml(R){
     + card('A RÉGUA DA META', _taktTxt(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`)
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
-    + `<div class="uep-conv-dig">A base continua <b>1,00</b> — trocar a base troca a escala inteira. Para converter os outros produtos pela SUA cronoanálise (inclusive o tempo com a linha rodando, se a base foi medida rodando), ponha <b>${_taktTxt(R.seg)}</b> em SEGUNDOS DA BASE.</div>` + nota;
+    + `<div class="uep-conv-dig">A base continua <b>1,00</b> — trocar a base troca a escala inteira. Para converter os outros produtos pela SUA cronoanálise (inclusive o tempo com a linha rodando, se a base foi medida rodando), ponha <b>${_taktTxt(R.seg)}</b> em s/VOLUME DA MADERO.</div>` + nota;
   const difSub = R.difPct == null ? 'sem UEP no cadastro para comparar'
     : R.confere ? `CONFERE — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
     : R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro';
@@ -5843,6 +5849,18 @@ function _uepConvAtualiza(){
     res.innerHTML = _uepConvHtml(_uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '',
       _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), meta));
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
+}
+// v7.142.1 (PPCP: "quando dá tab cai para baixo"): depois do último campo, o
+// próximo foco da página é o 7 DIAS do bloco 5, lá embaixo, e a tela rolava
+// até ele. Tab no campo da base volta ao PRODUTO; Shift+Tab segue normal.
+function _uepConvTecla(ev){
+  if(ev.key !== 'Tab' || ev.shiftKey) return;
+  const elP = document.getElementById('uep-conv-prod');
+  if(elP){ ev.preventDefault(); elP.focus(); }
+}
+function _uepConvLimparBase(){
+  const elB = document.getElementById('uep-conv-base'); if(elB) elB.value = '';
+  _uepConvBase();
 }
 function _uepConvBase(){
   const elB = document.getElementById('uep-conv-base'), v = elB ? elB.value.trim() : '';
