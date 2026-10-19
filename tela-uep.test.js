@@ -143,6 +143,41 @@ ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
    [false, false, false]);
 ok('a tela F do retrato não carrega texto de "sem dado"', /nenhum produto|sem UEP no cadastro/.test(F0), false);
 
+console.log('\n── rótulos do gráfico e encaixe na altura (19/10/2026) ──');
+// O print do PPCP às 08:59: ESPERADO 571 acima-à-direita do ponto, com as
+// linhas que vêm pela frente subindo por cima dele.
+function rotulos(svg){
+  const pos = re => { const m = svg.match(re); return m ? { x: +m[1], y: +m[2] } : null; };
+  // os dois pontos de AGORA (o círculo do "a meta sai às" também tem r=9, com outro fill)
+  const pts = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(?:9" fill="var\(--txt2\)|13)"/g)].map(m => ({ x: +m[1], y: +m[2] }));
+  return { feito: pos(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>FEITO /), esp: pos(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>ESPERADO /), pts };
+}
+const Mm = _tvUepMontar(montarD(539, { '07:00': 290, '08:00': 220 }, { '07:00': 157, '08:00': 120 }),
+                        { agoraMin: 539, prod: PROD, cat: CAT });
+const Rm = rotulos(_tvGSvg(Mm, true));
+const xa = Rm.pts[0].x, yBaixo = Math.max(...Rm.pts.map(q => q.y));
+ok('08:59: os dois rótulos à DIREITA do agora e ABAIXO dos dois pontos (o que vem depois sobe)',
+   [Rm.feito.x > xa, Rm.esp.x > xa, Rm.feito.y - 34 > yBaixo, Rm.esp.y - 28 > yBaixo], [true, true, true, true]);
+ok('08:59: empilhados — o ponto mais alto (ESPERADO 571) em cima', Rm.esp.y < Rm.feito.y, true);
+const Rc = rotulos(_tvGSvg(_tvUepMontar(montarD(450, { '07:00': 120 }, { '07:00': 60 }), { agoraMin: 450, prod: PROD, cat: CAT }), true));
+ok('07:30 (pontos colados no eixo): sem rótulo — os números estão no 1º cartão', [Rc.feito, Rc.esp], [null, null]);
+const Rt = rotulos(_tvGSvg(M, true));
+ok('15:02 (meio do dia): o mais alto continua acima-à-esquerda',
+   [Rt.pts.length, Rt.feito.x <= Rt.pts[0].x, Rt.feito.y < Math.min(...Rt.pts.map(q => q.y))], [2, true, true]);
+const CSS_FG = html.split('\n').filter(l => /^\.tv[ufg]-/.test(l) && !/^\.tvu-slide\{/.test(l) && /font-size:/.test(l));
+ok('fonte das Telas F/G pela escala --tvu-k (nenhum font-size solto por vh)',
+   CSS_FG.filter(l => /font-size:clamp\(/.test(l)).length, 0);
+ok('o cartão cresce pelo CONTEÚDO (1 1 auto), não em fatias iguais', /^\.tvu-card\{flex:1 1 auto;/m.test(html), true);
+const CABE = pegaJs('function _tvUepCabe(');
+ok('o encaixe reduz a escala até TV_UEP_K_MIN e só refaz quando o tamanho muda',
+   [/TV_UEP_K_MIN/.test(CABE), /_tvuTam === tam/.test(CABE), /--tvu-k/.test(CABE)], [true, true, true]);
+ok('mede a ALTURA (scrollHeight) — o teste da v7.138.0 só via a largura',
+   /scrollHeight > e\.clientHeight/.test(pegaJs('function _tvUepCorta(')), true);
+ok('nome de produto pode cortar com "…" sem encolher a tela', /tvu-nome/.test(pegaJs('function _tvUepCorta(')) && /tvu-prod tvu-nome/.test(F0) && /tvu-sub tvu-nome/.test(G0), true);
+const CICLO = JS.slice(JS.indexOf('function _sincSlideUep('), JS.indexOf('function _sincSlideUep(') + 9000);
+ok('o ciclo mede depois de desenhar e depois de MOSTRAR (escondida não tem altura)',
+   [/innerHTML = t === 'f'[\s\S]{0,120}_tvUepCabe\(/.test(CICLO), /slides\[t\]\.style\.display = 'flex'; _tvUepCabe\(slides\[t\], true\)/.test(JS)], [true, true]);
+
 console.log('\n── ciclo e config: fora por padrão ──');
 ok('as Telas F/G só entram MARCADAS (=== true: config antiga não tem a chave)',
    /\[t\] === true && !!_tvUepModelo\(\)/.test(pegaJs('function _temUep(')), true);

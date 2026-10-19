@@ -440,7 +440,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
 #sec-uep .uep-per button{font-family:var(--font-d);font-size:10px;letter-spacing:1px;padding:3px 9px;border-radius:4px;border:1px solid var(--border);background:none;color:var(--txt2);cursor:pointer}
 #sec-uep .uep-per button.on{border-color:var(--acc);color:var(--acc)}
-#sec-uep .uep-pad-tab{table-layout:fixed;min-width:980px}
+#sec-uep .uep-pad-tab{table-layout:fixed;min-width:1040px}
 #sec-uep .uep-pad-l{cursor:pointer}
 #sec-uep .uep-pad-l:hover td{background:var(--elevated)}
 #sec-uep .uep-pad-l.on td{background:var(--elevated);border-bottom-color:transparent}
@@ -954,47 +954,47 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
    (lida a 15 m), medida em min(vw,vh) como a Tela E. Cor só com o selo ligado:
    sem ele, número e barra em tinta (o veredito da TV continua na Tela B). */
 .tvu-slide{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;display:none;flex-direction:column;align-items:stretch;padding:14px 4vw 16px;text-align:left;gap:clamp(8px,1.6vh,22px)}
-.tvu-corpo{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(8px,1.8vh,26px)}
-.tvu-lbl{font-family:var(--font-d);font-size:clamp(13px,min(1.45vw,2.6vh),30px);letter-spacing:3px;color:var(--txt2);text-transform:uppercase}
-.tvu-num{font-family:var(--font-h);font-weight:700;font-size:clamp(90px,min(12.5vw,21vh),250px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
-.tvu-un{font-family:var(--font-h);font-weight:600;font-size:clamp(28px,min(3.4vw,6vh),68px);line-height:1;color:var(--txt2)}
-.tvu-selo{display:inline-block;align-self:flex-start;font-family:var(--font-h);font-weight:700;font-size:clamp(22px,min(2.7vw,4.8vh),54px);line-height:1;letter-spacing:2px;padding:.18em .5em;border:3px solid;border-radius:12px;white-space:nowrap}
+.tvu-corpo{flex:1;min-height:0;display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(8px,1.8vh,26px))}
+.tvu-lbl{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(13px,min(1.45vw,2.6vh),30px));letter-spacing:3px;color:var(--txt2);text-transform:uppercase}
+.tvu-num{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(90px,min(12.5vw,21vh),250px));line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvu-un{font-family:var(--font-h);font-weight:600;font-size:calc(var(--tvu-k,1)*clamp(28px,min(3.4vw,6vh),68px));line-height:1;color:var(--txt2)}
+.tvu-selo{display:inline-block;align-self:flex-start;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(22px,min(2.7vw,4.8vh),54px));line-height:1;letter-spacing:2px;padding:.18em .5em;border:3px solid;border-radius:12px;white-space:nowrap}
 .tvu-selo.ok{color:var(--ok)}.tvu-selo.warn{color:var(--warn)}.tvu-selo.red{color:var(--red)}
-.tvu-apoio{font-family:var(--font-d);font-size:clamp(16px,min(1.85vw,3.3vh),36px);color:var(--txt2);line-height:1.2}
+.tvu-apoio{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.85vw,3.3vh),36px));color:var(--txt2);line-height:1.2}
 .tvu-apoio b{color:var(--txt);font-weight:600}
-.tvu-barra{position:relative;height:clamp(18px,4.2vh,46px);background:var(--elevated);border-radius:8px;margin-top:clamp(6px,1.2vh,14px)}
+.tvu-barra{position:relative;height:calc(var(--tvu-k,1)*clamp(18px,4.2vh,46px));background:var(--elevated);border-radius:8px;margin-top:calc(var(--tvu-k,1)*clamp(6px,1.2vh,14px))}
 .tvu-barra i{position:absolute;left:0;top:0;bottom:0;border-radius:8px}
 .tvu-barra b{position:absolute;top:-12px;bottom:-12px;width:5px;margin-left:-2px;background:var(--txt);border-radius:2px}
-.tvu-barra-lbl{position:relative;height:clamp(18px,3vh,32px);font-family:var(--font-d);font-size:clamp(12px,min(1.25vw,2.2vh),24px);color:var(--txt2)}
+.tvu-barra-lbl{position:relative;height:calc(var(--tvu-k,1)*clamp(18px,3vh,32px));font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.25vw,2.2vh),24px));color:var(--txt2)}
 .tvu-barra-lbl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
 .tvu-barra-lbl span.fim{right:0;transform:none}
-.tvu-card{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:clamp(2px,.6vh,8px);padding:clamp(10px,2vh,26px) clamp(14px,1.8vw,36px);background:var(--surface);border:1px solid var(--border);border-radius:16px}
-.tvu-prod{font-family:var(--font-h);font-weight:700;font-size:clamp(24px,min(2.7vw,4.8vh),54px);line-height:1.05;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tvu-mid{font-family:var(--font-d);font-size:clamp(16px,min(1.8vw,3.2vh),36px);color:var(--txt2);line-height:1.1}
-.tvu-mid b{font-family:var(--font-h);font-weight:700;font-size:clamp(40px,min(4.4vw,7.6vh),90px);color:var(--txt);margin-right:.12em;font-variant-numeric:tabular-nums}
-.tvu-sub{font-family:var(--font-d);font-size:clamp(12px,min(1.4vw,2.5vh),28px);color:var(--txt2);line-height:1.2}
+.tvu-card{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--tvu-k,1)*clamp(2px,.6vh,8px));padding:calc(var(--tvu-k,1)*clamp(10px,2vh,26px)) clamp(14px,1.8vw,36px);background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.tvu-prod{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(24px,min(2.7vw,4.8vh),54px));line-height:1.05;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvu-mid{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.8vw,3.2vh),36px));color:var(--txt2);line-height:1.1}
+.tvu-mid b{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(40px,min(4.4vw,7.6vh),90px));color:var(--txt);margin-right:.12em;font-variant-numeric:tabular-nums}
+.tvu-sub{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.4vw,2.5vh),28px));color:var(--txt2);line-height:1.2}
 .tvu-card .tvu-sub,.tvu-card .tvu-lbl,.tvg-cx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tvu-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px clamp(14px,1.8vw,36px);font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2.2vh),24px);color:var(--txt2);letter-spacing:1px}
+.tvu-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px clamp(14px,1.8vw,36px);font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.2vw,2.2vh),24px));color:var(--txt2);letter-spacing:1px}
 .tvu-leg span{display:inline-flex;align-items:center;gap:10px}
 .tvu-tick{display:inline-block;width:40px;height:0;border-top:4px solid var(--txt)}
-.tvu-rod{display:flex;justify-content:space-between;gap:20px;font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2vh),24px);color:var(--txt2);letter-spacing:1px;border-top:1px solid var(--border);padding-top:clamp(6px,1vh,14px)}
+.tvu-rod{flex-shrink:0;display:flex;justify-content:space-between;gap:20px;font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(12px,min(1.2vw,2vh),24px));color:var(--txt2);letter-spacing:1px;border-top:1px solid var(--border);padding-top:clamp(6px,1vh,14px)}
 .tvf-topo{flex:1.5;min-height:0;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:clamp(16px,2vw,40px)}
-.tvf-hero{display:flex;flex-direction:column;justify-content:center;gap:clamp(4px,1.2vh,16px);min-width:0}
+.tvf-hero{display:flex;flex-direction:column;justify-content:center;gap:calc(var(--tvu-k,1)*clamp(4px,1.2vh,16px));min-width:0;min-height:0;overflow:hidden}
 .tvf-linha{display:flex;align-items:center;gap:clamp(14px,1.7vw,32px)}
-.tvf-unid{display:flex;flex-direction:column;gap:clamp(6px,1.4vh,18px)}
-.tvf-cards{display:flex;flex-direction:column;gap:clamp(10px,2vh,22px);min-width:0;min-height:0}
+.tvf-unid{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(6px,1.4vh,18px))}
+.tvf-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
 .tvf-horas{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
-.tvf-horas-tit{display:flex;justify-content:space-between;align-items:baseline;gap:20px;font-family:var(--font-h);font-weight:700;font-size:clamp(18px,min(1.8vw,3.2vh),34px);letter-spacing:2px;color:var(--txt)}
+.tvf-horas-tit{display:flex;justify-content:space-between;align-items:baseline;gap:20px;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(18px,min(1.8vw,3.2vh),34px));letter-spacing:2px;color:var(--txt)}
 .tvf-cols{flex:1;min-height:0;display:flex;gap:clamp(8px,1.1vw,22px)}
 .tvf-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-.tvf-val{position:absolute;left:0;right:0;margin-bottom:8px;text-align:center;font-family:var(--font-h);font-weight:700;font-size:clamp(18px,min(1.8vw,3.2vh),34px);line-height:1.1;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvf-val{position:absolute;left:0;right:0;margin-bottom:8px;text-align:center;font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(18px,min(1.8vw,3.2vh),34px));line-height:1.1;color:var(--txt);font-variant-numeric:tabular-nums}
 .tvf-col.fut .tvf-val{color:var(--txt3)}
 .tvf-area{position:relative;flex:1;min-height:0;border-bottom:2px solid var(--border)}
 .tvf-bar{position:absolute;left:12%;right:12%;bottom:0;border-radius:6px 6px 0 0}
 .tvf-oco{position:absolute;left:12%;right:12%;bottom:0;box-sizing:border-box;border:2px dashed var(--border);border-bottom:none;border-radius:6px 6px 0 0}
 .tvf-col.and .tvf-oco{border:3px dashed var(--acc);border-bottom:none}
 .tvf-meta{position:absolute;left:4%;right:4%;height:0;border-top:4px solid var(--txt);opacity:.85}
-.tvf-h{text-align:center;font-family:var(--font-d);font-size:clamp(13px,min(1.5vw,2.7vh),30px);color:var(--txt2);white-space:nowrap}
+.tvf-h{text-align:center;font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(13px,min(1.5vw,2.7vh),30px));color:var(--txt2);white-space:nowrap}
 .tvf-col.and .tvf-h{color:var(--acc)}
 .tvg-corpo{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(16px,2vw,40px)}
 .tvg-graf{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
@@ -1007,9 +1007,9 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-sw.f{border-top:6px solid var(--txt);border-radius:3px}
 .tvg-sw.e{border-top:4px dashed var(--txt2)}
 .tvg-sw.p{border-top:4px dotted var(--txt)}
-.tvg-cards{display:flex;flex-direction:column;gap:clamp(10px,2vh,22px);min-width:0;min-height:0}
-.tvg-min{font-family:var(--font-h);font-weight:700;font-size:clamp(60px,min(7.6vw,13vh),150px);line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
-.tvg-cx{font-family:var(--font-d);font-size:clamp(15px,min(1.65vw,2.9vh),32px);color:var(--txt);line-height:1.15}
+.tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
+.tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvg-cx{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(15px,min(1.65vw,2.9vh),32px));color:var(--txt);line-height:1.15}
 .tvg-cx b{font-weight:700}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
@@ -3227,7 +3227,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.139.0';
+const APP_VER   = '7.141.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5103,6 +5103,21 @@ function _uepPadSt(pct){ return pct<UEP_PAD_FAIXA[0] ? 'abaixo' : (pct>UEP_PAD_F
 function _uepPadMinSlot(slots){ const m={}; (slots||[]).forEach(sl=>{ m[sl.inicio]=Number(sl.min)||60; }); return m; }
 // Conta pura e testada. itens: getProducaoModeloPeriodo(?cxHora=1&uepVer=1).
 // metaDe: {dd/MM/yyyy: meta UEP do dia}; metaAtual: a do ⚙ para dia sem registro.
+// ── TAKT POR PRODUTO (v7.141.0, PPCP 19/10/2026: "colocar takt time de cada
+// um nos relatórios") ─────────────────────────────────────────────────────
+// O takt da LINHA em UEP é o tempo de jornada ÷ a META UEP do dia: 527 min ×
+// 60 ÷ 2.530 = 12,5 s por UEP. O de cada produto é esse tempo × a UEP da
+// caixa dele: 1 caixa de MADERO (1,00) = 12,5 s; um volume de 1,84 = 23,0 s.
+// É o CX/H PADRÃO escrito em segundos por caixa (3.600 ÷ CX/H PADRÃO), e é o
+// número que a cronoanálise compara com o tempo medido.
+// ⚠ NÃO é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, régua
+// da aba PARADAS e da GESTÃO DE PERDAS): aquele é UM número para qualquer
+// caixa. Por isso aqui o nome é sempre TAKT s/CX, nunca só "TAKT".
+function _taktUep(uepCx, metaUep){
+  const m = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO, u = Number(uepCx);
+  return u > 0 && isFinite(u) ? UEP_MIN_DIA * 60 / m * u : null;
+}
+function _taktTxt(seg){ return seg != null && isFinite(seg) ? seg.toFixed(1).replace('.', ',') + ' s' : '—'; }
 function _uepPadHist(itens, metaDe, metaAtual, minSlot){
   const mAt=Number(metaAtual)>0?Number(metaAtual):UEP_META_PADRAO;
   const D={}, NOME={};
@@ -5151,7 +5166,9 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
       const st=julg?_uepPadSt(pct):'curto';
       g.dias.push({ data:d.data, cx:x.cx, uep:x.uep, min:x.min, meta, pad, pct, st, julg, semBase:x.semBase,
                     cxh:x.min>0?x.cx/(x.min/60):null, cxhPad:x.uep>0?R*60*x.cx/x.uep:null,
-                    uepCx:x.cx>0?x.uep/x.cx:null, vig:d.vig[k], alterado, antes:!!d.antes[k] });
+                    uepCx:x.cx>0?x.uep/x.cx:null, vig:d.vig[k], alterado, antes:!!d.antes[k],
+                    takt:x.cx>0?_taktUep(x.uep/x.cx, meta):null,      // o que a meta pede por caixa
+                    segCx:x.cx>0&&x.min>0?x.min*60/x.cx:null });      // o que a linha levou por caixa
       g.cx+=x.cx;
       if(julg){ g.nJulg++; g[st]++; g.uep+=x.uep; g.pad+=pad; }
       if(alterado) g.alterou=true;
@@ -5161,7 +5178,7 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
   const prods=Object.values(P).map(g=>{
     const u=g.dias[g.dias.length-1];
     const pct=g.pad>0?g.uep/g.pad*100:null;
-    return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u, uepCx:u.uepCx, cxhPad:u.cxhPad });
+    return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u, uepCx:u.uepCx, cxhPad:u.cxhPad, takt:u.takt });
   }).sort((a,b)=>b.cx-a.cx);
   const julgados=prods.filter(g=>g.nJulg>0);
   // Totais de produto × dia julgado (a capa da impressão): a soma das colunas.
@@ -5236,29 +5253,31 @@ function _uepPadMontar(){
 //     produto, e o CX/H do dia fica ao lado do CX/H PADRÃO, onde se compara.
 //   • A impressão (_uepPadDocHtml) monta as linhas com as MESMAS peças — muda
 //     a moldura e a pele (.pad-doc), nunca as células.
-const UEP_PAD_COLS=[6,22,6,8,5,6,7,6,8,9,17];   // MOD · PRODUTO · UEP/CX · CX/H PAD · DIAS · ABAIXO · NO · ACIMA · % · SELO · DIA
+// v7.141.0: + TAKT s/CX depois do CX/H PADRÃO (12 colunas); no dia a dia, o
+// TAKT do dia embaixo do do produto e o s/CX REAL ao lado dele.
+const UEP_PAD_COLS=[6,19,6,7,6,5,6,7,6,8,9,15];   // MOD · PRODUTO · UEP/CX · CX/H PAD · TAKT · DIAS · ABAIXO · NO · ACIMA · % · SELO · DIA
 function _uepPadColgroup(){ return '<colgroup>'+UEP_PAD_COLS.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup>'; }
 function _uepPadU2(v){ return v!=null&&isFinite(v)?v.toFixed(2).replace('.',','):'—'; }
 function _uepPadNn(v){ return v!=null&&isFinite(v)?fmtN(Math.round(v)):'—'; }
 function _uepPadPctTd(pct, st){ return `<td class="n"><b class="uep-pad-${UEP_PAD_ST[st]?UEP_PAD_ST[st].c:''}">${pct!=null?fmtP(pct):'—'}</b></td>`; }
 function _uepPadSelo(st){ return `<span class="uep-pad-st ${UEP_PAD_ST[st].c}">${UEP_PAD_ST[st].t}</span>`; }
 function _uepPadThead(){
-  return `<thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th colspan="2">ÚLTIMO DIA</th></tr></thead>`;
+  return `<thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Segundos por caixa que a meta pede deste produto: ${UEP_MIN_DIA} min × 60 ÷ meta UEP × UEP por caixa (= 3.600 ÷ CX/H PADRÃO)">TAKT s/CX</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th colspan="2">ÚLTIMO DIA</th></tr></thead>`;
 }
-// As 11 células da linha do produto.
+// As 12 células da linha do produto.
 function _uepPadCelsProd(g){
   return `<td class="mono">${_rpEsc(g.modelo)}</td><td>${_rpEsc(g.nome||'—')}${g.alterou?' <span class="uep-pad-alt">PADRÃO ALTERADO</span>':''}</td>`
-    +`<td class="n">${_uepPadU2(g.uepCx)}</td><td class="n">${_uepPadNn(g.cxhPad)}</td><td class="n">${g.nJulg}</td>`
+    +`<td class="n">${_uepPadU2(g.uepCx)}</td><td class="n">${_uepPadNn(g.cxhPad)}</td><td class="n">${_taktTxt(g.takt)}</td><td class="n">${g.nJulg}</td>`
     +`<td class="n">${g.abaixo||'—'}</td><td class="n">${g.no||'—'}</td><td class="n">${g.acima||'—'}</td>${_uepPadPctTd(g.pct,g.st)}`
     +`<td>${_uepPadSelo(g.ultimo.julg?g.ultimo.st:'curto')}</td><td class="mono">${_rpEsc(String(g.ultimo.data).slice(0,5))}</td>`;
 }
 // O dia a dia de um produto: a linha de rótulos + um dia por linha, do mais
-// recente ao mais antigo, nas MESMAS 11 colunas.
+// recente ao mais antigo, nas MESMAS 12 colunas.
 function _uepPadDiasRows(g){
-  return `<tr class="uep-pad-dh"><td></td><td>DIA</td><td class="n">UEP/CX</td><td class="n">CX/H PADRÃO</td><td class="n">CX/H</td><td class="n">CX</td><td class="n">HORAS</td><td></td><td class="n">% DO PADRÃO</td><td>SITUAÇÃO</td><td></td></tr>`
+  return `<tr class="uep-pad-dh"><td></td><td>DIA</td><td class="n">UEP/CX</td><td class="n">CX/H PADRÃO</td><td class="n">TAKT s/CX</td><td class="n" title="Segundos que a linha levou por caixa do produto no dia: minutos dele × 60 ÷ caixas">s/CX REAL</td><td class="n">CX/H</td><td class="n">CX</td><td class="n">HORAS</td><td class="n">% DO PADRÃO</td><td>SITUAÇÃO</td><td></td></tr>`
     +g.dias.slice().reverse().map(d=>`<tr class="uep-pad-d"><td></td><td class="mono">${_rpEsc(d.data)}</td>`
-      +`<td class="n">${_uepPadU2(d.uepCx)}</td><td class="n">${_uepPadNn(d.cxhPad)}</td><td class="n">${_uepPadNn(d.cxh)}</td>`
-      +`<td class="n">${fmtN(d.cx)}</td><td class="n">${(d.min/60).toFixed(1).replace('.',',')}</td><td></td>`
+      +`<td class="n">${_uepPadU2(d.uepCx)}</td><td class="n">${_uepPadNn(d.cxhPad)}</td><td class="n">${_taktTxt(d.takt)}</td><td class="n">${_taktTxt(d.segCx)}</td><td class="n">${_uepPadNn(d.cxh)}</td>`
+      +`<td class="n">${fmtN(d.cx)}</td><td class="n">${(d.min/60).toFixed(1).replace('.',',')}</td>`
       +`${d.julg?_uepPadPctTd(d.pct,d.st):'<td class="n">—</td>'}<td>${_uepPadSelo(d.st)}</td>`
       +`<td>${d.alterado?'<span class="uep-pad-alt" title="A UEP padrão de algum código do produto mudou neste dia (aba UEP_VERSOES)">PADRÃO ALTERADO</span> ':''}`
       +`${d.semBase?`<span class="mono" title="Hora com caixa de código sem UEP: o tempo dela não se reparte e ficou fora">${plural(d.semBase,'hora fora','horas fora')}</span>`:''}</td></tr>`).join('');
@@ -5331,6 +5350,7 @@ function _uepPadDocHtml(H, V, ctx){
     +`<div class="rp-sec-ttl">3 ▸ COMO O NÚMERO SAI</div>`
     +`<table><tbody>`
     +`<tr><td style="font-weight:700;width:24%">O PADRÃO</td><td>O ritmo da meta: META UEP do dia ÷ ${UEP_MIN_DIA} min de jornada (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h). Em caixas, esse ritmo ÷ a UEP por caixa do produto — o CX/H PADRÃO. A META é a gravada no HISTÓRICO daquele dia.</td></tr>`
+    +`<tr><td style="font-weight:700">TAKT s/CX</td><td>O padrão em segundos por caixa: ${UEP_MIN_DIA} min × 60 ÷ META UEP × UEP por caixa (= 3.600 ÷ CX/H PADRÃO) — com a meta de ${fmtN(H.metaAtual)}, ${_taktTxt(_taktUep(1, H.metaAtual))} por UEP. No dia a dia, ao lado vem o s/CX REAL: minutos do produto no dia × 60 ÷ caixas, com a hora de troca repartida. Real acima do takt = mais lento que a meta pede. Não é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, um número para qualquer caixa).</td></tr>`
     +`<tr><td style="font-weight:700">A UEP DE CADA DIA</td><td>A UEP padrão que VALIA no dia (aba UEP_VERSOES): mudar o cadastro depois não muda o dia. Antes da 1ª mudança registrada, a padrão é o cadastro de hoje.</td></tr>`
     +`<tr><td style="font-weight:700">% DO PADRÃO</td><td>UEP feita pelo produto ÷ UEP que o ritmo da meta pede nas mesmas horas. No período, Σ UEP feita ÷ Σ UEP pedida nos dias julgados — não é média de percentuais.</td></tr>`
     +`<tr><td style="font-weight:700">A HORA DE TROCA</td><td>A linha roda um produto por vez; hora com dois produtos é repartida pelo tempo padrão de cada um (UEP de cada um). Nessa hora os dois saem com o mesmo %: o apontamento por hora não diz qual foi o lento. Hora com caixa de código sem UEP sai da conta dos produtos dela.</td></tr>`
@@ -5423,7 +5443,7 @@ function _filaAmostraDeItens(itens){
 }
 // Conta pura da fila. cat = cadastro cru (getProdutos); amostra = {modelo|nome:
 // {dias,cx}} ou null (não lida); prog = PROG_DETALHADA ou null; uteis = [aaaammdd].
-function _filaCronoMontar(cat, amostra, prog, uteis){
+function _filaCronoMontar(cat, amostra, prog, uteis, metaUep){
   const P = {}, porCod = {};
   (cat || []).forEach(c => {
     const cod = String(c && c.codigo || '').replace(/\D/g, '');
@@ -5493,6 +5513,8 @@ function _filaCronoMontar(cat, amostra, prog, uteis){
     fila.push({
       key:p.key, modelo:p.modelo, nome:p.nome, nVol:p.nVol, motivos:m,
       uepTxt: vols.map(us => us.length ? us.map(u => u.toLocaleString('pt-BR', { minimumFractionDigits:2 })).join('/') : '—').join(' · '),
+      // o takt na MESMA forma da UEP: um por volume, as cores com "/" (v7.141.0)
+      taktTxt: vols.some(us => us.length) ? vols.map(us => us.length ? us.map(u => _taktTxt(_taktUep(u, metaUep)).replace(' s', '')).join('/') : '—').join(' · ') + ' s' : '—',
       origem: p.origens.sem ? 'SEM UEP' : todosDig ? 'DIGITADA ' + _filaN2br(p.digDe).slice(0, 5)
             : p.origens.est && !p.origens.med ? 'ESTIMADA' : p.origens.est ? 'MEDIDA + ESTIMADA'
             : 'MEDIDA ' + (p.vigMax ? _filaN2br(p.vigMax).slice(0, 5) : ''),
@@ -5516,6 +5538,7 @@ function _filaCronoMontar(cat, amostra, prog, uteis){
     prog: prog1, semProg: semProgTodos.slice(0, FILA_MAX_SEM), semProgMais: Math.max(0, semProgTodos.length - FILA_MAX_SEM),
     total: fila.length, cont, totUep, emDuvida, pctDuvida: totUep > 0 ? emDuvida / totUep * 100 : null,
     kMin, nProd: lista.length, nCod: Object.keys(porCod).length,
+    metaUep: Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO,
     uteis: uteis || [], amostraLida: !!amostra, progLida: !!prog
   };
 }
@@ -5555,11 +5578,11 @@ const _FILA_DOC_SKIN = `
 function _filaCronoHtml(F, ctx){
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
   const chips = f => f.motivos.map(m => `<span class="fl-chip ${m}" title="${_rpEsc(FILA_MOTIVOS[m].d)}">${FILA_MOTIVOS[m].t}${m === 'fam' && f.famRazao ? ' ' + fmt1(f.famRazao) + '×' : ''}${m === 'prov' && f.dias != null ? ' · ' + f.dias + ' DIA' + (f.dias === 1 ? '' : 'S') : ''}</span>`).join('');
-  const colg = '<colgroup><col style="width:3%"><col style="width:24%"><col style="width:10%"><col style="width:10%"><col style="width:6%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:17%"></colgroup>';
-  const th = '<thead><tr><th class="n">#</th><th>PRODUTO</th><th>UEP/CX (por volume)</th><th>ORIGEM</th><th class="n">DIAS NA AMOSTRA</th><th class="n">CX NA AMOSTRA</th><th class="n">PROGRAMADO (CX)</th><th class="n">PROGRAMADO (UEP)</th><th class="n">% DA JANELA</th><th>POR QUE ESTÁ NA FILA</th></tr></thead>';
+  const colg = '<colgroup><col style="width:3%"><col style="width:21%"><col style="width:10%"><col style="width:9%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:13%"></colgroup>';
+  const th = '<thead><tr><th class="n">#</th><th>PRODUTO</th><th>UEP/CX (por volume)</th><th title="Segundos por caixa que a meta pede: ' + UEP_MIN_DIA + ' min × 60 ÷ META UEP × UEP da caixa">TAKT s/CX</th><th>ORIGEM</th><th class="n">DIAS NA AMOSTRA</th><th class="n">CX NA AMOSTRA</th><th class="n">PROGRAMADO (CX)</th><th class="n">PROGRAMADO (UEP)</th><th class="n">% DA JANELA</th><th>POR QUE ESTÁ NA FILA</th></tr></thead>';
   const linha = (f, i, topo) => `<tr${topo ? ' class="fl-top"' : ''}><td class="n mono">${i + 1}</td>`
     + `<td><b>${_rpEsc(f.nome)}</b><span class="fl-sub">${_rpEsc(f.modelo)}${f.nVol > 1 ? ' · ' + f.nVol + ' volumes' : ''}</span></td>`
-    + `<td class="mono">${_rpEsc(f.uepTxt)}</td><td class="mono">${_rpEsc(f.origem)}</td>`
+    + `<td class="mono">${_rpEsc(f.uepTxt)}</td><td class="mono">${_rpEsc(f.taktTxt)}</td><td class="mono">${_rpEsc(f.origem)}</td>`
     + `<td class="n">${f.dias == null ? '—' : fmtN(f.dias)}</td><td class="n">${f.cxAm == null ? '—' : fmtN(Math.round(f.cxAm))}</td>`
     + `<td class="n">${f.progCx ? fmtN(Math.round(f.progCx)) : '—'}</td>`
     + `<td class="n">${f.progUep ? fmtN(Math.round(f.progUep)) : (f.progCxSem ? 'sem UEP' : '—')}</td>`
@@ -5590,6 +5613,7 @@ function _filaCronoHtml(F, ctx){
         k === 'fam' ? `. Régua: a maior UEP por hora de esteira da família (mesmo modelo de 6 dígitos) é ${fmt1(FILA_FAM_RAZAO)}× ou mais a menor` :
         k === 'prov' ? `. Mínimo: ${UEP_MIN_DIAS} dias. Amostra: a produção apontada de ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}, o período de onde saiu a UEP travada` : ''}.</td></tr>`).join('')
     + `<tr><td style="font-weight:700">A ORDEM</td><td>Primeiro o que está programado de ${jan} (próximos ${F.uteis.length} dias úteis), pela UEP programada — é ali que um número errado mais pesa na meta e na carteira; código sem UEP programado vem antes de todos. Depois, o resto da fila pelo volume já embalado. As 5 primeiras linhas vêm destacadas.</td></tr>`
+    + `<tr><td style="font-weight:700">TAKT s/CX</td><td>O tempo por caixa que a META UEP pede do produto: ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(F.metaUep)} UEP = ${_taktTxt(_taktUep(1, F.metaUep))} por UEP, × a UEP da caixa. Um por volume, na mesma ordem da UEP/CX. É a referência da cronoanálise: tempo medido acima dele = o produto não acompanha a meta com a UEP que tem. Não é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, um número para qualquer caixa).</td></tr>`
     + `<tr><td style="font-weight:700">% DA JANELA</td><td>UEP programada do produto ÷ UEP programada de todos os produtos na janela (caixas em aberto × UEP do cadastro).</td></tr>`
     + `<tr><td style="font-weight:700">COMO SAI DA FILA</td><td>Digitar a UEP da cronoanálise na coluna UEP da PRODUTO_CODIGO. A UEP_VIGENCIA da linha vira "DIGITADA" (Apps Script v5.27) e o produto deixa de ser PROVISÓRIA, ESTIMADA e NO LIMITE DA ESTEIRA. FAMÍLIA INCOERENTE continua nos irmãos ainda não cronometrados.</td></tr>`
     + `<tr><td style="font-weight:700">O QUE ELE NÃO É</td><td>Não mede o produto: aponta onde a UEP do cadastro tem base fraca. A UEP continua TRAVADA — nada aqui grava.</td></tr>`
@@ -5621,13 +5645,13 @@ async function gerarRelatorioFilaCrono(){
   const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
                 amDe:FILA_AMOSTRA_DE, amAte:am ? am.ate : (UEP_TRAVADA_DESDE || '—') };
   try{
-    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS));
+    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS), PONTOS_DIA.metaUep);
     corpo = _filaCronoHtml(F, ctx);
   }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
   const html = _rpDocParadas('Fila de cronoanálise — ' + ctx.data, true)
     + '<style>' + _FILA_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="fila-doc">'
     + _rpCabecalho('FILA DE CRONOANÁLISE',
-        `<div class="rp-per">UEP</div><div>janela: próximos ${GPX_DIAS} dias úteis</div><div>amostra: ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}</div>`,
+        `<div class="rp-per">UEP</div><div>janela: próximos ${GPX_DIAS} dias úteis</div><div>amostra: ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}</div><div>takt pela meta de ${fmtN(F.metaUep)} UEP</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
     + corpo + '</div></body></html>';
   win.document.open(); win.document.write(html); win.document.close();
@@ -18819,7 +18843,7 @@ function _tvFHtml(m, selo){
     // A cor vai no rótulo: uma linha a menos, que em 1366×768 não cabia.
     + '<div class="tvu-card"><div class="tvu-lbl">RODANDO AGORA' + (m.prod && m.prod.cor ? ' · ' + _rpEsc(m.prod.cor) : '') + '</div>'
     + (m.prod
-        ? '<div class="tvu-prod">' + _rpEsc(m.prod.nome) + '</div>'
+        ? '<div class="tvu-prod tvu-nome">' + _rpEsc(m.prod.nome) + '</div>'
           + (m.prod.uepCx > 0 ? '<div class="tvu-mid">1 caixa = <b>' + _tvF2(m.prod.uepCx) + '</b> UEP</div>'
                               : '<div class="tvu-sub">sem UEP no cadastro para este código</div>')
         : '<div class="tvu-sub">nenhum produto selecionado no app</div>')
@@ -18897,9 +18921,21 @@ function _tvGSvg(m, selo){
   const fAlto = m.feito >= m.esp;
   const hi = fAlto ? ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'] : ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'];
   const lo = fAlto ? ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'] : ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'];
-  const hiEsq = xa > L + 230;
-  s += '<text x="' + (hiEsq ? xa - 18 : xa + 18).toFixed(1) + '" y="' + (hi[1] - 24).toFixed(1) + '" text-anchor="' + (hiEsq ? 'end' : 'start') + '" class="' + hi[2] + '">' + hi[0] + '</text>';
-  if(xa < W - R - 220) s += '<text x="' + (xa + 18).toFixed(1) + '" y="' + (lo[1] + 44).toFixed(1) + '" class="' + lo[2] + '">' + lo[0] + '</text>';
+  const txt = (r, xx, yy, ancora) => '<text x="' + xx.toFixed(1) + '" y="' + yy.toFixed(1) + '"'
+    + (ancora ? ' text-anchor="' + ancora + '"' : '') + ' class="' + r[2] + '">' + r[0] + '</text>';
+  const fundo = T + ph - 8;   // abaixo disto é o eixo e as horas
+  if(xa > L + 230){
+    s += txt(hi, xa - 18, hi[1] - 24, 'end');
+    if(xa < W - R - 220 && lo[1] + 44 < fundo) s += txt(lo, xa + 18, lo[1] + 44);
+  } else if(lo[1] + 84 < fundo){
+    // Começo do dia: à esquerda não cabe, e acima-à-direita as linhas que vêm
+    // pela frente sobem por cima do rótulo (o ESPERADO 571 das 08:59 de
+    // 19/10). Abaixo-à-direita do ponto mais baixo nada passa: tudo o que vem
+    // depois dos dois pontos sobe. Os dois empilhados ali, o mais alto em cima.
+    s += txt(hi, xa + 18, lo[1] + 44) + txt(lo, xa + 18, lo[1] + 84);
+  }
+  // Senão (a 1ª hora, pontos colados no eixo): sem rótulo — os dois números
+  // estão no 1º cartão, ao lado.
   return s + '</svg>';
 }
 // TELA G — desenho (sem conta).
@@ -18915,7 +18951,7 @@ function _tvGHtml(m, selo){
       + '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
       // O número antes do nome: nome comprido corta com "…", a conta não.
       + (m.faltaCx ? '<div class="tvg-cx">= <b>' + fmtN(m.faltaCx) + ' caixas</b> deste produto</div>'
-                     + '<div class="tvu-sub">' + _tvF2(m.prod.uepCx) + ' UEP/cx · ' + _rpEsc(m.prod.nome) + '</div>'
+                     + '<div class="tvu-sub tvu-nome">' + _tvF2(m.prod.uepCx) + ' UEP/cx · ' + _rpEsc(m.prod.nome) + '</div>'
                    : '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
     // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
     // senão o cartão lido a 15 m parece selo mesmo com o selo desligado.
@@ -18945,6 +18981,44 @@ function _tvGHtml(m, selo){
     + '<div class="tvu-card">' + card2 + '</div>'
     + (card3 ? '<div class="tvu-card">' + card3 + '</div>' : '')
     + '</div></div>' + _tvUepRodHtml(m);
+}
+// ENCAIXE MEDIDO das Telas F e G. A fonte é por vh, e a tela nem sempre tem
+// 100vh: no gerencial (aba TV OPERACIONAL) ela perde o cabeçalho, as abas e o
+// rodapé, e mesmo na TV cheia o 1º cartão da G com o selo ligado pedia mais
+// altura do que tinha (19/10/2026 — o teste da v7.138.0 só media a LARGURA).
+// Depois de desenhar, reduz a escala (--tvu-k, que multiplica fontes e
+// espaços) de 5 em 5% até nada cortar, no máximo até TV_UEP_K_MIN. Nome de
+// produto (.tvu-nome) pode cortar com "…" na largura: um nome comprido não
+// encolhe a tela inteira.
+const TV_UEP_K_MIN = 0.6, TV_UEP_K_PASSO = 0.05;
+function _tvUepCorta(corpo){
+  const caixas = corpo.querySelectorAll('.tvf-topo, .tvf-hero, .tvf-cards, .tvf-horas, .tvg-cards, .tvu-card, .tvu-rod');
+  for(const e of caixas){
+    if(e.scrollHeight > e.clientHeight + 1) return true;
+    if(e.scrollWidth > e.clientWidth + 1) return true;
+  }
+  // Linha de dentro do cartão: na ALTURA só conta a que pode encolher
+  // (overflow escondido — é ela que cortava o texto no meio da letra); o
+  // número grande tem entrelinha < 1 de propósito e "transborda" sem cortar.
+  for(const e of corpo.querySelectorAll('.tvu-card > *, .tvu-apoio')){
+    if(getComputedStyle(e).overflowY !== 'visible' && e.scrollHeight > e.clientHeight + 1) return true;
+    if(!e.classList.contains('tvu-nome') && e.scrollWidth > e.clientWidth + 1) return true;
+  }
+  return false;
+}
+function _tvUepCabe(slide, forcar){
+  const corpo = slide && slide.querySelector('.tvu-corpo');
+  if(!corpo || !slide.offsetHeight || !corpo.firstChild) return;
+  const tam = slide.offsetWidth + 'x' + slide.offsetHeight;
+  if(!forcar && corpo._tvuTam === tam) return;
+  corpo._tvuTam = tam;
+  let k = 1;
+  corpo.style.setProperty('--tvu-k', '1');
+  while(k > TV_UEP_K_MIN + 1e-9 && _tvUepCorta(corpo)){
+    k = Math.max(TV_UEP_K_MIN, k - TV_UEP_K_PASSO);
+    corpo.style.setProperty('--tvu-k', k.toFixed(2));
+  }
+  corpo.dataset.k = k.toFixed(2);
 }
 // O modelo das duas telas, refeito no máximo a cada TV_UEP_TTL. O _ordemTelas
 // (chamado a cada segundo pela reconciliação do ciclo) lê daqui sem recalcular.
@@ -19184,7 +19258,10 @@ const _cicloTV = (function() {
     if (sig === _uSig[t]) return;
     _uSig[t] = sig;
     const corpo = document.getElementById('tv' + t + '-corpo');
-    if (corpo && m) corpo.innerHTML = t === 'f' ? _tvFHtml(m, selo) : _tvGHtml(m, selo);
+    if (corpo && m) {
+      corpo.innerHTML = t === 'f' ? _tvFHtml(m, selo) : _tvGHtml(m, selo);
+      _tvUepCabe(document.getElementById('tv-slide-' + t), true);   // escondida: o _mostrarTela mede
+    }
   }
   // Só entra no ciclo marcada (=== true: config salva antes da v7.138.0 não
   // tem a chave e fica de fora) e com o que mostrar.
@@ -19242,7 +19319,7 @@ const _cicloTV = (function() {
     else if (t === 'c' && slides.c) { _sincSlideC(); slides.c.style.display = 'flex'; }
     else if (t === 'd' && slides.d) { _sincSlideD(); slides.d.style.display = 'flex'; }
     else if (t === 'e' && slides.e) { _eSig = ''; _sincSlideE(); slides.e.style.display = 'flex'; }
-    else if ((t === 'f' || t === 'g') && slides[t]) { _uSig[t] = ''; _sincSlideUep(t); slides[t].style.display = 'flex'; }
+    else if ((t === 'f' || t === 'g') && slides[t]) { _uSig[t] = ''; _sincSlideUep(t); slides[t].style.display = 'flex'; _tvUepCabe(slides[t], true); }
     _updBtn();
   }
 
@@ -19284,7 +19361,8 @@ const _cicloTV = (function() {
     // sozinha no ciclo não há volta); o _eSig faz disto um no-op sem mudança.
     if (_tela === 'e') _sincSlideE();
     // F e G idem: o modelo é refeito a cada 15 s e a assinatura evita redesenho.
-    if (_tela === 'f' || _tela === 'g') _sincSlideUep(_tela);
+    // O _tvUepCabe só refaz a conta quando o TAMANHO muda (janela, ⛶ PAINEL CHEIO).
+    if (_tela === 'f' || _tela === 'g') { _sincSlideUep(_tela); _tvUepCabe(document.getElementById('tv-slide-' + _tela)); }
     // A Tela D mostra o PERÍODO da semana no lugar do relógio — nada a acertar
     // por segundo ali.
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
@@ -19318,7 +19396,7 @@ const _cicloTV = (function() {
     else if (_tela === 'c') _sincSlideC();
     else if (_tela === 'd') _sincSlideD();
     else if (_tela === 'e') { _eSig = ''; _sincSlideE(); }
-    else if (_tela === 'f' || _tela === 'g') { _uSig[_tela] = ''; _sincSlideUep(_tela); }
+    else if (_tela === 'f' || _tela === 'g') { _uSig[_tela] = ''; _sincSlideUep(_tela); _tvUepCabe(document.getElementById('tv-slide-' + _tela), true); }
     _updBtn();
     // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
     // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.

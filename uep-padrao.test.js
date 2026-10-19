@@ -228,7 +228,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
 ['UEP_PAD_FAIXA', 'UEP_PAD_MIN_MIN', 'UEP_TRAVA_LISTA', 'UEP_MIN_DIAS', 'UEP_IMP_ALERTA'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
 vm.runInContext("var CFG = { turnoInicio: '07:00', turnoFim: '17:00' };", F);
 vm.runInContext('var UEP_PAD_ST = ' + V7JS.match(/const UEP_PAD_ST=(\{[^\n]*\});/)[1] + ';', F);
-['function _uepPadSt(', 'function _uepPadMinSlot(', 'function _uepPadHist(', 'function _uepTravaTxt(', 'function _uepPadJanela(',
+['function _taktUep(', 'function _taktTxt(', 'function _uepPadSt(', 'function _uepPadMinSlot(', 'function _uepPadHist(', 'function _uepTravaTxt(', 'function _uepPadJanela(',
  'function _horaEhHE(', 'function _uepChave(', 'function _uepImpacto(', 'function _uepImpactoTxt(']
   .forEach(f => vm.runInContext(pegaV7(f), F));
 const hist = (itens, metaDe, metaAt, minSlot) => vm.runInContext('_uepPadHist(' + JSON.stringify(itens) + ',' + JSON.stringify(metaDe || {}) + ',' + JSON.stringify(metaAt) + ',' + JSON.stringify(minSlot || {}) + ')', F);
@@ -304,19 +304,30 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
   ];
   const H = hist(itens, {}, 2530, {});
   ok('totais da capa = soma das colunas dos produtos julgados', H.tot, { dias: 3, abaixo: 1, no: 1, acima: 1 });
-  // conta as colunas de cada <tr>: td/th + colspan−1. Toda linha tem de ter 11.
+  // conta as colunas de cada <tr>: td/th + colspan−1. Toda linha tem de ter 12 (11 até a v7.140.0; + TAKT s/CX).
   const colunas = html => [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map(m =>
     [...m[1].matchAll(/<t[dh]([^>]*)>/g)].reduce((n, c) => n + (Number((c[1].match(/colspan="(\d+)"/) || [])[1]) || 1), 0));
   const tela = vm.runInContext('_uepPadHtml(' + JSON.stringify(H) + ', "501149|MESA CABECEIRA MADERO", {registrado:true, diverge:0})', F);
-  ok('tela: as larguras são fixas (colgroup de 11 + table-layout) e o dia a dia aberto usa as MESMAS 11 colunas',
+  ok('tela: as larguras são fixas (colgroup de 12 + table-layout) e o dia a dia aberto usa as MESMAS 12 colunas',
      [vm.runInContext('UEP_PAD_COLS.length', F), vm.runInContext('UEP_PAD_COLS.reduce((a,b)=>a+b,0)', F), (tela.match(/<col /g) || []).length,
-      [...new Set(colunas(tela))], /uep-pad-det|<table><thead><tr><th>DIA/.test(tela)], [11, 100, 11, [11], false]);
+      [...new Set(colunas(tela))], /uep-pad-det|<table><thead><tr><th>DIA/.test(tela)], [12, 100, 12, [12], false]);
   ok('tela: o dia a dia abre embaixo do produto, com a própria linha de rótulos',
      [(tela.match(/class="uep-pad-dh"/g) || []).length, (tela.match(/class="uep-pad-d"/g) || []).length], [1, 2]);
   ok('o selo tem largura fixa na tela e no papel (a data não anda em zigue-zague)',
      [/#sec-uep \.uep-pad-st\{display:inline-block;min-width:\d+px/.test(V7), /\.pad-doc \.uep-pad-st\{display:inline-block;min-width:\d+px/.test(V7)], [true, true]);
   const doc = vm.runInContext('_uepPadDocHtml(' + JSON.stringify(H) + ', {registrado:false, diverge:2}, {de:"16/09/2026", ate:"15/10/2026", data:"16/10/2026", hora:"10:51"})', F);
-  ok('papel: toda linha com as 11 colunas, nas duas tabelas de produto', [...new Set(colunas(doc.slice(0, doc.indexOf('3 ▸ COMO O NÚMERO SAI'))).filter(n => n > 2))], [11]);
+  ok('papel: toda linha com as 12 colunas, nas duas tabelas de produto', [...new Set(colunas(doc.slice(0, doc.indexOf('3 ▸ COMO O NÚMERO SAI'))).filter(n => n > 2))], [12]);
+  // TAKT s/CX (v7.141.0, PPCP 19/10/2026: "colocar takt time de cada um nos relatórios")
+  const mad = H.julgados.find(g => g.modelo === '501149'), elo = H.julgados.find(g => g.modelo === '501061');
+  const r1 = v => Math.round(v * 10) / 10;
+  ok('takt = 527 min × 60 ÷ META UEP × UEP/cx: MADERO 12,5 s; ELOA (5,14 UEP/cx) 64,3 s',
+     [mad.takt.toFixed(2), elo.takt.toFixed(1), vm.runInContext('_taktTxt(_taktUep(1.84, 2530))', F)], ['12.50', '64.3', '23,0 s']);
+  ok('takt = 3.600 ÷ CX/H PADRÃO (a mesma régua, em segundos por caixa)', [r1(3600 / mad.cxhPad), r1(3600 / elo.cxhPad)], [r1(mad.takt), r1(elo.takt)]);
+  ok('s/CX REAL do dia = minutos × 60 ÷ caixas (MADERO 01/10: 120 min, 576 cx → 12,5 s)',
+     mad.dias.map(d => [d.data, r1(d.segCx)]), [['01/10/2026', 12.5], ['02/10/2026', 18]]);
+  ok('sem UEP → takt null ("—"), nunca 0', [vm.runInContext('_taktUep(0, 2530)', F), vm.runInContext('_taktUep(null, 2530)', F), vm.runInContext('_taktTxt(null)', F)], [null, null, '—']);
+  ok('tela e papel mostram TAKT s/CX no cabeçalho e o s/CX REAL no dia a dia',
+     [/>TAKT s\/CX</.test(tela), />s\/CX REAL</.test(tela), />12,5 s</.test(tela), /TAKT s\/CX<\/td><td>O padrão em segundos por caixa/.test(doc)], [true, true, true, true]);
   ok('papel: o resumo e o dia a dia de TODOS os produtos julgados (na tela abre um por vez)',
      [(doc.match(/MESA CABECEIRA MADERO/g) || []).length, (doc.match(/PENTEADEIRA CAMARIM ELOA/g) || []).length,
       (doc.match(/class="uep-pad-dh"/g) || []).length, (doc.match(/class="uep-pad-d"/g) || []).length, /MESA CABECEIRA SLEEP/.test(doc)],
