@@ -3701,7 +3701,18 @@ feito e dá ar de verdade ao que sobrou.
     12. Retrato da tela no clique: mesmas entradas do `_uepConvAtualiza`,
     nenhuma leitura, janela aberta no clique; estado não-ok avisa e não abre.
     `<title>` sem `/` e `:` (`_uepConvDocTitulo`). Medido no Chromium: A4 em pé,
-    1 página nos casos ok, troca com 2 volumes e base digitada.
+    1 página nos casos ok, troca com 2 volumes, base digitada e a própria base.
+  - ⚠ **Revisão adversarial da v7.145.0 (3 lentes + cético por achado)**
+    confirmou 3 e refutou 3. Corrigidos: (1) as ENTRADAS são lidas por UMA
+    função, `_uepConvEntradas()` (tela e papel; teste conta 2 chamadores) — o
+    papel lia o campo da base cru, e o campo automático só acompanha a meta
+    quando a aba redesenha: com a meta mudada pelo ⚙ ou pelo refresh, saía
+    "BASE DIGITADA" com a régua velha. O 🖨 chama `_uepConvAtualiza()` antes,
+    para a tela ficar com o mesmo retrato. (2) "clique em 📌 FIXAR" é
+    `.so-tela`; o papel leva a `.so-papel` (`#sec-crono .so-papel{display:none}`
+    na tela — regra própria, não junto da de perdas/simulador, que o teste
+    prende como está). (3) o teste das entradas roda a função real num DOM de
+    mentira (conferido por mutação: volta o defeito, o teste cai).
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

@@ -438,6 +438,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* ⏱ CRONOANÁLISE → UEP (v7.144.1, PPCP 19/10/2026: "modernize somente a tela").
    Só visual: tokens do painel + um azul local (--ucv-azul) para o resultado. */
 #sec-crono{--ucv-azul:#5AA9F0}
+#sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
 #sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
 #sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) auto;gap:14px;align-items:end}
 #sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
@@ -5897,7 +5898,7 @@ function _uepConvHtml(R){
     + card('A RÉGUA DA META', sg(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`, 'ucv-azul')
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
-    + `<div class="ucv-acao base"><p>A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base: daí em diante, cada produto entra com o tempo rodando dele.</p></div>` + nota;
+    + `<div class="ucv-acao base"><p>A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, <span class="so-tela">clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base</span><span class="so-papel">fixe ${_taktTxt(R.seg)} em s/VOLUME DA BASE, na aba ⏱ CRONOANÁLISE do painel, para usar esse tempo como base</span>: daí em diante, cada produto entra com o tempo rodando dele.</p></div>` + nota;
   const difSub = R.difPct == null ? 'sem UEP no cadastro para comparar'
     : R.confere ? `<span class="ucv-pill ok">CONFERE</span> — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
     : `<span class="ucv-pill warn">${R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro'}</span>`;
@@ -5928,11 +5929,28 @@ function _uepConvGuia(daMeta){
     + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
 }
 let UEP_CONV_CAT = null, UEP_CONV_PRODS = [], UEP_CONV_INI = false;
+// As ENTRADAS da conversão, lidas por UMA função para a tela e o papel
+// (v7.145.0 — a revisão achou o 🖨 lendo o campo da base cru).
+// v7.143.1 (PPCP: "10,4 de exemplo"): o placeholder diz que o vazio é a meta.
+// v7.143.2 (PPCP: "fixa sleep no volume base"): o campo MOSTRA a base em uso —
+// vazio, e sem ninguém digitando nele, recebe a régua da meta; preenchido assim
+// (dataset.auto) acompanha a meta de AGORA. Ela muda pelo ⚙ e pelo refresh sem
+// redesenhar a aba: lendo o valor velho, o papel saía "BASE DIGITADA" com a
+// régua antiga. Não grava no computador: só o digitado ou fixado vai para o
+// rpe_uep_conv.
+function _uepConvEntradas(){
+  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
+  const meta = PONTOS_DIA.metaUep;
+  const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
+  if(elB) elB.placeholder = 'meta ' + metaTxt;
+  if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
+  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:_pgSimNum(elB ? elB.value : ''), meta };
+}
 // Só o resultado é redesenhado: os campos e a lista ficam (o datalist só é
 // refeito quando o cadastro muda), senão o foco sairia do campo a cada tecla.
 function _uepConvAtualiza(){
   const res = document.getElementById('uep-conv-res'); if(!res) return;
-  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
+  const elB = document.getElementById('uep-conv-base');   // só para o valor guardado; as entradas vêm do _uepConvEntradas
   if(!UEP_CONV_INI){
     UEP_CONV_INI = true;
     try{ const b = localStorage.getItem(UEP_CONV_LS); if(b && elB && !elB.value) elB.value = b; }catch(e){}
@@ -5943,24 +5961,15 @@ function _uepConvAtualiza(){
     const dl = document.getElementById('uep-conv-lista');
     if(dl) dl.innerHTML = UEP_CONV_PRODS.map(p => `<option value="${_rpEsc(p.rot)}">`).join('');
   }
-  const meta = PONTOS_DIA.metaUep;
-  // v7.143.1 (PPCP: "10,4 de exemplo"): vazio, o campo usa a régua da meta — o
-  // placeholder diz isso, senão parece exemplo como os outros dois campos
-  const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
-  if(elB) elB.placeholder = 'meta ' + metaTxt;
-  // v7.143.2 (PPCP: "fixa sleep no volume base"): o campo MOSTRA a base em uso.
-  // Vazio (e sem ninguém digitando nele) recebe a régua da meta; preenchido
-  // assim (dataset.auto) acompanha a meta do ⚙. Não grava no computador: só o
-  // que é digitado ou fixado vai para o rpe_uep_conv.
-  if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
+  const E = _uepConvEntradas();
   const bn = document.getElementById('uep-conv-base-nome'); if(bn) bn.textContent = _uepBaseCurto();
   const fx = document.getElementById('uep-conv-fixar');
-  if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
+  if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, E.txt, E.seg);
     fx.textContent = o.acao === 'fixar' ? `📌 FIXAR ${_taktTxt(o.seg)} COMO BASE` : `📌 FIXAR ${_uepBaseCurto()}`;
     fx.disabled = o.acao === 'sem-base'; }
   const guia = document.getElementById('uep-conv-guia');
   try{
-    const R = _uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), meta);
+    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
     if(guia) guia.innerHTML = _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
     res.innerHTML = _uepConvHtml(R);
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
@@ -6065,8 +6074,9 @@ function _uepConvDocHtml(R, ctx){
     + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · cronoanálise → UEP</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
 }
 function gerarRelatorioCrono(){
-  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
-  const R = _uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), PONTOS_DIA.metaUep);
+  _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
+  const E = _uepConvEntradas();
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
   if(R.estado !== 'ok'){
     alert(R.estado === 'sem-cadastro' ? 'O cadastro de UEP ainda não foi lido. Tente em alguns segundos.'
         : R.estado === 'sem-produto' ? 'Escolha o produto antes de imprimir.' : 'Digite o tempo por volume medido antes de imprimir.');

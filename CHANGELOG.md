@@ -25,6 +25,10 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     cabeçalho e botão comuns dos outros relatórios. Ao salvar em PDF o arquivo
     já vem com nome: *"Cronoanálise UEP - produto - data hora"*.
   - Sem produto ou sem tempo digitado, o botão avisa em vez de abrir folha vazia.
+  - A folha é sempre o retrato da tela: com a meta trocada no ⚙ (ou chegando
+    na atualização) depois de a aba abrir, a base em uso é refeita antes de
+    imprimir. Na folha da SLEEP, o "clique em 📌 FIXAR" da tela vira a instrução
+    escrita (fixar o tempo em s/VOLUME DA BASE, na aba do painel).
 - **Atenção:** nenhuma conta mudou; nada é lido nem gravado pela impressão.
 
 ---
