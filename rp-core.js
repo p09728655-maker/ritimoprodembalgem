@@ -210,7 +210,11 @@ function minSlotDecorrido(inicio, minSlot, agoraMin){
   return ag - ini;
 }
 
-const UEP_META_PADRAO = 2530;
+// v7.143.0 (PPCP, 19/10/2026): a BASE passou da MADERO para a MESA CABECEIRA
+// SLEEP (a de mais caixas no histórico, ~20 mil). Toda UEP foi dividida por
+// 0,83 (a UEP da SLEEP na escala antiga): 2.530 ÷ 0,83 = 3.048 — o MESMO
+// ritmo (~347 UEP-SLEEP/h, os ~288 de antes), outra unidade.
+const UEP_META_PADRAO = 3048;
 const UEP_MIN_DIA     = 527;   // minutos da jornada normal (9 slots: 4×60 + 48 + 3×60 + 59)
 function uepCard(uep, metaCfg, minJornada){
   const l = 'UEP DO DIA';

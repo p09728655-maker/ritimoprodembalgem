@@ -11,6 +11,40 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.143.0 · mobile 1.35.0 · `.gs` v5.28 — 19/10/2026
+
+- **A BASE DA UEP PASSOU A SER A MESA CABECEIRA SLEEP** (decisão do PPCP: *"hoje
+  o melhor produto é MESA CABECEIRA SLEEP"*, *"20 mil caixas no histórico"*). Foi
+  uma **troca de unidade**, não uma medição nova: tudo o que estava em UEP foi
+  dividido por **0,83** (a UEP da SLEEP na base antiga), então a SLEEP vale 1,00.
+  - Planilha, gravado em 19/10: coluna UEP da PRODUTO_CODIGO (429 códigos),
+    **META_UEP 2.530 → 3.048** na CONFIG_PAINEL e, no HISTORICO de 03/07 a
+    16/10, as colunas UEP, UEP HE e META UEP.
+  - Painel: a base fixa (`UEP_BASE`) é a 501094 MESA CABECEIRA SLEEP; a meta
+    padrão do núcleo é 3.048; a SLEEP sai da FILA DE CRONOANÁLISE (base vale
+    1,00 por definição).
+- **⏱ CRONOANÁLISE → UEP: o tempo certo é COM A LINHA RODANDO** (PPCP: *"as
+  paradas são evitáveis se ajustar"*). Parada evitável é perda da linha, não
+  esforço do produto. Com o tempo da base (SLEEP) cronometrado com a linha
+  rodando no campo **s/VOLUME DA BASE**, o produto entra com o tempo rodando
+  dele. Sem a base cronometrada, a régua continua sendo a da meta (que tem as
+  paradas dentro) e o tempo é o do período — a tela diz qual dos dois vale. Base
+  digitada mais lenta que a régua da meta ganha o aviso *"não parece a SLEEP
+  com a linha rodando — confira"*.
+- **Atenção — TODO número em UEP muda de tamanho (× 1,205), nenhum veredito
+  muda.** A proporção feito ÷ meta é a mesma. Exemplos: meta do dia 2.530 →
+  **3.048**; 16/10 de 3.115,8 para **3.754**; SLEEP 0,83 → **1,00**; MADERO 1,00
+  → **1,20**; ARMÁRIO ENCANTO 2,23 → **2,69**; régua do conversor e do TAKT
+  s/CX 12,5 s → **10,4 s** por UEP; meta da hora ~288 → **~347** UEP/h.
+- ⚠ **re-deploy** do Apps Script: o `.gs` v5.28 só troca o padrão de reserva
+  (2.530 → 3.048), que vale quando a CONFIG_PAINEL não tem META_UEP. Não é
+  urgente, mas sem ele um dia fechado sem a chave gravaria a meta antiga.
+- ⚠ A dúvida sobre o 0,83 continua (ele vinha do limite da esteira). Na base
+  nova ela aparece na MADERO: 1,20, quando pelo tamanho da caixa daria ~1,04. A
+  cronoanálise com a linha rodando, contra a SLEEP, é o que corrige.
+
+---
+
 ## v7.142.1 — 19/10/2026
 
 - **⏱ CRONOANÁLISE → UEP: o Tab não joga mais a tela para baixo** (PPCP:

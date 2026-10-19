@@ -48,7 +48,7 @@ require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'
  'FILA_FAM_RAZAO', 'FILA_TETO_FOLGA', 'FILA_MAX_SEM', 'FILA_MOTIVOS', 'FILA_AMOSTRA_DE',
  'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br']
   .forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
-['function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
+['function _uepEhBase(', 'function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
  'function _cartQtdAberta(', 'function _tvF2(', 'function _filaUteis(', 'function _filaAmostraDeItens(',
  'function _filaCronoMontar(', 'function _filaCronoHtml(', 'function _cxUepMontar(', 'function _cxUepHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -77,7 +77,8 @@ const CAT = [
   C('501130001', 'VOL 1/1 MESA LATERAL LUNA 440', 'OFF WHITE', 880, 3.33, '16/10/2026'),              // família: 3,4×
   C('501130005', 'VOL 1/1 MESA CENTRO LUNA 590', 'OFF WHITE', 926, 1.0, '16/10/2026'),
   C('501150001', 'VOL 1/1 COMODA DALILA NEW', 'BRANCO', 0, 4.18, '16/10/2026'),                       // sem medida
-  C('501999001', 'VOL 1/1 PRODUTO NOVO', 'BRANCO', 900, '', '')                                      // sem UEP
+  C('501999001', 'VOL 1/1 PRODUTO NOVO', 'BRANCO', 900, '', ''),                                     // sem UEP
+  C('501095001', 'VOL 1/1 NICHO TESTE', 'BRANCO', 825, 0.84, '16/10/2026')                           // no limite, como a SLEEP
 ];
 const AM = { '501149|MESA CABECEIRA MADERO': { dias: 12, cx: 9000 }, '501094|MESA CABECEIRA SLEEP': { dias: 14, cx: 20541 },
              '501059|PENTEADEIRA CAMARIM STRASS': { dias: 4, cx: 2357 }, '501061|PENTEADEIRA CAMARIM ELOA': { dias: 2, cx: 500 },
@@ -94,12 +95,15 @@ const PROG = [
   L('19/10/2026', '501094001', 300, { foraEsteira: true }),                  // fora da esteira não conta
   L('27/10/2026', '501094001', 900)];                                        // fora da janela
 const UT = _filaUteis(new Date(2026, 9, 19), 5);
-const F = _filaCronoMontar(CAT, AM, PROG, UT);
+const F = _filaCronoMontar(CAT, AM, PROG, UT, 2530);   // cadastro de mentira na escala MADERO
 const por = k => F.prog.concat(F.semProg).find(f => f.key === k) || null;
 
 console.log('\n── FILA: quem entra e por quê ──');
-ok('a base bem medida NÃO entra', por('501149|MESA CABECEIRA MADERO'), null);
-ok('SLEEP: no limite da esteira (o menor UEP × teto do cadastro)', por('501094|MESA CABECEIRA SLEEP').motivos, ['teto']);
+ok('produto bem medido (MADERO) NÃO entra', por('501149|MESA CABECEIRA MADERO'), null);
+// v7.143.0: a SLEEP virou a BASE — vale 1,00 por definição e sai da fila, mesmo
+// sendo a de menor UEP × teto do cadastro (a régua do limite continua com ela).
+ok('a BASE (SLEEP) não entra na fila, nem no limite da esteira', por('501094|MESA CABECEIRA SLEEP'), null);
+ok('outro produto no mesmo limite: NO LIMITE DA ESTEIRA', por('501095|NICHO TESTE').motivos, ['teto']);
 ok('STRASS: provisória (4 dias na amostra)', [por('501059|PENTEADEIRA CAMARIM STRASS').motivos, por('501059|PENTEADEIRA CAMARIM STRASS').dias], [['prov'], 4]);
 ok('PUFF EVORA: estimada', por('501159|PUFF EVORA').motivos, ['est']);
 ok('ELOA cronometrada (vigência DIGITADA) SAI da fila, mesmo com 2 dias', por('501061|PENTEADEIRA CAMARIM ELOA'), null);
@@ -114,19 +118,19 @@ ok('ordem: SEM UEP programado → maior UEP programada',
    F.prog.map(f => f.nome), ['PRODUTO NOVO', 'PENTEADEIRA CAMARIM STRASS', 'PUFF EVORA', 'MESA CENTRO LUNA 590']);
 ok('STRASS programada: 800 cx e 400×2,71 + 400×2,29 = 2.000 UEP', [por('501059|PENTEADEIRA CAMARIM STRASS').progCx, Math.round(por('501059|PENTEADEIRA CAMARIM STRASS').progUep)], [800, 2000]);
 ok('só o que está ABERTO (100 − 40 adiantadas)', por('501130|MESA CENTRO LUNA 590').progCx, 60);
-ok('fora da esteira e fora da janela não contam (SLEEP fica sem programação)', por('501094|MESA CABECEIRA SLEEP').progCx, 0);
 const totEsperado = 2000 + 1300 * 1 + 200 * 1.54 + 135 * 2.4 + 60 * 1.0;
-ok('a % da janela é sobre TODA a UEP programada (inclusive a base e a cronometrada)',
+ok('a % da janela é sobre TODA a UEP programada (inclusive a base e a cronometrada; fora da esteira e fora da janela não contam)',
    [Math.round(F.totUep), Math.round(F.emDuvida), Math.round(F.pctDuvida * 10) / 10],
    [Math.round(totEsperado), Math.round(2000 + 308 + 60), Math.round((2000 + 308 + 60) / totEsperado * 1000) / 10]);
 ok('contagem por motivo', F.cont, { 'sem-uep': 1, est: 1, prov: 1, teto: 1, fam: 2, 'sem-medida': 1 });
 // TAKT s/CX (v7.141.0): 527 min × 60 ÷ META UEP × UEP da caixa, um por volume
-ok('takt da STRASS por volume (2,71 · 2,29) com a meta padrão de 2.530: 33,9 · 28,6 s',
+ok('meta padrão (sem a do ⚙) é a da base SLEEP, 3.048', _filaCronoMontar(CAT, AM, PROG, UT).metaUep, 3048);
+ok('takt da STRASS por volume (2,71 · 2,29) com a meta de 2.530: 33,9 · 28,6 s',
    [por('501059|PENTEADEIRA CAMARIM STRASS').uepTxt, por('501059|PENTEADEIRA CAMARIM STRASS').taktTxt, F.metaUep], ['2,71 · 2,29', '33,9 · 28,6 s', 2530]);
 ok('o takt segue a META UEP do ⚙ (com 2.100 a STRASS pede 40,8 · 34,5 s)',
    _filaCronoMontar(CAT, AM, PROG, UT, 2100).prog.find(f => f.nome === 'PENTEADEIRA CAMARIM STRASS').taktTxt, '40,8 · 34,5 s');
 ok('sem UEP → takt "—", nunca 0', por('501999|PRODUTO NOVO').taktTxt, '—');
-const F0 = _filaCronoMontar(CAT, null, null, UT);
+const F0 = _filaCronoMontar(CAT, null, null, UT, 2530);
 ok('sem amostra: PROVISÓRIA não é avaliada (e diz); sem programação, tudo vai pelo volume',
    [!!por('501059|PENTEADEIRA CAMARIM STRASS') && F0.prog.length, F0.amostraLida, F0.progLida, F0.cont.prov], [0, false, false, 0]);
 
@@ -195,11 +199,12 @@ ok('cartão sem status não herda o vermelho do relatório de paradas',
 console.log('\n── CRONOANÁLISE → UEP ──');
 global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
-['function _uepEhBase(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
+['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
 const CV = (codigo, desc, cor, uep, uepVig) => ({ codigo, desc, cor, uep, uepVig });
 const PRODS = _uepConvProdutos([
   CV('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, '25/09/2026'),
+  CV('501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 1, '19/10/2026'),      // a base desde a v7.143.0
   CV('501.139.001', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO', 2.23, '25/09/2026'),      // código com ponto, como a planilha mostra
   CV('501139002', 'VOL 1/1 ARMARIO ENCANTO', 'CINAMOMO', 2.23, '25/09/2026'),
   CV('501139003', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO/CINAMOMO', 2.23, '25/09/2026'),
@@ -233,9 +238,10 @@ ok('2 volumes: o jogo medido é repartido como o cadastro reparte (2,71 / 2,29)'
 const E5 = _uepConvMontar(PRODS, 'PRODUTO NOVO', 20, 0, 2530);
 ok('sem UEP no cadastro: sem diferença (nunca 0%), e o número a digitar é o medido',
    [E5.volCad, E5.difPct, E5.confere, E5.digitar[0].uep, E5.origem], [null, null, false, 1.6, 'SEM UEP']);
-const E6 = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 12, 0, 2530);
-ok('a BASE não ganha UEP nova: mostra a distância da cronoanálise para a régua da meta',
+const E6 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 10, 0, 3048);
+ok('a BASE (SLEEP) não ganha UEP nova: mostra a distância da cronoanálise para a régua da meta (10 s × 10,4 s)',
    [E6.ehBase, E6.digitar, Math.round(E6.reguaDif)], [true, null, -4]);
+ok('a MADERO deixou de ser a base', _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 12, 0, 3048).ehBase, false);
 ok('meta diferente muda a régua da base pela meta (2.635 UEP → 12,0 s)',
    _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 24, 0, 2635).uepVol.toFixed(2), '2.00');
 ok('estados antes do número', [_uepConvMontar([], 'X', 1, 0, 2530).estado, _uepConvMontar(PRODS, 'ENCANTO', 27.8, 0, 2530).estado,
@@ -261,10 +267,12 @@ const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
 ok('base digitada: a diferença para a régua da meta sai pronta do montar (+40,8%)', [E7.base.daMeta, fmtP(E7.base.difMeta)], [false, '40,8%']);
 const H7 = _uepConvHtml(E7);
 ok('base digitada fica à vista, com o valor e o botão de voltar à meta — e antes do resultado',
-   [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA MADERO'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
+   [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA SLEEP'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
     H7.indexOf('BASE DIGITADA') < H7.indexOf('UEP EQUIVALENTE')], [true, true, true, true]);
 ok('base pela meta não mostra o aviso', [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA')], [false, false]);
-ok('o rótulo diz de quem é o tempo da base', [/>s\/VOLUME DA MADERO \(BASE\)<input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<')], [true, false]);
+ok('o rótulo diz de quem é o tempo da base (o nome vem do UEP_BASE)',
+   [/>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">SLEEP<\/span>\)<input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
+    /bn\.textContent = _uepBaseCurto\(\)/.test(pegaJs('function _uepConvAtualiza(')), _uepBaseCurto()], [true, false, true, 'SLEEP']);
 {
   const docAntes = global.document; let foco = null, evitou = false;
   global.document = { getElementById: id => ({ focus: () => { foco = id; } }) };
@@ -275,6 +283,21 @@ ok('o rótulo diz de quem é o tempo da base', [/>s\/VOLUME DA MADERO \(BASE\)<i
   ok('Tab no campo da base volta ao PRODUTO (sem rolar a tela); Shift+Tab segue normal', [r1, [foco, evitou]], [['uep-conv-prod', true], [null, false]]);
   global.document = docAntes;
 }
+// v7.142.2 — PPCP: "as paradas são evitáveis se ajustar". Com a MADERO digitada a
+// orientação pede o tempo RODANDO; base mais lenta que a régua da meta é suspeita.
+eval.call(global, pegaJs('function _uepConvGuia('));
+ok('sem a base cronometrada, a orientação é o período (e diz que o método certo é rodando); com ela, rodando',
+   [/NO PERÍODO/.test(_uepConvGuia(true)), /SLEEP <b>com a linha rodando<\/b>/.test(_uepConvGuia(true)),
+    /COM A LINHA RODANDO/.test(_uepConvGuia(false)), /NO PERÍODO/.test(_uepConvGuia(false))], [true, true, true, false]);
+ok('a orientação é desenhada pelo _uepConvAtualiza (não é mais texto fixo no HTML)',
+   [/id="uep-conv-guia"/.test(html), /_uepConvGuia\(/.test(pegaJs('function _uepConvAtualiza(')), html.includes('Use o tempo <b>NO PERÍODO</b> (paradas dentro): é a régua')], [true, true, false]);
+ok('base mais lenta que a régua da meta é suspeita (o 17,6 do Encanto); a MADERO rodando a 8,7 s não é',
+   [E7.base.suspeita, _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530).base.suspeita, E1.base.suspeita],
+   [true, false, false]);
+ok('o desenho cobra a conferência da base suspeita e, com a base, fala em tempo rodando',
+   [H7.includes('não parece a SLEEP com a linha rodando'), H7.includes('o tempo é o COM A LINHA RODANDO'),
+    _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530)).includes('não parece a SLEEP')], [true, true, false]);
+ok('Encanto rodando 17,6 ÷ MADERO rodando 8,7 = 2,02', _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530).uepVol.toFixed(2), '2.02');
 ok('o campo da base tem o Tab ligado', /id="uep-conv-base"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
