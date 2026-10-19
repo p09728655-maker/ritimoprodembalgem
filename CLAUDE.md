@@ -473,11 +473,35 @@ via Google Apps Script (JSONP).
   `TEMPO_G`, `SELO_UEP_TV` na CONFIG_PAINEL, as de ligar `false` sem a chave.
   ⚠ **re-deploy manual**; antes dele `aplicarConfigPainel` preserva a marcação
   LOCAL — marcar no PC não liga a TV da fábrica (é como o PPCP acompanha).
-- **Medido no Chromium** (1920×1080 e 1366×768, retrato de 16/10 e um dia
-  atrasado): nada corta nem sobrepõe. O que custou duas rodadas: o nome do
-  produto com a cor numa linha só, os cartões da G com frase longa, e o SVG
-  1000×640 (sobrava 1/3 da altura) — hoje 1000×840 com `xMidYMin meet`.
-  Mexeu em texto? Renderizar de novo nas duas resoluções.
+- ~~**Medido no Chromium**: nada corta nem sobrepõe~~ — **ERRADO**, e o PPCP
+  achou no print de 19/10 08:59 (aba TV OPERACIONAL, selo ligado): os cartões
+  da G cortavam o texto no meio da letra. A medição da v7.138.0 olhava só a
+  **largura** (`scrollWidth`); com a ALTURA medida, o 1º cartão da G com selo
+  cortava **até na TV em 1920×1080**. Medição de tela tem de olhar os dois eixos.
+- **ENCAIXE MEDIDO (v7.140.0)** — `_tvUepCabe` / `_tvUepCorta`: as fontes e os
+  espaços das duas telas são `calc(var(--tvu-k,1) * clamp(…vh…))`; depois de
+  desenhar (e depois de MOSTRAR: escondida não tem altura) a escala desce de
+  5 em 5% até nada cortar, até `TV_UEP_K_MIN`=0,6. Só refaz quando o tamanho
+  muda (o relógio chama a cada segundo). Por quê: a fonte é por `vh` e a tela
+  da TV no gerencial tem 100vh menos cabeçalho, abas e rodapé (133 px).
+  - O cartão é `flex:1 1 auto` (altura do conteúdo), não um terço fixo: com o
+    selo o 1º cartão da G pede mais que os outros.
+  - Na altura, linha de dentro do cartão só conta se tem `overflow` escondido
+    (é ela que encolhe e corta a letra). O número grande tem entrelinha < 1 de
+    propósito e "transborda" sem cortar — contá-lo levava a G a 60% sempre.
+  - **`.tvu-nome` pode cortar com "…"** na largura: nome de produto comprido
+    não encolhe a tela inteira. O resto (rótulo com a cor, peso, falta) tem de
+    caber inteiro.
+  - Medido (Chromium, retrato de 16/10, um dia atrasado e 08:59): TV 1920×1080
+    e 1366×768 a 90–100%; gerencial em janela de 1920×950 a 85–95% e de
+    1366×650 a 75–80%. Nada corta fora o nome.
+- **Rótulos FEITO/ESPERADO da G**: meio do dia, o mais alto acima-à-esquerda e
+  o mais baixo abaixo-à-direita. **Começo do dia** (agora a menos de 230 do
+  eixo): empilhados abaixo-à-direita do ponto mais baixo — tudo o que vem
+  depois SOBE, então ali nada passa (acima-à-direita é onde o tracejado sobe:
+  o *ESPERADO 571* do print). Na 1ª hora, sem espaço até o eixo, sem rótulo.
+- Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
+  duas resoluções, medindo ALTURA e largura.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
