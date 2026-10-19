@@ -411,6 +411,8 @@ ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).
 
 // ════════════════════════════════════════════════════════════════════════════
 // TOLERÂNCIA de fadiga e movimentação (v7.146.0, PPCP: "15% iguais para todos")
+// ⚠ Os 8,7 s de base são EXEMPLO (estimativa do limite da esteira para a
+// MADERO, base antiga), não cronometragem da SLEEP.
 console.log('\n── CRONOANÁLISE → UEP: a tolerância ──');
 ok('o padrão é 15%', UEP_CONV_TOL_PADRAO, 15);
 const T0 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 0), T15 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 15),

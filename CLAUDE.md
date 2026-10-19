@@ -3723,6 +3723,11 @@ feito e dá ar de verdade ao que sobrou.
     TOLERÂNCIA explica). Se um dia a tolerância for POR PRODUTO (fadiga por
     peso — o cadastro tem P B), aí ela muda a UEP e a conta tem de mudar junto.
     O "prevê X s" do NO CADASTRO segue em tempo rodando (cru × cru).
+    - ⚠ **O 8,7 s dos testes e das notas NÃO é medição** — e nem é da SLEEP. Saiu
+      de uma estimativa do Claude em 19/10 para a MADERO (base antiga) no
+      limite da esteira: caixa + vão de ~420 mm ÷ 9 m/min. Virou número de
+      exemplo nos testes. A SLEEP ainda não foi cronometrada; nenhuma conclusão
+      sobre a meta ou a folga para paradas pode sair dele.
     - ⚠ **A contagem dupla que sobra é a do USUÁRIO**: digitar o medido já com
       +15% (no produto e não na base) sobe a UEP 15%. O COMO LER e a dica do
       campo dizem "sem somar tolerância" — o teste prende as duas réguas.
@@ -3731,7 +3736,7 @@ feito e dá ar de verdade ao que sobrou.
       mandam NaN); 0% → `tpSeg` null (sem "+0%"); `tolFator` arredondado a 4
       casas (1 + 14/100 = 1,1400000000000001); `onblur` refaz o campo. A
       régua e o cabeçalho do papel dizem *medido* ao lado do número da base
-      (eram 8,7 no cabeçalho e 10,0 no cartão, sem dizer qual era qual). O
+      (no exemplo, 8,7 no cabeçalho e 10,0 no cartão, sem dizer qual era qual). O
       teste confere o tempo padrão com 30% (só o 15% — o padrão — deixava
       passar a conta que ignora o digitado) e a persistência com um
       localStorage de mentira; conferido por mutação.

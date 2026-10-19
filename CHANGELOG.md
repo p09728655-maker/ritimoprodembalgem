@@ -17,9 +17,10 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   *"tenho que colocar fadiga e movimentação 15%"* → *"15% iguais para todos"*).
   Campo novo, padrão **15%**. Com a SLEEP cronometrada com a linha rodando, a
   tela e o papel mostram o **TEMPO PADRÃO** = medido × 1,15 (Armário Encanto
-  17,6 s → **20,2 s**) e a UEP como razão dos tempos padrão (20,2 ÷ 10,0).
+  17,6 s → **20,2 s**) e a UEP como razão dos tempos padrão.
   - **A UEP não muda**: a mesma tolerância no produto e na base se cancela
-    (17,6 ÷ 8,7 = 20,2 ÷ 10,0 = 2,02). Ela muda o tempo padrão do produto (o
+    (exemplo com base de 8,7 s — número de teste, **a SLEEP ainda não foi
+    cronometrada**: 17,6 ÷ 8,7 = 20,2 ÷ 10,0 = 2,02). Ela muda o tempo padrão do produto (o
     número da ficha) e, mais adiante, a meta — quando a SLEEP for cronometrada,
     dá para comparar o tempo padrão dela com a régua da meta.
   - **Com a base pela meta (10,4) a tolerância não entra**: essa régua já tem
@@ -33,7 +34,7 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     +0%"; o multiplicador sai limpo (14% → × 1,14, não × 1,1400000000000001); o
     campo apagado volta a mostrar o padrão ao sair dele. A base passa a dizer
     qual número é o medido e qual é o tempo padrão (na régua e no cabeçalho do
-    papel: *8,7 s por UEP medido (tempo padrão 10,0 s)*).
+    papel, ex.: *8,7 s por UEP medido (tempo padrão 10,0 s)*).
 - **Atenção:** nenhuma UEP muda; o tempo padrão é número novo na tela e no papel.
 
 ---
