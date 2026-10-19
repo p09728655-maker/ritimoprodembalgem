@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.138.0 — 19/10/2026 · ⚠ re-deploy (.gs v5.26)
+
+- **Duas telas novas para a TV da produção, com a UEP do dia** (pedido do PPCP:
+  *"vamos fazer as duas, deixar prontas para que eu possa acompanhar"*):
+  - **TELA F — ESFORÇO DO DIA:** UEP feita até agora contra a esperada, o
+    produto que está rodando (*1 caixa = 1,04 UEP*), o peso médio da caixa de
+    hoje contra o normal dos últimos 30 dias e o hora a hora em UEP.
+  - **TELA G — CORRIDA DO DIA:** a UEP acumulada contra o esperado num gráfico,
+    quantos **minutos** a linha está à frente ou atrás, o que falta para a meta
+    **em caixas do produto de agora** e a hora em que a meta sai mantendo
+    288 UEP/h. Fala em tempo e em caixas: dá para ler sem entender UEP.
+- **As duas nascem DESLIGADAS** — nada muda na TV da fábrica até marcar ⚙ →
+  TELA F / TELA G. Também nascem **sem veredito**: números e barras em tinta,
+  sem NO RITMO / ATENÇÃO / ABAIXO DO RITMO. O selo é a opção ⚙ → SELO DE RITMO
+  NAS TELAS F e G.
+- **Atenção:** com o selo ligado, a TV passa a ter **dois vereditos** — a
+  Tela B em caixas e as Telas F/G em UEP — e eles podem discordar no mesmo
+  minuto. Retrato real de 16/10 às 15:02: Tela B *ABAIXO DO RITMO* (1.483 de
+  ~1.819 cx), Tela F *NO RITMO* (2.271 de 1.959 UEP). Recomendação: ligar o selo
+  só depois da cronoanálise dos produtos pesados da semana.
+- Nenhum número novo de UEP: as telas leem a mesma montagem da aba ⚖ UEP (os
+  números batem com o card UEP DO DIA). Custo de chamada: nenhum a mais, exceto
+  o histórico (para o peso "normal"), relido a cada 30 min só com F ou G
+  ligada.
+- ⚠ **re-deploy do `.gs` (v5.26)** para a escolha de telas e do selo valer em
+  todos os aparelhos. Antes dele, marcar F/G vale **só no aparelho** onde foi
+  marcado — dá para acompanhar no PC (aba TV OPERACIONAL) sem mexer na TV da
+  fábrica.
+
+---
+
 ## v7.137.0 — 16/10/2026
 
 - **UEP TRAVADA.** Decisão do PPCP depois da migração para a base fixa: *"não

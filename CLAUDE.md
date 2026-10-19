@@ -33,6 +33,10 @@ via Google Apps Script (JSONP).
 - `tela-e.test.js` — Tela E da TV (programação do dia): ordem, situação, corte
   de linhas, entrada no ciclo, config, e a cor/`atrasoDesde` do
   `calcularProgramacao` real: `node tela-e.test.js`.
+- `tela-uep.test.js` — Telas F e G da TV (UEP do dia): a conta do
+  `_tvUepMontar` no retrato real de 16/10 15:02, os desfechos da corrida, o
+  peso normal, o desenho sem veredito com o selo desligado e a config
+  desligada por padrão (painel e `.gs`): `node tela-uep.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
@@ -421,6 +425,57 @@ via Google Apps Script (JSONP).
   - ⚠ Linha do mesmo lote com data FUTURA não entra no total (o FIFO só abre
     demanda até hoje).
 
+## TELAS F e G da TV — a UEP do dia (v7.138.0 / `.gs` v5.26)
+- PPCP, 19/10/2026, depois de conferir as UEP travadas: *"sugestão de uma
+  tela dedicada para uep… para tv da produção"* → duas maquetes → *"vamos
+  fazer as duas, deixar prontas para que eu possa acompanhar"*.
+  - **F = ESFORÇO DO DIA**: UEP feita × esperada (barra com a marca do
+    esperado), RODANDO AGORA (*1 caixa = X UEP*, cor no rótulo), PESO MÉDIO DA
+    CAIXA HOJE contra o normal, hora a hora em UEP com a meta da hora.
+  - **G = CORRIDA DO DIA**: UEP acumulada × esperado (SVG), **minutos** à
+    frente/atrás, FALTA PARA A META em UEP **e em caixas do produto de agora**,
+    e A META SAI ÀS (mantendo 288 UEP/h). Fala em tempo e caixas — é a que se
+    lê sem entender UEP.
+- **Conta nenhuma nova**: `_tvUepModelo` lê o `_uepAbaDados` (4º leitor — o
+  teste conta) e o `_tvUepMontar` só arruma para a TV (curva, minutos,
+  caixas). Desenho em `_tvFHtml` / `_tvGHtml` / `_tvGSvg`, sem conta (o teste
+  prende). Modelo refeito no máximo a cada 15 s (`TV_UEP_TTL`): o
+  `_ordemTelas` roda a cada segundo pela reconciliação do ciclo.
+  - O **esperado da curva** anda pela régua do card (só hora com lançamento; a
+    em andamento pelo `minSlotDecorrido`): o ponto de agora FECHA com o card.
+  - **À frente em minutos** = (feito − esperado) ÷ (meta ÷ 527). **A meta sai
+    às** = anda só pelos minutos de jornada que restam (almoço fora); não
+    cabendo, mostra o ritmo que faltaria. Caixas = ⌈falta ÷ UEP/cx⌉, para cima.
+  - **UEP/cx do produto de agora**: o cadastro (`CAP_RAW`, ou o guardado no
+    aparelho); sem ele, a média de hoje do MESMO produto e cor no
+    `porHoraModelo` (o 501130 tem quatro mesas — nunca só pelos 6 dígitos).
+  - **Peso normal** = mediana de UEP ÷ `_qpRealDia` nos últimos 30 dias
+    fechados com UEP (mín. 5). É a única leitura nova: o histórico, relido a
+    cada 30 min **só com F ou G ligada** (`_uepAbaHistCarregar`).
+- ⚠ **DESLIGADAS POR PADRÃO, e o veredito também.** `CFG.telasAtivas.f/.g`
+  só ligam com `=== true` (config salva antes não tem a chave — `!== false`
+  ligaria as duas na TV da fábrica no primeiro deploy) e `CFG.uepSeloTv`
+  nasce `false`. Sem o selo: números e barras em tinta, nenhum NO RITMO.
+  - **Por quê**: a Tela B julga em CAIXAS e estas em UEP. Às 15:02 de 16/10 a
+    B diria ABAIXO DO RITMO (1.483 de ~1.819 cx) e a F NO RITMO (2.271 de
+    1.959 UEP). Dois vereditos na mesma TV é o defeito que este projeto mais
+    pagou caro. Recomendação dada ao PPCP: ligar o selo só depois da
+    cronoanálise dos produtos pesados (56% da UEP programada de 19–23/10
+    vinha de UEP medida com menos de 5 dias).
+  - ⚠ **Rótulo nenhum pode usar "NO RITMO"** — é a palavra do veredito
+    (`slRitmo`). O 1º rascunho tinha "NO RITMO DA META, CHEGA ÀS" e o teste
+    pegou: lido de longe parece selo mesmo com o selo desligado.
+- **Config** (⚙ → PAINEL TV): TEMPO NA TELA F/G (20 s), TELA F, TELA G e SELO
+  DE RITMO NAS TELAS F e G. `.gs` v5.26: `TELA_F`, `TELA_G`, `TEMPO_F`,
+  `TEMPO_G`, `SELO_UEP_TV` na CONFIG_PAINEL, as de ligar `false` sem a chave.
+  ⚠ **re-deploy manual**; antes dele `aplicarConfigPainel` preserva a marcação
+  LOCAL — marcar no PC não liga a TV da fábrica (é como o PPCP acompanha).
+- **Medido no Chromium** (1920×1080 e 1366×768, retrato de 16/10 e um dia
+  atrasado): nada corta nem sobrepõe. O que custou duas rodadas: o nome do
+  produto com a cor numa linha só, os cartões da G com frase longa, e o SVG
+  1000×640 (sobrava 1/3 da altura) — hoje 1000×840 com `xMidYMin meet`.
+  Mexeu em texto? Renderizar de novo nas duas resoluções.
+
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
   8:25 = 1; vamos precisar pegar os segundos também, estamos estudando as
@@ -458,8 +513,9 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje onze, com o `tela-e.test.js`, o `programacao.test.js`, o
-  `uep-padrao.test.js` e o `exclusao.test.js`) antes de publicar.
+  sete (hoje doze, com o `tela-e.test.js`, o `programacao.test.js`, o
+  `uep-padrao.test.js`, o `exclusao.test.js` e o `tela-uep.test.js`) antes de
+  publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
@@ -2970,6 +3026,9 @@ feito e dá ar de verdade ao que sobrou.
     cheia. `minNorm` = minutos de slots NÃO-HE com lançamento (`calcKPIs` dos
     dois). Estados distintos: `null` aguardando · `false` backend sem o campo ·
     `codigos:0` cadastro vazio. **TV e operador não mostram** (teste prende).
+    ⚠ Desde a v7.138.0 a TV tem UEP, mas **só nas Telas F e G** (desligadas
+    por padrão, ver a seção delas); a Tela A, a Tela B e o operador seguem em
+    caixas.
 - **UEP NA PROGRAMAÇÃO E HORA A HORA** (v7.82.0 / mobile 1.21.0 / `.gs` v5.13,
   PPCP 24/09/2026). `getProgramacaoDetalhada` manda `uep` (qtde × UEP do
   código; **null** sem UEP, nunca 0) e `uepCx`. A aba PROGRAMAÇÃO mostra a

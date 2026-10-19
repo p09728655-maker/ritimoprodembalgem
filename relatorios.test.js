@@ -3867,7 +3867,9 @@ console.log('\n── estudo de UEP ──');
        [/CAP_FALHA=erro/.test(pega('async function _capBuscar(')), /Não consegui ler o cadastro/.test(pega('function _capPintar(')), /TENTAR DE NOVO/.test(pega('function _capPintar('))], [true, true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
-    ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
+    // v7.138.0: a UEP chegou à TV, mas SÓ nas Telas F e G (fora do ciclo por
+    // padrão, tela-uep.test.js) — a Tela A e a Tela B continuam em caixas.
+    ok('a Tela A e a Tela B da TV NÃO mostram UEP (a UEP da TV mora só nas Telas F e G)',
        (pega('function _sincSlideB(') + pega('function renderTV(')).includes('uepCard'), false);
     ok('o GRAVAR UEP mostra que está trabalhando e não dispara duas vezes',
        [/if\(_uepGravando\) return;/.test(pega('async function gravarUepCadastro(')), /_uepBotao\('⏳ BUSCANDO/.test(pega('async function _gravarUepCadastro('))], [true, true]);
@@ -3968,8 +3970,8 @@ console.log('\n── estudo de UEP ──');
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
-  ok('tela, impressão e diretoria leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
-     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [3, false]);   // tela, papel e a tela da diretoria (v7.116.0)
+  ok('tela, impressão, diretoria e Telas F/G da TV leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
+     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [4, false]);   // tela, papel, diretoria (v7.116.0) e TV F/G (v7.138.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
      [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),

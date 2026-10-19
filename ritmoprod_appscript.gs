@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.26 — TELAS F e G DA TV (UEP DO DIA) NA CONFIG_PAINEL
+//               PPCP, 19/10/2026: "vamos fazer as duas, deixar prontas para
+//               que eu possa acompanhar". Só a config compartilhada: TELA_F,
+//               TELA_G, TEMPO_F, TEMPO_G e SELO_UEP_TV, as três chaves de
+//               ligar DESLIGADAS por padrão. Nenhuma conta nova — as telas
+//               leem o getPontosDia que já existe.
 // Versão: 5.25 — EXCLUIR LANÇAMENTO PELO APP
 //               PPCP, 16/10/2026: "no lançamento eu preciso ter como excluir
 //               um lançamento", "porque envolve o produto que ele estava
@@ -2974,6 +2980,13 @@ function getConfigPainel() {
     tempoC: num(kv.TEMPO_C, 15),
     tempoD: num(kv.TEMPO_D, 20),
     tempoE: num(kv.TEMPO_E, 20),
+    // TELAS F e G — UEP do dia (v5.26). DESLIGADAS por padrão: sem a chave na
+    // aba, ficam fora do ciclo; o selo de ritmo nelas também nasce desligado.
+    telaF:  bool(kv.TELA_F, false),
+    telaG:  bool(kv.TELA_G, false),
+    tempoF: num(kv.TEMPO_F, 20),
+    tempoG: num(kv.TEMPO_G, 20),
+    seloUepTv: bool(kv.SELO_UEP_TV, false),
     kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
     modoLeitor: bool(kv.MODO_LEITOR, true),  // seleção de produto por bipe no mobile (padrão ligado)
     // Meta de UEP do dia (8 h de jornada normal), v5.11. Sem a chave → null e
@@ -3008,6 +3021,12 @@ function setConfigPainel(p) {
     if (p.tempoC !== undefined) novos.TEMPO_C = String(parseInt(p.tempoC, 10) || 15);
     if (p.tempoD !== undefined) novos.TEMPO_D = String(parseInt(p.tempoD, 10) || 20);
     if (p.tempoE !== undefined) novos.TEMPO_E = String(parseInt(p.tempoE, 10) || 20);
+    // Telas F e G da TV (UEP do dia) e o selo de ritmo nelas — v5.26.
+    if (p.telaF  !== undefined) novos.TELA_F  = b01(p.telaF);
+    if (p.telaG  !== undefined) novos.TELA_G  = b01(p.telaG);
+    if (p.tempoF !== undefined) novos.TEMPO_F = String(parseInt(p.tempoF, 10) || 20);
+    if (p.tempoG !== undefined) novos.TEMPO_G = String(parseInt(p.tempoG, 10) || 20);
+    if (p.seloUepTv !== undefined) novos.SELO_UEP_TV = b01(p.seloUepTv);
     if (p.kpisTelaB !== undefined) novos.KPIS_TELA_B = String(p.kpisTelaB || '');
     if (p.modoLeitor !== undefined) novos.MODO_LEITOR = b01(p.modoLeitor);
     // META DE UEP do dia (v5.17): digitada nas CONFIGURAÇÕES do painel. Só
