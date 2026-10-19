@@ -3684,6 +3684,13 @@ feito e dá ar de verdade ao que sobrou.
     (só o cadastro); o `_capBuscar` redesenha a aba quando o cadastro chega. O
     `renderUep` não chama mais o conversor. A aba UEP aponta para cá (botão) e
     a 🖨 FILA DE CRONOANÁLISE abre das duas.
+  - **v7.144.1 — visual** (PPCP: *"modernize somente a tela"*, com maquete do
+    ChatGPT como referência). Só pele e marcação desta aba: regras `#sec-crono`
+    (inclui `--ucv-azul` local), classes `ucv-*`; o `#uep-conv-res` saiu do
+    cartão dos campos. Mantidos: os quatro cartões (a maquete tinha dois), os
+    textos, ids, botões e contas. ⚠ Da maquete NÃO entrou o botão "Registrar
+    medição" (nada é gravado; a UEP muda só digitada no cadastro) nem os campos
+    embaixo do resultado (calculadora: entrada em cima).
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter
