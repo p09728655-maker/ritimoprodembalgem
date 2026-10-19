@@ -188,5 +188,75 @@ ok('os dois botões na aba ⚖ UEP', [/onclick="gerarRelatorioFilaCrono\(\)"/.te
 ok('cartão sem status não herda o vermelho do relatório de paradas',
    [/\.fila-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS), /\.cxu-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS)], [true, true]);
 
+// ════════════════════════════════════════════════════════════════════════════
+// CRONOANÁLISE → UEP (v7.142.0): o caso real de 19/10/2026 — ARMÁRIO ENCANTO,
+// Volume a volume no tablet: 27,8 s no período (paradas dentro) e 17,6 s com a
+// linha rodando; cadastro 2,23 (vigência 25/09), base MADERO 1,00.
+console.log('\n── CRONOANÁLISE → UEP ──');
+global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
+['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
+['function _uepEhBase(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
+  .forEach(f => eval.call(global, pegaJs(f)));
+const CV = (codigo, desc, cor, uep, uepVig) => ({ codigo, desc, cor, uep, uepVig });
+const PRODS = _uepConvProdutos([
+  CV('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, '25/09/2026'),
+  CV('501.139.001', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO', 2.23, '25/09/2026'),      // código com ponto, como a planilha mostra
+  CV('501139002', 'VOL 1/1 ARMARIO ENCANTO', 'CINAMOMO', 2.23, '25/09/2026'),
+  CV('501139003', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO/CINAMOMO', 2.23, '25/09/2026'),
+  CV('501139004', 'VOL 1/1 ARMARIO ENCANTO', 'OFF WHITE/CINAMOMO', 2.23, '25/09/2026'),
+  CV('501121001', 'VOL 1/1 ESCRIVANINHA ENCANTO', 'BRANCO', 2.6, '16/10/2026'),
+  CV('501136001', 'VOL 1/1 LIVREIRO ENCANTO', 'BRANCO', 1.87, '16/10/2026'),
+  CV('501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 2.71, '16/10/2026'),
+  CV('501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 2.29, '16/10/2026'),
+  CV('501999001', 'VOL 1/1 PRODUTO NOVO', 'BRANCO', '', '')
+]);
+const achou = t => { const a = _uepConvAchar(PRODS, t); return a.p ? a.p.nome : a.n; };
+ok('acha pelo nome sem acento, pela linha da lista e pelo código com ponto',
+   [achou('armário encanto'), achou('501139 · ARMARIO ENCANTO'), achou('501.139.002')], ['ARMARIO ENCANTO', 'ARMARIO ENCANTO', 'ARMARIO ENCANTO']);
+ok('texto de três produtos é ambíguo (não chuta); vazio não acha nada', [achou('ENCANTO'), achou('')], [3, 0]);
+
+const E1 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 2530);
+ok('27,8 s no período ÷ 12,5 s da régua da meta = 2,22 — confere com o 2,23 do cadastro',
+   [E1.uepVol.toFixed(2), E1.volCad, E1.confere, fmtP(E1.difPct), E1.prevSeg.toFixed(1), E1.origem],
+   ['2.22', 2.23, true, '-0,3%', '27.9', 'MEDIDA 25/09']);
+ok('o que digitar: os quatro códigos com o mesmo número', E1.digitar.map(g => [g.uep, g.cods.map(c => c.cod)]),
+   [[2.22, ['501139001', '501139002', '501139003', '501139004']]]);
+const E2 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 0, 2530);
+ok('17,6 s com a linha rodando contra a base pela meta: 1,41, 37% mais leve — não confere',
+   [E2.uepVol.toFixed(2), Math.round(E2.difPct), E2.confere, E2.digitar[0].uep], ['1.41', -37, false, 1.41]);
+const E3 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 11, 2530);
+ok('com a MADERO cronometrada (11 s), a base é a dela, não a da meta', [E3.base.daMeta, E3.uepVol.toFixed(2)], [false, '1.60']);
+const E4 = _uepConvMontar(PRODS, 'PENTEADEIRA CAMARIM STRASS', 30, 0, 2530);
+ok('2 volumes: o jogo medido é repartido como o cadastro reparte (2,71 / 2,29)',
+   [E4.nVol, E4.p.nVol, E4.uepJogo.toFixed(2), E4.confere, E4.digitar.map(g => [g.vol, g.uep])],
+   [undefined, 2, '4.80', true, [[1, 2.6], [2, 2.2]]]);
+const E5 = _uepConvMontar(PRODS, 'PRODUTO NOVO', 20, 0, 2530);
+ok('sem UEP no cadastro: sem diferença (nunca 0%), e o número a digitar é o medido',
+   [E5.volCad, E5.difPct, E5.confere, E5.digitar[0].uep, E5.origem], [null, null, false, 1.6, 'SEM UEP']);
+const E6 = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 12, 0, 2530);
+ok('a BASE não ganha UEP nova: mostra a distância da cronoanálise para a régua da meta',
+   [E6.ehBase, E6.digitar, Math.round(E6.reguaDif)], [true, null, -4]);
+ok('meta diferente muda a régua da base pela meta (2.635 UEP → 12,0 s)',
+   _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 24, 0, 2635).uepVol.toFixed(2), '2.00');
+ok('estados antes do número', [_uepConvMontar([], 'X', 1, 0, 2530).estado, _uepConvMontar(PRODS, 'ENCANTO', 27.8, 0, 2530).estado,
+   _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 0, 0, 2530).estado], ['sem-cadastro', 'sem-produto', 'sem-tempo']);
+
+const H1 = _uepConvHtml(E1), H2 = _uepConvHtml(E2);
+ok('o desenho: CONFERE, o número e onde digitar', [H1.includes('CONFERE'), H1.includes('<b>2,22</b>'), H1.includes('501.139.001 BRANCO'),
+   H1.includes('PRODUTO_CODIGO'), H1.includes('NÃO PRECISA TROCAR')], [true, true, true, true, true]);
+ok('o desenho: rodando contra a meta sai mais LEVE, pede troca e manda conferir o tempo antes',
+   [H2.includes('mais LEVE que o cadastro'), H2.includes('PARA TROCAR'), H2.includes('CONFIRA O TEMPO ANTES DE TROCAR'), H2.indexOf('CONFIRA') < H2.indexOf('PARA TROCAR')],
+   [true, true, true, true]);
+ok('o aviso do tempo só com a base pela meta e o produto mais leve que a faixa',
+   [E1.confRegua, E2.confRegua, E3.confRegua, _uepConvHtml(E1).includes('CONFIRA O TEMPO')], [false, true, false, false]);
+ok('o desenho não faz conta', /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
+ok('o campo mora na aba ⚖ UEP, FORA do #uep-bloco (o renderUep refaz o bloco a cada refresh)',
+   [html.indexOf('id="sec-uep"') < html.indexOf('id="uep-conv"'), html.indexOf('id="uep-conv"') < html.indexOf('id="uep-bloco"')], [true, true]);
+const RU = pegaJs('function renderUep(');
+ok('o renderUep atualiza o conversor ANTES de sair esperando a leitura do dia',
+   RU.indexOf('_uepConvAtualiza()') > 0 && RU.indexOf('_uepConvAtualiza()') < RU.indexOf("D.estado!=='ok'"), true);
+ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
+   /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

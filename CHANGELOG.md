@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.142.0 — 19/10/2026
+
+- **⏱ CRONOANÁLISE → UEP na aba ⚖ UEP** (pedido do PPCP: *"onde podemos fazer a
+  transformação de 17,6 segundos para UEP?"*). Abre embaixo do título da aba:
+  escolha o produto, digite o tempo por volume da medição Volume a volume e a
+  tela mostra a **UEP equivalente**, a UEP do cadastro, a diferença e **o que
+  digitar em quais códigos** da coluna UEP da PRODUTO_CODIGO.
+  - A conta é a TAKT s/CX ao contrário: **segundos por volume ÷ 12,5 s** (527
+    min × 60 ÷ META UEP de 2.530). Os 12,5 s são o ritmo da base MADERO **com
+    as paradas dentro**, então o tempo a digitar é o **NO PERÍODO** do Volume a
+    volume. ARMÁRIO ENCANTO de 19/10: 27,8 s → **2,22**, cadastro **2,23**
+    (CONFERE). Os 17,6 s com a linha rodando dariam 1,41 — o produto 37% mais
+    leve do que é.
+  - **SEGUNDOS DA BASE**: com a MADERO cronometrada do mesmo jeito, digite o
+    tempo dela e a conversão passa a usar a sua régua (aí o tempo com a linha
+    rodando pode ser usado, se a base também foi medida rodando). Fica
+    guardado neste computador.
+  - CONFERE = dentro de 90–110% do cadastro, a mesma faixa do NO PADRÃO do
+    bloco 7. Produto de vários volumes: o número sai repartido entre os
+    volumes como o cadastro já reparte.
+- **Atenção:** **nada é gravado.** A UEP continua TRAVADA; a troca é digitar o
+  número na coluna UEP da PRODUTO_CODIGO (vira versão DIGITADA). Nenhum número
+  que já existia mudou.
+
+---
+
 ## v7.141.0 — 19/10/2026
 
 - **TAKT s/CX de cada produto nos relatórios de UEP** (pedido do PPCP: *"colocar

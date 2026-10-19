@@ -295,6 +295,8 @@ Fora do ciclo por padrão (⚙ → TELA F / TELA G) e **sem veredito** por padr�
 | **A META EM CX PEDIA** | META em caixas × UEP/cx do próprio dia ÷ META UEP — acima de 105%, a meta em caixas era mais pesada que a capacidade em UEP | % | `v7:_cxUepMontar` |
 | **TAKT s/CX** (fila e bloco 7) | 527 min × 60 ÷ META UEP × UEP/cx do produto (= 3.600 ÷ CX/H PADRÃO). Com a meta de 2.530: 12,5 s por UEP — 1 caixa de MADERO (1,00) = 12,5 s, um volume de 1,84 = 23,0 s. Na fila, um por volume, com a META UEP do ⚙; no bloco 7, com a META gravada em cada dia | s/cx | `v7:_taktUep` |
 | **s/CX REAL** (dia a dia do bloco 7) | minutos do produto no dia × 60 ÷ caixas, com a hora de troca repartida pelo tempo padrão — acima do TAKT s/CX = mais lento que a meta pede | s/cx | `v7:_uepPadHist` |
+| **UEP EQUIVALENTE** (⏱ CRONOANÁLISE → UEP) | segundos por volume medidos ÷ segundos da base por volume. Base vazia = a régua da meta (527 min × 60 ÷ META UEP, 12,5 s com 2.530), e aí o tempo medido é o NO PERÍODO (paradas dentro); base digitada = a MADERO cronometrada do mesmo jeito. Produto de N volumes: jogo = UEP equivalente × N | UEP/vol | `v7:_uepConvMontar` |
+| **DIFERENÇA** (⏱ CRONOANÁLISE → UEP) | UEP equivalente ÷ UEP média por volume do cadastro − 1. CONFERE dentro de 90–110% (`UEP_PAD_FAIXA`, a faixa do NO PADRÃO do bloco 7). Sem UEP no cadastro: "—", nunca 0% | % | `v7:_uepConvMontar` |
 
 ⚠ **TAKT s/CX não é o TAKT IDEAL.** O TAKT IDEAL (aba PARADAS, GESTÃO DE
 PERDAS) é horas produtivas × 3.600 ÷ DEMANDA IDEAL das configurações (caixas
