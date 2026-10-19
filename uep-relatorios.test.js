@@ -198,6 +198,7 @@ ok('cartão sem status não herda o vermelho do relatório de paradas',
 // linha rodando; cadastro 2,23 (vigência 25/09), base MADERO 1,00.
 console.log('\n── CRONOANÁLISE → UEP ──');
 global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
+global.UEP_CONV_TOL_META = eval('(' + pegaConst('UEP_CONV_TOL_META') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -315,6 +316,27 @@ ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.place
 ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
+
+// v7.143.2 — PPCP: "tenho que ver qual volume é" e "fixa sleep no volume base"
+ok('produto de 2 volumes ganha uma linha por volume (o de 1 volume não)',
+   [PRODS.filter(p => p.modelo === '501059').map(p => p.rot), PRODS.filter(p => p.modelo === '501139').length],
+   [['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 1/2', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'], 1]);
+ok('o nome do produto escolhe o produto inteiro; o código escolhe o VOLUME dele',
+   [_uepConvAchar(PRODS, 'penteadeira camarim strass').p.rot, _uepConvAchar(PRODS, '501.059.002').p.rot],
+   ['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2']);
+const EV = _uepConvMontar(PRODS, '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', 25, 0, 2530);
+ok('um volume: a UEP e o que digitar são só dele (25 s → 2,00 contra 2,29 do VOL 2/2)',
+   [EV.uepVol.toFixed(2), EV.volCad, EV.digitar.map(g => [g.uep, g.cods.map(c => c.cod)])], ['2.00', 2.29, [[2, ['501059002']]]]);
+const EM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.4, 3048);
+ok('base digitada igual à régua da meta (10,4 com 3.048) É a régua da meta: sem aviso, tempo do período',
+   [EM.base.igualMeta, EM.base.daMeta, EM.base.suspeita, _uepConvHtml(EM).includes('BASE DIGITADA'), _uepConvHtml(EM).includes('o tempo é o NO PERÍODO')],
+   [true, true, false, false, true]);
+const EM2 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.6, 3048);
+ok('acima de 1% da régua já é base digitada (e suspeita, se mais lenta)', [EM2.base.daMeta, EM2.base.suspeita], [false, true]);
+const AT = pegaJs('function _uepConvAtualiza(');
+ok('o campo da base mostra a régua da meta quando vazio, sem gravar, e a orientação segue a conta',
+   [/elB\.dataset\.auto === '1'/.test(AT), /document\.activeElement !== elB/.test(AT), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
+    /oninput="this\.dataset\.auto='';_uepConvBase\(\)"/.test(html)], [true, true, true, true]);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

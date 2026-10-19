@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.143.2 — 19/10/2026
+
+- **⏱ CRONOANÁLISE → UEP por VOLUME** (PPCP: *"tenho que ver qual volume é"*).
+  Produto de vários volumes aparece na lista inteiro **e** volume a volume
+  (*… PENTEADEIRA CAMARIM MEL · VOL 1/2*). Escolhido o volume, a UEP comparada e
+  os códigos a digitar são só dele. Digitar o código de 9 dígitos já escolhe o
+  volume; digitar o nome escolhe o produto inteiro.
+- **O campo da base mostra a base em uso** (PPCP: *"fixa sleep no volume base"*):
+  vazio, ele já vem com **10,4** (a régua da meta) e acompanha a meta do ⚙.
+  Digitar 10,4 ali é a mesma régua — o aviso *"não parece a SLEEP com a linha
+  rodando"* saía por 0,3% de arredondamento e não sai mais (tolerância de 1%).
+- **Atenção:** nenhuma conta mudou.
+
+---
+
 ## v7.143.1 — 19/10/2026
 
 - **⏱ CRONOANÁLISE → UEP: botão 📌 FIXAR SLEEP** (pedido do PPCP: *"deixa um

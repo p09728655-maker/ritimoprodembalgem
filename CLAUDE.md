@@ -3669,6 +3669,20 @@ feito e dá ar de verdade ao que sobrou.
     Placeholder do campo da base = *"meta 10,4"*: sem o *meta*, o PPCP leu o
     valor em uso como exemplo. ⚠ Rótulo dentro do `<label>` flex em coluna vai
     num `<span>` só — texto solto ao lado de outro span vira uma linha cada.
+  - **v7.143.2**: lista **por volume** (PPCP: *"tenho que ver qual volume
+    é"*) — produto de N volumes entra inteiro e uma linha por volume
+    (`volSel`, códigos com `vol:1` e `volOrig`); código de 9 dígitos casa com o
+    VOLUME, o nome com o produto inteiro. O campo da base **mostra** a base em
+    uso: vazio recebe a régua da meta (`dataset.auto`, não grava, segue o ⚙;
+    nunca enquanto o campo tem o foco). Base digitada a até 1% da régua
+    (`UEP_CONV_TOL_META`) É a régua da meta: o 10,4 digitado acusava "não
+    parece a SLEEP rodando" por 0,3% de arredondamento.
+  - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
+    então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
+    muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter
+    mudado nada. Na campanha de cronoanálise, a velocidade fica fixa; se mudar,
+    refazer a SLEEP (📌 FIXAR) e lembrar que o medido antes está na unidade
+    antiga — e atualizar a coluna VELOCIDADE da PRODUTO_CODIGO.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
