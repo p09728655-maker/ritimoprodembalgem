@@ -412,7 +412,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* As duas colunas terminam na mesma linha (PPCP, 25/09/2026: "esse espaço no
    meio ficou feio"): o card que sobra de cada coluna estica até o fim dela. */
 #sec-uep .uep-2 .uep-grow{flex:1}
-#sec-uep .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
+#sec-uep .uep-card,#sec-crono .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
 #sec-uep .uep-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:8px}
 #sec-uep .uep-leg span::before{content:'';display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--c);border-radius:2px}
 #sec-uep .uep-leg .tr::before{height:0;border-top:2px dashed var(--c,var(--txt));width:14px;background:none;vertical-align:3px}
@@ -434,24 +434,21 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-sem{margin-top:10px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
 #sec-uep .uep-sem b{color:var(--warn)}
 #sec-uep .uep-sem li b{color:var(--txt)}
-#sec-uep .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
-#sec-uep .uep-conv{margin-bottom:12px}
-#sec-uep .uep-conv summary{cursor:pointer;font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);padding:4px 0}
-#sec-uep .uep-conv summary b{color:var(--txt)}
-#sec-uep .uep-conv>.uep-card{margin-top:8px}
-#sec-uep .uep-conv-f{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-#sec-uep .uep-conv-f label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2)}
-#sec-uep .uep-conv-f .frm-inp{width:130px;padding:6px 9px}
-#sec-uep .uep-conv-f #uep-conv-prod{width:min(360px,80vw)}
-#sec-uep .uep-conv-tit{font-family:var(--font-d);font-size:12px;color:var(--txt2);margin:14px 0 8px}
-#sec-uep .uep-conv-tit b{color:var(--txt)}
-#sec-uep .uep-conv-dig{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px}
-#sec-uep .uep-conv-dig ul{margin:4px 0 0 18px;padding:0}
-#sec-uep .uep-conv-dig li{color:var(--txt2)}
-#sec-uep .uep-conv-dig li b{color:var(--txt)}
-#sec-uep .uep-conv-av{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px;border-left:3px solid var(--warn);padding-left:10px}
-#sec-uep .uep-conv-av b{color:var(--warn)}
-@media (max-width:900px){#sec-uep .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
+#sec-uep .uep-nota,#sec-crono .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
+#sec-crono .uep-conv{margin-bottom:12px}
+#sec-crono .uep-conv-f{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+#sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2)}
+#sec-crono .uep-conv-f .frm-inp{width:130px;padding:6px 9px}
+#sec-crono .uep-conv-f #uep-conv-prod{width:min(360px,80vw)}
+#sec-crono .uep-conv-tit{font-family:var(--font-d);font-size:12px;color:var(--txt2);margin:14px 0 8px}
+#sec-crono .uep-conv-tit b{color:var(--txt)}
+#sec-crono .uep-conv-dig{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px}
+#sec-crono .uep-conv-dig ul{margin:4px 0 0 18px;padding:0}
+#sec-crono .uep-conv-dig li{color:var(--txt2)}
+#sec-crono .uep-conv-dig li b{color:var(--txt)}
+#sec-crono .uep-conv-av{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px;border-left:3px solid var(--warn);padding-left:10px}
+#sec-crono .uep-conv-av b{color:var(--warn)}
+@media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
 #sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
 #sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
@@ -1917,6 +1914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido">⚖ UEP</button>
+  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (SLEEP). Nada é gravado.">⏱ CRONOANÁLISE</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -2731,15 +2729,28 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="uep-upd" class="par-upd"></span>
+      <button class="btn btn-ghost" onclick="setTab('crono')" style="font-size:10px;padding:4px 10px" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: em quantos o veredito em caixas e o em UEP discordaram, e por quê">🖨 CAIXAS × UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
-  <!-- CRONOANÁLISE → UEP (v7.142.0): fora do #uep-bloco, que o renderUep refaz a
-       cada refresh — o que está sendo digitado iria junto. Nada é gravado. -->
-  <details id="uep-conv" class="uep-conv">
-    <summary><b>⏱ CRONOANÁLISE → UEP</b> o tempo por volume medido, convertido em UEP — nada é gravado</summary>
+  <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
+</section>
+
+<!-- ═══ ABA CRONOANÁLISE → UEP (v7.144.0) ═══ PPCP, 19/10/2026: "colocar uma tela
+     separada para isso". O conversor saiu da aba ⚖ UEP (onde era um bloco que
+     abria e fechava) para a aba dele. Mesmos ids e mesmas funções (_uepConv*);
+     só o gerencial do PC. Nada é gravado: a UEP muda só digitada no cadastro. -->
+<section id="sec-crono" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">⏱ CRONOANÁLISE → UEP</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — nada é gravado</span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+    </div>
+  </div>
+  <div id="uep-conv" class="uep-conv">
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
@@ -2751,8 +2762,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-nota" id="uep-conv-guia"></div>
       <div id="uep-conv-res"></div>
     </div>
-  </details>
-  <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
+  </div>
 </section>
 
 <section id="sec-simulador" class="sec">
@@ -3260,7 +3270,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.143.2';
+const APP_VER   = '7.144.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6086,7 +6096,6 @@ async function gerarRelatorioCxUep(){
 }
 
 function renderUep(){
-  _uepConvAtualiza();   // o conversor fica fora do bloco e não depende da leitura do dia
   const el=document.getElementById('uep-bloco'); if(!el) return;
   const D=_uepAbaDados();
   if(D.estado!=='ok'){
@@ -9614,6 +9623,7 @@ async function _capBuscar(){
   if(erro) CAP_FALHA=erro;
   _capPintar();
   if(_abaOn('uep')) renderUep();                    // a aba UEP também lê o cadastro
+  if(_abaOn('crono')) _uepConvAtualiza();           // e a da cronoanálise (v7.144.0)
 }
 // IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
 // contas da tela (_capMix sobre o CAP_CAT); nada é buscado de novo. Documento
@@ -13104,6 +13114,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
+  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar(); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }

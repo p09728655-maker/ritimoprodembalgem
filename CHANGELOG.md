@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.144.0 — 19/10/2026
+
+- **⏱ CRONOANÁLISE ganhou aba própria** (pedido do PPCP: *"colocar uma tela
+  separada para isso"*), ao lado da ⚖ UEP. É o mesmo conversor — que antes era
+  um bloco que abria e fechava no topo da aba UEP — com o botão 🖨 FILA DE
+  CRONOANÁLISE no cabeçalho (o que cronometrar primeiro). A aba UEP ficou com
+  um botão **⏱ CRONOANÁLISE → UEP** que leva para lá.
+- **Atenção:** nenhuma conta mudou.
+
+---
+
 ## v7.143.2 — 19/10/2026
 
 - **⏱ CRONOANÁLISE → UEP por VOLUME** (PPCP: *"tenho que ver qual volume é"*).

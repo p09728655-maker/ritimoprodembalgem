@@ -3677,6 +3677,13 @@ feito e dá ar de verdade ao que sobrou.
     nunca enquanto o campo tem o foco). Base digitada a até 1% da régua
     (`UEP_CONV_TOL_META`) É a régua da meta: o 10,4 digitado acusava "não
     parece a SLEEP rodando" por 0,3% de arredondamento.
+  - **v7.144.0 — ABA PRÓPRIA `#sec-crono`** (PPCP: *"colocar uma tela separada
+    para isso"*), depois da ⚖ UEP. Mesmos ids e funções; a pele foi de
+    `#sec-uep .uep-conv*` para `#sec-crono .uep-conv*` (`.uep-card`/`.uep-nota`
+    valem nas duas). Abrir a aba: `_uepConvAtualiza()` + `_uepAbaCatCarregar()`
+    (só o cadastro); o `_capBuscar` redesenha a aba quando o cadastro chega. O
+    `renderUep` não chama mais o conversor. A aba UEP aponta para cá (botão) e
+    a 🖨 FILA DE CRONOANÁLISE abre das duas.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

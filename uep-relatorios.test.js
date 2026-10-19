@@ -257,11 +257,19 @@ ok('o desenho: rodando contra a meta sai mais LEVE, pede troca e manda conferir 
 ok('o aviso do tempo só com a base pela meta e o produto mais leve que a faixa',
    [E1.confRegua, E2.confRegua, E3.confRegua, _uepConvHtml(E1).includes('CONFIRA O TEMPO')], [false, true, false, false]);
 ok('o desenho não faz conta', /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
-ok('o campo mora na aba ⚖ UEP, FORA do #uep-bloco (o renderUep refaz o bloco a cada refresh)',
-   [html.indexOf('id="sec-uep"') < html.indexOf('id="uep-conv"'), html.indexOf('id="uep-conv"') < html.indexOf('id="uep-bloco"')], [true, true]);
-const RU = pegaJs('function renderUep(');
-ok('o renderUep atualiza o conversor ANTES de sair esperando a leitura do dia',
-   RU.indexOf('_uepConvAtualiza()') > 0 && RU.indexOf('_uepConvAtualiza()') < RU.indexOf("D.estado!=='ok'"), true);
+// v7.144.0 (PPCP: "colocar uma tela separada para isso"): aba própria
+const iCr = html.indexOf('<section id="sec-crono"'), fCr = html.indexOf('</section>', iCr);
+ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
+   [iCr > 0 && html.indexOf('id="uep-conv"') > iCr && html.indexOf('id="uep-conv"') < fCr, /data-tab="crono" onclick="setTab\('crono'\)"/.test(html),
+    html.slice(html.indexOf('<section id="sec-uep"'), html.indexOf('</section>', html.indexOf('<section id="sec-uep"'))).includes('id="uep-conv"')],
+   [true, true, false]);
+const ST = pegaJs('function setTab(');
+ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
+   [/tab==='crono'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+    pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
+ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
+ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
+   [/onclick="setTab\('crono'\)"[^>]*>⏱ CRONOANÁLISE → UEP<\/button>/.test(html), html.slice(iCr, fCr).includes('gerarRelatorioFilaCrono()')], [true, true]);
 // v7.142.1 — o PPCP digitou o 17,6 do PRÓPRIO Encanto no campo da base (1,58 e
 // depois 0,06) e o Tab do último campo rolava a tela até o bloco 5
 const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
