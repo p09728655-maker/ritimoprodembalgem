@@ -412,7 +412,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* As duas colunas terminam na mesma linha (PPCP, 25/09/2026: "esse espaço no
    meio ficou feio"): o card que sobra de cada coluna estica até o fim dela. */
 #sec-uep .uep-2 .uep-grow{flex:1}
-#sec-uep .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
+#sec-uep .uep-card,#sec-crono .uep-card{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;padding:14px 16px}
 #sec-uep .uep-leg{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);margin-top:8px}
 #sec-uep .uep-leg span::before{content:'';display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--c);border-radius:2px}
 #sec-uep .uep-leg .tr::before{height:0;border-top:2px dashed var(--c,var(--txt));width:14px;background:none;vertical-align:3px}
@@ -434,24 +434,21 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-sem{margin-top:10px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
 #sec-uep .uep-sem b{color:var(--warn)}
 #sec-uep .uep-sem li b{color:var(--txt)}
-#sec-uep .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
-#sec-uep .uep-conv{margin-bottom:12px}
-#sec-uep .uep-conv summary{cursor:pointer;font-family:var(--font-d);font-size:10px;letter-spacing:2px;color:var(--txt2);padding:4px 0}
-#sec-uep .uep-conv summary b{color:var(--txt)}
-#sec-uep .uep-conv>.uep-card{margin-top:8px}
-#sec-uep .uep-conv-f{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-#sec-uep .uep-conv-f label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2)}
-#sec-uep .uep-conv-f .frm-inp{width:130px;padding:6px 9px}
-#sec-uep .uep-conv-f #uep-conv-prod{width:min(360px,80vw)}
-#sec-uep .uep-conv-tit{font-family:var(--font-d);font-size:12px;color:var(--txt2);margin:14px 0 8px}
-#sec-uep .uep-conv-tit b{color:var(--txt)}
-#sec-uep .uep-conv-dig{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px}
-#sec-uep .uep-conv-dig ul{margin:4px 0 0 18px;padding:0}
-#sec-uep .uep-conv-dig li{color:var(--txt2)}
-#sec-uep .uep-conv-dig li b{color:var(--txt)}
-#sec-uep .uep-conv-av{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px;border-left:3px solid var(--warn);padding-left:10px}
-#sec-uep .uep-conv-av b{color:var(--warn)}
-@media (max-width:900px){#sec-uep .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
+#sec-uep .uep-nota,#sec-crono .uep-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;margin-top:8px}
+#sec-crono .uep-conv{margin-bottom:12px}
+#sec-crono .uep-conv-f{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+#sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:4px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.5px;color:var(--txt2)}
+#sec-crono .uep-conv-f .frm-inp{width:130px;padding:6px 9px}
+#sec-crono .uep-conv-f #uep-conv-prod{width:min(360px,80vw)}
+#sec-crono .uep-conv-tit{font-family:var(--font-d);font-size:12px;color:var(--txt2);margin:14px 0 8px}
+#sec-crono .uep-conv-tit b{color:var(--txt)}
+#sec-crono .uep-conv-dig{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px}
+#sec-crono .uep-conv-dig ul{margin:4px 0 0 18px;padding:0}
+#sec-crono .uep-conv-dig li{color:var(--txt2)}
+#sec-crono .uep-conv-dig li b{color:var(--txt)}
+#sec-crono .uep-conv-av{font-family:var(--font-d);font-size:12px;line-height:1.6;margin-top:10px;border-left:3px solid var(--warn);padding-left:10px}
+#sec-crono .uep-conv-av b{color:var(--warn)}
+@media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
 #sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
 #sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
 #sec-uep .uep-per{display:inline-flex;gap:4px;margin-left:6px}
@@ -1917,6 +1914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido">⚖ UEP</button>
+  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (SLEEP). Nada é gravado.">⏱ CRONOANÁLISE</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -2731,28 +2729,40 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="uep-upd" class="par-upd"></span>
+      <button class="btn btn-ghost" onclick="setTab('crono')" style="font-size:10px;padding:4px 10px" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: em quantos o veredito em caixas e o em UEP discordaram, e por quê">🖨 CAIXAS × UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
-  <!-- CRONOANÁLISE → UEP (v7.142.0): fora do #uep-bloco, que o renderUep refaz a
-       cada refresh — o que está sendo digitado iria junto. Nada é gravado. -->
-  <details id="uep-conv" class="uep-conv">
-    <summary><b>⏱ CRONOANÁLISE → UEP</b> o tempo por volume medido, convertido em UEP — nada é gravado</summary>
+  <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
+</section>
+
+<!-- ═══ ABA CRONOANÁLISE → UEP (v7.144.0) ═══ PPCP, 19/10/2026: "colocar uma tela
+     separada para isso". O conversor saiu da aba ⚖ UEP (onde era um bloco que
+     abria e fechava) para a aba dele. Mesmos ids e mesmas funções (_uepConv*);
+     só o gerencial do PC. Nada é gravado: a UEP muda só digitada no cadastro. -->
+<section id="sec-crono" class="sec">
+  <div class="tbl-hdr" style="margin-bottom:14px">
+    <span class="tbl-hdr-ttl">⏱ CRONOANÁLISE → UEP</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — nada é gravado</span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+    </div>
+  </div>
+  <div id="uep-conv" class="uep-conv">
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
         <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
-        <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Vazio = a régua da meta (527 min × 60 ÷ META UEP). Fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="_uepConvBase()"></label>
+        <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Sem ela, o campo mostra a régua da meta (527 min × 60 ÷ META UEP, 10,4 s com 3.048). O que for digitado ou fixado fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
         <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)" style="font-size:10px;padding:7px 12px">📌 FIXAR SLEEP</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota" id="uep-conv-guia"></div>
       <div id="uep-conv-res"></div>
     </div>
-  </details>
-  <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
+  </div>
 </section>
 
 <section id="sec-simulador" class="sec">
@@ -3260,7 +3270,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.143.1';
+const APP_VER   = '7.144.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5716,6 +5726,7 @@ async function gerarRelatorioFilaCrono(){
 // ⚠ O campo mora FORA do #uep-bloco: o renderUep refaz o bloco a cada refresh e
 // levaria junto o que está sendo digitado.
 const UEP_CONV_LS = 'rpe_uep_conv';
+const UEP_CONV_TOL_META = 0.01;   // base digitada a até 1% da régua da meta = a régua da meta (o 10,4 arredondado)
 const _uepConvCod = d => d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d;
 const _uepConvNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 // Produtos do cadastro cru: modelo + nome, sem VOL e sem cor (a chave da FILA).
@@ -5730,7 +5741,19 @@ function _uepConvProdutos(cat){
     p.nVol = Math.max(p.nVol, nVol);
     p.cods.push({ cod, vol, cor:String(c.cor || '').trim(), uep:Number(c.uep) > 0 ? Number(c.uep) : null, vig:String(c.uepVig || '').trim() });
   });
-  return Object.values(P).sort((a, b) => a.rot.localeCompare(b.rot));
+  // v7.143.2 (PPCP: "tenho que ver qual volume é"): produto de N volumes ganha
+  // também uma linha por volume — cronometrado um volume de cada vez, a UEP e o
+  // que digitar são só daquele volume. A linha do produto inteiro continua (os
+  // volumes intercalados, como o tablet conta).
+  const L = [];
+  Object.values(P).forEach(p => {
+    L.push(p);
+    for(let v = 1; p.nVol > 1 && v <= p.nVol; v++){
+      const cods = p.cods.filter(c => c.vol === v).map(c => Object.assign({}, c, { vol:1, volOrig:v }));
+      if(cods.length) L.push({ chave:p.chave + '|v' + v, modelo:p.modelo, nome:p.nome, rot:p.rot + ' · VOL ' + v + '/' + p.nVol, nVol:1, volSel:v, nVolTot:p.nVol, cods });
+    }
+  });
+  return L.sort((a, b) => a.rot.localeCompare(b.rot));
 }
 // O produto pelo que foi digitado: a linha da lista, o código de 9 dígitos ou um
 // texto que só um produto tem. n = quantos casaram (0, ou mais de um = ambíguo).
@@ -5739,8 +5762,13 @@ function _uepConvAchar(prods, txt){
   const ex = prods.filter(p => _uepConvNorm(p.rot) === t);
   if(ex.length === 1) return { p:ex[0], n:1 };
   const dig = t.replace(/\D/g, '');
-  if(dig.length === 9){ const c = prods.filter(p => p.cods.some(x => x.cod === dig)); if(c.length === 1) return { p:c[0], n:1 }; }
+  // um código é UM volume: casa com a linha do volume, não com a do produto
+  if(dig.length === 9){ const c = prods.filter(p => p.cods.some(x => x.cod === dig)), cv = c.filter(p => p.volSel);
+    if(c.length === 1) return { p:c[0], n:1 }; if(cv.length === 1) return { p:cv[0], n:1 }; }
   const ct = prods.filter(p => _uepConvNorm(p.rot).includes(t));
+  // o nome do produto casa com ele E com os volumes dele: vale o produto inteiro
+  const pr = ct.filter(p => !p.volSel);
+  if(ct.length > 1 && pr.length === 1 && ct.every(p => p === pr[0] || p.chave.indexOf(pr[0].chave + '|v') === 0)) return { p:pr[0], n:1 };
   return ct.length === 1 ? { p:ct[0], n:1 } : { p:null, n:ct.length };
 }
 // Conta pura. seg = s/volume medido; baseSeg = s/volume da base cronometrada
@@ -5748,8 +5776,12 @@ function _uepConvAchar(prods, txt){
 // entre volumes e cores (é como o GRAVAR repartia o jogo); sem UEP, igual.
 function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
   const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
-  const metaSeg = _taktUep(1, meta), daMeta = !(Number(baseSeg) > 0);
-  const base = { seg:daMeta ? metaSeg : Number(baseSeg), daMeta, metaSeg, meta };
+  const metaSeg = _taktUep(1, meta), bIn = Number(baseSeg) > 0 ? Number(baseSeg) : 0;
+  // v7.143.2: o campo da base mostra a régua da meta (10,4); digitada até 1% dela
+  // (o 10,4 arredondado) É a régua da meta — não a SLEEP cronometrada rodando.
+  const igualMeta = bIn > 0 && Math.abs(bIn / metaSeg - 1) <= UEP_CONV_TOL_META;
+  const daMeta = !(bIn > 0) || igualMeta;
+  const base = { seg:daMeta ? metaSeg : bIn, daMeta, igualMeta, metaSeg, meta };
   base.difMeta = daMeta ? 0 : (base.seg / metaSeg - 1) * 100;
   // a régua da meta TEM as paradas dentro: a base rodando não pode ser mais
   // lenta que ela (os 17,6 s do Encanto digitados como base dariam +40,8%)
@@ -5868,17 +5900,23 @@ function _uepConvAtualiza(){
   const meta = PONTOS_DIA.metaUep;
   // v7.143.1 (PPCP: "10,4 de exemplo"): vazio, o campo usa a régua da meta — o
   // placeholder diz isso, senão parece exemplo como os outros dois campos
-  if(elB) elB.placeholder = 'meta ' + _taktTxt(_taktUep(1, meta)).replace(' s', '');
+  const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
+  if(elB) elB.placeholder = 'meta ' + metaTxt;
+  // v7.143.2 (PPCP: "fixa sleep no volume base"): o campo MOSTRA a base em uso.
+  // Vazio (e sem ninguém digitando nele) recebe a régua da meta; preenchido
+  // assim (dataset.auto) acompanha a meta do ⚙. Não grava no computador: só o
+  // que é digitado ou fixado vai para o rpe_uep_conv.
+  if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
   const bn = document.getElementById('uep-conv-base-nome'); if(bn) bn.textContent = _uepBaseCurto();
   const fx = document.getElementById('uep-conv-fixar');
   if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
     fx.textContent = o.acao === 'fixar' ? `📌 FIXAR ${_taktTxt(o.seg)} COMO BASE` : `📌 FIXAR ${_uepBaseCurto()}`;
     fx.disabled = o.acao === 'sem-base'; }
   const guia = document.getElementById('uep-conv-guia');
-  if(guia) guia.innerHTML = _uepConvGuia(!(_pgSimNum(elB ? elB.value : '') > 0));
   try{
-    res.innerHTML = _uepConvHtml(_uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '',
-      _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), meta));
+    const R = _uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), meta);
+    if(guia) guia.innerHTML = _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
+    res.innerHTML = _uepConvHtml(R);
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
 }
 // v7.142.1 (PPCP: "quando dá tab cai para baixo"): depois do último campo, o
@@ -5904,14 +5942,14 @@ function _uepConvFixarBase(){
   const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
   const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
   if(o.acao === 'fixar' && elB){
-    elB.value = String(o.seg).replace('.', ',');
+    elB.value = String(o.seg).replace('.', ','); elB.dataset.auto = '';
     if(elP) elP.value = ''; if(elS) elS.value = '';     // pronto para o próximo produto
     _uepConvBase(); if(elP) elP.focus(); return;
   }
   if(o.acao === 'escolher' && elP){ elP.value = o.rot; if(elS) elS.value = ''; _uepConvAtualiza(); if(elS) elS.focus(); }
 }
 function _uepConvLimparBase(){
-  const elB = document.getElementById('uep-conv-base'); if(elB) elB.value = '';
+  const elB = document.getElementById('uep-conv-base'); if(elB){ elB.value = ''; elB.dataset.auto = ''; }
   _uepConvBase();
 }
 function _uepConvBase(){
@@ -6058,7 +6096,6 @@ async function gerarRelatorioCxUep(){
 }
 
 function renderUep(){
-  _uepConvAtualiza();   // o conversor fica fora do bloco e não depende da leitura do dia
   const el=document.getElementById('uep-bloco'); if(!el) return;
   const D=_uepAbaDados();
   if(D.estado!=='ok'){
@@ -9586,6 +9623,7 @@ async function _capBuscar(){
   if(erro) CAP_FALHA=erro;
   _capPintar();
   if(_abaOn('uep')) renderUep();                    // a aba UEP também lê o cadastro
+  if(_abaOn('crono')) _uepConvAtualiza();           // e a da cronoanálise (v7.144.0)
 }
 // IMPRESSÃO DA SIMULAÇÃO DE CAPACIDADE (v7.91.0, PPCP 24/09/2026). Mesmas
 // contas da tela (_capMix sobre o CAP_CAT); nada é buscado de novo. Documento
@@ -13076,6 +13114,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
+  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar(); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }

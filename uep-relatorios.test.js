@@ -198,6 +198,7 @@ ok('cartão sem status não herda o vermelho do relatório de paradas',
 // linha rodando; cadastro 2,23 (vigência 25/09), base MADERO 1,00.
 console.log('\n── CRONOANÁLISE → UEP ──');
 global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
+global.UEP_CONV_TOL_META = eval('(' + pegaConst('UEP_CONV_TOL_META') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -256,11 +257,19 @@ ok('o desenho: rodando contra a meta sai mais LEVE, pede troca e manda conferir 
 ok('o aviso do tempo só com a base pela meta e o produto mais leve que a faixa',
    [E1.confRegua, E2.confRegua, E3.confRegua, _uepConvHtml(E1).includes('CONFIRA O TEMPO')], [false, true, false, false]);
 ok('o desenho não faz conta', /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
-ok('o campo mora na aba ⚖ UEP, FORA do #uep-bloco (o renderUep refaz o bloco a cada refresh)',
-   [html.indexOf('id="sec-uep"') < html.indexOf('id="uep-conv"'), html.indexOf('id="uep-conv"') < html.indexOf('id="uep-bloco"')], [true, true]);
-const RU = pegaJs('function renderUep(');
-ok('o renderUep atualiza o conversor ANTES de sair esperando a leitura do dia',
-   RU.indexOf('_uepConvAtualiza()') > 0 && RU.indexOf('_uepConvAtualiza()') < RU.indexOf("D.estado!=='ok'"), true);
+// v7.144.0 (PPCP: "colocar uma tela separada para isso"): aba própria
+const iCr = html.indexOf('<section id="sec-crono"'), fCr = html.indexOf('</section>', iCr);
+ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
+   [iCr > 0 && html.indexOf('id="uep-conv"') > iCr && html.indexOf('id="uep-conv"') < fCr, /data-tab="crono" onclick="setTab\('crono'\)"/.test(html),
+    html.slice(html.indexOf('<section id="sec-uep"'), html.indexOf('</section>', html.indexOf('<section id="sec-uep"'))).includes('id="uep-conv"')],
+   [true, true, false]);
+const ST = pegaJs('function setTab(');
+ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
+   [/tab==='crono'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+    pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
+ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
+ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
+   [/onclick="setTab\('crono'\)"[^>]*>⏱ CRONOANÁLISE → UEP<\/button>/.test(html), html.slice(iCr, fCr).includes('gerarRelatorioFilaCrono()')], [true, true]);
 // v7.142.1 — o PPCP digitou o 17,6 do PRÓPRIO Encanto no campo da base (1,58 e
 // depois 0,06) e o Tab do último campo rolava a tela até o bloco 5
 const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
@@ -315,6 +324,27 @@ ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.place
 ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
+
+// v7.143.2 — PPCP: "tenho que ver qual volume é" e "fixa sleep no volume base"
+ok('produto de 2 volumes ganha uma linha por volume (o de 1 volume não)',
+   [PRODS.filter(p => p.modelo === '501059').map(p => p.rot), PRODS.filter(p => p.modelo === '501139').length],
+   [['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 1/2', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'], 1]);
+ok('o nome do produto escolhe o produto inteiro; o código escolhe o VOLUME dele',
+   [_uepConvAchar(PRODS, 'penteadeira camarim strass').p.rot, _uepConvAchar(PRODS, '501.059.002').p.rot],
+   ['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2']);
+const EV = _uepConvMontar(PRODS, '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', 25, 0, 2530);
+ok('um volume: a UEP e o que digitar são só dele (25 s → 2,00 contra 2,29 do VOL 2/2)',
+   [EV.uepVol.toFixed(2), EV.volCad, EV.digitar.map(g => [g.uep, g.cods.map(c => c.cod)])], ['2.00', 2.29, [[2, ['501059002']]]]);
+const EM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.4, 3048);
+ok('base digitada igual à régua da meta (10,4 com 3.048) É a régua da meta: sem aviso, tempo do período',
+   [EM.base.igualMeta, EM.base.daMeta, EM.base.suspeita, _uepConvHtml(EM).includes('BASE DIGITADA'), _uepConvHtml(EM).includes('o tempo é o NO PERÍODO')],
+   [true, true, false, false, true]);
+const EM2 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.6, 3048);
+ok('acima de 1% da régua já é base digitada (e suspeita, se mais lenta)', [EM2.base.daMeta, EM2.base.suspeita], [false, true]);
+const AT = pegaJs('function _uepConvAtualiza(');
+ok('o campo da base mostra a régua da meta quando vazio, sem gravar, e a orientação segue a conta',
+   [/elB\.dataset\.auto === '1'/.test(AT), /document\.activeElement !== elB/.test(AT), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
+    /oninput="this\.dataset\.auto='';_uepConvBase\(\)"/.test(html)], [true, true, true, true]);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);
