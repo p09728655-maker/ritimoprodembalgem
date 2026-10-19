@@ -2744,7 +2744,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
         <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
-        <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Vazio = a régua da meta (527 min × 60 ÷ META UEP). Fica guardado neste computador.">s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)<input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="_uepConvBase()" onkeydown="_uepConvTecla(event)"></label>
+        <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Vazio = a régua da meta (527 min × 60 ÷ META UEP). Fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="_uepConvBase()"></label>
+        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)" style="font-size:10px;padding:7px 12px">📌 FIXAR SLEEP</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota" id="uep-conv-guia"></div>
@@ -3259,7 +3260,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.143.0';
+const APP_VER   = '7.143.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5823,7 +5824,7 @@ function _uepConvHtml(R){
     + card('A RÉGUA DA META', _taktTxt(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`)
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
-    + `<div class="uep-conv-dig">A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, ponha <b>${_taktTxt(R.seg)}</b> em s/VOLUME DA BASE: daí em diante, cada produto entra com o tempo rodando dele.</div>` + nota;
+    + `<div class="uep-conv-dig">A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base: daí em diante, cada produto entra com o tempo rodando dele.</div>` + nota;
   const difSub = R.difPct == null ? 'sem UEP no cadastro para comparar'
     : R.confere ? `CONFERE — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
     : R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro';
@@ -5865,8 +5866,14 @@ function _uepConvAtualiza(){
     if(dl) dl.innerHTML = UEP_CONV_PRODS.map(p => `<option value="${_rpEsc(p.rot)}">`).join('');
   }
   const meta = PONTOS_DIA.metaUep;
-  if(elB) elB.placeholder = _taktTxt(_taktUep(1, meta)).replace(' s', '');
+  // v7.143.1 (PPCP: "10,4 de exemplo"): vazio, o campo usa a régua da meta — o
+  // placeholder diz isso, senão parece exemplo como os outros dois campos
+  if(elB) elB.placeholder = 'meta ' + _taktTxt(_taktUep(1, meta)).replace(' s', '');
   const bn = document.getElementById('uep-conv-base-nome'); if(bn) bn.textContent = _uepBaseCurto();
+  const fx = document.getElementById('uep-conv-fixar');
+  if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
+    fx.textContent = o.acao === 'fixar' ? `📌 FIXAR ${_taktTxt(o.seg)} COMO BASE` : `📌 FIXAR ${_uepBaseCurto()}`;
+    fx.disabled = o.acao === 'sem-base'; }
   const guia = document.getElementById('uep-conv-guia');
   if(guia) guia.innerHTML = _uepConvGuia(!(_pgSimNum(elB ? elB.value : '') > 0));
   try{
@@ -5881,6 +5888,27 @@ function _uepConvTecla(ev){
   if(ev.key !== 'Tab' || ev.shiftKey) return;
   const elP = document.getElementById('uep-conv-prod');
   if(elP){ ev.preventDefault(); elP.focus(); }
+}
+// 📌 FIXAR SLEEP (v7.143.1, PPCP: "deixa um botão para fixar sleep"). Com a base
+// no PRODUTO e o tempo dela digitado, o tempo vira a base (s/VOLUME DA BASE, que
+// fica guardado); sem isso, o botão escolhe a base no PRODUTO e pede o tempo.
+// Conta pura: o que o clique faria agora.
+function _uepConvFixar(prods, txt, seg){
+  const pb = (prods || []).find(p => _uepEhBase(p));
+  if(!pb) return { acao:'sem-base' };
+  const a = _uepConvAchar(prods, txt);
+  if(a.p && a.p === pb && Number(seg) > 0) return { acao:'fixar', seg:Number(seg) };
+  return { acao:'escolher', rot:pb.rot };
+}
+function _uepConvFixarBase(){
+  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
+  const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
+  if(o.acao === 'fixar' && elB){
+    elB.value = String(o.seg).replace('.', ',');
+    if(elP) elP.value = ''; if(elS) elS.value = '';     // pronto para o próximo produto
+    _uepConvBase(); if(elP) elP.focus(); return;
+  }
+  if(o.acao === 'escolher' && elP){ elP.value = o.rot; if(elS) elS.value = ''; _uepConvAtualiza(); if(elS) elS.focus(); }
 }
 function _uepConvLimparBase(){
   const elB = document.getElementById('uep-conv-base'); if(elB) elB.value = '';
