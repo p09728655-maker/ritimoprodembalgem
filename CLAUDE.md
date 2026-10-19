@@ -3628,6 +3628,41 @@ feito e dá ar de verdade ao que sobrou.
     um GRAVAR mede contra o ritmo do período e mexe na escala. Não propor
     regravar a UEP pelo ritmo enquanto a cronoanálise não vier.
 
+## BASE DA UEP = MESA CABECEIRA SLEEP (v7.143.0 / mobile 1.35.0 / `.gs` v5.28)
+- PPCP, 19/10/2026: *"hoje o melhor produto é MESA CABECEIRA SLEEP"*, *"20 mil
+  caixas no histórico"* → escolheu trocar a base (recomendação dada: manter a
+  MADERO e usar a SLEEP como referência de trabalho — recusada).
+- **Foi TROCA DE UNIDADE, não medição nova**: tudo ÷ 0,83 (a UEP da SLEEP na
+  base MADERO). Gravado na planilha em 19/10 pelo Claude (API do Sheets, sem
+  `onEdit`): coluna UEP da PRODUTO_CODIGO (429 códigos, 2 casas, vigência
+  intocada), **META_UEP 2.530 → 3.048**, e HISTORICO de 03/07 a 16/10: UEP e UEP
+  HE ÷ 0,83 (1 casa) e META UEP 3.048. Proporções e vereditos iguais; 16/10:
+  3.115,8 de 2.530 → 3.754 de 3.048 (123%).
+  - `UEP_BASE = { modelo:'501094', nome:'MESA CABECEIRA SLEEP' }`;
+    `UEP_META_PADRAO` (rp-core) e `UEP_META_PADRAO_GS` = **3048**. Régua da meta:
+    527 × 60 ÷ 3.048 = **10,4 s por UEP**; meta da hora ~347.
+  - Não havia aba `UEP_VERSOES` (só a `_TESTE3`): o cadastro é a única versão,
+    vale para todas as datas. A próxima digitação cria a aba com a semente já
+    na escala SLEEP.
+  - A base sai da FILA DE CRONOANÁLISE (`_uepEhBase` no `_filaCronoMontar`): a
+    SLEEP era NO LIMITE DA ESTEIRA na escala antiga.
+  - ⚠ **A dúvida do 0,83 mudou de lugar, não sumiu**: ele vinha do limite da
+    esteira. Na base nova a MADERO ficou 1,20; pelo passo da esteira (881 × 825
+    mm + vão) daria ~1,04. Corrige-se cronometrando com a linha rodando contra a
+    SLEEP (⏱ CRONOANÁLISE → UEP), produto a produto.
+  - As notas antigas deste arquivo com "2.530", "12,5 s", "288 UEP/h" e "base
+    MADERO" são da escala anterior: multiplique por 1/0,83 para ler na atual.
+  - ⚠ Trocar a base DE NOVO é o mesmo trabalho: cadastro, META_UEP, HISTORICO
+    (e as versões, se a `UEP_VERSOES` existir) pelo mesmo fator, junto com o
+    `UEP_BASE` e as duas constantes de meta.
+- **⏱ CRONOANÁLISE → UEP, tempo RODANDO** (PPCP: *"as paradas são evitáveis se
+  ajustar"*): parada evitável não é esforço do produto. O certo é a base e o
+  produto com a linha rodando; sem a base cronometrada, a régua da meta (com as
+  paradas dentro) obriga o tempo do período — remendo. `_uepConvGuia` é o texto
+  único dessa orientação (`#uep-conv-guia`); base digitada mais lenta que a
+  régua da meta = `base.suspeita` (aviso). Nomes da base sempre pelo
+  `UEP_BASE` (`_uepBaseCurto`), nunca escritos à mão.
+
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
   horas"*), maquete aprovada. Nasceu no fim do GERENCIAL e foi para a **aba ⚖
