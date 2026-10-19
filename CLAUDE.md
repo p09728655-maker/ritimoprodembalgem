@@ -3713,6 +3713,16 @@ feito e dá ar de verdade ao que sobrou.
     na tela — regra própria, não junto da de perdas/simulador, que o teste
     prende como está). (3) o teste das entradas roda a função real num DOM de
     mentira (conferido por mutação: volta o defeito, o teste cai).
+  - **v7.146.0 — TOLERÂNCIA (%)** (PPCP: *"fadiga e movimentação 15%"* →
+    *"15% iguais para todos"*). `UEP_CONV_TOL_PADRAO`=15, campo `#uep-conv-tol`
+    (à vista, guardado em `rpe_uep_conv_tol`; 0 é zero). Tempo padrão = medido ×
+    `base.tolFator`, no produto (`R.tpSeg`) e na base (`base.tpSeg`). ⚠ **A UEP
+    continua `s ÷ base`**: a MESMA tolerância nos dois se cancela — o teste roda
+    0/15/30% e exige a mesma UEP. Só aplica com a base DIGITADA (rodando): a
+    régua da meta já tem fadiga e paradas dentro (`tolAplica`=false, a linha
+    TOLERÂNCIA explica). Se um dia a tolerância for POR PRODUTO (fadiga por
+    peso — o cadastro tem P B), aí ela muda a UEP e a conta tem de mudar junto.
+    O "prevê X s" do NO CADASTRO segue em tempo rodando (cru × cru).
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

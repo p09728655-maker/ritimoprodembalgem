@@ -199,6 +199,8 @@ ok('cartão sem status não herda o vermelho do relatório de paradas',
 console.log('\n── CRONOANÁLISE → UEP ──');
 global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
 global.UEP_CONV_TOL_META = eval('(' + pegaConst('UEP_CONV_TOL_META') + ')');
+global.UEP_CONV_TOL_PADRAO = eval('(' + pegaConst('UEP_CONV_TOL_PADRAO') + ')');
+global.UEP_CONV_TOL_LS = eval('(' + pegaConst('UEP_CONV_TOL_LS') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -367,7 +369,7 @@ const GC = pegaJs('function gerarRelatorioCrono(');
 // Revisão adversarial da v7.145.0: o papel lia o campo da base cru e a tela o
 // sincronizava com a meta — com a meta mudada pelo ⚙ ou pelo refresh, o papel
 // saía "BASE DIGITADA" com a régua antiga. Hoje as DUAS leem _uepConvEntradas.
-const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);';
+const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);';
 ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chamada',
    [/const E = _uepConvEntradas\(\);/.test(AT), /const E = _uepConvEntradas\(\);/.test(GC), AT.includes(MONTA), GC.includes(MONTA),
     (JS.match(/(?<!function )_uepConvEntradas\(\)/g) || []).length, /_uepConvDocHtml\(R, ctx\)/.test(GC), GC.indexOf('_uepConvAtualiza();') < GC.indexOf('_uepConvEntradas()')],
@@ -378,7 +380,7 @@ ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chama
   eval.call(global, pegaJs('function _pgSimNum('));
   eval.call(global, pegaJs('function _uepConvEntradas('));
   const docAntes = global.document, pdAntes = global.PONTOS_DIA;
-  const campos = { 'uep-conv-prod': { value: 'ARMARIO ENCANTO' }, 'uep-conv-seg': { value: '27,8' }, 'uep-conv-base': { value: '10,4', dataset: { auto: '1' } } };
+  const campos = { 'uep-conv-prod': { value: 'ARMARIO ENCANTO' }, 'uep-conv-seg': { value: '27,8' }, 'uep-conv-base': { value: '10,4', dataset: { auto: '1' } }, 'uep-conv-tol': { value: '' } };
   global.document = { activeElement: null, getElementById: id => campos[id] || null };
   global.PONTOS_DIA = { metaUep: 2530 };
   const e1 = _uepConvEntradas();
@@ -386,6 +388,9 @@ ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chama
   const e2 = _uepConvEntradas();
   ok('o campo automático segue a meta de AGORA; o digitado fica como está',
      [e1.base, campos['uep-conv-base'].value, e2.base, e1.meta, e1.txt, e1.seg], [12.5, '8,7', 8.7, 2530, 'ARMARIO ENCANTO', 27.8]);
+  // tolerância: vazio vira 15 e fica à vista no campo; 0 é zero (não volta a 15)
+  ok('o campo da tolerância vem com 15% (à vista); digitado 0 vale 0',
+     [e1.tol, campos['uep-conv-tol'].value, (campos['uep-conv-tol'].value = '0', _uepConvEntradas().tol)], [15, '15', 0]);
   global.document = docAntes; global.PONTOS_DIA = pdAntes;
 }
 ok('sem conversão pronta não abre janela; com ela, abre no clique (nenhuma leitura antes)',
@@ -403,6 +408,30 @@ ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde);
     /\.so-tela\{display:none\}/.test(pegaJs('function _rpDocParadas(')), /#sec-crono \.so-papel\{display:none\}/.test(html)],
    [true, true, true, true]);
 ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="gerarRelatorioCrono()"'), true);
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOLERÂNCIA de fadiga e movimentação (v7.146.0, PPCP: "15% iguais para todos")
+console.log('\n── CRONOANÁLISE → UEP: a tolerância ──');
+ok('o padrão é 15%', UEP_CONV_TOL_PADRAO, 15);
+const T0 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 0), T15 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 15),
+      T30 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 30);
+ok('a MESMA tolerância no produto e na base se cancela: a UEP não muda (0%, 15%, 30%)',
+   [T0.uepVol, T15.uepVol, T30.uepVol].map(x => x.toFixed(4)), [T0.uepVol.toFixed(4), T0.uepVol.toFixed(4), T0.uepVol.toFixed(4)]);
+ok('tempo padrão = medido × 1,15 no produto (17,6 → 20,2) e na base (8,7 → 10,0); a UEP é a razão dos dois',
+   [T15.tpSeg.toFixed(2), T15.base.tpSeg.toFixed(3), (T15.tpSeg / T15.base.tpSeg).toFixed(4)], ['20.24', '10.005', T15.uepVol.toFixed(4)]);
+const TM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 15);
+ok('com a régua da meta a tolerância NÃO entra (ela já tem fadiga e paradas dentro): sem tempo padrão, UEP igual',
+   [TM.base.tolAplica, TM.tpSeg, TM.uepVol.toFixed(4)], [false, null, _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 0).uepVol.toFixed(4)]);
+ok('tolerância vazia ou fora de 0–100 vira o padrão; 0 é zero',
+   [_uepConvMontar(PRODS, 'X', 1, 8.7, 3048, undefined).base.tol, _uepConvMontar(PRODS, 'X', 1, 8.7, 3048, 150).base.tol, T0.base.tol], [15, 15, 0]);
+const HT = _uepConvHtml(T15), HM = _uepConvHtml(TM);
+ok('a tela mostra o tempo padrão e a razão dos tempos padrão; com a meta, diz por que a tolerância não entra',
+   [HT.includes('tempo padrão <b>20,2 s</b> (+15%)'), HT.includes('20,2 s ÷ 10,0 s (tempo padrão, +15% nos dois)'), HT.includes('A mesma tolerância nos dois se cancela na UEP'),
+    HM.includes('tempo padrão <b>'), HM.includes('não entra: a régua da meta já tem fadiga, movimentação e paradas dentro')],
+   [true, true, true, false, true]);
+ok('o campo TOLERÂNCIA (%) está na aba, antes do FIXAR (o Tab do FIXAR continua sendo o último)',
+   [html.indexOf('id="uep-conv-tol"') > html.indexOf('id="uep-conv-base"'), html.indexOf('id="uep-conv-tol"') < html.indexOf('id="uep-conv-fixar"')], [true, true]);
+ok('o desenho continua sem conta (o multiplicador vem pronto do montar)', /\/ *100|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.146.0 — 19/10/2026
+
+- **⏱ CRONOANÁLISE → UEP: TOLERÂNCIA (%) de fadiga e movimentação** (PPCP:
+  *"tenho que colocar fadiga e movimentação 15%"* → *"15% iguais para todos"*).
+  Campo novo, padrão **15%**. Com a SLEEP cronometrada com a linha rodando, a
+  tela e o papel mostram o **TEMPO PADRÃO** = medido × 1,15 (Armário Encanto
+  17,6 s → **20,2 s**) e a UEP como razão dos tempos padrão (20,2 ÷ 10,0).
+  - **A UEP não muda**: a mesma tolerância no produto e na base se cancela
+    (17,6 ÷ 8,7 = 20,2 ÷ 10,0 = 2,02). Ela muda o tempo padrão do produto (o
+    número da ficha) e, mais adiante, a meta — quando a SLEEP for cronometrada,
+    dá para comparar o tempo padrão dela com a régua da meta.
+  - **Com a base pela meta (10,4) a tolerância não entra**: essa régua já tem
+    fadiga, movimentação e paradas dentro; somar 15% contaria duas vezes. A
+    linha TOLERÂNCIA da tela diz isso.
+- **Atenção:** nenhuma UEP muda; o tempo padrão é número novo na tela e no papel.
+
+---
+
 ## v7.145.0 — 19/10/2026
 
 - **🖨 IMPRIMIR na aba ⏱ CRONOANÁLISE** (pedido do PPCP: *"falta impressão"*).
