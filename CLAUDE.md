@@ -3691,6 +3691,17 @@ feito e dá ar de verdade ao que sobrou.
     textos, ids, botões e contas. ⚠ Da maquete NÃO entrou o botão "Registrar
     medição" (nada é gravado; a UEP muda só digitada no cadastro) nem os campos
     embaixo do resultado (calculadora: entrada em cima).
+  - **v7.145.0 — 🖨 IMPRIMIR** (PPCP: *"falta impressão"*):
+    `gerarRelatorioCrono` → `_uepConvDocHtml(R, ctx)` = `_uepConvHtml(R)` +
+    `_uepConvGuia` + REGISTRO DA MEDIÇÃO (`UCV_REG_CAMPOS`, linhas para a
+    caneta, com a VELOCIDADE DA ESTEIRA por causa da base no limite) + rodapé.
+    Mesma marcação da tela, pele `_UCV_DOC_SKIN` escopada em `.ucv-doc` (o
+    VOLTAR À RÉGUA DA META some no papel). `_rpDocParadas` em PÉ — agora 14
+    usuários (o teste conta), `_rpCabecalho` 18 chamadas, rodapé `APP_NOME_CX`
+    12. Retrato da tela no clique: mesmas entradas do `_uepConvAtualiza`,
+    nenhuma leitura, janela aberta no clique; estado não-ok avisa e não abre.
+    `<title>` sem `/` e `:` (`_uepConvDocTitulo`). Medido no Chromium: A4 em pé,
+    1 página nos casos ok, troca com 2 volumes e base digitada.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

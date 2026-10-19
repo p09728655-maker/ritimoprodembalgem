@@ -346,5 +346,36 @@ ok('o campo da base mostra a régua da meta quando vazio, sem gravar, e a orient
    [/elB\.dataset\.auto === '1'/.test(AT), /document\.activeElement !== elB/.test(AT), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
     /oninput="this\.dataset\.auto='';_uepConvBase\(\)"/.test(html)], [true, true, true, true]);
 
+// ════════════════════════════════════════════════════════════════════════════
+// 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP: "falta impressão")
+console.log('\n── CRONOANÁLISE → UEP: a impressão ──');
+global.APP_NOME_CX = global.APP_NOME_CX || 'RITMOPATRIMAR';
+global.UCV_REG_CAMPOS = eval('(' + pegaConst('UCV_REG_CAMPOS') + ')');
+['function _uepConvDocTitulo(', 'function _uepConvDocHtml('].forEach(f => eval.call(global, pegaJs(f)));
+const ctxI = { data: '19/10/2026', hora: '16:05' };
+const DI = _uepConvDocHtml(E1, ctxI), DV = _uepConvDocHtml(EV, ctxI);
+ok('o papel tem a medição (a MESMA marcação da tela), o como ler e o registro da medição',
+   [DI.includes(_uepConvHtml(E1)), DI.includes(_uepConvGuia(E1.base.daMeta)), DI.includes('NÃO PRECISA TROCAR'), DI.includes('<b>2,22</b>'),
+    DI.includes('REGISTRO DA MEDIÇÃO'), DI.includes('VELOCIDADE DA ESTEIRA (m/min)'), DI.includes('gerado 19/10/2026 às 16:05')],
+   [true, true, true, true, true, true, true]);
+ok('o desenho do papel não faz conta (só a tela + títulos + caneta)',
+   /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA/.test(pegaJs('function _uepConvDocHtml(')), false);
+ok('nome do arquivo (o <title>) sem / e : — o Windows não aceita',
+   [_uepConvDocTitulo(EV, ctxI), /[\/:]/.test(_uepConvDocTitulo(EV, ctxI))],
+   ['Cronoanálise UEP - 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2-2 - 19-10-2026 16h05', false]);
+const GC = pegaJs('function gerarRelatorioCrono(');
+ok('a impressão é o retrato da tela: mesma montagem e mesmas entradas do _uepConvAtualiza',
+   [/_uepConvMontar\(UEP_CONV_PRODS, elP \? elP\.value : '', _pgSimNum\(elS \? elS\.value : ''\), _pgSimNum\(elB \? elB\.value : ''\), PONTOS_DIA\.metaUep\)/.test(GC),
+    /_uepConvDocHtml\(R, ctx\)/.test(GC)], [true, true]);
+ok('sem conversão pronta não abre janela; com ela, abre no clique (nenhuma leitura antes)',
+   [GC.indexOf("R.estado !== 'ok'") > 0 && GC.indexOf("R.estado !== 'ok'") < GC.indexOf('window.open('), /await /.test(GC)], [true, false]);
+ok('documento compartilhado, EM PÉ, com o cabeçalho e o botão comuns',
+   [/_rpDocParadas\(_uepConvDocTitulo\(R, ctx\), false\)/.test(GC), /_rpCabecalho\('CRONOANÁLISE → UEP'/.test(GC), /_rpBotaoImprimir\(\)/.test(GC)], [true, true, true]);
+const SK = pegaConst('_UCV_DOC_SKIN').replace(/^`|`$/g, '');
+ok('a pele do papel é escopada em .ucv-doc (não mexe nos outros relatórios do documento)',
+   SK.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-doc ')), true);
+ok('no papel, o botão VOLTAR À RÉGUA DA META some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
+ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="gerarRelatorioCrono()"'), true);
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);
