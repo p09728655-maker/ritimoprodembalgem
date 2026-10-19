@@ -545,6 +545,19 @@ via Google Apps Script (JSONP).
     dos lotes, não o ritmo. É o argumento (com a fila) para o PPCP decidir o
     selo das Telas F/G. O teste prende esses números.
   - Caixa lançada sem produto conta nas caixas e não tem UEP: o papel avisa.
+- **TAKT s/CX nos dois relatórios por produto** (v7.141.0, PPCP: *"colocar
+  takt time de cada um nos relatórios"*). `_taktUep(uepCx, meta)` = 527 × 60 ÷
+  META UEP × UEP/cx (= 3.600 ÷ CX/H PADRÃO), `_taktTxt` o formato (*23,0 s*),
+  uma implementação só. FILA: um por volume, na forma da UEP/CX, com a META UEP
+  do ⚙ (`PONTOS_DIA.metaUep`, 5º parâmetro do `_filaCronoMontar`). Bloco 7:
+  coluna depois do CX/H PADRÃO (12 colunas em `UEP_PAD_COLS`), e no dia a dia
+  o takt do dia (meta gravada daquele dia) com o **s/CX REAL** ao lado.
+  - ⚠ **Não é o TAKT IDEAL** (`_taktIdeal`: DEMANDA IDEAL do ⚙ em cx/dia, um
+    número para qualquer caixa — 1.850 → ~17,1 s). Nome sempre **TAKT s/CX**,
+    nunca só "TAKT". Não pus no comparativo por modelo (PRODUÇÃO/HORA) de
+    propósito: lá o card MÉDIA CX/H · TAKT e o ▼ já usam o TAKT IDEAL, e dois
+    takts no mesmo papel é o defeito de dois vereditos.
+  - Sem UEP → "—", nunca 0.
 
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a

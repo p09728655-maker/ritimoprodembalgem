@@ -293,6 +293,13 @@ Fora do ciclo por padrão (⚙ → TELA F / TELA G) e **sem veredito** por padr�
 | **UEP PROGRAMADA EM DÚVIDA** | Σ (caixas abertas × UEP) dos produtos da fila na janela ÷ Σ de todos os produtos na janela (próximos 5 dias úteis; aberta = qtde − adiantado; fora da esteira não entra) | % | `v7:_filaCronoMontar` |
 | **EM CAIXAS / EM UEP** (caixas × UEP) | caixas de jornada (REALIZADO − HE CX) ÷ META · UEP de jornada ÷ META UEP, do HISTORICO; veredito pela régua do selo (`sc`/`slRitmo`, ≥ 96%) | % | `v7:_cxUepMontar` |
 | **A META EM CX PEDIA** | META em caixas × UEP/cx do próprio dia ÷ META UEP — acima de 105%, a meta em caixas era mais pesada que a capacidade em UEP | % | `v7:_cxUepMontar` |
+| **TAKT s/CX** (fila e bloco 7) | 527 min × 60 ÷ META UEP × UEP/cx do produto (= 3.600 ÷ CX/H PADRÃO). Com a meta de 2.530: 12,5 s por UEP — 1 caixa de MADERO (1,00) = 12,5 s, um volume de 1,84 = 23,0 s. Na fila, um por volume, com a META UEP do ⚙; no bloco 7, com a META gravada em cada dia | s/cx | `v7:_taktUep` |
+| **s/CX REAL** (dia a dia do bloco 7) | minutos do produto no dia × 60 ÷ caixas, com a hora de troca repartida pelo tempo padrão — acima do TAKT s/CX = mais lento que a meta pede | s/cx | `v7:_uepPadHist` |
+
+⚠ **TAKT s/CX não é o TAKT IDEAL.** O TAKT IDEAL (aba PARADAS, GESTÃO DE
+PERDAS) é horas produtivas × 3.600 ÷ DEMANDA IDEAL das configurações (caixas
+por dia) — **um número para qualquer caixa** (`v7:_taktIdeal`). O TAKT s/CX
+sai da META UEP e muda com o peso do produto. Os dois nomes não se misturam.
 
 ## Simulador de investimento
 

@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.141.0 — 19/10/2026
+
+- **TAKT s/CX de cada produto nos relatórios de UEP** (pedido do PPCP: *"colocar
+  takt time de cada um nos relatórios"*). O takt é o tempo por caixa que a META
+  UEP pede do produto: **527 min × 60 ÷ META UEP × UEP da caixa**. Com a meta de
+  2.530 são 12,5 s por UEP — uma caixa de MADERO (1,00) = 12,5 s, a PENTEADEIRA
+  CAMARIM STRASS = 33,9 s (volume 1) e 28,6 s (volume 2).
+  - **🖨 FILA DE CRONOANÁLISE:** coluna TAKT s/CX ao lado da UEP/CX, um por
+    volume. É o tempo contra o qual a cronoanálise compara o medido.
+  - **Bloco 7 PADRÃO × REALIZADO** (tela e 🖨 IMPRIMIR): coluna TAKT s/CX depois
+    do CX/H PADRÃO; no dia a dia, o takt do dia e, ao lado, o **s/CX REAL**
+    (minutos do produto × 60 ÷ caixas).
+- **Atenção:** o TAKT s/CX **não é o TAKT IDEAL** da aba PARADAS e da GESTÃO DE
+  PERDAS. Aquele sai da DEMANDA IDEAL das configurações (padrão 1.850 cx/dia →
+  ~17,1 s para **qualquer** caixa); este sai da META UEP e muda com o peso do
+  produto. Nenhum número que já existia mudou.
+
+---
+
 ## v7.140.0 — 19/10/2026
 
 - **Telas F e G cabem na tela, inclusive no gerencial.** No print do PPCP
