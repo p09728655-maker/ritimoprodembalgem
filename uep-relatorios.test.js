@@ -255,6 +255,27 @@ ok('o campo mora na aba ⚖ UEP, FORA do #uep-bloco (o renderUep refaz o bloco a
 const RU = pegaJs('function renderUep(');
 ok('o renderUep atualiza o conversor ANTES de sair esperando a leitura do dia',
    RU.indexOf('_uepConvAtualiza()') > 0 && RU.indexOf('_uepConvAtualiza()') < RU.indexOf("D.estado!=='ok'"), true);
+// v7.142.1 — o PPCP digitou o 17,6 do PRÓPRIO Encanto no campo da base (1,58 e
+// depois 0,06) e o Tab do último campo rolava a tela até o bloco 5
+const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
+ok('base digitada: a diferença para a régua da meta sai pronta do montar (+40,8%)', [E7.base.daMeta, fmtP(E7.base.difMeta)], [false, '40,8%']);
+const H7 = _uepConvHtml(E7);
+ok('base digitada fica à vista, com o valor e o botão de voltar à meta — e antes do resultado',
+   [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA MADERO'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
+    H7.indexOf('BASE DIGITADA') < H7.indexOf('UEP EQUIVALENTE')], [true, true, true, true]);
+ok('base pela meta não mostra o aviso', [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA')], [false, false]);
+ok('o rótulo diz de quem é o tempo da base', [/>s\/VOLUME DA MADERO \(BASE\)<input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<')], [true, false]);
+{
+  const docAntes = global.document; let foco = null, evitou = false;
+  global.document = { getElementById: id => ({ focus: () => { foco = id; } }) };
+  eval.call(global, pegaJs('function _uepConvTecla('));
+  _uepConvTecla({ key: 'Tab', shiftKey: false, preventDefault: () => { evitou = true; } });
+  const r1 = [foco, evitou]; foco = null; evitou = false;
+  _uepConvTecla({ key: 'Tab', shiftKey: true, preventDefault: () => { evitou = true; } });
+  ok('Tab no campo da base volta ao PRODUTO (sem rolar a tela); Shift+Tab segue normal', [r1, [foco, evitou]], [['uep-conv-prod', true], [null, false]]);
+  global.document = docAntes;
+}
+ok('o campo da base tem o Tab ligado', /id="uep-conv-base"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
 
