@@ -265,6 +265,35 @@ grava com a base medida no período: 5+ dias e abaixo de 90% do teto
 (`UEP_TRAVADA_DESDE`): o GRAVAR não grava nada, e a UEP só muda digitada na
 coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
+## Telas F e G da TV — a UEP do dia (v7.138.0)
+
+Fora do ciclo por padrão (⚙ → TELA F / TELA G) e **sem veredito** por padrão
+(⚙ → SELO DE RITMO NAS TELAS F e G). Tudo sai da montagem da aba ⚖ UEP
+(`_uepAbaDados`): os números são os mesmos do card UEP DO DIA.
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **UEP FEITA ATÉ AGORA** (Tela F) | o UEP ATÉ AGORA da aba ⚖ UEP (`uepCard`): UEP de jornada normal × esperado até agora | UEP | `rp-core:uepCard` |
+| **1 CAIXA = X UEP** (rodando agora) | UEP do código do produto atual no cadastro; sem cadastro no aparelho, UEP ÷ caixas de hoje do mesmo produto e cor (`porHoraModelo`) | UEP/cx | `v7:_tvUepDoProduto` |
+| **PESO MÉDIO DA CAIXA HOJE** | UEP de jornada ÷ caixas de jornada da HORA_A_HORA (`k.realNormal`) | UEP/cx | `v7:_tvUepMontar` |
+| **O NORMAL** (peso da caixa) | mediana de UEP ÷ caixas de jornada (`_qpRealDia`) nos últimos 30 dias fechados com UEP; menos de 5 dias → não mostra. "mais pesadas/leves" = hoje ÷ normal acima de 1,05 / abaixo de 0,95 | UEP/cx | `v7:_tvUepPesoNormal` |
+| **À FRENTE / ATRÁS (min)** (Tela G) | (UEP feita − esperada) ÷ (meta ÷ 527) — o adiantamento em minutos de linha no ritmo da meta | min | `v7:_tvUepMontar` |
+| **FALTA PARA A META DO DIA** | meta − UEP feita (nunca negativo); em caixas = ⌈falta ÷ UEP/cx do produto de agora⌉ | UEP · cx | `v7:_tvUepMontar` |
+| **A META SAI ÀS** | agora + falta ÷ (meta ÷ 527), andando só pelos minutos de jornada que restam (o almoço não conta). Não cabe até o fim da jornada → mostra o ritmo que faltaria: falta ÷ minutos restantes × 60 | hora · UEP/h | `v7:_tvUepMontar` |
+| **ESPERADO** (linha do gráfico) | meta × minutos de jornada **com lançamento** ÷ 527, hora a hora — a mesma régua do card; daqui para a frente, a meta no ritmo do relógio | UEP | `v7:_tvUepMontar` |
+
+## Relatórios de UEP da aba ⚖ UEP (v7.139.0)
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **UEP POR HORA DE ESTEIRA** (k) | UEP/cx do código × teto da esteira do código (velocidade × 60.000 ÷ (medida + entre-peças), cx/h); do produto, a mediana dos códigos medidos | UEP/h | `v7:_filaCronoMontar` |
+| **PROVISÓRIA** (fila) | UEP medida com menos de `UEP_MIN_DIAS` (5) dias distintos de produção na amostra (01/07/2026 até `UEP_TRAVADA_DESDE`) | — | `v7:_filaCronoMontar` |
+| **NO LIMITE DA ESTEIRA** (fila) | k do produto ≤ menor k do cadastro × 1,02 — o estudo corta o ritmo no teto físico, então quem rodou no limite cai no mínimo | — | `v7:_filaCronoMontar` |
+| **FAMÍLIA INCOERENTE** (fila) | maior ÷ menor k entre os produtos medidos do mesmo modelo de 6 dígitos ≥ 1,8 | × | `v7:_filaCronoMontar` |
+| **UEP PROGRAMADA EM DÚVIDA** | Σ (caixas abertas × UEP) dos produtos da fila na janela ÷ Σ de todos os produtos na janela (próximos 5 dias úteis; aberta = qtde − adiantado; fora da esteira não entra) | % | `v7:_filaCronoMontar` |
+| **EM CAIXAS / EM UEP** (caixas × UEP) | caixas de jornada (REALIZADO − HE CX) ÷ META · UEP de jornada ÷ META UEP, do HISTORICO; veredito pela régua do selo (`sc`/`slRitmo`, ≥ 96%) | % | `v7:_cxUepMontar` |
+| **A META EM CX PEDIA** | META em caixas × UEP/cx do próprio dia ÷ META UEP — acima de 105%, a meta em caixas era mais pesada que a capacidade em UEP | % | `v7:_cxUepMontar` |
+
 ## Simulador de investimento
 
 Fica na aba **💡 SIMULADOR**, com **filtro de datas próprio** — independente do da

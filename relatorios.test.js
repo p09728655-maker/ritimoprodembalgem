@@ -1677,8 +1677,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os onze relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva e o padrão × realizado por produto)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 11);
+ok('e os treze relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise e caixas × UEP)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 13);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2506,7 +2506,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 9);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 11);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2517,8 +2517,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 15 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 16);   // 15 chamadas (+ UEP executiva + padrão × realizado) + a declaração
+ok('e é UMA implementação — os 17 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 18);   // 17 chamadas (+ UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -3867,7 +3867,9 @@ console.log('\n── estudo de UEP ──');
        [/CAP_FALHA=erro/.test(pega('async function _capBuscar(')), /Não consegui ler o cadastro/.test(pega('function _capPintar(')), /TENTAR DE NOVO/.test(pega('function _capPintar('))], [true, true, true]);
     ok('nenhum painel declara a própria cópia da conta',
        [/function uepCard/.test(JS), /function uepCard/.test(MOB)], [false, false]);
-    ok('a TV e o operador NÃO mostram UEP (só o gerencial)',
+    // v7.138.0: a UEP chegou à TV, mas SÓ nas Telas F e G (fora do ciclo por
+    // padrão, tela-uep.test.js) — a Tela A e a Tela B continuam em caixas.
+    ok('a Tela A e a Tela B da TV NÃO mostram UEP (a UEP da TV mora só nas Telas F e G)',
        (pega('function _sincSlideB(') + pega('function renderTV(')).includes('uepCard'), false);
     ok('o GRAVAR UEP mostra que está trabalhando e não dispara duas vezes',
        [/if\(_uepGravando\) return;/.test(pega('async function gravarUepCadastro(')), /_uepBotao\('⏳ BUSCANDO/.test(pega('async function _gravarUepCadastro('))], [true, true]);
@@ -3968,8 +3970,8 @@ console.log('\n── estudo de UEP ──');
       /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
-  ok('tela, impressão e diretoria leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
-     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [3, false]);   // tela, papel e a tela da diretoria (v7.116.0)
+  ok('tela, impressão, diretoria e Telas F/G da TV leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
+     [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [4, false]);   // tela, papel, diretoria (v7.116.0) e TV F/G (v7.138.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
      [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),

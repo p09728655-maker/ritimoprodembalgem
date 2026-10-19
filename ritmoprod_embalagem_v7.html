@@ -950,6 +950,67 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tve-vazio{font-family:var(--font-h);font-weight:700;font-size:clamp(34px,4vw,80px);color:var(--ok);text-align:center;padding:6vh 0;letter-spacing:2px}
 .tve-rod{margin-top:auto;display:flex;justify-content:space-between;gap:20px;font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2vh),24px);color:var(--txt2);letter-spacing:1px;border-top:1px solid var(--border);padding-top:clamp(6px,1vh,14px)}
 #tve-concl:not(:empty){color:var(--ok)}
+/* Telas F e G — a UEP do dia (v7.138.0). Mesma caixa das outras; letra de TV
+   (lida a 15 m), medida em min(vw,vh) como a Tela E. Cor só com o selo ligado:
+   sem ele, número e barra em tinta (o veredito da TV continua na Tela B). */
+.tvu-slide{position:absolute;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:10;display:none;flex-direction:column;align-items:stretch;padding:14px 4vw 16px;text-align:left;gap:clamp(8px,1.6vh,22px)}
+.tvu-corpo{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(8px,1.8vh,26px)}
+.tvu-lbl{font-family:var(--font-d);font-size:clamp(13px,min(1.45vw,2.6vh),30px);letter-spacing:3px;color:var(--txt2);text-transform:uppercase}
+.tvu-num{font-family:var(--font-h);font-weight:700;font-size:clamp(90px,min(12.5vw,21vh),250px);line-height:.85;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvu-un{font-family:var(--font-h);font-weight:600;font-size:clamp(28px,min(3.4vw,6vh),68px);line-height:1;color:var(--txt2)}
+.tvu-selo{display:inline-block;align-self:flex-start;font-family:var(--font-h);font-weight:700;font-size:clamp(22px,min(2.7vw,4.8vh),54px);line-height:1;letter-spacing:2px;padding:.18em .5em;border:3px solid;border-radius:12px;white-space:nowrap}
+.tvu-selo.ok{color:var(--ok)}.tvu-selo.warn{color:var(--warn)}.tvu-selo.red{color:var(--red)}
+.tvu-apoio{font-family:var(--font-d);font-size:clamp(16px,min(1.85vw,3.3vh),36px);color:var(--txt2);line-height:1.2}
+.tvu-apoio b{color:var(--txt);font-weight:600}
+.tvu-barra{position:relative;height:clamp(18px,4.2vh,46px);background:var(--elevated);border-radius:8px;margin-top:clamp(6px,1.2vh,14px)}
+.tvu-barra i{position:absolute;left:0;top:0;bottom:0;border-radius:8px}
+.tvu-barra b{position:absolute;top:-12px;bottom:-12px;width:5px;margin-left:-2px;background:var(--txt);border-radius:2px}
+.tvu-barra-lbl{position:relative;height:clamp(18px,3vh,32px);font-family:var(--font-d);font-size:clamp(12px,min(1.25vw,2.2vh),24px);color:var(--txt2)}
+.tvu-barra-lbl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.tvu-barra-lbl span.fim{right:0;transform:none}
+.tvu-card{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:clamp(2px,.6vh,8px);padding:clamp(10px,2vh,26px) clamp(14px,1.8vw,36px);background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.tvu-prod{font-family:var(--font-h);font-weight:700;font-size:clamp(24px,min(2.7vw,4.8vh),54px);line-height:1.05;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvu-mid{font-family:var(--font-d);font-size:clamp(16px,min(1.8vw,3.2vh),36px);color:var(--txt2);line-height:1.1}
+.tvu-mid b{font-family:var(--font-h);font-weight:700;font-size:clamp(40px,min(4.4vw,7.6vh),90px);color:var(--txt);margin-right:.12em;font-variant-numeric:tabular-nums}
+.tvu-sub{font-family:var(--font-d);font-size:clamp(12px,min(1.4vw,2.5vh),28px);color:var(--txt2);line-height:1.2}
+.tvu-card .tvu-sub,.tvu-card .tvu-lbl,.tvg-cx{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvu-leg{display:flex;flex-wrap:wrap;align-items:center;gap:6px clamp(14px,1.8vw,36px);font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2.2vh),24px);color:var(--txt2);letter-spacing:1px}
+.tvu-leg span{display:inline-flex;align-items:center;gap:10px}
+.tvu-tick{display:inline-block;width:40px;height:0;border-top:4px solid var(--txt)}
+.tvu-rod{display:flex;justify-content:space-between;gap:20px;font-family:var(--font-d);font-size:clamp(12px,min(1.2vw,2vh),24px);color:var(--txt2);letter-spacing:1px;border-top:1px solid var(--border);padding-top:clamp(6px,1vh,14px)}
+.tvf-topo{flex:1.5;min-height:0;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:clamp(16px,2vw,40px)}
+.tvf-hero{display:flex;flex-direction:column;justify-content:center;gap:clamp(4px,1.2vh,16px);min-width:0}
+.tvf-linha{display:flex;align-items:center;gap:clamp(14px,1.7vw,32px)}
+.tvf-unid{display:flex;flex-direction:column;gap:clamp(6px,1.4vh,18px)}
+.tvf-cards{display:flex;flex-direction:column;gap:clamp(10px,2vh,22px);min-width:0;min-height:0}
+.tvf-horas{flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
+.tvf-horas-tit{display:flex;justify-content:space-between;align-items:baseline;gap:20px;font-family:var(--font-h);font-weight:700;font-size:clamp(18px,min(1.8vw,3.2vh),34px);letter-spacing:2px;color:var(--txt)}
+.tvf-cols{flex:1;min-height:0;display:flex;gap:clamp(8px,1.1vw,22px)}
+.tvf-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.tvf-val{position:absolute;left:0;right:0;margin-bottom:8px;text-align:center;font-family:var(--font-h);font-weight:700;font-size:clamp(18px,min(1.8vw,3.2vh),34px);line-height:1.1;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvf-col.fut .tvf-val{color:var(--txt3)}
+.tvf-area{position:relative;flex:1;min-height:0;border-bottom:2px solid var(--border)}
+.tvf-bar{position:absolute;left:12%;right:12%;bottom:0;border-radius:6px 6px 0 0}
+.tvf-oco{position:absolute;left:12%;right:12%;bottom:0;box-sizing:border-box;border:2px dashed var(--border);border-bottom:none;border-radius:6px 6px 0 0}
+.tvf-col.and .tvf-oco{border:3px dashed var(--acc);border-bottom:none}
+.tvf-meta{position:absolute;left:4%;right:4%;height:0;border-top:4px solid var(--txt);opacity:.85}
+.tvf-h{text-align:center;font-family:var(--font-d);font-size:clamp(13px,min(1.5vw,2.7vh),30px);color:var(--txt2);white-space:nowrap}
+.tvf-col.and .tvf-h{color:var(--acc)}
+.tvg-corpo{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(16px,2vw,40px)}
+.tvg-graf{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
+.tvg-svg{flex:1;min-height:0;width:100%;height:100%;display:block}
+.tvg-svg text{font-family:var(--font-d)}
+.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:34px;fill:var(--txt)}
+.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:28px;fill:var(--txt2)}
+.tvg-svg .tvg-t2{font-size:23px;fill:var(--txt2)}
+.tvg-sw{display:inline-block;width:48px;height:0}
+.tvg-sw.f{border-top:6px solid var(--txt);border-radius:3px}
+.tvg-sw.e{border-top:4px dashed var(--txt2)}
+.tvg-sw.p{border-top:4px dotted var(--txt)}
+.tvg-cards{display:flex;flex-direction:column;gap:clamp(10px,2vh,22px);min-width:0;min-height:0}
+.tvg-min{font-family:var(--font-h);font-weight:700;font-size:clamp(60px,min(7.6vw,13vh),150px);line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
+.tvg-cx{font-family:var(--font-d);font-size:clamp(15px,min(1.65vw,2.9vh),32px);color:var(--txt);line-height:1.15}
+.tvg-cx b{font-weight:700}
 #tv-slide-c .tvb-hero-num{font-size:clamp(90px,11vw,200px)}
 /* .tv-table/td/th têm fonte gigante (feita pra Tela A, 5 colunas curtas) —
    ajusta pro tamanho certo da Tela C (só CÓDIGO/FALTA, conteúdo curto). */
@@ -2397,6 +2458,29 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="tve-rod"><span><span id="tve-concl"></span><span id="tve-fora"></span></span><span id="tve-ordem">ordem: rodando agora → atraso mais antigo → programado hoje</span></div>
   </div>
 
+  <!-- Telas F e G (v7.138.0): a UEP do dia. Fora do ciclo por padrão; o corpo
+       sai pronto do _tvFHtml / _tvGHtml (desenho), a conta do _tvUepMontar. -->
+  <div id="tv-slide-f" class="tvu-slide" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl"><span id="tvf-setor">EMBALAGEM</span> <span style="color:var(--acc)">· ESFORÇO DO DIA</span></div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(40px,7vh,96px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tvf-clock">--:--:--</div>
+    </div>
+    <div id="tvf-corpo" class="tvu-corpo"></div>
+  </div>
+  <div id="tv-slide-g" class="tvu-slide" style="display:none">
+    <div class="tvb-top">
+      <div class="tvb-setor-lbl"><span id="tvg-setor">EMBALAGEM</span> <span style="color:var(--acc)">· CORRIDA DO DIA</span></div>
+      <div style="text-align:center;line-height:1">
+        <img src="/patrimar-logo.png" alt="Patrimar móveis" style="height:clamp(40px,7vh,96px);width:auto;display:inline-block;vertical-align:middle">
+      </div>
+      <div class="tvb-clock-lbl" id="tvg-clock">--:--:--</div>
+    </div>
+    <div id="tvg-corpo" class="tvu-corpo"></div>
+  </div>
+
   <!-- Controle do carrossel — SÓ no gerencial (preview das telas da TV). Deixa o
        gestor pausar numa tela e conferir, ou passar manualmente entre A/B/C/D/E. -->
   <div id="tv-ciclo-ctrl" style="display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:30;align-items:center;gap:8px;background:rgba(0,0,0,.6);border:0.5px solid var(--border);border-radius:999px;padding:7px 12px;box-shadow:0 4px 16px rgba(0,0,0,.4)">
@@ -2630,6 +2714,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="uep-upd" class="par-upd"></span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: em quantos o veredito em caixas e o em UEP discordaram, e por quê">🖨 CAIXAS × UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
@@ -2990,6 +3076,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA D (segundos)</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
       <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA E (segundos)</label><input class="frm-inp" id="c-slidee-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA F (segundos)</label><input class="frm-inp" id="c-slidef-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA G (segundos)</label><input class="frm-inp" id="c-slideg-int" type="number" min="3" max="300" placeholder="20"></div>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -2998,6 +3086,11 @@ if (_v7Instalado()) _v7EscondeBotao();
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"> TELA D — SEMANA PASSADA (só entra se a semana anterior tiver dia fechado)</label>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-e" style="accent-color:var(--acc)"> TELA E — PROGRAMAÇÃO DO DIA (só entra se houver programação ou atraso)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-f" style="accent-color:var(--acc)"> TELA F — ESFORÇO DO DIA EM UEP (só entra com hora de jornada lançada)</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-g" style="accent-color:var(--acc)"> TELA G — CORRIDA DO DIA EM UEP (só entra com hora de jornada lançada)</label>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)" title="Desligado (padrão): as Telas F e G mostram a UEP sem julgar — o veredito da TV continua em caixas, na Tela B. Ligado: elas ganham o selo NO RITMO / ATENÇÃO / ABAIXO DO RITMO e as cores — e a TV passa a ter dois vereditos, um em caixas e outro em UEP, que podem discordar no mesmo minuto."><input type="checkbox" id="c-uep-selo-tv" style="accent-color:var(--acc)"> SELO DE RITMO NAS TELAS F e G (veredito em UEP — desligado, elas só informam)</label>
     </div>
     <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
@@ -3134,7 +3227,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.137.0';
+const APP_VER   = '7.139.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -3248,6 +3341,9 @@ let CFG = {
   slideCIntervalo:15, // tempo próprio da Tela C (antes dividia o intervalo da Tela B)
   slideDIntervalo:20, // Tela D tem mais a ler (5 dias + barra da meta) que as outras
   slideEIntervalo:20, // Tela E (programação do dia) — lista de até 6 produtos
+  slideFIntervalo:20, // Telas F e G (UEP do dia) — fora do ciclo até serem marcadas
+  slideGIntervalo:20,
+  uepSeloTv:false,    // veredito (selo e cores) nas Telas F e G — decisão do PPCP
   slideBAtivo:true, // legado, mantido só p/ compatibilidade com config salva antes das telasAtivas
   telasAtivas:{a:true,b:true,c:true,d:true,e:true},
   modoLeitor:true, // seleção de produto por bipe no mobile (padrão ligado)
@@ -5270,6 +5366,408 @@ function gerarRelatorioUepPadrao(){
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FILA DE CRONOANÁLISE (v7.139.0, PPCP 19/10/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// Com a UEP travada (16/10/2026), o único caminho de mudança é a cronoanálise
+// digitada no cadastro. Este relatório diz QUAL produto cronometrar primeiro:
+// os de UEP fraca (provisória, estimada, no limite da esteira, família
+// incoerente, sem medida, sem UEP) ordenados pela UEP PROGRAMADA nos próximos
+// dias úteis — é ali que um número errado mais pesa na meta e na carteira.
+// Calibrado na planilha real em 19/10/2026: 6 produtos no limite da esteira
+// (SLEEP, DECOR 470 e 600, NICHO 1.6, MOON 2.2, INTENSE RIP) e 4 famílias com
+// 1,8× ou mais de diferença (LUNA 3,4×, DECOR 2,9×, EVOLUTION 2,0×, MOON 1,9×).
+// ⚠ "k" = UEP × teto da esteira do código (cx/h) — UEP por HORA DE ESTEIRA. O
+// estudo corta o ritmo no teto físico, então produto que rodou no limite sai
+// com k = ritmo da base (o MESMO para todos): é o mínimo de k do cadastro.
+// ⚠ Sai da fila quem foi CRONOMETRADO: UEP digitada carimba a UEP_VIGENCIA com
+// "DIGITADA" (.gs v5.27) — PROVISÓRIA, ESTIMADA e LIMITE DA ESTEIRA deixam de
+// valer; FAMÍLIA INCOERENTE continua só nos irmãos ainda não cronometrados.
+const FILA_AMOSTRA_DE = '01/07/2026';   // começo do log de produto: a amostra do GRAVAR de 16/10
+const FILA_FAM_RAZAO  = 1.8;            // família: maior ÷ menor UEP por hora de esteira
+const FILA_TETO_FOLGA = 1.02;           // até 2% acima do mínimo = no limite da esteira
+const FILA_MAX_SEM    = 30;             // sem programação: os 30 de maior volume (o resto é contado)
+const FILA_LS         = 'rpe_fila_amostra';
+const FILA_LS_TTL     = 24 * 60 * 60 * 1000;   // a amostra é um período fechado: 1 leitura por dia
+const FILA_MOTIVOS = {
+  'sem-uep':    { t:'SEM UEP',              d:'código sem UEP no cadastro: as caixas dele ficam fora de toda conta de UEP' },
+  'est':        { t:'ESTIMADA',             d:'UEP calculada pela medida da caixa na esteira (vigência EST), nunca medida' },
+  'prov':       { t:'PROVISÓRIA',           d:'medida com poucos dias de produção na amostra (menos que o mínimo do estudo de UEP)' },
+  'teto':       { t:'NO LIMITE DA ESTEIRA', d:'rodou no limite físico da esteira: a UEP saiu do teto (velocidade × medida da caixa), não do ritmo da equipe' },
+  'fam':        { t:'FAMÍLIA INCOERENTE',   d:'tamanhos do mesmo modelo com esforço por hora de esteira muito diferente' },
+  'sem-medida': { t:'SEM MEDIDA',           d:'sem MEDIDA DA CAIXA no cadastro: não dá para conferir a UEP pela esteira' }
+};
+// Próximos n dias ÚTEIS (seg–sex), a partir de hoje se hoje for útil → [aaaammdd].
+function _filaUteis(base, n){
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate()), out = [];
+  while(out.length < n){
+    if(d.getDay() !== 0 && d.getDay() !== 6) out.push(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+const _filaN2br = n => p2(n % 100) + '/' + p2(Math.floor(n / 100) % 100) + '/' + Math.floor(n / 10000);
+// A amostra (dias e caixas por produto) a partir dos itens do getProducaoModeloPeriodo.
+function _filaAmostraDeItens(itens){
+  const G = {};
+  (itens || []).forEach(it => {
+    const k = String(it.modelo || '') + '|' + String(it.nome || '').toUpperCase().trim();
+    const g = G[k] = G[k] || { dias:{}, cx:0 };
+    g.dias[it.data] = 1; g.cx += Number(it.caixas) || 0;
+  });
+  const o = {};
+  Object.keys(G).forEach(k => { o[k] = { dias:Object.keys(G[k].dias).length, cx:G[k].cx }; });
+  return o;
+}
+// Conta pura da fila. cat = cadastro cru (getProdutos); amostra = {modelo|nome:
+// {dias,cx}} ou null (não lida); prog = PROG_DETALHADA ou null; uteis = [aaaammdd].
+function _filaCronoMontar(cat, amostra, prog, uteis){
+  const P = {}, porCod = {};
+  (cat || []).forEach(c => {
+    const cod = String(c && c.codigo || '').replace(/\D/g, '');
+    if(!cod) return;
+    const vo = _capVol(c.desc), nome = _capNome(c.desc, c.cor);
+    const key = cod.slice(0, 6) + '|' + nome;
+    const p = P[key] = P[key] || { key, modelo:cod.slice(0, 6), nome, nVol:vo.nVol, vols:{}, cods:[], ks:[], origens:{}, vigMax:0, digDe:0 };
+    const uep = Number(c.uep) || 0, vig = String(c.uepVig || '').trim();
+    const vel = Number(c.velocidade) || 0, med = Number(c.medida) || 0, ent = Number(c.entrePeca) || 0;
+    const teto = vel > 0 && med > 0 ? vel * 60000 / (med + ent) : 0;
+    const origem = !(uep > 0) ? 'sem' : /\bEST\s*$/i.test(vig) ? 'est' : /DIGITADA\s*$/i.test(vig) ? 'dig' : 'med';
+    const vn = _cartNum((vig.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || [''])[0]);
+    p.origens[origem] = (p.origens[origem] || 0) + 1;
+    if(vn > p.vigMax) p.vigMax = vn;
+    if(origem === 'dig' && vn > p.digDe) p.digDe = vn;
+    (p.vols[vo.vol] = p.vols[vo.vol] || []).push(uep);
+    if(uep > 0 && teto > 0 && origem !== 'est') p.ks.push(uep * teto);
+    if(!(teto > 0)) p.semMedida = true;
+    p.cods.push(cod);
+    porCod[cod] = { key, uep };
+  });
+  const lista = Object.values(P);
+  const med = a => { const s = a.slice().sort((x, y) => x - y), i = s.length >> 1; return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2; };
+  lista.forEach(p => { p.k = p.ks.length ? med(p.ks) : null; });
+  const kMed = lista.filter(p => p.k != null && !p.origens.dig);
+  const kMin = kMed.length ? Math.min(...kMed.map(p => p.k)) : null;
+  // família: maior ÷ menor k entre os produtos MEDIDOS do mesmo modelo de 6 dígitos
+  const fam = {};
+  lista.forEach(p => { if(p.k != null) (fam[p.modelo] = fam[p.modelo] || []).push(p.k); });
+  const famRazao = {};
+  Object.keys(fam).forEach(m => { const a = fam[m]; if(a.length >= 2) famRazao[m] = Math.max(...a) / Math.min(...a); });
+
+  // programação na janela (dias úteis): caixas abertas × UEP do código
+  const jan = {}; (uteis || []).forEach(n => { jan[n] = 1; });
+  let totUep = 0;
+  (prog || []).forEach(it => {
+    if(!it || it.foraEsteira) return;
+    const dn = Number(it.dataNum) || _cartNum(it.data);
+    if(!jan[dn]) return;
+    const q = _cartQtdAberta(it); if(!(q > 0)) return;
+    const pc = porCod[String(it.codigo || '').replace(/\D/g, '')];
+    const u = pc && pc.uep > 0 ? pc.uep : (Number(it.uepCx) > 0 ? Number(it.uepCx) : 0);
+    const p = pc ? P[pc.key] : null;
+    if(u > 0) totUep += q * u;
+    if(!p) return;
+    p.progCx = (p.progCx || 0) + q;
+    if(u > 0) p.progUep = (p.progUep || 0) + q * u; else p.progCxSem = (p.progCxSem || 0) + q;
+    (p.progDias = p.progDias || {})[dn] = 1;
+  });
+
+  const fila = [];
+  lista.forEach(p => {
+    const am = amostra ? (amostra[p.key] || { dias:0, cx:0 }) : null;
+    const todosDig = !!p.origens.dig && !p.origens.med && !p.origens.est && !p.origens.sem;
+    const m = [];
+    if(p.origens.sem) m.push('sem-uep');
+    if(!todosDig){
+      if(p.origens.est) m.push('est');
+      if(p.origens.med && am && am.dias > 0 && am.dias < UEP_MIN_DIAS) m.push('prov');
+      if(p.origens.med && p.k != null && kMin != null && p.k <= kMin * FILA_TETO_FOLGA) m.push('teto');
+      if(!p.origens.dig && famRazao[p.modelo] >= FILA_FAM_RAZAO) m.push('fam');
+      if(p.semMedida && (p.origens.med || p.origens.dig)) m.push('sem-medida');
+    }
+    if(!m.length) return;
+    const vols = Object.keys(p.vols).map(Number).sort((a, b) => a - b)
+      .map(v => [...new Set(p.vols[v].filter(u => u > 0))].sort((a, b) => a - b));
+    fila.push({
+      key:p.key, modelo:p.modelo, nome:p.nome, nVol:p.nVol, motivos:m,
+      uepTxt: vols.map(us => us.length ? us.map(u => u.toLocaleString('pt-BR', { minimumFractionDigits:2 })).join('/') : '—').join(' · '),
+      origem: p.origens.sem ? 'SEM UEP' : todosDig ? 'DIGITADA ' + _filaN2br(p.digDe).slice(0, 5)
+            : p.origens.est && !p.origens.med ? 'ESTIMADA' : p.origens.est ? 'MEDIDA + ESTIMADA'
+            : 'MEDIDA ' + (p.vigMax ? _filaN2br(p.vigMax).slice(0, 5) : ''),
+      dias: am ? am.dias : null, cxAm: am ? am.cx : null,
+      famRazao: famRazao[p.modelo] || null,
+      progCx: p.progCx || 0, progUep: p.progUep || 0, progCxSem: p.progCxSem || 0,
+      progPct: totUep > 0 && p.progUep ? p.progUep / totUep * 100 : null,
+      progDias: p.progDias ? Object.keys(p.progDias).map(Number).sort((a, b) => a - b) : []
+    });
+  });
+  // ordem: SEM UEP programado primeiro (nem entra na conta) → UEP programada →
+  // volume já embalado na amostra → nome
+  const prog1 = fila.filter(f => f.progCx > 0)
+    .sort((a, b) => (b.progCxSem > 0) - (a.progCxSem > 0) || b.progUep - a.progUep || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
+  const semProgTodos = fila.filter(f => !(f.progCx > 0))
+    .sort((a, b) => (b.motivos.includes('sem-uep')) - (a.motivos.includes('sem-uep')) || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
+  const cont = {};
+  Object.keys(FILA_MOTIVOS).forEach(k => { cont[k] = fila.filter(f => f.motivos.includes(k)).length; });
+  const emDuvida = prog1.reduce((s, f) => s + f.progUep, 0);
+  return {
+    prog: prog1, semProg: semProgTodos.slice(0, FILA_MAX_SEM), semProgMais: Math.max(0, semProgTodos.length - FILA_MAX_SEM),
+    total: fila.length, cont, totUep, emDuvida, pctDuvida: totUep > 0 ? emDuvida / totUep * 100 : null,
+    kMin, nProd: lista.length, nCod: Object.keys(porCod).length,
+    uteis: uteis || [], amostraLida: !!amostra, progLida: !!prog
+  };
+}
+// A amostra do GRAVAR (01/07 → dia da trava), uma leitura por dia: é um período
+// FECHADO, e o getProducaoModeloPeriodo de ~3 meses é das leituras mais caras.
+// Guarda e devolve o PREP_PERIODO e o PH_UEP_PROD (a leitura publica os da aba
+// PRODUÇÃO/HORA, de outro período — a mesma regra da carteira).
+async function _filaAmostra(){
+  const ate = UEP_TRAVADA_DESDE || hojeStr();
+  const key = FILA_AMOSTRA_DE + '|' + ate;
+  try{ const o = JSON.parse(localStorage.getItem(FILA_LS) || 'null');
+       if(o && o.key === key && Date.now() - o.ts < FILA_LS_TTL && o.a) return { a:o.a, de:FILA_AMOSTRA_DE, ate }; }catch(e){}
+  const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
+  let itens = null;
+  try{ itens = await lerProducaoModeloPeriodo(FILA_AMOSTRA_DE, ate, null, { ms:60000 }); }
+  catch(e){ itens = null; }
+  finally{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
+  if(itens == null) return null;
+  const a = _filaAmostraDeItens(itens);
+  try{ localStorage.setItem(FILA_LS, JSON.stringify({ key, ts:Date.now(), a })); }catch(e){}
+  return { a, de:FILA_AMOSTRA_DE, ate };
+}
+const _FILA_DOC_SKIN = `
+.fila-doc .kpi-grid{grid-template-columns:repeat(4,1fr)}
+.fila-doc .kpi-card{border-left-color:#cbd5e0}
+.fila-doc .kpi-card.g{border-left-color:#4CAF50}.fila-doc .kpi-card.o{border-left-color:#FF9800}.fila-doc .kpi-card.r{border-left-color:#F44336}
+.fila-doc table{table-layout:fixed}
+.fila-doc td.n,.fila-doc th.n{text-align:right}
+.fila-doc tbody td{padding:5px 7px;vertical-align:top}
+.fila-doc td.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
+.fila-doc .fl-chip{display:inline-block;margin:0 4px 3px 0;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid #a0aec0;border-radius:3px;padding:1px 4px;color:#4a5568;white-space:nowrap}
+.fila-doc .fl-chip.sem-uep{color:#c53030;border-color:#c53030}
+.fila-doc .fl-sub{display:block;font-size:9px;color:#718096;margin-top:1px}
+.fila-doc tr.fl-top td{background:#fffaf0}
+`;
+// Desenho (sem conta): tudo vem pronto do _filaCronoMontar.
+function _filaCronoHtml(F, ctx){
+  const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const chips = f => f.motivos.map(m => `<span class="fl-chip ${m}" title="${_rpEsc(FILA_MOTIVOS[m].d)}">${FILA_MOTIVOS[m].t}${m === 'fam' && f.famRazao ? ' ' + fmt1(f.famRazao) + '×' : ''}${m === 'prov' && f.dias != null ? ' · ' + f.dias + ' DIA' + (f.dias === 1 ? '' : 'S') : ''}</span>`).join('');
+  const colg = '<colgroup><col style="width:3%"><col style="width:24%"><col style="width:10%"><col style="width:10%"><col style="width:6%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:17%"></colgroup>';
+  const th = '<thead><tr><th class="n">#</th><th>PRODUTO</th><th>UEP/CX (por volume)</th><th>ORIGEM</th><th class="n">DIAS NA AMOSTRA</th><th class="n">CX NA AMOSTRA</th><th class="n">PROGRAMADO (CX)</th><th class="n">PROGRAMADO (UEP)</th><th class="n">% DA JANELA</th><th>POR QUE ESTÁ NA FILA</th></tr></thead>';
+  const linha = (f, i, topo) => `<tr${topo ? ' class="fl-top"' : ''}><td class="n mono">${i + 1}</td>`
+    + `<td><b>${_rpEsc(f.nome)}</b><span class="fl-sub">${_rpEsc(f.modelo)}${f.nVol > 1 ? ' · ' + f.nVol + ' volumes' : ''}</span></td>`
+    + `<td class="mono">${_rpEsc(f.uepTxt)}</td><td class="mono">${_rpEsc(f.origem)}</td>`
+    + `<td class="n">${f.dias == null ? '—' : fmtN(f.dias)}</td><td class="n">${f.cxAm == null ? '—' : fmtN(Math.round(f.cxAm))}</td>`
+    + `<td class="n">${f.progCx ? fmtN(Math.round(f.progCx)) : '—'}</td>`
+    + `<td class="n">${f.progUep ? fmtN(Math.round(f.progUep)) : (f.progCxSem ? 'sem UEP' : '—')}</td>`
+    + `<td class="n">${f.progPct != null ? fmtP(f.progPct) : '—'}</td><td>${chips(f)}</td></tr>`;
+  const jan = F.uteis.length ? `${_filaN2br(F.uteis[0]).slice(0, 5)} a ${_filaN2br(F.uteis[F.uteis.length - 1]).slice(0, 5)}` : '—';
+  const avisos = [];
+  if(!F.amostraLida) avisos.push('A amostra (produção de ' + _rpEsc(ctx.amDe) + ' a ' + _rpEsc(ctx.amAte) + ') não foi lida — PROVISÓRIA não foi avaliada e as colunas DIAS/CX NA AMOSTRA saem "—".');
+  if(!F.progLida) avisos.push('A programação não foi lida — a fila sai só pelo volume já embalado, sem a coluna PROGRAMADO.');
+  const contTxt = Object.keys(FILA_MOTIVOS).filter(k => F.cont[k]).map(k => `${FILA_MOTIVOS[k].t} ${F.cont[k]}`).join(' · ');
+  let s = '<div class="kpi-grid">'
+    + card('PRODUTOS NA FILA', fmtN(F.total), `de ${fmtN(F.nProd)} produtos do cadastro`)
+    + card('PROGRAMADOS NA JANELA', fmtN(F.prog.length), `próximos ${F.uteis.length} dias úteis · ${jan}`, F.prog.length ? 'o' : '')
+    + card('UEP PROGRAMADA EM DÚVIDA', F.pctDuvida != null ? fmtP(F.pctDuvida) : '—', F.progLida ? `${fmtN(Math.round(F.emDuvida))} de ${fmtN(Math.round(F.totUep))} UEP da janela` : 'programação não lida', F.pctDuvida >= 30 ? 'r' : '')
+    + card('A BASE', '1,00', `${_rpEsc(UEP_BASE.nome)}${UEP_TRAVADA_DESDE ? ' · travada desde ' + _rpEsc(UEP_TRAVADA_DESDE) : ''}`)
+    + '</div>'
+    + `<div class="rp-note">Na fila, por motivo: ${contTxt || '—'}. Um produto pode ter mais de um motivo.</div>`
+    + avisos.map(a => `<div class="rp-note" style="color:#c05621">${a}</div>`).join('');
+  s += `<div class="rp-sec-ttl">1 ▸ PROGRAMADOS DE ${jan} — CRONOMETRAR PRIMEIRO</div>`
+    + (F.prog.length ? `<table>${colg}${th}<tbody>${F.prog.map((f, i) => linha(f, i, i < 5)).join('')}</tbody></table>`
+                     : `<div class="rp-note">${F.progLida ? 'Nenhum produto da fila está programado na janela.' : 'Programação não lida.'}</div>`);
+  s += '<div class="rp-sec-ttl">2 ▸ SEM PROGRAMAÇÃO NA JANELA — PELO VOLUME JÁ EMBALADO</div>'
+    + (F.semProg.length ? `<table>${colg}${th}<tbody>${F.semProg.map((f, i) => linha(f, i, false)).join('')}</tbody></table>`
+                        : '<div class="rp-note">Nenhum.</div>')
+    + (F.semProgMais ? `<div class="rp-note">+ ${fmtN(F.semProgMais)} produto(s) na fila com menos volume, fora desta lista.</div>` : '');
+  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO A FILA É MONTADA</div><table><tbody>'
+    + Object.keys(FILA_MOTIVOS).map(k => `<tr><td style="font-weight:700;width:22%">${FILA_MOTIVOS[k].t}</td><td>${FILA_MOTIVOS[k].d}${
+        k === 'teto' && F.kMin ? `. Régua: UEP × teto da esteira do código (cx/h) até ${Math.round((FILA_TETO_FOLGA - 1) * 100)}% acima do menor do cadastro (${fmtN(Math.round(F.kMin))} UEP por hora de esteira) — o estudo corta o ritmo no teto físico, então quem rodou no limite cai exatamente aí` :
+        k === 'fam' ? `. Régua: a maior UEP por hora de esteira da família (mesmo modelo de 6 dígitos) é ${fmt1(FILA_FAM_RAZAO)}× ou mais a menor` :
+        k === 'prov' ? `. Mínimo: ${UEP_MIN_DIAS} dias. Amostra: a produção apontada de ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}, o período de onde saiu a UEP travada` : ''}.</td></tr>`).join('')
+    + `<tr><td style="font-weight:700">A ORDEM</td><td>Primeiro o que está programado de ${jan} (próximos ${F.uteis.length} dias úteis), pela UEP programada — é ali que um número errado mais pesa na meta e na carteira; código sem UEP programado vem antes de todos. Depois, o resto da fila pelo volume já embalado. As 5 primeiras linhas vêm destacadas.</td></tr>`
+    + `<tr><td style="font-weight:700">% DA JANELA</td><td>UEP programada do produto ÷ UEP programada de todos os produtos na janela (caixas em aberto × UEP do cadastro).</td></tr>`
+    + `<tr><td style="font-weight:700">COMO SAI DA FILA</td><td>Digitar a UEP da cronoanálise na coluna UEP da PRODUTO_CODIGO. A UEP_VIGENCIA da linha vira "DIGITADA" (Apps Script v5.27) e o produto deixa de ser PROVISÓRIA, ESTIMADA e NO LIMITE DA ESTEIRA. FAMÍLIA INCOERENTE continua nos irmãos ainda não cronometrados.</td></tr>`
+    + `<tr><td style="font-weight:700">O QUE ELE NÃO É</td><td>Não mede o produto: aponta onde a UEP do cadastro tem base fraca. A UEP continua TRAVADA — nada aqui grava.</td></tr>`
+    + '</tbody></table>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · fila de cronoanálise</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+  return s;
+}
+async function gerarRelatorioFilaCrono(){
+  // A janela abre NO CLIQUE: depois das leituras o navegador bloquearia o pop-up.
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  const msg = t => { try{ win.document.open(); win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ ' + t + '</p></body></html>'); win.document.close(); }catch(e){} };
+  if(!CFG.sheetsUrl){ win.close(); alert('Sem a URL do Apps Script configurada — não há cadastro para ler.'); return; }
+  msg('Lendo o cadastro de UEP…');
+  // em sequência: o Apps Script atende uma execução por vez
+  if(!CAP_RAW || !CAP_CAT_TS || Date.now() - CAP_CAT_TS > 10 * 60 * 1000){
+    if(!CAP_BUSCANDO) await _capBuscar();
+    for(let i = 0; i < 120 && CAP_BUSCANDO; i++) await new Promise(r => setTimeout(r, 500));
+  }
+  if(!Array.isArray(CAP_RAW) || !CAP_RAW.length){ win.close(); alert('Não consegui ler o cadastro (PRODUTO_CODIGO)' + (CAP_FALHA ? ': ' + CAP_FALHA : '') + '.\n\nTente de novo em alguns segundos.'); return; }
+  msg('Lendo a produção da amostra da UEP (de ' + FILA_AMOSTRA_DE + ' até a trava)… pode levar até 1 min na 1ª vez do dia');
+  let am = null;
+  try{ am = await _filaAmostra(); }catch(e){ am = null; }
+  msg('Lendo a programação dos próximos dias…');
+  let progOk = false;
+  try{ progOk = await carregarProgramacaoDetalhada(); }catch(e){ progOk = false; }
+  let F = null, corpo = '';
+  const agora = new Date();
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
+                amDe:FILA_AMOSTRA_DE, amAte:am ? am.ate : (UEP_TRAVADA_DESDE || '—') };
+  try{
+    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS));
+    corpo = _filaCronoHtml(F, ctx);
+  }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas('Fila de cronoanálise — ' + ctx.data, true)
+    + '<style>' + _FILA_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="fila-doc">'
+    + _rpCabecalho('FILA DE CRONOANÁLISE',
+        `<div class="rp-per">UEP</div><div>janela: próximos ${GPX_DIAS} dias úteis</div><div>amostra: ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CAIXAS × UEP — QUANDO OS VEREDITOS DISCORDAM (v7.139.0, PPCP 19/10/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// A Tela B julga em CAIXAS e as Telas F/G (com selo) em UEP. Este relatório
+// mede, nos dias fechados, quantas vezes as duas réguas dariam veredito
+// diferente — e POR QUÊ: a meta em caixas convertida em UEP pelo mix do próprio
+// dia (meta cx × UEP/cx do dia) diz se a régua em caixas pedia mais ou menos
+// esforço que a meta de UEP. É a evidência para decidir onde mora o veredito
+// da TV. Hora extra fora dos DOIS lados (meta de UEP é de jornada; em caixas,
+// sai a HE CX). Veredito pela MESMA régua do selo (sc / slRitmo, ≥ 96%).
+// ⚠ Dia com caixa lançada sem produto tem menos UEP do que esforço (a caixa sem
+// produto não tem UEP) — o "como ler" avisa.
+const CXU_DIAS  = 30;      // dias corridos antes de hoje
+const CXU_FOLGA = 5;       // ±5%: meta em caixas "pedia mais/menos" que a de UEP; mix pesado/leve
+function _cxUepMontar(hist, hojeNum, n){
+  const N = Number(n) || CXU_DIAS;
+  const h = new Date(Math.floor(hojeNum / 10000), Math.floor(hojeNum / 100) % 100 - 1, hojeNum % 100);
+  const ini = new Date(h); ini.setDate(ini.getDate() - N);
+  const iniNum = ini.getFullYear() * 10000 + (ini.getMonth() + 1) * 100 + ini.getDate();
+  const dias = (hist || []).filter(d => {
+    const dn = _cartNum(d && d.data);
+    return dn && dn >= iniNum && dn < hojeNum && Number(d.meta) > 0 && Number(d.uep) > 0 && _qpRealDia(d) > 0;
+  }).sort((a, b) => _cartNum(a.data) - _cartNum(b.data)).map(d => {
+    const cx = _qpRealDia(d), metaCx = Number(d.meta), uep = Number(d.uep), metaU = uepDiaMeta(d);
+    const pctCx = cx / metaCx * 100, pctU = uep / metaU * 100, uepCx = uep / cx;
+    return { data:d.data, cx, metaCx, pctCx, uep, metaU, pctU, uepCx,
+             metaCxEmUep: metaCx * uepCx, pctMetaCx: metaCx * uepCx / metaU * 100,
+             clsCx: sc(pctCx), clsU: sc(pctU), semSep: d.heCx === null || d.heCx === undefined };
+  });
+  const s = dias.map(d => d.uepCx).sort((a, b) => a - b);
+  const normal = s.length ? (s.length % 2 ? s[s.length >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
+  const lo = 1 - CXU_FOLGA / 100, hi = 1 + CXU_FOLGA / 100;
+  dias.forEach(d => {
+    const okCx = d.clsCx === 'ok', okU = d.clsU === 'ok';
+    d.tipo = okCx === okU ? 'igual' : (okU ? 'cx-abaixo' : 'uep-abaixo');
+    d.mix = normal ? (d.uepCx / normal > hi ? 'pesado' : d.uepCx / normal < lo ? 'leve' : 'normal') : null;
+    d.porque = d.tipo === 'cx-abaixo'
+      ? (d.pctMetaCx > 100 * hi ? 'meta-alta' : d.mix === 'pesado' ? 'mix-pesado' : 'limite')
+      : d.tipo === 'uep-abaixo'
+      ? (d.pctMetaCx < 100 * lo ? 'meta-baixa' : d.mix === 'leve' ? 'mix-leve' : 'limite')
+      : null;
+  });
+  const conta = (f) => dias.filter(f).length;
+  const pm = dias.map(d => d.pctMetaCx).sort((a, b) => a - b);
+  return {
+    dias, n:dias.length, normal, de:_filaN2br(iniNum), ate:hojeStr(),
+    iguais: conta(d => d.tipo === 'igual'),
+    cxAbaixo: conta(d => d.tipo === 'cx-abaixo'), cxAbaixoMeta: conta(d => d.porque === 'meta-alta'),
+    uepAbaixo: conta(d => d.tipo === 'uep-abaixo'), uepAbaixoMeta: conta(d => d.porque === 'meta-baixa'),
+    pctMetaMed: pm.length ? (pm.length % 2 ? pm[pm.length >> 1] : (pm[pm.length / 2 - 1] + pm[pm.length / 2]) / 2) : null,
+    semSep: conta(d => d.semSep)
+  };
+}
+const _CXU_PORQUE = {
+  'meta-alta':  'a meta em caixas pedia mais UEP que a meta de UEP',
+  'meta-baixa': 'a meta em caixas pedia menos UEP que a meta de UEP',
+  'mix-pesado': 'mix pesado: cada caixa valeu mais UEP que o normal',
+  'mix-leve':   'mix leve: cada caixa valeu menos UEP que o normal',
+  'limite':     'perto do limite das duas réguas'
+};
+const _CXU_DOC_SKIN = `
+.cxu-doc .kpi-grid{grid-template-columns:repeat(5,1fr)}
+.cxu-doc .kpi-card{border-left-color:#cbd5e0}
+.cxu-doc .kpi-card.g{border-left-color:#4CAF50}.cxu-doc .kpi-card.o{border-left-color:#FF9800}.cxu-doc .kpi-card.r{border-left-color:#F44336}
+.cxu-doc table{table-layout:fixed}
+.cxu-doc td.n,.cxu-doc th.n{text-align:right}
+.cxu-doc tbody td{padding:5px 7px}
+.cxu-doc .cxu-st{display:inline-block;min-width:92px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid;border-radius:3px;padding:1px 4px}
+.cxu-doc .cxu-st.ok{color:#2f855a}.cxu-doc .cxu-st.warn{color:#b7791f}.cxu-doc .cxu-st.red{color:#c53030}
+.cxu-doc tr.cxu-dif td{background:#fffaf0}
+`;
+// Desenho (sem conta): tudo vem pronto do _cxUepMontar.
+function _cxUepHtml(R, ctx){
+  const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const pc = x => R.n ? fmtP(x / R.n * 100) : '—';
+  const st = (cls, pct) => `<span class="cxu-st ${cls}">${slRitmo(pct)}</span>`;
+  const colg = '<colgroup><col style="width:8%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:6%"><col style="width:10%"><col style="width:18%"></colgroup>';
+  const th = '<thead><tr><th>DIA</th><th class="n">CAIXAS · META</th><th class="n">%</th><th>EM CAIXAS</th><th class="n">UEP · META UEP</th><th class="n">%</th><th>EM UEP</th><th class="n">UEP/CX</th><th class="n">A META EM CX PEDIA</th><th>POR QUE DISCORDARAM</th></tr></thead>';
+  const linha = d => `<tr${d.tipo !== 'igual' ? ' class="cxu-dif"' : ''}><td>${_rpEsc(d.data.slice(0, 5))}${d.semSep ? '*' : ''}</td>`
+    + `<td class="n">${fmtN(Math.round(d.cx))} · ${fmtN(Math.round(d.metaCx))}</td><td class="n">${fmtP(d.pctCx)}</td><td>${st(d.clsCx, d.pctCx)}</td>`
+    + `<td class="n">${fmtN(Math.round(d.uep))} · ${fmtN(Math.round(d.metaU))}</td><td class="n">${fmtP(d.pctU)}</td><td>${st(d.clsU, d.pctU)}</td>`
+    + `<td class="n">${_tvF2(d.uepCx)}</td><td class="n">${fmtN(Math.round(d.metaCxEmUep))} · ${fmtP(d.pctMetaCx)}</td>`
+    + `<td>${d.porque ? _CXU_PORQUE[d.porque] : '—'}</td></tr>`;
+  const dif = R.dias.filter(d => d.tipo !== 'igual');
+  const disc = R.cxAbaixo + R.uepAbaixo;
+  const leit = [];
+  leit.push(`Em <b>${R.iguais} de ${R.n}</b> dias as duas réguas deram o mesmo veredito; em <b>${disc}</b>, discordaram.`);
+  if(R.cxAbaixo) leit.push(`<b>${R.cxAbaixo}</b> dia(s) com caixas ABAIXO e UEP no ritmo — em <b>${R.cxAbaixoMeta}</b> deles a meta em caixas, no mix do dia, pedia mais de ${100 + CXU_FOLGA}% da meta de UEP: a régua em caixas estava mais alta que a capacidade, a diferença veio da META (da programação), não do ritmo da linha.`);
+  if(R.uepAbaixo) leit.push(`<b>${R.uepAbaixo}</b> dia(s) com caixas no ritmo e UEP ABAIXO — em <b>${R.uepAbaixoMeta}</b> deles a meta em caixas pedia menos de ${100 - CXU_FOLGA}% da meta de UEP: a meta em caixas estava fácil para o mix do dia.`);
+  if(R.pctMetaMed != null) leit.push(`Na mediana do período, a meta em caixas pediu <b>${fmtP(R.pctMetaMed)}</b> da meta de UEP.`);
+  let s = '<div class="kpi-grid">'
+    + card('DIAS COMPARADOS', fmtN(R.n), `fechados, de ${_rpEsc(R.de)} a ontem`)
+    + card('MESMO VEREDITO', fmtN(R.iguais), pc(R.iguais) + ' dos dias', 'g')
+    + card('CAIXAS ABAIXO · UEP NO RITMO', fmtN(R.cxAbaixo), `${R.cxAbaixoMeta} pela meta em caixas alta`, R.cxAbaixo ? 'o' : '')
+    + card('CAIXAS NO RITMO · UEP ABAIXO', fmtN(R.uepAbaixo), `${R.uepAbaixoMeta} pela meta em caixas baixa`, R.uepAbaixo ? 'o' : '')
+    + card('A META EM CAIXAS PEDIU', R.pctMetaMed != null ? fmtP(R.pctMetaMed) : '—', 'da meta de UEP (mediana, no mix de cada dia)')
+    + '</div>'
+    + `<div class="rp-note">${leit.join(' ')}</div>`;
+  s += '<div class="rp-sec-ttl">1 ▸ OS DIAS EM QUE DISCORDARAM</div>'
+    + (dif.length ? `<table>${colg}${th}<tbody>${dif.map(linha).join('')}</tbody></table>` : '<div class="rp-note">Nenhum: nos dias do período as duas réguas concordaram.</div>');
+  s += '<div class="rp-sec-ttl">2 ▸ TODOS OS DIAS</div>'
+    + `<table>${colg}${th}<tbody>${R.dias.map(linha).join('')}</tbody></table>`
+    + (R.semSep ? `<div class="rp-note">* dia sem a separação da hora extra no HISTÓRICO: as caixas entram inteiras (${R.semSep} dia(s)).</div>` : '');
+  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO LER</div><table><tbody>'
+    + `<tr><td style="font-weight:700;width:22%">AS DUAS RÉGUAS</td><td>EM CAIXAS: caixas de jornada (REALIZADO − HE CX) ÷ META do dia — a régua da Tela B. EM UEP: UEP de jornada ÷ META UEP do dia — a régua das Telas F e G. Os dois do HISTÓRICO, gravados no fechamento; a hora extra fica fora dos dois lados.</td></tr>`
+    + `<tr><td style="font-weight:700">O VEREDITO</td><td>A mesma régua do selo da TV: ≥ 96% NO RITMO · 90–96% ATENÇÃO · &lt; 90% ABAIXO DO RITMO. Discordam quando uma diz NO RITMO e a outra não.</td></tr>`
+    + `<tr><td style="font-weight:700">A META EM CX PEDIA</td><td>META em caixas × UEP por caixa do PRÓPRIO dia (o mix que rodou) — quanta UEP a meta em caixas pedia, comparada com a META UEP. Acima de ${100 + CXU_FOLGA}%: a meta em caixas era mais pesada que a capacidade em UEP; abaixo de ${100 - CXU_FOLGA}%, mais leve. Ela muda com a datação dos lotes; a meta de UEP é fixa.</td></tr>`
+    + `<tr><td style="font-weight:700">MIX PESADO / LEVE</td><td>UEP por caixa do dia contra a mediana do período (${R.normal ? _tvF2(R.normal) : '—'} UEP/cx), ±${CXU_FOLGA}%.</td></tr>`
+    + `<tr><td style="font-weight:700">COMO USAR</td><td>Se as discordâncias vêm da META em caixas (alta ou baixa para o mix do dia), o veredito em caixas está julgando a programação, não o ritmo da linha — é o argumento para o veredito da TV passar para UEP. Se vêm do mix sem a meta mudar, olhe a UEP dos produtos daquele dia (FILA DE CRONOANÁLISE).</td></tr>`
+    + `<tr><td style="font-weight:700">O QUE ELE NÃO VÊ</td><td>Caixa lançada SEM produto conta nas caixas e não tem UEP: dia com apontamento incompleto tem a UEP mais baixa do que o esforço. O veredito do HORÁRIO (a TV ao longo do dia) pode ter discordado em outros momentos — aqui é o dia fechado.</td></tr>`
+    + '</tbody></table>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · caixas × UEP</span><span>${_rpEsc(R.de)} a ontem · gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+  return s;
+}
+async function gerarRelatorioCxUep(){
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Lendo o histórico dos dias fechados…</p></body></html>');
+  if(!UEP_HIST || Date.now() - UEP_HIST_TS > 2 * 60 * 1000){ try{ await _uepAbaHistCarregar(); }catch(e){} }
+  if(!_uepHistDaPlanilha(UEP_HIST)){ win.close(); alert('Não consegui ler o histórico (HISTORICO) da planilha.\n\nTente de novo em alguns segundos.'); return; }
+  let R = null, corpo = '';
+  const agora = new Date();
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  try{
+    R = _cxUepMontar(UEP_HIST, _cartNum(hojeStr()), CXU_DIAS);
+    if(!R.n){ win.close(); alert(`Nenhum dia fechado com META e UEP nos últimos ${CXU_DIAS} dias — nada para comparar.`); return; }
+    corpo = _cxUepHtml(R, ctx);
+  }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas(`Caixas × UEP — ${R.de} a ${ctx.data}`, true)
+    + '<style>' + _CXU_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="cxu-doc">'
+    + _rpCabecalho('CAIXAS × UEP — QUANDO OS VEREDITOS DISCORDAM',
+        `<div class="rp-per">UEP</div><div>${_rpEsc(R.de)} a ontem</div><div>últimos ${CXU_DIAS} dias · hoje fora</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
 }
 
 function renderUep(){
@@ -9819,6 +10317,9 @@ function openCfg(){
   document.getElementById('c-slidec-int').value=CFG.slideCIntervalo||CFG.slideBIntervalo||15;
   document.getElementById('c-slided-int').value=CFG.slideDIntervalo||20;
   document.getElementById('c-slidee-int').value=CFG.slideEIntervalo||20;
+  document.getElementById('c-slidef-int').value=CFG.slideFIntervalo||20;
+  document.getElementById('c-slideg-int').value=CFG.slideGIntervalo||20;
+  document.getElementById('c-uep-selo-tv').checked=CFG.uepSeloTv===true;
   document.getElementById('c-modo-leitor').checked=CFG.modoLeitor!==false;
   const _telas=CFG.telasAtivas||{a:true,b:true,c:true,d:true,e:true};
   document.getElementById('c-tela-a').checked=_telas.a!==false;
@@ -9826,6 +10327,9 @@ function openCfg(){
   document.getElementById('c-tela-c').checked=_telas.c!==false;
   document.getElementById('c-tela-d').checked=_telas.d!==false;
   document.getElementById('c-tela-e').checked=_telas.e!==false;
+  // F e G nascem DESLIGADAS: só === true marca (config antiga não tem a chave).
+  document.getElementById('c-tela-f').checked=_telas.f===true;
+  document.getElementById('c-tela-g').checked=_telas.g===true;
   const _kpis=CFG.slideBKpis||['meta','ef','status','prog'];
   ['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].forEach(k=>{
     const el=document.getElementById('c-tvb-'+k); if(el) el.checked=_kpis.includes(k);
@@ -9884,13 +10388,19 @@ function saveCfg(){
   CFG.slideCIntervalo=parseInt(document.getElementById('c-slidec-int').value)||15;
   CFG.slideDIntervalo=parseInt(document.getElementById('c-slided-int').value)||20;
   CFG.slideEIntervalo=parseInt(document.getElementById('c-slidee-int').value)||20;
+  CFG.slideFIntervalo=parseInt(document.getElementById('c-slidef-int').value)||20;
+  CFG.slideGIntervalo=parseInt(document.getElementById('c-slideg-int').value)||20;
+  CFG.uepSeloTv=document.getElementById('c-uep-selo-tv').checked;
   CFG.telasAtivas={
     a:document.getElementById('c-tela-a').checked,
     b:document.getElementById('c-tela-b').checked,
     c:document.getElementById('c-tela-c').checked,
     d:document.getElementById('c-tela-d').checked,
-    e:document.getElementById('c-tela-e').checked
+    e:document.getElementById('c-tela-e').checked,
+    f:document.getElementById('c-tela-f').checked,
+    g:document.getElementById('c-tela-g').checked
   };
+  _tvUepTs=0;   // F/G ligadas agora: o modelo sai na hora, sem esperar os 15 s
   CFG.slideBKpis=['meta','ef','status','prog','ritmo','nec','proj','falta','pontos','peso'].filter(k=>{
     const el=document.getElementById('c-tvb-'+k); return el&&el.checked;
   });
@@ -9939,6 +10449,11 @@ function enviarConfigPainel(){
     'tempoC='+(CFG.slideCIntervalo||15),
     'tempoD='+(CFG.slideDIntervalo||20),
     'tempoE='+(CFG.slideEIntervalo||20),
+    'telaF='+(t.f===true?1:0),
+    'telaG='+(t.g===true?1:0),
+    'tempoF='+(CFG.slideFIntervalo||20),
+    'tempoG='+(CFG.slideGIntervalo||20),
+    'seloUepTv='+(CFG.uepSeloTv===true?1:0),
     'kpisTelaB='+encodeURIComponent((CFG.slideBKpis||[]).join(',')),
     'modoLeitor='+(CFG.modoLeitor!==false?1:0)
   ];
@@ -9962,14 +10477,25 @@ function aplicarConfigPainel(pc){
   const _dAtual = (CFG.telasAtivas||{}).d!==false;
   // Mesma regra para a Tela E (telaE/tempoE só no backend v5.7 pra cima).
   const _eAtual = (CFG.telasAtivas||{}).e!==false;
+  // Telas F e G e o selo de UEP (.gs v5.26): mesma regra, mas DESLIGADAS por
+  // padrão — só === true liga. Backend antigo não manda a chave → vale a
+  // marcação deste aparelho (ligar no PC não liga a TV da fábrica até o
+  // re-deploy).
+  const _fAtual = (CFG.telasAtivas||{}).f===true, _gAtual = (CFG.telasAtivas||{}).g===true;
   CFG.telasAtivas = { a: pc.telaA!==false, b: pc.telaB!==false, c: pc.telaC!==false,
                       d: pc.telaD!==undefined ? pc.telaD!==false : _dAtual,
-                      e: pc.telaE!==undefined ? pc.telaE!==false : _eAtual };
+                      e: pc.telaE!==undefined ? pc.telaE!==false : _eAtual,
+                      f: pc.telaF!==undefined ? pc.telaF===true : _fAtual,
+                      g: pc.telaG!==undefined ? pc.telaG===true : _gAtual };
+  if(pc.seloUepTv!==undefined) CFG.uepSeloTv = pc.seloUepTv===true;
   if(pc.tempoA) CFG.slideAIntervalo = pc.tempoA;
   if(pc.tempoB) CFG.slideBIntervalo = pc.tempoB;
   if(pc.tempoC) CFG.slideCIntervalo = pc.tempoC;
   if(pc.tempoD) CFG.slideDIntervalo = pc.tempoD;
   if(pc.tempoE) CFG.slideEIntervalo = pc.tempoE;
+  if(pc.tempoF) CFG.slideFIntervalo = pc.tempoF;
+  if(pc.tempoG) CFG.slideGIntervalo = pc.tempoG;
+  _tvUepTs = 0;
   if(typeof pc.kpisTelaB==='string'){
     CFG.slideBKpis = pc.kpisTelaB.split(',').map(function(s){return s.trim();}).filter(Boolean);
   }
@@ -18115,6 +18641,337 @@ function _telaEHtml(m){
     + m.linhas.map(linha).join('') + '</tbody></table>';
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// TELAS F e G da TV — a UEP do dia (v7.138.0, PPCP 19/10/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// Pedido: "uma tela dedicada para UEP, para TV da produção" → duas sugestões
+// em maquete → "vamos fazer as duas, deixar prontas para que eu possa
+// acompanhar". F = ESFORÇO DO DIA (UEP feita × esperada, produto rodando, peso
+// da caixa de hoje, hora a hora); G = CORRIDA DO DIA (UEP acumulada × esperada,
+// minutos à frente ou atrás, o que falta em caixas do produto de agora e a hora
+// em que a meta sai, no ritmo dela). G fala em TEMPO e em CAIXAS: quem está na
+// linha lê sem precisar entender UEP.
+// ⚠ NENHUMA CONTA DE UEP NOVA: tudo sai do _uepAbaDados (uepCard, _uepAbaHoras,
+// _uepAbaMix) — a montagem da aba ⚖ UEP, do papel e da diretoria. Aqui só se
+// arruma o que ela já calculou para a TV (curva acumulada, minutos, caixas).
+// ⚠ FORA DO CICLO POR PADRÃO (CFG.telasAtivas.f/.g === true liga) e SEM
+// VEREDITO POR PADRÃO (CFG.uepSeloTv). A Tela B julga em CAIXAS e estas em
+// UEP: às 15:02 de 16/10 a B diria ABAIXO DO RITMO (1.483 de ~1.819 cx) e a F
+// NO RITMO (2.271 de 1.959 UEP) — dois vereditos na mesma TV, o defeito que
+// este projeto mais pagou caro. Sem o selo as telas INFORMAM (barras e números
+// em tinta); ligar o selo é decisão do PPCP, depois da cronoanálise.
+const TV_UEP_TTL       = 15000;            // o modelo é refeito no máximo a cada 15 s
+const TV_UEP_PESO_DIAS = 30;               // "o normal" do peso da caixa: últimos 30 dias fechados
+const TV_UEP_PESO_MIN  = 5;                // com menos dias não há "normal" para comparar
+const TV_UEP_HIST_TTL  = 30 * 60 * 1000;   // a TV relê o histórico (peso normal) a cada 30 min
+
+function _tvF2(v){ return Number(v).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+// Minutos de linha num texto curto de TV: 45 min · 1h05.
+function _tvMinTxt(m){
+  const r = Math.round(Math.abs(Number(m) || 0));
+  return r < 60 ? r + ' min' : Math.floor(r / 60) + 'h' + p2(r % 60);
+}
+// UEP por caixa do produto que está rodando. O cadastro manda (UEP por CÓDIGO,
+// cada volume com a sua); sem cadastro neste aparelho, a média de hoje do
+// produto e da cor no porHoraModelo (volumes juntos). Nada achado → null.
+function _tvUepDoProduto(cod, desc, cor, cat, phm){
+  const c = String(cod || '').replace(/\D/g, '');
+  if(!c) return null;
+  if(Array.isArray(cat)){
+    const p = cat.find(x => String(x && x.codigo || '').replace(/\D/g, '') === c);
+    if(p && Number(p.uep) > 0) return Number(p.uep);
+  }
+  const nome = String(desc || '').toUpperCase().trim().replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').trim();
+  const cr = String(cor || '').toUpperCase().trim();
+  let cx = 0, u = 0;
+  (phm || []).forEach(it => {
+    if(String(it.modelo || '') !== c.slice(0, 6) || String(it.nome || '').toUpperCase().trim() !== nome) return;
+    if(String(it.cor || '').toUpperCase().trim() !== cr || !(Number(it.uep) > 0)) return;
+    cx += Number(it.caixas) || 0; u += Number(it.uep) || 0;
+  });
+  return cx > 0 ? u / cx : null;
+}
+// "O normal" do peso da caixa: mediana de UEP ÷ caixas de jornada (_qpRealDia,
+// a base da aba PLANO) nos últimos dias FECHADOS com UEP. A mesma régua do
+// peso de hoje (UEP de jornada ÷ caixas de jornada da HORA_A_HORA). Poucos
+// dias → null: sem base, a tela não compara.
+function _tvUepPesoNormal(hist, hojeNum){
+  const v = (hist || [])
+    .filter(d => d && Number(d.uep) > 0 && _qpRealDia(d) > 0 && _cartNum(d.data) && _cartNum(d.data) < hojeNum)
+    .sort((a, b) => _cartNum(b.data) - _cartNum(a.data))
+    .slice(0, TV_UEP_PESO_DIAS)
+    .map(d => Number(d.uep) / _qpRealDia(d))
+    .sort((a, b) => a - b);
+  if(v.length < TV_UEP_PESO_MIN) return null;
+  const i = v.length >> 1;
+  return v.length % 2 ? v[i] : (v[i - 1] + v[i]) / 2;
+}
+// Conta pura das Telas F e G: recebe a montagem da aba UEP (D) e devolve o que
+// as duas desenham. null = não há o que mostrar (sem UEP, nenhuma hora de
+// jornada lançada) — a tela fica fora do ciclo, nunca aparece vazia.
+// ctx: { agoraMin, prod:{cod,desc,cor}, cat, phm, pesoNormal, baseNome }
+function _tvUepMontar(D, ctx){
+  if(!D || D.estado !== 'ok' || !D.k || !(D.k.minNorm > 0)) return null;
+  const c = ctx || {}, ag = Number(c.agoraMin);
+  const meta = Number(D.meta) || UEP_META_PADRAO, porMin = meta / UEP_MIN_DIA;
+  const minDe = {};
+  (D.k.slots || []).forEach(s => { minDe[s.inicio] = s.min || 60; });
+  const jorn = (D.horas || []).filter(h => !h.he);
+  if(!jorn.length) return null;
+  const feito = Number(D.feito) || 0, esp = Number(D.card && D.card.esperado) || 0, ef = Number(D.card && D.card.ef) || 0;
+  const ini = toMin(jorn[0].inicio);
+  const ult = jorn[jorn.length - 1], fim = toMin(ult.inicio) + (minDe[ult.inicio] || 60);
+  const agora = Math.max(ini, Math.min(isFinite(ag) ? ag : ini, fim));
+
+  // Curva acumulada no FIM de cada hora já começada. O esperado anda pela
+  // MESMA régua do card (só hora com lançamento; a em andamento pelo que já
+  // passou — minSlotDecorrido), então o ponto de agora fecha com o card.
+  const pts = [];
+  let cf = 0, ce = 0;
+  jorn.forEach(h => {
+    if(h.futuro) return;
+    const i0 = toMin(h.inicio), mn = minDe[h.inicio] || 60;
+    if(!pts.length || pts[pts.length - 1].t < i0) pts.push({ t:i0, f:cf, e:ce });
+    cf += Number(h.uep) || 0;
+    if(h.lancada) ce += porMin * minSlotDecorrido(h.inicio, mn, agora);
+    pts.push({ t:h.andamento ? agora : i0 + mn, f:cf, e:ce });
+  });
+  if(!pts.length || pts[pts.length - 1].t < agora) pts.push({ t:agora, f:feito, e:esp });
+  // O ponto de agora é o do card (o número grande): a soma das horas e o total
+  // do backend saem da mesma base, a diferença é de arredondamento.
+  pts[pts.length - 1].f = feito; pts[pts.length - 1].e = esp;
+
+  // O que ainda resta de jornada, a partir de agora (o almoço fica de fora).
+  const rest = [];
+  jorn.forEach(h => {
+    const i0 = toMin(h.inicio), f0 = i0 + (minDe[h.inicio] || 60);
+    if(f0 > agora) rest.push([Math.max(i0, agora), f0]);
+  });
+  const minRest = rest.reduce((s, r) => s + r[1] - r[0], 0);
+  // Caminho no ritmo da meta, de agora até `alvo` (ou até o fim da jornada).
+  const andar = (v0, alvo) => {
+    const p = [{ t:agora, v:v0 }];
+    let v = v0, chega = null;
+    for(const [de, ate] of rest){
+      if(de > p[p.length - 1].t) p.push({ t:de, v });
+      const cap = (ate - de) * porMin;
+      if(alvo != null && v + cap >= alvo){ const t = de + (alvo - v) / porMin; p.push({ t, v:alvo }); chega = t; v = alvo; break; }
+      v += cap; p.push({ t:ate, v });
+    }
+    return { p, chega };
+  };
+  const falta = Math.max(0, meta - feito);
+  const proj = falta > 0 ? andar(feito, meta) : null;
+  const espFut = andar(esp, null).p;
+  const gaps = [];
+  for(let i = 1; i < jorn.length; i++){
+    const a = toMin(jorn[i - 1].inicio) + (minDe[jorn[i - 1].inicio] || 60), b = toMin(jorn[i].inicio);
+    if(b - a >= 20) gaps.push({ de:a, ate:b });
+  }
+
+  const pr = c.prod || {};
+  const uepCx = pr.cod ? _tvUepDoProduto(pr.cod, pr.desc, pr.cor, c.cat, c.phm) : null;
+  const realJ = Number(D.k.realNormal) || 0;
+  const difUep = feito - esp;
+  return {
+    meta, porMin, feito, esp, ef, difUep, difMin: difUep / porMin,
+    falta, faltaCx: falta > 0 && uepCx > 0 ? Math.ceil(falta / uepCx) : null,
+    he: Number(D.he) || 0,
+    // "VOL 1/1" é ruído na TV; "VOL 1/3" fica — a UEP é daquele volume. Nome e
+    // cor vão separados também: na letra de TV os dois não cabem numa linha.
+    prod: pr.cod ? (() => {
+      const nome = String(pr.desc || '').replace(/^VOL\.?\s*1\s*\/\s*1\s*/i, '').trim() || String(pr.cod);
+      return { rot: nomeComCor(nome, pr.cor) || nome, nome, cor: String(pr.cor || '').trim(), uepCx };
+    })() : null,
+    peso: realJ > 0 && feito > 0 ? feito / realJ : null,
+    pesoNormal: Number(c.pesoNormal) > 0 ? Number(c.pesoNormal) : null,
+    horas: jorn.map(h => ({ rot:h.inicio, uep:h.uep, metaH:h.metaH, cls:h.cls, lancada:h.lancada,
+                            andamento:h.andamento, futuro:h.futuro, ate:h.ate })),
+    ini, fim, agora, pts, espFut, gaps,
+    proj: proj ? proj.p : null, chega: proj ? proj.chega : null, minRest,
+    precisaH: proj && proj.chega == null && minRest > 0 ? falta / minRest * 60 : null,
+    baseNome: c.baseNome || ''
+  };
+}
+// Rodapé comum das duas telas (desenho).
+function _tvUepRodHtml(m){
+  return '<div class="tvu-rod"><span>' + (m.he > 0 ? '+' + fmtN(Math.round(m.he)) + ' UEP em hora extra hoje — fora da meta' : '') + '</span>'
+    + '<span>1 UEP = 1 caixa de ' + _rpEsc(m.baseNome) + '</span></div>';
+}
+// TELA F — desenho (sem conta). `selo` liga o veredito (cores e o NO RITMO).
+function _tvFHtml(m, selo){
+  const pct = Math.max(0, Math.min(100, m.feito / m.meta * 100));
+  const pe = Math.max(0, Math.min(100, m.esp / m.meta * 100));
+  const peLbl = Math.max(12, Math.min(70, pe));
+  const corSt = selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt2)';
+  const pesoTxt = !(m.peso > 0 && m.pesoNormal > 0) ? ''
+    : m.peso / m.pesoNormal > 1.05 ? 'hoje mais pesadas'
+    : m.peso / m.pesoNormal < 0.95 ? 'hoje mais leves' : 'hoje no peso de sempre';
+  let s = '<div class="tvf-topo"><div class="tvf-hero">'
+    + '<div class="tvu-lbl">UEP FEITA ATÉ AGORA · JORNADA NORMAL</div>'
+    + '<div class="tvf-linha"><span class="tvu-num">' + fmtN(Math.round(m.feito)) + '</span>'
+    + '<span class="tvf-unid"><span class="tvu-un">UEP</span>'
+    + (selo ? '<span class="tvu-selo ' + sc(m.ef) + '">' + slRitmo(m.ef) + '</span>' : '') + '</span></div>'
+    + '<div class="tvu-apoio"><b>' + fmtN(Math.round(m.feito)) + '</b> de <b>' + fmtN(Math.round(m.esp)) + '</b> esperadas · meta <b>' + fmtN(m.meta) + '</b></div>'
+    + '<div class="tvu-barra"><i style="width:' + pct.toFixed(1) + '%;background:' + corSt + '"></i><b style="left:' + pe.toFixed(1) + '%"></b></div>'
+    + '<div class="tvu-barra-lbl"><span style="left:' + peLbl.toFixed(1) + '%">esperado agora · ' + fmtN(Math.round(m.esp)) + '</span></div>'
+    + '</div><div class="tvf-cards">'
+    // A cor vai no rótulo: uma linha a menos, que em 1366×768 não cabia.
+    + '<div class="tvu-card"><div class="tvu-lbl">RODANDO AGORA' + (m.prod && m.prod.cor ? ' · ' + _rpEsc(m.prod.cor) : '') + '</div>'
+    + (m.prod
+        ? '<div class="tvu-prod">' + _rpEsc(m.prod.nome) + '</div>'
+          + (m.prod.uepCx > 0 ? '<div class="tvu-mid">1 caixa = <b>' + _tvF2(m.prod.uepCx) + '</b> UEP</div>'
+                              : '<div class="tvu-sub">sem UEP no cadastro para este código</div>')
+        : '<div class="tvu-sub">nenhum produto selecionado no app</div>')
+    + '</div><div class="tvu-card"><div class="tvu-lbl">PESO MÉDIO DA CAIXA HOJE</div>'
+    + (m.peso > 0 ? '<div class="tvu-mid"><b>' + _tvF2(m.peso) + '</b> UEP por caixa</div>'
+                    + (pesoTxt ? '<div class="tvu-sub">o normal é ' + _tvF2(m.pesoNormal) + ' · ' + pesoTxt + '</div>' : '')
+                  : '<div class="tvu-sub">—</div>')
+    + '</div></div></div>';
+  const esc = Math.max(1, ...m.horas.map(h => Math.max(Number(h.uep) || 0, Number(h.metaH) || 0))) * 1.18;
+  s += '<div class="tvf-horas"><div class="tvf-horas-tit"><span>HORA A HORA · UEP</span>'
+    + '<span class="tvu-leg"><i class="tvu-tick"></i>meta da hora · ' + fmtN(Math.round(m.porMin * 60)) + ' UEP/h</span></div><div class="tvf-cols">';
+  // O número fica EM CIMA da própria barra (ou da marca da meta, se a barra
+  // não chegou nela) — no topo da coluna ele ficava longe da barra que conta.
+  m.horas.forEach(h => {
+    const v = Number(h.uep) || 0, hp = (v / esc * 100).toFixed(1), mp = ((Number(h.metaH) || 0) / esc * 100).toFixed(1);
+    const cor = h.andamento || !selo || !h.cls ? 'var(--txt2)' : 'var(--' + h.cls + ')';
+    const val = h.futuro ? '—' : (h.uep != null ? fmtN(Math.round(v)) : '—');
+    s += '<div class="tvf-col' + (h.andamento ? ' and' : '') + (h.futuro ? ' fut' : '') + '"><div class="tvf-area">'
+      + (!h.futuro && v > 0 ? '<i class="tvf-bar" style="height:' + hp + '%;background:' + cor + '"></i>' : '')
+      + (h.andamento || h.futuro ? '<i class="tvf-oco" style="height:' + mp + '%"></i>' : '')
+      + '<i class="tvf-meta" style="bottom:' + mp + '%"></i>'
+      + '<span class="tvf-val" style="bottom:' + Math.max(Number(hp), Number(mp)).toFixed(1) + '%">' + val + '</span></div>'
+      + '<span class="tvf-h">' + (h.andamento ? 'até ' + _rpEsc(h.ate) : _rpEsc(h.rot)) + '</span></div>';
+  });
+  return s + '</div></div>' + _tvUepRodHtml(m);
+}
+// TELA G — o gráfico da corrida (desenho, SVG no DOM: os tokens resolvem).
+function _tvGSvg(m, selo){
+  // Proporção da área do gráfico na TV (≈1,2 em 1920×1080 e em 1366×768): com
+  // 1000×640 sobrava um terço da altura vazia em cima.
+  const W = 1000, H = 840, L = 92, R = 34, T = 60, B = 60, pw = W - L - R, ph = H - T - B;
+  const topo = Math.max(m.meta, m.feito, m.espFut.length ? m.espFut[m.espFut.length - 1].v : 0) * 1.1;
+  const x = t => L + (t - m.ini) / Math.max(1, m.fim - m.ini) * pw;
+  const y = v => T + ph - v / topo * ph;
+  const pl = arr => arr.map(p => x(p[0]).toFixed(1) + ',' + y(p[1]).toFixed(1)).join(' ');
+  const passo = [100, 200, 250, 500, 1000, 2000].find(p => topo / p <= 6) || 5000;
+  let s = '<svg class="tvg-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMin meet" role="img" aria-label="UEP acumulada de hoje: '
+    + fmtN(Math.round(m.feito)) + ' feitas contra ' + fmtN(Math.round(m.esp)) + ' esperadas">';
+  m.gaps.forEach(g => {
+    s += '<rect x="' + x(g.de).toFixed(1) + '" y="' + T + '" width="' + (x(g.ate) - x(g.de)).toFixed(1) + '" height="' + ph + '" fill="var(--surface)"/>'
+      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + 26) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
+  });
+  for(let v = passo; v < topo; v += passo){
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)"/>'
+      + '<text x="' + (L - 12) + '" y="' + (y(v) + 7).toFixed(1) + '" text-anchor="end" class="tvg-t2">' + fmtN(v) + '</text>';
+  }
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--txt3)" stroke-width="2"/>';
+  for(let h = Math.ceil(m.ini / 60) * 60; h <= m.fim; h += 120){
+    s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
+  }
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="2" stroke-dasharray="4 8"/>'
+    + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 12).toFixed(1) + '" class="tvg-t1">META DO DIA ' + fmtN(m.meta) + '</text>';
+  // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada
+  s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="4" stroke-dasharray="14 10" stroke-linejoin="round" points="'
+    + pl(m.pts.map(p => [p.t, p.e]).concat(m.espFut.slice(1).map(p => [p.t, p.v]))) + '"/>';
+  if(m.proj && m.proj.length > 1){
+    s += '<polyline fill="none" stroke="var(--txt)" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round" points="' + pl(m.proj.map(p => [p.t, p.v])) + '"/>';
+    if(m.chega != null){
+      s += '<circle cx="' + x(m.chega).toFixed(1) + '" cy="' + y(m.meta).toFixed(1) + '" r="9" fill="var(--bg)" stroke="var(--txt)" stroke-width="3"/>'
+        + '<text x="' + x(m.chega).toFixed(1) + '" y="' + (y(m.meta) - 18).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
+    }
+  }
+  const fp = pl(m.pts.map(p => [p.t, p.f]));
+  s += '<polyline fill="none" stroke="var(--bg)" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>'
+    + '<polyline fill="none" stroke="var(--txt)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>';
+  const xa = x(m.agora), yf = y(m.feito), ye = y(m.esp);
+  s += '<line x1="' + xa.toFixed(1) + '" x2="' + xa.toFixed(1) + '" y1="' + yf.toFixed(1) + '" y2="' + ye.toFixed(1) + '" stroke="'
+    + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt2)') + '" stroke-width="6"/>'
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + ye.toFixed(1) + '" r="9" fill="var(--txt2)" stroke="var(--bg)" stroke-width="3"/>'
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + yf.toFixed(1) + '" r="13" fill="var(--txt)" stroke="var(--bg)" stroke-width="4"/>';
+  // Rótulos: o ponto MAIS ALTO leva o seu acima-à-esquerda (o que já passou
+  // está todo abaixo dele); o mais baixo, abaixo-à-direita (o que vem pela
+  // frente sobe a partir dos dois). Perto da borda direita o de baixo sai —
+  // o número dele está no cartão ao lado.
+  const fAlto = m.feito >= m.esp;
+  const hi = fAlto ? ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'] : ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'];
+  const lo = fAlto ? ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'] : ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'];
+  const hiEsq = xa > L + 230;
+  s += '<text x="' + (hiEsq ? xa - 18 : xa + 18).toFixed(1) + '" y="' + (hi[1] - 24).toFixed(1) + '" text-anchor="' + (hiEsq ? 'end' : 'start') + '" class="' + hi[2] + '">' + hi[0] + '</text>';
+  if(xa < W - R - 220) s += '<text x="' + (xa + 18).toFixed(1) + '" y="' + (lo[1] + 44).toFixed(1) + '" class="' + lo[2] + '">' + lo[0] + '</text>';
+  return s + '</svg>';
+}
+// TELA G — desenho (sem conta).
+function _tvGHtml(m, selo){
+  const absMin = Math.abs(m.difMin), frente = m.difMin >= 0, noTempo = absMin < 0.5;
+  const minTxt = noTempo ? '0 min' : (frente ? '+' : '−') + _tvMinTxt(absMin);
+  const cap = noTempo ? 'no tempo do esperado'
+    : (frente ? 'à frente do esperado · +' : 'atrás do esperado · −') + fmtN(Math.round(Math.abs(m.difUep))) + ' UEP';
+  let card2, card3 = '';
+  if(m.falta > 0){
+    // Texto curto de propósito: a 15 m cada linha tem de caber inteira no cartão.
+    card2 = '<div class="tvu-lbl">FALTA PARA A META DO DIA</div>'
+      + '<div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
+      // O número antes do nome: nome comprido corta com "…", a conta não.
+      + (m.faltaCx ? '<div class="tvg-cx">= <b>' + fmtN(m.faltaCx) + ' caixas</b> deste produto</div>'
+                     + '<div class="tvu-sub">' + _tvF2(m.prod.uepCx) + ' UEP/cx · ' + _rpEsc(m.prod.nome) + '</div>'
+                   : '<div class="tvu-sub">' + (m.prod ? 'sem UEP no cadastro para o produto de agora' : 'nenhum produto selecionado no app') + '</div>');
+    // ⚠ "NO RITMO" é a palavra do VEREDITO (slRitmo): rótulo nenhum pode usá-la,
+    // senão o cartão lido a 15 m parece selo mesmo com o selo desligado.
+    const hMeta = fmtN(Math.round(m.porMin * 60));
+    if(m.chega != null){
+      card3 = '<div class="tvu-lbl">A META SAI ÀS</div><div class="tvu-mid"><b>' + fromMin(Math.ceil(m.chega)) + '</b></div>'
+        + '<div class="tvu-sub">mantendo ' + hMeta + ' UEP por hora</div>';
+    } else if(m.minRest > 0){
+      card3 = '<div class="tvu-lbl">A META NÃO SAI ATÉ ' + fromMin(m.fim) + '</div>'
+        + '<div class="tvu-mid"><b>' + fmtN(Math.ceil(m.precisaH)) + '</b> UEP/h</div>'
+        + '<div class="tvu-sub">daqui até ' + fromMin(m.fim) + ' · a meta pede ' + hMeta + '/h</div>';
+    } else {
+      card3 = '<div class="tvu-lbl">JORNADA NORMAL ENCERRADA</div><div class="tvu-mid"><b>' + fmtN(Math.round(m.falta)) + '</b> UEP</div>'
+        + '<div class="tvu-sub">faltaram para a meta do dia</div>';
+    }
+  } else {
+    card2 = '<div class="tvu-lbl">META DO DIA</div><div class="tvu-mid"><b>ALCANÇADA</b></div>'
+      + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' UEP · +' + fmtN(Math.round(m.feito - m.meta)) + ' acima da meta</div>';
+  }
+  return '<div class="tvg-corpo"><figure class="tvg-graf">'
+    + '<div class="tvu-leg tvg-leg"><span><i class="tvg-sw f"></i>FEITO</span><span><i class="tvg-sw e"></i>ESPERADO</span>'
+    + (m.proj ? '<span><i class="tvg-sw p"></i>ATÉ A META, A ' + fmtN(Math.round(m.porMin * 60)) + '/h</span>' : '') + '</div>'
+    + _tvGSvg(m, selo) + '</figure><div class="tvg-cards">'
+    + '<div class="tvu-card">' + (selo ? '<span class="tvu-selo ' + sc(m.ef) + '">' + slRitmo(m.ef) + '</span>' : '')
+    + '<div class="tvg-min">' + minTxt + '</div><div class="tvu-sub">' + cap + '</div>'
+    + '<div class="tvu-sub">' + fmtN(Math.round(m.feito)) + ' feitas · ' + fmtN(Math.round(m.esp)) + ' esperadas</div></div>'
+    + '<div class="tvu-card">' + card2 + '</div>'
+    + (card3 ? '<div class="tvu-card">' + card3 + '</div>' : '')
+    + '</div></div>' + _tvUepRodHtml(m);
+}
+// O modelo das duas telas, refeito no máximo a cada TV_UEP_TTL. O _ordemTelas
+// (chamado a cada segundo pela reconciliação do ciclo) lê daqui sem recalcular.
+// Com a F ou a G no ciclo, o histórico (só para o peso normal) é relido a cada
+// 30 min — a mesma leitura com 3 tentativas da aba ⚖ UEP.
+let _tvUepM = null, _tvUepTs = 0;
+function _tvUepModelo(forcar){
+  if(!forcar && Date.now() - _tvUepTs < TV_UEP_TTL) return _tvUepM;
+  _tvUepTs = Date.now();
+  const t = CFG.telasAtivas || {};
+  if(t.f !== true && t.g !== true){ _tvUepM = null; return null; }
+  if(CFG.sheetsUrl && !UEP_HIST_VOO && (!UEP_HIST || Date.now() - UEP_HIST_TS > TV_UEP_HIST_TTL)) _uepAbaHistCarregar();
+  if(!CAP_RAW){ const loc = _capDoLocal(); if(loc) CAP_RAW = loc.p; }   // cadastro guardado neste aparelho
+  let D = null;
+  try{ D = _uepAbaDados(); }catch(e){ D = null; }
+  const a = new Date();
+  try{
+    _tvUepM = _tvUepMontar(D, {
+      agoraMin: a.getHours() * 60 + a.getMinutes(),
+      prod: { cod:PONTOS_DIA.produtoAtual, desc:PONTOS_DIA.produtoAtualDesc, cor:PONTOS_DIA.produtoAtualCor },
+      cat: CAP_RAW, phm: PONTOS_DIA.porHoraModelo,
+      pesoNormal: _tvUepPesoNormal(UEP_HIST, _cartNum(hojeStr())), baseNome: UEP_BASE.nome
+    });
+  }catch(e){ console.warn('[TV] Telas F/G:', e.message); _tvUepM = null; }
+  return _tvUepM;
+}
+
 // ─── CICLO DE TELAS TV — troca entre Slide A e Slide B ───────────────────────
 const _cicloTV = (function() {
   let _timer = null;
@@ -18312,6 +19169,26 @@ const _cicloTV = (function() {
   }
   function _temProgDia() { return _telaETem(PONTOS_DIA.programacao); }
   function _temSemanaPassada() { return RP_SEMANA.tem(); }
+
+  // ── TELAS F e G — a UEP do dia ─────────────────────────────────────────
+  // Conta no _tvUepModelo (refeito a cada 15 s); aqui só o desenho, e só
+  // quando o modelo ou o selo mudam (o relógio chama isto a cada segundo).
+  const _uSig = { f:'', g:'' };
+  function _sincSlideUep(t) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const st = document.getElementById('tv-setor');
+    set('tv' + t + '-setor', st ? st.textContent : 'EMBALAGEM');
+    const m = _tvUepModelo();
+    const selo = CFG.uepSeloTv === true;
+    const sig = JSON.stringify([m, selo]);
+    if (sig === _uSig[t]) return;
+    _uSig[t] = sig;
+    const corpo = document.getElementById('tv' + t + '-corpo');
+    if (corpo && m) corpo.innerHTML = t === 'f' ? _tvFHtml(m, selo) : _tvGHtml(m, selo);
+  }
+  // Só entra no ciclo marcada (=== true: config salva antes da v7.138.0 não
+  // tem a chave e fica de fora) e com o que mostrar.
+  function _temUep(t) { return (CFG.telasAtivas || {})[t] === true && !!_tvUepModelo(); }
   RP_SEMANA.aoCarregar(() => { if (_tela === 'd') _sincSlideD(); });
 
   // Agenda a próxima troca usando a duração da tela ATUALMENTE visível.
@@ -18324,6 +19201,8 @@ const _cicloTV = (function() {
     // 20 s de padrão, não os 15 das demais.
     if (t === 'd') return CFG.slideDIntervalo || 20;
     if (t === 'e') return CFG.slideEIntervalo || 20;
+    if (t === 'f') return CFG.slideFIntervalo || 20;
+    if (t === 'g') return CFG.slideGIntervalo || 20;
     return CFG.slideBIntervalo || 15;
   }
   function _agendar() {
@@ -18344,6 +19223,8 @@ const _cicloTV = (function() {
     if (t.c !== false && _temAtrasoAgora()) ordem.push('c');
     if (t.d !== false && _temSemanaPassada()) ordem.push('d');
     if (t.e !== false && _temProgDia()) ordem.push('e');
+    if (_temUep('f')) ordem.push('f');
+    if (_temUep('g')) ordem.push('g');
     return ordem.length ? ordem : ['a'];
   }
 
@@ -18352,13 +19233,16 @@ const _cicloTV = (function() {
     const slides = { b: document.getElementById('tv-slide-b'),
                      c: document.getElementById('tv-slide-c'),
                      d: document.getElementById('tv-slide-d'),
-                     e: document.getElementById('tv-slide-e') };
+                     e: document.getElementById('tv-slide-e'),
+                     f: document.getElementById('tv-slide-f'),
+                     g: document.getElementById('tv-slide-g') };
     Object.keys(slides).forEach(k => { if (slides[k]) slides[k].style.display = 'none'; });
     _tela = t;
     if (t === 'b') { _sincSlideB(); if (slides.b) slides.b.style.display = 'flex'; }
     else if (t === 'c' && slides.c) { _sincSlideC(); slides.c.style.display = 'flex'; }
     else if (t === 'd' && slides.d) { _sincSlideD(); slides.d.style.display = 'flex'; }
     else if (t === 'e' && slides.e) { _eSig = ''; _sincSlideE(); slides.e.style.display = 'flex'; }
+    else if ((t === 'f' || t === 'g') && slides[t]) { _uSig[t] = ''; _sincSlideUep(t); slides[t].style.display = 'flex'; }
     _updBtn();
   }
 
@@ -18391,14 +19275,16 @@ const _cicloTV = (function() {
 
   // Atualiza relógio nas Telas B/C a cada segundo quando visíveis
   setInterval(() => {
-    if (_tela === 'b' || _tela === 'c' || _tela === 'e') {
+    if (_tela === 'b' || _tela === 'c' || _tela === 'e' || _tela === 'f' || _tela === 'g') {
       const c = document.getElementById('tv-clock');
-      const cb = document.getElementById(_tela === 'b' ? 'tvb-clock' : _tela === 'c' ? 'tvc-clock' : 'tve-clock');
+      const cb = document.getElementById('tv' + _tela + '-clock');
       if (c && cb) cb.textContent = c.textContent;
     }
     // A Tela E acompanha o dado sem esperar a próxima volta do ciclo (com ela
     // sozinha no ciclo não há volta); o _eSig faz disto um no-op sem mudança.
     if (_tela === 'e') _sincSlideE();
+    // F e G idem: o modelo é refeito a cada 15 s e a assinatura evita redesenho.
+    if (_tela === 'f' || _tela === 'g') _sincSlideUep(_tela);
     // A Tela D mostra o PERÍODO da semana no lugar do relógio — nada a acertar
     // por segundo ali.
     // Reconciliação de segurança: se a tela atualmente visível saiu do ciclo
@@ -18410,7 +19296,7 @@ const _cicloTV = (function() {
     if (_podeRodar() && !_pausado) {
       const ordemAtual = _ordemTelas();
       if (!ordemAtual.includes(_tela)) { reiniciar(); return; }
-      ['b', 'c', 'd', 'e'].forEach(k => {
+      ['b', 'c', 'd', 'e', 'f', 'g'].forEach(k => {
         const el = document.getElementById('tv-slide-' + k);
         if (el && _tela !== k && el.style.display !== 'none') el.style.display = 'none';
       });
@@ -18424,7 +19310,7 @@ const _cicloTV = (function() {
     if ((CFG.telasAtivas || {}).d !== false) RP_SEMANA.carregar();
     const ordemInicial = _ordemTelas();
     _tela = ordemInicial[0]; // primeira tela ativa (normalmente 'a', respeita config)
-    ['b', 'c', 'd', 'e'].forEach(k => {
+    ['b', 'c', 'd', 'e', 'f', 'g'].forEach(k => {
       const el = document.getElementById('tv-slide-' + k);
       if (el) el.style.display = (_tela === k) ? 'flex' : 'none';
     });
@@ -18432,6 +19318,7 @@ const _cicloTV = (function() {
     else if (_tela === 'c') _sincSlideC();
     else if (_tela === 'd') _sincSlideD();
     else if (_tela === 'e') { _eSig = ''; _sincSlideE(); }
+    else if (_tela === 'f' || _tela === 'g') { _uSig[_tela] = ''; _sincSlideUep(_tela); }
     _updBtn();
     // Roda na TV do operador SEMPRE; no gerencial só quando está na aba TV
     // (preview). Com só 1 tela ativa, ou pausado, não há o que alternar.
@@ -18440,7 +19327,7 @@ const _cicloTV = (function() {
       return;
     }
     _agendar(); // começa contando a duração da tela atual
-    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s / E:${CFG.slideEIntervalo||20}s)`);
+    console.log(`[TV] Ciclo ativo: ${ordemInicial.join(' ↔ ')} (A:${CFG.slideAIntervalo||15}s / B:${CFG.slideBIntervalo||15}s / C:${CFG.slideCIntervalo||CFG.slideBIntervalo||15}s / D:${CFG.slideDIntervalo||20}s / E:${CFG.slideEIntervalo||20}s / F:${CFG.slideFIntervalo||20}s / G:${CFG.slideGIntervalo||20}s)`);
   }
 
   reiniciar();

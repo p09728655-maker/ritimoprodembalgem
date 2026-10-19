@@ -11,6 +11,63 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.139.0 — 19/10/2026 · ⚠ re-deploy (.gs v5.27)
+
+- **Dois relatórios gerenciais novos na aba ⚖ UEP:**
+  - **🖨 FILA DE CRONOANÁLISE** — quais produtos cronometrar primeiro. Entram os
+    de UEP com base fraca: **provisória** (menos de 5 dias na amostra de
+    01/07 a 16/10), **estimada** pela esteira, **no limite da esteira** (a UEP
+    saiu do teto físico, não do ritmo da equipe), **família incoerente**
+    (tamanhos do mesmo modelo com 1,8× ou mais de diferença de esforço por
+    hora de esteira), **sem medida** da caixa e **sem UEP**. A ordem é a UEP
+    programada nos próximos 5 dias úteis; o resto vai pelo volume já embalado.
+    Com os dados de 19/10: 103 produtos na fila e **58% da UEP programada de
+    19 a 23/10 em produto de UEP fraca** — à frente a PENTEADEIRA CAMARIM
+    STRASS (2.500 UEP, 16% da semana), RACK FLIP 1.8, TOUCADOR MAGIC NEW,
+    ARMÁRIO ENCANTO e HOME RIPADO SUPREMO 1.8.
+  - **🖨 CAIXAS × UEP** — nos últimos 30 dias fechados, em quantos o veredito em
+    caixas (régua da Tela B) e o em UEP (régua das Telas F e G) discordaram, e
+    por quê. Com os dados reais: **18 dias, 13 com o mesmo veredito e 5 com
+    caixas ABAIXO e UEP no ritmo — os 5 porque a meta em caixas, no mix do dia,
+    pedia de 118% a 179% da meta de UEP.** Nenhum dia ao contrário.
+- **A digitação da UEP carimba a UEP_VIGENCIA** (`dd/mm/aaaa DIGITADA`) —
+  ⚠ **re-deploy do `.gs` v5.27** (inclui o v5.26 das Telas F e G). É por ela que
+  o produto cronometrado sai da fila; sem o re-deploy ele continua aparecendo.
+- **Atenção:** nada muda em número exibido nas telas que já existiam.
+
+---
+
+## v7.138.0 — 19/10/2026 · ⚠ re-deploy (.gs v5.26)
+
+- **Duas telas novas para a TV da produção, com a UEP do dia** (pedido do PPCP:
+  *"vamos fazer as duas, deixar prontas para que eu possa acompanhar"*):
+  - **TELA F — ESFORÇO DO DIA:** UEP feita até agora contra a esperada, o
+    produto que está rodando (*1 caixa = 1,04 UEP*), o peso médio da caixa de
+    hoje contra o normal dos últimos 30 dias e o hora a hora em UEP.
+  - **TELA G — CORRIDA DO DIA:** a UEP acumulada contra o esperado num gráfico,
+    quantos **minutos** a linha está à frente ou atrás, o que falta para a meta
+    **em caixas do produto de agora** e a hora em que a meta sai mantendo
+    288 UEP/h. Fala em tempo e em caixas: dá para ler sem entender UEP.
+- **As duas nascem DESLIGADAS** — nada muda na TV da fábrica até marcar ⚙ →
+  TELA F / TELA G. Também nascem **sem veredito**: números e barras em tinta,
+  sem NO RITMO / ATENÇÃO / ABAIXO DO RITMO. O selo é a opção ⚙ → SELO DE RITMO
+  NAS TELAS F e G.
+- **Atenção:** com o selo ligado, a TV passa a ter **dois vereditos** — a
+  Tela B em caixas e as Telas F/G em UEP — e eles podem discordar no mesmo
+  minuto. Retrato real de 16/10 às 15:02: Tela B *ABAIXO DO RITMO* (1.483 de
+  ~1.819 cx), Tela F *NO RITMO* (2.271 de 1.959 UEP). Recomendação: ligar o selo
+  só depois da cronoanálise dos produtos pesados da semana.
+- Nenhum número novo de UEP: as telas leem a mesma montagem da aba ⚖ UEP (os
+  números batem com o card UEP DO DIA). Custo de chamada: nenhum a mais, exceto
+  o histórico (para o peso "normal"), relido a cada 30 min só com F ou G
+  ligada.
+- ⚠ **re-deploy do `.gs` (v5.26)** para a escolha de telas e do selo valer em
+  todos os aparelhos. Antes dele, marcar F/G vale **só no aparelho** onde foi
+  marcado — dá para acompanhar no PC (aba TV OPERACIONAL) sem mexer na TV da
+  fábrica.
+
+---
+
 ## v7.137.0 — 16/10/2026
 
 - **UEP TRAVADA.** Decisão do PPCP depois da migração para a base fixa: *"não
