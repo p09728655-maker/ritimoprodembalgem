@@ -5897,9 +5897,13 @@ function _uepConvHtml(R){
       ? `<b>Mais lenta que a régua da meta, que tem as paradas dentro: não parece a ${_uepBaseCurto()} com a linha rodando — confira.</b>`
       : `Só vale com a ${_uepBaseCurto()} cronometrada com a linha rodando; com outro tempo, toda conversão sai errada.`}</span>`
     + `<button class="btn btn-ghost" onclick="_uepConvLimparBase()" style="font-size:10px;padding:4px 11px">VOLTAR À RÉGUA DA META</button></div>`;
+  const tolTxt = String(R.base.tol).replace('.', ',') + '%';
+  const tolForaTxt = R.base.tolFora ? `⚠ o valor digitado não vale (0 a 100%): vale o padrão, ${tolTxt}.` : '';
+  // fora do estado ok não há a linha TOLERÂNCIA, e a régua já mostra o tempo padrão: o aviso vai à parte
+  const tolForaNota = tolForaTxt ? `<div class="uep-nota">TOLERÂNCIA: ${tolForaTxt}</div>` : '';
   if(R.estado === 'sem-cadastro') return '<div class="uep-nota">O cadastro de UEP ainda não foi lido — a lista de produtos aparece quando a aba terminar de carregar.</div>';
   if(R.estado === 'sem-produto') return avBase + `<div class="uep-nota">${!R.txt ? 'Escolha o produto e digite o tempo por volume da medição.'
-    : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>`;
+    : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>` + tolForaNota;
   const p = R.p, vTxt = p.nVol > 1 ? ` · ${p.nVol} volumes` : '';
   const cad = R.volCad != null ? u2(R.volCad) : '—';
   const cadSub = R.volCad != null
@@ -5908,9 +5912,8 @@ function _uepConvHtml(R){
   const tit = avBase + `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${p.nVol > 1 ? `<span class="ucv-chip">${p.nVol} volumes</span>` : ''}`
     + `${R.ehBase ? '<span class="ucv-chip base">A BASE DA UEP · 1,00 por definição</span>' : ''}</div>`;
   if(R.estado !== 'ok') return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
-    : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>`;
-  const tolTxt = String(R.base.tol).replace('.', ',') + '%';
-  const tolLinha = ['TOLERÂNCIA', (R.base.tolFora ? `⚠ o valor digitado não vale (0 a 100%): vale o padrão, ${tolTxt}. ` : '')
+    : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>` + tolForaNota;
+  const tolLinha = ['TOLERÂNCIA', (tolForaTxt ? tolForaTxt + ' ' : '')
     + (!R.base.tolAplica ? `não entra: a régua da meta já tem fadiga, movimentação e paradas dentro. Os ${tolTxt} entram com a ${_uepBaseCurto()} cronometrada com a linha rodando.`
       : R.base.tol > 0 ? `${tolTxt} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(R.base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
       : 'zero: o tempo padrão é o próprio medido.')];

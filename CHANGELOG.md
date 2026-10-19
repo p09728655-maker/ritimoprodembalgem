@@ -33,8 +33,9 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     **e a tela avisa** (antes virava 0% calado); 0% não mostra "tempo padrão
     +0%"; o multiplicador sai limpo (14% → × 1,14, não × 1,1400000000000001); o
     campo apagado volta a mostrar o padrão ao sair dele. A base passa a dizer
-    qual número é o medido e qual é o tempo padrão (na régua e no cabeçalho do
-    papel, ex.: *8,7 s por UEP medido (tempo padrão 10,0 s)*).
+    qual número é o medido e qual é o tempo padrão (na régua, ex.: *8,7 s por
+    UEP medido (tempo padrão 10,0 s)*; no cabeçalho do papel, *medido*). O aviso
+    de tolerância inválida sai também antes de escolher o produto.
 - **Atenção:** nenhuma UEP muda; o tempo padrão é número novo na tela e no papel.
 
 ---
