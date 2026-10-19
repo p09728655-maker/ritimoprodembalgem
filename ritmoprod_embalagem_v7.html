@@ -438,6 +438,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* ⏱ CRONOANÁLISE → UEP (v7.144.1, PPCP 19/10/2026: "modernize somente a tela").
    Só visual: tokens do painel + um azul local (--ucv-azul) para o resultado. */
 #sec-crono{--ucv-azul:#5AA9F0}
+#sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
 #sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
 #sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) auto;gap:14px;align-items:end}
 #sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
@@ -2784,6 +2785,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — nada é gravado</span>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" style="font-size:10px;padding:4px 10px" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
     </div>
   </div>
   <div id="uep-conv" class="uep-conv">
@@ -3306,7 +3308,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.144.1';
+const APP_VER   = '7.145.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5896,7 +5898,7 @@ function _uepConvHtml(R){
     + card('A RÉGUA DA META', sg(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`, 'ucv-azul')
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
-    + `<div class="ucv-acao base"><p>A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base: daí em diante, cada produto entra com o tempo rodando dele.</p></div>` + nota;
+    + `<div class="ucv-acao base"><p>A base continua <b>1,00</b> — trocar a base troca a escala inteira. Se ${_taktTxt(R.seg)} é o tempo <b>com a linha rodando</b>, <span class="so-tela">clique em <b>📌 FIXAR</b> para usar ${_taktTxt(R.seg)} como base</span><span class="so-papel">fixe ${_taktTxt(R.seg)} em s/VOLUME DA BASE, na aba ⏱ CRONOANÁLISE do painel, para usar esse tempo como base</span>: daí em diante, cada produto entra com o tempo rodando dele.</p></div>` + nota;
   const difSub = R.difPct == null ? 'sem UEP no cadastro para comparar'
     : R.confere ? `<span class="ucv-pill ok">CONFERE</span> — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
     : `<span class="ucv-pill warn">${R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro'}</span>`;
@@ -5927,11 +5929,28 @@ function _uepConvGuia(daMeta){
     + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
 }
 let UEP_CONV_CAT = null, UEP_CONV_PRODS = [], UEP_CONV_INI = false;
+// As ENTRADAS da conversão, lidas por UMA função para a tela e o papel
+// (v7.145.0 — a revisão achou o 🖨 lendo o campo da base cru).
+// v7.143.1 (PPCP: "10,4 de exemplo"): o placeholder diz que o vazio é a meta.
+// v7.143.2 (PPCP: "fixa sleep no volume base"): o campo MOSTRA a base em uso —
+// vazio, e sem ninguém digitando nele, recebe a régua da meta; preenchido assim
+// (dataset.auto) acompanha a meta de AGORA. Ela muda pelo ⚙ e pelo refresh sem
+// redesenhar a aba: lendo o valor velho, o papel saía "BASE DIGITADA" com a
+// régua antiga. Não grava no computador: só o digitado ou fixado vai para o
+// rpe_uep_conv.
+function _uepConvEntradas(){
+  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
+  const meta = PONTOS_DIA.metaUep;
+  const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
+  if(elB) elB.placeholder = 'meta ' + metaTxt;
+  if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
+  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:_pgSimNum(elB ? elB.value : ''), meta };
+}
 // Só o resultado é redesenhado: os campos e a lista ficam (o datalist só é
 // refeito quando o cadastro muda), senão o foco sairia do campo a cada tecla.
 function _uepConvAtualiza(){
   const res = document.getElementById('uep-conv-res'); if(!res) return;
-  const elP = document.getElementById('uep-conv-prod'), elS = document.getElementById('uep-conv-seg'), elB = document.getElementById('uep-conv-base');
+  const elB = document.getElementById('uep-conv-base');   // só para o valor guardado; as entradas vêm do _uepConvEntradas
   if(!UEP_CONV_INI){
     UEP_CONV_INI = true;
     try{ const b = localStorage.getItem(UEP_CONV_LS); if(b && elB && !elB.value) elB.value = b; }catch(e){}
@@ -5942,24 +5961,15 @@ function _uepConvAtualiza(){
     const dl = document.getElementById('uep-conv-lista');
     if(dl) dl.innerHTML = UEP_CONV_PRODS.map(p => `<option value="${_rpEsc(p.rot)}">`).join('');
   }
-  const meta = PONTOS_DIA.metaUep;
-  // v7.143.1 (PPCP: "10,4 de exemplo"): vazio, o campo usa a régua da meta — o
-  // placeholder diz isso, senão parece exemplo como os outros dois campos
-  const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
-  if(elB) elB.placeholder = 'meta ' + metaTxt;
-  // v7.143.2 (PPCP: "fixa sleep no volume base"): o campo MOSTRA a base em uso.
-  // Vazio (e sem ninguém digitando nele) recebe a régua da meta; preenchido
-  // assim (dataset.auto) acompanha a meta do ⚙. Não grava no computador: só o
-  // que é digitado ou fixado vai para o rpe_uep_conv.
-  if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
+  const E = _uepConvEntradas();
   const bn = document.getElementById('uep-conv-base-nome'); if(bn) bn.textContent = _uepBaseCurto();
   const fx = document.getElementById('uep-conv-fixar');
-  if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
+  if(fx){ const o = _uepConvFixar(UEP_CONV_PRODS, E.txt, E.seg);
     fx.textContent = o.acao === 'fixar' ? `📌 FIXAR ${_taktTxt(o.seg)} COMO BASE` : `📌 FIXAR ${_uepBaseCurto()}`;
     fx.disabled = o.acao === 'sem-base'; }
   const guia = document.getElementById('uep-conv-guia');
   try{
-    const R = _uepConvMontar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''), _pgSimNum(elB ? elB.value : ''), meta);
+    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
     if(guia) guia.innerHTML = _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
     res.innerHTML = _uepConvHtml(R);
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
@@ -6001,6 +6011,91 @@ function _uepConvBase(){
   const elB = document.getElementById('uep-conv-base'), v = elB ? elB.value.trim() : '';
   try{ if(v) localStorage.setItem(UEP_CONV_LS, v); else localStorage.removeItem(UEP_CONV_LS); }catch(e){}
   _uepConvAtualiza();
+}
+// ── 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP 19/10/2026: "falta
+// impressão"). Retrato da tela no clique: os MESMOS _uepConvMontar,
+// _uepConvHtml e _uepConvGuia — a marcação é a da tela, só a pele (.ucv-doc)
+// é do papel (a regra dos relatórios: duas peles, um desenho). Nada é lido nem
+// gravado. Folha EM PÉ, uma página. O REGISTRO DA MEDIÇÃO são linhas em branco
+// para a caneta — a velocidade da esteira entra porque a base (SLEEP) roda no
+// limite da esteira: medição de outra velocidade é outra unidade.
+const _UCV_DOC_SKIN = `
+.ucv-doc .rp-sec-ttl{color:#4a5568}
+.ucv-doc .uep-nota{font-size:10px;color:#4a5568}
+.ucv-doc .uep-conv-tit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1a1a2e;margin:2px 0 10px}
+.ucv-doc .ucv-chip{font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:400;letter-spacing:1px;color:#4a5568;border:1px solid #cbd5e0;border-radius:20px;padding:2px 8px}
+.ucv-doc .ucv-chip.base{color:#c05621;border-color:#f6ad55}
+.ucv-doc .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
+.ucv-doc .kpi-grid.c3{grid-template-columns:repeat(3,1fr)}
+.ucv-doc .kpi-card{border-left-color:#cbd5e0;padding:10px 12px 9px}
+.ucv-doc .kpi-card.ucv-azul{border-left-color:#3182ce;background:#f0f6fc}
+.ucv-doc .kpi-card.ok{border-left-color:#38a169}
+.ucv-doc .kpi-card.warn{border-left-color:#dd6b20}
+.ucv-doc .kpi-val small{font-size:13px;color:#718096;font-weight:600}
+.ucv-doc .kpi-sub{font-size:8.5px;color:#4a5568;line-height:1.5}
+.ucv-doc .ucv-pill{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;padding:1px 6px;border-radius:10px;border:1px solid}
+.ucv-doc .ucv-pill.ok{color:#276749;border-color:#68d391}
+.ucv-doc .ucv-pill.warn{color:#c05621;border-color:#f6ad55}
+.ucv-doc .uep-conv-av{border:1px solid #fbd38d;border-left:3px solid #dd6b20;border-radius:5px;background:#fffaf0;padding:7px 10px;margin:0 0 10px;font-size:10px;line-height:1.5}
+.ucv-doc .uep-conv-av b{color:#c05621}
+.ucv-doc .uep-conv-av .btn{display:none}
+.ucv-doc .ucv-acao{border:1px solid #e2e8f0;border-left:4px solid #dd6b20;border-radius:6px;padding:10px 14px;margin-top:10px;background:#fffaf0;page-break-inside:avoid}
+.ucv-doc .ucv-acao.ok{border-left-color:#38a169;background:#f0fff4}
+.ucv-doc .ucv-acao.base{border-left-color:#FF5C1F;background:#fff}
+.ucv-doc .ucv-acao-t{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.6px;color:#c05621;margin-bottom:4px}
+.ucv-doc .ucv-acao.ok .ucv-acao-t{color:#276749}
+.ucv-doc .ucv-acao p{font-size:10.5px;line-height:1.5;color:#1a1a2e}
+.ucv-doc .ucv-lista{list-style:none;margin:8px 0 0;display:flex;flex-direction:column;gap:5px}
+.ucv-doc .ucv-lista li{display:flex;gap:4px 12px;align-items:baseline;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#4a5568;padding:5px 9px;border:1px solid #e2e8f0;border-radius:4px;background:#fff}
+.ucv-doc .ucv-lista li b{font-family:'Barlow Condensed',sans-serif;font-size:15px;color:#1a1a2e;min-width:36px}
+.ucv-doc .ucv-vol{font-size:8px;letter-spacing:1px;border:1px solid #cbd5e0;border-radius:3px;padding:0 5px}
+.ucv-doc .ucv-info{display:grid;grid-template-columns:96px 1fr;gap:5px 12px;margin-top:10px;padding-top:8px;border-top:1px solid #edf2f7;page-break-inside:avoid}
+.ucv-doc .ucv-info>span{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096;padding-top:2px}
+.ucv-doc .ucv-info>p{font-size:10.5px;line-height:1.5;color:#1a1a2e}
+.ucv-doc .rp-sec-ttl+.ucv-info{margin-top:0;padding-top:0;border-top:none}
+.ucv-doc .ucv-reg{display:grid;grid-template-columns:1fr 1fr;gap:16px 26px;margin-top:6px;page-break-inside:avoid}
+.ucv-doc .ucv-reg>div{display:flex;align-items:flex-end;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:#4a5568}
+.ucv-doc .ucv-reg span{white-space:nowrap}
+.ucv-doc .ucv-reg i{flex:1;border-bottom:1px solid #a0aec0;height:16px}
+`;
+// Os campos da caneta, na ordem em que se preenchem na linha.
+const UCV_REG_CAMPOS = ['DATA DA MEDIÇÃO', 'VELOCIDADE DA ESTEIRA (m/min)', 'VOLUMES MEDIDOS', 'CRONOMETRADO POR', 'CONFERIDO POR (PPCP)', 'DIGITADO NO CADASTRO EM'];
+// Nome do arquivo ao salvar em PDF (o <title>): sem / e : — o Windows não aceita.
+function _uepConvDocTitulo(R, ctx){
+  return ('Cronoanálise UEP - ' + (R && R.p ? R.p.rot : '') + ' - ' + String(ctx.data || '').replace(/\//g, '-') + ' ' + String(ctx.hora || '').replace(':', 'h'))
+    .replace(/[\\/:*?"<>|]/g, '-').trim();
+}
+// Desenho do papel (sem conta): a tela + os títulos de seção + a caneta.
+function _uepConvDocHtml(R, ctx){
+  return '<div class="rp-sec-ttl">A MEDIÇÃO</div>' + _uepConvHtml(R)
+    + '<div class="rp-sec-ttl">COMO LER</div>' + _uepConvGuia(R.base.daMeta)
+    + '<div class="rp-sec-ttl">REGISTRO DA MEDIÇÃO</div><div class="ucv-reg">'
+    + UCV_REG_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · cronoanálise → UEP</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+}
+function gerarRelatorioCrono(){
+  _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
+  const E = _uepConvEntradas();
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
+  if(R.estado !== 'ok'){
+    alert(R.estado === 'sem-cadastro' ? 'O cadastro de UEP ainda não foi lido. Tente em alguns segundos.'
+        : R.estado === 'sem-produto' ? 'Escolha o produto antes de imprimir.' : 'Digite o tempo por volume medido antes de imprimir.');
+    return;
+  }
+  // A janela abre NO CLIQUE (nenhuma leitura antes): o navegador não bloqueia.
+  const win = window.open('', '_blank', 'width=900,height=1000');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  const agora = new Date();
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  let corpo = '';
+  try{ corpo = _uepConvDocHtml(R, ctx); }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas(_uepConvDocTitulo(R, ctx), false)
+    + '<style>' + _UCV_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="ucv-doc">'
+    + _rpCabecalho('CRONOANÁLISE → UEP',
+        `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
 }
 
 // ════════════════════════════════════════════════════════════════════════════

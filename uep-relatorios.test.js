@@ -320,7 +320,7 @@ ok('FIXAR: com a base no produto e o tempo dela, fixa o tempo; sem tempo ou com 
    [_uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 8.7), _uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 0), _uepConvFixar(PRODS, 'ARMARIO ENCANTO', 27.8)],
    [{ acao: 'fixar', seg: 8.7 }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }]);
 ok('FIXAR sem a base no cadastro não faz nada', _uepConvFixar(PRODS.filter(p => p.modelo !== '501094'), 'X', 1), { acao: 'sem-base' });
-ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.placeholder = 'meta ' \+/.test(pegaJs('function _uepConvAtualiza(')), true);
+ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.placeholder = 'meta ' \+/.test(pegaJs('function _uepConvEntradas(')), true);
 ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
@@ -341,10 +341,68 @@ ok('base digitada igual à régua da meta (10,4 com 3.048) É a régua da meta: 
    [true, true, false, false, true]);
 const EM2 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.6, 3048);
 ok('acima de 1% da régua já é base digitada (e suspeita, se mais lenta)', [EM2.base.daMeta, EM2.base.suspeita], [false, true]);
-const AT = pegaJs('function _uepConvAtualiza(');
+const AT = pegaJs('function _uepConvAtualiza('), EN = pegaJs('function _uepConvEntradas(');
 ok('o campo da base mostra a régua da meta quando vazio, sem gravar, e a orientação segue a conta',
-   [/elB\.dataset\.auto === '1'/.test(AT), /document\.activeElement !== elB/.test(AT), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
+   [/elB\.dataset\.auto === '1'/.test(EN), /document\.activeElement !== elB/.test(EN), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
     /oninput="this\.dataset\.auto='';_uepConvBase\(\)"/.test(html)], [true, true, true, true]);
+
+// ════════════════════════════════════════════════════════════════════════════
+// 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP: "falta impressão")
+console.log('\n── CRONOANÁLISE → UEP: a impressão ──');
+global.APP_NOME_CX = global.APP_NOME_CX || 'RITMOPATRIMAR';
+global.UCV_REG_CAMPOS = eval('(' + pegaConst('UCV_REG_CAMPOS') + ')');
+['function _uepConvDocTitulo(', 'function _uepConvDocHtml('].forEach(f => eval.call(global, pegaJs(f)));
+const ctxI = { data: '19/10/2026', hora: '16:05' };
+const DI = _uepConvDocHtml(E1, ctxI), DV = _uepConvDocHtml(EV, ctxI);
+ok('o papel tem a medição (a MESMA marcação da tela), o como ler e o registro da medição',
+   [DI.includes(_uepConvHtml(E1)), DI.includes(_uepConvGuia(E1.base.daMeta)), DI.includes('NÃO PRECISA TROCAR'), DI.includes('<b>2,22</b>'),
+    DI.includes('REGISTRO DA MEDIÇÃO'), DI.includes('VELOCIDADE DA ESTEIRA (m/min)'), DI.includes('gerado 19/10/2026 às 16:05')],
+   [true, true, true, true, true, true, true]);
+ok('o desenho do papel não faz conta (só a tela + títulos + caneta)',
+   /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA/.test(pegaJs('function _uepConvDocHtml(')), false);
+ok('nome do arquivo (o <title>) sem / e : — o Windows não aceita',
+   [_uepConvDocTitulo(EV, ctxI), /[\/:]/.test(_uepConvDocTitulo(EV, ctxI))],
+   ['Cronoanálise UEP - 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2-2 - 19-10-2026 16h05', false]);
+const GC = pegaJs('function gerarRelatorioCrono(');
+// Revisão adversarial da v7.145.0: o papel lia o campo da base cru e a tela o
+// sincronizava com a meta — com a meta mudada pelo ⚙ ou pelo refresh, o papel
+// saía "BASE DIGITADA" com a régua antiga. Hoje as DUAS leem _uepConvEntradas.
+const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);';
+ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chamada',
+   [/const E = _uepConvEntradas\(\);/.test(AT), /const E = _uepConvEntradas\(\);/.test(GC), AT.includes(MONTA), GC.includes(MONTA),
+    (JS.match(/(?<!function )_uepConvEntradas\(\)/g) || []).length, /_uepConvDocHtml\(R, ctx\)/.test(GC), GC.indexOf('_uepConvAtualiza();') < GC.indexOf('_uepConvEntradas()')],
+   [true, true, true, true, 2, true, true]);
+{
+  // O caso da revisão, rodando a função real: campo automático em 10,4 (meta
+  // 3.048) e a meta muda para 2.530 sem a aba redesenhar.
+  eval.call(global, pegaJs('function _pgSimNum('));
+  eval.call(global, pegaJs('function _uepConvEntradas('));
+  const docAntes = global.document, pdAntes = global.PONTOS_DIA;
+  const campos = { 'uep-conv-prod': { value: 'ARMARIO ENCANTO' }, 'uep-conv-seg': { value: '27,8' }, 'uep-conv-base': { value: '10,4', dataset: { auto: '1' } } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 2530 };
+  const e1 = _uepConvEntradas();
+  campos['uep-conv-base'] = { value: '8,7', dataset: { auto: '' } };          // a base DIGITADA não é tocada
+  const e2 = _uepConvEntradas();
+  ok('o campo automático segue a meta de AGORA; o digitado fica como está',
+     [e1.base, campos['uep-conv-base'].value, e2.base, e1.meta, e1.txt, e1.seg], [12.5, '8,7', 8.7, 2530, 'ARMARIO ENCANTO', 27.8]);
+  global.document = docAntes; global.PONTOS_DIA = pdAntes;
+}
+ok('sem conversão pronta não abre janela; com ela, abre no clique (nenhuma leitura antes)',
+   [GC.indexOf("R.estado !== 'ok'") > 0 && GC.indexOf("R.estado !== 'ok'") < GC.indexOf('window.open('), /await /.test(GC)], [true, false]);
+ok('documento compartilhado, EM PÉ, com o cabeçalho e o botão comuns',
+   [/_rpDocParadas\(_uepConvDocTitulo\(R, ctx\), false\)/.test(GC), /_rpCabecalho\('CRONOANÁLISE → UEP'/.test(GC), /_rpBotaoImprimir\(\)/.test(GC)], [true, true, true]);
+const SK = pegaConst('_UCV_DOC_SKIN').replace(/^`|`$/g, '');
+ok('a pele do papel é escopada em .ucv-doc (não mexe nos outros relatórios do documento)',
+   SK.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-doc ')), true);
+ok('no papel, o botão VOLTAR À RÉGUA DA META some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
+// Revisão: na folha da base saía "clique em 📌 FIXAR" — botão que só existe na tela.
+const HB = _uepConvHtml(E6);
+ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde); o papel tem a frase sem botão (.so-papel, que a aba esconde)',
+   [/<span class="so-tela">clique em <b>📌 FIXAR<\/b>[^<]*<\/span>/.test(HB), /<span class="so-papel">fixe [^<]*s\/VOLUME DA BASE[^<]*<\/span>/.test(HB),
+    /\.so-tela\{display:none\}/.test(pegaJs('function _rpDocParadas(')), /#sec-crono \.so-papel\{display:none\}/.test(html)],
+   [true, true, true, true]);
+ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="gerarRelatorioCrono()"'), true);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.145.0 — 19/10/2026
+
+- **🖨 IMPRIMIR na aba ⏱ CRONOANÁLISE** (pedido do PPCP: *"falta impressão"*).
+  Folha A4 em pé, uma página, com a conversão que está na tela: os quatro
+  cartões, NÃO PRECISA TROCAR / PARA TROCAR com os códigos por volume, RÉGUA,
+  GRAVAÇÃO e o COMO LER (tempo a usar, método, amostra). Fecha com o
+  **REGISTRO DA MEDIÇÃO** — linhas em branco para a caneta: data, **velocidade
+  da esteira**, volumes medidos, quem cronometrou, quem conferiu (PPCP) e
+  quando foi digitado no cadastro. A velocidade está lá porque a base (SLEEP)
+  roda no limite da esteira: medição de outra velocidade é outra unidade.
+  - O papel usa a MESMA marcação da tela (só muda a pele) e o documento,
+    cabeçalho e botão comuns dos outros relatórios. Ao salvar em PDF o arquivo
+    já vem com nome: *"Cronoanálise UEP - produto - data hora"*.
+  - Sem produto ou sem tempo digitado, o botão avisa em vez de abrir folha vazia.
+  - A folha é sempre o retrato da tela: com a meta trocada no ⚙ (ou chegando
+    na atualização) depois de a aba abrir, a base em uso é refeita antes de
+    imprimir. Na folha da SLEEP, o "clique em 📌 FIXAR" da tela vira a instrução
+    escrita (fixar o tempo em s/VOLUME DA BASE, na aba do painel).
+- **Atenção:** nenhuma conta mudou; nada é lido nem gravado pela impressão.
+
+---
+
 ## v7.144.1 — 19/10/2026
 
 - **Aba ⏱ CRONOANÁLISE com visual novo** (pedido do PPCP: *"modernize somente
