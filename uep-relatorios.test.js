@@ -271,7 +271,7 @@ ok('base digitada fica à vista, com o valor e o botão de voltar à meta — e 
     H7.indexOf('BASE DIGITADA') < H7.indexOf('UEP EQUIVALENTE')], [true, true, true, true]);
 ok('base pela meta não mostra o aviso', [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA')], [false, false]);
 ok('o rótulo diz de quem é o tempo da base (o nome vem do UEP_BASE)',
-   [/>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">SLEEP<\/span>\)<input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
+   [/><span>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">SLEEP<\/span>\)<\/span><input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
     /bn\.textContent = _uepBaseCurto\(\)/.test(pegaJs('function _uepConvAtualiza(')), _uepBaseCurto()], [true, false, true, 'SLEEP']);
 {
   const docAntes = global.document; let foco = null, evitou = false;
@@ -298,7 +298,21 @@ ok('o desenho cobra a conferência da base suspeita e, com a base, fala em tempo
    [H7.includes('não parece a SLEEP com a linha rodando'), H7.includes('o tempo é o COM A LINHA RODANDO'),
     _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530)).includes('não parece a SLEEP')], [true, true, false]);
 ok('Encanto rodando 17,6 ÷ MADERO rodando 8,7 = 2,02', _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530).uepVol.toFixed(2), '2.02');
-ok('o campo da base tem o Tab ligado', /id="uep-conv-base"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), true);
+// v7.143.1: o label é flex em coluna — texto solto ao lado do nome da base virava
+// três linhas ("s/VOLUME DA BASE (" · "SLEEP" · ")") e desalinhava os campos.
+ok('o rótulo da base é UM item do label (texto e nome no mesmo span)',
+   /<label[^>]*>s\/VOLUME DA BASE/.test(html), false);
+// v7.143.1: depois da base vem o 📌 FIXAR — o Tab que volta ao PRODUTO é dele
+ok('o último foco do conversor (o FIXAR) tem o Tab ligado; o campo da base não',
+   [/id="uep-conv-fixar"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), /id="uep-conv-base"[^>]*onkeydown=/.test(html)], [true, false]);
+// 📌 FIXAR SLEEP (v7.143.1, PPCP: "deixa um botão para fixar sleep")
+eval.call(global, pegaJs('function _uepConvFixar('));
+ok('FIXAR: com a base no produto e o tempo dela, fixa o tempo; sem tempo ou com outro produto, escolhe a base',
+   [_uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 8.7), _uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 0), _uepConvFixar(PRODS, 'ARMARIO ENCANTO', 27.8)],
+   [{ acao: 'fixar', seg: 8.7 }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }]);
+ok('FIXAR sem a base no cadastro não faz nada', _uepConvFixar(PRODS.filter(p => p.modelo !== '501094'), 'X', 1), { acao: 'sem-base' });
+ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.placeholder = 'meta ' \+/.test(pegaJs('function _uepConvAtualiza(')), true);
+ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
 

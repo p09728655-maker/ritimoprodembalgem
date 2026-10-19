@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.143.1 — 19/10/2026
+
+- **⏱ CRONOANÁLISE → UEP: botão 📌 FIXAR SLEEP** (pedido do PPCP: *"deixa um
+  botão para fixar sleep"*). Com a SLEEP no PRODUTO e o tempo dela (com a linha
+  rodando) digitado, o botão vira **📌 FIXAR X s COMO BASE** e grava esse tempo
+  no campo da base; com outro produto, ele escolhe a SLEEP e põe o cursor no
+  tempo. Depois de fixar, os campos limpam para o próximo produto.
+- **O campo da base diz que o vazio é a meta**: o placeholder virou *"meta
+  10,4"* — sem o *meta* ele parecia exemplo, como os outros dois campos.
+- **Rótulo da base numa linha só**: "s/VOLUME DA BASE (SLEEP)" quebrava em três
+  linhas e desalinhava os campos.
+- **Atenção:** nenhuma conta mudou.
+
+---
+
 ## v7.143.0 · mobile 1.35.0 · `.gs` v5.28 — 19/10/2026
 
 - **A BASE DA UEP PASSOU A SER A MESA CABECEIRA SLEEP** (decisão do PPCP: *"hoje

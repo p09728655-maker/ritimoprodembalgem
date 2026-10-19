@@ -3662,6 +3662,13 @@ feito e dá ar de verdade ao que sobrou.
   único dessa orientação (`#uep-conv-guia`); base digitada mais lenta que a
   régua da meta = `base.suspeita` (aviso). Nomes da base sempre pelo
   `UEP_BASE` (`_uepBaseCurto`), nunca escritos à mão.
+  - **📌 FIXAR SLEEP** (v7.143.1, PPCP: *"deixa um botão para fixar sleep"*):
+    `_uepConvFixar` (puro) decide — base no PRODUTO + tempo → `fixar` (vai para
+    o campo da base, que é guardado); senão → `escolher` (põe a base no
+    PRODUTO). O Tab que volta ao PRODUTO passou para o botão (último foco).
+    Placeholder do campo da base = *"meta 10,4"*: sem o *meta*, o PPCP leu o
+    valor em uso como exemplo. ⚠ Rótulo dentro do `<label>` flex em coluna vai
+    num `<span>` só — texto solto ao lado de outro span vira uma linha cada.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
