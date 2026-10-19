@@ -3723,6 +3723,13 @@ feito e dá ar de verdade ao que sobrou.
     TOLERÂNCIA explica). Se um dia a tolerância for POR PRODUTO (fadiga por
     peso — o cadastro tem P B), aí ela muda a UEP e a conta tem de mudar junto.
     O "prevê X s" do NO CADASTRO segue em tempo rodando (cru × cru).
+    - ⚠ **A contagem dupla que sobra é a do USUÁRIO**: digitar o medido já com
+      +15% (no produto e não na base) sobe a UEP 15%. O COMO LER e a dica do
+      campo dizem "sem somar tolerância" — o teste prende as duas réguas.
+    - Revisão: fora de 0–100% ou sem algarismo → padrão com aviso
+      (`base.tolFora`; o `_pgSimNum` daria 0 calado, por isso as entradas
+      mandam NaN); 0% → `tpSeg` null (sem "+0%"); `tolFator` arredondado a 4
+      casas (1 + 14/100 = 1,1400000000000001); `onblur` refaz o campo.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

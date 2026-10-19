@@ -432,6 +432,37 @@ ok('a tela mostra o tempo padrão e a razão dos tempos padrão; com a meta, diz
 ok('o campo TOLERÂNCIA (%) está na aba, antes do FIXAR (o Tab do FIXAR continua sendo o último)',
    [html.indexOf('id="uep-conv-tol"') > html.indexOf('id="uep-conv-base"'), html.indexOf('id="uep-conv-tol"') < html.indexOf('id="uep-conv-fixar"')], [true, true]);
 ok('o desenho continua sem conta (o multiplicador vem pronto do montar)', /\/ *100|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
+// Revisão da v7.146.0: 1 + 14/100 é 1,1400000000000001 em ponto flutuante
+const T14 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 14), H14 = _uepConvHtml(T14);
+ok('o multiplicador sai limpo (14% → × 1,14), sem a cauda do ponto flutuante',
+   [T14.base.tolFator, H14.includes('medido × 1,14.'), /1,1400000/.test(H14)], [1.14, true, false]);
+const TF = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 150), TN = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, NaN);
+ok('valor fora de 0–100 ou ilegível: vale o padrão E a tela diz (o campo mostra outra coisa)',
+   [TF.base.tol, TF.base.tolFora, TN.base.tol, TN.base.tolFora, T15.base.tolFora, _uepConvHtml(TF).includes('⚠ o valor digitado não vale (0 a 100%): vale o padrão, 15%.')],
+   [15, true, 15, true, false, true]);
+const HZ = _uepConvHtml(T0);
+ok('0% é zero: sem "tempo padrão +0%", a razão volta a ser a dos tempos medidos',
+   [T0.tpSeg, T0.base.tpSeg, HZ.includes('tempo padrão <b>'), HZ.includes('zero: o tempo padrão é o próprio medido.'), HZ.includes('17,6 s ÷ 8,7 s')], [null, null, false, true, true]);
+{ // o campo com texto sem algarismo NÃO vira 0% (o _pgSimNum devolveria 0)
+  const docAntes = global.document, pdAntes = global.PONTOS_DIA;
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': { value: '', dataset: {} }, 'uep-conv-tol': { value: 'abc' } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  const eA = _uepConvEntradas();
+  campos['uep-conv-tol'].value = '12,5'; const eB = _uepConvEntradas();
+  ok('tolerância sem algarismo chega como NaN (padrão + aviso), nunca 0; "12,5" é 12,5',
+     [Number.isNaN(eA.tol), _uepConvMontar(PRODS, 'X', 1, 8.7, 3048, eA.tol).base.tolFora, eB.tol], [true, true, 12.5]);
+  global.document = docAntes; global.PONTOS_DIA = pdAntes;
+}
+// O risco de contar duas vezes é do USUÁRIO: digitar o medido já com +15%.
+// A UEP subiria 15% (só o produto inflado). A tela tem de dizer como digitar.
+global._uepBaseCurto = global._uepBaseCurto || (() => 'SLEEP');
+eval.call(global, pegaJs('function _uepConvGuia('));
+ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância (nas duas réguas)',
+   [_uepConvGuia(false).includes('sem somar tolerância'), _uepConvGuia(true).includes('sem somar tolerância'),
+    /title="[^"]*sem somar tolerância[^"]*">s\/VOLUME MEDIDO/.test(html)], [true, true, true]);
+ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrão)',
+   /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

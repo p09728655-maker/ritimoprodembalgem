@@ -25,6 +25,13 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   - **Com a base pela meta (10,4) a tolerância não entra**: essa régua já tem
     fadiga, movimentação e paradas dentro; somar 15% contaria duas vezes. A
     linha TOLERÂNCIA da tela diz isso.
+  - **O tempo é digitado MEDIDO, sem somar a tolerância** — o COMO LER (tela e
+    papel) e a dica do campo dizem isso. Somar 15% à mão no produto e não na
+    base faria a UEP subir 15%.
+  - Revisão antes do merge: valor fora de 0–100% ou sem algarismo vale o padrão
+    **e a tela avisa** (antes virava 0% calado); 0% não mostra "tempo padrão
+    +0%"; o multiplicador sai limpo (14% → × 1,14, não × 1,1400000000000001); o
+    campo apagado volta a mostrar o padrão ao sair dele.
 - **Atenção:** nenhuma UEP muda; o tempo padrão é número novo na tela e no papel.
 
 ---

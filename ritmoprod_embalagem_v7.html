@@ -2792,9 +2792,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-        <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
+        <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
         <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Sem ela, o campo mostra a régua da meta (527 min × 60 ÷ META UEP, 10,4 s com 3.048). O que for digitado ou fixado fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
-        <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()"></label>
+        <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
         <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR SLEEP</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
@@ -5832,11 +5832,12 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct){
   // a régua da meta TEM as paradas dentro: a base rodando não pode ser mais
   // lenta que ela (os 17,6 s do Encanto digitados como base dariam +40,8%)
   base.suspeita = !daMeta && base.difMeta > 0;
-  const tN = Number(tolPct);
-  base.tol = tolPct != null && tolPct !== '' && isFinite(tN) && tN >= 0 && tN <= 100 ? tN : UEP_CONV_TOL_PADRAO;
+  const tN = Number(tolPct), tDado = tolPct != null && tolPct !== '', tOk = tDado && isFinite(tN) && tN >= 0 && tN <= 100;
+  base.tol = tOk ? tN : UEP_CONV_TOL_PADRAO;
+  base.tolFora = tDado && !tOk;                      // digitado fora de 0–100 (ou ilegível): vale o padrão, e a tela DIZ
   base.tolAplica = !daMeta;                          // com a régua da meta, NÃO (já tem fadiga e paradas dentro)
-  base.tolFator = 1 + base.tol / 100;
-  base.tpSeg = base.tolAplica ? base.seg * base.tolFator : null;          // tempo padrão da base
+  base.tolFator = Math.round((1 + base.tol / 100) * 1e4) / 1e4;   // 1 + 14/100 dá 1,1400000000000001 na tela
+  base.tpSeg = base.tolAplica && base.tol > 0 ? base.seg * base.tolFator : null;   // tempo padrão da base (0% = o medido)
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
   if(!a.p) return { estado:'sem-produto', base, txt:String(txt || '').trim(), n:a.n };
@@ -5863,7 +5864,7 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct){
   R.uepVol = s / base.seg; R.uepJogo = R.uepVol * p.nVol;
   // tempo padrão do produto: a MESMA tolerância da base — por isso a UEP acima
   // (s ÷ base) é igual a tempo padrão ÷ tempo padrão da base
-  R.tpSeg = base.tolAplica ? s * base.tolFator : null;
+  R.tpSeg = base.tpSeg != null ? s * base.tolFator : null;
   R.pct = volCad ? R.uepVol / volCad * 100 : null;
   R.difPct = R.pct != null ? R.pct - 100 : null;
   R.confere = R.pct != null && R.pct >= UEP_PAD_FAIXA[0] && R.pct <= UEP_PAD_FAIXA[1];
@@ -5908,9 +5909,10 @@ function _uepConvHtml(R){
   if(R.estado !== 'ok') return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
     : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>`;
   const tolTxt = String(R.base.tol).replace('.', ',') + '%';
-  const tolLinha = ['TOLERÂNCIA', R.base.tolAplica
-    ? `${tolTxt} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(R.base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
-    : `não entra: a régua da meta já tem fadiga, movimentação e paradas dentro. Os ${tolTxt} entram com a ${_uepBaseCurto()} cronometrada com a linha rodando.`];
+  const tolLinha = ['TOLERÂNCIA', (R.base.tolFora ? `⚠ o valor digitado não vale (0 a 100%): vale o padrão, ${tolTxt}. ` : '')
+    + (!R.base.tolAplica ? `não entra: a régua da meta já tem fadiga, movimentação e paradas dentro. Os ${tolTxt} entram com a ${_uepBaseCurto()} cronometrada com a linha rodando.`
+      : R.base.tol > 0 ? `${tolTxt} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(R.base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
+      : 'zero: o tempo padrão é o próprio medido.')];
   const tpMed = R.tpSeg != null ? ` · tempo padrão <b>${_taktTxt(R.tpSeg)}</b> (+${tolTxt})` : '';
   const nota = notas([tolLinha, ['RÉGUA', `${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base digitada, o tempo é o COM A LINHA RODANDO (paradas fora).'}`],
                       ['GRAVAÇÃO', 'Nada é gravado aqui.']]);
@@ -5943,9 +5945,9 @@ function _uepConvGuia(daMeta){
   const b = _uepBaseCurto();
   // v7.144.1: os mesmos textos, em linhas rotuladas (só desenho)
   return '<div class="ucv-info">' + (daMeta
-    ? `<span>TEMPO A USAR</span><p>Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>.</p>`
+    ? `<span>TEMPO A USAR</span><p>Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>, sem somar tolerância.</p>`
       + `<span>MÉTODO</span><p>O método certo é cronometrar a ${b} <b>com a linha rodando</b> e digitar o tempo dela em s/VOLUME DA BASE — parada evitável é perda da linha, não esforço do produto.</p>`
-    : `<span>TEMPO A USAR</span><p>Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b}.</p>`
+    : `<span>TEMPO A USAR</span><p>Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b}. Os dois <b>sem somar tolerância</b>: ela entra pelo campo TOLERÂNCIA — somada à mão no produto e não na base, a UEP sobe na mesma proporção.</p>`
       + '<span>MÉTODO</span><p>Parada evitável é perda da linha, não esforço do produto.</p>')
     + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
 }
@@ -5971,8 +5973,9 @@ function _uepConvEntradas(){
     elT.value = t || String(UEP_CONV_TOL_PADRAO);
   }
   const tTxt = elT ? elT.value.trim() : '';
+  // sem algarismo (o _pgSimNum devolveria 0): NaN, que a conta troca pelo padrão e a tela avisa
   return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:_pgSimNum(elB ? elB.value : ''), meta,
-           tol:tTxt === '' ? UEP_CONV_TOL_PADRAO : _pgSimNum(tTxt) };
+           tol:tTxt === '' ? UEP_CONV_TOL_PADRAO : /\d/.test(tTxt) ? _pgSimNum(tTxt) : NaN };
 }
 function _uepConvTol(){
   const elT = document.getElementById('uep-conv-tol'), v = elT ? elT.value.trim() : '';
