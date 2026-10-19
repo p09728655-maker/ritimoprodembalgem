@@ -2714,6 +2714,8 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span class="tbl-hdr-ttl">⚖ UEP — HOJE</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span id="uep-upd" class="par-upd"></span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: em quantos o veredito em caixas e o em UEP discordaram, e por quê">🖨 CAIXAS × UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
@@ -3225,7 +3227,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.138.0';
+const APP_VER   = '7.139.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5364,6 +5366,408 @@ function gerarRelatorioUepPadrao(){
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FILA DE CRONOANÁLISE (v7.139.0, PPCP 19/10/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// Com a UEP travada (16/10/2026), o único caminho de mudança é a cronoanálise
+// digitada no cadastro. Este relatório diz QUAL produto cronometrar primeiro:
+// os de UEP fraca (provisória, estimada, no limite da esteira, família
+// incoerente, sem medida, sem UEP) ordenados pela UEP PROGRAMADA nos próximos
+// dias úteis — é ali que um número errado mais pesa na meta e na carteira.
+// Calibrado na planilha real em 19/10/2026: 6 produtos no limite da esteira
+// (SLEEP, DECOR 470 e 600, NICHO 1.6, MOON 2.2, INTENSE RIP) e 4 famílias com
+// 1,8× ou mais de diferença (LUNA 3,4×, DECOR 2,9×, EVOLUTION 2,0×, MOON 1,9×).
+// ⚠ "k" = UEP × teto da esteira do código (cx/h) — UEP por HORA DE ESTEIRA. O
+// estudo corta o ritmo no teto físico, então produto que rodou no limite sai
+// com k = ritmo da base (o MESMO para todos): é o mínimo de k do cadastro.
+// ⚠ Sai da fila quem foi CRONOMETRADO: UEP digitada carimba a UEP_VIGENCIA com
+// "DIGITADA" (.gs v5.27) — PROVISÓRIA, ESTIMADA e LIMITE DA ESTEIRA deixam de
+// valer; FAMÍLIA INCOERENTE continua só nos irmãos ainda não cronometrados.
+const FILA_AMOSTRA_DE = '01/07/2026';   // começo do log de produto: a amostra do GRAVAR de 16/10
+const FILA_FAM_RAZAO  = 1.8;            // família: maior ÷ menor UEP por hora de esteira
+const FILA_TETO_FOLGA = 1.02;           // até 2% acima do mínimo = no limite da esteira
+const FILA_MAX_SEM    = 30;             // sem programação: os 30 de maior volume (o resto é contado)
+const FILA_LS         = 'rpe_fila_amostra';
+const FILA_LS_TTL     = 24 * 60 * 60 * 1000;   // a amostra é um período fechado: 1 leitura por dia
+const FILA_MOTIVOS = {
+  'sem-uep':    { t:'SEM UEP',              d:'código sem UEP no cadastro: as caixas dele ficam fora de toda conta de UEP' },
+  'est':        { t:'ESTIMADA',             d:'UEP calculada pela medida da caixa na esteira (vigência EST), nunca medida' },
+  'prov':       { t:'PROVISÓRIA',           d:'medida com poucos dias de produção na amostra (menos que o mínimo do estudo de UEP)' },
+  'teto':       { t:'NO LIMITE DA ESTEIRA', d:'rodou no limite físico da esteira: a UEP saiu do teto (velocidade × medida da caixa), não do ritmo da equipe' },
+  'fam':        { t:'FAMÍLIA INCOERENTE',   d:'tamanhos do mesmo modelo com esforço por hora de esteira muito diferente' },
+  'sem-medida': { t:'SEM MEDIDA',           d:'sem MEDIDA DA CAIXA no cadastro: não dá para conferir a UEP pela esteira' }
+};
+// Próximos n dias ÚTEIS (seg–sex), a partir de hoje se hoje for útil → [aaaammdd].
+function _filaUteis(base, n){
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate()), out = [];
+  while(out.length < n){
+    if(d.getDay() !== 0 && d.getDay() !== 6) out.push(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+const _filaN2br = n => p2(n % 100) + '/' + p2(Math.floor(n / 100) % 100) + '/' + Math.floor(n / 10000);
+// A amostra (dias e caixas por produto) a partir dos itens do getProducaoModeloPeriodo.
+function _filaAmostraDeItens(itens){
+  const G = {};
+  (itens || []).forEach(it => {
+    const k = String(it.modelo || '') + '|' + String(it.nome || '').toUpperCase().trim();
+    const g = G[k] = G[k] || { dias:{}, cx:0 };
+    g.dias[it.data] = 1; g.cx += Number(it.caixas) || 0;
+  });
+  const o = {};
+  Object.keys(G).forEach(k => { o[k] = { dias:Object.keys(G[k].dias).length, cx:G[k].cx }; });
+  return o;
+}
+// Conta pura da fila. cat = cadastro cru (getProdutos); amostra = {modelo|nome:
+// {dias,cx}} ou null (não lida); prog = PROG_DETALHADA ou null; uteis = [aaaammdd].
+function _filaCronoMontar(cat, amostra, prog, uteis){
+  const P = {}, porCod = {};
+  (cat || []).forEach(c => {
+    const cod = String(c && c.codigo || '').replace(/\D/g, '');
+    if(!cod) return;
+    const vo = _capVol(c.desc), nome = _capNome(c.desc, c.cor);
+    const key = cod.slice(0, 6) + '|' + nome;
+    const p = P[key] = P[key] || { key, modelo:cod.slice(0, 6), nome, nVol:vo.nVol, vols:{}, cods:[], ks:[], origens:{}, vigMax:0, digDe:0 };
+    const uep = Number(c.uep) || 0, vig = String(c.uepVig || '').trim();
+    const vel = Number(c.velocidade) || 0, med = Number(c.medida) || 0, ent = Number(c.entrePeca) || 0;
+    const teto = vel > 0 && med > 0 ? vel * 60000 / (med + ent) : 0;
+    const origem = !(uep > 0) ? 'sem' : /\bEST\s*$/i.test(vig) ? 'est' : /DIGITADA\s*$/i.test(vig) ? 'dig' : 'med';
+    const vn = _cartNum((vig.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || [''])[0]);
+    p.origens[origem] = (p.origens[origem] || 0) + 1;
+    if(vn > p.vigMax) p.vigMax = vn;
+    if(origem === 'dig' && vn > p.digDe) p.digDe = vn;
+    (p.vols[vo.vol] = p.vols[vo.vol] || []).push(uep);
+    if(uep > 0 && teto > 0 && origem !== 'est') p.ks.push(uep * teto);
+    if(!(teto > 0)) p.semMedida = true;
+    p.cods.push(cod);
+    porCod[cod] = { key, uep };
+  });
+  const lista = Object.values(P);
+  const med = a => { const s = a.slice().sort((x, y) => x - y), i = s.length >> 1; return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2; };
+  lista.forEach(p => { p.k = p.ks.length ? med(p.ks) : null; });
+  const kMed = lista.filter(p => p.k != null && !p.origens.dig);
+  const kMin = kMed.length ? Math.min(...kMed.map(p => p.k)) : null;
+  // família: maior ÷ menor k entre os produtos MEDIDOS do mesmo modelo de 6 dígitos
+  const fam = {};
+  lista.forEach(p => { if(p.k != null) (fam[p.modelo] = fam[p.modelo] || []).push(p.k); });
+  const famRazao = {};
+  Object.keys(fam).forEach(m => { const a = fam[m]; if(a.length >= 2) famRazao[m] = Math.max(...a) / Math.min(...a); });
+
+  // programação na janela (dias úteis): caixas abertas × UEP do código
+  const jan = {}; (uteis || []).forEach(n => { jan[n] = 1; });
+  let totUep = 0;
+  (prog || []).forEach(it => {
+    if(!it || it.foraEsteira) return;
+    const dn = Number(it.dataNum) || _cartNum(it.data);
+    if(!jan[dn]) return;
+    const q = _cartQtdAberta(it); if(!(q > 0)) return;
+    const pc = porCod[String(it.codigo || '').replace(/\D/g, '')];
+    const u = pc && pc.uep > 0 ? pc.uep : (Number(it.uepCx) > 0 ? Number(it.uepCx) : 0);
+    const p = pc ? P[pc.key] : null;
+    if(u > 0) totUep += q * u;
+    if(!p) return;
+    p.progCx = (p.progCx || 0) + q;
+    if(u > 0) p.progUep = (p.progUep || 0) + q * u; else p.progCxSem = (p.progCxSem || 0) + q;
+    (p.progDias = p.progDias || {})[dn] = 1;
+  });
+
+  const fila = [];
+  lista.forEach(p => {
+    const am = amostra ? (amostra[p.key] || { dias:0, cx:0 }) : null;
+    const todosDig = !!p.origens.dig && !p.origens.med && !p.origens.est && !p.origens.sem;
+    const m = [];
+    if(p.origens.sem) m.push('sem-uep');
+    if(!todosDig){
+      if(p.origens.est) m.push('est');
+      if(p.origens.med && am && am.dias > 0 && am.dias < UEP_MIN_DIAS) m.push('prov');
+      if(p.origens.med && p.k != null && kMin != null && p.k <= kMin * FILA_TETO_FOLGA) m.push('teto');
+      if(!p.origens.dig && famRazao[p.modelo] >= FILA_FAM_RAZAO) m.push('fam');
+      if(p.semMedida && (p.origens.med || p.origens.dig)) m.push('sem-medida');
+    }
+    if(!m.length) return;
+    const vols = Object.keys(p.vols).map(Number).sort((a, b) => a - b)
+      .map(v => [...new Set(p.vols[v].filter(u => u > 0))].sort((a, b) => a - b));
+    fila.push({
+      key:p.key, modelo:p.modelo, nome:p.nome, nVol:p.nVol, motivos:m,
+      uepTxt: vols.map(us => us.length ? us.map(u => u.toLocaleString('pt-BR', { minimumFractionDigits:2 })).join('/') : '—').join(' · '),
+      origem: p.origens.sem ? 'SEM UEP' : todosDig ? 'DIGITADA ' + _filaN2br(p.digDe).slice(0, 5)
+            : p.origens.est && !p.origens.med ? 'ESTIMADA' : p.origens.est ? 'MEDIDA + ESTIMADA'
+            : 'MEDIDA ' + (p.vigMax ? _filaN2br(p.vigMax).slice(0, 5) : ''),
+      dias: am ? am.dias : null, cxAm: am ? am.cx : null,
+      famRazao: famRazao[p.modelo] || null,
+      progCx: p.progCx || 0, progUep: p.progUep || 0, progCxSem: p.progCxSem || 0,
+      progPct: totUep > 0 && p.progUep ? p.progUep / totUep * 100 : null,
+      progDias: p.progDias ? Object.keys(p.progDias).map(Number).sort((a, b) => a - b) : []
+    });
+  });
+  // ordem: SEM UEP programado primeiro (nem entra na conta) → UEP programada →
+  // volume já embalado na amostra → nome
+  const prog1 = fila.filter(f => f.progCx > 0)
+    .sort((a, b) => (b.progCxSem > 0) - (a.progCxSem > 0) || b.progUep - a.progUep || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
+  const semProgTodos = fila.filter(f => !(f.progCx > 0))
+    .sort((a, b) => (b.motivos.includes('sem-uep')) - (a.motivos.includes('sem-uep')) || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
+  const cont = {};
+  Object.keys(FILA_MOTIVOS).forEach(k => { cont[k] = fila.filter(f => f.motivos.includes(k)).length; });
+  const emDuvida = prog1.reduce((s, f) => s + f.progUep, 0);
+  return {
+    prog: prog1, semProg: semProgTodos.slice(0, FILA_MAX_SEM), semProgMais: Math.max(0, semProgTodos.length - FILA_MAX_SEM),
+    total: fila.length, cont, totUep, emDuvida, pctDuvida: totUep > 0 ? emDuvida / totUep * 100 : null,
+    kMin, nProd: lista.length, nCod: Object.keys(porCod).length,
+    uteis: uteis || [], amostraLida: !!amostra, progLida: !!prog
+  };
+}
+// A amostra do GRAVAR (01/07 → dia da trava), uma leitura por dia: é um período
+// FECHADO, e o getProducaoModeloPeriodo de ~3 meses é das leituras mais caras.
+// Guarda e devolve o PREP_PERIODO e o PH_UEP_PROD (a leitura publica os da aba
+// PRODUÇÃO/HORA, de outro período — a mesma regra da carteira).
+async function _filaAmostra(){
+  const ate = UEP_TRAVADA_DESDE || hojeStr();
+  const key = FILA_AMOSTRA_DE + '|' + ate;
+  try{ const o = JSON.parse(localStorage.getItem(FILA_LS) || 'null');
+       if(o && o.key === key && Date.now() - o.ts < FILA_LS_TTL && o.a) return { a:o.a, de:FILA_AMOSTRA_DE, ate }; }catch(e){}
+  const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
+  let itens = null;
+  try{ itens = await lerProducaoModeloPeriodo(FILA_AMOSTRA_DE, ate, null, { ms:60000 }); }
+  catch(e){ itens = null; }
+  finally{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
+  if(itens == null) return null;
+  const a = _filaAmostraDeItens(itens);
+  try{ localStorage.setItem(FILA_LS, JSON.stringify({ key, ts:Date.now(), a })); }catch(e){}
+  return { a, de:FILA_AMOSTRA_DE, ate };
+}
+const _FILA_DOC_SKIN = `
+.fila-doc .kpi-grid{grid-template-columns:repeat(4,1fr)}
+.fila-doc .kpi-card{border-left-color:#cbd5e0}
+.fila-doc .kpi-card.g{border-left-color:#4CAF50}.fila-doc .kpi-card.o{border-left-color:#FF9800}.fila-doc .kpi-card.r{border-left-color:#F44336}
+.fila-doc table{table-layout:fixed}
+.fila-doc td.n,.fila-doc th.n{text-align:right}
+.fila-doc tbody td{padding:5px 7px;vertical-align:top}
+.fila-doc td.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
+.fila-doc .fl-chip{display:inline-block;margin:0 4px 3px 0;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid #a0aec0;border-radius:3px;padding:1px 4px;color:#4a5568;white-space:nowrap}
+.fila-doc .fl-chip.sem-uep{color:#c53030;border-color:#c53030}
+.fila-doc .fl-sub{display:block;font-size:9px;color:#718096;margin-top:1px}
+.fila-doc tr.fl-top td{background:#fffaf0}
+`;
+// Desenho (sem conta): tudo vem pronto do _filaCronoMontar.
+function _filaCronoHtml(F, ctx){
+  const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const chips = f => f.motivos.map(m => `<span class="fl-chip ${m}" title="${_rpEsc(FILA_MOTIVOS[m].d)}">${FILA_MOTIVOS[m].t}${m === 'fam' && f.famRazao ? ' ' + fmt1(f.famRazao) + '×' : ''}${m === 'prov' && f.dias != null ? ' · ' + f.dias + ' DIA' + (f.dias === 1 ? '' : 'S') : ''}</span>`).join('');
+  const colg = '<colgroup><col style="width:3%"><col style="width:24%"><col style="width:10%"><col style="width:10%"><col style="width:6%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:17%"></colgroup>';
+  const th = '<thead><tr><th class="n">#</th><th>PRODUTO</th><th>UEP/CX (por volume)</th><th>ORIGEM</th><th class="n">DIAS NA AMOSTRA</th><th class="n">CX NA AMOSTRA</th><th class="n">PROGRAMADO (CX)</th><th class="n">PROGRAMADO (UEP)</th><th class="n">% DA JANELA</th><th>POR QUE ESTÁ NA FILA</th></tr></thead>';
+  const linha = (f, i, topo) => `<tr${topo ? ' class="fl-top"' : ''}><td class="n mono">${i + 1}</td>`
+    + `<td><b>${_rpEsc(f.nome)}</b><span class="fl-sub">${_rpEsc(f.modelo)}${f.nVol > 1 ? ' · ' + f.nVol + ' volumes' : ''}</span></td>`
+    + `<td class="mono">${_rpEsc(f.uepTxt)}</td><td class="mono">${_rpEsc(f.origem)}</td>`
+    + `<td class="n">${f.dias == null ? '—' : fmtN(f.dias)}</td><td class="n">${f.cxAm == null ? '—' : fmtN(Math.round(f.cxAm))}</td>`
+    + `<td class="n">${f.progCx ? fmtN(Math.round(f.progCx)) : '—'}</td>`
+    + `<td class="n">${f.progUep ? fmtN(Math.round(f.progUep)) : (f.progCxSem ? 'sem UEP' : '—')}</td>`
+    + `<td class="n">${f.progPct != null ? fmtP(f.progPct) : '—'}</td><td>${chips(f)}</td></tr>`;
+  const jan = F.uteis.length ? `${_filaN2br(F.uteis[0]).slice(0, 5)} a ${_filaN2br(F.uteis[F.uteis.length - 1]).slice(0, 5)}` : '—';
+  const avisos = [];
+  if(!F.amostraLida) avisos.push('A amostra (produção de ' + _rpEsc(ctx.amDe) + ' a ' + _rpEsc(ctx.amAte) + ') não foi lida — PROVISÓRIA não foi avaliada e as colunas DIAS/CX NA AMOSTRA saem "—".');
+  if(!F.progLida) avisos.push('A programação não foi lida — a fila sai só pelo volume já embalado, sem a coluna PROGRAMADO.');
+  const contTxt = Object.keys(FILA_MOTIVOS).filter(k => F.cont[k]).map(k => `${FILA_MOTIVOS[k].t} ${F.cont[k]}`).join(' · ');
+  let s = '<div class="kpi-grid">'
+    + card('PRODUTOS NA FILA', fmtN(F.total), `de ${fmtN(F.nProd)} produtos do cadastro`)
+    + card('PROGRAMADOS NA JANELA', fmtN(F.prog.length), `próximos ${F.uteis.length} dias úteis · ${jan}`, F.prog.length ? 'o' : '')
+    + card('UEP PROGRAMADA EM DÚVIDA', F.pctDuvida != null ? fmtP(F.pctDuvida) : '—', F.progLida ? `${fmtN(Math.round(F.emDuvida))} de ${fmtN(Math.round(F.totUep))} UEP da janela` : 'programação não lida', F.pctDuvida >= 30 ? 'r' : '')
+    + card('A BASE', '1,00', `${_rpEsc(UEP_BASE.nome)}${UEP_TRAVADA_DESDE ? ' · travada desde ' + _rpEsc(UEP_TRAVADA_DESDE) : ''}`)
+    + '</div>'
+    + `<div class="rp-note">Na fila, por motivo: ${contTxt || '—'}. Um produto pode ter mais de um motivo.</div>`
+    + avisos.map(a => `<div class="rp-note" style="color:#c05621">${a}</div>`).join('');
+  s += `<div class="rp-sec-ttl">1 ▸ PROGRAMADOS DE ${jan} — CRONOMETRAR PRIMEIRO</div>`
+    + (F.prog.length ? `<table>${colg}${th}<tbody>${F.prog.map((f, i) => linha(f, i, i < 5)).join('')}</tbody></table>`
+                     : `<div class="rp-note">${F.progLida ? 'Nenhum produto da fila está programado na janela.' : 'Programação não lida.'}</div>`);
+  s += '<div class="rp-sec-ttl">2 ▸ SEM PROGRAMAÇÃO NA JANELA — PELO VOLUME JÁ EMBALADO</div>'
+    + (F.semProg.length ? `<table>${colg}${th}<tbody>${F.semProg.map((f, i) => linha(f, i, false)).join('')}</tbody></table>`
+                        : '<div class="rp-note">Nenhum.</div>')
+    + (F.semProgMais ? `<div class="rp-note">+ ${fmtN(F.semProgMais)} produto(s) na fila com menos volume, fora desta lista.</div>` : '');
+  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO A FILA É MONTADA</div><table><tbody>'
+    + Object.keys(FILA_MOTIVOS).map(k => `<tr><td style="font-weight:700;width:22%">${FILA_MOTIVOS[k].t}</td><td>${FILA_MOTIVOS[k].d}${
+        k === 'teto' && F.kMin ? `. Régua: UEP × teto da esteira do código (cx/h) até ${Math.round((FILA_TETO_FOLGA - 1) * 100)}% acima do menor do cadastro (${fmtN(Math.round(F.kMin))} UEP por hora de esteira) — o estudo corta o ritmo no teto físico, então quem rodou no limite cai exatamente aí` :
+        k === 'fam' ? `. Régua: a maior UEP por hora de esteira da família (mesmo modelo de 6 dígitos) é ${fmt1(FILA_FAM_RAZAO)}× ou mais a menor` :
+        k === 'prov' ? `. Mínimo: ${UEP_MIN_DIAS} dias. Amostra: a produção apontada de ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}, o período de onde saiu a UEP travada` : ''}.</td></tr>`).join('')
+    + `<tr><td style="font-weight:700">A ORDEM</td><td>Primeiro o que está programado de ${jan} (próximos ${F.uteis.length} dias úteis), pela UEP programada — é ali que um número errado mais pesa na meta e na carteira; código sem UEP programado vem antes de todos. Depois, o resto da fila pelo volume já embalado. As 5 primeiras linhas vêm destacadas.</td></tr>`
+    + `<tr><td style="font-weight:700">% DA JANELA</td><td>UEP programada do produto ÷ UEP programada de todos os produtos na janela (caixas em aberto × UEP do cadastro).</td></tr>`
+    + `<tr><td style="font-weight:700">COMO SAI DA FILA</td><td>Digitar a UEP da cronoanálise na coluna UEP da PRODUTO_CODIGO. A UEP_VIGENCIA da linha vira "DIGITADA" (Apps Script v5.27) e o produto deixa de ser PROVISÓRIA, ESTIMADA e NO LIMITE DA ESTEIRA. FAMÍLIA INCOERENTE continua nos irmãos ainda não cronometrados.</td></tr>`
+    + `<tr><td style="font-weight:700">O QUE ELE NÃO É</td><td>Não mede o produto: aponta onde a UEP do cadastro tem base fraca. A UEP continua TRAVADA — nada aqui grava.</td></tr>`
+    + '</tbody></table>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · fila de cronoanálise</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+  return s;
+}
+async function gerarRelatorioFilaCrono(){
+  // A janela abre NO CLIQUE: depois das leituras o navegador bloquearia o pop-up.
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  const msg = t => { try{ win.document.open(); win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ ' + t + '</p></body></html>'); win.document.close(); }catch(e){} };
+  if(!CFG.sheetsUrl){ win.close(); alert('Sem a URL do Apps Script configurada — não há cadastro para ler.'); return; }
+  msg('Lendo o cadastro de UEP…');
+  // em sequência: o Apps Script atende uma execução por vez
+  if(!CAP_RAW || !CAP_CAT_TS || Date.now() - CAP_CAT_TS > 10 * 60 * 1000){
+    if(!CAP_BUSCANDO) await _capBuscar();
+    for(let i = 0; i < 120 && CAP_BUSCANDO; i++) await new Promise(r => setTimeout(r, 500));
+  }
+  if(!Array.isArray(CAP_RAW) || !CAP_RAW.length){ win.close(); alert('Não consegui ler o cadastro (PRODUTO_CODIGO)' + (CAP_FALHA ? ': ' + CAP_FALHA : '') + '.\n\nTente de novo em alguns segundos.'); return; }
+  msg('Lendo a produção da amostra da UEP (de ' + FILA_AMOSTRA_DE + ' até a trava)… pode levar até 1 min na 1ª vez do dia');
+  let am = null;
+  try{ am = await _filaAmostra(); }catch(e){ am = null; }
+  msg('Lendo a programação dos próximos dias…');
+  let progOk = false;
+  try{ progOk = await carregarProgramacaoDetalhada(); }catch(e){ progOk = false; }
+  let F = null, corpo = '';
+  const agora = new Date();
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
+                amDe:FILA_AMOSTRA_DE, amAte:am ? am.ate : (UEP_TRAVADA_DESDE || '—') };
+  try{
+    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS));
+    corpo = _filaCronoHtml(F, ctx);
+  }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas('Fila de cronoanálise — ' + ctx.data, true)
+    + '<style>' + _FILA_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="fila-doc">'
+    + _rpCabecalho('FILA DE CRONOANÁLISE',
+        `<div class="rp-per">UEP</div><div>janela: próximos ${GPX_DIAS} dias úteis</div><div>amostra: ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CAIXAS × UEP — QUANDO OS VEREDITOS DISCORDAM (v7.139.0, PPCP 19/10/2026)
+// ════════════════════════════════════════════════════════════════════════════
+// A Tela B julga em CAIXAS e as Telas F/G (com selo) em UEP. Este relatório
+// mede, nos dias fechados, quantas vezes as duas réguas dariam veredito
+// diferente — e POR QUÊ: a meta em caixas convertida em UEP pelo mix do próprio
+// dia (meta cx × UEP/cx do dia) diz se a régua em caixas pedia mais ou menos
+// esforço que a meta de UEP. É a evidência para decidir onde mora o veredito
+// da TV. Hora extra fora dos DOIS lados (meta de UEP é de jornada; em caixas,
+// sai a HE CX). Veredito pela MESMA régua do selo (sc / slRitmo, ≥ 96%).
+// ⚠ Dia com caixa lançada sem produto tem menos UEP do que esforço (a caixa sem
+// produto não tem UEP) — o "como ler" avisa.
+const CXU_DIAS  = 30;      // dias corridos antes de hoje
+const CXU_FOLGA = 5;       // ±5%: meta em caixas "pedia mais/menos" que a de UEP; mix pesado/leve
+function _cxUepMontar(hist, hojeNum, n){
+  const N = Number(n) || CXU_DIAS;
+  const h = new Date(Math.floor(hojeNum / 10000), Math.floor(hojeNum / 100) % 100 - 1, hojeNum % 100);
+  const ini = new Date(h); ini.setDate(ini.getDate() - N);
+  const iniNum = ini.getFullYear() * 10000 + (ini.getMonth() + 1) * 100 + ini.getDate();
+  const dias = (hist || []).filter(d => {
+    const dn = _cartNum(d && d.data);
+    return dn && dn >= iniNum && dn < hojeNum && Number(d.meta) > 0 && Number(d.uep) > 0 && _qpRealDia(d) > 0;
+  }).sort((a, b) => _cartNum(a.data) - _cartNum(b.data)).map(d => {
+    const cx = _qpRealDia(d), metaCx = Number(d.meta), uep = Number(d.uep), metaU = uepDiaMeta(d);
+    const pctCx = cx / metaCx * 100, pctU = uep / metaU * 100, uepCx = uep / cx;
+    return { data:d.data, cx, metaCx, pctCx, uep, metaU, pctU, uepCx,
+             metaCxEmUep: metaCx * uepCx, pctMetaCx: metaCx * uepCx / metaU * 100,
+             clsCx: sc(pctCx), clsU: sc(pctU), semSep: d.heCx === null || d.heCx === undefined };
+  });
+  const s = dias.map(d => d.uepCx).sort((a, b) => a - b);
+  const normal = s.length ? (s.length % 2 ? s[s.length >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
+  const lo = 1 - CXU_FOLGA / 100, hi = 1 + CXU_FOLGA / 100;
+  dias.forEach(d => {
+    const okCx = d.clsCx === 'ok', okU = d.clsU === 'ok';
+    d.tipo = okCx === okU ? 'igual' : (okU ? 'cx-abaixo' : 'uep-abaixo');
+    d.mix = normal ? (d.uepCx / normal > hi ? 'pesado' : d.uepCx / normal < lo ? 'leve' : 'normal') : null;
+    d.porque = d.tipo === 'cx-abaixo'
+      ? (d.pctMetaCx > 100 * hi ? 'meta-alta' : d.mix === 'pesado' ? 'mix-pesado' : 'limite')
+      : d.tipo === 'uep-abaixo'
+      ? (d.pctMetaCx < 100 * lo ? 'meta-baixa' : d.mix === 'leve' ? 'mix-leve' : 'limite')
+      : null;
+  });
+  const conta = (f) => dias.filter(f).length;
+  const pm = dias.map(d => d.pctMetaCx).sort((a, b) => a - b);
+  return {
+    dias, n:dias.length, normal, de:_filaN2br(iniNum), ate:hojeStr(),
+    iguais: conta(d => d.tipo === 'igual'),
+    cxAbaixo: conta(d => d.tipo === 'cx-abaixo'), cxAbaixoMeta: conta(d => d.porque === 'meta-alta'),
+    uepAbaixo: conta(d => d.tipo === 'uep-abaixo'), uepAbaixoMeta: conta(d => d.porque === 'meta-baixa'),
+    pctMetaMed: pm.length ? (pm.length % 2 ? pm[pm.length >> 1] : (pm[pm.length / 2 - 1] + pm[pm.length / 2]) / 2) : null,
+    semSep: conta(d => d.semSep)
+  };
+}
+const _CXU_PORQUE = {
+  'meta-alta':  'a meta em caixas pedia mais UEP que a meta de UEP',
+  'meta-baixa': 'a meta em caixas pedia menos UEP que a meta de UEP',
+  'mix-pesado': 'mix pesado: cada caixa valeu mais UEP que o normal',
+  'mix-leve':   'mix leve: cada caixa valeu menos UEP que o normal',
+  'limite':     'perto do limite das duas réguas'
+};
+const _CXU_DOC_SKIN = `
+.cxu-doc .kpi-grid{grid-template-columns:repeat(5,1fr)}
+.cxu-doc .kpi-card{border-left-color:#cbd5e0}
+.cxu-doc .kpi-card.g{border-left-color:#4CAF50}.cxu-doc .kpi-card.o{border-left-color:#FF9800}.cxu-doc .kpi-card.r{border-left-color:#F44336}
+.cxu-doc table{table-layout:fixed}
+.cxu-doc td.n,.cxu-doc th.n{text-align:right}
+.cxu-doc tbody td{padding:5px 7px}
+.cxu-doc .cxu-st{display:inline-block;min-width:92px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid;border-radius:3px;padding:1px 4px}
+.cxu-doc .cxu-st.ok{color:#2f855a}.cxu-doc .cxu-st.warn{color:#b7791f}.cxu-doc .cxu-st.red{color:#c53030}
+.cxu-doc tr.cxu-dif td{background:#fffaf0}
+`;
+// Desenho (sem conta): tudo vem pronto do _cxUepMontar.
+function _cxUepHtml(R, ctx){
+  const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
+  const pc = x => R.n ? fmtP(x / R.n * 100) : '—';
+  const st = (cls, pct) => `<span class="cxu-st ${cls}">${slRitmo(pct)}</span>`;
+  const colg = '<colgroup><col style="width:8%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:6%"><col style="width:10%"><col style="width:18%"></colgroup>';
+  const th = '<thead><tr><th>DIA</th><th class="n">CAIXAS · META</th><th class="n">%</th><th>EM CAIXAS</th><th class="n">UEP · META UEP</th><th class="n">%</th><th>EM UEP</th><th class="n">UEP/CX</th><th class="n">A META EM CX PEDIA</th><th>POR QUE DISCORDARAM</th></tr></thead>';
+  const linha = d => `<tr${d.tipo !== 'igual' ? ' class="cxu-dif"' : ''}><td>${_rpEsc(d.data.slice(0, 5))}${d.semSep ? '*' : ''}</td>`
+    + `<td class="n">${fmtN(Math.round(d.cx))} · ${fmtN(Math.round(d.metaCx))}</td><td class="n">${fmtP(d.pctCx)}</td><td>${st(d.clsCx, d.pctCx)}</td>`
+    + `<td class="n">${fmtN(Math.round(d.uep))} · ${fmtN(Math.round(d.metaU))}</td><td class="n">${fmtP(d.pctU)}</td><td>${st(d.clsU, d.pctU)}</td>`
+    + `<td class="n">${_tvF2(d.uepCx)}</td><td class="n">${fmtN(Math.round(d.metaCxEmUep))} · ${fmtP(d.pctMetaCx)}</td>`
+    + `<td>${d.porque ? _CXU_PORQUE[d.porque] : '—'}</td></tr>`;
+  const dif = R.dias.filter(d => d.tipo !== 'igual');
+  const disc = R.cxAbaixo + R.uepAbaixo;
+  const leit = [];
+  leit.push(`Em <b>${R.iguais} de ${R.n}</b> dias as duas réguas deram o mesmo veredito; em <b>${disc}</b>, discordaram.`);
+  if(R.cxAbaixo) leit.push(`<b>${R.cxAbaixo}</b> dia(s) com caixas ABAIXO e UEP no ritmo — em <b>${R.cxAbaixoMeta}</b> deles a meta em caixas, no mix do dia, pedia mais de ${100 + CXU_FOLGA}% da meta de UEP: a régua em caixas estava mais alta que a capacidade, a diferença veio da META (da programação), não do ritmo da linha.`);
+  if(R.uepAbaixo) leit.push(`<b>${R.uepAbaixo}</b> dia(s) com caixas no ritmo e UEP ABAIXO — em <b>${R.uepAbaixoMeta}</b> deles a meta em caixas pedia menos de ${100 - CXU_FOLGA}% da meta de UEP: a meta em caixas estava fácil para o mix do dia.`);
+  if(R.pctMetaMed != null) leit.push(`Na mediana do período, a meta em caixas pediu <b>${fmtP(R.pctMetaMed)}</b> da meta de UEP.`);
+  let s = '<div class="kpi-grid">'
+    + card('DIAS COMPARADOS', fmtN(R.n), `fechados, de ${_rpEsc(R.de)} a ontem`)
+    + card('MESMO VEREDITO', fmtN(R.iguais), pc(R.iguais) + ' dos dias', 'g')
+    + card('CAIXAS ABAIXO · UEP NO RITMO', fmtN(R.cxAbaixo), `${R.cxAbaixoMeta} pela meta em caixas alta`, R.cxAbaixo ? 'o' : '')
+    + card('CAIXAS NO RITMO · UEP ABAIXO', fmtN(R.uepAbaixo), `${R.uepAbaixoMeta} pela meta em caixas baixa`, R.uepAbaixo ? 'o' : '')
+    + card('A META EM CAIXAS PEDIU', R.pctMetaMed != null ? fmtP(R.pctMetaMed) : '—', 'da meta de UEP (mediana, no mix de cada dia)')
+    + '</div>'
+    + `<div class="rp-note">${leit.join(' ')}</div>`;
+  s += '<div class="rp-sec-ttl">1 ▸ OS DIAS EM QUE DISCORDARAM</div>'
+    + (dif.length ? `<table>${colg}${th}<tbody>${dif.map(linha).join('')}</tbody></table>` : '<div class="rp-note">Nenhum: nos dias do período as duas réguas concordaram.</div>');
+  s += '<div class="rp-sec-ttl">2 ▸ TODOS OS DIAS</div>'
+    + `<table>${colg}${th}<tbody>${R.dias.map(linha).join('')}</tbody></table>`
+    + (R.semSep ? `<div class="rp-note">* dia sem a separação da hora extra no HISTÓRICO: as caixas entram inteiras (${R.semSep} dia(s)).</div>` : '');
+  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO LER</div><table><tbody>'
+    + `<tr><td style="font-weight:700;width:22%">AS DUAS RÉGUAS</td><td>EM CAIXAS: caixas de jornada (REALIZADO − HE CX) ÷ META do dia — a régua da Tela B. EM UEP: UEP de jornada ÷ META UEP do dia — a régua das Telas F e G. Os dois do HISTÓRICO, gravados no fechamento; a hora extra fica fora dos dois lados.</td></tr>`
+    + `<tr><td style="font-weight:700">O VEREDITO</td><td>A mesma régua do selo da TV: ≥ 96% NO RITMO · 90–96% ATENÇÃO · &lt; 90% ABAIXO DO RITMO. Discordam quando uma diz NO RITMO e a outra não.</td></tr>`
+    + `<tr><td style="font-weight:700">A META EM CX PEDIA</td><td>META em caixas × UEP por caixa do PRÓPRIO dia (o mix que rodou) — quanta UEP a meta em caixas pedia, comparada com a META UEP. Acima de ${100 + CXU_FOLGA}%: a meta em caixas era mais pesada que a capacidade em UEP; abaixo de ${100 - CXU_FOLGA}%, mais leve. Ela muda com a datação dos lotes; a meta de UEP é fixa.</td></tr>`
+    + `<tr><td style="font-weight:700">MIX PESADO / LEVE</td><td>UEP por caixa do dia contra a mediana do período (${R.normal ? _tvF2(R.normal) : '—'} UEP/cx), ±${CXU_FOLGA}%.</td></tr>`
+    + `<tr><td style="font-weight:700">COMO USAR</td><td>Se as discordâncias vêm da META em caixas (alta ou baixa para o mix do dia), o veredito em caixas está julgando a programação, não o ritmo da linha — é o argumento para o veredito da TV passar para UEP. Se vêm do mix sem a meta mudar, olhe a UEP dos produtos daquele dia (FILA DE CRONOANÁLISE).</td></tr>`
+    + `<tr><td style="font-weight:700">O QUE ELE NÃO VÊ</td><td>Caixa lançada SEM produto conta nas caixas e não tem UEP: dia com apontamento incompleto tem a UEP mais baixa do que o esforço. O veredito do HORÁRIO (a TV ao longo do dia) pode ter discordado em outros momentos — aqui é o dia fechado.</td></tr>`
+    + '</tbody></table>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · caixas × UEP</span><span>${_rpEsc(R.de)} a ontem · gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+  return s;
+}
+async function gerarRelatorioCxUep(){
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Lendo o histórico dos dias fechados…</p></body></html>');
+  if(!UEP_HIST || Date.now() - UEP_HIST_TS > 2 * 60 * 1000){ try{ await _uepAbaHistCarregar(); }catch(e){} }
+  if(!_uepHistDaPlanilha(UEP_HIST)){ win.close(); alert('Não consegui ler o histórico (HISTORICO) da planilha.\n\nTente de novo em alguns segundos.'); return; }
+  let R = null, corpo = '';
+  const agora = new Date();
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  try{
+    R = _cxUepMontar(UEP_HIST, _cartNum(hojeStr()), CXU_DIAS);
+    if(!R.n){ win.close(); alert(`Nenhum dia fechado com META e UEP nos últimos ${CXU_DIAS} dias — nada para comparar.`); return; }
+    corpo = _cxUepHtml(R, ctx);
+  }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas(`Caixas × UEP — ${R.de} a ${ctx.data}`, true)
+    + '<style>' + _CXU_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="cxu-doc">'
+    + _rpCabecalho('CAIXAS × UEP — QUANDO OS VEREDITOS DISCORDAM',
+        `<div class="rp-per">UEP</div><div>${_rpEsc(R.de)} a ontem</div><div>últimos ${CXU_DIAS} dias · hoje fora</div>`,
+        ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
 }
 
 function renderUep(){

@@ -37,6 +37,9 @@ via Google Apps Script (JSONP).
   `_tvUepMontar` no retrato real de 16/10 15:02, os desfechos da corrida, o
   peso normal, o desenho sem veredito com o selo desligado e a config
   desligada por padrão (painel e `.gs`): `node tela-uep.test.js`.
+- `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
+  ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
+  (5 discordâncias, todas pela meta em caixas alta): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
@@ -476,6 +479,49 @@ via Google Apps Script (JSONP).
   1000×640 (sobrava 1/3 da altura) — hoje 1000×840 com `xMidYMin meet`.
   Mexeu em texto? Renderizar de novo nas duas resoluções.
 
+## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
+- PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
+  *"sim fazer 1 e 2"*. Botões no cabeçalho da aba ⚖ UEP; documentos
+  DEITADOS no `_rpDocParadas` (13 usuários hoje — o teste conta), peles
+  `.fila-doc` e `.cxu-doc`. Cartão sem status fica com borda NEUTRA: a do
+  documento comum é vermelha (lá marca perda).
+- **FILA DE CRONOANÁLISE** (`_filaCronoMontar` conta, `_filaCronoHtml`
+  desenho). Produto (modelo + `_capNome`) entra por: SEM UEP · ESTIMADA (EST)
+  · PROVISÓRIA (< `UEP_MIN_DIAS` dias distintos na amostra) · NO LIMITE DA
+  ESTEIRA · FAMÍLIA INCOERENTE · SEM MEDIDA. Ordem: SEM UEP programado → UEP
+  programada nos próximos `GPX_DIAS` dias úteis (`_filaUteis`) → volume da
+  amostra. A % é sobre TODA a UEP da janela.
+  - **k = UEP × teto da esteira** (UEP por hora de esteira). O estudo corta o
+    ritmo no teto físico, então quem rodou no limite tem k = ritmo da base, o
+    MÍNIMO do cadastro (287 em 19/10/2026). LIMITE = k ≤ mínimo × 1,02
+    (`FILA_TETO_FOLGA`); FAMÍLIA = maior ÷ menor k do modelo ≥ 1,8
+    (`FILA_FAM_RAZAO`). Calibrado na planilha real: 6 no limite (SLEEP,
+    DECOR 470/600, NICHO 1.6, MOON 2.2, INTENSE RIP) e 4 famílias (LUNA 3,4×,
+    DECOR 2,9×, EVOLUTION 2,0×, MOON 1,9×). URBAN (1,66×) fica fora de propósito.
+  - **A amostra** = log de 01/07/2026 (`FILA_AMOSTRA_DE`) até
+    `UEP_TRAVADA_DESDE` — o período de onde saiu a UEP travada. É período
+    FECHADO: `getProducaoModeloPeriodo` de ~3,5 meses (das leituras mais caras)
+    UMA vez por dia, guardada em `localStorage['rpe_fila_amostra']`; devolve o
+    `PREP_PERIODO`/`PH_UEP_PROD` da aba PRODUÇÃO/HORA. Leituras em sequência:
+    cadastro (`_capBuscar`) → amostra → programação (cache de 2 min).
+  - ⚠ **Sai da fila quem foi cronometrado**: o `.gs` v5.27 carimba a
+    `UEP_VIGENCIA` com `dd/MM/yyyy DIGITADA` na digitação (`_uepVerDaEdicao`);
+    produto todo DIGITADA perde PROVISÓRIA/ESTIMADA/LIMITE, e FAMÍLIA só marca
+    os irmãos não cronometrados. Sem o re-deploy a fila não esvazia. UEP
+    apagada → vigência vazia.
+- **CAIXAS × UEP** (`_cxUepMontar` / `_cxUepHtml`): últimos `CXU_DIAS` (30)
+  dias fechados com META e UEP, hoje fora. EM CAIXAS = (REALIZADO − HE CX) ÷
+  META; EM UEP = UEP ÷ META UEP; veredito por `sc`/`slRitmo` (a régua do
+  selo). Discordam quando um é NO RITMO e o outro não. **A META EM CX PEDIA**
+  = META × UEP/cx do próprio dia ÷ META UEP: > 105% meta em caixas alta,
+  < 95% baixa (`CXU_FOLGA`); senão o mix (±5% da mediana) ou "perto do limite".
+  - **Medido em 19/10/2026 (21/09–16/10, 18 dias): 13 iguais, 5 com caixas
+    ABAIXO e UEP NO RITMO — os 5 com a meta em caixas pedindo 118–179% da meta
+    UEP; nenhum ao contrário.** O veredito em caixas estava julgando a datação
+    dos lotes, não o ritmo. É o argumento (com a fila) para o PPCP decidir o
+    selo das Telas F/G. O teste prende esses números.
+  - Caixa lançada sem produto conta nas caixas e não tem UEP: o papel avisa.
+
 ## Paradas com SEGUNDOS (microparadas)
 - Pedido do PPCP, 17/09/2026: *"a duração está vindo número fechado, ex. 8:24 a
   8:25 = 1; vamos precisar pegar os segundos também, estamos estudando as
@@ -513,9 +559,9 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje doze, com o `tela-e.test.js`, o `programacao.test.js`, o
-  `uep-padrao.test.js`, o `exclusao.test.js` e o `tela-uep.test.js`) antes de
-  publicar.
+  sete (hoje treze, com o `tela-e.test.js`, o `programacao.test.js`, o
+  `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js` e o
+  `uep-relatorios.test.js`) antes de publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,

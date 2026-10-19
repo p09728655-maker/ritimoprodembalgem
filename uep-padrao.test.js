@@ -168,6 +168,12 @@ console.log('\n── digitada à mão (onEdit) ──');
   vm.runInContext('onEdit', P.ctx)({ range: rng(P, 5, 7, 2, 1) });   // colagem de duas linhas
   ok('colagem de várias linhas: uma versão por código (apagar a UEP também é versão)',
      P.ABAS.UEP_VERSOES.slice(-2).map(l => [l[0], l[1], l[5]]), [['501094001', 0.7, ''], ['501130001', '', 0.8]]);
+  // v5.27: a vigência do cadastro acompanha a digitação — é por ela que a fila
+  // de cronoanálise do painel sabe que o produto já foi cronometrado.
+  ok('a digitação carimba a UEP_VIGENCIA da linha ("DIGITADA"); UEP apagada deixa a vigência vazia',
+     [P.ABAS.PRODUTO_CODIGO[1][7], P.ABAS.PRODUTO_CODIGO[3][7], P.ABAS.PRODUTO_CODIGO[4][7], P.ABAS.PRODUTO_CODIGO[5][7]],
+     ['16/10/2026 DIGITADA', '16/10/2026 DIGITADA', '16/10/2026 DIGITADA', '']);
+  ok('a linha que não mudou de valor mantém a vigência que tinha', P.ABAS.PRODUTO_CODIGO[2][7], '24/09/2026');
   ok('o onEdit lê a aba de versões DIRETO (quem escreve não usa o memo)',
      /_uepVersoesMapa\(ss, true\)/.test(GS.slice(GS.indexOf('function _uepVerDaEdicao('), GS.indexOf('function simularUepCatalogo('))), true);
   ok('falha no registro não trava a edição na planilha', /try \{ _uepVerDaEdicao\(e, sh\); \} catch/.test(GS), true);

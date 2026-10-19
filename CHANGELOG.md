@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.139.0 — 19/10/2026 · ⚠ re-deploy (.gs v5.27)
+
+- **Dois relatórios gerenciais novos na aba ⚖ UEP:**
+  - **🖨 FILA DE CRONOANÁLISE** — quais produtos cronometrar primeiro. Entram os
+    de UEP com base fraca: **provisória** (menos de 5 dias na amostra de
+    01/07 a 16/10), **estimada** pela esteira, **no limite da esteira** (a UEP
+    saiu do teto físico, não do ritmo da equipe), **família incoerente**
+    (tamanhos do mesmo modelo com 1,8× ou mais de diferença de esforço por
+    hora de esteira), **sem medida** da caixa e **sem UEP**. A ordem é a UEP
+    programada nos próximos 5 dias úteis; o resto vai pelo volume já embalado.
+    Com os dados de 19/10: 103 produtos na fila e **58% da UEP programada de
+    19 a 23/10 em produto de UEP fraca** — à frente a PENTEADEIRA CAMARIM
+    STRASS (2.500 UEP, 16% da semana), RACK FLIP 1.8, TOUCADOR MAGIC NEW,
+    ARMÁRIO ENCANTO e HOME RIPADO SUPREMO 1.8.
+  - **🖨 CAIXAS × UEP** — nos últimos 30 dias fechados, em quantos o veredito em
+    caixas (régua da Tela B) e o em UEP (régua das Telas F e G) discordaram, e
+    por quê. Com os dados reais: **18 dias, 13 com o mesmo veredito e 5 com
+    caixas ABAIXO e UEP no ritmo — os 5 porque a meta em caixas, no mix do dia,
+    pedia de 118% a 179% da meta de UEP.** Nenhum dia ao contrário.
+- **A digitação da UEP carimba a UEP_VIGENCIA** (`dd/mm/aaaa DIGITADA`) —
+  ⚠ **re-deploy do `.gs` v5.27** (inclui o v5.26 das Telas F e G). É por ela que
+  o produto cronometrado sai da fila; sem o re-deploy ele continua aparecendo.
+- **Atenção:** nada muda em número exibido nas telas que já existiam.
+
+---
+
 ## v7.138.0 — 19/10/2026 · ⚠ re-deploy (.gs v5.26)
 
 - **Duas telas novas para a TV da produção, com a UEP do dia** (pedido do PPCP:

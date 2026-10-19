@@ -1,5 +1,11 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.27 — A DIGITAÇÃO DA UEP CARIMBA A UEP_VIGENCIA
+//               Com a UEP travada (16/10/2026), o único caminho de mudança é
+//               digitar o valor da cronoanálise na coluna UEP do cadastro. A
+//               versão já ia para a UEP_VERSOES; agora a UEP_VIGENCIA da linha
+//               também vira "dd/MM/yyyy DIGITADA" — é por ela que a FILA DE
+//               CRONOANÁLISE do painel sabe que o produto saiu da fila.
 // Versão: 5.26 — TELAS F e G DA TV (UEP DO DIA) NA CONFIG_PAINEL
 //               PPCP, 19/10/2026: "vamos fazer as duas, deixar prontas para
 //               que eu possa acompanhar". Só a config compartilhada: TELA_F,
@@ -3307,7 +3313,7 @@ function _uepVerDaEdicao(e, sh) {
   const M = _uepVersoesMapa(ss, true);
   const cods = sh.getRange(l0, iCod + 1, l1 - l0 + 1, 1).getValues();
   const novos = sh.getRange(l0, iUep + 1, l1 - l0 + 1, 1).getValues();
-  const editados = {}, mud = [];
+  const editados = {}, mud = [], linhasMud = [];
   for (let i = 0; i < cods.length; i++) {
     const cod = String(cods[i][0] || '').trim();
     if (!cod) continue;
@@ -3318,6 +3324,7 @@ function _uepVerDaEdicao(e, sh) {
       : (umaCelula && e.oldValue !== undefined ? _numBR(e.oldValue) : null);
     if (antes !== null && _uepIgual(antes, novo)) continue;
     mud.push([cod, antes === null ? '' : antes, novo]);
+    linhasMud.push({ row: l0 + i, novo: novo });
   }
   if (!mud.length) return 0;
   let semente = [];
@@ -3335,7 +3342,19 @@ function _uepVerDaEdicao(e, sh) {
     }
     mud.forEach(function (m) { if (Number(m[1]) > 0) semente.push([m[0], m[1], '']); });
   }
-  return _uepVerRegistrar(ss, mud, Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'), 'DIGITADA', semente);
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const n = _uepVerRegistrar(ss, mud, hoje, 'DIGITADA', semente);
+  // v5.27: a UEP_VIGENCIA do cadastro acompanha a digitação ("dd/MM/yyyy
+  // DIGITADA"; UEP apagada → vigência vazia). Sem isso o painel não sabe que o
+  // produto já foi cronometrado: a FILA DE CRONOANÁLISE nunca esvaziaria e a
+  // vigência continuaria dizendo a data do último GRAVAR. Depois da semente
+  // (que leva a vigência de ANTES) e da versão; escrita de script não dispara
+  // o onEdit de novo.
+  const iVigC = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
+  if (iVigC >= 0) linhasMud.forEach(function (x) {
+    sh.getRange(x.row, iVigC + 1).setValue(x.novo > 0 ? hoje + ' DIGITADA' : '');
+  });
+  return n;
 }
 
 // v5.24: a MESMA conta do GRAVAR, sem gravar nada — o antes → depois de cada
