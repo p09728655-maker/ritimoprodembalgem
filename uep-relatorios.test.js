@@ -206,6 +206,8 @@ global.UEP_CONV_LS = eval('(' + pegaConst('UEP_CONV_LS') + ')');
 global.UEP_BASE_MEDIDA = eval('(' + pegaConst('UEP_BASE_MEDIDA') + ')');
 global.CRONO_LINHA_DIAS = eval('(' + pegaConst('CRONO_LINHA_DIAS') + ')');
 global.UCV_REG_VEREDITO = eval('(' + pegaConst('UCV_REG_VEREDITO') + ')');
+global.UCV_REG_SEG_MAX = eval('(' + pegaConst('UCV_REG_SEG_MAX') + ')');
+global.UCV_REG_PER_MAX = eval('(' + pegaConst('UCV_REG_PER_MAX') + ')');
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null;
 ['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -638,6 +640,14 @@ console.log('\n── CRONOANÁLISE → UEP: a linha faz e o registro ──');
      [!!_ucvRegValida(8.6, { data:'21/10/2026' }, H).erro, !!_ucvRegValida(8.6, { data:'2/10/26' }, H).erro, !!_ucvRegValida(8.6, { vol:'abc' }, H).erro, !!_ucvRegValida(8.6, { per:'0' }, H).erro],
      [true, true, true, true]);
 
+  // v7.150.1 — o 1º registro real gravou NO PERÍODO 1335: "13:35" perdia os dois pontos no _pgSimNum
+  ok('"13:35", "8,6 s" e "1.335,0" não são número de segundos: não grava (o "13:35" virava 1335)',
+     [!!_ucvRegValida(8.6, { per:'13:35' }, H).erro, !!_ucvRegValida(8.6, { per:'9,4 s' }, H).erro, !!_ucvRegValida(8.6, { per:'1.335,0' }, H).erro,
+      _ucvRegValida(8.6, { per:'9.4' }, H).per], [true, true, true, 9.4]);
+  ok('NO PERÍODO acima de 5× o RODANDO é o tempo total, não o por volume: não grava (até 5× grava)',
+     [/mais de 5 vezes o RODANDO/.test(_ucvRegValida(7.9, { per:'1335' }, H).erro || ''), _ucvRegValida(7.9, { per:'39' }, H).per], [true, 39]);
+  ok('RODANDO fora do plausível (0 ou acima de 120 s por volume): não grava',
+     [!!_ucvRegValida(0, {}, H).erro, !!_ucvRegValida(836, {}, H).erro, _ucvRegValida(119, {}, H).erro], [true, true, undefined]);
   // a linha da planilha
   const V = _ucvRegValida(8.6, { per:'9,4', lac:'7,1', vol:'60', quem:'PPCP' }, H);
   const D = _ucvRegMontar(RM, V, { de:'20/09/2026', ate:'19/10/2026' });

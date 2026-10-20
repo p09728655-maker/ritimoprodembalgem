@@ -3359,7 +3359,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.150.0';
+const APP_VER   = '7.150.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6325,15 +6325,22 @@ function _ucvRegsCarregar(forcar){
 function _ucvRegVol(p){ return p.volSel ? `VOL ${p.volSel}/${p.nVolTot}` : p.nVol > 1 ? `JOGO ${p.nVol} VOL` : 'VOL 1/1'; }
 // Os campos do registro, conferidos. No Volume a volume o NO PERÍODO é sempre o
 // maior dos três e o SEM AS LACUNAS o menor: fora disso os campos estão trocados.
+// v7.150.1 (1º registro real, 20/10/2026: NO PERÍODO gravado como 1335): número é
+// só algarismo com UMA vírgula ou ponto — "13:35" virava 1335 pelo _pgSimNum, que
+// joga fora o que não é número. E segundos por volume têm teto de plausibilidade.
+const UCV_REG_SEG_MAX = 120;      // s por volume: o produto mais pesado do cadastro (~5 UEP) roda a ~40 s
+const UCV_REG_PER_MAX = 5;        // NO PERÍODO até 5× o RODANDO (uma parada de 30 min numa medição de 8 min)
 function _ucvRegValida(seg, F, hoje){
-  const num = v => { const t = String(v == null ? '' : v).trim(); return t === '' ? null : /\d/.test(t) ? _pgSimNum(t) : NaN; };
+  const num = v => { const t = String(v == null ? '' : v).trim(); return t === '' ? null : /^\d+([.,]\d+)?$/.test(t) ? _pgSimNum(t) : NaN; };
+  if(!(seg > 0) || seg > UCV_REG_SEG_MAX) return { erro:`RODANDO de ${_taktTxt(seg)} por volume não parece certo: o Volume a volume mostra segundos por volume (ex.: 8,6). Confira o campo s/VOLUME RODANDO.` };
   const per = num(F.per), lac = num(F.lac), vol = num(F.vol), vel = num(F.vel);
   const data = String(F.data || '').trim() || hoje;
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return { erro:'DATA DA MEDIÇÃO: use dd/mm/aaaa.' };
   if(_cartNum(data) > _cartNum(hoje)) return { erro:'DATA DA MEDIÇÃO está no futuro.' };
   const C = [[per, 'NO PERÍODO'], [lac, 'SEM AS LACUNAS'], [vol, 'VOLUMES MEDIDOS'], [vel, 'VELOCIDADE']];
-  for(const c of C) if(c[0] != null && !(c[0] > 0)) return { erro:c[1] + ': digite um número maior que zero, ou deixe vazio.' };
+  for(const c of C) if(c[0] != null && !(c[0] > 0)) return { erro:c[1] + ': digite só o número (ex.: 8,6), maior que zero — ou deixe vazio.' };
   if(per != null && per < seg - 0.05) return { erro:`NO PERÍODO (${_taktTxt(per)}) é menor que o RODANDO (${_taktTxt(seg)}). No Volume a volume o período é sempre o maior dos três — confira se os campos não estão trocados.` };
+  if(per != null && per > seg * UCV_REG_PER_MAX) return { erro:`NO PERÍODO (${_taktTxt(per)}) é mais de ${UCV_REG_PER_MAX} vezes o RODANDO (${_taktTxt(seg)}). É o cartão POR VOLUME NO PERÍODO, em segundos por volume (ex.: 8,6) — não o tempo total da medição.` };
   if(lac != null && lac > seg + 0.05) return { erro:`SEM AS LACUNAS (${_taktTxt(lac)}) é maior que o RODANDO (${_taktTxt(seg)}). No Volume a volume ele é sempre o menor dos três — confira se os campos não estão trocados.` };
   return { data, per, lac, vol:vol != null ? Math.round(vol) : null, vel, quem:String(F.quem || '').trim().slice(0, 40) };
 }
@@ -19283,6 +19290,11 @@ function fecharPreviaParada(){
 
   function dispararAlerta(){
     if(_alertaAberto) return; // não empilha alertas
+    // v7.150.1 (PPCP, 20/10/2026: "tira essa lembrete no gerencial"): o gestor
+    // não lança caixa, e o modal com bipe cobria a tela no meio do trabalho. A
+    // tela da diretoria também fica de fora — ninguém lança de lá, e o modal
+    // ficaria aberto na TV da sala. Segue no perfil do operador e na TV.
+    if(PERFIL==='gerencial' || document.documentElement.classList.contains('modo-dir')) return;
     const agora=new Date();
     const hh=agora.getHours();
     const[hIni]=CFG.turnoInicio.split(':').map(Number);
