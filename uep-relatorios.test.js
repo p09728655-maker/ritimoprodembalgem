@@ -209,6 +209,10 @@ const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'fu
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml('];
+// "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
+// cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
+// ou qualquer divisão no desenho deixaria a tela contradizer a conta.
+const UCV_SEM_CONTA = /\/ *100|\/ *(R|base)\.|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|_uepConvMontar\(|_uepConvBaseDe\(|_uepConvCadastro\(|_uepConvDigitar\(/;
 ['function _uepBaseCurto(', 'function _ucvEl(', 'function _ucvLe(', 'function _ucvGuarda(', 'function _uepConvProdutos(', 'function _uepConvAchar(']
   .concat(UCV_CONTA, UCV_DESENHO).forEach(f => eval.call(global, pegaJs(f)));
 const CV = (codigo, desc, cor, uep, uepVig) => ({ codigo, desc, cor, uep, uepVig });
@@ -265,7 +269,7 @@ ok('o desenho: rodando contra a meta sai mais LEVE, pede troca e manda conferir 
    [true, true, true, true]);
 ok('o aviso do tempo só com a base pela meta e o produto mais leve que a faixa',
    [E1.confRegua, E2.confRegua, E3.confRegua, _uepConvHtml(E1).includes('CONFIRA O TEMPO')], [false, true, false, false]);
-ok('o desenho não faz conta', /_uepConvMontar\(|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
+ok('o desenho não faz conta — em nenhuma das peças dele (UCV_DESENHO)', UCV_DESENHO.filter(f => UCV_SEM_CONTA.test(pegaJs(f))), []);
 // v7.144.0 (PPCP: "colocar uma tela separada para isso"): aba própria
 const iCr = html.indexOf('<section id="sec-crono"'), fCr = html.indexOf('</section>', iCr);
 ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
@@ -446,8 +450,7 @@ ok('a tela mostra o tempo padrão e a razão dos tempos padrão; com a meta, diz
    [true, true, true, false, true]);
 ok('o campo TOLERÂNCIA (%) está na aba, antes do FIXAR (o Tab do FIXAR continua sendo o último)',
    [html.indexOf('id="uep-conv-tol"') > html.indexOf('id="uep-conv-base"'), html.indexOf('id="uep-conv-tol"') < html.indexOf('id="uep-conv-fixar"')], [true, true]);
-ok('o desenho continua sem conta (o multiplicador vem pronto do montar) — em TODAS as peças dele',
-   UCV_DESENHO.filter(f => /\/ *100|\/ *R\.|_uepConvMontar\(|_uepConvBaseDe\(|_uepConvCadastro\(|_uepConvDigitar\(/.test(pegaJs(f))), []);
+ok('o desenho continua sem conta (o multiplicador da tolerância vem pronto do montar)', UCV_DESENHO.filter(f => UCV_SEM_CONTA.test(pegaJs(f))), []);
 // Revisão da v7.146.0: 1 + 14/100 é 1,1400000000000001 em ponto flutuante
 const T14 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 14), H14 = _uepConvHtml(T14);
 ok('o multiplicador sai limpo (14% → × 1,14), sem a cauda do ponto flutuante',

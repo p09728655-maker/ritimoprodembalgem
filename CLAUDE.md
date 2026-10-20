@@ -3748,14 +3748,18 @@ feito e dá ar de verdade ao que sobrou.
   - **v7.146.1 — refatoração, sem mudança de comportamento** (PPCP:
     *"refatorar"*, escopo só a cronoanálise). A conta é `_uepConvBaseDe` (régua
     e tolerância, sem produto) + `_uepConvCadastro` (UEP por volume, jogo,
-    origem) + `_uepConvDigitar` (repartição), e o `_uepConvMontar` só as junta.
+    origem) + `_uepConvDigitar` (repartição); o `_uepConvMontar` acha o produto,
+    junta as três e faz a conversão (UEP, tempo padrão, % do cadastro, CONFERE).
     O desenho são peças sem conta (`_uepConvAvisoBase`, `_uepConvRegua`,
     `_uepConvCadTxt`, `_uepConvNotasHtml`, `_uepConvBaseHtml`,
     `_uepConvTrocaHtml` e os `_ucv*` pequenos); o `_uepConvHtml` escolhe pelo
     estado. Campos e localStorage só por `_ucvEl`/`_ucvLe`/`_ucvGuarda` (o
     teste conta 1 `getElementById('uep-conv-` no arquivo). Peça nova de
     desenho entra na lista `UCV_DESENHO` do `uep-relatorios.test.js`: é ela
-    que a guarda "desenho sem conta" varre.
+    que a guarda "desenho sem conta" varre, com o `UCV_SEM_CONTA` — que olha
+    `/ R.` E `/ base.` (as peças recebem um ou outro), `_taktUep(` e a faixa.
+    ⚠ A 1ª versão da guarda ficou olhando só o `_uepConvHtml`, que virou
+    despachante: dividir função em peças exige levar a guarda junto.
     - ⚠ **Como foi provado que nada mudou**: um script (fora do repositório)
       roda a região inteira num `vm` com DOM e localStorage de mentira, em
       249.318 casos — catálogo real + casos de borda, cada estado, base, meta e
