@@ -447,6 +447,16 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono #uep-conv-fixar{height:42px;padding:0 18px;font-size:10.5px;letter-spacing:1.2px;border:1px solid rgba(255,92,31,.5);border-radius:7px;color:var(--txt);white-space:nowrap}
 #sec-crono #uep-conv-fixar:hover:not(:disabled){border-color:var(--acc);background:rgba(255,92,31,.08)}
 #sec-crono #uep-conv-guia{margin:0}
+#sec-crono .ucv-qual{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+#sec-crono .ucv-qual-t{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);margin-bottom:8px}
+#sec-crono .ucv-qual-g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+#sec-crono .ucv-q{display:flex;flex-direction:column;gap:3px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);opacity:.6}
+#sec-crono .ucv-q.usa{opacity:1;border:2px solid var(--ok);background:rgba(46,204,113,.07)}
+#sec-crono .ucv-q-l{font-family:var(--font-d);font-size:10.5px;letter-spacing:1.2px;color:var(--txt)}
+#sec-crono .ucv-q-s{font-family:var(--font-b);font-size:12px;color:var(--txt2)}
+#sec-crono .ucv-q-v{font-family:var(--font-b);font-size:13px;color:var(--txt2);margin-top:2px}
+#sec-crono .ucv-q.usa .ucv-q-v{color:var(--ok);font-weight:700}
+#sec-crono .ucv-q.usa .ucv-q-v b{color:var(--txt)}
 #sec-crono .ucv-info{display:grid;grid-template-columns:120px 1fr;gap:7px 16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 #sec-crono .ucv-info>span{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);padding-top:3px}
 #sec-crono .ucv-info>p{margin:0;font-family:var(--font-b);font-size:13.5px;line-height:1.55;color:var(--txt)}
@@ -484,7 +494,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-lista li b{font-family:var(--font-h);font-size:20px;color:var(--txt);min-width:44px}
 #sec-crono .ucv-lista .ucv-vol{font-size:10px;letter-spacing:1px;color:var(--txt2);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
 @media (max-width:1100px){#sec-crono .uep-conv-f{grid-template-columns:1fr 1fr}#sec-crono .uep-conv-f label:first-child{grid-column:1/-1}}
-@media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}#sec-crono .ucv-qual-g{grid-template-columns:1fr}}
 @media (max-width:560px){#sec-crono .uep-conv-f,#sec-crono .ucv-info{grid-template-columns:1fr}#sec-crono .uep-conv .kpi-grid{grid-template-columns:1fr}}
 #sec-uep .uep-rod{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);border-top:1px solid var(--border);margin-top:20px;padding-top:10px;line-height:1.6}
 #sec-uep .kpi-val small{font-size:16px;color:var(--txt2);font-weight:600}
@@ -2793,7 +2803,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-        <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
+        <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a SLEEP deu 7,9 s. Com a régua da meta como base (10,4), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
         <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a SLEEP medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 10,4 (a régua da meta, 527 min × 60 ÷ 3.048) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
         <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
         <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR SLEEP</button>
@@ -3310,7 +3320,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.148.0';
+const APP_VER   = '7.149.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5780,12 +5790,15 @@ const UEP_CONV_TOL_META = 0.01;   // base digitada a até 1% da régua da meta =
 // campo que se lê de cada produto — as lacunas (paradas não marcadas) ficam
 // dentro dos dois; trocar por 6,7 exigiria ler o "sem as lacunas" de TODO produto.
 // É a base de todo computador; o digitado no campo vale só naquele.
+// periodo/semLacunas são os outros dois cartões do app nessa medição: só servem
+// para a faixa QUAL NÚMERO DO VOLUME A VOLUME (_uepConvQual) mostrar ao lado de
+// cada cartão o que a SLEEP deu ali — não entram em conta nenhuma.
 // ⚠ A SLEEP roda PERTO DO LIMITE DA ESTEIRA: vão real de 250–270 mm (PPCP,
 // 20/10/2026 — 250 no cadastro desde então; era 650). 825 + 250 mm a 9 m/min =
 // 7,2 s por caixa, e o rodando (7,9) é ~91% disso. Mudou a velocidade ou o vão,
 // a base muda: medir a SLEEP de novo.
 // Medição nova da SLEEP = trocar aqui (e a régua de todo produto muda junto).
-const UEP_BASE_MEDIDA = { seg:7.9, data:'20/10/2026', volumes:60 };
+const UEP_BASE_MEDIDA = { seg:7.9, periodo:8.6, semLacunas:6.7, data:'20/10/2026', volumes:60 };
 const _uepConvCod = d => d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d;
 const _uepConvNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 // Os campos da aba são os ids uep-conv-*; o que é digitado na base e na
@@ -5994,7 +6007,7 @@ function _uepConvTrocaHtml(R){
     : `<span class="ucv-pill warn">${R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro'}</span>`;
   const conta = R.tpSeg != null ? `${_taktTxt(R.tpSeg)} ÷ ${_taktTxt(R.base.tpSeg)} (tempo padrão, +${tol} nos dois)` : `${_taktTxt(R.seg)} ÷ ${_taktTxt(R.base.seg)}`;
   return '<div class="kpi-grid c4 ucv-cards">'
-    + _ucvCard('MEDIDO', _ucvSeg(R.seg), 'por volume' + (p.nVol > 1 ? ` · ${p.nVol} volumes` : '') + _ucvTpMed(R))
+    + _ucvCard(R.base.daMeta ? 'MEDIDO · NO PERÍODO' : 'MEDIDO · RODANDO', _ucvSeg(R.seg), 'por volume' + (p.nVol > 1 ? ` · ${p.nVol} volumes` : '') + _ucvTpMed(R))
     + _ucvCard('UEP EQUIVALENTE', _ucvU2(R.uepVol), `por volume · ${conta}${p.nVol > 1 ? ` · jogo ${_ucvU2(R.uepJogo)}` : ''}`, 'ucv-azul')
     + _ucvCard('NO CADASTRO', cad.n, cad.sub)
     + _ucvCard('DIFERENÇA', R.difPct == null ? '—' : (R.difPct > 0 ? '+' : '') + fmtP(R.difPct), difSub, R.difPct == null ? '' : R.confere ? 'ok' : 'warn')
@@ -6037,6 +6050,25 @@ function _uepConvGuia(daMeta){
     : `<span>TEMPO A USAR</span><p>Base cronometrada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), o mesmo campo do Volume a volume em que a ${b} deu ${med} — as lacunas ficam dentro, nos dois. Os dois <b>sem somar tolerância</b>: ela entra pelo campo TOLERÂNCIA — somada à mão no produto e não na base, a UEP sobe na mesma proporção.</p>`
       + '<span>MÉTODO</span><p>Parada evitável é perda da linha, não esforço do produto.</p>')
     + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
+}
+// QUAL NÚMERO DO VOLUME A VOLUME (v7.149.0, PPCP 20/10/2026: "deixa claro no
+// painel qual medida eu coloco para comparar com sleep"). Os três cartões do
+// app, com os nomes de lá, o que vale em destaque e, ao lado de cada um, o que a
+// SLEEP deu nele — o produto entra com o número do MESMO cartão. Com a régua da
+// meta como base, o que vale é o NO PERÍODO. Desenho: nenhuma conta.
+function _uepConvQual(base){
+  const M = UEP_BASE_MEDIDA, b = _uepBaseCurto(), usa = base.daMeta ? 'per' : 'rod';
+  const ref = base.daMeta ? `base: a régua da meta, ${_taktTxt(base.metaSeg)}`
+    : base.medida ? `a ${b} deu <b>${_taktTxt(M.seg)}</b> aqui`
+    : `base digitada: ${_taktTxt(base.seg)}`;
+  const C = [['per', 'POR VOLUME NO PERÍODO', 'com as paradas', M.periodo],
+             ['rod', 'POR VOLUME COM A LINHA RODANDO', 'sem as paradas marcadas', M.seg],
+             ['lac', 'SEM AS LACUNAS', 'sem parada nenhuma', M.semLacunas]];
+  return '<div class="ucv-qual"><div class="ucv-qual-t">QUAL NÚMERO DO VOLUME A VOLUME DIGITAR</div><div class="ucv-qual-g">'
+    + C.map(c => c[0] === usa
+      ? `<div class="ucv-q usa"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">✓ USE ESTE · ${ref}</span></div>`
+      : `<div class="ucv-q"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">não use${base.medida ? ` · ${b} ${_taktTxt(c[3])}` : ''}</span></div>`).join('')
+    + '</div></div>';
 }
 // ── A tela (DOM) ───────────────────────────────────────────────────────────
 let UEP_CONV_CAT = null, UEP_CONV_PRODS = [], UEP_CONV_INI = false;
@@ -6092,7 +6124,8 @@ function _uepConvAtualiza(){
   const guia = _ucvEl('guia');
   try{
     const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);
-    if(guia) guia.innerHTML = _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
+    if(guia) guia.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
+    const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME RODANDO';
     res.innerHTML = _uepConvHtml(R);
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
 }
@@ -6175,6 +6208,15 @@ const _UCV_DOC_SKIN = `
 .ucv-doc .ucv-info>span{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096;padding-top:2px}
 .ucv-doc .ucv-info>p{font-size:10.5px;line-height:1.5;color:#1a1a2e}
 .ucv-doc .rp-sec-ttl+.ucv-info{margin-top:0;padding-top:0;border-top:none}
+.ucv-doc .ucv-qual{margin:0 0 10px;page-break-inside:avoid}
+.ucv-doc .ucv-qual-t{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096;margin-bottom:5px}
+.ucv-doc .ucv-qual-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ucv-doc .ucv-q{display:flex;flex-direction:column;gap:2px;padding:6px 9px;border:1px solid #e2e8f0;border-radius:5px;color:#718096}
+.ucv-doc .ucv-q.usa{border:2px solid #38a169;background:#f0fff4;color:#1a1a2e}
+.ucv-doc .ucv-q-l{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.8px}
+.ucv-doc .ucv-q-s{font-size:9px}
+.ucv-doc .ucv-q-v{font-size:9.5px}
+.ucv-doc .ucv-q.usa .ucv-q-v{color:#276749;font-weight:700}
 .ucv-doc .ucv-reg{display:grid;grid-template-columns:1fr 1fr;gap:16px 26px;margin-top:6px;page-break-inside:avoid}
 .ucv-doc .ucv-reg>div{display:flex;align-items:flex-end;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:1px;color:#4a5568}
 .ucv-doc .ucv-reg span{white-space:nowrap}
@@ -6190,7 +6232,7 @@ function _uepConvDocTitulo(R, ctx){
 // Desenho do papel (sem conta): a tela + os títulos de seção + a caneta.
 function _uepConvDocHtml(R, ctx){
   return '<div class="rp-sec-ttl">A MEDIÇÃO</div>' + _uepConvHtml(R)
-    + '<div class="rp-sec-ttl">COMO LER</div>' + _uepConvGuia(R.base.daMeta)
+    + '<div class="rp-sec-ttl">COMO LER</div>' + _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta)
     + '<div class="rp-sec-ttl">REGISTRO DA MEDIÇÃO</div><div class="ucv-reg">'
     + UCV_REG_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>'
     + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · cronoanálise → UEP</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;

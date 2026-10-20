@@ -209,7 +209,7 @@ global.UEP_BASE_MEDIDA = eval('(' + pegaConst('UEP_BASE_MEDIDA') + ')');
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
-  'function _uepConvTrocaHtml(', 'function _uepConvHtml('];
+  'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -483,7 +483,7 @@ global._uepBaseCurto = global._uepBaseCurto || (() => 'SLEEP');
 eval.call(global, pegaJs('function _uepConvGuia('));
 ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância (nas duas réguas)',
    [_uepConvGuia(false).includes('sem somar tolerância'), _uepConvGuia(true).includes('sem somar tolerância'),
-    /title="[^"]*sem somar tolerância[^"]*">s\/VOLUME MEDIDO/.test(html)], [true, true, true]);
+    /title="[^"]*sem somar tolerância[^"]*"><span id="uep-conv-seg-rot">s\/VOLUME RODANDO<\/span>/.test(html)], [true, true, true]);
 { // a tolerância digitada fica no computador e volta no campo vazio (F5)
   eval.call(global, pegaJs('function _uepConvTol('));
   const docAntes = global.document, lsAntes = global.localStorage, atAntes = global._uepConvAtualiza, pdAntes = global.PONTOS_DIA;
@@ -567,6 +567,27 @@ ok('o COMO LER com a base cronometrada cita a SLEEP medida e as lacunas dentro n
 }
 ok('o título do campo diz que vazio é a SLEEP medida (e não mais a régua da meta)',
    [/id="uep-conv-base"/.test(html), /title="[^"]*Vazio, vale a SLEEP medida em 20\/10\/2026: 7,9 s[^"]*"><span>s\/VOLUME DA BASE/.test(html)], [true, true]);
+
+// QUAL NÚMERO DO VOLUME A VOLUME (v7.149.0, PPCP: "deixa claro no painel qual
+// medida eu coloco para comparar com sleep")
+{ const QM = _uepConvQual(_uepConvBaseDe(7.9, 3048)), QR = _uepConvQual(_uepConvBaseDe(0, 3048)), QD = _uepConvQual(_uepConvBaseDe(8.6, 3048));
+  const usa = h => (h.match(/<div class="ucv-q usa"><span class="ucv-q-l">([^<]+)</) || [])[1];
+  ok('com a SLEEP medida o destaque é o RODANDO, com os 7,9 dela; os outros dois cartões dizem "não use" e o que a SLEEP deu neles',
+     [usa(QM), QM.includes('a SLEEP deu <b>7,9 s</b> aqui'), QM.includes('não use · SLEEP 8,6 s'), QM.includes('não use · SLEEP 6,7 s'), (QM.match(/ucv-q usa/g) || []).length],
+     ['POR VOLUME COM A LINHA RODANDO', true, true, true, 1]);
+  ok('com a régua da meta o destaque é o NO PERÍODO (base 10,4); com base digitada, o RODANDO com o número dela',
+     [usa(QR), QR.includes('base: a régua da meta, 10,4 s'), usa(QD), QD.includes('base digitada: 8,6 s'), QD.includes('SLEEP 6,7')],
+     ['POR VOLUME NO PERÍODO', true, 'POR VOLUME COM A LINHA RODANDO', true, false]);
+  ok('os nomes são os do app (Volume a volume) e o desenho não faz conta',
+     [['POR VOLUME NO PERÍODO', 'POR VOLUME COM A LINHA RODANDO', 'SEM AS LACUNAS'].every(t => QM.includes(t)), UCV_SEM_CONTA.test(pegaJs('function _uepConvQual('))], [true, false]);
+  const AT2 = pegaJs('function _uepConvAtualiza('), DH = pegaJs('function _uepConvDocHtml(');
+  ok('a faixa vai na tela (logo abaixo dos campos) e no papel; o rótulo do campo segue a régua',
+     [/guia\.innerHTML = _uepConvQual\(R\.base\) \+ _uepConvGuia/.test(AT2), /_uepConvQual\(R\.base\) \+ _uepConvGuia/.test(DH),
+      /rot\.textContent = R\.base\.daMeta \? 's\/VOLUME NO PERÍODO' : 's\/VOLUME RODANDO'/.test(AT2), /\.ucv-doc \.ucv-q\.usa\{/.test(html)],
+     [true, true, true, true]);
+  ok('o cartão MEDIDO diz de qual cartão do app veio o número',
+     [_uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048)).includes('>MEDIDO · RODANDO<'), H1.includes('>MEDIDO · NO PERÍODO<')], [true, true]);
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // REFATORAÇÃO da ⏱ CRONOANÁLISE (v7.146.1) — o comportamento é o mesmo, conferido
