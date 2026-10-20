@@ -23,18 +23,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     pode ter alguns minutos. A UEP o `.gs` calcula na hora, lendo o log. A
     mesma linha ficava com números de dois momentos.
   - **Agora:** o `saveDay` lê a HORA_A_HORA no momento de gravar e tira dela
-    REALIZADO, EFICIÊNCIA, MELHOR H., PIOR H., HE, MEDIA CX/H e HE CX — a MESMA
-    conta do fechamento das 23:59 (`arquivarDiaAtual`), que passou a morar numa
-    função só (`_resumoHoraAHora`). Do painel ficam a **META** (a meta do dia,
-    da PROGRAMAÇÃO) e o **FECHADO EM**.
+    REALIZADO, MELHOR H., PIOR H., HE, MEDIA CX/H e HE CX — a MESMA conta do
+    fechamento das 23:59 (`arquivarDiaAtual`), que passou a morar numa função
+    só (`_resumoHoraAHora`). Do painel ficam a **META** (a meta do dia, da
+    PROGRAMAÇÃO) e o **FECHADO EM**; a **EFICIÊNCIA** é o REALIZADO da aba ÷
+    essa META (o das 23:59 divide pela soma das metas da aba, que pode ser
+    outra).
+  - **Exceção — hora extra que só o painel conhece:** se o painel manda mais
+    caixas de HE do que a aba tem, a linha fica com o que o painel mandou, como
+    antes. É o modal ⚙ HORA EXTRA do PC com a META vazia: o REALIZADO digitado
+    fica no navegador e nunca chega à planilha; trocar pela aba apagaria essas
+    caixas do HISTORICO.
+  - O `saveDay` passou a rodar sob o **mesmo lock dos lançamentos**: a leitura da
+    aba, a do log (UEP) e a gravação saem do mesmo instante, e dois painéis
+    fechando no mesmo minuto (TV + PC às 17:05) não acrescentam a linha duas
+    vezes.
   - **Trava:** só lê a aba quando o carimbo `dataDados` (gravado a cada
     lançamento, apagado no reset) é do dia que está fechando, e quando a aba
     tem produção. Fora disso grava o que o painel mandou, como antes.
-  - Conferido: o `arquivarDiaAtual` saiu idêntico ao da `main` em 3.000
-    planilhas sorteadas, e o `saveDay` sem o carimbo do dia também (6.000
-    casos); com o carimbo, a produção da linha bateu com a do `arquivarDiaAtual`
-    nas 1.897 que tinham produção. Cinco defeitos plantados foram todos pegos.
-    Teste novo: `node fechamento.test.js`, com o caso real de 19/10.
+  - Conferido por um script fora do repositório: o `arquivarDiaAtual` saiu
+    idêntico ao da `main` em 3.000 planilhas sorteadas, e o `saveDay` sem o
+    carimbo do dia também (6.000 casos); com o carimbo, a produção da linha
+    bateu com a do `arquivarDiaAtual` nas 1.897 que tinham produção.
+  - Teste novo no repositório: `node fechamento.test.js` — o caso real de 19/10,
+    a META do painel diferente da aba, hora fechada em zero, produção só em HE,
+    a madrugada escondida pela C3, a HE só no painel, o lock e as travas. 18
+    defeitos plantados no `.gs` (entre eles os da revisão independente), todos
+    pegos por ele.
+  - O comentário do `salvarDiaSheets` no v7 dizia que o fechamento das 17:05 é o
+    `arquivarDiaAtual`; corrigido (sem mudança de comportamento, sem versão
+    nova do painel).
 - **Atenção:**
   - **Dia fechado pelo painel com lançamento nos últimos minutos:** o REALIZADO
     passa a incluir esse lançamento (19/10 teria gravado **1.509**, EF
@@ -43,6 +61,11 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     a regra do fechamento das 23:59, que **ignora a hora sem produção**. O botão
     contava essa hora (PIOR H. 0, a média dividida por ela e a hora extra
     zerada no nº de HE). Os dias fechados às 23:59 sempre foram assim.
+  - **Madrugada lançada e depois escondida pela C3** (05:00 → 07:00 no meio do
+    dia): o painel deixa de somar essas horas, a aba não. A linha passa a
+    contá-las em REALIZADO, HE e HE CX — como o fechamento das 23:59 e a UEP HE
+    já faziam. Nesse dia o HISTORICO fica MAIOR que a PRODUÇÃO REAL que o
+    gerencial e a TV mostravam.
   - **Lançamento DEPOIS do fechamento das 17:05** (a hora das 16:00 aceita até
     ~17:14) continua fora da linha: a saída é a mesma de antes, FECHAR DIA de
     novo.

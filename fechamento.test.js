@@ -99,19 +99,20 @@ function montar(o) {
   // `dataDados` é o carimbo de a qual dia pertence a HORA_A_HORA (gravado a cada lançamento).
   const PROPS = { dataDados: 'carimbo' in o ? o.carimbo : '19/10/2026' };
   const LOGS = [];
+  const LOCK = { wait: 0, rel: 0 };
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
     Utilities: { formatDate: (d, tz, f) => f === 'yyyy' ? '2026' : (/HH/.test(f) ? '19/10/2026 17:05' : '19/10/2026') },
     CacheService: { getScriptCache: () => ({ get: () => null, put: () => {}, remove: () => {} }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in PROPS ? PROPS[k] : null),
       setProperty: (k, x) => { PROPS[k] = x; }, deleteProperty: k => { delete PROPS[k]; } }) },
-    LockService: { getScriptLock: () => ({ waitLock: () => {}, releaseLock: () => {} }) },
+    LockService: { getScriptLock: () => ({ waitLock: () => { LOCK.wait++; }, releaseLock: () => { LOCK.rel++; } }) },
     Logger: { log: m => LOGS.push(String(m)) },
   };
   vm.createContext(ctx);
   vm.runInContext(GS, ctx);
   const run = code => vm.runInContext('(function(){ ' + code + ' })()', ctx);
-  return { ABAS, run, LOGS };
+  return { ABAS, run, LOGS, LOCK };
 }
 
 // O que o painel mandou às 17:05:57 de 19/10/2026 (o retrato dele: 16:00 = 157).
@@ -135,10 +136,12 @@ console.log('\n── o caso de 19/10/2026: o painel manda 1.491, a planilha tem
 
 console.log('\n── a mesma conta do fechamento das 23:59 ──');
 {
-  // Com hora extra: madrugada liberada pela C3 (HE pelo HORÁRIO) e a linha rotulada.
+  // Com hora extra: madrugada liberada pela C3 (HE pelo HORÁRIO) e a linha rotulada
+  // COMO O addHE A CRIA: REALIZADO vazio (a fórmula só existe nas horas do turno)
+  // e as caixas só no LANÇ 1 — é o ramo da soma dos LANÇ do laço.
   const horas = [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 0]]
     .concat(HORAS_1910.map(([rot, l], i) => linhaHora(rot, i < 8 ? '129' : '125', l)))
-    .concat([['HE 17:00-18:00', '100', 40, 40]]);
+    .concat([['HE 17:00-18:00', '100', '', 40]]);
   const A = montar({ horas }), B = montar({ horas });
   saveDay(A, { real: '1600' });
   B.run("arquivarDiaAtual('19/10/2026');");
@@ -153,6 +156,63 @@ console.log('\n── a mesma conta do fechamento das 23:59 ──');
     B.run("arquivarDiaAtual('19/10/2026');");
     return hist(B)[0][1];
   })(), 1);
+}
+
+console.log('\n── o que a aba diz e o painel não sabia ──');
+{
+  const P = montar();
+  saveDay(P, { meta: '1300' });
+  ok('a META é a do PAINEL mesmo quando a aba soma outra (aqui 1.157): META 1.300, EF 1.509 ÷ 1.300',
+     hist(P)[0].slice(1, 4), [1509, 1300, Number((1509 / 1300 * 100).toFixed(1))]);
+
+  // Hora de jornada fechada em ZERO (10:00): o painel manda PIOR 0 e a média por 9 horas.
+  const zero = HORAS_1910.map(([rot, l], i) => linhaHora(rot, i < 8 ? '129' : '125', rot === '10:00-11:00' ? [] : l));
+  const Z = montar({ horas: [['05:00-06:00', '', 0], ['06:00-07:00', '', 0]].concat(zero) });
+  saveDay(Z, { real: '1421', melhor: '200', pior: '0', mediaH: '158', ef: '122.8' });
+  ok('hora fechada em zero: MELHOR e PIOR saem da aba e a hora sem caixa fica fora (regra das 23:59)',
+     [hist(Z)[0][1], hist(Z)[0][4], hist(Z)[0][5], hist(Z)[0][9]], [1421, 263, 138, Math.round(1421 / 8)]);
+
+  // Só hora extra produziu (FECHAR DIA antes das 07:00 num dia com C3=5).
+  const soHE = [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 50, 50]]
+    .concat(HORAS_1910.map(([rot], i) => linhaHora(rot, i < 8 ? '129' : '125', [])));
+  const H = montar({ horas: soHE });
+  saveDay(H, { real: '100', melhor: '0', pior: '0', he: '1', heCx: '100', mediaH: '0', ef: '8.6' });
+  ok('produção só em HE: PIOR 0 e MEDIA 0 (nunca vazio nem Infinity), 2 horas e 150 cx em HE',
+     [hist(H)[0][1], hist(H)[0][4], hist(H)[0][5], hist(H)[0][6], hist(H)[0][9], hist(H)[0][10]], [150, 0, 0, 2, 0, 150]);
+
+  // Madrugada lançada e depois escondida pela C3 (5 → 7 à tarde): o painel não a soma.
+  const madr = [['05:00-06:00', '', 167, 167], ['06:00-07:00', '', 240, 240]]
+    .concat(HORAS_1910.map(([rot, l], i) => linhaHora(rot, i < 8 ? '129' : '125', l)));
+  const M = montar({ horas: madr });
+  saveDay(M);
+  ok('madrugada escondida pela C3 entra como HE (como no fechamento das 23:59 e na UEP HE)',
+     [hist(M)[0][1], hist(M)[0][6], hist(M)[0][10]], [1916, 2, 407]);
+}
+
+console.log('\n── HORA EXTRA que só o painel conhece: fica o que o painel mandou ──');
+{
+  // Modal ⚙ HORA EXTRA do PC com a META vazia: o REALIZADO digitado (286) fica
+  // no navegador (rpe_he); o addHE grava a linha sem caixa e o getDados a pula.
+  const P = montar();
+  const r = saveDay(P, { real: '1795', ef: '155.1', he: '1', heCx: '286', mediaH: '199' });
+  ok('o painel tem mais HE que a aba → a linha é a do painel, como antes da v5.29',
+     hist(P)[0], ['19/10/2026', 1795, 1157, 155.1, 263, 88, 1, true, '19/10/2026, 17:05:57', 199, 286, 3542.4, 0, 3048]);
+  ok('o retorno e o log dizem por quê', [r.fonte, r.heLocal, P.LOGS.some(l => /HE só no navegador/.test(l))], ['painel', true, true]);
+  const Q = montar({ horas: [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 0]]
+    .concat(HORAS_1910.map(([rot, l], i) => linhaHora(rot, i < 8 ? '129' : '125', l))) });
+  ok('o painel com MENOS HE que a aba (retrato velho da madrugada) → a aba',
+     [saveDay(Q, { heCx: '60', he: '1' }).fonte, hist(Q)[0][10]], ['planilha', 100]);
+}
+
+console.log('\n── o lock dos lançamentos ──');
+{
+  const P = montar();
+  saveDay(P);
+  ok('o saveDay pega e solta o MESMO lock do saveRealizado', [P.LOCK.wait, P.LOCK.rel], [1, 1]);
+  P.run("_resumoParaFechar = function () { throw new Error('planilha fora'); };");
+  let erro = '';
+  try { saveDay(P); } catch (e) { erro = e.message; }
+  ok('e solta mesmo quando a gravação falha', [erro, P.LOCK.wait, P.LOCK.rel], ['planilha fora', 2, 2]);
 }
 
 console.log('\n── sem o carimbo do dia, a aba NÃO é deste dia: fica o que o painel mandou ──');
@@ -178,6 +238,7 @@ console.log('\n── um lugar só ──');
       /_resumoHoraAHora\(/.test(pega('function _resumoParaFechar('))], [true, true, true]);
   ok('a trava é o carimbo dataDados (o mesmo do reset diário)', /PROP_DATA_DADOS/.test(pega('function _resumoParaFechar(')), true);
   ok('lê direto da planilha (caminho de escrita, nada do memo)', /_valores(DaAba)?\s*\(/.test(pega('function _resumoParaFechar(')), false);
+  ok('o saveDay roda sob o lock dos lançamentos', /LockService\.getScriptLock\(\)[\s\S]*waitLock[\s\S]*finally[\s\S]*releaseLock/.test(pega('function saveDay(')), true);
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');

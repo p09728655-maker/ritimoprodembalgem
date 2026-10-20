@@ -2699,10 +2699,11 @@ feito e dá ar de verdade ao que sobrou.
     soma a meta das linhas não-HE e calcula `ef = real ÷ meta` com essa mesma
     meta. Quem estava fora do padrão era o botão do painel — e o fechamento das
     **17:05**, que é o mesmo botão disparado pelo relógio (`fecharDiaAutomatico`,
-    no navegador do painel). ⚠ Notas antigas daqui e o comentário do
-    `salvarDiaSheets` no v7 dizem que o das 17:05 é o `arquivarDiaAtual`: estão
-    erradas. O `.gs` grava `AUTO dd/MM/yyyy HH:mm` e `FECHADO=false`; o painel
-    grava `dd/MM/yyyy, HH:mm:ss` e `FECHADO=true`.
+    no navegador do painel). ⚠ Notas antigas daqui diziam que o das 17:05 é o
+    `arquivarDiaAtual`: estavam erradas (o comentário do `salvarDiaSheets` no v7
+    dizia o mesmo e foi corrigido na v5.29). O `.gs` grava `AUTO dd/MM/yyyy
+    HH:mm` e `FECHADO=false`; o painel grava `dd/MM/yyyy, HH:mm:ss` e
+    `FECHADO=true`.
   - Hoje `salvarDiaSheets` calcula `efGrav = real ÷ k.meta` e grava ESSA.
     `relatorios.test.js` falha se `'ef='+k.ef` voltar.
 - **O mesmo botão ZERAVA a coluna MEDIA CX/H.** O `saveDay` grava
@@ -2728,17 +2729,38 @@ feito e dá ar de verdade ao que sobrou.
   leitura do painel (minutos de atraso), e a UEP o `saveDay` sempre calculou no
   `.gs`, lendo o log na hora: a mesma linha com números de dois momentos. As 18
   cx (501060003, hora das 16:00) entraram nesse intervalo.
-  - Hoje o `saveDay` tira REALIZADO, EF, MELHOR/PIOR, HE, MEDIA CX/H e HE CX da
+  - Hoje o `saveDay` tira REALIZADO, MELHOR/PIOR, HE, MEDIA CX/H e HE CX da
     `HORA_A_HORA` (`_resumoParaFechar` → `_resumoHoraAHora`, a MESMA conta do
     `arquivarDiaAtual`, que passou a morar ali). Do painel ficam a **META** e o
-    **FECHADO EM**. EF = REALIZADO ÷ essa META.
+    **FECHADO EM**. EF = REALIZADO da aba ÷ essa META (o das 23:59 divide pela
+    soma das metas da aba — com PROGRAMAÇÃO e HORA_A_HORA discordando, as duas
+    EF diferem, e é a do painel que vale).
+  - **Exceção — HE que só o painel conhece** (`heLocal`): painel com MAIS caixas
+    de HE (`p.heCx`) que a aba → fica tudo do painel, como antes. É o modal ⚙
+    HORA EXTRA do PC com a META vazia: o `addHE` grava a linha sem caixa (ignora
+    o `real`), o `getDados` pula linha de meta 0 e o REALIZADO digitado só existe
+    no `rpe_he` daquele navegador. Achado na revisão: sem a exceção, essas caixas
+    sumiam do HISTORICO caladas. O caminho certo é o `addHE` gravar o `real` na
+    planilha — não feito (mexe no upsert por rótulo e no que o operador lança na
+    mesma linha).
+  - **Sob o lock dos lançamentos** (`LockService.getScriptLock`, o mesmo do
+    `saveRealizado`): a leitura da aba, a do log (`_uepColsDoDia`) e o upsert saem
+    do mesmo instante, e TV + PC fechando no mesmo minuto não duplicam a linha.
+  - **Madrugada escondida pela C3 entra**: lançada às 05:00/06:00 e depois a C3
+    volta a 7 — o painel deixa de somar (o `getDados` filtra), a aba não. A linha
+    conta como HE, como o das 23:59 e a UEP HE (que separa pelo horário do log).
+    Nesse dia o HISTORICO fica maior que a PRODUÇÃO REAL da tela.
   - **Trava pelo carimbo `dataDados`** (`PROP_DATA_DADOS`, gravado a cada
     lançamento e apagado no reset): com ele de outro dia, sem ele, ou com a aba
     sem produção, grava o que o painel mandou, como antes.
   - O retorno diz `fonte: 'planilha' | 'painel'` e `realPainel`, e a diferença
     vai para o log de execução do Apps Script.
   - O painel e o celular não mudaram: o `salvarDiaSheets` continua mandando
-    tudo (é a rede do `.gs` antigo e do dia sem carimbo).
+    tudo (é a rede do `.gs` antigo, do dia sem carimbo e da HE local). O
+    comentário dele, que atribuía as 17:05 ao `arquivarDiaAtual`, foi corrigido.
+  - `fechamento.test.js` pega 18 mutações do `.gs` (trava, lock, exceção da HE,
+    meta, EF, melhor/pior, guardas de PIOR/MEDIA, soma dos LANÇ). A fixture da
+    linha `HE …` é como o `addHE` cria: REALIZADO vazio, caixa só no LANÇ.
   - ⚠ Consequência aceita: hora fechada em ZERO deixa de entrar em PIOR H.,
     MEDIA CX/H e HE no fechamento pelo painel (a regra das 23:59, que ignora
     hora sem produção). A coluna REALIZADO é fórmula e dá 0 tanto para "fechou

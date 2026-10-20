@@ -10418,9 +10418,12 @@ function salvarDiaSheets(data, k, fechadoEm){
      Medido em 28/08/2026: a linha ficou com META 1.881 e EF 100,6% (que é
      1.509 ÷ 1.500, a meta da HORA_A_HORA). O relatório semanal imprimia
      "100,6% · NA META" e o bloco do gerencial, do mesmo dia, dizia 80,2%.
-     O fechamento AUTOMÁTICO das 17:05 (`arquivarDiaAtual`, no .gs) sempre fez
-     assim — ef = real ÷ meta, a mesma meta da linha. Quem estava fora do
-     padrão era este botão. */
+     O fechamento das 23:59 (`arquivarDiaAtual`, no .gs) sempre fez assim —
+     ef = real ÷ meta, a mesma meta da linha. Quem estava fora do padrão era
+     este botão (que é também o fechamento das 17:05: o fecharDiaAutomatico
+     deste painel chama esta função). Desde o .gs v5.29 o saveDay troca real,
+     melhor, pior, he, heCx e mediaH pelos da HORA_A_HORA, lida na hora; o que
+     vai daqui fica de rede para o .gs antigo e para o dia sem o carimbo. */
   const efGrav = k.meta>0 ? (k.real/k.meta*100) : 0;
   /* ── MEDIA CX/H, MELHOR e PIOR: a definição é a do fechamento automático ───
      O `saveDay` grava `Number(p.mediaH || 0)` na coluna MEDIA CX/H — e este

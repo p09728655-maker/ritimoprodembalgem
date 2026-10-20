@@ -11,7 +11,10 @@
 //               (_resumoHoraAHora, a MESMA conta do arquivarDiaAtual) quando o
 //               carimbo `dataDados` diz que ela é do dia que está fechando. Do
 //               painel ficam a META e o FECHADO EM. Sem o carimbo do dia, ou
-//               sem produção na aba, grava o que o painel mandou, como antes.
+//               sem produção na aba, grava o que o painel mandou, como antes —
+//               e também quando o painel tem MAIS caixas de HE que a aba (HE do
+//               modal do PC com META vazia, que só existe no navegador). O
+//               saveDay passou a rodar sob o lock dos lançamentos.
 // Versão: 5.28 — META UEP PADRÃO 3.048 (BASE DA UEP PASSA A SER A SLEEP)
 //               PPCP, 19/10/2026: a base da UEP passou da MESA CABECEIRA
 //               MADERO para a MESA CABECEIRA SLEEP (a de mais caixas no
@@ -2616,59 +2619,81 @@ function preencherUepPassada(sobrescrever) {
 function regravarUepPassada() { preencherUepPassada(true); }
 
 function saveDay(p) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh   = ss.getSheetByName(SHEET_HIST);
+  // v5.29: sob o MESMO lock dos lançamentos (saveRealizado). Sem ele, um
+  // lançamento entre a leitura da HORA_A_HORA e a do log deixava REALIZADO e UEP
+  // de instantes diferentes (o defeito de 19/10, em segundos), e dois painéis
+  // fechando no mesmo minuto (TV + PC às 17:05) podiam acrescentar a linha duas vezes.
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sh   = ss.getSheetByName(SHEET_HIST);
 
-  if (!sh) {
-    sh = ss.insertSheet(SHEET_HIST);
-    sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX','UEP','UEP HE','META UEP']);
-    sh.setFrozenRows(1);
+    if (!sh) {
+      sh = ss.insertSheet(SHEET_HIST);
+      sh.appendRow(['DATA','REALIZADO','META','EFICIENCIA %','MELHOR H.','PIOR H.','HE','FECHADO','FECHADO EM','MEDIA CX/H','HE CX','UEP','UEP HE','META UEP']);
+      sh.setFrozenRows(1);
+    }
+    if (String(sh.getRange(1, 10).getValue()).trim() === '') sh.getRange(1, 10).setValue('MEDIA CX/H');
+    if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
+    _garantirColsUepHist(sh);
+
+    sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@');
+    sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');
+
+    const rows = sh.getDataRange().getValues();
+    const idx  = rows.slice(1).map(r => String(r[0])).indexOf(p.data);
+
+    // v5.29: os números da PRODUÇÃO saem da HORA_A_HORA, lida agora — o mesmo
+    // instante em que o _uepColsDoDia lê o log. O painel manda o retrato da
+    // última leitura DELE: em 19/10/2026 foram 1.491 cx gravadas contra 1.509 na
+    // planilha (18 cx lançadas minutos antes das 17:05), com a UEP das 1.509 na
+    // mesma linha. A META continua a do painel (é a meta do dia, da PROGRAMAÇÃO).
+    // Exceção: HORA EXTRA que só o PAINEL conhece. O modal ⚙ HORA EXTRA do PC
+    // com a META vazia guarda o REALIZADO digitado no navegador (rpe_he) — o
+    // addHE grava a linha sem caixa e o getDados a pula. Painel com mais caixas
+    // de HE que a aba → fica o que o painel mandou, como antes da v5.29: trocar
+    // pela aba apagaria essas caixas do HISTORICO em silêncio.
+    const pl0  = _resumoParaFechar(p.data);
+    const heLocal = !!pl0 && (Number(p.heCx) || 0) > pl0.heCx;
+    const pl   = heLocal ? null : pl0;
+    const meta = Number(p.meta) || 0;
+    const real = pl ? pl.real : (Number(p.real) || 0);
+    const row = [
+      p.data,
+      real,
+      meta,
+      pl ? (meta > 0 ? Number((real / meta * 100).toFixed(1)) : 0) : (Number(p.ef) || 0),
+      pl ? pl.melhor : (Number(p.melhor) || 0),
+      pl ? (pl.pior === null ? 0 : pl.pior) : (Number(p.pior) || 0),
+      pl ? pl.he : Number(p.he || 0),
+      true,
+      String(p.fechadoEm || ''),
+      pl ? (pl.horas > 0 ? Math.round(pl.real / pl.horas) : 0) : Number(p.mediaH || 0),
+      pl ? pl.heCx : Number(p.heCx || 0)   // caixas produzidas em hora extra
+    ].concat(_uepColsDoDia(p.data));   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
+
+    if (pl && real !== (Number(p.real) || 0)) {
+      Logger.log('saveDay ' + p.data + ': painel mandou ' + (Number(p.real) || 0) +
+        ' cx, a HORA_A_HORA tem ' + real + ' — gravado o da planilha.');
+    }
+
+    if (idx >= 0) {
+      sh.getRange(idx + 2, 1, 1, row.length).setValues([row]);
+    } else {
+      sh.appendRow(row);
+    }
+
+    if (heLocal) {
+      Logger.log('saveDay ' + p.data + ': o painel tem ' + (Number(p.heCx) || 0) + ' cx de HE e a HORA_A_HORA ' +
+        pl0.heCx + ' — gravado o do painel (HE só no navegador).');
+    }
+
+    return { ok: true, data: p.data, fonte: pl ? 'planilha' : 'painel', heLocal: heLocal,
+             real: real, realPainel: Number(p.real) || 0 };
+  } finally {
+    lock.releaseLock();
   }
-  if (String(sh.getRange(1, 10).getValue()).trim() === '') sh.getRange(1, 10).setValue('MEDIA CX/H');
-  if (String(sh.getRange(1, 11).getValue()).trim() === '') sh.getRange(1, 11).setValue('HE CX');
-  _garantirColsUepHist(sh);
-
-  sh.getRange(1, 1, sh.getMaxRows(), 1).setNumberFormat('@');
-  sh.getRange(1, 9, sh.getMaxRows(), 1).setNumberFormat('@');
-
-  const rows = sh.getDataRange().getValues();
-  const idx  = rows.slice(1).map(r => String(r[0])).indexOf(p.data);
-
-  // v5.29: os números da PRODUÇÃO saem da HORA_A_HORA, lida agora — o mesmo
-  // instante em que o _uepColsDoDia lê o log. O painel manda o retrato da
-  // última leitura DELE: em 19/10/2026 foram 1.491 cx gravadas contra 1.509 na
-  // planilha (18 cx lançadas minutos antes das 17:05), com a UEP das 1.509 na
-  // mesma linha. A META continua a do painel (é a meta do dia, da PROGRAMAÇÃO).
-  const pl   = _resumoParaFechar(p.data);
-  const meta = Number(p.meta) || 0;
-  const real = pl ? pl.real : (Number(p.real) || 0);
-  const row = [
-    p.data,
-    real,
-    meta,
-    pl ? (meta > 0 ? Number((real / meta * 100).toFixed(1)) : 0) : (Number(p.ef) || 0),
-    pl ? pl.melhor : (Number(p.melhor) || 0),
-    pl ? (pl.pior === null ? 0 : pl.pior) : (Number(p.pior) || 0),
-    pl ? pl.he : Number(p.he || 0),
-    true,
-    String(p.fechadoEm || ''),
-    pl ? (pl.horas > 0 ? Math.round(pl.real / pl.horas) : 0) : Number(p.mediaH || 0),
-    pl ? pl.heCx : Number(p.heCx || 0)   // caixas produzidas em hora extra
-  ].concat(_uepColsDoDia(p.data));   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
-
-  if (pl && real !== (Number(p.real) || 0)) {
-    Logger.log('saveDay ' + p.data + ': painel mandou ' + (Number(p.real) || 0) +
-      ' cx, a HORA_A_HORA tem ' + real + ' — gravado o da planilha.');
-  }
-
-  if (idx >= 0) {
-    sh.getRange(idx + 2, 1, 1, row.length).setValues([row]);
-  } else {
-    sh.appendRow(row);
-  }
-
-  return { ok: true, data: p.data, fonte: pl ? 'planilha' : 'painel',
-           real: real, realPainel: Number(p.real) || 0 };
 }
 
 // v5.29: o resumo da HORA_A_HORA para o FECHAR DIA — só quando a aba é do dia
