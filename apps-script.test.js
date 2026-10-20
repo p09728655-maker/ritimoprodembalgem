@@ -193,7 +193,9 @@ const ESCRITORAS = ['saveDay', 'saveParadas', 'endParada', 'arquivarDiaAtual',
                     // v5.24: cadastro de UEP e o histórico de versões dela
                     'setUepCatalogo', '_uepEstimarCatalogo', '_uepVerAba', '_uepVerRegistrar', '_uepVerDaEdicao',
                     // v5.25: excluir lançamento (lê a hora e o log DIRETO antes de apagar)
-                    '_excluirLancamentoCore', '_lancLinhaDaHora', '_lancTiraFamilia', '_lancRegistrarExclusao'];
+                    '_excluirLancamentoCore', '_lancLinhaDaHora', '_lancTiraFamilia', '_lancRegistrarExclusao',
+                    // v5.29: o FECHAR DIA lê a HORA_A_HORA para gravar o HISTORICO
+                    '_resumoParaFechar'];
 ESCRITORAS.forEach(f => {
   const corpo = pega('function ' + f + '(');
   ok(`${f} não usa o memo`, /_valores(DaAba)?\s*\(/.test(corpo), false);
