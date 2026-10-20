@@ -204,12 +204,19 @@ global.UEP_CONV_TOL_LS = eval('(' + pegaConst('UEP_CONV_TOL_LS') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UEP_CONV_LS = eval('(' + pegaConst('UEP_CONV_LS') + ')');
 global.UEP_BASE_MEDIDA = eval('(' + pegaConst('UEP_BASE_MEDIDA') + ')');
+global.CRONO_LINHA_DIAS = eval('(' + pegaConst('CRONO_LINHA_DIAS') + ')');
+global.UCV_REG_VEREDITO = eval('(' + pegaConst('UCV_REG_VEREDITO') + ')');
+global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null;
+['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
+  .forEach(f => eval.call(global, pegaJs(f)));
 // v7.146.1 (refatoração): a conta em três peças (base · cadastro · digitar) e o
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
-const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar('];
+const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar(',
+  'function _ucvLinhaDe(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
+  'function _ucvRegsDoProduto(', 'function _ucvRegsResumo('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
-  'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual('];
+  'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -279,7 +286,7 @@ ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
    [true, true, false]);
 const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
-   [/tab==='crono'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+   [/tab==='crono'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
 ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
 ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
@@ -384,11 +391,11 @@ const GC = pegaJs('function gerarRelatorioCrono(');
 // Revisão adversarial da v7.145.0: o papel lia o campo da base cru e a tela o
 // sincronizava com a meta — com a meta mudada pelo ⚙ ou pelo refresh, o papel
 // saía "BASE DIGITADA" com a régua antiga. Hoje as DUAS leem _uepConvEntradas.
-const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);';
+const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha);';
 ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chamada',
    [/const E = _uepConvEntradas\(\);/.test(AT), /const E = _uepConvEntradas\(\);/.test(GC), AT.includes(MONTA), GC.includes(MONTA),
     (JS.match(/(?<!function )_uepConvEntradas\(\)/g) || []).length, /_uepConvDocHtml\(R, ctx\)/.test(GC), GC.indexOf('_uepConvAtualiza();') < GC.indexOf('_uepConvEntradas()')],
-   [true, true, true, true, 2, true, true]);
+   [true, true, true, true, 3, true, true]);   // 3: tela, papel e o 💾 REGISTRAR (v7.150.0)
 {
   // O caso da revisão, rodando a função real: campo automático em 10,4 (meta
   // 3.048) e a meta muda para 2.530 sem a aba redesenhar.
@@ -587,6 +594,92 @@ ok('o título do campo diz que vazio é a SLEEP medida (e não mais a régua da 
      [true, true, true, true]);
   ok('o cartão MEDIDO diz de qual cartão do app veio o número',
      [_uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048)).includes('>MEDIDO · RODANDO<'), H1.includes('>MEDIDO · NO PERÍODO<')], [true, true]);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// O QUE A LINHA FAZ + REGISTRO DA MEDIÇÃO (v7.150.0, PPCP: "pode fazer tbm
+// guardar o que é cronoanalise e que linha faz" → os dois)
+console.log('\n── CRONOANÁLISE → UEP: a linha faz e o registro ──');
+{ // MADERO em 4 dias: 300/2h · 400/2h · 500/2h · e um dia com DUAS cores na mesma hora (300 cx em 2 horas DISTINTAS)
+  const IT = (data, cor, cx, hs, nome) => ({ data, modelo:'501149', nome:nome || 'MESA CABECEIRA MADERO', cor, caixas:cx, horas:hs.length, horasLista:hs });
+  const ITENS = [IT('01/10/2026', 'BRANCO', 300, ['07:00', '08:00']), IT('02/10/2026', 'BRANCO', 400, ['07:00', '08:00']),
+    IT('03/10/2026', 'BRANCO', 500, ['07:00', '08:00']), IT('06/10/2026', 'BRANCO', 200, ['07:00', '08:00']),
+    IT('06/10/2026', 'CINZA/CINAMOMO', 100, ['08:00']), IT('06/10/2026', 'BRANCO', 999, ['09:00'], 'MESA CABECEIRA SLEEP'),
+    { data:'07/10/2026', modelo:'501149', nome:'MESA  CABECEIRA   MADERO', caixas:0, horasLista:['07:00'] }];
+  const pM = PRODS.find(p => p.rot === '501149 · MESA CABECEIRA MADERO');
+  const L = _ucvLinhaDe(ITENS, pM);
+  ok('A LINHA FAZ: horas DISTINTAS por dia (duas cores na mesma hora = uma hora) e média APARADA (sai um 150 e o 250) — 700 cx ÷ 4 h',
+     [L.dias, L.cx, Math.round(L.cxh), L.sCx.toFixed(2), L.aparada], [4, 1500, 175, '20.57', true]);
+  ok('produto que não rodou na janela: null (nada para comparar), nunca zero', _ucvLinhaDe(ITENS, PRODS.find(p => p.rot === '501139 · ARMARIO ENCANTO')), null);
+  const RM = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15, ITENS), HM = _uepConvHtml(RM);
+  ok('o montar põe a linha ao lado da cronoanálise: 8,6 ÷ 20,6 = a linha entrega 41,8% do ritmo rodando',
+     [RM.linhaEst, Math.round(RM.linha.cxh), RM.linhaPct.toFixed(1), HM.includes('A LINHA FAZ'), HM.includes('<b>20,6 s</b>'), HM.includes('175 cx/h'), HM.includes('a linha entrega <b>41,8%</b>')],
+     ['ok', 175, '41.8', true, true, true, true]);
+  ok('lendo · falhou · não rodou: a tela diz qual, sem número inventado',
+     [_uepConvHtml(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15, 'lendo')).includes('lendo a produção dos últimos 30 dias'),
+      _uepConvHtml(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15, 'falhou')).includes('não foi lida'),
+      _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048, 15, ITENS)).includes('não rodou nos últimos 30 dias'),
+      _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048, 15, ITENS).linhaPct],
+     [true, true, true, null]);
+  ok('sem o 7º parâmetro (chamador antigo) nada muda na conversão', _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15).uepVol.toFixed(4), RM.uepVol.toFixed(4));
+  ok('a janela é a do bloco 7 (30 dias fechados, hoje fora) e reaproveita a leitura dele',
+     [_uepPadJanela(30, new Date(2026, 9, 20)), /UEP_PAD && UEP_PAD\.de === J\.de && UEP_PAD\.ate === J\.ate/.test(pegaJs('function _ucvLinhaItens('))],
+     [{ de:'20/09/2026', ate:'19/10/2026' }, true]);
+
+  // os campos do registro
+  const H = '20/10/2026';
+  ok('campos vazios: a data é hoje, o resto fica vazio (nunca 0)', _ucvRegValida(8.6, {}, H), { data:H, per:null, lac:null, vol:null, vel:null, quem:'' });
+  ok('números em pt-BR e o nome cortado em 40', _ucvRegValida(8.6, { per:'9,4', lac:'7,1', vol:'60', vel:'9', quem:'  Maurício ' }, H),
+     { data:H, per:9.4, lac:7.1, vol:60, vel:9, quem:'Maurício' });
+  const E1v = _ucvRegValida(8.6, { per:'7,9' }, H), E2v = _ucvRegValida(8.6, { lac:'9,1' }, H);
+  ok('NO PERÍODO menor que o RODANDO, ou SEM AS LACUNAS maior: campos trocados — não grava',
+     [/menor que o RODANDO/.test(E1v.erro), /trocados/.test(E1v.erro), /maior que o RODANDO/.test(E2v.erro)], [true, true, true]);
+  ok('data no futuro, data torta, texto no número: não grava',
+     [!!_ucvRegValida(8.6, { data:'21/10/2026' }, H).erro, !!_ucvRegValida(8.6, { data:'2/10/26' }, H).erro, !!_ucvRegValida(8.6, { vol:'abc' }, H).erro, !!_ucvRegValida(8.6, { per:'0' }, H).erro],
+     [true, true, true, true]);
+
+  // a linha da planilha
+  const V = _ucvRegValida(8.6, { per:'9,4', lac:'7,1', vol:'60', quem:'PPCP' }, H);
+  const D = _ucvRegMontar(RM, V, { de:'20/09/2026', ate:'19/10/2026' });
+  ok('a linha da planilha: os segundos da medição, a conversão do momento e o que a linha faz',
+     [D.data, D.modelo, D.produto, D.volume, D.sRod, D.sPer, D.sLac, D.volumes, D.base, D.baseS, D.tol, D.tpS, D.uep, D.uepCad, D.linhaCxh, D.linhaSCx, D.linhaDias, D.linhaPer, D.vel, D.quem],
+     [H, '501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 8.6, 9.4, 7.1, 60, 'SLEEP MEDIDA 20/10/2026', 7.9, 15, 9.89, 1.09, 1, 175, 20.57, 4, '20/09/2026 a 19/10/2026', '', 'PPCP']);
+  ok('o REG_ID sai do conteúdo: a mesma medição dá o mesmo id (o 2º clique não duplica); outra medição, outro id',
+     [D.regId === _ucvRegMontar(RM, V, null).regId, D.regId === _ucvRegMontar(RM, Object.assign({}, V, { lac:7 }), null).regId, /^c[0-9a-z]+$/.test(D.regId)],
+     [true, false, true]);
+  const PS = PRODS.find(p => p.rot === '501059 · PENTEADEIRA CAMARIM STRASS'), PV = PRODS.find(p => p.rot === '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2');
+  ok('o volume vai como texto que o Sheets não vira data (o "1/2" viraria)', [_ucvRegVol(pM), _ucvRegVol(PS), _ucvRegVol(PV)], ['VOL 1/1', 'JOGO 2 VOL', 'VOL 2/2']);
+  ok('base da régua da meta e base digitada ficam ditas na linha',
+     [_ucvRegMontar(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 9.5, 10.4, 3048, 15), V, null).base,
+      _ucvRegMontar(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 9.5, 8.2, 3048, 15), V, null).base,
+      _ucvRegMontar(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 9.5, 10.4, 3048, 15), V, null).tol],
+     ['RÉGUA DA META', 'DIGITADA', 0]);
+
+  // a regra das DUAS medições (PPCP, 20/10/2026)
+  const RG = (data, uep, uepCad, extra) => Object.assign({ data, modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1', uep, uepCad }, extra || {});
+  ok('um dia só: medir em outro dia antes de trocar', _ucvRegsResumo([RG(H, 1.05, 1.2), RG(H, 1.06, 1.2)]).veredito, 'um-dia');
+  ok('dois dias, os dois mais LEVES que a faixa: pode trocar', [_ucvRegsResumo([RG(H, 1.05, 1.2), RG('17/10/2026', 1.04, 1.2)]).veredito, _ucvRegsResumo([RG(H, 1.05, 1.2), RG('17/10/2026', 1.04, 1.2)]).lado], ['trocar', 'leve']);
+  ok('dois dias, um fora e um dentro da faixa: discordam', _ucvRegsResumo([RG(H, 1.05, 1.2), RG('17/10/2026', 1.12, 1.2)]).veredito, 'discordam');
+  ok('dois dias dentro da faixa: a UEP fica', _ucvRegsResumo([RG(H, 1.11, 1.2), RG('17/10/2026', 1.14, 1.2)]).veredito, 'confere');
+  ok('o filtro do produto: mesmo modelo, nome e volume', _ucvRegsDoProduto([RG(H, 1, 1), RG(H, 1, 1, { volume:'JOGO 2 VOL' }), RG(H, 1, 1, { modelo:'501094' })], pM).length, 1);
+  const HR = _ucvRegsHtml([RG(H, 1.05, 1.2, { sRod:8.6, linhaSCx:20.57 })], pM, null);
+  ok('a lista diz a regra e mostra os segundos, a UEP e o que a linha faz',
+     [HR.includes('1 medição em 1 dia'), HR.includes('meça em outro dia antes de trocar a UEP'), HR.includes('<b>8,6 s</b>'), HR.includes('20,6 s/cx'), HR.includes('<b>1,05</b>')],
+     [true, true, true, true, true]);
+  ok('lista sem o .gs novo, ainda lendo, vazia: diz qual',
+     [_ucvRegsHtml(null, pM, 'sem-endpoint').includes('cole o .gs v5.30'), _ucvRegsHtml(null, pM, null).includes('Lendo as medições'),
+      _ucvRegsHtml([], pM, null).includes('Nenhuma medição registrada deste produto')], [true, true, true]);
+}
+{ const RGS = pegaJs('async function _ucvRegistrar('), AT3 = pegaJs('function _uepConvAtualiza(');
+  ok('o 💾 grava pelo registrarCrono com retentativa, confere a resposta do .gs novo e NÃO toca a UEP do cadastro',
+     [/action=registrarCrono/.test(RGS), /jsonpEscrita\(/.test(RGS), /!r \|\| !r\.registrado/.test(RGS), /setUepCatalogo|simularUepCatalogo/.test(RGS), /confirm\(/.test(RGS)],
+     [true, true, true, false, true]);
+  ok('o formulário mora FORA do resultado (refeito a cada tecla) e só aparece com a conversão pronta',
+     [html.indexOf('id="uep-conv-reg"') > html.indexOf('id="uep-conv-res"'), /box\.style\.display = R\.estado === 'ok'/.test(pegaJs('function _ucvRegPintar(')), /_ucvRegPintar\(R\)/.test(AT3)],
+     [true, true, true]);
+  ok('a leitura da linha só sai com produto escolhido, uma de cada vez (espera a das medições)',
+     [/if\(R\.p && \(E\.linha === 'nao-lida' \|\| E\.linha === 'falhou'\)\) _ucvLinhaCarregar\(\)/.test(AT3), /if\(UCV_REGS_VOO\) await UCV_REGS_VOO/.test(pegaJs('function _ucvLinhaCarregar('))],
+     [true, true]);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

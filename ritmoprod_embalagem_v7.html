@@ -493,6 +493,31 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-lista li{display:flex;gap:6px 14px;align-items:baseline;flex-wrap:wrap;font-family:var(--font-d);font-size:11.5px;color:var(--txt2);padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px}
 #sec-crono .ucv-lista li b{font-family:var(--font-h);font-size:20px;color:var(--txt);min-width:44px}
 #sec-crono .ucv-lista .ucv-vol{font-size:10px;letter-spacing:1px;color:var(--txt2);border:1px solid var(--border);border-radius:4px;padding:1px 6px}
+#sec-crono .ucv-linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 16px;padding:11px 16px;border:1px solid var(--border);border-left:4px solid var(--ucv-azul);border-radius:8px;background:var(--surface);font-family:var(--font-b);font-size:13.5px;color:var(--txt2)}
+#sec-crono .ucv-acao+.ucv-linha{margin-top:14px}
+#sec-crono .ucv-linha-l{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2)}
+#sec-crono .ucv-linha>b{font-family:var(--font-h);font-size:22px;color:var(--txt)}
+#sec-crono .ucv-linha-c{flex-basis:100%;color:var(--txt)}
+#sec-crono .ucv-linha-c b{color:var(--txt)}
+#sec-crono #uep-conv-reg{margin-top:18px;padding:16px 20px;border-radius:10px;border:1px solid var(--border)}
+#sec-crono .ucv-reg-t{font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--txt);margin-bottom:12px}
+#sec-crono .ucv-reg-t span{display:block;margin-top:4px;font-family:var(--font-b);font-size:12px;letter-spacing:0;color:var(--txt2)}
+#sec-crono .ucv-reg-f{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr)) auto;gap:12px;align-items:end}
+#sec-crono .ucv-reg-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.4px;color:var(--txt2);min-width:0}
+#sec-crono .ucv-reg-f .frm-inp{width:100%;height:40px;padding:0 11px;font-size:14px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box}
+#sec-crono #uep-conv-r-btn{height:40px;padding:0 16px;font-size:10.5px;letter-spacing:1.2px;border:1px solid rgba(46,204,113,.5);border-radius:7px;color:var(--txt);white-space:nowrap}
+#sec-crono #uep-conv-r-msg{margin-top:10px;font-family:var(--font-b);font-size:13px;color:var(--txt)}
+#sec-crono #uep-conv-regs{margin-top:22px}
+#sec-crono .ucv-regs-t{font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--txt2);margin-bottom:8px}
+#sec-crono .ucv-regs-r{font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:9px 14px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:8px}
+#sec-crono .ucv-regs-r.ok{border-left-color:var(--ok)}
+#sec-crono .ucv-regs-r.troca{border-left-color:var(--acc)}
+#sec-crono .ucv-regs-w{overflow-x:auto}
+#sec-crono .ucv-regs{width:100%;border-collapse:collapse;font-size:12.5px}
+#sec-crono .ucv-regs th{background:none;font-family:var(--font-d);font-size:9px;letter-spacing:1.2px;color:var(--txt2);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+#sec-crono .ucv-regs td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--txt);white-space:nowrap}
+#sec-crono .ucv-regs .n{text-align:right}
+@media (max-width:1100px){#sec-crono .ucv-reg-f{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:1100px){#sec-crono .uep-conv-f{grid-template-columns:1fr 1fr}#sec-crono .uep-conv-f label:first-child{grid-column:1/-1}}
 @media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}#sec-crono .ucv-qual-g{grid-template-columns:1fr}}
 @media (max-width:560px){#sec-crono .uep-conv-f,#sec-crono .ucv-info{grid-template-columns:1fr}#sec-crono .uep-conv .kpi-grid{grid-template-columns:1fr}}
@@ -1962,7 +1987,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido">⚖ UEP</button>
-  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (SLEEP). Nada é gravado.">⏱ CRONOANÁLISE</button>
+  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (SLEEP). A UEP do cadastro não muda aqui; o 💾 REGISTRAR guarda só a medição.">⏱ CRONOANÁLISE</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -2794,7 +2819,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tbl-hdr" style="margin-bottom:14px">
     <span class="tbl-hdr-ttl">⏱ CRONOANÁLISE → UEP</span>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — nada é gravado</span>
+      <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro não muda aqui</span>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" style="font-size:10px;padding:4px 10px" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
     </div>
@@ -2812,6 +2837,20 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-nota" id="uep-conv-guia"></div>
     </div>
     <div id="uep-conv-res"></div>
+    <div id="uep-conv-reg" class="uep-card" style="display:none">
+      <div class="ucv-reg-t">REGISTRAR ESTA MEDIÇÃO <span>guarda na planilha (aba CRONOANALISE) os segundos da medição e o que a linha faz — a UEP do cadastro não muda</span></div>
+      <div class="ucv-reg-f">
+        <label>DATA DA MEDIÇÃO<input id="uep-conv-r-data" class="frm-inp" inputmode="numeric" maxlength="10" oninput="maskData(this)"></label>
+        <label title="O cartão POR VOLUME NO PERÍODO do Volume a volume (com as paradas). Opcional.">NO PERÍODO (s)<input id="uep-conv-r-per" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
+        <label title="O SEM AS LACUNAS do Volume a volume (sem parada nenhuma). Opcional.">SEM AS LACUNAS (s)<input id="uep-conv-r-lac" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
+        <label>VOLUMES MEDIDOS<input id="uep-conv-r-vol" class="frm-inp" inputmode="numeric" placeholder="opcional"></label>
+        <label title="A velocidade da esteira durante a medição. Vazio = a do cadastro.">VELOCIDADE (m/min)<input id="uep-conv-r-vel" class="frm-inp" inputmode="decimal"></label>
+        <label>MEDIDO POR<input id="uep-conv-r-quem" class="frm-inp" maxlength="40" placeholder="opcional"></label>
+        <button type="button" class="btn btn-ghost" id="uep-conv-r-btn" onclick="_ucvRegistrar()">💾 REGISTRAR MEDIÇÃO</button>
+      </div>
+      <div class="uep-nota" id="uep-conv-r-msg"></div>
+    </div>
+    <div id="uep-conv-regs"></div>
   </div>
 </section>
 
@@ -3320,7 +3359,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.149.0';
+const APP_VER   = '7.150.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5817,7 +5856,8 @@ function _uepConvProdutos(cat){
     const k = cod.slice(0, 6) + '|' + nome;
     const p = P[k] = P[k] || { chave:k, modelo:cod.slice(0, 6), nome, rot:cod.slice(0, 6) + ' · ' + nome, nVol:1, cods:[] };
     p.nVol = Math.max(p.nVol, nVol);
-    p.cods.push({ cod, vol, cor:String(c.cor || '').trim(), uep:Number(c.uep) > 0 ? Number(c.uep) : null, vig:String(c.uepVig || '').trim() });
+    p.cods.push({ cod, vol, cor:String(c.cor || '').trim(), uep:Number(c.uep) > 0 ? Number(c.uep) : null, vig:String(c.uepVig || '').trim(),
+                  vel:Number(c.velocidade) > 0 ? Number(c.velocidade) : null, entre:c.entrePeca === '' || c.entrePeca == null ? null : Number(c.entrePeca) });
   });
   // v7.143.2 (PPCP: "tenho que ver qual volume é"): produto de N volumes ganha
   // também uma linha por volume — cronometrado um volume de cada vez, a UEP e o
@@ -5912,18 +5952,24 @@ function _uepConvDigitar(p, cad, uepVol, uepJogo){
 }
 // A conversão inteira: estado (sem-cadastro · sem-produto · sem-tempo · ok),
 // a base, o cadastro do produto e, com o tempo, a UEP e o que digitar.
-function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct){
+// linhaItens (v7.150.0): os itens de produção da janela (array) ou o estado da
+// leitura ('lendo' · 'falhou' · 'nao-lida') — é de onde sai A LINHA FAZ.
+function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaItens){
   const base = _uepConvBaseDe(baseSeg, metaUep, tolPct);
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
   if(!a.p) return { estado:'sem-produto', base, txt:String(txt || '').trim(), n:a.n };
   const p = a.p, cad = _uepConvCadastro(p);
   const R = { estado:'sem-tempo', base, p, vols:cad.vols, completo:cad.completo, jogoCad:cad.jogoCad, volCad:cad.volCad, ehBase:_uepEhBase(p),
-              prevSeg:cad.volCad != null ? cad.volCad * base.seg : null, origem:cad.origem };
+              prevSeg:cad.volCad != null ? cad.volCad * base.seg : null, origem:cad.origem,
+              linhaEst:Array.isArray(linhaItens) ? 'ok' : (linhaItens || 'nao-lida'),
+              linha:Array.isArray(linhaItens) ? _ucvLinhaDe(linhaItens, p) : undefined };
   const s = Number(seg);
   if(!(s > 0)) return R;
   R.estado = 'ok'; R.seg = s;
   R.uepVol = s / base.seg; R.uepJogo = R.uepVol * p.nVol;
+  // quanto do ritmo da cronoanálise (rodando) a linha entrega na produção real
+  R.linhaPct = R.linha ? s / R.linha.sCx * 100 : null;
   // tempo padrão do produto: a MESMA tolerância da base — por isso a UEP acima
   // (s ÷ base) é igual a tempo padrão ÷ tempo padrão da base
   R.tpSeg = base.tpSeg != null ? s * base.tolFator : null;
@@ -5984,7 +6030,7 @@ function _uepConvNotasHtml(base){
       : base.tol > 0 ? `${tol} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
       : 'zero: o tempo padrão é o próprio medido.');
   const regua = _uepConvRegua(base) + '.' + (base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base cronometrada, o tempo é o COM A LINHA RODANDO (paradas fora).');
-  return '<div class="ucv-info">' + [['TOLERÂNCIA', tolLinha], ['RÉGUA', regua], ['GRAVAÇÃO', 'Nada é gravado aqui.']]
+  return '<div class="ucv-info">' + [['TOLERÂNCIA', tolLinha], ['RÉGUA', regua], ['GRAVAÇÃO', 'A UEP do cadastro não muda aqui: só digitada na PRODUTO_CODIGO. O 💾 REGISTRAR MEDIÇÃO guarda a medição na aba CRONOANALISE.']]
     .map(l => `<span>${l[0]}</span><p>${l[1]}</p>`).join('') + '</div>';
 }
 // A própria base medida: ela continua 1,00; o que se lê é a distância para a
@@ -6032,9 +6078,22 @@ function _uepConvHtml(R){
   if(R.estado !== 'ok'){
     const cad = _uepConvCadTxt(R);
     return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
-      : `No cadastro: ${cad.n} UEP por volume (${cad.sub}). Digite o tempo por volume medido.`}</div>` + foraNota;
+      : `No cadastro: ${cad.n} UEP por volume (${cad.sub}). Digite o tempo por volume medido.`}</div>` + _ucvLinhaHtml(R) + foraNota;
   }
-  return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _uepConvNotasHtml(R.base);
+  return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _ucvLinhaHtml(R) + _uepConvNotasHtml(R.base);
+}
+// A LINHA FAZ (v7.150.0): o MÉD.PERÍODO do produto ao lado da cronoanálise.
+// Desenho: tudo vem pronto do _uepConvMontar (R.linha, R.linhaPct, R.linhaEst).
+function _ucvLinhaHtml(R){
+  const t = '<span class="ucv-linha-l">A LINHA FAZ</span>', n = CRONO_LINHA_DIAS;
+  if(R.linhaEst === 'falhou') return `<div class="ucv-linha">${t}<span>a produção dos últimos ${n} dias não foi lida — tenta de novo em 1 min.</span></div>`;
+  if(R.linhaEst !== 'ok') return `<div class="ucv-linha">${t}<span>lendo a produção dos últimos ${n} dias…</span></div>`;
+  if(!R.linha) return `<div class="ucv-linha">${t}<span>o produto não rodou nos últimos ${n} dias fechados — nada para comparar.</span></div>`;
+  const L = R.linha;
+  return `<div class="ucv-linha" title="MÉD.PERÍODO da aba PRODUÇÃO/HORA: caixas ÷ horas em que o produto rodou, dia a dia, média ${L.aparada ? 'sem o melhor e o pior dia' : 'de todos os dias'}. Hora dividida com outro produto conta inteira: a linha sai um pouco mais lenta do que é.">`
+    + `${t}<b>${_taktTxt(L.sCx)}</b><span>por caixa · ${fmtN(Math.round(L.cxh))} cx/h · ${L.dias} dia${L.dias === 1 ? '' : 's'} nos últimos ${n}${R.p.volSel ? ` · média dos ${R.p.nVolTot} volumes` : ''}</span>`
+    + (R.linhaPct != null ? `<span class="ucv-linha-c">a linha entrega <b>${fmtP(R.linhaPct)}</b> do ritmo da cronoanálise rodando (${_taktTxt(R.seg)})</span>` : '')
+    + '</div>';
 }
 // A orientação de qual tempo digitar (v7.142.2, PPCP: "as paradas são evitáveis
 // se ajustar"). Parada evitável não é esforço do produto: o método certo é a
@@ -6092,7 +6151,7 @@ function _uepConvEntradas(){
   if(elT && document.activeElement !== elT && !elT.value.trim()) elT.value = _ucvLe(UEP_CONV_TOL_LS) || String(UEP_CONV_TOL_PADRAO);
   const tTxt = elT ? elT.value.trim() : '';
   // sem algarismo (o _pgSimNum devolveria 0): NaN, que a conta troca pelo padrão e a tela avisa
-  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:bTxt ? _pgSimNum(bTxt) : UEP_BASE_MEDIDA.seg, meta,
+  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:bTxt ? _pgSimNum(bTxt) : UEP_BASE_MEDIDA.seg, meta, linha:_ucvLinhaItens(),
            tol:tTxt === '' ? UEP_CONV_TOL_PADRAO : /\d/.test(tTxt) ? _pgSimNum(tTxt) : NaN };
 }
 function _uepConvTol(){
@@ -6123,10 +6182,12 @@ function _uepConvAtualiza(){
     fx.disabled = o.acao === 'sem-base'; }
   const guia = _ucvEl('guia');
   try{
-    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);
+    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha);
     if(guia) guia.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
     const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME RODANDO';
     res.innerHTML = _uepConvHtml(R);
+    _ucvRegPintar(R);
+    if(R.p && (E.linha === 'nao-lida' || E.linha === 'falhou')) _ucvLinhaCarregar();   // só com produto escolhido
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
 }
 // v7.142.1 (PPCP: "quando dá tab cai para baixo"): depois do último campo, o
@@ -6166,6 +6227,232 @@ function _uepConvBase(){
   const elB = _ucvEl('base');
   _ucvGuarda(UEP_CONV_LS, elB ? elB.value.trim() : '');
   _uepConvAtualiza();
+}
+// ════════════════════════════════════════════════════════════════════════════
+// O QUE A LINHA FAZ + REGISTRO DA MEDIÇÃO (v7.150.0 / .gs v5.30)
+// ════════════════════════════════════════════════════════════════════════════
+// PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanalise e que linha
+// faz" → os dois. A cronoanálise é o que a linha faz RODANDO; o que ela faz de
+// verdade é o MÉD.PERÍODO da aba PRODUÇÃO/HORA, a mesma conta: caixas ÷ horas
+// DISTINTAS em que o produto rodou, por dia, média APARADA (_phMediaAparada),
+// nos últimos CRONO_LINHA_DIAS dias FECHADOS (_uepPadJanela — a janela do bloco
+// 7, hoje fora). Hora dividida com outro produto conta inteira (a régua do
+// comparativo): a linha sai um pouco mais lenta do que é, e o title diz isso.
+// Custo: UM getProducaoModeloPeriodo da janela, só com produto escolhido, e a
+// janela só muda na virada do dia; nenhum se o bloco 7 da aba ⚖ UEP já leu a
+// mesma janela (UEP_PAD). Uma leitura de cada vez: espera a das medições.
+// O REGISTRO grava na aba CRONOANALISE (.gs v5.30, registrarCrono) os segundos
+// da medição — RODANDO, NO PERÍODO, SEM AS LACUNAS —, a conversão do momento e
+// A LINHA FAZ. Os SEGUNDOS são o que importa: base nova ou esteira em outra
+// velocidade, a UEP de todo produto se refaz pela conta, sem medir de novo.
+// ⚠ NÃO troca a UEP do cadastro (TRAVADA, só digitada). A regra combinada com
+// o PPCP (20/10/2026): manter a faixa 90–110% e trocar a UEP só com DUAS
+// medições em dias diferentes apontando o mesmo lado — o resumo da lista diz.
+const CRONO_LINHA_DIAS = 30;
+const CRONO_REG_TTL = 2 * 60 * 1000;
+let UCV_LINHA = null, UCV_LINHA_VOO = null;   // { de, ate, itens, falha, ts }
+let UCV_REGS = null, UCV_REGS_VOO = null;     // { lista, falha, ts }
+// Conta pura: o produto (modelo + nome — todas as cores e volumes) nos itens do
+// período. null = não rodou na janela.
+function _ucvLinhaDe(itens, p){
+  if(!p) return null;
+  const k = _uepConvNorm(p.modelo + '|' + p.nome), D = {};
+  (itens || []).forEach(it => {
+    if(!it || !(Number(it.caixas) > 0) || _uepConvNorm(String(it.modelo || '') + '|' + (it.nome || '')) !== k) return;
+    _phAdd(D[it.data] = D[it.data] || _phAcc(), it);
+  });
+  // as horas do dia são as DISTINTAS (duas cores na mesma hora = uma hora)
+  const accs = Object.keys(D).map(d => { const a = D[d], h = Object.keys(a.hSet).length; if(h) a.horas = h; return a; }).filter(a => a.horas > 0);
+  if(!accs.length) return null;
+  const m = _phMediaAparada(accs, 'mediaH', 'aparada');
+  if(!(m.val > 0)) return null;
+  return { cxh:m.val, sCx:3600 / m.val, dias:accs.length, cx:accs.reduce((t, a) => t + a.caixas, 0), aparada:m.aparada };
+}
+// Os itens da janela, se já estão na mão (daqui ou do bloco 7); senão o estado
+// da leitura. É o que o _uepConvEntradas entrega ao _uepConvMontar.
+function _ucvLinhaItens(){
+  const J = _uepPadJanela(CRONO_LINHA_DIAS);
+  if(UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.ate === J.ate && UCV_LINHA.itens) return UCV_LINHA.itens;
+  if(UEP_PAD && UEP_PAD.de === J.de && UEP_PAD.ate === J.ate && Array.isArray(UEP_PAD.itens)) return UEP_PAD.itens;
+  if(UCV_LINHA_VOO) return 'lendo';
+  return UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.ate === J.ate && UCV_LINHA.falha ? 'falhou' : 'nao-lida';
+}
+function _ucvLinhaCarregar(){
+  if(UCV_LINHA_VOO) return UCV_LINHA_VOO;
+  const J = _uepPadJanela(CRONO_LINHA_DIAS);
+  if(!CFG.sheetsUrl || Array.isArray(_ucvLinhaItens())) return Promise.resolve();
+  if(UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.falha && Date.now() - UCV_LINHA.ts < 60000) return Promise.resolve();
+  UCV_LINHA_VOO = (async () => {
+    if(UCV_REGS_VOO) await UCV_REGS_VOO.catch(() => {});
+    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=getProducaoModeloPeriodo'
+      + '&de=' + encodeURIComponent(J.de) + '&ate=' + encodeURIComponent(J.ate);
+    let itens = null, falha = 'sem-resposta';
+    for(let t = 1; t <= 3; t++){
+      try{
+        const r = await jsonpFetch(url, 60000);
+        if(r && r.ok && Array.isArray(r.itens)){ itens = r.itens; falha = null; }
+        else falha = r && r.ok === false ? 'erro' : 'sem-endpoint';
+        break;
+      }catch(e){ if(t < 3) await new Promise(ok => setTimeout(ok, 2000 * t)); }
+    }
+    UCV_LINHA = { de:J.de, ate:J.ate, itens, falha, ts:Date.now() };
+  })().finally(() => { UCV_LINHA_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
+  return UCV_LINHA_VOO;
+}
+// As medições registradas (getCronoRegistros): ao abrir a aba, depois do
+// cadastro, e de novo depois de cada registro.
+function _ucvRegsCarregar(forcar){
+  if(!CFG.sheetsUrl) return Promise.resolve();
+  if(UCV_REGS_VOO) return UCV_REGS_VOO;
+  if(!forcar && UCV_REGS && Date.now() - UCV_REGS.ts < (UCV_REGS.falha ? 60000 : CRONO_REG_TTL)) return Promise.resolve();
+  UCV_REGS_VOO = (async () => {
+    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=getCronoRegistros';
+    let lista = null, falha = 'sem-resposta';
+    for(let t = 1; t <= 2; t++){
+      try{
+        const r = await jsonpFetch(url);
+        if(r && r.ok && Array.isArray(r.registros)){ lista = r.registros; falha = null; }
+        else falha = r && r.ok === false ? 'erro' : 'sem-endpoint';   // .gs antigo cai no getDados
+        break;
+      }catch(e){ if(t < 2) await new Promise(ok => setTimeout(ok, 2000)); }
+    }
+    UCV_REGS = { lista:lista || (UCV_REGS && UCV_REGS.lista) || null, falha, ts:Date.now() };
+  })().finally(() => { UCV_REGS_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
+  return UCV_REGS_VOO;
+}
+// ── Contas puras do registro ───────────────────────────────────────────────
+// O volume como vai à planilha: texto que o Sheets não vira data ("1/2" viraria).
+function _ucvRegVol(p){ return p.volSel ? `VOL ${p.volSel}/${p.nVolTot}` : p.nVol > 1 ? `JOGO ${p.nVol} VOL` : 'VOL 1/1'; }
+// Os campos do registro, conferidos. No Volume a volume o NO PERÍODO é sempre o
+// maior dos três e o SEM AS LACUNAS o menor: fora disso os campos estão trocados.
+function _ucvRegValida(seg, F, hoje){
+  const num = v => { const t = String(v == null ? '' : v).trim(); return t === '' ? null : /\d/.test(t) ? _pgSimNum(t) : NaN; };
+  const per = num(F.per), lac = num(F.lac), vol = num(F.vol), vel = num(F.vel);
+  const data = String(F.data || '').trim() || hoje;
+  if(!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return { erro:'DATA DA MEDIÇÃO: use dd/mm/aaaa.' };
+  if(_cartNum(data) > _cartNum(hoje)) return { erro:'DATA DA MEDIÇÃO está no futuro.' };
+  const C = [[per, 'NO PERÍODO'], [lac, 'SEM AS LACUNAS'], [vol, 'VOLUMES MEDIDOS'], [vel, 'VELOCIDADE']];
+  for(const c of C) if(c[0] != null && !(c[0] > 0)) return { erro:c[1] + ': digite um número maior que zero, ou deixe vazio.' };
+  if(per != null && per < seg - 0.05) return { erro:`NO PERÍODO (${_taktTxt(per)}) é menor que o RODANDO (${_taktTxt(seg)}). No Volume a volume o período é sempre o maior dos três — confira se os campos não estão trocados.` };
+  if(lac != null && lac > seg + 0.05) return { erro:`SEM AS LACUNAS (${_taktTxt(lac)}) é maior que o RODANDO (${_taktTxt(seg)}). No Volume a volume ele é sempre o menor dos três — confira se os campos não estão trocados.` };
+  return { data, per, lac, vol:vol != null ? Math.round(vol) : null, vel, quem:String(F.quem || '').trim().slice(0, 40) };
+}
+function _ucvHash(s){ let h = 2166136261; for(let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
+// A linha da planilha. O REG_ID sai do CONTEÚDO da medição: o 2º clique depois
+// de um timeout manda o mesmo id e o .gs não duplica.
+function _ucvRegMontar(R, V, J){
+  const p = R.p, c0 = p.cods.find(c => c.vel > 0) || {};
+  const r2 = x => x == null || !isFinite(x) ? '' : Math.round(x * 100) / 100;
+  const D = { data:V.data, modelo:p.modelo, produto:p.nome, volume:_ucvRegVol(p),
+    codigos:p.cods.map(c => _uepConvCod(c.cod)).join(' '),
+    sRod:r2(R.seg), sPer:r2(V.per), sLac:r2(V.lac), volumes:V.vol == null ? '' : V.vol,
+    base:R.base.daMeta ? 'RÉGUA DA META' : R.base.medida ? `${_uepBaseCurto()} MEDIDA ${UEP_BASE_MEDIDA.data}` : 'DIGITADA',
+    baseS:r2(R.base.seg), tol:R.base.tolAplica ? R.base.tol : 0, tpS:r2(R.tpSeg),
+    uep:r2(R.uepVol), uepCad:r2(R.volCad),
+    linhaCxh:R.linha ? Math.round(R.linha.cxh * 10) / 10 : '', linhaSCx:R.linha ? r2(R.linha.sCx) : '',
+    linhaDias:R.linha ? R.linha.dias : '', linhaPer:R.linha && J ? J.de + ' a ' + J.ate : '',
+    vel:V.vel != null ? V.vel : (c0.vel || ''), entre:c0.entre != null ? c0.entre : '', quem:V.quem };
+  D.regId = 'c' + _ucvHash([D.data, D.modelo, D.produto, D.volume, D.sRod, D.sPer, D.sLac, D.volumes, D.quem].join('|'));
+  return D;
+}
+// As medições do produto (mesmo modelo, nome e volume), da mais nova para trás.
+function _ucvRegsDoProduto(lista, p){
+  if(!p) return [];
+  const k = _uepConvNorm(p.nome), v = _ucvRegVol(p);
+  return (lista || []).filter(r => String(r.modelo || '') === p.modelo && _uepConvNorm(r.produto) === k && String(r.volume || '') === v);
+}
+// A regra do PPCP (20/10/2026): trocar a UEP só com DUAS medições em dias
+// diferentes apontando o mesmo lado da faixa do CONFERE (UEP_PAD_FAIXA).
+function _ucvRegsResumo(regs){
+  if(!regs || !regs.length) return null;
+  const dias = {}, lados = {}, us = [];
+  regs.forEach(r => {
+    if(r.data) dias[r.data] = 1;
+    if(r.uep > 0) us.push(r.uep);
+    if(r.uep > 0 && r.uepCad > 0){
+      const pct = r.uep / r.uepCad * 100;
+      lados[pct > UEP_PAD_FAIXA[1] ? 'pesado' : pct < UEP_PAD_FAIXA[0] ? 'leve' : 'confere'] = 1;
+    }
+  });
+  const nDias = Object.keys(dias).length, L = Object.keys(lados);
+  const uepMed = us.length ? us.reduce((a, b) => a + b, 0) / us.length : null;
+  const veredito = nDias < 2 ? 'um-dia' : L.length !== 1 ? (L.length ? 'discordam' : 'sem-cadastro') : L[0] === 'confere' ? 'confere' : 'trocar';
+  return { n:regs.length, nDias, lado:L.length === 1 ? L[0] : null, uepMed, veredito };
+}
+// ── Desenho (sem conta) ────────────────────────────────────────────────────
+const UCV_REG_VEREDITO = {
+  'um-dia':      ['warn', 'medição de um dia só — meça em outro dia antes de trocar a UEP'],
+  'confere':     ['ok',   'as medições conferem com o cadastro — a UEP fica'],
+  'trocar':      ['troca', 'as medições, em dias diferentes, apontam o mesmo lado — pode trocar a UEP (digitar na PRODUTO_CODIGO)'],
+  'discordam':   ['warn', 'as medições discordam entre si — meça de novo'],
+  'sem-cadastro':['warn', 'sem UEP no cadastro para comparar'] };
+function _ucvRegsHtml(regs, p, est){
+  const tit = `<div class="ucv-regs-t">MEDIÇÕES REGISTRADAS${p ? ` · ${_rpEsc(p.rot)}` : ' · AS ÚLTIMAS'}</div>`;
+  if(est === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div>';
+  if(!regs) return tit + `<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div>`;
+  if(!regs.length) return tit + `<div class="uep-nota">${p ? 'Nenhuma medição registrada deste produto ainda.' : 'Nenhuma medição registrada ainda.'}</div>`;
+  const S = p ? _ucvRegsResumo(regs) : null, V = S ? UCV_REG_VEREDITO[S.veredito] : null;
+  const n = x => x == null ? '—' : String(x).replace('.', ',');
+  const sg = x => x == null ? '—' : _taktTxt(x);
+  return tit
+    + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${S.n} medição${S.n === 1 ? '' : 'ões'} em ${S.nDias} dia${S.nDias === 1 ? '' : 's'}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
+    + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
+    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th class="n">CADASTRO</th><th class="n" title="MÉD.PERÍODO do produto na produção real, na hora do registro">A LINHA FAZ</th><th>BASE</th><th>MEDIDO POR</th></tr></thead><tbody>'
+    + regs.slice(0, 15).map(r => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td>${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
+      + `<td>${_rpEsc(r.volume || '')}</td><td class="n"><b>${sg(r.sRod)}</b></td><td class="n">${sg(r.sPer)}</td><td class="n">${sg(r.sLac)}</td>`
+      + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="n">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}</td>`
+      + `<td class="n">${r.linhaSCx > 0 ? sg(r.linhaSCx) + '/cx' : '—'}</td><td>${_rpEsc(r.base || '')}</td><td>${_rpEsc(r.quem || '')}</td></tr>`).join('')
+    + '</tbody></table></div>' + (regs.length > 15 ? `<div class="uep-nota">+ ${regs.length - 15} mais antigas na aba CRONOANALISE da planilha.</div>` : '');
+}
+// ── Tela (DOM) ─────────────────────────────────────────────────────────────
+// O formulário do registro mora FORA do #uep-conv-res: o resultado é refeito a
+// cada tecla e levaria junto o que está sendo digitado nele.
+function _ucvRegPintar(R){
+  const box = _ucvEl('reg'); if(box) box.style.display = R.estado === 'ok' ? '' : 'none';
+  const dt = _ucvEl('r-data'); if(dt) dt.placeholder = hojeStr();
+  const c0 = R.p ? R.p.cods.find(c => c.vel > 0) : null, vl = _ucvEl('r-vel');
+  if(vl) vl.placeholder = c0 ? 'cadastro: ' + String(c0.vel).replace('.', ',') : '';
+  const lst = _ucvEl('regs');
+  if(lst){
+    const L = UCV_REGS && UCV_REGS.lista;
+    lst.innerHTML = _ucvRegsHtml(L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null, R.p || null, UCV_REGS && UCV_REGS.falha);
+  }
+}
+function _ucvRegCampos(){
+  const v = n => { const el = _ucvEl('r-' + n); return el ? el.value : ''; };
+  return { data:v('data'), per:v('per'), lac:v('lac'), vol:v('vol'), vel:v('vel'), quem:v('quem') };
+}
+async function _ucvRegistrar(){
+  const msg = _ucvEl('r-msg'), btn = _ucvEl('r-btn');
+  const diz = t => { if(msg) msg.textContent = t; };
+  if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
+  if(UCV_LINHA_VOO){ diz('Lendo a produção dos últimos ' + CRONO_LINHA_DIAS + ' dias…'); await UCV_LINHA_VOO.catch(() => {}); }
+  const E = _uepConvEntradas();
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha);
+  if(R.estado !== 'ok'){ alert('Escolha o produto e digite o tempo RODANDO antes de registrar.'); return; }
+  const V = _ucvRegValida(R.seg, _ucvRegCampos(), hojeStr());
+  if(V.erro){ alert(V.erro); return; }
+  const D = _ucvRegMontar(R, V, R.linha ? _uepPadJanela(CRONO_LINHA_DIAS) : null);
+  const sg = x => x === '' ? '—' : _taktTxt(x);
+  if(!confirm(`Registrar esta medição na planilha (aba CRONOANALISE)?
+
+${R.p.rot}
+${D.data} · rodando ${sg(D.sRod)} · no período ${sg(D.sPer)} · sem lacunas ${sg(D.sLac)}${D.volumes ? ' · ' + D.volumes + ' volumes' : ''}
+UEP ${_ucvU2(R.uepVol)}${R.volCad != null ? ' (cadastro ' + _ucvU2(R.volCad) + ')' : ''}
+A linha faz: ${R.linha ? _taktTxt(R.linha.sCx) + ' por caixa (' + R.linha.dias + ' dias)' : 'sem produção na janela'}
+
+A UEP do cadastro NÃO muda.`)) return;
+  if(btn) btn.disabled = true;
+  try{
+    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=registrarCrono&'
+      + Object.keys(D).map(k => k + '=' + encodeURIComponent(D[k])).join('&');
+    const r = await jsonpEscrita(url, i => diz(i > 1 ? `Gravando… tentativa ${i} de 3` : 'Gravando…'));
+    if(!r || !r.registrado){ diz('O Apps Script ainda não tem o registro (.gs v5.30): cole o .gs no editor e re-deploye. Nada foi gravado.'); return; }
+    diz(r.duplicado ? '✓ Esta medição já estava registrada.' : '✓ Medição registrada na aba CRONOANALISE.');
+    ['per', 'lac', 'vol'].forEach(n => { const el = _ucvEl('r-' + n); if(el) el.value = ''; });
+    _ucvRegsCarregar(true);
+  }catch(e){ diz('Não gravou: ' + e.message + ' — tente de novo (repetir não duplica).'); }
+  finally{ if(btn) btn.disabled = false; }
 }
 // ── 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP 19/10/2026: "falta
 // impressão"). Retrato da tela no clique: os MESMOS _uepConvMontar,
@@ -6208,6 +6495,11 @@ const _UCV_DOC_SKIN = `
 .ucv-doc .ucv-info>span{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096;padding-top:2px}
 .ucv-doc .ucv-info>p{font-size:10.5px;line-height:1.5;color:#1a1a2e}
 .ucv-doc .rp-sec-ttl+.ucv-info{margin-top:0;padding-top:0;border-top:none}
+.ucv-doc .ucv-linha{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0 0 10px;padding:7px 10px;border:1px solid #e2e8f0;border-left:3px solid #3182ce;border-radius:5px;font-size:10px;color:#4a5568;page-break-inside:avoid}
+.ucv-doc .ucv-acao+.ucv-linha{margin-top:10px}
+.ucv-doc .ucv-linha-l{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096}
+.ucv-doc .ucv-linha>b{font-family:'Barlow Condensed',sans-serif;font-size:15px;color:#1a1a2e}
+.ucv-doc .ucv-linha-c{flex-basis:100%;color:#1a1a2e}
 .ucv-doc .ucv-qual{margin:0 0 10px;page-break-inside:avoid}
 .ucv-doc .ucv-qual-t{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1.2px;color:#718096;margin-bottom:5px}
 .ucv-doc .ucv-qual-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -6240,7 +6532,7 @@ function _uepConvDocHtml(R, ctx){
 function gerarRelatorioCrono(){
   _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
   const E = _uepConvEntradas();
-  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha);
   if(R.estado !== 'ok'){
     alert(R.estado === 'sem-cadastro' ? 'O cadastro de UEP ainda não foi lido. Tente em alguns segundos.'
         : R.estado === 'sem-produto' ? 'Escolha o produto antes de imprimir.' : 'Digite o tempo por volume medido antes de imprimir.');
@@ -13421,7 +13713,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
-  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar(); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
+  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }

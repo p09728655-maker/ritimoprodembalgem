@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.30 — REGISTRO DA CRONOANÁLISE (aba CRONOANALISE)
+//               PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise
+//               e que linha faz" → os dois. registrarCrono acrescenta UMA linha
+//               por medição registrada no painel (aba ⏱ CRONOANÁLISE): os
+//               segundos do Volume a volume (rodando, no período, sem lacunas),
+//               a conversão do momento (base, tolerância, UEP) e o que a linha
+//               faz (MÉD.PERÍODO de 30 dias do produto). Idempotente pelo
+//               REG_ID. getCronoRegistros devolve as medições. NÃO toca a UEP
+//               do cadastro: ela continua travada e só muda digitada.
 // Versão: 5.29 — O FECHAMENTO DO DIA LÊ O REALIZADO DA PLANILHA
 //               PPCP, 20/10/2026 ("GS NOVO"): a linha de 19/10 do HISTORICO
 //               gravou REALIZADO 1.491 com a UEP de 1.509 cx. O fechamento das
@@ -1025,12 +1034,13 @@ const CACHE_TTL_LEITURA = {
   getProgramacaoHoje: 60,
   getProgramacaoDetalhada: 60,
   getProducaoModeloPeriodo: 300,
-  getConfigPainel: 30
+  getConfigPainel: 30,
+  getCronoRegistros: 300           // v5.30: aba pequena; o registro invalida
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
-  'excluirLancamento'];
+  'excluirLancamento', 'registrarCrono'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1192,6 +1202,8 @@ function doGet(e) {
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'getLancamentosHora') result = getLancamentosHora(p);   // v5.25
     else if (act === 'excluirLancamento')  result = excluirLancamento(p);    // v5.25
+    else if (act === 'registrarCrono')     result = registrarCrono(p);       // v5.30
+    else if (act === 'getCronoRegistros')  result = getCronoRegistros();     // v5.30
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else if (act === 'getHoraDia')    result = getHoraDia(p);
@@ -1844,6 +1856,112 @@ function _lancRegistrarExclusao(ss, linha) {
     sh.setFrozenRows(1);
   }
   sh.appendRow(linha);
+}
+
+
+// ════════════════════════════════════════════════════════
+// REGISTRO DA CRONOANÁLISE (v5.30)
+// ════════════════════════════════════════════════════════
+// PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise e que linha
+// faz". O painel (aba ⏱ CRONOANÁLISE → 💾 REGISTRAR MEDIÇÃO) manda uma medição
+// e ela vira UMA linha na aba CRONOANALISE (criada na 1ª gravação, só
+// acréscimo). Por que guardar os SEGUNDOS e não só a UEP: a UEP é segundos ÷
+// segundos da base. Medida a base de novo, ou mudada a velocidade da esteira,
+// a UEP de todo produto se refaz pela conta — sem cronometrar de novo.
+// ⚠ NÃO toca a UEP do cadastro: ela continua TRAVADA e só muda digitada na
+// coluna UEP da PRODUTO_CODIGO.
+// Idempotente pelo REG_ID (o painel o tira do conteúdo da medição): a
+// retentativa por timeout, ou o 2º clique depois de um timeout, não duplica.
+// A gravação é pelo NOME da coluna: inserir coluna na aba não desalinha nada,
+// e coluna que falta (aba de uma versão anterior) é criada no fim.
+const SHEET_CRONO = 'CRONOANALISE';
+const CRONO_COLS = [
+  ['REGISTRADO_EM', ''], ['DATA_MEDICAO', 'data'], ['MODELO', 'modelo'], ['PRODUTO', 'produto'],
+  ['VOLUME', 'volume'], ['CODIGOS', 'codigos'],
+  ['S_RODANDO', 'sRod'], ['S_PERIODO', 'sPer'], ['S_SEM_LACUNAS', 'sLac'], ['VOLUMES_MEDIDOS', 'volumes'],
+  ['BASE', 'base'], ['BASE_S', 'baseS'], ['TOLERANCIA_PCT', 'tol'], ['TEMPO_PADRAO_S', 'tpS'],
+  ['UEP_CRONO', 'uep'], ['UEP_CADASTRO', 'uepCad'],
+  ['LINHA_CX_H', 'linhaCxh'], ['LINHA_S_CX', 'linhaSCx'], ['LINHA_DIAS', 'linhaDias'], ['LINHA_PERIODO', 'linhaPer'],
+  ['VELOCIDADE', 'vel'], ['ENTRE_PECAS', 'entre'], ['MEDIDO_POR', 'quem'], ['REG_ID', 'regId']];
+const CRONO_NUM = { sRod: 1, sPer: 1, sLac: 1, volumes: 1, baseS: 1, tol: 1, tpS: 1, uep: 1, uepCad: 1,
+                    linhaCxh: 1, linhaSCx: 1, linhaDias: 1, vel: 1, entre: 1 };
+const CRONO_LER_MAX = 500;   // medições devolvidas ao painel, da mais nova para trás
+
+// Número que veio pela URL ("8.6"; "8,6" também) — vazio fica vazio, nunca 0.
+function _cronoNum(v) {
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  if (!s) return '';
+  const n = Number(s);
+  return isFinite(n) ? n : '';
+}
+
+function registrarCrono(p) {
+  p = p || {};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { return _registrarCronoCore(p); }
+  finally { lock.releaseLock(); }
+}
+
+function _registrarCronoCore(p) {
+  const regId = String(p.regId || '').trim();
+  if (!regId) return { ok: false, erro: 'Registro sem identificador (REG_ID).' };
+  if (!(Number(_cronoNum(p.sRod)) > 0)) return { ok: false, erro: 'Sem o tempo RODANDO da medição.' };
+  if (!String(p.produto || '').trim()) return { ok: false, erro: 'Sem o produto da medição.' };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_CRONO);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_CRONO);
+    sh.appendRow(CRONO_COLS.map(function (c) { return c[0]; }));
+    sh.setFrozenRows(1);
+  }
+  let hdr = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0]
+    .map(function (t) { return String(t).trim().toUpperCase(); });
+  CRONO_COLS.forEach(function (c) {
+    if (hdr.indexOf(c[0]) < 0) { sh.getRange(1, hdr.length + 1).setValue(c[0]); hdr.push(c[0]); }
+  });
+  const iId = hdr.indexOf('REG_ID');
+  if (sh.getLastRow() > 1) {
+    const ids = sh.getRange(2, iId + 1, sh.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() === regId) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
+    }
+  }
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  const linha = hdr.map(function (t) {
+    const c = CRONO_COLS.filter(function (x) { return x[0] === t; })[0];
+    if (!c) return '';
+    if (!c[1]) return agora;
+    const v = p[c[1]];
+    return CRONO_NUM[c[1]] ? _cronoNum(v) : String(v == null ? '' : v).trim().slice(0, 300);
+  });
+  sh.appendRow(linha);
+  return { ok: true, registrado: true, linha: sh.getLastRow() };
+}
+
+// Leitura: as medições da mais NOVA para a mais antiga, até CRONO_LER_MAX.
+// Sem a aba (nada registrado ainda) é lista vazia, não erro.
+function getCronoRegistros() {
+  const v = _valores(SHEET_CRONO);
+  if (!v || v.length < 2) return { ok: true, registros: [] };
+  const hdr = v[0].map(function (t) { return String(t).trim().toUpperCase(); });
+  const out = [];
+  for (let i = v.length - 1; i >= 1 && out.length < CRONO_LER_MAX; i--) {
+    const r = v[i];
+    if (!r.some(function (x) { return x !== '' && x != null; })) continue;
+    const o = { linha: i + 1 };
+    CRONO_COLS.forEach(function (c) {
+      const j = hdr.indexOf(c[0]);
+      if (j < 0) return;
+      const x = r[j];
+      if (!c[1]) o.em = x instanceof Date ? Utilities.formatDate(x, TZ, 'dd/MM/yyyy HH:mm') : String(x == null ? '' : x);
+      else if (c[1] === 'data') o.data = fmtDataBR(x);
+      else if (CRONO_NUM[c[1]]) o[c[1]] = (x === '' || x == null) ? null : _numBR(x);
+      else o[c[1]] = String(x == null ? '' : x).trim();
+    });
+    out.push(o);
+  }
+  return { ok: true, registros: out };
 }
 
 
