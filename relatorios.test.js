@@ -4285,6 +4285,12 @@ console.log('\n── estudo de UEP ──');
   ok('pelo endereço da diretoria o painel só mostra a diretoria, e o celular vai para ela',
      [/if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\) \|\| /.test(src), /if\(\/\^diretoria\[-\.\]\/i\.test\(location\.hostname\)\) location\.replace\('\/diretoria'\);/.test(mob)], [true, true]); }
 
+// v7.150.1 — o LEMBRETE DE LANÇAMENTO não aparece no gerencial nem na diretoria
+{ const i = src.indexOf('function dispararAlerta(){'), corpo = src.slice(i, src.indexOf('\n  }\n', i));
+  ok('o lembrete de lançamento sai antes de tudo no perfil gerencial e na tela da diretoria',
+     /if\(PERFIL==='gerencial' \|\| document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(corpo)
+       && corpo.indexOf("PERFIL==='gerencial'") < corpo.indexOf('getSlotPendente()'), true);
+}
 console.log(falhas === 0
   ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
   : `\n❌ ${falhas} falha(s)\n`);

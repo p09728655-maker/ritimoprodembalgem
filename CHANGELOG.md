@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.150.1 — 20/10/2026
+
+- **💾 REGISTRAR MEDIÇÃO confere melhor os números.** O 1º registro real
+  (MADERO, 20/10/2026 15:58) gravou NO PERÍODO = **1335**: um "13:35" digitado
+  perdia os dois pontos e virava 1.335 segundos. Agora:
+  - os campos de segundos aceitam só número (com vírgula ou ponto); "13:35" ou
+    "9,4 s" são recusados com a explicação;
+  - NO PERÍODO acima de 5 vezes o RODANDO é recusado (é o tempo total da
+    medição, não o por volume);
+  - RODANDO acima de 120 s por volume é recusado.
+- **O LEMBRETE DE LANÇAMENTO saiu do gerencial do PC** (pedido do PPCP). O
+  modal com bipe a cada hora cobria a tela do gestor, que não lança caixa. Saiu
+  também da tela da diretoria. Continua no perfil do operador e na TV.
+- **Atenção:** nenhuma conta mudou. A linha já gravada não se corrige sozinha:
+  é na planilha (aba CRONOANALISE).
+
+---
+
 ## v7.150.0 + `.gs` v5.30 — 20/10/2026 · ⚠ re-deploy
 
 - **⏱ CRONOANÁLISE: o registro das medições e o que a linha faz.** Pedido do

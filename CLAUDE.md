@@ -1230,6 +1230,14 @@ via Google Apps Script (JSONP).
   dos parâmetros** — função com parâmetro desestruturado (`{a,b}`) quebrava a
   extração.
 
+## LEMBRETE DE LANÇAMENTO (desktop)
+- O modal ⏰ com bipe (`iniciarAlertaLancamento` / `dispararAlerta`, a cada
+  minuto, slot encerrando em 5 min ou fechado sem lançamento) **não aparece no
+  perfil GERENCIAL nem na diretoria** desde a v7.150.1 (PPCP, 20/10/2026: *"tira
+  essa lembrete no gerencial"*). Segue no perfil do operador e na TV. ⚠ O texto
+  dele ainda manda *"preencher o REALIZADO na planilha"* — o lançamento hoje é
+  pelo app; não mexido. O mobile não tem lembrete.
+
 ## Versão do painel / aviso de atualização (desktop, raiz)
 - `APP_VER` no topo do script do `ritmoprod_embalagem_v7.html` aparece no rodapé.
   Ao publicar mudança na raiz, suba este número.
@@ -3933,6 +3941,13 @@ feito e dá ar de verdade ao que sobrou.
       invalidado pelo registro). ⚠ **re-deploy manual**. NÃO toca a UEP.
     - O GRAVAÇÃO das notas e o título da aba deixaram de dizer "nada é gravado":
       a UEP não muda, a medição é registrada.
+    - **v7.150.1 — o 1º registro real (MADERO, 20/10 15:58) gravou NO PERÍODO
+      1335** (e RODANDO 7,9 / SEM LACUNAS 6,7 — os números da SLEEP, a
+      conferir com o PPCP). O `_pgSimNum` joga fora o que não é número, então
+      "13:35" virava 1335. `_ucvRegValida` só aceita `^\d+([.,]\d+)?$`, recusa
+      NO PERÍODO acima de `UCV_REG_PER_MAX`=5× o RODANDO e RODANDO fora de
+      0–`UCV_REG_SEG_MAX`=120 s. A LINHA FAZ saiu vazia **com razão**: a MADERO
+      não rodou de 20/09 a 19/10 (só hoje, 877 cx, e hoje fica fora).
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter
