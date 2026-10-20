@@ -3359,7 +3359,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.150.1';
+const APP_VER   = '7.151.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5068,7 +5068,18 @@ function _uepAbaPerSvg(dias, largura){
     if(mostraNum) s+=`<text x="${cx.toFixed(1)}" y="${(y(Math.max(u,m))-6).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(u))}</text>`;
     if((dias.length-1-i)%passoLbl===0) s+=`<text x="${cx.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
   });
-  return s+'</svg>';
+  return s+_uepEscalaMarca(dias, i=>pl+i*bw, pt-8, H-pb, W, FS-2, pt-12)+'</svg>';
+}
+// A MARCA da troca de escala num gráfico de UEP por dia (v7.151.0): tracejado
+// âmbar entre o último dia da régua anterior e o 1º da nova, com a data. Fica no
+// vão entre as barras, por cima delas. Sem troca no período: nada.
+function _uepEscalaMarca(dias, xDe, y1, y2, W, fs, yTxt){
+  const c=_uepEscalaCorte((dias||[]).map(d=>d.data));
+  if(!c) return '';
+  const i=dias.findIndex(d=>_cartNum(d.data)>=c.n), x=xDe(i), dir=x>W*.7;
+  return `<g><title>${_rpEsc(_uepEscalaNota(dias.map(d=>d.data)))}</title>`
+    +`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y1}" y2="${y2}" stroke="var(--warn)" stroke-width="${Math.max(1.5,fs/7).toFixed(1)}" stroke-dasharray="${fs*.4} ${fs*.3}"/>`
+    +`<text x="${(x+(dir?-1:1)*fs*.4).toFixed(1)}" y="${yTxt}" text-anchor="${dir?'end':'start'}" font-size="${fs}" font-weight="600" fill="var(--warn)" font-family="IBM Plex Mono">ESCALA NOVA DA UEP · ${_rpEsc(c.desde.slice(0,5))}</text></g>`;
 }
 
 function _uepAbaCatCarregar(){
@@ -6770,7 +6781,8 @@ function renderUep(){
       b4=`<div class="kpi-grid c3">${pc.map(c=>`<div class="kpi-card ${c.c}"${c.t?` title="${_rpEsc(c.t)}"`:''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`
         +`<div class="uep-card" id="uep-p-box">${_uepAbaPerSvg(P.dias, box?_svgLargura(box):760)}
           <div class="uep-leg"><span style="--c:var(--txt2)">bateu a meta</span><span style="--c:var(--red)">abaixo da meta</span><span class="tr" style="--c:var(--acc)">meta do dia</span></div>
-          ${P.res.he>0?`<div class="uep-nota" title="A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a de hoje usa o cadastro atual. A base pode diferir um pouco.">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra, fora da conta</div>`:''}</div>`;
+          ${P.res.he>0?`<div class="uep-nota" title="A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data; a de hoje usa o cadastro atual. A base pode diferir um pouco.">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra, fora da conta</div>`:''}
+          ${(esc=>esc?`<div class="uep-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
     }
   }
 
@@ -6976,7 +6988,8 @@ function _uepDocHtml(D, ctx){
   else b3+=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`
     +`<div class="ud-g">${_uepAbaPerSvg(P.dias, W)}
       <div class="ud-leg"><span><i style="background:#5B6470"></i>bateu a meta</span><span><i style="background:#C62828"></i>abaixo da meta</span><span><i class="tr" style="border-top-color:#E65100"></i>meta do dia</span></div>
-      <div class="ud-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div></div>`;
+      <div class="ud-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div>
+      ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
 
   // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxHtml), com a pele do papel.
   const PX=D.prox;
@@ -8568,6 +8581,40 @@ function _uepBaseFaltaTxt(e){
 // O cadastro travado foi conferido na planilha: 429 códigos numa escala só (a
 // da MADERO, a mesma de 25/09) e o HISTORICO regravado com META UEP 2.530.
 const UEP_TRAVADA_DESDE = '16/10/2026';
+// TROCA DE ESCALA COM O PASSADO TRAVADO (v7.151.0, PPCP 20/10/2026: "quando
+// alterar deixar travado o passado" → "faz a marcação de datas nos gráficos").
+// Cada entrada é um dia em que o cadastro INTEIRO mudou de régua SEM regravar o
+// HISTORICO: de `desde` em diante a UEP gravada está na régua nova, antes na
+// anterior. O % da meta continua certo (cada dia tem a META UEP dele gravada);
+// UEP em NÚMERO de dias dos dois lados, não — é isso que a marca avisa.
+// ⚠ Só entra troca com o passado TRAVADO: as de 16/10 e 19/10 regravaram o
+// HISTORICO inteiro (a régua é uma só) e não entram. Vazia = nenhuma marca.
+// Forma: { desde:'dd/MM/yyyy', txt:'cadastro × 0,83 · meta 3.048 → 2.530' }
+const UEP_ESCALAS = [];
+// A troca que CORTA uma lista de dias: a mais recente com dia dos dois lados.
+// null = a lista está toda numa régua só (puro, testado).
+function _uepEscalaCorte(datas, escalas){
+  const ns=(datas||[]).map(_cartNum).filter(n=>n>0);
+  if(ns.length<2) return null;
+  const mn=Math.min(...ns), mx=Math.max(...ns);
+  const t=(escalas||UEP_ESCALAS).map(x=>({ desde:String(x.desde||''), txt:x.txt||'', n:_cartNum(x.desde) }))
+    .filter(x=>x.n>mn && x.n<=mx).sort((a,b)=>b.n-a.n)[0];
+  return t ? { desde:t.desde, txt:t.txt, n:t.n, antes:ns.filter(n=>n<t.n).length, depois:ns.filter(n=>n>=t.n).length } : null;
+}
+// Os textos da marca, os MESMOS em toda tela e papel: o curto (card) e o longo.
+function _uepEscalaSelo(datas, escalas){
+  const c=_uepEscalaCorte(datas, escalas);
+  return c ? `⚠ escala da UEP mudou em ${c.desde.slice(0,5)}` : '';
+}
+function _uepEscalaNota(datas, escalas){
+  const c=_uepEscalaCorte(datas, escalas);
+  return c ? `⚠ A escala da UEP mudou em ${c.desde.slice(0,5)}${c.txt?' ('+c.txt+')':''}: `
+    +`${plural(c.antes,'dia está','dias estão')} na régua anterior. O % da meta vale; UEP em número só se compara a partir dessa data.` : '';
+}
+// O 1º dia (num) da régua que vale em `ateNum` — para quem não pode misturar.
+function _uepEscalaDesde(ateNum, escalas){
+  return (escalas||UEP_ESCALAS).map(x=>_cartNum(x.desde)).filter(n=>n>0 && n<=ateNum).reduce((a,b)=>Math.max(a,b), 0);
+}
 function _uepTravadaTxt(){
   return 'UEP TRAVADA desde '+UEP_TRAVADA_DESDE+' (decisão do PPCP).\n\n'
     +'A UEP do cadastro só muda com a CRONOANÁLISE: o valor medido é digitado na coluna UEP da PRODUTO_CODIGO, '
@@ -11066,6 +11113,7 @@ async function renderHist(){
   // UEP dos dias fechados (.gs v5.14): card e coluna só quando algum dia tem.
   const uR=uepHistResumo(dias);
   const temUepHist=uR.n>0;
+  const uEsc=dias.filter(d=>d.uep!=null&&isFinite(Number(d.uep))).map(d=>d.data);   // troca de escala no período (v7.151.0)
   { const _th=document.getElementById('th-hist-uep'); if(_th) _th.style.display=temUepHist?'':'none';
     const _g=document.getElementById('hist-kpi-grid'); if(_g){ _g.classList.toggle('c6',temUepHist); _g.classList.toggle('c5',!temUepHist); } }
   document.getElementById('hist-kpi-grid').innerHTML=`
@@ -11074,7 +11122,7 @@ async function renderHist(){
     <div class="kpi-card ${sc(efM)}"><div class="kpi-lbl">EFICIÊNCIA MÉDIA</div><div class="kpi-val">${fmtP(efM)}</div><div class="kpi-sub">${sl(efM)}</div></div>
     <div class="kpi-card ok"><div class="kpi-lbl">DIAS COM META</div><div class="kpi-val">${comMeta}</div><div class="kpi-sub">de ${dias.length} (${dias.length?((comMeta/dias.length)*100).toFixed(0):0}%)</div></div>
     <div class="kpi-card"><div class="kpi-lbl">MELHOR DIA</div><div class="kpi-val">${melhorDia?fmtP(melhorDia.ef):'—'}</div><div class="kpi-sub">${melhorDia?melhorDia.data:'—'}</div></div>
-    ${temUepHist?`<div class="kpi-card ${uR.media>=uR.meta?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO)."><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(uR.meta)} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.semUep?` · ${uR.semUep} sem UEP`:''}</div></div>`:''}`;
+    ${temUepHist?`<div class="kpi-card ${uR.media>=uR.meta?'ok':'acc'}" title="UEP em jornada normal, gravada no fechamento de cada dia. A meta é a de cada dia (META UEP do HISTORICO).${_rpEsc(_uepEscalaNota(uEsc)?' '+_uepEscalaNota(uEsc):'')}"><div class="kpi-lbl">UEP / DIA (JORNADA)</div><div class="kpi-val">${fmtN(Math.round(uR.media))}</div><div class="kpi-sub">meta ${fmtN(uR.meta)} · bateu em ${uR.bateu} de ${uR.n} dia(s)${uR.semUep?` · ${uR.semUep} sem UEP`:''}${_uepEscalaSelo(uEsc)?`<br><span style="color:var(--warn)">${_uepEscalaSelo(uEsc)}</span>`:''}</div></div>`:''}`;
 
   renderChartHist(dias,periodo);
 
@@ -12765,9 +12813,12 @@ function _cartSemUepHtml(lin, div, cls, hoje){
 }
 // A RÉGUA EM UEP: a UEP de jornada normal gravada no HISTORICO (.gs v5.14) —
 // congelada no fechamento. Dia sem UEP fica fora da curva.
+function _qpCurvaUepDias(dias, janela){
+  const v = (dias || []).filter(d => d && d.uep != null && Number(d.uep) > 0);
+  return janela > 0 ? v.slice(-janela) : v;
+}
 function _qpCurvaUep(dias, janela){
-  return _qpCurva((dias || []).filter(d => d && d.uep != null && Number(d.uep) > 0)
-                               .map(d => Object.assign({}, d, { real: Number(d.uep) })), janela);
+  return _qpCurva(_qpCurvaUepDias(dias, janela).map(d => Object.assign({}, d, { real: Number(d.uep) })), 0);
 }
 
 async function _cartMontar(dias, modoPedido){
@@ -12851,6 +12902,8 @@ async function _cartBlocos(dias, curva, agendar){
     if(modo === 'uep'){
       curvaM = _qpCurvaUep(dias, QP_REGUA);
       if(!cart.uepFalha && curvaM.length < QP_MIN_DIAS) cart.uepFalha = 'sem-historico';
+      // a régua junta dias das duas escalas? (v7.151.0) — a tela diz
+      cart.escNota = _uepEscalaNota(_qpCurvaUepDias(dias, QP_REGUA).map(d => d.data));
     }
     const a = cart.uepFalha ? null : _cartAnalise(cart, curvaM, QP_FAIXA);
     if(a){
@@ -12878,7 +12931,8 @@ function _cartBlocosHtml(blocos, larg){
   // ⚠ o que é idêntico nos dois sai uma vez só — pela pele `.cart-dois`
   const corpo = blocos.map(b => '<div class="cart-bloco">'
     + (b.tit ? '<div class="cart-tit">' + b.tit + '</div>' : '')
-    + (b.a ? _cartHtml(b.a, QP_REGUA, larg) : '') + '</div>').join('');
+    + (b.a ? _cartHtml(b.a, QP_REGUA, larg) : '')
+    + (b.a && b.cart.escNota ? '<div class="qp-mix warn">' + b.cart.escNota + '</div>' : '') + '</div>').join('');
   return blocos.length > 1 ? '<div class="cart-dois">' + corpo + '</div>' : corpo;
 }
 
@@ -13496,7 +13550,7 @@ function _dirSemSvg(U, W){
       + `<text x="${cx.toFixed(1)}" y="${(Math.min(y(u), y(m)) - 10).toFixed(1)}" font-size="34" font-weight="600" fill="var(--txt)" text-anchor="middle" style="font-family:var(--font-d)">${fmtN(Math.round(u))}</text>`
       + `<text x="${cx.toFixed(1)}" y="254" font-size="24" fill="var(--txt2)" text-anchor="middle" style="font-family:var(--font-d)">${_rpEsc(String(d.data).slice(0,5))}</text>`;
   });
-  return s + '</svg>';
+  return s + _uepEscalaMarca(U, i => 20 + i * passo, 30, base, W, 20, 22) + '</svg>';
 }
 function _dirSemanaHtml(S, U, falhaHist, ptsEst){
   if(S === undefined) return _dirMsg(falhaHist ? 'Não consegui ler o histórico — tento de novo sozinho.' : 'Lendo o histórico…');
@@ -14704,7 +14758,7 @@ function _rpUepFaixaHtml(dias){
   <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:3px;color:${selo[1]};background:${selo[2]};border:0.5px solid ${selo[1]}">${selo[0]}</span>
   <div style="font-size:10.5px;color:#3d4757;line-height:1.55;flex:1;min-width:220px">
     média <b>${fmtN(Math.round(r.media))} UEP/dia</b> · bateu a meta de UEP em <b>${r.bateu} de ${plural(r.n,'dia','dias')}</b>${r.he>0?` · <b>+${fmtN(Math.round(r.he))} UEP</b> em hora extra (fora da meta)`:''}${r.semUep?` · ${plural(r.semUep,'dia','dias')} sem UEP gravada fora da conta`:''}<br>
-    <span style="color:#5B6470">UEP = caixas × UEP por caixa do cadastro, gravada no fechamento de cada dia. A caixa não mede esforço: 100 cx de um produto lento pesam mais que 100 de um rápido.</span>
+    <span style="color:#5B6470">UEP = caixas × UEP por caixa do cadastro, gravada no fechamento de cada dia. A caixa não mede esforço: 100 cx de um produto lento pesam mais que 100 de um rápido.</span>${(esc=>esc?`<br><b style="color:#B26A00">${esc}</b>`:'')(_uepEscalaNota((dias||[]).filter(d=>d&&d.uep!=null&&isFinite(Number(d.uep))).map(d=>d.data)))}
   </div>
 </div>`;
 }
@@ -16511,6 +16565,7 @@ function _simUepPintar(){
     +`<span style="color:var(${acima?'--red':'--ok'})">${acima?'ACIMA':'ABAIXO'} DO CUSTO DA META</span>`
     +(acima?` — R$ ${fmtN(Math.round(c.excesso))} pagos sem virar UEP`:'')
     +` · ${plural(c.n,'dia fechado','dias fechados')} com UEP. `
+    +(esc=>esc?`<span style="color:var(--warn)">${esc}</span> `:'')(_uepEscalaNota(SIM_UEP.dias.filter(d=>d&&Number(d.uep)>0).map(d=>d.data)))
     +`<span title="custo-hora do cenário × ${UEP_MIN_DIA} min de jornada normal por dia ÷ UEP feita (a hora extra fica fora). É custo de conversão da mão de obra da embalagem, não custo do produto. O custo-hora vale só neste computador.">Custo-hora ${rs(ch)} × ${UEP_MIN_DIA} min por dia ÷ UEP de jornada.</span>`;
 }
 
@@ -19643,9 +19698,14 @@ function _tvUepDoProduto(cod, desc, cor, cat, phm){
 // a base da aba PLANO) nos últimos dias FECHADOS com UEP. A mesma régua do
 // peso de hoje (UEP de jornada ÷ caixas de jornada da HORA_A_HORA). Poucos
 // dias → null: sem base, a tela não compara.
+// ⚠ Só dias da régua de HOJE (v7.151.0): a TV não tem onde escrever "mistura
+// escalas", e a mediana da régua anterior diria que a caixa de hoje é mais leve
+// ou mais pesada que o normal sem nada ter mudado na linha. Depois de uma troca
+// (UEP_ESCALAS), fica sem comparação até juntar TV_UEP_PESO_MIN dias.
 function _tvUepPesoNormal(hist, hojeNum){
+  const desde = _uepEscalaDesde(hojeNum);
   const v = (hist || [])
-    .filter(d => d && Number(d.uep) > 0 && _qpRealDia(d) > 0 && _cartNum(d.data) && _cartNum(d.data) < hojeNum)
+    .filter(d => d && Number(d.uep) > 0 && _qpRealDia(d) > 0 && _cartNum(d.data) && _cartNum(d.data) < hojeNum && _cartNum(d.data) >= desde)
     .sort((a, b) => _cartNum(b.data) - _cartNum(a.data))
     .slice(0, TV_UEP_PESO_DIAS)
     .map(d => Number(d.uep) / _qpRealDia(d))

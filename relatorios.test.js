@@ -2793,6 +2793,11 @@ ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
 console.log('\n── a carteira que vem (programação × capacidade) ──');
 { const m = JS.match(/const CART_DIAS_MAX\s*=\s*\d+/); if(m) eval(m[0].replace('const ','global.')+';'); }
 eval(pega('function _cartNum('));
+// TROCA DE ESCALA DA UEP (v7.151.0): os desenhos de UEP por dia e a régua em
+// UEP chamam a marca — globais, porque parte dos desenhos daqui é global.
+global._cartNum = _cartNum; global.UEP_ESCALAS = [];
+['function _uepEscalaCorte(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaDesde(', 'function _uepEscalaMarca(']
+  .forEach(f => require('vm').runInThisContext(pega(f).replace(/^function (\w+)/, 'global.$1 = function $1')));
 // o mix entra na carteira por parâmetro — as funções dele vêm antes
 [/const MIX_FATOR_MIN\s*=\s*[\d.]+/, /const MIX_FATOR_MAX\s*=\s*[\d.]+/, /const QP_MIN_DIAS\s*=\s*\d+/]
   .forEach(re => { const m = JS.match(re); if(m) eval(m[0].replace('const ','global.')+';'); });
@@ -3180,7 +3185,7 @@ ok('o cenário é ligado na análise dentro do _cartBlocos, para os três chamad
    /a\.cenario = modo === 'uep' \? \(QP_ESE > 0 \? \{ falha:'uep' \} : null\) : await _cartCenarioAsync\(cart, dias\)/.test(_cartBloc), true);
 // ── CARTEIRA EM UEP (v7.85.0) ──
 {
-  eval(pega('function _cartUepMedia(')); eval(pega('function _qpCurvaUep('));
+  eval(pega('function _cartUepMedia(')); eval(pega('function _qpCurvaUepDias(')); eval(pega('function _qpCurvaUep('));
   const itU = [{ data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:100, uepCx:1.94, codigo:'A', lote:'1' },
                { data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:300, uepCx:1, codigo:'B', lote:'1' },
                { data:'20/10/2026', dataNum:_cartNum('20/10/2026'), qtde:50, codigo:'C', lote:'2' }];
@@ -3192,6 +3197,9 @@ ok('o cenário é ligado na análise dentro do _cartBlocos, para os três chamad
   ok('sem nenhuma linha com UEP, não há média (o modo não se aplica)', _cartUepMedia([{ qtde:10 }]), null);
   ok('a régua em UEP sai da UEP gravada no HISTÓRICO, sem os dias sem UEP',
      _qpCurvaUep([{ uep:2400 }, { uep:null, real:9999 }, { uep:2100 }], 0), [2100, 2400]);
+  ok('a régua em UEP com janela: os últimos dias COM UEP, e a lista de dias é a mesma da curva (v7.151.0)',
+     [_qpCurvaUep([{ uep:2400 }, { uep:2100 }, { uep:null }, { uep:3000 }], 2), _qpCurvaUepDias([{ uep:2400, data:'a' }, { uep:2100, data:'b' }, { uep:null, data:'c' }, { uep:3000, data:'d' }], 2).map(d => d.data)],
+     [[2100, 3000], ['b', 'd']]);
   ok('em UEP a unidade dos textos é UEP e o peso é UEP/cx', [_cartUn({ mixModo:'uep' }), _cartUn({ mixModo:'mix' }), _cartPeso({ mixModo:'uep' }, 1.94).selo], ['UEP', 'cx', '1,94 UEP/cx']);
   ok('o seletor oferece EM UEP e a preferência guarda', [/<option value="uep">em UEP<\/option>/.test(src), /o\.mix === 'uep'/.test(pega('function _qpCarregarPref(') )], [true, true]);
 }

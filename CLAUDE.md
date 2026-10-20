@@ -36,7 +36,8 @@ via Google Apps Script (JSONP).
 - `tela-uep.test.js` — Telas F e G da TV (UEP do dia): a conta do
   `_tvUepMontar` no retrato real de 16/10 15:02, os desfechos da corrida, o
   peso normal, o desenho sem veredito com o selo desligado e a config
-  desligada por padrão (painel e `.gs`): `node tela-uep.test.js`.
+  desligada por padrão (painel e `.gs`), e a marca de troca de escala da UEP
+  (`UEP_ESCALAS`): `node tela-uep.test.js`.
 - `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
   ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
@@ -3954,6 +3955,40 @@ feito e dá ar de verdade ao que sobrou.
     mudado nada. Na campanha de cronoanálise, a velocidade fica fixa; se mudar,
     refazer a SLEEP (📌 FIXAR) e lembrar que o medido antes está na unidade
     antiga — e atualizar a coluna VELOCIDADE da PRODUTO_CODIGO.
+
+## TROCA DE ESCALA DA UEP COM O PASSADO TRAVADO (v7.151.0)
+- PPCP, 20/10/2026, depois da cronoanálise da MADERO (= SLEEP, 1,00 contra
+  1,20 no cadastro; o Encanto também deu cadastro × 0,83): *"quando alterar
+  deixar travado o passado"* → *"faz a marcação de datas nos gráficos"*.
+  **Nada foi trocado ainda** — falta medir mais produtos (regra das duas
+  medições). Se a escala mudar, o HISTORICO **não** é regravado desta vez.
+- **`UEP_ESCALAS`** (v7, junto do `UEP_TRAVADA_DESDE`): uma entrada
+  `{ desde:'dd/MM/yyyy', txt }` por troca do cadastro inteiro SEM regravar o
+  passado. **Hoje vazia.** As trocas de 16/10 e 19/10 regravaram o HISTORICO e
+  não entram. Conta pura: `_uepEscalaCorte(datas)` (a troca com dia dos dois
+  lados; o dia da troca já é da régua nova), textos únicos `_uepEscalaSelo`
+  (card) e `_uepEscalaNota` (nota), `_uepEscalaDesde(ateNum)` (1º dia da régua
+  que vale) e o desenho `_uepEscalaMarca` (tracejado âmbar + *ESCALA NOVA DA
+  UEP · dd/mm*, no vão entre as barras; perto da borda direita o texto vira).
+- **Onde aparece:** marca nos gráficos `_uepAbaPerSvg` (bloco 5, tela e papel) e
+  `_dirSemSvg` (diretoria); nota no bloco 5 (tela e papel), card UEP / DIA do
+  HISTÓRICO, `_rpUepFaixaHtml` (semanal e histórico), carteira em UEP do PLANO
+  (`cart.escNota`, pela `_qpCurvaUepDias` — os MESMOS dias da régua) e custo
+  por UEP do SIMULADOR. O **peso normal das Telas F/G** (`_tvUepPesoNormal`)
+  **só usa dias da régua de hoje** — na TV não cabe nota, e a mediana antiga
+  diria que a caixa mudou de peso.
+- O % da meta segue certo dos dois lados (cada dia tem a META UEP gravada):
+  veredito do dia e da semana, CAIXAS × UEP e bloco 7 não ganham nota.
+- **No dia da troca, junto com a entrada na lista:** cadastro × fator, META UEP
+  do ⚙ no mesmo dia, `UEP_META_PADRAO` (rp-core) e `UEP_META_PADRAO_GS`, e a
+  aba `UEP_VERSOES` gravada com o valor antigo e o novo (vigência = a data).
+  ⚠ **Colar a coluna UEP inteira não registra o valor antigo**: o
+  `_uepVerDaEdicao` só sabe o valor de antes numa célula única (`e.oldValue`),
+  e sem a aba a semente pula os códigos editados — o bloco 7 releria o passado
+  com a UEP nova. NÃO rodar o `regravarUepPassada`.
+- Testes em `tela-uep.test.js` (corte, textos, peso normal, a marca nos dois
+  gráficos e os chamadores; conferido por mutação) e `relatorios.test.js`
+  (régua em UEP com janela).
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de

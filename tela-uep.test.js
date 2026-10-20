@@ -45,7 +45,11 @@ for (const c of ['TV_UEP_PESO_DIAS', 'TV_UEP_PESO_MIN']) {
   if (!m) throw new Error(c + ' sumiu do painel');
   global[c] = Number(m[1]);
 }
+if (!/const UEP_ESCALAS = \[/.test(JS)) throw new Error('UEP_ESCALAS sumiu do painel');
+global.UEP_ESCALAS = [];        // o teste põe as trocas que quer; o painel nasce sem nenhuma
 ['function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _uepAbaHoras(',
+ 'function _uepEscalaCorte(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaDesde(',
+ 'function _uepEscalaMarca(', 'function _uepAbaPerSvg(', 'function _dirSemSvg(',
  'function _tvF2(', 'function _tvMinTxt(', 'function _tvUepDoProduto(', 'function _tvUepPesoNormal(',
  'function _tvUepMontar(', 'function _tvUepRodHtml(', 'function _tvFHtml(', 'function _tvGSvg(',
  'function _tvGHtml('].forEach(f => eval.call(global, pegaJs(f)));
@@ -124,6 +128,60 @@ ok('dia sem UEP gravada fica fora (não vira zero)',
 ok('hora extra sai do denominador (_qpRealDia)', _tvF2(_tvUepPesoNormal(
    [dia('01/10/2026', 2000, 1500, 500), dia('02/10/2026', 2000, 1500, 500), dia('06/10/2026', 2000, 1500, 500),
     dia('07/10/2026', 2000, 1500, 500), dia('08/10/2026', 2000, 1500, 500)], 20261019)), '2,00');
+
+console.log('\n── TROCA DE ESCALA DA UEP com o passado travado (v7.151.0) ──');
+{
+  // PPCP, 20/10/2026: "quando alterar deixar travado o passado" → "faz a
+  // marcação de datas nos gráficos". A troca entra em UEP_ESCALAS; o HISTORICO
+  // não é regravado, então os dias antes dela ficam na régua anterior.
+  const ESC = [{ desde: '21/10/2026', txt: 'cadastro × 0,83 · meta 3.048 → 2.530' }];
+  const D4 = ['16/10/2026', '20/10/2026', '21/10/2026', '22/10/2026'];
+  ok('o corte: a troca com dia dos dois lados; o dia da troca já é da régua nova',
+     _uepEscalaCorte(D4, ESC), { desde: '21/10/2026', txt: 'cadastro × 0,83 · meta 3.048 → 2.530', n: 20261021, antes: 2, depois: 2 });
+  ok('lista toda de um lado só (antes, depois ou um dia) → null: nada a marcar',
+     [_uepEscalaCorte(['16/10/2026', '20/10/2026'], ESC), _uepEscalaCorte(['21/10/2026', '22/10/2026'], ESC), _uepEscalaCorte(['22/10/2026'], ESC)], [null, null, null]);
+  ok('duas trocas no período: vale a mais recente', _uepEscalaCorte(['01/10/2026', '10/10/2026', '22/10/2026'],
+     [{ desde: '05/10/2026' }, { desde: '21/10/2026' }]).desde, '21/10/2026');
+  ok('o painel nasce sem troca nenhuma: nada é marcado', [_uepEscalaCorte(D4), _uepEscalaNota(D4), _uepEscalaSelo(D4)], [null, '', '']);
+  ok('cada troca escrita no painel tem data que se lê (dd/mm/aaaa)',
+     (eval(JS.match(/const UEP_ESCALAS = (\[[\s\S]*?\]);/)[1]) || []).every(t => _cartNum(t.desde) > 0), true);
+  ok('os textos: curto no card, longo na nota, com quantos dias ficaram na régua anterior',
+     [_uepEscalaSelo(D4, ESC), /2 dias estão na régua anterior/.test(_uepEscalaNota(D4, ESC)), /cadastro × 0,83/.test(_uepEscalaNota(D4, ESC)),
+      /1 dia está/.test(_uepEscalaNota(['20/10/2026', '21/10/2026'], ESC))],
+     ['⚠ escala da UEP mudou em 21/10', true, true, true]);
+  ok('o 1º dia da régua que vale numa data', [_uepEscalaDesde(20261020, ESC), _uepEscalaDesde(20261021, ESC), _uepEscalaDesde(20261030, ESC)], [0, 20261021, 20261021]);
+
+  // O peso normal da TV não mistura: só dias da régua de hoje.
+  UEP_ESCALAS.push({ desde: '14/10/2026' });
+  ok('peso normal: depois da troca só entram os dias da régua nova (aqui 3 → sem "normal")', _tvUepPesoNormal(H5, 20261019), null);
+  UEP_ESCALAS.length = 0; UEP_ESCALAS.push({ desde: '01/09/2026' });
+  ok('troca antiga, fora da janela: o normal é o mesmo de sempre', _tvF2(_tvUepPesoNormal(H5, 20261019)), '1,58');
+  UEP_ESCALAS.length = 0;
+
+  // A marca nos dois gráficos de UEP por dia — na data, entre as barras.
+  const dU = (data, uep) => ({ data, uep, metaUep: 3048 });
+  const P4 = D4.map((d, i) => dU(d, 2800 + i * 50));
+  ok('gráfico do PERÍODO sem troca: nenhuma marca', /ESCALA NOVA/.test(_uepAbaPerSvg(P4, 760)), false);
+  UEP_ESCALAS.push(ESC[0]);
+  const sv = _uepAbaPerSvg(P4, 760), bw = (760 - 46 - 10) / 4;
+  ok('gráfico do PERÍODO: tracejado no vão entre 20/10 e 21/10, com a data e a nota no título',
+     [/ESCALA NOVA DA UEP · 21\/10/.test(sv), sv.includes(`x1="${(46 + 2 * bw).toFixed(1)}"`), /<title>⚠ A escala da UEP mudou em 21\/10/.test(sv)], [true, true, true]);
+  const sd = _dirSemSvg(P4, 1600), passo = (1600 - 40) / 4;
+  ok('gráfico da DIRETORIA (últimos dias): a mesma marca, na escala dela',
+     [/ESCALA NOVA DA UEP · 21\/10/.test(sd), sd.includes(`x1="${(20 + 2 * passo).toFixed(1)}"`)], [true, true]);
+  ok('marca perto da borda direita: o texto vira para dentro', /text-anchor="end"[^>]*>ESCALA NOVA/.test(_uepAbaPerSvg(['17/10/2026', '18/10/2026', '19/10/2026', '20/10/2026', '21/10/2026'].map(d => dU(d, 2900)), 760)), true);
+  UEP_ESCALAS.length = 0;
+
+  // Onde a UEP de vários dias aparece junta, a nota sai pelas MESMAS funções.
+  const pega = f => pegaJs(f);
+  ok('as notas estão nos lugares que juntam UEP de dias diferentes',
+     [/_uepEscalaNota\(P\.dias\.map/.test(pega('function renderUep(')), /_uepEscalaNota\(P\.dias\.map/.test(pega('function _uepDocHtml(')),
+      /_uepEscalaSelo\(uEsc\)/.test(JS), /_uepEscalaNota\(/.test(pega('function _rpUepFaixaHtml(')),
+      /cart\.escNota = _uepEscalaNota\(_qpCurvaUepDias\(dias, QP_REGUA\)/.test(pega('async function _cartBlocos(')),
+      /b\.cart\.escNota/.test(pega('function _cartBlocosHtml(')), /_uepEscalaNota\(SIM_UEP\.dias/.test(pega('function _simUepPintar(')),
+      /_uepEscalaDesde\(hojeNum\)/.test(pega('function _tvUepPesoNormal('))],
+     [true, true, true, true, true, true, true, true]);
+}
 
 console.log('\n── o desenho: veredito só com o selo ligado ──');
 const F0 = _tvFHtml(M, false), F1 = _tvFHtml(M, true), G0 = _tvGHtml(M, false), G1 = _tvGHtml(M, true);
