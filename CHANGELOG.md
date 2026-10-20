@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.151.0 — 20/10/2026
+
+- **Marca de TROCA DE ESCALA DA UEP nos gráficos.** Pedido do PPCP: *"quando
+  alterar deixar travado o passado"* → *"faz a marcação de datas nos
+  gráficos"*. Quando o cadastro inteiro mudar de régua (ex.: UEP × 0,83 se a
+  cronoanálise confirmar) **sem regravar o HISTORICO**, a data entra numa lista
+  do painel (`UEP_ESCALAS`). Hoje a lista está **vazia**: nada aparece.
+  - **Gráficos:** UEP por dia da aba ⚖ UEP (bloco 5, tela e impressão
+    executiva) e os últimos dias da tela da diretoria ganham um tracejado âmbar
+    entre o último dia da régua antiga e o 1º da nova, com *ESCALA NOVA DA UEP ·
+    dd/mm*.
+  - **Números que juntam UEP de dias diferentes** ganham a nota *"a escala da
+    UEP mudou em dd/mm: N dias estão na régua anterior"*: média do período (aba
+    ⚖ UEP), card UEP / DIA do HISTÓRICO, faixa de UEP dos relatórios semanal e
+    do histórico, régua da carteira em UEP (aba PLANO) e custo por UEP (aba
+    SIMULADOR).
+  - **Peso normal das Telas F/G (TV):** usa só os dias da régua nova. Sem 5
+    dias depois da troca, a TV fica sem comparar (a TV não tem onde escrever a
+    nota, e a régua antiga diria que a caixa mudou de peso sem nada ter mudado
+    na linha).
+- **Atenção:** nenhum número muda hoje (lista vazia). Quando houver troca, o %
+  da meta continua valendo nos dias dos dois lados — cada dia tem a META UEP
+  dele gravada; o que não se compara é a UEP em número.
+
+---
+
 ## v7.150.1 — 20/10/2026
 
 - **💾 REGISTRAR MEDIÇÃO confere melhor os números.** O 1º registro real
