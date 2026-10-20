@@ -48,6 +48,10 @@ via Google Apps Script (JSONP).
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto). Carrega o
   `.gs` **inteiro** e a conta do painel: `node uep-padrao.test.js`.
+- `fechamento.test.js` — FECHAR DIA (`.gs` v5.29): o `saveDay` grava a produção
+  da HORA_A_HORA (carimbo `dataDados` do dia) e não o retrato do painel; o caso
+  real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
+  `arquivarDiaAtual`, rodando o `.gs` inteiro: `node fechamento.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -114,12 +118,14 @@ via Google Apps Script (JSONP).
   tolerância é para o toque consciente na linha, não para atribuição
   automática, que erraria justamente na virada da hora.
 - Fim de turno: a última hora (16:00-16:59) fica lançável até ~17:14, ou seja, a
-  janela **cruza o fechamento automático das 17:05** (que grava `FECHADO=true`
-  no `HISTORICO` — e o `arquivarDiaAtual` do dia seguinte **não sobrescreve dia
-  fechado**). Lançamento nesse intervalo fica na `HORA_A_HORA` mas fora do
-  retrato do `HISTORICO` — a MESMA situação de uma HE lançada depois das 17:05,
-  que já existia. Saída igual à da HE: **FECHAR DIA de novo** (o `saveDay` é
-  upsert por data e refaz o retrato).
+  janela **cruza o fechamento automático das 17:05** (o `fecharDiaAutomatico`
+  do PAINEL, que grava `FECHADO=true` no `HISTORICO` — e o `arquivarDiaAtual`
+  do dia seguinte **não sobrescreve dia fechado**). Lançamento DEPOIS do
+  fechamento fica na `HORA_A_HORA` mas fora do retrato do `HISTORICO` — a MESMA
+  situação de uma HE lançada depois das 17:05, que já existia. Saída igual à da
+  HE: **FECHAR DIA de novo** (o `saveDay` é upsert por data e, desde o `.gs`
+  v5.29, relê a produção da planilha). O que entrou ANTES do fechamento já vai
+  na linha — ver *O que é gravado no HISTORICO*.
 - Nada no `.gs`: a regra é só de tela (o `saveRealizado` sempre aceitou
   qualquer slot existente da `HORA_A_HORA`).
 
@@ -631,9 +637,9 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje treze, com o `tela-e.test.js`, o `programacao.test.js`, o
-  `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js` e o
-  `uep-relatorios.test.js`) antes de publicar.
+  sete (hoje catorze, com o `tela-e.test.js`, o `programacao.test.js`, o
+  `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js`, o
+  `uep-relatorios.test.js` e o `fechamento.test.js`) antes de publicar.
 
 ## Tela cheia de PARADA (ao vivo)
 - O operador **registra a parada e dá o START no mobile** (`ritmoprod_mobile.html`,
@@ -2689,9 +2695,14 @@ feito e dá ar de verdade ao que sobrou.
     100,6% é 1.509 ÷ **1.500**. O relatório semanal, que imprime a coluna EF,
     dizia *"100,6% · NA META"*; o bloco FECHAMENTO DA SEMANA PASSADA, que
     divide `real/meta`, dizia **80,2%** para o mesmo dia.
-  - O **fechamento automático das 17:05** (`arquivarDiaAtual`, no `.gs`) sempre
-    fez certo: soma a meta das linhas não-HE e calcula `ef = real ÷ meta` com
-    essa mesma meta. Quem estava fora do padrão era o botão do painel.
+  - O **fechamento das 23:59** (`arquivarDiaAtual`, no `.gs`) sempre fez certo:
+    soma a meta das linhas não-HE e calcula `ef = real ÷ meta` com essa mesma
+    meta. Quem estava fora do padrão era o botão do painel — e o fechamento das
+    **17:05**, que é o mesmo botão disparado pelo relógio (`fecharDiaAutomatico`,
+    no navegador do painel). ⚠ Notas antigas daqui e o comentário do
+    `salvarDiaSheets` no v7 dizem que o das 17:05 é o `arquivarDiaAtual`: estão
+    erradas. O `.gs` grava `AUTO dd/MM/yyyy HH:mm` e `FECHADO=false`; o painel
+    grava `dd/MM/yyyy, HH:mm:ss` e `FECHADO=true`.
   - Hoje `salvarDiaSheets` calcula `efGrav = real ÷ k.meta` e grava ESSA.
     `relatorios.test.js` falha se `'ef='+k.ef` voltar.
 - **O mesmo botão ZERAVA a coluna MEDIA CX/H.** O `saveDay` grava
@@ -2706,13 +2717,40 @@ feito e dá ar de verdade ao que sobrou.
   extras, coluna G) NÃO está zerada** — 22/07, 28/07, 05/08, 11/08, 28/08 e
   vários outros dias têm `2`. A anotação anterior dizia o contrário e estava
   errada. Com o `.gs` re-deployado, a contagem é por **HORÁRIO**
-  (`_ehHoraExtraCaixas`): o fechamento automático das 17:05 grava o nº de horas
-  de HE **com produção** (hoje, 05:00 e 06:00 → `HE=2`, `HE CX=660`), e o botão
-  FECHAR DIA manda o mesmo número (dia fechado na mão tem prioridade — o
-  automático não sobrescreve).
+  (`_ehHoraExtraCaixas`): o fechamento das 23:59 grava o nº de horas de HE
+  **com produção** (hoje, 05:00 e 06:00 → `HE=2`, `HE CX=660`), e o FECHAR DIA
+  (botão ou 17:05) grava o mesmo número (dia fechado pelo painel tem prioridade
+  — o das 23:59 não sobrescreve).
+- **A PRODUÇÃO da linha sai da PLANILHA, não do retrato do painel** (`.gs`
+  v5.29, PPCP 20/10/2026: *"GS NOVO"*). Conferido na linha de 19/10: REALIZADO
+  **1.491** com a UEP de **1.509 cx** (3.542,4) — o log de produto e a
+  HISTORICO_HORA tinham 1.509. O `salvarDiaSheets` manda o `k.real` da última
+  leitura do painel (minutos de atraso), e a UEP o `saveDay` sempre calculou no
+  `.gs`, lendo o log na hora: a mesma linha com números de dois momentos. As 18
+  cx (501060003, hora das 16:00) entraram nesse intervalo.
+  - Hoje o `saveDay` tira REALIZADO, EF, MELHOR/PIOR, HE, MEDIA CX/H e HE CX da
+    `HORA_A_HORA` (`_resumoParaFechar` → `_resumoHoraAHora`, a MESMA conta do
+    `arquivarDiaAtual`, que passou a morar ali). Do painel ficam a **META** e o
+    **FECHADO EM**. EF = REALIZADO ÷ essa META.
+  - **Trava pelo carimbo `dataDados`** (`PROP_DATA_DADOS`, gravado a cada
+    lançamento e apagado no reset): com ele de outro dia, sem ele, ou com a aba
+    sem produção, grava o que o painel mandou, como antes.
+  - O retorno diz `fonte: 'planilha' | 'painel'` e `realPainel`, e a diferença
+    vai para o log de execução do Apps Script.
+  - O painel e o celular não mudaram: o `salvarDiaSheets` continua mandando
+    tudo (é a rede do `.gs` antigo e do dia sem carimbo).
+  - ⚠ Consequência aceita: hora fechada em ZERO deixa de entrar em PIOR H.,
+    MEDIA CX/H e HE no fechamento pelo painel (a regra das 23:59, que ignora
+    hora sem produção). A coluna REALIZADO é fórmula e dá 0 tanto para "fechou
+    em zero" quanto para "ainda não chegou"; separar os dois exigiria comparar
+    o rótulo de cada hora com o relógio, e a regra das 23:59 nunca fez isso.
+  - Lançamento DEPOIS do fechamento das 17:05 continua fora (ver *Lançamento na
+    hora RECÉM-FECHADA*). Fechar às 17:15 resolveria; não foi pedido.
 - ⚠ **Dia já gravado não se conserta sozinho**: a linha antiga continua com o
   par velho. Corrigir é editar a planilha (ou reabrir e FECHAR DIA de novo, que
-  o `saveDay` é upsert por data).
+  o `saveDay` é upsert por data — vale só para HOJE, com a `HORA_A_HORA` ainda
+  do dia). A linha de 19/10/2026 (1.491) foi achada na conferência de 20/10 e
+  não foi corrigida pelo código.
 - ⚠ **Duas leituras do mesmo indicador continuam existindo**: o relatório
   semanal e o do histórico imprimem a **coluna EF** gravada; o bloco da semana e
   a Tela D calculam `real/meta`. Enquanto a gravação estiver certa elas
