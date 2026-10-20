@@ -203,6 +203,7 @@ global.UEP_CONV_TOL_PADRAO = eval('(' + pegaConst('UEP_CONV_TOL_PADRAO') + ')');
 global.UEP_CONV_TOL_LS = eval('(' + pegaConst('UEP_CONV_TOL_LS') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UEP_CONV_LS = eval('(' + pegaConst('UEP_CONV_LS') + ')');
+global.UEP_BASE_MEDIDA = eval('(' + pegaConst('UEP_BASE_MEDIDA') + ')');
 // v7.146.1 (refatoração): a conta em três peças (base · cadastro · digitar) e o
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar('];
@@ -288,10 +289,12 @@ ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
 const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
 ok('base digitada: a diferença para a régua da meta sai pronta do montar (+40,8%)', [E7.base.daMeta, fmtP(E7.base.difMeta)], [false, '40,8%']);
 const H7 = _uepConvHtml(E7);
-ok('base digitada fica à vista, com o valor e o botão de voltar à meta — e antes do resultado',
+ok('base digitada fica à vista, com o valor e o botão de voltar à SLEEP medida — e antes do resultado',
    [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA SLEEP'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
     H7.indexOf('BASE DIGITADA') < H7.indexOf('UEP EQUIVALENTE')], [true, true, true, true]);
-ok('base pela meta não mostra o aviso', [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA')], [false, false]);
+ok('base pela meta não é BASE DIGITADA: tem o aviso PRÓPRIO (desde a v7.148.0 é desvio da SLEEP medida)',
+   [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA'),
+    H1.includes('BASE PELA RÉGUA DA META: 12,5 s POR UEP'), H1.includes('VOLTAR À SLEEP MEDIDA (7,9 s)')], [false, false, true, true]);
 ok('o rótulo diz de quem é o tempo da base (o nome vem do UEP_BASE)',
    [/><span>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">SLEEP<\/span>\)<\/span><input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
     /bn\.textContent = _uepBaseCurto\(\)/.test(pegaJs('function _uepConvAtualiza(')), _uepBaseCurto()], [true, false, true, 'SLEEP']);
@@ -333,7 +336,7 @@ ok('FIXAR: com a base no produto e o tempo dela, fixa o tempo; sem tempo ou com 
    [_uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 8.7), _uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 0), _uepConvFixar(PRODS, 'ARMARIO ENCANTO', 27.8)],
    [{ acao: 'fixar', seg: 8.7 }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }]);
 ok('FIXAR sem a base no cadastro não faz nada', _uepConvFixar(PRODS.filter(p => p.modelo !== '501094'), 'X', 1), { acao: 'sem-base' });
-ok('o placeholder do campo da base diz que é a meta, não exemplo', /elB\.placeholder = 'meta ' \+/.test(pegaJs('function _uepConvEntradas(')), true);
+ok('o placeholder do campo da base diz que é a SLEEP medida, não exemplo', /elB\.placeholder = _uepBaseCurto\(\) \+ ' ' \+ medTxt/.test(pegaJs('function _uepConvEntradas(')), true);
 ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
@@ -349,13 +352,14 @@ const EV = _uepConvMontar(PRODS, '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/
 ok('um volume: a UEP e o que digitar são só dele (25 s → 2,00 contra 2,29 do VOL 2/2)',
    [EV.uepVol.toFixed(2), EV.volCad, EV.digitar.map(g => [g.uep, g.cods.map(c => c.cod)])], ['2.00', 2.29, [[2, ['501059002']]]]);
 const EM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.4, 3048);
-ok('base digitada igual à régua da meta (10,4 com 3.048) É a régua da meta: sem aviso, tempo do período',
-   [EM.base.igualMeta, EM.base.daMeta, EM.base.suspeita, _uepConvHtml(EM).includes('BASE DIGITADA'), _uepConvHtml(EM).includes('o tempo é o NO PERÍODO')],
-   [true, true, false, false, true]);
+ok('base digitada igual à régua da meta (10,4 com 3.048) É a régua da meta: tempo do período, aviso da régua (não BASE DIGITADA)',
+   [EM.base.igualMeta, EM.base.daMeta, EM.base.suspeita, _uepConvHtml(EM).includes('BASE DIGITADA'), _uepConvHtml(EM).includes('o tempo é o NO PERÍODO'),
+    _uepConvHtml(EM).includes('BASE PELA RÉGUA DA META')],
+   [true, true, false, false, true, true]);
 const EM2 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 10.6, 3048);
 ok('acima de 1% da régua já é base digitada (e suspeita, se mais lenta)', [EM2.base.daMeta, EM2.base.suspeita], [false, true]);
 const AT = pegaJs('function _uepConvAtualiza('), EN = pegaJs('function _uepConvEntradas(');
-ok('o campo da base mostra a régua da meta quando vazio, sem gravar, e a orientação segue a conta',
+ok('o campo da base mostra a base padrão quando vazio, sem gravar, e a orientação segue a conta',
    [/elB\.dataset\.auto === '1'/.test(EN), /document\.activeElement !== elB/.test(EN), /_uepConvGuia\(R\.base\.daMeta\)/.test(AT),
     /oninput="this\.dataset\.auto='';_uepConvBase\(\)"/.test(html)], [true, true, true, true]);
 
@@ -397,8 +401,8 @@ ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chama
   const e1 = _uepConvEntradas();
   campos['uep-conv-base'] = { value: '8,7', dataset: { auto: '' } };          // a base DIGITADA não é tocada
   const e2 = _uepConvEntradas();
-  ok('o campo automático segue a meta de AGORA; o digitado fica como está',
-     [e1.base, campos['uep-conv-base'].value, e2.base, e1.meta, e1.txt, e1.seg], [12.5, '8,7', 8.7, 2530, 'ARMARIO ENCANTO', 27.8]);
+  ok('o campo automático (o 10,4 antigo da meta) passa a mostrar a SLEEP medida; o digitado fica como está',
+     [e1.base, campos['uep-conv-base'].value, e2.base, e1.meta, e1.txt, e1.seg], [7.9, '8,7', 8.7, 2530, 'ARMARIO ENCANTO', 27.8]);
   // tolerância: vazio vira 15 e fica à vista no campo; 0 é zero (não volta a 15)
   ok('o campo da tolerância vem com 15% (à vista); digitado 0 vale 0',
      [e1.tol, campos['uep-conv-tol'].value, (campos['uep-conv-tol'].value = '0', _uepConvEntradas().tol)], [15, '15', 0]);
@@ -411,7 +415,7 @@ ok('documento compartilhado, EM PÉ, com o cabeçalho e o botão comuns',
 const SK = pegaConst('_UCV_DOC_SKIN').replace(/^`|`$/g, '');
 ok('a pele do papel é escopada em .ucv-doc (não mexe nos outros relatórios do documento)',
    SK.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-doc ')), true);
-ok('no papel, o botão VOLTAR À RÉGUA DA META some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
+ok('no papel, o botão VOLTAR À SLEEP MEDIDA some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
 // Revisão: na folha da base saía "clique em 📌 FIXAR" — botão que só existe na tela.
 const HB = _uepConvHtml(E6);
 ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde); o papel tem a frase sem botão (.so-papel, que a aba esconde)',
@@ -521,6 +525,48 @@ ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância 
 }
 ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrão)',
    /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
+
+// ════════════════════════════════════════════════════════════════════════════
+// A SLEEP CRONOMETRADA vira a base padrão (v7.148.0, PPCP 20/10/2026: "achei
+// tempo sleep" → "precisa alterar agora"). Volume a volume de 60 volumes:
+// período 8,6 · rodando 7,9 · sem lacunas 6,7. Vale o RODANDO.
+console.log('\n── CRONOANÁLISE → UEP: a SLEEP medida é a base ──');
+ok('a base medida é a SLEEP rodando: 7,9 s em 20/10/2026, 60 volumes', [UEP_BASE_MEDIDA.seg, UEP_BASE_MEDIDA.data, UEP_BASE_MEDIDA.volumes], [7.9, '20/10/2026', 60]);
+{ const SM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048, 15), HS = _uepConvHtml(SM);
+  ok('com 7,9 a base é a MEDIDA: sem aviso nenhum, régua com data e volumes, tolerância entra (7,9 → 9,1 s)',
+     [SM.base.medida, SM.base.daMeta, HS.includes('uep-conv-av'), HS.includes('a SLEEP cronometrada com a linha rodando (20/10/2026, 60 volumes)'),
+      SM.base.tolAplica, SM.base.tpSeg.toFixed(3)], [true, false, false, true, true, '9.085']);
+  ok('o caso real: Encanto rodando 17,6 ÷ SLEEP rodando 7,9 = 2,23', SM.uepVol.toFixed(2), '2.23');
+  const SD = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.6, 3048, 15), HD = _uepConvHtml(SD);
+  ok('outro tempo (o 8,6 do período) é BASE DIGITADA, com o botão de voltar à SLEEP medida',
+     [SD.base.medida, HD.includes('BASE DIGITADA: 8,6 s POR VOLUME DA SLEEP'), HD.includes('A SLEEP medida é 7,9 s (20/10/2026)'), HD.includes('VOLTAR À SLEEP MEDIDA (7,9 s)')],
+     [false, true, true, true]);
+  ok('igual a uma casa É a medida (7,94 sim, 8,0 não)', [_uepConvBaseDe(7.94, 3048).medida, _uepConvBaseDe(8, 3048).medida, _uepConvBaseDe(0, 3048).medida], [true, false, false]);
+}
+{ const B1 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 7.9, 7.9, 3048, 15), B2 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 8.6, 7.9, 3048, 15);
+  ok('a própria SLEEP: o tempo da base em uso diz que é ela; tempo novo manda FIXAR (neste computador)',
+     [B1.emUso, _uepConvHtml(B1).includes('7,9 s é a base em uso'), _uepConvHtml(B1).includes('📌 FIXAR</b>'),
+      B2.emUso, _uepConvHtml(B2).includes('clique em <b>📌 FIXAR</b> para usar 8,6 s como base neste computador')],
+     [true, true, false, false, true]);
+}
+ok('o COMO LER com a base cronometrada cita a SLEEP medida e as lacunas dentro nos dois',
+   [_uepConvGuia(false).includes('a SLEEP deu 7,9 s'), _uepConvGuia(false).includes('as lacunas ficam dentro'), _uepConvGuia(true).includes('7,9 s, medida em 20/10/2026')], [true, true, true]);
+{ // a tela: vazio mostra 7,9; apagado COM O FOCO continua valendo a medida (não pula para a meta)
+  const docAntes = global.document, pdAntes = global.PONTOS_DIA;
+  const base = { value: '', dataset: {} };
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': base, 'uep-conv-tol': { value: '' } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  const eV = _uepConvEntradas();
+  const r1 = [eV.base, base.value, base.dataset.auto, base.placeholder];
+  base.value = ''; base.dataset.auto = ''; global.document.activeElement = base;
+  const eF = _uepConvEntradas();
+  ok('campo vazio: mostra 7,9 (automático) e vale 7,9; apagado com o foco: fica vazio e vale 7,9',
+     [r1, [eF.base, base.value]], [[7.9, '7,9', '1', 'SLEEP 7,9'], [7.9, '']]);
+  global.document = docAntes; global.PONTOS_DIA = pdAntes;
+}
+ok('o título do campo diz que vazio é a SLEEP medida (e não mais a régua da meta)',
+   [/id="uep-conv-base"/.test(html), /title="[^"]*Vazio, vale a SLEEP medida em 20\/10\/2026: 7,9 s[^"]*"><span>s\/VOLUME DA BASE/.test(html)], [true, true]);
 
 // ════════════════════════════════════════════════════════════════════════════
 // REFATORAÇÃO da ⏱ CRONOANÁLISE (v7.146.1) — o comportamento é o mesmo, conferido
