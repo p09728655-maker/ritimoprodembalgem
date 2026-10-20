@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.150.0 + `.gs` v5.30 — 20/10/2026 · ⚠ re-deploy
+
+- **⏱ CRONOANÁLISE: o registro das medições e o que a linha faz.** Pedido do
+  PPCP: *"pode fazer tbm guardar o que é cronoanálise e que linha faz"*.
+  - **A LINHA FAZ**, logo abaixo do resultado: o ritmo real do produto nos
+    últimos 30 dias fechados, com a mesma conta do MÉD.PERÍODO da aba
+    PRODUÇÃO/HORA (caixas ÷ horas em que o produto rodou, média sem o melhor e
+    o pior dia), em segundos por caixa e cx/h, e quanto do ritmo da
+    cronoanálise a linha entrega (ex.: MADERO rodando 8,6 s × a linha a 20,6 s
+    por caixa = 41,8%).
+  - **💾 REGISTRAR MEDIÇÃO**: grava na planilha, aba nova **CRONOANALISE**, uma
+    linha por medição com os três números do Volume a volume (rodando, no
+    período, sem lacunas), volumes medidos, data, velocidade, quem mediu, a
+    base, a tolerância, a UEP calculada, a UEP do cadastro e o que a linha
+    faz. Campos trocados (período menor que o rodando, ou sem lacunas maior)
+    são recusados.
+  - **MEDIÇÕES REGISTRADAS** do produto, com a regra combinada: só trocar a UEP
+    com **duas medições em dias diferentes** apontando o mesmo lado da faixa
+    90–110%.
+- **Atenção:** a UEP do cadastro **não muda** com o registro (continua
+  travada, só digitada). Os números da conversão não mudaram. Os segundos
+  ficam guardados para que, se a base for medida de novo ou a velocidade da
+  esteira mudar, a UEP de todo produto possa ser recalculada sem cronometrar
+  de novo.
+- ⚠ **re-deploy do `.gs` v5.30.** Antes dele, a lista diz que o Apps Script
+  ainda não tem o registro e o 💾 não grava nada. A LINHA FAZ já funciona sem
+  o re-deploy.
+
+---
+
 ## v7.149.0 — 20/10/2026
 
 - **⏱ CRONOANÁLISE: o painel diz qual número do Volume a volume digitar.**

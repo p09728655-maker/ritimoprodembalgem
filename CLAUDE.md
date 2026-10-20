@@ -52,6 +52,10 @@ via Google Apps Script (JSONP).
   da HORA_A_HORA (carimbo `dataDados` do dia) e não o retrato do painel; o caso
   real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
   `arquivarDiaAtual`, rodando o `.gs` inteiro: `node fechamento.test.js`.
+- `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
+  `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
+  de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
+  vazio fica vazio): `node crono-registro.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -677,7 +681,7 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje catorze, com o `tela-e.test.js`, o `programacao.test.js`, o
+  sete (hoje quinze, com o `crono-registro.test.js`, o `tela-e.test.js`, o `programacao.test.js`, o
   `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js`, o
   `uep-relatorios.test.js` e o `fechamento.test.js`) antes de publicar.
 
@@ -3903,6 +3907,32 @@ feito e dá ar de verdade ao que sobrou.
     `.semLacunas` — só para isso, nenhuma conta). Tela (`#uep-conv-guia`, antes
     do COMO LER) e papel. Rótulo do campo (`#uep-conv-seg-rot`) e cartão
     MEDIDO dizem RODANDO, ou NO PERÍODO com a régua da meta.
+  - **v7.150.0 / `.gs` v5.30 — REGISTRO DA MEDIÇÃO E A LINHA FAZ** (PPCP:
+    *"pode fazer tbm guardar o que é cronoanalise e que linha faz"* → *"os
+    dois"*). Decidido junto: **manter a faixa 90–110%** e trocar a UEP só com
+    **duas medições em dias diferentes** apontando o mesmo lado (`_ucvRegsResumo`
+    → `UCV_REG_VEREDITO`). Ruído medido de UMA medição de 8 min: as 4 lacunas
+    da SLEEP separam 7,9 de 6,7 (18%); outra amostra cairia em ±8%.
+    - **A LINHA FAZ** (`_ucvLinhaDe`, conta): o MÉD.PERÍODO do produto
+      (horas DISTINTAS por dia, `_phMediaAparada` 'aparada') nos últimos
+      `CRONO_LINHA_DIAS`=30 dias fechados (`_uepPadJanela`, a janela do bloco 7).
+      Leitura: um `getProducaoModeloPeriodo` só com produto escolhido, nenhum se
+      o `UEP_PAD` do bloco 7 já tem a mesma janela; espera a das medições.
+      `R.linhaPct` = medido ÷ s/cx da linha. Entra pelo 7º parâmetro do
+      `_uepConvMontar` (array = itens; texto = estado da leitura).
+    - **💾 REGISTRAR MEDIÇÃO**: formulário `#uep-conv-reg` FORA do
+      `#uep-conv-res` (refeito a cada tecla). `_ucvRegValida` recusa campos
+      trocados (período < rodando, sem lacunas > rodando); `_ucvRegMontar` é a
+      linha; o REG_ID é hash do CONTEÚDO (2º clique depois de timeout não
+      duplica). Volume vai como `VOL 1/2` / `JOGO 2 VOL` — "1/2" o Sheets
+      viraria data. `jsonpEscrita` + confere `registrado` (o `.gs` antigo cai no
+      `getDados` e não grava).
+    - **`.gs` v5.30**: aba `CRONOANALISE` (só acréscimo, criada na 1ª
+      gravação), grava pelo NOME da coluna (coluna que falta é criada no fim),
+      sob o lock, idempotente pelo REG_ID; `getCronoRegistros` (cache 300 s,
+      invalidado pelo registro). ⚠ **re-deploy manual**. NÃO toca a UEP.
+    - O GRAVAÇÃO das notas e o título da aba deixaram de dizer "nada é gravado":
+      a UEP não muda, a medição é registrada.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter
