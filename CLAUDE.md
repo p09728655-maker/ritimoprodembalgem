@@ -3895,6 +3895,14 @@ feito e dá ar de verdade ao que sobrou.
       limite do simulador de capacidade e o NO LIMITE DA ESTEIRA da FILA. ⚠
       Enquanto os outros produtos seguirem com 650, o % TETO entre produtos
       compara réguas diferentes (o teto da SLEEP subiu de ~366 para ~502 cx/h).
+  - **v7.149.0 — QUAL NÚMERO DIGITAR** (PPCP: *"deixa claro no painel qual
+    medida eu coloco para comparar com sleep"*). `_uepConvQual(base)`
+    (desenho, em `UCV_DESENHO`): os três cartões do Volume a volume com os
+    nomes do app, o que vale em verde com o número da SLEEP nele, os outros
+    *não use* com o que a SLEEP deu ali (`UEP_BASE_MEDIDA.periodo` /
+    `.semLacunas` — só para isso, nenhuma conta). Tela (`#uep-conv-guia`, antes
+    do COMO LER) e papel. Rótulo do campo (`#uep-conv-seg-rot`) e cartão
+    MEDIDO dizem RODANDO, ou NO PERÍODO com a régua da meta.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

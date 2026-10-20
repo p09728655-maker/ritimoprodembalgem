@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.149.0 — 20/10/2026
+
+- **⏱ CRONOANÁLISE: o painel diz qual número do Volume a volume digitar.**
+  Pedido do PPCP: *"deixa claro no painel qual medida eu coloco para comparar
+  com sleep"*. Logo abaixo dos campos, os três cartões do app com os nomes de
+  lá — POR VOLUME NO PERÍODO · POR VOLUME COM A LINHA RODANDO · SEM AS LACUNAS
+  —, o que vale em verde (**✓ USE ESTE · a SLEEP deu 7,9 s aqui**) e, nos
+  outros, *não use* com o que a SLEEP deu neles (8,6 e 6,7).
+  - O campo passou de *s/VOLUME MEDIDO* para **s/VOLUME RODANDO**, e o cartão
+    do resultado para **MEDIDO · RODANDO**. Com a régua da meta como base
+    (10,4), os dois viram NO PERÍODO e o destaque muda de cartão.
+  - Vai também na impressão (COMO LER).
+- **Atenção:** nenhuma conta mudou. Só texto e o quadro novo. Nada no `.gs`.
+
+---
+
 ## v7.148.0 — 20/10/2026
 
 - **⏱ CRONOANÁLISE → UEP: a base agora é a SLEEP cronometrada, 7,9 s por
