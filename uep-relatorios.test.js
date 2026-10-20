@@ -202,8 +202,15 @@ global.UEP_CONV_TOL_META = eval('(' + pegaConst('UEP_CONV_TOL_META') + ')');
 global.UEP_CONV_TOL_PADRAO = eval('(' + pegaConst('UEP_CONV_TOL_PADRAO') + ')');
 global.UEP_CONV_TOL_LS = eval('(' + pegaConst('UEP_CONV_TOL_LS') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
-['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
-  .forEach(f => eval.call(global, pegaJs(f)));
+global.UEP_CONV_LS = eval('(' + pegaConst('UEP_CONV_LS') + ')');
+// v7.146.1 (refatoração): a conta em três peças (base · cadastro · digitar) e o
+// desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
+const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar('];
+const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
+  'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
+  'function _uepConvTrocaHtml(', 'function _uepConvHtml('];
+['function _uepBaseCurto(', 'function _ucvEl(', 'function _ucvLe(', 'function _ucvGuarda(', 'function _uepConvProdutos(', 'function _uepConvAchar(']
+  .concat(UCV_CONTA, UCV_DESENHO).forEach(f => eval.call(global, pegaJs(f)));
 const CV = (codigo, desc, cor, uep, uepVig) => ({ codigo, desc, cor, uep, uepVig });
 const PRODS = _uepConvProdutos([
   CV('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, '25/09/2026'),
@@ -439,7 +446,8 @@ ok('a tela mostra o tempo padrão e a razão dos tempos padrão; com a meta, diz
    [true, true, true, false, true]);
 ok('o campo TOLERÂNCIA (%) está na aba, antes do FIXAR (o Tab do FIXAR continua sendo o último)',
    [html.indexOf('id="uep-conv-tol"') > html.indexOf('id="uep-conv-base"'), html.indexOf('id="uep-conv-tol"') < html.indexOf('id="uep-conv-fixar"')], [true, true]);
-ok('o desenho continua sem conta (o multiplicador vem pronto do montar)', /\/ *100|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
+ok('o desenho continua sem conta (o multiplicador vem pronto do montar) — em TODAS as peças dele',
+   UCV_DESENHO.filter(f => /\/ *100|\/ *R\.|_uepConvMontar\(|_uepConvBaseDe\(|_uepConvCadastro\(|_uepConvDigitar\(/.test(pegaJs(f))), []);
 // Revisão da v7.146.0: 1 + 14/100 é 1,1400000000000001 em ponto flutuante
 const T14 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 14), H14 = _uepConvHtml(T14);
 ok('o multiplicador sai limpo (14% → × 1,14), sem a cauda do ponto flutuante',
@@ -510,6 +518,30 @@ ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância 
 }
 ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrão)',
    /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
+
+// ════════════════════════════════════════════════════════════════════════════
+// REFATORAÇÃO da ⏱ CRONOANÁLISE (v7.146.1) — o comportamento é o mesmo, conferido
+// fora do repositório contra 249.318 casos (conta, tela, papel e cliques); aqui
+// ficam as guardas das costuras novas.
+console.log('\n── CRONOANÁLISE → UEP: as peças ──');
+{ const B = _uepConvBaseDe(8.7, 3048, 15), R = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 15);
+  ok('o _uepConvMontar usa a base do _uepConvBaseDe (a mesma régua e tolerância, sem produto nenhum)',
+     [JSON.stringify(B), JSON.stringify(_uepConvMontar([], '', 0, 8.7, 3048, 15).base)], [JSON.stringify(R.base), JSON.stringify(R.base)]);
+  const PS = PRODS.find(p => p.rot === '501059 · PENTEADEIRA CAMARIM STRASS'), C = _uepConvCadastro(PS);
+  ok('o cadastro do produto: UEP por volume, jogo e origem (multivolume)',
+     [C.vols.length, C.completo, C.jogoCad != null, C.volCad === C.jogoCad / 2, typeof C.origem], [2, true, true, true, 'string']);
+  const D = _uepConvDigitar(PS, C, 1, 2);
+  ok('o que digitar: um grupo por volume e número, volume 1 antes do 2 (o mesmo do _uepConvMontar)',
+     [D.map(g => g.vol), JSON.stringify(D) === JSON.stringify(_uepConvMontar(PRODS, PS.rot, 2 * _uepConvBaseDe(0, 2530).seg / 2, 0, 2530).digitar)], [[1, 2], true]);
+}
+ok('os campos da aba saem só do _ucvEl, e o que é guardado só pelo _ucvLe/_ucvGuarda',
+   [(JS.match(/getElementById\('uep-conv-/g) || []).length, /localStorage\.(get|set|remove)Item\(UEP_CONV/.test(JS)], [1, false]);
+{ const lsAntes = global.localStorage;
+  global.localStorage = { getItem(){ throw new Error('bloqueado'); }, setItem(){ throw new Error('bloqueado'); }, removeItem(){ throw new Error('bloqueado'); } };
+  let quebrou = false; try{ _ucvGuarda('x', '1'); _ucvGuarda('x', ''); }catch(e){ quebrou = true; }
+  ok('sem localStorage (janela anônima, bloqueado): lê vazio e não quebra', [_ucvLe('x'), quebrou], ['', false]);
+  global.localStorage = lsAntes;
+}
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

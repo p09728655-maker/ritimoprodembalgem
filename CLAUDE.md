@@ -3745,6 +3745,23 @@ feito e dá ar de verdade ao que sobrou.
       premissa da tolerância a régua já tem fadiga dentro — a comparação
       coerente seria o TEMPO PADRÃO da base contra a régua (a sobra é o espaço
       das paradas). Não mexido: muda o número do cartão e o limite do aviso.
+  - **v7.146.1 — refatoração, sem mudança de comportamento** (PPCP:
+    *"refatorar"*, escopo só a cronoanálise). A conta é `_uepConvBaseDe` (régua
+    e tolerância, sem produto) + `_uepConvCadastro` (UEP por volume, jogo,
+    origem) + `_uepConvDigitar` (repartição), e o `_uepConvMontar` só as junta.
+    O desenho são peças sem conta (`_uepConvAvisoBase`, `_uepConvRegua`,
+    `_uepConvCadTxt`, `_uepConvNotasHtml`, `_uepConvBaseHtml`,
+    `_uepConvTrocaHtml` e os `_ucv*` pequenos); o `_uepConvHtml` escolhe pelo
+    estado. Campos e localStorage só por `_ucvEl`/`_ucvLe`/`_ucvGuarda` (o
+    teste conta 1 `getElementById('uep-conv-` no arquivo). Peça nova de
+    desenho entra na lista `UCV_DESENHO` do `uep-relatorios.test.js`: é ela
+    que a guarda "desenho sem conta" varre.
+    - ⚠ **Como foi provado que nada mudou**: um script (fora do repositório)
+      roda a região inteira num `vm` com DOM e localStorage de mentira, em
+      249.318 casos — catálogo real + casos de borda, cada estado, base, meta e
+      tolerância, a impressão e os cliques — e compara o hash da saída de antes
+      e de depois. Zero diferença; quatro defeitos plantados foram pegos. Para a
+      próxima refatoração aqui, o mesmo método: gravar a saída ANTES de mexer.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

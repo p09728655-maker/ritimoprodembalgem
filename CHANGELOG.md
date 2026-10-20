@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.146.1 — 20/10/2026
+
+- **Refatoração da ⏱ CRONOANÁLISE → UEP — nada muda na tela, no papel nem nos
+  números.** A conta, que era uma função de 63 linhas, virou três peças com
+  nome: a régua e a tolerância (`_uepConvBaseDe`), o que o cadastro diz do
+  produto (`_uepConvCadastro`) e o que digitar (`_uepConvDigitar`). O
+  `_uepConvMontar` só junta as três. O desenho, que tinha 62 linhas, ficou em
+  peças por bloco: aviso da base, régua, notas, cartões da base e cartões do
+  produto. Os campos da aba e o que fica guardado no computador passam por três
+  funções pequenas (`_ucvEl`, `_ucvLe`, `_ucvGuarda`), em vez de oito cópias do
+  mesmo `try/localStorage`.
+  - Conferido contra 249.318 casos, no código de antes e no de depois: as
+    contas, as quatro telas do resultado, a impressão, os cliques (FIXAR,
+    VOLTAR À RÉGUA, Tab) e o que fica guardado. Saíram idênticos. A conferência
+    também foi testada: quatro defeitos plantados de propósito foram todos pegos.
+  - O arquivo ficou ~57 linhas maior (cabeçalho e comentário de cada peça); a
+    maior função da aba caiu de 63 para 29 linhas.
+- **Atenção:** nenhum número, texto ou arquivo muda.
+
+---
+
 ## v7.146.0 — 19/10/2026
 
 - **⏱ CRONOANÁLISE → UEP: TOLERÂNCIA (%) de fadiga e movimentação** (PPCP:
