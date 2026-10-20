@@ -199,6 +199,8 @@ ok('cartão sem status não herda o vermelho do relatório de paradas',
 console.log('\n── CRONOANÁLISE → UEP ──');
 global.UEP_PAD_FAIXA = eval('(' + pegaConst('UEP_PAD_FAIXA') + ')');
 global.UEP_CONV_TOL_META = eval('(' + pegaConst('UEP_CONV_TOL_META') + ')');
+global.UEP_CONV_TOL_PADRAO = eval('(' + pegaConst('UEP_CONV_TOL_PADRAO') + ')');
+global.UEP_CONV_TOL_LS = eval('(' + pegaConst('UEP_CONV_TOL_LS') + ')');
 ['_uepConvCod', '_uepConvNorm'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepBaseCurto(', 'function _uepConvProdutos(', 'function _uepConvAchar(', 'function _uepConvMontar(', 'function _uepConvHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -367,7 +369,7 @@ const GC = pegaJs('function gerarRelatorioCrono(');
 // Revisão adversarial da v7.145.0: o papel lia o campo da base cru e a tela o
 // sincronizava com a meta — com a meta mudada pelo ⚙ ou pelo refresh, o papel
 // saía "BASE DIGITADA" com a régua antiga. Hoje as DUAS leem _uepConvEntradas.
-const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);';
+const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);';
 ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chamada',
    [/const E = _uepConvEntradas\(\);/.test(AT), /const E = _uepConvEntradas\(\);/.test(GC), AT.includes(MONTA), GC.includes(MONTA),
     (JS.match(/(?<!function )_uepConvEntradas\(\)/g) || []).length, /_uepConvDocHtml\(R, ctx\)/.test(GC), GC.indexOf('_uepConvAtualiza();') < GC.indexOf('_uepConvEntradas()')],
@@ -378,7 +380,7 @@ ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chama
   eval.call(global, pegaJs('function _pgSimNum('));
   eval.call(global, pegaJs('function _uepConvEntradas('));
   const docAntes = global.document, pdAntes = global.PONTOS_DIA;
-  const campos = { 'uep-conv-prod': { value: 'ARMARIO ENCANTO' }, 'uep-conv-seg': { value: '27,8' }, 'uep-conv-base': { value: '10,4', dataset: { auto: '1' } } };
+  const campos = { 'uep-conv-prod': { value: 'ARMARIO ENCANTO' }, 'uep-conv-seg': { value: '27,8' }, 'uep-conv-base': { value: '10,4', dataset: { auto: '1' } }, 'uep-conv-tol': { value: '' } };
   global.document = { activeElement: null, getElementById: id => campos[id] || null };
   global.PONTOS_DIA = { metaUep: 2530 };
   const e1 = _uepConvEntradas();
@@ -386,6 +388,9 @@ ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chama
   const e2 = _uepConvEntradas();
   ok('o campo automático segue a meta de AGORA; o digitado fica como está',
      [e1.base, campos['uep-conv-base'].value, e2.base, e1.meta, e1.txt, e1.seg], [12.5, '8,7', 8.7, 2530, 'ARMARIO ENCANTO', 27.8]);
+  // tolerância: vazio vira 15 e fica à vista no campo; 0 é zero (não volta a 15)
+  ok('o campo da tolerância vem com 15% (à vista); digitado 0 vale 0',
+     [e1.tol, campos['uep-conv-tol'].value, (campos['uep-conv-tol'].value = '0', _uepConvEntradas().tol)], [15, '15', 0]);
   global.document = docAntes; global.PONTOS_DIA = pdAntes;
 }
 ok('sem conversão pronta não abre janela; com ela, abre no clique (nenhuma leitura antes)',
@@ -403,6 +408,108 @@ ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde);
     /\.so-tela\{display:none\}/.test(pegaJs('function _rpDocParadas(')), /#sec-crono \.so-papel\{display:none\}/.test(html)],
    [true, true, true, true]);
 ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="gerarRelatorioCrono()"'), true);
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOLERÂNCIA de fadiga e movimentação (v7.146.0, PPCP: "15% iguais para todos")
+// ⚠ Os 8,7 s de base são EXEMPLO (estimativa do limite da esteira para a
+// MADERO, base antiga), não cronometragem da SLEEP.
+console.log('\n── CRONOANÁLISE → UEP: a tolerância ──');
+ok('o padrão é 15%', UEP_CONV_TOL_PADRAO, 15);
+const T0 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 0), T15 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 15),
+      T30 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 30);
+ok('a MESMA tolerância no produto e na base se cancela: a UEP não muda (0%, 15%, 30%)',
+   [T0.uepVol, T15.uepVol, T30.uepVol].map(x => x.toFixed(4)), [T0.uepVol.toFixed(4), T0.uepVol.toFixed(4), T0.uepVol.toFixed(4)]);
+ok('tempo padrão = medido × 1,15 no produto (17,6 → 20,2) e na base (8,7 → 10,0); a UEP é a razão dos dois',
+   [T15.tpSeg.toFixed(2), T15.base.tpSeg.toFixed(3), (T15.tpSeg / T15.base.tpSeg).toFixed(4)], ['20.24', '10.005', T15.uepVol.toFixed(4)]);
+const TM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 15);
+ok('com a régua da meta a tolerância NÃO entra (ela já tem fadiga e paradas dentro): sem tempo padrão, UEP igual',
+   [TM.base.tolAplica, TM.tpSeg, TM.uepVol.toFixed(4)], [false, null, _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 3048, 0).uepVol.toFixed(4)]);
+// Revisão da v7.146.0: só o 15% (que é o padrão) era conferido — trocar a conta
+// por "sempre o padrão" passava. O tempo padrão tem de seguir o que foi DIGITADO.
+ok('o tempo padrão segue a tolerância digitada (30% → 17,6 × 1,3 = 22,88; base 8,7 × 1,3 = 11,31)',
+   [T30.tpSeg.toFixed(2), T30.base.tpSeg.toFixed(2), T30.base.tolFator], ['22.88', '11.31', 1.3]);
+ok('com a tolerância, a RÉGUA diz qual número da base é o medido e qual é o tempo padrão',
+   [_uepConvHtml(T15).includes('8,7 s por UEP medido (tempo padrão 10,0 s)'), _uepConvHtml(TM).includes(' medido (tempo padrão')], [true, false]);
+ok('tolerância vazia ou fora de 0–100 vira o padrão; 0 é zero',
+   [_uepConvMontar(PRODS, 'X', 1, 8.7, 3048, undefined).base.tol, _uepConvMontar(PRODS, 'X', 1, 8.7, 3048, 150).base.tol, T0.base.tol], [15, 15, 0]);
+const HT = _uepConvHtml(T15), HM = _uepConvHtml(TM);
+ok('a tela mostra o tempo padrão e a razão dos tempos padrão; com a meta, diz por que a tolerância não entra',
+   [HT.includes('tempo padrão <b>20,2 s</b> (+15%)'), HT.includes('20,2 s ÷ 10,0 s (tempo padrão, +15% nos dois)'), HT.includes('A mesma tolerância nos dois se cancela na UEP'),
+    HM.includes('tempo padrão <b>'), HM.includes('não entra: a régua da meta já tem fadiga, movimentação e paradas dentro')],
+   [true, true, true, false, true]);
+ok('o campo TOLERÂNCIA (%) está na aba, antes do FIXAR (o Tab do FIXAR continua sendo o último)',
+   [html.indexOf('id="uep-conv-tol"') > html.indexOf('id="uep-conv-base"'), html.indexOf('id="uep-conv-tol"') < html.indexOf('id="uep-conv-fixar"')], [true, true]);
+ok('o desenho continua sem conta (o multiplicador vem pronto do montar)', /\/ *100|\/ *R\./.test(pegaJs('function _uepConvHtml(')), false);
+// Revisão da v7.146.0: 1 + 14/100 é 1,1400000000000001 em ponto flutuante
+const T14 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 14), H14 = _uepConvHtml(T14);
+ok('o multiplicador sai limpo (14% → × 1,14), sem a cauda do ponto flutuante',
+   [T14.base.tolFator, H14.includes('medido × 1,14.'), /1,1400000/.test(H14)], [1.14, true, false]);
+const TF = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, 150), TN = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 3048, NaN);
+ok('valor fora de 0–100 ou ilegível: vale o padrão E a tela diz (o campo mostra outra coisa)',
+   [TF.base.tol, TF.base.tolFora, TN.base.tol, TN.base.tolFora, T15.base.tolFora, _uepConvHtml(TF).includes('⚠ o valor digitado não vale (0 a 100%): vale o padrão, 15%.')],
+   [15, true, 15, true, false, true]);
+const HZ = _uepConvHtml(T0);
+ok('0% é zero: sem "tempo padrão +0%", a razão volta a ser a dos tempos medidos',
+   [T0.tpSeg, T0.base.tpSeg, HZ.includes('tempo padrão <b>'), HZ.includes('zero: o tempo padrão é o próprio medido.'), HZ.includes('17,6 s ÷ 8,7 s')], [null, null, false, true, true]);
+{ // o campo com texto sem algarismo NÃO vira 0% (o _pgSimNum devolveria 0)
+  const docAntes = global.document, pdAntes = global.PONTOS_DIA;
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': { value: '', dataset: {} }, 'uep-conv-tol': { value: 'abc' } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  const eA = _uepConvEntradas();
+  campos['uep-conv-tol'].value = '12,5'; const eB = _uepConvEntradas();
+  ok('tolerância sem algarismo chega como NaN (padrão + aviso), nunca 0; "12,5" é 12,5',
+     [Number.isNaN(eA.tol), _uepConvMontar(PRODS, 'X', 1, 8.7, 3048, eA.tol).base.tolFora, eB.tol], [true, true, 12.5]);
+  global.document = docAntes; global.PONTOS_DIA = pdAntes;
+}
+// O risco de contar duas vezes é do USUÁRIO: digitar o medido já com +15%.
+// A UEP subiria 15% (só o produto inflado). A tela tem de dizer como digitar.
+global._uepBaseCurto = global._uepBaseCurto || (() => 'SLEEP');
+eval.call(global, pegaJs('function _uepConvGuia('));
+ok('o COMO LER e o campo do medido dizem: o tempo MEDIDO, sem somar tolerância (nas duas réguas)',
+   [_uepConvGuia(false).includes('sem somar tolerância'), _uepConvGuia(true).includes('sem somar tolerância'),
+    /title="[^"]*sem somar tolerância[^"]*">s\/VOLUME MEDIDO/.test(html)], [true, true, true]);
+{ // a tolerância digitada fica no computador e volta no campo vazio (F5)
+  eval.call(global, pegaJs('function _uepConvTol('));
+  const docAntes = global.document, lsAntes = global.localStorage, atAntes = global._uepConvAtualiza, pdAntes = global.PONTOS_DIA;
+  const mem = {}; global.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
+  global._uepConvAtualiza = () => {};
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': { value: '', dataset: {} }, 'uep-conv-tol': { value: '20' } };
+  global.document = { activeElement: null, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  _uepConvTol();
+  const salvo = mem[UEP_CONV_TOL_LS];
+  campos['uep-conv-tol'].value = '';                         // F5: o campo nasce vazio
+  const eF5 = _uepConvEntradas();
+  campos['uep-conv-tol'].value = ''; _uepConvTol();          // apagou: some do computador, volta o padrão
+  const eLimpo = _uepConvEntradas();
+  ok('a tolerância digitada fica no computador e volta depois do F5; apagada, volta o padrão',
+     [salvo, eF5.tol, campos['uep-conv-tol'].value === '15' && !(UEP_CONV_TOL_LS in mem), eLimpo.tol], ['20', 20, true, 15]);
+  global.document = docAntes; global.localStorage = lsAntes; global._uepConvAtualiza = atAntes; global.PONTOS_DIA = pdAntes;
+}
+// Verificação final da v7.146.0: o piso, o 100 e o vazio não eram conferidos (tirar
+// o tN >= 0 deixava -15 virar "zero" calado), e o aviso só existia com produto e tempo.
+{ const TT = (t, prod, seg) => _uepConvMontar(PRODS, prod == null ? 'ARMARIO ENCANTO' : prod, seg == null ? 17.6 : seg, 8.7, 3048, t).base;
+  ok('a faixa é 0 a 100: -15 e 101 avisam e valem 15; 100 vale; vazio e sem valor não avisam',
+     [[TT(-15).tol, TT(-15).tolFora], [TT(101).tol, TT(101).tolFora], [TT(100).tol, TT(100).tolFora], TT('').tolFora, TT(undefined).tolFora, TT(0).tolFora],
+     [[15, true], [15, true], [100, false], false, false, false]);
+  const HS = _uepConvHtml(_uepConvMontar(PRODS, '', 0, 8.7, 3048, 150)), HT0 = _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 0, 8.7, 3048, 150));
+  ok('o aviso de tolerância inválida aparece também sem produto e sem tempo (a régua já mostra o tempo padrão)',
+     [HS.includes('tempo padrão 10,0 s'), HS.includes('⚠ o valor digitado não vale (0 a 100%): vale o padrão, 15%.'), HT0.includes('⚠ o valor digitado não vale'),
+      _uepConvHtml(_uepConvMontar(PRODS, '', 0, 8.7, 3048, 15)).includes('⚠')], [true, true, true, false]);
+}
+{ // digitando: com o campo da tolerância EM FOCO e apagado, ele não é preenchido de volta (o "15" viraria "1520")
+  const docAntes = global.document, pdAntes = global.PONTOS_DIA;
+  const tol = { value: '' };
+  const campos = { 'uep-conv-prod': { value: '' }, 'uep-conv-seg': { value: '' }, 'uep-conv-base': { value: '', dataset: {} }, 'uep-conv-tol': tol };
+  global.document = { activeElement: tol, getElementById: id => campos[id] || null };
+  global.PONTOS_DIA = { metaUep: 3048 };
+  const eFoco = _uepConvEntradas();
+  ok('com o campo em foco e vazio: ele fica vazio enquanto se digita, e a conta usa o padrão (não 0)', [tol.value, eFoco.tol], ['', 15]);
+  global.document = docAntes; global.PONTOS_DIA = pdAntes;
+}
+ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrão)',
+   /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

@@ -3713,6 +3713,38 @@ feito e dá ar de verdade ao que sobrou.
     na tela — regra própria, não junto da de perdas/simulador, que o teste
     prende como está). (3) o teste das entradas roda a função real num DOM de
     mentira (conferido por mutação: volta o defeito, o teste cai).
+  - **v7.146.0 — TOLERÂNCIA (%)** (PPCP: *"fadiga e movimentação 15%"* →
+    *"15% iguais para todos"*). `UEP_CONV_TOL_PADRAO`=15, campo `#uep-conv-tol`
+    (à vista, guardado em `rpe_uep_conv_tol`; 0 é zero). Tempo padrão = medido ×
+    `base.tolFator`, no produto (`R.tpSeg`) e na base (`base.tpSeg`). ⚠ **A UEP
+    continua `s ÷ base`**: a MESMA tolerância nos dois se cancela — o teste roda
+    0/15/30% e exige a mesma UEP. Só aplica com a base DIGITADA (rodando): a
+    régua da meta já tem fadiga e paradas dentro (`tolAplica`=false, a linha
+    TOLERÂNCIA explica). Se um dia a tolerância for POR PRODUTO (fadiga por
+    peso — o cadastro tem P B), aí ela muda a UEP e a conta tem de mudar junto.
+    O "prevê X s" do NO CADASTRO segue em tempo rodando (cru × cru).
+    - ⚠ **O 8,7 s dos testes e das notas NÃO é medição** — e nem é da SLEEP. Saiu
+      de uma estimativa do Claude em 19/10 para a MADERO (base antiga) no
+      limite da esteira: caixa + vão de ~420 mm ÷ 9 m/min. Virou número de
+      exemplo nos testes. A SLEEP ainda não foi cronometrada; nenhuma conclusão
+      sobre a meta ou a folga para paradas pode sair dele.
+    - ⚠ **A contagem dupla que sobra é a do USUÁRIO**: digitar o medido já com
+      +15% (no produto e não na base) sobe a UEP 15%. O COMO LER e a dica do
+      campo dizem "sem somar tolerância" — o teste prende as duas réguas.
+    - Revisão: fora de 0–100% ou sem algarismo → padrão com aviso
+      (`base.tolFora`; o `_pgSimNum` daria 0 calado, por isso as entradas
+      mandam NaN); 0% → `tpSeg` null (sem "+0%"); `tolFator` arredondado a 4
+      casas (1 + 14/100 = 1,1400000000000001); `onblur` refaz o campo. A
+      régua e o cabeçalho do papel dizem *medido* ao lado do número da base
+      (no exemplo, 8,7 no cabeçalho e 10,0 no cartão, sem dizer qual era qual). O
+      teste confere o tempo padrão com 30% (só o 15% — o padrão — deixava
+      passar a conta que ignora o digitado) e a persistência com um
+      localStorage de mentira; conferido por mutação.
+    - ⚠ **Decisão em aberto (PPCP)**: a guarda `base.suspeita` e o cartão
+      DIFERENÇA da base comparam o tempo CRU com a régua da meta. Pela
+      premissa da tolerância a régua já tem fadiga dentro — a comparação
+      coerente seria o TEMPO PADRÃO da base contra a régua (a sobra é o espaço
+      das paradas). Não mexido: muda o número do cartão e o limite do aviso.
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

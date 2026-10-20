@@ -440,7 +440,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono{--ucv-azul:#5AA9F0}
 #sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
 #sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
-#sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) auto;gap:14px;align-items:end}
+#sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) minmax(110px,.7fr) auto;gap:14px;align-items:end}
 #sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
 #sec-crono .uep-conv-f .frm-inp{width:100%;height:42px;padding:0 13px;font-size:15px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
 #sec-crono .uep-conv-f .frm-inp:focus{border-color:var(--ucv-azul);box-shadow:0 0 0 3px rgba(90,169,240,.15)}
@@ -2792,8 +2792,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-        <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
+        <label title="Do Volume a volume: com a base digitada, o COM A LINHA RODANDO (paradas fora); sem ela, o POR VOLUME NO PERÍODO (paradas dentro), a régua da meta. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA.">s/VOLUME MEDIDO<input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="ex.: 27,8" oninput="_uepConvAtualiza()"></label>
         <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) cronometrada do mesmo jeito que o produto — NÃO o tempo do próprio produto. Sem ela, o campo mostra a régua da meta (527 min × 60 ÷ META UEP, 10,4 s com 3.048). O que for digitado ou fixado fica guardado neste computador."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
+        <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
         <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR SLEEP</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
@@ -3308,7 +3309,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.145.0';
+const APP_VER   = '7.146.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5764,6 +5765,13 @@ async function gerarRelatorioFilaCrono(){
 // ⚠ O campo mora FORA do #uep-bloco: o renderUep refaz o bloco a cada refresh e
 // levaria junto o que está sendo digitado.
 const UEP_CONV_LS = 'rpe_uep_conv';
+// Tolerância de fadiga e movimentação (PPCP, 19/10/2026: "tenho que colocar
+// fadiga e movimentação 15%" → "15% iguais para todos"). Tempo padrão = medido
+// × (1 + tolerância), no produto e na base: a MESMA nos dois se cancela, então a
+// UEP não muda — o que muda é o TEMPO PADRÃO na tela e no papel. Só com a base
+// cronometrada (rodando): a régua da meta já tem fadiga e paradas dentro.
+const UEP_CONV_TOL_PADRAO = 15;
+const UEP_CONV_TOL_LS = 'rpe_uep_conv_tol';
 const UEP_CONV_TOL_META = 0.01;   // base digitada a até 1% da régua da meta = a régua da meta (o 10,4 arredondado)
 const _uepConvCod = d => d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d;
 const _uepConvNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -5812,7 +5820,7 @@ function _uepConvAchar(prods, txt){
 // Conta pura. seg = s/volume medido; baseSeg = s/volume da base cronometrada
 // (vazio/0 → a base pela meta). O que digitar mantém a repartição do cadastro
 // entre volumes e cores (é como o GRAVAR repartia o jogo); sem UEP, igual.
-function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
+function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct){
   const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
   const metaSeg = _taktUep(1, meta), bIn = Number(baseSeg) > 0 ? Number(baseSeg) : 0;
   // v7.143.2: o campo da base mostra a régua da meta (10,4); digitada até 1% dela
@@ -5824,6 +5832,12 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
   // a régua da meta TEM as paradas dentro: a base rodando não pode ser mais
   // lenta que ela (os 17,6 s do Encanto digitados como base dariam +40,8%)
   base.suspeita = !daMeta && base.difMeta > 0;
+  const tN = Number(tolPct), tDado = tolPct != null && tolPct !== '', tOk = tDado && isFinite(tN) && tN >= 0 && tN <= 100;
+  base.tol = tOk ? tN : UEP_CONV_TOL_PADRAO;
+  base.tolFora = tDado && !tOk;                      // digitado fora de 0–100 (ou ilegível): vale o padrão, e a tela DIZ
+  base.tolAplica = !daMeta;                          // com a régua da meta, NÃO (já tem fadiga e paradas dentro)
+  base.tolFator = Math.round((1 + base.tol / 100) * 1e4) / 1e4;   // 1 + 14/100 dá 1,1400000000000001 na tela
+  base.tpSeg = base.tolAplica && base.tol > 0 ? base.seg * base.tolFator : null;   // tempo padrão da base (0% = o medido)
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
   if(!a.p) return { estado:'sem-produto', base, txt:String(txt || '').trim(), n:a.n };
@@ -5848,6 +5862,9 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep){
   if(!(s > 0)) return R;
   R.estado = 'ok'; R.seg = s;
   R.uepVol = s / base.seg; R.uepJogo = R.uepVol * p.nVol;
+  // tempo padrão do produto: a MESMA tolerância da base — por isso a UEP acima
+  // (s ÷ base) é igual a tempo padrão ÷ tempo padrão da base
+  R.tpSeg = base.tpSeg != null ? s * base.tolFator : null;
   R.pct = volCad ? R.uepVol / volCad * 100 : null;
   R.difPct = R.pct != null ? R.pct - 100 : null;
   R.confere = R.pct != null && R.pct >= UEP_PAD_FAIXA[0] && R.pct <= UEP_PAD_FAIXA[1];
@@ -5871,7 +5888,8 @@ function _uepConvHtml(R){
   const sg = t => _taktTxt(t).replace(/ s$/, '<small> s</small>');   // só o desenho da unidade
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
   const notas = linhas => '<div class="ucv-info">' + linhas.map(l => `<span>${l[0]}</span><p>${l[1]}</p>`).join('') + '</div>';
-  const regua = `${_taktTxt(R.base.seg)} por UEP — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : `a ${_uepBaseCurto()} cronometrada, digitada em s/VOLUME DA BASE`}`;
+  // com a tolerância, a base tem DOIS números: o medido (a conta) e o tempo padrão (a ficha)
+  const regua = `${_taktTxt(R.base.seg)} por UEP${R.base.tpSeg != null ? ` medido (tempo padrão ${_taktTxt(R.base.tpSeg)})` : ''} — ${R.base.daMeta ? `a base pela meta (${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)} UEP)` : `a ${_uepBaseCurto()} cronometrada, digitada em s/VOLUME DA BASE`}`;
   // v7.142.1: o campo fica guardado neste computador — com valor, ele muda TODA
   // conversão, então fica à vista (o 17,6 do próprio Encanto foi digitado ali).
   const avBase = R.base.daMeta ? '' : `<div class="uep-conv-av"><span><b>BASE DIGITADA: ${_taktTxt(R.base.seg)} POR VOLUME DA ${_uepBaseCurto()}</b>`
@@ -5879,9 +5897,13 @@ function _uepConvHtml(R){
       ? `<b>Mais lenta que a régua da meta, que tem as paradas dentro: não parece a ${_uepBaseCurto()} com a linha rodando — confira.</b>`
       : `Só vale com a ${_uepBaseCurto()} cronometrada com a linha rodando; com outro tempo, toda conversão sai errada.`}</span>`
     + `<button class="btn btn-ghost" onclick="_uepConvLimparBase()" style="font-size:10px;padding:4px 11px">VOLTAR À RÉGUA DA META</button></div>`;
+  const tolTxt = String(R.base.tol).replace('.', ',') + '%';
+  const tolForaTxt = R.base.tolFora ? `⚠ o valor digitado não vale (0 a 100%): vale o padrão, ${tolTxt}.` : '';
+  // fora do estado ok não há a linha TOLERÂNCIA, e a régua já mostra o tempo padrão: o aviso vai à parte
+  const tolForaNota = tolForaTxt ? `<div class="uep-nota">TOLERÂNCIA: ${tolForaTxt}</div>` : '';
   if(R.estado === 'sem-cadastro') return '<div class="uep-nota">O cadastro de UEP ainda não foi lido — a lista de produtos aparece quando a aba terminar de carregar.</div>';
   if(R.estado === 'sem-produto') return avBase + `<div class="uep-nota">${!R.txt ? 'Escolha o produto e digite o tempo por volume da medição.'
-    : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>`;
+    : R.n > 1 ? `${R.n} produtos têm esse texto — escolha um da lista.` : 'Nenhum produto do cadastro com esse nome ou código — escolha da lista.'} Régua: ${regua}.</div>` + tolForaNota;
   const p = R.p, vTxt = p.nVol > 1 ? ` · ${p.nVol} volumes` : '';
   const cad = R.volCad != null ? u2(R.volCad) : '—';
   const cadSub = R.volCad != null
@@ -5890,11 +5912,16 @@ function _uepConvHtml(R){
   const tit = avBase + `<div class="uep-conv-tit"><b>${_rpEsc(p.rot)}</b>${p.nVol > 1 ? `<span class="ucv-chip">${p.nVol} volumes</span>` : ''}`
     + `${R.ehBase ? '<span class="ucv-chip base">A BASE DA UEP · 1,00 por definição</span>' : ''}</div>`;
   if(R.estado !== 'ok') return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
-    : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>`;
-  const nota = notas([['RÉGUA', `${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base digitada, o tempo é o COM A LINHA RODANDO (paradas fora).'}`],
+    : `No cadastro: ${cad} UEP por volume (${cadSub}). Digite o tempo por volume medido.`}</div>` + tolForaNota;
+  const tolLinha = ['TOLERÂNCIA', (tolForaTxt ? tolForaTxt + ' ' : '')
+    + (!R.base.tolAplica ? `não entra: a régua da meta já tem fadiga, movimentação e paradas dentro. Os ${tolTxt} entram com a ${_uepBaseCurto()} cronometrada com a linha rodando.`
+      : R.base.tol > 0 ? `${tolTxt} de fadiga e movimentação, no produto e na base: tempo padrão = medido × ${String(R.base.tolFator).replace('.', ',')}. A mesma tolerância nos dois se cancela na UEP.`
+      : 'zero: o tempo padrão é o próprio medido.')];
+  const tpMed = R.tpSeg != null ? ` · tempo padrão <b>${_taktTxt(R.tpSeg)}</b> (+${tolTxt})` : '';
+  const nota = notas([tolLinha, ['RÉGUA', `${regua}.${R.base.daMeta ? ' Com a base pela meta, o tempo é o NO PERÍODO (paradas dentro).' : ' Com a base digitada, o tempo é o COM A LINHA RODANDO (paradas fora).'}`],
                       ['GRAVAÇÃO', 'Nada é gravado aqui.']]);
   if(R.ehBase) return tit + '<div class="kpi-grid c3 ucv-cards">'
-    + card('MEDIDO', sg(R.seg), 'por volume')
+    + card('MEDIDO', sg(R.seg), 'por volume' + tpMed)
     + card('A RÉGUA DA META', sg(R.base.metaSeg), `por UEP · ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(R.base.meta)}`, 'ucv-azul')
     + card('DIFERENÇA', (R.reguaDif > 0 ? '+' : '') + fmtP(R.reguaDif), 'da cronoanálise para a régua da meta')
     + '</div>'
@@ -5903,8 +5930,8 @@ function _uepConvHtml(R){
     : R.confere ? `<span class="ucv-pill ok">CONFERE</span> — dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% do cadastro`
     : `<span class="ucv-pill warn">${R.difPct > 0 ? 'mais PESADO que o cadastro' : 'mais LEVE que o cadastro'}</span>`;
   return tit + '<div class="kpi-grid c4 ucv-cards">'
-    + card('MEDIDO', sg(R.seg), 'por volume' + vTxt)
-    + card('UEP EQUIVALENTE', u2(R.uepVol), `por volume · ${_taktTxt(R.seg)} ÷ ${_taktTxt(R.base.seg)}${p.nVol > 1 ? ` · jogo ${u2(R.uepJogo)}` : ''}`, 'ucv-azul')
+    + card('MEDIDO', sg(R.seg), 'por volume' + vTxt + tpMed)
+    + card('UEP EQUIVALENTE', u2(R.uepVol), `por volume · ${R.tpSeg != null ? `${_taktTxt(R.tpSeg)} ÷ ${_taktTxt(R.base.tpSeg)} (tempo padrão, +${tolTxt} nos dois)` : `${_taktTxt(R.seg)} ÷ ${_taktTxt(R.base.seg)}`}${p.nVol > 1 ? ` · jogo ${u2(R.uepJogo)}` : ''}`, 'ucv-azul')
     + card('NO CADASTRO', cad, cadSub)
     + card('DIFERENÇA', R.difPct == null ? '—' : (R.difPct > 0 ? '+' : '') + fmtP(R.difPct), difSub, R.difPct == null ? '' : R.confere ? 'ok' : 'warn')
     + '</div>'
@@ -5922,9 +5949,9 @@ function _uepConvGuia(daMeta){
   const b = _uepBaseCurto();
   // v7.144.1: os mesmos textos, em linhas rotuladas (só desenho)
   return '<div class="ucv-info">' + (daMeta
-    ? `<span>TEMPO A USAR</span><p>Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>.</p>`
+    ? `<span>TEMPO A USAR</span><p>Sem a ${b} (a base) cronometrada, a régua é a da meta, que tem as paradas dentro: use o tempo <b>NO PERÍODO</b>, sem somar tolerância.</p>`
       + `<span>MÉTODO</span><p>O método certo é cronometrar a ${b} <b>com a linha rodando</b> e digitar o tempo dela em s/VOLUME DA BASE — parada evitável é perda da linha, não esforço do produto.</p>`
-    : `<span>TEMPO A USAR</span><p>Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b}.</p>`
+    : `<span>TEMPO A USAR</span><p>Base digitada: use o tempo <b>COM A LINHA RODANDO</b> do produto (paradas fora), medido do mesmo jeito que a ${b}. Os dois <b>sem somar tolerância</b>: ela entra pelo campo TOLERÂNCIA — somada à mão no produto e não na base, a UEP sobe na mesma proporção.</p>`
       + '<span>MÉTODO</span><p>Parada evitável é perda da linha, não esforço do produto.</p>')
     + '<span>AMOSTRA</span><p>Medição de poucos minutos não basta para trocar a UEP.</p></div>';
 }
@@ -5944,7 +5971,20 @@ function _uepConvEntradas(){
   const metaTxt = _taktTxt(_taktUep(1, meta)).replace(' s', '');
   if(elB) elB.placeholder = 'meta ' + metaTxt;
   if(elB && document.activeElement !== elB && (!elB.value.trim() || elB.dataset.auto === '1')){ elB.value = metaTxt; elB.dataset.auto = '1'; }
-  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:_pgSimNum(elB ? elB.value : ''), meta };
+  const elT = document.getElementById('uep-conv-tol');
+  if(elT && document.activeElement !== elT && !elT.value.trim()){
+    let t = ''; try{ t = localStorage.getItem(UEP_CONV_TOL_LS) || ''; }catch(e){}
+    elT.value = t || String(UEP_CONV_TOL_PADRAO);
+  }
+  const tTxt = elT ? elT.value.trim() : '';
+  // sem algarismo (o _pgSimNum devolveria 0): NaN, que a conta troca pelo padrão e a tela avisa
+  return { txt:elP ? elP.value : '', seg:_pgSimNum(elS ? elS.value : ''), base:_pgSimNum(elB ? elB.value : ''), meta,
+           tol:tTxt === '' ? UEP_CONV_TOL_PADRAO : /\d/.test(tTxt) ? _pgSimNum(tTxt) : NaN };
+}
+function _uepConvTol(){
+  const elT = document.getElementById('uep-conv-tol'), v = elT ? elT.value.trim() : '';
+  try{ if(v) localStorage.setItem(UEP_CONV_TOL_LS, v); else localStorage.removeItem(UEP_CONV_TOL_LS); }catch(e){}
+  _uepConvAtualiza();
 }
 // Só o resultado é redesenhado: os campos e a lista ficam (o datalist só é
 // refeito quando o cadastro muda), senão o foco sairia do campo a cada tecla.
@@ -5969,7 +6009,7 @@ function _uepConvAtualiza(){
     fx.disabled = o.acao === 'sem-base'; }
   const guia = document.getElementById('uep-conv-guia');
   try{
-    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
+    const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);
     if(guia) guia.innerHTML = _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
     res.innerHTML = _uepConvHtml(R);
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
@@ -6076,7 +6116,7 @@ function _uepConvDocHtml(R, ctx){
 function gerarRelatorioCrono(){
   _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
   const E = _uepConvEntradas();
-  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta);
+  const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol);
   if(R.estado !== 'ok'){
     alert(R.estado === 'sem-cadastro' ? 'O cadastro de UEP ainda não foi lido. Tente em alguns segundos.'
         : R.estado === 'sem-produto' ? 'Escolha o produto antes de imprimir.' : 'Digite o tempo por volume medido antes de imprimir.');
@@ -6092,7 +6132,7 @@ function gerarRelatorioCrono(){
   const html = _rpDocParadas(_uepConvDocTitulo(R, ctx), false)
     + '<style>' + _UCV_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="ucv-doc">'
     + _rpCabecalho('CRONOANÁLISE → UEP',
-        `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
+        `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP${R.base.tpSeg != null ? ' medido' : ''}</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
     + corpo + '</div></body></html>';
   win.document.open(); win.document.write(html); win.document.close();
