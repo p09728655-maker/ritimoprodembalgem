@@ -1051,13 +1051,14 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-graf{margin:0;min-width:0;min-height:0;display:flex;flex-direction:column;gap:clamp(4px,1vh,10px)}
 .tvg-svg{flex:1;min-height:0;width:100%;height:100%;display:block}
 .tvg-svg text{font-family:var(--font-d)}
-.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:34px;fill:var(--txt)}
-.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:28px;fill:var(--txt2)}
-.tvg-svg .tvg-t2{font-size:23px;fill:var(--txt2)}
-.tvg-sw{display:inline-block;width:48px;height:0}
-.tvg-sw.f{border-top:6px solid var(--txt);border-radius:3px}
-.tvg-sw.e{border-top:4px dashed var(--txt2)}
-.tvg-sw.p{border-top:4px dotted var(--txt)}
+.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px;fill:var(--txt)}
+.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px;fill:var(--txt2)}
+.tvg-svg .tvg-t2{font-size:32px;fill:var(--txt2)}
+.tvg-leg{font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.7vw,3vh),34px))}
+.tvg-sw{display:inline-block;width:64px;height:0}
+.tvg-sw.f{border-top:11px solid var(--txt);border-radius:6px}
+.tvg-sw.e{border-top:7px dashed var(--txt2)}
+.tvg-sw.p{border-top:7px dotted var(--txt)}
 .tvg-cards{display:flex;flex-direction:column;gap:calc(var(--tvu-k,1)*clamp(10px,2vh,22px));min-width:0;min-height:0}
 .tvg-min{font-family:var(--font-h);font-weight:700;font-size:calc(var(--tvu-k,1)*clamp(60px,min(7.6vw,13vh),150px));line-height:.9;color:var(--txt);font-variant-numeric:tabular-nums}
 .tvg-cx{font-family:var(--font-d);font-size:calc(var(--tvu-k,1)*clamp(15px,min(1.65vw,2.9vh),32px));color:var(--txt);line-height:1.15}
@@ -3309,7 +3310,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.146.1';
+const APP_VER   = '7.147.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -19424,10 +19425,13 @@ function _tvFHtml(m, selo){
   return s + '</div></div>' + _tvUepRodHtml(m);
 }
 // TELA G — o gráfico da corrida (desenho, SVG no DOM: os tokens resolvem).
+// Medido para a TV de 65" a 1920×1080 (1 px ≈ 0,75 mm): o SVG sai a ~1,05× do
+// viewBox, então 1 unidade ≈ 0,8 mm na parede. Traço e letra dimensionados para
+// isso — o FEITO a 12 (≈ 1 cm), os números do agora a 54/42, o eixo a 32.
 function _tvGSvg(m, selo){
   // Proporção da área do gráfico na TV (≈1,2 em 1920×1080 e em 1366×768): com
   // 1000×640 sobrava um terço da altura vazia em cima.
-  const W = 1000, H = 840, L = 92, R = 34, T = 60, B = 60, pw = W - L - R, ph = H - T - B;
+  const W = 1000, H = 840, L = 124, R = 34, T = 60, B = 72, pw = W - L - R, ph = H - T - B;
   const topo = Math.max(m.meta, m.feito, m.espFut.length ? m.espFut[m.espFut.length - 1].v : 0) * 1.1;
   const x = t => L + (t - m.ini) / Math.max(1, m.fim - m.ini) * pw;
   const y = v => T + ph - v / topo * ph;
@@ -19437,58 +19441,139 @@ function _tvGSvg(m, selo){
     + fmtN(Math.round(m.feito)) + ' feitas contra ' + fmtN(Math.round(m.esp)) + ' esperadas">';
   m.gaps.forEach(g => {
     s += '<rect x="' + x(g.de).toFixed(1) + '" y="' + T + '" width="' + (x(g.ate) - x(g.de)).toFixed(1) + '" height="' + ph + '" fill="var(--surface)"/>'
-      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + 26) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
+      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + 32) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
   });
   for(let v = passo; v < topo; v += passo){
-    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)"/>'
-      + '<text x="' + (L - 12) + '" y="' + (y(v) + 7).toFixed(1) + '" text-anchor="end" class="tvg-t2">' + fmtN(v) + '</text>';
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)" stroke-width="2"/>'
+      + '<text x="' + (L - 14) + '" y="' + (y(v) + 11).toFixed(1) + '" text-anchor="end" class="tvg-t2">' + fmtN(v) + '</text>';
   }
-  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--txt3)" stroke-width="2"/>';
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--txt3)" stroke-width="3"/>';
   for(let h = Math.ceil(m.ini / 60) * 60; h <= m.fim; h += 120){
-    s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 18) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
+    s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 20) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
   }
-  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="2" stroke-dasharray="4 8"/>'
-    + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 12).toFixed(1) + '" class="tvg-t1">META DO DIA ' + fmtN(m.meta) + '</text>';
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="3" stroke-dasharray="6 10"/>'
+    + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 14).toFixed(1) + '" class="tvg-t1">META DO DIA ' + fmtN(m.meta) + '</text>';
+  // A DISTÂNCIA entre o feito e o esperado, desenhada: a faixa entre as duas
+  // curvas até agora. De longe é ela que mostra quem está em cima — a linha
+  // sozinha some quando a diferença é de poucas dezenas de UEP. Tinta neutra:
+  // o veredito (cor) só com o selo ligado, como no resto da tela.
+  if(m.pts.length > 1){
+    const ida = m.pts.map(p => [p.t, p.f]), volta = m.pts.slice().reverse().map(p => [p.t, p.e]);
+    s += '<polygon points="' + pl(ida.concat(volta)) + '" fill="' + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt)') + '" opacity=".2"/>';
+  }
   // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada
-  s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="4" stroke-dasharray="14 10" stroke-linejoin="round" points="'
+  s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="'
     + pl(m.pts.map(p => [p.t, p.e]).concat(m.espFut.slice(1).map(p => [p.t, p.v]))) + '"/>';
   if(m.proj && m.proj.length > 1){
-    s += '<polyline fill="none" stroke="var(--txt)" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round" points="' + pl(m.proj.map(p => [p.t, p.v])) + '"/>';
+    s += '<polyline fill="none" stroke="var(--txt)" stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round" points="' + pl(m.proj.map(p => [p.t, p.v])) + '"/>';
     if(m.chega != null){
-      s += '<circle cx="' + x(m.chega).toFixed(1) + '" cy="' + y(m.meta).toFixed(1) + '" r="9" fill="var(--bg)" stroke="var(--txt)" stroke-width="3"/>'
-        + '<text x="' + x(m.chega).toFixed(1) + '" y="' + (y(m.meta) - 18).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
+      s += '<circle cx="' + x(m.chega).toFixed(1) + '" cy="' + y(m.meta).toFixed(1) + '" r="12" fill="var(--bg)" stroke="var(--txt)" stroke-width="4"/>'
+        + '<text x="' + x(m.chega).toFixed(1) + '" y="' + (y(m.meta) - 22).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
     }
   }
   const fp = pl(m.pts.map(p => [p.t, p.f]));
-  s += '<polyline fill="none" stroke="var(--bg)" stroke-width="11" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>'
-    + '<polyline fill="none" stroke="var(--txt)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>';
+  s += '<polyline fill="none" stroke="var(--bg)" stroke-width="20" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>'
+    + '<polyline fill="none" stroke="var(--txt)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" points="' + fp + '"/>';
   const xa = x(m.agora), yf = y(m.feito), ye = y(m.esp);
   s += '<line x1="' + xa.toFixed(1) + '" x2="' + xa.toFixed(1) + '" y1="' + yf.toFixed(1) + '" y2="' + ye.toFixed(1) + '" stroke="'
     + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt2)') + '" stroke-width="6"/>'
-    + '<circle cx="' + xa.toFixed(1) + '" cy="' + ye.toFixed(1) + '" r="9" fill="var(--txt2)" stroke="var(--bg)" stroke-width="3"/>'
-    + '<circle cx="' + xa.toFixed(1) + '" cy="' + yf.toFixed(1) + '" r="13" fill="var(--txt)" stroke="var(--bg)" stroke-width="4"/>';
-  // Rótulos: o ponto MAIS ALTO leva o seu acima-à-esquerda (o que já passou
-  // está todo abaixo dele); o mais baixo, abaixo-à-direita (o que vem pela
-  // frente sobe a partir dos dois). Perto da borda direita o de baixo sai —
-  // o número dele está no cartão ao lado.
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + ye.toFixed(1) + '" r="12" fill="var(--txt2)" stroke="var(--bg)" stroke-width="4"/>'
+    + '<circle cx="' + xa.toFixed(1) + '" cy="' + yf.toFixed(1) + '" r="18" fill="var(--txt)" stroke="var(--bg)" stroke-width="5"/>';
+  // Rótulos do AGORA, sempre (de longe são o que se lê): o número do FEITO e o
+  // do ESPERADO perto dos pontos. A posição é a 1ª de uma lista de candidatas
+  // que NÃO encosta nas curvas, no texto da META, no horário da meta nem no
+  // outro rótulo — regra fixa por hora do dia errava: às 15:02 o ESPERADO caía
+  // em cima da curva do FEITO, e de manhã os dois em cima das linhas que sobem.
+  // A linha tracejada da META pode passar atrás (a tarja cobre). Longe do
+  // ponto, uma guia fina liga o número a ele.
   const fAlto = m.feito >= m.esp;
-  const hi = fAlto ? ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'] : ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'];
-  const lo = fAlto ? ['ESPERADO ' + fmtN(Math.round(m.esp)), ye, 'tvg-t1'] : ['FEITO ' + fmtN(Math.round(m.feito)), yf, 'tvg-t0'];
-  const txt = (r, xx, yy, ancora) => '<text x="' + xx.toFixed(1) + '" y="' + yy.toFixed(1) + '"'
-    + (ancora ? ' text-anchor="' + ancora + '"' : '') + ' class="' + r[2] + '">' + r[0] + '</text>';
-  const fundo = T + ph - 8;   // abaixo disto é o eixo e as horas
-  if(xa > L + 230){
-    s += txt(hi, xa - 18, hi[1] - 24, 'end');
-    if(xa < W - R - 220 && lo[1] + 44 < fundo) s += txt(lo, xa + 18, lo[1] + 44);
-  } else if(lo[1] + 84 < fundo){
-    // Começo do dia: à esquerda não cabe, e acima-à-direita as linhas que vêm
-    // pela frente sobem por cima do rótulo (o ESPERADO 571 das 08:59 de
-    // 19/10). Abaixo-à-direita do ponto mais baixo nada passa: tudo o que vem
-    // depois dos dois pontos sobe. Os dois empilhados ali, o mais alto em cima.
-    s += txt(hi, xa + 18, lo[1] + 44) + txt(lo, xa + 18, lo[1] + 84);
+  const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), py:yf, c:'tvg-t0', f:54 };
+  const rE = { t:'ESPERADO ' + fmtN(Math.round(m.esp)), py:ye, c:'tvg-t1', f:42 };
+  const hi = fAlto ? rF : rE, lo = fAlto ? rE : rF;
+  const fundo = T + ph - 10;   // abaixo disto é o eixo e as horas
+  const linhas = [m.pts.map(p => [x(p.t), y(p.f)]),
+                  m.pts.map(p => [x(p.t), y(p.e)]).concat(m.espFut.slice(1).map(p => [x(p.t), y(p.v)]))];
+  if(m.proj && m.proj.length > 1) linhas.push(m.proj.map(p => [x(p.t), y(p.v)]));
+  const larg = r => r.t.length * r.f * .42 + 18;
+  const ocupado = [[L, y(m.meta) - 56, L + 8 + larg({ t:'META DO DIA ' + fmtN(m.meta), f:42 }), y(m.meta) - 6]];
+  if(m.proj && m.chega != null) ocupado.push([x(m.chega) - 80, y(m.meta) - 76, x(m.chega) + 80, y(m.meta) + 16]);
+  const caixa = (r, xx, yy, ancora) => {
+    const w = larg(r), x0 = ancora === 'end' ? xx - w + 9 : xx - 9;
+    return [x0, yy - r.f * .82, x0 + w, yy + r.f * .16];
+  };
+  const cruza = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const toca = bx => linhas.some(pl => pl.some((q, i) => {
+    if(!i) return false;
+    const [x1, y1] = pl[i - 1], [x2, y2] = q, n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 4));
+    for(let k = 0; k <= n; k++){
+      const px = x1 + (x2 - x1) * k / n, py = y1 + (y2 - y1) * k / n;
+      if(px > bx[0] - 8 && px < bx[2] + 8 && py > bx[1] - 8 && py < bx[3] + 8) return true;
+    }
+    return false;
+  }));
+  const livre = (bx, extra) => bx[0] >= L + 2 && bx[2] <= W - R && bx[1] >= 6 && bx[3] <= fundo && !toca(bx)
+    && !ocupado.concat(extra || []).some(o => cruza(o, bx));
+  const D = [0, 46, 92, 138, 184, 230, 276, 322, 368, 414];
+  // Perto do próprio ponto: primeiro para o lado dele (o mais alto para cima, o
+  // mais baixo para baixo), à esquerda, à direita e encostado na borda direita,
+  // cada vez mais longe; depois para o outro lado (entre as duas curvas, num
+  // dia muito atrasado ou muito adiantado, há espaço); por fim na altura dele.
+  // `dMax` limita o quão longe: a 1ª rodada só aceita perto do ponto; longe,
+  // só se nem empilhados couber. A borda direita só conta com o agora perto dela.
+  const perto = (r, cima, dMax) => {
+    const c = [], borda = W - R - xa < 420, lado = up => D.forEach(d => {
+      if(d > dMax) return;
+      const yy = r.py + (up ? -34 - d : 62 + d);
+      c.push([xa - 30, yy, 'end'], [xa + 30, yy]);
+      if(borda) c.push([W - R - 12, yy, 'end']);
+    });
+    lado(cima); lado(!cima);
+    c.push([xa - 34, r.py + r.f * .3, 'end'], [xa + 34, r.py + r.f * .3]);
+    return c;
+  };
+  const separados = dMax => {
+    let h = poe(hi, perto(hi, true, dMax)), l = poe(lo, perto(lo, false, dMax), h ? [h.bx] : []);
+    if(l && !h) h = poe(hi, perto(hi, true, dMax), [l.bx]);
+    return [h, l];
+  };
+  const poe = (r, cand, extra) => {
+    for(const c of cand){ const bx = caixa(r, c[0], c[1], c[2]); if(livre(bx, extra)) return { r, xx:c[0], yy:c[1], an:c[2], bx }; }
+    return null;
+  };
+  // 1) cada um PERTO do seu ponto: o mais alto para cima, o mais baixo para baixo
+  let [pHi, pLo] = separados(138);
+  // 2) senão (começo do dia: os pontos colados no eixo e nada cabe à esquerda),
+  //    os dois EMPILHADOS acima dos pontos, o mais alto em cima — as linhas que
+  //    vêm pela frente sobem para a direita, e acima-à-esquerda ainda está vazio
+  let bloco = false;
+  if(!pHi || !pLo){
+    pHi = pLo = null; bloco = true;
+    const yTopo = Math.min(hi.py, lo.py);
+    for(const x0 of [Math.max(L + 20, xa - 40), xa + 30]){
+      for(const d of D.concat([460, 506, 552, 598])){
+        const bh = caixa(hi, x0, yTopo - 92 - d), bl = caixa(lo, x0, yTopo - 36 - d);
+        if(livre(bh) && livre(bl)){ pHi = { r:hi, xx:x0, yy:yTopo - 92 - d, bx:bh }; pLo = { r:lo, xx:x0, yy:yTopo - 36 - d, bx:bl, guia:true }; break; }
+      }
+      if(pHi) break;
+    }
+    // 3) nem empilhados: cada um onde couber, mais longe (com a guia); o que
+    //    não couber fica de fora — os dois estão no 1º cartão
+    if(!pHi){ [pHi, pLo] = separados(Infinity); bloco = false; }
   }
-  // Senão (a 1ª hora, pontos colados no eixo): sem rótulo — os dois números
-  // estão no 1º cartão, ao lado.
+  [pHi, pLo].forEach(p => {
+    if(!p) return;   // nenhum lugar livre: os dois números estão no 1º cartão, ao lado
+    const bx = p.bx, cx = Math.max(bx[0] + 12, Math.min(bx[2] - 12, xa)), cy = p.r.py < bx[1] ? bx[1] : bx[3];
+    const longe = Math.hypot(cx - xa, cy - p.r.py) > 46;
+    if(longe && (!bloco || p.guia)){   // empilhados: uma guia só, a de baixo
+      const py = p.guia ? Math.min(hi.py, lo.py) : p.r.py;
+      s += '<line x1="' + xa.toFixed(1) + '" y1="' + (py - 20).toFixed(1) + '" x2="' + cx.toFixed(1) + '" y2="' + cy.toFixed(1)
+        + '" stroke="var(--txt3)" stroke-width="3" stroke-dasharray="3 6"/>';
+    }
+    s += '<rect x="' + bx[0].toFixed(1) + '" y="' + bx[1].toFixed(1) + '" width="' + (bx[2] - bx[0]).toFixed(1) + '" height="'
+      + (bx[3] - bx[1]).toFixed(1) + '" rx="8" fill="var(--bg)" opacity=".86"/>'
+      + '<text x="' + p.xx.toFixed(1) + '" y="' + p.yy.toFixed(1) + '"' + (p.an ? ' text-anchor="' + p.an + '"' : '')
+      + ' class="' + p.r.c + '">' + p.r.t + '</text>';
+  });
   return s + '</svg>';
 }
 // TELA G — desenho (sem conta).

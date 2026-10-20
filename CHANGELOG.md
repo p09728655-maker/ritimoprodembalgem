@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.147.0 — 20/10/2026
+
+- **Tela G da TV (CORRIDA DO DIA): gráfico para a TV de 65".** Pedido do PPCP
+  com o print das 08:46, em que o gráfico era uma linha fina no canto e nenhum
+  número.
+  - Traço mais grosso (FEITO 12, ESPERADO 7, ATÉ A META 7 em pontos) e letra
+    maior (números do agora 54/42, eixo 32, legenda até 34 px).
+  - A distância entre FEITO e ESPERADO virou uma **faixa** entre as duas curvas:
+    de longe se vê quem está em cima. Sem o selo, cinza; com o selo, a cor dele.
+  - Os números **FEITO** e **ESPERADO** aparecem **sempre** no gráfico, com
+    tarja, num lugar que não encosta em curva nenhuma (antes, na 1ª hora e meia
+    não havia número, e à tarde o ESPERADO podia cair em cima da curva do
+    FEITO). De manhã vão empilhados acima dos pontos, com uma guia até eles.
+- **Atenção:** nenhuma conta mudou — os números, o selo (desligado por padrão) e
+  os cartões ao lado são os mesmos. Só o desenho do gráfico. Nada no `.gs`.
+
+---
+
 ## `.gs` v5.29 — 20/10/2026 · ⚠ re-deploy
 
 - **O FECHAR DIA passa a gravar a produção que está na PLANILHA, não a que o
