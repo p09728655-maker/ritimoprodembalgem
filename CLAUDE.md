@@ -3866,6 +3866,35 @@ feito e dá ar de verdade ao que sobrou.
       tolerância, a impressão e os cliques — e compara o hash da saída de antes
       e de depois. Zero diferença; quatro defeitos plantados foram pegos. Para a
       próxima refatoração aqui, o mesmo método: gravar a saída ANTES de mexer.
+  - **v7.148.0 — A SLEEP CRONOMETRADA É A BASE** (PPCP, 20/10/2026: *"achei
+    tempo sleep"* → *"precisa alterar agora"*). Volume a volume de 60 volumes:
+    NO PERÍODO 8,6 s · COM A LINHA RODANDO **7,9 s** · sem as 4 lacunas 6,7 s.
+    `UEP_BASE_MEDIDA = {seg:7.9, data:'20/10/2026', volumes:60}` é a base de
+    TODO computador: campo vazio vale e mostra 7,9 (`_uepConvEntradas`, mesmo
+    com o foco no campo — apagado para digitar não pula para a meta).
+    `base.medida` (igual a uma casa) = sem aviso; outro tempo = BASE DIGITADA;
+    10,4 = régua da meta com aviso próprio (BASE PELA RÉGUA DA META). Os dois
+    com **VOLTAR À SLEEP MEDIDA**. A própria SLEEP com o tempo em uso
+    (`R.emUso`) diz que é a base; tempo novo manda FIXAR *neste computador*.
+    - ⚠ **Vale o RODANDO, não o 6,7**: é o campo que se lê de cada produto, e
+      as lacunas (paradas não marcadas) ficam dentro nos dois. Trocar para o
+      "sem as lacunas" exige ler esse campo de TODO produto.
+    - ⚠ **60 volumes ≈ 8 min de linha.** Uma 2ª medição (outro dia) confirma
+      antes de trocar UEP em massa. Medição nova = trocar a constante (muda a
+      conversão de todo produto) — o 8,7 s dos testes antigos continua exemplo.
+    - Efeito real: ARMÁRIO ENCANTO rodando 17,6 s → **2,23** contra 2,69 no
+      cadastro (−17%). Nada gravado (UEP TRAVADA, só digitada).
+    - ⚠ **O VÃO DO CADASTRO NÃO ERA O DA LINHA.** As 429 linhas da
+      PRODUTO_CODIGO tinham ENTRE_PECAS 650 e VELOCIDADE 9 (valor padrão, não
+      medido). Com 650 o teto da SLEEP saía 9,8 s/caixa — mais lento que a
+      própria medição. O PPCP informou **250–270 mm** e corrigiu no cadastro em
+      20/10/2026: **SLEEP (501.094) e MADERO (501.149) com 250**; o resto
+      continua 650. Com 825 + 250 mm a 9 m/min o limite é **7,2 s/caixa** e o
+      rodando (7,9) é ~91% dele: a SLEEP roda PERTO DO LIMITE (confirma a nota
+      abaixo). Não afeta a UEP (razão de tempos medidos); afeta % TETO EST., o
+      limite do simulador de capacidade e o NO LIMITE DA ESTEIRA da FILA. ⚠
+      Enquanto os outros produtos seguirem com 650, o % TETO entre produtos
+      compara réguas diferentes (o teto da SLEEP subiu de ~366 para ~502 cx/h).
   - ⚠ **Velocidade da esteira × base SLEEP**: a SLEEP roda no limite da esteira,
     então o tempo dela é (caixa + vão) ÷ velocidade. Mudou a velocidade, a base
     muda e todo produto que NÃO é limitado pela esteira ganha/perde UEP sem ter

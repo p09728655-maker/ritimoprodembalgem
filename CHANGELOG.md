@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.148.0 — 20/10/2026
+
+- **⏱ CRONOANÁLISE → UEP: a base agora é a SLEEP cronometrada, 7,9 s por
+  volume com a linha rodando.** Medição do Volume a volume (60 volumes): no
+  período 8,6 s · rodando 7,9 s · sem as 4 lacunas 6,7 s. Vale o RODANDO, o
+  mesmo campo que se lê de cada produto (as lacunas ficam dentro nos dois).
+  - Vale em **todo computador**: o campo s/VOLUME DA BASE vem com 7,9. O que for
+    digitado ou fixado ali continua valendo só naquele computador, com aviso e o
+    botão **VOLTAR À SLEEP MEDIDA**.
+  - O produto entra com o tempo **COM A LINHA RODANDO**, e a tolerância de 15%
+    passa a aparecer no tempo padrão (SLEEP 7,9 → 9,1 s).
+  - A régua da meta (10,4 s, tempo NO PERÍODO) continua disponível digitando
+    10,4 no campo, agora com aviso próprio.
+- **Atenção:** a UEP EQUIVALENTE de qualquer produto muda. Antes, sem base
+  digitada, a conta dividia pelos 10,4 s da meta; agora divide pelos 7,9 s da
+  SLEEP. Exemplo real: ARMÁRIO ENCANTO rodando 17,6 s → **2,23** (era 1,70 pela
+  meta, que pedia o tempo do período). O cadastro tem 2,69: **−17%**. Nada é
+  gravado; a UEP do cadastro só muda digitada. Nada no `.gs`.
+
+---
+
 ## v7.147.0 — 20/10/2026
 
 - **Tela G da TV (CORRIDA DO DIA): gráfico para a TV de 65".** Pedido do PPCP
