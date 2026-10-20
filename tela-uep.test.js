@@ -143,27 +143,64 @@ ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
    [false, false, false]);
 ok('a tela F do retrato não carrega texto de "sem dado"', /nenhum produto|sem UEP no cadastro/.test(F0), false);
 
-console.log('\n── rótulos do gráfico e encaixe na altura (19/10/2026) ──');
-// O print do PPCP às 08:59: ESPERADO 571 acima-à-direita do ponto, com as
-// linhas que vêm pela frente subindo por cima dele.
+console.log('\n── rótulos do gráfico e encaixe na altura (19/10/2026; TV de 65", 20/10/2026) ──');
+// 19/10: o ESPERADO 571 das 08:59 caía acima-à-direita do ponto, com as linhas
+// que vêm pela frente subindo por cima dele. 20/10 (TV de 65"): às 08:46 o
+// gráfico não tinha número nenhum, e às 15:02 o ESPERADO caía em cima da curva
+// do FEITO. A regra hoje é o INVARIANTE, não a posição: os dois números sempre
+// aparecem, dentro da área do gráfico, sem encostar em curva nenhuma nem um
+// no outro.
 function rotulos(svg){
-  const pos = re => { const m = svg.match(re); return m ? { x: +m[1], y: +m[2] } : null; };
-  // os dois pontos de AGORA (o círculo do "a meta sai às" também tem r=9, com outro fill)
-  const pts = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(?:9" fill="var\(--txt2\)|13)"/g)].map(m => ({ x: +m[1], y: +m[2] }));
-  return { feito: pos(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>FEITO /), esp: pos(/<text x="([\d.]+)" y="([\d.]+)"[^>]*>ESPERADO /), pts };
+  const caixa = re => { const m = svg.match(re); return m ? [+m[1], +m[2], +m[1] + +m[3], +m[2] + +m[4]] : null; };
+  const R = '<rect x="([\\d.-]+)" y="([\\d.-]+)" width="([\\d.]+)" height="([\\d.]+)" rx="8" fill="var\\(--bg\\)" opacity=".86"/><text [^>]*>';
+  const pts = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(?:12" fill="var\(--txt2\)|18)"/g)].map(m => ({ x: +m[1], y: +m[2] }));
+  const curvas = [...svg.matchAll(/<polyline [^>]*points="([^"]+)"/g)].map(m => m[1].split(' ').map(p => p.split(',').map(Number)));
+  return { feito: caixa(new RegExp(R + 'FEITO ')), esp: caixa(new RegExp(R + 'ESPERADO ')), pts, curvas,
+           vb: svg.match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number) };
 }
-const Mm = _tvUepMontar(montarD(539, { '07:00': 290, '08:00': 220 }, { '07:00': 157, '08:00': 120 }),
-                        { agoraMin: 539, prod: PROD, cat: CAT });
-const Rm = rotulos(_tvGSvg(Mm, true));
-const xa = Rm.pts[0].x, yBaixo = Math.max(...Rm.pts.map(q => q.y));
-ok('08:59: os dois rótulos à DIREITA do agora e ABAIXO dos dois pontos (o que vem depois sobe)',
-   [Rm.feito.x > xa, Rm.esp.x > xa, Rm.feito.y - 34 > yBaixo, Rm.esp.y - 28 > yBaixo], [true, true, true, true]);
-ok('08:59: empilhados — o ponto mais alto (ESPERADO 571) em cima', Rm.esp.y < Rm.feito.y, true);
-const Rc = rotulos(_tvGSvg(_tvUepMontar(montarD(450, { '07:00': 120 }, { '07:00': 60 }), { agoraMin: 450, prod: PROD, cat: CAT }), true));
-ok('07:30 (pontos colados no eixo): sem rótulo — os números estão no 1º cartão', [Rc.feito, Rc.esp], [null, null]);
-const Rt = rotulos(_tvGSvg(M, true));
-ok('15:02 (meio do dia): o mais alto continua acima-à-esquerda',
-   [Rt.pts.length, Rt.feito.x <= Rt.pts[0].x, Rt.feito.y < Math.min(...Rt.pts.map(q => q.y))], [2, true, true]);
+function encosta(bx, curvas){
+  return curvas.some(pl => pl.some((q, i) => {
+    if(!i) return false;
+    const [x1, y1] = pl[i - 1], [x2, y2] = q, n = Math.ceil(Math.hypot(x2 - x1, y2 - y1)) + 1;
+    for(let k = 0; k <= n; k++){ const px = x1 + (x2 - x1) * k / n, py = y1 + (y2 - y1) * k / n;
+      if(px > bx[0] && px < bx[2] && py > bx[1] && py < bx[3]) return true; }
+    return false;
+  }));
+}
+const cruzaBx = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+const CASOS_G = {
+  '07:30 (pontos colados no eixo)': _tvUepMontar(montarD(450, { '07:00': 120 }, { '07:00': 60 }), { agoraMin: 450, prod: PROD, cat: CAT }),
+  '08:46 (o print da TV de 65")': _tvUepMontar(montarD(526, { '07:00': 275 }, { '07:00': 132 }), { agoraMin: 526, prod: PROD, cat: CAT }),
+  '08:59 (o print de 19/10)': _tvUepMontar(montarD(539, { '07:00': 290, '08:00': 220 }, { '07:00': 157, '08:00': 120 }), { agoraMin: 539, prod: PROD, cat: CAT }),
+  '13:40 (atrasado)': _tvUepMontar(montarD(820, { '07:00': 210, '08:00': 190, '09:00': 230, '10:00': 215, '12:12': 165, '13:00': 150 },
+                                   { '07:00': 120, '08:00': 110, '09:00': 135, '10:00': 125, '12:12': 96, '13:00': 86 }), { agoraMin: 820, prod: PROD, cat: CAT }),
+  '15:02 (o retrato de 16/10)': M,
+  // os dois tipos de dia em que a 1ª versão da busca não achava lugar (sorteio
+  // de 4.000 dias): muito atrasado no fim da tarde, e o FEITO colado na meta
+  '16:34 (muito atrasado)': _tvUepMontar(montarD(994, { '07:00': 150, '08:00': 120, '09:00': 130, '10:00': 140, '12:12': 100, '13:00': 120, '14:00': 150, '15:00': 160, '16:00': 90 },
+                                         { '07:00': 75, '08:00': 60, '09:00': 65, '10:00': 70, '12:12': 50, '13:00': 60, '14:00': 75, '15:00': 80, '16:00': 45 }), { agoraMin: 994, prod: PROD, cat: CAT }),
+  '16:08 (feito colado na meta)': _tvUepMontar(montarD(968, { '07:00': 300, '08:00': 280, '09:00': 310, '10:00': 290, '12:12': 230, '13:00': 300, '14:00': 290, '15:00': 280 },
+                                         { '07:00': 150, '08:00': 140, '09:00': 155, '10:00': 145, '12:12': 115, '13:00': 150, '14:00': 145, '15:00': 140 }), { agoraMin: 968, prod: PROD, cat: CAT }),
+  '16:30 (meta batida)': batida,
+};
+Object.entries(CASOS_G).forEach(([nome, mm]) => {
+  [false, true].forEach(selo => {
+    const R = rotulos(_tvGSvg(mm, selo)), bxs = [R.feito, R.esp];
+    ok(nome + (selo ? ' · selo' : '') + ': os dois números aparecem, dentro do gráfico, sem encostar em curva nem um no outro',
+       [bxs.every(Boolean), bxs.every(b => b && b[0] >= 0 && b[1] >= 0 && b[2] <= R.vb[0] && b[3] <= R.vb[1]),
+        bxs.some(b => b && encosta(b, R.curvas)), !!(R.feito && R.esp && cruzaBx(R.feito, R.esp))],
+       [true, true, false, false]);
+  });
+});
+const S1502 = _tvGSvg(M, false);
+ok('a DISTÂNCIA feito × esperado é uma faixa desenhada (tinta neutra sem o selo)', /<polygon points="[^"]+" fill="var\(--txt\)" opacity=".2"\/>/.test(S1502), true);
+ok('com o selo, a faixa pega a cor do veredito', /<polygon points="[^"]+" fill="var\(--(ok|warn|red)\)" opacity=".2"\/>/.test(_tvGSvg(M, true)), true);
+ok('traço de TV de 65": FEITO 12, ESPERADO 7 tracejado, ATÉ A META 7 em pontos',
+   [/stroke="var\(--txt\)" stroke-width="12"/.test(S1502), /stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14"/.test(S1502),
+    /stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round"/.test(S1502)], [true, true, true]);
+ok('letra do gráfico para 65": números do agora 54/42, eixo 32',
+   ['.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px', '.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px',
+    '.tvg-svg .tvg-t2{font-size:32px'].map(t => html.includes(t)), [true, true, true]);
 const CSS_FG = html.split('\n').filter(l => /^\.tv[ufg]-/.test(l) && !/^\.tvu-slide\{/.test(l) && /font-size:/.test(l));
 ok('fonte das Telas F/G pela escala --tvu-k (nenhum font-size solto por vh)',
    CSS_FG.filter(l => /font-size:clamp\(/.test(l)).length, 0);

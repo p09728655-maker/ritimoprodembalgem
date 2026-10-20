@@ -502,11 +502,51 @@ via Google Apps Script (JSONP).
   - Medido (Chromium, retrato de 16/10, um dia atrasado e 08:59): TV 1920×1080
     e 1366×768 a 90–100%; gerencial em janela de 1920×950 a 85–95% e de
     1366×650 a 75–80%. Nada corta fora o nome.
-- **Rótulos FEITO/ESPERADO da G**: meio do dia, o mais alto acima-à-esquerda e
-  o mais baixo abaixo-à-direita. **Começo do dia** (agora a menos de 230 do
-  eixo): empilhados abaixo-à-direita do ponto mais baixo — tudo o que vem
-  depois SOBE, então ali nada passa (acima-à-direita é onde o tracejado sobe:
-  o *ESPERADO 571* do print). Na 1ª hora, sem espaço até o eixo, sem rótulo.
+- ~~**Rótulos FEITO/ESPERADO da G**: posição fixa por hora do dia; na 1ª hora,
+  sem rótulo~~ — **revogado na v7.147.0** (abaixo): a regra fixa deixava a TV
+  sem número nenhum às 08:46 e jogava o ESPERADO em cima da curva do FEITO às
+  15:02.
+- **GRÁFICO DA G PARA A TV DE 65" (v7.147.0, PPCP 20/10/2026, com o print das
+  08:46: *"na tv tem como deixar mais visível o gráfico"*, *"para tv de 65
+  polegadas"*).** A 1920×1080 numa 65", 1 px ≈ 0,75 mm, e o SVG sai a ~1,05×
+  o viewBox. Antes: FEITO a 6 (≈ 5 mm), eixo a 23 (≈ 17 mm de corpo) e, de
+  manhã, nenhum número no gráfico.
+  - **Traço**: FEITO 12 (halo 20), ESPERADO 7 tracejado `24 14`, ATÉ A META 7
+    em pontos redondos (`0 16`), META 3; pontos do agora r 18 / 12.
+  - **Letra** (`.tvg-t0/1/2`): números do agora **54/42**, eixo e ALMOÇO **32**;
+    legenda `.tvg-leg` pela escala `--tvu-k` (até 34 px) com amostras de 64 px.
+    Margens do viewBox foram junto (`L` 124, `B` 72) para o eixo maior caber.
+  - **A distância FEITO × ESPERADO é uma FAIXA** (`<polygon>` entre as duas
+    curvas até agora, opacidade .2): de longe é ela que mostra quem está em
+    cima — a linha sozinha some quando a diferença é de poucas dezenas de UEP.
+    **Tinta neutra sem o selo**; com o selo, a cor do `sc(ef)` (a regra do
+    veredito da tela não mudou).
+  - **Rótulos FEITO/ESPERADO SEMPRE**, cada um com tarja da cor do fundo, na
+    1ª posição de uma lista de candidatas que **não encosta em curva nenhuma**,
+    no texto da META, no horário da meta nem no outro rótulo (a linha tracejada
+    da META pode passar atrás — a tarja cobre). Perto do ponto primeiro (o mais
+    alto para cima, o mais baixo para baixo, depois mais longe e a coluna da
+    direita); sem lugar para os dois assim, **EMPILHADOS** acima dos pontos (o
+    começo do dia), com UMA guia pontilhada até eles. Longe do ponto, guia fina.
+    Nem empilhados: fica o que coube perto do ponto (um número é melhor que
+    nenhum — os dois estão no 1º cartão).
+  - **Sorteio de 4.000 dias** (script fora do repositório; hora sem lançamento,
+    zero, 900 UEP numa hora, meta de 2.000 a 4.000, com e sem selo): 7.856
+    desenhos, 0 erro, 0 NaN, os dois números em TODOS, nenhum encostado em
+    curva nem no outro. A 1ª versão da busca deixava 1,5% sem rótulo — muito
+    atrasado no fim da tarde (só procurava para baixo; havia espaço ENTRE as
+    curvas) e FEITO colado na meta (sem lugar para o par, descartava os dois).
+    Os dois casos estão no teste. Desenho < 0,3 ms, e a G só redesenha quando o
+    modelo muda (no máximo a cada 15 s).
+  - O teste (`tela-uep.test.js`) prende o **invariante**, não a posição: em
+    07:30, 08:46, 08:59, 13:40 atrasado, 15:02, meta batida, 16:34 muito
+    atrasado e 16:08 colado na meta, com e sem selo,
+    os dois números aparecem, dentro do viewBox, sem encostar em curva nem um no
+    outro. Desligar a checagem de colisão derruba 13 casos.
+  - Medido no Chromium (cenários acima): TV 1920×1080 e 1366×768 e a aba TV
+    do gerencial a 1920×947 — nada corta (`_tvUepCorta` falso). Na aba do
+    gerencial o SVG fica limitado pela ALTURA (viewBox 1000×840) e sobra
+    largura dos lados: na TV cheia, não.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 
