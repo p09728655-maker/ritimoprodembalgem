@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.31 — PADRÃO DE UEP: BASE MADERO, META UEP PADRÃO 2.530
+//               PPCP, 21/10/2026: "temos que definir o padrão e não mexer
+//               mais". A base volta a ser a MESA CABECEIRA MADERO (a unidade
+//               da planilha de programação); cadastro, META_UEP e HISTORICO
+//               foram multiplicados por 0,83 na planilha. Aqui muda só o
+//               padrão de reserva (o mesmo do rp-core). Não é urgente colar:
+//               ele só vale quando a CONFIG_PAINEL não tem META_UEP.
 // Versão: 5.30 — REGISTRO DA CRONOANÁLISE (aba CRONOANALISE)
 //               PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise
 //               e que linha faz" → os dois. registrarCrono acrescenta UMA linha
@@ -24,13 +31,6 @@
 //               e também quando o painel tem MAIS caixas de HE que a aba (HE do
 //               modal do PC com META vazia, que só existe no navegador). O
 //               saveDay passou a rodar sob o lock dos lançamentos.
-// Versão: 5.31 — PADRÃO DE UEP: BASE MADERO, META UEP PADRÃO 2.530
-//               PPCP, 21/10/2026: "temos que definir o padrão e não mexer
-//               mais". A base volta a ser a MESA CABECEIRA MADERO (a unidade
-//               da planilha de programação); cadastro, META_UEP e HISTORICO
-//               foram multiplicados por 0,83 na planilha. Aqui muda só o
-//               padrão de reserva (o mesmo do rp-core). Não é urgente colar:
-//               ele só vale quando a CONFIG_PAINEL não tem META_UEP.
 // Versão: 5.28 — META UEP PADRÃO 3.048 (BASE DA UEP PASSA A SER A SLEEP)
 //               ⚠ DESFEITA na v5.31 (base MADERO de novo).
 //               PPCP, 19/10/2026: a base da UEP passou da MESA CABECEIRA
