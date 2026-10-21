@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.37.0 — 21/10/2026 · START de parada sem internet
+
+- **A parada fecha na hora do 1º toque no START, mesmo sem internet** (PPCP:
+  *"como acertar uma parada que travou por causa da internet?"*). Caso real:
+  troca de produto das 13:19:56, de ~6 min, gravada até 13:37:32 (17,6 min) —
+  o START das ~13:25 não chegou e o toque seguinte, com a internet de volta,
+  mandou a hora dele.
+  - Agora o celular guarda a hora do 1º toque e os toques seguintes mandam essa
+    hora até ela chegar. Enquanto não chega, a tela mostra *START TOCADO ÀS
+    HH:MM:SS · AINDA NÃO ENVIADO* e o aviso diz que a hora ficou guardada.
+  - Só o mesmo celular e o mesmo dia. Se o operador nem tocou no START
+    enquanto estava sem internet, o celular não tem como saber: corrige-se na
+    planilha (coluna FIM da aba PARADAS).
+  - O REGISTRAR PARADA continua como era (ver CLAUDE.md).
+- **Atenção:** nenhum número muda nos dias passados. Daqui para frente, parada
+  com START sem internet deixa de crescer até a hora em que a internet voltou.
+- Nada no `.gs`.
+
+---
+
 ## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
 
 - **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o

@@ -53,6 +53,9 @@ via Google Apps Script (JSONP).
   da HORA_A_HORA (carimbo `dataDados` do dia) e não o retrato do painel; o caso
   real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
   `arquivarDiaAtual`, rodando o `.gs` inteiro: `node fechamento.test.js`.
+- `parada-start.test.js` — START de parada sem internet: o FIM é a hora do 1º
+  toque, guardada no celular até chegar ao servidor (`darStartParada` real,
+  com rede e planilha de mentira): `node parada-start.test.js`.
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
@@ -682,7 +685,7 @@ via Google Apps Script (JSONP).
   não acompanharam o 🖨 CARTEIRA: contagens 5→6 e 10→11, e dois textos que
   moram na marcação HTML mas eram procurados só nos `<script>`). Consertado no
   teste, sem tocar no painel. Suíte que não roda não guarda nada — rodar as
-  sete (hoje quinze, com o `crono-registro.test.js`, o `tela-e.test.js`, o `programacao.test.js`, o
+  sete (hoje dezesseis, com o `parada-start.test.js`, o `crono-registro.test.js`, o `tela-e.test.js`, o `programacao.test.js`, o
   `uep-padrao.test.js`, o `exclusao.test.js`, o `tela-uep.test.js`, o
   `uep-relatorios.test.js` e o `fechamento.test.js`) antes de publicar.
 
@@ -708,6 +711,24 @@ via Google Apps Script (JSONP).
     Os dois caminhos fazem `carregarParadas()` e só alertam se a parada **ainda
     estiver aberta** (ou ainda não existir). Sem isso o operador registrava a
     mesma parada de novo e o dia fechava com paradas duplicadas.
+  - **O FIM é a hora do 1º toque no START, mesmo sem internet** (mobile
+    1.37.0, PPCP 21/10/2026: *"como acertar uma parada que travou por causa da
+    internet"*). O FIM vem do CELULAR (`fim=` na URL; o `.gs` só usa a hora
+    dele quando o campo não vem). Sem internet o toque falhava e o PRÓXIMO
+    toque mandava a hora dele: a troca de produto das 13:19:56 (~6 min) ficou
+    até 13:37:32, 17,6 min, a hora em que a internet voltou.
+    - `rp_par_start` (localStorage, só o dia) guarda por parada `{ini, fim}`
+      do 1º toque, **antes** de mandar; `parStartHora` (conta pura) reaproveita
+      quando o id e o INÍCIO batem e o fim não é anterior ao início. Sai quando
+      chega ou quando o servidor mostra o FIM. O banner mostra *START TOCADO ÀS
+      HH:MM:SS · AINDA NÃO ENVIADO*. Teste: `parada-start.test.js`.
+    - ⚠ **O REGISTRAR não tem o mesmo seguro, de propósito**: não há parada no
+      servidor para amarrar a hora guardada, e uma sobra esquecida daria o
+      início de uma parada de horas atrás a uma parada nova. Parada registrada
+      atrasada por falta de internet se corrige na planilha (coluna INICIO).
+    - Corrigir à mão na planilha: a coluna que conta é a **E (FIM)** — os
+      painéis recalculam a duração por INICIO/FIM (`RP_PARADAS.durMin`). F e H
+      corrigir junto só para a aba não ficar com dois números.
 - **`_parEscrevendo` congela a tela de paradas durante a gravação.** O poll de
   90s caía no meio do START, refazia o `innerHTML` e trocava o botão
   "RETOMANDO..." (disabled) por um botão **novo e habilitado** — o operador
