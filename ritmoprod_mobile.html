@@ -956,7 +956,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.36.0';
+const APP_VER   = '1.37.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1922,6 +1922,42 @@ function _aplicarFechadasLocais(lista){
   });
 }
 
+// Hora do START GUARDADA (v1.37.0). O FIM da parada é a hora do TOQUE no
+// START, mandada pelo celular (o .gs só carimba a dele quando o fim não vem).
+// Sem internet o toque falhava e o PRÓXIMO toque mandava a hora DELE — caso
+// real de 21/10/2026: troca de produto das 13:19:56, de ~6 min, gravada até
+// 13:37:32 (17,6 min), a hora em que a internet voltou, não a linha.
+// Agora o 1º toque fica guardado no aparelho, por parada (id + início), ANTES
+// de mandar (timeout não prova que não gravou), e os toques seguintes mandam
+// essa hora até o servidor mostrar o FIM. Só o mesmo dia; parada que não está
+// mais aberta sai da lista no próximo START.
+const PAR_START_K = 'rp_par_start';
+function _parStartLe(){
+  try{
+    const o = JSON.parse(localStorage.getItem(PAR_START_K)||'null');
+    return (o && o.dia===hojeStr() && o.itens && typeof o.itens==='object') ? o.itens : {};
+  }catch(e){ return {}; }
+}
+function _parStartGrava(itens){
+  try{
+    if(Object.keys(itens).length) localStorage.setItem(PAR_START_K, JSON.stringify({dia:hojeStr(), itens}));
+    else localStorage.removeItem(PAR_START_K);
+  }catch(e){}
+}
+// Conta pura: a hora a mandar no START desta parada — a guardada, quando é da
+// MESMA parada (mesmo início) e não é anterior a ele; senão a de agora.
+function parStartHora(guardado, at, agora){
+  const ini = String((at&&at.ini)||'');
+  if(guardado && guardado.fim && guardado.ini===ini && String(guardado.fim)>=ini) return String(guardado.fim);
+  return agora;
+}
+// A hora guardada da parada aberta que ainda não chegou ao servidor, ou null.
+function _parStartPendente(at){
+  if(!at) return null;
+  const g = _parStartLe()[String(at.id)];
+  return (g && g.ini===String(at.ini||'')) ? g.fim : null;
+}
+
 async function carregarParadas(){
   if(!CFG.sheetsUrl) return;
   if(_parEscrevendo) return;   // não mexer na tela no meio de uma gravação
@@ -1979,12 +2015,14 @@ function renderParadaEstado(){
   if(!el) return;
   const at = paradaAtiva();
   if(at){
+    const pend = _parStartPendente(at);
     el.innerHTML = `
       <div class="par-banner par-banner-off">
         <div class="par-banner-ttl">⏸ PRODUÇÃO PARADA</div>
         <div class="par-banner-tipo">${at.tipo||'—'}</div>
         ${at.obs?`<div class="par-banner-obs">${at.obs}</div>`:''}
         <div class="par-banner-hora">Desde ${at.ini||'--:--'}</div>
+        ${pend?`<div class="par-banner-hora" style="color:var(--warn)">START TOCADO ÀS ${pend} · AINDA NÃO ENVIADO</div>`:''}
       </div>
       <button class="btn-salvar par-btn-start" id="btn-start-parada" onclick="darStartParada()">▶ DAR START (RETOMAR)</button>`;
     _parEstadoRender = 'parado';
@@ -2096,16 +2134,26 @@ async function darStartParada(){
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
   if(_parEscrevendo) return;   // toque duplo não dispara dois endParada
   const btnTxt = t=>{ const b=document.getElementById('btn-start-parada'); if(b) b.textContent=t; };
-  const btnOn  = ()=>{ const b=document.getElementById('btn-start-parada'); if(b){ b.textContent='▶ DAR START (RETOMAR)'; b.disabled=false; } };
   const btn = document.getElementById('btn-start-parada');
   if(btn){ btn.textContent='RETOMANDO...'; btn.disabled=true; }
 
-  const fim  = nowHoraSeg();
+  // A hora de cada parada: a do 1º toque, se um toque anterior não chegou ao
+  // servidor (ver PAR_START_K). Guardada ANTES de mandar. A lista é refeita só
+  // com as abertas de agora — a que fechou por outro caminho sai daqui.
+  const agora = nowHoraSeg();
+  const antes = _parStartLe(), guard = {}, envio = {};
+  abertas.forEach(at=>{
+    const k = String(at.id);
+    envio[k] = parStartHora(antes[k], at, agora);
+    guard[k] = { ini:String(at.ini||''), fim:envio[k] };
+  });
+  _parStartGrava(guard);
   const data = hojeStr();
   let erro = null;
   _parEscrevendo = true;   // só aqui: nada entre a marca e o try pode escapar
   try{
     for(const at of abertas){
+      const fim = envio[String(at.id)];
       // Manda também data+INICIO: se o ID da linha estiver vazio/bagunçado na
       // planilha (linha criada à mão, ID apagado), o getParadas inventa um id
       // que não existe lá e o endParada respondia "parada não encontrada" —
@@ -2120,6 +2168,8 @@ async function darStartParada(){
       await jsonpEscritaParada(url, i=>btnTxt(i>1?`RETOMANDO... (${i}/3)`:'RETOMANDO...'));
       at.fim = fim;
       _marcarFechadaLocal(at.id, fim);
+      delete guard[String(at.id)];
+      _parStartGrava(guard);
     }
   }catch(e){ erro = e; }
   _parEscrevendo = false;
@@ -2129,17 +2179,24 @@ async function darStartParada(){
     // FIM. Pergunta ao servidor como a parada está AGORA antes de assustar o
     // operador com um erro de algo que já foi feito.
     await carregarParadas();
-    const aindaAberta = PARADAS_HOJE.some(p=>
-      abertas.some(a=>String(a.id)===String(p.id)) && (!p.fim || String(p.fim).trim()===''));
-    if(aindaAberta){
-      alert('O servidor não respondeu depois de 3 tentativas.\n\n'
-        +'A parada CONTINUA aberta — nada foi perdido. Toque em START de novo '
-        +'em alguns segundos; repetir é seguro.');
-      btnOn();
+    const abertaAinda = a=>PARADAS_HOJE.some(p=>
+      String(a.id)===String(p.id) && (!p.fim || String(p.fim).trim()===''));
+    // A que o servidor já mostra fechada não precisa mais da hora guardada.
+    abertas.forEach(a=>{ if(!abertaAinda(a)) delete guard[String(a.id)]; });
+    _parStartGrava(guard);
+    const pend = abertas.filter(abertaAinda);
+    if(pend.length){
+      const semRede = /timeout|rede/i.test((erro&&erro.message)||'');
+      alert((semRede ? 'Sem resposta do servidor (internet?).'
+                     : 'O servidor recusou o START: '+((erro&&erro.message)||'erro')+'.')+'\n\n'
+        +'A parada CONTINUA aberta. A hora do START ('+envio[String(pend[0].id)]+') '
+        +'ficou guardada neste celular: toque em START de novo quando a internet '
+        +'voltar — a parada fecha nessa hora, não na do novo toque.');
+      renderParadaEstado();   // botão habilitado + a linha START TOCADO ÀS
       return;
     }
     // Encerrou de verdade: segue o fluxo normal, sem alerta.
-    abertas.forEach(a=>_marcarFechadaLocal(a.id, fim));
+    abertas.forEach(a=>_marcarFechadaLocal(a.id, envio[String(a.id)]));
   }
 
   _paradaLocalAberta = null;
