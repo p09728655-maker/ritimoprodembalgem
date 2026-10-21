@@ -3763,13 +3763,16 @@ feito e dá ar de verdade ao que sobrou.
 - Código: `UEP_BASE` MADERO, `UEP_META_PADRAO`/`UEP_META_PADRAO_GS` 2530,
   `UEP_BASE_MEDIDA` = MADERO 7,9 s / sem lacunas 6,7 s / `periodo:null` (o NO
   PERÍODO não veio legível — o quadro mostra o cartão sem número).
-- Planilha (⚠ PENDENTE em 21/10/2026 08:xx — a gravação pela API foi barrada pela
-  permissão da sessão; fazer via API, sem `onEdit`, para não carimbar `DIGITADA` em 429
-  códigos — o que tiraria todos da FILA): cadastro × 0,83 (MADERO = 1), META_UEP
+- Planilha (feito em 21/10/2026 de manhã, pela API e sem `onEdit` — que carimbaria
+  `DIGITADA` em 429
+  códigos e os tiraria todos da FILA): cadastro × 0,83 (MADERO = 1), META_UEP
   2.530, HISTORICO 03/07–20/10 UEP e UEP HE × 0,83 e META UEP 2.530, e a aba
   `UEP_VERSOES` (criada pela digitação da MADERO em 21/10) renomeada para
   `UEP_VERSOES_TESTE4`. ⚠ Fórmula pela API nesta planilha vai em pt-BR
-  (`;` e vírgula decimal) — com `,` dá `#ERROR!`.
+  (`;` e vírgula decimal) — com `,` dá `#ERROR!`. O método: fórmula numa coluna
+  auxiliar (repeatCell), conferir, `copyPaste` PASTE_VALUES por cima, limpar a
+  auxiliar — nada é transcrito à mão. Conferido: 16/10 3.754 → 3.115,8, o valor
+  de antes de 19/10.
 - Em aberto: SLEEP 0,83 no cadastro × 1,00 medido (2ª medição); PUFF EVORA
   1,54 a entrar na aba UEP da planilha.
 - A seção abaixo (base SLEEP) fica como registro — **DESFEITA**.
