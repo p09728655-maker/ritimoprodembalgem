@@ -99,10 +99,10 @@ const F = _filaCronoMontar(CAT, AM, PROG, UT, 2530);   // cadastro de mentira na
 const por = k => F.prog.concat(F.semProg).find(f => f.key === k) || null;
 
 console.log('\n── FILA: quem entra e por quê ──');
-ok('produto bem medido (MADERO) NÃO entra', por('501149|MESA CABECEIRA MADERO'), null);
-// v7.143.0: a SLEEP virou a BASE — vale 1,00 por definição e sai da fila, mesmo
-// sendo a de menor UEP × teto do cadastro (a régua do limite continua com ela).
-ok('a BASE (SLEEP) não entra na fila, nem no limite da esteira', por('501094|MESA CABECEIRA SLEEP'), null);
+// PADRÃO DE UEP (v7.152.0): a BASE é a MADERO — vale 1,00 por definição e não
+// entra na fila. A SLEEP volta a ser produto comum: no limite da esteira.
+ok('a BASE (MADERO) NÃO entra na fila', por('501149|MESA CABECEIRA MADERO'), null);
+ok('SLEEP: no limite da esteira (o menor UEP × teto do cadastro)', por('501094|MESA CABECEIRA SLEEP').motivos, ['teto']);
 ok('outro produto no mesmo limite: NO LIMITE DA ESTEIRA', por('501095|NICHO TESTE').motivos, ['teto']);
 ok('STRASS: provisória (4 dias na amostra)', [por('501059|PENTEADEIRA CAMARIM STRASS').motivos, por('501059|PENTEADEIRA CAMARIM STRASS').dias], [['prov'], 4]);
 ok('PUFF EVORA: estimada', por('501159|PUFF EVORA').motivos, ['est']);
@@ -122,9 +122,9 @@ const totEsperado = 2000 + 1300 * 1 + 200 * 1.54 + 135 * 2.4 + 60 * 1.0;
 ok('a % da janela é sobre TODA a UEP programada (inclusive a base e a cronometrada; fora da esteira e fora da janela não contam)',
    [Math.round(F.totUep), Math.round(F.emDuvida), Math.round(F.pctDuvida * 10) / 10],
    [Math.round(totEsperado), Math.round(2000 + 308 + 60), Math.round((2000 + 308 + 60) / totEsperado * 1000) / 10]);
-ok('contagem por motivo', F.cont, { 'sem-uep': 1, est: 1, prov: 1, teto: 1, fam: 2, 'sem-medida': 1 });
+ok('contagem por motivo', F.cont, { 'sem-uep': 1, est: 1, prov: 1, teto: 2, fam: 2, 'sem-medida': 1 });
 // TAKT s/CX (v7.141.0): 527 min × 60 ÷ META UEP × UEP da caixa, um por volume
-ok('meta padrão (sem a do ⚙) é a da base SLEEP, 3.048', _filaCronoMontar(CAT, AM, PROG, UT).metaUep, 3048);
+ok('meta padrão (sem a do ⚙) é a do PADRÃO DE UEP, 2.530 (base MADERO)', _filaCronoMontar(CAT, AM, PROG, UT).metaUep, 2530);
 ok('takt da STRASS por volume (2,71 · 2,29) com a meta de 2.530: 33,9 · 28,6 s',
    [por('501059|PENTEADEIRA CAMARIM STRASS').uepTxt, por('501059|PENTEADEIRA CAMARIM STRASS').taktTxt, F.metaUep], ['2,71 · 2,29', '33,9 · 28,6 s', 2530]);
 ok('o takt segue a META UEP do ⚙ (com 2.100 a STRASS pede 40,8 · 34,5 s)',
@@ -228,7 +228,7 @@ const UCV_SEM_CONTA = /\/ *100|\/ *(R|base)\.|_taktUep\(|UEP_PAD_FAIXA\[0\] *<=|
 const CV = (codigo, desc, cor, uep, uepVig) => ({ codigo, desc, cor, uep, uepVig });
 const PRODS = _uepConvProdutos([
   CV('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, '25/09/2026'),
-  CV('501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 1, '19/10/2026'),      // a base desde a v7.143.0
+  CV('501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 0.83, '16/10/2026'),   // produto comum (a base é a MADERO)
   CV('501.139.001', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO', 2.23, '25/09/2026'),      // código com ponto, como a planilha mostra
   CV('501139002', 'VOL 1/1 ARMARIO ENCANTO', 'CINAMOMO', 2.23, '25/09/2026'),
   CV('501139003', 'VOL 1/1 ARMARIO ENCANTO', 'BRANCO/CINAMOMO', 2.23, '25/09/2026'),
@@ -262,10 +262,10 @@ ok('2 volumes: o jogo medido é repartido como o cadastro reparte (2,71 / 2,29)'
 const E5 = _uepConvMontar(PRODS, 'PRODUTO NOVO', 20, 0, 2530);
 ok('sem UEP no cadastro: sem diferença (nunca 0%), e o número a digitar é o medido',
    [E5.volCad, E5.difPct, E5.confere, E5.digitar[0].uep, E5.origem], [null, null, false, 1.6, 'SEM UEP']);
-const E6 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 10, 0, 3048);
-ok('a BASE (SLEEP) não ganha UEP nova: mostra a distância da cronoanálise para a régua da meta (10 s × 10,4 s)',
+const E6 = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 12, 0, 2530);
+ok('a BASE (MADERO) não ganha UEP nova: mostra a distância da cronoanálise para a régua da meta (12 s × 12,5 s)',
    [E6.ehBase, E6.digitar, Math.round(E6.reguaDif)], [true, null, -4]);
-ok('a MADERO deixou de ser a base', _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 12, 0, 3048).ehBase, false);
+ok('a SLEEP não é a base (a base SLEEP foi desfeita no PADRÃO DE UEP)', _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 10, 0, 2530).ehBase, false);
 ok('meta diferente muda a régua da base pela meta (2.635 UEP → 12,0 s)',
    _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 24, 0, 2635).uepVol.toFixed(2), '2.00');
 ok('estados antes do número', [_uepConvMontar([], 'X', 1, 0, 2530).estado, _uepConvMontar(PRODS, 'ENCANTO', 27.8, 0, 2530).estado,
@@ -298,15 +298,15 @@ ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
 const E7 = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 17.6, 2530);
 ok('base digitada: a diferença para a régua da meta sai pronta do montar (+40,8%)', [E7.base.daMeta, fmtP(E7.base.difMeta)], [false, '40,8%']);
 const H7 = _uepConvHtml(E7);
-ok('base digitada fica à vista, com o valor e o botão de voltar à SLEEP medida — e antes do resultado',
-   [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA SLEEP'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
+ok('base digitada fica à vista, com o valor e o botão de voltar à MADERO medida — e antes do resultado',
+   [H7.includes('BASE DIGITADA: 17,6 s POR VOLUME DA MADERO'), H7.includes('+40,8%'), H7.includes('_uepConvLimparBase()'),
     H7.indexOf('BASE DIGITADA') < H7.indexOf('UEP EQUIVALENTE')], [true, true, true, true]);
-ok('base pela meta não é BASE DIGITADA: tem o aviso PRÓPRIO (desde a v7.148.0 é desvio da SLEEP medida)',
+ok('base pela meta não é BASE DIGITADA: tem o aviso PRÓPRIO (desde a v7.148.0 é desvio da base medida)',
    [H1.includes('BASE DIGITADA'), _uepConvHtml(_uepConvMontar(PRODS, '', 0, 0, 2530)).includes('BASE DIGITADA'),
-    H1.includes('BASE PELA RÉGUA DA META: 12,5 s POR UEP'), H1.includes('VOLTAR À SLEEP MEDIDA (7,9 s)')], [false, false, true, true]);
+    H1.includes('BASE PELA RÉGUA DA META: 12,5 s POR UEP'), H1.includes('VOLTAR À MADERO MEDIDA (7,9 s)')], [false, false, true, true]);
 ok('o rótulo diz de quem é o tempo da base (o nome vem do UEP_BASE)',
-   [/><span>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">SLEEP<\/span>\)<\/span><input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
-    /bn\.textContent = _uepBaseCurto\(\)/.test(pegaJs('function _uepConvAtualiza(')), _uepBaseCurto()], [true, false, true, 'SLEEP']);
+   [/><span>s\/VOLUME DA BASE \(<span id="uep-conv-base-nome">MADERO<\/span>\)<\/span><input id="uep-conv-base"/.test(html), html.includes('>SEGUNDOS DA BASE<'),
+    /bn\.textContent = _uepBaseCurto\(\)/.test(pegaJs('function _uepConvAtualiza(')), _uepBaseCurto()], [true, false, true, 'MADERO']);
 {
   const docAntes = global.document; let foco = null, evitou = false;
   global.document = { getElementById: id => ({ focus: () => { foco = id; } }) };
@@ -321,7 +321,7 @@ ok('o rótulo diz de quem é o tempo da base (o nome vem do UEP_BASE)',
 // orientação pede o tempo RODANDO; base mais lenta que a régua da meta é suspeita.
 eval.call(global, pegaJs('function _uepConvGuia('));
 ok('sem a base cronometrada, a orientação é o período (e diz que o método certo é rodando); com ela, rodando',
-   [/NO PERÍODO/.test(_uepConvGuia(true)), /SLEEP <b>com a linha rodando<\/b>/.test(_uepConvGuia(true)),
+   [/NO PERÍODO/.test(_uepConvGuia(true)), /MADERO <b>com a linha rodando<\/b>/.test(_uepConvGuia(true)),
     /COM A LINHA RODANDO/.test(_uepConvGuia(false)), /NO PERÍODO/.test(_uepConvGuia(false))], [true, true, true, false]);
 ok('a orientação é desenhada pelo _uepConvAtualiza (não é mais texto fixo no HTML)',
    [/id="uep-conv-guia"/.test(html), /_uepConvGuia\(/.test(pegaJs('function _uepConvAtualiza(')), html.includes('Use o tempo <b>NO PERÍODO</b> (paradas dentro): é a régua')], [true, true, false]);
@@ -329,8 +329,8 @@ ok('base mais lenta que a régua da meta é suspeita (o 17,6 do Encanto); a MADE
    [E7.base.suspeita, _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530).base.suspeita, E1.base.suspeita],
    [true, false, false]);
 ok('o desenho cobra a conferência da base suspeita e, com a base, fala em tempo rodando',
-   [H7.includes('não parece a SLEEP com a linha rodando'), H7.includes('o tempo é o COM A LINHA RODANDO'),
-    _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530)).includes('não parece a SLEEP')], [true, true, false]);
+   [H7.includes('não parece a MADERO com a linha rodando'), H7.includes('o tempo é o COM A LINHA RODANDO'),
+    _uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530)).includes('não parece a MADERO')], [true, true, false]);
 ok('Encanto rodando 17,6 ÷ MADERO rodando 8,7 = 2,02', _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.7, 2530).uepVol.toFixed(2), '2.02');
 // v7.143.1: o label é flex em coluna — texto solto ao lado do nome da base virava
 // três linhas ("s/VOLUME DA BASE (" · "SLEEP" · ")") e desalinhava os campos.
@@ -339,13 +339,13 @@ ok('o rótulo da base é UM item do label (texto e nome no mesmo span)',
 // v7.143.1: depois da base vem o 📌 FIXAR — o Tab que volta ao PRODUTO é dele
 ok('o último foco do conversor (o FIXAR) tem o Tab ligado; o campo da base não',
    [/id="uep-conv-fixar"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), /id="uep-conv-base"[^>]*onkeydown=/.test(html)], [true, false]);
-// 📌 FIXAR SLEEP (v7.143.1, PPCP: "deixa um botão para fixar sleep")
+// 📌 FIXAR (v7.143.1, PPCP: "deixa um botão para fixar sleep"; a base hoje é a MADERO)
 eval.call(global, pegaJs('function _uepConvFixar('));
 ok('FIXAR: com a base no produto e o tempo dela, fixa o tempo; sem tempo ou com outro produto, escolhe a base',
-   [_uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 8.7), _uepConvFixar(PRODS, 'MESA CABECEIRA SLEEP', 0), _uepConvFixar(PRODS, 'ARMARIO ENCANTO', 27.8)],
-   [{ acao: 'fixar', seg: 8.7 }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }, { acao: 'escolher', rot: '501094 · MESA CABECEIRA SLEEP' }]);
-ok('FIXAR sem a base no cadastro não faz nada', _uepConvFixar(PRODS.filter(p => p.modelo !== '501094'), 'X', 1), { acao: 'sem-base' });
-ok('o placeholder do campo da base diz que é a SLEEP medida, não exemplo', /elB\.placeholder = _uepBaseCurto\(\) \+ ' ' \+ medTxt/.test(pegaJs('function _uepConvEntradas(')), true);
+   [_uepConvFixar(PRODS, 'MESA CABECEIRA MADERO', 8.7), _uepConvFixar(PRODS, 'MESA CABECEIRA MADERO', 0), _uepConvFixar(PRODS, 'ARMARIO ENCANTO', 27.8)],
+   [{ acao: 'fixar', seg: 8.7 }, { acao: 'escolher', rot: '501149 · MESA CABECEIRA MADERO' }, { acao: 'escolher', rot: '501149 · MESA CABECEIRA MADERO' }]);
+ok('FIXAR sem a base no cadastro não faz nada', _uepConvFixar(PRODS.filter(p => p.modelo !== '501149'), 'X', 1), { acao: 'sem-base' });
+ok('o placeholder do campo da base diz que é a base medida, não exemplo', /elB\.placeholder = _uepBaseCurto\(\) \+ ' ' \+ medTxt/.test(pegaJs('function _uepConvEntradas(')), true);
 ok('o texto da base manda clicar no FIXAR', _uepConvHtml(E6).includes('clique em <b>📌 FIXAR</b>'), true);
 ok('o conversor não grava: nada de jsonpEscrita nem setUepCatalogo nele',
    /jsonpEscrita|setUepCatalogo/.test(pegaJs('function _uepConvAtualiza(') + pegaJs('function _uepConvBase(')), false);
@@ -424,7 +424,7 @@ ok('documento compartilhado, EM PÉ, com o cabeçalho e o botão comuns',
 const SK = pegaConst('_UCV_DOC_SKIN').replace(/^`|`$/g, '');
 ok('a pele do papel é escopada em .ucv-doc (não mexe nos outros relatórios do documento)',
    SK.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-doc ')), true);
-ok('no papel, o botão VOLTAR À SLEEP MEDIDA some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
+ok('no papel, o botão VOLTAR À BASE MEDIDA some', /\.ucv-doc \.uep-conv-av \.btn\{display:none\}/.test(SK), true);
 // Revisão: na folha da base saía "clique em 📌 FIXAR" — botão que só existe na tela.
 const HB = _uepConvHtml(E6);
 ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde); o papel tem a frase sem botão (.so-papel, que a aba esconde)',
@@ -536,30 +536,31 @@ ok('o campo TOLERÂNCIA se refaz ao sair dele (apagado, volta a mostrar o padrã
    /id="uep-conv-tol"[^>]*onblur="_uepConvAtualiza\(\)"/.test(html), true);
 
 // ════════════════════════════════════════════════════════════════════════════
-// A SLEEP CRONOMETRADA vira a base padrão (v7.148.0, PPCP 20/10/2026: "achei
-// tempo sleep" → "precisa alterar agora"). Volume a volume de 60 volumes:
-// período 8,6 · rodando 7,9 · sem lacunas 6,7. Vale o RODANDO.
-console.log('\n── CRONOANÁLISE → UEP: a SLEEP medida é a base ──');
-ok('a base medida é a SLEEP rodando: 7,9 s em 20/10/2026, 60 volumes', [UEP_BASE_MEDIDA.seg, UEP_BASE_MEDIDA.data, UEP_BASE_MEDIDA.volumes], [7.9, '20/10/2026', 60]);
+// A BASE CRONOMETRADA é a padrão (v7.148.0 com a SLEEP; v7.152.0, PADRÃO DE
+// UEP, com a MADERO — medida em 20/10/2026 igual à SLEEP: rodando 7,9 · sem
+// lacunas 6,7; o NO PERÍODO dela não veio legível). Vale o RODANDO.
+console.log('\n── CRONOANÁLISE → UEP: a MADERO medida é a base ──');
+ok('a base medida é a MADERO rodando: 7,9 s em 20/10/2026, 60 volumes; período sem número',
+   [UEP_BASE_MEDIDA.seg, UEP_BASE_MEDIDA.data, UEP_BASE_MEDIDA.volumes, UEP_BASE_MEDIDA.periodo, UEP_BASE_MEDIDA.semLacunas], [7.9, '20/10/2026', 60, null, 6.7]);
 { const SM = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048, 15), HS = _uepConvHtml(SM);
   ok('com 7,9 a base é a MEDIDA: sem aviso nenhum, régua com data e volumes, tolerância entra (7,9 → 9,1 s)',
-     [SM.base.medida, SM.base.daMeta, HS.includes('uep-conv-av'), HS.includes('a SLEEP cronometrada com a linha rodando (20/10/2026, 60 volumes)'),
+     [SM.base.medida, SM.base.daMeta, HS.includes('uep-conv-av'), HS.includes('a MADERO cronometrada com a linha rodando (20/10/2026, 60 volumes)'),
       SM.base.tolAplica, SM.base.tpSeg.toFixed(3)], [true, false, false, true, true, '9.085']);
-  ok('o caso real: Encanto rodando 17,6 ÷ SLEEP rodando 7,9 = 2,23', SM.uepVol.toFixed(2), '2.23');
+  ok('o caso real: Encanto rodando 17,6 ÷ MADERO rodando 7,9 = 2,23 (o cadastro na base MADERO)', SM.uepVol.toFixed(2), '2.23');
   const SD = _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 8.6, 3048, 15), HD = _uepConvHtml(SD);
-  ok('outro tempo (o 8,6 do período) é BASE DIGITADA, com o botão de voltar à SLEEP medida',
-     [SD.base.medida, HD.includes('BASE DIGITADA: 8,6 s POR VOLUME DA SLEEP'), HD.includes('A SLEEP medida é 7,9 s (20/10/2026)'), HD.includes('VOLTAR À SLEEP MEDIDA (7,9 s)')],
+  ok('outro tempo (8,6) é BASE DIGITADA, com o botão de voltar à MADERO medida',
+     [SD.base.medida, HD.includes('BASE DIGITADA: 8,6 s POR VOLUME DA MADERO'), HD.includes('A MADERO medida é 7,9 s (20/10/2026)'), HD.includes('VOLTAR À MADERO MEDIDA (7,9 s)')],
      [false, true, true, true]);
   ok('igual a uma casa É a medida (7,94 sim, 8,0 não)', [_uepConvBaseDe(7.94, 3048).medida, _uepConvBaseDe(8, 3048).medida, _uepConvBaseDe(0, 3048).medida], [true, false, false]);
 }
-{ const B1 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 7.9, 7.9, 3048, 15), B2 = _uepConvMontar(PRODS, 'MESA CABECEIRA SLEEP', 8.6, 7.9, 3048, 15);
-  ok('a própria SLEEP: o tempo da base em uso diz que é ela; tempo novo manda FIXAR (neste computador)',
+{ const B1 = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 7.9, 7.9, 2530, 15), B2 = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 2530, 15);
+  ok('a própria MADERO: o tempo da base em uso diz que é ela; tempo novo manda FIXAR (neste computador)',
      [B1.emUso, _uepConvHtml(B1).includes('7,9 s é a base em uso'), _uepConvHtml(B1).includes('📌 FIXAR</b>'),
       B2.emUso, _uepConvHtml(B2).includes('clique em <b>📌 FIXAR</b> para usar 8,6 s como base neste computador')],
      [true, true, false, false, true]);
 }
-ok('o COMO LER com a base cronometrada cita a SLEEP medida e as lacunas dentro nos dois',
-   [_uepConvGuia(false).includes('a SLEEP deu 7,9 s'), _uepConvGuia(false).includes('as lacunas ficam dentro'), _uepConvGuia(true).includes('7,9 s, medida em 20/10/2026')], [true, true, true]);
+ok('o COMO LER com a base cronometrada cita a MADERO medida e as lacunas dentro nos dois',
+   [_uepConvGuia(false).includes('a MADERO deu 7,9 s'), _uepConvGuia(false).includes('as lacunas ficam dentro'), _uepConvGuia(true).includes('7,9 s, medida em 20/10/2026')], [true, true, true]);
 { // a tela: vazio mostra 7,9; apagado COM O FOCO continua valendo a medida (não pula para a meta)
   const docAntes = global.document, pdAntes = global.PONTOS_DIA;
   const base = { value: '', dataset: {} };
@@ -571,21 +572,23 @@ ok('o COMO LER com a base cronometrada cita a SLEEP medida e as lacunas dentro n
   base.value = ''; base.dataset.auto = ''; global.document.activeElement = base;
   const eF = _uepConvEntradas();
   ok('campo vazio: mostra 7,9 (automático) e vale 7,9; apagado com o foco: fica vazio e vale 7,9',
-     [r1, [eF.base, base.value]], [[7.9, '7,9', '1', 'SLEEP 7,9'], [7.9, '']]);
+     [r1, [eF.base, base.value]], [[7.9, '7,9', '1', 'MADERO 7,9'], [7.9, '']]);
   global.document = docAntes; global.PONTOS_DIA = pdAntes;
 }
-ok('o título do campo diz que vazio é a SLEEP medida (e não mais a régua da meta)',
-   [/id="uep-conv-base"/.test(html), /title="[^"]*Vazio, vale a SLEEP medida em 20\/10\/2026: 7,9 s[^"]*"><span>s\/VOLUME DA BASE/.test(html)], [true, true]);
+ok('o título do campo diz que vazio é a MADERO medida (e não mais a régua da meta)',
+   [/id="uep-conv-base"/.test(html), /title="[^"]*Vazio, vale a MADERO medida em 20\/10\/2026: 7,9 s[^"]*"><span>s\/VOLUME DA BASE/.test(html)], [true, true]);
 
 // QUAL NÚMERO DO VOLUME A VOLUME (v7.149.0, PPCP: "deixa claro no painel qual
 // medida eu coloco para comparar com sleep")
-{ const QM = _uepConvQual(_uepConvBaseDe(7.9, 3048)), QR = _uepConvQual(_uepConvBaseDe(0, 3048)), QD = _uepConvQual(_uepConvBaseDe(8.6, 3048));
+{ const QM = _uepConvQual(_uepConvBaseDe(7.9, 2530)), QR = _uepConvQual(_uepConvBaseDe(0, 2530)), QD = _uepConvQual(_uepConvBaseDe(8.6, 2530));
   const usa = h => (h.match(/<div class="ucv-q usa"><span class="ucv-q-l">([^<]+)</) || [])[1];
-  ok('com a SLEEP medida o destaque é o RODANDO, com os 7,9 dela; os outros dois cartões dizem "não use" e o que a SLEEP deu neles',
-     [usa(QM), QM.includes('a SLEEP deu <b>7,9 s</b> aqui'), QM.includes('não use · SLEEP 8,6 s'), QM.includes('não use · SLEEP 6,7 s'), (QM.match(/ucv-q usa/g) || []).length],
+  // O NO PERÍODO da MADERO não veio legível: o cartão diz "não use" sem número (nunca inventa).
+  ok('com a MADERO medida o destaque é o RODANDO, com os 7,9 dela; os outros dois dizem "não use" — com o número só quando a medição tem',
+     [usa(QM), QM.includes('a MADERO deu <b>7,9 s</b> aqui'), /POR VOLUME NO PERÍODO<\/span><span class="ucv-q-s">com as paradas<\/span><span class="ucv-q-v">não use<\/span>/.test(QM),
+      QM.includes('não use · MADERO 6,7 s'), (QM.match(/ucv-q usa/g) || []).length],
      ['POR VOLUME COM A LINHA RODANDO', true, true, true, 1]);
-  ok('com a régua da meta o destaque é o NO PERÍODO (base 10,4); com base digitada, o RODANDO com o número dela',
-     [usa(QR), QR.includes('base: a régua da meta, 10,4 s'), usa(QD), QD.includes('base digitada: 8,6 s'), QD.includes('SLEEP 6,7')],
+  ok('com a régua da meta o destaque é o NO PERÍODO (base 12,5); com base digitada, o RODANDO com o número dela',
+     [usa(QR), QR.includes('base: a régua da meta, 12,5 s'), usa(QD), QD.includes('base digitada: 8,6 s'), QD.includes('MADERO 6,7')],
      ['POR VOLUME NO PERÍODO', true, 'POR VOLUME COM A LINHA RODANDO', true, false]);
   ok('os nomes são os do app (Volume a volume) e o desenho não faz conta',
      [['POR VOLUME NO PERÍODO', 'POR VOLUME COM A LINHA RODANDO', 'SEM AS LACUNAS'].every(t => QM.includes(t)), UCV_SEM_CONTA.test(pegaJs('function _uepConvQual('))], [true, false]);
@@ -653,7 +656,7 @@ console.log('\n── CRONOANÁLISE → UEP: a linha faz e o registro ──');
   const D = _ucvRegMontar(RM, V, { de:'20/09/2026', ate:'19/10/2026' });
   ok('a linha da planilha: os segundos da medição, a conversão do momento e o que a linha faz',
      [D.data, D.modelo, D.produto, D.volume, D.sRod, D.sPer, D.sLac, D.volumes, D.base, D.baseS, D.tol, D.tpS, D.uep, D.uepCad, D.linhaCxh, D.linhaSCx, D.linhaDias, D.linhaPer, D.vel, D.quem],
-     [H, '501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 8.6, 9.4, 7.1, 60, 'SLEEP MEDIDA 20/10/2026', 7.9, 15, 9.89, 1.09, 1, 175, 20.57, 4, '20/09/2026 a 19/10/2026', '', 'PPCP']);
+     [H, '501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 8.6, 9.4, 7.1, 60, 'MADERO MEDIDA 20/10/2026', 7.9, 15, 9.89, 1.09, 1, 175, 20.57, 4, '20/09/2026 a 19/10/2026', '', 'PPCP']);
   ok('o REG_ID sai do conteúdo: a mesma medição dá o mesmo id (o 2º clique não duplica); outra medição, outro id',
      [D.regId === _ucvRegMontar(RM, V, null).regId, D.regId === _ucvRegMontar(RM, Object.assign({}, V, { lac:7 }), null).regId, /^c[0-9a-z]+$/.test(D.regId)],
      [true, false, true]);

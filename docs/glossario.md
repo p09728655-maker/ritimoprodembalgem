@@ -215,13 +215,13 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 
 | Termo | Fórmula | Unidade | Onde está |
 |---|---|---|---|
-| **UEP/CX** | ritmo da base fixa (`UEP_BASE`: SLEEP desde a v7.143.0, antes MADERO; sem ela no período, a âncora do período) ÷ ritmo do produto (a base vale 1,00); o ritmo é o EM REGIME com 4+ h sozinho, senão o usado | UEP/cx | `v7:5822` |
+| **UEP/CX** | ritmo da base fixa (`UEP_BASE`: MESA CABECEIRA MADERO — PADRÃO DE UEP de 21/10/2026; a base SLEEP da v7.143.0 foi desfeita; sem ela no período, a âncora do período) ÷ ritmo do produto (a base vale 1,00); o ritmo é o EM REGIME com 4+ h sozinho, senão o usado | UEP/cx | `v7:5822` |
 | **RITMO EM REGIME** | caixas ÷ horas em que o produto rodou sozinho na linha | cx/h | `v7:_uepProdutos` |
 | **RITMO USADO** | caixas ÷ horas do produto com a hora de troca repartida pelo tempo esperado (caixas ÷ ritmo em regime) | cx/h | `v7:_uepProdutos` |
 | **UEP POR DIA** | Σ caixas com produto do dia × UEP/cx (âncora A) — o realizado | UEP | `v7:_uepDias` |
 | **FAIXA SUGERIDA DE META (UEP)** | p50–p60 (faixa da aba PLANO) da UEP GRAVADA (coluna UEP do HISTORICO, jornada) dos dias válidos — sem os dias acima do limite físico (teto do produto de referência na escala da base) ou com apontamento acima do realizado; mesma escala da META UEP | UEP | `v7:_uepEstudo` |
 | **UEP GRAVADA** (estudo de UEP) | a UEP oficial do dia (coluna UEP do HISTORICO) e % = UEP ÷ META UEP do dia, cor `sc` como na aba HISTÓRICO; BATEU A META = `uepHistResumo` (UEP ≥ meta do dia). A UEP ESTUDO da mesma linha está na escala do período e não se compara com meta | UEP | `v7:_uepEstudo` |
-| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 3.048 na base SLEEP — era 2.530 na base MADERO; jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
+| **UEP DO DIA** (gerencial) | Σ caixas × UEP do código (coluna UEP da PRODUTO_CODIGO), só horas de jornada normal; HE à parte. Meta = META_UEP da CONFIG_PAINEL (padrão 2.530, base MADERO = 1,00 — PADRÃO DE UEP de 21/10/2026; jornada normal de 527 min). Esperado = meta × min(minutos de jornada com lançamento, 527) ÷ 527 | UEP | `.gs:getPontosDia` + `rp-core:uepCard` |
 | **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
 | **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
@@ -254,7 +254,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 **Alerta de dado** (faixa âmbar no topo): aparece quando ≥ 20% das caixas de
 hoje têm UEP estimada ou ≥ 5% estão sem UEP (`UEP_ALERTA_EST`/`UEP_ALERTA_SEM`).
 
-**Como ler:** A = a **BASE FIXA** `UEP_BASE` (501094 MESA CABECEIRA SLEEP desde a v7.143.0; antes 501149 MESA CABECEIRA MADERO),
+**Como ler:** A = a **BASE FIXA** `UEP_BASE` (501149 MESA CABECEIRA MADERO; entre 19 e 21/10/2026 foi a 501094 SLEEP, desfeita no PADRÃO DE UEP),
 que vale 1,00 em todo estudo quando rodou no período (v7.136.0). Sem ela no
 período, a A é — só para leitura — a âncora do período (o produto com mais
 caixas abaixo de 90% do teto, entre os que têm 5+ dias). Desde a v7.137.0 o
@@ -293,9 +293,9 @@ Fora do ciclo por padrão (⚙ → TELA F / TELA G) e **sem veredito** por padr�
 | **UEP PROGRAMADA EM DÚVIDA** | Σ (caixas abertas × UEP) dos produtos da fila na janela ÷ Σ de todos os produtos na janela (próximos 5 dias úteis; aberta = qtde − adiantado; fora da esteira não entra) | % | `v7:_filaCronoMontar` |
 | **EM CAIXAS / EM UEP** (caixas × UEP) | caixas de jornada (REALIZADO − HE CX) ÷ META · UEP de jornada ÷ META UEP, do HISTORICO; veredito pela régua do selo (`sc`/`slRitmo`, ≥ 96%) | % | `v7:_cxUepMontar` |
 | **A META EM CX PEDIA** | META em caixas × UEP/cx do próprio dia ÷ META UEP — acima de 105%, a meta em caixas era mais pesada que a capacidade em UEP | % | `v7:_cxUepMontar` |
-| **TAKT s/CX** (fila e bloco 7) | 527 min × 60 ÷ META UEP × UEP/cx do produto (= 3.600 ÷ CX/H PADRÃO). Com a meta de 3.048 (base SLEEP): 10,4 s por UEP — 1 caixa de SLEEP (1,00) = 10,4 s. Na base antiga (MADERO, meta 2.530) eram 12,5 s, um volume de 1,84 = 23,0 s. Na fila, um por volume, com a META UEP do ⚙; no bloco 7, com a META gravada em cada dia | s/cx | `v7:_taktUep` |
+| **TAKT s/CX** (fila e bloco 7) | 527 min × 60 ÷ META UEP × UEP/cx do produto (= 3.600 ÷ CX/H PADRÃO). Com a meta de 2.530 (base MADERO): 12,5 s por UEP — 1 caixa de MADERO (1,00) = 12,5 s, um volume de 1,84 = 23,0 s. Na fila, um por volume, com a META UEP do ⚙; no bloco 7, com a META gravada em cada dia | s/cx | `v7:_taktUep` |
 | **s/CX REAL** (dia a dia do bloco 7) | minutos do produto no dia × 60 ÷ caixas, com a hora de troca repartida pelo tempo padrão — acima do TAKT s/CX = mais lento que a meta pede | s/cx | `v7:_uepPadHist` |
-| **UEP EQUIVALENTE** (⏱ CRONOANÁLISE → UEP) | segundos por volume medidos ÷ segundos da base por volume. Base padrão (campo vazio) = a SLEEP cronometrada com a linha rodando, **7,9 s** (20/10/2026, 60 volumes, `UEP_BASE_MEDIDA`), e o produto também rodando — parada evitável não é esforço do produto. Outro tempo digitado vale só naquele computador (aviso). 10,4 digitado = a régua da meta (527 min × 60 ÷ META UEP), e aí o tempo medido é o NO PERÍODO (paradas dentro). Base mais lenta que a régua da meta = suspeita (aviso). Produto de N volumes: jogo = UEP equivalente × N | UEP/vol | `v7:_uepConvMontar` |
+| **UEP EQUIVALENTE** (⏱ CRONOANÁLISE → UEP) | segundos por volume medidos ÷ segundos da base por volume. Base padrão (campo vazio) = a MADERO cronometrada com a linha rodando, **7,9 s** (20/10/2026, 60 volumes, `UEP_BASE_MEDIDA`; a SLEEP deu o mesmo), e o produto também rodando — parada evitável não é esforço do produto. Outro tempo digitado vale só naquele computador (aviso). 12,5 digitado = a régua da meta (527 min × 60 ÷ META UEP), e aí o tempo medido é o NO PERÍODO (paradas dentro). Base mais lenta que a régua da meta = suspeita (aviso). Produto de N volumes: jogo = UEP equivalente × N | UEP/vol | `v7:_uepConvMontar` |
 | **DIFERENÇA** (⏱ CRONOANÁLISE → UEP) | UEP equivalente ÷ UEP média por volume do cadastro − 1. CONFERE dentro de 90–110% (`UEP_PAD_FAIXA`, a faixa do NO PADRÃO do bloco 7). Sem UEP no cadastro: "—", nunca 0% | % | `v7:_uepConvMontar` |
 | **A LINHA FAZ** (⏱ CRONOANÁLISE → UEP) | o MÉD.PERÍODO do produto (modelo + nome, todas as cores e volumes) nos últimos 30 dias fechados: caixas ÷ horas DISTINTAS em que ele rodou, dia a dia, média aparada (sem o melhor e o pior dia, com 3+ dias). Hora dividida com outro produto conta inteira, então sai um pouco mais lenta do que é. s/cx = 3.600 ÷ cx/h. **A linha entrega X%** = tempo medido rodando ÷ s/cx da linha. Sem produção na janela: "não rodou", nunca 0 | s/cx · cx/h · % | `v7:_ucvLinhaDe` |
 
