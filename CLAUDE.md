@@ -3773,8 +3773,31 @@ feito e dá ar de verdade ao que sobrou.
   auxiliar (repeatCell), conferir, `copyPaste` PASTE_VALUES por cima, limpar a
   auxiliar — nada é transcrito à mão. Conferido: 16/10 3.754 → 3.115,8, o valor
   de antes de 19/10.
+- **1ª exceção ao item 3 — CONJ 2 MESAS CANTO/LAT SLIM (501142), 21/10/2026.**
+  PPCP: *"tem que ser menos de uma uep, está inflando a programação… pelo
+  conhecimento que tenho"*. O 1,37 do cadastro era PROVISÓRIA do estudo: 2 dias,
+  quase tudo hora de troca (~210 cx/h). Nas horas em que rodou SOZINHO no log:
+  270 cx/h (3 h, 21/09 e 14/10, as três lançadas como 270) contra 300 da MADERO
+  (33 h, 11 dias) → ≈ 1,11 — a mesma régua dá a SLEEP 0,82 (cadastro 0,83).
+  4,7 kg contra 8,15 da MADERO, mas PONTOS 71 contra 45. Recomendado 1,10; o
+  PPCP decidiu **0,95**, entrando pela regra 5 (estimada, marcada): cadastro
+  `21/10/2026 EST` (fica na FILA DE CRONOANÁLISE), `UEP_VERSOES` 1,37 até 20/10
+  → 0,95 desde 21/10, planilha aba UEP linha 13 `ESTIMADA 21/10/2026` (a BASE
+  PRODUTOS puxa dela por fórmula). Lote 210/26 de 05/11 (1.100 cx): 1.507 →
+  1.045 UEP. **Cronometrar nesse lote**: ~7,5 s/cx rodando confirma o 0,95;
+  ~8,7 s → ~1,1.
+- ⚠ **A 1ª digitação, sem a aba `UEP_VERSOES`, tem corrida.** Digitando rápido
+  em células seguidas da coluna UEP, os `onEdit` rodam juntos: o que cria a aba
+  lê o cadastro com as OUTRAS células já trocadas e grava o valor NOVO como
+  semente ("vale desde sempre"), e a edição delas vira "não mudou" (sem linha).
+  Medido em 21/10: 501142001 e 003 com semente 0,9 em vez de 1,37 (corrigido à
+  mão, B369:B370). Na 1ª vez: digitar UMA célula, esperar a aba aparecer, e só
+  então as outras. Com a aba existindo não acontece (o anterior vem dela). E
+  toda digitação na coluna UEP recarimba `DIGITADA`: estimativa precisa do
+  `EST` de novo depois.
 - Em aberto: SLEEP 0,83 no cadastro × 1,00 medido (2ª medição); PUFF EVORA
-  1,54 a entrar na aba UEP da planilha.
+  1,54 a entrar na aba UEP da planilha; CONJ SLIM 0,95 estimada → cronometrar
+  no lote 210/26 (05/11).
 - A seção abaixo (base SLEEP) fica como registro — **DESFEITA**.
 
 ## ~~BASE DA UEP = MESA CABECEIRA SLEEP~~ (v7.143.0 / mobile 1.35.0 / `.gs` v5.28) — DESFEITA na v7.152.0
