@@ -24,7 +24,15 @@
 //               e também quando o painel tem MAIS caixas de HE que a aba (HE do
 //               modal do PC com META vazia, que só existe no navegador). O
 //               saveDay passou a rodar sob o lock dos lançamentos.
+// Versão: 5.31 — PADRÃO DE UEP: BASE MADERO, META UEP PADRÃO 2.530
+//               PPCP, 21/10/2026: "temos que definir o padrão e não mexer
+//               mais". A base volta a ser a MESA CABECEIRA MADERO (a unidade
+//               da planilha de programação); cadastro, META_UEP e HISTORICO
+//               foram multiplicados por 0,83 na planilha. Aqui muda só o
+//               padrão de reserva (o mesmo do rp-core). Não é urgente colar:
+//               ele só vale quando a CONFIG_PAINEL não tem META_UEP.
 // Versão: 5.28 — META UEP PADRÃO 3.048 (BASE DA UEP PASSA A SER A SLEEP)
+//               ⚠ DESFEITA na v5.31 (base MADERO de novo).
 //               PPCP, 19/10/2026: a base da UEP passou da MESA CABECEIRA
 //               MADERO para a MESA CABECEIRA SLEEP (a de mais caixas no
 //               histórico). Cadastro, META_UEP e HISTORICO foram divididos por
@@ -2576,7 +2584,7 @@ function setTurnoInicio(p) {
 // ════════════════════════════════════════════════════════
 // Meta padrão de UEP do dia (jornada normal inteira, 527 min) — a MESMA do
 // rp-core (UEP_META_PADRAO); a CONFIG_PAINEL (META_UEP) manda quando existe.
-const UEP_META_PADRAO_GS = 3048;   // v5.28: base SLEEP (era 2530 na base MADERO)
+const UEP_META_PADRAO_GS = 2530;   // v5.31: padrão de UEP, base MADERO (a SLEEP da v5.28 foi desfeita)
 
 function _celNumOuNull(v) {
   if (v === '' || v === null || v === undefined) return null;

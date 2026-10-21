@@ -3623,35 +3623,32 @@ console.log('\n── estudo de UEP ──');
   ok('sem dia acima do ritmo da âncora, o teste de sanidade passa', eT.nAcimaAncora, 0);
   ok('sem a base fixa no período, a âncora é a automática e vem marcada', [eT.baseFixa, eT.baseOk], [false, false]);
 
-  // ── v7.136.0: BASE FIXA = MESA CABECEIRA SLEEP (PPCP, 16/10/2026: "a base
+  // ── v7.136.0: BASE FIXA = MESA CABECEIRA MADERO (PPCP, 16/10/2026: "a base
   // tem que ser um só"). A escolha automática virou a âncora para o KIT 2
   // SLEEP no GRAVAR de 16/10 e deixou o cadastro com duas escalas.
-  // v7.143.0 (PPCP, 19/10/2026): a base passou para a MESA CABECEIRA SLEEP (a de
-  // mais caixas no histórico) — mudança de unidade, tudo ÷ 0,83. O mecanismo da
-  // base fixa é o mesmo; os casos abaixo usam a base vigente.
-  ok('a base fixa é a MESA CABECEIRA SLEEP (501094)', [UEP_BASE.modelo, UEP_BASE.nome], ['501094', 'MESA CABECEIRA SLEEP']);
-  const baseIt = (n, teto) => {
+  ok('a base fixa é a MESA CABECEIRA MADERO (501149)', [UEP_BASE.modelo, UEP_BASE.nome], ['501149', 'MESA CABECEIRA MADERO']);
+  const madero = (n, teto) => {
     const r = [];
-    for (let i = 0; i < n; i++) r.push({ data: dia(i), modelo: '501094', nome: 'MESA CABECEIRA SLEEP', cor: 'BRANCO', caixas: 400, horas: 2,
+    for (let i = 0; i < n; i++) r.push({ data: dia(i), modelo: '501149', nome: 'MESA CABECEIRA MADERO', cor: 'BRANCO', caixas: 400, horas: 2,
       horasLista: ['14:00', '15:00'], cxHora: { '14:00': 200, '15:00': 200 }, tetoCxH: teto });
     return r;
   };
-  const eB = _uepEstudo(itT.concat(baseIt(6, 400)), 'aparada');
+  const eB = _uepEstudo(itT.concat(madero(6, 400)), 'aparada');
   const bB = n => eB.prods.find(p => p.nome === n);
-  ok('com a base no período, ELA é a A — mesmo sem ser o maior volume', [eB.volume.nome, eB.baseFixa, eB.baseOk], ['MESA CABECEIRA SLEEP', true, true]);
-  ok('a base vale 1,00 e os outros saem contra ela', [bB('MESA CABECEIRA SLEEP').uepVol, bB('A').uepVol, Math.round(bB('B').uepVol * 1000) / 1000], [1, 200 / 300, 1.333]);
+  ok('com a base no período, ELA é a A — mesmo sem ser o maior volume', [eB.volume.nome, eB.baseFixa, eB.baseOk], ['MESA CABECEIRA MADERO', true, true]);
+  ok('a base vale 1,00 e os outros saem contra ela', [bB('MESA CABECEIRA MADERO').uepVol, bB('A').uepVol, Math.round(bB('B').uepVol * 1000) / 1000], [1, 200 / 300, 1.333]);
   ok('com a base, ninguém é "fora da âncora" (a regra do teto não escolhe mais)', eB.foraTeto, []);
   ok('a B (mais rápido) continua só para comparar', eB.rapido.nome, 'A');
-  const eB3 = _uepEstudo(itT.concat(baseIt(3, 400)), 'aparada');
-  ok('base com menos de ' + UEP_MIN_DIAS + ' dias: ainda é a A, mas NÃO libera o GRAVAR', [eB3.volume.nome, eB3.baseFixa, eB3.baseOk, eB3.baseDias], ['MESA CABECEIRA SLEEP', true, false, 3]);
-  const eBT = _uepEstudo(itT.concat(baseIt(6, 210)), 'aparada');
-  ok('base no limite da esteira continua sendo a base, mas NÃO libera o GRAVAR', [eBT.volume.nome, eBT.volume.pctTeto > UEP_ANCORA_TETO_MAX, eBT.baseNoTeto, eBT.baseOk], ['MESA CABECEIRA SLEEP', true, true, false]);
+  const eB3 = _uepEstudo(itT.concat(madero(3, 400)), 'aparada');
+  ok('base com menos de ' + UEP_MIN_DIAS + ' dias: ainda é a A, mas NÃO libera o GRAVAR', [eB3.volume.nome, eB3.baseFixa, eB3.baseOk, eB3.baseDias], ['MESA CABECEIRA MADERO', true, false, 3]);
+  const eBT = _uepEstudo(itT.concat(madero(6, 210)), 'aparada');
+  ok('base no limite da esteira continua sendo a base, mas NÃO libera o GRAVAR', [eBT.volume.nome, eBT.volume.pctTeto > UEP_ANCORA_TETO_MAX, eBT.baseNoTeto, eBT.baseOk], ['MESA CABECEIRA MADERO', true, true, false]);
   ok('e o relatório diz por quê', /e\.baseNoTeto\?/.test(pega('function _uepHtml(')), true);
   // Base cortada no teto (a conta deu 200 cx/h, teto 190): a régua da sanidade
   // não pode ser o teto dela (sem folga, quase todo dia sairia suspeito). É o
   // teto da referência automática na escala da base — a mesma classificação
   // de antes da base fixa. (01/09–15/10/2026: 17 de 30 dias × 0.)
-  const eBC = _uepEstudo(itT.concat(baseIt(6, 190)), 'aparada');
+  const eBC = _uepEstudo(itT.concat(madero(6, 190)), 'aparada');
   ok('base cortada no teto: limitada, bloqueia o GRAVAR e a sanidade não acusa dia normal',
      [eBC.volume.limitadoTeto, eBC.baseNoTeto, eBC.baseOk, eBC.nAcimaAncora], [true, true, false, 0]);
   ok('a régua da sanidade é o teto da referência na escala da base (B: teto 400 × 190 ÷ 150)', Math.round(eBC.tetoUepH * 10) / 10, 506.7);
@@ -3665,8 +3662,8 @@ console.log('\n── estudo de UEP ──');
        .map(x => pega('function _uepHtml(').includes(x)), [true, true, true, true]);
   ok('o estudo mostra UMA UEP/CX só (a da base): a coluna B não volta',
      /uepRap|UEP\/CX · B|anc\(e\.rapido/.test(pega('function _uepHtml(')), false);
-  ok('o nome da base casa sem diferença de caixa/espaço', _uepEhBase({ modelo: '501094', nome: ' mesa cabeceira sleep ' }), true);
-  ok('outro produto do mesmo modelo de 6 dígitos não é a base', _uepEhBase({ modelo: '501094', nome: 'MESA CABECEIRA SLEEP KIT' }), false);
+  ok('o nome da base casa sem diferença de caixa/espaço', _uepEhBase({ modelo: '501149', nome: ' mesa cabeceira madero ' }), true);
+  ok('outro produto do mesmo modelo de 6 dígitos não é a base', _uepEhBase({ modelo: '501149', nome: 'MESA CABECEIRA MADERO KIT' }), false);
   ok('o aviso diz quantos dias a base rodou', /rodou só 3 dias/.test(_uepBaseFaltaTxt(eB3)), true);
   ok('sem a base, diz que não rodou e que nada foi gravado', [/não rodou/.test(_uepBaseFaltaTxt(eT)), /Nada foi gravado/.test(_uepBaseFaltaTxt(eT))], [true, true]);
   {
@@ -3687,14 +3684,14 @@ console.log('\n── estudo de UEP ──');
   eval(pega('function _uepBaseNoCadastro('));
   eval(pega('function _uepBaseLinha('));
   ok('o aviso da trava diz o caminho (cronoanálise digitada, UEP_VERSOES), a base e que nada foi gravado',
-     ['CRONOANÁLISE', 'coluna UEP da PRODUTO_CODIGO', 'UEP_VERSOES', '501094 MESA CABECEIRA SLEEP = 1,00', 'Nada foi gravado'].map(x => _uepTravadaTxt().includes(x)), [true, true, true, true, true]);
-  const catB = v => [1, 2, 3, 4].map(i => ({ codigo: '50109400' + i, desc: 'VOL 1/1 MESA CABECEIRA SLEEP', cor: 'BRANCO', uep: i === 4 ? v : 1 }))
+     ['CRONOANÁLISE', 'coluna UEP da PRODUTO_CODIGO', 'UEP_VERSOES', '501149 MESA CABECEIRA MADERO = 1,00', 'Nada foi gravado'].map(x => _uepTravadaTxt().includes(x)), [true, true, true, true, true]);
+  const catB = v => [1, 2, 3, 4].map(i => ({ codigo: '50114900' + i, desc: 'VOL 1/1 MESA CABECEIRA MADERO', cor: 'BRANCO', uep: i === 4 ? v : 1 }))
     .concat([{ codigo: '501097001', desc: 'VOL 1/1 KIT 2 MESA CABECEIRA SLEEP', cor: 'BRANCO', uep: 1 }]);
-  ok('a base no cadastro: os 4 códigos da SLEEP em 1,00 → ok (o KIT 2 SLEEP não é a base)', _uepBaseNoCadastro(catB(1)), { n: 4, vals: [1], ok: true });
+  ok('a base no cadastro: os 4 códigos da MADERO em 1,00 → ok (o KIT 2 SLEEP não é a base)', _uepBaseNoCadastro(catB(1)), { n: 4, vals: [1], ok: true });
   ok('um código da base digitado diferente → avisa com os valores', _uepBaseNoCadastro(catB(1.1)), { n: 4, vals: [1, 1.1], ok: false });
   ok('sem cadastro lido → null (não acusa às cegas)', [_uepBaseNoCadastro(null), _uepBaseNoCadastro([])], [null, null]);
   ok('a linha da base diz a base, a trava e o desvio do cadastro',
-     [/MESA CABECEIRA SLEEP = 1,00 UEP\/cx/.test(_uepBaseLinha(_uepBaseNoCadastro(catB(1)))), /travada desde 16\/10\/2026/.test(_uepBaseLinha(null)),
+     [/MESA CABECEIRA MADERO = 1,00 UEP\/cx/.test(_uepBaseLinha(_uepBaseNoCadastro(catB(1)))), /travada desde 16\/10\/2026/.test(_uepBaseLinha(null)),
       /no cadastro a base está 1,00 \/ 1,10/.test(_uepBaseLinha(_uepBaseNoCadastro(catB(1.1))))], [true, true, true]);
   ok('a linha da base é a MESMA na aba ⚖ UEP e no papel, e vem da montagem única',
      [/_uepBaseLinha\(D\.base\)/.test(pega('function renderUep(')), /_uepBaseLinha\(D\.base\)/.test(pega('function _uepDocHtml(')),

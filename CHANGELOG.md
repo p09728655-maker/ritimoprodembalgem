@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
+
+- **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o
+  padrão e não mexer mais"* → *"fecha"*). A planilha de programação do PPCP
+  estava na base MADERO e o painel na base SLEEP (desde 19/10): o painel
+  mostrava ~20,5% a mais em todo dia (22/10: planilha 3.448, painel 4.155).
+  - **Base: MESA CABECEIRA MADERO = 1,00 UEP por caixa.** Meta: **2.530 UEP**
+    na jornada normal (~288 UEP/h, 12,5 s por UEP).
+  - A UEP de cada código é a do cadastro (PRODUTO_CODIGO); a aba UEP da
+    planilha é cópia dele.
+  - Só muda por cronoanálise: duas medições em dias diferentes, com a linha
+    rodando, contra a MADERO (7,9 s); digitada no cadastro e na planilha no
+    mesmo dia. Nada de trocar de base nem recalcular pelo ritmo.
+  - O passado não é regravado — esta volta é a última exceção.
+- **⏱ CRONOANÁLISE:** a base passa a ser a MADERO medida em 20/10/2026 (7,9 s
+  rodando, igual à SLEEP). O NO PERÍODO dela não veio legível no registro; o
+  quadro QUAL NÚMERO DIGITAR mostra esse cartão sem número.
+- **Atenção:** toda UEP do painel cai × 0,83 (cadastro, HISTÓRICO e meta
+  3.048 → 2.530), voltando aos números da planilha. O % da meta não muda. A
+  SLEEP fica 0,83 no cadastro (a medição deu 1,00 — muda só com a 2ª medição).
+- `.gs` v5.31: só a meta padrão de reserva (2.530). ⚠ re-deploy **sem
+  pressa** — ela só vale quando a CONFIG_PAINEL não tem META_UEP.
+
+---
+
 ## v7.151.0 — 20/10/2026
 
 - **Marca de TROCA DE ESCALA DA UEP nos gráficos.** Pedido do PPCP: *"quando

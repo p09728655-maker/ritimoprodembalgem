@@ -1987,7 +1987,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <button class="tab"    data-tab="programacao" onclick="setTab('programacao')">📅 PROGRAMAÇÃO</button>
   <button class="tab"    data-tab="plano" onclick="setTab('plano')" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 PLANO</button>
   <button class="tab"    data-tab="uep" onclick="setTab('uep')" title="UEP de hoje: ritmo, hora a hora, o mix que explica o número e o quanto dele é medido">⚖ UEP</button>
-  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (SLEEP). A UEP do cadastro não muda aqui; o 💾 REGISTRAR guarda só a medição.">⏱ CRONOANÁLISE</button>
+  <button class="tab"    data-tab="crono" onclick="setTab('crono')" title="Cronoanálise → UEP: o tempo por volume medido no tablet convertido em UEP contra a base (MADERO). A UEP do cadastro não muda aqui; o 💾 REGISTRAR guarda só a medição.">⏱ CRONOANÁLISE</button>
   <button class="tab"    data-tab="producaohora" onclick="setTab('producaohora')">🕐 PRODUÇÃO/HORA</button>
   <button class="tab"    data-tab="paradas" onclick="setTab('paradas')">⏸ PARADAS</button>
   <button class="tab"    data-tab="perdas"  onclick="setTab('perdas')">🎯 GESTÃO DE PERDAS</button>
@@ -2828,10 +2828,10 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="uep-card">
       <div class="uep-conv-f">
         <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-        <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a SLEEP deu 7,9 s. Com a régua da meta como base (10,4), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
-        <label title="O tempo por volume da BASE (MESA CABECEIRA SLEEP, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a SLEEP medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 10,4 (a régua da meta, 527 min × 60 ÷ 3.048) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">SLEEP</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
+        <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a MADERO deu 7,9 s. Com a régua da meta como base (12,5), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
+        <label title="O tempo por volume da BASE (MESA CABECEIRA MADERO, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a MADERO medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 12,5 (a régua da meta, 527 min × 60 ÷ 2.530) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">MADERO</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
         <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
-        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR SLEEP</button>
+        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR MADERO</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota" id="uep-conv-guia"></div>
@@ -3152,7 +3152,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <!-- META DE UEP (v7.89.0): grava na CONFIG_PAINEL (chave META_UEP) e vale
          para todos os aparelhos (gerencial, celular, histórico, relatórios). -->
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="3048"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 3.048 (base SLEEP) · vale para todos os aparelhos</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 (base MADERO = 1,00) · vale para todos os aparelhos</div></div>
       <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
     </div>
     <div class="frm-row">
@@ -3359,7 +3359,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.151.0';
+const APP_VER   = '7.152.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5251,7 +5251,7 @@ function _uepPadMinSlot(slots){ const m={}; (slots||[]).forEach(sl=>{ m[sl.inici
 // O takt da LINHA em UEP é o tempo de jornada ÷ a META UEP do dia: 527 min ×
 // 60 ÷ 2.530 = 12,5 s por UEP. O de cada produto é esse tempo × a UEP da
 // caixa dele: 1 caixa de MADERO (1,00) = 12,5 s; um volume de 1,84 = 23,0 s.
-// v7.143.0, base SLEEP: 527 × 60 ÷ 3.048 = 10,4 s por UEP (1 caixa de SLEEP).
+// (A base SLEEP da v7.143.0, 10,4 s com 3.048, foi desfeita no PADRÃO DE UEP de 21/10/2026.)
 // É o CX/H PADRÃO escrito em segundos por caixa (3.600 ÷ CX/H PADRÃO), e é o
 // número que a cronoanálise compara com o tempo medido.
 // ⚠ NÃO é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, régua
@@ -5834,6 +5834,11 @@ const UEP_CONV_LS = 'rpe_uep_conv';
 const UEP_CONV_TOL_PADRAO = 15;
 const UEP_CONV_TOL_LS = 'rpe_uep_conv_tol';
 const UEP_CONV_TOL_META = 0.01;   // base digitada a até 1% da régua da meta = a régua da meta (o 10,4 arredondado)
+// A BASE CRONOMETRADA. v7.152.0 (PADRÃO DE UEP): é a MADERO, medida em
+// 20/10/2026 com o mesmo resultado da SLEEP — rodando 7,9 s, sem as lacunas
+// 6,7 s (PPCP: "os tempos são iguais"). O NO PERÍODO da MADERO não veio
+// legível no registro (13:35), por isso `periodo` é null: o quadro QUAL NÚMERO
+// DIGITAR mostra o cartão sem número. O texto abaixo é da medição da SLEEP:
 // A SLEEP CRONOMETRADA (v7.148.0, PPCP 20/10/2026: "achei tempo sleep" →
 // "precisa alterar agora"). Volume a volume de 60 volumes: NO PERÍODO 8,6 s ·
 // COM A LINHA RODANDO 7,9 s · sem as 4 lacunas 6,7 s. Vale o RODANDO, o mesmo
@@ -5848,7 +5853,7 @@ const UEP_CONV_TOL_META = 0.01;   // base digitada a até 1% da régua da meta =
 // 7,2 s por caixa, e o rodando (7,9) é ~91% disso. Mudou a velocidade ou o vão,
 // a base muda: medir a SLEEP de novo.
 // Medição nova da SLEEP = trocar aqui (e a régua de todo produto muda junto).
-const UEP_BASE_MEDIDA = { seg:7.9, periodo:8.6, semLacunas:6.7, data:'20/10/2026', volumes:60 };
+const UEP_BASE_MEDIDA = { seg:7.9, periodo:null, semLacunas:6.7, data:'20/10/2026', volumes:60 };
 const _uepConvCod = d => d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d;
 const _uepConvNorm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
 // Os campos da aba são os ids uep-conv-*; o que é digitado na base e na
@@ -6137,7 +6142,7 @@ function _uepConvQual(base){
   return '<div class="ucv-qual"><div class="ucv-qual-t">QUAL NÚMERO DO VOLUME A VOLUME DIGITAR</div><div class="ucv-qual-g">'
     + C.map(c => c[0] === usa
       ? `<div class="ucv-q usa"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">✓ USE ESTE · ${ref}</span></div>`
-      : `<div class="ucv-q"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">não use${base.medida ? ` · ${b} ${_taktTxt(c[3])}` : ''}</span></div>`).join('')
+      : `<div class="ucv-q"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">não use${base.medida && c[3] != null ? ` · ${b} ${_taktTxt(c[3])}` : ''}</span></div>`).join('')
     + '</div></div>';
 }
 // ── A tela (DOM) ───────────────────────────────────────────────────────────
@@ -8546,8 +8551,15 @@ const UEP_ANCORA_TETO_MAX = 90;
 // MADERO ficou 1,20. ⚠ O 0,83 vinha do limite da esteira (a SLEEP estava NO
 // LIMITE DA ESTEIRA na FILA): pelo tamanho da caixa a MADERO daria ~1,04 — é a
 // cronoanálise com a linha rodando, contra a SLEEP, que acerta produto a produto.
-const UEP_BASE = { modelo:'501094', nome:'MESA CABECEIRA SLEEP' };
-// O nome curto da base para rótulo ("SLEEP"): a última palavra do nome.
+// ⚠ DESFEITA no PADRÃO DE UEP (v7.152.0, PPCP 21/10/2026: "temos que definir o
+// padrão e não mexer mais" → "fecha"). A planilha de programação do PPCP ficou
+// na base MADERO e o painel 20,5% acima dela; a cronoanálise de 20/10 deu
+// MADERO = SLEEP (7,9 s rodando) e o Encanto 2,23 — os valores da base MADERO.
+// Cadastro, META_UEP (3.048 → 2.530) e HISTORICO × 0,83 na planilha. O padrão:
+// base MADERO = 1,00, meta 2.530, UEP só muda por cronoanálise (duas medições
+// em dias diferentes), passado não se regrava. NÃO trocar a base de novo.
+const UEP_BASE = { modelo:'501149', nome:'MESA CABECEIRA MADERO' };
+// O nome curto da base para rótulo ("MADERO"): a última palavra do nome.
 function _uepBaseCurto(){ return UEP_BASE.nome.split(' ').pop(); }
 function _uepEhBase(p){
   return !!p && String(p.modelo||'')===UEP_BASE.modelo
@@ -11356,7 +11368,7 @@ function saveCfg(){
   }
   // Meta de UEP: só vai à planilha quando o gestor MUDOU o valor — campo vazio
   // ou igual ao que já vale não manda nada (um aparelho que abriu antes de ler a
-  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 3048 (base SLEEP).
+  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 2530 (base MADERO).
   { const mu=_pgSimNum((document.getElementById('c-meta-uep')||{}).value);
     const atual=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
     _metaUepNova=(mu>0&&Math.round(mu)!==Math.round(atual))?Math.round(mu):null;

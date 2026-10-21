@@ -3741,7 +3741,40 @@ feito e dá ar de verdade ao que sobrou.
     um GRAVAR mede contra o ritmo do período e mexe na escala. Não propor
     regravar a UEP pelo ritmo enquanto a cronoanálise não vier.
 
-## BASE DA UEP = MESA CABECEIRA SLEEP (v7.143.0 / mobile 1.35.0 / `.gs` v5.28)
+## PADRÃO DE UEP — base MADERO, e não se mexe mais (v7.152.0 / mobile 1.36.0 / `.gs` v5.31)
+- PPCP, 21/10/2026, com a planilha de programação na mão: *"está virando uma
+  loucura, vamos colocar a bola no chão"*, *"não bate com a planilha"* →
+  *"temos que definir o padrão e não mexer mais"* → *"fecha"*.
+- **Por que não batia** (conferido dia a dia, 22–29/10): a planilha do PPCP
+  (`PLANILHA PRODUÇÃO SEM COR - 2026.xlsx`, abas da semana com `UEP UNIT.` e
+  `UEP DIA` por lote = QTDE × UEP do produto) está na **base MADERO** — a aba
+  UEP dela é o cadastro de 16/10. O painel estava na base SLEEP (÷0,83 =
+  ×1,205): 22, 26, 28 e 29/10 batiam com planilha ÷ 0,83. 23/10 +372: PUFF
+  EVORA com UEP estimada no cadastro (1,86) e SEM ESTUDO na planilha. 27/10
+  −260: a MADERO digitada 1,00 no cadastro às 07:35 de 21/10 (duas réguas).
+- **O PADRÃO:**
+  1. base MESA CABECEIRA MADERO = 1,00 UEP/cx; meta 2.530 na jornada normal;
+  2. UEP de cada código = a do cadastro; a aba UEP da planilha é cópia dele;
+  3. só muda por cronoanálise — duas medições em dias diferentes, rodando,
+     contra a MADERO (7,9 s) —, digitada no cadastro e na planilha no mesmo
+     dia. Nunca trocar de base nem recalcular pelo ritmo (UEP TRAVADA segue);
+  4. o passado não se regrava (esta volta foi a última exceção);
+  5. produto novo entra com a estimada nos dois lugares, marcado.
+- Código: `UEP_BASE` MADERO, `UEP_META_PADRAO`/`UEP_META_PADRAO_GS` 2530,
+  `UEP_BASE_MEDIDA` = MADERO 7,9 s / sem lacunas 6,7 s / `periodo:null` (o NO
+  PERÍODO não veio legível — o quadro mostra o cartão sem número).
+- Planilha (⚠ PENDENTE em 21/10/2026 08:xx — a gravação pela API foi barrada pela
+  permissão da sessão; fazer via API, sem `onEdit`, para não carimbar `DIGITADA` em 429
+  códigos — o que tiraria todos da FILA): cadastro × 0,83 (MADERO = 1), META_UEP
+  2.530, HISTORICO 03/07–20/10 UEP e UEP HE × 0,83 e META UEP 2.530, e a aba
+  `UEP_VERSOES` (criada pela digitação da MADERO em 21/10) renomeada para
+  `UEP_VERSOES_TESTE4`. ⚠ Fórmula pela API nesta planilha vai em pt-BR
+  (`;` e vírgula decimal) — com `,` dá `#ERROR!`.
+- Em aberto: SLEEP 0,83 no cadastro × 1,00 medido (2ª medição); PUFF EVORA
+  1,54 a entrar na aba UEP da planilha.
+- A seção abaixo (base SLEEP) fica como registro — **DESFEITA**.
+
+## ~~BASE DA UEP = MESA CABECEIRA SLEEP~~ (v7.143.0 / mobile 1.35.0 / `.gs` v5.28) — DESFEITA na v7.152.0
 - PPCP, 19/10/2026: *"hoje o melhor produto é MESA CABECEIRA SLEEP"*, *"20 mil
   caixas no histórico"* → escolheu trocar a base (recomendação dada: manter a
   MADERO e usar a SLEEP como referência de trabalho — recusada).
