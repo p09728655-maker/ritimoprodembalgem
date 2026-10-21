@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.152.1 — 21/10/2026 · META DIA (UEP) que não ficava
+
+- **O 2.530 digitado no ⚙ era descartado sem aviso** (PPCP: *"sumiu a meta… mas
+  digitei"*). Com a META_UEP ainda não lida pelo painel, o campo abria vazio e o
+  SALVAR comparava o digitado com o **padrão** (2.530): igual, não mandava nada
+  à planilha, e o campo voltava vazio. Agora, com a meta não lida, o que é
+  digitado vai (`_metaUepEnviar`); com a meta lida, só vai se mudou; campo
+  vazio continua sem mandar nada.
+- **Linha nova embaixo do campo** diz de onde vem a meta que vale:
+  *lida da planilha: 2.530 UEP*, *aguardando a leitura do dia — até lá vale o
+  padrão 2.530* ou *a leitura do dia veio SEM a META_UEP*.
+- **Atenção:** nenhuma conta mudou. Com o campo vazio a meta usada já era o
+  padrão 2.530 (a META UEP POR HORA ao lado mostrava 288 UEP/h). Sem
+  re-deploy do `.gs`.
+
+---
+
 ## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
 
 - **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o

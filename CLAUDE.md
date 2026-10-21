@@ -3370,6 +3370,17 @@ feito e dá ar de verdade ao que sobrou.
   MUDOU, e o `enviarConfigPainel` manda `metaUep` uma vez. O `setConfigPainel`
   grava `META_UEP` só com número > 0. ⚠ Nunca mandar sempre: um aparelho que
   abriu antes de ler a config apagaria a meta dos outros.
+  - **v7.152.1 (PPCP, 21/10/2026: *"sumiu a meta… mas digitei"*)**: com a
+    META_UEP não lida (`PONTOS_DIA.metaUep` null), o campo abre vazio e o
+    `saveCfg` comparava o digitado com o PADRÃO — o 2.530 digitado era igual,
+    não ia, e o campo voltava vazio. A regra é o `_metaUepEnviar(mu, lida)`:
+    vazio nunca vai; com a meta lida, só se mudou; sem ela, o digitado vai. E o
+    `#c-meta-uep-st` (`_metaUepEstado`) diz de onde vem a meta: lida da
+    planilha · leitura do dia não chegou · leitura chegou SEM a META_UEP.
+    ⚠ Na tela de 21/10 08:22 a leitura do dia TINHA chegado (meta em cx 2.626
+    pela programação) e o campo estava vazio, com a CONFIG_PAINEL tendo
+    META_UEP 2.530. A causa não foi achada no código: a linha nova separa os
+    casos na próxima vez.
 - **SIMULADOR DE CAPACIDADE EM UEP** (v7.90.0, PPCP 24/09/2026: *"tem que
   ser para penteadeira completa"*). Botão 🧮 na aba PROGRAMAÇÃO, modal
   `#modal-capuep`. Contas puras e testadas: `_capVol`, `_capNome`,

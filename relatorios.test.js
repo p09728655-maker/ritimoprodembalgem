@@ -3821,9 +3821,26 @@ console.log('\n── estudo de UEP ──');
         /_simUepPintar\(\)/.test(pega('function _pgSimAtualiza('))], [true, false, true]);
     ok('R$/UEP saiu dos cards UEP DO DIA (hoje e dia passado)',
        [/_uepComCusto/.test(JS), /uepCusto\(/.test(JS)], [false, false]);
-    ok('META DIA (UEP) nas configurações: só envia quando o gestor mudou o valor, uma vez',
-       [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
+    ok('META DIA (UEP) nas configurações: a regra é o _metaUepEnviar, e vai uma vez',
+       [/id="c-meta-uep"/.test(src), /_metaUepNova=_metaUepEnviar\(mu, PONTOS_DIA\.metaUep\)/.test(pega('function saveCfg(')),
         /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);
+    // 21/10/2026, PPCP: "sumiu a meta… mas digitei". Com a meta não lida, o
+    // 2.530 digitado era comparado com o PADRÃO (2.530), não ia à planilha, e o
+    // campo voltava vazio.
+    eval(pega('function _metaUepEnviar(')); eval(pega('function _metaUepEstado('));
+    ok('META UEP: digitada com a meta ainda não lida vai — inclusive igual ao padrão',
+       [_metaUepEnviar(2530, null), _metaUepEnviar(2530, undefined), _metaUepEnviar(2600.4, null)], [2530, 2530, 2600]);
+    ok('META UEP: com a meta lida, só vai se mudou',
+       [_metaUepEnviar(2530, 2530), _metaUepEnviar(2600, 2530), _metaUepEnviar(2530, 3048)], [null, 2600, 2530]);
+    ok('META UEP: campo vazio nunca vai (não apaga a meta dos outros aparelhos)',
+       [_metaUepEnviar(0, null), _metaUepEnviar(0, 2530), _metaUepEnviar(NaN, null)], [null, null, null]);
+    ok('META UEP: a linha do ⚙ separa lida × leitura não chegou × leitura sem a chave',
+       [_metaUepEstado(2530, {}, 'x').aviso, /lida da planilha: 2\.530/.test(_metaUepEstado(2530, {}, 'x').txt),
+        _metaUepEstado(null, null, 'aguardando a leitura do dia…').txt,
+        /SEM a META_UEP/.test(_metaUepEstado(null, { normal: 0 }, 'x').txt), _metaUepEstado(null, false, 'x').aviso],
+       [false, true, 'aguardando a leitura do dia… — até lá vale o padrão 2.530', true, true]);
+    ok('o ⚙ escreve a linha do estado ao abrir',
+       [/id="c-meta-uep-st"/.test(src), /_metaUepEstado\(PONTOS_DIA\.metaUep, PONTOS_DIA\.uep, _pontosEstadoTxt\(true\)\)/.test(pega('function openCfg('))], [true, true]);
     // v7.90.0 — simulador de capacidade em UEP, por PRODUTO COMPLETO
     eval(pega('function _capVol(')); eval(pega('function _capNome(')); eval(pega('function _capProdutos(')); eval(pega('function _capMix('));
     ok('volume lido da descrição; sem VOL é 1/1', [_capVol('VOL 2/2 PENTEADEIRA').vol, _capVol('VOL 2/2 X').nVol, _capVol('MESA').nVol], [2, 2, 1]);

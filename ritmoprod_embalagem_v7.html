@@ -3152,7 +3152,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <!-- META DE UEP (v7.89.0): grava na CONFIG_PAINEL (chave META_UEP) e vale
          para todos os aparelhos (gerencial, celular, histórico, relatórios). -->
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 (base MADERO = 1,00) · vale para todos os aparelhos</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div id="c-meta-uep-st" style="font-size:10px;color:var(--txt2);margin-top:4px"></div><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 (base MADERO = 1,00) · vale para todos os aparelhos</div></div>
       <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
     </div>
     <div class="frm-row">
@@ -3359,7 +3359,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.152.0';
+const APP_VER   = '7.152.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11285,6 +11285,28 @@ function exportarExcel(){
 // ════════════════════════════════════════════════
 // CONFIG MODAL
 // ════════════════════════════════════════════════
+// META DIA (UEP) do ⚙ — o que vai para a planilha ao SALVAR. `lida` é a
+// META_UEP que veio da planilha (PONTOS_DIA.metaUep): null enquanto a leitura
+// do dia não chega, ou quando ela vem sem a chave. Campo vazio nunca manda (um
+// aparelho que abriu antes da leitura não apaga a meta dos outros); com a meta
+// lida, manda só se mudou; sem ela, manda o que foi digitado. Antes comparava
+// com o PADRÃO: o 2.530 digitado com a meta não lida era descartado calado e o
+// campo voltava vazio (PPCP, 21/10/2026: "sumiu a meta… mas digitei").
+function _metaUepEnviar(mu, lida){
+  const v=Math.round(Number(mu)||0);
+  if(!(v>0)) return null;
+  const l=Number(lida)>0?Math.round(Number(lida)):null;
+  return v!==l?v:null;
+}
+// A linha embaixo do campo: de onde vem a meta que vale agora. `uep` é o
+// PONTOS_DIA.uep — null só enquanto a leitura do dia não chegou; chegou sem a
+// META_UEP é outro caso, e diz isso (campo vazio sozinho não separa os dois).
+function _metaUepEstado(lida, uep, leitura){
+  const pad=fmtN(UEP_META_PADRAO);
+  if(Number(lida)>0) return { txt:`lida da planilha: ${fmtN(Number(lida))} UEP`, aviso:false };
+  if(uep===null) return { txt:`${leitura} — até lá vale o padrão ${pad}`, aviso:true };
+  return { txt:`a leitura do dia veio SEM a META_UEP — vale o padrão ${pad}; digite e salve para gravar`, aviso:true };
+}
 function openCfg(){
   document.getElementById('c-empresa').value=CFG.empresa;
   document.getElementById('c-unidade').value=CFG.unidade;
@@ -11293,6 +11315,8 @@ function openCfg(){
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
   { const mu=document.getElementById('c-meta-uep');
     if(mu){ mu.value=Number(PONTOS_DIA.metaUep)>0?String(PONTOS_DIA.metaUep):'';
+      const st=_metaUepEstado(PONTOS_DIA.metaUep, PONTOS_DIA.uep, _pontosEstadoTxt(true)), se=document.getElementById('c-meta-uep-st');
+      if(se){ se.textContent=st.txt; se.style.color=st.aviso?'var(--warn)':'var(--txt2)'; }
       const h=()=>{ const v=_pgSimNum(mu.value)||UEP_META_PADRAO; const e=document.getElementById('c-meta-uep-h');
         if(e) e.textContent=`≈ ${fmtN(Math.round(v*60/UEP_MIN_DIA))} UEP/h · ${fmtN(v)} UEP em ${UEP_MIN_DIA} min`; };
       mu.oninput=h; h(); } }
@@ -11366,12 +11390,10 @@ function saveCfg(){
     CFG.metaDiaManual=(autoAtual===0 || novaMeta!==autoAtual);
     CFG.metaDiaManualData=hojeStr();
   }
-  // Meta de UEP: só vai à planilha quando o gestor MUDOU o valor — campo vazio
-  // ou igual ao que já vale não manda nada (um aparelho que abriu antes de ler a
-  // config não pode apagar a meta dos outros). Voltar ao padrão = digitar 2530 (base MADERO).
+  // Meta de UEP: a regra de quando ela vai à planilha mora no _metaUepEnviar.
+  // Voltar ao padrão = digitar 2530 (base MADERO).
   { const mu=_pgSimNum((document.getElementById('c-meta-uep')||{}).value);
-    const atual=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
-    _metaUepNova=(mu>0&&Math.round(mu)!==Math.round(atual))?Math.round(mu):null;
+    _metaUepNova=_metaUepEnviar(mu, PONTOS_DIA.metaUep);
     if(_metaUepNova) PONTOS_DIA.metaUep=_metaUepNova; }
   CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
   CFG.turnoInicio=document.getElementById('c-t0').value;
