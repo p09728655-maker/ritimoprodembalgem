@@ -48,6 +48,13 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   plástico, 77 trocas, 4,2 min, 45 em até 4 min. Nas duas, a 2ª metade do
   período ficou **dentro da variação** da 1ª (produto +1,8 min com ±1,9;
   plástico +0,7 com ±1,0): não dá para dizer que melhorou nem que piorou.
+- **A capa impressa da GESTÃO DE PERDAS cabe com o plano de ação cheio.**
+  Com 6 itens no plano (o máximo: as 5 maiores causas + o tipo genérico), o
+  quadro passava da folha 1 desde a v7.152.0 e a capa saía com a folha 1 só
+  com o cabeçalho; com uma parada em andamento junto, pior. Agora sai menos
+  espaço entre as linhas do plano, de OUTROS e de ANOMALIAS e sob os títulos
+  — nenhuma fonte mudou. Medido com as fontes do papel: o pior caso (6 itens
+  + parada em andamento) termina em 712 px de ~718.
 - Nada no `.gs`.
 
 ---

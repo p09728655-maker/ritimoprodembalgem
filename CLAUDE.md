@@ -1480,12 +1480,18 @@ via Google Apps Script (JSONP).
     tiram ~60px de **ar** da capa (nenhum número, nenhuma fonte de leitura).
     Nada disso vale no retrato, e o teste falha se alguma regra da paisagem
     escapar do escopo `.deitado`.
-    - ⚠ **A "folga para o 6º item do plano" NÃO existe com as fontes do papel**
-      (medido em 22/10/2026, Chromium com Barlow/IBM Plex carregadas, paradas
-      reais de 17/09–22/10): com 5 itens o quadro termina em **703 px** dos
-      ~718 da folha; com 6, em **725** — a capa vai para a folha 2, e já era
-      assim na v7.152.0. Medição com as fontes bloqueadas dá ~25 px a menos e
-      engana. Não corrigido (fora do pedido); medir SEMPRE com as fontes.
+    - ⚠ **A "folga para o 6º item do plano" NÃO existia com as fontes do
+      papel** (medido em 22/10/2026, Chromium com Barlow/IBM Plex carregadas,
+      paradas reais de 17/09–22/10): 6 itens = **725 px** e 6 itens + uma
+      parada em andamento (5ª linha das ANOMALIAS) = **746 px**, para ~718 de
+      folha — a capa ia para a folha 2, já na v7.152.0. **Corrigido na
+      v7.153.0 (PPCP: *"corrige a capa com 6 itens"*)** com mais três regras
+      de ar no `.deitado`: linha do plano `2px` (era 3,5), linha de OUTROS e
+      ANOMALIAS `2.5px` (era 3,5) e título das células `margin-bottom:5px`
+      (era 7). Medido depois: 5 itens 672 · 5 + aberta 693 · 6 itens 691 ·
+      **6 + aberta 712** — todos na folha 1. 6 é o máximo do plano (TOP 5 +
+      o tipo genérico). Medição com as fontes bloqueadas dá ~25 px a menos e
+      engana: medir SEMPRE com as fontes. O teste prende as três regras.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
 - **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo

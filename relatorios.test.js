@@ -1891,6 +1891,14 @@ ok('nenhum tamanho de página fixo dentro do documento compartilhado',
 const _perdas = pega('async function gerarRelatorioPerdas(');
 const _paradas = pega('async function gerarRelatorioParadas(');
 ok('GESTÃO DE PERDAS imprime deitado', /_rpDocParadas\(`Gestão de Perdas[^`]*`,\s*true\)/.test(_perdas), true);
+// A capa tem de caber na folha 1 com o plano CHEIO (6 itens: TOP 5 + o tipo
+// genérico) e uma parada em andamento (5ª linha das ANOMALIAS). Medido em
+// 22/10/2026 com as fontes do papel: 746 px para ~718 sem as três regras
+// abaixo; 712 com elas. Mexeu numa delas? Medir a capa de novo, com as fontes.
+ok('a capa deitada tira o ar que o 6º item do plano precisa',
+   [/\n  \.deitado \.pgq-plano tbody td\{padding:2px 8px\}/.test(src),
+    /\n  \.deitado \.pgq-l\{padding:2\.5px 0\}/.test(src),
+    /\n  \.deitado \.pgq-cel-ttl\{margin-bottom:5px\}/.test(src)], [true, true, true]);
 ok('PARADAS continua em pé', /_rpDocParadas\(`Relatório de Paradas[^`]*`\)/.test(_paradas), true);
 // A compactação da capa deitada não pode vazar para o retrato: toda regra da
 // paisagem é escopada por .deitado.

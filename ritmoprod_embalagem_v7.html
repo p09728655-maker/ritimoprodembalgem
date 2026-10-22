@@ -18116,8 +18116,14 @@ ${_RP_HEADER_CSS}
      juntos na folha 1 — senão o quadro pula para a folha 2 e a 1 sai quase em
      branco, que foi o que a primeira tentativa de paisagem produziu.
      Medido: 756px de conteúdo para 703px de folha. O que segue tira ~60px de
-     ar da CAPA (nenhum número, nenhuma fonte de leitura), com folga para o 6º
-     item do plano de ação. Nada aqui vale no retrato. ── */
+     ar da CAPA (nenhum número, nenhuma fonte de leitura). Nada aqui vale no
+     retrato.
+     ⚠ A folga para o 6º item NÃO existia com as fontes do papel carregadas
+     (medido em 22/10/2026: 6 itens = 725 px, e 6 itens + uma parada em
+     andamento — 5ª linha nas ANOMALIAS — = 746 px, para ~718 de folha). As
+     três últimas regras deste bloco (linha do plano, linha de OUTROS e
+     ANOMALIAS, título das células) tiram mais ~34 px de ar: o pior caso cai
+     para 712 px. Medir SEMPRE com as fontes: bloqueadas, dão ~25 px a menos. ── */
   .deitado .rp-header{margin-bottom:7px;padding:6px 16px}
   .deitado .pg-abre{padding:9px 14px}
   .deitado .pgq-top{padding:7px 13px}
@@ -18132,7 +18138,9 @@ ${_RP_HEADER_CSS}
   .deitado .pgq-smed-nota,.deitado .pgq-smed-mt{display:none}
   .deitado .pgq-plano-band{padding:6px 13px}
   .deitado .pgq-plano thead th{padding:4px 8px}
-  .deitado .pgq-plano tbody td{padding:3.5px 8px}
+  .deitado .pgq-plano tbody td{padding:2px 8px}
+  .deitado .pgq-l{padding:2.5px 0}
+  .deitado .pgq-cel-ttl{margin-bottom:5px}
   /* Deitado, a grade do dia a dia tem largura de sobra: 5 cartões de pior dia
      numa linha ficavam com o dobro do espaço que o texto precisa. */
   .deitado .pg-smed-kpis{grid-template-columns:repeat(6,1fr)}
