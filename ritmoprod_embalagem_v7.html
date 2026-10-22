@@ -249,6 +249,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pgq-tend.g{background:rgba(76,175,80,.12);color:var(--ok)}
 #sec-perdas .pgq-tend.o{background:rgba(255,152,0,.12);color:var(--warn)}
 #sec-perdas .pgq-tend.r{background:rgba(244,67,54,.12);color:var(--red)}
+#sec-perdas .pgq-tend.n{background:var(--elevated);color:var(--txt2)}
 #sec-perdas .pgq-seta{font-size:22px;line-height:1;font-weight:700}
 #sec-perdas .pgq-smed-l{display:grid;grid-template-columns:86px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
 #sec-perdas .pgq-smed-l.vazio{display:block;font-size:12.5px;color:var(--txt2)}
@@ -294,6 +295,8 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pg-mes-per{font-family:var(--font-d);font-size:10.5px;font-weight:400;color:var(--txt2);letter-spacing:.6px;margin-top:3px}
 #sec-perdas .pg-mes .v-ok{color:var(--ok);font-weight:700}
 #sec-perdas .pg-mes .v-red{color:var(--red);font-weight:700}
+#sec-perdas .pg-causas-ttl{margin-top:18px}
+#sec-perdas .pg-causas-tot td{border-top:1px solid var(--border)}
 #sec-perdas .pg-vazio,#sec-perdas .rp-note{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.55;margin-top:8px}
 /* O diagnóstico não cabe no quadro, mas cabe na tela: é a frase que o gestor
    leva para a reunião. No PDF ele já tem seção própria. */
@@ -3363,7 +3366,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.153.0';
+const APP_VER   = '7.154.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -15287,7 +15290,10 @@ function _pgDias(porDia, diasTrab, horasProd){
       data:d, min:o.min||0, minNP:o.minNP||0, perd:o.perd||0, qtd:o.qtd||0,
       trabalhado:!!trab[d],
       dispon: temBase ? Math.max(0,(baseMin-(o.minNP||0))/baseMin*100) : null,
-      causa: tps.length?tps[0].tipo:'', causaMin: tps.length?tps[0].min:0
+      causa: tps.length?tps[0].tipo:'', causaMin: tps.length?tps[0].min:0,
+      // minutos NÃO programados de cada tipo no dia — o O QUE MUDOU soma isto
+      // nas mesmas janelas e nos mesmos dias do minutos / 1.000 cx
+      tiposNP: tps.reduce((m,t)=>{ m[t.tipo]=t.min; return m; }, {})
     };
   }).sort((a,b)=>RP_PARADAS.dataNum(a.data)-RP_PARADAS.dataNum(b.data));
 }
@@ -15436,56 +15442,70 @@ function _pgMetaSmed(durs, metaBase){
   return out;
 }
 
-// ── Tendência do tempo de troca ("melhorou?") ───────────────────────────────
-// PPCP, 22/10/2026, lendo "40% já na meta" no quadro como melhora: a tela não
-// dizia se a troca está ficando mais rápida. NÃO é primeira × última semana,
-// como a seta da disponibilidade: o tempo de UMA troca varia muito (desvio de
-// ~5 min na troca de produto, medido em 17/09–22/10/2026) e a semana da ponta
-// costuma ser pedaço — ali a S38 tinha 8 trocas a 4,4 min contra 8,1 da S43, e
-// a seta diria PIORA +3,7 min. Aqui as trocas do período, em ordem de data e
-// hora, são partidas ao meio (com n ímpar a do meio fica fora) e as duas médias
-// comparadas. Direção só quando a diferença passa de PG_SMED_TEND_EP
-// erros-padrão; abaixo disso é DENTRO DA VARIAÇÃO — o número vai junto, mas a
-// seta não afirma o que o dado não sustenta. Menos de PG_SMED_AMOSTRA trocas em
-// cada metade → null (a mesma amostra mínima da escada da meta).
-// Tempo MENOR é melhora: a seta segue o número (↘ = caiu), a palavra e a cor
-// dizem se isso é bom. Recebe {dia (aaaammdd), ini (minuto), d (duração)}.
-function _pgTendSmed(trocas){
-  const t=(trocas||[]).slice().sort((a,b)=>a.dia-b.dia||a.ini-b.ini);
-  const h=Math.floor(t.length/2);
-  if(h<PG_SMED_AMOSTRA) return null;
-  const A=t.slice(0,h), B=t.slice(t.length-h);
-  const med=a=>a.reduce((s,x)=>s+x.d,0)/a.length;
-  const vari=a=>{ const m=med(a); return a.reduce((s,x)=>s+(x.d-m)*(x.d-m),0)/(a.length-1); };
+// ── "Melhorou?" — 1ª × 2ª metade, a régua ÚNICA do quadro ─────────────────
+// Vale para o tempo de troca (SMED, por troca) e para a disponibilidade
+// (EVOLUÇÃO, por dia trabalhado). Os valores, já em ordem, são partidos ao
+// meio — com n ímpar o do meio fica fora — e as duas médias comparadas.
+// Direção só quando a diferença passa de PG_SMED_TEND_EP erros-padrão (Welch,
+// variância amostral); abaixo disso é DENTRO DA VARIAÇÃO — o número vai junto,
+// mas a seta não afirma o que o dado não sustenta.
+//   ⚠ Primeira × última SEMANA foi medido e descartado (22/10/2026): uma troca
+//     varia muito da outra (desvio de ~5 min) e a semana da ponta costuma ser
+//     pedaço — no SMED a seta diria PIORA +3,7 min onde o dado dá +1,8 com
+//     ±1,9, e na EVOLUÇÃO dizia MELHORA +0,7 p.p. com as semanas do meio a
+//     86–87% e a última de volta aos 83%.
+// A direção é decidida com os números que vão para a LINHA (médias e limite
+// com uma casa): com o cru, "PIORA +3,2 min" saía ao lado de "±3,2". O `piso`
+// é o menor limite aceito — a casa que a tela mostra, ou o ruído conhecido.
+// `min` = valores mínimos em CADA metade; abaixo disso, null (não diz nada).
+function _pgMetades(vals, min, piso){
+  const v=(vals||[]).filter(x=>x!=null&&isFinite(x));
+  const h=Math.floor(v.length/2);
+  if(h<Math.max(2, min||0)) return null;
+  const A=v.slice(0,h), B=v.slice(v.length-h);
+  const med=a=>a.reduce((s,x)=>s+x,0)/a.length;
+  const vari=a=>{ const m=med(a); return a.reduce((s,x)=>s+(x-m)*(x-m),0)/(a.length-1); };
   const de=med(A), ate=med(B), delta=ate-de;
-  // Piso de 0,1 min — a casa que a tela mostra: abaixo disso a diferença sai
-  // "0,0" e as duas médias podem sair iguais com uma casa, e trocas todas
-  // iguais (variância zero) não podem virar "PIORA +0,0 min".
-  const lim=Math.max(0.1, PG_SMED_TEND_EP*Math.sqrt(vari(A)/h+vari(B)/h));
-  // A direção é decidida com os números que vão para a LINHA (médias e limite
-  // com uma casa): com o cru, "PIORA +3,2 min" saía ao lado de "±3,2" — a
-  // palavra contradizendo os números que ela mesma mostra.
-  const limR=Math.max(0.1, Math.round(lim*10)/10);
+  const lim=Math.max(piso||0, PG_SMED_TEND_EP*Math.sqrt(vari(A)/h+vari(B)/h));
+  const limR=Math.max(piso||0, Math.round(lim*10)/10);
   const difR=(Math.round(ate*10)-Math.round(de*10))/10;
-  const melhorou=difR<-limR, piorou=difR>limR;
-  return {de, ate, delta, lim, limR, n:h, fora:t.length-2*h, melhorou, piorou,
-          diaA:[A[0].dia, A[h-1].dia], diaB:[B[0].dia, B[h-1].dia],
-          seta:melhorou?'↘':(piorou?'↗':'→'), st:melhorou?'g':(piorou?'r':'n')};
+  return {de, ate, delta, lim, limR, difR, n:h, fora:v.length-2*h, subiu:difR>limR, caiu:difR<-limR};
 }
 
-// O TEXTO do "melhorou?", um lugar só: o quadro (tela e capa) e a seção 5 do
-// papel escrevem a mesma coisa. O sinal sai do valor JÁ ARREDONDADO — do delta
-// cru, −0,04 saía "−0,0 min".
+// O texto da diferença, um lugar só: sai das médias EXIBIDAS (6,0 → 7,9 é
+// +1,9, nunca +1,8 do cru), e o sinal do valor já arredondado (−0,04 saía
+// "−0,0"). Com o piso do limite, a direção nunca aparece ao lado de "0,0".
+function _pgDifTxt(de, ate, un){
+  const d10=Math.round(de*10), a10=Math.round(ate*10), r=(a10-d10)/10;
+  return {de:fmt1(d10/10), ate:fmt1(a10/10), dif:(r>0?'+':r<0?'−':'')+fmt1(Math.abs(r))+' '+un};
+}
+
+// ── Tendência do tempo de troca ("melhorou?" do SMED) ───────────────────────
+// PPCP, 22/10/2026, lendo "40% já na meta" no quadro como melhora. As trocas
+// do período em ordem de data e hora pela régua das metades; menos de
+// PG_SMED_AMOSTRA trocas em cada metade → null (a mesma amostra mínima da
+// escada da meta). Piso de 0,1 min: trocas todas iguais (variância zero) não
+// viram "PIORA +0,0 min". Tempo MENOR é melhora: a seta segue o número (↘ =
+// caiu), a palavra e a cor dizem se isso é bom.
+// Recebe {dia (aaaammdd), ini (minuto), d (duração)}.
+function _pgTendSmed(trocas){
+  const t=(trocas||[]).slice().sort((a,b)=>a.dia-b.dia||a.ini-b.ini);
+  const M=_pgMetades(t.map(x=>x.d), PG_SMED_AMOSTRA, 0.1);
+  if(!M) return null;
+  const h=M.n, melhorou=M.caiu, piorou=M.subiu;
+  return Object.assign(M, {melhorou, piorou,
+          diaA:[t[0].dia, t[h-1].dia], diaB:[t[t.length-h].dia, t[t.length-1].dia],
+          seta:melhorou?'↘':(piorou?'↗':'→'), st:melhorou?'g':(piorou?'r':'n')});
+}
+
+// O TEXTO do "melhorou?" do SMED, um lugar só: o quadro (tela e capa) e a
+// seção 5 do papel escrevem a mesma coisa.
 function _pgTendSmedFmt(t){
   const dm=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
-  // A diferença é a das médias EXIBIDAS (6,0 → 7,9 é +1,9, nunca +1,8): a
-  // conta que se lê na linha tem de fechar. Com o piso de 0,1 do limite, a
-  // direção nunca aparece ao lado de "0,0".
-  const d10=Math.round(t.de*10), a10=Math.round(t.ate*10), r=(a10-d10)/10;
+  const D=_pgDifTxt(t.de, t.ate, 'min');
   return {
     rot: t.melhorou?'MELHORA':t.piorou?'PIORA':'DENTRO DA VARIAÇÃO',
-    de: fmt1(d10/10), ate: fmt1(a10/10),
-    dif: (r>0?'+':r<0?'−':'')+fmt1(Math.abs(r))+' min',
+    de: D.de, ate: D.ate, dif: D.dif,
     lim: '±'+fmt1(t.limR!=null?t.limR:t.lim),
     faixaA: dm(t.diaA[0])+' a '+dm(t.diaA[1]),
     faixaB: dm(t.diaB[0])+' a '+dm(t.diaB[1])
@@ -15626,20 +15646,35 @@ function _pgSobrepostas(paradas){
   return out;
 }
 
-// ── Tendência da disponibilidade (primeira × última semana) ─────────────────
-// Mora numa função só porque DOIS lugares dependem dela: a seta ↗/↘ do quadro
-// e a linha "ESTAMOS MELHORANDO?" do diagnóstico. Duas cópias e a próxima
-// mexida faria a seta apontar para um lado e o texto dizer o contrário.
-// Só entram semanas com base (dia trabalhado) — semana "sem base" não tem
-// disponibilidade e não pode definir tendência.
-function _pgTendencia(semanas){
-  const s=(semanas||[]).filter(x=>x.dispon!=null);
-  if(s.length<2) return null;
-  const d=s[s.length-1].dispon-s[0].dispon;
-  // Meio ponto percentual é ruído de arredondamento, não melhora: abaixo disso
-  // a leitura é ESTÁVEL, e o quadro mostra "→" em vez de fingir direção.
-  return {delta:d, subiu:d>0.5, caiu:d<-0.5, de:s[0], ate:s[s.length-1],
-          seta:d>0.5?'↗':(d<-0.5?'↘':'→'), st:d>0.5?'g':(d<-0.5?'r':'o')};
+// ── Tendência da disponibilidade (1ª × 2ª metade dos dias trabalhados) ──────
+// Mora numa função só porque DOIS lugares dependem dela: a seta do quadro e a
+// linha "ESTAMOS MELHORANDO?" do diagnóstico. Duas cópias e a próxima mexida
+// faria a seta apontar para um lado e o texto dizer o contrário.
+// Era primeira × última SEMANA, com meio ponto de folga: em 23/09–22/10/2026
+// dizia MELHORA +0,7 p.p. (82,3% → 83,0%) com as semanas do meio a 86–87% e a
+// última de volta ao nível de setembro (PPCP: "como saber a partir de quando
+// melhorou?"). Agora é a régua das metades (_pgMetades), a MESMA do SMED, sobre
+// a disponibilidade de cada DIA TRABALHADO (dia sem produção não tem base).
+// O meio ponto vira o piso do limite. Menos de PG_TEND_MIN_DIAS dias em cada
+// metade → null.
+const PG_TEND_MIN_DIAS = 4;    // dias trabalhados em cada metade
+const PG_TEND_PISO_PP  = 0.5;  // p.p.: abaixo disso é arredondamento, não tendência
+function _pgTendencia(dias){
+  const d=(dias||[]).filter(x=>x.dispon!=null)
+    .slice().sort((a,b)=>RP_PARADAS.dataNum(a.data)-RP_PARADAS.dataNum(b.data));
+  const M=_pgMetades(d.map(x=>x.dispon), PG_TEND_MIN_DIAS, PG_TEND_PISO_PP);
+  if(!M) return null;
+  const h=M.n;
+  return Object.assign(M, {diaA:[d[0].data, d[h-1].data], diaB:[d[d.length-h].data, d[d.length-1].data],
+          seta:M.subiu?'↗':(M.caiu?'↘':'→'), st:M.subiu?'g':(M.caiu?'r':'n')});
+}
+// O texto dela (quadro e diagnóstico): médias, diferença e faixas exibidas.
+function _pgTendFmt(t){
+  const D=_pgDifTxt(t.de, t.ate, 'p.p.');
+  const dm=s=>String(s||'').slice(0,5);
+  return {rot: t.subiu?'MELHORA':t.caiu?'PIORA':'DENTRO DA VARIAÇÃO',
+          de: D.de+'%', ate: D.ate+'%', dif: D.dif, lim: '±'+fmt1(t.limR),
+          faixaA: dm(t.diaA[0])+' a '+dm(t.diaA[1]), faixaB: dm(t.diaB[0])+' a '+dm(t.diaB[1])};
 }
 
 // ── ANOMALIAS DE APONTAMENTO ────────────────────────────────────────────────
@@ -15740,11 +15775,11 @@ function _pgPlano(top, outros, metas){
 // ── Diagnóstico PPCP (resumo executivo da camada nova) ──────────────────────
 // Cada linha só afirma o que o período sustenta. Sem causa nomeada no topo, o
 // PROBLEMA PRINCIPAL sai "CAUSA NÃO IDENTIFICADA" — nunca um palpite.
-function _pgDiagnostico({st, top, outros, rec, fluxo, semanas}){
+function _pgDiagnostico({st, top, outros, rec, fluxo, dias}){
   const t0=(top||[])[0];
   const anormal=(top||[]).filter(a=>a.classe==='ANORMAL')[0];
   const prox=(top||[]).filter(a=>a!==t0)[0];
-  const tend=_pgTendencia(semanas);   // a MESMA que desenha a seta do quadro
+  const tend=_pgTendencia(dias);   // a MESMA que desenha a seta do quadro
   return {
     problema: t0 ? (t0.classe==='IDENTIFICAR'
         ? `${t0.tipo} — CAUSA NÃO IDENTIFICADA (${_fmtMinPar(t0.min)}, ${t0.pct}% do tempo parado)`
@@ -15808,11 +15843,15 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
     <div class="pgq-eixo">escala a partir de ${PISO}% · tracejado = meta ${PG_META_DISP}%</div>`
     :'<div class="pgq-na">Sem semana com dia trabalhado no período.</div>';
 
-  const setaHtml=tend?`<div class="pgq-tend ${tend.st}">
+  // A seta é a régua das metades dos dias trabalhados (_pgTendencia), não a
+  // 1ª × última barra acima: as barras mostram QUANDO, a seta diz se a 2ª
+  // metade do período ficou de fato diferente da 1ª.
+  const TF=tend?_pgTendFmt(tend):null;
+  const setaHtml=tend?`<div class="pgq-tend ${tend.st}" title="${e(`Dias trabalhados do período partidos ao meio (${tend.n} em cada metade): 1ª metade ${TF.faixaA}, 2ª metade ${TF.faixaB}. Diferença menor que ${TF.lim} p.p. (2 erros-padrão) é variação de um dia para outro, não tendência.`)}">
       <span class="pgq-seta">${tend.seta}</span>
-      <span>${tend.subiu?'MELHORA':tend.caiu?'PIORA':'ESTÁVEL'} <b>${tend.subiu?'+':tend.caiu?'−':''}${fmt1(Math.abs(tend.delta))} p.p.</b> (${fmt1(tend.de.dispon)}% → ${fmt1(tend.ate.dispon)}%)</span>
+      <span>${TF.rot} <b>${TF.dif}</b>${tend.st==='n'?` (${TF.lim})`:''} · 1ª metade ${TF.de} → 2ª metade ${TF.ate}</span>
     </div>`
-    :'<div class="pgq-na">São precisas 2 semanas com dia trabalhado para dizer se melhorou.</div>';
+    :`<div class="pgq-na">São precisos ${PG_TEND_MIN_DIAS*2} dias trabalhados para dizer se melhorou.</div>`;
 
   // SMED — média do período, a meta ao lado e o ganho de cada um. O ganho vem
   // do mesmo _pgRecuperacao da seção 8; o quadro só procura o item pelo tipo.
@@ -15885,8 +15924,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
       <td class="td-mono" style="color:#a0aec0">${e(a.prazo)}</td>
       <td class="td-mono">${e(a.meta)}</td>
       <td><span class="pg-sinal r">ABERTO</span></td></tr>`).join('')}</tbody></table>
-    <div class="rp-note so-tela">Responsável e prazo: <b>a definir</b> (não vêm do dado)</div>
-    <div class="rp-note so-papel">RECOMENDAÇÃO. Responsável e prazo <b>não existem no dado</b> — saem "A definir" de propósito: preencher com um nome plausível seria inventar compromisso de terceiro. O status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.</div>`
+    <div class="rp-note">Responsável e prazo: <b>a definir</b> (não vêm do dado)</div>`
     :'<div class="pg-vazio">Sem causa não programada no período — nada a planejar.</div>';
 
   return `<div class="pgq">
@@ -15995,9 +16033,10 @@ function _pgPorJanela(dias, realByDay, grao){
     if(!(cx>0)){ if((d.min||0)>0){ minFora+=d.min||0; diasFora++; } return; }
     const j=_pgJanelaDe(d.data, grao); if(!j) return;
     if(!M[j.chave]) M[j.chave]={chave:j.chave, lbl:j.lbl, cx:0, min:0, minNP:0, dias:0,
-                                de:null, ate:null, _de:'', _ate:''};
+                                de:null, ate:null, _de:'', _ate:'', tipos:{}};
     const m=M[j.chave];
     m.min+=d.min||0; m.minNP+=d.minNP||0;
+    Object.keys(d.tiposNP||{}).forEach(t=>{ m.tipos[t]=(m.tipos[t]||0)+d.tiposNP[t]; });
     m.cx+=cx; m.dias++;
     // A lista de dias não é garantidamente ordenada: o extremo sai da chave
     // ordenável, não da ordem em que o dia apareceu.
@@ -16007,15 +16046,37 @@ function _pgPorJanela(dias, realByDay, grao){
   const lista=Object.keys(M).sort().map(k=>M[k])
     .map(m=>Object.assign(m,{mil:_pgMinPor1000(m.min,m.cx), milNP:_pgMinPor1000(m.minNP,m.cx),
                              faixa:_pgFaixaDias(m.de, m.ate)}));
-  // A variação é contra a janela ANTERIOR DA LISTA; queda é melhora.
+  // A variação é contra a janela ANTERIOR DA LISTA; queda é melhora. Sai dos
+  // valores EXIBIDOS (uma casa): 51,1 → 40,0 é −11,1, nunca o −11,2 do cru —
+  // a conta que se lê na linha tem de fechar. E vai também em % do anterior
+  // (PPCP, 22/10/2026: "essa variação é percentual?" — não era, e não dizia).
+  const r1=v=>v==null?null:Math.round(v*10)/10;
   lista.forEach((m,i)=>{
     const ant=i>0?lista[i-1]:null;
-    m.delta   = ant&&ant.mil!=null&&m.mil!=null     ? Math.round((m.mil-ant.mil)*10)/10     : null;
-    m.deltaNP = ant&&ant.milNP!=null&&m.milNP!=null ? Math.round((m.milNP-ant.milNP)*10)/10 : null;
-    m.bom     = m.deltaNP!=null ? m.deltaNP<0 : null;
+    m.delta   = ant&&ant.mil!=null&&m.mil!=null     ? Math.round((r1(m.mil)-r1(ant.mil))*10)/10     : null;
+    m.deltaNP = ant&&ant.milNP!=null&&m.milNP!=null ? Math.round((r1(m.milNP)-r1(ant.milNP))*10)/10 : null;
+    m.deltaNPpct = m.deltaNP!=null&&r1(ant.milNP)>0 ? m.deltaNP/r1(ant.milNP)*100 : null;
+    m.bom     = m.deltaNP!=null&&m.deltaNP!==0 ? m.deltaNP<0 : null;
   });
-  return {lista, minFora, diasFora};
+  // ── O QUE MUDOU: o NÃO PROGRAMADO aberto por causa, nas MESMAS janelas e
+  // nos MESMOS dias (PPCP: "como saber a partir de quando melhorou e onde
+  // melhorou?"). As PG_CAUSAS_N causas de mais minutos no período, em
+  // min/1.000 cx de cada janela; o resto vai em `demais`, e causas + demais =
+  // o NÃO PROG. / 1.000 CX da linha. `melhor` = a janela de menor valor da
+  // causa (só com 2+ janelas).
+  const tot={};
+  lista.forEach(m=>Object.keys(m.tipos).forEach(t=>{ tot[t]=(tot[t]||0)+m.tipos[t]; }));
+  const nomes=Object.keys(tot).filter(t=>tot[t]>0).sort((a,b)=>tot[b]-tot[a]).slice(0,PG_CAUSAS_N);
+  const causas=nomes.map(t=>{
+    const mil=lista.map(m=>_pgMinPor1000(m.tipos[t]||0, m.cx));
+    let melhor=null;
+    if(lista.length>1) mil.forEach((v,i)=>{ if(v!=null&&(melhor==null||v<mil[melhor])) melhor=i; });
+    return {tipo:t, min:tot[t], mil, melhor};
+  });
+  const demais=lista.map(m=>_pgMinPor1000(Math.max(0,(m.minNP||0)-nomes.reduce((s,t)=>s+(m.tipos[t]||0),0)), m.cx));
+  return {lista, minFora, diasFora, causas, demais};
 }
+const PG_CAUSAS_N = 5;   // causas abertas no O QUE MUDOU (as de mais minutos no período)
 
 // ── MINUTOS DE PARADA / 1.000 CAIXAS — um desenho, duas peles ───────────────
 // O KPI nasceu só no PDF (seção 6) e o gestor pediu ele NA TELA (27/08/2026):
@@ -16040,7 +16101,7 @@ function _pgJanelaTabelaHtml(ctx, grao){
     return `<div class="rp-note">O período escolhido tem <b>${(lista.length?(G.g==='m'?'um ':'uma '):(G.g==='m'?'nenhum ':'nenhuma '))+G.um} com produção</b> — não há com o que comparar. Escolha um período maior: <b>${G.dica}</b>.</div>`;
   return `<table class="pgq-plano pg-mes"><thead><tr>
         <th>${G.col}</th><th>CAIXAS</th><th>DIAS</th><th>TEMPO PARADO</th>
-        <th>MIN / 1.000 CX</th><th>NÃO PROG. / 1.000 CX</th><th>VARIAÇÃO</th>
+        <th>MIN / 1.000 CX</th><th>NÃO PROG. / 1.000 CX</th><th>VARIAÇÃO DO NÃO PROG.</th>
       </tr></thead><tbody>${lista.map(m=>`<tr>
         <td style="font-weight:700">${e(m.lbl)}${m.faixa?`<div class="pg-mes-per">${e(m.faixa)}</div>`:''}</td>
         <td class="td-mono">${fmtN(m.cx)}</td>
@@ -16049,10 +16110,31 @@ function _pgJanelaTabelaHtml(ctx, grao){
         <td class="td-mono">${m.mil!=null?fmt1(m.mil):'—'}</td>
         <td class="td-mono" style="font-weight:700">${m.milNP!=null?fmt1(m.milNP):'—'}</td>
         <td class="td-mono ${m.bom===true?'v-ok':m.bom===false?'v-red':''}">${
-          m.deltaNP==null?'—':`${m.bom?'↓':'↑'} ${fmt1(Math.abs(m.deltaNP))} ${m.bom?'a menos':'a mais'}`}</td>
+          m.deltaNP==null?'—':m.deltaNP===0?'= 0,0 min'
+          :`${m.bom?'↓':'↑'} ${fmt1(Math.abs(m.deltaNP))} min${m.deltaNPpct!=null?` (${m.bom?'−':'+'}${Math.round(Math.abs(m.deltaNPpct))}%)`:''}`}</td>
       </tr>`).join('')}</tbody></table>
-      <div class="rp-note so-tela"><b>↓ é melhora</b> · só dias com produção${jan.diasFora>0?` · ${plural(jan.diasFora,'dia','dias')} fora (${_fmtMinPar(jan.minFora)} apontadas)`:''}</div>
-      <div class="rp-note so-papel">Cada ${G.um} do período em uma linha, com a variação do NÃO PROGRAMADO contra ${o} ${G.um} anterior — <b>↓ é melhora</b> (parou menos por caixa produzida). <b>A data embaixo do rótulo é a faixa que entrou na linha</b>: do primeiro ao último dia COM PRODUÇÃO dentro do período escolhido, e não ${o} ${G.um} inteir${o}. Minutos do mesmo <b>porDia</b> do resumo, caixas do <b>HISTÓRICO</b>. <b>Só dia trabalhado entra</b> (dia sem produção lançada não tem caixa no denominador)${jan.diasFora>0?`: ${plural(jan.diasFora,'dia ficou','dias ficaram')} de fora, com ${_fmtMinPar(jan.minFora)} de parada apontada`:''}. ${G.cap} pela metade — a ponta do período — compara um pedaço com um inteiro.</div>`;
+      <div class="rp-note"><b>↓ é melhora</b> · variação em min/1.000 cx contra ${o} ${G.um} anterior · só dias com produção${jan.diasFora>0?` · ${plural(jan.diasFora,'dia','dias')} fora (${_fmtMinPar(jan.minFora)} apontadas)`:''}</div>`;
+}
+
+// ── O QUE MUDOU — o NÃO PROGRAMADO por causa, janela a janela ───────────────
+// A resposta ao "a partir de quando melhorou e onde?" (PPCP, 22/10/2026): a
+// tabela de cima diz QUANDO o total mexeu; esta diz EM QUE CAUSA. Mesmas
+// janelas, mesmos dias e mesmas caixas da tabela de cima (as causas + demais
+// fecham com o NÃO PROG. / 1.000 CX dela). Desenho só: a conta é do
+// _pgPorJanela. Em negrito, a melhor janela de cada causa.
+function _pgCausasJanelaHtml(ctx, grao){
+  const G=PG_GRAOS[grao]?PG_GRAOS[grao]:PG_GRAOS.mes;
+  const jan=(((ctx||{}).janelas||{})[grao])||{};
+  const lista=jan.lista||[], causas=jan.causas||[];
+  if(lista.length<2||!causas.length) return '';
+  const e=_rpEsc;
+  const cel=(v,b)=>`<td class="td-mono">${v>0?(b?`<b>${fmt1(v)}</b>`:fmt1(v)):'—'}</td>`;
+  return `<div class="pgq-cel-ttl pg-causas-ttl">O QUE MUDOU <i>min não programados / 1.000 cx, por causa · ↓ é melhor · em negrito, ${G.g==='m'?'o melhor':'a melhor'} ${G.um} de cada causa</i></div>
+    <table class="pgq-plano pg-mes pg-causas"><thead><tr><th>CAUSA</th>${lista.map(m=>`<th>${e(m.lbl)}${m.faixa?`<div class="pg-mes-per">${e(m.faixa)}</div>`:''}</th>`).join('')}</tr></thead>
+    <tbody>${causas.map(c=>`<tr><td>${e(c.tipo)}</td>${c.mil.map((v,i)=>cel(v,i===c.melhor)).join('')}</tr>`).join('')}
+      <tr><td style="color:#a0aec0">demais causas</td>${(jan.demais||[]).map(v=>cel(v,false)).join('')}</tr>
+      <tr class="pg-causas-tot"><td style="font-weight:700">NÃO PROG. TOTAL</td>${lista.map(m=>`<td class="td-mono" style="font-weight:700">${m.milNP!=null?fmt1(m.milNP):'—'}</td>`).join('')}</tr>
+    </tbody></table>`;
 }
 
 // Não há conta aqui: os dois por 1.000 cx vêm prontos do _pgContexto.
@@ -16084,7 +16166,8 @@ function _pgMin1000Html(ctx){
     <div class="kpi-val">${cx>0?fmtN(cx):'—'}</div>
     <div class="kpi-sub">base da comparação${lista.length?` · ${lista.length} ${lista.length>1?G.varios:G.um} no período`:''}${faixaTot?`<br>dias com produção: ${_rpEsc(faixaTot)}`:''}</div></div>
 </div>
-${mesHtml}`;
+${mesHtml}
+${_pgCausasJanelaHtml(ctx, grao)}`;
 }
 
 // ── DESENHO da camada GESTÃO DAS PERDAS ─────────────────────────────────────
@@ -16102,6 +16185,18 @@ function _pgSecaoHtml(ctx){
   const corDisp=v=>v==null?'#a0aec0':(v>=PG_META_DISP?'#4CAF50':v>=PG_META_DISP-5?'#FF9800':'#F44336');
   const ex=_pgExtremos(dias);
   const marca=(d,campo)=> (ex[campo] && ex[campo].data===d.data) ? ' pg-mark' : '';
+
+  // ── ANEXO — COMO LER (PPCP, 22/10/2026: "na impressão tem muito coisa
+  // escrita" — 739 das 2.345 palavras do papel estavam em 13 notas). No corpo,
+  // cada nota é UMA linha com a conclusão ou a legenda; o "como o número sai"
+  // vai para o fim, numa folha só. Nenhum número sai do corpo — só a
+  // explicação muda de lugar. `anexo()` devolve '' para entrar no meio do
+  // template; texto repetido (as duas trocas do SMED) entra uma vez.
+  const AX={};
+  const anexo=(ord, tit, txt)=>{ if(!AX[ord]) AX[ord]={tit, txt:[]}; if(!AX[ord].txt.includes(txt)) AX[ord].txt.push(txt); return ''; };
+  const anexoHtml=()=>{ const ks=Object.keys(AX).map(Number).sort((a,b)=>a-b);
+    return ks.length?`<div class="rp-sec-ttl pg-anexo-ttl">${soZinho?'ANEXO — COMO LER':'COMO LER A CAMADA DE GESTÃO'}</div>
+<div class="pg-anexo">${ks.map(k=>`<p><b>${AX[k].tit}.</b> ${AX[k].txt.join(' ')}</p>`).join('')}</div>`:''; };
 
   // 1 ▸ PARETO DIÁRIO -------------------------------------------------------
   const linhasDia=(dias||[]).filter(d=>d.qtd>0||d.trabalhado).map(d=>`<tr>
@@ -16136,7 +16231,7 @@ function _pgSecaoHtml(ctx){
       <td>${s.dispon==null?'<span style="color:#a0aec0">sem base</span>':`<span class="pg-sinal ${s.status}">${s.status==='g'?'DENTRO':s.status==='o'?'ATENÇÃO':'ABAIXO'}</span>`}</td>
       <td class="td-mono" style="color:${s.perd>0?'#c62828':'#bbb'}">${s.perd>0?fmtN(s.perd):'—'}</td>
     </tr>`).join('')}</tbody></table>
-    <div class="rp-note">Semana = segunda 00:00 → domingo 23:59, a MESMA janela do relatório semanal. A base de cada semana são os dias trabalhados dela, então a soma das semanas fecha com a disponibilidade do resumo. Semana sem dia trabalhado no período sai "sem base".</div>`
+    <div class="rp-note">Semana = segunda a domingo · só dias trabalhados</div>${anexo(2,'2 ▸ EVOLUÇÃO DA DISPONIBILIDADE','Semana = segunda 00:00 → domingo 23:59, a MESMA janela do relatório semanal. A base de cada semana são os dias trabalhados dela, então a soma das semanas fecha com a disponibilidade do resumo. Semana sem dia trabalhado no período sai "sem base".')}`
     :'<div class="pg-vazio">Sem dias trabalhados no período para montar a evolução.</div>';
 
   // 3 ▸ TOP CAUSAS ----------------------------------------------------------
@@ -16152,7 +16247,7 @@ function _pgSecaoHtml(ctx){
       <td class="td-mono">${_fmtMinPar(t.med)}</td>
       <td class="td-mono" style="color:#c62828">${fmtN(t.perd)}</td>
     </tr>`).join('')}</tbody></table>
-    <div class="rp-note">DADO. A classe gerencial é a 2ª camada e não altera a classificação PROGRAMADA / NÃO PROGRAMADA do relatório: <b>REDUTÍVEL</b> = troca/setup (mesmo critério do ESTUDO DE GANHO — o tempo cai, a parada não some), <b>ANORMAL</b> = não deveria ocorrer, <b>A IDENTIFICAR</b> = tipo genérico, sem causa nomeada no dado. O % usa o mesmo denominador do Pareto acima.</div>`
+    <div class="rp-note"><b>REDUTÍVEL</b> = troca/setup · <b>ANORMAL</b> = não deveria ocorrer · <b>A IDENTIFICAR</b> = tipo genérico</div>${anexo(3,'3 ▸ TOP CAUSAS','A classe gerencial é a 2ª camada e não altera a classificação PROGRAMADA / NÃO PROGRAMADA do relatório. REDUTÍVEL usa o mesmo critério do ESTUDO DE GANHO — o tempo cai, a parada não some. A IDENTIFICAR = tipo genérico, sem causa nomeada no dado. O % usa o mesmo denominador do Pareto.')}`
     :'<div class="pg-vazio">Nenhuma parada não programada no período.</div>';
 
   // 4 ▸ OUTROS --------------------------------------------------------------
@@ -16171,7 +16266,7 @@ function _pgSecaoHtml(ctx){
       ${outros.lista.map(i=>`<tr><td>${e(i.motivo)}</td><td class="td-mono">${i.qtd}</td><td class="td-mono">${_fmtMinPar(i.min)}</td><td class="td-mono">${Math.round(i.min/(outros.min||1)*100)}%</td></tr>`).join('')}
       ${outros.semMotivoMin>0?`<tr><td style="color:#6b46c1;font-weight:600">CAUSA NÃO IDENTIFICADA</td><td class="td-mono">${outros.semMotivoQtd}</td><td class="td-mono">${_fmtMinPar(outros.semMotivoMin)}</td><td class="td-mono">${Math.round(outros.semMotivoMin/(outros.min||1)*100)}%</td></tr>`:''}
     </tbody></table>
-    <div class="rp-note">ANÁLISE. Os motivos vêm do texto livre que o operador digita no app — o relatório <b>não presume causa</b>: o que veio sem motivo fica em CAUSA NÃO IDENTIFICADA. RECOMENDAÇÃO: o motivo que mais se repete merece tipo próprio na aba TIPOS_PARADA, e aí sai do balaio.</div>`
+    <div class="rp-note">RECOMENDAÇÃO: o motivo que mais se repete merece tipo próprio na aba TIPOS_PARADA.</div>${anexo(4,'4 ▸ "OUTROS"','Os motivos vêm do texto livre que o operador digita no app — o relatório não presume causa: o que veio sem motivo fica em CAUSA NÃO IDENTIFICADA. Com tipo próprio na aba TIPOS_PARADA, o motivo sai do balaio.')}`
     :`<div class="pg-vazio">Nenhuma dessas paradas tem motivo escrito — <b>CAUSA NÃO IDENTIFICADA</b> em 100% do tempo genérico. Sem o motivo no app, essa fatia não tem como ser atacada.</div>`}`
     :'<div class="pg-vazio">Nenhuma parada sob tipo genérico no período — todo o tempo parado tem causa nomeada.</div>';
 
@@ -16202,13 +16297,12 @@ function _pgSecaoHtml(ctx){
       <div style="margin-top:7px">${barra}</div>
       ${ev}
       ${s.tend?(()=>{ const F=_pgTendSmedFmt(s.tend);
-        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio${s.tend.fora?' (com número ímpar, a troca do meio fica fora)':''}: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${F.de} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${F.ate} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra`
-          // A frase da evolução semanal só sai quando o quadro dela foi impresso
-          // (ele exige 2+ semanas): citar "acima" um quadro que não está lá confunde.
-          +(s.semanas.length>1?`, e a semana da ponta costuma ser pedaço do período, por isso a evolução semana a semana acima não basta para dizer que melhorou ou piorou.`:'.')+`</div>`; })():''}
-      ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA. A meta de <b>${_pgFmtMin(s.metaBase)} min</b> foi atingida (média ${fmt1(s.med)} min), então o alvo em vigor passa a ser <b>${_pgFmtMin(s.meta)} min</b> — a média das <b>${s.metaAmostra}</b> trocas mais rápidas do período, um tempo que a equipe já fez. Não é aperto arbitrário: o degrau só desce quando o próprio desempenho o sustenta. A distribuição, as trocas dentro da meta, o excedente e o cenário de recuperação já medem contra esse alvo.</div>`
-        :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)} — a meta desce sozinha só quando o desempenho sustenta o degrau novo.</div>`:'')}
-      ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${_fmtMinPar(s.menor)} — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
+        // Uma linha: a conclusão com as datas. A régua (metades, ±, a do meio
+        // fora com nº ímpar, por que a semanal não basta) está no anexo.
+        return `<div class="rp-note" style="margin-top:6px">MELHOROU? 1ª metade (${F.faixaA}) <b>${F.de} min</b> → 2ª metade (${F.faixaB}) <b>${F.ate} min</b>: <b>${F.rot}</b> (${F.dif}${s.tend.st==='n'?`, ${F.lim} min`:''}).</div>`; })():''}
+      ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA: <b>${_pgFmtMin(s.metaBase)} min</b> atingida (média ${fmt1(s.med)}) → alvo em vigor <b>${_pgFmtMin(s.meta)} min</b>, média das ${s.metaAmostra} trocas mais rápidas.</div>${anexo(5,'5 ▸ SMED',_PG_AX_DEGRAU)}`
+        :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)}.</div>${anexo(5,'5 ▸ SMED',_PG_AX_DEGRAU)}`:'')}
+      ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período · a meta já foi atingida ${s.naMeta}× em ${s.qtd}.</div>${anexo(5,'5 ▸ SMED','Excedente = (média − meta) × número de trocas. As faixas da distribuição são pintadas pela meta do tipo: 5 min está dentro na troca de produto e fora na de plástico.')}`:''}
     </div>`;
   };
 
@@ -16229,17 +16323,16 @@ function _pgSecaoHtml(ctx){
       <td class="td-mono" style="font-weight:700">${fmt1(rec.ganhoH)}h</td>
       <td class="td-mono" style="font-weight:700;color:#2e7d32">${fmtN(rec.cx)}</td></tr>
     </tbody></table>
-    <div class="rp-note">RECOMENDAÇÃO (simulação, não previsão). As caixas saem do <b>ritmo real medido</b> (${fmtN(rec.ritmo)} cx/h), a mesma régua da PERDA A RITMO REAL do resumo — o cálculo original de CAIXAS PERDIDAS continua intacto e não foi tocado. Só entram os cenários definidos pelo PPCP que existem no período; tipo que não apareceu não vira cenário.</div>`
+    <div class="rp-note">Simulação, não previsão · caixas ao ritmo real medido (${fmtN(rec.ritmo)} cx/h)</div>${anexo(8,'8 ▸ QUANTO PODEMOS RECUPERAR','As caixas saem do ritmo real medido, a mesma régua da PERDA A RITMO REAL do resumo — o cálculo original de CAIXAS PERDIDAS continua intacto. Só entram os cenários definidos pelo PPCP que existem no período; tipo que não apareceu não vira cenário.')}`
     :'<div class="pg-vazio">Nenhum dos cenários definidos (troca de produto, troca de plástico, tipo genérico) apareceu no período.</div>';
 
   // 7 ▸ IMPACTO NO FLUXO ----------------------------------------------------
   const fxHtml=(fluxo&&fluxo.veredito)?`<div class="pg-fluxo ${fluxo.veredito==='disponibilidade'?'ok':'warn'}">
       <div class="pg-fluxo-tag">${fluxo.veredito==='disponibilidade'?'VELOCIDADE NÃO É O PROBLEMA — DISPONIBILIDADE É O FOCO.':'O RITMO TAMBÉM ESTÁ ABAIXO DO NECESSÁRIO.'}</div>
       <div class="pg-fluxo-txt">${fluxo.veredito==='disponibilidade'
-        ? `Rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> que a demanda pede (${fmtN(fluxo.ritmoReal)} contra ${fmtN(fluxo.ritmoIdeal)} cx/h) — ela é <b>${fmt1(fluxo.folga)} s/cx mais rápida</b> que o necessário. O que falta não é velocidade, é <b>tempo rodando</b>: a disponibilidade está em ${pct(fluxo.dispon)} contra a meta de ${PG_META_DISP}%. Mandar acelerar a linha ataca o lugar errado — quem define o ritmo é o gargalo, e aqui o gargalo é a parada.`
-        : `Mesmo rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> do ideal (${fmtN(fluxo.ritmoReal)} contra ${fmtN(fluxo.ritmoIdeal)} cx/h). Aqui os dois lados pesam: além da disponibilidade de ${pct(fluxo.dispon)}, o ritmo em si não alcança a demanda.`}</div>
-      <div class="pg-fluxo-ord">PRIORIDADE PPCP: 1 disponibilidade · 2 estabilidade · 3 redução de paradas · 4 redução de troca · 5 eliminação de causas anormais · 6 redução de WIP · 7 fluxo contínuo</div>
-    </div>`
+        ? `Rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> (${fmtN(fluxo.ritmoReal)} cx/h) contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> (${fmtN(fluxo.ritmoIdeal)} cx/h) que a demanda pede — <b>${fmt1(fluxo.folga)} s/cx mais rápida</b>. O que falta é <b>tempo rodando</b>: disponibilidade ${pct(fluxo.dispon)} (meta ${PG_META_DISP}%).`
+        : `Mesmo rodando, a linha faz <b>${fluxo.taktReal} s/cx</b> (${fmtN(fluxo.ritmoReal)} cx/h) contra <b>${fmt1(fluxo.taktIdeal)} s/cx</b> (${fmtN(fluxo.ritmoIdeal)} cx/h) do ideal: além da disponibilidade de ${pct(fluxo.dispon)}, o ritmo não alcança a demanda.`}</div>
+    </div>${anexo(7,'7 ▸ IMPACTO NO FLUXO','Takt real (a linha rodando) × takt ideal (o que a demanda pede). Com a linha mais rápida que o necessário, mandar acelerar ataca o lugar errado — quem define o ritmo é o gargalo, e aí o gargalo é a parada. PRIORIDADE PPCP: 1 disponibilidade · 2 estabilidade · 3 redução de paradas · 4 redução de troca · 5 eliminação de causas anormais · 6 redução de WIP · 7 fluxo contínuo.')}`
     :'<div class="pg-vazio">Sem takt configurado (defina a demanda) — o veredito de fluxo depende do takt ideal × takt real.</div>';
 
   // (o PLANO DE AÇÃO é desenhado no quadro, _pgQuadroHtml — um lugar só)
@@ -16247,7 +16340,7 @@ function _pgSecaoHtml(ctx){
   // 9 ▸ APONTAMENTO SOBREPOSTO ---------------------------------------------
   const sobreHtml=(sobre||[]).length?`<div class="pg-alerta">
       <div class="pg-alerta-ttl">⚠️ APONTAMENTO SOBREPOSTO — ${plural(sobre.length,'registro','registros')} para validar</div>
-      <div class="pg-alerta-txt">Paradas do mesmo dia em que a seguinte começa antes de a anterior terminar. Pode ser erro de apontamento ou parada simultânea em dois postos. <b>Nada foi corrigido nem descontado</b> — os indicadores acima seguem exatamente como estavam; isto é só sinalização para o líder validar.</div>
+      <div class="pg-alerta-txt"><b>Nada foi corrigido nem descontado</b> — só sinalização para o líder validar.</div>${anexo(9,'9 ▸ VALIDAÇÃO DO APONTAMENTO','Sobreposição: no mesmo dia, a parada seguinte começa antes de a anterior terminar — pode ser erro de apontamento ou parada simultânea em dois postos. Nada é corrigido nem descontado: os indicadores seguem exatamente como estavam.')}
       <table style="margin-top:6px"><thead><tr><th>DATA</th><th>PARADA A</th><th>PARADA B</th><th>SOBREPOSIÇÃO</th></tr></thead><tbody>
       ${sobre.slice(0,12).map(s=>`<tr>
         <td class="td-mono">${e(s.data)}</td>
@@ -16285,7 +16378,7 @@ function _pgSecaoHtml(ctx){
         <div class="pg-alerta-ttl">⚠️ ${plural(_an.abertas.length,'parada aberta','paradas abertas')} (sem FIM)</div>
         <div class="pg-alerta-txt">Sem fim não há duração, então elas <b>não entram em nenhum indicador</b> — a perda real do período é maior do que o relatório consegue medir. ${_an.abertas.slice(0,6).map(a=>`${e(a.data)} ${e(a.tipo||'—')} ${e(a.ini||'')}`).join(' · ')}</div>
       </div>`:''}
-    <div class="rp-note">DADO. "Sem motivo" é contado onde ele faz falta: parada de tipo genérico (sem o motivo não há o que atacar) ou acima de ${_an.limite} min. No período foram <b>${_an.semMotivo.length}</b> ${_an.semMotivo.length===1?'assim':'assim'}, de ${_an.semMotivoTotal} sem motivo no total — motivo é opcional no app, e cobrar de toda parada viraria ruído.</div>`;
+    <div class="rp-note">"Sem motivo" conta só parada genérica ou acima de ${_an.limite} min: <b>${_an.semMotivo.length}</b> de ${_an.semMotivoTotal} sem motivo</div>${anexo(9,'9 ▸ VALIDAÇÃO DO APONTAMENTO','"Sem motivo" é contado onde ele faz falta — parada de tipo genérico (sem o motivo não há o que atacar) ou longa; motivo é opcional no app, e cobrar de toda parada viraria ruído. Parada aberta (sem FIM) não tem duração e fica fora de todo indicador.')}`;
 
   // 10 ▸ DIAGNÓSTICO PPCP ---------------------------------------------------
   const linhaDiag=(rot,val,cor)=>`<div class="pg-diag-l"><div class="pg-diag-r">${rot}</div><div class="pg-diag-v" style="${cor?`color:${cor}`:''}">${val}</div></div>`;
@@ -16298,11 +16391,12 @@ function _pgSecaoHtml(ctx){
     ${linhaDiag('PRÓXIMO FOCO', e(diag.foco))}
     ${diag.anormal?linhaDiag('CAUSA ANORMAL NO TOP', e(diag.anormal), '#c62828'):''}
     ${linhaDiag('ESTAMOS MELHORANDO?', tend
-        ? (tend.subiu?`SIM — disponibilidade subiu ${fmt1(Math.abs(tend.delta))} p.p. da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`
-          : tend.caiu?`NÃO — disponibilidade caiu ${fmt1(Math.abs(tend.delta))} p.p. da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`
-          : `ESTÁVEL — disponibilidade praticamente igual da primeira à última semana (${pct(tend.de.dispon)} → ${pct(tend.ate.dispon)})`)
-        : 'Período curto demais — são precisas 2 semanas com dia trabalhado para dizer.',
-        tend?(tend.subiu?'#2e7d32':tend.caiu?'#c62828':'#e65100'):'#718096')}
+        ? (()=>{ const TF=_pgTendFmt(tend);
+            return tend.subiu?`SIM — a disponibilidade subiu ${TF.dif.replace('+','')} da 1ª para a 2ª metade dos dias trabalhados (${TF.de} → ${TF.ate})`
+              : tend.caiu?`NÃO — a disponibilidade caiu ${TF.dif.replace('−','')} da 1ª para a 2ª metade dos dias trabalhados (${TF.de} → ${TF.ate})`
+              : `SEM MUDANÇA CLARA — ${TF.de} → ${TF.ate} (${TF.dif}), dentro da variação de um dia para outro (${TF.lim} p.p.)`; })()
+        : `Período curto demais — são precisos ${PG_TEND_MIN_DIAS*2} dias trabalhados para dizer.`,
+        tend?(tend.subiu?'#2e7d32':tend.caiu?'#c62828':'#718096'):'#718096')}
   </div>`;
 
   // ── montagem ------------------------------------------------------------
@@ -16310,15 +16404,15 @@ function _pgSecaoHtml(ctx){
 <div class="pg-abre${soZinho?' so':''}">
   ${soZinho?'':'<div class="pg-abre-ttl">GESTÃO DAS PERDAS — VISÃO PPCP</div>'}
   <div class="pg-abre-txt">${soZinho
-    ? 'As mesmas contas do relatório de paradas, lidas pela pergunta da gestão: onde estamos perdendo, o que atacar primeiro, quanto dá para recuperar e se estamos melhorando. <b>Nenhum indicador foi recalculado por outro método</b> — todo número derivado usa a duração produtiva, a perda pela meta do dia e a perda ao ritmo real do relatório de controle. Onde a leitura é nova, está dito; onde o dado não sustenta, está escrito "não identificado".'
-    : 'Camada de gestão sobre o relatório de controle acima. <b>Nenhum indicador, fórmula ou critério das seções anteriores foi alterado</b> — o que vem aqui é leitura nova sobre os mesmos dados, e todo número derivado usa as mesmas contas (duração produtiva, perda pela meta do dia, perda ao ritmo real). Onde a leitura é nova, está dito. Onde o dado não sustenta, está escrito "não identificado".'}</div>
-</div>
+    ? 'Onde estamos perdendo, o que atacar primeiro, quanto dá para recuperar e se estamos melhorando — com as mesmas contas do relatório de paradas. O método está no ANEXO, no fim.'
+    : 'Camada de gestão sobre o relatório de controle acima: os mesmos dados e as mesmas contas. O método está no fim da camada.'}</div>
+</div>${anexo(0,'COMO LER ESTE RELATÓRIO','Nenhum indicador foi recalculado por outro método — todo número derivado usa a duração produtiva, a perda pela meta do dia e a perda ao ritmo real do relatório de controle. Onde a leitura é nova, está dito; onde o dado não sustenta, está escrito "não identificado".')}
 
-${_pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, rec, tend, foco})}
+${_pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, rec, tend, foco})}${anexo(0.5,'O QUADRO','"Melhorou?" — na EVOLUÇÃO, a disponibilidade de cada dia trabalhado; no SMED, cada troca. Os valores do período, em ordem, são partidos ao meio (com número ímpar, o do meio fica fora) e as duas médias comparadas. Só vira MELHORA ou PIORA quando a diferença passa de 2 erros-padrão (o ± ao lado); abaixo disso é DENTRO DA VARIAÇÃO: um dia — ou uma troca — varia muito do outro, e a semana da ponta costuma ser pedaço do período, por isso a barra ou a semana sozinha não basta. A palavra é decidida com os mesmos números, de uma casa, que a linha mostra. PLANO DE AÇÃO: responsável e prazo não existem no dado — saem "A definir" de propósito, porque preencher com um nome plausível seria inventar compromisso de terceiro; o status nasce ABERTO porque o acompanhamento das ações ainda não é registrado no sistema.')}
 
 <div class="rp-sec-ttl">1 ▸ PARETO DIÁRIO — O PROBLEMA É RECORRENTE OU CONCENTRADO?</div>
 <table><thead><tr><th>DATA</th><th>TEMPO PARADO</th><th>DISPONIBILIDADE</th><th>PARADAS</th><th>PRINCIPAL CAUSA</th><th>PERDA ESTIMADA (CX)</th></tr></thead><tbody>${linhasDia}</tbody></table>
-<div class="rp-note">DADO. Célula marcada = extremo do período (maior tempo parado, menor disponibilidade, mais ocorrências, maior perda). A disponibilidade do dia usa a mesma base do resumo (horas produtivas do turno); dia sem produção lançada não tem base e sai "—", ficando fora da conta da semana.</div>
+<div class="rp-note">Célula marcada = pior do período · dia sem produção sai "—"</div>${anexo(1,'1 ▸ PARETO DIÁRIO','Célula marcada = extremo do período (maior tempo parado, menor disponibilidade, mais ocorrências, maior perda). A disponibilidade do dia usa a mesma base do resumo (horas produtivas do turno); dia sem produção lançada não tem base e sai "—", fora da conta da semana. Os 5 piores dias são ordenados pelo tempo não programado — é o que vira perda.')}
 ${pioresHtml}
 
 <div class="rp-sec-ttl">2 ▸ EVOLUÇÃO DA DISPONIBILIDADE — META ${PG_META_DISP}%</div>
@@ -16335,8 +16429,7 @@ ${smedBloco(smedProd,'TROCA DE PRODUTO','min/troca')}
 ${smedBloco(smedPlas,'TROCA DE PLÁSTICO','min/troca')}
 
 <div class="rp-sec-ttl">6 ▸ MINUTOS DE PARADA / 1.000 CAIXAS — COMPARAR PERÍODOS DE VOLUME DIFERENTE</div>
-${_pgMin1000Html(ctx)}
-<div class="rp-note">INDICADOR NOVO — não substitui nenhum dos anteriores. O tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume e permite comparar mês contra mês. Base: as caixas apontadas que o TAKT REAL já usa.</div>
+${_pgMin1000Html(ctx)}${anexo(6,'6 ▸ MINUTOS DE PARADA / 1.000 CAIXAS','Indicador novo — não substitui nenhum dos anteriores. Minutos parados ÷ caixas apontadas × 1.000: o tempo parado absoluto cresce só porque o período foi maior; este normaliza pelo volume. Minutos do mesmo porDia do resumo, caixas do HISTÓRICO (as mesmas do TAKT REAL). Só dia trabalhado entra — dia sem produção não tem caixa no denominador. A data embaixo do rótulo é a faixa que entrou na linha, do primeiro ao último dia com produção: a ponta do período compara um pedaço com um inteiro. VARIAÇÃO = diferença do NÃO PROGRAMADO contra a janela anterior, em min/1.000 cx, e o % sobre ela. O QUE MUDOU abre o NÃO PROGRAMADO por causa, nos mesmos dias: as causas + demais causas = o NÃO PROG. TOTAL.')}
 
 <div class="rp-sec-ttl">7 ▸ IMPACTO NO FLUXO — ONDE ESTÁ O GARGALO</div>
 ${fxHtml}
@@ -16350,9 +16443,13 @@ ${anomDet}
 
 <div class="rp-sec-ttl">10 ▸ DIAGNÓSTICO PPCP</div>
 ${diagHtml}
-${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito. Com o motivo preenchido no app, a análise de "Outros" passa a apontar causa raiz em vez de tempo sem nome.</div>':''}
+${!temMotivo?'<div class="rp-note">Nenhuma parada do período tem motivo escrito — sem ele, "Outros" fica sem causa raiz.</div>':''}
+${anexoHtml()}
 `;
 }
+// O texto do degrau da meta SMED no anexo (o mesmo para as duas trocas — o
+// anexo põe uma vez só).
+const _PG_AX_DEGRAU='A meta de troca é inicial: atingida, o alvo em vigor passa a ser a média das trocas mais rápidas do período — um tempo que a equipe já fez; o degrau só desce quando o próprio desempenho o sustenta. A distribuição, as trocas dentro da meta, o excedente e o cenário de recuperação medem contra o alvo em vigor.';
 
 // RELATÓRIO DE PARADAS (PDF) — mesmo padrão/cálculo da aba PARADAS
 // ════════════════════════════════════════════════
@@ -17766,7 +17863,7 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate, grao}){
     fluxo:_pgImpactoFluxo(tiR, trR, st),
     anom:_pgAnomalias(paradas, CFG, {classeMap:PAR_CLASSE_MAP}),
     plano:_pgPlano(top, outros, metasSmed),
-    tend:_pgTendencia(semanas),
+    tend:_pgTendencia(dias),
     foco:_pgFoco(top, outros),
     // Os por 1.000 cx saem daqui: o desenho (tela e PDF) só imprime.
     //   NP  = o que vira perda · PROG = a parada combinada (a diferença entre
@@ -17781,7 +17878,7 @@ function _pgContexto({paradas, st, tiR, trR, realByDay, de, ate, grao}){
              quinzena:_pgPorJanela(dias, realByDay, 'quinzena'),
              mes:     _pgPorJanela(dias, realByDay, 'mes')},
     grao: PG_GRAOS[grao] ? grao : 'mes',
-    diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), semanas}),
+    diag:_pgDiagnostico({st, top, outros, rec, fluxo:_pgImpactoFluxo(tiR,trR,st), dias}),
     temMotivo:(paradas||[]).some(p=>String(p.obs||'').trim()!=='')
   };
 }
@@ -17981,6 +18078,13 @@ ${_RP_HEADER_CSS}
   .pg-mes-per{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:400;color:#718096;margin-top:2px}
   .pg-mes .v-ok{color:#2e7d32;font-weight:700}
   .pg-mes .v-red{color:#c62828;font-weight:700}
+  .pg-causas-ttl{margin-top:12px}
+  .pg-causas-tot td{border-top:1.5px solid #cbd5e0}
+  /* ANEXO — COMO LER: o método das seções, numa folha própria no fim. O corpo
+     fica com números, tabelas e uma linha por nota. */
+  .pg-anexo-ttl{page-break-before:always}
+  .pg-anexo p{margin:0 0 8px;font-size:10.5px;line-height:1.5;color:#4a5568}
+  .pg-anexo p b{color:#1a1a2e;letter-spacing:.4px}
   .kpi-lbl{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
   .kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;color:#1a1a2e}
   .kpi-sub{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;margin-top:4px}
@@ -18082,7 +18186,7 @@ ${_RP_HEADER_CSS}
   .pgq-bar-l{font-family:'IBM Plex Mono',monospace;font-size:7px;color:#718096;margin-top:2px}
   .pgq-eixo{font-family:'IBM Plex Mono',monospace;font-size:6.5px;color:#a0aec0;margin-top:2px}
   .pgq-tend{display:flex;align-items:center;gap:7px;margin-top:7px;padding:5px 8px;border-radius:4px;font-size:9.5px;line-height:1.35;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pgq-tend.g{background:#f1f8f2;color:#2e7d32}.pgq-tend.o{background:#fff8e1;color:#e65100}.pgq-tend.r{background:#fff5f5;color:#c62828}
+  .pgq-tend.g{background:#f1f8f2;color:#2e7d32}.pgq-tend.o{background:#fff8e1;color:#e65100}.pgq-tend.r{background:#fff5f5;color:#c62828}.pgq-tend.n{background:#f4f6f8;color:#4a5568}
   .pgq-seta{font-size:19px;line-height:1;font-weight:700}
   /* SMED — média do período e a meta numa linha por tipo; embaixo, as trocas
      dentro da meta e o "melhorou?". */

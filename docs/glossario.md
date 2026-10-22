@@ -183,6 +183,9 @@ O combinado está em constantes no topo do bloco (`QP_ALVO_MIN` 50, `QP_ALVO_MAX
 | **DISPONIBILIDADE** | (tempo disponível − tempo parado não programado) ÷ tempo disponível × 100 | % | `paradas-calc.js:261` |
 | **RITMO DE REFERÊNCIA** | caixas perdidas ÷ (tempo parado não programado ÷ 60) | cx/h | `paradas-calc.js:270` |
 | **MIN / 1.000 CX** | minutos parados ÷ caixas × 1.000, só nos **dias trabalhados** | min | `v7:_pgPorJanela` |
+| **VARIAÇÃO DO NÃO PROG.** (tabela por janela) | NÃO PROG. / 1.000 CX da janela − o da janela anterior, com os valores **exibidos** (uma casa); e o % sobre o anterior exibido. ↓ é melhora | min/1.000 cx e % | `v7:_pgPorJanela` (`deltaNP`, `deltaNPpct`) |
+| **O QUE MUDOU** (por causa) | minutos NÃO programados da causa nos dias trabalhados da janela ÷ caixas da janela × 1.000. As 5 causas de mais minutos no período + demais causas = o NÃO PROG. / 1.000 CX da janela | min/1.000 cx | `v7:_pgPorJanela` (`causas`, `demais`) |
+| **MELHOROU?** (EVOLUÇÃO) | disponibilidade de cada dia trabalhado, em ordem, partida ao meio; a mesma régua do MELHOROU? do SMED (2 erros-padrão, piso de 0,5 p.p., 4+ dias em cada metade) | p.p. | `v7:_pgTendencia` → `_pgMetades` |
 | **TEMPO MÉDIO DE TROCA** (SMED) | soma da duração produtiva das trocas do tipo ÷ nº de trocas, no período escolhido (não é "hoje") | min | `v7:_pgSmed` |
 | **TROCAS EM ATÉ X MIN** (SMED) | nº de trocas do período com duração produtiva ≤ meta em vigor (X), de um total de N | trocas | `v7:_pgSmed` (`naMeta`) |
 | **MELHOROU?** (SMED) | trocas do período em ordem de data e hora, partidas ao meio (ímpar: a do meio fora); média da 2ª metade − média da 1ª. **MELHORA**/**PIORA** só quando a diferença passa de 2 erros-padrão (`2 × √(s₁²/n + s₂²/n)`, nunca menos de 0,1 min) — comparadas as duas com uma casa, como a linha mostra —, senão **DENTRO DA VARIAÇÃO**; menos de 4 trocas por metade → sem leitura. Tempo que cai é MELHORA | min | `v7:_pgTendSmed` |
