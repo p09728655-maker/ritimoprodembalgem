@@ -1156,6 +1156,7 @@ eval(pega('function _pgTopCausas('));
 eval(pega('function _pgOutros('));
 eval(pega('function _pgMetaSmed('));   // a escada da meta — o _pgSmed chama
 eval(pega('function _pgTendSmed('));   // o "melhorou?" — o _pgSmed chama
+eval(pega('function _pgTendSmedFmt('));   // o texto dele — quadro e seção 5
 eval(pega('function _pgFmtMin('));
 eval(pega('function _pgSmed('));
 eval(pega('function _pgMinPor1000('));
@@ -1323,6 +1324,20 @@ ok('e o limite sai das próprias trocas (2 erros-padrão da diferença)',
 // Trocas todas iguais: variância zero não vira "PIORA +0,0 min".
 const tdI = _pgTendSmed(Array.from({length:10}, (_,i) => _tr(20260901+i, 480, 4)));
 ok('trocas iguais não inventam direção', [tdI.seta, tdI.delta], ['→', 0]);
+// Piso de 0,1 min — a casa que a tela mostra. Metades de variância zero que
+// diferem por segundos (4:00 × 4:01) dariam erro-padrão 0 e "PIORA +0,0 min";
+// 0,08 min (entre o piso antigo de 0,05 e o de hoje) sairia "+0,1" com as
+// duas médias iguais com uma casa.
+const _quase = dd => _pgTendSmed([4,4,4,4].map((d,i) => _tr(20260901+i, 480, d))
+  .concat([4,4,4,4].map((d,i) => _tr(20261001+i, 480, 4+dd))));
+ok('metades iguais que diferem por segundos não viram PIORA', [_quase(1/60).seta, _quase(1/60).st], ['→', 'n']);
+ok('nem por 0,08 min (o piso é a casa que a tela mostra)', [_quase(0.08).seta, _quase(0.08).lim], ['→', 0.1]);
+ok('acima do piso, sem variância, a direção vale', _quase(0.2).piorou, true);
+// O sinal sai do valor ARREDONDADO: do delta cru, −0,04 saía "−0,0 min".
+ok('o texto não escreve "−0,0"', _pgTendSmedFmt({delta:-0.04, lim:0.1, melhorou:false, piorou:false,
+   diaA:[20260917,20261005], diaB:[20261006,20261022]}).dif, '0,0 min');
+ok('o texto do "melhorou?": rótulo, diferença, limite e as faixas de data',
+   _pgTendSmedFmt(tdM), {rot:'MELHORA', dif:'−3,5 min', lim:'±0,7', faixaA:'01/09 a 08/09', faixaB:'01/10 a 08/10'});
 // Amostra curta: a mesma de quem move a meta (PG_SMED_AMOSTRA em cada metade).
 ok('menos de 4 trocas em cada metade não diz nada',
    _pgTendSmed(_tA.slice(0,4).concat(_tB.slice(0,3))), null);
@@ -1356,10 +1371,27 @@ ok('a contagem é em trocas, sem "já"',
 ok('o subtítulo não diz "hoje" (é a média do período)',
    [/hoje → meta/.test(_qSmed), /tempo médio de troca no período/.test(_qSmed)], [false, true]);
 ok('a linha do "melhorou?" sai com a direção e as duas metades',
-   /class="pgq-smed-t g"[^>]*>↘ MELHORA <b>−3,5 min<\/b> · 1ª metade 8,0 → 2ª metade 4,5 min/.test(_qSmed), true);
+   /class="pgq-smed-t g"[^>]*>↘ MELHORA <b>−3,5 min<\/b> · <span class="pgq-smed-mt">1ª metade <\/span>8,0 → <span class="pgq-smed-mt">2ª metade <\/span>4,5 min/.test(_qSmed), true);
+// Contagem e "melhorou?" no MESMO bloco: é o que deixa a capa deitada pôr os
+// dois numa linha só (em duas, a capa ia para a folha 2 quando uma troca
+// batia a meta — 723 px para 718, medido com as fontes do papel).
+ok('a contagem e o "melhorou?" moram no mesmo bloco',
+   /<div class="pgq-smed-s">4 de 8 trocas em até 5 min<span class="pgq-smed-t g"/.test(_qSmed), true);
+ok('na capa deitada: em linha, sem a nota da meta e sem "1ª/2ª metade"',
+   [/\n  \.deitado \.pgq-smed-t\{display:inline;margin-top:0\}/.test(src),
+    /\n  \.deitado \.pgq-smed-nota,\.deitado \.pgq-smed-mt\{display:none\}/.test(src)], [true, true]);
+ok('a nota da meta fica marcada para a capa esconder (a seção 5 a imprime inteira)',
+   /<span class="pgq-smed-nota"> · \$\{s\.metaNota\}<\/span>/.test(pega('function _pgQuadroHtml(')), true);
 ok('e as datas de cada metade vão no tooltip', /1ª metade 27\/09 a 30\/09, 2ª metade 01\/10 a 04\/10/.test(_qSmed), true);
 ok('sem trocas suficientes, diz que é pouco — não some calado',
    /pgq-smed-t n">menos de 8 trocas no período — pouco para dizer se melhorou/.test(_qSmed), true);
+// O papel explica a régua na seção 5 (a capa não tem tooltip), com as datas.
+{ const _s5 = pega('function _pgSecaoHtml(');
+  ok('a seção 5 do papel explica o "melhorou?" com o mesmo texto do quadro',
+     [/MELHOROU\? As trocas do período, em ordem de data e hora, partidas ao meio/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
+  ok('o texto do "melhorou?" é escrito num lugar só',
+     [(JS.match(/function _pgTendSmedFmt\(/g) || []).length, (JS.match(/(?<!function )_pgTendSmedFmt\(/g) || []).length], [1, 2]);
+}
 const _qR = _pgQuadroHtml({semanas:[], smedProd:Object.assign({}, smT, {tend:tdR}), smedPlas:null, outros:null, anom:null, plano:[], top:[], rec:null, tend:null, foco:'x'});
 ok('dentro da variação: sem cor, com o tamanho da variação ao lado',
    /class="pgq-smed-t n"[^>]*>→ DENTRO DA VARIAÇÃO <b>\+0,6 min<\/b> \(±3,7\)/.test(_qR), true);
@@ -2399,8 +2431,66 @@ _assincronos.push(async () => {
     solta(); await p2; await flush();
     ok(rot + ': o ↻ ATUALIZAR dado no meio da leitura roda depois, forçado', busca, ['17/09/2026', '17/09/2026 ↻']);
     solta(); await flush(); await flush();
+    // ↻ e depois um pedido comum (trocar de aba e voltar) na mesma leitura: o
+    // forçado não se perde.
+    busca = []; abertas = []; pintou = [];
+    const p3 = fn(); fn(true); fn();
+    solta(); await p3; await flush();
+    ok(rot + ': ↻ seguido de pedido comum na mesma leitura continua forçado', busca, ['17/09/2026', '17/09/2026 ↻']);
+    solta(); await flush(); await flush();
+    // ↻ durante uma leitura que JÁ é forçada: ela já traz dado fresco.
+    busca = []; abertas = []; pintou = [];
+    const p4 = fn(true); fn(true);
+    solta(); await p4; await flush();
+    ok(rot + ': dois ↻ seguidos fazem UMA leitura forçada', busca, ['17/09/2026 ↻']);
+    // O MESMO pedido repetido (o setTab chama o render duas vezes na 1ª
+    // entrada) não vira outra leitura — com a falha, era uma leitura completa
+    // a mais e a mensagem de falha trocada por CARREGANDO.
+    busca = []; abertas = []; pintou = [];
+    global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
+      return new Promise(r => abertas.push(() => r(null))); };   // a leitura falha
+    const p5 = fn(); fn();
+    solta(); await p5; await flush();
+    ok(rot + ': o mesmo pedido repetido não refaz a leitura que acabou de falhar', busca, ['17/09/2026']);
+    ok(rot + ': e a falha fica na tela', dom[rot === 'SIMULADOR' ? 'sim-bloco' : 'pg-quadro'].innerHTML, 'FALHA');
+    global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
+      return new Promise(r => abertas.push(() => r({ctx:{de}, t:1}))); };
+    // Campo pela metade (data sendo digitada) não é período novo: pinta o que
+    // chegou, em vez de deixar CARREGANDO sem nada em voo.
+    busca = []; abertas = []; pintou = [];
+    const p6 = fn();
+    campos[ate] = '';
+    solta(); await p6; await flush();
+    ok(rot + ': com a data pela metade, pinta o que chegou e não busca nada', [pintou, busca], [['17/09/2026'], ['17/09/2026']]);
+    campos[ate] = '22/10/2026';
   }
   global.document = docAntes;
+});
+
+// A retentativa automática de 20 s só dispara com a FALHA ainda na tela: com
+// uma leitura em curso (o ↻ tocado antes) ou já pintada, ela virava um pedido
+// forçado pendente e refazia a leitura que tinha acabado de dar certo.
+_assincronos.push(async () => {
+  console.log('\n── a retentativa automática não refaz o que já está na tela ──');
+  let agendado = null; const chamou = [];
+  const setTimeout = fn => { agendado = fn; return 1; }, clearTimeout = () => {};   // o eval abaixo enxerga estes
+  let _pgFalhaTimer = null;
+  const docAntes = global.document;
+  let mostra = '';
+  global.document = { getElementById: id => id === 'sec-perdas'
+    ? { classList:{contains:()=>true}, querySelector: q => (q === '.pg-falha' && mostra.includes('pg-falha')) ? {} : null } : null };
+  global.window.renderGestaoPerdas = f => chamou.push(f);
+  global._pgFalhaTentou = {};
+  eval(pega('function _pgFalhaHtml('));
+  mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  ok('a mensagem de falha leva a marca que a retentativa procura', /class="pg-carregando pg-falha"/.test(mostra), true);
+  mostra = '<div class="pg-carregando">CARREGANDO…</div>';   // o gestor tocou ↻ antes dos 20 s
+  agendado();
+  ok('com outra leitura na tela, os 20 s não disparam nada', chamou, []);
+  _pgFalhaTentou = {}; mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  agendado();
+  ok('com a falha ainda na tela, tenta de novo (forçado)', chamou, [true]);
+  global.document = docAntes; delete global.window.renderGestaoPerdas;
 });
 ok('e tem a guarda do módulo de cálculo',
    /_rpOk\(\)/.test(pega('async function renderSimulador(')), true);
@@ -4425,6 +4515,10 @@ console.log('\n── estudo de UEP ──');
      /if\(PERFIL==='gerencial' \|\| document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(corpo)
        && corpo.indexOf("PERFIL==='gerencial'") < corpo.indexOf('getSlotPendente()'), true);
 }
+// Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
+// sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
+process.exitCode = 1;
+process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não terminou\n'));
 (async () => {
   for (const f of _assincronos) await f();
   console.log(falhas === 0

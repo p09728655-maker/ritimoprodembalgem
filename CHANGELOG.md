@@ -26,12 +26,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
     VARIAÇÃO**, com o número e o limite ao lado. Com menos de 8 trocas, a
     linha diz que é pouco para afirmar.
   - No relatório desta tela, o card da seção 5 *"já dentro da meta"* virou
-    *"das trocas em até X min"*.
+    *"das trocas em até X min"*, e a seção 5 ganhou a nota **MELHOROU?**, com
+    as datas de cada metade e a régua (a capa impressa não tem tooltip).
+  - Na **capa impressa** (paisagem), a contagem e o "melhorou?" saem numa
+    linha só, sem a nota da meta (que a seção 5 já imprime): em duas linhas a
+    capa ia para a folha 2 quando uma troca batia a meta. A capa continua com
+    a mesma altura da v7.152.0.
 - **Trocar a data com a leitura em curso mostrava o período anterior.** A
   GESTÃO DE PERDAS e o SIMULADOR descartavam o pedido feito durante uma
   leitura e pintavam o resultado antigo sob o rótulo novo. Agora o pedido
   espera a leitura terminar e roda em seguida, e o resultado de outro período
-  não aparece.
+  não aparece. Pedido repetido do mesmo período não vira leitura a mais, e a
+  retentativa automática de 20 s só roda se a falha ainda estiver na tela —
+  as duas coisas evitam leituras extras da aba PARADAS (a mais cara) quando o
+  Apps Script está lento.
 - **Atenção:** o quadro de 22/10 (rótulo 17/09–22/10) mostrava os números de
   **02/09–22/10**: 142 trocas de produto, 6,8 min, 40% na meta. O período
   17/09–22/10 tem **108 trocas, 6,9 min, 40 de 108 (37%)** em até 5 min; na de

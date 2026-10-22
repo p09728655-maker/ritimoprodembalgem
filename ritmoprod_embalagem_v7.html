@@ -253,7 +253,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pgq-smed-l{display:grid;grid-template-columns:86px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
 #sec-perdas .pgq-smed-l.vazio{display:block;font-size:12.5px;color:var(--txt2)}
 #sec-perdas .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
-#sec-perdas .pgq-smed-n{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1.2px;grid-row:span 3}
+#sec-perdas .pgq-smed-n{font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1.2px;grid-row:span 2}
 #sec-perdas .pgq-smed-v{display:flex;align-items:baseline;gap:6px;font-family:var(--font-h);font-size:27px;font-weight:700;line-height:1}
 #sec-perdas .pgq-smed-v span{color:var(--txt2);font-size:17px;margin-left:8px}
 #sec-perdas .pgq-smed-v i{font-family:var(--font-d);font-size:11px;color:var(--txt2);font-style:normal;font-weight:400}
@@ -261,7 +261,7 @@ body.ger-hist .ger-live-only{display:none!important}
 #sec-perdas .pgq-smed-g{font-family:var(--font-h);font-size:21px;font-weight:700;color:var(--ok);text-align:right}
 #sec-perdas .pgq-smed-s{grid-column:2/4;font-family:var(--font-d);font-size:10.5px;color:var(--txt2);line-height:1.45;margin-top:2px}
 /* "Melhorou?" do tempo de troca: cor só quando há direção — dentro da variação é tinta. */
-#sec-perdas .pgq-smed-t{grid-column:2/4;font-family:var(--font-d);font-size:11.5px;color:var(--txt2);line-height:1.45;margin-top:3px}
+#sec-perdas .pgq-smed-t{display:block;font-size:11.5px;margin-top:3px}
 #sec-perdas .pgq-smed-t.g{color:var(--ok)}
 #sec-perdas .pgq-smed-t.r{color:var(--red)}
 #sec-perdas .pgq-smed-tot{margin-top:10px;font-family:var(--font-d);font-size:11px;color:var(--txt2);letter-spacing:1.2px}
@@ -15458,13 +15458,29 @@ function _pgTendSmed(trocas){
   const med=a=>a.reduce((s,x)=>s+x.d,0)/a.length;
   const vari=a=>{ const m=med(a); return a.reduce((s,x)=>s+(x.d-m)*(x.d-m),0)/(a.length-1); };
   const de=med(A), ate=med(B), delta=ate-de;
-  // Piso de 0,05 min: abaixo disso a diferença nem aparece com uma casa, e
-  // trocas todas iguais (variância zero) não podem virar "PIORA +0,0 min".
-  const lim=Math.max(0.05, PG_SMED_TEND_EP*Math.sqrt(vari(A)/h+vari(B)/h));
+  // Piso de 0,1 min — a casa que a tela mostra: abaixo disso a diferença sai
+  // "0,0" e as duas médias podem sair iguais com uma casa, e trocas todas
+  // iguais (variância zero) não podem virar "PIORA +0,0 min".
+  const lim=Math.max(0.1, PG_SMED_TEND_EP*Math.sqrt(vari(A)/h+vari(B)/h));
   const melhorou=delta<-lim, piorou=delta>lim;
   return {de, ate, delta, lim, n:h, melhorou, piorou,
           diaA:[A[0].dia, A[h-1].dia], diaB:[B[0].dia, B[h-1].dia],
           seta:melhorou?'↘':(piorou?'↗':'→'), st:melhorou?'g':(piorou?'r':'n')};
+}
+
+// O TEXTO do "melhorou?", um lugar só: o quadro (tela e capa) e a seção 5 do
+// papel escrevem a mesma coisa. O sinal sai do valor JÁ ARREDONDADO — do delta
+// cru, −0,04 saía "−0,0 min".
+function _pgTendSmedFmt(t){
+  const dm=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
+  const r=Math.round(t.delta*10)/10;
+  return {
+    rot: t.melhorou?'MELHORA':t.piorou?'PIORA':'DENTRO DA VARIAÇÃO',
+    dif: (r>0?'+':r<0?'−':'')+fmt1(Math.abs(r))+' min',
+    lim: '±'+fmt1(t.lim),
+    faixaA: dm(t.diaA[0])+' a '+dm(t.diaA[1]),
+    faixaB: dm(t.diaB[0])+' a '+dm(t.diaB[1])
+  };
 }
 
 // Meta em minutos: inteiro sai sem casa ("5 min"); o degrau automático sai com
@@ -15796,14 +15812,20 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
   // parecia progresso. A meta vai escrita como META, a contagem em trocas, e o
   // "melhorou?" tem linha própria (s.tend, calculado no _pgSmed).
   const ganhoDe=re=>{ const i=((rec&&rec.itens)||[]).find(x=>re.test(x.tipo)); return i||null; };
-  const dm=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
+  // A contagem e o "melhorou?" moram no MESMO bloco (.pgq-smed-s): na tela e no
+  // retrato são duas linhas; na capa DEITADA viram uma (a pele .deitado põe o
+  // "melhorou?" em linha, esconde a nota da meta — a seção 5 a imprime inteira
+  // — e as palavras "1ª/2ª metade", que a seção 5 explica). Medido em
+  // 22/10/2026 com as fontes do papel: em linhas separadas a célula SMED
+  // passava da EVOLUÇÃO e a capa pulava para a folha 2 quando uma troca batia
+  // a meta (723 px para 718).
   const tendSmed=s=>{
     const t=s.tend;
-    if(!t) return `<div class="pgq-smed-t n">menos de ${PG_SMED_AMOSTRA*2} trocas no período — pouco para dizer se melhorou</div>`;
-    const dif=`${t.delta>0?'+':t.delta<0?'−':''}${fmt1(Math.abs(t.delta))} min`;
-    const tit=`Trocas do período em ordem de data e hora, partidas ao meio (${t.n} em cada metade): 1ª metade ${dm(t.diaA[0])} a ${dm(t.diaA[1])}, 2ª metade ${dm(t.diaB[0])} a ${dm(t.diaB[1])}. `
-      +`Diferença menor que ±${fmt1(t.lim)} min (2 erros-padrão) é variação de uma troca para outra, não tendência.`;
-    return `<div class="pgq-smed-t ${t.st}" title="${e(tit)}">${t.seta} ${t.melhorou?'MELHORA':t.piorou?'PIORA':'DENTRO DA VARIAÇÃO'} <b>${dif}</b>${t.st==='n'?` (±${fmt1(t.lim)})`:''} · 1ª metade ${fmt1(t.de)} → 2ª metade ${fmt1(t.ate)} min</div>`;
+    if(!t) return `<span class="pgq-smed-t n">menos de ${PG_SMED_AMOSTRA*2} trocas no período — pouco para dizer se melhorou</span>`;
+    const F=_pgTendSmedFmt(t);
+    const tit=`Trocas do período em ordem de data e hora, partidas ao meio (${t.n} em cada metade): 1ª metade ${F.faixaA}, 2ª metade ${F.faixaB}. `
+      +`Diferença menor que ${F.lim} min (2 erros-padrão) é variação de uma troca para outra, não tendência.`;
+    return `<span class="pgq-smed-t ${t.st}" title="${e(tit)}">${t.seta} ${F.rot} <b>${F.dif}</b>${t.st==='n'?` (${F.lim})`:''} · <span class="pgq-smed-mt">1ª metade </span>${fmt1(t.de)} → <span class="pgq-smed-mt">2ª metade </span>${fmt1(t.ate)} min</span>`;
   };
   const linhaSmed=(s,rot,re)=>{
     if(!s) return `<div class="pgq-smed-l vazio">${rot}<i>nenhuma no período</i></div>`;
@@ -15815,8 +15837,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
       <div class="pgq-smed-n">${rot}</div>
       <div class="pgq-smed-v"><b style="color:${s.metaAtingida?'#2e7d32':'#c62828'}">${fmt1(s.med)}</b><i>min</i><span>meta ${_pgFmtMin(s.meta)} min</span>${s.metaAuto?'<em class="pgq-smed-tag">ALVO NOVO</em>':''}</div>
       <div class="pgq-smed-g">${g&&g.cx>0?`+${fmtN(g.cx)} cx`:'na meta'}</div>
-      <div class="pgq-smed-s">${fmtN(s.naMeta)} de ${plural(s.qtd,'troca','trocas')} em até ${_pgFmtMin(s.meta)} min${s.metaNota?` · ${s.metaNota}`:''}</div>
-      ${tendSmed(s)}
+      <div class="pgq-smed-s">${fmtN(s.naMeta)} de ${plural(s.qtd,'troca','trocas')} em até ${_pgFmtMin(s.meta)} min${s.metaNota?`<span class="pgq-smed-nota"> · ${s.metaNota}</span>`:''}${tendSmed(s)}</div>
     </div>`;
   };
   const ganhoTot=(rec&&rec.cx>0)?`<div class="pgq-smed-tot">GANHO POTENCIAL <b>${fmtN(rec.cx)} cx</b> <i>(${fmt1(rec.ganhoH)}h nos cenários simulados)</i></div>`:'';
@@ -16171,6 +16192,8 @@ function _pgSecaoHtml(ctx){
       </div>
       <div style="margin-top:7px">${barra}</div>
       ${ev}
+      ${s.tend?(()=>{ const F=_pgTendSmedFmt(s.tend);
+        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${fmt1(s.tend.de)} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${fmt1(s.tend.ate)} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra, e a semana da ponta costuma ser pedaço do período, por isso a evolução semana a semana acima não basta para dizer que melhorou ou piorou.</div>`; })():''}
       ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA. A meta de <b>${_pgFmtMin(s.metaBase)} min</b> foi atingida (média ${fmt1(s.med)} min), então o alvo em vigor passa a ser <b>${_pgFmtMin(s.meta)} min</b> — a média das <b>${s.metaAmostra}</b> trocas mais rápidas do período, um tempo que a equipe já fez. Não é aperto arbitrário: o degrau só desce quando o próprio desempenho o sustenta. A distribuição, as trocas dentro da meta, o excedente e o cenário de recuperação já medem contra esse alvo.</div>`
         :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)} — a meta desce sozinha só quando o desempenho sustenta o degrau novo.</div>`:'')}
       ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${_fmtMinPar(s.menor)} — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
@@ -16417,9 +16440,12 @@ function _pgFalhaHtml(fn, sec){
   if(auto){
     _pgFalhaTentou[fn]=true;
     clearTimeout(_pgFalhaTimer);
-    _pgFalhaTimer=setTimeout(()=>{ const el=document.getElementById(sec); if(el&&el.classList.contains('on')) window[fn](true); },20000);
+    // Só tenta se a FALHA ainda está na tela: com uma leitura em curso (o ↻
+    // tocado antes dos 20 s) ou já pintada, o disparo virava um pedido forçado
+    // pendente e refazia a leitura que acabou de dar certo.
+    _pgFalhaTimer=setTimeout(()=>{ const el=document.getElementById(sec); if(el&&el.classList.contains('on')&&el.querySelector('.pg-falha')) window[fn](true); },20000);
   }
-  return '<div class="pg-carregando">A leitura das paradas do período não respondeu em 3 tentativas (a aba PARADAS é a leitura mais demorada do backend; períodos longos demoram mais).'
+  return '<div class="pg-carregando pg-falha">A leitura das paradas do período não respondeu em 3 tentativas (a aba PARADAS é a leitura mais demorada do backend; períodos longos demoram mais).'
     +(auto?' Tentando de novo sozinho em 20 s…':'')
     +' <button class="btn btn-ghost" style="font-size:10px;padding:3px 10px;margin-left:6px" onclick="'+fn+'(true)">↻ TENTAR DE NOVO</button></div>';
 }
@@ -16437,7 +16463,7 @@ async function renderGestaoPerdas(forcar){
   // mostrou o período de 02/09 sob o rótulo de 17/09 — 142 trocas no lugar de
   // 108. Fica pendente e roda no fim, com o período que estiver nos campos
   // (a mesma régua do CART_PEND da aba PLANO).
-  if(PG_TELA_RODANDO){ PG_TELA_PEND={forcar:!!forcar||!!(PG_TELA_PEND&&PG_TELA_PEND.forcar)}; return; }
+  if(PG_TELA_RODANDO){ PG_TELA_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(PG_TELA_PEND&&PG_TELA_PEND.forcar)}; return; }
   const chave=de+'|'+ate;
   if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
@@ -16450,14 +16476,18 @@ async function renderGestaoPerdas(forcar){
   // e só marca "atualizando" — a busca é cara e piscar CARREGANDO a cada ciclo
   // tira a tela da frente do gestor no meio da leitura.
   const upd=document.getElementById('pg-upd');
-  if(chave!==PG_TELA_ULT || !alvo.querySelector('.pgq')) alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>';
+  // O selo sai junto com o quadro: "atualizando…" (ou "dados de …" do período
+  // anterior) ao lado de CARREGANDO — ou da falha que vier — ficava preso.
+  if(chave!==PG_TELA_ULT || !alvo.querySelector('.pgq')){ alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>'; if(upd) upd.textContent=''; }
   else if(upd) upd.textContent='atualizando…';
   PG_TELA_ULT=chave; PG_TELA_RODANDO=true;
   try{
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
     // Trocaram o período durante a leitura: este resultado é de OUTRO período.
-    // Não pinta (o rótulo já é do novo); o pendente busca o certo.
-    if(chave!==dGet('pg-de')+'|'+dGet('pg-ate')){ PG_TELA_PEND=PG_TELA_PEND||{forcar:false}; return; }
+    // Não pinta (o rótulo já é do novo); o pendente busca o certo. Campo pela
+    // metade (data sendo digitada) não é período novo: pinta o que chegou.
+    const deA=dGet('pg-de'), ateA=dGet('pg-ate');
+    if(deA && ateA && chave!==deA+'|'+ateA){ PG_TELA_PEND=PG_TELA_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
     if(!reg){
       if(alvo.querySelector('.pgq')){ if(upd) upd.textContent='⚠ não atualizou'; }
       else alvo.innerHTML=_pgFalhaHtml('renderGestaoPerdas','sec-perdas');
@@ -16469,7 +16499,13 @@ async function renderGestaoPerdas(forcar){
     else if(upd) upd.textContent='⚠ não atualizou';
   }finally{
     PG_TELA_RODANDO=false;
-    if(PG_TELA_PEND){ const p=PG_TELA_PEND; PG_TELA_PEND=null; renderGestaoPerdas(p.forcar); }
+    // O pendente só vira leitura se pede OUTRA coisa: outro período, ou um ↻
+    // forçado durante uma leitura que não era forçada. O mesmo pedido repetido
+    // (o setTab chama o render duas vezes na 1ª entrada) já foi atendido — com
+    // a leitura falhando, ele virava uma leitura completa a mais na fila do
+    // Apps Script e trocava a mensagem de falha por CARREGANDO.
+    const p=PG_TELA_PEND; PG_TELA_PEND=null;
+    if(p && (p.chave!==chave || (p.forcar && !forcar))) renderGestaoPerdas(p.forcar);
   }
 }
 
@@ -16571,8 +16607,10 @@ async function renderSimulador(forcar){
   const de=dGet('sim-de'), ate=dGet('sim-ate');
   if(!de||!ate){ _simInitFiltro(); return; }
   // Mesma regra da GESTÃO DE PERDAS: o pedido que chega com uma leitura em
-  // curso fica pendente — engolido, a proposta sairia com o período anterior.
-  if(SIM_RODANDO){ SIM_PEND={forcar:!!forcar||!!(SIM_PEND&&SIM_PEND.forcar)}; return; }
+  // curso fica pendente. Engolido, a TELA ficava no período anterior (e o
+  // cenário digitado, que lê pelo SIM_ULT, também) enquanto o 🖨 da proposta já
+  // lia o período dos campos: tela e papel discordavam.
+  if(SIM_RODANDO){ SIM_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(SIM_PEND&&SIM_PEND.forcar)}; return; }
   const chave=de+'|'+ate;
   if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
@@ -16584,12 +16622,13 @@ async function renderSimulador(forcar){
   // Período novo limpa a tela; refresh do MESMO período mantém o cenário
   // digitado no ar — refazer o bloco no meio da digitação roubaria o campo.
   const upd=document.getElementById('sim-upd');
-  if(chave!==SIM_ULT || !alvo.querySelector('.pg-sim')) alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>';
+  if(chave!==SIM_ULT || !alvo.querySelector('.pg-sim')){ alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>'; if(upd) upd.textContent=''; }
   else if(upd) upd.textContent='atualizando…';
   SIM_ULT=chave; SIM_RODANDO=true;
   try{
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
-    if(chave!==dGet('sim-de')+'|'+dGet('sim-ate')){ SIM_PEND=SIM_PEND||{forcar:false}; return; }
+    const deA=dGet('sim-de'), ateA=dGet('sim-ate');
+    if(deA && ateA && chave!==deA+'|'+ateA){ SIM_PEND=SIM_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
     if(!reg){
       if(alvo.querySelector('.pg-sim')){ if(upd) upd.textContent='⚠ não atualizou'; }
       else alvo.innerHTML=_pgFalhaHtml('renderSimulador','sec-simulador');
@@ -16602,7 +16641,8 @@ async function renderSimulador(forcar){
     else if(upd) upd.textContent='⚠ não atualizou';
   }finally{
     SIM_RODANDO=false;
-    if(SIM_PEND){ const p=SIM_PEND; SIM_PEND=null; renderSimulador(p.forcar); }
+    const p=SIM_PEND; SIM_PEND=null;   // mesma regra do renderGestaoPerdas
+    if(p && (p.chave!==chave || (p.forcar && !forcar))) renderSimulador(p.forcar);
   }
 }
 
@@ -18024,14 +18064,14 @@ ${_RP_HEADER_CSS}
   .pgq-smed-l{display:grid;grid-template-columns:64px 1fr auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid #f4f6f8}
   .pgq-smed-l.vazio{display:block;font-size:9.5px;color:#a0aec0}
   .pgq-smed-l.vazio i{font-style:normal;margin-left:6px}
-  .pgq-smed-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px;grid-row:span 3}
+  .pgq-smed-n{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px;grid-row:span 2}
   .pgq-smed-v{display:flex;align-items:baseline;gap:5px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;line-height:1}
   .pgq-smed-v span{color:#718096;font-size:15px;margin-left:6px}
   .pgq-smed-v i{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#a0aec0;font-style:normal;font-weight:400}
   .pgq-smed-tag{font-family:'IBM Plex Mono',monospace;font-size:7px;font-weight:700;letter-spacing:1px;color:#2e7d32;border:1px solid #a5d6a7;border-radius:3px;padding:1px 4px;font-style:normal;margin-left:2px}
   .pgq-smed-g{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#2e7d32;text-align:right}
   .pgq-smed-s{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#a0aec0}
-  .pgq-smed-t{grid-column:2/4;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#718096;margin-top:1px}
+  .pgq-smed-t{display:block;color:#718096;margin-top:1px}
   .pgq-smed-t.g{color:#2e7d32}.pgq-smed-t.r{color:#c62828}
   .pgq-smed-tot{margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#718096;letter-spacing:1.2px}
   .pgq-smed-tot b{font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#2e7d32;letter-spacing:0}
@@ -18064,6 +18104,12 @@ ${_RP_HEADER_CSS}
   .deitado .pgq-cel{padding:7px 13px}
   .deitado .pgq-bars{height:74px}
   .deitado .pgq-smed-l{padding:4px 0}
+  /* SMED na capa: contagem e "melhorou?" numa linha só — em duas, a célula
+     passava da EVOLUÇÃO e a capa ia para a folha 2 (medido em 22/10/2026). A
+     nota da meta e as palavras "1ª/2ª metade" saem inteiras na seção 5. */
+  .deitado .pgq-smed-t{display:inline;margin-top:0}
+  .deitado .pgq-smed-t::before{content:' · ';color:#a0aec0}
+  .deitado .pgq-smed-nota,.deitado .pgq-smed-mt{display:none}
   .deitado .pgq-plano-band{padding:6px 13px}
   .deitado .pgq-plano thead th{padding:4px 8px}
   .deitado .pgq-plano tbody td{padding:3.5px 8px}

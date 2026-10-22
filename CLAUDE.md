@@ -1477,9 +1477,15 @@ via Google Apps Script (JSONP).
   - **A CAPA tem de caber na folha 1**: cabeçalho + abertura + quadro. Medido,
     davam 756px para 718px de folha — o quadro (que não pode partir ao meio)
     pulava para a folha 2 e a 1 saía quase em branco. As regras `.deitado *`
-    tiram ~60px de **ar** da capa (nenhum número, nenhuma fonte de leitura),
-    com folga para o 6º item do plano de ação. Nada disso vale no retrato, e o
-    teste falha se alguma regra da paisagem escapar do escopo `.deitado`.
+    tiram ~60px de **ar** da capa (nenhum número, nenhuma fonte de leitura).
+    Nada disso vale no retrato, e o teste falha se alguma regra da paisagem
+    escapar do escopo `.deitado`.
+    - ⚠ **A "folga para o 6º item do plano" NÃO existe com as fontes do papel**
+      (medido em 22/10/2026, Chromium com Barlow/IBM Plex carregadas, paradas
+      reais de 17/09–22/10): com 5 itens o quadro termina em **703 px** dos
+      ~718 da folha; com 6, em **725** — a capa vai para a folha 2, e já era
+      assim na v7.152.0. Medição com as fontes bloqueadas dá ~25 px a menos e
+      engana. Não corrigido (fora do pedido); medir SEMPRE com as fontes.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
 - **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo
@@ -1995,6 +2001,20 @@ via Google Apps Script (JSONP).
   `6,8 min · meta 5 min`, `57 de 142 trocas em até 5 min` e uma linha de
   tendência por tipo. No papel, o card da seção 5 virou *"das trocas em até
   X min"*.
+  - **Contagem e "melhorou?" moram no MESMO bloco** (`.pgq-smed-s`, com o
+    "melhorou?" num `<span class="pgq-smed-t">`): na tela e no retrato saem em
+    duas linhas; na **capa deitada** viram uma só (`.deitado .pgq-smed-t
+    {display:inline}`), sem a nota da meta (`.pgq-smed-nota`) e sem as palavras
+    "1ª/2ª metade" (`.pgq-smed-mt`) — a seção 5 imprime as duas inteiras.
+    Por quê: em linhas separadas a célula SMED do papel passava da EVOLUÇÃO
+    (146 px) e, com uma troca batendo a meta (nota presente), o quadro ia a
+    723 px e a capa para a folha 2. Assim a célula fica com a altura da
+    v7.152.0 e a capa em 703 px em todos os casos medidos (nenhuma, uma ou as
+    duas trocas na meta). Mexeu no texto da linha? Medir a capa de novo.
+  - **O papel explica a régua na seção 5** (nota MELHOROU?, com as datas de
+    cada metade e o ±): a capa não tem tooltip. O texto (rótulo, diferença,
+    ±, faixas) sai do `_pgTendSmedFmt`, um lugar só para quadro e seção 5; o
+    sinal sai do valor JÁ arredondado (do cru, −0,04 saía "−0,0 min").
   - **`_pgTendSmed` NÃO é a régua da seta da disponibilidade** (1ª × última
     semana). Medido na planilha: a troca de produto tem desvio de ~5 min de uma
     troca para outra e a semana da ponta costuma ser pedaço — em 17/09–22/10 a
@@ -2003,7 +2023,9 @@ via Google Apps Script (JSONP).
     do meio fica fora) e as duas médias comparadas. **MELHORA/PIORA só acima
     de `PG_SMED_TEND_EP`=2 erros-padrão**; abaixo é **DENTRO DA VARIAÇÃO**, sem
     cor, com o número e o ±limite ao lado. Menos de `PG_SMED_AMOSTRA` trocas
-    em cada metade → não diz (a linha avisa que é pouco).
+    em cada metade → não diz (a linha avisa que é pouco). **Piso de 0,1 min**
+    no limite — a casa que a tela mostra: metades de variância zero que
+    diferem por segundos não viram "PIORA +0,0 min".
   - Em 17/09–22/10/2026 as duas trocas deram DENTRO DA VARIAÇÃO (produto +1,8
     com ±1,9; plástico +0,7 com ±1,0): o dado não sustenta "melhorou" nem
     "piorou". Não baixar o limite para a seta "dizer alguma coisa".
@@ -2011,8 +2033,7 @@ via Google Apps Script (JSONP).
     no tempo de troca, cair é MELHORA. A conta mora no `_pgSmed` (`s.tend`); o
     quadro só desenha (o teste prende). Pele `.pgq-smed-t` na tela e no papel.
   - Medido no Chromium com as paradas reais: a tela não cresce (o SMED já
-    tinha folga ao lado da EVOLUÇÃO); no papel o quadro desce 5 px e a capa,
-    com 6 itens no plano de ação, termina em 700 dos ~718 px da folha 1.
+    tinha folga ao lado da EVOLUÇÃO).
 - **`_pgAnomalias` são quatro checagens, e nenhuma altera indicador**:
   sobreposição · sem motivo · parada acima de `PG_ANOM_LONGA` (30 min) · tipo
   fora da aba `TIPOS_PARADA`. Parada aberta (sem FIM) entra como quinta linha
@@ -2072,10 +2093,28 @@ via Google Apps Script (JSONP).
     planilha. Hoje o pedido fica pendente (`PG_TELA_PEND`, com o ↻ forçado
     preservado) e roda no fim, e resultado de período que não é mais o dos
     campos **não é pintado**. Mesma correção no SIMULADOR (`SIM_PEND`) — lá a
-    proposta impressa sairia com o período anterior. É a régua do
-    `CART_PEND`/`QP_PEND` da aba PLANO. `relatorios.test.js` roda as duas
-    funções reais com a busca de mentira (a fila `_assincronos`, que roda
-    antes do resumo final).
+    TELA (e o cenário digitado, que lê pelo `SIM_ULT`) ficava no período
+    anterior enquanto o 🖨 da proposta já lia o período dos campos: tela e
+    papel discordavam. É a régua do `CART_PEND`/`QP_PEND` da aba PLANO.
+    - **O pendente guarda a CHAVE** (`{chave, forcar}`) e só vira leitura se
+      pede outra coisa: outro período, ou um ↻ forçado durante uma leitura não
+      forçada. O MESMO pedido repetido é descartado — o `setTab` chama o
+      render DUAS vezes na 1ª entrada (`_pgInitFiltro` já renderiza), e com a
+      leitura falhando o repetido virava uma leitura completa a mais na fila
+      do Apps Script (revisão adversarial de 22/10: 9 chamadas a
+      `getParadasPeriodo` contra 6 antes, ~4 min em CARREGANDO).
+    - **Campo de data pela metade** (sendo digitado) não é período novo: o
+      resultado que chegou é pintado, em vez de CARREGANDO sem nada em voo.
+    - Ao limpar a tela para CARREGANDO, o selo (`pg-upd`/`sim-upd`) é limpo
+      junto — "atualizando…" ficava preso ao lado da falha.
+    - **A retentativa automática de 20 s** (`_pgFalhaHtml`) só dispara com a
+      FALHA ainda na tela (`.pg-falha`): com outra leitura em curso ou dado já
+      pintado, ela virava um pedido forçado e refazia a leitura que tinha
+      acabado de dar certo.
+    - `relatorios.test.js` roda as duas funções reais com a busca de mentira
+      (a fila `_assincronos`, que roda antes do resumo final; com
+      `process.exitCode=1` armado, teste assíncrono que não termina não sai
+      0).
   - O **título do quadro some na tela** (a aba e o cabeçalho já dizem GESTÃO DE
     PERDAS) e a **marca da meta vira tracejado branco** — no papel ela é verde,
     e verde sobre a barra verde de quem bateu a meta desaparece.
