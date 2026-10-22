@@ -11,6 +11,57 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.153.0 — 22/10/2026 · GESTÃO DE PERDAS: SMED legível e o período certo
+
+- **O SMED do quadro dizia o que não era** (PPCP: *"o que quer dizer 40% já na
+  meta? que melhorou"*). Não era melhora: era a fatia das trocas do período
+  que saiu dentro da meta. E o `6,8 → 5 min` parecia evolução, quando é média
+  contra meta. Agora:
+  - `6,8 min · meta 5 min` (sem seta entre os dois);
+  - `57 de 142 trocas em até 5 min` (contagem, sem o "já");
+  - subtítulo *"tempo médio de troca no período"* (o 6,8 nunca foi "hoje");
+  - linha nova **"melhorou?"** por tipo de troca: as trocas do período em
+    ordem, partidas ao meio, e as duas médias comparadas. MELHORA ou PIORA só
+    quando a diferença passa de 2 erros-padrão; abaixo disso, **DENTRO DA
+    VARIAÇÃO**, com o número e o limite ao lado — e a palavra é decidida com
+    os mesmos números que a linha mostra (uma casa), para nunca sair "PIORA
+    +3,2 min" com "±3,2". Com menos de 8 trocas, a linha diz que é pouco para
+    afirmar.
+  - No relatório desta tela, o card da seção 5 *"já dentro da meta"* virou
+    *"das trocas em até X min"*, e a seção 5 ganhou a nota **MELHOROU?**, com
+    as datas de cada metade e a régua (a capa impressa não tem tooltip).
+  - Na **capa impressa** (paisagem), a contagem e o "melhorou?" saem numa
+    linha só, sem a nota da meta (que a seção 5 já imprime): em duas linhas a
+    capa ia para a folha 2 quando uma troca batia a meta. A capa continua com
+    a mesma altura da v7.152.0.
+- **Trocar a data com a leitura em curso mostrava o período anterior.** A
+  GESTÃO DE PERDAS e o SIMULADOR descartavam o pedido feito durante uma
+  leitura e pintavam o resultado antigo sob o rótulo novo. Agora o pedido
+  espera a leitura terminar e roda em seguida, e o resultado de outro período
+  não aparece — e o quadro antigo sai da tela no instante do pedido, sem
+  esperar a leitura em curso terminar. Pedido repetido do mesmo período não
+  vira leitura a mais, e a retentativa automática de 20 s só roda se a falha
+  ainda estiver na tela (agora uma por tela; na GESTÃO, como no SIMULADOR,
+  ela volta a valer depois de cada leitura que deu certo — se a retentativa
+  também falha, fica o ↻) — evita leituras extras da aba PARADAS (a mais
+  cara) quando o Apps Script está lento.
+- **Atenção:** o quadro de 22/10 (rótulo 17/09–22/10) mostrava os números de
+  **02/09–22/10**: 142 trocas de produto, 6,8 min, 40% na meta. O período
+  17/09–22/10 tem **108 trocas, 6,9 min, 40 de 108 (37%)** em até 5 min; na de
+  plástico, 77 trocas, 4,2 min, 45 em até 4 min. Nas duas, a 2ª metade do
+  período ficou **dentro da variação** da 1ª (produto +1,8 min com ±1,9;
+  plástico +0,7 com ±1,0): não dá para dizer que melhorou nem que piorou.
+- **A capa impressa da GESTÃO DE PERDAS cabe com o plano de ação cheio.**
+  Com 6 itens no plano (o máximo: as 5 maiores causas + o tipo genérico), o
+  quadro passava da folha 1 desde a v7.152.0 e a capa saía com a folha 1 só
+  com o cabeçalho; com uma parada em andamento junto, pior. Agora sai menos
+  espaço entre as linhas do plano, de OUTROS e de ANOMALIAS e sob os títulos
+  — nenhuma fonte mudou. Medido com as fontes do papel: o pior caso (6 itens
+  + parada em andamento) termina em 712 px de ~718.
+- Nada no `.gs`.
+
+---
+
 ## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
 
 - **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o

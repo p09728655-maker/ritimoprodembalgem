@@ -62,6 +62,10 @@ function ok(nome, real, esperado) {
     (bate ? '' : `\n       esperado: ${JSON.stringify(esperado)}\n       recebido: ${JSON.stringify(real)}`));
 }
 
+// Testes que precisam esperar uma promessa (a tela com a busca em curso) entram
+// nesta fila e rodam antes do resumo final — o resto do arquivo é síncrono.
+const _assincronos = [];
+
 console.log('\n── janela da semana ──');
 // 13/08/2026 é uma quinta-feira: a semana vai de 10/08 (segunda) a 16/08 (domingo).
 let j = _relSemanaJanela('13/08/2026');
@@ -1151,6 +1155,8 @@ eval(pega('function _pgSemLbl('));
 eval(pega('function _pgTopCausas('));
 eval(pega('function _pgOutros('));
 eval(pega('function _pgMetaSmed('));   // a escada da meta — o _pgSmed chama
+eval(pega('function _pgTendSmed('));   // o "melhorou?" — o _pgSmed chama
+eval(pega('function _pgTendSmedFmt('));   // o texto dele — quadro e seção 5
 eval(pega('function _pgFmtMin('));
 eval(pega('function _pgSmed('));
 eval(pega('function _pgMinPor1000('));
@@ -1291,6 +1297,129 @@ ok('evolução semana a semana', pgSp.semanas.map(s=>s.qtd), [2,1]);
 ok('o plástico tem meta própria', _pgSmed(pg_parTroca, PG_RE_TROCA_PLAS, CFGT, 4).med, 6);
 // Seção sem dado não é impressa com zeros — some.
 ok('tipo que não apareceu devolve null', _pgSmed([], PG_RE_TROCA_PROD, CFGT, 5), null);
+
+console.log('\n── SMED: "melhorou?" — 1ª × 2ª metade das trocas ──');
+// PPCP, 22/10/2026: leu "40% já na meta" como melhora. A tela não dizia se a
+// troca está ficando mais rápida. Primeira × última semana (a régua da seta da
+// disponibilidade) foi medida na planilha e descartada: a S38 tinha 8 trocas a
+// 4,4 min e a S43 8,1 — a seta diria PIORA +3,7 min com a metade do período
+// dizendo +1,8 dentro de ±1,9. Aqui as trocas são partidas ao meio.
+const _tr = (dia, ini, d) => ({dia, ini, d});
+const _tA = [8,9,7,8,8,9,7,8].map((d,i) => _tr(20260901+i, 480, d));
+const _tB = [4,5,4,5,4,5,4,5].map((d,i) => _tr(20261001+i, 480, d));
+const tdM = _pgTendSmed(_tA.concat(_tB));
+ok('trocas mais curtas na 2ª metade = MELHORA, e a seta segue o número (↘ caiu)',
+   [tdM.melhorou, tdM.piorou, tdM.seta, tdM.st, tdM.n], [true, false, '↘', 'g', 8]);
+ok('as duas médias e a diferença', [tdM.de, tdM.ate, tdM.delta], [8, 4.5, -3.5]);
+const tdP = _pgTendSmed(_tB.map((t,i) => _tr(20260901+i, 480, t.d)).concat(_tA.map((t,i) => _tr(20261001+i, 480, t.d))));
+ok('mais longas na 2ª metade = PIORA (↗, vermelho)', [tdP.piorou, tdP.seta, tdP.st], [true, '↗', 'r']);
+// Troca varia muito de uma para outra: diferença de meio minuto no meio de
+// trocas de 2 a 12 min é acaso. O número vai, a seta não afirma direção.
+const _ruidoA = [2,12,3,11,4,10,5,9], _ruidoB = [3,12,4,11,5,10,6,10];
+const tdR = _pgTendSmed(_ruidoA.map((d,i) => _tr(20260901+i, 480, d)).concat(_ruidoB.map((d,i) => _tr(20261001+i, 480, d))));
+ok('diferença menor que 2 erros-padrão é DENTRO DA VARIAÇÃO (→, sem cor)',
+   [tdR.melhorou, tdR.piorou, tdR.seta, tdR.st], [false, false, '→', 'n']);
+ok('e o limite sai das próprias trocas (2 erros-padrão da diferença)',
+   tdR.lim > Math.abs(tdR.delta) && Math.round(tdR.lim*100)/100, 3.72);
+// Trocas todas iguais: variância zero não vira "PIORA +0,0 min".
+const tdI = _pgTendSmed(Array.from({length:10}, (_,i) => _tr(20260901+i, 480, 4)));
+ok('trocas iguais não inventam direção', [tdI.seta, tdI.delta], ['→', 0]);
+// Piso de 0,1 min — a casa que a tela mostra. Metades de variância zero que
+// diferem por segundos (4:00 × 4:01) dariam erro-padrão 0 e "PIORA +0,0 min";
+// 0,08 min (entre o piso antigo de 0,05 e o de hoje) sairia "+0,1" com as
+// duas médias iguais com uma casa.
+const _quase = dd => _pgTendSmed([4,4,4,4].map((d,i) => _tr(20260901+i, 480, d))
+  .concat([4,4,4,4].map((d,i) => _tr(20261001+i, 480, 4+dd))));
+ok('metades iguais que diferem por segundos não viram PIORA', [_quase(1/60).seta, _quase(1/60).st], ['→', 'n']);
+ok('nem por 0,08 min (o piso é a casa que a tela mostra)', [_quase(0.08).seta, _quase(0.08).lim], ['→', 0.1]);
+ok('acima do piso, sem variância, a direção vale', _quase(0.2).piorou, true);
+// A direção é decidida com os números da LINHA (uma casa): 6,75 → 10,0 dá
+// +3,25 contra ±3,20 cru — PIORA —, mas a linha mostraria "+3,2 min (±3,2)".
+const _empate = _pgTendSmed([5,4,8,10].map((d,i) => _tr(20260901+i, 480, d))
+  .concat([8,10,12,10].map((d,i) => _tr(20261001+i, 480, d))));
+ok('diferença igual ao limite mostrado não vira PIORA', [_empate.piorou, _empate.st, _pgTendSmedFmt(_empate).dif, _pgTendSmedFmt(_empate).lim],
+   [false, 'n', '+3,2 min', '±3,2']);
+ok('com nº ímpar o papel sabe que a troca do meio ficou fora',
+   [_pgTendSmed(_tA.concat([_tr(20260920, 480, 99)], _tB)).fora, tdM.fora], [1, 0]);
+// O sinal sai do valor ARREDONDADO: do delta cru, −0,04 saía "−0,0 min".
+ok('o texto não escreve "−0,0"', _pgTendSmedFmt({de:5.02, ate:4.98, delta:-0.04, lim:0.1, melhorou:false, piorou:false,
+   diaA:[20260917,20261005], diaB:[20261006,20261022]}).dif, '0,0 min');
+// A diferença é a das médias EXIBIDAS: 6,04 → 7,86 aparece "6,0 → 7,9", e a
+// linha tem de dizer +1,9 (do cru, +1,8 — a conta lida não fechava).
+{ const F = _pgTendSmedFmt({de:6.04, ate:7.86, delta:1.82, lim:1.9, melhorou:false, piorou:false,
+   diaA:[20260917,20261005], diaB:[20261006,20261022]});
+  ok('a diferença fecha com as médias que a linha mostra', [F.de, F.ate, F.dif], ['6,0', '7,9', '+1,9 min']); }
+ok('o texto do "melhorou?": rótulo, médias, diferença, limite e as faixas de data',
+   _pgTendSmedFmt(tdM), {rot:'MELHORA', de:'8,0', ate:'4,5', dif:'−3,5 min', lim:'±0,7', faixaA:'01/09 a 08/09', faixaB:'01/10 a 08/10'});
+// Amostra curta: a mesma de quem move a meta (PG_SMED_AMOSTRA em cada metade).
+ok('menos de 4 trocas em cada metade não diz nada',
+   _pgTendSmed(_tA.slice(0,4).concat(_tB.slice(0,3))), null);
+ok('com 4 em cada metade já diz', _pgTendSmed(_tA.slice(0,4).concat(_tB.slice(0,4))).n, 4);
+// Ímpar: a troca do meio fica fora, para as duas metades terem o mesmo peso.
+ok('com nº ímpar a troca do meio fica fora',
+   _pgTendSmed(_tA.concat([_tr(20260920, 480, 99)], _tB)).delta, -3.5);
+// A ordem é a dos FATOS (data, depois hora) — nunca a da aba nem a do texto.
+const _emb = _tA.concat(_tB).slice().reverse();
+ok('a ordem de entrada não muda nada', _pgTendSmed(_emb).delta, -3.5);
+ok('no mesmo dia vale a hora', _pgTendSmed([30,30,30,30,1,1,1,1].map((d,i) =>
+   _tr(20261001, i<4 ? 900+i : 420+i, d))).melhorou, false);
+ok('e as faixas de data de cada metade saem junto', [tdM.diaA, tdM.diaB], [[20260901,20260908],[20261001,20261008]]);
+// Pelo _pgSmed, com a data dd/mm/yyyy: 30/09 vem ANTES de 01/10 (como texto,
+// "01/10" < "30/09" e a 1ª metade seria a de outubro).
+const _parTend = [8,9,7,8].map((d,i) => ({data:(27+i)+'/09/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:'+p2(d)}))
+  .concat([4,5,4,5].map((d,i) => ({data:p2(1+i)+'/10/2026', tipo:'Troca de produto', ini:'08:00', fim:'08:'+p2(d)})));
+const smT = _pgSmed(_parTend, PG_RE_TROCA_PROD, CFGT, 5);
+ok('o _pgSmed entrega o "melhorou?" com a data lida como data', [smT.tend.de, smT.tend.ate, smT.tend.melhorou], [8, 4.5, true]);
+ok('com poucas trocas o _pgSmed devolve tend null', pgSp.tend, null);
+
+console.log('\n── quadro: o SMED não pode parecer melhora sem ser ──');
+// "6,8 → 5 min" foi lido como "caiu de 6,8 para 5", e "40% já na meta" como
+// 40% de melhora. O quadro escreve META e conta trocas.
+eval(pega('function _pgQuadroHtml('));
+const _qSmed = _pgQuadroHtml({semanas:[], smedProd:smT, smedPlas:pgSp, outros:null, anom:null, plano:[], top:[], rec:null, tend:null, foco:'x'});
+ok('a média sai com a META escrita, sem seta entre as duas',
+   [/<i>min<\/i><span>meta 5 min<\/span>/.test(_qSmed), /<span>→<\/span>/.test(_qSmed)], [true, false]);
+ok('a contagem é em trocas, sem "já"',
+   [/4 de 8 trocas em até 5 min/.test(_qSmed), /já na meta/.test(_qSmed)], [true, false]);
+ok('o subtítulo não diz "hoje" (é a média do período)',
+   [/hoje → meta/.test(_qSmed), /tempo médio de troca no período/.test(_qSmed)], [false, true]);
+ok('a linha do "melhorou?" sai com a direção e as duas metades',
+   /class="pgq-smed-t g"[^>]*>↘ MELHORA <b>−3,5 min<\/b> · <span class="pgq-smed-mt">1ª metade <\/span>8,0 → <span class="pgq-smed-mt">2ª metade <\/span>4,5 min/.test(_qSmed), true);
+// Contagem e "melhorou?" no MESMO bloco: é o que deixa a capa deitada pôr os
+// dois numa linha só (em duas, a capa ia para a folha 2 quando uma troca
+// batia a meta — 723 px para 718, medido com as fontes do papel).
+ok('a contagem e o "melhorou?" moram no mesmo bloco',
+   /<div class="pgq-smed-s">4 de 8 trocas em até 5 min<span class="pgq-smed-t g"/.test(_qSmed), true);
+ok('na capa deitada: em linha, sem a nota da meta e sem "1ª/2ª metade"',
+   [/\n  \.deitado \.pgq-smed-t\{display:inline;margin-top:0\}/.test(src),
+    /\n  \.deitado \.pgq-smed-nota,\.deitado \.pgq-smed-mt\{display:none\}/.test(src)], [true, true]);
+ok('a nota da meta fica marcada para a capa esconder (a seção 5 a imprime inteira)',
+   /<span class="pgq-smed-nota"> · \$\{s\.metaNota\}<\/span>/.test(pega('function _pgQuadroHtml(')), true);
+ok('e as datas de cada metade vão no tooltip', /1ª metade 27\/09 a 30\/09, 2ª metade 01\/10 a 04\/10/.test(_qSmed), true);
+ok('sem trocas suficientes, diz que é pouco — não some calado',
+   /pgq-smed-t n">menos de 8 trocas no período — pouco para dizer se melhorou/.test(_qSmed), true);
+// O papel explica a régua na seção 5 (a capa não tem tooltip), com as datas.
+{ const _s5 = pega('function _pgSecaoHtml(');
+  ok('a seção 5 do papel explica o "melhorou?" com o mesmo texto do quadro',
+     [/MELHOROU\? As trocas do período, em ordem de data e hora, partidas ao meio/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
+  // A frase que manda olhar "a evolução semana a semana acima" só sai quando
+  // esse quadro foi impresso (2+ semanas) — o mesmo teste do quadro dela.
+  ok('com nº ímpar a nota diz que a troca do meio ficou fora',
+     /\$\{s\.tend\.fora\?' \(com número ímpar, a troca do meio fica fora\)':''\}/.test(_s5), true);
+  ok('a nota só cita a evolução semanal quando ela está no papel',
+     /\+\(s\.semanas\.length>1\?`, e a semana da ponta/.test(_s5) && /const ev=s\.semanas\.length>1\?/.test(_s5), true);
+  ok('o texto do "melhorou?" é escrito num lugar só',
+     [(JS.match(/function _pgTendSmedFmt\(/g) || []).length, (JS.match(/(?<!function )_pgTendSmedFmt\(/g) || []).length], [1, 2]);
+}
+const _qR = _pgQuadroHtml({semanas:[], smedProd:Object.assign({}, smT, {tend:tdR}), smedPlas:null, outros:null, anom:null, plano:[], top:[], rec:null, tend:null, foco:'x'});
+ok('dentro da variação: sem cor, com o tamanho da variação ao lado',
+   /class="pgq-smed-t n"[^>]*>→ DENTRO DA VARIAÇÃO <b>\+0,6 min<\/b> \(±3,7\)/.test(_qR), true);
+ok('o quadro não calcula a tendência — recebe pronta do _pgSmed',
+   [/_pgTendSmed\(/.test(pega('function _pgQuadroHtml(')), /tend: _pgTendSmed\(trocas\)/.test(pega('function _pgSmed('))], [false, true]);
+ok('a tendência é uma implementação só', (JS.match(/function _pgTendSmed\(/g) || []).length, 1);
+// As duas peles (tela e papel) têm a linha nova — marcação sem pele sai crua.
+ok('a linha do "melhorou?" tem pele na tela e no papel',
+   [/#sec-perdas \.pgq-smed-t\{/.test(src), /\n  \.pgq-smed-t\{/.test(src)], [true, true]);
 
 console.log('\n── meta SMED: atingida, ela desce sozinha ──');
 // Pedido do usuário em 27/08/2026: "SMED, deixar automático quando atingir".
@@ -1633,7 +1762,8 @@ ok('nenhuma das duas monta contexto por conta própria',
    || /_pgContexto\(\{/.test(pega('async function renderSimulador(')), false);
 // A busca é a leitura mais cara do painel (lê a aba PARADAS inteira): sem
 // guarda de reentrância os ciclos se empilham, e sem cache o refresh refaz tudo.
-ok('a tela não empilha buscas', /if\(PG_TELA_RODANDO\) return;/.test(pega('async function renderGestaoPerdas(')), true);
+ok('a tela não empilha buscas — o pedido que chega no meio fica pendente',
+   /if\(PG_TELA_RODANDO\)\{\s*PG_TELA_PEND=/.test(pega('async function renderGestaoPerdas(')), true);
 ok('e guarda o período em cache', /PG_TELA_CACHE\[chave\]=reg/.test(_ctxPer), true);
 // ⚠ Duas abas pedindo a MESMA janela não podem virar duas execuções no Apps
 // Script — elas só se enfileirariam lá. Mesmo remédio do _phVoo do comparativo.
@@ -1641,6 +1771,10 @@ ok('e uma requisição em voo é compartilhada',
    /if\(PG_VOO\[chave\]\) return PG_VOO\[chave\]/.test(_ctxPer), true);
 // Sem o paradas-calc.js não há conta nenhuma — mesma guarda das outras telas.
 ok('a tela tem a guarda do módulo', /_rpOk\(\)/.test(pega('async function renderGestaoPerdas(')), true);
+// Deu certo: a próxima falha volta a ter a retentativa automática (o SIMULADOR
+// sempre zerou; a GESTÃO ficava com uma por sessão).
+ok('a GESTÃO zera a retentativa automática quando a leitura dá certo',
+   /_pgFalhaTentou\.renderGestaoPerdas=false;[^\n]*\n\s*_pgPintar\(reg\.ctx, reg\.t\)/.test(pega('async function renderGestaoPerdas(')), true);
 // A aba e a seção precisam existir e casar com o setTab.
 ok('a aba existe na navegação', /data-tab="perdas"/.test(src), true);
 ok('a seção existe', /id="sec-perdas"/.test(src), true);
@@ -1767,6 +1901,14 @@ ok('nenhum tamanho de página fixo dentro do documento compartilhado',
 const _perdas = pega('async function gerarRelatorioPerdas(');
 const _paradas = pega('async function gerarRelatorioParadas(');
 ok('GESTÃO DE PERDAS imprime deitado', /_rpDocParadas\(`Gestão de Perdas[^`]*`,\s*true\)/.test(_perdas), true);
+// A capa tem de caber na folha 1 com o plano CHEIO (6 itens: TOP 5 + o tipo
+// genérico) e uma parada em andamento (5ª linha das ANOMALIAS). Medido em
+// 22/10/2026 com as fontes do papel: 746 px para ~718 sem as três regras
+// abaixo; 712 com elas. Mexeu numa delas? Medir a capa de novo, com as fontes.
+ok('a capa deitada tira o ar que o 6º item do plano precisa',
+   [/\n  \.deitado \.pgq-plano tbody td\{padding:2px 8px\}/.test(src),
+    /\n  \.deitado \.pgq-l\{padding:2\.5px 0\}/.test(src),
+    /\n  \.deitado \.pgq-cel-ttl\{margin-bottom:5px\}/.test(src)], [true, true, true]);
 ok('PARADAS continua em pé', /_rpDocParadas\(`Relatório de Paradas[^`]*`\)/.test(_paradas), true);
 // A compactação da capa deitada não pode vazar para o retrato: toda regra da
 // paisagem é escopada por .deitado.
@@ -2271,8 +2413,159 @@ ok('a impressão executiva manda o período do simulador',
    /gerarRelatorioInvestimento\(dGet\('sim-de'\),dGet\('sim-ate'\)\)/.test(src), true);
 ok('e a proposta prefere esse período ao das outras abas',
    /let de=deArg\|\|dGet\('sim-de'\)/.test(_inv), true);
-ok('a aba do simulador não empilha buscas',
-   /if\(SIM_RODANDO\) return;/.test(pega('async function renderSimulador(')), true);
+ok('a aba do simulador não empilha buscas — o pedido que chega no meio fica pendente',
+   /if\(SIM_RODANDO\)\{\s*SIM_PEND=/.test(pega('async function renderSimulador(')), true);
+
+// ── trocar o período com a leitura em curso (22/10/2026) ────────────────────
+// A data trocada durante uma leitura era engolida pelo `return` seco: o quadro
+// mostrou 02/09–22/10 (142 trocas de produto) sob o rótulo de 17/09–22/10 (108).
+// Roda as funções REAIS com a busca de mentira, resolvida à mão.
+_assincronos.push(async () => {
+  console.log('\n── trocar o período com a leitura em curso não pode sumir ──');
+  const flush = () => new Promise(r => setImmediate(r));
+  const docAntes = global.document;
+  // O elemento sabe se há um quadro pintado (o `.pgq`/`.pg-sim` que as telas
+  // procuram): é o que separa "período novo, tela limpa" de "refresh do mesmo
+  // período com o quadro no ar".
+  const el = () => { const o = {innerHTML:'', textContent:'', classList:{contains:()=>true}};
+    o.querySelector = () => (o.innerHTML.startsWith('QUADRO') ? {} : null); return o; };
+  const dom = {'pg-quadro':el(), 'pg-upd':el(), 'sim-bloco':el(), 'sim-upd':el()};
+  global.document = { getElementById: id => dom[id] || null };
+  const campos = {};
+  Object.assign(global, {
+    dGet: id => campos[id] || '', _rpOk: () => true, _rpRecarregar: () => {},
+    _pgInitFiltro: () => {}, _simInitFiltro: () => {}, invalidarParadasPeriodo: () => {},
+    _pgFalhaHtml: () => 'FALHA', _pgFalhaTentou: {}, _simUepCarregar: () => {},
+    PG_TELA_TTL: 5*60*1000, PG_TELA_CACHE: {}, PG_TELA_RODANDO: false, PG_TELA_ULT: '', PG_TELA_PEND: null,
+    SIM_RODANDO: false, SIM_ULT: '', SIM_PEND: null
+  });
+  global.CFG = Object.assign({}, global.CFG, {sheetsUrl:'https://x/exec'});
+  let busca = [], abertas = [], pintou = [];
+  global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
+    return new Promise(r => abertas.push(() => r({ctx:{de}, t:1}))); };
+  global._pgPintar = ctx => { pintou.push(ctx.de); dom['pg-quadro'].innerHTML = 'QUADRO ' + ctx.de; };
+  global._simPintar = ctx => { pintou.push(ctx.de); dom['sim-bloco'].innerHTML = 'QUADRO ' + ctx.de; };
+  const solta = () => { const f = abertas.shift(); if (f) f(); };   // resolve a busca mais antiga
+  eval(pega('async function renderGestaoPerdas('));
+  eval(pega('async function renderSimulador('));
+
+  for (const [rot, fn, de, ate] of [['GESTÃO DE PERDAS', renderGestaoPerdas, 'pg-de', 'pg-ate'],
+                                     ['SIMULADOR', renderSimulador, 'sim-de', 'sim-ate']]) {
+    const tela = dom[rot === 'SIMULADOR' ? 'sim-bloco' : 'pg-quadro'];
+    // O caso de 22/10: 02/09–22/10 no ar, o refresh dele em curso, e o gestor
+    // troca a data para 17/09.
+    campos[de] = '02/09/2026'; campos[ate] = '22/10/2026';
+    const p0 = fn(); solta(); await p0; await flush();
+    busca = []; abertas = []; pintou = [];
+    const p1 = fn();                       // refresh do mesmo período: o quadro fica no ar
+    ok(rot + ': no refresh do mesmo período o quadro continua no ar', tela.innerHTML, 'QUADRO 02/09/2026');
+    campos[de] = '17/09/2026';             // o gestor troca a data com a leitura em curso
+    fn();
+    // O que estava na tela sai NA HORA do pedido — não espera a leitura antiga
+    // terminar (até ~80 s no cold start) sob o rótulo novo.
+    ok(rot + ': a tela troca para CARREGANDO no instante do pedido novo', /CARREGANDO/.test(tela.innerHTML), true);
+    solta(); await p1; await flush();
+    ok(rot + ': o resultado do período antigo NÃO é pintado sob o rótulo novo', pintou, []);
+    ok(rot + ': e o pedido novo não sumiu — a busca do período certo sai em seguida', busca, ['02/09/2026', '17/09/2026']);
+    solta(); await flush(); await flush();
+    ok(rot + ': na tela fica o período que está nos campos', pintou, ['17/09/2026']);
+    // ↻ ATUALIZAR no meio da leitura do MESMO período: roda depois, forçado.
+    busca = []; abertas = []; pintou = [];
+    const p2 = fn(); fn(true);
+    solta(); await p2; await flush();
+    ok(rot + ': o ↻ ATUALIZAR dado no meio da leitura roda depois, forçado', busca, ['17/09/2026', '17/09/2026 ↻']);
+    solta(); await flush(); await flush();
+    // ↻ e depois um pedido comum (trocar de aba e voltar) na mesma leitura: o
+    // forçado não se perde.
+    busca = []; abertas = []; pintou = [];
+    const p3 = fn(); fn(true); fn();
+    solta(); await p3; await flush();
+    ok(rot + ': ↻ seguido de pedido comum na mesma leitura continua forçado', busca, ['17/09/2026', '17/09/2026 ↻']);
+    solta(); await flush(); await flush();
+    // ↻ durante uma leitura que JÁ é forçada: ela já traz dado fresco.
+    busca = []; abertas = []; pintou = [];
+    const p4 = fn(true); fn(true);
+    solta(); await p4; await flush();
+    ok(rot + ': dois ↻ seguidos fazem UMA leitura forçada', busca, ['17/09/2026 ↻']);
+    // O MESMO pedido repetido (o setTab chama o render duas vezes na 1ª
+    // entrada) não vira outra leitura — com a falha, era uma leitura completa
+    // a mais e a mensagem de falha trocada por CARREGANDO.
+    busca = []; abertas = []; pintou = []; tela.innerHTML = '';   // 1ª entrada: nada no ar
+    global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
+      return new Promise(r => abertas.push(() => r(null))); };   // a leitura falha
+    const p5 = fn(); fn();
+    solta(); await p5; await flush();
+    ok(rot + ': o mesmo pedido repetido não refaz a leitura que acabou de falhar', busca, ['17/09/2026']);
+    ok(rot + ': e a falha fica na tela', tela.innerHTML, 'FALHA');
+    global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
+      return new Promise(r => abertas.push(() => r({ctx:{de}, t:1}))); };
+    // Campo pela metade (data sendo digitada) não é período novo: pinta o que
+    // chegou, em vez de deixar CARREGANDO sem nada em voo.
+    busca = []; abertas = []; pintou = [];
+    const p6 = fn();
+    campos[ate] = '';
+    solta(); await p6; await flush();
+    ok(rot + ': com a data pela metade, pinta o que chegou e não busca nada', [pintou, busca], [['17/09/2026'], ['17/09/2026']]);
+    campos[ate] = '22/10/2026';
+    // Pela metade, mas o campo PREENCHIDO já é de outro período: não pinta.
+    busca = []; abertas = []; pintou = [];
+    const p7 = fn();
+    campos[de] = '01/10/2026'; campos[ate] = '';
+    solta(); await p7; await flush(); await flush();
+    ok(rot + ': com o campo preenchido de outro período, o que chegou não é pintado', pintou, []);
+    campos[de] = '17/09/2026'; campos[ate] = '22/10/2026';
+  }
+  global.document = docAntes;
+});
+
+// A retentativa automática de 20 s só dispara com a FALHA ainda na tela: com
+// uma leitura em curso (o ↻ tocado antes) ou já pintada, ela virava um pedido
+// forçado pendente e refazia a leitura que tinha acabado de dar certo.
+_assincronos.push(async () => {
+  console.log('\n── a retentativa automática não refaz o que já está na tela ──');
+  let agendado = null; const chamou = [];
+  const setTimeout = fn => { agendado = fn; return 1; }, clearTimeout = () => {};   // o eval abaixo enxerga estes
+  let _pgFalhaTimer = {};
+  const docAntes = global.document;
+  let mostra = '';
+  global.document = { getElementById: id => id === 'sec-perdas'
+    ? { classList:{contains:()=>true}, querySelector: q => (q === '.pg-falha' && mostra.includes('pg-falha')) ? {} : null } : null };
+  global.window.renderGestaoPerdas = f => chamou.push(f);
+  global._pgFalhaTentou = {};
+  eval(pega('function _pgFalhaHtml('));
+  mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  ok('a mensagem de falha leva a marca que a retentativa procura', /class="pg-carregando pg-falha"/.test(mostra), true);
+  mostra = '<div class="pg-carregando">CARREGANDO…</div>';   // o gestor tocou ↻ antes dos 20 s
+  agendado();
+  ok('com outra leitura na tela, os 20 s não disparam nada', chamou, []);
+  _pgFalhaTentou = {}; mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  agendado();
+  ok('com a falha ainda na tela, tenta de novo (forçado)', chamou, [true]);
+  global.document = docAntes; delete global.window.renderGestaoPerdas;
+});
+
+// Um timer POR TELA: a falha do SIMULADOR (pendente em segundo plano) não pode
+// cancelar a retentativa que a GESTÃO acabou de prometer. Com relógio de
+// mentira que de fato cancela — uma regex não pegaria a volta do timer único.
+_assincronos.push(async () => {
+  console.log('\n── a retentativa de uma tela não cancela a da outra ──');
+  const vivos = new Map(); let id = 0; const chamou = [];
+  const setTimeout = fn => { vivos.set(++id, fn); return id; }, clearTimeout = k => { vivos.delete(k); };
+  let _pgFalhaTimer = {};
+  const docAntes = global.document;
+  const falha = { classList:{contains:()=>true}, querySelector: q => (q === '.pg-falha' ? {} : null) };
+  global.document = { getElementById: id => (id === 'sec-perdas' || id === 'sec-simulador') ? falha : null };
+  global.window.renderGestaoPerdas = f => chamou.push('GESTÃO ' + f);
+  global.window.renderSimulador = f => chamou.push('SIMULADOR ' + f);
+  global._pgFalhaTentou = {};
+  eval(pega('function _pgFalhaHtml('));
+  _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  _pgFalhaHtml('renderSimulador', 'sec-simulador');      // a outra tela falha logo depois
+  ok('as duas retentativas continuam agendadas', vivos.size, 2);
+  [...vivos.values()].forEach(f => f());
+  ok('e as duas telas tentam de novo, forçadas', chamou, ['GESTÃO true', 'SIMULADOR true']);
+  global.document = docAntes; delete global.window.renderGestaoPerdas; delete global.window.renderSimulador;
+});
 ok('e tem a guarda do módulo de cálculo',
    /_rpOk\(\)/.test(pega('async function renderSimulador(')), true);
 // Nenhuma conta no desenho da aba: a base sai pronta do `st` que o RP_PARADAS
@@ -4296,7 +4589,14 @@ console.log('\n── estudo de UEP ──');
      /if\(PERFIL==='gerencial' \|\| document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(corpo)
        && corpo.indexOf("PERFIL==='gerencial'") < corpo.indexOf('getSlotPendente()'), true);
 }
-console.log(falhas === 0
-  ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
-  : `\n❌ ${falhas} falha(s)\n`);
-process.exit(falhas === 0 ? 0 : 1);
+// Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
+// sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
+process.exitCode = 1;
+process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não terminou\n'));
+(async () => {
+  for (const f of _assincronos) await f();
+  console.log(falhas === 0
+    ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
+    : `\n❌ ${falhas} falha(s)\n`);
+  process.exit(falhas === 0 ? 0 : 1);
+})().catch(e => { console.error(e); process.exit(1); });
