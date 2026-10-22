@@ -33,8 +33,8 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   apagada à mão. O FIM da 929 foi empurrado a cada START: estava em 12:26:11
   às 12:27 e às 12:33 já marcava 12:31:52 (15,52 min). O fim real é o do 1º
   START, às 12:26:11 ou antes (9,83 min no máximo) — corrigir na planilha.
-- Nada no painel nem no app. ⚠ **re-deploy manual** do `.gs`. Até lá, o
-  mesmo defeito pode se repetir quando o Apps Script estiver lento.
+- Nada no painel nem no app. ⚠ **re-deploy manual** do `.gs` — feito em
+  22/10/2026 (nova versão na implantação existente, mesma URL).
 
 ---
 

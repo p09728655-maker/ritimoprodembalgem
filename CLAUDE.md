@@ -728,6 +728,7 @@ via Google Apps Script (JSONP).
     fechada** (`jaFechada`). Cópia antiga que sobrar fecha junto e o log do
     Apps Script aponta as linhas — apagar a cópia à mão.
   - Medido em 22/10/2026: era a única duplicata nas 929 linhas da aba.
+    Re-deployado no mesmo dia (nova versão na implantação existente).
     `apps-script.test.js` cobre (conferido por mutação).
 - **`_parEscrevendo` congela a tela de paradas durante a gravação.** O poll de
   90s caía no meio do START, refazia o `innerHTML` e trocava o botão
