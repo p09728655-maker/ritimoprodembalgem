@@ -11,6 +11,42 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.154.0 — 22/10/2026 · GESTÃO DE PERDAS: o que mudou, onde, e o papel enxuto
+
+- **O QUE MUDOU** (PPCP: *"como saber a partir de quando melhorou e onde
+  melhorou?"*). Abaixo da tabela de MINUTOS DE PARADA / 1.000 CAIXAS, o não
+  programado aberto pelas 5 causas que mais pararam no período, semana a
+  semana (ou quinzena, ou mês — o grão escolhido), em min/1.000 cx, com as
+  demais causas e o total. Em negrito, a melhor semana de cada causa. Vai na
+  tela, no relatório da tela e na impressão dedicada.
+- **A VARIAÇÃO diz a unidade e o %** (*"essa variação é percentual?"* — não
+  era). Antes: `↓ 11,2 a menos`. Agora: `↓ 11,1 min (−22%)` — minutos não
+  programados por 1.000 caixas contra a janela anterior, calculados com os
+  números que aparecem na linha.
+- **A seta da EVOLUÇÃO não chama mais de melhora o que é oscilação.** Ela
+  comparava a primeira com a última semana e chamava de tendência qualquer
+  diferença acima de meio ponto. Agora usa a mesma régua do SMED: a
+  disponibilidade de cada dia trabalhado, 1ª metade × 2ª metade do período, e
+  só diz MELHORA ou PIORA quando a diferença passa da variação normal de um
+  dia para outro. A linha ESTAMOS MELHORANDO? do diagnóstico segue a mesma
+  régua (e diz SEM MUDANÇA CLARA quando não há direção).
+- **O relatório impresso ficou enxuto.** No corpo, cada nota virou uma linha
+  com a conclusão; o "como o número sai" foi para um **ANEXO — COMO LER**, na
+  última folha. Nenhum número saiu. Notas do corpo: 729 → 181 palavras; corpo
+  do relatório: 2.167 → 1.637 palavras, já com a tabela nova. Continuam 7
+  folhas.
+- **Atenção:** em 23/09–22/10 a seta da EVOLUÇÃO dizia **MELHORA +0,7 p.p.**
+  (82,3% → 83,0%). Pela régua nova: **DENTRO DA VARIAÇÃO** — 1ª metade 85,8%
+  → 2ª metade 84,5% (−1,3 p.p., ±3,5). As semanas: 82,3 · 86,5 · 87,3 · 85,6
+  · 83,0 — duas boas no meio, e a última de volta ao nível do começo. Por
+  causa (min não programados / 1.000 cx, semana a semana): troca de produto
+  23,7 · 17,0 · 21,8 · **12,5** · 22,4; "Outros" 14,5 · **3,9** · 9,5 · 5,9 ·
+  17,0; troca de plástico **4,2** · 6,4 · 8,4 · 9,6 · 10,5 (sobe toda
+  semana: mais trocas por dia, não trocas mais longas).
+- Nada no `.gs`.
+
+---
+
 ## v7.153.0 — 22/10/2026 · GESTÃO DE PERDAS: SMED legível e o período certo
 
 - **O SMED do quadro dizia o que não era** (PPCP: *"o que quer dizer 40% já na

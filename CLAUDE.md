@@ -1492,6 +1492,8 @@ via Google Apps Script (JSONP).
       **6 + aberta 712** — todos na folha 1. 6 é o máximo do plano (TOP 5 +
       o tipo genérico). Medição com as fontes bloqueadas dá ~25 px a menos e
       engana: medir SEMPRE com as fontes. O teste prende as três regras.
+      Na v7.154.0 (papel enxuto) a abertura caiu para uma linha (52 → 37 px):
+      5 itens 644 · 5 + aberta 665 · 6 itens 663 · **6 + aberta 684**.
 - **O CSS de cada relatório continua local, de propósito**: só 5 das 185 regras
   são comuns aos cinco. Unificar traria pouco e arriscaria o layout de todos.
 - **"A meta foi batida" × "a hora extra bateu a meta"** (`_relMetaHE`, usada pelo
@@ -1995,10 +1997,25 @@ via Google Apps Script (JSONP).
   - ⚠ **Crase dentro do CSS do relatório fecha o template literal** e derruba o
     parse do arquivo inteiro (um comentário com `page-break-inside` entre
     crases já fez isso). O `node lint-js.js` pega.
-- **`_pgTendencia` é a MESMA para a seta ↗/↘ do quadro e para a linha "ESTAMOS
+- **`_pgTendencia` é a MESMA para a seta do quadro e para a linha "ESTAMOS
   MELHORANDO?" do diagnóstico** — duas cópias e uma apontaria para um lado e a
-  outra diria o contrário. Variação abaixo de meio ponto percentual é
-  **ESTÁVEL** (→), que é ruído de arredondamento, não melhora.
+  outra diria o contrário.
+  - ⚠ **Desde a v7.154.0 ela é a régua das METADES, não 1ª × última semana**
+    (PPCP, 22/10/2026: *"como saber a partir de quando melhorou?"*). Em
+    23/09–22/10 a seta dizia **MELHORA +0,7 p.p.** (82,3% → 83,0%) com as
+    semanas do meio a 86,5–87,3% e a última de volta: comparava duas pontas
+    e chamava de tendência qualquer diferença acima de meio ponto. Agora:
+    disponibilidade de cada **dia trabalhado**, em ordem, partida ao meio, e
+    `_pgMetades` (a MESMA do SMED) — direção só acima de 2 erros-padrão,
+    senão **DENTRO DA VARIAÇÃO** (seta →, pele neutra `.pgq-tend.n`). O meio
+    ponto virou o piso do limite (`PG_TEND_PISO_PP`); menos de
+    `PG_TEND_MIN_DIAS`=4 dias em cada metade → não diz. No mesmo período:
+    1ª metade 85,8% → 2ª 84,5% (−1,3 p.p., ±3,5) = DENTRO DA VARIAÇÃO.
+  - **As barras mostram QUANDO; a seta diz SE mudou.** Não voltar a tirar a
+    seta das barras: a barra da ponta costuma ser pedaço da semana.
+  - O diagnóstico diz **SEM MUDANÇA CLARA** (não "ESTÁVEL") quando não há
+    direção. `_pgTendFmt` é o texto único (quadro e diagnóstico); a conta
+    recebe `dias` (o `_pgContexto` passa `dias` ao `_pgDiagnostico`).
 - **SMED do quadro: média, META escrita, trocas contadas e o "melhorou?"**
   (v7.153.0, PPCP 22/10/2026, lendo *"40% já na meta"* como melhora). Era
   `6,8 → 5 min` com `142 trocas · 40% já na meta` e o subtítulo *"hoje → meta
@@ -2017,14 +2034,16 @@ via Google Apps Script (JSONP).
     723 px e a capa para a folha 2. Assim a célula fica com a altura da
     v7.152.0 e a capa em 703 px em todos os casos medidos (nenhuma, uma ou as
     duas trocas na meta). Mexeu no texto da linha? Medir a capa de novo.
-  - **O papel explica a régua na seção 5** (nota MELHOROU?, com as datas de
-    cada metade e o ±): a capa não tem tooltip. O texto (rótulo, diferença,
-    ±, faixas, médias) sai do `_pgTendSmedFmt`, um lugar só para quadro e
-    seção 5. A diferença é a das **médias exibidas** (6,0 → 7,9 é +1,9, nunca
-    +1,8 do cru): a conta lida na linha fecha, e "−0,0 min" não existe. A
-    frase da seção 5 que cita a evolução semanal só sai quando ela foi
-    impressa (2+ semanas).
-  - **`_pgTendSmed` NÃO é a régua da seta da disponibilidade** (1ª × última
+  - **No papel, a seção 5 diz o MELHOROU? numa linha** (as duas metades com
+    as datas, o rótulo e o ±); a régua — metades, ±, a do meio fora com nº
+    ímpar, por que a semana sozinha não basta — está no ANEXO (v7.154.0; antes
+    era um parágrafo na própria seção 5). O texto (rótulo, diferença, ±,
+    faixas, médias) sai do `_pgTendSmedFmt`, um lugar só para quadro e seção
+    5. A diferença é a das **médias exibidas** (`_pgDifTxt`: 6,0 → 7,9 é
+    +1,9, nunca +1,8 do cru): a conta lida na linha fecha, e "−0,0" não
+    existe.
+  - **`_pgTendSmed` usa a régua das metades (`_pgMetades`)**, a mesma da
+    seta da disponibilidade desde a v7.154.0 (antes esta era 1ª × última
     semana). Medido na planilha: a troca de produto tem desvio de ~5 min de uma
     troca para outra e a semana da ponta costuma ser pedaço — em 17/09–22/10 a
     S38 tinha 8 trocas a 4,4 min e a S43 8,1, e a seta diria PIORA +3,7. As
@@ -2051,6 +2070,23 @@ via Google Apps Script (JSONP).
     contradizendo os números que mostra. `delta`/`lim` crus continuam no
     objeto. Com nº ímpar de trocas, `fora`=1 e a nota da seção 5 diz que a do
     meio ficou fora.
+- **PAPEL ENXUTO + ANEXO — COMO LER** (v7.154.0, PPCP: *"na impressão tem
+  muito coisa escrita"*). Medido no relatório da tela (23/09–22/10): **729 das
+  2.314 palavras (32%) estavam em 13 notas**. Regra de agora: no corpo, **cada
+  nota é UMA linha** (conclusão ou legenda, ≤ 24 palavras — o teste conta) e o
+  "como o número sai" vai para o **ANEXO — COMO LER**, numa folha própria no
+  fim (`.pg-anexo-ttl{page-break-before:always}`). Embutida no relatório de
+  PARADAS a camada fecha com **COMO LER A CAMADA DE GESTÃO**.
+  - `anexo(ord, título, texto)` no `_pgSecaoHtml` devolve '' para entrar no
+    meio do template e guarda o texto por seção; texto repetido entra uma vez;
+    `anexoHtml()` é a ÚLTIMA expressão do template. Nenhum número saiu do
+    corpo — só a explicação mudou de lugar.
+  - O plano de ação e a tabela por janela deixaram de ter versão longa
+    `.so-papel`: tela e papel mostram a mesma linha curta, e a explicação está
+    no anexo (a impressão dedicada do min/1.000 tem a dela, COMO O NÚMERO SAI).
+  - Resultado medido: notas do corpo 729 → **181 palavras**; corpo do papel
+    2.167 → **1.637 palavras**, já com o O QUE MUDOU; 7 folhas, a última é o
+    anexo (718 palavras). Escreveu nota nova? Uma linha; o resto no `anexo()`.
 - **`_pgAnomalias` são quatro checagens, e nenhuma altera indicador**:
   sobreposição · sem motivo · parada acima de `PG_ANOM_LONGA` (30 min) · tipo
   fora da aba `TIPOS_PARADA`. Parada aberta (sem FIM) entra como quinta linha
@@ -2174,7 +2210,27 @@ via Google Apps Script (JSONP).
       escrito embaixo da tabela (`minFora`/`diasFora`) em vez de sumir.
     - A **variação é do NÃO PROGRAMADO** contra a janela anterior da lista, e
       **↓ é melhora**. Janela pela metade (a ponta do período) compara um pedaço
-      com um inteiro — a nota avisa.
+      com um inteiro — o anexo do papel avisa.
+    - ⚠ **A VARIAÇÃO é em MINUTOS por 1.000 cx, e diz isso** (v7.154.0, PPCP:
+      *"essa variação é percentual?"*). Saía `↓ 11,2 a menos`, sem unidade, e
+      do valor cru (51,1 → 40,0 dava 11,2). Hoje `↓ 11,1 min (−22%)`: a
+      diferença sai dos valores EXIBIDOS (`deltaNP`) e o % sobre o anterior
+      exibido (`deltaNPpct`). Coluna `VARIAÇÃO DO NÃO PROG.`; variação zero
+      sai `= 0,0 min`, sem cor.
+    - **O QUE MUDOU** (v7.154.0, PPCP: *"como saber a partir de quando
+      melhorou e onde melhorou?"*): logo abaixo da tabela por janela, o NÃO
+      PROGRAMADO aberto pelas `PG_CAUSAS_N`=5 causas de mais minutos no
+      período, em min/1.000 cx de cada janela, + **demais causas** + o **NÃO
+      PROG. TOTAL** (causas + demais = a coluna NÃO PROG. da tabela de cima,
+      o teste prende). Em negrito, a melhor janela de cada causa. Conta no
+      `_pgPorJanela` (`causas`, `demais`, a partir do `tiposNP` que o
+      `_pgDias` passou a levar — NÃO programado por tipo do dia, os mesmos
+      dias); desenho em `_pgCausasJanelaHtml`, chamado pelo `_pgMin1000Html`
+      (tela, seção 6 do relatório e impressão dedicada, no grão em cartaz).
+      Medido em 23/09–22/10/2026 por semana: troca de produto 23,7 · 17,0 ·
+      21,8 · **12,5** · 22,4; "Outros" 14,5 · **3,9** · 9,5 · 5,9 · 17,0;
+      troca de plástico **4,2** · 6,4 · 8,4 · 9,6 · 10,5 (sobe toda semana —
+      mais trocas por dia, não trocas mais longas).
     - ⚠ **"MÊS QUAL DIA ATÉ QUE DIA?"** (usuário, 27/08/2026). O rótulo diz
       `AGO/26`, mas a linha quase nunca é o mês inteiro: é a parte dele que caiu
       **dentro do período escolhido** e que teve produção lançada — e "JUL/26 ·

@@ -1155,6 +1155,8 @@ eval(pega('function _pgSemLbl('));
 eval(pega('function _pgTopCausas('));
 eval(pega('function _pgOutros('));
 eval(pega('function _pgMetaSmed('));   // a escada da meta — o _pgSmed chama
+eval(pega('function _pgMetades('));    // a régua única das metades (SMED e EVOLUÇÃO)
+eval(pega('function _pgDifTxt('));
 eval(pega('function _pgTendSmed('));   // o "melhorou?" — o _pgSmed chama
 eval(pega('function _pgTendSmedFmt('));   // o texto dele — quadro e seção 5
 eval(pega('function _pgFmtMin('));
@@ -1167,6 +1169,7 @@ eval(pega('function _pgRecuperacao('));
 eval(pega('function _pgImpactoFluxo('));
 eval(pega('function _pgSobrepostas('));
 eval(pega('function _pgTendencia('));   // dependência do _pgDiagnostico
+eval(pega('function _pgTendFmt('));
 eval(pega('function _pgPlano('));
 eval(pega('function _pgDiagnostico('));
 
@@ -1400,14 +1403,12 @@ ok('sem trocas suficientes, diz que é pouco — não some calado',
    /pgq-smed-t n">menos de 8 trocas no período — pouco para dizer se melhorou/.test(_qSmed), true);
 // O papel explica a régua na seção 5 (a capa não tem tooltip), com as datas.
 { const _s5 = pega('function _pgSecaoHtml(');
-  ok('a seção 5 do papel explica o "melhorou?" com o mesmo texto do quadro',
-     [/MELHOROU\? As trocas do período, em ordem de data e hora, partidas ao meio/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
-  // A frase que manda olhar "a evolução semana a semana acima" só sai quando
-  // esse quadro foi impresso (2+ semanas) — o mesmo teste do quadro dela.
-  ok('com nº ímpar a nota diz que a troca do meio ficou fora',
-     /\$\{s\.tend\.fora\?' \(com número ímpar, a troca do meio fica fora\)':''\}/.test(_s5), true);
-  ok('a nota só cita a evolução semanal quando ela está no papel',
-     /\+\(s\.semanas\.length>1\?`, e a semana da ponta/.test(_s5) && /const ev=s\.semanas\.length>1\?/.test(_s5), true);
+  // No corpo, uma linha com a conclusão e as datas; a régua (metades, ±, a do
+  // meio fora com nº ímpar, por que a semana sozinha não basta) vai ao ANEXO.
+  ok('a seção 5 do papel diz o "melhorou?" numa linha, com o mesmo texto do quadro',
+     [/MELHOROU\? 1ª metade \(\$\{F\.faixaA\}\)/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
+  ok('a régua do "melhorou?" está no anexo, com a do meio fora e a semana que não basta',
+     /com número ímpar, o do meio fica fora[\s\S]*a semana da ponta costuma ser pedaço/.test(_s5), true);
   ok('o texto do "melhorou?" é escrito num lugar só',
      [(JS.match(/function _pgTendSmedFmt\(/g) || []).length, (JS.match(/(?<!function )_pgTendSmedFmt\(/g) || []).length], [1, 2]);
 }
@@ -1521,6 +1522,49 @@ ok('a faixa sai da data, não da ordem da lista',
    _pgPorJanela([{data:'28/08/2026',min:10,minNP:10},{data:'03/08/2026',min:10,minNP:10}],
                 {'28/08/2026':500,'03/08/2026':500}, 'mes').lista[0].faixa, '03/08 → 28/08');
 
+// ── v7.154.0: VARIAÇÃO pelos valores EXIBIDOS e em %; O QUE MUDOU por causa ──
+// PPCP, 22/10/2026: "essa variação é percentual?" — não era, e não dizia. Na
+// tela, 51,1 → 40,0 saía "↓ 11,2" (do cru); a conta lida tem de fechar.
+{ const J = _pgPorJanela([
+      {data:'03/08/2026', min:0, minNP:51.14, tiposNP:{'Troca de produto':30, 'Outros':21.14}},
+      {data:'03/09/2026', min:0, minNP:39.96, tiposNP:{'Troca de produto':12, 'Outros':20, 'Limpeza':7.96}},
+      {data:'05/10/2026', min:0, minNP:52.8,  tiposNP:{'Troca de produto':22, 'Outros':30.8}}],
+      {'03/08/2026':1000, '03/09/2026':1000, '05/10/2026':1000}, 'mes');
+  const L = J.lista;
+  ok('a variação sai dos valores exibidos (51,1 → 40,0 = −11,1)', [L[1].deltaNP, L[2].deltaNP], [-11.1, 12.8]);
+  ok('e em % do anterior exibido', [Math.round(L[1].deltaNPpct), Math.round(L[2].deltaNPpct)], [-22, 32]);
+  ok('variação zero não é melhora nem piora', _pgPorJanela([{data:'03/08/2026',min:0,minNP:10},{data:'03/09/2026',min:0,minNP:10}],
+     {'03/08/2026':1000,'03/09/2026':1000}, 'mes').lista[1].bom, null);
+  // O QUE MUDOU: as causas de mais minutos no período, por janela, em min/1.000 cx.
+  ok('as causas em ordem de minutos no período', J.causas.map(c=>c.tipo), ['Outros','Troca de produto','Limpeza']);
+  ok('cada causa por janela, em min/1.000 cx', J.causas[1].mil, [30, 12, 22]);
+  ok('a melhor janela de cada causa', J.causas.map(c=>c.melhor), [1, 1, 0]);
+  // As causas + demais causas fecham com o NÃO PROG. / 1.000 CX da linha.
+  ok('causas + demais = o NÃO PROG. da janela', L.map((m,i)=>Math.round((J.causas.reduce((s,c)=>s+c.mil[i],0)+J.demais[i])*100)/100),
+     L.map(m=>Math.round(m.milNP*100)/100));
+  const J6 = _pgPorJanela([{data:'03/08/2026', min:0, minNP:70, tiposNP:{A:10,B:10,C:10,D:10,E:10,F:10,G:10}},
+                           {data:'03/09/2026', min:0, minNP:7, tiposNP:{A:1,B:1,C:1,D:1,E:1,F:1,G:1}}],
+                          {'03/08/2026':1000,'03/09/2026':1000}, 'mes');
+  ok('no máximo PG_CAUSAS_N causas; o resto vai em demais', [J6.causas.length, J6.demais], [5, [20, 2]]);
+  ok('o _pgDias leva o NÃO PROGRAMADO por tipo do dia (o planejado fica fora)',
+     _pgDias({'10/08/2026':{min:30,minNP:20,perd:0,qtd:2,tipos:{'Troca de produto':{qtd:1,min:20,perd:0,planej:false},'Parada/Café':{qtd:1,min:10,perd:0,planej:true}}}},
+             ['10/08/2026'], 10)[0].tiposNP, {'Troca de produto':20});
+  // O desenho: só desenha o que a conta entregou.
+  eval(pega('function _pgCausasJanelaHtml('));
+  const H = _pgCausasJanelaHtml({janelas:{mes:J}}, 'mes');
+  ok('O QUE MUDOU: título, uma coluna por janela, a melhor em negrito, demais e total',
+     [/O QUE MUDOU/.test(H), (H.match(/<th>/g)||[]).length, /<b>12,0<\/b>/.test(H), /demais causas/.test(H), /NÃO PROG\. TOTAL/.test(H)],
+     [true, 4, true, true, true]);
+  ok('com uma janela só não há o que comparar — a tabela não sai', _pgCausasJanelaHtml({janelas:{mes:{lista:[L[0]], causas:J.causas}}}, 'mes'), '');
+  ok('o desenho não faz conta', /_pgMinPor1000\(|_pgPorJanela\(|tiposNP/.test(pega('function _pgCausasJanelaHtml(')), false);
+  ok('e sai junto da tabela por janela (tela, relatório e impressão dedicada)',
+     /\$\{mesHtml\}\n\$\{_pgCausasJanelaHtml\(ctx, grao\)\}/.test(pega('function _pgMin1000Html(')), true);
+  // A VARIAÇÃO escrita: unidade e %.
+  eval(pega('function _pgJanelaTabelaHtml('));
+  const T = _pgJanelaTabelaHtml({janelas:{mes:J}}, 'mes');
+  ok('a VARIAÇÃO diz a unidade e o %', [/↓ 11,1 min \(−22%\)/.test(T), /↑ 12,8 min \(\+32%\)/.test(T), /VARIAÇÃO DO NÃO PROG\./.test(T)], [true, true, true]);
+}
+
 console.log('\n── potencial de recuperação (simulação) ──');
 const pgRec = _pgRecuperacao(pgTipos, 217, {});
 ok('só simula os cenários definidos e existentes', pgRec.itens.map(i=>i.tipo),
@@ -1598,15 +1642,40 @@ ok('sem parada não programada não há problema principal inventado',
 console.log('\n── quadro: tendência da disponibilidade ──');
 eval(pega('function _pgAnomalias('));
 eval(pega('function _pgFoco('));
-const _sm=(n,d)=>({num:n, dispon:d, nDias:5, minNP:0, min:0, qtd:0, perd:0, ini:n});
-ok('subiu meia dúzia de pontos = MELHORA', _pgTendencia([_sm(31,83.9),_sm(32,88.3),_sm(35,90.3)]).seta, '↗');
-ok('caiu = PIORA', _pgTendencia([_sm(31,92),_sm(32,88)]).seta, '↘');
-// Meio ponto percentual é ruído de arredondamento, não melhora.
-ok('variação abaixo de meio ponto é ESTÁVEL', _pgTendencia([_sm(31,90.0),_sm(32,90.3)]).seta, '→');
-ok('uma semana só não define tendência', _pgTendencia([_sm(31,90)]), null);
-// Semana sem dia trabalhado não tem disponibilidade — não pode definir direção.
-ok('semana sem base fica fora', _pgTendencia([_sm(31,84),_sm(32,null),_sm(33,90)]).ate.num, 33);
-ok('o delta é da primeira à última', Math.round(_pgTendencia([_sm(31,84),_sm(32,90)]).delta*10)/10, 6);
+// Era 1ª × última SEMANA com meio ponto de folga: em 23/09–22/10/2026 dizia
+// MELHORA +0,7 p.p. (82,3 → 83,0) com as semanas do meio a 86–87%. Agora é a
+// régua das metades (a MESMA do SMED) sobre a disponibilidade de cada DIA
+// TRABALHADO. Os dias de mentira vão em ordem trocada de propósito.
+const _dd=(i,v)=>({data:p2(1+i)+'/10/2026', dispon:v});
+const _dias=(a,b)=>a.map((v,i)=>_dd(i,v)).concat(b.map((v,i)=>_dd(10+i,v))).reverse();
+const tdD = _pgTendencia(_dias([80,82,81,79,80], [90,91,89,92,90]));
+ok('a 2ª metade dos dias claramente acima = MELHORA (↗, verde)', [tdD.subiu, tdD.seta, tdD.st, tdD.n], [true, '↗', 'g', 5]);
+ok('as médias são dos DIAS de cada metade, em ordem de data', [tdD.de, tdD.ate, tdD.diaA, tdD.diaB],
+   [80.4, 90.4, ['01/10/2026','05/10/2026'], ['11/10/2026','15/10/2026']]);
+ok('claramente abaixo = PIORA (↘, vermelho)', _pgTendencia(_dias([90,91,89,92,90], [80,82,81,79,80])).st, 'r');
+// O caso de 22/10: semanas do meio boas, a última de volta — a média das
+// metades quase não mexe e o dia a dia varia muito. Sem direção.
+const tdV = _pgTendencia(_dias([70,95,82,88,76,91], [86,78,95,72,90,84]));
+ok('oscilação de um dia para outro é DENTRO DA VARIAÇÃO (→, sem cor)', [tdV.subiu, tdV.caiu, tdV.seta, tdV.st], [false, false, '→', 'n']);
+// Meio ponto continua sendo o piso: dias todos iguais que diferem por 0,3 p.p.
+ok('meio ponto é o piso do limite', _pgTendencia(_dias([90,90,90,90], [90.3,90.3,90.3,90.3])).st, 'n');
+ok('menos de 4 dias trabalhados em cada metade não diz nada', _pgTendencia(_dias([80,82,81], [90,91,89])), null);
+ok('dia sem base (sem produção) fica fora', _pgTendencia(_dias([80,82,81,79,null], [90,91,89,92,null])).n, 4);
+// O texto: médias e diferença das EXIBIDAS, em p.p., e as faixas de data.
+ok('o texto da tendência', _pgTendFmt(tdD),
+   {rot:'MELHORA', de:'80,4%', ate:'90,4%', dif:'+10,0 p.p.', lim:'±'+fmt1(tdD.limR), faixaA:'01/10 a 05/10', faixaB:'11/10 a 15/10'});
+// No quadro: a seta diz a régua (1ª × 2ª metade), com o ± quando não há direção.
+{ const Q = _pgQuadroHtml({semanas:[], smedProd:null, smedPlas:null, outros:null, anom:null, plano:[], top:[], rec:null, tend:tdV, foco:'x'});
+  ok('a seta da EVOLUÇÃO: DENTRO DA VARIAÇÃO com o ±, sem cor, e as duas metades',
+     [/class="pgq-tend n"/.test(Q), /→ <\/span>|<span class="pgq-seta">→<\/span>/.test(Q), /DENTRO DA VARIAÇÃO <b>[+−]?\d+,\d p\.p\.<\/b> \(±\d+,\d\) · 1ª metade \d+,\d% → 2ª metade \d+,\d%/.test(Q), /ESTÁVEL/.test(Q)],
+     [true, true, true, false]);
+  ok('a seta tem pele neutra na tela e no papel', [/#sec-perdas \.pgq-tend\.n\{/.test(src), /\.pgq-tend\.n\{background:#f4f6f8/.test(src)], [true, true]); }
+ok('"ESTAMOS MELHORANDO?" fala das metades dos dias, e "SEM MUDANÇA CLARA" no lugar de ESTÁVEL',
+   [/SEM MUDANÇA CLARA/.test(pega('function _pgSecaoHtml(')), /da primeira à última semana/.test(pega('function _pgSecaoHtml(')), /_pgTendFmt\(tend\)/.test(pega('function _pgSecaoHtml('))],
+   [true, false, true]);
+ok('o SMED e a EVOLUÇÃO usam a MESMA régua das metades',
+   [/_pgMetades\(/.test(pega('function _pgTendencia(')), /_pgMetades\(/.test(pega('function _pgTendSmed(')),
+    (JS.match(/function _pgMetades\(/g)||[]).length], [true, true, 1]);
 
 console.log('\n── quadro: anomalias de apontamento ──');
 const CFGA={turnoInicio:'07:00', turnoFim:'17:00', almocoInicio:'11:00', almocoFim:'12:12'};
@@ -1655,8 +1724,8 @@ ok('a tabela do plano é montada num lugar só',
 ok('e a seção própria do plano não existe mais', /rp-sec-ttl">\d+ ▸ PLANO DE AÇÃO/.test(JS), false);
 // A seta do quadro e a linha "ESTAMOS MELHORANDO?" do diagnóstico leem a MESMA
 // tendência — duas cópias e uma apontaria para um lado e a outra para o outro.
-ok('quadro e diagnóstico leem a mesma tendência',
-   /_pgTendencia\(semanas\)/.test(pega('function _pgDiagnostico(')), true);
+ok('quadro e diagnóstico leem a mesma tendência (pelos dias trabalhados)',
+   [/_pgTendencia\(dias\)/.test(pega('function _pgDiagnostico(')), /tend:_pgTendencia\(dias\)/.test(pega('function _pgContexto('))], [true, true]);
 // O quadro é desenho: recebe pronto o que as seções já calcularam.
 const _q=pega('function _pgQuadroHtml(');
 ok('o quadro não recalcula perda', /perdaDeMin|perdaAoRitmo|RP_PARADAS\.stats/.test(_q), false);
@@ -4551,9 +4620,25 @@ console.log('\n── estudo de UEP ──');
      [/<details class="qp-nota"><summary>ⓘ COMO LER<\/summary>/.test(pega('function _qpHtml(')), /<details class="qp-nota"><summary>ⓘ COMO LER<\/summary>/.test(pega('function _cartHtml(')),
       /qp-lembra[^\n]*mede o PLANO, não a linha[^\n]*Não é baixar a meta/.test(pega('function _qpHtml(')), /qp-lembra[^\n]*mediana[^\n]*nivelar não é sequenciar/.test(pega('function _cartHtml(')),
       /\.plano-doc \.qp-lembra\{display:none\}/.test(src)], [true, true, true, true, true]);
-  ok('GESTÃO DE PERDAS: a versão longa continua no PDF (.so-papel) e a tela mostra a curta (.so-tela)',
+  // O CORPO do relatório da gestão de perdas: cada nota é UMA linha. Medido em
+  // 22/10/2026: 739 das 2.345 palavras do papel estavam em 13 notas (32%) —
+  // o método mora no ANEXO — COMO LER. Nota que voltar a passar de 24
+  // palavras (sem contar os ${...} e as tags) reprova aqui.
+  { const sec = pega('function _pgSecaoHtml(');
+    const notas = [...sec.matchAll(/<div class="rp-note"[^>]*>([\s\S]*?)<\/div>/g)].map(m => m[1]);
+    const palavras = t => (t.replace(/\$\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g, ' X ').replace(/<[^>]+>/g, ' ').match(/[^\s·—:()]+/g) || []).length;
+    const longas = notas.filter(t => palavras(t) > 24);
+    ok('as notas do corpo do papel têm uma linha (≤ 24 palavras)', longas.map(t => t.slice(0, 60)), []);
+    ok('e o método está no ANEXO — COMO LER, numa folha própria',
+       [/ANEXO — COMO LER/.test(sec), /\$\{anexoHtml\(\)\}\s*`;\s*\}$/.test(sec), /\.pg-anexo-ttl\{page-break-before:always\}/.test(src)], [true, true, true]); }
+  // v7.154.0 ("na impressão tem muito coisa escrita"): a versão longa das notas
+  // do plano e da tabela por janela saiu do corpo do papel e foi para o ANEXO —
+  // COMO LER; tela e papel mostram a mesma linha curta. O texto não sumiu.
+  ok('GESTÃO DE PERDAS: as explicações longas moram no ANEXO, não no corpo',
      [/#sec-perdas \.so-papel,#sec-simulador \.so-papel\{display:none\}/.test(src), /\.so-tela\{display:none\}/.test(pega('function _rpDocParadas(')),
-      /rp-note so-papel">RECOMENDAÇÃO\. Responsável e prazo/.test(JS), /rp-note so-papel">Cada \$\{G\.um\} do período em uma linha/.test(JS)], [true, true, true, true]);
+      /preencher com um nome plausível[\s\S]*inventar compromisso de terceiro/.test(pega('function _pgSecaoHtml(')),
+      /A data embaixo do rótulo é a faixa que entrou na linha/.test(pega('function _pgSecaoHtml(')),
+      /rp-note so-papel">RECOMENDAÇÃO\. Responsável e prazo|rp-note so-papel">Cada \$\{G\.um\}/.test(JS)], [true, true, true, true, false]);
   ok('SIMULADOR: a assinatura continua escrita na tela', /a assinatura é sua, não do modelo/.test(JS), true);
   const HH2 = _dirHojeHtml(_dirHoje({ estado:'ok', feito:1790, he:410, meta:2530, proj:{ fim:2635 }, card:{ c:'ok', ef:104, esperado:1719 }, mix:{ cx:1020 } },
       { minNorm:358, realNormal:1020, realHE:198 }, [{ hora:'07:00', pontos:3060 }, { hora:'05:00', pontos:594 }]));
