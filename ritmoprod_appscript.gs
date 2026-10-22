@@ -1,5 +1,16 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.32 — PARADA DUPLICADA QUE NÃO FECHAVA
+//               PPCP, 22/10/2026: "não está fechando a parada". Na aba PARADAS
+//               a parada das 12:16:21 estava em DUAS linhas com o mesmo ID: a
+//               retentativa do app rodou junto com a 1ª tentativa, as duas
+//               leram a aba antes de gravar e as duas acrescentaram. O
+//               endParada fechava sempre a 1ª cópia (empurrando o FIM dela a
+//               cada START) e a 2ª ficava aberta, com a TV presa na tela
+//               cheia. Agora saveParadas e endParada rodam sob o lock dos
+//               lançamentos (a leitura da aba dentro dele), e o endParada
+//               fecha TODA linha aberta do ID e não regrava FIM de linha
+//               fechada.
 // Versão: 5.30 — REGISTRO DA CRONOANÁLISE (aba CRONOANALISE)
 //               PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise
 //               e que linha faz" → os dois. registrarCrono acrescenta UMA linha
@@ -4775,12 +4786,35 @@ function _semPrefixoHE(rotulo) {
 // PARADAS
 // ════════════════════════════════════════════════════════
 
+// v5.32: REGISTRAR e START rodam sob o lock dos lançamentos. Caso real
+// (22/10/2026, 12:16:21): a mesma parada entrou DUAS vezes na aba (linhas 929 e
+// 930, mesmo ID e mesmo INICIO). Mesmo payload duas vezes = retentativa do app
+// (jsonpEscritaParada, 25 s por tentativa) com a 1ª ainda rodando aqui. As
+// duas execuções leram a aba ANTES de qualquer uma gravar, nenhuma achou o ID,
+// e as duas acrescentaram — o upsert por ID e o dedupe de parada aberta só
+// valem em sequência. Depois disso o endParada fechava sempre a 1ª cópia (e
+// empurrava o FIM dela a cada START) e a 2ª ficava aberta: TV presa na tela
+// cheia, operador tocando START sem efeito.
+// tryLock em 20 s, antes do timeout de 25 s do app: a resposta "timeout" chega
+// e o app tenta de novo (o jsonpEscritaParada só repete timeout/rede).
+function _comLockParadas(fn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return { ok: false, erro: 'timeout: planilha ocupada, tente de novo' };
+  try { return fn(); }
+  finally { lock.releaseLock(); }
+}
+
 // UPSERT por ID: se já existe uma linha com o mesmo ID (mesma parada), atualiza-a;
 // senão, acrescenta. Isso permite o fluxo "ao vivo" do operador — registrar uma
 // parada EM ANDAMENTO (sem FIM) e depois dar START (reenviar a mesma parada com o
 // FIM preenchido) sem duplicar linhas. IDs novos continuam sendo acrescentados,
 // então o comportamento antigo (paradas já com início e fim) é preservado.
+// A leitura da aba é feita DENTRO do lock (v5.32) — fora dele, duas chamadas
+// simultâneas não se enxergam e o upsert vira dois appends.
 function saveParadas(p) {
+  return _comLockParadas(function () { return _saveParadasCore(p); });
+}
+function _saveParadasCore(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh   = ss.getSheetByName(SHEET_PARADAS);
 
@@ -4831,7 +4865,14 @@ function saveParadas(p) {
 // Dá START (encerra) numa parada em andamento: carimba o FIM (hora do servidor,
 // se não vier) e recalcula a DURAÇÃO da linha cujo ID casa. Usado pelo operador
 // no mobile quando a produção volta a rodar.
+// v5.32: sob o lock (o mesmo do saveParadas); fecha TODA linha ABERTA do ID —
+// não a 1ª que casar — e NUNCA regrava o FIM de linha já fechada. Antes, com
+// duas linhas do mesmo ID, cada START reescrevia o FIM da 1ª (fechada: 12:26:11
+// virou 12:29:01 no caso de 22/10) e a 2ª, aberta, nunca fechava.
 function endParada(p) {
+  return _comLockParadas(function () { return _endParadaCore(p); });
+}
+function _endParadaCore(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PARADAS);
   if (!sh) return { ok: false, erro: 'sem paradas' };
@@ -4844,20 +4885,36 @@ function endParada(p) {
   const values = sh.getDataRange().getValues();
   _garantirColDuracaoSeg(sh);
 
-  // Fecha a linha i (0-based no array) e devolve a resposta padrão.
-  const fechar = function (i) {
+  // Carimba o FIM na linha i (0-based no array).
+  const carimbar = function (i) {
     const ini = _horaSegStr(values[i][3]);
     sh.getRange(i + 1, 5).setValue(fim);                          // FIM (col E)
     sh.getRange(i + 1, 6).setValue(calcDurMin(ini, fim) || '');   // DURACAO_MIN (col F)
     sh.getRange(i + 1, 8).setValue(calcDurSeg(ini, fim) || '');   // DURACAO_SEG (col H)
+  };
+  // Fecha a linha i e devolve a resposta padrão.
+  const fechar = function (i) {
+    carimbar(i);
     SpreadsheetApp.flush();
     return { ok: true, fim };
   };
 
-  // 1) Caminho normal: casa pelo ID.
+  // 1) Caminho normal: casa pelo ID. Fecha TODAS as linhas abertas dele (uma
+  //    cópia duplicada aberta prendia a TV para sempre); linha já fechada fica
+  //    como está — repetir o START não empurra o FIM para mais tarde.
   if (id) {
+    const doId = [];
     for (let i = 1; i < values.length; i++) {
-      if (String(values[i][1]) === id) return fechar(i);
+      if (String(values[i][1]) === id) doId.push(i);
+    }
+    if (doId.length) {
+      const abertasId = doId.filter(function (i) { return !_horaSegStr(values[i][4]); });
+      if (!abertasId.length) return { ok: true, fim: _horaSegStr(values[doId[0]][4]), jaFechada: true };
+      abertasId.forEach(carimbar);
+      SpreadsheetApp.flush();
+      if (doId.length > 1) Logger.log('endParada: ID ' + id + ' em ' + doId.length + ' linhas (' +
+        doId.map(function (i) { return i + 1; }).join(', ') + ') — parada duplicada na aba PARADAS');
+      return { ok: true, fim, fechadas: abertasId.length };
     }
   }
 

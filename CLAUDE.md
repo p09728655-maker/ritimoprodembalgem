@@ -22,8 +22,9 @@ via Google Apps Script (JSONP).
 - `hora-extra.test.js` — teste da separação hora normal × hora extra, rodando
   contra o código real do `.gs`: `node hora-extra.test.js`.
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
-  que conta leituras, **e o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
-  função real): `node apps-script.test.js`.
+  que conta leituras, **o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
+  função real) e a parada duplicada da v5.32 (lock + `endParada`):
+  `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
 - `exclusao.test.js` — EXCLUIR LANÇAMENTO: `getLancamentosHora` e
@@ -708,6 +709,26 @@ via Google Apps Script (JSONP).
     Os dois caminhos fazem `carregarParadas()` e só alertam se a parada **ainda
     estiver aberta** (ou ainda não existir). Sem isso o operador registrava a
     mesma parada de novo e o dia fechava com paradas duplicadas.
+- **REGISTRAR e START rodam sob o lock (`.gs` v5.32, `_comLockParadas`).**
+  Caso real, 22/10/2026 12:16:21: a mesma parada entrou em DUAS linhas da aba
+  (929 e 930, mesmo ID e mesmo INICIO). Mesmo payload duas vezes = a
+  retentativa do `jsonpEscritaParada` rodando JUNTO com a 1ª tentativa: as
+  duas leram a aba antes de qualquer uma gravar, e o upsert por ID e o dedupe
+  de parada aberta viraram dois appends. Depois, cada START fechava a 1ª cópia
+  de novo (FIM 12:26:11 → 12:29:01) e a 2ª ficava aberta: TV presa, operador
+  tocando START sem efeito.
+  - ⚠ **"O Apps Script atende uma execução por vez" é FALSO para escrita** —
+    esta duplicata é a prova. Chamadas em sequência continuam certas (em
+    paralelo elas competem), mas "repetir é seguro" só vale com o lock e com
+    a LEITURA da aba dentro dele. Escrita nova que confia em upsert precisa do
+    mesmo cuidado (o `saveRealizado` já tinha lock + `lancId`).
+  - `tryLock(20000)`, abaixo dos 25 s do app: ocupado → `erro: 'timeout…'`,
+    que o `jsonpEscritaParada` repete. É o mesmo lock dos lançamentos.
+  - O `endParada` fecha TODA linha aberta do ID e **não regrava FIM de linha
+    fechada** (`jaFechada`). Cópia antiga que sobrar fecha junto e o log do
+    Apps Script aponta as linhas — apagar a cópia à mão.
+  - Medido em 22/10/2026: era a única duplicata nas 929 linhas da aba.
+    `apps-script.test.js` cobre (conferido por mutação).
 - **`_parEscrevendo` congela a tela de paradas durante a gravação.** O poll de
   90s caía no meio do START, refazia o `innerHTML` e trocava o botão
   "RETOMANDO..." (disabled) por um botão **novo e habilitado** — o operador

@@ -143,7 +143,11 @@ console.log('\n── PARADAS com segundos (v5.5, microparadas) ──');
   eval(pega('function _horaSegStr('));
   eval(pega('function _dataStr('));
   eval(pega('function _garantirColDuracaoSeg('));
+  // v5.32: endParada é o lock + o _endParadaCore.
+  const LockService = { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) };
+  eval(pega('function _comLockParadas('));
   eval(pega('function endParada('));
+  eval(pega('function _endParadaCore('));
 
   ok('08:24:10 → 08:25:00 = 50 s', calcDurSeg('08:24:10', '08:25:00'), 50);
   ok('… e 0,83 min em DURACAO_MIN (era 1)', calcDurMin('08:24:10', '08:25:00'), 0.83);
@@ -185,10 +189,115 @@ console.log('\n── PARADAS com segundos (v5.5, microparadas) ──');
   ok('cabeçalho existente fica quieto', escritas['1,8'], undefined);
 })();
 
+console.log('\n── PARADA DUPLICADA que não fechava (v5.32) ──');
+// Caso real (22/10/2026): a parada das 12:16:21 entrou em DUAS linhas da aba
+// PARADAS (929 e 930, mesmo ID). A retentativa do app rodou junto com a 1ª
+// tentativa, as duas leram a aba antes de gravar e as duas acrescentaram. Cada
+// START fechava a 929 de novo (FIM 12:26:11 → 12:29:01) e a 930 ficava aberta:
+// TV presa na tela cheia. Roda o saveParadas e o endParada REAIS.
+(function () {
+  const p2 = n => String(n).padStart(2, '0');
+  const Utilities = { formatDate: (d, tz, f) => {
+    if (f === 'dd/MM/yyyy') return '22/10/2026';
+    if (f === 'HH:mm:ss')   return '12:30:00';
+    throw new Error('formato não esperado no teste: ' + f);
+  } };
+  function _ssTz() { return TZ; }
+  const logs = [];
+  const Logger = { log(m) { logs.push(m); } };
+  const SHEET_PARADAS = 'PARADAS';
+  eval(pega('function _horaEmSeg('));
+  eval(pega('function calcDurSeg('));
+  eval(pega('function calcDurMin('));
+  eval(pega('function _horaSegStr('));
+  eval(pega('function _dataStr('));
+  eval(pega('function _garantirColDuracaoSeg('));
+
+  // Lock de mentira: marca quando está preso e conta as leituras FORA dele.
+  let travado = false, livre = true, leiturasFora = 0;
+  const LockService = { getScriptLock: () => ({
+    tryLock: () => { if (!livre) return false; travado = true; return true; },
+    releaseLock: () => { travado = false; }
+  }) };
+  eval(pega('function _comLockParadas('));
+  eval(pega('function saveParadas('));
+  eval(pega('function _saveParadasCore('));
+  eval(pega('function endParada('));
+  eval(pega('function _endParadaCore('));
+
+  const HDR = ['DATA', 'ID', 'TIPO', 'INICIO', 'FIM', 'DURACAO_MIN', 'OBS', 'DURACAO_SEG'];
+  let linhas;
+  const sh = {
+    getDataRange: () => ({ getValues: () => {
+      if (!travado) leiturasFora++;
+      return linhas.map(r => r.slice());
+    } }),
+    getRange: (r, c, nl, nc) => ({
+      getValue: () => (linhas[r - 1] || [])[c - 1] || '',
+      setValue: v => { linhas[r - 1][c - 1] = v; },
+      setValues: vs => { vs[0].forEach((v, j) => { linhas[r - 1][c - 1 + j] = v; }); }
+    }),
+    appendRow: row => { linhas.push(row.slice()); }
+  };
+  const SpreadsheetApp = { getActiveSpreadsheet: () => ({ getSheetByName: () => sh }), flush() {} };
+  const ID = '1792682181875';
+  const fimDe = n => linhas[n - 1][4];
+
+  // O retrato da planilha às 12:27 (print do PPCP): 929 fechada, 930 aberta.
+  linhas = [HDR,
+    ['22/10/2026', ID, 'Outros', '12:16:21', '12:26:11', 9.83, '', 590],
+    ['22/10/2026', ID, 'Outros', '12:16:21', '', '', '', '']];
+  let r = endParada({ id: ID, fim: '12:29:01', data: '22/10/2026', ini: '12:16:21' });
+  ok('START com a cópia aberta: fecha a cópia ABERTA (era sempre a 1ª, já fechada)', [r.ok, fimDe(3)], [true, '12:29:01']);
+  ok('… e o FIM da linha já fechada NÃO anda (12:26:11 virava 12:29:01)', fimDe(2), '12:26:11');
+  ok('… e o log aponta as linhas duplicadas', logs.some(m => /em 2 linhas \(2, 3\)/.test(m)), true);
+
+  // As duas cópias abertas (a corrida antes do 1º START): fecham juntas.
+  linhas = [HDR,
+    ['22/10/2026', ID, 'Outros', '12:16:21', '', '', '', ''],
+    ['22/10/2026', ID, 'Outros', '12:16:21', '', '', '', '']];
+  r = endParada({ id: ID, fim: '12:26:11', data: '22/10/2026', ini: '12:16:21' });
+  ok('duas cópias abertas: um START fecha as duas', [r.fechadas, fimDe(2), fimDe(3)], [2, '12:26:11', '12:26:11']);
+
+  // START repetido (retentativa, tela defasada) numa parada já fechada.
+  r = endParada({ id: ID, fim: '12:40:00', data: '22/10/2026', ini: '12:16:21' });
+  ok('START de novo numa parada fechada: ok, sem regravar o FIM', [r.ok, r.jaFechada, r.fim, fimDe(2), fimDe(3)],
+     [true, true, '12:26:11', '12:26:11', '12:26:11']);
+
+  // Parada sem cópia: continua como sempre foi.
+  linhas = [HDR, ['22/10/2026', ID, 'Outros', '12:16:21', '', '', '', '']];
+  r = endParada({ id: ID, fim: '12:26:11', data: '22/10/2026' });
+  ok('parada única: fecha com a duração de sempre', [r.ok, fimDe(2), linhas[1][5], linhas[1][7]], [true, '12:26:11', 9.83, 590]);
+
+  // REGISTRAR repetido (a retentativa que duplicou): em sequência, o upsert
+  // por ID acha a linha. O lock é o que garante que as duas chamadas ficam em
+  // sequência — e só vale se a LEITURA da aba estiver dentro dele.
+  linhas = [HDR];
+  const nova = JSON.stringify([{ id: Number(ID), tipo: 'Outros', ini: '12:16:21', fim: '', obs: '' }]);
+  const r1 = saveParadas({ paradas: nova, data: '22/10/2026' });
+  const r2 = saveParadas({ paradas: nova, data: '22/10/2026' });
+  ok('o mesmo REGISTRAR duas vezes = UMA linha', [r1.salvos, r2.salvos, linhas.length - 1], [1, 1, 1]);
+  ok('saveParadas e endParada leem a aba DENTRO do lock', leiturasFora, 0);
+  ok('… e soltam o lock no fim', travado, false);
+
+  // Lock ocupado (um lançamento sincronizando): não lê, não grava, e a
+  // resposta é "timeout" — a palavra que faz o app tentar de novo.
+  livre = false;
+  const antes = JSON.stringify(linhas);
+  const rs = saveParadas({ paradas: nova, data: '22/10/2026' });
+  const re = endParada({ id: ID, fim: '12:26:11', data: '22/10/2026' });
+  livre = true;
+  const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  const repete = /if\(!\/timeout\|rede\/i\.test\(e\.message\|\|''\)\) throw e;/.test(mob);
+  ok('lock ocupado: ok:false e nada muda na aba', [rs.ok, re.ok, JSON.stringify(linhas) === antes], [false, false, true]);
+  ok('… com "timeout" no erro, que o jsonpEscritaParada do app repete',
+     [repete, /timeout|rede/i.test(rs.erro), /timeout|rede/i.test(re.erro)], [true, true, true]);
+})();
+
 console.log('\n── quem ESCREVE continua lendo direto da planilha ──');
 // Guarda-corpo: se alguma função de escrita passar a usar o memo, ela pode
 // gravar em cima de um retrato velho da aba.
-const ESCRITORAS = ['saveDay', 'saveParadas', 'endParada', 'arquivarDiaAtual',
+const ESCRITORAS = ['saveDay', 'saveParadas', 'endParada', '_saveParadasCore', '_endParadaCore', 'arquivarDiaAtual',
                     'arquivarHorasDoDia', 'setConfigPainel', 'atualizarSaldoNaProgramacao',
                     // v5.24: cadastro de UEP e o histórico de versões dela
                     'setUepCatalogo', '_uepEstimarCatalogo', '_uepVerAba', '_uepVerRegistrar', '_uepVerDaEdicao',

@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## `.gs` v5.32 — 22/10/2026 · PARADA QUE NÃO FECHAVA ⚠ re-deploy
+
+- **A parada das 12:16:21 de 22/10 não fechava com o START** (PPCP: *"não
+  está fechando a parada"*). Na aba PARADAS ela estava em **duas linhas com o
+  mesmo ID** (929 e 930). O app repete a gravação quando o Apps Script demora
+  (25 s por tentativa); a repetição rodou **junto** com a 1ª tentativa, as duas
+  leram a aba antes de gravar e as duas acrescentaram a linha. Daí em diante
+  cada START fechava de novo a 929 (o FIM foi de 12:26:11 para 12:29:01) e a
+  930 ficava aberta, com a TV presa na tela cheia de PRODUÇÃO PARADA.
+  - **REGISTRAR e START passam a rodar sob o lock** dos lançamentos, com a
+    leitura da aba dentro dele: duas chamadas da mesma parada ficam em
+    sequência e a 2ª acha a linha da 1ª.
+  - **O START fecha toda linha aberta da parada** e **não regrava o FIM** de
+    linha já fechada (tocar START de novo não empurra o fim para mais tarde).
+  - Lock ocupado por mais de 20 s responde *timeout* e o app tenta de novo,
+    como já fazia.
+- Conferido na planilha em 22/10: é a **única** parada duplicada em 929
+  linhas da aba.
+- **Atenção:** nenhum número muda. A linha 930 de 22/10 (a cópia) foi
+  apagada à mão. O FIM da 929 foi empurrado a cada START: estava em 12:26:11
+  às 12:27 e às 12:33 já marcava 12:31:52 (15,52 min). O fim real é o do 1º
+  START, às 12:26:11 ou antes (9,83 min no máximo) — corrigir na planilha.
+- Nada no painel nem no app. ⚠ **re-deploy manual** do `.gs`. Até lá, o
+  mesmo defeito pode se repetir quando o Apps Script estiver lento.
+
+---
+
 ## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
 
 - **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o
