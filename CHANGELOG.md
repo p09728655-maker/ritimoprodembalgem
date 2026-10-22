@@ -36,10 +36,12 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   GESTÃO DE PERDAS e o SIMULADOR descartavam o pedido feito durante uma
   leitura e pintavam o resultado antigo sob o rótulo novo. Agora o pedido
   espera a leitura terminar e roda em seguida, e o resultado de outro período
-  não aparece. Pedido repetido do mesmo período não vira leitura a mais, e a
-  retentativa automática de 20 s só roda se a falha ainda estiver na tela —
-  as duas coisas evitam leituras extras da aba PARADAS (a mais cara) quando o
-  Apps Script está lento.
+  não aparece — e o quadro antigo sai da tela no instante do pedido, sem
+  esperar a leitura em curso terminar. Pedido repetido do mesmo período não
+  vira leitura a mais, e a retentativa automática de 20 s só roda se a falha
+  ainda estiver na tela (agora uma por tela, e de novo a cada falha na
+  GESTÃO) — evita leituras extras da aba PARADAS (a mais cara) quando o Apps
+  Script está lento.
 - **Atenção:** o quadro de 22/10 (rótulo 17/09–22/10) mostrava os números de
   **02/09–22/10**: 142 trocas de produto, 6,8 min, 40% na meta. O período
   17/09–22/10 tem **108 trocas, 6,9 min, 40 de 108 (37%)** em até 5 min; na de

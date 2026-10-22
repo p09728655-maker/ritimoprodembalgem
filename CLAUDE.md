@@ -2013,8 +2013,11 @@ via Google Apps Script (JSONP).
     duas trocas na meta). Mexeu no texto da linha? Medir a capa de novo.
   - **O papel explica a régua na seção 5** (nota MELHOROU?, com as datas de
     cada metade e o ±): a capa não tem tooltip. O texto (rótulo, diferença,
-    ±, faixas) sai do `_pgTendSmedFmt`, um lugar só para quadro e seção 5; o
-    sinal sai do valor JÁ arredondado (do cru, −0,04 saía "−0,0 min").
+    ±, faixas, médias) sai do `_pgTendSmedFmt`, um lugar só para quadro e
+    seção 5. A diferença é a das **médias exibidas** (6,0 → 7,9 é +1,9, nunca
+    +1,8 do cru): a conta lida na linha fecha, e "−0,0 min" não existe. A
+    frase da seção 5 que cita a evolução semanal só sai quando ela foi
+    impressa (2+ semanas).
   - **`_pgTendSmed` NÃO é a régua da seta da disponibilidade** (1ª × última
     semana). Medido na planilha: a troca de produto tem desvio de ~5 min de uma
     troca para outra e a semana da ponta costuma ser pedaço — em 17/09–22/10 a
@@ -2104,13 +2107,22 @@ via Google Apps Script (JSONP).
       do Apps Script (revisão adversarial de 22/10: 9 chamadas a
       `getParadasPeriodo` contra 6 antes, ~4 min em CARREGANDO).
     - **Campo de data pela metade** (sendo digitado) não é período novo: o
-      resultado que chegou é pintado, em vez de CARREGANDO sem nada em voo.
+      resultado que chegou é pintado, em vez de CARREGANDO sem nada em voo —
+      desde que o campo que ESTÁ preenchido seja o do período lido (com o
+      outro campo já de outro período, não pinta).
+    - **Pedido de OUTRO período com leitura em curso limpa a tela NA HORA**
+      (CARREGANDO + selo vazio). Sem isso, o quadro do período em leitura
+      ficava sob o rótulo novo até ela terminar (~80 s no cold start) — o
+      caso de 22/10 em versão curta (2ª passada da revisão).
     - Ao limpar a tela para CARREGANDO, o selo (`pg-upd`/`sim-upd`) é limpo
       junto — "atualizando…" ficava preso ao lado da falha.
     - **A retentativa automática de 20 s** (`_pgFalhaHtml`) só dispara com a
       FALHA ainda na tela (`.pg-falha`): com outra leitura em curso ou dado já
       pintado, ela virava um pedido forçado e refazia a leitura que tinha
-      acabado de dar certo.
+      acabado de dar certo. O timer é **um por tela** (`_pgFalhaTimer[fn]`):
+      com um só, a falha do SIMULADOR cancelava a retentativa da GESTÃO. E a
+      GESTÃO zera o `_pgFalhaTentou` no sucesso, como o SIMULADOR já fazia —
+      antes a retentativa automática valia uma vez por sessão.
     - `relatorios.test.js` roda as duas funções reais com a busca de mentira
       (a fila `_assincronos`, que roda antes do resumo final; com
       `process.exitCode=1` armado, teste assíncrono que não termina não sai

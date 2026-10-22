@@ -15473,9 +15473,13 @@ function _pgTendSmed(trocas){
 // cru, −0,04 saía "−0,0 min".
 function _pgTendSmedFmt(t){
   const dm=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
-  const r=Math.round(t.delta*10)/10;
+  // A diferença é a das médias EXIBIDAS (6,0 → 7,9 é +1,9, nunca +1,8): a
+  // conta que se lê na linha tem de fechar. Com o piso de 0,1 do limite, a
+  // direção nunca aparece ao lado de "0,0".
+  const d10=Math.round(t.de*10), a10=Math.round(t.ate*10), r=(a10-d10)/10;
   return {
     rot: t.melhorou?'MELHORA':t.piorou?'PIORA':'DENTRO DA VARIAÇÃO',
+    de: fmt1(d10/10), ate: fmt1(a10/10),
     dif: (r>0?'+':r<0?'−':'')+fmt1(Math.abs(r))+' min',
     lim: '±'+fmt1(t.lim),
     faixaA: dm(t.diaA[0])+' a '+dm(t.diaA[1]),
@@ -15825,7 +15829,7 @@ function _pgQuadroHtml({semanas, smedProd, smedPlas, outros, anom, plano, top, r
     const F=_pgTendSmedFmt(t);
     const tit=`Trocas do período em ordem de data e hora, partidas ao meio (${t.n} em cada metade): 1ª metade ${F.faixaA}, 2ª metade ${F.faixaB}. `
       +`Diferença menor que ${F.lim} min (2 erros-padrão) é variação de uma troca para outra, não tendência.`;
-    return `<span class="pgq-smed-t ${t.st}" title="${e(tit)}">${t.seta} ${F.rot} <b>${F.dif}</b>${t.st==='n'?` (${F.lim})`:''} · <span class="pgq-smed-mt">1ª metade </span>${fmt1(t.de)} → <span class="pgq-smed-mt">2ª metade </span>${fmt1(t.ate)} min</span>`;
+    return `<span class="pgq-smed-t ${t.st}" title="${e(tit)}">${t.seta} ${F.rot} <b>${F.dif}</b>${t.st==='n'?` (${F.lim})`:''} · <span class="pgq-smed-mt">1ª metade </span>${F.de} → <span class="pgq-smed-mt">2ª metade </span>${F.ate} min</span>`;
   };
   const linhaSmed=(s,rot,re)=>{
     if(!s) return `<div class="pgq-smed-l vazio">${rot}<i>nenhuma no período</i></div>`;
@@ -16193,7 +16197,10 @@ function _pgSecaoHtml(ctx){
       <div style="margin-top:7px">${barra}</div>
       ${ev}
       ${s.tend?(()=>{ const F=_pgTendSmedFmt(s.tend);
-        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${fmt1(s.tend.de)} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${fmt1(s.tend.ate)} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra, e a semana da ponta costuma ser pedaço do período, por isso a evolução semana a semana acima não basta para dizer que melhorou ou piorou.</div>`; })():''}
+        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${F.de} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${F.ate} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra`
+          // A frase da evolução semanal só sai quando o quadro dela foi impresso
+          // (ele exige 2+ semanas): citar "acima" um quadro que não está lá confunde.
+          +(s.semanas.length>1?`, e a semana da ponta costuma ser pedaço do período, por isso a evolução semana a semana acima não basta para dizer que melhorou ou piorou.`:'.')+`</div>`; })():''}
       ${s.metaAuto?`<div class="rp-note" style="margin-top:6px">META AUTOMÁTICA. A meta de <b>${_pgFmtMin(s.metaBase)} min</b> foi atingida (média ${fmt1(s.med)} min), então o alvo em vigor passa a ser <b>${_pgFmtMin(s.meta)} min</b> — a média das <b>${s.metaAmostra}</b> trocas mais rápidas do período, um tempo que a equipe já fez. Não é aperto arbitrário: o degrau só desce quando o próprio desempenho o sustenta. A distribuição, as trocas dentro da meta, o excedente e o cenário de recuperação já medem contra esse alvo.</div>`
         :(s.metaAtingida&&s.metaNota?`<div class="rp-note" style="margin-top:6px">ANÁLISE. ${e(s.metaNota)} — a meta desce sozinha só quando o desempenho sustenta o degrau novo.</div>`:'')}
       ${s.excedente>0?`<div class="rp-note" style="margin-top:6px">ANÁLISE: ${_fmtMinPar(s.excedente)} acima da meta no período (${fmt1(s.med)} − ${s.meta} min × ${s.qtd}). A menor troca do período foi de ${_fmtMinPar(s.menor)} — a meta já foi atingida na prática, ${s.naMeta}× em ${s.qtd}.</div>`:''}
@@ -16434,16 +16441,16 @@ async function _pgContextoDoPeriodo(de, ate, forcar){
 // getParadasPeriodo de 30 dias estourando 3 × 25 s): não é servidor frio, é a
 // leitura da aba PARADAS que demora. Mesma régua da aba PARADAS: botão na
 // mensagem e UMA tentativa automática 20 s depois, só com a aba na tela.
-var _pgFalhaTimer=null, _pgFalhaTentou={};
+var _pgFalhaTimer={}, _pgFalhaTentou={};   // por tela: a falha de uma não cancela a retentativa da outra
 function _pgFalhaHtml(fn, sec){
   const auto=!_pgFalhaTentou[fn];
   if(auto){
     _pgFalhaTentou[fn]=true;
-    clearTimeout(_pgFalhaTimer);
+    clearTimeout(_pgFalhaTimer[fn]);
     // Só tenta se a FALHA ainda está na tela: com uma leitura em curso (o ↻
     // tocado antes dos 20 s) ou já pintada, o disparo virava um pedido forçado
     // pendente e refazia a leitura que acabou de dar certo.
-    _pgFalhaTimer=setTimeout(()=>{ const el=document.getElementById(sec); if(el&&el.classList.contains('on')&&el.querySelector('.pg-falha')) window[fn](true); },20000);
+    _pgFalhaTimer[fn]=setTimeout(()=>{ const el=document.getElementById(sec); if(el&&el.classList.contains('on')&&el.querySelector('.pg-falha')) window[fn](true); },20000);
   }
   return '<div class="pg-carregando pg-falha">A leitura das paradas do período não respondeu em 3 tentativas (a aba PARADAS é a leitura mais demorada do backend; períodos longos demoram mais).'
     +(auto?' Tentando de novo sozinho em 20 s…':'')
@@ -16463,7 +16470,14 @@ async function renderGestaoPerdas(forcar){
   // mostrou o período de 02/09 sob o rótulo de 17/09 — 142 trocas no lugar de
   // 108. Fica pendente e roda no fim, com o período que estiver nos campos
   // (a mesma régua do CART_PEND da aba PLANO).
-  if(PG_TELA_RODANDO){ PG_TELA_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(PG_TELA_PEND&&PG_TELA_PEND.forcar)}; return; }
+  if(PG_TELA_RODANDO){
+    PG_TELA_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(PG_TELA_PEND&&PG_TELA_PEND.forcar)};
+    // Outro período pedido: o quadro na tela é do período EM LEITURA (ou do
+    // anterior a ele) e ficaria sob o rótulo novo até a leitura terminar —
+    // até ~80 s no cold start. Sai já, junto com o selo.
+    if(de+'|'+ate!==PG_TELA_ULT){ alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>'; const u=document.getElementById('pg-upd'); if(u) u.textContent=''; }
+    return;
+  }
   const chave=de+'|'+ate;
   if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
@@ -16485,14 +16499,16 @@ async function renderGestaoPerdas(forcar){
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
     // Trocaram o período durante a leitura: este resultado é de OUTRO período.
     // Não pinta (o rótulo já é do novo); o pendente busca o certo. Campo pela
-    // metade (data sendo digitada) não é período novo: pinta o que chegou.
+    // metade (data sendo digitada) não é período novo: pinta o que chegou —
+    // desde que o campo que ESTÁ preenchido seja o do período lido.
     const deA=dGet('pg-de'), ateA=dGet('pg-ate');
-    if(deA && ateA && chave!==deA+'|'+ateA){ PG_TELA_PEND=PG_TELA_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
+    if((deA && deA!==de) || (ateA && ateA!==ate)){ PG_TELA_PEND=PG_TELA_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
     if(!reg){
       if(alvo.querySelector('.pgq')){ if(upd) upd.textContent='⚠ não atualizou'; }
       else alvo.innerHTML=_pgFalhaHtml('renderGestaoPerdas','sec-perdas');
       return;
     }
+    _pgFalhaTentou.renderGestaoPerdas=false;   // deu certo: a próxima falha volta a ter a retentativa automática
     _pgPintar(reg.ctx, reg.t);
   }catch(err){
     if(!alvo.querySelector('.pgq')) alvo.innerHTML=`<div class="pg-carregando">Não foi possível montar a gestão de perdas: ${_rpEsc(err.message)}</div>`;
@@ -16610,7 +16626,11 @@ async function renderSimulador(forcar){
   // curso fica pendente. Engolido, a TELA ficava no período anterior (e o
   // cenário digitado, que lê pelo SIM_ULT, também) enquanto o 🖨 da proposta já
   // lia o período dos campos: tela e papel discordavam.
-  if(SIM_RODANDO){ SIM_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(SIM_PEND&&SIM_PEND.forcar)}; return; }
+  if(SIM_RODANDO){
+    SIM_PEND={chave:de+'|'+ate, forcar:!!forcar||!!(SIM_PEND&&SIM_PEND.forcar)};
+    if(de+'|'+ate!==SIM_ULT){ alvo.innerHTML='<div class="pg-carregando">CARREGANDO…</div>'; const u=document.getElementById('sim-upd'); if(u) u.textContent=''; }
+    return;
+  }
   const chave=de+'|'+ate;
   if(forcar){ delete PG_TELA_CACHE[chave]; invalidarParadasPeriodo(de, ate); }
   const cache=PG_TELA_CACHE[chave];
@@ -16628,7 +16648,7 @@ async function renderSimulador(forcar){
   try{
     const reg=await _pgContextoDoPeriodo(de, ate, forcar);
     const deA=dGet('sim-de'), ateA=dGet('sim-ate');
-    if(deA && ateA && chave!==deA+'|'+ateA){ SIM_PEND=SIM_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
+    if((deA && deA!==de) || (ateA && ateA!==ate)){ SIM_PEND=SIM_PEND||{chave:deA+'|'+ateA, forcar:false}; return; }
     if(!reg){
       if(alvo.querySelector('.pg-sim')){ if(upd) upd.textContent='⚠ não atualizou'; }
       else alvo.innerHTML=_pgFalhaHtml('renderSimulador','sec-simulador');

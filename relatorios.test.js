@@ -1334,10 +1334,15 @@ ok('metades iguais que diferem por segundos não viram PIORA', [_quase(1/60).set
 ok('nem por 0,08 min (o piso é a casa que a tela mostra)', [_quase(0.08).seta, _quase(0.08).lim], ['→', 0.1]);
 ok('acima do piso, sem variância, a direção vale', _quase(0.2).piorou, true);
 // O sinal sai do valor ARREDONDADO: do delta cru, −0,04 saía "−0,0 min".
-ok('o texto não escreve "−0,0"', _pgTendSmedFmt({delta:-0.04, lim:0.1, melhorou:false, piorou:false,
+ok('o texto não escreve "−0,0"', _pgTendSmedFmt({de:5.02, ate:4.98, delta:-0.04, lim:0.1, melhorou:false, piorou:false,
    diaA:[20260917,20261005], diaB:[20261006,20261022]}).dif, '0,0 min');
-ok('o texto do "melhorou?": rótulo, diferença, limite e as faixas de data',
-   _pgTendSmedFmt(tdM), {rot:'MELHORA', dif:'−3,5 min', lim:'±0,7', faixaA:'01/09 a 08/09', faixaB:'01/10 a 08/10'});
+// A diferença é a das médias EXIBIDAS: 6,04 → 7,86 aparece "6,0 → 7,9", e a
+// linha tem de dizer +1,9 (do cru, +1,8 — a conta lida não fechava).
+{ const F = _pgTendSmedFmt({de:6.04, ate:7.86, delta:1.82, lim:1.9, melhorou:false, piorou:false,
+   diaA:[20260917,20261005], diaB:[20261006,20261022]});
+  ok('a diferença fecha com as médias que a linha mostra', [F.de, F.ate, F.dif], ['6,0', '7,9', '+1,9 min']); }
+ok('o texto do "melhorou?": rótulo, médias, diferença, limite e as faixas de data',
+   _pgTendSmedFmt(tdM), {rot:'MELHORA', de:'8,0', ate:'4,5', dif:'−3,5 min', lim:'±0,7', faixaA:'01/09 a 08/09', faixaB:'01/10 a 08/10'});
 // Amostra curta: a mesma de quem move a meta (PG_SMED_AMOSTRA em cada metade).
 ok('menos de 4 trocas em cada metade não diz nada',
    _pgTendSmed(_tA.slice(0,4).concat(_tB.slice(0,3))), null);
@@ -1389,6 +1394,10 @@ ok('sem trocas suficientes, diz que é pouco — não some calado',
 { const _s5 = pega('function _pgSecaoHtml(');
   ok('a seção 5 do papel explica o "melhorou?" com o mesmo texto do quadro',
      [/MELHOROU\? As trocas do período, em ordem de data e hora, partidas ao meio/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
+  // A frase que manda olhar "a evolução semana a semana acima" só sai quando
+  // esse quadro foi impresso (2+ semanas) — o mesmo teste do quadro dela.
+  ok('a nota só cita a evolução semanal quando ela está no papel',
+     /\+\(s\.semanas\.length>1\?`, e a semana da ponta/.test(_s5) && /const ev=s\.semanas\.length>1\?/.test(_s5), true);
   ok('o texto do "melhorou?" é escrito num lugar só',
      [(JS.match(/function _pgTendSmedFmt\(/g) || []).length, (JS.match(/(?<!function )_pgTendSmedFmt\(/g) || []).length], [1, 2]);
 }
@@ -1744,7 +1753,7 @@ ok('nenhuma das duas monta contexto por conta própria',
 // A busca é a leitura mais cara do painel (lê a aba PARADAS inteira): sem
 // guarda de reentrância os ciclos se empilham, e sem cache o refresh refaz tudo.
 ok('a tela não empilha buscas — o pedido que chega no meio fica pendente',
-   /if\(PG_TELA_RODANDO\)\{ PG_TELA_PEND=/.test(pega('async function renderGestaoPerdas(')), true);
+   /if\(PG_TELA_RODANDO\)\{\s*PG_TELA_PEND=/.test(pega('async function renderGestaoPerdas(')), true);
 ok('e guarda o período em cache', /PG_TELA_CACHE\[chave\]=reg/.test(_ctxPer), true);
 // ⚠ Duas abas pedindo a MESMA janela não podem virar duas execuções no Apps
 // Script — elas só se enfileirariam lá. Mesmo remédio do _phVoo do comparativo.
@@ -1752,6 +1761,10 @@ ok('e uma requisição em voo é compartilhada',
    /if\(PG_VOO\[chave\]\) return PG_VOO\[chave\]/.test(_ctxPer), true);
 // Sem o paradas-calc.js não há conta nenhuma — mesma guarda das outras telas.
 ok('a tela tem a guarda do módulo', /_rpOk\(\)/.test(pega('async function renderGestaoPerdas(')), true);
+// Deu certo: a próxima falha volta a ter a retentativa automática (o SIMULADOR
+// sempre zerou; a GESTÃO ficava com uma por sessão).
+ok('a GESTÃO zera a retentativa automática quando a leitura dá certo',
+   /_pgFalhaTentou\.renderGestaoPerdas=false;[^\n]*\n\s*_pgPintar\(reg\.ctx, reg\.t\)/.test(pega('async function renderGestaoPerdas(')), true);
 // A aba e a seção precisam existir e casar com o setTab.
 ok('a aba existe na navegação', /data-tab="perdas"/.test(src), true);
 ok('a seção existe', /id="sec-perdas"/.test(src), true);
@@ -2383,7 +2396,7 @@ ok('a impressão executiva manda o período do simulador',
 ok('e a proposta prefere esse período ao das outras abas',
    /let de=deArg\|\|dGet\('sim-de'\)/.test(_inv), true);
 ok('a aba do simulador não empilha buscas — o pedido que chega no meio fica pendente',
-   /if\(SIM_RODANDO\)\{ SIM_PEND=/.test(pega('async function renderSimulador(')), true);
+   /if\(SIM_RODANDO\)\{\s*SIM_PEND=/.test(pega('async function renderSimulador(')), true);
 
 // ── trocar o período com a leitura em curso (22/10/2026) ────────────────────
 // A data trocada durante uma leitura era engolida pelo `return` seco: o quadro
@@ -2393,7 +2406,11 @@ _assincronos.push(async () => {
   console.log('\n── trocar o período com a leitura em curso não pode sumir ──');
   const flush = () => new Promise(r => setImmediate(r));
   const docAntes = global.document;
-  const el = () => ({innerHTML:'', textContent:'', querySelector:()=>null, classList:{contains:()=>true}});
+  // O elemento sabe se há um quadro pintado (o `.pgq`/`.pg-sim` que as telas
+  // procuram): é o que separa "período novo, tela limpa" de "refresh do mesmo
+  // período com o quadro no ar".
+  const el = () => { const o = {innerHTML:'', textContent:'', classList:{contains:()=>true}};
+    o.querySelector = () => (o.innerHTML.startsWith('QUADRO') ? {} : null); return o; };
   const dom = {'pg-quadro':el(), 'pg-upd':el(), 'sim-bloco':el(), 'sim-upd':el()};
   global.document = { getElementById: id => dom[id] || null };
   const campos = {};
@@ -2408,18 +2425,27 @@ _assincronos.push(async () => {
   let busca = [], abertas = [], pintou = [];
   global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
     return new Promise(r => abertas.push(() => r({ctx:{de}, t:1}))); };
-  global._pgPintar = global._simPintar = ctx => pintou.push(ctx.de);
+  global._pgPintar = ctx => { pintou.push(ctx.de); dom['pg-quadro'].innerHTML = 'QUADRO ' + ctx.de; };
+  global._simPintar = ctx => { pintou.push(ctx.de); dom['sim-bloco'].innerHTML = 'QUADRO ' + ctx.de; };
   const solta = () => { const f = abertas.shift(); if (f) f(); };   // resolve a busca mais antiga
   eval(pega('async function renderGestaoPerdas('));
   eval(pega('async function renderSimulador('));
 
   for (const [rot, fn, de, ate] of [['GESTÃO DE PERDAS', renderGestaoPerdas, 'pg-de', 'pg-ate'],
                                      ['SIMULADOR', renderSimulador, 'sim-de', 'sim-ate']]) {
-    busca = []; abertas = []; pintou = [];
+    const tela = dom[rot === 'SIMULADOR' ? 'sim-bloco' : 'pg-quadro'];
+    // O caso de 22/10: 02/09–22/10 no ar, o refresh dele em curso, e o gestor
+    // troca a data para 17/09.
     campos[de] = '02/09/2026'; campos[ate] = '22/10/2026';
-    const p1 = fn();
+    const p0 = fn(); solta(); await p0; await flush();
+    busca = []; abertas = []; pintou = [];
+    const p1 = fn();                       // refresh do mesmo período: o quadro fica no ar
+    ok(rot + ': no refresh do mesmo período o quadro continua no ar', tela.innerHTML, 'QUADRO 02/09/2026');
     campos[de] = '17/09/2026';             // o gestor troca a data com a leitura em curso
     fn();
+    // O que estava na tela sai NA HORA do pedido — não espera a leitura antiga
+    // terminar (até ~80 s no cold start) sob o rótulo novo.
+    ok(rot + ': a tela troca para CARREGANDO no instante do pedido novo', /CARREGANDO/.test(tela.innerHTML), true);
     solta(); await p1; await flush();
     ok(rot + ': o resultado do período antigo NÃO é pintado sob o rótulo novo', pintou, []);
     ok(rot + ': e o pedido novo não sumiu — a busca do período certo sai em seguida', busca, ['02/09/2026', '17/09/2026']);
@@ -2446,13 +2472,13 @@ _assincronos.push(async () => {
     // O MESMO pedido repetido (o setTab chama o render duas vezes na 1ª
     // entrada) não vira outra leitura — com a falha, era uma leitura completa
     // a mais e a mensagem de falha trocada por CARREGANDO.
-    busca = []; abertas = []; pintou = [];
+    busca = []; abertas = []; pintou = []; tela.innerHTML = '';   // 1ª entrada: nada no ar
     global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
       return new Promise(r => abertas.push(() => r(null))); };   // a leitura falha
     const p5 = fn(); fn();
     solta(); await p5; await flush();
     ok(rot + ': o mesmo pedido repetido não refaz a leitura que acabou de falhar', busca, ['17/09/2026']);
-    ok(rot + ': e a falha fica na tela', dom[rot === 'SIMULADOR' ? 'sim-bloco' : 'pg-quadro'].innerHTML, 'FALHA');
+    ok(rot + ': e a falha fica na tela', tela.innerHTML, 'FALHA');
     global._pgContextoDoPeriodo = (de, ate, forcar) => { busca.push(de + (forcar ? ' ↻' : ''));
       return new Promise(r => abertas.push(() => r({ctx:{de}, t:1}))); };
     // Campo pela metade (data sendo digitada) não é período novo: pinta o que
@@ -2463,6 +2489,13 @@ _assincronos.push(async () => {
     solta(); await p6; await flush();
     ok(rot + ': com a data pela metade, pinta o que chegou e não busca nada', [pintou, busca], [['17/09/2026'], ['17/09/2026']]);
     campos[ate] = '22/10/2026';
+    // Pela metade, mas o campo PREENCHIDO já é de outro período: não pinta.
+    busca = []; abertas = []; pintou = [];
+    const p7 = fn();
+    campos[de] = '01/10/2026'; campos[ate] = '';
+    solta(); await p7; await flush(); await flush();
+    ok(rot + ': com o campo preenchido de outro período, o que chegou não é pintado', pintou, []);
+    campos[de] = '17/09/2026'; campos[ate] = '22/10/2026';
   }
   global.document = docAntes;
 });
@@ -2474,7 +2507,7 @@ _assincronos.push(async () => {
   console.log('\n── a retentativa automática não refaz o que já está na tela ──');
   let agendado = null; const chamou = [];
   const setTimeout = fn => { agendado = fn; return 1; }, clearTimeout = () => {};   // o eval abaixo enxerga estes
-  let _pgFalhaTimer = null;
+  let _pgFalhaTimer = {};
   const docAntes = global.document;
   let mostra = '';
   global.document = { getElementById: id => id === 'sec-perdas'
@@ -2490,6 +2523,9 @@ _assincronos.push(async () => {
   _pgFalhaTentou = {}; mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
   agendado();
   ok('com a falha ainda na tela, tenta de novo (forçado)', chamou, [true]);
+  // Um timer POR TELA: a falha do SIMULADOR (pendente em segundo plano) não
+  // pode cancelar a retentativa que a GESTÃO acabou de prometer.
+  ok('o timer da retentativa é um por tela', /_pgFalhaTimer\[fn\]=setTimeout/.test(pega('function _pgFalhaHtml(')), true);
   global.document = docAntes; delete global.window.renderGestaoPerdas;
 });
 ok('e tem a guarda do módulo de cálculo',
