@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.153.0 — 22/10/2026 · GESTÃO DE PERDAS: SMED legível e o período certo
+
+- **O SMED do quadro dizia o que não era** (PPCP: *"o que quer dizer 40% já na
+  meta? que melhorou"*). Não era melhora: era a fatia das trocas do período
+  que saiu dentro da meta. E o `6,8 → 5 min` parecia evolução, quando é média
+  contra meta. Agora:
+  - `6,8 min · meta 5 min` (sem seta entre os dois);
+  - `57 de 142 trocas em até 5 min` (contagem, sem o "já");
+  - subtítulo *"tempo médio de troca no período"* (o 6,8 nunca foi "hoje");
+  - linha nova **"melhorou?"** por tipo de troca: as trocas do período em
+    ordem, partidas ao meio, e as duas médias comparadas. MELHORA ou PIORA só
+    quando a diferença passa de 2 erros-padrão; abaixo disso, **DENTRO DA
+    VARIAÇÃO**, com o número e o limite ao lado. Com menos de 8 trocas, a
+    linha diz que é pouco para afirmar.
+  - No relatório desta tela, o card da seção 5 *"já dentro da meta"* virou
+    *"das trocas em até X min"*.
+- **Trocar a data com a leitura em curso mostrava o período anterior.** A
+  GESTÃO DE PERDAS e o SIMULADOR descartavam o pedido feito durante uma
+  leitura e pintavam o resultado antigo sob o rótulo novo. Agora o pedido
+  espera a leitura terminar e roda em seguida, e o resultado de outro período
+  não aparece.
+- **Atenção:** o quadro de 22/10 (rótulo 17/09–22/10) mostrava os números de
+  **02/09–22/10**: 142 trocas de produto, 6,8 min, 40% na meta. O período
+  17/09–22/10 tem **108 trocas, 6,9 min, 40 de 108 (37%)** em até 5 min; na de
+  plástico, 77 trocas, 4,2 min, 45 em até 4 min. Nas duas, a 2ª metade do
+  período ficou **dentro da variação** da 1ª (produto +1,8 min com ±1,9;
+  plástico +0,7 com ±1,0): não dá para dizer que melhorou nem que piorou.
+- Nada no `.gs`.
+
+---
+
 ## v7.152.0 + mobile 1.36.0 + `.gs` v5.31 — 21/10/2026 · PADRÃO DE UEP
 
 - **A UEP tem um padrão só, e ele não muda mais** (PPCP: *"temos que definir o

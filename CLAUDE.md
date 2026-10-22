@@ -1943,7 +1943,7 @@ via Google Apps Script (JSONP).
     meta em vigor: com o degrau já um nível abaixo, comparar com ele deixaria
     **vermelho** justamente quem acabou de bater o combinado. `dentro` continua
     medindo contra a meta em vigor (é ela que pinta as faixas da distribuição e
-    o *"já dentro da meta"*).
+    a contagem das trocas em até X min).
   - **Quem decide a meta é o `_pgSmed`, uma vez.** `_pgContexto` calcula o SMED
     **antes** da recuperação e passa o alvo em vigor (`metasSmed`) para
     `_pgRecuperacao` e `_pgPlano` — cenário simulado e plano de ação cobram o
@@ -1987,6 +1987,32 @@ via Google Apps Script (JSONP).
   MELHORANDO?" do diagnóstico** — duas cópias e uma apontaria para um lado e a
   outra diria o contrário. Variação abaixo de meio ponto percentual é
   **ESTÁVEL** (→), que é ruído de arredondamento, não melhora.
+- **SMED do quadro: média, META escrita, trocas contadas e o "melhorou?"**
+  (v7.153.0, PPCP 22/10/2026, lendo *"40% já na meta"* como melhora). Era
+  `6,8 → 5 min` com `142 trocas · 40% já na meta` e o subtítulo *"hoje → meta
+  em vigor"*: a seta entre média e meta parecia evolução, o "já" parecia
+  progresso e o 6,8 não era de hoje (é a média do período). Hoje:
+  `6,8 min · meta 5 min`, `57 de 142 trocas em até 5 min` e uma linha de
+  tendência por tipo. No papel, o card da seção 5 virou *"das trocas em até
+  X min"*.
+  - **`_pgTendSmed` NÃO é a régua da seta da disponibilidade** (1ª × última
+    semana). Medido na planilha: a troca de produto tem desvio de ~5 min de uma
+    troca para outra e a semana da ponta costuma ser pedaço — em 17/09–22/10 a
+    S38 tinha 8 trocas a 4,4 min e a S43 8,1, e a seta diria PIORA +3,7. As
+    trocas do período, em ordem de data e hora, são partidas ao meio (ímpar: a
+    do meio fica fora) e as duas médias comparadas. **MELHORA/PIORA só acima
+    de `PG_SMED_TEND_EP`=2 erros-padrão**; abaixo é **DENTRO DA VARIAÇÃO**, sem
+    cor, com o número e o ±limite ao lado. Menos de `PG_SMED_AMOSTRA` trocas
+    em cada metade → não diz (a linha avisa que é pouco).
+  - Em 17/09–22/10/2026 as duas trocas deram DENTRO DA VARIAÇÃO (produto +1,8
+    com ±1,9; plástico +0,7 com ±1,0): o dado não sustenta "melhorou" nem
+    "piorou". Não baixar o limite para a seta "dizer alguma coisa".
+  - A seta segue o NÚMERO (↘ = o tempo caiu) e a palavra/cor dizem se é bom —
+    no tempo de troca, cair é MELHORA. A conta mora no `_pgSmed` (`s.tend`); o
+    quadro só desenha (o teste prende). Pele `.pgq-smed-t` na tela e no papel.
+  - Medido no Chromium com as paradas reais: a tela não cresce (o SMED já
+    tinha folga ao lado da EVOLUÇÃO); no papel o quadro desce 5 px e a capa,
+    com 6 itens no plano de ação, termina em 700 dos ~718 px da folha 1.
 - **`_pgAnomalias` são quatro checagens, e nenhuma altera indicador**:
   sobreposição · sem motivo · parada acima de `PG_ANOM_LONGA` (30 min) · tipo
   fora da aba `TIPOS_PARADA`. Parada aberta (sem FIM) entra como quinta linha
@@ -2038,6 +2064,18 @@ via Google Apps Script (JSONP).
     5 min por período** (`PG_TELA_CACHE`) e **guarda de reentrância**
     (`PG_TELA_RODANDO`), como a aba PARADAS. Refresh do mesmo período **mantém o
     que está na tela** e só marca a hora do dado; trocar de período limpa.
+  - ⚠ **A guarda não pode ENGOLIR o pedido** (v7.153.0). Era `if(PG_TELA_RODANDO)
+    return;`: a data trocada durante uma leitura sumia, e quando a leitura
+    antiga voltava ela era pintada sob o rótulo novo. Caso real, 22/10/2026:
+    o quadro dizia 17/09–22/10 e mostrava 02/09–22/10 (142 trocas e 6,8 min;
+    o período certo tem 108 e 6,9) — conferido refazendo a conta com a
+    planilha. Hoje o pedido fica pendente (`PG_TELA_PEND`, com o ↻ forçado
+    preservado) e roda no fim, e resultado de período que não é mais o dos
+    campos **não é pintado**. Mesma correção no SIMULADOR (`SIM_PEND`) — lá a
+    proposta impressa sairia com o período anterior. É a régua do
+    `CART_PEND`/`QP_PEND` da aba PLANO. `relatorios.test.js` roda as duas
+    funções reais com a busca de mentira (a fila `_assincronos`, que roda
+    antes do resumo final).
   - O **título do quadro some na tela** (a aba e o cabeçalho já dizem GESTÃO DE
     PERDAS) e a **marca da meta vira tracejado branco** — no papel ela é verde,
     e verde sobre a barra verde de quem bateu a meta desaparece.
