@@ -2041,8 +2041,16 @@ via Google Apps Script (JSONP).
   - A seta segue o NÚMERO (↘ = o tempo caiu) e a palavra/cor dizem se é bom —
     no tempo de troca, cair é MELHORA. A conta mora no `_pgSmed` (`s.tend`); o
     quadro só desenha (o teste prende). Pele `.pgq-smed-t` na tela e no papel.
-  - Medido no Chromium com as paradas reais: a tela não cresce (o SMED já
-    tinha folga ao lado da EVOLUÇÃO).
+  - Medido no Chromium com as paradas reais, na TELA: de 1366 px de largura
+    para cima a linha de cima do quadro não cresce (o SMED cabe ao lado da
+    EVOLUÇÃO, 250 px); em 1280 px ou menos o "melhorou?" quebra e ela cresce
+    29 px (250 → 279). Nada corta: a célula cresce — a tela não tem folha.
+  - **A direção é decidida com os números da LINHA** (`limR`/`difR` no
+    `_pgTendSmed`: médias e limite com uma casa). Com o cru, 6,75 → 10,0
+    (+3,25 contra ±3,20) saía "PIORA +3,2 min" com "±3,2" — a palavra
+    contradizendo os números que mostra. `delta`/`lim` crus continuam no
+    objeto. Com nº ímpar de trocas, `fora`=1 e a nota da seção 5 diz que a do
+    meio ficou fora.
 - **`_pgAnomalias` são quatro checagens, e nenhuma altera indicador**:
   sobreposição · sem motivo · parada acima de `PG_ANOM_LONGA` (30 min) · tipo
   fora da aba `TIPOS_PARADA`. Parada aberta (sem FIM) entra como quinta linha

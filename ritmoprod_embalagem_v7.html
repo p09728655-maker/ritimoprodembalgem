@@ -15462,8 +15462,13 @@ function _pgTendSmed(trocas){
   // "0,0" e as duas médias podem sair iguais com uma casa, e trocas todas
   // iguais (variância zero) não podem virar "PIORA +0,0 min".
   const lim=Math.max(0.1, PG_SMED_TEND_EP*Math.sqrt(vari(A)/h+vari(B)/h));
-  const melhorou=delta<-lim, piorou=delta>lim;
-  return {de, ate, delta, lim, n:h, melhorou, piorou,
+  // A direção é decidida com os números que vão para a LINHA (médias e limite
+  // com uma casa): com o cru, "PIORA +3,2 min" saía ao lado de "±3,2" — a
+  // palavra contradizendo os números que ela mesma mostra.
+  const limR=Math.max(0.1, Math.round(lim*10)/10);
+  const difR=(Math.round(ate*10)-Math.round(de*10))/10;
+  const melhorou=difR<-limR, piorou=difR>limR;
+  return {de, ate, delta, lim, limR, n:h, fora:t.length-2*h, melhorou, piorou,
           diaA:[A[0].dia, A[h-1].dia], diaB:[B[0].dia, B[h-1].dia],
           seta:melhorou?'↘':(piorou?'↗':'→'), st:melhorou?'g':(piorou?'r':'n')};
 }
@@ -15481,7 +15486,7 @@ function _pgTendSmedFmt(t){
     rot: t.melhorou?'MELHORA':t.piorou?'PIORA':'DENTRO DA VARIAÇÃO',
     de: fmt1(d10/10), ate: fmt1(a10/10),
     dif: (r>0?'+':r<0?'−':'')+fmt1(Math.abs(r))+' min',
-    lim: '±'+fmt1(t.lim),
+    lim: '±'+fmt1(t.limR!=null?t.limR:t.lim),
     faixaA: dm(t.diaA[0])+' a '+dm(t.diaA[1]),
     faixaB: dm(t.diaB[0])+' a '+dm(t.diaB[1])
   };
@@ -16197,7 +16202,7 @@ function _pgSecaoHtml(ctx){
       <div style="margin-top:7px">${barra}</div>
       ${ev}
       ${s.tend?(()=>{ const F=_pgTendSmedFmt(s.tend);
-        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${F.de} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${F.ate} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra`
+        return `<div class="rp-note" style="margin-top:6px">MELHOROU? As trocas do período, em ordem de data e hora, partidas ao meio${s.tend.fora?' (com número ímpar, a troca do meio fica fora)':''}: 1ª metade (${F.faixaA}, ${s.tend.n} trocas) <b>${F.de} min</b> → 2ª metade (${F.faixaB}, ${s.tend.n} trocas) <b>${F.ate} min</b>, diferença de <b>${F.dif}</b>: <b>${F.rot}</b>. A diferença só vira MELHORA ou PIORA quando passa de ${F.lim} min (2 erros-padrão) — o tempo de uma troca varia muito de uma para outra`
           // A frase da evolução semanal só sai quando o quadro dela foi impresso
           // (ele exige 2+ semanas): citar "acima" um quadro que não está lá confunde.
           +(s.semanas.length>1?`, e a semana da ponta costuma ser pedaço do período, por isso a evolução semana a semana acima não basta para dizer que melhorou ou piorou.`:'.')+`</div>`; })():''}

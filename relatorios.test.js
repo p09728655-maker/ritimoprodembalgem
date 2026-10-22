@@ -1333,6 +1333,14 @@ const _quase = dd => _pgTendSmed([4,4,4,4].map((d,i) => _tr(20260901+i, 480, d))
 ok('metades iguais que diferem por segundos não viram PIORA', [_quase(1/60).seta, _quase(1/60).st], ['→', 'n']);
 ok('nem por 0,08 min (o piso é a casa que a tela mostra)', [_quase(0.08).seta, _quase(0.08).lim], ['→', 0.1]);
 ok('acima do piso, sem variância, a direção vale', _quase(0.2).piorou, true);
+// A direção é decidida com os números da LINHA (uma casa): 6,75 → 10,0 dá
+// +3,25 contra ±3,20 cru — PIORA —, mas a linha mostraria "+3,2 min (±3,2)".
+const _empate = _pgTendSmed([5,4,8,10].map((d,i) => _tr(20260901+i, 480, d))
+  .concat([8,10,12,10].map((d,i) => _tr(20261001+i, 480, d))));
+ok('diferença igual ao limite mostrado não vira PIORA', [_empate.piorou, _empate.st, _pgTendSmedFmt(_empate).dif, _pgTendSmedFmt(_empate).lim],
+   [false, 'n', '+3,2 min', '±3,2']);
+ok('com nº ímpar o papel sabe que a troca do meio ficou fora',
+   [_pgTendSmed(_tA.concat([_tr(20260920, 480, 99)], _tB)).fora, tdM.fora], [1, 0]);
 // O sinal sai do valor ARREDONDADO: do delta cru, −0,04 saía "−0,0 min".
 ok('o texto não escreve "−0,0"', _pgTendSmedFmt({de:5.02, ate:4.98, delta:-0.04, lim:0.1, melhorou:false, piorou:false,
    diaA:[20260917,20261005], diaB:[20261006,20261022]}).dif, '0,0 min');
@@ -1396,6 +1404,8 @@ ok('sem trocas suficientes, diz que é pouco — não some calado',
      [/MELHOROU\? As trocas do período, em ordem de data e hora, partidas ao meio/.test(_s5), /_pgTendSmedFmt\(s\.tend\)/.test(_s5)], [true, true]);
   // A frase que manda olhar "a evolução semana a semana acima" só sai quando
   // esse quadro foi impresso (2+ semanas) — o mesmo teste do quadro dela.
+  ok('com nº ímpar a nota diz que a troca do meio ficou fora',
+     /\$\{s\.tend\.fora\?' \(com número ímpar, a troca do meio fica fora\)':''\}/.test(_s5), true);
   ok('a nota só cita a evolução semanal quando ela está no papel',
      /\+\(s\.semanas\.length>1\?`, e a semana da ponta/.test(_s5) && /const ev=s\.semanas\.length>1\?/.test(_s5), true);
   ok('o texto do "melhorou?" é escrito num lugar só',
@@ -2531,10 +2541,30 @@ _assincronos.push(async () => {
   _pgFalhaTentou = {}; mostra = _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
   agendado();
   ok('com a falha ainda na tela, tenta de novo (forçado)', chamou, [true]);
-  // Um timer POR TELA: a falha do SIMULADOR (pendente em segundo plano) não
-  // pode cancelar a retentativa que a GESTÃO acabou de prometer.
-  ok('o timer da retentativa é um por tela', /_pgFalhaTimer\[fn\]=setTimeout/.test(pega('function _pgFalhaHtml(')), true);
   global.document = docAntes; delete global.window.renderGestaoPerdas;
+});
+
+// Um timer POR TELA: a falha do SIMULADOR (pendente em segundo plano) não pode
+// cancelar a retentativa que a GESTÃO acabou de prometer. Com relógio de
+// mentira que de fato cancela — uma regex não pegaria a volta do timer único.
+_assincronos.push(async () => {
+  console.log('\n── a retentativa de uma tela não cancela a da outra ──');
+  const vivos = new Map(); let id = 0; const chamou = [];
+  const setTimeout = fn => { vivos.set(++id, fn); return id; }, clearTimeout = k => { vivos.delete(k); };
+  let _pgFalhaTimer = {};
+  const docAntes = global.document;
+  const falha = { classList:{contains:()=>true}, querySelector: q => (q === '.pg-falha' ? {} : null) };
+  global.document = { getElementById: id => (id === 'sec-perdas' || id === 'sec-simulador') ? falha : null };
+  global.window.renderGestaoPerdas = f => chamou.push('GESTÃO ' + f);
+  global.window.renderSimulador = f => chamou.push('SIMULADOR ' + f);
+  global._pgFalhaTentou = {};
+  eval(pega('function _pgFalhaHtml('));
+  _pgFalhaHtml('renderGestaoPerdas', 'sec-perdas');
+  _pgFalhaHtml('renderSimulador', 'sec-simulador');      // a outra tela falha logo depois
+  ok('as duas retentativas continuam agendadas', vivos.size, 2);
+  [...vivos.values()].forEach(f => f());
+  ok('e as duas telas tentam de novo, forçadas', chamou, ['GESTÃO true', 'SIMULADOR true']);
+  global.document = docAntes; delete global.window.renderGestaoPerdas; delete global.window.renderSimulador;
 });
 ok('e tem a guarda do módulo de cálculo',
    /_rpOk\(\)/.test(pega('async function renderSimulador(')), true);

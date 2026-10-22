@@ -23,8 +23,10 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   - linha nova **"melhorou?"** por tipo de troca: as trocas do período em
     ordem, partidas ao meio, e as duas médias comparadas. MELHORA ou PIORA só
     quando a diferença passa de 2 erros-padrão; abaixo disso, **DENTRO DA
-    VARIAÇÃO**, com o número e o limite ao lado. Com menos de 8 trocas, a
-    linha diz que é pouco para afirmar.
+    VARIAÇÃO**, com o número e o limite ao lado — e a palavra é decidida com
+    os mesmos números que a linha mostra (uma casa), para nunca sair "PIORA
+    +3,2 min" com "±3,2". Com menos de 8 trocas, a linha diz que é pouco para
+    afirmar.
   - No relatório desta tela, o card da seção 5 *"já dentro da meta"* virou
     *"das trocas em até X min"*, e a seção 5 ganhou a nota **MELHOROU?**, com
     as datas de cada metade e a régua (a capa impressa não tem tooltip).
@@ -39,9 +41,10 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   não aparece — e o quadro antigo sai da tela no instante do pedido, sem
   esperar a leitura em curso terminar. Pedido repetido do mesmo período não
   vira leitura a mais, e a retentativa automática de 20 s só roda se a falha
-  ainda estiver na tela (agora uma por tela, e de novo a cada falha na
-  GESTÃO) — evita leituras extras da aba PARADAS (a mais cara) quando o Apps
-  Script está lento.
+  ainda estiver na tela (agora uma por tela; na GESTÃO, como no SIMULADOR,
+  ela volta a valer depois de cada leitura que deu certo — se a retentativa
+  também falha, fica o ↻) — evita leituras extras da aba PARADAS (a mais
+  cara) quando o Apps Script está lento.
 - **Atenção:** o quadro de 22/10 (rótulo 17/09–22/10) mostrava os números de
   **02/09–22/10**: 142 trocas de produto, 6,8 min, 40% na meta. O período
   17/09–22/10 tem **108 trocas, 6,9 min, 40 de 108 (37%)** em até 5 min; na de
