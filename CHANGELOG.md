@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.154.1 — 23/10/2026 · PRÓXIMOS DIAS: o que vai para o 1º dia não é "atraso"
+
+- PPCP, com o print da aba ⚖ UEP: *"ATRASO?"*. O cartão de segunda dizia
+  **inclui atraso de 8h26** — e só 3h23 eram lote vencido. O resto era o
+  programado de hoje (23/10) que não cabe no que sobra da jornada de hoje.
+- **Agora:** *inclui 8h26 que não cabem hoje*. O tooltip do cartão abre a
+  conta: *falta zerar 15h30 (vencido 3h23 + falta do programado de hoje
+  12h07) − 7h05 que a linha ainda faz hoje no ritmo da meta*. O rodapé
+  *"N dias pedem…"* diz no tooltip que o total leva essas horas. O ANEXO do
+  papel da UEP explica a mesma conta.
+- **Atenção:** nenhum número mudou — só o rótulo e o tooltip. Vale para a aba
+  ⚖ UEP, a impressão executiva e a tela da diretoria (lá o texto ocupa duas
+  linhas; conferido em 1920×1080 e 1366×768, nada corta).
+
+---
+
 ## v7.154.0 — 22/10/2026 · GESTÃO DE PERDAS: o que mudou, onde, e o papel enxuto
 
 - **O QUE MUDOU** (PPCP: *"como saber a partir de quando melhorou e onde

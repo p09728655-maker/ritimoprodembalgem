@@ -4207,6 +4207,19 @@ feito e dá ar de verdade ao que sobrou.
   o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `dívida − ritmo ×
   (527 − minNorm)`, a base da projeção da aba UEP. Pôr a dívida inteira no 1º
   dia cobraria duas vezes o que a linha ainda faz hoje.
+  - ⚠ **Isso NÃO é "atraso", e o cartão não diz mais que é** (v7.154.1, PPCP
+    23/10/2026, com o print na mão: *"ATRASO?"*). O cartão de segunda dizia
+    *"inclui atraso de 8h26"*, e a conta era 3h23 de lote vencido (o TOUCADOR
+    MAGIC NEW 25331, 600 cx sem começar) + 12h07 do programado de 23/10
+    (1.550 cx = 3.492 UEP, 138% da meta) − 7h05 que a linha ainda fazia
+    hoje. Hoje: *"inclui 8h26 que não cabem hoje"*, e o tooltip abre a conta
+    (`falta zerar X (vencido V + falta do programado de hoje H) − C que a
+    linha ainda faz hoje no ritmo da meta`). A parte vencida é o `atraso` de
+    cada código da lista (`_gpxDivida` → `uepAtr`; sem o campo → `null` e o
+    tooltip mostra só o total). `_gpxMontar` devolve a conta em minutos
+    INTEIROS que fecham (`conta`: `div − cabe` = o número do cartão, `venc +
+    hoje` = `div`) — o arredondamento vai no termo que não aparece sozinho.
+    Nome é **falta zerar**, o mesmo da Tela C.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo

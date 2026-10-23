@@ -4494,6 +4494,30 @@ console.log('\n── estudo de UEP ──');
   // 10h32 − 8h47 = 105,3 min: a tela mostra "1h45", e a cor tem de ser a da legenda "até 1h45"
   const G2 = _gpxMontar([it('25/09/2026','1',1000,3.033)], new Date(2026, 8, 24), 0, 0, 2530, 1);
   ok('a cor segue o número exibido: 1h45 é âmbar, não NÃO CABE', [_fmtHM(G2.dias[0].exc), G2.dias[0].estado], ['1h45', 'warn']);
+  // v7.154.1 — PPCP, 23/10/2026: "ATRASO?". O cartão dizia "inclui atraso de
+  // 8h26" e eram 3h23 de vencido + 12h07 do programado de hoje − 7h05 que
+  // cabiam hoje. Agora diz que NÃO CABEM HOJE, e o tooltip abre a conta.
+  const DA = _gpxDivida([{ codigo:'501125230', falta:300, atraso:100 }, { codigo:'501125231', falta:200, atraso:0 }, { codigo:'999', falta:40, atraso:40 }], itens, 540);
+  ok('dívida: a parte vencida sai do `atraso` de cada código (sem UEP fica fora das duas)', [DA.uep, DA.uepAtr], [900, 200]);
+  ok('sem o campo `atraso` a divisão não é inventada', _gpxDivida([{ codigo:'501125230', falta:300 }], itens, 300).uepAtr, null);
+  const GC = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5, 600);
+  ok('a conta do que não cabe hoje fecha em minutos inteiros: falta zerar − cabe = cartão; vencido + hoje = falta zerar',
+     [GC.dias[0].conta, Math.round(GC.dias[0].minAtr), GC.dias[1].conta, GC.carry === G.carry],
+     [{ div:208, venc:125, hoje:83, cabe:120 }, 88, null, true]);
+  ok('sem a parte vencida (backend sem `atraso`) a conta sai só com o total', _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0].conta, { div:208, venc:null, hoje:null, cabe:120 });
+  { if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
+    if (typeof _dirF === 'undefined') eval(pega('function _dirF('));
+    global.GPX_DOW = eval(JS.match(/const GPX_DOW = (\[[^\]]*\]);/)[1]);
+    eval(pega('function _gpxCartaoHtml('));
+    const CH = _gpxCartaoHtml(GC.dias[0], 'gpx'), CS = _gpxCartaoHtml(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0], 'gpx');
+    ok('o cartão diz que NÃO CABEM HOJE (nunca "atraso de"), e o tooltip abre a conta',
+       [/inclui 1h28 que não cabem hoje<\/div>|inclui 1h28 que não cabem hoje</.test(CH), /inclui atraso de/.test(CH),
+        /falta zerar 3h28 \(vencido 2h05 \+ falta do programado de hoje 1h23\) − 2h00 que a linha ainda faz hoje no ritmo da meta/.test(CH),
+        /falta zerar 3h28 − 2h00 que a linha/.test(CS)],
+       [true, false, true, true]);
+    ok('o painel passa a parte vencida e o papel explica a conta',
+       [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /O que não cabe no resto de hoje entra no 1º dia útil: falta zerar/.test(JS),
+        /atraso de/.test(pega('function _gpxCartaoHtml('))], [true, true, false]); }
 }
 
 // ── Azul-marinho no PC e no celular; a TV continua PRETA (v7.115.0) ──────────
