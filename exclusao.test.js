@@ -72,7 +72,7 @@ function montar(o) {
     PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'P B', 'PONTOS'],
       ['501136004', 'VOL 1/1 LIVREIRO ENCANTO', 'CINZA'], ['501080008', 'VOL 2/2 CRISTALEIRA ORION', 'OFF WHITE'],
       ['501080006', 'VOL 2/2 CRISTALEIRA ORION', 'NATURE'], ['501080007', 'VOL 1/2 CRISTALEIRA ORION', 'CINAMOMO'],
-      ['501.136.005', 'VOL 1/1 LIVREIRO ENCANTO', 'ROSA', 26.2, 84]],   // com pontos e peso, e o código com pontos como no cadastro real
+      ['501.136.005', 'VOL 1/1 LIVREIRO ENCANTO', 'ROSA', 26.2, 84]],   // com pontos e peso; código com pontos: a troca acha por codKey
   };
   function aba(nome) {
     const v = ABAS[nome];

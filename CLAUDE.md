@@ -198,11 +198,20 @@ via Google Apps Script (JSONP).
   hora ficou em 0. **Excluir vale para qualquer hora de hoje, lançar não**:
   excluir-e-relançar numa hora fechada é uma armadilha.
   - Arrumado no mesmo dia com uma chamada direta ao `/exec`
-    (`action=saveRealizado&horario=14:00&realizado=203&produto=501.106.005&lancId=…`):
+    (`action=saveRealizado&horario=14:00&realizado=203&produto=…&lancId=…`):
     o backend nunca teve trava de horário, a regra da tolerância é só de tela.
     ⚠ Esse caminho troca o `PROD_ATUAL` do turno (o `registrarProducaoProduto`
     grava a propriedade e o app sincroniza pelo `getDados`) — o operador tem de
     bipar o produto que está rodando depois.
+  - ⚠ **Na chamada à mão, o código vai SÓ COM DÍGITOS** (`produto=501106005`).
+    O CODIGO da `PRODUTO_CODIGO` é **número** com formato `#,##0` (a tela mostra
+    `501.106.005`), e o `registrarProducaoProduto` procura o produto por
+    igualdade exata com o texto que chegou. Com `501.106.005` a linha entrou sem
+    DESCRICAO, PONTOS e PESO_KG (o Sheets ainda converteu o código para número,
+    então UEP e FIFO casaram). Corrigido à mão pela API: linha 2893 da
+    `PRODUCAO_PRODUTO` e 2642 da `HISTORICO_MEDIA_FAMILIA`. O app manda o código
+    do cadastro (dígitos) e não tem esse problema; a troca compara por `codKey`
+    e grava o código do cadastro.
 - **O erro era o PRODUTO, não as caixas.** O produto só mora na
   `PRODUCAO_PRODUTO` e na `HISTORICO_MEDIA_FAMILIA`; a `HORA_A_HORA` guarda o
   número. `trocarProdutoLancamento` reescreve a linha do registro **no lugar**
@@ -217,8 +226,9 @@ via Google Apps Script (JSONP).
     caixas que não estão, dia fechado → nada muda) e **idempotente pelo
     `trocaId`** (cache 2 h).
   - Pontos e peso pela MESMA conta do `registrarProducaoProduto` (retrato do
-    cadastro). O código gravado é o do cadastro (`501.106.005`); tudo que lê o
-    registro compara por `codKey`.
+    cadastro). O produto novo é achado por `codKey` (aceita `501.106.005` ou
+    `501106005`) e o código gravado é o do cadastro (`String` do número:
+    `501106005`) — o mesmo texto que o `getPontosDia` e a UEP procuram.
   - **Família**: o 1.4 e o 1.6 do SIRIUS são a MESMA família (6 dígitos). A
     linha de mesma descrição vem primeiro; sem ela, a última da família com
     as caixas. Não achar não desfaz a troca (é análise).
