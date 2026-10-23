@@ -4220,6 +4220,16 @@ feito e dá ar de verdade ao que sobrou.
     INTEIROS que fecham (`conta`: `div − cabe` = o número do cartão, `venc +
     hoje` = `div`) — o arredondamento vai no termo que não aparece sozinho.
     Nome é **falta zerar**, o mesmo da Tela C.
+  - **ATRASO — CONFERÊNCIA** (v7.155.0, PPCP: *"mostra o atraso separado
+    para conferência"*): quadro embaixo dos cartões, SÓ na tela (o
+    `renderProxDias` soma ao `_gpxHtml`; o papel e a diretoria não levam — a
+    folha 2 não tem espaço). Linhas = códigos com `atraso` > 0 da lista
+    (`_gpxDivida` → `linhas`), do `atrasoDesde` mais antigo, e depois a conta
+    (`_gpxMontar` → `conta`, que agora existe sempre que há dívida, com as
+    parcelas também em UEP: `uDiv`, `uVenc`, `uCabe`, `uCarry`, `resto`).
+    Conta em `_gpxAtrasoMontar`, desenho em `_gpxAtrasoHtml` (UEP das
+    parcelas pelos números exibidos, para a soma fechar na tela). Código sem
+    UEP entra com as caixas e "sem UEP". Sem a lista com `atraso` → sem quadro.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo

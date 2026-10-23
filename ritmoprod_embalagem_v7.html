@@ -776,6 +776,18 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-prox .gpx-sem ul{margin:4px 0 0 16px}
 #ger-prox .gpx-sem li b{color:var(--txt)}
 #ger-prox .gpx-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;padding:10px 16px 16px}
+/* ATRASO — CONFERÊNCIA (v7.155.0): número à direita, em fonte de largura fixa */
+#ger-prox .gpx-atr{margin:4px 16px 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+#ger-prox .gpx-atr-t{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);padding:9px 12px;background:var(--elevated);border-bottom:1px solid var(--border);line-height:1.5}
+#ger-prox .gpx-atr-t b{color:var(--txt);letter-spacing:1.5px}
+#ger-prox .gpx-atr th,#ger-prox .gpx-atr td{padding:5px 12px;font-size:11.5px}
+#ger-prox .gpx-atr th{font-size:9.5px}
+#ger-prox .gpx-atr .n,#ger-prox .gpx-atr .n0{font-family:var(--font-d);white-space:nowrap}
+#ger-prox .gpx-atr .n{text-align:right}
+#ger-prox .gpx-atr tr.c td{background:var(--elevated);font-family:var(--font-d);color:var(--txt2)}
+#ger-prox .gpx-atr tr.f td{color:var(--txt);font-weight:700}
+#ger-prox .gpx-atr tr.r td{color:var(--red)}
+#ger-prox .gpx-atr-p{font-family:var(--font-d);font-size:10.5px;color:var(--warn);padding:7px 12px}
 @media (max-width:900px){#ger-prox .gpx-dias{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){#ger-prox .gpx-dias{grid-template-columns:1fr}}
 #ger-semana .gsem-selo{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--acc);letter-spacing:2px;margin-left:12px;padding:3px 10px;border:1px solid rgba(245,166,35,.5);border-radius:4px;white-space:nowrap}
@@ -3366,7 +3378,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.154.1';
+const APP_VER   = '7.155.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -13301,19 +13313,24 @@ function _gpxCalendario(hoje, n, comLote){
 // (backend antigo) a dívida inteira fica sem UEP.
 // `uepAtr` (v7.154.1) é a parte VENCIDA (o `atraso` de cada código); o resto
 // é o que falta do programado de hoje. Item sem o campo `atraso` → null: a
-// divisão não é inventada, e o cartão mostra só o total.
+// divisão não é inventada, e o cartão mostra só o total. `linhas` é a mesma
+// lista por código (vencido e hoje em caixas, UEP/cx ou null) — é dela que
+// sai o quadro ATRASO — CONFERÊNCIA.
 function _gpxDivida(lista, itens, dividaCx){
   const uDe = {};
   (itens || []).forEach(it => { if(it && Number(it.uepCx) > 0) uDe[String(it.codigo)] = Number(it.uepCx); });
   if(!Array.isArray(lista) || !lista.length)
-    return { uep:0, uepAtr:null, semUep: (Number(dividaCx) > 0) ? [{ codigo:'', cx:Number(dividaCx), rot:'atraso total (backend sem a lista por código)' }] : [] };
-  let uep = 0, uepAtr = 0, temAtr = true; const semUep = [];
+    return { uep:0, uepAtr:null, linhas:null, semUep: (Number(dividaCx) > 0) ? [{ codigo:'', cx:Number(dividaCx), rot:'atraso total (backend sem a lista por código)' }] : [] };
+  let uep = 0, uepAtr = 0, temAtr = true; const semUep = [], linhas = [];
   lista.forEach(x => { const f = Number(x.falta) || 0; if(f <= 0) return;
     const u = uDe[String(x.codigo)];
     if(x.atraso == null) temAtr = false;
+    const atr = Math.min(f, Math.max(0, Number(x.atraso) || 0));
+    linhas.push({ codigo:String(x.codigo || ''), desc:String(x.desc || x.descricao || ''), cor:String(x.cor || ''),
+                  desde:String(x.atrasoDesde || ''), atr, hoje: f - atr, u: u > 0 ? u : null });
     if(u > 0){ uep += f * u; uepAtr += Math.min(f, Math.max(0, Number(x.atraso) || 0)) * u; }
     else semUep.push({ codigo:String(x.codigo || ''), cx:f, rot:String(x.descricao || x.desc || x.nome || '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '') }); });
-  return { uep, uepAtr: temAtr ? uepAtr : null, semUep };
+  return { uep, uepAtr: temAtr ? uepAtr : null, semUep, linhas: temAtr ? linhas : null };
 }
 // O rótulo do lote no "Mais pesado" (v7.130.0, PPCP, 09/10/2026). As horas são
 // do LOTE inteiro, e o rótulo levava a cor da maior linha: em 15/10 saía
@@ -13360,7 +13377,9 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
   // o arredondamento vai no termo que a tela não mostra sozinho.
   const divU = Math.max(0, Number(dividaUep) || 0), A = Math.round(carry / porMin), D = Math.round(divU / porMin);
   const V = (uepAtr != null && isFinite(Number(uepAtr))) ? Math.min(D, Math.round(Math.max(0, Number(uepAtr)) / porMin)) : null;
-  const conta = carry > 0 ? { div:D, venc:V, hoje: V != null ? D - V : null, cabe: D - A } : null;
+  // `u*` são as mesmas parcelas em UEP, para o quadro ATRASO — CONFERÊNCIA.
+  const conta = divU > 0 ? { div:D, venc:V, hoje: V != null ? D - V : null, cabe: D - A,
+    uDiv: divU, uVenc: V != null ? Math.min(divU, Math.max(0, Number(uepAtr))) : null, uCabe: divU - carry, uCarry: carry, resto } : null;
   // as linhas sem UEP também marcam o dia (sábado com lote sem UEP aparece)
   const semPorNum = {};
   _cartSemUep(itens, hojeNum).forEach(x => { (semPorNum[x.dataNum] = semPorNum[x.dataNum] || []).push(x); });
@@ -13418,6 +13437,44 @@ function _gpxHtml(P, alt){   // `alt` era a altura do trilho; o cartão novo nã
     <div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
+// ATRASO — CONFERÊNCIA (v7.155.0, PPCP 23/10/2026: "mostra o atraso separado
+// para conferência"). O que o cartão do 1º dia útil resume numa linha, aberto
+// código por código: os vencidos (o `atraso` de cada código, o mesmo que a
+// PROGRAMACAO marca EM ATRASO), o que falta do programado de hoje e o que a
+// linha ainda faz hoje. Só na tela da aba ⚖ UEP: a folha 2 do papel não tem
+// espaço, e o quadro é de conferência, não de gestão à vista.
+function _gpxAtrasoMontar(linhas, porMin){
+  if(!Array.isArray(linhas)) return null;
+  const venc = linhas.filter(l => l.atr > 0).map(l => ({ codigo:l.codigo, nome:nomeComCor(l.desc, l.cor), desde:l.desde, cx:l.atr,
+      uep: l.u ? l.atr * l.u : null, min: l.u ? l.atr * l.u / porMin : null }))
+    .sort((a,b) => (_cartNum(a.desde) || 99999999) - (_cartNum(b.desde) || 99999999) || b.cx - a.cx);
+  const hoje = linhas.filter(l => l.hoje > 0);
+  return { venc, cxVenc: venc.reduce((a,x) => a + x.cx, 0), cxHoje: hoje.reduce((a,l) => a + l.hoje, 0), nHoje: hoje.length,
+           semUep: venc.filter(x => x.uep == null).length + hoje.filter(l => !l.u).length };
+}
+// Desenho: as parcelas vêm prontas do _gpxMontar (`conta`) e as linhas do
+// _gpxAtrasoMontar. O fim do quadro é o número do cartão.
+function _gpxAtrasoHtml(A, P){
+  const k = P && P.conta;
+  if(!A || !k) return '';
+  const uep = v => v == null ? '<span style="color:var(--warn)">sem UEP</span>' : fmtN(Math.round(v));
+  const d1 = (P.dias || []).find(d => !d.fds);
+  // UEP das parcelas pelos números EXIBIDOS (vencido + hoje = falta zerar; falta zerar − cabe = o que não cabe)
+  const uD = Math.round(k.uDiv), uV = Math.round(k.uVenc || 0), uC = Math.round(k.uCarry);
+  const linha = (cls, rot, cx, u, min) => `<tr class="${cls}"><td colspan="3">${rot}</td><td class="n">${cx}</td><td class="n">${u}</td><td class="n">${min}</td></tr>`;
+  const rows = A.venc.length
+    ? A.venc.map(x => `<tr><td class="n0">${_rpEsc(x.codigo)}</td><td>${_rpEsc(x.nome)}</td><td class="n0">${_rpEsc(x.desde.slice(0,5) || '—')}</td><td class="n">${fmtN(x.cx)}</td><td class="n">${uep(x.uep)}</td><td class="n">${x.min == null ? '—' : _fmtHM(x.min)}</td></tr>`).join('')
+    : '<tr><td colspan="6" style="color:var(--txt2)">Nenhum código vencido com saldo.</td></tr>';
+  return `<div class="gpx-atr"><div class="gpx-atr-t"><b>ATRASO — CONFERÊNCIA</b> · vencido com saldo na PROGRAMACAO (STATUS EM ATRASO), por código · linha encerrada com X não entra</div>
+    <table><thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>DESDE</th><th class="n">CX</th><th class="n">UEP</th><th class="n">HORAS</th></tr></thead><tbody>${rows}
+    ${linha('c f', 'VENCIDO', fmtN(A.cxVenc), fmtN(uV), _fmtHM(k.venc || 0))}
+    ${linha('c', `+ falta do programado de hoje (${plural(A.nHoje, 'código', 'códigos')})`, fmtN(A.cxHoje), fmtN(uD - uV), _fmtHM(k.hoje || 0))}
+    ${linha('c f', '= FALTA ZERAR', fmtN(A.cxVenc + A.cxHoje), fmtN(uD), _fmtHM(k.div))}
+    ${linha('c', `− a linha ainda faz hoje (${_fmtHM(k.resto)} de jornada no ritmo da meta, ${fmtN(Math.round(P.porMin * 60))} UEP/h)`, '', fmtN(uD - uC), _fmtHM(k.cabe))}
+    ${k.uCarry > 0 ? linha('c f r', `= NÃO CABE HOJE → ${d1 ? GPX_DOW[d1.dow] + ' ' + d1.data.slice(0,5) : '1º dia útil'}`, '', fmtN(uC), _fmtHM(k.div - k.cabe))
+                   : linha('c f', '= cabe tudo hoje — nada vai para o 1º dia útil', '', '', '')}
+    </tbody></table>${A.semUep ? `<div class="gpx-atr-p">${plural(A.semUep, 'código sem UEP fica', 'códigos sem UEP ficam')} fora da UEP e das horas (só nas caixas) — ver a lista SEM UEP abaixo.</div>` : ''}</div>`;
+}
 let GPX_CARREGANDO = false, GPX_TENT = 0;
 // A montagem com os dados do painel, UMA vez: a tela (renderProxDias) e a
 // impressão executiva da UEP (_uepAbaDados → _uepDocHtml) leem daqui.
@@ -13427,7 +13484,7 @@ function _gpxDoPainel(){
   const k = calcKPIs(getDadosHoje());
   const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
   const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS, dv.uepAtr);
-  if(!P.falha){ P.divSemUep = dv.semUep; P.lidaEm = PROG_DET_TS; }
+  if(!P.falha){ P.divSemUep = dv.semUep; P.divLinhas = dv.linhas; P.lidaEm = PROG_DET_TS; }
   return P;
 }
 function renderProxDias(){
@@ -13453,7 +13510,7 @@ function renderProxDias(){
   }
   const P = _gpxDoPainel();
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
-  corpo.innerHTML = _gpxHtml(P);
+  corpo.innerHTML = _gpxHtml(P) + _gpxAtrasoHtml(_gpxAtrasoMontar(P.divLinhas, P.porMin), P);
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }

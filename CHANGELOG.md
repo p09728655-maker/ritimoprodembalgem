@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.155.0 — 23/10/2026 · PRÓXIMOS DIAS: o atraso aberto, para conferência
+
+- PPCP: *"mostra o atraso separado para conferência"*. Embaixo dos cartões
+  do bloco 6 da aba ⚖ UEP, o quadro **ATRASO — CONFERÊNCIA**: cada código
+  vencido com saldo (o que a PROGRAMACAO marca EM ATRASO; linha com X fica
+  fora), com produto, cor, desde quando, caixas, UEP e horas — do mais antigo
+  para o mais novo. Embaixo, a conta inteira até o número do cartão: VENCIDO
+  + falta do programado de hoje = FALTA ZERAR − o que a linha ainda faz hoje
+  = NÃO CABE HOJE → o 1º dia útil.
+- Medido com a planilha de 23/10, 08:42: vencido 611 cx (TOUCADOR MAGIC NEW
+  25331, 600 cx, e a sobra do STRASS 25330, 11 cx) = 976 UEP = 3h23; hoje
+  1.550 cx = 3.491 UEP = 12h08; falta zerar 15h31 − 7h05 = **8h26**.
+- **Atenção:** nenhum número mudou. Código sem UEP aparece com as caixas e
+  "sem UEP" (fica fora da UEP e das horas, como antes). O quadro é só da tela:
+  a impressão executiva da UEP e a diretoria não mudam.
+
+---
+
 ## v7.154.1 — 23/10/2026 · PRÓXIMOS DIAS: o que vai para o 1º dia não é "atraso"
 
 - PPCP, com o print da aba ⚖ UEP: *"ATRASO?"*. O cartão de segunda dizia

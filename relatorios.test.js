@@ -4501,10 +4501,16 @@ console.log('\n── estudo de UEP ──');
   ok('dívida: a parte vencida sai do `atraso` de cada código (sem UEP fica fora das duas)', [DA.uep, DA.uepAtr], [900, 200]);
   ok('sem o campo `atraso` a divisão não é inventada', _gpxDivida([{ codigo:'501125230', falta:300 }], itens, 300).uepAtr, null);
   const GC = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5, 600);
+  const _c = k => k && [k.div, k.venc, k.hoje, k.cabe];
   ok('a conta do que não cabe hoje fecha em minutos inteiros: falta zerar − cabe = cartão; vencido + hoje = falta zerar',
-     [GC.dias[0].conta, Math.round(GC.dias[0].minAtr), GC.dias[1].conta, GC.carry === G.carry],
-     [{ div:208, venc:125, hoje:83, cabe:120 }, 88, null, true]);
-  ok('sem a parte vencida (backend sem `atraso`) a conta sai só com o total', _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0].conta, { div:208, venc:null, hoje:null, cabe:120 });
+     [_c(GC.dias[0].conta), Math.round(GC.dias[0].minAtr), GC.dias[1].conta, GC.carry === G.carry],
+     [[208, 125, 83, 120], 88, null, true]);
+  ok('as mesmas parcelas em UEP (quadro de conferência): vencido, falta zerar, cabe hoje e o que não cabe',
+     [GC.conta.uDiv, GC.conta.uVenc, Math.round(GC.conta.uCabe), Math.round(GC.conta.uCarry), GC.conta.resto], [1000, 600, 576, 424, 120]);
+  ok('sem a parte vencida (backend sem `atraso`) a conta sai só com o total', _c(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0].conta), [208, null, null, 120]);
+  ok('dívida que cabe hoje: a conta existe (o quadro mostra), mas nenhum dia leva parcela',
+     (() => { const g = _gpxMontar(itens, new Date(2026, 8, 24), 500, 300, 2530, 5, 200); return [g.carry, _c(g.conta), g.dias.some(d => d.conta)]; })(),
+     [0, [104, 42, 62, 104], false]);
   { if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
     if (typeof _dirF === 'undefined') eval(pega('function _dirF('));
     global.GPX_DOW = eval(JS.match(/const GPX_DOW = (\[[^\]]*\]);/)[1]);
@@ -4515,6 +4521,32 @@ console.log('\n── estudo de UEP ──');
         /falta zerar 3h28 \(vencido 2h05 \+ falta do programado de hoje 1h23\) − 2h00 que a linha ainda faz hoje no ritmo da meta/.test(CH),
         /falta zerar 3h28 − 2h00 que a linha/.test(CS)],
        [true, false, true, true]);
+    // v7.155.0 — PPCP: "mostra o atraso separado para conferência"
+    eval(pega('function _gpxAtrasoMontar(')); eval(pega('function _gpxAtrasoHtml('));
+    const LA = _gpxDivida([{ codigo:'501.082.003', desc:'VOL 1/1 TOUCADOR MAGIC NEW', cor:'CINAMOMO', falta:185, atraso:185, atrasoDesde:'22/10/2026' },
+                           { codigo:'501.059.002', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', falta:4, atraso:4, atrasoDesde:'22/10/2026' },
+                           { codigo:'501.088.007', desc:'VOL 1/2 HOME ANGEL 1.6', cor:'OFF WHITE/CINAMOMO', falta:140, atraso:140, atrasoDesde:'20/10/2026' },
+                           { codigo:'501.083.121', desc:'VOL 1/1 RACK FLIP 1.8', cor:'OFF WHITE/CINAMOMO', falta:320, atraso:0 },
+                           { codigo:'501.999.001', desc:'VOL 1/1 SEM UEP', cor:'', falta:10, atraso:10, atrasoDesde:'21/10/2026' }],
+                          [{ codigo:'501.082.003', uepCx:1.58 }, { codigo:'501.059.002', uepCx:2.29 }, { codigo:'501.088.007', uepCx:1.77 }, { codigo:'501.083.121', uepCx:2.89 }], 0);
+    const AM = _gpxAtrasoMontar(LA.linhas, 2530 / 527);
+    ok('conferência: só o vencido, do mais antigo para o mais novo (no mesmo dia, mais caixas antes); hoje à parte; sem UEP contado',
+       [AM.venc.map(x => [x.codigo, x.cx, x.uep == null ? null : Math.round(x.uep)]), AM.cxVenc, AM.cxHoje, AM.nHoje, AM.semUep],
+       [[['501.088.007', 140, 248], ['501.999.001', 10, null], ['501.082.003', 185, 292], ['501.059.002', 4, 9]], 339, 320, 1, 1]);
+    const PA = _gpxMontar([it('26/10/2026','25340',700,1.69)], new Date(2026, 9, 23), LA.uep, 425, 2530, 5, LA.uepAtr);
+    const AH = _gpxAtrasoHtml(AM, PA);
+    const ult = PA.conta.div - PA.conta.cabe;
+    ok('o quadro abre o vencido por código, a conta inteira, e termina no número do cartão',
+       [/<td class="n0">501\.088\.007<\/td><td>VOL 1\/2 HOME ANGEL 1\.6 · OFF WHITE\/CINAMOMO<\/td><td class="n0">20\/10<\/td>/.test(AH),
+        /VENCIDO/.test(AH), /= FALTA ZERAR/.test(AH), /− a linha ainda faz hoje \(7h05 de jornada no ritmo da meta, 288 UEP\/h\)/.test(AH),
+        new RegExp('NÃO CABE HOJE → SEG 26/10</td><td class="n"></td><td class="n">[^<]+</td><td class="n">' + _fmtHM(ult) + '<').test(AH),
+        ult === Math.round(PA.dias[0].minAtr), /sem UEP/.test(AH)],
+       [true, true, true, true, PA.carry > 0, true, true]);
+    ok('quadro sem a lista por código (backend antigo) ou sem dívida: nada', [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(AM, { conta:null })], ['', '']);
+    ok('o quadro é só da tela (o papel da UEP segue com o _gpxHtml) e o desenho não faz conta de UEP',
+       [/_gpxHtml\(P\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
+        /_gpxAtrasoHtml/.test(pega('function _gpxHtml(')) || /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(')),
+        /\.u\b|uepCx|_gpxDivida\(/.test(pega('function _gpxAtrasoHtml('))], [true, false, false]);
     ok('o painel passa a parte vencida e o papel explica a conta',
        [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /O que não cabe no resto de hoje entra no 1º dia útil: falta zerar/.test(JS),
         /atraso de/.test(pega('function _gpxCartaoHtml('))], [true, true, false]); }
