@@ -4203,10 +4203,30 @@ feito e dá ar de verdade ao que sobrou.
 - **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP
   (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
-- ⚠ **A dívida (`faltaZerar`) inclui o que falta da meta de HOJE.** Só vai para
-  o 1º dia útil o que NÃO cabe no resto da jornada de hoje: `dívida − ritmo ×
-  (527 − minNorm)`, a base da projeção da aba UEP. Pôr a dívida inteira no 1º
-  dia cobraria duas vezes o que a linha ainda faz hoje.
+- ⚠ **O ATRASO E O DE HOJE NÃO ENTRAM NOS PRÓXIMOS DIAS** (v7.156.0, PPCP
+  23/10/2026, com o print na mão: *"ATRASO?"* → *"está colocando o de hoje
+  como atraso"* → *"nem aconteceu ainda"*). Até a v7.155.0 a dívida
+  (`faltaZerar` = atraso vencido + o que falta do programado de hoje) que não
+  cabia no resto da jornada de hoje ia para o 1º dia útil como *"inclui atraso
+  de 8h26"* — e em 23/10 08:42 as 8h26 eram TODAS do lote de hoje (o vencido,
+  3h23, sai primeiro e cabia hoje). O dia nem tinha acabado. Hoje:
+  - **cada dia leva só os lotes datados nele** (`_gpxMontar` não soma nada no
+    1º dia; o cartão não tem mais "inclui");
+  - **cartão HOJE** (`_gpxHojeHtml`, borda tracejada, *previsão*) antes da
+    segunda, só na tela: falta zerar (atraso + programado de hoje), cabem no
+    resto da jornada no ritmo da meta, e o que não cabe — separado em atraso
+    (o que sobra do vencido depois do resto do dia; a linha faz o mais antigo
+    primeiro) e lote de hoje — *"não entram nos próximos dias"*. A conta é o
+    `conta` do `_gpxMontar`, em minutos inteiros que fecham;
+  - **ATRASO — CONFERÊNCIA** (`_gpxAtrasoMontar`/`_gpxAtrasoHtml`, pedido
+    *"mostra o atraso separado para conferência"*): só o VENCIDO, código por
+    código (o `atraso` da lista; `_gpxDivida` → `linhas`), do `atrasoDesde`
+    mais antigo, fechando no mesmo ATRASO do cartão HOJE. Código sem UEP entra
+    com as caixas e "sem UEP". O programado de hoje não aparece aqui;
+  - papel da UEP e diretoria: só os próximos dias (sem cartão HOJE e sem
+    quadro). O ANEXO diz que cada dia leva só os lotes dele.
+  - ⚠ A aba PLANO (carteira em UEP) **ainda** põe a dívida nos primeiros dias
+    do nivelamento (`_cartAberta(…, dv.uep, …)`) — não mexido.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo

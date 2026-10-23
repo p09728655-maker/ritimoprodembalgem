@@ -11,6 +11,60 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.156.0 — 23/10/2026 · PRÓXIMOS DIAS: hoje à parte — o lote de hoje não é atraso
+
+- PPCP: *"está colocando o de hoje como atraso"*, *"nem aconteceu ainda"*. As
+  8h26 que caíam na segunda eram todas do lote de hoje (23/10): o vencido
+  (3h23) sai primeiro e cabe no resto do dia.
+- **A segunda (e cada dia) leva só os lotes datados nele.** Sai o *"inclui …
+  que não cabem hoje"* do cartão. Em 23/10: segunda 18h21 → **9h56**; o total
+  *"5 dias pedem"* deixa de contar o que é de hoje.
+- **Cartão HOJE · previsão** antes da segunda (só na tela da aba ⚖ UEP):
+  *falta zerar 15h31 = atraso 3h23 + programado de hoje 12h08 · cabem 7h05 no
+  resto da jornada · não cabem 8h26 do lote de hoje — não entram nos próximos
+  dias*. Borda tracejada: é previsão pelo ritmo da meta.
+- **ATRASO — CONFERÊNCIA fica só com o vencido** (os códigos EM ATRASO, total
+  611 cx · 976 UEP · 3h23). O programado de hoje saiu do quadro.
+- **Atenção:** muda o número dos cartões dos próximos dias e do total —
+  antes eles carregavam a sobra prevista de hoje no 1º dia útil. A impressão
+  executiva da UEP e a diretoria mostram só os próximos dias.
+
+---
+
+## v7.155.0 — 23/10/2026 · PRÓXIMOS DIAS: o atraso aberto, para conferência
+
+- PPCP: *"mostra o atraso separado para conferência"*. Embaixo dos cartões
+  do bloco 6 da aba ⚖ UEP, o quadro **ATRASO — CONFERÊNCIA**: cada código
+  vencido com saldo (o que a PROGRAMACAO marca EM ATRASO; linha com X fica
+  fora), com produto, cor, desde quando, caixas, UEP e horas — do mais antigo
+  para o mais novo. Embaixo, a conta inteira até o número do cartão: VENCIDO
+  + falta do programado de hoje = FALTA ZERAR − o que a linha ainda faz hoje
+  = NÃO CABE HOJE → o 1º dia útil.
+- Medido com a planilha de 23/10, 08:42: vencido 611 cx (TOUCADOR MAGIC NEW
+  25331, 600 cx, e a sobra do STRASS 25330, 11 cx) = 976 UEP = 3h23; hoje
+  1.550 cx = 3.491 UEP = 12h08; falta zerar 15h31 − 7h05 = **8h26**.
+- **Atenção:** nenhum número mudou. Código sem UEP aparece com as caixas e
+  "sem UEP" (fica fora da UEP e das horas, como antes). O quadro é só da tela:
+  a impressão executiva da UEP e a diretoria não mudam.
+
+---
+
+## v7.154.1 — 23/10/2026 · PRÓXIMOS DIAS: o que vai para o 1º dia não é "atraso"
+
+- PPCP, com o print da aba ⚖ UEP: *"ATRASO?"*. O cartão de segunda dizia
+  **inclui atraso de 8h26** — e só 3h23 eram lote vencido. O resto era o
+  programado de hoje (23/10) que não cabe no que sobra da jornada de hoje.
+- **Agora:** *inclui 8h26 que não cabem hoje*. O tooltip do cartão abre a
+  conta: *falta zerar 15h30 (vencido 3h23 + falta do programado de hoje
+  12h07) − 7h05 que a linha ainda faz hoje no ritmo da meta*. O rodapé
+  *"N dias pedem…"* diz no tooltip que o total leva essas horas. O ANEXO do
+  papel da UEP explica a mesma conta.
+- **Atenção:** nenhum número mudou — só o rótulo e o tooltip. Vale para a aba
+  ⚖ UEP, a impressão executiva e a tela da diretoria (lá o texto ocupa duas
+  linhas; conferido em 1920×1080 e 1366×768, nada corta).
+
+---
+
 ## v7.154.0 — 22/10/2026 · GESTÃO DE PERDAS: o que mudou, onde, e o papel enxuto
 
 - **O QUE MUDOU** (PPCP: *"como saber a partir de quando melhorou e onde
