@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.32 — TROCAR O PRODUTO DE UM LANÇAMENTO
+//               PPCP, 23/10/2026: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO
+//               entraram na hora 14:00 como SIRIUS 1.6 CINAMOMO; o operador
+//               excluiu e não conseguiu lançar de novo (a hora já não aceitava
+//               lançamento), e a hora ficou em 0. trocarProdutoLancamento
+//               troca só o PRODUTO: reescreve a linha do registro de produto e
+//               a da HISTORICO_MEDIA_FAMILIA no lugar, a HORA_A_HORA não muda,
+//               o FIFO refaz. Mesmo casamento e tudo-ou-nada da exclusão,
+//               idempotente pelo trocaId, registro na aba LANC_TROCADOS.
 // Versão: 5.30 — REGISTRO DA CRONOANÁLISE (aba CRONOANALISE)
 //               PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise
 //               e que linha faz" → os dois. registrarCrono acrescenta UMA linha
@@ -1048,7 +1057,7 @@ const CACHE_TTL_LEITURA = {
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
-  'excluirLancamento', 'registrarCrono'];
+  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1210,6 +1219,7 @@ function doGet(e) {
     else if (act === 'saveRealizado') result = saveRealizado(p);
     else if (act === 'getLancamentosHora') result = getLancamentosHora(p);   // v5.25
     else if (act === 'excluirLancamento')  result = excluirLancamento(p);    // v5.25
+    else if (act === 'trocarProdutoLancamento') result = trocarProdutoLancamento(p);   // v5.32
     else if (act === 'registrarCrono')     result = registrarCrono(p);       // v5.30
     else if (act === 'getCronoRegistros')  result = getCronoRegistros();     // v5.30
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
@@ -1861,6 +1871,135 @@ function _lancRegistrarExclusao(ss, linha) {
   if (!sh) {
     sh = ss.insertSheet(SHEET_LANC_EXCL);
     sh.appendRow(LANC_EXCL_HDR);
+    sh.setFrozenRows(1);
+  }
+  sh.appendRow(linha);
+}
+
+
+// ════════════════════════════════════════════════════════
+// TROCAR O PRODUTO DE UM LANÇAMENTO (v5.32)
+// ════════════════════════════════════════════════════════
+// PPCP, 23/10/2026: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO entraram na
+// hora 14:00 como SIRIUS 1.6 CINAMOMO. O operador excluiu pelo app às 15:19 e
+// não conseguiu lançar de novo — excluir vale para qualquer hora de hoje,
+// lançar só na hora corrente + 15 min —, e a hora ficou em 0.
+// O erro era o PRODUTO, não as caixas. O produto só mora no registro de
+// produto e na HISTORICO_MEDIA_FAMILIA; a HORA_A_HORA guarda o número e NÃO
+// muda. A linha do registro é reescrita NO LUGAR (a ordem das linhas é a ordem
+// dos fatos: o _prepDoDia conta as preparações por ela) e o FIFO refaz: as
+// caixas saem do lote do produto errado e entram no do certo.
+// Mesmo casamento da exclusão (a ÚLTIMA linha da hora com o produto e as
+// caixas), mesmo tudo-ou-nada, idempotente pelo trocaId.
+const SHEET_LANC_TROCA = 'LANC_TROCADOS';
+const LANC_TROCA_HDR = ['TROCADO_EM', 'DATA', 'HORA', 'CAIXAS', 'CODIGO_ANTES', 'DESCRICAO_ANTES',
+  'CODIGO_DEPOIS', 'DESCRICAO_DEPOIS', 'ORIGEM'];
+
+function trocarProdutoLancamento(p) {
+  p = p || {};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const trocaId = String(p.trocaId || '').trim();
+    const cache   = trocaId ? CacheService.getScriptCache() : null;
+    if (cache) {
+      const prev = cache.get('troca_' + trocaId);
+      if (prev) { const r = JSON.parse(prev); r.duplicado = true; return r; }
+    }
+    const r = _trocarProdutoCore(p);
+    if (cache && r && r.ok) cache.put('troca_' + trocaId, JSON.stringify(r), 7200);
+    if (r && r.ok) {
+      try { _invalidarValores(); sincronizarPlanilhaPosLancamento(); }
+      catch (e) { Logger.log('sincronizarPlanilha após troca falhou (ignorado): ' + e.message); }
+    }
+    return r;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function _trocarProdutoCore(p) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  if (_lancDiaFechado(ss, hoje)) {
+    return { ok: false, erro: 'dia-fechado',
+             msg: 'O dia de hoje já está fechado no HISTÓRICO. Corrija na planilha e use FECHAR DIA de novo.' };
+  }
+  const cx = Number(p.caixas) || 0;
+  const cod = String(p.produto || '').trim();
+  const novo = String(p.novo || '').trim();
+  if (!(cx > 0)) return { ok: false, erro: 'Quantidade inválida.' };
+  if (!cod) return { ok: false, erro: 'Lançamento sem produto: não há produto para trocar.' };
+  if (!novo) return { ok: false, erro: 'Sem o produto certo para gravar.' };
+  if (codKey(novo) === codKey(cod)) return { ok: false, erro: 'mesmo-produto', msg: 'É o mesmo produto — nada foi trocado.' };
+  const prod = lerCatalogoProdutos().filter(function (x) { return codKey(x.codigo) === codKey(novo); })[0];
+  if (!prod) return { ok: false, erro: 'produto-desconhecido',
+                      msg: 'O código ' + novo + ' não está no cadastro (PRODUTO_CODIGO). Nada foi trocado.' };
+  const H = _lancLinhaDaHora(ss, p.horario);
+  if (!H) return { ok: false, erro: 'Hora não encontrada: ' + (p.horario || '') };
+  const hh = _lancHHMM(H.inicio);
+
+  // Tudo é CONFERIDO antes de qualquer gravação: sem a linha no registro, nada muda.
+  const shLog = ss.getSheetByName(SHEET_PROD_LOG);
+  const values = shLog ? shLog.getDataRange().getValues() : [];
+  const logs = _lancLogDaHora(values, hoje, hh);
+  let alvo = null;
+  for (let j = logs.length - 1; j >= 0; j--) {
+    if (codKey(logs[j].codigo) === codKey(cod) && logs[j].cx === cx) { alvo = logs[j]; break; }
+  }
+  if (!alvo) return { ok: false, erro: 'nao-encontrado',
+                      msg: 'Não achei ' + cx + ' cx de ' + cod + ' no registro de produto da hora ' + H.label + '. Nada foi trocado.' };
+
+  // Mesmos campos e a mesma conta do registrarProducaoProduto (o retrato do cadastro na hora).
+  const hdr = values[0].map(function (c) { return String(c).trim().toUpperCase(); });
+  const col = function (n, d) { const k = hdr.indexOf(n); return (k >= 0 ? k : d) + 1; };
+  const desc = prod.desc || '';
+  const pontos = cx * (prod.pontos || 0);
+  const peso = Math.round(cx * (prod.peso || 0) * 10) / 10;
+  const linha = alvo.i + 1;
+  shLog.getRange(linha, col('CODIGO', 2)).setValue(prod.codigo);
+  shLog.getRange(linha, col('DESCRICAO', 3)).setValue(desc);
+  shLog.getRange(linha, col('PONTOS', 5)).setValue(pontos);
+  shLog.getRange(linha, col('PESO_KG', 6)).setValue(peso);
+  try { _lancTrocaFamilia(ss, hoje, hh, cod, alvo.desc, cx, prod.codigo, desc, pontos, peso); }
+  catch (e) { Logger.log('trocarProdutoLancamento: HISTORICO_MEDIA_FAMILIA não ajustada: ' + e.message); }
+  // O "produto atual" do turno NÃO muda: a troca corrige o passado, e o
+  // operador pode estar embalando outra coisa agora.
+  const total = H.lotes.reduce(function (s, l) { return s + l.cx; }, 0);
+  try {
+    _lancRegistrarTroca(ss, [Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss'), hoje, H.label, cx,
+                             cod, alvo.desc, prod.codigo, desc, String(p.operador || 'Mobile')]);
+  } catch (e) { Logger.log('trocarProdutoLancamento: registro em ' + SHEET_LANC_TROCA + ' falhou: ' + e.message); }
+  return { ok: true, horario: H.inicio, label: H.label, caixas: cx, produto: cod, descAntes: alvo.desc,
+           novo: prod.codigo, desc: desc, cor: produtoDoCodigo(prod.codigo).cor || '', totalHora: total };
+}
+
+// A linha da HISTORICO_MEDIA_FAMILIA do mesmo lançamento. A família são os 6
+// dígitos — o 1.4 e o 1.6 do SIRIUS são a mesma —, então a linha da mesma
+// descrição vem primeiro; sem ela, a última da família com as caixas. É análise:
+// não achar não desfaz a troca.
+function _lancTrocaFamilia(ss, hoje, hh, cod, descAntes, cx, novo, desc, pontos, peso) {
+  const sh = ss.getSheetByName(SHEET_HIST_FAM);
+  if (!sh || sh.getLastRow() < 2) return false;
+  const v = sh.getDataRange().getValues();
+  const fam = codKey(cod).slice(0, 6);
+  const casa = function (r) {
+    return fmtDataBR(r[0]) === hoje && _lancHHMM(r[1]) === hh && codKey(r[2]) === fam && Number(r[4]) === cx;
+  };
+  let alvo = -1;
+  for (let i = v.length - 1; i >= 1 && alvo < 0; i--) if (casa(v[i]) && String(v[i][3] || '') === String(descAntes || '')) alvo = i;
+  for (let i = v.length - 1; i >= 1 && alvo < 0; i--) if (casa(v[i])) alvo = i;
+  if (alvo < 0) return false;
+  sh.getRange(alvo + 1, 3, 1, 2).setValues([[codKey(novo).slice(0, 6), desc]]);
+  sh.getRange(alvo + 1, 6, 1, 2).setValues([[peso, pontos]]);
+  return true;
+}
+
+function _lancRegistrarTroca(ss, linha) {
+  let sh = ss.getSheetByName(SHEET_LANC_TROCA);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_LANC_TROCA);
+    sh.appendRow(LANC_TROCA_HDR);
     sh.setFrozenRows(1);
   }
   sh.appendRow(linha);

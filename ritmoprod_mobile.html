@@ -374,6 +374,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .corr-prod .prod-search-desc{margin-top:2px}
 .corr-btn{min-height:44px;padding:0 14px;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-family:var(--font-h);font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;flex-shrink:0}
 .corr-btn:disabled{opacity:.4;cursor:default}
+.corr-btn.troca{border-color:var(--txt2);color:var(--txt)}
+.corr-acoes{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .corr-sub{font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2);margin-top:6px;line-height:1.5}
 .corr-aviso{font-family:var(--font-b);font-size:13px;color:var(--warn);line-height:1.5}
 .corr-abrir{display:block;margin-top:10px;min-height:40px;padding:0 12px;background:transparent;border:0.5px solid var(--border);border-radius:8px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px;cursor:pointer}
@@ -835,7 +837,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="modal-slot-info">
       <div class="modal-slot-hora" id="mc-hora">--:-- – --:--</div>
       <div class="modal-slot-nome">CORRIGIR LANÇAMENTO</div>
-      <div class="modal-slot-meta">Toque EXCLUIR no lançamento errado.</div>
+      <div class="modal-slot-meta">Produto errado: TROCAR. Quantidade errada ou em dobro: EXCLUIR.</div>
     </div>
     <div id="mc-lista" style="display:flex;flex-direction:column;gap:8px"></div>
     <div class="modal-btns">
@@ -848,8 +850,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 <div class="modal-over" id="modal-produto">
   <div class="modal-sheet">
     <div class="modal-slot-info">
-      <div class="modal-slot-nome">SELECIONAR PRODUTO</div>
-      <div class="modal-slot-meta">Bipe a etiqueta ou digite LOTE / código</div>
+      <div class="modal-slot-nome" id="mp-ttl">SELECIONAR PRODUTO</div>
+      <div class="modal-slot-meta" id="mp-sub">Bipe a etiqueta ou digite LOTE / código</div>
     </div>
     <!-- inputmode=none: o operador usa o teclado numérico próprio; o teclado do
          sistema (tablet) NÃO abre ao tocar no campo. -->
@@ -956,7 +958,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.36.0';
+const APP_VER   = '1.37.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1357,6 +1359,13 @@ function abrirModalProduto(){
 }
 function fecharModalProduto(){
   document.getElementById('modal-produto').classList.remove('open');
+  // Fechou sem escolher = desistiu da troca: o próximo toque volta a escolher
+  // o produto atual do turno.
+  if(_corrTroca){
+    _corrTroca = null;
+    document.getElementById('mp-ttl').textContent = 'SELECIONAR PRODUTO';
+    document.getElementById('mp-sub').textContent = 'Bipe a etiqueta ou digite LOTE / código';
+  }
 }
 function filtrarProdutos(){
   const raw = document.getElementById('prod-search-inp').value.trim();
@@ -1431,6 +1440,14 @@ function prodNumpadDel(){
   filtrarProdutos();
 }
 async function selecionarProduto(codigo){
+  // TROCAR PRODUTO (v1.37.0): o seletor foi aberto para o produto CERTO de um
+  // lançamento já feito — o produto atual do turno não muda.
+  if(_corrTroca){
+    const t = _corrTroca;
+    fecharModalProduto();
+    _corrTrocarPara(t, codigo);
+    return;
+  }
   PROD_ATUAL = codigo;
   localStorage.setItem('rpe_prod_atual', codigo);
   atualizarProdutoBar();
@@ -1536,11 +1553,14 @@ function processarBipe(raw){
     // com a hora recém-fechada em tolerância, jogava as caixas na hora seguinte
     // — o caso de 28/08. Bipar com o CONFERIR A COR aberto = trocar a cor.
     const lancAberto = !!_slotAtivo && document.getElementById('modal-lanc').classList.contains('open');
+    // Bipe com o seletor aberto para TROCAR PRODUTO = o produto certo do
+    // lançamento antigo: nada de abrir a hora atual nem trocar o produto do turno.
+    const trocando = !!_corrTroca;
     if(_confirmaCb && _confirmaTag==='cor') _confirmaResolve(false);
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
     bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
-    if(!lancAberto) abrirLancSlotAtivo();         // já abre a hora atual p/ digitar a quantidade
+    if(!lancAberto && !trocando) abrirLancSlotAtivo();   // já abre a hora atual p/ digitar a quantidade
   }else{
     const core = eanCore(raw);
     bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
@@ -2723,7 +2743,8 @@ function _nomeProdLanc(cod){
 function _escH(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-let _corr = null;   // {inicio, label, res, excluindo}
+let _corr = null;   // {inicio, label, res, excluindo}  — excluindo: false | true (excluir) | 'troca'
+let _corrTroca = null;   // {c, x, so}: o seletor de produto está escolhendo o produto CERTO de um lançamento
 function abrirCorrecao(inicio, label){
   _corr = {inicio, label, res:null, excluindo:false};
   document.getElementById('mc-hora').textContent = label;
@@ -2773,8 +2794,12 @@ function corrListaHtml(res, excluindo){
       ? `<div class="prod-search-cod">${_escH(x.codigo)}${x.cor?`<span class="prod-search-cor">${_escH(x.cor)}</span>`:''}</div>`
         + `<div class="prod-search-desc">${_escH(x.desc||x.codigo)}</div>`
       : '<div class="prod-search-desc" style="color:var(--txt2)">sem produto</div>';
+    const dis = excluindo ? 'disabled' : '';
+    const excl = `<button class="corr-btn" ${dis} onclick="excluirLanc(${i},${so?1:0})">EXCLUIR</button>`;
+    // TROCAR só quando há produto: é o registro de produto que muda (v1.37.0).
     const btn = res.fechado ? ''
-      : `<button class="corr-btn" ${excluindo?'disabled':''} onclick="excluirLanc(${i},${so?1:0})">EXCLUIR</button>`;
+      : x.codigo ? `<div class="corr-acoes"><button class="corr-btn troca" ${dis} onclick="trocarProdLanc(${i},${so?1:0})">TROCAR</button>${excl}</div>`
+      : excl;
     return `<div class="corr-item"><div class="corr-cx">${fmtN(x.cx)} <span class="un">CX</span></div>`
       + `<div class="corr-prod">${prod}</div>${btn}</div>`;
   };
@@ -2785,17 +2810,29 @@ function corrListaHtml(res, excluindo){
     + ' mas estas caixas ainda baixam lote e somam UEP</div>' + so.map((x,i)=>item(x,i,true)).join('');
   if(res.fechado) h = '<div class="corr-aviso">O dia já está fechado no HISTÓRICO. Excluir agora só pela planilha,'
     + ' e depois FECHAR DIA de novo.</div>' + h;
-  if(excluindo) h = '<div class="corr-sub">EXCLUINDO… (até 1 min se o servidor estiver parado)</div>' + h;
+  if(excluindo) h = '<div class="corr-sub">'+(excluindo==='troca'?'TROCANDO O PRODUTO…':'EXCLUINDO…')
+    + ' (até 1 min se o servidor estiver parado)</div>' + h;
   return h;
 }
 // Texto puro (testado) da confirmação: o que sai e como a hora fica.
-function corrConfirmaTxt(label, x, so, total){
+// `travada`: a hora já não aceita lançamento novo. Caso de 23/10/2026: 203 cx
+// lançadas no produto errado, excluídas para relançar — e a hora ficou em 0.
+function corrConfirmaTxt(label, x, so, total, travada){
   const nome = x.codigo ? nomeComCor(x.desc||x.codigo, x.cor) : 'sem produto';
   if(so) return `Excluir ${fmtN(x.cx)} cx de ${nome} do registro de produto da hora ${label}?`
     + ` A hora não muda (${fmtN(total)} cx): só sai da baixa dos lotes e da UEP.`;
   return `Excluir ${fmtN(x.cx)} cx de ${nome} da hora ${label}?`
     + ` A hora cai de ${fmtN(total)} para ${fmtN(Math.max(0,total-x.cx))} cx`
-    + (x.codigo ? ' e essas caixas voltam a faltar no lote do produto.' : '.');
+    + (x.codigo ? ' e essas caixas voltam a faltar no lote do produto.' : '.')
+    + (travada ? ' ATENÇÃO: esta hora não aceita mais lançamento pelo app — excluído, não dá para lançar de novo.'
+        + (x.codigo ? ' Se só o produto está errado, VOLTE e use TROCAR.' : '') : '');
+}
+// A hora do rótulo ("14:00-15:00", "HE 17:00-18:00") ainda aceita lançamento?
+// A MESMA regra da lista (slotLancavel: hora corrente + tolerância).
+function _corrHoraTravada(label, nm){
+  const m = String(label||'').match(/(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})/);
+  if(!m) return false;
+  return !slotLancavel(nm, toMin(m[1]), toMin(m[2])).lancavel;
 }
 function _corrConta(res, x, so){
   const l = ((so ? res.soLog : res.lancs) || []);
@@ -2814,7 +2851,7 @@ async function _corrEnviar(url){
 async function excluirLanc(i, so){
   const c = _corr; if(!c || !c.res || c.excluindo || c.res.fechado) return;
   const x = ((so ? c.res.soLog : c.res.lancs) || [])[i]; if(!x) return;
-  const ok = await confirmarModal({titulo:'EXCLUIR LANÇAMENTO', msg:corrConfirmaTxt(c.label, x, so, c.res.total),
+  const ok = await confirmarModal({titulo:'EXCLUIR LANÇAMENTO', msg:corrConfirmaTxt(c.label, x, so, c.res.total, _corrHoraTravada(c.label, nowMin())),
                                    ok:'EXCLUIR', cancelar:'VOLTAR', seguro:'cancelar', tag:'excl'});
   if(!ok || _corr!==c) return;
   const antes = _corrConta(c.res, x, so);
@@ -2848,6 +2885,82 @@ async function excluirLanc(i, so){
   } else {
     alert(leu ? 'O servidor não respondeu e o lançamento continua na lista. Tente excluir de novo.'
               : 'O servidor não respondeu. Abra a hora de novo e confira se o lançamento saiu antes de tentar outra vez.');
+    if(_corr===c) _corrRender();
+  }
+}
+
+// ── TROCAR O PRODUTO (v1.37.0 / .gs v5.32) ──
+// 23/10/2026: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO entraram como
+// SIRIUS 1.6 CINAMOMO na hora 14:00. O operador excluiu às 15:19 para lançar de
+// novo, a hora já não aceitava lançamento e ficou em 0. O erro era o produto,
+// não as caixas: a troca muda só o registro de produto (lote, UEP, pontos) e a
+// hora fica como está. O produto certo sai do MESMO seletor do lançamento
+// (toque, LOTE, código ou bipe), aberto por cima da correção.
+function trocarProdLanc(i, so){
+  const c = _corr; if(!c || !c.res || c.excluindo || c.res.fechado) return;
+  const x = ((so ? c.res.soLog : c.res.lancs) || [])[i]; if(!x || !x.codigo) return;
+  abrirModalProduto();
+  _corrTroca = {c, x, so:!!so};
+  document.getElementById('mp-ttl').textContent = 'PRODUTO CERTO';
+  document.getElementById('mp-sub').textContent = fmtN(x.cx)+' cx da hora '+c.label+' · bipe a etiqueta ou digite LOTE / código';
+}
+// Texto puro (testado) da confirmação da troca.
+function corrTrocaTxt(label, x, nomeNovo, total){
+  const nome = nomeComCor(x.desc||x.codigo, x.cor);
+  return `Trocar o produto de ${fmtN(x.cx)} cx da hora ${label}? Sai: ${nome}. Entra: ${nomeNovo}.`
+    + ` A hora não muda (${fmtN(total)} cx): as caixas saem do lote do primeiro e passam para o lote do segundo.`;
+}
+// Código pelos dígitos: o registro devolve 501106013, o cadastro escreve 501.106.013.
+function _corrK(c){ return String(c||'').replace(/\D/g,''); }
+function _corrContaCod(res, cx, cod, so){
+  const l = ((so ? res.soLog : res.lancs) || []);
+  return l.filter(y=>Number(y.cx)===Number(cx) && _corrK(y.codigo)===_corrK(cod)).length;
+}
+async function _corrTrocarPara(t, novo){
+  const c = t.c, x = t.x, so = t.so;
+  if(_corr!==c || !c.res || c.excluindo || c.res.fechado) return;
+  if(_corrK(novo)===_corrK(x.codigo)){ alert('É o mesmo produto do lançamento — nada a trocar.'); return; }
+  const pN = PRODUTOS.find(p=>p.codigo===novo) || PROG_HOJE.find(p=>p.codigo===novo);
+  const nomeN = pN ? nomeComCor(pN.desc, corDeProduto(pN)) : String(novo);
+  const ok = await confirmarModal({titulo:'TROCAR PRODUTO', msg:corrTrocaTxt(c.label, x, nomeN, c.res.total),
+                                   ok:'TROCAR', cancelar:'VOLTAR', seguro:'cancelar', tag:'troca'});
+  if(!ok || _corr!==c) return;
+  const antes = _corrContaCod(c.res, x.cx, x.codigo, so);
+  c.excluindo = 'troca'; _corrRender();
+  const trocaId = 'T'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const params = ['action=trocarProdutoLancamento', 'horario='+encodeURIComponent(c.inicio), 'caixas='+x.cx,
+                  'produto='+encodeURIComponent(x.codigo), 'novo='+encodeURIComponent(novo),
+                  'trocaId='+encodeURIComponent(trocaId), 'operador='+encodeURIComponent('Mobile')];
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
+  let res = null;
+  try{ res = await _corrEnviar(url); }catch(e){ res = null; }
+  c.excluindo = false;
+  if(res && res.ok===false){
+    alert(res.msg || res.erro || 'Não foi possível trocar o produto.');
+    if(_corr===c) await _corrCarregar();
+    return;
+  }
+  // .gs anterior à v5.32: a ação cai no getDados e volta sem `novo` — nada mudou.
+  if(res && res.novo===undefined){
+    alert('O Apps Script ainda não tem a troca de produto — cole o ritmoprod_appscript.gs v5.32 e re-deploye. Nada foi trocado.');
+    if(_corr===c) _corrRender();
+    return;
+  }
+  // Sem resposta ≠ não trocou: relê a hora e decide pelo que ela mostra.
+  const leu = _corr===c ? await _corrCarregar() : false;
+  const trocou = !!(res && res.ok) || (leu && _corrContaCod(c.res, x.cx, x.codigo, so) < antes);
+  if(trocou){
+    bipeToast('✓ Trocado: '+fmtN(x.cx)+' cx → '+novo, true);
+    // As faltas de hoje andam já (o aviso de cor errada lê delas até a lista ser relida).
+    const anda = (cod, d)=>{
+      const it = PROG_HOJE.find(p=>_corrK(p.codigo)===_corrK(cod));
+      if(it) it.falta = Math.max(0, (Number(it.falta)||0) + d);
+    };
+    anda(x.codigo, x.cx); anda(novo, -x.cx);
+    await lerSheets();
+  } else {
+    alert(leu ? 'O servidor não respondeu e o lançamento continua com o produto antigo. Tente trocar de novo.'
+              : 'O servidor não respondeu. Abra a hora de novo e confira o produto antes de tentar outra vez.');
     if(_corr===c) _corrRender();
   }
 }

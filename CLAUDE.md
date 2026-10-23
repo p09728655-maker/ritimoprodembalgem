@@ -26,10 +26,12 @@ via Google Apps Script (JSONP).
   função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
-- `exclusao.test.js` — EXCLUIR LANÇAMENTO: `getLancamentosHora` e
-  `excluirLancamento` rodando o `.gs` inteiro numa planilha de mentira (as três
-  abas, o tudo-ou-nada, o exclId, o dia fechado) e o aviso de lançamento
-  repetido, a lista e a confirmação do celular: `node exclusao.test.js`.
+- `exclusao.test.js` — EXCLUIR e TROCAR PRODUTO do lançamento:
+  `getLancamentosHora`, `excluirLancamento` e `trocarProdutoLancamento`
+  rodando o `.gs` inteiro numa planilha de mentira (as três abas, o
+  tudo-ou-nada, o exclId/trocaId, o dia fechado, a família) e o aviso de
+  lançamento repetido, a lista, as confirmações e o seletor no modo troca do
+  celular: `node exclusao.test.js`.
 - `tela-e.test.js` — Tela E da TV (programação do dia): ordem, situação, corte
   de linhas, entrada no ciclo, config, e a cor/`atrasoDesde` do
   `calcularProgramacao` real: `node tela-e.test.js`.
@@ -187,6 +189,75 @@ via Google Apps Script (JSONP).
   barulho.
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, a correção diz que o
   Apps Script ainda não tem a exclusão; o aviso de repetido já funciona.
+
+## TROCAR PRODUTO do lançamento (mobile 1.37.0 / `.gs` v5.32)
+- Caso real, 23/10/2026 (WhatsApp do operador): 203 cx de **RACK SIRIUS 1.4
+  OFF WHITE/CINAMOMO** (501.106.005, lote 25337) entraram na hora 14:00 como
+  **SIRIUS 1.6 CINAMOMO** (501.106.013). Às 15:19 ele EXCLUIU para lançar de
+  novo — e não conseguiu: a hora 14:00 só aceitava lançamento até 15:15. A
+  hora ficou em 0. **Excluir vale para qualquer hora de hoje, lançar não**:
+  excluir-e-relançar numa hora fechada é uma armadilha.
+  - Arrumado no mesmo dia com uma chamada direta ao `/exec`
+    (`action=saveRealizado&horario=14:00&realizado=203&produto=…&lancId=…`):
+    o backend nunca teve trava de horário, a regra da tolerância é só de tela.
+    ⚠ Esse caminho troca o `PROD_ATUAL` do turno (o `registrarProducaoProduto`
+    grava a propriedade e o app sincroniza pelo `getDados`) — o operador tem de
+    bipar o produto que está rodando depois.
+  - ⚠ **Na chamada à mão, o código vai SÓ COM DÍGITOS** (`produto=501106005`).
+    O CODIGO da `PRODUTO_CODIGO` é **número** com formato `#,##0` (a tela mostra
+    `501.106.005`), e o `registrarProducaoProduto` procura o produto por
+    igualdade exata com o texto que chegou. Com `501.106.005` a linha entrou sem
+    DESCRICAO, PONTOS e PESO_KG (o Sheets ainda converteu o código para número,
+    então UEP e FIFO casaram). Corrigido à mão pela API: linha 2893 da
+    `PRODUCAO_PRODUTO` e 2642 da `HISTORICO_MEDIA_FAMILIA`. O app manda o código
+    do cadastro (dígitos) e não tem esse problema; a troca compara por `codKey`
+    e grava o código do cadastro.
+- **O erro era o PRODUTO, não as caixas.** O produto só mora na
+  `PRODUCAO_PRODUTO` e na `HISTORICO_MEDIA_FAMILIA`; a `HORA_A_HORA` guarda o
+  número. `trocarProdutoLancamento` reescreve a linha do registro **no lugar**
+  (CODIGO, DESCRICAO, PONTOS, PESO_KG — a ordem das linhas é a ordem dos
+  fatos, o `_prepDoDia` conta preparação por ela), ajusta a linha da família e
+  refaz o FIFO (`_invalidarValores` + `sincronizarPlanilhaPosLancamento`): as
+  caixas saem do lote errado e entram no certo. A hora **não muda**, nem por
+  um instante (excluir + relançar deixava a TV e o painel com a hora a 0 no
+  meio).
+  - Mesmo casamento da exclusão (a ÚLTIMA linha da hora com o produto e as
+    caixas), **tudo ou nada** (produto novo fora do cadastro, mesmo produto,
+    caixas que não estão, dia fechado → nada muda) e **idempotente pelo
+    `trocaId`** (cache 2 h).
+  - Pontos e peso pela MESMA conta do `registrarProducaoProduto` (retrato do
+    cadastro). O produto novo é achado por `codKey` (aceita `501.106.005` ou
+    `501106005`) e o código gravado é o do cadastro (`String` do número:
+    `501106005`) — o mesmo texto que o `getPontosDia` e a UEP procuram.
+  - **Família**: o 1.4 e o 1.6 do SIRIUS são a MESMA família (6 dígitos). A
+    linha de mesma descrição vem primeiro; sem ela, a última da família com
+    as caixas. Não achar não desfaz a troca (é análise).
+  - O **produto atual do turno NÃO muda** — a troca corrige o passado.
+  - Registro na aba **`LANC_TROCADOS`** (criada na 1ª troca): quando, data,
+    hora, caixas, código e descrição antes e depois, origem.
+  - Lançamento **sem produto** não tem TROCAR (não há linha no registro para
+    trocar); a linha **SÓ NO REGISTRO** tem.
+- **Celular**: na correção, cada lançamento com produto tem **TROCAR**
+  (neutro) em cima do **EXCLUIR** (vermelho). TROCAR abre o MESMO seletor de
+  produto do lançamento, com o título **PRODUTO CERTO** (`_corrTroca`): toque,
+  LOTE, código ou **bipe**. No modo troca o `selecionarProduto` não mexe no
+  `PROD_ATUAL` e o bipe não abre o lançamento da hora atual; fechar o seletor
+  desfaz o modo. Confirmação com **VOLTAR** em destaque (`corrTrocaTxt`: sai,
+  entra, a hora não muda). Sem resposta ≠ não trocou: relê a hora e conta pelos
+  dígitos do código (`_corrContaCod`). Backend antigo (sem `novo` na resposta)
+  → diz que falta o `.gs` v5.32.
+- **A EXCLUSÃO AVISA quando a hora já não aceita lançamento**
+  (`_corrHoraTravada`, a mesma regra do `slotLancavel`): *"excluído, não dá
+  para lançar de novo. Se só o produto está errado, VOLTE e use TROCAR."*
+- ⚠ O **aviso de cor errada não pega** o caso de 23/10: ele só compara cores do
+  MESMO produto (mesma `desc`), e 1.6 × 1.4 são produtos diferentes. O 1.6
+  CINAMOMO nem estava programado. Um aviso de "código fora da programação de
+  hoje e dos próximos 2 dias" foi proposto e **ainda não decidido** pelo PPCP
+  (o custo: perguntaria à toa quando produzem fora da programação, o que já
+  aconteceu em setembro). No mesmo dia, às 15:00, entraram mais 65 cx no 1.6
+  CINAMOMO — o produto atual do app tinha ficado no errado.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o TROCAR diz que o Apps
+  Script não tem a troca e não grava nada; o EXCLUIR segue funcionando.
 
 ## Caixas em HORA NORMAL × HORA EXTRA
 - **A JORNADA NORMAL É 07:00–17:00. Fora dela, é hora extra** (PPCP,

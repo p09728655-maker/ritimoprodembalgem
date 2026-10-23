@@ -6,6 +6,12 @@
 // ENCANTO (501136004) entraram DUAS vezes na hora 10:00 — a hora foi a 279 em
 // vez de 219, e o 2º 60 baixava lote na programação e somava UEP.
 //
+// TROCAR PRODUTO (23/10/2026, .gs v5.32 / mobile 1.37.0): 203 cx de RACK
+// SIRIUS 1.4 OFF WHITE/CINAMOMO entraram na hora 14:00 como SIRIUS 1.6
+// CINAMOMO; o operador excluiu para relançar e a hora (já sem tolerância)
+// ficou em 0. A troca muda só o produto — o registro e a família — e a hora
+// fica como está.
+//
 // O .gs é carregado INTEIRO numa planilha de mentira (como no
 // uep-padrao.test.js): getLancamentosHora e excluirLancamento rodam o caminho
 // real. As contas do celular (aviso de repetido, lista e confirmação) saem do
@@ -61,11 +67,12 @@ function montar(o) {
       ['16/10/2026', '10:00', '501080', 'VOL 2/2 CRISTALEIRA ORION', 109],
       ['16/10/2026', '10:00', '501080', 'VOL 2/2 CRISTALEIRA ORION', 50],
       ['16/10/2026', '10:00', '501136', 'VOL 1/1 LIVREIRO ENCANTO', 60],
-      ['16/10/2026', '10:00', '501136', 'VOL 1/1 LIVREIRO ENCANTO', 60]],
+      ['16/10/2026', '10:00', '501136', 'VOL 1/1 LIVREIRO ENCANTO', 60]].concat(o.fam || []),
     HISTORICO: [['DATA', 'REALIZADO'], ['15/10/2026', 1640]].concat(o.hist || []),
-    PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR'],
+    PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'P B', 'PONTOS'],
       ['501136004', 'VOL 1/1 LIVREIRO ENCANTO', 'CINZA'], ['501080008', 'VOL 2/2 CRISTALEIRA ORION', 'OFF WHITE'],
-      ['501080006', 'VOL 2/2 CRISTALEIRA ORION', 'NATURE'], ['501080007', 'VOL 1/2 CRISTALEIRA ORION', 'CINAMOMO']],
+      ['501080006', 'VOL 2/2 CRISTALEIRA ORION', 'NATURE'], ['501080007', 'VOL 1/2 CRISTALEIRA ORION', 'CINAMOMO'],
+      ['501.136.005', 'VOL 1/1 LIVREIRO ENCANTO', 'ROSA', 26.2, 84]],   // com pontos e peso; código com pontos: a troca acha por codKey
   };
   function aba(nome) {
     const v = ABAS[nome];
@@ -177,13 +184,79 @@ console.log('\n── excluir: tudo ou nada, e o dia fechado ──');
 ok('a exclusão é gravação: invalida o cache de leitura', /ACOES_ESCRITA = \[[^\]]*'excluirLancamento'/.test(GS), true);
 ok('o dispatcher conhece as duas ações', [/act === 'getLancamentosHora'\) result = getLancamentosHora\(p\)/.test(GS), /act === 'excluirLancamento'\)\s+result = excluirLancamento\(p\)/.test(GS)], [true, true]);
 
+console.log('\n── trocar o produto: o registro e a família mudam, a hora não ──');
+{
+  const P = montar();
+  const posAntes = P.ABAS.PRODUCAO_PRODUTO.length;
+  const r = P.run(`return trocarProdutoLancamento({ horario: '10:00', caixas: '60', produto: '501136004', novo: '501.136.005', trocaId: 'T1' });`);
+  ok('troca: ok, com o produto novo, a cor e a hora que NÃO muda',
+     [r.ok, r.novo, r.cor, r.totalHora, hora(P, '10:00-11:00')], [true, '501.136.005', 'ROSA', 279, [109, 50, 60, 60]]);
+  ok('a ÚLTIMA linha da hora com o produto e as caixas é reescrita NO LUGAR, com pontos e peso do cadastro',
+     [P.ABAS.PRODUCAO_PRODUTO.length, P.ABAS.PRODUCAO_PRODUTO[6]],
+     [posAntes, ['16/10/2026', '10:00', '501.136.005', 'VOL 1/1 LIVREIRO ENCANTO', 60, 5040, 1572, 'Mobile']]);
+  ok('a outra linha de 60 do mesmo produto (HORA em Date) fica', P.ABAS.PRODUCAO_PRODUTO[5].slice(2, 5), ['501136004', 'VOL 1/1 LIVREIRO ENCANTO', 60]);
+  ok('a família: a última linha casada ganha peso e pontos novos', P.ABAS.HISTORICO_MEDIA_FAMILIA[4],
+     ['16/10/2026', '10:00', '501136', 'VOL 1/1 LIVREIRO ENCANTO', 60, 1572, 5040]);
+  ok('a lista da hora mostra o produto novo no lugar do errado',
+     P.run(`return getLancamentosHora({ horario: '10:00' });`).lancs.map(x => [x.cx, x.codigo]),
+     [[109, '501080008'], [50, '501080006'], [60, '501136004'], [60, '501.136.005']]);
+  ok('a troca fica registrada na aba LANC_TROCADOS', P.ABAS.LANC_TROCADOS,
+     [['TROCADO_EM', 'DATA', 'HORA', 'CAIXAS', 'CODIGO_ANTES', 'DESCRICAO_ANTES', 'CODIGO_DEPOIS', 'DESCRICAO_DEPOIS', 'ORIGEM'],
+      ['16/10/2026 12:20:05', '16/10/2026', '10:00-11:00', 60, '501136004', 'VOL 1/1 LIVREIRO ENCANTO', '501.136.005', 'VOL 1/1 LIVREIRO ENCANTO', 'Mobile']]);
+  ok('a programação é recalculada (o FIFO tira do lote errado e põe no certo)', vm.runInContext('_sincs', P.ctx), 1);
+  const r2 = P.run(`return trocarProdutoLancamento({ horario: '10:00', caixas: '60', produto: '501136004', novo: '501.136.005', trocaId: 'T1' });`);
+  ok('MESMO trocaId (retentativa por timeout) não troca o OUTRO 60',
+     [r2.duplicado, P.ABAS.PRODUCAO_PRODUTO[5][2], P.ABAS.LANC_TROCADOS.length, vm.runInContext('_sincs', P.ctx)], [true, '501136004', 2, 1]);
+}
+{
+  const P = montar();
+  const antes = JSON.stringify(P.ABAS);
+  const t = q => P.run(`return trocarProdutoLancamento(${JSON.stringify(q)});`);
+  const rs = [
+    t({ horario: '10:00', caixas: '70', produto: '501136004', novo: '501.136.005', trocaId: 'A' }),
+    t({ horario: '10:00', caixas: '60', produto: '501136004', novo: '501136004', trocaId: 'B' }),
+    t({ horario: '10:00', caixas: '60', produto: '501136004', novo: '999999999', trocaId: 'C' }),
+    t({ horario: '09:00', caixas: '35', produto: '', novo: '501.136.005', trocaId: 'D' }),
+    t({ horario: '22:00', caixas: '60', produto: '501136004', novo: '501.136.005', trocaId: 'E' })];
+  ok('tudo ou nada: caixas que não estão, o mesmo produto, código fora do cadastro, lançamento sem produto, hora que não existe',
+     [rs.map(r => [r.ok, r.erro || '']).map(x => x[0]), rs.slice(0, 3).map(r => r.erro), JSON.stringify(P.ABAS) === antes, vm.runInContext('_sincs', P.ctx)],
+     [[false, false, false, false, false], ['nao-encontrado', 'mesmo-produto', 'produto-desconhecido'], true, 0]);
+  ok('o mesmo produto escrito de outro jeito (com pontos) também é o mesmo',
+     t({ horario: '10:00', caixas: '60', produto: '501136004', novo: '501.136.004', trocaId: 'F' }).erro, 'mesmo-produto');
+}
+{
+  const P = montar({ hist: [['16/10/2026', 760]] });
+  const antes = JSON.stringify(P.ABAS);
+  const r = P.run(`return trocarProdutoLancamento({ horario: '10:00', caixas: '60', produto: '501136004', novo: '501.136.005', trocaId: 'H' });`);
+  ok('dia já no HISTORICO → não troca', [r.ok, r.erro, JSON.stringify(P.ABAS) === antes], [false, 'dia-fechado', true]);
+}
+{
+  // Família: o 1.4 e o 1.6 do SIRIUS são a MESMA família (6 dígitos). A linha
+  // da mesma descrição vem antes de outra da família com as mesmas caixas.
+  const P = montar({ log: [['16/10/2026', '12:12', '501080008', 'VOL 2/2 CRISTALEIRA ORION', 30, 0, 0, 'Mobile']],
+                     fam: [['16/10/2026', '10:00', '501080', 'VOL 1/2 CRISTALEIRA ORION', 109]] });
+  P.run(`return trocarProdutoLancamento({ horario: '10:00', caixas: '109', produto: '501080008', novo: '501.136.005', trocaId: 'G' });`);
+  ok('família: troca a linha da MESMA descrição, não a última da família', P.ABAS.HISTORICO_MEDIA_FAMILIA.slice(1).map(r => [r[2], r[3], r[4]]),
+     [['501136', 'VOL 1/1 LIVREIRO ENCANTO', 109], ['501080', 'VOL 2/2 CRISTALEIRA ORION', 50], ['501136', 'VOL 1/1 LIVREIRO ENCANTO', 60],
+      ['501136', 'VOL 1/1 LIVREIRO ENCANTO', 60], ['501080', 'VOL 1/2 CRISTALEIRA ORION', 109]]);
+  const r = P.run(`return trocarProdutoLancamento({ horario: '12:12', caixas: '30', produto: '501080008', novo: '501.136.005', trocaId: 'S' });`);
+  ok('SÓ NO REGISTRO também troca (a hora segue vazia)', [r.ok, hora(P, '12:12-13:00'), P.ABAS.PRODUCAO_PRODUTO[P.ABAS.PRODUCAO_PRODUTO.length - 1][2]],
+     [true, [], '501.136.005']);
+}
+ok('a troca é gravação: invalida o cache de leitura', /ACOES_ESCRITA = \[[^\]]*'trocarProdutoLancamento'/.test(GS), true);
+ok('o dispatcher conhece a troca', /act === 'trocarProdutoLancamento'\) result = trocarProdutoLancamento\(p\)/.test(GS), true);
+ok('a troca não mexe na HORA_A_HORA nem no produto atual do turno',
+   [/H\.sh\.getRange/.test(pega(GS, 'function _trocarProdutoCore(')), /PROP_PROD_ATUAL/.test(pega(GS, 'function _trocarProdutoCore('))], [false, false]);
+
 console.log('\n── celular: o aviso de lançamento repetido ──');
 const F = { window: {} };
 F.window = F;
 vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
 vm.runInContext('var LANC_REPETIDO_MIN = ' + MJS.match(/const LANC_REPETIDO_MIN = (\d+);/)[1] + ';', F);
-['function lancRepetido(', 'function lancRepetidoTxt(', 'function _escH(', 'function corrListaHtml(', 'function corrConfirmaTxt(']
+vm.runInContext('var LANC_TOLERANCIA_MIN = ' + MJS.match(/const LANC_TOLERANCIA_MIN = (\d+);/)[1] + ';', F);
+['function lancRepetido(', 'function lancRepetidoTxt(', 'function _escH(', 'function corrListaHtml(', 'function corrConfirmaTxt(',
+ 'function slotLancavel(', 'function _corrHoraTravada(', 'function corrTrocaTxt(', 'function _corrK(', 'function _corrContaCod(']
   .forEach(f => vm.runInContext(pega(MJS, f), F));
 {
   const T0 = new Date(2026, 9, 16, 10, 42).getTime();
@@ -212,15 +285,51 @@ console.log('\n── celular: a correção ──');
   ok('um EXCLUIR por lançamento, o sem produto dito, o SÓ NO LOG separado, e o texto escapado',
      [(h.match(/>EXCLUIR</g) || []).length, h.includes('sem produto'), h.includes('SÓ NO REGISTRO DE PRODUTO'), h.includes('VOL &lt;2/2&gt; ORION'),
       h.includes("excluirLanc(0,1)")], [3, true, true, true, true]);
+  ok('TROCAR só em lançamento COM produto (o da hora e o SÓ NO LOG), nunca no sem produto',
+     [(h.match(/>TROCAR</g) || []).length, h.includes('trocarProdLanc(0,0)'), h.includes('trocarProdLanc(0,1)'), h.includes('trocarProdLanc(1,0)')],
+     [2, true, true, false]);
   const hf = vm.runInContext(`corrListaHtml(${JSON.stringify(Object.assign({}, RES, { fechado: true }))}, false)`, F);
-  ok('dia fechado: sem botão, com o aviso', [(hf.match(/>EXCLUIR</g) || []).length, hf.includes('FECHAR DIA de novo')], [0, true]);
-  ok('excluindo: os botões travam', (vm.runInContext(`corrListaHtml(${JSON.stringify(RES)}, true)`, F).match(/disabled/g) || []).length, 3);
+  ok('dia fechado: sem botão, com o aviso', [(hf.match(/>EXCLUIR</g) || []).length, (hf.match(/>TROCAR</g) || []).length, hf.includes('FECHAR DIA de novo')], [0, 0, true]);
+  ok('excluindo: os botões travam (os dois)', (vm.runInContext(`corrListaHtml(${JSON.stringify(RES)}, true)`, F).match(/disabled/g) || []).length, 5);
+  const ht = vm.runInContext(`corrListaHtml(${JSON.stringify(RES)}, 'troca')`, F);
+  ok('trocando: trava e diz que está trocando', [(ht.match(/disabled/g) || []).length, ht.includes('TROCANDO O PRODUTO'), ht.includes('EXCLUINDO')], [5, true, false]);
   const c1 = vm.runInContext(`corrConfirmaTxt('10:00-11:00', {cx:60, codigo:'501136004', desc:'VOL 1/1 LIVREIRO ENCANTO', cor:'CINZA'}, false, 279)`, F);
   ok('a confirmação diz o produto, como a hora fica e o efeito no lote',
      ['Excluir 60 cx de VOL 1/1 LIVREIRO ENCANTO · CINZA da hora 10:00-11:00', 'cai de 279 para 219 cx', 'voltam a faltar no lote'].map(x => c1.includes(x)),
      [true, true, true]);
   const c2 = vm.runInContext(`corrConfirmaTxt('12:12-13:00', {cx:30, codigo:'501080006', desc:'VOL 2/2 ORION', cor:''}, true, 0)`, F);
   ok('SÓ NO LOG: diz que a hora não muda', c2.includes('A hora não muda'), true);
+  ok('hora que já não aceita lançamento: a exclusão avisa que não dá para relançar e manda TROCAR (o caso de 23/10)',
+     [c1.includes('não aceita mais'), vm.runInContext(`corrConfirmaTxt('14:00-15:00', {cx:203, codigo:'501106013', desc:'VOL 1/1 RACK SIRIUS 1.6', cor:'CINAMOMO'}, false, 203, true)`, F)
+       .includes('não aceita mais lançamento pelo app — excluído, não dá para lançar de novo. Se só o produto está errado, VOLTE e use TROCAR.'),
+      vm.runInContext(`corrConfirmaTxt('14:00-15:00', {cx:20, codigo:'', desc:''}, false, 203, true)`, F).includes('use TROCAR')],
+     [false, true, false]);
+  const tv = (rot, h, m) => vm.runInContext(`_corrHoraTravada('${rot}', ${h * 60 + m})`, F);
+  ok('hora travada = a regra da lista (corrente + ' + vm.runInContext('LANC_TOLERANCIA_MIN', F) + ' min): 15:19 trava a das 14:00, 15:10 ainda não',
+     [tv('14:00-15:00', 15, 19), tv('14:00-15:00', 15, 10), tv('14:00-15:00', 14, 30), tv('HE 17:00-18:00', 17, 30), tv('sem hora', 15, 30)],
+     [true, false, false, false, false]);
+  const tr = vm.runInContext(`corrTrocaTxt('14:00-15:00', {cx:203, codigo:'501106013', desc:'VOL 1/1 RACK SIRIUS 1.6', cor:'CINAMOMO'}, 'VOL 1/1 RACK SIRIUS 1.4 · OFF WHITE/CINAMOMO', 203)`, F);
+  ok('a confirmação da troca diz o que sai, o que entra e que a hora não muda',
+     ['203 cx da hora 14:00-15:00', 'Sai: VOL 1/1 RACK SIRIUS 1.6 · CINAMOMO', 'Entra: VOL 1/1 RACK SIRIUS 1.4 · OFF WHITE/CINAMOMO', 'A hora não muda (203 cx)'].map(x => tr.includes(x)),
+     [true, true, true, true]);
+  ok('a conta da relida casa o código pelos dígitos (o registro devolve 501106013, o cadastro 501.106.013)',
+     vm.runInContext(`_corrContaCod({lancs:[{cx:203,codigo:'501106013'},{cx:203,codigo:'501106005'}], soLog:[]}, 203, '501.106.013', false)`, F), 1);
+  const tp = pega(MJS, 'async function _corrTrocarPara(');
+  ok('trocar: confirma antes, VOLTAR em destaque, um trocaId para as tentativas, backend antigo dito, timeout relê a hora',
+     [tp.indexOf('confirmarModal(') < tp.indexOf('_corrEnviar('), /seguro:'cancelar'/.test(tp), /const trocaId = /.test(tp),
+      /res\.novo===undefined/.test(tp), /_corrContaCod\(c\.res, x\.cx, x\.codigo, so\) < antes/.test(tp)], [true, true, true, true, true]);
+  // O seletor no modo troca NÃO mexe no produto atual do turno.
+  const S = { PROD_ATUAL: '501136004', _corrTroca: { x: 1 }, got: null, salvo: null, fechou: 0,
+              localStorage: { setItem: (k, v) => { S.salvo = [k, v]; } } };
+  vm.createContext(S);
+  vm.runInContext(pega(MJS, 'async function selecionarProduto('), S);
+  vm.runInContext('function fecharModalProduto(){ fechou++; _corrTroca = null; } function _corrTrocarPara(t, c){ got = [t, c]; }', S);
+  vm.runInContext(`selecionarProduto('501.136.005')`, S);
+  ok('seletor no modo troca: entrega o código à troca e o produto atual fica',
+     [S.PROD_ATUAL, S.salvo, S.got && S.got[1], S.fechou, S._corrTroca], ['501136004', null, '501.136.005', 1, null]);
+  ok('fechar o seletor desfaz o modo troca; o bipe no modo troca não abre o lançamento da hora atual',
+     [/if\(_corrTroca\)\{\s*_corrTroca = null;/.test(pega(MJS, 'function fecharModalProduto(')),
+      /if\(!lancAberto && !trocando\) abrirLancSlotAtivo\(\)/.test(pega(MJS, 'function processarBipe('))], [true, true]);
   const ex = pega(MJS, 'async function excluirLanc(');
   ok('excluir: confirma antes, um exclId para todas as tentativas, e timeout relê a hora antes de acusar',
      [ex.indexOf('confirmarModal(') < ex.indexOf('_corrEnviar('), /seguro:'cancelar'/.test(ex), /const exclId = /.test(ex),
@@ -229,11 +338,11 @@ console.log('\n── celular: a correção ──');
      /corrigivel = bloqueado && !!\(slot\.lotes&&slot\.lotes\.length\)/.test(MJS) && /abrirCorrecao\('\$\{slot\.inicio\}'/.test(MJS), true);
   ok('o modal da hora atual leva à correção', /onclick="_corrDoLanc\(\)">✎ CORRIGIR UM LANÇAMENTO</.test(MJS), true);
   ok('versão do app e cache do service worker sobem juntos',
-     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v45';\s+\/\/ APP_VER 1\.36\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
-     ['1.36.0', true]);
+     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v46';\s+\/\/ APP_VER 1\.37\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
+     ['1.37.0', true]);
 }
 
 console.log(falhas === 0
-  ? '\n✅ exclusão ok — o lançamento sai das três abas, uma vez só, e o repetido é perguntado antes\n'
+  ? '\n✅ exclusão ok — o lançamento sai das três abas, uma vez só, a troca muda só o produto, e o repetido é perguntado antes\n'
   : `\n❌ ${falhas} falha(s)\n`);
 process.exit(falhas === 0 ? 0 : 1);
