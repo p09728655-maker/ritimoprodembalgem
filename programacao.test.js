@@ -701,6 +701,7 @@ function pegaMob(assinatura) {
     global.bipeToast = () => {}; global.bipeSom = () => {}; global.nomeComCor = d => d; global.eanCore = x => x;
     global.abrirLancSlotAtivo = () => { reabriu++; };
     global._confirmaResolve = v => { resolvido = v; global._confirmaCb = null; };
+    global._corrTroca = null;   // seletor no modo TROCAR PRODUTO (mobile 1.37.0)
     const abertos = { 'modal-lanc': true };
     global.document = { getElementById: id => ({ classList: { contains: () => !!abertos[id] } }) };
     eval(pegaMob('function processarBipe(').replace('function processarBipe', 'global.processarBipe = function'));
@@ -711,6 +712,10 @@ function pegaMob(assinatura) {
     abertos['modal-lanc'] = false; global._slotAtivo = null; global._confirmaCb = null; global._confirmaTag = '';
     processarBipe('7898599078424');
     ok('sem lançamento aberto, o bipe abre a hora corrente como sempre', reabriu, 1);
+    global._corrTroca = { x: 1 };
+    processarBipe('7898599078424');
+    ok('bipe com o seletor no modo TROCAR PRODUTO não abre a hora corrente', reabriu, 1);
+    global._corrTroca = null;
     delete global.document;
   }
   ok('depois de gravar, o saldo local do código desconta o lançado', /it\.falta=Math\.max\(0,\(Number\(it\.falta\)\|\|0\)-add\)/.test(SL), true);

@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.37.0 · `.gs` v5.32 — 23/10/2026 · TROCAR PRODUTO do lançamento
+
+- Caso real de hoje: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO entraram na
+  hora 14:00 como SIRIUS 1.6 CINAMOMO. O operador excluiu para lançar de novo e
+  não conseguiu (a hora já não aceitava lançamento) — a hora ficou em 0.
+- **Na correção do lançamento, botão TROCAR** em cima do EXCLUIR. Abre o
+  seletor de produto (toque, lote, código ou bipe) para escolher o produto
+  CERTO; confirma e troca só o produto: o registro de produto e o histórico
+  por família mudam, as caixas passam do lote errado para o certo, a hora
+  continua com as mesmas caixas. O produto atual do turno não muda. Cada troca
+  fica na aba nova **LANC_TROCADOS**.
+- **O EXCLUIR avisa** quando a hora já não aceita lançamento: excluído, não dá
+  para lançar de novo — se só o produto está errado, use TROCAR.
+- **Atenção:** nenhum número muda sozinho. Uma troca muda o PRODUZIDO/SALDO dos
+  dois lotes na PROGRAMACAO, a UEP e os pontos do dia — é a correção.
+- ⚠ **re-deploy** do `.gs` v5.32. Antes dele o TROCAR avisa que falta o
+  re-deploy e não grava nada.
+
+---
+
 ## v7.156.0 — 23/10/2026 · PRÓXIMOS DIAS: hoje à parte — o lote de hoje não é atraso
 
 - PPCP: *"está colocando o de hoje como atraso"*, *"nem aconteceu ainda"*. As
