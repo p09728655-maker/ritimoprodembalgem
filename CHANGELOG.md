@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.156.0 — 23/10/2026 · PRÓXIMOS DIAS: hoje à parte — o lote de hoje não é atraso
+
+- PPCP: *"está colocando o de hoje como atraso"*, *"nem aconteceu ainda"*. As
+  8h26 que caíam na segunda eram todas do lote de hoje (23/10): o vencido
+  (3h23) sai primeiro e cabe no resto do dia.
+- **A segunda (e cada dia) leva só os lotes datados nele.** Sai o *"inclui …
+  que não cabem hoje"* do cartão. Em 23/10: segunda 18h21 → **9h56**; o total
+  *"5 dias pedem"* deixa de contar o que é de hoje.
+- **Cartão HOJE · previsão** antes da segunda (só na tela da aba ⚖ UEP):
+  *falta zerar 15h31 = atraso 3h23 + programado de hoje 12h08 · cabem 7h05 no
+  resto da jornada · não cabem 8h26 do lote de hoje — não entram nos próximos
+  dias*. Borda tracejada: é previsão pelo ritmo da meta.
+- **ATRASO — CONFERÊNCIA fica só com o vencido** (os códigos EM ATRASO, total
+  611 cx · 976 UEP · 3h23). O programado de hoje saiu do quadro.
+- **Atenção:** muda o número dos cartões dos próximos dias e do total —
+  antes eles carregavam a sobra prevista de hoje no 1º dia útil. A impressão
+  executiva da UEP e a diretoria mostram só os próximos dias.
+
+---
+
 ## v7.155.0 — 23/10/2026 · PRÓXIMOS DIAS: o atraso aberto, para conferência
 
 - PPCP: *"mostra o atraso separado para conferência"*. Embaixo dos cartões

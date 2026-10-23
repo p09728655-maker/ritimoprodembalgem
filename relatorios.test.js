@@ -4424,10 +4424,13 @@ console.log('\n── estudo de UEP ──');
   const G = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5);
   ok('calendário: 5 dias úteis a partir de amanhã; sábado entra só porque tem lote',
      G.dias.map(d => d.data.slice(0,5)), ['25/09','26/09','28/09','29/09','30/09','01/10']);
-  ok('horas = UEP ÷ ritmo da meta; o atraso que não cabe hoje vai para o 1º dia útil',
-     [Math.round(G.carry), Math.round(G.dias[0].minAtr), Math.round(G.dias[0].min), G.dias[1].minAtr], [424, 88, 567, 0]);
+  // v7.156.0 — o que não cabe hoje NÃO vai mais para o 1º dia útil (PPCP: "está
+  // colocando o de hoje como atraso", "nem aconteceu ainda"): 25/09 leva só os
+  // lotes dele (479 min), e não mais 567 com as 88 de hoje
+  ok('horas = UEP ÷ ritmo da meta; a dívida de hoje NÃO entra no 1º dia útil',
+     [Math.round(G.carry), Math.round(G.dias[0].min), G.dias.some(d => 'minAtr' in d || 'conta' in d)], [424, 479, false]);
   ok('estados: passa até 1h45 = âmbar, mais = NÃO CABE, folga grande = verde, sem lote = vazio, sábado à parte',
-     G.dias.map(d => d.estado), ['warn','fds','vazio','red','ok','vazio']);
+     G.dias.map(d => d.estado), ['','fds','vazio','red','ok','vazio']);
   ok('fora da esteira e vencido não entram; linha sem UEP NÃO vira hora — sai da conta e é apontada',
      [G.dias[2].uep, G.dias[4].uep, G.dias[4].cxSemUep, G.semUep.map(x => [x.data.slice(0,5), x.lote, x.cx])],
      [0, 500, 100, [['30/09', '25246', 100]]]);
@@ -4435,7 +4438,7 @@ console.log('\n── estudo de UEP ──');
   ok('atraso: código com UEP vira UEP, sem UEP é apontado (nunca pela média)', [DV.uep, DV.semUep.map(x => [x.codigo, x.cx])], [600, [['999', 40]]]);
   ok('backend sem a lista por código: o atraso inteiro fica sem UEP e é apontado', [_gpxDivida([], itens, 340).uep, _gpxDivida([], itens, 340).semUep[0].cx], [0, 340]);
   ok('totais: jornada só dos dias úteis, sábado fora da falta e da folga',
-     [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 201, 2, 1, 2]);
+     [G.nUteis, G.minJorn, Math.round(G.falta), G.nFalta, G.nSobra, G.nVazio], [5, 2635, 160, 1, 2, 2]);
   ok('lotes mais pesados do dia, em horas', G.dias[0].lotes.map(l => [l.lote, Math.round(l.min)]), [['25230', 417], ['25231', 62]]);
   ok('sem nenhuma UEP na programação não converte (não inventa hora)', _gpxMontar([it('26/09/2026','1',10,null)], new Date(2026,8,25), 0, 0, 2530, 5).falha, 'sem-uep');
   ok('dívida que cabe no resto de hoje não passa para amanhã', _gpxMontar(itens, new Date(2026,8,24), 500, 300, 2530, 5).carry, 0);
@@ -4494,34 +4497,43 @@ console.log('\n── estudo de UEP ──');
   // 10h32 − 8h47 = 105,3 min: a tela mostra "1h45", e a cor tem de ser a da legenda "até 1h45"
   const G2 = _gpxMontar([it('25/09/2026','1',1000,3.033)], new Date(2026, 8, 24), 0, 0, 2530, 1);
   ok('a cor segue o número exibido: 1h45 é âmbar, não NÃO CABE', [_fmtHM(G2.dias[0].exc), G2.dias[0].estado], ['1h45', 'warn']);
-  // v7.154.1 — PPCP, 23/10/2026: "ATRASO?". O cartão dizia "inclui atraso de
-  // 8h26" e eram 3h23 de vencido + 12h07 do programado de hoje − 7h05 que
-  // cabiam hoje. Agora diz que NÃO CABEM HOJE, e o tooltip abre a conta.
+  // v7.154.1 → v7.156.0 — PPCP, 23/10/2026: "ATRASO?" → "está colocando o de
+  // hoje como atraso" → "nem aconteceu ainda". O 1º dia útil levava 8h26 que
+  // eram TODAS do lote de hoje. Agora a conta de hoje vai para o cartão HOJE
+  // (previsão, só na tela) e nenhum dia recebe parcela dela.
   const DA = _gpxDivida([{ codigo:'501125230', falta:300, atraso:100 }, { codigo:'501125231', falta:200, atraso:0 }, { codigo:'999', falta:40, atraso:40 }], itens, 540);
   ok('dívida: a parte vencida sai do `atraso` de cada código (sem UEP fica fora das duas)', [DA.uep, DA.uepAtr], [900, 200]);
-  ok('sem o campo `atraso` a divisão não é inventada', _gpxDivida([{ codigo:'501125230', falta:300 }], itens, 300).uepAtr, null);
+  ok('sem o campo `atraso` a divisão não é inventada', [_gpxDivida([{ codigo:'501125230', falta:300 }], itens, 300).uepAtr, _gpxDivida([{ codigo:'501125230', falta:300 }], itens, 300).linhas], [null, null]);
   const GC = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5, 600);
   const _c = k => k && [k.div, k.venc, k.hoje, k.cabe];
-  ok('a conta do que não cabe hoje fecha em minutos inteiros: falta zerar − cabe = cartão; vencido + hoje = falta zerar',
-     [_c(GC.dias[0].conta), Math.round(GC.dias[0].minAtr), GC.dias[1].conta, GC.carry === G.carry],
-     [[208, 125, 83, 120], 88, null, true]);
-  ok('as mesmas parcelas em UEP (quadro de conferência): vencido, falta zerar, cabe hoje e o que não cabe',
-     [GC.conta.uDiv, GC.conta.uVenc, Math.round(GC.conta.uCabe), Math.round(GC.conta.uCarry), GC.conta.resto], [1000, 600, 576, 424, 120]);
-  ok('sem a parte vencida (backend sem `atraso`) a conta sai só com o total', _c(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0].conta), [208, null, null, 120]);
-  ok('dívida que cabe hoje: a conta existe (o quadro mostra), mas nenhum dia leva parcela',
-     (() => { const g = _gpxMontar(itens, new Date(2026, 8, 24), 500, 300, 2530, 5, 200); return [g.carry, _c(g.conta), g.dias.some(d => d.conta)]; })(),
-     [0, [104, 42, 62, 104], false]);
+  ok('a conta de HOJE fecha em minutos inteiros (atraso + hoje = falta zerar; falta zerar − cabe = não cabe) e não mexe nos dias',
+     [_c(GC.conta), GC.conta.sobra, GC.conta.sobraAtr, GC.conta.sobraHoje, GC.dias[0].min === G.dias[0].min, GC.dataHoje],
+     [[208, 125, 83, 120], 88, 5, 83, true, '24/09']);
+  ok('do que não cabe, atraso é só o que sobra do vencido depois do resto do dia (a linha faz o mais antigo primeiro)',
+     (() => { const g = _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5, 200); return [g.conta.sobra, g.conta.sobraAtr, g.conta.sobraHoje]; })(), [88, 0, 88]);
+  ok('sem a parte vencida (backend sem `atraso`) a conta sai só com o total', [_c(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).conta), _gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).conta.sobraAtr], [[208, null, null, 120], null]);
+  ok('dívida que cabe hoje: a conta existe e nada sobra',
+     (() => { const g = _gpxMontar(itens, new Date(2026, 8, 24), 500, 300, 2530, 5, 200); return [g.carry, _c(g.conta), g.conta.sobra]; })(), [0, [104, 42, 62, 104], 0]);
+  ok('sem dívida, sem conta (o cartão HOJE some)', _gpxMontar(itens, new Date(2026, 8, 24), 0, 120, 2530, 5).conta, null);
   { if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
     if (typeof _dirF === 'undefined') eval(pega('function _dirF('));
     global.GPX_DOW = eval(JS.match(/const GPX_DOW = (\[[^\]]*\]);/)[1]);
-    eval(pega('function _gpxCartaoHtml('));
-    const CH = _gpxCartaoHtml(GC.dias[0], 'gpx'), CS = _gpxCartaoHtml(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5).dias[0], 'gpx');
-    ok('o cartão diz que NÃO CABEM HOJE (nunca "atraso de"), e o tooltip abre a conta',
-       [/inclui 1h28 que não cabem hoje<\/div>|inclui 1h28 que não cabem hoje</.test(CH), /inclui atraso de/.test(CH),
-        /falta zerar 3h28 \(vencido 2h05 \+ falta do programado de hoje 1h23\) − 2h00 que a linha ainda faz hoje no ritmo da meta/.test(CH),
-        /falta zerar 3h28 − 2h00 que a linha/.test(CS)],
-       [true, false, true, true]);
-    // v7.155.0 — PPCP: "mostra o atraso separado para conferência"
+    eval(pega('function _gpxCartaoHtml(')); eval(pega('function _gpxHojeHtml('));
+    const CH = _gpxCartaoHtml(GC.dias[0], 'gpx');
+    ok('o cartão do dia é só o dia: nada de "inclui", "não cabem" nem "atraso"', [/inclui|não cabem|atraso/i.test(CH), /só os lotes datados neste dia/.test(CH)], [false, true]);
+    const HC = _gpxHojeHtml(GC);
+    ok('cartão HOJE: previsão, falta zerar com atraso e programado de hoje, quanto cabe e o que não cabe — sem ir para os próximos dias',
+       [/<b>HOJE<\/b> 24\/09 · previsão/.test(HC), /NÃO CABEM 1h28/.test(HC), /3h28<small> falta zerar/.test(HC),
+        /atraso <b>2h05<\/b> \+ programado de hoje <b>1h23<\/b>/.test(HC), /cabem <b>2h00<\/b> no resto da jornada/.test(HC),
+        /não cabem: atraso <b>0h05<\/b> \+ lote de hoje <b>1h23<\/b> — não entram nos próximos dias/.test(HC), /gpx-dia gpx-hoje warn/.test(HC)],
+       [true, true, true, true, true, true, true]);
+    const HC2 = _gpxHojeHtml(_gpxMontar(itens, new Date(2026, 8, 24), 1000, 120, 2530, 5, 200));
+    ok('quando o que não cabe é só o lote de hoje, o cartão diz isso (o caso de 23/10: 8h26, nenhuma de atraso)',
+       [/não cabem <b>1h28<\/b> do lote de hoje/.test(HC2), /não cabem: atraso/.test(HC2)], [true, false]);
+    ok('cabe tudo hoje: CABE HOJE, sem linha do que não cabe; sem dívida: nada',
+       (() => { const h = _gpxHojeHtml(_gpxMontar(itens, new Date(2026, 8, 24), 500, 300, 2530, 5, 200)); return [/CABE HOJE/.test(h), /não cabem/.test(h), /gpx-hoje ok/.test(h), _gpxHojeHtml({ conta:null })]; })(),
+       [true, false, true, '']);
+    // v7.155.0 — PPCP: "mostra o atraso separado para conferência" (v7.156.0: só o vencido)
     eval(pega('function _gpxAtrasoMontar(')); eval(pega('function _gpxAtrasoHtml('));
     const LA = _gpxDivida([{ codigo:'501.082.003', desc:'VOL 1/1 TOUCADOR MAGIC NEW', cor:'CINAMOMO', falta:185, atraso:185, atrasoDesde:'22/10/2026' },
                            { codigo:'501.059.002', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', falta:4, atraso:4, atrasoDesde:'22/10/2026' },
@@ -4530,26 +4542,24 @@ console.log('\n── estudo de UEP ──');
                            { codigo:'501.999.001', desc:'VOL 1/1 SEM UEP', cor:'', falta:10, atraso:10, atrasoDesde:'21/10/2026' }],
                           [{ codigo:'501.082.003', uepCx:1.58 }, { codigo:'501.059.002', uepCx:2.29 }, { codigo:'501.088.007', uepCx:1.77 }, { codigo:'501.083.121', uepCx:2.89 }], 0);
     const AM = _gpxAtrasoMontar(LA.linhas, 2530 / 527);
-    ok('conferência: só o vencido, do mais antigo para o mais novo (no mesmo dia, mais caixas antes); hoje à parte; sem UEP contado',
-       [AM.venc.map(x => [x.codigo, x.cx, x.uep == null ? null : Math.round(x.uep)]), AM.cxVenc, AM.cxHoje, AM.nHoje, AM.semUep],
-       [[['501.088.007', 140, 248], ['501.999.001', 10, null], ['501.082.003', 185, 292], ['501.059.002', 4, 9]], 339, 320, 1, 1]);
+    ok('conferência: só o vencido, do mais antigo para o mais novo (no mesmo dia, mais caixas antes); o de hoje fica fora; sem UEP contado',
+       [AM.venc.map(x => [x.codigo, x.cx, x.uep == null ? null : Math.round(x.uep)]), AM.cxVenc, AM.semUep],
+       [[['501.088.007', 140, 248], ['501.999.001', 10, null], ['501.082.003', 185, 292], ['501.059.002', 4, 9]], 339, 1]);
     const PA = _gpxMontar([it('26/10/2026','25340',700,1.69)], new Date(2026, 9, 23), LA.uep, 425, 2530, 5, LA.uepAtr);
     const AH = _gpxAtrasoHtml(AM, PA);
-    const ult = PA.conta.div - PA.conta.cabe;
-    ok('o quadro abre o vencido por código, a conta inteira, e termina no número do cartão',
+    ok('o quadro abre o vencido por código e fecha no ATRASO do cartão HOJE — sem o programado de hoje',
        [/<td class="n0">501\.088\.007<\/td><td>VOL 1\/2 HOME ANGEL 1\.6 · OFF WHITE\/CINAMOMO<\/td><td class="n0">20\/10<\/td>/.test(AH),
-        /VENCIDO/.test(AH), /= FALTA ZERAR/.test(AH), /− a linha ainda faz hoje \(7h05 de jornada no ritmo da meta, 288 UEP\/h\)/.test(AH),
-        new RegExp('NÃO CABE HOJE → SEG 26/10</td><td class="n"></td><td class="n">[^<]+</td><td class="n">' + _fmtHM(ult) + '<').test(AH),
-        ult === Math.round(PA.dias[0].minAtr), /sem UEP/.test(AH)],
-       [true, true, true, true, PA.carry > 0, true, true]);
-    ok('quadro sem a lista por código (backend antigo) ou sem dívida: nada', [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(AM, { conta:null })], ['', '']);
-    ok('o quadro é só da tela (o papel da UEP segue com o _gpxHtml) e o desenho não faz conta de UEP',
-       [/_gpxHtml\(P\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
-        /_gpxAtrasoHtml/.test(pega('function _gpxHtml(')) || /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(')),
-        /\.u\b|uepCx|_gpxDivida\(/.test(pega('function _gpxAtrasoHtml('))], [true, false, false]);
-    ok('o painel passa a parte vencida e o papel explica a conta',
-       [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /O que não cabe no resto de hoje entra no 1º dia útil: falta zerar/.test(JS),
-        /atraso de/.test(pega('function _gpxCartaoHtml('))], [true, true, false]); }
+        new RegExp('<td colspan="3">ATRASO</td><td class="n">339</td><td class="n">549</td><td class="n">' + _fmtHM(PA.conta.venc) + '<').test(AH),
+        /FALTA ZERAR|NÃO CABE|falta do programado|1º dia útil/.test(AH), /sem UEP/.test(AH), /CABE HOJE/.test(_gpxHojeHtml(PA))],
+       [true, true, false, true, true]);
+    ok('quadro sem a lista por código (backend antigo) ou sem vencido: nada',
+       [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(_gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8), PA)], ['', '']);
+    ok('cartão HOJE e quadro só na tela (papel e diretoria mostram só os próximos dias) e os desenhos não fazem conta de carga',
+       [/_gpxHtml\(P, 0, _gpxHojeHtml\(P\)\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
+        /_gpxHojeHtml|_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxHtml(')),
+        /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxHojeHtml(') + pega('function _gpxAtrasoHtml('))], [true, false, false]);
+    ok('o painel passa a parte vencida e o papel diz que cada dia leva só os lotes dele',
+       [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram/.test(JS)], [true, true]); }
 }
 
 // ── Azul-marinho no PC e no celular; a TV continua PRETA (v7.115.0) ──────────
