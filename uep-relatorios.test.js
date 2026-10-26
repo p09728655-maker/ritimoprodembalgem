@@ -990,7 +990,7 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
 // 26/10/2026 10:22" (app de cronoanálise, RitmoPatrimar v2.93.1), item a item.
 console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──');
 { const TXT = "Takt Time —   Painel Sirius 1.4 · EMBALAGEM 01   RitmoPatrimar v 2.93.1   · emitido em   26/10/2026 \n MEDIÇÃO \n 26/10/2026 10:22 \n PERÍODO \n 10:22–10:40 \n VOLUMES \n 50 \n PARADO (MARCADO) \n 5 min \n No período, saiu um volume a cada 20.7 s, paradas dentro; com a linha rodando, 14.3 s. \n Sem takt para comparar: não há programa de produção do grupo EMBALAGEM cadastrado. \n 1 lacuna — intervalo maior que o dobro do normal (14.0 s) — somou 14.6s além do normal: cerca de 1 volume que deixou de sair. As paradas marcadas no\n cronômetro já estão fora desta conta: estas, ninguém marcou. \n POR VOLUME NO PERÍODO \n 20.7 s \n com as paradas, do 1º ao último toque \n TAKT DA SEMANA \n — \n sem programa para comparar \n POR VOLUME COM A LINHA\n RODANDO \n 14.3 s \n sem as paradas marcadas \n SEM AS LACUNAS \n 14.0 s \n sem parada nenhuma \n LACUNAS \n 1 \n 14.6s além do normal \n Intervalo entre   volumes \n Tempo de cada   volume   até   o seguinte ,   com a linha rodando — as paradas marcadas no cronômetro   fi cam fora \n Intervalo   Lacuna — mais que 2× o normal   Rodando — média dos intervalos \n 0 \n 10 s \n 20 s \n 30 s   28.6   s 28.6 s \n Rodando   14.3 s \n 15 5   10   20   25   30   35   40   45   50 2 \n Volume nº \n Onde a linha parou sem parada marcada \n Volume   nº   Intervalo   Além do normal   O que aconteceu \n 15   28.6 s   14.6 s \n Intervalo = tempo de um volume até o seguinte, com a linha rodando: as paradas marcadas no cronômetro já saíram; as marcadas depois (no resultado do tablet ou aqui no PC) continuam\n dentro dos intervalos. O primeiro toque não tem intervalo: o intervalo vai de um toque ao seguinte, e o tempo antes do primeiro toque não entra. Contra o takt vai o relógio do primeiro ao\n último toque ÷ intervalos, com as paradas dentro (sem o setup marcado entre os toques, quando o grupo tem setup planejado) — a mesma régua do programa da semana. Com a linha rodando\n = soma dos intervalos ÷ quantidade. Lacuna = intervalo maior que 2× o normal — a média dos intervalos que não são lacuna. Leitura a partir de 10 intervalos. Na embalagem, o programa da\n semana é colado em volumes.";
-  ['function _ucvPdfLer(', 'function _ucvImportItem(', 'function _ucvImportConfirmaTxt(', 'function _ucvRegUrl('].forEach(f => eval.call(global, pegaJs(f)));
+  ['function _ucvPdfLer(', 'function _ucvPdfAchar(', 'function _ucvImportItem(', 'function _ucvImportConfirmaTxt(', 'function _ucvRegUrl('].forEach(f => eval.call(global, pegaJs(f)));
   const L = _ucvPdfLer(TXT);
   ok('o PDF real: produto, grupo, data e hora da medição, volumes e os três cartões (segundos com ponto)',
      L, { produto:'Painel Sirius 1.4', grupo:'EMBALAGEM 01', data:'26/10/2026', hora:'10:22', vol:50, per:20.7, rod:14.3, lac:14, versao:'2.93.1', falta:[] });
@@ -1014,6 +1014,33 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
      [/não está no cadastro/.test(_ucvImportItem(Object.assign({}, L, { produto:'Painel Orion' }), PRP, EI, '26/10/2026', JI, '').erro),
       /2 produtos do cadastro têm "Sirius 1.4"/.test(_ucvImportItem(Object.assign({}, L, { produto:'Sirius 1.4' }), PRP, EI, '26/10/2026', JI, '').erro),
       /não consegui ler o PDF/.test(_ucvImportItem({ arquivo:'x.pdf', erro:'Invalid PDF', falta:[] }, PRP, EI, '26/10/2026', JI, '').erro)], [true, true, true]);
+  // v7.159.0 (PPCP: "ajusta importador"): o app de cronoanálise nomeia o estudo
+  // como quem o cadastrou — a STRASS do VOL 2/2 vem "Penteadeira strass - caixa 2/2".
+  const pa = t => { const a = _ucvPdfAchar(PRODS, t); return a.p ? a.p.rot : (a.motivo || a.n); };
+  ok('o nome do app com "caixa 2/2" casa com a linha do VOLUME (a palavra CAMARIM pode faltar)',
+     [pa('Penteadeira strass - caixa 2/2'), pa('Penteadeira Strass - caixa 1/2')],
+     ['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 1/2']);
+  ok('a marca de volume em outras formas: cx, vol., volume N de N, entre parênteses',
+     [pa('PENTEADEIRA STRASS CX 2/2'), pa('Penteadeira Strass (vol. 2/2)'), pa('penteadeira strass volume 2 de 2'), pa('Penteadeira Camarim Strass Vol 2/2')],
+     Array(4).fill('501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'));
+  ok('sem a marca, as palavras casam o produto inteiro, em qualquer ordem; um volume só aceita 1/1',
+     [pa('Penteadeira strass'), pa('Encanto Armario'), pa('Mesa Cabeceira Madero - caixa 1/1')],
+     ['501059 · PENTEADEIRA CAMARIM STRASS', '501139 · ARMARIO ENCANTO', '501149 · MESA CABECEIRA MADERO']);
+  ok('volume que o produto não tem NÃO casa (seria a UEP do volume errado) e diz por quê',
+     [pa('Penteadeira strass - caixa 3/3'), pa('Armario Encanto - caixa 1/2')],
+     ['"Penteadeira strass - caixa 3/3" fala em volume 3/3, e 501059 · PENTEADEIRA CAMARIM STRASS tem 2 volumes no cadastro',
+      '"Armario Encanto - caixa 1/2" fala em volume 1/2, e 501139 · ARMARIO ENCANTO tem 1 volume no cadastro']);
+  ok('palavra que mais de um produto tem continua ambígua (nunca o 1º da lista); o que já casava não muda',
+     [pa('Encanto'), pa('Encanto - caixa 1/1'), _ucvPdfAchar(PRP, 'Painel Sirius 1.4').p.rot, _ucvPdfAchar(PRP, 'Sirius 1.4').n],
+     [3, 3, '501114 · PAINEL SIRIUS 1.4', 2]);
+  const IS = _ucvImportItem(Object.assign({ arquivo:'s.pdf' }, L, { produto:'Penteadeira strass - caixa 2/2' }), PRODS, EI, '26/10/2026', JI, '');
+  ok('o PDF da STRASS caixa 2/2 vira a linha do VOL 2/2 (só os códigos dele); volume que não existe fica de fora com o motivo',
+     [IS.erro, IS.D.produto, IS.D.volume, IS.D.codigos, IS.D.uepCad,
+      /fala em volume 3\/3, .* — importe este sozinho/.test(_ucvImportItem(Object.assign({}, L, { produto:'Penteadeira strass - caixa 3/3' }), PRODS, EI, '26/10/2026', JI, '').erro)],
+     [undefined, 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '501.059.002', 2.29, true]);
+  ok('os dois caminhos do IMPORTAR (um PDF e vários) acham o produto pelo _ucvPdfAchar',
+     [(JS.match(/_ucvPdfAchar\(/g) || []).length, /_uepConvAchar\(/.test(pegaJs('async function _ucvImportar(')), /_ucvPdfAchar\(prods, x\.produto\)/.test(pegaJs('function _ucvImportItem('))],
+     [3, false, true]);
   ok('a confirmação do lote lista o que entra e o que fica de fora, e que a UEP do cadastro não muda',
      ['Registrar 1 medição lida dos PDFs', '501114 · PAINEL SIRIUS 1.4 · 26/10/2026 · 50 volumes · rodando 14,3 s · UEP 1,81 (cadastro 1,49)', 'Ficam de fora (1)', 'y.pdf: ', 'A UEP do cadastro NÃO muda']
        .filter(t => !_ucvImportConfirmaTxt([I, { x:{ arquivo:'y.pdf' }, erro:'o PDF não tem os VOLUMES' }]).includes(t)), []);
@@ -1044,6 +1071,7 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
        [campos.prod.value, campos.seg.value, campos['r-data'].value, campos['r-per'].value, campos['r-lac'].value, campos['r-vol'].value, F.pintou, F.chamadas.length,
         iMsg.textContent.includes('confira e clique em 💾 REGISTRAR MEDIÇÃO')],
        ['501114 · PAINEL SIRIUS 1.4', '14,3', '26/10/2026', '20,7', '14', '50', 1, 0, true]);
+    ok('fluxo IMPORTAR (1 PDF): a mensagem diz com que produto do cadastro o nome do app casou', iMsg.textContent.includes('→ 501114 · PAINEL SIRIUS 1.4 — confira'), true);
     await _ucvImportar([{ name:'a.pdf' }, { name:'b.pdf' }, { name:'ruim.pdf' }]);
     ok('fluxo IMPORTAR (vários): uma confirmação, registra os que deram, o ruim fica de fora, relê a lista',
        [F.chamadas.length, F.chamadas.every(u => u.includes('action=registrarCrono&data=26%2F10%2F2026&modelo=501114')), F.releu, /2 medições registradas/.test(iMsg.textContent), /1 fora/.test(iMsg.textContent)],

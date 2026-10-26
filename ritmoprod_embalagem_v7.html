@@ -3413,7 +3413,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.158.0';
+const APP_VER   = '7.159.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6735,13 +6735,50 @@ function _ucvPdfLer(texto){
     .filter(c => !R[c[0]]).map(c => c[1]);
   return R;
 }
+// Conta pura: o produto do título do PDF. O app de cronoanálise nomeia o produto
+// do jeito de quem cadastrou o estudo, não como a PRODUTO_CODIGO: a STRASS do
+// VOL 2/2 vem "Penteadeira strass - caixa 2/2" (cadastro: VOL 2/2 PENTEADEIRA
+// CAMARIM STRASS). v7.159.0, PPCP 26/10/2026: "ajusta importador". Três passos:
+// 1. o nome como veio (_uepConvAchar: exato, código, trecho que só um tem);
+// 2. a marca de volume ("caixa 2/2", "cx 2/2", "vol 2/2", "volume 2 de 2") sai
+//    do nome e escolhe a linha do VOLUME — um volume cronometrado é a UEP dele;
+// 3. sem casar pelo trecho, as PALAVRAS: todas no nome de um produto só
+//    ("PENTEADEIRA STRASS" → PENTEADEIRA CAMARIM STRASS). Duas casando =
+//    ambíguo, nunca a primeira da lista.
+// Volume que o produto não tem (caixa 3/3 num de 2 volumes) não casa e diz por
+// quê: escolher outro volume trocaria a UEP do volume errado.
+function _ucvPdfAchar(prods, nome){
+  const t = _uepConvNorm(nome);
+  const a = _uepConvAchar(prods, t);
+  if(a.p) return a;
+  const mv = /(?:^|[\s\-–—·(])(?:CAIXA|CX|VOLUME|VOL)\.?\s*(\d+)\s*(?:\/|DE)\s*(\d+)\b/.exec(t);
+  const limpo = (mv ? t.slice(0, mv.index) + ' ' + t.slice(mv.index + mv[0].length) : t)
+    .replace(/[\-–—·()]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if(!limpo) return { p:null, n:0 };
+  let b = mv ? _uepConvAchar(prods, limpo) : { p:null, n:0 };
+  if(!b.p){
+    const pal = limpo.split(' '), inteiros = prods.filter(p => !p.volSel);
+    const c = inteiros.filter(p => { const w = _uepConvNorm(p.rot).split(/[\s·]+/); return pal.every(x => w.includes(x)); });
+    b = c.length === 1 ? { p:c[0], n:1 } : { p:null, n:Math.max(c.length, a.n) };
+  }
+  if(!b.p) return b;
+  const pr = b.p.volSel ? prods.find(p => !p.volSel && b.p.chave.indexOf(p.chave + '|v') === 0) || b.p : b.p;
+  if(!mv) return { p:pr, n:1 };
+  const v = Number(mv[1]), nv = Number(mv[2]), tot = pr.nVol;
+  if(nv !== tot || v < 1 || v > nv)
+    return { p:null, n:0, motivo:`"${nome}" fala em volume ${v}/${nv}, e ${pr.rot} tem ${plural(tot, 'volume', 'volumes')} no cadastro` };
+  if(tot === 1) return { p:pr, n:1 };
+  const lv = prods.find(p => p.chave === pr.chave + '|v' + v);
+  return lv ? { p:lv, n:1 } : { p:null, n:0, motivo:`o VOL ${v}/${nv} de ${pr.rot} não tem código no cadastro` };
+}
 // Conta pura: um PDF lido → a linha do registro (a MESMA do 💾 REGISTRAR:
 // _uepConvMontar → _ucvRegValida → _ucvRegMontar), ou o motivo de não dar.
 function _ucvImportItem(x, prods, E, hoje, J, quem){
   if(x.erro) return { x, erro:'não consegui ler o PDF (' + x.erro + ')' };
   if(x.falta.length) return { x, erro:'o PDF não tem ' + x.falta.join(', ') };
-  const a = _uepConvAchar(prods, x.produto);
-  if(!a.p) return { x, erro:a.n > 1 ? `${a.n} produtos do cadastro têm "${x.produto}" — importe este sozinho e escolha na lista PRODUTO`
+  const a = _ucvPdfAchar(prods, x.produto);
+  if(!a.p) return { x, erro:a.motivo ? a.motivo + ' — importe este sozinho e escolha na lista PRODUTO'
+                                    : a.n > 1 ? `${a.n} produtos do cadastro têm "${x.produto}" — importe este sozinho e escolha na lista PRODUTO`
                                     : `"${x.produto}" não está no cadastro — importe este sozinho e escolha na lista PRODUTO` };
   const R = _uepConvMontar(prods, a.p.rot, x.rod, E.base, E.meta, E.tol, E.linha, E.regs);
   const txt = v => v == null ? '' : String(v);
@@ -6777,13 +6814,15 @@ async function _ucvImportar(files){
       const x = lidos[0];
       if(x.erro){ diz('Não consegui ler o PDF (' + x.erro + '). Digite os campos.'); return; }
       if(x.falta.length){ diz('O PDF não tem ' + x.falta.join(', ') + ' — é o relatório Takt Time do app de cronoanálise?'); return; }
-      const a = _uepConvAchar(UEP_CONV_PRODS, x.produto), br = v => v == null ? '' : String(v).replace('.', ',');
+      const a = _ucvPdfAchar(UEP_CONV_PRODS, x.produto), br = v => v == null ? '' : String(v).replace('.', ',');
       const put = (n, v) => { const el = _ucvEl(n); if(el) el.value = v; };
       put('prod', a.p ? a.p.rot : x.produto); put('seg', br(x.rod));
       put('r-data', x.data); put('r-per', br(x.per)); put('r-lac', br(x.lac)); put('r-vol', x.vol == null ? '' : String(x.vol));
       _uepConvAtualiza();
       diz(`✓ Importado: ${x.produto} · ${x.data}${x.hora ? ' ' + x.hora : ''} · ${x.vol} volumes · rodando ${_taktTxt(x.rod)}`
-        + (a.p ? ' — confira e clique em 💾 REGISTRAR MEDIÇÃO.' : ` — "${x.produto}" não foi achado no cadastro: escolha o produto na lista PRODUTO.`));
+        + (a.p ? ` → ${a.p.rot} — confira e clique em 💾 REGISTRAR MEDIÇÃO.`
+               : a.motivo ? ` — ${a.motivo}: escolha o produto na lista PRODUTO.`
+               : ` — "${x.produto}" não foi achado no cadastro: escolha o produto na lista PRODUTO.`));
       return;
     }
     if(!CFG.sheetsUrl){ diz('Sem a URL do Apps Script nas configurações (⚙): os PDFs foram lidos, mas não há onde registrar.'); return; }
