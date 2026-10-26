@@ -214,6 +214,7 @@ global.UEP_PAD_MIN_MIN = eval('(' + pegaConst('UEP_PAD_MIN_MIN') + ')');
 global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
 global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
+global.UCV_ST = eval('(' + pegaConst('UCV_ST') + ')');
 global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
 ['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
@@ -221,7 +222,7 @@ global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; glo
 // v7.146.1 (refatoração): a conta em três peças (base · cadastro · digitar) e o
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar(',
-  'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
+  'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegsStatus(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
   'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
   'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvProntas(', 'function _ucvTrocaConfirmaTxt(',
   'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar('];
@@ -229,7 +230,7 @@ const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
   'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
-  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt('];
+  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -705,7 +706,7 @@ console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume
       /não rodou sozinha/.test(_ucvPadCel(_ucvRegsPadrao([REG2(1.82, '501061002 501061004 501061006')], HE, 2530, null)[0])), /não rodou sozinho/.test(_ucvPadCel(null)),
       _ucvPadCel(Object.assign(_ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530), { rel:90 })).includes('0,9 h*')], ['…', true, true, true, true, true]);
   ok('o painel calcula os % da lista no _ucvRegPintar (o desenho não faz conta)',
-     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
+     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\),\s*_ucvRegsStatus\(RL && RL\.slice\(0, 15\), UCV_CONF && UCV_CONF\.trocas\)\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
       /_ucvConfMontar\(UCV_CONF\.trocas, R\.base\.meta, LH, UEP_CONV_PRODS\)/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
 
   // os campos do registro
@@ -797,8 +798,8 @@ const _assincronos = [];
   const HE = _ucvRegsHtml([RX('c1abc'), RX('c2def')], pM, null, 'c1abc');
   ok('com uma exclusão em curso: ela diz EXCLUINDO… e TODOS os botões ficam travados (uma de cada vez)',
      [HE.includes('>EXCLUINDO…<'), (HE.match(/ disabled>/g) || []).length], [true, 2]);
-  ok('o cabeçalho tem a coluna do botão (mesmo nº de th e td)',
-     [(HX.match(/<th[ >]/g) || []).length, (HX.split('<tr>')[2].match(/<td[ >]/g) || []).length], [12, 12]);
+  ok('o cabeçalho tem a coluna do botão e a TROCA (mesmo nº de th e td)',
+     [(HX.match(/<th[ >]/g) || []).length, (HX.split('<tr>')[2].match(/<td[ >]/g) || []).length], [13, 13]);
   const CT = _ucvExclConfirmaTxt(RX('c1abc'));
   ok('a confirmação diz qual medição, que a UEP NÃO muda e onde fica a cópia',
      ['MESA CABECEIRA MADERO', 'VOL 1/1', 'medida em 21/10/2026', 'rodando 16,2 s', 'UEP 2,05', 'registrada em 26/10/2026 08:55', 'A UEP do cadastro NÃO muda', 'CRONO_EXCLUIDOS'].filter(t => !CT.includes(t)), []);
@@ -969,6 +970,24 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
                  [[ST2('26/10/2026', 22, 40, 2.78)], 2.29], [[ST2('26/10/2026', 0, 0, 0)], 2.29]];
   ok('a regra do painel e a do .gs dão o MESMO veredito, amostra e média em todos os casos',
      CASOS.map(([r, c]) => { const a = _ucvRegsResumo(r, c), b = G(r, c); return [a.veredito === b.veredito, a.nVol === b.nVol, (a.uepMed || 0).toFixed(6) === (b.uepMed || 0).toFixed(6)]; }).filter(x => x.includes(false)), []);
+  // a coluna TROCA (PPCP, 26/10/2026: "colocar que não troca devido a variar 90 a 110 e tbm se foi trocado")
+  const RTR = (modelo, produto, volume, uep, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, uep, uepCad, volumes:50 });
+  const TROCASR = [{ modelo:'501061', produto:'PENTEADEIRA CAMARIM ELOA', volume:'VOL 2/2', gravado:'26/10/2026 12:11', vig:'26/10/2026', codigos:[{ cod:'501061002', uep:1.82, antes:2.53 }, { cod:'501061004', uep:1.82, antes:2.53 }] }];
+  const STR = _ucvRegsStatus([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), RTR('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 1.81, 1.49),
+    RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.82, 2.53), RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.90, 1.82),
+    RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 1/2', 2.0, 2.19), RTR('501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 1, 1.2), RTR('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.23, '')], TROCASR);
+  ok('a coluna TROCA: dentro de 90–110% NÃO TROCA, fora FORA DA FAIXA, TROCADA só a medição que viu o cadastro de ANTES da troca (a de depois é julgada contra a UEP nova), a base nunca, sem cadastro —',
+     STR.map(x => [x.est, x.dif != null ? +x.dif.toFixed(1) : x.antes != null ? [x.antes, x.depois, x.vig] : null]),
+     [['nao-troca', 7.6], ['fora', 21.5], ['trocada', [2.53, 1.82, '26/10/2026']], ['nao-troca', 4.4], ['nao-troca', -8.7], ['base', null], ['sem-cadastro', null]]);
+  ok('a célula diz o porquê: quanto variou e a faixa; a troca com a data e antes → depois',
+     [_ucvStatusCel(STR[0]), _ucvStatusCel(STR[1]).includes('FORA DA FAIXA</span><small>variou +21,5% · fora de 90–110%'), _ucvStatusCel(STR[2]).includes('TROCADA</span><small>26/10 · 2,53 → 1,82'),
+      _ucvStatusCel(STR[4]).includes('variou −8,7%'), _ucvStatusCel(STR[5]).includes('BASE'), _ucvStatusCel(undefined)],
+     ['<span class="ucv-pill ok">NÃO TROCA</span><small>variou +7,6% · dentro de 90–110%</small>', true, true, true, true, '']);
+  const HTR = _ucvRegsHtml([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58)], null, null, null, null, 'lendo', STR.slice(0, 1));
+  ok('a coluna fica entre UEP e CADASTRO; a BASE da linha sai curta (o texto inteiro no title)',
+     [/<th class="n">UEP<\/th><th title="[^"]*">TROCA<\/th><th class="n">CADASTRO<\/th>/.test(HTR), HTR.includes('NÃO TROCA'),
+      _ucvRegsHtml([Object.assign(RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), { base:'MADERO MEDIDA 20/10/2026' })], null, null, null, null, 'lendo', []).includes('title="MADERO MEDIDA 20/10/2026">MADERO 20/10</td>')],
+     [true, true, true]);
   // a conferência das trocas (v7.161.0: pelas horas do getHorasCrono, SEM as paradas, contra a base)
   const TC = (prod, cod, extra) => Object.assign({ modelo:'501059', produto:prod, volume:'VOL 2/2', amostra:'2 medições, 113 volumes', gravado:'26/10/2026 10:40', vig:'26/10/2026',
     codigos:[{ cod, uep:1.51, antes:2.29, atual:1.51 }], substituida:false }, extra || {});
