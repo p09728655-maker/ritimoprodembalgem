@@ -4233,12 +4233,17 @@ console.log('\n── estudo de UEP ──');
       ok('o mês da capacidade é o mês típico de 22 dias úteis do simulador', dm && +dm[1], 22);
       global.CAP_DIAS_MES = +dm[1];
       global.CAP_JORN_MAX = +JS.match(/const CAP_JORN_MAX = (\d+);/)[1];
+      global.CAP_MESES_ANO = +JS.match(/const CAP_MESES_ANO = (\d+);/)[1];
+      eval(pega('function _fmtHM(')); eval(pega('function _capJornPeriodo('));
       // eval direto (dentro de um forEach a função ficaria presa à seta)
       eval(pega('function _capVel(')); eval(pega('function _capJornMin(')); eval(pega('function _capJornada('));
       eval(pega('function _capJornLinhas(')); eval(pega('function _capJornHtml(')); eval(pega('function _capJornDocHtml('));
       eval(pega('function _capMetaOficial(')); eval(pega('function gerarRelatorioCapTodos('));
       // a conta da jornada: 527 − 24 = 503 min, no mesmo ritmo
       const J = _capJornada(2530, 24);
+      ok('o ano = o mês × 12 (a conta do simulador): −30.360 UEP e 105h36 de jornada no ano; 8h48 no mês',
+         [CAP_MESES_ANO, J.anoMenos, J.minMes, J.minAno, _capJornPeriodo(J).map(l => l[1] + ' · ' + l[2])],
+         [12, 30360, 528, 6336, ['−115 UEP · −24 min de jornada', '−2.530 UEP · −8h48 de jornada', '−30.360 UEP · −105h36 de jornada']]);
       ok('o fim do turno: 17:00 − 24 = 16:36; sem o turno (ou inválido), não inventa', [_capJornada(2530, 24, '17:00').fimNovo, J.fimNovo, _capJornada(2530, 24, 'x').fimNovo], ['16:36', null, null]);
       ok('jornada −24 min: 503 min, meta 2.415 no mesmo ritmo (288 UEP/h), −2.530 UEP no mês, 302 UEP/h para manter 2.530',
          [J.minNovo, J.metaNova, J.difMeta, Math.round(J.ritmoH), J.mesMenos, Math.round(J.ritmoManter), +J.pctManter.toFixed(1), +J.pct.toFixed(1)],
@@ -4270,13 +4275,17 @@ console.log('\n── estudo de UEP ──');
       gerarRelatorioCapTodos(true, 24);
       // ELOA: 2.415 ÷ 4,32 = 559/dia → 12.298/mês; a menos (585 − 559) × 22 = 572; 26 ÷ 585 = 4,4%
       ok('jornada simulada: a tabela inteira na jornada nova, A MENOS / MÊS e % PERDA contra a de hoje, e o papel diz a simulação',
-         [nums(linha('PENTEADEIRA ELOA')).slice(3, 10), /<th>PRODUTOS \/ MÊS<\/th><th>A MENOS \/ MÊS<\/th><th>% PERDA<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
+         [nums(linha('PENTEADEIRA ELOA')).slice(3, 11), /<th>PRODUTOS \/ MÊS<\/th><th>PRODUTOS A MENOS \/ MÊS<\/th><th>PRODUTOS A MENOS \/ ANO<\/th><th>% PERDA<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
           /JORNADA SIMULADA/.test(papel), /Meta: 2\.415 UEP\/dia em 503 min/.test(papel), /title="−26 por dia × 22 dias úteis/.test(linha('PENTEADEIRA ELOA')),
           /SIMULAÇÃO DE JORNADA · 24 MIN A MENOS POR DIA/.test(papel), /302 UEP\/h/.test(papel)],
-         [['559', '12.298', '−572', '−4,4%', '1.118', '67', '2.794'], true, true, true, true, true, true]);
+         [['559', '12.298', '−572', '−6.864', '−4,4%', '1.118', '67', '2.794'], true, true, true, true, true, true]);
       ok('a PERDA DE CAPACIDADE em cartão (−4,6%, −115 UEP/dia, −2.530 UEP/mês) e o fim do turno se o corte for no fim (17:00 − 24 = 16:36)',
-         [/PERDA DE CAPACIDADE<\/div><div class="kpi-val">−4,6%<\/div><div class="kpi-sub">−115 UEP\/dia · −2\.530 UEP\/mês \(22 dias\)/.test(papel),
+         [/PERDA DE CAPACIDADE<\/div><div class="kpi-val">−4,6%<\/div>/.test(papel) && /A MENOS POR ANO · 12 MESES<\/div><div class="kpi-val">−30\.360 UEP<\/div><div class="kpi-sub">−105h36 de jornada/.test(papel),
           /fim às 16:36 se o corte for no fim/.test(papel), /% perda<\/b> = produtos \/ dia a menos ÷ produtos \/ dia de hoje/.test(papel)], [true, true, true]);
+      // PPCP: "pontos dia também sai o mesmo percentual?" — sim, pelo produto
+      ok('pontos / dia e caixas / dia saem do MESMO produtos/dia simulado (caem no mesmo % da linha), e o papel diz isso',
+         [/fmtN\(Math\.round\(jd\*p\.ptsJogo\)\)/.test(pega('function gerarRelatorioCapTodos(')), /fmtN\(jd\*p\.nVol\)/.test(pega('function gerarRelatorioCapTodos(')),
+          /caem no MESMO % da linha/.test(papel)], [true, true, true]);
       const slH = Math.floor(sl.tetoH * 503 / 60);
       ok('no limite da esteira, a jornada nova corta pelos minutos de esteira que sobram',
          [nums(linha('MESA CABECEIRA SLEEP'))[3], nums(linha('MESA CABECEIRA SLEEP'))[5]], [fmtN(slH), '−' + fmtN((sl.tetoDia - slH) * 22)]);
@@ -4297,9 +4306,9 @@ console.log('\n── estudo de UEP ──');
       global.document = docAntes; global.window.open = openAntes;
       ok('o quadro do diálogo: sem simulação diz a jornada de hoje; com erro, o erro; com 24, os quatro números',
          [/jornada de hoje — 527 min, meta 2\.530 UEP/.test(_capJornHtml(null, 2530)), /só os minutos/.test(_capJornHtml(_capJornada(2530, NaN), 2530)),
-          ['503 min', '−4,6%', '2.415 UEP', '−2.530 UEP/mês', '302 UEP/h', 'fim às 16:36'].filter(t => !_capJornHtml(_capJornada(2530, 24, '17:00'), 2530).includes(t))], [true, true, []]);
+          ['503 min', '−4,6%', '2.415 UEP', '−2.530 UEP', '−30.360 UEP', '−105h36 de jornada', '302 UEP/h', 'fim às 16:36'].filter(t => !_capJornHtml(_capJornada(2530, 24, '17:00'), 2530).includes(t))], [true, true, []]);
       ok('o desenho da jornada não faz conta (tudo vem do _capJornada)',
-         ['function _capJornLinhas(', 'function _capJornHtml(', 'function _capJornDocHtml('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
+         ['function _capJornLinhas(', 'function _capJornPeriodo(', 'function _capJornHtml(', 'function _capJornDocHtml('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
       const sc = src.slice(src.indexOf('<section id="sec-crono"'), src.indexOf('</section>', src.indexOf('<section id="sec-crono"')));
       ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua; o diálogo da jornada existe',
          [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src),
