@@ -215,7 +215,8 @@ global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null;
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar(',
   'function _ucvLinhaDe(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
-  'function _ucvRegsDoProduto(', 'function _ucvRegsResumo('];
+  'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
+  'function _ucvExclResposta(', 'function _ucvExclConfere('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml('];
@@ -683,6 +684,94 @@ console.log('\n── CRONOANÁLISE → UEP: a linha faz e o registro ──');
      [_ucvRegsHtml(null, pM, 'sem-endpoint').includes('cole o .gs v5.30'), _ucvRegsHtml(null, pM, null).includes('Lendo as medições'),
       _ucvRegsHtml([], pM, null).includes('Nenhuma medição registrada deste produto')], [true, true, true]);
 }
+// ════════════════════════════════════════════════════════════════════════════
+// EXCLUIR UMA MEDIÇÃO (v7.157.0 / .gs v5.33, PPCP 26/10/2026: "vou ter que
+// excluir estudo" → "sim fazer")
+console.log('\n── CRONOANÁLISE → UEP: excluir uma medição ──');
+const _assincronos = [];
+{ const pM = PRODS.find(p => p.rot === '501149 · MESA CABECEIRA MADERO');
+  const RX = (regId, extra) => Object.assign({ data:'21/10/2026', modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1',
+    sRod:16.2, uep:2.05, uepCad:2.1, em:'26/10/2026 08:55', regId }, extra || {});
+  const HX = _ucvRegsHtml([RX('c1abc'), RX('c2def', { data:'20/10/2026' })], pM, null);
+  ok('cada medição registrada pelo painel tem o EXCLUIR, com o REG_ID dela',
+     [(HX.match(/class="ucv-x"/g) || []).length, HX.includes('data-reg="c1abc"'), HX.includes('data-reg="c2def"'), HX.includes('onclick="_ucvExcluir(this.dataset.reg)"'), /disabled/.test(HX)],
+     [2, true, true, true, false]);
+  const HM = _ucvRegsHtml([RX('x"><img src=x onerror=alert(1)>'), RX(''), RX('c1abc')], pM, null);
+  ok('linha digitada à mão na planilha (REG_ID vazio ou estranho): sem botão, "—" que manda excluir lá — e nada do id vai para a tela',
+     [(HM.match(/class="ucv-x"/g) || []).length, (HM.match(/class="ucv-x-sem"/g) || []).length, HM.includes('<img'), HM.includes('exclua lá')], [1, 2, false, true]);
+  const HE = _ucvRegsHtml([RX('c1abc'), RX('c2def')], pM, null, 'c1abc');
+  ok('com uma exclusão em curso: ela diz EXCLUINDO… e TODOS os botões ficam travados (uma de cada vez)',
+     [HE.includes('>EXCLUINDO…<'), (HE.match(/ disabled>/g) || []).length], [true, 2]);
+  ok('o cabeçalho tem a coluna do botão (mesmo nº de th e td)',
+     [(HX.match(/<th[ >]/g) || []).length, (HX.split('<tr>')[2].match(/<td[ >]/g) || []).length], [12, 12]);
+  const CT = _ucvExclConfirmaTxt(RX('c1abc'));
+  ok('a confirmação diz qual medição, que a UEP NÃO muda e onde fica a cópia',
+     ['MESA CABECEIRA MADERO', 'VOL 1/1', 'medida em 21/10/2026', 'rodando 16,2 s', 'UEP 2,05', 'registrada em 26/10/2026 08:55', 'A UEP do cadastro NÃO muda', 'CRONO_EXCLUIDOS'].filter(t => !CT.includes(t)), []);
+  ok('a resposta: excluiu · já tinha excluído (a retentativa) · não estava lá · .gs antigo (cai no getDados e não exclui)',
+     [_ucvExclResposta({ ok:true, excluido:true }).tipo, _ucvExclResposta({ ok:true, excluido:true, jaExcluido:true }).tipo,
+      _ucvExclResposta({ ok:true, excluido:false, naoAchou:true }).tipo, _ucvExclResposta({ ok:true, slots:[] }).tipo, /v5\.33/.test(_ucvExclResposta({ ok:true }).txt)],
+     ['ok', 'ja', 'nao-achou', 'velho', true]);
+  ok('sem resposta ≠ não excluiu: a lista relida decide; lista que não veio não decide',
+     [_ucvExclConfere({ lista:[RX('c1abc')] }, 'c1abc').tipo, _ucvExclConfere({ lista:[RX('c2def')] }, 'c1abc').tipo,
+      _ucvExclConfere({ lista:[RX('c1abc')], falha:'sem-resposta' }, 'c1abc').tipo, _ucvExclConfere(null, 'c1abc').tipo,
+      _ucvExclConfere({ lista:[RX('c1abc')] }, 'c1abc', 'Lock timeout').txt.includes('(Lock timeout)')],
+     ['ficou', 'saiu', 'incerto', 'incerto', true]);
+  const XC = pegaJs('async function _ucvExcluir(');
+  ok('o EXCLUIR vai pelo excluirCrono com retentativa e confirmação, e NÃO toca a UEP do cadastro',
+     [/action=excluirCrono&regId=' \+ encodeURIComponent\(regId\)/.test(XC), /jsonpEscrita\(/.test(XC), /confirm\(_ucvExclConfirmaTxt\(/.test(XC), /setUepCatalogo|simularUepCatalogo/.test(XC)],
+     [true, true, true, false]);
+  ok('a mensagem mora FORA da lista (refeita a cada tecla) e a lista sabe da exclusão em curso',
+     [html.indexOf('id="uep-conv-x-msg"') > html.indexOf('id="uep-conv-regs"'), /_ucvEl\('x-msg'\)/.test(XC),
+      /UCV_REGS && UCV_REGS\.falha, UCV_EXCL\)/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
+  ok('UCV_EXCL declarado junto do UCV_REGS (o _ucvRegPintar lê os dois)',
+     /let UCV_REGS = null, UCV_REGS_VOO = null;[^\n]*\nlet UCV_EXCL = null;/.test(JS), true);
+
+  // o fluxo REAL do _ucvExcluir, com o Apps Script de mentira
+  eval.call(global, XC);
+  const msgEl = { textContent:'' };
+  const montarFluxo = (resposta, listaDepois) => {
+    const F = { chamadas:[], leituras:0, pintou:0 };
+    global.CFG = { sheetsUrl:'https://script.google.com/macros/s/X/exec' };
+    global.UCV_EXCL = null; global.UCV_REGS_VOO = null;
+    global.UCV_REGS = { lista:[RX('c1abc'), RX('c2def')], falha:null, ts:0 };
+    global._ucvEl = n => (n === 'x-msg' ? msgEl : null);
+    global.confirm = () => true; global.alert = () => {};
+    global._uepConvAtualiza = () => { F.pintou++; F.exclNaPintura = F.exclNaPintura || global.UCV_EXCL; };
+    global._ucvRegsCarregar = async () => { F.leituras++; F.naTelaAoReler = (global.UCV_REGS.lista || []).map(r => r.regId); global.UCV_REGS = listaDepois; };
+    global.jsonpEscrita = async url => { F.chamadas.push(url); if(resposta instanceof Error) throw resposta; return resposta; };
+    return F;
+  };
+  _assincronos.push(async () => {
+    let F = montarFluxo({ ok:true, excluido:true, linha:3 }, { lista:[RX('c2def')], falha:null });
+    await _ucvExcluir('c1abc');
+    ok('fluxo: excluiu → manda o REG_ID, relê a lista, destrava e diz ✓',
+       [F.chamadas.length, /action=excluirCrono&regId=c1abc$/.test(F.chamadas[0]), F.leituras, global.UCV_EXCL, msgEl.textContent.startsWith('✓ Medição excluída'), F.exclNaPintura],
+       [1, true, 1, null, true, 'c1abc']);
+    ok('fluxo: excluiu → sai da tela já, sem esperar a releitura (cold start)', F.naTelaAoReler, ['c2def']);
+    F = montarFluxo({ ok:true, slots:[] }, { lista:[RX('c1abc'), RX('c2def')], falha:null });
+    await _ucvExcluir('c1abc');
+    ok('fluxo: .gs antigo → diz que falta o re-deploy (nada excluído) e a medição fica na tela',
+       [msgEl.textContent.includes('.gs v5.33'), global.UCV_EXCL, F.naTelaAoReler], [true, null, ['c1abc', 'c2def']]);
+    F = montarFluxo(new Error('Timeout — o Apps Script não respondeu em 25 s'), { lista:[RX('c2def')], falha:null });
+    await _ucvExcluir('c1abc');
+    ok('fluxo: sem resposta, mas a lista relida não tem mais a medição → excluiu', [F.leituras, msgEl.textContent.startsWith('✓ A medição saiu da lista')], [1, true]);
+    F = montarFluxo(new Error('Timeout — o Apps Script não respondeu em 25 s'), { lista:[RX('c1abc'), RX('c2def')], falha:null });
+    await _ucvExcluir('c1abc');
+    ok('fluxo: sem resposta e a medição continua na lista → não excluiu, sem falar em "Timeout"',
+       [msgEl.textContent.startsWith('Não excluiu (sem resposta do Apps Script)'), global.UCV_EXCL], [true, null]);
+    F = montarFluxo({ ok:true, excluido:true }, null);
+    global.confirm = () => false;
+    await _ucvExcluir('c1abc');
+    ok('fluxo: VOLTAR na confirmação → nada é chamado', [F.chamadas.length, F.leituras, global.UCV_EXCL], [0, 0, null]);
+    F = montarFluxo({ ok:true, excluido:true }, null);
+    global.UCV_EXCL = 'c2def';
+    await _ucvExcluir('c1abc');
+    ok('fluxo: com outra exclusão em curso → espera, nada é chamado', [F.chamadas.length, msgEl.textContent.includes('Espere')], [0, true]);
+    F = montarFluxo({ ok:true, excluido:true }, null);
+    await _ucvExcluir('cnaoexiste');
+    ok('fluxo: REG_ID que não está na lista → relê a lista, não exclui', [F.chamadas.length, F.leituras], [0, 1]);
+  });
+}
 { const RGS = pegaJs('async function _ucvRegistrar('), AT3 = pegaJs('function _uepConvAtualiza(');
   ok('o 💾 grava pelo registrarCrono com retentativa, confere a resposta do .gs novo e NÃO toca a UEP do cadastro',
      [/action=registrarCrono/.test(RGS), /jsonpEscrita\(/.test(RGS), /!r \|\| !r\.registrado/.test(RGS), /setUepCatalogo|simularUepCatalogo/.test(RGS), /confirm\(/.test(RGS)],
@@ -719,5 +808,11 @@ ok('os campos da aba saem só do _ucvEl, e o que é guardado só pelo _ucvLe/_uc
   global.localStorage = lsAntes;
 }
 
-console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
-process.exit(falhas ? 1 : 0);
+// os testes assíncronos (o fluxo do EXCLUIR) rodam antes do resumo; um que não
+// termina deixa o processo sair com erro, nunca com "tudo certo"
+process.exitCode = 1;
+(async () => {
+  for (const f of _assincronos) await f();
+  console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
+  process.exit(falhas ? 1 : 0);
+})().catch(e => { console.log('\n❌ teste assíncrono quebrou: ' + e.message); process.exit(1); });

@@ -524,6 +524,11 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-regs th{background:none;font-family:var(--font-d);font-size:9px;letter-spacing:1.2px;color:var(--txt2);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
 #sec-crono .ucv-regs td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--txt);white-space:nowrap}
 #sec-crono .ucv-regs .n{text-align:right}
+#sec-crono .ucv-x{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.2px;padding:4px 10px;background:none;border:1px solid rgba(245,85,74,.55);border-radius:6px;color:var(--red);cursor:pointer}
+#sec-crono .ucv-x:hover:not(:disabled){background:rgba(245,85,74,.12)}
+#sec-crono .ucv-x:disabled{opacity:.45;cursor:default}
+#sec-crono .ucv-x-sem{color:var(--txt2)}
+#sec-crono #uep-conv-x-msg{margin-top:10px;font-family:var(--font-b);font-size:13px;color:var(--txt)}
 @media (max-width:1100px){#sec-crono .ucv-reg-f{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:1100px){#sec-crono .uep-conv-f{grid-template-columns:1fr 1fr}#sec-crono .uep-conv-f label:first-child{grid-column:1/-1}}
 @media (max-width:900px){#sec-crono .uep-conv .kpi-grid{grid-template-columns:repeat(2,1fr)}#sec-crono .ucv-qual-g{grid-template-columns:1fr}}
@@ -2872,6 +2877,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-nota" id="uep-conv-r-msg"></div>
     </div>
     <div id="uep-conv-regs"></div>
+    <div class="uep-nota" id="uep-conv-x-msg"></div>
   </div>
 </section>
 
@@ -3380,7 +3386,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.156.0';
+const APP_VER   = '7.157.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6289,6 +6295,7 @@ const CRONO_LINHA_DIAS = 30;
 const CRONO_REG_TTL = 2 * 60 * 1000;
 let UCV_LINHA = null, UCV_LINHA_VOO = null;   // { de, ate, itens, falha, ts }
 let UCV_REGS = null, UCV_REGS_VOO = null;     // { lista, falha, ts }
+let UCV_EXCL = null;                          // REG_ID da medição sendo excluída (v7.157.0)
 // Conta pura: o produto (modelo + nome — todas as cores e volumes) nos itens do
 // período. null = não rodou na janela.
 function _ucvLinhaDe(itens, p){
@@ -6430,7 +6437,7 @@ const UCV_REG_VEREDITO = {
   'trocar':      ['troca', 'as medições, em dias diferentes, apontam o mesmo lado — pode trocar a UEP (digitar na PRODUTO_CODIGO)'],
   'discordam':   ['warn', 'as medições discordam entre si — meça de novo'],
   'sem-cadastro':['warn', 'sem UEP no cadastro para comparar'] };
-function _ucvRegsHtml(regs, p, est){
+function _ucvRegsHtml(regs, p, est, excl){
   const tit = `<div class="ucv-regs-t">MEDIÇÕES REGISTRADAS${p ? ` · ${_rpEsc(p.rot)}` : ' · AS ÚLTIMAS'}</div>`;
   if(est === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div>';
   if(!regs) return tit + `<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div>`;
@@ -6441,11 +6448,13 @@ function _ucvRegsHtml(regs, p, est){
   return tit
     + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${S.n} medição${S.n === 1 ? '' : 'ões'} em ${S.nDias} dia${S.nDias === 1 ? '' : 's'}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
     + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
-    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th class="n">CADASTRO</th><th class="n" title="MÉD.PERÍODO do produto na produção real, na hora do registro">A LINHA FAZ</th><th>BASE</th><th>MEDIDO POR</th></tr></thead><tbody>'
+    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th class="n">CADASTRO</th><th class="n" title="MÉD.PERÍODO do produto na produção real, na hora do registro">A LINHA FAZ</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>'
     + regs.slice(0, 15).map(r => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td>${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n"><b>${sg(r.sRod)}</b></td><td class="n">${sg(r.sPer)}</td><td class="n">${sg(r.sLac)}</td>`
       + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="n">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}</td>`
-      + `<td class="n">${r.linhaSCx > 0 ? sg(r.linhaSCx) + '/cx' : '—'}</td><td>${_rpEsc(r.base || '')}</td><td>${_rpEsc(r.quem || '')}</td></tr>`).join('')
+      + `<td class="n">${r.linhaSCx > 0 ? sg(r.linhaSCx) + '/cx' : '—'}</td><td>${_rpEsc(r.base || '')}</td><td>${_rpEsc(r.quem || '')}</td>`
+      + `<td>${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
+        : '<span class="ucv-x-sem" title="Linha sem REG_ID (digitada na planilha): exclua lá">—</span>'}</td></tr>`).join('')
     + '</tbody></table></div>' + (regs.length > 15 ? `<div class="uep-nota">+ ${regs.length - 15} mais antigas na aba CRONOANALISE da planilha.</div>` : '');
 }
 // ── Tela (DOM) ─────────────────────────────────────────────────────────────
@@ -6459,7 +6468,7 @@ function _ucvRegPintar(R){
   const lst = _ucvEl('regs');
   if(lst){
     const L = UCV_REGS && UCV_REGS.lista;
-    lst.innerHTML = _ucvRegsHtml(L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null, R.p || null, UCV_REGS && UCV_REGS.falha);
+    lst.innerHTML = _ucvRegsHtml(L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL);
   }
 }
 function _ucvRegCampos(){
@@ -6497,6 +6506,71 @@ A UEP do cadastro NÃO muda.`)) return;
     _ucvRegsCarregar(true);
   }catch(e){ diz('Não gravou: ' + e.message + ' — tente de novo (repetir não duplica).'); }
   finally{ if(btn) btn.disabled = false; }
+}
+// ── EXCLUIR UMA MEDIÇÃO (v7.157.0 / .gs v5.33) ─────────────────────────────
+// PPCP, 26/10/2026, com a aba CRONOANALISE na mão: "vou ter que excluir estudo"
+// → "sim fazer". A medição registrada errada (volume trocado, campo trocado)
+// ficava na lista e na regra das duas medições — e saía só na planilha. O
+// EXCLUIR de cada linha manda o REG_ID ao excluirCrono, que copia a linha
+// inteira para a aba CRONO_EXCLUIDOS e só então apaga. Corrigir = excluir e
+// registrar de novo: registrar a certa sem excluir a errada deixaria as duas.
+// ⚠ NÃO troca a UEP do cadastro. Uma exclusão de cada vez (UCV_EXCL, declarado
+// junto do UCV_REGS: o _ucvRegPintar lê os dois).
+// Só linha com o REG_ID que o painel gera (c + base 36): o id vai num atributo
+// e no clique; o que foi digitado à mão na planilha se exclui lá.
+function _ucvExclPode(r){ return !!r && /^[A-Za-z0-9_-]{1,40}$/.test(String(r.regId || '')); }
+function _ucvExclConfirmaTxt(r){
+  const n = x => x == null ? '—' : _taktTxt(x);
+  return `Excluir esta medição da aba CRONOANALISE?
+
+${r.modelo || ''} · ${r.produto || ''} · ${r.volume || ''}
+medida em ${r.data || '—'} · rodando ${n(r.sRod)}${r.uep > 0 ? ' · UEP ' + _ucvU2(r.uep) : ''}${r.em ? ' · registrada em ' + r.em : ''}
+
+Ela sai da lista e da regra das duas medições. Uma cópia fica na aba CRONO_EXCLUIDOS da planilha.
+A UEP do cadastro NÃO muda.`;
+}
+// O que a resposta do excluirCrono diz. Sem o campo `excluido`, o Apps Script é
+// anterior à v5.33: a ação caiu no getDados e NADA foi excluído.
+function _ucvExclResposta(r){
+  if(r && r.excluido) return { tipo:r.jaExcluido ? 'ja' : 'ok', txt:r.jaExcluido ? '✓ Esta medição já tinha sido excluída.' : '✓ Medição excluída da aba CRONOANALISE (a cópia ficou na CRONO_EXCLUIDOS).' };
+  if(r && r.naoAchou) return { tipo:'nao-achou', txt:'Esta medição não está mais na aba CRONOANALISE (apagada na planilha?) — a lista foi relida.' };
+  return { tipo:'velho', txt:'O Apps Script ainda não tem a exclusão (.gs v5.33): cole o .gs no editor e re-deploye. Nada foi excluído.' };
+}
+// Sem resposta ≠ não excluiu: a lista relida decide. Lista que não veio não
+// decide nada — e diz isso.
+function _ucvExclConfere(L, regId, erro){
+  if(!L || L.falha || !Array.isArray(L.lista)) return { tipo:'incerto', txt:'Sem resposta do Apps Script e a lista não foi relida: não dá para saber se excluiu. Confira a lista em 1 min.' };
+  return L.lista.some(r => r.regId === regId)
+    ? { tipo:'ficou', txt:'Não excluiu' + (erro ? ' (' + erro + ')' : ' (sem resposta do Apps Script)') + ': a medição continua na lista. Tente de novo — repetir é seguro.' }
+    : { tipo:'saiu', txt:'✓ A medição saiu da lista (o Apps Script demorou a responder, mas excluiu).' };
+}
+async function _ucvExcluir(regId){
+  const msg = _ucvEl('x-msg'), diz = t => { if(msg) msg.textContent = t; };
+  if(UCV_EXCL){ diz('Espere a exclusão em curso terminar.'); return; }
+  if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
+  const r0 = ((UCV_REGS && UCV_REGS.lista) || []).find(r => r.regId === regId);
+  if(!r0 || !_ucvExclPode(r0)){ diz('Esta medição não está mais na lista — relendo.'); _ucvRegsCarregar(true); return; }
+  if(!confirm(_ucvExclConfirmaTxt(r0))) return;
+  UCV_EXCL = regId; _uepConvAtualiza();
+  let txt;
+  try{
+    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=excluirCrono&regId=' + encodeURIComponent(regId);
+    const r = await jsonpEscrita(url, i => diz(i > 1 ? `Excluindo… tentativa ${i} de 3` : 'Excluindo…'));
+    const X = _ucvExclResposta(r);
+    txt = X.txt;
+    UCV_EXCL = null;
+    // o servidor disse que ela não está mais lá: sai da tela já, sem esperar a releitura (cold start)
+    if(X.tipo !== 'velho' && UCV_REGS && Array.isArray(UCV_REGS.lista)) UCV_REGS.lista = UCV_REGS.lista.filter(x => x.regId !== regId);
+    if(UCV_REGS_VOO) await UCV_REGS_VOO.catch(() => {});   // leitura de antes da exclusão não serve
+    _ucvRegsCarregar(true);
+  }catch(e){
+    UCV_EXCL = null;
+    diz('Sem resposta do Apps Script — conferindo a lista…');
+    if(UCV_REGS_VOO) await UCV_REGS_VOO.catch(() => {});
+    await _ucvRegsCarregar(true);
+    txt = _ucvExclConfere(UCV_REGS, regId, e && e.message && !/timeout/i.test(e.message) ? e.message : '').txt;
+  }
+  diz(txt); _uepConvAtualiza();
 }
 // ── 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP 19/10/2026: "falta
 // impressão"). Retrato da tela no clique: os MESMOS _uepConvMontar,

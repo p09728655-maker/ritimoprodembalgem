@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.157.0 · `.gs` v5.33 — 26/10/2026 · EXCLUIR uma medição da cronoanálise
+
+- PPCP, com a aba CRONOANALISE na mão: *"vou ter que excluir estudo"* →
+  *"sim fazer"*. A medição registrada errada (volume trocado, campo trocado)
+  ficava na lista e na regra das duas medições, e só saía apagando a linha na
+  planilha.
+- **Aba ⏱ CRONOANÁLISE, lista MEDIÇÕES REGISTRADAS: botão EXCLUIR** em cada
+  linha. Confirma dizendo qual medição; tira a linha da aba CRONOANALISE e
+  guarda a linha inteira na aba nova **CRONO_EXCLUIDOS** (com a hora e a linha
+  onde estava). Se a cópia falhar, nada é apagado.
+- **Corrigir uma medição = excluir e registrar de novo.** Registrar a certa sem
+  excluir a errada deixa as duas, e a regra passa a dizer *"as medições
+  discordam"*.
+- Linha digitada à mão na planilha (sem REG_ID) não tem o botão: exclui-se lá.
+- **Atenção:** nenhum número muda sozinho. A UEP do cadastro não muda; excluir
+  muda só a lista e o resumo da regra das duas medições daquele produto.
+- ⚠ **re-deploy** do `.gs` v5.33. Antes dele o EXCLUIR avisa que falta o
+  re-deploy e não exclui nada.
+
 ## mobile 1.37.0 · `.gs` v5.32 — 23/10/2026 · TROCAR PRODUTO do lançamento
 
 - Caso real de hoje: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO entraram na
