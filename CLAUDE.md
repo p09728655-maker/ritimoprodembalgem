@@ -45,7 +45,8 @@ via Google Apps Script (JSONP).
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
   (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
   amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
-  da regra com o `.gs` e o 📄 IMPORTAR PDF (com o texto do PDF real de 26/10):
+  da regra com o `.gs` e o 📄 IMPORTAR PDF (com o texto do PDF real de 26/10 e o nome do app com
+  "caixa 2/2"):
   `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
@@ -4968,12 +4969,25 @@ feito e dá ar de verdade ao que sobrou.
     (`_ucvImportItem` → a MESMA linha do 💾: `_uepConvMontar` →
     `_ucvRegValida` → `_ucvRegMontar`; URL única `_ucvRegUrl`). Mesmo PDF
     importado de novo = mesmo REG_ID (não duplica).
-  - O produto do título casa pelo `_uepConvAchar` ("Painel Sirius 1.4" → 501114
-    · PAINEL SIRIUS 1.4). Fora do cadastro ou ambíguo ("Sirius 1.4": rack e
-    painel) → fica de fora do lote; sozinho, o nome vai para o campo e a tela
-    manda escolher na lista. ⚠ Como o app nomeia produto de vários volumes
-    ainda não foi visto — o 1º PDF de penteadeira vai mostrar se casa com a
-    linha do VOLUME.
+  - O produto do título casa pelo **`_ucvPdfAchar`** (v7.159.0, PPCP: *"ajusta
+    importador"*), nos dois caminhos (um PDF e vários):
+    1. o nome como veio, pelo `_uepConvAchar` ("Painel Sirius 1.4" → 501114 ·
+       PAINEL SIRIUS 1.4);
+    2. a **marca de volume** sai do nome e escolhe a **linha do VOLUME**. O app
+       nomeia como quem cadastrou o estudo: a STRASS vem **"Penteadeira strass -
+       caixa 2/2"** (cadastro: VOL 2/2 PENTEADEIRA CAMARIM STRASS). Aceita
+       `caixa`, `cx`, `vol`, `volume`, com `/` ou `de`;
+    3. sem casar pelo trecho, as **palavras** — todas no nome de um produto só
+       (PENTEADEIRA STRASS → PENTEADEIRA CAMARIM STRASS).
+    - Volume que o produto não tem (caixa 3/3 num de 2 volumes; caixa 1/2 num
+      de 1) **não casa**, com o motivo: escolher outro volume gravaria a UEP do
+      volume errado. Mais de um produto casando = ambíguo, nunca o 1º da lista.
+    - Fora do cadastro ou ambíguo ("Sirius 1.4": rack e painel) → fica de fora
+      do lote; sozinho, o nome vai para o campo e a tela manda escolher na
+      lista. A mensagem de 1 PDF diz com que produto casou (`→ 501059 · …`).
+    - Conferido contra o cadastro real (26/10/2026): os nomes da lista do app
+      (Rack Flip 1.8, Rack sirius 1.6, Painel Sirius 1.4, Toucador Magic New,
+      MESA CABECEIRA MADERO, Penteadeira strass - caixa 1/2 e 2/2) casam todos.
   - MEDIDO POR e VELOCIDADE não estão no PDF: vazio (velocidade = a do
     cadastro); no lote, o MEDIDO POR digitado no formulário vale para todos.
   - **O leitor é o pdf.js 3.11.174 do cdnjs (UMD, `window.pdfjsLib`), carregado

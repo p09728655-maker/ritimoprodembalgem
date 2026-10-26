@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.159.0 — 26/10/2026 · IMPORTAR PDF reconhece o volume ("caixa 2/2")
+
+- PPCP: *"ajusta importador"*. O app de cronoanálise nomeia o estudo como quem
+  o cadastrou: a STRASS do VOL 2/2 vinha **"Penteadeira strass - caixa 2/2"**,
+  e o importador não achava no cadastro (VOL 2/2 PENTEADEIRA CAMARIM STRASS) —
+  o PDF ficava de fora do lote.
+- Agora a marca de volume (`caixa 2/2`, `cx 2/2`, `vol 2/2`, `volume 2 de 2`)
+  sai do nome e escolhe a **linha do volume**; o nome casa pelas **palavras**
+  quando falta alguma (CAMARIM). Volume que o produto não tem não casa e diz
+  por quê; nome que casa com mais de um produto continua ambíguo.
+- Com 1 PDF a mensagem diz com que produto do cadastro o nome casou.
+- **Atenção:** nenhum número muda. Os nomes que já casavam continuam casando
+  igual (conferido contra o cadastro real). Nada no `.gs`.
+
 ## v7.158.0 · `.gs` v5.34 — 26/10/2026 · TROCAR A UEP pela cronoanálise + CONFERÊNCIA + IMPORTAR PDF
 
 - PPCP, com a STRASS VOL 2/2 na tela (*"qual UEP colocar?"*): o quadro PARA
