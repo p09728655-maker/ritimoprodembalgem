@@ -4217,20 +4217,38 @@ console.log('\n── estudo de UEP ──');
     ok('dentro do limite não marca; sem medida não inventa limite',
        [_capDia(el, 2530).limitado, _capDia(md, 2530).limitado, _capDia(md, 2530).dia], [false, false, 2530]);
     ok('as duas impressões e a tela usam o _capDia (não recalculam)',
-       [/_capDia\(p, meta, velS\)/.test(pega('function gerarRelatorioCapTodos(')), /_capDia\(l\.p, r\.meta, _capVel\(\)\)/.test(pega('function gerarRelatorioCapUep(')), /_capDia\(p, meta, _capVel\(\)\)/.test(pega('function _capPintar('))], [true, true, true]);
+       [/_capDia\(p, meta, velS, minD\)/.test(pega('function gerarRelatorioCapTodos(')), /_capDia\(l\.p, r\.meta, _capVel\(\)\)/.test(pega('function gerarRelatorioCapUep(')), /_capDia\(p, meta, _capVel\(\)\)/.test(pega('function _capPintar('))], [true, true, true]);
     ok('velocidade simulada refaz o limite com a mesma medida (esteira mais rápida = limite maior)',
        [_capDia(sl, 2530, 30).tetoDia, _capDia(sl, 2530, 30).limitado], [Math.floor(30 * 60000 / 2700 * 527 / 60), false]);
     ok('a impressão por produto tem PONTOS / DIA na última coluna',
        /<th>PONTOS \/ DIA<\/th><\/tr><\/thead>/.test(pega('function gerarRelatorioCapTodos(')), true);
     // v7.164.0 (PPCP 26/10/2026: "colocar essa impressão na cronoanálise e
-    // colocar a coluna qtde mensal" → "21 dias"): PRODUTOS / MÊS = produtos /
-    // dia × 21 dias úteis; o 🖨 da aba ⏱ CRONOANÁLISE é a MESMA impressão,
-    // com a meta das configurações (nunca a simulação digitada no modal).
+    // colocar a coluna qtde mensal"; foi 21 dias e "volta para 22 dias" na
+    // v7.165.0): PRODUTOS / MÊS = produtos / dia × o mês típico de 22 dias
+    // úteis; o 🖨 da aba ⏱ CRONOANÁLISE é a MESMA impressão, com a meta das
+    // configurações (nunca a simulação digitada no modal) e, desde a v7.165.0,
+    // a SIMULAÇÃO DE JORNADA ("em dezembro vai diminuir 24 minutos por dia").
     {
       const dm = JS.match(/const CAP_DIAS_MES = (\d+);/);
-      ok('o mês da capacidade é de 21 dias úteis (PPCP)', dm && +dm[1], 21);
+      ok('o mês da capacidade é o mês típico de 22 dias úteis do simulador', dm && +dm[1], 22);
       global.CAP_DIAS_MES = +dm[1];
-      eval(pega('function _capVel(')); eval(pega('function gerarRelatorioCapTodos('));
+      global.CAP_JORN_MAX = +JS.match(/const CAP_JORN_MAX = (\d+);/)[1];
+      // eval direto (dentro de um forEach a função ficaria presa à seta)
+      eval(pega('function _capVel(')); eval(pega('function _capJornMin(')); eval(pega('function _capJornada('));
+      eval(pega('function _capJornLinhas(')); eval(pega('function _capJornHtml(')); eval(pega('function _capJornDocHtml('));
+      eval(pega('function _capMetaOficial(')); eval(pega('function gerarRelatorioCapTodos('));
+      // a conta da jornada: 527 − 24 = 503 min, no mesmo ritmo
+      const J = _capJornada(2530, 24);
+      ok('jornada −24 min: 503 min, meta 2.415 no mesmo ritmo (288 UEP/h), −2.530 UEP no mês, 302 UEP/h para manter 2.530',
+         [J.minNovo, J.metaNova, J.difMeta, Math.round(J.ritmoH), J.mesMenos, Math.round(J.ritmoManter), +J.pctManter.toFixed(1), +J.pct.toFixed(1)],
+         [503, 2415, -115, 288, 2530, 302, 4.8, -4.6]);
+      ok('vazio/0 = jornada de hoje (null); texto, negativo ou corte grande demais = erro, nunca um número inventado',
+         [_capJornada(2530, 0), _capJornada(2530, _capJornMin('')), !!_capJornada(2530, _capJornMin('vinte')).erro,
+          !!_capJornada(2530, _capJornMin('-24')).erro, !!_capJornada(2530, 600).erro, _capJornMin('24'), _capJornMin('24,5')],
+         [null, null, true, true, true, 24, 24.5]);
+      ok('o _capDia com os minutos do dia: menos minutos, menos esteira; sem eles, os 527 de hoje',
+         [_capDia(el, 2415, 0, 503).dia, _capDia(sl, 2530, 0, 503).tetoDia === Math.floor(sl.tetoH * 503 / 60), _capDia(sl, 2530, 0, 503).tetoDia < sl.tetoDia,
+          _capDia(sl, 2530).tetoDia === sl.tetoDia, _capDia(sl, 2530, 30, 503).tetoDia], [559, true, true, true, Math.floor(30 * 60000 / 2700 * 503 / 60)]);
       const docAntes = global.document, openAntes = global.window.open;
       const campos = { 'cap-meta': { value: '3.000' }, 'cap-vel': { value: '30' } };
       global.document = { getElementById: id => campos[id] || null };
@@ -4241,30 +4259,53 @@ console.log('\n── estudo de UEP ──');
       const linha = nome => { const i = papel.indexOf(nome); return papel.slice(i, papel.indexOf('</tr>', i)); };
       const nums = l => [...l.matchAll(/<td class="td-(?:bold|mono)"[^>]*>([^<]*)<\/td>/g)].map(m => m[1]);
       gerarRelatorioCapTodos(true);
-      // ELOA: 2.530 ÷ 4,32 = 585/dia (a esteira passa 3.088) → 585 × 21 = 12.285/mês
-      ok('oficial (cronoanálise): meta das configurações e velocidade do cadastro; o mês = dia × 21',
-         [nums(linha('PENTEADEIRA ELOA')).slice(0, 6), /Meta: 2\.530 UEP\/dia · mês de 21 dias úteis/.test(papel), /SIMULADA/.test(papel)],
-         [['2', '1', '4,32', '585', '12.285', '1.170'], true, false]);
+      // ELOA: 2.530 ÷ 4,32 = 585/dia (a esteira passa 3.088) → 585 × 22 = 12.870/mês
+      ok('oficial (cronoanálise): meta das configurações e velocidade do cadastro; o mês = dia × 22; sem simulação, sem A MENOS',
+         [nums(linha('PENTEADEIRA ELOA')).slice(0, 7), /Meta: 2\.530 UEP\/dia · mês de 22 dias úteis/.test(papel), /SIMULADA|A MENOS/.test(papel)],
+         [['2', '1', '4,32', '585', '12.870', '1.170', '67'], true, false]);
       ok('o mês vem DEPOIS de PRODUTOS / DIA, e sai do número já cortado no limite da esteira',
          [/<th>PRODUTOS \/ DIA<\/th><th>PRODUTOS \/ MÊS<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
-          nums(linha('MESA CABECEIRA SLEEP'))[4] === fmtN(sl.tetoDia * 21)], [true, true]);
+          nums(linha('MESA CABECEIRA SLEEP'))[4] === fmtN(sl.tetoDia * 22)], [true, true]);
+      gerarRelatorioCapTodos(true, 24);
+      // ELOA: 2.415 ÷ 4,32 = 559/dia → 12.298/mês; a menos (585 − 559) × 22 = 572
+      ok('jornada simulada: a tabela inteira na jornada nova, A MENOS / MÊS contra a de hoje, e o papel diz a simulação',
+         [nums(linha('PENTEADEIRA ELOA')).slice(3, 9), /<th>PRODUTOS \/ MÊS<\/th><th>A MENOS \/ MÊS<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
+          /JORNADA SIMULADA/.test(papel), /Meta: 2\.415 UEP\/dia em 503 min/.test(papel), /title="−26 por dia × 22 dias úteis/.test(linha('PENTEADEIRA ELOA')),
+          /SIMULAÇÃO DE JORNADA · 24 MIN A MENOS POR DIA/.test(papel), /302 UEP\/h/.test(papel)],
+         [['559', '12.298', '−572', '1.118', '67', '2.794'], true, true, true, true, true, true]);
+      const slH = Math.floor(sl.tetoH * 503 / 60);
+      ok('no limite da esteira, a jornada nova corta pelos minutos de esteira que sobram',
+         [nums(linha('MESA CABECEIRA SLEEP'))[3], nums(linha('MESA CABECEIRA SLEEP'))[5]], [fmtN(slH), '−' + fmtN((sl.tetoDia - slH) * 22)]);
+      papel = '';
+      const alAntes = global.alert; let alerta = ''; global.alert = m => { alerta = m; };
+      gerarRelatorioCapTodos(true, 600);
+      ok('jornada impossível: avisa e não imprime', [papel, /Até 240 minutos/.test(alerta)], ['', true]);
+      global.alert = alAntes;
       gerarRelatorioCapTodos();
       ok('sem o oficial (o botão do modal da PROGRAMAÇÃO): a meta e a velocidade digitadas, como antes',
          [nums(linha('PENTEADEIRA ELOA')).slice(3, 5), /Meta: 3\.000 UEP\/dia/.test(papel), /SIMULADA de 30 m\/min/.test(papel)],
-         [['694', '14.574'], true, true]);
+         [['694', '15.268'], true, true]);
       global.CAP_CAT_ORIGEM = 'cadastro guardado neste computador, lido em 26/10/2026 08:00:00';
       gerarRelatorioCapTodos(true);
       ok('cadastro guardado (a leitura de agora não chegou): o papel diz de quando é a UEP',
          /UEP do cadastro guardado neste computador, lido em 26\/10\/2026 08:00:00/.test(papel), true);
       global.CAP_CAT_ORIGEM = '';
       global.document = docAntes; global.window.open = openAntes;
+      ok('o quadro do diálogo: sem simulação diz a jornada de hoje; com erro, o erro; com 24, os quatro números',
+         [/jornada de hoje — 527 min, meta 2\.530 UEP/.test(_capJornHtml(null, 2530)), /só os minutos/.test(_capJornHtml(_capJornada(2530, NaN), 2530)),
+          ['503 min', '2.415 UEP', '−2.530 UEP', '302 UEP/h'].filter(t => !_capJornHtml(J, 2530).includes(t))], [true, true, []]);
+      ok('o desenho da jornada não faz conta (tudo vem do _capJornada)',
+         ['function _capJornLinhas(', 'function _capJornHtml(', 'function _capJornDocHtml('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
       const sc = src.slice(src.indexOf('<section id="sec-crono"'), src.indexOf('</section>', src.indexOf('<section id="sec-crono"')));
-      ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua',
-         [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src)], [true, true]);
-      const UCT = pega('function _ucvCapTodos(');
-      ok('o da cronoanálise é a MESMA impressão (oficial), síncrono (o pop-up abre no clique) e cai no cadastro guardado',
-         [/gerarRelatorioCapTodos\(true\)/.test(UCT), /await|async/.test(UCT), /_capCatLocal\(\)/.test(UCT), /_capCatLocal\(\)/.test(pega('async function abrirCapUep('))],
-         [true, false, true, true]);
+      ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua; o diálogo da jornada existe',
+         [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src),
+          /id="modal-capjorn"/.test(src), /id="capj-min"[^>]*oninput="_capJornPintar\(\)"/.test(src), /onclick="_capJornImprimir\(\)"/.test(src)],
+         [true, true, true, true, true]);
+      const UCT = pega('function _ucvCapTodos('), IMP = pega('function _capJornImprimir(');
+      ok('o botão abre o diálogo; o IMPRIMIR é a MESMA impressão (oficial, com os minutos), síncrono (o pop-up abre no clique), e cai no cadastro guardado',
+         [/modal-capjorn'\)\.classList\.add\('on'\)/.test(UCT), /gerarRelatorioCapTodos\(true, n\)/.test(IMP), /await|async/.test(UCT + IMP),
+          /_capCatLocal\(\)/.test(UCT), /_capCatLocal\(\)/.test(pega('async function abrirCapUep(')), /localStorage\.setItem\(CAP_JORN_LS/.test(IMP)],
+         [true, true, false, true, true, true]);
     }
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
