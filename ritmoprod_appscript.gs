@@ -1,5 +1,17 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.34 — TROCAR A UEP PELA CRONOANÁLISE + CONFERÊNCIA DAS TROCAS
+//               PPCP, 26/10/2026: "deixa pronto para trocar já no app a uep
+//               que puder", "a medição não dá para travar em duas datas
+//               diferentes" e "deixar uma conferência para que quando passar o
+//               produto outras vezes criar alerta sem alterar se sobe ou desce
+//               a uep". trocarUepCrono grava a UEP do volume quando as
+//               medições registradas somam 30 volumes ou mais e apontam o
+//               mesmo lado (confere de novo contra a planilha antes de
+//               gravar), com vigência DIGITADA e versão na UEP_VERSOES (ORIGEM
+//               CRONOANÁLISE). getConferenciaCrono devolve as horas em que o
+//               volume trocado rodou sozinho depois da troca — o painel avisa
+//               SUBIR?/DESCER?; nada é gravado.
 // Versão: 5.33 — EXCLUIR UMA MEDIÇÃO DA CRONOANÁLISE
 //               PPCP, 26/10/2026, com a aba CRONOANALISE na mão: "vou ter que
 //               excluir estudo" → "sim fazer". Medição registrada errada
@@ -1062,12 +1074,13 @@ const CACHE_TTL_LEITURA = {
   getProgramacaoDetalhada: 60,
   getProducaoModeloPeriodo: 300,
   getConfigPainel: 30,
-  getCronoRegistros: 300           // v5.30: aba pequena; o registro invalida
+  getCronoRegistros: 300,          // v5.30: aba pequena; o registro invalida
+  getConferenciaCrono: 300         // v5.34: a troca e o lançamento invalidam
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
-  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono', 'excluirCrono'];
+  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono', 'excluirCrono', 'trocarUepCrono'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1233,6 +1246,8 @@ function doGet(e) {
     else if (act === 'registrarCrono')     result = registrarCrono(p);       // v5.30
     else if (act === 'getCronoRegistros')  result = getCronoRegistros();     // v5.30
     else if (act === 'excluirCrono')       result = excluirCrono(p);         // v5.33
+    else if (act === 'trocarUepCrono')     result = trocarUepCrono(p);       // v5.34
+    else if (act === 'getConferenciaCrono') result = getConferenciaCrono();  // v5.34
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else if (act === 'getHoraDia')    result = getHoraDia(p);
@@ -2195,6 +2210,248 @@ function _cronoJaExcluida(shX, regId) {
   if (j < 0) return false;
   for (let k = v.length - 1; k >= 1; k--) if (String(v[k][j]).trim() === regId) return true;
   return false;
+}
+
+// ── TROCAR A UEP PELA CRONOANÁLISE (v5.34) ─────────────────────────────────
+// PPCP, 26/10/2026: "deixa pronto para trocar já no app a uep que puder" e "a
+// medição não dá para travar em duas datas diferentes o mesmo produto, isso vai
+// demorar muito". A regra deixou de ser DUAS DATAS e passou a ser AMOSTRA: as
+// medições registradas do produto e volume somam CRONO_TROCA_MIN_VOL_GS volumes
+// ou mais (pode ser num dia só) e TODAS apontam o mesmo lado da faixa 90–110%
+// contra o cadastro ATUAL. A UEP nova é a média das medições pesada pelos
+// volumes medidos, cada uma pelos SEGUNDOS (rodando ÷ base) — não pela UEP já
+// arredondada da linha.
+// A regra é do painel (_ucvRegsResumo); esta é a cópia que CONFERE antes de
+// gravar, contra a planilha de agora: a tela pode estar com o cadastro ou a
+// lista de medições velhos (outro computador trocou, alguém excluiu uma
+// medição). O teste roda as duas contra os mesmos casos.
+// O painel manda os códigos com a UEP nova de cada um (a repartição entre
+// cores e volumes é a do cadastro, a mesma do PARA TROCAR); aqui se confere:
+// os códigos estão nas medições (coluna CODIGOS), a média deles bate com a das
+// medições e a regra deixa. Recusa NÃO é erro (ok:true, trocado:false): o
+// painel não retenta uma coisa que não vai mudar.
+// Grava a UEP, a UEP_VIGENCIA "dd/MM/yyyy DIGITADA" (o mesmo carimbo da
+// digitação: a FILA DE CRONOANÁLISE tira o produto) e uma versão por código na
+// UEP_VERSOES, ORIGEM "CRONOANÁLISE · modelo · produto · volume · amostra" — é
+// por ela que a CONFERÊNCIA (getConferenciaCrono) acha a troca depois.
+// Idempotente: a UEP já igual responde jaTrocado (a retentativa por timeout).
+const CRONO_TROCA_MIN_VOL_GS = 30;      // = UCV_TROCA_MIN_VOL do painel (o teste prende)
+const CRONO_TROCA_FAIXA_GS = [90, 110]; // = UEP_PAD_FAIXA do painel (o teste prende)
+const CRONO_ORIGEM = 'CRONOANÁLISE';
+
+// Conta pura (cópia da _ucvRegsResumo do painel): regs [{data, sRod, baseS,
+// uep, uepCad, volumes}] e a UEP/volume do cadastro de agora.
+function _cronoTrocaRegra(regs, cadAtual) {
+  const F = CRONO_TROCA_FAIXA_GS, dias = {}, lados = {};
+  let nVol = 0, soma = 0, semVol = 0;
+  (regs || []).forEach(function (r) {
+    if (r.data) dias[r.data] = 1;
+    const sR = Number(r.sRod) || 0, bS = Number(r.baseS) || 0;
+    const u = sR > 0 && bS > 0 ? sR / bS : Number(r.uep) || 0;
+    const v = Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0;
+    if (!(u > 0)) return;
+    if (!v) { semVol++; return; }
+    nVol += v; soma += u * v;
+    const cad = Number(cadAtual) > 0 ? Number(cadAtual) : Number(r.uepCad) || 0;
+    if (cad > 0) { const pct = u / cad * 100; lados[pct > F[1] ? 'pesado' : pct < F[0] ? 'leve' : 'confere'] = 1; }
+  });
+  const L = Object.keys(lados);
+  const veredito = !nVol ? (semVol ? 'sem-volumes' : 'sem-medicao') : !L.length ? 'sem-cadastro'
+    : L.length > 1 ? 'discordam' : L[0] === 'confere' ? 'confere' : nVol < CRONO_TROCA_MIN_VOL_GS ? 'pouca-amostra' : 'trocar';
+  return { nVol: nVol, semVol: semVol, nDias: Object.keys(dias).length, lado: L.length === 1 ? L[0] : null,
+           uepMed: nVol ? soma / nVol : null, veredito: veredito };
+}
+const CRONO_TROCA_RECUSA = {
+  'sem-medicao':   'nenhuma medição registrada deste produto e volume na aba CRONOANALISE',
+  'sem-volumes':   'as medições não têm VOLUMES MEDIDOS — sem a amostra não dá para trocar',
+  'sem-cadastro':  'o volume está sem UEP no cadastro para comparar — digite na PRODUTO_CODIGO',
+  'discordam':     'as medições discordam entre si (uma confere com o cadastro, outra não)',
+  'confere':       'as medições conferem com o cadastro de agora — a UEP fica',
+  'pouca-amostra': 'as medições somam menos de ' + CRONO_TROCA_MIN_VOL_GS + ' volumes'
+};
+// A UEP de um conjunto de códigos como o painel lê (_uepConvCadastro): a média
+// das cores de cada volume, e a média dos volumes. Volume sem UEP → null.
+function _cronoUepVolumes(lista) {
+  const V = {};
+  lista.forEach(function (x) { (V[x.vol] = V[x.vol] || []).push(x.uep); });
+  const ms = Object.keys(V).map(function (k) {
+    const us = V[k].filter(function (u) { return u > 0; });
+    return us.length ? us.reduce(function (a, b) { return a + b; }, 0) / us.length : null;
+  });
+  if (!ms.length || ms.some(function (m) { return m === null; })) return null;
+  return ms.reduce(function (a, b) { return a + b; }, 0) / ms.length;
+}
+function _cronoVolDaDesc(desc) {
+  const m = String(desc || '').match(/VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
+  return m ? +m[1] : 1;
+}
+// ORIGEM da versão: escrita e lida aqui, uma vez (a conferência separa por ' · ').
+function _cronoOrigem(modelo, produto, volume, nMed, nVol) {
+  return [CRONO_ORIGEM, modelo, produto, volume, nMed + (nMed === 1 ? ' medição, ' : ' medições, ') + nVol + ' volumes'].join(' · ');
+}
+function _cronoOrigemLer(s) {
+  const p = String(s || '').split(' · ');
+  if (p[0] !== CRONO_ORIGEM || p.length < 4) return null;
+  return { modelo: p[1], produto: p[2], volume: p[3], amostra: p.slice(4).join(' · ') };
+}
+
+function trocarUepCrono(p) {
+  p = p || {};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { return _trocarUepCronoCore(p); }
+  finally { lock.releaseLock(); }
+}
+
+function _trocarUepCronoCore(p) {
+  const recusa = function (motivo, txt) { return { ok: true, trocado: false, recusado: true, motivo: motivo, erro: txt }; };
+  const modelo = codKey(p.modelo).slice(0, 6), produto = String(p.produto || '').trim(), volume = String(p.volume || '').trim();
+  if (modelo.length !== 6 || !produto || !volume) return { ok: false, erro: 'Faltou o produto (modelo, nome e volume).' };
+  const alvo = {};
+  String(p.cods || '').split(',').forEach(function (x) {
+    const m = x.split(':'), c = codKey(m[0]), u = Number(String(m[1] || '').replace(',', '.'));
+    if (c && u > 0 && u <= 20) alvo[c] = Math.round(u * 100) / 100;
+  });
+  const cAlvo = Object.keys(alvo);
+  if (!cAlvo.length) return { ok: false, erro: 'Nenhum código com a UEP nova.' };
+  if (cAlvo.some(function (c) { return c.slice(0, 6) !== modelo; })) return recusa('outro-modelo', 'há código de outro modelo na lista');
+  const norm = function (s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // As medições do produto e volume — direto da planilha (quem escreve não lê do memo).
+  const shC = ss.getSheetByName(SHEET_CRONO);
+  const vC = shC ? shC.getDataRange().getValues() : [];
+  const hC = (vC[0] || []).map(function (t) { return String(t).trim().toUpperCase(); });
+  const ix = function (n) { return hC.indexOf(n); };
+  const regs = [], medidos = {};
+  for (let i = 1; i < vC.length; i++) {
+    const r = vC[i];
+    if (codKey(r[ix('MODELO')]).slice(0, 6) !== modelo || norm(r[ix('PRODUTO')]) !== norm(produto) || String(r[ix('VOLUME')] || '').trim() !== volume) continue;
+    const num = function (n) { const j = ix(n); return j < 0 || r[j] === '' || r[j] == null ? 0 : _numBR(r[j]); };
+    regs.push({ data: fmtDataBR(r[ix('DATA_MEDICAO')]), sRod: num('S_RODANDO'), baseS: num('BASE_S'), uep: num('UEP_CRONO'),
+                uepCad: num('UEP_CADASTRO'), volumes: num('VOLUMES_MEDIDOS') });
+    String(ix('CODIGOS') >= 0 ? r[ix('CODIGOS')] : '').split(/[\s,;]+/).forEach(function (c) { c = codKey(c); if (c) medidos[c] = 1; });
+  }
+  if (!regs.length) return recusa('sem-medicao', CRONO_TROCA_RECUSA['sem-medicao']);
+  const fora = cAlvo.filter(function (c) { return !medidos[c]; });
+  if (fora.length) return recusa('codigo-fora', 'código que não está nas medições: ' + fora.join(', '));
+
+  // O cadastro, direto.
+  const sh = ss.getSheetByName(SHEET_PRODUTOS);
+  if (!sh) return { ok: false, erro: 'aba ' + SHEET_PRODUTOS + ' não encontrada' };
+  const v = sh.getDataRange().getValues();
+  const hdr = (v[0] || []).map(function (c) { return String(c).trim().toUpperCase().replace(/\s+/g, ' '); });
+  const iCod = hdr.indexOf('CODIGO'), iDesc = hdr.indexOf('DESCRICAO'), iUep = hdr.indexOf('UEP');
+  const iVig = hdr.findIndex(function (h) { return h.indexOf('UEP_VIG') === 0; });
+  if (iCod < 0 || iUep < 0) return { ok: false, erro: 'cadastro sem as colunas CODIGO e UEP' };
+  const L = {}, semente = [];
+  for (let i = 1; i < v.length; i++) {
+    const raw = String(v[i][iCod] == null ? '' : v[i][iCod]).trim(), c = codKey(raw);
+    if (!c) continue;
+    const u = _numBR(v[i][iUep]);
+    if (u > 0) semente.push([raw, u, iVig >= 0 ? v[i][iVig] : '']);
+    if (alvo[c] !== undefined) L[c] = { linha: i + 1, raw: raw, antes: u, vol: _cronoVolDaDesc(iDesc >= 0 ? v[i][iDesc] : '') };
+  }
+  const semCad = cAlvo.filter(function (c) { return !L[c]; });
+  if (semCad.length) return recusa('codigo-fora', 'código fora do cadastro: ' + semCad.join(', '));
+  if (cAlvo.every(function (c) { return _uepIgual(L[c].antes, alvo[c]); })) return { ok: true, trocado: true, jaTrocado: true, n: 0 };
+
+  const cadAtual = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: L[c].vol, uep: L[c].antes }; }));
+  const regra = _cronoTrocaRegra(regs, cadAtual);
+  if (regra.veredito !== 'trocar') return recusa(regra.veredito, CRONO_TROCA_RECUSA[regra.veredito] || regra.veredito);
+  const novoMed = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: L[c].vol, uep: alvo[c] }; }));
+  if (!(novoMed > 0) || Math.abs(novoMed - regra.uepMed) > 0.01)
+    return recusa('nao-bate', 'a UEP enviada (' + (novoMed || 0).toFixed(2) + ') não bate com a média das medições (' + regra.uepMed.toFixed(2) + ') — a tela estava desatualizada');
+
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const mud = [], cods = [];
+  cAlvo.forEach(function (c) {
+    const l = L[c];
+    sh.getRange(l.linha, iUep + 1).setValue(alvo[c]);
+    if (iVig >= 0) sh.getRange(l.linha, iVig + 1).setValue(hoje + ' DIGITADA');
+    cods.push({ cod: c, antes: l.antes, depois: alvo[c] });
+    if (!_uepIgual(l.antes, alvo[c])) mud.push([l.raw, l.antes, alvo[c]]);
+  });
+  _catalogoMemo = null;
+  const out = { ok: true, trocado: true, n: cods.length, uep: Math.round(regra.uepMed * 100) / 100, nVol: regra.nVol,
+                medicoes: regs.length, vigencia: hoje, codigos: cods };
+  // A versão vem DEPOIS do cadastro: se falhar, a resposta diz (como o GRAVAR UEP).
+  try { out.versoes = _uepVerRegistrar(ss, mud, hoje, _cronoOrigem(modelo, produto, volume, regs.length, regra.nVol), semente); }
+  catch (e) { out.versaoErro = e.message; }
+  return out;
+}
+
+// ── CONFERÊNCIA DAS TROCAS (v5.34) ─────────────────────────────────────────
+// PPCP, 26/10/2026: "deixar uma conferência para que quando passar o produto
+// outras vezes criar alerta sem alterar se sobe ou desce a uep". Para cada
+// troca feita pela cronoanálise (versões da UEP_VERSOES com ORIGEM
+// CRONOANÁLISE, agrupadas pela gravação), as horas em que SÓ aqueles códigos
+// rodaram, nos dias DEPOIS da troca e antes de hoje (a hora em andamento de
+// hoje ainda está sendo lançada). Hora dividida com outro produto ou com o
+// outro volume fica fora: não se sabe quanto do tempo foi de quem. Devolve
+// minutos, caixas e a UEP feita (caixas × UEP nova de cada código) por dia; o
+// PAINEL compara com a régua da meta e diz SUBIR?/DESCER? — nada é gravado.
+// O slot das 12:12 tem 48 min (o turno não muda: ver CLAUDE.md).
+function _cronoMinSlot(hora) { return String(hora || '').slice(0, 5) === '12:12' ? 48 : 60; }
+function getConferenciaCrono() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_UEP_VER);
+  if (!sh) return { ok: true, trocas: [] };
+  const v = _valoresDaAba(sh);
+  const hdr = (v[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const iCod = hdr.indexOf('CODIGO'), iUep = hdr.indexOf('UEP'), iVig = hdr.indexOf('VIGENCIA'),
+        iOri = hdr.indexOf('ORIGEM'), iGrav = hdr.indexOf('GRAVADO_EM'), iAnt = hdr.indexOf('ANTERIOR');
+  if (iCod < 0 || iUep < 0 || iOri < 0) return { ok: true, trocas: [] };
+  const G = {};
+  for (let i = 1; i < v.length; i++) {
+    const o = _cronoOrigemLer(v[i][iOri]);
+    if (!o) continue;
+    const grav = iGrav >= 0 ? (v[i][iGrav] instanceof Date ? Utilities.formatDate(v[i][iGrav], TZ, 'dd/MM/yyyy HH:mm') : String(v[i][iGrav] || '')) : '';
+    const k = String(v[i][iOri]) + '|' + grav;
+    const g = G[k] = G[k] || { modelo: o.modelo, produto: o.produto, volume: o.volume, amostra: o.amostra, gravado: grav,
+                               vig: iVig >= 0 ? _dataStr(v[i][iVig]) : '', vigNum: iVig >= 0 ? _uepVerDataNum(v[i][iVig]) : 0, codigos: {} };
+    g.codigos[codKey(v[i][iCod])] = { uep: _numBR(v[i][iUep]), antes: iAnt >= 0 ? _numBR(v[i][iAnt]) : 0 };
+  }
+  const grupos = Object.keys(G).map(function (k) { return G[k]; });
+  if (!grupos.length) return { ok: true, trocas: [] };
+  const cad = {};
+  lerCatalogoProdutos().forEach(function (pr) { cad[codKey(pr.codigo)] = pr.uep; });
+  // O log: hora a hora, que códigos e quantas caixas — só dias depois da troca mais antiga e antes de hoje.
+  const hoje = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const desde = Math.min.apply(null, grupos.map(function (g) { return g.vigNum; }));
+  const lv = _valores(SHEET_PROD_LOG) || [];
+  const lh = (lv[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const jD = lh.indexOf('DATA') >= 0 ? lh.indexOf('DATA') : 0, jH = lh.indexOf('HORA') >= 0 ? lh.indexOf('HORA') : 1,
+        jC = lh.indexOf('CODIGO') >= 0 ? lh.indexOf('CODIGO') : 2, jX = lh.indexOf('CAIXAS') >= 0 ? lh.indexOf('CAIXAS') : 4;
+  const H = {};
+  for (let i = 1; i < lv.length; i++) {
+    const r = lv[i], dn = dataParaNum(r[jD]);
+    if (!dn || dn <= desde || dn >= hoje) continue;
+    const cx = Number(r[jX]) || 0, c = codKey(r[jC]);
+    if (!c || !cx) continue;
+    const hora = formatHoraCel(r[jH]), k = dn + '|' + hora;
+    const h = H[k] = H[k] || { dn: dn, data: fmtDataBR(r[jD]), hora: hora, cods: {} };
+    h.cods[c] = (h.cods[c] || 0) + cx;
+  }
+  const trocas = grupos.map(function (g) {
+    const D = {};
+    Object.keys(H).forEach(function (k) {
+      const h = H[k];
+      if (h.dn <= g.vigNum) return;
+      const cs = Object.keys(h.cods);
+      if (!cs.every(function (c) { return g.codigos[c]; })) return;     // dividida com outro código: fora
+      const d = D[h.data] = D[h.data] || { data: h.data, dn: h.dn, min: 0, cx: 0, uep: 0, horas: 0 };
+      d.min += _cronoMinSlot(h.hora); d.horas++;
+      cs.forEach(function (c) { d.cx += h.cods[c]; d.uep += h.cods[c] * g.codigos[c].uep; });
+    });
+    const cods = Object.keys(g.codigos);
+    return { modelo: g.modelo, produto: g.produto, volume: g.volume, amostra: g.amostra, gravado: g.gravado, vig: g.vig,
+             codigos: cods.map(function (c) { return { cod: c, uep: g.codigos[c].uep, antes: g.codigos[c].antes, atual: cad[c] || 0 }; }),
+             substituida: cods.some(function (c) { return !_uepIgual(cad[c] || 0, g.codigos[c].uep); }),
+             dias: Object.keys(D).map(function (k) { const d = D[k]; return { data: d.data, dn: d.dn, min: d.min, horas: d.horas, cx: d.cx, uep: Math.round(d.uep * 100) / 100 }; })
+               .sort(function (a, b) { return a.dn - b.dn; }) };
+  });
+  return { ok: true, trocas: trocas };
 }
 
 
