@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.165.0 — 26/10/2026 · SIMULAÇÃO DE JORNADA na capacidade por produto; o mês volta a 22 dias
+
+- PPCP: *"vamos ter alteração de jornada em dezembro, vai diminuir 24 minutos
+  por dia, coloca um simulador para que possa ver o que vai diminuir e colocar
+  na impressão que fizemos agora"* e *"volta para 22 dias"*.
+- **PRODUTOS / MÊS volta a 22 dias úteis** (era 21 na v7.164.0): o mesmo mês
+  típico do simulador de investimento e da SWOT — um mês só no painel.
+- **🖨 CAPACIDADE POR PRODUTO** (aba ⏱ CRONOANÁLISE) agora abre antes um quadro
+  **SIMULAÇÃO DE JORNADA**: MINUTOS A MENOS POR DIA (vazio = a jornada de hoje;
+  o valor fica guardado neste computador). Com 24: jornada **527 → 503 min**
+  (−4,6%), meta do dia no mesmo ritmo **2.530 → 2.415 UEP**, **−2.530 UEP no
+  mês**, e o ritmo que manteria 2.530 UEP: **302 UEP/h** (hoje 288, +4,8%).
+- Com a simulação, a impressão sai **inteira na jornada nova** (produtos/dia,
+  mês, caixas, produtos/hora, limite da esteira e pontos) e ganha a coluna
+  **A MENOS / MÊS** contra a jornada de hoje, mais os quatro cartões no topo. A
+  esteira passa menos produtos nos minutos que sobram: quem estava no limite cai
+  pelo limite.
+- **Atenção:** o PRODUTOS / MÊS da v7.164.0 (×21) volta a ×22. Simulação —
+  nada é gravado; a meta, o turno e o `.gs` não mudam. O botão do modal 🧮
+  CAPACIDADE UEP da PROGRAMAÇÃO imprime como antes (sem jornada).
+
 ## v7.164.0 — 26/10/2026 · CAPACIDADE POR PRODUTO na cronoanálise, com o MÊS
 
 - PPCP, com a impressão CAPACIDADE DIÁRIA POR PRODUTO na mão: *"colocar essa

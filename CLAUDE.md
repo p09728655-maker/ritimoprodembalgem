@@ -3647,13 +3647,13 @@ feito e dá ar de verdade ao que sobrou.
   - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
 - **CAPACIDADE POR PRODUTO na ⏱ CRONOANÁLISE e o MÊS** (v7.164.0, PPCP
   26/10/2026: *"colocar essa impressão na cronoanálise e colocar a coluna qtde
-  mensal"* → *"21 dias"*). O `gerarRelatorioCapTodos(oficial)` ganhou a coluna
-  **PRODUTOS / MÊS** = produtos/dia × `CAP_DIAS_MES`=21 (sem sábado e sem HE),
-  depois de PRODUTOS / DIA. ⚠ O simulador de investimento e a SWOT seguem com
-  o mês típico de **22** — dois meses no painel; não mexido (mudaria payback e
-  projeções já apresentados). Unificar é decisão do PPCP.
+  mensal"*). O `gerarRelatorioCapTodos(oficial, menos)` ganhou a coluna
+  **PRODUTOS / MÊS** = produtos/dia × `CAP_DIAS_MES`=22 — o mês típico do
+  simulador e da SWOT (foi 21 só na v7.164.0; *"volta para 22 dias"*). Sem
+  sábado e sem HE, depois de PRODUTOS / DIA.
   - O botão **🖨 CAPACIDADE POR PRODUTO** da aba ⏱ CRONOANÁLISE chama
-    `_ucvCapTodos()` → `gerarRelatorioCapTodos(true)`: `oficial` = META UEP do
+    `_ucvCapTodos()`, que abre o diálogo `#modal-capjorn` (v7.165.0, abaixo);
+    o IMPRIMIR dele → `gerarRelatorioCapTodos(true, n)`: `oficial` = META UEP do
     ⚙ (`PONTOS_DIA.metaUep`) e velocidade do cadastro, nunca o que ficou
     digitado no modal (simulação). Sem o argumento (o botão do modal), vale o
     modal, como antes.
@@ -3662,7 +3662,29 @@ feito e dá ar de verdade ao que sobrou.
     guardado neste computador e o papel diz de quando ele é
     (`CAP_CAT_ORIGEM`); sem nenhum, avisa e dispara o `_capBuscar`.
   - `relatorios.test.js` roda a impressão real (oficial × modal, o mês cortado
-    no limite da esteira, o cadastro guardado).
+    no limite da esteira, o cadastro guardado, a jornada simulada).
+- **SIMULAÇÃO DE JORNADA** (v7.165.0, PPCP 26/10/2026: *"vamos ter alteração de
+  jornada em dezembro, vai diminuir 24 minutos por dia, coloca um simulador"*).
+  Diálogo `#modal-capjorn` (MINUTOS A MENOS POR DIA, guardado em
+  `localStorage['rpe_cap_jorn']`; vazio = jornada de hoje) com o quadro ao vivo
+  (`_capJornHtml`) e o IMPRIMIR.
+  - Conta pura `_capJornada(meta, menos)`: jornada = `UEP_MIN_DIA` − menos; a
+    linha **mantém o ritmo de hoje** → meta nova = meta × jornada ÷ 527
+    (arredondada; é ela que entra no `_capDia`, para o papel fechar), −UEP no
+    mês (× 22) e o ritmo que manteria a meta de hoje (meta ÷ jornada × 60).
+    Até `CAP_JORN_MAX`=240 min; texto/negativo → erro, nunca número inventado.
+  - `_capDia(p, meta, velSim, minDia)`: o limite da esteira é refeito nos
+    minutos que sobram (sem `minDia`, o `tetoDia` de 527 de sempre).
+  - Na impressão, com a simulação, a tabela INTEIRA vai para a jornada nova
+    (produtos/dia, mês, caixas, produtos/hora, limite, pontos) + a coluna **A
+    MENOS / MÊS** contra a de hoje (o por dia no `title`) + quatro cartões
+    (`_capJornDocHtml`, grade de 4). Desenhos sem conta (o teste prende).
+  - ⚠ **É só a capacidade.** A mudança de jornada de verdade (dezembro) mexe em
+    mais coisa e nada disso muda sozinho: `UEP_MIN_DIA`=527 (rp-core — meta da
+    hora, esperado do card UEP, Telas F/G, PRÓXIMOS DIAS), a META UEP do ⚙, o
+    turno do ⚙ (`turnoInicio`/`turnoFim`) e as `HE_JORNADA_*` do `.gs` (a hora
+    extra é contada por horário), os slots da `HORA_A_HORA` e a regra do
+    `getSlots`. Combinar com o PPCP ONDE saem os minutos antes de mexer.
 - **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
   PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
   medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`
