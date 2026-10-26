@@ -14,12 +14,12 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 ## v7.164.0 — 26/10/2026 · CAPACIDADE POR PRODUTO na cronoanálise, com o MÊS
 
 - PPCP, com a impressão CAPACIDADE DIÁRIA POR PRODUTO na mão: *"colocar essa
-  impressão na cronoanálise e colocar a coluna qtde mensal"*.
-- **Coluna PRODUTOS / MÊS** logo depois de PRODUTOS / DIA: produtos/dia × **22
-  dias úteis** — o mesmo mês típico do simulador de investimento e da SWOT.
-  Sem sábado e sem hora extra, como o dia; quem passa do limite da esteira sai
-  com o mês do número já cortado. O cabeçalho, a nota de abertura, o COMO O
-  NÚMERO SAI e o rodapé dizem o mês de 22 dias.
+  impressão na cronoanálise e colocar a coluna qtde mensal"* → *"21 dias"*.
+- **Coluna PRODUTOS / MÊS** logo depois de PRODUTOS / DIA: produtos/dia × **21
+  dias úteis**. Sem sábado e sem hora extra, como o dia; quem passa do limite
+  da esteira sai com o mês do número já cortado. O cabeçalho, a nota de
+  abertura, o COMO O NÚMERO SAI e o rodapé dizem o mês de 21 dias. ⚠ O
+  simulador de investimento e a SWOT continuam com o mês típico de 22 dias.
 - **🖨 CAPACIDADE POR PRODUTO** no cabeçalho da aba ⏱ CRONOANÁLISE: a MESMA
   impressão do botão 🖨 CAPACIDADE DE CADA PRODUTO do modal 🧮 CAPACIDADE UEP da
   PROGRAMAÇÃO (que continua lá), com a **meta das configurações** e a

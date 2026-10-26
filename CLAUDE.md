@@ -3647,9 +3647,11 @@ feito e dá ar de verdade ao que sobrou.
   - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
 - **CAPACIDADE POR PRODUTO na ⏱ CRONOANÁLISE e o MÊS** (v7.164.0, PPCP
   26/10/2026: *"colocar essa impressão na cronoanálise e colocar a coluna qtde
-  mensal"*). O `gerarRelatorioCapTodos(oficial)` ganhou a coluna **PRODUTOS /
-  MÊS** = produtos/dia × `CAP_DIAS_MES`=22 (o mês típico do simulador e da
-  SWOT — a mesma régua, sem sábado e sem HE), depois de PRODUTOS / DIA.
+  mensal"* → *"21 dias"*). O `gerarRelatorioCapTodos(oficial)` ganhou a coluna
+  **PRODUTOS / MÊS** = produtos/dia × `CAP_DIAS_MES`=21 (sem sábado e sem HE),
+  depois de PRODUTOS / DIA. ⚠ O simulador de investimento e a SWOT seguem com
+  o mês típico de **22** — dois meses no painel; não mexido (mudaria payback e
+  projeções já apresentados). Unificar é decisão do PPCP.
   - O botão **🖨 CAPACIDADE POR PRODUTO** da aba ⏱ CRONOANÁLISE chama
     `_ucvCapTodos()` → `gerarRelatorioCapTodos(true)`: `oficial` = META UEP do
     ⚙ (`PONTOS_DIA.metaUep`) e velocidade do cadastro, nunca o que ficou

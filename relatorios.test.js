@@ -4223,12 +4223,12 @@ console.log('\n── estudo de UEP ──');
     ok('a impressão por produto tem PONTOS / DIA na última coluna',
        /<th>PONTOS \/ DIA<\/th><\/tr><\/thead>/.test(pega('function gerarRelatorioCapTodos(')), true);
     // v7.164.0 (PPCP 26/10/2026: "colocar essa impressão na cronoanálise e
-    // colocar a coluna qtde mensal"): PRODUTOS / MÊS = produtos / dia × o mês
-    // típico de 22 dias úteis; o 🖨 da aba ⏱ CRONOANÁLISE é a MESMA impressão,
+    // colocar a coluna qtde mensal" → "21 dias"): PRODUTOS / MÊS = produtos /
+    // dia × 21 dias úteis; o 🖨 da aba ⏱ CRONOANÁLISE é a MESMA impressão,
     // com a meta das configurações (nunca a simulação digitada no modal).
     {
       const dm = JS.match(/const CAP_DIAS_MES = (\d+);/);
-      ok('o mês da capacidade é o mês típico de 22 dias úteis do simulador', dm && +dm[1], 22);
+      ok('o mês da capacidade é de 21 dias úteis (PPCP)', dm && +dm[1], 21);
       global.CAP_DIAS_MES = +dm[1];
       eval(pega('function _capVel(')); eval(pega('function gerarRelatorioCapTodos('));
       const docAntes = global.document, openAntes = global.window.open;
@@ -4241,17 +4241,17 @@ console.log('\n── estudo de UEP ──');
       const linha = nome => { const i = papel.indexOf(nome); return papel.slice(i, papel.indexOf('</tr>', i)); };
       const nums = l => [...l.matchAll(/<td class="td-(?:bold|mono)"[^>]*>([^<]*)<\/td>/g)].map(m => m[1]);
       gerarRelatorioCapTodos(true);
-      // ELOA: 2.530 ÷ 4,32 = 585/dia (a esteira passa 3.088) → 585 × 22 = 12.870/mês
-      ok('oficial (cronoanálise): meta das configurações e velocidade do cadastro; o mês = dia × 22',
-         [nums(linha('PENTEADEIRA ELOA')).slice(0, 6), /Meta: 2\.530 UEP\/dia · mês de 22 dias úteis/.test(papel), /SIMULADA/.test(papel)],
-         [['2', '1', '4,32', '585', '12.870', '1.170'], true, false]);
+      // ELOA: 2.530 ÷ 4,32 = 585/dia (a esteira passa 3.088) → 585 × 21 = 12.285/mês
+      ok('oficial (cronoanálise): meta das configurações e velocidade do cadastro; o mês = dia × 21',
+         [nums(linha('PENTEADEIRA ELOA')).slice(0, 6), /Meta: 2\.530 UEP\/dia · mês de 21 dias úteis/.test(papel), /SIMULADA/.test(papel)],
+         [['2', '1', '4,32', '585', '12.285', '1.170'], true, false]);
       ok('o mês vem DEPOIS de PRODUTOS / DIA, e sai do número já cortado no limite da esteira',
          [/<th>PRODUTOS \/ DIA<\/th><th>PRODUTOS \/ MÊS<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
-          nums(linha('MESA CABECEIRA SLEEP'))[4] === fmtN(sl.tetoDia * 22)], [true, true]);
+          nums(linha('MESA CABECEIRA SLEEP'))[4] === fmtN(sl.tetoDia * 21)], [true, true]);
       gerarRelatorioCapTodos();
       ok('sem o oficial (o botão do modal da PROGRAMAÇÃO): a meta e a velocidade digitadas, como antes',
          [nums(linha('PENTEADEIRA ELOA')).slice(3, 5), /Meta: 3\.000 UEP\/dia/.test(papel), /SIMULADA de 30 m\/min/.test(papel)],
-         [['694', '15.268'], true, true]);
+         [['694', '14.574'], true, true]);
       global.CAP_CAT_ORIGEM = 'cadastro guardado neste computador, lido em 26/10/2026 08:00:00';
       gerarRelatorioCapTodos(true);
       ok('cadastro guardado (a leitura de agora não chegou): o papel diz de quando é a UEP',
