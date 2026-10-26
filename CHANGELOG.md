@@ -11,6 +11,69 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.169.0 — 26/10/2026 · PONTOS NA JORNADA × META na PROGRAMAÇÃO × CAPACIDADE
+
+- PPCP: *"poucos produtos chegam"* à meta de pontos/dia, *"esse número é o
+  ideal para faturar"* → *"s/ horas extra"*.
+- Campo **META DE PONTOS / DIA · SEM HE** no diálogo, opcional. Fica guardado
+  **só neste computador** (`rpe_cap_pts`): o painel é público na Vercel e meta
+  de faturamento não vai no código — a regra do custo-hora do SIMULADOR.
+- **PONTOS NA JORNADA** por dia e por jornada: dia que cabe = os pontos
+  programados; dia acima = os pontos dos lotes que cabem na ORDEM do dia + o
+  lote PARCIAL na fração do tempo que cabe. Sem a ordem num dia acima, ou com
+  lote sem UEP/sem pontos, "—" (não se diz).
+- No período: pontos na jornada por dia e **% da meta**, **dias na meta de
+  pontos** e **PONTOS POR UEP** — o da programação contra o que a meta pede
+  (meta de pontos ÷ meta de UEP da jornada). Coluna PONTOS nos lotes.
+- Medido com a programação de 27/10 a 06/11: a programação traz **76,0 pontos
+  por UEP**, abaixo do que a meta pede — nenhum dia chega à meta de pontos, e
+  não chegaria nem com a programação inteira cabendo na jornada. O problema é
+  o MIX, não só o tempo.
+- **Atenção:** só a 🖨 PROGRAMAÇÃO × CAPACIDADE e o diálogo mudam. Sem meta
+  digitada, nada de %; os pontos na jornada saem do mesmo jeito. Nada no `.gs`.
+
+## v7.168.0 — 26/10/2026 · 🖨 PROGRAMAÇÃO × CAPACIDADE · ⚠ re-deploy (.gs v5.37)
+
+- PPCP: prompt *"Evolução do Relatório de Capacidade Diária por Produto"* —
+  comparar a capacidade com a programação real, na jornada de hoje e na
+  simulada, com o mix, e apontar os lotes em risco.
+- Impressão nova **🖨 PROGRAMAÇÃO × CAPACIDADE**, no diálogo da simulação de
+  jornada (⏱ CRONOANÁLISE → 🖨 CAPACIDADE POR PRODUTO), ao lado da de sempre:
+  a programação DATADA (cada dia só com os lotes dele; o já adiantado fora)
+  contra a jornada normal, com o MIX que está nela. Paisagem.
+  - **Período**, por jornada: capacidade disponível, tempo necessário, saldo
+    (déficit), ocupação, dias acima e dias com folga.
+  - **Dia a dia**: lotes, caixas a embalar, UEP, pontos, tempo necessário e,
+    para cada jornada, saldo, ocupação e situação.
+  - **Lotes dos dias acima da jornada, na ORDEM do dia**: tempo, acumulado e,
+    para cada jornada, CABE · PARCIAL (cabem X de Y) · FICA DE FORA.
+  - A 🖨 CAPACIDADE POR PRODUTO (cada um sozinho) continua **igual**, com o
+    botão de sempre (PPCP: *"deixar a impressão antiga também"*).
+- O diálogo da simulação de jornada mostra o resumo (pede, capacidade, saldo,
+  ocupação, dias acima) nas duas jornadas, e lê a programação se a do painel
+  tiver mais de 15 min. A impressão não espera leitura nenhuma: sem a
+  programação lida, avisa e não abre.
+- **Nenhuma conta de carga nova**: é a MESMA do PRÓXIMOS DIAS da aba ⚖ UEP
+  (UEP ÷ 288 UEP/h, o ritmo da meta — trocas e paradas já dentro). Sem tempo de
+  troca a mais e sem limite da esteira na carga.
+- Situações = as regras que já existiam no PRÓXIMOS DIAS: COM FOLGA (folga ≥ 3h)
+  · DENTRO · ACIMA ATÉ 1h45 (≈ a madrugada) · ACIMA. **"Próximo do limite" não
+  entrou**: não existe régua para isso no sistema.
+- O que fica fora da capacidade, e é dito: dia útil sem lote (pode ser feriado
+  — 02/11), sábado com lote (todo hora extra), dia só com linhas sem UEP (SEM
+  DADOS), linhas sem UEP (listadas) e o atraso + o que falta de hoje (linha HOJE,
+  previsão).
+- Medido com a programação de 26/10/2026 (27/10 a 06/11, 8 dias úteis): pede
+  **88h29** contra **70h16** de jornada (126%) — os 8 dias acima; na jornada
+  simulada de 503 min, 67h04 (132%). 27/10: 13h05 para 8h47, a BANQUETA
+  VERSATIL cabe em parte (1h18 de 1h27) e o BUFFET FLIP 1.8 fica de fora.
+- ⚠ **re-deploy** (`.gs` v5.37): o `getProgramacaoDetalhada` manda a coluna
+  **ORDEM** da PROGRAMACAO. Antes dele, os lotes saem do mais pesado ao mais
+  leve e o papel diz que não dá para afirmar qual fica de fora.
+- **Atenção:** nenhuma impressão antiga mudou; o diálogo ficou mais largo,
+  com dois botões de impressão (Enter continua imprimindo a CAPACIDADE POR
+  PRODUTO).
+
 ## v7.167.0 — 26/10/2026 · simulação de jornada no MÊS e no ANO
 
 - PPCP: *"colocar para simular sobre os meses também, mensal e anual"*, e as
