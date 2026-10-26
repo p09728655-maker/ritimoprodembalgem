@@ -51,8 +51,8 @@ via Google Apps Script (JSONP).
   de 26/10 e o nome do app com "caixa 2/2"): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
-  caminho real (calcular → gravar saldo → arquivar → recalcular):
-  `node programacao.test.js`.
+  caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
+  dia no `getProgramacaoDetalhada` (v5.37): `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto). Carrega o
   `.gs` **inteiro** e a conta do painel: `node uep-padrao.test.js`.
@@ -3699,6 +3699,58 @@ feito e dá ar de verdade ao que sobrou.
     turno do ⚙ (`turnoInicio`/`turnoFim`) e as `HE_JORNADA_*` do `.gs` (a hora
     extra é contada por horário), os slots da `HORA_A_HORA` e a regra do
     `getSlots`. Combinar com o PPCP ONDE saem os minutos antes de mexer.
+- **PROGRAMAÇÃO × CAPACIDADE** (v7.168.0 / `.gs` v5.37, PPCP 26/10/2026, prompt
+  *"Evolução do Relatório de Capacidade Diária por Produto"*). Impressão
+  PRÓPRIA `gerarRelatorioCapProg(menos)` (paisagem, `_rpDocParadas` → 15
+  usuários, `_rpCabecalho` 19 chamadas, rodapé `APP_NOME_CX` 13 — o teste
+  conta): a programação DATADA contra a jornada de hoje e a simulada, com o MIX
+  que está nela. Botão **🖨 PROGRAMAÇÃO × CAPACIDADE** no diálogo
+  `#modal-capjorn` (`_capJornImprimir('prog')`). ⚠ **A 🖨 CAPACIDADE POR
+  PRODUTO ficou IGUAL** (PPCP, no meio do trabalho: *"deixar a impressão antiga
+  também"*) — o teste falha se ela passar a ler a programação; o Enter do
+  diálogo continua nela.
+  - ⚠ **Nenhuma conta de carga nova**: `_capProgDoPainel(J, meta)` →
+    `_gpxDoPainel(CAP_PROG_DIAS, meta)` → o MESMO `_gpxMontar` do PRÓXIMOS
+    DIAS (UEP ÷ ritmo da meta, já adiantado fora, sem UEP fora e listado, atraso
+    e o de hoje fora). `_gpxDoPainel(n, metaUep)` ganhou os dois parâmetros
+    (sem eles, o de sempre). A meta passada é a de HOJE (`meta0`): a simulada
+    só reduz a capacidade, o ritmo é o mesmo. O teste confere a paridade dia a
+    dia.
+  - `_capProgMontar(P, J)` (conta): minuto INTEIRO por dia (os totais fecham com
+    a coluna); por jornada saldo, ocupação e situação pelo `_gpxEstado` — a
+    regra do PRÓXIMOS DIAS, agora numa função só: COM FOLGA (≥ `GPX_FOLGA_OK`) ·
+    DENTRO · ACIMA ATÉ 1h45 (`GPX_EXC_MAX`) · ACIMA. ⚠ **"Próximo do limite"
+    não existe** — não há régua; o PPCP define o número se quiser, numa
+    constante.
+  - Fora da capacidade, e dito no papel: dia útil sem lote (pode ser feriado —
+    02/11/2026), sábado com lote (todo HE), dia só com linha sem UEP (SEM
+    DADOS). Horizonte: até `CAP_PROG_DIAS`=10 dias úteis, cortado no último dia
+    com lote.
+  - **Lotes na ORDEM do dia** (coluna ORDEM da PROGRAMACAO, `_progOrdem`;
+    `_cartAberta` e `_cartSemUep` guardam a ordem por linha; o `_gpxMontar`
+    devolve `grupos`, todos os lotes do dia com a menor ordem das linhas). Só
+    os dias acima de alguma jornada vão ao papel: acumulado e, por jornada,
+    CABE · PARCIAL (cabem X de Y) · FICA DE FORA. Algum lote sem ordem no dia →
+    sem veredito, do mais pesado ao mais leve. Lote com linha sem UEP → dali
+    em diante INCERTO (o acumulado é um piso; FICA DE FORA continua certo).
+    Ordem repetida → entre eles vale o número do lote, e o papel avisa.
+  - Diálogo `#modal-capjorn`: resumo `_capProgResumoHtml` (`#capj-prog`, pede ·
+    capacidade · saldo · ocupação · dias acima, nas duas jornadas). Lê a
+    programação ao abrir só se a do painel tem mais de `GPX_TTL` (15 min);
+    `CAP_PROG_LENDO` evita duas leituras; o fim redesenha. A impressão é
+    síncrona: usa o que está no painel; sem programação lida (ou com a falha,
+    pelo `_progDetFalhaInfo`), sem UEP, sem lote ou com a montagem quebrada →
+    avisa (`_capProgFaltaTxt`) e NÃO abre o pop-up; o diálogo fica aberto.
+  - ⚠ Na impressão o atraso e o que falta de hoje ficam numa linha HOJE
+    (previsão, jornada de hoje, `conta` do `_gpxMontar`) — não entram nos dias.
+  - Medido com a programação de 26/10/2026: 27/10–06/11, 8 dias úteis, pede
+    88h29 × 70h16 (126%), os 8 acima; na simulada (503) 67h04 (132%).
+  - `.gs` v5.37: `_lerProgDaAba` lê a coluna `ORDEM` (nome exato, maiúsculas) e
+    o `getProgramacaoDetalhada` manda `ordem` (número; vazia/texto/sem coluna →
+    null). ⚠ **re-deploy manual**; antes dele, sem veredito por lote.
+  - Testes: `relatorios.test.js` (o 27/10 real, paridade com o `_gpxMontar`,
+    ordem, incerto, sem dados, totais, o papel e o diálogo) e
+    `programacao.test.js` (a ORDEM no `.gs`). Conferidos por mutação.
 - **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
   PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
   medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`

@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.37 — A ORDEM DO DIA NA PROGRAMAÇÃO DETALHADA
+//               PPCP, 26/10/2026 (programação × capacidade da embalagem): a aba
+//               PROGRAMACAO tem a coluna ORDEM (a sequência do dia), e o painel
+//               precisa dela para dizer QUAL lote fica fora da jornada quando o
+//               dia estoura. _lerProgDaAba lê a coluna (opcional, pelo nome) e
+//               getProgramacaoDetalhada devolve `ordem` (número; null sem a
+//               coluna ou com a célula vazia — nunca uma ordem inventada).
+//               Nada mais muda.
 // Versão: 5.36 — AS PARADAS APONTADAS DENTRO DE CADA HORA (getHorasCrono)
 //               PPCP, 26/10/2026: "a idéia é ajustar as paradas para menos, não
 //               pode normalizar e a UEP ficar maior" → "tem que ser justa a
@@ -4714,6 +4722,9 @@ function _lerProgDaAba(sh, arquivada) {
   const iProd = hdr.indexOf('PRODUZIDO');
   const iSald = hdr.indexOf('SALDO');
   const iStat = hdr.indexOf('STATUS');
+  // ORDEM (v5.37): a sequência do dia, opcional. Só o nome exato — "ORDEM" não
+  // pode casar com outra coluna por pedaço.
+  const iOrd  = hdr.indexOf('ORDEM');
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -4743,6 +4754,7 @@ function _lerProgDaAba(sh, arquivada) {
                encerrada: encerrada,
                produzido: produzido,
                status: iStat >= 0 ? String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() : '',
+               ordem: iOrd >= 0 && String(r[iOrd] == null ? '' : r[iOrd]).trim() !== '' && isFinite(Number(r[iOrd])) ? Number(r[iOrd]) : null,
                row: i });   // índice da linha na aba (o write-back casa a linha por ela)
   }
   return out;
@@ -5200,6 +5212,8 @@ function getProgramacaoDetalhada() {
       data:     normalizarDataBR(pr.data),
       dataNum:  dNum,
       lote:     pr.lote || '',
+      // v5.37: a sequência do dia (coluna ORDEM). null = sem a coluna ou vazia.
+      ordem:    pr.ordem == null ? null : pr.ordem,
       codigo:   cat ? cat.codigo : pr.codigo,
       desc:     cat ? cat.desc   : '',
       // Mesma razão do getProgramacaoHoje: sem a cor, duas linhas do mesmo

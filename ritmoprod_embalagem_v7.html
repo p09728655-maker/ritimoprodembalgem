@@ -1522,6 +1522,14 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #modal-capjorn .capj-p{grid-template-columns:1fr 1fr 1fr;margin-top:0}
 #modal-capjorn .capj-p b{font-size:18px}
 #modal-capjorn .capj-n{font-size:11.5px;color:var(--txt2);line-height:1.5;margin:10px 0 4px}
+#modal-capjorn .capj-pt{font-family:var(--font-d);font-size:10px;letter-spacing:1.2px;color:var(--txt2);margin:4px 0 6px}
+#modal-capjorn .capj-t{width:100%;border-collapse:collapse;font-size:12px}
+#modal-capjorn .capj-t th,#modal-capjorn .capj-t td{padding:4px 8px;border-bottom:0.5px solid var(--border);text-align:right;background:none}
+#modal-capjorn .capj-t th:first-child{text-align:left}
+#modal-capjorn .capj-t thead th{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.2px;color:var(--txt2);font-weight:400}
+#modal-capjorn .capj-t tbody th{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.2px;color:var(--txt2);font-weight:400}
+#modal-capjorn .capj-t td{font-family:var(--font-d);color:var(--txt)}
+#modal-capjorn .capj-t b.r{color:var(--red)}
 .modal{background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto}
 .modal-ttl{font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:2px;color:var(--acc);text-transform:uppercase;margin-bottom:20px}
 .frm-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px}
@@ -3350,18 +3358,20 @@ if (_v7Instalado()) _v7EscondeBotao();
 <!-- 🖨 CAPACIDADE POR PRODUTO da ⏱ CRONOANÁLISE, com a SIMULAÇÃO DE JORNADA
      (v7.165.0). Simulação — nada é gravado. -->
 <div class="modal-over" id="modal-capjorn">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:640px">
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="modal-ttl" style="margin:0">🖨 CAPACIDADE POR PRODUTO</div>
+      <div class="modal-ttl" style="margin:0">🖨 CAPACIDADE</div>
       <span style="font-family:var(--font-d);font-size:9px;letter-spacing:1.5px;color:var(--warn);border:0.5px solid var(--warn);border-radius:3px;padding:2px 6px">SIMULAÇÃO DE JORNADA</span>
     </div>
     <div class="frm-row" style="margin-top:14px">
       <div class="frm-grp"><label class="frm-lbl">MINUTOS A MENOS POR DIA</label><input class="frm-inp" id="capj-min" type="text" inputmode="numeric" placeholder="ex.: 24 — vazio = a jornada de hoje" oninput="_capJornPintar()" onkeydown="if(event.key==='Enter')_capJornImprimir()"></div>
     </div>
     <div id="capj-res"></div>
+    <div id="capj-prog" style="margin-top:12px"></div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="fecharCapJorn()">CANCELAR</button>
-      <button class="btn btn-acc" onclick="_capJornImprimir()">🖨 IMPRIMIR</button>
+      <button class="btn btn-ghost" onclick="_capJornImprimir('prog')" title="a programação datada contra a jornada, dia a dia, e os lotes na ordem do dia">🖨 PROGRAMAÇÃO × CAPACIDADE</button>
+      <button class="btn btn-acc" onclick="_capJornImprimir()" title="quantos produtos cabem por dia, cada um sozinho na linha">🖨 CAPACIDADE POR PRODUTO</button>
     </div>
   </div>
 </div>
@@ -3445,7 +3455,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.167.0';
+const APP_VER   = '7.168.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7275,9 +7285,18 @@ function _uepConvDocHtml(R, ctx){
 // dia; vazio = a jornada de hoje). O IMPRIMIR do diálogo é o clique que abre o
 // pop-up. O valor fica neste computador (rpe_cap_jorn).
 const CAP_JORN_LS = 'rpe_cap_jorn';
+// A programação é lida ao abrir o diálogo só se a do painel tem mais de 15 min
+// (GPX_TTL, a régua do PRÓXIMOS DIAS — é das leituras mais caras do backend);
+// o fim da leitura redesenha o diálogo. A impressão nunca espera por ela.
+let CAP_PROG_LENDO=false;
 function _ucvCapTodos(){
   _capCatLocal();
   if(!CAP_CAT && !CAP_BUSCANDO) _capBuscar();
+  if(CFG.sheetsUrl && !CAP_PROG_LENDO && (!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL)){
+    CAP_PROG_LENDO=true;
+    carregarProgramacaoDetalhada().finally(()=>{ CAP_PROG_LENDO=false;
+      const m=document.getElementById('modal-capjorn'); if(m && m.classList.contains('on')) _capJornPintar(); });
+  }
   const i=document.getElementById('capj-min');
   if(i && !i.value){ try{ i.value=localStorage.getItem(CAP_JORN_LS)||''; }catch(e){} }
   document.getElementById('modal-capjorn').classList.add('on');
@@ -7286,14 +7305,24 @@ function _ucvCapTodos(){
 }
 function _capJornPintar(){
   const v=(document.getElementById('capj-min')||{}).value, meta=_capMetaOficial();
-  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(_capJornada(meta, _capJornMin(v), CFG.turnoFim), meta);
+  const J=_capJornada(meta, _capJornMin(v), CFG.turnoFim);
+  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(J, meta);
+  // PROGRAMAÇÃO × CAPACIDADE (v7.168.0): a mesma montagem da impressão
+  const g=document.getElementById('capj-prog');
+  if(g){ let h='';
+    try{ h=_capProgResumoHtml(_capProgDoPainel(J && !J.erro ? J : null, meta), !CAP_PROG_LENDO && !PROG_DET_TS && PROG_DET_FALHA ? _progDetFalhaInfo() : null); }
+    catch(e){ console.warn('programação × capacidade:', e); h='<div class="capj-n">Não consegui montar a comparação com a programação.</div>'; }
+    g.innerHTML=h; }
 }
 function fecharCapJorn(){ document.getElementById('modal-capjorn').classList.remove('on'); }
-function _capJornImprimir(){
+// `qual` = 'prog' → a PROGRAMAÇÃO × CAPACIDADE (v7.168.0); sem ele (e no
+// Enter), a CAPACIDADE POR PRODUTO de sempre.
+function _capJornImprimir(qual){
   const v=(document.getElementById('capj-min')||{}).value, n=_capJornMin(v);
   const J=_capJornada(_capMetaOficial(), n);
   if(J && J.erro){ _capJornPintar(); return; }
   try{ localStorage.setItem(CAP_JORN_LS, String(v||'').trim()); }catch(e){}
+  if(qual==='prog'){ if(gerarRelatorioCapProg(n)) fecharCapJorn(); return; }   // não abriu → o diálogo fica (o aviso disse por quê)
   fecharCapJorn();
   gerarRelatorioCapTodos(true, n);
 }
@@ -11180,7 +11209,7 @@ function _capJornHtml(J, meta){
   if(J.erro) return `<div class="capj-n" style="color:var(--warn)">${_rpEsc(J.erro)}</div>`;
   return `<div class="capj-g">${_capJornLinhas(J).map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b><i>${l[2]}</i></div>`).join('')}</div>
     <div class="capj-g capj-p">${_capJornPeriodo(J).map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b><i>${l[2]}</i></div>`).join('')}</div>
-    <div class="capj-n">Simulação — nada é gravado. A tabela da impressão sai na jornada nova, com PRODUTOS A MENOS por mês e por ano e a % PERDA.</div>`;
+    <div class="capj-n">Simulação — nada é gravado. A 🖨 CAPACIDADE POR PRODUTO sai na jornada nova, com PRODUTOS A MENOS por mês e por ano e a % PERDA.</div>`;
 }
 function _capJornDocHtml(J){
   return `<div class="rp-sec-ttl" style="margin-top:0">SIMULAÇÃO DE JORNADA · ${fmtN(J.menos)} MIN A MENOS POR DIA</div>
@@ -11189,6 +11218,236 @@ function _capJornDocHtml(J){
 <div class="rp-note">A linha mantém o ritmo de hoje: com menos minutos, a meta do dia e a capacidade de cada produto caem na mesma proporção. Nada foi gravado.</div>`;
 }
 function _capMetaOficial(){ return Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO; }
+// ── PROGRAMAÇÃO × CAPACIDADE (v7.168.0, PPCP 26/10/2026 — "evolução do
+// relatório de capacidade diária por produto") ────────────────────────────────
+// A tabela por produto diz quanto cabe com CADA produto SOZINHO na linha. Esta
+// diz se a programação DATADA cabe na jornada, dia a dia, com o MIX que está
+// nela — na jornada de hoje e na simulada, com a MESMA programação.
+// ⚠ NENHUMA CONTA DE CARGA NOVA: os dias vêm do _gpxMontar, a MESMA carga do
+// PRÓXIMOS DIAS da aba ⚖ UEP (UEP da linha ÷ ritmo da meta, já adiantado fora,
+// linha sem UEP fora e listada, atraso e o de hoje fora — v7.156.0). Aqui só se
+// compara com cada jornada e se acumula os lotes na ORDEM do dia.
+// ⚠ Sem tempo de troca a mais: o ritmo da meta (UEP ÷ 527 min) já tem as trocas
+// e as paradas dentro. Sem limite da esteira na carga: o vão do cadastro é o
+// padrão de 650 mm em quase todo produto (só SLEEP e MADERO medidos).
+// ⚠ "PRÓXIMO DO LIMITE" NÃO EXISTE: não há régua para isso no sistema. As
+// situações são as do PRÓXIMOS DIAS (_gpxEstado): COM FOLGA (≥ GPX_FOLGA_OK) ·
+// DENTRO · ACIMA ATÉ 1h45 (GPX_EXC_MAX, ≈ a madrugada) · ACIMA — e a ocupação %.
+const CAP_PROG_DIAS = 10;   // dias úteis à frente; o fim é o último dia com lote
+// O nome da situação, das regras do PRÓXIMOS DIAS (função: as GPX_* são
+// declaradas mais abaixo no arquivo).
+function _capProgSitTxt(e){
+  return e === 'ok' ? 'COM FOLGA' : e === 'warn' ? 'ACIMA ATÉ ' + _fmtHM(GPX_EXC_MAX) : e === 'red' ? 'ACIMA' : 'DENTRO';
+}
+function _capProgMontar(P, J){
+  if(!P) return null;
+  if(P.falha) return { falha:P.falha };
+  const jorn = [{ id:'hoje', min:UEP_MIN_DIA }];
+  if(J && !J.erro) jorn.push({ id:'sim', min:J.minNovo });
+  let ult = -1; P.dias.forEach((d, i) => { if(d.estado !== 'vazio') ult = i; });
+  const dias = P.dias.slice(0, ult + 1).map(d => {
+    const vazio = d.estado === 'vazio';
+    const semDados = !vazio && !d.fds && !(d.uep > 0);      // só linhas sem UEP: o tempo não se sabe
+    // MINUTO INTEIRO por dia: é o que a tela mostra, e os totais do período
+    // (somas destes) fecham com a coluna dia a dia. A situação não muda — o
+    // _gpxEstado já arredonda o excesso.
+    const m = Math.round(d.min);
+    const por = jorn.map(j => (vazio || d.fds || semDados) ? null
+      : { saldo: j.min - m, ocup: m / j.min * 100, estado: _gpxEstado(m - j.min, false, false) });
+    // OS LOTES NA ORDEM DO DIA. Sem a ORDEM em todos os lotes do dia (backend
+    // antigo, coluna vazia) não se diz qual fica de fora: a lista sai do mais
+    // pesado ao mais leve, sem veredito. Lote sem UEP (ou com linha sem UEP)
+    // deixa o acumulado dali em diante sem fim conhecido: CABE vira INCERTO —
+    // só o FICA DE FORA continua certo (o acumulado é um piso).
+    const grupos = d.grupos || [];
+    const comOrdem = grupos.length > 0 && grupos.every(g => g.ordem != null && !g.semOrd);
+    const gs = grupos.slice().sort(comOrdem ? ((a, b) => a.ordem - b.ordem || String(a.lote).localeCompare(String(b.lote)))
+                                            : ((a, b) => (b.min || 0) - (a.min || 0)));
+    let acU = 0, incerto = false;
+    const lotes = gs.map(g => {
+      const ini = Math.round(Math.round(acU) / P.porMin);
+      if(g.uep != null) acU += g.uep;
+      if(g.cxSemUep > 0) incerto = true;
+      const fim = Math.round(Math.round(acU) / P.porMin);
+      const cabe = (!comOrdem || d.fds) ? null : jorn.map(j =>
+          ini >= j.min ? { s:'fora' }
+        : incerto      ? { s:'incerto' }
+        : fim <= j.min ? { s:'cabe' }
+        :                { s:'parcial', min: j.min - ini, de: fim - ini });
+      return Object.assign({}, g, { ini, fim, cabe });
+    });
+    return { data:d.data, dow:d.dow, fds:d.fds, vazio, semDados, uep:d.uep, cx:d.cx, cxAdi:d.cxAdi, pts:d.pts, min:m,
+             cxSemUep:d.cxSemUep, por, comOrdem, ordRep: comOrdem && new Set(gs.map(g => g.ordem)).size < gs.length, lotes,
+             acima: por.some(x => x && (x.estado === 'warn' || x.estado === 'red')) };
+  });
+  const uteis = dias.filter(d => !d.fds && !d.vazio && !d.semDados);
+  const tot = jorn.map((j, k) => {
+    const cap = uteis.length * j.min, pede = uteis.reduce((a, d) => a + d.min, 0);
+    const ac = uteis.filter(d => d.por[k].estado === 'warn' || d.por[k].estado === 'red');
+    const fo = uteis.filter(d => Math.round(d.por[k].saldo) > 0);
+    return { id:j.id, min:j.min, cap, pede, saldo: cap - pede, ocup: cap > 0 ? pede / cap * 100 : null,
+             nAcima: ac.length, falta: ac.reduce((a, d) => a - d.por[k].saldo, 0),
+             nFolga: fo.length, sobra: fo.reduce((a, d) => a + d.por[k].saldo, 0) };
+  });
+  return {
+    dias, tot, jorn, porMin:P.porMin, meta:P.meta, conta:P.conta, dataHoje:P.dataHoje,
+    nUteis: uteis.length, de: uteis.length ? uteis[0].data : '', ate: uteis.length ? uteis[uteis.length - 1].data : '',
+    uep: uteis.reduce((a, d) => a + d.uep, 0), cx: uteis.reduce((a, d) => a + d.cx, 0), cxAdi: uteis.reduce((a, d) => a + d.cxAdi, 0),
+    pts: uteis.some(d => d.pts == null) ? null : uteis.reduce((a, d) => a + d.pts, 0),
+    vazios: dias.filter(d => d.vazio && !d.fds).map(d => d.data),
+    fds: dias.filter(d => d.fds && !d.vazio),
+    semDados: dias.filter(d => d.semDados).map(d => d.data),
+    cxSemUep: dias.reduce((a, d) => a + d.cxSemUep, 0),
+    semUep: (P.semUep || []).filter(x => dias.some(d => d.data === x.data)),
+    semOrdem: uteis.some(d => !d.comOrdem), algumaOrdem: uteis.some(d => d.comOrdem)
+  };
+}
+// A montagem com os dados do painel (a meta da impressão).
+function _capProgDoPainel(J, meta){
+  const P = _gpxDoPainel(CAP_PROG_DIAS, meta);
+  const C = _capProgMontar(P, J);
+  if(C && !C.falha){ C.lidaEm = PROG_DET_TS; C.divSemUep = P.divSemUep || []; }
+  return C;
+}
+// Desenho (sem conta): tudo vem pronto do _capProgMontar.
+function _capProgSitHtml(x){
+  if(!x) return '—';
+  const cor = x.estado === 'red' ? '#C62828' : x.estado === 'warn' ? '#B4650A' : x.estado === 'ok' ? '#2E7D32' : '#1F2328';
+  return `<b style="color:${cor}">${_capProgSitTxt(x.estado)}</b>`;
+}
+function _capProgSaldoTxt(v){ const r = Math.round(v); return r === 0 ? '0h00' : (r > 0 ? '+' : '−') + _fmtHM(r); }
+function _capProgCabeTxt(c){
+  if(!c) return '—';
+  if(c.s === 'cabe') return '<b style="color:#2E7D32">CABE</b>';
+  if(c.s === 'fora') return '<b style="color:#C62828">FICA DE FORA</b>';
+  if(c.s === 'parcial') return `<b style="color:#B4650A">PARCIAL</b> · cabem ${_fmtHM(c.min)}${c.de != null ? ' de ' + _fmtHM(c.de) : ''}`;
+  return '<span style="color:#5B6470" title="há lote sem UEP antes (ou neste): o tempo acumulado é um piso">INCERTO · sem UEP</span>';
+}
+function _capProgTitJorn(C, k){
+  return (k === 0 ? 'JORNADA DE HOJE' : 'JORNADA SIMULADA') + ' · ' + fmtN(C.jorn[k].min) + ' MIN';
+}
+function _capProgDocHtml(C){
+  if(!C) return '';
+  const sim = C.jorn.length > 1, nJ = C.jorn.length;
+  const lida = C.lidaEm ? ' · programação lida às ' + new Date(C.lidaEm).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
+  const ritmo = fmtN(Math.round(C.porMin * 60));
+  const linT = (rot, f) => `<tr><td class="td-bold">${rot}</td>${C.tot.map((t, k) => `<td class="td-mono">${f(t, k)}</td>`).join('')}</tr>`;
+  const tabTot = `<table style="width:auto;min-width:60%"><thead><tr><th></th>${C.tot.map((t, k) => `<th>${_capProgTitJorn(C, k)}</th>`).join('')}</tr></thead><tbody>
+    ${linT('CAPACIDADE DISPONÍVEL', t => `<b>${_fmtHM(t.cap)}</b> · ${C.nUteis} × ${_fmtHM(t.min)}`)}
+    ${linT('TEMPO NECESSÁRIO', t => `<b>${_fmtHM(t.pede)}</b>`)}
+    ${linT('SALDO DO PERÍODO', t => `<b style="color:${Math.round(t.saldo) < 0 ? '#C62828' : '#1F2328'}">${_capProgSaldoTxt(t.saldo)}</b>${Math.round(t.saldo) < 0 ? ' · déficit' : ''}`)}
+    ${linT('OCUPAÇÃO', t => t.ocup == null ? '—' : `<b>${fmtP(t.ocup)}</b>`)}
+    ${linT('DIAS ACIMA DA JORNADA', t => `<b>${t.nAcima} de ${C.nUteis}</b>${t.nAcima ? ' · faltam ' + _fmtHM(t.falta) : ''}`)}
+    ${linT('DIAS COM FOLGA', t => `${t.nFolga} de ${C.nUteis}${t.nFolga ? ' · sobram ' + _fmtHM(t.sobra) : ''}`)}
+  </tbody></table>`;
+  const cols = 6 + 3 * nJ;
+  const linhaDia = d => {
+    const nome = `<td class="td-bold">${GPX_DOW[d.dow]} ${d.data.slice(0,5)}</td>`;
+    if(d.vazio) return `<tr>${nome}<td colspan="${cols - 1}" style="color:#5B6470">SEM LOTE DATADO — fora da capacidade (feriado, ou ainda sem programação)</td></tr>`;
+    const base = `<td class="td-mono">${d.lotes.length}</td><td class="td-mono">${fmtN(d.cx)}${d.cxAdi ? `<div style="font-size:8.5px;color:#5B6470">${fmtN(d.cxAdi)} já adiantadas</div>` : ''}</td>
+      <td class="td-mono">${fmtN(d.uep)}</td><td class="td-mono">${d.pts == null ? '—' : fmtN(d.pts)}</td>
+      <td class="td-bold">${d.semDados ? '—' : _fmtHM(d.min)}${d.cxSemUep ? `<div style="font-size:8.5px;font-weight:700;color:#B4650A">+ ${fmtN(d.cxSemUep)} cx sem UEP</div>` : ''}</td>`;
+    if(d.fds) return `<tr>${nome}${base}<td colspan="${3 * nJ}" style="color:#5B6470">FIM DE SEMANA — todo hora extra, fora da capacidade</td></tr>`;
+    if(d.semDados) return `<tr>${nome}${base}<td colspan="${3 * nJ}" style="color:#B4650A"><b>SEM DADOS</b> — nenhuma linha do dia tem UEP no cadastro</td></tr>`;
+    return `<tr${d.acima ? ' style="background:#fff8ed;-webkit-print-color-adjust:exact;print-color-adjust:exact"' : ''}>${nome}${base}${d.por.map(x =>
+      `<td class="td-mono">${_capProgSaldoTxt(x.saldo)}</td><td class="td-mono">${fmtP(x.ocup)}</td><td>${_capProgSitHtml(x)}</td>`).join('')}</tr>`;
+  };
+  const tabDias = `<table><thead>
+    <tr><th rowspan="2">DIA</th><th rowspan="2">LOTES</th><th rowspan="2">CAIXAS A EMBALAR</th><th rowspan="2">UEP</th><th rowspan="2">PONTOS</th><th rowspan="2">TEMPO NECESSÁRIO</th>${C.jorn.map((j, k) => `<th colspan="3">${_capProgTitJorn(C, k)}</th>`).join('')}</tr>
+    <tr>${C.jorn.map(() => '<th>SALDO</th><th>OCUPAÇÃO</th><th>SITUAÇÃO</th>').join('')}</tr></thead>
+    <tbody>${C.dias.map(linhaDia).join('')}</tbody></table>`;
+  // os lotes dos dias acima da jornada, na ORDEM do dia
+  const diasAc = C.dias.filter(d => d.acima);
+  const linLote = (d, g) => `<tr><td class="td-mono">${d.comOrdem ? fmtN(g.ordem) : '—'}</td><td class="td-mono">${_rpEsc(g.lote || '—')}</td><td>${_rpEsc(g.rot || '')}</td>
+      <td class="td-mono">${fmtN(g.cx + g.cxSemUep)}${g.cxSemUep ? `<div style="font-size:8.5px;font-weight:700;color:#B4650A">${fmtN(g.cxSemUep)} sem UEP</div>` : ''}</td>
+      <td class="td-mono">${g.min == null ? 'sem UEP' : _fmtHM(g.min)}</td><td class="td-mono">${d.comOrdem ? _fmtHM(g.fim) : '—'}</td>
+      ${C.jorn.map((j, k) => `<td>${g.cabe ? _capProgCabeTxt(g.cabe[k]) : '—'}</td>`).join('')}</tr>`;
+  const cabDia = d => `<tr style="background:#f2f4f7;-webkit-print-color-adjust:exact;print-color-adjust:exact"><td colspan="${6 + nJ}"><b>${GPX_DOW[d.dow]} ${d.data.slice(0,5)}</b> · ${_fmtHM(d.min)} de linha · ${d.por.map((x, k) => `${k ? 'simulada' : 'hoje'} ${_capProgSaldoTxt(x.saldo)}`).join(' · ')}${d.comOrdem ? (d.ordRep ? ' · <span style="color:#B4650A">ordem repetida: entre eles vale o número do lote</span>' : '') : ' · <span style="color:#B4650A">sem a ORDEM do dia — do mais pesado ao mais leve, sem dizer qual fica de fora</span>'}</td></tr>`;
+  const tabLotes = diasAc.length ? `<div class="rp-sec-ttl">LOTES DOS DIAS ACIMA DA JORNADA · NA ORDEM DO DIA</div>
+    <table><thead><tr><th>ORDEM</th><th>LOTE</th><th>PRODUTO</th><th>CAIXAS</th><th>TEMPO</th><th>ACUMULADO</th>${C.jorn.map((j, k) => `<th>${_capProgTitJorn(C, k)}</th>`).join('')}</tr></thead>
+    <tbody>${diasAc.map(d => cabDia(d) + d.lotes.map(g => linLote(d, g)).join('')).join('')}</tbody></table>
+    <div class="rp-note">O que fica de fora não se perde: vai para outro dia, hora extra ou nova data — a decisão é do PPCP; o painel não reprograma nada.</div>` : '';
+  const k = C.conta;
+  const notas = [
+    k ? `<b>Hoje ${_rpEsc(C.dataHoje)} (previsão, jornada de hoje):</b> falta zerar ${_fmtHM(k.div)}${k.venc != null ? ` (atraso ${_fmtHM(k.venc)} + programado de hoje ${_fmtHM(k.hoje)})` : ''} · cabem ${_fmtHM(k.cabe)} no resto da jornada${k.sobra > 0 ? ` · <b>não cabem ${_fmtHM(k.sobra)}</b>` : ''} — não entram nos dias acima.` : '',
+    C.vazios.length ? `<b>Dia útil sem lote datado:</b> ${C.vazios.map(x => x.slice(0,5)).join(', ')} — fora da capacidade (pode ser feriado).` : '',
+    C.fds.length ? `<b>Fim de semana com lote:</b> ${C.fds.map(d => d.data.slice(0,5) + ' ' + _fmtHM(d.min)).join(', ')} — todo hora extra, fora da capacidade.` : '',
+    C.cxSemUep ? `<b>${fmtN(C.cxSemUep)} cx sem UEP no cadastro</b> ficam fora do tempo necessário: ${C.semUep.slice(0, 12).map(x => _rpEsc(x.data.slice(0,5) + ' · lote ' + (x.lote || '—') + ' · ' + x.codigo + ' · ' + fmtN(x.cx) + ' cx')).join('; ')}${C.semUep.length > 12 ? ` e mais ${C.semUep.length - 12}` : ''}.` : '',
+    C.semOrdem ? `<b>Sem a ORDEM do dia${C.algumaOrdem ? ' em alguns dias' : ''}</b> — a programação ${C.algumaOrdem ? 'tem lote com a coluna ORDEM vazia' : 'não trouxe a coluna ORDEM (.gs v5.37 ainda não publicado, ou a coluna está vazia)'}: nesses dias não se diz qual lote fica de fora.` : ''
+  ].filter(Boolean).map(t => `<div class="rp-note" style="margin:3px 0">${t}</div>`).join('');
+  return `<div class="rp-sec-ttl"${sim ? '' : ' style="margin-top:0"'}>PROGRAMAÇÃO × CAPACIDADE · ${_rpEsc(C.de.slice(0,5))} A ${_rpEsc(C.ate.slice(0,5))} · ${plural(C.nUteis, 'DIA ÚTIL', 'DIAS ÚTEIS')} COM LOTE</div>
+<div class="rp-note" style="margin-top:0">A programação <b>datada</b> (cada dia só com os lotes dele; o já adiantado fora) contra a jornada normal, com o <b>mix</b> que está nela — não um produto sozinho. ${plural(C.nUteis, 'dia', 'dias')}: <b>${fmtN(C.uep)} UEP</b> · <b>${fmtN(C.cx)} cx</b>${C.pts != null ? ` · <b>${fmtN(C.pts)} pontos</b>` : ''}${C.cxAdi ? ` · ${fmtN(C.cxAdi)} cx já adiantadas, fora` : ''}. Tempo = UEP ÷ ${ritmo} UEP/h, o ritmo da meta.${sim ? ' A simulada usa a MESMA programação e o MESMO ritmo, com menos minutos.' : ''}${lida}</div>
+${tabTot}
+<div class="rp-sec-ttl">DIA A DIA</div>
+${tabDias}
+${notas}
+${tabLotes}`;
+}
+// 🖨 PROGRAMAÇÃO × CAPACIDADE (v7.168.0) — impressão PRÓPRIA (PPCP: "deixar a
+// impressão antiga também"): a 🖨 CAPACIDADE POR PRODUTO continua como era.
+// SÍNCRONA: usa a programação já lida no painel (o pop-up abre no clique);
+// sem ela, ou com a montagem quebrada, avisa e não abre — nunca um número
+// inventado. Meta das configurações; `menos` = a simulação de jornada.
+function _capProgFaltaTxt(C){
+  if(!C){ const f=PROG_DET_FALHA?_progDetFalhaInfo():null;
+    return f ? f.t+' — '+f.d : 'A programação ainda não foi lida neste computador. Aguarde alguns segundos e tente de novo.'; }
+  if(C.falha) return 'A programação não traz UEP — sem ela não há como comparar com a capacidade.';
+  if(!C.nUteis) return 'Nenhum lote datado nos próximos dias úteis.';
+  return '';
+}
+function gerarRelatorioCapProg(menos){
+  const meta0=_capMetaOficial();
+  const J=_capJornada(meta0, menos, CFG.turnoFim);
+  if(J && J.erro){ alert(J.erro); return false; }
+  let C=null;
+  try{ C=_capProgDoPainel(J, meta0); }
+  catch(err){ console.warn('programação × capacidade:', err); alert('Não consegui montar a comparação com a programação.'); return false; }
+  const falta=_capProgFaltaTxt(C);
+  if(falta){ alert(falta); return false; }
+  const win=window.open('','_blank','width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este endereço e tente de novo.'); return false; }
+  const ritmo=fmtN(Math.round(C.porMin*60)), lida=C.lidaEm?new Date(C.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+  const corpo=`
+${J?_capJornDocHtml(J):''}
+${_capProgDocHtml(C)}
+<div class="rp-sec-ttl">COMO O NÚMERO SAI</div>
+<div style="font-size:10.5px;color:#5B6470;line-height:1.6">
+  <b>Tempo necessário</b> = UEP do dia ÷ ${ritmo} UEP/h — o ritmo da meta (${fmtN(C.meta)} UEP em ${fmtN(UEP_MIN_DIA)} min). UEP do dia = caixas a embalar × UEP por caixa do cadastro, só dos lotes datados nele; o já adiantado e as linhas sem UEP ficam fora (estas são listadas). É a MESMA carga do PRÓXIMOS DIAS da aba ⚖ UEP.
+  <b>Capacidade</b> = dias úteis com lote × jornada (${fmtN(UEP_MIN_DIA)} min${J?`, ou ${fmtN(J.minNovo)} min na simulada`:''}). Dia útil sem lote, sábado e dia só com linhas sem UEP ficam fora. <b>Saldo</b> = capacidade − tempo; <b>ocupação</b> = tempo ÷ capacidade.
+  <b>Situação</b> (as regras do PRÓXIMOS DIAS): COM FOLGA = sobram ${_fmtHM(GPX_FOLGA_OK)} ou mais · DENTRO · ACIMA ATÉ ${_fmtHM(GPX_EXC_MAX)} (≈ a madrugada das 05:00 às 07:00) · ACIMA.
+  <b>Lotes</b> acumulados na ORDEM do dia (coluna Ordem da PROGRAMACAO): CABE = termina dentro da jornada · PARCIAL = começa dentro e passa · FICA DE FORA = começa depois · INCERTO = há linha sem UEP antes (ou nele), o tempo acumulado é um piso.
+  Sem tempo de troca a mais: o ritmo da meta já tem as trocas e as paradas dentro. Sem o limite da esteira: o vão do cadastro ainda é o padrão na maioria dos produtos.
+  ${J?'<b>Jornada simulada</b>: a MESMA programação e o MESMO ritmo, com menos minutos — só a capacidade muda. ':''}O atraso e o que falta de hoje não entram nos dias (linha HOJE, previsão). Nada é gravado e nada é reprogramado.
+</div>
+<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>programação × capacidade · ${_rpEsc(C.de.slice(0,5))} a ${_rpEsc(C.ate.slice(0,5))}${J?' · jornada simulada de '+fmtN(J.minNovo)+' min':''}</span></div>`;
+  const html=_rpDocParadas('Programação × capacidade', true)   // PAISAGEM: as duas jornadas lado a lado
+    + _rpBotaoImprimir()
+    + _rpCabecalho('PROGRAMAÇÃO × CAPACIDADE',
+        `<div class="rp-per">${J?'JORNADA SIMULADA':'JORNADA DE HOJE'}</div>
+         <div>Meta: ${fmtN(meta0)} UEP em ${fmtN(UEP_MIN_DIA)} min · ${ritmo} UEP/h${lida?' · programação de '+lida:''}</div>
+         <div>Gerado em: ${new Date().toLocaleString('pt-BR')}</div>`,
+        ' · PROGRAMAÇÃO DATADA · MIX DOS LOTES')
+    + corpo + '</body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+  return true;
+}
+// O resumo do diálogo (tela): a mesma montagem, só o período.
+function _capProgResumoHtml(C, falha){
+  if(!C) return `<div class="capj-n">${falha ? _rpEsc(falha.t + ' — ' + falha.d) : 'Lendo a programação…'}</div>`;
+  if(C.falha) return '<div class="capj-n">A programação não traz UEP — sem ela não há como comparar com a capacidade.</div>';
+  if(!C.nUteis) return '<div class="capj-n">Nenhum lote datado nos próximos dias úteis.</div>';
+  const cel = (t, f) => `<td>${f(t)}</td>`;
+  const lin = (rot, f) => `<tr><th>${rot}</th>${C.tot.map(t => cel(t, f)).join('')}</tr>`;
+  return `<div class="capj-pt">PROGRAMAÇÃO × CAPACIDADE · ${_rpEsc(C.de.slice(0,5))} a ${_rpEsc(C.ate.slice(0,5))} · ${plural(C.nUteis, 'dia útil', 'dias úteis')} com lote</div>
+    <table class="capj-t"><thead><tr><th></th>${C.tot.map((t, k) => `<th>${k ? 'SIMULADA' : 'HOJE'} · ${fmtN(t.min)} min</th>`).join('')}</tr></thead><tbody>
+      ${lin('PEDE', t => _fmtHM(t.pede))}
+      ${lin('CAPACIDADE', t => _fmtHM(t.cap))}
+      ${lin('SALDO', t => `<b class="${Math.round(t.saldo) < 0 ? 'r' : ''}">${_capProgSaldoTxt(t.saldo)}</b>`)}
+      ${lin('OCUPAÇÃO', t => t.ocup == null ? '—' : fmtP(t.ocup))}
+      ${lin('DIAS ACIMA', t => `${t.nAcima} de ${C.nUteis}`)}
+    </tbody></table>
+    <div class="capj-n">No 🖨 PROGRAMAÇÃO × CAPACIDADE: o dia a dia e os lotes dos dias acima, na ordem do dia.${C.cxSemUep ? ` ⚠ ${fmtN(C.cxSemUep)} cx sem UEP fora do tempo.` : ''}${C.semOrdem ? ' ⚠ Sem a ORDEM do dia em parte dos dias.' : ''}</div>`;
+}
 function gerarRelatorioCapTodos(oficial, menos){
   if(!CAP_CAT){ alert('O cadastro ainda está carregando. Tente em alguns segundos.'); return; }
   const meta0=oficial ? _capMetaOficial()
@@ -13040,6 +13299,14 @@ function _mixDiag(dias, itens, ritmos){
 // entra na carga. Backend antigo não manda o campo → a qtde, como sempre.
 // O adiantado fica contado à parte (`adi` no dia, `adiantado` no total): a
 // tela diz quanto saiu da conta, nunca some calado.
+// A ORDEM do dia (coluna ORDEM da PROGRAMACAO, .gs v5.37): número ou null —
+// vazia, texto ou backend antigo nunca viram uma ordem inventada.
+function _progOrdem(it){
+  const v = it && it.ordem;
+  if(v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
 function _cartQtdAberta(it){
   const q = Number(it && it.qtde) || 0;
   return Math.max(0, q - Math.max(0, Number(it && it.adiantado) || 0));
@@ -13081,7 +13348,8 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     // cada lote fica guardado: é a lista impressa "OS LOTES PROGRAMADOS, DIA A
     // DIA" (pedido do PPCP, 16/09/2026 — "inserir os produtos programados")
     d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado,
-                   desc: String(it.desc || it.nome || ''), cor: String(it.cor || '') });   // o rótulo do lote no PRÓXIMOS DIAS (_gpxRotLote)
+                   desc: String(it.desc || it.nome || ''), cor: String(it.cor || ''),   // o rótulo do lote no PRÓXIMOS DIAS (_gpxRotLote)
+                   ordem: _progOrdem(it) });                                             // a ORDEM do dia (.gs v5.37) — PROGRAMAÇÃO × CAPACIDADE
     if(ritmos && !fx.base) d.semBase++;
     if(fx.aparado) d.aparados++;
     // o lote que mais pesa no dia, em cx de linha — é ele que se olha primeiro
@@ -13646,7 +13914,7 @@ function _cartSemUep(itens, hojeNum){
     const dn = Number(it.dataNum) || _cartNum(it.data), q = _cartQtdAberta(it);   // já adiantado não falta
     if(!(dn > hojeNum) || q <= 0) return;
     out.push({ data:String(it.data || ''), dataNum:dn, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
-      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q });
+      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q, ordem:_progOrdem(it) });
   });
   return out.sort((a,b) => a.dataNum - b.dataNum);
 }
@@ -14172,6 +14440,14 @@ function _gpxRotLote(linhas, rotMaior){
   const rot = prods.length > 1 ? `${prods[0]} + ${plural(prods.length - 1, 'produto', 'produtos')}` : `${prods[0]} · ${cores.length} cores`;
   return { rot, nome: rot + (cores.length ? ': ' + cores.map(c => `${c} ${fmtN(C[c])} cx`).join(' · ') : '') };
 }
+// O estado do dia contra uma jornada, UMA regra (o PRÓXIMOS DIAS e a
+// PROGRAMAÇÃO × CAPACIDADE da impressão de capacidade leem daqui). A cor segue o
+// número que a tela MOSTRA (minuto inteiro): 105,3 min sai "1h45", e com a
+// conta crua ele virava vermelho contra a legenda "até 1h45".
+function _gpxEstado(exc, vazio, fds){
+  const excR = Math.round(exc);
+  return vazio ? 'vazio' : fds ? 'fds' : excR > GPX_EXC_MAX ? 'red' : excR > 0 ? 'warn' : (-excR >= GPX_FOLGA_OK ? 'ok' : '');
+}
 // Conta pura: itens da programação detalhada → os dias da faixa.
 // ⚠ NUNCA INVENTAR NÚMERO (PPCP, 25/09/2026): linha sem UEP no cadastro NÃO
 // entra nas horas pela média — sai da conta e é APONTADA (`semUep`), com data,
@@ -14219,17 +14495,26 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
     const exc = min - UEP_MIN_DIA;
     // os lotes mais pesados do dia, somados por LOTE (uma linha por código)
     const L = {};
-    (d ? d.lotes : []).forEach(l => { const k = l.lote || l.codigo; const g = L[k] = L[k] || { lote:l.lote, rot:l.rot, eq:0, maior:0, linhas:[] };
-      g.eq += l.eq; g.linhas.push(l); if(l.eq > g.maior){ g.maior = l.eq; g.rot = l.rot; } });
+    (d ? d.lotes : []).forEach(l => { const k = l.lote || l.codigo; const g = L[k] = L[k] || { lote:l.lote, rot:l.rot, eq:0, maior:0, linhas:[], cx:0, ordem:null, semOrd:false };
+      g.eq += l.eq; g.cx += l.q; g.linhas.push(l); if(l.eq > g.maior){ g.maior = l.eq; g.rot = l.rot; }
+      if(l.ordem == null) g.semOrd = true; else g.ordem = g.ordem == null ? l.ordem : Math.min(g.ordem, l.ordem); });
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => Object.assign({ lote:g.lote, min:g.eq / porMin }, _gpxRotLote(g.linhas, g.rot)));
     const lotesDia = Object.values(L).sort((a,b) => b.eq - a.eq).map(g => g.lote).filter(Boolean);   // todos, do mais pesado (tela da diretoria)
     const vazio = !d && !sem.length;
-    // a cor segue o número que a tela MOSTRA (minuto inteiro): 105,3 min sai
-    // "1h45", e com a conta crua ele virava vermelho contra a legenda "até 1h45"
-    const excR = Math.round(exc);
-    const estado = vazio ? 'vazio' : fds ? 'fds' : excR > GPX_EXC_MAX ? 'red' : excR > 0 ? 'warn' : (-excR >= GPX_FOLGA_OK ? 'ok' : '');
+    const estado = _gpxEstado(exc, vazio, fds);
+    // TODOS os lotes do dia, com a ORDEM (v7.168.0 — PROGRAMAÇÃO × CAPACIDADE
+    // da impressão de capacidade). Lote só com linhas sem UEP entra sem tempo
+    // (`min` null); lote com algumas linhas sem UEP leva as caixas delas à parte.
+    const S = {};
+    sem.forEach(x => { const k = x.lote || x.codigo; const g = S[k] = S[k] || { cx:0, ordem:null, semOrd:false, linhas:[] };
+      g.cx += x.cx; g.linhas.push(x); if(x.ordem == null) g.semOrd = true; else g.ordem = g.ordem == null ? x.ordem : Math.min(g.ordem, x.ordem); });
+    const grupos = Object.keys(L).map(k => { const g = L[k], s = S[k];
+      const ordem = s && s.ordem != null ? (g.ordem == null ? s.ordem : Math.min(g.ordem, s.ordem)) : g.ordem;
+      return Object.assign({ lote:g.lote, uep:g.eq, min:g.eq / porMin, cx:g.cx, cxSemUep: s ? s.cx : 0, ordem, semOrd: g.semOrd || !!(s && s.semOrd) }, _gpxRotLote(g.linhas, g.rot)); })
+      .concat(Object.keys(S).filter(k => !L[k]).map(k => { const s = S[k], x = s.linhas[0];
+        return { lote:x.lote, uep:null, min:null, cx:0, cxSemUep:s.cx, ordem:s.ordem, semOrd:s.semOrd, rot:x.rot, nome:x.rot }; }));
     return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, exc, estado, lotes, lotesDia,
-             semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0) };
+             semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0), grupos };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
   return {
@@ -14307,11 +14592,13 @@ let GPX_CARREGANDO = false, GPX_TENT = 0;
 // A montagem com os dados do painel, UMA vez: a tela (renderProxDias) e a
 // impressão executiva da UEP (_uepAbaDados → _uepDocHtml) leem daqui.
 // null = a programação ainda não foi lida.
-function _gpxDoPainel(){
+// `n` e `metaUep` (v7.168.0): a PROGRAMAÇÃO × CAPACIDADE da impressão de
+// capacidade lê mais dias e com a meta da impressão. Sem eles, o de sempre.
+function _gpxDoPainel(n, metaUep){
   if(!PROG_DET_TS) return null;
   const k = calcKPIs(getDadosHoje());
   const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
-  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), PONTOS_DIA.metaUep, GPX_DIAS, dv.uepAtr);
+  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), metaUep || PONTOS_DIA.metaUep, n || GPX_DIAS, dv.uepAtr);
   if(!P.falha){ P.divSemUep = dv.semUep; P.divLinhas = dv.linhas; P.lidaEm = PROG_DET_TS; }
   return P;
 }

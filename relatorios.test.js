@@ -1880,8 +1880,8 @@ ok('não repete o relatório de controle', /swotHtml|linhasTipo|<div class="rp-s
 // o próximo ajuste consertasse um e esquecesse o outro (#204/#205).
 ok('o CSS do documento é declarado uma vez só',
    (JS.match(/function _rpDocParadas\(/g) || []).length, 1);
-ok('e os catorze relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP e a cronoanálise → UEP)',
-   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 14);
+ok('e os quinze relatórios usam ele (paradas, perdas, min/1000, proposta de investimento, qualidade do plano, carteira, estudo de UEP, capacidade em UEP — dia montado e por produto —, a UEP executiva, o padrão × realizado por produto, a fila de cronoanálise, caixas × UEP, a cronoanálise → UEP e a programação × capacidade)',
+   (JS.match(/(?<!function )_rpDocParadas\(/g) || []).length, 15);
 // A camada abre o documento no relatório dela: sem "o relatório acima" e sem
 // a quebra de página que imprimiria uma folha em branco.
 ok('o relatório da tela marca a camada como sozinha', /ctx\.soZinho=true/.test(_relPg), true);
@@ -2868,7 +2868,7 @@ ok('e a versão em caixa alta deriva dela, não é digitada de novo',
 ok('os rodapés de relatório leem a constante',
    (_v7.match(/<span>\$\{APP_NOME\} · \$\{CFG\.empresa\}/g) || []).length, 5);
 ok('os rodapés de PDF de paradas leem a constante',
-   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 12);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP
+   (_v7.match(/<span>\$\{APP_NOME_CX\} · Embalagem/g) || []).length, 13);   // + estudo de UEP + capacidade em UEP (2) + UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade
 ok('o resumo do WhatsApp assina com a constante',
    /L\.push\(APP_NOME\+' · PPCP'\);/.test(_v7), true);
 ok('e o resumo continua sem emoji depois da troca',
@@ -2879,8 +2879,8 @@ console.log('\n── o slogan vai em TODA impressão ──');
 // ponto de destaque é o FINAL, e o "·" do meio é texto normal.
 ok('o cabeçalho comum dos relatórios leva o slogan',
    /rp-slogan[^>]*>Medimos o pulso da·linha<span[^>]*>\.<\/span>/.test(_v7), true);
-ok('e é UMA implementação — os 18 relatórios passam pelo _rpCabecalho',
-   (_v7.match(/_rpCabecalho\(/g) || []).length, 19);   // 18 chamadas (+ UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP) + a declaração
+ok('e é UMA implementação — os 19 relatórios passam pelo _rpCabecalho',
+   (_v7.match(/_rpCabecalho\(/g) || []).length, 20);   // 19 chamadas (+ UEP executiva + padrão × realizado + fila de cronoanálise + caixas × UEP + cronoanálise → UEP + programação × capacidade) + a declaração
 ok('os dois cabeçalhos de impressão do painel também levam',
    (_v7.match(/class="print-header-slogan">Medimos o pulso da·linha<span>\.<\/span>/g) || []).length, 2);
 // O slogan aparece em SEIS lugares no desktop, e a forma é a MESMA nos seis —
@@ -3169,6 +3169,7 @@ eval(pega('function _mixRotulo('));
 eval(pega('function _mixRitmos('));
 eval(pega('function _mixFator('));
 eval(pega('function _mixDiag('));
+eval(pega('function _progOrdem('));
 eval(pega('function _cartQtdAberta('));
 eval(pega('function _cartAberta('));
 eval(pega('function _cartAnalise('));
@@ -4514,7 +4515,7 @@ console.log('\n── estudo de UEP ──');
   { const m = JS.match(/const GPX_DIAS = \d+;\s*[^\n]*\nconst GPX_EXC_MAX = \d+;\s*[^\n]*\nconst GPX_FOLGA_OK = \d+;/);
     eval(m[0].replace(/const /g, 'global.')); }
   eval(pega('function _fmtHM(')); eval(pega('function _gpxCalendario(')); eval(pega('function _gpxDivida('));
-  eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxRotLote(')); eval(pega('function _gpxMontar('));
+  eval(pega('function _gpxEstado(')); eval(pega('function _cartSemUep(')); eval(pega('function _cartSemUepHtml(')); eval(pega('function _gpxRotLote(')); eval(pega('function _gpxMontar('));
   const it = (data, lote, qtde, uepCx, extra) => Object.assign({ data, lote, codigo:'5011'+lote, desc:'PRODUTO '+lote, qtde, uepCx }, extra || {});
   const itens = [it('25/09/2026','25230',1000,2), it('25/09/2026','25231',200,1.5), it('26/09/2026','25232',100,2),
                  it('28/09/2026','25233',900,2,{ foraEsteira:true }), it('29/09/2026','25240',1500,2.2),
@@ -4658,6 +4659,145 @@ console.log('\n── estudo de UEP ──');
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxHojeHtml(') + pega('function _gpxAtrasoHtml('))], [true, false, false]);
     ok('o painel passa a parte vencida e o papel diz que cada dia leva só os lotes dele',
        [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram/.test(JS)], [true, true]); }
+}
+
+// ── PROGRAMAÇÃO × CAPACIDADE na impressão de capacidade (v7.168.0) ──────────
+// PPCP, 26/10/2026 ("evolução do relatório de capacidade diária por produto"):
+// a programação DATADA contra a jornada de hoje e a simulada, dia a dia, com o
+// mix que está nela, e os lotes na ORDEM do dia. A carga é a do _gpxMontar (a
+// MESMA do PRÓXIMOS DIAS) — aqui só a comparação e o acumulado.
+{
+  console.log('\n── programação × capacidade (v7.168.0) ──');
+  global.GPX_DOW = eval(JS.match(/const GPX_DOW = (\[[^\]]*\]);/)[1]);
+  global.CAP_PROG_DIAS = +JS.match(/const CAP_PROG_DIAS = (\d+);/)[1];
+  if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
+  eval(pega('function _capProgMontar(')); eval(pega('function _capProgSitTxt(')); eval(pega('function _capProgSitHtml('));
+  eval(pega('function _capProgSaldoTxt(')); eval(pega('function _capProgCabeTxt(')); eval(pega('function _capProgTitJorn('));
+  eval(pega('function _capProgDocHtml(')); eval(pega('function _capProgResumoHtml('));
+  ok('a ORDEM da linha: número ou null — vazia, texto ou ausente nunca viram uma ordem',
+     [_progOrdem({ ordem:'3' }), _progOrdem({ ordem:3 }), _progOrdem({ ordem:0 }), _progOrdem({ ordem:'' }), _progOrdem({ ordem:'x' }), _progOrdem({}), _progOrdem(null)],
+     [3, 3, 0, null, null, null, null]);
+  const L = (data, lote, ordem, codigo, qtde, uepCx, extra) => Object.assign({ data, lote, ordem, codigo, desc:'VOL 1/1 PRODUTO ' + lote, cor:'', qtde, uepCx }, extra || {});
+  // 27/10 é o dia REAL (aba PROGRAMACAO de 26/10/2026, UEP do cadastro)
+  const itens = [
+    L('27/10/2026','25353',1,'501134001',160,1.9), L('27/10/2026','25353',1,'501134002',290,1.9),
+    L('27/10/2026','25354',2,'501149001',400,1), L('27/10/2026','25354',2,'501149002',100,1), L('27/10/2026','25354',2,'501149003',400,1), L('27/10/2026','25354',2,'501149004',400,1),
+    L('27/10/2026','25347',3,'501140001',210,1.04), L('27/10/2026','25347',3,'501140002',120,1.04), L('27/10/2026','25347',3,'501140003',70,1.04),
+    L('27/10/2026','25355',4,'501077001',100,2.17), L('27/10/2026','25355',4,'501077002',100,1.25), L('27/10/2026','25355',4,'501077003',30,2.17),
+    L('27/10/2026','25355',4,'501077004',30,1.25), L('27/10/2026','25355',4,'501077005',220,2.17), L('27/10/2026','25355',4,'501077006',220,1.25),
+    L('28/10/2026','25348',1,'501155001',100,1),                                             // folga grande
+    L('29/10/2026','25360',1,'501060001',500,2), L('29/10/2026','25361',null,'501141007',1000,2),   // um lote sem ORDEM
+    L('30/10/2026','25373',1,'501061001',1000,2), L('30/10/2026','25374',2,'501157001',100,1), L('30/10/2026','25374',2,'501157003',50,null),
+    L('30/10/2026','25375',3,'501072001',1000,1), L('30/10/2026','25376',4,'501072002',100,1),        // linha sem UEP no meio da ordem
+    L('31/10/2026','25377',1,'501088001',200,1),                                             // sábado com lote
+    L('03/11/2026','25379',1,'501088003',300,null),                                          // dia só com linha sem UEP
+    L('04/11/2026','25386',1,'501134003',2000,1)];                                           // dentro, folga < 3h
+  const hoje = new Date(2026, 9, 26);
+  const G = _gpxMontar(itens, hoje, 0, 0, 2530, CAP_PROG_DIAS);
+  const J = _capJornada(2530, 24);
+  const C = _capProgMontar(G, J);
+  const D = d => C.dias.find(x => x.data === d);
+  ok('o horizonte vai até o último dia com lote: sábado com lote entra, a segunda sem lote também (vazia)',
+     C.dias.map(d => d.data.slice(0,5)), ['27/10','28/10','29/10','30/10','31/10','02/11','03/11','04/11']);
+  const d27 = D('27/10/2026');
+  ok('27/10 real: 3.768 UEP = 785 min (13h05) contra 527 → −4h18, 149% · ACIMA; simulada 503 → −4h42, 156%',
+     [d27.uep, d27.min, d27.por.map(x => [x.saldo, +x.ocup.toFixed(1), x.estado])], [3768, 785, [[-258, 149, 'red'], [-282, 156.1, 'red']]]);
+  ok('27/10 na ORDEM do dia: PRINCESA e MADERO cabem, a VERSATIL cabe em parte (1h18 de 1h27 hoje, 0h54 na simulada), o BUFFET FLIP fica de fora',
+     [d27.comOrdem, d27.lotes.map(g => g.lote), d27.lotes.map(g => g.fim), d27.lotes.map(g => g.cabe.map(c => c.s + (c.min != null ? c.min + '/' + c.de : '')))],
+     [true, ['25353','25354','25347','25355'], [178, 449, 536, 785], [['cabe','cabe'],['cabe','cabe'],['parcial78/87','parcial54/87'],['fora','fora']]]);
+  ok('a carga é a MESMA do PRÓXIMOS DIAS: minuto e situação de cada dia batem com o _gpxMontar',
+     C.dias.filter(d => !d.vazio && !d.fds && !d.semDados).map(d => { const g = G.dias.find(x => x.data === d.data); return [Math.round(g.min) === d.min, g.estado === d.por[0].estado]; }),
+     C.dias.filter(d => !d.vazio && !d.fds && !d.semDados).map(() => [true, true]));
+  ok('a situação é a régua do PRÓXIMOS DIAS: COM FOLGA ≥ 3h · DENTRO · ACIMA ATÉ 1h45 · ACIMA; nenhum "próximo do limite" inventado',
+     [D('28/10/2026').por[0].estado, D('04/11/2026').por.map(x => [x.saldo, x.estado]), ['ok','','warn','red'].map(_capProgSitTxt), /PRÓXIMO DO LIMITE/i.test(pega('function _capProgDocHtml(') + pega('function _capProgSitTxt('))],
+     [ 'ok', [[110, ''], [86, '']], ['COM FOLGA','DENTRO','ACIMA ATÉ 1h45','ACIMA'], false]);
+  ok('a situação segue o minuto que a tela MOSTRA: 105,3 min sai "1h45" e fica âmbar; 105,6 vira 1h46 e fica vermelho; folga de 179,6 é 3h00',
+     [_gpxEstado(105.3, false, false), _gpxEstado(105.6, false, false), _gpxEstado(0.4, false, false), _gpxEstado(-179.6, false, false), _gpxEstado(-179.4, false, false), _gpxEstado(9, true, false), _gpxEstado(9, false, true)],
+     ['warn', 'red', '', 'ok', '', 'vazio', 'fds']);
+  { const Gm = _gpxMontar([L('27/10/2026','A',3,'1',100,1), L('27/10/2026','B',2,'2',100,1), L('27/10/2026','A',1,'3',100,1)], hoje, 0, 0, 2530, 3);
+    ok('lote com linhas de ordens diferentes começa na MENOR (a primeira linha dele na sequência)',
+       _capProgMontar(Gm, null).dias[0].lotes.map(g => g.lote + g.ordem), ['A1', 'B2']); }
+  const d29 = D('29/10/2026');
+  ok('lote sem ORDEM no dia: sem veredito — a lista sai do mais pesado ao mais leve',
+     [d29.comOrdem, d29.lotes.map(g => g.lote), d29.lotes.every(g => g.cabe === null)], [false, ['25361','25360'], true]);
+  const d30 = D('30/10/2026');
+  ok('lote com linha sem UEP na ordem: dali em diante CABE vira INCERTO (o acumulado é um piso) — FICA DE FORA continua certo',
+     [d30.cxSemUep, d30.lotes.map(g => g.cabe[0].s), d30.lotes[1].cxSemUep], [50, ['cabe','incerto','incerto','fora'], 50]);
+  ok('sábado com lote, dia útil sem lote e dia só com linha sem UEP ficam FORA da capacidade, e são ditos',
+     [C.fds.map(d => d.data), C.vazios, C.semDados, D('03/11/2026').por, D('31/10/2026').por, C.nUteis],
+     [['31/10/2026'], ['02/11/2026'], ['03/11/2026'], [null, null], [null, null], 5]);
+  const uteis = C.dias.filter(d => !d.vazio && !d.fds && !d.semDados);
+  ok('o período fecha com o dia a dia: capacidade = dias × jornada, tempo = soma dos minutos inteiros, saldo e ocupação de cada jornada',
+     C.tot.map(t => [t.cap, t.pede, t.saldo, +t.ocup.toFixed(1), t.nAcima, t.falta, t.nFolga, t.sobra]),
+     [527, 503].map(j => { const pede = uteis.reduce((a, d) => a + d.min, 0), ac = uteis.filter(d => d.min - j > 0), fo = uteis.filter(d => d.min - j < 0);
+       return [5 * j, pede, 5 * j - pede, +(pede / (5 * j) * 100).toFixed(1), ac.length, ac.reduce((a, d) => a + d.min - j, 0), fo.length, fo.reduce((a, d) => a + j - d.min, 0)]; }));
+  ok('sem simulação (ou com erro) há UMA jornada; a simulada nunca muda a carga, só a capacidade',
+     [_capProgMontar(G, null).jorn.length, _capProgMontar(G, _capJornada(2530, NaN)).jorn.length, C.tot[0].pede === C.tot[1].pede, _capProgMontar(G, null).dias[0].por.length],
+     [1, 1, true, 1]);
+  ok('backend sem UEP / sem programação: diz, nunca um número', [_capProgMontar({ falha:'sem-uep' }, J), _capProgMontar(null, J)], [{ falha:'sem-uep' }, null]);
+  const doc = _capProgDocHtml(C);
+  ok('o papel: período por jornada, dia a dia com as três situações, e os lotes dos dias acima na ordem do dia',
+     ['PROGRAMAÇÃO × CAPACIDADE · 27/10 A 04/11 · 5 DIAS ÚTEIS COM LOTE', 'JORNADA DE HOJE · 527 MIN', 'JORNADA SIMULADA · 503 MIN', 'CAPACIDADE DISPONÍVEL', 'TEMPO NECESSÁRIO',
+      'SALDO DO PERÍODO', 'OCUPAÇÃO', 'DIAS ACIMA DA JORNADA', '−4h18', '149,0%', 'SEM LOTE DATADO', 'FIM DE SEMANA', 'SEM DADOS', 'LOTES DOS DIAS ACIMA DA JORNADA · NA ORDEM DO DIA',
+      'PARCIAL</b> · cabem 1h18 de 1h27', 'FICA DE FORA', 'INCERTO', 'sem a ORDEM do dia', 'o painel não reprograma nada'].filter(t => !doc.includes(t)), []);
+  ok('o resumo do diálogo: as duas jornadas lado a lado; lendo, falha e sem lote dizem o que é',
+     [['PEDE', 'CAPACIDADE', 'SALDO', 'OCUPAÇÃO', 'DIAS ACIMA', 'HOJE · 527 min', 'SIMULADA · 503 min'].filter(t => !_capProgResumoHtml(C).includes(t)),
+      /Lendo a programação/.test(_capProgResumoHtml(null)), /SEM URL — x/.test(_capProgResumoHtml(null, { t:'SEM URL', d:'x' })),
+      /não traz UEP/.test(_capProgResumoHtml({ falha:'sem-uep' })), /Nenhum lote datado/.test(_capProgResumoHtml(_capProgMontar(_gpxMontar([L('20/10/2026','1',1,'1',10,1)], hoje, 0, 0, 2530, 5), null)))],
+     [[], true, true, true, true]);
+  ok('o desenho não faz conta de carga (tudo vem do _capProgMontar)',
+     ['function _capProgDocHtml(', 'function _capProgResumoHtml(', 'function _capProgCabeTxt(', 'function _capProgSitHtml('].filter(f => /_gpxMontar\(|_cartAberta\(|_gpxEstado\(|_capProgMontar\(|\.reduce\(|uepCx/.test(pega(f))), []);
+  ok('a montagem do painel: o _gpxDoPainel com mais dias e a meta da impressão (sem eles, o de sempre); a impressão passa a meta de HOJE (a simulada é só capacidade)',
+     [/metaUep \|\| PONTOS_DIA\.metaUep, n \|\| GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /_gpxDoPainel\(CAP_PROG_DIAS, meta\)/.test(pega('function _capProgDoPainel(')),
+      /_capProgDoPainel\(J, meta0\)/.test(pega('function gerarRelatorioCapProg(')), /_gpxEstado\(exc, vazio, fds\)/.test(pega('function _gpxMontar('))], [true, true, true, true]);
+  const IMPC = pega('function gerarRelatorioCapProg('), UCT = pega('function _ucvCapTodos('), JIMP = pega('function _capJornImprimir(');
+  ok('a impressão é SÍNCRONA (usa a programação já lida); o diálogo lê só se a do painel tem mais de 15 min, e redesenha no fim',
+     [/carregarProgramacaoDetalhada|await|async/.test(IMPC + JIMP), /Date\.now\(\)-PROG_DET_TS>GPX_TTL/.test(UCT), /carregarProgramacaoDetalhada\(\)\.finally/.test(UCT), /_capJornPintar\(\)/.test(UCT)],
+     [false, true, true, true]);
+  // PPCP, no meio do trabalho: "deixar a impressão antiga também"
+  ok('a 🖨 CAPACIDADE POR PRODUTO continua como era (nem programação, nem folha nova); a PROGRAMAÇÃO × CAPACIDADE é outra impressão, com botão próprio no diálogo',
+     [/_capProgDoPainel|PROGRAMAÇÃO × CAPACIDADE|page-break-before/.test(pega('function gerarRelatorioCapTodos(')),
+      /onclick="_capJornImprimir\('prog'\)"[^>]*>🖨 PROGRAMAÇÃO × CAPACIDADE</.test(src), /onclick="_capJornImprimir\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(src),
+      /if\(qual==='prog'\)\{ if\(gerarRelatorioCapProg\(n\)\) fecharCapJorn\(\); return; \}/.test(JIMP), /_capProgDoPainel\(J, meta0\)/.test(IMPC), /_rpDocParadas\('Programação × capacidade', true\)/.test(IMPC)],
+     [false, true, true, true, true, true]);
+  // a impressão de verdade, com a montagem trocada por uma de mentira
+  const docAntes = global.document, openAntes = global.window.open;
+  let papel = '';
+  global.document = { getElementById: () => null };
+  global.window.open = () => ({ document: { open() {}, write(h) { papel = h; }, close() {} } });
+  Object.assign(global, { CAP_CAT: [{ modelo:'501149', nome:'MESA CABECEIRA MADERO', chave:'x', nVol:1, nCores:4, uepJogo:1, ptsJogo:45, volSemUep:[], tetoDia:null, tetoH:null, mmJogo:0 }],
+    CAP_CAT_ORIGEM: '', PONTOS_DIA: { metaUep: 2530 }, PROG_DET_FALHA: null, CFG: Object.assign({}, global.CFG || {}, { turnoFim:'17:00' }),
+    _rpDocParadas: () => '<doc>', _rpBotaoImprimir: () => '', _rpCabecalho: (t, m) => '<cab>' + m + '</cab>' });
+  eval(pega('function _capProgFaltaTxt(')); eval(pega('function gerarRelatorioCapProg('));
+  global.GPX_FOLGA_OK = +JS.match(/const GPX_FOLGA_OK = (\d+);/)[1]; global.GPX_EXC_MAX = +JS.match(/const GPX_EXC_MAX = (\d+);/)[1];
+  const alAntes = global.alert; let alerta = ''; global.alert = m => { alerta = m; };
+  let pedido = null;
+  global._capProgDoPainel = (j, m) => { pedido = [j && j.minNovo, m]; return _capProgMontar(G, j); };
+  const r1 = gerarRelatorioCapProg(24);
+  ok('o papel novo: a jornada simulada, depois a programação × capacidade e o COMO O NÚMERO SAI; a montagem recebe a jornada e a meta de HOJE',
+     [r1, pedido, papel.indexOf('SIMULAÇÃO DE JORNADA') > -1 && papel.indexOf('SIMULAÇÃO DE JORNADA') < papel.indexOf('PROGRAMAÇÃO × CAPACIDADE ·'),
+      papel.indexOf('PROGRAMAÇÃO × CAPACIDADE ·') < papel.indexOf('COMO O NÚMERO SAI'), /JORNADA SIMULADA · 503 MIN/.test(papel), /CAPACIDADE DIÁRIA POR PRODUTO/.test(papel),
+      /COM FOLGA = sobram 3h00 ou mais · DENTRO · ACIMA ATÉ 1h45/.test(papel), /288 UEP\/h/.test(papel)],
+     [true, [503, 2530], true, true, true, false, true, true]);
+  gerarRelatorioCapProg(0);
+  ok('sem simulação: só a jornada de hoje', [/JORNADA SIMULADA/.test(papel), /JORNADA DE HOJE · 527 MIN/.test(papel), pedido], [false, true, [null, 2530]]);
+  papel = '';
+  global._capProgDoPainel = () => null;
+  ok('programação ainda não lida: avisa e não abre o pop-up (nunca um papel vazio)', [gerarRelatorioCapProg(24), papel, /ainda não foi lida neste computador/.test(alerta)], [false, '', true]);
+  const fInfo = _falha('sem-resposta');                     // o texto ÚNICO da falha (_progDetFalhaInfo real)
+  gerarRelatorioCapProg(24);
+  ok('a leitura falhou: o aviso diz por quê, com o texto único da falha', [alerta, papel], [fInfo.t + ' — ' + fInfo.d, '']);
+  global.PROG_DET_FALHA = null;
+  global._capProgDoPainel = () => { throw new Error('x'); };
+  const warnAntes = console.warn; console.warn = () => {};
+  ok('a montagem quebrou: avisa e não abre (nunca um número inventado)', [gerarRelatorioCapProg(24), papel, /Não consegui montar/.test(alerta)], [false, '', true]);
+  console.warn = warnAntes;
+  global._capProgDoPainel = () => ({ falha:'sem-uep' });
+  ok('programação sem UEP: avisa e não abre', [gerarRelatorioCapProg(24), /não traz UEP/.test(alerta)], [false, true]);
+  ok('jornada impossível: avisa e não abre', [gerarRelatorioCapProg(600), /Até 240 minutos/.test(alerta)], [false, true]);
+  global.alert = alAntes;
+  global.PROG_DET_FALHA = null;
+  global.document = docAntes; global.window.open = openAntes;
 }
 
 // ── Azul-marinho no PC e no celular; a TV continua PRETA (v7.115.0) ──────────

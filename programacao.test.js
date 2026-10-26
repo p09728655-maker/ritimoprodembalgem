@@ -36,7 +36,7 @@ function montar(prog, log, opts) {
     // pede outro número (célula de outra linha, depois de colar o extrato).
     // cópia: o script acrescenta colunas no cabeçalho (ENCERRAR, ADIANTADO_CX),
     // e o mesmo array em todos os casos vazaria a coluna de um caso para o outro
-    PROGRAMACAO: [HDR_PROG.slice()].concat(prog.map(l => [l.lote, l.data, 1, l.cod, 'X', l.qtde,
+    PROGRAMACAO: [HDR_PROG.slice()].concat(prog.map(l => [l.lote, l.data, l.ordem !== undefined ? l.ordem : 1, l.cod, 'X', l.qtde,
       l.prod == null ? '' : l.prod, l.saldo !== undefined ? l.saldo : (l.prod == null ? '' : l.qtde - l.prod),
       '', l.status || '', '', l.enc === undefined ? '' : l.enc])),
     PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS']].concat(log.map(e => [e[0], '08:00', e[1], 'X', e[2]])),
@@ -485,6 +485,16 @@ console.log('\n── o lote de AMANHÃ já baixa o adiantado (v5.22) ──');
   const dl = (lote, cod) => (det.find(it => it.lote === lote && it.codigo === cod) || {}).adiantado;
   ok('a programação detalhada manda o adiantado POR LINHA futura (0 na de hoje)',
      [dl('25295', '501.142.002'), dl('25304', '501.142.002'), dl('25310', '501.142.002'), dl('25291', '501.060.005')], [450, 30, 0, 0]);
+  // v5.37: a ORDEM do dia vai junto (a planilha de mentira tem 1 em toda linha)
+  ok('a programação detalhada manda a ORDEM do dia (v5.37)', det.map(it => it.ordem).every(o => o === 1), true);
+  {
+    const mo = montar([{ lote: 'A1', data: '15/10/2026', cod: '501.142.001', qtde: 10, ordem: 2 },
+                       { lote: 'A2', data: '15/10/2026', cod: '501.142.002', qtde: 10, ordem: '' },
+                       { lote: 'A3', data: '15/10/2026', cod: '501.142.003', qtde: 10, ordem: 'x' }], [], { hoje: '14/10/2026' });
+    const it = vm.runInContext('getProgramacaoDetalhada()', mo.ctx).itens;
+    ok('ORDEM vazia ou que não é número vira null — nunca uma ordem inventada',
+       ['A1', 'A2', 'A3'].map(l => it.find(x => x.lote === l).ordem), [2, null, null]);
+  }
 
   // amanhã (15/10): o lote abre de verdade e o FIFO dá o MESMO número
   m.setHoje('15/10/2026');
