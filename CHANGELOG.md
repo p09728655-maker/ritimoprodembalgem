@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.162.0 — 26/10/2026 · coluna TROCA nas medições registradas
+
+- PPCP, com a lista na mão (Painel Sirius 1.4 com 1,81 e 1,62 contra 1,49 no
+  cadastro, sem troca): *"colocar que não troca devido a variar 90 a 110 e tbm
+  se foi trocado"* — modelo aprovado antes de subir.
+- Coluna **TROCA** entre UEP e CADASTRO, uma etiqueta por medição, contra o
+  cadastro que ela viu:
+  - **NÃO TROCA** — *variou +7,6% · dentro de 90–110%*;
+  - **FORA DA FAIXA** — *variou +21,5% · fora de 90–110%*. Não troca sozinha: a
+    troca continua sendo a regra do volume, com todas as medições;
+  - **TROCADA** — o ✓ TROCAR A UEP gravou a UEP nova a partir deste cadastro:
+    *26/10 · 2,53 → 1,82*. Medição registrada depois da troca é julgada contra
+    a UEP nova;
+  - **BASE** — a MADERO, *a régua das outras*.
+- A coluna BASE da lista sai curta (*MADERO 20/10*, o texto inteiro no
+  tooltip); o produto e o texto da TROCA quebram linha — a lista cabe em 1366
+  sem rolar para o lado.
+- **Atenção:** nenhum número muda; nada no `.gs`.
+
 ## v7.161.0 · `.gs` v5.36 — 26/10/2026 · UEP julgada SEM as paradas, contra a MADERO
 
 - PPCP: *"a idéia é ajustar as paradas para menos, não pode normalizar e a UEP
