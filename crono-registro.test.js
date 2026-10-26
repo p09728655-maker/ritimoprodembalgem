@@ -221,7 +221,7 @@ ok('o registro e a exclusão não chamam nada que grave a UEP do cadastro',
    [/setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function registrarCrono('), GS.indexOf('function getCronoRegistros('))),
     /setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('function _cronoJaExcluida(')))], [false, false]);
 ok('a troca da UEP lê as abas DIRETO (é escrita: nunca o memo de leitura)',
-   /_valores\(|_valoresDaAba\(|lerCatalogoProdutos\(/.test(GS.slice(GS.indexOf('function _trocarUepCronoCore('), GS.indexOf('CONFERÊNCIA DAS TROCAS (v5.34)'))), false);
+   /_valores\(|_valoresDaAba\(|lerCatalogoProdutos\(/.test(GS.slice(GS.indexOf('function _trocarUepCronoCore('), GS.indexOf('CONFERÊNCIA DAS TROCAS (v5.34'))), false);
 ok('a exclusão lê a aba DIRETO (é escrita: nunca o memo de leitura)',
    /_valores\(|_valoresDaAba\(/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('TROCAR A UEP PELA CRONOANÁLISE (v5.34)'))), false);
 
@@ -296,8 +296,8 @@ console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o v
   const t = r.trocas[0];
   ok('uma troca, achada pela ORIGEM da UEP_VERSOES (a semente não é troca)', [r.ok, r.trocas.length, t.modelo, t.produto, t.volume, t.vig, t.amostra, t.substituida],
      [true, 1, '501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '18/10/2026', '2 medições, 113 volumes', false]);
-  ok('os dias: depois da troca e antes de hoje, só as horas com o volume sozinho (12:12 = 48 min)',
-     t.dias.map(d => [d.data, d.min, d.horas, d.cx, d.uep]), [['19/10/2026', 120, 2, 250, 377.5], ['20/10/2026', 48, 1, 120, 181.2]]);
+  ok('v5.36: a conferência não lê mais o log — as horas depois da troca são contadas no painel, pelo getHorasCrono (com as paradas)',
+     [t.dias, /SHEET_PROD_LOG/.test(GS.slice(GS.indexOf('function getConferenciaCrono('), GS.indexOf('HORAS DA LINHA POR CÓDIGO (v5.35)')))], [undefined, false]);
   ok('os códigos com a UEP nova, a anterior e a de agora', t.codigos.map(c => [c.cod, c.uep, c.antes, c.atual]),
      [['501059002', 1.51, 2.29, 1.51], ['501059004', 1.51, 2.29, 1.51], ['501059008', 1.51, 2.29, 1.51]]);
   P2.ABAS.PRODUTO_CODIGO[3][3] = 1.6;                                   // alguém digitou outro número no 501059004
@@ -306,9 +306,16 @@ console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o v
   ok('a ORIGEM vai e volta pela mesma regra', montar().run(`return _cronoOrigemLer(_cronoOrigem('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 1, 52));`),
      { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', amostra:'1 medição, 52 volumes' });
 }
-console.log('\n── getHorasCrono (v5.35): o log da janela hora a hora, código por código ──');
+console.log('\n── getHorasCrono (v5.35/v5.36): o log da janela hora a hora, código por código, com as paradas ──');
 {
-  const H = montar({ PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR'],
+  const H = montar({ PARADAS: [['DATA', 'ID', 'TIPO', 'INICIO', 'FIM', 'DURACAO_MIN', 'OBS', 'DURACAO_SEG'],
+    ['19/10/2026', 'p1', 'Troca de Plastico', '09:10', '09:14:30', 4.5, '', 270],      // dentro das 09:00
+    ['19/10/2026', 'p2', 'Troca de produto', '09:55', '10:05', 10, '', 600],          // atravessa 09 → 10 h: 5 + 5
+    ['19/10/2026', 'p3', 'Troca de Plastico', '10:20', '10:23', 3, '', 180],
+    ['19/10/2026', 'p4', 'Robo', '10:40', '', '', '', ''],                            // sem FIM: fora
+    ['19/10/2026', 'p5', '', '12:50', '13:10', 20, '', 1200],                         // 12:12 vai até 13:00: 10 min, sem tipo
+    ['18/10/2026', 'p6', 'Limpeza', '09:00', '09:30', 30, '', 1800]],                 // fora da janela
+    PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR'],
     ['18/10/2026', '15:00', '501059002', 'VOL 2/2', 90, 0, 0, 'Mobile'],     // antes da janela: fora
     ['19/10/2026', '09:00', '501059002', 'VOL 2/2', 100, 0, 0, 'Mobile'],
     ['19/10/2026', '10:00', '501059002', 'VOL 2/2', 80, 0, 0, 'Mobile'], ['19/10/2026', '10:00', '501.059.004', 'VOL 2/2', 70, 0, 0, 'Mobile'],
@@ -322,10 +329,15 @@ console.log('\n── getHorasCrono (v5.35): o log da janela hora a hora, códig
      [r.ok, r.de, r.ate, r.horas.map(h => [h.data, h.hora, h.min, h.cods])],
      [true, '19/10/2026', '21/10/2026', [['19/10/2026', '09:00', 60, { 501059002:100 }], ['19/10/2026', '10:00', 60, { 501059002:85, 501059004:70 }],
        ['19/10/2026', '12:12', 48, { 501059008:40, 501059001:30 }], ['20/10/2026', '12:12', 48, { 501059004:120 }]]]);
+  ok('v5.36: as paradas apontadas dentro de cada hora, em minutos por TIPO (a que atravessa a hora divide; sem FIM fica fora; toda hora tem par)',
+     r.horas.map(h => [h.data, h.hora, h.par]),
+     [['19/10/2026', '09:00', { 'Troca de Plastico':4.5, 'Troca de produto':5 }], ['19/10/2026', '10:00', { 'Troca de produto':5, 'Troca de Plastico':3 }],
+      ['19/10/2026', '12:12', { 'sem tipo':10 }], ['20/10/2026', '12:12', {}]]);
   ok('período inválido ou ao contrário: erro dito, nada lido',
      [H.run(`return getHorasCrono({ de:'', ate:'21/10/2026' });`).ok, H.run(`return getHorasCrono({ de:'21/10/2026', ate:'19/10/2026' });`).ok], [false, false]);
-  ok('a conferência e o getHorasCrono leem o log pelo MESMO _cronoHorasDoLog; o getHorasCrono só a janela (_valoresPorData)',
-     [(GS.match(/_cronoHorasDoLog\(/g) || []).length, /function getHorasCrono[\s\S]*?_valoresPorData\(sh, 'DATA'/.test(GS)], [3, true]);
+  ok('o getHorasCrono lê só a janela do log e das PARADAS (_valoresPorData, a mesma conversão no recorte e no filtro)',
+     [(GS.match(/_cronoHorasDoLog\(/g) || []).length, /function getHorasCrono[\s\S]*?_valoresPorData\(sh, 'DATA'/.test(GS),
+      /function _cronoParadasNasHoras[\s\S]*?_valoresPorData\(sh, 'DATA', 0, conv, deNum, ateNum\)[\s\S]*?dn = conv\(r\[iD\]\)/.test(GS)], [2, true, true]);
   ok('no doGet, com cache de leitura (a chave leva de/ate)',
      [/act === 'getHorasCrono'\)\s*result = getHorasCrono\(p\)/.test(GS), /getHorasCrono: 300/.test(GS)], [true, true]);
 }

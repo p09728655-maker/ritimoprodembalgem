@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.36 — AS PARADAS APONTADAS DENTRO DE CADA HORA (getHorasCrono)
+//               PPCP, 26/10/2026: "a idéia é ajustar as paradas para menos, não
+//               pode normalizar e a UEP ficar maior" → "tem que ser justa a
+//               uep". O painel julga a UEP SEM as paradas apontadas, contra a
+//               MADERO nas mesmas condições; as paradas viram perda à parte.
+//               getHorasCrono devolve, por hora, os minutos parados por TIPO
+//               (sobreposição com a aba PARADAS). getConferenciaCrono deixou de
+//               ler o log (o painel conta as horas da conferência pelo mesmo
+//               getHorasCrono): uma leitura cara a menos.
 // Versão: 5.35 — HORAS DA LINHA POR CÓDIGO (getHorasCrono)
 //               PPCP, 26/10/2026, sobre a coluna A LINHA FAZ da cronoanálise
 //               (s/cx do dia inteiro): "mas esse tempo é cheio de paradas" →
@@ -2391,7 +2400,7 @@ function _trocarUepCronoCore(p) {
   return out;
 }
 
-// ── CONFERÊNCIA DAS TROCAS (v5.34) ─────────────────────────────────────────
+// ── CONFERÊNCIA DAS TROCAS (v5.34; v5.36: só a troca — as horas são do painel) ──
 // PPCP, 26/10/2026: "deixar uma conferência para que quando passar o produto
 // outras vezes criar alerta sem alterar se sobe ou desce a uep". Para cada
 // troca feita pela cronoanálise (versões da UEP_VERSOES com ORIGEM
@@ -2445,27 +2454,13 @@ function getConferenciaCrono() {
   if (!grupos.length) return { ok: true, trocas: [] };
   const cad = {};
   lerCatalogoProdutos().forEach(function (pr) { cad[codKey(pr.codigo)] = pr.uep; });
-  // O log: hora a hora, que códigos e quantas caixas — só dias depois da troca mais antiga e antes de hoje.
-  const hoje = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
-  const desde = Math.min.apply(null, grupos.map(function (g) { return g.vigNum; }));
-  const H = _cronoHorasDoLog(_valores(SHEET_PROD_LOG) || [], function (dn) { return dn > desde && dn < hoje; });
+  // v5.36: as horas depois da troca são contadas no PAINEL, pelo getHorasCrono
+  // (o mesmo log, com as paradas de cada hora) — aqui só a troca e os códigos.
   const trocas = grupos.map(function (g) {
-    const D = {};
-    Object.keys(H).forEach(function (k) {
-      const h = H[k];
-      if (h.dn <= g.vigNum) return;
-      const cs = Object.keys(h.cods);
-      if (!cs.every(function (c) { return g.codigos[c]; })) return;     // dividida com outro código: fora
-      const d = D[h.data] = D[h.data] || { data: h.data, dn: h.dn, min: 0, cx: 0, uep: 0, horas: 0 };
-      d.min += _cronoMinSlot(h.hora); d.horas++;
-      cs.forEach(function (c) { d.cx += h.cods[c]; d.uep += h.cods[c] * g.codigos[c].uep; });
-    });
     const cods = Object.keys(g.codigos);
     return { modelo: g.modelo, produto: g.produto, volume: g.volume, amostra: g.amostra, gravado: g.gravado, vig: g.vig,
              codigos: cods.map(function (c) { return { cod: c, uep: g.codigos[c].uep, antes: g.codigos[c].antes, atual: cad[c] || 0 }; }),
-             substituida: cods.some(function (c) { return !_uepIgual(cad[c] || 0, g.codigos[c].uep); }),
-             dias: Object.keys(D).map(function (k) { const d = D[k]; return { data: d.data, dn: d.dn, min: d.min, horas: d.horas, cx: d.cx, uep: Math.round(d.uep * 100) / 100 }; })
-               .sort(function (a, b) { return a.dn - b.dn; }) };
+             substituida: cods.some(function (c) { return !_uepIgual(cad[c] || 0, g.codigos[c].uep); }) };
   });
   return { ok: true, trocas: trocas };
 }
@@ -2478,6 +2473,40 @@ function getConferenciaCrono() {
 // leitura devolve o log da janela hora a hora: data, hora, minutos do slot
 // (12:12 = 48) e as caixas de cada código. Hoje fica fora (a hora em andamento
 // ainda está sendo lançada). Lê só as linhas da janela (_valoresPorData).
+// As PARADAS apontadas dentro de cada hora (v5.36): minutos de sobreposição
+// com o slot (início da hora + _cronoMinSlot), por TIPO. Toda hora ganha `par`,
+// mesmo vazio — é o sinal, para o painel, de que as paradas foram lidas. Parada
+// sem FIM (em andamento) ou que atravessa a meia-noite fica fora. Data pela
+// MESMA conversão no recorte e no filtro (_dataStr → dataParaNum).
+function _cronoParadasNasHoras(H, deNum, ateNum) {
+  const porDia = {};
+  Object.keys(H).forEach(function (k) {
+    const h = H[k], m = String(h.hora || '').match(/^(\d{1,2}):(\d{2})/);
+    h.par = {};
+    if (!m) return;
+    const a = (+m[1]) * 60 + (+m[2]);
+    (porDia[h.dn] = porDia[h.dn] || []).push({ h: h, a: a, b: a + _cronoMinSlot(h.hora) });
+  });
+  if (!Object.keys(porDia).length) return;
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PARADAS);
+  if (!sh) return;
+  const conv = function (v) { return dataParaNum(_dataStr(v)); };
+  const v = _valoresPorData(sh, 'DATA', 0, conv, deNum, ateNum);
+  const hdr = (v[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const iD = hdr.indexOf('DATA') >= 0 ? hdr.indexOf('DATA') : 0, iT = hdr.indexOf('TIPO') >= 0 ? hdr.indexOf('TIPO') : 2,
+        iI = hdr.indexOf('INICIO') >= 0 ? hdr.indexOf('INICIO') : 3, iF = hdr.indexOf('FIM') >= 0 ? hdr.indexOf('FIM') : 4;
+  for (let i = 1; i < v.length; i++) {
+    const r = v[i], dn = conv(r[iD]), slots = porDia[dn];
+    if (!slots) continue;
+    const ini = _horaEmSeg(_horaSegStr(r[iI])), fim = _horaEmSeg(_horaSegStr(r[iF]));
+    if (ini == null || fim == null || fim <= ini) continue;
+    const tipo = String(r[iT] || '').trim() || 'sem tipo';
+    slots.forEach(function (s) {
+      const ov = Math.min(s.b * 60, fim) - Math.max(s.a * 60, ini);
+      if (ov > 0) s.h.par[tipo] = (s.h.par[tipo] || 0) + ov / 60;
+    });
+  }
+}
 function getHorasCrono(p) {
   p = p || {};
   const deNum = p.de ? dataParaNum(p.de) : 0, ateNum = p.ate ? dataParaNum(p.ate) : 0;
@@ -2487,9 +2516,11 @@ function getHorasCrono(p) {
   if (!sh) return { ok: true, de: p.de, ate: p.ate, horas: [] };
   const H = _cronoHorasDoLog(_valoresPorData(sh, 'DATA', 0, dataParaNum, deNum, ateNum),
                              function (dn) { return dn >= deNum && dn <= ateNum && dn < hoje; });
+  _cronoParadasNasHoras(H, deNum, ateNum);
   const horas = Object.keys(H).map(function (k) {
-    const h = H[k];
-    return { data: h.data, dn: h.dn, hora: h.hora, min: _cronoMinSlot(h.hora), cods: h.cods };
+    const h = H[k], par = {};
+    Object.keys(h.par).forEach(function (t) { par[t] = Math.round(h.par[t] * 10) / 10; });
+    return { data: h.data, dn: h.dn, hora: h.hora, min: _cronoMinSlot(h.hora), cods: h.cods, par: par };
   }).sort(function (a, b) { return a.dn - b.dn || (a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0); });
   return { ok: true, de: p.de, ate: p.ate, horas: horas };
 }

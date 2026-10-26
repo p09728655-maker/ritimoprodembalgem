@@ -45,8 +45,9 @@ via Google Apps Script (JSONP).
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
   (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
   amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
-  da regra com o `.gs`, o NA PRODUÇÃO (% do padrão com o volume sozinho, com o
-  log real da ELOA de 26/09–25/10) e o 📄 IMPORTAR PDF (com o texto do PDF real
+  da regra com o `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
+  a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
+  o 📄 IMPORTAR PDF (com o texto do PDF real
   de 26/10 e o nome do app com "caixa 2/2"): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
@@ -66,8 +67,9 @@ via Google Apps Script (JSONP).
   `CRONO_EXCLUIDOS` antes de apagar, retentativa, lock de pé, a última linha
   não congelada), o `trocarUepCrono` (v5.34: grava, recusa, semente da
   `UEP_VERSOES`, idempotente), o `getConferenciaCrono` (só as horas do volume
-  sozinho, depois da troca, hoje fora) e o `getHorasCrono` (v5.35: o log da
-  janela hora a hora, código por código): `node crono-registro.test.js`.
+  sozinho, depois da troca, hoje fora — até a v5.35; na v5.36 só a troca) e o
+  `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
+  as paradas apontadas de cada hora, por tipo): `node crono-registro.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -5047,6 +5049,35 @@ feito e dá ar de verdade ao que sobrou.
   (manuseio, troca de cor, parada não marcada). 2–3 h cada: não prova. Exigir
   que a produção confirme antes do ✓ TROCAR foi proposto ao PPCP e ainda NÃO
   decidido.
+- **v7.161.0 / `.gs` v5.36 — JULGADA SEM AS PARADAS, CONTRA A BASE** (PPCP:
+  *"a idéia é ajustar as paradas para menos, não pode normalizar e a UEP ficar
+  maior"* → *"tem que ser justa a uep"*). O % do padrão com as paradas dentro,
+  contra 100%, ENGORDAVA a UEP: o RACK SIRIUS saía 84,3% e a conferência pediria
+  ▲ SUBIR? — eram limpeza 13, troca de produto 12 e robô 7 min (27% do tempo).
+  - `_ucvPadraoDe` tira das horas contadas os minutos das paradas APONTADAS
+    (`par`, por tipo, do `getHorasCrono`) → `minRod`, `pctRod`; `par`/`parPct`/
+    `tipos` ficam à parte como PERDA EM PARADAS. `_ucvRefDe` é a MADERO (UEP do
+    cadastro) nas mesmas condições; `_ucvRel` = pctRod do volume ÷ pctRod da
+    base; `_ucvRelEst` aplica a faixa 90–110%. Cartão, lista (`_ucvRegsPadrao`)
+    e conferência (`_ucvConfMontar`) usam as MESMAS quatro.
+  - **Por que contra a base e não contra 100%**: hora sem troca é hora boa — a
+    própria MADERO roda a 108,7% do padrão da meta com as paradas e 116,3% sem
+    (26/09–25/10). Contra 100%, todo produto certo sairia "acima". Microparada
+    NÃO apontada continua dentro dos dois (produto e base): a comparação é justa.
+  - `pouco` é sobre o tempo SEM parada (minRod < 2 h): a conferência espera mais.
+  - Medido (26/09–25/10): RACK SIRIUS 1.6 (1,95) **98,8%**; STRASS VOL 2/2 (1,57)
+    89,2%; ELOA VOL 2/2 (1,82) 83,0%; Toucador 1,58 → 88,7% e 1,70 → 95,4%.
+    Abaixo da faixa sem as paradas = microparada não apontada, ritmo — ou UEP
+    leve: o texto manda apontar e medir de novo, nunca engordar a UEP.
+  - **Conferência pelas horas do painel**: o `getConferenciaCrono` (v5.36) só
+    devolve a troca e os códigos — não lê mais o log. As horas depois da troca
+    saem do `getHorasCrono` (janela de 30 dias), com `desde` = a vigência da
+    troca (o dia dela fora). Troca com mais de 30 dias conta só a janela.
+  - `.gs` v5.36: `_cronoParadasNasHoras` (sobreposição parada × slot, slot =
+    início + `_cronoMinSlot`; sem FIM ou atravessando a meia-noite fora; data
+    pela MESMA conversão `_dataStr → dataParaNum` no recorte e no filtro). Toda
+    hora vem com `par` (mesmo `{}`) — é o sinal de que as paradas foram lidas;
+    sem ele (`.gs` v5.35) a tela diz que falta o v5.36, nunca julga.
 - ⚠ Os **15% de tolerância** (fadiga e movimentação) NÃO entram aqui nem na UEP:
   só no TEMPO PADRÃO exibido (medido × 1,15) e na coluna TEMPO_PADRAO_S. A meta
   já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);

@@ -11,6 +11,34 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.161.0 · `.gs` v5.36 — 26/10/2026 · UEP julgada SEM as paradas, contra a MADERO
+
+- PPCP: *"a idéia é ajustar as paradas para menos, não pode normalizar e a UEP
+  ficar maior"* → *"tem que ser justa a uep"*. O % DO PADRÃO da v7.160.0 punha as
+  paradas dentro e comparava com 100%: um volume que só perdeu em paradas
+  (limpeza, robô, troca de plástico) aparecia abaixo e a CONFERÊNCIA pedia
+  ▲ SUBIR? — a perda virava "esforço do produto" e a UEP engordava.
+- Agora a produção é contada **sem as paradas apontadas** (aba PARADAS, minuto a
+  minuto dentro de cada hora) e **contra a MADERO nas mesmas condições** — só ela
+  na linha, sem as paradas. 100% = rendeu o mesmo que a base na régua da UEP;
+  90–110% a produção confirma. As paradas daquelas horas aparecem **à parte**,
+  como PERDA EM PARADAS, com os tipos.
+  - Cartão NA PRODUÇÃO e coluna NA PRODUÇÃO da lista de medições: o % contra a
+    base e as horas sem parada.
+  - CONFERÊNCIA DAS TROCAS: a mesma conta. Quem perdeu só em paradas CONFERE e
+    mostra a perda; ▲ SUBIR?/▼ DESCER? só quando, sem as paradas, o volume rende
+    diferente da base. Menos de 2 h sem parada: AGUARDANDO.
+- **Atenção — os números mudam** (26/09–25/10/2026): a MADERO, só ela na linha,
+  roda a 116,3% do padrão da meta sem as paradas. Contra ela: RACK SIRIUS 1.6
+  (1,95) 98,8% — a UEP confere; o 84,3% de antes era limpeza, robô e troca
+  (27% do tempo) —; STRASS VOL 2/2 (1,57) 89,2%; ELOA VOL 2/2 (1,82) 83,0%;
+  Toucador 1,58 → 88,7% e 1,70 → 95,4%.
+- `.gs` v5.36: `getHorasCrono` traz os minutos parados por tipo em cada hora;
+  `getConferenciaCrono` deixou de ler o log (as horas da conferência saem do
+  `getHorasCrono`) — uma leitura cara a menos.
+- ⚠ **re-deploy do `.gs` v5.36**. Antes dele o cartão, a coluna e a conferência
+  dizem que falta o `.gs`.
+
 ## v7.160.0 · `.gs` v5.35 — 26/10/2026 · A LINHA FAZ (s/cx) → NA PRODUÇÃO (% do padrão)
 
 - PPCP, com a ELOA VOL 2/2 na lista (*"a linha faz 35,5 s/cx?"* → *"mas esse

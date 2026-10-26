@@ -213,6 +213,7 @@ global.UCV_TROCA_MIN_VOL = eval('(' + pegaConst('UCV_TROCA_MIN_VOL') + ')');
 global.UEP_PAD_MIN_MIN = eval('(' + pegaConst('UEP_PAD_MIN_MIN') + ')');
 global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
+global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
 global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
 ['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
@@ -220,7 +221,7 @@ global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; glo
 // v7.146.1 (refatoração): a conta em três peças (base · cadastro · digitar) e o
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar(',
-  'function _ucvPadraoDe(', 'function _ucvRegsPadrao(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
+  'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
   'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
   'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvProntas(', 'function _ucvTrocaConfirmaTxt(',
   'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar('];
@@ -228,7 +229,7 @@ const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
   'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
-  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel('];
+  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -617,41 +618,69 @@ ok('o título do campo diz que vazio é a MADERO medida (e não mais a régua da
 // que é cronoanalise e que linha faz"; v7.160.0, PPCP 26/10/2026, sobre o s/cx
 // da ELOA: "mas esse tempo é cheio de paradas" → "faz as duas")
 console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume sozinho) e o registro ──');
-{ // a ELOA de verdade (log de 26/09–25/10/2026), com o cadastro de antes da troca: VOL 1/2 2,19 · VOL 2/2 2,53
+{ // a ELOA e a MADERO de verdade (log e aba PARADAS de 26/09–25/10/2026), com o cadastro de antes da troca: VOL 1/2 2,19 · VOL 2/2 2,53
   const PE = _uepConvProdutos(['1', '3', '5'].map(c => ({ codigo:'50106100' + c, desc:'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor:'C' + c, uep:2.19, uepVig:'16/10/2026' }))
     .concat(['2', '4', '6'].map(c => ({ codigo:'50106100' + c, desc:'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor:'C' + c, uep:2.53, uepVig:'16/10/2026' })))
+    .concat(['1', '2', '3', '4'].map(c => ({ codigo:'50114900' + c, desc:'VOL 1/1 MESA CABECEIRA MADERO', cor:'C' + c, uep:1, uepVig:'21/10/2026 DIGITADA' })))
     .concat([{ codigo:'501139001', desc:'VOL 1/1 ARMARIO ENCANTO', cor:'BRANCO', uep:2.23, uepVig:'25/09/2026' }]));
-  const HR_ = (data, hora, cods) => ({ data, hora, min:hora === '12:12' ? 48 : 60, cods });
-  const HE = [HR_('06/10/2026', '09:00', { 501061006:50, 501061004:64 }), HR_('06/10/2026', '10:00', { 501061004:35, 501061002:96 }),
-    HR_('06/10/2026', '12:12', { 501061002:54, 501147004:90 }),                                        // com o RACK INTENSE: fora
-    HR_('21/10/2026', '07:00', { 501149001:59, 501060006:20, 501060002:44, 501061004:32 }),             // troca de produto: fora
-    HR_('21/10/2026', '08:00', { 501061004:83, 501061006:64 }), HR_('21/10/2026', '09:00', { 501061006:60, 501128003:25, 501061002:64 }),
-    HR_('21/10/2026', '10:00', { 501061001:88, 501061005:42 }), HR_('21/10/2026', '12:12', { 501061005:63, 501061003:63 }),
-    HR_('21/10/2026', '13:00', { 501061003:50, 501088006:54, 501088008:30 })];
+  const HR_ = (data, hora, cods, par) => ({ data, hora, min:hora === '12:12' ? 48 : 60, cods, par:par || {} });
+  const ELOA = [HR_('06/10/2026', '09:00', { 501061006:50, 501061004:64 }, { 'Troca de Plastico':5, 'Troca de produto':7 }),
+    HR_('06/10/2026', '10:00', { 501061004:35, 501061002:96 }, { 'Troca de Plastico':7.8 }),
+    HR_('06/10/2026', '12:12', { 501061002:54, 501147004:90 }, { 'Troca de produto':6 }),                       // com o RACK INTENSE: fora
+    HR_('21/10/2026', '07:00', { 501149001:59, 501060006:20, 501060002:44, 501061004:32 }, { 'Troca de produto':14.4 }),   // troca de produto: fora
+    HR_('21/10/2026', '08:00', { 501061004:83, 501061006:64 }, { Outros:2.3, 'Troca de Plastico':3.9 }),
+    HR_('21/10/2026', '09:00', { 501061006:60, 501128003:25, 501061002:64 }, { 'Troca de Plastico':4.3, Outros:5.5 }),
+    HR_('21/10/2026', '10:00', { 501061001:88, 501061005:42 }, { 'Troca de produto':8.5 }), HR_('21/10/2026', '12:12', { 501061005:63, 501061003:63 }, { Outros:8.1 }),
+    HR_('21/10/2026', '13:00', { 501061003:50, 501088006:54, 501088008:30 }, { 'Troca de produto':6 })];
+  const MAD = [HR_('20/10/2026', '14:00', { 501149004:199, 501149003:180 }, { 'Troca de Plastico':5 }), HR_('20/10/2026', '15:00', { 501149003:300 }, { 'Troca de Plastico':3.5 }),
+    HR_('20/10/2026', '16:00', { 501149003:113, 501149001:240 }), HR_('22/10/2026', '08:00', { 501149003:360 }, { Outros:2.8 }),
+    HR_('22/10/2026', '09:00', { 501149003:111, 501149002:180 }, { 'Troca de Plastico':8.7 }), HR_('22/10/2026', '10:00', { 501149004:195 }, { Outros:3.7 })];
+  const HE = ELOA.concat(MAD);
   const V2 = ['501061002', '501.061.004', '501061006'], P2 = _ucvPadraoDe(HE, V2, 1.82, 2530);
-  ok('% DO PADRÃO do VOL 2/2: só as horas com ele SOZINHO (06/10 09 e 10 h, 21/10 08 h) — 392 cx × 1,82 ÷ (180 min × 2.530 ÷ 527)',
-     [P2.min, P2.horas, P2.dias, P2.cx, P2.pct.toFixed(1), P2.pouco], [180, 3, 2, 392, '82.6', false]);
+  ok('o VOL 2/2 na produção: só as horas com ele SOZINHO (06/10 09 e 10 h, 21/10 08 h); as paradas APONTADAS saem do tempo e ficam à parte',
+     [P2.min, P2.par, P2.minRod, P2.horas, P2.dias, P2.cx, P2.pct.toFixed(1), P2.pctRod.toFixed(1), P2.parPct.toFixed(1), P2.tipos.map(x => [x.tipo, +x.min.toFixed(1)]), P2.parLido, P2.pouco],
+     [180, 26, 154, 3, 2, 392, '82.6', '96.5', '14.4', [['Troca de Plastico', 16.7], ['Troca de produto', 7], ['Outros', 2.3]], true, false]);
+  const REF = _ucvRefDe(HE, PE, 2530);
+  ok('a BASE nas mesmas condições: a MADERO só ela na linha, sem as paradas, passa de 100% da meta (hora sem troca é hora boa)',
+     [REF.minRod.toFixed(1), REF.cx, REF.pct.toFixed(1), REF.pctRod.toFixed(1), REF.parPct.toFixed(1)], ['336.3', 1878, '108.7', '116.3', '6.6']);
+  ok('a régua justa: o produto CONTRA a base, os dois sem as paradas (100% = rendeu o mesmo que a base)',
+     [_ucvRel(P2, REF).toFixed(1), _ucvRel(_ucvPadraoDe(HE, V2, 2.53, 2530), REF).toFixed(1), _ucvRelEst(83), _ucvRelEst(95), _ucvRelEst(115), _ucvRel(P2, null), _ucvRel(null, REF)],
+     ['83.0', '115.3', 'abaixo', 'confere', 'acima', null, null]);
   const PJ = _ucvPadraoDe(HE, ['501061001', '501061002', '501061003', '501061004', '501061005', '501061006'], 2.36, 2530);
   ok('o produto inteiro (os dois volumes): as horas de qualquer volume dele, sem outro produto (12:12 = 48 min)', [PJ.min, PJ.horas, PJ.cx], [288, 5, 648]);
-  ok('não rodou sozinho: null (nada para comparar); sem UEP: sem %; menos de 2 h: pouco para julgar',
-     [_ucvPadraoDe(HE, ['501139001'], 2.23, 2530), _ucvPadraoDe(HE, V2, 0, 2530).pct, _ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530).pouco, _ucvPadraoDe('lendo', V2, 1.82, 2530)],
-     [null, null, true, null]);
+  const SEMPAR = HE.map(h => ({ data:h.data, hora:h.hora, min:h.min, cods:h.cods }));   // o .gs v5.35 (sem as paradas)
+  ok('não rodou sozinho: null; sem UEP: sem %; menos de 2 h sem parada: pouco; .gs sem as paradas: parLido falso e sem o % sem paradas',
+     [_ucvPadraoDe(HE, ['501139001'], 2.23, 2530), _ucvPadraoDe(HE, V2, 0, 2530).pct, _ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530).pouco, _ucvPadraoDe('lendo', V2, 1.82, 2530),
+      _ucvPadraoDe(SEMPAR, V2, 1.82, 2530).parLido, _ucvPadraoDe(SEMPAR, V2, 1.82, 2530).pctRod],
+     [null, null, true, null, false, null]);
+  const SOB = _ucvPadraoDe([HR_('01/10/2026', '09:00', { 501061002:10 }, { 'Troca de Plastico':50, Limpeza:30 })], V2, 1.82, 2530);
+  ok('paradas apontadas por cima uma da outra não passam da hora (80 min numa hora de 60 = 60): sem tempo rodando, sem %',
+     [SOB.par, SOB.minRod, SOB.pctRod], [60, 0, null]);
+  ok('desde (a conferência da troca): só as horas DEPOIS do dia', [_ucvPadraoDe(HE, V2, 1.82, 2530, '06/10/2026').horas, _ucvPadraoDe(HE, V2, 1.82, 2530, '21/10/2026')], [1, null]);
   const ROT2 = '501061 · PENTEADEIRA CAMARIM ELOA · VOL 2/2';
   const RM2 = _uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, HE), HM2 = _uepConvHtml(RM2);
-  ok('o cartão NA PRODUÇÃO: % com a UEP medida (14,4 ÷ 7,9 = 1,82, como a tela mostra) e com a do cadastro — o mesmo % da linha registrada',
-     [RM2.padrao.pct.toFixed(1), RM2.padCad.pct.toFixed(1), HM2.includes('NA PRODUÇÃO'), HM2.includes('<b>82,6%</b><span>do padrão com a UEP medida (1,82)</span>'),
-      HM2.includes('com a do cadastro (2,53): <b>114,8%</b>'), HM2.includes('3 h com o volume sozinho em 2 dias (últimos 30) · paradas dentro')],
-     ['82.6', '114.8', true, true, true, true]);
-  ok('nada de s/cx nem de "A LINHA FAZ" no cartão (convidava a comparar com o RODANDO)', [HM2.includes('/cx'), HM2.includes('A LINHA FAZ'), HM2.includes('cx/h')], [false, false, false]);
+  ok('o cartão NA PRODUÇÃO: contra a MADERO, com a UEP medida (14,4 ÷ 7,9 = 1,82) e com a do cadastro, e a PERDA EM PARADAS à parte',
+     [RM2.relMed.toFixed(1), RM2.relCad.toFixed(1), RM2.relEst, HM2.includes('NA PRODUÇÃO'),
+      HM2.includes('<b>83,0%</b><span>da MADERO com a UEP medida (1,82) — rendeu menos que a MADERO: microparada não apontada ou ritmo'),
+      HM2.includes('com a do cadastro (2,53): <b>115,3%</b>'), HM2.includes('2,6 h com o volume sozinho, sem parada, em 2 dias · a MADERO: 5,6 h (últimos 30)'),
+      HM2.includes('PERDA EM PARADAS nessas horas: <b>26 min</b> de 180 (14,4%) — troca de plastico 16,7 · troca de produto 7,0 · outros 2,3 · a MADERO: 6,6%')],
+     ['83.0', '115.3', 'abaixo', true, true, true, true, true]);
+  const PE2 = PE.map(p => p.rot === ROT2 ? Object.assign({}, p, { cods:p.cods.map(c => Object.assign({}, c, { uep:1.82 })) }) : p);
+  ok('UEP medida igual à do cadastro: o número aparece uma vez só', (_uepConvHtml(_uepConvMontar(PE2, ROT2, 14.4, 7.9, 2530, 15, HE)).match(/83,0%/g) || []).length, 1);
+  ok('nada de s/cx, de "A LINHA FAZ" nem de "% do padrão" com as paradas dentro julgando a UEP', [HM2.includes('/cx'), HM2.includes('A LINHA FAZ'), HM2.includes('82,6%')], [false, false, false]);
   const RS2 = _uepConvMontar(PE, ROT2, '', 7.9, 2530, 15, HE);
-  ok('sem o tempo digitado: só o % com a UEP do cadastro', [RS2.padrao, _uepConvHtml(RS2).includes('<b>114,8%</b><span>do padrão com a UEP do cadastro (2,53)</span>')], [undefined, true]);
-  ok('lendo · falhou · .gs antigo · não rodou sozinho: a tela diz qual, sem número inventado',
+  ok('sem o tempo digitado: só com a UEP do cadastro', [RS2.padrao, _uepConvHtml(RS2).includes('<b>115,3%</b><span>da MADERO com a UEP do cadastro (2,53) — rendeu mais que a MADERO')], [undefined, true]);
+  ok('a própria base: o % dela sem as paradas, como referência das outras',
+     _uepConvHtml(_uepConvMontar(PE, 'MESA CABECEIRA MADERO', 7.9, 7.9, 2530, 15, HE)).includes('<b>116,3%</b><span>do padrão da meta, sem as paradas — é a base, a referência das outras'), true);
+  ok('lendo · falhou · .gs antigo · sem as paradas · sem a base · não rodou sozinho: a tela diz qual, sem número inventado',
      [_uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, 'lendo')).includes('lendo a produção dos últimos 30 dias'),
       _uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, 'falhou')).includes('não foi lida'),
-      _uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, 'sem-endpoint')).includes('.gs v5.35'),
+      _uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, 'sem-endpoint')).includes('.gs v5.36'),
+      _uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, SEMPAR)).includes('ainda não manda as paradas de cada hora'),
+      _uepConvHtml(_uepConvMontar(PE, ROT2, 14.4, 7.9, 2530, 15, ELOA)).includes('a MADERO não rodou sozinha nos últimos 30 dias fechados: sem a referência'),
       _uepConvHtml(_uepConvMontar(PE, 'ARMARIO ENCANTO', 17.6, 7.9, 2530, 15, HE)).includes('o produto não rodou sozinho na linha nos últimos 30 dias'),
       _uepConvMontar(PE, 'ARMARIO ENCANTO', 17.6, 7.9, 2530, 15, HE).padrao],
-     [true, true, true, true, null]);
+     [true, true, true, true, true, true, null]);
   const RM = _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15);
   const pM = PRODS.find(p => p.rot === '501149 · MESA CABECEIRA MADERO');
   ok('sem o 7º parâmetro (chamador antigo) nada muda na conversão', _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 8.6, 7.9, 3048, 15, HE).uepVol.toFixed(4), RM.uepVol.toFixed(4));
@@ -659,19 +688,25 @@ console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume
      [_uepPadJanela(30, new Date(2026, 9, 20)), /action=getHorasCrono/.test(pegaJs('function _ucvLinhaCarregar(')),
       /if\(UCV_REGS_VOO\) await UCV_REGS_VOO[\s\S]*if\(UCV_CONF_VOO\) await UCV_CONF_VOO/.test(pegaJs('function _ucvLinhaCarregar(')), /UEP_PAD/.test(pegaJs('function _ucvLinhaItens('))],
      [{ de:'20/09/2026', ate:'19/10/2026' }, true, true, false]);
-  // a lista: cada medição com a UEP DELA e os códigos DELA
-  const REG2 = (uep, codigos) => ({ data:'21/10/2026', modelo:'501061', produto:'PENTEADEIRA CAMARIM ELOA', volume:'VOL 2/2', uep, uepCad:2.53, volumes:60, sRod:14.4, codigos });
-  const PADS = _ucvRegsPadrao([REG2(1.82, '501.061.002 501.061.004 501.061.006'), REG2(1.82, '')], HE, 2530);
-  ok('a lista: % do padrão por medição, com a UEP e os códigos dela (sem códigos: nada); sem as horas, o estado da leitura',
-     [PADS[0].pct.toFixed(1), PADS[1], _ucvRegsPadrao([REG2(1.82, '')], 'lendo', 2530), _ucvRegsPadrao([REG2(1.82, '')], undefined, 2530)], ['82.6', null, 'lendo', 'nao-lida']);
+  // a lista: cada medição com a UEP DELA e os códigos DELA, contra a base
+  const REG2 = (uep, codigos, extra) => Object.assign({ data:'21/10/2026', modelo:'501061', produto:'PENTEADEIRA CAMARIM ELOA', volume:'VOL 2/2', uep, uepCad:2.53, volumes:60, sRod:14.4, codigos }, extra || {});
+  const PADS = _ucvRegsPadrao([REG2(1.82, '501.061.002 501.061.004 501.061.006'), REG2(1.82, ''),
+    REG2(1, '501.149.001 501.149.002 501.149.003 501.149.004', { modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1' })], HE, 2530, REF);
+  ok('a lista: cada medição contra a base, com a UEP e os códigos dela (sem códigos: nada; a própria base: 100%); sem as horas, o estado da leitura',
+     [PADS[0].rel.toFixed(1), PADS[1], PADS[2].rel.toFixed(1), _ucvRegsPadrao([REG2(1.82, '')], 'lendo', 2530, REF), _ucvRegsPadrao([REG2(1.82, '')], undefined, 2530, REF),
+      _ucvRegsPadrao([REG2(1.82, '501061002 501061004 501061006')], HE, 2530, null)[0].semRef],
+     ['83.0', null, '100.0', 'lendo', 'nao-lida', true]);
   const PEv2 = PE.find(p => p.rot === ROT2), HL = _ucvRegsHtml([REG2(1.82, '501.061.002 501.061.004 501.061.006')], PEv2, null, null, 2.53, PADS.slice(0, 1));
-  ok('a coluna % DO PADRÃO no lugar do A LINHA FAZ: o % e as horas que o sustentam',
-     [HL.includes('>% DO PADRÃO</th>'), HL.includes('82,6% <small'), HL.includes('3 h</small>'), HL.includes('A LINHA FAZ'), HL.includes('/cx')], [true, true, true, false, false]);
-  ok('a célula: lendo …, .gs antigo —, não rodou sozinho —, pouco para julgar com *',
-     [_ucvPadCel('lendo'), /—/.test(_ucvPadCel('sem-endpoint')) && /v5\.35/.test(_ucvPadCel('sem-endpoint')), /não rodou sozinho/.test(_ucvPadCel(null)),
-      _ucvPadCel(_ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530)).includes('1 h*')], ['…', true, true, true]);
+  ok('a coluna NA PRODUÇÃO no lugar do A LINHA FAZ: o % contra a base e as horas sem parada que o sustentam',
+     [HL.includes('>NA PRODUÇÃO</th>'), HL.includes('83,0% <small'), HL.includes('2,6 h</small>'), HL.includes('A LINHA FAZ'), HL.includes('/cx'), HL.includes('perda em paradas 26 min')],
+     [true, true, true, false, false, true]);
+  ok('a célula: lendo …, .gs antigo —, sem as paradas —, sem a base —, não rodou sozinho —, pouco para julgar com *',
+     [_ucvPadCel('lendo'), /—/.test(_ucvPadCel('sem-endpoint')) && /v5\.36/.test(_ucvPadCel('sem-endpoint')), /v5\.36/.test(_ucvPadCel(_ucvPadraoDe(SEMPAR, V2, 1.82, 2530))),
+      /não rodou sozinha/.test(_ucvPadCel(_ucvRegsPadrao([REG2(1.82, '501061002 501061004 501061006')], HE, 2530, null)[0])), /não rodou sozinho/.test(_ucvPadCel(null)),
+      _ucvPadCel(Object.assign(_ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530), { rel:90 })).includes('0,9 h*')], ['…', true, true, true, true, true]);
   ok('o painel calcula os % da lista no _ucvRegPintar (o desenho não faz conta)',
-     /_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), _ucvLinhaItens\(\), R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')), true);
+     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
+      /_ucvConfMontar\(UCV_CONF\.trocas, R\.base\.meta, LH, UEP_CONV_PRODS\)/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
 
   // os campos do registro
   const H = '20/10/2026';
@@ -934,31 +969,46 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
                  [[ST2('26/10/2026', 22, 40, 2.78)], 2.29], [[ST2('26/10/2026', 0, 0, 0)], 2.29]];
   ok('a regra do painel e a do .gs dão o MESMO veredito, amostra e média em todos os casos',
      CASOS.map(([r, c]) => { const a = _ucvRegsResumo(r, c), b = G(r, c); return [a.veredito === b.veredito, a.nVol === b.nVol, (a.uepMed || 0).toFixed(6) === (b.uepMed || 0).toFixed(6)]; }).filter(x => x.includes(false)), []);
-  // a conferência das trocas
-  const TC = (prod, dias, extra) => Object.assign({ modelo:'501059', produto:prod, volume:'VOL 2/2', amostra:'2 medições, 113 volumes', gravado:'26/10/2026 10:40', vig:'26/10/2026',
-    codigos:[{ cod:'501059002', uep:1.51, antes:2.29, atual:1.51 }], substituida:false, dias }, extra || {});
-  const DIA = (data, min, cx) => ({ data, dn:0, min, horas:min / 60, cx, uep:Math.round(cx * 1.51 * 100) / 100 });
-  const CM = _ucvConfMontar([
-    TC('PENTEADEIRA CAMARIM STRASS', [DIA('28/10/2026', 120, 380)]),                                    // 573,8 de 576,1 → 99,6%
-    TC('P ABAIXO', [DIA('28/10/2026', 120, 250)]),                                                       // 65,5%
-    TC('P ACIMA', [DIA('28/10/2026', 60, 160), DIA('29/10/2026', 60, 160)]),                             // 83,9%… ×2 dias = 83,9% → não; ajustado abaixo
-    TC('P ESPERA', [DIA('28/10/2026', 60, 190)]),                                                        // 1 h: aguardando
-    TC('P VELHA', [], { gravado:'20/10/2026 09:00' }), TC('P VELHA', [DIA('28/10/2026', 120, 500)], { gravado:'27/10/2026 08:00' }),
-    TC('P SUBST', [DIA('28/10/2026', 120, 380)], { substituida:true })], 2530);
-  const est = n => (CM.lista.find(x => x.rot === '501059 · ' + n + ' · VOL 2/2') || {}).estado;
-  ok('a conferência: 99,6% CONFERE, 65% ▲ SUBIR?, 1 h AGUARDANDO, UEP mudada depois = SUBSTITUÍDA',
-     [est('PENTEADEIRA CAMARIM STRASS'), fmtP(CM.lista.find(x => x.rot.includes('STRASS')).pct), est('P ABAIXO'), est('P ESPERA'), est('P SUBST')],
-     ['confere', '99,6%', 'abaixo', 'aguardando', 'substituida']);
-  ok('a troca mais NOVA do volume é a que vale (a anterior foi substituída por ela): 500 cx em 2 h = 131% ▼ DESCER?',
-     [CM.lista.filter(x => x.rot.includes('P VELHA')).length, est('P VELHA'), Math.round(CM.lista.find(x => x.rot.includes('P VELHA')).pct)], [1, 'acima', 131]);
-  ok('os alertas vêm primeiro e são contados', [CM.lista.slice(0, CM.nAlerta).every(x => x.estado === 'abaixo' || x.estado === 'acima'), CM.nAlerta], [true, 3]);
+  // a conferência das trocas (v7.161.0: pelas horas do getHorasCrono, SEM as paradas, contra a base)
+  const TC = (prod, cod, extra) => Object.assign({ modelo:'501059', produto:prod, volume:'VOL 2/2', amostra:'2 medições, 113 volumes', gravado:'26/10/2026 10:40', vig:'26/10/2026',
+    codigos:[{ cod, uep:1.51, antes:2.29, atual:1.51 }], substituida:false }, extra || {});
+  const HC_ = (data, hora, cods, par) => ({ data, hora, min:60, cods, par:par || {} });
+  const HCONF = [HC_('20/10/2026', '13:00', { 501149001:288 }), HC_('20/10/2026', '14:00', { 501149001:288 }), HC_('20/10/2026', '15:00', { 501149001:288 }),   // a base: 99,98%
+    HC_('26/10/2026', '09:00', { 501059602:999 }),                                                       // o dia da troca: fora
+    HC_('28/10/2026', '09:00', { 501059002:190 }), HC_('28/10/2026', '10:00', { 501059002:190 }),       // 380 cx × 1,51: 99,6% → CONFERE
+    HC_('28/10/2026', '11:00', { 501059002:50, 501149001:50 }),                                           // dividida: fora dos dois
+    HC_('28/10/2026', '13:00', { 501059102:125 }), HC_('28/10/2026', '14:00', { 501059102:125 }),       // 65,5% → ▲ SUBIR?
+    HC_('29/10/2026', '09:00', { 501059202:160 }, { 'Troca de Plastico':15 }), HC_('29/10/2026', '10:00', { 501059202:160 }, { Limpeza:15 }),
+    HC_('29/10/2026', '13:00', { 501059202:147 }),                                                        // perdeu SÓ em paradas: 30 min de 180
+    HC_('28/10/2026', '15:00', { 501059302:95 }),                                                         // 1 h: aguardando
+    HC_('28/10/2026', '15:00', { 501059402:250 }), HC_('28/10/2026', '16:00', { 501059402:250 }),       // 131% → ▼ DESCER?
+    HC_('28/10/2026', '16:00', { 501059502:190 })];
+  const PC = PRODS.concat([]);
+  const CM = _ucvConfMontar([TC('PENTEADEIRA CAMARIM STRASS', '501059002'), TC('P ABAIXO', '501059102'), TC('P PARADAS', '501059202'), TC('P ESPERA', '501059302'),
+    TC('P VELHA', '501059402', { gravado:'20/10/2026 09:00', vig:'20/10/2026' }), TC('P VELHA', '501059402', { gravado:'27/10/2026 08:00', vig:'27/10/2026' }),
+    TC('P SUBST', '501059502', { substituida:true }), TC('P ANTES', '501059602')], 2530, HCONF, PC);
+  const cf = n => CM.lista.find(x => x.rot === '501059 · ' + n + ' · VOL 2/2') || {}, est = n => cf(n).estado;
+  ok('a conferência contra a base (99,98%): 99,6% CONFERE, 65% ▲ SUBIR?, 1 h AGUARDANDO, o dia da troca fora, UEP mudada depois = SUBSTITUÍDA',
+     [est('PENTEADEIRA CAMARIM STRASS'), fmtP(cf('PENTEADEIRA CAMARIM STRASS').rel), est('P ABAIXO'), est('P ESPERA'), est('P ANTES'), cf('P ANTES').P, est('P SUBST')],
+     ['confere', '99,6%', 'abaixo', 'aguardando', 'aguardando', null, 'substituida']);
+  ok('JUSTA: quem perdeu só em PARADAS confere (sem elas 97,9% da base) — com as paradas dentro dava 81,6% e pediria para SUBIR a UEP',
+     [est('P PARADAS'), cf('P PARADAS').rel.toFixed(1), cf('P PARADAS').P.pct.toFixed(1), cf('P PARADAS').P.par], ['confere', '97.9', '81.6', 30]);
+  ok('a troca mais NOVA do volume é a que vale: 500 cx em 2 h = 131% ▼ DESCER?',
+     [CM.lista.filter(x => x.rot.includes('P VELHA')).length, est('P VELHA'), Math.round(cf('P VELHA').rel)], [1, 'acima', 131]);
+  ok('os alertas vêm primeiro e são contados', [CM.lista.slice(0, CM.nAlerta).every(x => x.estado === 'abaixo' || x.estado === 'acima'), CM.nAlerta], [true, 2]);
+  ok('sem a base na janela · sem as paradas (.gs v5.35) · sem as horas: diz qual, nunca julga',
+     [_ucvConfMontar([TC('X', '501059002')], 2530, HCONF.slice(3), PC).lista[0].estado,
+      _ucvConfMontar([TC('X', '501059002')], 2530, HCONF.map(h => ({ data:h.data, hora:h.hora, min:h.min, cods:h.cods })), PC).lista[0].estado,
+      _ucvConfMontar([TC('X', '501059002')], 2530, 'lendo', PC).lista[0].estado, _ucvConfMontar([TC('X', '501059002')], 2530, 'sem-endpoint', PC).lista[0].estado],
+     ['sem-base', 'sem-paradas', 'lendo', 'sem-paradas']);
   const HC = _ucvConfHtml(CM, null);
-  ok('o desenho da conferência: os alertas com a direção, o quanto falta para julgar e que nada muda sozinho',
-     [HC.includes('▲ SUBIR?'), HC.includes('▼ DESCER?'), HC.includes('CONFERE'), HC.includes('1 h de 2 h sozinho para julgar'), HC.includes('a UEP não muda sozinha'), HC.includes('2,29 → <b>1,51</b>')],
-     [true, true, true, true, true, true]);
+  ok('o desenho da conferência: a direção, a perda em paradas à parte, o quanto falta para julgar e que nada muda sozinho',
+     [HC.includes('▲ SUBIR?'), HC.includes('▼ DESCER?'), HC.includes('CONFERE'), HC.includes('1 h de 2 h sozinho, sem parada, para julgar'), HC.includes('a UEP não muda sozinha'),
+      HC.includes('2,29 → <b>1,51</b>'), HC.includes('perda em paradas 30 min (16,7%)'), HC.includes('SEM as paradas apontadas, contra a MADERO nas mesmas condições (3 h, 100,0% do padrão da meta)')],
+     [true, true, true, true, true, true, true, true]);
   ok('a conferência sem o .gs novo, sem troca, sem leitura; e o aviso do topo só com alerta',
-     [_ucvConfHtml(null, 'sem-endpoint').includes('.gs v5.34'), _ucvConfHtml({ lista:[], nAlerta:0 }, null).includes('Nenhuma UEP trocada'), _ucvConfHtml(null, null),
-      _ucvConfAvisoHtml(CM).includes('3 UEP trocadas fora do padrão'), _ucvConfAvisoHtml({ lista:[], nAlerta:0 }), _ucvConfAvisoHtml(null)],
+     [_ucvConfHtml(null, 'sem-endpoint').includes('.gs v5.36'), _ucvConfHtml({ lista:[], nAlerta:0 }, null).includes('Nenhuma UEP trocada'), _ucvConfHtml(null, null),
+      _ucvConfAvisoHtml(CM).includes('2 UEP trocadas que a produção não confirma'), _ucvConfAvisoHtml({ lista:[], nAlerta:0 }), _ucvConfAvisoHtml(null)],
      [true, true, '', true, '', '']);
   // a tela
   const iCr2 = html.indexOf('<section id="sec-crono"'), SEC = html.slice(iCr2, html.indexOf('</section>', iCr2));
