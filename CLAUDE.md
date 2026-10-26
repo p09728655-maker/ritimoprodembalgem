@@ -3645,6 +3645,22 @@ feito e dá ar de verdade ao que sobrou.
   - ⚠ Produto marcado = **UEP baixa demais OU velocidade do cadastro errada**.
     Não é para "corrigir" a UEP pelo limite: é o sinal para conferir.
   - Sem MEDIDA/VELOCIDADE em algum volume → limite `null`, nada é cortado.
+- **CAPACIDADE POR PRODUTO na ⏱ CRONOANÁLISE e o MÊS** (v7.164.0, PPCP
+  26/10/2026: *"colocar essa impressão na cronoanálise e colocar a coluna qtde
+  mensal"*). O `gerarRelatorioCapTodos(oficial)` ganhou a coluna **PRODUTOS /
+  MÊS** = produtos/dia × `CAP_DIAS_MES`=22 (o mês típico do simulador e da
+  SWOT — a mesma régua, sem sábado e sem HE), depois de PRODUTOS / DIA.
+  - O botão **🖨 CAPACIDADE POR PRODUTO** da aba ⏱ CRONOANÁLISE chama
+    `_ucvCapTodos()` → `gerarRelatorioCapTodos(true)`: `oficial` = META UEP do
+    ⚙ (`PONTOS_DIA.metaUep`) e velocidade do cadastro, nunca o que ficou
+    digitado no modal (simulação). Sem o argumento (o botão do modal), vale o
+    modal, como antes.
+  - ⚠ **Síncrono de propósito**: o pop-up tem de abrir no clique. Sem
+    `CAP_CAT`, o `_capCatLocal()` (também do `abrirCapUep`) monta o cadastro
+    guardado neste computador e o papel diz de quando ele é
+    (`CAP_CAT_ORIGEM`); sem nenhum, avisa e dispara o `_capBuscar`.
+  - `relatorios.test.js` roda a impressão real (oficial × modal, o mês cortado
+    no limite da esteira, o cadastro guardado).
 - **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
   PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
   medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`

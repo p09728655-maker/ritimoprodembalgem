@@ -4222,6 +4222,50 @@ console.log('\n── estudo de UEP ──');
        [_capDia(sl, 2530, 30).tetoDia, _capDia(sl, 2530, 30).limitado], [Math.floor(30 * 60000 / 2700 * 527 / 60), false]);
     ok('a impressão por produto tem PONTOS / DIA na última coluna',
        /<th>PONTOS \/ DIA<\/th><\/tr><\/thead>/.test(pega('function gerarRelatorioCapTodos(')), true);
+    // v7.164.0 (PPCP 26/10/2026: "colocar essa impressão na cronoanálise e
+    // colocar a coluna qtde mensal"): PRODUTOS / MÊS = produtos / dia × o mês
+    // típico de 22 dias úteis; o 🖨 da aba ⏱ CRONOANÁLISE é a MESMA impressão,
+    // com a meta das configurações (nunca a simulação digitada no modal).
+    {
+      const dm = JS.match(/const CAP_DIAS_MES = (\d+);/);
+      ok('o mês da capacidade é o mês típico de 22 dias úteis do simulador', dm && +dm[1], 22);
+      global.CAP_DIAS_MES = +dm[1];
+      eval(pega('function _capVel(')); eval(pega('function gerarRelatorioCapTodos('));
+      const docAntes = global.document, openAntes = global.window.open;
+      const campos = { 'cap-meta': { value: '3.000' }, 'cap-vel': { value: '30' } };
+      global.document = { getElementById: id => campos[id] || null };
+      let papel = '';
+      global.window.open = () => ({ document: { open() {}, write(h) { papel = h; }, close() {} } });
+      Object.assign(global, { CAP_CAT: cpT, CAP_CAT_ORIGEM: '', PONTOS_DIA: { metaUep: 2530 },
+        _rpDocParadas: () => '<doc>', _rpBotaoImprimir: () => '', _rpCabecalho: (t, m) => '<cab>' + m + '</cab>' });
+      const linha = nome => { const i = papel.indexOf(nome); return papel.slice(i, papel.indexOf('</tr>', i)); };
+      const nums = l => [...l.matchAll(/<td class="td-(?:bold|mono)"[^>]*>([^<]*)<\/td>/g)].map(m => m[1]);
+      gerarRelatorioCapTodos(true);
+      // ELOA: 2.530 ÷ 4,32 = 585/dia (a esteira passa 3.088) → 585 × 22 = 12.870/mês
+      ok('oficial (cronoanálise): meta das configurações e velocidade do cadastro; o mês = dia × 22',
+         [nums(linha('PENTEADEIRA ELOA')).slice(0, 6), /Meta: 2\.530 UEP\/dia · mês de 22 dias úteis/.test(papel), /SIMULADA/.test(papel)],
+         [['2', '1', '4,32', '585', '12.870', '1.170'], true, false]);
+      ok('o mês vem DEPOIS de PRODUTOS / DIA, e sai do número já cortado no limite da esteira',
+         [/<th>PRODUTOS \/ DIA<\/th><th>PRODUTOS \/ MÊS<\/th><th>CAIXAS \/ DIA<\/th>/.test(papel),
+          nums(linha('MESA CABECEIRA SLEEP'))[4] === fmtN(sl.tetoDia * 22)], [true, true]);
+      gerarRelatorioCapTodos();
+      ok('sem o oficial (o botão do modal da PROGRAMAÇÃO): a meta e a velocidade digitadas, como antes',
+         [nums(linha('PENTEADEIRA ELOA')).slice(3, 5), /Meta: 3\.000 UEP\/dia/.test(papel), /SIMULADA de 30 m\/min/.test(papel)],
+         [['694', '15.268'], true, true]);
+      global.CAP_CAT_ORIGEM = 'cadastro guardado neste computador, lido em 26/10/2026 08:00:00';
+      gerarRelatorioCapTodos(true);
+      ok('cadastro guardado (a leitura de agora não chegou): o papel diz de quando é a UEP',
+         /UEP do cadastro guardado neste computador, lido em 26\/10\/2026 08:00:00/.test(papel), true);
+      global.CAP_CAT_ORIGEM = '';
+      global.document = docAntes; global.window.open = openAntes;
+      const sc = src.slice(src.indexOf('<section id="sec-crono"'), src.indexOf('</section>', src.indexOf('<section id="sec-crono"')));
+      ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua',
+         [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src)], [true, true]);
+      const UCT = pega('function _ucvCapTodos(');
+      ok('o da cronoanálise é a MESMA impressão (oficial), síncrono (o pop-up abre no clique) e cai no cadastro guardado',
+         [/gerarRelatorioCapTodos\(true\)/.test(UCT), /await|async/.test(UCT), /_capCatLocal\(\)/.test(UCT), /_capCatLocal\(\)/.test(pega('async function abrirCapUep('))],
+         [true, false, true, true]);
+    }
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
     ok('mix: UEP usada, sobra, quanto ainda cabe e produto sem UEP à parte',

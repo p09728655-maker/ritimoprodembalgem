@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.164.0 — 26/10/2026 · CAPACIDADE POR PRODUTO na cronoanálise, com o MÊS
+
+- PPCP, com a impressão CAPACIDADE DIÁRIA POR PRODUTO na mão: *"colocar essa
+  impressão na cronoanálise e colocar a coluna qtde mensal"*.
+- **Coluna PRODUTOS / MÊS** logo depois de PRODUTOS / DIA: produtos/dia × **22
+  dias úteis** — o mesmo mês típico do simulador de investimento e da SWOT.
+  Sem sábado e sem hora extra, como o dia; quem passa do limite da esteira sai
+  com o mês do número já cortado. O cabeçalho, a nota de abertura, o COMO O
+  NÚMERO SAI e o rodapé dizem o mês de 22 dias.
+- **🖨 CAPACIDADE POR PRODUTO** no cabeçalho da aba ⏱ CRONOANÁLISE: a MESMA
+  impressão do botão 🖨 CAPACIDADE DE CADA PRODUTO do modal 🧮 CAPACIDADE UEP da
+  PROGRAMAÇÃO (que continua lá), com a **meta das configurações** e a
+  **velocidade do cadastro** — nunca a simulação que ficou digitada no modal. A
+  UEP trocada pelo ✓ TROCAR A UEP já sai nela (a troca relê o cadastro).
+  Nenhuma leitura nova: usa o cadastro que a aba já lê; se a leitura de agora
+  não chegou, sai com o cadastro guardado neste computador e o papel diz de
+  quando ele é.
+- **Atenção:** nenhum número existente muda; a impressão ganhou uma coluna
+  (11, na folha deitada). Nada no `.gs`.
+
 ## v7.163.0 — 26/10/2026 · VERSÃO DO CADASTRO (em vigor / anterior)
 
 - PPCP, com a ELOA VOL 2/2 na lista (*"cadastro 2,53, como explico?"* — o
