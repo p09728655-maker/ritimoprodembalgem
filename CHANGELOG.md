@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.166.0 — 26/10/2026 · % PERDA na simulação de jornada
+
+- PPCP: *"ainda não determinou, mas a possibilidade é ser às 16:36; colocar
+  percentual de perda na impressão"*.
+- Cartão **PERDA DE CAPACIDADE** (−4,6% com 24 min: −115 UEP/dia, −2.530
+  UEP/mês) no quadro e no papel, no lugar do NO MÊS; o cartão da META DO DIA
+  fica só com a meta.
+- Coluna **% PERDA** por produto, depois de A MENOS / MÊS: produtos/dia a menos
+  ÷ produtos/dia de hoje. Fica perto dos 4,6% em todos (a diferença é o
+  arredondamento para baixo: −4,3% a −4,7% no cadastro de hoje).
+- O cartão JORNADA NORMAL diz a que horas o turno termina **se o corte for no
+  fim**: 17:00 − 24 min = **16:36** (o fim do turno vem das configurações).
+- **Atenção:** só a impressão com a simulação ganhou coluna; sem simulação,
+  nada muda. Nada no `.gs`.
+
 ## v7.165.0 — 26/10/2026 · SIMULAÇÃO DE JORNADA na capacidade por produto; o mês volta a 22 dias
 
 - PPCP: *"vamos ter alteração de jornada em dezembro, vai diminuir 24 minutos

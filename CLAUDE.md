@@ -3679,6 +3679,13 @@ feito e dá ar de verdade ao que sobrou.
     (produtos/dia, mês, caixas, produtos/hora, limite, pontos) + a coluna **A
     MENOS / MÊS** contra a de hoje (o por dia no `title`) + quatro cartões
     (`_capJornDocHtml`, grade de 4). Desenhos sem conta (o teste prende).
+  - **% PERDA** (v7.166.0, PPCP: *"colocar percentual de perda na impressão"*):
+    cartão PERDA DE CAPACIDADE (minutos ÷ 527, com UEP/dia e UEP/mês) e coluna
+    % PERDA por produto (produtos/dia a menos ÷ os de hoje — perto dos 4,6% em
+    todos; só o arredondamento muda). O `_capJornada(meta, menos, turnoFim)`
+    devolve `fimNovo` = fim do turno do ⚙ − minutos, dito como "se o corte for
+    no fim" — o PPCP ainda não decidiu onde saem os 24 min; a possibilidade
+    levantada em 26/10/2026 é o turno terminar às **16:36**.
   - ⚠ **É só a capacidade.** A mudança de jornada de verdade (dezembro) mexe em
     mais coisa e nada disso muda sozinho: `UEP_MIN_DIA`=527 (rp-core — meta da
     hora, esperado do card UEP, Telas F/G, PRÓXIMOS DIAS), a META UEP do ⚙, o
