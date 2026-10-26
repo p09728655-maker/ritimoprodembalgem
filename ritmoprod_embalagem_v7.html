@@ -489,6 +489,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-pill.troca{color:var(--acc);border-color:rgba(255,92,31,.45);background:rgba(255,92,31,.08)}
 #sec-crono .ucv-regs td.ucv-st small{display:block;margin-top:3px;font-size:11px;color:var(--txt2);white-space:normal;min-width:120px}
 #sec-crono .ucv-regs td.ucv-pr{white-space:normal;min-width:150px}
+#sec-crono .ucv-regs td.ucv-vc small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
 #sec-crono .uep-conv-av{display:flex;gap:10px 16px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-family:var(--font-b);font-size:13.5px;line-height:1.55;margin:0 0 16px;padding:11px 16px;border:1px solid rgba(255,152,0,.35);border-left:4px solid var(--warn);border-radius:8px;background:rgba(255,152,0,.06)}
 #sec-crono .uep-conv-av>span{flex:1 1 420px}
 #sec-crono .uep-conv-av b{color:var(--warn)}
@@ -6466,19 +6467,25 @@ function _ucvRelEst(rel){ return rel == null ? null : rel < UEP_PAD_FAIXA[0] ? '
 // fora FORA DA FAIXA (a troca é decidida pela regra do volume, com todas as
 // medições). Se o volume foi trocado pelo ✓ TROCAR A UEP (getConferenciaCrono)
 // a partir do cadastro que esta medição viu, ela é TROCADA (antes → depois).
-// A base nunca troca.
-function _ucvRegsStatus(regs, trocas){
+// A base nunca troca. v7.163.0 (PPCP: "troca cadastro VERSÃO 01") — a coluna
+// CADASTRO virou VERSÃO DO CADASTRO: o número continua sendo o que a medição
+// viu, e `vigor` diz se ele ainda é o cadastro de hoje (prods: UEP_CONV_PRODS;
+// sem o volume no cadastro, null — a tela não diz nada).
+function _ucvRegsStatus(regs, trocas, prods){
   const F = UEP_PAD_FAIXA, T = {}, med = (L, f) => L.length ? L.reduce((a, x) => a + (Number(x[f]) || 0), 0) / L.length : null;
+  const hoje = r => { const p = (prods || []).find(q => q.modelo === String(r.modelo || '') && _uepConvNorm(q.nome) === _uepConvNorm(r.produto) && _ucvRegVol(q) === String(r.volume || ''));
+    const c = p ? _uepConvCadastro(p).volCad : null; return c != null && Number(r.uepCad) > 0 ? Math.abs(c - Number(r.uepCad)) < 0.005 : null; };
   (trocas || []).forEach(t => { const k = t.modelo + '|' + _uepConvNorm(t.produto) + '|' + t.volume; if(!T[k] || _ucvGravNum(t.gravado) >= _ucvGravNum(T[k].gravado)) T[k] = t; });
   return (regs || []).map(r => {
-    if(String(r.modelo || '') === UEP_BASE.modelo && _uepConvNorm(r.produto) === _uepConvNorm(UEP_BASE.nome)) return { est:'base' };
+    const vigor = hoje(r);
+    if(String(r.modelo || '') === UEP_BASE.modelo && _uepConvNorm(r.produto) === _uepConvNorm(UEP_BASE.nome)) return { est:'base', vigor };
     const t = T[String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || '')];
     const antes = t ? med(t.codigos || [], 'antes') : null;
-    if(t && antes != null && Math.abs(antes - Number(r.uepCad)) < 0.005) return { est:'trocada', antes, depois:med(t.codigos || [], 'uep'), vig:t.vig };
+    if(t && antes != null && Math.abs(antes - Number(r.uepCad)) < 0.005) return { est:'trocada', antes, depois:med(t.codigos || [], 'uep'), vig:t.vig, vigor };
     const u = Number(r.uep), c = Number(r.uepCad);
-    if(!(u > 0) || !(c > 0)) return { est:'sem-cadastro' };
+    if(!(u > 0) || !(c > 0)) return { est:'sem-cadastro', vigor };
     const pct = u / c * 100;
-    return { est:pct >= F[0] && pct <= F[1] ? 'nao-troca' : 'fora', dif:pct - 100 };
+    return { est:pct >= F[0] && pct <= F[1] ? 'nao-troca' : 'fora', dif:pct - 100, vigor };
   });
 }
 // Conta pura: cada medição da lista com a UEP DELA e os códigos DELA (coluna
@@ -6671,10 +6678,10 @@ function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts){
   return tit
     + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${plural(S.n, 'medição', 'medições')} · ${_ucvVolTxt(S.nVol)}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
     + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
-    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, a troca é decidida pela regra do volume (todas as medições). TROCADA = o ✓ TROCAR A UEP já gravou a UEP nova a partir deste cadastro.">TROCA</th><th class="n">CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>'
+    + `<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, a troca é decidida pela regra do volume (todas as medições). TROCADA = o ✓ TROCAR A UEP já gravou a UEP nova a partir deste cadastro.">TROCA</th><th class="n" title="A UEP do cadastro com que a medição foi comparada (a que estava em vigor quando ela entrou no painel). EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada — o valor novo está na coluna TROCA.">VERSÃO DO<br>CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>`
     + regs.slice(0, 15).map((r, i) => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td class="ucv-pr">${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n"><b>${sg(r.sRod)}</b></td><td class="n">${sg(r.sPer)}</td><td class="n">${sg(r.sLac)}</td>`
-      + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="ucv-st">${_ucvStatusCel(sts && sts[i])}</td><td class="n">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}</td>`
+      + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="ucv-st">${_ucvStatusCel(sts && sts[i])}</td><td class="n ucv-vc">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}${sts && sts[i] && sts[i].vigor != null ? `<small>${sts[i].vigor ? 'em vigor' : 'anterior'}</small>` : ''}</td>`
       + `<td class="n">${_ucvPadCel(Array.isArray(pads) ? pads[i] : pads)}</td><td title="${_rpEsc(r.base || '')}">${_rpEsc(String(r.base || '').replace(/ MEDIDA (\d{2}\/\d{2})\/\d{4}$/, ' $1'))}</td><td>${_rpEsc(r.quem || '')}</td>`
       + `<td>${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
         : '<span class="ucv-x-sem" title="Linha sem REG_ID (digitada na planilha): exclua lá">—</span>'}</td></tr>`).join('')
@@ -6694,7 +6701,7 @@ function _ucvRegPintar(R){
   const ref = Array.isArray(LH) ? _ucvRefDe(LH, UEP_CONV_PRODS, R.base.meta) : null;
   if(lst) lst.innerHTML = _ucvProntasHtml(UCV_PRONTAS)
     + _ucvRegsHtml(RL, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), LH, R.base.meta, ref),
-        _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas));
+        _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta, LH, UEP_CONV_PRODS) : null;
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);

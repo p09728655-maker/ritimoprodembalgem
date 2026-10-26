@@ -706,7 +706,7 @@ console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume
       /não rodou sozinha/.test(_ucvPadCel(_ucvRegsPadrao([REG2(1.82, '501061002 501061004 501061006')], HE, 2530, null)[0])), /não rodou sozinho/.test(_ucvPadCel(null)),
       _ucvPadCel(Object.assign(_ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530), { rel:90 })).includes('0,9 h*')], ['…', true, true, true, true, true]);
   ok('o painel calcula os % da lista no _ucvRegPintar (o desenho não faz conta)',
-     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\),\s*_ucvRegsStatus\(RL && RL\.slice\(0, 15\), UCV_CONF && UCV_CONF\.trocas\)\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
+     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\),\s*_ucvRegsStatus\(RL && RL\.slice\(0, 15\), UCV_CONF && UCV_CONF\.trocas, UEP_CONV_PRODS\)\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
       /_ucvConfMontar\(UCV_CONF\.trocas, R\.base\.meta, LH, UEP_CONV_PRODS\)/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
 
   // os campos do registro
@@ -984,10 +984,21 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
       _ucvStatusCel(STR[4]).includes('variou −8,7%'), _ucvStatusCel(STR[5]).includes('BASE'), _ucvStatusCel(undefined)],
      ['<span class="ucv-pill ok">NÃO TROCA</span><small>variou +7,6% · dentro de 90–110%</small>', true, true, true, true, '']);
   const HTR = _ucvRegsHtml([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58)], null, null, null, null, 'lendo', STR.slice(0, 1));
-  ok('a coluna fica entre UEP e CADASTRO; a BASE da linha sai curta (o texto inteiro no title)',
-     [/<th class="n">UEP<\/th><th title="[^"]*">TROCA<\/th><th class="n">CADASTRO<\/th>/.test(HTR), HTR.includes('NÃO TROCA'),
+  ok('a coluna fica entre UEP e VERSÃO DO CADASTRO; a BASE da linha sai curta (o texto inteiro no title)',
+     [/<th class="n">UEP<\/th><th title="[^"]*">TROCA<\/th><th class="n" title="[^"]*">VERSÃO DO<br>CADASTRO<\/th>/.test(HTR), HTR.includes('NÃO TROCA'),
       _ucvRegsHtml([Object.assign(RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), { base:'MADERO MEDIDA 20/10/2026' })], null, null, null, null, 'lendo', []).includes('title="MADERO MEDIDA 20/10/2026">MADERO 20/10</td>')],
      [true, true, true]);
+  // VERSÃO DO CADASTRO (v7.163.0, PPCP: "troca cadastro VERSÃO 01" → "ISSO"): o número é o que a medição viu; em vigor/anterior diz se ainda é o de hoje
+  const PRV = _uepConvProdutos([{ codigo:'501082001', desc:'VOL 1/1 TOUCADOR MAGIC NEW', cor:'B', uep:1.58, uepVig:'25/09/2026' },
+    { codigo:'501061002', desc:'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor:'B', uep:1.82, uepVig:'26/10/2026 DIGITADA' }, { codigo:'501061001', desc:'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor:'B', uep:2.19, uepVig:'16/10/2026' }]);
+  const STV = _ucvRegsStatus([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.82, 2.53),
+    RTR('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.23, 2.23)], TROCASR, PRV);
+  ok('em vigor = o cadastro de hoje é o que a medição viu; anterior = já trocado; fora do cadastro: nada', STV.map(x => [x.est, x.vigor]),
+     [['nao-troca', true], ['trocada', false], ['nao-troca', null]]);
+  const HV = _ucvRegsHtml([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.82, 2.53)], null, null, null, null, 'lendo', STV.slice(0, 2));
+  ok('a célula: o número com "em vigor" ou "anterior" embaixo', [HV.includes('1,58<small>em vigor</small>'), HV.includes('2,53<small>anterior</small>')], [true, true]);
+  ok('os títulos da lista interpolam (a linha do cabeçalho é template, não aspas simples: "${UEP_PAD_FAIXA[0]}" saía cru no tooltip)',
+     [HV.includes('${'), /\+ `<th>VOLUME<\/th>/.test(pegaJs('function _ucvRegsHtml('))], [false, true]);
   // a conferência das trocas (v7.161.0: pelas horas do getHorasCrono, SEM as paradas, contra a base)
   const TC = (prod, cod, extra) => Object.assign({ modelo:'501059', produto:prod, volume:'VOL 2/2', amostra:'2 medições, 113 volumes', gravado:'26/10/2026 10:40', vig:'26/10/2026',
     codigos:[{ cod, uep:1.51, antes:2.29, atual:1.51 }], substituida:false }, extra || {});
