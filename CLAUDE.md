@@ -45,9 +45,9 @@ via Google Apps Script (JSONP).
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
   (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
   amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
-  da regra com o `.gs` e o 📄 IMPORTAR PDF (com o texto do PDF real de 26/10 e o nome do app com
-  "caixa 2/2"):
-  `node uep-relatorios.test.js`.
+  da regra com o `.gs`, o NA PRODUÇÃO (% do padrão com o volume sozinho, com o
+  log real da ELOA de 26/09–25/10) e o 📄 IMPORTAR PDF (com o texto do PDF real
+  de 26/10 e o nome do app com "caixa 2/2"): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
@@ -65,8 +65,9 @@ via Google Apps Script (JSONP).
   vazio fica vazio) e o EXCLUIR (`excluirCrono`, v5.33: cópia na
   `CRONO_EXCLUIDOS` antes de apagar, retentativa, lock de pé, a última linha
   não congelada), o `trocarUepCrono` (v5.34: grava, recusa, semente da
-  `UEP_VERSOES`, idempotente) e o `getConferenciaCrono` (só as horas do volume
-  sozinho, depois da troca, hoje fora): `node crono-registro.test.js`.
+  `UEP_VERSOES`, idempotente), o `getConferenciaCrono` (só as horas do volume
+  sozinho, depois da troca, hoje fora) e o `getHorasCrono` (v5.35: o log da
+  janela hora a hora, código por código): `node crono-registro.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -4203,13 +4204,9 @@ feito e dá ar de verdade ao que sobrou.
     travar em duas datas diferentes o mesmo produto, isso vai demorar
     muito"*): a regra é de AMOSTRA — ver *TROCAR A UEP PELA CRONOANÁLISE*. Ruído medido de UMA medição de 8 min: as 4 lacunas
     da SLEEP separam 7,9 de 6,7 (18%); outra amostra cairia em ±8%.
-    - **A LINHA FAZ** (`_ucvLinhaDe`, conta): o MÉD.PERÍODO do produto
-      (horas DISTINTAS por dia, `_phMediaAparada` 'aparada') nos últimos
-      `CRONO_LINHA_DIAS`=30 dias fechados (`_uepPadJanela`, a janela do bloco 7).
-      Leitura: um `getProducaoModeloPeriodo` só com produto escolhido, nenhum se
-      o `UEP_PAD` do bloco 7 já tem a mesma janela; espera a das medições.
-      `R.linhaPct` = medido ÷ s/cx da linha. Entra pelo 7º parâmetro do
-      `_uepConvMontar` (array = itens; texto = estado da leitura).
+    - ~~**A LINHA FAZ** (`_ucvLinhaDe`): o MÉD.PERÍODO do produto em s/cx~~ —
+      **trocado na v7.160.0 pelo NA PRODUÇÃO** (ver *NA PRODUÇÃO: % DO PADRÃO
+      NA CRONOANÁLISE*).
     - **💾 REGISTRAR MEDIÇÃO**: formulário `#uep-conv-reg` FORA do
       `#uep-conv-res` (refeito a cada tecla). `_ucvRegValida` recusa campos
       trocados (período < rodando, sem lacunas > rodando); `_ucvRegMontar` é a
@@ -4997,3 +4994,51 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o ✓ TROCAR A UEP diz que
   falta o v5.34 e não grava; a conferência diz o mesmo. O IMPORTAR e o
   REGISTRAR não dependem do v5.34 (o `registrarCrono` é da v5.30).
+
+## NA PRODUÇÃO: % DO PADRÃO NA CRONOANÁLISE (v7.160.0 / `.gs` v5.35)
+- PPCP, 26/10/2026, com a ELOA VOL 2/2 na lista de medições: *"a linha faz
+  35,5 s/cx?"* → *"o que é s/cx"* → *"mas esse tempo é cheio de paradas"* →
+  *"faz as duas"* (tirar o s/cx e pôr o % do padrão). O A LINHA FAZ era o
+  MÉD.PERÍODO do PRODUTO em s/cx: dia inteiro, hora de troca contada cheia, os
+  dois volumes juntos e, com 3 dias, a média aparada sobrava UM dia (21/10).
+  Ao lado do RODANDO (14,4 s) ele convidava a comparar paradas com tempo sem
+  paradas.
+- **A régua certa já existia — a da CONFERÊNCIA DAS TROCAS**: só as horas em que
+  SÓ os códigos do volume rodaram, UEP feita ÷ (minutos × META UEP ÷ 527). A
+  meta tem as paradas dentro (12,5 s por UEP contra 7,9 s da MADERO rodando:
+  ~37% do tempo), então comparar a produção com paradas contra ela é justo.
+  - `_ucvPadraoDe(horas, cods, uep, meta)` é a conta (pura); `_ucvRegsPadrao`
+    faz a lista (cada medição com a UEP DELA e os códigos DELA, coluna CODIGOS);
+    `_ucvLinhaHtml` (cartão NA PRODUÇÃO) e `_ucvPadCel` (célula) só desenham.
+  - **Cartão**: com a UEP medida (arredondada a duas casas, como a tela mostra
+    — senão o cartão dava 94,5% e a linha registrada 94,6%) e com a do
+    cadastro. A que a produção confirma fica perto de 100%. Sem tempo digitado,
+    só a do cadastro.
+  - Menos de `UEP_PAD_MIN_MIN` (2 h) somadas: "pouco para julgar" (`*` na lista).
+    Não rodou sozinho: "—", nunca 0.
+- **Por que uma leitura nova (`getHorasCrono`, `.gs` v5.35)**: o
+  `getProducaoModeloPeriodo` junta os volumes do mesmo produto (VOL 1/2 e 2/2 da
+  mesma cor são o MESMO item), e "o volume sozinho" precisa dos códigos de cada
+  hora. Devolve o log da janela (de/ate, hoje fora) hora a hora: data, hora,
+  minutos do slot (12:12 = 48) e as caixas de cada código. Só as linhas da
+  janela (`_valoresPorData`), cache de 300 s. O log hora a hora é o MESMO
+  `_cronoHorasDoLog` da conferência (linha sem hora fica fora nos dois).
+  - Carregada no `setTab('crono')` DEPOIS das medições e da conferência, e o
+    `_ucvLinhaCarregar` espera as duas — uma leitura de cada vez. Sem produto
+    escolhido também (a lista usa). `.gs` antigo (cai no `getDados`) →
+    `sem-endpoint`: cartão e coluna dizem que falta o v5.35, sem retentar em laço.
+- O 💾 REGISTRAR e o IMPORTAR deixaram de mandar `linhaCxh/linhaSCx/linhaDias/
+  linhaPer`: as colunas LINHA_* da aba CRONOANALISE ficam vazias nas medições
+  novas (as antigas guardam o s/cx, sem uso). O `.gs` não mudou no registro.
+  `_ucvRegMontar(R, V)` e `_ucvImportItem(x, prods, E, hoje, quem)` perderam o
+  parâmetro da janela.
+- Medido com o log real de 26/09 a 25/10/2026 (conferido na mão e no Chromium):
+  ELOA VOL 2/2 com 1,82 → 82,6% (06/10 09 e 10 h, 21/10 08 h: 392 cx em 180
+  min); STRASS VOL 2/2 com 1,57 → 94,6% e 1,46 → 87,9% (2 h); Toucador medida
+  1,70 → 113%, cadastro 1,58 → 105%; RACK SIRIUS 1.6 com 1,95 → 84%; MADERO
+  1,00 → 95%. Rack Flip 1.8: não rodou na janela (só hoje).
+- ⚠ Os **15% de tolerância** (fadiga e movimentação) NÃO entram aqui nem na UEP:
+  só no TEMPO PADRÃO exibido (medido × 1,15) e na coluna TEMPO_PADRAO_S. A meta
+  já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);
+  somar os 15% de novo contaria a fadiga duas vezes.
+- ⚠ Mudou o `.gs` → **re-deploy manual**.

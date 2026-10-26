@@ -2890,7 +2890,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div id="uep-conv-res"></div>
     <div class="uep-nota" id="uep-conv-t-msg"></div>
     <div id="uep-conv-reg" class="uep-card" style="display:none">
-      <div class="ucv-reg-t">REGISTRAR ESTA MEDIÇÃO <span>guarda na planilha (aba CRONOANALISE) os segundos da medição e o que a linha faz — a UEP do cadastro não muda</span></div>
+      <div class="ucv-reg-t">REGISTRAR ESTA MEDIÇÃO <span>guarda na planilha (aba CRONOANALISE) os segundos da medição e a UEP que eles dão — a UEP do cadastro não muda</span></div>
       <div class="ucv-reg-f">
         <label title="O dia em que a medição foi FEITA — não o de hoje, se ela foi antes. Obrigatória.">DATA DA MEDIÇÃO<input id="uep-conv-r-data" class="frm-inp" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="maskData(this)"></label>
         <label title="O cartão POR VOLUME NO PERÍODO do Volume a volume (com as paradas). Opcional.">NO PERÍODO (s)<input id="uep-conv-r-per" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
@@ -3413,7 +3413,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.159.0';
+const APP_VER   = '7.160.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6022,13 +6022,14 @@ function _uepConvDigitar(p, cad, uepVol, uepJogo){
 }
 // A conversão inteira: estado (sem-cadastro · sem-produto · sem-tempo · ok),
 // a base, o cadastro do produto e, com o tempo, a UEP e o que digitar.
-// linhaItens (v7.150.0): os itens de produção da janela (array) ou o estado da
-// leitura ('lendo' · 'falhou' · 'nao-lida') — é de onde sai A LINHA FAZ.
+// linhaHoras (v7.160.0): as horas do log da janela, código por código (array,
+// getHorasCrono), ou o estado da leitura ('lendo' · 'falhou' · 'sem-endpoint' ·
+// 'nao-lida') — é de onde sai o NA PRODUÇÃO (% do padrão, volume sozinho).
 // regLista (v7.158.0): as medições registradas (getCronoRegistros), ou null
 // enquanto não foram lidas. É delas — não do tempo digitado — que sai a troca:
 // R.regRes (a regra contra o cadastro de AGORA) e, quando ela deixa, R.troca
 // (a média das medições e o que gravar em cada código).
-function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaItens, regLista){
+function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaHoras, regLista){
   const base = _uepConvBaseDe(baseSeg, metaUep, tolPct);
   if(!prods || !prods.length) return { estado:'sem-cadastro', base };
   const a = _uepConvAchar(prods, txt);
@@ -6036,8 +6037,10 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaItens, r
   const p = a.p, cad = _uepConvCadastro(p);
   const R = { estado:'sem-tempo', base, p, vols:cad.vols, completo:cad.completo, jogoCad:cad.jogoCad, volCad:cad.volCad, ehBase:_uepEhBase(p),
               prevSeg:cad.volCad != null ? cad.volCad * base.seg : null, origem:cad.origem,
-              linhaEst:Array.isArray(linhaItens) ? 'ok' : (linhaItens || 'nao-lida'),
-              linha:Array.isArray(linhaItens) ? _ucvLinhaDe(linhaItens, p) : undefined };
+              linhaEst:Array.isArray(linhaHoras) ? 'ok' : (linhaHoras || 'nao-lida') };
+  const cods = p.cods.map(c => c.cod);
+  // o % do padrão com a UEP do cadastro (com o tempo digitado, também com a medida)
+  if(Array.isArray(linhaHoras)) R.padCad = _ucvPadraoDe(linhaHoras, cods, cad.volCad, base.meta);
   R.regs = Array.isArray(regLista) ? _ucvRegsDoProduto(regLista, p) : null;
   R.regRes = R.regs ? _ucvRegsResumo(R.regs, cad.volCad) : null;
   if(!R.ehBase && R.regRes && R.regRes.veredito === 'trocar'){
@@ -6048,8 +6051,8 @@ function _uepConvMontar(prods, txt, seg, baseSeg, metaUep, tolPct, linhaItens, r
   if(!(s > 0)) return R;
   R.estado = 'ok'; R.seg = s;
   R.uepVol = s / base.seg; R.uepJogo = R.uepVol * p.nVol;
-  // quanto do ritmo da cronoanálise (rodando) a linha entrega na produção real
-  R.linhaPct = R.linha ? s / R.linha.sCx * 100 : null;
+  // com a UEP como a tela mostra (duas casas): o cartão fecha com a linha registrada da lista
+  if(Array.isArray(linhaHoras)) R.padrao = _ucvPadraoDe(linhaHoras, cods, Math.round(R.uepVol * 100) / 100, base.meta);
   // tempo padrão do produto: a MESMA tolerância da base — por isso a UEP acima
   // (s ÷ base) é igual a tempo padrão ÷ tempo padrão da base
   R.tpSeg = base.tpSeg != null ? s * base.tolFator : null;
@@ -6197,18 +6200,27 @@ function _uepConvHtml(R){
   }
   return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _ucvLinhaHtml(R) + _uepConvNotasHtml(R.base);
 }
-// A LINHA FAZ (v7.150.0): o MÉD.PERÍODO do produto ao lado da cronoanálise.
-// Desenho: tudo vem pronto do _uepConvMontar (R.linha, R.linhaPct, R.linhaEst).
+// NA PRODUÇÃO (v7.160.0, PPCP 26/10/2026: o s/cx do dia inteiro que estava aqui
+// "é cheio de paradas" → "faz as duas"). O % DO PADRÃO só nas horas em que o
+// VOLUME rodou sozinho nos últimos CRONO_LINHA_DIAS dias fechados — a régua da
+// conferência, com as paradas dentro como a meta. Com a UEP medida e com a do
+// cadastro: a que a produção confirma fica perto de 100%.
+// Desenho: tudo vem pronto do _uepConvMontar (R.padrao, R.padCad, R.linhaEst).
 function _ucvLinhaHtml(R){
-  const t = '<span class="ucv-linha-l">A LINHA FAZ</span>', n = CRONO_LINHA_DIAS;
-  if(R.linhaEst === 'falhou') return `<div class="ucv-linha">${t}<span>a produção dos últimos ${n} dias não foi lida — tenta de novo em 1 min.</span></div>`;
-  if(R.linhaEst !== 'ok') return `<div class="ucv-linha">${t}<span>lendo a produção dos últimos ${n} dias…</span></div>`;
-  if(!R.linha) return `<div class="ucv-linha">${t}<span>o produto não rodou nos últimos ${n} dias fechados — nada para comparar.</span></div>`;
-  const L = R.linha;
-  return `<div class="ucv-linha" title="MÉD.PERÍODO da aba PRODUÇÃO/HORA: caixas ÷ horas em que o produto rodou, dia a dia, média ${L.aparada ? 'sem o melhor e o pior dia' : 'de todos os dias'}. Hora dividida com outro produto conta inteira: a linha sai um pouco mais lenta do que é.">`
-    + `${t}<b>${_taktTxt(L.sCx)}</b><span>por caixa · ${fmtN(Math.round(L.cxh))} cx/h · ${L.dias} dia${L.dias === 1 ? '' : 's'} nos últimos ${n}${R.p.volSel ? ` · média dos ${R.p.nVolTot} volumes` : ''}</span>`
-    + (R.linhaPct != null ? `<span class="ucv-linha-c">a linha entrega <b>${fmtP(R.linhaPct)}</b> do ritmo da cronoanálise rodando (${_taktTxt(R.seg)})</span>` : '')
-    + '</div>';
+  const t = '<span class="ucv-linha-l">NA PRODUÇÃO</span>', n = CRONO_LINHA_DIAS;
+  const caixa = (txt, tit) => `<div class="ucv-linha"${tit ? ` title="${tit}"` : ''}>${t}${txt}</div>`;
+  if(R.linhaEst === 'sem-endpoint') return caixa('<span>o Apps Script ainda não manda as horas da linha: cole o .gs v5.35 no editor e re-deploye.</span>');
+  if(R.linhaEst === 'falhou') return caixa(`<span>a produção dos últimos ${n} dias não foi lida — tenta de novo em 1 min.</span>`);
+  if(R.linhaEst !== 'ok') return caixa(`<span>lendo a produção dos últimos ${n} dias…</span>`);
+  const H = R.padCad || R.padrao;
+  if(!H) return caixa(`<span>${R.p.volSel ? 'o volume' : 'o produto'} não rodou sozinho na linha nos últimos ${n} dias fechados — nada para comparar.</span>`);
+  const tit = `Só as horas em que ${R.p.volSel ? 'este volume' : 'este produto'} rodou SOZINHO na linha (hora com outro produto ou outro volume fica fora), nos últimos ${n} dias fechados. Padrão = régua da meta (527 min ÷ meta), com as paradas dentro, como a meta. ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% confere.`;
+  const uMed = R.padrao && R.padrao.pct != null, uCad = R.padCad && R.padCad.pct != null;
+  const amostra = `${_ucvHoras(H.min)} com ${R.p.volSel ? 'o volume' : 'o produto'} sozinho em ${plural(H.dias, 'dia', 'dias')} (últimos ${n}) · paradas dentro`
+    + (H.pouco ? ' · pouco para julgar (menos de ' + _ucvHoras(UEP_PAD_MIN_MIN) + ')' : '');
+  return caixa((uMed ? `<b>${fmtP(R.padrao.pct)}</b><span>do padrão com a UEP medida (${_ucvU2(R.uepVol)})</span>`
+                     : uCad ? `<b>${fmtP(R.padCad.pct)}</b><span>do padrão com a UEP do cadastro (${_ucvU2(R.volCad)})</span>` : '<span>sem UEP para contar o padrão</span>')
+    + `<span class="ucv-linha-c">${uMed && uCad ? `com a do cadastro (${_ucvU2(R.volCad)}): <b>${fmtP(R.padCad.pct)}</b> · ` : ''}${amostra}</span>`, tit);
 }
 // A orientação de qual tempo digitar (v7.142.2, PPCP: "as paradas são evitáveis
 // se ajustar"). Parada evitável não é esforço do produto: o método certo é a
@@ -6303,7 +6315,7 @@ function _uepConvAtualiza(){
     const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME RODANDO';
     res.innerHTML = _uepConvHtml(R);
     _ucvRegPintar(R);
-    if(R.p && (E.linha === 'nao-lida' || E.linha === 'falhou')) _ucvLinhaCarregar();   // só com produto escolhido
+    if((E.linha === 'nao-lida' && UCV_REGS) || E.linha === 'falhou') _ucvLinhaCarregar();   // a 1ª leitura é a do setTab, depois das medições
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
 }
 // v7.142.1 (PPCP: "quando dá tab cai para baixo"): depois do último campo, o
@@ -6345,57 +6357,66 @@ function _uepConvBase(){
   _uepConvAtualiza();
 }
 // ════════════════════════════════════════════════════════════════════════════
-// O QUE A LINHA FAZ + REGISTRO DA MEDIÇÃO (v7.150.0 / .gs v5.30)
+// NA PRODUÇÃO + REGISTRO DA MEDIÇÃO (v7.150.0 / .gs v5.30; v7.160.0 / .gs v5.35)
 // ════════════════════════════════════════════════════════════════════════════
 // PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanalise e que linha
-// faz" → os dois. A cronoanálise é o que a linha faz RODANDO; o que ela faz de
-// verdade é o MÉD.PERÍODO da aba PRODUÇÃO/HORA, a mesma conta: caixas ÷ horas
-// DISTINTAS em que o produto rodou, por dia, média APARADA (_phMediaAparada),
-// nos últimos CRONO_LINHA_DIAS dias FECHADOS (_uepPadJanela — a janela do bloco
-// 7, hoje fora). Hora dividida com outro produto conta inteira (a régua do
-// comparativo): a linha sai um pouco mais lenta do que é, e o title diz isso.
-// Custo: UM getProducaoModeloPeriodo da janela, só com produto escolhido, e a
-// janela só muda na virada do dia; nenhum se o bloco 7 da aba ⚖ UEP já leu a
-// mesma janela (UEP_PAD). Uma leitura de cada vez: espera a das medições.
+// faz" → os dois. A v7.150.0 mostrava A LINHA FAZ: o MÉD.PERÍODO do produto em
+// s/cx (caixas ÷ horas do dia inteiro). PPCP, 26/10/2026, com a ELOA na tela
+// (35,5 s/cx contra 14,4 s rodando): "mas esse tempo é cheio de paradas" →
+// "faz as duas" (tirar o s/cx e pôr o % do padrão). Agora é o % DO PADRÃO só
+// nas horas em que o VOLUME medido rodou sozinho, nos últimos CRONO_LINHA_DIAS
+// dias FECHADOS (_uepPadJanela, hoje fora): a régua da CONFERÊNCIA DAS TROCAS,
+// com as paradas dentro — a meta também tem (12,5 s por UEP contra 7,9 s da
+// MADERO rodando). O s/cx convidava a comparar com o RODANDO, e não se compara.
+// Custo: UM getHorasCrono da janela (.gs v5.35, só as linhas da janela), depois
+// das medições e da conferência — uma leitura de cada vez. A janela só muda na
+// virada do dia. Serve ao cartão e à lista (cada medição com a UEP dela).
 // O REGISTRO grava na aba CRONOANALISE (.gs v5.30, registrarCrono) os segundos
-// da medição — RODANDO, NO PERÍODO, SEM AS LACUNAS —, a conversão do momento e
-// A LINHA FAZ. Os SEGUNDOS são o que importa: base nova ou esteira em outra
-// velocidade, a UEP de todo produto se refaz pela conta, sem medir de novo.
-// ⚠ NÃO troca a UEP do cadastro (TRAVADA, só digitada). A regra combinada com
-// o PPCP (20/10/2026): manter a faixa 90–110% e trocar a UEP só com DUAS
-// medições em dias diferentes apontando o mesmo lado — o resumo da lista diz.
+// da medição — RODANDO, NO PERÍODO, SEM AS LACUNAS — e a conversão do momento.
+// As colunas LINHA_* da aba ficam vazias desde a v7.160.0 (eram o s/cx). Os
+// SEGUNDOS são o que importa: base nova ou esteira em outra velocidade, a UEP
+// de todo produto se refaz pela conta, sem medir de novo.
+// A troca da UEP é pelo ✓ TROCAR A UEP (v7.158.0), pela regra de amostra.
 const CRONO_LINHA_DIAS = 30;
 const CRONO_REG_TTL = 2 * 60 * 1000;
-let UCV_LINHA = null, UCV_LINHA_VOO = null;   // { de, ate, itens, falha, ts }
+let UCV_LINHA = null, UCV_LINHA_VOO = null;   // { de, ate, horas, falha, ts }
 let UCV_REGS = null, UCV_REGS_VOO = null;     // { lista, falha, ts }
 let UCV_EXCL = null;                          // REG_ID da medição sendo excluída (v7.157.0)
 let UCV_TROCANDO = false;                     // troca da UEP em curso (v7.158.0): uma de cada vez
 let UCV_PRONTAS = [];                         // os volumes que a regra deixa trocar (a lista PRONTAS PARA TROCAR)
 let UCV_CONF = null, UCV_CONF_VOO = null;     // a CONFERÊNCIA DAS TROCAS: { trocas, falha, ts }
-// Conta pura: o produto (modelo + nome — todas as cores e volumes) nos itens do
-// período. null = não rodou na janela.
-function _ucvLinhaDe(itens, p){
-  if(!p) return null;
-  const k = _uepConvNorm(p.modelo + '|' + p.nome), D = {};
-  (itens || []).forEach(it => {
-    if(!it || !(Number(it.caixas) > 0) || _uepConvNorm(String(it.modelo || '') + '|' + (it.nome || '')) !== k) return;
-    _phAdd(D[it.data] = D[it.data] || _phAcc(), it);
+// Conta pura: o % DO PADRÃO nas horas em que SÓ estes códigos rodaram — a régua
+// da conferência (_ucvConfMontar): UEP feita (caixas × uep) ÷ UEP pedida
+// (minutos × meta ÷ UEP_MIN_DIA). null = não rodaram sozinhos na janela; pct
+// null = sem UEP para contar. pouco = menos de UEP_PAD_MIN_MIN minutos somados.
+function _ucvPadraoDe(horas, cods, uep, meta){
+  const S = new Set((cods || []).map(c => String(c).replace(/\D/g, '')).filter(Boolean));
+  if(!S.size || !Array.isArray(horas)) return null;
+  let min = 0, cx = 0, n = 0; const dias = {};
+  horas.forEach(h => {
+    const cs = Object.keys(h && h.cods || {});
+    if(!cs.length || !cs.every(c => S.has(c))) return;          // dividida com outro código: fora
+    min += Number(h.min) || 0; n++; dias[h.data] = 1;
+    cs.forEach(c => { cx += Number(h.cods[c]) || 0; });
   });
-  // as horas do dia são as DISTINTAS (duas cores na mesma hora = uma hora)
-  const accs = Object.keys(D).map(d => { const a = D[d], h = Object.keys(a.hSet).length; if(h) a.horas = h; return a; }).filter(a => a.horas > 0);
-  if(!accs.length) return null;
-  const m = _phMediaAparada(accs, 'mediaH', 'aparada');
-  if(!(m.val > 0)) return null;
-  return { cxh:m.val, sCx:3600 / m.val, dias:accs.length, cx:accs.reduce((t, a) => t + a.caixas, 0), aparada:m.aparada };
+  if(!n) return null;
+  const m = Number(meta) > 0 ? Number(meta) : UEP_META_PADRAO, u = Number(uep), ped = min * m / UEP_MIN_DIA;
+  return { min, horas:n, dias:Object.keys(dias).length, cx, pct:u > 0 && ped > 0 ? cx * u / ped * 100 : null, pouco:min < UEP_PAD_MIN_MIN };
 }
-// Os itens da janela, se já estão na mão (daqui ou do bloco 7); senão o estado
-// da leitura. É o que o _uepConvEntradas entrega ao _uepConvMontar.
+// Conta pura: o % do padrão de cada medição da lista, com a UEP DELA e os
+// códigos DELA (coluna CODIGOS). Sem as horas lidas, o estado da leitura.
+function _ucvRegsPadrao(regs, horas, meta){
+  if(!Array.isArray(horas)) return horas || 'nao-lida';
+  return (regs || []).map(r => _ucvPadraoDe(horas, String(r && r.codigos || '').split(/\s+/), r && r.uep, meta));
+}
+// As horas da janela, se já estão na mão; senão o estado da leitura. É o que o
+// _uepConvEntradas entrega ao _uepConvMontar.
 function _ucvLinhaItens(){
   const J = _uepPadJanela(CRONO_LINHA_DIAS);
-  if(UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.ate === J.ate && UCV_LINHA.itens) return UCV_LINHA.itens;
-  if(UEP_PAD && UEP_PAD.de === J.de && UEP_PAD.ate === J.ate && Array.isArray(UEP_PAD.itens)) return UEP_PAD.itens;
+  const daJanela = UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.ate === J.ate;
+  if(daJanela && UCV_LINHA.horas) return UCV_LINHA.horas;
   if(UCV_LINHA_VOO) return 'lendo';
-  return UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.ate === J.ate && UCV_LINHA.falha ? 'falhou' : 'nao-lida';
+  return daJanela && UCV_LINHA.falha ? (UCV_LINHA.falha === 'sem-endpoint' ? 'sem-endpoint' : 'falhou') : 'nao-lida';
 }
 function _ucvLinhaCarregar(){
   if(UCV_LINHA_VOO) return UCV_LINHA_VOO;
@@ -6403,19 +6424,20 @@ function _ucvLinhaCarregar(){
   if(!CFG.sheetsUrl || Array.isArray(_ucvLinhaItens())) return Promise.resolve();
   if(UCV_LINHA && UCV_LINHA.de === J.de && UCV_LINHA.falha && Date.now() - UCV_LINHA.ts < 60000) return Promise.resolve();
   UCV_LINHA_VOO = (async () => {
-    if(UCV_REGS_VOO) await UCV_REGS_VOO.catch(() => {});
-    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=getProducaoModeloPeriodo'
+    if(UCV_REGS_VOO) await UCV_REGS_VOO.catch(() => {});     // uma leitura de cada vez
+    if(UCV_CONF_VOO) await UCV_CONF_VOO.catch(() => {});
+    const url = CFG.sheetsUrl + (CFG.sheetsUrl.includes('?') ? '&' : '?') + 'action=getHorasCrono'
       + '&de=' + encodeURIComponent(J.de) + '&ate=' + encodeURIComponent(J.ate);
-    let itens = null, falha = 'sem-resposta';
+    let horas = null, falha = 'sem-resposta';
     for(let t = 1; t <= 3; t++){
       try{
         const r = await jsonpFetch(url, 60000);
-        if(r && r.ok && Array.isArray(r.itens)){ itens = r.itens; falha = null; }
-        else falha = r && r.ok === false ? 'erro' : 'sem-endpoint';
+        if(r && r.ok && Array.isArray(r.horas)){ horas = r.horas; falha = null; }
+        else falha = r && r.ok === false ? 'erro' : 'sem-endpoint';   // o .gs antigo cai no getDados
         break;
       }catch(e){ if(t < 3) await new Promise(ok => setTimeout(ok, 2000 * t)); }
     }
-    UCV_LINHA = { de:J.de, ate:J.ate, itens, falha, ts:Date.now() };
+    UCV_LINHA = { de:J.de, ate:J.ate, horas, falha, ts:Date.now() };
   })().finally(() => { UCV_LINHA_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
   return UCV_LINHA_VOO;
 }
@@ -6476,7 +6498,7 @@ function _ucvRegUrl(D){
 function _ucvHash(s){ let h = 2166136261; for(let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
 // A linha da planilha. O REG_ID sai do CONTEÚDO da medição: o 2º clique depois
 // de um timeout manda o mesmo id e o .gs não duplica.
-function _ucvRegMontar(R, V, J){
+function _ucvRegMontar(R, V){
   const p = R.p, c0 = p.cods.find(c => c.vel > 0) || {};
   const r2 = x => x == null || !isFinite(x) ? '' : Math.round(x * 100) / 100;
   const D = { data:V.data, modelo:p.modelo, produto:p.nome, volume:_ucvRegVol(p),
@@ -6485,8 +6507,6 @@ function _ucvRegMontar(R, V, J){
     base:R.base.daMeta ? 'RÉGUA DA META' : R.base.medida ? `${_uepBaseCurto()} MEDIDA ${UEP_BASE_MEDIDA.data}` : 'DIGITADA',
     baseS:r2(R.base.seg), tol:R.base.tolAplica ? R.base.tol : 0, tpS:r2(R.tpSeg),
     uep:r2(R.uepVol), uepCad:r2(R.volCad),
-    linhaCxh:R.linha ? Math.round(R.linha.cxh * 10) / 10 : '', linhaSCx:R.linha ? r2(R.linha.sCx) : '',
-    linhaDias:R.linha ? R.linha.dias : '', linhaPer:R.linha && J ? J.de + ' a ' + J.ate : '',
     vel:V.vel != null ? V.vel : (c0.vel || ''), entre:c0.entre != null ? c0.entre : '', quem:V.quem };
   D.regId = 'c' + _ucvHash([D.data, D.modelo, D.produto, D.volume, D.sRod, D.sPer, D.sLac, D.volumes, D.quem].join('|'));
   return D;
@@ -6539,7 +6559,15 @@ const UCV_REG_VEREDITO = {
   'sem-volumes': ['warn', 'medição sem VOLUMES MEDIDOS não entra na regra — registre de novo com os volumes'],
   'sem-medicao': ['warn', 'medição sem o tempo RODANDO'],
   'sem-cadastro':['warn', 'sem UEP no cadastro para comparar'] };
-function _ucvRegsHtml(regs, p, est, excl, cadAtual){
+// A célula % DO PADRÃO da lista: o resultado pronto do _ucvRegsPadrao (ou o estado da leitura).
+function _ucvPadCel(x){
+  if(typeof x === 'string' || x === undefined) return x === 'lendo' || x === 'nao-lida' || x === undefined ? '…'
+    : `<span title="${x === 'sem-endpoint' ? 'falta o .gs v5.35 (re-deploy)' : 'a produção não foi lida'}">—</span>`;
+  if(!x) return '<span title="o volume não rodou sozinho na linha na janela">—</span>';
+  if(x.pct == null) return '—';
+  return `${fmtP(x.pct)} <small title="horas com o volume sozinho${x.pouco ? ' — pouco para julgar' : ''}">${_ucvHoras(x.min)}${x.pouco ? '*' : ''}</small>`;
+}
+function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads){
   const tit = `<div class="ucv-regs-t">MEDIÇÕES REGISTRADAS${p ? ` · ${_rpEsc(p.rot)}` : ' · AS ÚLTIMAS'}</div>`;
   if(est === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div>';
   if(!regs) return tit + `<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div>`;
@@ -6550,11 +6578,11 @@ function _ucvRegsHtml(regs, p, est, excl, cadAtual){
   return tit
     + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${plural(S.n, 'medição', 'medições')} · ${_ucvVolTxt(S.nVol)}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
     + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
-    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th class="n">CADASTRO</th><th class="n" title="MÉD.PERÍODO do produto na produção real, na hora do registro">A LINHA FAZ</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>'
-    + regs.slice(0, 15).map(r => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td>${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
+    + '<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th class="n">CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, com a UEP desta medição: UEP feita ÷ UEP da régua da meta, com as paradas dentro. ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% confere.">% DO PADRÃO</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>'
+    + regs.slice(0, 15).map((r, i) => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td>${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n"><b>${sg(r.sRod)}</b></td><td class="n">${sg(r.sPer)}</td><td class="n">${sg(r.sLac)}</td>`
       + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="n">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}</td>`
-      + `<td class="n">${r.linhaSCx > 0 ? sg(r.linhaSCx) + '/cx' : '—'}</td><td>${_rpEsc(r.base || '')}</td><td>${_rpEsc(r.quem || '')}</td>`
+      + `<td class="n">${_ucvPadCel(Array.isArray(pads) ? pads[i] : pads)}</td><td>${_rpEsc(r.base || '')}</td><td>${_rpEsc(r.quem || '')}</td>`
       + `<td>${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
         : '<span class="ucv-x-sem" title="Linha sem REG_ID (digitada na planilha): exclua lá">—</span>'}</td></tr>`).join('')
     + '</tbody></table></div>' + (regs.length > 15 ? `<div class="uep-nota">+ ${regs.length - 15} mais antigas na aba CRONOANALISE da planilha.</div>` : '');
@@ -6569,8 +6597,9 @@ function _ucvRegPintar(R){
   const L = UCV_REGS && UCV_REGS.lista;
   UCV_PRONTAS = L ? _ucvProntas(L, UEP_CONV_PRODS) : [];
   const lst = _ucvEl('regs');
+  const RL = L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null;
   if(lst) lst.innerHTML = _ucvProntasHtml(UCV_PRONTAS)
-    + _ucvRegsHtml(L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad);
+    + _ucvRegsHtml(RL, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), _ucvLinhaItens(), R.base.meta));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta) : null;
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
@@ -6583,20 +6612,19 @@ async function _ucvRegistrar(){
   const msg = _ucvEl('r-msg'), btn = _ucvEl('r-btn');
   const diz = t => { if(msg) msg.textContent = t; };
   if(!CFG.sheetsUrl){ alert('Sem a URL do Apps Script nas configurações (⚙).'); return; }
-  if(UCV_LINHA_VOO){ diz('Lendo a produção dos últimos ' + CRONO_LINHA_DIAS + ' dias…'); await UCV_LINHA_VOO.catch(() => {}); }
   const E = _uepConvEntradas();
   const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
   if(R.estado !== 'ok'){ alert('Escolha o produto e digite o tempo RODANDO antes de registrar.'); return; }
   const V = _ucvRegValida(R.seg, _ucvRegCampos(), hojeStr());
   if(V.erro){ alert(V.erro); return; }
-  const D = _ucvRegMontar(R, V, R.linha ? _uepPadJanela(CRONO_LINHA_DIAS) : null);
+  const D = _ucvRegMontar(R, V);
   const sg = x => x === '' ? '—' : _taktTxt(x);
   if(!confirm(`Registrar esta medição na planilha (aba CRONOANALISE)?
 
 ${R.p.rot}
 ${D.data} · rodando ${sg(D.sRod)} · no período ${sg(D.sPer)} · sem lacunas ${sg(D.sLac)}${D.volumes ? ' · ' + D.volumes + ' volumes' : ''}
 UEP ${_ucvU2(R.uepVol)}${R.volCad != null ? ' (cadastro ' + _ucvU2(R.volCad) + ')' : ''}
-A linha faz: ${R.linha ? _taktTxt(R.linha.sCx) + ' por caixa (' + R.linha.dias + ' dias)' : 'sem produção na janela'}
+Na produção (só o volume na linha, ${CRONO_LINHA_DIAS} dias): ${R.padrao && R.padrao.pct != null ? fmtP(R.padrao.pct) + ' do padrão com esta UEP, em ' + _ucvHoras(R.padrao.min) : R.linhaEst === 'ok' ? 'não rodou sozinho' : 'não lida'}
 
 A UEP do cadastro NÃO muda.`)) return;
   if(btn) btn.disabled = true;
@@ -6773,7 +6801,7 @@ function _ucvPdfAchar(prods, nome){
 }
 // Conta pura: um PDF lido → a linha do registro (a MESMA do 💾 REGISTRAR:
 // _uepConvMontar → _ucvRegValida → _ucvRegMontar), ou o motivo de não dar.
-function _ucvImportItem(x, prods, E, hoje, J, quem){
+function _ucvImportItem(x, prods, E, hoje, quem){
   if(x.erro) return { x, erro:'não consegui ler o PDF (' + x.erro + ')' };
   if(x.falta.length) return { x, erro:'o PDF não tem ' + x.falta.join(', ') };
   const a = _ucvPdfAchar(prods, x.produto);
@@ -6784,7 +6812,7 @@ function _ucvImportItem(x, prods, E, hoje, J, quem){
   const txt = v => v == null ? '' : String(v);
   const V = _ucvRegValida(x.rod, { data:x.data, per:txt(x.per), lac:txt(x.lac), vol:txt(x.vol), vel:'', quem:quem || '' }, hoje);
   if(V.erro) return { x, R, erro:V.erro };
-  return { x, R, D:_ucvRegMontar(R, V, R.linha ? J : null) };
+  return { x, R, D:_ucvRegMontar(R, V) };
 }
 function _ucvImportConfirmaTxt(itens){
   const ok = itens.filter(i => i.D), ruins = itens.filter(i => !i.D);
@@ -6826,9 +6854,8 @@ async function _ucvImportar(files){
       return;
     }
     if(!CFG.sheetsUrl){ diz('Sem a URL do Apps Script nas configurações (⚙): os PDFs foram lidos, mas não há onde registrar.'); return; }
-    await _ucvLinhaCarregar();              // A LINHA FAZ entra na linha de cada medição
     const E = _uepConvEntradas(), quemEl = _ucvEl('r-quem');
-    const itens = lidos.map(x => _ucvImportItem(x, UEP_CONV_PRODS, E, hojeStr(), _uepPadJanela(CRONO_LINHA_DIAS), quemEl ? quemEl.value.trim() : ''));
+    const itens = lidos.map(x => _ucvImportItem(x, UEP_CONV_PRODS, E, hojeStr(), quemEl ? quemEl.value.trim() : ''));
     const ok = itens.filter(i => i.D);
     if(!ok.length){ diz('Nenhum PDF deu para registrar: ' + itens.map(i => i.x.arquivo + ': ' + i.erro).join(' · ')); return; }
     if(!confirm(_ucvImportConfirmaTxt(itens))){ diz('Nada foi registrado.'); return; }
@@ -14408,7 +14435,7 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
-  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
+  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }

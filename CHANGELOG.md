@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.160.0 · `.gs` v5.35 — 26/10/2026 · A LINHA FAZ (s/cx) → NA PRODUÇÃO (% do padrão)
+
+- PPCP, com a ELOA VOL 2/2 na lista (*"a linha faz 35,5 s/cx?"* → *"mas esse
+  tempo é cheio de paradas"* → *"faz as duas"*). O A LINHA FAZ era o
+  MÉD.PERÍODO do produto em segundos por caixa: dia inteiro, horas de troca
+  contadas cheias e os dois volumes juntos. Ao lado do RODANDO (14,4 s) ele
+  convidava a uma comparação que não existe.
+- No lugar, o **% DO PADRÃO** só nas horas em que **o volume medido rodou
+  sozinho** nos últimos 30 dias fechados — a régua da CONFERÊNCIA DAS TROCAS,
+  com as paradas dentro, como a meta.
+  - **Cartão NA PRODUÇÃO** (abaixo da conversão): com a UEP medida e com a do
+    cadastro. A que a produção confirma fica perto de 100%.
+  - **Coluna % DO PADRÃO** na lista de medições, no lugar do A LINHA FAZ: cada
+    medição com a UEP dela e os códigos dela, e as horas que sustentam o número.
+- O 💾 REGISTRAR deixou de gravar as colunas LINHA_* da aba CRONOANALISE (ficam
+  vazias nas medições novas; as antigas continuam lá, sem uso).
+- **Atenção:** a coluna mudou de grandeza (s/cx → %). Medido com o log real de
+  26/09 a 25/10: ELOA VOL 2/2 com 1,82 → **82,6%** (3 h sozinho; com a UEP antiga
+  de 2,53 daria 114,8%); STRASS VOL 2/2 com 1,57 → **94,6%** e com 1,46 →
+  **87,9%** (2 h); Toucador com a medida 1,70 → 113%, com o cadastro 1,58 → 105%.
+- ⚠ **re-deploy do `.gs` v5.35** (`getHorasCrono`, só leitura). Antes dele o
+  cartão e a coluna dizem que falta o `.gs`; o resto da aba segue igual.
+
 ## v7.159.0 — 26/10/2026 · IMPORTAR PDF reconhece o volume ("caixa 2/2")
 
 - PPCP: *"ajusta importador"*. O app de cronoanálise nomeia o estudo como quem
