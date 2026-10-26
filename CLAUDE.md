@@ -3751,6 +3751,26 @@ feito e dá ar de verdade ao que sobrou.
   - Testes: `relatorios.test.js` (o 27/10 real, paridade com o `_gpxMontar`,
     ordem, incerto, sem dados, totais, o papel e o diálogo) e
     `programacao.test.js` (a ORDEM no `.gs`). Conferidos por mutação.
+  - **PONTOS NA JORNADA × META** (v7.169.0, PPCP 26/10/2026: a meta de pontos
+    por dia é *"o ideal para faturar"*, *"s/ horas extra"*). Campo **META DE
+    PONTOS / DIA · SEM HE** no diálogo (`#capj-pts`, `_capPtsMetaLer`: vazio =
+    sem meta; texto/zero/decimal = erro, nunca 0), guardado em
+    `localStorage['rpe_cap_pts']`. ⚠ **O VALOR DA META NÃO VAI PARA ARQUIVO
+    NENHUM DO REPOSITÓRIO** — código, comentário, teste ou doc: o painel é
+    público na Vercel (a regra do custo-hora). O teste usa uma meta de exemplo e
+    falha se o valor do PPCP aparecer no HTML.
+    - `_capProgMontar(P, J, metaPts)`: `ptsJ` por dia e jornada — dia que cabe =
+      `d.pts`; dia acima = pontos dos lotes CABE + o PARCIAL × (minutos que cabem
+      ÷ minutos do lote); sem ordem, lote INCERTO ou linha sem pontos → null. Os
+      pontos por lote vêm do `_cartAberta` (`pts` por linha, `pontos × q ÷ q0`) e
+      somam no `grupos` do `_gpxMontar` (`pts` null se alguma linha não tem).
+    - Período: `ptsJorn`/`ptsDia`, `ptsPct` (÷ meta × dias), `nMetaPts` e
+      `ptsUepNec` = meta de pontos ÷ meta de UEP da jornada (porMin × minutos).
+      `C.ptsUep` = pontos ÷ UEP da programação. É ele contra o `ptsUepNec` que
+      diz se o MIX chega à meta — medido em 26/10/2026: 76, abaixo do que a
+      meta pede (o número da meta fica fora daqui, ver acima).
+    - Pontos só contam linha COM UEP (as sem UEP ficam fora do tempo e dos
+      pontos, como no PRÓXIMOS DIAS).
 - **UEP DE TODO O CADASTRO — ESTIMADA PELA ESTEIRA** (v7.96.0 / `.gs` v5.18,
   PPCP 25/09/2026: *"fazer a UEP de todos produtos"*). O GRAVAR UEP, depois da
   medida, chama `setUepCatalogo&estimar=1&k=&tetoAnc=`. `_uepCalibEsteira`

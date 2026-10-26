@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.169.0 — 26/10/2026 · PONTOS NA JORNADA × META na PROGRAMAÇÃO × CAPACIDADE
+
+- PPCP: *"poucos produtos chegam"* à meta de pontos/dia, *"esse número é o
+  ideal para faturar"* → *"s/ horas extra"*.
+- Campo **META DE PONTOS / DIA · SEM HE** no diálogo, opcional. Fica guardado
+  **só neste computador** (`rpe_cap_pts`): o painel é público na Vercel e meta
+  de faturamento não vai no código — a regra do custo-hora do SIMULADOR.
+- **PONTOS NA JORNADA** por dia e por jornada: dia que cabe = os pontos
+  programados; dia acima = os pontos dos lotes que cabem na ORDEM do dia + o
+  lote PARCIAL na fração do tempo que cabe. Sem a ordem num dia acima, ou com
+  lote sem UEP/sem pontos, "—" (não se diz).
+- No período: pontos na jornada por dia e **% da meta**, **dias na meta de
+  pontos** e **PONTOS POR UEP** — o da programação contra o que a meta pede
+  (meta de pontos ÷ meta de UEP da jornada). Coluna PONTOS nos lotes.
+- Medido com a programação de 27/10 a 06/11: a programação traz **76,0 pontos
+  por UEP**, abaixo do que a meta pede — nenhum dia chega à meta de pontos, e
+  não chegaria nem com a programação inteira cabendo na jornada. O problema é
+  o MIX, não só o tempo.
+- **Atenção:** só a 🖨 PROGRAMAÇÃO × CAPACIDADE e o diálogo mudam. Sem meta
+  digitada, nada de %; os pontos na jornada saem do mesmo jeito. Nada no `.gs`.
+
 ## v7.168.0 — 26/10/2026 · 🖨 PROGRAMAÇÃO × CAPACIDADE · ⚠ re-deploy (.gs v5.37)
 
 - PPCP: prompt *"Evolução do Relatório de Capacidade Diária por Produto"* —

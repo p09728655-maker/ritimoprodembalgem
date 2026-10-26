@@ -4674,10 +4674,14 @@ console.log('\n── estudo de UEP ──');
   eval(pega('function _capProgMontar(')); eval(pega('function _capProgSitTxt(')); eval(pega('function _capProgSitHtml('));
   eval(pega('function _capProgSaldoTxt(')); eval(pega('function _capProgCabeTxt(')); eval(pega('function _capProgTitJorn('));
   eval(pega('function _capProgDocHtml(')); eval(pega('function _capProgResumoHtml('));
+  eval(pega('function _capProgU1(')); eval(pega('function _capProgPtsCel(')); eval(pega('function _capPtsMetaLer('));
   ok('a ORDEM da linha: número ou null — vazia, texto ou ausente nunca viram uma ordem',
      [_progOrdem({ ordem:'3' }), _progOrdem({ ordem:3 }), _progOrdem({ ordem:0 }), _progOrdem({ ordem:'' }), _progOrdem({ ordem:'x' }), _progOrdem({}), _progOrdem(null)],
      [3, 3, 0, null, null, null, null]);
   const L = (data, lote, ordem, codigo, qtde, uepCx, extra) => Object.assign({ data, lote, ordem, codigo, desc:'VOL 1/1 PRODUTO ' + lote, cor:'', qtde, uepCx }, extra || {});
+  // pontos do cadastro (26/10/2026) × caixas, para os lotes do 27/10 real
+  const PTS = { '501134001':241, '501134002':236, '501149001':45, '501149002':46, '501149003':45, '501149004':45, '501140001':49, '501140002':49, '501140003':118,
+                '501077001':244, '501077002':96, '501077003':243, '501077004':96, '501077005':243, '501077006':96 };
   // 27/10 é o dia REAL (aba PROGRAMACAO de 26/10/2026, UEP do cadastro)
   const itens = [
     L('27/10/2026','25353',1,'501134001',160,1.9), L('27/10/2026','25353',1,'501134002',290,1.9),
@@ -4692,6 +4696,7 @@ console.log('\n── estudo de UEP ──');
     L('31/10/2026','25377',1,'501088001',200,1),                                             // sábado com lote
     L('03/11/2026','25379',1,'501088003',300,null),                                          // dia só com linha sem UEP
     L('04/11/2026','25386',1,'501134003',2000,1)];                                           // dentro, folga < 3h
+  itens.forEach(x => { x.pontos = (PTS[x.codigo] != null ? PTS[x.codigo] : 50) * x.qtde; });
   const hoje = new Date(2026, 9, 26);
   const G = _gpxMontar(itens, hoje, 0, 0, 2530, CAP_PROG_DIAS);
   const J = _capJornada(2530, 24);
@@ -4749,7 +4754,48 @@ console.log('\n── estudo de UEP ──');
      ['function _capProgDocHtml(', 'function _capProgResumoHtml(', 'function _capProgCabeTxt(', 'function _capProgSitHtml('].filter(f => /_gpxMontar\(|_cartAberta\(|_gpxEstado\(|_capProgMontar\(|\.reduce\(|uepCx/.test(pega(f))), []);
   ok('a montagem do painel: o _gpxDoPainel com mais dias e a meta da impressão (sem eles, o de sempre); a impressão passa a meta de HOJE (a simulada é só capacidade)',
      [/metaUep \|\| PONTOS_DIA\.metaUep, n \|\| GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /_gpxDoPainel\(CAP_PROG_DIAS, meta\)/.test(pega('function _capProgDoPainel(')),
-      /_capProgDoPainel\(J, meta0\)/.test(pega('function gerarRelatorioCapProg(')), /_gpxEstado\(exc, vazio, fds\)/.test(pega('function _gpxMontar('))], [true, true, true, true]);
+      /_capProgDoPainel\(J, meta0, metaPts\)/.test(pega('function gerarRelatorioCapProg(')), /_gpxEstado\(exc, vazio, fds\)/.test(pega('function _gpxMontar('))], [true, true, true, true]);
+  // PONTOS NA JORNADA (v7.169.0): meta de pontos por dia SEM hora extra (PPCP).
+  // A meta do PPCP não entra em arquivo nenhum do repositório (ele é publicado):
+  // aqui vale uma de exemplo, 150.000.
+  { const MP = 150000, Cp = _capProgMontar(G, J, MP), p27 = Cp.dias.find(d => d.data === '27/10/2026');
+    const g = p27.lotes, cabeH = Math.round(107000 + 58600 + 24430 * 78 / 87), cabeS = Math.round(107000 + 58600 + 24430 * 54 / 87);
+    ok('27/10: pontos programados 308.780; na jornada cabem PRINCESA + MADERO + a fração da VERSATIL que cabe (78 de 87 min hoje, 54 na simulada); o BUFFET FLIP fica fora',
+       [p27.pts, g.map(x => Math.round(x.pts)), p27.ptsJ, p27.ptsPct.map(v => +v.toFixed(1))],
+       [308780, [107000, 58600, 24430, 118750], [cabeH, cabeS], [+(cabeH / MP * 100).toFixed(1), +(cabeS / MP * 100).toFixed(1)]]);
+    ok('dia que cabe inteiro: os pontos programados; dia acima sem ORDEM, com lote INCERTO, sábado ou sem dados: não se diz (null)',
+       ['28/10', '04/11', '29/10', '30/10', '31/10', '03/11'].map(x => Cp.dias.find(d => d.data === x + '/2026').ptsJ),
+       [[5000, 5000], [100000, 100000], [null, null], [null, null], [null, null], [null, null]]);
+    ok('…e é null DE VERDADE (NaN viraria null na comparação por JSON)',
+       ['29/10', '30/10'].map(x => Cp.dias.find(d => d.data === x + '/2026').ptsJ.every(v => v === null)), [true, true]);
+    { const Gd = _gpxMontar([L('28/10/2026','A',1,'1',2000,1,{ pontos:2000 }), L('28/10/2026','B',2,'2',500,1,{ pontos:500 }), L('28/10/2026','B',2,'3',500,1)], hoje, 0, 0, 2530, 3);
+      const pd = _capProgMontar(Gd, null, MP).dias.find(d => d.data === '28/10/2026');
+      ok('lote que cabe (inteiro ou em parte) com uma linha sem PONTOS: os pontos na jornada do dia não se dizem',
+         [pd.lotes.map(g => [g.lote, g.pts, g.cabe[0].s]), pd.ptsJ[0] === null], [[['A', 2000, 'cabe'], ['B', null, 'parcial']], true]); }
+    const Gc = _gpxMontar([L('28/10/2026','A',1,'1',100,1,{ pontos:5000 }), L('29/10/2026','B',1,'2',300,1,{ pontos:30000 })], hoje, 0, 0, 2530, 3);
+    const Cc = _capProgMontar(Gc, J, MP);
+    ok('o período: pontos na jornada ÷ dias, % da meta, dias na meta e os pontos por UEP que a meta pede (meta ÷ 2.530; na simulada ÷ 2.415)',
+       [Cc.dias.filter(d => !d.vazio).map(d => d.ptsJ[0]), Cc.tot.map(t => [t.ptsJorn, t.ptsDia, +t.ptsPct.toFixed(2), t.nMetaPts, _capProgU1(t.ptsUepNec)]), _capProgU1(Cc.ptsUep), Cc.metaPts],
+       [[5000, 30000], [[35000, 17500, 11.67, 0, _capProgU1(MP / 2530)], [35000, 17500, 11.67, 0, _capProgU1(MP / 2415)]], '87,5', MP]);
+    ok('sem meta digitada: sem % nem "a meta pede"; os pontos na jornada continuam',
+       [_capProgMontar(Gc, J).tot.map(t => [t.ptsJorn, t.ptsPct, t.nMetaPts, t.ptsUepNec]), _capProgMontar(Gc, J).metaPts], [[[35000, null, null, null], [35000, null, null, null]], null]);
+    ok('linha sem PONTOS (backend antigo): o dia não tem pontos e o período não diz',
+       [_capProgMontar(_gpxMontar([L('28/10/2026','A',1,'1',100,1)], hoje, 0, 0, 2530, 3), null, MP).tot[0].ptsJorn], [null]);
+    ok('a meta de pontos digitada: vazio = sem meta; com ou sem ponto de milhar; texto, zero ou decimal = erro (nunca 0)',
+       ['', '  ', '150.000', '150000', '1.234.567', 'abc', '0', '150,5', '15.00'].map(v => { const n = _capPtsMetaLer(v); return Number.isNaN(n) ? 'erro' : n; }),
+       [null, null, 150000, 150000, 1234567, 'erro', 'erro', 'erro', 'erro']);
+    const docP = _capProgDocHtml(Cp);
+    ok('o papel: pontos na jornada e % da meta no período e por dia, pontos por UEP, a meta "sem hora extra" e a coluna de pontos dos lotes',
+       ['PONTOS NA JORNADA', 'DIAS NA META DE PONTOS', 'PONTOS POR UEP', 'a meta pede <b>' + _capProgU1(MP / 2530) + '</b>', 'PONTOS PROGRAMADOS', 'PONTOS NA JORNADA · % META',
+        'Meta de pontos: <b>150.000 por dia, sem hora extra</b>', '<th>PONTOS</th>', '308.780'].filter(t => !docP.includes(t)), []);
+    ok('sem pontos no backend o papel não mostra linhas de pontos inventadas',
+       /PONTOS NA JORNADA|PONTOS POR UEP/.test(_capProgDocHtml(_capProgMontar(_gpxMontar([L('28/10/2026','A',1,'1',100,1)], hoje, 0, 0, 2530, 3), null, MP)).split('DIA A DIA')[0]), false);
+    ok('o resumo do diálogo leva os pontos por dia e o % da meta',
+       ['PONTOS / DIA', 'META DE PONTOS'].filter(t => !_capProgResumoHtml(Cc).includes(t)), []);
+    ok('a meta NÃO mora no código (o HTML é público): campo do diálogo, guardado neste computador',
+       [/\b\d{2,3}\.\d{3}\b|\b\d{6,}\b/.test(pega('function _capPtsMetaLer(') + pega('function gerarRelatorioCapProg(') + pega('function _capJornPintar(') + pega('function _capProgMontar(')),
+        /id="capj-pts"[^>]*\svalue=/.test(src), /const CAP_PTS_LS = 'rpe_cap_pts';/.test(JS), /id="capj-pts"/.test(src)], [false, false, true, true]);
+  }
   const IMPC = pega('function gerarRelatorioCapProg('), UCT = pega('function _ucvCapTodos('), JIMP = pega('function _capJornImprimir(');
   ok('a impressão é SÍNCRONA (usa a programação já lida); o diálogo lê só se a do painel tem mais de 15 min, e redesenha no fim',
      [/carregarProgramacaoDetalhada|await|async/.test(IMPC + JIMP), /Date\.now\(\)-PROG_DET_TS>GPX_TTL/.test(UCT), /carregarProgramacaoDetalhada\(\)\.finally/.test(UCT), /_capJornPintar\(\)/.test(UCT)],
@@ -4758,7 +4804,7 @@ console.log('\n── estudo de UEP ──');
   ok('a 🖨 CAPACIDADE POR PRODUTO continua como era (nem programação, nem folha nova); a PROGRAMAÇÃO × CAPACIDADE é outra impressão, com botão próprio no diálogo',
      [/_capProgDoPainel|PROGRAMAÇÃO × CAPACIDADE|page-break-before/.test(pega('function gerarRelatorioCapTodos(')),
       /onclick="_capJornImprimir\('prog'\)"[^>]*>🖨 PROGRAMAÇÃO × CAPACIDADE</.test(src), /onclick="_capJornImprimir\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(src),
-      /if\(qual==='prog'\)\{ if\(gerarRelatorioCapProg\(n\)\) fecharCapJorn\(\); return; \}/.test(JIMP), /_capProgDoPainel\(J, meta0\)/.test(IMPC), /_rpDocParadas\('Programação × capacidade', true\)/.test(IMPC)],
+      JIMP.includes("if(qual==='prog'){ if(gerarRelatorioCapProg(n, _capPtsMetaLer((document.getElementById('capj-pts')||{}).value))) fecharCapJorn(); return; }"), /_capProgDoPainel\(J, meta0, metaPts\)/.test(IMPC), /_rpDocParadas\('Programação × capacidade', true\)/.test(IMPC)],
      [false, true, true, true, true, true]);
   // a impressão de verdade, com a montagem trocada por uma de mentira
   const docAntes = global.document, openAntes = global.window.open;
