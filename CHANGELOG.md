@@ -30,7 +30,10 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 - **Atenção:** a coluna mudou de grandeza (s/cx → %). Medido com o log real de
   26/09 a 25/10: ELOA VOL 2/2 com 1,82 → **82,6%** (3 h sozinho; com a UEP antiga
   de 2,53 daria 114,8%); STRASS VOL 2/2 com 1,57 → **94,6%** e com 1,46 →
-  **87,9%** (2 h); Toucador com a medida 1,70 → 113%, com o cadastro 1,58 → 105%.
+  **87,9%** (2 h); Toucador com a medida 1,70 → **111,0%**, com o cadastro 1,58 →
+  **103,1%** (2 h); MADERO (a base, 1,00) → **108,7%** (6 h) — conferido no painel
+  publicado (a 1ª versão desta nota tinha 113%, 105% e 95%, contados à mão com
+  horas que tiveram outro produto junto).
 - ⚠ **re-deploy do `.gs` v5.35** (`getHorasCrono`, só leitura). Antes dele o
   cartão e a coluna dizem que falta o `.gs`; o resto da aba segue igual.
 

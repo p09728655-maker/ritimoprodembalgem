@@ -5035,8 +5035,18 @@ feito e dá ar de verdade ao que sobrou.
 - Medido com o log real de 26/09 a 25/10/2026 (conferido na mão e no Chromium):
   ELOA VOL 2/2 com 1,82 → 82,6% (06/10 09 e 10 h, 21/10 08 h: 392 cx em 180
   min); STRASS VOL 2/2 com 1,57 → 94,6% e 1,46 → 87,9% (2 h); Toucador medida
-  1,70 → 113%, cadastro 1,58 → 105%; RACK SIRIUS 1.6 com 1,95 → 84%; MADERO
-  1,00 → 95%. Rack Flip 1.8: não rodou na janela (só hoje).
+  1,70 → 111,0%, cadastro 1,58 → 103,1% (2 h: a hora das 12:12 de 23/10 teve
+  RACK SIRIUS 1.4 junto); RACK SIRIUS 1.6 com 1,95 → 84,3%; MADERO 1,00 →
+  108,7% (6 h). Rack Flip 1.8: não rodou na janela (só hoje). Conferido no
+  painel publicado — a 1ª conta à mão (113%, 105%, 95%) pegou horas divididas.
+- ⚠ **A referência não é 100%, é a BASE.** Hora com o produto sozinho é hora
+  SEM TROCA (hora boa): a própria MADERO (1,00) roda a 108,7% do padrão nelas.
+  UEP certa deixaria o produto perto disso. Em 26/10 as três trocas do dia
+  ficaram abaixo (ELOA 82,6%, RACK SIRIUS 84,3%, STRASS 94,6%) — sinal de que a
+  cronoanálise RODANDO deixa esses produtos mais leves do que a linha mostra
+  (manuseio, troca de cor, parada não marcada). 2–3 h cada: não prova. Exigir
+  que a produção confirme antes do ✓ TROCAR foi proposto ao PPCP e ainda NÃO
+  decidido.
 - ⚠ Os **15% de tolerância** (fadiga e movimentação) NÃO entram aqui nem na UEP:
   só no TEMPO PADRÃO exibido (medido × 1,15) e na coluna TEMPO_PADRAO_S. A meta
   já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);
