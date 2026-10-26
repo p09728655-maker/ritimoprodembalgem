@@ -5087,6 +5087,17 @@ feito e dá ar de verdade ao que sobrou.
   cadastro que a medição viu — a medição registrada depois da troca é julgada
   contra a UEP nova. Para caber em 1366: BASE curta (*MADERO 20/10*, título com
   o texto inteiro) e produto/TROCA com quebra de linha (`.ucv-pr`, `.ucv-st`).
+- **v7.163.0 — VERSÃO DO CADASTRO** (PPCP, com a ELOA mostrando 2,53 e o
+  cadastro de hoje em 1,82: *"troca cadastro VERSÃO 01"* → *"ISSO"*). A coluna
+  CADASTRO da lista virou VERSÃO DO CADASTRO, título em duas linhas (cabe em
+  1366): o número é o UEP_CADASTRO da medição (o que ela viu) e embaixo
+  **em vigor** / **anterior** (`vigor` do `_ucvRegsStatus`, contra o cadastro de
+  hoje do volume pelo `UEP_CONV_PRODS`). "Cadastro na medição" foi recusado
+  (*"a medição partiu do app"*); mostrar o cadastro de hoje também — o número
+  antigo é a régua com que aquela medição foi julgada.
+  - ⚠ **A linha de cabeçalho do `_ucvRegsHtml` é TEMPLATE (crase).** Estava
+    entre aspas simples, e os `title` de NA PRODUÇÃO e TROCA saíam com
+    `${UEP_PAD_FAIXA[0]}` cru no tooltip (v7.160–7.162). O teste prende.
 - ⚠ Os **15% de tolerância** (fadiga e movimentação) NÃO entram aqui nem na UEP:
   só no TEMPO PADRÃO exibido (medido × 1,15) e na coluna TEMPO_PADRAO_S. A meta
   já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);
