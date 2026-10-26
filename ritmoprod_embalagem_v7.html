@@ -3443,7 +3443,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.165.0';
+const APP_VER   = '7.166.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7284,7 +7284,7 @@ function _ucvCapTodos(){
 }
 function _capJornPintar(){
   const v=(document.getElementById('capj-min')||{}).value, meta=_capMetaOficial();
-  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(_capJornada(meta, _capJornMin(v)), meta);
+  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(_capJornada(meta, _capJornMin(v), CFG.turnoFim), meta);
 }
 function fecharCapJorn(){ document.getElementById('modal-capjorn').classList.remove('on'); }
 function _capJornImprimir(){
@@ -11138,30 +11138,34 @@ function _capJornMin(v){
   if(!t) return 0;
   return /^\d+([.,]\d+)?$/.test(t) ? Number(t.replace(',','.')) : NaN;
 }
-function _capJornada(meta, menos){
+// `turnoFim` (opcional, 'HH:MM' do ⚙): se o corte for no FIM do turno, a que
+// horas ele termina (PPCP, 26/10/2026: "a possibilidade de ser às 16:36").
+function _capJornada(meta, menos, turnoFim){
   const M=Number(meta)>0?Number(meta):UEP_META_PADRAO;
   if(menos==null || menos===0) return null;
   const n=Number(menos);
   if(!(n>0)) return { erro:'Digite só os minutos a menos por dia — ex.: 24.' };
   if(n>CAP_JORN_MAX) return { erro:`Até ${CAP_JORN_MAX} minutos a menos por dia (a jornada de hoje tem ${UEP_MIN_DIA}).` };
   const minNovo=UEP_MIN_DIA-n, metaNova=Math.round(M*minNovo/UEP_MIN_DIA);
+  const fimOk=/^\d{1,2}:\d{2}$/.test(String(turnoFim||''));
   return { menos:n, minHoje:UEP_MIN_DIA, minNovo, meta:M, metaNova, difMeta:metaNova-M,
+           fimHoje: fimOk ? turnoFim : null, fimNovo: fimOk ? fromMin(Math.round(toMin(turnoFim)-n)) : null,
            pct:-n/UEP_MIN_DIA*100, mesMenos:(M-metaNova)*CAP_DIAS_MES,
            ritmoH:M/UEP_MIN_DIA*60, ritmoManter:M/minNovo*60, pctManter:(UEP_MIN_DIA/minNovo-1)*100 };
 }
 // Desenho (sem conta): o quadro do diálogo e os cartões do papel.
 function _capJornLinhas(J){
   return [
-    ['JORNADA NORMAL', `${fmtN(J.minNovo)} min`, `hoje ${fmtN(J.minHoje)} · −${fmtN(J.menos)} min/dia (${fmtP(J.pct)})`],
-    ['META DO DIA · MESMO RITMO', `${fmtN(J.metaNova)} UEP`, `hoje ${fmtN(J.meta)} · ${fmtN(J.difMeta)} UEP/dia`],
-    [`NO MÊS · ${CAP_DIAS_MES} DIAS`, `−${fmtN(J.mesMenos)} UEP`, `cada produto cai na mesma proporção (${fmtP(J.pct)})`],
+    ['JORNADA NORMAL', `${fmtN(J.minNovo)} min`, `hoje ${fmtN(J.minHoje)} · −${fmtN(J.menos)} min/dia${J.fimNovo?` · fim às ${J.fimNovo} se o corte for no fim`:''}`],
+    ['PERDA DE CAPACIDADE', `−${fmtP(Math.abs(J.pct))}`, `−${fmtN(Math.abs(J.difMeta))} UEP/dia · −${fmtN(J.mesMenos)} UEP/mês (${CAP_DIAS_MES} dias)`],
+    ['META DO DIA · MESMO RITMO', `${fmtN(J.metaNova)} UEP`, `hoje ${fmtN(J.meta)} UEP`],
     [`PARA MANTER ${fmtN(J.meta)} UEP`, `${fmtN(Math.round(J.ritmoManter))} UEP/h`, `hoje ${fmtN(Math.round(J.ritmoH))} UEP/h · +${fmtP(J.pctManter)} de ritmo`]];
 }
 function _capJornHtml(J, meta){
   if(!J) return `<div class="capj-n">Sem simulação: a impressão sai na jornada de hoje — ${fmtN(UEP_MIN_DIA)} min, meta ${fmtN(meta)} UEP.</div>`;
   if(J.erro) return `<div class="capj-n" style="color:var(--warn)">${_rpEsc(J.erro)}</div>`;
   return `<div class="capj-g">${_capJornLinhas(J).map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b><i>${l[2]}</i></div>`).join('')}</div>
-    <div class="capj-n">Simulação — nada é gravado. A tabela da impressão sai na jornada nova, com a coluna A MENOS / MÊS.</div>`;
+    <div class="capj-n">Simulação — nada é gravado. A tabela da impressão sai na jornada nova, com as colunas A MENOS / MÊS e % PERDA.</div>`;
 }
 function _capJornDocHtml(J){
   return `<div class="rp-sec-ttl" style="margin-top:0">SIMULAÇÃO DE JORNADA · ${fmtN(J.menos)} MIN A MENOS POR DIA</div>
@@ -11173,7 +11177,7 @@ function gerarRelatorioCapTodos(oficial, menos){
   if(!CAP_CAT){ alert('O cadastro ainda está carregando. Tente em alguns segundos.'); return; }
   const meta0=oficial ? _capMetaOficial()
                       : (_pgSimNum((document.getElementById('cap-meta')||{}).value)||UEP_META_PADRAO);
-  const J=_capJornada(meta0, menos);
+  const J=_capJornada(meta0, menos, CFG.turnoFim);
   if(J && J.erro){ alert(J.erro); return; }
   const meta=J ? J.metaNova : meta0, minD=J ? J.minNovo : UEP_MIN_DIA;
   const velS=oficial ? 0 : _capVel();   // velocidade simulada da esteira (vazio = a do cadastro)
@@ -11191,11 +11195,11 @@ ${J?_capJornDocHtml(J):''}
 ${CAP_CAT_ORIGEM?`<div class="rp-note" style="color:#B4650A">UEP do ${_rpEsc(CAP_CAT_ORIGEM)} — a leitura de agora ainda não chegou.</div>`:''}
 <div class="rp-sec-ttl">CAPACIDADE DIÁRIA POR PRODUTO · ${plural(com.length,'produto','produtos')}</div>
 <table>
-  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>PRODUTOS / MÊS</th>${J?'<th>A MENOS / MÊS</th>':''}<th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>LIMITE ESTEIRA / DIA</th><th>PONTOS / DIA</th></tr></thead>
+  <thead><tr><th>CÓDIGO</th><th>PRODUTO</th><th>VOL.</th><th>CORES</th><th>UEP / PRODUTO</th><th>PRODUTOS / DIA</th><th>PRODUTOS / MÊS</th>${J?'<th>A MENOS / MÊS</th><th>% PERDA</th>':''}<th>CAIXAS / DIA</th><th>PRODUTOS / HORA</th><th>LIMITE ESTEIRA / DIA</th><th>PONTOS / DIA</th></tr></thead>
   <tbody>${com.map(p=>{ const c=_capDia(p, meta, velS, minD), jd=c.dia;
-    const dif=J ? _capDia(p, J.meta, velS).dia-jd : 0;   // por dia, contra a jornada de hoje
+    const hoje=J ? _capDia(p, J.meta, velS).dia : jd, dif=hoje-jd;   // por dia, contra a jornada de hoje
     return `<tr${c.limitado?' style="background:#fff8ed;-webkit-print-color-adjust:exact;print-color-adjust:exact"':''}><td class="td-mono">${_rpEsc(p.modelo)}</td><td>${_rpEsc(p.nome)}${c.limitado?`<div style="font-size:8.5px;font-weight:700;color:#B4650A">⚠ pela UEP seriam ${fmtN(c.porUep)}/dia, a esteira ${velS>0?'a '+fmtN(velS)+' m/min':'na velocidade do cadastro'} passa ${fmtN(c.tetoDia)}</div>`:''}</td><td class="td-mono">${p.nVol}</td><td class="td-mono">${p.nCores||'—'}</td>
-      <td class="td-mono">${u2(p.uepJogo)}</td><td class="td-bold">${fmtN(jd)}</td><td class="td-bold" title="${fmtN(jd)} produtos/dia × ${CAP_DIAS_MES} dias úteis">${fmtN(jd*CAP_DIAS_MES)}</td>${J?`<td class="td-mono" title="${dif>0?'−'+fmtN(dif):'0'} por dia × ${CAP_DIAS_MES} dias úteis (jornada de hoje − a simulada)">${dif>0?'−'+fmtN(dif*CAP_DIAS_MES):'0'}</td>`:''}<td class="td-mono">${fmtN(jd*p.nVol)}</td>
+      <td class="td-mono">${u2(p.uepJogo)}</td><td class="td-bold">${fmtN(jd)}</td><td class="td-bold" title="${fmtN(jd)} produtos/dia × ${CAP_DIAS_MES} dias úteis">${fmtN(jd*CAP_DIAS_MES)}</td>${J?`<td class="td-mono" title="${dif>0?'−'+fmtN(dif):'0'} por dia × ${CAP_DIAS_MES} dias úteis (jornada de hoje − a simulada)">${dif>0?'−'+fmtN(dif*CAP_DIAS_MES):'0'}</td><td class="td-mono" title="${fmtN(dif)} ÷ ${fmtN(hoje)} produtos/dia">${dif>0&&hoje>0?'−'+fmtP(dif/hoje*100):'0%'}</td>`:''}<td class="td-mono">${fmtN(jd*p.nVol)}</td>
       <td class="td-mono">${fmtN(Math.round(jd/minD*60))}</td>
       <td class="td-mono">${c.tetoDia!=null?fmtN(c.tetoDia):'—'}</td>
       <td class="td-bold" title="${p.ptsJogo!=null?fmtN(jd)+' produtos × '+String(p.ptsJogo).replace('.',',')+' pontos por produto':'algum volume sem PONTOS no cadastro'}">${p.ptsJogo!=null?fmtN(Math.round(jd*p.ptsJogo)):'—'}</td></tr>`; }).join('')}</tbody>
@@ -11211,7 +11215,7 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
   <b>Produtos / hora</b> = produtos / dia ÷ ${fmtN(minD)} min × 60.
   <b>Limite esteira / dia</b> = produtos que a esteira passa em ${fmtN(minD)} min: velocidade × 60.000 ÷ (medida da caixa + entre-peças), somando o tempo de cada volume. Quando a UEP promete mais, vale o limite e a linha sai marcada. Velocidade: a do cadastro, ou a digitada no simulador.
   <b>Pontos / dia</b> = produtos / dia × pontos do produto (soma dos PONTOS de cada volume no cadastro) — para comparar a régua de UEP com a de pontos.
-  ${J?`<b>Jornada simulada</b> = ${fmtN(J.minHoje)} − ${fmtN(J.menos)} = ${fmtN(J.minNovo)} min. A linha mantém o ritmo de hoje (${fmtN(J.meta)} UEP ÷ ${fmtN(J.minHoje)} min = ${fmtN(Math.round(J.ritmoH))} UEP/h): a meta do dia vira ${fmtN(J.meta)} × ${fmtN(J.minNovo)} ÷ ${fmtN(J.minHoje)} = ${fmtN(J.metaNova)} UEP, e a esteira passa menos produtos nos minutos que sobram. <b>A menos / mês</b> = (produtos / dia na jornada de hoje − na simulada) × ${CAP_DIAS_MES}.`:''}<br>
+  ${J?`<b>Jornada simulada</b> = ${fmtN(J.minHoje)} − ${fmtN(J.menos)} = ${fmtN(J.minNovo)} min. A linha mantém o ritmo de hoje (${fmtN(J.meta)} UEP ÷ ${fmtN(J.minHoje)} min = ${fmtN(Math.round(J.ritmoH))} UEP/h): a meta do dia vira ${fmtN(J.meta)} × ${fmtN(J.minNovo)} ÷ ${fmtN(J.minHoje)} = ${fmtN(J.metaNova)} UEP, e a esteira passa menos produtos nos minutos que sobram. <b>A menos / mês</b> = (produtos / dia na jornada de hoje − na simulada) × ${CAP_DIAS_MES}. <b>% perda</b> = produtos / dia a menos ÷ produtos / dia de hoje — perto dos ${fmtP(Math.abs(J.pct))} da jornada em todos; o que muda é o arredondamento para baixo.`:''}<br>
   É o ritmo <b>demonstrado</b> da linha, não o teto da esteira; vale para a jornada normal, sem hora extra. Num dia com vários produtos, cada um ocupa a parte dele — use o simulador (DIA MONTADO).
 </div>
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>capacidade por produto · meta ${fmtN(meta)} UEP${J?' · jornada simulada de '+fmtN(minD)+' min':''} · mês de ${CAP_DIAS_MES} dias úteis</span></div>`;
