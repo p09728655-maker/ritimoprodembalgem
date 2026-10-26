@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.167.0 — 26/10/2026 · simulação de jornada no MÊS e no ANO
+
+- PPCP: *"colocar para simular sobre os meses também, mensal e anual"*, e as
+  perguntas *"pontos dia também sai o mesmo percentual da UEP?"* e *"a menos
+  mês é o que?"*.
+- Faixa **A MENOS POR DIA · POR MÊS · POR ANO** no quadro e no papel: UEP a
+  menos e horas de jornada a menos. Com 24 min: −115 UEP e 24 min por dia;
+  −2.530 UEP e 8h48 por mês (22 dias úteis); **−30.360 UEP e 105h36 por ano**
+  (× 12, a mesma conta do simulador de investimento).
+- Coluna **PRODUTOS A MENOS / ANO**, e a do mês renomeada para **PRODUTOS A
+  MENOS / MÊS** — o título antigo ("A MENOS / MÊS") não dizia que são produtos
+  completos.
+- O COMO O NÚMERO SAI diz que caixas/dia e pontos/dia caem no **mesmo %** da
+  linha (volumes e pontos por produto não mudam).
+- **Atenção:** só a impressão com a simulação muda. Nada no `.gs`.
+
 ## v7.166.0 — 26/10/2026 · % PERDA na simulação de jornada
 
 - PPCP: *"ainda não determinou, mas a possibilidade é ser às 16:36; colocar

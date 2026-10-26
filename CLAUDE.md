@@ -3686,6 +3686,13 @@ feito e dá ar de verdade ao que sobrou.
     devolve `fimNovo` = fim do turno do ⚙ − minutos, dito como "se o corte for
     no fim" — o PPCP ainda não decidiu onde saem os 24 min; a possibilidade
     levantada em 26/10/2026 é o turno terminar às **16:36**.
+  - **MÊS e ANO** (v7.167.0, PPCP: *"simular sobre os meses também, mensal e
+    anual"*): `_capJornada` devolve `anoMenos` (UEP) e `minMes`/`minAno`
+    (jornada); ano = mês × `CAP_MESES_ANO`=12, a conta do simulador de
+    investimento. Faixa `_capJornPeriodo` (POR DIA · MÊS · ANO) no quadro e no
+    papel, e a coluna **PRODUTOS A MENOS / ANO**. O título da coluna do mês
+    virou **PRODUTOS A MENOS / MÊS** — o PPCP perguntou *"a menos mês é o
+    que?"*: sem a unidade no título, não dava para saber que eram produtos.
   - ⚠ **É só a capacidade.** A mudança de jornada de verdade (dezembro) mexe em
     mais coisa e nada disso muda sozinho: `UEP_MIN_DIA`=527 (rp-core — meta da
     hora, esperado do card UEP, Telas F/G, PRÓXIMOS DIAS), a META UEP do ⚙, o
