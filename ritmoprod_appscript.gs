@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.33 — EXCLUIR UMA MEDIÇÃO DA CRONOANÁLISE
+//               PPCP, 26/10/2026, com a aba CRONOANALISE na mão: "vou ter que
+//               excluir estudo" → "sim fazer". Medição registrada errada
+//               (volume trocado, campo digitado no lugar de outro) só saía
+//               apagando a linha na planilha. excluirCrono tira UMA linha pelo
+//               REG_ID — o id que o painel mostra na lista —, copiando antes a
+//               linha inteira para a aba CRONO_EXCLUIDOS (criada na 1ª
+//               exclusão): falhou a cópia, nada é apagado. Idempotente: a
+//               retentativa acha o REG_ID na CRONO_EXCLUIDOS e responde "já
+//               excluída". NÃO toca a UEP do cadastro.
 // Versão: 5.32 — TROCAR O PRODUTO DE UM LANÇAMENTO
 //               PPCP, 23/10/2026: 203 cx de RACK SIRIUS 1.4 OFF WHITE/CINAMOMO
 //               entraram na hora 14:00 como SIRIUS 1.6 CINAMOMO; o operador
@@ -1057,7 +1067,7 @@ const CACHE_TTL_LEITURA = {
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
   'saveRealizado', 'setTurnoInicio', 'setProdutoAtual', 'setConfigPainel', 'setUepCatalogo',
-  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono'];
+  'excluirLancamento', 'trocarProdutoLancamento', 'registrarCrono', 'excluirCrono'];
 
 // ════════════════════════════════════════════════════════
 // LEITURA DE ABA — memo por EXECUÇÃO
@@ -1222,6 +1232,7 @@ function doGet(e) {
     else if (act === 'trocarProdutoLancamento') result = trocarProdutoLancamento(p);   // v5.32
     else if (act === 'registrarCrono')     result = registrarCrono(p);       // v5.30
     else if (act === 'getCronoRegistros')  result = getCronoRegistros();     // v5.30
+    else if (act === 'excluirCrono')       result = excluirCrono(p);         // v5.33
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else if (act === 'getHoraDia')    result = getHoraDia(p);
@@ -2042,6 +2053,18 @@ function _cronoNum(v) {
   return isFinite(n) ? n : '';
 }
 
+// O cabeçalho da aba (maiúsculo, sem espaço nas pontas) com as colunas pedidas:
+// a que falta é criada no fim. Grava-se pelo NOME — coluna inserida na aba não
+// desalinha nada. A aba tem de ter a linha 1: vazia, a 1ª coluna ficaria em B.
+function _cronoHdr(sh, nomes) {
+  const hdr = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0]
+    .map(function (t) { return String(t).trim().toUpperCase(); });
+  nomes.forEach(function (n) {
+    if (hdr.indexOf(n) < 0) { sh.getRange(1, hdr.length + 1).setValue(n); hdr.push(n); }
+  });
+  return hdr;
+}
+
 function registrarCrono(p) {
   p = p || {};
   const lock = LockService.getScriptLock();
@@ -2062,11 +2085,7 @@ function _registrarCronoCore(p) {
     sh.appendRow(CRONO_COLS.map(function (c) { return c[0]; }));
     sh.setFrozenRows(1);
   }
-  let hdr = sh.getRange(1, 1, 1, Math.max(1, sh.getLastColumn())).getValues()[0]
-    .map(function (t) { return String(t).trim().toUpperCase(); });
-  CRONO_COLS.forEach(function (c) {
-    if (hdr.indexOf(c[0]) < 0) { sh.getRange(1, hdr.length + 1).setValue(c[0]); hdr.push(c[0]); }
-  });
+  const hdr = _cronoHdr(sh, CRONO_COLS.map(function (c) { return c[0]; }));
   const iId = hdr.indexOf('REG_ID');
   if (sh.getLastRow() > 1) {
     const ids = sh.getRange(2, iId + 1, sh.getLastRow() - 1, 1).getValues();
@@ -2109,6 +2128,73 @@ function getCronoRegistros() {
     out.push(o);
   }
   return { ok: true, registros: out };
+}
+
+// ── EXCLUIR UMA MEDIÇÃO (v5.33) ────────────────────────────────────────────
+// PPCP, 26/10/2026 ("vou ter que excluir estudo" → "sim fazer"): a medição
+// registrada errada ficava na lista e na regra das duas medições do painel, e
+// só saía apagando a linha na planilha. Sai UMA linha, pelo REG_ID (o painel só
+// oferece o EXCLUIR em linha que tem). Antes de apagar, a linha INTEIRA vai
+// para a CRONO_EXCLUIDOS (criada na 1ª exclusão, só acréscimo), com a hora e a
+// linha onde estava: a cópia vem primeiro, então se ela falhar nada é apagado
+// — a medição não some sem rastro. Desfazer = copiar a linha de volta.
+// Idempotente: a retentativa depois de um timeout não acha mais a linha, acha
+// o REG_ID na CRONO_EXCLUIDOS e responde "já excluída". Não achar em nenhuma
+// das duas (apagada à mão) não é erro: diz que não estava lá.
+// ⚠ NÃO toca a UEP do cadastro, como o registro.
+const SHEET_CRONO_EXCL = 'CRONO_EXCLUIDOS';
+
+function excluirCrono(p) {
+  p = p || {};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { return _excluirCronoCore(p); }
+  finally { lock.releaseLock(); }
+}
+
+function _excluirCronoCore(p) {
+  const regId = String(p.regId || '').trim();
+  if (!regId) return { ok: false, erro: 'Medição sem identificador (REG_ID).' };
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_CRONO);
+  const v = sh ? sh.getDataRange().getValues() : [];
+  const hdr = (v[0] || []).map(function (t) { return String(t).trim().toUpperCase(); });
+  const iId = hdr.indexOf('REG_ID');
+  let i = -1;
+  if (iId >= 0) for (let k = v.length - 1; k >= 1; k--) if (String(v[k][iId]).trim() === regId) { i = k; break; }
+  let shX = ss.getSheetByName(SHEET_CRONO_EXCL);
+  if (i < 0) {
+    return _cronoJaExcluida(shX, regId) ? { ok: true, excluido: true, jaExcluido: true }
+                                        : { ok: true, excluido: false, naoAchou: true };
+  }
+  const nomes = ['EXCLUIDO_EM', 'LINHA_ORIGINAL'].concat(hdr.filter(function (t) {
+    return t && t !== 'EXCLUIDO_EM' && t !== 'LINHA_ORIGINAL';
+  }));
+  if (!shX) {
+    shX = ss.insertSheet(SHEET_CRONO_EXCL);
+    shX.appendRow(nomes);
+    shX.setFrozenRows(1);
+  }
+  const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
+  shX.appendRow(_cronoHdr(shX, nomes).map(function (t) {
+    if (t === 'EXCLUIDO_EM') return agora;
+    if (t === 'LINHA_ORIGINAL') return i + 1;
+    const j = t ? hdr.indexOf(t) : -1;
+    return j >= 0 ? v[i][j] : '';
+  }));
+  // O Sheets não apaga a última linha não congelada: sobra uma em branco.
+  if (sh.getMaxRows() - sh.getFrozenRows() <= 1) sh.insertRowAfter(sh.getMaxRows());
+  sh.deleteRow(i + 1);
+  return { ok: true, excluido: true, linha: i + 1 };
+}
+
+function _cronoJaExcluida(shX, regId) {
+  if (!shX || shX.getLastRow() < 2) return false;
+  const v = shX.getDataRange().getValues();
+  const j = v[0].map(function (t) { return String(t).trim().toUpperCase(); }).indexOf('REG_ID');
+  if (j < 0) return false;
+  for (let k = v.length - 1; k >= 1; k--) if (String(v[k][j]).trim() === regId) return true;
+  return false;
 }
 
 

@@ -1,5 +1,6 @@
 // REGISTRO DA CRONOANÁLISE (.gs v5.30): registrarCrono e getCronoRegistros
-// rodando o .gs INTEIRO numa planilha de mentira.
+// rodando o .gs INTEIRO numa planilha de mentira — e o EXCLUIR de uma medição
+// (.gs v5.33, excluirCrono).
 //   node crono-registro.test.js
 //
 // PPCP, 20/10/2026: "pode fazer tbm guardar o que é cronoanálise e que linha
@@ -22,39 +23,51 @@ function ok(nome, real, esperado) {
     (bate ? '' : `\n       esperado: ${JSON.stringify(esperado)}\n       recebido: ${JSON.stringify(real)}`));
 }
 
-function montar(abas) {
+// META: linhas em branco abaixo dos dados (o Sheets nasce com ~1.000) e as
+// congeladas. Como no Sheets, apagar a ÚLTIMA linha não congelada dá erro.
+function montar(abas, meta) {
   const ABAS = Object.assign({
     PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP'], ['501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1.2]],
   }, abas || {});
+  const META = meta || {};
+  const M = nome => (META[nome] = META[nome] || { extra: 998, frozen: 1 });
   function aba(nome) {
     const v = ABAS[nome];
     if (!v) return null;
+    const m = M(nome);
     return {
+      getMaxRows: () => v.length + m.extra, getFrozenRows: () => m.frozen,
+      insertRowAfter: () => { m.extra++; },
+      deleteRow: n => {
+        if (!lockDePe) semLock++;
+        if (v.length + m.extra - m.frozen <= 1) throw new Error('Não é possível excluir todas as linhas não congeladas.');
+        if (n > v.length) m.extra--; else v.splice(n - 1, 1);
+      },
       getName: () => nome, getLastRow: () => v.length, getLastColumn: () => Math.max(0, ...v.map(r => r.length)),
       getDataRange: () => ({ getValues: () => v.map(r => r.slice()) }),
       getRange: (l, c, nl, nc) => ({
         getValues: () => { const out = []; for (let i = 0; i < (nl || 1); i++) { const r = v[l - 1 + i] || []; const x = []; for (let j = 0; j < (nc || 1); j++) x.push(r[c - 1 + j] === undefined ? '' : r[c - 1 + j]); out.push(x); } return out; },
         setValue: x => { (v[l - 1] = v[l - 1] || [])[c - 1] = x; },
       }),
-      appendRow: r => { v.push(r.slice()); },
-      setFrozenRows: () => {},
+      appendRow: r => { if (!lockDePe) semLock++; v.push(r.slice()); },
+      setFrozenRows: n => { m.frozen = n; },
     };
   }
-  const ss = { getSheetByName: aba, insertSheet: nome => { ABAS[nome] = []; return aba(nome); }, getName: () => 'teste' };
+  const ss = { getSheetByName: aba, insertSheet: nome => { ABAS[nome] = []; META[nome] = { extra: 1000, frozen: 0 }; return aba(nome); }, getName: () => 'teste' };
   const CACHE = {};
-  let locks = 0;
+  let locks = 0, lockDePe = false, semLock = 0;
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
     Utilities: { formatDate: (d, tz, f) => (/HH/.test(f) ? '20/10/2026 15:40:00' : '20/10/2026') },
     CacheService: { getScriptCache: () => ({ get: k => (k in CACHE ? CACHE[k] : null), put: (k, x) => { CACHE[k] = x; }, remove: k => { delete CACHE[k]; } }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: () => null, setProperty: () => {} }) },
-    LockService: { getScriptLock: () => ({ waitLock: () => { locks++; }, releaseLock: () => {} }) },
+    LockService: { getScriptLock: () => ({ waitLock: () => { locks++; lockDePe = true; }, releaseLock: () => { lockDePe = false; } }) },
     Logger: { log: () => {} },
   };
   vm.createContext(ctx);
   vm.runInContext(GS, ctx);
   const run = code => vm.runInContext('(function(){ _invalidarValores(); ' + code + ' })()', ctx);
-  return { ABAS, run, locks: () => locks };
+  return { ABAS, run, locks: () => locks, semLock: () => semLock };
 }
 
 // O que o painel manda (o _ucvRegMontar): números como o JS escreve, vazio = ''.
@@ -127,13 +140,85 @@ console.log('\n── getCronoRegistros ──');
      [8.6, 9.4, null, 1.09, 1.2, 20.57, 60, 'MESA CABECEIRA MADERO', 'VOL 1/1', 'SLEEP MEDIDA 20/10/2026', '20/10/2026 15:40:00', 'c1abc', null]);
 }
 
+console.log('\n── excluirCrono (v5.33): sai UMA linha, pelo REG_ID, com cópia antes ──');
+{
+  const P = montar();
+  P.run(`return registrarCrono(${q(MED)});`);
+  P.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'c2def', data: '21/10/2026', sRod: '16.2', volume: 'VOL 1/2' }))});`);
+  P.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'c3ghi', data: '23/10/2026', sRod: '12.4' }))});`);
+  const H = P.ABAS.CRONOANALISE[0].slice(), iId = H.indexOf('REG_ID');
+  const antes = P.ABAS.CRONOANALISE[2].slice();
+  const r = P.run(`return excluirCrono({ regId: 'c2def' });`);
+  ok('exclui e diz que excluiu, com a linha onde estava', [r.ok, r.excluido, r.jaExcluido, r.linha], [true, true, undefined, 3]);
+  ok('sai SÓ aquela linha; as outras ficam, na ordem', P.ABAS.CRONOANALISE.slice(1).map(l => l[iId]), ['c1abc', 'c3ghi']);
+  const X = P.ABAS.CRONO_EXCLUIDOS, hX = X[0];
+  ok('a CRONO_EXCLUIDOS nasce com EXCLUIDO_EM, LINHA_ORIGINAL e as colunas da CRONOANALISE',
+     [hX[0], hX[1], hX.slice(2).join('|') === H.join('|'), X.length], ['EXCLUIDO_EM', 'LINHA_ORIGINAL', true, 2]);
+  ok('a cópia é a linha INTEIRA, como estava (números como número), com a hora e a linha',
+     [X[1][0], X[1][1], JSON.stringify(X[1].slice(2)) === JSON.stringify(antes), X[1][hX.indexOf('S_RODANDO')], X[1][hX.indexOf('VOLUME')]],
+     ['20/10/2026 15:40:00', 3, true, 16.2, 'VOL 1/2']);
+  ok('roda sob o lock dos lançamentos: copia e apaga com ele de pé', [P.locks() >= 4, P.semLock()], [true, 0]);
+  ok('a UEP do cadastro NÃO é tocada', P.ABAS.PRODUTO_CODIGO, [['CODIGO', 'DESCRICAO', 'COR', 'UEP'], ['501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1.2]]);
+
+  const r2 = P.run(`return excluirCrono({ regId: 'c2def' });`);
+  ok('a retentativa (resposta perdida no timeout): "já excluída", sem apagar OUTRA linha nem copiar de novo',
+     [r2.ok, r2.excluido, r2.jaExcluido, P.ABAS.CRONOANALISE.length, P.ABAS.CRONO_EXCLUIDOS.length], [true, true, true, 3, 2]);
+  const r3 = P.run(`return excluirCrono({ regId: 'cxxxx' });`);
+  ok('REG_ID que não está em aba nenhuma (apagado à mão): não é erro, diz que não achou e não mexe em nada',
+     [r3.ok, r3.excluido, r3.naoAchou, P.ABAS.CRONOANALISE.length, P.ABAS.CRONO_EXCLUIDOS.length], [true, false, true, 3, 2]);
+  const r4 = P.run(`return excluirCrono({ regId: '  ' });`);
+  ok('sem REG_ID: erro dito, nada muda', [r4.ok, P.ABAS.CRONOANALISE.length], [false, 3]);
+  ok('a lista do painel não traz mais a excluída', P.run(`return getCronoRegistros();`).registros.map(x => x.regId), ['c3ghi', 'c1abc']);
+  P.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'c2def', data: '21/10/2026', sRod: '16.2', volume: 'VOL 1/2' }))});`);
+  ok('registrar de novo a MESMA medição depois de excluir: volta (o REG_ID não está mais na aba)',
+     P.ABAS.CRONOANALISE.slice(1).map(l => l[iId]), ['c1abc', 'c3ghi', 'c2def']);
+  P.run(`return excluirCrono({ regId: 'c1abc' });`);
+  ok('a 2ª exclusão acrescenta na CRONO_EXCLUIDOS (só acréscimo)',
+     [P.ABAS.CRONO_EXCLUIDOS.length, P.ABAS.CRONO_EXCLUIDOS[2][P.ABAS.CRONO_EXCLUIDOS[0].indexOf('REG_ID')], P.ABAS.CRONO_EXCLUIDOS[2][1]], [3, 'c1abc', 2]);
+}
+{
+  // aba com uma coluna do PPCP no meio; a CRONO_EXCLUIDOS já existe de antes,
+  // sem essa coluna: ela é criada no fim e recebe o valor
+  const H0 = ['REGISTRADO_EM', 'PRODUTO', 'OBSERVAÇÃO DO PPCP', 'S_RODANDO', 'REG_ID'];
+  const P = montar({ CRONOANALISE: [H0.slice(), ['20/10/2026 15:58:38', 'MESA CABECEIRA MADERO', 'NO PERÍODO ERRADO', 7.9, 'c9']],
+                     CRONO_EXCLUIDOS: [['EXCLUIDO_EM', 'LINHA_ORIGINAL', 'REGISTRADO_EM', 'PRODUTO', 'S_RODANDO', 'REG_ID']] });
+  P.run(`return excluirCrono({ regId: 'c9' });`);
+  const X = P.ABAS.CRONO_EXCLUIDOS, c = n => X[1][X[0].indexOf(n)];
+  ok('cópia pelo NOME da coluna; a coluna que faltava na CRONO_EXCLUIDOS nasce no fim e recebe o valor',
+     [c('PRODUTO'), c('S_RODANDO'), c('REG_ID'), X[0].indexOf('OBSERVAÇÃO DO PPCP') >= 6, c('OBSERVAÇÃO DO PPCP'), P.ABAS.CRONOANALISE.length],
+     ['MESA CABECEIRA MADERO', 7.9, 'c9', true, 'NO PERÍODO ERRADO', 1]);
+}
+{
+  // a aba sem linha em branco abaixo (alguém apagou as vazias): o Sheets não
+  // deixa apagar a última linha não congelada — sobra uma em branco
+  const P = montar({ CRONOANALISE: [['REGISTRADO_EM', 'PRODUTO', 'S_RODANDO', 'REG_ID'], ['x', 'MESA CABECEIRA MADERO', 7.9, 'c1']] },
+                   { CRONOANALISE: { extra: 0, frozen: 1 } });
+  let erro = '';
+  try { P.run(`return excluirCrono({ regId: 'c1' });`); } catch (e) { erro = e.message; }
+  ok('a única medição de uma aba sem linha sobrando também sai', [erro, P.ABAS.CRONOANALISE.length], ['', 1]);
+}
+{
+  // a cópia falhou: nada é apagado
+  const P = montar();
+  P.run(`return registrarCrono(${q(MED)});`);
+  P.run(`SpreadsheetApp.getActiveSpreadsheet().insertSheet = function () { throw new Error('sem permissão'); };`);
+  let erro = '';
+  try { P.run(`return excluirCrono({ regId: 'c1abc' });`); } catch (e) { erro = e.message; }
+  ok('a cópia vem ANTES: se ela falha, a medição fica (não some sem rastro)', [erro, P.ABAS.CRONOANALISE.length], ['sem permissão', 2]);
+}
+
 console.log('\n── o dispatcher e o cache ──');
-ok('registrar é gravação (invalida o cache de leitura); ler entra no cache de leitura',
-   [/ACOES_ESCRITA = \[[^\]]*'registrarCrono'/.test(GS), /getCronoRegistros:\s*\d+/.test(GS), /registrarCrono:\s*\d+/.test(GS)], [true, true, false]);
-ok('as duas ações estão no doGet',
-   [/act === 'registrarCrono'\)\s*result = registrarCrono\(p\)/.test(GS), /act === 'getCronoRegistros'\)\s*result = getCronoRegistros\(\)/.test(GS)], [true, true]);
-ok('o registro não chama nada que grave a UEP do cadastro',
-   /setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function registrarCrono('), GS.indexOf('function getCronoRegistros('))), false);
+ok('registrar e excluir são gravação (invalidam o cache de leitura); ler entra no cache de leitura',
+   [/ACOES_ESCRITA = \[[^\]]*'registrarCrono'/.test(GS), /ACOES_ESCRITA = \[[^\]]*'excluirCrono'/.test(GS), /getCronoRegistros:\s*\d+/.test(GS),
+    /registrarCrono:\s*\d+/.test(GS), /excluirCrono:\s*\d+/.test(GS)], [true, true, true, false, false]);
+ok('as três ações estão no doGet',
+   [/act === 'registrarCrono'\)\s*result = registrarCrono\(p\)/.test(GS), /act === 'getCronoRegistros'\)\s*result = getCronoRegistros\(\)/.test(GS),
+    /act === 'excluirCrono'\)\s*result = excluirCrono\(p\)/.test(GS)], [true, true, true]);
+ok('o registro e a exclusão não chamam nada que grave a UEP do cadastro',
+   [/setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function registrarCrono('), GS.indexOf('function getCronoRegistros('))),
+    /setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('function _cronoJaExcluida(')))], [false, false]);
+ok('a exclusão lê a aba DIRETO (é escrita: nunca o memo de leitura)',
+   /_valores\(|_valoresDaAba\(/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('ITENS 1 e 3'))), false);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

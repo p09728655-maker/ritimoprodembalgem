@@ -58,7 +58,9 @@ via Google Apps Script (JSONP).
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
-  vazio fica vazio): `node crono-registro.test.js`.
+  vazio fica vazio) e o EXCLUIR (`excluirCrono`, v5.33: cópia na
+  `CRONO_EXCLUIDOS` antes de apagar, retentativa, lock de pé, a última linha
+  não congelada): `node crono-registro.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -4255,6 +4257,42 @@ feito e dá ar de verdade ao que sobrou.
 - Testes em `tela-uep.test.js` (corte, textos, peso normal, a marca nos dois
   gráficos e os chamadores; conferido por mutação) e `relatorios.test.js`
   (régua em UEP com janela).
+
+## EXCLUIR UMA MEDIÇÃO DA CRONOANÁLISE (v7.157.0 / `.gs` v5.33)
+- PPCP, 26/10/2026, com a aba CRONOANALISE na mão: *"vou ter que excluir
+  estudo"* → *"sim fazer"*. Recomendação dada antes: excluir a linha na
+  planilha bastava (a aba só alimenta a lista da ⏱ CRONOANÁLISE) — o PPCP quis
+  o botão.
+- **EXCLUIR** em cada linha da lista MEDIÇÕES REGISTRADAS (`_ucvRegsHtml`, 4º
+  parâmetro = exclusão em curso: EXCLUINDO… e todos travados, uma de cada vez,
+  `UCV_EXCL` declarado junto do `UCV_REGS`). `_ucvExcluir` → confirmação
+  (`_ucvExclConfirmaTxt`) → `excluirCrono&regId=` por `jsonpEscrita` →
+  `_ucvExclResposta`. **Sem resposta ≠ não excluiu**: espera a leitura em voo
+  (é de antes da exclusão), relê a lista e decide pelo `_ucvExclConfere`.
+  Mensagem em `#uep-conv-x-msg`, FORA da lista (refeita a cada tecla).
+- **Só linha com o REG_ID do painel** (`_ucvExclPode`: `[A-Za-z0-9_-]`, até
+  40): o id vai num atributo e no clique, e o `_rpEsc` não escapa aspas. Linha
+  digitada à mão na planilha mostra "—" e se exclui lá.
+- `.gs` `excluirCrono`, sob o lock: acha a ÚLTIMA linha com o REG_ID, **copia
+  a linha inteira para a `CRONO_EXCLUIDOS`** (EXCLUIDO_EM, LINHA_ORIGINAL e as
+  colunas da CRONOANALISE pelo nome — `_cronoHdr`, o mesmo do registro) e só
+  então apaga. Cópia falhou → nada é apagado.
+  - Idempotente: a linha não está mais lá mas o REG_ID está na
+    CRONO_EXCLUIDOS → `jaExcluido`; em nenhuma das duas (apagada à mão) →
+    `naoAchou`, com **`ok:true`** — com `ok:false` o `jsonpEscrita` retentaria
+    três vezes uma coisa que não vai mudar.
+  - Antes do `deleteRow`, se só sobra uma linha não congelada, insere uma em
+    branco: o Sheets não apaga a última linha não congelada.
+- Desfazer = copiar a linha de volta da CRONO_EXCLUIDOS (sem as duas primeiras
+  colunas) ou registrar de novo a mesma medição (o REG_ID é o mesmo e entra).
+  **Corrigir = excluir e registrar de novo**: registrar a certa sem excluir a
+  errada deixa as duas no veredito ("discordam").
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o EXCLUIR diz que falta o
+  `.gs` v5.33 e não exclui nada. A UEP do cadastro não muda em caso nenhum.
+- Testes: `crono-registro.test.js` (o `.gs` inteiro) e `uep-relatorios.test.js`
+  (desenho, respostas e o fluxo real do `_ucvExcluir` com o Apps Script de
+  mentira — os testes assíncronos rodam antes do resumo). Conferidos por
+  mutação.
 
 ## PRÓXIMOS DIAS — a carteira em HORAS (v7.109.0; na aba ⚖ UEP desde a v7.111.0)
 - Pedido do PPCP, 25/09/2026 (*"programações futuras como previsão… de
