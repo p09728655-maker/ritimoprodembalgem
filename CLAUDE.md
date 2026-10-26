@@ -5078,6 +5078,15 @@ feito e dá ar de verdade ao que sobrou.
     pela MESMA conversão `_dataStr → dataParaNum` no recorte e no filtro). Toda
     hora vem com `par` (mesmo `{}`) — é o sinal de que as paradas foram lidas;
     sem ele (`.gs` v5.35) a tela diz que falta o v5.36, nunca julga.
+- **v7.162.0 — coluna TROCA** na lista de medições (PPCP: *"colocar que não
+  troca devido a variar 90 a 110 e tbm se foi trocado"*; modelo mandado em
+  imagem e aprovado antes de subir). `_ucvRegsStatus` (conta) / `_ucvStatusCel`
+  (desenho), entre UEP e CADASTRO: NÃO TROCA (*variou +X% · dentro de
+  90–110%*), FORA DA FAIXA, TROCADA (*dd/mm · antes → depois*, das trocas do
+  `getConferenciaCrono`) e BASE. TROCADA só quando o "antes" da troca é o
+  cadastro que a medição viu — a medição registrada depois da troca é julgada
+  contra a UEP nova. Para caber em 1366: BASE curta (*MADERO 20/10*, título com
+  o texto inteiro) e produto/TROCA com quebra de linha (`.ucv-pr`, `.ucv-st`).
 - ⚠ Os **15% de tolerância** (fadiga e movimentação) NÃO entram aqui nem na UEP:
   só no TEMPO PADRÃO exibido (medido × 1,15) e na coluna TEMPO_PADRAO_S. A meta
   já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);
