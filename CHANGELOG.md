@@ -11,6 +11,55 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.158.0 · `.gs` v5.34 — 26/10/2026 · TROCAR A UEP pela cronoanálise + CONFERÊNCIA + IMPORTAR PDF
+
+- PPCP, com a STRASS VOL 2/2 na tela (*"qual UEP colocar?"*): o quadro PARA
+  TROCAR mostrava **1,57** (só a medição dos campos) e a lista, **UEP média
+  1,52** — dois números para a mesma decisão. Depois: *"deixa pronto para
+  trocar já no app a uep que puder"*, *"a medição não dá para travar em duas
+  datas diferentes o mesmo produto, isso vai demorar muito"* e *"deixar uma
+  conferência para que quando passar o produto outras vezes criar alerta sem
+  alterar se sobe ou desce a uep"*.
+- **Regra da troca: amostra, não calendário.** Antes: duas medições em dias
+  diferentes. Agora: as medições registradas do volume somam **30 volumes ou
+  mais** (pode ser num dia só, ou numa medição só) e **todas** apontam o mesmo
+  lado da faixa 90–110% contra o cadastro **de agora**. Medição sem VOLUMES
+  MEDIDOS não entra. A faixa de ±10% continua: mais volumes tiram o erro de
+  caixa para caixa, não o efeito do dia (equipe, lote).
+- **✓ TROCAR A UEP NO CADASTRO** (aba ⏱ CRONOANÁLISE): aparece quando a regra
+  deixa, com a média das medições e o que muda em cada código. Grava na coluna
+  UEP da PRODUTO_CODIGO, vigência de hoje (DIGITADA — o mesmo carimbo da
+  digitação, a FILA DE CRONOANÁLISE tira o produto) e uma versão por código na
+  UEP_VERSOES (ORIGEM CRONOANÁLISE). O Apps Script confere a regra de novo
+  contra a planilha antes de gravar: medições excluídas, cadastro trocado em
+  outro computador ou UEP que não bate com a média → não grava e diz por quê.
+  A UEP TRAVADA continua valendo para o GRAVAR UEP (estudo pelo ritmo).
+- **PRONTAS PARA TROCAR**: lista dos volumes que a regra já libera, acima das
+  medições registradas; o toque abre o volume com o botão.
+- **CONFERÊNCIA DAS TROCAS** (fim da aba, com aviso no topo quando há alerta):
+  para cada troca, as horas em que **só** aquele volume rodou nos dias depois da
+  troca (hoje fora) contra a régua da meta. Abaixo de 90%: **▲ SUBIR?** (UEP
+  baixa, ou paradas); acima de 110%: **▼ DESCER?**; menos de 2 h sozinho:
+  AGUARDANDO. **Nada muda sozinho** — o alerta pede medição nova.
+- **DATA DA MEDIÇÃO e VOLUMES MEDIDOS obrigatórios** no 💾 REGISTRAR. A data
+  vazia virava HOJE: a 2ª medição da STRASS foi gravada em 26/10, e o log de
+  produção não tem STRASS nesse dia (o VOL 2/2 rodou em 22/10 16h e 23/10
+  07–08h). A data também sai do campo depois de cada registro.
+- **📄 IMPORTAR PDF** (cabeçalho da aba): o PDF *Takt Time* do app de
+  cronoanálise. **Um PDF** preenche produto, tempo rodando, data, no período,
+  sem lacunas e volumes — confira e clique em 💾 REGISTRAR. **Vários PDFs**
+  registram de uma vez, com uma confirmação. A data é a do PDF (acaba com a
+  medição gravada com a data do dia do lançamento). O leitor de PDF só carrega
+  no clique.
+- Corrigido: o plural saía **"mediçãoões"** na lista.
+- **Atenção:** a UEP média da lista muda de 1,52 para **1,51** na STRASS VOL
+  2/2 — passa a sair dos segundos pesados pelos volumes, não da média das UEP
+  já arredondadas. O resumo da lista troca *"N medições em N dias"* por
+  *"N medições · V volumes"*. A UEP do cadastro só muda com o clique no ✓
+  TROCAR A UEP.
+- ⚠ **re-deploy** do `.gs` v5.34. Antes dele o ✓ TROCAR A UEP avisa que falta
+  o re-deploy e não grava nada; a conferência diz o mesmo.
+
 ## v7.157.0 · `.gs` v5.33 — 26/10/2026 · EXCLUIR uma medição da cronoanálise
 
 - PPCP, com a aba CRONOANALISE na mão: *"vou ter que excluir estudo"* →

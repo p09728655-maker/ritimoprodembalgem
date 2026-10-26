@@ -43,7 +43,10 @@ via Google Apps Script (JSONP).
 - `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
   ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
-  (Armário Encanto de 19/10: 27,8 s → 2,22): `node uep-relatorios.test.js`.
+  (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
+  amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
+  da regra com o `.gs` e o 📄 IMPORTAR PDF (com o texto do PDF real de 26/10):
+  `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular):
@@ -60,7 +63,9 @@ via Google Apps Script (JSONP).
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
   vazio fica vazio) e o EXCLUIR (`excluirCrono`, v5.33: cópia na
   `CRONO_EXCLUIDOS` antes de apagar, retentativa, lock de pé, a última linha
-  não congelada): `node crono-registro.test.js`.
+  não congelada), o `trocarUepCrono` (v5.34: grava, recusa, semente da
+  `UEP_VERSOES`, idempotente) e o `getConferenciaCrono` (só as horas do volume
+  sozinho, depois da troca, hoje fora): `node crono-registro.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -3963,6 +3968,9 @@ feito e dá ar de verdade ao que sobrou.
     na coluna UEP da `PRODUTO_CODIGO` e vira versão `DIGITADA` na
     `UEP_VERSOES` (`onEdit` → `_uepVerDaEdicao`). Nada no `.gs` mudou: a trava
     é do painel (o único que chama o `setUepCatalogo`).
+    Desde a v7.158.0 há também o **✓ TROCAR A UEP** da aba ⏱ CRONOANÁLISE
+    (`trocarUepCrono`): é cronoanálise, não estudo pelo ritmo — a trava do
+    GRAVAR UEP continua. Ver *TROCAR A UEP PELA CRONOANÁLISE*.
   - ⚠ **Produto novo fica SEM UEP** até ser digitado — a estimativa pela
     esteira também está travada. Ele aparece na lista SEM UEP da aba ⚖ UEP.
   - **A base aparece na aba ⚖ UEP** (bloco ORIGEM DA UEP, tela e papel):
@@ -3987,9 +3995,11 @@ feito e dá ar de verdade ao que sobrou.
 - **O PADRÃO:**
   1. base MESA CABECEIRA MADERO = 1,00 UEP/cx; meta 2.530 na jornada normal;
   2. UEP de cada código = a do cadastro; a aba UEP da planilha é cópia dele;
-  3. só muda por cronoanálise — duas medições em dias diferentes, rodando,
-     contra a MADERO (7,9 s) —, digitada no cadastro e na planilha no mesmo
-     dia. Nunca trocar de base nem recalcular pelo ritmo (UEP TRAVADA segue);
+  3. só muda por cronoanálise — ~~duas medições em dias diferentes~~ (desde a
+     v7.158.0: **30 volumes medidos ou mais**, qualquer data, todas do mesmo
+     lado), rodando, contra a MADERO (7,9 s) —, gravada no cadastro (✓ TROCAR
+     A UEP ou digitada) e na planilha no mesmo dia. Nunca trocar de base nem
+     recalcular pelo ritmo (UEP TRAVADA segue);
   4. o passado não se regrava (esta volta foi a última exceção);
   5. produto novo entra com a estimada nos dois lugares, marcado.
 - Código: `UEP_BASE` MADERO, `UEP_META_PADRAO`/`UEP_META_PADRAO_GS` 2530,
@@ -4187,8 +4197,10 @@ feito e dá ar de verdade ao que sobrou.
   - **v7.150.0 / `.gs` v5.30 — REGISTRO DA MEDIÇÃO E A LINHA FAZ** (PPCP:
     *"pode fazer tbm guardar o que é cronoanalise e que linha faz"* → *"os
     dois"*). Decidido junto: **manter a faixa 90–110%** e trocar a UEP só com
-    **duas medições em dias diferentes** apontando o mesmo lado (`_ucvRegsResumo`
-    → `UCV_REG_VEREDITO`). Ruído medido de UMA medição de 8 min: as 4 lacunas
+    ~~**duas medições em dias diferentes**~~ apontando o mesmo lado (`_ucvRegsResumo`
+    → `UCV_REG_VEREDITO`). ⚠ **Revogado na v7.158.0** (PPCP: *"não dá para
+    travar em duas datas diferentes o mesmo produto, isso vai demorar
+    muito"*): a regra é de AMOSTRA — ver *TROCAR A UEP PELA CRONOANÁLISE*. Ruído medido de UMA medição de 8 min: as 4 lacunas
     da SLEEP separam 7,9 de 6,7 (18%); outra amostra cairia em ±8%.
     - **A LINHA FAZ** (`_ucvLinhaDe`, conta): o MÉD.PERÍODO do produto
       (horas DISTINTAS por dia, `_phMediaAparada` 'aparada') nos últimos
@@ -4868,3 +4880,106 @@ feito e dá ar de verdade ao que sobrou.
   `main`: o webhook do push pode falhar silenciosamente (aconteceu no #200 —
   preview da branch buildou, produção não). Re-disparar = qualquer commit novo
   na `main` (PR mínimo como este).
+
+## TROCAR A UEP PELA CRONOANÁLISE, IMPORTAR PDF e CONFERÊNCIA (v7.158.0 / `.gs` v5.34)
+- PPCP, 26/10/2026, com a STRASS VOL 2/2 na tela: *"qual UEP colocar?"* — o
+  PARA TROCAR dizia **1,57** (só a medição dos campos) e a lista **UEP média
+  1,52**. Depois, na mesma conversa: *"faz as duas correções"*, *"deixa pronto
+  para trocar já no app a uep que puder"*, *"a medição não dá para travar em
+  duas datas diferentes o mesmo produto, isso vai demorar muito"*, *"deixar uma
+  conferência para que quando passar o produto outras vezes criar alerta sem
+  alterar se sobe ou desce a uep"* e, com o PDF do app de cronoanálise na mão,
+  *"segue modelo"* → *"importar para não ter que digitar nada"*.
+- **A REGRA DA TROCA é de AMOSTRA** (`_ucvRegsResumo(regs, cadAtual)`): as
+  medições REGISTRADAS do volume (mesmo modelo, nome e VOLUME) somam
+  `UCV_TROCA_MIN_VOL`=30 volumes ou mais — num dia só, ou numa medição só — e
+  TODAS caem do mesmo lado da faixa 90–110% contra o cadastro **de agora**
+  (sem ele, o `uepCad` da hora do registro). Medição sem VOLUMES MEDIDOS não
+  entra. Vereditos: `trocar` · `pouca-amostra` · `discordam` · `confere` ·
+  `sem-volumes` · `sem-medicao` · `sem-cadastro`.
+  - ⚠ **O que se perdeu ao tirar as duas datas**: volume a mais tira o erro de
+    caixa para caixa, NÃO o efeito do dia (equipe, lote, regulagem). Por isso a
+    faixa de ±10% fica e a CONFERÊNCIA existe. Dito ao PPCP.
+  - **A UEP média sai dos SEGUNDOS** (`_ucvRegUep`: rodando ÷ base de cada
+    medição), pesada pelos volumes — não da UEP já arredondada (1,46 e 1,57
+    davam 1,52; os segundos dão **1,51**).
+  - **A troca é das REGISTRADAS, não do tempo digitado**: com o tempo nos
+    campos, os cartões são dele; a caixa de ação é da regra. `_uepConvMontar`
+    ganhou o 8º parâmetro `regLista` (`R.regs`, `R.regRes`, `R.troca` = média,
+    antes, diferença e o `_uepConvDigitar` dela). Caixa: **PODE TROCAR · PELAS
+    MEDIÇÕES REGISTRADAS** (com o botão) · ✓ NÃO PRECISA TROCAR · **AINDA NÃO
+    TROQUE** (o que esta medição dá e por que ainda não, `UCV_AINDA`). O PARA
+    TROCAR sumiu — o teste falha se voltar.
+- **✓ TROCAR A UEP NO CADASTRO** (`_ucvTrocar` → `trocarUepCrono`): manda
+  modelo, produto, volume e `cods=código:UEP` (a repartição entre cores e
+  volumes é a do cadastro). O `.gs` **refaz a regra contra a planilha**
+  (`_cronoTrocaRegra`, cópia da do painel; o teste roda as duas nos mesmos
+  casos e prende `CRONO_TROCA_MIN_VOL_GS`/`CRONO_TROCA_FAIXA_GS` iguais às do
+  painel), confere que os códigos estão na coluna CODIGOS das medições e que a
+  média dos valores enviados bate com a das medições (±0,01), e só então grava:
+  UEP, `UEP_VIGENCIA` = `dd/MM/yyyy DIGITADA` (o carimbo da digitação: a FILA
+  tira o produto) e uma versão por código na `UEP_VERSOES`, ORIGEM
+  `CRONOANÁLISE · modelo · produto · volume · N medições, V volumes`
+  (`_cronoOrigem`/`_cronoOrigemLer`, uma implementação). Lê as abas DIRETO
+  (escrita), sob o lock.
+  - **Recusa vem com `ok:true, trocado:false, recusado:true`** — com `ok:false`
+    o `jsonpEscrita` retentaria três vezes uma coisa que não vai mudar.
+    Idempotente: UEP já igual = `jaTrocado`.
+  - Sem resposta ≠ não trocou: relê o cadastro e decide (`_ucvTrocaConfere`).
+    Depois, em sequência: cadastro → medições → conferência.
+  - A UEP de **hoje inteiro** já sai com o número novo (o `getPontosDia` e o
+    fechamento leem o cadastro); dias fechados não mudam. A confirmação diz
+    isso e manda atualizar a aba UEP da planilha de programação no mesmo dia.
+  - ⚠ A base (MADERO) nunca tem troca. O JOGO e cada VOLUME são medições
+    diferentes (`_ucvRegVol`): as do VOL 2/2 não liberam o JOGO.
+- **PRONTAS PARA TROCAR** (`_ucvProntas`, conta; `_ucvProntasHtml`): os volumes
+  que a regra já libera, de todas as medições, acima da lista; o toque abre o
+  volume (`_ucvAbrirPronta`, pelo índice — o `_rpEsc` não escapa aspas).
+- **CONFERÊNCIA DAS TROCAS** (`getConferenciaCrono` → `_ucvConfMontar` →
+  `_ucvConfHtml`; aviso no topo `_ucvConfAvisoHtml`): para cada troca (a mais
+  nova de cada volume), as horas em que **SÓ** os códigos trocados rodaram, nos
+  dias depois da troca e antes de hoje. UEP feita (caixas × UEP nova) ÷ pedida
+  (minutos × META UEP ÷ 527 — o padrão do bloco 7). Abaixo de 90%: **▲ SUBIR?**
+  (UEP baixa, ou paradas); acima de 110%: **▼ DESCER?**; menos de
+  `UEP_PAD_MIN_MIN`=120 min sozinho: AGUARDANDO; UEP do cadastro mudou depois:
+  SUBSTITUÍDA. **Nada é gravado**: o alerta pede medição nova.
+  - Hora dividida com outro produto ou com o outro volume fica fora (não se sabe
+    de quem foi o tempo) — a conferência pode demorar a julgar, e é de
+    propósito: misturar o VOL 1/2 da STRASS julgaria o volume errado.
+  - O slot 12:12 vale 48 min (`_cronoMinSlot`). Cache de leitura 300 s; a troca
+    e qualquer gravação invalidam.
+  - Só acha troca feita pelo ✓ TROCAR A UEP (ORIGEM CRONOANÁLISE); UEP digitada
+    à mão na planilha não entra.
+- **DATA DA MEDIÇÃO e VOLUMES MEDIDOS obrigatórios** no 💾 REGISTRAR
+  (`_ucvRegValida`). A data vazia virava HOJE: a 2ª medição da STRASS saiu
+  26/10, e o log de produção não tem STRASS nesse dia (o VOL 2/2 rodou em 22/10
+  16h e 23/10 07–08h — a data dela NÃO foi corrigida na planilha, o PPCP
+  confere). A data também sai do campo depois de cada registro; o placeholder
+  é `dd/mm/aaaa`, não a data de hoje.
+- **📄 IMPORTAR PDF** (`_ucvImportar`): o PDF **Takt Time — <produto> ·
+  <grupo>** do app de cronoanálise (RitmoPatrimar v2.9x). `_ucvPdfLer` (conta)
+  tira produto, grupo, data e hora da MEDIÇÃO, VOLUMES e os três cartões (NO
+  PERÍODO, COM A LINHA RODANDO, SEM AS LACUNAS; segundos com PONTO) — a frase
+  do resumo é a rede do período e do rodando. Faltando produto, data, rodando ou
+  volumes, diz o que falta, nunca inventa.
+  - **Um PDF preenche a tela** (produto, s/VOLUME RODANDO, data, período,
+    lacunas, volumes) e **não registra sozinho**: confere e 💾 REGISTRAR.
+    **Vários PDFs** registram de uma vez, com uma confirmação
+    (`_ucvImportItem` → a MESMA linha do 💾: `_uepConvMontar` →
+    `_ucvRegValida` → `_ucvRegMontar`; URL única `_ucvRegUrl`). Mesmo PDF
+    importado de novo = mesmo REG_ID (não duplica).
+  - O produto do título casa pelo `_uepConvAchar` ("Painel Sirius 1.4" → 501114
+    · PAINEL SIRIUS 1.4). Fora do cadastro ou ambíguo ("Sirius 1.4": rack e
+    painel) → fica de fora do lote; sozinho, o nome vai para o campo e a tela
+    manda escolher na lista. ⚠ Como o app nomeia produto de vários volumes
+    ainda não foi visto — o 1º PDF de penteadeira vai mostrar se casa com a
+    linha do VOLUME.
+  - MEDIDO POR e VELOCIDADE não estão no PDF: vazio (velocidade = a do
+    cadastro); no lote, o MEDIDO POR digitado no formulário vale para todos.
+  - **O leitor é o pdf.js 3.11.174 do cdnjs (UMD, `window.pdfjsLib`), carregado
+    só no clique** (`_ucvPdfjs`, voo compartilhado; falhou → diz e manda
+    digitar). Nada no `<head>`: nem a abertura do painel nem a TV pagam por ele.
+    Medido no Chromium com o PDF real (worker de outro domínio, como na Vercel).
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o ✓ TROCAR A UEP diz que
+  falta o v5.34 e não grava; a conferência diz o mesmo. O IMPORTAR e o
+  REGISTRAR não dependem do v5.34 (o `registrarCrono` é da v5.30).
