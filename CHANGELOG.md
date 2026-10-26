@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.163.0 — 26/10/2026 · VERSÃO DO CADASTRO (em vigor / anterior)
+
+- PPCP, com a ELOA VOL 2/2 na lista (*"cadastro 2,53, como explico?"* — o
+  cadastro de hoje é 1,82): *"troca cadastro VERSÃO 01"* → modelo aprovado.
+  A coluna CADASTRO da lista de medições vira **VERSÃO DO CADASTRO**: o número
+  continua sendo o que a medição viu, e embaixo dele **em vigor** (ainda é o
+  cadastro de hoje) ou **anterior** (já trocado — o valor novo está na coluna
+  TROCA, *2,53 → 1,82*).
+- Corrigido: o texto ao passar o mouse nos títulos **NA PRODUÇÃO** (desde a
+  v7.160.0) e **TROCA** (v7.162.0) mostrava `${UEP_PAD_FAIXA[0]}` cru — a linha
+  do cabeçalho estava entre aspas simples, não crases.
+- **Atenção:** nenhum número muda; nada no `.gs`.
+
 ## v7.162.0 — 26/10/2026 · coluna TROCA nas medições registradas
 
 - PPCP, com a lista na mão (Painel Sirius 1.4 com 1,81 e 1,62 contra 1,49 no
