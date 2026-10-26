@@ -306,6 +306,29 @@ console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o v
   ok('a ORIGEM vai e volta pela mesma regra', montar().run(`return _cronoOrigemLer(_cronoOrigem('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 1, 52));`),
      { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', amostra:'1 medição, 52 volumes' });
 }
+console.log('\n── getHorasCrono (v5.35): o log da janela hora a hora, código por código ──');
+{
+  const H = montar({ PRODUCAO_PRODUTO: [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR'],
+    ['18/10/2026', '15:00', '501059002', 'VOL 2/2', 90, 0, 0, 'Mobile'],     // antes da janela: fora
+    ['19/10/2026', '09:00', '501059002', 'VOL 2/2', 100, 0, 0, 'Mobile'],
+    ['19/10/2026', '10:00', '501059002', 'VOL 2/2', 80, 0, 0, 'Mobile'], ['19/10/2026', '10:00', '501.059.004', 'VOL 2/2', 70, 0, 0, 'Mobile'],
+    ['19/10/2026', '10:00', '501059002', 'VOL 2/2', 5, 0, 0, 'Mobile'],      // o mesmo código duas vezes na hora: soma
+    ['19/10/2026', '12:12', '501059008', 'VOL 2/2', 40, 0, 0, 'Mobile'], ['19/10/2026', '12:12', '501059001', 'VOL 1/2', 30, 0, 0, 'Mobile'],
+    ['19/10/2026', '', '501059002', 'VOL 2/2', 33, 0, 0, 'Mobile'],          // sem hora: fora
+    ['20/10/2026', '12:12', '501059004', 'VOL 2/2', 120, 0, 0, 'Mobile'],
+    ['21/10/2026', '07:00', '501059004', 'VOL 2/2', 150, 0, 0, 'Mobile']] }, null, '21/10/2026');   // hoje: fora
+  const r = H.run(`return getHorasCrono({ de:'19/10/2026', ate:'21/10/2026' });`);
+  ok('as horas da janela (hoje fora, sem hora fora), com os minutos do slot e as caixas de cada código (código com ponto vira dígitos)',
+     [r.ok, r.de, r.ate, r.horas.map(h => [h.data, h.hora, h.min, h.cods])],
+     [true, '19/10/2026', '21/10/2026', [['19/10/2026', '09:00', 60, { 501059002:100 }], ['19/10/2026', '10:00', 60, { 501059002:85, 501059004:70 }],
+       ['19/10/2026', '12:12', 48, { 501059008:40, 501059001:30 }], ['20/10/2026', '12:12', 48, { 501059004:120 }]]]);
+  ok('período inválido ou ao contrário: erro dito, nada lido',
+     [H.run(`return getHorasCrono({ de:'', ate:'21/10/2026' });`).ok, H.run(`return getHorasCrono({ de:'21/10/2026', ate:'19/10/2026' });`).ok], [false, false]);
+  ok('a conferência e o getHorasCrono leem o log pelo MESMO _cronoHorasDoLog; o getHorasCrono só a janela (_valoresPorData)',
+     [(GS.match(/_cronoHorasDoLog\(/g) || []).length, /function getHorasCrono[\s\S]*?_valoresPorData\(sh, 'DATA'/.test(GS)], [3, true]);
+  ok('no doGet, com cache de leitura (a chave leva de/ate)',
+     [/act === 'getHorasCrono'\)\s*result = getHorasCrono\(p\)/.test(GS), /getHorasCrono: 300/.test(GS)], [true, true]);
+}
 ok('a troca e a conferência estão no doGet, e a troca invalida as leituras',
    [/act === 'trocarUepCrono'\)\s*result = trocarUepCrono\(p\)/.test(GS), /act === 'getConferenciaCrono'\)\s*result = getConferenciaCrono\(\)/.test(GS),
     /ACOES_ESCRITA = \[[^\]]*'trocarUepCrono'/.test(GS)], [true, true, true]);

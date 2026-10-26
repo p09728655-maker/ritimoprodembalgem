@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.35 — HORAS DA LINHA POR CÓDIGO (getHorasCrono)
+//               PPCP, 26/10/2026, sobre a coluna A LINHA FAZ da cronoanálise
+//               (s/cx do dia inteiro): "mas esse tempo é cheio de paradas" →
+//               "faz as duas". O painel passou a mostrar o % DO PADRÃO só nas
+//               horas em que o VOLUME medido rodou sozinho — a régua da
+//               conferência. getHorasCrono devolve, por hora da janela, os
+//               códigos e as caixas (o getProducaoModeloPeriodo junta os
+//               volumes do mesmo produto). Só leitura; a conta é do painel.
 // Versão: 5.34 — TROCAR A UEP PELA CRONOANÁLISE + CONFERÊNCIA DAS TROCAS
 //               PPCP, 26/10/2026: "deixa pronto para trocar já no app a uep
 //               que puder", "a medição não dá para travar em duas datas
@@ -1075,7 +1083,8 @@ const CACHE_TTL_LEITURA = {
   getProducaoModeloPeriodo: 300,
   getConfigPainel: 30,
   getCronoRegistros: 300,          // v5.30: aba pequena; o registro invalida
-  getConferenciaCrono: 300         // v5.34: a troca e o lançamento invalidam
+  getConferenciaCrono: 300,        // v5.34: a troca e o lançamento invalidam
+  getHorasCrono: 300               // v5.35: o lançamento invalida (a chave leva de/ate)
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
@@ -1248,6 +1257,7 @@ function doGet(e) {
     else if (act === 'excluirCrono')       result = excluirCrono(p);         // v5.33
     else if (act === 'trocarUepCrono')     result = trocarUepCrono(p);       // v5.34
     else if (act === 'getConferenciaCrono') result = getConferenciaCrono();  // v5.34
+    else if (act === 'getHorasCrono')      result = getHorasCrono(p);        // v5.35
     else if (act === 'setTurnoInicio')result = setTurnoInicio(p);
     else if (act === 'getMediaHoras') result = getMediaHoras();
     else if (act === 'getHoraDia')    result = getHoraDia(p);
@@ -2393,6 +2403,25 @@ function _trocarUepCronoCore(p) {
 // PAINEL compara com a régua da meta e diz SUBIR?/DESCER? — nada é gravado.
 // O slot das 12:12 tem 48 min (o turno não muda: ver CLAUDE.md).
 function _cronoMinSlot(hora) { return String(hora || '').slice(0, 5) === '12:12' ? 48 : 60; }
+// O log hora a hora: "dataNum|hora" → { dn, data, hora, cods: { código: caixas } },
+// só dos dias que `aceita(dataNum)` deixa. Linha sem hora fica fora (não há de
+// que hora ela é). Uma implementação para a conferência e o getHorasCrono.
+function _cronoHorasDoLog(lv, aceita) {
+  const lh = (lv[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
+  const jD = lh.indexOf('DATA') >= 0 ? lh.indexOf('DATA') : 0, jH = lh.indexOf('HORA') >= 0 ? lh.indexOf('HORA') : 1,
+        jC = lh.indexOf('CODIGO') >= 0 ? lh.indexOf('CODIGO') : 2, jX = lh.indexOf('CAIXAS') >= 0 ? lh.indexOf('CAIXAS') : 4;
+  const H = {};
+  for (let i = 1; i < lv.length; i++) {
+    const r = lv[i], dn = dataParaNum(r[jD]);
+    if (!dn || !aceita(dn)) continue;
+    const cx = Number(r[jX]) || 0, c = codKey(r[jC]), hora = formatHoraCel(r[jH]);
+    if (!c || !cx || !hora) continue;
+    const k = dn + '|' + hora;
+    const h = H[k] = H[k] || { dn: dn, data: fmtDataBR(r[jD]), hora: hora, cods: {} };
+    h.cods[c] = (h.cods[c] || 0) + cx;
+  }
+  return H;
+}
 function getConferenciaCrono() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_UEP_VER);
@@ -2419,20 +2448,7 @@ function getConferenciaCrono() {
   // O log: hora a hora, que códigos e quantas caixas — só dias depois da troca mais antiga e antes de hoje.
   const hoje = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
   const desde = Math.min.apply(null, grupos.map(function (g) { return g.vigNum; }));
-  const lv = _valores(SHEET_PROD_LOG) || [];
-  const lh = (lv[0] || []).map(function (c) { return String(c).trim().toUpperCase(); });
-  const jD = lh.indexOf('DATA') >= 0 ? lh.indexOf('DATA') : 0, jH = lh.indexOf('HORA') >= 0 ? lh.indexOf('HORA') : 1,
-        jC = lh.indexOf('CODIGO') >= 0 ? lh.indexOf('CODIGO') : 2, jX = lh.indexOf('CAIXAS') >= 0 ? lh.indexOf('CAIXAS') : 4;
-  const H = {};
-  for (let i = 1; i < lv.length; i++) {
-    const r = lv[i], dn = dataParaNum(r[jD]);
-    if (!dn || dn <= desde || dn >= hoje) continue;
-    const cx = Number(r[jX]) || 0, c = codKey(r[jC]);
-    if (!c || !cx) continue;
-    const hora = formatHoraCel(r[jH]), k = dn + '|' + hora;
-    const h = H[k] = H[k] || { dn: dn, data: fmtDataBR(r[jD]), hora: hora, cods: {} };
-    h.cods[c] = (h.cods[c] || 0) + cx;
-  }
+  const H = _cronoHorasDoLog(_valores(SHEET_PROD_LOG) || [], function (dn) { return dn > desde && dn < hoje; });
   const trocas = grupos.map(function (g) {
     const D = {};
     Object.keys(H).forEach(function (k) {
@@ -2452,6 +2468,30 @@ function getConferenciaCrono() {
                .sort(function (a, b) { return a.dn - b.dn; }) };
   });
   return { ok: true, trocas: trocas };
+}
+
+// ── HORAS DA LINHA POR CÓDIGO (v5.35) ──────────────────────────────────────
+// O % DO PADRÃO da cronoanálise (painel) é contado só nas horas em que o
+// VOLUME medido rodou sozinho — hora com outro produto ou com o outro volume
+// fica fora, como na conferência. O getProducaoModeloPeriodo junta os volumes
+// do mesmo produto (VOL 1/2 e 2/2 da mesma cor são o mesmo item), então esta
+// leitura devolve o log da janela hora a hora: data, hora, minutos do slot
+// (12:12 = 48) e as caixas de cada código. Hoje fica fora (a hora em andamento
+// ainda está sendo lançada). Lê só as linhas da janela (_valoresPorData).
+function getHorasCrono(p) {
+  p = p || {};
+  const deNum = p.de ? dataParaNum(p.de) : 0, ateNum = p.ate ? dataParaNum(p.ate) : 0;
+  if (!deNum || !ateNum || ateNum < deNum) return { ok: false, erro: 'período inválido (de/ate em dd/MM/yyyy)' };
+  const hoje = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROD_LOG);
+  if (!sh) return { ok: true, de: p.de, ate: p.ate, horas: [] };
+  const H = _cronoHorasDoLog(_valoresPorData(sh, 'DATA', 0, dataParaNum, deNum, ateNum),
+                             function (dn) { return dn >= deNum && dn <= ateNum && dn < hoje; });
+  const horas = Object.keys(H).map(function (k) {
+    const h = H[k];
+    return { data: h.data, dn: h.dn, hora: h.hora, min: _cronoMinSlot(h.hora), cods: h.cods };
+  }).sort(function (a, b) { return a.dn - b.dn || (a.hora < b.hora ? -1 : a.hora > b.hora ? 1 : 0); });
+  return { ok: true, de: p.de, ate: p.ate, horas: horas };
 }
 
 
