@@ -4806,7 +4806,7 @@ console.log('\n── estudo de UEP ──');
     ok('cartão: FERIADO com a descrição (não "SEM LOTE DATADO"); com lote, FERIADO · HORA EXTRA',
        [/>FERIADO</.test(CF), /FINADOS/.test(CF), /SEM LOTE DATADO/.test(CF), /FERIADO · HORA EXTRA/.test(CL), /FIM DE SEMANA/.test(CL)], [true, true, false, true, false]);
     global.plural = global.plural || ((n, a, b) => n + ' ' + (n === 1 ? a : b));
-    eval(pega('function _gpxCapDem(')); eval(pega('function _gpxCapDemHtml('));
+    eval(pega('function _gpxCapDem('));
     // v7.178.0 — POR SEMANA (PPCP, 27/10/2026: "está confundindo muito como não
     // cabe… contar só a semana… semana que vem são 4 dias devido ao feriado")
     eval(pega('function _gpxSegunda(')); eval(pega('function _gpxNSemanas('));
@@ -4825,6 +4825,15 @@ console.log('\n── estudo de UEP ──');
        [W[1].rot, W[1].de, W[1].ate, W[1].nUteis, _fmtHM(W[1].minPede), _fmtHM(W[1].minJorn), _fmtHM(W[1].falta), _fmtHM(W[1].sobra), W[1].feriados.map(f => f.data + ' ' + f.desc)],
        ['SEMANA QUE VEM', '03/11/2026', '06/11/2026', 4, '39h48', '35h08', '5h22', '0h42', ['02/11/2026 FINADOS']]);
     const BW = _gpxSemanasHtml(PW, W);
+    // v7.178.1 — o cabeçalho diz o SALDO da semana (pedem − jornada), não falta e
+    // sobra por dia lado a lado (PPCP: "pedem 37h52 para 35h08 faltam 3h27 sobra 0h43")
+    ok('semana que vem: pedem 39h48 para 35h08 → faltam 4h40 (o saldo), sem "sobram" ao lado',
+       [/pedem <b>39h48<\/b> para <b>35h08<\/b> · <span class="r">faltam <b>4h40<\/b><\/span>/.test(BW), /sobram/.test(BW.split('SEMANA QUE VEM')[1] || '')], [true, false]);
+    ok('semana com folga: sobram o saldo; empatada: cabe na jornada',
+       (() => { const F = [it('03/11/2026','1',100,U(400)), it('04/11/2026','2',100,U(500))];
+                const Pf = _gpxMontar(F, hj, 0, 0, 2530, 7, null, FER), Wf = _gpxSemanasMontar(Pf, hj), h = _gpxSemanasBlocos(Wf, 'gpx');
+                // esta semana sem lote: sobram as 26h21; a que vem: 15h00 para 35h08 → sobram 20h08
+                return [/sobram <b>26h21<\/b>/.test(h), /sobram <b>20h08<\/b>/.test(h), /class="r"/.test(h)]; })(), [true, true, false]);
     ok('o desenho: um bloco por semana com o total dela, o cartão na coluna do dia da semana; sem cartão HOJE e sem cartão do feriado',
        [/<b>ESTA SEMANA<\/b> · 28\/10 a 30\/10 · 3 dias úteis/.test(BW), /<b>SEMANA QUE VEM<\/b> · 03\/11 a 06\/11 · 4 dias úteis · 02\/11 feriado/.test(BW),
         /pedem <b>34h04<\/b> para <b>26h21<\/b> · <span class="r">faltam <b>7h43<\/b>/.test(BW), /style="grid-column:3" class="gpx-dia/.test(BW), /style="grid-column:2" class="gpx-dia/.test(BW),
@@ -4865,14 +4874,21 @@ console.log('\n── estudo de UEP ──');
     ok('o feriado com lote não entra (não tem jornada): pedido e capacidade só dos 5 dias úteis',
        (() => { const c = _gpxCapDem(FL, { n:19, res:{ media:2761 } }); return [_fmtHM(c.minPede), _fmtHM(c.minCap)]; })(), ['44h35', '47h56']);
     ok('sem histórico (ou sem média), sem linha — nunca uma capacidade inventada',
-       [_gpxCapDem(com, null), _gpxCapDem(com, { n:0, res:{ media:null } }), _gpxCapDem({ falha:'sem-uep' }, { n:19, res:{ media:2761 } }), _gpxCapDemHtml(null)], [null, null, null, '']);
-    const CH2 = _gpxCapDemHtml(CD);
-    ok('a linha diz a média, os dias, quanto cabe e quanto falta — em tinta neutra, sem selo',
-       [/2\.761<\/b> UEP\/dia · 19 dias fechados/.test(CH2), /cabem <b>47h56<\/b> para <b>57h00<\/b>/.test(CH2), /faltam <b>9h04<\/b>/.test(CH2), /class="r"|var\(--red\)|var\(--ok\)/.test(CH2)],
-       [true, true, true, false]);
+       [_gpxCapDem(com, null), _gpxCapDem(com, { n:0, res:{ media:null } }), _gpxCapDem({ falha:'sem-uep' }, { n:19, res:{ media:2761 } })], [null, null, null]);
+    // v7.178.1 — a média feita POR SEMANA (PPCP: "faça essas horas por semana,
+    // não precisa totalizar"), dentro do bloco de cada semana; a linha somada saiu
+    const PW2 = Object.assign({}, PW, { capDem: _gpxCapDem(PW, { n:19, res:{ media:2761 } }) }), W2 = _gpxSemanasMontar(PW2, hj);
+    const BM = _gpxSemanasBlocos(W2, 'gpx');
+    ok('cada semana diz o que caberia na média feita (2.761): esta 28h45 para 34h04 → faltam 5h19; a que vem 38h20 para 39h48 → faltam 1h28',
+       [/na média que a linha fez \(2\.761 UEP\/dia\): cabem <b>28h45<\/b> · faltam <b>5h19<\/b>/.test(BM), /cabem <b>38h20<\/b> · faltam <b>1h28<\/b>/.test(BM), (BM.match(/gpx-wk-m/g) || []).length],
+       [true, true, 2]);
+    ok('a média igual à meta não repete a linha; a diretoria não leva a linha; sem histórico, nada',
+       [(() => { const P3 = Object.assign({}, PW, { capDem: _gpxCapDem(PW, { n:19, res:{ media:2530 } }) }); return /-wk-m/.test(_gpxSemanasBlocos(_gpxSemanasMontar(P3, hj), 'gpx')); })(),
+        /-wk-m/.test(_gpxSemanasBlocos(W2, 'dir')), /-wk-m/.test(_gpxSemanasBlocos(W, 'gpx')), /na média que a linha fez[^<]*cabem <b>6/.test(_gpxSemanasHtml(PW2, W2))],
+       [false, false, false, false]);
     ok('o painel monta a referência pelo MESMO período do bloco 5, e o desenho do PRÓXIMOS DIAS a mostra',
        [/_gpxCapDem\(P, typeof UEP_HIST !== 'undefined' && UEP_HIST \? _uepAbaPeriodo\(UEP_HIST, _uepPerN\(\)\) : null\)/.test(pega('function _gpxDoPainel(')),
-        /_gpxCapDemHtml\(P\.capDem\)/.test(pega('function _gpxSemanasHtml('))], [true, true]);
+        /capDem: P\.capDem \?/.test(pega('function _gpxSemanasMontar('))], [true, true]);
     ok('a diretoria guarda e restaura os feriados junto com a programação',
        [/_dirGuarda\('fer', PROG_FERIADOS\)/.test(JS), /_dirLe\('fer'/.test(pega('function _dirRestaura('))], [true, true]); }
 }

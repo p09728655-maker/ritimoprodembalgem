@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.178.1 — 27/10/2026 · PRÓXIMOS DIAS: o saldo da semana e a média por semana
+
+- PPCP, com o print: *"pedem 37h52 para 35h08 faltam 3h27 sobra 0h43"* → *"que
+  rolo"*. O cabeçalho da semana somava a falta dos dias que passam (3h27) e a
+  folga dos que sobram (0h43) lado a lado, e nenhum dos dois fechava com o
+  *pedem × jornada* da mesma linha. Agora é o **saldo da semana** (pedem −
+  jornada): *"pedem 37h52 para 35h08 · faltam 2h44"*. O que falta em cada dia
+  continua no cartão dele.
+- *"Faça essas horas por semana, não precisa totalizar"*: a linha da média que
+  a linha fez saiu do rodapé (que somava as duas semanas) e foi para **dentro de
+  cada semana**, abaixo do total. Só aparece quando a média é diferente da meta
+  — com a meta em 2.761 = a média, ela repetiria o número de cima e não sai.
+- **Atenção:** o total da semana com dias de folga muda de número (era a soma
+  da falta dos dias; agora é o saldo). Os cartões não mudam.
+
 ## v7.178.0 — 27/10/2026 · PRÓXIMOS DIAS por semana (aba UEP, impressão e diretoria)
 
 - PPCP, com o print: *"está confundindo muito como não cabe… melhor tirar dia de

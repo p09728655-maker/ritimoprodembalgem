@@ -4613,6 +4613,12 @@ feito e dá ar de verdade ao que sobrou.
     coluna vazia, feriado no cabeçalho. `_gpxSemanasHtml(P, W)` = blocos + média
     feita + fórmula + sem UEP (aba e papel).
   - Classe do bloco é `gpx-wk` (⚠ `gpx-sem` já é a lista de SEM UEP).
+  - **v7.178.1**: o total da semana é o **SALDO** (`Math.round(minPede) −
+    minJorn`), nunca falta e folga por dia lado a lado (PPCP: *"pedem 37h52 para
+    35h08 faltam 3h27 sobra 0h43"* → *"que rolo"*). A média feita
+    (`_gpxCapDem`) vai POR SEMANA (`w.capDem`, linha `gpx-wk-m` abaixo do
+    cabeçalho) — só quando difere da meta e nunca na diretoria; o
+    `_gpxCapDemHtml` (linha somada das duas semanas) foi apagado.
   - Papel: `.gpx-dx + .gpx-dl` (Lotes) some e o espaçamento aperta — medido em
     PDF: 3 folhas, inclusive com 11 produtos no mix + hora extra (sem isso a
     nota do mix ia para a folha 3). Diretoria: `.dir-wk .dir-dl` some, horas a
