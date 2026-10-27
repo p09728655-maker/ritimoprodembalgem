@@ -1148,7 +1148,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .tvg-svg text{font-family:var(--font-d)}
 .tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px;fill:var(--txt)}
 .tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px;fill:var(--txt2)}
-.tvg-svg .tvg-t2{font-size:32px;fill:var(--txt2)}
+.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:34px;fill:var(--txt2)}
 .tvg-leg{font-size:calc(var(--tvu-k,1)*clamp(16px,min(1.7vw,3vh),34px))}
 .tvg-sw{display:inline-block;width:64px;height:0}
 .tvg-sw.f{border-top:11px solid var(--txt);border-radius:6px}
@@ -3472,7 +3472,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.172.1';
+const APP_VER   = '7.173.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -21655,23 +21655,50 @@ function _tvFHtml(m, selo){
   return s + '</div></div>' + _tvUepRodHtml(m);
 }
 // TELA G — o gráfico da corrida (desenho, SVG no DOM: os tokens resolvem).
-// Medido para a TV de 65" a 1920×1080 (1 px ≈ 0,75 mm): o SVG sai a ~1,05× do
-// viewBox, então 1 unidade ≈ 0,8 mm na parede. Traço e letra dimensionados para
-// isso — o FEITO a 12 (≈ 1 cm), os números do agora a 54/42, o eixo a 32.
-function _tvGSvg(m, selo){
-  // Proporção da área do gráfico na TV (≈1,2 em 1920×1080 e em 1366×768): com
-  // 1000×640 sobrava um terço da altura vazia em cima.
-  const W = 1000, H = 840, L = 124, R = 34, T = 60, B = 72, pw = W - L - R, ph = H - T - B;
+// Medido para a TV de 65" a 1920×1080 (1 px ≈ 0,75 mm): na TV cheia 1 unidade
+// do desenho = 1 px ≈ 0,75 mm na parede. Traço e letra dimensionados para isso
+// — o FEITO a 12 (≈ 1 cm), os números do agora a 54/42, o eixo a 34.
+// ESCALA (v7.173.0): o desenho tem o TAMANHO DA CAIXA (`dim`, px, medido pelo
+// _tvGEncaixa) e 1 unidade = _tvGEscala(altura) px. Com o viewBox fixo de
+// 1000×840 o SVG ficava limitado pela altura: no print de 27/10 (a janela do
+// app, com cabeçalho, abas, rodapé e barra do Windows) saía a 0,78×, com
+// 135 px vazios de cada lado e letra e traço 22% menores que os medidos.
+// Até TV_G_H_CHEIO de altura a escala não cai (a letra é a da TV cheia); numa
+// caixa menor encolhe junto, até TV_G_Z_MIN. Sem `dim` (1º desenho, escondida,
+// teste): 1000×840.
+const TV_G_H_CHEIO = 620, TV_G_Z_MIN = 0.55, TV_G_Z_MAX = 1.3;
+function _tvGEscala(h){
+  if(!(h > 0)) return 1;
+  return Math.max(TV_G_Z_MIN, Math.min(1, h / TV_G_H_CHEIO), Math.min(TV_G_Z_MAX, h / 840));
+}
+function _tvGSvg(m, selo, dim){
+  if(!(dim && dim.w > 0 && dim.h > 0)) return _tvGDesenho(m, selo, 1000, 840).s;
+  // Os DOIS números do agora sempre aparecem: se o par não acha lugar com a
+  // letra da escala, ela desce de 10 em 10% (até TV_G_Z_MIN). Medido no
+  // sorteio de 4.000 dias: na TV de 1366×768, 3% dos desenhos ficavam sem um.
+  let z = _tvGEscala(dim.h);
+  for(;;){
+    const d = _tvGDesenho(m, selo, Math.round(dim.w / z), Math.round(dim.h / z));
+    if(d.n === 2 || z <= TV_G_Z_MIN + 1e-9) return d.s;
+    z = Math.max(TV_G_Z_MIN, z * 0.9);
+  }
+}
+// O desenho em W×H unidades; devolve também quantos números do agora couberam.
+function _tvGDesenho(m, selo, W, H){
+  const L = 100, R = 34, T = 60, B = 72, pw = W - L - R, ph = H - T - B;
   const topo = Math.max(m.meta, m.feito, m.espFut.length ? m.espFut[m.espFut.length - 1].v : 0) * 1.1;
   const x = t => L + (t - m.ini) / Math.max(1, m.fim - m.ini) * pw;
   const y = v => T + ph - v / topo * ph;
   const pl = arr => arr.map(p => x(p[0]).toFixed(1) + ',' + y(p[1]).toFixed(1)).join(' ');
-  const passo = [100, 200, 250, 500, 1000, 2000].find(p => topo / p <= 6) || 5000;
+  // Grade de no máximo 4 passos (1.000 e 2.000 com a meta de 2.530): o número
+  // do agora e a META já estão escritos no gráfico; cinco linhas cinzas com
+  // número disputavam com eles e, a 15 m, o eixo não se lê de qualquer jeito.
+  const passo = [100, 200, 250, 500, 1000, 2000].find(p => topo / p <= 4) || 5000;
   let s = '<svg class="tvg-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMin meet" role="img" aria-label="UEP acumulada de hoje: '
     + fmtN(Math.round(m.feito)) + ' feitas contra ' + fmtN(Math.round(m.esp)) + ' esperadas">';
   m.gaps.forEach(g => {
     s += '<rect x="' + x(g.de).toFixed(1) + '" y="' + T + '" width="' + (x(g.ate) - x(g.de)).toFixed(1) + '" height="' + ph + '" fill="var(--surface)"/>'
-      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + 32) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
+      + '<text x="' + ((x(g.de) + x(g.ate)) / 2).toFixed(1) + '" y="' + (T + ph - 16) + '" text-anchor="middle" class="tvg-t2">ALMOÇO</text>';
   });
   for(let v = passo; v < topo; v += passo){
     s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)" stroke-width="2"/>'
@@ -21681,7 +21708,9 @@ function _tvGSvg(m, selo){
   for(let h = Math.ceil(m.ini / 60) * 60; h <= m.fim; h += 120){
     s += '<text x="' + x(h).toFixed(1) + '" y="' + (H - 20) + '" text-anchor="middle" class="tvg-t2">' + fromMin(h) + '</text>';
   }
-  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="3" stroke-dasharray="6 10"/>'
+  // A META é linha CHEIA: tracejado é só o ESPERADO. As duas eram cinza
+  // tracejadas, e de longe "a linha que eu devia seguir" e "o alvo" se confundiam.
+  s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(m.meta).toFixed(1) + '" y2="' + y(m.meta).toFixed(1) + '" stroke="var(--txt3)" stroke-width="3"/>'
     + '<text x="' + (L + 8) + '" y="' + (y(m.meta) - 14).toFixed(1) + '" class="tvg-t1">META DO DIA ' + fmtN(m.meta) + '</text>';
   // A DISTÂNCIA entre o feito e o esperado, desenhada: a faixa entre as duas
   // curvas até agora. De longe é ela que mostra quem está em cima — a linha
@@ -21691,14 +21720,23 @@ function _tvGSvg(m, selo){
     const ida = m.pts.map(p => [p.t, p.f]), volta = m.pts.slice().reverse().map(p => [p.t, p.e]);
     s += '<polygon points="' + pl(ida.concat(volta)) + '" fill="' + (selo ? 'var(--' + sc(m.ef) + ')' : 'var(--txt)') + '" opacity=".2"/>';
   }
-  // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada
+  // esperado: o que já passou + o que falta da jornada, a mesma linha tracejada.
+  // Daqui para a frente ele e o ATÉ A META andam juntos (os dois no ritmo da
+  // meta, separados pela distância de agora): com o dia no tempo os dois ficam
+  // colados e o tracejado por baixo dos pontos virava uma terceira textura (o
+  // print de 27/10). Colados, fica só o ATÉ A META.
+  const colados = !!(m.proj && m.proj.length > 1) && Math.abs(y(m.feito) - y(m.esp)) < 12;
+  const xChega = m.chega != null ? Math.min(x(m.chega), W - 70) : null;
+  const espLinha = m.pts.map(p => [p.t, p.e]).concat(colados ? [] : m.espFut.slice(1).map(p => [p.t, p.v]));
   s += '<polyline fill="none" stroke="var(--txt2)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="'
-    + pl(m.pts.map(p => [p.t, p.e]).concat(m.espFut.slice(1).map(p => [p.t, p.v]))) + '"/>';
+    + pl(espLinha) + '"/>';
   if(m.proj && m.proj.length > 1){
     s += '<polyline fill="none" stroke="var(--txt)" stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round" points="' + pl(m.proj.map(p => [p.t, p.v])) + '"/>';
     if(m.chega != null){
+      // o horário não passa da borda direita: a meta saindo às 16:5x punha
+      // metade do número fora do desenho (antes a sobra lateral escondia isso)
       s += '<circle cx="' + x(m.chega).toFixed(1) + '" cy="' + y(m.meta).toFixed(1) + '" r="12" fill="var(--bg)" stroke="var(--txt)" stroke-width="4"/>'
-        + '<text x="' + x(m.chega).toFixed(1) + '" y="' + (y(m.meta) - 22).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
+        + '<text x="' + xChega.toFixed(1) + '" y="' + (y(m.meta) - 22).toFixed(1) + '" text-anchor="middle" class="tvg-t0">' + fromMin(Math.ceil(m.chega)) + '</text>';
     }
   }
   const fp = pl(m.pts.map(p => [p.t, p.f]));
@@ -21714,19 +21752,22 @@ function _tvGSvg(m, selo){
   // que NÃO encosta nas curvas, no texto da META, no horário da meta nem no
   // outro rótulo — regra fixa por hora do dia errava: às 15:02 o ESPERADO caía
   // em cima da curva do FEITO, e de manhã os dois em cima das linhas que sobem.
-  // A linha tracejada da META pode passar atrás (a tarja cobre). Longe do
+  // A linha da META pode passar atrás (a tarja cobre). Longe do
   // ponto, uma guia fina liga o número a ele.
   const fAlto = m.feito >= m.esp;
   const rF = { t:'FEITO ' + fmtN(Math.round(m.feito)), py:yf, c:'tvg-t0', f:54 };
   const rE = { t:'ESPERADO ' + fmtN(Math.round(m.esp)), py:ye, c:'tvg-t1', f:42 };
   const hi = fAlto ? rF : rE, lo = fAlto ? rE : rF;
   const fundo = T + ph - 10;   // abaixo disto é o eixo e as horas
-  const linhas = [m.pts.map(p => [x(p.t), y(p.f)]),
-                  m.pts.map(p => [x(p.t), y(p.e)]).concat(m.espFut.slice(1).map(p => [x(p.t), y(p.v)]))];
+  const linhas = [m.pts.map(p => [x(p.t), y(p.f)]), espLinha.map(p => [x(p[0]), y(p[1])])];
   if(m.proj && m.proj.length > 1) linhas.push(m.proj.map(p => [x(p.t), y(p.v)]));
   const larg = r => r.t.length * r.f * .42 + 18;
   const ocupado = [[L, y(m.meta) - 56, L + 8 + larg({ t:'META DO DIA ' + fmtN(m.meta), f:42 }), y(m.meta) - 6]];
-  if(m.proj && m.chega != null) ocupado.push([x(m.chega) - 80, y(m.meta) - 76, x(m.chega) + 80, y(m.meta) + 16]);
+  if(m.proj && m.chega != null) ocupado.push([Math.min(x(m.chega) - 20, xChega - 80), y(m.meta) - 76, Math.max(x(m.chega) + 20, xChega + 80), y(m.meta) + 16]);
+  // o ALMOÇO mora no PÉ da faixa (v7.173.0): no alto, com o gráfico mais
+  // baixo da janela do app, ele disputava o lugar com o FEITO da tarde
+  m.gaps.forEach(g => { const cx = (x(g.de) + x(g.ate)) / 2, w = larg({ t:'ALMOÇO', f:34 }) / 2;
+    ocupado.push([cx - w, T + ph - 16 - 34 * .82, cx + w, T + ph - 16 + 34 * .16]); });
   const caixa = (r, xx, yy, ancora) => {
     const w = larg(r), x0 = ancora === 'end' ? xx - w + 9 : xx - 9;
     return [x0, yy - r.f * .82, x0 + w, yy + r.f * .16];
@@ -21804,7 +21845,7 @@ function _tvGSvg(m, selo){
       + '<text x="' + p.xx.toFixed(1) + '" y="' + p.yy.toFixed(1) + '"' + (p.an ? ' text-anchor="' + p.an + '"' : '')
       + ' class="' + p.r.c + '">' + p.r.t + '</text>';
   });
-  return s + '</svg>';
+  return { s:s + '</svg>', n:[pHi, pLo].filter(Boolean).length };
 }
 // TELA G — desenho (sem conta).
 function _tvGHtml(m, selo){
@@ -21887,6 +21928,19 @@ function _tvUepCabe(slide, forcar){
     corpo.style.setProperty('--tvu-k', k.toFixed(2));
   }
   corpo.dataset.k = k.toFixed(2);
+  _tvGEncaixa(corpo);
+}
+// O gráfico da G no TAMANHO DA CAIXA dele, depois do encaixe da escala (a
+// --tvu-k muda a legenda e, com ela, a altura que sobra para o gráfico). O SVG
+// é flex:1 — a caixa não depende do desenho, então redesenhar não mexe no
+// layout. O modelo vem do _sincSlideUep (corpo._tvgArgs); sem ele (Tela F, ou
+// nada desenhado) não faz nada.
+function _tvGEncaixa(corpo){
+  const svg = corpo && corpo.querySelector('svg.tvg-svg'), a = corpo && corpo._tvgArgs;
+  if(!svg || !a) return;
+  const r = svg.getBoundingClientRect();
+  if(r.width < 200 || r.height < 120) return;
+  svg.outerHTML = _tvGSvg(a[0], a[1], { w:r.width, h:r.height });
 }
 // O modelo das duas telas, refeito no máximo a cada TV_UEP_TTL. O _ordemTelas
 // (chamado a cada segundo pela reconciliação do ciclo) lê daqui sem recalcular.
@@ -22127,6 +22181,7 @@ const _cicloTV = (function() {
     _uSig[t] = sig;
     const corpo = document.getElementById('tv' + t + '-corpo');
     if (corpo && m) {
+      corpo._tvgArgs = t === 'g' ? [m, selo] : null;   // o _tvGEncaixa redesenha o gráfico no tamanho da caixa
       corpo.innerHTML = t === 'f' ? _tvFHtml(m, selo) : _tvGHtml(m, selo);
       _tvUepCabe(document.getElementById('tv-slide-' + t), true);   // escondida: o _mostrarTela mede
     }

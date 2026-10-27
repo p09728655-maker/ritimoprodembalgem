@@ -38,8 +38,10 @@ via Google Apps Script (JSONP).
 - `tela-uep.test.js` — Telas F e G da TV (UEP do dia): a conta do
   `_tvUepMontar` no retrato real de 16/10 15:02, os desfechos da corrida, o
   peso normal, o desenho sem veredito com o selo desligado e a config
-  desligada por padrão (painel e `.gs`), e a marca de troca de escala da UEP
-  (`UEP_ESCALAS`): `node tela-uep.test.js`.
+  desligada por padrão (painel e `.gs`), a marca de troca de escala da UEP
+  (`UEP_ESCALAS`) e o gráfico da G no tamanho real da caixa (v7.173.0: os
+  rótulos nas quatro caixas medidas, as linhas e o encaixe):
+  `node tela-uep.test.js`.
 - `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
   ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
@@ -645,9 +647,54 @@ via Google Apps Script (JSONP).
     os dois números aparecem, dentro do viewBox, sem encostar em curva nem um no
     outro. Desligar a checagem de colisão derruba 13 casos.
   - Medido no Chromium (cenários acima): TV 1920×1080 e 1366×768 e a aba TV
-    do gerencial a 1920×947 — nada corta (`_tvUepCorta` falso). Na aba do
-    gerencial o SVG fica limitado pela ALTURA (viewBox 1000×840) e sobra
-    largura dos lados: na TV cheia, não.
+    do gerencial a 1920×947 — nada corta (`_tvUepCorta` falso). ~~Na aba do
+    gerencial o SVG fica limitado pela ALTURA e sobra largura dos lados~~ —
+    resolvido na v7.173.0 (abaixo).
+- **O GRÁFICO DA G NO TAMANHO DA CAIXA (v7.173.0, PPCP 27/10/2026, com o print
+  das 14:49: *"na tv o gráfico está muito ruim de ver"*).** O print era a
+  JANELA do app (gerencial, aba TV OPERACIONAL, com cabeçalho, abas, rodapé e
+  a barra do Windows), não a TV cheia. Medido no Chromium nessa geometria
+  (1920×1015): o viewBox fixo de 1000×840 era limitado pela altura e saía a
+  **0,78×** — 135 px vazios de cada lado, área de plotagem 656×551 px, eixo a
+  25 px, FEITO a 42 px e traço a 9 px. Tudo o que foi medido para a 65" na
+  v7.147.0 saía 22% menor.
+  - **`_tvGSvg(m, selo, dim)`**: com a caixa (`dim`, px), o desenho tem a
+    proporção dela e 1 unidade = `_tvGEscala(altura)` px — **1 até
+    `TV_G_H_CHEIO`=620 px** de altura (a letra da TV cheia vale também na
+    janela), abaixo encolhe junto até `TV_G_Z_MIN`=0,55, acima de 840 cresce
+    até `TV_G_Z_MAX`=1,3. Sem `dim` (1º desenho, escondida, teste): 1000×840.
+    O corpo do desenho é o `_tvGDesenho(m, selo, W, H)`, que devolve também
+    quantos números do agora couberam.
+  - **`_tvGEncaixa(corpo)`** roda no fim do `_tvUepCabe` (depois do `--tvu-k`,
+    que muda a altura da legenda) e redesenha o SVG com o tamanho medido. O
+    SVG é `flex:1`: a caixa não depende do desenho, redesenhar não mexe no
+    layout. O modelo vem do `_sincSlideUep` em `corpo._tvgArgs` (só na G).
+  - Na janela de 1920: plotagem **892×522 px** (era 656×551), eixo 34 px, FEITO
+    54 px, traço 12 px — os números da TV cheia. TV cheia 1920×1080: igual a
+    antes, só mais larga (892×710). TV 1366×768: ×0,93 (era ×0,68).
+  - **Os DOIS números do agora continuam sempre**: com a letra maior num campo
+    mais estreito, o sorteio de 4.000 dias deixava 3% dos desenhos da TV de
+    1366×768 sem um deles. Quando o par não cabe, a letra desce de 10 em 10%
+    até `TV_G_Z_MIN`. Sorteio de novo (3.983 dias × 5 caixas × com/sem selo =
+    39.830 desenhos): 0 sem número, 0 fora, 0 encostado em curva, no outro
+    rótulo ou no ALMOÇO, 0 NaN; ~0,1 ms por desenho.
+  - **Só o ESPERADO é tracejado**: a META virou linha CHEIA (eram duas linhas
+    cinza tracejadas, de sentidos diferentes). E com o dia no tempo (o print:
+    1.906 = 1.906) o esperado daqui para a frente e o ATÉ A META andam colados
+    — o tracejado por baixo dos pontos virava uma terceira textura: colados
+    (menos de 12 unidades), o esperado PARA no agora e fica só o ATÉ A META.
+  - **Eixo**: grade de no máximo 4 passos (1.000 e 2.000 com a meta de 2.530 —
+    eram 5 linhas com número), em Barlow Condensed 600 a 34 (era IBM Plex Mono
+    400 a 32, fino e cinza). Margem do eixo 124 → 100 (o número condensado é
+    mais estreito). O **ALMOÇO mora no PÉ da faixa** e é lugar ocupado para os
+    rótulos: no alto, com o gráfico mais baixo, o FEITO da tarde caía nele.
+  - O horário da meta (`16:59`) não passa da borda direita (`xChega`): antes a
+    sobra lateral escondia o corte.
+  - ⚠ **Se o PC da TV mostra a janela do app**, a TV perde ~18% da altura para
+    cabeçalho, abas, rodapé e barra do Windows. ⛶ PAINEL CHEIO (ou o perfil
+    OPERADOR, que já abre nele) devolve ao gráfico a caixa de 842 px.
+  - Nada de conta mudou: `_tvUepMontar`, cartões, números e veredito são os
+    mesmos.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
 
