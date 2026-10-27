@@ -1972,6 +1972,21 @@ via Google Apps Script (JSONP).
     dispara uma segunda leitura — ela só se enfileiraria no Apps Script,
     atrasando a primeira.
 
+- **MÉTRICAS EM UEP no comparativo** (v7.176.0, PPCP 27/10/2026: *"acrescentar
+  a métrica em UEP"*). `uepH` (UEP ÷ horas, taxa) e `uep` (caixas × UEP/cx,
+  aditiva) no `#ph-metrica`. O acumulador (`_phAcc`/`_phAdd`) leva `uep`,
+  `cxUep` e `hUep` — só item COM UEP no `PH_UEP_PROD` (cadastro de hoje, a mesma
+  da coluna UEP/CX); `_phTem` decide se a célula tem valor (nas de UEP,
+  `cxUep>0`) e vale na média aparada e no `nd`. `_phSoComUep` (tela e PDF):
+  linha e dia sem UEP saem, as caixas viram *"N cx sem UEP, fora"* — nunca 0.
+  - Régua do UEP/H: `_phRitmoMetaUep()` = META UEP ÷ `UEP_MIN_DIA` × 60 (~288),
+    a do card UEP DO DIA; `_phCorRitmo(…, meta)` só troca o texto da nota.
+    Teto da esteira e simulador continuam só no cx/h.
+  - ⚠ O `PH_UEP_PROD` é de quem leu por último (estudo, bloco 7): o `_phCache`
+    guarda o `uepProd` do período e o devolve no acerto do cache.
+  - Sem o mapa (backend antes da v5.14) a tela e o PDF dizem que a leitura não
+    trouxe a UEP. Mesma limitação do cx/h: hora dividida conta para os dois.
+
 ## Cascata + cobertura + ganho demonstrado (relatórios de produção)
 - **A SWOT saiu dos relatórios de produção** (pedido do PPCP, 18/08/2026 — "tira
   swot e faz cascata"); a de PARADAS continua, que lá é nativa. No lugar, três

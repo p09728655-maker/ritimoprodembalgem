@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.176.0 — 27/10/2026 · PRODUÇÃO/HORA: métricas em UEP no comparativo
+
+- PPCP, com o comparativo na tela: *"acrescentar a métrica em UEP"*. O
+  seletor MÉTRICA ganhou duas opções:
+  - **UEP/H** — o ritmo de cada produto em UEP por hora. Em cx/h, caixa grande
+    e caixa pequena não se comparam; em UEP/h sim, e a régua da cor e do ▼ é o
+    **ritmo da meta** (META UEP ÷ 527 min ≈ 288 UEP/h — a mesma do card UEP DO
+    DIA), não o ideal da linha em cx/h. MÉD.PERÍODO aparada e MELHOR DIA como
+    no cx/h.
+  - **UEP** — o esforço do período (caixas × UEP/cx), somável como CAIXAS:
+    TOTAL e MÉD/DIA por produto, e o TOTAL/DIA da linha.
+- A UEP/cx é a do **cadastro de hoje** (a mesma da coluna UEP/CX ao lado).
+  Produto sem UEP no cadastro **não vira 0**: nas métricas de UEP a linha e o
+  dia que só têm ele saem da tabela, e as caixas aparecem à parte (*"N cx sem
+  UEP, fora"*). No UEP/H as horas dele também ficam fora.
+- Tela e relatório do período (PDF) leem a mesma conta.
+- **Atenção:** nada muda nas métricas que já existiam. O UEP/H herda a
+  limitação do cx/h: a hora em que o produto rodou conta inteira, e a hora
+  dividida com outro produto conta para os dois (o bloco 7 da aba ⚖ UEP é que
+  reparte a hora). Por isso quase tudo sai abaixo dos 288.
+
 ## v7.175.0 — 27/10/2026 · PROGRAMAÇÃO: colunas alinhadas entre os dias
 
 - Print do PPCP: *"essa tela está toda desalinhada"*. Cada dia da aba

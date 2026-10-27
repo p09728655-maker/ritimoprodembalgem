@@ -441,10 +441,13 @@ console.log('\n── comparativo por modelo: média aparada e teto da esteira �
 // um pico de rodada dedicada ou um apontamento capenga não podem definir o
 // padrão do modelo. Números reais que motivaram a regra (18/08/2026).
 eval(pega('function _phAcc('));
+eval(pega('function _phEhUep('));
+eval(pega('function _phTem('));
 eval(pega('function _phVal('));
 eval(pega('function _phAdd('));
 eval(pega('function _phMediaAparada('));
 eval(pega('function _phTeto('));
+if (typeof _uepChave === 'undefined') eval(pega('function _uepChave('));
 const _dia = (cx, h, teto) => { const a = _phAcc(); _phAdd(a, { caixas: cx, horas: h, tetoCxH: teto || 0 }); return a; };
 
 // SAPATEIRA VIVARE: 59, 122, 122 cx/h — o dia de 59 punia o modelo.
@@ -468,6 +471,43 @@ ok('méd/dia aditiva aparada', ap.val, 250);
 // Dia sem produção (célula vazia) não conta como "pior dia".
 ap = _phMediaAparada([null, _dia(100,1), undefined, _dia(300,1), _dia(200,1)], 'mediaH');
 ok('célula vazia não entra na poda', Math.round(ap.val), 200);
+// v7.176.0 — MÉTRICA EM UEP (PPCP, 27/10/2026: "acrescentar a métrica em uep").
+// UEP = caixas × UEP/cx do cadastro (PH_UEP_PROD); UEP/H = UEP ÷ as horas dos
+// itens COM UEP. Produto sem UEP fica fora — nunca vira 0.
+{ const ant = typeof PH_UEP_PROD === 'undefined' ? undefined : PH_UEP_PROD;
+  global.PH_UEP_PROD = { '501149|MESA CABECEIRA MADERO': 1, '501077|BUFFET FLIP 1.8': 2.17 };
+  const IT = (modelo, nome, cx, h) => ({ modelo, nome, caixas: cx, horas: h });
+  const dU = itens => { const a = _phAcc(); itens.forEach(i => _phAdd(a, i)); return a; };
+  const a1 = dU([IT('501149','MESA CABECEIRA MADERO',300,1), IT('501077','BUFFET FLIP 1.8',100,1), IT('999999','SEM UEP',50,1)]);
+  ok('UEP da célula = Σ caixas × UEP/cx; o produto sem UEP fica fora (caixas e horas)',
+     [Math.round(_phVal(a1,'uep')), a1.cxUep, a1.hUep, Math.round(_phVal(a1,'uepH')), Math.round(_phVal(a1,'mediaH'))], [517, 400, 2, 259, 150]);
+  const so = dU([IT('999999','SEM UEP',50,1)]);
+  ok('célula só com produto sem UEP: sem valor nas métricas de UEP (·), com valor em caixas',
+     [_phTem(so,'uep'), _phTem(so,'uepH'), _phTem(so,'caixas'), _phTem(null,'uep')], [false, false, true, false]);
+  ok('acc somado em acc carrega a UEP (a média aparada junta os dias assim)',
+     (() => { const t = _phAcc(); _phAdd(t, a1); _phAdd(t, a1); return [Math.round(t.uep), t.cxUep, t.hUep]; })(), [1034, 800, 4]);
+  const D = (cx, h) => dU([IT('501149','MESA CABECEIRA MADERO',cx,h)]);
+  ap = _phMediaAparada([D(100,1), D(300,1), D(200,1), so], 'uepH');
+  ok('UEP/H aparada é ponderada e o dia sem UEP não entra (nem como pior dia)', [Math.round(ap.val), ap.aparada], [200, true]);
+  ap = _phMediaAparada([D(100,1), D(300,1), D(200,1), D(900,1), so], 'uep');
+  ok('UEP aditiva: méd/dia aparada sobre os dias com UEP', ap.val, 250);
+  global.PH_UEP_PROD = null;
+  ok('sem o mapa do backend: nenhuma UEP (e a métrica de caixas não muda)', [dU([IT('501149','MESA CABECEIRA MADERO',300,1)]).cxUep, Math.round(_phVal(dU([IT('501149','MESA CABECEIRA MADERO',300,1)]),'mediaH'))], [0, 300]);
+  eval(pega('function _phSoComUep('));
+  const L = [{ key:'a', acc:{ cxUep:300 } }, { key:'b', acc:{ cxUep:0, caixas:80 } }];
+  const dA = { '13/10/2026': { caixas:300, cxUep:300 }, '15/10/2026': { caixas:80, cxUep:0 } };
+  const SC = _phSoComUep(L, ['13/10/2026','15/10/2026'], dA, { caixas:380, cxUep:300 }, 'uepH');
+  ok('UEP: linha e dia sem UEP saem da tabela, as caixas deles são contadas à parte; nas outras métricas nada muda',
+     [SC.linhas.map(l => l.key), SC.datasV, SC.cxSemUep, _phSoComUep(L, ['13/10/2026','15/10/2026'], dA, { caixas:380, cxUep:300 }, 'caixas').linhas.length],
+     [['a'], ['13/10/2026'], 80, 2]);
+  ok('o seletor tem UEP/H e UEP; tela e PDF passam pelo _phSoComUep e avisam quando a leitura não trouxe a UEP',
+     [/<option value="uepH"[^>]*>UEP\/H<\/option>/.test(src), /<option value="uep"[^>]*>UEP<\/option>/.test(src),
+      (JS.match(/_phSoComUep\(linhasT, datas, dayAcc, grandAcc, metric\)/g) || []).length,
+      /_phEhUep\(metric\) && !PH_UEP_PROD/.test(pega('async function renderModeloPeriodo(')), /_phEhUep\(metric\) && !PH_UEP_PROD/.test(pega('async function gerarRelatorioProducaoHora('))],
+     [true, true, 2, true, true]);
+  ok('UEP/H julgado contra o ritmo da META (META UEP ÷ 527 min), não contra o ideal da linha em cx/h',
+     [/const alvoM=metric==='uepH' \? _phRitmoMetaUep\(\) : alvoRit;/.test(JS), /_phCorRitmo\(v1,v2,l\.nd,alvoM,metric==='uepH'\)/.test(JS)], [true, true]);
+  global.PH_UEP_PROD = ant; }
 
 // O FILTRO MÉDIA (pedido do PPCP, 24/08/2026: "deixar um filtro para eu
 // manipular deixar o maior e o menor"): 'completa' desliga a poda — nenhum
