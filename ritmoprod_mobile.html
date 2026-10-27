@@ -958,7 +958,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.37.0';
+const APP_VER   = '1.38.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1053,10 +1053,19 @@ function sl(ef){ return ef>=96?'META':ef>=90?'ATENÇÃO':'ABAIXO'; }
 // A tolerância cobre exatamente o "fechou agora e ainda não lancei"; hora mais
 // antiga continua bloqueada — corrigir o passado é na planilha, não no app.
 const LANC_TOLERANCIA_MIN = 15;
+// MADRUGADA (v1.38.0, PPCP 27/10/2026: "preciso dar entrada quando o operador
+// do app não entra às 5:00"). A linha começa às 05:00 em hora extra e o
+// operador do app só chega às 07:00: as horas 05:00 e 06:00 já fecharam e não
+// aceitavam mais nada. Hora que TERMINA até o começo da jornada normal continua
+// aceitando o resto do dia — pelo app, com produto (baixa o lote, entra na UEP).
+// Só aparece com a C3 em 5 (botão COMEÇOU ÀS 05:00?). 07:00 é o
+// HE_JORNADA_INI_MIN do .gs — mudou a jornada, mudar os dois.
+const LANC_MADRUGADA_FIM = 7*60;
 function slotLancavel(nm, ini, fim){
   const ativo      = nm>=ini && nm<fim;                          // hora corrente
   const tolerancia = !ativo && nm>=fim && (nm-fim)<LANC_TOLERANCIA_MIN;
-  return { ativo, tolerancia, lancavel: ativo||tolerancia };
+  const madrugada  = !ativo && !tolerancia && nm>=fim && fim<=LANC_MADRUGADA_FIM;
+  return { ativo, tolerancia, madrugada, lancavel: ativo||tolerancia||madrugada };
 }
 
 // ════════════════════════════════════════════════
@@ -1556,7 +1565,9 @@ function processarBipe(raw){
     // Bipe com o seletor aberto para TROCAR PRODUTO = o produto certo do
     // lançamento antigo: nada de abrir a hora atual nem trocar o produto do turno.
     const trocando = !!_corrTroca;
-    if(_confirmaCb && _confirmaTag==='cor') _confirmaResolve(false);
+    // Bipe também responde as perguntas da MADRUGADA: na do produto é TROCAR
+    // PRODUTO; na da volta é MANTER (o bipe já escolheu o produto de agora).
+    if(_confirmaCb && (_confirmaTag==='cor' || _confirmaTag==='mad' || _confirmaTag==='mad2')) _confirmaResolve(false);
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
     bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
@@ -2517,7 +2528,7 @@ function renderLancamentos(){
       const c=sc(efSlot);
       cls=c; badgeClass='badge-'+c; badgeText=fmtN(prod)+' CX';
       nome = fmtN(prod)+' CX';
-    } else if(lc.tolerancia){
+    } else if(lc.tolerancia || lc.madrugada){
       // Fechou há pouco e ninguém lançou: chama para lançar em vez de dar a
       // hora por perdida. Sem destaque de linha ('andamento' é só da corrente,
       // duas linhas acesas confundiriam qual é a hora de agora).
@@ -2534,7 +2545,8 @@ function renderLancamentos(){
       ? (corrigivel ? `onclick="abrirCorrecao('${slot.inicio}','${slot.label}')"` : '')
       : `onclick="abrirLanc('${slot.inicio}','${slot.fim||''}','${slot.label}',${slot.metaHora||metaH},${temValor?prod:'null'})"`;
     const lotesTxt = (slot.lotes&&slot.lotes.length) ? fmtLotes(slot.lotes) : '';
-    const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}` : '';
+    const tolTxt = lc.tolerancia ? ` · aceita lançamento até ${fromMin(fim+LANC_TOLERANCIA_MIN)}`
+                 : lc.madrugada  ? ' · hora extra · aceita lançamento hoje' : '';
     return `<div class="slot-item ${cls} ${disabled}" ${onclick}>
       <div class="slot-hora">${slot.label}</div>
       <div class="slot-info">
@@ -2643,9 +2655,12 @@ async function toggleInicioTurno(){
 // ════════════════════════════════════════════════
 function abrirLanc(inicio, fim, label, meta, prodAtual){
   const acumAtual = (prodAtual!==null && prodAtual!==undefined) ? Number(prodAtual) : 0;
-  _slotAtivo = {inicio, fim, label, meta, prodAtual: acumAtual};
+  // Hora da madrugada já fechada: o produto do app é o de AGORA — o salvarLanc
+  // confere antes, e o prodAntes diz para onde voltar depois.
+  const mad = slotLancavel(nowMin(), toMin(inicio), fim ? toMin(fim) : toMin(inicio)+60).madrugada;
+  _slotAtivo = {inicio, fim, label, meta, prodAtual: acumAtual, mad, prodAntes: PROD_ATUAL};
   document.getElementById('ml-hora').textContent = label;
-  document.getElementById('ml-nome').textContent = 'LANÇAR PRODUÇÃO';
+  document.getElementById('ml-nome').textContent = mad ? 'LANÇAR · HORA EXTRA DA MADRUGADA' : 'LANÇAR PRODUÇÃO';
   document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
   document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
   // Lotes já lançados nesta hora (busca em DADOS pelo horário de início)
@@ -2727,6 +2742,30 @@ function _nomeProdLanc(cod){
   if(!cod) return '';
   const p = PRODUTOS.find(x=>x.codigo===cod);
   return p ? nomeComCor(p.desc, corDeProduto(p)) : String(cod);
+}
+// ── MADRUGADA (v1.38.0) ── textos da confirmação e da volta ao produto de agora.
+function lancMadrugadaTxt(label, cx, nomeProd){
+  if(!nomeProd) return `Lançar ${fmtN(cx)} cx na hora ${label} (hora extra) SEM PRODUTO?`
+    + ' Sem produto, as caixas não baixam o lote nem entram na UEP. Se sabe o produto, use TROCAR PRODUTO.';
+  return `Lançar ${fmtN(cx)} cx na hora ${label} (hora extra) como ${nomeProd}?`
+    + ' Confira: tem de ser o produto que rodou NESSA hora, não o que está rodando agora.';
+}
+// Lançar com produto troca o produto atual do turno (registrarProducaoProduto
+// no .gs). Depois da madrugada, oferece voltar ao que estava antes.
+async function _lancMadrugadaVolta(prodAntes){
+  const agora = _nomeProdLanc(PROD_ATUAL);
+  if(prodAntes){
+    const voltar = await confirmarModal({titulo:'PRODUTO DE AGORA',
+      msg:`O produto do app ficou ${agora} (o da madrugada). Antes era ${_nomeProdLanc(prodAntes)}.`
+        + ' Se é ele que está rodando agora, volte; senão, bipe o que está rodando.',
+      ok:'VOLTAR AO ANTERIOR', cancelar:'MANTER', tag:'mad2'});
+    if(voltar && PROD_ATUAL!==prodAntes) await selecionarProduto(prodAntes);
+    return;
+  }
+  const escolher = await confirmarModal({titulo:'PRODUTO DE AGORA',
+    msg:`O produto do app ficou ${agora} (o da madrugada). Bipe ou escolha o que está rodando agora.`,
+    ok:'ESCOLHER PRODUTO', cancelar:'DEPOIS', tag:'mad2'});
+  if(escolher) abrirModalProduto();
 }
 
 // ════════════════════════════════════════════════
@@ -3034,6 +3073,15 @@ async function salvarLanc(){
   // vê o lote que o PPCP datou ou encerrou depois, e acusaria à toa.
   const codLanc = PROD_ATUAL, slotLanc = _slotAtivo;
   const kLanc = String(codLanc||'').replace(/\D/g,'');
+  // MADRUGADA (v1.38.0): lançada às 07:00 ou depois, a hora das 05:00 levaria
+  // o produto que está rodando AGORA. Pergunta antes; TROCAR PRODUTO abre o
+  // seletor por cima do lançamento (como o TROCAR A COR) e a quantidade fica.
+  if(slotLanc.mad){
+    const seguir = await confirmarModal({titulo:'PRODUTO DA MADRUGADA', msg:lancMadrugadaTxt(slotLanc.label, add, _nomeProdLanc(codLanc)),
+                                         ok:'LANÇAR', cancelar:'TROCAR PRODUTO', seguro:'cancelar', tag:'mad'});
+    if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta
+    if(!seguir){ abrirModalProduto(); return; }
+  }
   // Lançamento REPETIDO? (v1.34.0) Em 16/10 um 60 de LIVREIRO ENCANTO entrou
   // duas vezes na hora 10:00: o lancId protege a retentativa DENTRO do mesmo
   // modal, e o operador fechou e lançou de novo — modal novo, id novo, o
@@ -3116,6 +3164,8 @@ async function salvarLanc(){
       }
       fecharModalLanc();
       await lerSheets();
+      // O produto do turno (app e backend) ficou o da madrugada.
+      if(slotLanc.mad && codLanc && codLanc!==slotLanc.prodAntes) await _lancMadrugadaVolta(slotLanc.prodAntes);
       return;
     }catch(e){
       ultimoErro = e;
