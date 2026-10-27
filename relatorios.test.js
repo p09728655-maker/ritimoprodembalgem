@@ -4131,6 +4131,16 @@ console.log('\n── estudo de UEP ──');
        [/uepCelula\(uepH\[sl\.inicio\]/.test(JS), /uepCelula\(uepH\[r\.horario\]/.test(MOB), /porHoraModelo: json\.porHoraModelo/.test(MOB)], [true, true, true]);
     ok('a PROGRAMAÇÃO mostra a UEP da linha e do dia contra a meta',
        /UEP \(\$\{fmtP\(pctUep\)\} da meta/.test(pega('function renderProgramacaoDetalhada(')), true);
+    // v7.175.0 (PPCP, 27/10/2026, com o print: "essa tela está toda desalinhada"):
+    // cada dia é uma tabela, e com a largura automática cada uma alinhava as
+    // colunas de um jeito. Uma régua só (PROG2_COLS), largura fixa, números à direita.
+    { const RPD = pega('function renderProgramacaoDetalhada(');
+      const C2 = eval(JS.match(/const PROG2_COLS = (\[[\s\S]*?\]);/)[1]);
+      ok('PROGRAMAÇÃO por dia: todas as tabelas com a MESMA régua de colunas (largura fixa) e números à direita',
+         [/<table class="prog2-tab">/.test(RPD), /\$\{cabTab\}/.test(RPD), /<thead><tr><th>LOTE<\/th>/.test(RPD),
+          /#prog2-dias \.prog2-tab\{table-layout:fixed/.test(src), /#prog2-dias \.prog2-tab \.n\{text-align:right/.test(src),
+          (RPD.match(/<td class="mono n"/g) || []).length, C2.map(c => c.t).join(' '), C2.reduce((a, c) => a + (c.w || 0), 0) < 70],
+         [true, true, false, true, true, 6, 'LOTE PRODUTO QTDE PESO PONTOS UEP EMBALADO FALTA', true]); }
     eval(pega('function _phUepPorGrupo(')); eval(pega('function _uepChave('));
     global.PH_UEP_PROD = { '501134|PENTEADEIRA PRINCESA': 1.94, '501149|MESA MADERO': 1 };
     const ug = _phUepPorGrupo([{ modelo: '501134', nome: 'PENTEADEIRA PRINCESA', caixas: 100, fam: 'P' },

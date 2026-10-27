@@ -877,6 +877,15 @@ body.tv-fullscreen{ background:var(--bg); }              /* TV: fundo puro */
 tbody tr{ transition:background .12s }
 tbody tr:hover td{ background:rgba(255,255,255,.03) }
 td.mono{font-family:var(--font-d);font-size:12px}
+/* PROGRAMAÇÃO por dia (v7.175.0, PPCP 27/10/2026 com o print: "essa tela está
+   toda desalinhada"). Cada dia é uma tabela, e com a largura automática cada
+   uma alinhava as colunas de um jeito (QTDE a 982 px num dia, 1.079 no outro).
+   Largura fixa por coluna (PROG2_COLS), a mesma em todos os dias; números à
+   direita, para as casas ficarem uma embaixo da outra. */
+#prog2-dias .prog2-tab{table-layout:fixed;min-width:960px}
+#prog2-dias .prog2-tab .n{text-align:right;white-space:nowrap}
+#prog2-dias .prog2-tab td.n:last-child{white-space:normal}   /* FALTA: "FORA DA ESTEIRA" quebra em tela estreita */
+#prog2-dias .prog2-tab td.prod{overflow-wrap:anywhere}
 td.hora-cell{font-family:var(--font-h);font-size:15px;font-weight:700}
 .badge{font-family:var(--font-d);font-size:9px;font-weight:600;padding:3px 9px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
 .b-ok  {background:rgba(76,175,80,.1); color:var(--ok);  border:0.5px solid rgba(76,175,80,.3)}
@@ -3472,7 +3481,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.174.0';
+const APP_VER   = '7.175.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -11934,6 +11943,15 @@ function _capPintarMix(){
   <div id="cap-mix-tot" style="margin-top:10px;font-family:var(--font-d);font-size:13px;color:var(--txt)">${_capTotHtml(r)}</div>`;
 }
 
+// As colunas da PROGRAMAÇÃO por dia, em % da largura (o PRODUTO fica com o
+// resto) — UMA régua para todos os dias, senão cada tabela alinha as colunas de
+// um jeito. Em % e não em px: em 1920 os números ficariam todos colados à
+// direita, longe do nome. `n`: número, alinhado à direita. A UEP só existe com
+// o backend que manda o campo.
+const PROG2_COLS = [
+  { t:'LOTE', w:6 }, { t:'PRODUTO' }, { t:'QTDE', w:7, n:1 }, { t:'PESO', w:11, n:1 }, { t:'PONTOS', w:9, n:1 },
+  { t:'UEP', w:7, n:1, uep:1, tip:'qtde × UEP por caixa do cadastro' }, { t:'EMBALADO', w:9, n:1 }, { t:'FALTA', w:12, n:1 }
+];
 function renderProgramacaoDetalhada(){
   const wrap=document.getElementById('prog2-dias');
   const totEl=document.getElementById('prog2-totais');
@@ -11956,6 +11974,9 @@ function renderProgramacaoDetalhada(){
   const temUep=PROG_DETALHADA.some(it=>it && 'uep' in it);
   const metaUep=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO;
   let totQtd=0, totPeso=0, totPts=0, totUep=0, totSemUep=0;
+  const cols=PROG2_COLS.filter(c=>temUep||!c.uep);
+  const cabTab=`<colgroup>${cols.map(c=>c.w?`<col style="width:${c.w}%">`:'<col>').join('')}</colgroup>
+        <thead><tr>${cols.map(c=>`<th${c.n?' class="n"':''}${c.tip?` title="${c.tip}"`:''}>${c.t}</th>`).join('')}</tr></thead>`;
   wrap.innerHTML=ordem.map(data=>{
     const itens=porDia[data];
     let dQtd=0, dPeso=0, dPts=0, dUep=0, dSemUep=0;
@@ -11983,13 +12004,13 @@ function renderProgramacaoDetalhada(){
       const nome=nomeComCor(it.desc, it.cor);
       return `<tr>
         <td class="mono">${it.lote||'—'}</td>
-        <td style="text-align:left">${it.codigo}${nome?' · '+nome:''}</td>
-        <td class="mono">${fmtN(it.qtde)}</td>
-        <td class="mono">${fmtN(it.pesoKg)} kg</td>
-        <td class="mono">${fmtN(it.pontos)}</td>
-        ${temUep?`<td class="mono" title="${it.uepCx!=null?fmtN(it.qtde)+' cx × '+String(it.uepCx).replace('.',',')+' UEP/cx':'código sem UEP no cadastro (PRODUTO_CODIGO)'}">${it.uep!=null?fmtN(Math.round(it.uep)):'—'}</td>`:''}
-        <td class="mono"${adiTip}>${fmtN(adi>0?adi:it.embalado)}</td>
-        <td class="mono" style="color:${faltaCor};font-weight:700"${adiTip}>${faltaTxt}</td>
+        <td class="prod">${it.codigo}${nome?' · '+nome:''}</td>
+        <td class="mono n">${fmtN(it.qtde)}</td>
+        <td class="mono n">${fmtN(it.pesoKg)} kg</td>
+        <td class="mono n">${fmtN(it.pontos)}</td>
+        ${temUep?`<td class="mono n" title="${it.uepCx!=null?fmtN(it.qtde)+' cx × '+String(it.uepCx).replace('.',',')+' UEP/cx':'código sem UEP no cadastro (PRODUTO_CODIGO)'}">${it.uep!=null?fmtN(Math.round(it.uep)):'—'}</td>`:''}
+        <td class="mono n"${adiTip}>${fmtN(adi>0?adi:it.embalado)}</td>
+        <td class="mono n" style="color:${faltaCor};font-weight:700"${adiTip}>${faltaTxt}</td>
       </tr>`;
     }).join('');
     totQtd+=dQtd; totPeso+=dPeso; totPts+=dPts; totUep+=dUep; totSemUep+=dSemUep;
@@ -12006,8 +12027,8 @@ function renderProgramacaoDetalhada(){
         <div style="flex:1"></div>
         <span style="font-family:var(--font-d);font-size:10px;color:var(--txt2)">${fmtN(dQtd)} cx · ${fmtN(dPeso)} kg · ${fmtN(dPts)} pts${uepDia}</span>
       </div>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>LOTE</th><th>PRODUTO</th><th>QTDE</th><th>PESO</th><th>PONTOS</th>${temUep?'<th title="qtde × UEP por caixa do cadastro">UEP</th>':''}<th>EMBALADO</th><th>FALTA</th></tr></thead>
+      <div style="overflow-x:auto"><table class="prog2-tab">
+        ${cabTab}
         <tbody>${linhas}</tbody>
       </table></div>
     </div>`;

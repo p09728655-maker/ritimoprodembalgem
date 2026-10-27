@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.175.0 — 27/10/2026 · PROGRAMAÇÃO: colunas alinhadas entre os dias
+
+- Print do PPCP: *"essa tela está toda desalinhada"*. Cada dia da aba
+  PROGRAMAÇÃO é uma tabela, e o navegador calculava a largura das colunas de
+  cada uma pelo conteúdo: QTDE começava a 982 px num dia e a 1.079 px no outro,
+  e os números alinhados à esquerda deixavam "1.198,5 kg" fora do prumo de
+  "496,5 kg".
+- Agora todos os dias usam a MESMA régua de colunas (largura fixa, em % da
+  tela) e os números ficam à direita, casa embaixo de casa. Medido no Chromium
+  em 1920, 1366 e 1000 px: as colunas caem no mesmo pixel em todos os dias e
+  nada é cortado (em tela estreita, "FORA DA ESTEIRA" quebra em duas linhas).
+- Só visual: nenhum número, coluna ou regra mudou.
+
 ## v7.174.0 · ⚠ re-deploy `.gs` v5.38 — 27/10/2026 · FERIADOS (aba `FERIADOS`)
 
 - PPCP, com o PRÓXIMOS DIAS na tela: *"02/11 feriado, como tratar?"*. O painel
