@@ -4235,7 +4235,8 @@ console.log('\n── estudo de UEP ──');
       global.CAP_DIAS_MES = +dm[1];
       global.CAP_JORN_MAX = +JS.match(/const CAP_JORN_MAX = (\d+);/)[1];
       global.CAP_MESES_ANO = +JS.match(/const CAP_MESES_ANO = (\d+);/)[1];
-      eval(pega('function _fmtHM(')); eval(pega('function _capJornPeriodo('));
+      global._CAP_TODOS_SKIN = JS.match(/const _CAP_TODOS_SKIN = `([\s\S]*?)`;/)[1];
+      eval(pega('function _fmtHM(')); eval(pega('function _capJornPeriodo(')); eval(pega('function _capJornPremissa('));
       // eval direto (dentro de um forEach a função ficaria presa à seta)
       eval(pega('function _capVel(')); eval(pega('function _capJornMin(')); eval(pega('function _capJornada('));
       eval(pega('function _capJornLinhas(')); eval(pega('function _capJornHtml(')); eval(pega('function _capJornDocHtml('));
@@ -4249,6 +4250,22 @@ console.log('\n── estudo de UEP ──');
       ok('jornada −24 min: 503 min, meta 2.415 no mesmo ritmo (288 UEP/h), −2.530 UEP no mês, 302 UEP/h para manter 2.530',
          [J.minNovo, J.metaNova, J.difMeta, Math.round(J.ritmoH), J.mesMenos, Math.round(J.ritmoManter), +J.pctManter.toFixed(1), +J.pct.toFixed(1)],
          [503, 2415, -115, 288, 2530, 302, 4.8, -4.6]);
+      // PERDA FIXA (v7.170.0, PPCP 27/10/2026: "colocar perda fixa"): os minutos
+      // cortados saem todos do tempo de produzir — a capacidade cai mais que o proporcional
+      const Jf = _capJornada(2530, 48, '17:00', 60);
+      ok('perda fixa de 60 min, −48 min: produzir 467 → 419 min, meta 2.270 (−10,3% contra −9,1% proporcional), 362 UEP/h para manter (hoje 325 fora da perda fixa, +11,5%), 473 min no ritmo de hoje',
+         [Jf.minNovo, Jf.prodHoje, Jf.prodNovo, Jf.metaNova, +Jf.pct.toFixed(1), +Jf.pctProp.toFixed(1), Math.round(Jf.ritmoProdH), Math.round(Jf.ritmoManter), +Jf.pctManter.toFixed(1), Jf.minCap, Jf.mesMenos],
+         [479, 467, 419, 2270, -10.3, -9.1, 325, 362, 11.5, 473, 5720]);
+      ok('perda fixa vazia/0 = a conta proporcional de sempre; texto, negativa ou ≥ a jornada simulada = erro; sem minutos a menos, sem simulação',
+         [JSON.stringify(_capJornada(2530, 24, '17:00', 0)) === JSON.stringify(_capJornada(2530, 24, '17:00')), _capJornada(2530, 24, null, _capJornMin('')).metaNova,
+          !!_capJornada(2530, 24, null, _capJornMin('sessenta')).erro, !!_capJornada(2530, 24, null, -5).erro, !!_capJornada(2530, 24, null, 503).erro,
+          _capJornada(2530, 24, null, 502).metaNova > 0, _capJornada(2530, 0, null, 60)],
+         [true, 2415, true, true, true, true, null]);
+      ok('o quadro com perda fixa: a perda maior, o proporcional ao lado e o ritmo fora da perda fixa',
+         [['−10,3%', 'com 60 min/dia de perda fixa mantidos', 'proporcional seria −9,1%', '2.270 UEP', '362 UEP/h', 'fora da perda fixa · hoje 325 UEP/h · +11,5% de ritmo']
+           .filter(t => !_capJornHtml(Jf, 2530).includes(t)),
+          ['PERDA FIXA DE 60 MIN/DIA', 'os 48 min saem todos do tempo de produzir (467 → 419 min)', '−10,3%, contra −9,1%'].filter(t => !_capJornDocHtml(Jf).includes(t)),
+          /A linha mantém o ritmo de hoje/.test(_capJornDocHtml(J))], [[], [], true]);
       ok('vazio/0 = jornada de hoje (null); texto, negativo ou corte grande demais = erro, nunca um número inventado',
          [_capJornada(2530, 0), _capJornada(2530, _capJornMin('')), !!_capJornada(2530, _capJornMin('vinte')).erro,
           !!_capJornada(2530, _capJornMin('-24')).erro, !!_capJornada(2530, 600).erro, _capJornMin('24'), _capJornMin('24,5')],
@@ -4280,6 +4297,11 @@ console.log('\n── estudo de UEP ──');
           /JORNADA SIMULADA/.test(papel), /Meta: 2\.415 UEP\/dia em 503 min/.test(papel), /title="−26 por dia × 22 dias úteis/.test(linha('PENTEADEIRA ELOA')),
           /SIMULAÇÃO DE JORNADA · 24 MIN A MENOS POR DIA/.test(papel), /302 UEP\/h/.test(papel)],
          [['559', '12.298', '−572', '−6.864', '−4,4%', '1.118', '67', '2.794'], true, true, true, true, true, true]);
+      ok('as colunas centralizadas (o nome do produto à esquerda), escopadas na tabela; o limite da esteira diz que é em PRODUTOS, e o título da célula dá as caixas',
+         [/<table class="cap-todos">/.test(papel), /\.cap-todos th,\.cap-todos td\{text-align:center\}/.test(_CAP_TODOS_SKIN), /\.cap-todos td:nth-child\(2\)\{text-align:left\}/.test(_CAP_TODOS_SKIN),
+          _CAP_TODOS_SKIN.split('}').filter(r => r.trim() && !/^\.cap-todos /.test(r.trim())).length,
+          /<th>LIMITE ESTEIRA · PRODUTOS \/ DIA<\/th>/.test(papel), /LIMITE ESTEIRA \/ DIA/.test(src), /produtos × 2 volume\(s\) = [\d.]+ caixas\/dia/.test(linha('PENTEADEIRA ELOA'))],
+         [true, true, true, 0, true, false, true]);
       ok('a PERDA DE CAPACIDADE em cartão (−4,6%, −115 UEP/dia, −2.530 UEP/mês) e o fim do turno se o corte for no fim (17:00 − 24 = 16:36)',
          [/PERDA DE CAPACIDADE<\/div><div class="kpi-val">−4,6%<\/div>/.test(papel) && /A MENOS POR ANO · 12 MESES<\/div><div class="kpi-val">−30\.360 UEP<\/div><div class="kpi-sub">−105h36 de jornada/.test(papel),
           /fim às 16:36 se o corte for no fim/.test(papel), /% perda<\/b> = produtos \/ dia a menos ÷ produtos \/ dia de hoje/.test(papel)], [true, true, true]);
@@ -4290,6 +4312,12 @@ console.log('\n── estudo de UEP ──');
       const slH = Math.floor(sl.tetoH * 503 / 60);
       ok('no limite da esteira, a jornada nova corta pelos minutos de esteira que sobram',
          [nums(linha('MESA CABECEIRA SLEEP'))[3], nums(linha('MESA CABECEIRA SLEEP'))[5]], [fmtN(slH), '−' + fmtN((sl.tetoDia - slH) * 22)]);
+      gerarRelatorioCapTodos(true, 48, 60);
+      // ELOA: 2.270 ÷ 4,32 = 525/dia; hoje 585 → 60 a menos × 22 = 1.320; 60 ÷ 585 = 10,3%
+      ok('a impressão com perda fixa: a tabela na meta de 2.270, % PERDA maior, e o papel diz a perda fixa e a conta',
+         [nums(linha('PENTEADEIRA ELOA')).slice(3, 8),
+          ['PERDA FIXA DE 60 MIN/DIA', 'perda fixa 60 min', '2.530 × 419 ÷ 467 = 2.270', 'proporcional, sem perda fixa, seria −9,1%', 'perda fixa de 60 min/dia · mês'].filter(t => !papel.includes(t))],
+         [['525', '11.550', '−1.320', '−15.840', '−10,3%'], []]);
       papel = '';
       const alAntes = global.alert; let alerta = ''; global.alert = m => { alerta = m; };
       gerarRelatorioCapTodos(true, 600);
@@ -4309,17 +4337,23 @@ console.log('\n── estudo de UEP ──');
          [/jornada de hoje — 527 min, meta 2\.530 UEP/.test(_capJornHtml(null, 2530)), /só os minutos/.test(_capJornHtml(_capJornada(2530, NaN), 2530)),
           ['503 min', '−4,6%', '2.415 UEP', '−2.530 UEP', '−30.360 UEP', '−105h36 de jornada', '302 UEP/h', 'fim às 16:36'].filter(t => !_capJornHtml(_capJornada(2530, 24, '17:00'), 2530).includes(t))], [true, true, []]);
       ok('o desenho da jornada não faz conta (tudo vem do _capJornada)',
-         ['function _capJornLinhas(', 'function _capJornPeriodo(', 'function _capJornHtml(', 'function _capJornDocHtml('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
+         ['function _capJornLinhas(', 'function _capJornPeriodo(', 'function _capJornHtml(', 'function _capJornDocHtml(', 'function _capJornPremissa('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
       const sc = src.slice(src.indexOf('<section id="sec-crono"'), src.indexOf('</section>', src.indexOf('<section id="sec-crono"')));
       ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua; o diálogo da jornada existe',
          [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src),
-          /id="modal-capjorn"/.test(src), /id="capj-min"[^>]*oninput="_capJornPintar\(\)"/.test(src), /onclick="_capJornImprimir\(\)"/.test(src)],
-         [true, true, true, true, true]);
+          /id="modal-capjorn"/.test(src), /id="capj-min"[^>]*oninput="_capJornPintar\(\)"/.test(src), /onclick="_capJornImprimir\(\)"/.test(src),
+          /id="capj-fixa"[^>]*oninput="_capJornPintar\(\)"/.test(src)],
+         [true, true, true, true, true, true]);
       const UCT = pega('function _ucvCapTodos('), IMP = pega('function _capJornImprimir(');
       ok('o botão abre o diálogo; o IMPRIMIR é a MESMA impressão (oficial, com os minutos), síncrono (o pop-up abre no clique), e cai no cadastro guardado',
-         [/modal-capjorn'\)\.classList\.add\('on'\)/.test(UCT), /gerarRelatorioCapTodos\(true, n\)/.test(IMP), /await|async/.test(UCT + IMP),
+         [/modal-capjorn'\)\.classList\.add\('on'\)/.test(UCT), /gerarRelatorioCapTodos\(true, n, f\)/.test(IMP), /await|async/.test(UCT + IMP),
           /_capCatLocal\(\)/.test(UCT), /_capCatLocal\(\)/.test(pega('async function abrirCapUep(')), /localStorage\.setItem\(CAP_JORN_LS/.test(IMP)],
          [true, true, false, true, true, true]);
+      ok('a perda fixa vai nas duas impressões e no quadro, e fica guardada neste computador junto com os minutos',
+         [/localStorage\.setItem\(CAP_FIXA_LS/.test(IMP), /localStorage\.getItem\(CAP_FIXA_LS\)/.test(UCT), /const CAP_FIXA_LS = 'rpe_cap_fixa';/.test(JS),
+          /_capJornada\(meta, _capJornMin\(v\), CFG\.turnoFim, _capJornMin\(\(document\.getElementById\('capj-fixa'\)/.test(pega('function _capJornPintar(')),
+          /_capJornada\(meta0, menos, CFG\.turnoFim, fixa\)/.test(pega('function gerarRelatorioCapTodos(')), /_capJornada\(meta0, menos, CFG\.turnoFim, fixa\)/.test(pega('function gerarRelatorioCapProg('))],
+         [true, true, true, true, true, true]);
     }
     ok('volume sem UEP → produto sem UEP (nunca soma pela metade)', [rack.uepJogo, rack.volSemUep], [null, [2]]);
     const mx = _capMix(cp, [{ chave: eloa.chave, qtde: 300 }, { chave: rack.chave, qtde: 10 }], 2530);
@@ -4740,6 +4774,14 @@ console.log('\n── estudo de UEP ──');
      [_capProgMontar(G, null).jorn.length, _capProgMontar(G, _capJornada(2530, NaN)).jorn.length, C.tot[0].pede === C.tot[1].pede, _capProgMontar(G, null).dias[0].por.length],
      [1, 1, true, 1]);
   ok('backend sem UEP / sem programação: diz, nunca um número', [_capProgMontar({ falha:'sem-uep' }, J), _capProgMontar(null, J)], [{ falha:'sem-uep' }, null]);
+  // PERDA FIXA (v7.170.0): a simulada rende o que J.minCap minutos rendem hoje — a
+  // MESMA meta da CAPACIDADE POR PRODUTO (2.400 UEP = 500 min a 2.530 ÷ 527)
+  { const Jf = _capJornada(2530, 24, null, 60), Cf = _capProgMontar(G, Jf), d27f = Cf.dias.find(x => x.data === '27/10/2026');
+    ok('perda fixa de 60 min na programação: a simulada (503 min) rende o que 500 rendem hoje; a carga não muda; papel e resumo dizem a jornada e a capacidade',
+       [Cf.jorn.map(j => [j.min, j.jorn]), Cf.tot[1].cap, Cf.tot[0].pede === C.tot[0].pede, d27f.por[1].saldo, Math.round(Jf.metaNova / (2530 / 527)),
+        ['JORNADA SIMULADA · 503 MIN', 'perda fixa de 60 min/dia', 'rendem o que <b>500 min</b>'].filter(t => !_capProgDocHtml(Cf).includes(t)),
+        _capProgResumoHtml(Cf).includes('SIMULADA · 503 min'), C.fixa],
+       [[[527, 527], [500, 503]], 2500, true, 500 - 785, 500, [], true, null]); }
   const doc = _capProgDocHtml(C);
   ok('o papel: período por jornada, dia a dia com as três situações, e os lotes dos dias acima na ordem do dia',
      ['PROGRAMAÇÃO × CAPACIDADE · 27/10 A 04/11 · 5 DIAS ÚTEIS COM LOTE', 'JORNADA DE HOJE · 527 MIN', 'JORNADA SIMULADA · 503 MIN', 'CAPACIDADE DISPONÍVEL', 'TEMPO NECESSÁRIO',
@@ -4804,7 +4846,7 @@ console.log('\n── estudo de UEP ──');
   ok('a 🖨 CAPACIDADE POR PRODUTO continua como era (nem programação, nem folha nova); a PROGRAMAÇÃO × CAPACIDADE é outra impressão, com botão próprio no diálogo',
      [/_capProgDoPainel|PROGRAMAÇÃO × CAPACIDADE|page-break-before/.test(pega('function gerarRelatorioCapTodos(')),
       /onclick="_capJornImprimir\('prog'\)"[^>]*>🖨 PROGRAMAÇÃO × CAPACIDADE</.test(src), /onclick="_capJornImprimir\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(src),
-      JIMP.includes("if(qual==='prog'){ if(gerarRelatorioCapProg(n, _capPtsMetaLer((document.getElementById('capj-pts')||{}).value))) fecharCapJorn(); return; }"), /_capProgDoPainel\(J, meta0, metaPts\)/.test(IMPC), /_rpDocParadas\('Programação × capacidade', true\)/.test(IMPC)],
+      JIMP.includes("if(qual==='prog'){ if(gerarRelatorioCapProg(n, _capPtsMetaLer((document.getElementById('capj-pts')||{}).value), f)) fecharCapJorn(); return; }"), /_capProgDoPainel\(J, meta0, metaPts\)/.test(IMPC), /_rpDocParadas\('Programação × capacidade', true\)/.test(IMPC)],
      [false, true, true, true, true, true]);
   // a impressão de verdade, com a montagem trocada por uma de mentira
   const docAntes = global.document, openAntes = global.window.open;
