@@ -51,8 +51,11 @@ global.UEP_ESCALAS = [];        // o teste põe as trocas que quer; o painel nas
  'function _uepEscalaCorte(', 'function _uepEscalaSelo(', 'function _uepEscalaNota(', 'function _uepEscalaDesde(',
  'function _uepEscalaMarca(', 'function _uepAbaPerSvg(', 'function _dirSemSvg(',
  'function _tvF2(', 'function _tvMinTxt(', 'function _tvUepDoProduto(', 'function _tvUepPesoNormal(',
- 'function _tvUepMontar(', 'function _tvUepRodHtml(', 'function _tvFHtml(', 'function _tvGSvg(',
+ 'function _tvUepMontar(', 'function _tvUepRodHtml(', 'function _tvFHtml(', 'function _tvGEscala(', 'function _tvGDesenho(', 'function _tvGSvg(',
  'function _tvGHtml('].forEach(f => eval.call(global, pegaJs(f)));
+{ const m = JS.match(/const TV_G_H_CHEIO = ([\d.]+), TV_G_Z_MIN = ([\d.]+), TV_G_Z_MAX = ([\d.]+);/);
+  if (!m) throw new Error('TV_G_H_CHEIO/TV_G_Z_MIN/TV_G_Z_MAX sumiram do painel');
+  [global.TV_G_H_CHEIO, global.TV_G_Z_MIN, global.TV_G_Z_MAX] = m.slice(1).map(Number); }
 
 // ── o retrato de 16/10/2026, 15:02 ────────────────────────────────────────────
 const SLOTS = [['07:00', 60], ['08:00', 60], ['09:00', 60], ['10:00', 60], ['12:12', 48],
@@ -197,8 +200,8 @@ ok('Tela G fala em tempo e em caixas', [G0.includes('+1h05'), G0.includes('250 c
    [true, true, true, true]);
 ok('o rodapé diz o que é 1 UEP', F0.includes('1 UEP = 1 caixa de MESA CABECEIRA MADERO'), true);
 ok('desenho sem conta: nenhuma régua de UEP dentro dos três',
-   ['function _tvFHtml(', 'function _tvGHtml(', 'function _tvGSvg('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|_uepAbaHoras\(|minSlotDecorrido\(/.test(pegaJs(f))),
-   [false, false, false]);
+   ['function _tvFHtml(', 'function _tvGHtml(', 'function _tvGSvg(', 'function _tvGDesenho('].map(f => /uepCard\(|efNoRitmo\(|_uepAbaDados\(|_uepAbaHoras\(|minSlotDecorrido\(/.test(pegaJs(f))),
+   [false, false, false, false]);
 ok('a tela F do retrato não carrega texto de "sem dado"', /nenhum produto|sem UEP no cadastro/.test(F0), false);
 
 console.log('\n── rótulos do gráfico e encaixe na altura (19/10/2026; TV de 65", 20/10/2026) ──');
@@ -256,9 +259,57 @@ ok('com o selo, a faixa pega a cor do veredito', /<polygon points="[^"]+" fill="
 ok('traço de TV de 65": FEITO 12, ESPERADO 7 tracejado, ATÉ A META 7 em pontos',
    [/stroke="var\(--txt\)" stroke-width="12"/.test(S1502), /stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14"/.test(S1502),
     /stroke-width="7" stroke-dasharray="0 16" stroke-linecap="round"/.test(S1502)], [true, true, true]);
-ok('letra do gráfico para 65": números do agora 54/42, eixo 32',
+ok('letra do gráfico para 65": números do agora 54/42, eixo 34 em Barlow Condensed 600 (o mono 400 cinza era fino demais)',
    ['.tvg-svg .tvg-t0{font-family:var(--font-h);font-weight:700;font-size:54px', '.tvg-svg .tvg-t1{font-family:var(--font-h);font-weight:600;font-size:42px',
-    '.tvg-svg .tvg-t2{font-size:32px'].map(t => html.includes(t)), [true, true, true]);
+    '.tvg-svg .tvg-t2{font-family:var(--font-h);font-weight:600;font-size:34px'].map(t => html.includes(t)), [true, true, true]);
+
+console.log('\n── o gráfico no TAMANHO DA CAIXA (v7.173.0; print de 27/10, a janela do app no PC da TV) ──');
+// Caixas medidas no Chromium: a janela do app em 1920 (cabeçalho, abas, rodapé
+// e barra do Windows — o print), a TV cheia em 1920×1080 e em 1366×768, e o
+// gerencial numa janela de 1366×650.
+const CAIXAS_G = { 'janela 1920 (o print)': { w: 1050, h: 654 }, 'TV cheia 1920×1080': { w: 1050, h: 842 },
+                   'TV cheia 1366×768': { w: 747, h: 575 }, 'janela 1366×650': { w: 747, h: 357 } };
+ok('escala: a letra da TV cheia vale até 620 px de altura; abaixo encolhe junto; sem caixa, 1',
+   [_tvGEscala(654), +_tvGEscala(842).toFixed(3), +_tvGEscala(575).toFixed(3), +_tvGEscala(357).toFixed(3), _tvGEscala(0), _tvGEscala(5000)],
+   [1, 1.002, 0.927, 0.576, 1, 1.3]);
+ok('o viewBox tem a proporção da caixa (antes 1000×840 fixo: na janela de 1920 sobravam 135 px de cada lado)',
+   Object.values(CAIXAS_G).map(d => { const v = _tvGSvg(M, false, d).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number);
+     return Math.abs(v[0] / v[1] - d.w / d.h) < 0.01; }), [true, true, true, true]);
+ok('sem caixa (1º desenho, escondida) continua 1000×840', /viewBox="0 0 1000 840"/.test(_tvGSvg(M, false)), true);
+const noTempo = _tvUepMontar(montarD(889, { '07:00': 300, '08:00': 270, '09:00': 290, '10:00': 330, '12:12': 215, '13:00': 435, '14:00': 66 },
+                                     { '07:00': 290, '08:00': 260, '09:00': 280, '10:00': 320, '12:12': 200, '13:00': 420, '14:00': 64 }),
+                         { agoraMin: 889, prod: PROD, cat: CAT });
+Object.entries(CAIXAS_G).forEach(([cn, d]) => {
+  const res = Object.entries(Object.assign({ '14:49 (o print de 27/10: a meta sai às 16:59, na borda)': noTempo,
+    // do sorteio: na TV de 1366×768 o par só cabe com a letra 10% menor
+    '10:12 (muito adiantado)': _tvUepMontar(montarD(612, { '07:00': 344.5, '08:00': 345.1, '09:00': 203.3, '10:00': 534.1 },
+                                                       { '07:00': 230, '08:00': 230, '09:00': 136, '10:00': 356 }), { agoraMin: 612, prod: PROD, cat: CAT }) }, CASOS_G)).map(([nome, mm]) => [false, true].map(selo => {
+    const svg = _tvGSvg(mm, selo, d), R = rotulos(svg), bxs = [R.feito, R.esp];
+    const alm = (() => { const m = svg.match(/<text x="([\d.]+)" y="([\d.]+)" text-anchor="middle" class="tvg-t2">ALMOÇO<\/text>/);
+      return m ? [+m[1] - 52, +m[2] - 28, +m[1] + 52, +m[2] + 6] : null; })();
+    const hora = svg.match(/<text x="([\d.]+)" y="[\d.]+" text-anchor="middle" class="tvg-t0">\d\d:\d\d<\/text>/);
+    return [bxs.every(Boolean), bxs.every(b => b && b[0] >= 0 && b[1] >= 0 && b[2] <= R.vb[0] && b[3] <= R.vb[1]),
+            bxs.some(b => b && encosta(b, R.curvas)), !!(R.feito && R.esp && cruzaBx(R.feito, R.esp)),
+            !!alm && bxs.some(b => b && cruzaBx(b, alm)), !!hora && +hora[1] + 62 > R.vb[0]].join() === 'true,true,false,false,false,false'
+      ? null : nome + (selo ? ' · selo' : '');
+  })).flat().filter(Boolean);
+  ok(cn + ': nos 11 casos, com e sem selo, os dois números aparecem dentro, sem encostar em curva, um no outro, no ALMOÇO, e o horário da meta não passa da borda', res, []);
+});
+
+console.log('\n── as linhas: só o ESPERADO é tracejado, e o que anda colado não se desenha duas vezes ──');
+ok('a META é linha cheia (o tracejado 6 10 sumiu)', [/stroke-dasharray="6 10"/.test(S1502), /stroke="var\(--txt3\)" stroke-width="3"\/><text [^>]*class="tvg-t1">META DO DIA/.test(S1502)], [false, true]);
+const espPts = svg => svg.match(/stroke="var\(--txt2\)" stroke-width="7" stroke-dasharray="24 14" stroke-linejoin="round" points="([^"]+)"/)[1].split(' ').length;
+ok('o print de 27/10 (14:49, 1.906 feitas = 1.906 esperadas): o esperado PARA no agora — daqui para a frente fica só o ATÉ A META',
+   [Math.round(noTempo.difUep), espPts(_tvGSvg(noTempo, false)), noTempo.pts.length], [0, noTempo.pts.length, noTempo.pts.length]);
+ok('com distância (15:02, +312 UEP), o esperado segue até o fim da jornada', espPts(S1502) > M.pts.length, true);
+ok('meta batida (sem ATÉ A META): o esperado segue até o fim', espPts(_tvGSvg(batida, false)) > batida.pts.length, true);
+ok('grade de no máximo 4 passos: com a meta de 2.530, só 1.000 e 2.000',
+   [...S1502.matchAll(/text-anchor="end" class="tvg-t2">([\d.]+)</g)].map(m => m[1]), ['1.000', '2.000']);
+ok('o ALMOÇO mora no pé da faixa', /y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/.test(S1502) && +S1502.match(/y="(\d+)" text-anchor="middle" class="tvg-t2">ALMOÇO/)[1] > 700, true);
+const CABE_G = pegaJs('function _tvUepCabe('), ENC = pegaJs('function _tvGEncaixa(');
+ok('o encaixe redesenha o gráfico no tamanho da caixa, com o modelo que o ciclo deixou no corpo',
+   [/_tvGEncaixa\(corpo\)/.test(CABE_G), /_tvGSvg\(a\[0\], a\[1\], \{ w:r\.width, h:r\.height \}\)/.test(ENC),
+    /corpo\._tvgArgs = t === 'g' \? \[m, selo\] : null/.test(JS)], [true, true, true]);
 const CSS_FG = html.split('\n').filter(l => /^\.tv[ufg]-/.test(l) && !/^\.tvu-slide\{/.test(l) && /font-size:/.test(l));
 ok('fonte das Telas F/G pela escala --tvu-k (nenhum font-size solto por vh)',
    CSS_FG.filter(l => /font-size:clamp\(/.test(l)).length, 0);

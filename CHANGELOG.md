@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.173.0 — 27/10/2026 · gráfico da Tela G (CORRIDA DO DIA) legível na TV
+
+- Print do PPCP às 14:49: *"na tv o gráfico está muito ruim de ver"*. Medido no
+  Chromium na mesma geometria do print (a janela do app com cabeçalho, abas e a
+  barra do Windows): o gráfico saía a 78% do tamanho pensado para a TV de 65",
+  com 135 px vazios de cada lado — área de desenho 656×551 px, números do eixo
+  a 25 px, FEITO a 42 px, linha a 9 px.
+- O gráfico passa a ocupar a caixa inteira: área de desenho **892×522 px** na
+  janela do app, com a letra e o traço da TV cheia (eixo 34, FEITO 54, linha
+  12). Na TV cheia fica igual, só mais largo; na TV de 1366×768 sai a 93% (era
+  68%).
+- **Só o ESPERADO é tracejado**: a linha da META virou linha cheia. Com o dia
+  no tempo, o esperado para no agora e daqui para a frente fica só o pontilhado
+  ATÉ A META (os dois andavam um em cima do outro).
+- Eixo mais limpo: só 1.000 e 2.000 (eram cinco linhas com número), em letra
+  mais encorpada. O ALMOÇO foi para o pé da faixa.
+- Os dois números do agora (FEITO e ESPERADO) continuam sempre na tela: quando
+  não cabem, a letra do gráfico desce um pouco. Conferido num sorteio de 3.983
+  dias em cinco tamanhos de tela.
+- **Atenção:** só o desenho. Nenhum número, cartão, veredito ou conta mudou.
+  Se o PC da TV mostra a janela do app (como no print), o ⛶ PAINEL CHEIO dá ao
+  gráfico ~28% mais altura.
+
 ## v7.172.1 — 27/10/2026 · cabeçalho da ⏱ CRONOANÁLISE arrumado
 
 - Print do PPCP: o título da aba quebrava em duas linhas (três em 1366) e o
