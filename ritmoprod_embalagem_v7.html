@@ -445,6 +445,17 @@ html.modo-dir #sec-dir.on{display:flex}
 /* ⏱ CRONOANÁLISE → UEP (v7.144.1, PPCP 19/10/2026: "modernize somente a tela").
    Só visual: tokens do painel + um azul local (--ucv-azul) para o resultado. */
 #sec-crono{--ucv-azul:#5AA9F0}
+/* cabeçalho da aba (v7.172.1): o título não quebra, os botões numa fileira e a frase de ajuda na linha de baixo —
+   no meio dos botões ela empurrava o título para 2–3 linhas e o último botão para uma fileira sozinho */
+#sec-crono .ucv-hdr{flex-wrap:wrap;gap:10px 18px;margin-bottom:14px}
+#sec-crono .ucv-hdr .tbl-hdr-ttl{white-space:nowrap}
+#sec-crono .ucv-hdr-bts{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto}
+#sec-crono .ucv-hdr-bts .btn{height:30px;padding:0 12px;font-size:10px;box-sizing:border-box}
+#sec-crono .ucv-hdr-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
+#sec-crono .ucv-hdr-dia{display:flex;align-items:center}   /* o dia é o parâmetro do ESTUDOS DO DIA: os dois colados */
+#sec-crono .ucv-hdr-dia .frm-inp{width:140px;height:30px;padding:0 8px;font-size:11px;cursor:pointer;box-sizing:border-box;border-radius:5px 0 0 5px;border-right:none}
+#sec-crono .ucv-hdr-dia .btn{border-radius:0 5px 5px 0}
+#sec-crono .ucv-hdr-sub{flex-basis:100%;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2)}
 #sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
 #sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
 #sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) minmax(110px,.7fr) auto;gap:14px;align-items:end}
@@ -2883,18 +2894,18 @@ if (_v7Instalado()) _v7EscondeBotao();
      medições registradas liberam (30 volumes ou mais, do mesmo lado); a
      CONFERÊNCIA DAS TROCAS acompanha a produção depois, sem alterar nada. -->
 <section id="sec-crono" class="sec">
-  <div class="tbl-hdr" style="margin-bottom:14px">
+  <div class="tbl-hdr ucv-hdr">
     <span class="tbl-hdr-ttl">⏱ CRONOANÁLISE → UEP</span>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span class="par-upd">o tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas</span>
-      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
-      <button class="btn btn-acc" onclick="_ucvEl('pdf').click()" style="font-size:10px;padding:4px 12px" title="O PDF Takt Time do app de cronoanálise: um arquivo preenche a tela (confira e registre); vários registram de uma vez">📄 IMPORTAR PDF</button>
+    <div class="ucv-hdr-bts">
+      <button class="btn btn-acc" onclick="_ucvEl('pdf').click()" title="O PDF Takt Time do app de cronoanálise: um arquivo preenche a tela (confira e registre); vários registram de uma vez">📄 IMPORTAR PDF</button>
       <input type="file" id="uep-conv-pdf" accept="application/pdf,.pdf" multiple style="display:none" onchange="_ucvImportar(this.files);this.value=''">
-      <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" style="font-size:10px;padding:4px 10px" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
-      <input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje." style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
-      <button class="btn btn-ghost" onclick="gerarRelatorioCronoDia()" style="font-size:10px;padding:4px 10px" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button>
-      <button class="btn btn-ghost" onclick="_ucvCapTodos()" style="font-size:10px;padding:4px 10px" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO</button>
+      <span class="ucv-hdr-sep" aria-hidden="true"></span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
+      <span class="ucv-hdr-dia"><input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje."><button class="btn btn-ghost" onclick="gerarRelatorioCronoDia()" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button></span>
+      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
+      <button class="btn btn-ghost" onclick="_ucvCapTodos()" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO</button>
     </div>
+    <span class="ucv-hdr-sub">o tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas</span>
   </div>
   <div id="uep-conv" class="uep-conv">
     <div id="uep-conv-conf-av"></div>
@@ -3461,7 +3472,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.172.0';
+const APP_VER   = '7.172.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o

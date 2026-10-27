@@ -303,6 +303,15 @@ const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
    [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
+// v7.172.1 (print do PPCP): a frase de ajuda no meio dos botões quebrava o título e jogava o último botão numa fileira sozinho
+{
+  const SC = html.slice(iCr, fCr), iB = SC.indexOf('<div class="ucv-hdr-bts">'), iS = SC.indexOf('<span class="ucv-hdr-sub">');
+  const BTS = SC.slice(iB, iS);
+  ok('cabeçalho da ⏱ CRONOANÁLISE: os botões numa fileira, a frase de ajuda na linha de baixo (fora dos botões), o título sem quebra',
+     [iB > 0 && iS > iB, BTS.includes('tablet, convertido'), (BTS.match(/<button /g) || []).length, SC.slice(iS, iS + 300).includes('tablet, convertido'),
+      /#sec-crono \.ucv-hdr-sub\{flex-basis:100%/.test(html), /#sec-crono \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html)],
+     [true, false, 5, true, true, true]);
+}
 ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
 ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
    [/onclick="setTab\('crono'\)"[^>]*>⏱ CRONOANÁLISE → UEP<\/button>/.test(html), html.slice(iCr, fCr).includes('gerarRelatorioFilaCrono()')], [true, true]);

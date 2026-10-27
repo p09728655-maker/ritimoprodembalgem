@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.172.1 — 27/10/2026 · cabeçalho da ⏱ CRONOANÁLISE arrumado
+
+- Print do PPCP: o título da aba quebrava em duas linhas (três em 1366) e o
+  🖨 CAPACIDADE POR PRODUTO caía sozinho numa segunda fileira. Causa: a frase de
+  ajuda estava no meio dos botões e disputava a largura com eles.
+- A frase foi para a linha de baixo do cabeçalho; o título não quebra; os
+  botões ficam numa fileira só, com a mesma altura. Ordem: 📄 IMPORTAR PDF
+  (a ação) · 🖨 IMPRIMIR · dia + 🖨 ESTUDOS DO DIA (colados: o dia é dele) ·
+  🖨 FILA DE CRONOANÁLISE · 🖨 CAPACIDADE POR PRODUTO.
+- Medido no Chromium com as fontes do painel: uma fileira em 1920, 1366 e 1280.
+- **Atenção:** só a tela. Nenhum número, botão ou impressão mudou.
+
 ## v7.172.0 — 27/10/2026 · 🖨 ESTUDOS DO DIA na ⏱ CRONOANÁLISE
 
 - PPCP: *"subi estudos hoje, colocar impressão dos estudos feito no dia"*.
