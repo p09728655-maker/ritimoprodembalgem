@@ -387,6 +387,14 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-dir .dir-graf-h svg{max-width:none!important;height:100%}
 #sec-dir .dir-msg{font-family:var(--font-d);font-size:calc(var(--u)*1.8);color:var(--txt2);text-align:center}
 #sec-dir .dir-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:calc(var(--u)*1.1);align-items:stretch}
+#sec-dir .dir-wk-h{display:flex;justify-content:space-between;gap:calc(var(--u)*2);flex-wrap:wrap;align-items:baseline;font-family:var(--font-d);font-size:calc(var(--u)*1.15);letter-spacing:calc(var(--u)*.06);color:var(--txt2);padding-bottom:calc(var(--u)*.4);margin-bottom:calc(var(--u)*.6);border-bottom:1px solid var(--border)}
+#sec-dir .dir-wk-h b{color:var(--txt);letter-spacing:calc(var(--u)*.12)} #sec-dir .dir-wk-h .av{color:var(--warn)}
+#sec-dir .dir-wk-t{font-size:calc(var(--u)*1.3)} #sec-dir .dir-wk-t b{font-size:calc(var(--u)*1.6);letter-spacing:0} #sec-dir .dir-wk-t .r b{color:var(--red)}
+/* por semana são duas fileiras: o cartão fica com dia, selo, horas e a carga —
+   lotes e "mais pesado" saem (na diretoria, pouco texto; o detalhe está na aba UEP) */
+#sec-dir .dir-wk .dir-dl{display:none}
+#sec-dir .dir-wk .dir-dia{padding:calc(var(--u)*.8) calc(var(--u)*1.1);gap:calc(var(--u)*.45)}
+#sec-dir .dir-wk .dir-dh{font-size:calc(var(--u)*3.1);margin-top:calc(var(--u)*.2)}
 #sec-dir .dir-dia{background:var(--surface);border:1px solid var(--border);border-top:calc(var(--u)*.45) solid var(--border);border-radius:calc(var(--u)*.6);padding:calc(var(--u)*1.3) calc(var(--u)*1.2);display:flex;flex-direction:column;gap:calc(var(--u)*.9);min-width:0}
 #sec-dir .dir-dia.red{border-top-color:var(--red)} #sec-dir .dir-dia.warn{border-top-color:var(--warn)} #sec-dir .dir-dia.ok{border-top-color:var(--ok)}
 #sec-dir .dir-dn{font-family:var(--font-d);font-size:calc(var(--u)*1.2);letter-spacing:calc(var(--u)*.2);color:var(--txt2)}
@@ -811,13 +819,20 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-prox .gpx-tot b{color:var(--txt);font-size:14px}
 #ger-prox .gpx-tot .r b{color:var(--red)}
 #ger-prox .gpx-capdem{margin-top:0;padding-top:6px;border-top:0}   /* a média feita, logo abaixo do total pela meta */
+#ger-prox .gpx-wk{margin:14px 16px 0}
+#ger-prox .gpx-wk + .gpx-wk{margin-top:18px}
+#ger-prox .gpx-wk-h{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:baseline;font-family:var(--font-d);font-size:11px;letter-spacing:.6px;color:var(--txt2);padding-bottom:8px;border-bottom:1px solid var(--border)}
+#ger-prox .gpx-wk-h b{color:var(--txt);font-size:12px;letter-spacing:1.2px}
+#ger-prox .gpx-wk-t{font-size:12px;letter-spacing:.3px}
+#ger-prox .gpx-wk-t b{font-size:14px;letter-spacing:0}
+#ger-prox .gpx-wk-t .r b{color:var(--red)}
+#ger-prox .gpx-wk .gpx-dias{padding:10px 0 0}
+#ger-prox .gpx-wk ~ .gpx-capdem{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 #ger-prox .gpx-sem{margin:0 16px 16px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
 #ger-prox .gpx-sem b{color:var(--warn)}
 #ger-prox .gpx-sem ul{margin:4px 0 0 16px}
 #ger-prox .gpx-sem li b{color:var(--txt)}
 #ger-prox .gpx-nota{font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6;padding:10px 16px 16px}
-/* cartão HOJE (v7.156.0): é previsão — borda tracejada, a cor do topo é o veredito */
-#ger-prox .gpx-hoje{border-left-style:dashed;border-right-style:dashed;border-bottom-style:dashed}
 /* ATRASO — CONFERÊNCIA (v7.155.0): número à direita, em fonte de largura fixa */
 #ger-prox .gpx-atr{margin:4px 16px 16px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
 #ger-prox .gpx-atr-t{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);padding:9px 12px;background:var(--elevated);border-bottom:1px solid var(--border);line-height:1.5}
@@ -3484,7 +3499,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.177.0';
+const APP_VER   = '7.178.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5316,7 +5331,7 @@ function _uepAbaDados(){
   // (só quando ela já foi lida — null é "não sei", nunca "nada falta")
   const semHoje=_uepAbaSemUepHoje(PONTOS_DIA.porHora, CAP_RAW);
   const semFut=PROG_DET_TS?_cartSemUep(PROG_DETALHADA, _cartNum(hojeStr())):null;
-  let prox=null; try{ prox=_gpxDoPainel(); }catch(e){ prox=null; }
+  let prox=null; try{ prox=_gpxDoPainel(_gpxNSemanas(new Date(), PROG_FERIADOS)); }catch(e){ prox=null; }   // por semana (v7.178.0)
   const base=_uepBaseNoCadastro(CAP_RAW);
   return { estado:'ok', k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, fimTxt, semHoje, semFut, prox, base,
            nPer, P, perCards:P&&P.n?_uepAbaPerCards(P):null };
@@ -7936,6 +7951,15 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-prox .gpx-tot b{color:#1F2328}
   .uep-doc .ud-prox .gpx-tot .r b{color:#C62828}
   .uep-doc .ud-prox .gpx-capdem{margin-top:3px}
+  .uep-doc .ud-prox .gpx-wk + .gpx-wk{margin-top:5px}
+  /* por semana são duas fileiras de cartões: no papel a linha "Lotes" sai (o
+     mais pesado fica) — com ela o mix do pior caso passava para a folha 3 */
+  .uep-doc .ud-prox .gpx-dx + .gpx-dl{display:none}
+  .uep-doc .ud-prox .gpx-wk .gpx-dia{padding:4px 7px;gap:2px}   /* só ar: a letra é a mesma */
+  .uep-doc .ud-prox .gpx-wk .gpx-dias{gap:6px}
+  .uep-doc .ud-prox .gpx-wk-h{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470;padding-bottom:2px;margin-bottom:3px;border-bottom:1px solid #e2e8f0}
+  .uep-doc .ud-prox .gpx-wk-h b{color:#1F2328;letter-spacing:.8px}
+  .uep-doc .ud-prox .gpx-wk-t b{color:#1F2328} .uep-doc .ud-prox .gpx-wk-t .r b{color:#C62828}
   .uep-doc .ud-prox .gpx-nota{display:none}   /* a fórmula vai no ANEXO — COMO LER */
   /* a lista SEM UEP já sai inteira na ORIGEM DA UEP, logo abaixo — no papel
      ela não se repete aqui */
@@ -7998,12 +8022,12 @@ function _uepDocHtml(D, ctx){
       <div class="ud-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div>
       ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
 
-  // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxHtml), com a pele do papel.
+  // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxSemanasHtml, por semana), com a pele do papel.
   const PX=D.prox;
   const bProx=sec('PRÓXIMOS DIAS — HORAS DE LINHA QUE A CARTEIRA PEDE'+(PX&&PX.lidaEm?` · programação de ${new Date(PX.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:''))
     +(!PX ? '<div class="ud-vazio">A programação ainda não tinha sido lida quando o relatório foi gerado (abra a aba ⚖ UEP e espere o bloco 6).</div>'
         : PX.falha ? '<div class="ud-vazio">A programação não traz UEP — sem ela não há como converter a carteira em horas.</div>'
-        : `<div class="ud-prox">${_gpxHtml(PX, 50)}</div>`);
+        : `<div class="ud-prox">${_gpxSemanasHtml(PX, _gpxSemanasMontar(PX, new Date()))}</div>`);
 
   // 4 · O MIX
   const mostra=mix.linhas.slice(0, UEP_DOC_MIX_MAX), resto=mix.linhas.slice(UEP_DOC_MIX_MAX);
@@ -14983,20 +15007,77 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr, fer
     semUep: dias.reduce((a,d) => a.concat(d.semUep), [])
   };
 }
+// PRÓXIMOS DIAS POR SEMANA (v7.178.0, PPCP 27/10/2026, com o print: "está
+// confundindo muito como não cabe… melhor tirar dia de hoje e contar só a
+// semana… semana que vem são 4 dias devido ao feriado" → "por semana"). O
+// horizonte é o resto DESTA semana + a SEMANA QUE VEM (seg–dom); sem dia útil
+// sobrando nesta semana, a semana que vem e a seguinte. Devolve quantos dias
+// úteis há até lá (feriado da aba FERIADOS não conta) — é o `n` do _gpxMontar,
+// que continua sendo a conta única da carga.
+function _gpxSegunda(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
+function _gpxNSemanas(hoje, fer){
+  const d0 = new Date(hoje); d0.setHours(0,0,0,0);
+  const util = d => { const w = d.getDay(); if(w === 0 || w === 6) return false;
+    const n = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); return !(fer && fer[n] != null); };
+  const fimEsta = _gpxSegunda(d0); fimEsta.setDate(fimEsta.getDate() + 6);          // domingo desta semana
+  const conta = ate => { let n = 0; const d = new Date(d0); for(let g = 0; g < 40; g++){ d.setDate(d.getDate() + 1); if(d > ate) break; if(util(d)) n++; } return n; };
+  const fim = new Date(fimEsta); fim.setDate(fim.getDate() + (conta(fimEsta) > 0 ? 7 : 14));
+  return conta(fim);
+}
+// Os dias do _gpxMontar agrupados por semana (seg–dom), com o total de cada uma
+// — a MESMA régua dos cartões: dia útil com lote passa (falta) ou sobra (folga)
+// contra a jornada; fim de semana e feriado não têm jornada (o sábado com lote
+// aparece à parte, todo hora extra). Conta pura.
+const GPX_SEM_ROT = ['ESTA SEMANA', 'SEMANA QUE VEM', 'EM 2 SEMANAS'];
+function _gpxSemanasMontar(P, hoje){
+  if(!P || P.falha) return [];
+  const s0 = _gpxSegunda(hoje), S = {};
+  P.dias.forEach(d => {
+    const [dd, mm, aa] = d.data.split('/').map(Number), seg = _gpxSegunda(new Date(aa, mm - 1, dd));
+    const k = Math.round((seg - s0) / (7 * 864e5));
+    (S[k] = S[k] || { idx:k, rot: GPX_SEM_ROT[k] || ('EM ' + k + ' SEMANAS'), dias:[] }).dias.push(d);
+  });
+  return Object.values(S).sort((a, b) => a.idx - b.idx).map(w => {
+    const uteis = w.dias.filter(d => !d.fds), comLote = uteis.filter(d => d.estado !== 'vazio');
+    return Object.assign(w, {
+      de: (uteis[0] || w.dias[0]).data, ate: (uteis[uteis.length - 1] || w.dias[w.dias.length - 1]).data,
+      nUteis: uteis.length, minPede: uteis.reduce((a, d) => a + d.min, 0), minJorn: uteis.length * UEP_MIN_DIA,
+      falta: comLote.filter(d => d.exc > 0).reduce((a, d) => a + d.exc, 0), nFalta: comLote.filter(d => d.exc > 0).length,
+      sobra: comLote.filter(d => d.exc < 0).reduce((a, d) => a - d.exc, 0), nSobra: comLote.filter(d => d.exc < 0).length,
+      fdsLote: w.dias.filter(d => d.fds && !d.fer && d.estado !== 'vazio'),
+      feriados: w.dias.filter(d => d.fer).map(d => ({ data:d.data, desc:d.fer, min: d.estado === 'feriado' ? null : d.min }))
+    });
+  });
+}
 // Desenho: nenhuma conta de carga aqui, só escala da barra e texto.
 const GPX_DOW = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
-// `cartaoHoje` (v7.156.0): o cartão HOJE da tela, antes dos dias. O papel e a
-// diretoria não passam — eles mostram só os próximos dias.
-function _gpxHtml(P, alt, cartaoHoje){   // `alt` era a altura do trilho; o cartão novo não tem trilho
-  const cards = (cartaoHoje || '') + P.dias.map(d => _gpxCartaoHtml(d, 'gpx')).join('');
-  return `<div class="gpx-dias" style="--n:${P.dias.length + (cartaoHoje ? 1 : 0)}">${cards}</div>
-    <div class="gpx-tot"><span>${plural(P.dias.filter(d => d.estado !== 'feriado').length,'dia pede','dias pedem')} <b>${_fmtHM(P.minPede)}</b> para <b>${_fmtHM(P.minJorn)}</b> de jornada em ${plural(P.nUteis,'dia útil','dias úteis')}</span>`
-      + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
-      + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
-      + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '')
-      + ((P.feriados || []).length ? `<span>${P.feriados.map(f => f.data.slice(0,5)).join(', ')} ${P.feriados.length > 1 ? 'feriados' : 'feriado'} — fora da jornada</span>` : '') + `</div>`
-      + _gpxCapDemHtml(P.capDem) + `
-    <div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
+// O PRÓXIMOS DIAS por semana: um bloco por semana, o cartão na coluna do dia da
+// semana (SEG a SEX, e SÁB só quando algum sábado tem lote) — o dia que já
+// passou e o feriado ficam como coluna vazia, e o cabeçalho da semana diz o
+// feriado. Sem cartão HOJE (PPCP: confundia). UM desenho para a aba ⚖ UEP, a
+// impressão executiva e a diretoria: o prefixo (`gpx` | `dir`) só escolhe a pele.
+// `aviso` (opcional): texto que vai no cabeçalho da 1ª semana — a diretoria põe
+// ali as linhas sem UEP (duas fileiras de cartões não deixam altura para rodapé).
+function _gpxSemanasBlocos(W, pf, aviso){
+  const sab = W.some(w => w.dias.some(d => d.dow === 6 && d.estado !== 'vazio'));
+  const nCol = sab ? 6 : 5;
+  return W.map((w, i) => {
+    const cards = w.dias.filter(d => d.estado !== 'feriado' && !(d.fds && d.estado === 'vazio') && (sab || d.dow !== 6) && d.dow !== 0)
+      .map(d => _gpxCartaoHtml(d, pf).replace(/^<div class="/, `<div style="grid-column:${d.dow}" class="`)).join('');
+    const fer = w.feriados.length ? ` · ${w.feriados.map(f => f.data.slice(0,5) + ' ' + (f.min == null ? 'feriado' : 'feriado com lote')).join(', ')}` : '';
+    const tot = `pedem <b>${_fmtHM(w.minPede)}</b> para <b>${_fmtHM(w.minJorn)}</b>`
+      + (w.nFalta ? ` · <span class="r">faltam <b>${_fmtHM(w.falta)}</b></span>` : '')
+      + (w.nSobra ? ` · sobram <b>${_fmtHM(w.sobra)}</b>` : '')
+      + (!w.nFalta && !w.nSobra ? ' · cabe na jornada' : '')
+      + (w.fdsLote.length ? ` · ${w.fdsLote.map(d => GPX_DOW[d.dow] + ' ' + d.data.slice(0,5) + ' ' + _fmtHM(d.min)).join(', ')} em hora extra` : '');
+    return `<div class="${pf}-wk"><div class="${pf}-wk-h"><span><b>${w.rot}</b> · ${w.de.slice(0,5)} a ${w.ate.slice(0,5)} · ${plural(w.nUteis, 'dia útil', 'dias úteis')}${fer}${i === 0 && aviso ? ' · <span class="av">' + aviso + '</span>' : ''}</span><span class="${pf}-wk-t">${tot}</span></div>
+      <div class="${pf}-dias" style="--n:${nCol}">${cards}</div></div>`;
+  }).join('');
+}
+// A aba ⚖ UEP e o papel: as semanas + a média feita + a fórmula + o que está sem UEP.
+function _gpxSemanasHtml(P, W){
+  return _gpxSemanasBlocos(W, 'gpx') + _gpxCapDemHtml(P.capDem)
+    + `<div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
 // A linha da capacidade demonstrada (desenho; a conta é do _gpxCapDem). Cor
@@ -15007,25 +15088,6 @@ function _gpxCapDemHtml(c){
   const tip = `Referência, não veredito: a MÉDIA POR DIA do bloco 5 (${fmtN(Math.round(c.uepDia))} UEP de jornada, sem hora extra, ${c.nDias} dias fechados) convertida em horas no ritmo da meta = ${_fmtHM(c.minDia)} por dia útil. Em metade dos dias a linha faz menos que a média — os cartões continuam julgados pela meta.`;
   return `<div class="gpx-tot gpx-capdem" title="${_rpEsc(tip)}"><span>na média que a linha fez (<b>${fmtN(Math.round(c.uepDia))}</b> UEP/dia · ${plural(c.nDias, 'dia fechado', 'dias fechados')}): cabem <b>${_fmtHM(c.minCap)}</b> para <b>${_fmtHM(c.minPede)}</b></span>`
     + (r > 0 ? `<span>sobram <b>${_fmtHM(r)}</b></span>` : r < 0 ? `<span>faltam <b>${_fmtHM(-r)}</b></span>` : '<span>empata</span>') + `</div>`;
-}
-// O CARTÃO HOJE (v7.156.0) — só na tela da aba ⚖ UEP, antes dos próximos
-// dias. É PREVISÃO: o dia não acabou. Diz o que falta zerar (atraso vencido +
-// o que falta do programado de hoje), quanto cabe no resto da jornada no
-// ritmo da meta e quanto não cabe — sem levar nada para os próximos dias.
-// Desenho: tudo vem pronto do `conta` do _gpxMontar.
-function _gpxHojeHtml(P){
-  const k = P && P.conta;
-  if(!k) return '';
-  const est = k.sobra > GPX_EXC_MAX ? 'red' : k.sobra > 0 ? 'warn' : 'ok';
-  const tip = `Previsão pelo ritmo da meta (${fmtN(Math.round(P.porMin * 60))} UEP/h) — muda com o ritmo de hoje. O que não for feito hoje vira atraso no próximo dia útil; até lá não é atraso nem carga dos próximos dias.`;
-  const naoCabe = !(k.sobra > 0) ? '' : k.sobraAtr > 0
-    ? `não cabem: atraso <b>${_fmtHM(k.sobraAtr)}</b> + lote de hoje <b>${_fmtHM(k.sobraHoje)}</b>`
-    : `não cabem <b>${_fmtHM(k.sobra)}</b>${k.sobraHoje != null ? ' do lote de hoje' : ''}`;
-  return `<div class="gpx-dia gpx-hoje ${est}" title="${_rpEsc(tip)}"><div class="gpx-dn"><b>HOJE</b> ${_rpEsc(P.dataHoje || '')} · previsão</div>
-    <span class="gpx-ds ${est}">${k.sobra > 0 ? 'NÃO CABEM ' + _fmtHM(k.sobra) : 'CABE HOJE'}</span>
-    <div class="gpx-dh">${_fmtHM(k.div)}<small> falta zerar</small></div>
-    <div class="gpx-dx">${k.venc != null ? `atraso <b>${_fmtHM(k.venc)}</b> + programado de hoje <b>${_fmtHM(k.hoje)}</b><br>` : ''}cabem <b>${_fmtHM(k.cabe)}</b> no resto da jornada</div>
-    ${naoCabe ? `<div class="gpx-dl">${naoCabe} — não entram nos próximos dias</div>` : ''}</div>`;
 }
 // ATRASO — CONFERÊNCIA (v7.155.0, PPCP 23/10/2026: "mostra o atraso separado
 // para conferência"). Só o VENCIDO, código por código — o `atraso` de cada
@@ -15105,9 +15167,9 @@ function renderProxDias(){
                         : '<div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div>';
     return;
   }
-  const P = _gpxDoPainel();
+  const hoje = new Date(), P = _gpxDoPainel(_gpxNSemanas(hoje, PROG_FERIADOS));
   if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; return; }
-  corpo.innerHTML = _gpxHtml(P, 0, _gpxHojeHtml(P)) + _gpxAtrasoHtml(_gpxAtrasoMontar(P.divLinhas, P.porMin), P);
+  corpo.innerHTML = _gpxSemanasHtml(P, _gpxSemanasMontar(P, hoje)) + _gpxAtrasoHtml(_gpxAtrasoMontar(P.divLinhas, P.porMin), P);
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
@@ -15287,14 +15349,12 @@ function _gpxCartaoHtml(d, pf){
 function _dirCartHtml(P, falha){
   if(!P) return falha ? _dirMsg(PROG_DET_FALHA === 'sem-resposta' ? 'A programação ainda não respondeu (servidor lento) — tento de novo em 1 min.' : `${falha.t} — tento de novo sozinho.`) : _dirMsg('Lendo a programação…');
   if(P.falha === 'sem-uep') return _dirMsg('A programação não traz UEP — não dá para converter em horas.');
-  const f = _dirF;
-  const cards = P.dias.map(d => _gpxCartaoHtml(d, 'dir')).join('');
+  // por semana (v7.178.0, PPCP: "sim" para a diretoria também): os MESMOS
+  // blocos da aba ⚖ UEP, com a pele da diretoria; o total é o de cada semana
   const semU = (P.semUep || []).length + (P.divSemUep || []).length;
-  return `<div class="dir-dias" style="--n:${P.dias.length}">${cards}</div>
-    <div class="dir-tot">${P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b></span>` : '<span>nenhum dia passa da jornada</span>'}
-      ${P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b></span>` : ''}
-      ${semU ? `<span class="av">⚠ ${plural(semU, 'linha sem UEP', 'linhas sem UEP')} fora das horas</span>` : ''}
-      <span style="margin-left:auto">jornada ${_fmtHM(UEP_MIN_DIA)}</span></div>`;
+  // sem rodapé: duas fileiras de cartões não deixam altura para mais uma linha
+  // (medido a 1920×1080 e 1366×768) — as linhas sem UEP vão no cabeçalho da 1ª semana
+  return _gpxSemanasBlocos(_gpxSemanasMontar(P, new Date()), 'dir', semU ? `⚠ ${plural(semU, 'linha sem UEP', 'linhas sem UEP')} fora das horas` : '');
 }
 // QUANDO O DADO É VELHO depende de cada tela (v7.126.0). Com um limite só de
 // 15 min, a SEMANA PASSADA ficava âmbar aos 16 min de um histórico que é relido
@@ -15333,7 +15393,7 @@ function renderDir(){
       corpo = _dirSemanaHtml(S, UEP_HIST ? _dirUltimos(UEP_HIST, null, 10) : [], UEP_HIST_FALHA, DIR_PTS.falha ? 'falha' : null);
     } else {
       tit = '<b>PRÓXIMOS DIAS</b> · HORAS DE LINHA'; ts = PROG_DET_TS;
-      corpo = _dirCartHtml(_gpxDoPainel(), !PROG_DET_TS && PROG_DET_FALHA ? _progDetFalhaInfo() : null);
+      corpo = _dirCartHtml(_gpxDoPainel(_gpxNSemanas(new Date(), PROG_FERIADOS)), !PROG_DET_TS && PROG_DET_FALHA ? _progDetFalhaInfo() : null);
     }
   }catch(e){ corpo = _dirMsg('Não consegui montar esta tela: ' + _rpEsc(e.message)); }
   el.innerHTML = _dirMoldura(t, corpo, tit, ts);

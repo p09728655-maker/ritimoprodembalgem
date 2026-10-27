@@ -4596,6 +4596,29 @@ feito e dá ar de verdade ao que sobrou.
     quadro). O ANEXO diz que cada dia leva só os lotes dele.
   - ⚠ A aba PLANO (carteira em UEP) **ainda** põe a dívida nos primeiros dias
     do nivelamento (`_cartAberta(…, dv.uep, …)`) — não mexido.
+- **POR SEMANA, sem cartão HOJE** (v7.178.0, PPCP 27/10/2026: *"está
+  confundindo muito como não cabe… contar só a semana… semana que vem são 4 dias
+  devido ao feriado"*, prévia aprovada; *"sim"* para papel e diretoria). Revoga o
+  cartão HOJE da v7.156.0 (o `_gpxHojeHtml` foi apagado; a conta `conta` do
+  `_gpxMontar` continua, a PROGRAMAÇÃO × CAPACIDADE lê) e o desenho em fileira
+  única (`_gpxHtml` apagado).
+  - `_gpxNSemanas(hoje, fer)`: dias úteis até o domingo da semana que vem (sem
+    dia útil sobrando nesta, a que vem e a seguinte) — é o `n` do `_gpxMontar`
+    na aba (`renderProxDias`), no papel (`_uepAbaDados().prox`) e na diretoria.
+    A PROGRAMAÇÃO × CAPACIDADE segue com `CAP_PROG_DIAS`.
+  - `_gpxSemanasMontar(P, hoje)` (conta): agrupa por semana (seg–dom), total de
+    cada uma pela MESMA régua dos cartões. `_gpxSemanasBlocos(W, pf, aviso)`
+    (desenho único, `gpx` aba/papel, `dir` diretoria): cartão na coluna do dia
+    da semana (`grid-column` = dow; SÁB só com lote); feriado e dia que passou =
+    coluna vazia, feriado no cabeçalho. `_gpxSemanasHtml(P, W)` = blocos + média
+    feita + fórmula + sem UEP (aba e papel).
+  - Classe do bloco é `gpx-wk` (⚠ `gpx-sem` já é a lista de SEM UEP).
+  - Papel: `.gpx-dx + .gpx-dl` (Lotes) some e o espaçamento aperta — medido em
+    PDF: 3 folhas, inclusive com 11 produtos no mix + hora extra (sem isso a
+    nota do mix ia para a folha 3). Diretoria: `.dir-wk .dir-dl` some, horas a
+    3,1u, sem rodapé (o aviso de sem UEP vai no cabeçalho da 1ª semana) — a
+    1920×1080 e 1366×768 nada corta, com e sem o aviso. Mexeu no cartão? Medir
+    de novo papel e diretoria.
 - **CAPACIDADE DEMONSTRADA como referência** (v7.177.0, PPCP 27/10/2026: *"por
   que 2.530 se no histórico faz mais?"* → *"2761"*). `_gpxCapDem(P, per)` (conta)
   + `_gpxCapDemHtml` (desenho, tinta neutra), montada no `_gpxDoPainel` com o
