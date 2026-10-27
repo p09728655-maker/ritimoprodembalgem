@@ -11,6 +11,38 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.179.0 — 27/10/2026 · PRÓXIMOS DIAS: a semana inteira — o que já foi feito, hoje e o feriado
+
+- PPCP: *"sugira algo para não ficar vazio a tela"* → prévia → *"essa última"*.
+  As colunas vazias da semana viram cartões **apagados** (borda tracejada):
+  - **dia que já passou → FEITO**: a UEP de jornada gravada no fechamento contra
+    a meta DAQUELE dia, e as caixas (26/10: 2.762 UEP · 109,2% da meta 2.530 ·
+    1.263 cx). Dia fechado sem UEP mostra as caixas; dia útil sem fechamento,
+    SEM PRODUÇÃO;
+  - **hoje → HOJE · EM ANDAMENTO**: a UEP de jornada até agora (o número do card
+    UEP DO DIA) e a meta do dia — sem horas e sem "não cabe";
+  - **feriado → FERIADO** com a descrição da aba FERIADOS.
+- Na aba ⚖ UEP, na impressão executiva e na diretoria (medidos: o papel
+  continua em 3 folhas no pior caso; a diretoria cabe a 1920×1080 e 1366×768).
+- **Atenção:** o total de cada semana continua só com os dias que faltam; os
+  cartões apagados não entram na conta. Sem o histórico lido, os dias que
+  passaram ficam vazios (não se afirma "sem produção").
+
+## v7.178.1 — 27/10/2026 · PRÓXIMOS DIAS: o saldo da semana e a média por semana
+
+- PPCP, com o print: *"pedem 37h52 para 35h08 faltam 3h27 sobra 0h43"* → *"que
+  rolo"*. O cabeçalho da semana somava a falta dos dias que passam (3h27) e a
+  folga dos que sobram (0h43) lado a lado, e nenhum dos dois fechava com o
+  *pedem × jornada* da mesma linha. Agora é o **saldo da semana** (pedem −
+  jornada): *"pedem 37h52 para 35h08 · faltam 2h44"*. O que falta em cada dia
+  continua no cartão dele.
+- *"Faça essas horas por semana, não precisa totalizar"*: a linha da média que
+  a linha fez saiu do rodapé (que somava as duas semanas) e foi para **dentro de
+  cada semana**, abaixo do total. Só aparece quando a média é diferente da meta
+  — com a meta em 2.761 = a média, ela repetiria o número de cima e não sai.
+- **Atenção:** o total da semana com dias de folga muda de número (era a soma
+  da falta dos dias; agora é o saldo). Os cartões não mudam.
+
 ## v7.178.0 — 27/10/2026 · PRÓXIMOS DIAS por semana (aba UEP, impressão e diretoria)
 
 - PPCP, com o print: *"está confundindo muito como não cabe… melhor tirar dia de
