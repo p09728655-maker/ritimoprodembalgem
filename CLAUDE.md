@@ -3729,6 +3729,24 @@ feito e dá ar de verdade ao que sobrou.
       apontamento antes de tirar média da aba. Variáveis (encolhem com a
       jornada): "Outros" 16,5, troca de plástico 13,3 (consumo de bobina), o
       resto ~12. 24 min a menos com 54 de fixa = −5,1% (meta 2.402), não −4,6%.
+  - **MOTIVOS DA PERDA FIXA** (v7.171.0, PPCP: *"lista na impressão os motivos
+    da perda fixa"* → *"enxuga o que puder"*). Com perda fixa digitada, o
+    `_capJornDocHtml(J, M)` (as DUAS impressões do diálogo) traz a tabela
+    `_capFixaDocHtml`: os tipos de `CAP_FIXA_RE` (troca de produto e de cor,
+    café, limpeza, reunião, finalização, aniversariantes — o que depende do dia
+    ou da programação; plástico, isomanta e "Outros" ficam fora) em vezes/dia e
+    min/dia, + a linha **SEM APONTAMENTO NAS PARADAS** = digitado − soma (dos
+    valores exibidos, uma casa). Conta `_capFixaMontar(st, fixa, de, ate)` sobre
+    o `st` do `_paradasStats` (duração sem almoço, `nDias` = dias trabalhados):
+    a régua da GESTÃO DE PERDAS.
+    - **Leitura**: `_capFixaCarregar` (só no diálogo, depois da programação —
+      uma de cada vez) → `_pgContextoDoPeriodo` com a janela de 30 dias da
+      GESTÃO (`_capFixaJanela` = `_pgFiltro(30)`): mesma busca, `PG_TELA_CACHE`
+      e voo compartilhado. As impressões seguem síncronas: sem a leitura, o
+      papel diz que as paradas não foram lidas.
+    - Tipo novo de parada que seja fixo → entrar no `CAP_FIXA_RE`.
+    - Papel enxuto na mesma versão: COMO O NÚMERO SAI uma linha por termo, a
+      nota que repetia o cabeçalho saiu (a de velocidade simulada fica).
   - **LIMITE ESTEIRA · PRODUTOS / DIA** (v7.170.0): é em PRODUTOS, não caixas —
     o PPCP leu "855 cx/dia contra limite 444" (444 produtos de 3 volumes =
     1.332 cx). A célula tem as caixas no `title`. A tabela tem as colunas

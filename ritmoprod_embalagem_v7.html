@@ -3459,7 +3459,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.170.0';
+const APP_VER   = '7.171.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7307,14 +7307,43 @@ function _capPtsMetaLer(v){
 // (GPX_TTL, a régua do PRÓXIMOS DIAS — é das leituras mais caras do backend);
 // o fim da leitura redesenha o diálogo. A impressão nunca espera por ela.
 let CAP_PROG_LENDO=false;
+// As paradas dos MOTIVOS DA PERDA FIXA (v7.171.0): os últimos 30 dias, a
+// janela padrão da GESTÃO DE PERDAS — a MESMA busca (_pgContextoDoPeriodo:
+// PG_TELA_CACHE e voo compartilhado), então com aquela aba já lida não há
+// chamada nova. Lidas DEPOIS da programação: uma leitura de cada vez.
+let CAP_FIXA_CTX=null, CAP_FIXA_LENDO=false, CAP_FIXA_FALHA=false;
+function _capFixaJanela(){
+  const ate=new Date(), de=new Date(); de.setDate(ate.getDate()-29);
+  const f=d=>p2(d.getDate())+'/'+p2(d.getMonth()+1)+'/'+d.getFullYear();
+  return { de:f(de), ate:f(ate) };
+}
+async function _capFixaCarregar(){
+  if(CAP_FIXA_LENDO || !CFG.sheetsUrl) return;
+  const w=_capFixaJanela();
+  if(CAP_FIXA_CTX && CAP_FIXA_CTX.de===w.de && CAP_FIXA_CTX.ate===w.ate && Date.now()-CAP_FIXA_CTX.t<PG_TELA_TTL) return;
+  CAP_FIXA_LENDO=true;
+  try{
+    const r=await _pgContextoDoPeriodo(w.de, w.ate);
+    if(r && r.ctx){ CAP_FIXA_CTX={ st:r.ctx.st, de:w.de, ate:w.ate, t:Date.now() }; CAP_FIXA_FALHA=false; }
+    else CAP_FIXA_FALHA=true;
+  }catch(e){ console.warn('motivos da perda fixa:', e); CAP_FIXA_FALHA=true; }
+  finally{ CAP_FIXA_LENDO=false;
+    const m=document.getElementById('modal-capjorn'); if(m && m.classList.contains('on')) _capJornPintar(); }
+}
+// O que o diálogo e as impressões mostram: a conta, ou o estado da leitura.
+function _capFixaDoPainel(fixa){
+  if(CAP_FIXA_CTX) return _capFixaMontar(CAP_FIXA_CTX.st, fixa, CAP_FIXA_CTX.de, CAP_FIXA_CTX.ate);
+  return CAP_FIXA_LENDO ? { lendo:true, fixa:Number(fixa)||0 } : { falha:true, fixa:Number(fixa)||0 };
+}
 function _ucvCapTodos(){
   _capCatLocal();
   if(!CAP_CAT && !CAP_BUSCANDO) _capBuscar();
   if(CFG.sheetsUrl && !CAP_PROG_LENDO && (!PROG_DET_TS || Date.now()-PROG_DET_TS>GPX_TTL)){
     CAP_PROG_LENDO=true;
     carregarProgramacaoDetalhada().finally(()=>{ CAP_PROG_LENDO=false;
-      const m=document.getElementById('modal-capjorn'); if(m && m.classList.contains('on')) _capJornPintar(); });
-  }
+      const m=document.getElementById('modal-capjorn'); if(m && m.classList.contains('on')) _capJornPintar();
+      _capFixaCarregar(); });
+  } else if(!CAP_PROG_LENDO) _capFixaCarregar();
   const i=document.getElementById('capj-min'), ip=document.getElementById('capj-pts'), ifx=document.getElementById('capj-fixa');
   if(i && !i.value){ try{ i.value=localStorage.getItem(CAP_JORN_LS)||''; }catch(e){} }
   if(ifx && !ifx.value){ try{ ifx.value=localStorage.getItem(CAP_FIXA_LS)||''; }catch(e){} }
@@ -7327,8 +7356,9 @@ function _capJornPintar(guardaPts){
   const v=(document.getElementById('capj-min')||{}).value, meta=_capMetaOficial();
   const vp=(document.getElementById('capj-pts')||{}).value, mp=_capPtsMetaLer(vp);
   if(guardaPts && !Number.isNaN(mp)){ try{ localStorage.setItem(CAP_PTS_LS, String(vp||'').trim()); }catch(e){} }
-  const J=_capJornada(meta, _capJornMin(v), CFG.turnoFim, _capJornMin((document.getElementById('capj-fixa')||{}).value));
-  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(J, meta);
+  const fx=_capJornMin((document.getElementById('capj-fixa')||{}).value);
+  const J=_capJornada(meta, _capJornMin(v), CFG.turnoFim, fx);
+  const r=document.getElementById('capj-res'); if(r) r.innerHTML=_capJornHtml(J, meta, _capFixaDoPainel(fx));
   // PROGRAMAÇÃO × CAPACIDADE (v7.168.0): a mesma montagem da impressão
   const g=document.getElementById('capj-prog');
   if(g){ let h='';
@@ -11230,8 +11260,8 @@ function _capJornLinhas(J){
   return [
     ['JORNADA NORMAL', `${fmtN(J.minNovo)} min`, `hoje ${fmtN(J.minHoje)} · −${fmtN(J.menos)} min/dia${J.fimNovo?` · fim às ${J.fimNovo} se o corte for no fim`:''}`],
     ['PERDA DE CAPACIDADE', `−${fmtP(Math.abs(J.pct))}`, J.fixa
-      ? `com ${fmtN(J.fixa)} min/dia de perda fixa mantidos · proporcional seria −${fmtP(Math.abs(J.pctProp))}`
-      : 'da capacidade de cada produto — no dia, no mês e no ano'],
+      ? `perda fixa de ${fmtN(J.fixa)} min/dia mantida · proporcional −${fmtP(Math.abs(J.pctProp))}`
+      : 'em cada produto — dia, mês e ano'],
     ['META DO DIA · MESMO RITMO', `${fmtN(J.metaNova)} UEP`, `hoje ${fmtN(J.meta)} UEP`],
     [`PARA MANTER ${fmtN(J.meta)} UEP`, `${fmtN(Math.round(J.ritmoManter))} UEP/h`, J.fixa
       ? `fora da perda fixa · hoje ${fmtN(Math.round(J.ritmoProdH))} UEP/h · +${fmtP(J.pctManter)} de ritmo`
@@ -11245,24 +11275,66 @@ function _capJornPeriodo(J){
     [`POR MÊS · ${CAP_DIAS_MES} DIAS ÚTEIS`, `−${fmtN(J.mesMenos)} UEP`, `−${_fmtHM(J.minMes)} de jornada`],
     [`POR ANO · ${CAP_MESES_ANO} MESES`, `−${fmtN(J.anoMenos)} UEP`, `−${_fmtHM(J.minAno)} de jornada`]];
 }
-function _capJornHtml(J, meta){
+function _capJornHtml(J, meta, M){
   if(!J) return `<div class="capj-n">Sem simulação: a impressão sai na jornada de hoje — ${fmtN(UEP_MIN_DIA)} min, meta ${fmtN(meta)} UEP.</div>`;
   if(J.erro) return `<div class="capj-n" style="color:var(--warn)">${_rpEsc(J.erro)}</div>`;
   return `<div class="capj-g">${_capJornLinhas(J).map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b><i>${l[2]}</i></div>`).join('')}</div>
     <div class="capj-g capj-p">${_capJornPeriodo(J).map(l=>`<div><span>${l[0]}</span><b>${l[1]}</b><i>${l[2]}</i></div>`).join('')}</div>
-    <div class="capj-n">Simulação — nada é gravado. A 🖨 CAPACIDADE POR PRODUTO sai na jornada nova, com PRODUTOS A MENOS por mês e por ano e a % PERDA.</div>`;
+    ${_capFixaLinhaHtml(M)}
+    <div class="capj-n">Simulação — nada é gravado.</div>`;
 }
 // O que a simulação supõe, numa frase (papel; no diálogo os cartões já dizem).
 function _capJornPremissa(J){
   return J.fixa
-    ? `A perda fixa de ${fmtN(J.fixa)} min/dia não diminui com a jornada: os ${fmtN(J.menos)} min saem todos do tempo de produzir (${fmtN(J.prodHoje)} → ${fmtN(J.prodNovo)} min), e a meta do dia e a capacidade de cada produto caem nessa proporção — −${fmtP(Math.abs(J.pct))}, contra −${fmtP(Math.abs(J.pctProp))} se todas as perdas encolhessem junto.`
-    : 'A linha mantém o ritmo de hoje: com menos minutos, a meta do dia e a capacidade de cada produto caem na mesma proporção.';
+    ? `Perda fixa de ${fmtN(J.fixa)} min/dia mantida: os ${fmtN(J.menos)} min saem do tempo de produzir (${fmtN(J.prodHoje)} → ${fmtN(J.prodNovo)} min) — −${fmtP(Math.abs(J.pct))}, contra −${fmtP(Math.abs(J.pctProp))} se todas as perdas encolhessem junto.`
+    : 'A linha mantém o ritmo de hoje: meta e capacidade caem na mesma proporção dos minutos.';
 }
-function _capJornDocHtml(J){
+// MOTIVOS DA PERDA FIXA (v7.171.0, PPCP 27/10/2026: "lista na impressão os
+// motivos da perda fixa"). O que NÃO encolhe com a jornada: depende do DIA
+// (café, limpeza, reunião, aniversariantes) ou da PROGRAMAÇÃO (troca de produto
+// e de cor, finalização de lote) — não do tempo rodado. Troca de plástico e
+// abastecimento acompanham as caixas (consumo): ficam fora, como "Outros" (sem
+// causa não se classifica). Tipo novo que seja fixo: entrar aqui.
+const CAP_FIXA_RE = /troca de produto|troca de cor|caf[eé]|limpeza|reuni|finaliza|anivers/i;
+// Conta pura: os tipos fixos do período, por dia trabalhado — a MESMA régua da
+// GESTÃO DE PERDAS (st do _paradasStats: duração sem o almoço, `nDias` = dias
+// trabalhados). A soma é a dos valores EXIBIDOS (uma casa), e a diferença para
+// a perda fixa digitada sai numa linha própria: o que está no número e não está
+// apontado (em 10/2026, o café, que deixou de ser apontado em 25/09).
+function _capFixaMontar(st, fixa, de, ate){
+  if(!st || !(st.nDias > 0)) return null;
+  const r1 = v => Math.round(v * 10) / 10, n = st.nDias;
+  const linhas = (st.tipos || []).filter(t => CAP_FIXA_RE.test(t.tipo || '') && t.min > 0)
+    .map(t => ({ tipo:t.tipo, minDia:r1(t.min / n), vezesDia:r1(t.qtd / n) }))
+    .filter(l => l.minDia > 0).sort((a, b) => b.minDia - a.minDia || a.tipo.localeCompare(b.tipo));
+  const apont = r1(linhas.reduce((a, l) => a + l.minDia, 0));
+  const f = Number(fixa) > 0 ? Number(fixa) : 0;
+  return { linhas, apont, nDias:n, de, ate, fixa:f, dif: f > 0 ? r1(f - apont) : null };
+}
+// Desenho (sem conta): a linha do diálogo e a tabela do papel.
+function _capFixaLinhaHtml(M){
+  if(!M) return '';
+  if(M.lendo) return '<div class="capj-n">Perda fixa apontada: lendo as paradas dos últimos 30 dias…</div>';
+  if(M.falha) return '<div class="capj-n">Perda fixa apontada: as paradas não foram lidas.</div>';
+  return `<div class="capj-n">Apontado como fixo · ${M.nDias} dias trabalhados: ${M.linhas.map(l => `${_rpEsc(l.tipo)} ${_capProgU1(l.minDia)}`).join(' · ') || 'nada'} = <b>${_capProgU1(M.apont)} min/dia</b>.</div>`;
+}
+function _capFixaDocHtml(M){
+  if(!M || !M.fixa) return '';
+  if(M.lendo || M.falha || !M.linhas) return '<div class="rp-note">Motivos da perda fixa: as paradas do período não foram lidas neste computador.</div>';
+  const lin = M.linhas.map(l => `<tr><td>${_rpEsc(l.tipo)}</td><td class="td-mono">${_capProgU1(l.vezesDia)}</td><td class="td-mono">${_capProgU1(l.minDia)}</td></tr>`).join('');
+  const dif = M.dif > 0 ? `<tr><td>Sem apontamento nas paradas</td><td class="td-mono">—</td><td class="td-mono">${_capProgU1(M.dif)}</td></tr>` : '';
+  return `<div class="rp-sec-ttl">MOTIVOS DA PERDA FIXA · ${_rpEsc(String(M.de).slice(0,5))} A ${_rpEsc(String(M.ate).slice(0,5))} · ${M.nDias} DIAS TRABALHADOS</div>
+<style>.cap-fixa th,.cap-fixa td{text-align:center}.cap-fixa th:first-child,.cap-fixa td:first-child{text-align:left}</style>
+<table class="cap-fixa" style="width:auto;min-width:40%"><thead><tr><th>MOTIVO</th><th>VEZES / DIA</th><th>MIN / DIA</th></tr></thead>
+<tbody>${lin}${dif}<tr><td class="td-bold">PERDA FIXA USADA</td><td></td><td class="td-bold">${fmtN(M.fixa)}</td></tr></tbody></table>
+${M.dif < 0 ? `<div class="rp-note">Digitado abaixo do apontado (${_capProgU1(M.apont)} min/dia).</div>` : ''}`;
+}
+function _capJornDocHtml(J, M){
   return `<div class="rp-sec-ttl" style="margin-top:0">SIMULAÇÃO DE JORNADA · ${fmtN(J.menos)} MIN A MENOS POR DIA${J.fixa?` · PERDA FIXA DE ${fmtN(J.fixa)} MIN/DIA`:''}</div>
 <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">${_capJornLinhas(J).map(l=>`<div class="kpi-card" style="border-left-color:#cbd5e0"><div class="kpi-lbl">${l[0]}</div><div class="kpi-val">${l[1]}</div><div class="kpi-sub">${l[2]}</div></div>`).join('')}</div>
 <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-top:8px">${_capJornPeriodo(J).map(l=>`<div class="kpi-card" style="border-left-color:#cbd5e0"><div class="kpi-lbl">A MENOS ${l[0]}</div><div class="kpi-val">${l[1]}</div><div class="kpi-sub">${l[2]}</div></div>`).join('')}</div>
-<div class="rp-note">${_capJornPremissa(J)} Nada foi gravado.</div>`;
+<div class="rp-note">${_capJornPremissa(J)} Nada foi gravado.</div>
+${J.fixa ? _capFixaDocHtml(M) : ''}`;
 }
 function _capMetaOficial(){ return Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):UEP_META_PADRAO; }
 // ── PROGRAMAÇÃO × CAPACIDADE (v7.168.0, PPCP 26/10/2026 — "evolução do
@@ -11505,7 +11577,7 @@ function gerarRelatorioCapProg(menos, metaPts, fixa){
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este endereço e tente de novo.'); return false; }
   const ritmo=fmtN(Math.round(C.porMin*60)), lida=C.lidaEm?new Date(C.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
   const corpo=`
-${J?_capJornDocHtml(J):''}
+${J?_capJornDocHtml(J, _capFixaDoPainel(J.fixa)):''}
 ${_capProgDocHtml(C)}
 <div class="rp-sec-ttl">COMO O NÚMERO SAI</div>
 <div style="font-size:10.5px;color:#5B6470;line-height:1.6">
@@ -11570,8 +11642,8 @@ function gerarRelatorioCapTodos(oficial, menos, fixa){
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este endereço e tente de novo.'); return; }
   const u2=v=>v.toFixed(2).replace('.',',');
   const corpo=`
-${J?_capJornDocHtml(J):''}
-<div class="rp-note" style="margin-top:0">Quantos produtos <b>completos</b> cabem num dia com <b>cada produto sozinho na linha</b>, pela meta de <b>${fmtN(meta)} UEP</b> na jornada normal (${fmtN(minD)} min${J?' — SIMULADA':''}). Todos os produtos do cadastro, do mais pesado para o mais leve. Mês de <b>${CAP_DIAS_MES} dias úteis</b>. Limite da esteira ${velS>0?`com velocidade <b>SIMULADA de ${fmtN(velS)} m/min</b>`:'com a velocidade do cadastro'}.</div>
+${J?_capJornDocHtml(J, _capFixaDoPainel(J.fixa)):''}
+${velS>0?`<div class="rp-note" style="margin-top:0">Limite da esteira com velocidade <b>SIMULADA de ${fmtN(velS)} m/min</b>.</div>`:''}
 ${CAP_CAT_ORIGEM?`<div class="rp-note" style="color:#B4650A">UEP do ${_rpEsc(CAP_CAT_ORIGEM)} — a leitura de agora ainda não chegou.</div>`:''}
 <div class="rp-sec-ttl">CAPACIDADE DIÁRIA POR PRODUTO · ${plural(com.length,'produto','produtos')}</div>
 <style>${_CAP_TODOS_SKIN}</style>
@@ -11591,15 +11663,15 @@ ${sem.length?`<div class="rp-sec-ttl">SEM UEP COMPLETA NO CADASTRO · ${plural(s
 <div class="rp-note">Algum volume está sem UEP na coluna UEP da PRODUTO_CODIGO — sem ela não dá para dizer quantos cabem. ${sem.slice(0,60).map(p=>_rpEsc(p.modelo+' '+p.nome)+(p.volSemUep.length?` (vol. ${p.volSemUep.join(', ')})`:'')).join(' · ')}${sem.length>60?` · e mais ${sem.length-60}`:''}.</div>`:''}
 <div class="rp-sec-ttl">COMO O NÚMERO SAI</div>
 <div style="font-size:10.5px;color:#5B6470;line-height:1.6">
-  <b>UEP do produto</b> = soma da UEP de cada volume no cadastro; entre as cores vale a mais rápida (menor UEP), nunca a média.
-  <b>Produtos / dia</b> = meta de UEP ÷ UEP do produto, arredondado para baixo. <b>Produtos / mês</b> = produtos / dia × ${CAP_DIAS_MES} dias úteis (o mês típico do simulador), sem sábado e sem hora extra. <b>Caixas / dia</b> = produtos × volumes.
-  <b>Produtos / hora</b> = produtos / dia ÷ ${fmtN(minD)} min × 60.
-  <b>Limite esteira · produtos / dia</b> = produtos (não caixas — em caixas, × os volumes) que a esteira passa em ${fmtN(minD)} min: velocidade × 60.000 ÷ (medida da caixa + entre-peças), somando o tempo de cada volume. Quando a UEP promete mais, vale o limite e a linha sai marcada. Velocidade: a do cadastro, ou a digitada no simulador.
-  <b>Pontos / dia</b> = produtos / dia × pontos do produto (soma dos PONTOS de cada volume no cadastro) — para comparar a régua de UEP com a de pontos.
-  ${J?`<b>Jornada simulada</b> = ${fmtN(J.minHoje)} − ${fmtN(J.menos)} = ${fmtN(J.minNovo)} min. ${J.fixa
-    ? `<b>Perda fixa</b> de ${fmtN(J.fixa)} min/dia (não diminui com a jornada): o tempo de produzir vai de ${fmtN(J.minHoje)} − ${fmtN(J.fixa)} = ${fmtN(J.prodHoje)} para ${fmtN(J.minNovo)} − ${fmtN(J.fixa)} = ${fmtN(J.prodNovo)} min, no ritmo de hoje (${fmtN(J.meta)} UEP ÷ ${fmtN(J.prodHoje)} min = ${fmtN(Math.round(J.ritmoProdH))} UEP/h fora da perda fixa): a meta do dia vira ${fmtN(J.meta)} × ${fmtN(J.prodNovo)} ÷ ${fmtN(J.prodHoje)} = ${fmtN(J.metaNova)} UEP (proporcional, sem perda fixa, seria −${fmtP(Math.abs(J.pctProp))}). O limite da esteira continua nos ${fmtN(J.minNovo)} min — é o teto físico, sem parada nenhuma.`
-    : `A linha mantém o ritmo de hoje (${fmtN(J.meta)} UEP ÷ ${fmtN(J.minHoje)} min = ${fmtN(Math.round(J.ritmoH))} UEP/h): a meta do dia vira ${fmtN(J.meta)} × ${fmtN(J.minNovo)} ÷ ${fmtN(J.minHoje)} = ${fmtN(J.metaNova)} UEP, e a esteira passa menos produtos nos minutos que sobram.`} <b>Produtos a menos / mês</b> = (produtos / dia na jornada de hoje − na simulada) × ${CAP_DIAS_MES}; <b>/ ano</b> = o do mês × ${CAP_MESES_ANO}. <b>% perda</b> = produtos / dia a menos ÷ produtos / dia de hoje — perto dos ${fmtP(Math.abs(J.pct))} da PERDA DE CAPACIDADE em todos; o que muda é o arredondamento para baixo. Caixas / dia e pontos / dia caem no MESMO % da linha (volumes e pontos por produto não mudam).`:''}<br>
-  É o ritmo <b>demonstrado</b> da linha, não o teto da esteira; vale para a jornada normal, sem hora extra. Num dia com vários produtos, cada um ocupa a parte dele — use o simulador (DIA MONTADO).
+  <div><b>UEP do produto</b> = soma dos volumes (entre as cores, a mais rápida)</div>
+  <div><b>Produtos / dia</b> = meta ÷ UEP do produto, para baixo · <b>/ mês</b> × ${CAP_DIAS_MES} dias úteis · <b>caixas</b> × volumes · <b>/ hora</b> ÷ ${fmtN(minD)} min × 60</div>
+  <div><b>Limite esteira</b> = produtos (não caixas) que a esteira passa em ${fmtN(minD)} min: velocidade × 60.000 ÷ (caixa + entre-peças) — acima dele vale o limite</div>
+  <div><b>Pontos / dia</b> = produtos × pontos do produto</div>
+  ${J?`<div><b>Jornada simulada</b> = ${fmtN(J.minHoje)} − ${fmtN(J.menos)} = ${fmtN(J.minNovo)} min · meta = ${J.fixa
+    ? `${fmtN(J.meta)} × ${fmtN(J.prodNovo)} ÷ ${fmtN(J.prodHoje)} = ${fmtN(J.metaNova)} UEP (tempo de produzir, sem os ${fmtN(J.fixa)} min de perda fixa; proporcional, sem perda fixa, seria −${fmtP(Math.abs(J.pctProp))})`
+    : `${fmtN(J.meta)} × ${fmtN(J.minNovo)} ÷ ${fmtN(J.minHoje)} = ${fmtN(J.metaNova)} UEP (mesmo ritmo)`}</div>
+  <div><b>A menos / mês</b> = (produtos / dia hoje − simulada) × ${CAP_DIAS_MES} · <b>/ ano</b> × ${CAP_MESES_ANO} · <b>% perda</b> = produtos / dia a menos ÷ produtos / dia de hoje; caixas e pontos caem no MESMO % da linha</div>`:''}
+  <div>Jornada normal, sem hora extra, cada produto sozinho na linha — num dia com vários, use o DIA MONTADO.</div>
 </div>
 <div class="rp-footer"><span>${APP_NOME_CX} · Embalagem</span><span>capacidade por produto · meta ${fmtN(meta)} UEP${J?' · jornada simulada de '+fmtN(minD)+' min':''}${J&&J.fixa?' · perda fixa de '+fmtN(J.fixa)+' min/dia':''} · mês de ${CAP_DIAS_MES} dias úteis</span></div>`;
   const html=_rpDocParadas('Capacidade diária por produto', true)   // PAISAGEM (PPCP: "pode virar a página")

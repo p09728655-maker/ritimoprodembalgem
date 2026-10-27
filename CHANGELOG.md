@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.171.0 — 27/10/2026 · MOTIVOS DA PERDA FIXA na impressão · papel enxuto
+
+- PPCP: *"lista na impressão os motivos da perda fixa"* → *"enxuga o que puder"*.
+- Com perda fixa digitada, as duas impressões do diálogo (CAPACIDADE POR
+  PRODUTO e PROGRAMAÇÃO × CAPACIDADE) trazem **MOTIVOS DA PERDA FIXA**: os tipos
+  de parada que não encolhem com a jornada (troca de produto e de cor, café,
+  limpeza, reunião, finalização de lote, aniversariantes), em vezes/dia e
+  min/dia, nos últimos 30 dias trabalhados. O que passa do apontado vira uma
+  linha **SEM APONTAMENTO NAS PARADAS** (hoje é o café, que deixou de ser
+  apontado em 25/09). O diálogo mostra a mesma soma numa linha.
+- As paradas são as da GESTÃO DE PERDAS (mesma janela de 30 dias, mesma busca
+  e cache): com aquela aba já lida, nenhuma chamada nova. Lidas ao abrir o
+  diálogo, depois da programação.
+- Papel enxuto: saiu a nota que repetia o cabeçalho; COMO O NÚMERO SAI virou
+  uma linha por termo; cartões e premissa mais curtos. O diálogo perdeu a frase
+  sobre a impressão.
+- **Atenção:** nenhum número mudou. Troca de plástico, abastecimento de
+  isomanta e "Outros" não entram como fixos (acompanham as caixas ou não têm
+  causa). Nada no `.gs`.
+
+---
+
 ## v7.170.0 — 27/10/2026 · PERDA FIXA na simulação de jornada · colunas centralizadas
 
 - PPCP: *"esse percentual é sobre o tempo que diminuiu?"* → *"colocar perda

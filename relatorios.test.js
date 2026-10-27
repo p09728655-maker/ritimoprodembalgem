@@ -4237,6 +4237,10 @@ console.log('\n── estudo de UEP ──');
       global.CAP_MESES_ANO = +JS.match(/const CAP_MESES_ANO = (\d+);/)[1];
       global._CAP_TODOS_SKIN = JS.match(/const _CAP_TODOS_SKIN = `([\s\S]*?)`;/)[1];
       eval(pega('function _fmtHM(')); eval(pega('function _capJornPeriodo(')); eval(pega('function _capJornPremissa('));
+      global.CAP_FIXA_RE = eval(JS.match(/const CAP_FIXA_RE = (\/[^\n]*\/i);/)[1]);
+      Object.assign(global, { CAP_FIXA_CTX: null, CAP_FIXA_LENDO: false, CAP_FIXA_FALHA: false });
+      eval(pega('function _capProgU1(')); eval(pega('function _capFixaMontar(')); eval(pega('function _capFixaLinhaHtml('));
+      eval(pega('function _capFixaDocHtml(')); eval(pega('function _capFixaDoPainel(')); eval(pega('function _capFixaJanela('));
       // eval direto (dentro de um forEach a função ficaria presa à seta)
       eval(pega('function _capVel(')); eval(pega('function _capJornMin(')); eval(pega('function _capJornada('));
       eval(pega('function _capJornLinhas(')); eval(pega('function _capJornHtml(')); eval(pega('function _capJornDocHtml('));
@@ -4262,10 +4266,44 @@ console.log('\n── estudo de UEP ──');
           _capJornada(2530, 24, null, 502).metaNova > 0, _capJornada(2530, 0, null, 60)],
          [true, 2415, true, true, true, true, null]);
       ok('o quadro com perda fixa: a perda maior, o proporcional ao lado e o ritmo fora da perda fixa',
-         [['−10,3%', 'com 60 min/dia de perda fixa mantidos', 'proporcional seria −9,1%', '2.270 UEP', '362 UEP/h', 'fora da perda fixa · hoje 325 UEP/h · +11,5% de ritmo']
+         [['−10,3%', 'perda fixa de 60 min/dia mantida · proporcional −9,1%', '2.270 UEP', '362 UEP/h', 'fora da perda fixa · hoje 325 UEP/h · +11,5% de ritmo']
            .filter(t => !_capJornHtml(Jf, 2530).includes(t)),
-          ['PERDA FIXA DE 60 MIN/DIA', 'os 48 min saem todos do tempo de produzir (467 → 419 min)', '−10,3%, contra −9,1%'].filter(t => !_capJornDocHtml(Jf).includes(t)),
+          ['PERDA FIXA DE 60 MIN/DIA', 'os 48 min saem do tempo de produzir (467 → 419 min)', '−10,3%, contra −9,1%'].filter(t => !_capJornDocHtml(Jf).includes(t)),
           /A linha mantém o ritmo de hoje/.test(_capJornDocHtml(J))], [[], [], true]);
+      // MOTIVOS DA PERDA FIXA (v7.171.0, PPCP 27/10/2026: "lista na impressão os
+      // motivos da perda fixa"): os tipos que não encolhem com a jornada, por dia
+      // trabalhado (a régua da GESTÃO DE PERDAS); o que passa do apontado sai à parte
+      ok('fixo = o que depende do dia ou da programação; o que acompanha as caixas (plástico, isomanta) e o sem causa ficam fora',
+         [['Troca de produto', 'Parada/Café', 'Limpeza', 'Parada para Limpeza', 'Reunião', 'Finalização de Lote', 'Aniversariantes do Mês', 'Troca de Cor (Robo)'].filter(t => !CAP_FIXA_RE.test(t)),
+          ['Troca de Plastico', 'Abastecimento Isomanta', 'Outros', 'Falta de material', 'Manutenção', 'Parada/Robo', 'Empilhadeira'].filter(t => CAP_FIXA_RE.test(t))], [[], []]);
+      const stF = { nDias: 20, tipos: [
+        { tipo:'Troca de produto', qtd:83, min:644 }, { tipo:'Outros', qtd:82, min:330 }, { tipo:'Troca de Plastico', qtd:62, min:266 },
+        { tipo:'Limpeza', qtd:3, min:40 }, { tipo:'Finalização de Lote', qtd:9, min:42 }, { tipo:'Reunião', qtd:2, min:28 },
+        { tipo:'Parada/Café', qtd:1, min:16.55 }, { tipo:'Abastecimento Isomanta', qtd:22, min:50 }, { tipo:'Troca de Cor (Robo)', qtd:0, min:0 } ] };
+      const Mf = _capFixaMontar(stF, 54, '28/09/2026', '27/10/2026');
+      ok('os motivos por dia trabalhado, do maior ao menor; a soma é a do que se lê (38,5) e o que passa dela fica SEM APONTAMENTO (15,5 de 54)',
+         [Mf.linhas.map(l => l.tipo + ' ' + l.minDia), Mf.apont, Mf.dif, Mf.nDias, _capFixaMontar(stF, 30).dif, _capFixaMontar(stF, 0).dif,
+          _capFixaMontar(null, 54), _capFixaMontar({ nDias:0, tipos:stF.tipos }, 54)],
+         [['Troca de produto 32.2', 'Finalização de Lote 2.1', 'Limpeza 2', 'Reunião 1.4', 'Parada/Café 0.8'], 38.5, 15.5, 20, -8.5, null, null, null]);
+      const dF = _capFixaDocHtml(Mf);
+      ok('o papel: a tabela dos motivos com a janela e os dias, a linha sem apontamento e a perda fixa usada; nada do que é variável',
+         [['MOTIVOS DA PERDA FIXA · 28/09 A 27/10 · 20 DIAS TRABALHADOS', 'Troca de produto', '32,2', 'Sem apontamento nas paradas', '15,5', 'PERDA FIXA USADA', '>54<'].filter(t => !dF.includes(t)),
+          /Outros|Plastico|Isomanta/.test(dF) || !/\.cap-fixa td:first-child\{text-align:left\}/.test(dF), /Digitado abaixo do apontado \(38,5 min\/dia\)/.test(_capFixaDocHtml(_capFixaMontar(stF, 30, '28/09/2026', '27/10/2026'))),
+          /Sem apontamento/.test(_capFixaDocHtml(_capFixaMontar(stF, 30, '28/09/2026', '27/10/2026'))),
+          /não foram lidas/.test(_capFixaDocHtml({ falha:true, fixa:54 })), /não foram lidas/.test(_capFixaDocHtml({ lendo:true, fixa:54 })), _capFixaDocHtml(null), _capFixaDocHtml(_capFixaMontar(stF, 0))],
+         [[], false, true, false, true, true, '', '']);
+      ok('o diálogo: uma linha com o apontado como fixo (lendo e falha dizem o que é)',
+         [_capFixaLinhaHtml(Mf).includes('Apontado como fixo · 20 dias trabalhados: Troca de produto 32,2'), _capFixaLinhaHtml(Mf).includes('= <b>38,5 min/dia</b>'),
+          /lendo as paradas/.test(_capFixaLinhaHtml({ lendo:true })), /não foram lidas/.test(_capFixaLinhaHtml({ falha:true })), _capFixaLinhaHtml(null),
+          _capJornHtml(Jf, 2530, Mf).includes('Apontado como fixo')], [true, true, true, true, '', true]);
+      ok('o desenho dos motivos não faz conta (tudo vem do _capFixaMontar)',
+         ['function _capFixaLinhaHtml(', 'function _capFixaDocHtml('].filter(f => /\/ *n\b|\.reduce\(|CAP_FIXA_RE|\.min *\//.test(pega(f))), []);
+      { const w = _capFixaJanela(), d = new Date(); d.setDate(d.getDate() - 29);
+        ok('a janela dos motivos é a de 30 dias da GESTÃO DE PERDAS (até hoje), e a leitura é a MESMA busca dela, depois da programação',
+           [w.ate === hojeStr(), w.de === p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear(),
+            /_pgContextoDoPeriodo\(w\.de, w\.ate\)/.test(pega('async function _capFixaCarregar(')), /_pgFiltro\(30,'30'\)/.test(pega('function _pgInitFiltro(')),
+            /carregarProgramacaoDetalhada\(\)\.finally\(\(\)=>\{[^{}]*_capFixaCarregar\(\);\s*\}\)/.test(pega('function _ucvCapTodos(')), /else if\(!CAP_PROG_LENDO\) _capFixaCarregar\(\)/.test(pega('function _ucvCapTodos('))],
+           [true, true, true, true, true, true]); }
       ok('vazio/0 = jornada de hoje (null); texto, negativo ou corte grande demais = erro, nunca um número inventado',
          [_capJornada(2530, 0), _capJornada(2530, _capJornMin('')), !!_capJornada(2530, _capJornMin('vinte')).erro,
           !!_capJornada(2530, _capJornMin('-24')).erro, !!_capJornada(2530, 600).erro, _capJornMin('24'), _capJornMin('24,5')],
@@ -4312,12 +4350,20 @@ console.log('\n── estudo de UEP ──');
       const slH = Math.floor(sl.tetoH * 503 / 60);
       ok('no limite da esteira, a jornada nova corta pelos minutos de esteira que sobram',
          [nums(linha('MESA CABECEIRA SLEEP'))[3], nums(linha('MESA CABECEIRA SLEEP'))[5]], [fmtN(slH), '−' + fmtN((sl.tetoDia - slH) * 22)]);
+      global.CAP_FIXA_CTX = { st: { nDias: 20, tipos: [{ tipo:'Troca de produto', qtd:83, min:644 }, { tipo:'Limpeza', qtd:3, min:40 }, { tipo:'Outros', qtd:82, min:330 }] }, de:'28/09/2026', ate:'27/10/2026', t: Date.now() };
       gerarRelatorioCapTodos(true, 48, 60);
+      ok('a impressão com perda fixa lista os motivos (34,2 apontados + 25,8 sem apontamento = 60), e as duas impressões passam por eles',
+         [['MOTIVOS DA PERDA FIXA · 28/09 A 27/10', '32,2', '25,8', 'PERDA FIXA USADA'].filter(t => !papel.includes(t)), /Outros/.test((papel.split('MOTIVOS DA PERDA FIXA')[1] || '').split('</table>')[0]),
+          /_capJornDocHtml\(J, _capFixaDoPainel\(J\.fixa\)\)/.test(pega('function gerarRelatorioCapTodos(')), /_capJornDocHtml\(J, _capFixaDoPainel\(J\.fixa\)\)/.test(pega('function gerarRelatorioCapProg('))],
+         [[], false, true, true]);
       // ELOA: 2.270 ÷ 4,32 = 525/dia; hoje 585 → 60 a menos × 22 = 1.320; 60 ÷ 585 = 10,3%
       ok('a impressão com perda fixa: a tabela na meta de 2.270, % PERDA maior, e o papel diz a perda fixa e a conta',
          [nums(linha('PENTEADEIRA ELOA')).slice(3, 8),
           ['PERDA FIXA DE 60 MIN/DIA', 'perda fixa 60 min', '2.530 × 419 ÷ 467 = 2.270', 'proporcional, sem perda fixa, seria −9,1%', 'perda fixa de 60 min/dia · mês'].filter(t => !papel.includes(t))],
          [['525', '11.550', '−1.320', '−15.840', '−10,3%'], []]);
+      global.CAP_FIXA_CTX = null;
+      ok('o papel enxuto: sem as frases que repetiam o cabeçalho, COMO O NÚMERO SAI uma linha por termo',
+         [/Quantos produtos <b>completos<\/b>|Todos os produtos do cadastro|É o ritmo <b>demonstrado/.test(papel), (papel.match(/<div><b>[^<]+<\/b> =/g) || []).length >= 6], [false, true]);
       papel = '';
       const alAntes = global.alert; let alerta = ''; global.alert = m => { alerta = m; };
       gerarRelatorioCapTodos(true, 600);
@@ -4351,7 +4397,7 @@ console.log('\n── estudo de UEP ──');
          [true, true, false, true, true, true]);
       ok('a perda fixa vai nas duas impressões e no quadro, e fica guardada neste computador junto com os minutos',
          [/localStorage\.setItem\(CAP_FIXA_LS/.test(IMP), /localStorage\.getItem\(CAP_FIXA_LS\)/.test(UCT), /const CAP_FIXA_LS = 'rpe_cap_fixa';/.test(JS),
-          /_capJornada\(meta, _capJornMin\(v\), CFG\.turnoFim, _capJornMin\(\(document\.getElementById\('capj-fixa'\)/.test(pega('function _capJornPintar(')),
+          /const fx=_capJornMin\(\(document\.getElementById\('capj-fixa'\)/.test(pega('function _capJornPintar(')) && /_capJornada\(meta, _capJornMin\(v\), CFG\.turnoFim, fx\)/.test(pega('function _capJornPintar(')),
           /_capJornada\(meta0, menos, CFG\.turnoFim, fixa\)/.test(pega('function gerarRelatorioCapTodos(')), /_capJornada\(meta0, menos, CFG\.turnoFim, fixa\)/.test(pega('function gerarRelatorioCapProg('))],
          [true, true, true, true, true, true]);
     }
