@@ -4596,6 +4596,15 @@ feito e dá ar de verdade ao que sobrou.
     quadro). O ANEXO diz que cada dia leva só os lotes dele.
   - ⚠ A aba PLANO (carteira em UEP) **ainda** põe a dívida nos primeiros dias
     do nivelamento (`_cartAberta(…, dv.uep, …)`) — não mexido.
+- **CAPACIDADE DEMONSTRADA como referência** (v7.177.0, PPCP 27/10/2026: *"por
+  que 2.530 se no histórico faz mais?"* → *"2761"*). `_gpxCapDem(P, per)` (conta)
+  + `_gpxCapDemHtml` (desenho, tinta neutra), montada no `_gpxDoPainel` com o
+  `_uepAbaPeriodo(UEP_HIST, _uepPerN())` — a MÉDIA POR DIA do bloco 5, o MESMO
+  número do card. Horas = média ÷ (meta ÷ 527) por dia útil (sem fds/feriado;
+  dia útil vazio é capacidade). **Os cartões seguem pela meta** (dois vereditos
+  na mesma tela é o defeito caro deste projeto). Medido no print de 27/10: meta
+  43h55 (faltam 13h05) × média 2.761 = 47h56 (faltam 9h04). A meta 2.530 está
+  no ~p21 de 28/09–26/10 (mediana 2.762): subir a meta é decisão do PPCP.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo

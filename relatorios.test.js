@@ -4815,6 +4815,7 @@ console.log('\n── estudo de UEP ──');
     ok('cartão: FERIADO com a descrição (não "SEM LOTE DATADO"); com lote, FERIADO · HORA EXTRA',
        [/>FERIADO</.test(CF), /FINADOS/.test(CF), /SEM LOTE DATADO/.test(CF), /FERIADO · HORA EXTRA/.test(CL), /FIM DE SEMANA/.test(CL)], [true, true, false, true, false]);
     global.plural = global.plural || ((n, a, b) => n + ' ' + (n === 1 ? a : b));
+    eval(pega('function _gpxCapDem(')); eval(pega('function _gpxCapDemHtml('));
     eval(pega('function _gpxHtml('));
     ok('a linha de totais diz qual dia é feriado, e o feriado não conta como dia que pede',
        [/02\/11 feriado — fora da jornada/.test(_gpxHtml(com, 0)), /6 dias pedem/.test(_gpxHtml(com, 0)), /5 dias pedem/.test(_gpxHtml(com, 0))], [true, false, true]);
@@ -4829,6 +4830,26 @@ console.log('\n── estudo de UEP ──');
     ok('FILA DE CRONOANÁLISE: a janela de dias úteis pula o feriado',
        [_filaUteis(new Date(2026, 9, 29), 3), _filaUteis(new Date(2026, 9, 29), 3, FER)], [[20261029, 20261030, 20261102], [20261029, 20261030, 20261103]]);
     ok('a FILA recebe os feriados da programação', /_filaUteis\(agora, GPX_DIAS, PROG_FERIADOS\)/.test(JS), true);
+    // v7.177.0 — a capacidade DEMONSTRADA como referência (PPCP: "por que 2.530
+    // se no histórico faz mais?" → "2761"): a MÉDIA POR DIA do bloco 5.
+    // o print das 16:08: 28/10 10h50, 29/10 13h21, 30/10 9h53, 03/11 10h31, 04/11 12h25
+    const com5 = _gpxMontar(FI.concat([it('04/11/2026','25390',100,U(745))]), new Date(2026, 9, 27), 0, 0, 2530, 5, null, FER);
+    const CD = _gpxCapDem(com5, { n:19, res:{ media:2761 } });
+    ok('na média feita (2.761 UEP/dia): 5 dias úteis × 9h35 = 47h56 para 57h00 → faltam 9h04 (pela meta, 13h05)',
+       [_fmtHM(CD.minDia), _fmtHM(CD.minCap), _fmtHM(CD.minPede), _fmtHM(-CD.saldo), _fmtHM(com5.falta)], ['9h35', '47h56', '57h00', '9h04', '13h05']);
+    ok('dia útil sem lote também é capacidade (nos 4 dias com lote: cabem 47h56 para 44h35, sobram 3h21)',
+       (() => { const c = _gpxCapDem(com, { n:19, res:{ media:2761 } }); return [_fmtHM(c.minCap), _fmtHM(c.minPede), _fmtHM(c.saldo)]; })(), ['47h56', '44h35', '3h21']);
+    ok('o feriado com lote não entra (não tem jornada): pedido e capacidade só dos 5 dias úteis',
+       (() => { const c = _gpxCapDem(FL, { n:19, res:{ media:2761 } }); return [_fmtHM(c.minPede), _fmtHM(c.minCap)]; })(), ['44h35', '47h56']);
+    ok('sem histórico (ou sem média), sem linha — nunca uma capacidade inventada',
+       [_gpxCapDem(com, null), _gpxCapDem(com, { n:0, res:{ media:null } }), _gpxCapDem({ falha:'sem-uep' }, { n:19, res:{ media:2761 } }), _gpxCapDemHtml(null)], [null, null, null, '']);
+    const CH2 = _gpxCapDemHtml(CD);
+    ok('a linha diz a média, os dias, quanto cabe e quanto falta — em tinta neutra, sem selo',
+       [/2\.761<\/b> UEP\/dia · 19 dias fechados/.test(CH2), /cabem <b>47h56<\/b> para <b>57h00<\/b>/.test(CH2), /faltam <b>9h04<\/b>/.test(CH2), /class="r"|var\(--red\)|var\(--ok\)/.test(CH2)],
+       [true, true, true, false]);
+    ok('o painel monta a referência pelo MESMO período do bloco 5, e o desenho do PRÓXIMOS DIAS a mostra',
+       [/_gpxCapDem\(P, typeof UEP_HIST !== 'undefined' && UEP_HIST \? _uepAbaPeriodo\(UEP_HIST, _uepPerN\(\)\) : null\)/.test(pega('function _gpxDoPainel(')),
+        /_gpxCapDemHtml\(P\.capDem\)/.test(pega('function _gpxHtml('))], [true, true]);
     ok('a diretoria guarda e restaura os feriados junto com a programação',
        [/_dirGuarda\('fer', PROG_FERIADOS\)/.test(JS), /_dirLe\('fer'/.test(pega('function _dirRestaura('))], [true, true]); }
 }

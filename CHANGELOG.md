@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.177.0 — 27/10/2026 · PRÓXIMOS DIAS: a capacidade que a linha demonstrou, como referência
+
+- PPCP: *"a capacidade, por que 2.530 UEP/dia se no histórico faz mais?"* →
+  *"2761"*. O PRÓXIMOS DIAS converte UEP em horas pela **meta** (2.530 em 527
+  min) — e a meta fica perto do percentil 21 dos últimos 19 dias fechados (15
+  bateram; mediana 2.762).
+- Nova linha abaixo do total, **só de referência**: *"na média que a linha fez
+  (2.761 UEP/dia · 19 dias fechados): cabem 47h56 para 57h00 · faltam 9h04"*.
+  A média é a **MÉDIA POR DIA do bloco 5** da mesma aba (jornada, sem hora
+  extra, dias fechados; segue o filtro 7/15/30 dele), convertida em horas no
+  ritmo da meta. Conta só dia útil (fim de semana e feriado não têm jornada);
+  dia útil sem lote conta como capacidade.
+- **Atenção:** os cartões continuam julgados pela meta (FALTA/FOLGA e as cores
+  não mudaram) — em metade dos dias a linha faz menos que a média, então a
+  linha nova é a ponta otimista e o total pela meta a conservadora. Vai também
+  na impressão executiva da aba UEP. Sem histórico lido, a linha não aparece.
+
 ## v7.176.0 — 27/10/2026 · PRODUÇÃO/HORA: métricas em UEP no comparativo
 
 - PPCP, com o comparativo na tela: *"acrescentar a métrica em UEP"*. O

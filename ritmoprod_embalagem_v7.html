@@ -810,6 +810,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-prox .gpx-tot{display:flex;gap:26px;flex-wrap:wrap;margin:12px 16px 0;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-d);font-size:12px;color:var(--txt2)}
 #ger-prox .gpx-tot b{color:var(--txt);font-size:14px}
 #ger-prox .gpx-tot .r b{color:var(--red)}
+#ger-prox .gpx-capdem{margin-top:0;padding-top:6px;border-top:0}   /* a média feita, logo abaixo do total pela meta */
 #ger-prox .gpx-sem{margin:0 16px 16px;border:1px solid rgba(255,152,0,.45);border-left:4px solid var(--warn);border-radius:6px;padding:9px 13px;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.6}
 #ger-prox .gpx-sem b{color:var(--warn)}
 #ger-prox .gpx-sem ul{margin:4px 0 0 16px}
@@ -3483,7 +3484,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.176.0';
+const APP_VER   = '7.177.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7934,6 +7935,7 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-prox .gpx-tot{display:flex;gap:18px;flex-wrap:wrap;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470}
   .uep-doc .ud-prox .gpx-tot b{color:#1F2328}
   .uep-doc .ud-prox .gpx-tot .r b{color:#C62828}
+  .uep-doc .ud-prox .gpx-capdem{margin-top:3px}
   .uep-doc .ud-prox .gpx-nota{display:none}   /* a fórmula vai no ANEXO — COMO LER */
   /* a lista SEM UEP já sai inteira na ORIGEM DA UEP, logo abaixo — no papel
      ela não se repete aqui */
@@ -14992,9 +14994,19 @@ function _gpxHtml(P, alt, cartaoHoje){   // `alt` era a altura do trilho; o cart
       + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
       + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '')
-      + ((P.feriados || []).length ? `<span>${P.feriados.map(f => f.data.slice(0,5)).join(', ')} ${P.feriados.length > 1 ? 'feriados' : 'feriado'} — fora da jornada</span>` : '') + `</div>
+      + ((P.feriados || []).length ? `<span>${P.feriados.map(f => f.data.slice(0,5)).join(', ')} ${P.feriados.length > 1 ? 'feriados' : 'feriado'} — fora da jornada</span>` : '') + `</div>`
+      + _gpxCapDemHtml(P.capDem) + `
     <div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
+}
+// A linha da capacidade demonstrada (desenho; a conta é do _gpxCapDem). Cor
+// neutra de propósito: o veredito do dia é a meta, nos cartões.
+function _gpxCapDemHtml(c){
+  if(!c) return '';
+  const r = Math.round(c.saldo);
+  const tip = `Referência, não veredito: a MÉDIA POR DIA do bloco 5 (${fmtN(Math.round(c.uepDia))} UEP de jornada, sem hora extra, ${c.nDias} dias fechados) convertida em horas no ritmo da meta = ${_fmtHM(c.minDia)} por dia útil. Em metade dos dias a linha faz menos que a média — os cartões continuam julgados pela meta.`;
+  return `<div class="gpx-tot gpx-capdem" title="${_rpEsc(tip)}"><span>na média que a linha fez (<b>${fmtN(Math.round(c.uepDia))}</b> UEP/dia · ${plural(c.nDias, 'dia fechado', 'dias fechados')}): cabem <b>${_fmtHM(c.minCap)}</b> para <b>${_fmtHM(c.minPede)}</b></span>`
+    + (r > 0 ? `<span>sobram <b>${_fmtHM(r)}</b></span>` : r < 0 ? `<span>faltam <b>${_fmtHM(-r)}</b></span>` : '<span>empata</span>') + `</div>`;
 }
 // O CARTÃO HOJE (v7.156.0) — só na tela da aba ⚖ UEP, antes dos próximos
 // dias. É PREVISÃO: o dia não acabou. Diz o que falta zerar (atraso vencido +
@@ -15052,8 +15064,25 @@ function _gpxDoPainel(n, metaUep){
   // hoje feriado: não há resto de jornada para a dívida caber
   const ag = new Date(), feriadoHoje = PROG_FERIADOS[_cartNum(p2(ag.getDate()) + '/' + p2(ag.getMonth()+1) + '/' + ag.getFullYear())] != null;
   const P = _gpxMontar(PROG_DETALHADA, ag, dv.uep, feriadoHoje ? 0 : UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), metaUep || PONTOS_DIA.metaUep, n || GPX_DIAS, dv.uepAtr, PROG_FERIADOS);
-  if(!P.falha){ P.divSemUep = dv.semUep; P.divLinhas = dv.linhas; P.lidaEm = PROG_DET_TS; }
+  if(!P.falha){ P.divSemUep = dv.semUep; P.divLinhas = dv.linhas; P.lidaEm = PROG_DET_TS;
+    P.capDem = _gpxCapDem(P, typeof UEP_HIST !== 'undefined' && UEP_HIST ? _uepAbaPeriodo(UEP_HIST, _uepPerN()) : null); }
   return P;
+}
+// A CAPACIDADE DEMONSTRADA como REFERÊNCIA (v7.177.0, PPCP 27/10/2026: "por
+// que 2.530 UEP/dia se no histórico faz mais?" → "2761"). Os cartões seguem
+// julgados pela META (2.530 em 527 min, a régua da jornada); esta linha diz o
+// que a mesma carga daria na MÉDIA que a linha fez — a MÉDIA POR DIA do bloco
+// 5 (jornada, sem HE, dias fechados, o filtro 7/15/30 dele). Em horas no
+// ritmo da meta: média ÷ (meta ÷ 527 min) por dia útil. Só dias úteis (sem
+// fim de semana nem feriado, que não têm jornada). Sem histórico → null.
+// É referência, não veredito: em metade dos dias a linha faz menos que a média.
+function _gpxCapDem(P, per){
+  if(!P || P.falha || !per || !(per.n > 0) || !per.res || !(per.res.media > 0) || !(P.porMin > 0)) return null;
+  const uteis = (P.dias || []).filter(d => !d.fds);
+  if(!uteis.length) return null;
+  const minDia = per.res.media / P.porMin;
+  const minCap = minDia * uteis.length, minPede = uteis.reduce((a, d) => a + (d.min || 0), 0);
+  return { uepDia: per.res.media, nDias: per.n, minDia, minCap, minPede, saldo: minCap - minPede };
 }
 function renderProxDias(){
   const box = document.getElementById('ger-prox'), corpo = document.getElementById('gpx-corpo');
