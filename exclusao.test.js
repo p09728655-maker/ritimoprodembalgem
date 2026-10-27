@@ -255,6 +255,7 @@ vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
 vm.runInContext('var LANC_REPETIDO_MIN = ' + MJS.match(/const LANC_REPETIDO_MIN = (\d+);/)[1] + ';', F);
 vm.runInContext('var LANC_TOLERANCIA_MIN = ' + MJS.match(/const LANC_TOLERANCIA_MIN = (\d+);/)[1] + ';', F);
+vm.runInContext('var LANC_MADRUGADA_FIM = ' + MJS.match(/const LANC_MADRUGADA_FIM = ([^;]+);/)[1] + ';', F);
 ['function lancRepetido(', 'function lancRepetidoTxt(', 'function _escH(', 'function corrListaHtml(', 'function corrConfirmaTxt(',
  'function slotLancavel(', 'function _corrHoraTravada(', 'function corrTrocaTxt(', 'function _corrK(', 'function _corrContaCod(']
   .forEach(f => vm.runInContext(pega(MJS, f), F));
@@ -308,6 +309,10 @@ console.log('\n── celular: a correção ──');
   ok('hora travada = a regra da lista (corrente + ' + vm.runInContext('LANC_TOLERANCIA_MIN', F) + ' min): 15:19 trava a das 14:00, 15:10 ainda não',
      [tv('14:00-15:00', 15, 19), tv('14:00-15:00', 15, 10), tv('14:00-15:00', 14, 30), tv('HE 17:00-18:00', 17, 30), tv('sem hora', 15, 30)],
      [true, false, false, false, false]);
+  // Madrugada (mobile 1.38.0): a hora das 05:00 aceita lançamento o resto do
+  // dia — excluir não trava o relançamento, então a exclusão não avisa.
+  ok('madrugada não trava: 05:00 às 09:00 aceita relançar; 07:00 às 09:00 trava',
+     [tv('05:00-06:00', 9, 0), tv('06:00-07:00', 9, 0), tv('07:00-08:00', 9, 0)], [false, false, true]);
   const tr = vm.runInContext(`corrTrocaTxt('14:00-15:00', {cx:203, codigo:'501106013', desc:'VOL 1/1 RACK SIRIUS 1.6', cor:'CINAMOMO'}, 'VOL 1/1 RACK SIRIUS 1.4 · OFF WHITE/CINAMOMO', 203)`, F);
   ok('a confirmação da troca diz o que sai, o que entra e que a hora não muda',
      ['203 cx da hora 14:00-15:00', 'Sai: VOL 1/1 RACK SIRIUS 1.6 · CINAMOMO', 'Entra: VOL 1/1 RACK SIRIUS 1.4 · OFF WHITE/CINAMOMO', 'A hora não muda (203 cx)'].map(x => tr.includes(x)),
@@ -338,8 +343,8 @@ console.log('\n── celular: a correção ──');
      /corrigivel = bloqueado && !!\(slot\.lotes&&slot\.lotes\.length\)/.test(MJS) && /abrirCorrecao\('\$\{slot\.inicio\}'/.test(MJS), true);
   ok('o modal da hora atual leva à correção', /onclick="_corrDoLanc\(\)">✎ CORRIGIR UM LANÇAMENTO</.test(MJS), true);
   ok('versão do app e cache do service worker sobem juntos',
-     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v46';\s+\/\/ APP_VER 1\.37\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
-     ['1.37.0', true]);
+     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v47';\s+\/\/ APP_VER 1\.38\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
+     ['1.38.0', true]);
 }
 
 console.log(falhas === 0

@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.38.0 — 27/10/2026 · LANÇAR A MADRUGADA DEPOIS DAS 07:00
+
+- PPCP: *"preciso de uma solução para dar entrada quando o operador do app não
+  entra às 5:00"* → *"tem que ser pelo app ou pelo gerencial"*.
+- A linha começa às 05:00 em hora extra e o operador do app só chega às 07:00:
+  as horas **05:00 e 06:00** já tinham fechado e o app não aceitava mais nada
+  nelas (só a hora corrente e a recém-fechada, por 15 min).
+- Agora **hora que termina até 07:00 aceita lançamento o resto do dia**, pelo
+  app, com produto — baixa o lote, entra na UEP e nos pontos, como qualquer
+  lançamento. A linha mostra *AINDA ACEITA · hora extra · aceita lançamento
+  hoje*. Da 07:00 em diante nada mudou.
+- Passo a passo: **COMEÇOU ÀS 05:00?** (a C3 vai a 5 e as duas horas aparecem)
+  → toque na hora → quantidade → **PRODUTO DA MADRUGADA**: o app pergunta se o
+  produto é o que rodou NAQUELA hora (o selecionado é o de agora). TROCAR
+  PRODUTO abre o seletor (toque ou bipe) sem perder a quantidade.
+- Depois de lançar com outro produto, o app oferece **VOLTAR AO ANTERIOR** — o
+  lançamento troca o produto atual do turno.
+- O bipe continua abrindo só a hora corrente.
+- **Atenção:** nenhum número muda de régua. As caixas da madrugada contam como
+  hora extra (05:00–07:00, como sempre). Lançadas depois do FECHAR DIA das 17:05
+  ficam fora do HISTORICO — FECHAR DIA de novo, como já era.
+- Nada no `.gs` (o backend sempre aceitou qualquer hora da planilha).
+
+---
+
 ## v7.169.0 — 26/10/2026 · PONTOS NA JORNADA × META na PROGRAMAÇÃO × CAPACIDADE
 
 - PPCP: *"poucos produtos chegam"* à meta de pontos/dia, *"esse número é o

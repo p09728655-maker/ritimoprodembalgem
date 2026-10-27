@@ -146,6 +146,20 @@ via Google Apps Script (JSONP).
   na linha — ver *O que é gravado no HISTORICO*.
 - Nada no `.gs`: a regra é só de tela (o `saveRealizado` sempre aceitou
   qualquer slot existente da `HORA_A_HORA`).
+- **MADRUGADA (mobile 1.38.0, 27/10/2026)** — PPCP: *"dar entrada quando o
+  operador do app não entra às 5:00"*. Hora que **termina até 07:00**
+  (`LANC_MADRUGADA_FIM` = o `HE_JORNADA_INI_MIN` do `.gs`; o teste confere)
+  aceita lançamento **o resto do dia** — `slotLancavel` devolve `madrugada`. A
+  hora da jornada continua com a regra de sempre. Só aparece com a C3 em 5
+  (botão **COMEÇOU ÀS 05:00?** do próprio app).
+  - O produto do app é o de AGORA: na hora da madrugada o `salvarLanc` pergunta
+    **PRODUTO DA MADRUGADA** antes (TROCAR PRODUTO em destaque, abre o seletor
+    por cima, a quantidade fica; o bipe responde TROCAR, tag `mad`). Gravou com
+    outro produto → **VOLTAR AO ANTERIOR** (`_lancMadrugadaVolta`, tag `mad2`):
+    o `registrarProducaoProduto` troca o produto atual do turno.
+  - A exclusão de lançamento da madrugada não avisa "não dá para relançar"
+    (`_corrHoraTravada` usa a mesma regra). O bipe segue só na hora corrente.
+  - Gerencial do PC **não** lança: ele não tem seletor de produto.
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas
