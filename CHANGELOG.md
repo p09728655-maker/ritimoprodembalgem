@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.178.0 — 27/10/2026 · PRÓXIMOS DIAS por semana (aba UEP, impressão e diretoria)
+
+- PPCP, com o print: *"está confundindo muito como não cabe… melhor tirar dia de
+  hoje e contar só a semana… semana que vem são 4 dias devido ao feriado"* e
+  *"tem 7 dias na tela"* → prévia aprovada (*"por semana"*), e *"sim"* para a
+  impressão executiva e a diretoria.
+- **Saiu o cartão HOJE** (o "NÃO CABEM 7h46"). O que sobrar do lote de hoje
+  aparece amanhã no quadro ATRASO — CONFERÊNCIA, que continua embaixo.
+- **Saiu o cartão do feriado**: o feriado é dito no cabeçalho da semana.
+- **Um bloco por semana** — o resto DESTA semana e a SEMANA QUE VEM (sem dia útil
+  sobrando nesta semana, a que vem e a seguinte) —, cada um com o seu total:
+  *"ESTA SEMANA · 28/10 a 30/10 · 3 dias úteis — pedem 31h13 para 26h21 ·
+  faltam 4h52"* e *"SEMANA QUE VEM · 03/11 a 06/11 · 4 dias úteis · 02/11
+  feriado — pedem 37h52 para 35h08 · faltam 3h27 · sobram 0h43"*. O cartão fica
+  na coluna do dia da semana (SEG a SEX; SÁB só com lote, como hora extra).
+- **Impressão executiva da aba UEP**: o mesmo desenho; no papel a linha "Lotes"
+  dos cartões sai (fica o mais pesado) e o espaçamento aperta — medido em PDF,
+  continua em 3 folhas, inclusive com o mix cheio e hora extra.
+- **Diretoria**: os mesmos blocos; os cartões ficam com dia, selo, horas e a
+  carga (lotes e "mais pesado" saem — o detalhe está na aba UEP); o aviso de
+  linha sem UEP vai no cabeçalho da 1ª semana. Medido a 1920×1080 e 1366×768:
+  nada corta.
+- **Atenção:** nenhuma conta mudou — cada dia é o mesmo de antes; muda o
+  horizonte (até o fim da semana que vem, em vez de 5 dias úteis) e o total, que
+  agora é por semana. A linha da média feita segue embaixo (no total das duas
+  semanas). A PROGRAMAÇÃO × CAPACIDADE (impressão de capacidade) não mudou.
+
 ## v7.177.0 — 27/10/2026 · PRÓXIMOS DIAS: a capacidade que a linha demonstrou, como referência
 
 - PPCP: *"a capacidade, por que 2.530 UEP/dia se no histórico faz mais?"* →
