@@ -3472,7 +3472,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.173.0';
+const APP_VER   = '7.174.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5677,10 +5677,13 @@ const FILA_MOTIVOS = {
   'sem-medida': { t:'SEM MEDIDA',           d:'sem MEDIDA DA CAIXA no cadastro: não dá para conferir a UEP pela esteira' }
 };
 // Próximos n dias ÚTEIS (seg–sex), a partir de hoje se hoje for útil → [aaaammdd].
-function _filaUteis(base, n){
+// `fer` (v7.174.0, opcional): { aaaammdd: descrição } da aba FERIADOS — fica fora.
+function _filaUteis(base, n, fer){
   const d = new Date(base.getFullYear(), base.getMonth(), base.getDate()), out = [];
-  while(out.length < n){
-    if(d.getDay() !== 0 && d.getDay() !== 6) out.push(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate());
+  let guarda = 0;
+  while(out.length < n && guarda++ < 60){
+    const num = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    if(d.getDay() !== 0 && d.getDay() !== 6 && !(fer && fer[num] != null)) out.push(num);
     d.setDate(d.getDate() + 1);
   }
   return out;
@@ -5905,7 +5908,7 @@ async function gerarRelatorioFilaCrono(){
   const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
                 amDe:FILA_AMOSTRA_DE, amAte:am ? am.ate : (UEP_TRAVADA_DESDE || '—') };
   try{
-    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS), PONTOS_DIA.metaUep);
+    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS, PROG_FERIADOS), PONTOS_DIA.metaUep);
     corpo = _filaCronoHtml(F, ctx);
   }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
   const html = _rpDocParadas('Fila de cronoanálise — ' + ctx.data, true)
@@ -11078,6 +11081,17 @@ const PROG_DET_TTL=120000;   // 2 min, como o cache do histórico
 //   null | 'sem-resposta' (timeout/cold start) | 'sem-endpoint' (.gs antigo)
 //   | 'erro' (backend respondeu com erro) | 'sem-url' (painel sem Sheets)
 let PROG_DET_FALHA=null, PROG_DET_ERRO='';
+// FERIADOS (v7.174.0 / .gs v5.38, PPCP 27/10/2026: "02/11 feriado, como
+// tratar?"): { aaaammdd: descrição } da aba FERIADOS da planilha, que vem junto
+// com a programação detalhada. O dia sai da jornada no PRÓXIMOS DIAS, na
+// PROGRAMAÇÃO × CAPACIDADE e na janela da FILA. Backend antigo não manda a
+// lista → {} e o dia sem lote continua sendo dia útil, como antes.
+let PROG_FERIADOS={};
+function _feriadosMapa(lista){
+  const m = {};
+  (Array.isArray(lista) ? lista : []).forEach(x => { const n = _cartNum(x && x.data); if(n) m[n] = String((x && x.desc) || 'FERIADO'); });
+  return m;
+}
 function invalidarProgDetCache(){ PROG_DET_TS=0; PROG_DET_VOO=null; }
 async function carregarProgramacaoDetalhada(){
   if(!CFG.sheetsUrl){ PROG_DET_FALHA='sem-url'; return false; }
@@ -11098,7 +11112,7 @@ async function carregarProgramacaoDetalhada(){
         // DIAS dizia "não consegui ler a programação" com 25 s)
         const json=await jsonpFetch(url, _modoDir() ? 60000 : undefined);
         if(json && json.ok && Array.isArray(json.itens)){
-          PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now();
+          PROG_DETALHADA=json.itens; PROG_DET_TS=Date.now(); PROG_FERIADOS=_feriadosMapa(json.feriados);
           PROG_DET_FALHA=null; PROG_DET_ERRO=''; return true;
         }
         if(json && json.erro){ PROG_DET_FALHA='erro'; PROG_DET_ERRO=String(json.erro); return false; }
@@ -11533,9 +11547,9 @@ function _capProgMontar(P, J, metaPts){
   // o que J.minCap minutos rendem hoje — a MESMA meta da CAPACIDADE POR PRODUTO.
   const jorn = [{ id:'hoje', min:UEP_MIN_DIA, jorn:UEP_MIN_DIA }];
   if(J && !J.erro) jorn.push({ id:'sim', min:J.minCap, jorn:J.minNovo });
-  let ult = -1; P.dias.forEach((d, i) => { if(d.estado !== 'vazio') ult = i; });
+  let ult = -1; P.dias.forEach((d, i) => { if(d.estado !== 'vazio' && d.estado !== 'feriado') ult = i; });
   const dias = P.dias.slice(0, ult + 1).map(d => {
-    const vazio = d.estado === 'vazio';
+    const vazio = d.estado === 'vazio' || d.estado === 'feriado';
     const semDados = !vazio && !d.fds && !(d.uep > 0);      // só linhas sem UEP: o tempo não se sabe
     // MINUTO INTEIRO por dia: é o que a tela mostra, e os totais do período
     // (somas destes) fecham com a coluna dia a dia. A situação não muda — o
@@ -11578,7 +11592,7 @@ function _capProgMontar(P, J, metaPts){
       }
       return Math.round(t);
     });
-    return { data:d.data, dow:d.dow, fds:d.fds, vazio, semDados, uep:d.uep, cx:d.cx, cxAdi:d.cxAdi, pts:d.pts, min:m,
+    return { data:d.data, dow:d.dow, fds:d.fds, fer:d.fer || '', vazio, semDados, uep:d.uep, cx:d.cx, cxAdi:d.cxAdi, pts:d.pts, min:m,
              cxSemUep:d.cxSemUep, por, comOrdem, ordRep: comOrdem && new Set(gs.map(g => g.ordem)).size < gs.length, lotes,
              acima: por.some(x => x && (x.estado === 'warn' || x.estado === 'red')),
              ptsUep: d.pts != null && d.uep > 0 ? d.pts / d.uep : null, ptsJ,
@@ -11607,7 +11621,8 @@ function _capProgMontar(P, J, metaPts){
     pts: uteis.some(d => d.pts == null) ? null : uteis.reduce((a, d) => a + d.pts, 0),
     metaPts: metaPts > 0 ? metaPts : null,
     vazios: dias.filter(d => d.vazio && !d.fds).map(d => d.data),
-    fds: dias.filter(d => d.fds && !d.vazio),
+    feriados: dias.filter(d => d.fer).map(d => ({ data:d.data, desc:d.fer, min: d.vazio ? null : d.min })),
+    fds: dias.filter(d => d.fds && !d.vazio && !d.fer),
     semDados: dias.filter(d => d.semDados).map(d => d.data),
     cxSemUep: dias.reduce((a, d) => a + d.cxSemUep, 0),
     semUep: (P.semUep || []).filter(x => dias.some(d => d.data === x.data)),
@@ -11668,11 +11683,12 @@ function _capProgDocHtml(C){
   const cols = 6 + 4 * nJ;
   const linhaDia = d => {
     const nome = `<td class="td-bold">${GPX_DOW[d.dow]} ${d.data.slice(0,5)}</td>`;
-    if(d.vazio) return `<tr>${nome}<td colspan="${cols - 1}" style="color:#5B6470">SEM LOTE DATADO — fora da capacidade (feriado, ou ainda sem programação)</td></tr>`;
+    if(d.fer && d.vazio) return `<tr>${nome}<td colspan="${cols - 1}" style="color:#5B6470">FERIADO · ${_rpEsc(d.fer)} — fora da capacidade</td></tr>`;
+    if(d.vazio) return `<tr>${nome}<td colspan="${cols - 1}" style="color:#5B6470">SEM LOTE DATADO — fora da capacidade (feriado fora da aba FERIADOS, ou ainda sem programação)</td></tr>`;
     const base = `<td class="td-mono">${d.lotes.length}</td><td class="td-mono">${fmtN(d.cx)}${d.cxAdi ? `<div style="font-size:8.5px;color:#5B6470">${fmtN(d.cxAdi)} já adiantadas</div>` : ''}</td>
       <td class="td-mono">${fmtN(d.uep)}</td><td class="td-mono">${d.pts == null ? '—' : fmtN(d.pts)}</td>
       <td class="td-bold">${d.semDados ? '—' : _fmtHM(d.min)}${d.cxSemUep ? `<div style="font-size:8.5px;font-weight:700;color:#B4650A">+ ${fmtN(d.cxSemUep)} cx sem UEP</div>` : ''}</td>`;
-    if(d.fds) return `<tr>${nome}${base}<td colspan="${4 * nJ}" style="color:#5B6470">FIM DE SEMANA — todo hora extra, fora da capacidade</td></tr>`;
+    if(d.fds) return `<tr>${nome}${base}<td colspan="${4 * nJ}" style="color:#5B6470">${d.fer ? 'FERIADO · ' + _rpEsc(d.fer) : 'FIM DE SEMANA'} — todo hora extra, fora da capacidade</td></tr>`;
     if(d.semDados) return `<tr>${nome}${base}<td colspan="${4 * nJ}" style="color:#B4650A"><b>SEM DADOS</b> — nenhuma linha do dia tem UEP no cadastro</td></tr>`;
     return `<tr${d.acima ? ' style="background:#fff8ed;-webkit-print-color-adjust:exact;print-color-adjust:exact"' : ''}>${nome}${base}${d.por.map((x, k) =>
       `<td class="td-mono">${_capProgSaldoTxt(x.saldo)}</td><td class="td-mono">${fmtP(x.ocup)}</td><td>${_capProgSitHtml(x)}</td><td class="td-mono">${_capProgPtsCel(d, k)}</td>`).join('')}</tr>`;
@@ -11696,7 +11712,8 @@ function _capProgDocHtml(C){
   const k = C.conta;
   const notas = [
     k ? `<b>Hoje ${_rpEsc(C.dataHoje)} (previsão, jornada de hoje):</b> falta zerar ${_fmtHM(k.div)}${k.venc != null ? ` (atraso ${_fmtHM(k.venc)} + programado de hoje ${_fmtHM(k.hoje)})` : ''} · cabem ${_fmtHM(k.cabe)} no resto da jornada${k.sobra > 0 ? ` · <b>não cabem ${_fmtHM(k.sobra)}</b>` : ''} — não entram nos dias acima.` : '',
-    C.vazios.length ? `<b>Dia útil sem lote datado:</b> ${C.vazios.map(x => x.slice(0,5)).join(', ')} — fora da capacidade (pode ser feriado).` : '',
+    C.feriados.length ? `<b>Feriado</b> (aba FERIADOS): ${C.feriados.map(f => _rpEsc(f.data.slice(0,5) + ' ' + f.desc) + (f.min != null ? ' · ' + _fmtHM(f.min) + ' com lote, todo hora extra' : '')).join(', ')} — fora da capacidade.` : '',
+    C.vazios.length ? `<b>Dia útil sem lote datado:</b> ${C.vazios.map(x => x.slice(0,5)).join(', ')} — fora da capacidade (feriado que não está na aba FERIADOS, ou ainda sem programação).` : '',
     C.fds.length ? `<b>Fim de semana com lote:</b> ${C.fds.map(d => d.data.slice(0,5) + ' ' + _fmtHM(d.min)).join(', ')} — todo hora extra, fora da capacidade.` : '',
     C.cxSemUep ? `<b>${fmtN(C.cxSemUep)} cx sem UEP no cadastro</b> ficam fora do tempo necessário: ${C.semUep.slice(0, 12).map(x => _rpEsc(x.data.slice(0,5) + ' · lote ' + (x.lote || '—') + ' · ' + x.codigo + ' · ' + fmtN(x.cx) + ' cx')).join('; ')}${C.semUep.length > 12 ? ` e mais ${C.semUep.length - 12}` : ''}.` : '',
     C.semOrdem ? `<b>Sem a ORDEM do dia${C.algumaOrdem ? ' em alguns dias' : ''}</b> — a programação ${C.algumaOrdem ? 'tem lote com a coluna ORDEM vazia' : 'não trouxe a coluna ORDEM (.gs v5.37 ainda não publicado, ou a coluna está vazia)'}: nesses dias não se diz qual lote fica de fora.` : ''
@@ -14719,17 +14736,20 @@ function _fmtHM(min){
 }
 // O calendário: os próximos `n` dias úteis a partir de amanhã, e o fim de
 // semana no meio SÓ se tiver lote (sábado com produção existe; vazio não ocupa
-// coluna). Feriado não é conhecido aqui — aparece como SEM LOTE DATADO.
-function _gpxCalendario(hoje, n, comLote){
+// coluna). FERIADO (`fer`, v7.174.0 — a aba FERIADOS): entra sempre, com a
+// descrição, mas NÃO conta como dia útil — o horizonte anda um dia e o cartão
+// diz FERIADO, para a data que pulou não parecer sumida.
+function _gpxCalendario(hoje, n, comLote, fer){
   const d = new Date(hoje); d.setHours(0,0,0,0);
   const out = []; let uteis = 0, guarda = 0;
   while(uteis < n && guarda++ < 40){
     d.setDate(d.getDate() + 1);
     const str = p2(d.getDate()) + '/' + p2(d.getMonth()+1) + '/' + d.getFullYear();
     const num = _cartNum(str), dow = d.getDay(), fds = dow === 0 || dow === 6;
+    const f = fer && fer[num] != null ? String(fer[num]) : '';
     if(fds && !(comLote && comLote[num])) continue;
-    out.push({ data:str, dataNum:num, dow });
-    if(!fds) uteis++;
+    out.push(f ? { data:str, dataNum:num, dow, fer:f } : { data:str, dataNum:num, dow });
+    if(!fds && !f) uteis++;
   }
   return out;
 }
@@ -14793,7 +14813,11 @@ function _gpxEstado(exc, vazio, fds){
 // lote, código e caixas, para alguém cadastrar a UEP.
 // `uepAtr` (opcional): a parte vencida da dívida, do _gpxDivida — para o
 // cartão HOJE separar o atraso do programado de hoje.
-function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
+// `fer` (opcional, v7.174.0): { aaaammdd: descrição } da aba FERIADOS. Feriado
+// não tem jornada: sai de `minJorn`/`nUteis` e de falta/folga como o fim de
+// semana (`fds` verdadeiro, `fer` com a descrição); sem lote é o estado
+// 'feriado', nunca 'vazio' (não é "dia sem lote datado").
+function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr, fer){
   if(!(itens || []).some(it => it && Number(it.uepCx) > 0)) return { falha:'sem-uep' };
   const hojeNum = _cartNum(p2(hoje.getDate()) + '/' + p2(hoje.getMonth()+1) + '/' + hoje.getFullYear());
   const comUep = (itens || []).filter(it => it && Number(it.uepCx) > 0);
@@ -14823,12 +14847,13 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
   const semPorNum = {};
   _cartSemUep(itens, hojeNum).forEach(x => { (semPorNum[x.dataNum] = semPorNum[x.dataNum] || []).push(x); });
   const marca = Object.assign({}, semPorNum, porNum);
-  const cal = _gpxCalendario(hoje, n || GPX_DIAS, marca);
+  const cal = _gpxCalendario(hoje, n || GPX_DIAS, marca, fer);
   const dias = cal.map(c => {
     const d = porNum[c.dataNum], sem = semPorNum[c.dataNum] || [];
     // fim de semana não tem jornada: é todo hora extra (a regra do HE_SABADO_
     // INTEIRO do .gs). Mostra as horas, mas não entra em falta nem folga.
-    const fds = c.dow === 0 || c.dow === 6;
+    // Feriado (v7.174.0) é a mesma coisa: sem jornada.
+    const fds = c.dow === 0 || c.dow === 6 || !!c.fer;
     const uep = d ? d.qtde : 0;
     const min = uep / porMin;
     const exc = min - UEP_MIN_DIA;
@@ -14841,7 +14866,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => Object.assign({ lote:g.lote, min:g.eq / porMin }, _gpxRotLote(g.linhas, g.rot)));
     const lotesDia = Object.values(L).sort((a,b) => b.eq - a.eq).map(g => g.lote).filter(Boolean);   // todos, do mais pesado (tela da diretoria)
     const vazio = !d && !sem.length;
-    const estado = _gpxEstado(exc, vazio, fds);
+    const estado = c.fer && vazio ? 'feriado' : _gpxEstado(exc, vazio, fds);
     // TODOS os lotes do dia, com a ORDEM (v7.168.0 — PROGRAMAÇÃO × CAPACIDADE
     // da impressão de capacidade). Lote só com linhas sem UEP entra sem tempo
     // (`min` null); lote com algumas linhas sem UEP leva as caixas delas à parte.
@@ -14854,7 +14879,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
                              pts: g.semPts ? null : g.pts }, _gpxRotLote(g.linhas, g.rot)); })
       .concat(Object.keys(S).filter(k => !L[k]).map(k => { const s = S[k], x = s.linhas[0];
         return { lote:x.lote, uep:null, min:null, cx:0, cxSemUep:s.cx, ordem:s.ordem, semOrd:s.semOrd, pts:null, rot:x.rot, nome:x.rot }; }));
-    return { data:c.data, dow:c.dow, fds, uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, exc, estado, lotes, lotesDia,
+    return { data:c.data, dow:c.dow, fds, fer: c.fer || '', uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, exc, estado, lotes, lotesDia,
              semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0), grupos };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
@@ -14868,6 +14893,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr){
     sobra: comDado.filter(d => d.exc < 0).reduce((a,d) => a - d.exc, 0),
     nSobra: comDado.filter(d => d.exc < 0).length,
     nVazio: dias.filter(d => d.estado === 'vazio').length,
+    feriados: dias.filter(d => d.fer).map(d => ({ data:d.data, desc:d.fer })),
     // só as linhas dos dias da faixa (o que está além dela não é desta leitura)
     semUep: dias.reduce((a,d) => a.concat(d.semUep), [])
   };
@@ -14879,10 +14905,11 @@ const GPX_DOW = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 function _gpxHtml(P, alt, cartaoHoje){   // `alt` era a altura do trilho; o cartão novo não tem trilho
   const cards = (cartaoHoje || '') + P.dias.map(d => _gpxCartaoHtml(d, 'gpx')).join('');
   return `<div class="gpx-dias" style="--n:${P.dias.length + (cartaoHoje ? 1 : 0)}">${cards}</div>
-    <div class="gpx-tot"><span>${plural(P.dias.length,'dia pede','dias pedem')} <b>${_fmtHM(P.minPede)}</b> para <b>${_fmtHM(P.minJorn)}</b> de jornada em ${plural(P.nUteis,'dia útil','dias úteis')}</span>`
+    <div class="gpx-tot"><span>${plural(P.dias.filter(d => d.estado !== 'feriado').length,'dia pede','dias pedem')} <b>${_fmtHM(P.minPede)}</b> para <b>${_fmtHM(P.minJorn)}</b> de jornada em ${plural(P.nUteis,'dia útil','dias úteis')}</span>`
       + (P.nFalta ? `<span class="r">faltam <b>${_fmtHM(P.falta)}</b> em ${plural(P.nFalta,'dia','dias')}</span>` : '<span>nenhum dia passa da jornada</span>')
       + (P.nSobra ? `<span>sobram <b>${_fmtHM(P.sobra)}</b> em ${plural(P.nSobra,'dia','dias')}</span>` : '')
-      + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '') + `</div>
+      + (P.nVazio ? `<span>${plural(P.nVazio,'dia sem lote datado','dias sem lote datado')}</span>` : '')
+      + ((P.feriados || []).length ? `<span>${P.feriados.map(f => f.data.slice(0,5)).join(', ')} ${P.feriados.length > 1 ? 'feriados' : 'feriado'} — fora da jornada</span>` : '') + `</div>
     <div class="gpx-nota" title="Horas = UEP programada ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h (o ritmo da meta: ${fmtN(P.meta)} UEP em ${UEP_MIN_DIA} min). São horas de LINHA — a UEP já desconta o mix. Faltar horas não é ordem de hora extra: pode ser mover lote para o dia com folga.">Horas = UEP ÷ ${fmtN(Math.round(P.porMin*60))} UEP/h · faltar horas não é ordem de hora extra</div>`
     + _cartSemUepHtml(P.semUep, P.divSemUep, 'gpx-sem');
 }
@@ -14939,7 +14966,9 @@ function _gpxDoPainel(n, metaUep){
   if(!PROG_DET_TS) return null;
   const k = calcKPIs(getDadosHoje());
   const dv = _gpxDivida((PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [], PROG_DETALHADA, _planoDivida());
-  const P = _gpxMontar(PROG_DETALHADA, new Date(), dv.uep, UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), metaUep || PONTOS_DIA.metaUep, n || GPX_DIAS, dv.uepAtr);
+  // hoje feriado: não há resto de jornada para a dívida caber
+  const ag = new Date(), feriadoHoje = PROG_FERIADOS[_cartNum(p2(ag.getDate()) + '/' + p2(ag.getMonth()+1) + '/' + ag.getFullYear())] != null;
+  const P = _gpxMontar(PROG_DETALHADA, ag, dv.uep, feriadoHoje ? 0 : UEP_MIN_DIA - Math.min(k.minNorm || 0, UEP_MIN_DIA), metaUep || PONTOS_DIA.metaUep, n || GPX_DIAS, dv.uepAtr, PROG_FERIADOS);
   if(!P.falha){ P.divSemUep = dv.semUep; P.divLinhas = dv.linhas; P.lidaEm = PROG_DET_TS; }
   return P;
 }
@@ -15130,8 +15159,9 @@ function _gpxCartaoHtml(d, pf){
   const f = _dirF, c = n => pf + '-' + n;
   const nome = `<div class="${c('dn')}"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
   if(d.estado === 'vazio') return `<div class="${c('dia')}">${nome}<span class="${c('ds')}">SEM LOTE DATADO</span><div class="${c('dh')}" style="color:var(--txt2)">—</div></div>`;
+  if(d.estado === 'feriado') return `<div class="${c('dia')}" title="${_rpEsc(d.data + ': ' + d.fer + ' — da aba FERIADOS da planilha; fora da jornada')}">${nome}<span class="${c('ds')}">FERIADO</span><div class="${c('dh')}" style="color:var(--txt2)">—</div><div class="${c('dl')}">${_rpEsc(d.fer)}</div></div>`;
   const cls = d.fds ? '' : d.estado;
-  const selo = d.fds ? 'FIM DE SEMANA'
+  const selo = d.fer ? 'FERIADO · HORA EXTRA' : d.fds ? 'FIM DE SEMANA'
     : d.exc > 0 ? 'FALTA ' + _fmtHM(d.exc)          // âmbar até 1h45, vermelho acima: a cor é o veredito
     : (Math.round(d.exc) === 0 ? 'DENTRO DA JORNADA' : 'FOLGA ' + _fmtHM(-d.exc));
   const tip = _rpEsc(`${d.data}: ${_fmtHM(d.min)} de linha para ${_fmtHM(UEP_MIN_DIA)} de jornada (só os lotes datados neste dia)` + (d.cxSemUep ? ` · + ${fmtN(d.cxSemUep)} cx sem UEP, fora das horas` : '') + (d.cxAdi ? ` · ${fmtN(d.cxAdi)} cx já embaladas adiantadas, fora das horas` : ''));
@@ -15239,7 +15269,7 @@ async function _dirCarregar(){
     }
     if((!PROG_DET_TS || Date.now() - PROG_DET_TS > GPX_TTL) && Date.now() - GPX_TENT > 60000){
       GPX_TENT = Date.now(); const antes = PROG_DET_TS; await carregarProgramacaoDetalhada();
-      if(PROG_DET_TS && PROG_DET_TS !== antes && Array.isArray(PROG_DETALHADA)) _dirGuarda('prog', PROG_DETALHADA);
+      if(PROG_DET_TS && PROG_DET_TS !== antes && Array.isArray(PROG_DETALHADA)){ _dirGuarda('prog', PROG_DETALHADA); _dirGuarda('fer', PROG_FERIADOS); }
       renderDir();
     }
     const key = _dirSemKey(), [de, ate] = key.split('|');
@@ -15284,7 +15314,8 @@ function _dirRestaura(){
   const hi = _dirLe('hist', 12*3600000, false);
   if(hi && !UEP_HIST && Array.isArray(hi.dado)){ UEP_HIST = hi.dado; UEP_HIST_TS = hi.ts; }
   const pr = _dirLe('prog', 2*3600000, false);
-  if(pr && !PROG_DET_TS && Array.isArray(pr.dado)){ PROG_DETALHADA = pr.dado; PROG_DET_TS = pr.ts; }
+  if(pr && !PROG_DET_TS && Array.isArray(pr.dado)){ PROG_DETALHADA = pr.dado; PROG_DET_TS = pr.ts;
+    const fe = _dirLe('fer', 2*3600000, false); if(fe && fe.dado && typeof fe.dado === 'object') PROG_FERIADOS = fe.dado; }
 }
 function iniciarDiretoria(){
   if(!_modoDir()) return;

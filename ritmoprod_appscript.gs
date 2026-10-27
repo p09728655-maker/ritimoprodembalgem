@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.38 — FERIADOS (aba FERIADOS, digitada pelo PPCP)
+//               PPCP, 27/10/2026, com o PRÓXIMOS DIAS na tela: "02/11
+//               feriado, como tratar?". O script não conhecia feriado: 02/11
+//               contava como dia útil na janela do adiantamento (29/10 → 03/11
+//               dava 3 dias úteis, e o crédito era descartado) e na lista do
+//               aviso de cor errada. Agora a aba FERIADOS (DATA, DESCRICAO; um
+//               dia por linha) tira o dia de _diasUteisEntre, e o
+//               getProgramacaoDetalhada devolve `feriados` (de hoje em diante)
+//               para o painel tirar o dia da jornada. Sem a aba, nada muda.
 // Versão: 5.37 — A ORDEM DO DIA NA PROGRAMAÇÃO DETALHADA
 //               PPCP, 26/10/2026 (programação × capacidade da embalagem): a aba
 //               PROGRAMACAO tem a coluna ORDEM (a sequência do dia), e o painel
@@ -408,6 +417,14 @@ const ARQ_EXCLUIR_SEM_COPIA = false;
 // vai recebê-lo mostra o adiantamento já hoje (ver `adiFut` no cálculo). A
 // regra de quem recebe é a mesma; só o momento de mostrar mudou.
 const ANTEC_DIAS_UTEIS = 2;
+
+// FERIADOS (v5.38): dia SEM JORNADA, digitado pelo PPCP na aba FERIADOS —
+// coluna DATA (dd/mm/aaaa ou data de verdade) e DESCRICAO, um dia por linha
+// (férias coletivas e parada de fábrica também: um dia por linha). O dia sai
+// de _diasUteisEntre (janela do adiantamento e aviso de cor errada) e vai para
+// o painel no getProgramacaoDetalhada. Sem a aba, ou com ela vazia, o dia é
+// útil como sempre foi — a falha volta ao comportamento antigo, nunca inventa.
+const ABA_FERIADOS = 'FERIADOS';
 
 // Produto selecionado pelo operador ("produto atual do turno" — opcional).
 const PROP_PROD_ATUAL = 'produtoAtual';
@@ -1211,7 +1228,7 @@ function _valoresPorData(sh, nomeColData, iPadrao, paraNum, deNum, ateNum) {
   return hdr.concat(sh.getRange(f.ini, 1, f.fim - f.ini + 1, nCol).getValues());
 }
 
-function _invalidarValores() { _valoresMemo = {}; }
+function _invalidarValores() { _valoresMemo = {}; _feriadosMemo = null; }
 
 function _cacheGen(cache) {
   let g = cache.get('rp_gen');
@@ -4636,14 +4653,57 @@ function _diaAbs(n) {
   return Math.round(Date.UTC(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100) / 86400000);
 }
 // Dias ÚTEIS (seg–sex) depois de `aNum` até `bNum`, inclusive: sexta → segunda
-// = 1, quarta → sexta = 2. Feriado não é conhecido e conta como útil.
-function _diasUteisEntre(aNum, bNum) {
+// = 1, quarta → sexta = 2. `fer` (v5.38, opcional): { aaaammdd: descrição } da
+// aba FERIADOS — o feriado não conta (quinta 29/10 → terça 03/11, com 02/11
+// feriado, = 2). Sem `fer`, todo seg–sex conta, como antes.
+function _diasUteisEntre(aNum, bNum, fer) {
   const a = _diaAbs(aNum), b = _diaAbs(bNum);
   if (!(b > a)) return 0;
   if (b - a > 31) return 99;   // muito além de qualquer janela de adiantamento
   let n = 0;
-  for (let d = a + 1; d <= b; d++) { const w = (d + 4) % 7; if (w !== 0 && w !== 6) n++; }   // 01/01/1970 foi quinta
+  for (let d = a + 1; d <= b; d++) {
+    const w = (d + 4) % 7;   // 01/01/1970 foi quinta
+    if (w === 0 || w === 6) continue;
+    if (fer) { const t = new Date(d * 86400000);
+      if (fer[t.getUTCFullYear() * 10000 + (t.getUTCMonth() + 1) * 100 + t.getUTCDate()] != null) continue; }
+    n++;
+  }
   return n;
+}
+
+// A aba FERIADOS → { aaaammdd: descrição }. Conta pura (`v` = os valores da
+// aba, `paraNum` = a conversão da célula de data). A coluna de data é a que o
+// cabeçalho chama DATA; sem ela, a 1ª. A descrição é a DESCRICAO/MOTIVO, ou a
+// coluna ao lado da data. Linha sem data legível fica fora (o cabeçalho
+// também). Descrição vazia vira 'FERIADO'.
+function _feriadosDaAba(v, paraNum) {
+  const out = {};
+  if (!v || !v.length) return out;
+  const tit = (v[0] || []).map(function (c) { return String(c).trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); });
+  let iD = tit.indexOf('DATA'); if (iD < 0) iD = 0;
+  let iT = -1;
+  tit.forEach(function (t, i) { if (iT < 0 && i !== iD && (t.indexOf('DESCRI') === 0 || t.indexOf('MOTIVO') === 0)) iT = i; });
+  if (iT < 0) iT = iD + 1;
+  v.forEach(function (r) {
+    const n = paraNum(r[iD]);
+    if (!(n > 19000000)) return;
+    const t = String(r[iT] == null ? '' : r[iT]).trim();
+    out[n] = t || 'FERIADO';
+  });
+  return out;
+}
+// Os feriados da planilha, uma leitura por execução. A aba é só do PPCP (o
+// script não escreve nela), então o retrato vale para leitura e escrita.
+var _feriadosMemo = null;
+function _feriadosNums() {
+  if (_feriadosMemo) return _feriadosMemo;
+  let m = {};
+  try {
+    const sh = acharAbaTolerante(SpreadsheetApp.getActiveSpreadsheet(), ABA_FERIADOS);
+    if (sh) m = _feriadosDaAba(sh.getDataRange().getValues(), function (c) { return dataParaNum(_dataStr(c)); });
+  } catch (e) { Logger.log('FERIADOS: não consegui ler a aba — ' + e); m = {}; }
+  _feriadosMemo = m;
+  return m;
 }
 
 function dataParaNum(v) {
@@ -4824,6 +4884,7 @@ function lerEmbaladoPorProduto(hojeNum) {
 function calcularProgramacao() {
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
+  const FER     = _feriadosNums();   // v5.38: feriado não conta na janela do adiantamento
 
   // Catálogo indexado por dígitos do código (para desc + código "oficial" do app).
   const catByKey = {};
@@ -4950,7 +5011,7 @@ function calcularProgramacao() {
         const lot = { d: e.d, rem: e.q, lote: e.lote, q: e.qOrig, qf: e.q, enc: e.enc,
                       ateOntem: e.ateOntem, arq: e.arq, row: e.row, desfez: e.desfez, cred: 0, hojeProd: 0 };
         if (cred.length) {
-          cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, e.d) <= ANTEC_DIAS_UTEIS);
+          cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, e.d, FER) <= ANTEC_DIAS_UTEIS);
           for (let i = 0; i < cred.length && lot.rem > 0; i++) {
             const take = Math.min(lot.rem, cred[i].rem);
             lot.rem -= take; cred[i].rem -= take; lot.cred += take;
@@ -4992,7 +5053,7 @@ function calcularProgramacao() {
     const fut = progFut[key] || [];
     if (fut.length && cred.length) {
       fut.slice().sort((a, b) => (a.dNum - b.dNum) || ((a.enc ? 0 : 1) - (b.enc ? 0 : 1))).forEach(ln => {
-        cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, ln.dNum) <= ANTEC_DIAS_UTEIS);
+        cred = cred.filter(c => c.rem > 0 && _diasUteisEntre(c.d, ln.dNum, FER) <= ANTEC_DIAS_UTEIS);
         let rem = ln.qtde, tomou = 0;
         for (let i = 0; i < cred.length && rem > 0; i++) {
           const take = Math.min(rem, cred[i].rem);
@@ -5168,10 +5229,10 @@ function getProgramacaoHoje() {
 // O código continua na lista mesmo com 0: o app lê "nada mais a adiantar".
 function _codigosProximos(adiFut) {
   const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
-  const prox = {}, ja = adiFut || {};
+  const prox = {}, ja = adiFut || {}, fer = _feriadosNums();
   lerProgramacao().forEach(function (pr) {
     const d = dataParaNum(pr.data), k = codKey(pr.codigo);
-    if (k && d > hojeNum && !pr.foraEsteira && !pr.encerrada && _diasUteisEntre(hojeNum, d) <= ANTEC_DIAS_UTEIS) {
+    if (k && d > hojeNum && !pr.foraEsteira && !pr.encerrada && _diasUteisEntre(hojeNum, d, fer) <= ANTEC_DIAS_UTEIS) {
       const q = Number(pr.qtde) || 0, a = Number(ja[k + '|' + (pr.lote || '') + '|' + d + '|' + pr.row]) || 0;
       prox[k] = (prox[k] || 0) + Math.max(0, q - a);
     }
@@ -5252,7 +5313,12 @@ function getProgramacaoDetalhada() {
   }).filter(function (it) { return it.dataNum > 0 && it.lote; });
 
   itens.sort(function (a, b) { return a.dataNum - b.dataNum; });
-  return { ok: true, itens: itens };
+  // v5.38: os feriados de hoje em diante (aba FERIADOS) — o painel tira o dia
+  // da jornada no PRÓXIMOS DIAS. Sem a aba, lista vazia (o dia segue útil).
+  const fer = _feriadosNums();
+  const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= hojeNum; }).sort(function (a, b) { return a - b; })
+    .slice(0, 400).map(function (n) { return { data: _numParaDataBR(n), desc: fer[n] }; });
+  return { ok: true, itens: itens, feriados: feriados };
 }
 
 

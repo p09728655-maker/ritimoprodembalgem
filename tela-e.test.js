@@ -163,6 +163,7 @@ console.log('\n── backend: cor e data do lote aberto mais antigo ──');
   // v5.21: crédito de produção adiantada — sem isto, fixture com sobra de produção estoura
   eval(pegaGs('function _diaAbs('));
   eval(pegaGs('function _diasUteisEntre('));
+  const _feriadosNums = () => ({});   // .gs v5.38: sem a aba FERIADOS
   const ANTEC_DIAS_UTEIS = Number((gs.match(/const ANTEC_DIAS_UTEIS = (\d+);/) || [])[1]);
   // dois lotes vencidos (10/09 e 12/09) e um de hoje; a produção abate o de 10/09 inteiro
   const lerProgramacao = () => [
