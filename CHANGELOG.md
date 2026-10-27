@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.174.0 · ⚠ re-deploy `.gs` v5.38 — 27/10/2026 · FERIADOS (aba `FERIADOS`)
+
+- PPCP, com o PRÓXIMOS DIAS na tela: *"02/11 feriado, como tratar?"*. O painel
+  não conhecia feriado: 02/11 aparecia como SEM LOTE DATADO e **contava 8h47 de
+  jornada** na linha de totais — *"5 dias pedem 44h35 para 43h55"* parecia
+  quase empatado, quando nos 4 dias de verdade são 44h35 para **35h08** (faltam
+  9h27, sem dia com folga).
+- **Aba `FERIADOS` na planilha** (já criada, com 02/11/2026 FINADOS): coluna
+  DATA e DESCRICAO, **um dia por linha** — férias coletivas e parada de fábrica
+  entram do mesmo jeito. Quem mantém é o PPCP.
+- **PRÓXIMOS DIAS** (aba ⚖ UEP, impressão executiva, diretoria): o feriado sai
+  da jornada, ganha o cartão **FERIADO** com a descrição, o horizonte anda um
+  dia (5 dias úteis de verdade) e a linha de totais diz *"02/11 feriado — fora
+  da jornada"*. Feriado com lote aparece como hora extra, como o sábado.
+- **PROGRAMAÇÃO × CAPACIDADE** (impressão): o feriado sai como FERIADO, fora da
+  capacidade — não mais como "dia útil sem lote (pode ser feriado)".
+- **FILA DE CRONOANÁLISE**: a janela dos próximos dias úteis pula o feriado.
+- **Backend (`.gs` v5.38)**: o feriado não conta na janela do **adiantamento**
+  (quinta 29/10 → terça 03/11 são 2 dias úteis, não 3 — o que for embalado
+  adiantado na quinta e na sexta para 03/11 e 04/11 passa a baixar o lote) nem
+  no **aviso de cor errada** do app.
+- **Atenção:** muda a linha de totais do PRÓXIMOS DIAS (antes: dia útil sem lote
+  contava jornada mesmo sendo feriado; agora o feriado da aba não conta) e o
+  saldo/STATUS das linhas adiantadas que atravessam um feriado (antes: o
+  crédito era descartado). Sem a aba, ou antes do re-deploy, tudo fica como
+  era. Meta, histórico e eficiência não mudam (dia sem produção já não era
+  arquivado: 07/09 e 12/10 não têm linha no HISTORICO).
+- ⚠ **re-deploy** do `.gs` v5.38 — antes dele o painel não recebe a lista e o
+  02/11 continua como dia útil sem lote.
+
 ## v7.173.0 — 27/10/2026 · gráfico da Tela G (CORRIDA DO DIA) legível na TV
 
 - Print do PPCP às 14:49: *"na tv o gráfico está muito ruim de ver"*. Medido no

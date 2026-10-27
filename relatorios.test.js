@@ -4738,7 +4738,49 @@ console.log('\n── estudo de UEP ──');
         /_gpxHojeHtml|_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxHojeHtml(') + pega('function _gpxAtrasoHtml('))], [true, false, false]);
     ok('o painel passa a parte vencida e o papel diz que cada dia leva só os lotes dele',
-       [/GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram/.test(JS)], [true, true]); }
+       [/GPX_DIAS, dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram/.test(JS)], [true, true]); }
+  // v7.174.0 — FERIADO (aba FERIADOS, .gs v5.38). PPCP, 27/10/2026, com o print:
+  // "02/11 feriado". Sem a aba, a segunda era dia útil sem lote e a linha de
+  // totais contava 8h47 de jornada nela ("pedem 44h35 para 43h55").
+  { const U = m => m * 2530 / 527 / 100;   // UEP/cx de 100 cx que dão `m` minutos no ritmo da meta
+    const FI = [it('28/10/2026','25348',100,U(650)), it('29/10/2026','25363',100,U(801)), it('30/10/2026','25375',100,U(593)), it('03/11/2026','25381',100,U(631))];
+    const FER = { 20261102:'FINADOS' };
+    const sem = _gpxMontar(FI, new Date(2026, 9, 27), 0, 0, 2530, 5);
+    const com = _gpxMontar(FI, new Date(2026, 9, 27), 0, 0, 2530, 5, null, FER);
+    ok('sem a aba (backend antigo): 02/11 é dia útil sem lote e conta 8h47 de jornada — a conta do print',
+       [sem.dias.map(d => d.data.slice(0,5)), sem.dias[3].estado, sem.nUteis, _fmtHM(sem.minPede), _fmtHM(sem.minJorn), sem.nVazio],
+       [['28/10','29/10','30/10','02/11','03/11'], 'vazio', 5, '44h35', '43h55', 1]);
+    ok('com 02/11 na aba: FERIADO com a descrição, fora da jornada, e o horizonte anda até 04/11 (5 dias úteis de verdade)',
+       [com.dias.map(d => d.data.slice(0,5)), com.dias[3].estado, com.dias[3].fer, com.dias[3].fds, com.nUteis, com.nVazio, com.feriados],
+       [['28/10','29/10','30/10','02/11','03/11','04/11'], 'feriado', 'FINADOS', true, 5, 1, [{ data:'02/11/2026', desc:'FINADOS' }]]);
+    const com4 = _gpxMontar(FI, new Date(2026, 9, 27), 0, 0, 2530, 4, null, FER);
+    ok('nos mesmos 4 dias com lote: 44h35 para 35h08 — faltam 9h27 de verdade, sem folga para absorver',
+       [_fmtHM(com4.minPede), _fmtHM(com4.minJorn), _fmtHM(com4.falta), com4.nSobra], ['44h35', '35h08', '9h27', 0]);
+    ok('feriado não entra em falta nem folga, e o dia sem lote de verdade continua "sem lote datado"',
+       [com.dias[3].exc < 0, com.nFalta, com.nSobra, com.dias[5].estado], [true, 4, 0, 'vazio']);
+    const FL = _gpxMontar(FI.concat([it('02/11/2026','25390',200,1)]), new Date(2026, 9, 27), 0, 0, 2530, 5, null, FER);
+    ok('feriado COM lote: as horas aparecem, todo hora extra, fora da jornada (como o sábado)',
+       [FL.dias[3].estado, Math.round(FL.dias[3].min), FL.nUteis, FL.minJorn], ['fds', 42, 5, 2635]);
+    const CF = _gpxCartaoHtml(com.dias[3], 'gpx'), CL = _gpxCartaoHtml(FL.dias[3], 'gpx');
+    ok('cartão: FERIADO com a descrição (não "SEM LOTE DATADO"); com lote, FERIADO · HORA EXTRA',
+       [/>FERIADO</.test(CF), /FINADOS/.test(CF), /SEM LOTE DATADO/.test(CF), /FERIADO · HORA EXTRA/.test(CL), /FIM DE SEMANA/.test(CL)], [true, true, false, true, false]);
+    global.plural = global.plural || ((n, a, b) => n + ' ' + (n === 1 ? a : b));
+    eval(pega('function _gpxHtml('));
+    ok('a linha de totais diz qual dia é feriado, e o feriado não conta como dia que pede',
+       [/02\/11 feriado — fora da jornada/.test(_gpxHtml(com, 0)), /6 dias pedem/.test(_gpxHtml(com, 0)), /5 dias pedem/.test(_gpxHtml(com, 0))], [true, false, true]);
+    ok('o painel passa a aba FERIADOS (e hoje feriado não tem resto de jornada)',
+       [/dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /feriadoHoje \? 0 :/.test(pega('function _gpxDoPainel(')),
+        /PROG_FERIADOS=_feriadosMapa\(json\.feriados\)/.test(JS)], [true, true, true]);
+    eval(pega('function _feriadosMapa('));
+    ok('a lista do backend vira o mapa; backend antigo (sem a lista) = {}',
+       [_feriadosMapa([{ data:'02/11/2026', desc:'FINADOS' }, { data:'20/11/2026' }, { data:'lixo' }]), _feriadosMapa(undefined)],
+       [{ 20261102:'FINADOS', 20261120:'FERIADO' }, {}]);
+    eval(pega('function _filaUteis('));
+    ok('FILA DE CRONOANÁLISE: a janela de dias úteis pula o feriado',
+       [_filaUteis(new Date(2026, 9, 29), 3), _filaUteis(new Date(2026, 9, 29), 3, FER)], [[20261029, 20261030, 20261102], [20261029, 20261030, 20261103]]);
+    ok('a FILA recebe os feriados da programação', /_filaUteis\(agora, GPX_DIAS, PROG_FERIADOS\)/.test(JS), true);
+    ok('a diretoria guarda e restaura os feriados junto com a programação',
+       [/_dirGuarda\('fer', PROG_FERIADOS\)/.test(JS), /_dirLe\('fer'/.test(pega('function _dirRestaura('))], [true, true]); }
 }
 
 // ── PROGRAMAÇÃO × CAPACIDADE na impressão de capacidade (v7.168.0) ──────────
@@ -4828,6 +4870,17 @@ console.log('\n── estudo de UEP ──');
         ['JORNADA SIMULADA · 503 MIN', 'perda fixa de 60 min/dia', 'rendem o que <b>500 min</b>'].filter(t => !_capProgDocHtml(Cf).includes(t)),
         _capProgResumoHtml(Cf).includes('SIMULADA · 503 min'), C.fixa],
        [[[527, 527], [500, 503]], 2500, true, 500 - 785, 500, [], true, null]); }
+  // v7.174.0 — feriado da aba FERIADOS: fora da capacidade, dito como FERIADO
+  { const Gf = _gpxMontar(itens, hoje, 0, 0, 2530, CAP_PROG_DIAS, null, { 20261102:'FINADOS' });
+    const Cf2 = _capProgMontar(Gf, J), df = _capProgDocHtml(Cf2);
+    ok('PROGRAMAÇÃO × CAPACIDADE: 02/11 na aba sai como FERIADO, fora da capacidade, e não como dia útil sem lote',
+       [Cf2.feriados.map(f => [f.data.slice(0,5), f.desc]), Cf2.vazios.map(x => x.slice(0,5)), Cf2.nUteis === C.nUteis,
+        /FERIADO · FINADOS — fora da capacidade/.test(df), /<b>Feriado<\/b> \(aba FERIADOS\): 02\/11 FINADOS/.test(df), /Dia útil sem lote datado:<\/b> 02\/11/.test(df)],
+       [[['02/11', 'FINADOS']], [], true, true, true, false]);
+    const Gl = _gpxMontar(itens.concat([L('02/11/2026','25390',1,'501088009',200,1)]), hoje, 0, 0, 2530, CAP_PROG_DIAS, null, { 20261102:'FINADOS' });
+    const dl = _capProgDocHtml(_capProgMontar(Gl, J));
+    ok('feriado COM lote: todo hora extra, fora da capacidade, e nunca listado como fim de semana',
+       [/FERIADO · FINADOS — todo hora extra/.test(dl), /Fim de semana com lote:<\/b>[^<]*02\/11/.test(dl), /02\/11 FINADOS · 0h42 com lote, todo hora extra/.test(dl)], [true, false, true]); }
   const doc = _capProgDocHtml(C);
   ok('o papel: período por jornada, dia a dia com as três situações, e os lotes dos dias acima na ordem do dia',
      ['PROGRAMAÇÃO × CAPACIDADE · 27/10 A 04/11 · 5 DIAS ÚTEIS COM LOTE', 'JORNADA DE HOJE · 527 MIN', 'JORNADA SIMULADA · 503 MIN', 'CAPACIDADE DISPONÍVEL', 'TEMPO NECESSÁRIO',
@@ -4841,7 +4894,7 @@ console.log('\n── estudo de UEP ──');
   ok('o desenho não faz conta de carga (tudo vem do _capProgMontar)',
      ['function _capProgDocHtml(', 'function _capProgResumoHtml(', 'function _capProgCabeTxt(', 'function _capProgSitHtml('].filter(f => /_gpxMontar\(|_cartAberta\(|_gpxEstado\(|_capProgMontar\(|\.reduce\(|uepCx/.test(pega(f))), []);
   ok('a montagem do painel: o _gpxDoPainel com mais dias e a meta da impressão (sem eles, o de sempre); a impressão passa a meta de HOJE (a simulada é só capacidade)',
-     [/metaUep \|\| PONTOS_DIA\.metaUep, n \|\| GPX_DIAS, dv\.uepAtr\)/.test(pega('function _gpxDoPainel(')), /_gpxDoPainel\(CAP_PROG_DIAS, meta\)/.test(pega('function _capProgDoPainel(')),
+     [/metaUep \|\| PONTOS_DIA\.metaUep, n \|\| GPX_DIAS, dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /_gpxDoPainel\(CAP_PROG_DIAS, meta\)/.test(pega('function _capProgDoPainel(')),
       /_capProgDoPainel\(J, meta0, metaPts\)/.test(pega('function gerarRelatorioCapProg(')), /_gpxEstado\(exc, vazio, fds\)/.test(pega('function _gpxMontar('))], [true, true, true, true]);
   // PONTOS NA JORNADA (v7.169.0): meta de pontos por dia SEM hora extra (PPCP).
   // A meta do PPCP não entra em arquivo nenhum do repositório (ele é publicado):

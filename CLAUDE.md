@@ -974,7 +974,8 @@ via Google Apps Script (JSONP).
   úteis"*). No FIFO do `calcularProgramacao`, a sobra de uma produção vira
   **crédito** (`cred`) e é consumida quando um lote **do mesmo código** abre
   em até 2 dias úteis depois dela (`_diasUteisEntre`: seg–sex, sexta → segunda
-  = 1, feriado conta como útil). Passou da janela, é descartada como antes.
+  = 1; o feriado da aba `FERIADOS` não conta desde o `.gs` v5.38 — ver
+  *FERIADOS*). Passou da janela, é descartada como antes.
   - ⚠ **A janela compara a data da PRODUÇÃO com a data do LOTE, nunca com
     hoje.** O FIFO é refeito do zero a cada execução; comparando com hoje, o
     saldo de lote antigo mudaria com o passar dos dias.
@@ -3828,9 +3829,9 @@ feito e dá ar de verdade ao que sobrou.
     DENTRO · ACIMA ATÉ 1h45 (`GPX_EXC_MAX`) · ACIMA. ⚠ **"Próximo do limite"
     não existe** — não há régua; o PPCP define o número se quiser, numa
     constante.
-  - Fora da capacidade, e dito no papel: dia útil sem lote (pode ser feriado —
-    02/11/2026), sábado com lote (todo HE), dia só com linha sem UEP (SEM
-    DADOS). Horizonte: até `CAP_PROG_DIAS`=10 dias úteis, cortado no último dia
+  - Fora da capacidade, e dito no papel: FERIADO da aba `FERIADOS` (v7.174.0),
+    dia útil sem lote (feriado fora da aba, ou sem programação), sábado com
+    lote (todo HE), dia só com linha sem UEP (SEM DADOS). Horizonte: até `CAP_PROG_DIAS`=10 dias úteis, cortado no último dia
     com lote.
   - **Lotes na ORDEM do dia** (coluna ORDEM da PROGRAMACAO, `_progOrdem`;
     `_cartAberta` e `_cartSemUep` guardam a ordem por linha; o `_gpxMontar`
@@ -4583,7 +4584,8 @@ feito e dá ar de verdade ao que sobrou.
 - Regras em constantes: `GPX_DIAS`=5 dias úteis, `GPX_EXC_MAX`=105 min
   (âmbar até aí, vermelho depois — ≈ a madrugada), `GPX_FOLGA_OK`=180 min
   (verde). Fim de semana só entra com lote e fica fora de falta/folga (é todo
-  HE). Feriado não é conhecido: sai SEM LOTE DATADO.
+  HE). Feriado: a aba `FERIADOS` (v7.174.0, ver *FERIADOS*); fora dela, sai
+  SEM LOTE DATADO.
 - **Custo:** `GPX_TTL`=15 min para reler a programação (o gerencial atualiza a
   cada 5 e a leitura é das mais caras); falha espera 1 min antes de tentar de
   novo (`GPX_TENT`) — o fim da leitura redesenha, e sem a espera uma falha
@@ -4615,6 +4617,53 @@ feito e dá ar de verdade ao que sobrou.
   (`_uepAbaSemUepHoje`, pelo cadastro cru `CAP_RAW`; sem cadastro → `null`,
   não acusa). A programação entra por último no `_uepAbaCarregar`, só se a
   leitura tiver mais de 15 min (`GPX_TTL`).
+
+## FERIADOS — a aba `FERIADOS` (v7.174.0 / `.gs` v5.38)
+- PPCP, 27/10/2026, com o PRÓXIMOS DIAS na tela: *"02/11 feriado, como
+  tratar?"* → *"fazer a aba"*. O painel não conhecia feriado: 02/11 saía SEM
+  LOTE DATADO e **contava 8h47 de jornada** no total (*"5 dias pedem 44h35 para
+  43h55"* — quase empatado, quando nos 4 dias de verdade eram 44h35 para 35h08:
+  faltavam 9h27 sem dia com folga). No `.gs`, contava como dia útil na janela
+  do adiantamento (quinta 29/10 → terça 03/11 dava 3, e o crédito era
+  descartado) e no aviso de cor errada.
+- **Aba `FERIADOS`** (criada pelo Claude pela API em 27/10/2026 com 02/11/2026
+  FINADOS): `DATA` e `DESCRICAO` (ou MOTIVO), **um dia por linha** — férias
+  coletivas e parada de fábrica também. Quem mantém é o PPCP. Dia na aba = dia
+  SEM JORNADA. O script não escreve nela.
+- **`.gs`**: `_feriadosDaAba` (conta pura: coluna DATA pelo nome, senão a 1ª;
+  descrição vazia = FERIADO; linha sem data fica fora) e `_feriadosNums` (uma
+  leitura por execução, limpo no `_invalidarValores`; aba ilegível → `{}` e o
+  log diz). `_diasUteisEntre(a, b, fer)` pula o feriado — **sem `fer` conta
+  todo seg–sex, como antes** (o `tela-e.test.js` evala a função sozinha). Quem
+  passa: `calcularProgramacao` (janela do adiantamento, nos dois filtros do
+  crédito) e `_codigosProximos` (aviso de cor errada). `getProgramacaoDetalhada`
+  devolve `feriados` (de hoje em diante, `{data, desc}`).
+- **Painel**: `PROG_FERIADOS` (`_feriadosMapa(json.feriados)`, `{}` com backend
+  antigo). `_gpxCalendario(…, fer)`: o feriado ENTRA (cartão **FERIADO** com a
+  descrição) mas não conta como dia útil — o horizonte anda um dia. No
+  `_gpxMontar(…, uepAtr, fer)` o dia tem `fds` verdadeiro (sem jornada: fora de
+  `minJorn`/`nUteis`/falta/folga, como o sábado) e `fer` com a descrição;
+  estado **`feriado`** quando não tem lote (nunca `vazio`: não é "dia sem lote
+  datado"); com lote, estado `fds` e selo FERIADO · HORA EXTRA. Total:
+  *"02/11 feriado — fora da jornada"*, e o feriado não conta em *"N dias
+  pedem"*. Hoje feriado → o resto de jornada do cartão HOJE é 0.
+  - PROGRAMAÇÃO × CAPACIDADE: FERIADO · descrição, fora da capacidade (com
+    lote: todo hora extra), nota própria, nunca na lista do fim de semana.
+  - FILA DE CRONOANÁLISE: `_filaUteis(base, n, fer)` pula o feriado.
+  - Diretoria: o retrato guarda os feriados junto com a programação
+    (`_dirGuarda('fer', …)`).
+- **Meta, histórico e eficiência não mudam**: dia sem produção nunca foi
+  arquivado (07/09 e 12/10/2026 não têm linha no HISTORICO; os dois guardas são
+  o `real <= 0` do `arquivarDiaAtual` e o `if(!dh.length)` do
+  `fecharDiaAutomatico`).
+- Ideia recusada: lista fixa no código — cada feriado viraria deploy +
+  re-deploy. O ERP seria a fonte certa se tiver calendário fabril, mas não há
+  integração.
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o painel não recebe a
+  lista e o feriado segue como dia útil sem lote. Testes: `programacao.test.js`
+  (o `.gs` inteiro: a aba, a janela, o adiantamento atravessando o feriado, o
+  aviso, a lista; conferido por mutação) e `relatorios.test.js` (o print de
+  27/10, cartão, total, capacidade, FILA, diretoria).
 
 ## A CARTEIRA em CX DE LINHA — o mix (v7.55.0)
 - **Pedido do PPCP, 16/09/2026**, com a tela em HORIZONTE SOBRECARREGADO:

@@ -43,6 +43,7 @@ function montar(prog, log, opts) {
     PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR']],
   };
   if (opts.arq) ABAS.PROGRAMACAO_CONCLUIDA = opts.arq;
+  if (opts.fer) ABAS.FERIADOS = opts.fer;   // .gs v5.38: a aba do PPCP
   function aba(nome) {
     const v = ABAS[nome];
     if (!v) return null;
@@ -756,6 +757,39 @@ console.log('\n── painel: aba PROGRAMAÇÃO ──');
       /adi>0\?\(adi>=it\.qtde\?'var\(--ok\)':'var\(--txt2\)'\)/.test(JS7)], [true, true, true]);
   ok('o app desconta o que passou do saldo de hoje do que os próximos dias ainda aceitam',
      /PROG_PROX_QTD\[k\]=Math\.max\(0,\(Number\(PROG_PROX_QTD\[k\]\)\|\|0\)-Math\.max\(0,add-antes\)\);/.test(MJS), true);
+}
+
+console.log('\n── FERIADOS (.gs v5.38) ──');
+{
+  // PPCP, 27/10/2026: "02/11 feriado". Quinta 29/10 → terça 03/11 com a
+  // segunda feriado são 2 dias úteis, não 3 — o adiantamento cabe na janela.
+  const FER = [['DATA', 'DESCRICAO'], ['02/11/2026', 'FINADOS'], ['20/11/2026', ''], ['', 'linha sem data'], ['texto', 'X']];
+  const prog = [{ lote: 'L1', data: '03/11/2026', cod: '501106005', qtde: 200 }, { lote: 'L2', data: '04/11/2026', cod: '501141007', qtde: 100 }];
+  const log = [['29/10/2026', '501106005', 200], ['30/10/2026', '501141007', 100]];
+  const sem = montar(prog, log, { hoje: '30/10/2026' }), com = montar(prog, log, { hoje: '30/10/2026', fer: FER });
+  const du = (m, a, b) => vm.runInContext(`(function(){ _invalidarValores(); return _diasUteisEntre(${a}, ${b}, _feriadosNums()); })()`, m.ctx);
+  ok('sem a aba: 29/10 → 03/11 = 3 e 30/10 → 04/11 = 3 (como antes)', [du(sem, 20261029, 20261103), du(sem, 20261030, 20261104)], [3, 3]);
+  ok('com 02/11 na aba: 2 e 2 — o feriado não conta', [du(com, 20261029, 20261103), du(com, 20261030, 20261104)], [2, 2]);
+  ok('sem `fer` a função conta todo seg–sex (o chamador antigo não muda)', vm.runInContext('_diasUteisEntre(20261029, 20261103)', com.ctx), 3);
+  ok('a aba vira { aaaammdd: descrição }: descrição vazia = FERIADO, linha sem data fica fora',
+     vm.runInContext('(function(){ _invalidarValores(); return _feriadosNums(); })()', com.ctx), { 20261102: 'FINADOS', 20261120: 'FERIADO' });
+  ok('cabeçalho com outro nome e acento: DATA achada pelo nome, MOTIVO como descrição',
+     vm.runInContext('_feriadosDaAba([["MOTIVO","DATA"],["Finados","02/11/2026"]], function (c) { return dataParaNum(c); })', com.ctx), { 20261102: 'Finados' });
+  const fut = (m) => { const a = m.calc().adiFut || {}; return Object.keys(a).sort().map(k => k.split('|').slice(0, 3).join('|') + '=' + a[k]); };
+  ok('adiantamento atravessando o feriado: sem a aba é descartado; com a aba as linhas de 03/11 e 04/11 mostram o adiantado',
+     [fut(sem), fut(com)], [[], ['501106005|L1|20261103=200', '501141007|L2|20261104=100']]);
+  ok('aviso de cor errada (próximos dias úteis): em 30/10 o lote de 04/11 só entra com a aba',
+     [vm.runInContext('(function(){ _invalidarValores(); return _codigosProximos({}); })()', sem.ctx)['501141007'],
+      vm.runInContext('(function(){ _invalidarValores(); return _codigosProximos({}); })()', com.ctx)['501141007']], [undefined, 100]);
+  ok('getProgramacaoDetalhada manda os feriados de hoje em diante (sem a aba, lista vazia)',
+     [vm.runInContext('getProgramacaoDetalhada().feriados', sem.ctx), vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx)],
+     [[], [{ data: '02/11/2026', desc: 'FINADOS' }, { data: '20/11/2026', desc: 'FERIADO' }]]);
+  com.setHoje('03/11/2026');
+  ok('feriado que já passou não vai mais', vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx), [{ data: '20/11/2026', desc: 'FERIADO' }]);
+  // a aba ilegível volta ao comportamento antigo, nunca derruba o cálculo
+  const ruim = montar(prog, log, { hoje: '30/10/2026', fer: { 0: ['DATA'], length: 2, map() { throw new Error('planilha fora'); } } });
+  ok('aba FERIADOS que não lê: {} e o cálculo segue (dia útil como antes)',
+     [vm.runInContext('(function(){ _invalidarValores(); return _feriadosNums(); })()', ruim.ctx), fut(ruim)], [{}, []]);
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ programação ok — adiantamento abate o lote, ENCERRAR fecha sem apagar, o app pergunta a cor');
