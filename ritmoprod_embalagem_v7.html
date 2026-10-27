@@ -2891,6 +2891,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       <button class="btn btn-acc" onclick="_ucvEl('pdf').click()" style="font-size:10px;padding:4px 12px" title="O PDF Takt Time do app de cronoanálise: um arquivo preenche a tela (confira e registre); vários registram de uma vez">📄 IMPORTAR PDF</button>
       <input type="file" id="uep-conv-pdf" accept="application/pdf,.pdf" multiple style="display:none" onchange="_ucvImportar(this.files);this.value=''">
       <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" style="font-size:10px;padding:4px 10px" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
+      <input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje." style="width:140px;padding:3px 8px;font-size:11px;cursor:pointer">
+      <button class="btn btn-ghost" onclick="gerarRelatorioCronoDia()" style="font-size:10px;padding:4px 10px" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button>
       <button class="btn btn-ghost" onclick="_ucvCapTodos()" style="font-size:10px;padding:4px 10px" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO</button>
     </div>
   </div>
@@ -3459,7 +3461,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.171.0';
+const APP_VER   = '7.172.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6709,23 +6711,26 @@ function _ucvPadCel(x){
   if(x.rel == null) return `<span title="${x.semRef ? 'a ' + _uepBaseCurto() + ' não rodou sozinha na janela: sem referência' : 'sem UEP'}">—</span>`;
   return `${fmtP(x.rel)} <small title="horas com o volume sozinho, sem parada${x.pouco ? ' — pouco para julgar' : ''} · perda em paradas ${fmtN(Math.round(x.par))} min">${_ucvHoras(x.minRod)}${x.pouco ? '*' : ''}</small>`;
 }
-function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts){
+// resRegs (v7.172.0, a impressão dos ESTUDOS DO DIA): as medições que o resumo
+// (a regra da troca) conta — todas as do volume, quando a tabela mostra só as
+// de um dia. Sem ele, as da tabela, como sempre.
+function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts, resRegs){
   const tit = `<div class="ucv-regs-t">MEDIÇÕES REGISTRADAS${p ? ` · ${_rpEsc(p.rot)}` : ' · AS ÚLTIMAS'}</div>`;
   if(est === 'sem-endpoint') return tit + '<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div>';
   if(!regs) return tit + `<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div>`;
   if(!regs.length) return tit + `<div class="uep-nota">${p ? 'Nenhuma medição registrada deste produto ainda.' : 'Nenhuma medição registrada ainda.'}</div>`;
-  const S = p ? _ucvRegsResumo(regs, cadAtual) : null, V = S ? UCV_REG_VEREDITO[S.veredito] : null;
+  const S = p ? _ucvRegsResumo(resRegs || regs, cadAtual) : null, V = S ? UCV_REG_VEREDITO[S.veredito] : null;
   const n = x => x == null ? '—' : String(x).replace('.', ',');
   const sg = x => x == null ? '—' : _taktTxt(x);
   return tit
     + (S ? `<div class="ucv-regs-r ${V[0]}"><b>${plural(S.n, 'medição', 'medições')} · ${_ucvVolTxt(S.nVol)}</b>${S.uepMed != null ? ` · UEP média ${_ucvU2(S.uepMed)}` : ''} — ${V[1]}</div>` : '')
     + '<div class="ucv-regs-w"><table class="ucv-regs"><thead><tr><th>DATA</th>' + (p ? '' : '<th>PRODUTO</th>')
-    + `<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, a troca é decidida pela regra do volume (todas as medições). TROCADA = o ✓ TROCAR A UEP já gravou a UEP nova a partir deste cadastro.">TROCA</th><th class="n" title="A UEP do cadastro com que a medição foi comparada (a que estava em vigor quando ela entrou no painel). EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada — o valor novo está na coluna TROCA.">VERSÃO DO<br>CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th></th></tr></thead><tbody>`
+    + `<th>VOLUME</th><th class="n">RODANDO</th><th class="n">NO PERÍODO</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th><th class="n">UEP</th><th title="Cada medição contra o cadastro que ela viu: dentro de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca; fora, a troca é decidida pela regra do volume (todas as medições). TROCADA = o ✓ TROCAR A UEP já gravou a UEP nova a partir deste cadastro.">TROCA</th><th class="n" title="A UEP do cadastro com que a medição foi comparada (a que estava em vigor quando ela entrou no painel). EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada — o valor novo está na coluna TROCA.">VERSÃO DO<br>CADASTRO</th><th class="n" title="Na produção dos últimos ${CRONO_LINHA_DIAS} dias fechados, só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP desta medição, contra a ${_uepBaseCurto()} nas mesmas condições. 100% = rendeu o mesmo que a ${_uepBaseCurto()}; ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma. As paradas são perda à parte.">NA PRODUÇÃO</th><th>BASE</th><th>MEDIDO POR</th><th class="ucv-x-c"></th></tr></thead><tbody>`
     + regs.slice(0, 15).map((r, i) => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td class="ucv-pr">${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n"><b>${sg(r.sRod)}</b></td><td class="n">${sg(r.sPer)}</td><td class="n">${sg(r.sLac)}</td>`
       + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${r.uep > 0 ? _ucvU2(r.uep) : '—'}</b></td><td class="ucv-st">${_ucvStatusCel(sts && sts[i])}</td><td class="n ucv-vc">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}${sts && sts[i] && sts[i].vigor != null ? `<small>${sts[i].vigor ? 'em vigor' : 'anterior'}</small>` : ''}</td>`
       + `<td class="n">${_ucvPadCel(Array.isArray(pads) ? pads[i] : pads)}</td><td title="${_rpEsc(r.base || '')}">${_rpEsc(String(r.base || '').replace(/ MEDIDA (\d{2}\/\d{2})\/\d{4}$/, ' $1'))}</td><td>${_rpEsc(r.quem || '')}</td>`
-      + `<td>${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
+      + `<td class="ucv-x-c">${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
         : '<span class="ucv-x-sem" title="Linha sem REG_ID (digitada na planilha): exclua lá">—</span>'}</td></tr>`).join('')
     + '</tbody></table></div>' + (regs.length > 15 ? `<div class="uep-nota">+ ${regs.length - 15} mais antigas na aba CRONOANALISE da planilha.</div>` : '');
 }
@@ -7401,6 +7406,130 @@ function gerarRelatorioCrono(){
     + _rpCabecalho('CRONOANÁLISE → UEP',
         `<div class="rp-per">UEP</div><div>${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)}</div><div>base ${_rpEsc(_uepBaseCurto())} · ${_rpEsc(_taktTxt(R.base.seg))} por UEP${R.base.tpSeg != null ? ' medido' : ''}</div><div>meta ${fmtN(R.base.meta)} UEP</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
+    + corpo + '</div></body></html>';
+  win.document.open(); win.document.write(html); win.document.close();
+}
+
+// ── 🖨 ESTUDOS DO DIA (v7.172.0, PPCP 27/10/2026: "subi estudos hoje, colocar
+// impressão dos estudos feito no dia"). As medições REGISTRADAS com a DATA DA
+// MEDIÇÃO do dia escolhido (o dia em que o estudo foi FEITO, não o do
+// registro), por volume, e as UEP trocadas no cadastro naquele dia. A tabela de
+// cada volume é a MESMA da lista da tela (_ucvRegsHtml) — TROCA, VERSÃO DO
+// CADASTRO e NA PRODUÇÃO pelas mesmas contas —, e o resumo de cada volume é a
+// regra da troca com TODAS as medições dele (as de outros dias também contam,
+// como na tela). Nada é lido nem gravado: o retrato do que o painel já tem, e a
+// janela abre no clique. Folha DEITADA (as 12 colunas da lista).
+// Conta pura. trocas = as do getConferenciaCrono (null = não lidas); horas = o
+// _ucvLinhaItens (a lista de horas ou o estado da leitura).
+function _ucvDiaMontar(lista, dia, prods, trocas, horas, meta){
+  const chave = r => String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || '');
+  const L = Array.isArray(lista) ? lista : [], doDia = L.filter(r => String(r.data || '') === dia), G = {};
+  doDia.forEach(r => { (G[chave(r)] = G[chave(r)] || []).push(r); });
+  const ref = Array.isArray(horas) ? _ucvRefDe(horas, prods, meta) : null;
+  const est = { 'nao-troca':0, fora:0, trocada:0, base:0, 'sem-cadastro':0 };
+  const grupos = Object.keys(G).map(k => {
+    const regs = G[k], r0 = regs[0], sts = _ucvRegsStatus(regs, trocas, prods);
+    const p = (prods || []).find(x => x.modelo === String(r0.modelo || '') && _uepConvNorm(x.nome) === _uepConvNorm(r0.produto) && _ucvRegVol(x) === String(r0.volume || '')) || null;
+    const todas = L.filter(r => chave(r) === k);
+    sts.forEach(x => { est[x.est]++; });
+    return { p, rot:p ? p.rot : String(r0.modelo || '') + ' · ' + String(r0.produto || '') + (r0.volume && r0.volume !== 'VOL 1/1' ? ' · ' + r0.volume : ''),
+             regs, todas, outras:todas.length - regs.length, cad:p ? _uepConvCadastro(p).volCad : null,
+             pads:_ucvRegsPadrao(regs, horas, meta, ref), sts,
+             nVol:regs.reduce((a, r) => a + (Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0), 0) };
+  }).sort((a, b) => a.rot.localeCompare(b.rot));
+  const media = (C, f) => C.length ? C.reduce((a, x) => a + (Number(x[f]) || 0), 0) / C.length : null;
+  const trocasDia = Array.isArray(trocas) ? trocas.filter(t => String(t.gravado || t.vig || '').slice(0, 10) === dia).map(t => {
+    const C = t.codigos || [];
+    return { rot:String(t.modelo || '') + ' · ' + String(t.produto || '') + (t.volume && t.volume !== 'VOL 1/1' ? ' · ' + t.volume : ''),
+             hora:String(t.gravado || '').slice(11, 16), amostra:String(t.amostra || ''), antes:media(C, 'antes'), uep:media(C, 'uep'),
+             cods:C.map(c => ({ cod:String(c.cod || ''), uep:Number(c.uep) > 0 ? Number(c.uep) : null })), substituida:!!t.substituida };
+  }).sort((a, b) => a.hora.localeCompare(b.hora) || a.rot.localeCompare(b.rot)) : null;
+  const ultimo = L.reduce((m, r) => _cartNum(r.data) > _cartNum(m) ? String(r.data) : m, '');
+  return { dia, n:doDia.length, grupos, nVol:grupos.reduce((a, g) => a + g.nVol, 0), est, trocasDia, lido:Array.isArray(horas), ultimo };
+}
+// O campo DIA (type=date, aaaa-mm-dd) em dd/mm/aaaa; vazio ou torto → null (vale hoje).
+function _ucvDiaDoCampo(v){
+  const m = String(v || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : null;
+}
+function _ucvDiaParaCampo(d){
+  const m = String(d || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m ? m[3] + '-' + m[2] + '-' + m[1] : '';
+}
+// A caneta do fim da folha: quem conferiu os estudos.
+const UCV_DIA_CAMPOS = ['CONFERIDO POR (PPCP)', 'DATA DA CONFERÊNCIA'];
+// A pele do papel, escopada em .ucv-dia (o documento é o comum: as regras soltas
+// mudariam os outros relatórios). O resto (cartões, pílulas, notas, caneta) é o
+// _UCV_DOC_SKIN — o papel leva as duas classes.
+const _UCV_DIA_SKIN = `
+.ucv-dia .ucv-dia-g{margin:0 0 14px;page-break-inside:avoid}
+.ucv-dia .ucv-regs-t{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.4px;color:#1a1a2e;margin:0 0 5px}
+.ucv-dia .ucv-regs-t span{font-family:'Barlow',sans-serif;font-size:10px;font-weight:400;letter-spacing:0;color:#4a5568;margin-left:6px}
+.ucv-dia .ucv-regs-r{font-size:10.5px;line-height:1.45;color:#1a1a2e;padding:5px 10px;margin:0 0 6px;border:1px solid #e2e8f0;border-left:3px solid #dd6b20;border-radius:4px}
+.ucv-dia .ucv-regs-r.ok{border-left-color:#38a169}
+.ucv-dia .ucv-regs-r.troca{border-left-color:#FF5C1F}
+.ucv-dia .ucv-regs th{padding:5px 6px;font-size:7.5px;letter-spacing:1px;white-space:nowrap;vertical-align:bottom}
+.ucv-dia .ucv-regs td{padding:5px 6px;font-size:10px;vertical-align:top}
+.ucv-dia .ucv-regs .n{text-align:right}
+.ucv-dia .ucv-regs td small{display:block;margin-top:2px;font-size:8px;color:#4a5568}
+.ucv-dia .ucv-regs .ucv-x-c{display:none}
+.ucv-dia .ucv-pill.troca{color:#c2410c;border-color:#fdba74}
+.ucv-dia .ucv-dia-cods{font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.6}
+.ucv-dia .ucv-dia-cods b{font-family:'Barlow',sans-serif;font-size:10px}
+.ucv-dia .uep-nota{margin-top:4px}
+`;
+// Desenho do papel (sem conta): tudo vem pronto do _ucvDiaMontar.
+function _ucvDiaHtml(D, ctx){
+  const B = _uepBaseCurto(), F = UEP_PAD_FAIXA, e = D.est, nT = D.trocasDia ? D.trocasDia.length : null;
+  const card = (l, v, s) => `<div class="kpi-card"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${s}</div></div>`;
+  const res = [e['nao-troca'] ? `${e['nao-troca']} dentro de ${F[0]}–${F[1]}%` : '', e.fora ? `${e.fora} fora da faixa` : '',
+               e.trocada ? `${e.trocada} já trocada${e.trocada === 1 ? '' : 's'}` : '', e.base ? `${e.base} da base` : '', e['sem-cadastro'] ? `${e['sem-cadastro']} sem cadastro` : ''].filter(Boolean).join(' · ');
+  return '<div class="kpi-grid c4">'
+    + card('MEDIÇÕES DO DIA', fmtN(D.n), res || 'pela DATA DA MEDIÇÃO')
+    + card('VOLUMES ESTUDADOS', fmtN(D.grupos.length), 'produto · volume')
+    + card('VOLUMES MEDIDOS', fmtN(D.nVol), `a amostra do dia — a troca pede ${UCV_TROCA_MIN_VOL} por volume, somando as medições`)
+    + card('UEP TROCADA NO CADASTRO', nT == null ? '—' : fmtN(nT), nT == null ? 'as trocas não foram lidas' : nT ? 'pelo ✓ TROCAR A UEP, neste dia' : 'nenhuma neste dia')
+    + '</div>'
+    + '<div class="rp-sec-ttl">AS MEDIÇÕES DO DIA, POR VOLUME</div>'
+    + D.grupos.map(g => '<div class="ucv-dia-g">' + _ucvRegsHtml(g.regs, g.p || { rot:g.rot }, null, null, g.cad, g.pads, g.sts, g.todas)
+      + (g.outras > 0 ? `<div class="uep-nota">O resumo é a regra da troca com as ${plural(g.todas.length, 'medição', 'medições')} registradas do volume — ${plural(g.outras, 'é de outro dia', 'são de outros dias')}.</div>` : '')
+      + '</div>').join('')
+    + (nT ? '<div class="rp-sec-ttl">UEP TROCADA NO CADASTRO NESTE DIA</div>'
+      + '<table class="ucv-regs"><thead><tr><th>PRODUTO</th><th>HORA</th><th class="n">UEP ANTES → DEPOIS</th><th>CÓDIGOS · A UEP NOVA</th><th>AMOSTRA</th></tr></thead><tbody>'
+      + D.trocasDia.map(t => `<tr><td>${_rpEsc(t.rot)}${t.substituida ? '<small>a UEP do cadastro já mudou de novo depois</small>' : ''}</td><td>${_rpEsc(t.hora || '—')}</td>`
+        + `<td class="n">${t.antes != null ? _ucvU2(t.antes) + ' → ' : ''}<b>${t.uep != null ? _ucvU2(t.uep) : '—'}</b></td>`
+        + `<td class="ucv-dia-cods">${t.cods.map(c => `${_rpEsc(_uepConvCod(c.cod))} <b>${c.uep != null ? _ucvU2(c.uep) : '—'}</b>`).join(' · ')}</td><td>${_rpEsc(t.amostra)}</td></tr>`).join('')
+      + '</tbody></table><div class="uep-nota">Confira a aba UEP da planilha de programação com estes códigos. A UEP de hoje inteira já sai com o número novo; os dias fechados não mudam.</div>' : '')
+    + '<div class="rp-sec-ttl">COMO LER</div><div class="ucv-info">'
+    + `<span>TROCA</span><p>Cada medição contra o cadastro que ela viu: dentro de ${F[0]}–${F[1]}% não troca. A UEP do volume só troca com ${UCV_TROCA_MIN_VOL} volumes ou mais, somando as medições, todas do mesmo lado.</p>`
+    + `<span>NA PRODUÇÃO</span><p>${D.lido ? `Últimos ${CRONO_LINHA_DIAS} dias fechados, só as horas com o volume sozinho na linha, sem as paradas apontadas, contra a ${B} nas mesmas condições (100% = rendeu o mesmo). * = menos de ${_ucvHoras(UEP_PAD_MIN_MIN)}.`
+        : 'A produção ainda não tinha sido lida quando o papel saiu (…): espere a aba terminar de ler e imprima de novo.'}</p>`
+    + `<span>UEP</span><p>RODANDO ÷ o tempo da base (coluna BASE) por volume. A UEP do cadastro só muda pelo ✓ TROCAR A UEP.</p></div>`
+    + '<div class="rp-sec-ttl">CONFERÊNCIA</div><div class="ucv-reg">' + UCV_DIA_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · estudos de cronoanálise do dia</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+}
+function gerarRelatorioCronoDia(){
+  const el = _ucvEl('dia'), dia = _ucvDiaDoCampo(el ? el.value : '') || hojeStr();
+  const L = UCV_REGS && Array.isArray(UCV_REGS.lista) ? UCV_REGS.lista : null;
+  if(!L){
+    _ucvRegsCarregar();
+    alert(UCV_REGS && UCV_REGS.falha === 'sem-endpoint' ? 'O Apps Script ainda não tem o registro da cronoanálise (.gs v5.30): não há medições para imprimir.'
+        : 'As medições registradas ainda não foram lidas. Tente em alguns segundos.');
+    return;
+  }
+  const D = _ucvDiaMontar(L, dia, UEP_CONV_PRODS, UCV_CONF && UCV_CONF.trocas, _ucvLinhaItens(), PONTOS_DIA.metaUep);
+  if(!D.n){ alert(`Nenhuma medição registrada com a DATA DA MEDIÇÃO ${dia}.` + (D.ultimo ? `\nA última registrada é de ${D.ultimo} — escolha o dia ao lado do botão.` : '')); return; }
+  // A janela abre NO CLIQUE (nenhuma leitura antes): o navegador não bloqueia.
+  const win = window.open('', '_blank', 'width=1100,height=800');
+  if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
+  const ctx = { data:hojeStr(), hora:new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  let corpo = '';
+  try{ corpo = _ucvDiaHtml(D, ctx); }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas('Estudos de cronoanálise - ' + dia.replace(/\//g, '-'), true)
+    + '<style>' + _UCV_DOC_SKIN + _UCV_DIA_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="ucv-doc ucv-dia">'
+    + _rpCabecalho('ESTUDOS DE CRONOANÁLISE',
+        `<div class="rp-per">${_rpEsc(dia)}</div><div>${plural(D.n, 'medição', 'medições')} · ${plural(D.grupos.length, 'volume estudado', 'volumes estudados')}</div><div>base ${_rpEsc(_uepBaseCurto())} · pela DATA DA MEDIÇÃO</div>`,
+        ' · DO DIA')
     + corpo + '</div></body></html>';
   win.document.open(); win.document.write(html); win.document.close();
 }
@@ -15164,7 +15293,8 @@ function setTab(tab){
   if(tab==='perdas'){ _pgInitFiltro(); renderGestaoPerdas(); }
   if(tab==='simulador'){ _simInitFiltro(); renderSimulador(); }
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
-  if(tab==='crono'){ _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
+  if(tab==='crono'){ const di=_ucvEl('dia'); if(di && !di.value) di.value=_ucvDiaParaCampo(hojeStr());   // o dia dos ESTUDOS DO DIA: hoje, se ninguém escolheu
+    _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
