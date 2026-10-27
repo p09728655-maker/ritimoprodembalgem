@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.172.0 — 27/10/2026 · 🖨 ESTUDOS DO DIA na ⏱ CRONOANÁLISE
+
+- PPCP: *"subi estudos hoje, colocar impressão dos estudos feito no dia"*.
+- Botão **🖨 ESTUDOS DO DIA** e campo de data (vem com hoje) no cabeçalho da aba
+  ⏱ CRONOANÁLISE. Folha deitada com todas as medições registradas com a **DATA
+  DA MEDIÇÃO** do dia, de todos os produtos, um bloco por volume: a mesma tabela
+  da lista da tela (sem o EXCLUIR), com TROCA, VERSÃO DO CADASTRO e NA PRODUÇÃO.
+- O resumo de cada volume é a regra da troca com **todas** as medições dele,
+  inclusive as de outros dias (como na tela); a folha avisa quantas são de
+  outro dia.
+- Seção **UEP TROCADA NO CADASTRO NESTE DIA**: antes → depois e os códigos com
+  a UEP nova, para conferir a aba UEP da planilha de programação. Campo
+  CONFERIDO POR (PPCP) no fim.
+- Retrato do que o painel já tem: nenhuma leitura nova, nada gravado.
+- **Atenção:** nenhum número mudou. O filtro é pela DATA DA MEDIÇÃO, não pelo
+  dia do registro: estudo de ontem subido hoje sai escolhendo ontem no campo.
+
 ## v7.171.0 — 27/10/2026 · MOTIVOS DA PERDA FIXA na impressão · papel enxuto
 
 - PPCP: *"lista na impressão os motivos da perda fixa"* → *"enxuga o que puder"*.

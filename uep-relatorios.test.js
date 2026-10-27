@@ -301,7 +301,7 @@ ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
    [true, true, false]);
 const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
-   [/tab==='crono'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+   [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
 ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
 ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
@@ -1190,6 +1190,106 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
     await _ucvImportar([{ name:'foto.jpg', type:'image/jpeg' }]);
     ok('fluxo IMPORTAR: arquivo que não é PDF não é lido', [iMsg.textContent.includes('Escolha o PDF'), F.chamadas.length], [true, 2]);
   });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// 🖨 ESTUDOS DO DIA (v7.172.0, PPCP 27/10/2026: "subi estudos hoje, colocar
+// impressão dos estudos feito no dia")
+console.log('\n── 🖨 ESTUDOS DO DIA ──');
+{
+  global.UCV_DIA_CAMPOS = eval('(' + pegaConst('UCV_DIA_CAMPOS') + ')');
+  ['function _ucvDiaMontar(', 'function _ucvDiaDoCampo(', 'function _ucvDiaParaCampo(', 'function _ucvDiaHtml(', 'function gerarRelatorioCronoDia(']
+    .forEach(f => eval.call(global, pegaJs(f)));
+  let nId = 0;
+  const RD = (data, modelo, produto, volume, uep, uepCad, volumes, extra) => Object.assign({ data, modelo, produto, volume, codigos:'', sRod:uep * 7.9, baseS:7.9,
+    volumes, uep, uepCad, base:'MADERO MEDIDA 20/10/2026', quem:'ADRIANO RODRIGUES', regId:'c' + (++nId) }, extra || {});
+  const LD = [   // da mais nova para trás, como o getCronoRegistros devolve
+    RD('27/10/2026', '501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.20, 2.23, 60, { codigos:'501.139.001' }),
+    RD('27/10/2026', '501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 1.51, 2.29, 60),
+    RD('27/10/2026', '501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 1, 1, 60),
+    RD('27/10/2026', '501777', 'PRODUTO SUMIDO', 'VOL 1/1', 1.6, 1.5, 30),
+    RD('27/10/2026', '501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.25, 2.23, 54, { codigos:'501.139.001' }),
+    RD('26/10/2026', '501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.50, 2.23, 40),   // outro dia: fora da folha, dentro da regra
+    RD('25/10/2026', '501136', 'LIVREIRO ENCANTO', 'VOL 1/1', 1.9, 1.87, 60)];
+  const TRD = [{ modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', gravado:'27/10/2026 10:40', vig:'27/10/2026', amostra:'2 medições, 113 volumes',
+                 codigos:[{ cod:'501059002', uep:1.51, antes:2.29 }], substituida:false },
+               { modelo:'501061', produto:'PENTEADEIRA CAMARIM ELOA', volume:'VOL 2/2', gravado:'26/10/2026 12:11', vig:'26/10/2026', amostra:'1 medição, 60 volumes',
+                 codigos:[{ cod:'501061002', uep:1.82, antes:2.53 }] }];
+  const D = _ucvDiaMontar(LD, '27/10/2026', PRODS, TRD, 'lendo', 2530);
+  ok('as medições do dia pela DATA DA MEDIÇÃO, por volume (o produto fora do cadastro também), em ordem de produto',
+     [D.n, D.grupos.map(g => [g.rot, g.regs.length, g.outras, !!g.p]), D.nVol, D.ultimo],
+     [5, [['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', 1, 0, true], ['501139 · ARMARIO ENCANTO', 2, 1, true], ['501149 · MESA CABECEIRA MADERO', 1, 0, true],
+          ['501777 · PRODUTO SUMIDO', 1, 0, false]], 264, '27/10/2026']);
+  ok('a coluna TROCA pela MESMA conta da lista; os contadores do dia saem dela',
+     [D.grupos.map(g => g.sts.map(x => x.est).join(',')), D.est], [['trocada', 'nao-troca,nao-troca', 'base', 'nao-troca'], { 'nao-troca':3, fora:0, trocada:1, base:1, 'sem-cadastro':0 }]);
+  ok('as UEP trocadas no cadastro NESTE dia (a de 26/10 fica fora), com os códigos e a UEP nova',
+     D.trocasDia, [{ rot:'501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', hora:'10:40', amostra:'2 medições, 113 volumes', antes:2.29, uep:1.51, cods:[{ cod:'501059002', uep:1.51 }], substituida:false }]);
+  ok('sem as trocas lidas: null (o cartão diz que não foram lidas), nunca "nenhuma"; produção não lida: o estado vai para a NA PRODUÇÃO',
+     [_ucvDiaMontar(LD, '27/10/2026', PRODS, null, 'lendo', 2530).trocasDia, D.lido, D.grupos[1].pads], [null, false, 'lendo']);
+  const HB = [1, 2, 3].map(h => ({ data:'20/10/2026', hora:(12 + h) + ':00', min:60, cods:{ 501149001:288 }, par:{} }))
+    .concat([9, 10].map(h => ({ data:'21/10/2026', hora:h + ':00', min:60, cods:{ 501139001:130 }, par:{} })));
+  const DL = _ucvDiaMontar(LD, '27/10/2026', PRODS, TRD, HB, 2530);
+  ok('com a produção lida: a NA PRODUÇÃO de cada medição, com a UEP dela, contra a base', [DL.lido, DL.grupos[1].pads.map(x => x && +x.rel.toFixed(1))], [true, [99.3, 101.6]]);
+  ok('dia sem medição: n 0 (o botão avisa e diz o último dia)', [_ucvDiaMontar(LD, '24/10/2026', PRODS, TRD, 'lendo', 2530).n, _ucvDiaMontar([], '27/10/2026', PRODS, TRD, 'lendo', 2530).ultimo], [0, '']);
+  ok('o campo DIA (aaaa-mm-dd) ↔ dd/mm/aaaa; vazio ou torto = hoje',
+     [_ucvDiaDoCampo('2026-10-27'), _ucvDiaDoCampo(''), _ucvDiaDoCampo('27/10/2026'), _ucvDiaParaCampo('27/10/2026'), _ucvDiaParaCampo('')], ['27/10/2026', null, null, '2026-10-27', '']);
+  // o resumo de cada volume é a regra da troca com TODAS as medições dele
+  const gE = D.grupos[1];
+  ok('o resumo do volume conta as medições de outros dias (a regra da troca é do volume): as duas de hoje conferem, com a de 26/10 discordam',
+     [_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts).includes(UCV_REG_VEREDITO.confere[1]),
+      _ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas).includes(UCV_REG_VEREDITO.discordam[1]),
+      _ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas).includes('3 medições ·')], [true, true, true]);
+  const DH = _ucvDiaHtml(D, { data:'27/10/2026', hora:'10:50' });
+  ok('o papel: os cartões, a tabela de cada volume (a MESMA da tela), a nota das medições de outros dias e as trocas do dia',
+     [DH.includes('MEDIÇÕES DO DIA'), DH.includes('3 dentro de 90–110% · 1 já trocada · 1 da base'), DH.includes(_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas)),
+      DH.includes('as 3 medições registradas do volume — 1 é de outro dia'), DH.includes('UEP TROCADA NO CADASTRO NESTE DIA'), DH.includes('501.059.002 <b>1,51</b>'),
+      DH.includes('2,29 → <b>1,51</b>'), DH.includes('MEDIÇÕES REGISTRADAS · 501777 · PRODUTO SUMIDO'), DH.includes('CONFERIDO POR (PPCP)'), DH.includes('gerado 27/10/2026 às 10:50')],
+     [true, true, true, true, true, true, true, true, true, true]);
+  ok('sem troca no dia, sem a seção; trocas não lidas, o cartão diz', [_ucvDiaHtml(_ucvDiaMontar(LD, '27/10/2026', PRODS, [], 'lendo', 2530), { data:'', hora:'' }).includes('NESTE DIA'),
+     _ucvDiaHtml(_ucvDiaMontar(LD, '27/10/2026', PRODS, null, 'lendo', 2530), { data:'', hora:'' }).includes('as trocas não foram lidas')], [false, true]);
+  ok('o desenho do papel não faz conta', UCV_SEM_CONTA.test(pegaJs('function _ucvDiaHtml(')) || /_ucvRegsStatus\(|_ucvRegsPadrao\(|_ucvRegsResumo\(|_ucvRefDe\(/.test(pegaJs('function _ucvDiaHtml(')), false);
+  const SKD = pegaConst('_UCV_DIA_SKIN').replace(/^`|`$/g, '');
+  ok('a pele é escopada em .ucv-dia e esconde a coluna do EXCLUIR (só da tela)',
+     [SKD.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-dia ')), /\.ucv-dia \.ucv-regs \.ucv-x-c\{display:none\}/.test(SKD),
+      (pegaJs('function _ucvRegsHtml(').match(/class="ucv-x-c"/g) || []).length], [true, true, 2]);
+  const LARG = [...SKD.matchAll(/\.ucv-dia-g \.ucv-regs th:nth-child\((\d+)\)\{width:(\d+)%\}/g)].map(m => [+m[1], +m[2]]);
+  const nCol = (_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts).match(/<th[ >]/g) || []).length - 1;   // a do EXCLUIR é escondida
+  ok('as tabelas dos volumes alinham: largura fixa para cada coluna visível da lista, somando 100%',
+     [/\.ucv-dia-g \.ucv-regs\{table-layout:fixed\}/.test(SKD), LARG.map(x => x[0]).join(), LARG.reduce((a, x) => a + x[1], 0)],
+     [true, Array.from({ length:nCol }, (_, i) => i + 1).join(), 100]);
+  // o botão, rodando a função real com o navegador de mentira
+  const G0 = {}, NOMES = ['document', 'window', 'alert', 'UCV_REGS', 'UCV_CONF', 'UEP_CONV_PRODS', 'PONTOS_DIA', 'UCV_LINHA', 'UCV_LINHA_VOO', 'hojeStr',
+    '_rpDocParadas', '_rpCabecalho', '_rpBotaoImprimir', '_UCV_DOC_SKIN', '_UCV_DIA_SKIN', '_ucvRegsCarregar', '_rpErroRelatorio'];
+  NOMES.forEach(n => { G0[n] = global[n]; });
+  const F = { alertas:[], abriu:0, html:'', leu:0, args:null };
+  const campoDia = { value:'' };
+  global.document = { activeElement:null, getElementById:id => id === 'uep-conv-dia' ? campoDia : null };
+  global.window = Object.assign(global, { open:() => { F.abriu++; return { document:{ open(){}, write(h){ F.html += h; }, close(){} }, close(){} }; } });
+  global.alert = t => F.alertas.push(t);
+  global.hojeStr = () => '27/10/2026';
+  global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.PONTOS_DIA = { metaUep:2530 };
+  global.UEP_CONV_PRODS = PRODS; global.UCV_CONF = { trocas:TRD };
+  global._rpDocParadas = (t, deitado) => { F.args = [t, deitado]; return '<html>'; };
+  global._rpCabecalho = (t, m, s) => `<hdr>${t}${m}${s}</hdr>`; global._rpBotaoImprimir = () => '';
+  global._UCV_DOC_SKIN = ''; global._UCV_DIA_SKIN = ''; global._ucvRegsCarregar = () => { F.leu++; return Promise.resolve(); };
+  global.UCV_REGS = null;
+  gerarRelatorioCronoDia();
+  global.UCV_REGS = { lista:LD, falha:null, ts:0 };
+  campoDia.value = '2026-10-24';
+  gerarRelatorioCronoDia();
+  ok('sem as medições lidas, ou dia sem medição: avisa (com o último dia), NÃO abre janela; sem lista, pede a leitura',
+     [F.abriu, F.leu, /ainda não foram lidas/.test(F.alertas[0]), /DATA DA MEDIÇÃO 24\/10\/2026[\s\S]*A última registrada é de 27\/10\/2026/.test(F.alertas[1])], [0, 1, true, true]);
+  campoDia.value = '';
+  gerarRelatorioCronoDia();
+  ok('com medições: abre no clique, deitada, com o dia de hoje (campo vazio) e o mesmo desenho',
+     [F.abriu, F.args, F.html.includes('<hdr>ESTUDOS DE CRONOANÁLISE<div class="rp-per">27/10/2026</div><div>5 medições · 4 volumes estudados</div>'),
+      F.html.includes(_ucvDiaHtml(_ucvDiaMontar(LD, '27/10/2026', PRODS, TRD, 'nao-lida', 2530), { data:'27/10/2026', hora:'' }).slice(0, 400)), F.html.includes('<div class="ucv-doc ucv-dia">')],
+     [1, ['Estudos de cronoanálise - 27-10-2026', true], true, true, true]);
+  ok('a impressão é síncrona: a janela abre no clique, nenhuma leitura antes', /await |\.then\(/.test(pegaJs('function gerarRelatorioCronoDia(')), false);
+  NOMES.forEach(n => { global[n] = G0[n]; });
+  ok('o botão e o dia moram na aba ⏱ CRONOANÁLISE; abrir a aba põe hoje no dia vazio',
+     [html.slice(iCr, fCr).includes('onclick="gerarRelatorioCronoDia()"'), html.slice(iCr, fCr).includes('<input type="date" id="uep-conv-dia"'),
+      /if\(tab==='crono'\)\{ const di=_ucvEl\('dia'\); if\(di && !di\.value\) di\.value=_ucvDiaParaCampo\(hojeStr\(\)\);/.test(ST)], [true, true, true]);
 }
 
 // os testes assíncronos (o fluxo do EXCLUIR) rodam antes do resumo; um que não

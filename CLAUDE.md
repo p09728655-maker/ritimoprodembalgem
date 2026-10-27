@@ -5182,6 +5182,36 @@ feito e dá ar de verdade ao que sobrou.
   falta o v5.34 e não grava; a conferência diz o mesmo. O IMPORTAR e o
   REGISTRAR não dependem do v5.34 (o `registrarCrono` é da v5.30).
 
+## 🖨 ESTUDOS DO DIA na ⏱ CRONOANÁLISE (v7.172.0)
+- PPCP, 27/10/2026: *"subi estudos hoje, colocar impressão dos estudos feito
+  no dia"*. Campo `#uep-conv-dia` (type=date; o `setTab('crono')` põe hoje
+  quando vazio; vazio = hoje) + **🖨 ESTUDOS DO DIA** → `gerarRelatorioCronoDia`.
+- **Pela DATA DA MEDIÇÃO** (o dia em que o estudo foi feito), não pelo
+  REGISTRADO_EM. Estudo de ontem subido hoje sai escolhendo ontem.
+- Conta `_ucvDiaMontar(lista, dia, prods, trocas, horas, meta)`: agrupa por
+  modelo|produto|volume (produto fora do cadastro entra com o rótulo do
+  registro), `sts` pelo `_ucvRegsStatus`, `pads` pelo `_ucvRegsPadrao`, `todas`
+  = as medições do volume de qualquer dia, e as trocas do `getConferenciaCrono`
+  com GRAVADO_EM no dia (`null` = não lidas). Desenho `_ucvDiaHtml` (sem conta).
+- **A tabela de cada volume é o MESMO `_ucvRegsHtml` da tela**: o 8º parâmetro
+  `resRegs` faz o resumo (a regra da troca) contar `todas`, não só as do dia —
+  senão o papel diria "conferem" com a tela dizendo "discordam". A coluna do
+  EXCLUIR tem `class="ucv-x-c"`, que a pele do papel esconde.
+- Pele `_UCV_DIA_SKIN` escopada em `.ucv-dia`; o papel leva `.ucv-doc
+  .ucv-dia` e usa também o `_UCV_DOC_SKIN`. Folha DEITADA (12 colunas), com
+  `table-layout:fixed` e uma largura por coluna (somam 100%): com a largura
+  automática cada volume alinhava as colunas de um jeito. Coluna nova no
+  `_ucvRegsHtml` pede a largura na pele também (o teste confere a contagem).
+  Medido no Chromium (A4 deitada, 1009 px úteis): 6 volumes e 12 medições em 3
+  folhas, nada passa da largura; um volume não parte entre folhas.
+  `_rpDocParadas` passou a 16 usuários, `_rpCabecalho` a 20 chamadas, rodapé
+  `APP_NOME_CX` a 14 (o teste conta).
+- Síncrono: sem a lista lida ou sem medição no dia, avisa (com o último dia
+  que tem) e não abre o pop-up. A NA PRODUÇÃO sai "…" se a produção ainda não
+  foi lida, e o COMO LER diz isso.
+- Testes em `uep-relatorios.test.js` (conta, desenho, pele e o botão rodando
+  com navegador de mentira; conferidos por mutação).
+
 ## NA PRODUÇÃO: % DO PADRÃO NA CRONOANÁLISE (v7.160.0 / `.gs` v5.35)
 - PPCP, 26/10/2026, com a ELOA VOL 2/2 na lista de medições: *"a linha faz
   35,5 s/cx?"* → *"o que é s/cx"* → *"mas esse tempo é cheio de paradas"* →
