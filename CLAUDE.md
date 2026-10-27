@@ -5211,6 +5211,12 @@ feito e dá ar de verdade ao que sobrou.
   foi lida, e o COMO LER diz isso.
 - Testes em `uep-relatorios.test.js` (conta, desenho, pele e o botão rodando
   com navegador de mentira; conferidos por mutação).
+- **Cabeçalho da aba (v7.172.1, print do PPCP)**: a frase de ajuda mora na
+  LINHA DE BAIXO (`.ucv-hdr-sub`), nunca no meio dos botões — lá ela quebrava o
+  título em 2–3 linhas e jogava o último botão numa fileira sozinho. Botões numa
+  fileira (`.ucv-hdr-bts`, 30 px), o dia colado ao 🖨 ESTUDOS DO DIA
+  (`.ucv-hdr-dia`). Medido com as fontes: uma fileira em 1920, 1366 e 1280.
+  Botão novo no cabeçalho? Medir de novo nas três larguras.
 
 ## NA PRODUÇÃO: % DO PADRÃO NA CRONOANÁLISE (v7.160.0 / `.gs` v5.35)
 - PPCP, 26/10/2026, com a ELOA VOL 2/2 na lista de medições: *"a linha faz
