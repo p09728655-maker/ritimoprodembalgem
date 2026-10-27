@@ -1252,6 +1252,11 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
   ok('a pele é escopada em .ucv-dia e esconde a coluna do EXCLUIR (só da tela)',
      [SKD.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-dia ')), /\.ucv-dia \.ucv-regs \.ucv-x-c\{display:none\}/.test(SKD),
       (pegaJs('function _ucvRegsHtml(').match(/class="ucv-x-c"/g) || []).length], [true, true, 2]);
+  const LARG = [...SKD.matchAll(/\.ucv-dia-g \.ucv-regs th:nth-child\((\d+)\)\{width:(\d+)%\}/g)].map(m => [+m[1], +m[2]]);
+  const nCol = (_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts).match(/<th[ >]/g) || []).length - 1;   // a do EXCLUIR é escondida
+  ok('as tabelas dos volumes alinham: largura fixa para cada coluna visível da lista, somando 100%',
+     [/\.ucv-dia-g \.ucv-regs\{table-layout:fixed\}/.test(SKD), LARG.map(x => x[0]).join(), LARG.reduce((a, x) => a + x[1], 0)],
+     [true, Array.from({ length:nCol }, (_, i) => i + 1).join(), 100]);
   // o botão, rodando a função real com o navegador de mentira
   const G0 = {}, NOMES = ['document', 'window', 'alert', 'UCV_REGS', 'UCV_CONF', 'UEP_CONV_PRODS', 'PONTOS_DIA', 'UCV_LINHA', 'UCV_LINHA_VOO', 'hojeStr',
     '_rpDocParadas', '_rpCabecalho', '_rpBotaoImprimir', '_UCV_DOC_SKIN', '_UCV_DIA_SKIN', '_ucvRegsCarregar', '_rpErroRelatorio'];

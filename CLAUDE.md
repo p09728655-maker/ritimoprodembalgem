@@ -5198,7 +5198,12 @@ feito e dá ar de verdade ao que sobrou.
   senão o papel diria "conferem" com a tela dizendo "discordam". A coluna do
   EXCLUIR tem `class="ucv-x-c"`, que a pele do papel esconde.
 - Pele `_UCV_DIA_SKIN` escopada em `.ucv-dia`; o papel leva `.ucv-doc
-  .ucv-dia` e usa também o `_UCV_DOC_SKIN`. Folha DEITADA (12 colunas).
+  .ucv-dia` e usa também o `_UCV_DOC_SKIN`. Folha DEITADA (12 colunas), com
+  `table-layout:fixed` e uma largura por coluna (somam 100%): com a largura
+  automática cada volume alinhava as colunas de um jeito. Coluna nova no
+  `_ucvRegsHtml` pede a largura na pele também (o teste confere a contagem).
+  Medido no Chromium (A4 deitada, 1009 px úteis): 6 volumes e 12 medições em 3
+  folhas, nada passa da largura; um volume não parte entre folhas.
   `_rpDocParadas` passou a 16 usuários, `_rpCabecalho` a 20 chamadas, rodapé
   `APP_NOME_CX` a 14 (o teste conta).
 - Síncrono: sem a lista lida ou sem medição no dia, avisa (com o último dia

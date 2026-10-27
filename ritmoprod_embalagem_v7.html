@@ -7460,7 +7460,10 @@ function _ucvDiaParaCampo(d){
 const UCV_DIA_CAMPOS = ['CONFERIDO POR (PPCP)', 'DATA DA CONFERÊNCIA'];
 // A pele do papel, escopada em .ucv-dia (o documento é o comum: as regras soltas
 // mudariam os outros relatórios). O resto (cartões, pílulas, notas, caneta) é o
-// _UCV_DOC_SKIN — o papel leva as duas classes.
+// _UCV_DOC_SKIN — o papel leva as duas classes. As tabelas dos volumes têm as
+// MESMAS larguras (table-layout fixo): com a largura automática cada volume
+// alinhava as colunas de um jeito. A soma dá 100% (a 13ª coluna, a do EXCLUIR,
+// é escondida); coluna nova no _ucvRegsHtml pede a largura aqui também.
 const _UCV_DIA_SKIN = `
 .ucv-dia .ucv-dia-g{margin:0 0 14px;page-break-inside:avoid}
 .ucv-dia .ucv-regs-t{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.4px;color:#1a1a2e;margin:0 0 5px}
@@ -7473,6 +7476,21 @@ const _UCV_DIA_SKIN = `
 .ucv-dia .ucv-regs .n{text-align:right}
 .ucv-dia .ucv-regs td small{display:block;margin-top:2px;font-size:8px;color:#4a5568}
 .ucv-dia .ucv-regs .ucv-x-c{display:none}
+.ucv-dia .ucv-dia-g .ucv-regs{table-layout:fixed}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(1){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(2){width:7%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(3){width:7%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(4){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(5){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(6){width:6%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(7){width:5%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(8){width:17%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(9){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(10){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(11){width:8%}
+.ucv-dia .ucv-dia-g .ucv-regs th:nth-child(12){width:10%}
+.ucv-dia .ucv-dia-g .ucv-regs th{white-space:normal}
+.ucv-dia .ucv-dia-g .ucv-regs td{overflow-wrap:anywhere}
 .ucv-dia .ucv-pill.troca{color:#c2410c;border-color:#fdba74}
 .ucv-dia .ucv-dia-cods{font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.6}
 .ucv-dia .ucv-dia-cods b{font-family:'Barlow',sans-serif;font-size:10px}
