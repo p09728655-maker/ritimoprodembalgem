@@ -2776,7 +2776,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">MÉTRICA</span>
     <select id="ph-metrica" onchange="renderModeloPeriodo()" class="frm-inp" style="padding:4px 8px;font-size:11px">
       <option value="mediaH">MÉDIA CX/H</option>
+      <option value="uepH" title="ritmo em UEP: compara caixa grande com pequena, contra os ~288 UEP/h da meta">UEP/H</option>
       <option value="caixas">CAIXAS</option>
+      <option value="uep" title="caixas × UEP/cx do cadastro: o esforço do período">UEP</option>
       <option value="pontos">PONTOS</option>
       <option value="pesoKg">PESO (KG)</option>
     </select>
@@ -3481,7 +3483,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.175.0';
+const APP_VER   = '7.176.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -8561,11 +8563,19 @@ function phFiltroRapido(dias){
 }
 // Metadados da métrica selecionada. mediaH (cx/h) é uma TAXA (caixas ÷ horas),
 // não é somável — as demais (caixas/pontos/peso) são aditivas.
+// UEP (v7.176.0, PPCP 27/10/2026: "acrescentar a métrica em UEP"): `uep` =
+// caixas × UEP/cx do cadastro (aditiva, como CAIXAS) e `uepH` = UEP ÷ horas
+// (taxa, como MÉDIA CX/H) — o ritmo numa régua comum a caixa grande e pequena,
+// julgado contra o ritmo da meta (META UEP ÷ 527 min). A UEP/cx é a do cadastro
+// de hoje (PH_UEP_PROD); caixa de produto sem UEP fica fora, nunca vira 0.
+function _phEhUep(metric){ return metric==='uep' || metric==='uepH'; }
 function _phMetricInfo(){
   const metric=(document.getElementById('ph-metrica')||{}).value||'mediaH';
   const map={
     mediaH:{label:'MÉDIA CX/H',unit:'cx/h',additive:false},
+    uepH:{label:'UEP/H',unit:'UEP/h',additive:false},
     caixas:{label:'CAIXAS',unit:'cx',additive:true},
+    uep:{label:'UEP',unit:'UEP',additive:true},
     pontos:{label:'PONTOS',unit:'pts',additive:true},
     pesoKg:{label:'PESO',unit:'kg',additive:true}
   };
@@ -8580,11 +8590,18 @@ function _phFmt(v,metric){
 // acumulador junta vários dias/modelos.
 function _phVal(acc,metric){
   if(metric==='mediaH') return acc.horas>0 ? acc.caixas/acc.horas : 0;
+  // UEP/H: só as horas dos itens COM UEP — a hora de produto sem UEP no
+  // cadastro não pode baixar o ritmo de quem tem
+  if(metric==='uepH') return acc.hUep>0 ? acc.uep/acc.hUep : 0;
+  if(metric==='uep') return acc.uep||0;
   if(metric==='pontos') return acc.pontos;
   if(metric==='pesoKg') return acc.pesoKg;
   return acc.caixas;
 }
-function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0,cxTeto:0,hTeto:0,mmCx:0,trocaMin:null,hSet:{}}; }
+function _phAcc(){ return {caixas:0,pontos:0,pesoKg:0,horas:0,uep:0,cxUep:0,hUep:0,cxTeto:0,hTeto:0,mmCx:0,trocaMin:null,hSet:{}}; }
+// A célula tem valor para a métrica? Nas de UEP só conta caixa de produto COM
+// UEP: célula só com produto sem UEP sai "·", e o dia dela não entra na média.
+function _phTem(acc,metric){ return !!acc && (_phEhUep(metric) ? acc.cxUep>0 : acc.caixas>0); }
 // Medida média do mix (mm, ponderada pelas caixas com teto) e o teto SIMULADO
 // para outra velocidade/entre-peças. A harmônica do teto real equivale a
 // vel × 60.000 ÷ (medida média + vão) — então trocar vel/vão pela conta da
@@ -8606,13 +8623,13 @@ function _phTetoSim(vel, entre, mixMm){
 // (padrão — poda como sempre) ou 'completa' (nenhum dia sai da média).
 // Omitido, vale 'aparada' — os chamadores antigos não mudam de conta.
 function _phMediaAparada(accsDia, metric, modo){
-  const dias=(accsDia||[]).filter(a=>a&&a.caixas>0);
+  const dias=(accsDia||[]).filter(a=>_phTem(a,metric));
   const poda=modo!=='completa' && dias.length>=3;
   const usados=poda
     ? [...dias].sort((a,b)=>_phVal(a,metric)-_phVal(b,metric)).slice(1,-1)
     : dias;
   const t=_phAcc(); usados.forEach(a=>_phAdd(t,a));
-  if(metric==='mediaH') return {val:_phVal(t,metric), aparada:poda};
+  if(metric==='mediaH' || metric==='uepH') return {val:_phVal(t,metric), aparada:poda};
   return {val:usados.length?_phVal(t,metric)/usados.length:0, aparada:poda};
 }
 // O filtro MÉDIA vive na barra do comparativo; o PDF lê o mesmo select, então
@@ -8773,6 +8790,24 @@ function _phUepTotal(itens){
 // a mesma regra da COR; grupo sem UEP no meio dos outros sai "—", nunca 0.
 const PH_UEP_TIT='UEP por caixa deste grupo (cadastro, média pelas caixas)';
 function _phUepTxt(u){ return u>0 ? u.toFixed(2).replace('.',',') : '—'; }
+// O ritmo da META em UEP/h (META UEP ÷ 527 min × 60, ~288): a régua das
+// métricas de UEP do comparativo — a mesma do card UEP DO DIA e do bloco 7.
+function _phRitmoMetaUep(){
+  const m=(typeof PONTOS_DIA!=='undefined' && PONTOS_DIA && Number(PONTOS_DIA.metaUep)>0) ? Number(PONTOS_DIA.metaUep) : UEP_META_PADRAO;
+  return m/UEP_MIN_DIA*60;
+}
+// Nas métricas de UEP, só as linhas e os dias que têm UEP; nas outras, tudo
+// como sempre. Tela e PDF passam por aqui (uma regra só).
+function _phSoComUep(linhas, datas, dayAcc, grandAcc, metric){
+  if(!_phEhUep(metric)) return { linhas, datasV:datas, cxSemUep:0 };
+  return { linhas: linhas.filter(l=>l.acc && l.acc.cxUep>0),
+           datasV: datas.filter(d=>_phTem(dayAcc[d],metric)),
+           cxSemUep: Math.max(0, (grandAcc.caixas||0)-(grandAcc.cxUep||0)) };
+}
+// O que a UEP do comparativo é, numa frase (tela e papel).
+function _phUepLegenda(metric){
+  return `UEP = caixas × UEP/cx do cadastro de hoje; caixa de produto sem UEP fica fora${metric==='uepH'?' (e as horas dela também)':''}`;
+}
 function _phLinhasPeriodo(ctx){
   const rowAcc=ctx.rowAcc, cellAcc=ctx.cellAcc, datas=ctx.datas, labelDe=ctx.labelDe;
   const metric=ctx.metric, additive=ctx.additive, horasLinha=ctx.horasLinha;
@@ -8782,7 +8817,7 @@ function _phLinhasPeriodo(ctx){
     const accsDia=datas.map(d=>cellAcc[k+'|'+d]);
     const ap=_phMediaAparada(accsDia,metric,mediaModo);
     const tetoReal=_phTeto(rowAcc[k]);
-    const nd=accsDia.filter(a=>a&&a.caixas>0).length;
+    const nd=accsDia.filter(a=>_phTem(a,metric)).length;
     const nTroc=_phTrocasPeriodo(k,datas,cellAcc,horasLinha);
     const minTroca=_phMinTrocaGrupo(k,datas,cellAcc,horasLinha,minDiaFn);
     const tetoBase=simUse?_phTetoSim(simUse.vel,simUse.entre,_phMixMm(rowAcc[k])):tetoReal;
@@ -9030,16 +9065,23 @@ function _phTrocaTxt(obs){
 // padrão do produto. E com 1 DIA só não existe aproveitamento (a média É o
 // melhor dia, por definição): cor neutra, senão quem rodou uma vez nascia
 // verde sem ter provado consistência nenhuma.
-function _phCorRitmo(v1, v2, nd, alvoRit){
+// `meta` (v7.176.0): a régua é o ritmo da META em UEP/h, não o ideal da linha
+// em cx/h — só muda o texto da nota; a cor segue a mesma regra.
+function _phCorRitmo(v1, v2, nd, alvoRit, meta){
   if(!(nd>=2)) return {cor:'var(--txt)', nota:'1 dia rodado — sem base para comparar com o próprio padrão'};
   const aprov=v2>0?v1/v2:0, pct=Math.round(aprov*100)+'% do próprio melhor';
   const abaixo=alvoRit>0&&v1<alvoRit;
   if(aprov>=0.9) return abaixo
-    ? {cor:'var(--warn)', nota:pct+' — regular, mas o próprio padrão fica abaixo do ideal da linha'}
-    : {cor:'var(--ok)',   nota:pct+' — regular e no ritmo da linha'};
+    ? {cor:'var(--warn)', nota:pct+(meta?' — regular, mas o próprio padrão fica abaixo do ritmo da meta':' — regular, mas o próprio padrão fica abaixo do ideal da linha')}
+    : {cor:'var(--ok)',   nota:pct+(meta?' — regular e no ritmo da meta':' — regular e no ritmo da linha')};
   return {cor:aprov>=0.75?'var(--warn)':'var(--red)', nota:pct+' — varia demais entre os dias'};
 }
 function _phAdd(acc,it){ acc.caixas+=it.caixas||0; acc.pontos+=it.pontos||0; acc.pesoKg+=it.pesoKg||0; acc.horas+=it.horas||0;
+  // UEP (v7.176.0): outro acc já traz uep/cxUep/hUep; item do backend leva a
+  // UEP/cx do produto (PH_UEP_PROD, cadastro). Sem o mapa ou sem UEP, nada.
+  if('cxUep' in it){ acc.uep+=it.uep||0; acc.cxUep+=it.cxUep||0; acc.hUep+=it.hUep||0; }
+  else{ const u=(typeof PH_UEP_PROD!=='undefined' && PH_UEP_PROD) ? Number(PH_UEP_PROD[_uepChave(it)]) : 0;
+    if(u>0 && it.caixas>0){ acc.uep+=it.caixas*u; acc.cxUep+=it.caixas; acc.hUep+=it.horas||0; } }
   // Rótulos das horas em que o grupo rodou — é a partir deles que se conta
   // quantas vezes ele ENTROU na linha (_phEntradasDia). Backend sem re-deploy
   // não manda horasLista: o hSet fica vazio e a contagem cai em 1 troca por
@@ -9217,7 +9259,9 @@ async function _phItensPeriodo(onTent){
   const de=dGet('ph-de');
   const ate=dGet('ph-ate');
   const key=de+'|'+ate;
-  if(_phCache.key===key && _phCache.itens!=null) return _phCache.itens;
+  // o mapa da UEP volta junto (v7.176.0): o PH_UEP_PROD é de quem leu por
+  // último (o estudo e o bloco 7 da aba UEP leem outros períodos)
+  if(_phCache.key===key && _phCache.itens!=null){ if(_phCache.uepProd) PH_UEP_PROD=_phCache.uepProd; return _phCache.itens; }
   // Duas chamadas para o MESMO período — trocar a métrica no meio de uma busca
   // lenta, tocar TENTAR DE NOVO duas vezes, pedir o PDF enquanto a tela carrega
   // — compartilham a MESMA requisição: com 3 tentativas de 25s a janela ficou
@@ -9227,7 +9271,7 @@ async function _phItensPeriodo(onTent){
   const p=(async()=>{
     try{
       const itens=await lerProducaoModeloPeriodo(de,ate,onTent);
-      if(itens!=null) _phCache={key, itens};
+      if(itens!=null) _phCache={key, itens, uepProd:PH_UEP_PROD};
       return itens;
     } finally { if(_phVoo.key===key) _phVoo={key:null, p:null}; }
   })();
@@ -9383,6 +9427,13 @@ async function renderModeloPeriodo(){
   // na métrica de ritmo — nas aditivas o teto nem aparece.
   const simEst=_phEsteiraSync();
   const simUse=(metric==='mediaH')?simEst:null;
+  // UEP sem o mapa do backend (.gs anterior à v5.14): não há o que mostrar
+  if(_phEhUep(metric) && !PH_UEP_PROD){
+    if(head) head.innerHTML='';
+    body.innerHTML='<tr><td class="empty-msg" style="padding:20px">A leitura do período não trouxe a UEP por produto — escolha outra métrica.</td></tr>';
+    if(totEl) totEl.textContent='';
+    return;
+  }
   // A medição da troca não segura a tela: desenha com o que tem (valor da
   // planilha) e redesenha quando a média das paradas chega. Não vira laço —
   // na segunda passada trocaObs() já responde e ninguém busca de novo.
@@ -9397,8 +9448,11 @@ async function renderModeloPeriodo(){
   // A régua do período e as linhas do quadro saem do MESMO lugar que o PDF usa
   // (_phReguaPeriodo / _phLinhasPeriodo) — ver o comentário na declaração.
   const {minDiaFn, fonteTroca, fatorTroca, mediaModo}=_phReguaPeriodo(_tl, datas, horasLinha, obsT);
-  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
+  const linhasT=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
                                  horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
+  // Métrica em UEP (v7.176.0): produto sem UEP não vira linha de "0", nem dia só
+  // com ele vira coluna vazia — as caixas dele são contadas à parte (cxSemUep).
+  const {linhas, datasV, cxSemUep}=_phSoComUep(linhasT, datas, dayAcc, grandAcc, metric);
 
   // % DO TETO DA ESTEIRA: só no ritmo (cx/h) e só quando o backend novo mandou
   // o teto (catálogo com MEDIDA/VELOCIDADE) — senão a coluna some, como a COR.
@@ -9406,26 +9460,28 @@ async function renderModeloPeriodo(){
   const temUep = linhas.some(l=>l.uepCx>0);
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
   const col2=additive?'MÉD/DIA':'MELHOR DIA';
+  // a régua da cor e do ▼: em cx/h o takt ideal da linha; em UEP/h o ritmo da meta
+  const alvoM=metric==='uepH' ? _phRitmoMetaUep() : alvoRit;
   head.innerHTML=`<tr><th style="text-align:left">${Termo}</th>`
     + (temUep?`<th style="text-align:right" title="${PH_UEP_TIT}">UEP/CX<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">cadastro</span></th>`:'')
-    + datas.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
+    + datasV.map(d=>`<th style="text-align:right" title="${fmtDataPtBR(d,'diaSemana')} ${d}">${d.slice(0,5)}</th>`).join('')
     + `<th style="text-align:right" title="${mediaModo==='completa'?'média com TODOS os dias do período (APARADA desligada no filtro MÉDIA)':'média sem o melhor e o pior dia (3+ dias)'} — o padrão de agora: é nela que se promete prazo e se monta a meta do dia">${col1}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">padrão de agora</span>`}</th><th style="text-align:right" title="o teto que vale HOJE: a equipe já fez esse ritmo — é a meta de melhoria justa">${col2}${additive?'':`<br><span style="display:block;font-size:9px;color:var(--txt2);font-weight:400;letter-spacing:.4px;margin-top:1px">teto praticado</span>`}</th>`
     + (temTeto?`<th style="text-align:right${simUse?';color:var(--warn)':''}" title="${simUse?`SIMULAÇÃO: esteira a ${simUse.vel} m/min com ${simUse.entre} mm entre peças — nada é gravado`:'quanto do teto da esteira o modelo usa — velocidade × 60.000 ÷ (medida da caixa + entre-peças), já descontados os '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto ('+(fonteTroca.medido?'medidos no período':'premissa combinada com o PPCP')+'), diluídos nas horas rodadas da linha — o desconto é o mesmo percentual para todas as linhas, então cores do mesmo produto têm o mesmo teto'}">${simUse?'% TETO SIM.':'% TETO EST.'}<br><span style="display:block;font-size:9px;color:${simUse?"var(--warn)":"var(--txt2)"};font-weight:400;letter-spacing:.4px;margin-top:1px">${simUse?'simulado − troca':'físico − troca'}</span></th>`:'')
     + `</tr>`;
 
   body.innerHTML=linhas.map(l=>{
-    const cells=datas.map(d=>{ const a=cellAcc[l.key+'|'+d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
+    const cells=datasV.map(d=>{ const a=cellAcc[l.key+'|'+d]; const has=_phTem(a,metric); return `<td class="mono" style="text-align:right${has?'':';color:var(--txt3)'}">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('');
     const v1=l.v1, v2=l.v2;
     // Cor da MÉD.PERÍODO: regra única em _phCorRitmo (verde só com regularidade
     // E ritmo da linha; 1 dia não julga). O ▼ continua marcando quem está
     // abaixo do ideal da LINHA — agora sem contradizer a cor da própria célula.
     let corV1='var(--acc)', aprovTxt='', notaV1='';
-    if(metric==='mediaH'){
-      const cr=_phCorRitmo(v1,v2,l.nd,alvoRit);
+    if(metric==='mediaH' || metric==='uepH'){
+      const cr=_phCorRitmo(v1,v2,l.nd,alvoM,metric==='uepH');
       corV1=cr.cor; notaV1=cr.nota;
       if(v2>0&&v1<v2) aprovTxt=` <span title="aproveitamento do próprio melhor" style="font-size:10px;color:var(--txt2)">${Math.round(v1/v2*100)}%</span>`;
     }
-    const flag=(metric==='mediaH'&&alvoRit>0&&v1<alvoRit)?' <span title="abaixo do takt ideal da linha" style="font-size:10px">▼</span>':'';
+    const flag=(!additive&&alvoM>0&&v1<alvoM)?` <span title="${metric==='uepH'?'abaixo do ritmo da meta em UEP':'abaixo do takt ideal da linha'}" style="font-size:10px">▼</span>`:'';
     // Em simulação o teto (o "tamanho do copo") fica VISÍVEL ao lado do % —
     // é ele que mede capacidade; o % sozinho induzia a ler régua como nota.
     const tdTeto=temTeto?`<td class="mono" style="text-align:right;color:${simUse?'var(--warn)':'var(--txt2)'};white-space:nowrap" title="teto ${simUse?'SIMULADO':''} deste mix já descontando ${fatorTroca!=null?fmtP((1-fatorTroca)*100)+' de troca — os':fmtN(Math.round(l.minTroca*10)/10)+' min de troca — a fatia deste produto nos'} ${fmtN(fonteTroca.minDia)} min/dia ${fonteTroca.medido?`MEDIDOS (${fmtN(fonteTroca.ev)} paradas de esteira/dia × ${fmtN(fonteTroca.min)} min, de ${fonteTroca.n} paradas apontadas)`:`da premissa (${TROCA_PREMISSA.trocasDia} trocas × ${TROCA_PREMISSA.min} min)`}${fatorTroca!=null?', diluídos nas horas da LINHA — mesma régua para todas as linhas e cores':''}: ${fmtN(Math.round(l.tetoShow))} cx/h (físico puro${simUse?' real':''}: ${fmtN(Math.round(l.teto))})">${l.tetoShow>0?fmtP(v1/l.tetoShow*100)+` <span style="font-size:10px;font-weight:600;color:${simUse?'var(--warn)':'var(--txt2)'}">de ${fmtN(Math.round(l.tetoShow))}/h</span>`:'—'}</td>`:'';
@@ -9433,15 +9489,16 @@ async function renderModeloPeriodo(){
     return `<tr><td style="text-align:left">${l.label}</td>${tdUep}${cells}<td class="mono" style="text-align:right;color:${corV1};font-weight:600"${notaV1?` title="${notaV1}"`:''}>${_phFmt(v1,metric)}${aprovTxt}${flag}</td><td class="mono" style="text-align:right" title="melhor ritmo do modelo = seu padrão">${_phFmt(v2,metric)}</td>${tdTeto}</tr>`;
   }).join('')
     + `<tr style="border-top:1.5px solid var(--border)"><td style="text-align:left;font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2)">${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${temUep?'<td></td>':''}`
-    + datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
+    + datasV.map(d=>{ const a=dayAcc[d]; const has=_phTem(a,metric); return `<td class="mono" style="text-align:right;font-weight:600">${has?_phFmt(_phVal(a,metric),metric):'·'}</td>`; }).join('')
     + `<td class="mono" style="text-align:right;font-weight:600;color:var(--acc)">${_phFmt(_phVal(grandAcc,metric),metric)}</td><td></td>${temTeto?'<td></td>':''}</tr>`;
   const grand=_phVal(grandAcc,metric);
 
   const mediaTxt=mediaModo==='completa'?'com todos os dias (APARADA desligada no filtro MÉDIA)':'sem o melhor e o pior dia (3+ dias)';
-  const legenda=(metric==='mediaH')?` · méd. ${mediaTxt} · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da linha · amarelo ≥75% ou abaixo do ideal · branco = 1 dia só (sem base)${alvoRit>0?` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoRit))}/h)`:''}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+' — régua igual para todas as linhas)'):''}`:` · méd/dia ${mediaTxt}`;
+  const uepLeg=_phEhUep(metric)?` · ${_phUepLegenda(metric)}`:'';
+  const legenda=(metric==='mediaH'||metric==='uepH')?` · méd. ${mediaTxt} · cor = aproveitamento do próprio melhor (MÉD ÷ MELHOR DIA): verde ≥90% E no ritmo da ${metric==='uepH'?'meta':'linha'} · amarelo ≥75% ou abaixo ${metric==='uepH'?'da meta':'do ideal'} · branco = 1 dia só (sem base)${alvoM>0?(metric==='uepH'?` · ▼ = abaixo do ritmo da meta (${fmtN(Math.round(alvoM))} UEP/h)`:` · ▼ = abaixo do ideal da linha (${fmtN(Math.round(alvoM))}/h)`):''}${uepLeg}${temTeto?(simUse?` · ⚠ % TETO SIM. = SIMULAÇÃO da esteira a ${simUse.vel} m/min · ${simUse.entre} mm (real: ${ESTEIRA_BASE.vel} · ${ESTEIRA_BASE.entre} — nada é gravado)`:' · % TETO EST. = uso do teto da esteira (físico − '+fmtN(fonteTroca.minDia)+' min/dia de troca de produto, '+(fonteTroca.medido?'medidos':'premissa')+' — régua igual para todas as linhas)'):''}`:` · méd/dia ${mediaTxt}${uepLeg}`;
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   if(totEl){
-    totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datas.length} dia${datas.length===1?'':'s'}${tLinha?' · '+tLinha:''}${simUse?` · ⚠ SIMULAÇÃO ${simUse.vel} m/min — nada é gravado`:''}${legenda?' · ⓘ':''}`;
+    totEl.textContent=`${label}: ${_phFmt(grand,metric)} ${unit} · ${linhas.length} ${linhas.length===1?termoS:termoP} · ${datasV.length} dia${datasV.length===1?'':'s'}${cxSemUep?` · ${fmtN(cxSemUep)} cx sem UEP, fora`:''}${tLinha?' · '+tLinha:''}${simUse?` · ⚠ SIMULAÇÃO ${simUse.vel} m/min — nada é gravado`:''}${legenda?' · ⓘ':''}`;
     totEl.title=legenda.replace(/^ · /,'').split(' · ').join('\n');   // a legenda inteira, passando o mouse
   }
   // O TOTAL DO DIA usa a MESMA régua de troca deste comparativo (PPCP,
@@ -10490,6 +10547,7 @@ async function gerarRelatorioProducaoHora(){
   if(!win){ alert('Pop-up bloqueado.\nClique no ícone de pop-up bloqueado na barra de endereço\ne permita pop-ups para este arquivo.'); return; }
 
   const {metric,label,unit,additive}=_phMetricInfo();
+  if(_phEhUep(metric) && !PH_UEP_PROD){ win.close(); alert('A leitura do período não trouxe a UEP por produto — escolha outra métrica.'); return; }
   const fmt=v=> metric==='pesoKg' ? (Math.round(v*10)/10).toLocaleString('pt-BR') : Math.round(v).toLocaleString('pt-BR');
 
   // Ocupação da LINHA por dia — TODOS os produtos, inclusive os que o filtro
@@ -10519,9 +10577,12 @@ async function gerarRelatorioProducaoHora(){
   // desenhar (a tela não quebrava porque lá a linha já ficava no fim).
   const tLinha=_phTrocasLinhaTxt(_tl,fonteTroca);
   const uepPer=_phUepTotal(itensView);   // card UEP APONTADA do resumo (v7.87.0)
-  const linhas=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
+  const linhasT=_phLinhasPeriodo({rowAcc, cellAcc, datas, labelDe, metric, additive, uepGrupo:_phUepPorGrupo(itensView,keyOf),
                                  horasLinha, simUse, obsT, minDiaFn, fatorTroca, mediaModo});
-  const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return (a&&a.caixas)?_phVal(a,metric):null; };
+  // Métrica em UEP (v7.176.0): produto sem UEP não vira linha de "0", nem dia só
+  // com ele vira coluna vazia — as caixas dele são contadas à parte (cxSemUep).
+  const {linhas, datasV, cxSemUep}=_phSoComUep(linhasT, datas, dayAcc, grandAcc, metric);
+  const cellV=(k,d)=>{ const a=cellAcc[k+'|'+d]; return _phTem(a,metric)?_phVal(a,metric):null; };
   const temTeto = metric==='mediaH' && linhas.some(l=>l.teto>0);
   const temUep = linhas.some(l=>l.uepCx>0);
   const col1=additive?'TOTAL':'MÉD.PERÍODO';
@@ -10672,6 +10733,7 @@ ${simUse?`<div class="rp-note" style="border:1px solid #FF9800;background:#fff8e
 </div>
 
 <div class="rp-sec-ttl" style="margin-top:16px">COMPARATIVO POR ${Termo} — POR DIA (${label})</div>
+${_phEhUep(metric)?`<div class="rp-note" style="margin:0 0 8px">${_phUepLegenda(metric)}${cxSemUep?` (${fmtN(cxSemUep)} cx no período)`:''}${metric==='uepH'?` · ritmo da meta ${fmtN(Math.round(_phRitmoMetaUep()))} UEP/h (META UEP ÷ ${UEP_MIN_DIA} min)`:''}.</div>`:''}
 ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:#3d4757;margin:0 0 8px;padding:8px 11px;background:#f8fafc;border:1px solid #edf2f7;border-radius:4px">
   <span><b style="color:#1a1a2e">MÉD.PERÍODO</b> = ${mediaModo==='completa'?'média com TODOS os dias (aparada desligada)':'padrão de agora'} → é a base para <b>prazo e meta do dia</b></span>
   <span><b style="color:#1a1a2e">MELHOR DIA</b> = teto praticado (a equipe já fez) → é a <b>meta de melhoria</b> justa</span>
@@ -10679,16 +10741,16 @@ ${additive?'':`<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px
 </div>`}
 <table>
   <thead>
-    <tr><th>${Termo}</th>${temUep?`<th title="${PH_UEP_TIT}">UEP/CX<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">cadastro</span></th>`:''}${datas.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">padrão de agora</span>`}</th><th>${col2}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">teto praticado</span>`}</th>${temTeto?(simUse?`<th style="color:#FF9800">% TETO SIM.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">simulado − troca</span></th>`:`<th>% TETO EST.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">físico − troca</span></th>`):''}</tr>
+    <tr><th>${Termo}</th>${temUep?`<th title="${PH_UEP_TIT}">UEP/CX<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">cadastro</span></th>`:''}${datasV.map(d=>`<th>${d.slice(0,5)}</th>`).join('')}<th title="média sem o melhor e o pior dia (3+ dias)">${col1}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">padrão de agora</span>`}</th><th>${col2}${additive?'':`<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">teto praticado</span>`}</th>${temTeto?(simUse?`<th style="color:#FF9800">% TETO SIM.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">simulado − troca</span></th>`:`<th>% TETO EST.<br><span style="font-size:8px;color:#a0aec0;font-weight:400;letter-spacing:.3px;text-transform:none">físico − troca</span></th>`):''}</tr>
   </thead>
   <tbody>
     ${linhas.map(l=>{
-      const cells=datas.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
+      const cells=datasV.map(d=>{ const v=cellV(l.key,d); return `<td${v==null?' style="color:#ccc"':''}>${v==null?'·':fmt(v)}</td>`; }).join('');
       return `<tr><td>${l.label}</td>${temUep?`<td style="color:#718096">${_phUepTxt(l.uepCx)}</td>`:''}${cells}<td class="col-tot">${fmt(l.v1)}</td><td>${fmt(l.v2)}</td>${temTeto?`<td style="${simUse?'color:#e65100;':''}white-space:nowrap">${l.tetoShow>0?fmtP(l.v1/l.tetoShow*100)+` <span style="font-size:9.5px;font-weight:600;color:${simUse?'#e65100':'#718096'}">de ${Math.round(l.tetoShow).toLocaleString('pt-BR')}/h</span>`:'—'}</td>`:''}</tr>`;
     }).join('')}
   </tbody>
   <tfoot>
-    <tr><td>${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${temUep?'<td></td>':''}${datas.map(d=>{ const a=dayAcc[d]; const has=a&&a.caixas; return `<td>${has?fmt(_phVal(a,metric)):'·'}</td>`; }).join('')}<td class="col-tot">${fmt(grand)}</td><td></td>${temTeto?'<td></td>':''}</tr>
+    <tr><td>${additive?'TOTAL/DIA':'RITMO/DIA'}</td>${temUep?'<td></td>':''}${datasV.map(d=>{ const a=dayAcc[d]; const has=_phTem(a,metric); return `<td>${has?fmt(_phVal(a,metric)):'·'}</td>`; }).join('')}<td class="col-tot">${fmt(grand)}</td><td></td>${temTeto?'<td></td>':''}</tr>
   </tfoot>
 </table>
 
