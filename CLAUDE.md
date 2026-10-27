@@ -3707,6 +3707,33 @@ feito e dá ar de verdade ao que sobrou.
     papel, e a coluna **PRODUTOS A MENOS / ANO**. O título da coluna do mês
     virou **PRODUTOS A MENOS / MÊS** — o PPCP perguntou *"a menos mês é o
     que?"*: sem a unidade no título, não dava para saber que eram produtos.
+  - **PERDA FIXA** (v7.170.0, PPCP 27/10/2026: *"esse percentual é sobre o
+    tempo que diminuiu?"* → *"colocar perda fixa"*). Campo **PERDA FIXA POR DIA
+    (MIN)** no diálogo (`#capj-fixa`, `rpe_cap_fixa`; vazio/0 = a conta
+    proporcional de sempre, texto/negativo/≥ jornada simulada = erro). É o tempo
+    que NÃO encolhe com a jornada: os minutos cortados saem todos do tempo de
+    produzir. `_capJornada(meta, menos, turnoFim, fixa)`: `prodHoje` = 527 −
+    fixa, `prodNovo` = jornada − fixa, meta nova = meta × prodNovo ÷ prodHoje,
+    `pct` = −menos ÷ prodHoje (o proporcional fica em `pctProp`, escrito no
+    cartão), PARA MANTER = meta ÷ prodNovo (o ritmo fora da perda fixa, contra
+    `ritmoProdH`). `minCap` = 527 × prodNovo ÷ prodHoje: a capacidade da
+    simulada na PROGRAMAÇÃO × CAPACIDADE (`jorn[k].min`; os minutos de jornada
+    ficam em `jorn[k].jorn`, o título) — a carga está no ritmo médio de hoje, e
+    assim as duas impressões do diálogo dão a mesma meta. Sem fixa, `minCap` =
+    jornada e tudo é como antes. O limite da esteira continua nos minutos da
+    jornada (teto físico, sem parada).
+    - Medido na planilha (19 dias de 28/09 a 26/10/2026): 79,6 min/dia de
+      paradas apontadas; fixos ~54 (troca de produto 32,2 · café ~16 · limpeza,
+      reunião e finalização de lote 5,5). ⚠ **O café não é apontado desde
+      25/09** (15–17 min todo dia até lá; voltou em 27/10): conferir o
+      apontamento antes de tirar média da aba. Variáveis (encolhem com a
+      jornada): "Outros" 16,5, troca de plástico 13,3 (consumo de bobina), o
+      resto ~12. 24 min a menos com 54 de fixa = −5,1% (meta 2.402), não −4,6%.
+  - **LIMITE ESTEIRA · PRODUTOS / DIA** (v7.170.0): é em PRODUTOS, não caixas —
+    o PPCP leu "855 cx/dia contra limite 444" (444 produtos de 3 volumes =
+    1.332 cx). A célula tem as caixas no `title`. A tabela tem as colunas
+    centralizadas (`_CAP_TODOS_SKIN`, escopada em `.cap-todos`; o PRODUTO fica
+    à esquerda).
   - ⚠ **É só a capacidade.** A mudança de jornada de verdade (dezembro) mexe em
     mais coisa e nada disso muda sozinho: `UEP_MIN_DIA`=527 (rp-core — meta da
     hora, esperado do card UEP, Telas F/G, PRÓXIMOS DIAS), a META UEP do ⚙, o

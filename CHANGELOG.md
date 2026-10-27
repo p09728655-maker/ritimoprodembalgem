@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.170.0 — 27/10/2026 · PERDA FIXA na simulação de jornada · colunas centralizadas
+
+- PPCP: *"esse percentual é sobre o tempo que diminuiu?"* → *"colocar perda
+  fixa"*. A % PERDA era só minutos a menos ÷ 527, porque a simulação supunha
+  que TODAS as paradas encolhem junto com a jornada. Parte delas não encolhe:
+  café, troca de produto, limpeza, reunião.
+- Campo **PERDA FIXA POR DIA (MIN)** no diálogo da 🖨 CAPACIDADE (aba ⏱
+  CRONOANÁLISE), opcional e guardado neste computador (`rpe_cap_fixa`). Com
+  ela, os minutos cortados saem todos do tempo de produzir: perda = minutos a
+  menos ÷ (527 − perda fixa); meta do dia = META UEP × (jornada − fixa) ÷
+  (527 − fixa). O cartão PERDA DE CAPACIDADE mostra o proporcional ao lado; o
+  PARA MANTER passa a ser o ritmo fora da perda fixa.
+- Vale nas DUAS impressões do diálogo: na PROGRAMAÇÃO × CAPACIDADE a jornada
+  simulada rende o que J.minCap minutos rendem hoje (ex.: 503 min com 60 de
+  fixa = 500 min) — a mesma meta da CAPACIDADE POR PRODUTO.
+- Medido na planilha (19 dias trabalhados de 28/09 a 26/10): 79,6 min/dia de
+  paradas apontadas; ~54 min/dia são fixos (troca de produto 32,2 + café ~16,
+  apontado só até 25/09 + limpeza, reunião e finalização de lote 5,5). Com 24
+  min a menos e 54 de fixa: −5,1% em vez de −4,6% (meta 2.402 em vez de 2.415).
+- **LIMITE ESTEIRA · PRODUTOS / DIA**: o título dizia só "LIMITE ESTEIRA / DIA"
+  e foi lido como caixas (855 cx/dia contra limite 444 — são 444 PRODUTOS de 3
+  volumes = 1.332 cx). A célula mostra as caixas no título. Também no simulador
+  da PROGRAMAÇÃO.
+- Tabela da CAPACIDADE POR PRODUTO com as colunas **centralizadas** (o nome do
+  produto continua à esquerda).
+- **Atenção:** sem perda fixa digitada, todos os números são os de antes. O
+  limite da esteira continua nos minutos da jornada (teto físico, sem parada
+  nenhuma). Nada no `.gs`.
+
+---
+
 ## mobile 1.38.0 — 27/10/2026 · LANÇAR A MADRUGADA DEPOIS DAS 07:00
 
 - PPCP: *"preciso de uma solução para dar entrada quando o operador do app não
