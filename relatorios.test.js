@@ -4703,7 +4703,7 @@ console.log('\n── estudo de UEP ──');
   const RP = pega('function renderProxDias(');
   ok('a impressão executiva leva o PRÓXIMOS DIAS pela MESMA montagem e o MESMO desenho da aba',
      [/_gpxDoPainel\(_gpxNSemanas\(hoje, PROG_FERIADOS\)\)/.test(RP), /prox=_gpxDoPainel\(_gpxNSemanas\(new Date\(\), PROG_FERIADOS\)\)/.test(pega('function _uepAbaDados(')),
-      /_gpxSemanasHtml\(PX, _gpxSemanasMontar\(PX, new Date\(\)\)\)/.test(pega('function _uepDocHtml(')), /PRÓXIMOS DIAS/.test(pega('function _uepDocHtml('))], [true, true, true, true]);
+      /_gpxSemanasHtml\(PX, _gpxSemanasMontar\(PX, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\)\)/.test(pega('function _uepDocHtml(')), /PRÓXIMOS DIAS/.test(pega('function _uepDocHtml('))], [true, true, true, true]);
   ok('a faixa mora na aba ⚖ UEP (bloco 6), renova a programação a cada 15 min e espera 1 min entre tentativas',
      [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /_abaOn\('uep'\)/.test(RP),
       /6 · PRÓXIMOS DIAS/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),
@@ -4775,7 +4775,7 @@ console.log('\n── estudo de UEP ──');
     ok('quadro sem a lista por código (backend antigo) ou sem vencido: nada',
        [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(_gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8), PA)], ['', '']);
     ok('quadro do atraso só na tela (papel e diretoria mostram só as semanas) e os desenhos não fazem conta de carga',
-       [/_gpxSemanasHtml\(P, _gpxSemanasMontar\(P, hoje\)\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
+       [/_gpxSemanasHtml\(P, _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\)\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
         /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxSemanasHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxAtrasoHtml(') + pega('function _gpxSemanasBlocos('))], [true, false, false]);
     ok('o painel passa a parte vencida e o papel diz que cada dia leva só os lotes dele',
@@ -4812,6 +4812,9 @@ console.log('\n── estudo de UEP ──');
     eval(pega('function _gpxSegunda(')); eval(pega('function _gpxNSemanas('));
     global.GPX_SEM_ROT = eval(JS.match(/const GPX_SEM_ROT = (\[[^\]]*\]);/)[1]);
     eval(pega('function _gpxSemanasMontar(')); eval(pega('function _gpxSemanasBlocos(')); eval(pega('function _gpxSemanasHtml('));
+    eval(pega('function _gpxPassados(')); eval(pega('function _gpxPassadoHtml('));
+    if (typeof _qpRealDia === 'undefined') eval(pega('function _qpRealDia('));
+    if (typeof uepDiaMeta === 'undefined') global.uepDiaMeta = d => d && Number(d.metaUep) > 0 ? Number(d.metaUep) : 2530;
     ok('horizonte: o resto desta semana + a semana que vem, em dias úteis (o feriado não conta); sem dia sobrando nesta semana, as duas seguintes',
        [_gpxNSemanas(new Date(2026, 9, 27, 16, 15), FER), _gpxNSemanas(new Date(2026, 9, 27), {}), _gpxNSemanas(new Date(2026, 9, 26), FER),
         _gpxNSemanas(new Date(2026, 9, 30, 16), FER), _gpxNSemanas(new Date(2026, 9, 31), FER), _gpxNSemanas(new Date(2026, 10, 1), FER)],
@@ -4834,22 +4837,41 @@ console.log('\n── estudo de UEP ──');
                 const Pf = _gpxMontar(F, hj, 0, 0, 2530, 7, null, FER), Wf = _gpxSemanasMontar(Pf, hj), h = _gpxSemanasBlocos(Wf, 'gpx');
                 // esta semana sem lote: sobram as 26h21; a que vem: 15h00 para 35h08 → sobram 20h08
                 return [/sobram <b>26h21<\/b>/.test(h), /sobram <b>20h08<\/b>/.test(h), /class="r"/.test(h)]; })(), [true, true, false]);
-    ok('o desenho: um bloco por semana com o total dela, o cartão na coluna do dia da semana; sem cartão HOJE e sem cartão do feriado',
+    ok('o desenho: um bloco por semana com o total dela, o cartão na coluna do dia da semana; o feriado é um cartão apagado na coluna dele (v7.179.0); sem passados, sem HOJE',
        [/<b>ESTA SEMANA<\/b> · 28\/10 a 30\/10 · 3 dias úteis/.test(BW), /<b>SEMANA QUE VEM<\/b> · 03\/11 a 06\/11 · 4 dias úteis · 02\/11 feriado/.test(BW),
-        /pedem <b>34h04<\/b> para <b>26h21<\/b> · <span class="r">faltam <b>7h43<\/b>/.test(BW), /style="grid-column:3" class="gpx-dia/.test(BW), /style="grid-column:2" class="gpx-dia/.test(BW),
-        /SEG<\/b> 02\/11|>FERIADO<|HOJE/.test(BW), (BW.match(/class="gpx-dia[ "]/g) || []).length, /--n:5/.test(BW)],
-       [true, true, true, true, true, false, 7, true]);
+        /pedem <b>34h04<\/b> para <b>26h21<\/b> · <span class="r">faltam <b>7h43<\/b>/.test(BW), /style="grid-column:3;grid-row:1" class="gpx-dia/.test(BW), /style="grid-column:2;grid-row:1" class="gpx-dia/.test(BW),
+        /HOJE/.test(BW), /class="gpx-dia gpx-pas">[^]*?FERIADO<\/span><div class="gpx-dl">FINADOS/.test(BW), (BW.match(/class="gpx-dia[ "]/g) || []).length, /--n:5/.test(BW)],
+       [true, true, true, true, true, false, true, 8, true]);
     const PS = _gpxMontar(FW.concat([it('31/10/2026','25377',100,U(120))]), hj, 0, 0, 2530, 7, null, FER), WS = _gpxSemanasMontar(PS, hj);
     ok('sábado com lote: coluna SÁB, fora da jornada, dito no total da semana como hora extra',
-       [/--n:6/.test(_gpxSemanasBlocos(WS, 'gpx')), /style="grid-column:6"/.test(_gpxSemanasBlocos(WS, 'gpx')), _fmtHM(WS[0].minPede), /SÁB 31\/10 2h00 em hora extra/.test(_gpxSemanasBlocos(WS, 'gpx'))],
+       [/--n:6/.test(_gpxSemanasBlocos(WS, 'gpx')), /style="grid-column:6;grid-row:1"/.test(_gpxSemanasBlocos(WS, 'gpx')), _fmtHM(WS[0].minPede), /SÁB 31\/10 2h00 em hora extra/.test(_gpxSemanasBlocos(WS, 'gpx'))],
        [true, true, '34h04', true]);
+    // v7.179.0 — os dias que já passaram nesta semana preenchem a coluna (PPCP:
+    // "sugira algo para não ficar vazio a tela" → prévia → "essa última")
+    const HIST = [{ data:'26/10/2026', uep:2761.6, metaUep:2530, real:1263, heCx:0 }];
+    const PAS = _gpxPassados(hj, HIST, 2104, 2761, FER);
+    ok('esta semana: SEG 26/10 FEITO (UEP gravada contra a meta DAQUELE dia, caixas de jornada) e TER 27/10 HOJE até agora',
+       PAS.map(x => [x.tipo, x.data, x.uep == null ? null : Math.round(x.uep), x.meta, x.pct == null ? null : +x.pct.toFixed(1), x.cx == null ? null : x.cx]),
+       [['feito', '26/10/2026', 2762, 2530, 109.2, 1263], ['hoje', '27/10/2026', 2104, 2761, null, null]]);
+    ok('sem o histórico lido não afirma nada dos dias que passaram; dia sem fechamento = SEM PRODUÇÃO; dia fechado sem UEP mostra as caixas; feriado da aba',
+       [_gpxPassados(hj, null, 2104, 2761, FER).map(x => x.tipo), _gpxPassados(hj, [], null, 2761, FER).map(x => x.tipo),
+        _gpxPassados(hj, [{ data:'26/10/2026', real:900, heCx:0 }], null, 2761, {}).map(x => [x.tipo, x.uep, x.cx]),
+        _gpxPassados(new Date(2026, 10, 3), [], null, 2761, FER).map(x => x.tipo)],
+       [['hoje'], ['sem'], [['feito', null, 900]], ['feriado']]);
+    const WP = _gpxSemanasMontar(PW, hj, PAS), BP = _gpxSemanasBlocos(WP, 'gpx');
+    ok('o desenho: cartões apagados nas colunas SEG e TER desta semana, o feriado na SEG da que vem, todos na mesma fileira; o total não muda',
+       [/style="grid-column:1;grid-row:1" class="gpx-dia gpx-pas">[^]*?FEITO[^]*?2\.762<small> UEP feitas/.test(BP), /109,2%<\/b> da meta 2\.530 · 1\.263 cx/.test(BP),
+        /style="grid-column:2;grid-row:1" class="gpx-dia gpx-pas">[^]*?HOJE · EM ANDAMENTO[^]*?2\.104<small> UEP até agora/.test(BP),
+        /style="grid-column:1;grid-row:1" class="gpx-dia gpx-pas">[^]*?FERIADO<\/span><div class="gpx-dl">FINADOS/.test(BP.split('SEMANA QUE VEM')[1] || ''),
+        /não cabe|NÃO CABE/i.test(BP), _fmtHM(WP[0].minPede), (BP.match(/grid-row:1/g) || []).length],
+       [true, true, true, true, false, '34h04', 10]);
     ok('o aviso (linhas sem UEP, na diretoria) vai no cabeçalho da 1ª semana, não num rodapé',
        [/ESTA SEMANA<\/b>[^<]*<span class="av">⚠ 2 linhas sem UEP<\/span>/.test(_gpxSemanasBlocos(W, 'dir', '⚠ 2 linhas sem UEP')),
         (_gpxSemanasBlocos(W, 'dir', '⚠ x').match(/class="av"/g) || []).length, /dir-tot/.test(pega('function _dirCartHtml('))], [true, 1, false]);
     ok('papel: duas fileiras, a linha "Lotes" sai e o espaçamento aperta (o mix do pior caso cabia na folha 2 e continua cabendo)',
        [/\.uep-doc \.ud-prox \.gpx-dx \+ \.gpx-dl\{display:none\}/.test(src), /#sec-dir \.dir-wk \.dir-dl\{display:none\}/.test(src)], [true, true]);
     ok('a diretoria e o papel usam os MESMOS blocos (a diretoria com a pele dela)',
-       [/_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\)\), 'dir', /.test(pega('function _dirCartHtml(')),
+       [/_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\), 'dir', /.test(pega('function _dirCartHtml(')),
         /_dirCartHtml\(_gpxDoPainel\(_gpxNSemanas\(new Date\(\), PROG_FERIADOS\)\)/.test(JS), /class="dir-wk"|dir-wk-h/.test(_gpxSemanasBlocos(W, 'dir'))], [true, true, true]);
     ok('o painel passa a aba FERIADOS (e hoje feriado não tem resto de jornada)',
        [/dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /feriadoHoje \? 0 :/.test(pega('function _gpxDoPainel(')),
@@ -5195,7 +5217,7 @@ console.log('\n── estudo de UEP ──');
 
 // ── v7.117.0: cartão único dos PRÓXIMOS DIAS e diretoria sem disputa de fila ─
 { ok('o cartão do dia é UM desenho: diretoria, aba UEP e papel passam pelo _gpxCartaoHtml',
-     [/_gpxCartaoHtml\(d, pf\)/.test(pega('function _gpxSemanasBlocos(')), /_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\)\), 'dir', /.test(pega('function _dirCartHtml(')),
+     [/_gpxCartaoHtml\(d, pf\)/.test(pega('function _gpxSemanasBlocos(')), /_gpxSemanasBlocos\(_gpxSemanasMontar\(P, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\), 'dir', /.test(pega('function _dirCartHtml(')),
       /gpx-trilho|gpx-barra/.test(pega('function _gpxSemanasBlocos(')), /_cartAberta\(|_gpxMontar\(/.test(pega('function _gpxCartaoHtml('))], [true, true, false, false]);
   ok('na diretoria não rodam o poll de paradas nem as médias por horário (disputavam a fila com o getHistory)',
      [/if\(!_modoDir\(\)\)\{\s*pollParadaTV\(\);/.test(JS), /return; \}\s*await lerPontosDia\(\); renderGerencial\(\);\s*if\(await lerMediaHorasComRetry\(4\)\)/.test(JS),

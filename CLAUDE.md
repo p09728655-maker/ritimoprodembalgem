@@ -4619,6 +4619,17 @@ feito e dá ar de verdade ao que sobrou.
     (`_gpxCapDem`) vai POR SEMANA (`w.capDem`, linha `gpx-wk-m` abaixo do
     cabeçalho) — só quando difere da meta e nunca na diretoria; o
     `_gpxCapDemHtml` (linha somada das duas semanas) foi apagado.
+  - **v7.179.0 — a semana inteira** (PPCP: *"sugira algo para não ficar vazio a
+    tela"* → prévia → *"essa última"*). `_gpxPassados(hoje, hist, hojeUep,
+    metaHoje, fer)` (conta): da segunda até hoje, dia útil — fechado no
+    `UEP_HIST` → FEITO (UEP gravada × `uepDiaMeta` do dia, `_qpRealDia`; sem UEP
+    → as caixas), sem dia → SEM PRODUÇÃO, feriado da aba, hoje → UEP de jornada
+    até agora. **Sem histórico lido (`hist` não é array) não afirma nada** dos
+    dias que passaram. `_gpxPassadosDoPainel` é a leitura única (aba, papel,
+    diretoria); `_gpxPassadoHtml` o cartão apagado (`gpx-pas`/`dir-pas`). O
+    feriado da semana virou cartão apagado também (revoga o "sem cartão do
+    feriado" da v7.178.0). Todo cartão leva `grid-row:1` (sem ele o grid
+    jogava o passado para uma 2ª fileira). Os totais não mudam.
   - Papel: `.gpx-dx + .gpx-dl` (Lotes) some e o espaçamento aperta — medido em
     PDF: 3 folhas, inclusive com 11 produtos no mix + hora extra (sem isso a
     nota do mix ia para a folha 3). Diretoria: `.dir-wk .dir-dl` some, horas a
