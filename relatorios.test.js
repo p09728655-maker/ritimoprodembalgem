@@ -4579,6 +4579,8 @@ console.log('\n── estudo de UEP ──');
 
   // IMPRESSÃO EXECUTIVA (v7.106.0) — o papel é o que está na tela.
   eval(pega('function _uepAbaPerCards('));
+  { const m = JS.match(/const EIXO_PASSOS=\[[^\]]+\];/); eval(m[0].replace('const ','global.')); }
+  eval(pega('function _eixoGrade(')); global._eixoGrade = _eixoGrade;
   eval(pega('function _uepAbaSvg(')); eval(pega('function _uepAbaPerSvg('));
   if (typeof _kpiCls === 'undefined') { const m = JS.match(/const _KPI_PAPEL = \{[^}]+\};/); if (m) eval(m[0].replace('const ','global.')); eval(pega('function _kpiCls(')); }
   if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
@@ -4637,7 +4639,31 @@ console.log('\n── estudo de UEP ──');
     ok('hora em andamento sai sem cor de veredito, com "até"; hora futura marcada; sem relógio nada muda',
        [A[0].cls, A[1].andamento, A[1].cls, A[1].ate, A[2].futuro, V[1].cls, V[1].andamento], ['red', true, '', '14:50', true, 'red', false]);
     ok('o desenho escreve "até 14:50" e diz no tooltip que a hora não é julgada',
-       [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]); }
+       [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]);
+    // v7.182.0 — PPCP, 28/10/2026, com o papel na mão: "está cortando, sobrepondo".
+    // Dia que começou às 05:00 tem 11 horas: no papel (480) a coluna tem ~39 e o
+    // "até 16:35" numa linha só caía em cima do "15:00". O rótulo da hora em
+    // andamento é o INÍCIO, na linha das outras, e o "até" vai numa 2ª linha.
+    const yTx = (svg, t) => { const m = svg.match(new RegExp('<text[^>]*y="([\\d.]+)"[^>]*>' + t + '</text>')); return m ? Number(m[1]) : null; };
+    const sl11 = ['05:00','06:00','07:00','08:00','09:00','10:00','12:12','13:00','14:00','15:00','16:00']
+      .map(i => ({ inicio:i, label:i, min:i === '12:12' ? 48 : 60, he:i < '07:00' }));
+    const reg11 = sl11.slice(0, 10).map(s => ({ horario:s.inicio, producaoHora:200, he:s.he }));
+    const uH11 = Object.fromEntries(sl11.slice(0, 10).map(s => [s.inicio, { uep:300, cxSem:0 }]));
+    const S11 = _uepAbaSvg(_uepAbaHoras(sl11, reg11, uH11, 2761, 16*60+35), 480);
+    const S11v = _uepAbaSvg(_uepAbaHoras(sl11, reg11, uH11, 2761), 480);
+    ok('hora em andamento: o início na linha das outras e o "até" numa 2ª linha, embaixo (não cai em cima do 15:00)',
+       [yTx(S11, '16:00') === yTx(S11, '15:00'), yTx(S11, 'até 16:35') > yTx(S11, '15:00'), yTx(S11, 'até 16:35') <= 250],
+       [true, true, true]);
+    // v7.182.0 — PPCP: "faz escala". A grade era cada quarto do máximo arredondado a 50:
+    // com o pico de 398 (o print de 28/10) saía 0, 100, 250, 350, 450 — passos desiguais.
+    ok('a grade do eixo tem passos iguais e redondos (pico 398 → 0, 100, 200, 300, 400)',
+       [_eixoGrade(398 * 1.15, 5), _eixoGrade(115, 5), _eixoGrade(60, 5), _eixoGrade(0, 5)],
+       [[0, 100, 200, 300, 400], [0, 25, 50, 75, 100], [0, 20, 40], [0]]);
+    { const uP = Object.assign({}, uH11, { '15:00':{ uep:398, cxSem:0 } });
+      const g = [...(_uepAbaSvg(_uepAbaHoras(sl11, reg11, uP, 2761), 480)).matchAll(/text-anchor="end"[^>]*>([\d.]+)<\/text>/g)].map(m => m[1]);
+      ok('o hora a hora usa essa grade', g, ['0', '100', '200', '300', '400']); }
+    ok('sem hora em andamento o eixo fica onde era (rótulo em H − 9) e não há 2ª linha',
+       [yTx(S11v, '15:00'), /até /.test(S11v)], [241, false]); }
   ok('o card UEP ATÉ AGORA escreve a diferença e o % do esperado; projeção diz "média da jornada" e hora extra fora',
      [/difEsp>=0\?'\+':'−'/.test(DAD), /do esperado\)/.test(DAD), /no ritmo de agora/.test(DAD), /na média da jornada/.test(DAD), /sub:he>0\?'fora da meta'/.test(DAD) && /Não entra no UEP ATÉ AGORA, na PROJEÇÃO nem na meta/.test(DAD)],
      [true, true, false, true, true]);
@@ -4852,6 +4878,8 @@ console.log('\n── estudo de UEP ──');
     // cabe… contar só a semana… semana que vem são 4 dias devido ao feriado")
     eval(pega('function _gpxSegunda(')); eval(pega('function _gpxNSemanas('));
     global.GPX_SEM_ROT = eval(JS.match(/const GPX_SEM_ROT = (\[[^\]]*\]);/)[1]);
+    { const m = JS.match(/const GPX_CAPDEM_MIN_PCT = \d+;/); eval(m[0].replace('const ','global.')); }
+    eval(pega('function _gpxCapDemMostra(')); global._gpxCapDemMostra = _gpxCapDemMostra;
     eval(pega('function _gpxSemanasMontar(')); eval(pega('function _gpxSemanasBlocos(')); eval(pega('function _gpxSemanasHtml('));
     eval(pega('function _gpxPassados(')); eval(pega('function _gpxPassadoHtml('));
     if (typeof _qpRealDia === 'undefined') eval(pega('function _qpRealDia('));
@@ -4949,9 +4977,19 @@ console.log('\n── estudo de UEP ──');
        [(() => { const P3 = Object.assign({}, PW, { capDem: _gpxCapDem(PW, { n:19, res:{ media:2530 } }) }); return /-wk-m/.test(_gpxSemanasBlocos(_gpxSemanasMontar(P3, hj), 'gpx')); })(),
         /-wk-m/.test(_gpxSemanasBlocos(W2, 'dir')), /-wk-m/.test(_gpxSemanasBlocos(W, 'gpx')), /na média que a linha fez[^<]*cabem <b>6/.test(_gpxSemanasHtml(PW2, W2))],
        [false, false, false, false]);
+    // v7.182.0 — PPCP, 28/10/2026, com a meta em 2.761 e a média em 2.766: "esconde a linha".
+    // Perto da meta ela repetia o "pedem … para …" de cima com minutos de diferença.
+    const PM = m => Object.assign({}, PW, { meta:2761, capDem: _gpxCapDem(PW, { n:20, res:{ media:m } }) });
+    ok('a média a menos de 2% da meta não leva a linha (2.766 × 2.761); a 2% ou mais leva; sem meta conhecida, leva',
+       [_gpxCapDemMostra(PM(2766)), _gpxCapDemMostra(PM(2761 * 1.02)), _gpxCapDemMostra(PM(2700)), _gpxCapDemMostra(PM(2761 * 0.985)),
+        _gpxCapDemMostra(Object.assign({}, PM(2766), { meta:null })), _gpxCapDemMostra(Object.assign({}, PW, { capDem:null }))],
+       [false, true, true, false, true, false]);
+    ok('no desenho: a semana com a média ≈ meta não tem a linha "na média que a linha fez"',
+       [/-wk-m/.test(_gpxSemanasBlocos(_gpxSemanasMontar(PM(2766), hj), 'gpx')), /-wk-m/.test(_gpxSemanasBlocos(_gpxSemanasMontar(PM(2900), hj), 'gpx'))],
+       [false, true]);
     ok('o painel monta a referência pelo MESMO período do bloco 5, e o desenho do PRÓXIMOS DIAS a mostra',
        [/_gpxCapDem\(P, typeof UEP_HIST !== 'undefined' && UEP_HIST \? _uepAbaPeriodo\(UEP_HIST, _uepPerN\(\)\) : null\)/.test(pega('function _gpxDoPainel(')),
-        /capDem: P\.capDem \?/.test(pega('function _gpxSemanasMontar('))], [true, true]);
+        /capDem: _gpxCapDemMostra\(P\) \?/.test(pega('function _gpxSemanasMontar('))], [true, true]);
     ok('a diretoria guarda e restaura os feriados junto com a programação',
        [/_dirGuarda\('fer', PROG_FERIADOS\)/.test(JS), /_dirLe\('fer'/.test(pega('function _dirRestaura('))], [true, true]); }
 }
