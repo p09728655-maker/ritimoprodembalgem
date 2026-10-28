@@ -4636,6 +4636,22 @@ feito e dá ar de verdade ao que sobrou.
     3,1u, sem rodapé (o aviso de sem UEP vai no cabeçalho da 1ª semana) — a
     1920×1080 e 1366×768 nada corta, com e sem o aviso. Mexeu no cartão? Medir
     de novo papel e diretoria.
+- **LOTE INTERNO no cartão do dia** (v7.180.0 / `.gs` v5.39, PPCP 28/10/2026:
+  *"coloca nos card lote interno"*). Coluna `LOTE INTERNO` da PROGRAMACAO (o lote
+  da fábrica, ex. 203/26 — um por dia na planilha). `_lerProgDaAba` acha pelo
+  nome com LOTE **e** INTERNO (o "contém LOTE" do `iLote` acha a coluna A
+  primeiro e não foi mexido) e o `getProgramacaoDetalhada` manda `loteInt`
+  (texto; `_loteIntTxt`: Date vira dd/MM, nunca o Date cru). Só para mostrar:
+  FIFO, saldo, arquivamento e meta não leem.
+  - Painel: `_cartAberta` e `_cartSemUep` guardam `loteInt` por linha; o
+    `_gpxMontar` devolve `lotesInt` por dia (distintos, com as linhas sem UEP,
+    ordem numérica). O `_gpxCartaoHtml` põe no CABEÇALHO, à direita
+    (`.gpx-li`, float, ANTES do texto do dia) — até 2 e "+N". **Não virar linha
+    nova**: o papel da UEP fecha em 3 folhas no limite; medido no Chromium (tela
+    1920 e 1366, A4 deitada) o cabeçalho cabe numa linha e o cartão não cresce.
+    Diretoria esconde (`#sec-dir .dir-li`), como a linha Lotes.
+  - Só dias que vêm: os cartões FEITO/HOJE leem o histórico, e a linha
+    concluída sai da PROGRAMACAO. ⚠ **re-deploy manual** do `.gs`.
 - **CAPACIDADE DEMONSTRADA como referência** (v7.177.0, PPCP 27/10/2026: *"por
   que 2.530 se no histórico faz mais?"* → *"2761"*). `_gpxCapDem(P, per)` (conta)
   + `_gpxCapDemHtml` (desenho, tinta neutra), montada no `_gpxDoPainel` com o

@@ -496,6 +496,25 @@ console.log('\n── o lote de AMANHÃ já baixa o adiantado (v5.22) ──');
     ok('ORDEM vazia ou que não é número vira null — nunca uma ordem inventada',
        ['A1', 'A2', 'A3'].map(l => it.find(x => x.lote === l).ordem), [2, null, null]);
   }
+  ok('sem a coluna LOTE INTERNO, loteInt vazio (e o LOTE continua o da coluna LOTE)', [det.every(it => it.loteInt === ''), det.some(it => it.lote === '25295')], [true, true]);
+  {
+    // v5.39 — PPCP, 28/10/2026: "coloca nos card lote interno". A coluna real
+    // fica à direita, depois de COR GPS (planilha de 28/10: 25386 → 203/26).
+    const mo = montar([{ lote: '25386', data: '04/11/2026', cod: '501.134.001', qtde: 240 },
+                       { lote: '25416', data: '04/11/2026', cod: '501.134.002', qtde: 150 },
+                       { lote: '25391', data: '05/11/2026', cod: '501.060.001', qtde: 190 }], [], { hoje: '28/10/2026' });
+    const P = mo.ABAS.PROGRAMACAO;
+    P[0].push('COR GPS', 'LOTE INTERNO');
+    P[1].push('AZUL', '203/26'); P[2].push('AZUL', ' 203/26 '); P[3].push('PRETO', '');
+    const it = vm.runInContext('getProgramacaoDetalhada()', mo.ctx).itens;
+    ok('LOTE INTERNO: a coluna pelo nome (texto, sem espaço; vazia → ""); o LOTE continua o da coluna A',
+       ['25386', '25416', '25391'].map(l => it.find(x => x.lote === l).loteInt), ['203/26', '203/26', '']);
+    mo.ctx.Utilities = { formatDate: (d, tz, f) => f + '|' + tz + '|' + d.getDate() + '/' + (d.getMonth() + 1) };
+    ok('_loteIntTxt: célula que virou data sai como a planilha mostra (dd/MM no fuso), nunca o Date cru', [
+      vm.runInContext('_loteIntTxt(new Date(2026, 10, 5))', mo.ctx), vm.runInContext('_loteIntTxt(new Date(NaN))', mo.ctx),
+      vm.runInContext('_loteIntTxt(null)', mo.ctx), vm.runInContext('_loteIntTxt(203)', mo.ctx)],
+      ['dd/MM|America/Sao_Paulo|5/11', '', '', '203']);
+  }
 
   // amanhã (15/10): o lote abre de verdade e o FIFO dá o MESMO número
   m.setHoje('15/10/2026');

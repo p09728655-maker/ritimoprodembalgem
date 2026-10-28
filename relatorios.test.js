@@ -4750,6 +4750,26 @@ console.log('\n── estudo de UEP ──');
     eval(pega('function _gpxCartaoHtml('));
     const CH = _gpxCartaoHtml(GC.dias[0], 'gpx');
     ok('o cartão do dia é só o dia: nada de "inclui", "não cabem" nem "atraso"', [/inclui|não cabem|atraso/i.test(CH), /só os lotes datados neste dia/.test(CH)], [false, true]);
+    // v7.180.0 / .gs v5.39 — PPCP, 28/10/2026: "coloca nos card lote interno".
+    // Na planilha é um por dia (03/11 → 202/26, 04/11 → 203/26); vai no
+    // cabeçalho do cartão, à direita, sem gastar altura (o papel está no limite).
+    { const LI = _gpxMontar([it('25/09/2026','25230',1000,2,{ loteInt:'203/26' }), it('25/09/2026','25231',200,1.5,{ loteInt:' 203/26 ' }),
+                             it('25/09/2026','25299',50,null,{ loteInt:'1003/26' }), it('26/09/2026','25232',100,2,{ loteInt:'204/26' }),
+                             it('26/09/2026','25234',100,2,{ loteInt:'21/26' }), it('26/09/2026','25235',100,2,{ loteInt:'9/26' }), it('29/09/2026','25240',100,2)],
+                            new Date(2026, 8, 24), 0, 0, 2530, 5);
+      const d25 = LI.dias.find(d => d.data.startsWith('25/09')), d26 = LI.dias.find(d => d.data.startsWith('26/09')), d29 = LI.dias.find(d => d.data.startsWith('29/09'));
+      ok('o lote interno do dia: os distintos, com a linha sem UEP junto, sem espaço e em ordem numérica; sem a coluna, nada',
+         [d25.lotesInt, d26.lotesInt, d29.lotesInt, LI.dias.find(d => d.data.startsWith('28/09')).lotesInt], [['203/26', '1003/26'], ['9/26', '21/26', '204/26'], [], []]);
+      const C25 = _gpxCartaoHtml(d25, 'gpx'), C26 = _gpxCartaoHtml(d26, 'gpx'), C29 = _gpxCartaoHtml(d29, 'gpx');
+      ok('o cartão: LOTE INTERNO no cabeçalho, ANTES do dia (float à direita); até 2 e "+N"; sem lote interno o cabeçalho é o de antes',
+         [/<div class="gpx-dn"><span class="gpx-li" title="LOTE INTERNO \(coluna da PROGRAMACAO\): 203\/26, 1003\/26">LOTE INTERNO <b>203\/26 · 1003\/26<\/b><\/span><b>SEX<\/b> 25\/09<\/div>/.test(C25),
+          /LOTE INTERNO <b>9\/26 · 21\/26 \+1<\/b>/.test(C26), /<div class="gpx-dn"><b>TER<\/b> 29\/09<\/div>/.test(C29), /gpx-li/.test(C29)],
+         [true, true, true, false]);
+      ok('o lote interno é escapado (vem da planilha)', /<script>/.test(_gpxCartaoHtml(Object.assign({}, d29, { lotesInt:['<script>'] }), 'gpx')), false);
+      ok('pele: float à direita na tela e no papel (sem altura nova); a diretoria esconde, como a linha Lotes',
+         [/#ger-prox \.gpx-li\{float:right;/.test(src), /\.uep-doc \.ud-prox \.gpx-li\{float:right;/.test(src), /#sec-dir \.dir-li\{display:none\}/.test(src)], [true, true, true]);
+      ok('o lote interno sai das linhas da programação (_cartAberta e _cartSemUep)',
+         [/loteInt: String\(it\.loteInt \|\| ''\)\.trim\(\)/.test(pega('function _cartAberta(')), /loteInt:String\(it\.loteInt \|\| ''\)\.trim\(\)/.test(pega('function _cartSemUep('))], [true, true]); }
     // v7.178.0 — o cartão HOJE saiu (PPCP: "está confundindo muito como não cabe");
     // a conta dele (`conta` do _gpxMontar) segue para a PROGRAMAÇÃO × CAPACIDADE
     ok('o cartão HOJE não existe mais', /function _gpxHojeHtml\(|gpx-hoje/.test(JS + src), false);
