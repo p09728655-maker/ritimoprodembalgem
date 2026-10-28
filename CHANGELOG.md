@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.182.0 — 28/10/2026 · Hora a hora em UEP: o "até 16:35" não cai mais em cima do "15:00"
+
+- PPCP, com o relatório da UEP aberto: *"está cortando, sobrepondo"*. No
+  gráfico HORA A HORA EM UEP (papel, aba ⚖ UEP e diretoria), a hora em
+  andamento trocava o rótulo pelo *"até 16:35"*. Num dia que começou às 05:00
+  são 11 horas: no papel cada coluna tem ~39 de largura e o texto ~54, e ele
+  caía em cima do *"15:00"*.
+- Agora a hora em andamento mostra o **início** na linha das outras
+  (*16:00*) e o *"até 16:35"* numa **2ª linha, embaixo**. Com hora em
+  andamento o gráfico desce o eixo 12 unidades para caber essa linha; sem ela,
+  fica como era.
+- Conferido no Chromium com os números do print de 28/10 16:35: continua em
+  **2 folhas**.
+- **Atenção:** nenhum número mudou.
+
 ## v7.181.0 — 28/10/2026 · Impressão da UEP enxuta: 2 folhas
 
 - PPCP: *"faz um limpa na impressão tem muita informação"* → escolheu **tirar

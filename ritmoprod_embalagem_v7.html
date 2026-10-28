@@ -3506,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.181.0';
+const APP_VER   = '7.182.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5263,7 +5263,13 @@ async function _uepAbaCarregar(){
 
 const UEP_G_H_MAX=520;   // teto da altura do hora a hora quando ele estica
 function _uepAbaSvg(horas, largura, altura){
-  const FS=12, W=largura||760, H=altura||250, pl=40, pb=28, pt=22;
+  // Hora em andamento: o rótulo é o INÍCIO, como as outras, e o "até HH:MM" vai
+  // numa 2ª linha embaixo (v7.182.0, PPCP 28/10/2026: "está cortando, sobrepondo").
+  // Numa linha só, "até 16:35" (~54 unidades) não cabe na coluna (~39 no papel,
+  // com as 11 horas de um dia que começou às 05:00) e caía em cima do "15:00".
+  // Na 2ª linha as vizinhas não têm texto: pode passar da coluna sem encostar.
+  const temAnd=(horas||[]).some(h=>h.andamento);
+  const FS=12, W=largura||760, H=altura||250, pl=40, pb=temAnd?40:28, pt=22;
   const n=Math.max(horas.length,1), bw=(W-pl-10)/n;
   const mx=Math.max(1, ...horas.map(h=>Math.max(h.uep||0, h.metaH||0)))*1.15;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
@@ -5288,7 +5294,8 @@ function _uepAbaSvg(horas, largura, altura){
       if(h.lancada) s+=`<text x="${cx.toFixed(1)}" y="${(y(0)-8).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">s/ prod.</text>`;
     }
     if(h.metaH) s+=`<line x1="${(x-3).toFixed(1)}" x2="${(x+w+3).toFixed(1)}" y1="${y(h.metaH).toFixed(1)}" y2="${y(h.metaH).toFixed(1)}" stroke="var(--txt)" stroke-width="2" stroke-dasharray="4 3"${h.andamento||h.futuro?' opacity=".45"':''}/>`;
-    s+=`<text x="${cx.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="${FS-2}" fill="${h.andamento?'var(--txt)':'var(--txt2)'}" font-family="IBM Plex Mono">${_rpEsc(h.andamento?'até '+h.ate:String(h.inicio||h.label||''))}</text>`;
+    s+=`<text x="${cx.toFixed(1)}" y="${H-pb+19}" text-anchor="middle" font-size="${FS-2}" fill="${h.andamento?'var(--txt)':'var(--txt2)'}" font-family="IBM Plex Mono">${_rpEsc(String(h.inicio||h.label||''))}</text>`;
+    if(h.andamento) s+=`<text x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt)" font-family="IBM Plex Mono">${_rpEsc('até '+h.ate)}</text>`;
   });
   return s+'</svg>';
 }

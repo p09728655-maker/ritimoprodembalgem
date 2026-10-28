@@ -4001,6 +4001,12 @@ feito e dá ar de verdade ao que sobrou.
     `andamento` (sem `cls`, rótulo `até HH:MM`, barra tracejada) e `futuro`.
     Sem `agoraMin` nada muda. Às 14:50 a hora das 14:00 saía vermelha com 244
     contra 288 da hora cheia.
+    - **O "até HH:MM" vai numa 2ª linha** do eixo (v7.182.0, PPCP 28/10/2026:
+      *"está cortando, sobrepondo"*); a 1ª linha é o INÍCIO, como as outras.
+      Numa linha só, num dia de 11 horas (madrugada) a coluna do papel (480 de
+      largura) tem ~39 e o "até 16:35" ~54: caía em cima do "15:00". Com hora
+      em andamento o `pb` do `_uepAbaSvg` vai de 28 a 40; sem ela, nada muda.
+      Rótulo novo no eixo de um gráfico com coluna estreita? Conferir no papel.
   - ⚠ **O ESPERADO DA UEP CONTA SÓ O MINUTO QUE PASSOU**: `minSlotDecorrido`
     (rp-core) nos DOIS `calcKPIs` alimenta o `minNorm` — card UEP DO DIA (PC e
     celular), aba UEP, projeção e PRÓXIMOS DIAS. ⚠ O `hProd`/`efRitmo` (selo em

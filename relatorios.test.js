@@ -4637,7 +4637,23 @@ console.log('\n── estudo de UEP ──');
     ok('hora em andamento sai sem cor de veredito, com "até"; hora futura marcada; sem relógio nada muda',
        [A[0].cls, A[1].andamento, A[1].cls, A[1].ate, A[2].futuro, V[1].cls, V[1].andamento], ['red', true, '', '14:50', true, 'red', false]);
     ok('o desenho escreve "até 14:50" e diz no tooltip que a hora não é julgada',
-       [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]); }
+       [/até 14:50/.test(_uepAbaSvg(A, 760)), /não é julgada/.test(_uepAbaSvg(A, 760))], [true, true]);
+    // v7.182.0 — PPCP, 28/10/2026, com o papel na mão: "está cortando, sobrepondo".
+    // Dia que começou às 05:00 tem 11 horas: no papel (480) a coluna tem ~39 e o
+    // "até 16:35" numa linha só caía em cima do "15:00". O rótulo da hora em
+    // andamento é o INÍCIO, na linha das outras, e o "até" vai numa 2ª linha.
+    const yTx = (svg, t) => { const m = svg.match(new RegExp('<text[^>]*y="([\\d.]+)"[^>]*>' + t + '</text>')); return m ? Number(m[1]) : null; };
+    const sl11 = ['05:00','06:00','07:00','08:00','09:00','10:00','12:12','13:00','14:00','15:00','16:00']
+      .map(i => ({ inicio:i, label:i, min:i === '12:12' ? 48 : 60, he:i < '07:00' }));
+    const reg11 = sl11.slice(0, 10).map(s => ({ horario:s.inicio, producaoHora:200, he:s.he }));
+    const uH11 = Object.fromEntries(sl11.slice(0, 10).map(s => [s.inicio, { uep:300, cxSem:0 }]));
+    const S11 = _uepAbaSvg(_uepAbaHoras(sl11, reg11, uH11, 2761, 16*60+35), 480);
+    const S11v = _uepAbaSvg(_uepAbaHoras(sl11, reg11, uH11, 2761), 480);
+    ok('hora em andamento: o início na linha das outras e o "até" numa 2ª linha, embaixo (não cai em cima do 15:00)',
+       [yTx(S11, '16:00') === yTx(S11, '15:00'), yTx(S11, 'até 16:35') > yTx(S11, '15:00'), yTx(S11, 'até 16:35') <= 250],
+       [true, true, true]);
+    ok('sem hora em andamento o eixo fica onde era (rótulo em H − 9) e não há 2ª linha',
+       [yTx(S11v, '15:00'), /até /.test(S11v)], [241, false]); }
   ok('o card UEP ATÉ AGORA escreve a diferença e o % do esperado; projeção diz "média da jornada" e hora extra fora',
      [/difEsp>=0\?'\+':'−'/.test(DAD), /do esperado\)/.test(DAD), /no ritmo de agora/.test(DAD), /na média da jornada/.test(DAD), /sub:he>0\?'fora da meta'/.test(DAD) && /Não entra no UEP ATÉ AGORA, na PROJEÇÃO nem na meta/.test(DAD)],
      [true, true, false, true, true]);
