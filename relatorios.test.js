@@ -3702,11 +3702,15 @@ ok('a tela escolhe entre o quadro e o vazio, sem afirmar carteira vazia por falh
 // (contra os 230px do `.chart-box-lg`, a régua do painel) e a legenda de 9px
 // chegava à tela com 21,9px, maior que o rótulo dos cards ao lado.
 console.log('\n── o gráfico ocupa a largura em vez de ampliar ──');
+{ const m = JS.match(/const SVG_LARG_MAX = \d+;/); eval(m[0].replace('const ','global.')); }
 eval(pega('function _svgLargura('));
-ok('a largura sai do card, com piso e teto',
-   [_svgLargura({clientWidth:1880}), _svgLargura({clientWidth:900}),
-    _svgLargura({clientWidth:300}), _svgLargura(null)],
-   [1400, 866, 640, 760]);
+// v7.183.0 — o teto era 1.400: no cartão de largura inteira a 1920 (~1.878) o
+// gráfico parava em 1.400 e sobravam ~430 px vazios à direita (PPCP, 28/10/2026,
+// no período da aba ⚖ UEP: "por que esse gráfico fica encolhido à esquerda").
+ok('a largura sai do card, com piso e teto (o teto só segura monitor ultralargo)',
+   [_svgLargura({clientWidth:1880}), _svgLargura({clientWidth:1878}), _svgLargura({clientWidth:900}),
+    _svgLargura({clientWidth:300}), _svgLargura({clientWidth:4000}), _svgLargura(null)],
+   [1846, 1844, 866, 640, 2560, 760]);
 // O `max-width` é o que impede o SVG de esticar de volta e ampliar tudo.
 ['_qpHtml','_cartHtml'].forEach(f => {
   const src = pega('function ' + f + '(');

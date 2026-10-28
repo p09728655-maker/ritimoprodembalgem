@@ -3506,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.182.0';
+const APP_VER   = '7.183.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -13406,9 +13406,15 @@ function _svgTarja(x, y, txt, ancora, fs){
     + '" width="' + w.toFixed(1) + '" height="' + h + '" fill="var(--bg)" opacity=".85" rx="2"/>';
 }
 
+// A largura do desenho = a do cartão. O teto era 1.400 e, num monitor de 1920,
+// o cartão de largura inteira tem ~1.865: o gráfico parava em 1.400 e sobravam
+// ~430 px vazios à direita (PPCP, 28/10/2026, no período da aba ⚖ UEP: "por
+// que esse gráfico fica encolhido à esquerda"). O teto só segura monitor
+// ultralargo; a letra não muda (o viewBox é a largura, 1 unidade = 1 px).
+const SVG_LARG_MAX = 2560;
 function _svgLargura(el){
   const w = (el && el.clientWidth) ? el.clientWidth - 34 : 0;
-  return Math.max(640, Math.min(1400, w || 760));
+  return Math.max(640, Math.min(SVG_LARG_MAX, w || 760));
 }
 
 // A ORDEM DA TABELA. Ordenar é DESENHO, mas mora em função própria por dois
