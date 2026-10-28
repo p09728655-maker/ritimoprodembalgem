@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.180.0 — 28/10/2026 · PRÓXIMOS DIAS: o LOTE INTERNO no cartão do dia · ⚠ **re-deploy** (`.gs` v5.39)
+
+- PPCP, com o print da aba ⚖ UEP e a PROGRAMACAO aberta: *"coloca nos card
+  lote interno"*. O cartão de cada dia que vem mostra, no canto direito do
+  cabeçalho, o **LOTE INTERNO** da coluna de mesmo nome da PROGRAMACAO
+  (*QUA 04/11 · LOTE INTERNO 203/26*). Na planilha de 28/10 é um por dia; se o
+  dia tiver mais de um, aparecem os dois primeiros e "+N" (todos no tooltip).
+- Na aba ⚖ UEP e na impressão executiva da UEP. Vai no cabeçalho, não numa
+  linha nova: medido no Chromium, o cartão não cresce (o papel continua no
+  limite das 3 folhas). **A diretoria não mostra**, como já não mostra a linha
+  *Lotes*.
+- Cartões de dia que já passou (FEITO, HOJE) não têm: eles leem o histórico, e
+  a linha concluída sai da PROGRAMACAO.
+- ⚠ **re-deploy**: o `.gs` v5.39 lê a coluna LOTE INTERNO (pelo nome) e manda
+  `loteInt` no `getProgramacaoDetalhada`. Antes do re-deploy o cartão fica como
+  está, sem o lote interno. Nenhuma conta muda (FIFO, saldo, arquivamento e
+  meta não leem a coluna).
+
 ## v7.179.0 — 27/10/2026 · PRÓXIMOS DIAS: a semana inteira — o que já foi feito, hoje e o feriado
 
 - PPCP: *"sugira algo para não ficar vazio a tela"* → prévia → *"essa última"*.

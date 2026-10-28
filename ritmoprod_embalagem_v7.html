@@ -393,6 +393,7 @@ html.modo-dir #sec-dir.on{display:flex}
 /* por semana são duas fileiras: o cartão fica com dia, selo, horas e a carga —
    lotes e "mais pesado" saem (na diretoria, pouco texto; o detalhe está na aba UEP) */
 #sec-dir .dir-wk .dir-dl{display:none}
+#sec-dir .dir-li{display:none}
 #sec-dir .dir-dia.dir-pas{background:transparent;border-style:dashed;opacity:.72}
 #sec-dir .dir-pas .dir-dh{color:var(--txt2)}
 #sec-dir .dir-wk .dir-dia{padding:calc(var(--u)*.8) calc(var(--u)*1.1);gap:calc(var(--u)*.45)}
@@ -807,6 +808,8 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-prox .gpx-dia.red{border-top-color:var(--red)} #ger-prox .gpx-dia.warn{border-top-color:var(--warn)} #ger-prox .gpx-dia.ok{border-top-color:var(--ok)}
 #ger-prox .gpx-dn{font-family:var(--font-d);font-size:11px;letter-spacing:1.5px;color:var(--txt2)}
 #ger-prox .gpx-dn b{color:var(--txt);font-weight:600}
+#ger-prox .gpx-li{float:right;margin-left:10px;letter-spacing:.5px;color:var(--txt2)}
+#ger-prox .gpx-li b{font-size:12px;letter-spacing:.5px}
 /* selo CHEIO: o fundo é o veredito, o texto escuro passa de 4,5:1 */
 #ger-prox .gpx-ds{align-self:flex-start;white-space:nowrap;font-family:var(--font-d);font-size:11.5px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:4px;background:var(--surface);color:var(--txt)}
 #ger-prox .gpx-ds.red{background:var(--red);color:#1a0806} #ger-prox .gpx-ds.warn{background:var(--warn);color:#1f1300} #ger-prox .gpx-ds.ok{background:var(--ok);color:#06200f}
@@ -3503,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.179.0';
+const APP_VER   = '7.180.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7944,6 +7947,7 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-prox .gpx-dia.red{border-top-color:#C62828} .uep-doc .ud-prox .gpx-dia.warn{border-top-color:#B26A00} .uep-doc .ud-prox .gpx-dia.ok{border-top-color:#2E7D32}
   .uep-doc .ud-prox .gpx-dn{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:1px;color:#5B6470}
   .uep-doc .ud-prox .gpx-dn b{color:#1F2328}
+  .uep-doc .ud-prox .gpx-li{float:right;margin-left:6px;letter-spacing:0}   /* sem o espaçamento: cabe na linha do dia */
   .uep-doc .ud-prox .gpx-ds{align-self:flex-start;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;padding:1px 5px;border:1px solid #cbd5e0;border-radius:3px;color:#1F2328;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .uep-doc .ud-prox .gpx-ds.red{background:#C62828;border-color:#C62828;color:#fff} .uep-doc .ud-prox .gpx-ds.warn{background:#B26A00;border-color:#B26A00;color:#fff} .uep-doc .ud-prox .gpx-ds.ok{color:#2E7D32;border-color:#2E7D32}
   .uep-doc .ud-prox .gpx-dh{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#1F2328;line-height:1}
@@ -13821,6 +13825,7 @@ function _cartAberta(itens, hojeNum, divida, ritmos){
     d.lotes.push({ lote: String(it.lote || ''), codigo: String(it.codigo || ''), rot: _mixRotulo(it), q, f: fx.f, eq, base: fx.base, aparado: !!fx.aparado,
                    desc: String(it.desc || it.nome || ''), cor: String(it.cor || ''),   // o rótulo do lote no PRÓXIMOS DIAS (_gpxRotLote)
                    ordem: _progOrdem(it),                                                // a ORDEM do dia (.gs v5.37) — PROGRAMAÇÃO × CAPACIDADE
+                   loteInt: String(it.loteInt || '').trim(),                            // o LOTE INTERNO (.gs v5.39) — cartão do PRÓXIMOS DIAS
                    pts: (it.pontos === undefined || it.pontos === null) ? null : (Number(it.pontos) || 0) * q / q0 });   // pontos na jornada (v7.169.0)
     if(ritmos && !fx.base) d.semBase++;
     if(fx.aparado) d.aparados++;
@@ -14386,7 +14391,8 @@ function _cartSemUep(itens, hojeNum){
     const dn = Number(it.dataNum) || _cartNum(it.data), q = _cartQtdAberta(it);   // já adiantado não falta
     if(!(dn > hojeNum) || q <= 0) return;
     out.push({ data:String(it.data || ''), dataNum:dn, lote:String(it.lote || ''), codigo:String(it.codigo || ''),
-      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q, ordem:_progOrdem(it) });
+      rot:String(_mixRotulo(it)).replace(/^\S+\s·\s/, '').replace(/^VOL\.?\s*\d+\s*\/\s*\d+\s*/i, ''), cx:q, ordem:_progOrdem(it),
+      loteInt:String(it.loteInt || '').trim() });
   });
   return out.sort((a,b) => a.dataNum - b.dataNum);
 }
@@ -14981,6 +14987,12 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr, fer
       if(l.ordem == null) g.semOrd = true; else g.ordem = g.ordem == null ? l.ordem : Math.min(g.ordem, l.ordem); });
     const lotes = Object.values(L).sort((a,b) => b.eq - a.eq).slice(0, 2).map(g => Object.assign({ lote:g.lote, min:g.eq / porMin }, _gpxRotLote(g.linhas, g.rot)));
     const lotesDia = Object.values(L).sort((a,b) => b.eq - a.eq).map(g => g.lote).filter(Boolean);   // todos, do mais pesado (tela da diretoria)
+    // o LOTE INTERNO do dia (.gs v5.39, PPCP 28/10/2026: "coloca nos card lote
+    // interno"): os distintos das linhas do dia, com e sem UEP, em ordem. Na
+    // planilha é um por dia; mais de um aparece todos. Backend antigo → [].
+    const LI = {};
+    (d ? d.lotes : []).concat(sem).forEach(l => { const v = String(l.loteInt || '').trim(); if(v) LI[v] = 1; });
+    const lotesInt = Object.keys(LI).sort((a,b) => a.localeCompare(b, 'pt-BR', { numeric:true }));
     const vazio = !d && !sem.length;
     const estado = c.fer && vazio ? 'feriado' : _gpxEstado(exc, vazio, fds);
     // TODOS os lotes do dia, com a ORDEM (v7.168.0 — PROGRAMAÇÃO × CAPACIDADE
@@ -14995,7 +15007,7 @@ function _gpxMontar(itens, hoje, dividaUep, minRestHoje, metaUep, n, uepAtr, fer
                              pts: g.semPts ? null : g.pts }, _gpxRotLote(g.linhas, g.rot)); })
       .concat(Object.keys(S).filter(k => !L[k]).map(k => { const s = S[k], x = s.linhas[0];
         return { lote:x.lote, uep:null, min:null, cx:0, cxSemUep:s.cx, ordem:s.ordem, semOrd:s.semOrd, pts:null, rot:x.rot, nome:x.rot }; }));
-    return { data:c.data, dow:c.dow, fds, fer: c.fer || '', uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, exc, estado, lotes, lotesDia,
+    return { data:c.data, dow:c.dow, fds, fer: c.fer || '', uep, cx: d ? d.crua : 0, cxAdi: d ? d.adi : 0, pts: d ? (d.semPts ? null : d.pts) : 0, min, exc, estado, lotes, lotesDia, lotesInt,
              semUep: sem, cxSemUep: sem.reduce((a,x) => a + x.cx, 0), grupos };
   });
   const comDado = dias.filter(d => d.estado !== 'vazio' && !d.fds);
@@ -15394,7 +15406,13 @@ function _dirSemanaHtml(S, U, falhaHist, ptsEst){
 // escolhe a pele (`dir` ou `gpx`). Nenhuma conta: tudo vem do _gpxMontar.
 function _gpxCartaoHtml(d, pf){
   const f = _dirF, c = n => pf + '-' + n;
-  const nome = `<div class="${c('dn')}"><b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
+  // o LOTE INTERNO vai no CABEÇALHO, à direita (v7.180.0, PPCP 28/10/2026:
+  // "coloca nos card lote interno"): identifica o dia sem gastar altura — o
+  // papel da UEP fecha em 3 folhas medido no limite, e uma linha a mais por
+  // fileira de cartões empurraria o mix. Vem ANTES do texto (float à direita).
+  const li = d.lotesInt && d.lotesInt.length
+    ? `<span class="${c('li')}" title="${_rpEsc('LOTE INTERNO (coluna da PROGRAMACAO): ' + d.lotesInt.join(', '))}">LOTE INTERNO <b>${d.lotesInt.slice(0, 2).map(_rpEsc).join(' · ')}${d.lotesInt.length > 2 ? ` +${d.lotesInt.length - 2}` : ''}</b></span>` : '';
+  const nome = `<div class="${c('dn')}">${li}<b>${GPX_DOW[d.dow]}</b> ${d.data.slice(0,5)}</div>`;
   if(d.estado === 'vazio') return `<div class="${c('dia')}">${nome}<span class="${c('ds')}">SEM LOTE DATADO</span><div class="${c('dh')}" style="color:var(--txt2)">—</div></div>`;
   if(d.estado === 'feriado') return `<div class="${c('dia')}" title="${_rpEsc(d.data + ': ' + d.fer + ' — da aba FERIADOS da planilha; fora da jornada')}">${nome}<span class="${c('ds')}">FERIADO</span><div class="${c('dh')}" style="color:var(--txt2)">—</div><div class="${c('dl')}">${_rpEsc(d.fer)}</div></div>`;
   const cls = d.fds ? '' : d.estado;

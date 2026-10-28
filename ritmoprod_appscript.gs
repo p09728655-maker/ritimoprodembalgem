@@ -1,5 +1,14 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.39 — LOTE INTERNO NA PROGRAMAÇÃO DETALHADA
+//               PPCP, 28/10/2026, com o PRÓXIMOS DIAS na tela: "coloca nos card
+//               lote interno". A PROGRAMACAO tem a coluna LOTE INTERNO (o lote
+//               da fábrica, ex. 203/26 — um por dia na planilha de 28/10), que
+//               o script nunca lia. _lerProgDaAba lê a coluna (opcional, pelo
+//               nome: LOTE e INTERNO — "contém LOTE" acharia o LOTE da coluna
+//               A) e getProgramacaoDetalhada devolve `loteInt` por linha (texto;
+//               '' sem a coluna ou com a célula vazia). Só para mostrar: FIFO,
+//               saldo, arquivamento e meta não leem. Nada mais muda.
 // Versão: 5.38 — FERIADOS (aba FERIADOS, digitada pelo PPCP)
 //               PPCP, 27/10/2026, com o PRÓXIMOS DIAS na tela: "02/11
 //               feriado, como tratar?". O script não conhecia feriado: 02/11
@@ -4785,6 +4794,9 @@ function _lerProgDaAba(sh, arquivada) {
   // ORDEM (v5.37): a sequência do dia, opcional. Só o nome exato — "ORDEM" não
   // pode casar com outra coluna por pedaço.
   const iOrd  = hdr.indexOf('ORDEM');
+  // LOTE INTERNO (v5.39): o lote da fábrica (ex. 203/26), opcional e só para
+  // mostrar. Pelo nome com INTERNO — o "contém LOTE" acima acha o LOTE (col. A).
+  const iLtInt = hdr.findIndex(function (h) { return h.indexOf('LOTE') >= 0 && h.indexOf('INTERNO') >= 0; });
   const cData = iData >= 0 ? iData : 0;
   const cCod  = iCod  >= 0 ? iCod  : 2;
   const cQtd  = iQtd  >= 0 ? iQtd  : 4;
@@ -4815,9 +4827,19 @@ function _lerProgDaAba(sh, arquivada) {
                produzido: produzido,
                status: iStat >= 0 ? String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() : '',
                ordem: iOrd >= 0 && String(r[iOrd] == null ? '' : r[iOrd]).trim() !== '' && isFinite(Number(r[iOrd])) ? Number(r[iOrd]) : null,
+               loteInt: iLtInt >= 0 ? _loteIntTxt(r[iLtInt]) : '',
                row: i });   // índice da linha na aba (o write-back casa a linha por ela)
   }
   return out;
+}
+
+// O LOTE INTERNO como a planilha MOSTRA (v5.39). É texto ("203/26": mês 26 não
+// existe, o Sheets não converte). Se um dia virar data (digitado "05/11" numa
+// planilha em pt-BR), sai dd/MM — o que a célula mostra —, nunca o Date cru.
+function _loteIntTxt(v) {
+  if (v == null || v === '') return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? '' : Utilities.formatDate(v, TZ, 'dd/MM');
+  return String(v).trim();
 }
 
 // v5.21 — O PRODUZIDO gravado só vale como teto da linha ENCERRADA quando fecha
@@ -5275,6 +5297,9 @@ function getProgramacaoDetalhada() {
       lote:     pr.lote || '',
       // v5.37: a sequência do dia (coluna ORDEM). null = sem a coluna ou vazia.
       ordem:    pr.ordem == null ? null : pr.ordem,
+      // v5.39: o LOTE INTERNO da linha (coluna LOTE INTERNO). '' = sem a coluna
+      // ou vazia. Só para mostrar no cartão do dia do PRÓXIMOS DIAS.
+      loteInt:  pr.loteInt || '',
       codigo:   cat ? cat.codigo : pr.codigo,
       desc:     cat ? cat.desc   : '',
       // Mesma razão do getProgramacaoHoje: sem a cor, duas linhas do mesmo
