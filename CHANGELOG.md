@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.183.0 — 28/10/2026 · Gráficos ocupam o cartão inteiro em tela larga
+
+- PPCP, com a aba ⚖ UEP a 1920: *"por que esse gráfico fica encolhido à
+  esquerda com espaço à direita"*. A largura dos gráficos desenhados pelo
+  painel tinha **teto de 1.400 px**; o cartão de largura inteira a 1920 tem
+  ~1.878, e sobravam ~430 px vazios.
+- O teto foi para **2.560** (só segura monitor ultralargo). Muda o gráfico do
+  **PERÍODO** da aba ⚖ UEP e os dois gráficos da aba **PLANO**; o hora a
+  hora da aba UEP mora em meia coluna e não chegava no teto.
+- A letra é a mesma (o desenho é 1:1 com a tela): as barras só ficam mais
+  espaçadas. Impressão e TV não mudam.
+- **Atenção:** nenhum número mudou.
+
 ## v7.182.0 — 28/10/2026 · Hora a hora em UEP: rótulo e escala; a média feita só quando difere da meta
 
 - PPCP, com o relatório da UEP aberto: *"está cortando, sobrepondo"*. No

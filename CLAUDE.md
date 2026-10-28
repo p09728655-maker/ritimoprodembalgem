@@ -3358,9 +3358,15 @@ feito e dá ar de verdade ao que sobrou.
   dá **zoom**: medido a 1920px em 15/09/2026, o gráfico saía com **510px** de
   altura (contra os **230px** do `.chart-box-lg`, a régua do painel) e a legenda
   de 9px chegava à tela com **21,9px**, maior que o rótulo dos cards ao lado. A
-  largura vem do card (`_svgLargura`, piso 640 / teto 1400) e entra por
-  parâmetro nos dois desenhos; o `max-width` no `<svg>` é o que impede de
-  esticar de volta. Em tela estreita ele encolhe junto, como antes.
+  largura vem do card (`_svgLargura`, piso 640 / teto `SVG_LARG_MAX`=2560) e
+  entra por parâmetro nos dois desenhos; o `max-width` no `<svg>` é o que
+  impede de esticar de volta. Em tela estreita ele encolhe junto, como antes.
+  - ⚠ **O teto era 1.400** até a v7.183.0 — e o cartão de largura inteira a
+    1920 tem ~1.878: o gráfico parava em 1.400 com ~430 px vazios à direita
+    (PPCP, 28/10/2026, no período da aba ⚖ UEP: *"por que esse gráfico fica
+    encolhido à esquerda"*). Vale para os três leitores: PLANO (os dois
+    blocos) e aba ⚖ UEP (hora a hora e período). A letra não muda — a escala
+    é 1:1; só as barras ficam mais espaçadas.
   - A tarja atrás dos rótulos sai do **texto** (`_svgTarja`), não de um número
     fixo — calibrada no desenho ampliado, na escala 1:1 ela sobrava e tapava
     barra. Ela recebe o corpo da fonte: largura e altura saem dele.
