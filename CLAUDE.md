@@ -4007,6 +4007,10 @@ feito e dá ar de verdade ao que sobrou.
       largura) tem ~39 e o "até 16:35" ~54: caía em cima do "15:00". Com hora
       em andamento o `pb` do `_uepAbaSvg` vai de 28 a 40; sem ela, nada muda.
       Rótulo novo no eixo de um gráfico com coluna estreita? Conferir no papel.
+    - **A grade do eixo tem passos iguais** (`_eixoGrade(mx, 5)`, v7.182.0,
+      PPCP: *"faz escala"*): o menor passo redondo (`EIXO_PASSOS`) que cabe em
+      até 5 intervalos. Era cada quarto do máximo arredondado a 50 — com pico
+      de 398 saía 0, 100, 250, 350, 450.
   - ⚠ **O ESPERADO DA UEP CONTA SÓ O MINUTO QUE PASSOU**: `minSlotDecorrido`
     (rp-core) nos DOIS `calcKPIs` alimenta o `minNorm` — card UEP DO DIA (PC e
     celular), aba UEP, projeção e PRÓXIMOS DIAS. ⚠ O `hProd`/`efRitmo` (selo em
@@ -4643,6 +4647,11 @@ feito e dá ar de verdade ao que sobrou.
     (`_gpxCapDem`) vai POR SEMANA (`w.capDem`, linha `gpx-wk-m` abaixo do
     cabeçalho) — só quando difere da meta e nunca na diretoria; o
     `_gpxCapDemHtml` (linha somada das duas semanas) foi apagado.
+    - "Difere da meta" é **2% ou mais** (`GPX_CAPDEM_MIN_PCT`,
+      `_gpxCapDemMostra`, v7.182.0 — PPCP 28/10/2026: *"esconde a linha"*).
+      Com a meta subida para 2.761 e a média em 2.766 ela repetia o *pedem …
+      para …* de cima (faltam 3h43 × 3h41). A regra está na conta
+      (`_gpxSemanasMontar` põe `capDem` null), não no desenho.
   - **v7.179.0 — a semana inteira** (PPCP: *"sugira algo para não ficar vazio a
     tela"* → prévia → *"essa última"*). `_gpxPassados(hoje, hist, hojeUep,
     metaHoje, fer)` (conta): da segunda até hoje, dia útil — fechado no

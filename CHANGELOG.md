@@ -11,7 +11,7 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
-## v7.182.0 — 28/10/2026 · Hora a hora em UEP: o "até 16:35" não cai mais em cima do "15:00"
+## v7.182.0 — 28/10/2026 · Hora a hora em UEP: rótulo e escala; a média feita só quando difere da meta
 
 - PPCP, com o relatório da UEP aberto: *"está cortando, sobrepondo"*. No
   gráfico HORA A HORA EM UEP (papel, aba ⚖ UEP e diretoria), a hora em
@@ -22,9 +22,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   (*16:00*) e o *"até 16:35"* numa **2ª linha, embaixo**. Com hora em
   andamento o gráfico desce o eixo 12 unidades para caber essa linha; sem ela,
   fica como era.
+- **Escala do hora a hora com passos iguais** (PPCP: *"faz escala"*): a grade
+  era cada quarto do máximo arredondado a 50, e com o pico de 398 saía
+  0, 100, 250, 350, 450 — intervalos desiguais. Agora é o menor passo redondo
+  que cabe em até 5 intervalos (no mesmo dia: 0, 100, 200, 300, 400).
+- **PRÓXIMOS DIAS** (aba ⚖ UEP e papel): a linha *"na média que a linha fez
+  (… UEP/dia): cabem …"* só aparece quando a média fica **a 2% ou mais da
+  meta** (PPCP: *"esconde a linha"*). Com a meta em 2.761 e a média em 2.766
+  ela repetia a linha de cima com 2 minutos de diferença.
 - Conferido no Chromium com os números do print de 28/10 16:35: continua em
   **2 folhas**.
-- **Atenção:** nenhum número mudou.
+- **Atenção:** nenhum número mudou. A linha da média feita **some** enquanto a
+  média estiver perto da meta e volta sozinha quando se afastar 2%.
 
 ## v7.181.0 — 28/10/2026 · Impressão da UEP enxuta: 2 folhas
 

@@ -5262,6 +5262,18 @@ async function _uepAbaCarregar(){
 }
 
 const UEP_G_H_MAX=520;   // teto da altura do hora a hora quando ele estica
+// A grade do eixo em PASSOS IGUAIS (v7.182.0, PPCP 28/10/2026: "faz escala").
+// Era cada quarto do máximo arredondado a 50 — com o pico de 398 saía 0, 100,
+// 250, 350, 450: intervalos de 100, 150, 100, 100, e o olho lia errado a
+// altura das barras do meio. Aqui o passo é o menor "redondo" que cabe em até
+// `nMax` intervalos; a grade vai de 0 até abaixo do topo do gráfico.
+const EIXO_PASSOS=[1,2,5,10,20,25,50,100,200,250,500,1000,2000,2500,5000,10000];
+function _eixoGrade(mx, nMax){
+  const m=Number(mx)>0?Number(mx):1, n=nMax>0?nMax:5;
+  const p=EIXO_PASSOS.find(v=>m/v<=n)||Math.ceil(m/n);
+  const g=[]; for(let v=0; v<m; v+=p) g.push(v);
+  return g;
+}
 function _uepAbaSvg(horas, largura, altura){
   // Hora em andamento: o rótulo é o INÍCIO, como as outras, e o "até HH:MM" vai
   // numa 2ª linha embaixo (v7.182.0, PPCP 28/10/2026: "está cortando, sobrepondo").
@@ -5273,7 +5285,7 @@ function _uepAbaSvg(horas, largura, altura){
   const n=Math.max(horas.length,1), bw=(W-pl-10)/n;
   const mx=Math.max(1, ...horas.map(h=>Math.max(h.uep||0, h.metaH||0)))*1.15;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
-  const grade=[0,.25,.5,.75,1].map(f=>Math.round(mx*f/50)*50).filter((v,i,a)=>a.indexOf(v)===i&&v<mx);
+  const grade=_eixoGrade(mx, 5);
   let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block" role="img" aria-label="UEP por hora contra a meta da hora">`
     +'<defs><pattern id="uepLis" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--warn)" opacity=".35"/><rect width="3" height="6" fill="var(--warn)"/></pattern></defs>';
   grade.forEach(g=>{ s+=`<line x1="${pl}" x2="${W-10}" y1="${y(g).toFixed(1)}" y2="${y(g).toFixed(1)}" stroke="var(--border)"/><text x="${pl-6}" y="${(y(g)+4).toFixed(1)}" text-anchor="end" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${fmtN(g)}</text>`; });
@@ -14832,6 +14844,7 @@ const GPX_DIAS = 5;          // dias úteis à frente (fim de semana entra só s
 const GPX_EXC_MAX = 105;     // minutos acima da jornada ainda "resolvível" (≈ a madrugada 05:00–07:00)
 const GPX_FOLGA_OK = 180;    // folga a partir da qual o dia é marcado como espaço para puxar carga
 const GPX_TTL = 15*60000;    // a carteira futura só muda quando alguém mexe na planilha
+const GPX_CAPDEM_MIN_PCT = 2; // a linha "na média que a linha fez" só aparece com a média a 2% ou mais da meta (v7.182.0)
 function _fmtHM(min){
   const m = Math.round(Math.abs(Number(min) || 0));
   return Math.floor(m / 60) + 'h' + p2(m % 60);
@@ -15062,6 +15075,14 @@ function _gpxPassadosDoPainel(hoje){
   const U = typeof PONTOS_DIA !== 'undefined' && PONTOS_DIA ? PONTOS_DIA : {};
   return _gpxPassados(hoje, typeof UEP_HIST !== 'undefined' ? UEP_HIST : null, U.uep && U.uep !== false ? U.uep.normal : null, U.metaUep, PROG_FERIADOS);
 }
+// A média feita só vale a linha quando difere da meta: perto dela, repetiria o
+// "pedem … para …" logo acima com uns minutos de diferença.
+function _gpxCapDemMostra(P){
+  const cd = P && P.capDem, m = P && Number(P.meta);
+  if(!cd || !(cd.uepDia > 0)) return false;
+  if(!(m > 0)) return true;
+  return Math.abs(cd.uepDia - m) / m * 100 >= GPX_CAPDEM_MIN_PCT;
+}
 function _gpxSemanasMontar(P, hoje, pas){
   if(!P || P.falha) return [];
   const s0 = _gpxSegunda(hoje), S = {};
@@ -15081,7 +15102,10 @@ function _gpxSemanasMontar(P, hoje, pas){
       // a MÉDIA FEITA nesta semana (v7.178.1, PPCP: "faça essas horas por
       // semana, não precisa totalizar"): a capacidade dos MESMOS dias úteis no
       // que a linha fez por dia (o _gpxCapDem do bloco 5). Sem histórico → null.
-      capDem: P.capDem ? { minCap: uteis.length * P.capDem.minDia, uepDia: P.capDem.uepDia, nDias: P.capDem.nDias } : null,
+      // Média a menos de GPX_CAPDEM_MIN_PCT da meta → null (v7.182.0, PPCP
+      // 28/10/2026, com a meta em 2.761 e a média em 2.766: "esconde a linha").
+      // Ela repetia a linha de cima com minutos de diferença (faltam 3h43 × 3h41).
+      capDem: _gpxCapDemMostra(P) ? { minCap: uteis.length * P.capDem.minDia, uepDia: P.capDem.uepDia, nDias: P.capDem.nDias } : null,
       feriados: w.dias.filter(d => d.fer).map(d => ({ data:d.data, desc:d.fer, min: d.estado === 'feriado' ? null : d.min })),
       passados: w.idx === 0 ? (pas || []) : []
     });
