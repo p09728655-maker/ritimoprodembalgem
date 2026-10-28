@@ -4592,10 +4592,30 @@ console.log('\n── estudo de UEP ──');
                avisos:[], cards:[{ l:'UEP ATÉ AGORA', v:'1.413', c:'ok', sub:'x' }], nPer:15, P:PP, perCards:_uepAbaPerCards(PP) };
   const ctxD = { data:'25/09/2026', hora:'13:05', hist:'ok', cadFalha:false, ini:'07:00', fim:'17:00' };
   const DOC = _uepDocHtml(Dd, ctxD);
-  ok('folha 1: selo de hoje e do período, com os números dos cards',
-     [DOC.includes('NO RITMO'), DOC.includes('8 DE 10 DIAS NA META'), DOC.includes('<b>1.413 UEP</b>'), DOC.includes('<b>2.586</b>'), DOC.includes('Mais 410 UEP em hora extra')], [true, true, true, true, true]);
+  // v7.181.0 — PPCP, 28/10/2026: "faz um limpa na impressão tem muita
+  // informação" → "tirar texto". O resumo é só o veredito: a frase embaixo do
+  // selo repetia os números dos cards logo abaixo.
+  ok('folha 1: o resumo é só o selo de hoje e do período; os números ficam nos cards, uma vez só',
+     [DOC.includes('NO RITMO'), DOC.includes('8 DE 10 DIAS NA META'), /ud-f\b/.test(DOC), DOC.includes('Mais 410 UEP em hora extra'),
+      DOC.includes('<div class="kpi-val">1.413</div>')], [true, true, false, false, true]);
   ok('o % da meta do período é UMA conta (pctMeta), lida pelo card e pelo papel',
-     [Math.round(PP.pctMeta*10)/10, _uepAbaPerCards(PP)[0].sub.startsWith(fmtP(PP.pctMeta)), DOC.includes('('+fmtP(PP.pctMeta)+' da meta)')], [106.3, true, true]);
+     [Math.round(PP.pctMeta*10)/10, _uepAbaPerCards(PP)[0].sub.startsWith(fmtP(PP.pctMeta)), DOC.includes(_uepAbaPerCards(PP)[0].sub)], [106.3, true, true]);
+  ok('papel enxuto: sem ANEXO (2 folhas, uma quebra só) e sem legenda de cor nos gráficos — fica a da ORIGEM, que traz os %',
+     [/ANEXO|COMO LER|ud-como/.test(DOC), (DOC.match(/ud-quebra/g) || []).length, (DOC.match(/class="ud-leg"/g) || []).length,
+      /UEP MEDIDA \(estudo ou cadastro\)/.test(DOC), /Meta da hora = |UEP\/cx acima de 1|gravada no fechamento, com o cadastro/.test(DOC)],
+     [false, 1, 1, true, false]);
+  ok('o que é número ou estado fica numa linha: HE do período, o * do hora a hora (só quando aparece), base e "não cronoanálise"',
+     [DOC.includes('UEP em hora extra no período, fora da conta') === (PP.res.he > 0), DOC.includes('caixas de códigos sem UEP, fora da conta') === H.some(h => h.cxSem > 0),
+      /Sobre [\d.]+ cx apontadas hoje · MEDIDA = estudo ou digitada, não cronoanálise/.test(DOC), /BASE DA UEP/.test(DOC),
+      _uepDocHtml(Object.assign({}, Dd, { P: Object.assign({}, PP, { res: Object.assign({}, PP.res, { he:402 }) }) }), ctxD).includes('+ 402 UEP em hora extra no período, fora da conta')],
+     [true, true, true, true, true]);
+  ok('a régua das horas dos PRÓXIMOS DIAS vai no TÍTULO da seção (era do anexo), sem linha a mais; a lista SEM UEP continua só na ORIGEM',
+     [/horas = UEP ÷ \$\{fmtN\(Math\.round\(PX\.porMin\*60\)\)\} UEP\/h/.test(pega('function _uepDocHtml(')), /\.uep-doc \.ud-prox \.gpx-nota\{display:none\}/.test(src),
+      /\.uep-doc \.ud-prox \.gpx-sem\{display:none\}/.test(src)], [true, true, true]);
+  ok('as caixas sem UEP do mix saem uma vez só: na nota do mix ou na lista da ORIGEM (mesma folha)',
+     [_uepDocHtml(Object.assign({}, Dd, { mix: Object.assign({}, mixG, { cx: mixG.cxCom + 30 }) }), ctxD).includes('30 cx de produtos sem UEP ficam fora'),
+      _uepDocHtml(Object.assign({}, Dd, { mix: Object.assign({}, mixG, { cx: mixG.cxCom + 30 }), semHoje:[{ codigo:'501199001', rot:'X', cx:30 }] }), ctxD).includes('cx de produtos sem UEP ficam fora')],
+     [true, false]);
   ok('folha 1 = hoje (hora a hora) e período lado a lado; a folha 2 (mix, confiabilidade) começa em página nova',
      [DOC.indexOf('HORA A HORA EM UEP') < DOC.indexOf('PERÍODO — DIAS FECHADOS'), DOC.indexOf('PERÍODO — DIAS FECHADOS') < DOC.indexOf('ud-quebra'),
       DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-cols"/.test(DOC)], [true, true, true, true]);
@@ -4798,8 +4818,9 @@ console.log('\n── estudo de UEP ──');
        [/_gpxSemanasHtml\(P, _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\)\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
         /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxSemanasHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxAtrasoHtml(') + pega('function _gpxSemanasBlocos('))], [true, false, false]);
-    ok('o painel passa a parte vencida e o papel diz que cada dia leva só os lotes dele',
-       [/GPX_DIAS, dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram/.test(JS)], [true, true]); }
+    // v7.181.0: o ANEXO do papel saiu; quem diz isso é o tooltip do cartão do dia
+    ok('o painel passa a parte vencida e o cartão diz que cada dia leva só os lotes dele',
+       [/GPX_DIAS, dv\.uepAtr, PROG_FERIADOS\)/.test(pega('function _gpxDoPainel(')), /só os lotes datados neste dia/.test(pega('function _gpxCartaoHtml('))], [true, true]); }
   // v7.174.0 — FERIADO (aba FERIADOS, .gs v5.38). PPCP, 27/10/2026, com o print:
   // "02/11 feriado". Sem a aba, a segunda era dia útil sem lote e a linha de
   // totais contava 8h47 de jornada nela ("pedem 44h35 para 43h55").

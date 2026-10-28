@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.181.0 — 28/10/2026 · Impressão da UEP enxuta: 2 folhas
+
+- PPCP: *"faz um limpa na impressão tem muita informação"* → escolheu **tirar
+  texto** (ficam todas as seções e todos os números). No 🖨 IMPRIMIR da aba
+  ⚖ UEP:
+  - **saiu o ANEXO — COMO LER** (era a folha 3);
+  - o resumo do topo ficou só com o **selo** de hoje e do período — a frase
+    embaixo repetia os números dos cards;
+  - saíram as **legendas de cor** dos gráficos do hora a hora e do período
+    (fica a da ORIGEM DA UEP, que traz os percentuais) e as notas que
+    explicavam a conta;
+  - o que é número ou estado ficou numa linha: a UEP em hora extra do período,
+    o `*` das horas com caixa sem UEP, a base das porcentagens da ORIGEM e o
+    *"MEDIDA = estudo ou digitada, não cronoanálise"*;
+  - a régua das horas dos PRÓXIMOS DIAS (*horas = UEP ÷ 314 UEP/h*) foi para o
+    título da seção.
+- Medido no Chromium com as fontes reais, no pior caso (11 produtos no mix +
+  hora extra + 7 linhas sem UEP): **4 folhas → 2**, 1.370 → 926 palavras.
+  Para caber, as linhas da tabela do mix ficaram mais justas (só o espaço
+  entre elas; a letra é a mesma).
+- **Atenção:** nenhum número mudou. A explicação de cada indicador continua na
+  tela (tooltips da aba ⚖ UEP) e no `docs/glossario.md`.
+
 ## v7.180.0 — 28/10/2026 · PRÓXIMOS DIAS: o LOTE INTERNO no cartão do dia · ⚠ **re-deploy** (`.gs` v5.39)
 
 - PPCP, com o print da aba ⚖ UEP e a PROGRAMACAO aberta: *"coloca nos card

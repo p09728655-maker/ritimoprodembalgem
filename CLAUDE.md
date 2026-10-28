@@ -3961,11 +3961,29 @@ feito e dá ar de verdade ao que sobrou.
       voltar a montar por conta própria ou se o desenho do papel chamar conta
       (`uepCard`, `efNoRitmo`, `_uepAbaPeriodo`…). O `pctMeta` do período mora
       no `_uepAbaPeriodo` — card e papel leem o mesmo número.
-    - **Folha 1 = o resultado**: resumo de hoje e do período lado a lado (selo
-      + frase), e embaixo de cada um os cards e o gráfico dele. **Folha 2 = o
+    - **Folha 1 = o resultado**: resumo de hoje e do período lado a lado (só
+      o selo), e embaixo de cada um os cards e o gráfico dele. **Folha 2 = o
       porquê**: PRÓXIMOS DIAS (v7.112.0), mix (máx. `UEP_DOC_MIX_MAX`=8, resto
-      em "demais") e confiabilidade; **folha 3 = ANEXO — COMO LER**. Medido no
-      Chromium: a 1ª fecha em ~661 e a 2ª em ~690 dos 718 px úteis.
+      em "demais") e origem da UEP. ~~folha 3 = ANEXO — COMO LER~~ (saiu na
+      v7.181.0, abaixo).
+    - **PAPEL ENXUTO, 2 FOLHAS (v7.181.0, PPCP 28/10/2026: *"faz um limpa na
+      impressão tem muita informação"* → *"tirar texto"*; ficam todas as seções
+      e todos os números).** Saíram o ANEXO, a frase do resumo (repetia os
+      cards), as legendas de cor do hora a hora e do período e as notas de
+      conta. Ficou numa linha o que é número ou estado: UEP em HE do período,
+      o `*` (só com hora que tem caixa sem UEP), a base das % da ORIGEM com o
+      *"não cronoanálise"* (confusão documentada na v7.114.0), a troca de
+      escala e a linha da base. A régua das horas dos PRÓXIMOS DIAS vai no
+      TÍTULO da seção (`.gpx-nota` continua escondida no papel); a nota
+      "N cx sem UEP" do mix só sai quando a ORIGEM não lista os códigos de
+      hoje (mesma folha). Linhas do mix com padding 3px (era 5): só ar.
+      - Medido no Chromium **com as fontes** (pior caso: 11 produtos + HE,
+        sem UEP em todo cartão, 7 linhas na lista SEM UEP): v7.180.0 dava **4
+        folhas** (o mix já transbordava a folha 2), v7.181.0 dá **2**; 1.370 →
+        926 palavras. Sem o padding menor eram 3 (5 linhas do mix na folha 3).
+        Mexeu no papel? Medir de novo com as fontes — no popup elas não
+        carregam pelo proxy da sessão: copiar o HTML do popup para uma página
+        nova (`setContent`) e imprimir dali.
     - Os gráficos são os MESMOS `_uepAbaSvg`/`_uepAbaPerSvg`, a
       `UEP_DOC_SVG_W`=480 (meia folha), re-skinados por token na
       `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
@@ -4565,10 +4583,10 @@ feito e dá ar de verdade ao que sobrou.
 - **Vai na impressão executiva da UEP** (v7.112.0): `_gpxDoPainel()` é a
   montagem única (tela e `_uepAbaDados().prox`); o papel chama o MESMO
   `_gpxHtml(P, 50)` — o 2º parâmetro é a altura do trilho — com a pele
-  `.uep-doc .ud-prox .gpx-*`. Abre a folha 2; o COMO LER virou ANEXO (folha 3),
-  porque medido no Chromium a folha 2 não comportava os dois. No papel a nota da
-  fórmula e a lista SEM UEP ficam escondidas (a fórmula vai no anexo; a lista
-  sai inteira na CONFIABILIDADE).
+  `.uep-doc .ud-prox .gpx-*`. Abre a folha 2; ~~o COMO LER virou ANEXO (folha
+  3)~~ — o anexo saiu na v7.181.0. No papel a nota da fórmula e a lista SEM UEP
+  ficam escondidas (a régua das horas vai no título da seção; a lista sai
+  inteira na ORIGEM DA UEP).
 - **A carga NÃO é conta nova**: `_gpxMontar` usa o `_cartAberta` em modo UEP
   (só com as linhas que têm UEP) — a MESMA carteira em UEP da aba PLANO. Horas = UEP ÷ (meta de UEP ÷ 527 min). São horas de LINHA: a UEP já
   desconta o mix (somar qtde ÷ ritmo de cada produto dava ~2×).
