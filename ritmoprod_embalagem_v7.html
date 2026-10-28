@@ -3506,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.180.0';
+const APP_VER   = '7.181.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7905,8 +7905,6 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-res-b.ok .ud-selo{color:#2E7D32}
   .uep-doc .ud-res-b.warn .ud-selo{color:#B26A00}
   .uep-doc .ud-res-b.red .ud-selo{color:#C62828}
-  .uep-doc .ud-f{font-size:11px;color:#4A5568;line-height:1.5}
-  .uep-doc .ud-f b{color:#1F2328}
   .uep-doc .kpi-grid.c4{grid-template-columns:repeat(4,1fr)}
   .uep-doc .kpi-card{border-left-color:#cbd5e0}
   .uep-doc .kpi-card.o{border-left-color:#B26A00}
@@ -7923,16 +7921,14 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-leg{display:flex;gap:13px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#5B6470;margin-top:6px}
   .uep-doc .ud-leg i{display:inline-block;width:11px;height:8px;vertical-align:middle;margin-right:4px;
                      -webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .uep-doc .ud-leg i.tr{height:0;border-top:2px dashed #1F2328}
-  .uep-doc .ud-leg i.he{background:repeating-linear-gradient(45deg,#B26A00 0 2px,#f1dcb8 2px 4px)}
   .uep-doc .ud-nota{font-size:9.5px;color:#718096;margin-top:7px;line-height:1.45}
   .uep-doc .ud-nota b{color:#4A5568}
   .uep-doc .ud-vazio{font-size:10.5px;color:#718096;background:#f8fafc;border:1px dashed #cbd5e0;border-radius:5px;padding:9px 12px;margin-top:6px}
   .uep-doc .ud-quebra{page-break-before:always;height:0}
   .uep-doc table.ud-mix th.n,.uep-doc table.ud-mix td.n{text-align:right}
-  .uep-doc table.ud-mix td{font-size:10.5px;padding:5px 9px}
+  .uep-doc table.ud-mix td{font-size:10.5px;padding:3px 9px}   /* v7.181.0: só ar — o mix cheio cabe na folha 2 */
   .uep-doc table.ud-mix tr.ud-dem td{color:#5B6470;font-style:italic}
-  .uep-doc table.ud-mix tfoot td{font-weight:700;border-top:1.5px solid #cbd5e0;padding:6px 9px;font-size:10.5px}
+  .uep-doc table.ud-mix tfoot td{font-weight:700;border-top:1.5px solid #cbd5e0;padding:4px 9px;font-size:10.5px}
   .uep-doc table.ud-mix tfoot tr.ud-he td{font-weight:400;color:#5B6470;border-top:1px solid #edf2f7}
   .uep-doc table.ud-mix tfoot tr.ud-he-p td{font-weight:400;color:#718096;font-size:9.5px;border-top:0;padding-top:0}
   .uep-doc .ud-mb{display:inline-block;width:56px;height:6px;background:#edf2f7;border-radius:3px;vertical-align:middle;
@@ -7971,18 +7967,16 @@ const _UEP_DOC_SKIN = `
   .uep-doc .ud-prox .gpx-wk-h{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470;padding-bottom:2px;margin-bottom:3px;border-bottom:1px solid #e2e8f0}
   .uep-doc .ud-prox .gpx-wk-h b{color:#1F2328;letter-spacing:.8px}
   .uep-doc .ud-prox .gpx-wk-t b{color:#1F2328} .uep-doc .ud-prox .gpx-wk-t .r b{color:#C62828}
-  .uep-doc .ud-prox .gpx-nota{display:none}   /* a fórmula vai no ANEXO — COMO LER */
+  .uep-doc .ud-prox .gpx-nota{display:none}   /* a régua das horas vai no título da seção */
   /* a lista SEM UEP já sai inteira na ORIGEM DA UEP, logo abaixo — no papel
      ela não se repete aqui */
   .uep-doc .ud-prox .gpx-sem{display:none}
-  .uep-doc table.ud-como td{font-size:10px;line-height:1.45;vertical-align:top;padding:6px 9px}
-  .uep-doc table.ud-como td:first-child{font-weight:700;width:24%;white-space:nowrap}
 `;
 
 // O desenho do papel. Recebe PRONTO o que `_uepAbaDados` montou; `ctx` traz só
 // o que não é dado de UEP (hora do retrato, estado das leituras, largura).
 function _uepDocHtml(D, ctx){
-  const {k, card, meta, feito, he, proj, horas, mix, conf, avisos, cards, P, perCards, nPer}=D;
+  const {k, card, meta, horas, mix, conf, avisos, cards, P, perCards, nPer}=D;
   const W=ctx.W||UEP_DOC_SVG_W;
   const u2=v=>v!=null?v.toFixed(2).replace('.',','):'—';
   const kpi=c=>`<div class="kpi-card ${_kpiCls(c.c||'')}"><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`;
@@ -7992,25 +7986,18 @@ function _uepDocHtml(D, ctx){
   // dos da tela. O papel usa os MESMOS NOMES da aba — é pelo nome que se acha.
   const sec=t=>`<div class="rp-sec-ttl">${t}</div>`;
 
-  // O RESUMO — o selo é o veredito, a frase repete os números dos cards.
+  // O RESUMO é só o VEREDITO (v7.181.0, PPCP 28/10/2026: "faz um limpa na
+  // impressão tem muita informação"). A frase que vinha embaixo do selo
+  // repetia os números dos cards logo abaixo; quem explica estado (histórico
+  // não lido, sem dia fechado) é a seção do período.
   const hojeTem=k.minNorm>0;
-  const fHoje=hojeTem
-    ? `<b>${fmtN(Math.round(feito))} UEP</b> em jornada normal, contra ${fmtN(Math.round(card.esperado))} esperadas até agora.`
-      +(proj?` ${proj.restMin>0?'Na média da jornada até agora, ela fecha em':'A jornada fechou em'} <b>${fmtN(Math.round(proj.fim))}</b> para a meta de ${fmtN(meta)}.`:'')
-    : `Nenhuma hora de jornada lançada ainda. A meta do dia é ${fmtN(meta)} UEP.`;
   const resHoje=`<div class="ud-res-b ${hojeTem?card.c:''}"><div class="ud-k">HOJE · ${_rpEsc(ctx.data)}</div>
-    <div class="ud-selo">${hojeTem?slRitmo(card.ef):'SEM HORA DE JORNADA LANÇADA'}</div>
-    <div class="ud-f">${fHoje}${he>0?` Mais ${fmtN(Math.round(he))} UEP em hora extra, fora da meta.`:''}</div></div>`;
+    <div class="ud-selo">${hojeTem?slRitmo(card.ef):'SEM HORA DE JORNADA LANÇADA'}</div></div>`;
   let resPer;
-  if(!P) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">${ctx.hist==='falha'?'HISTÓRICO NÃO LIDO':'HISTÓRICO AINDA LENDO'}</div>
-    <div class="ud-f">O período sai quando a leitura do histórico voltar. O resto deste relatório não depende dela.</div></div>`;
-  else if(!P.n) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">SEM DIA FECHADO COM UEP</div>
-    <div class="ud-f">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias corridos.</div></div>`;
+  if(!P) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">${ctx.hist==='falha'?'HISTÓRICO NÃO LIDO':'HISTÓRICO AINDA LENDO'}</div></div>`;
+  else if(!P.n) resPer=`<div class="ud-res-b"><div class="ud-k">ÚLTIMOS ${nPer} DIAS</div><div class="ud-selo">SEM DIA FECHADO COM UEP</div></div>`;
   else resPer=`<div class="ud-res-b ${perCards[1].c}"><div class="ud-k">ÚLTIMOS ${nPer} DIAS · ${plural(P.n,'dia fechado','dias fechados')}</div>
-    <div class="ud-selo">${P.res.bateu} DE ${P.n} ${P.n===1?'DIA':'DIAS'} NA META</div>
-    <div class="ud-f">Média de <b>${fmtN(Math.round(P.res.media))} UEP por dia</b>${P.pctMeta!=null?` (${fmtP(P.pctMeta)} da meta)`:''}.`
-    +(P.oscUep!=null&&P.oscCx!=null?` De um dia para o outro a UEP oscila <b>${fmtP(P.oscUep)}</b>; as caixas de jornada, ${fmtP(P.oscCx)} — em UEP o mix já está descontado.`:'')
-    +`</div></div>`;
+    <div class="ud-selo">${P.res.bateu} DE ${P.n} ${P.n===1?'DIA':'DIAS'} NA META</div></div>`;
 
   // 1 · HOJE
   const b1=sec(`HOJE — ${_rpEsc(ctx.ini)} a ${_rpEsc(ctx.fim)}, JORNADA NORMAL`)
@@ -8019,9 +8006,7 @@ function _uepDocHtml(D, ctx){
 
   // 2 · HORA A HORA
   const b2=sec('HORA A HORA EM UEP — ONDE A UEP SE PERDEU')
-    +`<div class="ud-g ud-horas">${_uepAbaSvg(horas, W)}
-      <div class="ud-leg"><span><i style="background:#5B6470"></i>na meta</span><span><i style="background:#B26A00"></i>atenção</span><span><i style="background:#C62828"></i>abaixo</span><span><i class="he"></i>hora extra (sem meta)</span><span><i class="tr"></i>meta da hora</span></div>
-      <div class="ud-nota">Meta da hora = meta do dia × minutos da hora ÷ ${UEP_MIN_DIA}.${horas.some(h=>h.cxSem>0)?' <b>*</b> hora com caixas de códigos sem UEP — ficaram fora da conta.':''}</div></div>`;
+    +`<div class="ud-g ud-horas">${_uepAbaSvg(horas, W)}${horas.some(h=>h.cxSem>0)?'<div class="ud-nota"><b>*</b> caixas de códigos sem UEP, fora da conta</div>':''}</div>`;
 
   // 3 · O PERÍODO
   let b3=sec(`PERÍODO — DIAS FECHADOS, ÚLTIMOS ${nPer} DIAS`);
@@ -8029,13 +8014,14 @@ function _uepDocHtml(D, ctx){
   else if(!P.n) b3+=`<div class="ud-vazio">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias corridos.</div>`;
   else b3+=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`
     +`<div class="ud-g">${_uepAbaPerSvg(P.dias, W)}
-      <div class="ud-leg"><span><i style="background:#5B6470"></i>bateu a meta</span><span><i style="background:#C62828"></i>abaixo da meta</span><span><i class="tr" style="border-top-color:#E65100"></i>meta do dia</span></div>
-      <div class="ud-nota">A UEP de cada dia é a gravada no fechamento, com o cadastro daquela data.${P.res.he>0?` Fora da conta: ${fmtN(Math.round(P.res.he))} UEP em hora extra no período.`:''}</div>
+      ${P.res.he>0?`<div class="ud-nota">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra no período, fora da conta</div>`:''}
       ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
 
   // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxSemanasHtml, por semana), com a pele do papel.
   const PX=D.prox;
-  const bProx=sec('PRÓXIMOS DIAS — HORAS DE LINHA QUE A CARTEIRA PEDE'+(PX&&PX.lidaEm?` · programação de ${new Date(PX.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:''))
+  // a régua das horas mora no TÍTULO (v7.181.0): era o anexo que a explicava, e
+  // uma linha a mais embaixo dos cartões empurrava o mix para a folha 3
+  const bProx=sec('PRÓXIMOS DIAS — HORAS DE LINHA QUE A CARTEIRA PEDE'+(PX&&!PX.falha&&PX.porMin>0?` · horas = UEP ÷ ${fmtN(Math.round(PX.porMin*60))} UEP/h`:'')+(PX&&PX.lidaEm?` · programação de ${new Date(PX.lidaEm).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`:''))
     +(!PX ? '<div class="ud-vazio">A programação ainda não tinha sido lida quando o relatório foi gerado (abra a aba ⚖ UEP e espere o bloco 6).</div>'
         : PX.falha ? '<div class="ud-vazio">A programação não traz UEP — sem ela não há como converter a carteira em horas.</div>'
         : `<div class="ud-prox">${_gpxSemanasHtml(PX, _gpxSemanasMontar(PX, new Date(), _gpxPassadosDoPainel(new Date())))}</div>`);
@@ -8053,7 +8039,7 @@ function _uepDocHtml(D, ctx){
           <tr class="ud-he-p"><td></td><td colspan="5">${mix.he.linhas.map(l=>`${_rpEsc(l.nome||l.modelo)} ${fmtN(l.cx)} cx`).join(' · ')}</td></tr>
           <tr><td></td><td>TOTAL DO DIA</td><td class="n">${fmtN(mix.dia.cx)}</td><td></td><td class="n">${fmtN(Math.round(mix.dia.uep))}</td><td></td></tr>`:'')
         +`</tfoot></table>
-        <div class="ud-nota">UEP/cx acima de 1 = produto que dá mais trabalho por caixa que a base da UEP (${UEP_BASE.nome}). É esta coluna que explica "poucas caixas e UEP batida" — e o contrário.${mix.cx>mix.cxCom?` ${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora.`:''}</div>`
+        ${mix.cx>mix.cxCom&&!(D.semHoje&&D.semHoje.length)?`<div class="ud-nota">${fmtN(mix.cx-mix.cxCom)} cx de produtos sem UEP ficam fora</div>`:''}`
       : '<div class="ud-vazio">Nenhuma caixa com produto apontado na jornada de hoje.</div>');
 
   // ORIGEM DA UEP (era CONFIABILIDADE)
@@ -8062,30 +8048,17 @@ function _uepDocHtml(D, ctx){
     +(conf
       ? `<div class="ud-conf"><i style="width:${conf.pMed.toFixed(1)}%;background:#2E7D32"></i><i style="width:${conf.pEst.toFixed(1)}%;background:#B26A00"></i><i style="width:${conf.pSem.toFixed(1)}%;background:#C62828"></i></div>
         <div class="ud-leg"><span><i style="background:#2E7D32"></i>${fmtP(conf.pMed)} UEP MEDIDA (estudo ou cadastro)</span><span><i style="background:#B26A00"></i>${fmtP(conf.pEst)} UEP ESTIMADA pela esteira (EST)</span><span><i style="background:#C62828"></i>${fmtP(conf.pSem)} SEM UEP (não entra)</span></div>
-        <div class="ud-nota">Pelas ${fmtN(conf.tot)} caixas apontadas hoje, com a vigência do cadastro. MEDIDA = ritmo demonstrado pelo estudo (ou digitada), não cronoanálise: 100% medida não é 100% exata.</div>`
+        <div class="ud-nota">Sobre ${fmtN(conf.tot)} cx apontadas hoje · MEDIDA = estudo ou digitada, não cronoanálise</div>`
       : `<div class="ud-vazio">${ctx.cadFalha?'Não consegui ler o cadastro':'O cadastro com a vigência ainda não tinha sido lido'} — a divisão entre UEP medida e estimada não sai nesta impressão.</div>`)
     +_cartSemUepHtml(D.semFut||[], [], 'ud-alerta', D.semHoje||[]);
 
-  // 6 · COMO LER
-  const b6=sec('ANEXO — COMO LER')
-    +`<table class="ud-como"><tbody>
-      <tr><td>A UEP</td><td>Caixas × UEP por caixa do cadastro (PRODUTO_CODIGO). Produto que dá mais trabalho por caixa vale mais UEP — é o que torna comparáveis dias de mix diferente.</td></tr>
-      <tr><td>A META</td><td>${fmtN(meta)} UEP na jornada normal (${UEP_MIN_DIA} min). Esperado até agora = meta × minutos de jornada já decorridos ÷ ${UEP_MIN_DIA} (a hora em andamento conta só os minutos que passaram e não é julgada no gráfico). A hora extra fica fora da meta. A meta é o ritmo <b>demonstrado</b> pela linha (estudo de UEP), não tempo padrão — até a cronoanálise.</td></tr>
-      <tr><td>PROJEÇÃO</td><td>UEP por minuto de jornada já decorrido × minutos que faltam — a média da jornada, não a última hora. Só jornada normal: a hora extra não entra. É projeção, não veredito: quem julga é o selo.</td></tr>
-      <tr><td>HORA EXTRA</td><td>Fica fora do UEP até agora, da projeção e da meta; entra só na última linha do mix, o total do dia.</td></tr>
-      <tr><td>HOJE × PERÍODO</td><td>O dia fechado leva a UEP gravada no fechamento; hoje usa o cadastro atual, inclusive as estimadas (EST). A base pode diferir um pouco.</td></tr>
-      <tr><td>PRÓXIMOS DIAS</td><td>Horas = UEP programada ÷ ${fmtN(Math.round(meta/UEP_MIN_DIA*60))} UEP/h (o ritmo da meta). São horas de LINHA — a UEP já desconta o mix. Cada dia leva só os lotes datados nele: o atraso e o que falta de hoje não entram (na tela ficam no cartão HOJE, como previsão). Linha sem UEP no cadastro fica fora e é listada. Faltar horas não é ordem de hora extra: pode ser mover lote para um dia com folga.</td></tr>
-      <tr><td>OSCILAÇÃO</td><td>Desvio ÷ média dos dias — a mesma conta da aba PLANO. Em caixas a produção pula com o mix; em UEP o mix já está descontado.</td></tr>
-    </tbody></table>`;
 
   return `<div class="ud-res">${resHoje}${resPer}</div>`
     +`<div class="ud-cols"><div>${b1}${b2}</div><div>${b3}</div></div>`
     +'<div class="ud-quebra"></div>'
     +bProx
     +`<div class="ud-cols ud-cols-2"><div>${b4}</div><div>${b5}</div></div>`
-    // o COMO LER vira anexo: com o PRÓXIMOS DIAS a folha 2 não o comporta
-    // (medido no Chromium: 3 folhas de qualquer jeito, e ele partido ao meio)
-    +'<div class="ud-quebra"></div>'+b6
+    // sem ANEXO (v7.181.0): o papel é número, gráfico e tabela — 2 folhas
     +`<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · UEP</span><span>retrato de ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · meta ${fmtN(meta)} UEP · só gerencial — TV e operador seguem em caixas</span></div>`;
 }
 
