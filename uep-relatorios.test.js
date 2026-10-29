@@ -187,7 +187,9 @@ ok('caixas no ritmo e UEP abaixo, com a meta em caixas leve para o mix',
 console.log('\n── CAIXAS × UEP: o desenho ──');
 const HC = _cxUepHtml(R, { data: '19/10/2026', hora: '08:00' });
 ok('o veredito usa as palavras do selo (slRitmo) e a leitura diz de onde veio a divergência',
-   [HC.includes('ABAIXO DO RITMO'), HC.includes('a diferença veio da META (da programação), não do ritmo da linha')], [true, true]);
+   [HC.includes('ABAIXO DO RITMO'), HC.includes('O vermelho veio da META (da programação), não do ritmo da linha')], [true, true]);
+ok('o motivo da divergência sai EM NÚMERO (16/10: a meta em caixas pedia 146,8% da meta de UEP)',
+   HC.includes(_CXU_PORQUE['meta-alta'] + ' — pedia 146,8% da meta de UEP'), true);
 ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxUepHtml(')), false);
 ok('os dois botões na aba ⚖ UEP', [/onclick="gerarRelatorioFilaCrono\(\)"/.test(html), /onclick="gerarRelatorioCxUep\(\)"/.test(html)], [true, true]);
 ok('cartão sem status não herda o vermelho do relatório de paradas',
@@ -247,17 +249,28 @@ ok('dia sem item no período: pontos null (não zero) e fora da base das três r
 
 console.log('\n── CAIXAS × PONTOS × UEP: o desenho ──');
 const HP = _cxUepHtml(RP, { data: '29/10/2026', hora: '08:00' }), HM = _cxUepHtml(RM, { data: '29/10/2026', hora: '08:00' });
-ok('a seção das três réguas abre o relatório e a frase sai do dado (a que menos oscilou)',
-   [HP.indexOf('1 ▸ AS TRÊS RÉGUAS') < HP.indexOf('2 ▸ QUANDO'), HP.includes('A régua que menos oscilou foi <b>UEP</b>'), HP.includes('±10,4%'), HP.includes('±18,5%')], [true, true, true, true]);
-ok('sem meta: coluna PONTOS sim, EM PONTOS não, e a nota diz onde se digita a meta',
-   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('Sem a META DE PONTOS / DIA neste computador')], [true, false, true]);
+ok('três folhas: o argumento abre, o veredito depois, o anexo por último',
+   [HP.indexOf('1 ▸ QUAL RÉGUA MEDE') < HP.indexOf('2 ▸ QUANDO O VEREDITO'), HP.indexOf('2 ▸ QUANDO O VEREDITO') < HP.indexOf('ANEXO ▸ OS 20 DIAS'),
+    (HP.match(/cxu-quebra/g) || []).length], [true, true, 2]);
+ok('a frase sai do dado: a que menos variou, e as outras duas com o número',
+   HP.includes('A <b>UEP</b> é a régua que menos varia de um dia para o outro: <b>±10,4%</b>, contra ±18,5% dos pontos e ±26,9% das caixas.'), true);
+ok('a prova sem vantagem: os dias depois da trava, com os números', HP.includes('<b>Sem vantagem para a UEP:</b>') && HP.includes('UEP <b>±10,5%</b> · PONTOS <b>±16,1%</b> · CAIXAS <b>±22,4%</b>'), true);
+ok('a frase segue o dado (se as caixas variassem menos, diria isso)', (() => {
+  const r = JSON.parse(JSON.stringify(RP)); r.reguas.cx.osc = 5;
+  return _cxUepHtml(r, { data: '29/10/2026', hora: '08:00' }).includes('As <b>CAIXAS</b> são a régua que menos varia');
+})(), true);
+ok('frase de leitura em fonte de texto (Barlow), não na mono pequena das notas', [/class="rp-note"/.test(HP), /\.cxu-doc \.cxu-txt\{font-family:'Barlow'/.test(JS)], [false, true]);
+ok('sem meta: coluna PONTOS no anexo, sem EM PONTOS, e a nota diz onde se digita a meta',
+   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está digitada neste computador')], [true, false, true]);
 ok('com meta: EM PONTOS e o motivo dos pontos na tabela', [HM.includes('<th>EM PONTOS</th>'), HM.includes(_CXU_PORQUE['pts-barato'])], [true, true]);
 ok('sem pontos: nem a coluna, e a linha da régua diz por quê',
    (() => { const h = _cxUepHtml(_cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' }), { data: '29/10/2026', hora: '08:00', ptsFalha: 'pontos não lidos — o Apps Script não respondeu' });
-            return [h.includes('PONTOS · '), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ AS TRÊS RÉGUAS')]; })(), [false, true, true]);
+            return [h.includes('<th class="n">PONTOS</th>'), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ QUAL RÉGUA MEDE')]; })(), [false, true, true]);
 const SV = _cxuSvg(RP);
-ok('o gráfico: três linhas, um eixo, a trava marcada, rótulo direto com a oscilação',
-   [(SV.match(/<polyline/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'), /UEP <tspan[^>]*>±10,4%/.test(SV)], [3, true, true, true]);
+ok('o gráfico: uma faixa por régua na MESMA escala, a trava atravessando, o nome e a variação de cada uma',
+   [(SV.match(/<polyline/g) || []).length, (SV.match(/fill="#eef1f4"/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'),
+    /font-weight="700" fill="#1F2328">UEP<\/text><text[^>]*>±10,4%/.test(SV)], [3, 3, true, true, true]);
+ok('sem pontos, duas faixas', (_cxuSvg(_cxUepMontar(HOUT, 20261029, 30, { pts: null })).match(/<polyline/g) || []).length, 2);
 ok('o gráfico e o desenho não fazem conta', [/_qpOscilacao\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxuSvg(')),
    /_qpOscilacao\(|_cxUepMontar\(/.test(pegaJs('function _cxUepHtml('))], [false, false]);
 const GR = pegaJs('async function gerarRelatorioCxUep(');

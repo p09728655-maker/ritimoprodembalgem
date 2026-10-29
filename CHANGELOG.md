@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.185.0 — 29/10/2026 · CAIXAS × PONTOS × UEP: impressão limpa, três folhas
+
+- PPCP, com o relatório na tela: *"quero que deixe impressão limpa, fácil de
+  entender, com clareza dos fatos"*. O papel tinha parede de texto em fonte
+  mono pequena, as três linhas cruzadas num quadro só e a mesma tabela de 12
+  colunas duas vezes.
+- Agora são **três folhas, uma pergunta em cada**:
+  1. **Qual régua mede o esforço**: a conclusão numa frase (montada a partir
+     dos números), três cartões (caixas, pontos, UEP) com a variação dia a dia e
+     o gráfico em **uma faixa por régua, na mesma escala**. A faixa cinza é ±10%
+     da média: as caixas pulam e a UEP fica quase reta. Logo abaixo, a
+     comparação sem vantagem (os dias depois da trava da UEP).
+  2. **Quando o veredito muda de régua**: só os dias em que as réguas
+     discordaram, com o motivo **em número** (*"meta em caixas acima da
+     capacidade — pedia 146,8% da meta de UEP"*).
+  3. **Anexo**: os dias em números (selo só na folha 2) e o *como o número sai*,
+     uma linha por item.
+- As frases estão em fonte de texto, não mais na mono pequena das notas.
+- **Atenção:** nenhuma conta mudou. Os motivos foram reescritos e o título do
+  cabeçalho ficou só **CAIXAS × PONTOS × UEP**. Medido no Chromium, com as
+  fontes: 3 folhas A4 deitadas, com e sem a meta de pontos, nada cortado.
+
 ## v7.184.0 — 29/10/2026 · CAIXAS × PONTOS × UEP: qual régua mede o esforço
 
 - PPCP: *"ver antes e depois para ter argumento de mudar para UEP, que faz mais
