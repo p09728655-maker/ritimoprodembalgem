@@ -42,8 +42,8 @@ via Google Apps Script (JSONP).
   (`UEP_ESCALAS`) e o gráfico da G no tamanho real da caixa (v7.173.0: os
   rótulos nas quatro caixas medidas, as linhas e o encaixe):
   `node tela-uep.test.js`.
-- `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × UEP da aba
-  ⚖ UEP: motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
+- `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × PONTOS × UEP
+  da aba ⚖ UEP (as três réguas nos 20 dias reais de 29/09–28/10/2026): motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
   (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
   amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
@@ -701,6 +701,41 @@ via Google Apps Script (JSONP).
     mesmos.
 - Mexeu em texto ou tamanho? Renderizar de novo na TV e no gerencial, nas
   duas resoluções, medindo ALTURA e largura.
+
+## CAIXAS × PONTOS × UEP — a régua que mede o esforço (v7.184.0)
+- PPCP, 29/10/2026: *"ver antes e depois para ter argumento de mudar para UEP
+  que faz mais sentido ao invés de pontos ou caixas"*. O 🖨 CAIXAS × UEP da aba
+  ⚖ UEP abre agora com **AS TRÊS RÉGUAS NOS MESMOS DIAS**: média/dia,
+  **oscilação** dia a dia (`_qpOscilacao`, a da aba PLANO), **depois da trava**
+  da UEP, NO RITMO e DISCORDA DA UEP, mais um gráfico com cada dia em % da média
+  da própria régua (um eixo só, nunca dois). O resto do relatório (caixas × UEP)
+  continua, com as colunas PONTOS / EM PONTOS na tabela dia a dia.
+- **O argumento é a oscilação, não o veredito**: a linha trabalha parecido todo
+  dia e o que muda é o mix. Medido (29/09–28/10/2026, 20 dias, jornada):
+  CAIXAS ±26,9% · PONTOS ±18,5% · UEP ±10,4%; nos 8 dias **depois da trava**
+  (16/10), que não entraram na conta da UEP: 22,4% · 16,1% · 10,5%. ⚠ Antes da
+  trava a UEP tem vantagem (foi calibrada com o ritmo da própria linha) — por
+  isso a coluna DEPOIS DA TRAVA existe. Não tirar.
+- Pontos medem **valor** (custo de reposição do ERP), não esforço: servem a
+  faturamento. A frase da leitura sai do dado (*"a régua que menos oscilou
+  foi…"*), nunca texto fixo.
+- **Conta**: `_cxuPtsDoPeriodo(itens)` (pontos − `pontosHe` por dia; item sem
+  `pontosHe` → null, nunca rateia) e o 4º parâmetro do `_cxUepMontar` (`P =
+  {pts, metaPts, trava}`); sem ele, caixas × UEP como sempre. As três réguas
+  usam os **mesmos dias** (dia sem ponto sai da base das três). Desenho:
+  `_cxuSvg` e `_cxUepHtml`, sem conta (o teste prende).
+- **Leitura**: `_cxuPtsLer` = `getProducaoModeloPeriodo` da janela
+  (`_cxuJanela`), DEPOIS do histórico, cache 5 min; devolve `PREP_PERIODO` e
+  `PH_UEP_PROD` (a régua do `_filaAmostra`). Falhou → sem os pontos, com o motivo
+  na linha da régua.
+- **Meta de pontos**: só a do computador (`rpe_cap_pts`, SIMULAR JORNADA). Com
+  ela: veredito EM PONTOS (régua do selo) e o motivo (`pts-barato`/`pts-caro` =
+  META UEP × pontos/UEP do dia ÷ meta de pontos, ±5%). O teste usa 190.000 de
+  exemplo — **nunca o valor do PPCP**.
+- Cores das séries validadas no papel branco (`CXU_COR`: UEP laranja, CAIXAS
+  azul, PONTOS verde-água tracejado — o verde-água tem contraste < 3:1, por isso
+  o tracejado e o rótulo direto). Medido no Chromium com as fontes: A4 deitada,
+  4 folhas com e sem a meta, nenhum selo ou célula cortado.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:

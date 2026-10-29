@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.184.0 — 29/10/2026 · CAIXAS × PONTOS × UEP: qual régua mede o esforço
+
+- PPCP: *"ver antes e depois para ter argumento de mudar para UEP, que faz mais
+  sentido ao invés de pontos ou caixas"*. O relatório 🖨 CAIXAS × UEP da aba
+  ⚖ UEP virou **🖨 CAIXAS × PONTOS × UEP** e ganhou uma 1ª seção, **AS TRÊS
+  RÉGUAS NOS MESMOS DIAS**: média por dia e **oscilação dia a dia**
+  (desvio-padrão ÷ média, a conta da aba PLANO) de caixas, pontos e UEP. Tem
+  também um gráfico com cada dia em % da média da própria régua (um eixo só).
+  A linha trabalha parecido todo dia e o que muda é o mix: a régua que menos
+  oscila é a que mede o esforço.
+- Medido com a planilha real, de 29/09 a 28/10/2026 (20 dias, só a jornada
+  normal): **CAIXAS ±26,9% · PONTOS ±18,5% · UEP ±10,4%**. Nos 8 dias depois
+  da trava da UEP (16/10), que não entraram na conta dela: **22,4% · 16,1% ·
+  10,5%**.
+- Pontos = os gravados no lançamento (`.gs` v5.40), menos os da hora extra
+  (`pontosHe`). A leitura é o `getProducaoModeloPeriodo` dos mesmos 30 dias,
+  feita depois do histórico, uma leitura de cada vez, com cache de 5 min. Se
+  falhar, o relatório sai sem os pontos e diz por quê.
+- Com a **META DE PONTOS / DIA** digitada neste computador (SIMULAR JORNADA da
+  ⏱ CRONOANÁLISE), os pontos ganham veredito, coluna EM PONTOS e motivo da
+  discordância com a UEP (*mix de pouco/muito valor por UEP*). Sem a meta, só a
+  oscilação.
+- **Atenção:** os motivos das caixas na tabela foram encurtados e levam o
+  prefixo da régua (*"caixas: a meta pedia mais UEP que a de UEP"*). As contas
+  de caixas × UEP não mudaram.
+
 ## `.gs` v5.40 — 29/10/2026 · Pontos do passado congelados · ⚠ re-deploy
 
 - PPCP, 29/10/2026: a coluna PONTOS da PRODUTO_CODIGO foi atualizada pelo

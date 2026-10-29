@@ -46,11 +46,12 @@ global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 ['UEP_MIN_DIAS', 'UEP_BASE', 'UEP_TRAVADA_DESDE', 'APP_NOME', 'APP_NOME_CX', 'GPX_DIAS',
  'FILA_FAM_RAZAO', 'FILA_TETO_FOLGA', 'FILA_MAX_SEM', 'FILA_MOTIVOS', 'FILA_AMOSTRA_DE',
- 'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br']
+ 'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br', 'CXU_FORA_MIN', 'CXU_COR', 'DIR_COB_MIN']
   .forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepEhBase(', 'function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
  'function _cartQtdAberta(', 'function _tvF2(', 'function _filaUteis(', 'function _filaAmostraDeItens(',
- 'function _filaCronoMontar(', 'function _filaCronoHtml(', 'function _cxUepMontar(', 'function _cxUepHtml(']
+ 'function _filaCronoMontar(', 'function _filaCronoHtml(', 'function _qpOscilacao(', 'function _cxuJanela(', 'function _cxuPtsDoPeriodo(',
+ 'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxUepHtml(']
   .forEach(f => eval.call(global, pegaJs(f)));
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -191,6 +192,80 @@ ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(p
 ok('os dois botões na aba ⚖ UEP', [/onclick="gerarRelatorioFilaCrono\(\)"/.test(html), /onclick="gerarRelatorioCxUep\(\)"/.test(html)], [true, true]);
 ok('cartão sem status não herda o vermelho do relatório de paradas',
    [/\.fila-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS), /\.cxu-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS)], [true, true]);
+
+// ════════════════════════════════════════════════════════════════════════════
+// CAIXAS × PONTOS × UEP (v7.184.0, PPCP 29/10/2026: "ver antes e depois para ter
+// argumento de mudar para UEP"). Os 20 dias fechados reais de 29/09 a 28/10/2026:
+// HISTORICO (caixas de jornada, UEP gravada) + os PONTOS gravados no log
+// (PRODUCAO_PRODUTO), só a jornada 07:00–17:00. Os números esperados foram
+// calculados FORA do painel (python sobre a planilha), não pela função.
+console.log('\n── CAIXAS × PONTOS × UEP: os 20 dias reais de 29/09 a 28/10/2026 ──');
+{
+const PTS = {"29/09":{"pts":192089.0,"cx":1778},"30/09":{"pts":172236.0,"cx":2209},"01/10":{"pts":161784.0,"cx":2696},"02/10":{"pts":153986.0,"cx":1097},"06/10":{"pts":215088.0,"cx":1421},"07/10":{"pts":172992.0,"cx":1268},"08/10":{"pts":238058.0,"cx":1241},"09/10":{"pts":216665.0,"cx":1683},"13/10":{"pts":110176.0,"cx":2651},"14/10":{"pts":201665.0,"cx":1849},"15/10":{"pts":137981.0,"cx":1640},"16/10":{"pts":190470.0,"cx":1971},"19/10":{"pts":195516.0,"cx":1509},"20/10":{"pts":183164.0,"cx":2041},"21/10":{"pts":177536.0,"cx":1004},"22/10":{"pts":208880.0,"cx":1960},"23/10":{"pts":177275.0,"cx":1483},"26/10":{"pts":212521.0,"cx":1263},"27/10":{"pts":261115.0,"cx":1972},"28/10":{"pts":157429.0,"cx":2141}};
+// os itens do getProducaoModeloPeriodo: um por dia, com a HE separada (pontosHe)
+const ITENS = Object.keys(PTS).map(d => ({ data: d + '/2026', modelo: '501149', caixas: PTS[d].cx, pontos: PTS[d].pts + 1000, pontosHe: 1000 }));
+const DU = (d, real, meta, heCx, uep, mu) => ({ data: d + '/2026', real, meta, heCx, uep, metaUep: mu || 2530, fonte: 'sheets' });
+const HOUT = [DU('29/09', 1778, 1750, 0, 3402), DU('30/09', 2209, 2700, 0, 2561.5), DU('01/10', 2696, 2250, 0, 2886.1),
+  DU('02/10', 1097, 1400, 0, 2392.6), DU('06/10', 1421, 1299, 0, 2863.5), DU('07/10', 1268, 1200, 0, 2871.3),
+  DU('08/10', 1241, 1000, 0, 3159.4), DU('09/10', 1683, 1650, 0, 2496.1), DU('13/10', 2651, 1750, 0, 2615.4),
+  DU('14/10', 1849, 2250, 0, 2897.7), DU('15/10', 1640, 2700, 0, 2751.1), DU('16/10', 1971, 2350, 0, 3115.8),
+  DU('19/10', 1509, 1157, 0, 2940.2), DU('20/10', 2041, 2500, 0, 2625.7), DU('21/10', 1004, 2200, 0, 2113.7),
+  DU('22/10', 1960, 1550, 0, 3064.3), DU('23/10', 1483, 1550, 0, 2755.9), DU('26/10', 1263, 1500, 0, 2761.6),
+  DU('27/10', 1972, 2850, 180, 2868.5, 2761), DU('28/10', 2141, 1250, 286, 2656.9, 2761)];
+const PM = _cxuPtsDoPeriodo(ITENS);
+ok('pontos de JORNADA = pontos − pontos em hora extra, por dia', [PM['29/09/2026'].pts, PM['28/10/2026'].cx], [192089, 2141]);
+ok('item sem pontosHe (backend antes da v5.20): não separa a jornada → null, nunca rateia',
+   _cxuPtsDoPeriodo([{ data: '01/10/2026', caixas: 10, pontos: 100 }]), null);
+ok('janela: 30 dias antes de hoje, hoje fora', _cxuJanela(20261029, 30), { iniNum: 20260929, de: '29/09/2026', ate: '28/10/2026' });
+const RP = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, metaPts: null, trava: '16/10/2026' });
+const G = RP.reguas, f1 = x => Math.round(x * 10) / 10;
+ok('20 dias, os mesmos para as três réguas', [RP.n, G.n], [20, 20]);
+ok('oscilação dia a dia: CAIXAS 26,9% · PONTOS 18,5% · UEP 10,4% — a UEP é a que menos varia com o mix',
+   [f1(G.cx.osc), f1(G.pts.osc), f1(G.uep.osc)], [26.9, 18.5, 10.4]);
+ok('depois da trava (16/10), 8 dias que não entraram na UEP: 22,4% · 16,1% · 10,5%',
+   [G.nFora, f1(G.cx.oscFora), f1(G.pts.oscFora), f1(G.uep.oscFora)], [8, 22.4, 16.1, 10.5]);
+ok('média por dia de jornada', [Math.round(G.cx.media), Math.round(G.pts.media), Math.round(G.uep.media)], [1721, 186831, 2790]);
+ok('sem META DE PONTOS: pontos sem veredito (só a oscilação)', [G.pts.noRitmo, G.pts.discorda, RP.metaPts, RP.dias[0].clsP], [null, null, false, null]);
+ok('o gráfico: cada dia em % da média da régua (a média do índice é 100)',
+   [Math.round(RP.serie.reduce((a, s) => a + s.uep, 0) / RP.serie.length), RP.serie.filter(s => s.fora).length], [100, 8]);
+// META de exemplo (NÃO é a do PPCP, que não entra no repositório)
+const RM = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, metaPts: 190000, trava: '16/10/2026' });
+ok('com meta: 11 dias com pontos no ritmo, 18 com UEP; 7 com UEP no ritmo e pontos abaixo',
+   [RM.reguas.pts.noRitmo, RM.reguas.uep.noRitmo, RM.ptsAbaixo, RM.ptsAcima], [11, 18, 7, 0]);
+ok('e os 7 pelo mix de VALOR do dia (batendo a meta de UEP, faltariam pontos)',
+   RM.dias.filter(d => d.tipoP === 'pts-abaixo').map(d => [d.data.slice(0, 5), d.porqueP]),
+   ['30/09', '01/10', '07/10', '13/10', '15/10', '23/10', '28/10'].map(d => [d, 'pts-barato']));
+ok('sem os pontos (leitura falhou), caixas × UEP como sempre (12 iguais, 8 com caixas abaixo — conferido fora do painel)', (() => {
+  const R0 = _cxUepMontar(HOUT, 20261029, 30), R1 = _cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' });
+  return [R0.iguais, R0.cxAbaixo, R1.iguais, R1.cxAbaixo, R1.reguas.pts, R1.reguas.n];
+})(), [12, 8, 12, 8, null, 20]);
+ok('dia sem item no período: pontos null (não zero) e fora da base das três réguas', (() => {
+  const pm = Object.assign({}, PM); delete pm['21/10/2026'];
+  const r = _cxUepMontar(HOUT, 20261029, 30, { pts: pm });
+  return [r.dias.find(d => d.data === '21/10/2026').pts, r.reguas.n];
+})(), [null, 19]);
+
+console.log('\n── CAIXAS × PONTOS × UEP: o desenho ──');
+const HP = _cxUepHtml(RP, { data: '29/10/2026', hora: '08:00' }), HM = _cxUepHtml(RM, { data: '29/10/2026', hora: '08:00' });
+ok('a seção das três réguas abre o relatório e a frase sai do dado (a que menos oscilou)',
+   [HP.indexOf('1 ▸ AS TRÊS RÉGUAS') < HP.indexOf('2 ▸ QUANDO'), HP.includes('A régua que menos oscilou foi <b>UEP</b>'), HP.includes('±10,4%'), HP.includes('±18,5%')], [true, true, true, true]);
+ok('sem meta: coluna PONTOS sim, EM PONTOS não, e a nota diz onde se digita a meta',
+   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('Sem a META DE PONTOS / DIA neste computador')], [true, false, true]);
+ok('com meta: EM PONTOS e o motivo dos pontos na tabela', [HM.includes('<th>EM PONTOS</th>'), HM.includes(_CXU_PORQUE['pts-barato'])], [true, true]);
+ok('sem pontos: nem a coluna, e a linha da régua diz por quê',
+   (() => { const h = _cxUepHtml(_cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' }), { data: '29/10/2026', hora: '08:00', ptsFalha: 'pontos não lidos — o Apps Script não respondeu' });
+            return [h.includes('PONTOS · '), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ AS TRÊS RÉGUAS')]; })(), [false, true, true]);
+const SV = _cxuSvg(RP);
+ok('o gráfico: três linhas, um eixo, a trava marcada, rótulo direto com a oscilação',
+   [(SV.match(/<polyline/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'), /UEP <tspan[^>]*>±10,4%/.test(SV)], [3, true, true, true]);
+ok('o gráfico e o desenho não fazem conta', [/_qpOscilacao\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxuSvg(')),
+   /_qpOscilacao\(|_cxUepMontar\(/.test(pegaJs('function _cxUepHtml('))], [false, false]);
+const GR = pegaJs('async function gerarRelatorioCxUep(');
+ok('leituras em SEQUÊNCIA (histórico → pontos), e a dos pontos devolve o PREP_PERIODO e o PH_UEP_PROD',
+   [GR.indexOf('_uepAbaHistCarregar()') < GR.indexOf('_cxuPtsLer('),
+    /finally\{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; \}/.test(pegaJs('async function _cxuPtsLer('))], [true, true]);
+ok('a meta de pontos vem só deste computador (rpe_cap_pts), nunca do código', /_capPtsMetaLer\(localStorage\.getItem\(CAP_PTS_LS\)\)/.test(GR), true);
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // CRONOANÁLISE → UEP (v7.142.0): o caso real de 19/10/2026 — ARMÁRIO ENCANTO,
