@@ -50,7 +50,9 @@ via Google Apps Script (JSONP).
   da regra com o `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
-  de 26/10 e o nome do app com "caixa 2/2"): `node uep-relatorios.test.js`.
+  de 26/10 e o nome do app com "caixa 2/2"), e a aba 📏 RÉGUAS (o mix de 70
+  pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
+  SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
@@ -728,7 +730,8 @@ via Google Apps Script (JSONP).
   (`_cxuJanela`), DEPOIS do histórico, cache 5 min; devolve `PREP_PERIODO` e
   `PH_UEP_PROD` (a régua do `_filaAmostra`). Falhou → sem os pontos, com o motivo
   na linha da régua.
-- **Meta de pontos**: só a do computador (`rpe_cap_pts`, SIMULAR JORNADA). Com
+- **Meta de pontos**: a do ⚙ (`_metaPtsDia`: CONFIG_PAINEL `META_PTS`, `.gs`
+  v5.42; sem ela, a deste computador `rpe_cap_pts` — ver *ABA 📏 RÉGUAS*). Com
   ela: veredito EM PONTOS (régua do selo) e o motivo (`pts-barato`/`pts-caro` =
   META UEP × pontos/UEP do dia ÷ meta de pontos, ±5%). O teste usa 198.740 de
   exemplo (190.000 × 1,046) — **nunca o valor do PPCP**.
@@ -764,6 +767,63 @@ via Google Apps Script (JSONP).
   - Medido no Chromium com as fontes: A4 deitada, **3 folhas** com e sem a meta,
     nada cortado. A folha 3 só fecha com o `padding:3px` do anexo: mexeu nela,
     medir de novo.
+
+## ABA 📏 RÉGUAS — a meta de pontos cabe no mix? (v7.187.0 / `.gs` v5.42)
+- PPCP, 29/10/2026: *"régua pela UEP é a justa, não adianta querer produzir
+  [a meta de pontos] por dia com SLEEP por exemplo, não consegue fazer"* →
+  *"essa impressão vire uma tela"* → prévia aprovada → *"sim"* (a meta na
+  planilha e a aba própria). Só o gerencial do PC (o operador só vê a TV).
+- **Três blocos, uma pergunta cada**:
+  1. **QUAL RÉGUA MEDE O ESFORÇO** — a folha 1 do 🖨 CAIXAS × PONTOS × UEP com
+     as MESMAS peças: `_cxUepMontar`, `_cxuTese`/`_cxuProva` (o texto, agora uma
+     função para o papel e a tela) e `_cxuSvg`;
+  2. **A META DE PONTOS CABE NO MIX?** — meta de pontos ÷ meta de UEP = os
+     pontos por UEP que a meta pede. O mix do período (Σ pontos ÷ Σ UEP nos
+     mesmos dias, só na tabela de HOJE) contra isso; dias na meta (UEP pela
+     meta gravada de cada dia, pontos pela meta do ⚙); UEP/dia para chegar à
+     meta com este mix; % das caixas em produto que não chega. **A meta de
+     pontos julga o MIX (o que foi programado); quem julga a linha é a UEP.**
+  3. **PRODUTO A PRODUTO** — cada produto sozinho na linha o dia inteiro:
+     batendo a meta de UEP (`_capDia`, a conta do simulador de capacidade) e no
+     LIMITE DA ESTEIRA sem nenhuma parada. Situação: CHEGA NA META DE UEP · SÓ
+     ACIMA DA META DE UEP · NÃO CHEGA NEM NO LIMITE · SEM LIMITE NO CADASTRO.
+     Filtro RODARAM NO PERÍODO (mais caixas primeiro) / CADASTRO INTEIRO (menos
+     pontos por UEP primeiro), 15 linhas + VER TODOS.
+- **Medido (29/09–28/10/2026, cadastro de 29/10, META UEP 2.761)**: mix de **70
+  pontos por UEP**; a linha bateu a meta de UEP em 16 dos 20 dias. A SLEEP
+  sozinha faz 94 mil pontos/dia batendo a meta de UEP e **125 mil no limite
+  físico** — a meta de pontos do PPCP está acima disso. 33 de 119 produtos do
+  cadastro chegam batendo a meta de UEP.
+- ⚠ **O vão padrão (`ESTEIRA_VAO_PADRAO` = 650 mm)**: o cadastro veio com 650
+  em todo código, não medido; só SLEEP e MADERO têm 250 (20/10/2026). Com 650 o
+  limite sai PESSIMISTA, e o `_capProdutos` marca `vaoPadrao` → `*` no limite e
+  em NÃO CHEGA NEM NO LIMITE. Só para SLEEP e MADERO o "não chega" é certo.
+  Medir o vão de um produto tira a marca sozinho.
+- ⚠ **A META DE PONTOS mora na CONFIG_PAINEL (`META_PTS`, `.gs` v5.42)**, campo
+  META DE PONTOS / DIA · SEM HE no ⚙ (com os pontos por UEP que ela pede ao
+  lado), como a META DIA (UEP): só vai à planilha quando MUDOU, vazio/texto não
+  apaga. `_metaPtsDia()` é a leitura ÚNICA (tela, 🖨 CAIXAS × PONTOS × UEP e o
+  diálogo da capacidade): planilha → este computador (`rpe_cap_pts`, também
+  gravado no ⚙ como rede) → null. A tela avisa quando a meta é só deste
+  computador. Revoga o "guardada SÓ neste computador" da v7.169.0: o argumento
+  era o HTML público, mas o cadastro com o CUSTO REP produto a produto já é
+  lido por quem tem a URL do Apps Script (`getProdutos`). ⚠ O VALOR continua
+  fora do repositório (código, teste, doc).
+- **Custo**: nenhuma leitura nova. Histórico (2 min) → pontos do período (o
+  `_cxuPtsLer` do relatório, cache 5 min, que agora devolve também as caixas
+  por produto, `_cxuCxPorProduto`) → cadastro (10 min), em sequência, só com a
+  aba aberta. Pedido no meio de uma leitura fica pendente (`REG_PEND`, a régua
+  do `PG_TELA_PEND`). ↻ ATUALIZAR passa por cima dos caches.
+- **Conta** `_regMontar` (pura) · **desenho** `_regHtml` (sem conta, o teste
+  prende) · **leitura** `renderReguas`/`_regPintar`. O gráfico é o do papel com
+  as cores por token (`var(--cxu-*, cor do papel)`); `#sec-reguas` define a
+  paleta escura (CAIXAS `#4f95e8`, 5,4:1 no fundo — o `#2a78d6` do papel dava
+  3,8). O 🖨 da aba é o relatório de três folhas com os dias da tela
+  (`gerarRelatorioCxUep(n)`).
+- Medido no Chromium com os dados reais: 1920 e 1366, com e sem meta — nada
+  passa da largura (a tabela rola dentro do cartão se faltar espaço).
+- ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, a meta digitada no ⚙
+  vale só neste computador (a planilha ignora o `metaPts`) e a tela diz isso.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
@@ -3950,7 +4010,9 @@ feito e dá ar de verdade ao que sobrou.
     por dia é *"o ideal para faturar"*, *"s/ horas extra"*). Campo **META DE
     PONTOS / DIA · SEM HE** no diálogo (`#capj-pts`, `_capPtsMetaLer`: vazio =
     sem meta; texto/zero/decimal = erro, nunca 0), guardado em
-    `localStorage['rpe_cap_pts']`. ⚠ **O VALOR DA META NÃO VAI PARA ARQUIVO
+    `localStorage['rpe_cap_pts']`. Desde a v7.187.0 o diálogo COMEÇA na meta do
+    ⚙ (CONFIG_PAINEL, `_metaPtsDia`); o digitado nele é da simulação e fica
+    neste computador. ⚠ **O VALOR DA META NÃO VAI PARA ARQUIVO
     NENHUM DO REPOSITÓRIO** — código, comentário, teste ou doc: o painel é
     público na Vercel (a regra do custo-hora). O teste usa uma meta de exemplo e
     falha se o valor do PPCP aparecer no HTML.

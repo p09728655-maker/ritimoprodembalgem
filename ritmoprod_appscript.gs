@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.42 — META DE PONTOS / DIA NA CONFIG_PAINEL (META_PTS)
+//               PPCP, 29/10/2026: a meta de pontos (faturamento, sem hora
+//               extra) era digitada e guardada só no computador que a usava. A
+//               aba 📏 RÉGUAS e os relatórios precisam dela em todo aparelho,
+//               como a META DIA (UEP). getConfigPainel devolve metaPts (null sem
+//               a chave); setConfigPainel grava META_PTS só com número > 0 —
+//               vazio ou lixo não apaga a meta que já vale.
 // Versão: 5.41 — PONTOS NA TABELA DE HOJE, SÓ PARA QUEM PEDE (?ptsCad=1)
 //               PPCP, 29/10/2026: o CAIXAS × PONTOS × UEP comparava os pontos
 //               gravados (tabela antiga) com a meta de pontos (tabela nova,
@@ -3801,7 +3808,10 @@ function getConfigPainel() {
     modoLeitor: bool(kv.MODO_LEITOR, true),  // seleção de produto por bipe no mobile (padrão ligado)
     // Meta de UEP do dia (8 h de jornada normal), v5.11. Sem a chave → null e
     // o painel usa o padrão dele (2.300, decisão do PPCP em 24/09/2026).
-    metaUep: kv.META_UEP !== undefined && _numBR(kv.META_UEP) > 0 ? _numBR(kv.META_UEP) : null
+    metaUep: kv.META_UEP !== undefined && _numBR(kv.META_UEP) > 0 ? _numBR(kv.META_UEP) : null,
+    // Meta de PONTOS do dia, sem hora extra (v5.42). Sem a chave → null: o
+    // painel não julga pontos (nunca uma meta inventada).
+    metaPts: kv.META_PTS !== undefined && _numBR(kv.META_PTS) > 0 ? _numBR(kv.META_PTS) : null
   };
 }
 
@@ -3842,6 +3852,8 @@ function setConfigPainel(p) {
     // META DE UEP do dia (v5.17): digitada nas CONFIGURAÇÕES do painel. Só
     // grava número > 0 — vazio ou lixo não apaga a meta que já vale.
     if (p.metaUep !== undefined && _numBR(p.metaUep) > 0) novos.META_UEP = String(Math.round(_numBR(p.metaUep)));
+    // META DE PONTOS do dia (v5.42), mesma regra: só número > 0.
+    if (p.metaPts !== undefined && _numBR(p.metaPts) > 0) novos.META_PTS = String(Math.round(_numBR(p.metaPts)));
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};

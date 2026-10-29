@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.187.0 + `.gs` v5.42 — 29/10/2026 · Aba 📏 RÉGUAS e a META DE PONTOS no ⚙ · ⚠ re-deploy
+
+- PPCP: *"régua pela UEP é a justa — não adianta querer produzir a meta de
+  pontos com SLEEP, não consegue fazer"* → o 🖨 CAIXAS × PONTOS × UEP virou
+  **tela própria (📏 RÉGUAS)**, com prévia aprovada antes.
+- **Três blocos**:
+  1. **Qual régua mede o esforço**: o mesmo do papel (UEP ±10,4%, pontos ±19,0%,
+     caixas ±26,9% em 29/09–28/10) e o gráfico das três réguas.
+  2. **A meta de pontos cabe no mix?** Meta de pontos ÷ meta de UEP = os pontos
+     por UEP que a meta pede. Contra isso, o mix do período (**70 pontos por
+     UEP** em 29/09–28/10), os dias na meta de cada régua, a UEP/dia que o mix
+     exigiria e o % das caixas em produto que não chega.
+  3. **Produto a produto**: cada produto sozinho na linha o dia inteiro,
+     batendo a meta de UEP e no limite físico da esteira (sem parada), com a
+     situação: CHEGA · SÓ ACIMA DA META DE UEP · NÃO CHEGA NEM NO LIMITE. A
+     SLEEP faz 94 mil pontos/dia na meta de UEP e 125 mil no limite.
+- **META DE PONTOS / DIA · SEM HE no ⚙**, gravada na planilha (`CONFIG_PAINEL`,
+  `META_PTS`) e válida para todos os aparelhos, como a META DIA (UEP). Antes
+  ela ficava só no computador que a digitou. O relatório e o diálogo da
+  capacidade leem a mesma meta.
+- **`.gs` v5.42**: `getConfigPainel` devolve `metaPts` e `setConfigPainel`
+  grava `META_PTS` (só número > 0; vazio não apaga).
+- **Atenção:**
+  - O limite da esteira de quem ainda tem o vão padrão de 650 mm no cadastro
+    (todos menos SLEEP e MADERO) sai **pessimista**, marcado com `*`. Para
+    esses, o "não chega nem no limite" não é prova.
+  - Na tela, a linha das CAIXAS no gráfico é um azul mais claro (contraste
+    no fundo escuro); no papel continua a mesma.
+  - **Antes do re-deploy**, a meta digitada no ⚙ vale só neste computador, e
+    a tela avisa.
+
 ## v7.186.0 + `.gs` v5.41 — 29/10/2026 · Pontos comparados na tabela de hoje · ⚠ re-deploy
 
 - PPCP, depois de ver *"em 13 dias a UEP estava no ritmo e os pontos abaixo da

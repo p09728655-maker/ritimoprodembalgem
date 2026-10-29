@@ -51,7 +51,7 @@ require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'
 ['function _uepEhBase(', 'function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
  'function _cartQtdAberta(', 'function _tvF2(', 'function _filaUteis(', 'function _filaAmostraDeItens(',
  'function _filaCronoMontar(', 'function _filaCronoHtml(', 'function _qpOscilacao(', 'function _cxuJanela(', 'function _cxuPtsDoPeriodo(',
- 'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxUepHtml(']
+ 'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxuTese(', 'function _cxuProva(', 'function _cxUepHtml(', 'function _cxuCxPorProduto(']
   .forEach(f => eval.call(global, pegaJs(f)));
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -274,7 +274,7 @@ ok('a frase segue o dado (se as caixas variassem menos, diria isso)', (() => {
 })(), true);
 ok('frase de leitura em fonte de texto (Barlow), não na mono pequena das notas', [/class="rp-note"/.test(HP), /\.cxu-doc \.cxu-txt\{font-family:'Barlow'/.test(JS)], [false, true]);
 ok('sem meta: coluna PONTOS no anexo, sem EM PONTOS, e a nota diz onde se digita a meta',
-   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está digitada neste computador')], [true, false, true]);
+   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está nas configurações (⚙ META DE PONTOS / DIA)')], [true, false, true]);
 ok('com meta: EM PONTOS e o motivo dos pontos na tabela', [HM.includes('<th>EM PONTOS</th>'), HM.includes(_CXU_PORQUE['pts-barato'])], [true, true]);
 ok('o papel diz a tabela: na de hoje, e a nota quando a meta não pode julgar',
    [HM.includes('pontos na tabela de pontos de hoje'), HM.includes('cadastro de HOJE (a tabela da meta)'),
@@ -286,8 +286,12 @@ ok('sem pontos: nem a coluna, e a linha da régua diz por quê',
             return [h.includes('<th class="n">PONTOS</th>'), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ QUAL RÉGUA MEDE')]; })(), [false, true, true]);
 const SV = _cxuSvg(RP);
 ok('o gráfico: uma faixa por régua na MESMA escala, a trava atravessando, o nome e a variação de cada uma',
-   [(SV.match(/<polyline/g) || []).length, (SV.match(/fill="#eef1f4"/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'),
-    /font-weight="700" fill="#1F2328">UEP<\/text><text[^>]*>±10,4%/.test(SV)], [3, 3, true, true, true]);
+   [(SV.match(/<polyline/g) || []).length, (SV.match(/fill="var\(--cxu-banda,#eef1f4\)"/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'),
+    /font-weight="700" fill="var\(--cxu-tinta,#1F2328\)">UEP<\/text><text[^>]*>±10,4%/.test(SV)], [3, 3, true, true, true]);
+// v7.187.0: as cores por TOKEN, com a do papel como reserva — a aba 📏 RÉGUAS
+// define --cxu-* e desenha o MESMO gráfico no fundo escuro. Nenhuma cor fixa.
+ok('o gráfico: cor nenhuma fixa (só var(--cxu-*, cor do papel))',
+   [SV.replace(/var\(--cxu-[a-z0-9]+,#[0-9a-fA-F]{6}\)/g, '').match(/#[0-9a-fA-F]{6}/g), /stroke="var\(--cxu-uep,#eb6834\)"/.test(SV)], [null, true]);
 ok('sem pontos, duas faixas', (_cxuSvg(_cxUepMontar(HOUT, 20261029, 30, { pts: null })).match(/<polyline/g) || []).length, 2);
 ok('o gráfico e o desenho não fazem conta', [/_qpOscilacao\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxuSvg(')),
    /_qpOscilacao\(|_cxUepMontar\(/.test(pegaJs('function _cxUepHtml('))], [false, false]);
@@ -295,7 +299,97 @@ const GR = pegaJs('async function gerarRelatorioCxUep(');
 ok('leituras em SEQUÊNCIA (histórico → pontos), e a dos pontos devolve o PREP_PERIODO e o PH_UEP_PROD',
    [GR.indexOf('_uepAbaHistCarregar()') < GR.indexOf('_cxuPtsLer('),
     /finally\{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; \}/.test(pegaJs('async function _cxuPtsLer('))], [true, true]);
-ok('a meta de pontos vem só deste computador (rpe_cap_pts), nunca do código', /_capPtsMetaLer\(localStorage\.getItem\(CAP_PTS_LS\)\)/.test(GR), true);
+// v7.187.0 / .gs v5.42: a meta mora na CONFIG_PAINEL (⚙); sem ela, a deste computador.
+ok('a meta de pontos vem do _metaPtsDia (a do ⚙), nunca do código', [/P\.metaPts = _metaPtsDia\(\)\.v;/.test(GR), /\b\d{6,}\b|\b\d{2,3}\.\d{3}\b/.test(pegaJs('function _metaPtsDia('))], [true, false]);
+{
+  eval.call(global, pegaJs('function _capPtsMetaLer(')); eval.call(global, pegaJs('function _metaPtsDia('));
+  global.CAP_PTS_LS = 'rpe_cap_pts';
+  const mem = {}; global.localStorage = { getItem: k => mem[k] == null ? null : mem[k], setItem: (k, v) => { mem[k] = String(v); } };
+  global.PONTOS_DIA = { metaPts: 198740 };
+  const a = _metaPtsDia(); mem.rpe_cap_pts = '150.000';
+  const b = _metaPtsDia(); global.PONTOS_DIA = { metaPts: null };
+  const c = _metaPtsDia(); mem.rpe_cap_pts = 'abc';
+  const d = _metaPtsDia(); global.PONTOS_DIA = {}; delete mem.rpe_cap_pts;
+  ok('a meta: a da planilha manda; sem ela, a deste computador; texto ou nada → null, nunca 0',
+     [a, b, c, d, _metaPtsDia()], [{ v: 198740, origem: 'planilha' }, { v: 198740, origem: 'planilha' }, { v: 150000, origem: 'computador' }, { v: null, origem: null }, { v: null, origem: null }]);
+  delete global.localStorage; delete global.PONTOS_DIA;
+}
+// ════════════════════════════════════════════════════════════════════════════
+// ABA 📏 RÉGUAS (v7.187.0, PPCP 29/10/2026: "régua pela UEP é a justa" → o
+// relatório virou tela, mais o PRODUTO A PRODUTO contra a meta de pontos).
+// Os 20 dias reais (HOUT + TAB, tabela de hoje) e um cadastro de mentira com a
+// SLEEP de verdade. Meta de EXEMPLO 198.740 (nunca a do PPCP) e META UEP 2.761.
+// Esperados calculados FORA do painel (python), não pela função.
+console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a produto ──');
+{
+  ['ESTEIRA_VAO_PADRAO', 'REG_LINHAS', 'REG_ESCALA', '_REG_SIT', 'REG_PERS'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
+  ['function _capProdutos(', 'function _capDia(', 'function _regMontar(', 'function _regLinhasVer(', 'function _regHtml(']
+    .forEach(f => eval.call(global, pegaJs(f)));
+  const C = (codigo, desc, uep, pontos, medida, entre) => ({ codigo, desc, cor: 'BRANCO', uep, pontos, medida, velocidade: medida ? 9 : 0, entrePeca: entre });
+  const CAT = _capProdutos([
+    C('501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 0.83, 28.3591, 825, 250),   // a de verdade: vão medido
+    C('501061001', 'VOL 1/1 PENTEADEIRA TESTE CHEGA', 4.01, 470.3, 900, 650),
+    C('501070001', 'VOL 1/1 HOME TESTE ACIMA', 2, 140, 900, 650),               // só acima da meta de UEP
+    C('501090001', 'VOL 1/1 MESA TESTE LIMITE', 0.5, 30, 1000, 650),            // a UEP promete mais que a esteira
+    C('501091001', 'VOL 1/1 MESA TESTE SEM MEDIDA', 1, 50, 0, 0),
+    C('501092001', 'VOL 1/1 MESA TESTE SEM UEP', 0, 50, 900, 650)]);
+  const PROD = { '501094|MESA CABECEIRA SLEEP': 5474, '501061|PENTEADEIRA TESTE CHEGA': 1241, '501070|HOME TESTE ACIMA': 588, '501999|FORA DO CADASTRO': 100 };
+  const D = _regMontar(RM, CAT, PROD, 198740, 2761);
+  ok('o mix dos 20 dias: 70,0 pontos por UEP (Σ pontos ÷ Σ UEP nos mesmos dias) → batendo a meta de UEP, 193.251 pontos',
+     [Math.round(D.mix.ppu * 10) / 10, Math.round(D.mix.ptsNaMeta), D.mix.nDias], [70.0, 193251, 20]);
+  ok('a meta pede 72 pontos por UEP; para chegar com este mix, 2.839 UEP/dia = 102,8% da meta de UEP',
+     [Math.round(D.need * 10) / 10, Math.round(D.mix.uepPara), Math.round(D.mix.pctUepPara * 10) / 10], [72.0, 2839, 102.8]);
+  ok('dias na meta: UEP 16 (a meta GRAVADA de cada dia: 2.530 e, de 27/10, 2.761), pontos 9', [D.mix.diasUep, D.mix.diasPts], [16, 9]);
+  const L = k => D.linhas.find(l => l.chave.startsWith(k));
+  // pontos do produto com 2 casas (_capProdutos): 28,36 × 3.326 e × 4.412
+  ok('a SLEEP sozinha o dia inteiro: 3.326 por dia batendo a meta de UEP, 4.412 no limite — NÃO CHEGA nem no limite (vão medido, sem *)',
+     [L('501094').porDia, L('501094').tetoDia, Math.round(L('501094').ptsMeta), Math.round(L('501094').ptsTeto), L('501094').sit, L('501094').vaoPadrao], [3326, 4412, 94325, 125124, 'nao', false]);
+  ok('as quatro situações e o limite que corta a UEP',
+     ['501061', '501070', '501090', '501091'].map(k => [L(k).sit, L(k).limitado, L(k).vaoPadrao]),
+     [['chega', false, true], ['acima', false, true], ['nao', true, true], ['sem-limite', false, false]]);
+  ok('quem não tem UEP ou pontos fica fora da tabela e é contado; caixas de produto fora da tabela também',
+     [D.nCad, D.semUep, D.nChega, D.cxTot, D.cxFora, D.cxBase, D.cxAbaixo], [5, 1, 1, 7403, 100, 7303, 5474 + 588]);
+  ok('sem a meta: nada é julgado (sem situação, sem "precisa"), os pontos por dia continuam',
+     (() => { const d = _regMontar(RPH, CAT, PROD, null, 2761); return [d.need, d.mix.diasPts, d.mix.uepPara, d.linhas.every(l => l.sit === null), Math.round(L('501094').ptsMeta)]; })(),
+     [null, null, null, true, 94325]);
+  ok('pontos gravados (Apps Script antes da v5.41): o mix não é medido — a troca de tabela viraria mix',
+     _regMontar(RMG, CAT, PROD, 198740, 2761).mix.ppu, null);
+  ok('sem o cadastro: semCad, linhas vazias; sem a leitura dos pontos: os dias da UEP continuam contados',
+     (() => { const d = _regMontar(RM, null, PROD, 198740, 2761), r0 = _cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' });
+              return [d.semCad, d.linhas.length, _regMontar(r0, CAT, null, 198740, 2761).mix.diasUep]; })(), [true, 0, 16]);
+  const V1 = _regLinhasVer(D, 'rodaram', false), V2 = _regLinhasVer(D, 'cadastro', false);
+  ok('RODARAM: só quem teve caixa, mais caixas primeiro; CADASTRO: todos, menos pontos por UEP primeiro (lista nova)',
+     [V1.linhas.map(l => l.modelo), V1.total, V2.linhas.map(l => l.modelo), D.linhas.map(l => l.modelo).join() === CAT.filter(p => p.uepJogo > 0 && p.ptsJogo > 0).map(p => p.modelo).join()],
+     [['501094', '501061', '501070'], 3, ['501094', '501091', '501090', '501070', '501061'], true]);
+  const HR = _regHtml(RM, D, { n: 30, svgW: 1200, filtro: 'cadastro', todos: false, ptsFalha: '', origem: 'planilha' });
+  ok('o desenho: a régua da meta, os quatro cartões, a situação com o * do vão padrão e o ⚠ do limite',
+     ['72 PONTOS POR UEP', 'MIX DOS 20 DIAS', 'UEP 16 · PONTOS 9', '2.839 UEP', 'NÃO CHEGA NEM NO LIMITE*', 'NÃO CHEGA NEM NO LIMITE</span>', 'SÓ ACIMA DA META DE UEP',
+      'CHEGA NA META DE UEP', 'SEM LIMITE NO CADASTRO', '2.874 ⚠', 'A <b>UEP</b> é a régua que menos varia', 'Sem vantagem para a UEP:', 'class="cxu-svg"'].filter(t => !HR.includes(t)), []);
+  ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
+  const HS = _regHtml(RPH, _regMontar(RPH, CAT, PROD, null, 2761), { n: 30, svgW: 1200, filtro: 'rodaram', todos: false });
+  ok('sem meta: diz onde configurar, sem coluna de situação nem % da meta',
+     [HS.includes('META DE PONTOS NÃO CONFIGURADA'), HS.includes('SITUAÇÃO'), HS.includes('% DA META'), HS.includes('reg-alerta')], [true, false, false, false]);
+  ok('meta só deste computador: a tela pede para salvar no ⚙',
+     _regHtml(RM, D, { n: 30, svgW: 1200, filtro: 'rodaram', origem: 'computador' }).includes('salve no ⚙ para valer em todos'), true);
+  ok('o desenho não faz conta (tudo vem do _regMontar e do _cxUepMontar)',
+     /_capDia\(|_cxUepMontar\(|_regMontar\(|_qpOscilacao\(|uepDiaMeta\(/.test(pegaJs('function _regHtml(')), false);
+  ok('o valor da meta não mora no código da aba', /\b\d{6,}\b|\b\d{2,3}\.\d{3}\b/.test(['function _regMontar(', 'function _regHtml(', 'async function renderReguas(', 'function _regPintar('].map(pegaJs).join('')), false);
+  const RR = pegaJs('async function renderReguas('), RPI = pegaJs('function _regPintar(');
+  ok('leituras em SEQUÊNCIA (histórico → pontos do período → cadastro) e o pedido do meio não é engolido',
+     [RR.indexOf('_uepAbaHistCarregar()') < RR.indexOf('_cxuPtsLer(') && RR.indexOf('_cxuPtsLer(') < RR.indexOf('_capBuscar()'),
+      /if\(REG_RODANDO\)\{ REG_PEND = \{ n, forcar:/.test(RR), /if\(p && \(p\.n !== REG_DADOS\.n \|\| p\.forcar\)\) renderReguas\(p\.forcar\);/.test(RR)], [true, true, true]);
+  ok('a tela lê a meta do ⚙ (_metaPtsDia) e a META UEP da config; o gráfico na largura do cartão',
+     [/meta = _metaPtsDia\(\)/.test(RPI), /Number\(PONTOS_DIA\.metaUep\) > 0/.test(RPI), /svgW:_svgLargura\(el\)/.test(RPI)], [true, true, true]);
+  const ST = pegaJs('function setTab(');
+  ok('a aba: botão, seção, o setTab e o 🖨 com os dias da tela', [/data-tab="reguas" onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS</.test(html), html.includes('<section id="sec-reguas" class="sec">'),
+     /if\(tab==='reguas'\)\{ _regPintar\(\); renderReguas\(\); \}/.test(ST), /onclick="gerarRelatorioCxUep\(_regN\(\)\)"/.test(html)], [true, true, true, true]);
+  ok('o gráfico na tela escura: as cores do papel trocadas por token no #sec-reguas', /#sec-reguas\{--cxu-banda:#1B2D44;[^}]*--cxu-cx:#4f95e8\}/.test(html), true);
+  ok('o 🖨 aceita os dias da tela (sem eles, os 30 de sempre)', [/async function gerarRelatorioCxUep\(n\)\{\n  const N = Number\(n\) > 0 \? Number\(n\) : CXU_DIAS;/.test(JS), /_cxuJanela\(hojeNum, N\)/.test(GR), /_cxUepMontar\(UEP_HIST, hojeNum, N, P\)/.test(GR)], [true, true, true]);
+  ok('a META DE PONTOS no ⚙: campo, só envia quando mudou (uma vez), e a rede deste computador',
+     [/id="c-meta-pts"/.test(html), /_metaPtsNova=\(v>0&&v!==atual\)\?v:null;/.test(pegaJs('function saveCfg(')),
+      /if\(_metaPtsNova\)\{ params\.push\('metaPts='\+_metaPtsNova\); _metaPtsNova=null; \}/.test(pegaJs('function enviarConfigPainel(')),
+      /localStorage\.setItem\(CAP_PTS_LS, String\(v\)\)/.test(pegaJs('function saveCfg(')), /metaPts: \(json\.painelConfig\|\|\{\}\)\.metaPts/.test(JS)], [true, true, true, true, true]);
+}
 }
 
 // ════════════════════════════════════════════════════════════════════════════
