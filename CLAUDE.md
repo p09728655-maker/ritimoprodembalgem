@@ -43,7 +43,9 @@ via Google Apps Script (JSONP).
   rótulos nas quatro caixas medidas, as linhas e o encaixe):
   `node tela-uep.test.js`.
 - `uep-relatorios.test.js` — 🖨 FILA DE CRONOANÁLISE e 🖨 CAIXAS × PONTOS × UEP
-  da aba ⚖ UEP (as três réguas nos 20 dias reais de 29/09–28/10/2026): motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
+  (as três réguas nos 20 dias reais de 29/09–28/10/2026; v7.188.0: as quatro
+  páginas, o atingimento e os dias na meta, a referência de UEP de cada data e
+  o que investigar): motivos, ordem e janela da fila; e os 18 dias reais de 21/09 a 16/10
   (5 discordâncias, todas pela meta em caixas alta); e o ⏱ CRONOANÁLISE → UEP
   (Armário Encanto de 19/10: 27,8 s → 2,22), mais a regra da troca por
   amostra, o ✓ TROCAR A UEP, as PRONTAS, a CONFERÊNCIA DAS TROCAS, a paridade
@@ -748,7 +750,8 @@ via Google Apps Script (JSONP).
   papel diz por quê. Diretoria e semana continuam com os gravados (passado
   congelado). O guarda do `pontos.test.js` deixa o `cx × (prod.pontos` no
   período só nas linhas do `pontosCad`.
-- **O PAPEL SÃO TRÊS FOLHAS, uma pergunta cada** (v7.185.0, PPCP: *"impressão
+- ~~**O PAPEL SÃO TRÊS FOLHAS**~~ — **hoje são QUATRO PÁGINAS** (v7.188.0, ver
+  *O RELATÓRIO EM QUATRO PÁGINAS*). Registro da v7.185.0 (PPCP: *"impressão
   limpa, fácil de entender, com clareza dos fatos"*):
   1. **qual régua mede o esforço**: frase (do dado, com o artigo certo: *A UEP
      é* / *Os PONTOS são* / *As CAIXAS são*), três cartões e o gráfico;
@@ -764,7 +767,8 @@ via Google Apps Script (JSONP).
   - Cores das séries validadas no papel branco (`CXU_COR`: UEP laranja, CAIXAS
     azul, PONTOS verde-água; cada faixa tem o nome, então a cor não é a única
     identidade).
-  - Medido no Chromium com as fontes: A4 deitada, **3 folhas** com e sem a meta,
+  - ~~Medido no Chromium com as fontes: A4 deitada, **3 folhas**~~ (ver a
+    correção de medida da v7.188.0) com e sem a meta,
     nada cortado. A folha 3 só fecha com o `padding:3px` do anexo: mexeu nela,
     medir de novo.
 
@@ -785,8 +789,9 @@ via Google Apps Script (JSONP).
      pontos julga o MIX (o que foi programado); quem julga a linha é a UEP.**
   3. **PRODUTO A PRODUTO** — cada produto sozinho na linha o dia inteiro:
      batendo a meta de UEP (`_capDia`, a conta do simulador de capacidade) e no
-     LIMITE DA ESTEIRA sem nenhuma parada. Situação: CHEGA NA META DE UEP · SÓ
-     ACIMA DA META DE UEP · NÃO CHEGA NEM NO LIMITE · SEM LIMITE NO CADASTRO.
+     LIMITE DA ESTEIRA sem nenhuma parada. Situação (desde a v7.188.0, com a
+     referência): CHEGA NA REFERÊNCIA · SÓ ACIMA DA REFERÊNCIA · NÃO CHEGA NEM
+     NO LIMITE · SEM LIMITE NO CADASTRO.
      Filtro RODARAM NO PERÍODO (mais caixas primeiro) / CADASTRO INTEIRO (menos
      pontos por UEP primeiro), 15 linhas + VER TODOS.
 - **Medido (29/09–28/10/2026, cadastro de 29/10, META UEP 2.761)**: mix de **70
@@ -818,8 +823,8 @@ via Google Apps Script (JSONP).
   prende) · **leitura** `renderReguas`/`_regPintar`. O gráfico é o do papel com
   as cores por token (`var(--cxu-*, cor do papel)`); `#sec-reguas` define a
   paleta escura (CAIXAS `#4f95e8`, 5,4:1 no fundo — o `#2a78d6` do papel dava
-  3,8). O 🖨 da aba é o relatório de três folhas com os dias da tela
-  (`gerarRelatorioCxUep(n)`).
+  3,8). O 🖨 da aba é o relatório (quatro páginas desde a v7.188.0) com os
+  dias da tela (`gerarRelatorioCxUep(n)`).
 - Medido no Chromium com os dados reais: 1920 e 1366, com e sem meta — nada
   passa da largura (a tabela rola dentro do cartão se faltar espaço).
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, a meta digitada no ⚙
@@ -835,9 +840,71 @@ via Google Apps Script (JSONP).
   sem filtro nem botão, os `REG_LINHAS` que mais rodaram + uma linha com o
   resto). O `_cxUepHtml` os põe numa folha própria depois da régua (`ctx.D`, do
   `_regMontar`; sem ele, o papel antigo). Pele `.reg-*` no `_CXU_DOC_SKIN`. A
-  impressão lê o cadastro depois dos pontos. Medido no Chromium com as fontes
-  (baixadas do npm `@fontsource`, o Google Fonts não carrega pelo proxy):
-  **4 folhas**, a tabela cabe na A4 deitada com e sem a meta.
+  impressão lê o cadastro depois dos pontos. ~~Medido no Chromium com as
+  fontes: **4 folhas**, a tabela cabe na A4 deitada~~ — **ERRADO**: a tabela
+  tinha 1.146 px numa folha de 1.032 e o Chromium encolhia o relatório inteiro
+  (~90%) para caber. Ver a correção na v7.188.0.
+- **Volumes em COLUNA (VOL.), nunca colados no nome** (v7.187.2, PPCP:
+  *"alinha essa inf de volumes"*) — a mesma lição do UEP/CX do comparativo:
+  cada nome tem um comprimento e o número ficava numa altura diferente.
+
+## O RELATÓRIO EM QUATRO PÁGINAS — e a UEP como REFERÊNCIA (v7.188.0)
+- PPCP, 29/10/2026, prompt *"MELHORIA DO RELATÓRIO CAIXAS × PONTOS × UEP"*:
+  quatro páginas, sem mudar dado nem cálculo, *"preserve o que já funciona"*.
+  `_cxUepHtml` é o despachante; as páginas, numa ordem só:
+  1. **RESUMO GERENCIAL** — a frase (`_cxuTese`), `_cxuResumoHtml` (uma linha
+     por régua: realizado/dia · meta ou referência/dia · ATINGIMENTO · DIAS NA
+     META · variação · depois da trava; a linha da régua que menos varia vai
+     destacada), o gráfico a 640 px e, ao lado, `_cxuRefHtml` (o aviso da
+     referência) + `_cxuConclusoes` (prova sem vantagem, vereditos diferentes,
+     meta de pontos × mix, produtos que chegam — cada uma aponta a página);
+  2. **CAPACIDADE POR PRODUTO** — título `_cxuCapTese` + os blocos da aba
+     (`_regMixHtml`/`_regProdHtml`, no papel como subtítulos `.cxu-sub` pelo
+     `_regTit`). No papel o mix tem 3 cartões: os DIAS NA META estão na pág. 1;
+  3. **ANÁLISE DOS DESVIOS** — só os dias que discordam; cada célula com o selo,
+     o % e *realizado de meta* da DATA (`.cxu-rm`); o porquê em DUAS colunas
+     (caixas × UEP · pontos × UEP), uma linha cada; `_cxuDecidir` = A INVESTIGAR
+     OU DECIDIR (só o que o dado sustenta: datação da programação com o pior %,
+     meta em caixas fácil, meta de pontos × mix, UEP acima da esteira e vão não
+     medido nos que rodaram, e a decisão da referência — sempre);
+  4. **DADOS E CRITÉRIOS** — a tabela dos dias com cabeçalho de grupo (CAIXAS ·
+     META DA PROGRAMAÇÃO · UEP · REFERÊNCIA DA DATA · PONTOS · META DO ⚙), ao lado
+     (`float`, `.cxu-p4-lado`) o histórico da referência e as limitações, e o
+     COMO O NÚMERO SAI na largura toda.
+  - O título de cada página é a conclusão (a frase grande `.cxu-tese` logo
+    abaixo do rótulo `rp-sec-ttl`), sempre saída do dado.
+  - **Conta nova, no `_cxUepMontar`** (o desenho só lê): por régua
+    `metaMedia`, `pctMeta` (Σ realizado ÷ Σ metas dos MESMOS dias — nunca média
+    de %) e `diasMeta` (realizado ≥ meta; o selo da TV é outra régua, 96%);
+    `refUep` (trechos seguidos da META UEP gravada, com o motivo) e
+    `cxAbaixoMetaMax`. O `_regMontar` lê os dias na meta daqui (uma conta só) e
+    ganhou `nRodChega`/`nRodNao`/`nRodLim`/`nRodVao` (só quem rodou).
+  - Medido (20 dias reais, 29/09–28/10, meta de exemplo 198.740): caixas 93,4%
+    (10 dias), UEP 109,3% (16), pontos 98,3% (9); referência 2.530 em 18 dias e
+    2.761 em 2. Conferido fora do painel (python). O teste prende.
+- **A UEP é REFERÊNCIA, não meta** (PPCP: a referência passou de 2.530 para
+  2.761 *"porque o desempenho médio da linha melhorou"*, e a UEP **ainda não é a
+  meta oficial da embalagem**). No relatório e na aba 📏 RÉGUAS ela se chama
+  *referência de UEP*, cada dia é julgado contra a da SUA data e o passado não
+  é regravado. `UEP_REF_STATUS` (o texto do status) e `UEP_REF_MOTIVO` (data da
+  troca → motivo; casa com a data ENTRE o fim do trecho anterior e o começo do
+  novo, então troca no fim de semana vale para a segunda) — sem motivo, o papel
+  diz *"motivo não registrado"*. Adotada como meta oficial: mudar o status.
+  - ⚠ **O resto do painel ainda diz META**: ⚙ META DIA (UEP), card UEP DO DIA,
+    aba ⚖ UEP, Telas F/G, PRÓXIMOS DIAS. Mudar lá é decisão do PPCP (UM NOME
+    POR INDICADOR); não foi feito. O COMO O NÚMERO SAI liga os nomes (*a
+    referência = o campo META DIA (UEP) do ⚙*).
+- ⚠ **CORREÇÃO DE MEDIDA**: na v7.187.1/7.187.2 a tabela do produto a produto
+  tinha 1.146 px numa folha útil de 1.032 (A4 deitada, `@page` 10/12 mm), e o
+  Chromium **encolhia o relatório inteiro (~90%)** para caber. A medição daquela
+  versão olhou a largura na TELA (viewport 1123, mídia de tela) e disse que
+  cabia. **Medir papel = mídia de impressão (`emulateMedia({media:'print'})`) na
+  largura útil da folha (1.032 × 718 px deitada)**, e conferir a altura de cada
+  página pela posição dos `rp-sec-ttl`. Na v7.188.0 a tabela cabe em 100%
+  (cabeçalhos de grupo em duas linhas, letter-spacing .6), e são 4 folhas com e
+  sem meta (pág. 1 682 px · 2 ~708 · 3 ~702 · 4 ~708 — perto do limite: texto
+  novo, medir de novo). Com 60 dias a tabela dos dados continua na folha
+  seguinte (o lado fica na 4).
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:

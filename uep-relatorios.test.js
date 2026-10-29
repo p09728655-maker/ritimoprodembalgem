@@ -46,12 +46,13 @@ global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 ['UEP_MIN_DIAS', 'UEP_BASE', 'UEP_TRAVADA_DESDE', 'APP_NOME', 'APP_NOME_CX', 'GPX_DIAS',
  'FILA_FAM_RAZAO', 'FILA_TETO_FOLGA', 'FILA_MAX_SEM', 'FILA_MOTIVOS', 'FILA_AMOSTRA_DE',
- 'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br', 'CXU_FORA_MIN', 'CXU_COR', 'DIR_COB_MIN']
+ 'CXU_DIAS', 'CXU_FOLGA', '_CXU_PORQUE', '_filaN2br', 'CXU_FORA_MIN', 'CXU_COR', 'DIR_COB_MIN', 'UEP_REF_STATUS', 'UEP_REF_MOTIVO']
   .forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 ['function _uepEhBase(', 'function _taktUep(', 'function _taktTxt(', 'function _rpEsc(', 'function _cartNum(', 'function _qpRealDia(', 'function _capVol(', 'function _capNome(',
  'function _cartQtdAberta(', 'function _tvF2(', 'function _filaUteis(', 'function _filaAmostraDeItens(',
  'function _filaCronoMontar(', 'function _filaCronoHtml(', 'function _qpOscilacao(', 'function _cxuJanela(', 'function _cxuPtsDoPeriodo(',
- 'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxuTese(', 'function _cxuProva(', 'function _cxUepHtml(', 'function _cxuCxPorProduto(']
+ 'function _cxUepMontar(', 'function _cxuSvg(', 'function _cxuTese(', 'function _cxuProva(', 'function _cxUepHtml(', 'function _cxuCxPorProduto(',
+ 'function _cxuResumoHtml(', 'function _cxuRefTrechos(', 'function _cxuRefHtml(', 'function _cxuConclusoes(', 'function _cxuCapTese(', 'function _cxuDecidir(']
   .forEach(f => eval.call(global, pegaJs(f)));
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -188,8 +189,8 @@ console.log('\n── CAIXAS × UEP: o desenho ──');
 const HC = _cxUepHtml(R, { data: '19/10/2026', hora: '08:00' });
 ok('o veredito usa as palavras do selo (slRitmo) e a leitura diz de onde veio a divergência',
    [HC.includes('ABAIXO DO RITMO'), HC.includes('O vermelho veio da META (da programação), não do ritmo da linha')], [true, true]);
-ok('o motivo da divergência sai EM NÚMERO (16/10: a meta em caixas pedia 146,8% da meta de UEP)',
-   HC.includes(_CXU_PORQUE['meta-alta'] + ' — pedia 146,8% da meta de UEP'), true);
+ok('o motivo da divergência sai EM NÚMERO (16/10: a meta em caixas pedia 146,8% da referência de UEP)',
+   HC.includes(_CXU_PORQUE['meta-alta'] + ' · pedia 146,8%'), true);
 ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxUepHtml(')), false);
 // v7.187.1: a mesma impressão estava nas duas abas — o 🖨 CAIXAS × PONTOS × UEP
 // ficou só na 📏 RÉGUAS; a ⚖ UEP tem o caminho até ela.
@@ -266,9 +267,10 @@ ok('dia sem item no período: pontos null (não zero) e fora da base das três r
 
 console.log('\n── CAIXAS × PONTOS × UEP: o desenho ──');
 const HP = _cxUepHtml(RP, { data: '29/10/2026', hora: '08:00' }), HM = _cxUepHtml(RM, { data: '29/10/2026', hora: '08:00' });
-ok('três folhas: o argumento abre, o veredito depois, o anexo por último',
-   [HP.indexOf('1 ▸ QUAL RÉGUA MEDE') < HP.indexOf('2 ▸ QUANDO O VEREDITO'), HP.indexOf('2 ▸ QUANDO O VEREDITO') < HP.indexOf('ANEXO ▸ OS 20 DIAS'),
-    (HP.match(/cxu-quebra/g) || []).length], [true, true, 2]);
+ok('sem a capacidade (sem o D): resumo, desvios e dados, cada um em folha nova',
+   [HP.indexOf('1 ▸ RESUMO GERENCIAL') > 0, HP.indexOf('1 ▸ RESUMO GERENCIAL') < HP.indexOf('2 ▸ ANÁLISE DOS DESVIOS'), HP.indexOf('2 ▸ ANÁLISE DOS DESVIOS') < HP.indexOf('3 ▸ DADOS E CRITÉRIOS'),
+    (HP.match(/cxu-quebra/g) || []).length], [true, true, true, 2]);
+ok('sem a capacidade, as conclusões apontam os desvios na página 2 (não na 3)', [HP.includes('referência de UEP — página 2.'), HP.includes('página 3')], [true, false]);
 ok('a frase sai do dado: a que menos variou, e as outras duas com o número',
    HP.includes('A <b>UEP</b> é a régua que menos varia de um dia para o outro: <b>±10,4%</b>, contra ±18,5% dos pontos e ±26,9% das caixas.'), true);
 ok('a prova sem vantagem: os dias depois da trava, com os números', HP.includes('<b>Sem vantagem para a UEP:</b>') && HP.includes('UEP <b>±10,5%</b> · PONTOS <b>±16,1%</b> · CAIXAS <b>±22,4%</b>'), true);
@@ -277,9 +279,10 @@ ok('a frase segue o dado (se as caixas variassem menos, diria isso)', (() => {
   return _cxUepHtml(r, { data: '29/10/2026', hora: '08:00' }).includes('As <b>CAIXAS</b> são a régua que menos varia');
 })(), true);
 ok('frase de leitura em fonte de texto (Barlow), não na mono pequena das notas', [/class="rp-note"/.test(HP), /\.cxu-doc \.cxu-txt\{font-family:'Barlow'/.test(JS)], [false, true]);
-ok('sem meta: coluna PONTOS no anexo, sem EM PONTOS, e a nota diz onde se digita a meta',
-   [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está nas configurações (⚙ META DE PONTOS / DIA)')], [true, false, true]);
-ok('com meta: EM PONTOS e o motivo dos pontos na tabela', [HM.includes('<th>EM PONTOS</th>'), HM.includes(_CXU_PORQUE['pts-barato'])], [true, true]);
+ok('sem meta: PONTOS nos dados (sem %), sem EM PONTOS, e a nota diz onde se digita a meta',
+   [HP.includes('class="gr">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está nas configurações (⚙ META DE PONTOS / DIA)')], [true, false, true]);
+ok('com meta: EM PONTOS, a coluna do motivo dos pontos e a meta no cabeçalho dos dados',
+   [HM.includes('<th>EM PONTOS<i>'), HM.includes('<th>PONTOS × UEP · POR QUE<i>'), HM.includes(_CXU_PORQUE['pts-barato'] + ' · daria '), HM.includes('class="gr">PONTOS · META 198.740 (⚙)</th>')], [true, true, true, true]);
 ok('o papel diz a tabela: na de hoje, e a nota quando a meta não pode julgar',
    [HM.includes('pontos na tabela de pontos de hoje'), HM.includes('cadastro de HOJE (a tabela da meta)'),
     _cxUepHtml(RMG, { data: '29/10/2026', hora: '08:00' }).includes('ainda não manda os pontos na tabela de hoje (.gs v5.41)'),
@@ -287,7 +290,7 @@ ok('o papel diz a tabela: na de hoje, e a nota quando a meta não pode julgar',
 ok('a leitura pede os pontos na tabela de hoje', /lerProducaoModeloPeriodo\(J\.de, J\.ate, null, \{ ptsCad:true \}\)/.test(pegaJs('async function _cxuPtsLer(')), true);
 ok('sem pontos: nem a coluna, e a linha da régua diz por quê',
    (() => { const h = _cxUepHtml(_cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' }), { data: '29/10/2026', hora: '08:00', ptsFalha: 'pontos não lidos — o Apps Script não respondeu' });
-            return [h.includes('<th class="n">PONTOS</th>'), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ QUAL RÉGUA MEDE')]; })(), [false, true, true]);
+            return [h.includes('class="gr">PONTOS'), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ RESUMO GERENCIAL')]; })(), [false, true, true]);
 const SV = _cxuSvg(RP);
 ok('o gráfico: uma faixa por régua na MESMA escala, a trava atravessando, o nome e a variação de cada uma',
    [(SV.match(/<polyline/g) || []).length, (SV.match(/fill="var\(--cxu-banda,#eef1f4\)"/g) || []).length, SV.includes('UEP TRAVADA 16/10'), HP.includes('100 = a média do período'),
@@ -367,8 +370,13 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
      [['501094', '501061', '501070'], 3, ['501094', '501091', '501090', '501070', '501061'], true]);
   const HR = _regHtml(RM, D, { n: 30, svgW: 1200, filtro: 'cadastro', todos: false, ptsFalha: '', origem: 'planilha' });
   ok('o desenho: a régua da meta, os quatro cartões, a situação com o * do vão padrão e o ⚠ do limite',
-     ['72 PONTOS POR UEP', 'MIX DOS 20 DIAS', 'UEP 16 · PONTOS 9', '2.839 UEP', 'NÃO CHEGA NEM NO LIMITE*', 'NÃO CHEGA NEM NO LIMITE</span>', 'SÓ ACIMA DA META DE UEP',
-      'CHEGA NA META DE UEP', 'SEM LIMITE NO CADASTRO', '2.874 ⚠', 'A <b>UEP</b> é a régua que menos varia', 'Sem vantagem para a UEP:', 'class="cxu-svg"'].filter(t => !HR.includes(t)), []);
+     ['72 PONTOS POR UEP', 'MIX DOS 20 DIAS', 'UEP 16 · PONTOS 9', '2.839 UEP', 'NÃO CHEGA NEM NO LIMITE*', 'NÃO CHEGA NEM NO LIMITE</span>', 'SÓ ACIMA DA REFERÊNCIA',
+      'CHEGA NA REFERÊNCIA</span>', 'SEM LIMITE NO CADASTRO', '2.874 ⚠', 'A <b>UEP</b> é a régua que menos varia', 'Sem vantagem para a UEP:', 'class="cxu-svg"'].filter(t => !HR.includes(t)), []);
+  // v7.187.2 (PPCP: "alinha essa inf de volumes"): os volumes numa coluna, nunca colados no nome
+  ok('VOL. é coluna própria, centrada, logo depois do PRODUTO; o nome sai sozinho',
+     [/<th class="l" rowspan="2">PRODUTO<\/th><th class="vol" rowspan="2">VOL\.<\/th>/.test(HR), /vol\.<\/span>/.test(HR), HR.includes('MESA CABECEIRA SLEEP</td><td class="n vol">1</td>'),
+      /#sec-reguas \.reg-tab th\.vol,#sec-reguas \.reg-tab td\.vol\{text-align:center\}/.test(html), /\.cxu-doc \.reg-tab th\.vol,\.cxu-doc \.reg-tab td\.vol\{text-align:center\}/.test(JS)],
+     [true, false, true, true, true]);
   ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red r reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
   const HS = _regHtml(RPH, _regMontar(RPH, CAT, PROD, null, 2761), { n: 30, svgW: 1200, filtro: 'rodaram', todos: false });
   ok('sem meta: diz onde configurar, sem coluna de situação nem % da meta',
@@ -391,22 +399,92 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   // v7.187.1 (PPCP, com a aba na mão: "essa não está na impressão"): o papel
   // leva a meta de pontos × mix e o produto a produto — o MESMO desenho da aba.
   const PAP = _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00', n: 30, D, origem: 'planilha' });
-  ok('o papel: 1 a régua · 2 a meta de pontos × mix · 3 produto a produto · 4 quando o veredito muda — nesta ordem, cada folha nova',
-     [['1 ▸ QUAL RÉGUA', '<div class="rp-sec-ttl cxu-quebra">2 ▸ A META DE PONTOS CABE NO MIX?', '3 ▸ PRODUTO A PRODUTO', '<div class="rp-sec-ttl cxu-quebra">4 ▸ QUANDO O VEREDITO MUDA', 'ANEXO ▸'].map(t => PAP.indexOf(t)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
-      PAP.includes('<div class="rp-sec-ttl">3 ▸ PRODUTO A PRODUTO')], [true, true]);
+  // v7.188.0 (prompt do PPCP): QUATRO PÁGINAS — resumo gerencial · capacidade
+  // por produto · análise dos desvios · dados e critérios — cada uma em folha nova
+  ok('o papel: 1 resumo · 2 capacidade (o mix e o produto a produto dentro) · 3 desvios · 4 dados — nesta ordem, cada folha nova',
+     [['1 ▸ RESUMO GERENCIAL', '<div class="rp-sec-ttl cxu-quebra">2 ▸ CAPACIDADE POR PRODUTO', '<div class="cxu-sub">A META DE PONTOS CABE NO MIX?', '<div class="cxu-sub">PRODUTO A PRODUTO',
+       '<div class="rp-sec-ttl cxu-quebra">3 ▸ ANÁLISE DOS DESVIOS', '<div class="rp-sec-ttl cxu-quebra">4 ▸ DADOS E CRITÉRIOS', 'class="rp-footer"'].map(t => PAP.indexOf(t)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
+      (PAP.match(/cxu-quebra/g) || []).length], [true, 3]);
   ok('no papel: a régua da meta, os cartões, a situação — e nenhum botão nem filtro (é papel)',
-     [['72 PONTOS POR UEP', 'quem julga a linha é a UEP', 'MIX DOS 20 DIAS', 'NÃO CHEGA NEM NO LIMITE', 'os 3 que mais rodaram nos 30 dias'].filter(t => !PAP.includes(t)), /onclick=|reg-chip|reg-mais/.test(PAP.split('2 ▸ A META')[1].split('4 ▸ QUANDO')[0])], [[], false]);
+     [['72 PONTOS POR UEP', 'quem julga a linha é a UEP', 'MIX DOS 20 DIAS', 'NÃO CHEGA NEM NO LIMITE', 'os 3 que mais rodaram nos 30 dias'].filter(t => !PAP.includes(t)), /onclick=|reg-chip|reg-mais/.test(PAP.split('2 ▸ CAPACIDADE')[1].split('3 ▸ ANÁLISE')[0])], [[], false]);
+  ok('no papel, os DIAS NA META ficam só no resumo da página 1: a capacidade tem três cartões (a tela, quatro)',
+     [PAP.includes('UEP 16 · PONTOS 9'), PAP.includes('<div class="kpi-grid c3 reg-mix">'), HR.includes('<div class="kpi-grid c4 reg-mix">')], [false, true, true]);
   ok('o produto a produto no papel: os 15 que mais rodaram e uma linha com o resto (caixas e %)',
      (() => { const L20 = Array.from({ length: 20 }, (_, i) => ({ chave: 'm' + i + '|P' + i, modelo: String(501100 + i), nome: 'P' + i, nVol: 1, ppu: 50, porDia: 1000, ptsMeta: 100000, pctMeta: 50, tetoDia: 1200, ptsTeto: 120000, sit: 'nao', cx: 100 + i }));
               const h = _regProdHtml({ metaPts: 198740, linhas: L20, cxBase: 2190, semUep: 0, cxFora: 0, temCx: true, nRod: 20, nCad: 20 }, { papel: true, n: 30 }, '3');
               return [(h.match(/<tr><td class="pr">/g) || []).length, h.includes('+ 5 produto(s) com 510 cx (23% das caixas da tabela).')]; })(), [15, true]);
   ok('sem o D (backend sem cadastro lido): o papel continua como era, sem a folha nova e com a numeração antiga',
-     [_cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('2 ▸ QUANDO O VEREDITO MUDA'), _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('A META DE PONTOS CABE')], [true, false]);
+     [_cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('2 ▸ ANÁLISE DOS DESVIOS'), _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('A META DE PONTOS CABE')], [true, false]);
   ok('a impressão lê o cadastro depois dos pontos (uma leitura de cada vez) e monta o D pelo _regMontar',
      [GR.indexOf('_cxuPtsLer(') < GR.indexOf('_capBuscar()'), /ctx\.D = _regMontar\(R, CAP_CAT, prod, P\.metaPts,/.test(GR)], [true, true]);
   ok('a pele do papel para os blocos da aba (escopada em .cxu-doc) e a cor da barra na impressão',
-     [/\.cxu-doc \.reg-mix\{grid-template-columns:repeat\(4,1fr\)/.test(JS), /\.cxu-doc \.reg-pb\{[^}]*print-color-adjust:exact/.test(JS), /\.cxu-doc \.reg-tab\{table-layout:auto/.test(JS)], [true, true, true]);
+     [/\.cxu-doc \.reg-mix\{grid-template-columns:repeat\(3,1fr\)/.test(JS), /\.cxu-doc \.reg-pb\{[^}]*print-color-adjust:exact/.test(JS), /\.cxu-doc \.reg-tab\{table-layout:auto/.test(JS)], [true, true, true]);
   ok('o 🖨 aceita os dias da tela (sem eles, os 30 de sempre)', [/async function gerarRelatorioCxUep\(n\)\{\n  const N = Number\(n\) > 0 \? Number\(n\) : CXU_DIAS;/.test(JS), /_cxuJanela\(hojeNum, N\)/.test(GR), /_cxUepMontar\(UEP_HIST, hojeNum, N, P\)/.test(GR)], [true, true, true]);
+  // ── v7.188.0: o RESUMO GERENCIAL, a REFERÊNCIA DE UEP e o que investigar ──
+  // Esperados calculados FORA do painel (python sobre os mesmos 20 dias reais):
+  // Σ realizado ÷ Σ metas dos dias, e dias com realizado ≥ meta.
+  const RG = RM.reguas, p1 = x => Math.round(x * 10) / 10;
+  ok('atingimento = Σ realizado ÷ Σ metas dos mesmos dias: caixas 93,4% (10 dias na meta, meta média 1.843), UEP 109,3% (16, referência média 2.553), pontos 98,3% (9, a meta de exemplo)',
+     [[p1(RG.cx.pctMeta), RG.cx.diasMeta, Math.round(RG.cx.metaMedia)], [p1(RG.uep.pctMeta), RG.uep.diasMeta, Math.round(RG.uep.metaMedia)], [p1(RG.pts.pctMeta), RG.pts.diasMeta, RG.pts.metaMedia]],
+     [[93.4, 10, 1843], [109.3, 16, 2553], [98.3, 9, 198740]]);
+  ok('sem meta de pontos: os pontos sem atingimento nem dias na meta (nunca 0)', [RPH.reguas.pts.pctMeta, RPH.reguas.pts.diasMeta, RPH.reguas.pts.metaMedia], [null, null, null]);
+  ok('o card do mix lê os dias na meta do _cxUepMontar (uma conta só)', [D.mix.diasUep === RG.uep.diasMeta, D.mix.diasPts === RG.pts.diasMeta, /G\.uep\.diasMeta/.test(pegaJs('function _regMontar('))], [true, true, true]);
+  ok('dia na meta é realizado ≥ meta: o dia que fecha EXATAMENTE na meta conta (caixas e UEP)', (() => {
+    const r = _cxUepMontar([DU('26/10', 1500, 1500, 0, 2530), DU('27/10', 1400, 1500, 0, 2529, 2530)], 20261029, 30);
+    return [r.reguas.cx.diasMeta, r.reguas.uep.diasMeta];
+  })(), [1, 1]);
+  ok('os que RODARAM contam só quem teve caixa no período (o cadastro inteiro fica no nChega)', (() => {
+    const d = _regMontar(RM, CAT, { '501094|MESA CABECEIRA SLEEP': 10 }, 198740, 2761);
+    return [d.nRod, d.nRodChega, d.nRodNao, d.nChega];
+  })(), [1, 0, 1, 1]);
+  ok('a REFERÊNCIA DE UEP de cada data, em trechos: 2.530 até 26/10 e 2.761 desde 27/10, com o motivo da troca',
+     RM.refUep.map(g => [g.valor, g.de.slice(0, 5), g.ate.slice(0, 5), g.n, g.motivo]),
+     [[2530, '29/09', '26/10', 18, null], [2761, '27/10', '28/10', 2, 'o desempenho médio da linha subiu']]);
+  ok('o motivo casa pela data da troca entre os dois trechos (troca no fim de semana vale para a segunda); sem registro → null', (() => {
+    const mot = global.UEP_REF_MOTIVO; global.UEP_REF_MOTIVO = { '24/10/2026': 'teste no sábado' };
+    const h = HOUT.map(d => Object.assign({}, d, _cartNum(d.data) >= 20261026 ? { metaUep: 2600 } : {}));
+    const a = _cxUepMontar(h, 20261029, 30, { pts: PH, tabela: 'hoje', metaPts: 198740 }).refUep.map(g => g.motivo);
+    global.UEP_REF_MOTIVO = {};
+    const b = _cxUepMontar(h, 20261029, 30, { pts: PH, tabela: 'hoje', metaPts: 198740 });
+    global.UEP_REF_MOTIVO = mot;
+    return [a, b.refUep.map(g => g.motivo), _cxUepHtml(b, { data: '29/10/2026', hora: '10:00' }).includes('motivo não registrado')];
+  })(), [[null, 'teste no sábado'], [null, null], true]);
+  ok('a meta em caixas mais alta entre os dias em que ela pedia mais que a referência: 179,0% (15/10)', [RM.cxAbaixoMeta, p1(RM.cxAbaixoMetaMax)], [8, 179.0]);
+  ok('página 1: o resumo das três réguas, linha por linha, com a coluna DEPOIS DA TRAVA',
+     ['93,4%', '10 de 20', '109,3%', '16 de 20', '98,3%', '9 de 20', 'DEPOIS DA TRAVA · 8 DIAS', 'média das referências · em avaliação', 'meta do ⚙ · tabela de hoje', '<tr class="cxu-min"><td class="rg"><b class="cxu-sw" style="background:#eb6834"></b>UEP']
+       .filter(t => !PAP.split('2 ▸ CAPACIDADE')[0].includes(t)), []);
+  ok('página 1: o aviso da referência — em avaliação, NÃO é a meta oficial — com os trechos e o motivo',
+     [PAP.includes('REFERÊNCIA DE UEP EM AVALIAÇÃO — AINDA NÃO É A META OFICIAL DA EMBALAGEM.</b> 2.530 até 26/10 · 2.761 desde 27/10 (o desempenho médio da linha subiu).'),
+      PAP.indexOf('cxu-ref') < PAP.indexOf('2 ▸ CAPACIDADE')], [true, true]);
+  ok('a UEP nunca é chamada de meta no papel nem na aba (é REFERÊNCIA)', [/meta de UEP|META DE UEP|META UEP/.test(PAP), /meta de UEP|META DE UEP|META UEP/i.test(HR)], [false, false]);
+  ok('página 1: as conclusões saem do dado e apontam a página que detalha',
+     ['<b>Sem vantagem para a UEP:</b>', '<b>Vereditos diferentes em 12 de 20 dias.</b> Nos 8 em que as caixas deram ABAIXO e a UEP NO RITMO, a meta em caixas pedia mais que a referência de UEP — página 3.',
+      '<b>A meta de pontos não cabe no mix.</b> O período rendeu 70 pontos por UEP e a meta pede 72: com a linha na referência de UEP todo dia, 97% da meta de pontos — página 2.',
+      '<b>Dos 3 produtos que rodaram, 1 chega à meta de pontos</b> na referência de UEP; 83% das caixas foram nos que não chegam — página 2.'].filter(t => !PAP.includes(t)), []);
+  ok('página 2: o título é a conclusão (os que rodaram: chegam e nem no limite)',
+     [_cxuCapTese(D), _cxuCapTese(_regMontar(RPH, CAT, PROD, null, 2761)).startsWith('O que cada produto rende'), _cxuCapTese({ semCad: true }).startsWith('O cadastro de produtos não foi lido')],
+     ['Dos <b>3</b> produtos que rodaram, <b>1</b> chega à meta de pontos na referência de UEP e <b>1</b> não chega nem no limite físico da esteira.', true, true]);
+  ok('página 2: capacidade estimada, limite físico e realizado com esses nomes, e capacidade não é produção garantida',
+     ['CAPACIDADE ESTIMADA<br>NA REFERÊNCIA DE UEP', 'LIMITE FÍSICO<br>ESTEIRA SEM PARADA', 'REALIZADO<br>CX · 30 DIAS', 'Nenhum dos dois é produção garantida'].filter(t => !PAP.includes(t)), []);
+  const P3 = PAP.split('3 ▸ ANÁLISE DOS DESVIOS')[1].split('4 ▸ DADOS')[0];
+  ok('página 3: 12 dias com veredito diferente (8 em caixas, 7 em pontos, juntos), cada dia contra a referência DA SUA DATA',
+     [P3.includes('Em <b>12 de 20</b> dias o veredito em caixas ou em pontos foi diferente do da UEP.'), (P3.match(/<tr><td>\d\d\/\d\d<\/td>/g) || []).length,
+      P3.includes('2.751 de 2.530'), P3.includes('2.869 de 2.761'), P3.includes('1.640 de 2.700')], [true, 12, true, true, true]);
+  ok('página 3: o que investigar ou decidir — só o que o dado sustenta, e a decisão da referência sempre',
+     ['Datação da programação.</b> Em 8 dia(s) a meta em caixas pedia mais que a referência de UEP (até 179,0%)', 'Meta de pontos × mix.', 'Referência de UEP.</b> Em avaliação — ainda não é a meta oficial da embalagem: decidir']
+       .map(t => P3.includes(t)).concat([P3.includes('UEP acima do limite da esteira.'), P3.includes('Vão não medido.')]), [true, true, true, false, false]);
+  ok('o que investigar: a UEP que passa da esteira e o vão não medido entram quando rodaram', (() => {
+    const h = _cxuDecidir({ cxAbaixoMeta: 0, uepAbaixoMeta: 2 }, { metaPts: null, mix: {}, nRodLim: 2, nRodVao: 3 });
+    return [h.includes('2 produto(s) que rodaram prometem'), h.includes('3 produto(s) que rodaram e não chegam nem no limite'), h.includes('Meta em caixas abaixo do esforço.</b> Em 2 dia(s)'), h.includes('Datação')];
+  })(), [true, true, true, false]);
+  const P4 = PAP.split('4 ▸ DADOS E CRITÉRIOS')[1];
+  ok('página 4: os dias com a meta (ou referência) de cada data, o histórico da referência, como o número sai e as limitações',
+     ['class="gr">CAIXAS · META DA PROGRAMAÇÃO</th>', 'class="gr">UEP · REFERÊNCIA DA DATA</th>', '<b>2.530</b> · 29/09 a 26/10 · 18 dias · vinha de antes do período',
+      '<b>2.761</b> · 27/10 a 28/10 · 2 dias · o desempenho médio da linha subiu', 'Status: em avaliação — ainda não é a meta oficial da embalagem.',
+      'LIMITAÇÕES DOS DADOS', 'METAS DE CADA DATA', 'ATINGIMENTO · SELO', 'CAPACIDADE · LIMITE FÍSICO', 'Capacidade não é produção garantida'].filter(t => !P4.includes(t)), []);
+  ok('os desenhos novos não fazem conta (tudo vem do _cxUepMontar e do _regMontar)',
+     ['function _cxuResumoHtml(', 'function _cxuRefTrechos(', 'function _cxuRefHtml(', 'function _cxuConclusoes(', 'function _cxuCapTese(', 'function _cxuDecidir(']
+       .filter(f => /_qpOscilacao\(|_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(|_capDia\(|_regMontar\(/.test(pegaJs(f))), []);
   ok('a META DE PONTOS no ⚙: campo, só envia quando mudou (uma vez), e a rede deste computador',
      [/id="c-meta-pts"/.test(html), /_metaPtsNova=\(v>0&&v!==atual\)\?v:null;/.test(pegaJs('function saveCfg(')),
       /if\(_metaPtsNova\)\{ params\.push\('metaPts='\+_metaPtsNova\); _metaPtsNova=null; \}/.test(pegaJs('function enviarConfigPainel(')),
