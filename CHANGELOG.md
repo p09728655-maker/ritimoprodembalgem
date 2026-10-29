@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.187.1 — 29/10/2026 · A impressão das RÉGUAS mostra o que a tela mostra
+
+- PPCP: *"impressão está nas duas agora, a mesma"*. O 🖨 CAIXAS × PONTOS × UEP
+  aparecia na aba ⚖ UEP e na 📏 RÉGUAS. Ficou só na 📏 RÉGUAS, que imprime com
+  os dias escolhidos na tela; na ⚖ UEP o botão virou **📏 RÉGUAS →**, que leva
+  até a aba.
+- PPCP, com a aba na mão: *"essa não está na impressão"*. O papel ganhou a
+  folha **2 ▸ A META DE PONTOS CABE NO MIX?** com **3 ▸ PRODUTO A PRODUTO**
+  (os 15 produtos que mais rodaram e uma linha com o resto), o mesmo desenho
+  da tela. Agora são **4 folhas**: régua · mix e produto · quando o veredito
+  muda · anexo. Medido no Chromium com as fontes, A4 deitada, com e sem meta.
+- **Atenção:** a numeração das seções do papel mudou (o "quando o veredito
+  muda" passou de 2 para 4). Nenhuma conta mudou.
+
 ## v7.187.0 + `.gs` v5.42 — 29/10/2026 · Aba 📏 RÉGUAS e a META DE PONTOS no ⚙ · ⚠ re-deploy
 
 - PPCP: *"régua pela UEP é a justa — não adianta querer produzir a meta de

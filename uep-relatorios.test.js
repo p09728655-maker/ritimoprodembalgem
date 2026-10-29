@@ -191,7 +191,11 @@ ok('o veredito usa as palavras do selo (slRitmo) e a leitura diz de onde veio a 
 ok('o motivo da divergência sai EM NÚMERO (16/10: a meta em caixas pedia 146,8% da meta de UEP)',
    HC.includes(_CXU_PORQUE['meta-alta'] + ' — pedia 146,8% da meta de UEP'), true);
 ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxUepHtml(')), false);
-ok('os dois botões na aba ⚖ UEP', [/onclick="gerarRelatorioFilaCrono\(\)"/.test(html), /onclick="gerarRelatorioCxUep\(\)"/.test(html)], [true, true]);
+// v7.187.1: a mesma impressão estava nas duas abas — o 🖨 CAIXAS × PONTOS × UEP
+// ficou só na 📏 RÉGUAS; a ⚖ UEP tem o caminho até ela.
+ok('a FILA na aba ⚖ UEP; o CAIXAS × PONTOS × UEP só na 📏 RÉGUAS (um botão no painel), com o caminho na ⚖ UEP',
+   [/onclick="gerarRelatorioFilaCrono\(\)"/.test(html), (html.match(/onclick="gerarRelatorioCxUep\(/g) || []).length,
+    /<section id="sec-uep"[\s\S]*?onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS →<[\s\S]*?<\/section>/.test(html)], [true, 1, true]);
 ok('cartão sem status não herda o vermelho do relatório de paradas',
    [/\.fila-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS), /\.cxu-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS)], [true, true]);
 
@@ -300,7 +304,7 @@ ok('leituras em SEQUÊNCIA (histórico → pontos), e a dos pontos devolve o PRE
    [GR.indexOf('_uepAbaHistCarregar()') < GR.indexOf('_cxuPtsLer('),
     /finally\{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; \}/.test(pegaJs('async function _cxuPtsLer('))], [true, true]);
 // v7.187.0 / .gs v5.42: a meta mora na CONFIG_PAINEL (⚙); sem ela, a deste computador.
-ok('a meta de pontos vem do _metaPtsDia (a do ⚙), nunca do código', [/P\.metaPts = _metaPtsDia\(\)\.v;/.test(GR), /\b\d{6,}\b|\b\d{2,3}\.\d{3}\b/.test(pegaJs('function _metaPtsDia('))], [true, false]);
+ok('a meta de pontos vem do _metaPtsDia (a do ⚙), nunca do código', [/const meta = _metaPtsDia\(\); P\.metaPts = meta\.v;/.test(GR), /\b\d{6,}\b|\b\d{2,3}\.\d{3}\b/.test(pegaJs('function _metaPtsDia('))], [true, false]);
 {
   eval.call(global, pegaJs('function _capPtsMetaLer(')); eval.call(global, pegaJs('function _metaPtsDia('));
   global.CAP_PTS_LS = 'rpe_cap_pts';
@@ -323,7 +327,7 @@ ok('a meta de pontos vem do _metaPtsDia (a do ⚙), nunca do código', [/P\.meta
 console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a produto ──');
 {
   ['ESTEIRA_VAO_PADRAO', 'REG_LINHAS', 'REG_ESCALA', '_REG_SIT', 'REG_PERS'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
-  ['function _capProdutos(', 'function _capDia(', 'function _regMontar(', 'function _regLinhasVer(', 'function _regHtml(']
+  ['function _capProdutos(', 'function _capDia(', 'function _regMontar(', 'function _regLinhasVer(', 'function _regHtml(', 'function _regTit(', 'function _regMixHtml(', 'function _regProdHtml(']
     .forEach(f => eval.call(global, pegaJs(f)));
   const C = (codigo, desc, uep, pontos, medida, entre) => ({ codigo, desc, cor: 'BRANCO', uep, pontos, medida, velocidade: medida ? 9 : 0, entrePeca: entre });
   const CAT = _capProdutos([
@@ -365,7 +369,7 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('o desenho: a régua da meta, os quatro cartões, a situação com o * do vão padrão e o ⚠ do limite',
      ['72 PONTOS POR UEP', 'MIX DOS 20 DIAS', 'UEP 16 · PONTOS 9', '2.839 UEP', 'NÃO CHEGA NEM NO LIMITE*', 'NÃO CHEGA NEM NO LIMITE</span>', 'SÓ ACIMA DA META DE UEP',
       'CHEGA NA META DE UEP', 'SEM LIMITE NO CADASTRO', '2.874 ⚠', 'A <b>UEP</b> é a régua que menos varia', 'Sem vantagem para a UEP:', 'class="cxu-svg"'].filter(t => !HR.includes(t)), []);
-  ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
+  ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red r reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
   const HS = _regHtml(RPH, _regMontar(RPH, CAT, PROD, null, 2761), { n: 30, svgW: 1200, filtro: 'rodaram', todos: false });
   ok('sem meta: diz onde configurar, sem coluna de situação nem % da meta',
      [HS.includes('META DE PONTOS NÃO CONFIGURADA'), HS.includes('SITUAÇÃO'), HS.includes('% DA META'), HS.includes('reg-alerta')], [true, false, false, false]);
@@ -384,6 +388,24 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('a aba: botão, seção, o setTab e o 🖨 com os dias da tela', [/data-tab="reguas" onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS</.test(html), html.includes('<section id="sec-reguas" class="sec">'),
      /if\(tab==='reguas'\)\{ _regPintar\(\); renderReguas\(\); \}/.test(ST), /onclick="gerarRelatorioCxUep\(_regN\(\)\)"/.test(html)], [true, true, true, true]);
   ok('o gráfico na tela escura: as cores do papel trocadas por token no #sec-reguas', /#sec-reguas\{--cxu-banda:#1B2D44;[^}]*--cxu-cx:#4f95e8\}/.test(html), true);
+  // v7.187.1 (PPCP, com a aba na mão: "essa não está na impressão"): o papel
+  // leva a meta de pontos × mix e o produto a produto — o MESMO desenho da aba.
+  const PAP = _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00', n: 30, D, origem: 'planilha' });
+  ok('o papel: 1 a régua · 2 a meta de pontos × mix · 3 produto a produto · 4 quando o veredito muda — nesta ordem, cada folha nova',
+     [['1 ▸ QUAL RÉGUA', '<div class="rp-sec-ttl cxu-quebra">2 ▸ A META DE PONTOS CABE NO MIX?', '3 ▸ PRODUTO A PRODUTO', '<div class="rp-sec-ttl cxu-quebra">4 ▸ QUANDO O VEREDITO MUDA', 'ANEXO ▸'].map(t => PAP.indexOf(t)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
+      PAP.includes('<div class="rp-sec-ttl">3 ▸ PRODUTO A PRODUTO')], [true, true]);
+  ok('no papel: a régua da meta, os cartões, a situação — e nenhum botão nem filtro (é papel)',
+     [['72 PONTOS POR UEP', 'quem julga a linha é a UEP', 'MIX DOS 20 DIAS', 'NÃO CHEGA NEM NO LIMITE', 'os 3 que mais rodaram nos 30 dias'].filter(t => !PAP.includes(t)), /onclick=|reg-chip|reg-mais/.test(PAP.split('2 ▸ A META')[1].split('4 ▸ QUANDO')[0])], [[], false]);
+  ok('o produto a produto no papel: os 15 que mais rodaram e uma linha com o resto (caixas e %)',
+     (() => { const L20 = Array.from({ length: 20 }, (_, i) => ({ chave: 'm' + i + '|P' + i, modelo: String(501100 + i), nome: 'P' + i, nVol: 1, ppu: 50, porDia: 1000, ptsMeta: 100000, pctMeta: 50, tetoDia: 1200, ptsTeto: 120000, sit: 'nao', cx: 100 + i }));
+              const h = _regProdHtml({ metaPts: 198740, linhas: L20, cxBase: 2190, semUep: 0, cxFora: 0, temCx: true, nRod: 20, nCad: 20 }, { papel: true, n: 30 }, '3');
+              return [(h.match(/<tr><td class="pr">/g) || []).length, h.includes('+ 5 produto(s) com 510 cx (23% das caixas da tabela).')]; })(), [15, true]);
+  ok('sem o D (backend sem cadastro lido): o papel continua como era, sem a folha nova e com a numeração antiga',
+     [_cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('2 ▸ QUANDO O VEREDITO MUDA'), _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00' }).includes('A META DE PONTOS CABE')], [true, false]);
+  ok('a impressão lê o cadastro depois dos pontos (uma leitura de cada vez) e monta o D pelo _regMontar',
+     [GR.indexOf('_cxuPtsLer(') < GR.indexOf('_capBuscar()'), /ctx\.D = _regMontar\(R, CAP_CAT, prod, P\.metaPts,/.test(GR)], [true, true]);
+  ok('a pele do papel para os blocos da aba (escopada em .cxu-doc) e a cor da barra na impressão',
+     [/\.cxu-doc \.reg-mix\{grid-template-columns:repeat\(4,1fr\)/.test(JS), /\.cxu-doc \.reg-pb\{[^}]*print-color-adjust:exact/.test(JS), /\.cxu-doc \.reg-tab\{table-layout:auto/.test(JS)], [true, true, true]);
   ok('o 🖨 aceita os dias da tela (sem eles, os 30 de sempre)', [/async function gerarRelatorioCxUep\(n\)\{\n  const N = Number\(n\) > 0 \? Number\(n\) : CXU_DIAS;/.test(JS), /_cxuJanela\(hojeNum, N\)/.test(GR), /_cxUepMontar\(UEP_HIST, hojeNum, N, P\)/.test(GR)], [true, true, true]);
   ok('a META DE PONTOS no ⚙: campo, só envia quando mudou (uma vez), e a rede deste computador',
      [/id="c-meta-pts"/.test(html), /_metaPtsNova=\(v>0&&v!==atual\)\?v:null;/.test(pegaJs('function saveCfg(')),

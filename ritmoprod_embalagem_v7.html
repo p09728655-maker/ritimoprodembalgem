@@ -2955,7 +2955,8 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span id="uep-upd" class="par-upd"></span>
       <button class="btn btn-ghost" onclick="setTab('crono')" style="font-size:10px;padding:4px 10px" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
-      <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: caixas, pontos e UEP nos mesmos dias — qual oscila menos com o mix, e quando os vereditos discordaram">🖨 CAIXAS × PONTOS × UEP</button>
+      <!-- v7.187.1 (PPCP: "impressão está nas duas agora, a mesma"): o 🖨 CAIXAS × PONTOS × UEP mora só na aba 📏 RÉGUAS; aqui fica o caminho até ela -->
+      <button class="btn btn-ghost" onclick="setTab('reguas')" style="font-size:10px;padding:4px 10px" title="Caixas × pontos × UEP: tela própria, com a impressão">📏 RÉGUAS →</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
@@ -3570,7 +3571,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.187.0';
+const APP_VER   = '7.187.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7934,13 +7935,34 @@ const _CXU_DOC_SKIN = `
 .cxu-doc .cxu-anx tbody td{padding:3px 7px}
 .cxu-doc .cxu-como td{padding:4px 7px}
 .cxu-doc .cxu-como td{font-family:'Barlow',sans-serif;font-size:11px;line-height:1.4}
+.cxu-doc .reg-regra{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border:1px solid #d9dee5;border-left:4px solid #1F2328;border-radius:4px;padding:8px 12px;margin:6px 0 10px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#1F2328;page-break-inside:avoid}
+.cxu-doc .reg-regra .op{color:#5B6470}.cxu-doc .reg-regra .res{color:#C2410C;font-size:22px}
+.cxu-doc .reg-regra .exp{flex-basis:100%;font-family:'Barlow',sans-serif;font-size:12px;font-weight:400;color:#5B6470}
+.cxu-doc .reg-regra.sem{border-left-color:#b7791f}
+.cxu-doc .reg-mix{grid-template-columns:repeat(4,1fr);margin-bottom:10px;page-break-inside:avoid}
+.cxu-doc .kpi-card.reg-alerta{border-left-color:#c53030}.cxu-doc .reg-alerta .kpi-val{color:#c53030}
+.cxu-doc .reg-card{border:0;padding:0;background:none}
+.cxu-doc .reg-tab{table-layout:auto;width:100%;font-size:11px}
+.cxu-doc .reg-tab th{text-align:right;white-space:nowrap}.cxu-doc .reg-tab th.l,.cxu-doc .reg-tab td.pr{text-align:left}.cxu-doc .reg-tab th.gr{text-align:center}
+.cxu-doc .reg-tab td{padding:3px 6px;white-space:nowrap}.cxu-doc .reg-tab td.n{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px}.cxu-doc .reg-tab td.b{font-weight:700}
+.cxu-doc .reg-tab .cod{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470}
+.cxu-doc .reg-st{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.4px;border:1px solid;border-radius:3px;padding:1px 5px}
+.cxu-doc .reg-st.ok{color:#5B6470}.cxu-doc .reg-st.wa{color:#b7791f}.cxu-doc .reg-st.re{color:#c53030}
+.cxu-doc td.bar{width:130px}.cxu-doc .reg-pb{position:relative;height:9px;width:130px;background:#eef1f4;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cxu-doc .reg-pb i{position:absolute;left:0;top:0;bottom:0;border-radius:2px}.cxu-doc .reg-pb .lim{border:1px solid #8a96a3}.cxu-doc .reg-pb .met{background:#5B6470;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cxu-doc .reg-pb b{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px dashed #C2410C}.cxu-doc .reg-pb .cut{position:absolute;right:-8px;top:-4px;color:#5B6470;font-size:11px}
+.cxu-doc .reg-leg{display:flex;gap:16px;font-family:'Barlow',sans-serif;font-size:11px;color:#5B6470;margin:6px 0 2px}
+.cxu-doc .reg-leg i{display:inline-block;width:16px;height:8px;vertical-align:middle;margin-right:4px;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cxu-doc .reg-met{background:#5B6470}.cxu-doc .reg-lim{border:1px solid #8a96a3}.cxu-doc .reg-leg i.reg-mp{width:0;height:11px;border-left:2px dashed #C2410C;border-radius:0}
+.cxu-doc .reg-nota{font-family:'Barlow',sans-serif;font-size:10.5px;color:#5B6470;line-height:1.4}
 `;
-// Desenho (sem conta): tudo vem pronto do _cxUepMontar. O papel tem TRÊS
-// folhas, uma pergunta cada (v7.185.0, PPCP: "impressão limpa, fácil de
-// entender, com clareza dos fatos"): 1) qual régua mede o esforço — a frase,
-// três cartões e o gráfico; 2) quando o veredito muda — só os dias em que as
-// réguas discordaram, com o motivo EM NÚMERO; 3) anexo — os dias em número
-// (selo só onde muda alguma coisa) e o como o número sai, uma linha cada.
+// Desenho (sem conta): tudo vem pronto do _cxUepMontar (e o ctx.D do
+// _regMontar). Uma pergunta por folha (v7.185.0, PPCP: "impressão limpa, fácil
+// de entender, com clareza dos fatos"): 1) qual régua mede o esforço — a frase,
+// três cartões e o gráfico; 2) a meta de pontos cabe no mix? e o produto a
+// produto (v7.187.1, a aba 📏 RÉGUAS no papel); 3) quando o veredito muda — só
+// os dias em que as réguas discordaram, com o motivo EM NÚMERO; 4) anexo — os
+// dias em número (selo só onde muda alguma coisa) e o como o número sai.
 // Frase sempre em fonte de texto: a mono pequena das notas ninguém lia.
 // A FRASE da folha 1 e a PROVA sem vantagem — texto ÚNICO do papel e da aba
 // 📏 RÉGUAS (v7.187.0): a régua que menos oscila, dita a partir do dado.
@@ -7987,7 +8009,15 @@ function _cxUepHtml(R, ctx){
       + (G.trava ? `<div class="cxu-prova">${_cxuProva(G)}</div>` : '')
       + `<div class="cxu-txt">Caixas contam volume e pontos contam valor — os dois sobem e descem com o mix do dia. A UEP conta o tempo de embalar cada caixa: é a régua do ritmo da embalagem. Pontos continuam sendo a régua do faturamento.</div>`;
   }
-  // ── FOLHA 2 · QUANDO O VEREDITO MUDA ──────────────────────────────────────
+  // ── A META DE PONTOS CABE NO MIX? + PRODUTO A PRODUTO (v7.187.1, PPCP: "essa
+  // não está na impressão") — o MESMO desenho da aba 📏 RÉGUAS (_regMixHtml /
+  // _regProdHtml), com a pele do papel. Folha própria, depois da régua.
+  let num = s ? 2 : 1;
+  if(ctx.D){
+    const pc = { papel:true, n:ctx.n || CXU_DIAS, ptsFalha:ctx.ptsFalha, capFalha:ctx.capFalha, origem:ctx.origem };
+    s += _regMixHtml(R, ctx.D, Object.assign({ quebra:!!s }, pc), String(num++)) + _regProdHtml(ctx.D, pc, String(num++));
+  }
+  // ── QUANDO O VEREDITO MUDA ────────────────────────────────────────────────
   const porque = d => {
     const t = [];
     if(d.porque === 'meta-alta' || d.porque === 'meta-baixa') t.push(`${_CXU_PORQUE[d.porque]} — pedia ${fmtP(d.pctMetaCx)} da meta de UEP`);
@@ -8010,7 +8040,7 @@ function _cxUepHtml(R, ctx){
               [comMeta ? 18 : 25, 'EM UEP', d => st(d.clsU, d.pctU)],
               comMeta && [18, 'EM PONTOS', d => d.clsP ? st(d.clsP, d.pctP) : '—'],
               [comMeta ? 38 : 42, 'POR QUE DISCORDARAM', porque]].filter(Boolean);
-  s += `<div class="rp-sec-ttl${s ? ' cxu-quebra' : ''}">${s ? '2' : '1'} ▸ QUANDO O VEREDITO MUDA DE RÉGUA</div>`
+  s += `<div class="rp-sec-ttl${s ? ' cxu-quebra' : ''}">${num} ▸ QUANDO O VEREDITO MUDA DE RÉGUA</div>`
     + `<div class="cxu-txt">${f2.join(' ')}</div>`
     + (dif.length
       ? `<table><colgroup>${cD.map(c => `<col style="width:${c[0]}%">`).join('')}</colgroup><thead><tr>${cD.map(c => `<th>${c[1]}</th>`).join('')}</tr></thead>`
@@ -8083,16 +8113,21 @@ async function gerarRelatorioCxUep(n){
   if(!_uepHistDaPlanilha(UEP_HIST)){ win.close(); alert('Não consegui ler o histórico (HISTORICO) da planilha.\n\nTente de novo em alguns segundos.'); return; }
   const hojeNum = _cartNum(hojeStr());
   // Em sequência, depois do histórico: uma leitura de cada vez no Apps Script.
-  let P = { pts:null, tabela:null, metaPts:null, trava:UEP_TRAVADA_DESDE || null }, ptsFalha = '';
-  try{ const r = await _cxuPtsLer(_cxuJanela(hojeNum, N)); P.pts = r.m; P.tabela = r.tabela || null; ptsFalha = r.falha; }
+  let P = { pts:null, tabela:null, metaPts:null, trava:UEP_TRAVADA_DESDE || null }, ptsFalha = '', prod = null;
+  try{ const r = await _cxuPtsLer(_cxuJanela(hojeNum, N)); P.pts = r.m; P.tabela = r.tabela || null; prod = r.prod || null; ptsFalha = r.falha; }
   catch(e){ ptsFalha = 'pontos não lidos — ' + (e && e.message || 'falha na leitura'); }
-  P.metaPts = _metaPtsDia().v;   // a do ⚙ (CONFIG_PAINEL); sem ela, a deste computador
+  const meta = _metaPtsDia(); P.metaPts = meta.v;   // a do ⚙ (CONFIG_PAINEL); sem ela, a deste computador
+  // O cadastro, para o PRODUTO A PRODUTO (v7.187.1): o guardado, e lido de novo se tem mais de 10 min.
+  _capCatLocal();
+  if(!CAP_CAT_TS || Date.now() - CAP_CAT_TS > 10 * 60 * 1000){ try{ await _capBuscar(); }catch(e){} }
   let R = null, corpo = '';
   const agora = new Date();
-  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }), ptsFalha };
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }), ptsFalha,
+    n:N, origem:meta.origem, capFalha:CAP_FALHA };
   try{
     R = _cxUepMontar(UEP_HIST, hojeNum, N, P);
     if(!R.n){ win.close(); alert(`Nenhum dia fechado com META e UEP nos últimos ${N} dias — nada para comparar.`); return; }
+    ctx.D = _regMontar(R, CAP_CAT, prod, P.metaPts, Number(PONTOS_DIA.metaUep) > 0 ? Number(PONTOS_DIA.metaUep) : UEP_META_PADRAO);
     corpo = _cxUepHtml(R, ctx);
   }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
   const html = _rpDocParadas(`Caixas × Pontos × UEP — ${R.de} a ${ctx.data}`, true)
@@ -8175,7 +8210,8 @@ function _regMontar(R, prods, porProd, metaPts, metaUep){
 function _regLinhasVer(D, filtro, todos){
   const L = filtro === 'cadastro' ? D.linhas.slice().sort((a, b) => a.ppu - b.ppu || a.nome.localeCompare(b.nome))
     : D.linhas.filter(l => l.cx > 0).sort((a, b) => b.cx - a.cx || a.nome.localeCompare(b.nome));
-  return { linhas: todos ? L : L.slice(0, REG_LINHAS), total: L.length };
+  const ver = todos ? L : L.slice(0, REG_LINHAS), fora = L.slice(ver.length);
+  return { linhas: ver, total: L.length, resto: { n: fora.length, cx: fora.reduce((t, l) => t + (l.cx || 0), 0) } };
 }
 const _REG_SIT = { chega:['CHEGA NA META DE UEP', 'ok'], acima:['SÓ ACIMA DA META DE UEP', 'wa'],
   nao:['NÃO CHEGA NEM NO LIMITE', 're'], 'sem-limite':['SEM LIMITE NO CADASTRO', 'ok'] };
@@ -8198,16 +8234,27 @@ function _regHtml(R, D, ctx){
       }).join('') + '</div>'
     + `<div class="reg-card">${_cxuSvg(R, ctx.svgW, 12)}<div class="reg-leg"><span><i class="reg-banda"></i>faixa ±10% da média</span><span>100 = a média do período de cada régua</span></div>`
     + (G.trava ? `<div class="reg-prova">${_cxuProva(G)}</div>` : '') + '</div>';
-  // ── 2 · A META DE PONTOS CABE NO MIX? ───────────────────────────────────
+  return s + _regMixHtml(R, D, ctx, '2') + _regProdHtml(D, ctx, '3');
+}
+// O título de um bloco: na tela, a faixa da aba (com o complemento ao lado);
+// no papel (ctx.papel), o título de seção do relatório — com a quebra de folha.
+function _regTit(ctx, num, nome, sub, extra){
+  return ctx.papel ? `<div class="rp-sec-ttl${ctx.quebra ? ' cxu-quebra' : ''}">${num} ▸ ${nome}</div>`
+    : `<div class="reg-sec"><b>${num} · ${nome}</b><span>${sub}</span>${extra || ''}</div>`;
+}
+// ── A META DE PONTOS CABE NO MIX? — a tela e o papel (v7.187.1: "essa não
+// está na impressão"). Desenho só: D vem pronto do _regMontar.
+function _regMixHtml(R, D, ctx, num){
+  const mil = v => fmtN(Math.round(v / 1000)) + ' mil';
   const M = D.mix, MP = D.metaPts;
-  s += '<div class="reg-sec"><b>2 · A META DE PONTOS CABE NO MIX?</b><span>a meta de pontos julga o que foi programado; quem julga a linha é a UEP</span></div>';
+  let s = _regTit(ctx, num, 'A META DE PONTOS CABE NO MIX?', 'a meta de pontos julga o que foi programado; quem julga a linha é a UEP');
   s += MP
     ? `<div class="reg-regra"><span>META DE PONTOS ${fmtN(MP)}</span><span class="op">÷</span><span>META DE UEP ${fmtN(D.metaUep)}</span><span class="op">=</span><span class="res">${fmtN(Math.round(D.need))} PONTOS POR UEP</span>`
-      + `<span class="exp">Abaixo de ${fmtN(Math.round(D.need))} pontos por UEP, nem a linha batendo a meta de UEP chega à meta de pontos.${ctx.origem === 'computador' ? ' <b>Meta guardada só neste computador</b> — salve no ⚙ para valer em todos.' : ''}</span></div>`
-    : '<div class="reg-regra sem"><span>META DE PONTOS NÃO CONFIGURADA</span><span class="exp">⚙ CONFIGURAÇÕES → META DE PONTOS / DIA. Sem ela a tela mostra os pontos que o mix e cada produto rendem, sem julgar.</span></div>';
+      + `<span class="exp">Abaixo de ${fmtN(Math.round(D.need))} pontos por UEP, nem a linha batendo a meta de UEP chega à meta de pontos.${ctx.papel ? ' A meta de pontos julga o que foi programado; quem julga a linha é a UEP.' : ''}${ctx.origem === 'computador' && !ctx.papel ? ' <b>Meta guardada só neste computador</b> — salve no ⚙ para valer em todos.' : ''}</span></div>`
+    : `<div class="reg-regra sem"><span>META DE PONTOS NÃO CONFIGURADA</span><span class="exp">⚙ CONFIGURAÇÕES → META DE PONTOS / DIA. Sem ela, ${ctx.papel ? 'o relatório mostra' : 'a tela mostra'} os pontos que o mix e cada produto rendem, sem julgar.</span></div>`;
   const semMix = R.ptsTabela === 'gravada' ? 'o Apps Script ainda não manda os pontos na tabela de hoje (.gs v5.41)' : (ctx.ptsFalha || 'pontos não lidos');
   const k1 = M.ppu != null
-    ? `<div class="kpi-card${MP && M.ppu < D.need ? ' red reg-alerta' : ''}"><div class="kpi-lbl">MIX DOS ${M.nDias} DIAS</div><div class="kpi-val">${fmtN(Math.round(M.ppu))} pontos/UEP</div><div class="kpi-sub">batendo a meta de UEP todo dia: <b>${mil(M.ptsNaMeta)} pontos/dia</b></div></div>`
+    ? `<div class="kpi-card${MP && M.ppu < D.need ? ' red r reg-alerta' : ''}"><div class="kpi-lbl">MIX DOS ${M.nDias} DIAS</div><div class="kpi-val">${fmtN(Math.round(M.ppu))} pontos/UEP</div><div class="kpi-sub">batendo a meta de UEP todo dia: <b>${mil(M.ptsNaMeta)} pontos/dia</b></div></div>`
     : `<div class="kpi-card"><div class="kpi-lbl">MIX DO PERÍODO</div><div class="kpi-val">—</div><div class="kpi-sub">${_rpEsc(semMix)}</div></div>`;
   const k2 = `<div class="kpi-card"><div class="kpi-lbl">DIAS NA META · EM ${M.nDias}</div><div class="kpi-val">UEP ${M.diasUep}${M.diasPts != null ? ` · PONTOS ${M.diasPts}` : ''}</div>`
     + `<div class="kpi-sub">${M.diasPts != null ? `a linha bateu a meta de UEP em ${M.diasUep} dias; a de pontos, em ${M.diasPts}` : `dias com a meta de UEP batida${MP ? '' : ' · pontos sem meta'}`}</div></div>`;
@@ -8217,16 +8264,22 @@ function _regHtml(R, D, ctx){
   const k4 = MP && D.temCx && !D.semCad && D.cxBase > 0
     ? `<div class="kpi-card"><div class="kpi-lbl">CAIXAS EM PRODUTO ABAIXO DE ${fmtN(Math.round(D.need))}</div><div class="kpi-val">${fmtN(Math.round(D.cxAbaixo / D.cxBase * 100))}%</div><div class="kpi-sub">${fmtN(D.cxAbaixo)} de ${fmtN(D.cxBase)} cx · no cadastro, ${D.nChega} de ${D.nCad} produtos chegam</div></div>`
     : `<div class="kpi-card"><div class="kpi-lbl">PRODUTOS QUE CHEGAM</div><div class="kpi-val">${MP && !D.semCad ? `${D.nChega} de ${D.nCad}` : '—'}</div><div class="kpi-sub">${D.semCad ? (ctx.capLendo ? 'lendo o cadastro…' : _rpEsc(ctx.capFalha || 'cadastro não lido')) : MP ? 'no cadastro, batendo a meta de UEP' : 'sem meta de pontos'}</div></div>`;
-  s += `<div class="kpi-grid c4 reg-mix">${k1}${k2}${k3}${k4}</div>`;
-  // ── 3 · PRODUTO A PRODUTO ───────────────────────────────────────────────
-  const V = _regLinhasVer(D, ctx.filtro, ctx.todos);
-  s += '<div class="reg-sec"><b>3 · PRODUTO A PRODUTO</b><span>o que cada um rende sozinho na linha o dia inteiro</span>'
-    + `<span class="reg-chips reg-chips-r">${[['rodaram', `RODARAM NOS ${ctx.n} DIAS · ${D.nRod}`], ['cadastro', `CADASTRO INTEIRO · ${D.nCad}`]].map(f =>
-        `<button class="reg-chip${ctx.filtro === f[0] ? ' on' : ''}" onclick="_regSetFiltro('${f[0]}')">${f[1]}</button>`).join('')}</span></div>`;
-  if(D.semCad){
-    s += `<div class="reg-card"><div class="empty-msg">${ctx.capLendo ? 'Lendo o cadastro de produtos…' : 'O cadastro de produtos não foi lido' + (ctx.capFalha ? ': ' + _rpEsc(ctx.capFalha) : '') + '.'}</div></div>`;
-    return s;
-  }
+  return s + `<div class="kpi-grid c4 reg-mix">${k1}${k2}${k3}${k4}</div>`;
+}
+// ── PRODUTO A PRODUTO — a tela e o papel. No papel (ctx.papel): os que
+// RODARAM, os REG_LINHAS de mais caixas e uma linha com os demais; sem filtro
+// nem botão.
+function _regProdHtml(D, ctx, num){
+  const mil = v => fmtN(Math.round(v / 1000)) + ' mil';
+  const MP = D.metaPts;
+  const filtro = ctx.papel ? 'rodaram' : ctx.filtro, todos = !ctx.papel && ctx.todos;
+  const V = _regLinhasVer(D, filtro, todos);
+  let s = _regTit(ctx, num, 'PRODUTO A PRODUTO', 'o que cada um rende sozinho na linha o dia inteiro',
+    `<span class="reg-chips reg-chips-r">${[['rodaram', `RODARAM NOS ${ctx.n} DIAS · ${D.nRod}`], ['cadastro', `CADASTRO INTEIRO · ${D.nCad}`]].map(f =>
+      `<button class="reg-chip${filtro === f[0] ? ' on' : ''}" onclick="_regSetFiltro('${f[0]}')">${f[1]}</button>`).join('')}</span>`);
+  if(ctx.papel) s += `<div class="cxu-txt m">Cada produto sozinho na linha o dia inteiro — os ${Math.min(REG_LINHAS, V.total)} que mais rodaram nos ${ctx.n} dias.</div>`;
+  if(D.semCad)
+    return s + `<div class="reg-card"><div class="empty-msg">${ctx.capLendo ? 'Lendo o cadastro de produtos…' : 'O cadastro de produtos não foi lido' + (ctx.capFalha ? ': ' + _rpEsc(ctx.capFalha) : '') + '.'}</div></div>`;
   const esc = MP ? MP * REG_ESCALA : Math.max(1, ...V.linhas.map(l => l.ptsTeto || l.ptsMeta));
   const barra = l => {
     const a = Math.min(l.ptsMeta, esc) / esc * 100, b = Math.min(l.ptsTeto != null ? l.ptsTeto : l.ptsMeta, esc) / esc * 100;
@@ -8248,8 +8301,9 @@ function _regHtml(R, D, ctx){
       + `<td class="n">${l.tetoDia != null ? fmtN(l.tetoDia) + ast(l) : '—'}</td><td class="n">${l.ptsTeto != null ? mil(l.ptsTeto) : '—'}</td>`
       + `<td class="bar">${barra(l)}</td>${MP ? `<td>${sit(l)}</td>` : ''}</tr>`).join('')
     + '</tbody></table>'
-    + (V.total > REG_LINHAS ? `<button class="reg-mais" onclick="_regTodos()">${ctx.todos ? 'MOSTRAR SÓ OS ' + REG_LINHAS : `VER TODOS · + ${V.total - REG_LINHAS} produtos`}</button>` : '')
-    + (!V.total ? `<div class="empty-msg">${ctx.filtro === 'rodaram' ? (D.temCx ? `Nenhum produto com UEP e pontos rodou nos ${ctx.n} dias.` : 'As caixas por produto do período não foram lidas.') : 'Nenhum produto do cadastro com UEP e pontos.'}</div>` : '')
+    + (ctx.papel ? (V.resto.n ? `<div class="cxu-txt m">+ ${V.resto.n} produto(s) com ${fmtN(V.resto.cx)} cx${D.cxBase > 0 ? ` (${fmtN(Math.round(V.resto.cx / D.cxBase * 100))}% das caixas da tabela)` : ''}.</div>` : '')
+      : V.total > REG_LINHAS ? `<button class="reg-mais" onclick="_regTodos()">${todos ? 'MOSTRAR SÓ OS ' + REG_LINHAS : `VER TODOS · + ${V.total - REG_LINHAS} produtos`}</button>` : '')
+    + (!V.total ? `<div class="empty-msg">${filtro === 'rodaram' ? (D.temCx ? `Nenhum produto com UEP e pontos rodou nos ${ctx.n} dias.` : 'As caixas por produto do período não foram lidas.') : 'Nenhum produto do cadastro com UEP e pontos.'}</div>` : '')
     + `<div class="reg-leg"><span><i class="reg-met"></i>batendo a meta de UEP</span><span><i class="reg-lim"></i>até o limite da esteira, sem nenhuma parada</span>${MP ? '<span><i class="reg-mp"></i>meta de pontos</span>' : ''}</div>`
     + `<div class="reg-nota">Batendo a meta de UEP = meta de UEP ÷ UEP do produto (a conta do simulador de capacidade). Limite = velocidade ÷ (caixa + vão), em ${UEP_MIN_DIA} min. `
     + `<b>*</b> vão de ${ESTEIRA_VAO_PADRAO} mm, o padrão do cadastro (não medido): limite pessimista. ⚠ a UEP promete mais do que a esteira passa — vale o limite.`
