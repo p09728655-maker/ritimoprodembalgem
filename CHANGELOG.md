@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.188.1 — 29/10/2026 · "Sem vantagem para a UEP" diz que ela muda por cronoanálise
+
+- PPCP: *"a UEP está sendo atualizada conforme cronoanálise"*. A frase dizia
+  só que a UEP *"foi calibrada com o ritmo da própria linha até 16/10"*, como
+  se estivesse parada desde então. Agora diz: saiu do ritmo da linha até a
+  trava e **depois disso só muda por cronoanálise** — o tempo medido do
+  produto, não a produção do dia. Por isso a comparação continua sem
+  vantagem. A frase é a mesma no relatório e na aba 📏 RÉGUAS.
+- A página 4 ganhou a limitação: a UEP trocada por cronoanálise vale do dia
+  da troca em diante. O dia fechado guarda a UEP daquele dia, então o período
+  pode ter a UEP antiga e a nova de um mesmo produto.
+- Conferido na planilha:
+  - De 16/10 a 29/10 entraram na `UEP_VERSOES` seis trocas por cronoanálise:
+    STRASS 2/2 −34%, ELOA 2/2 −28%, RACK FLIP 1.8 −26%, RACK MOVE 1.8 −23%,
+    RACK FLIP 1.6 −19% e RACK SIRIUS 1.6 −12%. Também houve uma digitada, o
+    501142, −31%. **Todas para baixo.**
+  - 26/10 e 27/10 já foram gravados com a UEP nova (conferido refazendo a
+    conta com o log). Na UEP antiga dariam 3.053 e 2.959, contra 2.762 e
+    2.869 gravados.
+  - A variação dos 8 dias depois da trava, toda na UEP antiga, seria ±11,4%
+    em vez de ±10,5%. Continua bem abaixo dos pontos (±16,5%) e das caixas
+    (±22,4%).
+- No gráfico, o rótulo do penúltimo dia não cola mais no do último.
+  O gráfico da página 1 passou a 600 px, para a coluna das conclusões caber.
+- **Atenção:** nenhum número mudou.
+
 ## v7.188.0 — 29/10/2026 · Relatório CAIXAS × PONTOS × UEP em quatro páginas; a UEP como referência
 
 - PPCP, com um prompt de melhoria: o relatório 🖨 da aba 📏 RÉGUAS foi

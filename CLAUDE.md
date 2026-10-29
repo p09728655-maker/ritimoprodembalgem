@@ -894,6 +894,25 @@ via Google Apps Script (JSONP).
     aba ⚖ UEP, Telas F/G, PRÓXIMOS DIAS. Mudar lá é decisão do PPCP (UM NOME
     POR INDICADOR); não foi feito. O COMO O NÚMERO SAI liga os nomes (*a
     referência = o campo META DIA (UEP) do ⚙*).
+- **DEPOIS DA TRAVA A UEP MUDA POR CRONOANÁLISE** (v7.188.1, PPCP: *"a UEP
+  está sendo atualizada conforme cronoanálise"*). O `_cxuProva` (relatório e
+  aba) e o COMO O NÚMERO SAI dizem isso: até a trava a UEP saiu do ritmo da
+  linha; depois, só por cronoanálise (o tempo do produto, não a produção do
+  dia — por isso a comparação continua sem vantagem). A página 4 diz que o dia
+  fechado guarda a UEP do dia: o período mistura a antiga e a nova de um
+  produto trocado.
+  - Medido em 29/10/2026 (`UEP_VERSOES`): 6 trocas por cronoanálise de 26 a
+    29/10 e 1 digitada em 21/10 (501142), **todas para baixo** (−12% a −34%).
+    26/10 e 27/10 gravados com a UEP nova (refeito com o log: 2.761,6 e
+    2.868,5; na antiga, 3.052,5 e 2.959,1). Os 8 dias depois da trava toda na
+    UEP antiga: ±11,4% (gravados: ±10,5%).
+  - ⚠ **Risco para a REFERÊNCIA**: a de 2.761 é a média de 28/09–26/10, quase
+    toda na UEP ANTIGA. Se a cronoanálise continuar baixando a UEP dos produtos
+    que mais rodam, a mesma produção vira menos UEP e a referência fica alta (o
+    26/10 caiu 10,5% só por duas trocas). Rever a referência quando as trocas
+    cobrirem o mix — decisão do PPCP. E ainda está em aberto se a cronoanálise
+    RODANDO deixa os produtos leves demais (ver *NA PRODUÇÃO*: ELOA 83%, STRASS
+    89% da base sem as paradas).
 - ⚠ **CORREÇÃO DE MEDIDA**: na v7.187.1/7.187.2 a tabela do produto a produto
   tinha 1.146 px numa folha útil de 1.032 (A4 deitada, `@page` 10/12 mm), e o
   Chromium **encolhia o relatório inteiro (~90%)** para caber. A medição daquela
