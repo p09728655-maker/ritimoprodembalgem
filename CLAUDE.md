@@ -730,8 +730,21 @@ via Google Apps Script (JSONP).
   na linha da régua.
 - **Meta de pontos**: só a do computador (`rpe_cap_pts`, SIMULAR JORNADA). Com
   ela: veredito EM PONTOS (régua do selo) e o motivo (`pts-barato`/`pts-caro` =
-  META UEP × pontos/UEP do dia ÷ meta de pontos, ±5%). O teste usa 190.000 de
-  exemplo — **nunca o valor do PPCP**.
+  META UEP × pontos/UEP do dia ÷ meta de pontos, ±5%). O teste usa 198.740 de
+  exemplo (190.000 × 1,046) — **nunca o valor do PPCP**.
+- ⚠ **A meta só julga pontos NA TABELA DE HOJE** (v7.186.0 / `.gs` v5.41). Os
+  pontos gravados são da tabela de cada lançamento; a meta é da de hoje. Em
+  29/10/2026 a tabela subiu ~4,6% e a meta junto: contra os gravados, dia
+  passado saía abaixo pela tabela (com a meta de exemplo, 16/10 e 20/10). Um
+  fator único também erra (o mix de cada dia subiu de 1,9% a 6,7%). Por isso o
+  relatório pede `?ptsCad=1` (`pontosCad`/`pontosCadHe`: caixas × cadastro de
+  agora) e usa ESSA tabela para tudo — oscilação, veredito e gráfico.
+  `_cxuPtsDoPeriodo` devolve `{dias, tabela:'hoje'|'gravada'}`; um item sem
+  `pontosCad` derruba o período inteiro para `gravada` (nunca meio a meio). Com
+  `gravada` (o `.gs` antes da v5.41), a meta NÃO julga (`metaSemTabela`) e o
+  papel diz por quê. Diretoria e semana continuam com os gravados (passado
+  congelado). O guarda do `pontos.test.js` deixa o `cx × (prod.pontos` no
+  período só nas linhas do `pontosCad`.
 - **O PAPEL SÃO TRÊS FOLHAS, uma pergunta cada** (v7.185.0, PPCP: *"impressão
   limpa, fácil de entender, com clareza dos fatos"*):
   1. **qual régua mede o esforço**: frase (do dado, com o artigo certo: *A UEP

@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.41 — PONTOS NA TABELA DE HOJE, SÓ PARA QUEM PEDE (?ptsCad=1)
+//               PPCP, 29/10/2026: o CAIXAS × PONTOS × UEP comparava os pontos
+//               gravados (tabela antiga) com a meta de pontos (tabela nova,
+//               +4,6%) — os dias passados saíam ~4,6% abaixo por causa da
+//               tabela, não do mix. getProducaoModeloPeriodo com ?ptsCad=1
+//               devolve pontosCad / pontosCadHe por item (caixas × cadastro de
+//               agora). Sem o parâmetro, nada muda; o `pontos` continua o gravado.
 // Versão: 5.40 — PONTOS DO PASSADO CONGELADOS (o gravado no lançamento)
 //               PPCP, 29/10/2026, ao atualizar a coluna PONTOS da
 //               PRODUTO_CODIGO pelo CUSTO REP do ERP (+4,6% na média): "congelar
@@ -1286,7 +1293,7 @@ function doGet(e) {
     try {
       cache = CacheService.getScriptCache();
       cacheKey = 'rp:' + _cacheGen(cache) + ':' + actEf + ':' +
-        ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer'].map(function (k) { return p[k] || ''; }).join('|');
+        ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer', 'ptsCad'].map(function (k) { return p[k] || ''; }).join('|');
       const hit = cache.get(cacheKey);
       if (hit) return _saidaJson(hit, callback);
     } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
@@ -4502,6 +4509,12 @@ function getProducaoModeloPeriodo(p) {
   // mude depois. Sem a aba de versões, o cadastro de hoje vale para todos.
   const querUepVer = String(p.uepVer || '') === '1';
   const verM = querUepVer ? _uepVersoesMapa(ss) : null;
+  const querPtsCad = String(p.ptsCad || '') === '1';
+  // v5.41 (?ptsCad=1): os pontos também na TABELA DE HOJE (caixas × PONTOS do
+  // cadastro de agora), para quem COMPARA dias com a meta de pontos — a meta é
+  // da tabela de hoje, e os pontos gravados (o `pontos`, congelado na v5.40)
+  // são da tabela de cada lançamento. Só para quem pede: o resto do painel lê
+  // o gravado.
 
   // Recorte por data na LEITURA, não só no filtro: a aba tem milhares de linhas
   // e o período pede algumas centenas. O filtro do laço continua igual — ele é
@@ -4542,7 +4555,7 @@ function getProducaoModeloPeriodo(p) {
       map[key] = { data: fmtDataBR(r[iData]), dataNum: dNum, modelo: modelo,
                    nome: descBase, cor: pr.cor,
                    familia: familiaDoNome(descBase) || modelo,
-                   caixas: 0, pontos: 0, pontosHe: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {},
+                   caixas: 0, pontos: 0, pontosHe: 0, pontosCad: 0, pontosCadHe: 0, pesoKg: 0, cxTeto: 0, hTeto: 0, mmCx: 0, troca: 0, horasSet: {}, cxHora: {},
                    uepHora: {}, semUepHora: {}, uepVigDe: 0, uepAntes: false };
     }
     const dStr = fmtDataBR(r[iData]);
@@ -4555,6 +4568,7 @@ function getProducaoModeloPeriodo(p) {
     const ptsL = _ptsDoLog(r, iPts, cx, prod);
     map[key].caixas += cx;
     map[key].pontos += ptsL;
+    map[key].pontosCad += cx * (prod.pontos || 0);
     map[key].pesoKg += cx * (prod.peso   || 0);
     // UEP média por caixa do PRODUTO no período (v5.14): um mapa pequeno no
     // topo do payload, não um campo por item — o payload deste período já
@@ -4590,7 +4604,7 @@ function getProducaoModeloPeriodo(p) {
       // v5.20: PONTOS EM HORA EXTRA, pela MESMA régua das caixas
       // (_ehHoraExtraCaixas: fora de 07:00–17:00). Soma exata na leitura — o
       // painel da diretoria mostra pontos sem HE e com HE sem ratear nada.
-      if (_ehHoraExtraCaixas(hora)) map[key].pontosHe += ptsL;
+      if (_ehHoraExtraCaixas(hora)) { map[key].pontosHe += ptsL; map[key].pontosCadHe += cx * (prod.pontos || 0); }
       if (querUepVer) {
         const vg = _uepVigente(verM && verM[codigo], dNum, prod.uep);
         const it = map[key];
@@ -4609,6 +4623,8 @@ function getProducaoModeloPeriodo(p) {
              cor: it.cor, familia: it.familia,
              caixas: it.caixas, pontos: Math.round(it.pontos),
              pontosHe: Math.round(it.pontosHe),   // v5.20 — pontos das horas fora da jornada
+             pontosCad: querPtsCad ? Math.round(it.pontosCad) : undefined,       // v5.41 — na tabela de hoje (?ptsCad=1)
+             pontosCadHe: querPtsCad ? Math.round(it.pontosCadHe) : undefined,
              pesoKg: Math.round(it.pesoKg * 10) / 10,
              // Teto físico da esteira p/ o mix do item (0 = catálogo sem
              // medida/velocidade — o painel esconde a leitura, nunca chuta).

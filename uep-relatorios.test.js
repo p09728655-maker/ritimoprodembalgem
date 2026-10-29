@@ -214,12 +214,19 @@ const HOUT = [DU('29/09', 1778, 1750, 0, 3402), DU('30/09', 2209, 2700, 0, 2561.
   DU('19/10', 1509, 1157, 0, 2940.2), DU('20/10', 2041, 2500, 0, 2625.7), DU('21/10', 1004, 2200, 0, 2113.7),
   DU('22/10', 1960, 1550, 0, 3064.3), DU('23/10', 1483, 1550, 0, 2755.9), DU('26/10', 1263, 1500, 0, 2761.6),
   DU('27/10', 1972, 2850, 180, 2868.5, 2761), DU('28/10', 2141, 1250, 286, 2656.9, 2761)];
-const PM = _cxuPtsDoPeriodo(ITENS);
-ok('pontos de JORNADA = pontos − pontos em hora extra, por dia', [PM['29/09/2026'].pts, PM['28/10/2026'].cx], [192089, 2141]);
+const PMr = _cxuPtsDoPeriodo(ITENS), PM = PMr.dias;
+ok('pontos de JORNADA = pontos − pontos em hora extra, por dia; sem o pontosCad, a tabela é a GRAVADA', [PM['29/09/2026'].pts, PM['28/10/2026'].cx, PMr.tabela], [192089, 2141, 'gravada']);
+// .gs v5.41 (?ptsCad=1): os mesmos dias, com os pontos também na TABELA DE HOJE
+// (log real × a tabela de 29/10/2026, calculado fora do painel).
+const TAB = {"29/09":{"cad":201017.5,"cadHe":0,"grav":192089.0,"gravHe":0,"cx":1778},"30/09":{"cad":183729.6,"cadHe":0,"grav":172236.0,"gravHe":0,"cx":2209},"01/10":{"cad":169182.0,"cadHe":0,"grav":161784.0,"gravHe":0,"cx":2696},"02/10":{"cad":162143.6,"cadHe":0,"grav":153986.0,"gravHe":0,"cx":1097},"06/10":{"cad":222695.0,"cadHe":0,"grav":215088.0,"gravHe":0,"cx":1421},"07/10":{"cad":177298.3,"cadHe":0,"grav":172992.0,"gravHe":0,"cx":1268},"08/10":{"cad":246881.5,"cadHe":0,"grav":238058.0,"gravHe":0,"cx":1241},"09/10":{"cad":230459.1,"cadHe":0,"grav":216665.0,"gravHe":0,"cx":1683},"13/10":{"cad":112274.9,"cadHe":0,"grav":110176.0,"gravHe":0,"cx":2651},"14/10":{"cad":214444.8,"cadHe":0,"grav":201665.0,"gravHe":0,"cx":1849},"15/10":{"cad":142220.8,"cadHe":0,"grav":137981.0,"gravHe":0,"cx":1640},"16/10":{"cad":194978.7,"cadHe":0,"grav":190470.0,"gravHe":0,"cx":1971},"19/10":{"cad":203141.7,"cadHe":0,"grav":195516.0,"gravHe":0,"cx":1509},"20/10":{"cad":191634.2,"cadHe":0,"grav":183164.0,"gravHe":0,"cx":2041},"21/10":{"cad":184312.6,"cadHe":0,"grav":177536.0,"gravHe":0,"cx":1004},"22/10":{"cad":219637.7,"cadHe":0,"grav":208880.0,"gravHe":0,"cx":1960},"23/10":{"cad":187429.9,"cadHe":0,"grav":177275.0,"gravHe":0,"cx":1483},"26/10":{"cad":224729.8,"cadHe":0,"grav":212521.0,"gravHe":0,"cx":1263},"27/10":{"cad":303926.7,"cadHe":29361.2,"grav":289167.0,"gravHe":28052.0,"cx":1972},"28/10":{"cad":236345.8,"cadHe":73557.9,"grav":224925.0,"gravHe":67496.0,"cx":2141}};
+const ITH = Object.keys(TAB).map(d => ({ data: d + '/2026', modelo: '501149', caixas: TAB[d].cx, pontos: TAB[d].grav, pontosHe: TAB[d].gravHe, pontosCad: TAB[d].cad, pontosCadHe: TAB[d].cadHe }));
+const PHr = _cxuPtsDoPeriodo(ITH), PH = PHr.dias;
+ok('com o pontosCad: pontos na TABELA DE HOJE, menos os da hora extra (28/10: 236.345,8 − 73.557,9)', [PHr.tabela, Math.round(PH['28/10/2026'].pts * 10) / 10], ['hoje', 162787.9]);
+ok('um item sem pontosCad: a tabela de hoje não vale para o período (nunca meio a meio)', _cxuPtsDoPeriodo(ITH.slice(0, 3).concat([ITENS[3]])).tabela, 'gravada');
 ok('item sem pontosHe (backend antes da v5.20): não separa a jornada → null, nunca rateia',
    _cxuPtsDoPeriodo([{ data: '01/10/2026', caixas: 10, pontos: 100 }]), null);
 ok('janela: 30 dias antes de hoje, hoje fora', _cxuJanela(20261029, 30), { iniNum: 20260929, de: '29/09/2026', ate: '28/10/2026' });
-const RP = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, metaPts: null, trava: '16/10/2026' });
+const RP = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, tabela: 'gravada', metaPts: null, trava: '16/10/2026' });
 const G = RP.reguas, f1 = x => Math.round(x * 10) / 10;
 ok('20 dias, os mesmos para as três réguas', [RP.n, G.n], [20, 20]);
 ok('oscilação dia a dia: CAIXAS 26,9% · PONTOS 18,5% · UEP 10,4% — a UEP é a que menos varia com o mix',
@@ -230,8 +237,14 @@ ok('média por dia de jornada', [Math.round(G.cx.media), Math.round(G.pts.media)
 ok('sem META DE PONTOS: pontos sem veredito (só a oscilação)', [G.pts.noRitmo, G.pts.discorda, RP.metaPts, RP.dias[0].clsP], [null, null, false, null]);
 ok('o gráfico: cada dia em % da média da régua (a média do índice é 100)',
    [Math.round(RP.serie.reduce((a, s) => a + s.uep, 0) / RP.serie.length), RP.serie.filter(s => s.fora).length], [100, 8]);
-// META de exemplo (NÃO é a do PPCP, que não entra no repositório)
-const RM = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, metaPts: 190000, trava: '16/10/2026' });
+const RPH = _cxUepMontar(HOUT, 20261029, 30, { pts: PH, tabela: 'hoje', metaPts: null, trava: '16/10/2026' });
+ok('na tabela de hoje: pontos ±19,0% (depois da trava ±16,5%); caixas e UEP iguais',
+   [f1(RPH.reguas.pts.osc), f1(RPH.reguas.pts.oscFora), f1(RPH.reguas.cx.osc), f1(RPH.reguas.uep.osc), RPH.ptsTabela], [19.0, 16.5, 26.9, 10.4, 'hoje']);
+// META de exemplo (NÃO é a do PPCP, que não entra no repositório): 190.000 × 1,046
+const RM = _cxUepMontar(HOUT, 20261029, 30, { pts: PH, tabela: 'hoje', metaPts: 198740, trava: '16/10/2026' });
+const RMG = _cxUepMontar(HOUT, 20261029, 30, { pts: PM, tabela: 'gravada', metaPts: 198740, trava: '16/10/2026' });
+ok('a meta NÃO julga os pontos gravados (seriam 9 abaixo, 16/10 e 20/10 só pela troca de tabela): sem veredito e diz por quê',
+   [RMG.metaPts, RMG.metaSemTabela, RMG.ptsAbaixo, RMG.dias[0].clsP], [false, true, 0, null]);
 ok('com meta: 11 dias com pontos no ritmo, 18 com UEP; 7 com UEP no ritmo e pontos abaixo',
    [RM.reguas.pts.noRitmo, RM.reguas.uep.noRitmo, RM.ptsAbaixo, RM.ptsAcima], [11, 18, 7, 0]);
 ok('e os 7 pelo mix de VALOR do dia (batendo a meta de UEP, faltariam pontos)',
@@ -243,7 +256,7 @@ ok('sem os pontos (leitura falhou), caixas × UEP como sempre (12 iguais, 8 com 
 })(), [12, 8, 12, 8, null, 20]);
 ok('dia sem item no período: pontos null (não zero) e fora da base das três réguas', (() => {
   const pm = Object.assign({}, PM); delete pm['21/10/2026'];
-  const r = _cxUepMontar(HOUT, 20261029, 30, { pts: pm });
+  const r = _cxUepMontar(HOUT, 20261029, 30, { pts: pm, tabela: 'gravada' });
   return [r.dias.find(d => d.data === '21/10/2026').pts, r.reguas.n];
 })(), [null, 19]);
 
@@ -263,6 +276,11 @@ ok('frase de leitura em fonte de texto (Barlow), não na mono pequena das notas'
 ok('sem meta: coluna PONTOS no anexo, sem EM PONTOS, e a nota diz onde se digita a meta',
    [HP.includes('<th class="n">PONTOS</th>'), HP.includes('EM PONTOS'), HP.includes('a META DE PONTOS / DIA não está digitada neste computador')], [true, false, true]);
 ok('com meta: EM PONTOS e o motivo dos pontos na tabela', [HM.includes('<th>EM PONTOS</th>'), HM.includes(_CXU_PORQUE['pts-barato'])], [true, true]);
+ok('o papel diz a tabela: na de hoje, e a nota quando a meta não pode julgar',
+   [HM.includes('pontos na tabela de pontos de hoje'), HM.includes('cadastro de HOJE (a tabela da meta)'),
+    _cxUepHtml(RMG, { data: '29/10/2026', hora: '08:00' }).includes('ainda não manda os pontos na tabela de hoje (.gs v5.41)'),
+    HP.includes('pontos na tabela de pontos de hoje')], [true, true, true, false]);
+ok('a leitura pede os pontos na tabela de hoje', /lerProducaoModeloPeriodo\(J\.de, J\.ate, null, \{ ptsCad:true \}\)/.test(pegaJs('async function _cxuPtsLer(')), true);
 ok('sem pontos: nem a coluna, e a linha da régua diz por quê',
    (() => { const h = _cxUepHtml(_cxUepMontar(HOUT, 20261029, 30, { pts: null, trava: '16/10/2026' }), { data: '29/10/2026', hora: '08:00', ptsFalha: 'pontos não lidos — o Apps Script não respondeu' });
             return [h.includes('<th class="n">PONTOS</th>'), h.includes('o Apps Script não respondeu'), h.includes('1 ▸ QUAL RÉGUA MEDE')]; })(), [false, true, true]);

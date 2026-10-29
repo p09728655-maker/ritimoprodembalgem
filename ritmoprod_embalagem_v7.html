@@ -3506,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.185.0';
+const APP_VER   = '7.186.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7656,29 +7656,39 @@ function _cxuJanela(hojeNum, n){
   const num = x => x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate();
   return { iniNum: num(ini), de: _filaN2br(num(ini)), ate: _filaN2br(num(ont)) };
 }
-// Pontos de JORNADA por dia (pontos − pontosHe) e caixas apontadas com produto,
-// dos itens do getProducaoModeloPeriodo. Item sem pontosHe (backend antes da
-// v5.20) → null: a jornada não se separa, e ratear seria inventar.
+// Pontos de JORNADA por dia e caixas apontadas com produto, dos itens do
+// getProducaoModeloPeriodo. TABELA ÚNICA (v7.186.0): com o .gs v5.41
+// (?ptsCad=1), os pontos na tabela de HOJE (pontosCad − pontosCadHe) — a mesma
+// da meta de pontos. Os gravados em cada lançamento (pontos − pontosHe) são de
+// tabelas diferentes quando a tabela muda no período: em 29/10/2026 ela subiu
+// ~4,6%, e os dias de antes saíam abaixo da meta pela tabela, não pelo mix.
+// Sem o pontosCad, os gravados (`tabela:'gravada'`) — servem à oscilação, não
+// ao veredito. Item sem pontosHe (backend antes da v5.20) → null: a jornada
+// não se separa, e ratear seria inventar.
 function _cxuPtsDoPeriodo(itens){
   if(!Array.isArray(itens)) return null;
-  if(itens.some(i => i && (i.pontosHe === undefined || i.pontosHe === null))) return null;
+  const tem = c => itens.every(i => !i || (i[c] !== undefined && i[c] !== null));
+  const hoje = tem('pontosCad') && tem('pontosCadHe');
+  if(!hoje && !tem('pontosHe')) return null;
   const m = {};
   itens.forEach(i => {
     if(!i || !i.data) return;
     const x = m[i.data] = m[i.data] || { pts:0, cx:0 };
-    x.pts += (Number(i.pontos) || 0) - (Number(i.pontosHe) || 0);
+    x.pts += hoje ? (Number(i.pontosCad) || 0) - (Number(i.pontosCadHe) || 0) : (Number(i.pontos) || 0) - (Number(i.pontosHe) || 0);
     x.cx  += Number(i.caixas) || 0;
   });
-  return m;
+  return { dias: m, tabela: hoje ? 'hoje' : 'gravada' };
 }
-// P (opcional): { pts: _cxuPtsDoPeriodo(...) | null, metaPts: META DE PONTOS /
-// DIA | null, trava: 'dd/mm/aaaa' | null }. Sem P, a conta de caixas × UEP é a
-// de sempre.
+// P (opcional): { pts: os `dias` do _cxuPtsDoPeriodo | null, tabela: 'hoje' |
+// 'gravada', metaPts: META DE PONTOS / DIA | null, trava: 'dd/mm/aaaa' | null }.
+// Sem P, a conta de caixas × UEP é a de sempre. A meta de pontos só julga com os
+// pontos na tabela de HOJE: contra os gravados, a troca de tabela viraria veredito.
 function _cxUepMontar(hist, hojeNum, n, P){
   const N = Number(n) || CXU_DIAS;
   const iniNum = _cxuJanela(hojeNum, N).iniNum;
   const ptsM = P && P.pts ? P.pts : null;
-  const metaPts = P && Number(P.metaPts) > 0 ? Number(P.metaPts) : null;
+  const metaDig = P && Number(P.metaPts) > 0 ? Number(P.metaPts) : null;
+  const metaPts = metaDig && P.tabela === 'hoje' ? metaDig : null;
   const dias = (hist || []).filter(d => {
     const dn = _cartNum(d && d.data);
     return dn && dn >= iniNum && dn < hojeNum && Number(d.meta) > 0 && Number(d.uep) > 0 && _qpRealDia(d) > 0;
@@ -7746,7 +7756,8 @@ function _cxUepMontar(hist, hojeNum, n, P){
     fora: trNum ? _cartNum(d.data) > trNum : false }));
   return {
     dias, n:dias.length, normal, de:_filaN2br(iniNum), ate:hojeStr(),
-    reguas, serie, metaPts: !!metaPts,
+    reguas, serie, metaPts: !!metaPts, ptsTabela: ptsM ? (P.tabela || 'gravada') : null,
+    metaSemTabela: !!(metaDig && !metaPts && ptsM),
     ptsAbaixo: conta(d => d.tipoP === 'pts-abaixo'), ptsAbaixoBarato: conta(d => d.porqueP === 'pts-barato'),
     ptsAcima: conta(d => d.tipoP === 'pts-acima'), ptsAcimaCaro: conta(d => d.porqueP === 'pts-caro'),
     cobBaixa: conta(d => d.cob != null && d.cob < DIR_COB_MIN),
@@ -7861,7 +7872,7 @@ function _cxUepHtml(R, ctx){
       + `<div class="cxu-tese">${ordem.length >= 2
           ? `${{ uep:'A <b>UEP</b> é', pts:'Os <b>PONTOS</b> são', cx:'As <b>CAIXAS</b> são' }[m0]} a régua que menos varia de um dia para o outro: <b>±${fmtP(G[m0].osc)}</b>, contra ` + ordem.slice(1).map(k => `±${fmtP(G[k].osc)} ${k === 'cx' ? 'das caixas' : k === 'pts' ? 'dos pontos' : 'da UEP'}`).join(' e ') + '.'
           : `${nomes[m0]}: variação de <b>±${fmtP(G[m0].osc)}</b> dia a dia.`}</div>`
-      + `<div class="cxu-txt m">Os mesmos ${G.n} dias fechados (${per}), só a jornada normal. A linha trabalha parecido todo dia — o que muda é o mix. A régua que mede o esforço tem de variar pouco.</div>`
+      + `<div class="cxu-txt m">Os mesmos ${G.n} dias fechados (${per}), só a jornada normal${R.ptsTabela === 'hoje' ? ', pontos na tabela de pontos de hoje' : ''}. A linha trabalha parecido todo dia — o que muda é o mix. A régua que mede o esforço tem de variar pouco.</div>`
       + '<div class="cxu-rgs">' + ['cx', 'pts', 'uep'].map(k => {
           const g = G[k];
           if(!g) return `<div class="cxu-rg" style="border-top-color:${CXU_COR[k]}"><div class="cxu-rg-l">${nomes[k]} <i>${conta[k]}</i></div><div class="cxu-rg-v">—</div><div class="cxu-rg-s">${_rpEsc(ctx.ptsFalha || 'pontos não lidos')}</div></div>`;
@@ -7906,7 +7917,7 @@ function _cxUepHtml(R, ctx){
       ? `<table><colgroup>${cD.map(c => `<col style="width:${c[0]}%">`).join('')}</colgroup><thead><tr>${cD.map(c => `<th>${c[1]}</th>`).join('')}</tr></thead>`
         + `<tbody>${dif.map(d => '<tr>' + cD.map(c => `<td>${c[2](d)}</td>`).join('') + '</tr>').join('')}</tbody></table>`
       : '<div class="cxu-txt m">Nenhum dia: no período as réguas deram o mesmo veredito.</div>')
-    + `<div class="cxu-txt m">Veredito pela régua do selo da TV: 96% ou mais NO RITMO · 90 a 96% ATENÇÃO · abaixo de 90% ABAIXO DO RITMO.${temPts && !R.metaPts ? ' Pontos sem veredito: a META DE PONTOS / DIA não está digitada neste computador (SIMULAR JORNADA da ⏱ CRONOANÁLISE).' : ''}</div>`;
+    + `<div class="cxu-txt m">Veredito pela régua do selo da TV: 96% ou mais NO RITMO · 90 a 96% ATENÇÃO · abaixo de 90% ABAIXO DO RITMO.${R.metaSemTabela ? ' Pontos sem veredito: o Apps Script ainda não manda os pontos na tabela de hoje (.gs v5.41) — comparar os pontos gravados com a meta de hoje erraria pela troca de tabela.' : temPts && !R.metaPts ? ' Pontos sem veredito: a META DE PONTOS / DIA não está digitada neste computador (SIMULAR JORNADA da ⏱ CRONOANÁLISE).' : ''}</div>`;
   // ── FOLHA 3 · ANEXO ───────────────────────────────────────────────────────
   const cA = [[8, 'DIA', '', d => `${_rpEsc(d.data.slice(0, 5))}${d.semSep ? '*' : ''}`],
               [12, 'CAIXAS', 'n', d => fmtN(Math.round(d.cx))],
@@ -7924,7 +7935,9 @@ function _cxUepHtml(R, ctx){
   if(R.cobBaixa) nts.push(`° menos de ${DIR_COB_MIN}% das caixas apontadas com produto: pontos e UEP contam só essa parte (${R.cobBaixa} dia(s)).`);
   const como = [
     ['VARIAÇÃO DIA A DIA', 'Desvio-padrão ÷ média, nos mesmos dias para as três réguas, só a jornada normal.'],
-    ['CAIXAS · UEP · PONTOS', 'Caixas = REALIZADO − HE CX. UEP = UEP de jornada gravada no fechamento. Pontos = os gravados em cada lançamento, menos os da hora extra.'],
+    ['CAIXAS · UEP · PONTOS', 'Caixas = REALIZADO − HE CX. UEP = UEP de jornada gravada no fechamento. ' + (R.ptsTabela === 'hoje'
+      ? 'Pontos = caixas × pontos do cadastro de HOJE (a tabela da meta), menos os da hora extra — uma tabela só no período. Diretoria e semana usam os gravados em cada lançamento.'
+      : 'Pontos = os gravados em cada lançamento, menos os da hora extra (a tabela de cada dia).')],
     ['DEPOIS DA TRAVA', `Dias depois de ${_rpEsc(G && G.trava || '—')}: a UEP foi calibrada com o ritmo da linha até ali; esses dias não entraram na conta dela.`],
     ['META EM CX PEDIA', 'META em caixas × UEP por caixa do dia, contra a META UEP: quanto esforço a meta em caixas pedia, no mix que rodou.'],
     ['O QUE NÃO VÊ', 'Caixa lançada sem produto não tem UEP nem ponto. É o dia fechado — o veredito da TV ao longo do dia pode ter mudado em outros momentos.']];
@@ -7946,17 +7959,17 @@ function _cxUepHtml(R, ctx){
 let _CXU_PTS = { key:null, ts:0, m:null };
 async function _cxuPtsLer(J){
   const key = J.de + '|' + J.ate;
-  if(_CXU_PTS.key === key && Date.now() - _CXU_PTS.ts < 5 * 60 * 1000) return { m:_CXU_PTS.m, falha:'' };
+  if(_CXU_PTS.key === key && Date.now() - _CXU_PTS.ts < 5 * 60 * 1000) return { m:_CXU_PTS.m, tabela:_CXU_PTS.tabela, falha:'' };
   const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
   let itens = null;
-  try{ itens = await lerProducaoModeloPeriodo(J.de, J.ate); }
+  try{ itens = await lerProducaoModeloPeriodo(J.de, J.ate, null, { ptsCad:true }); }
   finally{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
   if(itens == null) return { m:null, falha:'pontos não lidos — ' + (PH_FALHA === 'sem-endpoint' ? 'o backend não conhece a leitura por período'
     : PH_FALHA === 'erro' ? 'o Apps Script respondeu com erro' : 'o Apps Script não respondeu') };
-  const m = _cxuPtsDoPeriodo(itens);
-  if(!m) return { m:null, falha:'pontos sem a separação da hora extra (o Apps Script é anterior à v5.20)' };
-  _CXU_PTS = { key, ts:Date.now(), m };
-  return { m, falha:'' };
+  const r = _cxuPtsDoPeriodo(itens);
+  if(!r) return { m:null, falha:'pontos sem a separação da hora extra (o Apps Script é anterior à v5.20)' };
+  _CXU_PTS = { key, ts:Date.now(), m:r.dias, tabela:r.tabela };
+  return { m:r.dias, tabela:r.tabela, falha:'' };
 }
 async function gerarRelatorioCxUep(){
   const win = window.open('', '_blank', 'width=1100,height=800');
@@ -7966,8 +7979,8 @@ async function gerarRelatorioCxUep(){
   if(!_uepHistDaPlanilha(UEP_HIST)){ win.close(); alert('Não consegui ler o histórico (HISTORICO) da planilha.\n\nTente de novo em alguns segundos.'); return; }
   const hojeNum = _cartNum(hojeStr());
   // Em sequência, depois do histórico: uma leitura de cada vez no Apps Script.
-  let P = { pts:null, metaPts:null, trava:UEP_TRAVADA_DESDE || null }, ptsFalha = '';
-  try{ const r = await _cxuPtsLer(_cxuJanela(hojeNum, CXU_DIAS)); P.pts = r.m; ptsFalha = r.falha; }
+  let P = { pts:null, tabela:null, metaPts:null, trava:UEP_TRAVADA_DESDE || null }, ptsFalha = '';
+  try{ const r = await _cxuPtsLer(_cxuJanela(hojeNum, CXU_DIAS)); P.pts = r.m; P.tabela = r.tabela || null; ptsFalha = r.falha; }
   catch(e){ ptsFalha = 'pontos não lidos — ' + (e && e.message || 'falha na leitura'); }
   try{ const v = _capPtsMetaLer(localStorage.getItem(CAP_PTS_LS)); P.metaPts = v > 0 ? v : null; }catch(e){}
   let R = null, corpo = '';
@@ -9412,6 +9425,8 @@ async function lerProducaoModeloPeriodo(de,ate,onTent,opt){
   // elas o payload de um período longo passa de 100 KB, fica fora do cache do
   // Apps Script e demora — por isso essa chamada espera mais (opt.ms).
   if(opt && opt.cxHora) url+='&cxHora=1';
+  // v5.41: os pontos também na tabela de HOJE (só o CAIXAS × PONTOS × UEP pede).
+  if(opt && opt.ptsCad) url+='&ptsCad=1';
   const TENT=3;
   for(let i=1;i<=TENT;i++){
     try{
