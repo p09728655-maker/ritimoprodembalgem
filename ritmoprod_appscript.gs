@@ -1,5 +1,17 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.40 — PONTOS DO PASSADO CONGELADOS (o gravado no lançamento)
+//               PPCP, 29/10/2026, ao atualizar a coluna PONTOS da
+//               PRODUTO_CODIGO pelo CUSTO REP do ERP (+4,6% na média): "congelar
+//               o passado". O dia (getPontosDia) e o período
+//               (getProducaoModeloPeriodo, pontos e pontosHe) recalculavam
+//               caixas × PONTOS do cadastro de AGORA, então a troca da tabela
+//               mudava os pontos de todo dia já feito. Agora leem a coluna
+//               PONTOS da PRODUCAO_PRODUTO — o que o registrarProducaoProduto
+//               gravou na hora (_ptsDoLog). Célula vazia → o cadastro, como era.
+//               Medido na planilha antes da troca: nenhuma linha vazia; 30 dias
+//               iguais aos de hoje, 90 dias −0,013% (decimais de julho).
+//               A programação (pontos da carteira) continua pelo cadastro.
 // Versão: 5.39 — LOTE INTERNO NA PROGRAMAÇÃO DETALHADA
 //               PPCP, 28/10/2026, com o PRÓXIMOS DIAS na tela: "coloca nos card
 //               lote interno". A PROGRAMACAO tem a coluna LOTE INTERNO (o lote
@@ -4265,6 +4277,26 @@ function setUepCatalogo(p) {
   }
 }
 
+// PONTOS de uma linha do log (v5.40): o valor GRAVADO no lançamento — o
+// registrarProducaoProduto grava caixas × PONTOS do cadastro daquela hora. É
+// ele que congela o passado: trocar a coluna PONTOS da PRODUTO_CODIGO muda só
+// os lançamentos dali em diante. Antes o dia e o período recalculavam caixas ×
+// cadastro de AGORA, e a atualização dos pontos de 29/10/2026 (+4,6% na média)
+// subiria outubro inteiro sem a linha ter feito nada a mais. Célula vazia ou
+// aba sem a coluna → caixas × cadastro de agora, como era. Zero é valor.
+function _ptsDoLog(r, iPts, cx, prod) {
+  if (iPts >= 0) {
+    const v = r[iPts];
+    if (typeof v === 'number' && isFinite(v)) return v;
+    if (v != null && String(v).trim() !== '') {
+      const s = String(v).trim();
+      const n = Number(s.indexOf(',') >= 0 ? s.replace(/\./g, '').replace(',', '.') : s);
+      if (isFinite(n)) return n;
+    }
+  }
+  return cx * ((prod && prod.pontos) || 0);
+}
+
 // Produção do dia em PONTOS e PESO (kg), a partir do log PRODUCAO_PRODUTO.
 // Usada só pelo gerencial/TV (fora do caminho quente do app do operador).
 function getPontosDia() {
@@ -4319,6 +4351,7 @@ function getPontosDia() {
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
   const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const iPts  = hdr.indexOf('PONTOS');   // v5.40: o gravado no lançamento (_ptsDoLog)
   const rows = values.slice(1);
 
   let pontos = 0, pesoKg = 0, caixas = 0;
@@ -4340,7 +4373,7 @@ function getPontosDia() {
     if (!codigo || !cx) return;
 
     const prod = catalogo[codigo] || { desc: '', pontos: 0, peso: 0 };
-    const pts  = cx * (prod.pontos || 0);
+    const pts  = _ptsDoLog(r, iPts, cx, prod);
     const kg   = cx * (prod.peso   || 0);
 
     pontos += pts; pesoKg += kg; caixas += cx;
@@ -4479,6 +4512,7 @@ function getProducaoModeloPeriodo(p) {
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
   const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
+  const iPts  = hdr.indexOf('PONTOS');   // v5.40: o gravado no lançamento (_ptsDoLog)
 
   // Sequência dos bipes por dia/hora, na ORDEM da planilha — é ela que revela
   // troca dentro da mesma hora e alternância (dois lados em paralelo).
@@ -4518,8 +4552,9 @@ function getProducaoModeloPeriodo(p) {
       if (!sd[hSeq]) { sd[hSeq] = []; (horasDia[dStr] = horasDia[dStr] || []).push(hSeq); }
       sd[hSeq].push(modelo + '|' + descBase + '|' + pr.cor);
     }
+    const ptsL = _ptsDoLog(r, iPts, cx, prod);
     map[key].caixas += cx;
-    map[key].pontos += cx * (prod.pontos || 0);
+    map[key].pontos += ptsL;
     map[key].pesoKg += cx * (prod.peso   || 0);
     // UEP média por caixa do PRODUTO no período (v5.14): um mapa pequeno no
     // topo do payload, não um campo por item — o payload deste período já
@@ -4555,7 +4590,7 @@ function getProducaoModeloPeriodo(p) {
       // v5.20: PONTOS EM HORA EXTRA, pela MESMA régua das caixas
       // (_ehHoraExtraCaixas: fora de 07:00–17:00). Soma exata na leitura — o
       // painel da diretoria mostra pontos sem HE e com HE sem ratear nada.
-      if (_ehHoraExtraCaixas(hora)) map[key].pontosHe += cx * (prod.pontos || 0);
+      if (_ehHoraExtraCaixas(hora)) map[key].pontosHe += ptsL;
       if (querUepVer) {
         const vg = _uepVigente(verM && verM[codigo], dNum, prod.uep);
         const it = map[key];

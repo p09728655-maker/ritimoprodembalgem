@@ -72,6 +72,10 @@ via Google Apps Script (JSONP).
   sozinho, depois da troca, hoje fora — até a v5.35; na v5.36 só a troca) e o
   `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
   as paradas apontadas de cada hora, por tipo): `node crono-registro.test.js`.
+- `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
+  período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
+  `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
+  `node pontos.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -5161,6 +5165,37 @@ feito e dá ar de verdade ao que sobrou.
   token — ficou como estava, discreta nos dois fundos.
 - **Não adotar borda colorida por card** (a maquete pintava cada card de uma
   cor sem significado): cor só onde há função.
+
+## PONTOS: a tabela é do ERP, e o passado fica congelado (`.gs` v5.40)
+- PPCP, 29/10/2026: *"preciso atualizar pontos na coluna I"*, com o
+  `PONTOS_ATUALIZADO.xlsx` (CODIGO, DESCRICAO, M³, PESO BRUTO, **CUSTO REP**,
+  PRECO COMPRA — não tem coluna chamada PONTOS) → *"está na coluna E cust
+  rep"* → *"4 casas, congelar o passado"*. **PONTOS = CUSTO REP do ERP**, com
+  4 casas, gravado pela API casando pelo código só com dígitos (417 de 429
+  códigos; os 12 fora do arquivo ficaram). O 1º lançamento de 03/07 já tinha
+  pontos com 4 casas — o cadastro foi arredondado para inteiro depois.
+- **Efeito medido** na produção de 29/09–28/10: **+4,6%** de pontos
+  (191.609 → 200.424 por dia); 37 códigos sobem mais de 10%. Os pontos do
+  cadastro antigo são um CUSTO REP de outra data.
+- **Congelar o passado**: o `getPontosDia` e o `getProducaoModeloPeriodo` (pontos
+  e `pontosHe`) somam a coluna PONTOS da `PRODUCAO_PRODUTO` (`_ptsDoLog`), que o
+  `registrarProducaoProduto` grava como caixas × cadastro **da hora**. Antes eles
+  recalculavam com o cadastro de AGORA, e trocar a tabela mudava todo o
+  passado. Célula vazia → cadastro de agora; **zero é valor**.
+  - A **programação** (carteira, PROGRAMAÇÃO × CAPACIDADE, diretoria) continua
+    `qtde × cadastro` — é futuro, vale a tabela nova.
+  - O `trocarProdutoLancamento` regrava o PONTOS da linha com o cadastro de
+    agora (é o produto certo daquela linha) — continua igual.
+  - ⚠ Erro de cadastro também fica congelado: a BANQUETA VERSATIL CINAMOMO
+    estava com 118 (as outras cores 49) e os 259 cx lançados assim seguem com
+    118. Corrigir o passado é editar a coluna PONTOS das linhas do log.
+- ⚠ A **META DE PONTOS / DIA** (diálogo da capacidade, só no computador) não
+  acompanha a tabela sozinha: subiu a tabela, revisar a meta.
+- ⚠ **Gravar número pela API em célula pt-BR**: mandar o valor como NÚMERO
+  (JSON), nunca texto `"170.578"` — com USER_ENTERED, texto com ponto vira
+  milhar. O catálogo lê PONTOS com `Number()`.
+- ⚠ O arquivo tem 65 códigos 501 que não existem na `PRODUTO_CODIGO`: se forem
+  produzidos, entram com 0 ponto.
 
 ## Notas de versão e glossário
 - `CHANGELOG.md` — uma entrada por publicação. **"Atenção" é obrigatório em toda

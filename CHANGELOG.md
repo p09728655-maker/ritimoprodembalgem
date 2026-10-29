@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## `.gs` v5.40 — 29/10/2026 · Pontos do passado congelados · ⚠ re-deploy
+
+- PPCP, 29/10/2026: a coluna PONTOS da PRODUTO_CODIGO foi atualizada pelo
+  **CUSTO REP** do ERP (`PONTOS_ATUALIZADO.xlsx`), com 4 casas, em 417 dos
+  429 códigos. Os 12 que não vinham no arquivo ficaram como estavam. Na
+  produção de 29/09 a 28/10 a tabela nova dá **+4,6%** de pontos.
+- O painel **não lia** os pontos gravados em cada lançamento: o dia e o
+  período recalculavam caixas × PONTOS do cadastro **de agora**. Com a tabela
+  nova, outubro inteiro subiria 4,6% sem a linha ter feito nada a mais. Agora
+  o dia (`getPontosDia`), o período e a semana da diretoria
+  (`getProducaoModeloPeriodo`, pontos e pontos em HE) somam a coluna PONTOS da
+  PRODUCAO_PRODUTO — o valor da tabela **na hora do lançamento**.
+- **Atenção:** os pontos dos dias passados **não mudam** com a tabela nova.
+  Os lançamentos a partir da troca saem cerca de 4,6% maiores, e o dia de
+  29/10 mistura as duas tabelas (antes e depois da troca). Até o re-deploy, o
+  passado aparece recalculado com a tabela nova. Conferido na planilha: o
+  congelado dá o mesmo número dos últimos 30 dias de antes da troca, e −0,013%
+  em 90 dias (decimais de julho).
+- **Atenção:** a **META DE PONTOS / DIA** do diálogo da capacidade continua a
+  mesma. Com a tabela 4,6% maior, ela fica 4,6% mais fácil se não for revista.
+- A **carteira** (pontos da programação, PROGRAMAÇÃO × CAPACIDADE, diretoria)
+  segue pelo cadastro de agora — é o futuro, vale a tabela nova.
+- A BANQUETA VERSATIL CINAMOMO estava com 118 pontos (as outras cores com 49)
+  e passou a 53,66. Os 259 cx lançados com 118 ficam congelados assim.
+- Teste novo: `node pontos.test.js` (o `.gs` inteiro: lançar, trocar o
+  cadastro, lançar de novo, ler dia e período; célula vazia, zero e texto).
+
 ## v7.183.0 — 28/10/2026 · Gráficos ocupam o cartão inteiro em tela larga
 
 - PPCP, com a aba ⚖ UEP a 1920: *"por que esse gráfico fica encolhido à
