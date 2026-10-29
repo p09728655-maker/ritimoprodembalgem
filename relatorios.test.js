@@ -5246,7 +5246,7 @@ console.log('\n── estudo de UEP ──');
   ok('com o pontosHe do .gs v5.20 a semana separa pontos sem e com HE, exato',
      [_dirSomaPts([{ pontos:10, caixas:3, pontosHe:4 }, { pontos:5, caixas:2, pontosHe:0 }]).ptsHe,
       /PONTOS <i>sem HE<\/i><\/span>\$\{_dirComHe\(S\.pts\)\}<\/div><div class="dir-kv">\$\{f\(S\.pts - S\.ptsHe\)\}/.test(pega('function _dirSemanaHtml(')),
-      /if \(_ehHoraExtraCaixas\(hora\)\) map\[key\]\.pontosHe \+= cx \* \(prod\.pontos \|\| 0\);/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8'))],
+      /if \(_ehHoraExtraCaixas\(hora\)\) map\[key\]\.pontosHe \+= ptsL;/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8'))],
      [4, true, true]);
   // UM VEREDITO: só a UEP tem selo; caixas e pontos são número
   const HH = _dirHojeHtml(H), SH = _dirSemanaHtml(S, [], false, null);
