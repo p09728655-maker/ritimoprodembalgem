@@ -2914,7 +2914,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <span id="uep-upd" class="par-upd"></span>
       <button class="btn btn-ghost" onclick="setTab('crono')" style="font-size:10px;padding:4px 10px" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" style="font-size:10px;padding:4px 10px" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
-      <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: em quantos o veredito em caixas e o em UEP discordaram, e por quê">🖨 CAIXAS × UEP</button>
+      <button class="btn btn-ghost" onclick="gerarRelatorioCxUep()" style="font-size:10px;padding:4px 10px" title="Últimos 30 dias fechados: caixas, pontos e UEP nos mesmos dias — qual oscila menos com o mix, e quando os vereditos discordaram">🖨 CAIXAS × PONTOS × UEP</button>
       <button class="btn btn-ghost" onclick="gerarRelatorioUepAba()" style="font-size:10px;padding:4px 10px" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 IMPRIMIR</button>
     </div>
   </div>
@@ -3506,7 +3506,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.183.0';
+const APP_VER   = '7.184.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7631,22 +7631,74 @@ function gerarRelatorioCronoDia(){
 // sai a HE CX). Veredito pela MESMA régua do selo (sc / slRitmo, ≥ 96%).
 // ⚠ Dia com caixa lançada sem produto tem menos UEP do que esforço (a caixa sem
 // produto não tem UEP) — o "como ler" avisa.
+//
+// PONTOS, A TERCEIRA RÉGUA (v7.184.0, PPCP 29/10/2026: "ver antes e depois
+// para ter argumento de mudar para UEP, que faz mais sentido ao invés de
+// pontos ou caixas"). A pergunta é qual régua mede o ESFORÇO da linha: ela
+// trabalha parecido todo dia e o que muda é o mix — a régua que mede esforço
+// oscila menos de um dia para o outro. Caixa conta volume (toda caixa vale 1),
+// ponto conta VALOR (custo de reposição do ERP), UEP conta tempo de embalar.
+// As três nos MESMOS dias e só na jornada normal (caixas − HE CX; UEP de
+// jornada; pontos − pontosHe, .gs v5.20). Os pontos são os gravados no
+// lançamento (.gs v5.40): a tabela nova de 29/10/2026 não muda dia fechado.
+// A UEP foi calibrada com o ritmo da linha até a trava (UEP_TRAVADA_DESDE):
+// a oscilação dos dias DEPOIS dela é a que não foi usada para fazer a UEP.
 const CXU_DIAS  = 30;      // dias corridos antes de hoje
 const CXU_FOLGA = 5;       // ±5%: meta em caixas "pedia mais/menos" que a de UEP; mix pesado/leve
-function _cxUepMontar(hist, hojeNum, n){
+const CXU_FORA_MIN = 5;    // dias depois da trava para dizer a oscilação fora da amostra
+const CXU_COR = { uep:'#eb6834', cx:'#2a78d6', pts:'#1baf7a' };   // validadas no papel branco (dataviz)
+// A janela: n dias corridos antes de hoje, hoje fora.
+function _cxuJanela(hojeNum, n){
   const N = Number(n) || CXU_DIAS;
   const h = new Date(Math.floor(hojeNum / 10000), Math.floor(hojeNum / 100) % 100 - 1, hojeNum % 100);
   const ini = new Date(h); ini.setDate(ini.getDate() - N);
-  const iniNum = ini.getFullYear() * 10000 + (ini.getMonth() + 1) * 100 + ini.getDate();
+  const ont = new Date(h); ont.setDate(ont.getDate() - 1);
+  const num = x => x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate();
+  return { iniNum: num(ini), de: _filaN2br(num(ini)), ate: _filaN2br(num(ont)) };
+}
+// Pontos de JORNADA por dia (pontos − pontosHe) e caixas apontadas com produto,
+// dos itens do getProducaoModeloPeriodo. Item sem pontosHe (backend antes da
+// v5.20) → null: a jornada não se separa, e ratear seria inventar.
+function _cxuPtsDoPeriodo(itens){
+  if(!Array.isArray(itens)) return null;
+  if(itens.some(i => i && (i.pontosHe === undefined || i.pontosHe === null))) return null;
+  const m = {};
+  itens.forEach(i => {
+    if(!i || !i.data) return;
+    const x = m[i.data] = m[i.data] || { pts:0, cx:0 };
+    x.pts += (Number(i.pontos) || 0) - (Number(i.pontosHe) || 0);
+    x.cx  += Number(i.caixas) || 0;
+  });
+  return m;
+}
+// P (opcional): { pts: _cxuPtsDoPeriodo(...) | null, metaPts: META DE PONTOS /
+// DIA | null, trava: 'dd/mm/aaaa' | null }. Sem P, a conta de caixas × UEP é a
+// de sempre.
+function _cxUepMontar(hist, hojeNum, n, P){
+  const N = Number(n) || CXU_DIAS;
+  const iniNum = _cxuJanela(hojeNum, N).iniNum;
+  const ptsM = P && P.pts ? P.pts : null;
+  const metaPts = P && Number(P.metaPts) > 0 ? Number(P.metaPts) : null;
   const dias = (hist || []).filter(d => {
     const dn = _cartNum(d && d.data);
     return dn && dn >= iniNum && dn < hojeNum && Number(d.meta) > 0 && Number(d.uep) > 0 && _qpRealDia(d) > 0;
   }).sort((a, b) => _cartNum(a.data) - _cartNum(b.data)).map(d => {
     const cx = _qpRealDia(d), metaCx = Number(d.meta), uep = Number(d.uep), metaU = uepDiaMeta(d);
     const pctCx = cx / metaCx * 100, pctU = uep / metaU * 100, uepCx = uep / cx;
+    // Pontos do dia: só com caixa apontada com produto (dia sem item → null,
+    // nunca 0). A cobertura é das caixas com produto sobre o realizado TOTAL —
+    // os dois com a hora extra dentro.
+    const pd = ptsM ? ptsM[d.data] : null;
+    const pts = pd && pd.cx > 0 ? pd.pts : null;
+    const ptsU = pts != null ? pts / uep : null;
+    const pctP = metaPts && pts != null ? pts / metaPts * 100 : null;
     return { data:d.data, cx, metaCx, pctCx, uep, metaU, pctU, uepCx,
              metaCxEmUep: metaCx * uepCx, pctMetaCx: metaCx * uepCx / metaU * 100,
-             clsCx: sc(pctCx), clsU: sc(pctU), semSep: d.heCx === null || d.heCx === undefined };
+             clsCx: sc(pctCx), clsU: sc(pctU), semSep: d.heCx === null || d.heCx === undefined,
+             pts, ptsU, pctP, clsP: pctP != null ? sc(pctP) : null,
+             cob: pd ? pd.cx / (Number(d.real) || 1) * 100 : null,
+             // a meta de UEP, no mix de valor do dia, valia quantos % da meta de pontos
+             pctMetaUPts: metaPts && ptsU != null ? metaU * ptsU / metaPts * 100 : null };
   });
   const s = dias.map(d => d.uepCx).sort((a, b) => a - b);
   const normal = s.length ? (s.length % 2 ? s[s.length >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
@@ -7660,11 +7712,44 @@ function _cxUepMontar(hist, hojeNum, n){
       : d.tipo === 'uep-abaixo'
       ? (d.pctMetaCx < 100 * lo ? 'meta-baixa' : d.mix === 'leve' ? 'mix-leve' : 'limite')
       : null;
+    // Pontos × UEP: só com a meta de pontos (sem ela não há veredito em pontos).
+    const okP = d.clsP === 'ok';
+    d.tipoP = d.clsP == null ? null : okP === okU ? 'igual' : (okU ? 'pts-abaixo' : 'pts-acima');
+    d.porqueP = d.tipoP === 'pts-abaixo' ? (d.pctMetaUPts < 100 * lo ? 'pts-barato' : 'pts-limite')
+      : d.tipoP === 'pts-acima' ? (d.pctMetaUPts > 100 * hi ? 'pts-caro' : 'pts-limite')
+      : null;
   });
   const conta = (f) => dias.filter(f).length;
   const pm = dias.map(d => d.pctMetaCx).sort((a, b) => a - b);
+  // AS TRÊS RÉGUAS nos MESMOS dias: com os pontos lidos, só os dias que têm
+  // pontos (senão a oscilação de cada régua sairia de dias diferentes).
+  const temPts = !!ptsM;
+  const base = temPts ? dias.filter(d => d.pts != null) : dias;
+  const trNum = P && P.trava ? _cartNum(P.trava) : 0;
+  const fora = trNum ? base.filter(d => _cartNum(d.data) > trNum) : [];
+  const media = v => v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+  const regua = (f, cls, tipo) => ({
+    media: media(base.map(f)), osc: _qpOscilacao(base.map(f)),
+    oscFora: fora.length >= CXU_FORA_MIN ? _qpOscilacao(fora.map(f)) : null,
+    noRitmo: cls ? base.filter(d => d[cls] === 'ok').length : null,
+    discorda: tipo ? base.filter(d => d[tipo] && d[tipo] !== 'igual').length : null });
+  const reguas = { n: base.length, nFora: fora.length, trava: P && P.trava || null,
+    cx: regua(d => d.cx, 'clsCx', 'tipo'),
+    uep: regua(d => d.uep, 'clsU', null),
+    pts: temPts && base.length ? regua(d => d.pts, metaPts ? 'clsP' : null, metaPts ? 'tipoP' : null) : null };
+  // A série do gráfico: cada dia como % da média da própria régua (índice 100),
+  // para as três caberem num eixo só — nunca dois eixos.
+  const idx = (v, m) => m > 0 ? v / m * 100 : null;
+  const serie = base.map(d => ({ data:d.data,
+    cx: idx(d.cx, reguas.cx.media), uep: idx(d.uep, reguas.uep.media),
+    pts: reguas.pts ? idx(d.pts, reguas.pts.media) : null,
+    fora: trNum ? _cartNum(d.data) > trNum : false }));
   return {
     dias, n:dias.length, normal, de:_filaN2br(iniNum), ate:hojeStr(),
+    reguas, serie, metaPts: !!metaPts,
+    ptsAbaixo: conta(d => d.tipoP === 'pts-abaixo'), ptsAbaixoBarato: conta(d => d.porqueP === 'pts-barato'),
+    ptsAcima: conta(d => d.tipoP === 'pts-acima'), ptsAcimaCaro: conta(d => d.porqueP === 'pts-caro'),
+    cobBaixa: conta(d => d.cob != null && d.cob < DIR_COB_MIN),
     iguais: conta(d => d.tipo === 'igual'),
     cxAbaixo: conta(d => d.tipo === 'cx-abaixo'), cxAbaixoMeta: conta(d => d.porque === 'meta-alta'),
     uepAbaixo: conta(d => d.tipo === 'uep-abaixo'), uepAbaixoMeta: conta(d => d.porque === 'meta-baixa'),
@@ -7673,12 +7758,67 @@ function _cxUepMontar(hist, hojeNum, n){
   };
 }
 const _CXU_PORQUE = {
-  'meta-alta':  'a meta em caixas pedia mais UEP que a meta de UEP',
-  'meta-baixa': 'a meta em caixas pedia menos UEP que a meta de UEP',
-  'mix-pesado': 'mix pesado: cada caixa valeu mais UEP que o normal',
-  'mix-leve':   'mix leve: cada caixa valeu menos UEP que o normal',
-  'limite':     'perto do limite das duas réguas'
+  'meta-alta':  'caixas: a meta pedia mais UEP que a de UEP',
+  'meta-baixa': 'caixas: a meta pedia menos UEP que a de UEP',
+  'mix-pesado': 'caixas: mix pesado (mais UEP por caixa)',
+  'mix-leve':   'caixas: mix leve (menos UEP por caixa)',
+  'limite':     'caixas: perto do limite',
+  'pts-barato': 'pontos: mix de pouco valor por UEP',
+  'pts-caro':   'pontos: mix de muito valor por UEP',
+  'pts-limite': 'pontos: perto do limite'
 };
+// O gráfico das TRÊS RÉGUAS (desenho, sem conta: a série vem pronta do
+// _cxUepMontar, cada dia como % da média da própria régua). Um eixo só; a
+// linha da média (100) em destaque; a trava da UEP marcada quando há dia
+// depois dela. Rótulo direto no fim de cada linha (texto em tinta, a cor fica
+// na amostra) e <title> em cada ponto.
+function _cxuSvg(R, W){
+  const S = R.serie || [];
+  if(S.length < 2) return '';
+  W = W || 980;
+  const H = 250, L = 40, D = 132, T = 14, B = 30, FS = 11;
+  const ks = [['uep', 'UEP', 3, ''], ['pts', 'PONTOS', 2, '7 4'], ['cx', 'CAIXAS', 2, '']]
+    .filter(k => S.every(s => s[k[0]] != null));
+  let lo = 100, hi = 100;
+  S.forEach(s => ks.forEach(k => { lo = Math.min(lo, s[k[0]]); hi = Math.max(hi, s[k[0]]); }));
+  lo = Math.floor(Math.min(lo, 80) / 20) * 20; hi = Math.ceil(Math.max(hi, 120) / 20) * 20;
+  const pw = W - L - D, ph = H - T - B;
+  const x = i => L + i * pw / (S.length - 1);
+  const y = v => T + (hi - v) / (hi - lo) * ph;
+  let g = '';
+  for(let v = lo; v <= hi; v += 20){
+    const m = v === 100;
+    g += `<line x1="${L}" x2="${L + pw}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="${m ? '#5B6470' : '#e2e8f0'}" stroke-width="${m ? 1.2 : 1}"/>`
+      + `<text x="${L - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" font-size="${FS - 1}"${m ? ' font-weight="700"' : ''} fill="#5B6470">${v}</text>`;
+  }
+  const passo = S.length > 24 ? 2 : 1;
+  S.forEach((s, i) => { if(i % passo === 0 || i === S.length - 1)
+    g += `<text x="${x(i).toFixed(1)}" y="${H - B + 16}" text-anchor="middle" font-size="${FS - 1}" fill="#5B6470">${_rpEsc(s.data.slice(0, 5))}</text>`; });
+  const iFora = S.findIndex(s => s.fora);
+  if(iFora > 0 && R.reguas && R.reguas.trava){
+    const xt = (x(iFora - 1) + x(iFora)) / 2;
+    g += `<line x1="${xt.toFixed(1)}" x2="${xt.toFixed(1)}" y1="${T}" y2="${T + ph}" stroke="#5B6470" stroke-dasharray="3 3"/>`
+      + `<text x="${(xt + 5).toFixed(1)}" y="${T + 10}" font-size="${FS - 2}" fill="#5B6470" letter-spacing=".6">UEP TRAVADA ${_rpEsc(R.reguas.trava.slice(0, 5))} →</text>`;
+  }
+  // linhas: UEP por último (por cima)
+  ks.slice().reverse().forEach(k => {
+    const pts = S.map((s, i) => x(i).toFixed(1) + ',' + y(s[k[0]]).toFixed(1)).join(' ');
+    g += `<polyline points="${pts}" fill="none" stroke="${CXU_COR[k[0]]}" stroke-width="${k[2]}" stroke-linejoin="round"${k[3] ? ` stroke-dasharray="${k[3]}"` : ''}/>`;
+    S.forEach((s, i) => { g += `<circle cx="${x(i).toFixed(1)}" cy="${y(s[k[0]]).toFixed(1)}" r="4" fill="${CXU_COR[k[0]]}" stroke="#fff" stroke-width="2"><title>${_rpEsc(s.data)} · ${k[1]}: ${fmtN(Math.round(s[k[0]]))}% da média</title></circle>`; });
+  });
+  // rótulos diretos no fim, afastados um do outro (mín. 15 px)
+  const ult = S[S.length - 1];
+  const rot = ks.map(k => ({ k, yv: y(ult[k[0]]) })).sort((a, b) => a.yv - b.yv);
+  for(let i = 1; i < rot.length; i++) if(rot[i].yv - rot[i - 1].yv < 15) rot[i].yv = rot[i - 1].yv + 15;
+  rot.forEach(r => {
+    const rg = R.reguas && R.reguas[r.k[0]];
+    const xr = L + pw + 10;
+    g += `<line x1="${xr}" x2="${xr + 16}" y1="${r.yv.toFixed(1)}" y2="${r.yv.toFixed(1)}" stroke="${CXU_COR[r.k[0]]}" stroke-width="3"${r.k[3] ? ` stroke-dasharray="${r.k[3]}"` : ''}/>`
+      + `<text x="${xr + 21}" y="${(r.yv + 4).toFixed(1)}" font-size="${FS}" font-weight="700" fill="#1F2328">${r.k[1]}`
+      + (rg && rg.osc != null ? ` <tspan font-weight="400" fill="#5B6470">±${fmtP(rg.osc)}</tspan>` : '') + '</text>';
+  });
+  return `<svg class="cxu-svg" viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px" role="img" aria-label="As três réguas dia a dia, em % da média de cada uma">${g}</svg>`;
+}
 const _CXU_DOC_SKIN = `
 .cxu-doc .kpi-grid{grid-template-columns:repeat(5,1fr)}
 .cxu-doc .kpi-card{border-left-color:#cbd5e0}
@@ -7686,70 +7826,162 @@ const _CXU_DOC_SKIN = `
 .cxu-doc table{table-layout:fixed}
 .cxu-doc td.n,.cxu-doc th.n{text-align:right}
 .cxu-doc tbody td{padding:5px 7px}
-.cxu-doc .cxu-st{display:inline-block;min-width:92px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid;border-radius:3px;padding:1px 4px}
+.cxu-doc .cxu-st{display:inline-block;min-width:84px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.5px;border:1px solid;border-radius:3px;padding:1px 4px}
 .cxu-doc .cxu-st.ok{color:#2f855a}.cxu-doc .cxu-st.warn{color:#b7791f}.cxu-doc .cxu-st.red{color:#c53030}
 .cxu-doc tr.cxu-dif td{background:#fffaf0}
+.cxu-doc .cxu-reg td,.cxu-doc .cxu-reg th{text-align:right}
+.cxu-doc .cxu-reg td:first-child,.cxu-doc .cxu-reg th:first-child,.cxu-doc .cxu-reg td:nth-child(2),.cxu-doc .cxu-reg th:nth-child(2){text-align:left}
+.cxu-doc .cxu-reg tr.uep td{font-weight:700}
+.cxu-doc .cxu-sw{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.cxu-doc .cxu-sw.tr{border-top-style:dashed}
+.cxu-doc .cxu-leg{display:flex;gap:18px;font-size:10px;color:#5B6470;margin:8px 0 2px}
+.cxu-doc .cxu-svg{display:block;margin:2px 0 4px;page-break-inside:avoid}
 `;
 // Desenho (sem conta): tudo vem pronto do _cxUepMontar.
 function _cxUepHtml(R, ctx){
   const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
   const pc = x => R.n ? fmtP(x / R.n * 100) : '—';
   const st = (cls, pct) => `<span class="cxu-st ${cls}">${slRitmo(pct)}</span>`;
-  const colg = '<colgroup><col style="width:8%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:13%"><col style="width:6%"><col style="width:10%"><col style="width:6%"><col style="width:10%"><col style="width:18%"></colgroup>';
-  const th = '<thead><tr><th>DIA</th><th class="n">CAIXAS · META</th><th class="n">%</th><th>EM CAIXAS</th><th class="n">UEP · META UEP</th><th class="n">%</th><th>EM UEP</th><th class="n">UEP/CX</th><th class="n">A META EM CX PEDIA</th><th>POR QUE DISCORDARAM</th></tr></thead>';
-  const linha = d => `<tr${d.tipo !== 'igual' ? ' class="cxu-dif"' : ''}><td>${_rpEsc(d.data.slice(0, 5))}${d.semSep ? '*' : ''}</td>`
-    + `<td class="n">${fmtN(Math.round(d.cx))} · ${fmtN(Math.round(d.metaCx))}</td><td class="n">${fmtP(d.pctCx)}</td><td>${st(d.clsCx, d.pctCx)}</td>`
-    + `<td class="n">${fmtN(Math.round(d.uep))} · ${fmtN(Math.round(d.metaU))}</td><td class="n">${fmtP(d.pctU)}</td><td>${st(d.clsU, d.pctU)}</td>`
-    + `<td class="n">${_tvF2(d.uepCx)}</td><td class="n">${fmtN(Math.round(d.metaCxEmUep))} · ${fmtP(d.pctMetaCx)}</td>`
-    + `<td>${d.porque ? _CXU_PORQUE[d.porque] : '—'}</td></tr>`;
-  const dif = R.dias.filter(d => d.tipo !== 'igual');
+  const G = R.reguas || null, temPts = !!(G && G.pts), comMeta = temPts && R.metaPts;
+  // ── 1 · AS TRÊS RÉGUAS ────────────────────────────────────────────────────
+  const nomes = { cx:'CAIXAS', pts:'PONTOS', uep:'UEP' };
+  const conta = { cx:'volume — toda caixa vale 1', pts:'valor — custo de reposição do ERP', uep:'esforço — tempo de embalar' };
+  const un = { cx:'cx', pts:'pts', uep:'UEP' };
+  const regLinha = k => {
+    const g = G[k];
+    if(!g) return `<tr><td><span class="cxu-sw" style="border-color:${CXU_COR[k]}"></span>${nomes[k]}</td><td>${conta[k]}</td><td colspan="5" style="text-align:left">${_rpEsc(ctx.ptsFalha || 'pontos não lidos')}</td></tr>`;
+    return `<tr class="${k}"><td><span class="cxu-sw${k === 'pts' ? ' tr' : ''}" style="border-color:${CXU_COR[k]}"></span>${nomes[k]}</td><td>${conta[k]}</td>`
+      + `<td>${g.media != null ? fmtN(Math.round(g.media)) + ' ' + un[k] : '—'}</td>`
+      + `<td>${g.osc != null ? '±' + fmtP(g.osc) : '—'}</td>`
+      + `<td>${g.oscFora != null ? '±' + fmtP(g.oscFora) : '—'}</td>`
+      + `<td>${g.noRitmo != null ? fmtN(g.noRitmo) + ' de ' + fmtN(G.n) : '—'}</td>`
+      + `<td>${k === 'uep' ? '—' : g.discorda != null ? fmtN(g.discorda) : '—'}</td></tr>`;
+  };
+  let sec1 = '';
+  if(G && G.n >= 2){
+    const ordem = ['cx', 'pts', 'uep'].filter(k => G[k] && G[k].osc != null).sort((a, b) => G[a].osc - G[b].osc);
+    const fr = [];
+    fr.push(`Nos mesmos <b>${G.n}</b> dias, dia a dia: ` + ['uep', 'pts', 'cx'].filter(k => G[k] && G[k].osc != null)
+      .map(k => `${nomes[k]} <b>±${fmtP(G[k].osc)}</b>`).join(' · ') + '.');
+    if(ordem.length >= 2) fr.push(`A régua que menos oscilou foi <b>${nomes[ordem[0]]}</b>: a linha trabalha parecido todo dia e o que muda é o mix — quem mede o esforço varia menos.`);
+    if(G.trava) fr.push(G.nFora >= CXU_FORA_MIN
+      ? `Depois da trava da UEP (${_rpEsc(G.trava.slice(0, 5))}, ${G.nFora} dias que não entraram na conta dela): ` + ['uep', 'pts', 'cx'].filter(k => G[k] && G[k].oscFora != null).map(k => `${nomes[k]} ±${fmtP(G[k].oscFora)}`).join(' · ') + '.'
+      : `Depois da trava da UEP (${_rpEsc(G.trava.slice(0, 5))}) há ${G.nFora} dia(s) — pouco para separar.`);
+    sec1 = '<div class="rp-sec-ttl">1 ▸ AS TRÊS RÉGUAS NOS MESMOS DIAS</div>'
+      + `<table class="cxu-reg"><colgroup><col style="width:11%"><col style="width:27%"><col style="width:13%"><col style="width:12%"><col style="width:13%"><col style="width:12%"><col style="width:12%"></colgroup>`
+      + `<thead><tr><th>RÉGUA</th><th>O QUE CONTA</th><th>MÉDIA / DIA</th><th>OSCILAÇÃO</th><th>DEPOIS DA TRAVA</th><th>NO RITMO</th><th>DISCORDA DA UEP</th></tr></thead>`
+      + `<tbody>${['cx', 'pts', 'uep'].map(regLinha).join('')}</tbody></table>`
+      + `<div class="cxu-leg">${['uep', 'pts', 'cx'].filter(k => G[k]).map(k => `<span><span class="cxu-sw${k === 'pts' ? ' tr' : ''}" style="border-color:${CXU_COR[k]}"></span>${nomes[k]}</span>`).join('')}<span>cada dia em % da média da própria régua · 100 = a média do período</span></div>`
+      + _cxuSvg(R)
+      + `<div class="rp-note">${fr.join(' ')}</div>`
+      + (temPts && !R.metaPts ? `<div class="rp-note">Sem a META DE PONTOS / DIA neste computador, os pontos ficam sem veredito — só a oscilação. Ela é digitada no SIMULAR JORNADA da ⏱ CRONOANÁLISE.</div>` : '');
+  }
+  // ── a tabela dia a dia ────────────────────────────────────────────────────
+  const cols = [
+    [5, 'DIA', '', d => `${_rpEsc(d.data.slice(0, 5))}${d.semSep ? '*' : ''}`],
+    [9, 'CAIXAS · META', 'n', d => `${fmtN(Math.round(d.cx))} · ${fmtN(Math.round(d.metaCx))}`],
+    [4.5, '%', 'n', d => fmtP(d.pctCx)],
+    [10, 'EM CAIXAS', '', d => st(d.clsCx, d.pctCx)],
+    [9, 'UEP · META UEP', 'n', d => `${fmtN(Math.round(d.uep))} · ${fmtN(Math.round(d.metaU))}`],
+    [4.5, '%', 'n', d => fmtP(d.pctU)],
+    [10, 'EM UEP', '', d => st(d.clsU, d.pctU)],
+    temPts && [10, comMeta ? 'PONTOS · % META' : 'PONTOS', 'n', d => d.pts == null ? '—'
+      : fmtN(Math.round(d.pts)) + (comMeta ? ' · ' + fmtP(d.pctP) : '') + (d.cob != null && d.cob < DIR_COB_MIN ? '°' : '')],
+    comMeta && [10, 'EM PONTOS', '', d => d.clsP ? st(d.clsP, d.pctP) : '—'],
+    [4, 'UEP/CX', 'n', d => _tvF2(d.uepCx)],
+    [9, 'A META EM CX PEDIA', 'n', d => `${fmtN(Math.round(d.metaCxEmUep))} · ${fmtP(d.pctMetaCx)}`],
+    [15, 'POR QUE DISCORDARAM', '', d => [d.porque, d.porqueP].filter(Boolean).map(x => _CXU_PORQUE[x]).join('; ') || '—']
+  ].filter(Boolean);
+  const tot = cols.reduce((a, c) => a + c[0], 0);
+  const colg = '<colgroup>' + cols.map(c => `<col style="width:${(c[0] / tot * 100).toFixed(1)}%">`).join('') + '</colgroup>';
+  const th = '<thead><tr>' + cols.map(c => `<th${c[2] ? ' class="n"' : ''}>${c[1]}</th>`).join('') + '</tr></thead>';
+  const difer = d => d.tipo !== 'igual' || (d.tipoP && d.tipoP !== 'igual');
+  const linha = d => `<tr${difer(d) ? ' class="cxu-dif"' : ''}>` + cols.map(c => `<td${c[2] ? ' class="n"' : ''}>${c[3](d)}</td>`).join('') + '</tr>';
+  const dif = R.dias.filter(difer);
   const disc = R.cxAbaixo + R.uepAbaixo;
   const leit = [];
-  leit.push(`Em <b>${R.iguais} de ${R.n}</b> dias as duas réguas deram o mesmo veredito; em <b>${disc}</b>, discordaram.`);
+  leit.push(`Caixas × UEP: em <b>${R.iguais} de ${R.n}</b> dias as duas réguas deram o mesmo veredito; em <b>${disc}</b>, discordaram.`);
   if(R.cxAbaixo) leit.push(`<b>${R.cxAbaixo}</b> dia(s) com caixas ABAIXO e UEP no ritmo — em <b>${R.cxAbaixoMeta}</b> deles a meta em caixas, no mix do dia, pedia mais de ${100 + CXU_FOLGA}% da meta de UEP: a régua em caixas estava mais alta que a capacidade, a diferença veio da META (da programação), não do ritmo da linha.`);
   if(R.uepAbaixo) leit.push(`<b>${R.uepAbaixo}</b> dia(s) com caixas no ritmo e UEP ABAIXO — em <b>${R.uepAbaixoMeta}</b> deles a meta em caixas pedia menos de ${100 - CXU_FOLGA}% da meta de UEP: a meta em caixas estava fácil para o mix do dia.`);
   if(R.pctMetaMed != null) leit.push(`Na mediana do período, a meta em caixas pediu <b>${fmtP(R.pctMetaMed)}</b> da meta de UEP.`);
-  let s = '<div class="kpi-grid">'
+  if(comMeta){
+    leit.push(`Pontos × UEP: <b>${R.ptsAbaixo}</b> dia(s) com UEP no ritmo e pontos abaixo da meta — em <b>${R.ptsAbaixoBarato}</b> deles, batendo a meta de UEP com aquele mix, a linha faria menos de ${100 - CXU_FOLGA}% da meta de pontos: faltou VALOR no mix (o que foi programado), não ritmo.`);
+    if(R.ptsAcima) leit.push(`<b>${R.ptsAcima}</b> dia(s) com pontos na meta e UEP abaixo — em <b>${R.ptsAcimaCaro}</b> deles, batendo a meta de UEP com aquele mix, a linha faria mais de ${100 + CXU_FOLGA}% da meta de pontos: a meta de pontos saiu fácil.`);
+  }
+  let s = sec1
+    + `<div class="rp-sec-ttl">${sec1 ? '2' : '1'} ▸ QUANDO OS VEREDITOS DISCORDAM</div>`
+    + '<div class="kpi-grid">'
     + card('DIAS COMPARADOS', fmtN(R.n), `fechados, de ${_rpEsc(R.de)} a ontem`)
-    + card('MESMO VEREDITO', fmtN(R.iguais), pc(R.iguais) + ' dos dias', 'g')
+    + card('MESMO VEREDITO', fmtN(R.iguais), pc(R.iguais) + ' dos dias · caixas × UEP', 'g')
     + card('CAIXAS ABAIXO · UEP NO RITMO', fmtN(R.cxAbaixo), `${R.cxAbaixoMeta} pela meta em caixas alta`, R.cxAbaixo ? 'o' : '')
     + card('CAIXAS NO RITMO · UEP ABAIXO', fmtN(R.uepAbaixo), `${R.uepAbaixoMeta} pela meta em caixas baixa`, R.uepAbaixo ? 'o' : '')
     + card('A META EM CAIXAS PEDIU', R.pctMetaMed != null ? fmtP(R.pctMetaMed) : '—', 'da meta de UEP (mediana, no mix de cada dia)')
     + '</div>'
-    + `<div class="rp-note">${leit.join(' ')}</div>`;
-  s += '<div class="rp-sec-ttl">1 ▸ OS DIAS EM QUE DISCORDARAM</div>'
-    + (dif.length ? `<table>${colg}${th}<tbody>${dif.map(linha).join('')}</tbody></table>` : '<div class="rp-note">Nenhum: nos dias do período as duas réguas concordaram.</div>');
-  s += '<div class="rp-sec-ttl">2 ▸ TODOS OS DIAS</div>'
+    + `<div class="rp-note">${leit.join(' ')}</div>`
+    + (dif.length ? `<table>${colg}${th}<tbody>${dif.map(linha).join('')}</tbody></table>` : '<div class="rp-note">Nenhum: nos dias do período as réguas concordaram.</div>');
+  const notas = [];
+  if(R.semSep) notas.push(`* dia sem a separação da hora extra no HISTÓRICO: as caixas entram inteiras (${R.semSep} dia(s)).`);
+  if(R.cobBaixa) notas.push(`° menos de ${DIR_COB_MIN}% das caixas do dia apontadas com produto: pontos e UEP contam só essa parte (${R.cobBaixa} dia(s)).`);
+  s += `<div class="rp-sec-ttl">${sec1 ? '3' : '2'} ▸ TODOS OS DIAS</div>`
     + `<table>${colg}${th}<tbody>${R.dias.map(linha).join('')}</tbody></table>`
-    + (R.semSep ? `<div class="rp-note">* dia sem a separação da hora extra no HISTÓRICO: as caixas entram inteiras (${R.semSep} dia(s)).</div>` : '');
-  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO LER</div><table><tbody>'
-    + `<tr><td style="font-weight:700;width:22%">AS DUAS RÉGUAS</td><td>EM CAIXAS: caixas de jornada (REALIZADO − HE CX) ÷ META do dia — a régua da Tela B. EM UEP: UEP de jornada ÷ META UEP do dia — a régua das Telas F e G. Os dois do HISTÓRICO, gravados no fechamento; a hora extra fica fora dos dois lados.</td></tr>`
-    + `<tr><td style="font-weight:700">O VEREDITO</td><td>A mesma régua do selo da TV: ≥ 96% NO RITMO · 90–96% ATENÇÃO · &lt; 90% ABAIXO DO RITMO. Discordam quando uma diz NO RITMO e a outra não.</td></tr>`
+    + (notas.length ? `<div class="rp-note">${notas.join(' ')}</div>` : '');
+  s += `<div class="rp-sec-ttl" style="page-break-before:always">${sec1 ? '4' : '3'} ▸ COMO LER</div><table><tbody>`
+    + `<tr><td style="font-weight:700;width:22%">AS TRÊS RÉGUAS</td><td>CAIXAS: caixas de jornada (REALIZADO − HE CX) — a régua da Tela B. UEP: UEP de jornada gravada no fechamento — a das Telas F e G. PONTOS: pontos de jornada (pontos − pontos em hora extra), os gravados em cada lançamento pela tabela da época; só caixa apontada com produto tem ponto.</td></tr>`
+    + `<tr><td style="font-weight:700">OSCILAÇÃO</td><td>Desvio-padrão ÷ média do dia a dia, nos mesmos dias para as três (a conta da oscilação da aba PLANO). A linha trabalha parecido todo dia; o que muda é o mix. Quanto menor a oscilação, mais a régua mede o esforço e menos o mix.</td></tr>`
+    + `<tr><td style="font-weight:700">DEPOIS DA TRAVA</td><td>A UEP foi calibrada com o ritmo da própria linha até a trava (${_rpEsc(G && G.trava || '—')}); nos dias de antes ela tem vantagem. Os dias DEPOIS da trava não entraram na conta dela — é a comparação limpa (a partir de ${CXU_FORA_MIN} dias).</td></tr>`
+    + `<tr><td style="font-weight:700">O VEREDITO</td><td>A mesma régua do selo da TV: ≥ 96% NO RITMO · 90–96% ATENÇÃO · &lt; 90% ABAIXO DO RITMO. Discordam quando uma diz NO RITMO e a outra não. Em pontos, contra a META DE PONTOS / DIA digitada neste computador (sem hora extra).</td></tr>`
     + `<tr><td style="font-weight:700">A META EM CX PEDIA</td><td>META em caixas × UEP por caixa do PRÓPRIO dia (o mix que rodou) — quanta UEP a meta em caixas pedia, comparada com a META UEP. Acima de ${100 + CXU_FOLGA}%: a meta em caixas era mais pesada que a capacidade em UEP; abaixo de ${100 - CXU_FOLGA}%, mais leve. Ela muda com a datação dos lotes; a meta de UEP é fixa.</td></tr>`
+    + (comMeta ? `<tr><td style="font-weight:700">PONTOS: POR QUE DISCORDARAM</td><td>A META UEP × pontos por UEP do dia: quantos pontos a linha faria batendo a meta de UEP com aquele mix, contra a meta de pontos. Abaixo de ${100 - CXU_FOLGA}%: o mix valia pouco por esforço (decisão de programação e comercial); acima de ${100 + CXU_FOLGA}%, muito.</td></tr>` : '')
     + `<tr><td style="font-weight:700">MIX PESADO / LEVE</td><td>UEP por caixa do dia contra a mediana do período (${R.normal ? _tvF2(R.normal) : '—'} UEP/cx), ±${CXU_FOLGA}%.</td></tr>`
-    + `<tr><td style="font-weight:700">COMO USAR</td><td>Se as discordâncias vêm da META em caixas (alta ou baixa para o mix do dia), o veredito em caixas está julgando a programação, não o ritmo da linha — é o argumento para o veredito da TV passar para UEP. Se vêm do mix sem a meta mudar, olhe a UEP dos produtos daquele dia (FILA DE CRONOANÁLISE).</td></tr>`
-    + `<tr><td style="font-weight:700">O QUE ELE NÃO VÊ</td><td>Caixa lançada SEM produto conta nas caixas e não tem UEP: dia com apontamento incompleto tem a UEP mais baixa do que o esforço. O veredito do HORÁRIO (a TV ao longo do dia) pode ter discordado em outros momentos — aqui é o dia fechado.</td></tr>`
+    + `<tr><td style="font-weight:700">COMO USAR</td><td>Caixas medem volume e pontos medem valor — servem para expedição e faturamento. Para julgar o ritmo da EMBALAGEM, a régua é a que menos depende do mix. Se as discordâncias vêm da META (em caixas ou em pontos), o veredito está julgando a programação, não a linha.</td></tr>`
+    + `<tr><td style="font-weight:700">O QUE ELE NÃO VÊ</td><td>Caixa lançada SEM produto conta nas caixas e não tem UEP nem ponto: dia com apontamento incompleto tem UEP e pontos mais baixos do que o esforço. O veredito do HORÁRIO (a TV ao longo do dia) pode ter discordado em outros momentos — aqui é o dia fechado.</td></tr>`
     + '</tbody></table>'
-    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · caixas × UEP</span><span>${_rpEsc(R.de)} a ontem · gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · caixas × pontos × UEP</span><span>${_rpEsc(R.de)} a ontem · gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
   return s;
+}
+// Os pontos de jornada do período, para a 3ª régua (v7.184.0). A leitura é o
+// getProducaoModeloPeriodo dos mesmos dias (das caras: cache de 5 min por
+// janela, para o 2º clique não pagar de novo). Ela publica PREP_PERIODO e
+// PH_UEP_PROD, que são da aba PRODUÇÃO/HORA: guarda e devolve (a régua do
+// _filaAmostra). Falhou → o relatório sai sem os pontos, dizendo por quê.
+let _CXU_PTS = { key:null, ts:0, m:null };
+async function _cxuPtsLer(J){
+  const key = J.de + '|' + J.ate;
+  if(_CXU_PTS.key === key && Date.now() - _CXU_PTS.ts < 5 * 60 * 1000) return { m:_CXU_PTS.m, falha:'' };
+  const prep = PREP_PERIODO, uepProd = PH_UEP_PROD;
+  let itens = null;
+  try{ itens = await lerProducaoModeloPeriodo(J.de, J.ate); }
+  finally{ PREP_PERIODO = prep; PH_UEP_PROD = uepProd; }
+  if(itens == null) return { m:null, falha:'pontos não lidos — ' + (PH_FALHA === 'sem-endpoint' ? 'o backend não conhece a leitura por período'
+    : PH_FALHA === 'erro' ? 'o Apps Script respondeu com erro' : 'o Apps Script não respondeu') };
+  const m = _cxuPtsDoPeriodo(itens);
+  if(!m) return { m:null, falha:'pontos sem a separação da hora extra (o Apps Script é anterior à v5.20)' };
+  _CXU_PTS = { key, ts:Date.now(), m };
+  return { m, falha:'' };
 }
 async function gerarRelatorioCxUep(){
   const win = window.open('', '_blank', 'width=1100,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
-  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Lendo o histórico dos dias fechados…</p></body></html>');
+  win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ Lendo o histórico dos dias fechados e os pontos…</p></body></html>');
   if(!UEP_HIST || Date.now() - UEP_HIST_TS > 2 * 60 * 1000){ try{ await _uepAbaHistCarregar(); }catch(e){} }
   if(!_uepHistDaPlanilha(UEP_HIST)){ win.close(); alert('Não consegui ler o histórico (HISTORICO) da planilha.\n\nTente de novo em alguns segundos.'); return; }
+  const hojeNum = _cartNum(hojeStr());
+  // Em sequência, depois do histórico: uma leitura de cada vez no Apps Script.
+  let P = { pts:null, metaPts:null, trava:UEP_TRAVADA_DESDE || null }, ptsFalha = '';
+  try{ const r = await _cxuPtsLer(_cxuJanela(hojeNum, CXU_DIAS)); P.pts = r.m; ptsFalha = r.falha; }
+  catch(e){ ptsFalha = 'pontos não lidos — ' + (e && e.message || 'falha na leitura'); }
+  try{ const v = _capPtsMetaLer(localStorage.getItem(CAP_PTS_LS)); P.metaPts = v > 0 ? v : null; }catch(e){}
   let R = null, corpo = '';
   const agora = new Date();
-  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }), ptsFalha };
   try{
-    R = _cxUepMontar(UEP_HIST, _cartNum(hojeStr()), CXU_DIAS);
+    R = _cxUepMontar(UEP_HIST, hojeNum, CXU_DIAS, P);
     if(!R.n){ win.close(); alert(`Nenhum dia fechado com META e UEP nos últimos ${CXU_DIAS} dias — nada para comparar.`); return; }
     corpo = _cxUepHtml(R, ctx);
   }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
-  const html = _rpDocParadas(`Caixas × UEP — ${R.de} a ${ctx.data}`, true)
+  const html = _rpDocParadas(`Caixas × Pontos × UEP — ${R.de} a ${ctx.data}`, true)
     + '<style>' + _CXU_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="cxu-doc">'
-    + _rpCabecalho('CAIXAS × UEP — QUANDO OS VEREDITOS DISCORDAM',
+    + _rpCabecalho('CAIXAS × PONTOS × UEP — QUAL RÉGUA MEDE O ESFORÇO',
         `<div class="rp-per">UEP</div><div>${_rpEsc(R.de)} a ontem</div><div>últimos ${CXU_DIAS} dias · hoje fora</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
     + corpo + '</div></body></html>';
