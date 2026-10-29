@@ -4242,6 +4242,7 @@ console.log('\n── estudo de UEP ──');
        [/id="c-meta-uep"/.test(src), /_metaUepNova=\(mu>0&&Math\.round\(mu\)!==Math\.round\(atual\)\)/.test(pega('function saveCfg(')),
         /if\(_metaUepNova\)\{ params\.push\('metaUep='\+_metaUepNova\); _metaUepNova=null; \}/.test(pega('function enviarConfigPainel('))], [true, true, true]);
     // v7.90.0 — simulador de capacidade em UEP, por PRODUTO COMPLETO
+    global.ESTEIRA_VAO_PADRAO = Number(JS.match(/const ESTEIRA_VAO_PADRAO = (\d+);/)[1]);   // v7.187.0
     eval(pega('function _capVol(')); eval(pega('function _capNome(')); eval(pega('function _capProdutos(')); eval(pega('function _capMix('));
     ok('volume lido da descrição; sem VOL é 1/1', [_capVol('VOL 2/2 PENTEADEIRA').vol, _capVol('VOL 2/2 X').nVol, _capVol('MESA').nVol], [2, 2, 1]);
     ok('nome sem VOL e sem a cor antiga no fim', _capNome('VOL 1/2 PENTEADEIRA CAMARIM ELOA ROSA', 'rosa'), 'PENTEADEIRA CAMARIM ELOA');

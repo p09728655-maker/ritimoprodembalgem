@@ -728,6 +728,10 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   ok('o comparativo do período manda a UEP por produto num mapa (não por item)',
      /uepProd: uepProd/.test(pega('function getProducaoModeloPeriodo(')), true);
   ok('META_UEP vem da CONFIG_PAINEL', /metaUep: kv\.META_UEP/.test(pega('function getConfigPainel(')), true);
+  // v5.42: a META DE PONTOS / DIA também mora na CONFIG_PAINEL (META_PTS).
+  ok('META_PTS: lida da CONFIG_PAINEL (null sem a chave) e gravada só com número > 0',
+     [/metaPts: kv\.META_PTS !== undefined && _numBR\(kv\.META_PTS\) > 0 \? _numBR\(kv\.META_PTS\) : null/.test(pega('function getConfigPainel(')),
+      /if \(p\.metaPts !== undefined && _numBR\(p\.metaPts\) > 0\) novos\.META_PTS = String\(Math\.round\(_numBR\(p\.metaPts\)\)\);/.test(pega('function setConfigPainel('))], [true, true]);
 }
 
 console.log(falhas === 0
