@@ -732,10 +732,25 @@ via Google Apps Script (JSONP).
   ela: veredito EM PONTOS (régua do selo) e o motivo (`pts-barato`/`pts-caro` =
   META UEP × pontos/UEP do dia ÷ meta de pontos, ±5%). O teste usa 190.000 de
   exemplo — **nunca o valor do PPCP**.
-- Cores das séries validadas no papel branco (`CXU_COR`: UEP laranja, CAIXAS
-  azul, PONTOS verde-água tracejado — o verde-água tem contraste < 3:1, por isso
-  o tracejado e o rótulo direto). Medido no Chromium com as fontes: A4 deitada,
-  4 folhas com e sem a meta, nenhum selo ou célula cortado.
+- **O PAPEL SÃO TRÊS FOLHAS, uma pergunta cada** (v7.185.0, PPCP: *"impressão
+  limpa, fácil de entender, com clareza dos fatos"*):
+  1. **qual régua mede o esforço**: frase (do dado, com o artigo certo: *A UEP
+     é* / *Os PONTOS são* / *As CAIXAS são*), três cartões e o gráfico;
+  2. **quando o veredito muda de régua**: só os dias que discordam, com o motivo
+     EM NÚMERO;
+  3. **anexo**: os dias em número (selo só na folha 2) e o *como o número sai*,
+     uma linha por item.
+  - O gráfico (`_cxuSvg`) é **uma faixa por régua, na MESMA escala**. Três
+    linhas cruzadas num quadro só (v7.184.0) obrigavam a decifrar; em faixas, a
+    variação se vê sem legenda. Banda ±10% em cada faixa, trava atravessando.
+  - Frase em fonte de texto (`.cxu-txt`, Barlow); a mono pequena do `.rp-note`
+    ninguém lia (o teste prende).
+  - Cores das séries validadas no papel branco (`CXU_COR`: UEP laranja, CAIXAS
+    azul, PONTOS verde-água; cada faixa tem o nome, então a cor não é a única
+    identidade).
+  - Medido no Chromium com as fontes: A4 deitada, **3 folhas** com e sem a meta,
+    nada cortado. A folha 3 só fecha com o `padding:3px` do anexo: mexeu nela,
+    medir de novo.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
