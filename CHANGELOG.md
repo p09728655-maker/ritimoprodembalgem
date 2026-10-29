@@ -11,6 +11,48 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.188.0 — 29/10/2026 · Relatório CAIXAS × PONTOS × UEP em quatro páginas; a UEP como referência
+
+- PPCP, com um prompt de melhoria: o relatório 🖨 da aba 📏 RÉGUAS foi
+  reorganizado em **quatro páginas, uma pergunta cada**. As contas que já
+  existiam não mudaram.
+  1. **Resumo gerencial**: a frase (*a UEP é a régua que menos varia*), uma
+     tabela com as três réguas (realizado por dia, meta ou referência por dia,
+     **atingimento**, **dias na meta**, variação dia a dia e depois da trava),
+     o aviso da referência de UEP, o gráfico e as **principais conclusões**.
+  2. **Capacidade por produto**: a meta de pontos × o mix e o produto a produto.
+     Agora os nomes separam **capacidade estimada** (na referência de UEP),
+     **limite físico** (esteira sem parada) e **realizado** (caixas do período),
+     com a nota de que capacidade não é produção garantida.
+  3. **Análise dos desvios**: só os dias em que as réguas discordaram. Cada
+     célula mostra o realizado contra a meta daquele dia (ex.: *2.751 de
+     2.530*). O porquê vem em duas colunas, caixas × UEP e pontos × UEP, cada
+     uma numa linha. A lista **A INVESTIGAR OU DECIDIR** traz só o que o dado
+     sustenta: datação da programação, meta de pontos × mix, UEP acima da
+     esteira, vão não medido e a decisão sobre a referência.
+  4. **Dados e critérios**: os dias com a meta (ou a referência) de cada data,
+     o **histórico da referência de UEP**, o como o número sai e as limitações.
+  - O título de cada página é a conclusão dela, saída do dado.
+- **A UEP é uma REFERÊNCIA, não a meta oficial.** A referência passou de 2.530
+  para 2.761 em 27/10 porque o desempenho médio da linha subiu, e a UEP ainda
+  não foi adotada como meta da embalagem. O papel e a aba 📏 RÉGUAS chamam de
+  *referência de UEP*, dizem que está **em avaliação** e comparam cada dia com
+  a referência **da sua data** (o passado não é regravado). O status mora no
+  `UEP_REF_STATUS`; o motivo de cada troca, no `UEP_REF_MOTIVO`.
+- **Atenção:**
+  - **Correção de medida.** Na v7.187.1 e na v7.187.2 a tabela do produto a
+    produto tinha 1.146 px numa folha de 1.032. O Chromium encolhia o
+    relatório inteiro (~90%) para caber, e a medição daquela versão, feita na
+    largura da tela e não na da impressão, não pegou isso. Agora a tabela cabe
+    em 100%, e o relatório tem 4 folhas medidas em mídia de impressão, com e
+    sem a meta de pontos. Com 60 dias, os dados seguem na folha seguinte.
+  - Na aba 📏 RÉGUAS, *meta de UEP* virou *referência de UEP*:
+    - situação: **CHEGA NA REFERÊNCIA** e **SÓ ACIMA DA REFERÊNCIA**;
+    - cabeçalhos: **CAPACIDADE ESTIMADA / NA REFERÊNCIA DE UEP**,
+      **LIMITE FÍSICO / ESTEIRA SEM PARADA** e **REALIZADO / CX · N DIAS**.
+  - No papel, o cartão *dias na meta* saiu da página 2 (está no resumo da
+    página 1). Nenhum número mudou.
+
 ## v7.187.2 — 29/10/2026 · Volumes em coluna no produto a produto
 
 - PPCP: *"alinha essa inf de volumes"*. O *"· 2 vol."* ia colado no fim do
