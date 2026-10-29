@@ -11,6 +11,12 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.187.2 — 29/10/2026 · Volumes em coluna no produto a produto
+
+- PPCP: *"alinha essa inf de volumes"*. O *"· 2 vol."* ia colado no fim do
+  nome do produto, cada um numa altura. Virou a coluna **VOL.**, centrada,
+  logo depois do PRODUTO — na aba 📏 RÉGUAS e no papel. Nenhum número mudou.
+
 ## v7.187.1 — 29/10/2026 · A impressão das RÉGUAS mostra o que a tela mostra
 
 - PPCP: *"impressão está nas duas agora, a mesma"*. O 🖨 CAIXAS × PONTOS × UEP

@@ -369,6 +369,11 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('o desenho: a régua da meta, os quatro cartões, a situação com o * do vão padrão e o ⚠ do limite',
      ['72 PONTOS POR UEP', 'MIX DOS 20 DIAS', 'UEP 16 · PONTOS 9', '2.839 UEP', 'NÃO CHEGA NEM NO LIMITE*', 'NÃO CHEGA NEM NO LIMITE</span>', 'SÓ ACIMA DA META DE UEP',
       'CHEGA NA META DE UEP', 'SEM LIMITE NO CADASTRO', '2.874 ⚠', 'A <b>UEP</b> é a régua que menos varia', 'Sem vantagem para a UEP:', 'class="cxu-svg"'].filter(t => !HR.includes(t)), []);
+  // v7.187.2 (PPCP: "alinha essa inf de volumes"): os volumes numa coluna, nunca colados no nome
+  ok('VOL. é coluna própria, centrada, logo depois do PRODUTO; o nome sai sozinho',
+     [/<th class="l" rowspan="2">PRODUTO<\/th><th class="vol" rowspan="2">VOL\.<\/th>/.test(HR), /vol\.<\/span>/.test(HR), HR.includes('MESA CABECEIRA SLEEP</td><td class="n vol">1</td>'),
+      /#sec-reguas \.reg-tab th\.vol,#sec-reguas \.reg-tab td\.vol\{text-align:center\}/.test(html), /\.cxu-doc \.reg-tab th\.vol,\.cxu-doc \.reg-tab td\.vol\{text-align:center\}/.test(JS)],
+     [true, false, true, true, true]);
   ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red r reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
   const HS = _regHtml(RPH, _regMontar(RPH, CAT, PROD, null, 2761), { n: 30, svgW: 1200, filtro: 'rodaram', todos: false });
   ok('sem meta: diz onde configurar, sem coluna de situação nem % da meta',

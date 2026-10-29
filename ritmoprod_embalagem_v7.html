@@ -449,7 +449,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-reguas .reg-tab-w{overflow-x:auto;padding:6px 8px 10px}
 #sec-reguas .reg-tab{width:100%;border-collapse:collapse;font-size:13px}
 #sec-reguas .reg-tab th{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--txt2);font-weight:400;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:bottom;background:none}
-#sec-reguas .reg-tab th.gr{text-align:center;border-bottom:1px solid #3A5272;color:var(--txt)} #sec-reguas .reg-tab th.l,#sec-reguas .reg-tab td.pr{text-align:left}
+#sec-reguas .reg-tab th.gr{text-align:center;border-bottom:1px solid #3A5272;color:var(--txt)} #sec-reguas .reg-tab th.vol,#sec-reguas .reg-tab td.vol{text-align:center} #sec-reguas .reg-tab th.l,#sec-reguas .reg-tab td.pr{text-align:left}
 #sec-reguas .reg-tab td{padding:7px 8px;border-bottom:1px solid #1A2B42;white-space:nowrap}
 #sec-reguas .reg-tab td.n{text-align:right;font-family:var(--font-d);font-size:12.5px} #sec-reguas .reg-tab td.b{font-weight:600}
 #sec-reguas .reg-tab .cod{font-family:var(--font-d);font-size:11px;color:var(--txt2)}
@@ -3571,7 +3571,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.187.1';
+const APP_VER   = '7.187.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7943,7 +7943,7 @@ const _CXU_DOC_SKIN = `
 .cxu-doc .kpi-card.reg-alerta{border-left-color:#c53030}.cxu-doc .reg-alerta .kpi-val{color:#c53030}
 .cxu-doc .reg-card{border:0;padding:0;background:none}
 .cxu-doc .reg-tab{table-layout:auto;width:100%;font-size:11px}
-.cxu-doc .reg-tab th{text-align:right;white-space:nowrap}.cxu-doc .reg-tab th.l,.cxu-doc .reg-tab td.pr{text-align:left}.cxu-doc .reg-tab th.gr{text-align:center}
+.cxu-doc .reg-tab th{text-align:right;white-space:nowrap}.cxu-doc .reg-tab th.vol,.cxu-doc .reg-tab td.vol{text-align:center}.cxu-doc .reg-tab th.l,.cxu-doc .reg-tab td.pr{text-align:left}.cxu-doc .reg-tab th.gr{text-align:center}
 .cxu-doc .reg-tab td{padding:3px 6px;white-space:nowrap}.cxu-doc .reg-tab td.n{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px}.cxu-doc .reg-tab td.b{font-weight:700}
 .cxu-doc .reg-tab .cod{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5B6470}
 .cxu-doc .reg-st{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.4px;border:1px solid;border-radius:3px;padding:1px 5px}
@@ -8290,11 +8290,13 @@ function _regProdHtml(D, ctx, num){
   const sit = l => { const x = _REG_SIT[l.sit]; return x ? `<span class="reg-st ${x[1]}">${x[0]}${l.sit === 'nao' && l.vaoPadrao ? '*' : ''}</span>` : ''; };
   const ast = l => l.vaoPadrao ? '*' : '';
   s += '<div class="reg-card reg-tab-w"><table class="reg-tab"><thead>'
-    + `<tr><th class="l" rowspan="2">PRODUTO</th><th rowspan="2">CAIXAS<br>${ctx.n} DIAS</th><th rowspan="2">PONTOS<br>POR UEP</th>`
+    + `<tr><th class="l" rowspan="2">PRODUTO</th><th class="vol" rowspan="2">VOL.</th><th rowspan="2">CAIXAS<br>${ctx.n} DIAS</th><th rowspan="2">PONTOS<br>POR UEP</th>`
     + `<th class="gr" colspan="${MP ? 3 : 2}">BATENDO A META DE UEP</th><th class="gr" colspan="2">LIMITE DA ESTEIRA · SEM PARADA</th>`
     + `<th class="l" rowspan="2">PONTOS / DIA · 0 A ${mil(esc).toUpperCase()}</th>${MP ? '<th class="l" rowspan="2">SITUAÇÃO</th>' : ''}</tr>`
     + `<tr><th>PRODUTOS/DIA</th><th>PONTOS/DIA</th>${MP ? '<th>% DA META</th>' : ''}<th>PRODUTOS/DIA</th><th>PONTOS/DIA</th></tr></thead><tbody>`
-    + V.linhas.map(l => `<tr><td class="pr"><span class="cod">${_rpEsc(l.modelo)}</span> ${_rpEsc(l.nome)}${l.nVol > 1 ? ` <span class="cod">· ${l.nVol} vol.</span>` : ''}</td>`
+    // Os volumes numa COLUNA (v7.187.2, PPCP: "alinha essa inf de volumes"):
+    // colados no fim do nome, cada um caía numa altura — a lição do UEP/CX.
+    + V.linhas.map(l => `<tr><td class="pr"><span class="cod">${_rpEsc(l.modelo)}</span> ${_rpEsc(l.nome)}</td><td class="n vol">${l.nVol}</td>`
       + `<td class="n">${l.cx ? fmtN(l.cx) : '—'}</td><td class="n b">${fmtN(Math.round(l.ppu))}</td>`
       + `<td class="n"${l.limitado ? ' title="a UEP do cadastro promete mais do que a esteira passa: vale o limite — UEP a conferir"' : ''}>${fmtN(l.porDia)}${l.limitado ? ' ⚠' : ''}</td>`
       + `<td class="n b">${mil(l.ptsMeta)}</td>${MP ? `<td class="n">${fmtN(Math.round(l.pctMeta))}%</td>` : ''}`

@@ -838,6 +838,9 @@ via Google Apps Script (JSONP).
   impressão lê o cadastro depois dos pontos. Medido no Chromium com as fontes
   (baixadas do npm `@fontsource`, o Google Fonts não carrega pelo proxy):
   **4 folhas**, a tabela cabe na A4 deitada com e sem a meta.
+- **Volumes em COLUNA (VOL.), nunca colados no nome** (v7.187.2, PPCP:
+  *"alinha essa inf de volumes"*) — a mesma lição do UEP/CX do comparativo:
+  cada nome tem um comprimento e o número ficava numa altura diferente.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
