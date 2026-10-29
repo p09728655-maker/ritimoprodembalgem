@@ -85,6 +85,22 @@ console.log('\n── período: o gravado no lançamento, não o cadastro de ago
   ok('pontos em hora extra também pelo gravado', soma(r.itens, 'pontosHe'), 1000);
 }
 
+console.log('\n── ?ptsCad=1 (.gs v5.41): os pontos também na tabela de HOJE, só para quem pede ──');
+{
+  const P = montar([
+    ['27/10/2026', '05:00', '501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 10, 1000, 100, 'Mobile'],   // hora extra
+    ['27/10/2026', '08:00', '501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 20, 2000, 200, 'Mobile'],
+  ]);
+  P.pontosCad('501149001', 104.5678);
+  const sem = periodo(P, '27/10/2026', '27/10/2026').itens[0];
+  ok('sem o parâmetro: nada muda (o pontos é o gravado, sem pontosCad)', [sem.pontos, sem.pontosCad, sem.pontosCadHe], [3000, undefined, undefined]);
+  const com = P.run(`return getProducaoModeloPeriodo({ de: '27/10/2026', ate: '27/10/2026', ptsCad: '1' });`).itens[0];
+  ok('com ?ptsCad=1: o gravado continua, e a tabela de hoje vem ao lado (30 cx × 104,5678; HE 10 cx)',
+     [com.pontos, com.pontosHe, com.pontosCad, com.pontosCadHe], [3000, 1000, Math.round(30 * 104.5678), Math.round(10 * 104.5678)]);
+  ok('a chave do cache de leitura inclui o ptsCad (senão um pedido devolveria a resposta do outro)',
+     /'cxHora', 'uepVer', 'ptsCad'\]\.map\(function \(k\) \{ return p\[k\] \|\| ''; \}\)/.test(GS), true);
+}
+
 console.log('\n── célula vazia, zero, texto e aba sem a coluna ──');
 {
   const P = montar([
@@ -119,8 +135,12 @@ console.log('\n── o caminho real: lançar, trocar o cadastro, lançar de nov
 console.log('\n── guarda: nenhum leitor do log volta a multiplicar pelo cadastro ──');
 {
   const corpo = nome => { const i = GS.indexOf('function ' + nome + '('); return GS.slice(i, GS.indexOf('\nfunction ', i + 10)); };
-  ['getPontosDia', 'getProducaoModeloPeriodo'].forEach(f =>
-    ok(f + ' lê os pontos pelo _ptsDoLog', [/cx \* \(prod\.pontos/.test(corpo(f)), /_ptsDoLog\(/.test(corpo(f))], [false, true]));
+  ok('getPontosDia lê os pontos pelo _ptsDoLog', [/cx \* \(prod\.pontos/.test(corpo('getPontosDia')), /_ptsDoLog\(/.test(corpo('getPontosDia'))], [false, true]);
+  // No período, caixas × cadastro só pode alimentar o pontosCad (v5.41, a tabela de hoje).
+  const per = corpo('getProducaoModeloPeriodo');
+  ok('getProducaoModeloPeriodo: pontos e pontosHe pelo _ptsDoLog; o cadastro de agora só no pontosCad',
+     [/map\[key\]\.pontos \+= ptsL;/.test(per), /pontosHe \+= ptsL;/.test(per),
+      per.split('\n').filter(l => /cx \* \(prod\.pontos/.test(l)).every(l => /pontosCad/.test(l))], [true, true, true]);
 }
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');

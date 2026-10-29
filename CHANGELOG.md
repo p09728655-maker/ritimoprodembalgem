@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.186.0 + `.gs` v5.41 — 29/10/2026 · Pontos comparados na tabela de hoje · ⚠ re-deploy
+
+- PPCP, depois de ver *"em 13 dias a UEP estava no ritmo e os pontos abaixo da
+  meta"*. O relatório comparava os pontos **gravados** (tabela de cada
+  lançamento, a antiga até 28/10) com a **meta de pontos**, que já está na
+  tabela nova (+4,6%). Os dias passados saíam abaixo da meta por causa da
+  tabela, não do mix. Medido com uma meta de exemplo: 16/10 e 20/10 só
+  apareciam abaixo pela troca de tabela.
+- Um fator único não resolveria: a troca subiu cada mix de um jeito (de +1,9%
+  a +6,7% por dia). Agora o relatório avalia **todos os dias na tabela de
+  pontos de hoje**, a mesma da meta. A oscilação também fica numa tabela só
+  (pontos ±19,0%, depois da trava ±16,5%). O papel diz qual tabela valeu.
+- **`.gs` v5.41**: `getProducaoModeloPeriodo` com `?ptsCad=1` devolve, além
+  do gravado, `pontosCad` / `pontosCadHe` por item (caixas × cadastro de
+  agora). Sem o parâmetro, nada muda. A chave do cache inclui o `ptsCad`.
+- **Atenção:** o histórico oficial (diretoria, semana) continua com os pontos
+  gravados. **Antes do re-deploy**, o relatório mostra a oscilação com os
+  gravados e **não dá veredito em pontos**, e diz que falta o `.gs` v5.41.
+
 ## v7.185.0 — 29/10/2026 · CAIXAS × PONTOS × UEP: impressão limpa, três folhas
 
 - PPCP, com o relatório na tela: *"quero que deixe impressão limpa, fácil de
