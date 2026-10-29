@@ -824,10 +824,25 @@ via Google Apps Script (JSONP).
   passa da largura (a tabela rola dentro do cartão se faltar espaço).
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele, a meta digitada no ⚙
   vale só neste computador (a planilha ignora o `metaPts`) e a tela diz isso.
+  Publicado e conferido em 29/10/2026: `META_PTS` gravada na `CONFIG_PAINEL`.
+- **Uma impressão, um lugar** (v7.187.1, PPCP: *"impressão está nas duas agora,
+  a mesma"*): o 🖨 CAIXAS × PONTOS × UEP saiu da aba ⚖ UEP e ficou só na 📏
+  RÉGUAS (com os dias da tela). Na ⚖ UEP ficou o caminho **📏 RÉGUAS →**, como
+  o ⏱ CRONOANÁLISE → UEP — sem ele o gestor procura onde o botão não está mais.
+- **O papel mostra o que a tela mostra** (v7.187.1, PPCP: *"essa não está na
+  impressão"*): os blocos 2 e 3 da aba são `_regMixHtml` e `_regProdHtml`, UMA
+  marcação para a tela e o papel (`ctx.papel`: título de seção do relatório,
+  sem filtro nem botão, os `REG_LINHAS` que mais rodaram + uma linha com o
+  resto). O `_cxUepHtml` os põe numa folha própria depois da régua (`ctx.D`, do
+  `_regMontar`; sem ele, o papel antigo). Pele `.reg-*` no `_CXU_DOC_SKIN`. A
+  impressão lê o cadastro depois dos pontos. Medido no Chromium com as fontes
+  (baixadas do npm `@fontsource`, o Google Fonts não carrega pelo proxy):
+  **4 folhas**, a tabela cabe na A4 deitada com e sem a meta.
 
 ## Relatórios de UEP: FILA DE CRONOANÁLISE e CAIXAS × UEP (v7.139.0 / `.gs` v5.27)
 - PPCP, 19/10/2026, depois da conferência das UEP travadas e das Telas F/G:
-  *"sim fazer 1 e 2"*. Botões no cabeçalho da aba ⚖ UEP; documentos
+  *"sim fazer 1 e 2"*. Botões no cabeçalho da aba ⚖ UEP (o do CAIXAS × UEP
+  mora na 📏 RÉGUAS desde a v7.187.1); documentos
   DEITADOS no `_rpDocParadas` (13 usuários hoje — o teste conta), peles
   `.fila-doc` e `.cxu-doc`. Cartão sem status fica com borda NEUTRA: a do
   documento comum é vermelha (lá marca perda).
