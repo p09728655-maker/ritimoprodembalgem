@@ -273,6 +273,8 @@ ok('sem a capacidade (sem o D): resumo, desvios e dados, cada um em folha nova',
 ok('sem a capacidade, as conclusões apontam os desvios na página 2 (não na 3)', [HP.includes('referência de UEP — página 2.'), HP.includes('página 3')], [true, false]);
 ok('a frase sai do dado: a que menos variou, e as outras duas com o número',
    HP.includes('A <b>UEP</b> é a régua que menos varia de um dia para o outro: <b>±10,4%</b>, contra ±18,5% dos pontos e ±26,9% das caixas.'), true);
+ok('a prova diz que, depois da trava, a UEP só muda por cronoanálise (tempo medido, não a produção do dia) — v7.188.1',
+   [HP.includes('ela saiu do ritmo da própria linha até 16/10; depois disso só muda por cronoanálise — o tempo medido do produto, não a produção do dia.'), HP.includes('foi calibrada com o ritmo')], [true, false]);
 ok('a prova sem vantagem: os dias depois da trava, com os números', HP.includes('<b>Sem vantagem para a UEP:</b>') && HP.includes('UEP <b>±10,5%</b> · PONTOS <b>±16,1%</b> · CAIXAS <b>±22,4%</b>'), true);
 ok('a frase segue o dado (se as caixas variassem menos, diria isso)', (() => {
   const r = JSON.parse(JSON.stringify(RP)); r.reguas.cx.osc = 5;
@@ -481,7 +483,7 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('página 4: os dias com a meta (ou referência) de cada data, o histórico da referência, como o número sai e as limitações',
      ['class="gr">CAIXAS · META DA PROGRAMAÇÃO</th>', 'class="gr">UEP · REFERÊNCIA DA DATA</th>', '<b>2.530</b> · 29/09 a 26/10 · 18 dias · vinha de antes do período',
       '<b>2.761</b> · 27/10 a 28/10 · 2 dias · o desempenho médio da linha subiu', 'Status: em avaliação — ainda não é a meta oficial da embalagem.',
-      'LIMITAÇÕES DOS DADOS', 'METAS DE CADA DATA', 'ATINGIMENTO · SELO', 'CAPACIDADE · LIMITE FÍSICO', 'Capacidade não é produção garantida'].filter(t => !P4.includes(t)), []);
+      'LIMITAÇÕES DOS DADOS', 'UEP trocada por cronoanálise vale do dia da troca em diante', 'METAS DE CADA DATA', 'ATINGIMENTO · SELO', 'CAPACIDADE · LIMITE FÍSICO', 'Capacidade não é produção garantida'].filter(t => !P4.includes(t)), []);
   ok('os desenhos novos não fazem conta (tudo vem do _cxUepMontar e do _regMontar)',
      ['function _cxuResumoHtml(', 'function _cxuRefTrechos(', 'function _cxuRefHtml(', 'function _cxuConclusoes(', 'function _cxuCapTese(', 'function _cxuDecidir(']
        .filter(f => /_qpOscilacao\(|_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(|_capDia\(|_regMontar\(/.test(pegaJs(f))), []);

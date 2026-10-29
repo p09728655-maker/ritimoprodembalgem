@@ -3571,7 +3571,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.188.0';
+const APP_VER   = '7.188.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7938,7 +7938,7 @@ function _cxuSvg(R, W, fs){
     S.forEach((s, i) => { g += `<circle cx="${x(i).toFixed(1)}" cy="${y(s[k]).toFixed(1)}" r="3" fill="var(--cxu-${k},${CXU_COR[k]})"><title>${_rpEsc(s.data)} · ${nomes[k]}: ${fmtN(Math.round(s[k]))}% da média</title></circle>`; });
   });
   const passo = Math.max(1, Math.ceil(34 / (pw / Math.max(1, S.length - 1))));   // rótulo a cada ≥ 34 unidades (a página 1 desenha estreito)
-  S.forEach((s, i) => { if(i % passo === 0 || i === S.length - 1)
+  S.forEach((s, i) => { if((i % passo === 0 && S.length - 1 - i >= passo) || i === S.length - 1)   // o último sempre; o do passo colado nele sai
     g += `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" font-size="${FS - 1}" fill="var(--cxu-tinta2,#5B6470)">${_rpEsc(s.data.slice(0, 5))}</text>`; });
   const iFora = S.findIndex(s => s.fora);
   if(iFora > 0 && R.reguas && R.reguas.trava){
@@ -7975,7 +7975,7 @@ const _CXU_DOC_SKIN = `
 .cxu-doc .cxu-res tr.cxu-min td{background:#fff8f3}
 .cxu-doc .cxu-sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:7px;vertical-align:baseline;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .cxu-doc .cxu-ref{font-family:'Barlow',sans-serif;font-size:11.5px;line-height:1.4;color:#1F2328;border-left:3px solid #b7791f;background:#fffaf0;padding:6px 11px;margin:4px 0 8px;page-break-inside:avoid}
-.cxu-doc .cxu-g2{display:grid;grid-template-columns:640px 1fr;gap:20px;align-items:start;page-break-inside:avoid}
+.cxu-doc .cxu-g2{display:grid;grid-template-columns:600px 1fr;gap:18px;align-items:start;page-break-inside:avoid}
 .cxu-doc .cxu-g2 .cxu-sub{margin-top:4px}
 .cxu-doc .cxu-p4-lado{float:right;width:30%;margin:0 0 6px 18px}.cxu-doc .cxu-p4-lado .cxu-sub:first-child{margin-top:0}
 .cxu-doc .cxu-p4::after{content:'';display:block;clear:both}
@@ -8039,11 +8039,16 @@ function _cxuTese(G){
     ? `${{ uep:'A <b>UEP</b> é', pts:'Os <b>PONTOS</b> são', cx:'As <b>CAIXAS</b> são' }[m0]} a régua que menos varia de um dia para o outro: <b>±${fmtP(G[m0].osc)}</b>, contra ` + ordem.slice(1).map(k => `±${fmtP(G[k].osc)} ${k === 'cx' ? 'das caixas' : k === 'pts' ? 'dos pontos' : 'da UEP'}`).join(' e ') + '.'
     : `${nomes[m0]}: variação de <b>±${fmtP(G[m0].osc)}</b> dia a dia.`;
 }
+// v7.188.1 (PPCP: "a UEP está sendo atualizada conforme cronoanálise"): depois
+// da trava a UEP não está parada — muda por cronoanálise, produto a produto. A
+// frase diz isso: a cronoanálise mede o TEMPO do produto, não a produção do
+// dia, então a comparação continua sem vantagem; o dia fechado guarda a UEP
+// daquele dia (a do dia da troca em diante já é a nova).
 function _cxuProva(G){
   const nomes = { cx:'CAIXAS', pts:'PONTOS', uep:'UEP' };
   if(!G || !G.trava) return '';
   return G.nFora >= CXU_FORA_MIN
-    ? `<b>Sem vantagem para a UEP:</b> ela foi calibrada com o ritmo da própria linha até ${_rpEsc(G.trava.slice(0, 5))}. Nos ${G.nFora} dias depois disso, que não entraram na conta dela: ` + ['uep', 'pts', 'cx'].filter(k => G[k] && G[k].oscFora != null).map(k => `${nomes[k]} <b>±${fmtP(G[k].oscFora)}</b>`).join(' · ') + '.'
+    ? `<b>Sem vantagem para a UEP:</b> ela saiu do ritmo da própria linha até ${_rpEsc(G.trava.slice(0, 5))}; depois disso só muda por cronoanálise — o tempo medido do produto, não a produção do dia. Nos ${G.nFora} dias depois da trava, que não entraram na conta do ritmo: ` + ['uep', 'pts', 'cx'].filter(k => G[k] && G[k].oscFora != null).map(k => `${nomes[k]} <b>±${fmtP(G[k].oscFora)}</b>`).join(' · ') + '.'
     : `Depois da trava da UEP (${_rpEsc(G.trava.slice(0, 5))}) há só ${G.nFora} dia(s): pouco para a comparação sem vantagem. Gere de novo quando houver ${CXU_FORA_MIN} ou mais.`;
 }
 // O RESUMO das três réguas (página 1): realizado × meta dos mesmos dias, a
@@ -8140,7 +8145,7 @@ function _cxUepHtml(R, ctx){
       + `<div class="cxu-tese">${_cxuTese(G)}</div>`
       + `<div class="cxu-txt m">Os mesmos ${G.n} dias fechados (${per}), só a jornada normal${R.ptsTabela === 'hoje' ? ', pontos na tabela de pontos de hoje' : ''}. A linha trabalha parecido todo dia; o que muda é o mix.</div>`
       + _cxuResumoHtml(R, ctx)
-      + `<div class="cxu-g2"><div>${_cxuSvg(R, 640)}<div class="cxu-txt m">Cada ponto é um dia, em % da média da própria régua (100 = a média do período). A faixa cinza é ±10% da média.</div></div>`
+      + `<div class="cxu-g2"><div>${_cxuSvg(R, 600)}<div class="cxu-txt m">Cada ponto é um dia, em % da média da própria régua (100 = a média do período). A faixa cinza é ±10% da média.</div></div>`
       + `<div>${_cxuRefHtml(R)}${_cxuConclusoes(R, ctx.D, ctx.D ? 3 : 2)}</div></div>`;
   }
   // ── PÁGINA 2 · CAPACIDADE POR PRODUTO — o MESMO desenho da aba 📏 RÉGUAS
@@ -8207,10 +8212,11 @@ function _cxUepHtml(R, ctx){
       + (temPts ? ' Pontos: a meta do ⚙ de hoje para todos os dias (ela não tem histórico).' : '')],
     ['ATINGIMENTO · SELO', 'Atingimento = Σ realizado ÷ Σ metas dos dias. Dia na meta = realizado ≥ meta. Selo dos desvios (régua da TV): 96% ou mais NO RITMO · 90 a 96% ATENÇÃO · abaixo de 90% ABAIXO.'],
     ctx.D && ['CAPACIDADE · LIMITE FÍSICO', `Capacidade estimada = referência de UEP ÷ UEP do produto, sozinho na linha o dia inteiro. Limite físico = velocidade ÷ (caixa + vão), em ${UEP_MIN_DIA} min sem parada.`],
-    ['DEPOIS DA TRAVA', `Dias depois de ${_rpEsc(G && G.trava || '—')}: a UEP foi calibrada com o ritmo da linha até ali; esses dias não entraram na conta dela.`],
+    ['DEPOIS DA TRAVA', `Dias depois de ${_rpEsc(G && G.trava || '—')}: até ali a UEP saiu do ritmo da linha; depois, só muda por cronoanálise. Esses dias não entraram na conta do ritmo.`],
     ['META EM CX PEDIA', 'META em caixas × UEP por caixa do dia ÷ referência de UEP da data: quanto esforço a meta em caixas pedia, no mix que rodou.']].filter(Boolean);
   const lim = (dif.length ? ['Linhas destacadas: dias em que as réguas deram veredito diferente (página de desvios).'] : [])
-    .concat(['Caixa lançada sem produto não tem UEP nem ponto. É o dia fechado: o veredito da TV ao longo do dia pode ter mudado.'])
+    .concat(['Caixa lançada sem produto não tem UEP nem ponto. É o dia fechado: o veredito da TV ao longo do dia pode ter mudado.',
+             'UEP trocada por cronoanálise vale do dia da troca em diante; o dia fechado guarda a UEP daquele dia. O período pode ter a UEP antiga e a nova de um mesmo produto.'])
     .concat(R.semSep ? [`* sem a separação da hora extra no HISTÓRICO: caixas inteiras (${R.semSep} dia(s)).`] : [])
     .concat(R.cobBaixa ? [`° menos de ${DIR_COB_MIN}% das caixas apontadas com produto: pontos e UEP contam só essa parte (${R.cobBaixa} dia(s)).`] : [])
     .concat(ctx.D ? [`Capacidade não é produção garantida. Vão de ${ESTEIRA_VAO_PADRAO} mm (*) = padrão do cadastro, não medido: limite pessimista.`] : [])
