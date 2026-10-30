@@ -5837,8 +5837,16 @@ feito e dá ar de verdade ao que sobrou.
     pede a mesma amostra que trocá-la. O ARMÁRIO ENCANTO (11 volumes) cai
     nisso. A regra da lista não foi mexida.
   - PRONTA ainda não é medido: o cadastro segue com a UEP antiga.
-- **Ordem**: o que falta medir primeiro (do mais pesado), depois os medidos; o
-  `#` é a posição pela UEP. `UCV_PRINC_LINHAS`=15 + VER TODOS
+- **Ordem** (v7.190.0, PPCP: *"sim"* para o peso × suspeita): o que falta
+  medir vem antes dos medidos, em três grupos (`UCV_PRINC_ORD`) e o mais
+  pesado primeiro em cada um — 1º a produção FORA de 90–110%, 2º SEM LEITURA
+  (não rodou sozinho, `pouco`, ou sem a base na janela), 3º o que a produção
+  CONFIRMA. O NA PRODUÇÃO é a régua do cartão (`_ucvPadraoDe` com a UEP do
+  cadastro + `_ucvRel` contra a `_ucvRefDe`), coluna própria pela célula
+  `_ucvPadCel` da lista de medições. ⚠ **Só ordena**: não conta como medição
+  nem entra na cobertura (a MEL VOL 1/2 confirmava a 106% e seguia FALTA
+  MEDIR). `_ucvPrincipais(…, meta)` recebe a META UEP (`R.base.meta`). O `#`
+  é a posição pela UEP. `UCV_PRINC_LINHAS`=15 + VER TODOS
   (`UCV_PRINC_TODOS`). Tocar na linha abre o volume no conversor
   (`_ucvAbrirPrincipal`, pelo índice — o `_rpEsc` não escapa aspas).
 - **COBERTURA** = UEP da janela em volume medido ÷ UEP da janela. É o número
@@ -5847,4 +5855,10 @@ feito e dá ar de verdade ao que sobrou.
   mesmo que pese no mix do ano. Mudar a janela é o `CRONO_LINHA_DIAS`, que
   também move o NA PRODUÇÃO e a conferência.
 - Testes em `uep-relatorios.test.js` (estados, ordem, corte dos 80%, hora
-  extra fora, cobertura, desenho, a tela); conferido por mutação.
+  extra fora, cobertura, desenho, a tela; v7.190.0: a ordem por suspeita, o
+  NA PRODUÇÃO contra a base e sem a base); conferido por mutação.
+- ⚠ **Em aberto (30/10/2026)**: a SLEEP é a nº 1 (8,5% da UEP) e aparece
+  FALTA MEDIR. A medição de 7,9 s de 20/10 era da SLEEP mas foi registrada
+  como MADERO; se ela roda mesmo a 7,9 s, a UEP dela seria 1,00, não 0,83
+  (+20%), na direção contrária das outras trocas. Pedir uma medição nova,
+  registrada como SLEEP, com 30+ volumes.
