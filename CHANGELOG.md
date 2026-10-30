@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.191.1 — 30/10/2026 · 📄 IMPORTAR PDF lê o título do app v2.96
+
+- PPCP, com dois PDFs da ELOA na mão: *"subi não leu no app"*. O app de
+  cronoanálise v2.96.0 passou a mandar o título *"Penteadeira camarim eloa
+  2/2"* — o volume só como `2/2`, sem "caixa" ou "vol" na frente. O
+  importador lia todos os números (data, volumes, os três cartões), mas não
+  achava o produto: com um PDF, o campo PRODUTO ficava com o nome do app; com
+  vários, todos ficavam de fora e nada era registrado.
+- A fração solta, como palavra própria (`eloa 2/2`, `(2/2)`), agora é a marca
+  de volume, como `caixa 2/2`. Volume que o produto não tem continua recusado
+  com o motivo, e número com ponto (`1.4`) continua sendo parte do nome.
+  Conferido no cadastro: nenhum nome de produto tem `N/M`.
+- Os cartões novos do v2.96 (ROUBADOS PELAS PARADAS, VOLUMES/HORA) não
+  atrapalham a leitura.
+- **Atenção:** nenhum número mudou. Os PDFs que ficaram de fora é só importar
+  de novo (o mesmo PDF não duplica).
+
 ## v7.191.0 — 30/10/2026 · Principais: a ordem é a da programação
 
 - PPCP, com a lista na tela: *"esse seria a sequência ideal para coleta?"* →

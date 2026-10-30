@@ -5649,6 +5649,13 @@ feito e dá ar de verdade ao que sobrou.
        `caixa`, `cx`, `vol`, `volume`, com `/` ou `de`;
     3. sem casar pelo trecho, as **palavras** — todas no nome de um produto só
        (PENTEADEIRA STRASS → PENTEADEIRA CAMARIM STRASS).
+    - **Desde o app v2.96.0 o título vem só com a fração** (*"Penteadeira
+      camarim eloa 2/2"*, PDFs de 30/10/2026): sem a palavra, nada casava e o
+      lote deixava os dois PDFs de fora (*"subi não leu no app"*). A fração
+      SOLTA, como palavra própria (`2/2`, `(2/2)`), também é a marca de volume
+      (v7.191.1). Nenhum nome do cadastro tem `N/M` (conferido em 30/10);
+      `1.4`, com ponto, continua parte do nome. O teste leva o texto do pdf.js
+      do PDF v2.96.0 (cartões novos ROUBADOS PELAS PARADAS e VOLUMES/HORA).
     - Volume que o produto não tem (caixa 3/3 num de 2 volumes; caixa 1/2 num
       de 1) **não casa**, com o motivo: escolher outro volume gravaria a UEP do
       volume errado. Mais de um produto casando = ambíguo, nunca o 1º da lista.

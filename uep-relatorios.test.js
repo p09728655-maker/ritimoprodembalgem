@@ -1602,6 +1602,27 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
   ok('a marca de volume em outras formas: cx, vol., volume N de N, entre parênteses',
      [pa('PENTEADEIRA STRASS CX 2/2'), pa('Penteadeira Strass (vol. 2/2)'), pa('penteadeira strass volume 2 de 2'), pa('Penteadeira Camarim Strass Vol 2/2')],
      Array(4).fill('501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'));
+  // v7.191.1 (PPCP, 30/10/2026: "subi não leu no app"): o app v2.96.0 manda o
+  // título "Penteadeira camarim eloa 2/2" — a fração SOLTA, sem caixa/vol. O
+  // texto abaixo é o que o pdf.js 3.11.174 tira do PDF real de 30/10 12:48 (com
+  // os cartões novos ROUBADOS PELAS PARADAS e VOLUMES/HORA).
+  const TXT296 = "Takt Time —   Penteadeira camarim eloa 2/2 · EMBALAGEM 01   RitmoPatrimar v 2.96.0   · emitido em   30/10/2026 \n MEDIÇÃO \n 30/10/2026 12:48 \n PERÍODO \n 12:48–13:09 \n VOLUMES \n 65 \n PARADO (MARCADO) \n 4 min \n ROUBADOS PELAS PARADAS \n 16 · teriam saído 81 \n No período, saiu um volume a cada 18.9 s, paradas dentro; com a linha rodando, 15.1 s. \n Sem takt para comparar: não há programa de produção do grupo EMBALAGEM cadastrado. \n 2 lacunas — intervalo maior que o dobro do normal (14.4 s) — somaram 40.0s além do normal: cerca de 3 volumes que deixaram de sair. As paradas marcadas\n no cronômetro já estão fora desta conta: estas, ninguém marcou. \n POR VOLUME NO PERÍODO \n 18.9 s \n com as paradas, do 1º ao último\n toque \n TAKT DA SEMANA \n — \n sem programa para comparar \n POR VOLUME COM A LINHA\n RODANDO \n 15.1 s \n sem as paradas marcadas \n SEM AS LACUNAS \n 14.4 s \n sem parada nenhuma \n LACUNAS \n 2 \n 40.0s além do normal \n VOLUMES/HORA \n 189 \n na medição inteira, com as\n paradas \n";
+  const PEL = _uepConvProdutos([
+    { codigo:'501061001', desc:'VOL 1/2 PENTEADEIRA CAMARIM ELOA', cor:'BRANCO', uep:2.19, uepVig:'16/10/2026' },
+    { codigo:'501061002', desc:'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor:'BRANCO', uep:1.82, uepVig:'26/10/2026 DIGITADA' },
+    { codigo:'501061006', desc:'VOL 2/2 PENTEADEIRA CAMARIM ELOA', cor:'CINAMOMO/OFF WHITE', uep:1.82, uepVig:'26/10/2026 DIGITADA' },
+    { codigo:'501106004', desc:'VOL 1/1 RACK SIRIUS 1.4', cor:'ALECRIM/CINAMOMO', uep:1.68, uepVig:'16/10/2026' }]);
+  const L296 = _ucvPdfLer(TXT296), pe = t => { const a = _ucvPdfAchar(PEL, t); return a.p ? a.p.rot : (a.motivo || a.n); };
+  ok('o PDF do app v2.96.0: os cartões novos não atrapalham a leitura',
+     L296, { produto:'Penteadeira camarim eloa 2/2', grupo:'EMBALAGEM 01', data:'30/10/2026', hora:'12:48', vol:65, per:18.9, rod:15.1, lac:14.4, versao:'2.96.0', falta:[] });
+  ok('a fração solta ("eloa 2/2") é a marca de volume; volume que o produto não tem continua recusado; número com ponto não vira volume',
+     [pe(L296.produto), pe('Penteadeira camarim eloa 1/2'), pe('Penteadeira camarim eloa 3/3'), pe('Rack Sirius 1.4'), pe('PENTEADEIRA ELOA (2/2)')],
+     ['501061 · PENTEADEIRA CAMARIM ELOA · VOL 2/2', '501061 · PENTEADEIRA CAMARIM ELOA · VOL 1/2',
+      '"Penteadeira camarim eloa 3/3" fala em volume 3/3, e 501061 · PENTEADEIRA CAMARIM ELOA tem 2 volumes no cadastro',
+      '501106 · RACK SIRIUS 1.4', '501061 · PENTEADEIRA CAMARIM ELOA · VOL 2/2']);
+  const I296 = _ucvImportItem(Object.assign({ arquivo:'eloa.pdf' }, L296), PEL, EI, '30/10/2026', '');
+  ok('e vira a linha do registro do VOL 2/2 (o lote de PDFs não deixa mais de fora)',
+     [I296.erro, ...(I296.D ? [I296.D.produto, I296.D.volume, I296.D.volumes, I296.D.sRod, I296.D.data] : [])], [undefined, 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 65, 15.1, '30/10/2026']);
   ok('sem a marca, as palavras casam o produto inteiro, em qualquer ordem; um volume só aceita 1/1',
      [pa('Penteadeira strass'), pa('Encanto Armario'), pa('Mesa Cabeceira Madero - caixa 1/1')],
      ['501059 · PENTEADEIRA CAMARIM STRASS', '501139 · ARMARIO ENCANTO', '501149 · MESA CABECEIRA MADERO']);

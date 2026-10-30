@@ -3583,7 +3583,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.191.0';
+const APP_VER   = '7.191.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7087,8 +7087,9 @@ function _ucvPdfLer(texto){
 // VOL 2/2 vem "Penteadeira strass - caixa 2/2" (cadastro: VOL 2/2 PENTEADEIRA
 // CAMARIM STRASS). v7.159.0, PPCP 26/10/2026: "ajusta importador". Três passos:
 // 1. o nome como veio (_uepConvAchar: exato, código, trecho que só um tem);
-// 2. a marca de volume ("caixa 2/2", "cx 2/2", "vol 2/2", "volume 2 de 2") sai
-//    do nome e escolhe a linha do VOLUME — um volume cronometrado é a UEP dele;
+// 2. a marca de volume ("caixa 2/2", "cx 2/2", "vol 2/2", "volume 2 de 2" e,
+//    desde o app v2.96, só "2/2") sai do nome e escolhe a linha do VOLUME — um
+//    volume cronometrado é a UEP dele;
 // 3. sem casar pelo trecho, as PALAVRAS: todas no nome de um produto só
 //    ("PENTEADEIRA STRASS" → PENTEADEIRA CAMARIM STRASS). Duas casando =
 //    ambíguo, nunca a primeira da lista.
@@ -7098,7 +7099,10 @@ function _ucvPdfAchar(prods, nome){
   const t = _uepConvNorm(nome);
   const a = _uepConvAchar(prods, t);
   if(a.p) return a;
-  const mv = /(?:^|[\s\-–—·(])(?:CAIXA|CX|VOLUME|VOL)\.?\s*(\d+)\s*(?:\/|DE)\s*(\d+)\b/.exec(t);
+  // v7.191.1: o app v2.96 manda só "eloa 2/2", sem a palavra — a fração solta,
+  // como palavra própria, também é volume (nenhum nome do cadastro tem N/M).
+  const mv = /(?:^|[\s\-–—·(])(?:CAIXA|CX|VOLUME|VOL)\.?\s*(\d+)\s*(?:\/|DE)\s*(\d+)\b/.exec(t)
+          || /(?:^|[\s\-–—·(])(\d{1,2})\s*\/\s*(\d{1,2})(?=$|[\s\-–—·)])/.exec(t);
   const limpo = (mv ? t.slice(0, mv.index) + ' ' + t.slice(mv.index + mv[0].length) : t)
     .replace(/[\-–—·()]+/g, ' ').replace(/\s+/g, ' ').trim();
   if(!limpo) return { p:null, n:0 };
