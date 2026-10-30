@@ -517,6 +517,8 @@ global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
 global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
 global.UCV_ST = eval('(' + pegaConst('UCV_ST') + ')');
+['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
+global.UCV_PRINC = []; global.UCV_PRINC_TODOS = false;
 global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
 ['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
@@ -527,12 +529,13 @@ const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'fu
   'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegsStatus(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
   'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
   'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvProntas(', 'function _ucvTrocaConfirmaTxt(',
-  'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar('];
+  'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar(', 'function _ucvPrincEstado(', 'function _ucvPrincipais('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
   'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
-  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel('];
+  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel(',
+  'function _ucvPrincSub(', 'function _ucvPrincHtml('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -1403,6 +1406,89 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
     await _ucvTrocar();
     ok('fluxo TROCAR: as medições não liberam (amostra pequena) → não chama o Apps Script', [F.chamadas.length, tMsg.textContent.includes('não liberam')], [0, true]);
   });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0, PPCP 30/10/2026: "deixar os
+// principais produtos marcados para análise de tempo" — a referência de UEP só é
+// revista quando a cronoanálise cobrir o mix). Os volumes que somam 80% da UEP
+// de jornada da janela do getHorasCrono, com a situação de cada um.
+console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de tempo ──');
+{ const CV2 = (codigo, desc, uep, uepVig) => ({ codigo, desc, cor:'BRANCO', uep, uepVig });
+  const PP = _uepConvProdutos([
+    CV2('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 1, '21/10/2026 DIGITADA'),        // a base (vem antes de "trocada")
+    CV2('501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 0.83, '16/10/2026'),
+    CV2('501060001', 'VOL 1/2 PENTEADEIRA CAMARIM MEL', 1.73, '16/10/2026'),
+    CV2('501060002', 'VOL 2/2 PENTEADEIRA CAMARIM MEL', 1.71, '16/10/2026 EST'),
+    CV2('501061001', 'VOL 1/2 PENTEADEIRA CAMARIM ELOA', 2.19, '16/10/2026'),
+    CV2('501061002', 'VOL 2/2 PENTEADEIRA CAMARIM ELOA', 1.82, '26/10/2026 DIGITADA'),     // trocada pelo ✓ TROCAR A UEP
+    CV2('501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 2.71, '16/10/2026'),
+    CV2('501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 2.29, '16/10/2026'),
+    CV2('501082001', 'VOL 1/1 TOUCADOR MAGIC NEW', 1.58, '25/09/2026'),
+    CV2('501139001', 'VOL 1/1 ARMARIO ENCANTO', 2.23, '25/09/2026'),
+    CV2('501114004', 'VOL 1/1 PAINEL SIRIUS 1.4', 1.49, '16/10/2026'),
+    CV2('501999002', 'VOL 1/1 MESA RABO', 2, '16/10/2026'),
+    CV2('501888001', 'VOL 1/1 PRODUTO SEM UEP', '', '')]);
+  const RG2 = (modelo, produto, volume, sRod, volumes, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, sRod, baseS:7.9, uep:Math.round(sRod / 7.9 * 100) / 100, uepCad, volumes });
+  const RGS = [RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 12.4, 52, 2.29), RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 11.5, 61, 2.29),
+    RG2('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 13.4, 70, 1.58),                                // 107% com 70 volumes: confere
+    RG2('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 17.6, 11, 2.23),                                  // confere, mas 11 volumes
+    RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 12.8, 51, 1.49), RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 14.3, 50, 1.49)];   // discordam
+  const HP2 = (data, hora, cods) => ({ data, hora, min:60, cods, par:{} });
+  const HRS = [HP2('27/10/2026', '07:00', { 501094001:600 }), HP2('28/10/2026', '07:00', { 501094001:400 }),   // SLEEP 1.000 cx × 0,83 = 830, em 2 dias
+    HP2('27/10/2026', '08:00', { 501149001:800 }), HP2('27/10/2026', '09:00', { 501060001:400, 501060002:400 }),
+    HP2('27/10/2026', '10:00', { 501061002:300, 501061001:50 }), HP2('27/10/2026', '13:00', { 501059002:200 }), HP2('27/10/2026', '14:00', { 501082001:250 }),
+    HP2('27/10/2026', '15:00', { 501139001:150, 501114004:150 }), HP2('27/10/2026', '16:00', { 501999002:100, 501888001:70, 501777001:30 }),
+    HP2('28/10/2026', '05:00', { 501999002:5000 })];                                                       // hora extra: fora (a referência é de jornada)
+  const ehHE = h => /^0[56]:/.test(h);
+  const M = _ucvPrincipais(HRS, PP, RGS, ehHE);
+  ok('os principais: os volumes até cruzar 80% da UEP de jornada (o TOUCADOR cruza: 76,1% → 83,5%); a hora extra fica fora',
+     [M.nPrinc, M.nDemais, fmtP(M.pctDemais), M.lista.find(g => g.p.rot.includes('TOUCADOR')).acum.toFixed(1), Math.round(M.uepTot)], [7, 4, '16,5%', '83.5', 5273]);
+  ok('a ordem: o que falta medir primeiro (o mais pesado no topo), depois os medidos; # é a posição pela UEP',
+     M.lista.map(g => [g.rank, g.p.rot.replace(/^\d+ · /, ''), g.sit]),
+     [[1, 'MESA CABECEIRA SLEEP', 'falta'], [3, 'PENTEADEIRA CAMARIM MEL · VOL 1/2', 'falta'], [4, 'PENTEADEIRA CAMARIM MEL · VOL 2/2', 'falta'],
+      [6, 'PENTEADEIRA CAMARIM STRASS · VOL 2/2', 'pronta'], [2, 'MESA CABECEIRA MADERO', 'base'], [5, 'PENTEADEIRA CAMARIM ELOA · VOL 2/2', 'trocada'],
+      [7, 'TOUCADOR MAGIC NEW', 'confere']]);
+  ok('a cobertura: UEP de volume medido (base + trocada + confere com 30+ volumes) ÷ UEP da janela; PRONTA ainda não conta (o cadastro é o antigo)',
+     [fmtP(M.cobertura), M.nPrincMed, M.lista.find(g => g.sit === 'pronta').medido], ['33,0%', 3, false]);
+  const sl = M.lista.find(g => g.sit === 'falta' && g.rank === 1), mv2 = M.lista.find(g => g.rank === 4), el = M.lista.find(g => g.sit === 'trocada');
+  ok('por volume: caixas, dias, UEP/cx do cadastro, estimada marcada; a data da troca sai da vigência',
+     [sl.cx, sl.nDias, _ucvU2(sl.uepCx), mv2.estimada, sl.estimada, el.vig], [1000, 2, '0,83', true, false, '26/10/2026']);
+  ok('código sem UEP e fora do cadastro ficam fora do ranking, contados', [M.cxSemUep, M.cxFora, M.lista.concat().some(g => /SEM UEP|RABO/.test(g.p.rot))], [70, 30, false]);
+  const est = n => _ucvPrincEstado(PP.find(p => p.rot.includes(n)), RGS);
+  ok('a situação: confere com menos de 30 volumes e medições que discordam continuam MEDINDO; sem medição, FALTA MEDIR',
+     [[est('ARMARIO ENCANTO').sit, est('ARMARIO ENCANTO').S.nVol], est('PAINEL SIRIUS').sit, est('PAINEL SIRIUS').S.veredito, est('MESA RABO').sit, est('MESA CABECEIRA MADERO').sit],
+     [['medindo', 11], 'medindo', 'discordam', 'falta', 'base']);
+  const M0 = _ucvPrincipais(HRS, PP, null, ehHE);
+  ok('medições ainda não lidas: sem cobertura (nunca inventa 0%) e quem não é base nem trocada fica "lendo"',
+     [M0.cobertura, M0.regsLidas, M0.lista.filter(g => g.sit === 'lendo').length, M0.nPrincMed], [null, false, 5, 2]);
+  ok('sem as horas: null (a tela diz o estado da leitura)', [_ucvPrincipais('lendo', PP, RGS, ehHE), _ucvPrincipais(null, PP, RGS, ehHE)], [null, null]);
+  // o desenho
+  const H = _ucvPrincHtml(M, HRS, PP.find(p => p.rot.includes('SLEEP')).chave, false);
+  ok('o desenho: a cobertura e quantos faltam no topo, a situação de cada um, a linha clicável e a selecionada',
+     [H.includes('<b>33,0%</b> da UEP da janela já vem de volume medido'), H.includes('<b>3 de 7</b> principais medidos · faltam <b>4</b>'),
+      H.includes('FALTA MEDIR'), H.includes('PRONTA PARA TROCAR</span><small>113 volumes — falta o ✓ TROCAR A UEP'), H.includes('✓ TROCADA</span><small>UEP nova desde 26/10'),
+      H.includes('✓ BASE</span><small>cronometrada em 20/10'), H.includes('✓ CONFERE</span><small>70 volumes — a UEP fica'),
+      H.includes('onclick="_ucvAbrirPrincipal(0)"'), /<tr class="sel"[^>]*>\s*<td class="n">1<\/td>/.test(H), H.includes('1,71<small>estimada</small>')],
+     [true, true, true, true, true, true, true, true, true, true]);
+  ok('o rodapé diz o que ficou fora e para onde vai o código sem UEP',
+     [H.includes('Fora da lista: 4 volumes com 16,5% da UEP'), H.includes('100 cx sem UEP no cadastro (estão na 🖨 FILA DE CRONOANÁLISE)')], [true, true]);
+  ok('o MEDINDO diz o que falta: N de 30 volumes (confere até agora) ou que as medições discordam',
+     [_ucvPrincSub(Object.assign({ sit:'medindo' }, est('ARMARIO ENCANTO'))), _ucvPrincSub(Object.assign({ sit:'medindo' }, est('PAINEL SIRIUS')))],
+     ['11 de 30 volumes · confere até agora', 'as medições discordam — meça de novo']);
+  ok('todos medidos: o resumo diz que pode rever a referência',
+     _ucvPrincHtml(Object.assign({}, M, { nPrincMed:7 }), HRS, null, false).includes('<b>7 de 7</b> principais medidos — pode rever a referência'), true);
+  ok('estados da leitura das horas: lendo · falhou · .gs sem as horas', [_ucvPrincHtml(null, 'lendo').includes('Lendo a produção'), _ucvPrincHtml(null, 'falhou').includes('não foi lida'),
+     _ucvPrincHtml(null, 'sem-endpoint').includes('.gs v5.35')], [true, true, true]);
+  const MUITOS = Object.assign({}, M, { lista:Array.from({ length:20 }, () => M.lista[0]) });
+  ok('mais de 15 linhas: VER TODOS (e VER MENOS aberto)', [(_ucvPrincHtml(MUITOS, HRS, null, false).match(/<tr class=/g) || []).length, _ucvPrincHtml(MUITOS, HRS, null, false).includes('VER TODOS (20)'),
+     (_ucvPrincHtml(MUITOS, HRS, null, true).match(/<tr class=/g) || []).length, _ucvPrincHtml(MUITOS, HRS, null, true).includes('VER MENOS')], [15, true, 20, true]);
+  // a tela: o bloco mora fora do resultado (refeito a cada tecla) e usa as horas, as medições e o cadastro que a aba já tem
+  const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC)), RP = pegaJs('function _ucvRegPintar(');
+  ok('a tela: o bloco entre o registro e as medições; o _ucvRegPintar passa as horas, as medições, o cadastro e a hora extra (_horaEhHE) — nenhuma leitura nova',
+     [SC.indexOf('id="uep-conv-princ"') > SC.indexOf('id="uep-conv-reg"') && SC.indexOf('id="uep-conv-princ"') < SC.indexOf('id="uep-conv-regs"'),
+      /_ucvPrincipais\(LH, UEP_CONV_PRODS, L, _horaEhHE\)/.test(RP), /jsonpFetch|action=/.test(pegaJs('function _ucvPrincipais(') + pegaJs('function _ucvPrincHtml('))],
+     [true, true, false]);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

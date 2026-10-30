@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.189.0 — 30/10/2026 · Os principais produtos marcados para a análise de tempo
+
+- PPCP: *"deixar os principais produtos marcados para análise de tempo"*.
+  Combinado antes: a referência de UEP (2.761) só é revista quando a
+  cronoanálise cobrir o mix principal. Com o cadastro de hoje, a mesma regra
+  da 2.761 daria ~2.690 (−2,5%) — dentro da oscilação de ±12% da linha, por
+  isso a referência não mudou.
+- Aba ⏱ CRONOANÁLISE, novo bloco **PRINCIPAIS PARA ANÁLISE DE TEMPO**, entre
+  o registro da medição e a lista de medições:
+  - os **volumes** que somam 80% da UEP de jornada dos últimos 30 dias
+    fechados (produto de 2 volumes entra volume a volume, que é como se
+    cronometra);
+  - o que falta medir em cima, do mais pesado para o mais leve; depois os já
+    medidos. O # é a posição pela UEP;
+  - a situação de cada um: FALTA MEDIR · MEDINDO (quantos de 30 volumes, ou
+    medições que discordam) · PRONTA PARA TROCAR · ✓ CONFERE · ✓ TROCADA ·
+    ✓ BASE;
+  - no topo, **quanto da UEP da janela já vem de volume medido** e quantos
+    principais faltam. Tocar numa linha abre o volume no conversor.
+- Medido = a base, UEP trocada no cadastro (vigência DIGITADA) ou medições
+  que conferem com **30 volumes ou mais** — confirmar a UEP pede a mesma
+  amostra que trocá-la. O ARMÁRIO ENCANTO (11 volumes) aparece como MEDINDO,
+  embora a lista de medições diga que confere.
+- Nenhuma leitura nova: usa as horas da produção (`getHorasCrono`, a do NA
+  PRODUÇÃO), as medições e o cadastro que a aba já lê.
+- **Atenção:** nenhum número existente mudou.
+
 ## v7.188.1 — 29/10/2026 · "Sem vantagem para a UEP" diz que ela muda por cronoanálise
 
 - PPCP: *"a UEP está sendo atualizada conforme cronoanálise"*. A frase dizia
