@@ -517,7 +517,7 @@ global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
 global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
 global.UCV_ST = eval('(' + pegaConst('UCV_ST') + ')');
-['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT', 'UCV_PRINC_ORD'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
+['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT', 'UCV_PRINC_ORD', 'GPX_DOW'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UCV_PRINC = []; global.UCV_PRINC_TODOS = false;
 global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
@@ -529,13 +529,13 @@ const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'fu
   'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegsStatus(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
   'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
   'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvProntas(', 'function _ucvTrocaConfirmaTxt(',
-  'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar(', 'function _ucvPrincEstado(', 'function _ucvPrincipais('];
+  'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar(', 'function _ucvPrincEstado(', 'function _ucvProgDe(', 'function _ucvPrincipais('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
   'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
   'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel(',
-  'function _ucvPrincSub(', 'function _ucvPrincHtml('];
+  'function _ucvPrincSub(', 'function _ucvProgCel(', 'function _ucvPrincHtml('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -606,7 +606,7 @@ ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
    [true, true, false]);
 const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
-   [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+   [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\)\.then\(\(\)=>_ucvProgCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
 // v7.172.1 (print do PPCP): a frase de ajuda no meio dos botões quebrava o título e jogava o último botão numa fileira sozinho
 {
@@ -1362,7 +1362,7 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
      [true, true, true, true, true]);
   const RPI = pegaJs('function _ucvRegPintar('), REG = pegaJs('async function _ucvRegistrar('), TRC = pegaJs('async function _ucvTrocar(');
   ok('a data não tem mais HOJE de enfeite e sai do campo depois de registrar (cada medição com a sua)',
-     [RPI.includes('hojeStr'), /\['data', 'per', 'lac', 'vol'\]/.test(REG)], [false, true]);
+     [/r-data[^\n]*hojeStr|placeholder *= *hojeStr/.test(RPI), /\['data', 'per', 'lac', 'vol'\]/.test(REG)], [false, true]);   // o hojeStr dos PRINCIPAIS (v7.191.0) é a data da programação, não o campo
   ok('o TROCAR vai pelo trocarUepCrono, com confirmação e retentativa, e relê cadastro → medições → conferência em sequência',
      [/action=trocarUepCrono/.test(TRC), /confirm\(_ucvTrocaConfirmaTxt\(/.test(TRC), /jsonpEscrita\(/.test(TRC),
       /await _capBuscar\(\);\s*await _ucvRegsCarregar\(true\);\s*await _ucvConfCarregar\(true\);/.test(TRC), /setUepCatalogo|simularUepCatalogo/.test(TRC)],
@@ -1487,7 +1487,7 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
   const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC)), RP = pegaJs('function _ucvRegPintar(');
   ok('a tela: o bloco entre o registro e as medições; o _ucvRegPintar passa as horas, as medições, o cadastro, a hora extra (_horaEhHE) e a META UEP — nenhuma leitura nova',
      [SC.indexOf('id="uep-conv-princ"') > SC.indexOf('id="uep-conv-reg"') && SC.indexOf('id="uep-conv-princ"') < SC.indexOf('id="uep-conv-regs"'),
-      /_ucvPrincipais\(LH, UEP_CONV_PRODS, L, _horaEhHE, R\.base\.meta\)/.test(RP), /jsonpFetch|action=/.test(pegaJs('function _ucvPrincipais(') + pegaJs('function _ucvPrincHtml('))],
+      /_ucvPrincipais\(LH, UEP_CONV_PRODS, L, _horaEhHE, R\.base\.meta, PROG_DET_TS \? PROG_DETALHADA : null, _cartNum\(hojeStr\(\)\)\)/.test(RP), /jsonpFetch|action=/.test(pegaJs('function _ucvPrincipais(') + pegaJs('function _ucvPrincHtml('))],
      [true, true, false]);
   // v7.190.0: PESO × SUSPEITA. O NA PRODUÇÃO (o volume sozinho, sem as paradas,
   // contra a MADERO) ordena o que falta medir: fora de 90–110% → sem leitura →
@@ -1509,11 +1509,57 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
   const H2 = _ucvPrincHtml(M2, HRS2, null, false);
   ok('o desenho: a coluna NA PRODUÇÃO (a célula da lista de medições), o fora em destaque e o resumo diz quantos medir primeiro',
      [/<th class="n" title="[^"]*">NA PRODUÇÃO<\/th><th>ANÁLISE DE TEMPO<\/th>/.test(H2), H2.includes('<td class="n ucv-pf">76,8%'),
-      H2.includes('<b>1</b> com a produção fora de 90–110% (medir primeiro)'), H2.includes('não substitui a cronoanálise'), H2.includes('o volume não rodou sozinho')],
+      H2.includes('<b>1</b> com a produção fora de 90–110%'), H2.includes('não substitui a cronoanálise'), H2.includes('o volume não rodou sozinho')],
      [true, true, true, true, true]);
   const M3 = _ucvPrincipais(HRS2.slice(2), PP, [], () => false, 2530);
   ok('sem a base na janela: ninguém é julgado (todos sem leitura, ordem pelo peso) e o rodapé diz por quê',
      [M3.semBase, M3.nFora, M3.lista.every(g => g.prod === 'sem'), _ucvPrincHtml(M3, HRS2, null, false).includes('não rodou sozinha na janela: sem referência')], [true, 0, true, true]);
+  // v7.191.0: NA PROGRAMAÇÃO. A cronoanálise só acontece com o produto na
+  // linha: a ordem do que falta medir é a da programação (hoje/atraso → data;
+  // no mesmo dia, o mais pesado); o não programado vai para o fim, na ordem do
+  // NA PRODUÇÃO. Hoje = 30/10/2026 (sexta).
+  const PG = (data, codigo, qtde, extra) => Object.assign({ data, dataNum:_cartNum(data), codigo, qtde, falta:0, adiantado:0 }, extra || {});
+  const HOJE = 20261030;
+  const PROG = [
+    PG('27/10/2026', '501094001', 100, { falta:120 }), PG('28/10/2026', '501094001', 100, { falta:120 }),   // SLEEP: o falta é do CÓDIGO — conta uma vez
+    PG('09/11/2026', '501094001', 1000), PG('09/11/2026', '501094001', 1200),
+    PG('05/11/2026', '501060001', 350, { adiantado:50 }),                                                    // MEL VOL 1/2: 300 em aberto
+    PG('05/11/2026', '501.060.002', 350), PG('11/11/2026', '501.060.002', 400),                              // MEL VOL 2/2, código com ponto
+    PG('29/10/2026', '501082001', 60, { falta:50, encerrada:true }), PG('03/11/2026', '501082001', 200, { foraEsteira:true }),   // TOUCADOR: nada que passe na linha
+    PG('12/11/2026', '501777001', 999)];                                                                     // a programação vai até 12/11 (código fora dos principais)
+  ok('_ucvProgDe: atraso pelo falta do CÓDIGO (uma vez), data futura = qtde − adiantado por linha somada no dia, dia da semana, as datas depois',
+     [_ucvProgDe(['501094001'], PROG, HOJE), _ucvProgDe(['501060001'], PROG, HOJE), _ucvProgDe(['501060002'], PROG, HOJE)],
+     [{ agora:true, hoje:false, cx:120, depois:1 }, { agora:false, dn:20261105, data:'05/11', dow:'qui', cx:300, depois:0 },
+      { agora:false, dn:20261105, data:'05/11', dow:'qui', cx:350, depois:1 }]);
+  ok('_ucvProgDe: hoje com falta → HOJE; hoje já feito (falta 0) → a próxima data; vencida ENCERRADA e fora da esteira não contam; sem nada → null',
+     [_ucvProgDe(['501094001'], PROG.concat([PG('30/10/2026', '501094001', 200, { falta:120 })]), HOJE),
+      _ucvProgDe(['501060001'], PROG.concat([PG('30/10/2026', '501060001', 200, { falta:0 })]), HOJE).data,
+      _ucvProgDe(['501082001'], PROG, HOJE), _ucvProgDe(['501139001'], [], HOJE)],
+     [{ agora:true, hoje:true, cx:120, depois:1 }, '05/11', null, null]);
+  const M4 = _ucvPrincipais(HRS2, PP, [], () => false, 2530, PROG, HOJE);
+  ok('a ordem com a programação: o atraso primeiro (SLEEP, a que a produção confirma), depois 05/11 com o mais pesado no topo (MEL 1/2, MEL 2/2); o não programado no fim mesmo FORA de 90–110% (TOUCADOR)',
+     M4.lista.filter(g => !g.medido).map(g => [g.rank, g.p.rot.replace(/^\d+ · /, ''), g.prog ? (g.prog.agora ? 'agora' : g.prog.data) : '—']),
+     [[4, 'MESA CABECEIRA SLEEP', 'agora'], [1, 'PENTEADEIRA CAMARIM MEL · VOL 1/2', '05/11'], [2, 'PENTEADEIRA CAMARIM MEL · VOL 2/2', '05/11'], [3, 'TOUCADOR MAGIC NEW', '—']]);
+  ok('o resumo da programação: quantos que faltam estão nela, quantos hoje ou em atraso, até quando ela vai (fora da esteira não conta)',
+     [M4.progLida, M4.nProg, M4.nAgora, M4.progAte, M2.progLida], [true, 3, 1, '12/11', false]);
+  const H4 = _ucvPrincHtml(M4, HRS2, null, false, 'lendo');
+  ok('o desenho: a coluna NA PROGRAMAÇÃO depois do produto; EM ATRASO/HOJE em destaque com as caixas; a data com o dia da semana; o não programado diz até quando a programação vai',
+     [/<th>PRODUTO · VOLUME<\/th><th title="[^"]*">NA PROGRAMAÇÃO<\/th><th class="n"[^>]*>UEP NA JANELA/.test(H4),
+      H4.includes('<td class="ucv-pg"><b class="ucv-ph">EM ATRASO</b><small>120 cx em aberto · +1 data</small></td>'),
+      H4.includes('<td class="ucv-pg"><b>05/11</b> qui<small>300 cx</small></td>'), H4.includes('<b>05/11</b> qui<small>350 cx · +1 data</small>'),
+      H4.includes('<span title="Não está na programação (vai até 12/11)">—</span>'),
+      H4.includes(' · <b>3</b> estão na programação até 12/11 — <b>1</b> hoje ou em atraso'), H4.includes('(medir primeiro)')],
+     [true, true, true, true, true, true, false]);
+  ok('programação ainda não lida: a célula "…", o resumo diz que está lendo; falhou: "—" e a ordem é a do NA PRODUÇÃO',
+     [_ucvPrincHtml(M2, HRS2, null, false, 'lendo').includes('<span title="Lendo a programação">…</span>'), _ucvPrincHtml(M2, HRS2, null, false, 'lendo').includes(' · lendo a programação…'),
+      _ucvPrincHtml(M2, HRS2, null, false, 'falhou').includes(' · a programação não foi lida — a ordem é a do NA PRODUÇÃO'),
+      _ucvPrincHtml(M2, HRS2, null, false, 'falhou').includes('title="A programação não foi lida — a ordem é a do NA PRODUÇÃO">—</span>')],
+     [true, true, true, true]);
+  ok('todos medidos: o resumo não fala da programação', _ucvPrincHtml(Object.assign({}, M4, { nPrincMed:M4.nPrinc }), HRS2, null, false, 'lendo').includes('estão na programação até'), false);
+  const PC = pegaJs('function _ucvProgCarregar(');
+  ok('a leitura: a MESMA do PRÓXIMOS DIAS (carregarProgramacaoDetalhada, voo compartilhado), renovada a cada GPX_TTL, depois das horas, 1 min de espera na falha — nenhuma chamada própria',
+     [/carregarProgramacaoDetalhada\(\)/.test(PC), /PROG_DET_TS && Date\.now\(\) - PROG_DET_TS < GPX_TTL/.test(PC), /await UCV_LINHA_VOO/.test(PC), /UCV_PROG_TENT < 60000/.test(PC), /jsonpFetch|action=/.test(PC)],
+     [true, true, true, true, false]);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

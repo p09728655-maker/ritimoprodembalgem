@@ -11,6 +11,31 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.191.0 — 30/10/2026 · Principais: a ordem é a da programação
+
+- PPCP, com a lista na tela: *"esse seria a sequência ideal para coleta?"* →
+  *"sim"* para a coluna da programação. A cronoanálise só acontece com o
+  produto na linha, e a lista não olhava a programação: a MESA CABECEIRA SLEEP
+  (a nº 1 da janela, 8,5% da UEP) ficava no fim porque a produção "confirma" o
+  cadastro — e ela roda 2.200 cx em 09/11.
+- Coluna nova **NA PROGRAMAÇÃO**, depois do produto: a próxima vez do volume na
+  PROGRAMACAO e as caixas em aberto nela — **HOJE** ou **EM ATRASO** (o que
+  falta do código) em destaque, ou a data com o dia da semana (quantidade menos
+  o já adiantado), e *+N datas* quando há mais. **—** = não está programado (o
+  título diz até quando a programação vai).
+- A ordem do que falta medir agora é: hoje e atraso → a data; no mesmo dia, o
+  mais pesado. O que não está programado vai para o fim, na ordem da v7.190.0
+  (produção fora de 90–110% → sem leitura → confirma).
+- O resumo do topo diz quantos dos que faltam estão na programação e quantos
+  são de hoje ou do atraso. Fora da esteira e linha vencida encerrada (X) não
+  contam.
+- A leitura é a MESMA do PRÓXIMOS DIAS (`getProgramacaoDetalhada`), por último
+  na fila da aba, só quando a do painel tem mais de 15 min. Sem ela, a célula
+  mostra *…* (lendo) ou *—* (não lida) e a ordem é a do NA PRODUÇÃO.
+- **Atenção:** nenhum número mudou; muda a ordem das linhas que faltam medir.
+  A cronoanálise roda uma leitura cara a mais ao abrir a aba (no máximo a cada
+  15 min).
+
 ## v7.190.0 — 30/10/2026 · Principais: o que medir primeiro, pela produção
 
 - PPCP: *"sim"* para pôr o **NA PRODUÇÃO** na lista PRINCIPAIS PARA ANÁLISE
