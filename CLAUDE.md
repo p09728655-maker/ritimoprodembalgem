@@ -53,7 +53,7 @@ via Google Apps Script (JSONP).
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
   de 26/10 e o nome do app com "caixa 2/2"), os PRINCIPAIS PARA ANÁLISE DE
-  TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura), e a aba 📏 RÉGUAS (o mix de 70
+  TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura; v7.191.0: a ordem pela programação), e a aba 📏 RÉGUAS (o mix de 70
   pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
   SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
@@ -5821,7 +5821,8 @@ feito e dá ar de verdade ao que sobrou.
   `_ucvPrincEstado(p, regs)`; **desenho** `_ucvPrincHtml` / `_ucvPrincSub`
   (sem conta — estão no `UCV_DESENHO` do teste). Pintado no `_ucvRegPintar`,
   com as horas do `getHorasCrono` (a janela do NA PRODUÇÃO, 30 dias fechados),
-  as medições e o cadastro que a aba já lê: **nenhuma leitura nova**.
+  as medições e o cadastro que a aba já lê: **nenhuma leitura nova** — até a
+  v7.191.0, que lê a programação (abaixo).
 - **Por VOLUME** (o que se cronometra): produto de N volumes entra pelas
   linhas de volume do `_uepConvProdutos`. UEP = caixas de JORNADA (`_horaEhHE`
   fora — a referência é de jornada) × UEP do cadastro de hoje. Principais =
@@ -5849,6 +5850,25 @@ feito e dá ar de verdade ao que sobrou.
   é a posição pela UEP. `UCV_PRINC_LINHAS`=15 + VER TODOS
   (`UCV_PRINC_TODOS`). Tocar na linha abre o volume no conversor
   (`_ucvAbrirPrincipal`, pelo índice — o `_rpEsc` não escapa aspas).
+- **A ORDEM É A DA PROGRAMAÇÃO** (v7.191.0, PPCP: *"esse seria a sequência
+  ideal para coleta?"* → *"sim"*). A cronoanálise só acontece com o produto na
+  linha; pela ordem da v7.190.0 a MESA CABECEIRA SLEEP (nº 1, 8,5% da UEP,
+  2.200 cx em 09/11) ia para o fim porque a produção "confirma" o 0,83. Coluna
+  **NA PROGRAMAÇÃO** depois do produto: `_ucvProgDe(cods, prog, hojeNum)`
+  (conta) / `_ucvProgCel` (desenho). Vencido e hoje = o `falta` do código, UMA
+  vez por código (o FIFO manda o mesmo número em toda linha dele) → HOJE (há
+  linha de hoje) ou EM ATRASO; futura = Σ `_cartQtdAberta` da data mais próxima
+  (a régua do PRÓXIMOS DIAS); fora da esteira e vencida encerrada não contam.
+  Ordem do que falta medir: agora → data; no mesmo dia, o mais pesado; o não
+  programado no fim, na ordem da v7.190.0. Sem a programação no painel, a ordem
+  é a da v7.190.0 e a célula diz *…*/*—*.
+  - **Leitura**: `_ucvProgCarregar` = o `carregarProgramacaoDetalhada` (voo
+    compartilhado com PROGRAMAÇÃO, PLANO e ⚖ UEP), por último na fila do
+    `setTab('crono')`, só quando o `PROG_DET_TS` passa de `GPX_TTL` (15 min);
+    falhou → 1 min de espera (`UCV_PROG_TENT`). O `_ucvRegPintar` passa
+    `PROG_DET_TS ? PROG_DETALHADA : null` e `_cartNum(hojeStr())`.
+  - ⚠ A data é a da LINHA da programação, não a ORDEM do dia: no dia com dois
+    principais, a linha decide quem passa antes.
 - **COBERTURA** = UEP da janela em volume medido ÷ UEP da janela. É o número
   que diz quando rever a referência. Medições não lidas → sem número, nunca 0%.
 - A janela anda: produto que não rodou nos últimos 30 dias sai da lista,
@@ -5856,7 +5876,9 @@ feito e dá ar de verdade ao que sobrou.
   também move o NA PRODUÇÃO e a conferência.
 - Testes em `uep-relatorios.test.js` (estados, ordem, corte dos 80%, hora
   extra fora, cobertura, desenho, a tela; v7.190.0: a ordem por suspeita, o
-  NA PRODUÇÃO contra a base e sem a base); conferido por mutação.
+  NA PRODUÇÃO contra a base e sem a base; v7.191.0: a programação — falta por
+  código, adiantado, encerrada, fora da esteira, a ordem e a leitura);
+  conferido por mutação.
 - ⚠ **Em aberto (30/10/2026)**: a SLEEP é a nº 1 (8,5% da UEP) e aparece
   FALTA MEDIR. A medição de 7,9 s de 20/10 era da SLEEP mas foi registrada
   como MADERO; se ela roda mesmo a 7,9 s, a UEP dela seria 1,00, não 0,83

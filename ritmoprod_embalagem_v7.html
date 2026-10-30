@@ -607,6 +607,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-princ td small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
 #sec-crono .ucv-princ-mais{margin-top:10px}
 #sec-crono .ucv-princ td.ucv-pf{color:var(--warn);font-weight:600}
+#sec-crono .ucv-princ .ucv-ph{color:var(--acc)}
 #sec-crono .ucv-regs-t span{margin-left:8px;font-family:var(--font-b);font-size:12px;letter-spacing:0;color:var(--txt2)}
 #sec-crono .ucv-conf td{vertical-align:top}
 #sec-crono .ucv-conf small{display:block;margin-top:3px;font-size:11px;color:var(--txt2);white-space:normal}
@@ -3582,7 +3583,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.190.0';
+const APP_VER   = '7.191.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6718,6 +6719,24 @@ function _ucvLinhaCarregar(){
   })().finally(() => { UCV_LINHA_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
   return UCV_LINHA_VOO;
 }
+// A programação dos PRINCIPAIS (v7.191.0): a MESMA leitura do PRÓXIMOS DIAS
+// (carregarProgramacaoDetalhada — voo compartilhado com as abas PROGRAMAÇÃO,
+// PLANO e ⚖ UEP), renovada só a cada GPX_TTL (15 min): é das leituras mais
+// caras do backend. Por último na fila da aba, uma leitura de cada vez; falhou,
+// espera 1 min antes de tentar de novo (o fim redesenha a aba).
+let UCV_PROG_VOO = null, UCV_PROG_TENT = 0;
+function _ucvProgCarregar(){
+  if(!CFG.sheetsUrl) return Promise.resolve();
+  if(UCV_PROG_VOO) return UCV_PROG_VOO;
+  if(PROG_DET_TS && Date.now() - PROG_DET_TS < GPX_TTL) return Promise.resolve();
+  if(Date.now() - UCV_PROG_TENT < 60000) return Promise.resolve();
+  UCV_PROG_TENT = Date.now();
+  UCV_PROG_VOO = (async () => {
+    if(UCV_LINHA_VOO) await UCV_LINHA_VOO.catch(() => {});     // uma leitura de cada vez
+    await carregarProgramacaoDetalhada();
+  })().catch(() => {}).finally(() => { UCV_PROG_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
+  return UCV_PROG_VOO;
+}
 // As medições registradas (getCronoRegistros): ao abrir a aba, depois do
 // cadastro, e de novo depois de cada registro.
 function _ucvRegsCarregar(forcar){
@@ -6896,9 +6915,11 @@ function _ucvRegPintar(R){
         _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta, LH, UEP_CONV_PRODS) : null;
   // os principais para a análise de tempo (v7.189.0): as mesmas horas, medições e cadastro
-  const M = _ucvPrincipais(LH, UEP_CONV_PRODS, L, _horaEhHE, R.base.meta);
+  // v7.191.0: e a programação (a do PRÓXIMOS DIAS, já no painel ou lida por último na fila da aba)
+  const M = _ucvPrincipais(LH, UEP_CONV_PRODS, L, _horaEhHE, R.base.meta, PROG_DET_TS ? PROG_DETALHADA : null, _cartNum(hojeStr()));
   UCV_PRINC = M ? M.lista : [];
-  const pp = _ucvEl('princ'); if(pp) pp.innerHTML = _ucvPrincHtml(M, LH, R.p ? R.p.chave : null, UCV_PRINC_TODOS);
+  const pe = UCV_PROG_VOO || !UCV_PROG_TENT ? 'lendo' : 'falhou';
+  const pp = _ucvEl('princ'); if(pp) pp.innerHTML = _ucvPrincHtml(M, LH, R.p ? R.p.chave : null, UCV_PRINC_TODOS, pe);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
 }
@@ -7398,8 +7419,43 @@ function _ucvPrincEstado(p, regs){
 // cada VOLUME (é o que se cronometra); a UEP de cada caixa é a do cadastro de
 // hoje. Código fora do cadastro ou sem UEP fica fora do ranking, contado.
 // meta: a META UEP (o padrão da meta do NA PRODUÇÃO).
+// v7.191.0 (PPCP, 30/10/2026: "sim" para a coluna NA PROGRAMAÇÃO): a
+// cronoanálise só acontece com o produto na linha, então a ordem do que falta
+// medir é a da PROGRAMACAO — hoje e o atraso primeiro, depois a data; no mesmo
+// dia, o mais pesado. O que não está programado vai para o fim, na ordem do
+// NA PRODUÇÃO (v7.190.0). prog = PROG_DETALHADA (null = não lida: a ordem é a
+// do NA PRODUÇÃO); hojeNum = aaaammdd.
 const UCV_PRINC_ORD = { fora:0, sem:1, confirma:2 };
-function _ucvPrincipais(horas, prods, regs, ehHE, meta){
+// Conta pura: a próxima vez do volume (os códigos dele, só dígitos) na
+// programação. Vencido e hoje: o `falta` do código — o FIFO é POR CÓDIGO e
+// manda o mesmo número em toda linha dele, então conta UMA vez por código,
+// nunca somado por linha. Data futura: qtde − adiantado, POR LINHA
+// (_cartQtdAberta, a régua do PRÓXIMOS DIAS). Fora da esteira não passa na
+// linha; vencida ENCERRADA (X) não pede mais nada. null = não está programado.
+function _ucvProgDe(cods, prog, hojeNum){
+  const S = {}; (cods || []).forEach(c => { S[String(c).replace(/\D/g, '')] = 1; });
+  const visto = {}, fut = {}; let agora = 0, hoje = false;
+  (prog || []).forEach(it => {
+    if(!it || it.foraEsteira) return;
+    const c = String(it.codigo || '').replace(/\D/g, ''), dn = Number(it.dataNum) || _cartNum(it.data);
+    if(!S[c] || !dn) return;
+    if(dn <= hojeNum){
+      const f = Number(it.falta) || 0;
+      if(it.encerrada || !(f > 0)) return;
+      if(!visto[c]){ visto[c] = 1; agora += f; }
+      if(dn === hojeNum) hoje = true;
+      return;
+    }
+    const q = _cartQtdAberta(it);
+    if(q > 0) fut[dn] = (fut[dn] || 0) + q;
+  });
+  const datas = Object.keys(fut).map(Number).sort((a, b) => a - b);
+  if(agora > 0) return { agora:true, hoje, cx:agora, depois:datas.length };
+  if(!datas.length) return null;
+  const dn = datas[0], dt = new Date(Math.floor(dn / 10000), Math.floor(dn / 100) % 100 - 1, dn % 100);
+  return { agora:false, dn, data:_filaN2br(dn).slice(0, 5), dow:GPX_DOW[dt.getDay()].toLowerCase(), cx:fut[dn], depois:datas.length - 1 };
+}
+function _ucvPrincipais(horas, prods, regs, ehHE, meta, prog, hojeNum){
   if(!Array.isArray(horas)) return null;
   const V = {};
   (prods || []).forEach(p => { if(p.volSel || p.nVol === 1) p.cods.forEach(c => { V[c.cod] = { p, uep:c.uep > 0 ? c.uep : 0 }; }); });
@@ -7433,11 +7489,25 @@ function _ucvPrincipais(horas, prods, regs, ehHE, meta){
     g.pad = pd ? Object.assign(pd, { rel:_ucvRel(pd, ref), semRef:!ref }) : null;
     g.prod = !pd || pd.pouco || g.pad.rel == null ? 'sem' : _ucvRelEst(g.pad.rel) === 'confere' ? 'confirma' : 'fora';
   });
-  // o que falta medir primeiro, por suspeita e, em cada grupo, o mais pesado no topo; depois os já medidos
-  const pend = P.filter(g => !g.medido).sort((a, b) => UCV_PRINC_ORD[a.prod] - UCV_PRINC_ORD[b.prod] || b.uep - a.uep);
+  // a programação de cada principal (v7.191.0)
+  const progLida = Array.isArray(prog);
+  let progAte = 0;
+  if(progLida){
+    prog.forEach(it => { const dn = it && !it.foraEsteira ? Number(it.dataNum) || _cartNum(it.data) : 0; if(dn > progAte) progAte = dn; });
+    P.forEach(g => { g.prog = _ucvProgDe(g.p.cods.map(c => c.cod), prog, hojeNum); });
+  }
+  // o que falta medir: pela programação (hoje/atraso → data; no mesmo dia, o
+  // mais pesado); o não programado no fim, por suspeita e peso. Sem a
+  // programação lida, só suspeita e peso. Depois, os já medidos.
+  const sus = (a, b) => UCV_PRINC_ORD[a.prod] - UCV_PRINC_ORD[b.prod] || b.uep - a.uep;
+  const quando = g => !g.prog ? Infinity : g.prog.agora ? 0 : g.prog.dn;
+  const pend = P.filter(g => !g.medido).sort(!progLida ? sus
+    : (a, b) => quando(a) !== quando(b) ? quando(a) - quando(b) : a.prog ? b.uep - a.uep : sus(a, b));
   const lista = pend.concat(P.filter(g => g.medido));
   return { lista, nPrinc:P.length, nPrincMed:P.filter(g => g.medido).length, nDemais:todos.length - P.length,
            nFora:pend.filter(g => g.prod === 'fora').length, semBase:!ref,
+           progLida, progAte:progAte ? _filaN2br(progAte).slice(0, 5) : '',
+           nProg:pend.filter(g => g.prog).length, nAgora:pend.filter(g => g.prog && g.prog.agora).length,
            pctDemais:Math.max(0, 100 - P.reduce((a, g) => a + g.pct, 0)), uepTot, regsLidas:Array.isArray(regs),
            cobertura:uepTot > 0 && Array.isArray(regs) ? uepMed / uepTot * 100 : null, cxSemUep, cxFora };
 }
@@ -7456,22 +7526,31 @@ function _ucvPrincSub(g){
     : S.veredito === 'sem-cadastro' ? 'sem UEP no cadastro para comparar'
     : `${fmtN(S.nVol)} de ${V} volumes${S.veredito === 'confere' ? ' · confere até agora' : ''}`;
 }
-function _ucvPrincHtml(M, est, sel, todos){
-  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span>os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — a referência de UEP é revista quando eles estiverem medidos. Medir primeiro: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma — o mais pesado primeiro em cada grupo</span></div>`;
+// A célula NA PROGRAMAÇÃO (v7.191.0): tudo pronto do _ucvProgDe.
+// progEst: 'lendo' | 'falhou' — quando a programação ainda não está no painel.
+function _ucvProgCel(x, M, progEst){
+  if(!M.progLida) return progEst === 'falhou' ? '<span title="A programação não foi lida — a ordem é a do NA PRODUÇÃO">—</span>' : '<span title="Lendo a programação">…</span>';
+  if(!x) return `<span title="Não está na programação${M.progAte ? ' (vai até ' + M.progAte + ')' : ''}">—</span>`;
+  const mais = x.depois ? ` · +${plural(x.depois, 'data', 'datas')}` : '';
+  return x.agora ? `<b class="ucv-ph">${x.hoje ? 'HOJE' : 'EM ATRASO'}</b><small>${fmtN(x.cx)} cx em aberto${mais}</small>`
+    : `<b>${x.data}</b> ${x.dow}<small>${fmtN(x.cx)} cx${mais}</small>`;
+}
+function _ucvPrincHtml(M, est, sel, todos, progEst){
+  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span>os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — a referência de UEP é revista quando eles estiverem medidos. Ordem do que falta medir: a programação (hoje e atraso, depois a data; no mesmo dia, o mais pesado). O que não está programado vai para o fim: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma</span></div>`;
   if(!M) return est === 'sem-endpoint' ? tit + '<div class="uep-nota">O Apps Script ainda não tem as horas da produção: cole o .gs v5.35 no editor e re-deploye.</div>'
     : est === 'falhou' ? tit + '<div class="uep-nota">A produção dos últimos dias não foi lida — tenta de novo em 1 min.</div>'
     : tit + '<div class="uep-nota">Lendo a produção dos últimos dias…</div>';
   if(!M.lista.length) return tit + '<div class="uep-nota">Nenhuma caixa com UEP na janela.</div>';
   const L = todos ? M.lista : M.lista.slice(0, UCV_PRINC_LINHAS), falta = M.nPrinc - M.nPrincMed;
   return tit
-    + `<div class="ucv-princ-r${falta ? '' : ' ok'}">${M.cobertura != null ? `<b>${fmtP(M.cobertura)}</b> da UEP da janela já vem de volume medido · ` : ''}<b>${M.nPrincMed} de ${M.nPrinc}</b> principais medidos${falta ? ` · faltam <b>${falta}</b>` : ' — pode rever a referência'}${M.nFora ? ` · <b>${M.nFora}</b> com a produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% (medir primeiro)` : ''}${M.regsLidas ? '' : ' · lendo as medições…'}</div>`
-    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-princ"><thead><tr><th class="n" title="Posição pela UEP na janela">#</th><th>PRODUTO · VOLUME</th><th class="n" title="Caixas de jornada × UEP do cadastro de hoje, na janela">UEP NA JANELA</th><th class="n">CX</th><th class="n">DIAS</th><th class="n" title="A UEP por caixa do cadastro de hoje (média das cores)">UEP/CX</th>'
+    + `<div class="ucv-princ-r${falta ? '' : ' ok'}">${M.cobertura != null ? `<b>${fmtP(M.cobertura)}</b> da UEP da janela já vem de volume medido · ` : ''}<b>${M.nPrincMed} de ${M.nPrinc}</b> principais medidos${falta ? ` · faltam <b>${falta}</b>` : ' — pode rever a referência'}${falta && M.progLida ? ` · <b>${M.nProg}</b> ${M.nProg === 1 ? 'está' : 'estão'} na programação${M.progAte ? ' até ' + M.progAte : ''}${M.nAgora ? ` — <b>${M.nAgora}</b> hoje ou em atraso` : ''}` : ''}${falta && !M.progLida ? (progEst === 'falhou' ? ' · a programação não foi lida — a ordem é a do NA PRODUÇÃO' : ' · lendo a programação…') : ''}${M.nFora ? ` · <b>${M.nFora}</b> com a produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%` : ''}${M.regsLidas ? '' : ' · lendo as medições…'}</div>`
+    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-princ"><thead><tr><th class="n" title="Posição pela UEP na janela">#</th><th>PRODUTO · VOLUME</th><th title="A próxima vez do volume na PROGRAMACAO e as caixas em aberto nela (hoje e atraso: o que falta do código; data futura: a quantidade menos o já adiantado). — = não está programado.">NA PROGRAMAÇÃO</th><th class="n" title="Caixas de jornada × UEP do cadastro de hoje, na janela">UEP NA JANELA</th><th class="n">CX</th><th class="n">DIAS</th><th class="n" title="A UEP por caixa do cadastro de hoje (média das cores)">UEP/CX</th>'
     + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP do cadastro, contra a ${_uepBaseCurto()} nas mesmas condições. ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma; fora, medir primeiro. * = menos de 2 h, pouco para julgar. Não vale como medição: só ordena a fila.">NA PRODUÇÃO</th>`
     + '<th>ANÁLISE DE TEMPO</th></tr></thead><tbody>'
     + L.map((g, i) => {
       const E = UCV_PRINC_SIT[g.sit] || ['', g.sit], sub = _ucvPrincSub(g);
       return `<tr class="${g.p.chave === sel ? 'sel' : ''}${g.medido ? ' med' : ''}" onclick="_ucvAbrirPrincipal(${i})" title="Abrir este volume no conversor">`
-        + `<td class="n">${g.rank}</td><td class="ucv-pr">${_rpEsc(g.p.rot)}</td>`
+        + `<td class="n">${g.rank}</td><td class="ucv-pr">${_rpEsc(g.p.rot)}</td><td class="ucv-pg">${_ucvProgCel(g.prog, M, progEst)}</td>`
         + `<td class="n"><b>${fmtN(Math.round(g.uep))}</b><small>${fmtP(g.pct)} · acum. ${fmtP(g.acum)}</small></td>`
         + `<td class="n">${fmtN(g.cx)}</td><td class="n">${g.nDias}</td>`
         + `<td class="n">${_ucvU2(g.uepCx)}${g.estimada ? '<small>estimada</small>' : ''}</td>`
@@ -16564,7 +16643,7 @@ function setTab(tab){
   if(tab==='uep'){ renderUep(); _uepAbaCarregar(); }
   if(tab==='reguas'){ _regPintar(); renderReguas(); }
   if(tab==='crono'){ const di=_ucvEl('dia'); if(di && !di.value) di.value=_ucvDiaParaCampo(hojeStr());   // o dia dos ESTUDOS DO DIA: hoje, se ninguém escolheu
-    _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
+    _uepConvAtualiza(); _uepAbaCatCarregar().then(()=>_ucvRegsCarregar()).then(()=>_ucvConfCarregar()).then(()=>_ucvLinhaCarregar()).then(()=>_ucvProgCarregar()); }   // só o cadastro (10 min de cache); o resto do painel já tem a meta
   if(tab==='programacao') carregarProgramacaoDetalhada().then(renderProgramacaoDetalhada);
   if(tab==='plano'){ _qpInitFiltro(); renderCarteira(); renderQualidadePlano(); }
   if(tab==='producaohora'){ _initFiltroPH(); renderModeloPeriodo(); lerPontosDia().then(renderProducaoPorHoraDedicada); }
