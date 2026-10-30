@@ -52,7 +52,8 @@ via Google Apps Script (JSONP).
   da regra com o `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
-  de 26/10 e o nome do app com "caixa 2/2"), e a aba 📏 RÉGUAS (o mix de 70
+  de 26/10 e o nome do app com "caixa 2/2"), os PRINCIPAIS PARA ANÁLISE DE
+  TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura), e a aba 📏 RÉGUAS (o mix de 70
   pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
   SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
@@ -910,7 +911,16 @@ via Google Apps Script (JSONP).
     toda na UEP ANTIGA. Se a cronoanálise continuar baixando a UEP dos produtos
     que mais rodam, a mesma produção vira menos UEP e a referência fica alta (o
     26/10 caiu 10,5% só por duas trocas). Rever a referência quando as trocas
-    cobrirem o mix — decisão do PPCP. E ainda está em aberto se a cronoanálise
+    cobrirem o mix — decisão do PPCP.
+  - **Decidido em 30/10/2026: a referência fica em 2.761 até a cronoanálise
+    cobrir os principais** (o bloco PRINCIPAIS PARA ANÁLISE DE TEMPO da ⏱
+    CRONOANÁLISE, v7.189.0, diz quanto falta). Medido no mesmo dia, refazendo
+    28/09–26/10 com a UEP de hoje dos 7 volumes trocados (log de produção,
+    jornada): média **2.693** (gravada 2.760,7 = a 2.761), p50 2.651, p60
+    2.760 — −2,5%, dentro da oscilação de ±12%. Não trocar a cada leva: cada
+    troca vira um trecho novo de referência no histórico. Na revisão: a média
+    da UEP de jornada de ~20 dias úteis, refeita com o cadastro daquele
+    momento (o critério da 2.761), e a linha no `UEP_REF_MOTIVO`. E ainda está em aberto se a cronoanálise
     RODANDO deixa os produtos leves demais (ver *NA PRODUÇÃO*: ELOA 83%, STRASS
     89% da base sem as paradas).
 - ⚠ **CORREÇÃO DE MEDIDA**: na v7.187.1/7.187.2 a tabela do produto a produto
@@ -5800,3 +5810,41 @@ feito e dá ar de verdade ao que sobrou.
   já tem folga própria (12,5 s contra o tempo padrão de 9,1 s da MADERO: ~27%);
   somar os 15% de novo contaria a fadiga duas vezes.
 - ⚠ Mudou o `.gs` → **re-deploy manual**.
+
+## PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0)
+- PPCP, 30/10/2026, depois de decidir que a referência de UEP só é revista
+  quando a cronoanálise cobrir o mix: *"deixar os principais produtos marcados
+  para análise de tempo"*. Bloco `#uep-conv-princ` da ⏱ CRONOANÁLISE, entre o
+  registro da medição e a lista de medições (fora do `#uep-conv-res`, que é
+  refeito a cada tecla).
+- **Conta** `_ucvPrincipais(horas, prods, regs, ehHE)` (pura) +
+  `_ucvPrincEstado(p, regs)`; **desenho** `_ucvPrincHtml` / `_ucvPrincSub`
+  (sem conta — estão no `UCV_DESENHO` do teste). Pintado no `_ucvRegPintar`,
+  com as horas do `getHorasCrono` (a janela do NA PRODUÇÃO, 30 dias fechados),
+  as medições e o cadastro que a aba já lê: **nenhuma leitura nova**.
+- **Por VOLUME** (o que se cronometra): produto de N volumes entra pelas
+  linhas de volume do `_uepConvProdutos`. UEP = caixas de JORNADA (`_horaEhHE`
+  fora — a referência é de jornada) × UEP do cadastro de hoje. Principais =
+  ordenados pela UEP, os que entram até cruzar `UCV_PRINC_PCT`=80% (o que
+  cruza entra). Código sem UEP ou fora do cadastro fica fora, contado (vai
+  para a 🖨 FILA DE CRONOANÁLISE).
+- **Situação**: ✓ BASE (MADERO) · ✓ TROCADA (vigência DIGITADA em todos os
+  códigos do volume — o ✓ TROCAR A UEP e a digitação na planilha carimbam
+  igual) · ✓ CONFERE (medições conferem com **30+ volumes**) · PRONTA PARA
+  TROCAR · MEDINDO · FALTA MEDIR.
+  - ⚠ **Confere com menos de 30 volumes é MEDINDO** aqui, embora a lista de
+    medições (`UCV_REG_VEREDITO.confere`) diga que a UEP fica. Confirmar a UEP
+    pede a mesma amostra que trocá-la. O ARMÁRIO ENCANTO (11 volumes) cai
+    nisso. A regra da lista não foi mexida.
+  - PRONTA ainda não é medido: o cadastro segue com a UEP antiga.
+- **Ordem**: o que falta medir primeiro (do mais pesado), depois os medidos; o
+  `#` é a posição pela UEP. `UCV_PRINC_LINHAS`=15 + VER TODOS
+  (`UCV_PRINC_TODOS`). Tocar na linha abre o volume no conversor
+  (`_ucvAbrirPrincipal`, pelo índice — o `_rpEsc` não escapa aspas).
+- **COBERTURA** = UEP da janela em volume medido ÷ UEP da janela. É o número
+  que diz quando rever a referência. Medições não lidas → sem número, nunca 0%.
+- A janela anda: produto que não rodou nos últimos 30 dias sai da lista,
+  mesmo que pese no mix do ano. Mudar a janela é o `CRONO_LINHA_DIAS`, que
+  também move o NA PRODUÇÃO e a conferência.
+- Testes em `uep-relatorios.test.js` (estados, ordem, corte dos 80%, hora
+  extra fora, cobertura, desenho, a tela); conferido por mutação.

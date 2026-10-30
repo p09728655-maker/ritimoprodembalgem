@@ -597,6 +597,15 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-pronta:hover{border-color:var(--acc)}
 #sec-crono .ucv-pronta b{color:var(--acc);margin-left:6px}
 #sec-crono #uep-conv-conf{margin-top:26px}
+#sec-crono #uep-conv-princ{margin-top:22px}
+#sec-crono .ucv-princ-r{font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:9px 14px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:8px}
+#sec-crono .ucv-princ-r.ok{border-left-color:var(--ok)}
+#sec-crono .ucv-princ tbody tr{cursor:pointer}
+#sec-crono .ucv-princ tbody tr:hover td{background:var(--elevated)}
+#sec-crono .ucv-princ tbody tr.sel td{background:rgba(255,92,31,.08)}
+#sec-crono .ucv-princ tbody tr.med td{color:var(--txt2)}
+#sec-crono .ucv-princ td small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
+#sec-crono .ucv-princ-mais{margin-top:10px}
 #sec-crono .ucv-regs-t span{margin-left:8px;font-family:var(--font-b);font-size:12px;letter-spacing:0;color:var(--txt2)}
 #sec-crono .ucv-conf td{vertical-align:top}
 #sec-crono .ucv-conf small{display:block;margin-top:3px;font-size:11px;color:var(--txt2);white-space:normal}
@@ -3029,6 +3038,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       </div>
       <div class="uep-nota" id="uep-conv-r-msg"></div>
     </div>
+    <div id="uep-conv-princ"></div>
     <div id="uep-conv-regs"></div>
     <div class="uep-nota" id="uep-conv-x-msg"></div>
     <div id="uep-conv-conf"></div>
@@ -3571,7 +3581,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.188.1';
+const APP_VER   = '7.189.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6884,6 +6894,10 @@ function _ucvRegPintar(R){
     + _ucvRegsHtml(RL, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), LH, R.base.meta, ref),
         _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta, LH, UEP_CONV_PRODS) : null;
+  // os principais para a análise de tempo (v7.189.0): as mesmas horas, medições e cadastro
+  const M = _ucvPrincipais(LH, UEP_CONV_PRODS, L, _horaEhHE);
+  UCV_PRINC = M ? M.lista : [];
+  const pp = _ucvEl('princ'); if(pp) pp.innerHTML = _ucvPrincHtml(M, LH, R.p ? R.p.chave : null, UCV_PRINC_TODOS);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
 }
@@ -7340,6 +7354,121 @@ function _ucvConfCarregar(forcar){
   })().finally(() => { UCV_CONF_VOO = null; if(_abaOn('crono')) _uepConvAtualiza(); });
   return UCV_CONF_VOO;
 }
+// ── PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0) ────────────────────────────
+// PPCP, 30/10/2026, depois de combinar que a referência de UEP (2.761) só é
+// revista quando a cronoanálise cobrir o mix: "deixar os principais produtos
+// marcados para análise de tempo". Os VOLUMES que somam UCV_PRINC_PCT% da UEP de
+// JORNADA dos últimos CRONO_LINHA_DIAS dias fechados — o MESMO getHorasCrono do
+// NA PRODUÇÃO, nenhuma leitura nova —, com a situação da análise de tempo de
+// cada um. A COBERTURA (% da UEP da janela em volume já medido) é o número que
+// diz quando rever a referência.
+// Medido = a base (MADERO, cronometrada em 20/10) · UEP trocada (vigência
+// DIGITADA em todos os códigos do volume: o ✓ TROCAR A UEP carimba assim, como a
+// digitação na planilha) · medições que conferem com o cadastro COM a amostra da
+// troca (UCV_TROCA_MIN_VOL volumes: confirmar a UEP pede a mesma amostra que
+// trocá-la). PRONTA PARA TROCAR ainda não é medido: o cadastro segue o antigo.
+const UCV_PRINC_PCT = 80;      // os volumes que somam 80% da UEP da janela (classe A)
+const UCV_PRINC_LINHAS = 15;   // linhas antes do VER TODOS
+let UCV_PRINC = [], UCV_PRINC_TODOS = false;
+// Conta pura: a situação da análise de tempo de um volume (p, do _uepConvProdutos).
+function _ucvPrincEstado(p, regs){
+  if(_uepEhBase(p)) return { sit:'base', medido:true };
+  const cs = p.cods.filter(c => c.uep > 0);
+  if(cs.length && cs.every(c => /DIGITADA\s*$/i.test(c.vig))){
+    const n = Math.max(...cs.map(c => _cartNum((c.vig.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || [''])[0]) || 0));
+    return { sit:'trocada', medido:true, vig:n ? _filaN2br(n) : '' };
+  }
+  if(!Array.isArray(regs)) return { sit:'lendo', medido:false };
+  const R = _ucvRegsDoProduto(regs, p);
+  if(!R.length) return { sit:'falta', medido:false };
+  const S = _ucvRegsResumo(R, _uepConvCadastro(p).volCad), conf = S.veredito === 'confere' && S.nVol >= UCV_TROCA_MIN_VOL;
+  return { sit:S.veredito === 'trocar' ? 'pronta' : conf ? 'confere' : 'medindo', medido:conf, S };
+}
+// Conta pura. horas: as do getHorasCrono (array); prods: _uepConvProdutos;
+// regs: as medições registradas (null = não lidas); ehHE(rótulo): a hora é
+// extra (a referência é de jornada). Produto de N volumes entra pela linha de
+// cada VOLUME (é o que se cronometra); a UEP de cada caixa é a do cadastro de
+// hoje. Código fora do cadastro ou sem UEP fica fora do ranking, contado.
+function _ucvPrincipais(horas, prods, regs, ehHE){
+  if(!Array.isArray(horas)) return null;
+  const V = {};
+  (prods || []).forEach(p => { if(p.volSel || p.nVol === 1) p.cods.forEach(c => { V[c.cod] = { p, uep:c.uep > 0 ? c.uep : 0 }; }); });
+  const G = {}; let uepTot = 0, cxSemUep = 0, cxFora = 0;
+  horas.forEach(h => {
+    if(!h || (ehHE && ehHE(h.hora))) return;
+    Object.keys(h.cods || {}).forEach(k => {
+      const cx = Number(h.cods[k]) || 0, x = V[String(k).replace(/\D/g, '')];
+      if(!(cx > 0)) return;
+      if(!x){ cxFora += cx; return; }
+      const g = G[x.p.chave] = G[x.p.chave] || { p:x.p, cx:0, cxUep:0, uep:0, dias:{} };
+      g.cx += cx; g.dias[h.data] = 1;
+      if(x.uep > 0){ g.cxUep += cx; g.uep += cx * x.uep; uepTot += cx * x.uep; } else cxSemUep += cx;
+    });
+  });
+  const todos = Object.values(G).filter(g => g.uep > 0).sort((a, b) => b.uep - a.uep || a.p.rot.localeCompare(b.p.rot));
+  let ac = 0, uepMed = 0;
+  todos.forEach((g, i) => {
+    const cad = _uepConvCadastro(g.p);
+    g.rank = i + 1; g.pct = g.uep / uepTot * 100; g.principal = ac < UCV_PRINC_PCT; ac += g.pct; g.acum = ac;
+    g.nDias = Object.keys(g.dias).length; delete g.dias;
+    g.uepCx = g.uep / g.cxUep; g.estimada = /ESTIMADA/.test(cad.origem);
+    Object.assign(g, _ucvPrincEstado(g.p, regs));
+    if(g.medido) uepMed += g.uep;
+  });
+  const P = todos.filter(g => g.principal);
+  // o que falta medir primeiro (o mais pesado no topo); depois os já medidos
+  const lista = P.filter(g => !g.medido).concat(P.filter(g => g.medido));
+  return { lista, nPrinc:P.length, nPrincMed:P.filter(g => g.medido).length, nDemais:todos.length - P.length,
+           pctDemais:Math.max(0, 100 - P.reduce((a, g) => a + g.pct, 0)), uepTot, regsLidas:Array.isArray(regs),
+           cobertura:uepTot > 0 && Array.isArray(regs) ? uepMed / uepTot * 100 : null, cxSemUep, cxFora };
+}
+// ── Desenho (sem conta): tudo pronto do _ucvPrincipais ─────────────────────
+const UCV_PRINC_SIT = { falta:['warn', 'FALTA MEDIR'], medindo:['', 'MEDINDO'], pronta:['troca', 'PRONTA PARA TROCAR'],
+  confere:['ok', '✓ CONFERE'], trocada:['ok', '✓ TROCADA'], base:['ok', '✓ BASE'], lendo:['', '…'] };
+function _ucvPrincSub(g){
+  const S = g.S, V = UCV_TROCA_MIN_VOL;
+  if(g.sit === 'base') return 'cronometrada em ' + _rpEsc(UEP_BASE_MEDIDA.data.slice(0, 5));
+  if(g.sit === 'trocada') return g.vig ? 'UEP nova desde ' + _rpEsc(g.vig.slice(0, 5)) : 'UEP nova no cadastro';
+  if(g.sit === 'confere') return `${fmtN(S.nVol)} volumes — a UEP fica`;
+  if(g.sit === 'pronta') return `${fmtN(S.nVol)} volumes — falta o ✓ TROCAR A UEP`;
+  if(g.sit !== 'medindo') return '';
+  return S.veredito === 'discordam' ? 'as medições discordam — meça de novo'
+    : S.veredito === 'sem-volumes' ? 'medição sem VOLUMES MEDIDOS'
+    : S.veredito === 'sem-cadastro' ? 'sem UEP no cadastro para comparar'
+    : `${fmtN(S.nVol)} de ${V} volumes${S.veredito === 'confere' ? ' · confere até agora' : ''}`;
+}
+function _ucvPrincHtml(M, est, sel, todos){
+  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span>os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — a referência de UEP é revista quando eles estiverem medidos</span></div>`;
+  if(!M) return est === 'sem-endpoint' ? tit + '<div class="uep-nota">O Apps Script ainda não tem as horas da produção: cole o .gs v5.35 no editor e re-deploye.</div>'
+    : est === 'falhou' ? tit + '<div class="uep-nota">A produção dos últimos dias não foi lida — tenta de novo em 1 min.</div>'
+    : tit + '<div class="uep-nota">Lendo a produção dos últimos dias…</div>';
+  if(!M.lista.length) return tit + '<div class="uep-nota">Nenhuma caixa com UEP na janela.</div>';
+  const L = todos ? M.lista : M.lista.slice(0, UCV_PRINC_LINHAS), falta = M.nPrinc - M.nPrincMed;
+  return tit
+    + `<div class="ucv-princ-r${falta ? '' : ' ok'}">${M.cobertura != null ? `<b>${fmtP(M.cobertura)}</b> da UEP da janela já vem de volume medido · ` : ''}<b>${M.nPrincMed} de ${M.nPrinc}</b> principais medidos${falta ? ` · faltam <b>${falta}</b>` : ' — pode rever a referência'}${M.regsLidas ? '' : ' · lendo as medições…'}</div>`
+    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-princ"><thead><tr><th class="n" title="Posição pela UEP na janela">#</th><th>PRODUTO · VOLUME</th><th class="n" title="Caixas de jornada × UEP do cadastro de hoje, na janela">UEP NA JANELA</th><th class="n">CX</th><th class="n">DIAS</th><th class="n" title="A UEP por caixa do cadastro de hoje (média das cores)">UEP/CX</th><th>ANÁLISE DE TEMPO</th></tr></thead><tbody>'
+    + L.map((g, i) => {
+      const E = UCV_PRINC_SIT[g.sit] || ['', g.sit], sub = _ucvPrincSub(g);
+      return `<tr class="${g.p.chave === sel ? 'sel' : ''}${g.medido ? ' med' : ''}" onclick="_ucvAbrirPrincipal(${i})" title="Abrir este volume no conversor">`
+        + `<td class="n">${g.rank}</td><td class="ucv-pr">${_rpEsc(g.p.rot)}</td>`
+        + `<td class="n"><b>${fmtN(Math.round(g.uep))}</b><small>${fmtP(g.pct)} · acum. ${fmtP(g.acum)}</small></td>`
+        + `<td class="n">${fmtN(g.cx)}</td><td class="n">${g.nDias}</td>`
+        + `<td class="n">${_ucvU2(g.uepCx)}${g.estimada ? '<small>estimada</small>' : ''}</td>`
+        + `<td class="ucv-st"><span class="ucv-pill ${E[0]}">${E[1]}</span>${sub ? `<small>${sub}</small>` : ''}</td></tr>`;
+    }).join('')
+    + '</tbody></table></div>'
+    + (M.lista.length > UCV_PRINC_LINHAS ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvPrincTodos()">${todos ? 'VER MENOS' : `VER TODOS (${M.lista.length})`}</button></div>` : '')
+    + `<div class="uep-nota">Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes. Fora da lista: ${plural(M.nDemais, 'volume', 'volumes')} com ${fmtP(M.pctDemais)} da UEP`
+    + `${M.cxSemUep + M.cxFora > 0 ? ` · ${fmtN(M.cxSemUep + M.cxFora)} cx sem UEP no cadastro (estão na 🖨 FILA DE CRONOANÁLISE)` : ''}.</div>`;
+}
+function _ucvAbrirPrincipal(i){
+  const g = UCV_PRINC[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
+  if(!g || !elP) return;
+  elP.value = g.p.rot; if(elS) elS.value = '';
+  _uepConvAtualiza();
+  const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function _ucvPrincTodos(){ UCV_PRINC_TODOS = !UCV_PRINC_TODOS; _uepConvAtualiza(); }
 // ── 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP 19/10/2026: "falta
 // impressão"). Retrato da tela no clique: os MESMOS _uepConvMontar,
 // _uepConvHtml e _uepConvGuia — a marcação é a da tela, só a pele (.ucv-doc)
