@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.190.0 — 30/10/2026 · Principais: o que medir primeiro, pela produção
+
+- PPCP: *"sim"* para pôr o **NA PRODUÇÃO** na lista PRINCIPAIS PARA ANÁLISE
+  DE TEMPO e ordenar o que falta medir por **peso × suspeita**. A ordem só pelo
+  peso dizia o que pesa, não o que pode estar errado: a MEL VOL 1/2 (5ª) já
+  tinha a produção confirmando o cadastro (106%).
+- Coluna nova **NA PRODUÇÃO**, a mesma régua do cartão: as horas em que o
+  volume rodou sozinho, sem as paradas apontadas, com a UEP do cadastro, contra
+  a MADERO nas mesmas condições. `*` = menos de 2 h, pouco para julgar.
+- O que falta medir agora vem em três grupos, e em cada um o mais pesado
+  primeiro:
+  1. a produção **fora de 90–110%** (o cadastro pode estar errado), com o
+     número em destaque;
+  2. **sem leitura** (não rodou sozinho, menos de 2 h ou a MADERO não rodou
+     sozinha na janela);
+  3. o que a produção **confirma**.
+- O resumo do topo diz quantos estão com a produção fora (*"medir primeiro"*).
+- O NA PRODUÇÃO **só ordena a fila**: não conta como medição, e a cobertura
+  continua sendo só de volume medido.
+- **Atenção:** nenhum número mudou; muda a ordem das linhas que faltam medir.
+
 ## v7.189.0 — 30/10/2026 · Os principais produtos marcados para a análise de tempo
 
 - PPCP: *"deixar os principais produtos marcados para análise de tempo"*.

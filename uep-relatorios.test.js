@@ -517,7 +517,7 @@ global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
 global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
 global.UCV_ST = eval('(' + pegaConst('UCV_ST') + ')');
-['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
+['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT', 'UCV_PRINC_ORD'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UCV_PRINC = []; global.UCV_PRINC_TODOS = false;
 global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
@@ -1485,10 +1485,35 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
      (_ucvPrincHtml(MUITOS, HRS, null, true).match(/<tr class=/g) || []).length, _ucvPrincHtml(MUITOS, HRS, null, true).includes('VER MENOS')], [15, true, 20, true]);
   // a tela: o bloco mora fora do resultado (refeito a cada tecla) e usa as horas, as medições e o cadastro que a aba já tem
   const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC)), RP = pegaJs('function _ucvRegPintar(');
-  ok('a tela: o bloco entre o registro e as medições; o _ucvRegPintar passa as horas, as medições, o cadastro e a hora extra (_horaEhHE) — nenhuma leitura nova',
+  ok('a tela: o bloco entre o registro e as medições; o _ucvRegPintar passa as horas, as medições, o cadastro, a hora extra (_horaEhHE) e a META UEP — nenhuma leitura nova',
      [SC.indexOf('id="uep-conv-princ"') > SC.indexOf('id="uep-conv-reg"') && SC.indexOf('id="uep-conv-princ"') < SC.indexOf('id="uep-conv-regs"'),
-      /_ucvPrincipais\(LH, UEP_CONV_PRODS, L, _horaEhHE\)/.test(RP), /jsonpFetch|action=/.test(pegaJs('function _ucvPrincipais(') + pegaJs('function _ucvPrincHtml('))],
+      /_ucvPrincipais\(LH, UEP_CONV_PRODS, L, _horaEhHE, R\.base\.meta\)/.test(RP), /jsonpFetch|action=/.test(pegaJs('function _ucvPrincipais(') + pegaJs('function _ucvPrincHtml('))],
      [true, true, false]);
+  // v7.190.0: PESO × SUSPEITA. O NA PRODUÇÃO (o volume sozinho, sem as paradas,
+  // contra a MADERO) ordena o que falta medir: fora de 90–110% → sem leitura →
+  // confirma; o mais pesado primeiro em cada grupo.
+  const HQ = (data, hora, cods) => ({ data, hora, min:60, cods, par:{} });
+  const HRS2 = [HQ('27/10/2026', '07:00', { 501149001:288 }), HQ('27/10/2026', '08:00', { 501149001:288 }),               // a base: ~100% do padrão
+    HQ('27/10/2026', '09:00', { 501060001:200, 501060002:200 }), HQ('27/10/2026', '10:00', { 501060001:200, 501060002:200 }),
+    HQ('27/10/2026', '13:00', { 501060001:200, 501060002:200 }),                                                           // MEL: os volumes sempre juntos → sem leitura
+    HQ('28/10/2026', '07:00', { 501082001:140 }), HQ('28/10/2026', '08:00', { 501082001:140 }),
+    HQ('28/10/2026', '09:00', { 501082001:140 }), HQ('28/10/2026', '10:00', { 501082001:140 }),                            // TOUCADOR: 4 h a 76,8% → fora
+    HQ('29/10/2026', '07:00', { 501094001:347 }), HQ('29/10/2026', '08:00', { 501094001:347 })];                          // SLEEP: 2 h a 100% → confirma
+  const M2 = _ucvPrincipais(HRS2, PP, [], () => false, 2530);
+  ok('a ordem do que falta medir: a produção FORA de 90–110% primeiro (TOUCADOR, 3º em UEP), depois SEM LEITURA (MEL, o mais pesado), por último o que CONFIRMA (SLEEP)',
+     M2.lista.filter(g => !g.medido).map(g => [g.rank, g.p.rot.replace(/^\d+ · /, ''), g.prod]),
+     [[3, 'TOUCADOR MAGIC NEW', 'fora'], [1, 'PENTEADEIRA CAMARIM MEL · VOL 1/2', 'sem'], [2, 'PENTEADEIRA CAMARIM MEL · VOL 2/2', 'sem'], [4, 'MESA CABECEIRA SLEEP', 'confirma']]);
+  const tq = M2.lista.find(g => g.p.rot.includes('TOUCADOR')), sq = M2.lista.find(g => g.p.rot.includes('SLEEP'));
+  ok('o NA PRODUÇÃO é a régua do cartão: a UEP do cadastro, sem as paradas, contra a base nas mesmas condições',
+     [fmtP(tq.pad.rel), tq.pad.minRod, fmtP(sq.pad.rel), M2.nFora, M2.semBase], ['76,8%', 240, '100,0%', 1, false]);
+  const H2 = _ucvPrincHtml(M2, HRS2, null, false);
+  ok('o desenho: a coluna NA PRODUÇÃO (a célula da lista de medições), o fora em destaque e o resumo diz quantos medir primeiro',
+     [/<th class="n" title="[^"]*">NA PRODUÇÃO<\/th><th>ANÁLISE DE TEMPO<\/th>/.test(H2), H2.includes('<td class="n ucv-pf">76,8%'),
+      H2.includes('<b>1</b> com a produção fora de 90–110% (medir primeiro)'), H2.includes('não substitui a cronoanálise'), H2.includes('o volume não rodou sozinho')],
+     [true, true, true, true, true]);
+  const M3 = _ucvPrincipais(HRS2.slice(2), PP, [], () => false, 2530);
+  ok('sem a base na janela: ninguém é julgado (todos sem leitura, ordem pelo peso) e o rodapé diz por quê',
+     [M3.semBase, M3.nFora, M3.lista.every(g => g.prod === 'sem'), _ucvPrincHtml(M3, HRS2, null, false).includes('não rodou sozinha na janela: sem referência')], [true, 0, true, true]);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
