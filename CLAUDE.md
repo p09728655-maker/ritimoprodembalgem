@@ -5986,3 +5986,26 @@ feito e dá ar de verdade ao que sobrou.
 - Testes em `uep-relatorios.test.js` (média pesada, puro, paradas fora,
   JOGO fora dos totais, ordem, amostra curta, ganha, estados e desenho);
   conferido por mutação.
+- **🖨 IMPRIMIR** (v7.195.0, PPCP: *"impressa"*): botão no título do bloco →
+  `gerarRelatorioTempo` → `_ucvTempoDocHtml` = o MESMO `_ucvTempoHtml` com o 5º
+  parâmetro `papel` (sem o 🖨, sem clique nas linhas, TODAS as linhas, COMO LER
+  aberto como seção) + rodapé. Retrato da tela no clique: o `_ucvRegPintar`
+  guarda a montagem em `UCV_TEMPO_M`, e o 🖨 chama o `_uepConvAtualiza()` antes;
+  nada é lido, a janela abre no clique; sem montagem, avisa o estado e não abre.
+  - Folha DEITADA (`_rpDocParadas` → 17 usuários, `_rpCabecalho` 22 ocorrências
+    com a declaração, rodapé `APP_NOME_CX` 15 — o teste conta). Pele
+    `_UCV_TEMPO_SKIN` escopada em `.ucv-tempo` (+ o `_UCV_DOC_SKIN`): redefine
+    os tokens das barras (`--ucv-tp-puro`, `--ucv-tp-par`, `--warn`, `--red`,
+    `--ok`, `--txt`) — no documento os do painel não existem e a cor cairia no
+    preto; o teste confere todo token usado no desenho. O título do bloco some
+    no papel (o cabeçalho já diz).
+  - **No papel o COMO LER sobe para a folha 1** (cartões → cascata → como ler)
+    e a tabela abre a folha 2 (`.ucv-tp-tw{page-break-before:always}`); na
+    ordem da tela, o como ler ficava sozinho numa folha 3. Na tela a ordem é a
+    de sempre.
+  - Medido no Chromium **com as fontes** (mídia de impressão, 1.032 × 718 px,
+    dados de 03/11/2026, 17 volumes): folha 1 fecha em ~646 px, folha 2 em
+    ~701 (tabela com `td` a 4 px de padding). 2 folhas, nada passa da largura.
+    Volume a mais vai para a folha seguinte com o cabeçalho da tabela repetido.
+    ⚠ O proxy desta sessão mudou de porta: medir com o `$HTTPS_PROXY`, senão as
+    fontes não carregam e a medida sai ~25 px menor.

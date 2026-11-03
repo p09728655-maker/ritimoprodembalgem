@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.195.0 — 03/11/2026 · Cronoanálise: 🖨 IMPRIMIR do ONDE O TEMPO VAI
+
+- PPCP, depois de ver o bloco publicado: *"impressa"*. O bloco ganhou o botão
+  **🖨 IMPRIMIR** no título, que abre o papel em **folha deitada (A4)**:
+  - **folha 1**: os quatro cartões, a cascata da linha e o COMO LER;
+  - **folha 2**: a tabela ONDE PERDE com **todos** os volumes (sem o corte de
+    12 da tela) e a faixa ONDE GANHA.
+- É o retrato da tela no clique: a mesma montagem e o mesmo desenho, só a pele
+  de papel. Nada é lido nem gravado. Sem a produção ou as medições lidas, o
+  botão avisa e não abre a janela.
+- Medido no Chromium com os dados de 03/11/2026 (17 volumes): 2 folhas, nada
+  passa da largura; a folha 2 fecha a ~17 px do fim. Com mais volumes estudados
+  a tabela continua na folha seguinte, com o cabeçalho repetido.
+- **Atenção:** nenhum número mudou. Sem re-deploy.
+
 ## v7.194.1 — 03/11/2026 · Cronoanálise: marcas do ONDE O TEMPO VAI em coluna
 
 - PPCP, com o print da tabela ONDE PERDE, VOLUME A VOLUME: *"alinhar"*. As
