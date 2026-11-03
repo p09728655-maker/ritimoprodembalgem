@@ -606,7 +606,7 @@ ok('o conversor mora na aba ⏱ CRONOANÁLISE (e não mais na ⚖ UEP)',
    [true, true, false]);
 const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
-   [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\)\.then\(\(\)=>_ucvProgCarregar\(\)\); \}/.test(ST), /if\(_abaOn\('crono'\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
+   [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\)\.then\(\(\)=>_ucvProgCarregar\(\)\); \}/.test(ST), /if\(_ucvAbaOn\(\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
 // v7.172.1 (print do PPCP): a frase de ajuda no meio dos botões quebrava o título e jogava o último botão numa fileira sozinho
 {
@@ -1600,7 +1600,7 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
 // PRODUÇÃO, com as paradas apontadas) e a meta. Nenhuma leitura nova.
 console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
 {
-  eval.call(global, 'global.UCV_TEMPO_GANHA_PCT = ' + pegaConst('UCV_TEMPO_GANHA_PCT') + '; global.UCV_TEMPO_LINHAS = ' + pegaConst('UCV_TEMPO_LINHAS')
+  eval.call(global, 'global.UCV_TEMPO_GANHA_PCT = ' + pegaConst('UCV_TEMPO_GANHA_PCT') + '; global.UCV_TEMPO_TOP = ' + pegaConst('UCV_TEMPO_TOP')
     + '; global.UCV_TEMPO_SEG = ' + pegaConst('UCV_TEMPO_SEG') + ';');
   ['function _ucvTempoMontar(', 'function _ucvTempoSeg(', 'function _ucvTempoHtml('].forEach(f => eval.call(global, pegaJs(f)));
   const H = (data, hora, cods, par) => ({ data, hora, min:60, cods, par:par || {} });
@@ -1660,13 +1660,13 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   const hBar = [...HT.matchAll(/<span class="ucv-tp-h">[^<]* h<i><span class="g?" style="width:(\d+)%"><\/span><\/i><\/span>/g)].map(m => +m[1]);
   const pele = (src, sel) => src.includes(sel + ' i{display:inline-block;flex:0 0 ');
   ok('v7.195.1: a barra das HORAS A MAIS mora num trilho de largura fixa (em %), e o % da DIFERENÇA tem largura mínima: os números não andam',
-     [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#sec-crono .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
-      /#sec-crono \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
+     [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#sec-tempo .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
+      /#sec-tempo \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
      [T.linhas.filter(l => l.hGap != null).length, 100, true, true, true, true, true]);
   ok('v7.195.2: o nome diz que só saem as paradas APONTADAS (as microparadas não apontadas ficam dentro), na coluna e na cascata',
      [HT.includes('>PRODUÇÃO SEM<br>PARADAS APONTADAS</th>'), />PRODUÇÃO<br>SEM PARADAS</.test(HT), / s sem as paradas apontadas</.test(HT), / s sem as paradas</.test(HT)],
      [true, false, true, false]);
-  const celPm = [...HT.matchAll(/<span class="ucv-tp-pm( ucv-tp-(folga|falta))?">([^<]*)(?:<small>([^<]*)<\/small>)?<\/span>/g)]
+  const celPm = [...HT.slice(HT.indexOf('ONDE PERDE, VOLUME A VOLUME')).matchAll(/<span class="ucv-tp-pm( ucv-tp-(folga|falta))?">([^<]*)(?:<small>([^<]*)<\/small>)?<\/span>/g)]
     .map(m => [m[2] || '', m[3], m[4] || '']);
   const espPm = T.linhas.filter(l => l.folgaS != null).map(l => Math.abs(l.folgaS) < 0.05 ? ['', '= meta', '']
     : [l.folgaS >= 0 ? 'folga' : 'falta', Math.abs(l.folgaS).toFixed(1).replace('.', ',') + ' s', l.folgaS >= 0 ? 'mais rápida' : 'mais lenta']);
@@ -1674,10 +1674,11 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('v7.195.3: produção real × meta em PALAVRAS (mais rápida = cabe, mais lenta = passa), nunca o sinal; o ONDE GANHA e o COMO LER dizem o mesmo',
      [celPm, espPm.some(e => e[2] === 'mais rápida'), espPm.some(e => e[2] === 'mais lenta'), HT.includes('>PRODUÇÃO REAL<br>× META</th>'), /FOLGA \(\+\)|FALTA \(−\)/.test(HT),
       /s\/cx mais (rápida|lenta) que a meta/.test(HG), /· (folga|falta) \d/.test(HG), /<b>Produção real × meta<\/b>/.test(HT),
-      /\.ucv-tempo \.ucv-tp-pm small\{display:block/.test(pegaConst('_UCV_TEMPO_SKIN')), /#sec-crono \.ucv-tp-tab td \.ucv-tp-pm small\{display:block/.test(html)],
+      /\.ucv-tempo \.ucv-tp-pm small\{display:block/.test(pegaConst('_UCV_TEMPO_SKIN')), /#sec-tempo \.ucv-tp-tab td \.ucv-tp-pm small\{display:block/.test(html)],
      [espPm, true, true, true, false, true, false, true, true, true]);
-  ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
-     [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
+  ok('a linha abre o volume no conversor; o selecionado fica marcado; a tabela inteira fica recolhida (v7.196.0)',
+     [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /<details class="ucv-tp-todos" ontoggle="_ucvTempoTodos\(this\.open\)"><summary>VER TODOS OS VOLUMES \(5\)/.test(HT),
+      /<details class="ucv-tp-todos" open/.test(_ucvTempoHtml(T, HRS, null, true))], [true, true, true, true]);
   ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',
      [/não foi lida/.test(_ucvTempoHtml(null, 'falhou')), /\.gs v5\.36/.test(_ucvTempoHtml(null, 'sem-endpoint')), /Lendo a produção/.test(_ucvTempoHtml(null, 'lendo')),
       /Lendo as medições/.test(_ucvTempoHtml(_ucvTempoMontar(null, PRODS, HRS, 2530), HRS)), /Nenhuma medição registrada/.test(_ucvTempoHtml(_ucvTempoMontar([], PRODS, HRS, 2530), HRS))],
@@ -1686,18 +1687,57 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('o desenho não faz conta; a conta não lê nada (as horas, as medições e o cadastro que a aba já tem)',
      [UCV_SEM_CONTA.test(TH), /_ucvPadraoDe\(|_uepConvCadastro\(|_ucvTempoMontar\(|\.reduce\(/.test(TH), /jsonp|action=|getElementById/.test(TM + TH)], [false, false, false]);
   const RPT = pegaJs('function _ucvRegPintar('), iCrT = html.indexOf('<section id="sec-crono"'), SECT = html.slice(iCrT, html.indexOf('</section>', iCrT));
-  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro), entre eles e a lista de medições',
+  const iTpT = html.indexOf('<section id="sec-tempo"'), SECTP = html.slice(iTpT, html.indexOf('</section>', iTpT));
+  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro); desde a v7.196.0 na aba própria, com o ponteiro onde ele morava',
      [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
-      SECT.indexOf('id="uep-conv-princ"') < SECT.indexOf('id="uep-conv-tempo"') && SECT.indexOf('id="uep-conv-tempo"') < SECT.indexOf('id="uep-conv-regs"')], [true, true, true]);
+      SECT.includes('id="uep-conv-tempo"'), SECTP.includes('<div id="uep-conv-tempo"></div>'),
+      SECT.indexOf('id="uep-conv-princ"') < SECT.indexOf('class="ucv-tp-ponteiro"') && SECT.indexOf('class="ucv-tp-ponteiro"') < SECT.indexOf('id="uep-conv-regs"'),
+      /class="ucv-tp-ponteiro"[\s\S]{0,300}onclick="setTab\('tempo'\)"/.test(SECT)], [true, true, false, true, true, true]);
+  // v7.196.0 (PPCP: "não achei legal junto com a cronoanálise, parece um excel melhorado"): aba própria, a tela em painel
+  ok('v7.196.0 ONDE PERDE MAIS (conta): os de mais horas a mais, sem o volume que o JOGO já conta (a STRASS VOL 2/2), no máximo UCV_TEMPO_TOP; o resto contado',
+     [T.top.map(l => l.rot.replace(/^\d+ · /, '')), T.top.every(l => !l.dentro && l.hGap > 0), T.topResto, r2(T.topMax), UCV_TEMPO_TOP],
+     [['PENTEADEIRA CAMARIM STRASS', 'MESA CABECEIRA MADERO', 'ARMARIO ENCANTO'], true, 0, r2(J.hGap), 5]);
+  const TOP0 = global.UCV_TEMPO_TOP; global.UCV_TEMPO_TOP = 2; const T2 = _ucvTempoMontar(REGS, PRODS, HRS, 2530); global.UCV_TEMPO_TOP = TOP0;
+  ok('v7.196.0 com o corte em 2: os 2 primeiros nas barras, o terceiro contado para a tabela', [T2.top.length, T2.topResto, /\+ 1 volume com menos horas a mais/.test(_ucvTempoHtml(T2, HRS, null, false))], [2, 1, true]);
+  {
+    const iHero = HT.indexOf('ucv-tp-hero'), iCasc = HT.indexOf('A CASCATA DA LINHA'), iPerde = HT.indexOf('ONDE PERDE MAIS'), iGanha = HT.indexOf('ONDE GANHA'),
+      iTodos = HT.indexOf('<details class="ucv-tp-todos"'), iLer = HT.indexOf('ⓘ COMO LER');
+    const heroH = HT.slice(iHero, HT.indexOf('ucv-tp-rod'));
+    const botoes = [...HT.matchAll(/<button type="button" class="ucv-tp-p( sel)?" onclick="_ucvAbrirTempo\((\d+)\)"/g)].map(m => +m[2]);
+    const barras = [...HT.matchAll(/<span class="br"><i style="width:(\d+)%"><\/i><\/span>/g)].map(m => +m[1]);
+    const qs = [...HT.matchAll(/<span class="q">([\s\S]*?)<\/span><\/button>/g)].map(m => m[1]);
+    ok('v7.196.0 a tela é painel: 3 números grandes (diferença, paradas, produção real × meta em palavras), fluxo e cobertura numa linha, a cascata, os que mais perdem em barras, onde ganha, a tabela recolhida e o como ler — nessa ordem',
+       [(heroH.match(/class="kpi-card/g) || []).length, /kpi-grid c3 ucv-cards ucv-tp-hero/.test(HT), ['DIFERENÇA ESTUDO × PRODUÇÃO', 'PARADAS APONTADAS', 'PRODUÇÃO REAL × META'].every(t => heroH.includes(t)),
+        heroH.includes(`% ${T.casc.falta > 0 ? 'mais lenta' : 'mais rápida'}</small>`), /FLUXO NO ESTUDO <b>/.test(HT) && /COBERTURA <b>/.test(HT),
+        iHero > 0 && iHero < iCasc && iCasc < iPerde && iPerde < iGanha && iGanha < iTodos && iTodos < iLer,
+        botoes, Math.max(...barras), barras.length, /<button type="button" class="ucv-tp-p sel" onclick="_ucvAbrirTempo\(2\)"/.test(HT)],
+       [3, true, true, true, true, true, T.top.map(l => T.linhas.indexOf(l)), 100, T.top.length, true]);
+    ok('v7.196.0 cada barra diz a diferença sobre o estudo e, em palavras, a produção real contra a meta',
+       qs.map(q => /^[+−]\d+% sobre o estudo<span class="ucv-tp-pm ucv-tp-(folga|falta)">\d+,\d s<small>mais (rápida|lenta) que a meta<\/small><\/span>$/.test(q)),
+       T.top.map(() => true));
+    const HP0 = _ucvTempoHtml(T, null, null, true, true);
+    ok('v7.196.0 o papel não mudou: os quatro cartões, sem os números grandes, sem as barras, sem nada recolhido',
+       [/kpi-grid c4 ucv-cards"/.test(HP0), /ucv-tp-hero|ucv-tp-p"|ucv-tp-rod|<details/.test(HP0)], [true, false]);
+  }
+  const STT = pegaJs('function setTab(');
+  ok('v7.196.0 a aba: o botão logo depois da ⏱ CRONOANÁLISE; abrir lê cadastro → medições → horas (uma de cada vez); toda leitura da cronoanálise redesenha as duas abas; o toque abre o volume na ⏱ CRONOANÁLISE',
+     [/data-tab="crono"[^\n]*\n\s*<button class="tab"\s+data-tab="tempo" onclick="setTab\('tempo'\)"/.test(html),
+      /if\(tab==='tempo'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(STT),
+      (html.match(/if\(_ucvAbaOn\(\)\) _uepConvAtualiza\(\);/g) || []).length, /_abaOn\('crono'\)\) _uepConvAtualiza/.test(html),
+      /function _ucvAbaOn\(\)\{ return _abaOn\('crono'\) \|\| _abaOn\('tempo'\); \}/.test(html),
+      /if\(!_abaOn\('crono'\)\) setTab\('crono'\)/.test(pegaJs('function _ucvAbrirTempo('))],
+     [true, true, 5, false, true, true]);
+  ok('v7.196.0 a pele: o bloco é do #sec-tempo (nenhuma regra .ucv-tp no #sec-crono além do ponteiro) e as peças comuns valem nas duas abas',
+     [(html.match(/^#sec-crono \.ucv-tp-(?!ponteiro)/gm) || []).length, /^#sec-tempo\{--ucv-tp-puro:/m.test(html),
+      ['.ucv-regs{', '.ucv-regs th{', '.ucv-regs td{', '.ucv-chip{', '.uep-conv-tit{', '.ucv-cards .kpi-val{', '.ucv-pill.warn{', '.ucv-regs-t{'].filter(c => !html.includes(',#sec-tempo ' + c))],
+     [0, true, []]);
   // 🖨 IMPRIMIR do bloco (v7.195.0, PPCP: "impressa"): a MESMA marcação no modo papel
-  const LIN0 = global.UCV_TEMPO_LINHAS; global.UCV_TEMPO_LINHAS = 2;
   const HTp = _ucvTempoHtml(T, HRS, '501149|MESA CABECEIRA MADERO', false), HP = _ucvTempoHtml(T, null, null, true, true);
-  global.UCV_TEMPO_LINHAS = LIN0;
   const nTr = h => (h.match(/<tbody>[\s\S]*<\/tbody>/)[0].match(/<tr[ >]/g) || []).length;
-  ok('na tela: o 🖨 no título do bloco, 2 linhas com o VER TODOS; no papel: sem botão, sem clique, todas as linhas, sem o "toque na linha"',
-     [HTp.includes('onclick="gerarRelatorioTempo()"'), nTr(HTp), /VER TODOS \(5\)/.test(HTp),
+  ok('na tela: o 🖨 no título do bloco, a tabela inteira dentro do VER TODOS; no papel: sem botão, sem clique, todas as linhas, sem o "toque na linha"',
+     [HTp.includes('onclick="gerarRelatorioTempo()"'), nTr(HTp), /VER TODOS OS VOLUMES \(5\)/.test(HTp),
       /gerarRelatorioTempo|_ucvAbrirTempo|_ucvTempoTodos|<button/.test(HP), nTr(HP), /toque na linha/.test(HP), /class="sel"/.test(HP)],
-     [true, 2, true, false, T.linhas.length, false, false]);
+     [true, T.linhas.length, true, false, T.linhas.length, false, false]);
   ok('no papel o COMO LER vem aberto (título de seção, não <details>) e sobe para a folha 1: cascata → como ler → tabela → onde ganha',
      [/<details/.test(HP), HP.includes('<div class="ucv-tp-ler"><div class="rp-sec-ttl">COMO LER</div><ul><li><b>Diferença não é perda.</b>'),
       HP.indexOf('A CASCATA DA LINHA') < HP.indexOf('COMO LER') && HP.indexOf('COMO LER') < HP.indexOf('ONDE PERDE, VOLUME A VOLUME') && HP.indexOf('ONDE PERDE') < HP.indexOf('ONDE GANHA'),

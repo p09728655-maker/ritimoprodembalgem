@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.196.0 — 03/11/2026 · ONDE O TEMPO VAI em aba própria, como painel
+
+- PPCP: *"não achei legal junto com a cronoanálise, parece um excel
+  melhorado"*. O bloco saiu do fim da ⏱ CRONOANÁLISE e virou a aba **⏳ ONDE O
+  TEMPO VAI**, logo depois dela. Na cronoanálise ficou um aviso com o botão
+  para a aba nova.
+- A tela virou painel:
+  1. **três números grandes**: DIFERENÇA ESTUDO × PRODUÇÃO (+40%, ≈ 15,8 h em
+     30 dias), PARADAS APONTADAS (12,5% do tempo) e PRODUÇÃO REAL × META em
+     palavras (*7,4% mais lenta*, com os segundos por UEP embaixo). Fluxo no
+     estudo e cobertura numa linha só, embaixo;
+  2. a cascata, como estava;
+  3. **ONDE PERDE MAIS**: os 5 volumes com mais horas a mais que o estudo, em
+     barras, com a diferença e a produção × meta em palavras. Tocar abre o
+     volume na ⏱ CRONOANÁLISE. O volume que o JOGO já conta (ELOA VOL 2/2)
+     não entra nas barras, como já não entrava nos totais;
+  4. ONDE GANHA, como estava;
+  5. **VER TODOS OS VOLUMES**: a tabela completa, recolhida (aberta ou fechada,
+     ela fica assim quando a tela atualiza).
+- **Atenção:** nenhum número mudou e nenhuma leitura nova (a aba lê o cadastro,
+  as medições e as horas que a cronoanálise já lia). A **🖨 IMPRIMIR não mudou**:
+  o papel continua com os quatro cartões, a cascata e a tabela inteira, em 2
+  folhas.
+- Medido no Chromium com os dados reais: 1920, 1366 e 1280, nada passa da
+  largura; a barra de abas tem a mesma altura de antes nas três larguras.
+
 ## v7.195.3 — 03/11/2026 · Cronoanálise: PRODUÇÃO REAL × META em palavras
 
 - PPCP: *"não estou entendendo se melhorou ou piorou"* → *"folga e falta"*. Na

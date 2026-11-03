@@ -6024,3 +6024,29 @@ feito e dá ar de verdade ao que sobrou.
   (passa da meta, vermelho) ou *mais rápida* (cabe, verde); `= meta` até
   0,05 s. Esta é a ÚNICA coluna que depende da UEP do cadastro (a meta por
   caixa): muda quando a cronoanálise troca a UEP. DIFERENÇA e HORAS A MAIS não.
+- **ABA PRÓPRIA, TELA DE PAINEL (v7.196.0, PPCP: *"não achei legal junto com a
+  cronoanálise, parece um excel melhorado"*)**. `#sec-tempo` (botão `⏳ ONDE O
+  TEMPO VAI` logo depois da ⏱ CRONOANÁLISE); na cronoanálise ficou o ponteiro
+  `.ucv-tp-ponteiro` onde o bloco morava. Mesmos ids (`#uep-conv-tempo`) e a
+  mesma pintura (`_ucvRegPintar` dentro do `_uepConvAtualiza`, que roda com a
+  aba escondida: o `#uep-conv-res` existe sempre).
+  - `setTab('tempo')`: `_uepConvAtualiza()` + cadastro → medições → horas, uma
+    de cada vez (sem a conferência nem a programação, que a tela não usa).
+    `_ucvAbaOn()` (crono OU tempo) é quem redesenha no fim de cada leitura —
+    as 5 que diziam `_abaOn('crono')`. Tocar num volume abre a ⏱ CRONOANÁLISE
+    com ele (`_ucvAbrirTempo` troca de aba).
+  - Tela (`_ucvTempoHtml` sem `papel`): 3 cartões grandes (`.ucv-tp-hero`:
+    DIFERENÇA · PARADAS · PRODUÇÃO REAL × META em palavras), fluxo e cobertura
+    numa linha (`.ucv-tp-rod`), a cascata, **ONDE PERDE MAIS** (`T.top`, os
+    `UCV_TEMPO_TOP`=5 de mais horas a mais, sem o `dentro`; `topResto` contado;
+    barras pelo `topMax`), ONDE GANHA, a tabela inteira num `<details>`
+    (`UCV_TEMPO_TODOS` guarda aberta/fechada; saiu o `UCV_TEMPO_LINHAS`) e o
+    COMO LER. **O papel é o de antes**, byte a byte (o teste prende: sem
+    `ucv-tp-hero`, sem barras, sem `<details>`).
+  - CSS: as regras `.ucv-tp*` são do `#sec-tempo`; as peças comuns da
+    cronoanálise que o bloco usa (`.ucv-regs`, `.ucv-chip`, `.ucv-cards`,
+    `.uep-conv-tit`, `.ucv-pill`) têm o seletor das duas abas
+    (`#sec-crono X,#sec-tempo X`). Peça comum nova no bloco → as duas abas.
+  - Medido (Chromium, dados de 03/11): 1920, 1366 e 1280 sem nada passar da
+    largura; a barra de abas fica com a mesma altura de antes (39 px a 1920,
+    52 a 1366/1280 — lá ela já quebrava em duas linhas antes da aba nova).
