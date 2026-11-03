@@ -535,7 +535,7 @@ const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
   'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
   'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel(',
-  'function _ucvPrincSub(', 'function _ucvProgCel(', 'function _ucvPrincHtml('];
+  'function _ucvPrincSub(', 'function _ucvProgCel(', 'function _ucvPrincHtml(', 'function _uepConvQualCurto(', 'function _ucvSubMontar(', 'function _ucvRegFalta('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
 // ou qualquer divisão no desenho deixaria a tela contradizer a conta.
@@ -608,14 +608,21 @@ const ST = pegaJs('function setTab(');
 ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redesenha a aba; o renderUep não cuida mais dele',
    [/tab==='crono'\)\{[^\n]*\n\s*_uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvConfCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\)\.then\(\(\)=>_ucvProgCarregar\(\)\); \}/.test(ST), /if\(_ucvAbaOn\(\)\) _uepConvAtualiza\(\);/.test(pegaJs('async function _capBuscar(')),
     pegaJs('function renderUep(').includes('_uepConvAtualiza')], [true, true, false]);
-// v7.172.1 (print do PPCP): a frase de ajuda no meio dos botões quebrava o título e jogava o último botão numa fileira sozinho
+// v7.172.1 (print do PPCP): a frase de ajuda no meio dos botões quebrava o título e jogava o último botão numa fileira sozinho.
+// v7.197.0 (PPCP: "está muito cheia a tela, tem que enxugar"): o 📄 IMPORTAR PDF à vista, as quatro impressões num menu
+// e a frase de ajuda no title do título
 {
-  const SC = html.slice(iCr, fCr), iB = SC.indexOf('<div class="ucv-hdr-bts">'), iS = SC.indexOf('<span class="ucv-hdr-sub">');
-  const BTS = SC.slice(iB, iS);
-  ok('cabeçalho da ⏱ CRONOANÁLISE: os botões numa fileira, a frase de ajuda na linha de baixo (fora dos botões), o título sem quebra',
-     [iB > 0 && iS > iB, BTS.includes('tablet, convertido'), (BTS.match(/<button /g) || []).length, SC.slice(iS, iS + 300).includes('tablet, convertido'),
-      /#sec-crono \.ucv-hdr-sub\{flex-basis:100%/.test(html), /#sec-crono \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html)],
-     [true, false, 5, true, true, true]);
+  const SC = html.slice(iCr, fCr), iB = SC.indexOf('<div class="ucv-hdr-bts">'), iM = SC.indexOf('<details class="ucv-imp" id="uep-conv-imp">');
+  const MENU = SC.slice(iM, SC.indexOf('</details>', iM)), FORA = SC.slice(iB, iM);
+  ok('cabeçalho da ⏱ CRONOANÁLISE: o IMPORTAR PDF à vista, as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes), a frase de ajuda no title do título',
+     [iB > 0 && iM > iB, (FORA.match(/<button /g) || []).length, (MENU.match(/onclick="_ucvImpFecha\(\);/g) || []).length, /<summary class="btn btn-ghost"[^>]*>🖨 IMPRIMIR ▾<\/summary>/.test(MENU),
+      SC.includes('ucv-hdr-sub'), /class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido/.test(SC),
+      /#sec-crono \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m\{position:absolute/.test(html)],
+     [true, 1, 4, true, false, true, true, true]);
+  ok('o menu fecha no clique fora e no Esc; o fechar é uma função só',
+     [/document\.addEventListener\('click', e => \{ const d = _ucvEl\('imp'\); if\(d && d\.open && !d\.contains\(e\.target\)\) d\.open = false; \}\);/.test(html),
+      /document\.addEventListener\('keydown', e => \{ if\(e\.key === 'Escape'\) _ucvImpFecha\(\); \}\);/.test(html), /function _ucvImpFecha\(\)\{ const d = _ucvEl\('imp'\); if\(d\) d\.open = false; \}/.test(html)],
+     [true, true, true]);
 }
 ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
 ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
@@ -784,7 +791,7 @@ ok('o "clique em 📌 FIXAR" é só da tela (.so-tela, que o documento esconde);
    [/<span class="so-tela">clique em <b>📌 FIXAR<\/b>[^<]*<\/span>/.test(HB), /<span class="so-papel">fixe [^<]*s\/VOLUME DA BASE[^<]*<\/span>/.test(HB),
     /\.so-tela\{display:none\}/.test(pegaJs('function _rpDocParadas(')), /#sec-crono \.so-papel\{display:none\}/.test(html)],
    [true, true, true, true]);
-ok('o botão 🖨 IMPRIMIR mora na aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="gerarRelatorioCrono()"'), true);
+ok('o botão 🖨 CONVERSÃO DA TELA mora no menu da aba ⏱ CRONOANÁLISE', html.slice(iCr, fCr).includes('onclick="_ucvImpFecha();gerarRelatorioCrono()"'), true);
 
 // ════════════════════════════════════════════════════════════════════════════
 // TOLERÂNCIA de fadiga e movimentação (v7.146.0, PPCP: "15% iguais para todos")
@@ -946,10 +953,24 @@ ok('o título do campo diz que vazio é a MADERO medida (e não mais a régua da
   ok('os nomes são os do app (Volume a volume) e o desenho não faz conta',
      [['POR VOLUME NO PERÍODO', 'POR VOLUME COM A LINHA RODANDO', 'SEM AS LACUNAS'].every(t => QM.includes(t)), UCV_SEM_CONTA.test(pegaJs('function _uepConvQual('))], [true, false]);
   const AT2 = pegaJs('function _uepConvAtualiza('), DH = pegaJs('function _uepConvDocHtml(');
-  ok('a faixa vai na tela (logo abaixo dos campos) e no papel; o rótulo do campo segue a régua',
-     [/guia\.innerHTML = _uepConvQual\(R\.base\) \+ _uepConvGuia/.test(AT2), /_uepConvQual\(R\.base\) \+ _uepConvGuia/.test(DH),
+  // v7.197.0 (PPCP: "está muito cheia a tela"): na tela, UMA linha logo abaixo dos campos; os três cartões, o
+  // porquê e as notas no ⓘ COMO LER (só o miolo é refeito: aberto, não fecha a cada tecla); o papel como sempre
+  ok('a faixa vai na tela (uma linha abaixo dos campos; os três cartões no ⓘ COMO LER) e no papel; o rótulo do campo segue a régua',
+     [/guia\.innerHTML = _uepConvQualCurto\(R\.base\);/.test(AT2), /ler\.innerHTML = _uepConvQual\(R\.base\) \+ _uepConvGuia\(R\.base\.daMeta\) \+ \(R\.estado === 'ok' \? _uepConvNotasHtml\(R\.base\) : ''\)/.test(AT2),
+      /_ucvEl\('ler-c'\)/.test(AT2), /<details class="ucv-ler" id="uep-conv-ler">[^\n]*<div id="uep-conv-ler-c"><\/div><\/details>/.test(html),
+      /_uepConvQual\(R\.base\) \+ _uepConvGuia/.test(DH),
       /rot\.textContent = R\.base\.daMeta \? 's\/VOLUME NO PERÍODO' : 's\/VOLUME RODANDO'/.test(AT2), /\.ucv-doc \.ucv-q\.usa\{/.test(html)],
-     [true, true, true, true]);
+     [true, true, true, true, true, true, true]);
+  const Q1M = _uepConvQualCurto(_uepConvBaseDe(7.9, 2530)), Q1R = _uepConvQualCurto(_uepConvBaseDe(0, 2530)), Q1D = _uepConvQualCurto(_uepConvBaseDe(8.6, 2530));
+  ok('a linha curta: o cartão que vale e o número da base nele; os outros dois em "não use" (a mesma regra dos três cartões)',
+     [Q1M.includes('<b class="ucv-q1-u">POR VOLUME COM A LINHA RODANDO</b>'), Q1M.includes('a MADERO deu <b>7,9 s</b> nele'), Q1M.includes('não use NO PERÍODO nem SEM AS LACUNAS'),
+      Q1R.includes('<b class="ucv-q1-u">POR VOLUME NO PERÍODO</b>'), Q1R.includes('base: a régua da meta, 12,5 s'), Q1R.includes('não use COM A LINHA RODANDO nem SEM AS LACUNAS'),
+      Q1D.includes('base digitada: <b>8,6 s</b>')],
+     [true, true, true, true, true, true, true]);
+  ok('na tela o resultado sai sem as notas TOLERÂNCIA · RÉGUA · GRAVAÇÃO (vão para o ⓘ COMO LER); o papel continua com elas',
+     [_uepConvHtml(E1).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('NÃO PRECISA TROCAR'),
+      /res\.innerHTML = _uepConvHtml\(R, true\);/.test(AT2), /_uepConvHtml\(R\)/.test(DH)],
+     [true, false, true, true, true]);
   ok('o cartão MEDIDO diz de qual cartão do app veio o número',
      [_uepConvHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 17.6, 7.9, 3048)).includes('>MEDIDO · RODANDO<'), H1.includes('>MEDIDO · NO PERÍODO<')], [true, true]);
 }
@@ -1156,8 +1177,9 @@ const _assincronos = [];
   ok('o EXCLUIR vai pelo excluirCrono com retentativa e confirmação, e NÃO toca a UEP do cadastro',
      [/action=excluirCrono&regId=' \+ encodeURIComponent\(regId\)/.test(XC), /jsonpEscrita\(/.test(XC), /confirm\(_ucvExclConfirmaTxt\(/.test(XC), /setUepCatalogo|simularUepCatalogo/.test(XC)],
      [true, true, true, false]);
-  ok('a mensagem mora FORA da lista (refeita a cada tecla) e a lista sabe da exclusão em curso',
-     [html.indexOf('id="uep-conv-x-msg"') > html.indexOf('id="uep-conv-regs"'), /_ucvEl\('x-msg'\)/.test(XC),
+  // v7.197.0: as medições aparecem no MEDIR (do volume) e no MEDIÇÕES (todas) — a mensagem fica acima das sub-abas, à vista nas duas
+  ok('a mensagem mora FORA das listas (refeitas a cada tecla), acima das sub-abas, e a lista sabe da exclusão em curso',
+     [html.indexOf('id="uep-conv-x-msg"') < html.indexOf('<div class="ucv-pn on" data-sub="medir">') && html.indexOf('id="uep-conv-x-msg"') > html.indexOf('id="uep-conv-sub"'), /_ucvEl\('x-msg'\)/.test(XC),
       /UCV_REGS && UCV_REGS\.falha, UCV_EXCL, R\.volCad, _ucvRegsPadrao\(/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
   ok('UCV_EXCL declarado junto do UCV_REGS (o _ucvRegPintar lê os dois)',
      /let UCV_REGS = null, UCV_REGS_VOO = null;[^\n]*\nlet UCV_EXCL = null;/.test(JS), true);
@@ -1688,11 +1710,11 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
      [UCV_SEM_CONTA.test(TH), /_ucvPadraoDe\(|_uepConvCadastro\(|_ucvTempoMontar\(|\.reduce\(/.test(TH), /jsonp|action=|getElementById/.test(TM + TH)], [false, false, false]);
   const RPT = pegaJs('function _ucvRegPintar('), iCrT = html.indexOf('<section id="sec-crono"'), SECT = html.slice(iCrT, html.indexOf('</section>', iCrT));
   const iTpT = html.indexOf('<section id="sec-tempo"'), SECTP = html.slice(iTpT, html.indexOf('</section>', iTpT));
-  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro); desde a v7.196.0 na aba própria, com o ponteiro onde ele morava',
+  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro); desde a v7.196.0 na aba própria, e o caminho para ela (v7.197.0) na faixa das sub-abas',
      [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
       SECT.includes('id="uep-conv-tempo"'), SECTP.includes('<div id="uep-conv-tempo"></div>'),
-      SECT.indexOf('id="uep-conv-princ"') < SECT.indexOf('class="ucv-tp-ponteiro"') && SECT.indexOf('class="ucv-tp-ponteiro"') < SECT.indexOf('id="uep-conv-regs"'),
-      /class="ucv-tp-ponteiro"[\s\S]{0,300}onclick="setTab\('tempo'\)"/.test(SECT)], [true, true, false, true, true, true]);
+      SECT.indexOf('ucv-sb-ir') > SECT.indexOf('id="uep-conv-sub"') && SECT.indexOf('ucv-sb-ir') < SECT.indexOf('<div class="ucv-pn on"'),
+      /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('tempo'\)"/.test(SECT), SECT.includes('ucv-tp-ponteiro')], [true, true, false, true, true, true, false]);
   // v7.196.0 (PPCP: "não achei legal junto com a cronoanálise, parece um excel melhorado"): aba própria, a tela em painel
   ok('v7.196.0 ONDE PERDE MAIS (conta): os de mais horas a mais, sem o volume que o JOGO já conta (a STRASS VOL 2/2), no máximo UCV_TEMPO_TOP; o resto contado',
      [T.top.map(l => l.rot.replace(/^\d+ · /, '')), T.top.every(l => !l.dentro && l.hGap > 0), T.topResto, r2(T.topMax), UCV_TEMPO_TOP],
@@ -1857,6 +1879,7 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
     global._ucvPdfTexto = async f => (f.name === 'ruim.pdf' ? 'nada aqui' : TXT);
     global.UEP_CONV_PRODS = PRP; global.UCV_IMPORTANDO = false;
     global._uepConvAtualiza = () => { F.pintou++; };
+    global._ucvSub = k => { F.sub = k; };
     global.hojeStr = () => '26/10/2026'; global.confirm = () => true;
     global._ucvLinhaCarregar = async () => {}; global._uepConvEntradas = () => EI;
     global._ucvRegsCarregar = async () => { F.releu++; };
@@ -1867,6 +1890,7 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
        [campos.prod.value, campos.seg.value, campos['r-data'].value, campos['r-per'].value, campos['r-lac'].value, campos['r-vol'].value, F.pintou, F.chamadas.length,
         iMsg.textContent.includes('confira e clique em 💾 REGISTRAR MEDIÇÃO')],
        ['501114 · PAINEL SIRIUS 1.4', '14,3', '26/10/2026', '20,7', '14', '50', 1, 0, true]);
+    ok('fluxo IMPORTAR (1 PDF): abre a sub-aba MEDIR (é lá que se confere e registra)', F.sub, 'medir');
     ok('fluxo IMPORTAR (1 PDF): a mensagem diz com que produto do cadastro o nome do app casou', iMsg.textContent.includes('→ 501114 · PAINEL SIRIUS 1.4 — confira'), true);
     await _ucvImportar([{ name:'a.pdf' }, { name:'b.pdf' }, { name:'ruim.pdf' }]);
     ok('fluxo IMPORTAR (vários): uma confirmação, registra os que deram, o ruim fica de fora, relê a lista',
@@ -1973,8 +1997,79 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
   ok('a impressão é síncrona: a janela abre no clique, nenhuma leitura antes', /await |\.then\(/.test(pegaJs('function gerarRelatorioCronoDia(')), false);
   NOMES.forEach(n => { global[n] = G0[n]; });
   ok('o botão e o dia moram na aba ⏱ CRONOANÁLISE; abrir a aba põe hoje no dia vazio',
-     [html.slice(iCr, fCr).includes('onclick="gerarRelatorioCronoDia()"'), html.slice(iCr, fCr).includes('<input type="date" id="uep-conv-dia"'),
+     [html.slice(iCr, fCr).includes('onclick="_ucvImpFecha();gerarRelatorioCronoDia()"'), html.slice(iCr, fCr).includes('<input type="date" id="uep-conv-dia"'),
       /if\(tab==='crono'\)\{ const di=_ucvEl\('dia'\); if\(di && !di\.value\) di\.value=_ucvDiaParaCampo\(hojeStr\(\)\);/.test(ST)], [true, true, true]);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUB-ABAS DA ⏱ CRONOANÁLISE (v7.197.0, PPCP 03/11/2026: "está muito cheia a
+// tela, tem que enxugar, deixar mais dinâmica" → sub-abas por tarefa e as
+// impressões num menu). Os blocos, ids e leituras são os de antes.
+console.log('\n── CRONOANÁLISE: sub-abas ──');
+{
+  const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC));
+  const pn = k => { const i = SC.indexOf(`<div class="ucv-pn${k === 'medir' ? ' on' : ''}" data-sub="${k}">`); return i < 0 ? '' : SC.slice(i, SC.indexOf('<div class="ucv-pn', i + 10) > 0 ? SC.indexOf('<div class="ucv-pn', i + 10) : SC.length); };
+  ok('quatro botões e quatro painéis, com as mesmas chaves; o MEDIR começa aceso nos dois; a faixa vem antes dos painéis',
+     [[...SC.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), [...SC.matchAll(/class="ucv-pn[^"]*" data-sub="(\w+)"/g)].map(m => m[1]),
+      /class="ucv-sb on" data-sub="medir" role="tab" aria-selected="true"/.test(SC), SC.includes('<div class="ucv-pn on" data-sub="medir">'),
+      SC.indexOf('id="uep-conv-sub"') < SC.indexOf('<div class="ucv-pn'), pegaConst('UCV_SUBS')],
+     [['medir', 'princ', 'regs', 'trocas'], ['medir', 'princ', 'regs', 'trocas'], true, true, true, "['medir', 'princ', 'regs', 'trocas']"]);
+  ok('cada painel tem o seu bloco: MEDIR (campos, resultado, registro, as medições do volume, ⓘ COMO LER), O QUE MEDIR, MEDIÇÕES, TROCAS',
+     [['id="uep-conv-prod"', 'id="uep-conv-res"', 'id="uep-conv-reg"', 'id="uep-conv-reg-falta"', 'id="uep-conv-regs-p"', 'id="uep-conv-ler"'].filter(t => !pn('medir').includes(t)),
+      pn('princ').includes('id="uep-conv-princ"'), pn('regs').includes('id="uep-conv-regs"'), pn('trocas').includes('id="uep-conv-conf"'),
+      ['conf-av', 'i-msg', 'x-msg'].filter(n => SC.indexOf(`id="uep-conv-${n}"`) > SC.indexOf('<div class="ucv-pn'))],
+     [[], true, true, true, []]);
+  // a conta dos botões: só lê o que o _ucvRegPintar já montou
+  const Mx = { nPrincMed:10, nPrinc:33, cobertura:34.9 }, Lx = new Array(34).fill({}), Cx = { lista:new Array(9).fill({}), nAlerta:0 };
+  const PV = { nome:'PENTEADEIRA CAMARIM STRASS', volSel:2, nVolTot:2 };
+  const D1 = _ucvSubMontar({ p:PV, M:Mx, LH:[], L:Lx, prontas:[{}, {}], C:Cx });
+  ok('os números dos botões: o volume escolhido, medidos × principais, as registradas e as prontas, as trocas e os alertas',
+     [D1.medir.txt, D1.princ.txt, D1.regs.txt, D1.regs.cls, D1.trocas.txt, D1.trocas.cls],
+     ['PENTEADEIRA CAMARIM STRASS · VOL 2/2', '10 de 33 medidos · 34,9% da UEP', '34 registradas · 2 prontas para trocar', 'acc', '9 trocas · nenhum alerta', '']);
+  const D2 = _ucvSubMontar({ p:null, M:Object.assign({}, Mx, { nPrincMed:33 }), LH:[], L:Lx, prontas:[], C:{ lista:new Array(9).fill({}), nAlerta:2 } });
+  ok('alerta na conferência pinta o TROCAS; tudo medido pinta o O QUE MEDIR; sem produto, o MEDIR pede um',
+     [D2.trocas.txt, D2.trocas.cls, D2.princ.cls, D2.medir.txt, D2.regs.txt, D2.regs.cls], ['9 trocas · 2 alertas', 'warn', 'ok', 'escolha o produto', '34 registradas', '']);
+  const D3 = _ucvSubMontar({ p:null, M:null, LH:'sem-endpoint', L:null, regsFalha:'sem-resposta', C:null, confFalha:'sem-endpoint' });
+  const D4 = _ucvSubMontar({ p:null, M:null, LH:'lendo', L:null, C:null });
+  ok('sem a leitura, o botão diz o estado (nunca 0): falta o .gs, não foi lida, ou …',
+     [D3.princ.txt, D3.regs.txt, D3.trocas.txt, D4.princ.txt, D4.regs.txt, D4.trocas.txt, _ucvSubMontar({ C:{ lista:[], nAlerta:0 } }).trocas.txt],
+     ['falta o .gs novo', 'não foram lidas', 'falta o .gs novo', '…', '…', '…', 'nenhuma troca']);
+  // trocar de sub-aba só mostra e esconde
+  { const docAntes = global.document, el = d => ({ dataset:{ sub:d }, cls:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.s.add(c) : this.s.delete(c); } }, setAttribute(k, v){ this.at[k] = v; } });
+    const PN = ['medir', 'princ', 'regs', 'trocas'].map(el), SB = ['medir', 'princ', 'regs', 'trocas'].map(el);
+    PN.concat(SB).forEach(e => { e.classList.s = e.cls; });
+    global.document = { querySelectorAll:q => (q === '#uep-conv .ucv-pn' ? PN : q === '#uep-conv .ucv-sb' ? SB : []) };
+    global.UCV_SUBS = ['medir', 'princ', 'regs', 'trocas']; global.UCV_SUB = 'medir';
+    eval.call(global, pegaJs('function _ucvSub('));
+    _ucvSub('trocas');
+    const r1 = [UCV_SUB, PN.filter(e => e.cls.has('on')).map(e => e.dataset.sub), SB.filter(e => e.cls.has('on')).map(e => e.dataset.sub), SB.map(e => e.at['aria-selected'])];
+    _ucvSub('nada');
+    ok('_ucvSub acende o painel e o botão pedidos (e o aria-selected); chave que não existe não muda nada',
+       [r1, UCV_SUB, /jsonp|_uepConvAtualiza|innerHTML/.test(pegaJs('function _ucvSub('))],
+       [['trocas', ['trocas'], ['trocas'], ['false', 'false', 'false', 'true']], 'trocas', false]);
+    global.document = docAntes; }
+  // o 💾 escondido diz o que falta (PPCP: "sumiu onde salva o estudo" — o nome do produto estava diferente do cadastro)
+  const RF = R => _ucvRegFalta(R, { txt:'Penteadeira strass', seg:12.1 });
+  ok('o 💾 escondido diz o que falta: o produto da lista (um só), o tempo, o cadastro; com a conversão pronta ou nada digitado, nada',
+     [RF({ estado:'sem-produto', n:0 }), RF({ estado:'sem-produto', n:3 }), RF({ estado:'sem-tempo', base:{ daMeta:false } }), RF({ estado:'sem-tempo', base:{ daMeta:true } }),
+      RF({ estado:'sem-cadastro' }), RF({ estado:'ok' }), _ucvRegFalta({ estado:'sem-produto', n:0 }, { txt:'', seg:0 })],
+     ['💾 O REGISTRO DA MEDIÇÃO aparece quando o PRODUTO for escolhido da lista — o nome do app de cronoanálise pode ser diferente do cadastro.',
+      '💾 O REGISTRO DA MEDIÇÃO aparece quando um só produto for escolhido da lista.',
+      '💾 O REGISTRO DA MEDIÇÃO aparece quando o tempo RODANDO for digitado.', '💾 O REGISTRO DA MEDIÇÃO aparece quando o tempo NO PERÍODO for digitado.',
+      '💾 O REGISTRO DA MEDIÇÃO aparece quando o cadastro de produtos terminar de ser lido.', '', '']);
+  const AT4 = pegaJs('function _uepConvAtualiza('), RP4 = pegaJs('function _ucvRegPintar(');
+  ok('a tela: a linha do 💾 pelo _uepConvAtualiza; as medições do volume só com produto (no MEDIR), todas no MEDIÇÕES; os botões no fim do _ucvRegPintar',
+     [/const fl = _ucvEl\('reg-falta'\); if\(fl\) fl\.textContent = _ucvRegFalta\(R, E\);/.test(AT4), /lstP\.innerHTML = !R\.p \? '' : _ucvRegsHtml\(L \? RL : null, R\.p,/.test(RP4),
+      /lst\.innerHTML = _ucvProntasHtml\(UCV_PRONTAS\)\s*\+ _ucvRegsHtml\(L, null,/.test(RP4), /_ucvSubPintar\(_ucvSubMontar\(\{ p:R\.p, M, LH, L, prontas:UCV_PRONTAS,/.test(RP4)],
+     [true, true, true, true]);
+  ok('quem abre um volume volta ao MEDIR: os PRINCIPAIS, as PRONTAS, o ONDE O TEMPO VAI e um PDF importado; o aviso da conferência leva às TROCAS',
+     [['function _ucvAbrirPrincipal(', 'function _ucvAbrirPronta(', 'function _ucvAbrirTempo(', 'async function _ucvImportar('].filter(f => !pegaJs(f).includes("_ucvSub('medir')")),
+      _ucvConfAvisoHtml({ nAlerta:1 }).includes(`onclick="_ucvSub('trocas')"`), _ucvConfAvisoHtml({ nAlerta:1 }).includes('no fim da tela')],
+     [[], true, false]);
+  ok('a pele: só o painel aceso aparece; a entrada não se mexe com menos movimento pedido; o cartão dos campos é do painel',
+     [/#sec-crono \.ucv-pn\{display:none\}/.test(html), /#sec-crono \.ucv-pn\.on\{display:block;/.test(html), /@media \(prefers-reduced-motion:reduce\)\{#sec-crono \.ucv-pn\.on\{animation:none\}\}/.test(html),
+      /#sec-crono \.ucv-pn>\.uep-card\{/.test(html), /#sec-crono \.uep-conv>\.uep-card\{/.test(html)],
+     [true, true, true, true, false]);
 }
 
 // os testes assíncronos (o fluxo do EXCLUIR) rodam antes do resumo; um que não

@@ -496,19 +496,57 @@ html.modo-dir #sec-dir.on{display:flex}
 /* ⏱ CRONOANÁLISE → UEP (v7.144.1, PPCP 19/10/2026: "modernize somente a tela").
    Só visual: tokens do painel + um azul local (--ucv-azul) para o resultado. */
 #sec-crono{--ucv-azul:#5AA9F0}
-/* cabeçalho da aba (v7.172.1): o título não quebra, os botões numa fileira e a frase de ajuda na linha de baixo —
-   no meio dos botões ela empurrava o título para 2–3 linhas e o último botão para uma fileira sozinho */
+/* cabeçalho da aba (v7.172.1): o título não quebra e os botões numa fileira. v7.197.0: o 📄 IMPORTAR PDF à vista e
+   as quatro impressões num menu (🖨 IMPRIMIR ▾); a frase de ajuda foi para o title do título */
 #sec-crono .ucv-hdr{flex-wrap:wrap;gap:10px 18px;margin-bottom:14px}
 #sec-crono .ucv-hdr .tbl-hdr-ttl{white-space:nowrap}
 #sec-crono .ucv-hdr-bts{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto}
 #sec-crono .ucv-hdr-bts .btn{height:30px;padding:0 12px;font-size:10px;box-sizing:border-box}
-#sec-crono .ucv-hdr-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
-#sec-crono .ucv-hdr-dia{display:flex;align-items:center}   /* o dia é o parâmetro do ESTUDOS DO DIA: os dois colados */
-#sec-crono .ucv-hdr-dia .frm-inp{width:140px;height:30px;padding:0 8px;font-size:11px;cursor:pointer;box-sizing:border-box;border-radius:5px 0 0 5px;border-right:none}
-#sec-crono .ucv-hdr-dia .btn{border-radius:0 5px 5px 0}
-#sec-crono .ucv-hdr-sub{flex-basis:100%;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2)}
+#sec-crono .ucv-imp{position:relative}
+#sec-crono .ucv-imp>summary{list-style:none;cursor:pointer;user-select:none}
+#sec-crono .ucv-imp>summary::-webkit-details-marker{display:none}
+#sec-crono .ucv-imp[open]>summary{border-color:var(--txt2);color:var(--txt)}
+#sec-crono .ucv-imp-m{position:absolute;right:0;top:36px;z-index:40;display:flex;flex-direction:column;gap:6px;width:330px;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:9px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+#sec-crono .ucv-imp-m .btn{height:auto;min-height:38px;padding:7px 12px;font-size:11px;letter-spacing:.8px;justify-content:flex-start;text-align:left;flex-wrap:wrap;color:var(--txt)}
+#sec-crono .ucv-imp-m .btn small{flex-basis:100%;font-size:11px;letter-spacing:0;font-weight:400;color:var(--txt2);padding-left:22px}
+#sec-crono .ucv-imp-m .btn:hover{border-color:var(--txt2)}
+#sec-crono .ucv-hdr-dia{display:flex;align-items:stretch}   /* o dia é o parâmetro do ESTUDOS DO DIA: os dois colados */
+#sec-crono .ucv-hdr-dia .frm-inp{width:140px;height:38px;padding:0 8px;font-size:11px;cursor:pointer;box-sizing:border-box;border-radius:5px 0 0 5px;border-right:none}
+#sec-crono .ucv-hdr-dia .btn{flex:1;border-radius:0 5px 5px 0}
+/* as sub-abas (v7.197.0, PPCP: "está muito cheia a tela, tem que enxugar, deixar mais dinâmica"):
+   uma tarefa por vez, cada botão com o seu número */
+#sec-crono .ucv-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:0 0 18px}
+#sec-crono .ucv-sb{flex:1 1 180px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 14px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+#sec-crono .ucv-sb:hover{border-color:var(--txt2)}
+#sec-crono .ucv-sb b{font-family:var(--font-d);font-size:11px;font-weight:400;letter-spacing:1.8px;color:var(--txt2)}
+#sec-crono .ucv-sb span{max-width:100%;font-family:var(--font-b);font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sec-crono .ucv-sb.on{border-color:var(--acc);background:rgba(255,92,31,.08);box-shadow:inset 0 -3px 0 var(--acc)}
+#sec-crono .ucv-sb.on b{color:var(--txt)}
+#sec-crono .ucv-sb.ok span{color:var(--ok)}
+#sec-crono .ucv-sb.acc span{color:var(--acc)}
+#sec-crono .ucv-sb.warn span{color:var(--warn)}
+#sec-crono .ucv-sb-ir{flex:0 0 auto;align-self:center;height:34px;padding:0 14px;font-size:10.5px;letter-spacing:1px}
+#sec-crono .ucv-pn{display:none}
+#sec-crono .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
+@keyframes ucvIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#sec-crono .ucv-pn.on{animation:none}}
+#sec-crono #uep-conv-x-msg{margin:0 0 12px;font-family:var(--font-b);font-size:13.5px;color:var(--txt)}
+#sec-crono #uep-conv-x-msg:empty,#sec-crono #uep-conv-reg-falta:empty{display:none}
+#sec-crono #uep-conv-reg-falta{margin-top:16px;font-family:var(--font-b);font-size:13px;color:var(--txt2);padding:10px 14px;border:1px dashed var(--border);border-radius:8px}
+#sec-crono #uep-conv-regs-p:not(:empty){margin-top:22px}
+/* ⓘ COMO LER do MEDIR: os três cartões do Volume a volume, o porquê e as notas TOLERÂNCIA · RÉGUA · GRAVAÇÃO */
+#sec-crono .ucv-ler{margin-top:20px;border:1px solid var(--border);border-radius:8px;padding:0 16px;background:var(--surface)}
+#sec-crono .ucv-ler>summary{cursor:pointer;padding:11px 0;font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--txt2)}
+#sec-crono .ucv-ler>summary:hover{color:var(--txt)}
+#sec-crono .ucv-ler[open]{padding-bottom:16px}
+#sec-crono .ucv-ler .ucv-qual{margin-top:4px;padding-top:0;border-top:none}
+#sec-crono .ucv-q1{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-family:var(--font-b);font-size:13.5px;color:var(--txt2);line-height:1.5}
+#sec-crono .ucv-q1-l{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;margin-right:4px}
+#sec-crono .ucv-q1-u{color:var(--ok)}
+#sec-crono .ucv-q1 b{color:var(--txt)}
+#sec-crono .ucv-q1 .ucv-q1-u{color:var(--ok)}
 #sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
-#sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
+#sec-crono .ucv-pn>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
 #sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) minmax(110px,.7fr) auto auto;gap:14px;align-items:end}
 #sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
 #sec-crono .uep-conv-f .frm-inp{width:100%;height:42px;padding:0 13px;font-size:15px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
@@ -582,7 +620,6 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-reg-f .frm-inp{width:100%;height:40px;padding:0 11px;font-size:14px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box}
 #sec-crono #uep-conv-r-btn{height:40px;padding:0 16px;font-size:10.5px;letter-spacing:1.2px;border:1px solid rgba(46,204,113,.5);border-radius:7px;color:var(--txt);white-space:nowrap}
 #sec-crono #uep-conv-r-msg{margin-top:10px;font-family:var(--font-b);font-size:13px;color:var(--txt)}
-#sec-crono #uep-conv-regs{margin-top:22px}
 #sec-crono .ucv-acao.troca{border-left-color:var(--acc);background:rgba(255,92,31,.06)}
 #sec-crono .ucv-acao.troca .ucv-acao-t{color:var(--acc)}
 #sec-crono .ucv-acao.ainda{border-left-color:var(--txt2);background:var(--surface)}
@@ -598,8 +635,6 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-pronta{font-family:var(--font-b);font-size:12.5px;color:var(--txt);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 11px;cursor:pointer}
 #sec-crono .ucv-pronta:hover{border-color:var(--acc)}
 #sec-crono .ucv-pronta b{color:var(--acc);margin-left:6px}
-#sec-crono #uep-conv-conf{margin-top:26px}
-#sec-crono #uep-conv-princ{margin-top:22px}
 #sec-crono .ucv-princ-r{font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:9px 14px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:8px}
 #sec-crono .ucv-princ-r.ok{border-left-color:var(--ok)}
 #sec-crono .ucv-princ tbody tr{cursor:pointer}
@@ -612,8 +647,6 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-princ .ucv-ph{color:var(--acc)}
 /* ONDE O TEMPO VAI (v7.194.0) — a cascata do tempo por caixa: estudo × produção × meta */
 #sec-tempo{--ucv-tp-puro:#4A6A8E;--ucv-tp-par:#8FA0B5}
-#sec-crono .ucv-tp-ponteiro{margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;font-family:var(--font-b);font-size:13.5px;color:var(--txt2);padding:11px 16px;border:1px dashed var(--border);border-radius:8px}
-#sec-crono .ucv-tp-ponteiro b{color:var(--txt);font-weight:600}
 #sec-tempo .ucv-tp{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px 18px;display:flex;flex-direction:column;gap:22px}
 #sec-tempo .ucv-tp .uep-conv-tit{margin:0}
 #sec-tempo .ucv-tp-imp{margin-left:auto;font-size:12px;padding:6px 14px}
@@ -3083,54 +3116,71 @@ if (_v7Instalado()) _v7EscondeBotao();
      medições registradas liberam (30 volumes ou mais, do mesmo lado); a
      CONFERÊNCIA DAS TROCAS acompanha a produção depois, sem alterar nada. -->
 <section id="sec-crono" class="sec">
+  <!-- v7.197.0 (PPCP 03/11/2026: "está muito cheia a tela, tem que enxugar, deixar mais dinâmica"):
+       sub-abas por tarefa — MEDIR · O QUE MEDIR · MEDIÇÕES · TROCAS —, cada uma com o seu número, e as
+       quatro impressões num menu só. Os ids, as leituras e as contas são os mesmos de antes. -->
   <div class="tbl-hdr ucv-hdr">
-    <span class="tbl-hdr-ttl">⏱ CRONOANÁLISE → UEP</span>
+    <span class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas">⏱ CRONOANÁLISE → UEP</span>
     <div class="ucv-hdr-bts">
       <button class="btn btn-acc" onclick="_ucvEl('pdf').click()" title="O PDF Takt Time do app de cronoanálise: um arquivo preenche a tela (confira e registre); vários registram de uma vez">📄 IMPORTAR PDF</button>
       <input type="file" id="uep-conv-pdf" accept="application/pdf,.pdf" multiple style="display:none" onchange="_ucvImportar(this.files);this.value=''">
-      <span class="ucv-hdr-sep" aria-hidden="true"></span>
-      <button class="btn btn-ghost" onclick="gerarRelatorioCrono()" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 IMPRIMIR</button>
-      <span class="ucv-hdr-dia"><input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje."><button class="btn btn-ghost" onclick="gerarRelatorioCronoDia()" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button></span>
-      <button class="btn btn-ghost" onclick="gerarRelatorioFilaCrono()" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE</button>
-      <button class="btn btn-ghost" onclick="_ucvCapTodos()" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO</button>
+      <details class="ucv-imp" id="uep-conv-imp">
+        <summary class="btn btn-ghost" title="As quatro impressões da aba">🖨 IMPRIMIR ▾</summary>
+        <div class="ucv-imp-m">
+          <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioCrono()" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 CONVERSÃO DA TELA<small>em pé, com campos para a caneta</small></button>
+          <span class="ucv-hdr-dia"><input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje."><button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioCronoDia()" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button></span>
+          <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioFilaCrono()" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE<small>o que cronometrar primeiro</small></button>
+          <button class="btn btn-ghost" onclick="_ucvImpFecha();_ucvCapTodos()" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO<small>quantos cabem por dia e por mês</small></button>
+        </div>
+      </details>
     </div>
-    <span class="ucv-hdr-sub">o tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas</span>
   </div>
   <div id="uep-conv" class="uep-conv">
+    <div class="ucv-sub" id="uep-conv-sub" role="tablist">
+      <button type="button" class="ucv-sb on" data-sub="medir" role="tab" aria-selected="true" onclick="_ucvSub('medir')"><b>MEDIR</b><span id="uep-conv-sb-medir">escolha o produto</span></button>
+      <button type="button" class="ucv-sb" data-sub="princ" role="tab" aria-selected="false" onclick="_ucvSub('princ')"><b>O QUE MEDIR</b><span id="uep-conv-sb-princ">…</span></button>
+      <button type="button" class="ucv-sb" data-sub="regs" role="tab" aria-selected="false" onclick="_ucvSub('regs')"><b>MEDIÇÕES</b><span id="uep-conv-sb-regs">…</span></button>
+      <button type="button" class="ucv-sb" data-sub="trocas" role="tab" aria-selected="false" onclick="_ucvSub('trocas')"><b>TROCAS</b><span id="uep-conv-sb-trocas">…</span></button>
+      <button type="button" class="btn btn-ghost ucv-sb-ir" onclick="setTab('tempo')" title="Estudo × produção × meta: onde o tempo por caixa vai, em aba própria">⏳ ONDE O TEMPO VAI →</button>
+    </div>
     <div id="uep-conv-conf-av"></div>
     <div class="uep-nota" id="uep-conv-i-msg"></div>
-    <div class="uep-card">
-      <div class="uep-conv-f">
-        <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-        <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a MADERO deu 7,9 s. Com a régua da meta como base (12,5), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
-        <label title="O tempo por volume da BASE (MESA CABECEIRA MADERO, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a MADERO medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 12,5 (a régua da meta, 527 min × 60 ÷ 2.530) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">MADERO</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
-        <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
-        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()">📌 FIXAR MADERO</button>
-        <button type="button" class="btn btn-ghost" id="uep-conv-limpar" onclick="_ucvLimpar()" onkeydown="_uepConvTecla(event)" title="Zera o estudo da tela para o próximo: produto, tempo, os campos do registro e os avisos. Ficam a BASE, a TOLERÂNCIA e o MEDIDO POR. Nada é apagado na planilha.">✕ LIMPAR</button>
-      </div>
-      <datalist id="uep-conv-lista"></datalist>
-      <div class="uep-nota" id="uep-conv-guia"></div>
-    </div>
-    <div id="uep-conv-res"></div>
-    <div class="uep-nota" id="uep-conv-t-msg"></div>
-    <div id="uep-conv-reg" class="uep-card" style="display:none">
-      <div class="ucv-reg-t">REGISTRAR ESTA MEDIÇÃO <span>guarda na planilha (aba CRONOANALISE) os segundos da medição e a UEP que eles dão — a UEP do cadastro não muda</span></div>
-      <div class="ucv-reg-f">
-        <label title="O dia em que a medição foi FEITA — não o de hoje, se ela foi antes. Obrigatória.">DATA DA MEDIÇÃO<input id="uep-conv-r-data" class="frm-inp" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="maskData(this)"></label>
-        <label title="O cartão POR VOLUME NO PERÍODO do Volume a volume (com as paradas). Opcional.">NO PERÍODO (s)<input id="uep-conv-r-per" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
-        <label title="O SEM AS LACUNAS do Volume a volume (sem parada nenhuma). Opcional.">SEM AS LACUNAS (s)<input id="uep-conv-r-lac" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
-        <label title="Quantos volumes a medição teve (o Volume a volume mostra). Obrigatório: é a amostra que libera a troca da UEP (30 ou mais, somando as medições).">VOLUMES MEDIDOS<input id="uep-conv-r-vol" class="frm-inp" inputmode="numeric" placeholder="obrigatório"></label>
-        <label title="A velocidade da esteira durante a medição. Vazio = a do cadastro.">VELOCIDADE (m/min)<input id="uep-conv-r-vel" class="frm-inp" inputmode="decimal"></label>
-        <label>MEDIDO POR<input id="uep-conv-r-quem" class="frm-inp" maxlength="40" placeholder="opcional"></label>
-        <button type="button" class="btn btn-ghost" id="uep-conv-r-btn" onclick="_ucvRegistrar()">💾 REGISTRAR MEDIÇÃO</button>
-      </div>
-      <div class="uep-nota" id="uep-conv-r-msg"></div>
-    </div>
-    <div id="uep-conv-princ"></div>
-    <div class="ucv-tp-ponteiro"><span><b>ONDE O TEMPO VAI</b> (estudo × produção × meta) tem aba própria.</span><button type="button" class="btn btn-ghost" onclick="setTab('tempo')">⏳ ONDE O TEMPO VAI →</button></div>
-    <div id="uep-conv-regs"></div>
     <div class="uep-nota" id="uep-conv-x-msg"></div>
-    <div id="uep-conv-conf"></div>
+    <div class="ucv-pn on" data-sub="medir">
+      <div class="uep-card">
+        <div class="uep-conv-f">
+          <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
+          <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a MADERO deu 7,9 s. Com a régua da meta como base (12,5), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
+          <label title="O tempo por volume da BASE (MESA CABECEIRA MADERO, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a MADERO medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 12,5 (a régua da meta, 527 min × 60 ÷ 2.530) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">MADERO</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
+          <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
+          <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()">📌 FIXAR MADERO</button>
+          <button type="button" class="btn btn-ghost" id="uep-conv-limpar" onclick="_ucvLimpar()" onkeydown="_uepConvTecla(event)" title="Zera o estudo da tela para o próximo: produto, tempo, os campos do registro e os avisos. Ficam a BASE, a TOLERÂNCIA e o MEDIDO POR. Nada é apagado na planilha.">✕ LIMPAR</button>
+        </div>
+        <datalist id="uep-conv-lista"></datalist>
+        <div class="uep-nota" id="uep-conv-guia"></div>
+      </div>
+      <div id="uep-conv-res"></div>
+      <div class="uep-nota" id="uep-conv-t-msg"></div>
+      <div id="uep-conv-reg" class="uep-card" style="display:none">
+        <div class="ucv-reg-t" title="Guarda na planilha (aba CRONOANALISE) os segundos da medição e a UEP que eles dão">REGISTRAR ESTA MEDIÇÃO <span>a UEP do cadastro não muda</span></div>
+        <div class="ucv-reg-f">
+          <label title="O dia em que a medição foi FEITA — não o de hoje, se ela foi antes. Obrigatória.">DATA DA MEDIÇÃO<input id="uep-conv-r-data" class="frm-inp" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" oninput="maskData(this)"></label>
+          <label title="O cartão POR VOLUME NO PERÍODO do Volume a volume (com as paradas). Opcional.">NO PERÍODO (s)<input id="uep-conv-r-per" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
+          <label title="O SEM AS LACUNAS do Volume a volume (sem parada nenhuma). Opcional.">SEM AS LACUNAS (s)<input id="uep-conv-r-lac" class="frm-inp" inputmode="decimal" placeholder="opcional"></label>
+          <label title="Quantos volumes a medição teve (o Volume a volume mostra). Obrigatório: é a amostra que libera a troca da UEP (30 ou mais, somando as medições).">VOLUMES MEDIDOS<input id="uep-conv-r-vol" class="frm-inp" inputmode="numeric" placeholder="obrigatório"></label>
+          <label title="A velocidade da esteira durante a medição. Vazio = a do cadastro.">VELOCIDADE (m/min)<input id="uep-conv-r-vel" class="frm-inp" inputmode="decimal"></label>
+          <label>MEDIDO POR<input id="uep-conv-r-quem" class="frm-inp" maxlength="40" placeholder="opcional"></label>
+          <button type="button" class="btn btn-ghost" id="uep-conv-r-btn" onclick="_ucvRegistrar()">💾 REGISTRAR MEDIÇÃO</button>
+        </div>
+        <div class="uep-nota" id="uep-conv-r-msg"></div>
+      </div>
+      <div class="uep-nota" id="uep-conv-reg-falta"></div>
+      <div id="uep-conv-regs-p"></div>
+      <details class="ucv-ler" id="uep-conv-ler"><summary>ⓘ COMO LER — qual tempo digitar, tolerância, régua e gravação</summary><div id="uep-conv-ler-c"></div></details>
+    </div>
+    <div class="ucv-pn" data-sub="princ"><div id="uep-conv-princ"></div></div>
+    <div class="ucv-pn" data-sub="regs"><div id="uep-conv-regs"></div></div>
+    <div class="ucv-pn" data-sub="trocas"><div id="uep-conv-conf"></div></div>
   </div>
 </section>
 
@@ -3680,7 +3730,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.196.0';
+const APP_VER   = '7.197.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6489,7 +6539,9 @@ function _ucvAindaHtml(R){
 }
 // O resultado, por estado. Fora do estado ok não há a linha TOLERÂNCIA, e a
 // régua já mostra o tempo padrão: o aviso de tolerância inválida vai à parte.
-function _uepConvHtml(R){
+// tela (v7.197.0): as notas TOLERÂNCIA · RÉGUA · GRAVAÇÃO saem do resultado e vão
+// para o ⓘ COMO LER da aba; o papel (sem o parâmetro) continua com elas.
+function _uepConvHtml(R, tela){
   if(R.estado === 'sem-cadastro') return '<div class="uep-nota">O cadastro de UEP ainda não foi lido — a lista de produtos aparece quando a aba terminar de carregar.</div>';
   const avBase = _uepConvAvisoBase(R.base), fora = _ucvTolFora(R.base);
   const foraNota = fora ? `<div class="uep-nota">TOLERÂNCIA: ${fora}</div>` : '';
@@ -6503,7 +6555,7 @@ function _uepConvHtml(R){
     return tit + `<div class="uep-nota">${R.ehBase ? 'Digite o tempo por volume dela para comparar com a régua da meta.'
       : `No cadastro: ${cad.n} UEP por volume (${cad.sub}). Digite o tempo por volume medido.`}</div>` + (R.troca ? _ucvTrocaHtml(R) : '') + _ucvLinhaHtml(R) + foraNota;
   }
-  return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _ucvLinhaHtml(R) + _uepConvNotasHtml(R.base);
+  return tit + (R.ehBase ? _uepConvBaseHtml(R) : _uepConvTrocaHtml(R)) + _ucvLinhaHtml(R) + (tela ? '' : _uepConvNotasHtml(R.base));
 }
 // NA PRODUÇÃO (v7.160.0, PPCP 26/10/2026: o s/cx do dia inteiro que estava aqui
 // "é cheio de paradas"; v7.161.0: "tem que ser justa a uep"). O volume na
@@ -6574,6 +6626,17 @@ function _uepConvQual(base){
       : `<div class="ucv-q"><span class="ucv-q-l">${c[1]}</span><span class="ucv-q-s">${c[2]}</span><span class="ucv-q-v">não use${base.medida && c[3] != null ? ` · ${b} ${_taktTxt(c[3])}` : ''}</span></div>`).join('')
     + '</div></div>';
 }
+// A MESMA orientação numa linha, logo abaixo dos campos (v7.197.0, PPCP: "está
+// muito cheia a tela"): o cartão que vale e o número da base nele. Os três
+// cartões inteiros e o porquê vão para o ⓘ COMO LER; o papel segue com eles.
+function _uepConvQualCurto(base){
+  const M = UEP_BASE_MEDIDA, b = _uepBaseCurto();
+  const usa = base.daMeta ? 'POR VOLUME NO PERÍODO' : 'POR VOLUME COM A LINHA RODANDO';
+  const nao = base.daMeta ? 'COM A LINHA RODANDO nem SEM AS LACUNAS' : 'NO PERÍODO nem SEM AS LACUNAS';
+  const ref = base.daMeta ? `base: a régua da meta, ${_taktTxt(base.metaSeg)}`
+    : base.medida ? `a ${b} deu <b>${_taktTxt(M.seg)}</b> nele` : `base digitada: <b>${_taktTxt(base.seg)}</b>`;
+  return `<div class="ucv-q1"><span class="ucv-q1-l">DIGITE</span> o cartão <b class="ucv-q1-u">${usa}</b> do Volume a volume · ${ref} <span class="ucv-q1-n">— não use ${nao}</span></div>`;
+}
 // ── A tela (DOM) ───────────────────────────────────────────────────────────
 let UEP_CONV_CAT = null, UEP_CONV_PRODS = [], UEP_CONV_INI = false;
 // As ENTRADAS da conversão, lidas por UMA função para a tela e o papel
@@ -6629,9 +6692,12 @@ function _uepConvAtualiza(){
   const guia = _ucvEl('guia');
   try{
     const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
-    if(guia) guia.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta);   // a MESMA régua da conta (com a tolerância da meta)
+    if(guia) guia.innerHTML = _uepConvQualCurto(R.base);   // a MESMA régua da conta (com a tolerância da meta)
+    // v7.197.0: os três cartões, o porquê e as notas no ⓘ COMO LER (só o miolo é refeito: aberto, ele não fecha a cada tecla)
+    const ler = _ucvEl('ler-c'); if(ler) ler.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta) + (R.estado === 'ok' ? _uepConvNotasHtml(R.base) : '');
     const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME RODANDO';
-    res.innerHTML = _uepConvHtml(R);
+    res.innerHTML = _uepConvHtml(R, true);
+    const fl = _ucvEl('reg-falta'); if(fl) fl.textContent = _ucvRegFalta(R, E);
     _ucvRegPintar(R);
     if((E.linha === 'nao-lida' && UCV_REGS) || E.linha === 'falhou') _ucvLinhaCarregar();   // a 1ª leitura é a do setTab, depois das medições
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
@@ -7025,12 +7091,16 @@ function _ucvRegPintar(R){
   if(vl) vl.placeholder = c0 ? 'cadastro: ' + String(c0.vel).replace('.', ',') : '';
   const L = UCV_REGS && UCV_REGS.lista;
   UCV_PRONTAS = L ? _ucvProntas(L, UEP_CONV_PRODS) : [];
-  const lst = _ucvEl('regs');
-  const RL = L ? (R.p ? _ucvRegsDoProduto(L, R.p) : L) : null, LH = _ucvLinhaItens();
+  // v7.197.0 (sub-abas): no MEDIR, as medições do volume escolhido (a regra da troca dele);
+  // no MEDIÇÕES, as últimas de todos, com as PRONTAS PARA TROCAR em cima
+  const lst = _ucvEl('regs'), lstP = _ucvEl('regs-p');
+  const RL = L && R.p ? _ucvRegsDoProduto(L, R.p) : null, LH = _ucvLinhaItens();
   const ref = Array.isArray(LH) ? _ucvRefDe(LH, UEP_CONV_PRODS, R.base.meta) : null;
-  if(lst) lst.innerHTML = _ucvProntasHtml(UCV_PRONTAS)
-    + _ucvRegsHtml(RL, R.p || null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), LH, R.base.meta, ref),
+  if(lstP) lstP.innerHTML = !R.p ? '' : _ucvRegsHtml(L ? RL : null, R.p, UCV_REGS && UCV_REGS.falha, UCV_EXCL, R.volCad, _ucvRegsPadrao(RL && RL.slice(0, 15), LH, R.base.meta, ref),
         _ucvRegsStatus(RL && RL.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
+  if(lst) lst.innerHTML = _ucvProntasHtml(UCV_PRONTAS)
+    + _ucvRegsHtml(L, null, UCV_REGS && UCV_REGS.falha, UCV_EXCL, null, _ucvRegsPadrao(L && L.slice(0, 15), LH, R.base.meta, ref),
+        _ucvRegsStatus(L && L.slice(0, 15), UCV_CONF && UCV_CONF.trocas, UEP_CONV_PRODS));
   const C = UCV_CONF && UCV_CONF.trocas ? _ucvConfMontar(UCV_CONF.trocas, R.base.meta, LH, UEP_CONV_PRODS) : null;
   // os principais para a análise de tempo (v7.189.0): as mesmas horas, medições e cadastro
   // v7.191.0: e a programação (a do PRÓXIMOS DIAS, já no painel ou lida por último na fila da aba)
@@ -7044,7 +7114,58 @@ function _ucvRegPintar(R){
   const tp = _ucvEl('tempo'); if(tp) tp.innerHTML = _ucvTempoHtml(TV, LH, R.p ? R.p.chave : null, UCV_TEMPO_TODOS);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
+  _ucvSubPintar(_ucvSubMontar({ p:R.p, M, LH, L, prontas:UCV_PRONTAS, regsFalha:UCV_REGS && UCV_REGS.falha, C, confFalha:UCV_CONF && UCV_CONF.falha }));
 }
+// ── Sub-abas da ⏱ CRONOANÁLISE (v7.197.0) ──────────────────────────────────
+// PPCP, 03/11/2026: "está muito cheia a tela, tem que enxugar, deixar mais
+// dinâmica" → sub-abas por tarefa (MEDIR · O QUE MEDIR · MEDIÇÕES · TROCAS),
+// uma na tela por vez. Cada botão diz o seu número, para escolher para onde ir
+// sem abrir. Os blocos, ids e leituras são os de antes: só a moldura mudou.
+const UCV_SUBS = ['medir', 'princ', 'regs', 'trocas'];
+let UCV_SUB = 'medir';
+// O texto de cada botão: só lê o que o _ucvRegPintar já montou (nenhuma conta).
+function _ucvSubMontar(o){
+  const p = o.p, M = o.M, L = o.L, C = o.C, np = (o.prontas || []).length;
+  const lendo = x => x === 'sem-endpoint' ? 'falta o .gs novo' : x === 'falhou' ? 'a produção não foi lida' : '…';
+  return {
+    medir:  { txt:p ? p.nome + (p.volSel ? ' · VOL ' + p.volSel + '/' + p.nVolTot : '') : 'escolha o produto', cls:'' },
+    princ:  M ? { txt:`${M.nPrincMed} de ${M.nPrinc} medidos` + (M.cobertura != null ? ` · ${fmtP(M.cobertura)} da UEP` : ''), cls:M.nPrinc && M.nPrincMed >= M.nPrinc ? 'ok' : '' }
+              : { txt:Array.isArray(o.LH) ? '…' : lendo(o.LH), cls:'' },
+    regs:   L ? { txt:plural(L.length, 'registrada', 'registradas') + (np ? ` · ${plural(np, 'pronta', 'prontas')} para trocar` : ''), cls:np ? 'acc' : '' }
+              : { txt:o.regsFalha ? (o.regsFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'não foram lidas') : '…', cls:'' },
+    trocas: C ? { txt:(C.lista.length ? plural(C.lista.length, 'troca', 'trocas') : 'nenhuma troca') + (C.nAlerta ? ` · ${plural(C.nAlerta, 'alerta', 'alertas')}` : C.lista.length ? ' · nenhum alerta' : ''), cls:C.nAlerta ? 'warn' : '' }
+              : { txt:o.confFalha ? (o.confFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'não foi lida') : '…', cls:'' } };
+}
+function _ucvSubPintar(D){
+  UCV_SUBS.forEach(k => {
+    const el = _ucvEl('sb-' + k); if(!el || !D || !D[k]) return;
+    el.textContent = D[k].txt; el.title = D[k].txt;   // o nome comprido corta com … no botão estreito
+    const b = el.parentNode; if(b && b.classList) ['ok', 'acc', 'warn'].forEach(c => b.classList.toggle(c, D[k].cls === c));
+  });
+}
+// Trocar de sub-aba só mostra e esconde: nada é lido nem recalculado.
+function _ucvSub(k){
+  if(UCV_SUBS.indexOf(k) < 0) return;
+  UCV_SUB = k;
+  document.querySelectorAll('#uep-conv .ucv-pn').forEach(el => el.classList.toggle('on', el.dataset.sub === k));
+  document.querySelectorAll('#uep-conv .ucv-sb').forEach(el => { const on = el.dataset.sub === k; el.classList.toggle('on', on); el.setAttribute('aria-selected', on ? 'true' : 'false'); });
+}
+// O 💾 REGISTRAR só aparece com a conversão pronta (v7.150.0). Escondido sem
+// dizer por quê, ele "sumiu" (PPCP, 03/11/2026, com o nome do produto diferente
+// do cadastro): a linha diz o que falta. Nada digitado → nada a dizer.
+function _ucvRegFalta(R, E){
+  if(!R || R.estado === 'ok' || !(String(E && E.txt || '').trim() || Number(E && E.seg) > 0)) return '';
+  const pre = '💾 O REGISTRO DA MEDIÇÃO aparece quando ';
+  if(R.estado === 'sem-cadastro') return pre + 'o cadastro de produtos terminar de ser lido.';
+  if(R.estado === 'sem-produto') return pre + (R.n > 1 ? 'um só produto for escolhido da lista.'
+    : 'o PRODUTO for escolhido da lista — o nome do app de cronoanálise pode ser diferente do cadastro.');
+  return pre + 'o tempo ' + (R.base && R.base.daMeta ? 'NO PERÍODO' : 'RODANDO') + ' for digitado.';
+}
+// O menu 🖨 IMPRIMIR ▾ (v7.197.0): cada impressão fecha o menu antes de abrir o
+// pop-up (síncrono, no clique); clique fora ou Esc fecha.
+function _ucvImpFecha(){ const d = _ucvEl('imp'); if(d) d.open = false; }
+document.addEventListener('click', e => { const d = _ucvEl('imp'); if(d && d.open && !d.contains(e.target)) d.open = false; });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') _ucvImpFecha(); });
 function _ucvRegCampos(){
   const v = n => { const el = _ucvEl('r-' + n); return el ? el.value : ''; };
   return { data:v('data'), per:v('per'), lac:v('lac'), vol:v('vol'), vel:v('vel'), quem:v('quem') };
@@ -7285,6 +7406,7 @@ async function _ucvImportar(files){
       if(x.falta.length){ diz('O PDF não tem ' + x.falta.join(', ') + ' — é o relatório Takt Time do app de cronoanálise?'); return; }
       const a = _ucvPdfAchar(UEP_CONV_PRODS, x.produto), br = v => v == null ? '' : String(v).replace('.', ',');
       const put = (n, v) => { const el = _ucvEl(n); if(el) el.value = v; };
+      _ucvSub('medir');                     // um PDF preenche o MEDIR (confira e registre)
       put('prod', a.p ? a.p.rot : x.produto); put('seg', br(x.rod));
       put('r-data', x.data); put('r-per', br(x.per)); put('r-lac', br(x.lac)); put('r-vol', x.vol == null ? '' : String(x.vol));
       _uepConvAtualiza();
@@ -7378,6 +7500,7 @@ function _ucvProntasHtml(L){
 function _ucvAbrirPronta(i){
   const x = UCV_PRONTAS[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!x || !elP) return;
+  _ucvSub('medir');
   elP.value = x.p.rot; if(elS) elS.value = '';
   _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -7476,7 +7599,7 @@ function _ucvConfHtml(C, falha){
 }
 function _ucvConfAvisoHtml(C){
   if(!C || !C.nAlerta) return '';
-  return `<div class="uep-conv-av"><span><b>⚠ CONFERÊNCIA: ${C.nAlerta} UEP trocada${C.nAlerta === 1 ? '' : 's'} que a produção não confirma</b> (sem as paradas, contra a ${_uepBaseCurto()}) — veja a CONFERÊNCIA DAS TROCAS, no fim da tela. Nada foi alterado: meça de novo.</span></div>`;
+  return `<div class="uep-conv-av"><span><b>⚠ CONFERÊNCIA: ${C.nAlerta} UEP trocada${C.nAlerta === 1 ? '' : 's'} que a produção não confirma</b> (sem as paradas, contra a ${_uepBaseCurto()}). Nada foi alterado: meça de novo.</span><button type="button" class="btn btn-ghost" onclick="_ucvSub('trocas')">VER AS TROCAS →</button></div>`;
 }
 function _ucvConfCarregar(forcar){
   if(!CFG.sheetsUrl) return Promise.resolve();
@@ -7658,7 +7781,7 @@ function _ucvProgCel(x, M, progEst){
     : `<b>${x.data}</b> ${x.dow}<small>${fmtN(x.cx)} cx${mais}</small>`;
 }
 function _ucvPrincHtml(M, est, sel, todos, progEst){
-  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span>os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — a referência de UEP é revista quando eles estiverem medidos. Ordem do que falta medir: a programação (hoje e atraso, depois a data; no mesmo dia, o mais pesado). O que não está programado vai para o fim: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma</span></div>`;
+  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span title="A referência de UEP é revista quando eles estiverem medidos. Ordem do que falta medir: a programação (hoje e atraso, depois a data; no mesmo dia, o mais pesado). O que não está programado vai para o fim: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma.">os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — o que falta medir primeiro, na ordem da programação</span></div>`;
   if(!M) return est === 'sem-endpoint' ? tit + '<div class="uep-nota">O Apps Script ainda não tem as horas da produção: cole o .gs v5.35 no editor e re-deploye.</div>'
     : est === 'falhou' ? tit + '<div class="uep-nota">A produção dos últimos dias não foi lida — tenta de novo em 1 min.</div>'
     : tit + '<div class="uep-nota">Lendo a produção dos últimos dias…</div>';
@@ -7687,6 +7810,7 @@ function _ucvPrincHtml(M, est, sel, todos, progEst){
 function _ucvAbrirPrincipal(i){
   const g = UCV_PRINC[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!g || !elP) return;
+  _ucvSub('medir');
   elP.value = g.p.rot; if(elS) elS.value = '';
   _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -7919,6 +8043,7 @@ function _ucvAbrirTempo(i){
   const l = UCV_TEMPO[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!l || !elP) return;
   elP.value = l.rot; if(elS) elS.value = '';
+  _ucvSub('medir');
   if(!_abaOn('crono')) setTab('crono');      // o volume abre no conversor (v7.196.0: a tabela tem aba própria)
   else _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
