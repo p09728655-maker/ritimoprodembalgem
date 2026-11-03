@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.43 — OS FERIADOS DESTA SEMANA TAMBÉM VÃO AO PAINEL
+//               PPCP, 03/11/2026, com a impressão da aba ⚖ UEP na mão: o
+//               getProgramacaoDetalhada mandava os feriados de HOJE em diante,
+//               e o cartão do dia que já passou na semana (02/11, FINADOS) saía
+//               SEM PRODUÇÃO em vez de FERIADO. Agora a lista começa na segunda
+//               da semana corrente (_segundaNum). Nada de conta muda: quem lê a
+//               lista olha de hoje em diante ou só esta semana.
 // Versão: 5.42 — META DE PONTOS / DIA NA CONFIG_PAINEL (META_PTS)
 //               PPCP, 29/10/2026: a meta de pontos (faturamento, sem hora
 //               extra) era digitada e guardada só no computador que a usava. A
@@ -5272,6 +5279,15 @@ function _fecharLotes(mapa) {
 }
 
 // 20260912 -> '12/09/2026' (inverso do dataParaNum).
+// A segunda-feira da semana de um dia aaaammdd (v5.43), também aaaammdd. Conta
+// só com ano/mês/dia — sem fuso: o dia já chega pronto.
+function _segundaNum(n) {
+  n = Number(n) || 0;
+  if (!n) return 0;
+  const d = new Date(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100);
+  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
 function _numParaDataBR(n) {
   n = Number(n) || 0;
   if (!n) return '';
@@ -5401,10 +5417,15 @@ function getProgramacaoDetalhada() {
   }).filter(function (it) { return it.dataNum > 0 && it.lote; });
 
   itens.sort(function (a, b) { return a.dataNum - b.dataNum; });
-  // v5.38: os feriados de hoje em diante (aba FERIADOS) — o painel tira o dia
-  // da jornada no PRÓXIMOS DIAS. Sem a aba, lista vazia (o dia segue útil).
-  const fer = _feriadosNums();
-  const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= hojeNum; }).sort(function (a, b) { return a - b; })
+  // v5.38: os feriados (aba FERIADOS) — o painel tira o dia da jornada no
+  // PRÓXIMOS DIAS. Sem a aba, lista vazia (o dia segue útil).
+  // v5.43: desde a SEGUNDA DESTA SEMANA, não de hoje. Os cartões dos dias que
+  // já passaram na semana (v7.179.0) mostram FERIADO quando o dia está na lista;
+  // com a lista começando em hoje, em 03/11/2026 o 02/11 (FINADOS) saiu como
+  // SEM PRODUÇÃO na aba ⚖ UEP e na impressão. Quem lê a lista só olha de hoje
+  // em diante ou esta semana — um feriado passado a mais não muda conta nenhuma.
+  const fer = _feriadosNums(), desdeNum = _segundaNum(hojeNum);
+  const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= desdeNum; }).sort(function (a, b) { return a - b; })
     .slice(0, 400).map(function (n) { return { data: _numParaDataBR(n), desc: fer[n] }; });
   return { ok: true, itens: itens, feriados: feriados };
 }

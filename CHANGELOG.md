@@ -11,6 +11,39 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.192.0 — 03/11/2026 · Impressão da UEP: os gráficos alinhados · ⚠ **re-deploy** (.gs v5.43)
+
+- PPCP, com a impressão da aba ⚖ UEP na mão: *"alinhar os gráficos, está
+  desalinhado, avaliar a impressão toda"*. Medido no Chromium (A4 deitada): o
+  HORA A HORA começava **41 px abaixo** do gráfico do período, tinha outra
+  altura (250 × 230) e o eixo 12 px mais alto por causa do *"até 08:47"*. As
+  duas colunas da folha 1 eram soltas — a de hoje tinha um título a mais entre
+  os cards e o gráfico, e os cards dela eram mais altos.
+- A folha 1 virou **uma grade preenchida linha a linha** (títulos · cards ·
+  títulos dos gráficos · gráficos): cada linha tem a altura da maior das duas.
+  Os dois gráficos têm a **mesma altura (270)** e o **mesmo pé**: o zero do
+  eixo e as datas/horas ficam na mesma linha, com ou sem a hora em andamento.
+- O gráfico do período ganhou o título **DIA A DIA EM UEP — CONTRA A META DE
+  CADA DIA**, na mesma linha do *HORA A HORA EM UEP*.
+- A **meta** é a mesma tinta (escura, tracejada) nos dois gráficos do papel: era
+  preta no hora a hora e laranja no período, lado a lado. Laranja confundia com
+  a barra âmbar (hora entre 90% e 96%). Na tela nada mudou.
+- O rótulo **UEP EM HORA EXTRA** quebrava em duas linhas e o número dele ficava
+  abaixo dos outros três cards: o espaçamento das letras do rótulo foi de 1,5 para
+  1 px no papel. Os 7 números da folha 1 ficam na mesma linha.
+- O **ATENÇÃO AO DADO** (quando há UEP estimada ou caixa sem UEP) vai na largura
+  toda, numa linha própria — dentro da coluna de hoje ele empurrava só o hora a
+  hora para baixo.
+- **Feriado da semana** (`.gs` v5.43): o 02/11 (FINADOS) saía como **SEM
+  PRODUÇÃO** no cartão do PRÓXIMOS DIAS (aba e papel): o `.gs` só mandava os
+  feriados de hoje em diante. Agora manda desde a segunda da semana — o cartão
+  diz **FERIADO · FINADOS**.
+- Medido com as fontes, A4 deitada: 2 folhas; a folha 1 fecha em ~633 de 718 px
+  e, no pior caso (alerta do dado, 12 dias abaixo da meta, notas embaixo dos dois
+  gráficos), em ~683.
+- **Atenção:** nenhum número mudou. ⚠ **re-deploy** do `.gs` para o feriado da
+  semana aparecer; antes dele o cartão segue como SEM PRODUÇÃO.
+
 ## v7.191.0 — 30/10/2026 · Principais: a ordem é a da programação
 
 - PPCP, com a lista na tela: *"esse seria a sequência ideal para coleta?"* →

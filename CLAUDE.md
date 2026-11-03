@@ -4235,6 +4235,35 @@ feito e dá ar de verdade ao que sobrou.
       `_UEP_DOC_SKIN` (escopada em `.uep-doc`, o teste confere). No papel a
       hora que bateu sai **grafite** (`.ud-horas{--ok:…}`): cor só em quem não
       bateu, a regra do relatório semanal.
+    - **FOLHA 1 EM LINHAS ALINHADAS (v7.192.0, PPCP 03/11/2026, com o print:
+      *"alinhar os gráficos, está desalinhado, avaliar a impressão toda"*).**
+      Eram duas colunas soltas (`.ud-cols`): hoje = título + cards + título +
+      gráfico, período = título + cards + gráfico. Medido: o hora a hora
+      começava **41 px abaixo**, com 250 de altura contra 230 e o eixo 12 px
+      mais alto (o pé de 40 do "até HH:MM"). Hoje é `.ud-p1`, UMA grade de duas
+      colunas preenchida **linha a linha** (títulos · cards · títulos dos
+      gráficos · gráficos; `align-items:stretch`): cada linha tem a altura da
+      maior. A folha 2 continua em `.ud-cols`.
+      - Os dois gráficos com `UEP_DOC_SVG_H`=270 e o MESMO pé:
+        `_uepAbaPb(horas)` (40 com hora em andamento, 28 sem) vai ao
+        `_uepAbaPerSvg(dias, W, H, pbMin)`, que agora põe o rótulo do eixo X
+        pelo pé (`H-pb+19`, igual ao hora a hora). Sem os parâmetros, os
+        desenhos da tela e da diretoria são os de sempre (o `pt` do hora a hora
+        foi de 22 para 24, o do período).
+      - O período ganhou o título **DIA A DIA EM UEP — CONTRA A META DE CADA
+        DIA** (a linha do *HORA A HORA EM UEP*). Sem dia fechado: célula vazia,
+        nada de título nem gráfico.
+      - A **meta** é o token `--uep-meta` (fallback: `--txt` no hora a hora,
+        `--acc` no período — a tela não mudou); o papel o define **escuro**
+        (`#1F2328`) nos dois. Laranja foi testado e confundia com a barra âmbar.
+      - `.kpi-lbl` a 1 px de espaçamento no papel: "UEP EM HORA EXTRA" quebrava
+        em duas linhas e o número desse card ficava abaixo dos outros.
+      - O ATENÇÃO AO DADO é `.ud-larga` (largura toda, linha própria).
+      - Medido (Chromium, fontes, mídia de impressão a 1.032 px): os dois
+        gráficos com o mesmo topo e o zero do eixo na mesma linha (manhã com 1
+        hora, tarde com 7, pior caso); 2 folhas; folha 1 fecha em ~633 de 718 e
+        no pior caso (alerta + 12 dias abaixo + notas nos dois gráficos) em ~683.
+        Conteúdo novo na folha 1? Medir de novo — sobra ~35 px no pior caso.
     - ⚠ **O papel NÃO numera as seções** (v7.113.0, PPCP: *"o mix na tela
       está 3 na impressão 5"*): a ordem do papel não é a da aba (o período sobe
       para a folha 1), então os títulos são os NOMES dos blocos da aba, sem o
@@ -4996,7 +5025,11 @@ feito e dá ar de verdade ao que sobrou.
   todo seg–sex, como antes** (o `tela-e.test.js` evala a função sozinha). Quem
   passa: `calcularProgramacao` (janela do adiantamento, nos dois filtros do
   crédito) e `_codigosProximos` (aviso de cor errada). `getProgramacaoDetalhada`
-  devolve `feriados` (de hoje em diante, `{data, desc}`).
+  devolve `feriados` (`{data, desc}`) — desde a **segunda desta semana**
+  (`.gs` v5.43, `_segundaNum`): com a lista começando em hoje, o cartão do dia
+  que já passou na semana (`_gpxPassados`) dizia SEM PRODUÇÃO no 02/11
+  (FINADOS), na aba ⚖ UEP e na impressão. Todo leitor de `PROG_FERIADOS` olha
+  de hoje em diante ou só esta semana: feriado passado a mais não muda conta.
 - **Painel**: `PROG_FERIADOS` (`_feriadosMapa(json.feriados)`, `{}` com backend
   antigo). `_gpxCalendario(…, fer)`: o feriado ENTRA (cartão **FERIADO** com a
   descrição) mas não conta como dia útil — o horizonte anda um dia. No

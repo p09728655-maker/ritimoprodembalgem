@@ -3583,7 +3583,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.191.0';
+const APP_VER   = '7.192.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5277,8 +5277,11 @@ function _uepAbaHistCarregar(){
   })().finally(()=>{ UEP_HIST_VOO=null; });
   return UEP_HIST_VOO;
 }
-function _uepAbaPerSvg(dias, largura){
-  const FS=12, W=largura||760, H=230, pl=46, pb=28, pt=24;
+// `altura` e `pbMin` (v7.192.0): a impressão põe este gráfico ao lado do hora a
+// hora com a MESMA altura e o MESMO pé — o eixo dos dois na mesma linha. Sem
+// eles, o desenho de sempre (230 de altura, pé 28).
+function _uepAbaPerSvg(dias, largura, altura, pbMin){
+  const FS=12, W=largura||760, H=altura||230, pl=46, pb=Math.max(28, Number(pbMin)||0), pt=24;
   const n=Math.max(dias.length,1), bw=(W-pl-10)/n;
   const mx=Math.max(1, ...dias.map(d=>Math.max(Number(d.uep)||0, uepDiaMeta(d))))*1.12;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
@@ -5290,9 +5293,9 @@ function _uepAbaPerSvg(dias, largura){
     const cor=u>=m?'var(--txt2)':'var(--red)';
     const tip=_rpEsc(`${d.data} · ${fmtN(Math.round(u))} UEP · meta ${fmtN(m)} (${fmtP(u/m*100)})`+(d.uepHe>0?` · +${fmtN(Math.round(d.uepHe))} em HE`:''));
     s+=`<rect x="${x.toFixed(1)}" y="${y(u).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(u)).toFixed(1)}" rx="2" fill="${cor}" opacity=".85"><title>${tip}</title></rect>`
-      +`<line x1="${(x-2).toFixed(1)}" x2="${(x+w+2).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--acc)" stroke-width="2" stroke-dasharray="5 3"/>`;
+      +`<line x1="${(x-2).toFixed(1)}" x2="${(x+w+2).toFixed(1)}" y1="${y(m).toFixed(1)}" y2="${y(m).toFixed(1)}" stroke="var(--uep-meta,var(--acc))" stroke-width="2" stroke-dasharray="5 3"/>`;
     if(mostraNum) s+=`<text x="${cx.toFixed(1)}" y="${(y(Math.max(u,m))-6).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt)" font-family="IBM Plex Mono">${fmtN(Math.round(u))}</text>`;
-    if((dias.length-1-i)%passoLbl===0) s+=`<text x="${cx.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
+    if((dias.length-1-i)%passoLbl===0) s+=`<text x="${cx.toFixed(1)}" y="${H-pb+19}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">${_rpEsc(String(d.data).slice(0,5))}</text>`;
   });
   return s+_uepEscalaMarca(dias, i=>pl+i*bw, pt-8, H-pb, W, FS-2, pt-12)+'</svg>';
 }
@@ -5353,14 +5356,16 @@ function _eixoGrade(mx, nMax){
   const g=[]; for(let v=0; v<m; v+=p) g.push(v);
   return g;
 }
-function _uepAbaSvg(horas, largura, altura){
+// O pé do hora a hora: 40 com a hora em andamento (o "até HH:MM" na 2ª linha),
+// 28 sem ela. A impressão passa o mesmo pé ao gráfico do período (v7.192.0).
+function _uepAbaPb(horas){ return (horas||[]).some(h=>h&&h.andamento) ? 40 : 28; }
+function _uepAbaSvg(horas, largura, altura, pbMin){
   // Hora em andamento: o rótulo é o INÍCIO, como as outras, e o "até HH:MM" vai
   // numa 2ª linha embaixo (v7.182.0, PPCP 28/10/2026: "está cortando, sobrepondo").
   // Numa linha só, "até 16:35" (~54 unidades) não cabe na coluna (~39 no papel,
   // com as 11 horas de um dia que começou às 05:00) e caía em cima do "15:00".
   // Na 2ª linha as vizinhas não têm texto: pode passar da coluna sem encostar.
-  const temAnd=(horas||[]).some(h=>h.andamento);
-  const FS=12, W=largura||760, H=altura||250, pl=40, pb=temAnd?40:28, pt=22;
+  const FS=12, W=largura||760, H=altura||250, pl=40, pb=Math.max(_uepAbaPb(horas), Number(pbMin)||0), pt=24;
   const n=Math.max(horas.length,1), bw=(W-pl-10)/n;
   const mx=Math.max(1, ...horas.map(h=>Math.max(h.uep||0, h.metaH||0)))*1.15;
   const y=v=>pt+(H-pt-pb)*(1-v/mx);
@@ -5384,9 +5389,9 @@ function _uepAbaSvg(horas, largura, altura){
       s+=`<rect x="${x.toFixed(1)}" y="${y(h.metaH).toFixed(1)}" width="${w.toFixed(1)}" height="${(y(0)-y(h.metaH)).toFixed(1)}" rx="2" fill="none" stroke="var(--border)" stroke-dasharray="3 3"><title>${tip}</title></rect>`;
       if(h.lancada) s+=`<text x="${cx.toFixed(1)}" y="${(y(0)-8).toFixed(1)}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt2)" font-family="IBM Plex Mono">s/ prod.</text>`;
     }
-    if(h.metaH) s+=`<line x1="${(x-3).toFixed(1)}" x2="${(x+w+3).toFixed(1)}" y1="${y(h.metaH).toFixed(1)}" y2="${y(h.metaH).toFixed(1)}" stroke="var(--txt)" stroke-width="2" stroke-dasharray="4 3"${h.andamento||h.futuro?' opacity=".45"':''}/>`;
+    if(h.metaH) s+=`<line x1="${(x-3).toFixed(1)}" x2="${(x+w+3).toFixed(1)}" y1="${y(h.metaH).toFixed(1)}" y2="${y(h.metaH).toFixed(1)}" stroke="var(--uep-meta,var(--txt))" stroke-width="2" stroke-dasharray="4 3"${h.andamento||h.futuro?' opacity=".45"':''}/>`;
     s+=`<text x="${cx.toFixed(1)}" y="${H-pb+19}" text-anchor="middle" font-size="${FS-2}" fill="${h.andamento?'var(--txt)':'var(--txt2)'}" font-family="IBM Plex Mono">${_rpEsc(String(h.inicio||h.label||''))}</text>`;
-    if(h.andamento) s+=`<text x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt)" font-family="IBM Plex Mono">${_rpEsc('até '+h.ate)}</text>`;
+    if(h.andamento) s+=`<text x="${cx.toFixed(1)}" y="${H-pb+32}" text-anchor="middle" font-size="${FS-2}" fill="var(--txt)" font-family="IBM Plex Mono">${_rpEsc('até '+h.ate)}</text>`;
   });
   return s+'</svg>';
 }
@@ -8898,6 +8903,7 @@ function renderUep(){
 // `_uepAbaPerSvg`) re-skinados por token, como o relatório do PLANO. Nenhuma
 // conta nova, nenhuma chamada nova — `_uepDocHtml` é desenho.
 const UEP_DOC_SVG_W = 480;   // meia folha A4 deitada (~509 px), menos a moldura do gráfico
+const UEP_DOC_SVG_H = 270;   // os DOIS gráficos da folha 1 com esta altura (v7.192.0) — medido: a folha 1 fecha com folga
 const UEP_DOC_MIX_MAX = 8;   // linhas do mix no papel; o resto vira "demais N"
 const _UEP_DOC_SKIN = `
   /* os tokens que o SVG lê — é isto que re-skina o desenho para o papel */
@@ -8912,6 +8918,16 @@ const _UEP_DOC_SKIN = `
   .uep-doc .rp-per{color:#E65100}
   .uep-doc .rp-sec-ttl{color:#5B6470}
   .uep-doc .ud-res,.uep-doc .ud-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  /* FOLHA 1 (v7.192.0): uma grade só, linha a linha — título, cards e gráfico de
+     hoje e do período na MESMA linha; cada linha tem a altura da maior (stretch) */
+  .uep-doc .ud-p1{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;align-items:stretch}
+  .uep-doc .ud-p1 .ud-larga{grid-column:1/-1}
+  /* a META é a mesma coisa nos dois gráficos lado a lado: a mesma tinta — e é
+     referência, não veredito: tinta escura (laranja confundia com a barra âmbar) */
+  .uep-doc{--uep-meta:#1F2328}
+  /* rótulo do card numa linha: "UEP EM HORA EXTRA" quebrava em duas e o número
+     dele ficava abaixo dos outros três */
+  .uep-doc .kpi-lbl{letter-spacing:1px}
   .uep-doc .ud-res{margin:0 0 2px;page-break-inside:avoid}
   .uep-doc .ud-cols-2{grid-template-columns:1.2fr 1fr}
   .uep-doc .rp-sec-ttl{margin:11px 0 7px}
@@ -9019,23 +9035,32 @@ function _uepDocHtml(D, ctx){
   else resPer=`<div class="ud-res-b ${perCards[1].c}"><div class="ud-k">ÚLTIMOS ${nPer} DIAS · ${plural(P.n,'dia fechado','dias fechados')}</div>
     <div class="ud-selo">${P.res.bateu} DE ${P.n} ${P.n===1?'DIA':'DIAS'} NA META</div></div>`;
 
-  // 1 · HOJE
-  const b1=sec(`HOJE — ${_rpEsc(ctx.ini)} a ${_rpEsc(ctx.fim)}, JORNADA NORMAL`)
-    +`<div class="kpi-grid c4">${cards.map(kpi).join('')}</div>`
-    +(avisos.length?`<div class="ud-alerta"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de hoje é indicação, não medição.</div>`:'');
-
-  // 2 · HORA A HORA
-  const b2=sec('HORA A HORA EM UEP — ONDE A UEP SE PERDEU')
-    +`<div class="ud-g ud-horas">${_uepAbaSvg(horas, W)}${horas.some(h=>h.cxSem>0)?'<div class="ud-nota"><b>*</b> caixas de códigos sem UEP, fora da conta</div>':''}</div>`;
-
-  // 3 · O PERÍODO
-  let b3=sec(`PERÍODO — DIAS FECHADOS, ÚLTIMOS ${nPer} DIAS`);
-  if(!P) b3+=`<div class="ud-vazio">${ctx.hist==='falha'?'Não consegui ler o histórico — o servidor não respondeu em 3 tentativas.':'O histórico ainda estava sendo lido quando o relatório foi gerado.'} Gere de novo em instantes para ter esta seção.</div>`;
-  else if(!P.n) b3+=`<div class="ud-vazio">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias corridos.</div>`;
-  else b3+=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`
-    +`<div class="ud-g">${_uepAbaPerSvg(P.dias, W)}
+  // FOLHA 1 EM LINHAS ALINHADAS (v7.192.0, PPCP 03/11/2026, com o print na
+  // mão: "alinhar os gráficos, está desalinhado"). Eram duas colunas soltas —
+  // hoje com título + cards + título + gráfico, o período com título + cards +
+  // gráfico — e cada uma crescia sozinha: o hora a hora começava ~40 px abaixo
+  // do gráfico do período, com outra altura (250 × 230) e o eixo 12 px mais alto
+  // (o "até HH:MM"). Agora é UMA grade de duas colunas preenchida linha a linha
+  // (títulos · cards · títulos dos gráficos · gráficos): cada linha tem a altura
+  // da maior das duas, e os dois gráficos têm a mesma altura e o mesmo pé.
+  const H=UEP_DOC_SVG_H, pb=_uepAbaPb(horas), temP=!!(P&&P.n), nada='<div></div>';
+  const cHojeT=sec(`HOJE — ${_rpEsc(ctx.ini)} a ${_rpEsc(ctx.fim)}, JORNADA NORMAL`);
+  const cHoje=`<div class="kpi-grid c4">${cards.map(kpi).join('')}</div>`;
+  // o alerta do dado vai na largura toda, numa linha própria: dentro da coluna
+  // de hoje ele empurrava só o hora a hora para baixo
+  const cAlerta=avisos.length?`<div class="ud-alerta ud-larga"><b>ATENÇÃO AO DADO</b> · ${avisos.join(' · ')} — o número de hoje é indicação, não medição.</div>`:'';
+  const cHoraT=sec('HORA A HORA EM UEP — ONDE A UEP SE PERDEU');
+  const cHora=`<div class="ud-g ud-horas">${_uepAbaSvg(horas, W, H)}${horas.some(h=>h.cxSem>0)?'<div class="ud-nota"><b>*</b> caixas de códigos sem UEP, fora da conta</div>':''}</div>`;
+  const cPerT=sec(`PERÍODO — DIAS FECHADOS, ÚLTIMOS ${nPer} DIAS`);
+  let cPer;
+  if(!P) cPer=`<div class="ud-vazio">${ctx.hist==='falha'?'Não consegui ler o histórico — o servidor não respondeu em 3 tentativas.':'O histórico ainda estava sendo lido quando o relatório foi gerado.'} Gere de novo em instantes para ter esta seção.</div>`;
+  else if(!P.n) cPer=`<div class="ud-vazio">Nenhum dia fechado com UEP gravada nos últimos ${nPer} dias corridos.</div>`;
+  else cPer=`<div class="kpi-grid">${perCards.map(kpi).join('')}</div>`;
+  const cDiaT=temP?sec('DIA A DIA EM UEP — CONTRA A META DE CADA DIA'):nada;
+  const cDia=temP?`<div class="ud-g">${_uepAbaPerSvg(P.dias, W, H, pb)}
       ${P.res.he>0?`<div class="ud-nota">+ ${fmtN(Math.round(P.res.he))} UEP em hora extra no período, fora da conta</div>`:''}
-      ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`;
+      ${(esc=>esc?`<div class="ud-nota" style="color:var(--warn)">${esc}</div>`:'')(_uepEscalaNota(P.dias.map(d=>d.data)))}</div>`:nada;
+  const folha1=`<div class="ud-p1">${cHojeT}${cPerT}${cHoje}${cPer}${cAlerta}${cHoraT}${cDiaT}${cHora}${cDia}</div>`;
 
   // PRÓXIMOS DIAS — o MESMO desenho da aba (_gpxSemanasHtml, por semana), com a pele do papel.
   const PX=D.prox;
@@ -9074,7 +9099,7 @@ function _uepDocHtml(D, ctx){
 
 
   return `<div class="ud-res">${resHoje}${resPer}</div>`
-    +`<div class="ud-cols"><div>${b1}${b2}</div><div>${b3}</div></div>`
+    +folha1
     +'<div class="ud-quebra"></div>'
     +bProx
     +`<div class="ud-cols ud-cols-2"><div>${b4}</div><div>${b5}</div></div>`
