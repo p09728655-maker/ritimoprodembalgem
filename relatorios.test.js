@@ -4577,10 +4577,76 @@ console.log('\n── estudo de UEP ──');
   ok('tela, impressão, diretoria e Telas F/G da TV leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
      [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [4, false]);   // tela, papel, diretoria (v7.116.0) e TV F/G (v7.138.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
-     [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
+     [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>ORIGEM DA UEP/.test(R),
       /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura, pbMin\)/.test(JS),
       /_uepAbaSvg\(horas, w, Math\.min\(UEP_G_H_MAX/.test(R)], [true, true, true, true]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
+  // v7.198.0 (PPCP 03/11/2026, depois das sub-abas da cronoanálise: "faz o mesmo na aba uep")
+  { const iU = src.indexOf('<section id="sec-uep"'), SU = src.slice(iU, src.indexOf('</section>', iU));
+    const iM = SU.indexOf('<details class="ucv-imp" id="uep-imp">'), MENU = SU.slice(iM, SU.indexOf('</details>', iM));
+    ok('⚖ UEP em sub-abas: quatro botões (HOJE · PERÍODO · PRÓXIMOS DIAS · POR PRODUTO), HOJE aceso; o renderUep desenha um painel por chave, na mesma ordem',
+       [[...SU.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), /const UEP_SUBS = \['hoje', 'periodo', 'prox', 'prod'\];/.test(JS), /class="ucv-sb on" data-sub="hoje" role="tab" aria-selected="true"/.test(SU),
+        ['hoje', 'periodo', 'prox', 'prod'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R)],
+       [['hoje', 'periodo', 'prox', 'prod'], true, true, true, true]);
+    ok('o cabeçalho: as três impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE e RÉGUAS na ponta da faixa; o título não diz mais "— HOJE"',
+       [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()'].every(f => MENU.includes(f)),
+        /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('crono'\)"/.test(SU) && /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('reguas'\)"/.test(SU),
+        SU.includes('⚖ UEP — HOJE'), /gerarRelatorioUepPadrao\(\)/.test(R)],
+       [3, true, true, false, false]);
+    ok('os títulos dos blocos sem número (cada sub-aba é o seu contexto) e o renderUep pinta os botões, também sem os dados do dia',
+       [/\d · (HOJE|HORA A HORA|O MIX|ORIGEM|PERÍODO|PRÓXIMOS|PADRÃO)/.test(R), /_uepSubPintar\(_uepSubMontar\(\{ D, H:Hpad, padEst:/.test(R),
+        /el\.innerHTML=`<div class="empty-msg">\$\{D\.msg\}\$\{tentar\}<\/div>`;\s*_uepSubPintar\(_uepSubMontar\(\{ D \}\)\); return;/.test(R)],
+       [false, true, true]);
+    ok('o gráfico é redesenhado na largura do painel ACESO (escondido não tem largura); trocar de sub-aba redesenha a aba, sem leitura',
+       [/if\(nb&&nb\.offsetParent\)\{ const sv=nb\.querySelector\('svg'\); if\(sv&&Math\.abs\(\(sv\.viewBox\.baseVal\.width\|\|0\)-_svgLargura\(nb\)\)>2\)/.test(R),
+        /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /if\(_abaOn\('uep'\)\) renderUep\(\);/.test(pega('function _uepSub(')), /jsonp|_uepAbaCarregar|action=/.test(pega('function _uepSub('))],
+       [true, true, true, false]);
+    eval(pega('function _uepSubMontar(')); eval(pega('function _uepSubProx('));
+    if (typeof _fmtHM === 'undefined') eval(pega('function _fmtHM('));
+    const DU = { estado:'ok', k:{ minNorm:200 }, feito:667.4, card:{ ef:25.9, c:'red' }, P:{ n:10, res:{ media:2656.4, bateu:6 } } };
+    const HU = { julgados:[{ st:'acima' }, { st:'acima' }, { st:'abaixo' }, { st:'no' }] };
+    const S1 = _uepSubMontar({ D:DU, H:HU, padEst:'ok' });
+    ok('os números dos botões: HOJE com o selo e a cor do card UEP ATÉ AGORA (o mesmo veredito), PERÍODO média e dias na meta, POR PRODUTO acima e abaixo',
+       [S1.hoje, S1.periodo.txt, S1.prod.txt],
+       [{ txt:'667 UEP · ' + slRitmo(25.9), cls:'red' }, '2.656 UEP/dia · 6 de 10 na meta', '4 produtos · 2 acima · 1 abaixo']);
+    const S2 = _uepSubMontar({ D:Object.assign({}, DU, { k:{ minNorm:0 }, card:{ ef:0, c:'acc' }, P:{ n:0, res:{} } }), H:null, padEst:'falha' });
+    const S3 = _uepSubMontar({ D:Object.assign({}, DU, { P:null }), H:null, padEst:'lendo', histFalha:true });
+    ok('sem a leitura o botão diz o estado, nunca 0: dados do dia, jornada sem hora, histórico, produto',
+       [_uepSubMontar({ D:{ estado:'aguardando' } }).hoje.txt, _uepSubMontar({ D:{ estado:'sem-backend' } }).prod.txt, S2.hoje, S2.periodo.txt, S2.prod.txt, S3.periodo.txt, S3.prod.txt,
+        _uepSubMontar({ D:DU, H:{ julgados:[] }, padEst:'ok' }).prod.txt],
+       ['…', '…', { txt:'667 UEP · nenhuma hora lançada', cls:'' }, 'nenhum dia fechado', 'não foi lido', 'histórico não lido', '…', 'nenhum produto julgado']);
+    const WU = [{ rot:'ESTA SEMANA', nUteis:0, minPede:0, minJorn:0 }, { rot:'SEMANA QUE VEM', nUteis:3, minPede:1784.6, minJorn:1581 }];
+    ok('PRÓXIMOS DIAS: o saldo da 1ª semana com dia útil pela frente (a conta do "pedem … para …"); faltar é vermelho, sobrar e caber não',
+       [_uepSubProx(WU), _uepSubProx([{ rot:'ESTA SEMANA', nUteis:2, minPede:1000.4, minJorn:1054 }]), _uepSubProx([{ rot:'ESTA SEMANA', nUteis:2, minPede:1054, minJorn:1054 }]).txt,
+        _uepSubProx(null, 'falha').txt, _uepSubProx(null, 'lendo').txt, _uepSubProx(null, 'sem-uep').txt, _uepSubProx([]).txt],
+       [{ txt:'semana que vem: faltam ' + _fmtHM(204), cls:'red' }, { txt:'esta semana: sobram ' + _fmtHM(54), cls:'' }, 'esta semana: cabe na jornada',
+        'programação não lida', '…', 'sem UEP na programação', 'nenhum dia útil à frente']);
+    const RPX = pega('function renderProxDias(');
+    ok('o botão PRÓXIMOS DIAS é pintado pelo renderProxDias, em cada desfecho da leitura, com as MESMAS semanas do bloco',
+       [/const W = _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\)/.test(RPX), /sb\(_uepSubProx\(W\)\)/.test(RPX),
+        /sb\(_uepSubProx\(null, f \? 'falha' : 'lendo'\)\)/.test(RPX), /sb\(_uepSubProx\(null, 'sem-uep'\)\)/.test(RPX)],
+       [true, true, true, true]);
+    ok('os textos dos botões não fazem conta (só leem o que já foi montado) e a pintura é uma só para a cronoanálise e a UEP',
+       [/_uepAbaPeriodo\(|uepHistResumo\(|uepCard\(|_uepPadHist\(|_gpxMontar\(/.test(pega('function _uepSubMontar(') + pega('function _uepSubProx(')),
+        /_sbPinta\(/.test(pega('function _uepSubPintar(')) && /_sbPinta\(/.test(pega('function _ucvSubPintar(')), /'red'\]\.forEach/.test(pega('function _sbPinta('))],
+       [false, true, true]);
+    // _uepSub: acende, e a entrada (animação) só na troca — o refresh redesenha sem piscar
+    { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); }, add(c){ this.o.s.add(c); } }, setAttribute(k, v){ this.at[k] = v; } });
+      const SB = ['hoje', 'periodo', 'prox', 'prod'].map(el), PN = ['hoje', 'periodo', 'prox', 'prod'].map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
+      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#uep-bloco .ucv-pn' ? PN : []), querySelector:q => (q === '#uep-bloco .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null) };
+      global.UEP_SUBS = ['hoje', 'periodo', 'prox', 'prod']; global.UEP_SUB = 'hoje'; const abaA = global._abaOn; global._abaOn = () => false;
+      eval(pega('function _uepSub('));
+      _uepSub('prox'); const r1 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), SB.map(e => e.at['aria-selected']), PN[2].s.has('entra')];
+      _uepSub('xx');
+      ok('_uepSub acende painel e botão (aria-selected) e marca a entrada só no painel novo; chave desconhecida não muda nada',
+         [r1, UEP_SUB], [['prox', ['prox'], ['false', 'false', 'true', 'false'], true], 'prox']);
+      global.document = docA; global._abaOn = abaA; }
+    ok('a pele: o painel aceso aparece; a entrada só com .entra (o refresh redesenha o painel) e sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
+       [/#sec-uep \.ucv-pn\{display:none\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block\}/.test(src), /#sec-uep \.ucv-pn\.entra\{animation:ucvIn/.test(src),
+        /@media \(prefers-reduced-motion:reduce\)\{#sec-uep \.ucv-pn\.entra\{animation:none\}\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block;animation/.test(src),
+        ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-sb-ir{'].filter(c => !src.includes(',#sec-uep ' + c))],
+       [true, true, true, true, false, []]);
+  }
 
   // IMPRESSÃO EXECUTIVA (v7.106.0) — o papel é o que está na tela.
   eval(pega('function _uepAbaPerCards('));
@@ -4662,8 +4728,9 @@ console.log('\n── estudo de UEP ──');
   // v7.114.0 — o nome CONFIABILIDADE prometia exatidão; é a ORIGEM da UEP
   ok('o bloco se chama ORIGEM DA UEP na tela e no papel, e diz que medida não é cronoanálise',
      [/CONFIABILIDADE DA UEP/.test(DOC + R), DOC.includes('ORIGEM DA UEP'), /não (é )?cronoanálise/i.test(DOC), /NÃO é cronoanálise/.test(JS)], [false, true, true, true]);
-  ok('na tela os blocos são numerados na ordem em que aparecem (4 origem, 5 período, 6 próximos)',
-     [R.indexOf('4 · ORIGEM DA UEP') < R.indexOf('5 · PERÍODO'), R.indexOf('5 · PERÍODO') < R.indexOf('6 · PRÓXIMOS DIAS')], [true, true]);
+  // v7.198.0: com as sub-abas a tela não numera mais (cada painel é o seu contexto); a ordem é a dos botões
+  ok('na tela os blocos vêm na ordem dos botões (origem no HOJE, depois período e próximos dias)',
+     [R.indexOf('<b>ORIGEM DA UEP</b>') < R.indexOf('<b>PERÍODO</b>'), R.indexOf('<b>PERÍODO</b>') < R.indexOf('<b>PRÓXIMOS DIAS</b>')], [true, true]);
   // hora em andamento não é julgada (v7.114.0: 14:00 vermelho às 14:50)
   { const sl = [{ inicio:'13:00', label:'13:00-14:00', min:60 }, { inicio:'14:00', label:'14:00-15:00', min:60 }, { inicio:'15:00', label:'15:00-16:00', min:60 }];
     const reg = [{ horario:'13:00', producaoHora:100 }, { horario:'14:00', producaoHora:80 }];
@@ -4709,8 +4776,8 @@ console.log('\n── estudo de UEP ──');
   const RUD = pega('function _uepDocHtml('), GUA = pega('function gerarRelatorioUepAba(');
   ok('o desenho do papel não faz conta de UEP (nenhuma régua nova)',
      /uepCard\(|efNoRitmo\(|_uepAbaProj\(|_uepAbaPeriodo\(|uepHistResumo\(|_qpOscilacao\(/.test(RUD), false);
-  ok('imprime DEITADO no documento compartilhado, com o botão na aba UEP',
-     [/_rpDocParadas\(`UEP — [^`]*`, true\)/.test(GUA), (src.match(/onclick="gerarRelatorioUepAba\(\)"/g) || []).length], [true, 1]);
+  ok('imprime DEITADO no documento compartilhado, com o botão no menu 🖨 IMPRIMIR ▾ da aba UEP',
+     [/_rpDocParadas\(`UEP — [^`]*`, true\)/.test(GUA), (src.match(/onclick="_uepImpFecha\(\);gerarRelatorioUepAba\(\)"/g) || []).length, (src.match(/gerarRelatorioUepAba\(\)"/g) || []).length], [true, 1, 1]);
   ok('o SVG é re-skinado por token e a pele é escopada em .uep-doc',
      (() => { const sk = (JS.match(/const _UEP_DOC_SKIN = `([\s\S]*?)`;/) || [])[1] || '';
               const sels = sk.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+(?=\{)/g) || [];
@@ -4785,7 +4852,7 @@ console.log('\n── estudo de UEP ──');
       /_gpxSemanasHtml\(PX, _gpxSemanasMontar\(PX, new Date\(\), _gpxPassadosDoPainel\(new Date\(\)\)\)\)/.test(pega('function _uepDocHtml(')), /PRÓXIMOS DIAS/.test(pega('function _uepDocHtml('))], [true, true, true, true]);
   ok('a faixa mora na aba ⚖ UEP (bloco 6), renova a programação a cada 15 min e espera 1 min entre tentativas',
      [/GPX_TTL/.test(RP), /GPX_TENT > 60000/.test(RP), /_abaOn\('uep'\)/.test(RP),
-      /6 · PRÓXIMOS DIAS/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),
+      /<b>PRÓXIMOS DIAS<\/b>/.test(pega('function renderUep(')) && /renderProxDias\(\)/.test(pega('function renderUep(')),
       /renderProxDias/.test(pega('function renderAll(')), /id="ger-prox" style="display:none/.test(src)], [true, true, true, true, false, false]);
   // v7.130.0 — o "Mais pesado" é o LOTE inteiro: com várias cores, nada de nome
   // de uma cor só (caso real: 13/10 lote 25282 só OFF WHITE/NATURE 1.100 cx ×
@@ -4853,6 +4920,7 @@ console.log('\n── estudo de UEP ──');
     // a conta dele (`conta` do _gpxMontar) segue para a PROGRAMAÇÃO × CAPACIDADE
     ok('o cartão HOJE não existe mais', /function _gpxHojeHtml\(|gpx-hoje/.test(JS + src), false);
     // v7.155.0 — PPCP: "mostra o atraso separado para conferência" (v7.156.0: só o vencido)
+    global.GPX_ATR_ABERTO = false;
     eval(pega('function _gpxAtrasoMontar(')); eval(pega('function _gpxAtrasoHtml('));
     const LA = _gpxDivida([{ codigo:'501.082.003', desc:'VOL 1/1 TOUCADOR MAGIC NEW', cor:'CINAMOMO', falta:185, atraso:185, atrasoDesde:'22/10/2026' },
                            { codigo:'501.059.002', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', falta:4, atraso:4, atrasoDesde:'22/10/2026' },
@@ -4871,10 +4939,17 @@ console.log('\n── estudo de UEP ──');
         new RegExp('<td colspan="3">ATRASO</td><td class="n">339</td><td class="n">549</td><td class="n">' + _fmtHM(PA.conta.venc) + '<').test(AH),
         /FALTA ZERAR|NÃO CABE|falta do programado|1º dia útil/.test(AH), /sem UEP/.test(AH)],
        [true, true, false, true]);
+    // v7.198.0 (aba ⚖ UEP em sub-abas, "enxugar"): recolhido, com o total no título; aberto, fica aberto no refresh
+    global.GPX_ATR_ABERTO = true; const AHa = _gpxAtrasoHtml(AM, PA); global.GPX_ATR_ABERTO = false;
+    ok('o quadro do atraso nasce RECOLHIDO, com o total (cx · UEP · horas) e os códigos no título; aberto, continua aberto no refresh',
+       [/^<details class="gpx-atr" ontoggle="_gpxAtrToggle\(this\.open\)"><summary class="gpx-atr-t"><b>ATRASO — CONFERÊNCIA<\/b>/.test(AH),
+        AH.includes('<b>339 cx · 549 UEP · ' + _fmtHM(PA.conta.venc) + '</b> · 4 códigos'), /^<details class="gpx-atr" open /.test(AHa), /<\/details>$/.test(AH),
+        /function _gpxAtrToggle\(aberto\)\{ GPX_ATR_ABERTO = !!aberto; \}/.test(JS), /#ger-prox details\.gpx-atr>summary\{cursor:pointer/.test(src)],
+       [true, true, true, true, true, true]);
     ok('quadro sem a lista por código (backend antigo) ou sem vencido: nada',
        [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(_gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8), PA)], ['', '']);
     ok('quadro do atraso só na tela (papel e diretoria mostram só as semanas) e os desenhos não fazem conta de carga',
-       [/_gpxSemanasHtml\(P, _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\)\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
+       [/_gpxSemanasHtml\(P, W\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
         /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxSemanasHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxAtrasoHtml(') + pega('function _gpxSemanasBlocos('))], [true, false, false]);
     // v7.181.0: o ANEXO do papel saiu; quem diz isso é o tooltip do cartão do dia

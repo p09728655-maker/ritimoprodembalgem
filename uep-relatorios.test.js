@@ -195,7 +195,7 @@ ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(p
 // v7.187.1: a mesma impressão estava nas duas abas — o 🖨 CAIXAS × PONTOS × UEP
 // ficou só na 📏 RÉGUAS; a ⚖ UEP tem o caminho até ela.
 ok('a FILA na aba ⚖ UEP; o CAIXAS × PONTOS × UEP só na 📏 RÉGUAS (um botão no painel), com o caminho na ⚖ UEP',
-   [/onclick="gerarRelatorioFilaCrono\(\)"/.test(html), (html.match(/onclick="gerarRelatorioCxUep\(/g) || []).length,
+   [/<section id="sec-uep"[\s\S]*?onclick="_uepImpFecha\(\);gerarRelatorioFilaCrono\(\)"[\s\S]*?<\/section>/.test(html), (html.match(/onclick="gerarRelatorioCxUep\(/g) || []).length,
     /<section id="sec-uep"[\s\S]*?onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS →<[\s\S]*?<\/section>/.test(html)], [true, 1, true]);
 ok('cartão sem status não herda o vermelho do relatório de paradas',
    [/\.fila-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS), /\.cxu-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS)], [true, true]);
@@ -617,12 +617,14 @@ ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redes
   ok('cabeçalho da ⏱ CRONOANÁLISE: o IMPORTAR PDF à vista, as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes), a frase de ajuda no title do título',
      [iB > 0 && iM > iB, (FORA.match(/<button /g) || []).length, (MENU.match(/onclick="_ucvImpFecha\(\);/g) || []).length, /<summary class="btn btn-ghost"[^>]*>🖨 IMPRIMIR ▾<\/summary>/.test(MENU),
       SC.includes('ucv-hdr-sub'), /class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido/.test(SC),
-      /#sec-crono \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m\{position:absolute/.test(html)],
+      /#sec-crono \.ucv-hdr \.tbl-hdr-ttl,#sec-uep \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m,#sec-uep \.ucv-imp-m\{position:absolute/.test(html)],
      [true, 1, 4, true, false, true, true, true]);
-  ok('o menu fecha no clique fora e no Esc; o fechar é uma função só',
-     [/document\.addEventListener\('click', e => \{ const d = _ucvEl\('imp'\); if\(d && d\.open && !d\.contains\(e\.target\)\) d\.open = false; \}\);/.test(html),
-      /document\.addEventListener\('keydown', e => \{ if\(e\.key === 'Escape'\) _ucvImpFecha\(\); \}\);/.test(html), /function _ucvImpFecha\(\)\{ const d = _ucvEl\('imp'\); if\(d\) d\.open = false; \}/.test(html)],
-     [true, true, true]);
+  // v7.198.0: a ⚖ UEP tem o mesmo menu — clique fora e Esc fecham qualquer um
+  ok('o menu fecha no clique fora e no Esc (qualquer menu 🖨 aberto: cronoanálise e UEP); cada aba tem o seu fechar',
+     [/document\.addEventListener\('click', e => \{ document\.querySelectorAll\('details\.ucv-imp\[open\]'\)\.forEach\(d => \{ if\(!d\.contains\(e\.target\)\) d\.open = false; \}\); \}\);/.test(html),
+      /document\.addEventListener\('keydown', e => \{ if\(e\.key === 'Escape'\) document\.querySelectorAll\('details\.ucv-imp\[open\]'\)\.forEach\(d => \{ d\.open = false; \}\); \}\);/.test(html),
+      /function _ucvImpFecha\(\)\{ const d = _ucvEl\('imp'\); if\(d\) d\.open = false; \}/.test(html), /function _uepImpFecha\(\)\{ const d = document\.getElementById\('uep-imp'\); if\(d\) d\.open = false; \}/.test(html)],
+     [true, true, true, true]);
 }
 ok('a pele do conversor é da aba nova', [/#sec-crono \.uep-conv-f\{/.test(html), /#sec-uep \.uep-conv/.test(html)], [true, false]);
 ok('a aba UEP aponta para a aba nova, e a FILA também abre de lá',
