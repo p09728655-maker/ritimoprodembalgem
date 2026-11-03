@@ -5947,6 +5947,10 @@ feito e dá ar de verdade ao que sobrou.
   - **produção** = `_ucvPadraoDe` (só as horas em que SÓ os códigos do volume
     rodaram) → minutos × 60 ÷ caixas, com as paradas apontadas e sem elas
     (`minRod`; sem paradas lidas, só com);
+    ⚠ o nome da coluna é **PRODUÇÃO SEM PARADAS APONTADAS** (v7.195.2, PPCP:
+    *"estudo rodando, produção sem paradas?"*): só saem as paradas APONTADAS,
+    as microparadas não apontadas ficam dentro (e na DIFERENÇA). "SEM
+    PARADAS" sozinho fazia ler que não sobrava parada nenhuma. O teste prende;
   - **meta** = 527 × 60 ÷ META UEP × UEP do cadastro de hoje (11,45 s por UEP
     com 2.761);
   - **diferença** = produção sem paradas − rodando (s/cx e %); **horas a
