@@ -52,7 +52,7 @@ via Google Apps Script (JSONP).
   da regra com o `.gs`, o NA PRODUÇÃO (o volume sozinho, SEM as paradas, contra
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
-  de 26/10 e o nome do app com "caixa 2/2"), os PRINCIPAIS PARA ANÁLISE DE
+  de 26/10, o nome do app com "caixa 2/2" e o de 03/11 com o VOL 1/3 no título), os PRINCIPAIS PARA ANÁLISE DE
   TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura; v7.191.0: a ordem pela programação), as sub-abas da ⏱ CRONOANÁLISE (v7.197.0), e a aba 📏 RÉGUAS (o mix de 70
   pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
   SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
@@ -5684,7 +5684,7 @@ feito e dá ar de verdade ao que sobrou.
     2. a **marca de volume** sai do nome e escolhe a **linha do VOLUME**. O app
        nomeia como quem cadastrou o estudo: a STRASS vem **"Penteadeira strass -
        caixa 2/2"** (cadastro: VOL 2/2 PENTEADEIRA CAMARIM STRASS). Aceita
-       `caixa`, `cx`, `vol`, `volume`, com `/` ou `de`;
+       `caixa`, `cx`, `vol`, `volume`, com `/`, `-` ou `de`;
     3. sem casar pelo trecho, as **palavras** — todas no nome de um produto só
        (PENTEADEIRA STRASS → PENTEADEIRA CAMARIM STRASS).
     - Volume que o produto não tem (caixa 3/3 num de 2 volumes; caixa 1/2 num
@@ -5698,6 +5698,15 @@ feito e dá ar de verdade ao que sobrou.
       MESA CABECEIRA MADERO, Penteadeira strass - caixa 1/2 e 2/2) casam todos.
   - MEDIDO POR e VELOCIDADE não estão no PDF: vazio (velocidade = a do
     cadastro); no lote, o MEDIDO POR digitado no formulário vale para todos.
+  - ⚠ **O VOLUME NO TÍTULO (app v2.99, v7.199.1)**: o título passou a ser
+    **`<produto> · VOL 1/3 · <grupo>`** (HOME RIPADO ANTARES 1.8, 03/11/2026).
+    O `_ucvPdfLer` cortava no 1º `·`: o `VOL 1/3` ia para o grupo e o painel
+    casava com o produto INTEIRO — 14,3 s de UM volume virava a UEP média do
+    jogo (1,81 contra 2,10, −13,8%; no VOL 1/3, cadastro 2,34, são −22,6%).
+    Hoje o **grupo é o ÚLTIMO trecho** e trecho que é marca de volume fica com o
+    produto (título sem grupo também lê). O teste roda o texto real do pdf.js.
+    Formato novo do app? Extrair o texto com o pdf.js 3.11.174 e conferir o
+    título antes de mexer no leitor.
   - **O leitor é o pdf.js 3.11.174 do cdnjs (UMD, `window.pdfjsLib`), carregado
     só no clique** (`_ucvPdfjs`, voo compartilhado; falhou → diz e manda
     digitar). Nada no `<head>`: nem a abertura do painel nem a TV pagam por ele.

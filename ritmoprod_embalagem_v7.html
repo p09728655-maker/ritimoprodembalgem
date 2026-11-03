@@ -3783,7 +3783,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.199.0';
+const APP_VER   = '7.199.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7364,7 +7364,7 @@ async function _ucvPdfTexto(file){
   return t;
 }
 // Conta pura: o texto do "Takt Time — <produto> · <grupo>" (app de cronoanálise,
-// RitmoPatrimar v2.9x). Os segundos vêm com PONTO ("14.3 s"). Os cartões são a
+// RitmoPatrimar v2.9x; desde a v2.99, "<produto> · VOL 1/3 · <grupo>"). Os segundos vêm com PONTO ("14.3 s"). Os cartões são a
 // fonte; a frase do resumo ("a cada 20.7 s, paradas dentro; com a linha
 // rodando, 14.3 s") é a rede, se um cartão faltar.
 function _ucvPdfLer(texto){
@@ -7372,7 +7372,16 @@ function _ucvPdfLer(texto){
   const n = x => Number(String(x).replace(',', '.'));
   const SEG = '(\\d+(?:[.,]\\d+)?)\\s*s\\b';
   const ach = (...res) => { for(const re of res){ const r = re.exec(T); if(r) return r; } return null; };
-  const tit = ach(/Takt Time\s*[—–-]\s*(.+?)\s*·\s*(.+?)\s+RitmoPatrimar\b/i);
+  // v7.199.1 (PPCP, 03/11/2026, PDF da HOME RIPADO ANTARES 1.8: "não está
+  // buscando o correto"): o app v2.99 põe o VOLUME no título — "<produto> ·
+  // VOL 1/3 · <grupo>". Cortado no 1º "·", o VOL 1/3 ia para o grupo e o painel
+  // casava com o produto INTEIRO (a UEP do volume virava a do jogo). O grupo é
+  // o ÚLTIMO trecho; trecho que é marca de volume fica com o produto.
+  const tt = ach(/Takt Time\s*[—–-]\s*(.+?)\s+RitmoPatrimar\b/i);
+  const ps = tt ? tt[1].split(/\s*·\s*/).map(s => s.trim()).filter(Boolean) : [];
+  const ehVol = s => /^(?:CAIXA|CX|VOLUME|VOL)\.?\s*\d+\s*(?:\/|-|DE)\s*\d+$/i.test(s);
+  const comGrupo = ps.length > 1 && !ehVol(ps[ps.length - 1]);
+  const tit = ps.length ? [null, (comGrupo ? ps.slice(0, -1) : ps).join(' · '), comGrupo ? ps[ps.length - 1] : ''] : null;
   const med = ach(/MEDI[ÇC][ÃA]O\s+(\d{2}\/\d{2}\/\d{4})(?:\s+(\d{1,2}:\d{2}))?/);
   const vol = ach(/\bVOLUMES\s+(\d+)\b/);
   const per = ach(new RegExp('POR VOLUME NO PER[IÍ]ODO\\s+' + SEG, 'i'), new RegExp('a cada\\s+' + SEG + ',\\s*paradas dentro', 'i'));
@@ -7401,7 +7410,7 @@ function _ucvPdfAchar(prods, nome){
   const t = _uepConvNorm(nome);
   const a = _uepConvAchar(prods, t);
   if(a.p) return a;
-  const mv = /(?:^|[\s\-–—·(])(?:CAIXA|CX|VOLUME|VOL)\.?\s*(\d+)\s*(?:\/|DE)\s*(\d+)\b/.exec(t);
+  const mv = /(?:^|[\s\-–—·(])(?:CAIXA|CX|VOLUME|VOL)\.?\s*(\d+)\s*(?:\/|-|DE)\s*(\d+)\b/.exec(t);
   const limpo = (mv ? t.slice(0, mv.index) + ' ' + t.slice(mv.index + mv[0].length) : t)
     .replace(/[\-–—·()]+/g, ' ').replace(/\s+/g, ' ').trim();
   if(!limpo) return { p:null, n:0 };

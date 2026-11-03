@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.199.1 — 03/11/2026 · 📄 IMPORTAR PDF acha o VOLUME do título
+
+- PPCP, com o PDF da **HOME RIPADO ANTARES 1.8 · VOL 1/3**: *"não está
+  buscando o correto"*. O app de cronoanálise (v2.99.2) passou a pôr o volume no
+  título — `Takt Time — HOME RIPADO ANTARES 1.8 · VOL 1/3 · EMBALAGEM 01` — e o
+  painel cortava o produto no primeiro `·`. O `VOL 1/3` ia para o grupo, e a
+  medição de UM volume era casada com o **produto inteiro** (3 volumes).
+- Agora o grupo é o **último** trecho do título e a marca de volume fica com o
+  produto: o PDF casa com **501072 · HOME RIPADO ANTARES 1.8 · VOL 1/3**, só os
+  códigos do VOL 1 (501.072.001 · .004 · .007). A marca de volume com hífen
+  (`VOL 1-3`, como no nome do arquivo) também é lida.
+- **Atenção:** a UEP do import muda. Antes: 1,81 contra 2,10 (a média por volume
+  do jogo, **−13,8%**) e a sugestão de trocar os três volumes. Agora: 1,81
+  contra a UEP do VOL 1/3 no cadastro (no print, 2,34 → **−22,6%**), e a troca,
+  quando liberar, mexe só nos códigos do VOL 1. Medição desse PDF registrada
+  antes desta versão ficou como produto inteiro: **excluir e importar de
+  novo**.
+
 ## v7.199.0 — 03/11/2026 · 📐 PLANO em sub-abas
 
 - PPCP: *"faz o mesmo aba plano"* (as sub-abas da cronoanálise e da UEP). A aba
