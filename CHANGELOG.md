@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.195.1 — 03/11/2026 · Cronoanálise: HORAS A MAIS alinhadas
+
+- PPCP, com o papel do ONDE O TEMPO VAI na mão: *"alinhar"* (a coluna HORAS A
+  MAIS QUE O ESTUDO). A barra tinha largura solta (de 70 a 2 px) e empurrava o
+  número: cada linha com o número num lugar. Agora a barra mora num trilho de
+  largura fixa, e o número e o começo da barra ficam na mesma posição em todas
+  as linhas. O % ao lado da DIFERENÇA ganhou largura mínima pelo mesmo motivo.
+- Tela e papel (mesma marcação). Medido no Chromium: 1920, 1366 e a folha
+  deitada, com uma posição só por coluna.
+- **Atenção:** só o desenho mudou. Nenhum número. Sem re-deploy.
+
 ## v7.195.0 — 03/11/2026 · Cronoanálise: 🖨 IMPRIMIR do ONDE O TEMPO VAI
 
 - PPCP, depois de ver o bloco publicado: *"impressa"*. O bloco ganhou o botão

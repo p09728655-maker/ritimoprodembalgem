@@ -1657,6 +1657,12 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
      [/<th>VOLUME<\/th>\s*<th[^>]*>OBS\.<\/th>/.test(HT.replace(/`\s*\+\s*`/g, '')), celOb.length === celPr.length && celOb.length === T.linhas.length,
       celPr.some(c => /ucv-chip|ucv-pill/.test(c)), celOb.filter(c => /BASE|DENTRO DO JOGO|AMOSTRA CURTA/.test(c)).length],
      [true, true, false, T.linhas.filter(l => l.base || l.dentro || l.curta).length]);
+  const hBar = [...HT.matchAll(/<span class="ucv-tp-h">[^<]* h<i><span class="g?" style="width:(\d+)%"><\/span><\/i><\/span>/g)].map(m => +m[1]);
+  const pele = (src, sel) => src.includes(sel + ' i{display:inline-block;flex:0 0 ');
+  ok('v7.195.1: a barra das HORAS A MAIS mora num trilho de largura fixa (em %), e o % da DIFERENÇA tem largura mínima: os números não andam',
+     [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#sec-crono .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
+      /#sec-crono \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
+     [T.linhas.filter(l => l.hGap != null).length, 100, true, true, true, true, true]);
   ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
      [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
   ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',

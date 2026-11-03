@@ -6009,3 +6009,8 @@ feito e dá ar de verdade ao que sobrou.
     Volume a mais vai para a folha seguinte com o cabeçalho da tabela repetido.
     ⚠ O proxy desta sessão mudou de porta: medir com o `$HTTPS_PROXY`, senão as
     fontes não carregam e a medida sai ~25 px menor.
+- **HORAS A MAIS: a barra num trilho de largura FIXA** (v7.195.1, PPCP:
+  *"alinhar"*, com o papel na mão): `<i>` de 70 px na tela / 56 px no papel e a
+  barra dentro em %; antes a largura da barra (70 a 2 px) empurrava o número e
+  cada linha tinha o número num lugar. O `%` da DIFERENÇA (`.ucv-tp-pc`) tem
+  `min-width`. Barra de tamanho variável ao lado de número = trilho fixo.
