@@ -1663,6 +1663,9 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
      [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#sec-crono .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
       /#sec-crono \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
      [T.linhas.filter(l => l.hGap != null).length, 100, true, true, true, true, true]);
+  ok('v7.195.2: o nome diz que só saem as paradas APONTADAS (as microparadas não apontadas ficam dentro), na coluna e na cascata',
+     [HT.includes('>PRODUÇÃO SEM<br>PARADAS APONTADAS</th>'), />PRODUÇÃO<br>SEM PARADAS</.test(HT), / s sem as paradas apontadas</.test(HT), / s sem as paradas</.test(HT)],
+     [true, false, true, false]);
   ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
      [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
   ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',

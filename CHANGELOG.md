@@ -11,6 +11,18 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.195.2 — 03/11/2026 · Cronoanálise: PRODUÇÃO SEM PARADAS APONTADAS
+
+- PPCP: *"estudo rodando, produção sem paradas?"* → *"sim, troca"*. Na tabela
+  ONDE PERDE, a coluna **PRODUÇÃO SEM PARADAS** passa a se chamar **PRODUÇÃO
+  SEM PARADAS APONTADAS**, e a linha da cascata diz *"sem as paradas
+  apontadas"*. O número é o mesmo: só saem os minutos das paradas apontadas no
+  app; as microparadas que ninguém apontou continuam dentro (e são parte da
+  DIFERENÇA). O nome antigo dava a entender que não sobrava parada nenhuma.
+- Tela e papel. Medido no Chromium: o cabeçalho continua em duas linhas e a
+  tabela cabe a 1920, 1366 e na folha deitada (2 folhas).
+- **Atenção:** só o nome mudou. Nenhum número. Sem re-deploy.
+
 ## v7.195.1 — 03/11/2026 · Cronoanálise: HORAS A MAIS alinhadas
 
 - PPCP, com o papel do ONDE O TEMPO VAI na mão: *"alinhar"* (a coluna HORAS A

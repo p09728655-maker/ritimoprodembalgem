@@ -3641,7 +3641,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.195.1';
+const APP_VER   = '7.195.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7785,7 +7785,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
     casc = `<div class="ucv-tp-cw"><div class="ucv-regs-t">A CASCATA DA LINHA <span>segundos por UEP · pesada pela UEP feita · só as horas em que cada volume rodou sozinho</span></div><div class="ucv-tp-casc">`
       + lin('Trabalho puro', 'estudo, sem as lacunas', _ucvTempoSeg(0, C.puro, '--ucv-tp-puro', mx), v1(C.puro) + ' s')
       + lin('Microparadas do estudo', `lacunas · rodando ${v1(C.rod)} s`, _ucvTempoSeg(C.puro, C.rod, '--warn', mx), sn(ped.lac))
-      + lin('Diferença estudo × produção', `não apontada · ${v1(C.realSem)} s sem as paradas`, _ucvTempoSeg(C.rod, C.realSem, '--red', mx), sn(ped.dif))
+      + lin('Diferença estudo × produção', `não apontada · ${v1(C.realSem)} s sem as paradas apontadas`, _ucvTempoSeg(C.rod, C.realSem, '--red', mx), sn(ped.dif))
       + lin('Paradas apontadas', 'nas horas em que o volume rodou sozinho', _ucvTempoSeg(C.realSem, C.real, '--ucv-tp-par', mx), sn(ped.par))
       + lin('Produção real', `contra a meta de ${C.meta.toFixed(2).replace('.', ',')} s`,
           _ucvTempoSeg(0, C.puro, '--ucv-tp-puro', mx) + _ucvTempoSeg(C.puro, C.rod, '--warn', mx) + _ucvTempoSeg(C.rod, C.realSem, '--red', mx) + _ucvTempoSeg(C.realSem, C.real, '--ucv-tp-par', mx), v1(C.real) + ' s', true)
@@ -7808,7 +7808,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
     + '<div class="ucv-regs-w"><table class="ucv-regs ucv-tp-tab"><thead><tr><th>VOLUME</th>'
     + `<th title="BASE = a MADERO, régua da UEP · DENTRO DO JOGO = o JOGO do mesmo produto já conta estas caixas (fora dos totais) · AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho">OBS.</th>`
     + '<th class="n" title="Média das medições registradas, pesada pelos volumes medidos">ESTUDO<br>RODANDO</th>'
-    + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO na linha, sem as paradas apontadas, nos últimos ${CRONO_LINHA_DIAS} dias fechados">PRODUÇÃO<br>SEM PARADAS</th>`
+    + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO na linha, sem as paradas apontadas, nos últimos ${CRONO_LINHA_DIAS} dias fechados. As microparadas que ninguém apontou continuam dentro">PRODUÇÃO SEM<br>PARADAS APONTADAS</th>`
     + '<th class="n" title="Produção sem as paradas − estudo rodando: o que a produção tem e o estudo não (não é perda pronta: diz onde procurar)">DIFERENÇA</th>'
     + '<th class="n" title="As paradas apontadas nessas horas, por caixa">PARADAS<br>APONTADAS</th>'
     + `<th class="n" title="527 min × 60 ÷ META UEP × UEP do cadastro de hoje">META</th>`
