@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.195.3 — 03/11/2026 · Cronoanálise: PRODUÇÃO REAL × META em palavras
+
+- PPCP: *"não estou entendendo se melhorou ou piorou"* → *"folga e falta"*. Na
+  tabela ONDE PERDE, a coluna **FOLGA (+) / FALTA (−)** passa a se chamar
+  **PRODUÇÃO REAL × META**, e a célula diz em palavras: **4,6 s · mais lenta**
+  (vermelho: a produção, com as paradas, passa do tempo por caixa que a meta
+  concede) ou **2,1 s · mais rápida** (verde: cabe na meta). Igual à meta, até
+  0,05 s: *= meta*. O ONDE GANHA diz *"X s/cx mais rápida que a meta"* no lugar
+  de *"folga X s/cx"*.
+- O COMO LER ganhou a linha da coluna: a meta segue a UEP do cadastro — quando
+  a cronoanálise troca a UEP, a meta do volume muda junto; a DIFERENÇA e as
+  HORAS A MAIS não dependem da UEP.
+- **Atenção:** nenhum número mudou — o valor é o mesmo de antes, sem o sinal.
+  Tela e papel. Medido no Chromium (1920, 1366 e A4 deitada com as fontes):
+  nada passa da largura, o papel continua em 2 folhas.
+
 ## v7.195.2 — 03/11/2026 · Cronoanálise: PRODUÇÃO SEM PARADAS APONTADAS
 
 - PPCP: *"estudo rodando, produção sem paradas?"* → *"sim, troca"*. Na tabela

@@ -1666,6 +1666,16 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('v7.195.2: o nome diz que só saem as paradas APONTADAS (as microparadas não apontadas ficam dentro), na coluna e na cascata',
      [HT.includes('>PRODUÇÃO SEM<br>PARADAS APONTADAS</th>'), />PRODUÇÃO<br>SEM PARADAS</.test(HT), / s sem as paradas apontadas</.test(HT), / s sem as paradas</.test(HT)],
      [true, false, true, false]);
+  const celPm = [...HT.matchAll(/<span class="ucv-tp-pm( ucv-tp-(folga|falta))?">([^<]*)(?:<small>([^<]*)<\/small>)?<\/span>/g)]
+    .map(m => [m[2] || '', m[3], m[4] || '']);
+  const espPm = T.linhas.filter(l => l.folgaS != null).map(l => Math.abs(l.folgaS) < 0.05 ? ['', '= meta', '']
+    : [l.folgaS >= 0 ? 'folga' : 'falta', Math.abs(l.folgaS).toFixed(1).replace('.', ',') + ' s', l.folgaS >= 0 ? 'mais rápida' : 'mais lenta']);
+  const HG = _ucvTempoHtml(_ucvTempoMontar(REGS, PRODS, HRS, 1500), HRS, null, false);
+  ok('v7.195.3: produção real × meta em PALAVRAS (mais rápida = cabe, mais lenta = passa), nunca o sinal; o ONDE GANHA e o COMO LER dizem o mesmo',
+     [celPm, espPm.some(e => e[2] === 'mais rápida'), espPm.some(e => e[2] === 'mais lenta'), HT.includes('>PRODUÇÃO REAL<br>× META</th>'), /FOLGA \(\+\)|FALTA \(−\)/.test(HT),
+      /s\/cx mais (rápida|lenta) que a meta/.test(HG), /· (folga|falta) \d/.test(HG), /<b>Produção real × meta<\/b>/.test(HT),
+      /\.ucv-tempo \.ucv-tp-pm small\{display:block/.test(pegaConst('_UCV_TEMPO_SKIN')), /#sec-crono \.ucv-tp-tab td \.ucv-tp-pm small\{display:block/.test(html)],
+     [espPm, true, true, true, false, true, false, true, true, true]);
   ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
      [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
   ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',
