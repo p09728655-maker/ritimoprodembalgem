@@ -311,6 +311,14 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
   ok('tela: as larguras são fixas (colgroup de 12 + table-layout) e o dia a dia aberto usa as MESMAS 12 colunas',
      [vm.runInContext('UEP_PAD_COLS.length', F), vm.runInContext('UEP_PAD_COLS.reduce((a,b)=>a+b,0)', F), (tela.match(/<col /g) || []).length,
       [...new Set(colunas(tela))], /uep-pad-det|<table><thead><tr><th>DIA/.test(tela)], [12, 100, 12, [12], false]);
+  // v7.198.0 (PPCP: "alinhar PADRÃO ALTERADO"): colado no nome, cada nome tem um comprimento e a marca andava
+  { const cel = h => { const m = h.match(/<tr[^>]*>(<td class="mono">501149<\/td>[\s\S]*?)<\/tr>/); return m ? [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(x => x[1]) : []; };
+    const docP = vm.runInContext('_uepPadDocHtml(' + JSON.stringify(H) + ', {registrado:true, diverge:0}, {de:"16/09/2026", ate:"15/10/2026", data:"16/10/2026", hora:"10:51"})', F);
+    const T = cel(tela), P = cel(docP);
+    ok('PADRÃO ALTERADO na ÚLTIMA coluna, depois da data (largura fixa) — nunca colado no nome, na tela e no papel; o dia da troca leva a marca na mesma coluna',
+       [T.length, T[1], /^02\/10 <span class="uep-pad-alt"[^>]*>PADRÃO ALTERADO<\/span>$/.test(T[11]), P[1], /^02\/10 <span class="uep-pad-alt"/.test(P[11]),
+        /MESA CABECEIRA MADERO\s*<span class="uep-pad-alt"/.test(tela + docP), /<td class="mono">02\/10\/2026<\/td>[\s\S]*?<td><span class="uep-pad-alt"/.test(tela)],
+       [12, 'MESA CABECEIRA MADERO', true, 'MESA CABECEIRA MADERO', true, false, true]); }
   ok('tela: o dia a dia abre embaixo do produto, com a própria linha de rótulos',
      [(tela.match(/class="uep-pad-dh"/g) || []).length, (tela.match(/class="uep-pad-d"/g) || []).length], [1, 2]);
   ok('o selo tem largura fixa na tela e no papel (a data não anda em zigue-zague)',
@@ -341,7 +349,9 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
   ok('a impressão é o retrato da tela: mesma montagem, mesmos dados, DEITADA, sem leitura nova',
      [/_uepPadMontar\(\)/.test(ger), /_uepPadDocHtml\(H, UEP_PAD\.uepVer, ctx\)/.test(ger), /_rpDocParadas\([^;]*, true\)/.test(ger), /jsonpFetch|_uepPadCarregar/.test(ger)],
      [true, true, true, false]);
-  ok('o botão 🖨 IMPRIMIR mora no cabeçalho do bloco 7', /7 · PADRÃO × REALIZADO POR PRODUTO<\/b>[^`]*onclick="gerarRelatorioUepPadrao\(\)"/.test(V7), true);
+  // v7.198.0: a ⚖ UEP em sub-abas — as três impressões num menu 🖨 IMPRIMIR ▾ (uma impressão, um lugar)
+  ok('o 🖨 do PADRÃO × REALIZADO mora no menu 🖨 IMPRIMIR ▾ da aba ⚖ UEP, e só lá',
+     [/<details class="ucv-imp" id="uep-imp">[\s\S]*?onclick="_uepImpFecha\(\);gerarRelatorioUepPadrao\(\)"[^>]*>🖨 PADRÃO × REALIZADO/.test(V7), (V7.match(/gerarRelatorioUepPadrao\(\)"/g) || []).length], [true, 1]);
   const skin = V7.match(/const _UEP_PAD_DOC_SKIN = `([\s\S]*?)`;/)[1];
   ok('a pele do papel é escopada em .pad-doc (não mexe nos outros relatórios do _rpDocParadas)',
      skin.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.pad-doc ')), true);

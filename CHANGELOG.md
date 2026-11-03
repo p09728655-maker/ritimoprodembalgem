@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.198.0 — 03/11/2026 · ⚖ UEP em sub-abas, PADRÃO ALTERADO alinhado
+
+- PPCP: *"faz o mesmo na aba uep"* (as sub-abas da cronoanálise). A aba ⚖ UEP
+  tinha ~3.200 px de altura e ~1.340 palavras, os sete blocos empilhados. Agora
+  são quatro sub-abas, cada botão com o seu número:
+  1. **HOJE** (*667 UEP · ABAIXO DO RITMO*, na cor do card UEP ATÉ AGORA — o
+     mesmo veredito): cartões, hora a hora, mix e origem da UEP;
+  2. **PERÍODO** (*2.656 UEP/dia · 6 de 10 na meta*);
+  3. **PRÓXIMOS DIAS** (*esta semana: faltam 3h24*, vermelho quando falta). O
+     ATRASO — CONFERÊNCIA vem recolhido, com o total no título (*846 cx · 1.797
+     UEP · 5h43*); aberto, continua aberto quando a tela atualiza;
+  4. **POR PRODUTO** (*27 produtos · 13 acima · 1 abaixo*): o padrão ×
+     realizado.
+  - Os blocos perderam o número no título (cada sub-aba é o seu contexto).
+  - ⏱ CRONOANÁLISE → e 📏 RÉGUAS → foram para a ponta da faixa.
+  - Cada sub-aba fica entre ~630 e ~1.260 px.
+- **Cabeçalho**: as três impressões (VERSÃO EXECUTIVA, PADRÃO × REALIZADO e
+  FILA DE CRONOANÁLISE) no menu **🖨 IMPRIMIR ▾**, como na cronoanálise. O 🖨 do
+  padrão × realizado saiu do bloco (uma impressão, um lugar).
+- **PADRÃO ALTERADO alinhado** (PPCP: *"alinhar PADRÃO ALTERADO"*): saiu do lado
+  do nome do produto (cada nome tem um comprimento e a marca andava) e foi para
+  a última coluna, depois da data do ÚLTIMO DIA — a mesma coluna em que o dia a
+  dia aberto mostra o dia da troca. Vale na tela e na impressão.
+- **Atenção:** nenhum número, conta ou leitura mudou; as impressões são as
+  mesmas.
+- Medido no Chromium com os dados da planilha de hoje: 1920, 1366 e 1280, nada
+  passa da largura; o gráfico de cada sub-aba sai na largura do cartão; a marca
+  PADRÃO ALTERADO fica na mesma posição em toda linha, na tela e no papel
+  (deitado, sem quebrar).
+
 ## v7.197.0 — 03/11/2026 · Cronoanálise em sub-abas, impressões num menu
 
 - PPCP: *"está muito cheia a tela, tem que enxugar, deixar mais dinâmica"*. A

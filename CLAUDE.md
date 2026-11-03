@@ -4292,8 +4292,9 @@ feito e dá ar de verdade ao que sobrou.
     CAIXAS) **não** foi mexido — continua contando a hora corrente inteira; a
     mudança foi aprovada só para a UEP.
   - **CONFIABILIDADE virou ORIGEM DA UEP** (`UEP_ORIGEM_T`): "medida" = estudo
-    ou digitada, não cronoanálise. Numeração da tela na ordem em que aparece:
-    1 hoje · 2 hora a hora · 3 mix · 4 origem · 5 período · 6 próximos dias.
+    ou digitada, não cronoanálise. ~~Numeração da tela na ordem em que aparece:
+    1 hoje · 2 hora a hora · 3 mix · 4 origem · 5 período · 6 próximos dias~~ —
+    desde a v7.198.0 a aba é em sub-abas e os títulos não têm número.
   - Cards: desvio escrito no UEP ATÉ AGORA (do mesmo `esperado`), projeção "na
     média da jornada até agora · só jornada normal", HE "fora do UEP até agora,
     da projeção e da meta". Barras do mix neutras.
@@ -4393,8 +4394,8 @@ feito e dá ar de verdade ao que sobrou.
     dia ao lado do CX/H PADRÃO. Antes era uma tabela dentro da célula.
   - **As células são UMA implementação** (`_uepPadCelsProd`, `_uepPadDiasRows`,
     `_uepPadThead`, `_uepPadColgroup`, `_uepPadNotas`): a tela (`_uepPadHtml`)
-    e o papel (`_uepPadDocHtml`) mudam só a moldura e a pele. 🖨 IMPRIMIR no
-    cabeçalho do bloco → `gerarRelatorioUepPadrao`: retrato da tela (os MESMOS
+    e o papel (`_uepPadDocHtml`) mudam só a moldura e a pele. 🖨 IMPRIMIR (no
+    menu 🖨 IMPRIMIR ▾ da aba desde a v7.198.0) → `gerarRelatorioUepPadrao`: retrato da tela (os MESMOS
     `UEP_PAD` e `_uepPadMontar`, sem leitura nova), **deitado** (11 colunas),
     pele `_UEP_PAD_DOC_SKIN` escopada em `.pad-doc`. Folha 1: totais
     (`H.tot`, produto × dia) e o resumo; depois o dia a dia de **todos** os
@@ -5971,6 +5972,50 @@ feito e dá ar de verdade ao que sobrou.
   a 1920, 1366 e 1280 (a tabela das MEDIÇÕES rola dentro do cartão a 1280).
 - Testes em `uep-relatorios.test.js` (*CRONOANÁLISE: sub-abas*), conferidos por
   mutação (11 de 11).
+
+## SUB-ABAS DA ⚖ UEP (v7.198.0)
+- PPCP, 03/11/2026: *"faz o mesmo na aba uep"* (as sub-abas da cronoanálise).
+  A aba tinha ~3.200 px e ~1.340 palavras empilhadas.
+- Faixa estática `#uep-sub` (botões `.ucv-sb`, `data-sub`) e painéis `.ucv-pn`
+  dentro do `#uep-bloco`, desenhados pelo `renderUep` (`pn(k, h)`): **HOJE**
+  (`hoje`: cartões, hora a hora, mix, origem) · **PERÍODO** (`periodo`) ·
+  **PRÓXIMOS DIAS** (`prox`: `#ger-prox`) · **POR PRODUTO** (`prod`: bloco 7).
+  `UEP_SUBS`, `UEP_SUB` (começa no HOJE, só na memória da sessão).
+  - ⚠ **`_uepSub(k)` REDESENHA a aba** (`renderUep`, sem leitura): os gráficos
+    são desenhados na largura do painel ACESO, e escondido ele não tem largura
+    (o `_svgLargura` cairia nos 760). Depois do `innerHTML`, o hora a hora e o
+    período só são redesenhados com o painel visível (`offsetParent`).
+  - **A entrada (animação) só na troca** (`.entra`, posta pelo `_uepSub`): o
+    `renderUep` roda a cada refresh e refaz o painel — com a animação no `.on`
+    ele piscaria a cada 5 min.
+  - Números dos botões: `_uepSubMontar` (HOJE com o selo e a cor do card UEP
+    ATÉ AGORA — o MESMO veredito, `slRitmo(card.ef)` e `card.c`; PERÍODO média e
+    dias na meta do `_uepAbaPeriodo`; POR PRODUTO acima/abaixo do `_uepPadHist`)
+    e `_uepSubProx(W, est)` (o saldo da 1ª semana com dia útil, pintado pelo
+    `renderProxDias` com as MESMAS semanas do bloco). Sem leitura → o estado,
+    nunca 0. A pintura é o `_sbPinta`, uma só para a cronoanálise e a UEP.
+  - Os títulos dos blocos perderam o número (revoga a numeração da v7.114.0
+    na TELA; o papel já não numerava).
+  - ⏱ CRONOANÁLISE → e 📏 RÉGUAS → são `.ucv-sb-ir` na ponta da faixa.
+- **Menu 🖨 IMPRIMIR ▾** (`#uep-imp`): VERSÃO EXECUTIVA, PADRÃO × REALIZADO e
+  FILA DE CRONOANÁLISE, cada um com `_uepImpFecha();` antes. O 🖨 do bloco 7
+  saiu dele (uma impressão, um lugar). Os listeners de clique fora e Esc fecham
+  QUALQUER `details.ucv-imp[open]`.
+- **ATRASO — CONFERÊNCIA recolhido** (`_gpxAtrasoHtml` → `<details>`, o total
+  `cx · UEP · horas` no `summary`); aberto continua aberto no refresh
+  (`GPX_ATR_ABERTO`/`_gpxAtrToggle`). Só na tela, como antes.
+- **PADRÃO ALTERADO na ÚLTIMA coluna** do bloco 7 (`_uepPadCelsProd`, PPCP:
+  *"alinhar PADRÃO ALTERADO"*): depois da data do ÚLTIMO DIA (largura fixa),
+  nunca colado no nome — a lição do VOL. e do UEP/CX. É a coluna em que o dia a
+  dia aberto já marca o dia da troca. Tela e papel (a célula é a mesma).
+- CSS: as peças da faixa, do menu e do cabeçalho são `#sec-crono X,#sec-uep X`
+  (`.ucv-hdr*`, `.ucv-imp*`, `.ucv-sub`, `.ucv-sb*`); os painéis da UEP têm
+  regras próprias (`#sec-uep .ucv-pn`, `.entra`).
+- Medido (Chromium, o `.gs` do repositório sobre a cópia da planilha de
+  03/11): HOJE ~700–760 px, PERÍODO ~630, PRÓXIMOS ~890–960, POR PRODUTO
+  ~1.240; nada passa da largura a 1920, 1366 e 1280.
+- Testes: `relatorios.test.js` (sub-abas, números, pele, atraso recolhido) e
+  `uep-padrao.test.js` (PADRÃO ALTERADO e o 🖨 no menu); 12 de 12 mutações.
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde
