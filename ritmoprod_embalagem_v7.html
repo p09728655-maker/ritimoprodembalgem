@@ -509,12 +509,14 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-hdr-sub{flex-basis:100%;font-family:var(--font-d);font-size:9px;letter-spacing:1px;color:var(--txt2)}
 #sec-crono .so-papel{display:none}   /* a versão da frase para o papel (o 🖨 esconde a .so-tela) */
 #sec-crono .uep-conv>.uep-card{padding:18px 20px 16px;border-radius:10px;border:1px solid var(--border)}
-#sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) minmax(110px,.7fr) auto;gap:14px;align-items:end}
+#sec-crono .uep-conv-f{display:grid;grid-template-columns:minmax(240px,2.4fr) minmax(130px,1fr) minmax(170px,1fr) minmax(110px,.7fr) auto auto;gap:14px;align-items:end}
 #sec-crono .uep-conv-f label{display:flex;flex-direction:column;gap:7px;font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);min-width:0}
 #sec-crono .uep-conv-f .frm-inp{width:100%;height:42px;padding:0 13px;font-size:15px;background:var(--bg);border:1px solid var(--border);border-radius:7px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
 #sec-crono .uep-conv-f .frm-inp:focus{border-color:var(--ucv-azul);box-shadow:0 0 0 3px rgba(90,169,240,.15)}
 #sec-crono #uep-conv-fixar{height:42px;padding:0 18px;font-size:10.5px;letter-spacing:1.2px;border:1px solid rgba(255,92,31,.5);border-radius:7px;color:var(--txt);white-space:nowrap}
 #sec-crono #uep-conv-fixar:hover:not(:disabled){border-color:var(--acc);background:rgba(255,92,31,.08)}
+#sec-crono #uep-conv-limpar{height:42px;padding:0 16px;font-size:10.5px;letter-spacing:1.2px;border:1px solid var(--border);border-radius:7px;color:var(--txt2);white-space:nowrap}
+#sec-crono #uep-conv-limpar:hover{border-color:var(--txt2);color:var(--txt)}
 #sec-crono #uep-conv-guia{margin:0}
 #sec-crono .ucv-qual{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
 #sec-crono .ucv-qual-t{font-family:var(--font-d);font-size:9.5px;letter-spacing:1.6px;color:var(--txt2);margin-bottom:8px}
@@ -608,6 +610,57 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-princ-mais{margin-top:10px}
 #sec-crono .ucv-princ td.ucv-pf{color:var(--warn);font-weight:600}
 #sec-crono .ucv-princ .ucv-ph{color:var(--acc)}
+/* ONDE O TEMPO VAI (v7.194.0) — a cascata do tempo por caixa: estudo × produção × meta */
+#sec-crono{--ucv-tp-puro:#4A6A8E;--ucv-tp-par:#8FA0B5}
+#sec-crono #uep-conv-tempo{margin-top:26px}
+#sec-crono .ucv-tp{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px 18px;display:flex;flex-direction:column;gap:22px}
+#sec-crono .ucv-tp .uep-conv-tit{margin:0}
+#sec-crono .ucv-tp-sub{font-family:var(--font-b);font-size:13.5px;color:var(--txt2);margin-top:6px;max-width:110ch}
+#sec-crono .ucv-tp .ucv-cards{margin-bottom:0}
+#sec-crono .ucv-tp .ucv-cards .kpi-card{background:var(--bg)}
+#sec-crono .ucv-tp .kpi-sub b{color:var(--txt);font-weight:600}
+#sec-crono .ucv-tp-casc{display:flex;flex-direction:column;gap:9px;padding:16px 18px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+#sec-crono .ucv-tp-r{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr) 78px;gap:16px;align-items:center}
+#sec-crono .ucv-tp-r .n{font-family:var(--font-b);font-size:13.5px;color:var(--txt);line-height:1.25}
+#sec-crono .ucv-tp-r .n small{display:block;font-size:11.5px;color:var(--txt2)}
+#sec-crono .ucv-tp-r .x{font-family:var(--font-d);font-size:13.5px;text-align:right;font-variant-numeric:tabular-nums;color:var(--txt)}
+#sec-crono .ucv-tp-r.tot{padding-top:9px;border-top:1px solid var(--border)}
+#sec-crono .ucv-tp-r.tot .n,#sec-crono .ucv-tp-r.tot .x{font-weight:700}
+#sec-crono .ucv-tp-trilho{position:relative;height:24px;background:var(--elevated);border-radius:4px}
+#sec-crono .ucv-tp-seg{position:absolute;top:0;bottom:0;border-radius:3px}
+#sec-crono .ucv-tp-meta{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed var(--txt);pointer-events:none}
+#sec-crono .ucv-tp-eixo{position:relative;height:16px;font-family:var(--font-d);font-size:10px;color:var(--txt2)}
+#sec-crono .ucv-tp-eixo span{position:absolute;transform:translateX(-50%)}
+#sec-crono .ucv-tp-conc{display:flex;flex-wrap:wrap;gap:6px 26px;font-family:var(--font-b);font-size:13.5px;color:var(--txt2);margin-top:12px}
+#sec-crono .ucv-tp-conc b{color:var(--txt);font-weight:600}
+#sec-crono .ucv-tp .ucv-tp-falta{color:var(--red)}
+#sec-crono .ucv-tp .ucv-tp-folga{color:var(--ok)}
+#sec-crono .ucv-tp-leg{display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2);margin-top:10px}
+#sec-crono .ucv-tp-leg i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:6px}
+#sec-crono .ucv-tp-leg em{display:inline-block;width:0;height:13px;border-left:2px dashed var(--txt);vertical-align:-2px;margin-right:6px}
+#sec-crono .ucv-tp-tab td{font-variant-numeric:tabular-nums}
+#sec-crono .ucv-tp-tab tbody tr{cursor:pointer}
+#sec-crono .ucv-tp-tab tbody tr:hover td{background:var(--elevated)}
+#sec-crono .ucv-tp-tab tbody tr.sel td{background:rgba(255,92,31,.08)}
+#sec-crono .ucv-tp-tab tbody tr.dentro td{color:var(--txt2)}
+#sec-crono .ucv-tp-tab td.ucv-pr small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
+#sec-crono .ucv-tp-tab td.ucv-pr .ucv-chip,#sec-crono .ucv-tp-tab td.ucv-pr .ucv-pill{margin-left:6px;font-size:9px;padding:1px 8px}
+#sec-crono .ucv-tp-tab td .ucv-tp-pc{color:var(--txt2);font-size:11.5px;margin-left:3px}
+#sec-crono .ucv-tp-mini{position:relative;width:220px;height:14px;background:var(--elevated);border-radius:3px;margin-left:auto}
+#sec-crono .ucv-tp-mini .ucv-tp-seg{border-radius:2px}
+#sec-crono .ucv-tp-mini .ucv-tp-meta{top:-4px;bottom:-4px}
+#sec-crono .ucv-tp-h{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;white-space:nowrap}
+#sec-crono .ucv-tp-h span{display:inline-block;height:8px;border-radius:2px;background:var(--red)}
+#sec-crono .ucv-tp-h span.g{background:var(--ok)}
+#sec-crono .ucv-tp-ganha{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 18px;font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:11px 16px;border:1px solid var(--border);border-left:4px solid var(--ok);border-radius:8px;background:var(--bg);line-height:1.6}
+#sec-crono .ucv-tp-ganha .t{font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--ok)}
+#sec-crono .ucv-tp-ganha .q{color:var(--txt2)}
+#sec-crono .ucv-tp-ganha .g{white-space:nowrap}
+#sec-crono .ucv-tp-ganha .g span{color:var(--txt2);font-size:12.5px}
+#sec-crono .ucv-tp-ler summary{cursor:pointer;font-family:var(--font-d);font-size:10px;letter-spacing:1.6px;color:var(--txt2)}
+#sec-crono .ucv-tp-ler ul{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-family:var(--font-b);font-size:13px;color:var(--txt2);max-width:120ch}
+#sec-crono .ucv-tp-ler b{color:var(--txt);font-weight:600}
+@media (max-width:900px){#sec-crono .ucv-tp-r{grid-template-columns:minmax(0,1fr) 70px}#sec-crono .ucv-tp-r .n{grid-column:1/-1}#sec-crono .ucv-tp-r .ucv-tp-vz{display:none}}
 #sec-crono .ucv-regs-t span{margin-left:8px;font-family:var(--font-b);font-size:12px;letter-spacing:0;color:var(--txt2)}
 #sec-crono .ucv-conf td{vertical-align:top}
 #sec-crono .ucv-conf small{display:block;margin-top:3px;font-size:11px;color:var(--txt2);white-space:normal}
@@ -3020,7 +3073,8 @@ if (_v7Instalado()) _v7EscondeBotao();
         <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME COM A LINHA RODANDO — o mesmo em que a MADERO deu 7,9 s. Com a régua da meta como base (12,5), o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME RODANDO</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão RODANDO do app" oninput="_uepConvAtualiza()"></label>
         <label title="O tempo por volume da BASE (MESA CABECEIRA MADERO, 1,00) com a linha rodando — NÃO o tempo do próprio produto. Vazio, vale a MADERO medida em 20/10/2026: 7,9 s (60 volumes). O que for digitado ou fixado vale só neste computador; 12,5 (a régua da meta, 527 min × 60 ÷ 2.530) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">MADERO</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
         <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada com a linha rodando: a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
-        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()" onkeydown="_uepConvTecla(event)">📌 FIXAR MADERO</button>
+        <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()">📌 FIXAR MADERO</button>
+        <button type="button" class="btn btn-ghost" id="uep-conv-limpar" onclick="_ucvLimpar()" onkeydown="_uepConvTecla(event)" title="Zera o estudo da tela para o próximo: produto, tempo, os campos do registro e os avisos. Ficam a BASE, a TOLERÂNCIA e o MEDIDO POR. Nada é apagado na planilha.">✕ LIMPAR</button>
       </div>
       <datalist id="uep-conv-lista"></datalist>
       <div class="uep-nota" id="uep-conv-guia"></div>
@@ -3041,6 +3095,7 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="uep-nota" id="uep-conv-r-msg"></div>
     </div>
     <div id="uep-conv-princ"></div>
+    <div id="uep-conv-tempo"></div>
     <div id="uep-conv-regs"></div>
     <div class="uep-nota" id="uep-conv-x-msg"></div>
     <div id="uep-conv-conf"></div>
@@ -3583,7 +3638,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.192.0';
+const APP_VER   = '7.194.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -6568,6 +6623,19 @@ function _uepConvFixarBase(){
   }
   if(o.acao === 'escolher' && elP){ elP.value = o.rot; if(elS) elS.value = ''; _uepConvAtualiza(); if(elS) elS.focus(); }
 }
+// ✕ LIMPAR (v7.193.0, PPCP 03/11/2026, com um PDF importado na tela: "ter opção
+// de limpar"). Zera o estudo da tela para o próximo — produto, tempo, os campos
+// do registro e os avisos. Ficam a BASE e a TOLERÂNCIA (deste computador, valem
+// para todo estudo) e o MEDIDO POR (a mesma pessoa mede vários; o registro e a
+// importação em lote também o mantêm). Nada é gravado nem apagado na planilha.
+const UCV_LIMPAR_CAMPOS = ['prod', 'seg', 'r-data', 'r-per', 'r-lac', 'r-vol', 'r-vel'];
+const UCV_LIMPAR_MSGS = ['i-msg', 't-msg', 'r-msg', 'x-msg'];
+function _ucvLimpar(){
+  UCV_LIMPAR_CAMPOS.forEach(n => { const el = _ucvEl(n); if(el) el.value = ''; });
+  UCV_LIMPAR_MSGS.forEach(n => { const el = _ucvEl(n); if(el) el.textContent = ''; });
+  _uepConvAtualiza();
+  const elP = _ucvEl('prod'); if(elP) elP.focus();
+}
 function _uepConvLimparBase(){
   const elB = _ucvEl('base'); if(elB){ elB.value = ''; elB.dataset.auto = ''; }
   _uepConvBase();
@@ -6925,6 +6993,10 @@ function _ucvRegPintar(R){
   UCV_PRINC = M ? M.lista : [];
   const pe = UCV_PROG_VOO || !UCV_PROG_TENT ? 'lendo' : 'falhou';
   const pp = _ucvEl('princ'); if(pp) pp.innerHTML = _ucvPrincHtml(M, LH, R.p ? R.p.chave : null, UCV_PRINC_TODOS, pe);
+  // ONDE O TEMPO VAI (v7.194.0): as mesmas horas, medições e cadastro — nenhuma leitura nova
+  const TV = _ucvTempoMontar(L, UEP_CONV_PRODS, LH, R.base.meta);
+  UCV_TEMPO = TV ? TV.linhas : [];
+  const tp = _ucvEl('tempo'); if(tp) tp.innerHTML = _ucvTempoHtml(TV, LH, R.p ? R.p.chave : null, UCV_TEMPO_TODOS);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
 }
@@ -7575,6 +7647,194 @@ function _ucvAbrirPrincipal(i){
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 function _ucvPrincTodos(){ UCV_PRINC_TODOS = !UCV_PRINC_TODOS; _uepConvAtualiza(); }
+// ── ONDE O TEMPO VAI (v7.194.0) ────────────────────────────────────────────
+// PPCP, 03/11/2026: "com esses estudos o que dá pra mostrar em KPI onde perde
+// onde ganha?" → prévia com os estudos reais → "pode subir na aba
+// cronoanálise" → "capricha na tela". Cada medição registrada traz o tempo por
+// volume SEM AS LACUNAS (trabalho puro) e RODANDO; a produção do volume vem das
+// horas em que ele rodou SOZINHO na linha (o MESMO _ucvPadraoDe do NA PRODUÇÃO,
+// com as paradas apontadas de cada hora). Por caixa, em segundos:
+//   trabalho puro → + microparadas do estudo (lacunas) = RODANDO
+//   → + DIFERENÇA estudo × produção (o que ninguém aponta) = produção sem as paradas
+//   → + paradas apontadas = produção real, contra a META (527 min × 60 ÷ META UEP × UEP do cadastro).
+// Nenhuma leitura nova: as medições (getCronoRegistros), as horas da janela
+// (getHorasCrono, CRONO_LINHA_DIAS dias fechados) e o cadastro que a aba já lê.
+// ⚠ DIFERENÇA NÃO É PERDA: junta troca de cor dentro do lote, começo de lote,
+// ritmo, microparada não apontada e caixa lançada na hora seguinte. Diz onde
+// procurar. Medido na prévia (34 estudos, 04/10–02/11/2026): +40% sobre o
+// estudo, ≈ 15,8 h em 30 dias nos volumes estudados; paradas apontadas 12,5%
+// do tempo; fluxo no estudo 98% (a MADERO é a exceção, 85%).
+// HORAS EM 30 DIAS = diferença por caixa × todas as caixas do volume na janela
+// (extrapolação das horas sozinho). Volume que um JOGO do mesmo produto já
+// cobre (a ELOA VOL 2/2 dentro do JOGO 2 VOL) aparece, mas fica fora dos totais.
+const UCV_TEMPO_GANHA_PCT = 20;   // a produção até 20% acima do estudo: "repete o estudo"
+const UCV_TEMPO_LINHAS = 12;      // linhas antes do VER TODOS
+let UCV_TEMPO = [], UCV_TEMPO_TODOS = false;
+// Conta pura. regs: getCronoRegistros; prods: _uepConvProdutos; horas: getHorasCrono
+// (sem as horas — ainda lendo, falhou — devolve null e o desenho diz o estado).
+function _ucvTempoMontar(regs, prods, horas, meta){
+  if(!Array.isArray(horas)) return null;
+  const m = Number(meta) > 0 ? Number(meta) : UEP_META_PADRAO, sUep = UEP_MIN_DIA * 60 / m;
+  const G = {}, soma = (L, f) => L.reduce((a, x) => a + (Number(f(x)) || 0), 0);
+  (regs || []).forEach(r => { const k = String(r.modelo || '') + '|' + _uepConvNorm(r.produto) + '|' + String(r.volume || ''); (G[k] = G[k] || []).push(r); });
+  // média pesada pelos VOLUMES MEDIDOS (medição sem eles não entra, como na regra da troca)
+  const pond = (L, f, ok) => { let s = 0, w = 0; L.forEach(r => { const v = Number(r[f]), n = Number(r.volumes) || 0; if(n > 0 && ok(r, v)){ s += v * n; w += n; } }); return w > 0 ? s / w : null; };
+  let cxTotal = 0, foraCad = 0;
+  horas.forEach(h => Object.keys(h && h.cods || {}).forEach(c => { cxTotal += Number(h.cods[c]) || 0; }));
+  const linhas = [];
+  Object.keys(G).forEach(k => {
+    const L = G[k], r0 = L[0];
+    const p = (prods || []).find(x => x.modelo === String(r0.modelo || '') && _uepConvNorm(x.nome) === _uepConvNorm(r0.produto) && _ucvRegVol(x) === String(r0.volume || ''));
+    if(!p){ foraCad++; return; }
+    const sRod = pond(L, 'sRod', (r, v) => v > 0);
+    if(sRod == null) return;
+    // o fluxo (sem as lacunas ÷ rodando) só das medições que trazem as lacunas
+    const okLac = (r, v) => v > 0 && v <= Number(r.sRod);
+    const lac = pond(L, 'sLac', okLac), rodLac = pond(L, 'sRod', r => okLac(r, Number(r.sLac)));
+    const fluxo = lac != null && rodLac > 0 ? lac / rodLac : null;
+    const uep = _uepConvCadastro(p).volCad;
+    const cods = p.cods.map(c => String(c.cod).replace(/\D/g, ''));
+    const P = _ucvPadraoDe(horas, cods, uep, m);
+    let cx = 0; horas.forEach(h => cods.forEach(c => { cx += Number(h && h.cods && h.cods[c]) || 0; }));
+    const tem = !!(P && P.cx > 0), temPar = tem && P.parLido;
+    const real = tem ? P.min * 60 / P.cx : null, realSem = temPar ? P.minRod * 60 / P.cx : null;
+    const metaS = uep > 0 ? sUep * uep : null;
+    const gapS = realSem != null ? realSem - sRod : null, parS = temPar ? real - realSem : null;
+    const folgaS = metaS != null && real != null ? metaS - real : null;
+    const nVol = L.reduce((a, r) => a + (Number(r.volumes) || 0), 0);
+    linhas.push({ p, chave:p.chave, rot:p.rot, base:_uepEhBase(p), nMed:L.length, nVol, sRod, fluxo, puro:fluxo != null ? sRod * fluxo : null,
+      uep, metaS, cx, horasSoz:tem ? P.minRod / 60 : null, prod:P, real, realSem, parS, gapS,
+      gapPct:gapS != null ? (realSem / sRod - 1) * 100 : null, folgaS,
+      hGap:gapS != null ? gapS * cx / 3600 : null, hPar:parS != null ? parS * cx / 3600 : null, hFolga:folgaS != null ? folgaS * cx / 3600 : null,
+      curta:nVol < UCV_TROCA_MIN_VOL || !tem || !!P.pouco, dentro:false });
+  });
+  // o volume que um JOGO do mesmo produto já cobre: na tabela, fora dos totais
+  linhas.forEach(l => { l.dentro = !!l.p.volSel && linhas.some(o => o !== l && !o.p.volSel && o.p.modelo === l.p.modelo && o.p.nome === l.p.nome); });
+  linhas.sort((a, b) => (b.hGap != null) - (a.hGap != null) || (b.hGap || 0) - (a.hGap || 0) || b.cx - a.cx);
+  const fora = linhas.filter(l => !l.dentro), T = fora.filter(l => l.realSem != null);
+  const sRodCx = soma(T, l => l.sRod * l.cx);
+  const minP = soma(T, l => l.prod.min);
+  const fl = fora.filter(l => l.fluxo != null), flMin = fl.slice().sort((a, b) => a.fluxo - b.fluxo)[0] || null;
+  const tot = { n:linhas.length, nJulg:linhas.filter(l => !l.curta).length, nProd:T.length, cxTotal, cxEst:soma(fora, l => l.cx),
+    gapPct:sRodCx > 0 ? (soma(T, l => l.realSem * l.cx) / sRodCx - 1) * 100 : null,
+    hGap:soma(T, l => l.hGap), hPar:soma(T, l => l.hPar), hFolga:soma(T.filter(l => l.hFolga != null), l => l.hFolga),
+    parPct:minP > 0 ? soma(T, l => l.prod.par) / minP * 100 : null,
+    fluxo:soma(fl, l => l.nVol) > 0 ? soma(fl, l => l.fluxo * l.nVol) / soma(fl, l => l.nVol) * 100 : null,
+    fluxoMin:flMin && flMin.fluxo < 0.95 ? { rot:flMin.p.nome, pct:flMin.fluxo * 100 } : null, foraCad };
+  tot.cobertura = cxTotal > 0 ? tot.cxEst / cxTotal * 100 : null;
+  tot.jornadas = tot.hGap * 60 / UEP_MIN_DIA;
+  // a cascata da LINHA em segundos por UEP, pesada pela UEP feita no período
+  // (sem as lacunas medidas, o trabalho puro é o próprio rodando)
+  const TU = T.filter(l => l.uep > 0), wU = soma(TU, l => l.cx * l.uep);
+  let casc = null;
+  if(wU > 0){
+    const por = f => soma(TU, l => f(l) * l.cx) / wU;
+    casc = { puro:por(l => l.puro != null ? l.puro : l.sRod), rod:por(l => l.sRod), realSem:por(l => l.realSem), real:por(l => l.real), meta:sUep };
+    const pedacos = { lac:casc.rod - casc.puro, dif:casc.realSem - casc.rod, par:casc.real - casc.realSem };
+    casc.maior = Object.keys(pedacos).sort((a, b) => pedacos[b] - pedacos[a])[0];
+    casc.falta = casc.real - casc.meta;
+    casc.faltaPct = casc.falta / casc.meta * 100;
+    casc.mx = Math.ceil(Math.max(casc.real, casc.meta) * 1.08);
+  }
+  const ganha = fora.filter(l => l.gapPct != null && (l.gapPct <= UCV_TEMPO_GANHA_PCT || l.folgaS > 0)).sort((a, b) => a.gapPct - b.gapPct);
+  const mxL = Math.max(1, ...linhas.map(l => Math.max(l.real || 0, l.sRod || 0, l.metaS || 0))) * 1.04;
+  const hMax = Math.max(0, ...linhas.map(l => Math.abs(l.hGap || 0)));
+  return { linhas, tot, casc, ganha, meta:m, sUep, mxL, hMax, regsLidas:Array.isArray(regs) };
+}
+// ── Desenho (sem conta): tudo vem pronto do _ucvTempoMontar ────────────────
+const UCV_TEMPO_SEG = [['puro', '--ucv-tp-puro', 'trabalho puro (estudo, sem as lacunas)'], ['lac', '--warn', 'microparadas do estudo (lacunas)'],
+  ['dif', '--red', 'diferença estudo × produção (não apontada)'], ['par', '--ucv-tp-par', 'paradas apontadas']];
+function _ucvTempoSeg(a, b, cor, mx){
+  return b > a ? `<div class="ucv-tp-seg" style="left:${(a / mx * 100).toFixed(2)}%;width:${((b - a) / mx * 100).toFixed(2)}%;background:var(${cor})"></div>` : '';
+}
+function _ucvTempoHtml(T, est, sel, todos){
+  const v1 = x => x == null ? '—' : x.toFixed(1).replace('.', ',');
+  const sn = (x, d) => x == null ? '—' : (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(d == null ? 1 : d).replace('.', ',');
+  const tit = `<div><div class="uep-conv-tit">ONDE O TEMPO VAI${T && T.linhas.length ? ` <span class="ucv-chip">${plural(T.tot.n, 'volume estudado', 'volumes estudados')} · produção dos últimos ${CRONO_LINHA_DIAS} dias fechados</span>` : ''}</div>`
+    + `<div class="ucv-tp-sub">O tempo por caixa que o estudo provou, o que a produção faz nas horas em que o volume roda sozinho e o que a meta concede. A diferença diz onde procurar tempo.</div></div>`;
+  const caixa = h => `<div class="ucv-tp">${tit}${h}</div>`;
+  if(!T) return caixa(est === 'sem-endpoint' ? '<div class="uep-nota">O Apps Script ainda não tem as horas da produção: cole o .gs v5.36 no editor e re-deploye.</div>'
+    : est === 'falhou' ? '<div class="uep-nota">A produção dos últimos dias não foi lida — tenta de novo em 1 min.</div>'
+    : '<div class="uep-nota">Lendo a produção dos últimos dias…</div>');
+  if(!T.regsLidas) return caixa('<div class="uep-nota">Lendo as medições registradas…</div>');
+  if(!T.linhas.length) return caixa('<div class="uep-nota">Nenhuma medição registrada com VOLUMES MEDIDOS ainda.</div>');
+  const S = T.tot, C = T.casc;
+  const cards = '<div class="kpi-grid c4 ucv-cards">'
+    + _ucvCard('DIFERENÇA ESTUDO × PRODUÇÃO', S.gapPct == null ? '—' : sn(S.gapPct, 0) + '<small>%</small>',
+        S.gapPct == null ? 'nenhum volume estudado rodou sozinho na janela' : `a produção, sem as paradas apontadas, leva <b>${v1(Math.abs(S.gapPct))}% ${S.gapPct >= 0 ? 'mais' : 'menos'} tempo</b> por caixa que o estudo · ≈ <b>${v1(S.hGap)} h</b> de linha em ${CRONO_LINHA_DIAS} dias (${v1(S.jornadas)} jornadas)`, S.gapPct > 0 ? 'red' : 'ok')
+    + _ucvCard('PARADAS APONTADAS', S.parPct == null ? '—' : v1(S.parPct) + '<small>% do tempo</small>',
+        `nas horas em que esses volumes rodaram sozinhos · ≈ <b>${v1(S.hPar)} h</b> em ${CRONO_LINHA_DIAS} dias`, 'warn')
+    + _ucvCard('FLUXO NO ESTUDO', S.fluxo == null ? '—' : S.fluxo.toFixed(0) + '<small>%</small>',
+        `sem as lacunas ÷ rodando: quanto do estudo é trabalho${S.fluxoMin ? ` · menor: <b>${_rpEsc(S.fluxoMin.rot)} ${S.fluxoMin.pct.toFixed(0)}%</b>` : ' · nenhum volume abaixo de 95%'}`, '')
+    + _ucvCard('COBERTURA', S.cobertura == null ? '—' : S.cobertura.toFixed(0) + '<small>% das caixas</small>',
+        `dos ${fmtN(S.cxTotal)} cx da janela · <b>${S.nJulg} de ${S.n}</b> volumes com amostra para julgar`, '')
+    + '</div>';
+  let casc = '';
+  if(C){
+    const mx = C.mx, ml = `<div class="ucv-tp-meta" style="left:${(C.meta / mx * 100).toFixed(2)}%" title="meta: ${C.meta.toFixed(2).replace('.', ',')} s por UEP"></div>`;
+    const lin = (n, sub, segs, x, tot) => `<div class="ucv-tp-r${tot ? ' tot' : ''}"><div class="n">${n}<small>${sub}</small></div><div class="ucv-tp-trilho">${segs}${ml}</div><div class="x">${x}</div></div>`;
+    const ticks = []; for(let v = 0; v < mx; v += mx > 16 ? 4 : 2) ticks.push(`<span style="left:${(v / mx * 100).toFixed(2)}%">${v}</span>`);
+    const nomes = { lac:'as microparadas do estudo', dif:'a diferença entre o estudo e a produção', par:'as paradas apontadas' };
+    const ped = { lac:C.rod - C.puro, dif:C.realSem - C.rod, par:C.real - C.realSem };
+    casc = `<div><div class="ucv-regs-t">A CASCATA DA LINHA <span>segundos por UEP · pesada pela UEP feita · só as horas em que cada volume rodou sozinho</span></div><div class="ucv-tp-casc">`
+      + lin('Trabalho puro', 'estudo, sem as lacunas', _ucvTempoSeg(0, C.puro, '--ucv-tp-puro', mx), v1(C.puro) + ' s')
+      + lin('Microparadas do estudo', `lacunas · rodando ${v1(C.rod)} s`, _ucvTempoSeg(C.puro, C.rod, '--warn', mx), sn(ped.lac))
+      + lin('Diferença estudo × produção', `não apontada · ${v1(C.realSem)} s sem as paradas`, _ucvTempoSeg(C.rod, C.realSem, '--red', mx), sn(ped.dif))
+      + lin('Paradas apontadas', 'nas horas em que o volume rodou sozinho', _ucvTempoSeg(C.realSem, C.real, '--ucv-tp-par', mx), sn(ped.par))
+      + lin('Produção real', `contra a meta de ${C.meta.toFixed(2).replace('.', ',')} s`,
+          _ucvTempoSeg(0, C.puro, '--ucv-tp-puro', mx) + _ucvTempoSeg(C.puro, C.rod, '--warn', mx) + _ucvTempoSeg(C.rod, C.realSem, '--red', mx) + _ucvTempoSeg(C.realSem, C.real, '--ucv-tp-par', mx), v1(C.real) + ' s', true)
+      + `<div class="ucv-tp-r"><div class="ucv-tp-vz"></div><div class="ucv-tp-eixo">${ticks.join('')}</div><div></div></div></div>`
+      + `<div class="ucv-tp-conc"><span>Nas horas desses volumes, a linha leva <b class="${C.falta > 0 ? 'ucv-tp-falta' : 'ucv-tp-folga'}">${Math.abs(C.falta).toFixed(2).replace('.', ',')} s ${C.falta > 0 ? 'a mais' : 'a menos'} por UEP</b> que a meta (${v1(Math.abs(C.faltaPct))}%).</span>`
+      + `<span>O maior pedaço é <b>${nomes[C.maior]}</b>: ${v1(ped[C.maior])} s por UEP.</span></div>`
+      + `<div class="ucv-tp-leg">${UCV_TEMPO_SEG.map(g => `<span><i style="background:var(${g[1]})"></i>${g[2]}</span>`).join('')}<span><em></em>meta (${C.meta.toFixed(2).replace('.', ',')} s por UEP)</span></div></div>`;
+  }
+  const L = todos ? T.linhas : T.linhas.slice(0, UCV_TEMPO_LINHAS), mxL = T.mxL;
+  const mini = l => l.real == null ? '<span class="uep-nota" style="margin:0">não rodou sozinho</span>'
+    : `<div class="ucv-tp-mini" title="puro ${v1(l.puro)} · rodando ${v1(l.sRod)} · sem paradas ${v1(l.realSem)} · real ${v1(l.real)} · meta ${v1(l.metaS)} s por caixa">`
+      + _ucvTempoSeg(0, l.puro != null ? l.puro : l.sRod, '--ucv-tp-puro', mxL) + (l.puro != null ? _ucvTempoSeg(l.puro, l.sRod, '--warn', mxL) : '')
+      + (l.realSem != null ? _ucvTempoSeg(l.sRod, l.realSem, '--red', mxL) + _ucvTempoSeg(Math.max(l.sRod, l.realSem), l.real, '--ucv-tp-par', mxL) : '')
+      + (l.metaS != null ? `<div class="ucv-tp-meta" style="left:${(l.metaS / mxL * 100).toFixed(2)}%"></div>` : '') + '</div>';
+  const fol = x => x == null ? '—' : `<span class="${x >= 0 ? 'ucv-tp-folga' : 'ucv-tp-falta'}">${sn(x)}</span>`;
+  const hcel = l => l.hGap == null ? '—' : `<span class="ucv-tp-h">${sn(l.hGap)} h<span class="${l.hGap < 0 ? 'g' : ''}" style="width:${T.hMax > 0 ? Math.max(2, Math.abs(l.hGap) / T.hMax * 70).toFixed(0) : 2}px"></span></span>`;
+  const tab = `<div><div class="ucv-regs-t">ONDE PERDE, VOLUME A VOLUME <span>segundos por caixa · ordem: horas a mais que o estudo em ${CRONO_LINHA_DIAS} dias · toque na linha abre o volume no conversor</span></div>`
+    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-tp-tab"><thead><tr><th>VOLUME</th>'
+    + '<th class="n" title="Média das medições registradas, pesada pelos volumes medidos">ESTUDO<br>RODANDO</th>'
+    + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO na linha, sem as paradas apontadas, nos últimos ${CRONO_LINHA_DIAS} dias fechados">PRODUÇÃO<br>SEM PARADAS</th>`
+    + '<th class="n" title="Produção sem as paradas − estudo rodando: o que a produção tem e o estudo não (não é perda pronta: diz onde procurar)">DIFERENÇA</th>'
+    + '<th class="n" title="As paradas apontadas nessas horas, por caixa">PARADAS<br>APONTADAS</th>'
+    + `<th class="n" title="527 min × 60 ÷ META UEP × UEP do cadastro de hoje">META</th>`
+    + '<th class="n" title="Meta − produção real (com as paradas). + = a produção cabe no tempo que a meta concede">FOLGA (+)<br>FALTA (−)</th>'
+    + '<th class="n">ONDE O TEMPO VAI</th>'
+    + `<th class="n" title="Todas as caixas do volume na janela (${CRONO_LINHA_DIAS} dias)">CX</th>`
+    + '<th class="n" title="Diferença por caixa × as caixas do volume na janela: extrapolação das horas sozinho">HORAS A MAIS<br>QUE O ESTUDO</th></tr></thead><tbody>'
+    + L.map((l, i) => `<tr class="${l.chave === sel ? 'sel' : ''}${l.dentro ? ' dentro' : ''}" onclick="_ucvAbrirTempo(${i})" title="Abrir este volume no conversor">`
+      + `<td class="ucv-pr">${_rpEsc(l.rot)}${l.base ? '<span class="ucv-chip base">BASE</span>' : ''}${l.dentro ? '<span class="ucv-chip">DENTRO DO JOGO</span>' : ''}${l.curta ? '<span class="ucv-pill warn">AMOSTRA CURTA</span>' : ''}`
+      + `<small>${plural(l.nMed, 'estudo', 'estudos')} · ${fmtN(l.nVol)} vol. · ${l.horasSoz != null ? v1(l.horasSoz) + ' h sozinho' : 'sem hora sozinho'}</small></td>`
+      + `<td class="n">${v1(l.sRod)}</td><td class="n">${v1(l.realSem)}</td>`
+      + `<td class="n">${l.gapS == null ? '—' : `<b>${sn(l.gapS)}</b><span class="ucv-tp-pc">${sn(l.gapPct, 0)}%</span>`}</td>`
+      + `<td class="n">${v1(l.parS)}</td><td class="n">${v1(l.metaS)}</td><td class="n">${fol(l.folgaS)}</td>`
+      + `<td class="n">${mini(l)}</td><td class="n">${fmtN(l.cx)}</td><td class="n">${hcel(l)}</td></tr>`).join('')
+    + '</tbody></table></div>'
+    + (T.linhas.length > UCV_TEMPO_LINHAS ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvTempoTodos()">${todos ? 'VER MENOS' : `VER TODOS (${T.linhas.length})`}</button></div>` : '') + '</div>';
+  const ganha = T.ganha.length ? `<div class="ucv-tp-ganha"><span class="t">ONDE GANHA</span><span class="q">a produção repete o estudo (até ${UCV_TEMPO_GANHA_PCT}% acima) ou cabe na meta:</span>`
+    + T.ganha.map(l => `<span class="g"><b>${_rpEsc(l.p.nome)}${l.p.volSel ? ' · VOL ' + l.p.volSel + '/' + l.p.nVolTot : ''}</b> <span>${sn(l.gapPct, 0)}% · ${l.folgaS >= 0 ? 'folga' : 'falta'} ${v1(Math.abs(l.folgaS))} s/cx${l.curta ? ' · amostra curta' : ''}</span></span>`).join('') + '</div>' : '';
+  const ler = '<details class="ucv-tp-ler"><summary>ⓘ COMO LER</summary><ul>'
+    + '<li><b>Diferença não é perda.</b> Junta o que a produção tem e o estudo não: troca de cor dentro do lote, começo de lote, ritmo, microparada não apontada e caixa lançada na hora seguinte. Diz onde procurar.</li>'
+    + `<li><b>Produção</b> = só as horas em que o volume rodou sozinho na linha (sem outro produto nem o outro volume), nos últimos ${CRONO_LINHA_DIAS} dias fechados. AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho na produção.</li>`
+    + '<li><b>Horas a mais</b> = diferença por caixa × todas as caixas do volume na janela — extrapolação das horas sozinho.</li>'
+    + `<li><b>Meta por caixa</b> = ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(T.meta)} = ${T.sUep.toFixed(2).replace('.', ',')} s por UEP × a UEP do cadastro de hoje.</li>`
+    + '<li><b>Volume dentro do JOGO</b>: quando o JOGO do produto também foi medido, o volume aparece na tabela, mas fica fora dos totais (as caixas já estão no JOGO).</li>'
+    + `${S.foraCad ? `<li>${plural(S.foraCad, 'volume medido não está', 'volumes medidos não estão')} no cadastro de hoje e ${S.foraCad === 1 ? 'fica' : 'ficam'} fora.</li>` : ''}</ul></details>`;
+  return caixa(cards + casc + tab + ganha + ler);
+}
+function _ucvAbrirTempo(i){
+  const l = UCV_TEMPO[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
+  if(!l || !elP) return;
+  elP.value = l.rot; if(elS) elS.value = '';
+  _uepConvAtualiza();
+  const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function _ucvTempoTodos(){ UCV_TEMPO_TODOS = !UCV_TEMPO_TODOS; _uepConvAtualiza(); }
 // ── 🖨 IMPRIMIR da aba ⏱ CRONOANÁLISE (v7.145.0, PPCP 19/10/2026: "falta
 // impressão"). Retrato da tela no clique: os MESMOS _uepConvMontar,
 // _uepConvHtml e _uepConvGuia — a marcação é a da tela, só a pele (.ucv-doc)
