@@ -498,35 +498,35 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono{--ucv-azul:#5AA9F0}
 /* cabeçalho da aba (v7.172.1): o título não quebra e os botões numa fileira. v7.197.0: o 📄 IMPORTAR PDF à vista e
    as quatro impressões num menu (🖨 IMPRIMIR ▾); a frase de ajuda foi para o title do título */
-#sec-crono .ucv-hdr,#sec-uep .ucv-hdr{flex-wrap:wrap;gap:10px 18px;margin-bottom:14px}
-#sec-crono .ucv-hdr .tbl-hdr-ttl,#sec-uep .ucv-hdr .tbl-hdr-ttl{white-space:nowrap}
-#sec-crono .ucv-hdr-bts,#sec-uep .ucv-hdr-bts{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto}
-#sec-crono .ucv-hdr-bts .btn,#sec-uep .ucv-hdr-bts .btn{height:30px;padding:0 12px;font-size:10px;box-sizing:border-box}
-#sec-crono .ucv-imp,#sec-uep .ucv-imp{position:relative}
-#sec-crono .ucv-imp>summary,#sec-uep .ucv-imp>summary{list-style:none;cursor:pointer;user-select:none}
-#sec-crono .ucv-imp>summary::-webkit-details-marker,#sec-uep .ucv-imp>summary::-webkit-details-marker{display:none}
-#sec-crono .ucv-imp[open]>summary,#sec-uep .ucv-imp[open]>summary{border-color:var(--txt2);color:var(--txt)}
-#sec-crono .ucv-imp-m,#sec-uep .ucv-imp-m{position:absolute;right:0;top:36px;z-index:40;display:flex;flex-direction:column;gap:6px;width:330px;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:9px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
-#sec-crono .ucv-imp-m .btn,#sec-uep .ucv-imp-m .btn{height:auto;min-height:38px;padding:7px 12px;font-size:11px;letter-spacing:.8px;justify-content:flex-start;text-align:left;flex-wrap:wrap;color:var(--txt)}
-#sec-crono .ucv-imp-m .btn small,#sec-uep .ucv-imp-m .btn small{flex-basis:100%;font-size:11px;letter-spacing:0;font-weight:400;color:var(--txt2);padding-left:22px}
-#sec-crono .ucv-imp-m .btn:hover,#sec-uep .ucv-imp-m .btn:hover{border-color:var(--txt2)}
+#sec-crono .ucv-hdr,#sec-uep .ucv-hdr,#sec-plano .ucv-hdr{flex-wrap:wrap;gap:10px 18px;margin-bottom:14px}
+#sec-crono .ucv-hdr .tbl-hdr-ttl,#sec-uep .ucv-hdr .tbl-hdr-ttl,#sec-plano .ucv-hdr .tbl-hdr-ttl{white-space:nowrap}
+#sec-crono .ucv-hdr-bts,#sec-uep .ucv-hdr-bts,#sec-plano .ucv-hdr-bts{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto}
+#sec-crono .ucv-hdr-bts .btn,#sec-uep .ucv-hdr-bts .btn,#sec-plano .ucv-hdr-bts .btn{height:30px;padding:0 12px;font-size:10px;box-sizing:border-box}
+#sec-crono .ucv-imp,#sec-uep .ucv-imp,#sec-plano .ucv-imp{position:relative}
+#sec-crono .ucv-imp>summary,#sec-uep .ucv-imp>summary,#sec-plano .ucv-imp>summary{list-style:none;cursor:pointer;user-select:none}
+#sec-crono .ucv-imp>summary::-webkit-details-marker,#sec-uep .ucv-imp>summary::-webkit-details-marker,#sec-plano .ucv-imp>summary::-webkit-details-marker{display:none}
+#sec-crono .ucv-imp[open]>summary,#sec-uep .ucv-imp[open]>summary,#sec-plano .ucv-imp[open]>summary{border-color:var(--txt2);color:var(--txt)}
+#sec-crono .ucv-imp-m,#sec-uep .ucv-imp-m,#sec-plano .ucv-imp-m{position:absolute;right:0;top:36px;z-index:40;display:flex;flex-direction:column;gap:6px;width:330px;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:9px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+#sec-crono .ucv-imp-m .btn,#sec-uep .ucv-imp-m .btn,#sec-plano .ucv-imp-m .btn{height:auto;min-height:38px;padding:7px 12px;font-size:11px;letter-spacing:.8px;justify-content:flex-start;text-align:left;flex-wrap:wrap;color:var(--txt)}
+#sec-crono .ucv-imp-m .btn small,#sec-uep .ucv-imp-m .btn small,#sec-plano .ucv-imp-m .btn small{flex-basis:100%;font-size:11px;letter-spacing:0;font-weight:400;color:var(--txt2);padding-left:22px}
+#sec-crono .ucv-imp-m .btn:hover,#sec-uep .ucv-imp-m .btn:hover,#sec-plano .ucv-imp-m .btn:hover{border-color:var(--txt2)}
 #sec-crono .ucv-hdr-dia,#sec-uep .ucv-hdr-dia{display:flex;align-items:stretch}   /* o dia é o parâmetro do ESTUDOS DO DIA: os dois colados */
 #sec-crono .ucv-hdr-dia .frm-inp,#sec-uep .ucv-hdr-dia .frm-inp{width:140px;height:38px;padding:0 8px;font-size:11px;cursor:pointer;box-sizing:border-box;border-radius:5px 0 0 5px;border-right:none}
 #sec-crono .ucv-hdr-dia .btn,#sec-uep .ucv-hdr-dia .btn{flex:1;border-radius:0 5px 5px 0}
 /* as sub-abas (v7.197.0, PPCP: "está muito cheia a tela, tem que enxugar, deixar mais dinâmica"):
    uma tarefa por vez, cada botão com o seu número */
-#sec-crono .ucv-sub,#sec-uep .ucv-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:0 0 18px}
-#sec-crono .ucv-sb,#sec-uep .ucv-sb{flex:1 1 180px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 14px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
-#sec-crono .ucv-sb:hover,#sec-uep .ucv-sb:hover{border-color:var(--txt2)}
-#sec-crono .ucv-sb b,#sec-uep .ucv-sb b{font-family:var(--font-d);font-size:11px;font-weight:400;letter-spacing:1.8px;color:var(--txt2)}
-#sec-crono .ucv-sb span,#sec-uep .ucv-sb span{max-width:100%;font-family:var(--font-b);font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sec-crono .ucv-sb.on,#sec-uep .ucv-sb.on{border-color:var(--acc);background:rgba(255,92,31,.08);box-shadow:inset 0 -3px 0 var(--acc)}
-#sec-crono .ucv-sb.on b,#sec-uep .ucv-sb.on b{color:var(--txt)}
-#sec-crono .ucv-sb.ok span,#sec-uep .ucv-sb.ok span{color:var(--ok)}
-#sec-crono .ucv-sb.acc span,#sec-uep .ucv-sb.acc span{color:var(--acc)}
-#sec-crono .ucv-sb.warn span,#sec-uep .ucv-sb.warn span{color:var(--warn)}
-#sec-crono .ucv-sb.red span,#sec-uep .ucv-sb.red span{color:var(--red)}
-#sec-crono .ucv-sb-ir,#sec-uep .ucv-sb-ir{flex:0 0 auto;align-self:center;height:34px;padding:0 14px;font-size:10.5px;letter-spacing:1px}
+#sec-crono .ucv-sub,#sec-uep .ucv-sub,#sec-plano .ucv-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:0 0 18px}
+#sec-crono .ucv-sb,#sec-uep .ucv-sb,#sec-plano .ucv-sb{flex:1 1 180px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:10px 14px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+#sec-crono .ucv-sb:hover,#sec-uep .ucv-sb:hover,#sec-plano .ucv-sb:hover{border-color:var(--txt2)}
+#sec-crono .ucv-sb b,#sec-uep .ucv-sb b,#sec-plano .ucv-sb b{font-family:var(--font-d);font-size:11px;font-weight:400;letter-spacing:1.8px;color:var(--txt2)}
+#sec-crono .ucv-sb span,#sec-uep .ucv-sb span,#sec-plano .ucv-sb span{max-width:100%;font-family:var(--font-b);font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sec-crono .ucv-sb.on,#sec-uep .ucv-sb.on,#sec-plano .ucv-sb.on{border-color:var(--acc);background:rgba(255,92,31,.08);box-shadow:inset 0 -3px 0 var(--acc)}
+#sec-crono .ucv-sb.on b,#sec-uep .ucv-sb.on b,#sec-plano .ucv-sb.on b{color:var(--txt)}
+#sec-crono .ucv-sb.ok span,#sec-uep .ucv-sb.ok span,#sec-plano .ucv-sb.ok span{color:var(--ok)}
+#sec-crono .ucv-sb.acc span,#sec-uep .ucv-sb.acc span,#sec-plano .ucv-sb.acc span{color:var(--acc)}
+#sec-crono .ucv-sb.warn span,#sec-uep .ucv-sb.warn span,#sec-plano .ucv-sb.warn span{color:var(--warn)}
+#sec-crono .ucv-sb.red span,#sec-uep .ucv-sb.red span,#sec-plano .ucv-sb.red span{color:var(--red)}
+#sec-crono .ucv-sb-ir,#sec-uep .ucv-sb-ir,#sec-plano .ucv-sb-ir{flex:0 0 auto;align-self:center;height:34px;padding:0 14px;font-size:10.5px;letter-spacing:1px}
 #sec-crono .ucv-pn{display:none}
 #sec-crono .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
 @keyframes ucvIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
@@ -537,6 +537,17 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .ucv-pn.entra{animation:ucvIn .18s ease-out}
 @media (prefers-reduced-motion:reduce){#sec-uep .ucv-pn.entra{animation:none}}
 #sec-uep .uep-sb-irs{display:flex;flex-wrap:wrap;gap:8px;align-self:center}
+/* ── SUB-ABAS DO 📐 PLANO (v7.199.0) ── os painéis são marcação fixa (o render só refaz
+   o #qp-carteira / #qp-corpo dentro deles), então a entrada anima no .on, como na cronoanálise. */
+#sec-plano .ucv-pn{display:none}
+#sec-plano .ucv-pn.on{display:block;animation:ucvIn .18s ease-out}
+@media (prefers-reduced-motion:reduce){#sec-plano .ucv-pn.on{animation:none}}
+#sec-plano .qp-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;white-space:nowrap}
+#sec-plano .qp-sel{height:30px;padding:3px 8px;font-size:11px;cursor:pointer;box-sizing:border-box}
+#sec-plano .qp-pbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+#sec-plano .qp-pbar-nota{margin-left:auto;font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px}
+#sec-plano .qp-sb-cap{flex:0 1 auto;align-self:center;font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;cursor:help}
+#sec-plano .qp-sb-cap b{color:var(--txt);font-weight:400}
 #sec-crono #uep-conv-x-msg{margin:0 0 12px;font-family:var(--font-b);font-size:13.5px;color:var(--txt)}
 #sec-crono #uep-conv-x-msg:empty,#sec-crono #uep-conv-reg-falta:empty{display:none}
 #sec-crono #uep-conv-reg-falta{margin-top:16px;font-family:var(--font-b);font-size:13px;color:var(--txt2);padding:10px 14px;border:1px dashed var(--border);border-radius:8px}
@@ -2888,73 +2899,88 @@ if (_v7Instalado()) _v7EscondeBotao();
 <!-- ═══ PRODUÇÃO POR MODELO (visão dedicada: total do dia, um modelo por linha) ═══ -->
 <!-- ═══ QUALIDADE DO PLANO ═══ -->
 <section id="sec-plano" class="sec">
-  <div class="tbl-hdr" style="margin-bottom:14px">
-    <span class="tbl-hdr-ttl">📐 QUALIDADE DO PLANO</span>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">JULGAR OS ÚLTIMOS</span>
-      <button class="btn btn-ghost qp-q" data-n="15" onclick="_qpFiltro(15)">15 DIAS</button>
-      <button class="btn btn-ghost qp-q on" data-n="30" onclick="_qpFiltro(30)">30 DIAS</button>
-      <button class="btn btn-ghost qp-q" data-n="60" onclick="_qpFiltro(60)">60 DIAS</button>
-      <button class="btn btn-ghost qp-q" data-n="0" onclick="_qpFiltro(0)">TUDO</button>
-      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:10px">RÉGUA</span>
-      <select id="qp-regua" class="frm-inp" onchange="_qpSetRegua(this.value)" style="width:122px;padding:3px 8px;font-size:11px;cursor:pointer"
-              title="De quantos dias sai o p50/p60/p75 com que as metas são comparadas. Longa demais inclui um mês ruim que já passou; curta demais pula com uma semana ruim.">
+  <!-- v7.199.0 (PPCP 03/11/2026, depois das sub-abas da ⏱ CRONOANÁLISE e da ⚖ UEP: "faz o mesmo aba plano"):
+       duas sub-abas, cada uma com o seu número, e cada filtro junto do bloco em que ele vale. RÉGUA e
+       FAIXA ALVO valem para as duas e ficam no cabeçalho; as duas impressões num menu. Contas, leituras
+       e o papel são os de antes. -->
+  <div class="tbl-hdr ucv-hdr">
+    <span class="tbl-hdr-ttl" title="Qualidade do plano: onde a meta de cada dia cai na capacidade que a linha já demonstrou">📐 QUALIDADE DO PLANO</span>
+    <div class="ucv-hdr-bts">
+      <span id="qp-upd"></span>
+      <span class="qp-lbl">RÉGUA</span>
+      <select id="qp-regua" class="frm-inp qp-sel" onchange="_qpSetRegua(this.value)" style="width:122px"
+              title="De quantos dias sai o p50/p60/p75 com que as metas são comparadas — vale para as duas sub-abas. Longa demais inclui um mês ruim que já passou; curta demais pula com uma semana ruim.">
         <option value="30">30 dias</option>
         <option value="60" selected>60 dias</option>
         <option value="90">90 dias</option>
         <option value="0">todo o histórico</option>
       </select>
-      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">FAIXA ALVO</span>
-      <select id="qp-faixa" class="frm-inp" onchange="_qpSetFaixa(this.value)" style="width:104px;padding:3px 8px;font-size:11px;cursor:pointer"
-              title="Onde a meta deveria cair. Mais alta cobra mais, mas reprova mais dias — veja no card quantos caem dentro de cada faixa.">
+      <span class="qp-lbl">FAIXA ALVO</span>
+      <select id="qp-faixa" class="frm-inp qp-sel" onchange="_qpSetFaixa(this.value)" style="width:104px"
+              title="Onde a meta deveria cair — vale para as duas sub-abas. Mais alta cobra mais, mas reprova mais dias — veja no card quantos caem dentro de cada faixa.">
         <option value="45-55">p45–p55</option>
         <option value="50-60" selected>p50–p60</option>
         <option value="55-65">p55–p65</option>
         <option value="60-70">p60–p70</option>
       </select>
-      <span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-left:6px">ORDEM</span>
-      <select id="qp-ordem" class="frm-inp" onchange="_qpSetOrdem(this.value)" style="width:126px;padding:3px 8px;font-size:11px;cursor:pointer"
-              title="Por DATA a tabela mostra os últimos dias. Por ALTURA ela mostra as metas mais altas (ou mais baixas) do período INTEIRO — é assim que se acha a meta impossível de três semanas atrás, que a cauda dos últimos dias esconde.">
-        <option value="data" selected>por data</option>
-        <option value="alta">altura: p maior</option>
-        <option value="baixa">altura: p menor</option>
-      </select>
-      <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">CARTEIRA</span>
-      <select id="qp-mix" class="frm-inp" onchange="_qpSetMix(this.value)" style="width:150px;padding:3px 8px;font-size:11px;cursor:pointer"
+      <details class="ucv-imp" id="qp-imp">
+        <summary class="btn btn-ghost" title="As duas impressões da aba">🖨 IMPRIMIR ▾</summary>
+        <div class="ucv-imp-m">
+          <button class="btn btn-ghost" onclick="_qpImpFecha();gerarRelatorioCarteira()" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA QUE VEM<small>em paisagem, com os lotes dia a dia</small></button>
+          <button class="btn btn-ghost" onclick="_qpImpFecha();gerarRelatorioPlano()" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO COMPLETO<small>carteira, como temos datado e como o número sai</small></button>
+        </div>
+      </details>
+      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()">↻ ATUALIZAR</button>
+    </div>
+  </div>
+  <div class="ucv-sub" id="qp-sub" role="tablist">
+    <button type="button" class="ucv-sb on" data-sub="carteira" role="tab" aria-selected="true" onclick="_qpSub('carteira')" title="Os lotes já datados para os dias que vêm, contra a capacidade — o que ainda dá para mudar"><b>A CARTEIRA QUE VEM</b><span id="qp-sb-carteira">…</span></button>
+    <button type="button" class="ucv-sb" data-sub="datado" role="tab" aria-selected="false" onclick="_qpSub('datado')" title="A meta dos dias que já fecharam, contra a capacidade — diagnóstico da datação"><b>COMO TEMOS DATADO</b><span id="qp-sb-datado">…</span></button>
+    <span class="qp-sb-cap" title="A capacidade de todo o PLANO é a produção em jornada normal: a hora extra fica fora da régua (o melhor dia, a faixa alvo e o nivelado). RÉGUA e FAIXA ALVO valem para as duas sub-abas.">CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA</b> ⓘ</span>
+  </div>
+
+  <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
+  <div class="ucv-pn on" data-sub="carteira">
+    <div class="qp-pbar">
+      <span class="qp-lbl">CARTEIRA</span>
+      <select id="qp-mix" class="frm-inp qp-sel" onchange="_qpSetMix(this.value)" style="width:150px"
               title="CARGA PELO MIX: cada lote pesa pelo ritmo do produto (o mesmo cx/h da aba PRODUÇÃO/HORA) — produto lento pesa mais, produto rápido pesa menos. CAIXAS CRUAS soma as quantidades como estão na PROGRAMACAO. AS DUAS desenha um gráfico de cada, um sob o outro: é onde se vê se o veredito muda de uma régua para a outra.">
         <option value="uep">em UEP</option>
         <option value="mix" selected>carga pelo mix</option>
         <option value="cru">caixas cruas</option>
         <option value="ambos">as duas</option>
-      </select></span>
-      <span style="display:inline-flex;align-items:center;gap:8px;margin-left:6px"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">E SE PARADAS</span>
-      <select id="qp-ese" class="frm-inp" onchange="_qpSetEse(this.value)" style="width:108px;padding:3px 8px;font-size:11px;cursor:pointer"
+      </select>
+      <span class="qp-lbl">E SE PARADAS</span>
+      <select id="qp-ese" class="frm-inp qp-sel" onchange="_qpSetEse(this.value)" style="width:108px"
               title="Cenário: se as paradas NÃO programadas caíssem este tanto, quanto a linha faria a mais por dia e a carteira caberia? A perda por parada é a mesma conta da aba PARADAS. Nada é gravado.">
         <option value="0" selected>como hoje</option>
         <option value="0.1">−10%</option>
         <option value="0.25">−25%</option>
         <option value="0.5">−50%</option>
-      </select></span>
-      <button class="btn btn-ghost" onclick="gerarRelatorioCarteira()" style="font-size:10px;padding:4px 10px" title="Só a carteira que vem: veredito, gráfico, dia a dia e os lotes programados — em paisagem, sem o estudo de baixo">🖨 CARTEIRA</button>
-      <button class="btn btn-ghost" onclick="gerarRelatorioPlano()" style="font-size:10px;padding:4px 10px" title="O estudo completo: carteira, como temos datado e como o número sai">🖨 ESTUDO</button>
-      <button class="btn btn-ghost" onclick="invalidarHistoricoCache();invalidarProgDetCache();invalidarMixCache();renderCarteira();renderQualidadePlano()" style="font-size:10px;padding:4px 10px">↻ ATUALIZAR</button>
-      <span id="qp-upd"></span>
+      </select>
     </div>
+    <div id="qp-carteira"><div class="pg-carregando">CARREGANDO…</div></div>
   </div>
-  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-6px 2px 14px">
-    <span title="RÉGUA e FAIXA ALVO valem para os dois blocos · JULGAR e ORDEM só para o de baixo · CARTEIRA só para o de cima">CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA</b> ⓘ</span>
-  </div>
-
-  <!-- ═══ 1) O QUE VEM: a carteira datada contra a capacidade (dá para agir) ═══ -->
-  <div class="par-sec" style="margin-top:0">A CARTEIRA QUE VEM — O QUE AINDA DÁ PARA MUDAR</div>
-  <div id="qp-carteira"><div class="pg-carregando">CARREGANDO…</div></div>
 
   <!-- ═══ 2) O QUE PASSOU: diagnóstico da datação (o dia já foi) ═══ -->
-  <div class="par-sec" style="margin-top:28px">COMO TEMOS DATADO — OS DIAS QUE JÁ FECHARAM</div>
-  <div style="font-family:var(--font-d);font-size:9.5px;color:var(--txt2);letter-spacing:1px;margin:-8px 2px 12px">
-    <b>JULGAR</b> = QUAIS DIAS APARECEM · <b>RÉGUA</b> = DE ONDE SAI O PADRÃO
+  <div class="ucv-pn" data-sub="datado">
+    <div class="qp-pbar">
+      <span class="qp-lbl" title="Quais dias aparecem no gráfico e na tabela. A RÉGUA (no cabeçalho) é outra coisa: de onde sai o padrão com que eles são comparados.">JULGAR OS ÚLTIMOS</span>
+      <button class="btn btn-ghost qp-q" data-n="15" onclick="_qpFiltro(15)">15 DIAS</button>
+      <button class="btn btn-ghost qp-q on" data-n="30" onclick="_qpFiltro(30)">30 DIAS</button>
+      <button class="btn btn-ghost qp-q" data-n="60" onclick="_qpFiltro(60)">60 DIAS</button>
+      <button class="btn btn-ghost qp-q" data-n="0" onclick="_qpFiltro(0)">TUDO</button>
+      <span class="qp-lbl" style="margin-left:10px">ORDEM</span>
+      <select id="qp-ordem" class="frm-inp qp-sel" onchange="_qpSetOrdem(this.value)" style="width:126px"
+              title="Por DATA a tabela mostra os últimos dias. Por ALTURA ela mostra as metas mais altas (ou mais baixas) do período INTEIRO — é assim que se acha a meta impossível de três semanas atrás, que a cauda dos últimos dias esconde.">
+        <option value="data" selected>por data</option>
+        <option value="alta">altura: p maior</option>
+        <option value="baixa">altura: p menor</option>
+      </select>
+      <span class="qp-pbar-nota"><b>JULGAR</b> = QUAIS DIAS APARECEM · <b>RÉGUA</b> = DE ONDE SAI O PADRÃO</span>
+    </div>
+    <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
   </div>
-  <div id="qp-corpo"><div class="pg-carregando">CARREGANDO…</div></div>
 </section>
 
 <section id="sec-producaohora" class="sec">
@@ -3757,7 +3783,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.198.0';
+const APP_VER   = '7.199.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -9518,7 +9544,7 @@ function renderUep(){
       +alerta+kpis
       +`<div class="uep-2">${b2}<div>${b3}<div class="uep-sec" title="${_rpEsc(UEP_ORIGEM_T)}"><b>ORIGEM DA UEP</b></div>${b5}</div></div>`)
     +pn('periodo', `<div class="uep-sec" style="margin-top:0"><b>PERÍODO</b> dias fechados ${botoes}</div>${b4}`)
-    +pn('prox', `<div class="uep-sec" style="margin-top:0"><b>PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
+    +pn('prox', `<div class="uep-sec" style="margin-top:0"><b>PRÓXIMOS DIAS</b> <span id="gpx-sub">horas de linha</span><button class="btn btn-ghost" style="margin-left:auto;padding:3px 10px;font-size:10px;color:var(--acc);border-color:rgba(245,166,35,.4)" onclick="setTab('plano');_qpSub('carteira')" title="A análise completa da carteira: faixa de capacidade e os lotes dia a dia">VER NO PLANO →</button></div>
       <div class="tbl-wrap" id="ger-prox"><div id="gpx-corpo"><div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div></div></div>`)
     +pn('prod', `<div class="uep-sec" style="margin-top:0" title="A UEP padrão de cada dia é a vigente nele (aba UEP_VERSOES); hoje fica fora. Toque num produto para ver o dia a dia. A impressão está no 🖨 IMPRIMIR ▾ do cabeçalho."><b>PADRÃO × REALIZADO POR PRODUTO</b> dias fechados ${botoesPad}</div>${b7}`);
   _uepSubPintar(_uepSubMontar({ D, H:Hpad, padEst:UEP_PAD_FALHA && !UEP_PAD_VOO ? 'falha' : padOk ? 'ok' : 'lendo', histFalha:!!UEP_HIST_FALHA }));
@@ -15043,6 +15069,74 @@ function _qpSetFaixa(v){
   renderQualidadePlano();
 }
 
+// ── SUB-ABAS DO 📐 PLANO (v7.199.0) ────────────────────────────────────────
+// PPCP, 03/11/2026, depois das sub-abas da ⏱ CRONOANÁLISE e da ⚖ UEP: "faz o
+// mesmo aba plano". Duas sub-abas — A CARTEIRA QUE VEM (o que ainda dá para
+// mudar) e COMO TEMOS DATADO (os dias que já fecharam) —, cada filtro no painel
+// em que ele vale (RÉGUA e FAIXA ALVO, que valem para as duas, no cabeçalho) e
+// as duas impressões num menu. Contas, leituras e o papel são os de antes.
+//
+// Os painéis são MARCAÇÃO FIXA: o renderCarteira e o renderQualidadePlano só
+// refazem o #qp-carteira / #qp-corpo, os dois sempre desenhados. Trocar de
+// sub-aba não lê nem recalcula nada.
+const PLANO_SUBS = ['carteira', 'datado'];
+let PLANO_SUB = 'carteira';   // só na memória da sessão: abre na carteira
+function _qpSub(k){
+  if(PLANO_SUBS.indexOf(k) < 0) return;
+  PLANO_SUB = k;
+  document.querySelectorAll('#qp-sub .ucv-sb').forEach(b => {
+    const on = b.dataset.sub === k;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('#sec-plano .ucv-pn').forEach(p => p.classList.toggle('on', p.dataset.sub === k));
+}
+function _qpImpFecha(){ const d = document.getElementById('qp-imp'); if(d) d.open = false; }
+// ⚠ A LARGURA DO GRÁFICO. Os dois blocos são desenhados juntos, e o da sub-aba
+// escondida não tem largura (o _svgLargura cairia nos 760 e o gráfico sairia
+// encolhido à esquerda ao trocar). Os dois painéis têm a MESMA largura: o
+// escondido mede pelo painel aceso. Com a aba inteira escondida, o de sempre.
+function _qpLarg(alvo){
+  const ref = alvo && alvo.offsetParent ? alvo : document.querySelector('#sec-plano .ucv-pn.on');
+  return _svgLargura(ref || alvo);
+}
+// O NÚMERO DE CADA BOTÃO. Só lê o que a montagem já devolveu — nenhuma conta
+// nova — e a cor é a do VEREDITO do bloco (o mesmo selo, a mesma régua). Sem a
+// leitura, o botão diz o estado, nunca 0.
+// `est`: 'sem-curva' (menos de QP_MIN_DIAS dias fechados) · 'falha' (a leitura
+// da PROGRAMACAO falhou) · nada.
+const _QP_SB_PESO = { red:3, warn:2, ok:1 };
+function _qpSubCart(blocos, est){
+  if(est === 'sem-curva') return { txt:'sem curva de capacidade ainda', cls:'' };
+  if(!blocos) return { txt:'…', cls:'' };
+  const com = blocos.filter(b => b && b.a);
+  if(!com.length){
+    if(blocos.some(b => b && b.cart && b.cart.uepFalha)) return { txt:'em UEP ainda sem base', cls:'warn' };
+    if(est === 'falha') return { txt:'programação não lida', cls:'red' };
+    return { txt:'sem lote datado para a frente', cls:'' };
+  }
+  // AS DUAS: o veredito pode mudar de uma régua para a outra — o botão diz os
+  // dois números e pega a cor do pior.
+  const cls = com.map(b => _cartVeredito(b.a).cls)
+    .reduce((m, c) => (_QP_SB_PESO[c] || 0) > (_QP_SB_PESO[m] || 0) ? c : m, '');
+  const a = com[0].a;
+  if(com.length > 1)
+    return { txt:'não cabem: ' + a.nAcima + ' de ' + a.n + ' dias pelo mix · ' + com[1].a.nAcima + ' pelas cruas', cls };
+  const dias = a.nAcima ? a.nAcima + ' de ' + a.n + ' dias não cabem' : 'todos os ' + a.n + ' dias cabem';
+  return { txt: a.sobra > 0 ? 'sobram ' + fmtN(Math.round(a.sobra)) + ' ' + _cartUn(a) + ' · ' + dias : dias, cls };
+}
+// COMO TEMOS DATADO: as duas perguntas do bloco — ALTURA e OSCILAÇÃO —, os
+// mesmos números dos dois primeiros cards.
+function _qpSubDatado(a, est){
+  if(est === 'sem-curva') return { txt:'faltam dias fechados para a curva', cls:'' };
+  if(est === 'sem-meta') return { txt:'nenhum dia com meta no período', cls:'' };
+  if(!a) return { txt:'…', cls:'' };
+  if(a.pctMedio == null) return { txt:'sem base', cls:'' };
+  return { txt:'altura p' + Math.round(a.pctMedio) + (a.osc == null ? '' : ' · oscila ' + fmtP(a.osc)),
+           cls:_qpVeredito(a).cls };
+}
+function _qpSbPinta(k, o){ _sbPinta(document.getElementById('qp-sb-' + k), o); }
+
 async function renderQualidadePlano(){
   const alvo = document.getElementById('qp-corpo');
   if(!alvo) return;
@@ -15056,13 +15150,15 @@ async function renderQualidadePlano(){
     if(curva.length < QP_MIN_DIAS){
       alvo.innerHTML = '<div class="pg-carregando">São precisos ao menos ' + QP_MIN_DIAS
         + ' dias fechados para montar a curva de capacidade. Hoje há ' + curva.length + '.</div>';
+      _qpSbPinta('datado', _qpSubDatado(null, 'sem-curva'));
       return;
     }
     const rec = QP_JANELA > 0 ? dias.slice(-QP_JANELA) : dias;
     const a = _qpAnalise(rec, curva, QP_FAIXA);
-    if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; return; }
+    if(!a){ alvo.innerHTML = '<div class="pg-carregando">Nenhum dia com meta no período.</div>'; _qpSbPinta('datado', _qpSubDatado(null, 'sem-meta')); return; }
     a.nSemSep = dias.filter(d => d.semSep).length;
-    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, _svgLargura(alvo));
+    alvo.innerHTML = _qpHtml(a, curva, dias.length, QP_REGUA, QP_ORDEM, _qpLarg(alvo));
+    _qpSbPinta('datado', _qpSubDatado(a));
   }finally{
     QP_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
     if(QP_PEND){ QP_PEND = false; renderQualidadePlano(); }
@@ -16253,6 +16349,7 @@ async function renderCarteira(){
     if(curva.length < QP_MIN_DIAS){
       alvo.innerHTML = '<div class="pg-carregando">Sem curva de capacidade ainda — são precisos ao menos '
         + QP_MIN_DIAS + ' dias fechados.</div>';
+      _qpSbPinta('carteira', _qpSubCart(null, 'sem-curva'));
       return;
     }
     // A dívida (atraso vivo + o que falta hoje) sai do `_planoDivida`, a MESMA
@@ -16260,7 +16357,9 @@ async function renderCarteira(){
     // ⚠ VAZIO NÃO É UMA COISA SÓ. A falha da leitura tem prioridade sobre o
     // "não há lote futuro": dizer que a carteira está vazia quando na verdade
     // não se conseguiu lê-la é pior que não dizer nada.
-    alvo.innerHTML = _cartBlocosHtml(await _cartBlocos(dias, curva, true), _svgLargura(alvo));
+    const blocos = await _cartBlocos(dias, curva, true);
+    alvo.innerHTML = _cartBlocosHtml(blocos, _qpLarg(alvo));
+    _qpSbPinta('carteira', _qpSubCart(blocos, _progDetFalhaInfo() ? 'falha' : null));
   }finally{
     CART_RODANDO = false; alvo.classList.remove('qp-atualizando'); _planoUpd();
     if(CART_PEND){ CART_PEND = false; renderCarteira(); }

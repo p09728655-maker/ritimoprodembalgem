@@ -617,7 +617,7 @@ ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redes
   ok('cabeçalho da ⏱ CRONOANÁLISE: o IMPORTAR PDF à vista, as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes), a frase de ajuda no title do título',
      [iB > 0 && iM > iB, (FORA.match(/<button /g) || []).length, (MENU.match(/onclick="_ucvImpFecha\(\);/g) || []).length, /<summary class="btn btn-ghost"[^>]*>🖨 IMPRIMIR ▾<\/summary>/.test(MENU),
       SC.includes('ucv-hdr-sub'), /class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido/.test(SC),
-      /#sec-crono \.ucv-hdr \.tbl-hdr-ttl,#sec-uep \.ucv-hdr \.tbl-hdr-ttl\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m,#sec-uep \.ucv-imp-m\{position:absolute/.test(html)],
+      /#sec-crono \.ucv-hdr \.tbl-hdr-ttl,#sec-uep \.ucv-hdr \.tbl-hdr-ttl[,{][^\n]*\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m,#sec-uep \.ucv-imp-m[,{][^\n]*\{position:absolute/.test(html)],
      [true, 1, 4, true, false, true, true, true]);
   // v7.198.0: a ⚖ UEP tem o mesmo menu — clique fora e Esc fecham qualquer um
   ok('o menu fecha no clique fora e no Esc (qualquer menu 🖨 aberto: cronoanálise e UEP); cada aba tem o seu fechar',
