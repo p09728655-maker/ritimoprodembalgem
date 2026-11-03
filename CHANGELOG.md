@@ -11,6 +11,39 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.197.0 — 03/11/2026 · Cronoanálise em sub-abas, impressões num menu
+
+- PPCP: *"está muito cheia a tela, tem que enxugar, deixar mais dinâmica"*. A
+  aba ⏱ CRONOANÁLISE tinha ~2.950 px de altura (três telas cheias numa janela
+  de 1920) e ~1.500 palavras, tudo empilhado. Agora é uma tarefa por vez, numa
+  faixa com quatro botões que mostram o número de cada parte:
+  1. **MEDIR** (o produto escolhido): campos, resultado, NA PRODUÇÃO, o 💾
+     REGISTRAR e as medições daquele volume;
+  2. **O QUE MEDIR** (*10 de 33 medidos · 34,9% da UEP*): os PRINCIPAIS. Tocar
+     numa linha abre o volume no MEDIR;
+  3. **MEDIÇÕES** (*34 registradas · N prontas para trocar*, em laranja quando
+     há pronta): as últimas de todos, com as PRONTAS PARA TROCAR em cima;
+  4. **TROCAS** (*9 trocas · nenhum alerta*, em âmbar quando há alerta): a
+     CONFERÊNCIA DAS TROCAS. O aviso de alerta no topo tem o botão VER AS TROCAS.
+  - O caminho para a ⏳ ONDE O TEMPO VAI foi para a ponta da faixa.
+  - Cada sub-aba fica com até ~1 tela (o MEDIR com produto, ~1.200 px).
+- **Menos texto no MEDIR**: os três cartões do QUAL NÚMERO DIGITAR viraram uma
+  linha (*DIGITE o cartão POR VOLUME COM A LINHA RODANDO · a MADERO deu 7,9 s
+  nele — não use NO PERÍODO nem SEM AS LACUNAS*). Os três cartões, o TEMPO A
+  USAR · MÉTODO · AMOSTRA e as notas TOLERÂNCIA · RÉGUA · GRAVAÇÃO foram para o
+  **ⓘ COMO LER**, recolhido no fim (aberto, ele não fecha enquanto se digita).
+- **O 💾 não some mais calado**: com o produto fora do cadastro ou sem o tempo,
+  uma linha diz o que falta (*"aparece quando o PRODUTO for escolhido da lista —
+  o nome do app de cronoanálise pode ser diferente do cadastro"*). Foi o caso de
+  hoje (*"sumiu onde salva o estudo"*).
+- **Cabeçalho**: 📄 IMPORTAR PDF à vista; as quatro impressões (conversão da
+  tela, ESTUDOS DO DIA com a data, FILA DE CRONOANÁLISE, CAPACIDADE POR
+  PRODUTO) no menu **🖨 IMPRIMIR ▾** — fecha no clique fora e no Esc.
+- **Atenção:** nenhum número, conta ou leitura mudou, e nenhuma impressão mudou
+  (o papel da conversão continua com os três cartões e as notas).
+- Medido no Chromium com os dados reais: 1920, 1366 e 1280, nada passa da
+  largura (a tabela das MEDIÇÕES rola dentro do cartão a 1280, como antes).
+
 ## v7.196.0 — 03/11/2026 · ONDE O TEMPO VAI em aba própria, como painel
 
 - PPCP: *"não achei legal junto com a cronoanálise, parece um excel

@@ -53,7 +53,7 @@ via Google Apps Script (JSONP).
   a MADERO — com o log e as paradas reais da ELOA e da MADERO de 26/09–25/10) e
   o 📄 IMPORTAR PDF (com o texto do PDF real
   de 26/10 e o nome do app com "caixa 2/2"), os PRINCIPAIS PARA ANÁLISE DE
-  TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura; v7.191.0: a ordem pela programação), e a aba 📏 RÉGUAS (o mix de 70
+  TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura; v7.191.0: a ordem pela programação), as sub-abas da ⏱ CRONOANÁLISE (v7.197.0), e a aba 📏 RÉGUAS (o mix de 70
   pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
   SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
@@ -5926,6 +5926,52 @@ feito e dá ar de verdade ao que sobrou.
   (+20%), na direção contrária das outras trocas. Pedir uma medição nova,
   registrada como SLEEP, com 30+ volumes.
 
+## SUB-ABAS DA ⏱ CRONOANÁLISE (v7.197.0)
+- PPCP, 03/11/2026: *"está muito cheia a tela, tem que enxugar, deixar mais
+  dinâmica"* → escolheu **sub-abas por tarefa** e **um menu de impressão**. A
+  aba tinha ~2.950 px (três telas a 1920) e ~1.500 palavras empilhadas.
+- Faixa `#uep-conv-sub` com quatro botões (`.ucv-sb`, `data-sub`) e quatro
+  painéis (`.ucv-pn`, a mesma chave): **MEDIR** (`medir`: campos, resultado,
+  💾, as medições do volume em `#uep-conv-regs-p`, ⓘ COMO LER) · **O QUE MEDIR**
+  (`princ`: `#uep-conv-princ`) · **MEDIÇÕES** (`regs`: `#uep-conv-regs`, todas,
+  com as PRONTAS) · **TROCAS** (`trocas`: `#uep-conv-conf`). `UCV_SUBS`,
+  `UCV_SUB` (começa no MEDIR, só na memória da sessão).
+  - `_ucvSub(k)` só acende painel e botão (`aria-selected`): nada é lido nem
+    recalculado. `_ucvSubMontar` (o texto de cada botão, só lê o que o
+    `_ucvRegPintar` já montou — no fim dele) + `_ucvSubPintar` (DOM). Sem a
+    leitura, o botão diz o estado, nunca 0.
+  - Quem abre um volume chama `_ucvSub('medir')`: PRINCIPAIS, PRONTAS, ONDE O
+    TEMPO VAI e o IMPORTAR de um PDF. O aviso da conferência tem
+    `_ucvSub('trocas')`.
+  - `#uep-conv-conf-av`, `#uep-conv-i-msg` e `#uep-conv-x-msg` ficam ACIMA dos
+    painéis: o EXCLUIR existe nas medições do MEDIR e do MEDIÇÕES.
+  - O caminho para a ⏳ ONDE O TEMPO VAI é o `.ucv-sb-ir`, na ponta da faixa
+    (saiu o `.ucv-tp-ponteiro`).
+  - Bloco novo na aba? Entra num painel — ou numa sub-aba nova (botão + painel
+    + `UCV_SUBS`), nunca empilhado de novo.
+- **MEDIR enxuto**: `_uepConvQualCurto(base)` é a linha do QUAL NÚMERO DIGITAR
+  logo abaixo dos campos; os três cartões (`_uepConvQual`), o `_uepConvGuia` e
+  as notas (`_uepConvNotasHtml`, só com a conversão pronta) vão para o miolo do
+  ⓘ COMO LER (`#uep-conv-ler-c` — só o miolo é refeito, aberto não fecha a cada
+  tecla). `_uepConvHtml(R, tela)`: com `tela`, sem as notas; o papel chama sem
+  o parâmetro e continua com elas.
+- **O 💾 diz o que falta** (`_ucvRegFalta(R, E)` → `#uep-conv-reg-falta`, pelo
+  `_uepConvAtualiza`): produto fora do cadastro, mais de um produto, tempo, ou
+  cadastro lendo. Nada digitado → nada. O formulário continua só com a
+  conversão pronta (v7.150.0).
+- **Menu 🖨 IMPRIMIR ▾** (`<details id="uep-conv-imp">`): as quatro impressões,
+  cada uma com `_ucvImpFecha();` antes (o pop-up abre no clique, síncrono).
+  Clique fora e Esc fecham (dois listeners no `document`). A frase de ajuda do
+  cabeçalho foi para o `title` do título (saiu o `.ucv-hdr-sub`).
+- Pele: `#sec-crono .ucv-pn{display:none}` / `.on{display:block}` com entrada
+  de 0,18 s, desligada com `prefers-reduced-motion`. O cartão dos campos é
+  `.ucv-pn>.uep-card`.
+- Medido (Chromium, dados reais): MEDIR vazio ~430 px, com produto ~1.200 px;
+  O QUE MEDIR ~1.050; MEDIÇÕES ~1.010–1.130; TROCAS ~720. Nada passa da largura
+  a 1920, 1366 e 1280 (a tabela das MEDIÇÕES rola dentro do cartão a 1280).
+- Testes em `uep-relatorios.test.js` (*CRONOANÁLISE: sub-abas*), conferidos por
+  mutação (11 de 11).
+
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde
   onde ganha?"* → *"não altera nada"* → prévia com os 34 estudos reais
@@ -6027,7 +6073,8 @@ feito e dá ar de verdade ao que sobrou.
 - **ABA PRÓPRIA, TELA DE PAINEL (v7.196.0, PPCP: *"não achei legal junto com a
   cronoanálise, parece um excel melhorado"*)**. `#sec-tempo` (botão `⏳ ONDE O
   TEMPO VAI` logo depois da ⏱ CRONOANÁLISE); na cronoanálise ficou o ponteiro
-  `.ucv-tp-ponteiro` onde o bloco morava. Mesmos ids (`#uep-conv-tempo`) e a
+  `.ucv-tp-ponteiro` onde o bloco morava (desde a v7.197.0, o `.ucv-sb-ir` na
+  ponta da faixa das sub-abas). Mesmos ids (`#uep-conv-tempo`) e a
   mesma pintura (`_ucvRegPintar` dentro do `_uepConvAtualiza`, que roda com a
   aba escondida: o `#uep-conv-res` existe sempre).
   - `setTab('tempo')`: `_uepConvAtualiza()` + cadastro → medições → horas, uma

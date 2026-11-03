@@ -4441,7 +4441,7 @@ console.log('\n── estudo de UEP ──');
          ['function _capJornLinhas(', 'function _capJornPeriodo(', 'function _capJornHtml(', 'function _capJornDocHtml(', 'function _capJornPremissa('].filter(f => /UEP_MIN_DIA\s*[-*\/]|\* *60|\/ *60/.test(pega(f))), []);
       const sc = src.slice(src.indexOf('<section id="sec-crono"'), src.indexOf('</section>', src.indexOf('<section id="sec-crono"')));
       ok('o 🖨 CAPACIDADE POR PRODUTO mora no cabeçalho da aba ⏱ CRONOANÁLISE; o do modal continua; o diálogo da jornada existe',
-         [/onclick="_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src),
+         [/onclick="_ucvImpFecha\(\);_ucvCapTodos\(\)"[^>]*>🖨 CAPACIDADE POR PRODUTO</.test(sc), /onclick="gerarRelatorioCapTodos\(\)"/.test(src),
           /id="modal-capjorn"/.test(src), /id="capj-min"[^>]*oninput="_capJornPintar\(\)"/.test(src), /onclick="_capJornImprimir\(\)"/.test(src),
           /id="capj-fixa"[^>]*oninput="_capJornPintar\(\)"/.test(src)],
          [true, true, true, true, true, true]);
