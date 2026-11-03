@@ -644,7 +644,8 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-tp-tab tbody tr.sel td{background:rgba(255,92,31,.08)}
 #sec-crono .ucv-tp-tab tbody tr.dentro td{color:var(--txt2)}
 #sec-crono .ucv-tp-tab td.ucv-pr small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
-#sec-crono .ucv-tp-tab td.ucv-pr .ucv-chip,#sec-crono .ucv-tp-tab td.ucv-pr .ucv-pill{margin-left:6px;font-size:9px;padding:1px 8px}
+#sec-crono .ucv-tp-tab td.ucv-tp-ob>span{display:block;width:max-content;font-size:9px;padding:1px 8px}
+#sec-crono .ucv-tp-tab td.ucv-tp-ob>span+span{margin-top:4px}
 #sec-crono .ucv-tp-tab td .ucv-tp-pc{color:var(--txt2);font-size:11.5px;margin-left:3px}
 #sec-crono .ucv-tp-mini{position:relative;width:220px;height:14px;background:var(--elevated);border-radius:3px;margin-left:auto}
 #sec-crono .ucv-tp-mini .ucv-tp-seg{border-radius:2px}
@@ -3638,7 +3639,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.194.0';
+const APP_VER   = '7.194.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7798,6 +7799,7 @@ function _ucvTempoHtml(T, est, sel, todos){
   const hcel = l => l.hGap == null ? '—' : `<span class="ucv-tp-h">${sn(l.hGap)} h<span class="${l.hGap < 0 ? 'g' : ''}" style="width:${T.hMax > 0 ? Math.max(2, Math.abs(l.hGap) / T.hMax * 70).toFixed(0) : 2}px"></span></span>`;
   const tab = `<div><div class="ucv-regs-t">ONDE PERDE, VOLUME A VOLUME <span>segundos por caixa · ordem: horas a mais que o estudo em ${CRONO_LINHA_DIAS} dias · toque na linha abre o volume no conversor</span></div>`
     + '<div class="ucv-regs-w"><table class="ucv-regs ucv-tp-tab"><thead><tr><th>VOLUME</th>'
+    + `<th title="BASE = a MADERO, régua da UEP · DENTRO DO JOGO = o JOGO do mesmo produto já conta estas caixas (fora dos totais) · AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho">OBS.</th>`
     + '<th class="n" title="Média das medições registradas, pesada pelos volumes medidos">ESTUDO<br>RODANDO</th>'
     + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO na linha, sem as paradas apontadas, nos últimos ${CRONO_LINHA_DIAS} dias fechados">PRODUÇÃO<br>SEM PARADAS</th>`
     + '<th class="n" title="Produção sem as paradas − estudo rodando: o que a produção tem e o estudo não (não é perda pronta: diz onde procurar)">DIFERENÇA</th>'
@@ -7808,8 +7810,8 @@ function _ucvTempoHtml(T, est, sel, todos){
     + `<th class="n" title="Todas as caixas do volume na janela (${CRONO_LINHA_DIAS} dias)">CX</th>`
     + '<th class="n" title="Diferença por caixa × as caixas do volume na janela: extrapolação das horas sozinho">HORAS A MAIS<br>QUE O ESTUDO</th></tr></thead><tbody>'
     + L.map((l, i) => `<tr class="${l.chave === sel ? 'sel' : ''}${l.dentro ? ' dentro' : ''}" onclick="_ucvAbrirTempo(${i})" title="Abrir este volume no conversor">`
-      + `<td class="ucv-pr">${_rpEsc(l.rot)}${l.base ? '<span class="ucv-chip base">BASE</span>' : ''}${l.dentro ? '<span class="ucv-chip">DENTRO DO JOGO</span>' : ''}${l.curta ? '<span class="ucv-pill warn">AMOSTRA CURTA</span>' : ''}`
-      + `<small>${plural(l.nMed, 'estudo', 'estudos')} · ${fmtN(l.nVol)} vol. · ${l.horasSoz != null ? v1(l.horasSoz) + ' h sozinho' : 'sem hora sozinho'}</small></td>`
+      + `<td class="ucv-pr">${_rpEsc(l.rot)}<small>${plural(l.nMed, 'estudo', 'estudos')} · ${fmtN(l.nVol)} vol. · ${l.horasSoz != null ? v1(l.horasSoz) + ' h sozinho' : 'sem hora sozinho'}</small></td>`
+      + `<td class="ucv-tp-ob">${l.base ? '<span class="ucv-chip base">BASE</span>' : ''}${l.dentro ? '<span class="ucv-chip">DENTRO DO JOGO</span>' : ''}${l.curta ? '<span class="ucv-pill warn">AMOSTRA CURTA</span>' : ''}</td>`
       + `<td class="n">${v1(l.sRod)}</td><td class="n">${v1(l.realSem)}</td>`
       + `<td class="n">${l.gapS == null ? '—' : `<b>${sn(l.gapS)}</b><span class="ucv-tp-pc">${sn(l.gapPct, 0)}%</span>`}</td>`
       + `<td class="n">${v1(l.parS)}</td><td class="n">${v1(l.metaS)}</td><td class="n">${fol(l.folgaS)}</td>`
