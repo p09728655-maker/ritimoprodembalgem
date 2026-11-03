@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.199.0 — 03/11/2026 · 📐 PLANO em sub-abas
+
+- PPCP: *"faz o mesmo aba plano"* (as sub-abas da cronoanálise e da UEP). A aba
+  📐 PLANO tinha ~2.700 px de altura, os dois blocos empilhados e uma barra de
+  seis filtros que quebrava em duas linhas a 1366. Agora são duas sub-abas, cada
+  botão com o seu número na cor do veredito do bloco:
+  1. **A CARTEIRA QUE VEM** (*sobram 3.716 cx · 6 de 8 dias não cabem*): o que
+     ainda dá para mudar. Com AS DUAS, o botão diz os dois números (*não cabem:
+     2 de 8 dias pelo mix · 3 pelas cruas*) e pega a cor do pior;
+  2. **COMO TEMOS DATADO** (*altura p55 · oscila 31,5%*): as duas perguntas do
+     bloco, os mesmos números dos dois primeiros cards.
+- **Cada filtro mora no bloco em que vale**: CARTEIRA e E SE PARADAS na
+  carteira; JULGAR OS ÚLTIMOS e ORDEM no datado (com a nota *JULGAR = quais dias
+  aparecem · RÉGUA = de onde sai o padrão*). RÉGUA e FAIXA ALVO valem para os
+  dois e ficam no cabeçalho. Antes, só um tooltip dizia qual filtro valia onde.
+- **Cabeçalho**: 🖨 CARTEIRA e 🖨 ESTUDO no menu **🖨 IMPRIMIR ▾** (CARTEIRA QUE
+  VEM e ESTUDO COMPLETO), como na cronoanálise e na UEP. A nota CAPACIDADE =
+  JORNADA NORMAL, SEM HORA EXTRA foi para a ponta da faixa das sub-abas.
+- O **VER NO PLANO →** dos PRÓXIMOS DIAS (aba ⚖ UEP) abre a carteira.
+- **Atenção:** nenhum número, conta ou leitura mudou; as impressões são as
+  mesmas.
+- Medido no Chromium com os dados da planilha de hoje: CARTEIRA ~1.350 px e
+  DATADO ~1.550 px (as duas juntas eram ~2.700); 1920, 1366 e 1280 sem nada
+  passar da largura; o gráfico das duas sub-abas na largura do cartão (o bloco
+  escondido mede pelo painel aceso); o menu fecha no Esc.
+
 ## v7.198.0 — 03/11/2026 · ⚖ UEP em sub-abas, PADRÃO ALTERADO alinhado
 
 - PPCP: *"faz o mesmo na aba uep"* (as sub-abas da cronoanálise). A aba ⚖ UEP

@@ -3564,7 +3564,9 @@ feito e dá ar de verdade ao que sobrou.
     pula com uma semana ruim; longa demais carrega um mês ruim que já passou.
   - ⚠ **São DOIS recortes e eles não se confundem:** *JULGAR* escolhe quais dias
     aparecem no gráfico; *RÉGUA* escolhe de quais dias sai o padrão com que eles
-    são comparados. O subtítulo da tela existe só para dizer isso.
+    são comparados. O subtítulo da tela existe só para dizer isso (desde a
+    v7.199.0, na barra da sub-aba COMO TEMOS DATADO, com o JULGAR ao lado e a
+    RÉGUA no cabeçalho).
   - **A FAIXA ALVO é testável na tela** (p45–p55 … p60–p70). As constantes
     `QP_ALVO_*` são o **ponto de partida**, não a lei: a faixa entra por
     parâmetro no `_qpAnalise`, e **o veredito e o desenho leem dela** — senão a
@@ -5345,7 +5347,9 @@ feito e dá ar de verdade ao que sobrou.
   as **mesmas peças** do estudo — muda a moldura e a orientação. Junto com a
   GESTÃO DE PERDAS, são os dois únicos deitados; aqui a paisagem faz sentido
   porque o gráfico é largo e a lista de lotes é uma linha por lote. O 🖨 do
-  estudo completo continua em retrato, rebatizado **🖨 ESTUDO**.
+  estudo completo continua em retrato, rebatizado **🖨 ESTUDO**. Desde a
+  v7.199.0 os dois moram no menu 🖨 IMPRIMIR ▾ da aba (CARTEIRA QUE VEM ·
+  ESTUDO COMPLETO).
 - **A dívida é lida em UM lugar** (`_planoDivida`), pela tela e pelo papel —
   a nota do `!= null` (dívida zero é valor legítimo) mora lá. ⚠ A Tela C da TV
   tem a **própria** leitura do `faltaZerar`, anterior a isto e com outra
@@ -6016,6 +6020,47 @@ feito e dá ar de verdade ao que sobrou.
   ~1.240; nada passa da largura a 1920, 1366 e 1280.
 - Testes: `relatorios.test.js` (sub-abas, números, pele, atraso recolhido) e
   `uep-padrao.test.js` (PADRÃO ALTERADO e o 🖨 no menu); 12 de 12 mutações.
+
+## SUB-ABAS DO 📐 PLANO (v7.199.0)
+- PPCP, 03/11/2026: *"faz o mesmo aba plano"* (as sub-abas da cronoanálise e
+  da UEP). A aba tinha ~2.700 px, os dois blocos empilhados e seis filtros numa
+  barra que quebrava em duas linhas a 1366.
+- Faixa `#qp-sub` (dois `.ucv-sb`) e dois painéis `.ucv-pn` de MARCAÇÃO FIXA:
+  **A CARTEIRA QUE VEM** (`carteira`: barra com CARTEIRA e E SE PARADAS +
+  `#qp-carteira`) · **COMO TEMOS DATADO** (`datado`: barra com JULGAR OS ÚLTIMOS,
+  ORDEM e a nota dos dois recortes + `#qp-corpo`). `PLANO_SUBS`, `PLANO_SUB`
+  (começa na carteira, só na memória da sessão). `_qpSub(k)` só acende painel e
+  botão — o `renderCarteira`/`renderQualidadePlano` desenham sempre os dois
+  blocos (refazem só o miolo), por isso a entrada anima no `.on`, como na
+  cronoanálise (na UEP, que refaz o painel, é o `.entra`).
+- **RÉGUA e FAIXA ALVO no cabeçalho** (valem para os dois blocos — a regra do
+  *UMA RÉGUA SÓ NA ABA*); cada filtro de um bloco só no painel dele. A nota
+  CAPACIDADE = JORNADA NORMAL, SEM HORA EXTRA (`.qp-sb-cap`) fica na ponta da
+  faixa. Os títulos `par-sec` dos dois blocos saíram (o botão é o título).
+- ⚠ **A largura do gráfico do bloco escondido**: `_qpLarg(alvo)` mede pelo
+  painel aceso (os dois têm a mesma largura); com a aba escondida, o de sempre
+  (760). Sem isso o `_svgLargura` do bloco escondido cairia nos 760 e o gráfico
+  sairia encolhido à esquerda ao trocar — não há redesenho na troca.
+- **Números dos botões**: `_qpSubCart(blocos, est)` (a sobra primeiro, os dias
+  que não cabem; AS DUAS = os dois números e a cor do pior; `est` `sem-curva` ·
+  `falha` — a leitura da PROGRAMACAO — ou em UEP sem base) e
+  `_qpSubDatado(a, est)` (`altura pNN · oscila X%`, os dois primeiros cards),
+  cor do veredito do bloco (`_cartVeredito`/`_qpVeredito`). Pintados pelo
+  `_qpSbPinta` → `_sbPinta` (a mesma pintura da cronoanálise e da UEP) em cada
+  saída dos dois renders. Sem a leitura → o estado, nunca 0.
+- **Menu 🖨 IMPRIMIR ▾** (`#qp-imp`): CARTEIRA QUE VEM e ESTUDO COMPLETO, cada
+  um com `_qpImpFecha();` antes. Os ouvintes de clique fora e Esc já fecham
+  qualquer `details.ucv-imp[open]`.
+- O **VER NO PLANO →** dos PRÓXIMOS DIAS da ⚖ UEP é `setTab('plano');
+  _qpSub('carteira')`.
+- CSS: as peças da faixa, do menu e do cabeçalho ganharam `#sec-plano` junto de
+  `#sec-crono`/`#sec-uep`; regras próprias `#sec-plano .ucv-pn`, `.qp-pbar`,
+  `.qp-lbl`, `.qp-sel`, `.qp-sb-cap`.
+- Medido (Chromium, o `.gs` do repositório sobre a cópia da planilha de 03/11):
+  CARTEIRA ~1.350 px, DATADO ~1.550; nada passa da largura a 1920, 1366 e 1280;
+  os gráficos das duas sub-abas com a largura do cartão; as duas impressões
+  abrem pelo menu.
+- Testes em `relatorios.test.js` (*SUB-ABAS DO 📐 PLANO*), 14 de 14 mutações.
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde

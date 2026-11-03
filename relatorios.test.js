@@ -3181,7 +3181,7 @@ ok('o desenho pede o recorte ao _qpOrdenar em vez de fatiar por conta própria',
 ok('e o título da tabela vem de lá junto com as linhas',
    /ord\.titulo/.test(_qpDes), true);
 ok('a tela passa a ordem escolhida e a largura do card para o desenho',
-   /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM, _svgLargura\(alvo\)\)/.test(JS), true);
+   /_qpHtml\(a, curva, dias\.length, QP_REGUA, QP_ORDEM, _qpLarg\(alvo\)\)/.test(JS), true);   // v7.199.0: a largura do painel aceso (_qpLarg)
 // A tela não pode custar chamada nova ao Apps Script.
 const _qpRender = pega('async function renderQualidadePlano(');
 ok('a tela lê o histórico que o painel já busca (sem chamada nova)',
@@ -3617,7 +3617,7 @@ ok('o relatório da carteira usa as mesmas peças do estudo (montagem, desenho, 
    ['_cartBlocos(dias, curva, false)', '_cartBlocosHtml(blocos, CART_SVG_W_PAISAGEM)', '_cartLotesHtml(ac)', '_PLANO_SKIN', "_rpDocParadas("].every(s => _relCart.includes(s)), true);
 ok('e sai em PAISAGEM', /_rpDocParadas\('Carteira que vem — ' \+ hojeStr\(\), true\)/.test(_relCart), true);
 ok('sem o estudo de baixo', /_qpHtml\(|COMO O NÚMERO SAI/.test(_relCart), false);
-ok('a barra da aba tem os dois botões', /onclick="gerarRelatorioCarteira\(\)"/.test(_v7) && /onclick="gerarRelatorioPlano\(\)"/.test(_v7), true);   // botões são HTML, não script
+ok('o menu 🖨 IMPRIMIR ▾ da aba tem os dois (cada um fecha o menu antes)', /onclick="_qpImpFecha\(\);gerarRelatorioCarteira\(\)"/.test(_v7) && /onclick="_qpImpFecha\(\);gerarRelatorioPlano\(\)"/.test(_v7), true);   // botões são HTML, não script (v7.199.0: no menu)
 ok('a caixa do mix separa o veredito do resto em blocos com classe',
    ['qm-como', 'qm-conf', 'qm-det'].every(c => pega('function _cartMixHtml(').includes('class="' + c + '"')), true);
 // ⚠ A guarda é sobre a ABA PLANO: a Tela C da TV tem a própria leitura do
@@ -3629,6 +3629,86 @@ ok('não sobrou leitura da dívida escrita à mão na tela nem no papel',
 ok('régua e faixa redesenham a carteira junto com o retrospecto',
    [(JS.match(/renderCarteira\(\);\s*\n?\s*renderQualidadePlano\(\)/g)||[]).length >= 2,
     /invalidarProgDetCache\(\)/.test(JS)], [true, true]);
+// ── SUB-ABAS DO 📐 PLANO (v7.199.0, PPCP 03/11/2026: "faz o mesmo aba plano") ──
+// Duas sub-abas com o seu número, cada filtro no painel em que ele vale, RÉGUA e
+// FAIXA ALVO (que valem para as duas) no cabeçalho, e as duas impressões num menu.
+{
+  const iP = _v7.indexOf('<section id="sec-plano"'), SP = _v7.slice(iP, _v7.indexOf('</section>', iP));
+  const iH = SP.indexOf('<div class="ucv-sub" id="qp-sub"'), HDR = SP.slice(0, iH);
+  const iC = SP.indexOf('<div class="ucv-pn on" data-sub="carteira">'), iD = SP.indexOf('<div class="ucv-pn" data-sub="datado">');
+  const PC = SP.slice(iC, iD), PD = SP.slice(iD);
+  ok('PLANO: cabeçalho com RÉGUA, FAIXA ALVO, o menu 🖨 IMPRIMIR ▾ (dois itens) e o ↻ ATUALIZAR; nenhum filtro de um bloco só',
+     [iH > 0, /id="qp-regua"/.test(HDR), /id="qp-faixa"/.test(HDR), /<details class="ucv-imp" id="qp-imp">/.test(HDR),
+      (HDR.match(/onclick="_qpImpFecha\(\);/g) || []).length, />↻ ATUALIZAR</.test(HDR), /id="qp-upd"/.test(HDR),
+      /id="qp-mix"|id="qp-ese"|id="qp-ordem"|qp-q/.test(HDR)],
+     [true, true, true, true, 2, true, true, false]);
+  ok('PLANO: duas sub-abas (a carteira acesa), cada uma com o seu número; a nota da capacidade fica na faixa',
+     [/data-sub="carteira" role="tab" aria-selected="true" onclick="_qpSub\('carteira'\)"[^>]*><b>A CARTEIRA QUE VEM<\/b><span id="qp-sb-carteira">…<\/span>/.test(SP),
+      /data-sub="datado" role="tab" aria-selected="false" onclick="_qpSub\('datado'\)"[^>]*><b>COMO TEMOS DATADO<\/b><span id="qp-sb-datado">…<\/span>/.test(SP),
+      (SP.match(/class="ucv-sb/g) || []).length, /class="qp-sb-cap"[^>]*>CAPACIDADE = <b>JORNADA NORMAL, SEM HORA EXTRA<\/b>/.test(SP)],
+     [true, true, 2, true]);
+  ok('PLANO: cada filtro no painel em que vale — CARTEIRA e E SE na carteira; JULGAR e ORDEM no datado, com a nota dos dois recortes',
+     [iC > iH && iD > iC, /id="qp-mix"/.test(PC) && /id="qp-ese"/.test(PC) && /id="qp-carteira"/.test(PC), /qp-q|id="qp-ordem"|id="qp-corpo"/.test(PC),
+      (PD.match(/class="btn btn-ghost qp-q/g) || []).length, /id="qp-ordem"/.test(PD) && /id="qp-corpo"/.test(PD),
+      /<b>JULGAR<\/b> = QUAIS DIAS APARECEM · <b>RÉGUA<\/b> = DE ONDE SAI O PADRÃO/.test(PD), /par-sec/.test(SP)],
+     [true, true, false, 4, true, true, false]);
+  ok('PLANO: a pele — painel escondido, o aceso aparece com a entrada (marcação fixa: o render não refaz o painel), sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
+     [/#sec-plano \.ucv-pn\{display:none\}/.test(src), /#sec-plano \.ucv-pn\.on\{display:block;animation:ucvIn/.test(src),
+      /@media \(prefers-reduced-motion:reduce\)\{#sec-plano \.ucv-pn\.on\{animation:none\}\}/.test(src),
+      ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-hdr-bts .btn{'].filter(c => !src.includes(',#sec-plano ' + c))],
+     [true, true, true, []]);
+  // _qpSub: acende painel e botão; nada é lido nem recalculado
+  { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); } }, setAttribute(k, v){ this.at[k] = v; } });
+    const SB = ['carteira', 'datado'].map(el), PN = ['carteira', 'datado'].map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
+    global.document = { querySelectorAll:q => (q === '#qp-sub .ucv-sb' ? SB : q === '#sec-plano .ucv-pn' ? PN : []) };
+    global.PLANO_SUBS = ['carteira', 'datado']; global.PLANO_SUB = 'carteira';
+    eval(pega('function _qpSub('));
+    _qpSub('datado'); const r1 = [PLANO_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), SB.map(e => e.at['aria-selected'])];
+    _qpSub('xx');
+    ok('_qpSub acende painel e botão (aria-selected); chave desconhecida não muda nada; não lê nem desenha',
+       [r1, PLANO_SUB, /render|carregar|jsonp|innerHTML/i.test(pega('function _qpSub('))], [['datado', ['datado'], ['false', 'true']], 'datado', false]);
+    // _qpLarg: o painel escondido mede pelo aceso (os dois têm a mesma largura)
+    const ON = { clientWidth:1324 };
+    global.document = { querySelector:q => (q === '#sec-plano .ucv-pn.on' ? ON : null) };
+    { const m = JS.match(/const SVG_LARG_MAX = \d+;/); eval(m[0].replace('const ','global.')); }
+    eval(pega('function _svgLargura(')); eval(pega('function _qpLarg('));
+    const r2 = [_qpLarg({ offsetParent:{}, clientWidth:900 }), _qpLarg({ offsetParent:null, clientWidth:0 })];
+    global.document = { querySelector:() => null };
+    r2.push(_qpLarg({ offsetParent:null, clientWidth:0 }));
+    ok('_qpLarg: visível mede a si; escondido mede o painel aceso; sem painel aceso, o de sempre (760)', r2, [866, 1290, 760]);
+    global.document = docA; }
+  // O NÚMERO DE CADA BOTÃO
+  eval(JS.slice(JS.indexOf('const _QP_SB_PESO'), JS.indexOf('function _qpSbPinta(')));
+  const A = (o) => Object.assign({ n:8, nAcima:0, sobra:0, sai:0, nImpossivel:0, mixModo:'mix', teto:3240, cabe:0 }, o);
+  const B = (a, cart) => ({ a, cart: cart || {} });
+  ok('o botão da CARTEIRA: estado sem leitura, vazio pela falha, em UEP sem base, a sobra primeiro, todos cabem, e AS DUAS com a cor do pior',
+     [_qpSubCart(null, 'sem-curva').txt, _qpSubCart(null).txt, _qpSubCart([B(null, { uepFalha:'sem-uep' })]).cls,
+      _qpSubCart([B(null)], 'falha'), _qpSubCart([B(null)]).txt,
+      _qpSubCart([B(A({ nAcima:6, sobra:3716.4, sai:3716 }))]), _qpSubCart([B(A({ nAcima:6, sobra:3716.4, sai:3716, mixModo:'uep' }))]).txt,
+      _qpSubCart([B(A({ nAcima:2, sai:300, cabe:900 }))]), _qpSubCart([B(A())]),
+      _qpSubCart([B(A({ nAcima:2, sai:300, cabe:900 })), B(A({ nAcima:3, sobra:10, sai:400 }))])],
+     ['sem curva de capacidade ainda', '…', 'warn', { txt:'programação não lida', cls:'red' }, 'sem lote datado para a frente',
+      { txt:'sobram 3.716 cx · 6 de 8 dias não cabem', cls:'red' }, 'sobram 3.716 UEP · 6 de 8 dias não cabem',
+      { txt:'2 de 8 dias não cabem', cls:'warn' }, { txt:'todos os 8 dias cabem', cls:'ok' },
+      { txt:'não cabem: 2 de 8 dias pelo mix · 3 pelas cruas', cls:'red' }]);
+  ok('o botão do DATADO: as duas perguntas do bloco (altura e oscilação, os números dos cards) com a cor do veredito',
+     [_qpSubDatado(null, 'sem-curva').txt, _qpSubDatado(null, 'sem-meta').txt, _qpSubDatado(null).txt, _qpSubDatado({ pctMedio:null }).txt,
+      _qpSubDatado({ pctMedio:55.4, osc:31.5, faixa:[50, 60] }), _qpSubDatado({ pctMedio:54, osc:12, faixa:[50, 60] }), _qpSubDatado({ pctMedio:54, osc:null, faixa:[50, 60] }).txt],
+     ['faltam dias fechados para a curva', 'nenhum dia com meta no período', '…', 'sem base',
+      { txt:'altura p55 · oscila 31,5%', cls:'red' }, { txt:'altura p54 · oscila 12,0%', cls:'ok' }, 'altura p54']);
+  ok('os textos dos botões não fazem conta (só leem o que a montagem devolveu) e a pintura é a mesma da cronoanálise e da UEP',
+     [/_cartAnalise\(|_qpAnalise\(|_qpPercentil\(|_qpOscilacao\(|_qpCurva\(|_cartMontar\(/.test(pega('function _qpSubCart(') + pega('function _qpSubDatado(')),
+      /_sbPinta\(/.test(pega('function _qpSbPinta('))], [false, true]);
+  const RC = pega('async function renderCarteira('), RQ = pega('async function renderQualidadePlano(');
+  ok('o render pinta o número do botão em cada saída (desenho, sem curva, sem meta) e mede a largura pelo _qpLarg',
+     [/_qpSbPinta\('carteira', _qpSubCart\(blocos, _progDetFalhaInfo\(\) \? 'falha' : null\)\)/.test(RC), /_qpSbPinta\('carteira', _qpSubCart\(null, 'sem-curva'\)\)/.test(RC),
+      /_qpSbPinta\('datado', _qpSubDatado\(a\)\)/.test(RQ), /_qpSbPinta\('datado', _qpSubDatado\(null, 'sem-curva'\)\)/.test(RQ), /_qpSbPinta\('datado', _qpSubDatado\(null, 'sem-meta'\)\)/.test(RQ),
+      /_svgLargura\(alvo\)/.test(RC + RQ)],
+     [true, true, true, true, true, false]);
+  ok('o caminho da ⚖ UEP (PRÓXIMOS DIAS) abre a carteira; o menu fecha pelo _qpImpFecha e pelos ouvintes de qualquer menu 🖨',
+     [/onclick="setTab\('plano'\);_qpSub\('carteira'\)"/.test(_v7), /function _qpImpFecha\(\)\{ const d = document\.getElementById\('qp-imp'\); if\(d\) d\.open = false; \}/.test(JS),
+      /querySelectorAll\('details\.ucv-imp\[open\]'\)/.test(JS)], [true, true, true]);
+}
 // O carregador é compartilhado com a aba PROGRAMAÇÃO: duas telas, uma leitura.
 const _loader = pega('async function carregarProgramacaoDetalhada(');
 ok('o carregador tem cache e requisição em voo compartilhada',
@@ -3693,7 +3773,7 @@ ok('o desenho do vazio não faz conta',
    /_qpPercentil\(|_qpCurva\(|_cartAnalise\(/.test(_vazDes), false);
 const _renderV = pega('async function renderCarteira(');
 ok('a tela escolhe entre o quadro e o vazio, sem afirmar carteira vazia por falha',
-   /_cartBlocosHtml\(await _cartBlocos\(dias, curva, true\), _svgLargura\(alvo\)\)/.test(_renderV)
+   /const blocos = await _cartBlocos\(dias, curva, true\);\s*alvo\.innerHTML = _cartBlocosHtml\(blocos, _qpLarg\(alvo\)\);/.test(_renderV)
    && /if\(!blocos\.some\(b => b\.a\)\) return _cartVazioHtml\(blocos\[0\]\.cart\);/.test(pega('function _cartBlocosHtml(')), true);
 
 // ── O GRÁFICO OCUPA A LARGURA, NÃO AMPLIA ────────────────────────────────
@@ -4644,7 +4724,7 @@ console.log('\n── estudo de UEP ──');
     ok('a pele: o painel aceso aparece; a entrada só com .entra (o refresh redesenha o painel) e sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
        [/#sec-uep \.ucv-pn\{display:none\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block\}/.test(src), /#sec-uep \.ucv-pn\.entra\{animation:ucvIn/.test(src),
         /@media \(prefers-reduced-motion:reduce\)\{#sec-uep \.ucv-pn\.entra\{animation:none\}\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block;animation/.test(src),
-        ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-sb-ir{'].filter(c => !src.includes(',#sec-uep ' + c))],
+        ['.ucv-sb{', '.ucv-sb.on{', '.ucv-sb.red span{', '.ucv-imp-m{', '.ucv-hdr{', '.ucv-sb-ir{'].filter(c => !src.includes(',#sec-uep ' + c) && !src.includes(',#sec-uep ' + c.slice(0, -1) + ','))],
        [true, true, true, true, false, []]);
   }
 
