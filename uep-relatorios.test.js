@@ -1670,6 +1670,60 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro), entre eles e a lista de medições',
      [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
       SECT.indexOf('id="uep-conv-princ"') < SECT.indexOf('id="uep-conv-tempo"') && SECT.indexOf('id="uep-conv-tempo"') < SECT.indexOf('id="uep-conv-regs"')], [true, true, true]);
+  // 🖨 IMPRIMIR do bloco (v7.195.0, PPCP: "impressa"): a MESMA marcação no modo papel
+  const LIN0 = global.UCV_TEMPO_LINHAS; global.UCV_TEMPO_LINHAS = 2;
+  const HTp = _ucvTempoHtml(T, HRS, '501149|MESA CABECEIRA MADERO', false), HP = _ucvTempoHtml(T, null, null, true, true);
+  global.UCV_TEMPO_LINHAS = LIN0;
+  const nTr = h => (h.match(/<tbody>[\s\S]*<\/tbody>/)[0].match(/<tr[ >]/g) || []).length;
+  ok('na tela: o 🖨 no título do bloco, 2 linhas com o VER TODOS; no papel: sem botão, sem clique, todas as linhas, sem o "toque na linha"',
+     [HTp.includes('onclick="gerarRelatorioTempo()"'), nTr(HTp), /VER TODOS \(5\)/.test(HTp),
+      /gerarRelatorioTempo|_ucvAbrirTempo|_ucvTempoTodos|<button/.test(HP), nTr(HP), /toque na linha/.test(HP), /class="sel"/.test(HP)],
+     [true, 2, true, false, T.linhas.length, false, false]);
+  ok('no papel o COMO LER vem aberto (título de seção, não <details>) e sobe para a folha 1: cascata → como ler → tabela → onde ganha',
+     [/<details/.test(HP), HP.includes('<div class="ucv-tp-ler"><div class="rp-sec-ttl">COMO LER</div><ul><li><b>Diferença não é perda.</b>'),
+      HP.indexOf('A CASCATA DA LINHA') < HP.indexOf('COMO LER') && HP.indexOf('COMO LER') < HP.indexOf('ONDE PERDE, VOLUME A VOLUME') && HP.indexOf('ONDE PERDE') < HP.indexOf('ONDE GANHA'),
+      HT.indexOf('ONDE GANHA') < HT.indexOf('ⓘ COMO LER')], [false, true, true, true]);
+  const SKT = pegaConst('_UCV_TEMPO_SKIN').replace(/^`|`$/g, '');
+  const tokUsados = [...new Set([...(TH.match(/var\(--[\w-]+/g) || []), ...pegaConst('UCV_TEMPO_SEG').match(/'--[\w-]+'/g).map(t => 'var(' + t.slice(1, -1))])].map(t => t.slice(4));
+  const tokPele = (SKT.match(/^\.ucv-tempo\{([^}]*)\}/m) || ['', ''])[1];
+  ok('a pele do papel: escopada em .ucv-tempo, todo token de cor do desenho redefinido (senão cai no preto), a tabela abre a folha 2, o título repetido some',
+     [SKT.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.ucv-tempo')), tokUsados.filter(t => !tokPele.includes(t + ':')),
+      /\.ucv-tempo \.ucv-tp-tw\{page-break-before:always\}/.test(SKT), /\.ucv-tempo \.ucv-tp-ler\{page-break-inside:avoid\}/.test(SKT), /\.ucv-tempo \.ucv-tp \.uep-conv-tit\{display:none\}/.test(SKT)],
+     [true, [], true, true, true]);
+  eval.call(global, pegaJs('function _ucvTempoDocHtml(') + pegaJs('function gerarRelatorioTempo('));
+  ok('o desenho do papel não faz conta: o bloco no modo papel + o rodapé',
+     [UCV_SEM_CONTA.test(pegaJs('function _ucvTempoDocHtml(')), /_ucvTempoMontar\(|\.reduce\(/.test(pegaJs('function _ucvTempoDocHtml(')),
+      _ucvTempoDocHtml(T, { data:'03/11/2026', hora:'13:15' }).startsWith(HP), /onde o tempo vai — estudo × produção × meta<\/span><span>gerado 03\/11\/2026 às 13:15/.test(_ucvTempoDocHtml(T, { data:'03/11/2026', hora:'13:15' }))],
+     [false, false, true, true]);
+  // o botão, rodando a função real com o navegador de mentira
+  const G0 = {}, NOMES = ['window', 'alert', 'hojeStr', 'UCV_TEMPO_M', '_uepConvAtualiza', '_ucvLinhaItens', '_uepPadJanela', '_rpDocParadas', '_rpCabecalho',
+    '_rpBotaoImprimir', '_UCV_DOC_SKIN', '_UCV_TEMPO_SKIN', '_rpErroRelatorio'];
+  NOMES.forEach(n => { G0[n] = global[n]; });
+  const F = { alertas:[], abriu:0, html:'', args:null, atualizou:0 }; let est = 'lendo';
+  global.window = Object.assign(global, { open:() => { F.abriu++; return { document:{ open(){}, write(h){ F.html += h; }, close(){} }, close(){} }; } });
+  global.alert = t => F.alertas.push(t);
+  global.hojeStr = () => '03/11/2026';
+  global._uepConvAtualiza = () => { F.atualizou++; };
+  global._ucvLinhaItens = () => est;
+  global._uepPadJanela = () => ({ de:'04/10/2026', ate:'02/11/2026' });
+  global._rpDocParadas = (t, deitado) => { F.args = [t, deitado]; return '<html>'; };
+  global._rpCabecalho = (t, m, sb) => `<hdr>${t}${m}${sb}</hdr>`; global._rpBotaoImprimir = () => '';
+  global._UCV_DOC_SKIN = ''; global._UCV_TEMPO_SKIN = '';
+  global.UCV_TEMPO_M = null; gerarRelatorioTempo();
+  est = 'sem-endpoint'; gerarRelatorioTempo();
+  global.UCV_TEMPO_M = _ucvTempoMontar(null, PRODS, HRS, 2530); gerarRelatorioTempo();
+  global.UCV_TEMPO_M = _ucvTempoMontar([], PRODS, HRS, 2530); gerarRelatorioTempo();
+  ok('sem o que imprimir: avisa o estado (lendo, .gs antigo, medições não lidas, nenhuma medição) e NÃO abre janela',
+     [F.abriu, F.alertas.length, /sendo lida/.test(F.alertas[0]), /\.gs v5\.36/.test(F.alertas[1]), /medições registradas ainda não foram lidas/.test(F.alertas[2]), /Nenhuma medição registrada/.test(F.alertas[3])],
+     [0, 4, true, true, true, true]);
+  global.UCV_TEMPO_M = T; gerarRelatorioTempo();
+  ok('com o bloco montado: refaz a tela antes, abre UMA janela no clique, deitada, com a janela da produção, as medições e a meta no cabeçalho',
+     [F.atualizou, F.abriu, F.args, F.html.includes(`<hdr>ONDE O TEMPO VAI<div class="rp-per">04/10/2026 → 02/11/2026</div><div>${T.linhas.reduce((a, l) => a + l.nMed, 0)} medições · 5 volumes estudados</div><div>meta 2.530 UEP · 12,50 s por UEP · base `),
+      F.html.includes('<div class="ucv-doc ucv-tempo">'), F.html.includes(HP.slice(0, 600))],
+     [5, 1, ['Onde o tempo vai - 03-11-2026', true], true, true, true]);
+  ok('a impressão é síncrona: a janela abre no clique, nenhuma leitura antes', /await |\.then\(/.test(pegaJs('function gerarRelatorioTempo(')), false);
+  NOMES.forEach(n => { global[n] = G0[n]; });
+  ok('a tela guarda a montagem que mostra (a impressão é o retrato dela)', /UCV_TEMPO_M = TV;/.test(RPT), true);
 }
 console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──');
 { const TXT = "Takt Time —   Painel Sirius 1.4 · EMBALAGEM 01   RitmoPatrimar v 2.93.1   · emitido em   26/10/2026 \n MEDIÇÃO \n 26/10/2026 10:22 \n PERÍODO \n 10:22–10:40 \n VOLUMES \n 50 \n PARADO (MARCADO) \n 5 min \n No período, saiu um volume a cada 20.7 s, paradas dentro; com a linha rodando, 14.3 s. \n Sem takt para comparar: não há programa de produção do grupo EMBALAGEM cadastrado. \n 1 lacuna — intervalo maior que o dobro do normal (14.0 s) — somou 14.6s além do normal: cerca de 1 volume que deixou de sair. As paradas marcadas no\n cronômetro já estão fora desta conta: estas, ninguém marcou. \n POR VOLUME NO PERÍODO \n 20.7 s \n com as paradas, do 1º ao último toque \n TAKT DA SEMANA \n — \n sem programa para comparar \n POR VOLUME COM A LINHA\n RODANDO \n 14.3 s \n sem as paradas marcadas \n SEM AS LACUNAS \n 14.0 s \n sem parada nenhuma \n LACUNAS \n 1 \n 14.6s além do normal \n Intervalo entre   volumes \n Tempo de cada   volume   até   o seguinte ,   com a linha rodando — as paradas marcadas no cronômetro   fi cam fora \n Intervalo   Lacuna — mais que 2× o normal   Rodando — média dos intervalos \n 0 \n 10 s \n 20 s \n 30 s   28.6   s 28.6 s \n Rodando   14.3 s \n 15 5   10   20   25   30   35   40   45   50 2 \n Volume nº \n Onde a linha parou sem parada marcada \n Volume   nº   Intervalo   Além do normal   O que aconteceu \n 15   28.6 s   14.6 s \n Intervalo = tempo de um volume até o seguinte, com a linha rodando: as paradas marcadas no cronômetro já saíram; as marcadas depois (no resultado do tablet ou aqui no PC) continuam\n dentro dos intervalos. O primeiro toque não tem intervalo: o intervalo vai de um toque ao seguinte, e o tempo antes do primeiro toque não entra. Contra o takt vai o relógio do primeiro ao\n último toque ÷ intervalos, com as paradas dentro (sem o setup marcado entre os toques, quando o grupo tem setup planejado) — a mesma régua do programa da semana. Com a linha rodando\n = soma dos intervalos ÷ quantidade. Lacuna = intervalo maior que 2× o normal — a média dos intervalos que não são lacuna. Leitura a partir de 10 intervalos. Na embalagem, o programa da\n semana é colado em volumes.";
