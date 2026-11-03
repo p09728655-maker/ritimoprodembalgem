@@ -803,8 +803,17 @@ console.log('\n── FERIADOS (.gs v5.38) ──');
   ok('getProgramacaoDetalhada manda os feriados de hoje em diante (sem a aba, lista vazia)',
      [vm.runInContext('getProgramacaoDetalhada().feriados', sem.ctx), vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx)],
      [[], [{ data: '02/11/2026', desc: 'FINADOS' }, { data: '20/11/2026', desc: 'FERIADO' }]]);
+  // v5.43 — PPCP, 03/11/2026, com a impressão da UEP: o 02/11 (segunda) saía
+  // SEM PRODUÇÃO no cartão do dia que já passou. A lista começa na segunda
+  // DESTA semana; feriado de semana passada não vai.
   com.setHoje('03/11/2026');
-  ok('feriado que já passou não vai mais', vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx), [{ data: '20/11/2026', desc: 'FERIADO' }]);
+  ok('na terça 03/11 o feriado da segunda 02/11 ainda vai (é desta semana)', vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx),
+     [{ data: '02/11/2026', desc: 'FINADOS' }, { data: '20/11/2026', desc: 'FERIADO' }]);
+  com.setHoje('09/11/2026');
+  ok('feriado de semana passada não vai mais', vm.runInContext('(function(){ _invalidarValores(); return getProgramacaoDetalhada().feriados; })()', com.ctx), [{ data: '20/11/2026', desc: 'FERIADO' }]);
+  ok('_segundaNum: a segunda da semana (domingo é da semana que termina; virada de mês e de ano)',
+     ['20261103', '20261102', '20261108', '20261201', '20270101'].map(n => vm.runInContext(`_segundaNum(${n})`, com.ctx)),
+     [20261102, 20261102, 20261102, 20261130, 20261228]);
   // a aba ilegível volta ao comportamento antigo, nunca derruba o cálculo
   const ruim = montar(prog, log, { hoje: '30/10/2026', fer: { 0: ['DATA'], length: 2, map() { throw new Error('planilha fora'); } } });
   ok('aba FERIADOS que não lê: {} e o cálculo segue (dia útil como antes)',

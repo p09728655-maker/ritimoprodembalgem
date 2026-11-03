@@ -4578,7 +4578,7 @@ console.log('\n── estudo de UEP ──');
      [(JS.match(/(?<!function )_uepAbaDados\(/g) || []).length, /uepCard\(|_uepAbaHoras\(|_uepAbaMix\(|_uepAbaConf\(/.test(R)], [4, false]);   // tela, papel, diretoria (v7.116.0) e TV F/G (v7.138.0)
   ok('sem buraco no meio: a confiabilidade divide a coluna do mix, as colunas esticam e o hora a hora cresce até o fim',
      [/<div class="uep-2">\$\{b2\}<div>\$\{b3\}<div class="uep-sec" title="\$\{_rpEsc\(UEP_ORIGEM_T\)\}"><b>4 · ORIGEM DA UEP/.test(R),
-      /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura\)/.test(JS),
+      /#sec-uep \.uep-2 \.uep-grow\{flex:1\}/.test(src), /function _uepAbaSvg\(horas, largura, altura, pbMin\)/.test(JS),
       /_uepAbaSvg\(horas, w, Math\.min\(UEP_G_H_MAX/.test(R)], [true, true, true, true]);
   ok('a aba é só do gerencial do PC: a TV não desenha UEP', (pega('function _sincSlideB(') + pega('function renderTV(')).includes('renderUep'), false);
 
@@ -4586,11 +4586,12 @@ console.log('\n── estudo de UEP ──');
   eval(pega('function _uepAbaPerCards('));
   { const m = JS.match(/const EIXO_PASSOS=\[[^\]]+\];/); eval(m[0].replace('const ','global.')); }
   eval(pega('function _eixoGrade(')); global._eixoGrade = _eixoGrade;
+  eval(pega('function _uepAbaPb(')); global._uepAbaPb = _uepAbaPb;
   eval(pega('function _uepAbaSvg(')); eval(pega('function _uepAbaPerSvg('));
   if (typeof _kpiCls === 'undefined') { const m = JS.match(/const _KPI_PAPEL = \{[^}]+\};/); if (m) eval(m[0].replace('const ','global.')); eval(pega('function _kpiCls(')); }
   if (typeof _rpEsc === 'undefined') eval(pega('function _rpEsc('));
-  { const m = JS.match(/const UEP_DOC_SVG_W = \d+;/), m2 = JS.match(/const UEP_DOC_MIX_MAX = \d+;/);
-    eval(m[0].replace('const ','global.')); eval(m2[0].replace('const ','global.')); }
+  { const m = JS.match(/const UEP_DOC_SVG_W = \d+;/), m2 = JS.match(/const UEP_DOC_MIX_MAX = \d+;/), m3 = JS.match(/const UEP_DOC_SVG_H = \d+;/);
+    eval(m[0].replace('const ','global.')); eval(m2[0].replace('const ','global.')); eval(m3[0].replace('const ','global.')); }
   eval(pega('function _cartSemUepHtml(')); global._cartSemUepHtml = _cartSemUepHtml;
   eval(pega('function _uepDocHtml('));
   const card = { c:'ok', ef:102.2, meta:2530, esperado:1383 };
@@ -4624,8 +4625,35 @@ console.log('\n── estudo de UEP ──');
       _uepDocHtml(Object.assign({}, Dd, { mix: Object.assign({}, mixG, { cx: mixG.cxCom + 30 }), semHoje:[{ codigo:'501199001', rot:'X', cx:30 }] }), ctxD).includes('cx de produtos sem UEP ficam fora')],
      [true, false]);
   ok('folha 1 = hoje (hora a hora) e período lado a lado; a folha 2 (mix, confiabilidade) começa em página nova',
-     [DOC.indexOf('HORA A HORA EM UEP') < DOC.indexOf('PERÍODO — DIAS FECHADOS'), DOC.indexOf('PERÍODO — DIAS FECHADOS') < DOC.indexOf('ud-quebra'),
-      DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-cols"/.test(DOC)], [true, true, true, true]);
+     [DOC.indexOf('PERÍODO — DIAS FECHADOS') < DOC.indexOf('HORA A HORA EM UEP'), DOC.indexOf('HORA A HORA EM UEP') < DOC.indexOf('ud-quebra'),
+      DOC.indexOf('ud-quebra') < DOC.indexOf('O MIX DE HOJE'), /class="ud-p1"/.test(DOC)], [true, true, true, true]);
+  // v7.192.0 — PPCP, 03/11/2026, com o print: "alinhar os gráficos, está
+  // desalinhado". Eram duas colunas soltas (hoje: título + cards + título +
+  // gráfico; período: título + cards + gráfico): o hora a hora começava ~40 px
+  // abaixo, com 250 de altura contra 230 e o eixo 12 px mais alto. Agora UMA
+  // grade preenchida linha a linha, e os dois gráficos com a mesma altura e o mesmo pé.
+  { const p1 = DOC.slice(DOC.indexOf('class="ud-p1"'), DOC.indexOf('ud-quebra'));
+    const DOCsemP = _uepDocHtml(Object.assign({}, Dd, { P:null, perCards:null }), Object.assign({}, ctxD, { hist:'falha' }));
+    const ordem = ['HOJE — 07:00', 'PERÍODO — DIAS FECHADOS', 'class="kpi-grid c4"', 'class="kpi-grid"', 'HORA A HORA EM UEP', 'DIA A DIA EM UEP', 'aria-label="UEP por hora', 'aria-label="UEP por dia'].map(t => p1.indexOf(t));
+    const vb = [...p1.matchAll(/viewBox="0 0 (\d+) (\d+)"/g)].map(m => m[1] + '×' + m[2]);
+    const eixo = sv => [...sv.matchAll(/<text x="[\d.]+" y="([\d.]+)"[^>]*>(?:\d\d:\d\d|\d\d\/\d\d)<\/text>/g)].map(m => Number(m[1]))[0];
+    const svH = p1.match(/<svg[^>]*UEP por hora[\s\S]*?<\/svg>/)[0], svD = p1.match(/<svg[^>]*UEP por dia[\s\S]*?<\/svg>/)[0];
+    ok('folha 1 em linhas alinhadas: títulos, cards, títulos dos gráficos e gráficos na MESMA linha (hoje à esquerda, período à direita)',
+       [ordem.every(i => i > 0), ordem.every((v, i) => !i || v > ordem[i - 1])], [true, true]);
+    ok('os dois gráficos da folha 1 têm a mesma caixa (largura × altura) e o rótulo do eixo X na mesma altura',
+       [vb, eixo(svH) === eixo(svD)], [[UEP_DOC_SVG_W + '×' + UEP_DOC_SVG_H, UEP_DOC_SVG_W + '×' + UEP_DOC_SVG_H], true]);
+    const And = H.map((h, i) => Object.assign({}, h, { andamento: i === 1, ate: i === 1 ? '14:50' : null }));
+    const pAnd = _uepDocHtml(Object.assign({}, Dd, { horas: And }), ctxD);
+    const sh = pAnd.match(/<svg[^>]*UEP por hora[\s\S]*?<\/svg>/)[0], sd = pAnd.match(/<svg[^>]*UEP por dia[\s\S]*?<\/svg>/)[0];
+    ok('com a hora em andamento (o "até HH:MM" na 2ª linha) o período ganha o MESMO pé: os dois eixos continuam na mesma linha',
+       [_uepAbaPb(And), eixo(sh) === eixo(sd), eixo(sh) < eixo(svH)], [40, true, true]);
+    ok('o alerta do dado vai na largura toda, numa linha própria (não empurra só o hora a hora)',
+       /<div class="ud-alerta ud-larga"><b>ATENÇÃO AO DADO<\/b>/.test(_uepDocHtml(Object.assign({}, Dd, { avisos:['x'] }), ctxD)), true);
+    ok('a META é a mesma tinta nos dois gráficos do papel (token --uep-meta); a tela segue com a cor de sempre',
+       [/stroke="var\(--uep-meta,var\(--txt\)\)"/.test(svH), /stroke="var\(--uep-meta,var\(--acc\)\)"/.test(svD),
+        /\.uep-doc\{--uep-meta:#1F2328\}/.test(src), /--uep-meta:/.test(src.replace(/\.uep-doc\{--uep-meta:#1F2328\}/, ''))], [true, true, true, false]);
+    ok('sem dia fechado no período: nada de título nem gráfico vazio do lado direito',
+       [/DIA A DIA EM UEP/.test(DOCsemP), /UEP por dia/.test(DOCsemP)], [false, false]); }
   ok('tela e papel mostram a linha da hora extra e o total do dia quando houve HE',
      [DOC.includes('EM HORA EXTRA (fora da meta)'), DOC.includes('TOTAL DO DIA'), /mix\.he\.cx>0\?`<tr class="uep-he">/.test(R),
       _uepDocHtml(Object.assign({}, Dd, { mix: _uepAbaMix(phm.slice(1)) }), ctxD).includes('TOTAL DO DIA')], [true, true, true, false]);
