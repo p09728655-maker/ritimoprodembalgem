@@ -5700,6 +5700,14 @@ feito e dá ar de verdade ao que sobrou.
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o ✓ TROCAR A UEP diz que
   falta o v5.34 e não grava; a conferência diz o mesmo. O IMPORTAR e o
   REGISTRAR não dependem do v5.34 (o `registrarCrono` é da v5.30).
+- **✕ LIMPAR** (v7.193.0, PPCP 03/11/2026, com um PDF importado na tela: *"ter
+  opção de limpar"*): `_ucvLimpar` zera `UCV_LIMPAR_CAMPOS` (produto, tempo
+  rodando e os campos do registro, menos o MEDIDO POR) e `UCV_LIMPAR_MSGS` (os
+  avisos), redesenha e volta ao PRODUTO. Ficam a BASE e a TOLERÂNCIA (deste
+  computador) e o MEDIDO POR. Não grava nada (o teste prende). O botão fica
+  depois do 📌 FIXAR e virou o último foco: o `_uepConvTecla` (Tab volta ao
+  PRODUTO) passou para ele. Medido no Chromium: a linha de campos cabe em 1920,
+  1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
 
 ## 🖨 ESTUDOS DO DIA na ⏱ CRONOANÁLISE (v7.172.0)
 - PPCP, 27/10/2026: *"subi estudos hoje, colocar impressão dos estudos feito

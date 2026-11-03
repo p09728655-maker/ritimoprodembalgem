@@ -663,9 +663,35 @@ ok('Encanto rodando 17,6 ÷ MADERO rodando 8,7 = 2,02', _uepConvMontar(PRODS, 'A
 // três linhas ("s/VOLUME DA BASE (" · "SLEEP" · ")") e desalinhava os campos.
 ok('o rótulo da base é UM item do label (texto e nome no mesmo span)',
    /<label[^>]*>s\/VOLUME DA BASE/.test(html), false);
-// v7.143.1: depois da base vem o 📌 FIXAR — o Tab que volta ao PRODUTO é dele
-ok('o último foco do conversor (o FIXAR) tem o Tab ligado; o campo da base não',
-   [/id="uep-conv-fixar"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), /id="uep-conv-base"[^>]*onkeydown=/.test(html)], [true, false]);
+// v7.143.1: depois da base vem o 📌 FIXAR — o Tab que volta ao PRODUTO era dele.
+// v7.193.0: o ✕ LIMPAR veio depois do FIXAR e virou o último foco: o Tab é dele.
+ok('o último foco do conversor (o LIMPAR, depois do FIXAR) tem o Tab ligado; o FIXAR e o campo da base não',
+   [/id="uep-conv-limpar"[^>]*onkeydown="_uepConvTecla\(event\)"/.test(html), /id="uep-conv-fixar"[^>]*onkeydown=/.test(html),
+    /id="uep-conv-base"[^>]*onkeydown=/.test(html), html.indexOf('id="uep-conv-limpar"') > html.indexOf('id="uep-conv-fixar"')], [true, false, false, true]);
+// ✕ LIMPAR (v7.193.0, PPCP 03/11/2026, com um PDF importado na tela: "ter opção
+// de limpar"). Zera o estudo da tela; base, tolerância e MEDIDO POR ficam.
+{
+  const docAntes = global.document, elAntes = global._ucvEl, atAntes = global._uepConvAtualiza;
+  const val = { prod:'501155 · SAPATEIRA VIVARE', seg:'13,5', base:'7,9', tol:'15', 'r-data':'03/11/2026', 'r-per':'16,2',
+                'r-lac':'11,0', 'r-vol':'55', 'r-vel':'9', 'r-quem':'JOÃO' };
+  const txt = { 'i-msg':'✓ Importado: Sapateira Vivare', 't-msg':'✓ UEP trocada', 'r-msg':'✓ Medição registrada', 'x-msg':'✓ excluída' };
+  const els = {}; let foco = null, redesenhou = 0;
+  Object.keys(val).forEach(n => { els[n] = { value: val[n], focus: () => { foco = n; } }; });
+  Object.keys(txt).forEach(n => { els[n] = { textContent: txt[n] }; });
+  global._ucvEl = n => els[n] || null;
+  global._uepConvAtualiza = () => { redesenhou++; };
+  eval.call(global, 'global.UCV_LIMPAR_CAMPOS = ' + pegaConst('UCV_LIMPAR_CAMPOS') + '; global.UCV_LIMPAR_MSGS = ' + pegaConst('UCV_LIMPAR_MSGS') + ';');
+  eval.call(global, pegaJs('function _ucvLimpar('));
+  _ucvLimpar();
+  ok('✕ LIMPAR zera produto, tempo e os campos do registro; base, tolerância e MEDIDO POR ficam',
+     Object.keys(val).map(n => n + '=' + els[n].value),
+     ['prod=', 'seg=', 'base=7,9', 'tol=15', 'r-data=', 'r-per=', 'r-lac=', 'r-vol=', 'r-vel=', 'r-quem=JOÃO']);
+  ok('✕ LIMPAR apaga os avisos (importado, troca, registro, exclusão), redesenha a tela e volta ao PRODUTO',
+     [Object.keys(txt).map(n => els[n].textContent), redesenhou, foco], [['', '', '', ''], 1, 'prod']);
+  ok('✕ LIMPAR não grava nem apaga nada: nem planilha nem o que é guardado neste computador',
+     /jsonp|_ucvGuarda|localStorage|CFG\.sheetsUrl/.test(pegaJs('function _ucvLimpar(')), false);
+  global.document = docAntes; global._ucvEl = elAntes; global._uepConvAtualiza = atAntes;
+}
 // 📌 FIXAR (v7.143.1, PPCP: "deixa um botão para fixar sleep"; a base hoje é a MADERO)
 eval.call(global, pegaJs('function _uepConvFixar('));
 ok('FIXAR: com a base no produto e o tempo dela, fixa o tempo; sem tempo ou com outro produto, escolhe a base',

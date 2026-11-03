@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.193.0 — 03/11/2026 · Cronoanálise: botão ✕ LIMPAR
+
+- PPCP, com um PDF importado na aba ⏱ CRONOANÁLISE: *"ter opção de limpar"*.
+  Depois de importar ou digitar um estudo, não havia como zerar a tela para o
+  próximo — era apagar campo por campo.
+- **✕ LIMPAR**, ao lado do 📌 FIXAR MADERO: apaga o PRODUTO, o s/VOLUME RODANDO,
+  os campos do registro (data, no período, sem as lacunas, volumes,
+  velocidade) e os avisos (importado, registrado, trocado, excluído), e volta o
+  cursor ao PRODUTO.
+- **Ficam** a BASE e a TOLERÂNCIA (são deste computador e valem para todo
+  estudo) e o MEDIDO POR (a mesma pessoa mede vários).
+- Nada é gravado nem apagado na planilha: medição registrada continua na lista.
+- **Atenção:** nenhum número mudou. O Tab que volta ao PRODUTO passou do FIXAR
+  para o LIMPAR (o último botão da linha). Sem re-deploy.
+
 ## v7.192.0 — 03/11/2026 · Impressão da UEP: os gráficos alinhados · ⚠ **re-deploy** (.gs v5.43)
 
 - PPCP, com a impressão da aba ⚖ UEP na mão: *"alinhar os gráficos, está
