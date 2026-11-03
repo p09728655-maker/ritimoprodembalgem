@@ -636,6 +636,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-tp-conc b{color:var(--txt);font-weight:600}
 #sec-crono .ucv-tp .ucv-tp-falta{color:var(--red)}
 #sec-crono .ucv-tp .ucv-tp-folga{color:var(--ok)}
+#sec-crono .ucv-tp-tab td .ucv-tp-pm small{display:block;font-size:11px;line-height:1.15}
 #sec-crono .ucv-tp-leg{display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2);margin-top:10px}
 #sec-crono .ucv-tp-leg i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:6px}
 #sec-crono .ucv-tp-leg em{display:inline-block;width:0;height:13px;border-left:2px dashed var(--txt);vertical-align:-2px;margin-right:6px}
@@ -3641,7 +3642,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.195.2';
+const APP_VER   = '7.195.3';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7800,7 +7801,10 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
       + _ucvTempoSeg(0, l.puro != null ? l.puro : l.sRod, '--ucv-tp-puro', mxL) + (l.puro != null ? _ucvTempoSeg(l.puro, l.sRod, '--warn', mxL) : '')
       + (l.realSem != null ? _ucvTempoSeg(l.sRod, l.realSem, '--red', mxL) + _ucvTempoSeg(Math.max(l.sRod, l.realSem), l.real, '--ucv-tp-par', mxL) : '')
       + (l.metaS != null ? `<div class="ucv-tp-meta" style="left:${(l.metaS / mxL * 100).toFixed(2)}%"></div>` : '') + '</div>';
-  const fol = x => x == null ? '—' : `<span class="${x >= 0 ? 'ucv-tp-folga' : 'ucv-tp-falta'}">${sn(x)}</span>`;
+  // em PALAVRAS, não em sinal (v7.195.3, PPCP: "não estou entendendo se melhorou
+  // ou piorou"): "−4,6" não dizia se era bom; "mais lenta" que a meta diz
+  const fol = x => x == null ? '—' : Math.abs(x) < 0.05 ? '<span class="ucv-tp-pm">= meta</span>'
+    : `<span class="ucv-tp-pm ${x >= 0 ? 'ucv-tp-folga' : 'ucv-tp-falta'}">${v1(Math.abs(x))} s<small>${x >= 0 ? 'mais rápida' : 'mais lenta'}</small></span>`;
   // a barra mora num trilho de LARGURA FIXA (v7.195.1, PPCP: "alinhar"): com a
   // largura da barra solta, o número andava conforme o tamanho dela
   const hcel = l => l.hGap == null ? '—' : `<span class="ucv-tp-h">${sn(l.hGap)} h<i><span class="${l.hGap < 0 ? 'g' : ''}" style="width:${T.hMax > 0 ? Math.max(3, Math.abs(l.hGap) / T.hMax * 100).toFixed(0) : 3}%"></span></i></span>`;
@@ -7812,7 +7816,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
     + '<th class="n" title="Produção sem as paradas − estudo rodando: o que a produção tem e o estudo não (não é perda pronta: diz onde procurar)">DIFERENÇA</th>'
     + '<th class="n" title="As paradas apontadas nessas horas, por caixa">PARADAS<br>APONTADAS</th>'
     + `<th class="n" title="527 min × 60 ÷ META UEP × UEP do cadastro de hoje">META</th>`
-    + '<th class="n" title="Meta − produção real (com as paradas). + = a produção cabe no tempo que a meta concede">FOLGA (+)<br>FALTA (−)</th>'
+    + '<th class="n" title="A produção real (com as paradas), por caixa, contra o tempo que a META concede. Mais rápida = cabe na meta; mais lenta = passa dela. A meta sai da UEP do cadastro: muda quando a cronoanálise troca a UEP">PRODUÇÃO REAL<br>× META</th>'
     + '<th class="n">ONDE O TEMPO VAI</th>'
     + `<th class="n" title="Todas as caixas do volume na janela (${CRONO_LINHA_DIAS} dias)">CX</th>`
     + '<th class="n" title="Diferença por caixa × as caixas do volume na janela: extrapolação das horas sozinho">HORAS A MAIS<br>QUE O ESTUDO</th></tr></thead><tbody>'
@@ -7826,11 +7830,12 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
     + '</tbody></table></div>'
     + (!papel && T.linhas.length > UCV_TEMPO_LINHAS ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvTempoTodos()">${todos ? 'VER MENOS' : `VER TODOS (${T.linhas.length})`}</button></div>` : '') + '</div>';
   const ganha = T.ganha.length ? `<div class="ucv-tp-ganha"><span class="t">ONDE GANHA</span><span class="q">a produção repete o estudo (até ${UCV_TEMPO_GANHA_PCT}% acima) ou cabe na meta:</span>`
-    + T.ganha.map(l => `<span class="g"><b>${_rpEsc(l.p.nome)}${l.p.volSel ? ' · VOL ' + l.p.volSel + '/' + l.p.nVolTot : ''}</b> <span>${sn(l.gapPct, 0)}% · ${l.folgaS >= 0 ? 'folga' : 'falta'} ${v1(Math.abs(l.folgaS))} s/cx${l.curta ? ' · amostra curta' : ''}</span></span>`).join('') + '</div>' : '';
+    + T.ganha.map(l => `<span class="g"><b>${_rpEsc(l.p.nome)}${l.p.volSel ? ' · VOL ' + l.p.volSel + '/' + l.p.nVolTot : ''}</b> <span>${sn(l.gapPct, 0)}% · ${Math.abs(l.folgaS) < 0.05 ? 'na meta' : `${v1(Math.abs(l.folgaS))} s/cx ${l.folgaS >= 0 ? 'mais rápida' : 'mais lenta'} que a meta`}${l.curta ? ' · amostra curta' : ''}</span></span>`).join('') + '</div>' : '';
   const itens = '<li><b>Diferença não é perda.</b> Junta o que a produção tem e o estudo não: troca de cor dentro do lote, começo de lote, ritmo, microparada não apontada e caixa lançada na hora seguinte. Diz onde procurar.</li>'
     + `<li><b>Produção</b> = só as horas em que o volume rodou sozinho na linha (sem outro produto nem o outro volume), nos últimos ${CRONO_LINHA_DIAS} dias fechados. AMOSTRA CURTA = menos de ${UCV_TROCA_MIN_VOL} volumes nos estudos ou menos de ${UEP_PAD_MIN_MIN / 60} h sozinho na produção.</li>`
     + '<li><b>Horas a mais</b> = diferença por caixa × todas as caixas do volume na janela — extrapolação das horas sozinho.</li>'
     + `<li><b>Meta por caixa</b> = ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(T.meta)} = ${T.sUep.toFixed(2).replace('.', ',')} s por UEP × a UEP do cadastro de hoje.</li>`
+    + '<li><b>Produção real × meta</b>: a produção com as paradas, por caixa, contra a meta. <b>Mais rápida</b> = cabe na meta; <b>mais lenta</b> = passa dela. A meta segue a UEP do cadastro: quando a cronoanálise troca a UEP, ela muda junto — a diferença e as horas a mais não.</li>'
     + '<li><b>Volume dentro do JOGO</b>: quando o JOGO do produto também foi medido, o volume aparece na tabela, mas fica fora dos totais (as caixas já estão no JOGO).</li>'
     + `${S.foraCad ? `<li>${plural(S.foraCad, 'volume medido não está', 'volumes medidos não estão')} no cadastro de hoje e ${S.foraCad === 1 ? 'fica' : 'ficam'} fora.</li>` : ''}`;
   const ler = papel ? `<div class="ucv-tp-ler"><div class="rp-sec-ttl">COMO LER</div><ul>${itens}</ul></div>`
@@ -7880,6 +7885,7 @@ const _UCV_TEMPO_SKIN = `
 .ucv-tempo .ucv-tp-conc b{color:#1a1a2e}
 .ucv-tempo .ucv-tp-falta{color:#c53030}
 .ucv-tempo .ucv-tp-folga{color:#2f855a}
+.ucv-tempo .ucv-tp-pm small{display:block;font-size:8px;line-height:1.15}
 .ucv-tempo .ucv-tp-leg{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:9.5px;color:#4a5568;margin-top:7px}
 .ucv-tempo .ucv-tp-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .ucv-tempo .ucv-tp-leg em{display:inline-block;width:0;height:11px;border-left:2px dashed #1a1a2e;vertical-align:-2px;margin-right:5px}

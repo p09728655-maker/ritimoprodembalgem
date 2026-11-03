@@ -6018,3 +6018,9 @@ feito e dá ar de verdade ao que sobrou.
   barra dentro em %; antes a largura da barra (70 a 2 px) empurrava o número e
   cada linha tinha o número num lugar. O `%` da DIFERENÇA (`.ucv-tp-pc`) tem
   `min-width`. Barra de tamanho variável ao lado de número = trilho fixo.
+- **PRODUÇÃO REAL × META em PALAVRAS, nunca em sinal** (v7.195.3, PPCP: *"não
+  estou entendendo se melhorou ou piorou"*). Era FOLGA (+) / FALTA (−) com
+  `−4,6`: o sinal não dizia se era bom. A célula é `4,6 s` + *mais lenta*
+  (passa da meta, vermelho) ou *mais rápida* (cabe, verde); `= meta` até
+  0,05 s. Esta é a ÚNICA coluna que depende da UEP do cadastro (a meta por
+  caixa): muda quando a cronoanálise troca a UEP. DIFERENÇA e HORAS A MAIS não.
