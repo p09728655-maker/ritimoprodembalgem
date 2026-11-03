@@ -1858,6 +1858,31 @@ console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──'
      [IS.erro, IS.D.produto, IS.D.volume, IS.D.codigos, IS.D.uepCad,
       /fala em volume 3\/3, .* — importe este sozinho/.test(_ucvImportItem(Object.assign({}, L, { produto:'Penteadeira strass - caixa 3/3' }), PRODS, EI, '26/10/2026', '').erro)],
      [undefined, 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '501.059.002', 2.29, true]);
+  // v7.199.1 (PPCP 03/11/2026, com o PDF da HOME RIPADO ANTARES 1.8: "não está
+  // buscando o correto"): o app v2.99.2 põe o VOLUME no título — "<produto> ·
+  // VOL 1/3 · <grupo>". Cortado no 1º "·", o VOL 1/3 ia para o grupo e o painel
+  // casava com o produto INTEIRO (3 volumes): 14,3 s de UM volume virava a UEP
+  // média do jogo (1,81 contra 2,10, "-13,8%"). O texto é o que o pdf.js 3.11.174
+  // tira do PDF real. Cadastro do 501072 como no print do mesmo dia (2,34 + 2,29
+  // + 1,67 = 6,30 no jogo, 2,10 por volume).
+  const TXT2 = "Takt Time —   HOME RIPADO ANTARES 1.8 · VOL 1/3 · EMBALAGEM 01   RitmoPatrimar v 2.99.2   · emitido em   03/11/2026 \n MEDIÇÃO \n 03/11/2026 13:38 \n PERÍODO \n 13:38–13:50 \n VOLUMES \n 45 \n PARADO (MARCADO) \n 2 min \n ROUBADOS PELAS PARADAS \n 7 · teriam saído 52 \n No período, saiu um volume a cada 16.5 s, paradas dentro; com a linha rodando, 14.3 s. \n Sem takt para comparar: não há programa de produção do grupo EMBALAGEM cadastrado. \n Nenhuma lacuna: nenhum intervalo passou do dobro do normal. \n POR VOLUME NO PERÍODO \n 16.5 s \n com as paradas, do 1º ao último toque \n TAKT DA SEMANA \n — \n sem programa para comparar \n POR VOLUME COM A LINHA RODANDO \n 14.3 s \n sem as paradas marcadas \n SEM AS LACUNAS \n 14.3 s \n sem parada nenhuma \n LACUNAS \n 0 \n nenhum intervalo passou de 2× o normal \n VOLUMES/HORA \n 217 \n na medição inteira, com as paradas \n Intervalo entre   volumes \n Tempo de cada   volume   até   o seguinte ,   com a linha rodando — as paradas marcadas no cronômetro   fi cam fora \n Intervalo   Lacuna — mais que 2× o normal   Rodando — média dos intervalos \n 0 \n 5 s \n 10 s \n 15 s \n 20 s \n Rodando   14.3 s \n 2   4   6   8   10   12   14   16   18   20   22   24   26   28   30   32   34   36   38   40   42   44 \n Volume nº \n Volumes roubados pelas paradas = o que teria saído no mesmo tempo, no passo da linha rodando, menos o que saiu (paradas marcadas, setup incluído). Intervalo = tempo de um volume até o seguinte, com a linha rodando: as paradas marcadas no cronômetro já saíram; as\n marcadas depois (no resultado do tablet ou aqui no PC) continuam dentro dos intervalos. O primeiro toque não tem intervalo: o intervalo vai de um toque ao seguinte, e o tempo antes do primeiro toque não entra. Contra o takt vai o relógio do primeiro ao último toque ÷ intervalos,\n com as paradas dentro (sem o setup marcado entre os toques, quando o grupo tem setup planejado) — a mesma régua do programa da semana. Com a linha rodando = soma dos intervalos ÷ quantidade. Lacuna = intervalo maior que 2× o normal — a média dos intervalos que não\nsão lacuna. Volumes/hora = volumes ÷ tempo da medição inteira, com as paradas dentro: inclui o tempo antes do primeiro toque e depois do último e, com setup planejado, o setup entre os toques, que o por volume no período tira. Leitura a partir de 10 intervalos. Na embalagem, o\n programa da semana é em volumes, e o takt usa as horas dos dias programados.\n";
+  const L2 = _ucvPdfLer(TXT2);
+  ok('o PDF real da HOME RIPADO ANTARES 1.8 · VOL 1/3: o volume fica com o PRODUTO, o grupo é o último trecho do título',
+     L2, { produto:'HOME RIPADO ANTARES 1.8 · VOL 1/3', grupo:'EMBALAGEM 01', data:'03/11/2026', hora:'13:38', vol:45, per:16.5, rod:14.3, lac:14.3, versao:'2.99.2', falta:[] });
+  const PRH = _uepConvProdutos(['CINAMOMO', 'CINAMOMO/OFF WHITE', 'IMBUIA/OFF WHITE'].flatMap((cor, i) => [2.34, 2.29, 1.67].map((uep, v) =>
+    ({ codigo:'501072' + String(i * 3 + v + 1).padStart(3, '0'), desc:'VOL ' + (v + 1) + '/3 HOME RIPADO ANTARES 1.8', cor, uep, uepVig:'03/11/2026 DIGITADA' }))));
+  const IH = _ucvImportItem(Object.assign({ arquivo:'h.pdf' }, L2), PRH, EI, '03/11/2026', '');
+  ok('vira a linha do VOL 1/3 (só os códigos dele, cadastro 2,34) — nunca o produto inteiro',
+     [IH.erro, IH.R.p.rot, IH.D.volume, IH.D.codigos, IH.D.uepCad, IH.D.uep],
+     [undefined, '501072 · HOME RIPADO ANTARES 1.8 · VOL 1/3', 'VOL 1/3', '501.072.001 501.072.004 501.072.007', 2.34, 1.81]);
+  const tl = t => { const x = _ucvPdfLer('Takt Time — ' + t + ' RitmoPatrimar v 2.99.2'); return [x.produto, x.grupo]; };
+  ok('o título em outras formas: sem volume, sem grupo, volume com hífen (o nome do arquivo), e o grupo nunca é o volume',
+     [tl('Painel Sirius 1.4 · EMBALAGEM 01'), tl('HOME RIPADO ANTARES 1.8 · VOL 2/3'), tl('HOME RIPADO ANTARES 1.8'), tl('HOME RIPADO ANTARES 1.8 · VOL 3-3 · EMBALAGEM 01')],
+     [['Painel Sirius 1.4', 'EMBALAGEM 01'], ['HOME RIPADO ANTARES 1.8 · VOL 2/3', ''], ['HOME RIPADO ANTARES 1.8', ''], ['HOME RIPADO ANTARES 1.8 · VOL 3-3', 'EMBALAGEM 01']]);
+  const ph = t => { const a = _ucvPdfAchar(PRH, t); return a.p ? a.p.rot : (a.motivo || a.n); };
+  ok('cada volume do título acha a sua linha (com barra ou hífen); volume que o produto não tem não casa',
+     [ph('HOME RIPADO ANTARES 1.8 · VOL 2/3'), ph('HOME RIPADO ANTARES 1.8 · VOL 3-3'), ph('Home Ripado Antares 1.8 - caixa 1/3'), /fala em volume 1\/2/.test(ph('HOME RIPADO ANTARES 1.8 · VOL 1/2'))],
+     ['501072 · HOME RIPADO ANTARES 1.8 · VOL 2/3', '501072 · HOME RIPADO ANTARES 1.8 · VOL 3/3', '501072 · HOME RIPADO ANTARES 1.8 · VOL 1/3', true]);
   ok('os dois caminhos do IMPORTAR (um PDF e vários) acham o produto pelo _ucvPdfAchar',
      [(JS.match(/_ucvPdfAchar\(/g) || []).length, /_uepConvAchar\(/.test(pegaJs('async function _ucvImportar(')), /_ucvPdfAchar\(prods, x\.produto\)/.test(pegaJs('function _ucvImportItem('))],
      [3, false, true]);
