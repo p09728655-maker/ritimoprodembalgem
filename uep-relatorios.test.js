@@ -1593,6 +1593,79 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
 // "importar para não ter que digitar nada"). O texto abaixo é o que o pdf.js
 // 3.11.174 tira do PDF real "Takt Time — Painel Sirius 1.4 · EMBALAGEM 01 ·
 // 26/10/2026 10:22" (app de cronoanálise, RitmoPatrimar v2.93.1), item a item.
+// ONDE O TEMPO VAI (v7.194.0, PPCP 03/11/2026: "com esses estudos o que dá pra
+// mostrar em KPI onde perde onde ganha?" → prévia com os estudos reais → "pode
+// subir na aba cronoanálise"). Por caixa: o estudo (sem as lacunas, rodando)
+// contra a produção nas horas em que o volume rodou SOZINHO (o _ucvPadraoDe do NA
+// PRODUÇÃO, com as paradas apontadas) e a meta. Nenhuma leitura nova.
+console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
+{
+  eval.call(global, 'global.UCV_TEMPO_GANHA_PCT = ' + pegaConst('UCV_TEMPO_GANHA_PCT') + '; global.UCV_TEMPO_LINHAS = ' + pegaConst('UCV_TEMPO_LINHAS')
+    + '; global.UCV_TEMPO_SEG = ' + pegaConst('UCV_TEMPO_SEG') + ';');
+  ['function _ucvTempoMontar(', 'function _ucvTempoSeg(', 'function _ucvTempoHtml('].forEach(f => eval.call(global, pegaJs(f)));
+  const H = (data, hora, cods, par) => ({ data, hora, min:60, cods, par:par || {} });
+  const HRS = [H('20/10/2026', '08:00', { 501149001:360 }, { 'Troca de produto':6 }),        // MADERO sozinha
+    H('20/10/2026', '09:00', { 501139001:100, 501139002:50 }),                                // ENCANTO sozinho (duas cores)
+    H('20/10/2026', '10:00', { 501139001:60, 501149001:100 }),                                // dividida: conta nas caixas, fora do tempo
+    H('21/10/2026', '07:00', { 501059002:120 }, { Outros:12 }),                               // STRASS VOL 2/2 sozinho
+    H('21/10/2026', '08:00', { 501059001:100, 501059002:100 }),                               // STRASS os dois volumes (só o JOGO)
+    H('22/10/2026', '08:00', { 501149001:360 }), H('22/10/2026', '09:00', { 501149001:360 })];
+  const RG = (modelo, produto, volume, sRod, sLac, volumes) => ({ modelo, produto, volume, sRod, sLac, volumes });
+  const REGS = [RG('501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 7.9, 6.7, 60),
+    RG('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 18, 18, 20), RG('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 20, '', 20),
+    RG('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 99, 99, ''),                                  // sem VOLUMES MEDIDOS: não pesa
+    RG('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 12, 12, 50), RG('501059', 'PENTEADEIRA CAMARIM STRASS', 'JOGO 2 VOL', 13, 13, 40),
+    RG('501094', 'MESA CABECEIRA SLEEP', 'VOL 1/1', 7.9, 7.9, 30),                           // não rodou sozinha
+    RG('501136', 'LIVREIRO ENCANTO', 'VOL 1/1', 15, 15, ''),                                 // só medição sem volumes: fora
+    RG('501888', 'PRODUTO SUMIDO', 'VOL 1/1', 10, 10, 30)];                                  // fora do cadastro
+  const T = _ucvTempoMontar(REGS, PRODS, HRS, 2530), sU = 527 * 60 / 2530;
+  const lin = n => T.linhas.find(l => l.rot === n), r2 = x => x == null ? null : Math.round(x * 100) / 100;
+  const M = lin('501149 · MESA CABECEIRA MADERO'), E = lin('501139 · ARMARIO ENCANTO');
+  const V2 = lin('501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'), J = lin('501059 · PENTEADEIRA CAMARIM STRASS');
+  const uJ = _uepConvCadastro(J.p).volCad;
+  ok('MADERO: puro pelo fluxo, produção só nas 3 horas sozinha (a dividida fica fora), paradas à parte, meta pela UEP do cadastro',
+     [r2(M.sRod), r2(M.fluxo), r2(M.puro), M.cx, r2(M.real), r2(M.realSem), r2(M.parS), r2(M.gapS), r2(M.gapPct), r2(M.metaS), r2(M.folgaS), r2(M.hGap), M.curta],
+     [7.9, r2(6.7 / 7.9), 6.7, 1180, 10, r2(174 * 60 / 1080), r2(6 * 60 / 1080), r2(174 * 60 / 1080 - 7.9), r2((174 * 60 / 1080 / 7.9 - 1) * 100), r2(sU), r2(sU - 10), r2((174 * 60 / 1080 - 7.9) * 1180 / 3600), false]);
+  ok('ENCANTO: rodando pesado pelos volumes (a sem volumes não pesa), fluxo só das medições com lacunas, 1 h sozinho = amostra curta',
+     [r2(E.sRod), r2(E.fluxo), r2(E.puro), E.nVol, E.cx, r2(E.real), r2(E.gapS), E.curta], [19, 1, 19, 40, 210, 24, 5, true]);
+  ok('o VOL 2/2 só conta a hora em que rodou sozinho; o JOGO conta as horas com qualquer volume dele; o volume dentro do JOGO sai dos totais',
+     [r2(V2.real), r2(V2.realSem), V2.dentro, r2(J.real), r2(J.realSem), J.cx, J.dentro], [30, 24, true, 22.5, 20.25, 320, false]);
+  ok('sem hora sozinho: tudo da produção vazio (nunca 0) e amostra curta; medição sem volumes e produto fora do cadastro não viram linha',
+     [lin('501094 · MESA CABECEIRA SLEEP').real, lin('501094 · MESA CABECEIRA SLEEP').hGap, lin('501094 · MESA CABECEIRA SLEEP').curta,
+      !!lin('501136 · LIVREIRO ENCANTO'), T.tot.foraCad, T.linhas.length], [null, null, true, false, 1, 5]);
+  ok('ordem: horas a mais que o estudo, do maior para o menor; sem produção no fim',
+     T.linhas.map(l => l.rot.replace(/^\d+ · /, '')), ['PENTEADEIRA CAMARIM STRASS · VOL 2/2', 'PENTEADEIRA CAMARIM STRASS', 'MESA CABECEIRA MADERO', 'ARMARIO ENCANTO', 'MESA CABECEIRA SLEEP']);
+  const realSemCx = 174 * 60 / 1080 * 1180 + 24 * 210 + 20.25 * 320, rodCx = 7.9 * 1180 + 19 * 210 + 13 * 320;
+  ok('totais sem o volume dentro do JOGO: diferença pesada pelas caixas, horas, paradas no tempo, fluxo pelos volumes, cobertura',
+     [r2(T.tot.gapPct), r2(T.tot.hGap), r2(T.tot.parPct), r2(T.tot.fluxo), T.tot.fluxoMin.rot, T.tot.nJulg, T.tot.n, T.tot.cxTotal, T.tot.cxEst, r2(T.tot.cobertura)],
+     [r2((realSemCx / rodCx - 1) * 100), r2(M.hGap + E.hGap + J.hGap), r2(18 / 360 * 100), r2((6.7 / 7.9 * 60 + 40 + 40 + 30) / 170 * 100), 'MESA CABECEIRA MADERO', 1, 5, 1710, 1710, 100]);
+  const wU = 1180 * 1 + 210 * E.uep + 320 * uJ;
+  ok('a cascata da LINHA em s por UEP (pesada pela UEP feita) e o maior pedaço',
+     [r2(T.casc.puro), r2(T.casc.rod), r2(T.casc.real), r2(T.casc.meta), T.casc.maior, r2(T.casc.falta)],
+     [r2((6.7 * 1180 + 19 * 210 + 13 * 320) / wU), r2(rodCx / wU), r2((10 * 1180 + 24 * 210 + 22.5 * 320) / wU), r2(sU), 'dif', r2((10 * 1180 + 24 * 210 + 22.5 * 320) / wU - sU)]);
+  ok('ONDE GANHA: até 20% acima do estudo ou folga contra a meta; com a meta apertada ninguém ganha',
+     [T.ganha.map(l => l.p.nome), _ucvTempoMontar(REGS, PRODS, HRS, 6000).ganha.length], [['MESA CABECEIRA MADERO', 'ARMARIO ENCANTO', 'PENTEADEIRA CAMARIM STRASS'], 0]);
+  ok('sem as horas da produção: null (o desenho diz o estado); sem as medições: nenhuma linha e regsLidas falso',
+     [_ucvTempoMontar(REGS, PRODS, 'lendo', 2530), _ucvTempoMontar(null, PRODS, HRS, 2530).regsLidas, _ucvTempoMontar(null, PRODS, HRS, 2530).linhas.length], [null, false, 0]);
+  const HT = _ucvTempoHtml(T, HRS, '501149|MESA CABECEIRA MADERO', false);
+  ok('o desenho: título, os quatro cartões, a cascata, a tabela com as marcas e o ONDE GANHA',
+     ['ONDE O TEMPO VAI', 'DIFERENÇA ESTUDO × PRODUÇÃO', 'PARADAS APONTADAS', 'FLUXO NO ESTUDO', 'COBERTURA', 'A CASCATA DA LINHA', 'ONDE PERDE, VOLUME A VOLUME',
+      '>DENTRO DO JOGO<', '>AMOSTRA CURTA<', '>BASE<', 'não rodou sozinho', 'ONDE GANHA', 'ⓘ COMO LER', `+${Math.round(T.tot.gapPct)}<small>%</small>`, 'O maior pedaço é <b>a diferença entre o estudo e a produção</b>']
+       .filter(t => !HT.includes(t)), []);
+  ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
+     [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
+  ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',
+     [/não foi lida/.test(_ucvTempoHtml(null, 'falhou')), /\.gs v5\.36/.test(_ucvTempoHtml(null, 'sem-endpoint')), /Lendo a produção/.test(_ucvTempoHtml(null, 'lendo')),
+      /Lendo as medições/.test(_ucvTempoHtml(_ucvTempoMontar(null, PRODS, HRS, 2530), HRS)), /Nenhuma medição registrada/.test(_ucvTempoHtml(_ucvTempoMontar([], PRODS, HRS, 2530), HRS))],
+     [true, true, true, true, true]);
+  const TH = pegaJs('function _ucvTempoHtml(') + pegaJs('function _ucvTempoSeg('), TM = pegaJs('function _ucvTempoMontar(');
+  ok('o desenho não faz conta; a conta não lê nada (as horas, as medições e o cadastro que a aba já tem)',
+     [UCV_SEM_CONTA.test(TH), /_ucvPadraoDe\(|_uepConvCadastro\(|_ucvTempoMontar\(|\.reduce\(/.test(TH), /jsonp|action=|getElementById/.test(TM + TH)], [false, false, false]);
+  const RPT = pegaJs('function _ucvRegPintar('), iCrT = html.indexOf('<section id="sec-crono"'), SECT = html.slice(iCrT, html.indexOf('</section>', iCrT));
+  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro), entre eles e a lista de medições',
+     [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
+      SECT.indexOf('id="uep-conv-princ"') < SECT.indexOf('id="uep-conv-tempo"') && SECT.indexOf('id="uep-conv-tempo"') < SECT.indexOf('id="uep-conv-regs"')], [true, true, true]);
+}
 console.log('\n── CRONOANÁLISE → UEP: importar o PDF do Takt Time ──');
 { const TXT = "Takt Time —   Painel Sirius 1.4 · EMBALAGEM 01   RitmoPatrimar v 2.93.1   · emitido em   26/10/2026 \n MEDIÇÃO \n 26/10/2026 10:22 \n PERÍODO \n 10:22–10:40 \n VOLUMES \n 50 \n PARADO (MARCADO) \n 5 min \n No período, saiu um volume a cada 20.7 s, paradas dentro; com a linha rodando, 14.3 s. \n Sem takt para comparar: não há programa de produção do grupo EMBALAGEM cadastrado. \n 1 lacuna — intervalo maior que o dobro do normal (14.0 s) — somou 14.6s além do normal: cerca de 1 volume que deixou de sair. As paradas marcadas no\n cronômetro já estão fora desta conta: estas, ninguém marcou. \n POR VOLUME NO PERÍODO \n 20.7 s \n com as paradas, do 1º ao último toque \n TAKT DA SEMANA \n — \n sem programa para comparar \n POR VOLUME COM A LINHA\n RODANDO \n 14.3 s \n sem as paradas marcadas \n SEM AS LACUNAS \n 14.0 s \n sem parada nenhuma \n LACUNAS \n 1 \n 14.6s além do normal \n Intervalo entre   volumes \n Tempo de cada   volume   até   o seguinte ,   com a linha rodando — as paradas marcadas no cronômetro   fi cam fora \n Intervalo   Lacuna — mais que 2× o normal   Rodando — média dos intervalos \n 0 \n 10 s \n 20 s \n 30 s   28.6   s 28.6 s \n Rodando   14.3 s \n 15 5   10   20   25   30   35   40   45   50 2 \n Volume nº \n Onde a linha parou sem parada marcada \n Volume   nº   Intervalo   Além do normal   O que aconteceu \n 15   28.6 s   14.6 s \n Intervalo = tempo de um volume até o seguinte, com a linha rodando: as paradas marcadas no cronômetro já saíram; as marcadas depois (no resultado do tablet ou aqui no PC) continuam\n dentro dos intervalos. O primeiro toque não tem intervalo: o intervalo vai de um toque ao seguinte, e o tempo antes do primeiro toque não entra. Contra o takt vai o relógio do primeiro ao\n último toque ÷ intervalos, com as paradas dentro (sem o setup marcado entre os toques, quando o grupo tem setup planejado) — a mesma régua do programa da semana. Com a linha rodando\n = soma dos intervalos ÷ quantidade. Lacuna = intervalo maior que 2× o normal — a média dos intervalos que não são lacuna. Leitura a partir de 10 intervalos. Na embalagem, o programa da\n semana é colado em volumes.";
   ['function _ucvPdfLer(', 'function _ucvPdfAchar(', 'function _ucvImportItem(', 'function _ucvImportConfirmaTxt(', 'function _ucvRegUrl('].forEach(f => eval.call(global, pegaJs(f)));

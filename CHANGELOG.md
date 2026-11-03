@@ -11,6 +11,40 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.194.0 — 03/11/2026 · Cronoanálise: ONDE O TEMPO VAI
+
+- PPCP: *"com esses estudos o que dá pra mostrar em KPI onde perde onde
+  ganha?"* → prévia com os 34 estudos reais → *"pode subir na aba
+  cronoanálise"* → *"capricha na tela"*. Bloco novo na ⏱ CRONOANÁLISE, entre os
+  PRINCIPAIS e a lista de medições.
+- **O que mostra**, por caixa: o tempo que o estudo provou (sem as lacunas e
+  rodando), o que a produção faz nas horas em que o volume rodou **sozinho** na
+  linha (sem e com as paradas apontadas) e o que a meta concede.
+  - **Quatro cartões:** DIFERENÇA ESTUDO × PRODUÇÃO, PARADAS APONTADAS, FLUXO NO
+    ESTUDO e COBERTURA.
+  - **A cascata da linha** em segundos por UEP: trabalho puro → microparadas do
+    estudo → diferença estudo × produção → paradas apontadas → produção real,
+    com a linha da meta.
+  - **Onde perde, volume a volume:** a tabela ordenada pelas horas a mais que o
+    estudo em 30 dias, com uma mini-cascata em cada linha. Tocar abre o volume
+    no conversor.
+  - **Onde ganha:** os volumes em que a produção fica até 20% acima do estudo
+    ou cabe na meta.
+- Com os dados de 03/11/2026 (produção de 04/10 a 02/11): a produção, sem as
+  paradas apontadas, leva **40% mais tempo** por caixa que o estudo, ≈ **15,8 h**
+  em 30 dias (1,8 jornadas) nos volumes estudados. As paradas apontadas são
+  12,5% do tempo, e o fluxo no estudo fica em 98% (a MADERO é a exceção, 85%).
+  Cascata: 7,4 → 7,7 → 10,8 → 12,3 s por UEP contra 11,45 da meta.
+- **Diferença não é perda:** junta troca de cor dentro do lote, começo de lote,
+  ritmo, microparada não apontada e caixa lançada na hora seguinte. O bloco diz
+  onde procurar.
+- Volume com menos de 30 volumes medidos ou menos de 2 h sozinho na produção
+  leva a marca AMOSTRA CURTA. O volume que um JOGO do mesmo produto já cobre (a
+  ELOA VOL 2/2) aparece na tabela, mas fica fora dos totais.
+- **Atenção:** nenhum número que já existia mudou. Nenhuma leitura nova: o
+  bloco usa as medições, as horas da produção e o cadastro que a aba já lê. Sem
+  re-deploy.
+
 ## v7.193.0 — 03/11/2026 · Cronoanálise: botão ✕ LIMPAR
 
 - PPCP, com um PDF importado na aba ⏱ CRONOANÁLISE: *"ter opção de limpar"*.

@@ -5925,3 +5925,60 @@ feito e dá ar de verdade ao que sobrou.
   como MADERO; se ela roda mesmo a 7,9 s, a UEP dela seria 1,00, não 0,83
   (+20%), na direção contrária das outras trocas. Pedir uma medição nova,
   registrada como SLEEP, com 30+ volumes.
+
+## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
+- PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde
+  onde ganha?"* → *"não altera nada"* → prévia com os 34 estudos reais
+  (artifact privado) → *"pode subir na aba cronoanálise"* → *"capricha na
+  tela"*. Bloco `#uep-conv-tempo` da ⏱ CRONOANÁLISE, entre os PRINCIPAIS e a
+  lista de medições (fora do `#uep-conv-res`, que é refeito a cada tecla).
+- **Conta** `_ucvTempoMontar(regs, prods, horas, meta)` (pura) · **desenho**
+  `_ucvTempoHtml` + `_ucvTempoSeg` (sem conta, o teste prende) · tocar na
+  linha abre o volume no conversor (`_ucvAbrirTempo`, pelo índice — o `_rpEsc`
+  não escapa aspas) · VER TODOS (`UCV_TEMPO_TODOS`, `UCV_TEMPO_LINHAS`=12).
+  Pintado no `_ucvRegPintar`. **Nenhuma leitura nova**: as medições, as horas
+  do `getHorasCrono` (a janela do NA PRODUÇÃO, 30 dias fechados) e o cadastro
+  que a aba já lê.
+- **Por VOLUME** (o mesmo agrupamento da lista: modelo + produto + volume,
+  `_ucvRegVol`), em segundos por caixa:
+  - **rodando** = média das medições pesada pelos VOLUMES MEDIDOS; **fluxo** =
+    sem as lacunas ÷ rodando (só das medições que têm os dois); **trabalho
+    puro** = rodando × fluxo;
+  - **produção** = `_ucvPadraoDe` (só as horas em que SÓ os códigos do volume
+    rodaram) → minutos × 60 ÷ caixas, com as paradas apontadas e sem elas
+    (`minRod`; sem paradas lidas, só com);
+  - **meta** = 527 × 60 ÷ META UEP × UEP do cadastro de hoje (11,45 s por UEP
+    com 2.761);
+  - **diferença** = produção sem paradas − rodando (s/cx e %); **horas a
+    mais** = diferença × TODAS as caixas do volume na janela ÷ 3.600 — é
+    extrapolação das horas sozinho para o resto, e o COMO LER diz isso.
+- **Totais sem contar duas vezes**: o volume que um JOGO do mesmo produto já
+  cobre (`dentro`: há linha de JOGO do mesmo modelo e nome — a ELOA VOL 2/2)
+  aparece na tabela com a marca DENTRO DO JOGO e fica fora dos totais.
+- **A cascata da linha** é em **s por UEP**, pesada pelas caixas × UEP: puro →
+  rodando → produção sem paradas → produção real, contra a meta. Por UEP
+  porque é a única régua que soma produtos de pesos diferentes.
+- **AMOSTRA CURTA**: menos de `UCV_TROCA_MIN_VOL`=30 volumes medidos, ou sem
+  produção sozinho, ou menos de `UEP_PAD_MIN_MIN`=2 h sozinho (`pouco`). Entra
+  na tabela (marcada) e conta em "N de M julgados".
+- **ONDE GANHA**: diferença até `UCV_TEMPO_GANHA_PCT`=20% ou produção abaixo
+  da meta (folga). É o que já roda perto do estudo.
+- ⚠ **DIFERENÇA NÃO É PERDA**: junta troca de cor dentro do lote, começo de
+  lote, ritmo, microparada não apontada e caixa lançada na hora seguinte. O
+  bloco aponta onde procurar; não chamar de perda nem valorar em R$.
+- **Medido em 03/11/2026** (produção 04/10–02/11, 34 medições, cadastro do dia,
+  meta 2.761): **+40,2%** de tempo por caixa sem as paradas, ≈ **15,8 h** em 30
+  dias (1,8 jornadas) nos volumes estudados (38% das caixas da janela);
+  paradas apontadas 12,5% do tempo (~7,5 h); fluxo no estudo 98% (MADERO
+  84,8%); 8 de 17 volumes julgados. Cascata 7,4 → 7,7 → 10,8 → 12,3 s/UEP
+  contra 11,45 — a produção real passa a meta em 0,85 s/UEP (7,4%). Maiores:
+  ELOA JOGO +59% (4,0 h), MADERO +41% (3,5 h), PRINCESA +51% (1,8 h).
+  Reproduz a prévia número a número.
+- ⚠ A medição da MADERO de 20/10 tem NO PERÍODO "13:35" (o erro da v7.150.1);
+  o bloco não lê o NO PERÍODO.
+- Medido no Chromium com os dados reais: 1920 e 1366, nada passa da largura
+  do bloco (o 1 px de rolagem horizontal da página a 1366 é dos `.tab` do
+  cabeçalho, de antes — conferido com o bloco escondido).
+- Testes em `uep-relatorios.test.js` (média pesada, puro, paradas fora,
+  JOGO fora dos totais, ordem, amostra curta, ganha, estados e desenho);
+  conferido por mutação.
