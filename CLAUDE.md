@@ -5961,6 +5961,10 @@ feito e dá ar de verdade ao que sobrou.
 - **AMOSTRA CURTA**: menos de `UCV_TROCA_MIN_VOL`=30 volumes medidos, ou sem
   produção sozinho, ou menos de `UEP_PAD_MIN_MIN`=2 h sozinho (`pouco`). Entra
   na tabela (marcada) e conta em "N de M julgados".
+- **As marcas (BASE · DENTRO DO JOGO · AMOSTRA CURTA) moram na coluna OBS.**
+  (`td.ucv-tp-ob`, uma por linha, empilhadas), nunca coladas no nome
+  (v7.194.1, PPCP: *"alinhar"*) — a mesma lição do VOL. e do UEP/CX: cada nome
+  tem um comprimento e a marca andava. O teste prende.
 - **ONDE GANHA**: diferença até `UCV_TEMPO_GANHA_PCT`=20% ou produção abaixo
   da meta (folga). É o que já roda perto do estudo.
 - ⚠ **DIFERENÇA NÃO É PERDA**: junta troca de cor dentro do lote, começo de

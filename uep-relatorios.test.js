@@ -1652,6 +1652,11 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
      ['ONDE O TEMPO VAI', 'DIFERENÇA ESTUDO × PRODUÇÃO', 'PARADAS APONTADAS', 'FLUXO NO ESTUDO', 'COBERTURA', 'A CASCATA DA LINHA', 'ONDE PERDE, VOLUME A VOLUME',
       '>DENTRO DO JOGO<', '>AMOSTRA CURTA<', '>BASE<', 'não rodou sozinho', 'ONDE GANHA', 'ⓘ COMO LER', `+${Math.round(T.tot.gapPct)}<small>%</small>`, 'O maior pedaço é <b>a diferença entre o estudo e a produção</b>']
        .filter(t => !HT.includes(t)), []);
+  const celPr = [...HT.matchAll(/<td class="ucv-pr">([\s\S]*?)<\/td>/g)].map(m => m[1]), celOb = [...HT.matchAll(/<td class="ucv-tp-ob">([\s\S]*?)<\/td>/g)].map(m => m[1]);
+  ok('v7.194.1: as marcas moram na coluna OBS., nunca coladas no nome (cada nome tem um comprimento e a marca andava)',
+     [/<th>VOLUME<\/th>\s*<th[^>]*>OBS\.<\/th>/.test(HT.replace(/`\s*\+\s*`/g, '')), celOb.length === celPr.length && celOb.length === T.linhas.length,
+      celPr.some(c => /ucv-chip|ucv-pill/.test(c)), celOb.filter(c => /BASE|DENTRO DO JOGO|AMOSTRA CURTA/.test(c)).length],
+     [true, true, false, T.linhas.filter(l => l.base || l.dentro || l.curta).length]);
   ok('a linha abre o volume no conversor; o selecionado fica marcado; sem VER TODOS com até 12 linhas',
      [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /VER TODOS/.test(HT)], [true, true, false]);
   ok('os estados: produção não lida, .gs antigo, lendo, medições não lidas, nenhuma medição',

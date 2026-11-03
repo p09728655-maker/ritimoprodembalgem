@@ -11,6 +11,17 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.194.1 — 03/11/2026 · Cronoanálise: marcas do ONDE O TEMPO VAI em coluna
+
+- PPCP, com o print da tabela ONDE PERDE, VOLUME A VOLUME: *"alinhar"*. As
+  marcas BASE, DENTRO DO JOGO e AMOSTRA CURTA estavam coladas no fim do nome do
+  volume, e cada nome tem um comprimento: a marca ficava numa altura diferente
+  em cada linha. Agora moram numa coluna própria, **OBS.**, logo depois do
+  VOLUME, todas começando no mesmo ponto (o significado de cada uma no título
+  da coluna).
+- **Atenção:** só o desenho mudou. Nenhum número, nenhuma leitura. Sem
+  re-deploy.
+
 ## v7.194.0 — 03/11/2026 · Cronoanálise: ONDE O TEMPO VAI
 
 - PPCP: *"com esses estudos o que dá pra mostrar em KPI onde perde onde
