@@ -11,6 +11,51 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.200.0 — 04/11/2026 · ⏱ CRONOANÁLISE pela régua SEM AS LACUNAS · ⚠ re-deploy (.gs v5.44)
+
+- PPCP, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** (04/11, 60 volumes): o
+  import pegava o tempo **com a linha rodando** (20,4 s), que tinha **5
+  lacunas** dentro — 3min42s de paradas que ninguém marcou, 18% da medição — e
+  a UEP saía **2,58** contra 2,07 do cadastro. *"Tem que pegar sem as lacunas"*
+  → *"sem lacunas e acrescente 15%"* → *"vamos fazer a troca"*.
+- A UEP da cronoanálise passa a ser **SEM AS LACUNAS do produto ÷ SEM AS
+  LACUNAS da base**: a MADERO medida em 20/10 vale **6,7 s** (era 7,9 s, o
+  rodando dela). Os 15% de tolerância continuam no tempo padrão dos dois lados
+  (16,6 × 1,15 = 19,1 s ÷ 6,7 × 1,15 = 7,7 s = **2,48** na HOME ANGEL) e se
+  cancelam na UEP.
+- O campo do tempo virou **s/VOLUME SEM AS LACUNAS**; o **RODANDO** foi para o
+  registro, **obrigatório** (é com ele que a ⏳ ONDE O TEMPO VAI mede as
+  lacunas). O 📄 IMPORTAR PDF preenche assim sozinho, e PDF sem o cartão SEM AS
+  LACUNAS não importa.
+- **Só registra com a base MADERO medida** (6,7 s): é contra ela que a regra da
+  troca compara todas as medições. Com outra base na tela, o 💾 some e a linha
+  diz por quê.
+- A base fixada neste computador até a v7.199 era um tempo rodando: ela é
+  **apagada** na primeira abertura e o campo volta à MADERO medida.
+- **Atenção — os números da cronoanálise mudam, inclusive das medições já
+  registradas.** A lista, a coluna TROCA, o NA PRODUÇÃO e a regra da troca
+  recalculam as 39 medições pela régua nova (todas têm o SEM AS LACUNAS). A
+  UEP_CRONO e a BASE_S gravadas na aba ficam como retrato da régua antiga e não
+  entram em conta nenhuma. Medido com a planilha de hoje:
+  - contra o cadastro de antes das trocas, a mediana das medições vai de
+    **−16%** para **0%** (a MADERO foi medida com 15% de lacunas; os produtos,
+    ~2% — a base inchada deixava toda cronoanálise ~15% leve);
+  - **12 volumes ficam PRONTOS PARA TROCAR, todos para cima**: STRASS VOL 2/2
+    1,51 → 1,78 · ELOA VOL 2/2 1,88 → 2,20 · ANTARES VOL 1/3 1,81 → 2,13 ·
+    ANTARES VOL 3/3 1,67 → 1,95 · BUFFET FLIP VOL 2/2 1,25 → 1,52 · TOUCADOR
+    1,58 → 2,00 · RACK FLIP 1.6 2,19 → 2,55 · RACK FLIP 1.8 2,13 → 2,46 · RACK
+    SIRIUS 1.6 1,95 → 2,30 · PAINEL SIRIUS 1.4 1,49 → 2,00 · RACK MOVE 2,08 →
+    2,45 · PAINEL MOON 1.6 1,75 → 2,13;
+  - TAURUS, PRINCESA, PRISM e VIVARE passam a **discordar** (medições dos dois
+    lados da faixa) e o ARMÁRIO ENCANTO fica com amostra pequena (11 volumes).
+  - **Nada no cadastro muda sozinho**: a troca continua pelo ✓ TROCAR A UEP,
+    volume a volume. Antes de trocar, olhe a coluna NA PRODUÇÃO: ela compara com
+    a MADERO na produção e não depende do 6,7.
+- ⚠ **re-deploy (.gs v5.44)**: o `trocarUepCrono` confere a troca pela régua
+  nova (S_SEM_LACUNAS ÷ 6,7) e responde `regua:'lac'`; o `registrarCrono` pede o
+  SEM AS LACUNAS. Antes do re-deploy o ✓ TROCAR A UEP é recusado pelo `.gs`
+  antigo (a média não bate) e a tela diz que falta o v5.44 — nada é gravado.
+
 ## v7.199.1 — 03/11/2026 · 📄 IMPORTAR PDF acha o VOLUME do título
 
 - PPCP, com o PDF da **HOME RIPADO ANTARES 1.8 · VOL 1/3**: *"não está

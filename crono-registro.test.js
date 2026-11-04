@@ -76,7 +76,7 @@ function montar(abas, meta, hoje) {
 // O que o painel manda (o _ucvRegMontar): números como o JS escreve, vazio = ''.
 const MED = {
   regId: 'c1abc', data: '20/10/2026', modelo: '501149', produto: 'MESA CABECEIRA MADERO', volume: 'VOL 1/1',
-  codigos: '501.149.001 501.149.002', sRod: '8.6', sPer: '9.4', sLac: '', volumes: '60',
+  codigos: '501.149.001 501.149.002', sRod: '8.6', sPer: '9.4', sLac: '7.1', volumes: '60',
   base: 'SLEEP MEDIDA 20/10/2026', baseS: '7.9', tol: '15', tpS: '9.89', uep: '1.09', uepCad: '1.2',
   linhaCxh: '175', linhaSCx: '20.57', linhaDias: '4', linhaPer: '20/09/2026 a 19/10/2026', vel: '9', entre: '250', quem: 'PPCP',
 };
@@ -91,9 +91,12 @@ console.log('\n── registrarCrono: a aba nasce sozinha e a linha é a mediç�
   ok('grava e diz que gravou (o painel confere o "registrado")', [r.ok, r.registrado, r.duplicado, r.linha], [true, true, undefined, 2]);
   ok('a aba CRONOANALISE nasce com o cabeçalho, REGISTRADO_EM primeiro e REG_ID por último',
      [H[0], H[1], H[H.length - 1], H.length, P.ABAS.CRONOANALISE.length], ['REGISTRADO_EM', 'DATA_MEDICAO', 'REG_ID', 24, 2]);
-  ok('os segundos e a conversão como NÚMERO; vazio fica vazio (nunca 0)',
+  ok('os segundos e a conversão como NÚMERO',
      [col('S_RODANDO'), col('S_PERIODO'), col('S_SEM_LACUNAS'), col('VOLUMES_MEDIDOS'), col('UEP_CRONO'), col('UEP_CADASTRO'), col('LINHA_S_CX'), col('ENTRE_PECAS')],
-     [8.6, 9.4, '', 60, 1.09, 1.2, 20.57, 250]);
+     [8.6, 9.4, 7.1, 60, 1.09, 1.2, 20.57, 250]);
+  { const PV = montar(); PV.run(`return registrarCrono(${q(Object.assign({}, MED, { sPer: '', vel: '' }))});`);
+    const HV = PV.ABAS.CRONOANALISE[0], LV = PV.ABAS.CRONOANALISE[1];
+    ok('vazio fica vazio (nunca 0)', [LV[HV.indexOf('S_PERIODO')], LV[HV.indexOf('VELOCIDADE')]], ['', '']); }
   ok('texto como texto (produto, volume, base, códigos, quem) e o carimbo do servidor',
      [col('REGISTRADO_EM'), col('DATA_MEDICAO'), col('PRODUTO'), col('VOLUME'), col('BASE'), col('CODIGOS'), col('MEDIDO_POR'), col('REG_ID')],
      ['20/10/2026 15:40:00', '20/10/2026', 'MESA CABECEIRA MADERO', 'VOL 1/1', 'SLEEP MEDIDA 20/10/2026', '501.149.001 501.149.002', 'PPCP', 'c1abc']);
@@ -109,12 +112,14 @@ console.log('\n── registrarCrono: a aba nasce sozinha e a linha é a mediç�
 console.log('\n── registrarCrono: o que não grava ──');
 {
   const P = montar();
-  ok('sem REG_ID, sem o RODANDO ou sem produto: erro dito, e a aba nem nasce',
+  ok('sem REG_ID, sem o RODANDO, sem o SEM AS LACUNAS (v5.44: é a régua da UEP) ou sem produto: erro dito, e a aba nem nasce',
      [P.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: '' }))});`).ok,
       P.run(`return registrarCrono(${q(Object.assign({}, MED, { sRod: '' }))});`).ok,
       P.run(`return registrarCrono(${q(Object.assign({}, MED, { sRod: '0' }))});`).ok,
+      P.run(`return registrarCrono(${q(Object.assign({}, MED, { sLac: '' }))});`).ok,
+      P.run(`return registrarCrono(${q(Object.assign({}, MED, { sLac: '' }))});`).erro,
       P.run(`return registrarCrono(${q(Object.assign({}, MED, { produto: ' ' }))});`).ok,
-      'CRONOANALISE' in P.ABAS], [false, false, false, false, false]);
+      'CRONOANALISE' in P.ABAS], [false, false, false, false, 'Sem o tempo SEM AS LACUNAS da medição.', false, false]);
 }
 
 console.log('\n── registrarCrono: grava pelo NOME da coluna ──');
@@ -140,7 +145,7 @@ console.log('\n── getCronoRegistros ──');
   const x = r.registros[1];
   ok('números como número, vazio como null (nunca 0), texto como texto',
      [x.sRod, x.sPer, x.sLac, x.uep, x.uepCad, x.linhaSCx, x.volumes, x.produto, x.volume, x.base, x.em, x.regId, r.registros[0].sPer],
-     [8.6, 9.4, null, 1.09, 1.2, 20.57, 60, 'MESA CABECEIRA MADERO', 'VOL 1/1', 'SLEEP MEDIDA 20/10/2026', '20/10/2026 15:40:00', 'c1abc', null]);
+     [8.6, 9.4, 7.1, 1.09, 1.2, 20.57, 60, 'MESA CABECEIRA MADERO', 'VOL 1/1', 'SLEEP MEDIDA 20/10/2026', '20/10/2026 15:40:00', 'c1abc', null]);
 }
 
 console.log('\n── excluirCrono (v5.33): sai UMA linha, pelo REG_ID, com cópia antes ──');
@@ -228,19 +233,21 @@ ok('a exclusão lê a aba DIRETO (é escrita: nunca o memo de leitura)',
 // ════════════════════════════════════════════════════════════════════════════
 // TROCAR A UEP PELA CRONOANÁLISE + CONFERÊNCIA DAS TROCAS (.gs v5.34)
 // PPCP, 26/10/2026. O caso real: STRASS VOL 2/2, 11,5 s × 61 (23/10) e 12,4 s ×
-// 52 (26/10) contra a MADERO 7,9 s; cadastro 2,29 nos três códigos do volume.
+// 52 (26/10), sem lacuna; cadastro 2,29 nos três códigos do volume. v5.44: contra a
+// MADERO SEM AS LACUNAS (6,7 s) = 1,78 (pela régua rodando, 7,9 s, era 1,51). A
+// BASE_S e a UEP_CRONO gravadas (a régua antiga) não entram.
 const HC = CRONO_HDR => CRONO_HDR;
 const CRONO_COLS_NOMES = ['REGISTRADO_EM', 'DATA_MEDICAO', 'MODELO', 'PRODUTO', 'VOLUME', 'CODIGOS', 'S_RODANDO', 'S_PERIODO', 'S_SEM_LACUNAS', 'VOLUMES_MEDIDOS',
   'BASE', 'BASE_S', 'TOLERANCIA_PCT', 'TEMPO_PADRAO_S', 'UEP_CRONO', 'UEP_CADASTRO', 'LINHA_CX_H', 'LINHA_S_CX', 'LINHA_DIAS', 'LINHA_PERIODO', 'VELOCIDADE', 'ENTRE_PECAS', 'MEDIDO_POR', 'REG_ID'];
 const linhaCrono = o => CRONO_COLS_NOMES.map(n => (n in o ? o[n] : ''));
-const MED_ST = (data, sRod, vol, uep, regId) => linhaCrono({ REGISTRADO_EM:'26/10/2026 10:19:28', DATA_MEDICAO:data, MODELO:'501059', PRODUTO:'PENTEADEIRA CAMARIM STRASS',
-  VOLUME:'VOL 2/2', CODIGOS:'501.059.002 501.059.004 501.059.008', S_RODANDO:sRod, VOLUMES_MEDIDOS:vol, BASE:'MADERO MEDIDA 20/10/2026', BASE_S:7.9, UEP_CRONO:uep, UEP_CADASTRO:2.29, REG_ID:regId });
+const MED_ST = (data, sLac, vol, uep, regId, sRod) => linhaCrono({ REGISTRADO_EM:'26/10/2026 10:19:28', DATA_MEDICAO:data, MODELO:'501059', PRODUTO:'PENTEADEIRA CAMARIM STRASS',
+  VOLUME:'VOL 2/2', CODIGOS:'501.059.002 501.059.004 501.059.008', S_RODANDO:sRod == null ? sLac : sRod, S_SEM_LACUNAS:sLac, VOLUMES_MEDIDOS:vol, BASE:'MADERO MEDIDA 20/10/2026', BASE_S:7.9, UEP_CRONO:uep, UEP_CADASTRO:2.29, REG_ID:regId });
 const CAD = uep2 => [['CODIGO', 'DESCRICAO', 'COR', 'UEP', 'UEP_VIGENCIA'],
   ['501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 2.71, '16/10/2026'],
   ['501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', uep2, '16/10/2026'],
   ['501059004', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', uep2, '16/10/2026'],
   ['501059008', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ALECRIM', uep2, '16/10/2026']];
-const PEDIDO = { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', cods:'501059002:1.51,501059004:1.51,501059008:1.51' };
+const PEDIDO = { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', cods:'501059002:1.78,501059004:1.78,501059008:1.78', regua:'lac' };
 const abasST = (regs, uep2) => ({ PRODUTO_CODIGO: CAD(uep2 == null ? 2.29 : uep2), CRONOANALISE: [CRONO_COLS_NOMES].concat(regs || [MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]) });
 
 console.log('\n── trocarUepCrono: grava a média das medições quando a regra deixa ──');
@@ -248,20 +255,25 @@ console.log('\n── trocarUepCrono: grava a média das medições quando a reg
   const P = montar(abasST(), null, '26/10/2026');
   const r = P.run(`return trocarUepCrono(${q(PEDIDO)});`);
   const C = P.ABAS.PRODUTO_CODIGO;
-  ok('trocou: 3 códigos, a média pelos segundos (1,51), 113 volumes de 2 medições, vigência de hoje',
-     [r.ok, r.trocado, r.n, r.uep, r.nVol, r.medicoes, r.vigencia], [true, true, 3, 1.51, 113, 2, '26/10/2026']);
-  ok('o cadastro: o VOL 2/2 em 1,51 com a vigência DIGITADA; o VOL 1/2 não é tocado',
+  ok('trocou: 3 códigos, a média pelos segundos SEM AS LACUNAS ÷ 6,7 (1,78), 113 volumes de 2 medições, vigência de hoje — e a resposta diz a régua',
+     [r.ok, r.trocado, r.n, r.uep, r.nVol, r.medicoes, r.vigencia, r.regua], [true, true, 3, 1.78, 113, 2, '26/10/2026', 'lac']);
+  ok('o cadastro: o VOL 2/2 em 1,78 com a vigência DIGITADA; o VOL 1/2 não é tocado',
      C.slice(1).map(l => [l[0], l[3], l[4]]),
-     [['501059001', 2.71, '16/10/2026'], ['501059002', 1.51, '26/10/2026 DIGITADA'], ['501059004', 1.51, '26/10/2026 DIGITADA'], ['501059008', 1.51, '26/10/2026 DIGITADA']]);
+     [['501059001', 2.71, '16/10/2026'], ['501059002', 1.78, '26/10/2026 DIGITADA'], ['501059004', 1.78, '26/10/2026 DIGITADA'], ['501059008', 1.78, '26/10/2026 DIGITADA']]);
   const V = P.ABAS.UEP_VERSOES;
   ok('a UEP_VERSOES nasce com a SEMENTE (o cadastro de antes) e uma versão por código, ORIGEM CRONOANÁLISE',
      [V[0], V.slice(1, 5).map(l => [l[0], l[1], l[3]]), V.slice(5).map(l => [l[0], l[1], l[2], l[3], l[5]])],
      [['CODIGO', 'UEP', 'VIGENCIA', 'ORIGEM', 'GRAVADO_EM', 'ANTERIOR'],
       [['501059001', 2.71, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059002', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059004', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059008', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026']],
-      ['501059002', '501059004', '501059008'].map(c => [c, 1.51, '26/10/2026', 'CRONOANÁLISE · 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2 · 2 medições, 113 volumes', 2.29])]);
+      ['501059002', '501059004', '501059008'].map(c => [c, 1.78, '26/10/2026', 'CRONOANÁLISE · 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2 · 2 medições, 113 volumes', 2.29])]);
   ok('roda sob o lock, e nenhuma escrita fora dele', [P.locks() > 0, P.semLock()], [true, 0]);
   const r2 = P.run(`return trocarUepCrono(${q(PEDIDO)});`);
-  ok('a retentativa (timeout) acha a UEP já trocada: jaTrocado, nada regravado', [r2.trocado, r2.jaTrocado, P.ABAS.UEP_VERSOES.length], [true, true, 8]);
+  ok('a retentativa (timeout) acha a UEP já trocada: jaTrocado, nada regravado', [r2.trocado, r2.jaTrocado, P.ABAS.UEP_VERSOES.length, r2.regua], [true, true, 8, 'lac']);
+  // as lacunas (paradas que ninguém marcou) no RODANDO não mudam nada: a régua é o SEM AS LACUNAS
+  const PL = montar(abasST([MED_ST('26/10/2026', 12.4, 52, 1.9, 'c1', 15.8), MED_ST('23/10/2026', 11.5, 61, 1.8, 'c2', 14.3)]), null, '26/10/2026');
+  const rl = PL.run(`return trocarUepCrono(${q(PEDIDO)});`);
+  ok('com lacunas no RODANDO (15,8 e 14,3 s), a troca é a mesma 1,78 — sai do SEM AS LACUNAS, nunca do rodando nem da UEP gravada',
+     [rl.trocado, rl.uep, PL.ABAS.PRODUTO_CODIGO[2][3]], [true, 1.78, 1.78]);
 }
 
 console.log('\n── trocarUepCrono: o que NÃO troca (e não grava nada) ──');
@@ -269,8 +281,12 @@ console.log('\n── trocarUepCrono: o que NÃO troca (e não grava nada) ─�
   const caso = (abas, pedido) => { const P = montar(abas, null, '26/10/2026'); const r = P.run(`return trocarUepCrono(${q(pedido)});`);
     return [r.ok, r.trocado, r.recusado, r.motivo, P.ABAS.PRODUTO_CODIGO[2][3], 'UEP_VERSOES' in P.ABAS]; };
   ok('amostra pequena (uma medição de 20 volumes)', caso(abasST([MED_ST('26/10/2026', 12.4, 20, 1.57, 'c1')]), PEDIDO), [true, false, true, 'pouca-amostra', 2.29, false]);
-  ok('o cadastro já confere com as medições (outro computador trocou para 1,55)', caso(abasST(null, 1.55), PEDIDO), [true, false, true, 'confere', 1.55, false]);
-  ok('as medições discordam (uma 12,4 s, outra 19 s = 2,41 confere)', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 19, 61, 2.41, 'c2')]), PEDIDO),
+  ok('o cadastro já confere com as medições (outro computador trocou para 1,80)', caso(abasST(null, 1.8), PEDIDO), [true, false, true, 'confere', 1.8, false]);
+  ok('medição sem o SEM AS LACUNAS (linha antiga sem o campo) não conta: sem-medicao', caso(abasST([MED_ST('26/10/2026', '', 52, 1.57, 'c1', 12.4), MED_ST('23/10/2026', '', 61, 1.46, 'c2', 11.5)]), PEDIDO),
+     [true, false, true, 'sem-medicao', 2.29, false]);
+  { const PR = montar(abasST([MED_ST('26/10/2026', 12.4, 20, 1.57, 'c1')]), null, '26/10/2026');
+    ok('a recusa também diz a régua (o painel reconhece o .gs antigo pela falta dela)', PR.run(`return trocarUepCrono(${q(PEDIDO)});`).regua, 'lac'); }
+  ok('as medições discordam (uma 12,4 s, outra 15,4 s = 2,30 confere)', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 15.4, 61, 2.41, 'c2')]), PEDIDO),
      [true, false, true, 'discordam', 2.29, false]);
   ok('a UEP enviada não bate com a média das medições (a tela estava velha)', caso(abasST(), Object.assign({}, PEDIDO, { cods:'501059002:1.70,501059004:1.70,501059008:1.70' })),
      [true, false, true, 'nao-bate', 2.29, false]);
@@ -299,7 +315,7 @@ console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o v
   ok('v5.36: a conferência não lê mais o log — as horas depois da troca são contadas no painel, pelo getHorasCrono (com as paradas)',
      [t.dias, /SHEET_PROD_LOG/.test(GS.slice(GS.indexOf('function getConferenciaCrono('), GS.indexOf('HORAS DA LINHA POR CÓDIGO (v5.35)')))], [undefined, false]);
   ok('os códigos com a UEP nova, a anterior e a de agora', t.codigos.map(c => [c.cod, c.uep, c.antes, c.atual]),
-     [['501059002', 1.51, 2.29, 1.51], ['501059004', 1.51, 2.29, 1.51], ['501059008', 1.51, 2.29, 1.51]]);
+     [['501059002', 1.78, 2.29, 1.78], ['501059004', 1.78, 2.29, 1.78], ['501059008', 1.78, 2.29, 1.78]]);
   P2.ABAS.PRODUTO_CODIGO[3][3] = 1.6;                                   // alguém digitou outro número no 501059004
   ok('a UEP do cadastro mudou depois: SUBSTITUÍDA', montar(P2.ABAS, null, '21/10/2026').run('return getConferenciaCrono();').trocas[0].substituida, true);
   ok('sem a UEP_VERSOES (nenhuma troca ainda): lista vazia, não erro', montar(abasST(), null, '21/10/2026').run('return getConferenciaCrono();'), { ok:true, trocas:[] });

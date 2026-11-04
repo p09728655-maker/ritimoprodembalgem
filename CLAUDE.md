@@ -55,7 +55,10 @@ via Google Apps Script (JSONP).
   de 26/10, o nome do app com "caixa 2/2" e o de 03/11 com o VOL 1/3 no título), os PRINCIPAIS PARA ANÁLISE DE
   TEMPO (v7.189.0: o corte dos 80%, a situação e a cobertura; v7.191.0: a ordem pela programação), as sub-abas da ⏱ CRONOANÁLISE (v7.197.0), e a aba 📏 RÉGUAS (o mix de 70
   pontos por UEP nos 20 dias reais, as quatro situações produto a produto com a
-  SLEEP de verdade, a meta do ⚙): `node uep-relatorios.test.js`.
+  SLEEP de verdade, a meta do ⚙) e a régua SEM AS LACUNAS (v7.200.0: a UEP de
+  cada medição pelo sem as lacunas ÷ 6,7, o PDF real da HOME ANGEL de 04/11, o
+  RODANDO obrigatório no registro, a base que não é a medida não registra, a
+  base antiga guardada apagada): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
@@ -76,7 +79,9 @@ via Google Apps Script (JSONP).
   `UEP_VERSOES`, idempotente), o `getConferenciaCrono` (só as horas do volume
   sozinho, depois da troca, hoje fora — até a v5.35; na v5.36 só a troca) e o
   `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
-  as paradas apontadas de cada hora, por tipo): `node crono-registro.test.js`.
+  as paradas apontadas de cada hora, por tipo) e a régua SEM AS LACUNAS (v5.44:
+  o `registrarCrono` pede o S_SEM_LACUNAS, a troca sai dele e ignora o rodando e
+  a UEP gravada, toda resposta diz `regua:'lac'`): `node crono-registro.test.js`.
 - `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
@@ -4555,7 +4560,8 @@ feito e dá ar de verdade ao que sobrou.
   2. UEP de cada código = a do cadastro; a aba UEP da planilha é cópia dele;
   3. só muda por cronoanálise — ~~duas medições em dias diferentes~~ (desde a
      v7.158.0: **30 volumes medidos ou mais**, qualquer data, todas do mesmo
-     lado), rodando, contra a MADERO (7,9 s) —, gravada no cadastro (✓ TROCAR
+     lado), ~~rodando, contra a MADERO (7,9 s)~~ **sem as lacunas, contra a
+     MADERO sem as lacunas (6,7 s)** desde a v7.200.0 —, gravada no cadastro (✓ TROCAR
      A UEP ou digitada) e na planilha no mesmo dia. Nunca trocar de base nem
      recalcular pelo ritmo (UEP TRAVADA segue);
   4. o passado não se regrava (esta volta foi a última exceção);
@@ -4725,9 +4731,12 @@ feito e dá ar de verdade ao que sobrou.
     10,4 = régua da meta com aviso próprio (BASE PELA RÉGUA DA META). Os dois
     com **VOLTAR À SLEEP MEDIDA**. A própria SLEEP com o tempo em uso
     (`R.emUso`) diz que é a base; tempo novo manda FIXAR *neste computador*.
-    - ⚠ **Vale o RODANDO, não o 6,7**: é o campo que se lê de cada produto, e
+    - ~~⚠ **Vale o RODANDO, não o 6,7**: é o campo que se lê de cada produto, e
       as lacunas (paradas não marcadas) ficam dentro nos dois. Trocar para o
-      "sem as lacunas" exige ler esse campo de TODO produto.
+      "sem as lacunas" exige ler esse campo de TODO produto.~~ — **revogado na
+      v7.200.0**: vale o SEM AS LACUNAS, nos dois (ver *A RÉGUA DA CRONOANÁLISE É
+      O SEM AS LACUNAS*). As lacunas NÃO se cancelavam: a MADERO tinha 15% e os
+      produtos ~2%.
     - ⚠ **60 volumes ≈ 8 min de linha.** Uma 2ª medição (outro dia) confirma
       antes de trocar UEP em massa. Medição nova = trocar a constante (muda a
       conversão de todo produto) — o 8,7 s dos testes antigos continua exemplo.
@@ -5609,8 +5618,8 @@ feito e dá ar de verdade ao que sobrou.
   - ⚠ **O que se perdeu ao tirar as duas datas**: volume a mais tira o erro de
     caixa para caixa, NÃO o efeito do dia (equipe, lote, regulagem). Por isso a
     faixa de ±10% fica e a CONFERÊNCIA existe. Dito ao PPCP.
-  - **A UEP média sai dos SEGUNDOS** (`_ucvRegUep`: rodando ÷ base de cada
-    medição), pesada pelos volumes — não da UEP já arredondada (1,46 e 1,57
+  - **A UEP média sai dos SEGUNDOS** (`_ucvRegUep`: ~~rodando ÷ base de cada medição~~ — desde a v7.200.0, sem as lacunas ÷ 6,7; ver *A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS*),
+    pesada pelos volumes — não da UEP já arredondada (1,46 e 1,57
     davam 1,52; os segundos dão **1,51**).
   - **A troca é das REGISTRADAS, não do tempo digitado**: com o tempo nos
     campos, os cartões são dele; a caixa de ação é da regra. `_uepConvMontar`
@@ -5722,6 +5731,82 @@ feito e dá ar de verdade ao que sobrou.
   depois do 📌 FIXAR e virou o último foco: o `_uepConvTecla` (Tab volta ao
   PRODUTO) passou para ele. Medido no Chromium: a linha de campos cabe em 1920,
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
+
+## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
+- PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
+  volumes, nenhuma parada marcada, período = rodando = 20,4 s, **5 lacunas** —
+  105, 62, 51, 49 e 38 s, 3min42s além do normal, 18% da medição — sem as
+  lacunas 16,6 s): *"porque esta pegando esteira rodando? tem que pegar sem as
+  lacunas"* → *"sem lacunas e acrescente 15%"* → *"vamos fazer a troca"*. A
+  conversa passou por: o 15% entra nos dois e se cancela na UEP (só o tempo
+  padrão em segundos o mostra); o mesmo % é justo para produto rápido e lento (o
+  mesmo descanso por hora: 7,8 min/h nos dois); e por que ele não entra na
+  produção nem na meta (já têm o cansaço do dia dentro).
+- **A régua**: UEP = SEM AS LACUNAS do produto ÷ SEM AS LACUNAS da base.
+  `UEP_BASE_MEDIDA = { seg:6.7, rodando:7.9, periodo:null, … }` — `seg` é o
+  sem as lacunas (era 7,9, o rodando); o `rodando` só serve ao quadro QUAL
+  NÚMERO DIGITAR. Lacuna (intervalo > 2× o normal no app) é parada que ninguém
+  marcou: perda da linha, não esforço do produto.
+  - **Nos DOIS lados.** 16,6 ÷ 7,9 = 2,10 mistura régua (o produto ~15% leve).
+  - **Por que mudou o resultado de todos**: nas 39 medições registradas até
+    03/11, o sem as lacunas é 97,8% do rodando nos produtos (24 sem lacuna
+    nenhuma) e **84,8% na MADERO**. As lacunas não se cancelavam: a base inchada
+    deixava toda cronoanálise ~15% leve. Contra o cadastro de antes das trocas,
+    a mediana foi de −16% (rodando) para 0% (sem as lacunas).
+- **`_ucvRegUep(r)` = `r.sLac ÷ UEP_BASE_MEDIDA.seg`, a régua de HOJE para
+  todas as medições**, as antigas inclusive. A UEP_CRONO e a BASE_S da linha
+  são o retrato do registro (régua antiga) e não entram em conta nenhuma. Sem o
+  SEM AS LACUNAS a medição não conta (nunca cai no rodando nem na UEP gravada).
+  Quem lê por ela: a regra (`_ucvRegsResumo`), a coluna UEP da lista, a TROCA
+  (`_ucvRegsStatus`), o NA PRODUÇÃO da lista (`_ucvRegsPadrao`, duas casas), as
+  PRONTAS, os PRINCIPAIS, os ESTUDOS DO DIA e a confirmação do EXCLUIR. A base
+  remedida (trocar a constante) refaz a UEP de todas as medições juntas.
+- **Tela**: o campo é **s/VOLUME SEM AS LACUNAS** (com a régua da meta, NO
+  PERÍODO, como antes); o cartão MEDIDO · SEM AS LACUNAS; o QUAL NÚMERO DIGITAR
+  destaca o POR VOLUME SEM AS LACUNAS (a MADERO deu 6,7) e diz *não use* no NO
+  PERÍODO e no COM A LINHA RODANDO (7,9); a lista põe o SEM LACUNAS em negrito.
+- **Registro**: o RODANDO foi para o formulário, **obrigatório** (`r-rod`; era
+  o SEM AS LACUNAS opcional, `r-lac`) — a ⏳ ONDE O TEMPO VAI mede as lacunas
+  com ele. `_ucvRegValida(seg, F)`: seg = sem as lacunas; RODANDO ≥ seg e ≤ 3×
+  (`UCV_REG_ROD_MAX`); NO PERÍODO ≥ RODANDO e ≤ 5×. O REG_ID não mudou (hash dos
+  segundos): o mesmo PDF registrado pela régua antiga e pela nova não duplica.
+  BASE da linha nova: `MADERO SEM LACUNAS 20/10/2026`, BASE_S 6,7.
+  - **Só registra com a base MADERO medida** (`R.base.medida`): o formulário
+    some, o `_ucvRegFalta` diz por quê (`_ucvRegBaseTxt`) e o REGISTRAR e o
+    IMPORTAR em lote recusam. Com outra base, a UEP do registro não seria a da
+    regra. A régua da meta (NO PERÍODO) também não registra mais.
+- **📄 IMPORTAR PDF**: o SEM AS LACUNAS vai para o campo do tempo e o RODANDO
+  para o registro; PDF sem o cartão SEM AS LACUNAS não importa (`falta`).
+- **Base guardada**: chave nova `rpe_uep_conv_lac` (era `rpe_uep_conv`, um
+  tempo RODANDO); a antiga é apagada na 1ª abertura, ANTES da leitura. É troca
+  de chave por SENTIDO, não por estética.
+- **`.gs` v5.44** (⚠ re-deploy): `CRONO_BASE_S_GS = 6.7` (= `UEP_BASE_MEDIDA.seg`,
+  o teste prende); `_cronoTrocaRegra` com `sLac` (o `_trocarUepCronoCore` lê o
+  S_SEM_LACUNAS); `registrarCrono` exige o S_SEM_LACUNAS; toda resposta do
+  `trocarUepCrono` leva `regua:'lac'` e o painel manda `&regua=lac`. **Recusa sem
+  `regua` = `.gs` antigo** (confere pela régua rodando, a média não bate): o
+  `_ucvTrocaResposta` diz que falta o v5.44, não "tela desatualizada". Nada é
+  gravado antes do re-deploy.
+- **Medido com a planilha de 04/11/2026** (cadastro do dia, as 39 medições):
+  12 volumes ficam PRONTOS PARA TROCAR, todos para cima (+15% a +34%): STRASS
+  VOL 2/2 1,51 → 1,78, ELOA VOL 2/2 1,88 → 2,20, ANTARES VOL 1/3 1,81 → 2,13 e
+  VOL 3/3 1,67 → 1,95, BUFFET FLIP VOL 2/2 1,25 → 1,52, TOUCADOR 1,58 → 2,00,
+  RACK FLIP 1.6 2,19 → 2,55 e 1.8 2,13 → 2,46, RACK SIRIUS 1.6 1,95 → 2,30,
+  PAINEL SIRIUS 1.4 1,49 → 2,00, RACK MOVE 2,08 → 2,45, PAINEL MOON 1.6 1,75 →
+  2,13. TAURUS, PRINCESA, PRISM e VIVARE discordam; ENCANTO com 11 volumes.
+  Nada muda sozinho: o ✓ TROCAR é volume a volume.
+  - ⚠ **Tudo depende do 6,7**, que são 60 volumes (~8 min) com 4 lacunas, e a
+    dúvida se a medição de 20/10 era a MADERO ou a SLEEP continua. **Medir a
+    MADERO de novo** (60+ volumes, paradas marcadas) antes de trocar em massa.
+  - O **NA PRODUÇÃO** compara com a MADERO NA PRODUÇÃO e não depende do 6,7: é o
+    desempate. No dado de 26/09–25/10, ELOA (83% com 1,82) e STRASS (89% com
+    1,57) apontavam para ~2,19 e ~1,76 — perto da régua nova; RACK SIRIUS 1.6
+    (98,8% com 1,95) e TOUCADOR (~89–95%) apontavam para ~1,97 e ~1,78 — abaixo
+    da nova (2,30 e 2,00). 2–3 h de dado por produto: não decide sozinho.
+- A ⏳ ONDE O TEMPO VAI não mudou: ela já lia o rodando e o sem as lacunas de
+  cada medição (o ESTUDO RODANDO, o fluxo e o trabalho puro são os mesmos).
+- ⚠ O resto do painel que ainda fala em "rodando" na cronoanálise é o RODANDO
+  do app (o cartão, a coluna da lista, a ONDE O TEMPO VAI) — não a régua.
 
 ## 🖨 ESTUDOS DO DIA na ⏱ CRONOANÁLISE (v7.172.0)
 - PPCP, 27/10/2026: *"subi estudos hoje, colocar impressão dos estudos feito
