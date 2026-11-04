@@ -5803,6 +5803,28 @@ feito e dá ar de verdade ao que sobrou.
     1,57) apontavam para ~2,19 e ~1,76 — perto da régua nova; RACK SIRIUS 1.6
     (98,8% com 1,95) e TOUCADOR (~89–95%) apontavam para ~1,97 e ~1,78 — abaixo
     da nova (2,30 e 2,00). 2–3 h de dado por produto: não decide sozinho.
+- **Decidido em 04/11/2026 (PPCP): a base MADERO FICA em 6,7 s** (*"madero
+  fica"*), e as trocas foram feitas pela régua nova no mesmo dia, pelo ✓ TROCAR:
+  HOME ANGEL VOL 2/2 2,07 → 2,48 (09:01, 1 medição de 60 volumes, sem produção
+  para comparar) e as 12 PRONTAS (09:03–09:05) — STRASS VOL 2/2 1,51 → 1,78 ·
+  ELOA VOL 2/2 1,88 → 2,20 · ANTARES VOL 1/3 1,81 → 2,13 · VOL 3/3 1,67 → 1,95
+  · BUFFET FLIP VOL 2/2 1,25 → 1,52 · TOUCADOR 1,58 → 2,00 · RACK FLIP 1.6
+  2,19 → 2,55 · RACK FLIP 1.8 2,13 → 2,46 · RACK SIRIUS 1.6 1,95 → 2,30 ·
+  PAINEL SIRIUS 1.4 1,49 → 2,00 · RACK MOVE 2,08 → 2,45 · PAINEL MOON 1.6 1,75
+  → 2,13. Conferido na `UEP_VERSOES` (vigência 04/11/2026).
+  - ⚠ **Dito ao PPCP antes, e anotado**: pela coluna NA PRODUÇÃO (UEP ÷ % = a
+    UEP que a produção indica), a régua nova ficou na mediana **+12% acima da
+    produção** e a antiga −4% (9 volumes; PRISM 7,2 h; os outros com menos de
+    2 h ou de outubro). Hipótese não verificada: a lacuna é "> 2× o normal" — na
+    MADERO (6,7 s) qualquer intervalo acima de 13,4 s vira lacuna, nos produtos
+    lentos só acima de ~30 s; a base perde mais ritmo normal e sai rápida. Para
+    conferir: o tamanho das 4 lacunas no PDF da MADERO de 20/10.
+  - Quem acompanha agora é a **CONFERÊNCIA DAS TROCAS**: a produção esperada
+    pela régua da produção sugere ▼ DESCER? em ANTARES VOL 1/3, RACK SIRIUS 1.6
+    e TOUCADOR quando rodarem 2 h sozinhos. Se o padrão se repetir em vários,
+    é a base (remedir a MADERO), não produto a produto.
+  - A UEP/dia desses produtos sobe; a referência de 2.761 foi calibrada com o
+    cadastro anterior (rever a referência é decisão do PPCP).
 - A ⏳ ONDE O TEMPO VAI não mudou: ela já lia o rodando e o sem as lacunas de
   cada medição (o ESTUDO RODANDO, o fluxo e o trabalho puro são os mesmos).
 - ⚠ O resto do painel que ainda fala em "rodando" na cronoanálise é o RODANDO
