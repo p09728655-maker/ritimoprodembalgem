@@ -86,6 +86,12 @@ via Google Apps Script (JSONP).
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
   `node pontos.test.js`.
+- `produtos-dia.test.js` — PRODUTOS EMBALADOS HOJE do gerencial do celular
+  (mobile 1.39.0): a conta `_pdiaMontar` e o desenho `_pdiaHtml` reais, com o
+  log e o cadastro de 04/11/2026 (PRISM, HOME ANGEL, LIVREIRO): ordem, trocas,
+  faixa, cor × volume, AGORA, hora extra, cobertura e os casos de borda (A,B,A,B
+  na hora, madrugada lançada depois, 501130 com mesas irmãs, sem UEP):
+  `node produtos-dia.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -176,6 +182,49 @@ via Google Apps Script (JSONP).
   - A exclusão de lançamento da madrugada não avisa "não dá para relançar"
     (`_corrHoraTravada` usa a mesma regra). O bipe segue só na hora corrente.
   - Gerencial do PC **não** lança: ele não tem seletor de produto.
+
+## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0)
+- PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os
+  produtos embalados do dia"* → *"não alterar nada, me mostre antes"* → duas
+  prévias (artifact privado, dados reais do dia) → *"o que dá pra melhorar no
+  visual"* → *"implementar a versão 2"*. Quadro `#ger-pdia` entre os KPIs e as
+  PARADAS do `view-gerencial`.
+- **Conta** `_pdiaMontar(phm, ph, cat, atual, agoraMin, o)` (pura) · **desenho**
+  `_pdiaHtml` + `_pdiaDetHtml` (sem conta, o teste prende) · **leitura**
+  `renderGerProdutosDia(k.real)` no fim do `renderGerencial` · `_pdiaToggle(i)`
+  abre um produto por vez (`PDIA_ABERTO`, só na sessão).
+- **Nenhuma leitura nova**: `porHoraModelo` (caixas e UEP por hora, produto e
+  cor — a régua do `.gs`) e `porHora` (o log na ordem dos bipes, com o código e
+  a descrição com o VOL), os dois do `getPontosDia` que o gerencial já lê a cada
+  6 min. O `lerPontosDia` passou a guardar o `porHora` e o `lidoEm`.
+- O que mostra: resumo (caixas, UEP, produtos, **trocas de produto**), a
+  **faixa da sequência** (cada hora repartida pelas caixas de cada produto, a
+  hora em andamento só até agora; HE em âmbar, almoço listrado, agora em
+  laranja), a **cobertura** (caixas com produto × PRODUÇÃO REAL, e de que horas
+  é a lista) e uma linha por produto **na ordem em que rodou** (caixas, UEP,
+  cor, horário pelas horas da planilha, HE, barra = parte da UEP do dia). O
+  toque abre **por cor e volume** (só com 2+ volumes embalados hoje) e o **hora
+  a hora**.
+- ⚠ **Sem veredito por produto** (nem verde/vermelho, nem cx/h): o veredito do
+  dia é o selo do % DA META, e hora parcial distorce o ritmo de um produto.
+- **Trocas**: o produto mudou na sequência. Na mesma hora cada produto conta
+  uma vez (A,B,A,B é a esteira com dois lados) e o produto que vinha da hora
+  anterior abre a seguinte — a madrugada pode ser lançada horas depois, e a
+  ordem dos lançamentos dentro da hora não é a da linha.
+- **Código → produto**: com um produto só do modelo no dia, é ele; com vários (o
+  501130 tem quatro mesas), pelo nome (`_pdiaBase`: desc sem o VOL e sem a cor
+  no fim, do catálogo ou do próprio log). O **AGORA** (`PROD_ATUAL`) só casa
+  pelo nome — sem nome, nenhum: o código pode ser de uma mesa irmã que ainda
+  não embalou hoje.
+- A faixa: os blocos alternam dois tons neutros (`#44658F`/`#2E4A6E`, para
+  separar vizinhos) e o nome entra só se couber (`_pdiaCurto`: inteiro, sem as
+  medidas, ou a última palavra — BUFFET 4 PT PRISM → PRISM; referência
+  `PDIA_LARG`=340 px). O % da barra fica numa coluna fixa (as barras alinham).
+- Medido no Chromium com os dados de 04/11: 360, 390 e 430 px, nada passa da
+  largura nem corta; em 360 o hora a hora quebra a descrição em duas linhas.
+- Sem leitura do dia: *"Lendo a produção do dia…"*; dia sem produto lançado diz
+  quantas caixas da HORA_A_HORA ficaram sem produto; falha da conta diz isso
+  (nunca "lendo").
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas
