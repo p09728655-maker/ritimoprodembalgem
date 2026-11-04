@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.45 — A LINHA QUE VOLTA DA CONCLUIDA VEM COM A DATA NO FORMATO DA ABA
+//               PPCP, 04/11/2026, com a 25390 501.136.005 de volta à
+//               PROGRAMACAO depois do TROCAR PRODUTO (158 cx eram do CINAMOMO):
+//               "a data de novo veio errada". O valor era 04/11/2026, certo; o
+//               setValues do _desarquivar deixava o formato padrão do Sheets
+//               (04/11/2026) no meio do dd/mm do extrato. _progDataNoFormato dá
+//               à linha o formato das linhas da mesma data (sem elas, o mais
+//               comum da coluna). Nada de conta muda.
 // Versão: 5.44 — A TROCA DA UEP PELA RÉGUA SEM AS LACUNAS
 //               PPCP, 04/11/2026, com a HOME ANGEL 1.8 VOL 2/2: 5 lacunas
 //               (paradas que ninguém marcou, 18% da medição) entravam no tempo
@@ -3110,13 +3118,56 @@ function _desarquivar(ss, prog, hojeNum, simular) {
       return j >= 0 ? o.r[j] : '';
     });
   });
-  sh.getRange(sh.getLastRow() + 1, 1, novas.length, hp.length).setValues(novas);
+  const ini = sh.getLastRow() + 1;
+  sh.getRange(ini, 1, novas.length, hp.length).setValues(novas);
+  _progDataNoFormato(sh, hp, ini, sai.map(function (o) { return o.dNum; }));
   SpreadsheetApp.flush();   // só tira da CONCLUIDA depois que a volta está gravada
   sai.map(function (o) { return o.row; }).sort(function (a, b) { return b - a; })
      .forEach(function (row) { shArq.deleteRow(row + 1); });
   Logger.log('desarquivar: ' + sai.length + ' linha(s) voltaram para a ' + SHEET_PROG + ' · ' +
              sai.map(function (o) { return o.lote + ' ' + o.codigo; }).join(', '));
   return detalhe;
+}
+
+// v5.45 — A LINHA QUE VOLTA VEM COM A DATA NO FORMATO DA ABA. O setValues grava
+// o Date da CONCLUIDA no formato padrão do Sheets (04/11/2026), e a aba usa o do
+// extrato colado (dd/mm ou d/m). PPCP, 04/11/2026, com a 25390 501.136.005 de
+// volta depois do TROCAR PRODUTO: "a data de novo veio errada" — o VALOR estava
+// certo (o FIFO lê o Date), a cara não. Só formato: falhar aqui não desfaz a
+// volta. Uma leitura de UMA coluna (valores + formatos), só quando algo volta.
+function _progDataNoFormato(sh, hp, ini, dNums) {
+  try {
+    const j = hp.indexOf('DATA');
+    if (j < 0 || ini <= 2 || !dNums.length) return;
+    const rg = sh.getRange(2, j + 1, ini - 2, 1);
+    const nums = rg.getValues().map(function (r) { return dataParaNum(r[0]); });
+    const fmts = rg.getNumberFormats().map(function (r) { return String(r[0] == null ? '' : r[0]); });
+    _progFormatosData(nums, fmts, dNums).forEach(function (f, k) {
+      if (f) sh.getRange(ini + k, j + 1).setNumberFormat(f);
+    });
+  } catch (e) { Logger.log('desarquivar · formato da data: ' + e.message); }
+}
+
+// Conta pura: para cada data (aaaammdd) que volta, o formato de data MAIS COMUM
+// entre as linhas da MESMA data; sem nenhuma, o mais comum da coluna; sem nenhum,
+// '' (a célula fica como o setValues deixou). Só formato de DATA entra na conta —
+// "General", texto (@), número e data com hora não: copiar um deles faria a data
+// virar 46330. A mais comum, não a 1ª: uma linha que voltou antes (com o formato
+// longo) não pode ensinar o formato às outras.
+function _progFormatosData(nums, fmts, dNums) {
+  const ehData = function (f) { return /d/i.test(f) && /m/i.test(f) && !/[h@#0]/i.test(f); };
+  const moda = function (filtro) {
+    const c = {}; let melhor = '', n = 0;
+    for (let i = 0; i < nums.length; i++) {
+      const f = fmts[i];
+      if (!nums[i] || !ehData(f) || !filtro(nums[i])) continue;
+      c[f] = (c[f] || 0) + 1;
+      if (c[f] > n) { n = c[f]; melhor = f; }
+    }
+    return melhor;
+  };
+  const geral = moda(function () { return true; });
+  return dNums.map(function (d) { return moda(function (x) { return x === d; }) || geral; });
 }
 
 // Dia (aaaammdd) do carimbo ATUALIZADO_EM. O write-back grava o texto

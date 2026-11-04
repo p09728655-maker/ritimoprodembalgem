@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## `.gs` v5.45 — 04/11/2026 · a linha que volta da CONCLUIDA vem com a data no formato da aba ⚠ **re-deploy**
+
+- PPCP, com a PROGRAMACAO na tela: *"olha a data de novo veio errada"*. A
+  25390 · 501.136.005 (LIVREIRO ENCANTO BRANCO/CINAMOMO) tinha fechado e ido
+  para a PROGRAMACAO_CONCLUIDA; às 14:58 o **TROCAR PRODUTO** passou 158 cx
+  dela para o CINAMOMO (501.136.003), ela ficou com 147 de 150 e **voltou para
+  a aba** — como deve. Mas a DATA voltou escrita `04/11/2026`, no meio das
+  outras em `04/11`.
+- O **valor** da data sempre esteve certo (o cálculo lê a data, não o texto); o
+  que vinha errado era o **formato** da célula. Agora a linha que volta pega o
+  formato das linhas da mesma data (sem elas, o mais comum da coluna).
+- A célula daquele dia (B115) foi acertada direto na planilha.
+- **Atenção**: nenhum número muda. A linha que volta continua indo para o
+  **fim** da aba, fora da ordem do lote.
+- ⚠ **re-deploy** do Apps Script; antes dele, a próxima linha que voltar ainda
+  vem com a data longa.
+
 ## v7.201.0 + mobile 1.40.0 — 04/11/2026 · PRODUTOS EMBALADOS HOJE também no gerencial do PC
 
 - PPCP: *"onde daria para colocar no pc"* → *"ok gerencial"* (prévia com os
