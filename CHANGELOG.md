@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.39.0 — 04/11/2026 · PRODUTOS EMBALADOS HOJE no gerencial do celular
+
+- PPCP: *"sugestão para tela gerencial do app celular, colocando os produtos
+  embalados do dia"*. Duas prévias com os dados de hoje; escolhida a versão 2.
+- Quadro novo **PRODUTOS EMBALADOS HOJE**, entre os KPIs e as PARADAS:
+  - resumo: caixas, UEP, produtos e **trocas de produto**;
+  - **faixa da sequência do dia** (05/07 → 17 h): o que rodou, em que ordem, a
+    hora extra em âmbar, o almoço e o "agora" em laranja;
+  - uma linha por produto, **na ordem em que rodou**: caixas, UEP, cor(es),
+    horário, caixas em hora extra e a barra com a parte da UEP do dia; o
+    produto de agora leva **AGORA**;
+  - tocar no produto abre **por cor e volume** (produto de 2+ volumes) e o
+    **hora a hora** dele.
+- Nenhuma leitura nova e nada no Apps Script: sai do `getPontosDia` que o
+  gerencial já lê (o log do dia, `porHora`, já vinha na resposta e passou a
+  ser guardado).
+- **Sem veredito por produto** (nem verde/vermelho, nem cx/h): o veredito do dia
+  continua sendo o selo do % DA META; hora parcial distorceria o ritmo.
+- A faixa reparte cada hora pelas caixas de cada produto: a planilha não guarda
+  o minuto da troca, então o ponto dentro da hora é aproximado.
+- Nenhum número existente mudou.
+
 ## v7.200.0 — 04/11/2026 · ⏱ CRONOANÁLISE pela régua SEM AS LACUNAS · ⚠ re-deploy (.gs v5.44)
 
 - PPCP, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** (04/11, 60 volumes): o
