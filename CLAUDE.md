@@ -5825,6 +5825,25 @@ feito e dá ar de verdade ao que sobrou.
     é a base (remedir a MADERO), não produto a produto.
   - A UEP/dia desses produtos sobe; a referência de 2.761 foi calibrada com o
     cadastro anterior (rever a referência é decisão do PPCP).
+  - **HOME ANGEL VOL 1/2, 09:25 do mesmo dia**: 1,89 → 2,48 (1 medição, 62
+    volumes, rodando 25,2 s, sem as lacunas 16,6 s — o MESMO 16,6 do VOL 2/2).
+    Jogo 3,96 → 4,96. Conferido no log: a linha NÃO intercalou os volumes (VOL
+    2/2 06:00–07:59, VOL 1/2 a partir das 08:00) — cada estudo mediu a sua
+    caixa. Na produção: 07:00 129 cx do VOL 2/2 = 102% do ritmo da meta; 08:00
+    90 cx do VOL 1/2 = 71%.
+- **O QUE É A LACUNA PARA O PPCP** (04/11/2026): *"deficiência — não deixou
+  100% pronto, tem que ficar ajustando, puxando peças, colocando isomantas"*.
+  É trabalho que só existe porque a etapa anterior não entregou pronto: perda
+  a atacar, por isso fica fora da UEP e aparece como perda na produção (a
+  DIFERENÇA da ⏳ ONDE O TEMPO VAI). Duas ressalvas, ditas ao PPCP:
+  - se a tarefa é do PROCESSO COMBINADO (a embalagem que põe a isomanta, por
+    exemplo), não é deficiência: é conteúdo do produto e devia entrar na UEP.
+    Quem decide é o PPCP, tarefa a tarefa;
+  - o app só chama de lacuna o intervalo acima de 2× o normal. Ajuste pequeno
+    em toda caixa não vira lacuna e entra na UEP; só a interrupção grande sai.
+  - Para virar número por causa: a cronoanálise marca a parada com o motivo no
+    app (puxar peça, isomanta, ajuste) em vez de deixar como lacuna, e na
+    produção o operador aponta a parada. Sem isso a deficiência não tem dono.
 - A ⏳ ONDE O TEMPO VAI não mudou: ela já lia o rodando e o sem as lacunas de
   cada medição (o ESTUDO RODANDO, o fluxo e o trabalho puro são os mesmos).
 - ⚠ O resto do painel que ainda fala em "rodando" na cronoanálise é o RODANDO
