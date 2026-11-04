@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.44 — A TROCA DA UEP PELA RÉGUA SEM AS LACUNAS
+//               PPCP, 04/11/2026, com a HOME ANGEL 1.8 VOL 2/2: 5 lacunas
+//               (paradas que ninguém marcou, 18% da medição) entravam no tempo
+//               RODANDO e engordavam a UEP — "sem lacunas e acrescente 15%". A
+//               UEP de cada medição passa a ser S_SEM_LACUNAS ÷ a base sem as
+//               lacunas (CRONO_BASE_S_GS, 6,7 s = UEP_BASE_MEDIDA.seg do
+//               painel), nas antigas também. A BASE_S/UEP_CRONO gravadas não
+//               entram mais na conta. registrarCrono pede o S_SEM_LACUNAS e o
+//               trocarUepCrono responde regua:'lac' (o painel reconhece o .gs
+//               antigo pela falta dela).
 // Versão: 5.43 — OS FERIADOS DESTA SEMANA TAMBÉM VÃO AO PAINEL
 //               PPCP, 03/11/2026, com a impressão da aba ⚖ UEP na mão: o
 //               getProgramacaoDetalhada mandava os feriados de HOJE em diante,
@@ -2178,6 +2188,8 @@ function _registrarCronoCore(p) {
   const regId = String(p.regId || '').trim();
   if (!regId) return { ok: false, erro: 'Registro sem identificador (REG_ID).' };
   if (!(Number(_cronoNum(p.sRod)) > 0)) return { ok: false, erro: 'Sem o tempo RODANDO da medição.' };
+  // v5.44: o SEM AS LACUNAS é a régua da UEP — medição sem ele não entraria na troca
+  if (!(Number(_cronoNum(p.sLac)) > 0)) return { ok: false, erro: 'Sem o tempo SEM AS LACUNAS da medição.' };
   if (!String(p.produto || '').trim()) return { ok: false, erro: 'Sem o produto da medição.' };
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(SHEET_CRONO);
@@ -2305,8 +2317,9 @@ function _cronoJaExcluida(shX, regId) {
 // medições registradas do produto e volume somam CRONO_TROCA_MIN_VOL_GS volumes
 // ou mais (pode ser num dia só) e TODAS apontam o mesmo lado da faixa 90–110%
 // contra o cadastro ATUAL. A UEP nova é a média das medições pesada pelos
-// volumes medidos, cada uma pelos SEGUNDOS (rodando ÷ base) — não pela UEP já
-// arredondada da linha.
+// volumes medidos, cada uma pelos SEGUNDOS — não pela UEP já arredondada da
+// linha. v5.44: SEM AS LACUNAS ÷ CRONO_BASE_S_GS (a base sem as lacunas), em
+// todas as medições — a BASE_S e a UEP_CRONO da linha são da régua antiga.
 // A regra é do painel (_ucvRegsResumo); esta é a cópia que CONFERE antes de
 // gravar, contra a planilha de agora: a tela pode estar com o cadastro ou a
 // lista de medições velhos (outro computador trocou, alguém excluiu uma
@@ -2323,17 +2336,19 @@ function _cronoJaExcluida(shX, regId) {
 // Idempotente: a UEP já igual responde jaTrocado (a retentativa por timeout).
 const CRONO_TROCA_MIN_VOL_GS = 30;      // = UCV_TROCA_MIN_VOL do painel (o teste prende)
 const CRONO_TROCA_FAIXA_GS = [90, 110]; // = UEP_PAD_FAIXA do painel (o teste prende)
+const CRONO_BASE_S_GS = 6.7;            // = UEP_BASE_MEDIDA.seg do painel: a MADERO sem as lacunas (o teste prende)
 const CRONO_ORIGEM = 'CRONOANÁLISE';
 
-// Conta pura (cópia da _ucvRegsResumo do painel): regs [{data, sRod, baseS,
-// uep, uepCad, volumes}] e a UEP/volume do cadastro de agora.
+// Conta pura (cópia da _ucvRegsResumo do painel): regs [{data, sLac, uepCad,
+// volumes}] e a UEP/volume do cadastro de agora. A UEP de cada medição é a do
+// _ucvRegUep: sem as lacunas ÷ a base sem as lacunas; sem o campo, não conta.
 function _cronoTrocaRegra(regs, cadAtual) {
   const F = CRONO_TROCA_FAIXA_GS, dias = {}, lados = {};
   let nVol = 0, soma = 0, semVol = 0;
   (regs || []).forEach(function (r) {
     if (r.data) dias[r.data] = 1;
-    const sR = Number(r.sRod) || 0, bS = Number(r.baseS) || 0;
-    const u = sR > 0 && bS > 0 ? sR / bS : Number(r.uep) || 0;
+    const sL = Number(r.sLac) || 0;
+    const u = sL > 0 ? sL / CRONO_BASE_S_GS : 0;
     const v = Number(r.volumes) > 0 ? Math.round(Number(r.volumes)) : 0;
     if (!(u > 0)) return;
     if (!v) { semVol++; return; }
@@ -2348,7 +2363,7 @@ function _cronoTrocaRegra(regs, cadAtual) {
            uepMed: nVol ? soma / nVol : null, veredito: veredito };
 }
 const CRONO_TROCA_RECUSA = {
-  'sem-medicao':   'nenhuma medição registrada deste produto e volume na aba CRONOANALISE',
+  'sem-medicao':   'nenhuma medição registrada deste produto e volume com o SEM AS LACUNAS, na aba CRONOANALISE',
   'sem-volumes':   'as medições não têm VOLUMES MEDIDOS — sem a amostra não dá para trocar',
   'sem-cadastro':  'o volume está sem UEP no cadastro para comparar — digite na PRODUTO_CODIGO',
   'discordam':     'as medições discordam entre si (uma confere com o cadastro, outra não)',
@@ -2390,7 +2405,8 @@ function trocarUepCrono(p) {
 }
 
 function _trocarUepCronoCore(p) {
-  const recusa = function (motivo, txt) { return { ok: true, trocado: false, recusado: true, motivo: motivo, erro: txt }; };
+  // v5.44: toda resposta diz a régua — o painel reconhece o .gs antigo pela falta dela
+  const recusa = function (motivo, txt) { return { ok: true, trocado: false, recusado: true, motivo: motivo, erro: txt, regua: 'lac' }; };
   const modelo = codKey(p.modelo).slice(0, 6), produto = String(p.produto || '').trim(), volume = String(p.volume || '').trim();
   if (modelo.length !== 6 || !produto || !volume) return { ok: false, erro: 'Faltou o produto (modelo, nome e volume).' };
   const alvo = {};
@@ -2414,7 +2430,7 @@ function _trocarUepCronoCore(p) {
     const r = vC[i];
     if (codKey(r[ix('MODELO')]).slice(0, 6) !== modelo || norm(r[ix('PRODUTO')]) !== norm(produto) || String(r[ix('VOLUME')] || '').trim() !== volume) continue;
     const num = function (n) { const j = ix(n); return j < 0 || r[j] === '' || r[j] == null ? 0 : _numBR(r[j]); };
-    regs.push({ data: fmtDataBR(r[ix('DATA_MEDICAO')]), sRod: num('S_RODANDO'), baseS: num('BASE_S'), uep: num('UEP_CRONO'),
+    regs.push({ data: fmtDataBR(r[ix('DATA_MEDICAO')]), sLac: num('S_SEM_LACUNAS'),
                 uepCad: num('UEP_CADASTRO'), volumes: num('VOLUMES_MEDIDOS') });
     String(ix('CODIGOS') >= 0 ? r[ix('CODIGOS')] : '').split(/[\s,;]+/).forEach(function (c) { c = codKey(c); if (c) medidos[c] = 1; });
   }
@@ -2440,7 +2456,7 @@ function _trocarUepCronoCore(p) {
   }
   const semCad = cAlvo.filter(function (c) { return !L[c]; });
   if (semCad.length) return recusa('codigo-fora', 'código fora do cadastro: ' + semCad.join(', '));
-  if (cAlvo.every(function (c) { return _uepIgual(L[c].antes, alvo[c]); })) return { ok: true, trocado: true, jaTrocado: true, n: 0 };
+  if (cAlvo.every(function (c) { return _uepIgual(L[c].antes, alvo[c]); })) return { ok: true, trocado: true, jaTrocado: true, n: 0, regua: 'lac' };
 
   const cadAtual = _cronoUepVolumes(cAlvo.map(function (c) { return { vol: L[c].vol, uep: L[c].antes }; }));
   const regra = _cronoTrocaRegra(regs, cadAtual);
@@ -2460,7 +2476,7 @@ function _trocarUepCronoCore(p) {
   });
   _catalogoMemo = null;
   const out = { ok: true, trocado: true, n: cods.length, uep: Math.round(regra.uepMed * 100) / 100, nVol: regra.nVol,
-                medicoes: regs.length, vigencia: hoje, codigos: cods };
+                medicoes: regs.length, vigencia: hoje, codigos: cods, regua: 'lac' };
   // A versão vem DEPOIS do cadastro: se falhar, a resposta diz (como o GRAVAR UEP).
   try { out.versoes = _uepVerRegistrar(ss, mud, hoje, _cronoOrigem(modelo, produto, volume, regs.length, regra.nVol), semente); }
   catch (e) { out.versaoErro = e.message; }
