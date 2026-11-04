@@ -289,7 +289,7 @@ ok('sem meta do dia também não',
 
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
-             'efNoRitmo', 'nomeComCor', '_rpOk'];
+             'efNoRitmo', 'nomeComCor', '_rpOk', 'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');
