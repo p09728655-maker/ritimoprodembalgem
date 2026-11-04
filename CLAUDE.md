@@ -86,12 +86,14 @@ via Google Apps Script (JSONP).
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
   `node pontos.test.js`.
-- `produtos-dia.test.js` — PRODUTOS EMBALADOS HOJE do gerencial do celular
-  (mobile 1.39.0): a conta `_pdiaMontar` e o desenho `_pdiaHtml` reais, com o
-  log e o cadastro de 04/11/2026 (PRISM, HOME ANGEL, LIVREIRO): ordem, trocas,
-  faixa, cor × volume, AGORA, hora extra, cobertura e os casos de borda (A,B,A,B
-  na hora, madrugada lançada depois, 501130 com mesas irmãs, sem UEP):
-  `node produtos-dia.test.js`.
+- `produtos-dia.test.js` — PRODUTOS EMBALADOS HOJE dos dois gerenciais
+  (mobile 1.39.0, PC v7.201.0): a conta `pdiaMontar` do rp-core e os desenhos
+  reais (`_pdiaHtml` do celular, `_pdiaPcHtml` + a leitura
+  `renderGerProdutosDia` do PC), com o log e o cadastro de 04/11/2026 (PRISM,
+  HOME ANGEL, LIVREIRO): ordem, trocas, faixa, cor × volume, AGORA, hora extra,
+  cobertura e os casos de borda (A,B,A,B na hora, madrugada lançada depois,
+  501130 com mesas irmãs, sem UEP); no PC, o "lendo" antes da 1ª leitura e o
+  cadastro lido no clique uma vez só: `node produtos-dia.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -183,14 +185,17 @@ via Google Apps Script (JSONP).
     (`_corrHoraTravada` usa a mesma regra). O bipe segue só na hora corrente.
   - Gerencial do PC **não** lança: ele não tem seletor de produto.
 
-## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0)
+## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
 - PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os
   produtos embalados do dia"* → *"não alterar nada, me mostre antes"* → duas
   prévias (artifact privado, dados reais do dia) → *"o que dá pra melhorar no
   visual"* → *"implementar a versão 2"*. Quadro `#ger-pdia` entre os KPIs e as
   PARADAS do `view-gerencial`.
-- **Conta** `_pdiaMontar(phm, ph, cat, atual, agoraMin, o)` (pura) · **desenho**
-  `_pdiaHtml` + `_pdiaDetHtml` (sem conta, o teste prende) · **leitura**
+- **Conta** `pdiaMontar(phm, ph, cat, atual, agoraMin, o)` no **`rp-core.js`**
+  (v7.201.0 / mobile 1.40.0 — era `_pdiaMontar` no celular; com o PC ela virou
+  UMA só, com `pdiaVol`/`pdiaBase`/`pdiaCurto`/`PDIA_LARG`; o teste falha se um
+  painel voltar a ter cópia) · **desenho** do celular `_pdiaHtml` +
+  `_pdiaDetHtml` (sem conta, o teste prende) · **leitura**
   `renderGerProdutosDia(k.real)` no fim do `renderGerencial` · `_pdiaToggle(i)`
   abre um produto por vez (`PDIA_ABERTO`, só na sessão).
 - **Nenhuma leitura nova**: `porHoraModelo` (caixas e UEP por hora, produto e
@@ -225,6 +230,35 @@ via Google Apps Script (JSONP).
 - Sem leitura do dia: *"Lendo a produção do dia…"*; dia sem produto lançado diz
   quantas caixas da HORA_A_HORA ficaram sem produto; falha da conta diz isso
   (nunca "lendo").
+- **NO PC (v7.201.0)** — PPCP: *"onde daria para colocar no pc"* → *"ok
+  gerencial"* (prévia) → *"ok"*. Card `#ger-pdia` (`.tbl-wrap ger-live-only`)
+  logo abaixo do `#kpi-grid` da aba GERENCIAL; `renderGerProdutosDia(k.real)`
+  depois dos KPIs do `renderGerencial` (só o dia ao vivo — o modo histórico
+  sai antes e o `.ger-live-only` esconde o card; o dia passado não tem o
+  `porHoraModelo`). Fora da impressão do dia (`#ger-pdia` na lista do
+  `@media print`). Pele `#ger-pdia .pdpc-*`, sem verde nem vermelho (o teste
+  prende).
+  - Mesma conta, com `larg: PDIA_PC_LARG` (1100 — o nome inteiro cabe no bloco:
+    BUFFET 4 PT PRISM) e `passo: 60` (uma marca por hora). O desenho
+    (`_pdiaPcHtml`/`_pdiaPcDetHtml`) escreve o "agora" no eixo e tira a hora
+    cheia a menos de 25 min dele; tabela de 8 colunas (PRODUTO · COR · HORÁRIO ·
+    CAIXAS · UEP · EM HE · PARTE DA UEP DO DIA), `min-width:900` com rolagem
+    dentro do card; clique abre um produto por vez (`PDIA_PC_ABERTO`).
+  - Antes da 1ª resposta do `getPontosDia` (`PONTOS_DIA_TS` 0 — o `PONTOS_DIA`
+    nasce com listas vazias) é o `_pontosEstadoTxt`, nunca "nenhuma caixa". O
+    cabeçalho diz a hora da lista. AGORA pelo `PONTOS_DIA.produtoAtual` (+
+    `produtoAtualDesc`).
+  - **A cor de cada lançamento vem do cadastro** (`_pdiaPcCat`: `CAP_RAW`, senão
+    o `rpe_cap_cat` guardado). Sem nenhum, o 1º clique lê o cadastro
+    (`_capBuscar`, a leitura do simulador) **uma vez por sessão**
+    (`PDIA_PC_CATPED`) e redesenha; falhou, o detalhe sai sem a cor.
+  - ⚠ **A barra (parte da UEP do dia) inclui a hora extra**; o MIX DE HOJE da
+    aba ⚖ UEP é só da jornada. Num dia com HE os dois % diferem (04/11 às
+    09:41: HOME ANGEL 66% aqui × 93% lá — 947 de 1.441 UEP com a HE, 799 de
+    855 sem) e os dois estão certos. As dicas do celular e do
+    PC dizem *"com hora extra"*.
+  - Medido no Chromium com os dados de 04/11 às 09:41: 1280, 1366 e 1920 —
+    nada passa da largura, a página não rola de lado, os nomes cabem.
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas

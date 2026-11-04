@@ -338,6 +338,212 @@ function uepHistResumo(dias){
            meta: com.length ? uepDiaMeta(com[com.length - 1]) : UEP_META_PADRAO };
 }
 
+// ── PRODUTOS EMBALADOS HOJE (os dois gerenciais: mobile 1.39.0, v7.201.0) ────
+// A CONTA do quadro — uma só para o celular e o PC (cada painel tem o seu
+// desenho). Pura: recebe o porHoraModelo e o porHora do getPontosDia, o
+// catálogo e o relógio; não lê DADOS/CFG nem toca no DOM. Testada em
+// produtos-dia.test.js com o log real de 04/11/2026.
+const PDIA_LARG = 340;   // largura de referência da faixa no celular (px)
+const _pdiaNorm = s => String(s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// "VOL 1/2 HOME ANGEL 1.8" → {a:1, b:2, txt:'VOL 1/2'}; sem VOL → null.
+function pdiaVol(desc){
+  const m = String(desc||'').match(/^\s*VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
+  return m ? { a:+m[1], b:+m[2], txt:`VOL ${m[1]}/${m[2]}` } : null;
+}
+// Nome do produto como o .gs agrupa (sem o VOL e sem a cor no fim).
+function pdiaBase(desc, cor){
+  let s = String(desc||'').replace(/^\s*VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '').trim();
+  const c = String(cor||'').trim();
+  if(c && _pdiaNorm(s).endsWith(' '+_pdiaNorm(c))) s = s.slice(0, s.length-c.length).trim();
+  return s;
+}
+// O nome que cabe num bloco da faixa: inteiro, sem as medidas, ou a última
+// palavra (BUFFET 4 PT PRISM → PRISM). Não coube nada → sem rótulo.
+function pdiaCurto(nome, larg){
+  const cabe = t => t.length*6 + 6 <= larg;
+  const pal = String(nome||'').split(/\s+/).filter(Boolean);
+  const semMed = pal.filter(w => !/^[\d.,]+$/.test(w));
+  return [pal.join(' '), semMed.join(' '), semMed[semMed.length-1]||''].find(t => t && cabe(t)) || '';
+}
+
+// phm: porHoraModelo · ph: porHora · cat: catálogo (PRODUTOS, a cor de cada
+// código) · atual: código do produto de agora · agoraMin: agora em minutos ·
+// o: {turnoIni, turnoFim, almIni, almFim, real, larg, passo, atualDesc}
+// (minutos; real = caixas da HORA_A_HORA, para a cobertura; larg = largura da
+// faixa em px, só decide se o nome cabe no bloco — PDIA_LARG sem ela; passo =
+// minutos entre as marcas do eixo — 120 sem ele; atualDesc = descrição do
+// produto de agora, quando o painel a tem).
+function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
+  const dig = c => String(c==null?'':c).replace(/\D/g, '');
+  const fimSlot = ini => Math.floor(ini/60)*60 + 60;   // a hora acaba na próxima hora cheia (12:12 → 13:00)
+  const ehHE = m => m < o.turnoIni || m >= o.turnoFim;  // a janela do _ehHoraExtraCaixas do .gs
+  const catPor = {};
+  (cat||[]).forEach(c => { if(c) catPor[dig(c.codigo)] = c; });
+
+  // 1) Produtos (modelo + nome), pela régua do .gs: caixas, UEP, cores, horas.
+  const prods = [], porKey = {}, porModelo = {};
+  const doPhm = [];
+  (phm||[]).forEach((it, i) => {
+    const cx = Number(it && it.caixas) || 0;
+    const ini = it && it.hora ? toMin(String(it.hora)) : NaN;
+    if(!(cx > 0) || !isFinite(ini)) return;
+    const modelo = String(it.modelo||''), nome = String(it.nome||'').trim();
+    const key = modelo+'|'+nome;
+    let p = porKey[key];
+    if(!p){
+      p = porKey[key] = { key, modelo, nome: nome||modelo, i, seq:null, cores:[], cx:0, uep:0, uepCx:0,
+                          he:0, ini:Infinity, fim:-Infinity, phm:[], log:[] };
+      prods.push(p);
+      (porModelo[modelo] = porModelo[modelo] || []).push(p);
+    }
+    const u = Number(it.uep) || 0;
+    p.cx += cx;
+    if(u > 0){ p.uep += u; p.uepCx += cx; }
+    if(ehHE(ini)) p.he += cx;
+    const cor = String(it.cor||'').trim();
+    if(cor && !p.cores.includes(cor)) p.cores.push(cor);
+    p.ini = Math.min(p.ini, ini); p.fim = Math.max(p.fim, fimSlot(ini));
+    p.phm.push({ m:ini, hora:String(it.hora), cor, cx });
+    doPhm.push({ m:ini, p, cx });
+  });
+
+  // Código → produto. Com um produto só do modelo no dia, é ele; com vários
+  // (o 501130 tem quatro mesas), pelo nome. estrito (o produto de agora): só
+  // pelo nome — sem ele, nenhum (o código pode ser de uma mesa irmã que ainda
+  // não embalou hoje). O nome vem do catálogo ou, sem ele, do próprio log.
+  const descLog = {};
+  (ph||[]).forEach(l => { if(l && l.desc) descLog[dig(l.codigo)] = l.desc; });
+  const prodDoCod = (cod, desc, estrito) => {
+    const l = porModelo[dig(cod).slice(0, 6)] || [];
+    const c = catPor[dig(cod)] || {};
+    const b = _pdiaNorm(pdiaBase(desc || c.desc || descLog[dig(cod)], c.cor));
+    const pelo = b ? (l.find(p => _pdiaNorm(p.nome) === b)
+                   || l.find(p => { const n = _pdiaNorm(p.nome); return n && (b.startsWith(n) || n.startsWith(b)); })) : null;
+    if(pelo) return pelo;
+    return estrito ? null : (l[0] || null);
+  };
+
+  // 2) O log na ordem dos bipes; a HORA manda (a madrugada pode ser lançada depois).
+  const linhas = (ph||[]).map((l, i) => ({ l, i, m: l && l.hora ? toMin(String(l.hora)) : NaN }))
+    .filter(x => isFinite(x.m) && Number(x.l.caixas) > 0)
+    .sort((a, b) => a.m - b.m || a.i - b.i);
+  let n = 0;
+  linhas.forEach(x => {
+    const p = prodDoCod(x.l.codigo, x.l.desc, false);
+    if(!p) return;
+    x.p = p;
+    if(p.seq == null) p.seq = n++;
+    const c = catPor[dig(x.l.codigo)] || {};
+    const v = pdiaVol(x.l.desc || c.desc);
+    p.log.push({ m:x.m, hora:String(x.l.hora), vol: v && v.b > 1 ? v.txt : '', cor:String(c.cor||'').trim(), cx:Number(x.l.caixas)||0 });
+  });
+  prods.sort((a, b) => a.ini - b.ini || (a.seq==null?1e9:a.seq) - (b.seq==null?1e9:b.seq) || a.i - b.i);
+
+  // 3) Por hora, os produtos na ordem em que entraram: trocas e faixa.
+  const horas = {}, ordH = [];
+  const add = (m, p, cx) => {
+    if(!horas[m]){ horas[m] = []; ordH.push(m); }
+    const j = horas[m].find(x => x.p === p);
+    if(j) j.cx += cx; else horas[m].push({ p, cx });
+  };
+  if(linhas.some(x => x.p)) linhas.forEach(x => { if(x.p) add(x.m, x.p, Number(x.l.caixas)||0); });
+  else doPhm.forEach(x => add(x.m, x.p, x.cx));
+  ordH.sort((a, b) => a - b);
+  // Dentro da hora a ordem é a dos lançamentos — e a madrugada pode ser
+  // lançada horas depois. O produto que vinha rodando na hora anterior abre a
+  // hora seguinte (é continuação), senão a troca seria contada duas vezes.
+  ordH.forEach((m, k) => {
+    if(!k) return;
+    const ant = horas[ordH[k-1]], ult = ant[ant.length-1].p;
+    const j = horas[m].findIndex(x => x.p === ult);
+    if(j > 0) horas[m].unshift(horas[m].splice(j, 1)[0]);
+  });
+  // Troca = o produto muda na sequência. Dentro da MESMA hora conta cada produto
+  // uma vez: A,B,A,B numa hora é a esteira com dois lados, não três trocas.
+  const seq = [];
+  ordH.forEach(m => horas[m].forEach(x => { if(seq[seq.length-1] !== x.p) seq.push(x.p); }));
+  const trocas = Math.max(0, seq.length - 1);
+
+  const pAg = atual ? prodDoCod(atual, o.atualDesc || '', true) : null;
+
+  // Faixa do dia: cada hora repartida pelas caixas de cada produto, na ordem em
+  // que entraram (a planilha não guarda o minuto da troca); a hora em
+  // andamento vai só até agora.
+  const ini0 = prods.length ? Math.min(...prods.map(p => p.ini)) : o.turnoIni;
+  const fim0 = prods.length ? Math.max(...prods.map(p => p.fim)) : o.turnoFim;
+  const F = { ini: Math.min(o.turnoIni, Math.floor(ini0/60)*60), fim: Math.max(o.turnoFim, fim0) };
+  const segs = [];
+  ordH.forEach(m => {
+    const a = m;
+    let b = fimSlot(m);
+    if(agoraMin > a && agoraMin < b) b = agoraMin;
+    const tot = horas[m].reduce((s, x) => s + x.cx, 0);
+    if(!(b > a) || !(tot > 0)) return;
+    let t = a;
+    horas[m].forEach(x => {
+      const w = (b - a) * x.cx / tot, u = segs[segs.length-1];
+      if(u && u.p === x.p && Math.abs(u.fim - t) < 1e-6) u.fim = t + w;
+      else segs.push({ p:x.p, ini:t, fim:t + w });
+      t += w;
+    });
+  });
+  const span = F.fim - F.ini;
+  let tom = 0;
+  F.segs = segs.map(s => {
+    const ag = s.p === pAg;
+    return { ini:s.ini, fim:s.fim, nome:s.p.nome, cls: ag ? 'agora' : 't' + (tom++ % 2),
+             rot: pdiaCurto(s.p.nome, (s.fim - s.ini) / span * (Number(o.larg) || PDIA_LARG) - 4) };
+  });
+  F.ticks = [];
+  for(let m = Math.ceil(F.ini/60)*60, i = 0; m <= F.fim; m += (Number(o.passo) || 120), i++){
+    const he = m < o.turnoIni || m > o.turnoFim;
+    F.ticks.push({ m, he, txt: p2(Math.floor(m/60)) + (i === 0 && m < o.turnoIni ? ' HE' : '') });
+  }
+  F.he = [[F.ini, o.turnoIni], [o.turnoFim, F.fim]].filter(r => r[1] > r[0]);
+  F.alm = (o.almFim > o.almIni && o.almIni >= F.ini && o.almFim <= F.fim) ? [o.almIni, o.almFim] : null;
+  F.agora = (agoraMin > F.ini && agoraMin < F.fim) ? agoraMin : null;
+
+  // 4) A linha de cada produto e o detalhe (cor × volume, hora a hora).
+  const uepTot = prods.reduce((s, p) => s + p.uep, 0);
+  const produtos = prods.map(p => {
+    const vols = [...new Set(p.log.map(r => r.vol).filter(Boolean))].sort();
+    let tab = null;
+    if(vols.length >= 2){
+      const cores = [], lin = {};
+      p.log.forEach(r => {
+        if(!lin[r.cor]){ lin[r.cor] = vols.map(() => 0); cores.push(r.cor); }
+        const j = vols.indexOf(r.vol);
+        if(j >= 0) lin[r.cor][j] += r.cx;
+      });
+      tab = { vols, linhas: cores.map(c => ({ cor:c, v:lin[c] })),
+              tot: vols.map((_, j) => cores.reduce((s, c) => s + lin[c][j], 0)) };
+    }
+    const fonte = p.log.length
+      ? p.log.map(r => ({ m:r.m, hora:r.hora, d:[r.vol, r.cor].filter(Boolean).join(' · '), cx:r.cx }))
+      : p.phm.map(r => ({ m:r.m, hora:r.hora, d:r.cor, cx:r.cx }));
+    const hrs = [];
+    fonte.forEach(r => {
+      const u = hrs[hrs.length-1];
+      if(u && u.m === r.m && u.d === r.d) u.cx += r.cx;
+      else hrs.push({ m:r.m, hora:r.hora, d:r.d, cx:r.cx, he:ehHE(r.m) });
+    });
+    return {
+      key:p.key, nome:p.nome, cores:p.cores,
+      corTxt: p.cores.length === 1 ? p.cores[0] : (p.cores.length > 1 ? `${p.cores.length} cores` : ''),
+      iniTxt: fromMin(p.ini), fimTxt: fromMin(p.fim), agora: p === pAg,
+      cx:p.cx, uep: p.uep > 0 ? Math.round(p.uep) : null,
+      uepMedia: p.uepCx > 0 ? p.uep / p.uepCx : null, semUepCx: p.cx - p.uepCx,
+      he:p.he, heTxt: p.he > 0 ? (p.he === p.cx ? 'tudo em HE' : `${fmtN(p.he)} em HE`) : '',
+      pct: p.uep > 0 && uepTot > 0 ? Math.round(p.uep / uepTot * 100) : null,
+      tab, horas:hrs
+    };
+  });
+  return {
+    cx: prods.reduce((s, p) => s + p.cx, 0), uep: uepTot, heCx: prods.reduce((s, p) => s + p.he, 0),
+    trocas, real: Number(o.real) || 0, produtos, faixa:F
+  };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -349,8 +555,9 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.12.0',
+  versao: '1.13.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
-        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido']
+        'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar']
 };

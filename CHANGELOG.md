@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.201.0 + mobile 1.40.0 — 04/11/2026 · PRODUTOS EMBALADOS HOJE também no gerencial do PC
+
+- PPCP: *"onde daria para colocar no pc"* → *"ok gerencial"* (prévia com os
+  dados de hoje) → *"ok"*.
+- Quadro **PRODUTOS EMBALADOS HOJE** na aba **GERENCIAL**, logo abaixo dos KPIs:
+  o mesmo conteúdo do celular — resumo (caixas, UEP, produtos, trocas), faixa
+  da sequência do dia com uma marca por hora e o "agora" escrito no eixo, e a
+  tabela por produto (cor, horário, caixas, UEP, **EM HE**, parte da UEP do
+  dia). Clicar no produto abre **por cor e volume** e o **hora a hora**.
+- Só no dia **ao vivo**: some no modo histórico (o dia passado não tem a
+  produção por hora e produto) e na impressão do dia.
+- **A conta é uma só para os dois painéis**: saiu do celular para o
+  `rp-core.js` (`pdiaMontar`). Cada painel tem o seu desenho.
+- Nenhuma leitura nova: o `getPontosDia` que o gerencial já lê. A cor de cada
+  lançamento no detalhe vem do cadastro guardado neste computador; sem nenhum,
+  o cadastro é lido uma vez, no primeiro clique.
+- **Celular (1.40.0)**: a dica da barra passou a dizer **"com hora extra"** —
+  a parte da UEP do dia inclui a HE, e o MIX DE HOJE da aba ⚖ UEP é só da
+  jornada (os dois % diferem num dia com hora extra; os dois estão certos).
+- Nenhum número existente mudou. Nada no Apps Script.
+
 ## mobile 1.39.0 — 04/11/2026 · PRODUTOS EMBALADOS HOJE no gerencial do celular
 
 - PPCP: *"sugestão para tela gerencial do app celular, colocando os produtos

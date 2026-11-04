@@ -986,6 +986,68 @@ html.modo-dir #sec-dir.on{display:flex}
 .tbl-wrap{background:var(--surface);border:0.5px solid var(--border);border-radius:7px;overflow:hidden}
 .tbl-hdr{padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .tbl-hdr-ttl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase}
+/* PRODUTOS EMBALADOS HOJE (v7.201.0) — desenho do PC; a conta é a pdiaMontar
+   do rp-core.js. Cor só onde há função: os blocos da faixa alternam dois tons
+   neutros, laranja = agora, âmbar = hora extra. Nenhum verde/vermelho. */
+#ger-pdia{margin-bottom:16px;font-variant-numeric:tabular-nums}
+#ger-pdia .pdpc-ts{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+#ger-pdia .pdpc-vazio{padding:16px;color:var(--txt2);font-size:12px}
+#ger-pdia .he{color:var(--warn)}
+#ger-pdia .pdpc-res{display:flex;align-items:flex-end;gap:28px;padding:14px 16px 8px;flex-wrap:wrap}
+#ger-pdia .pdpc-n{display:flex;flex-direction:column}
+#ger-pdia .pdpc-n b{font-family:var(--font-h);font-size:30px;font-weight:700;line-height:1;color:var(--txt)}
+#ger-pdia .pdpc-n i{font-style:normal;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:4px}
+#ger-pdia .pdpc-cob{margin-left:auto;font-size:12px;color:var(--txt2);padding-bottom:2px}
+#ger-pdia .pdpc-seq{padding:8px 16px 14px;display:flex;flex-direction:column;gap:4px;border-bottom:0.5px solid var(--border)}
+#ger-pdia .pdpc-faixa{position:relative;height:32px;background:var(--bg);border-radius:4px;overflow:hidden}
+#ger-pdia .pdpc-alm{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--elevated) 0 3px,transparent 3px 8px);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;overflow:hidden;white-space:nowrap}
+#ger-pdia .pdpc-sg{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;border-left:1px solid var(--bg);box-sizing:border-box}
+#ger-pdia .pdpc-sg.t0{background:#44658F}
+#ger-pdia .pdpc-sg.t1{background:#2E4A6E}
+#ger-pdia .pdpc-sg.agora{background:var(--acc);color:#0B1622}
+#ger-pdia .pdpc-ag{position:absolute;top:0;bottom:0;width:2px;background:var(--acc)}
+#ger-pdia .pdpc-eixo{position:relative;height:16px}
+#ger-pdia .pdpc-eixo span{position:absolute;top:4px;font-family:var(--font-d);font-size:10px;color:var(--txt2);transform:translateX(-50%);white-space:nowrap}
+#ger-pdia .pdpc-eixo span.ini{transform:none}
+#ger-pdia .pdpc-eixo span.fim{transform:translateX(-100%)}
+#ger-pdia .pdpc-eixo span.he{color:var(--warn)}
+#ger-pdia .pdpc-eixo span.ag{color:var(--acc);font-weight:500}
+#ger-pdia .pdpc-he{position:absolute;top:0;height:2px;background:var(--warn)}
+#ger-pdia .pdpc-tw{overflow-x:auto}
+#ger-pdia .pdpc-tb{min-width:900px}
+#ger-pdia .pdpc-row{display:grid;grid-template-columns:22px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,1.4fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,2fr);gap:0 12px;align-items:center}
+#ger-pdia .pdpc-th{padding:8px 16px;border-bottom:0.5px solid var(--border);font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px}
+#ger-pdia .pdpc-th .n,#ger-pdia .pdpc-cx,#ger-pdia .pdpc-u{text-align:right}
+#ger-pdia .pdpc-it{border-bottom:0.5px solid var(--border)}
+#ger-pdia .pdpc-bt{background:transparent;border:none;width:100%;text-align:left;cursor:pointer;color:var(--txt);font-family:var(--font-b);padding:12px 16px;min-height:48px}
+#ger-pdia .pdpc-bt:hover{background:rgba(255,255,255,.025)}
+#ger-pdia .pdpc-sv{transition:transform .15s}
+#ger-pdia .pdpc-it.on .pdpc-sv{transform:rotate(90deg)}
+#ger-pdia .pdpc-nm{font-family:var(--font-h);font-size:17px;font-weight:700;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ger-pdia .pdpc-c{font-size:13px;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ger-pdia .pdpc-c .ag{color:var(--acc);font-weight:600;white-space:nowrap}
+#ger-pdia .pdpc-c .ag::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--acc);margin-right:4px;vertical-align:1px}
+#ger-pdia .pdpc-cx{font-family:var(--font-h);font-size:20px;font-weight:700}
+#ger-pdia .pdpc-u{font-family:var(--font-d);font-size:13px}
+#ger-pdia .pdpc-bar{display:flex;align-items:center;gap:10px}
+#ger-pdia .pdpc-tr{flex:1;height:6px;background:var(--elevated);border-radius:3px}
+#ger-pdia .pdpc-tr i{display:block;height:6px;background:var(--txt2);border-radius:3px}
+#ger-pdia .pdpc-pc{font-family:var(--font-d);font-size:12px;color:var(--txt2);width:38px;text-align:right;flex-shrink:0}
+#ger-pdia .pdpc-det{margin:0 16px 14px 50px;padding:12px 16px;background:var(--elevated);border-radius:6px;display:flex;gap:32px;flex-wrap:wrap}
+#ger-pdia .pdpc-dt{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1.5px;margin-bottom:6px}
+#ger-pdia .pdpc-tab{display:grid;gap:5px 14px;font-size:13px;min-width:300px}
+#ger-pdia .pdpc-tab .h{font-family:var(--font-d);font-size:9px;color:var(--txt2)}
+#ger-pdia .pdpc-tab .n{text-align:right;font-family:var(--font-d)}
+#ger-pdia .pdpc-tab .t{font-weight:600}
+#ger-pdia .pdpc-hrs{display:flex;flex-direction:column;gap:6px;min-width:340px;flex:1;max-width:560px}
+#ger-pdia .pdpc-hr{display:flex;align-items:baseline;gap:12px;font-size:13px}
+#ger-pdia .pdpc-hr .h{font-family:var(--font-d);color:var(--txt2);width:44px;flex-shrink:0}
+#ger-pdia .pdpc-hr .d{flex:1;min-width:0}
+#ger-pdia .pdpc-hr .e{font-family:var(--font-d);font-size:10px;color:var(--warn);width:20px}
+#ger-pdia .pdpc-hr .n{font-family:var(--font-d);width:40px;text-align:right}
+#ger-pdia .pdpc-uc{font-size:12px;color:var(--txt2);margin-top:4px}
+#ger-pdia .pdpc-dica{padding:10px 16px;font-size:12px;color:var(--txt2)}
+@media (prefers-reduced-motion:reduce){#ger-pdia .pdpc-sv{transition:none}}
 #ger-semana .tbl-hdr{flex-wrap:wrap;row-gap:8px}
 /* PRÓXIMOS DIAS (v7.109.0) — a carteira datada em HORAS DE LINHA */
 #ger-prox .gpx-dias{display:grid;grid-template-columns:repeat(var(--n,5),1fr);gap:12px;padding:14px 16px 4px}
@@ -1811,7 +1873,7 @@ footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px
   #btn-fechar-dia,#dia-fechado-badge,#btn-reabrir-dia,
   input[type=file],#refresh-badge,#countdown-badge,
   #hist-storage-info,
-  #ger-semana,#ger-prox,
+  #ger-semana,#ger-prox,#ger-pdia,
   .sec:not(.on){ display:none!important; }
 
   /* ── SEÇÃO ATIVA ── */
@@ -2325,6 +2387,17 @@ if (_v7Instalado()) _v7EscondeBotao();
   </div>
 
   <div class="kpi-grid c9" id="kpi-grid"></div>
+
+  <!-- PRODUTOS EMBALADOS HOJE (v7.201.0) — só o dia ao vivo: some no modo
+       histórico (o dia passado não tem a produção por hora e produto) e na
+       impressão. A conta é a pdiaMontar do rp-core.js, a mesma do celular. -->
+  <div class="tbl-wrap ger-live-only" id="ger-pdia">
+    <div class="tbl-hdr">
+      <span class="tbl-hdr-ttl">PRODUTOS EMBALADOS HOJE</span>
+      <span class="pdpc-ts" id="ger-pdia-ts"></span>
+    </div>
+    <div id="ger-pdia-corpo"><div class="pdpc-vazio">Lendo a produção do dia…</div></div>
+  </div>
 
   <div class="charts-row">
     <div class="chart-card">
@@ -3783,7 +3856,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.200.0';
+const APP_VER   = '7.201.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -9866,6 +9939,151 @@ function gerarRelatorioUepAba(){
   win.document.close();
 }
 
+// ════════════════════════════════════════════════
+// PRODUTOS EMBALADOS HOJE (v7.201.0)
+// ════════════════════════════════════════════════
+// PPCP, 04/11/2026, depois do quadro do celular (mobile 1.39.0): "onde daria
+// para colocar no pc" → "ok gerencial" (prévia) → "ok". Abaixo dos KPIs do
+// GERENCIAL ao vivo; some no modo histórico (.ger-live-only — o dia passado não
+// tem o porHoraModelo) e na impressão do dia. A CONTA é a pdiaMontar do
+// rp-core.js, a MESMA do celular (testada em produtos-dia.test.js); aqui só o
+// DESENHO (_pdiaPcHtml/_pdiaPcDetHtml, sem conta) e a leitura
+// (renderGerProdutosDia). Nenhuma leitura nova: o getPontosDia que o gerencial
+// já lê, e o cadastro guardado neste computador (a cor de cada lançamento no
+// detalhe — sem ele, o detalhe sai sem a cor e o cadastro é lido no clique).
+// ⚠ SEM VEREDITO POR PRODUTO (nem verde/vermelho, nem cx/h): o veredito do dia
+// é o selo do % DA META, e hora parcial distorce o ritmo de um produto.
+const PDIA_PC_LARG = 1100;   // largura de referência da faixa no PC (px): só decide se o nome cabe no bloco
+let PDIA_PC_ABERTO = '', PDIA_PC_M = null, PDIA_PC_REAL = 0, PDIA_PC_CATPED = false;
+// O cadastro (código → cor) sem leitura nova: o desta sessão ou o guardado.
+function _pdiaPcCat(){
+  try{
+    if(Array.isArray(CAP_RAW) && CAP_RAW.length) return CAP_RAW;
+    const loc = _capDoLocal();
+    return loc ? loc.p : null;
+  }catch(e){ return null; }
+}
+// DESENHO do quadro (sem conta: tudo vem pronto do pdiaMontar).
+function _pdiaPcHtml(M, aberto){
+  if(!M) return `<div class="pdpc-vazio">${_pontosEstadoTxt(false)}</div>`;
+  if(!M.produtos.length)
+    return `<div class="pdpc-vazio">${M.real > 0 ? `Nenhuma das ${fmtN(M.real)} cx de hoje foi lançada com produto.` : 'Nenhuma caixa lançada hoje.'}</div>`;
+  const e = _rpEsc, F = M.faixa;
+  const pos = m => ((m - F.ini) / (F.fim - F.ini) * 100).toFixed(2) + '%';
+  const larg = (a, b) => ((b - a) / (F.fim - F.ini) * 100).toFixed(2) + '%';
+  const cob = (M.real > M.cx
+      ? `${fmtN(M.cx)} de ${fmtN(M.real)} cx com produto · ${fmtN(M.real - M.cx)} fora da lista`
+      : `Todas as ${fmtN(M.cx)} cx lançadas com produto`)
+    + (M.heCx > 0 ? ` · <span class="he">${fmtN(M.heCx)} cx em hora extra</span>` : '');
+  const res = `<div class="pdpc-res">
+      <div class="pdpc-n"><b>${fmtN(M.cx)}</b><i>CAIXAS</i></div>
+      <div class="pdpc-n"><b>${M.uep > 0 ? fmtN(Math.round(M.uep)) : '—'}</b><i>UEP</i></div>
+      <div class="pdpc-n"><b>${fmtN(M.produtos.length)}</b><i>${M.produtos.length === 1 ? 'PRODUTO' : 'PRODUTOS'}</i></div>
+      <div class="pdpc-n"><b>${fmtN(M.trocas)}</b><i>${M.trocas === 1 ? 'TROCA' : 'TROCAS'} DE PRODUTO</i></div>
+      <span class="pdpc-cob">${cob}</span>
+    </div>`;
+  // A marca de agora tem o nome escrito no eixo; a hora cheia colada nela sai.
+  const ticks = F.ticks.filter(t => F.agora == null || Math.abs(t.m - F.agora) >= 25);
+  const aria = 'Sequência do dia: ' + F.segs.map(s => `${s.nome} ${fromMin(Math.round(s.ini))} a ${fromMin(Math.round(s.fim))}`).join(', ');
+  const faixa = `<div class="pdpc-seq">
+      <div class="pdpc-faixa" role="img" aria-label="${e(aria)}">
+        ${F.alm ? `<div class="pdpc-alm" style="left:${pos(F.alm[0])};width:${larg(F.alm[0], F.alm[1])}">ALMOÇO</div>` : ''}
+        ${F.segs.map(s => `<div class="pdpc-sg ${s.cls}" style="left:${pos(s.ini)};width:${larg(s.ini, s.fim)}" title="${e(s.nome)} · ${fromMin(Math.round(s.ini))}–${fromMin(Math.round(s.fim))}">${e(s.rot)}</div>`).join('')}
+        ${F.agora != null ? `<div class="pdpc-ag" style="left:calc(${pos(F.agora)} - 1px)"></div>` : ''}
+      </div>
+      <div class="pdpc-eixo" aria-hidden="true">
+        ${F.he.map(r => `<div class="pdpc-he" style="left:${pos(r[0])};width:${larg(r[0], r[1])}"></div>`).join('')}
+        ${ticks.map((t, i, a) => `<span class="${t.m === F.ini ? 'ini' : (i === a.length-1 && t.m === F.fim ? 'fim' : '')}${t.he ? ' he' : ''}" style="left:${pos(t.m)}">${t.txt}</span>`).join('')}
+        ${F.agora != null ? `<span class="ag" style="left:${pos(F.agora)}">agora</span>` : ''}
+      </div>
+    </div>`;
+  const cols = '<div class="pdpc-row pdpc-th"><span></span><span>PRODUTO</span><span>COR</span><span>HORÁRIO</span><span class="n">CAIXAS</span><span class="n">UEP</span><span class="n">EM HE</span><span>PARTE DA UEP DO DIA</span></div>';
+  const seta = '<svg class="pdpc-sv" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="#8FA0B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const itens = M.produtos.map((p, i) => {
+    const on = aberto === p.key;
+    const hor = (p.agora ? `desde ${p.iniTxt}` : `${p.iniTxt}–${p.fimTxt}`) + (p.agora ? ' · <span class="ag">AGORA</span>' : '');
+    return `<div class="pdpc-it${on ? ' on' : ''}">
+      <button type="button" class="pdpc-bt pdpc-row" onclick="_pdiaPcToggle(${i})" aria-expanded="${on}">
+        ${seta}
+        <span class="pdpc-nm" title="${e(p.nome)}">${e(p.nome)}</span>
+        <span class="pdpc-c" title="${e(p.cores.join(' · '))}">${e(p.corTxt || '—')}</span>
+        <span class="pdpc-c">${hor}</span>
+        <span class="pdpc-cx">${fmtN(p.cx)}</span>
+        <span class="pdpc-u">${p.uep != null ? fmtN(p.uep) : 'sem UEP'}</span>
+        <span class="pdpc-u${p.he > 0 ? ' he' : ''}">${p.he > 0 ? fmtN(p.he) : '—'}</span>
+        <span class="pdpc-bar"><span class="pdpc-tr"><i style="width:${p.pct != null ? p.pct : 0}%"></i></span><span class="pdpc-pc">${p.pct != null ? p.pct + '%' : '—'}</span></span>
+      </button>
+      ${on ? _pdiaPcDetHtml(p) : ''}
+    </div>`;
+  }).join('');
+  return `${res}${faixa}<div class="pdpc-tw"><div class="pdpc-tb">${cols}${itens}</div></div>
+    <div class="pdpc-dica">A barra é a parte da UEP do dia, com hora extra (a do MIX DE HOJE da aba ⚖ UEP é só da jornada). Clique no produto para abrir por cor e hora.</div>`;
+}
+function _pdiaPcDetHtml(p){
+  const e = _rpEsc;
+  let h = '';
+  if(p.tab){
+    const t = p.tab;
+    h += `<div><div class="pdpc-dt">POR COR E VOLUME</div>
+      <div class="pdpc-tab" style="grid-template-columns:minmax(0,2fr) repeat(${t.vols.length},minmax(0,1fr))">
+        <span class="h">COR</span>${t.vols.map(v => `<span class="h n">${e(v)}</span>`).join('')}
+        ${t.linhas.map(l => `<span>${e(l.cor || '—')}</span>${l.v.map(x => `<span class="n">${fmtN(x)}</span>`).join('')}`).join('')}
+        <span class="t">TOTAL</span>${t.tot.map(x => `<span class="n t">${fmtN(x)}</span>`).join('')}
+      </div></div>`;
+  }
+  h += `<div class="pdpc-hrs"><div class="pdpc-dt">HORA A HORA</div>${p.horas.map(r =>
+    `<div class="pdpc-hr"><span class="h">${e(r.hora)}</span><span class="d">${e(r.d || '—')}</span><span class="e">${r.he ? 'HE' : ''}</span><span class="n">${fmtN(r.cx)}</span></div>`).join('')}
+    <div class="pdpc-uc">${p.uepMedia != null
+      ? `média de ${p.uepMedia.toFixed(2).replace('.', ',')} UEP por caixa · cadastro de hoje${p.semUepCx > 0 ? ` · ${fmtN(p.semUepCx)} cx sem UEP` : ''}`
+      : 'sem UEP no cadastro'}</div></div>`;
+  return `<div class="pdpc-det">${h}</div>`;
+}
+function renderGerProdutosDia(real){
+  if(real != null) PDIA_PC_REAL = Number(real) || 0;
+  const el = document.getElementById('ger-pdia-corpo');
+  if(!el) return;
+  const ts = document.getElementById('ger-pdia-ts');
+  const phm = PONTOS_DIA && PONTOS_DIA.porHoraModelo;
+  let M = null;
+  // PONTOS_DIA nasce com listas vazias: sem a 1ª leitura, é "lendo", nunca "nenhuma caixa".
+  if(PONTOS_DIA_TS && Array.isArray(phm)){
+    try{
+      const a = new Date();
+      M = pdiaMontar(phm, PONTOS_DIA.porHora || [], _pdiaPcCat() || [], PONTOS_DIA.produtoAtual, a.getHours()*60 + a.getMinutes(), {
+        turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
+        almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_PC_REAL,
+        larg: PDIA_PC_LARG, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc });
+    }catch(err){
+      // Falhou a conta: diz isso, nunca "lendo" (que pareceria leitura em curso).
+      console.warn('produtos do dia:', err.message);
+      PDIA_PC_M = null;
+      el.innerHTML = '<div class="pdpc-vazio">Não deu para montar a lista agora. Clique em ↻ ATUALIZAR.</div>';
+      if(ts) ts.textContent = '';
+      return;
+    }
+  }
+  PDIA_PC_M = M;
+  if(ts){
+    const d = PONTOS_DIA_TS ? new Date(PONTOS_DIA_TS) : null;
+    ts.textContent = d ? `lista de ${p2(d.getHours())}:${p2(d.getMinutes())}` : '';
+  }
+  el.innerHTML = _pdiaPcHtml(M, PDIA_PC_ABERTO);
+}
+function _pdiaPcToggle(i){
+  const p = PDIA_PC_M && PDIA_PC_M.produtos[i];
+  if(!p) return;
+  PDIA_PC_ABERTO = PDIA_PC_ABERTO === p.key ? '' : p.key;
+  const el = document.getElementById('ger-pdia-corpo');
+  if(el) el.innerHTML = _pdiaPcHtml(PDIA_PC_M, PDIA_PC_ABERTO);
+  // A cor de cada lançamento vem do cadastro. Sem nenhum neste computador, lê
+  // agora (a mesma leitura do simulador) e redesenha — só no clique.
+  // Uma vez por sessão: falhou, o detalhe segue sem a cor (nunca uma leitura por clique).
+  if(PDIA_PC_ABERTO && !_pdiaPcCat() && !PDIA_PC_CATPED){
+    PDIA_PC_CATPED = true;
+    Promise.resolve(_capBuscar()).then(() => renderGerProdutosDia()).catch(() => {});
+  }
+}
+
 function renderGerencialHist(){
   _setModoHist(true);
   const H=GER_HIST||{horas:[],dia:null};
@@ -10076,6 +10294,7 @@ function renderGerencial(){
       <div class="kpi-val">${k.v}</div>
       <div class="kpi-sub">${k.sub}</div>
     </div>`).join('');
+  renderGerProdutosDia(k.real);   // produtos embalados hoje (v7.201.0)
   // A aba UEP lê o mesmo PONTOS_DIA: redesenha junto no refresh.
   if(_abaOn('uep')) renderUep();
 

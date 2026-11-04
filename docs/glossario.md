@@ -280,21 +280,25 @@ grava com a base medida no período: 5+ dias e abaixo de 90% do teto
 (`UEP_TRAVADA_DESDE`): o GRAVAR não grava nada, e a UEP só muda digitada na
 coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
-## Gerencial do celular — PRODUTOS EMBALADOS HOJE (mobile 1.39.0)
+## Gerencial — PRODUTOS EMBALADOS HOJE (mobile 1.39.0 · PC v7.201.0)
 
 Tudo sai do `getPontosDia` que o gerencial já lê (`porHoraModelo` e `porHora`);
 nenhuma leitura nova. Produto não ganha veredito (nem cor de status, nem cx/h).
+A conta é UMA para o celular e o PC (`rp-core:pdiaMontar`); o desenho é de cada
+painel (`mobile:_pdiaHtml`, `v7:_pdiaPcHtml`). A **parte da UEP do dia** inclui a
+hora extra — o **MIX DE HOJE** da aba ⚖ UEP é só da jornada, então os dois % são
+diferentes num dia com HE.
 
 | Indicador | Fórmula | Unidade | Onde |
 |---|---|---|---|
-| **CAIXAS / UEP** (resumo) | Σ caixas lançadas com produto hoje · Σ UEP das mesmas caixas (UEP do cadastro de hoje, a do `porHoraModelo`) | cx · UEP | `mobile:_pdiaMontar` |
-| **TROCAS DE PRODUTO** | quantas vezes o produto muda na sequência do dia (log na ordem da hora). Dentro da mesma hora cada produto conta uma vez (A,B,A,B = 1 troca), e o produto que vinha da hora anterior abre a hora seguinte. Troca de cor não entra | trocas | `mobile:_pdiaMontar` |
-| **COBERTURA** (linha da faixa) | caixas com produto contra a PRODUÇÃO REAL da HORA_A_HORA; a diferença é "fora da lista". Diz de que horas é a lista (`lidoEm`) | cx | `mobile:_pdiaHtml` |
-| **FAIXA DA SEQUÊNCIA** | cada hora da planilha repartida pelas caixas de cada produto, na ordem em que entraram; a hora em andamento só até agora. A planilha não guarda o minuto da troca: o ponto dentro da hora é aproximado | — | `mobile:_pdiaMontar` |
-| **HORÁRIO** (linha do produto) | início da 1ª hora em que teve caixa → fim da última hora (a hora acaba na próxima hora cheia: 12:12 → 13:00); o produto de agora diz "desde" | hh:mm | `mobile:_pdiaMontar` |
-| **EM HE** | caixas do produto lançadas fora de 07:00–17:00 (a janela do `_ehHoraExtraCaixas`) | cx | `mobile:_pdiaMontar` |
-| **% (barra)** | UEP do produto ÷ UEP do dia; produto sem UEP → "—", nunca 0 | % | `mobile:_pdiaMontar` |
-| **POR COR E VOLUME** (detalhe) | caixas do log por cor × volume, só com 2+ volumes embalados hoje | cx | `mobile:_pdiaMontar` |
+| **CAIXAS / UEP** (resumo) | Σ caixas lançadas com produto hoje · Σ UEP das mesmas caixas (UEP do cadastro de hoje, a do `porHoraModelo`) | cx · UEP | `rp-core:pdiaMontar` |
+| **TROCAS DE PRODUTO** | quantas vezes o produto muda na sequência do dia (log na ordem da hora). Dentro da mesma hora cada produto conta uma vez (A,B,A,B = 1 troca), e o produto que vinha da hora anterior abre a hora seguinte. Troca de cor não entra | trocas | `rp-core:pdiaMontar` |
+| **COBERTURA** (linha da faixa) | caixas com produto contra a PRODUÇÃO REAL da HORA_A_HORA; a diferença é "fora da lista". Diz de que horas é a lista (`lidoEm` no celular, `PONTOS_DIA_TS` no PC) | cx | `mobile:_pdiaHtml` · `v7:_pdiaPcHtml` |
+| **FAIXA DA SEQUÊNCIA** | cada hora da planilha repartida pelas caixas de cada produto, na ordem em que entraram; a hora em andamento só até agora. A planilha não guarda o minuto da troca: o ponto dentro da hora é aproximado | — | `rp-core:pdiaMontar` |
+| **HORÁRIO** (linha do produto) | início da 1ª hora em que teve caixa → fim da última hora (a hora acaba na próxima hora cheia: 12:12 → 13:00); o produto de agora diz "desde" | hh:mm | `rp-core:pdiaMontar` |
+| **EM HE** | caixas do produto lançadas fora de 07:00–17:00 (a janela do `_ehHoraExtraCaixas`) | cx | `rp-core:pdiaMontar` |
+| **% (barra)** | UEP do produto ÷ UEP do dia; produto sem UEP → "—", nunca 0 | % | `rp-core:pdiaMontar` |
+| **POR COR E VOLUME** (detalhe) | caixas do log por cor × volume, só com 2+ volumes embalados hoje | cx | `rp-core:pdiaMontar` |
 
 ## Telas F e G da TV — a UEP do dia (v7.138.0)
 

@@ -1,8 +1,9 @@
-// PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0)
+// PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
 //   node produtos-dia.test.js
 //
-// Roda o código REAL do ritmoprod_mobile.html (a conta _pdiaMontar e o desenho
-// _pdiaHtml/_pdiaDetHtml) com o rp-core.js, num contexto vm. Os dados são os
+// Roda o código REAL: a conta pdiaMontar do rp-core.js (uma só para os dois
+// painéis), o desenho do celular (_pdiaHtml/_pdiaDetHtml) e o do PC
+// (_pdiaPcHtml/_pdiaPcDetHtml + a leitura renderGerProdutosDia), num contexto vm. Os dados são os
 // de 04/11/2026 até as 09:41 (log da PRODUCAO_PRODUTO e cadastro do dia):
 // BUFFET 4 PT PRISM 05–06h (HE), HOME ANGEL 1.8 06–09h (VOL 2/2 e depois VOL
 // 1/2, duas cores), LIVREIRO ENCANTO desde 09h — 596 cx, 1.441 UEP.
@@ -11,6 +12,8 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const MOB = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+const PC = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+const PC_JS = [...PC.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 const MJS = [...MOB.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
 
 function pega(src, assinatura) {
@@ -36,9 +39,8 @@ function ok(nome, real, esperado) {
 const F = { window: {} };
 vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
-vm.runInContext('var PDIA_LARG = ' + MJS.match(/const PDIA_LARG = (\d+);/)[1] + ';', F);
-['function normTxt(', 'function _escH(', 'function _pdiaVol(', 'function _pdiaBase(', 'function _pdiaCurto(',
- 'function _pdiaMontar(', 'function _pdiaHtml(', 'function _pdiaDetHtml(']
+// A conta é do rp-core.js (uma só para o celular e o PC); o desenho, de cada painel.
+['function _escH(', 'function _pdiaHtml(', 'function _pdiaDetHtml(']
   .forEach(f => vm.runInContext(pega(MJS, f), F));
 const run = (expr, vars) => { Object.assign(F, vars || {}); return vm.runInContext(expr, F); };
 
@@ -75,7 +77,7 @@ const PHM = [  // porHoraModelo como o .gs monta (UEP com o cadastro de hoje)
 const O = { turnoIni: 420, turnoFim: 1020, almIni: 660, almFim: 732, real: 596 };
 const AGORA = 9 * 60 + 41;
 const monta = (phm, ph, atual, agora, o) =>
-  run('_pdiaMontar(_phm, _ph, _cat, _at, _ag, _o)', { _phm: phm, _ph: ph, _cat: CAT, _at: atual, _ag: agora, _o: o || O });
+  run('pdiaMontar(_phm, _ph, _cat, _at, _ag, _o)', { _phm: phm, _ph: ph, _cat: CAT, _at: atual, _ag: agora, _o: o || O });
 
 const M = monta(PHM, PH, '501136001', AGORA);
 
@@ -163,7 +165,7 @@ ok('mesmo modelo, produtos diferentes (501130): o código casa pelo nome',
 const outro = monta([pm('10:00', '501130', 'MESA CENTRO LUNA 590', 'CUMARU', 50, 60)],
   [{ hora: '10:00', codigo: '501130005', desc: 'VOL 1/1 MESA CENTRO LUNA 590', caixas: 50 }], '501130009', 11 * 60);
 F._cat = CAT.concat([{ codigo: '501130009', desc: 'VOL 1/1 MESA LATERAL LUNA 440', cor: 'CUMARU' }]);
-const outro2 = run('_pdiaMontar(_phm, _ph, _cat, "501130009", 660, _o)',
+const outro2 = run('pdiaMontar(_phm, _ph, _cat, "501130009", 660, _o)',
   { _phm: [pm('10:00', '501130', 'MESA CENTRO LUNA 590', 'CUMARU', 50, 60)],
     _ph: [{ hora: '10:00', codigo: '501130005', desc: 'VOL 1/1 MESA CENTRO LUNA 590', caixas: 50 }] });
 ok('produto de agora que ainda não embalou hoje: nenhum AGORA (nem no irmão do modelo)',
@@ -194,15 +196,95 @@ const hostil = monta([pm('10:00', '501999', '<img src=x onerror=alert(1)>', 'BRA
 ok('nome do cadastro é escapado', run('_pdiaHtml(_M, "", 0)', { _M: hostil }).includes('<img src=x'), false);
 
 console.log('\n── guardas ──');
+const CORE = fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8');
 const desenho = pega(MJS, 'function _pdiaHtml(') + pega(MJS, 'function _pdiaDetHtml(');
-ok('desenho sem conta (nada de soma nem de montagem)', /reduce\(|_pdiaMontar\(|toMin\(/.test(desenho), false);
+ok('desenho sem conta (nada de soma nem de montagem)', /reduce\(|pdiaMontar\(|toMin\(/.test(desenho), false);
 ok('produto sem veredito: nenhum NO RITMO, verde ou vermelho no quadro',
-   /NO RITMO|ABAIXO|var\(--ok\)|var\(--red\)/.test(desenho + pega(MJS, 'function _pdiaMontar(')), false);
+   /NO RITMO|ABAIXO|var\(--ok\)|var\(--red\)/.test(desenho + pega(CORE, 'function pdiaMontar(')), false);
+ok('a conta mora só no rp-core.js (nenhum painel com cópia)',
+   [/function _?pdiaMontar\(/.test(MJS), /function _?pdiaMontar\(/.test(PC_JS), /function pdiaMontar\(/.test(CORE)], [false, false, true]);
 ok('o gerencial pinta o quadro', /renderGerProdutosDia\(k\.real\)/.test(pega(MJS, 'function renderGerencial(')), true);
 ok('o porHora é guardado na leitura do dia', /porHora: Array\.isArray\(json\.porHora\)/.test(pega(MJS, 'async function lerPontosDia(')), true);
 const SW = fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8');
 const ver = MJS.match(/const APP_VER\s*=\s*'([\d.]+)'/)[1];
 ok('APP_VER e o cache do service worker andam juntos', SW.includes('// APP_VER ' + ver), true);
+
+// ── o gerencial do PC (v7.201.0): a MESMA conta, o desenho do desktop ──
+console.log('\n── o gerencial do PC ──');
+const G = { window: {} };
+vm.createContext(G);
+vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), G);
+['function _rpEsc(', 'function _pdiaPcCat(', 'function _pdiaPcHtml(', 'function _pdiaPcDetHtml(',
+ 'function renderGerProdutosDia(', 'function _pdiaPcToggle(']
+  .forEach(f => vm.runInContext(pega(PC_JS, f), G));
+const PC_LARG = Number(PC_JS.match(/const PDIA_PC_LARG = (\d+);/)[1]);
+const gEl = {};
+vm.runInContext(`
+  var PDIA_PC_LARG = ${PC_LARG}, PDIA_PC_ABERTO = '', PDIA_PC_M = null, PDIA_PC_REAL = 0, PDIA_PC_CATPED = false;
+  var CAP_RAW = null, CAP_PED = 0, PONTOS_DIA_TS = 0, PONTOS_DIA = { porHoraModelo: [], porHora: [] };
+  var CFG = { turnoInicio: '07:00', turnoFim: '17:00', almocoInicio: '11:00', almocoFim: '12:12' };
+  function _capDoLocal(){ return null; }
+  function _capBuscar(){ CAP_PED++; return Promise.resolve(); }
+  function _pontosEstadoTxt(){ return 'Lendo a produção do dia…'; }
+  var _D0 = Date;
+  Date = class extends _D0 { constructor(...a){ super(...(a.length ? a : [2026, 10, 4, 9, 41])); } };
+`, G);
+G.document = { getElementById: id => (gEl[id] = gEl[id] || { innerHTML: '', textContent: '' }) };
+const grun = (expr, vars) => { Object.assign(G, vars || {}); return vm.runInContext(expr, G); };
+const MP = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, passo: 60 }))',
+  { _phm: PHM, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
+ok('a mesma conta do celular: caixas, UEP, HE, trocas e parte da UEP',
+   [MP.cx, Math.round(MP.uep), MP.heCx, MP.trocas, MP.produtos.map(p => p.pct)], [M.cx, Math.round(M.uep), M.heCx, M.trocas, M.produtos.map(p => p.pct)]);
+ok('faixa do PC: uma marca por hora e o nome inteiro cabe (no celular, PRISM)',
+   [MP.faixa.ticks.map(t => t.txt).slice(0, 6), MP.faixa.segs[0].rot, M.faixa.segs[0].rot],
+   [['05 HE', '06', '07', '08', '09', '10'], 'BUFFET 4 PT PRISM', 'PRISM']);
+const HP = grun('_pdiaPcHtml(_M, "")', { _M: MP });
+const HPa = grun('_pdiaPcHtml(_M, _k)', { _M: MP, _k: MP.produtos[1].key });
+ok('resumo: caixas, UEP, produtos e trocas',
+   ['<b>596</b><i>CAIXAS</i>', '<b>1.441</b><i>UEP</i>', '<b>3</b><i>PRODUTOS</i>', '<b>2</b><i>TROCAS DE PRODUTO</i>'].every(t => HP.includes(t)), true);
+ok('cobertura: todas com produto · hora extra em âmbar',
+   HP.includes('Todas as 596 cx lançadas com produto · <span class="he">244 cx em hora extra</span>'), true);
+ok('eixo: o "agora" escrito e a hora cheia colada nele (10) fora',
+   [HP.includes('<span class="ag" style="left:'), />10<\/span>/.test(HP), />09<\/span>/.test(HP)], [true, false, true]);
+ok('almoço escrito na faixa', HP.includes('ALMOÇO</div>'), true);
+ok('uma linha por produto, cada uma um botão com aria-expanded',
+   (HP.match(/<button type="button" class="pdpc-bt pdpc-row" onclick="_pdiaPcToggle\(\d\)" aria-expanded="false">/g) || []).length, 3);
+ok('cabeçalho das colunas na ordem da prévia',
+   HP.includes('<span>PRODUTO</span><span>COR</span><span>HORÁRIO</span><span class="n">CAIXAS</span><span class="n">UEP</span><span class="n">EM HE</span><span>PARTE DA UEP DO DIA</span>'), true);
+ok('EM HE por produto em âmbar; sem hora extra, "—" neutro (traço não é sinal)',
+   ['<span class="pdpc-u he">184</span>', '<span class="pdpc-u he">60</span>', '<span class="pdpc-u">—</span>'].every(t => HP.includes(t)), true);
+ok('AGORA no horário do produto de agora', HP.includes('desde 09:00 · <span class="ag">AGORA</span>'), true);
+ok('% numa coluna fixa (as barras alinham)', (HP.match(/<span class="pdpc-pc">\d+%<\/span>/g) || []).length, 3);
+ok('fechado: sem detalhe; aberto: tabela e hora a hora só do aberto',
+   [HP.includes('POR COR E VOLUME'), (HPa.match(/POR COR E VOLUME/g) || []).length, (HPa.match(/HORA A HORA/g) || []).length, (HPa.match(/pdpc-it on/g) || []).length],
+   [false, 1, 1, 1]);
+ok('sem leitura: o estado da leitura do dia, nunca zero', grun('_pdiaPcHtml(null, "")'), '<div class="pdpc-vazio">Lendo a produção do dia…</div>');
+ok('vazio: diz que nenhuma das caixas foi lançada com produto',
+   grun('_pdiaPcHtml(_M, "")', { _M: vazio }).includes('Nenhuma das 120 cx de hoje foi lançada com produto.'), true);
+ok('nome do cadastro é escapado', grun('_pdiaPcHtml(_M, "")', { _M: hostil }).includes('<img src=x'), false);
+// A leitura: sem a 1ª resposta do getPontosDia é "lendo" (o PONTOS_DIA nasce vazio).
+grun('renderGerProdutosDia(596)');
+ok('antes da 1ª leitura: estado, não "nenhuma caixa"', [gEl['ger-pdia-corpo'].innerHTML.includes('Lendo'), gEl['ger-pdia-ts'].textContent], [true, '']);
+grun('PONTOS_DIA = { porHoraModelo: _phm, porHora: _ph, produtoAtual: "501136001", produtoAtualDesc: "VOL 1/1 LIVREIRO ENCANTO" }; CAP_RAW = _cat; PONTOS_DIA_TS = new Date(2026, 10, 4, 9, 40).getTime(); renderGerProdutosDia(596)',
+  { _phm: PHM, _ph: PH, _cat: CAT });
+ok('com a leitura: o quadro, a hora da lista e o AGORA pelo produto do turno',
+   [gEl['ger-pdia-corpo'].innerHTML === HP, gEl['ger-pdia-ts'].textContent], [true, 'lista de 09:40']);
+grun('renderGerProdutosDia()');
+ok('sem argumento mantém as caixas da HORA_A_HORA', grun('PDIA_PC_REAL'), 596);
+// O cadastro é lido no clique só sem nenhum neste computador, e uma vez por sessão.
+grun('CAP_RAW = null; _pdiaPcToggle(1); _pdiaPcToggle(1); _pdiaPcToggle(1); _pdiaPcToggle(0)');
+ok('sem cadastro: lê no clique, uma vez só', grun('CAP_PED'), 1);
+grun('CAP_RAW = _cat; PDIA_PC_CATPED = false; CAP_PED = 0; _pdiaPcToggle(2)', { _cat: CAT });
+ok('com cadastro: nenhuma leitura no clique', grun('CAP_PED'), 0);
+const desPC = pega(PC_JS, 'function _pdiaPcHtml(') + pega(PC_JS, 'function _pdiaPcDetHtml(');
+ok('PC: desenho sem conta (nada de soma nem de montagem)', /reduce\(|pdiaMontar\(|toMin\(/.test(desPC), false);
+ok('PC: produto sem veredito: nenhum NO RITMO, verde ou vermelho no quadro', /NO RITMO|ABAIXO|var\(--ok\)|var\(--red\)/.test(desPC), false);
+const PC_CSS = (PC.match(/#ger-pdia[^{]*\{[^}]*\}/g) || []).join('\n');
+ok('PC: pele sem verde nem vermelho', [PC_CSS.length > 0, /--ok|--red/.test(PC_CSS)], [true, false]);
+ok('PC: o gerencial ao vivo pinta o quadro', /renderGerProdutosDia\(k\.real\)/.test(pega(PC_JS, 'function renderGerencial(')), true);
+ok('PC: some no modo histórico e na impressão do dia',
+   [PC.includes('<div class="tbl-wrap ger-live-only" id="ger-pdia">'), /#ger-semana,#ger-prox,#ger-pdia,\s*\.sec:not\(\.on\)\{ display:none!important; \}/.test(PC)], [true, true]);
+ok('PC: logo abaixo dos KPIs', PC.indexOf('id="ger-pdia"') > PC.indexOf('id="kpi-grid"') && PC.indexOf('id="ger-pdia"') < PC.indexOf('id="ch-hora"'), true);
 
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exitCode = falhas ? 1 : 0;
