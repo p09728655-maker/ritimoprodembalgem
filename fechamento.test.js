@@ -73,8 +73,10 @@ function montar(o) {
       // O CODIGO real é NÚMERO (os pontos de "501.141.005" são só o formato da célula).
       .concat(Object.keys(UEP_CAD).map(c => [Number(c), 'VOL 1/1 X', 'COR', UEP_CAD[c], '16/10/2026'])),
     CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['META_UEP', '3048']],
+    // O cabeçalho real: MEDIA CX/H é a 10ª coluna, HE CX a 11ª, UEP/UEP HE/META UEP
+    // da 12ª à 14ª, e a v5.55 escreve META DIA e ATRASO META na 15ª e 16ª.
     HISTORICO: (o.hist || [['DATA', 'REALIZADO', 'META', 'EFICIÊNCIA %', 'MELHOR H.', 'PIOR H.', 'HE', 'FECHADO', 'FECHADO EM',
-      '', 'MEDIA CX/H', 'HE CX', 'UEP', 'UEP HE', 'META UEP']]).map(r => r.slice()),
+      'MEDIA CX/H', 'HE CX', 'UEP', 'UEP HE', 'META UEP']]).map(r => r.slice()),
   };
   function aba(nome) {
     const v = ABAS[nome];
@@ -125,8 +127,8 @@ console.log('\n── o caso de 19/10/2026: o painel manda 1.491, a planilha tem
 {
   const P = montar();
   const r = saveDay(P);
-  ok('grava a produção da HORA_A_HORA, com a META e o FECHADO EM do painel',
-     hist(P)[0], ['19/10/2026', 1509, 1157, 130.4, 263, 88, 0, true, '19/10/2026, 17:05:57', 168, 0, 3542.4, 0, 3048]);
+  ok('grava a produção da HORA_A_HORA, com a META e o FECHADO EM do painel (v5.55: + META DIA e ATRASO META)',
+     hist(P)[0], ['19/10/2026', 1509, 1157, 130.4, 263, 88, 0, true, '19/10/2026, 17:05:57', 168, 0, 3542.4, 0, 3048, 1157, 0]);
   ok('a UEP da mesma linha é a das mesmas 1.509 cx (já era — é ela que mostrou o defeito)', hist(P)[0][11], 3542.4);
   ok('o retorno diz de onde saiu e o que o painel tinha', [r.ok, r.fonte, r.real, r.realPainel], [true, 'planilha', 1509, 1491]);
   ok('a diferença fica no log de execução', P.LOGS.some(l => /19\/10\/2026: painel mandou 1491 cx, a HORA_A_HORA tem 1509/.test(l)), true);
@@ -151,6 +153,8 @@ console.log('\n── a mesma conta do fechamento das 23:59 ──');
   ok('com HE: 1.649 cx, 2 horas extras, 140 cx nelas', [a[1], a[6], a[10]], [1649, 2, 140]);
   ok('a META é a do painel (a da aba exclui só a linha rotulada HE)', [a[2], b[2]], [1157, 1157]);
   ok('a EF é REALIZADO ÷ META da própria linha', a[3], Number((1649 / 1157 * 100).toFixed(1)));
+  ok('META DIA e ATRASO META: a mesma soma por hora nos dois fechamentos (a linha HE fica fora)',
+     [a[14], a[15], b[14], b[15]], [1157, 0, 1157, 0]);
   ok('dia fechado pelo painel continua com prioridade sobre o das 23:59', (() => {
     B.ABAS.HISTORICO[1][7] = true; B.ABAS.HISTORICO[1][1] = 1;
     B.run("arquivarDiaAtual('19/10/2026');");
@@ -196,12 +200,49 @@ console.log('\n── HORA EXTRA que só o painel conhece: fica o que o painel m
   const P = montar();
   const r = saveDay(P, { real: '1795', ef: '155.1', he: '1', heCx: '286', mediaH: '199' });
   ok('o painel tem mais HE que a aba → a linha é a do painel, como antes da v5.29',
-     hist(P)[0], ['19/10/2026', 1795, 1157, 155.1, 263, 88, 1, true, '19/10/2026, 17:05:57', 199, 286, 3542.4, 0, 3048]);
+     hist(P)[0], ['19/10/2026', 1795, 1157, 155.1, 263, 88, 1, true, '19/10/2026, 17:05:57', 199, 286, 3542.4, 0, 3048, '', '']);
   ok('o retorno e o log dizem por quê', [r.fonte, r.heLocal, P.LOGS.some(l => /HE só no navegador/.test(l))], ['painel', true, true]);
   const Q = montar({ horas: [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 0]]
     .concat(HORAS_1910.map(([rot, l], i) => linhaHora(rot, i < 8 ? '129' : '125', l))) });
   ok('o painel com MENOS HE que a aba (retrato velho da madrugada) → a aba',
      [saveDay(Q, { heCx: '60', he: '1' }).fonte, hist(Q)[0][10]], ['planilha', 100]);
+}
+
+console.log('\n── v5.55 (opção A): a META é a do painel; META DIA e ATRASO META mostram do que ela é feita ──');
+{
+  // O painel com SOMAR ATRASO ligado: meta efetiva = programado de hoje (a aba,
+  // 1.157) + atraso de dias anteriores (143).
+  const P = montar();
+  saveDay(P, { meta: '1300' });
+  ok('META 1.300 (painel) · META DIA 1.157 (aba) · ATRASO META 143 = a diferença',
+     [hist(P)[0][2], hist(P)[0][14], hist(P)[0][15]], [1300, 1157, 143]);
+  ok('a EF continua REALIZADO ÷ META do painel (a mesma do % na tela)', hist(P)[0][3], Number((1509 / 1300 * 100).toFixed(1)));
+  ok('o log diz as duas metas', P.LOGS.some(l => /meta do painel 1300, meta do dia 1157/.test(l)), true);
+  ok('os títulos das colunas 15 e 16 são escritos na 1ª gravação',
+     [P.ABAS.HISTORICO[0][14], P.ABAS.HISTORICO[0][15]], ['META DIA', 'ATRASO META']);
+
+  const Z = montar();
+  saveDay(Z, { meta: '0' });
+  ok('painel sem meta → META = a da aba, ATRASO 0 (nunca META 0 com EF infinita)',
+     [hist(Z)[0][2], hist(Z)[0][3], hist(Z)[0][14], hist(Z)[0][15]], [1157, Number((1509 / 1157 * 100).toFixed(1)), 1157, 0]);
+
+  // Meta digitada abaixo da aba (ajuste manual): não existe atraso negativo.
+  const M = montar();
+  saveDay(M, { meta: '1100' });
+  ok('painel abaixo da aba → ATRASO META 0, META DIA continua a da aba',
+     [hist(M)[0][2], hist(M)[0][14], hist(M)[0][15]], [1100, 1157, 0]);
+
+  // Aba sem meta nenhuma nas horas (META vazia): sem META DIA, sem ATRASO.
+  const S = montar({ horas: HORAS_1910.map(([rot, l]) => linhaHora(rot, '', l)) });
+  saveDay(S, { meta: '1300' });
+  ok('aba sem meta por hora → META do painel e as duas colunas vazias',
+     [hist(S)[0][2], hist(S)[0][14], hist(S)[0][15]], [1300, '', '']);
+
+  // O fechamento das 23:59 não sabe a meta do painel: grava a da aba e atraso 0.
+  const A = montar();
+  A.run("arquivarDiaAtual('19/10/2026');");
+  ok('fechamento das 23:59 → META = META DIA = aba, ATRASO META 0',
+     [hist(A)[0][2], hist(A)[0][14], hist(A)[0][15]], [1157, 1157, 0]);
 }
 
 console.log('\n── o lock dos lançamentos ──');
@@ -217,7 +258,8 @@ console.log('\n── o lock dos lançamentos ──');
 
 console.log('\n── sem o carimbo do dia, a aba NÃO é deste dia: fica o que o painel mandou ──');
 {
-  const linhaPainel = ['19/10/2026', 1491, 1157, 128.9, 263, 88, 0, true, '19/10/2026, 17:05:57', 166, 0, 3542.4, 0, 3048];
+  // Sem a aba, não há META DIA (soma por hora): as duas colunas ficam vazias, nunca 0.
+  const linhaPainel = ['19/10/2026', 1491, 1157, 128.9, 263, 88, 0, true, '19/10/2026, 17:05:57', 166, 0, 3542.4, 0, 3048, '', ''];
   const P1 = montar({ carimbo: '18/10/2026' });
   ok('carimbo de OUTRO dia → os números do painel', [hist(P1).length, saveDay(P1).fonte, hist(P1)[0]], [0, 'painel', linhaPainel]);
   const P2 = montar({ carimbo: null });

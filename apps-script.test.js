@@ -736,9 +736,11 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
      [dl['24/09/2026'].normal, dl['24/09/2026'].he, dl['24/09/2026'].cxSem, dl['23/09/2026'].he], [297, 100, 30, 19.4]);
   ok('célula vazia do HISTORICO é null (dia sem UEP), número é número',
      [_celNumOuNull(''), _celNumOuNull(0), _celNumOuNull('2.300'), _celNumOuNull('1,5')], [null, 0, 2300, 1.5]);
-  ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend',
-     [/\]\.concat\(_uepColsDoDia\(p\.data\)\)/.test(pega('function saveDay(')),
-      /\]\.concat\(_uepColsDoDia\(dataRef\)\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+  // v5.55: depois das três da UEP vêm META DIA e ATRASO META (opção A). O das
+  // 23:59 não sabe a meta do painel: a META é a da aba e o atraso, 0.
+  ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend (+ META DIA e ATRASO META)',
+     [/\]\.concat\(_uepColsDoDia\(p\.data\), \[metaDia, atrasoMeta\]\)/.test(pega('function saveDay(')),
+      /\]\.concat\(_uepColsDoDia\(dataRef\), \[meta, 0\]\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
   eval(pega('function _uepPorHoraDoLog('));
   const hl = _uepPorHoraDoLog([
     { hora: '8:00', codigo: 'A', cx: 100 }, { hora: '08:00', codigo: 'X', cx: 20 },
@@ -752,6 +754,11 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
      /if \(p\.metaUep !== undefined && _numBR\(p\.metaUep\) > 0\) novos\.META_UEP/.test(pega('function setConfigPainel(')), true);
   ok('getHistory e getHoraDia devolvem uep/uepHe/metaUep',
      [/uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHistory(')), /uep:\s*_celNumOuNull\(r\[11\]\)/.test(pega('function getHoraDia('))], [true, true]);
+  ok('getHistory e getHoraDia devolvem metaDia/atrasoMeta das colunas 15 e 16 (v5.55; vazia = null)',
+     ['function getHistory(', 'function getHoraDia('].map(f => /metaDia:\s*_celNumOuNull\(r\[14\]\)/.test(pega(f)) &&
+       /atrasoMeta:\s*_celNumOuNull\(r\[15\]\)/.test(pega(f))), [true, true]);
+  ok('o título das colunas novas é escrito pelo mesmo _garantirColsUepHist',
+     /\['UEP', 'UEP HE', 'META UEP', 'META DIA', 'ATRASO META'\]/.test(pega('function _garantirColsUepHist(')), true);
   ok('a meta padrão do .gs é a mesma do rp-core',
      Number(src.match(/const UEP_META_PADRAO_GS = (\d+)/)[1]),
      Number(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8').match(/const UEP_META_PADRAO = (\d+)/)[1]));
