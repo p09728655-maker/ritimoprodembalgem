@@ -759,6 +759,15 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
        /atrasoMeta:\s*_celNumOuNull\(r\[15\]\)/.test(pega(f))), [true, true]);
   ok('o título das colunas novas é escrito pelo mesmo _garantirColsUepHist',
      /\['UEP', 'UEP HE', 'META UEP', 'META DIA', 'ATRASO META'\]/.test(pega('function _garantirColsUepHist(')), true);
+  // v5.57: a versão do .gs vai ao rodapé do painel. Os três números andam juntos:
+  // o cabeçalho, o GS_VERSAO (o que o getDados devolve) e o GS_REPO do painel
+  // (o que ele espera). Esquecer um deixa o rodapé âmbar sem motivo — ou verde
+  // com o .gs errado.
+  { const cab = (src.match(/^\/\/ Versão: (\d+\.\d+)/m) || [])[1];
+    const gs = (src.match(/^const GS_VERSAO = '([\d.]+)';/m) || [])[1];
+    const v7 = (fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8').match(/const GS_REPO\s+= '([\d.]+)';/) || [])[1];
+    ok('a versão do cabeçalho do .gs, o GS_VERSAO e o GS_REPO do painel são a mesma', [!!cab, cab === gs, gs === v7], [true, true, true]);
+    ok('o getDados devolve a versão do .gs (gsVersao)', /gsVersao:\s*GS_VERSAO/.test(pega('function getDados(')), true); }
   ok('a meta padrão do .gs é a mesma do rp-core',
      Number(src.match(/const UEP_META_PADRAO_GS = (\d+)/)[1]),
      Number(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8').match(/const UEP_META_PADRAO = (\d+)/)[1]));

@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.57 — A VERSÃO DO .gs VAI AO PAINEL (GS_VERSAO)
+//               PPCP, 05/11/2026: "quando muda gs está salvando no git?". O
+//               GitHub e o editor do Apps Script não se falam, e nada mostrava
+//               qual versão estava implantada. O getDados devolve gsVersao e o
+//               rodapé do painel mostra "gs vX", em âmbar quando não é a do
+//               repositório. Mudou o .gs? Suba o número aqui, no GS_VERSAO e no
+//               GS_REPO do painel (o apps-script.test.js confere os três).
 // Versão: 5.56 — SOMAR ATRASO NA CONFIG_PAINEL (META_COM_ATRASO)
 //               PPCP, 05/11/2026: com a opção A (v5.55) a META gravada é a do
 //               painel, e o SOMAR ATRASO era do navegador de cada computador —
@@ -469,6 +476,10 @@
 //     o zeramento só ocorre de madrugada, jamais apagando produção de hoje.
 //   • Só zera se houver produção pendente na planilha (planilhaTemProducao).
 // ════════════════════════════════════════════════════════
+
+// A versão deste arquivo, a mesma do cabeçalho (v5.57). Vai no getDados para o
+// rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
+const GS_VERSAO = '5.57';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1698,6 +1709,7 @@ function getDados() {
     metaDia:     slots.reduce((s, sl) => s + sl.metaHora, 0) || metaDia,
     dataRef:     hoje,
     dadosDeHoje: true,
+    gsVersao:    GS_VERSAO,   // v5.57: o rodapé do painel compara com o do repositório
     planilha:    ss.getName(),
     aba:         SHEET_DADOS,
     produtoAtual

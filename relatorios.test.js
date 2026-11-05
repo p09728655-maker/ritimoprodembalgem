@@ -5641,6 +5641,22 @@ console.log('\n── estudo de UEP ──');
      /metaComAtraso: \(json\.painelConfig\|\|\{\}\)\.metaComAtraso===true/.test(mJS), true);
 }
 
+// ── v7.205.0 / .gs v5.57: a versão do .gs implantado no rodapé ─────────────
+{ eval(pega('function _gsVerCmp(')); eval(pega('function _gsVerEstado('));
+  const E = (i, r) => { const e = _gsVerEstado(i, r); return e && [e.txt, e.alerta]; };
+  ok('rodapé: igual ao repositório = neutro; sem a leitura = some',
+     [E('5.57', '5.57'), _gsVerEstado(undefined, '5.57')], [['gs v5.57', false], null]);
+  ok('rodapé: .gs sem o campo (anterior à v5.57), atrás ou à frente do repositório = âmbar com as duas versões',
+     [E(null, '5.57'), E('5.56', '5.57'), E('5.58', '5.57'), E('5.9', '5.57'), E('5.570', '5.57')],
+     [['gs ?', true], ['gs v5.56 · repo v5.57', true], ['gs v5.58 · repo v5.57', true], ['gs v5.9 · repo v5.57', true], ['gs v5.570 · repo v5.57', true]]);
+  ok('a versão compara número a número (5.9 < 5.57), e a explicação diz o que fazer',
+     [_gsVerCmp('5.9', '5.57'), _gsVerCmp('5.57', '5.57'), /atrás do repositório[\s\S]*Cole o ritmoprod_appscript\.gs/.test(_gsVerEstado('5.56', '5.57').title),
+      /não foi para o GitHub/.test(_gsVerEstado('5.58', '5.57').title)], [-1, 0, true, true]);
+  ok('a leitura do getDados guarda a versão (sem o campo = null) e pinta o rodapé',
+     [/GS_IMPL = json\.gsVersao \? String\(json\.gsVersao\) : null;\s*try\{ _gsVerPintar\(\); \}catch\(e\)\{\}/.test(pega('function processarRespostaSheets(')),
+      /<span id="ftr-gs" class="ftr-hide-mobile" style="display:none"><\/span>/.test(src)], [true, true]);
+}
+
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
 // sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
 process.exitCode = 1;
