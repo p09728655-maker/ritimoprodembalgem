@@ -65,13 +65,23 @@ function novaPlanilha() {
 }
 let PLANILHA = novaPlanilha();
 const SpreadsheetApp = { getActiveSpreadsheet: () => PLANILHA };
-let cachePut = 0;
-const CacheService = { getScriptCache: () => ({ put: () => { cachePut++; }, get: () => null }) };
+// v5.52: a geração é POR GRUPO e vai num putAll só ({rp_gen_prod: g, …}).
+// cacheGen guarda o que foi gravado por chave, para conferir QUAIS grupos a
+// gravação trocou.
+let cachePut = 0, cacheGen = {};
+const CacheService = { getScriptCache: () => ({
+  put: (k, v) => { cachePut++; cacheGen[k] = v; },
+  putAll: vals => { cachePut++; Object.assign(cacheGen, vals); },
+  get: () => null,
+  getAll: () => ({})
+}) };
 
 eval(pega('function _valoresDaAba('));
 eval(pega('function _valores('));
 eval(pega('function _invalidarValores('));
 eval(pega('function invalidarCacheLeitura('));
+// v5.52: a lista de grupos vem do próprio .gs (grupo novo lá entra aqui sozinho).
+const CACHE_GRUPOS = eval(src.match(/const CACHE_GRUPOS = (\[[^\]]*\]);/)[1]);
 // _valoresMemo é declarado com var no .gs; aqui precisa existir antes do uso
 var _valoresMemo = {};
 
@@ -94,6 +104,13 @@ invalidarCacheLeitura();          // é o que roda em toda ação de escrita
 _valores('HISTORICO');
 ok('depois de gravar, a leitura vai na planilha de novo', leituras.HISTORICO, 2);
 ok('a geração do cache do CacheService também é trocada', cachePut > 0, true);
+ok('sem grupo, a gravação troca a geração de TODOS os grupos',
+   Object.keys(cacheGen).sort(), CACHE_GRUPOS.map(g => 'rp_gen_' + g).sort());
+cacheGen = {};
+invalidarCacheLeitura(['par']);   // v5.52: endParada/saveParadas só mexem em paradas
+ok('com grupo, só a geração dele muda (lançamento não derruba o catálogo)',
+   Object.keys(cacheGen), ['rp_gen_par']);
+ok('… e o memo da execução é limpo mesmo assim', (_valores('HISTORICO'), leituras.HISTORICO), 3);
 
 console.log('\n── aba que não existe não quebra nem entra no memo ──');
 PLANILHA = novaPlanilha(); _invalidarValores();
@@ -110,9 +127,12 @@ let FAKE_AGORA = '10/08/2026 08:00:00';
 let FAKE_HOJE  = '10/08/2026';
 const Utilities = { formatDate: (d, tz, fmt) =>
   fmt === 'yyyy'                      ? '2026'
+  : fmt === 'M'                       ? String(Number(FAKE_HOJE.split('/')[1]))  // v5.4x: _anoProvavel
   : (fmt && fmt.indexOf('HH') >= 0)   ? FAKE_AGORA
   :                                     FAKE_HOJE };
 eval(pega('function codKey('));
+// dd/MM sem ano: o ano mais próximo de hoje (não mais sempre o ano corrente).
+eval(pega('function _anoProvavel('));
 eval(pega('function dataParaNum('));
 eval(pega('function lerEmbaladoPorProduto('));
 PLANILHA = novaPlanilha(); _invalidarValores();
@@ -143,7 +163,14 @@ console.log('\n── PARADAS com segundos (v5.5, microparadas) ──');
   eval(pega('function _horaSegStr('));
   eval(pega('function _dataStr('));
   eval(pega('function _garantirColDuracaoSeg('));
-  eval(pega('function endParada('));
+  // v5.54: endParada = _comLock(_endParadaCore). O lock de mentira conta se foi
+  // pego e solto — o finally não pode deixar a planilha travada.
+  let lockPego = 0, lockSolto = 0;
+  const LockService = { getScriptLock: () => ({
+    waitLock: () => { lockPego++; }, releaseLock: () => { lockSolto++; }
+  }) };
+  eval(pega('function _comLock('));
+  eval(pega('function endParada('));   // o pega leva o _endParadaCore junto
 
   ok('08:24:10 → 08:25:00 = 50 s', calcDurSeg('08:24:10', '08:25:00'), 50);
   ok('… e 0,83 min em DURACAO_MIN (era 1)', calcDurMin('08:24:10', '08:25:00'), 0.83);
@@ -179,6 +206,7 @@ console.log('\n── PARADAS com segundos (v5.5, microparadas) ──');
   ok('DURACAO_MIN = 0,75 (45 s)', escritas['2,6'], 0.75);
   ok('DURACAO_SEG = 45 na coluna H', escritas['2,8'], 45);
   ok('cabeçalho DURACAO_SEG criado na aba antiga', escritas['1,8'], 'DURACAO_SEG');
+  ok('v5.54: o START grava sob o lock, e solta no fim', [lockPego, lockSolto], [1, 1]);
   // Cabeçalho já existente não é reescrito.
   linhas[0].push('DURACAO_SEG'); delete escritas['1,8'];
   endParada({ id: '1789645178327', fim: '08:39:47', data: '17/09/2026' });
@@ -215,6 +243,7 @@ eval(pega('function _progIgual('));
 eval(pega('function _progFase('));
 eval(pega('function _marcado('));   // v5.21: a coluna ENCERRAR passa a existir depois da 1ª rodada
 eval(pega('function _progStatus('));  // v5.21: o STATUS sai de um lugar só (write-back e volta da CONCLUIDA)
+eval(pega('function _numBR('));      // QTDE/PRODUZIDO lidos em pt-BR (1.200 = milhar)
 eval(pega('function atualizarSaldoNaProgramacao('));
 
 const PROG = [
@@ -376,6 +405,7 @@ ok('cabeçalho vazio não quebra', [_colunasDeLote([], 0), _ehColunaLote(null)],
 // 15/09/2026: PRODUCAO_PRODUTO tem 3.300 linhas x 8 colunas = 26.400 células, e
 // o comparativo por modelo lia todas para ficar com as do período.
 console.log('\n── leitura recortada por data ──');
+eval(pega('function _anoProvavel('));
 eval(pega('function dataParaNum('));
 eval(pega('function _faixaPorData('));
 eval(pega('function _valoresPorData('));
