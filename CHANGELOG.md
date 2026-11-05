@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.205.0 + `.gs` v5.57 — 05/11/2026 · qual `.gs` está implantado, no rodapé ⚠ **re-deploy**
+
+- PPCP: *"quando muda gs está salvando no git?"*. O GitHub e o editor do Apps
+  Script não se falam: o `.gs` só vai ao GitHub quando alguém sobe, e só roda
+  na fábrica quando alguém cola e implanta. Nada mostrava se os dois eram o
+  mesmo.
+- O Apps Script passa a dizer a versão dele (`getDados` → `gsVersao`) e o
+  rodapé do painel mostra **`gs v5.57`** ao lado da versão do painel. Quando o
+  implantado não é o do repositório, a etiqueta fica **âmbar** com as duas
+  (*"gs v5.56 · repo v5.57"*), e o *title* diz o que fazer: colar o arquivo do
+  GitHub e implantar, ou — se o implantado for mais novo — subir o arquivo para
+  o GitHub antes da próxima mudança. Antes da v5.57 implantada: **`gs ?`**.
+- **Atenção**: logo depois deste deploy, e até o `.gs` v5.57 ser colado e
+  implantado, o rodapé mostra **`gs ?`** em âmbar. É o aviso funcionando.
+- ⚠ **re-deploy** do Apps Script para a etiqueta ficar neutra.
+
 ## v7.204.0 — 05/11/2026 · ⚙ CONFIGURAÇÕES sem rolagem
 
 - PPCP, com o ⚙ aberto: *"aumentar dos lados para não dar rolagem"*. O ⚙ era

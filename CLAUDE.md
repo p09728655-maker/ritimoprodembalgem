@@ -109,6 +109,24 @@ via Google Apps Script (JSONP).
   que ele existe mesmo** — senão a guarda vira enfeite.
 - `ritmoprod_appscript.gs` — backend (Apps Script). **Mudanças aqui NÃO sobem pela
   Vercel**: precisam ser coladas no editor do Apps Script e **re-deployadas** manualmente.
+  - ⚠ **O GitHub e o editor do Apps Script não se falam** (PPCP, 05/11/2026:
+    *"quando muda gs está salvando no git?"*). As v5.45–v5.56 foram feitas em
+    outra conversa e subidas à mão (`9949a4e`, `0a42580`, `d349f79`). **O
+    repositório é a fonte**: mudança no `.gs` nasce aqui ou é subida no mesmo
+    dia — editar só no editor e colar depois o arquivo do GitHub desfaz a
+    edição.
+  - **Desde a v5.57 o rodapé do painel diz qual `.gs` está implantado**
+    (`GS_VERSAO` no `.gs` → `gsVersao` do `getDados` → `GS_IMPL`; o painel traz
+    o `GS_REPO`, a versão que foi junto com ele; `_gsVerEstado` /
+    `_gsVerPintar`, etiqueta `#ftr-gs`): `gs v5.57` neutro quando batem;
+    âmbar *"gs vX · repo vY"* quando não (o *title* diz se é para colar o
+    arquivo ou para subi-lo); `gs ?` com o `.gs` anterior à v5.57. Mudou o
+    `.gs`? **Suba os TRÊS: o cabeçalho `Versão:`, o `GS_VERSAO` e o `GS_REPO`
+    do painel** — o `apps-script.test.js` falha se divergirem. Entre o merge e
+    o re-deploy a etiqueta fica âmbar: é o lembrete de colar o arquivo.
+  - Implantar sozinho a cada merge (clasp + GitHub Actions) foi proposto e
+    NÃO feito: pede a credencial Google da conta dona do script como segredo
+    no GitHub e põe todo merge direto na produção da fábrica.
 - `vercel.json` — `/` → v7, `/mobile` → mobile.
 - Deploy front-end: automático pela Vercel ao dar merge na `main`.
 

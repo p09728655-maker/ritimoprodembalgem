@@ -1866,6 +1866,9 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 /* ═══ FOOTER ═══ */
 footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px solid var(--border);background:var(--bg);flex-shrink:0}
 #ftr-fonte{font-family:var(--font-d);font-size:10px;color:var(--txt3)}
+/* .gs implantado × repositório (v7.205.0): neutro quando é o mesmo, âmbar quando não. */
+#ftr-gs{font-family:var(--font-d);font-size:10px;color:var(--txt3);border:0.5px solid var(--border);padding:1px 7px;border-radius:3px;letter-spacing:1px;cursor:help}
+#ftr-gs.alerta{color:var(--warn);border-color:var(--warn);background:rgba(245,166,35,0.08)}
 
 /* ═══ MISC ═══ */
 .empty-msg{font-family:var(--font-b);font-size:12px;color:var(--txt3);padding:18px;text-align:center}
@@ -3610,6 +3613,7 @@ if (_v7Instalado()) _v7EscondeBotao();
   <span class="ftr-hide-mobile" style="font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:1.5px">RitmoPatrimar</span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span id="ftr-ver" class="ftr-hide-mobile" style="font-family:var(--font-d);font-size:10px;color:var(--txt3);background:rgba(245,166,35,0.1);border:0.5px solid rgba(245,166,35,0.3);padding:1px 7px;border-radius:3px;letter-spacing:1px">v7</span>
+  <span id="ftr-gs" class="ftr-hide-mobile" style="display:none"></span>
   <span class="ftr-hide-mobile" style="color:var(--border)">·</span>
   <span id="ftr-fonte" class="ftr-hide-mobile">Conectando ao Google Sheets…</span>
   <span style="flex:1"></span>
@@ -3897,8 +3901,15 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.204.0';
+const APP_VER   = '7.205.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
+// A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
+// painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
+// .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
+// falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
+// número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
+const GS_REPO   = '5.57';
+let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
 // resumo do WhatsApp e a notificação leem DAQUI — trocar o nome é trocar esta
@@ -3953,10 +3964,39 @@ async function checarVersaoV7(){
     if(m && m[1] && m[1]!==APP_VER){ if(document.documentElement.classList.contains('modo-dir')){ location.reload(); return; } mostrarAvisoAtualizacaoV7(m[1]); }
   }catch(e){ /* offline / rede ruim: tenta de novo no próximo ciclo */ }
 }
+// O .gs implantado contra o do repositório (v7.205.0). Conta pura: devolve o
+// texto, se é alerta e a explicação; null enquanto o getDados não respondeu.
+function _gsVerCmp(a, b){
+  const pa=String(a).split('.').map(Number), pb=String(b).split('.').map(Number);
+  for(let i=0;i<Math.max(pa.length,pb.length);i++){ const d=(pa[i]||0)-(pb[i]||0); if(d) return d<0?-1:1; }
+  return 0;
+}
+function _gsVerEstado(impl, repo){
+  if(impl===undefined) return null;
+  const COLAR='Cole o ritmoprod_appscript.gs do GitHub no editor do Apps Script e implante (Nova versão).';
+  if(impl===null) return { txt:'gs ?', alerta:true,
+    title:'O Apps Script implantado não informa a versão: é anterior à v5.57. O repositório está na v'+repo+'. '+COLAR };
+  if(_gsVerCmp(impl, repo)===0) return { txt:'gs v'+impl, alerta:false,
+    title:'Apps Script implantado = o do repositório (v'+repo+').' };
+  return { txt:'gs v'+impl+' · repo v'+repo, alerta:true,
+    title:_gsVerCmp(impl, repo)<0
+      ? 'O Apps Script implantado (v'+impl+') está atrás do repositório (v'+repo+'). '+COLAR
+      : 'O Apps Script implantado (v'+impl+') é mais novo que o do repositório (v'+repo+'): a mudança feita no editor não foi para o GitHub. Suba o arquivo antes da próxima mudança, senão ela se perde.' };
+}
+function _gsVerPintar(){
+  const el=document.getElementById('ftr-gs'); if(!el) return;
+  const e=_gsVerEstado(GS_IMPL, GS_REPO);
+  if(!e){ el.style.display='none'; return; }
+  el.style.display='';
+  el.textContent=e.txt;
+  el.title=e.title;
+  el.classList.toggle('alerta', e.alerta);
+}
 // Versão no rodapé + aviso de "atualizado" na 1ª abertura depois de subir.
 (function initVersaoV7(){
   const el=document.getElementById('ftr-ver');
   if(el) el.textContent='v'+APP_VER;
+  if(el) el.title='versão do painel (Vercel)';
   // Também na tela de entrada (login) — o rodapé não aparece lá.
   const lv=document.getElementById('login-ver-v7');
   if(lv) lv.textContent='v'+APP_VER;
@@ -4711,6 +4751,9 @@ function processarRespostaSheets(json){
   // e é melhor dizer isso na tela do que mostrar "—" sem explicação.
   if(Array.isArray(json.slots) && json.slots.length)
     HE_BACKEND_OK = Object.prototype.hasOwnProperty.call(json.slots[0],'he');
+  // Versão do .gs implantado (v5.57). Sem o campo: anterior à v5.57.
+  GS_IMPL = json.gsVersao ? String(json.gsVersao) : null;
+  try{ _gsVerPintar(); }catch(e){}
   let acum = 0;
   const novos = json.slots.filter(s=>s.metaHora>0).map(s=>{
     if(s.producaoHora!=null) acum+=s.producaoHora;

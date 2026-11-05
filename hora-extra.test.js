@@ -91,6 +91,8 @@ eval(pega('function _heCxDoDia('));
 // dele (estava copiado em três funções) e agora precisa vir junto.
 eval(pega('function _ehColunaLote('));
 eval(pega('function _colunasDeLote('));
+// v5.57: o getDados devolve a versão do arquivo (GS_VERSAO) — do código real.
+src.match(/const GS_VERSAO\s*=\s*[^;]+;/g).forEach(l => eval(l.replace('const ', 'global.')));
 eval(pega('function getDados()'));
 
 // _heCxDoDia lê a HISTORICO_HORA por este helper — aqui ele é controlado.
