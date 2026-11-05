@@ -66,7 +66,8 @@ via Google Apps Script (JSONP).
   dia no `getProgramacaoDetalhada` (v5.37), e a DATA no formato da aba na
   linha que volta da CONCLUIDA (v5.45): `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
-  UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto). Carrega o
+  UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto; v7.206.0: a
+  linha do produto na régua de hoje e o "% com X"). Carrega o
   `.gs` **inteiro** e a conta do painel: `node uep-padrao.test.js`.
 - `fechamento.test.js` — FECHAR DIA (`.gs` v5.29): o `saveDay` grava a produção
   da HORA_A_HORA (carimbo `dataDados` do dia) e não o retrato do painel; o caso
@@ -4645,6 +4646,27 @@ feito e dá ar de verdade ao que sobrou.
     pele `_UEP_PAD_DOC_SKIN` escopada em `.pad-doc`. Folha 1: totais
     (`H.tot`, produto × dia) e o resumo; depois o dia a dia de **todos** os
     produtos julgados e o COMO O NÚMERO SAI.
+  - **A LINHA DO PRODUTO NA RÉGUA DE HOJE (v7.206.0, PPCP 05/11/2026, com a
+    sub-aba POR PRODUTO: *"como interpretar?"* → *"sim"*).** UEP/CX, CX/H
+    PADRÃO e TAKT da linha saíam do ÚLTIMO dia em que o produto rodou, com a
+    meta daquele dia: a MADERO (28/10) lia 314 cx/h na meta de 2.761 e o RACK
+    FLIP 1.8 (26/10) 135 na de 2.530 — duas réguas na mesma coluna, e a UEP de
+    antes das trocas de 04/11. Hoje: UEP/CX = o `uepProd` da MESMA leitura
+    (`UEP_PAD.uepProd`, 5º parâmetro do `_uepPadHist`: cadastro de agora, média
+    pelas caixas do período — a UEP/CX do comparativo por modelo); meta = a do
+    ⚙ (`PONTOS_DIA.metaUep`; sem ela, a última META UEP gravada no
+    `UEP_HIST`). Sem UEP hoje → "—", nunca a do último dia.
+    - **O % e o dia a dia não mudaram**: cada dia com a UEP e a meta dele.
+    - **"% com X"** embaixo da UEP/CX (`uepJul`, `.uep-pad-jul`): a UEP com que
+      o % foi feito (Σ UEP ÷ Σ cx dos dias julgados), só quando a UEP de hoje
+      difere em `UEP_PAD_MUDOU`=1% ou mais da que valeu no período **nas
+      mesmas caixas** (toda caixa com UEP, todos os dias — a base do
+      `uepProd`). Comparar com os dias julgados acusaria troca à toa no produto
+      de dois volumes (outro mix de volumes, a mesma UEP) — o teste prende.
+    - `UEP_PAD_COLS` = [6,18,7,7,…]: a UEP/CX ganhou 1% do PRODUTO para o "%
+      com" caber. Medido no Chromium com as fontes: 1920 e 1366 e A4 deitada
+      (1.032 px), nada passa da célula; a linha com o aviso fica 11 px mais
+      alta na tela.
 - ⚠ Mudou o `.gs` → **re-deploy manual**. Antes dele o GRAVAR UEP para com o
   aviso de re-deploy (não grava nada) e o bloco 7 diz que o backend não manda a
   UEP por data. Nada no `HISTORICO` muda.

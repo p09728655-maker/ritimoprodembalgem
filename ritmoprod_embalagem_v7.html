@@ -779,6 +779,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .uep-pad-st{display:inline-block;min-width:82px;text-align:center;font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--txt2)}
 #sec-uep .uep-pad-st.ok{color:var(--ok);border-color:var(--ok)} #sec-uep .uep-pad-st.warn{color:var(--warn);border-color:var(--warn)} #sec-uep .uep-pad-st.red{color:var(--red);border-color:var(--red)}
 #sec-uep .uep-pad-alt{font-family:var(--font-d);font-size:9.5px;letter-spacing:1px;color:var(--acc);border:1px solid var(--acc);border-radius:3px;padding:0 5px;margin-left:4px;white-space:nowrap;display:inline-block}
+#sec-uep .uep-pad-jul{display:block;font-family:var(--font-d);font-size:9.5px;letter-spacing:.5px;color:var(--acc);white-space:nowrap;line-height:1.3}
 @media (max-width:900px){#sec-uep .uep-2{grid-template-columns:1fr}}
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
@@ -3901,7 +3902,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.205.0';
+const APP_VER   = '7.206.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -5901,9 +5902,25 @@ function _taktUep(uepCx, metaUep){
   return u > 0 && isFinite(u) ? UEP_MIN_DIA * 60 / m * u : null;
 }
 function _taktTxt(seg){ return seg != null && isFinite(seg) ? seg.toFixed(1).replace('.', ',') + ' s' : '—'; }
-function _uepPadHist(itens, metaDe, metaAtual, minSlot){
+// ── A LINHA DO PRODUTO NA RÉGUA DE HOJE (v7.206.0, PPCP 05/11/2026) ────────
+// UEP/CX, CX/H PADRÃO e TAKT da linha do produto saíam do ÚLTIMO dia em que ele
+// rodou, com a meta daquele dia: a MADERO (28/10) lia 314 cx/h na meta de 2.761
+// e o RACK FLIP 1.8 (26/10) 135 na de 2.530 — duas réguas na mesma coluna, e a
+// UEP de antes das trocas de 04/11. Hoje os três são os de HOJE: `uepHoje` é o
+// `uepProd` da mesma leitura (Σ cx × UEP do cadastro de agora ÷ Σ cx do produto
+// no período — a UEP/CX do comparativo por modelo) e a meta é a do ⚙. Sem a
+// UEP no cadastro de hoje, "—", nunca a do último dia (seria a régua velha de
+// volta, calada). O dia a dia continua com a UEP e a meta de CADA dia, e o %
+// também: ele julga o dia com a régua que valia nele.
+//   • `uepJul` = a UEP/cx com que o % foi feito (Σ UEP ÷ Σ cx dos dias julgados),
+//     só quando a UEP mudou: a de hoje × a que valeu no período, nas MESMAS
+//     caixas (toda caixa com UEP, todos os dias — a base do `uepProd`), a
+//     `UEP_PAD_MUDOU` ou mais. Comparar com a dos dias julgados acusaria troca à
+//     toa no produto de dois volumes (outro mix de volumes, a mesma UEP).
+const UEP_PAD_MUDOU=0.01;
+function _uepPadHist(itens, metaDe, metaAtual, minSlot, uepHoje){
   const mAt=Number(metaAtual)>0?Number(metaAtual):UEP_META_PADRAO;
-  const D={}, NOME={};
+  const D={}, NOME={}, VG={};
   let cxSemHora=0;
   (itens||[]).forEach(it=>{
     const k=(it.modelo||'')+'|'+(it.nome||'');
@@ -5919,6 +5936,7 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
       const sem=Number(sH[h])||0, cx=Math.max(0,(Number(cxH[h])||0)-sem), u=Number(uH[h])||0;
       const q=H.p[k]=H.p[k]||{cx:0, uep:0};
       q.cx+=cx; q.uep+=u; H.sem+=sem;
+      if(u>0){ const v=VG[k]=VG[k]||{cx:0, uep:0}; v.cx+=cx; v.uep+=u; }
     });
   });
   const P={};
@@ -5943,7 +5961,7 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
       const x=acc[k], pad=R*x.min;
       const julg=x.min>=UEP_PAD_MIN_MIN-1e-6 && pad>0;
       const pct=pad>0?x.uep/pad*100:null;
-      const g=P[k]=P[k]||{key:k, modelo:NOME[k].modelo, nome:NOME[k].nome, dias:[], cx:0, uep:0, pad:0, nJulg:0, abaixo:0, no:0, acima:0, alterou:false, antes:false};
+      const g=P[k]=P[k]||{key:k, modelo:NOME[k].modelo, nome:NOME[k].nome, dias:[], cx:0, cxJ:0, uep:0, pad:0, nJulg:0, abaixo:0, no:0, acima:0, alterou:false, antes:false};
       const prev=g.dias.length?g.dias[g.dias.length-1]:null;
       const alterado=!!(prev && prev.vig!==d.vig[k]);
       const st=julg?_uepPadSt(pct):'curto';
@@ -5953,15 +5971,21 @@ function _uepPadHist(itens, metaDe, metaAtual, minSlot){
                     takt:x.cx>0?_taktUep(x.uep/x.cx, meta):null,      // o que a meta pede por caixa
                     segCx:x.cx>0&&x.min>0?x.min*60/x.cx:null });      // o que a linha levou por caixa
       g.cx+=x.cx;
-      if(julg){ g.nJulg++; g[st]++; g.uep+=x.uep; g.pad+=pad; }
+      if(julg){ g.nJulg++; g[st]++; g.uep+=x.uep; g.pad+=pad; g.cxJ+=x.cx; }
       if(alterado) g.alterou=true;
       if(d.antes[k]) g.antes=true;
     });
   });
+  const ritH=mAt/UEP_MIN_DIA*60;                     // UEP por hora no ritmo da meta de HOJE
   const prods=Object.values(P).map(g=>{
     const u=g.dias[g.dias.length-1];
     const pct=g.pad>0?g.uep/g.pad*100:null;
-    return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u, uepCx:u.uepCx, cxhPad:u.cxhPad, takt:u.takt });
+    const uH=uepHoje&&Number(uepHoje[g.key])>0?Number(uepHoje[g.key]):null;
+    const v=VG[g.key], uPer=v&&v.cx>0?v.uep/v.cx:null, uJul=g.cxJ>0?g.uep/g.cxJ:null;
+    const mudou=uH!=null && uPer!=null && uJul!=null && Math.abs(uH/uPer-1)>=UEP_PAD_MUDOU
+      && Math.round(uH*100)!==Math.round(uJul*100);
+    return Object.assign(g, { pct, st:pct!=null?_uepPadSt(pct):'curto', ultimo:u,
+      uepCx:uH, cxhPad:uH!=null?ritH/uH:null, takt:_taktUep(uH, mAt), uepJul:mudou?uJul:null });
   }).sort((a,b)=>b.cx-a.cx);
   const julgados=prods.filter(g=>g.nJulg>0);
   // Totais de produto × dia julgado (a capa da impressão): a soma das colunas.
@@ -6002,7 +6026,7 @@ function _uepPadCarregar(forcar){
         if(r && r.ok && Array.isArray(r.itens)){
           // .gs anterior à v5.24: responde o período, mas sem a UEP da data
           if(!r.uepVer){ falha='sem-endpoint'; break; }
-          UEP_PAD={ itens:r.itens, uepVer:r.uepVer, de:J.de, ate:J.ate, n }; falha=null; break;
+          UEP_PAD={ itens:r.itens, uepVer:r.uepVer, uepProd:r.uepProd&&typeof r.uepProd==='object'?r.uepProd:null, de:J.de, ate:J.ate, n }; falha=null; break;
         }
         if(r && r.ok===false){ falha='erro'; erro=String(r.erro||''); break; }
         falha='sem-endpoint'; break;
@@ -6019,8 +6043,12 @@ function _uepPadCarregar(forcar){
 function _uepPadMontar(){
   if(!UEP_PAD) return null;
   const metaDe={};
-  (UEP_HIST||[]).forEach(d=>{ if(d&&d.data&&Number(d.metaUep)>0) metaDe[d.data]=Number(d.metaUep); });
-  return _uepPadHist(UEP_PAD.itens, metaDe, PONTOS_DIA.metaUep, _uepPadMinSlot(getSlots()));
+  let metaUlt=0, numUlt=0;
+  (UEP_HIST||[]).forEach(d=>{ if(d&&d.data&&Number(d.metaUep)>0){ metaDe[d.data]=Number(d.metaUep); const n=_cartNum(d.data); if(n>numUlt){ numUlt=n; metaUlt=Number(d.metaUep); } } });
+  // A meta de HOJE é a do ⚙ (a do card UEP DO DIA); sem a leitura do dia, a
+  // última gravada no HISTORICO — nunca o padrão do código calado.
+  const metaHoje=Number(PONTOS_DIA.metaUep)>0?Number(PONTOS_DIA.metaUep):(metaUlt||null);
+  return _uepPadHist(UEP_PAD.itens, metaDe, metaHoje, _uepPadMinSlot(getSlots()), UEP_PAD.uepProd);
 }
 // Desenho, sem conta: tudo vem pronto do _uepPadHist.
 // ── O DESENHO DA TABELA É UM SÓ, NA TELA E NO PAPEL (v7.134.0) ─────────────
@@ -6038,14 +6066,14 @@ function _uepPadMontar(){
 //     a moldura e a pele (.pad-doc), nunca as células.
 // v7.141.0: + TAKT s/CX depois do CX/H PADRÃO (12 colunas); no dia a dia, o
 // TAKT do dia embaixo do do produto e o s/CX REAL ao lado dele.
-const UEP_PAD_COLS=[6,19,6,7,6,5,6,7,6,8,9,15];   // MOD · PRODUTO · UEP/CX · CX/H PAD · TAKT · DIAS · ABAIXO · NO · ACIMA · % · SELO · DIA
+const UEP_PAD_COLS=[6,18,7,7,6,5,6,7,6,8,9,15];   // MOD · PRODUTO · UEP/CX · CX/H PAD · TAKT · DIAS · ABAIXO · NO · ACIMA · % · SELO · DIA
 function _uepPadColgroup(){ return '<colgroup>'+UEP_PAD_COLS.map(w=>`<col style="width:${w}%">`).join('')+'</colgroup>'; }
 function _uepPadU2(v){ return v!=null&&isFinite(v)?v.toFixed(2).replace('.',','):'—'; }
 function _uepPadNn(v){ return v!=null&&isFinite(v)?fmtN(Math.round(v)):'—'; }
 function _uepPadPctTd(pct, st){ return `<td class="n"><b class="uep-pad-${UEP_PAD_ST[st]?UEP_PAD_ST[st].c:''}">${pct!=null?fmtP(pct):'—'}</b></td>`; }
 function _uepPadSelo(st){ return `<span class="uep-pad-st ${UEP_PAD_ST[st].c}">${UEP_PAD_ST[st].t}</span>`; }
 function _uepPadThead(){
-  return `<thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa padrão do último dia (média dos códigos e volumes que rodaram)">UEP/CX</th><th class="n" title="Caixas por hora que o ritmo da meta pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP por caixa">CX/H PADRÃO</th><th class="n" title="Segundos por caixa que a meta pede deste produto: ${UEP_MIN_DIA} min × 60 ÷ meta UEP × UEP por caixa (= 3.600 ÷ CX/H PADRÃO)">TAKT s/CX</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th colspan="2">ÚLTIMO DIA</th></tr></thead>`;
+  return `<thead><tr><th>MOD.</th><th>PRODUTO</th><th class="n" title="UEP por caixa do cadastro de HOJE (média dos códigos e volumes pelas caixas do período). Quando a UEP mudou, embaixo vem a UEP com que o % foi feito">UEP/CX</th><th class="n" title="Caixas por hora que a meta de HOJE pede deste produto: (meta UEP ÷ ${UEP_MIN_DIA} min × 60) ÷ UEP/CX de hoje — a mesma régua em todas as linhas">CX/H PADRÃO</th><th class="n" title="Segundos por caixa que a meta de HOJE pede deste produto: ${UEP_MIN_DIA} min × 60 ÷ meta UEP × UEP/CX de hoje (= 3.600 ÷ CX/H PADRÃO)">TAKT s/CX</th><th class="n" title="Dias com ${UEP_PAD_MIN_MIN/60} h ou mais do produto">DIAS</th><th class="n">ABAIXO</th><th class="n">NO PADRÃO</th><th class="n">ACIMA</th><th class="n" title="UEP feita ÷ UEP que o ritmo da meta pede nas mesmas horas, nos dias julgados">% DO PADRÃO</th><th colspan="2">ÚLTIMO DIA</th></tr></thead>`;
 }
 // As 12 células da linha do produto.
 // O PADRÃO ALTERADO mora na ÚLTIMA coluna, depois da data (v7.198.0, PPCP:
@@ -6055,7 +6083,8 @@ function _uepPadThead(){
 // aberto já mostra o dia da troca.
 function _uepPadCelsProd(g){
   return `<td class="mono">${_rpEsc(g.modelo)}</td><td>${_rpEsc(g.nome||'—')}</td>`
-    +`<td class="n">${_uepPadU2(g.uepCx)}</td><td class="n">${_uepPadNn(g.cxhPad)}</td><td class="n">${_taktTxt(g.takt)}</td><td class="n">${g.nJulg}</td>`
+    +`<td class="n"${g.uepCx==null?' title="Sem UEP no cadastro de hoje"':''}>${_uepPadU2(g.uepCx)}${g.uepJul!=null?`<small class="uep-pad-jul" title="A UEP mudou: o % DO PADRÃO foi feito com a UEP de cada dia, em média ${_uepPadU2(g.uepJul)} por caixa — abra o dia a dia">% com ${_uepPadU2(g.uepJul)}</small>`:''}</td>`
+    +`<td class="n">${_uepPadNn(g.cxhPad)}</td><td class="n">${_taktTxt(g.takt)}</td><td class="n">${g.nJulg}</td>`
     +`<td class="n">${g.abaixo||'—'}</td><td class="n">${g.no||'—'}</td><td class="n">${g.acima||'—'}</td>${_uepPadPctTd(g.pct,g.st)}`
     +`<td>${_uepPadSelo(g.ultimo.julg?g.ultimo.st:'curto')}</td><td class="mono">${_rpEsc(String(g.ultimo.data).slice(0,5))}${g.alterou?' <span class="uep-pad-alt" title="A UEP padrão de algum código do produto mudou no período — no dia a dia, o dia da troca leva a mesma marca">PADRÃO ALTERADO</span>':''}</td>`;
 }
@@ -6077,7 +6106,7 @@ function _uepPadNotas(H, V){
   if(H.hSemBase) extra.push(`${plural(H.hSemBase,'hora ficou fora','horas ficaram fora')} por ter caixa de código sem UEP`);
   if(H.cxSemHora) extra.push(`${fmtN(H.cxSemHora)} cx sem hora no apontamento — fora`);
   if(H.prods.some(g=>g.antes)) extra.push('dia anterior à 1ª UEP registrada de um código usa a 1ª');
-  return { regra:`Padrão = ritmo da meta (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h) com a UEP vigente em cada dia · faixa ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · hora com troca repartida pelo tempo padrão${extra.length?' · '+extra.join(' · '):''}`,
+  return { regra:`UEP/CX, CX/H PADRÃO e TAKT do produto: cadastro e meta de hoje (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h) · o % e o dia a dia: a UEP e a meta de cada dia · faixa ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% · hora com troca repartida pelo tempo padrão${extra.length?' · '+extra.join(' · '):''}`,
            reg: V&&V.registrado===false ? 'Nenhuma mudança de UEP registrada ainda: a padrão de todos os dias é o cadastro de hoje.' : '',
            div: V&&V.diverge>0 ? `⚠ ${plural(V.diverge,'código está','códigos estão')} com a UEP do cadastro diferente da última versão da aba UEP_VERSOES — mudou sem registro. Confira na planilha.` : '' };
 }
@@ -6113,6 +6142,7 @@ const _UEP_PAD_DOC_SKIN = `
 .pad-doc .uep-pad-st.warn{color:#b7791f;border-color:#b7791f}
 .pad-doc .uep-pad-st.red{color:#c53030;border-color:#c53030}
 .pad-doc .uep-pad-alt{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1px;color:#c05621;border:1px solid #c05621;border-radius:3px;padding:0 4px;white-space:nowrap}
+.pad-doc .uep-pad-jul{display:block;font-family:'IBM Plex Mono',monospace;font-size:7.5px;color:#c05621;white-space:nowrap}
 .pad-doc tr.uep-pad-g td{font-weight:700;background:#f1f5f9;border-top:1.5px solid #cbd5e0}
 .pad-doc tr.uep-pad-dh td{font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:1px;color:#718096;padding-top:3px;padding-bottom:3px}
 .pad-doc tr.uep-pad-d td{font-size:10.5px}
@@ -6137,7 +6167,8 @@ function _uepPadDocHtml(H, V, ctx){
     +`<table>${_uepPadColgroup()}${_uepPadThead()}<tbody>${diaADia}</tbody></table>`
     +`<div class="rp-sec-ttl">3 ▸ COMO O NÚMERO SAI</div>`
     +`<table><tbody>`
-    +`<tr><td style="font-weight:700;width:24%">O PADRÃO</td><td>O ritmo da meta: META UEP do dia ÷ ${UEP_MIN_DIA} min de jornada (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h). Em caixas, esse ritmo ÷ a UEP por caixa do produto — o CX/H PADRÃO. A META é a gravada no HISTÓRICO daquele dia.</td></tr>`
+    +`<tr><td style="font-weight:700;width:24%">O PADRÃO</td><td>O ritmo da meta: META UEP do dia ÷ ${UEP_MIN_DIA} min de jornada. Em caixas, esse ritmo ÷ a UEP por caixa do produto — o CX/H PADRÃO. No dia a dia e no %, a META é a gravada no HISTÓRICO daquele dia.</td></tr>`
+    +`<tr><td style="font-weight:700">A LINHA DO PRODUTO</td><td>UEP/CX, CX/H PADRÃO e TAKT na régua de HOJE, iguais para todos: a UEP do cadastro de agora (média pelas caixas do período) e a meta de ${fmtN(H.metaAtual)} (~${fmtN(Math.round(H.ritmoMetaH))} UEP/h). Quando a UEP mudou, "% com X" diz a UEP com que o % foi feito.</td></tr>`
     +`<tr><td style="font-weight:700">TAKT s/CX</td><td>O padrão em segundos por caixa: ${UEP_MIN_DIA} min × 60 ÷ META UEP × UEP por caixa (= 3.600 ÷ CX/H PADRÃO) — com a meta de ${fmtN(H.metaAtual)}, ${_taktTxt(_taktUep(1, H.metaAtual))} por UEP. No dia a dia, ao lado vem o s/CX REAL: minutos do produto no dia × 60 ÷ caixas, com a hora de troca repartida. Real acima do takt = mais lento que a meta pede. Não é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, um número para qualquer caixa).</td></tr>`
     +`<tr><td style="font-weight:700">A UEP DE CADA DIA</td><td>A UEP padrão que VALIA no dia (aba UEP_VERSOES): mudar o cadastro depois não muda o dia. Antes da 1ª mudança registrada, a padrão é o cadastro de hoje.</td></tr>`
     +`<tr><td style="font-weight:700">% DO PADRÃO</td><td>UEP feita pelo produto ÷ UEP que o ritmo da meta pede nas mesmas horas. No período, Σ UEP feita ÷ Σ UEP pedida nos dias julgados — não é média de percentuais.</td></tr>`
