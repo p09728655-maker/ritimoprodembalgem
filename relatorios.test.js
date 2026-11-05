@@ -3916,9 +3916,10 @@ ok('a tarja da CARGA não pode subir até a do MELHOR DIA',
 // uma relação só: dados o real e a meta, o % e a diferença são aritmética.
 ok('o card GAP DA META não existe mais nos dois grids',
    (JS.match(/\{l:'GAP DA META'/g) || []).length, 0);
-// Dois grids (ao vivo e dia passado) × dois ramos do ternário (atingida / faltam).
+// Desde a v7.202.0 o subtítulo dos dois grids (ao vivo e dia passado) sai do
+// _metaPartesTxt — um texto só, com o "faltam/faltaram" e o ATINGIDA dentro.
 ok('e o que faltava virou o subtítulo da própria meta',
-   (JS.match(/caixas programadas · /g) || []).length, 4);
+   [(JS.match(/caixas programadas · /g) || []).length, /'ATINGIDA ✓':\(passado\?'faltaram ':'faltam '\)/.test(pega('function _metaPartesTxt('))], [1, true]);
 
 // ── UM VEREDITO SÓ para "vamos bater hoje?" ────────────────────────────────
 // A PROJEÇÃO FINAL e o selo do % DA META DO DIA respondiam a MESMA pergunta por
@@ -5564,6 +5565,41 @@ console.log('\n── estudo de UEP ──');
      /if\(PERFIL==='gerencial' \|\| document\.documentElement\.classList\.contains\('modo-dir'\)\) return;/.test(corpo)
        && corpo.indexOf("PERFIL==='gerencial'") < corpo.indexOf('getSlotPendente()'), true);
 }
+// ── v7.202.0 / .gs v5.55 (opção A): META DO DIA = META DIA + ATRASO META ──
+{ global.fmtN = global.fmtN || (n => Number(n).toLocaleString('pt-BR'));
+  eval(pega('function _metaPartes(')); eval(pega('function _metaPartesTxt(')); eval(pega('function _histTemMetaComp('));
+  global._metaPartes = _metaPartes; global._metaPartesTxt = _metaPartesTxt; global._histTemMetaComp = _histTemMetaComp;
+  ok('META do painel com atraso: META DIA da aba e o ATRASO é a diferença',
+     _metaPartes(2150, 1550), { meta: 2150, metaDia: 1550, atraso: 600 });
+  ok('painel abaixo da aba (meta ajustada): atraso 0, nunca negativo', _metaPartes(1100, 1157).atraso, 0);
+  ok('painel sem meta: fica a da aba, atraso 0', _metaPartes(0, 1157), { meta: 1157, metaDia: 1157, atraso: 0 });
+  ok('sem META DIA (aba sem meta por hora, DEMO): null nas duas, nunca 0',
+     [_metaPartes(1500, null), _metaPartes(1500, 0)], [{ meta: 1500, metaDia: null, atraso: null }, { meta: 1500, metaDia: null, atraso: null }]);
+  ok('o card diz do que a meta é feita só quando há atraso',
+     [_metaPartesTxt(_metaPartes(2150, 1550), 1000, false), _metaPartesTxt(_metaPartes(1550, 1550), 1000, false),
+      _metaPartesTxt(null, 0, true), _metaPartesTxt({ metaDia: 1550, atraso: 600 }, 200, true)],
+     ['1.550 do dia + 600 de atraso · faltam 1.000', 'caixas programadas · faltam 1.000',
+      'caixas programadas · ATINGIDA ✓', '1.550 do dia + 600 de atraso · faltaram 200']);
+  ok('as colunas META DIA e ATRASO META só entram quando a META difere da META DIA em algum dia',
+     [_histTemMetaComp([{ meta: 1550, metaDia: 1550, atrasoMeta: 0 }, { meta: 1500, metaDia: null, atrasoMeta: null }]),
+      _histTemMetaComp([{ meta: 2150, metaDia: 1550, atrasoMeta: 600 }]), _histTemMetaComp([{ meta: 1100, metaDia: 1157, atrasoMeta: 0 }]),
+      _histTemMetaComp([]), _histTemMetaComp(null)], [false, true, true, false, false]);
+  ok('os dois cards META DO DIA (hoje e dia passado) passam pelo _metaPartesTxt',
+     (JS.match(/l:'META DO DIA',\s*v:fmtN\((k\.)?meta\),\s*sub:_metaPartesTxt\(/g) || []).length, 2);
+  ok('o card de hoje lê a META DIA da aba pelo _metaDiaAba (a linha rotulada HE fora, como no .gs)',
+     [/_metaPartes\(k\.meta, _metaDiaAba\(\)\)/.test(JS), /\^HE\\b\|\^HE\\d/.test(pega('function _metaDiaAba('))], [true, true]);
+  ok('o histórico guarda metaDia/atrasoMeta do getHistory (null quando não vem)',
+     [/metaDia: \(d\.metaDia===null\|\|d\.metaDia===undefined\)\?null:Number\(d\.metaDia\)/.test(JS),
+      /atrasoMeta: \(d\.atrasoMeta===null\|\|d\.atrasoMeta===undefined\)\?null:Number\(d\.atrasoMeta\)/.test(JS)], [true, true]);
+  const rh = pega('async function renderHist(');
+  ok('a tabela do HISTÓRICO mostra as duas colunas pela mesma decisão do cabeçalho',
+     [/const temMetaComp=_histTemMetaComp\(dias\)/.test(rh), /\.th-hist-mcomp/.test(rh), /\$\{temMetaComp\?/.test(rh),
+      (src.match(/class="th-hist-mcomp"/g) || []).length], [true, true, true, 2]);
+  ok('o Excel do histórico leva o cabeçalho das colunas visíveis, não uma lista fixa',
+     [/thead th'\)\]\.filter\(th=>th\.style\.display!=='none'\)/.test(pega('function exportarExcel(')),
+      /\['Data','Realizado','Meta'/.test(pega('function exportarExcel('))], [true, false]);
+}
+
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
 // sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
 process.exitCode = 1;

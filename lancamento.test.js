@@ -126,5 +126,51 @@ ok('abrirLancSlotAtivo segue na hora corrente', /nm>=ini && nm<fim\){\s*\/\/ hor
 // E o operador vê até quando a hora recém-fechada aceita.
 ok('a linha diz até quando aceita', /aceita lançamento até \$\{fromMin\(fim\+LANC_TOLERANCIA_MIN\)\}/.test(MJS), true);
 
-console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo passou');
-process.exit(falhas ? 1 : 0);
+// ── lançamento RECUSADO pelo servidor (mobile 1.41.0) ─────────────────────
+// O .gs v5.48 confere a quantidade e o produto ANTES de gravar e a v5.46 não
+// grava com o dia anterior aberto: responde ok:false com o motivo. O celular
+// jogava o motivo fora e dizia "o servidor não respondeu… lance de novo,
+// repetir é seguro" — o operador repetia a mesma recusa sem saber por quê.
+// Roda o salvarLanc REAL contra um servidor de mentira.
+async function _lancCaso(resposta) {
+  const vm = require('vm');
+  const LS = {}, DOM = { 'ml-qtd': { value: '1500' }, 'btn-salvar': { textContent: 'ADICIONAR', disabled: false } };
+  const C = { window: {}, console, alert: m => C.ALERTS.push(String(m)), ALERTS: [], CHAMADAS: [],
+    document: { getElementById: id => DOM[id] || null },
+    localStorage: { getItem: k => (k in LS ? LS[k] : null), setItem: (k, v) => { LS[k] = String(v); } } };
+  vm.createContext(C);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), C);
+  vm.runInContext('var LANC_REPETIDO_MIN = ' + MJS.match(/const LANC_REPETIDO_MIN = (\d+);/)[1] + ', LANC_REC_K = "rp_lanc_rec";'
+    + 'var PROG_HOJE_DIA = "", PROG_HOJE_TS = 0, PROG_HOJE_MAX = 0, COR_OK = { dia: "", cod: {} }, PROG_HOJE = [], PROG_PROX = null, PROG_PROX_QTD = null;'
+    + 'var PROD_ATUAL = "", CFG = { sheetsUrl: "https://x/exec" }, _slotAtivo = { inicio: "10:00", label: "10:00-11:00" };'
+    + 'var FECHOU = 0, LEU = 0; function fecharModalLanc(){ FECHOU++; } async function lerSheets(){ LEU++; }'
+    + 'function confirmarModal(){ return Promise.resolve(true); } function _nomeProdLanc(){ return ""; }'
+    + 'function avisoCorErrada(){ return null; } function abrirModalProduto(){}', C);
+  ['function _lancRecentes(', 'function _lancGuardar(', 'function _lancEsquecer(', 'function lancRepetido(',
+   'function lancRecusadoTxt(', 'async function salvarLanc('].forEach(f => vm.runInContext(pega(MJS, f), C));
+  C.jsonpFetch = async url => { C.CHAMADAS.push(url); return resposta(); };
+  await vm.runInContext('salvarLanc()', C);
+  const recs = vm.runInContext('_lancRecentes()', C);
+  return { alerts: C.ALERTS, chamadas: C.CHAMADAS.length, fechou: vm.runInContext('FECHOU', C), btn: DOM['btn-salvar'],
+    guardado: recs.some(x => x.ini === '10:00' && x.cx === 1500) };
+}
+const _lancAsync = (async () => {
+  const MOTIVO = 'Quantidade acima do limite de 1000 cx por lançamento. Nada foi gravado.';
+  const r = await _lancCaso(() => ({ ok: false, erro: MOTIVO }));
+  ok('recusa: uma chamada só (não retenta), o motivo do servidor na tela, nunca "não respondeu"',
+     [r.chamadas, r.alerts.length, r.alerts[0].includes(MOTIVO), r.alerts[0].includes('RECUSOU'), /não respondeu|repetir é seguro/.test(r.alerts[0])],
+     [1, 1, true, true, false]);
+  ok('recusa: o modal fica aberto com a quantidade e o botão volta a ADICIONAR', [r.fechou, r.btn.textContent, r.btn.disabled], [0, 'ADICIONAR', false]);
+  ok('recusa: o envio sai do registro — lançar de novo não vira "LANÇAMENTO REPETIDO?"', r.guardado, false);
+  const s = await _lancCaso(() => ({ ok: true }));
+  ok('gravou: fecha o modal, sem aviso, e o envio fica registrado (o aviso de repetido continua valendo)',
+     [s.chamadas, s.alerts.length, s.fechou, s.guardado], [1, 0, 1, true]);
+  const t = await _lancCaso(() => { throw new Error('Timeout'); });
+  ok('sem resposta: retenta, diz que pode não ter gravado e mantém o registro (timeout ≠ não gravou)',
+     [t.chamadas, /não respondeu/.test(t.alerts[0] || ''), t.guardado], [4, true, true]);
+})();
+
+_lancAsync.then(() => {
+  console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo passou');
+  process.exit(falhas ? 1 : 0);
+}).catch(e => { console.error(e); process.exit(1); });

@@ -25,7 +25,8 @@ via Google Apps Script (JSONP).
   que conta leituras, **e o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
   função real): `node apps-script.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
-  tolerância da recém-fechada), contra o código real: `node lancamento.test.js`.
+  tolerância da recém-fechada), contra o código real, e o lançamento RECUSADO
+  pelo servidor (mobile 1.41.0, o `salvarLanc` real): `node lancamento.test.js`.
 - `exclusao.test.js` — EXCLUIR e TROCAR PRODUTO do lançamento:
   `getLancamentosHora`, `excluirLancamento` e `trocarProdutoLancamento`
   rodando o `.gs` inteiro numa planilha de mentira (as três abas, o
@@ -70,7 +71,9 @@ via Google Apps Script (JSONP).
 - `fechamento.test.js` — FECHAR DIA (`.gs` v5.29): o `saveDay` grava a produção
   da HORA_A_HORA (carimbo `dataDados` do dia) e não o retrato do painel; o caso
   real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
-  `arquivarDiaAtual`, rodando o `.gs` inteiro: `node fechamento.test.js`.
+  `arquivarDiaAtual`, rodando o `.gs` inteiro; e a opção A (`.gs` v5.55): a
+  META do painel com META DIA e ATRASO META nas colunas 15–16, e a paridade do
+  `_metaPartes` do painel com o `saveDay`: `node fechamento.test.js`.
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
@@ -169,6 +172,11 @@ via Google Apps Script (JSONP).
   HE: **FECHAR DIA de novo** (o `saveDay` é upsert por data e, desde o `.gs`
   v5.29, relê a produção da planilha). O que entrou ANTES do fechamento já vai
   na linha — ver *O que é gravado no HISTORICO*.
+  - **Desde o `.gs` v5.49 o lançamento depois do fechamento ATUALIZA a linha
+    do dia** (`_atualizarHistoricoPosLancamento`, sob o lock do
+    `saveRealizado`): REALIZADO, EF, MELHOR/PIOR, HE, MEDIA, HE CX e UEP pela
+    `HORA_A_HORA`. META, FECHADO e FECHADO EM ficam; nunca reduz o gravado (HE
+    só no navegador não some). O FECHAR DIA de novo deixou de ser necessário.
 - Nada no `.gs`: a regra é só de tela (o `saveRealizado` sempre aceitou
   qualquer slot existente da `HORA_A_HORA`).
 - **MADRUGADA (mobile 1.38.0, 27/10/2026)** — PPCP: *"dar entrada quando o
@@ -3190,7 +3198,8 @@ com nada. Ele não é a cláusula folgada: é a única que funciona.
   nunca abriu a planilha — faria as **dez** colunas pararem de ser somadas.
 - E o estrago seria **CALADO**: sem coluna de lote, o `_saveRealizadoCore` cai
   no ramo `iLotes.length === 0`, que grava na coluna REALIZADO **apenas**
-  `if (!cell.getFormula())` e devolve **`{ok:true}` de qualquer jeito**. E
+  `if (!cell.getFormula())` e ~~devolve **`{ok:true}` de qualquer jeito**~~
+  (desde o `.gs` v5.47 responde **erro** — o lançamento continua sem gravar). E
   **REALIZADO É FÓRMULA** — conferido na planilha em 15/09/2026: `C5:C15` é uma
   `=SUM(D5:M5)` compartilhada. Ou seja, o operador salva, o app diz que salvou
   e **nada é gravado**. Não é risco teórico: é o que aconteceria no 1º
@@ -3477,8 +3486,8 @@ feito e dá ar de verdade ao que sobrou.
     hora sem produção). A coluna REALIZADO é fórmula e dá 0 tanto para "fechou
     em zero" quanto para "ainda não chegou"; separar os dois exigiria comparar
     o rótulo de cada hora com o relógio, e a regra das 23:59 nunca fez isso.
-  - Lançamento DEPOIS do fechamento das 17:05 continua fora (ver *Lançamento na
-    hora RECÉM-FECHADA*). Fechar às 17:15 resolveria; não foi pedido.
+  - ~~Lançamento DEPOIS do fechamento das 17:05 continua fora~~ — desde o `.gs`
+    v5.49 ele atualiza a linha do dia (ver *Lançamento na hora RECÉM-FECHADA*).
 - ⚠ **Dia já gravado não se conserta sozinho**: a linha antiga continua com o
   par velho. Corrigir é editar a planilha (ou reabrir e FECHAR DIA de novo, que
   o `saveDay` é upsert por data — vale só para HOJE, com a `HORA_A_HORA` ainda
@@ -3489,6 +3498,91 @@ feito e dá ar de verdade ao que sobrou.
   a Tela D calculam `real/meta`. Enquanto a gravação estiver certa elas
   concordam. Unificar (fazer o painel sempre recalcular na leitura) mudaria o
   número dos dias antigos já gravados — decisão do usuário, ainda não tomada.
+
+## META DO DIA = META DIA + ATRASO META — opção A (v7.202.0 / `.gs` v5.55)
+- PPCP, 05/11/2026, na conversa do Apps Script (fora deste repositório): a
+  v5.48 tinha passado a gravar no `HISTORICO` a META da `HORA_A_HORA` nos dois
+  fechamentos, e o % do histórico deixou de bater com o % da tela. **Opção A**:
+  o FECHAR DIA volta a gravar a **META do painel** (a do card META DO DIA, a do
+  % na tela) e, ao lado, do que ela é feita:
+  - coluna **15 META DIA** = soma das metas por hora da `HORA_A_HORA` (jornada:
+    a hora antes do C3 e a linha rotulada `HE ` ficam fora — o
+    `_resumoHoraAHora`);
+  - coluna **16 ATRASO META** = META − META DIA, **nunca negativo**.
+  - Painel sem meta → META = a da aba, atraso 0. Aba sem meta por hora (ou linha
+    que sai do painel: carimbo de outro dia, HE só no navegador) → as duas
+    colunas **vazias**, nunca 0. O fechamento das 23:59 não sabe a meta do
+    painel: grava META = META DIA = aba e ATRASO 0.
+  - `getHistory`/`getHoraDia` devolvem `metaDia`/`atrasoMeta` (`null` = vazia).
+    O v5.49 (lançamento depois do fechamento) não toca nas três.
+- **Painel (v7.202.0)**: `_metaPartes(metaPainel, metaDia)` é a conta (a MESMA do
+  `saveDay`; o `fechamento.test.js` roda as duas em 7 casos), `_metaDiaAba()` a
+  META DIA de hoje (slots do `getDados`, sem a linha `HE ` nem a HE do modal) e
+  `_metaPartesTxt` o texto único dos dois cards META DO DIA (hoje e dia
+  passado): com atraso, *"1.550 do dia + 600 de atraso · faltam X"*; sem,
+  *"caixas programadas · faltam X"* como antes. HISTÓRICO: colunas **META DIA**
+  e **ATRASO META** depois da META, só quando algum dia do período tem a META
+  diferente da META DIA (`_histTemMetaComp`; regra da H. EXTRA). Dia fechado
+  antes da v5.55 sai "—".
+  - O Excel do HISTÓRICO tira o cabeçalho das colunas visíveis: a lista fixa de
+    7 títulos estava desalinhada desde a H. NORMAL / H. EXTRA.
+- ⚠ **A META gravada depende do COMPUTADOR que fechou o dia.** O SOMAR ATRASO
+  (`CFG.metaComAtraso`) e a meta digitada à mão (`metaDiaManual`) moram no
+  `localStorage` de cada navegador — não estão na `CONFIG_PAINEL`. E às 17:05
+  **todo** painel do PC aberto (TV, gerencial) roda o `fecharDiaAutomatico`
+  com a sua config; o `saveDay` é upsert, a ÚLTIMA gravação vence. TV com o
+  SOMAR ATRASO desligado e gerencial ligado = META do histórico decidida por
+  corrida. A v5.48 (meta da aba) era determinística. **Não corrigido**: o
+  caminho é o SOMAR ATRASO ir para a `CONFIG_PAINEL` (como o META_UEP) —
+  decisão do PPCP, `.gs` + re-deploy.
+- ⚠ O celular nunca soma o atraso (`aplicarMetaDiaAutomatica` do mobile = só o
+  `programadoHoje`): com o SOMAR ATRASO ligado no PC, o card META DO DIA do
+  celular e o do PC mostram números diferentes. Não mexido.
+- ⚠ **"META DIA" (coluna) e "META DO DIA" (card) são nomes quase iguais para
+  números diferentes** quando há atraso. O nome da coluna veio do `.gs`; o card
+  diz "do dia" e "de atraso" por extenso. Trocar o título da coluna é decisão do
+  PPCP (UM NOME POR INDICADOR).
+- Dias fechados com a v5.48–v5.54 publicada ficaram com a META da aba (e a EF
+  por ela); não foram regravados.
+
+## `.gs` v5.46 a v5.54 — o que mudou de regra (05/11/2026)
+- Feitos na conversa do Apps Script e subidos à `main` pelo upload de 05/11
+  (`9949a4e`, sem PR). O cabeçalho do `.gs` tem o registro de cada versão; os
+  testes que acompanham são do `5c9ad62` (`apps-script`, `produto-cor`).
+- **v5.46** — arquivar que falha **não zera** a `HORA_A_HORA`; o `resetDiario`
+  usa o dia do CARIMBO (o gatilho pode cair depois da meia-noite); resets sob o
+  lock dos lançamentos; o **1º lançamento do dia fecha o dia anterior** que
+  ficou aberto antes de gravar (falhou → não grava e diz *"avise o PPCP"*).
+- **v5.47** — `dd/MM` sem ano vai ao ano mais próximo (`_anoProvavel`); número
+  pt-BR em texto pelo `_numBR` (pontos, peso, medida, velocidade, QTDE); FORA
+  pela regra do `_marcado`; sem coluna de lote com REALIZADO em fórmula, o
+  lançamento responde **erro**.
+- **v5.48** — lançamento **validado antes de gravar** (`_validarLancamento`:
+  inteiro ≥ 0, até `LANC_MAX_CX`=1000, código no cadastro ou na programação —
+  e o código gravado passa a ser o do cadastro); log que falha
+  **desfaz a célula** (a retentativa não soma de novo); parada encerrada pelo
+  fechamento (`encerrada automaticamente` na OBS) vale **FIM = INÍCIO** nas
+  leituras — não infla as perdas (para contar, corrigir o FIM e tirar a marca).
+  A META única pela aba foi **revogada pela v5.55**.
+  - **Recusa no celular (mobile 1.41.0)**: `ok:false` do `saveRealizado` vira
+    erro com `recusado=true` — **não retenta** (só timeout/rede retenta) e o
+    `salvarLanc` mostra o motivo do servidor (`lancRecusadoTxt`), deixa o modal
+    aberto e tira o envio do registro do aviso de repetido (`_lancEsquecer`).
+    Antes caía no *"não respondeu… repetir é seguro"*. O `lancId` só fica no
+    cache do `.gs` com resultado ok: repetir depois de corrigir é avaliado de
+    novo. `lancamento.test.js` roda o `salvarLanc` real (recusa, ok, timeout).
+- **v5.49** — lançamento depois do fechamento atualiza a linha do dia (ver
+  *Lançamento na hora RECÉM-FECHADA*).
+- **v5.50** — `zerarPainelAgora` recusa dados de hoje; `testeFecharAgora` só
+  roda em planilha "Cópia de …".
+- **v5.51** — tempo por ação no `CacheService`; **`relatorioTempos()`** no
+  editor mostra chamadas, média, máximo e cache do dia.
+- **v5.52** — invalidação do cache **por grupo** (`putAll`; gravação só derruba
+  o que muda) e a programação calculada compartilhada 60 s entre as leituras.
+- **v5.53** — o fuso da planilha é lido uma vez por execução.
+- **v5.54** — `saveParadas`, `endParada` e `addHE` sob o lock dos lançamentos
+  (`_comLock`); `saveParadas` informa as paradas ignoradas; o arquivamento
+  reconfere código, lote e data antes de copiar e de apagar.
 
 ## Splash de abertura (`#splash`)
 - **~1s de marca + batida + slogan ao abrir**, no celular e no PC. A tarefa do

@@ -11,6 +11,83 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.41.0 — 05/11/2026 · lançamento recusado mostra o motivo
+
+- Desde o `.gs` v5.48 o servidor **recusa** o lançamento com quantidade
+  inválida, acima de 1.000 cx ou com código fora do cadastro e da programação
+  (e, desde a v5.46, com o dia anterior aberto) — e diz por quê. O celular
+  jogava o motivo fora e mostrava *"O servidor não respondeu… lance de novo —
+  repetir é seguro"*: o operador repetia a mesma recusa sem saber o motivo.
+- Agora: **"O SERVIDOR RECUSOU O LANÇAMENTO — nada foi gravado"** com o motivo
+  do servidor; o modal fica aberto com a quantidade para corrigir, e a
+  tentativa recusada não vira "LANÇAMENTO REPETIDO?" na próxima.
+- Sem resposta (timeout) continua como era: retenta e avisa que pode ter
+  gravado.
+
+## v7.202.0 + `.gs` v5.55 — 05/11/2026 · META DO DIA = META DIA + ATRASO META (opção A) ⚠ **re-deploy**
+
+- Decisão do PPCP (opção A): o **FECHAR DIA volta a gravar a META do painel**
+  — a mesma do card META DO DIA e do % na tela. Na v5.48 ele tinha passado a
+  gravar a meta da `HORA_A_HORA`, e o % do histórico deixava de bater com o da
+  tela nos dias com atraso somado.
+- O `HISTORICO` ganhou duas colunas: **META DIA** (15ª — soma das metas por
+  hora da `HORA_A_HORA`, o programado do dia) e **ATRASO META** (16ª — o que a
+  META somou além dela, nunca negativo). O fechamento das 23:59 grava META =
+  META DIA e atraso 0.
+- **Card META DO DIA** (gerencial, hoje e dia passado): com atraso na meta, a
+  linha de apoio diz do que ela é feita — *"1.550 do dia + 600 de atraso ·
+  faltam 1.470"*. Sem atraso, continua *"caixas programadas · faltam …"*.
+- **HISTÓRICO**: colunas **META DIA** e **ATRASO META** depois da META, só
+  quando algum dia do período tem atraso na meta (mesma regra da H. EXTRA). Dia
+  fechado antes da v5.55 sai "—".
+- **Exportar Excel do histórico**: o cabeçalho sai das colunas da tabela.
+- **Atenção**:
+  - a META e a EFICIÊNCIA gravadas voltam a ser as do painel. Os dias fechados
+    com a v5.48–v5.54 publicada ficaram com a meta da aba e não foram
+    regravados;
+  - o arquivo do **Exportar Excel** muda de formato: antes o cabeçalho era uma
+    lista fixa de 7 títulos e, desde a H. NORMAL / H. EXTRA, cada coluna vinha
+    com o título de outra; agora cada coluna tem o próprio título;
+  - **a META gravada depende do computador que fecha o dia**: o SOMAR ATRASO e
+    a meta digitada ficam no navegador de cada PC, e às 17:05 todo painel
+    aberto fecha o dia — vale a última gravação. Até isso ir para a
+    configuração da planilha, deixar o SOMAR ATRASO igual na TV e no
+    gerencial.
+- ⚠ **re-deploy** do Apps Script para as colunas novas; sem ele, o painel
+  mostra o card e a tabela como antes.
+
+## `.gs` v5.46 a v5.54 — 05/11/2026 · fechamento, lançamento, cache e locks ⚠ **re-deploy**
+
+- Subidos juntos no upload de 05/11 (o cabeçalho do `.gs` tem o registro de
+  cada versão):
+  - **v5.46** — arquivamento que falha não zera mais a `HORA_A_HORA`; o reset
+    usa o dia do carimbo; o 1º lançamento do dia fecha o dia anterior que
+    ficou aberto antes de gravar;
+  - **v5.47** — data `dd/MM` sem ano vai ao ano mais próximo; número em texto
+    pt-BR lido como número; lançamento sem coluna de lote responde erro;
+  - **v5.48** — quantidade e produto conferidos antes de gravar (até 1.000 cx
+    por lançamento); se o registro do produto falhar, a hora volta ao valor
+    anterior; parada encerrada pelo fechamento não conta tempo;
+  - **v5.49** — lançamento depois do FECHAR DIA atualiza a linha do dia no
+    histórico (realizado, UEP, hora extra);
+  - **v5.50** — os resets manuais recusam apagar o dia de hoje;
+  - **v5.51** — medição de tempo por ação (`relatorioTempos()` no editor);
+  - **v5.52** — cache invalidado por grupo e programação compartilhada 60 s;
+  - **v5.53** — fuso da planilha lido uma vez por chamada;
+  - **v5.54** — paradas e hora extra sob o mesmo lock dos lançamentos; o
+    arquivamento confere a linha antes de copiar e apagar.
+- **Atenção**:
+  - **lançamento recusado** (v5.48): quantidade inválida, acima de 1.000 cx ou
+    código fora do cadastro e da programação não grava. Até a mobile 1.41.0 o
+    celular mostrava "o servidor não respondeu" no lugar do motivo;
+  - **tempo parado menor** (v5.48): parada que ninguém encerrou e que o
+    fechamento encerrou passa a contar zero minutos, inclusive nas antigas.
+    Para contar, corrigir o FIM e tirar a marca da OBS;
+  - **histórico depois do fechamento** (v5.49): o realizado de um dia já
+    fechado sobe sozinho com um lançamento tardio — nunca desce;
+  - a META gravada pela v5.48–v5.54 é a da aba (revogada pela v5.55).
+- Testes que acompanham: `apps-script.test.js` e `produto-cor.test.js`.
+
 ## `.gs` v5.45 — 04/11/2026 · a linha que volta da CONCLUIDA vem com a data no formato da aba ⚠ **re-deploy**
 
 - PPCP, com a PROGRAMACAO na tela: *"olha a data de novo veio errada"*. A

@@ -3390,7 +3390,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="tbl-hdr"><span class="tbl-hdr-ttl">DETALHAMENTO POR DIA</span></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th><th>EFICIÊNCIA</th><th id="th-hist-uep" style="display:none" title="UEP feita em jornada normal no dia, gravada no fechamento, contra a meta de UEP daquele dia">UEP</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
+        <thead><tr><th>DATA</th><th>REALIZADO</th><th>H. NORMAL</th><th>H. EXTRA</th><th>META</th><th class="th-hist-mcomp" style="display:none" title="Soma das metas por hora da HORA_A_HORA no dia (o programado do dia), gravada no fechamento (.gs v5.55)">META DIA</th><th class="th-hist-mcomp" style="display:none" title="O que a META somou além da META DIA: o atraso da PROGRAMAÇÃO, com SOMAR ATRASO ligado no computador que fechou o dia (ou a diferença de uma meta ajustada à mão)">ATRASO META</th><th>EFICIÊNCIA</th><th id="th-hist-uep" style="display:none" title="UEP feita em jornada normal no dia, gravada no fechamento, contra a meta de UEP daquele dia">UEP</th><th>MELHOR H.</th><th>PIOR H.</th><th>STATUS</th><th>FECHAMENTO</th><th>FONTE</th></tr></thead>
         <tbody id="hist-tbl-body"><tr><td colspan="11" class="empty-msg">Nenhum dado.</td></tr></tbody>
       </table>
     </div>
@@ -3856,7 +3856,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.201.0';
+const APP_VER   = '7.202.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -4897,6 +4897,38 @@ function aplicarMetaDiaAutomatica(){
     CFG.metaDiaManual = false; // limpa um override de dia anterior que já expirou
     saveCfgLocal();
   }
+}
+
+/* ── META DO DIA = META DIA + ATRASO META (.gs v5.55, opção A, 05/11/2026) ──
+   O FECHAR DIA grava a META do painel (a deste card, a do % na tela) e, ao lado,
+   do que ela é feita: META DIA = soma das metas por hora da HORA_A_HORA (a hora
+   antes do C3 e a linha rotulada HE ficam fora) e ATRASO META = o que a META
+   somou além dela, nunca negativo. Com SOMAR ATRASO ligado neste computador, é
+   o atraso da PROGRAMAÇÃO; com a meta digitada à mão, é a diferença do ajuste.
+   É a MESMA conta do saveDay — o fechamento.test.js roda as duas nos mesmos
+   casos. Sem META DIA (aba sem meta por hora, DEMO) → null nas duas, nunca 0. */
+function _metaPartes(metaPainel, metaDia){
+  const m=Number(metaPainel)||0, d=Number(metaDia)||0;
+  if(!(d>0)) return {meta:m, metaDia:null, atraso:null};
+  const meta=m>0?m:d;
+  return {meta, metaDia:d, atraso:Math.max(0, meta-d)};
+}
+// META DIA de HOJE: os slots que vieram da HORA_A_HORA (o getDados já tira a
+// hora antes do C3). A HE do modal deste computador (rpe_he) não está na aba e
+// não entra — o saveDay também não a vê.
+function _metaDiaAba(){
+  if(!isSheets) return null;
+  const hoje=hojeStr();
+  let s=0;
+  DADOS.forEach(d=>{ if(d.data===hoje && !/^HE\b|^HE\d/i.test(String(d.slotLabel||'').trim())) s+=Number(d.metaHora)||0; });
+  return s>0?s:null;
+}
+// O texto da linha de apoio do card META DO DIA (hoje e dia passado).
+function _metaPartesTxt(p, gap, passado){
+  const falta=gap<=0?'ATINGIDA ✓':(passado?'faltaram ':'faltam ')+fmtN(Math.abs(gap));
+  return (p && p.atraso>0)
+    ? `${fmtN(p.metaDia)} do dia + ${fmtN(p.atraso)} de atraso · ${falta}`
+    : 'caixas programadas · '+falta;
 }
 
 async function testarSheets(){
@@ -10123,7 +10155,10 @@ function renderGerencialHist(){
   const kpis=[
     {l:'PRODUÇÃO REAL',    v:fmtN(real),  sub:heCx>0?`${fmtN(real-heCx)} normal + ${fmtN(heCx)} extra`:`meta ${fmtN(meta)} cx`, c:sc(ef)},
     ...(heCx>0?[{l:'CAIXAS EM HORA EXTRA', v:fmtN(heCx), sub:temHEnaTabela?'HE na tabela, sem meta':'fora da tabela abaixo', t:`${fmtN(real-heCx)} cx em hora normal`, c:'acc'}]:[]),
-    {l:'META DO DIA',      v:fmtN(meta),  sub:gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltaram '+fmtN(Math.abs(gap)), c:'acc'},
+    // .gs v5.55: META DIA e ATRASO META gravados no fechamento. Dia fechado antes
+    // (ou pelo das 23:59, que grava atraso 0) sai como sempre saiu.
+    {l:'META DO DIA',      v:fmtN(meta),  sub:_metaPartesTxt(dia.metaDia!=null?{metaDia:Number(dia.metaDia), atraso:Number(dia.atrasoMeta)||0}:null, gap, true),
+     t:dia.metaDia!=null?`META gravada no fechamento. META DIA (soma por hora): ${fmtN(Number(dia.metaDia))} cx · ATRASO META: ${fmtN(Number(dia.atrasoMeta)||0)} cx.`:'', c:'acc'},
     {l:'EFICIÊNCIA %',     v:fmtP(ef),    sub:sl(ef),                            c:sc(ef)},
     // UEP do dia fechado (.gs v5.14): gravada no fechamento, com a meta daquele
     // dia. Sem ela (dia antigo ou backend anterior), o card diz isso.
@@ -10234,7 +10269,13 @@ function renderGerencial(){
     // para uma relação só: dados o real e a meta, o % e a diferença são
     // aritmética. O que o gap tem de útil — quantas caixas faltam — cabe na
     // linha de apoio da própria meta, sem gastar um card do grid.
-    {l:'META DO DIA',       v:fmtN(k.meta),             sub:k.gap<=0?'caixas programadas · ATINGIDA ✓':'caixas programadas · faltam '+fmtN(k.gap), c:'acc'},
+    // v7.202.0: com atraso na META (SOMAR ATRASO), a linha de apoio diz do que
+    // ela é feita — as mesmas META DIA e ATRASO META que o FECHAR DIA grava.
+    (()=>{ const p=_metaPartes(k.meta, _metaDiaAba());
+      return {l:'META DO DIA', v:fmtN(k.meta), sub:_metaPartesTxt(p, k.gap, false),
+        t:p.metaDia==null?'':'Esta é a META que o FECHAR DIA grava no histórico. META DIA (soma das metas por hora da HORA_A_HORA): '
+          +fmtN(p.metaDia)+' cx · ATRASO META: '+fmtN(p.atraso)+' cx'+(p.atraso>0?(CFG.metaComAtraso?' (SOMAR ATRASO ligado neste computador)':' (meta ajustada neste computador)'):'')+'.',
+        c:'acc'}; })(),
     /* O número é FATO (quanto da meta do dia já saiu, conferível de cabeça) e o
        VEREDITO é a palavra do sub + a cor, que falam de RITMO — a troca feita
        na TV em 01/09/2026, pelo mesmo motivo: dois "%" e dois sentidos da
@@ -14533,6 +14574,10 @@ function _mergeDias(diasSheets){
       uep: (d.uep===null||d.uep===undefined)?null:Number(d.uep),
       uepHe: (d.uepHe===null||d.uepHe===undefined)?null:Number(d.uepHe),
       metaUep: (d.metaUep===null||d.metaUep===undefined)?null:Number(d.metaUep),
+      // .gs v5.55 (opção A): do que a META gravada é feita. null = dia fechado
+      // antes da v5.55 (ou aba sem meta por hora): a tabela mostra "—", nunca 0.
+      metaDia: (d.metaDia===null||d.metaDia===undefined)?null:Number(d.metaDia),
+      atrasoMeta: (d.atrasoMeta===null||d.atrasoMeta===undefined)?null:Number(d.atrasoMeta),
       fonte:'sheets'
     };
   });
@@ -14630,6 +14675,12 @@ function filtroRapido(dias){
   dSet('hist-ate',ate);
   renderHist();
 }
+// As colunas META DIA e ATRASO META entram quando algum dia do período tem a
+// META gravada diferente da META DIA (atraso, ou meta ajustada à mão).
+function _histTemMetaComp(dias){
+  return (dias||[]).some(d=>d && d.metaDia!=null && (Number(d.atrasoMeta)>0 || Number(d.metaDia)!==Number(d.meta)));
+}
+
 async function renderHist(){
   const periodo='diario';
   const deStr=dGet('hist-de');
@@ -14675,6 +14726,11 @@ async function renderHist(){
   const uR=uepHistResumo(dias);
   const temUepHist=uR.n>0;
   const uEsc=dias.filter(d=>d.uep!=null&&isFinite(Number(d.uep))).map(d=>d.data);   // troca de escala no período (v7.151.0)
+  // META DIA e ATRASO META (.gs v5.55): só quando algum dia do período tem a
+  // META diferente da META DIA — com atraso 0 em todos, a coluna META já diz tudo
+  // (mesma regra da H. EXTRA e da MOTIVO: coluna sem informação some).
+  const temMetaComp=_histTemMetaComp(dias);
+  document.querySelectorAll('.th-hist-mcomp').forEach(th=>{ th.style.display=temMetaComp?'':'none'; });
   { const _th=document.getElementById('th-hist-uep'); if(_th) _th.style.display=temUepHist?'':'none';
     const _g=document.getElementById('hist-kpi-grid'); if(_g){ _g.classList.toggle('c6',temUepHist); _g.classList.toggle('c5',!temUepHist); } }
   document.getElementById('hist-kpi-grid').innerHTML=`
@@ -14696,6 +14752,9 @@ async function renderHist(){
     <td class="mono" style="color:var(--txt2)">${_heIndef(d)?'—':fmtN(d.real-d.heCx)}</td>
     <td class="mono" style="color:${!_heIndef(d)&&d.heCx>0?'var(--acc)':'var(--txt2)'}"${_heIndef(d)?' title="Dia fechado antes da coluna HE CX existir — sem como separar"':''}>${_heIndef(d)?'—':fmtN(d.heCx)}</td>
     <td class="mono" style="color:var(--txt2)">${fmtN(d.meta)}</td>
+    ${temMetaComp?(d.metaDia==null
+      ? '<td class="mono" style="color:var(--txt3)" title="dia fechado antes da v5.55 do Apps Script">—</td><td class="mono" style="color:var(--txt3)">—</td>'
+      : `<td class="mono" style="color:var(--txt2)">${fmtN(d.metaDia)}</td><td class="mono" style="color:${d.atrasoMeta>0?'var(--warn)':'var(--txt2)'}">${fmtN(d.atrasoMeta||0)}</td>`):''}
     <td class="mono" style="color:${d.ef>=96?'var(--ok)':d.ef>=90?'var(--warn)':'var(--red)'}">${fmtP(d.ef)}</td>
     ${temUepHist?(()=>{ if(d.uep==null) return '<td class="mono" style="color:var(--txt3)" title="dia sem UEP gravada">—</td>';
       const pu=d.uep/uepDiaMeta(d)*100;
@@ -14820,7 +14879,12 @@ function renderAnaliseHorario(){
 // EXPORT EXCEL
 // ════════════════════════════════════════════════
 function exportarExcel(){
-  const rows=[['Data','Realizado','Meta','Eficiência %','Melhor Hora','Pior Hora','Status']];
+  // O cabeçalho sai das colunas VISÍVEIS da própria tabela (v7.202.0). Era uma
+  // lista fixa de 7 títulos para linhas de 12+ células: desde a H. NORMAL /
+  // H. EXTRA cada coluna do arquivo vinha com o título de outra.
+  const tb=document.getElementById('hist-tbl-body');
+  const ths=tb&&tb.closest('table')?[...tb.closest('table').querySelectorAll('thead th')].filter(th=>th.style.display!=='none'):[];
+  const rows=[ths.map(th=>th.textContent.trim())];
   document.querySelectorAll('#hist-tbl-body tr').forEach(tr=>{
     const tds=tr.querySelectorAll('td');
     if(tds.length>=7) rows.push([...tds].map(td=>td.textContent.trim()));

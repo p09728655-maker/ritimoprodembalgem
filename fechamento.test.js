@@ -245,6 +245,28 @@ console.log('\n── v5.55 (opção A): a META é a do painel; META DIA e ATRAS
      [hist(A)[0][2], hist(A)[0][14], hist(A)[0][15]], [1157, 1157, 0]);
 }
 
+console.log('\n── a mesma conta no painel (v7.202.0): o card diz o que o FECHAR DIA grava ──');
+{
+  // O _metaPartes do painel e o saveDay do .gs, nos mesmos pares (meta do painel,
+  // metas por hora da aba). O card META DO DIA mostra META DIA + ATRASO META;
+  // se as duas contas divergirem, a tela promete um número e o histórico grava outro.
+  const V7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+  const i = V7.indexOf('function _metaPartes(');
+  const corpo = V7.slice(i, V7.indexOf('\n}\n', i) + 2);
+  const _metaPartes = new Function(corpo + '; return _metaPartes;')();
+  const casos = [[1300, '129'], [0, '129'], [1100, '129'], [1157, '129'], [2000, '200'], [900, ''], [0, '']];
+  const tudoBate = casos.every(([mp, mh]) => {
+    const P = montar({ horas: HORAS_1910.map(([rot, l]) => linhaHora(rot, mh, l)) });
+    saveDay(P, { meta: String(mp) });
+    const l = hist(P)[0];
+    const somaAba = mh === '' ? 0 : Number(mh) * HORAS_1910.length;
+    const q = _metaPartes(mp, somaAba);
+    return JSON.stringify([l[2], l[14], l[15]]) ===
+      JSON.stringify([q.meta, q.metaDia == null ? '' : q.metaDia, q.atraso == null ? '' : q.atraso]);
+  });
+  ok('META, META DIA e ATRASO META iguais no painel e no saveDay em ' + casos.length + ' casos', tudoBate, true);
+}
+
 console.log('\n── o lock dos lançamentos ──');
 {
   const P = montar();
