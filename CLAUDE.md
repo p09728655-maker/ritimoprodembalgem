@@ -3553,6 +3553,20 @@ feito e dá ar de verdade ao que sobrou.
   - Testes: `fechamento.test.js` (o `getConfigPainel`/`setConfigPainel` reais)
     e `relatorios.test.js` (`_atrasoEnviar`, o `aplicarConfigPainel` real e o
     `aplicarMetaDiaAutomatica` do celular).
+  - **Publicado e conferido em 05/11/2026**: `META_COM_ATRASO = 1` na
+    `CONFIG_PAINEL` (linha 21), o ⚙ diz *"vale para todos os computadores"* e
+    o card META DO DIA mostra *"1.550 do dia + 852 de atraso"* (2.402).
+- **O ⚙ CONFIGURAÇÕES em três colunas (v7.204.0**, PPCP: *"aumentar dos lados
+  para não dar rolagem"*). `#modal-cfg .modal` a 1.240 px (`max-width:96vw`,
+  `max-height:94vh`), `.cfg-cols` com três `.cfg-col` de cartões `.cfg-sec`:
+  IDENTIFICAÇÃO + METAS DO DIA · TURNO + SENHAS + LEITOR + FONTE DE DADOS ·
+  PAINEL TV. Abaixo de 1.180 px, duas colunas; abaixo de 760, uma. Toda caixa
+  de marcar é `label.cfg-chk > input + span` — com o `<i>` da observação solto
+  dentro do flex, o texto quebrava em duas colunas. `.frm-inp` com
+  `min-width:0;width:100%` no ⚙ (sem isso o campo não encolhe e sai do
+  cartão). Ids, textos e funções não mudaram. Medido no Chromium com as fontes:
+  787 px de altura, sem rolagem a 1920×1015, 1920×937 e 1600×860; a 1366×657
+  rola. Seção nova no ⚙? Medir de novo: a coluna do meio é a mais alta.
 - ⚠ **"META DIA" (coluna) e "META DO DIA" (card) são nomes quase iguais para
   números diferentes** quando há atraso. O nome da coluna veio do `.gs`; o card
   diz "do dia" e "de atraso" por extenso. Trocar o título da coluna é decisão do
