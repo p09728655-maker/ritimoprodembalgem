@@ -1835,6 +1835,33 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 .frm-inp{background:var(--elevated);border:0.5px solid var(--border);color:var(--txt);font-family:var(--font-b);font-size:13px;padding:8px 11px;border-radius:5px;outline:none}
 .frm-inp:focus{border-color:var(--acc)}
 .modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:15px;border-top:0.5px solid var(--border)}
+/* ⚙ CONFIGURAÇÕES em três colunas (v7.204.0): cabe sem rolagem a 1920; abaixo
+   de 1180 vira duas colunas e abaixo de 760 uma — aí a rolagem volta. */
+#modal-cfg .modal{width:1240px;max-width:96vw;max-height:94vh;padding:20px 22px}
+#modal-cfg .modal-ttl{margin-bottom:14px}
+#modal-cfg .cfg-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+#modal-cfg .cfg-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+#modal-cfg .cfg-sec{background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:12px 14px}
+#modal-cfg .cfg-st{font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px;margin-bottom:10px}
+#modal-cfg .cfg-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin:2px 0 6px}
+#modal-cfg .cfg-h{font-size:10px;color:var(--txt2);line-height:1.4}
+#modal-cfg .cfg-v{font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:9px}
+#modal-cfg .cfg-vg{justify-content:flex-end}
+#modal-cfg .cfg-full{grid-column:1/-1;margin-top:-4px}
+#modal-cfg .frm-row{margin-bottom:10px}
+#modal-cfg .frm-inp{min-width:0;width:100%;box-sizing:border-box}
+#modal-cfg .cfg-r3{grid-template-columns:1fr 1fr}
+#modal-cfg .cfg-r3>.frm-grp:first-child{grid-column:1/-1}
+#modal-cfg .cfg-r4{grid-template-columns:repeat(4,1fr);gap:8px}
+#modal-cfg .cfg-r4 .frm-inp{min-width:0}
+#modal-cfg .cfg-chk{display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2);line-height:1.35}
+#modal-cfg .cfg-chk input{margin:1px 0 0;flex-shrink:0}
+#modal-cfg .cfg-chk i{font-style:normal;color:var(--txt3)}
+#modal-cfg .cfg-chks1{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+#modal-cfg .cfg-chks2{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px}
+#modal-cfg .modal-foot{margin-top:14px;padding-top:12px}
+@media (max-width:1180px){#modal-cfg .cfg-cols{grid-template-columns:repeat(2,minmax(0,1fr))}#modal-cfg .cfg-col:nth-child(3){grid-column:1/-1}}
+@media (max-width:760px){#modal-cfg .cfg-cols{grid-template-columns:1fr}#modal-cfg .cfg-r4{grid-template-columns:1fr 1fr}}
 
 /* ═══ FOOTER ═══ */
 footer{display:flex;align-items:center;gap:8px;padding:9px 20px;border-top:0.5px solid var(--border);background:var(--bg);flex-shrink:0}
@@ -3603,44 +3630,54 @@ if (_v7Instalado()) _v7EscondeBotao();
 
 <!-- ═══ MODAL CONFIGURAÇÕES ═══ -->
 <div class="modal-over" id="modal-cfg">
-  <div class="modal" style="width:560px">
+  <!-- v7.204.0 (PPCP, 05/11/2026: "aumentar dos lados para não dar rolagem"):
+       três colunas de cartões. Ids, textos e funções são os mesmos de antes. -->
+  <div class="modal">
     <div class="modal-ttl">⚙ CONFIGURAÇÕES</div>
-    <!-- Identificação -->
-    <div style="margin:2px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">IDENTIFICAÇÃO</div>
-    <div class="frm-row">
+    <div class="cfg-cols">
+    <div class="cfg-col">
+    <div class="cfg-sec">
+    <div class="cfg-st">IDENTIFICAÇÃO</div>
+    <div class="frm-row cfg-r3">
       <div class="frm-grp"><label class="frm-lbl">EMPRESA</label><input class="frm-inp" id="c-empresa" type="text"></div>
       <div class="frm-grp"><label class="frm-lbl">UNIDADE</label><input class="frm-inp" id="c-unidade" type="text"></div>
-    </div>
-    <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">SETOR</label><input class="frm-inp" id="c-setor" type="text"></div>
-      <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"><div id="c-meta-hint" style="font-size:10px;color:var(--txt2);margin-top:4px"></div></div>
     </div>
+    </div>
+    <div class="cfg-sec">
+    <div class="cfg-st">METAS DO DIA</div>
+    <div class="frm-row">
+      <div class="frm-grp"><label class="frm-lbl">META DIA (CX)</label><input class="frm-inp" id="c-meta" type="number"></div>
+      <div class="frm-grp cfg-vg"><div id="c-meta-hint" class="cfg-h"></div></div>
+    </div>
+    <label class="cfg-chk">
+        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)" onchange="onToggleMetaComAtraso()"><span>Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)</span></label>
+    <div id="c-meta-atraso-h" class="cfg-h" style="margin:2px 0 12px 20px"></div>
     <!-- META DE UEP (v7.89.0): grava na CONFIG_PAINEL (chave META_UEP) e vale
          para todos os aparelhos (gerencial, celular, histórico, relatórios). -->
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"><div style="font-size:10px;color:var(--txt2);margin-top:4px">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 (base MADERO = 1,00) · vale para todos os aparelhos</div></div>
-      <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META DIA (UEP)</label><input class="frm-inp" id="c-meta-uep" type="text" inputmode="numeric" placeholder="2530"></div>
+      <div class="frm-grp"><label class="frm-lbl">META UEP POR HORA</label><div id="c-meta-uep-h" class="cfg-v">—</div></div>
+      <div class="cfg-h cfg-full">jornada normal inteira (07:00–17:00, 527 min) · padrão 2.530 (base MADERO = 1,00) · vale para todos os aparelhos</div>
     </div>
     <!-- META DE PONTOS (v7.187.0 / .gs v5.42): grava na CONFIG_PAINEL (META_PTS)
          e vale para todos os aparelhos. Julga o MIX programado, não a linha. -->
     <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">META DE PONTOS / DIA · SEM HE</label><input class="frm-inp" id="c-meta-pts" type="text" inputmode="numeric" placeholder="vazio = sem meta"><div style="font-size:10px;color:var(--txt2);margin-top:4px">faturamento · vale para todos os aparelhos · julga o mix, não a linha (aba 📏 RÉGUAS)</div></div>
-      <div class="frm-grp"><label class="frm-lbl">PONTOS POR UEP QUE A META PEDE</label><div id="c-meta-pts-h" style="font-family:var(--font-d);font-size:12px;color:var(--txt2);padding-top:10px">—</div></div>
+      <div class="frm-grp"><label class="frm-lbl">META DE PONTOS / DIA · SEM HE</label><input class="frm-inp" id="c-meta-pts" type="text" inputmode="numeric" placeholder="vazio = sem meta"></div>
+      <div class="frm-grp"><label class="frm-lbl">PONTOS POR UEP QUE A META PEDE</label><div id="c-meta-pts-h" class="cfg-v">—</div></div>
+      <div class="cfg-h cfg-full">faturamento · vale para todos os aparelhos · julga o mix, não a linha (aba 📏 RÉGUAS)</div>
     </div>
-    <div class="frm-row">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
-        <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)" onchange="onToggleMetaComAtraso()">
-        Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
-      </label>
-      <div id="c-meta-atraso-h" style="font-size:10px;color:var(--txt2);margin:4px 0 0 20px"></div>
+    <div class="frm-row" style="margin-bottom:0">
+      <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"></div>
+      <div class="frm-grp"><label class="frm-lbl">TAKT IDEAL (CALCULADO)</label><div id="c-takt-hint" class="cfg-v">—</div></div>
+      <div class="cfg-h cfg-full">alvo p/ o TAKT IDEAL (ex.: 1850)</div>
     </div>
-    <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"><div style="font-size:10px;color:var(--txt2);margin-top:4px">alvo p/ o TAKT IDEAL (ex.: 1850)</div></div>
-      <div class="frm-grp"><label class="frm-lbl">TAKT IDEAL (CALCULADO)</label><div id="c-takt-hint" style="font-size:11px;color:var(--txt2);margin-top:9px">—</div></div>
     </div>
+    </div>
+    <div class="cfg-col">
     <!-- Turno, almoço e fechamento -->
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">TURNO, ALMOÇO E FECHAMENTO</div>
+    <div class="cfg-sec">
+    <div class="cfg-st">TURNO, ALMOÇO E FECHAMENTO</div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">INÍCIO TURNO</label><input class="frm-inp" id="c-t0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM TURNO</label><input class="frm-inp" id="c-t1" type="time"></div>
@@ -3649,77 +3686,80 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">INÍCIO ALMOÇO</label><input class="frm-inp" id="c-a0" type="time"></div>
       <div class="frm-grp"><label class="frm-lbl">FIM ALMOÇO</label><input class="frm-inp" id="c-a1" type="time"></div>
     </div>
-    <div class="frm-row">
+    <div class="frm-row" style="margin-bottom:0">
       <div class="frm-grp"><label class="frm-lbl">FECHAMENTO AUTOMÁTICO</label><input class="frm-inp" id="c-fechamento" type="time" title="Horário do fechamento automático diário"></div>
-      <div class="frm-grp" style="display:flex;align-items:flex-end"><span style="font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">Salva no histórico automaticamente neste horário</span></div>
+      <div class="frm-grp cfg-vg"><span class="cfg-h">Salva no histórico automaticamente neste horário</span></div>
+    </div>
     </div>
     <!-- Senhas de acesso -->
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">SENHAS DE ACESSO</div>
-    <div class="frm-row">
+    <div class="cfg-sec">
+    <div class="cfg-st">SENHAS DE ACESSO</div>
+    <div class="frm-row" style="margin-bottom:0">
       <div class="frm-grp"><label class="frm-lbl">SENHA OPERADOR</label><input class="frm-inp" id="c-senha-op" type="password" placeholder="••••"></div>
       <div class="frm-grp"><label class="frm-lbl">SENHA GERENCIAL</label><input class="frm-inp" id="c-senha-ger" type="password" placeholder="••••"></div>
     </div>
-    <!-- Apontamento / leitor de código (mobile do operador) -->
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">APONTAMENTO — LEITOR DE CÓDIGO (MOBILE)</div>
-    <div class="frm-row">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)">
-        <input type="checkbox" id="c-modo-leitor" style="accent-color:var(--acc)">
-        Selecionar produto por BIPE no mobile (leitor pareado no tablet do operador)
-      </label>
     </div>
-    <div style="font-family:var(--font-b);font-size:10px;color:var(--txt2);line-height:1.5;margin-top:4px">
+    <!-- Apontamento / leitor de código (mobile do operador) -->
+    <div class="cfg-sec">
+    <div class="cfg-st">APONTAMENTO — LEITOR DE CÓDIGO (MOBILE)</div>
+    <label class="cfg-chk"><input type="checkbox" id="c-modo-leitor" style="accent-color:var(--acc)"><span>Selecionar produto por BIPE no mobile (leitor pareado no tablet do operador)</span></label>
+    <div class="cfg-h" style="margin-top:6px">
       Ligado, o operador bipa a etiqueta em vez de digitar o código. Não conta caixa — só preenche o produto. Aparelho sem leitor ignora.
     </div>
-    <!-- Tela B -->
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">PAINEL TV — CICLO DE TELAS</div>
-    <div class="frm-row">
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA A (segundos)</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA B (segundos)</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA C (segundos)</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA D (segundos)</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA E (segundos)</label><input class="frm-inp" id="c-slidee-int" type="number" min="3" max="300" placeholder="20"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA F (segundos)</label><input class="frm-inp" id="c-slidef-int" type="number" min="3" max="300" placeholder="20"></div>
-      <div class="frm-grp"><label class="frm-lbl">TEMPO NA TELA G (segundos)</label><input class="frm-inp" id="c-slideg-int" type="number" min="3" max="300" placeholder="20"></div>
-    </div>
-    <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-a" style="accent-color:var(--acc)"> TELA A — HORA A HORA</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"> TELA B — VISÃO MACRO</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"> TELA C — ATRASO (só entra se houver atraso)</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"> TELA D — SEMANA PASSADA (só entra se a semana anterior tiver dia fechado)</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-e" style="accent-color:var(--acc)"> TELA E — PROGRAMAÇÃO DO DIA (só entra se houver programação ou atraso)</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-f" style="accent-color:var(--acc)"> TELA F — ESFORÇO DO DIA EM UEP (só entra com hora de jornada lançada)</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tela-g" style="accent-color:var(--acc)"> TELA G — CORRIDA DO DIA EM UEP (só entra com hora de jornada lançada)</label>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)" title="Desligado (padrão): as Telas F e G mostram a UEP sem julgar — o veredito da TV continua em caixas, na Tela B. Ligado: elas ganham o selo NO RITMO / ATENÇÃO / ABAIXO DO RITMO e as cores — e a TV passa a ter dois vereditos, um em caixas e outro em UEP, que podem discordar no mesmo minuto."><input type="checkbox" id="c-uep-selo-tv" style="accent-color:var(--acc)"> SELO DE RITMO NAS TELAS F e G (veredito em UEP — desligado, elas só informam)</label>
-    </div>
-    <div style="margin:4px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px">KPIs VISÍVEIS NA TELA B</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-bottom:4px">
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-meta" style="accent-color:var(--acc)"> META DO DIA</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ef" style="accent-color:var(--acc)"> EFICIÊNCIA</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-status" style="accent-color:var(--acc)"> STATUS</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-prog" style="accent-color:var(--acc)"> PROGRESSO DO DIA</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-ritmo" style="accent-color:var(--acc)"> RITMO ATUAL</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"> NECESSÁRIO</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"> PROJEÇÃO</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-falta" style="accent-color:var(--acc)"> FALTA P/ META</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-pontos" style="accent-color:var(--acc)"> PRODUÇÃO (PONTOS)</label>
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--font-d);font-size:11px;color:var(--txt2)"><input type="checkbox" id="c-tvb-peso" style="accent-color:var(--acc)"> PESO PRODUZIDO</label>
     </div>
     <!-- Google Sheets -->
-    <div style="margin-top:8px;margin-bottom:4px;height:0.5px;background:var(--border)"></div>
-    <div style="margin:10px 0 6px;font-family:var(--font-d);font-size:9px;color:var(--acc);letter-spacing:2px">FONTE DE DADOS — GOOGLE SHEETS</div>
+    <div class="cfg-sec">
+    <div class="cfg-st">FONTE DE DADOS — GOOGLE SHEETS</div>
     <div class="frm-grp" style="margin-bottom:8px">
       <label class="frm-lbl">URL DO APPS SCRIPT (deixe vazio para usar arquivo local)</label>
       <input class="frm-inp" id="c-sheets-url" type="url" placeholder="https://script.google.com/macros/s/...">
     </div>
-    <div style="font-family:var(--font-b);font-size:11px;color:var(--txt2);line-height:1.5;background:var(--elevated);border-radius:4px;padding:8px 10px">
+    <div class="cfg-h" style="font-size:11px;line-height:1.5;background:var(--elevated);border-radius:4px;padding:8px 10px">
       📋 Para configurar: cole o script <strong style="color:var(--acc)">ritmoprod_appscript.gs</strong> no Google Sheets
       → <em>Extensões → Apps Script</em> → Implantar → App da Web → Qualquer pessoa → copie a URL aqui.
+    </div>
+    </div>
+    </div>
+    <div class="cfg-col">
+    <!-- Tela B -->
+    <div class="cfg-sec">
+    <div class="cfg-st">PAINEL TV — CICLO DE TELAS</div>
+    <div class="cfg-sub">TEMPO EM CADA TELA (segundos)</div>
+    <div class="frm-row cfg-r4">
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA A (segundos)">TELA A</label><input class="frm-inp" id="c-slidea-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA B (segundos)">TELA B</label><input class="frm-inp" id="c-slideb-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA C (segundos)">TELA C</label><input class="frm-inp" id="c-slidec-int" type="number" min="3" max="300" placeholder="15"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA D (segundos)">TELA D</label><input class="frm-inp" id="c-slided-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA E (segundos)">TELA E</label><input class="frm-inp" id="c-slidee-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA F (segundos)">TELA F</label><input class="frm-inp" id="c-slidef-int" type="number" min="3" max="300" placeholder="20"></div>
+      <div class="frm-grp"><label class="frm-lbl" title="TEMPO NA TELA G (segundos)">TELA G</label><input class="frm-inp" id="c-slideg-int" type="number" min="3" max="300" placeholder="20"></div>
+    </div>
+    <div class="cfg-sub">TELAS NO CICLO (desmarcadas ficam fora da alternância)</div>
+    <div class="cfg-chks1">
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-a" style="accent-color:var(--acc)"><span>TELA A — HORA A HORA</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-b" style="accent-color:var(--acc)"><span>TELA B — VISÃO MACRO</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-c" style="accent-color:var(--acc)"><span>TELA C — ATRASO <i>(só entra se houver atraso)</i></span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-d" style="accent-color:var(--acc)"><span>TELA D — SEMANA PASSADA <i>(só entra se a semana anterior tiver dia fechado)</i></span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-e" style="accent-color:var(--acc)"><span>TELA E — PROGRAMAÇÃO DO DIA <i>(só entra se houver programação ou atraso)</i></span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-f" style="accent-color:var(--acc)"><span>TELA F — ESFORÇO DO DIA EM UEP <i>(só entra com hora de jornada lançada)</i></span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tela-g" style="accent-color:var(--acc)"><span>TELA G — CORRIDA DO DIA EM UEP <i>(só entra com hora de jornada lançada)</i></span></label>
+      <label class="cfg-chk" title="Desligado (padrão): as Telas F e G mostram a UEP sem julgar — o veredito da TV continua em caixas, na Tela B. Ligado: elas ganham o selo NO RITMO / ATENÇÃO / ABAIXO DO RITMO e as cores — e a TV passa a ter dois vereditos, um em caixas e outro em UEP, que podem discordar no mesmo minuto."><input type="checkbox" id="c-uep-selo-tv" style="accent-color:var(--acc)"><span>SELO DE RITMO NAS TELAS F e G <i>(veredito em UEP — desligado, elas só informam)</i></span></label>
+    </div>
+    <div class="cfg-sub">KPIs VISÍVEIS NA TELA B</div>
+    <div class="cfg-chks2">
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-meta" style="accent-color:var(--acc)"><span>META DO DIA</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-ef" style="accent-color:var(--acc)"><span>EFICIÊNCIA</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-status" style="accent-color:var(--acc)"><span>STATUS</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-prog" style="accent-color:var(--acc)"><span>PROGRESSO DO DIA</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-ritmo" style="accent-color:var(--acc)"><span>RITMO ATUAL</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-nec" style="accent-color:var(--acc)"><span>NECESSÁRIO</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-proj" style="accent-color:var(--acc)"><span>PROJEÇÃO</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-falta" style="accent-color:var(--acc)"><span>FALTA P/ META</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-pontos" style="accent-color:var(--acc)"><span>PRODUÇÃO (PONTOS)</span></label>
+      <label class="cfg-chk"><input type="checkbox" id="c-tvb-peso" style="accent-color:var(--acc)"><span>PESO PRODUZIDO</span></label>
+    </div>
+    </div>
+    </div>
     </div>
 
     <div class="modal-foot">
@@ -3857,7 +3897,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.203.0';
+const APP_VER   = '7.204.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o

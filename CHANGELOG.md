@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.204.0 — 05/11/2026 · ⚙ CONFIGURAÇÕES sem rolagem
+
+- PPCP, com o ⚙ aberto: *"aumentar dos lados para não dar rolagem"*. O ⚙ era
+  uma coluna de 560 px com sete seções empilhadas, e rolava mesmo a 1920.
+- Agora são **três colunas de cartões** (1.240 px): IDENTIFICAÇÃO e METAS DO
+  DIA · TURNO, SENHAS, LEITOR e FONTE DE DADOS · PAINEL TV. Os tempos das
+  telas ficam numa grade de quatro e os KPIs da Tela B em duas colunas.
+- Medido no Chromium com as fontes: a 1920 (janela de 1.015 ou de 937 px) e a
+  1600×860, o ⚙ inteiro aparece sem rolagem (787 px). Num notebook de
+  1366×657 ainda rola, porque a janela é mais baixa que o conteúdo. Abaixo de
+  1.180 px de largura ele vira duas colunas, e abaixo de 760 uma.
+- **Atenção**: nenhum campo, valor ou regra mudou — só a disposição. Os
+  rótulos dos tempos viraram TELA A…G sob o título *TEMPO EM CADA TELA
+  (segundos)*.
+
 ## v7.203.0 + mobile 1.42.0 + `.gs` v5.56 — 05/11/2026 · SOMAR ATRASO vale para todos os aparelhos ⚠ **re-deploy**
 
 - PPCP: *"coloca somar atraso na config painel"*. Com a opção A (v5.55) o
