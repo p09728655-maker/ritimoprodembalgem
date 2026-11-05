@@ -3526,18 +3526,33 @@ feito e dá ar de verdade ao que sobrou.
   antes da v5.55 sai "—".
   - O Excel do HISTÓRICO tira o cabeçalho das colunas visíveis: a lista fixa de
     7 títulos estava desalinhada desde a H. NORMAL / H. EXTRA.
-- ⚠ **A META gravada depende do COMPUTADOR que fechou o dia.** O SOMAR ATRASO
-  (`CFG.metaComAtraso`) e a meta digitada à mão (`metaDiaManual`) moram no
-  `localStorage` de cada navegador — não estão na `CONFIG_PAINEL`. E às 17:05
-  **todo** painel do PC aberto (TV, gerencial) roda o `fecharDiaAutomatico`
-  com a sua config; o `saveDay` é upsert, a ÚLTIMA gravação vence. TV com o
-  SOMAR ATRASO desligado e gerencial ligado = META do histórico decidida por
-  corrida. A v5.48 (meta da aba) era determinística. **Não corrigido**: o
-  caminho é o SOMAR ATRASO ir para a `CONFIG_PAINEL` (como o META_UEP) —
-  decisão do PPCP, `.gs` + re-deploy.
-- ⚠ O celular nunca soma o atraso (`aplicarMetaDiaAutomatica` do mobile = só o
-  `programadoHoje`): com o SOMAR ATRASO ligado no PC, o card META DO DIA do
-  celular e o do PC mostram números diferentes. Não mexido.
+- ⚠ **Às 17:05 TODO painel do PC aberto (TV, gerencial) roda o
+  `fecharDiaAutomatico`** com a config dele; o `saveDay` é upsert, a ÚLTIMA
+  gravação vence. Por isso a META gravada não pode depender do computador:
+  - **SOMAR ATRASO na `CONFIG_PAINEL` (v7.203.0 / mobile 1.42.0 / `.gs`
+    v5.56)**, PPCP: *"coloca somar atraso na config painel"*. Chave
+    **`META_COM_ATRASO`** (1/0). `getConfigPainel` devolve `metaComAtraso`
+    (true/false; **null** sem a chave ou ilegível — nunca um palpite);
+    `setConfigPainel` grava só quando o painel manda.
+  - PC: `aplicarConfigPainel` guarda **`ATRASO_PLAN`** (`planilha` ·
+    `sem-chave` · `antigo` = `.gs` sem o campo · null = ainda não leu); com
+    `planilha` diferente do local, troca o `CFG.metaComAtraso` e refaz a meta
+    (`aplicarMetaDiaAutomatica`) na mesma leitura. O `saveCfg` decide o envio
+    pelo **`_atrasoEnviar`**: manda quando o gestor MUDOU a marcação ou quando a
+    planilha está `sem-chave` (é o que semeia a chave) — mandar sempre deixaria
+    um PC que abriu antes de ler a config desfazer a escolha dos outros (a regra
+    do META_UEP). O ⚙ mostra o estado (`_atrasoPlanTxt`, `#c-meta-atraso-h`).
+  - Celular: `PONTOS_DIA.metaComAtraso` (só `true` liga) e o
+    `aplicarMetaDiaAutomatica` dele usa a `metaEfetiva` com a chave ligada —
+    antes nunca somava e o card META DO DIA dava outro número que o PC.
+  - ⚠ **Ainda local**: a meta DIGITADA à mão no ⚙ (`metaDiaManual`) vale só no
+    computador onde foi digitada — e vai para o histórico se aquele PC fechar
+    por último.
+  - Com o `.gs` antigo (sem o campo), cada PC segue a sua marcação, como antes.
+    Depois do re-deploy, a chave nasce no 1º SALVAR do ⚙ (`sem-chave`).
+  - Testes: `fechamento.test.js` (o `getConfigPainel`/`setConfigPainel` reais)
+    e `relatorios.test.js` (`_atrasoEnviar`, o `aplicarConfigPainel` real e o
+    `aplicarMetaDiaAutomatica` do celular).
 - ⚠ **"META DIA" (coluna) e "META DO DIA" (card) são nomes quase iguais para
   números diferentes** quando há atraso. O nome da coluna veio do `.gs`; o card
   diz "do dia" e "de atraso" por extenso. Trocar o título da coluna é decisão do

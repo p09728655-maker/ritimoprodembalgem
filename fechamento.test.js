@@ -267,6 +267,28 @@ console.log('\n── a mesma conta no painel (v7.202.0): o card diz o que o FEC
   ok('META, META DIA e ATRASO META iguais no painel e no saveDay em ' + casos.length + ' casos', tudoBate, true);
 }
 
+console.log('\n── v5.56: SOMAR ATRASO na CONFIG_PAINEL — a META gravada não depende do computador ──');
+{
+  const P = montar();
+  const cfg = () => P.run('return getConfigPainel();').metaComAtraso;
+  const linha = () => (P.ABAS.CONFIG_PAINEL.find(r => r[0] === 'META_COM_ATRASO') || [])[1];
+  const grava = q => P.run('_valoresMemo = {}; return setConfigPainel(' + JSON.stringify(q) + ');');
+  ok('sem a chave na planilha → null (a chave existe no objeto: é o sinal de .gs novo)',
+     [cfg(), Object.prototype.hasOwnProperty.call(P.run('return getConfigPainel();'), 'metaComAtraso')], [null, true]);
+  ok('setConfigPainel sem o campo (ou vazio) não cria a chave', (grava({ telaA: '1' }), grava({ metaComAtraso: '' }), linha()), undefined);
+  const r = grava({ metaComAtraso: '1' });
+  ok('metaComAtraso=1 grava META_COM_ATRASO 1 e a resposta já devolve true', [linha(), r.painelConfig.metaComAtraso], ['1', true]);
+  grava({ metaComAtraso: '0' });
+  ok('metaComAtraso=0 regrava a MESMA linha com 0 (upsert, uma linha só)',
+     [linha(), P.ABAS.CONFIG_PAINEL.filter(x => x[0] === 'META_COM_ATRASO').length, cfg()], ['0', 1, false]);
+  const Q = montar();
+  Q.ABAS.CONFIG_PAINEL.push(['META_COM_ATRASO', 'talvez']);
+  ok('valor ilegível na planilha → null (o painel fica com a dele), nunca um palpite',
+     Q.run('return getConfigPainel();').metaComAtraso, null);
+  ok('as leituras dependem do grupo cfg e o setConfigPainel o invalida',
+     [/getPontosDia: \[[^\]]*'cfg'/.test(GS), /setConfigPainel: \['cfg'\]/.test(GS)], [true, true]);
+}
+
 console.log('\n── o lock dos lançamentos ──');
 {
   const P = montar();

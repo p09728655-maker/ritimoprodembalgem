@@ -1,5 +1,12 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.56 — SOMAR ATRASO NA CONFIG_PAINEL (META_COM_ATRASO)
+//               PPCP, 05/11/2026: com a opção A (v5.55) a META gravada é a do
+//               painel, e o SOMAR ATRASO era do navegador de cada computador —
+//               às 17:05 todo PC aberto fecha o dia e a última gravação vencia.
+//               Agora a chave mora na planilha: getConfigPainel devolve
+//               metaComAtraso (true/false; null sem a chave) e setConfigPainel
+//               grava META_COM_ATRASO (1/0) só quando o painel manda.
 // Versão: 5.55 — META DO PAINEL NO HISTORICO, COM META DO DIA E ATRASO SEPARADOS
 //               Decisão do PPCP, 05/11/2026 (opção A): o FECHAR DIA volta a gravar
 //               a META do painel, a mesma do % na tela. Colunas novas META DIA
@@ -4095,7 +4102,11 @@ function getConfigPainel() {
     metaUep: kv.META_UEP !== undefined && _numBR(kv.META_UEP) > 0 ? _numBR(kv.META_UEP) : null,
     // Meta de PONTOS do dia, sem hora extra (v5.42). Sem a chave → null: o
     // painel não julga pontos (nunca uma meta inventada).
-    metaPts: kv.META_PTS !== undefined && _numBR(kv.META_PTS) > 0 ? _numBR(kv.META_PTS) : null
+    metaPts: kv.META_PTS !== undefined && _numBR(kv.META_PTS) > 0 ? _numBR(kv.META_PTS) : null,
+    // SOMAR ATRASO na META DO DIA (v5.56): a mesma para todo aparelho — é a META
+    // que o FECHAR DIA grava (v5.55). Sem a chave (ou ilegível) → null: o painel
+    // fica com a marcação dele e manda a sua na próxima vez que salvar o ⚙.
+    metaComAtraso: kv.META_COM_ATRASO !== undefined ? bool(kv.META_COM_ATRASO, null) : null
   };
 }
 
@@ -4138,6 +4149,9 @@ function setConfigPainel(p) {
     if (p.metaUep !== undefined && _numBR(p.metaUep) > 0) novos.META_UEP = String(Math.round(_numBR(p.metaUep)));
     // META DE PONTOS do dia (v5.42), mesma regra: só número > 0.
     if (p.metaPts !== undefined && _numBR(p.metaPts) > 0) novos.META_PTS = String(Math.round(_numBR(p.metaPts)));
+    // SOMAR ATRASO (v5.56): só quando o painel manda — ele manda quando o gestor
+    // muda a marcação ou quando a planilha ainda não tem a chave.
+    if (p.metaComAtraso !== undefined && String(p.metaComAtraso).trim() !== '') novos.META_COM_ATRASO = b01(p.metaComAtraso);
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};

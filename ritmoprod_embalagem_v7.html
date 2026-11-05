@@ -3632,6 +3632,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <input type="checkbox" id="c-meta-atraso" style="accent-color:var(--acc)" onchange="onToggleMetaComAtraso()">
         Somar atraso da PROGRAMAÇÃO na META DO DIA (senão fica só um aviso à parte)
       </label>
+      <div id="c-meta-atraso-h" style="font-size:10px;color:var(--txt2);margin:4px 0 0 20px"></div>
     </div>
     <div class="frm-row">
       <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"><div style="font-size:10px;color:var(--txt2);margin-top:4px">alvo p/ o TAKT IDEAL (ex.: 1850)</div></div>
@@ -3856,7 +3857,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.202.0';
+const APP_VER   = '7.203.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -14904,6 +14905,7 @@ function openCfg(){
   document.getElementById('c-setor').value=CFG.setor;
   document.getElementById('c-meta').value=CFG.metaDia;
   document.getElementById('c-meta-atraso').checked=!!CFG.metaComAtraso;
+  { const e=document.getElementById('c-meta-atraso-h'); if(e) e.textContent=_atrasoPlanTxt(ATRASO_PLAN); }
   { const mu=document.getElementById('c-meta-uep');
     if(mu){ mu.value=Number(PONTOS_DIA.metaUep)>0?String(PONTOS_DIA.metaUep):'';
       const h=()=>{ const v=_pgSimNum(mu.value)||UEP_META_PADRAO; const e=document.getElementById('c-meta-uep-h');
@@ -14963,6 +14965,17 @@ function closeCfg(){ document.getElementById('modal-cfg').classList.remove('on')
 // continuava mostrando o número antigo e, ao salvar, era comparado com o novo
 // autoAtual (diferente) — marcando a meta como "ajustada manualmente" e nunca
 // aplicando o atraso, mesmo com o checkbox marcado.
+// Conta pura: o que mandar à planilha ao SALVAR (null = nada).
+function _atrasoEnviar(antes, agora, plan){
+  return (!!antes!==!!agora || plan==='sem-chave') ? !!agora : null;
+}
+// De onde vale a marcação — a linha embaixo do checkbox no ⚙.
+function _atrasoPlanTxt(plan){
+  return plan==='planilha'  ? 'vale para todos os computadores (gravado na planilha)'
+       : plan==='sem-chave' ? 'ainda não está na planilha — ao SALVAR, a marcação deste computador vale para todos'
+       : plan==='antigo'    ? 'vale só neste computador — falta publicar o Apps Script v5.56'
+       :                      'lendo a configuração da planilha…';
+}
 function onToggleMetaComAtraso(){
   const comAtraso=document.getElementById('c-meta-atraso').checked;
   const _prog=PONTOS_DIA.programacao||{};
@@ -14977,7 +14990,9 @@ function saveCfg(){
   CFG.unidade=document.getElementById('c-unidade').value;
   CFG.setor=document.getElementById('c-setor').value;
   {
+    const _atrasoAntes=!!CFG.metaComAtraso;
     CFG.metaComAtraso=document.getElementById('c-meta-atraso').checked;
+    _metaAtrasoNovo=_atrasoEnviar(_atrasoAntes, CFG.metaComAtraso, ATRASO_PLAN);
     const novaMeta=parseInt(document.getElementById('c-meta').value)||1500;
     const _prog=PONTOS_DIA.programacao||{};
     const autoAtual=(CFG.metaComAtraso ? _prog.metaEfetiva : _prog.programadoHoje)||0;
@@ -15063,6 +15078,11 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 let _metaUepNova=null;   // meta de UEP digitada nas configurações, a enviar uma vez
 let _metaPtsNova=null;   // meta de PONTOS, idem (v7.187.0)
+// SOMAR ATRASO (v7.203.0 / .gs v5.56): vai à planilha quando o gestor MUDA a
+// marcação, ou quando a planilha ainda não tem a chave. Mandar sempre deixaria
+// um computador que abriu antes de ler a config desfazer a escolha dos outros.
+let _metaAtrasoNovo=null;
+let ATRASO_PLAN=null;    // 'planilha' | 'sem-chave' | 'antigo' | null (config ainda não lida)
 function enviarConfigPainel(){
   if(!CFG.sheetsUrl) return;
   const t = CFG.telasAtivas||{a:true,b:true,c:true,d:true,e:true};
@@ -15088,6 +15108,7 @@ function enviarConfigPainel(){
   ];
   if(_metaUepNova){ params.push('metaUep='+_metaUepNova); _metaUepNova=null; }
   if(_metaPtsNova){ params.push('metaPts='+_metaPtsNova); _metaPtsNova=null; }
+  if(_metaAtrasoNovo!==null){ params.push('metaComAtraso='+(_metaAtrasoNovo?1:0)); _metaAtrasoNovo=null; }
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
   try{ jsonpFetch(url).catch(function(){}); }catch(e){}
 }
@@ -15098,6 +15119,17 @@ function enviarConfigPainel(){
 let _painelCfgSig = null;
 function aplicarConfigPainel(pc){
   if(!pc) return;
+  // SOMAR ATRASO (.gs v5.56): a marcação da PLANILHA vale para todo aparelho —
+  // é a META que o FECHAR DIA grava (v5.55), e às 17:05 todo PC aberto fecha o
+  // dia. Sem a chave no objeto = .gs antigo (fica a deste computador); com a
+  // chave e valor null = a planilha ainda não tem (o próximo SALVAR do ⚙ grava).
+  ATRASO_PLAN = !Object.prototype.hasOwnProperty.call(pc,'metaComAtraso') ? 'antigo'
+              : (pc.metaComAtraso===true||pc.metaComAtraso===false) ? 'planilha' : 'sem-chave';
+  if(ATRASO_PLAN==='planilha' && CFG.metaComAtraso!==pc.metaComAtraso){
+    CFG.metaComAtraso = pc.metaComAtraso;
+    saveCfgLocal();
+    aplicarMetaDiaAutomatica();   // a META DO DIA muda junto, já nesta leitura
+  }
   const sig = JSON.stringify(pc);
   if(sig===_painelCfgSig) return;
   _painelCfgSig = sig;
