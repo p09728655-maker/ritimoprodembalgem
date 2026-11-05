@@ -616,6 +616,9 @@ function calcularProgramacao() {
     { codigo: '501060003', desc: 'VOL 1/2 PENTEADEIRA CAMARIM MEL', lote: 25076, programadoHoje: 150, atraso: 0, falta: 150 }
   ] };
 }
+// v5.52: getProgramacaoHoje lê pelo _programacaoCacheada (60 s no CacheService).
+// Sem CacheService aqui, a função REAL cai no calcularProgramacao() acima.
+eval(pega(GS, 'function _programacaoCacheada('));
 eval(pega(GS, 'function getProgramacaoHoje('));
 const hoje = getProgramacaoHoje();
 ok('getProgramacaoHoje manda a cor de cada item',

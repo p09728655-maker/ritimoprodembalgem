@@ -44,6 +44,11 @@ function montar(prog, log, opts) {
   };
   if (opts.arq) ABAS.PROGRAMACAO_CONCLUIDA = opts.arq;
   if (opts.fer) ABAS.FERIADOS = opts.fer;   // .gs v5.38: a aba do PPCP
+  // Formato de número por CÉLULA, preso ao array da linha (deleteRow e a linha
+  // que volta movem a linha inteira — o formato vai junto, como no Sheets).
+  const FMT = new Map();
+  const fmtDe = (r, j) => (FMT.get(r) || {})[j] || 'General';
+  prog.forEach((l, i) => { if (l.fmt) FMT.set(ABAS.PROGRAMACAO[i + 1], { 1: l.fmt }); });
   function aba(nome) {
     const v = ABAS[nome];
     if (!v) return null;
@@ -57,7 +62,11 @@ function montar(prog, log, opts) {
           if (!v[l - 1 + k]) v[l - 1 + k] = new Array(v[0].length).fill('');
           row.forEach((x, j) => { v[l - 1 + k][c - 1 + j] = x; });
         }),
-        getValue: () => (v[l - 1] || [])[c - 1], getFormula: () => '', setNumberFormat: () => {},
+        getValue: () => (v[l - 1] || [])[c - 1], getFormula: () => '',
+        getNumberFormats: () => v.slice(l - 1, l - 1 + (nl || 1)).map(r => Array.from({ length: nc || 1 }, (_, j) => fmtDe(r, c - 1 + j))),
+        setNumberFormat: f => v.slice(l - 1, l - 1 + (nl || 1)).forEach(r => {
+          const o = FMT.get(r) || {}; for (let j = 0; j < (nc || 1); j++) o[c - 1 + j] = f; FMT.set(r, o);
+        }),
       }),
       deleteRow: n => { v.splice(n - 1, 1); }, setFrozenRows: () => {}, appendRow: r => v.push(r),
     };
@@ -86,7 +95,7 @@ function montar(prog, log, opts) {
     'return { p: calcularProgramacao(), a: { arquivadas: n - SpreadsheetApp.getActiveSpreadsheet().getSheetByName("PROGRAMACAO").getLastRow() } }; })()', ctx);
   const calc = () => vm.runInContext('(function(){ _invalidarValores(); return calcularProgramacao(); })()', ctx);
   const simular = () => vm.runInContext('(function(){ _invalidarValores(); return _arquivarConcluidos(null, true); })()', ctx);
-  return { ABAS, ctx, rodar, calc, simular, setHoje: h => { hoje = h; } };
+  return { ABAS, ctx, rodar, calc, simular, setHoje: h => { hoje = h; }, fmtDe };
 }
 const col = (aba, nome) => aba[0].map(x => String(x).trim().toUpperCase()).indexOf(nome);
 function linha(aba, lote, cod) {
@@ -352,6 +361,43 @@ console.log('\n── linha arquivada que volta a ter saldo volta para a aba ─
      [campos(P, linha(P, 'B', '501128002'), ['PRODUZIDO', 'SALDO', 'STATUS']), !!linha(A(), 'B', '501128002')], [[0, 200, 'EM ATRASO'], false]);
   ok('o atraso do painel tem linha que o explique', r.p.atrasoTotal, 200);
   ok('e o BRANCO, agora feito, sai', [!!linha(P, 'S', '501128001'), !!linha(A(), 'S', '501128001')], [false, true]);
+}
+
+console.log('\n── a linha que volta vem com a DATA no formato da aba (.gs v5.45) ──');
+{
+  // PPCP, 04/11/2026: a 25390 501.136.005 voltou da CONCLUIDA depois do TROCAR
+  // PRODUTO e a DATA saiu 04/11/2026 no meio do dd/mm do extrato colado. O valor
+  // estava certo; o setValues deixava o formato padrão do Sheets.
+  const F = (nums, fmts, ds) => JSON.parse(JSON.stringify(vm.runInContext(
+    `_progFormatosData(${JSON.stringify(nums)}, ${JSON.stringify(fmts)}, ${JSON.stringify(ds)})`, montar([], []).ctx)));
+  ok('a linha pega o formato das linhas da MESMA data (o caso de 04/11: dd/mm, não o d/m que domina a coluna)',
+     F([20261104, 20261104, 20261111, 20261111, 20261111], ['dd/mm', 'dd/mm', 'd/m', 'd/m', 'd/m'], [20261104]), ['dd/mm']);
+  ok('sem linha da mesma data, o formato de data mais comum da coluna',
+     F([20261104, 20261111, 20261112], ['dd/mm', 'd/m', 'd/m'], [20261030]), ['d/m']);
+  ok('a mais comum, não a 1ª: uma linha que voltou antes com o formato longo não ensina as outras',
+     F([20261104, 20261104, 20261104], ['dd/MM/yyyy', 'dd/mm', 'dd/mm'], [20261104]), ['dd/mm']);
+  ok('General, texto, número, data com hora e linha sem data não contam — sem nenhum, fica como está',
+     F([20261104, 20261104, 20261104, 20261104, 0], ['General', '@', '#,##0', 'dd/mm/yyyy hh:mm:ss', 'dd/mm'], [20261104]), ['']);
+
+  // O caminho real: arquivar → corrigir o log → a linha volta para o FIM da aba.
+  const prog = [
+    { lote: 'A', data: '05/10/2026', cod: '501128002', qtde: 100, fmt: 'd/m' },
+    { lote: 'S', data: '05/10/2026', cod: '501128001', qtde: 200, fmt: 'd/m' },
+    { lote: 'B', data: '07/10/2026', cod: '501128002', qtde: 200, fmt: 'dd/mm' },
+    { lote: 'X', data: '07/10/2026', cod: '501999001', qtde: 50, fmt: 'dd/mm' },    // fica: mesma data do B
+    { lote: 'Y', data: '20/10/2026', cod: '501999002', qtde: 50, fmt: 'd/m' },      // futuras: d/m domina a coluna
+    { lote: 'Z', data: '21/10/2026', cod: '501999003', qtde: 50, fmt: 'd/m' },
+  ];
+  const m = montar(prog, [['05/10/2026', '501128002', 300]], { hoje: '07/10/2026' });
+  const P = m.ABAS.PROGRAMACAO, iD = col(P, 'DATA');
+  m.rodar(); m.setHoje('08/10/2026'); m.rodar();
+  ok('o B saiu para a CONCLUIDA', [!!linha(P, 'B', '501128002'), !!linha(m.ABAS.PROGRAMACAO_CONCLUIDA, 'B', '501128002')], [false, true]);
+  m.ABAS.PRODUCAO_PRODUTO.splice(1, 1, ['05/10/2026', '08:00', '501128002', 'X', 100], ['05/10/2026', '08:00', '501128001', 'X', 200]);
+  m.rodar();
+  const b = linha(P, 'B', '501128002');
+  ok('o B voltou para o fim da aba com a data certa', [!!b, P.indexOf(b) === P.length - 1, b && b[iD]], [true, true, '07/10/2026']);
+  ok('e com o formato das linhas da mesma data (dd/mm), não o padrão do Sheets', m.fmtDe(b, iD), 'dd/mm');
+  ok('as outras linhas não mudam de formato', ['X', 'Y', 'Z'].map((l, k) => m.fmtDe(linha(P, l, '50199900' + (k + 1)), iD)), ['dd/mm', 'd/m', 'd/m']);
 }
 
 console.log('\n── apagar o X na CONCLUIDA desfaz o encerramento ──');

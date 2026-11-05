@@ -1023,7 +1023,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.40.0';
+const APP_VER   = '1.41.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2790,6 +2790,24 @@ function _lancGuardar(ini, cod, cx){
     localStorage.setItem(LANC_REC_K, JSON.stringify({dia:hojeStr(), itens}));
   }catch(e){}
 }
+// O texto do lançamento recusado: o motivo do servidor, sem mandar repetir.
+function lancRecusadoTxt(motivo){
+  return 'O SERVIDOR RECUSOU O LANÇAMENTO — nada foi gravado.\n\n'
+       + String(motivo||'O servidor não disse o motivo.')
+       + '\n\nCorrija e lance de novo. Se o motivo não estiver claro, avise o PPCP.';
+}
+// Lançamento RECUSADO pelo servidor (1.41.0): não foi gravado, então não pode
+// virar "LANÇAMENTO REPETIDO?" quando o operador lançar de novo.
+function _lancEsquecer(ini, cod, cx){
+  try{
+    const itens = _lancRecentes(), c = String(cod||'');
+    for(let i=itens.length-1; i>=0; i--){
+      const x = itens[i];
+      if(x && x.ini===ini && String(x.cod||'')===c && Number(x.cx)===Number(cx)){ itens.splice(i,1); break; }
+    }
+    localStorage.setItem(LANC_REC_K, JSON.stringify({dia:hojeStr(), itens}));
+  }catch(e){}
+}
 // Conta pura: o envio IGUAL (mesma hora, produto e caixas) mais recente dos
 // últimos `janelaMin` minutos, ou null.
 function lancRepetido(recs, ini, cod, cx, agora, janelaMin){
@@ -3216,7 +3234,7 @@ async function salvarLanc(){
     try{
       if(i>1) btn.textContent='RECONECTANDO '+i+'/'+TENTATIVAS+'...';
       const res=await jsonpFetch(url, TIMEOUT);
-      if(res.ok===false) throw new Error(res.erro||'Erro ao salvar');
+      if(res.ok===false){ const er=new Error(res.erro||'O servidor não disse o motivo.'); er.recusado=true; throw er; }
       // A lista do dia só é relida ao abrir o seletor: sem descontar aqui, o
       // aviso de cor errada não veria o lote fechar ao longo dos lançamentos.
       if(codLanc){
@@ -3242,6 +3260,18 @@ async function salvarLanc(){
       // Erro de dados do backend (ok:false) não adianta retentar — aborta já.
       if(!/timeout|rede/i.test(e.message)) break;
     }
+  }
+  // RECUSADO (1.41.0): o servidor respondeu e NÃO gravou — .gs v5.48 confere a
+  // quantidade (inteiro, até 1.000 cx) e o produto antes de gravar, e a v5.46
+  // não grava com o dia anterior aberto. A mensagem dele é o que o operador
+  // precisa ler. Antes caía no aviso abaixo ("não respondeu… lance de novo,
+  // repetir é seguro") e ele repetia a mesma recusa sem saber o motivo.
+  // O modal fica aberto com a quantidade para corrigir.
+  if(ultimoErro && ultimoErro.recusado && !/timeout|rede/i.test(ultimoErro.message)){
+    _lancEsquecer(slotLanc.inicio, codLanc, add);
+    alert(lancRecusadoTxt(ultimoErro.message));
+    btn.textContent='ADICIONAR'; btn.disabled=false;
+    return;
   }
   // O operador não precisa saber o nome da exceção — precisa saber se perdeu o
   // lançamento e o que fazer. Timeout ≠ não gravou: o valor pode ter chegado.

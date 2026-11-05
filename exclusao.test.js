@@ -343,8 +343,8 @@ console.log('\n── celular: a correção ──');
      /corrigivel = bloqueado && !!\(slot\.lotes&&slot\.lotes\.length\)/.test(MJS) && /abrirCorrecao\('\$\{slot\.inicio\}'/.test(MJS), true);
   ok('o modal da hora atual leva à correção', /onclick="_corrDoLanc\(\)">✎ CORRIGIR UM LANÇAMENTO</.test(MJS), true);
   ok('versão do app e cache do service worker sobem juntos',
-     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v49';\s+\/\/ APP_VER 1\.40\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
-     ['1.40.0', true]);
+     [MJS.match(/const APP_VER\s+= '([\d.]+)'/)[1], /ritmoprod-mobile-v50';\s+\/\/ APP_VER 1\.41\.0/.test(fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8'))],
+     ['1.41.0', true]);
 }
 
 console.log(falhas === 0
