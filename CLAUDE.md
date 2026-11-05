@@ -62,7 +62,8 @@ via Google Apps Script (JSONP).
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
-  dia no `getProgramacaoDetalhada` (v5.37): `node programacao.test.js`.
+  dia no `getProgramacaoDetalhada` (v5.37), e a DATA no formato da aba na
+  linha que volta da CONCLUIDA (v5.45): `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto). Carrega o
   `.gs` **inteiro** e a conta do painel: `node uep-padrao.test.js`.
@@ -1336,6 +1337,19 @@ via Google Apps Script (JSONP).
   - ⚠ Não é mais verdade que "lote arquivado continua concluído": continua
     enquanto o log e a programação não mudarem para trás. Quando mudam, ele
     reaparece na aba — é a intenção.
+  - **A DATA volta no formato da aba** (`.gs` v5.45, `_progDataNoFormato` /
+    `_progFormatosData`). PPCP, 04/11/2026: *"a data de novo veio errada"* —
+    a 25390 501.136.005 voltou às 14:58 (o TROCAR PRODUTO das 14:58:02 tirou
+    158 cx dela para o CINAMOMO 501.136.003: 147 de 150) com a DATA
+    `04/11/2026` no meio do `dd/mm` do extrato. O VALOR estava certo (o FIFO
+    lê o Date); o `setValues` deixa o formato padrão do Sheets. Hoje a linha
+    pega o formato de data mais comum das linhas da MESMA data (sem elas, o da
+    coluna); "General", texto, número e data com hora não contam. Só formato:
+    falhar não desfaz a volta. A célula B115 daquele dia foi acertada à mão
+    pela API (`dd/mm`).
+  - ⚠ A linha que volta continua indo para o **FIM da aba**, fora da ordem do
+    lote. Inserir no lugar não foi feito: mexe na ordem da aba, que o FIFO usa
+    no desempate da mesma data (`fecho`).
 - **Mesma data no FIFO: quem já fechou entra primeiro** (`fecho`: arquivada →
   encerrada → aberta, cada grupo na ordem da aba). Antes o empate seguia a
   ordem de leitura (aba ativa antes da CONCLUIDA): ao arquivar, a linha passava
