@@ -1,5 +1,10 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.55 — META DO PAINEL NO HISTORICO, COM META DO DIA E ATRASO SEPARADOS
+//               Decisão do PPCP, 05/11/2026 (opção A): o FECHAR DIA volta a gravar
+//               a META do painel, a mesma do % na tela. Colunas novas META DIA
+//               (soma por hora) e ATRASO META (o que a meta do painel somou além
+//               dela). getHistory e getHoraDia devolvem metaDia e atrasoMeta.
 // Versão: 5.54 — PARADAS E HE SOB LOCK; ARQUIVAMENTO RECONFERE A LINHA
 //               saveParadas, endParada e addHE entram no lock dos lançamentos.
 //               saveParadas informa as paradas ignoradas. Antes de copiar e de
@@ -3476,7 +3481,7 @@ function _celNumOuNull(v) {
 }
 
 function _garantirColsUepHist(sh) {
-  ['UEP', 'UEP HE', 'META UEP'].forEach(function (t, i) {
+  ['UEP', 'UEP HE', 'META UEP', 'META DIA', 'ATRASO META'].forEach(function (t, i) {
     if (String(sh.getRange(1, 12 + i).getValue()).trim() === '') sh.getRange(1, 12 + i).setValue(t);
   });
 }
@@ -3666,10 +3671,12 @@ function saveDay(p) {
     const pl0  = _resumoParaFechar(p.data);
     const heLocal = !!pl0 && (Number(p.heCx) || 0) > pl0.heCx;
     const pl   = heLocal ? null : pl0;
-    // v5.48: a META sai da HORA_A_HORA, a mesma conta do fechamento automático.
+    // v5.55: a META é a do painel; META DIA e ATRASO META mostram do que ela é feita.
     const metaPainel = Number(p.meta) || 0;
-    const meta = (pl && pl.meta > 0) ? pl.meta : metaPainel;
-    if (meta !== metaPainel) Logger.log('saveDay ' + p.data + ': meta do painel ' + metaPainel + ', gravada ' + meta + '.');
+    const meta = metaPainel > 0 ? metaPainel : (pl ? pl.meta : 0);
+    const metaDia = (pl && pl.meta > 0) ? pl.meta : '';
+    const atrasoMeta = metaDia === '' ? '' : Math.max(0, meta - metaDia);
+    if (metaDia !== '' && meta !== metaDia) Logger.log('saveDay ' + p.data + ': meta do painel ' + meta + ', meta do dia ' + metaDia + '.');
     const real = pl ? pl.real : (Number(p.real) || 0);
     const row = [
       p.data,
@@ -3683,7 +3690,7 @@ function saveDay(p) {
       String(p.fechadoEm || ''),
       pl ? (pl.horas > 0 ? Math.round(pl.real / pl.horas) : 0) : Number(p.mediaH || 0),
       pl ? pl.heCx : Number(p.heCx || 0)   // caixas produzidas em hora extra
-    ].concat(_uepColsDoDia(p.data));   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
+    ].concat(_uepColsDoDia(p.data), [metaDia, atrasoMeta]);   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
 
     if (pl && real !== (Number(p.real) || 0)) {
       Logger.log('saveDay ' + p.data + ': painel mandou ' + (Number(p.real) || 0) +
@@ -3795,7 +3802,9 @@ function getHistory() {
         // UEP do dia (v5.14): null = o dia não tem (antes da coluna, ou sem UEP no cadastro)
         uep:     _celNumOuNull(r[11]),
         uepHe:   _celNumOuNull(r[12]),
-        metaUep: _celNumOuNull(r[13])
+        metaUep: _celNumOuNull(r[13]),
+        metaDia: _celNumOuNull(r[14]),
+        atrasoMeta: _celNumOuNull(r[15])
       };
     });
 
@@ -3905,7 +3914,9 @@ function getHoraDia(p) {
         realNormal: heCxDia === null ? null : (realDia - heCxDia),
         uep:     _celNumOuNull(r[11]),
         uepHe:   _celNumOuNull(r[12]),
-        metaUep: _celNumOuNull(r[13])
+        metaUep: _celNumOuNull(r[13]),
+        metaDia: _celNumOuNull(r[14]),
+        atrasoMeta: _celNumOuNull(r[15])
       };
       break;
     }
@@ -6570,7 +6581,7 @@ function arquivarDiaAtual(dataRef) {
     'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm'),
     mediaH,
     heCx   // caixas produzidas nas linhas de hora extra
-  ].concat(_uepColsDoDia(dataRef));   // UEP · UEP HE · META UEP (v5.14)
+  ].concat(_uepColsDoDia(dataRef), [meta, 0]);   // UEP · UEP HE · META UEP (v5.14)
 
   if (idx >= 0) {
     shH.getRange(idx + 2, 1, 1, row.length).setValues([row]);
