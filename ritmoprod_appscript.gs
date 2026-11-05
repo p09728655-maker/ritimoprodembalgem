@@ -1,5 +1,56 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.54 — PARADAS E HE SOB LOCK; ARQUIVAMENTO RECONFERE A LINHA
+//               saveParadas, endParada e addHE entram no lock dos lançamentos.
+//               saveParadas informa as paradas ignoradas. Antes de copiar e de
+//               apagar, o arquivamento reconfere código, lote e data da linha:
+//               edição manual no meio da rodada não apaga a linha errada.
+// Versão: 5.53 — FUSO DA PLANILHA LIDO UMA VEZ POR EXECUÇÃO
+//               _dataStr e _horaSegStr chamavam getSpreadsheetTimeZone a cada
+//               célula de data ou hora: getParadas fazia isso por linha. Agora
+//               o fuso fica guardado durante a execução. Nenhuma conta muda.
+// Versão: 5.52 — CACHE POR GRUPO E PROGRAMAÇÃO COMPARTILHADA NAS LEITURAS
+//               Gravação só invalida o que ela muda. A programação calculada fica
+//               60 s em cache para as leituras. getPontosDia lê só o dia no log,
+//               quando a programação vem do cache. Nenhuma conta muda.
+// Versão: 5.51 — MEDIÇÃO DE TEMPO POR AÇÃO (só leitura de desempenho)
+//               O doGet soma tempo por ação no CacheService. relatorioTempos(),
+//               rodado no editor, mostra chamadas, média, máximo e cache do dia.
+//               Nenhuma conta muda; falha na medição não afeta a resposta.
+// Versão: 5.50 — LIMPEZA: FALLBACKS, COMENTÁRIOS E PROTEÇÃO DOS RESETS MANUAIS
+//               zerarPainelAgora recusa dados de hoje. testeFecharAgora só roda
+//               em planilha "Cópia de ...". Fallbacks de CAIXAS e QTDE unificados.
+// Versão: 5.49 — LANÇAMENTO DEPOIS DO FECHAMENTO ATUALIZA O HISTORICO
+//               Hora extra lançada depois do FECHAR DIA entrava no log e no FIFO,
+//               mas o REALIZADO, a UEP e a HE do dia ficavam para trás. A linha
+//               do dia acompanha a HORA_A_HORA; META, FECHADO e FECHADO EM ficam.
+// Versão: 5.48 — LANÇAMENTO VALIDADO, META ÚNICA NO HISTORICO, PARADA SEM FIM FORA DAS PERDAS
+//               Quantidade e produto são conferidos antes de gravar. Se o log
+//               falhar, a célula da hora volta ao valor anterior: a retentativa
+//               não soma de novo. A META do HISTORICO é a mesma nos dois
+//               fechamentos (metas por hora da jornada, respeitando o C3).
+//               Parada encerrada pelo fechamento não conta tempo nas leituras.
+// Versão: 5.47 — DADOS QUE ENTRAVAM ERRADOS SEM AVISO
+//               dd/MM sem ano vai para o ano mais próximo (virada de ano); ano
+//               com 2 dígitos é lido; dia/mês impossível vira 0. Pontos, peso,
+//               medida, velocidade, troca e QTDE em texto pt-BR passam pelo
+//               _numBR. FORA usa a mesma regra do ENCERRAR (_marcado). A limpeza
+//               diária alcança lote além da coluna M. Sem coluna de lote e com
+//               REALIZADO em fórmula, o lançamento responde erro, não ok.
+// Versão: 5.46 — FECHAMENTO DO DIA: NÃO ZERA SEM ARQUIVAR, DATA PELO CARIMBO, COM LOCK
+//               Arquivamento que falha não zera mais a HORA_A_HORA. O
+//               resetDiario usa o dia do carimbo (o gatilho pode cair depois
+//               da meia-noite). Os resets rodam sob o lock dos lançamentos, o
+//               background reconfere o carimbo e o 1º lançamento do dia fecha
+//               o dia anterior que ficou aberto antes de gravar.
+// Versão: 5.45 — A LINHA QUE VOLTA DA CONCLUIDA VEM COM A DATA NO FORMATO DA ABA
+//               PPCP, 04/11/2026, com a 25390 501.136.005 de volta à
+//               PROGRAMACAO depois do TROCAR PRODUTO (158 cx eram do CINAMOMO):
+//               "a data de novo veio errada". O valor era 04/11/2026, certo; o
+//               setValues do _desarquivar deixava o formato padrão do Sheets
+//               (04/11/2026) no meio do dd/mm do extrato. _progDataNoFormato dá
+//               à linha o formato das linhas da mesma data (sem elas, o mais
+//               comum da coluna). Nada de conta muda.
 // Versão: 5.44 — A TROCA DA UEP PELA RÉGUA SEM AS LACUNAS
 //               PPCP, 04/11/2026, com a HOME ANGEL 1.8 VOL 2/2: 5 lacunas
 //               (paradas que ninguém marcou, 18% da medição) entravam no tempo
@@ -1282,16 +1333,50 @@ function _valoresPorData(sh, nomeColData, iPadrao, paraNum, deNum, ateNum) {
 
 function _invalidarValores() { _valoresMemo = {}; _feriadosMemo = null; }
 
-function _cacheGen(cache) {
-  let g = cache.get('rp_gen');
-  if (!g) { g = String(Date.now()); try { cache.put('rp_gen', g, 21600); } catch (e) {} }
-  return g;
+// v5.52: GERAÇÃO POR GRUPO. Antes, toda gravação derrubava todas as leituras:
+// um lançamento fazia catálogo, tipos, configuração e paradas serem relidos sem
+// nada ter mudado neles. Cada leitura lista os grupos de que depende, cada
+// escrita lista os que muda. Ação ou aba fora dos mapas invalida tudo.
+const CACHE_GRUPOS = ['prod', 'par', 'cat', 'cfg', 'crono'];
+const CACHE_DEP_LEITURA = {
+  getDados: ['prod'], getHistory: ['prod'], getMediaHoras: ['prod'], getHoraDia: ['prod', 'cat'],
+  getParadas: ['par'], getParadasPeriodo: ['par'], getHorasCrono: ['prod', 'par'],
+  getProdutos: ['cat'], getTiposParada: ['cat'], getConfigPainel: ['cfg'],
+  getPontosDia: ['prod', 'cat', 'cfg'], getProgramacaoHoje: ['prod', 'cat'],
+  getProgramacaoDetalhada: ['prod', 'cat'], getProducaoModeloPeriodo: ['prod', 'cat'],
+  getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat']
+};
+const CACHE_INV_ESCRITA = {
+  saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
+  setProdutoAtual: ['prod'], excluirLancamento: ['prod'], trocarProdutoLancamento: ['prod'],
+  saveParadas: ['par'], endParada: ['par'], setConfigPainel: ['cfg'], setUepCatalogo: ['cat'],
+  registrarCrono: ['crono'], excluirCrono: ['crono'], trocarUepCrono: ['cat', 'crono']
+};
+function _cacheGens(cache, grupos) {
+  const chaves = grupos.map(function (g) { return 'rp_gen_' + g; });
+  const achou = cache.getAll(chaves);
+  return chaves.map(function (k) {
+    let g = achou[k];
+    if (!g) { g = String(Date.now()); try { cache.put(k, g, 21600); } catch (e) {} }
+    return g;
+  }).join('.');
+}
+function _gruposDaAba(nome) {
+  if (nome === SHEET_PARADAS) return ['par'];
+  if (nome === SHEET_PRODUTOS || nome === SHEET_TIPOS_PAR || nome === SHEET_UEP_VER) return ['cat'];
+  if (nome === SHEET_CONFIG) return ['cfg'];
+  if (nome === SHEET_CRONO || nome === SHEET_CRONO_EXCL) return ['crono'];
+  return undefined; // qualquer outra aba invalida tudo
 }
 
 // Troca a geração → todas as entradas de leitura ficam órfãs (expiram sós).
-function invalidarCacheLeitura() {
-  _invalidarValores();   // o memo da execução também não pode sobreviver a uma gravação
-  try { CacheService.getScriptCache().put('rp_gen', String(Date.now()), 21600); } catch (e) {}
+function invalidarCacheLeitura(grupos) {
+  _invalidarValores(); // o memo da execução também não pode sobreviver a uma gravação
+  try {
+    const g = String(Date.now()), v = {};
+    (grupos || CACHE_GRUPOS).forEach(function (x) { v['rp_gen_' + x] = g; });
+    CacheService.getScriptCache().putAll(v, 21600);
+  } catch (e) {}
 }
 
 function _saidaJson(json, callback) {
@@ -1303,7 +1388,37 @@ function _saidaJson(json, callback) {
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
 
+// v5.51: tempo por ação do dia, no CacheService (6 h, renovadas a cada chamada).
+// Duas chamadas juntas podem perder uma contagem: serve para achar o gargalo, não
+// para auditoria. Rode relatorioTempos() no editor no fim do turno.
+function _medirTempo(acao, t0, hit) {
+  try {
+    const ms = Date.now() - t0;
+    const nome = (CACHE_TTL_LEITURA[acao] || ACOES_ESCRITA.indexOf(acao) >= 0) ? acao : 'outra';
+    const cache = CacheService.getScriptCache();
+    const k = 'tempo_' + Utilities.formatDate(new Date(), TZ, 'yyyyMMdd');
+    const s = cache.get(k);
+    const M = s ? JSON.parse(s) : {};
+    const a = M[nome] = M[nome] || { n: 0, ms: 0, max: 0, lentas: 0, hits: 0, hitMs: 0 };
+    if (hit) { a.hits++; a.hitMs += ms; }
+    else { a.n++; a.ms += ms; if (ms > a.max) a.max = ms; if (ms >= 5000) a.lentas++; }
+    cache.put(k, JSON.stringify(M), 21600);
+  } catch (e) { /* medição nunca pode afetar a resposta */ }
+}
+function relatorioTempos() {
+  const k = 'tempo_' + Utilities.formatDate(new Date(), TZ, 'yyyyMMdd');
+  const s = CacheService.getScriptCache().get(k);
+  if (!s) { Logger.log('Sem medição de hoje (ou o cache expirou: mais de 6 h sem chamadas).'); return; }
+  const M = JSON.parse(s);
+  Object.keys(M).sort(function (a, b) { return M[b].ms - M[a].ms; }).forEach(function (n) {
+    const a = M[n];
+    Logger.log(n + ': ' + a.n + ' chamadas · total ' + Math.round(a.ms / 1000) + ' s · média ' +
+      (a.n ? (a.ms / a.n / 1000).toFixed(1) : '0') + ' s · máx ' + (a.max / 1000).toFixed(1) + ' s · ' +
+      a.lentas + ' acima de 5 s · cache ' + a.hits + ' (média ' + (a.hits ? Math.round(a.hitMs / a.hits) : 0) + ' ms)');
+  });
+}
 function doGet(e) {
+  const t0 = Date.now(); // v5.51: medição de tempo
   e = e || {};
   const p        = e.parameter || {};
   const act      = p.action   || '';
@@ -1316,10 +1431,10 @@ function doGet(e) {
   if (ttl) {
     try {
       cache = CacheService.getScriptCache();
-      cacheKey = 'rp:' + _cacheGen(cache) + ':' + actEf + ':' +
+      cacheKey = 'rp:' + _cacheGens(cache, CACHE_DEP_LEITURA[actEf] || CACHE_GRUPOS) + ':' + actEf + ':' +
         ['data', 'de', 'ate', 'codigo', 'modelo', 'cxHora', 'uepVer', 'ptsCad'].map(function (k) { return p[k] || ''; }).join('|');
       const hit = cache.get(cacheKey);
-      if (hit) return _saidaJson(hit, callback);
+      if (hit) { _medirTempo(actEf, t0, true); return _saidaJson(hit, callback); }
     } catch (errCache) { cache = null; }   // cache indisponível → segue sem ele
   }
 
@@ -1365,7 +1480,7 @@ function doGet(e) {
 
   // 2) Gravou → invalida TODAS as leituras cacheadas (mesmo se o save falhou:
   //    invalidar demais é seguro; de menos é dado velho na tela do operador).
-  if (ACOES_ESCRITA.indexOf(act) >= 0) invalidarCacheLeitura();
+  if (ACOES_ESCRITA.indexOf(act) >= 0) invalidarCacheLeitura(CACHE_INV_ESCRITA[act]);
 
   const json = JSON.stringify(result);
 
@@ -1374,6 +1489,7 @@ function doGet(e) {
     try { cache.put(cacheKey, json, ttl); } catch (errPut) { /* >100KB: só não cacheia */ }
   }
 
+  _medirTempo(actEf, t0, false);
   return _saidaJson(json, callback);
 }
 
@@ -1395,11 +1511,10 @@ function doGet(e) {
 // o startsWith('L') — as outras duas não casam com nada. Tirá-lo faz as DEZ
 // colunas pararem de ser somadas.
 //
-// E o estrago é CALADO: sem coluna de lote, _saveRealizadoCore cai no ramo
-// `iLotes.length === 0`, que grava em REALIZADO apenas `if (!cell.getFormula())`
-// e devolve {ok:true} de qualquer jeito. E REALIZADO É FÓRMULA: conferido na
-// planilha em 15/09/2026, C5:C15 é =SUM(D5:M5) compartilhada. Ou seja, o
-// operador salva, o app diz que salvou e NADA é gravado.
+// Sem coluna de lote, _saveRealizadoCore cai no ramo `iLotes.length === 0`. E
+// REALIZADO É FÓRMULA: conferido na planilha em 15/09/2026, C5:C15 é
+// =SUM(D5:M5) compartilhada. Desde a v5.47 esse ramo responde erro em vez de
+// {ok:true}, mas o lançamento continua sem gravar.
 //
 // O que sobra é o critério aceitar DE MAIS: LINHA/LIMPEZA/LÍDER/LOCAL entram
 // pelo começo com L, e RESULTADO (resuLTado) e FALTA (faLTa) pelo LT no meio da
@@ -1603,7 +1718,8 @@ function saveRealizado(p) {
     // Só memoriza quando de fato gravou (ok:true): uma falha transitória não pode
     // ficar "presa" no cache impedindo uma nova tentativa real de gravar.
     if (cache && resultado && resultado.ok) {
-      cache.put('lanc_' + lancId, JSON.stringify(resultado), 7200); // 2h de janela
+      try { cache.put('lanc_' + lancId, JSON.stringify(resultado), 7200); } // 2h de janela
+      catch (e) { Logger.log('lancId sem cache (ignorado): ' + e.message); } // já gravou: não pode virar erro
     }
 
     // Itens 1 e 3: a cada lançamento efetivo, sincroniza a meta do dia e o saldo
@@ -1612,6 +1728,9 @@ function saveRealizado(p) {
     if (resultado && resultado.ok) {
       try { sincronizarPlanilhaPosLancamento(); }
       catch (e) { Logger.log('sincronizarPlanilha falhou (ignorado): ' + e.message); }
+      // v5.49: dia já no HISTORICO acompanha o lançamento. Falha aqui não derruba o lançamento.
+      try { _atualizarHistoricoPosLancamento(); }
+      catch (e) { Logger.log('HISTORICO pós-lançamento falhou (ignorado): ' + e.message); }
     }
     return resultado;
 
@@ -1624,6 +1743,11 @@ function saveRealizado(p) {
 // Separado de saveRealizado só para permitir a checagem de idempotência acima.
 // Roda já sob o lock adquirido por saveRealizado; não adquire lock próprio.
 function _saveRealizadoCore(p) {
+  // v5.46: aba ainda no dia anterior: fecha antes de gravar; falhou, não grava.
+  const erroValid = _validarLancamento(p); // v5.48: antes de qualquer gravação
+  if (erroValid) return { ok: false, erro: erroValid };
+  const erroDiaAnterior = _fecharDiaAnteriorPendente();
+  if (erroDiaAnterior) return { ok: false, erro: 'Dia anterior ainda aberto; lançamento não gravado. Avise o PPCP. (' + erroDiaAnterior + ')' };
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sh = ss.getSheetByName(SHEET_DADOS);
 
@@ -1662,10 +1786,12 @@ function _saveRealizadoCore(p) {
         const inicio   = cellHora.split('-')[0].trim();
         if (cellHora === horario || inicio === horario) {
           const cell = sh.getRange(i + 1, iR + 1);
-          if (!cell.getFormula()) {
-            cell.setValue(real);
-          }
-          registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
+        if (cell.getFormula()) {
+          return { ok: false, erro: 'REALIZADO é fórmula e a aba não tem coluna de lançamento: nada foi gravado.' };
+        }
+        const valorAntes = data[i][iR];
+        cell.setValue(real);
+          _registrarOuDesfazer(p, inicio || horario, real, cell, valorAntes);
           return { ok: true, linha: i + 1, horario: cellHora, realizado: real };
         }
       }
@@ -1678,10 +1804,13 @@ function _saveRealizadoCore(p) {
 
       if (cellHora === horario || inicio === horario) {
         let colunaEscrita = -1;
+        let celula = null, valorAntes = '';
         for (const ic of iLotes) {
           const val = data[i][ic];
           if (val === '' || val === null || val === undefined || val === 0) {
-            sh.getRange(i + 1, ic + 1).setValue(real);
+            celula = sh.getRange(i + 1, ic + 1);
+            valorAntes = val;
+            celula.setValue(real);
             colunaEscrita = ic + 1;
             break;
           }
@@ -1696,14 +1825,16 @@ function _saveRealizadoCore(p) {
         if (colunaEscrita < 0) {
           const ultimo = iLotes[iLotes.length - 1];
           const anterior = Number(data[i][ultimo]) || 0;
-          sh.getRange(i + 1, ultimo + 1).setValue(anterior + real);
+          celula = sh.getRange(i + 1, ultimo + 1);
+          valorAntes = data[i][ultimo];
+          celula.setValue(anterior + real);
           colunaEscrita = ultimo + 1;
           Logger.log('saveRealizado: sem coluna de LOTE livre em "' + cellHora +
                      '" (' + iLotes.length + ' coluna(s)). Somado na ultima: ' +
                      anterior + ' + ' + real + ' = ' + (anterior + real) +
                      '. Considere acrescentar colunas de LOTE na HORA_A_HORA.');
         }
-        registrarProducaoProduto(p.produto, inicio || horario, real, p.operador);
+        _registrarOuDesfazer(p, inicio || horario, real, celula, valorAntes);
         return { ok: true, linha: i + 1, coluna: colunaEscrita, horario: cellHora, realizado: real };
       }
     }
@@ -1711,6 +1842,63 @@ function _saveRealizadoCore(p) {
     return { ok: false, erro: 'Slot nao encontrado: ' + horario };
 }
 
+// v5.49: lançamento com o dia já no HISTORICO. Refaz os números da linha pela
+// HORA_A_HORA, sob o lock do saveRealizado. Não reduz o que está gravado.
+function _atualizarHistoricoPosLancamento() {
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HIST);
+  if (!sh || sh.getLastRow() < 2) return false;
+  const v = sh.getDataRange().getValues();
+  let k = -1;
+  for (let i = v.length - 1; i >= 1 && k < 0; i--) if (fmtDataBR(v[i][0]) === hoje) k = i;
+  if (k < 0) return false; // dia ainda aberto: nada a atualizar
+  const r = _resumoParaFechar(hoje);
+  if (!r) return false;
+  const realG = Number(v[k][1]) || 0, heG = Number(v[k][10]) || 0;
+  if (r.real === realG) return false;
+  // HE guardada só no navegador (saveDay, heLocal) não está na aba: não apaga.
+  if (r.real < realG || r.heCx < heG) {
+    Logger.log('HISTORICO ' + hoje + ' mantido: gravado ' + realG + ' cx, aba ' + r.real + ' cx.');
+    return false;
+  }
+  const meta = Number(v[k][2]) || 0;
+  const ef = meta > 0 ? Number((r.real / meta * 100).toFixed(1)) : 0;
+  const media = r.horas > 0 ? Math.round(r.real / r.horas) : 0;
+  sh.getRange(k + 1, 2).setValue(r.real);
+  sh.getRange(k + 1, 4, 1, 4).setValues([[ef, r.melhor, r.pior === null ? 0 : r.pior, r.he]]);
+  sh.getRange(k + 1, 10, 1, 5).setValues([[media, r.heCx].concat(_uepColsDoDia(hoje))]);
+  return true;
+}
+// v5.48: o log falhou depois de gravar a hora: a célula volta ao valor anterior.
+// Sem isso, a retentativa somaria as caixas de novo na HORA_A_HORA.
+function _registrarOuDesfazer(p, hora, real, celula, valorAntes) {
+  try {
+    registrarProducaoProduto(p.produto, hora, real, p.operador);
+  } catch (e) {
+    try { celula.setValue(valorAntes); }
+    catch (e2) { Logger.log('Não desfez a hora ' + hora + ': ' + e2.message); }
+    throw e;
+  }
+}
+// v5.48: conferência antes de gravar. Zero vale: é a hora sem produção. Limite
+// por lançamento contra dedo errado; o teto da esteira fica bem abaixo disso.
+const LANC_MAX_CX = 1000;
+function _validarLancamento(p) {
+  const bruto = String(p.realizado == null ? '' : p.realizado).trim();
+  const cx = Number(bruto);
+  if (!bruto || !isFinite(cx) || cx < 0 || Math.floor(cx) !== cx) return 'Quantidade inválida: ' + (bruto || 'vazia') + '. Nada foi gravado.';
+  if (cx > LANC_MAX_CX) return 'Quantidade acima do limite de ' + LANC_MAX_CX + ' cx por lançamento. Nada foi gravado.';
+  const cod = String(p.produto || '').trim();
+  if (!cod) return '';
+  const key = codKey(cod);
+  const catalogo = lerCatalogoProdutos();
+  const prod = catalogo.filter(function (x) { return x.codigo === cod || (key && codKey(x.codigo) === key); })[0];
+  if (prod) { p.produto = prod.codigo; return ''; }
+  if (!catalogo.length) return ''; // cadastro ilegível não para a linha
+  // Código da programação ainda fora do cadastro também não para a linha.
+  if (key && lerProgramacao().some(function (x) { return codKey(x.codigo) === key; })) return '';
+  return 'O código ' + cod + ' não está no cadastro nem na programação. Nada foi gravado.';
+}
 // Loga a produção por hora/produto (opcional — só se o operador selecionou um
 // produto no app). Também atualiza o "produto atual do turno". Chamada já sob o
 // lock de saveRealizado; não mexe nas colunas de lote de HORA_A_HORA.
@@ -2583,6 +2771,7 @@ function _cronoParadasNasHoras(H, deNum, ateNum) {
     if (!slots) continue;
     const ini = _horaEmSeg(_horaSegStr(r[iI])), fim = _horaEmSeg(_horaSegStr(r[iF]));
     if (ini == null || fim == null || fim <= ini) continue;
+    if (_paradaFimAuto(r[6])) continue; // v5.48: FIM inventado pelo fechamento
     const tipo = String(r[iT] || '').trim() || 'sem tipo';
     slots.forEach(function (s) {
       const ov = Math.min(s.b * 60, fim) - Math.max(s.a * 60, ini);
@@ -2731,7 +2920,7 @@ function atualizarSaldoNaProgramacao(prog) {
   const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
   const iData = acha('DATA') >= 0 ? acha('DATA') : 0;
   const iCod  = acha('CODIGO', 'COD') >= 0 ? acha('CODIGO', 'COD') : 2;
-  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
+  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 4;
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
   const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
@@ -2778,7 +2967,7 @@ function atualizarSaldoNaProgramacao(prog) {
     const codigo = String(r[iCod] || '').trim();
     const key    = codKey(codigo);
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
-    const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const fora   = iFora >= 0 && _marcado(r[iFora]);
     const enc    = iEnc  >= 0 && _marcado(r[iEnc]);
     const dNum   = dataParaNum(r[iData]);
     const temLinha = codigo && r[iData];
@@ -2801,7 +2990,7 @@ function atualizarSaldoNaProgramacao(prog) {
       // nunca como CONCLUIDO pela conta qtde − 0.
       const ek = key + '|' + lote + '|' + dNum + '|' + i;
       if (encMap[ek] != null) {
-        const qtde = Number(r[iQtd]) || 0;
+        const qtde = _numBR(r[iQtd]);
         produzido  = Math.max(0, encMap[ek]);
         saldo      = 0;
         pct        = qtde > 0 ? Math.floor(produzido / qtde * 100) : 0;
@@ -2814,7 +3003,7 @@ function atualizarSaldoNaProgramacao(prog) {
       const lk = key + '|' + lote + '|' + dNum, rk = lk + '|' + i;
       const sv = saldoRow[rk] != null ? saldoRow[rk] : saldoMap[lk];
       if (sv != null) {
-        const qtde = Number(r[iQtd]) || 0;
+        const qtde = _numBR(r[iQtd]);
         saldo      = Math.max(sv, 0);
         produzido  = Math.max(qtde - saldo, 0);
         pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
@@ -2830,7 +3019,7 @@ function atualizarSaldoNaProgramacao(prog) {
       // FIFO dá a ela quando a data chegar. Sem caixa adiantada, em branco.
       const fv = futMap[key + '|' + lote + '|' + dNum + '|' + i];
       if (fv > 0) {
-        const qtde = Number(r[iQtd]) || 0;
+        const qtde = _numBR(r[iQtd]);
         produzido  = Math.min(fv, qtde);
         saldo      = Math.max(qtde - produzido, 0);
         pct        = qtde > 0 ? Math.round(produzido / qtde * 100) : 0;
@@ -2921,7 +3110,7 @@ function _arquivarConcluidos(prog, simular) {
   const acha = function () { for (let i = 0; i < arguments.length; i++) { const j = hdr.indexOf(arguments[i]); if (j >= 0) return j; } return -1; };
   const iData = acha('DATA') >= 0 ? acha('DATA') : 0;
   const iCod  = acha('CODIGO', 'COD') >= 0 ? acha('CODIGO', 'COD') : 2;
-  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 5;
+  const iQtd  = acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') >= 0 ? acha('QTDE', 'QTD_CX', 'QTD', 'QUANTIDADE', 'QTD CX') : 4;
   const iLote = hdr.findIndex(function (h) { return h.includes('LOTE'); });
   const iFora = hdr.findIndex(function (h) { return h.includes('FORA'); });
   const iEnc  = hdr.findIndex(function (h) { return h.indexOf('ENCERR') === 0; });
@@ -2942,8 +3131,8 @@ function _arquivarConcluidos(prog, simular) {
     const codigo = String(r[iCod] || '').trim();
     const dNum   = dataParaNum(r[iData]);
     const lote   = iLote >= 0 ? String(r[iLote] || '').trim() : '';
-    const qtde   = Number(r[iQtd]) || 0;
-    const fora   = iFora >= 0 ? String(r[iFora] || '').trim() !== '' : false;
+    const qtde   = _numBR(r[iQtd]);
+    const fora   = iFora >= 0 && _marcado(r[iFora]);
     const enc    = iEnc  >= 0 && _marcado(r[iEnc]);
 
     let estado;
@@ -3011,6 +3200,16 @@ function _arquivarConcluidos(prog, simular) {
                    : { ok: true, arquivadas: 0, itens: [], seguradas: segura, voltam: voltam };
   }
 
+  // v5.54: o lock não cobre edição manual. Ordenar ou inserir linha durante a
+  // rodada muda os índices, e a linha errada seria copiada e apagada.
+  const chaveLinha = function (r) {
+    return r ? codKey(r[iCod]) + '|' + (iLote >= 0 ? String(r[iLote] || '').trim() : '') + '|' + dataParaNum(r[iData]) : '';
+  };
+  const conferir = sh.getDataRange().getValues();
+  if (idx.some(function (i) { return chaveLinha(conferir[i]) !== chaveLinha(values[i]); })) {
+    Logger.log('arquivarLotesConcluidos: aba mudou durante a rodada, nada arquivado agora.');
+    return { ok: true, arquivadas: 0, itens: [], seguradas: segura, voltam: [], adiado: true };
+  }
   // 3) Copia para o arquivo (a menos que o modo destrutivo esteja ligado).
   if (!ARQ_EXCLUIR_SEM_COPIA) {
     const shArq = _abaArquivoProg(ss, hdr);
@@ -3025,7 +3224,7 @@ function _arquivarConcluidos(prog, simular) {
     // final aqui — o histórico nunca vai para o arquivo em branco.
     const saida = idx.map(function (i) {
       const l     = linhas[i - 1];
-      const qtde  = Number(values[i][iQtd]) || 0;
+      const qtde  = _numBR(values[i][iQtd]);
       const lk    = codKey(l.codigo) + '|' + l.lote + '|' + l.dNum;
       const ek    = lk + '|' + i;
       const sv    = saldoRow[ek] != null ? saldoRow[ek] : saldoMap[lk];
@@ -3048,7 +3247,12 @@ function _arquivarConcluidos(prog, simular) {
   }
 
   // 4) Apaga da aba ativa, de baixo para cima (senão os índices andam).
-  for (let k = idx.length - 1; k >= 0; k--) sh.deleteRow(idx[k] + 1);
+  const fresca = sh.getDataRange().getValues();
+  for (let k = idx.length - 1; k >= 0; k--) {
+    const i = idx[k];
+    if (chaveLinha(fresca[i]) === chaveLinha(values[i])) sh.deleteRow(i + 1);
+    else Logger.log('arquivarLotesConcluidos: linha ' + (i + 1) + ' mudou, não apagada. Conferir a CONCLUIDA.');
+  }
 
   Logger.log('arquivarLotesConcluidos: ' + idx.length + ' linha(s) · lotes ' +
              detalhe.map(function (d) { return d.lote; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', '));
@@ -3099,7 +3303,7 @@ function _desarquivar(ss, prog, hojeNum, simular) {
   const hp = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(c => String(c).trim().toUpperCase());
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   const novas = sai.map(function (o) {
-    const qtde = Number(o.r[iQtd]) || 0, prodz = Math.max(qtde - o.rem, 0);
+    const qtde = _numBR(o.r[iQtd]), prodz = Math.max(qtde - o.rem, 0);
     const calc = { PRODUZIDO: prodz, SALDO: o.rem, PERCENTUAL: qtde > 0 ? Math.round(prodz / qtde * 100) : 0,
                    STATUS: _progStatus(qtde, o.rem, prodz, o.dNum, hojeNum, false), ATUALIZADO_EM: agora,
                    // o da CONCLUIDA é do retrato antigo; volta recalculado (v5.23)
@@ -3110,13 +3314,56 @@ function _desarquivar(ss, prog, hojeNum, simular) {
       return j >= 0 ? o.r[j] : '';
     });
   });
-  sh.getRange(sh.getLastRow() + 1, 1, novas.length, hp.length).setValues(novas);
+  const ini = sh.getLastRow() + 1;
+  sh.getRange(ini, 1, novas.length, hp.length).setValues(novas);
+  _progDataNoFormato(sh, hp, ini, sai.map(function (o) { return o.dNum; }));
   SpreadsheetApp.flush();   // só tira da CONCLUIDA depois que a volta está gravada
   sai.map(function (o) { return o.row; }).sort(function (a, b) { return b - a; })
      .forEach(function (row) { shArq.deleteRow(row + 1); });
   Logger.log('desarquivar: ' + sai.length + ' linha(s) voltaram para a ' + SHEET_PROG + ' · ' +
              sai.map(function (o) { return o.lote + ' ' + o.codigo; }).join(', '));
   return detalhe;
+}
+
+// v5.45 — A LINHA QUE VOLTA VEM COM A DATA NO FORMATO DA ABA. O setValues grava
+// o Date da CONCLUIDA no formato padrão do Sheets (04/11/2026), e a aba usa o do
+// extrato colado (dd/mm ou d/m). PPCP, 04/11/2026, com a 25390 501.136.005 de
+// volta depois do TROCAR PRODUTO: "a data de novo veio errada" — o VALOR estava
+// certo (o FIFO lê o Date), a cara não. Só formato: falhar aqui não desfaz a
+// volta. Uma leitura de UMA coluna (valores + formatos), só quando algo volta.
+function _progDataNoFormato(sh, hp, ini, dNums) {
+  try {
+    const j = hp.indexOf('DATA');
+    if (j < 0 || ini <= 2 || !dNums.length) return;
+    const rg = sh.getRange(2, j + 1, ini - 2, 1);
+    const nums = rg.getValues().map(function (r) { return dataParaNum(r[0]); });
+    const fmts = rg.getNumberFormats().map(function (r) { return String(r[0] == null ? '' : r[0]); });
+    _progFormatosData(nums, fmts, dNums).forEach(function (f, k) {
+      if (f) sh.getRange(ini + k, j + 1).setNumberFormat(f);
+    });
+  } catch (e) { Logger.log('desarquivar · formato da data: ' + e.message); }
+}
+
+// Conta pura: para cada data (aaaammdd) que volta, o formato de data MAIS COMUM
+// entre as linhas da MESMA data; sem nenhuma, o mais comum da coluna; sem nenhum,
+// '' (a célula fica como o setValues deixou). Só formato de DATA entra na conta —
+// "General", texto (@), número e data com hora não: copiar um deles faria a data
+// virar 46330. A mais comum, não a 1ª: uma linha que voltou antes (com o formato
+// longo) não pode ensinar o formato às outras.
+function _progFormatosData(nums, fmts, dNums) {
+  const ehData = function (f) { return /d/i.test(f) && /m/i.test(f) && !/[h@#0]/i.test(f); };
+  const moda = function (filtro) {
+    const c = {}; let melhor = '', n = 0;
+    for (let i = 0; i < nums.length; i++) {
+      const f = fmts[i];
+      if (!nums[i] || !ehData(f) || !filtro(nums[i])) continue;
+      c[f] = (c[f] || 0) + 1;
+      if (c[f] > n) { n = c[f]; melhor = f; }
+    }
+    return melhor;
+  };
+  const geral = moda(function () { return true; });
+  return dNums.map(function (d) { return moda(function (x) { return x === d; }) || geral; });
 }
 
 // Dia (aaaammdd) do carimbo ATUALIZADO_EM. O write-back grava o texto
@@ -3272,7 +3519,7 @@ function _uepLogPorDia(dataFiltro) {
   const iData = hdr.indexOf('DATA') >= 0 ? hdr.indexOf('DATA') : 0;
   const iHora = hdr.indexOf('HORA') >= 0 ? hdr.indexOf('HORA') : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
-  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
   const alvo  = dataFiltro ? dataParaNum(dataFiltro) : null;
   const linhas = [];
   for (let i = 1; i < values.length; i++) {
@@ -3320,7 +3567,7 @@ function _uepHoraDoDia(dataBR) {
   const iData = hdr.indexOf('DATA') >= 0 ? hdr.indexOf('DATA') : 0;
   const iHora = hdr.indexOf('HORA') >= 0 ? hdr.indexOf('HORA') : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
-  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
   const linhas = [];
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
@@ -3419,7 +3666,10 @@ function saveDay(p) {
     const pl0  = _resumoParaFechar(p.data);
     const heLocal = !!pl0 && (Number(p.heCx) || 0) > pl0.heCx;
     const pl   = heLocal ? null : pl0;
-    const meta = Number(p.meta) || 0;
+    // v5.48: a META sai da HORA_A_HORA, a mesma conta do fechamento automático.
+    const metaPainel = Number(p.meta) || 0;
+    const meta = (pl && pl.meta > 0) ? pl.meta : metaPainel;
+    if (meta !== metaPainel) Logger.log('saveDay ' + p.data + ': meta do painel ' + metaPainel + ', gravada ' + meta + '.');
     const real = pl ? pl.real : (Number(p.real) || 0);
     const row = [
       p.data,
@@ -3750,13 +4000,13 @@ function lerCatalogoProdutos() {
       codigo,
       desc:       iDesc   >= 0 ? String(row[iDesc] || '').trim() : '',
       cor:        iCor    >= 0 ? String(row[iCor]  || '').trim().toUpperCase() : '',
-      peso:       iPeso   >= 0 ? Number(row[iPeso])   || 0 : 0,
+      peso:       iPeso   >= 0 ? _numBR(row[iPeso]) : 0,
       ean:        iEan    >= 0 ? String(row[iEan] || '').trim() : '',
-      medida:     iMedida >= 0 ? Number(row[iMedida]) || 0 : 0,
-      velocidade: iVel    >= 0 ? Number(row[iVel])    || 0 : 0,
-      entrePeca:  iEntre  >= 0 ? Number(row[iEntre])  || 0 : 0,
-      pontos:     iPontos >= 0 ? Number(row[iPontos]) || 0 : 0,
-      tempoTroca: iTroca  >= 0 ? Number(row[iTroca])  || 0 : 0,
+      medida:     iMedida >= 0 ? _numBR(row[iMedida]) : 0,
+      velocidade: iVel    >= 0 ? _numBR(row[iVel]) : 0,
+      entrePeca:  iEntre  >= 0 ? _numBR(row[iEntre]) : 0,
+      pontos:     iPontos >= 0 ? _numBR(row[iPontos]) : 0,
+      tempoTroca: iTroca  >= 0 ? _numBR(row[iTroca]) : 0,
       uep:        iUep    >= 0 ? _numBR(row[iUep]) : 0,
       uepVig:     iUepVig >= 0 ? _dataStr(row[iUepVig]) : ''
     });
@@ -3829,8 +4079,8 @@ function getConfigPainel() {
     seloUepTv: bool(kv.SELO_UEP_TV, false),
     kpisTelaB: kv.KPIS_TELA_B !== undefined ? String(kv.KPIS_TELA_B) : null,
     modoLeitor: bool(kv.MODO_LEITOR, true),  // seleção de produto por bipe no mobile (padrão ligado)
-    // Meta de UEP do dia (8 h de jornada normal), v5.11. Sem a chave → null e
-    // o painel usa o padrão dele (2.300, decisão do PPCP em 24/09/2026).
+    // Meta de UEP do dia (jornada normal inteira), v5.11. Sem a chave → null e
+    // o painel usa o padrão dele (UEP_META_PADRAO_GS).
     metaUep: kv.META_UEP !== undefined && _numBR(kv.META_UEP) > 0 ? _numBR(kv.META_UEP) : null,
     // Meta de PONTOS do dia, sem hora extra (v5.42). Sem a chave → null: o
     // painel não julga pontos (nunca uma meta inventada).
@@ -4339,6 +4589,29 @@ function _ptsDoLog(r, iPts, cx, prod) {
   return cx * ((prod && prod.pontos) || 0);
 }
 
+// v5.52: a programação calculada, compartilhada por 60 s entre getPontosDia,
+// getProgramacaoHoje e getProgramacaoDetalhada: as três refaziam o mesmo FIFO.
+// Só para LEITURA. Quem grava chama calcularProgramacao() direto. Os mapas de
+// escrita não entram no cache, e o que passar de 100 KB só não é guardado.
+const PROG_SO_ESCRITA = ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'credRow', 'credArq', 'reabrirArq'];
+function _programacaoCacheada() {
+  let cache = null, k = '';
+  try {
+    cache = CacheService.getScriptCache();
+    k = 'rp_prog:' + Utilities.formatDate(new Date(), TZ, 'yyyyMMdd') + ':' + _cacheGens(cache, ['prod', 'cat']);
+    const s = cache.get(k);
+    if (s) return JSON.parse(s);
+  } catch (e) { cache = null; }
+  const p = calcularProgramacao();
+  if (cache) {
+    try {
+      const c = {};
+      Object.keys(p).forEach(function (x) { if (PROG_SO_ESCRITA.indexOf(x) < 0) c[x] = p[x]; });
+      cache.put(k, JSON.stringify(c), 60);
+    } catch (e) { /* acima de 100 KB: só não guarda */ }
+  }
+  return p;
+}
 // Produção do dia em PONTOS e PESO (kg), a partir do log PRODUCAO_PRODUTO.
 // Usada só pelo gerencial/TV (fora do caminho quente do app do operador).
 function getPontosDia() {
@@ -4354,7 +4627,7 @@ function getPontosDia() {
   const produtoAtualCor  = produtoAtual ? produtoDoCodigo(produtoAtual).cor : '';
 
   // Programação/atraso (planejado x embalado). Independe de haver produção hoje.
-  const programacao = calcularProgramacao();
+  const programacao = _programacaoCacheada();
   // saldoLinha é um mapa auxiliar (uso interno do write-back de saldo por lote);
   // não precisa ir no JSON do painel — remove para manter o payload enxuto.
   try { ['saldoLinha', 'saldoRow', 'encLinha', 'adiLinha', 'adiFut', 'credRow', 'credArq', 'reabrirArq'].forEach(function (k) { delete programacao[k]; }); } catch (e) {}
@@ -4384,7 +4657,7 @@ function getPontosDia() {
 
   const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
   const hojeNum = dataParaNum(hoje);
-  const values  = _valoresDaAba(sh);
+  const values  = _valoresPorData(sh, 'DATA', 0, dataParaNum, hojeNum, hojeNum);
 
   // Detecta as colunas pelo cabeçalho (a aba pode ter DESCRICAO/PONTOS/PESO_KG/OPERADOR
   // além de DATA/HORA/CODIGO/CAIXAS). Fallback posicional p/ o formato antigo.
@@ -4392,7 +4665,7 @@ function getPontosDia() {
   const iData = hdr.indexOf('DATA')   >= 0 ? hdr.indexOf('DATA')   : 0;
   const iHora = hdr.indexOf('HORA')   >= 0 ? hdr.indexOf('HORA')   : 1;
   const iCod  = hdr.indexOf('CODIGO') >= 0 ? hdr.indexOf('CODIGO') : 2;
-  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 3;
+  const iCx   = hdr.indexOf('CAIXAS') >= 0 ? hdr.indexOf('CAIXAS') : 4;
   const iPts  = hdr.indexOf('PONTOS');   // v5.40: o gravado no lançamento (_ptsDoLog)
   const rows = values.slice(1);
 
@@ -4473,7 +4746,7 @@ function getPontosDia() {
     porHoraModeloMap[key].troca = Math.max(porHoraModeloMap[key].troca, Number((catalogo[it.codigo] || {}).tempoTroca) || 0);
     // UEP por CÓDIGO (o PPCP pode ter UEP diferente entre códigos do mesmo
     // produto). Hora extra pela MESMA régua das caixas (_ehHoraExtraCaixas):
-    // a meta de UEP é de 8 h de jornada normal, a HE vai separada.
+    // a meta de UEP é de jornada normal inteira, a HE vai separada.
     const uCx = Number((catalogo[it.codigo] || {}).uep) || 0;
     if (uCx > 0) {
       uep[_ehHoraExtraCaixas(it.hora) ? 'he' : 'normal'] += it.caixas * uCx;
@@ -4801,18 +5074,25 @@ function _feriadosNums() {
   return m;
 }
 
+// Ano de uma data dd/MM sem ano: o mais próximo de hoje. Em janeiro, 29/12 é do
+// ano passado; em dezembro, 05/01 é do ano que vem.
+function _anoProvavel(mes) {
+  const hoje = new Date();
+  const ano = Number(Utilities.formatDate(hoje, TZ, 'yyyy'));
+  const dif = Number(mes) - Number(Utilities.formatDate(hoje, TZ, 'M'));
+  return dif > 6 ? ano - 1 : dif < -6 ? ano + 1 : ano;
+}
 function dataParaNum(v) {
   let s;
   if (v instanceof Date) s = Utilities.formatDate(v, TZ, 'dd/MM/yyyy');
   else s = String(v || '').trim();
-  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]);
-  m = s.match(/^(\d{1,2})\/(\d{1,2})$/);
-  if (m) {
-    const ano = Number(Utilities.formatDate(new Date(), TZ, 'yyyy'));
-    return ano * 10000 + Number(m[2]) * 100 + Number(m[1]);
-  }
-  return 0;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
+  if (!m) return 0;
+  const d = Number(m[1]), mes = Number(m[2]);
+  if (d < 1 || d > 31 || mes < 1 || mes > 12) return 0;
+  let ano = m[3] ? Number(m[3]) : _anoProvavel(mes);
+  if (ano < 100) ano += 2000;
+  return ano * 10000 + mes * 100 + d;
 }
 
 // Formata a coluna HORA do log PRODUCAO_PRODUTO como "HH:mm". O Sheets converte
@@ -4890,7 +5170,7 @@ function _lerProgDaAba(sh, arquivada) {
   for (let i = 1; i < values.length; i++) {
     const r = values[i];
     const codigo = String(r[cCod] || '').trim();
-    const qtde   = Number(r[cQtd]) || 0;
+    const qtde   = _numBR(r[cQtd]);
     if (!codigo || !r[cData]) continue;
     // LOTE é opcional: aba pode nao ter a coluna ainda (compatibilidade).
     const lote = iLote >= 0 ? String(r[iLote] || '').trim() : '';
@@ -4907,7 +5187,7 @@ function _lerProgDaAba(sh, arquivada) {
                             iStat >= 0 ? r[iStat] : '', qtde)
       : null;
     out.push({ data: r[cData], codigo: codigo, qtde: qtde, lote: lote,
-               foraEsteira: foraTxt !== '', foraLocal: foraTxt,
+               foraEsteira: iFora >= 0 && _marcado(r[iFora]), foraLocal: foraTxt,
                arquivada: !!arquivada,
                encerrada: encerrada,
                produzido: produzido,
@@ -5312,7 +5592,7 @@ function _numParaDataBR(n) {
 }
 
 function getProgramacaoHoje() {
-  const p = calcularProgramacao();
+  const p = _programacaoCacheada();
   // A COR vai junto: com ela em coluna própria na PRODUTO_CODIGO, a DESCRICAO
   // sozinha faz quatro cores do mesmo produto virarem quatro linhas IDÊNTICAS
   // no seletor do app — foi o que aconteceu com o lote 25076 (quatro
@@ -5368,7 +5648,7 @@ function getProgramacaoDetalhada() {
   lerCatalogoProdutos().forEach(pr => { catByKey[codKey(pr.codigo)] = pr; });
 
   const statusByKey = {};
-  const calc = calcularProgramacao();
+  const calc = _programacaoCacheada();
   calc.lista.forEach(function (x) { statusByKey[codKey(x.codigo)] = x; });
   const adiFut = calc.adiFut || {};
 
@@ -5451,12 +5731,20 @@ function getProgramacaoDetalhada() {
 // ADICIONAR HORA EXTRA
 // ════════════════════════════════════════════════════════
 
+// v5.54: o mesmo lock dos lançamentos para quem lê e depois grava na aba.
+function _comLock(f, p) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { return f(p); }
+  finally { lock.releaseLock(); }
+}
 // A linha de hora extra vai para a planilha MARCADA com o prefixo "HE ", que é
 // o que o resto do script sempre esperou (fechamento e limpeza diária usam
 // startsWith('HE')). Sem a marca, a linha era indistinguível de uma hora do
 // turno: a contagem de HE fechava em 0 e a limpeza não apagava a linha extra.
 // Rótulo já marcado (planilha antiga, edição manual) não ganha prefixo duplo.
-function addHE(p) {
+function addHE(p) { return _comLock(_addHECore, p); } // v5.54
+function _addHECore(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_DADOS);
   if (!sh) return { ok: false, erro: 'Aba nao encontrada.' };
@@ -5538,7 +5826,8 @@ function _semPrefixoHE(rotulo) {
 // parada EM ANDAMENTO (sem FIM) e depois dar START (reenviar a mesma parada com o
 // FIM preenchido) sem duplicar linhas. IDs novos continuam sendo acrescentados,
 // então o comportamento antigo (paradas já com início e fim) é preservado.
-function saveParadas(p) {
+function saveParadas(p) { return _comLock(_saveParadasCore, p); } // v5.54
+function _saveParadasCore(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh   = ss.getSheetByName(SHEET_PARADAS);
 
@@ -5562,6 +5851,7 @@ function saveParadas(p) {
   }
 
   let salvos = 0;
+  let ignoradas = 0; // v5.54: abertura recusada por já haver parada aberta
   paradas.forEach(par => {
     const id      = String(par.id || Date.now());
     const abrindo = !String(par.fim || '').trim();
@@ -5570,7 +5860,7 @@ function saveParadas(p) {
     // Dedupe: não cria uma SEGUNDA parada aberta enquanto já houver uma aberta
     // hoje. Impede o acúmulo de paradas "em andamento" por toques repetidos /
     // leituras defasadas no mobile.
-    if (!r && abrindo && temAbertaHoje) return;
+    if (!r && abrindo && temAbertaHoje) { ignoradas++; return; }
 
     const row = [
       data, id, par.tipo || '', par.ini || '', par.fim || '',
@@ -5583,13 +5873,14 @@ function saveParadas(p) {
   });
 
   SpreadsheetApp.flush(); // garante commit antes do próximo getParadas
-  return { ok: true, salvos };
+  return { ok: true, salvos: salvos, ignoradas: ignoradas };
 }
 
 // Dá START (encerra) numa parada em andamento: carimba o FIM (hora do servidor,
 // se não vier) e recalcula a DURAÇÃO da linha cujo ID casa. Usado pelo operador
 // no mobile quando a produção volta a rodar.
-function endParada(p) {
+function endParada(p) { return _comLock(_endParadaCore, p); } // v5.54
+function _endParadaCore(p) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PARADAS);
   if (!sh) return { ok: false, erro: 'sem paradas' };
@@ -5645,9 +5936,9 @@ function endParada(p) {
 }
 
 // Fecha as paradas que ficaram ABERTAS (sem FIM) no dia arquivado — assim uma
-// parada esquecida (sem START) não vira "em andamento" eterna. Carimba FIM = fim
-// do turno (último slot de HORA_A_HORA); se não achar, usa o próprio INÍCIO
-// (duração 0). Marca a OBS. Chamada no fechamento diário (executarReset).
+// parada esquecida (sem START) não vira "em andamento" eterna. Sem START não há
+// duração conhecida: FIM = INÍCIO (v5.48); sem INÍCIO, o fim do turno. Marca a
+// OBS. Chamada no fechamento diário (executarReset).
 function encerrarParadasAbertas(dataRef) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PARADAS);
@@ -5662,7 +5953,8 @@ function encerrarParadasAbertas(dataRef) {
     const fim       = _horaSegStr(values[i][4]);
     if (linhaData === dataRef && !fim) {
       const ini     = _horaSegStr(values[i][3]);
-      const novoFim = fimTurno || ini;
+      // v5.48: sem START não há duração conhecida: FIM = INÍCIO, e o PPCP corrige.
+      const novoFim = ini || fimTurno;
       const obs     = String(values[i][6] || '');
       sh.getRange(i + 1, 5).setValue(novoFim);
       sh.getRange(i + 1, 6).setValue(calcDurMin(ini, novoFim) || '');
@@ -5742,9 +6034,13 @@ function getTiposParada() {
 // deslocado (ex.: aparecia 17:19 em vez de 12:19, +5h, e o cronômetro da TV
 // travava em 00:00 porque o início ficava "no futuro"). getSpreadsheetTimeZone()
 // devolve exatamente o que está exibido na célula.
+// v5.53: uma consulta por execução. O fuso não muda no meio de uma chamada.
+var _ssTzMemo = null;
 function _ssTz() {
-  try { return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || TZ; }
+  if (_ssTzMemo) return _ssTzMemo;
+  try { _ssTzMemo = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || TZ; }
   catch (e) { return TZ; }
+  return _ssTzMemo;
 }
 function _dataStr(v) {
   return (v instanceof Date) ? Utilities.formatDate(v, _ssTz(), 'dd/MM/yyyy') : String(v || '').trim();
@@ -5772,6 +6068,11 @@ function _garantirColDuracaoSeg(sh) {
   } catch (e) { Logger.log('DURACAO_SEG: não consegui escrever o cabeçalho — ' + e); }
 }
 
+// v5.48: parada que ninguém encerrou tem FIM inventado pelo fechamento. Na
+// leitura ela vale FIM = INÍCIO (duração zero), inclusive nas linhas antigas:
+// não infla as perdas. Para contar, corrija o FIM e tire a marca da OBS.
+function _paradaFimAuto(obs) { return /encerrada automaticamente/i.test(String(obs || '')); }
+function _fimParadaLida(ini, fim, obs) { return (ini && _paradaFimAuto(obs)) ? ini : fim; }
 // Paradas de um intervalo de datas (para o relatório). de/ate em dd/MM/yyyy.
 // A duração é recalculada no front-end a partir de ini/fim (não depende da
 // coluna DURACAO, que pode ter virado fórmula/tempo na planilha).
@@ -5791,7 +6092,7 @@ function getParadasPeriodo(p) {
     data: _dataStr(r[0]),
     tipo: String(r[2] || ''),
     ini:  _horaSegStr(r[3]),
-    fim:  _horaSegStr(r[4]),
+    fim:  _fimParadaLida(_horaSegStr(r[3]), _horaSegStr(r[4]), r[6]),
     obs:  String(r[6] || '')
   })).filter(x => {
     const n = toNum(x.data);
@@ -5825,7 +6126,7 @@ function getParadas(p) {
       id:   Number(r[1]) || ('L' + (i + 1)),
       tipo: String(r[2] || ''),
       ini:  _horaSegStr(r[3]),
-      fim:  _horaSegStr(r[4]),
+      fim:  _fimParadaLida(_horaSegStr(r[3]), _horaSegStr(r[4]), r[6]),
       obs:  String(r[6] || '')
     });
   }
@@ -5847,7 +6148,7 @@ function onEdit(e) {
     // Edição manual em QUALQUER aba invalida o cache de leitura — senão o
     // painel poderia mostrar dado velho por até 5 min depois de uma correção
     // feita direto na planilha.
-    invalidarCacheLeitura();
+    invalidarCacheLeitura(_gruposDaAba(e.range.getSheet().getName()));
     const sh = e.range.getSheet();
     // v5.24: UEP digitada à mão no cadastro vira versão (UEP_VERSOES). Falhar
     // aqui não pode travar a edição — o catch de baixo engole, como sempre.
@@ -5910,21 +6211,54 @@ function instalarGatilhoAquecimento() {
 // Rode AGORA (menu Executar) para fechar e zerar o painel na hora, caso ele
 // tenha ficado com os dados de ontem. Arquiva sob a data correta antes de zerar.
 function zerarPainelAgora() {
-  const props   = PropertiesService.getScriptProperties();
-  const hoje    = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  const ontem   = Utilities.formatDate(new Date(Date.now() - 86400000), TZ, 'dd/MM/yyyy');
+  const props = PropertiesService.getScriptProperties();
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  const ontem = Utilities.formatDate(new Date(Date.now() - 86400000), TZ, 'dd/MM/yyyy');
   const carimbo = props.getProperty(PROP_DATA_DADOS);
-  const dataRef = (carimbo && carimbo !== hoje) ? carimbo : ontem;
-  executarReset(dataRef, props);
+  // v5.50: carimbo de hoje é produção de hoje. Arquivar como ontem e zerar apagaria o dia.
+  if (carimbo === hoje) {
+    Logger.log('zerarPainelAgora recusado: a aba tem dados de hoje (' + hoje + '). Use FECHAR DIA.');
+    return;
+  }
+  const dataRef = carimbo || ontem;
+  _resetComLock(dataRef, props);
   Logger.log('Painel zerado manualmente (arquivado em ' + dataRef + ').');
 }
 
 // Executada pelo gatilho às ~23:59. Salva o dia no HISTÓRICO e zera o REALIZADO.
 function resetDiario() {
   const props = PropertiesService.getScriptProperties();
-  const hoje  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  if (props.getProperty('ultimoReset') === hoje) return; // o dia de hoje já foi fechado
-  executarReset(hoje, props);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    // v5.46: nearMinute tem margem de ±15 min e o gatilho pode cair depois da
+    // meia-noite. O dia é o do CARIMBO; sem ele, o dia de 6 h atrás.
+    const dataRef = props.getProperty(PROP_DATA_DADOS) ||
+      Utilities.formatDate(new Date(Date.now() - 6 * 3600000), TZ, 'dd/MM/yyyy');
+    if (props.getProperty('ultimoReset') === dataRef) return; // esse dia já foi fechado
+    executarReset(dataRef, props);
+  } finally {
+    lock.releaseLock();
+  }
+}
+// v5.46: reset manual sob o MESMO lock dos lançamentos.
+function _resetComLock(dataRef, props) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try { executarReset(dataRef, props); }
+  finally { lock.releaseLock(); }
+}
+// v5.46: 1º lançamento do dia com a aba ainda no dia anterior. Fecha o dia
+// anterior ANTES de gravar, já sob o lock do saveRealizado (executarReset não
+// pega lock). Devolve '' se pode gravar, ou a mensagem do erro: gravar por cima
+// misturaria os dois dias e trocaria o carimbo, e o dia anterior nunca fecharia.
+function _fecharDiaAnteriorPendente() {
+  const props = PropertiesService.getScriptProperties();
+  const stamp = props.getProperty(PROP_DATA_DADOS);
+  if (!stamp || stamp === Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy')) return '';
+  if (!planilhaTemProducao()) { props.deleteProperty(PROP_DATA_DADOS); return ''; }
+  try { executarReset(stamp, props); return ''; }
+  catch (e) { Logger.log('Fechamento de ' + stamp + ' falhou: ' + e.message); return e.message; }
 }
 
 
@@ -6004,20 +6338,27 @@ function resetPendenteBackground() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'resetPendenteBackground') ScriptApp.deleteTrigger(t);
   });
-
-  const dataRef = props.getProperty('resetPendente');
-  props.deleteProperty('resetPendente');
-  if (!dataRef) return;
-
-  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  if (dataRef === hoje) return;                              // nada a fechar
-  if (props.getProperty('ultimoReset') === dataRef) return; // já foi fechado
-
+  // v5.46: sob o MESMO lock dos lançamentos. Sem o lock, resetPendente fica
+  // guardado e a próxima leitura reagenda.
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) { Logger.log('resetPendenteBackground: lock ocupado, fica para a próxima leitura.'); return; }
   try {
+    const dataRef = props.getProperty('resetPendente');
+    props.deleteProperty('resetPendente');
+    if (!dataRef) return;
+    const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+    if (dataRef === hoje) return; // nada a fechar
+    if (props.getProperty('ultimoReset') === dataRef) return; // já foi fechado
+    // Reconfere: se o carimbo mudou desde o agendamento, a aba tem dados de
+    // outro dia e zerar agora apagaria produção nova.
+    const stamp = props.getProperty(PROP_DATA_DADOS);
+    if (stamp && stamp !== dataRef) { Logger.log('resetPendenteBackground: carimbo ' + stamp + ' ≠ ' + dataRef + ' — nada zerado.'); return; }
     if (planilhaTemProducao()) executarReset(dataRef, props);
     else props.deleteProperty(PROP_DATA_DADOS);
   } catch (e) {
     Logger.log('resetPendenteBackground falhou: ' + e.message);
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -6035,11 +6376,13 @@ function planilhaTemProducao() {
   const iH  = hdr.indexOf('HORA');
   const iR  = hdr.indexOf('REALIZADO');
   if (iR < 0) return false;
+  const lotesP = _colunasDeLote(hdr, iR);
+  const ultColP = Math.max(12, lotesP.length ? lotesP[lotesP.length - 1] : 0); // v5.47: além da M
 
   for (let i = hIdx + 1; i < data.length; i++) {
     const hora = String(data[i][iH] || '').trim().toUpperCase();
     if (!hora || hora === 'TOTAL') continue;
-    for (let c = iR; c <= Math.min(12, data[i].length - 1); c++) {
+    for (let c = iR; c <= Math.min(ultColP, data[i].length - 1); c++) {
       const v = data[i][c];
       if (v !== '' && v !== null && v !== undefined && !isNaN(Number(v)) && Number(v) > 0) return true;
     }
@@ -6051,17 +6394,18 @@ function planilhaTemProducao() {
 // Se limparRealizado() falhar, a exceção sobe e o getDados() apenas registra o
 // erro e tenta de novo na próxima leitura (auto-recuperação, sem travar o painel).
 function executarReset(dataRef, props) {
-  try { arquivarDiaAtual(dataRef); }
-  catch (err) { Logger.log('Falha ao arquivar ' + dataRef + ': ' + err.message); }
-
+  // v5.46: SEM try/catch aqui. Se o arquivamento falhar, a exceção sobe e a
+  // HORA_A_HORA NÃO é zerada: o carimbo fica e o fechamento tenta de novo.
+  arquivarDiaAtual(dataRef);
+  SpreadsheetApp.flush(); // só zera depois que o arquivo está gravado de fato
   // Fecha paradas que ficaram abertas (operador esqueceu de dar START) para não
   // arrastarem "em andamento" para o dia seguinte. Nunca derruba o reset.
   try { encerrarParadasAbertas(dataRef); }
   catch (err) { Logger.log('Falha ao encerrar paradas abertas: ' + err.message); }
-
   limparRealizado();
   props.setProperty('ultimoReset', dataRef);
   props.deleteProperty(PROP_DATA_DADOS); // planilha zerada: sem dados carimbados
+  invalidarCacheLeitura(); // HISTORICO e HORA_A_HORA mudaram
   Logger.log('Dia fechado e zerado: ' + dataRef);
 }
 
@@ -6070,38 +6414,38 @@ function limparRealizado() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_DADOS);
   if (!sh) return;
-
   const data = sh.getDataRange().getValues();
   const hIdx = 3;
   if (data.length <= hIdx) return;
-  const hdr  = data[hIdx].map(c => String(c).trim().toUpperCase());
-  const iH   = hdr.indexOf('HORA');
-  const iR   = hdr.indexOf('REALIZADO');
-
+  const hdr = data[hIdx].map(c => String(c).trim().toUpperCase());
+  const iH = hdr.indexOf('HORA');
+  const iR = hdr.indexOf('REALIZADO');
   if (iR < 0) return;
-
-  const iLotes = [];
-  const COL_M  = 12;
-  for (let c = iR + 1; c <= Math.min(COL_M, hdr.length - 1); c++) {
-    iLotes.push(c);
-  }
-
+  // v5.47: as colunas depois de REALIZADO até a M, como sempre, e também os
+  // lotes além dela. Quem soma é o _colunasDeLote: lote fora da limpeza
+  // entraria na produção do dia seguinte. Blocos contíguos, para não tocar em
+  // coluna que não é de lote (COMO PREENCHER).
+  const COL_M = 12;
+  const marca = {};
+  for (let c = iR + 1; c <= Math.min(COL_M, hdr.length - 1); c++) marca[c] = 1;
+  _colunasDeLote(hdr, iR).forEach(function (c) { marca[c] = 1; });
+  const cols = Object.keys(marca).map(Number).sort(function (a, b) { return a - b; });
+  const blocos = [];
+  cols.forEach(function (c) {
+    const u = blocos[blocos.length - 1];
+    if (u && u.fim === c - 1) u.fim = c; else blocos.push({ ini: c, fim: c });
+  });
   for (let i = data.length - 1; i > hIdx; i--) {
     const hora = String(data[i][iH] || '').trim().toUpperCase();
-
     if (!hora || hora === 'TOTAL') continue;
-
     if (_ehHoraExtra(hora)) {
       sh.deleteRow(i + 1);
       continue;
     }
-
-    if (iLotes.length > 0) {
-      const startCol = iLotes[0] + 1;
-      const numCols  = iLotes[iLotes.length - 1] - iLotes[0] + 1;
-      const emptyRow = Array(numCols).fill('');
-      sh.getRange(i + 1, startCol, 1, numCols).setValues([emptyRow]);
-    }
+    blocos.forEach(function (b) {
+      const n = b.fim - b.ini + 1;
+      sh.getRange(i + 1, b.ini + 1, 1, n).setValues([Array(n).fill('')]);
+    });
   }
 }
 
@@ -6127,6 +6471,8 @@ function _resumoHoraAHora(data) {
   const num = (v) =>
     (v === '' || v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
+  // v5.48: slot antes do início do turno (C3) não entra na META, como no getDados.
+  const iniTurnoMin = (data[2] && Number(data[2][2]) === 5 ? 5 : 7) * 60;
   let real = 0, meta = 0, he = 0, heCx = 0, melhor = 0, pior = null, horas = 0;
   const horasArr = []; // {hora, real} por hora produtiva (não-HE) para a média por horário
 
@@ -6145,7 +6491,8 @@ function _resumoHoraAHora(data) {
     iLotes.forEach(c => { somaLotes += num(row[c]); });
     const realVal = Math.max(direto, somaLotes);
 
-    if (metaVal > 0 && !ehHE) meta += metaVal;
+    const iniSlot = _heMinutosDaHora(hora);
+    if (metaVal > 0 && !ehHE && !(iniSlot !== null && iniSlot < iniTurnoMin)) meta += metaVal;
 
     if (realVal > 0) {
       real += realVal;
@@ -6178,7 +6525,7 @@ function arquivarDiaAtual(dataRef) {
   if (!sh) return;
 
   const res = _resumoHoraAHora(sh.getDataRange().getValues());
-  if (!res) return;
+  if (!res) throw new Error('HORA_A_HORA sem cabeçalho HORA/REALIZADO/META: dia não arquivado, aba não zerada.');
   const { real, meta, he, heCx, melhor, pior, horas, horasArr } = res;
 
   if (real <= 0) return; // nada produzido — nada a arquivar
@@ -6272,7 +6619,7 @@ function normalizarDataBR(v) {
   if (!m) return s; // formato desconhecido: devolve como veio
   const d = parseInt(m[1], 10);
   const mo = parseInt(m[2], 10);
-  let y = m[3] ? parseInt(m[3], 10) : Number(Utilities.formatDate(new Date(), TZ, 'yyyy'));
+  let y = m[3] ? parseInt(m[3], 10) : _anoProvavel(mo);
   if (y < 100) y += 2000;
   if (d < 1 || d > 31 || mo < 1 || mo > 12) return s;
   return ('0' + d).slice(-2) + '/' + ('0' + mo).slice(-2) + '/' + y;
@@ -6310,9 +6657,13 @@ function testeArquivarHoje() {
 
 function testeFecharAgora() {
   // Simula o fechamento das 23:59 (salva no histórico e zera) para o dia de hoje.
+  // v5.50: só em planilha de teste. Na oficial, zeraria a produção do dia.
+  if (!/^C[óo]pia/i.test(SpreadsheetApp.getActiveSpreadsheet().getName())) {
+    throw new Error('testeFecharAgora só roda em planilha com nome "Cópia de ...".');
+  }
   const props = PropertiesService.getScriptProperties();
-  const hoje  = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
-  executarReset(hoje, props);
+  const hoje = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy');
+  _resetComLock(hoje, props);
 }
 
 // ════════════════════════════════════════════════════════
@@ -6340,7 +6691,7 @@ function testeFecharAgora() {
 //      calculou sozinho).
 
 // Regra de hora extra para esta reconstrução (confirmada com o PPCP):
-//   • dia útil: antes das 07:00 ou depois das 18:00
+//   • dia útil: antes das 07:00 ou a partir das 17:00
 //   • SÁBADO e DOMINGO: o dia INTEIRO, em qualquer horário — não é jornada
 //     normal, então tudo que sair ali é extra.
 // Conferido no 04/07/2026, um sábado com produção das 05:00 às 16:00: a hora
@@ -6352,6 +6703,8 @@ function testeFecharAgora() {
 const HE_TURNO_INI_MIN  = HE_JORNADA_INI_MIN;   // 07:00
 const HE_TURNO_FIM_MIN  = HE_JORNADA_FIM_MIN;   // 17:00
 const HE_SABADO_INTEIRO = true;      // sábado/domingo contam o dia todo
+// ⚠ Só neste reprocessamento: o fechamento (_ehHoraExtraCaixas) olha o horário e
+// não trata fim de semana como dia inteiro. Regra ainda a decidir com o PPCP.
 
 // A coluna HORA pode ser TEXTO ("07:00") ou HORA de verdade — e formatada como
 // hora ela chega aqui como Date ("Sat Dec 30 1899 07:00:00…"), que nenhum regex
@@ -6729,4 +7082,3 @@ function testarRedacaoIA() {
   const r = redigirProposta({ dados: JSON.stringify(d) });
   Logger.log(JSON.stringify(r, null, 1));
 }
-
