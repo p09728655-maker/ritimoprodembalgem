@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.206.0 — 05/11/2026 · ⚖ UEP · POR PRODUTO na régua de hoje
+
+- PPCP, com a sub-aba POR PRODUTO na tela: *"como interpretar?"*. O CX/H
+  PADRÃO e o TAKT s/CX da linha de cada produto saíam do **último dia** em que
+  ele rodou, com a meta **daquele dia**: a MADERO (28/10) lia 314 cx/h na meta
+  de 2.761 e o RACK FLIP 1.8 (26/10) 135 na de 2.530. Eram duas réguas na mesma
+  coluna. E a UEP/CX era a de antes das trocas de 04/11.
+- Agora a linha do produto usa a **régua de hoje** em todas as linhas: UEP/CX do
+  cadastro de agora (média pelas caixas do período, a mesma do comparativo por
+  modelo) e a META UEP do ⚙. Sem UEP no cadastro de hoje, "—".
+- **O % DO PADRÃO não muda**: cada dia continua julgado com a UEP e a meta que
+  valiam nele. O dia a dia (tocar na linha) também continua com os números do
+  dia.
+- Quando a UEP mudou, a célula da UEP/CX diz embaixo **"% com X"**: a UEP com
+  que o % foi feito. Ex.: RACK FLIP 1.8 `2,46 · % com 2,13`.
+- **Atenção**: CX/H PADRÃO e TAKT mudam nas linhas cujo último dia foi até
+  26/10 (meta 2.530) ou cuja UEP foi trocada depois. Ex.: RACK FLIP 1.8
+  135 → 128 cx/h e 26,6 → 28,2 s; RACK SIRIUS 1.6 148 → 137 cx/h. A impressão
+  PADRÃO × REALIZADO sai igual à tela.
+
 ## v7.205.0 + `.gs` v5.57 — 05/11/2026 · qual `.gs` está implantado, no rodapé ⚠ **re-deploy**
 
 - PPCP: *"quando muda gs está salvando no git?"*. O GitHub e o editor do Apps

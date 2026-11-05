@@ -225,13 +225,13 @@ const F = { window: {} };
 F.window = F;
 vm.createContext(F);
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), F);
-['UEP_PAD_FAIXA', 'UEP_PAD_MIN_MIN', 'UEP_TRAVA_LISTA', 'UEP_MIN_DIAS', 'UEP_IMP_ALERTA'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
+['UEP_PAD_FAIXA', 'UEP_PAD_MIN_MIN', 'UEP_PAD_MUDOU', 'UEP_TRAVA_LISTA', 'UEP_MIN_DIAS', 'UEP_IMP_ALERTA'].forEach(n => vm.runInContext('var ' + n + ' = ' + constV7(n) + ';', F));
 vm.runInContext("var CFG = { turnoInicio: '07:00', turnoFim: '17:00' };", F);
 vm.runInContext('var UEP_PAD_ST = ' + V7JS.match(/const UEP_PAD_ST=(\{[^\n]*\});/)[1] + ';', F);
 ['function _taktUep(', 'function _taktTxt(', 'function _uepPadSt(', 'function _uepPadMinSlot(', 'function _uepPadHist(', 'function _uepTravaTxt(', 'function _uepPadJanela(',
  'function _horaEhHE(', 'function _uepChave(', 'function _uepImpacto(', 'function _uepImpactoTxt(']
   .forEach(f => vm.runInContext(pegaV7(f), F));
-const hist = (itens, metaDe, metaAt, minSlot) => vm.runInContext('_uepPadHist(' + JSON.stringify(itens) + ',' + JSON.stringify(metaDe || {}) + ',' + JSON.stringify(metaAt) + ',' + JSON.stringify(minSlot || {}) + ')', F);
+const hist = (itens, metaDe, metaAt, minSlot, uepHoje) => vm.runInContext('_uepPadHist(' + JSON.stringify(itens) + ',' + JSON.stringify(metaDe || {}) + ',' + JSON.stringify(metaAt) + ',' + JSON.stringify(minSlot || {}) + ',' + JSON.stringify(uepHoje || null) + ')', F);
 
 console.log('\n── bloco 7: padrão × realizado por produto (conta pura) ──');
 {
@@ -302,7 +302,7 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
     A('01/10/2026', 20261001, '501061', 'PENTEADEIRA CAMARIM ELOA', { '09:00': 70, '10:00': 70 }, { '09:00': 360, '10:00': 360 }),   // 720 de 576 = 125%: ACIMA
     A('02/10/2026', 20261002, '501094', 'MESA CABECEIRA SLEEP', { '13:00': 80 }, { '13:00': 80 }),   // só 1 h: não julgado
   ];
-  const H = hist(itens, {}, 2530, {});
+  const H = hist(itens, {}, 2530, {}, { '501149|MESA CABECEIRA MADERO': 1, '501061|PENTEADEIRA CAMARIM ELOA': 5.14 });
   ok('totais da capa = soma das colunas dos produtos julgados', H.tot, { dias: 3, abaixo: 1, no: 1, acima: 1 });
   // conta as colunas de cada <tr>: td/th + colspan−1. Toda linha tem de ter 12 (11 até a v7.140.0; + TAKT s/CX).
   const colunas = html => [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)].map(m =>
@@ -328,8 +328,8 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
   // TAKT s/CX (v7.141.0, PPCP 19/10/2026: "colocar takt time de cada um nos relatórios")
   const mad = H.julgados.find(g => g.modelo === '501149'), elo = H.julgados.find(g => g.modelo === '501061');
   const r1 = v => Math.round(v * 10) / 10;
-  ok('takt = 527 min × 60 ÷ META UEP × UEP/cx: MADERO 12,5 s; ELOA (5,14 UEP/cx) 64,3 s',
-     [mad.takt.toFixed(2), elo.takt.toFixed(1), vm.runInContext('_taktTxt(_taktUep(1.84, 2530))', F)], ['12.50', '64.3', '23,0 s']);
+  ok('takt = 527 min × 60 ÷ META UEP × UEP/cx: MADERO 12,5 s; ELOA (5,14 UEP/cx do cadastro de hoje) 64,2 s',
+     [mad.takt.toFixed(2), elo.takt.toFixed(1), vm.runInContext('_taktTxt(_taktUep(1.84, 2530))', F)], ['12.50', '64.2', '23,0 s']);
   ok('takt = 3.600 ÷ CX/H PADRÃO (a mesma régua, em segundos por caixa)', [r1(3600 / mad.cxhPad), r1(3600 / elo.cxhPad)], [r1(mad.takt), r1(elo.takt)]);
   ok('s/CX REAL do dia = minutos × 60 ÷ caixas (MADERO 01/10: 120 min, 576 cx → 12,5 s)',
      mad.dias.map(d => [d.data, r1(d.segCx)]), [['01/10/2026', 12.5], ['02/10/2026', 18]]);
@@ -355,6 +355,60 @@ console.log('\n── bloco 7: colunas alinhadas e a impressão dedicada (v7.134
   const skin = V7.match(/const _UEP_PAD_DOC_SKIN = `([\s\S]*?)`;/)[1];
   ok('a pele do papel é escopada em .pad-doc (não mexe nos outros relatórios do _rpDocParadas)',
      skin.split('\n').map(l => l.trim()).filter(Boolean).every(l => l.startsWith('.pad-doc ')), true);
+}
+
+console.log('\n── bloco 7: a linha do produto na régua de HOJE (v7.206.0) ──');
+{
+  // PPCP, 05/11/2026, com a aba na mão: a MADERO (último dia 28/10) lia 314 cx/h
+  // na meta de 2.761 e o RACK FLIP 1.8 (26/10) 135 na de 2.530 — duas réguas na
+  // mesma coluna, e a UEP de antes das trocas de 04/11.
+  const A = (data, num, mod, nome, cxH, uH, vig) => ({ data, dataNum: num, modelo: mod, nome, caixas: 1, cxHora: cxH, uepHora: uH, uepVigDe: vig || 0 });
+  const itens = [
+    A('28/10/2026', 20261028, '501149', 'MESA CABECEIRA MADERO', { '07:00': 314, '08:00': 314 }, { '07:00': 314, '08:00': 314 }),
+    A('26/10/2026', 20261026, '501083', 'RACK FLIP 1.8', { '07:00': 135, '08:00': 135 }, { '07:00': 287.55, '08:00': 287.55 }),
+    // dois volumes (2,00 e 1,00): o dia julgado só teve o VOL 1; o de 1 hora, o VOL 2
+    A('27/10/2026', 20261027, '501060', 'PENTEADEIRA CAMARIM MEL', { '07:00': 100, '08:00': 100 }, { '07:00': 200, '08:00': 200 }),
+    A('28/10/2026', 20261028, '501060', 'PENTEADEIRA CAMARIM MEL', { '13:00': 100 }, { '13:00': 100 }),
+    // a UEP mudou DENTRO da janela (2,53 → 1,82)
+    A('27/10/2026', 20261027, '501061', 'PENTEADEIRA CAMARIM ELOA', { '13:00': 50, '14:00': 50 }, { '13:00': 126.5, '14:00': 126.5 }),
+    A('30/10/2026', 20261030, '501061', 'PENTEADEIRA CAMARIM ELOA', { '07:00': 50, '08:00': 50 }, { '07:00': 91, '08:00': 91 }, 20261030),
+    A('27/10/2026', 20261027, '501999', 'SEM UEP HOJE', { '09:00': 150, '10:00': 150 }, { '09:00': 300, '10:00': 300 }),
+  ];
+  const metaDe = { '26/10/2026': 2530, '27/10/2026': 2761, '28/10/2026': 2761, '30/10/2026': 2761 };
+  const hoje = { '501149|MESA CABECEIRA MADERO': 1, '501083|RACK FLIP 1.8': 2.46, '501060|PENTEADEIRA CAMARIM MEL': 1.67, '501061|PENTEADEIRA CAMARIM ELOA': 1.82 };
+  const H = hist(itens, metaDe, 2761, {}, hoje);
+  const g = m => H.prods.find(x => x.modelo === m);
+  const r1 = v => Math.round(v * 10) / 10, rit = 2761 / 527 * 60;
+  ok('CX/H PADRÃO e TAKT da linha: a meta de HOJE e a UEP do cadastro de HOJE, em todas as linhas (não a do último dia)',
+     [g('501149').cxhPad.toFixed(0), g('501083').uepCx, g('501083').cxhPad.toFixed(0), r1(g('501083').takt)],
+     [String(Math.round(rit)), 2.46, String(Math.round(rit / 2.46)), r1(527 * 60 / 2761 * 2.46)]);
+  ok('a mesma régua em todas as linhas: CX/H PADRÃO × UEP/CX = o ritmo da meta de hoje',
+     [...new Set(H.julgados.filter(x => x.uepCx != null).map(x => Math.round(x.cxhPad * x.uepCx * 1000)))], [Math.round(rit * 1000)]);
+  ok('o dia a dia continua com a UEP e a meta DO DIA (26/10: 2,13 e 2.530)',
+     [g('501083').dias[0].uepCx.toFixed(2), Math.round(g('501083').dias[0].cxhPad), g('501083').dias[0].meta], ['2.13', Math.round(2530 / 527 * 60 / 2.13), 2530]);
+  ok('o % não muda: feito com a UEP e a meta de cada dia', r1(g('501083').pct), r1(575.1 / (2530 / 527 * 120) * 100));
+  ok('UEP mudou depois do último dia → "% com" a UEP com que o % foi feito', g('501083').uepJul.toFixed(2), '2.13');
+  ok('UEP mudou dentro da janela → "% com" a média dos dias julgados', [g('501061').nJulg, Math.round(g('501061').uepJul * 1000)], [2, Math.round((253 + 182) / 200 * 1000)]);
+  ok('dois volumes com outro mix no dia julgado (a mesma UEP) NÃO acusa troca: a base é a do uepProd',
+     [g('501060').uepCx, g('501060').uepJul, g('501149').uepJul], [1.67, null, null]);
+  ok('sem UEP no cadastro de hoje → "—", nunca a do último dia', [g('501999').uepCx, g('501999').cxhPad, g('501999').takt, g('501999').uepJul], [null, null, null, null]);
+  ok('sem o mapa da leitura → "—" na linha (a régua velha não volta calada)', hist(itens, metaDe, 2761, {}).prods.every(x => x.uepCx == null && x.takt == null), true);
+  const cel = (h, m) => { const x = h.match(new RegExp('<td class="mono">' + m + '<\\/td><td>[^<]*<\\/td>(<td class="n"[^>]*>[\\s\\S]*?<\\/td>)')); return x ? x[1] : ''; };
+  const tela = vm.runInContext('_uepPadHtml(' + JSON.stringify(H) + ', null, {registrado:true, diverge:0})', F);
+  ok('tela: a célula diz "% com 2,13" embaixo da UEP de hoje; quem não mudou, só o número; sem UEP, "—" com o porquê',
+     [/^<td class="n">2,46<small class="uep-pad-jul"[^>]*>% com 2,13<\/small><\/td>$/.test(cel(tela, '501083')), cel(tela, '501149'), cel(tela, '501060'),
+      /^<td class="n" title="Sem UEP no cadastro de hoje">—<\/td>$/.test(cel(tela, '501999'))],
+     [true, '<td class="n">1,00</td>', '<td class="n">1,67</td>', true]);
+  ok('cabeçalho e nota dizem que a linha é a régua de hoje e o % a de cada dia',
+     [/title="UEP por caixa do cadastro de HOJE/.test(tela), /meta de HOJE pede/.test(tela), /UEP\/CX, CX\/H PADRÃO e TAKT do produto: cadastro e meta de hoje/.test(tela)], [true, true, true]);
+  const doc = vm.runInContext('_uepPadDocHtml(' + JSON.stringify(H) + ', {registrado:true, diverge:0}, {de:"21/10/2026", ate:"04/11/2026", data:"05/11/2026", hora:"13:00"})', F);
+  ok('papel: a mesma célula e a linha A LINHA DO PRODUTO no COMO O NÚMERO SAI',
+     [/2,46<small class="uep-pad-jul"[^>]*>% com 2,13</.test(doc), /A LINHA DO PRODUTO<\/td><td>UEP\/CX, CX\/H PADRÃO e TAKT na régua de HOJE/.test(doc)], [true, true]);
+  ok('a pele do "% com" existe na tela e no papel', [/#sec-uep \.uep-pad-jul\{display:block/.test(V7), /\.pad-doc \.uep-pad-jul\{display:block/.test(V7)], [true, true]);
+  const mon = pegaV7('function _uepPadMontar('), car = pegaV7('function _uepPadCarregar(');
+  ok('a leitura guarda o uepProd e a montagem o passa; meta de hoje = a do ⚙, senão a última gravada',
+     [/uepProd:r\.uepProd&&typeof r\.uepProd==='object'\?r\.uepProd:null/.test(car), /_uepPadHist\(UEP_PAD\.itens, metaDe, metaHoje, _uepPadMinSlot\(getSlots\(\)\), UEP_PAD\.uepProd\)/.test(mon),
+      /Number\(PONTOS_DIA\.metaUep\)>0\?Number\(PONTOS_DIA\.metaUep\):\(metaUlt\|\|null\)/.test(mon)], [true, true, true]);
 }
 
 console.log('\n── GRAVAR UEP: a autorização ──');
