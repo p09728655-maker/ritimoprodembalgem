@@ -5600,6 +5600,47 @@ console.log('\n── estudo de UEP ──');
       /\['Data','Realizado','Meta'/.test(pega('function exportarExcel('))], [true, false]);
 }
 
+// ── v7.203.0 / mobile 1.42.0 / .gs v5.56: SOMAR ATRASO na CONFIG_PAINEL ────
+// A META que o FECHAR DIA grava (v5.55) é a do painel; com o SOMAR ATRASO no
+// navegador de cada PC, a meta do histórico era a do último computador a fechar.
+{ const vm = require('vm');
+  eval(pega('function _atrasoEnviar(')); eval(pega('function _atrasoPlanTxt('));
+  ok('manda à planilha quando a marcação MUDA, ou quando a planilha ainda não tem a chave',
+     [_atrasoEnviar(false, true, 'planilha'), _atrasoEnviar(true, false, 'antigo'), _atrasoEnviar(true, true, 'planilha'),
+      _atrasoEnviar(false, false, 'sem-chave'), _atrasoEnviar(true, true, null)], [true, false, null, false, null]);
+  ok('o ⚙ diz de onde vale a marcação',
+     ['planilha', 'sem-chave', 'antigo', null].map(x => /todos os computadores|ainda não está|só neste computador|lendo/.test(_atrasoPlanTxt(x))),
+     [true, true, true, true]);
+  // aplicarConfigPainel real, num contexto separado (não mexe no CFG dos outros testes)
+  const roda = (local, pc) => {
+    const C = { CFG: { metaComAtraso: local, telasAtivas: {} }, _painelCfgSig: null, ATRASO_PLAN: null, _tvUepTs: 0,
+      META: 0, saveCfgLocal() {}, aplicarMetaDiaAutomatica() { C.META++; } };
+    vm.createContext(C); vm.runInContext(pega('function aplicarConfigPainel('), C);
+    vm.runInContext('aplicarConfigPainel(' + JSON.stringify(pc) + ')', C);
+    return [C.CFG.metaComAtraso, C.ATRASO_PLAN, C.META];
+  };
+  ok('planilha ligada num PC desligado → liga e refaz a META DO DIA na hora', roda(false, { telaA: true, metaComAtraso: true }), [true, 'planilha', 1]);
+  ok('planilha desligada num PC ligado → desliga', roda(true, { telaA: true, metaComAtraso: false }), [false, 'planilha', 1]);
+  ok('planilha sem a chave (null) → fica a deste PC, e o próximo SALVAR grava', roda(true, { telaA: true, metaComAtraso: null }), [true, 'sem-chave', 0]);
+  ok('.gs antigo (sem o campo) → fica a deste PC', roda(true, { telaA: true }), [true, 'antigo', 0]);
+  ok('o saveCfg decide pelo _atrasoEnviar e o enviarConfigPainel só manda quando há o que mandar',
+     [/_metaAtrasoNovo=_atrasoEnviar\(_atrasoAntes, CFG\.metaComAtraso, ATRASO_PLAN\)/.test(pega('function saveCfg(')),
+      /if\(_metaAtrasoNovo!==null\)\{ params\.push\('metaComAtraso='\+\(_metaAtrasoNovo\?1:0\)\); _metaAtrasoNovo=null; \}/.test(pega('function enviarConfigPainel('))],
+     [true, true]);
+  // celular: a META DO DIA segue a mesma chave
+  const mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  const mJS = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+  const i = mJS.indexOf('function aplicarMetaDiaAutomatica(');
+  const corpo = mJS.slice(i, mJS.indexOf('\n}\n', i) + 2);
+  const metaMob = (liga, prog) => { const C = { CFG: { metaDia: 0 }, META_HORA_A_HORA: 1400, PONTOS_DIA: { metaComAtraso: liga, programacao: prog } };
+    vm.createContext(C); vm.runInContext(corpo + ';aplicarMetaDiaAutomatica();', C); return C.CFG.metaDia; };
+  const PROG = { programadoHoje: 1550, metaEfetiva: 2150 };
+  ok('celular: com a chave ligada a META é a metaEfetiva (como no PC); desligada, o programado; sem programação, a da aba',
+     [metaMob(true, PROG), metaMob(false, PROG), metaMob(true, { programadoHoje: 0, metaEfetiva: 0 })], [2150, 1550, 1400]);
+  ok('celular: só true liga (lido da CONFIG_PAINEL no getPontosDia)',
+     /metaComAtraso: \(json\.painelConfig\|\|\{\}\)\.metaComAtraso===true/.test(mJS), true);
+}
+
 // Se um teste assíncrono não terminar (promessa que nunca resolve), o processo
 // sai sozinho com a fila pela metade — e sairia 0 com falha na tela.
 process.exitCode = 1;

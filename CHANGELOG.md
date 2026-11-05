@@ -11,6 +11,33 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.203.0 + mobile 1.42.0 + `.gs` v5.56 — 05/11/2026 · SOMAR ATRASO vale para todos os aparelhos ⚠ **re-deploy**
+
+- PPCP: *"coloca somar atraso na config painel"*. Com a opção A (v5.55) o
+  FECHAR DIA grava a META do painel, e o **SOMAR ATRASO** ficava no navegador
+  de cada computador: às 17:05 todo PC aberto fecha o dia e a meta do
+  histórico era a do último a gravar.
+- A marcação agora mora na planilha (`CONFIG_PAINEL`, chave
+  **`META_COM_ATRASO`**, 1/0). O ⚙ do PC grava quando o gestor muda a
+  marcação; todos os PCs e o celular aplicam na leitura seguinte (no máximo um
+  ciclo de atualização).
+- O ⚙ diz de onde vale a marcação: *"vale para todos os computadores"*,
+  *"ainda não está na planilha — ao SALVAR, a marcação deste computador vale
+  para todos"* ou *"vale só neste computador — falta publicar o Apps Script
+  v5.56"*.
+- **Celular**: o card META DO DIA passa a somar o atraso quando a chave está
+  ligada — antes ele nunca somava e mostrava outro número que o PC.
+- **Atenção**:
+  - com o SOMAR ATRASO ligado na planilha, a **META DO DIA do celular sobe**
+    (programado + atraso), igual à do PC;
+  - um PC que estava com a marcação diferente da planilha passa a seguir a
+    planilha sozinho, e a META DO DIA dele muda na hora;
+  - a **meta digitada à mão** no ⚙ continua valendo só no computador onde foi
+    digitada.
+- ⚠ **re-deploy** do Apps Script. Depois dele, abrir o ⚙ no gerencial, deixar
+  o SOMAR ATRASO como o PPCP quer e **SALVAR**: é isso que grava a chave na
+  planilha. Até lá, cada computador segue com a sua marcação.
+
 ## mobile 1.41.0 — 05/11/2026 · lançamento recusado mostra o motivo
 
 - Desde o `.gs` v5.48 o servidor **recusa** o lançamento com quantidade

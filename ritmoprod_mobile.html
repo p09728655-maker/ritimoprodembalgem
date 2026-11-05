@@ -1023,7 +1023,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.41.0';
+const APP_VER   = '1.42.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1361,6 +1361,8 @@ async function lerPontosDia(){
         // UEP do dia (.gs v5.11) + meta da CONFIG_PAINEL: só o gerencial lê.
         // false = o backend respondeu sem o campo (antes da v5.11).
         uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep,
+        // SOMAR ATRASO da CONFIG_PAINEL (.gs v5.56): o mesmo do PC. Só true liga.
+        metaComAtraso: (json.painelConfig||{}).metaComAtraso===true,
         porHoraModelo: json.porHoraModelo || [],
         // O log do dia na ordem dos bipes (código, descrição com o VOL, caixas):
         // o quadro PRODUTOS EMBALADOS HOJE tira dele o volume e a ordem. Já vinha
@@ -1375,12 +1377,15 @@ async function lerPontosDia(){
   return false;
 }
 
-// Meta do dia automática: puxa da PROGRAMAÇÃO (só programadoHoje — o atraso
-// acumulado de dias anteriores NÃO entra na meta do dia, aparece à parte como
-// aviso no KPI "⚠ ATRASO NA PROGRAMAÇÃO"). Sem nada cadastrado pra hoje
-// (programadoHoje=0), cai na meta da HORA_A_HORA em vez do default fixo do app.
+// Meta do dia automática: puxa da PROGRAMAÇÃO. Por padrão só o programadoHoje —
+// o atraso de dias anteriores aparece à parte, no KPI "⚠ ATRASO NA PROGRAMAÇÃO".
+// Com o SOMAR ATRASO ligado na planilha (CONFIG_PAINEL, .gs v5.56 — o mesmo
+// checkbox do ⚙ do PC), a meta é a metaEfetiva, como no PC: antes o celular
+// nunca somava e o card META DO DIA dava um número diferente do PC.
+// Sem nada cadastrado pra hoje, cai na meta da HORA_A_HORA em vez do default.
 function aplicarMetaDiaAutomatica(){
-  const auto = PONTOS_DIA.programacao?.programadoHoje || 0;
+  const prog = PONTOS_DIA.programacao || {};
+  const auto = (PONTOS_DIA.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
   const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
   if (novoValor > 0) CFG.metaDia = novoValor;
 }
