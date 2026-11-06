@@ -866,5 +866,76 @@ console.log('\n── FERIADOS (.gs v5.38) ──');
      [vm.runInContext('(function(){ _invalidarValores(); return _feriadosNums(); })()', ruim.ctx), fut(ruim)], [{}, []]);
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// v5.59 — A PROGRAMAÇÃO DA SEMANA (getProgramacaoSemana), para o TAKT DA SEMANA.
+// PPCP, 06/11/2026: "colocar takt da semana e comparar com o que está sendo
+// executado" → "só no painel, sem depender do app". As DUAS abas pela DATA (a
+// regra da META do dia), a UEP do cadastro e o SALDO só quando é da linha.
+console.log('\n── v5.59: a programação da semana ──');
+{
+  // hoje = quinta, 05/11/2026 (02/11 feriado). Semana: 02–08/11.
+  const prog = [
+    { lote: 'L1', data: '03/11', ordem: 1, cod: '501060001', qtde: 190, prod: 0 },              // vencida, aberta: saldo 190
+    { lote: 'L1', data: '04/11', ordem: 2, cod: '501134001', qtde: 100, prod: 88 },             // saldo 12
+    { lote: 'L4', data: '04/11', ordem: 3, cod: '501157006', qtde: 40, prod: 39, saldo: 99 },   // SALDO de outra linha: null
+    { lote: 'L5', data: '04/11', ordem: 1, cod: '501136003', qtde: 370, prod: 300, enc: 'X' },  // encerrada vencida: 0
+    { lote: 'L2', data: '05/11', ordem: 1, cod: '501141001', qtde: 95 },                        // hoje, sem conta: null
+    { lote: 'L7', data: '05/11', ordem: 2, cod: '501141002', qtde: 270 },                       // fora da esteira (abaixo)
+    { lote: 'L3', data: '06/11', ordem: 1, cod: '501079003', qtde: 190 },                       // futura sem conta: a QTDE
+    { lote: 'L3', data: '06/11', ordem: 2, cod: '501093001', qtde: 95, prod: 40 },              // futura adiantada: 55
+    { lote: 'L6', data: '09/11', ordem: 1, cod: '501094004', qtde: 1000 },                      // semana seguinte: fora
+    { lote: 'L0', data: '30/10', ordem: 1, cod: '501061001', qtde: 40, prod: 40 },              // semana passada: fora
+  ];
+  const arq = [['LOTE', 'DATA', 'ORDEM', 'CODIGO', 'DESCRICAO', 'QTD_CX', 'PRODUZIDO', 'SALDO', 'PERCENTUAL', 'STATUS', 'ATUALIZADO_EM', 'ARQUIVADO_EM'],
+    ['L8', '03/11/2026', 2, '501088001', 'X', 95, 95, 0, 100, 'CONCLUIDO', '', ''],
+    ['L1', '04/11/2026', 1, '501134001', 'X', 240, 240, 0, 100, 'CONCLUIDO', '', ''],
+    ['L9', '28/10/2026', 1, '501088002', 'X', 95, 95, 0, 100, 'CONCLUIDO', '', '']];
+  const m = montar(prog, [], { hoje: '05/11/2026', arq: arq, fer: [['DATA', 'DESCRICAO'], ['02/11/2026', 'FINADOS'], ['20/11/2026', '']] });
+  // fora da esteira: a coluna existe na aba real como opcional
+  m.ABAS.PROGRAMACAO[0].push('FORA DA ESTEIRA');
+  m.ABAS.PROGRAMACAO.slice(1).forEach((r, i) => r.push(prog[i].cod === '501141002' ? 'X' : ''));
+  m.ABAS.PRODUTO_CODIGO = [['CODIGO', 'DESCRICAO', 'COR', 'UEP'],
+    ['501060001', 'VOL 1/2 PENTEADEIRA CAMARIM MEL', 'BRANCO', 1.73], ['501134001', 'VOL 1/1 PENTEADEIRA PRINCESA', 'BRANCO', 2.4],
+    ['501157006', 'VOL 1/1 PAINEL MOON 1.8', 'CINAMOMO', 1.9], ['501136003', 'VOL 1/1 LIVREIRO ENCANTO', 'CINAMOMO', 1.53],
+    ['501141001', 'VOL 1/1 BUFFET 2 PT PRISM', 'CINAMOMO', 1.62], ['501141002', 'VOL 1/1 BUFFET 2 PT PRISM', 'OFF WHITE', 1.62],
+    ['501079003', 'VOL 1/2 BUFFET FLIP 1.6', 'OFF WHITE', 2.05], ['501093001', 'VOL 1/1 CANT CAFE AURORA', 'CINAMOMO', ''],
+    ['501088001', 'VOL 1/2 HOME ANGEL 1.8', 'CINAMOMO', 2.48]];
+  const sem = (args) => vm.runInContext(`(function(){ _invalidarValores(); return getProgramacaoSemana(${JSON.stringify(args || {})}); })()`, m.ctx);
+  const r = sem();
+  ok('sem datas: a semana de hoje, segunda a domingo', [r.ok, r.de, r.ate, r.hoje], [true, '02/11/2026', '08/11/2026', '05/11/2026']);
+  ok('as linhas da semana, das DUAS abas, por data e ordem (semana passada e a seguinte fora)',
+     r.linhas.map(x => [x.data, x.codigo, x.aba]),
+     [['03/11/2026', '501060001', 'aberta'], ['03/11/2026', '501088001', 'concluida'],
+      ['04/11/2026', '501136003', 'aberta'], ['04/11/2026', '501134001', 'concluida'], ['04/11/2026', '501134001', 'aberta'], ['04/11/2026', '501157006', 'aberta'],
+      ['05/11/2026', '501141001', 'aberta'], ['05/11/2026', '501141002', 'aberta'],
+      ['06/11/2026', '501079003', 'aberta'], ['06/11/2026', '501093001', 'aberta']]);
+  const de = cod => r.linhas.filter(x => x.codigo === cod && x.aba === 'aberta')[0];
+  ok('o SALDO: o do write-back quando fecha com a linha; concluída, encerrada e fora da esteira 0; futura sem conta a QTDE; adiantada o que falta; sem conta ou de outra linha null',
+     ['501060001', '501134001', '501157006', '501136003', '501141001', '501141002', '501079003', '501093001'].map(c => de(c).saldo)
+       .concat(r.linhas.filter(x => x.aba === 'concluida').map(x => x.saldo)),
+     [190, 12, null, 0, null, 0, 190, 55, 0, 0]);
+  ok('a UEP pela do cadastro (null sem UEP, nunca 0), a encerrada e a fora da esteira marcadas',
+     [de('501060001').uep, de('501060001').uepCx, de('501093001').uep, de('501136003').encerrada, de('501141002').foraEsteira, de('501060001').encerrada],
+     [328.7, 1.73, null, true, true, false]);
+  ok('os feriados do período (só os da semana)', r.feriados, [{ data: '02/11/2026', desc: 'FINADOS' }]);
+  // A REGRA DA META DO DIA: o dia daqui (sem a fora da esteira) é o programadoHoje.
+  const doDia = (lst, d) => lst.filter(x => x.data === d && !x.foraEsteira).reduce((a, x) => a + x.qtde, 0);
+  const metaDe = h => { m.setHoje(h); return m.calc().programadoHoje; };
+  ok('cada dia bate com a META do dia (programadoHoje): 05/11 e 04/11',
+     [doDia(r.linhas, '05/11/2026'), metaDe('05/11/2026'), doDia(r.linhas, '04/11/2026'), metaDe('04/11/2026')],
+     [95, 95, 750, 750]);
+  m.setHoje('05/11/2026');
+  const r2 = sem({ de: '04/11/2026', ate: '05/11/2026' });
+  ok('com de/ate: só o período pedido', [r2.de, r2.ate, r2.linhas.length], ['04/11/2026', '05/11/2026', 6]);
+  ok('datas inválidas, "ate" antes de "de" e mais de 14 dias: recusa, sem ler nada',
+     [sem({ de: 'ontem', ate: '05/11/2026' }).ok, sem({ de: '06/11/2026', ate: '05/11/2026' }).ok, sem({ de: '01/11/2026', ate: '15/11/2026' }).ok, sem({ de: '01/11/2026', ate: '14/11/2026' }).ok],
+     [false, false, false, true]);
+  ok('a leitura está no doGet, no cache de leitura (invalidado pelo lançamento e pelo cadastro) e não grava',
+     [/act === 'getProgramacaoSemana'\) result = getProgramacaoSemana\(p\)/.test(GS), /getProgramacaoSemana: 120/.test(GS),
+      /getProgramacaoSemana: \['prod', 'cat'\]/.test(GS),
+      /setValue|appendRow|insertSheet|deleteRow/.test(GS.slice(GS.indexOf('function getProgramacaoSemana('), GS.indexOf('// ════', GS.indexOf('function getProgramacaoSemana('))))],
+     [true, true, true, false]);
+}
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ programação ok — adiantamento abate o lote, ENCERRAR fecha sem apagar, o app pergunta a cor');
 process.exit(falhas ? 1 : 0);

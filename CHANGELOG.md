@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.208.1 + `.gs` v5.59 — 06/11/2026 · a programação da semana para o TAKT ⚠ **re-deploy**
+
+- PPCP: *"me manda gs"*, depois da prévia do TAKT DA SEMANA. O `.gs` ganha a
+  leitura **`getProgramacaoSemana`**: as linhas da semana das duas abas
+  (PROGRAMACAO + PROGRAMACAO_CONCLUIDA) pela data de cada lote, com a UEP do
+  cadastro e o saldo da linha. É o dado da sub-aba TAKT DA SEMANA, que ainda
+  não existe no painel — nada muda na tela por enquanto.
+- Cada dia da semana bate com a META daquele dia (mesma regra).
+- **Duas medições diferentes do app com os mesmos números** (mesmo dia,
+  produto, volume, tempos e volumes) deixam de virar uma só: a 2ª voltava "já
+  estava". O PDF de uma medição do app continua sendo reconhecido.
+- O painel passa a esperar o `.gs` v5.59 (rodapé). ⚠ **re-deploy**: até colar,
+  o rodapé fica âmbar (*gs v5.58 · repo v5.59*); nada mais muda.
+
+---
+
 ## v7.208.0 + `.gs` v5.58 — 06/11/2026 · a medição vem sozinha do app de cronoanálise ⚠ **re-deploy**
 
 - PPCP: *"b2"*. O painel passa a **aceitar** a medição que vem do app de

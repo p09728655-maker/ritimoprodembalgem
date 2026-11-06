@@ -399,6 +399,24 @@ console.log('\n── v5.58: a medição do app ──');
   ok('e o contrário: o PDF primeiro, o app depois — o app ouve "já estava"', [r4.ok, r4.app, r4.duplicado, r4.mesmaMedicao, P2.ABAS.CRONOANALISE.length], [true, true, true, true, 2]);
   const r5 = P2.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-outra', sLac: '16.8', sRod: '20.6' }))});`);
   ok('outra medição do mesmo volume no mesmo dia (tempos diferentes) entra', [r5.registrado, r5.duplicado, P2.ABAS.CRONOANALISE.length], [true, undefined, 3]);
+  // v5.59 — duas medições DIFERENTES do app (REG_IDs app- diferentes) com os mesmos
+  // números: a 2ª sumia calada ("já estava"). Agora o app só casa com o PDF pelo conteúdo.
+  { const P4 = montar(CAT, null, '06/11/2026');
+    const a1 = P4.run(`return registrarCrono(${q(APP)});`);
+    const a2 = P4.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-segunda-medicao' }))});`);
+    ok('v5.59: duas medições do app com os mesmos números e REG_IDs diferentes são duas linhas',
+       [a1.registrado, a2.registrado, a2.duplicado, a2.mesmaMedicao, P4.ABAS.CRONOANALISE.length], [true, true, undefined, undefined, 3]);
+    const pdf = P4.run(`return registrarCrono(${q(PDF)});`);
+    ok('v5.59: o PDF dessa medição continua reconhecido como a mesma (não vira 3ª linha)',
+       [pdf.duplicado, pdf.mesmaMedicao, P4.ABAS.CRONOANALISE.length], [true, true, 3]);
+    const P5 = montar(CAT, null, '06/11/2026');
+    P5.run(`return registrarCrono(${q(PDF)});`);
+    const b = P5.run(`return registrarCrono(${q(APP)});`);
+    ok('v5.59: o app depois do PDF continua "já estava" (só APP com APP deixou de casar)',
+       [b.duplicado, b.mesmaMedicao, P5.ABAS.CRONOANALISE.length], [true, true, 2]);
+    ok('v5.59: o comentário do _registrarCronoCore não diz mais que parada marcada muda os tempos',
+       /marcada uma parada e salva de novo, a MESMA medição volta com\s*\/\/ outros tempos/.test(GS), false);
+  }
   // o JOGO e o produto de um volume
   const P3 = montar(CAT, null, '06/11/2026');
   P3.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-j', rotulo: '501059 · PENTEADEIRA CAMARIM STRASS' }))});`);
