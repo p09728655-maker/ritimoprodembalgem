@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.59 — A PROGRAMAÇÃO DA SEMANA (getProgramacaoSemana) para o TAKT
+//               PPCP, 06/11/2026: "tenho a programação no painel, colocar takt
+//               da semana e comparar com o takt que está sendo executado" →
+//               "quero só no painel, sem depender do app". O painel faz a conta;
+//               daqui sai a semana das DUAS abas (em aberto + concluídas) pela
+//               DATA de cada linha, com a UEP do cadastro e o SALDO da linha.
+//               Junto: duas medições DIFERENTES do app (REG_IDs app- diferentes)
+//               com os mesmos números não viram uma só (_cronoMesmaMedicao não
+//               casa APP com APP), e o comentário do _registrarCronoCore deixa de
+//               dizer que parada marcada muda os tempos (não muda).
 // Versão: 5.58 — A MEDIÇÃO VEM DO APP DE CRONOANÁLISE (registrarCrono origem=app)
 //               PPCP, 06/11/2026 ("b2"): no "Salvar análise e fechar" do app, a
 //               medição da embalagem vem sozinha para a aba CRONOANALISE — sem
@@ -487,7 +497,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.58';
+const GS_VERSAO = '5.59';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1252,7 +1262,8 @@ const CACHE_TTL_LEITURA = {
   getConfigPainel: 30,
   getCronoRegistros: 300,          // v5.30: aba pequena; o registro invalida
   getConferenciaCrono: 300,        // v5.34: a troca e o lançamento invalidam
-  getHorasCrono: 300               // v5.35: o lançamento invalida (a chave leva de/ate)
+  getHorasCrono: 300,              // v5.35: o lançamento invalida (a chave leva de/ate)
+  getProgramacaoSemana: 120        // v5.59: as duas abas e o cadastro; o lançamento invalida
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
@@ -1375,7 +1386,8 @@ const CACHE_DEP_LEITURA = {
   getProdutos: ['cat'], getTiposParada: ['cat'], getConfigPainel: ['cfg'],
   getPontosDia: ['prod', 'cat', 'cfg'], getProgramacaoHoje: ['prod', 'cat'],
   getProgramacaoDetalhada: ['prod', 'cat'], getProducaoModeloPeriodo: ['prod', 'cat'],
-  getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat']
+  getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat'],
+  getProgramacaoSemana: ['prod', 'cat']
 };
 const CACHE_INV_ESCRITA = {
   saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
@@ -1499,6 +1511,7 @@ function doGet(e) {
     else if (act === 'getProducaoModeloPeriodo') result = getProducaoModeloPeriodo(p);
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
+    else if (act === 'getProgramacaoSemana') result = getProgramacaoSemana(p);   // v5.59
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
     else if (act === 'setUepCatalogo')  result = setUepCatalogo(p);
     else if (act === 'simularUepCatalogo') result = simularUepCatalogo(p);   // v5.24: antes → depois, sem gravar
@@ -2495,10 +2508,11 @@ function _cronoDoApp(p, catalogo) {
 // contrário. Os tempos com a folga de uma casa (o texto do PDF tem uma).
 // Com `tudo` (o mesmo REG_ID do app reenviado), o NO PERÍODO também tem de bater:
 // é a linha inteira que se compara para decidir entre "já estava" e substituir.
-function _cronoMesmaMedicao(hdr, linhas, d, tudo) {
+function _cronoMesmaMedicao(hdr, linhas, d, tudo, pularApp) {
   const ix = function (n) { return hdr.indexOf(n); };
   const iD = ix('DATA_MEDICAO'), iM = ix('MODELO'), iP = ix('PRODUTO'), iV = ix('VOLUME'),
-        iR = ix('S_RODANDO'), iL = ix('S_SEM_LACUNAS'), iQ = ix('VOLUMES_MEDIDOS'), iPe = ix('S_PERIODO');
+        iR = ix('S_RODANDO'), iL = ix('S_SEM_LACUNAS'), iQ = ix('VOLUMES_MEDIDOS'), iPe = ix('S_PERIODO'),
+        iO = ix('ORIGEM');
   if ([iD, iM, iP, iV, iR, iL, iQ].some(function (i) { return i < 0; })) return -1;
   const perto = function (a, b) { return a !== '' && b !== '' && Math.abs(_numBR(a) - Number(b)) < 0.051; };
   const vazio = function (x) { return x === '' || x == null; };
@@ -2506,6 +2520,10 @@ function _cronoMesmaMedicao(hdr, linhas, d, tudo) {
   const dia = fmtDataBR(d.data), up = function (x) { return String(x == null ? '' : x).trim().toUpperCase(); };
   for (let i = 0; i < linhas.length; i++) {
     const r = linhas[i];
+    // v5.59: medição do app não casa com OUTRA medição do app pelo conteúdo — o
+    // REG_ID do app é o id da medição, então REG_IDs diferentes são medições
+    // diferentes, mesmo com os mesmos números (a 2ª sumia calada, "já estava").
+    if (pularApp && iO >= 0 && up(r[iO]) === 'APP') continue;
     if (fmtDataBR(r[iD]) === dia && up(r[iM]) === up(d.modelo) && up(r[iP]) === up(d.produto) && up(r[iV]) === up(d.volume) &&
         perto(r[iR], d.sRod) && perto(r[iL], d.sLac) && Number(_numBR(r[iQ])) === Number(d.volumes) &&
         (!tudo || iPe < 0 || mesmoPer(r[iPe], d.sPer))) return i;
@@ -2558,18 +2576,21 @@ function _registrarCronoCore(p, doApp) {
     const linhas = sh.getRange(2, 1, sh.getLastRow() - 1, hdr.length).getValues();
     for (let i = 0; i < linhas.length; i++) {
       if (String(linhas[i][iId]).trim() !== regId) continue;
-      // revisão da v5.58: o REG_ID do app é o id da medição, não o conteúdo. Reaberta
-      // a análise no app, marcada uma parada e salva de novo, a MESMA medição volta com
-      // outros tempos — e "já estava" deixaria a aba com os números velhos. Igual:
-      // já estava. Diferente: SUBSTITUI, com a antiga copiada na CRONO_EXCLUIDOS (o
-      // mesmo rastro do EXCLUIR). O REG_ID do painel sai do conteúdo: igual é igual.
+      // revisão da v5.58: o REG_ID do app é o id da medição, não o conteúdo. A MESMA
+      // medição pode voltar com outro conteúdo: o produto corrigido no app (Editar
+      // produto reenvia sozinho) ou o NO PERÍODO mudado (setup ou programa do grupo).
+      // Parada marcada no PC NÃO muda nada: os tempos saem só dos toques (v5.59: o
+      // comentário daqui dizia o contrário). Igual: já estava. Diferente: SUBSTITUI,
+      // com a antiga copiada na CRONO_EXCLUIDOS (o mesmo rastro do EXCLUIR). O REG_ID
+      // do painel sai do conteúdo: igual é igual.
       if (!doApp || _cronoMesmaMedicao(hdr, [linhas[i]], p, true) === 0) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
       substituir = i;
       break;
     }
     if (substituir < 0) {
-      // v5.58: a mesma medição por outro caminho (app × PDF) também não duplica
-      const j = _cronoMesmaMedicao(hdr, linhas, p);
+      // v5.58: a mesma medição por outro caminho (app × PDF) também não duplica.
+      // v5.59: do app, só contra a do PDF (pularApp): app × app é REG_ID.
+      const j = _cronoMesmaMedicao(hdr, linhas, p, false, doApp);
       if (j >= 0) return { ok: true, registrado: true, duplicado: true, mesmaMedicao: true, linha: j + 2 };
     } else {
       antiga = linhas[substituir];
@@ -5400,6 +5421,9 @@ function _lerProgDaAba(sh, arquivada) {
                status: iStat >= 0 ? String(r[iStat] == null ? '' : r[iStat]).trim().toUpperCase() : '',
                ordem: iOrd >= 0 && String(r[iOrd] == null ? '' : r[iOrd]).trim() !== '' && isFinite(Number(r[iOrd])) ? Number(r[iOrd]) : null,
                loteInt: iLtInt >= 0 ? _loteIntTxt(r[iLtInt]) : '',
+               // v5.59: o SALDO da linha, só quando a célula é DELA (ver
+               // _saldoConfiavel). Só a semana do takt lê; o FIFO não.
+               saldo: _saldoConfiavel(iProd >= 0 ? r[iProd] : '', iSald >= 0 ? r[iSald] : '', qtde),
                row: i });   // índice da linha na aba (o write-back casa a linha por ela)
   }
   return out;
@@ -5412,6 +5436,17 @@ function _loteIntTxt(v) {
   if (v == null || v === '') return '';
   if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? '' : Utilities.formatDate(v, TZ, 'dd/MM');
   return String(v).trim();
+}
+
+// v5.59 — O SALDO gravado pelo write-back, só quando fecha com a PRÓPRIA linha:
+// PRODUZIDO + SALDO = QTDE (a mesma conferência do _produzidoConfiavel, abaixo:
+// o extrato do ERP colado por cima das colunas de entrada deixa nas de saída o
+// SALDO de OUTRA linha). null = vazia, texto ou de outra linha — nunca 0.
+function _saldoConfiavel(prodCel, saldoCel, qtde) {
+  if (prodCel === '' || prodCel == null || saldoCel === '' || saldoCel == null) return null;
+  const p = Number(prodCel), s = Number(saldoCel);
+  if (!isFinite(p) || !isFinite(s) || s < 0) return null;
+  return Math.abs(p + s - (Number(qtde) || 0)) < 0.5 ? s : null;
 }
 
 // v5.21 — O PRODUZIDO gravado só vale como teto da linha ENCERRADA quando fecha
@@ -5930,6 +5965,80 @@ function getProgramacaoDetalhada() {
   const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= desdeNum; }).sort(function (a, b) { return a - b; })
     .slice(0, 400).map(function (n) { return { data: _numParaDataBR(n), desc: fer[n] }; });
   return { ok: true, itens: itens, feriados: feriados };
+}
+
+// ════════════════════════════════════════════════════════
+// A PROGRAMAÇÃO DE UMA SEMANA — o TAKT DA SEMANA do painel (v5.59)
+// ════════════════════════════════════════════════════════
+// PPCP, 06/11/2026: "colocar takt da semana e comparar com o takt que está
+// sendo executado" → "quero só no painel, sem depender do app". O painel faz
+// a conta (takt = minutos de jornada ÷ UEP programada); daqui sai o DADO.
+//
+// AS DUAS ABAS. A linha concluída muda para a PROGRAMACAO_CONCLUIDA: lendo só a
+// PROGRAMACAO, o total da semana encolheria conforme a fábrica produz, e o
+// takt ficaria mais folgado a cada dia. A semana é a soma pela DATA de cada
+// linha — a MESMA regra da META do dia (programadoHoje: as duas abas, fora da
+// esteira de fora), então cada dia daqui bate com a meta gravada daquele dia.
+//
+// O SALDO de cada linha: a coluna SALDO (o write-back do FIFO, regravado a cada
+// lançamento), só quando ela fecha com a própria linha (_saldoConfiavel).
+// Concluída, encerrada vencida e fora da esteira: 0. Futura sem conta: a QTDE.
+// Sem conta confiável: null — o painel conta à parte, nunca como 0.
+//
+// UEP pela do cadastro de AGORA (é carga, como no PRÓXIMOS DIAS); código sem
+// UEP: null. Lê as duas abas e o cadastro (memo por execução), sem refazer o
+// FIFO. `de`/`ate` em dd/MM/aaaa; sem eles, a semana de hoje (seg–dom).
+const PROG_SEMANA_MAX_DIAS = 14;
+function _somaDiasNum(n, k) {
+  n = Number(n) || 0;
+  if (!n) return 0;
+  const d = new Date(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100 + (Number(k) || 0));
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+function getProgramacaoSemana(p) {
+  p = p || {};
+  const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+  const deNum  = p.de  ? dataParaNum(String(p.de))  : _segundaNum(hojeNum);
+  const ateNum = p.ate ? dataParaNum(String(p.ate)) : _somaDiasNum(deNum, 6);
+  if (!deNum || !ateNum) return { ok: false, erro: 'Datas inválidas: use dd/mm/aaaa em "de" e "ate".' };
+  if (ateNum < deNum) return { ok: false, erro: '"ate" antes de "de".' };
+  if (ateNum > _somaDiasNum(deNum, PROG_SEMANA_MAX_DIAS - 1)) {
+    return { ok: false, erro: 'Período de no máximo ' + PROG_SEMANA_MAX_DIAS + ' dias.' };
+  }
+  const catByKey = {};
+  lerCatalogoProdutos().forEach(function (pr) { catByKey[codKey(pr.codigo)] = pr; });
+  const linhas = [];
+  lerProgramacao(true).forEach(function (pr) {
+    const dNum = dataParaNum(pr.data);
+    if (!dNum || dNum < deNum || dNum > ateNum) return;
+    const cat = catByKey[codKey(pr.codigo)];
+    const qtde = Number(pr.qtde) || 0;
+    const futura = dNum > hojeNum;
+    let saldo;
+    if (pr.arquivada || pr.foraEsteira || (pr.encerrada && !futura)) saldo = 0;
+    else if (pr.saldo != null) saldo = pr.saldo;
+    else saldo = futura ? qtde : null;
+    linhas.push({
+      data: _numParaDataBR(dNum), dataNum: dNum,
+      lote: pr.lote || '', ordem: pr.ordem == null ? null : pr.ordem,
+      codigo: cat ? cat.codigo : pr.codigo,
+      desc: cat ? cat.desc : '',
+      cor: produtoDoCodigo(cat ? cat.codigo : pr.codigo).cor,
+      qtde: qtde,
+      uepCx: cat && cat.uep > 0 ? cat.uep : null,
+      uep: cat && cat.uep > 0 ? Math.round(qtde * cat.uep * 10) / 10 : null,
+      saldo: saldo,
+      aba: pr.arquivada ? 'concluida' : 'aberta',
+      encerrada: !!pr.encerrada && !futura && !pr.foraEsteira,
+      foraEsteira: !!pr.foraEsteira
+    });
+  });
+  linhas.sort(function (a, b) { return (a.dataNum - b.dataNum) || ((a.ordem == null ? 1e9 : a.ordem) - (b.ordem == null ? 1e9 : b.ordem)); });
+  const fer = _feriadosNums();
+  const feriados = Object.keys(fer).map(Number).filter(function (n) { return n >= deNum && n <= ateNum; })
+    .sort(function (a, b) { return a - b; }).map(function (n) { return { data: _numParaDataBR(n), desc: fer[n] }; });
+  return { ok: true, de: _numParaDataBR(deNum), ate: _numParaDataBR(ateNum), hoje: _numParaDataBR(hojeNum),
+           linhas: linhas, feriados: feriados };
 }
 
 

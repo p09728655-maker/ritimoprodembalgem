@@ -64,7 +64,9 @@ via Google Apps Script (JSONP).
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
   dia no `getProgramacaoDetalhada` (v5.37), e a DATA no formato da aba na
-  linha que volta da CONCLUIDA (v5.45): `node programacao.test.js`.
+  linha que volta da CONCLUIDA (v5.45), e a PROGRAMAÇÃO DA SEMANA (v5.59:
+  `getProgramacaoSemana` — as duas abas, o saldo só da própria linha, cada dia
+  igual à META do dia): `node programacao.test.js`.
 - `uep-padrao.test.js` — UEP padrão versionada (`UEP_VERSOES`), trava do GRAVAR
   UEP e o bloco 7 da aba ⚖ UEP (padrão × realizado por produto; v7.206.0: a
   linha do produto na régua de hoje e o "% com X"). Carrega o
@@ -6048,20 +6050,17 @@ feito e dá ar de verdade ao que sobrou.
     depois da análise: **parada marcada no PC não muda nada do que vai** — a
     medição reaberta e salva de novo volta "já estava". Troca a linha o produto
     corrigido no app (o *Editar produto* reenvia sozinho a que já foi) ou o NO
-    PERÍODO (setup ou programa do grupo mudados). ⚠ O comentário do
-    `_registrarCronoCore` no `.gs` v5.58 ainda diz "marcada uma parada… volta com
-    outros tempos": está errado; corrigir na próxima versão do `.gs` (só
-    comentário — não justifica re-deploy sozinho).
+    PERÍODO (setup ou programa do grupo mudados). O comentário do
+    `_registrarCronoCore`, que dizia o contrário, foi corrigido no `.gs` v5.59
+    (o `crono-registro.test.js` prende).
   - Por isso a mesma medição do PDF e do app **bate e não duplica**. O único
     caso que duplica: o PDF entrou com o produto ERRADO e o produto foi
     corrigido no app — outro produto, outra linha. Exclua a do PDF no painel.
-  - ⚠ **Em aberto (não feito)**: duas medições DIFERENTES do app (REG_IDs
-    `app-…` diferentes) do mesmo dia, produto e volume, com RODANDO, SEM AS
-    LACUNAS e VOLUMES iguais, viram uma só — o `_cronoMesmaMedicao` não olha a
-    ORIGEM, e a 2ª volta "já estava" (o app grava como no painel). Raro (os
-    volumes e os dois tempos têm de bater ao décimo); a falta é de volumes na
-    regra da troca, nunca número errado. A correção (não casar APP com APP pelo
-    conteúdo) pede um `.gs` v5.59.
+  - **APP × APP é pelo REG_ID** (`.gs` v5.59): duas medições DIFERENTES do app
+    (REG_IDs `app-…` diferentes) do mesmo dia, produto e volume, com RODANDO,
+    SEM AS LACUNAS e VOLUMES iguais, viravam uma só (a 2ª voltava "já estava").
+    Agora o `_cronoMesmaMedicao(…, pularApp)` só casa a do app com linha que NÃO
+    é APP (o PDF); o PDF continua casando com a do app.
   - Os limites são os do `_ucvRegValida` (`CRONO_APP_*` = `UCV_REG_*`; o
     teste prende).
 - **A MESMA MEDIÇÃO NÃO DUPLICA** (`_cronoMesmaMedicao`, para os dois caminhos):
@@ -6608,6 +6607,38 @@ feito e dá ar de verdade ao que sobrou.
   `setTab('tempo')` → ⏱ CRONOANÁLISE no ONDE O TEMPO VAI.
 - Medido no Chromium com os dados reais de 06/11 (1920×1015): nada passa da
   largura; o ONDE O TEMPO VAI antes × depois saiu igual.
+
+## TAKT DA SEMANA — a leitura no `.gs` (v5.59; a tela ainda não existe)
+- PPCP, 06/11/2026: *"tenho a programação no painel, colocar takt da semana e
+  comparar com o takt que está sendo executado"* → *"quero só no painel"* →
+  *"sem depender do app"* → prévia (imagem com os números reais da semana) →
+  *"me manda gs"*. A tela proposta é a 6ª sub-aba da ⚖ UEP: TAKT (minutos de
+  jornada ÷ UEP programada), REFERÊNCIA (527 × 60 ÷ 2.761) e EXECUTADO (minutos
+  ÷ UEP feita), em **segundos por UEP**, e a cascata PEDIDO − CARGA ACIMA DA
+  REFERÊNCIA − GAP DE RITMO = FEITO NA JORNADA. ⚠ **Ainda não implementada**:
+  a sub-aba, o nome final e os blocos dependem do OK do PPCP sobre a prévia.
+- **Por que UEP e não caixa** (medido em 03–05/11/2026): em caixas a linha fez
+  1.340, 1.327 e 1.009 contra ~1.800/dia que o takt em caixas pediria — vermelho
+  todo dia —, mas em UEP fez 97%, 104% e 76% da referência. O que faltou foi
+  CARGA (a programação pediu 116% da referência; 04/11 pediu 156%), não ritmo:
+  dos 2.611 UEP que não saíram na jornada, 1.978 eram carga e 633 ritmo.
+- **`getProgramacaoSemana&de=&ate=`** (`.gs` v5.59, leitura, cache 120 s,
+  grupos `prod`+`cat`): as linhas da semana das DUAS abas (PROGRAMACAO +
+  PROGRAMACAO_CONCLUIDA) pela DATA de cada linha — a regra da META do dia
+  (`programadoHoje`: fora da esteira de fora; o teste confere dia a dia). Por
+  linha: data, lote, ordem, código, cor, qtde, `uepCx`/`uep` (cadastro de agora;
+  null sem UEP), `saldo` (`_saldoConfiavel`: o SALDO do write-back só quando
+  PRODUZIDO + SALDO = QTDE; concluída, encerrada vencida e fora da esteira 0;
+  futura sem conta a QTDE; sem conta null, nunca 0), `aba`, `encerrada`,
+  `foraEsteira`; e os feriados do período. Sem datas: a semana de hoje (seg–dom).
+  Máx. 14 dias. Não refaz o FIFO (lê as abas e o cadastro).
+  - ⚠ **Só as duas abas juntas**: lendo só a PROGRAMACAO, o total da semana
+    encolhe conforme os lotes concluem, e o takt fica mais folgado a cada dia.
+  - Medido na planilha em 06/11/2026: a semana 02–08/11 somou **5.970 cx =
+    12.831 UEP** (03/11 1.200 · 04/11 2.070 · 05/11 1.550 · 06/11 1.150 — as
+    metas gravadas de cada dia). O app de cronoanálise usou **7.222 volumes**
+    para o takt da mesma semana: 1.252 a mais, origem não apurada. O takt do
+    painel é do painel; não comparar os dois números como se fossem o mesmo.
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
