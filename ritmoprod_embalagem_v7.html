@@ -3894,14 +3894,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.207.1';
+const APP_VER   = '7.208.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.57';
+const GS_REPO   = '5.58';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -7377,7 +7377,7 @@ function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts, resRegs){
     + regs.slice(0, 15).map((r, i) => `<tr><td>${_rpEsc(r.data || '')}</td>${p ? '' : `<td class="ucv-pr">${_rpEsc(r.modelo || '')} · ${_rpEsc(r.produto || '')}</td>`}`
       + `<td>${_rpEsc(r.volume || '')}</td><td class="n">${sg(r.sRod)}</td><td class="n">${sg(r.sPer)}</td><td class="n"><b>${sg(r.sLac)}</b></td>`
       + `<td class="n">${n(r.volumes)}</td><td class="n"><b>${_ucvRegUep(r) > 0 ? _ucvU2(_ucvRegUep(r)) : '—'}</b></td><td class="ucv-st">${_ucvStatusCel(sts && sts[i])}</td><td class="n ucv-vc">${r.uepCad > 0 ? _ucvU2(r.uepCad) : '—'}${sts && sts[i] && sts[i].vigor != null ? `<small>${sts[i].vigor ? 'em vigor' : 'anterior'}</small>` : ''}</td>`
-      + `<td class="n">${_ucvPadCel(Array.isArray(pads) ? pads[i] : pads)}</td><td title="${_rpEsc(r.base || '')}">${_rpEsc(String(r.base || '').replace(/ (?:MEDIDA|SEM LACUNAS) (\d{2}\/\d{2})\/\d{4}$/, ' $1'))}</td><td>${_rpEsc(r.quem || '')}</td>`
+      + `<td class="n">${_ucvPadCel(Array.isArray(pads) ? pads[i] : pads)}</td><td title="${_rpEsc(r.base || '')}">${_rpEsc(String(r.base || '').replace(/ (?:MEDIDA|SEM LACUNAS) (\d{2}\/\d{2})\/\d{4}$/, ' $1'))}</td><td${r.origem === 'APP' ? ' title="Veio sozinha do app de cronoanálise (Salvar análise), sem PDF"' : ''}>${_rpEsc(r.quem || (r.origem === 'APP' ? 'app' : ''))}</td>`
       + `<td class="ucv-x-c">${_ucvExclPode(r) ? `<button type="button" class="ucv-x" data-reg="${r.regId}" onclick="_ucvExcluir(this.dataset.reg)" title="Tirar esta medição da aba CRONOANALISE (a UEP do cadastro não muda)"${excl ? ' disabled' : ''}>${excl === r.regId ? 'EXCLUINDO…' : 'EXCLUIR'}</button>`
         : '<span class="ucv-x-sem" title="Linha sem REG_ID (digitada na planilha): exclua lá">—</span>'}</td></tr>`).join('')
     + '</tbody></table></div>' + (regs.length > 15 ? `<div class="uep-nota">+ ${regs.length - 15} mais antigas na aba CRONOANALISE da planilha.</div>` : '');

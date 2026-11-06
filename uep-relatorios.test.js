@@ -2134,6 +2134,9 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
 // SUB-ABAS DA ⏱ CRONOANÁLISE (v7.197.0, PPCP 03/11/2026: "está muito cheia a
 // tela, tem que enxugar, deixar mais dinâmica" → sub-abas por tarefa e as
 // impressões num menu). Os blocos, ids e leituras são os de antes.
+// v7.208.0 / .gs v5.58 (PPCP, 06/11/2026: "b2"): a medição que veio do app (ORIGEM APP) diz isso no MEDIDO POR
+ok('v7.208.0 a medição que veio do app diz "app" no MEDIDO POR (com o porquê no title); a do painel, o nome digitado',
+   /<td\$\{r\.origem === 'APP' \? ' title="Veio sozinha do app de cronoanálise \(Salvar análise\), sem PDF"' : ''\}>\$\{_rpEsc\(r\.quem \|\| \(r\.origem === 'APP' \? 'app' : ''\)\)\}<\/td>/.test(pegaJs('function _ucvRegsHtml(')), true);
 console.log('\n── CRONOANÁLISE: sub-abas ──');
 {
   const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC));

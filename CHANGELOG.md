@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.208.0 + `.gs` v5.58 — 06/11/2026 · a medição vem sozinha do app de cronoanálise ⚠ **re-deploy**
+
+- PPCP: *"b2"*. No **"Salvar análise e fechar"** do app de cronoanálise (PC,
+  Embalagem Takt Time), a medição da embalagem vai sozinha para a aba
+  CRONOANALISE do painel — sem PDF, sem 📄 IMPORTAR PDF, sem digitar.
+- Vai só medição com produto **da lista** do cadastro. Nome solto não vai: o
+  app diz para corrigir o produto e enviar de novo.
+- **A mesma medição não duplica**, venha do app ou do PDF: o `.gs` confere o
+  dia, o produto, o volume, os tempos e os volumes.
+- Na lista MEDIÇÕES da ⏱ CRONOANÁLISE, a medição que veio do app diz **app**
+  no MEDIDO POR.
+- O ✓ TROCAR A UEP, a regra dos 30 volumes e a base MADERO não mudaram: a
+  troca da UEP continua sendo decisão do PPCP, no painel.
+- ⚠ **re-deploy** do `.gs` v5.58. Antes dele o app recebe a recusa do `.gs`
+  antigo e diz que falta colar o v5.58; nada é gravado errado.
+
+---
+
 ## v7.207.1 — 06/11/2026 · correções da revisão da v7.207.0
 
 - Abrir a ⚖ UEP já na RÉGUAS punha três leituras ao mesmo tempo no Apps

@@ -86,7 +86,10 @@ via Google Apps Script (JSONP).
   `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
   as paradas apontadas de cada hora, por tipo) e a régua SEM AS LACUNAS (v5.44:
   o `registrarCrono` pede o S_SEM_LACUNAS, a troca sai dele e ignora o rodando e
-  a UEP gravada, toda resposta diz `regua:'lac'`): `node crono-registro.test.js`.
+  a UEP gravada, toda resposta diz `regua:'lac'`) e a MEDIÇÃO DO APP (v5.58: o
+  rótulo vira modelo, volume, códigos e UEP do cadastro pela régua do painel, as
+  recusas, a mesma medição app × PDF não duplica, a paridade com o `_capNome`,
+  a base e os limites do painel): `node crono-registro.test.js`.
 - `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
@@ -5993,6 +5996,55 @@ feito e dá ar de verdade ao que sobrou.
   depois do 📌 FIXAR e virou o último foco: o `_uepConvTecla` (Tab volta ao
   PRODUTO) passou para ele. Medido no Chromium: a linha de campos cabe em 1920,
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
+
+## A MEDIÇÃO VEM SOZINHA DO APP DE CRONOANÁLISE (v7.208.0 / `.gs` v5.58 / app 2.103.0)
+- PPCP, 06/11/2026: *"analisar o que pode unir"* → B1/B2 → *"b2"*. Antes: no
+  app (repositório `crono-analise`), Salvar análise → imprimir o PDF → no
+  painel, 📄 IMPORTAR PDF → conferir → 💾 REGISTRAR. Agora o **"Salvar análise
+  e fechar"** do app (PC, Embalagem Takt Time) manda a medição para a aba
+  CRONOANALISE pelo `registrarCrono` deste `.gs`. O IMPORTAR PDF fica como
+  reserva.
+- **B1 já estava feito** (conferido em 06/11): em 03/11 a lista de produtos da
+  embalagem do app foi carregada com os nomes do painel (o `rot` do
+  `_uepConvProdutos`: *"501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2"*), 168
+  = 168. O duplicado *"501141 BUFFET 4 PT PRISM"* (sem o "·", cadastrado pelo
+  tablet) foi desativado no banco do app a pedido do PPCP. O que sobra do B1
+  (o app ler a lista sozinho; o tablet não cadastrar nome solto) NÃO foi feito.
+- **O contrato** (`registrarCrono` com `origem=app`, GET sem callback, resposta
+  JSON): o app manda `regId` (`app-` + id da conferência), `rotulo` (o nome da
+  lista), `data` (dd/mm/aaaa, São Paulo), `sRod`, `sLac`, `sPer` (o texto do
+  PDF, `formatarSegundos`) e `volumes`. O resto sai do cadastro, pela régua do
+  painel (`_cronoDoApp`, PURA): PRODUTO = `_cronoNomeCad` (= `_capNome`),
+  VOLUME como o `_ucvRegVol`, CODIGOS = todos os do volume (as cores), UEP_CADASTRO
+  = o `volCad` (média das cores; JOGO = soma ÷ nº de volumes), BASE/BASE_S pela
+  MADERO sem as lacunas (`CRONO_BASE_ROT_GS`/`CRONO_BASE_S_GS`), VELOCIDADE e
+  ENTRE_PECAS do cadastro. TOLERANCIA e TEMPO PADRÃO vazios (são do painel de
+  cada computador). Coluna nova **ORIGEM** = `APP`.
+  - **Toda resposta ao app leva `app:true`**: o `.gs` antigo responde
+    *"Sem o produto da medição."* sem ele, e o app diz que falta o v5.58 — e
+    não grava nada (o app NÃO manda `produto`, de propósito).
+  - **Recusa com `ok:true, recusado:true`** e o motivo (fora do formato da
+    lista, fora do cadastro, volume que o produto não tem, data, volumes não
+    inteiros, RODANDO < SEM AS LACUNAS, tempo absurdo): o app não retenta o
+    que não vai mudar. Planilha ocupada (lock): `ok:false, app:true` → o app
+    pode reenviar. NO PERÍODO fora da régua fica vazio (só informa).
+  - Os limites são os do `_ucvRegValida` (`CRONO_APP_*` = `UCV_REG_*`; o
+    teste prende).
+- **A MESMA MEDIÇÃO NÃO DUPLICA** (`_cronoMesmaMedicao`, para os dois caminhos):
+  mesmo dia, modelo, produto, volume, RODANDO e SEM AS LACUNAS (folga de 0,05 —
+  o texto do PDF tem uma casa) e volumes → `duplicado:true, mesmaMedicao:true`.
+  O REG_ID do painel sai do conteúdo e do MEDIDO POR; o do app, do id dele: sem
+  isso, o PDF de uma medição já enviada entraria de novo.
+- **No app** (repositório `crono-analise`, v2.103.0): `api/_lib/painel.js`
+  (monta e envia), rota `PATCH /api/conferencias?id=…&painel=1`, colunas
+  `conferencias.painel_em`/`painel_erro`, e a variável de ambiente
+  **`PAINEL_APPS_SCRIPT_URL`** na Vercel do app (a URL `/exec` deste Apps
+  Script). **Sem ela, nada é enviado** (o envio nasce desligado). ⚠ Trocou a
+  implantação do Apps Script (a URL `/exec` mudou)? Trocar nos DOIS HTMLs do
+  painel **e** nessa variável.
+- No painel, a lista MEDIÇÕES diz **app** no MEDIDO POR da medição que veio do
+  app. Excluir/arquivar no app NÃO exclui no painel (decisão do 1º passo).
+- ⚠ **re-deploy manual** do `.gs` v5.58 antes de ligar a variável.
 
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
