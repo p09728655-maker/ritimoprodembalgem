@@ -6813,8 +6813,9 @@ feito e dá ar de verdade ao que sobrou.
     na planilha) + a troca registrada em AB27:AF27 (lote 203/26, PREV EMB
     04/11: 2.057 → 2.310). Os outros 120 produtos batem com o PRODUTO_CODIGO de
     06/11; 14 sem código na planilha (estimativa de 25/09); EXPOSITOR PATRIMAR
-    (2,67) × EXPOSITOR PATRIMAR III do cadastro (3,47 EST) **não mexido** — a
-    confirmar com o PPCP.
+    (2,67) × EXPOSITOR PATRIMAR III do cadastro (3,47 EST) **não mexido** —
+    PPCP, 06/11/2026: *"não importa esses produtos"* (nem ele nem os 14 sem
+    código); ficam como estão na planilha.
   - **Teste CABE/PASSA** (042–049): parâmetros `DADOS!Y2` = 2.761 (média da
     linha sem hora extra) e `Z2` = 527; por lote X:Z (% da média, horas de
     linha, CABE / PASSA +h) com formato condicional; nas 043–049 o bloco do
