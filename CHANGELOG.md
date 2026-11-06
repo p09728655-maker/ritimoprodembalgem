@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.213.0 — 06/11/2026 · AVALIAR PROGRAMAÇÃO antes de aprovar
+
+- PPCP: *"como fazer para programar dentro do padrão?"* → *"a no painel"*. Na
+  sub-aba TAKT DA SEMANA, a 3ª opção **AVALIAR PROGRAMAÇÃO**: na planilha de
+  produção, copie da semana em avaliação as colunas **F a I** (QTDE, PRODUTO,
+  TOTAL, PREV EMB) — ou **A a I** — e cole na caixa. O painel responde **CABE /
+  NÃO CABE**, quanto falta em horas de linha e em pontos, que dias passam de 1
+  dia de linha e o que redistribuir resolve — com o cadastro de UEP de hoje e
+  a mesma conta do TAKT. **Não grava nada.**
+- Conferido com a semana 042-26 da planilha (embalagem 09–13/11): a colagem dá
+  **NÃO CABE, faltam 2h13** — o mesmo do SEMANA QUE VEM e do teste novo da
+  planilha.
+- **Nome do produto**: 9 produtos têm nome diferente na planilha e no cadastro
+  (ex.: *CONJUNTO 2 MESAS…* × *CONJ 2 MESAS…*, *RACK BRITO* × *RACK BRITO 137
+  CM*). O painel casa os dois; produto que não casa com nenhum é **listado em
+  destaque** (a carga dele não entra — cadastre antes de aprovar).
+- Não soma o que sobrar da semana atual nem a programação que já está no painel
+  nessas datas: é só a programação colada.
+
+---
+
 ## v7.212.0 — 06/11/2026 · TAKT: "média da linha sem hora extra" e a falta em pontos
 
 - PPCP: *"troca [referência] por média da linha entregue sem hora extra"*. Na

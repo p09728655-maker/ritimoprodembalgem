@@ -6739,6 +6739,33 @@ feito e dá ar de verdade ao que sobrou.
     "≈ N pontos" à centena. ⚠ **UEP não tem valor fixo em pontos** (06/11:
     PAINEL RIPADO ~46, PENTEADEIRA MEL ~90 pontos por UEP; ~70 no mês) — por
     isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
+  - **AVALIAR PROGRAMAÇÃO (v7.213.0**, PPCP: *"como fazer para programar
+    dentro do padrão?"* → *"a no painel"*): `TKS_SEM` = 2. O PCP cola o bloco
+    da semana da PLANILHA DE PRODUÇÃO (Excel, ver abaixo) e vê CABE/NÃO CABE
+    antes de aprovar. Nada lido do servidor nem gravado: o cadastro que a aba
+    já leu (`_pdiaPcCat()` → `_capProdutos`, a UEP do PRODUTO = soma dos
+    volumes, cor mais rápida — a mesma da coluna V da aba UEP da planilha).
+    - **Leitura** `_tkaLer(txt, prods, hojeN)` (pura): por linha, a data é a
+      ÚLTIMA célula-data (a PREV EMB; os cortes vêm antes) e vale para baixo
+      até a próxima (o bloco do lote é mesclado); o produto é a célula que casa
+      (`_tkaChave`: sem acento, CONJ/PENT/CANT CAFE por extenso; `_tkaAchar`:
+      exato, senão o ÚNICO nome que começa com o outro — 9 de 121 nomes da
+      planilha diferem do cadastro, medido em 06/11); a QTDE é a célula à
+      ESQUERDA (à direita só com o produto na 1ª célula ou uma data à
+      esquerda) — o TOTAL do lote, à direita, nunca entra. Texto que não casa
+      → `semCad` (dito em destaque: carga que não entrou). `_tkaNum` ("2.200"
+      milhar, "2,5" decimal), `_tkaData` ("9/11" sem ano: de 30 dias atrás em
+      diante).
+    - **Conta** `_tkaMontar(L, fer, meta, rit)`: monta um getProgramacaoSemana
+      (código fictício 9000000NN por produto, para os pontos) e passa por
+      `_taktMontar` (o dia de referência é a VÉSPERA do 1º dia colado: tudo é
+      plano) → `_taktProxMontar` → `_taktVeredito`. Máx. 31 dias.
+    - **Desenho** `_tkaHtml` (a caixa `#tka-txt`, o veredito com
+      `unid:'produtos'`, o dia a dia, o que ficou de fora). `TKA_TXT` guarda o
+      texto; o `renderUep` não redesenha com o foco na caixa (perderia o
+      cursor) e o `_tkaAvaliar` tira o foco antes de desenhar.
+    - Medido com a 042-26 colada (F:I e A:I): 16 produtos, 8.000 produtos =
+      14.503,5 UEP → NÃO CABE, 2h13 — o mesmo do SEMANA QUE VEM.
   - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
     (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
     8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;
@@ -6766,6 +6793,36 @@ feito e dá ar de verdade ao que sobrou.
     metas gravadas de cada dia). O app de cronoanálise usou **7.222 volumes**
     para o takt da mesma semana: 1.252 a mais, origem não apurada. O takt do
     painel é do painel; não comparar os dois números como se fossem o mesmo.
+
+## PLANILHA DE PRODUÇÃO (Excel do PCP) — ajustes de 06/11/2026
+- Arquivo do PCP fora do repositório: `PLANILHA_PRODUÇÃO_SEM_COR - 2026.xlsx`
+  (uma aba por semana de corte `NNN-26`; cada bloco de 8 linhas = UM LOTE =
+  UM DIA de embalagem, PREV EMB na coluna I; QTDE em PRODUTOS (jogos) na F e o
+  PRODUTO na G; `UEP DIA` do lote em U8/U16/U24/U32/U40 pela BASE PRODUTOS;
+  aba UEP = cadastro por PRODUTO, com registro de trocas em AB:AF que vale
+  pela PREV EMB).
+- PPCP: *"pode arrumar tmb"* e *"se tiver UEP desatualizada na planilha
+  arrume"*. Feito por **edição cirúrgica do XML** (só 12 partes; os
+  complementos Claude/GPT for Excel, os comentários e o customXml ficam):
+  - **Valores velhos**: a coluna F da aba UEP já tinha as trocas de 04/11, mas
+    o arquivo guardava os resultados de antes (RACK FLIP 1.8 2,13 com F 2,46;
+    BUFFET FLIP 1.8 3,42 → 3,69). `fullCalcOnLoad="1"` no `calcPr`: o Excel
+    recalcula tudo ao abrir. Depois disso a 041-26 bate com o painel (03/11
+    3.229, 04/11 4.304,1) e a 042-26 também (12/11 2.736,5; semana 14.503,5).
+  - **LIVREIRO ENCANTO 1,87 → 2,10** (cadastro 04/11/2026 DIGITADA; faltava
+    na planilha) + a troca registrada em AB27:AF27 (lote 203/26, PREV EMB
+    04/11: 2.057 → 2.310). Os outros 120 produtos batem com o PRODUTO_CODIGO de
+    06/11; 14 sem código na planilha (estimativa de 25/09); EXPOSITOR PATRIMAR
+    (2,67) × EXPOSITOR PATRIMAR III do cadastro (3,47 EST) **não mexido** — a
+    confirmar com o PPCP.
+  - **Teste CABE/PASSA** (042–049): parâmetros `DADOS!Y2` = 2.761 (média da
+    linha sem hora extra) e `Z2` = 527; por lote X:Z (% da média, horas de
+    linha, CABE / PASSA +h) com formato condicional; nas 043–049 o bloco do
+    takt em VOLUMES (K46:Q47, com pausas de 90 min descontadas de novo) virou
+    UEP SEMANA · DIAS · CAPACIDADE · PEDE % · PRECISA · TEM · FALTA/SOBRA +
+    SITUAÇÃO (T47) e UEP/DIA MÉD. (U47); na 042 (rodapé antigo) o resumo em
+    X46:Z47. Verificado recalculando uma CÓPIA no LibreOffice: os mesmos 30
+    `#N/A` de antes (RESUMO M² T219:T248, já no original), nenhum novo.
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
