@@ -5998,10 +5998,14 @@ feito e dá ar de verdade ao que sobrou.
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
 
 ## A MEDIÇÃO VEM SOZINHA DO APP DE CRONOANÁLISE (v7.208.0 / `.gs` v5.58 / app 2.103.0)
-- ⚠ **Estado em 06/11/2026**: o lado do painel (`.gs` v5.58) está pronto; o do
-  app (2.103.0) estava em construção. Até o app sair **e** a variável
-  `PAINEL_APPS_SCRIPT_URL` ser configurada, nada vem sozinho — o 📄 IMPORTAR
-  PDF continua sendo o caminho. Ao confirmar o app, tirar esta nota.
+- ⚠ **Estado em 06/11/2026**: `.gs` v5.58 **implantado** (conferido: o
+  `getDados` responde `gsVersao` 5.58); variável `PAINEL_APPS_SCRIPT_URL`
+  criada na Vercel do app (projeto `crono-analise`, só Production, tipo
+  Config); app 2.103.0 **pronto na branch** `claude/serene-einstein-otq7ic` do
+  `crono-analise`, **ainda não mesclado**. Até o merge (que publica e roda a
+  migração do banco do app), nada vem sozinho — o 📄 IMPORTAR PDF continua
+  sendo o caminho. Ao ver a 1ª medição com ORIGEM = APP na aba, tirar esta
+  nota.
 - PPCP, 06/11/2026: *"analisar o que pode unir"* → B1/B2 → *"b2"*. Antes: no
   app (repositório `crono-analise`), Salvar análise → imprimir o PDF → no
   painel, 📄 IMPORTAR PDF → conferir → 💾 REGISTRAR. Agora o **"Salvar análise
@@ -6034,16 +6038,30 @@ feito e dá ar de verdade ao que sobrou.
     no caminho do app: `ok:false, app:true` → o app pode reenviar (revisão: a
     falha saía pelo catch do doGet sem `app`, e o app acusaria o `.gs` antigo).
     NO PERÍODO fora da régua fica vazio (só informa).
-  - **O mesmo REG_ID do app com outros números SUBSTITUI a linha** (revisão da
-    v5.58): o REG_ID do app é o id da medição, e reaberta a análise no app,
-    marcada uma parada e salva de novo, a MESMA medição volta com outros tempos.
-    Igual (a linha inteira, NO PERÍODO incluído) → `duplicado`; diferente →
-    `substituido:true`, no lugar, com a antiga na CRONO_EXCLUIDOS
+  - **O mesmo REG_ID do app com outro conteúdo SUBSTITUI a linha** (revisão da
+    v5.58). Igual (a linha inteira, NO PERÍODO incluído) → `duplicado`;
+    diferente → `substituido:true`, no lugar, com a antiga na CRONO_EXCLUIDOS
     (`_cronoCopiarExcluida`, a mesma do EXCLUIR) e as colunas que alguém pôs na
     aba preservadas. O REG_ID do painel sai do conteúdo: lá, igual é igual.
-  - ⚠ Limite aceito: medição importada por PDF ANTES e depois corrigida no app
-    (números diferentes, REG_ID diferente) entra de novo — exclua a do PDF no
-    painel. Só acontece na transição.
+  - ⚠ **O que muda o conteúdo é o PRODUTO, não a parada** (corrigido pela
+    revisão do app, 06/11). Os três tempos saem só dos TOQUES, que não mudam
+    depois da análise: **parada marcada no PC não muda nada do que vai** — a
+    medição reaberta e salva de novo volta "já estava". Troca a linha o produto
+    corrigido no app (o *Editar produto* reenvia sozinho a que já foi) ou o NO
+    PERÍODO (setup ou programa do grupo mudados). ⚠ O comentário do
+    `_registrarCronoCore` no `.gs` v5.58 ainda diz "marcada uma parada… volta com
+    outros tempos": está errado; corrigir na próxima versão do `.gs` (só
+    comentário — não justifica re-deploy sozinho).
+  - Por isso a mesma medição do PDF e do app **bate e não duplica**. O único
+    caso que duplica: o PDF entrou com o produto ERRADO e o produto foi
+    corrigido no app — outro produto, outra linha. Exclua a do PDF no painel.
+  - ⚠ **Em aberto (não feito)**: duas medições DIFERENTES do app (REG_IDs
+    `app-…` diferentes) do mesmo dia, produto e volume, com RODANDO, SEM AS
+    LACUNAS e VOLUMES iguais, viram uma só — o `_cronoMesmaMedicao` não olha a
+    ORIGEM, e a 2ª volta "já estava" (o app grava como no painel). Raro (os
+    volumes e os dois tempos têm de bater ao décimo); a falta é de volumes na
+    regra da troca, nunca número errado. A correção (não casar APP com APP pelo
+    conteúdo) pede um `.gs` v5.59.
   - Os limites são os do `_ucvRegValida` (`CRONO_APP_*` = `UCV_REG_*`; o
     teste prende).
 - **A MESMA MEDIÇÃO NÃO DUPLICA** (`_cronoMesmaMedicao`, para os dois caminhos):
@@ -6058,6 +6076,12 @@ feito e dá ar de verdade ao que sobrou.
   Script). **Sem ela, nada é enviado** (o envio nasce desligado). ⚠ Trocou a
   implantação do Apps Script (a URL `/exec` mudou)? Trocar nos DOIS HTMLs do
   painel **e** nessa variável.
+  - **No app, a fila de envio mora na página** (revisão de 06/11): a gravação
+    da análise (e do produto corrigido) já deixa em `painel_erro` "o envio ao
+    painel não foi confirmado…"; o envio troca pelo desfecho. Página fechada no
+    meio → a lista do app mostra "⚠ não foi ao painel" e o PCP manda de novo
+    (o painel responde "já estava" se ela tinha chegado). Recarregar ou fechar
+    com envios na fila pergunta antes.
 - No painel, a lista MEDIÇÕES diz **app** no MEDIDO POR da medição que veio do
   app. Excluir/arquivar no app NÃO exclui no painel (decisão do 1º passo).
 - ⚠ **re-deploy manual** do `.gs` v5.58 antes de ligar a variável.
