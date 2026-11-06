@@ -5171,10 +5171,9 @@ console.log('\n── estudo de UEP ──');
     ok('a lista do backend vira o mapa; backend antigo (sem a lista) = {}',
        [_feriadosMapa([{ data:'02/11/2026', desc:'FINADOS' }, { data:'20/11/2026' }, { data:'lixo' }]), _feriadosMapa(undefined)],
        [{ 20261102:'FINADOS', 20261120:'FERIADO' }, {}]);
-    eval(pega('function _filaUteis('));
-    ok('FILA DE CRONOANÁLISE: a janela de dias úteis pula o feriado',
-       [_filaUteis(new Date(2026, 9, 29), 3), _filaUteis(new Date(2026, 9, 29), 3, FER)], [[20261029, 20261030, 20261102], [20261029, 20261030, 20261103]]);
-    ok('a FILA recebe os feriados da programação', /_filaUteis\(agora, GPX_DIAS, PROG_FERIADOS\)/.test(JS), true);
+    // v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (e a janela de dias úteis dela, _filaUteis) saiu — a
+    // impressão é a AGENDA DA CRONOANÁLISE, a lista do O QUE MEDIR (testada em uep-relatorios.test.js)
+    ok('a FILA antiga e a janela de dias dela saíram do painel', [/function _filaUteis\(|function _filaCronoMontar\(/.test(JS)], [false]);
     // v7.177.0 — a capacidade DEMONSTRADA como referência (PPCP: "por que 2.530
     // se no histórico faz mais?" → "2761"): a MÉDIA POR DIA do bloco 5.
     // o print das 16:08: 28/10 10h50, 29/10 13h21, 30/10 9h53, 03/11 10h31, 04/11 12h25

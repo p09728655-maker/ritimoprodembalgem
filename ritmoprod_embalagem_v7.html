@@ -696,6 +696,11 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-princ-r{font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:9px 14px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:8px}
 #sec-crono .ucv-princ-r.ok{border-left-color:var(--ok)}
 #sec-crono .ucv-princ tbody tr{cursor:pointer}
+/* v7.216.0: os grupos da agenda (NA PROGRAMAÇÃO · RODOU, FORA DA PROGRAMAÇÃO · JÁ MEDIDOS) */
+#sec-crono .ucv-princ tbody tr.ucv-grp{cursor:default}
+#sec-crono .ucv-princ tbody tr.ucv-grp td{background:var(--elevated);font-family:var(--font-d);font-size:10.5px;letter-spacing:.6px;color:var(--txt2);padding:7px 10px}
+#sec-crono .ucv-princ tbody tr.ucv-grp td b{color:var(--txt);font-weight:700}
+#sec-crono .ucv-princ tbody tr.ucv-grp:hover td{background:var(--elevated)}
 #sec-crono .ucv-princ tbody tr:hover td{background:var(--elevated)}
 #sec-crono .ucv-princ tbody tr.sel td{background:rgba(255,92,31,.08)}
 #sec-crono .ucv-princ tbody tr.med td{color:var(--txt2)}
@@ -3290,7 +3295,7 @@ if (_v7Instalado()) _v7EscondeBotao();
         <div class="ucv-imp-m">
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioUepAba()" title="Versão executiva: o resultado de hoje e do período na folha 1; próximos dias, mix e origem da UEP na folha 2">🖨 VERSÃO EXECUTIVA<small>hoje e o período; próximos dias, mix e origem</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioUepPadrao()" title="O POR PRODUTO em folha deitada: o resumo por produto e o dia a dia de todos os produtos do período">🖨 PADRÃO × REALIZADO<small>por produto, dia a dia</small></button>
-          <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioFilaCrono()" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE<small>o que cronometrar primeiro</small></button>
+          <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioFilaCrono()" title="A mesma lista da sub-aba O QUE MEDIR da ⏱ CRONOANÁLISE, para levar à linha: o que falta medir, o programado primeiro (hoje e atraso, depois a data), depois o que rodou nos últimos dias, com uma coluna para anotar quando e quem mediu">🖨 AGENDA DA CRONOANÁLISE<small>o que falta medir, na ordem da programação</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioTakt()" title="Para a diretoria: esta semana e a semana que vem — o takt que a programação pede, a referência, o que a linha fez, por que não acompanhou e a simulação do que não cabe">🖨 TAKT DA SEMANA<small>a programação cabe na linha? esta semana e a que vem</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioAvaliacao()" title="A programação colada em TAKT DA SEMANA → AVALIAR PROGRAMAÇÃO: cabe ou não, o dia a dia e o saldo de horas de hoje até ela">🖨 AVALIAÇÃO DA PROGRAMAÇÃO<small>a colada no TAKT, com o saldo de horas</small></button>
           <button class="btn btn-ghost" onclick="_uepImpFecha();gerarRelatorioCxUep(_regN())" title="O relatório de quatro folhas (resumo · capacidade · desvios · dados), com os dias escolhidos na sub-aba RÉGUAS">🖨 CAIXAS × PONTOS × UEP<small>as três réguas, com os dias da sub-aba RÉGUAS</small></button>
@@ -3335,14 +3340,16 @@ if (_v7Instalado()) _v7EscondeBotao();
   <div class="tbl-hdr ucv-hdr">
     <span class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido em UEP contra a base — a UEP do cadastro só muda pelo ✓ TROCAR A UEP, com as medições registradas">⏱ CRONOANÁLISE → UEP</span>
     <div class="ucv-hdr-bts">
-      <button class="btn btn-acc" onclick="_ucvEl('pdf').click()" title="O PDF Takt Time do app de cronoanálise: um arquivo preenche a tela (confira e registre); vários registram de uma vez">📄 IMPORTAR PDF</button>
+      <!-- v7.216.0 (PPCP: "importa pdf não faz mais sentido?"): desde o app v2.103 a medição analisada chega sozinha
+           (com o nome de quem analisou, app v2.103.2) — o PDF virou contingência, discreto -->
+      <button class="btn btn-ghost" onclick="_ucvEl('pdf').click()" title="Contingência. A medição analisada no app de cronoanálise chega sozinha ao painel (no Salvar análise), com o nome de quem analisou. Use o PDF Takt Time só se ela não chegou (o app avisa &quot;não foi ao painel&quot;) ou para uma medição antiga: um arquivo preenche a tela (confira e registre); vários registram de uma vez. A mesma medição pelos dois caminhos não duplica.">📄 PDF (contingência)</button>
       <input type="file" id="uep-conv-pdf" accept="application/pdf,.pdf" multiple style="display:none" onchange="_ucvImportar(this.files);this.value=''">
       <details class="ucv-imp" id="uep-conv-imp">
         <summary class="btn btn-ghost" title="As cinco impressões da aba">🖨 IMPRIMIR ▾</summary>
         <div class="ucv-imp-m">
           <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioCrono()" title="Imprimir a conversão que está na tela (folha em pé, com campos para registrar a medição à mão)">🖨 CONVERSÃO DA TELA<small>em pé, com campos para a caneta</small></button>
           <span class="ucv-hdr-dia"><input type="date" id="uep-conv-dia" class="frm-inp" title="O dia dos estudos a imprimir, pela DATA DA MEDIÇÃO (o dia em que o estudo foi feito). Vazio = hoje."><button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioCronoDia()" title="As medições registradas no dia ao lado (pela DATA DA MEDIÇÃO), por volume, com a regra da troca de cada um e as UEP trocadas no cadastro naquele dia (folha deitada)">🖨 ESTUDOS DO DIA</button></span>
-          <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioFilaCrono()" title="Quais produtos cronometrar primeiro: UEP provisória, estimada, no limite da esteira ou incoerente na família, ordenados pela UEP programada nos próximos dias úteis">🖨 FILA DE CRONOANÁLISE<small>o que cronometrar primeiro</small></button>
+          <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioFilaCrono()" title="A mesma lista da sub-aba O QUE MEDIR da ⏱ CRONOANÁLISE, para levar à linha: o que falta medir, o programado primeiro (hoje e atraso, depois a data), depois o que rodou nos últimos dias, com uma coluna para anotar quando e quem mediu">🖨 AGENDA DA CRONOANÁLISE<small>o que falta medir, na ordem da programação</small></button>
           <button class="btn btn-ghost" onclick="_ucvImpFecha();_ucvCapTodos()" title="A tabela de todos os produtos do cadastro: quantos cabem por dia e por mês, cada um sozinho na linha, com a UEP de hoje do cadastro e a meta das configurações (folha deitada). Antes de imprimir, dá para simular minutos a menos de jornada por dia">🖨 CAPACIDADE POR PRODUTO<small>quantos cabem por dia e por mês</small></button>
           <button class="btn btn-ghost" onclick="_ucvImpFecha();gerarRelatorioTempo()" title="O ONDE O TEMPO VAI em folha deitada: os cartões, a cascata da linha, todos os volumes e o como ler">🖨 ONDE O TEMPO VAI<small>estudo × produção × meta, todos os volumes</small></button>
         </div>
@@ -3956,7 +3963,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.215.0';
+const APP_VER   = '7.216.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -6264,48 +6271,15 @@ function gerarRelatorioUepPadrao(){
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// FILA DE CRONOANÁLISE (v7.139.0, PPCP 19/10/2026)
+// A AMOSTRA DO GRAVAR e a 🖨 AGENDA DA CRONOANÁLISE (era a FILA, v7.139.0)
 // ════════════════════════════════════════════════════════════════════════════
-// Com a UEP travada (16/10/2026), o único caminho de mudança é a cronoanálise
-// digitada no cadastro. Este relatório diz QUAL produto cronometrar primeiro:
-// os de UEP fraca (provisória, estimada, no limite da esteira, família
-// incoerente, sem medida, sem UEP) ordenados pela UEP PROGRAMADA nos próximos
-// dias úteis — é ali que um número errado mais pesa na meta e na carteira.
-// Calibrado na planilha real em 19/10/2026: 6 produtos no limite da esteira
-// (SLEEP, DECOR 470 e 600, NICHO 1.6, MOON 2.2, INTENSE RIP) e 4 famílias com
-// 1,8× ou mais de diferença (LUNA 3,4×, DECOR 2,9×, EVOLUTION 2,0×, MOON 1,9×).
-// ⚠ "k" = UEP × teto da esteira do código (cx/h) — UEP por HORA DE ESTEIRA. O
-// estudo corta o ritmo no teto físico, então produto que rodou no limite sai
-// com k = ritmo da base (o MESMO para todos): é o mínimo de k do cadastro.
-// ⚠ Sai da fila quem foi CRONOMETRADO: UEP digitada carimba a UEP_VIGENCIA com
-// "DIGITADA" (.gs v5.27) — PROVISÓRIA, ESTIMADA e LIMITE DA ESTEIRA deixam de
-// valer; FAMÍLIA INCOERENTE continua só nos irmãos ainda não cronometrados.
+// A AMOSTRA DO GRAVAR (01/07 → dia da trava): a régua do _filaAmostra (📏 RÉGUAS).
+// v7.216.0: a 🖨 FILA DE CRONOANÁLISE antiga (UEP provisória, estimada, no limite
+// da esteira, família incoerente) saiu — a impressão é a AGENDA DA CRONOANÁLISE, a
+// mesma lista da sub-aba O QUE MEDIR (_ucvPrincipais). Desta parte ficou a amostra.
 const FILA_AMOSTRA_DE = '01/07/2026';   // começo do log de produto: a amostra do GRAVAR de 16/10
-const FILA_FAM_RAZAO  = 1.8;            // família: maior ÷ menor UEP por hora de esteira
-const FILA_TETO_FOLGA = 1.02;           // até 2% acima do mínimo = no limite da esteira
-const FILA_MAX_SEM    = 30;             // sem programação: os 30 de maior volume (o resto é contado)
 const FILA_LS         = 'rpe_fila_amostra';
 const FILA_LS_TTL     = 24 * 60 * 60 * 1000;   // a amostra é um período fechado: 1 leitura por dia
-const FILA_MOTIVOS = {
-  'sem-uep':    { t:'SEM UEP',              d:'código sem UEP no cadastro: as caixas dele ficam fora de toda conta de UEP' },
-  'est':        { t:'ESTIMADA',             d:'UEP calculada pela medida da caixa na esteira (vigência EST), nunca medida' },
-  'prov':       { t:'PROVISÓRIA',           d:'medida com poucos dias de produção na amostra (menos que o mínimo do estudo de UEP)' },
-  'teto':       { t:'NO LIMITE DA ESTEIRA', d:'rodou no limite físico da esteira: a UEP saiu do teto (velocidade × medida da caixa), não do ritmo da equipe' },
-  'fam':        { t:'FAMÍLIA INCOERENTE',   d:'tamanhos do mesmo modelo com esforço por hora de esteira muito diferente' },
-  'sem-medida': { t:'SEM MEDIDA',           d:'sem MEDIDA DA CAIXA no cadastro: não dá para conferir a UEP pela esteira' }
-};
-// Próximos n dias ÚTEIS (seg–sex), a partir de hoje se hoje for útil → [aaaammdd].
-// `fer` (v7.174.0, opcional): { aaaammdd: descrição } da aba FERIADOS — fica fora.
-function _filaUteis(base, n, fer){
-  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate()), out = [];
-  let guarda = 0;
-  while(out.length < n && guarda++ < 60){
-    const num = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-    if(d.getDay() !== 0 && d.getDay() !== 6 && !(fer && fer[num] != null)) out.push(num);
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-}
 const _filaN2br = n => p2(n % 100) + '/' + p2(Math.floor(n / 100) % 100) + '/' + Math.floor(n / 10000);
 // A amostra (dias e caixas por produto) a partir dos itens do getProducaoModeloPeriodo.
 function _filaAmostraDeItens(itens){
@@ -6318,110 +6292,6 @@ function _filaAmostraDeItens(itens){
   const o = {};
   Object.keys(G).forEach(k => { o[k] = { dias:Object.keys(G[k].dias).length, cx:G[k].cx }; });
   return o;
-}
-// Conta pura da fila. cat = cadastro cru (getProdutos); amostra = {modelo|nome:
-// {dias,cx}} ou null (não lida); prog = PROG_DETALHADA ou null; uteis = [aaaammdd].
-function _filaCronoMontar(cat, amostra, prog, uteis, metaUep){
-  const P = {}, porCod = {};
-  (cat || []).forEach(c => {
-    const cod = String(c && c.codigo || '').replace(/\D/g, '');
-    if(!cod) return;
-    const vo = _capVol(c.desc), nome = _capNome(c.desc, c.cor);
-    const key = cod.slice(0, 6) + '|' + nome;
-    const p = P[key] = P[key] || { key, modelo:cod.slice(0, 6), nome, nVol:vo.nVol, vols:{}, cods:[], ks:[], origens:{}, vigMax:0, digDe:0 };
-    const uep = Number(c.uep) || 0, vig = String(c.uepVig || '').trim();
-    const vel = Number(c.velocidade) || 0, med = Number(c.medida) || 0, ent = Number(c.entrePeca) || 0;
-    const teto = vel > 0 && med > 0 ? vel * 60000 / (med + ent) : 0;
-    const origem = !(uep > 0) ? 'sem' : /\bEST\s*$/i.test(vig) ? 'est' : /DIGITADA\s*$/i.test(vig) ? 'dig' : 'med';
-    const vn = _cartNum((vig.match(/\d{1,2}\/\d{1,2}\/\d{4}/) || [''])[0]);
-    p.origens[origem] = (p.origens[origem] || 0) + 1;
-    if(vn > p.vigMax) p.vigMax = vn;
-    if(origem === 'dig' && vn > p.digDe) p.digDe = vn;
-    (p.vols[vo.vol] = p.vols[vo.vol] || []).push(uep);
-    if(uep > 0 && teto > 0 && origem !== 'est') p.ks.push(uep * teto);
-    if(!(teto > 0)) p.semMedida = true;
-    p.cods.push(cod);
-    porCod[cod] = { key, uep };
-  });
-  const lista = Object.values(P);
-  const med = a => { const s = a.slice().sort((x, y) => x - y), i = s.length >> 1; return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2; };
-  lista.forEach(p => { p.k = p.ks.length ? med(p.ks) : null; });
-  const kMed = lista.filter(p => p.k != null && !p.origens.dig);
-  const kMin = kMed.length ? Math.min(...kMed.map(p => p.k)) : null;
-  // família: maior ÷ menor k entre os produtos MEDIDOS do mesmo modelo de 6 dígitos
-  const fam = {};
-  lista.forEach(p => { if(p.k != null) (fam[p.modelo] = fam[p.modelo] || []).push(p.k); });
-  const famRazao = {};
-  Object.keys(fam).forEach(m => { const a = fam[m]; if(a.length >= 2) famRazao[m] = Math.max(...a) / Math.min(...a); });
-
-  // programação na janela (dias úteis): caixas abertas × UEP do código
-  const jan = {}; (uteis || []).forEach(n => { jan[n] = 1; });
-  let totUep = 0;
-  (prog || []).forEach(it => {
-    if(!it || it.foraEsteira) return;
-    const dn = Number(it.dataNum) || _cartNum(it.data);
-    if(!jan[dn]) return;
-    const q = _cartQtdAberta(it); if(!(q > 0)) return;
-    const pc = porCod[String(it.codigo || '').replace(/\D/g, '')];
-    const u = pc && pc.uep > 0 ? pc.uep : (Number(it.uepCx) > 0 ? Number(it.uepCx) : 0);
-    const p = pc ? P[pc.key] : null;
-    if(u > 0) totUep += q * u;
-    if(!p) return;
-    p.progCx = (p.progCx || 0) + q;
-    if(u > 0) p.progUep = (p.progUep || 0) + q * u; else p.progCxSem = (p.progCxSem || 0) + q;
-    (p.progDias = p.progDias || {})[dn] = 1;
-  });
-
-  const fila = [];
-  lista.forEach(p => {
-    const am = amostra ? (amostra[p.key] || { dias:0, cx:0 }) : null;
-    // v7.143.0: a BASE não entra na fila — vale 1,00 por definição, e a SLEEP
-    // (base desde então) era NO LIMITE DA ESTEIRA na escala antiga.
-    if(_uepEhBase(p)) return;
-    const todosDig = !!p.origens.dig && !p.origens.med && !p.origens.est && !p.origens.sem;
-    const m = [];
-    if(p.origens.sem) m.push('sem-uep');
-    if(!todosDig){
-      if(p.origens.est) m.push('est');
-      if(p.origens.med && am && am.dias > 0 && am.dias < UEP_MIN_DIAS) m.push('prov');
-      if(p.origens.med && p.k != null && kMin != null && p.k <= kMin * FILA_TETO_FOLGA) m.push('teto');
-      if(!p.origens.dig && famRazao[p.modelo] >= FILA_FAM_RAZAO) m.push('fam');
-      if(p.semMedida && (p.origens.med || p.origens.dig)) m.push('sem-medida');
-    }
-    if(!m.length) return;
-    const vols = Object.keys(p.vols).map(Number).sort((a, b) => a - b)
-      .map(v => [...new Set(p.vols[v].filter(u => u > 0))].sort((a, b) => a - b));
-    fila.push({
-      key:p.key, modelo:p.modelo, nome:p.nome, nVol:p.nVol, motivos:m,
-      uepTxt: vols.map(us => us.length ? us.map(u => u.toLocaleString('pt-BR', { minimumFractionDigits:2 })).join('/') : '—').join(' · '),
-      // o takt na MESMA forma da UEP: um por volume, as cores com "/" (v7.141.0)
-      taktTxt: vols.some(us => us.length) ? vols.map(us => us.length ? us.map(u => _taktTxt(_taktUep(u, metaUep)).replace(' s', '')).join('/') : '—').join(' · ') + ' s' : '—',
-      origem: p.origens.sem ? 'SEM UEP' : todosDig ? 'DIGITADA ' + _filaN2br(p.digDe).slice(0, 5)
-            : p.origens.est && !p.origens.med ? 'ESTIMADA' : p.origens.est ? 'MEDIDA + ESTIMADA'
-            : 'MEDIDA ' + (p.vigMax ? _filaN2br(p.vigMax).slice(0, 5) : ''),
-      dias: am ? am.dias : null, cxAm: am ? am.cx : null,
-      famRazao: famRazao[p.modelo] || null,
-      progCx: p.progCx || 0, progUep: p.progUep || 0, progCxSem: p.progCxSem || 0,
-      progPct: totUep > 0 && p.progUep ? p.progUep / totUep * 100 : null,
-      progDias: p.progDias ? Object.keys(p.progDias).map(Number).sort((a, b) => a - b) : []
-    });
-  });
-  // ordem: SEM UEP programado primeiro (nem entra na conta) → UEP programada →
-  // volume já embalado na amostra → nome
-  const prog1 = fila.filter(f => f.progCx > 0)
-    .sort((a, b) => (b.progCxSem > 0) - (a.progCxSem > 0) || b.progUep - a.progUep || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
-  const semProgTodos = fila.filter(f => !(f.progCx > 0))
-    .sort((a, b) => (b.motivos.includes('sem-uep')) - (a.motivos.includes('sem-uep')) || (b.cxAm || 0) - (a.cxAm || 0) || a.nome.localeCompare(b.nome));
-  const cont = {};
-  Object.keys(FILA_MOTIVOS).forEach(k => { cont[k] = fila.filter(f => f.motivos.includes(k)).length; });
-  const emDuvida = prog1.reduce((s, f) => s + f.progUep, 0);
-  return {
-    prog: prog1, semProg: semProgTodos.slice(0, FILA_MAX_SEM), semProgMais: Math.max(0, semProgTodos.length - FILA_MAX_SEM),
-    total: fila.length, cont, totUep, emDuvida, pctDuvida: totUep > 0 ? emDuvida / totUep * 100 : null,
-    kMin, nProd: lista.length, nCod: Object.keys(porCod).length,
-    metaUep: Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO,
-    uteis: uteis || [], amostraLida: !!amostra, progLida: !!prog
-  };
 }
 // A amostra do GRAVAR (01/07 → dia da trava), uma leitura por dia: é um período
 // FECHADO, e o getProducaoModeloPeriodo de ~3 meses é das leituras mais caras.
@@ -6442,97 +6312,72 @@ async function _filaAmostra(){
   try{ localStorage.setItem(FILA_LS, JSON.stringify({ key, ts:Date.now(), a })); }catch(e){}
   return { a, de:FILA_AMOSTRA_DE, ate };
 }
-const _FILA_DOC_SKIN = `
-.fila-doc .kpi-grid{grid-template-columns:repeat(4,1fr)}
-.fila-doc .kpi-card{border-left-color:#cbd5e0}
-.fila-doc .kpi-card.g{border-left-color:#4CAF50}.fila-doc .kpi-card.o{border-left-color:#FF9800}.fila-doc .kpi-card.r{border-left-color:#F44336}
-.fila-doc table{table-layout:fixed}
-.fila-doc td.n,.fila-doc th.n{text-align:right}
-.fila-doc tbody td{padding:5px 7px;vertical-align:top}
-.fila-doc td.mono{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#4a5568}
-.fila-doc .fl-chip{display:inline-block;margin:0 4px 3px 0;font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.8px;border:1px solid #a0aec0;border-radius:3px;padding:1px 4px;color:#4a5568;white-space:nowrap}
-.fila-doc .fl-chip.sem-uep{color:#c53030;border-color:#c53030}
-.fila-doc .fl-sub{display:block;font-size:9px;color:#718096;margin-top:1px}
-.fila-doc tr.fl-top td{background:#fffaf0}
+// 🖨 AGENDA DA CRONOANÁLISE (v7.216.0): a MESMA lista da sub-aba O QUE MEDIR
+// (_ucvPrincipais, guardada em UCV_PRINC_M), para o cronoanalista levar à linha:
+// o que falta medir, na ordem da programação, com uma coluna para anotar. O botão
+// mora nos dois menus 🖨 (⚖ UEP e ⏱ CRONOANÁLISE); a aba da cronoanálise é quem
+// lê as horas, as medições, o cadastro e a programação — abre ela e espera.
+const _UCV_AGENDA_DOC_SKIN = `
+.ag-doc .ag-res{font-size:11.5px;line-height:1.55;margin:4px 0 10px;padding:8px 12px;border:1px solid #e2e8f0;border-left:4px solid #B26A00;border-radius:6px}
+.ag-doc .ag-res.ok{border-left-color:#2E7D32}
+.ag-doc table{table-layout:fixed;width:100%}
+.ag-doc td.n,.ag-doc th.n{text-align:right}
+.ag-doc tbody td{padding:4px 6px;vertical-align:top;font-size:10.5px}
+.ag-doc td small{display:block;font-size:8.5px;color:#718096;margin-top:1px}
+.ag-doc tr.ag-grp td{background:#f2f4f7;font-size:9.5px;letter-spacing:.5px;color:#4a5568;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ag-doc tr.ag-grp td b{color:#1F2328}
+.ag-doc td.ag-ph{font-weight:700;color:#C2410C}
+.ag-doc td.ag-anota{border-bottom:1px solid #a0aec0}
+.ag-doc tr{break-inside:avoid}
+.ag-doc .ag-nota{font-size:9.5px;color:#4a5568;margin-top:8px;line-height:1.5}
 `;
-// Desenho (sem conta): tudo vem pronto do _filaCronoMontar.
-function _filaCronoHtml(F, ctx){
-  const card = (l, v, sub, c) => `<div class="kpi-card ${c || ''}"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sub}</div></div>`;
-  const chips = f => f.motivos.map(m => `<span class="fl-chip ${m}" title="${_rpEsc(FILA_MOTIVOS[m].d)}">${FILA_MOTIVOS[m].t}${m === 'fam' && f.famRazao ? ' ' + fmt1(f.famRazao) + '×' : ''}${m === 'prov' && f.dias != null ? ' · ' + f.dias + ' DIA' + (f.dias === 1 ? '' : 'S') : ''}</span>`).join('');
-  const colg = '<colgroup><col style="width:3%"><col style="width:21%"><col style="width:10%"><col style="width:9%"><col style="width:9%"><col style="width:6%"><col style="width:7%"><col style="width:8%"><col style="width:8%"><col style="width:6%"><col style="width:13%"></colgroup>';
-  const th = '<thead><tr><th class="n">#</th><th>PRODUTO</th><th>UEP/CX (por volume)</th><th title="Segundos por caixa que a meta pede: ' + UEP_MIN_DIA + ' min × 60 ÷ META UEP × UEP da caixa">TAKT s/CX</th><th>ORIGEM</th><th class="n">DIAS NA AMOSTRA</th><th class="n">CX NA AMOSTRA</th><th class="n">PROGRAMADO (CX)</th><th class="n">PROGRAMADO (UEP)</th><th class="n">% DA JANELA</th><th>POR QUE ESTÁ NA FILA</th></tr></thead>';
-  const linha = (f, i, topo) => `<tr${topo ? ' class="fl-top"' : ''}><td class="n mono">${i + 1}</td>`
-    + `<td><b>${_rpEsc(f.nome)}</b><span class="fl-sub">${_rpEsc(f.modelo)}${f.nVol > 1 ? ' · ' + f.nVol + ' volumes' : ''}</span></td>`
-    + `<td class="mono">${_rpEsc(f.uepTxt)}</td><td class="mono">${_rpEsc(f.taktTxt)}</td><td class="mono">${_rpEsc(f.origem)}</td>`
-    + `<td class="n">${f.dias == null ? '—' : fmtN(f.dias)}</td><td class="n">${f.cxAm == null ? '—' : fmtN(Math.round(f.cxAm))}</td>`
-    + `<td class="n">${f.progCx ? fmtN(Math.round(f.progCx)) : '—'}</td>`
-    + `<td class="n">${f.progUep ? fmtN(Math.round(f.progUep)) : (f.progCxSem ? 'sem UEP' : '—')}</td>`
-    + `<td class="n">${f.progPct != null ? fmtP(f.progPct) : '—'}</td><td>${chips(f)}</td></tr>`;
-  const jan = F.uteis.length ? `${_filaN2br(F.uteis[0]).slice(0, 5)} a ${_filaN2br(F.uteis[F.uteis.length - 1]).slice(0, 5)}` : '—';
-  const avisos = [];
-  if(!F.amostraLida) avisos.push('A amostra (produção de ' + _rpEsc(ctx.amDe) + ' a ' + _rpEsc(ctx.amAte) + ') não foi lida — PROVISÓRIA não foi avaliada e as colunas DIAS/CX NA AMOSTRA saem "—".');
-  if(!F.progLida) avisos.push('A programação não foi lida — a fila sai só pelo volume já embalado, sem a coluna PROGRAMADO.');
-  const contTxt = Object.keys(FILA_MOTIVOS).filter(k => F.cont[k]).map(k => `${FILA_MOTIVOS[k].t} ${F.cont[k]}`).join(' · ');
-  let s = '<div class="kpi-grid">'
-    + card('PRODUTOS NA FILA', fmtN(F.total), `de ${fmtN(F.nProd)} produtos do cadastro`)
-    + card('PROGRAMADOS NA JANELA', fmtN(F.prog.length), `próximos ${F.uteis.length} dias úteis · ${jan}`, F.prog.length ? 'o' : '')
-    + card('UEP PROGRAMADA EM DÚVIDA', F.pctDuvida != null ? fmtP(F.pctDuvida) : '—', F.progLida ? `${fmtN(Math.round(F.emDuvida))} de ${fmtN(Math.round(F.totUep))} UEP da janela` : 'programação não lida', F.pctDuvida >= 30 ? 'r' : '')
-    + card('A BASE', '1,00', `${_rpEsc(UEP_BASE.nome)}${UEP_TRAVADA_DESDE ? ' · travada desde ' + _rpEsc(UEP_TRAVADA_DESDE) : ''}`)
-    + '</div>'
-    + `<div class="rp-note">Na fila, por motivo: ${contTxt || '—'}. Um produto pode ter mais de um motivo.</div>`
-    + avisos.map(a => `<div class="rp-note" style="color:#c05621">${a}</div>`).join('');
-  s += `<div class="rp-sec-ttl">1 ▸ PROGRAMADOS DE ${jan} — CRONOMETRAR PRIMEIRO</div>`
-    + (F.prog.length ? `<table>${colg}${th}<tbody>${F.prog.map((f, i) => linha(f, i, i < 5)).join('')}</tbody></table>`
-                     : `<div class="rp-note">${F.progLida ? 'Nenhum produto da fila está programado na janela.' : 'Programação não lida.'}</div>`);
-  s += '<div class="rp-sec-ttl">2 ▸ SEM PROGRAMAÇÃO NA JANELA — PELO VOLUME JÁ EMBALADO</div>'
-    + (F.semProg.length ? `<table>${colg}${th}<tbody>${F.semProg.map((f, i) => linha(f, i, false)).join('')}</tbody></table>`
-                        : '<div class="rp-note">Nenhum.</div>')
-    + (F.semProgMais ? `<div class="rp-note">+ ${fmtN(F.semProgMais)} produto(s) na fila com menos volume, fora desta lista.</div>` : '');
-  s += '<div class="rp-sec-ttl" style="page-break-before:always">3 ▸ COMO A FILA É MONTADA</div><table><tbody>'
-    + Object.keys(FILA_MOTIVOS).map(k => `<tr><td style="font-weight:700;width:22%">${FILA_MOTIVOS[k].t}</td><td>${FILA_MOTIVOS[k].d}${
-        k === 'teto' && F.kMin ? `. Régua: UEP × teto da esteira do código (cx/h) até ${Math.round((FILA_TETO_FOLGA - 1) * 100)}% acima do menor do cadastro (${fmtN(Math.round(F.kMin))} UEP por hora de esteira) — o estudo corta o ritmo no teto físico, então quem rodou no limite cai exatamente aí` :
-        k === 'fam' ? `. Régua: a maior UEP por hora de esteira da família (mesmo modelo de 6 dígitos) é ${fmt1(FILA_FAM_RAZAO)}× ou mais a menor` :
-        k === 'prov' ? `. Mínimo: ${UEP_MIN_DIAS} dias. Amostra: a produção apontada de ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}, o período de onde saiu a UEP travada` : ''}.</td></tr>`).join('')
-    + `<tr><td style="font-weight:700">A ORDEM</td><td>Primeiro o que está programado de ${jan} (próximos ${F.uteis.length} dias úteis), pela UEP programada — é ali que um número errado mais pesa na meta e na carteira; código sem UEP programado vem antes de todos. Depois, o resto da fila pelo volume já embalado. As 5 primeiras linhas vêm destacadas.</td></tr>`
-    + `<tr><td style="font-weight:700">TAKT s/CX</td><td>O tempo por caixa que a META UEP pede do produto: ${UEP_MIN_DIA} min × 60 ÷ ${fmtN(F.metaUep)} UEP = ${_taktTxt(_taktUep(1, F.metaUep))} por UEP, × a UEP da caixa. Um por volume, na mesma ordem da UEP/CX. É a referência da cronoanálise: tempo medido acima dele = o produto não acompanha a meta com a UEP que tem. Não é o TAKT IDEAL das configurações (DEMANDA IDEAL em caixas/dia, um número para qualquer caixa).</td></tr>`
-    + `<tr><td style="font-weight:700">% DA JANELA</td><td>UEP programada do produto ÷ UEP programada de todos os produtos na janela (caixas em aberto × UEP do cadastro).</td></tr>`
-    + `<tr><td style="font-weight:700">COMO SAI DA FILA</td><td>Digitar a UEP da cronoanálise na coluna UEP da PRODUTO_CODIGO. A UEP_VIGENCIA da linha vira "DIGITADA" (Apps Script v5.27) e o produto deixa de ser PROVISÓRIA, ESTIMADA e NO LIMITE DA ESTEIRA. FAMÍLIA INCOERENTE continua nos irmãos ainda não cronometrados.</td></tr>`
-    + `<tr><td style="font-weight:700">O QUE ELE NÃO É</td><td>Não mede o produto: aponta onde a UEP do cadastro tem base fraca. A UEP continua TRAVADA — nada aqui grava.</td></tr>`
-    + '</tbody></table>'
-    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · fila de cronoanálise</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
-  return s;
+// O DESENHO do papel (sem conta): só a parte a medir (os medidos ficam no resumo).
+function _ucvAgendaDocHtml(M, ctx){
+  const e = _rpEsc, nGrp = { prog:M.nProg, rodou:M.nRodou };
+  const quando = x => !M.progLida ? '—' : !x ? '—' : x.agora ? `<b>${x.hoje ? 'HOJE' : 'EM ATRASO'}</b><small>${fmtN(x.cx)} cx em aberto</small>`
+    : `<b>${x.data}</b> ${x.dow}<small>${fmtN(x.cx)} cx${x.depois ? ` · +${plural(x.depois, 'data', 'datas')}` : ''}</small>`;
+  let grp = null;
+  const lin = M.lista.filter(g => !g.medido).map(g => {
+    const E = UCV_PRINC_SIT[g.sit] || ['', g.sit], sub = _ucvPrincSub(g), w = _ucvAgendaPeso(g);
+    const cab = g.grupo !== grp ? `<tr class="ag-grp"><td colspan="6"><b>${UCV_AGENDA_GRP[g.grupo][0]}</b> · ${nGrp[g.grupo]} — ${UCV_AGENDA_GRP[g.grupo][1]}</td></tr>` : '';
+    grp = g.grupo;
+    return cab + `<tr><td${g.prog && g.prog.agora ? ' class="ag-ph"' : ''}>${quando(g.prog)}</td><td><b>${e(g.p.rot)}</b></td>`
+      + `<td>${E[1]}${sub ? `<small>${sub}</small>` : ''}${g.prod === 'fora' ? `<small>produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% — medir primeiro</small>` : ''}</td>`
+      + `<td class="n">${w.n}<small>${w.sub}</small></td>`
+      + `<td class="n">${g.uepCx != null ? _ucvU2(g.uepCx) : '—'}${g.estimada ? '<small>estimada</small>' : g.uepCx == null ? '<small>sem UEP</small>' : ''}</td><td class="ag-anota"></td></tr>`;
+  }).join('');
+  return `<div class="ag-res${M.nPend ? '' : ' ok'}">${_ucvAgendaResumo(M, ctx.progEst)}</div>`
+    + (lin ? '<table><colgroup><col style="width:13%"><col style="width:33%"><col style="width:22%"><col style="width:10%"><col style="width:8%"><col style="width:14%"></colgroup>'
+      + '<thead><tr><th>QUANDO</th><th>PRODUTO · VOLUME</th><th>SITUAÇÃO</th><th class="n">UEP NA JANELA</th><th class="n">UEP/CX</th><th>MEDIDO EM / POR</th></tr></thead>'
+      + `<tbody>${lin}</tbody></table>` : '')
+    + `<div class="ag-nota">A cronoanálise só acontece com o produto na linha: siga a ordem da programação. Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes (PRONTA PARA TROCAR já tem a medição: falta o ✓ TROCAR A UEP no painel). UEP NA JANELA = caixas de jornada × UEP do cadastro nos últimos ${CRONO_LINHA_DIAS} dias fechados; classe A = entre os volumes que somam ${UCV_PRINC_PCT}% da UEP.`
+    + (M.nSemNada != null ? ` Fora da agenda: ${plural(M.nSemNada, 'volume do cadastro', 'volumes do cadastro')} que não ${M.nSemNada === 1 ? 'rodou' : 'rodaram'} nem ${M.nSemNada === 1 ? 'está' : 'estão'} na programação.` : '')
+    + ' Fonte: HORA_A_HORA (as horas), CRONOANALISE (as medições), PRODUTO_CODIGO (o cadastro) e a programação.</div>'
+    + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · AGENDA DA CRONOANÁLISE</span><span>retrato de ${e(ctx.data)} às ${e(ctx.hora)}</span></div>`;
 }
 async function gerarRelatorioFilaCrono(){
   // A janela abre NO CLIQUE: depois das leituras o navegador bloquearia o pop-up.
   const win = window.open('', '_blank', 'width=1100,height=800');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   const msg = t => { try{ win.document.open(); win.document.write('<html><body style="background:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#888;font-size:14px">⏳ ' + t + '</p></body></html>'); win.document.close(); }catch(e){} };
-  if(!CFG.sheetsUrl){ win.close(); alert('Sem a URL do Apps Script configurada — não há cadastro para ler.'); return; }
-  msg('Lendo o cadastro de UEP…');
-  // em sequência: o Apps Script atende uma execução por vez
-  if(!CAP_RAW || !CAP_CAT_TS || Date.now() - CAP_CAT_TS > 10 * 60 * 1000){
-    if(!CAP_BUSCANDO) await _capBuscar();
-    for(let i = 0; i < 120 && CAP_BUSCANDO; i++) await new Promise(r => setTimeout(r, 500));
-  }
-  if(!Array.isArray(CAP_RAW) || !CAP_RAW.length){ win.close(); alert('Não consegui ler o cadastro (PRODUTO_CODIGO)' + (CAP_FALHA ? ': ' + CAP_FALHA : '') + '.\n\nTente de novo em alguns segundos.'); return; }
-  msg('Lendo a produção da amostra da UEP (de ' + FILA_AMOSTRA_DE + ' até a trava)… pode levar até 1 min na 1ª vez do dia');
-  let am = null;
-  try{ am = await _filaAmostra(); }catch(e){ am = null; }
-  msg('Lendo a programação dos próximos dias…');
-  let progOk = false;
-  try{ progOk = await carregarProgramacaoDetalhada(); }catch(e){ progOk = false; }
-  let F = null, corpo = '';
+  if(!CFG.sheetsUrl){ win.close(); alert('Sem a URL do Apps Script configurada — não há produção para ler.'); return; }
+  // a lista é a da sub-aba O QUE MEDIR: abre a ⏱ CRONOANÁLISE nela e espera as leituras
+  if(!_abaOn('crono')) setTab('crono');
+  _ucvSub('princ');
+  msg('Lendo a produção, as medições e a programação…');
+  const pronta = () => UCV_PRINC_M && UCV_PRINC_M.regsLidas && UCV_PRINC_M.progLida;
+  for(let i = 0; i < 180 && !pronta(); i++) await new Promise(r => setTimeout(r, 500));
+  const M = UCV_PRINC_M;
+  if(!M){ win.close(); alert('A produção dos últimos dias não foi lida — tente de novo em 1 min.'); return; }
   const agora = new Date();
-  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }),
-                amDe:FILA_AMOSTRA_DE, amAte:am ? am.ate : (UEP_TRAVADA_DESDE || '—') };
-  try{
-    F = _filaCronoMontar(CAP_RAW, am ? am.a : null, progOk ? PROG_DETALHADA : null, _filaUteis(agora, GPX_DIAS, PROG_FERIADOS), PONTOS_DIA.metaUep);
-    corpo = _filaCronoHtml(F, ctx);
-  }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
-  const html = _rpDocParadas('Fila de cronoanálise — ' + ctx.data, true)
-    + '<style>' + _FILA_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="fila-doc">'
-    + _rpCabecalho('FILA DE CRONOANÁLISE',
-        `<div class="rp-per">UEP</div><div>janela: próximos ${GPX_DIAS} dias úteis</div><div>amostra: ${_rpEsc(ctx.amDe)} a ${_rpEsc(ctx.amAte)}</div><div>takt pela meta de ${fmtN(F.metaUep)} UEP</div>`,
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }), progEst:M.progLida ? '' : 'falhou' };
+  let corpo = '';
+  try{ corpo = _ucvAgendaDocHtml(M, ctx); }
+  catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
+  const html = _rpDocParadas('Agenda da cronoanálise — ' + ctx.data, true)
+    + '<style>' + _UCV_AGENDA_DOC_SKIN + '</style>' + _rpBotaoImprimir() + '<div class="ag-doc">'
+    + _rpCabecalho('AGENDA DA CRONOANÁLISE',
+        `<div class="rp-per">O QUE MEDIR</div><div>produção: últimos ${CRONO_LINHA_DIAS} dias fechados</div><div>programação${M.progAte ? ' até ' + _rpEsc(M.progAte) : ''}</div>`,
         ' · UNIDADE DE ESFORÇO DE PRODUÇÃO')
     + corpo + '</div></body></html>';
   win.document.open(); win.document.write(html); win.document.close();
@@ -7469,7 +7314,7 @@ function _ucvRegPintar(R){
   // os principais para a análise de tempo (v7.189.0): as mesmas horas, medições e cadastro
   // v7.191.0: e a programação (a do PRÓXIMOS DIAS, já no painel ou lida por último na fila da aba)
   const M = _ucvPrincipais(LH, UEP_CONV_PRODS, L, _horaEhHE, R.base.meta, PROG_DET_TS ? PROG_DETALHADA : null, _cartNum(hojeStr()));
-  UCV_PRINC = M ? M.lista : [];
+  UCV_PRINC = M ? M.lista : []; UCV_PRINC_M = M;
   const pe = UCV_PROG_VOO || !UCV_PROG_TENT ? 'lendo' : 'falhou';
   const pp = _ucvEl('princ'); if(pp) pp.innerHTML = _ucvPrincHtml(M, LH, R.p ? R.p.chave : null, UCV_PRINC_TODOS, pe);
   // ONDE O TEMPO VAI (v7.194.0): as mesmas horas, medições e cadastro — nenhuma leitura nova
@@ -7494,7 +7339,8 @@ function _ucvSubMontar(o){
   const lendo = x => x === 'sem-endpoint' ? 'falta o .gs novo' : x === 'falhou' ? 'a produção não foi lida' : '…';
   return {
     medir:  { txt:p ? p.nome + (p.volSel ? ' · VOL ' + p.volSel + '/' + p.nVolTot : '') : 'escolha o produto', cls:'' },
-    princ:  M ? { txt:`${M.nPrincMed} de ${M.nPrinc} medidos` + (M.cobertura != null ? ` · ${fmtP(M.cobertura)} da UEP` : ''), cls:M.nPrinc && M.nPrincMed >= M.nPrinc ? 'ok' : '' }
+    // v7.216.0: o que falta medir na programação (a agenda), e quanto da UEP já está medido
+    princ:  M ? { txt:(M.progLida ? (M.nProg ? `${M.nProg} a medir na programação` : 'nada a medir na programação') : `${M.nPend} a medir`) + (M.cobertura != null ? ` · ${fmtP(M.cobertura)} da UEP medida` : ''), cls:M.nPend ? '' : 'ok' }
               : { txt:Array.isArray(o.LH) ? '…' : lendo(o.LH), cls:'' },
     regs:   L ? { txt:plural(L.length, 'registrada', 'registradas') + (np ? ` · ${plural(np, 'pronta', 'prontas')} para trocar` : ''), cls:np ? 'acc' : '' }
               : { txt:o.regsFalha ? (o.regsFalha === 'sem-endpoint' ? 'falta o .gs novo' : 'não foram lidas') : '…', cls:'' },
@@ -8038,7 +7884,7 @@ function _ucvConfCarregar(forcar){
 // primeiro em cada grupo. O NA PRODUÇÃO não vale como medição: só ordena.
 const UCV_PRINC_PCT = 80;      // os volumes que somam 80% da UEP da janela (classe A)
 const UCV_PRINC_LINHAS = 15;   // linhas antes do VER TODOS
-let UCV_PRINC = [], UCV_PRINC_TODOS = false;
+let UCV_PRINC = [], UCV_PRINC_TODOS = false, UCV_PRINC_M = null;   // UCV_PRINC_M: a agenda que está na tela (a 🖨 imprime ela)
 // Conta pura: a situação da análise de tempo de um volume (p, do _uepConvProdutos).
 function _ucvPrincEstado(p, regs){
   if(_uepEhBase(p)) return { sit:'base', medido:true };
@@ -8111,44 +7957,70 @@ function _ucvPrincipais(horas, prods, regs, ehHE, meta, prog, hojeNum){
       if(x.uep > 0){ g.cxUep += cx; g.uep += cx * x.uep; uepTot += cx * x.uep; } else cxSemUep += cx;
     });
   });
+  // v7.216.0 (PPCP, 06/11/2026: "precisamos listar os produtos que falta coletar
+  // tempos" → "sim, faz os três"): a AGENDA COMPLETA. A classe A (os volumes que
+  // somam 80% da UEP) continua contada — é ela que diz quando rever a referência —,
+  // mas a lista é TODO volume que falta medir: o programado primeiro (de qualquer
+  // classe, até o que não rodou na janela), depois o que rodou e não está
+  // programado. O que nem rodou nem está programado só é contado (nSemNada).
   const todos = Object.values(G).filter(g => g.uep > 0).sort((a, b) => b.uep - a.uep || a.p.rot.localeCompare(b.p.rot));
   let ac = 0, uepMed = 0;
-  todos.forEach((g, i) => {
+  todos.forEach((g, i) => { g.rank = i + 1; g.pct = g.uep / uepTot * 100; g.principal = ac < UCV_PRINC_PCT; ac += g.pct; g.acum = ac; });
+  // rodou sem UEP no cadastro: fora do ranking (não tem peso), mas na agenda — é o que mais precisa do tempo
+  const semUep = Object.values(G).filter(g => !(g.uep > 0)).sort((a, b) => b.cx - a.cx || a.p.rot.localeCompare(b.p.rot));
+  semUep.forEach(g => { g.rank = null; g.pct = 0; g.acum = null; g.principal = false; g.semUep = true; });
+  const comProd = todos.concat(semUep);
+  comProd.forEach(g => {
     const cad = _uepConvCadastro(g.p);
-    g.rank = i + 1; g.pct = g.uep / uepTot * 100; g.principal = ac < UCV_PRINC_PCT; ac += g.pct; g.acum = ac;
     g.nDias = Object.keys(g.dias).length; delete g.dias;
-    g.uepCx = g.uep / g.cxUep; g.estimada = /ESTIMADA/.test(cad.origem);
+    g.uepCx = g.cxUep > 0 ? g.uep / g.cxUep : null; g.estimada = /ESTIMADA/.test(cad.origem);
     Object.assign(g, _ucvPrincEstado(g.p, regs));
     if(g.medido) uepMed += g.uep;
   });
   const P = todos.filter(g => g.principal);
-  // NA PRODUÇÃO de cada principal (as horas com o volume sozinho, sem as paradas, contra a base)
+  // NA PRODUÇÃO de cada volume que rodou com UEP (as horas com o volume sozinho, sem as paradas, contra a base)
   const ref = _ucvRefDe(horas, prods, meta);
-  P.forEach(g => {
-    const pd = _ucvPadraoDe(horas, g.p.cods.map(c => c.cod), _uepConvCadastro(g.p).volCad, meta);
+  comProd.forEach(g => {
+    const pd = g.uep > 0 ? _ucvPadraoDe(horas, g.p.cods.map(c => c.cod), _uepConvCadastro(g.p).volCad, meta) : null;
     g.pad = pd ? Object.assign(pd, { rel:_ucvRel(pd, ref), semRef:!ref }) : null;
     g.prod = !pd || pd.pouco || g.pad.rel == null ? 'sem' : _ucvRelEst(g.pad.rel) === 'confere' ? 'confirma' : 'fora';
   });
-  // a programação de cada principal (v7.191.0)
-  const progLida = Array.isArray(prog);
-  let progAte = 0;
+  // a programação (v7.191.0): de cada volume que rodou e, desde a v7.216.0, a do
+  // volume do cadastro que NÃO rodou na janela mas está programado (sem peso)
+  const progLida = Array.isArray(prog), semProd = [];
+  let progAte = 0, nSemNada = null;
   if(progLida){
     prog.forEach(it => { const dn = it && !it.foraEsteira ? Number(it.dataNum) || _cartNum(it.data) : 0; if(dn > progAte) progAte = dn; });
-    P.forEach(g => { g.prog = _ucvProgDe(g.p.cods.map(c => c.cod), prog, hojeNum); });
+    comProd.forEach(g => { g.prog = _ucvProgDe(g.p.cods.map(c => c.cod), prog, hojeNum); });
+    const ja = {}; comProd.forEach(g => { ja[g.p.chave] = 1; });
+    nSemNada = 0;
+    (prods || []).forEach(p => {
+      if(!(p.volSel || p.nVol === 1) || ja[p.chave] || _uepEhBase(p)) return;
+      const pg = _ucvProgDe(p.cods.map(c => c.cod), prog, hojeNum);
+      if(!pg){ nSemNada++; return; }
+      const cad = _uepConvCadastro(p), us = p.cods.filter(c => c.uep > 0).map(c => c.uep);
+      semProd.push(Object.assign({ p, cx:0, cxUep:0, uep:0, rank:null, pct:0, acum:null, principal:false, nDias:0, semProd:true, semUep:!us.length,
+        uepCx:us.length ? us.reduce((a, b) => a + b, 0) / us.length : null, estimada:/ESTIMADA/.test(cad.origem), pad:null, prod:'sem', prog:pg },
+        _ucvPrincEstado(p, regs)));
+    });
   }
-  // o que falta medir: pela programação (hoje/atraso → data; no mesmo dia, o
-  // mais pesado); o não programado no fim, por suspeita e peso. Sem a
-  // programação lida, só suspeita e peso. Depois, os já medidos.
-  const sus = (a, b) => UCV_PRINC_ORD[a.prod] - UCV_PRINC_ORD[b.prod] || b.uep - a.uep;
+  // a ordem: programado (hoje/atraso → data; no mesmo dia, o mais pesado; o que
+  // não rodou, pelas caixas programadas) → rodou e não está programado (suspeita
+  // e peso) → os medidos. Sem a programação lida, só suspeita e peso.
+  const sus = (a, b) => UCV_PRINC_ORD[a.prod] - UCV_PRINC_ORD[b.prod] || b.uep - a.uep || b.cx - a.cx || a.p.rot.localeCompare(b.p.rot);
   const quando = g => !g.prog ? Infinity : g.prog.agora ? 0 : g.prog.dn;
-  const pend = P.filter(g => !g.medido).sort(!progLida ? sus
-    : (a, b) => quando(a) !== quando(b) ? quando(a) - quando(b) : a.prog ? b.uep - a.uep : sus(a, b));
-  const lista = pend.concat(P.filter(g => g.medido));
-  return { lista, nPrinc:P.length, nPrincMed:P.filter(g => g.medido).length, nDemais:todos.length - P.length,
+  const pendCom = comProd.filter(g => !g.medido), pendSem = semProd.filter(g => !g.medido);
+  const naProg = !progLida ? [] : pendCom.filter(g => g.prog).concat(pendSem)
+    .sort((a, b) => quando(a) - quando(b) || b.uep - a.uep || b.prog.cx - a.prog.cx || a.p.rot.localeCompare(b.p.rot));
+  const rodou = pendCom.filter(g => !progLida || !g.prog).sort(sus);
+  const med = comProd.filter(g => g.medido).sort((a, b) => (a.rank || Infinity) - (b.rank || Infinity));
+  naProg.forEach(g => { g.grupo = 'prog'; }); rodou.forEach(g => { g.grupo = 'rodou'; }); med.forEach(g => { g.grupo = 'medido'; });
+  const pend = naProg.concat(rodou), lista = pend.concat(med);
+  return { lista, nPrinc:P.length, nPrincMed:P.filter(g => g.medido).length, nVol:todos.length, nVolMed:todos.filter(g => g.medido).length,
+           nPend:pend.length, nProg:naProg.length, nRodou:rodou.length, nMed:med.length, nSemProd:pendSem.length, nSemUep:pend.filter(g => g.semUep).length, nSemNada,
            nFora:pend.filter(g => g.prod === 'fora').length, semBase:!ref,
            progLida, progAte:progAte ? _filaN2br(progAte).slice(0, 5) : '',
-           nProg:pend.filter(g => g.prog).length, nAgora:pend.filter(g => g.prog && g.prog.agora).length,
-           pctDemais:Math.max(0, 100 - P.reduce((a, g) => a + g.pct, 0)), uepTot, regsLidas:Array.isArray(regs),
+           nAgora:naProg.filter(g => g.prog.agora).length, uepTot, regsLidas:Array.isArray(regs),
            cobertura:uepTot > 0 && Array.isArray(regs) ? uepMed / uepTot * 100 : null, cxSemUep, cxFora };
 }
 // ── Desenho (sem conta): tudo pronto do _ucvPrincipais ─────────────────────
@@ -8175,32 +8047,59 @@ function _ucvProgCel(x, M, progEst){
   return x.agora ? `<b class="ucv-ph">${x.hoje ? 'HOJE' : 'EM ATRASO'}</b><small>${fmtN(x.cx)} cx em aberto${mais}</small>`
     : `<b>${x.data}</b> ${x.dow}<small>${fmtN(x.cx)} cx${mais}</small>`;
 }
+// Os grupos da agenda (v7.216.0): o título de cada um na tela e no papel.
+const UCV_AGENDA_GRP = { prog:['NA PROGRAMAÇÃO', 'medir quando rodar — a ordem da programação'],
+  rodou:['RODOU NOS ÚLTIMOS ' + CRONO_LINHA_DIAS + ' DIAS, FORA DA PROGRAMAÇÃO', 'medir quando voltar — primeiro a produção fora da faixa, depois o mais pesado'],
+  medido:['JÁ MEDIDOS', 'a base, UEP trocada ou medições que conferem'] };
+// O peso de uma linha da agenda (tela e papel): a UEP na janela, ou por que não tem.
+function _ucvAgendaPeso(g){
+  return g.semProd ? { n:'—', sub:`não rodou em ${CRONO_LINHA_DIAS} dias` }
+    : g.semUep ? { n:'—', sub:`${fmtN(g.cx)} cx sem UEP no cadastro` }
+    : { n:fmtN(Math.round(g.uep)), sub:`${fmtP(g.pct)}${g.principal ? ' · classe A' : ''}` };
+}
+// O resumo da agenda (tela e papel).
+function _ucvAgendaResumo(M, progEst){
+  const a = M.nPrinc && M.nPrincMed >= M.nPrinc;
+  return (M.cobertura != null ? `<b>${fmtP(M.cobertura)}</b> da UEP da janela já vem de volume medido · ` : '')
+    + `<b>${M.nVolMed} de ${M.nVol}</b> volumes que rodaram estão medidos · classe A (${UCV_PRINC_PCT}% da UEP): <b>${M.nPrincMed} de ${M.nPrinc}</b>${a ? ' — pode rever a referência' : ''}`
+    + (!M.nPend ? '<br>Nada a medir.'
+      : '<br>A medir: ' + (M.progLida
+          ? `<b>${M.nProg}</b> na programação${M.progAte ? ' até ' + M.progAte : ''}${M.nAgora ? ` (<b>${M.nAgora}</b> hoje ou em atraso)` : ''}${M.nSemProd ? `, ${plural(M.nSemProd, 'deles sem rodar', 'deles sem rodar')} nos últimos ${CRONO_LINHA_DIAS} dias` : ''} · <b>${M.nRodou}</b> ${M.nRodou === 1 ? 'rodou e não está programado' : 'rodaram e não estão programados'}`
+          : `<b>${M.nPend}</b> que rodaram${progEst === 'falhou' ? ' · a programação não foi lida — a ordem é a do NA PRODUÇÃO' : ' · lendo a programação…'}`)
+        + (M.nFora ? ` · <b>${M.nFora}</b> com a produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%` : ''))
+    + (M.regsLidas ? '' : ' · lendo as medições…');
+}
 function _ucvPrincHtml(M, est, sel, todos, progEst){
-  const tit = `<div class="ucv-regs-t">PRINCIPAIS PARA ANÁLISE DE TEMPO <span title="A referência de UEP é revista quando eles estiverem medidos. Ordem do que falta medir: a programação (hoje e atraso, depois a data; no mesmo dia, o mais pesado). O que não está programado vai para o fim: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma.">os volumes que somam ${UCV_PRINC_PCT}% da UEP de jornada dos últimos ${CRONO_LINHA_DIAS} dias fechados — o que falta medir primeiro, na ordem da programação</span></div>`;
+  const tit = `<div class="ucv-regs-t">O QUE MEDIR — A AGENDA DA CRONOANÁLISE <span title="A cronoanálise só acontece com o produto na linha: primeiro o que está na programação (hoje e atraso, depois a data; no mesmo dia, o mais pesado), de qualquer tamanho — até o que não rodou nos últimos ${CRONO_LINHA_DIAS} dias. Depois o que rodou e não está programado: produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%, depois sem leitura, depois o que a produção confirma; o mais pesado primeiro. A classe A (os volumes que somam ${UCV_PRINC_PCT}% da UEP) diz quando rever a referência de UEP.">todo volume que falta medir — o programado primeiro, depois o que rodou nos últimos ${CRONO_LINHA_DIAS} dias fechados</span></div>`;
   if(!M) return est === 'sem-endpoint' ? tit + '<div class="uep-nota">O Apps Script ainda não tem as horas da produção: cole o .gs v5.35 no editor e re-deploye.</div>'
     : est === 'falhou' ? tit + '<div class="uep-nota">A produção dos últimos dias não foi lida — tenta de novo em 1 min.</div>'
     : tit + '<div class="uep-nota">Lendo a produção dos últimos dias…</div>';
   if(!M.lista.length) return tit + '<div class="uep-nota">Nenhuma caixa com UEP na janela.</div>';
-  const L = todos ? M.lista : M.lista.slice(0, UCV_PRINC_LINHAS), falta = M.nPrinc - M.nPrincMed;
+  const L = todos ? M.lista : M.lista.slice(0, UCV_PRINC_LINHAS);
+  const nGrp = { prog:M.nProg, rodou:M.nRodou, medido:M.nMed };
+  let grp = null;
   return tit
-    + `<div class="ucv-princ-r${falta ? '' : ' ok'}">${M.cobertura != null ? `<b>${fmtP(M.cobertura)}</b> da UEP da janela já vem de volume medido · ` : ''}<b>${M.nPrincMed} de ${M.nPrinc}</b> principais medidos${falta ? ` · faltam <b>${falta}</b>` : ' — pode rever a referência'}${falta && M.progLida ? ` · <b>${M.nProg}</b> ${M.nProg === 1 ? 'está' : 'estão'} na programação${M.progAte ? ' até ' + M.progAte : ''}${M.nAgora ? ` — <b>${M.nAgora}</b> hoje ou em atraso` : ''}` : ''}${falta && !M.progLida ? (progEst === 'falhou' ? ' · a programação não foi lida — a ordem é a do NA PRODUÇÃO' : ' · lendo a programação…') : ''}${M.nFora ? ` · <b>${M.nFora}</b> com a produção fora de ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%` : ''}${M.regsLidas ? '' : ' · lendo as medições…'}</div>`
-    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-princ"><thead><tr><th class="n" title="Posição pela UEP na janela">#</th><th>PRODUTO · VOLUME</th><th title="A próxima vez do volume na PROGRAMACAO e as caixas em aberto nela (hoje e atraso: o que falta do código; data futura: a quantidade menos o já adiantado). — = não está programado.">NA PROGRAMAÇÃO</th><th class="n" title="Caixas de jornada × UEP do cadastro de hoje, na janela">UEP NA JANELA</th><th class="n">CX</th><th class="n">DIAS</th><th class="n" title="A UEP por caixa do cadastro de hoje (média das cores)">UEP/CX</th>'
+    + `<div class="ucv-princ-r${M.nPend ? '' : ' ok'}">${_ucvAgendaResumo(M, progEst)}</div>`
+    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-princ"><thead><tr><th class="n" title="Posição pela UEP na janela (— = sem peso: não rodou, ou rodou sem UEP no cadastro)">#</th><th>PRODUTO · VOLUME</th><th title="A próxima vez do volume na PROGRAMACAO e as caixas em aberto nela (hoje e atraso: o que falta do código; data futura: a quantidade menos o já adiantado). — = não está programado.">NA PROGRAMAÇÃO</th><th class="n" title="Caixas de jornada × UEP do cadastro de hoje, na janela; classe A = entre os volumes que somam ' + UCV_PRINC_PCT + '% da UEP">UEP NA JANELA</th><th class="n">CX</th><th class="n">DIAS</th><th class="n" title="A UEP por caixa do cadastro de hoje (média das cores)">UEP/CX</th>'
     + `<th class="n" title="Só nas horas em que o volume rodou SOZINHO, SEM as paradas apontadas, com a UEP do cadastro, contra a ${_uepBaseCurto()} nas mesmas condições. ${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% a produção confirma; fora, medir primeiro. * = menos de 2 h, pouco para julgar. Não vale como medição: só ordena a fila.">NA PRODUÇÃO</th>`
     + '<th>ANÁLISE DE TEMPO</th></tr></thead><tbody>'
     + L.map((g, i) => {
-      const E = UCV_PRINC_SIT[g.sit] || ['', g.sit], sub = _ucvPrincSub(g);
-      return `<tr class="${g.p.chave === sel ? 'sel' : ''}${g.medido ? ' med' : ''}" onclick="_ucvAbrirPrincipal(${i})" title="Abrir este volume no conversor">`
-        + `<td class="n">${g.rank}</td><td class="ucv-pr">${_rpEsc(g.p.rot)}</td><td class="ucv-pg">${_ucvProgCel(g.prog, M, progEst)}</td>`
-        + `<td class="n"><b>${fmtN(Math.round(g.uep))}</b><small>${fmtP(g.pct)} · acum. ${fmtP(g.acum)}</small></td>`
-        + `<td class="n">${fmtN(g.cx)}</td><td class="n">${g.nDias}</td>`
-        + `<td class="n">${_ucvU2(g.uepCx)}${g.estimada ? '<small>estimada</small>' : ''}</td>`
-        + `<td class="n${g.prod === 'fora' ? ' ucv-pf' : ''}">${_ucvPadCel(g.pad)}</td>`
+      const E = UCV_PRINC_SIT[g.sit] || ['', g.sit], sub = _ucvPrincSub(g), w = _ucvAgendaPeso(g);
+      const cab = g.grupo && g.grupo !== grp ? `<tr class="ucv-grp"><td colspan="9"><b>${UCV_AGENDA_GRP[g.grupo][0]}</b> · ${nGrp[g.grupo]} — ${UCV_AGENDA_GRP[g.grupo][1]}</td></tr>` : '';
+      grp = g.grupo;
+      return cab + `<tr class="${g.p.chave === sel ? 'sel' : ''}${g.medido ? ' med' : ''}" onclick="_ucvAbrirPrincipal(${i})" title="Abrir este volume no conversor">`
+        + `<td class="n">${g.rank || '—'}</td><td class="ucv-pr">${_rpEsc(g.p.rot)}</td><td class="ucv-pg">${_ucvProgCel(g.prog, M, progEst)}</td>`
+        + `<td class="n"><b>${w.n}</b><small>${w.sub}</small></td>`
+        + `<td class="n">${g.semProd ? '—' : fmtN(g.cx)}</td><td class="n">${g.semProd ? '—' : g.nDias}</td>`
+        + `<td class="n">${g.uepCx != null ? _ucvU2(g.uepCx) : '—'}${g.estimada ? '<small>estimada</small>' : g.uepCx == null ? '<small>sem UEP</small>' : ''}</td>`
+        + `<td class="n${g.prod === 'fora' ? ' ucv-pf' : ''}">${g.semProd ? '—' : _ucvPadCel(g.pad)}</td>`
         + `<td class="ucv-st"><span class="ucv-pill ${E[0]}">${E[1]}</span>${sub ? `<small>${sub}</small>` : ''}</td></tr>`;
     }).join('')
     + '</tbody></table></div>'
     + (M.lista.length > UCV_PRINC_LINHAS ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvPrincTodos()">${todos ? 'VER MENOS' : `VER TODOS (${M.lista.length})`}</button></div>` : '')
-    + `<div class="uep-nota">Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes. NA PRODUÇÃO só ordena a fila, não substitui a cronoanálise${M.semBase ? ` — a ${_uepBaseCurto()} não rodou sozinha na janela: sem referência, todos sem leitura` : ''}. Fora da lista: ${plural(M.nDemais, 'volume', 'volumes')} com ${fmtP(M.pctDemais)} da UEP`
-    + `${M.cxSemUep + M.cxFora > 0 ? ` · ${fmtN(M.cxSemUep + M.cxFora)} cx sem UEP no cadastro (estão na 🖨 FILA DE CRONOANÁLISE)` : ''}.</div>`;
+    + `<div class="uep-nota">Medido = a base, UEP trocada pela cronoanálise ou medições que conferem com ${UCV_TROCA_MIN_VOL}+ volumes. NA PRODUÇÃO só ordena a fila, não substitui a cronoanálise${M.semBase ? ` — a ${_uepBaseCurto()} não rodou sozinha na janela: sem referência, todos sem leitura` : ''}.`
+    + (M.nSemNada != null ? ` Fora da agenda: ${plural(M.nSemNada, 'volume do cadastro', 'volumes do cadastro')} que não ${M.nSemNada === 1 ? 'rodou' : 'rodaram'} nos últimos ${CRONO_LINHA_DIAS} dias e não ${M.nSemNada === 1 ? 'está' : 'estão'} na programação.` : '')
+    + `${M.cxFora > 0 ? ` ${fmtN(M.cxFora)} cx de código fora do cadastro (sem produto para medir).` : ''} 🖨 IMPRIMIR → AGENDA DA CRONOANÁLISE leva esta lista para a linha.</div>`;
 }
 function _ucvAbrirPrincipal(i){
   const g = UCV_PRINC[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');

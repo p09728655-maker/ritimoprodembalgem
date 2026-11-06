@@ -11,6 +11,40 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.216.0 — 06/11/2026 · O QUE MEDIR vira a agenda completa · 🖨 AGENDA DA CRONOANÁLISE · PDF em contingência
+
+- PPCP: *"precisamos listar os produtos que falta coletar tempos"* e
+  *"importa pdf não faz mais sentido?"* → *"sim, faz os três"*.
+- **O QUE MEDIR (⏱ CRONOANÁLISE) mostra TODO volume que falta medir.** Antes
+  mostrava só a classe A (os volumes que somam 80% da UEP): volume menor
+  programado para os próximos dias não aparecia em lugar nenhum (o RACK FLIP
+  2.2 de segunda, por exemplo). Agora, em grupos:
+  1. **Na programação** — medir quando rodar: hoje e atraso, depois a data, de
+     qualquer tamanho, inclusive o que não rodou nos últimos 30 dias.
+  2. **Rodou nos últimos 30 dias, fora da programação** — medir quando voltar.
+  3. **Já medidos.**
+  O que nem rodou nem está programado fica fora, só contado. A classe A
+  continua no resumo (é ela que diz quando rever a referência de UEP). O
+  volume que rodou sem UEP no cadastro passa a entrar na agenda.
+- Com os dados de hoje: **36 volumes a medir na programação até 18/11** (8
+  hoje ou em atraso, 16 sem rodar em 30 dias), 21 que rodaram e não estão
+  programados, 22 de 63 medidos (43,2% da UEP), classe A 15 de 34.
+- **🖨 AGENDA DA CRONOANÁLISE** (nos menus 🖨 da ⚖ UEP e da ⏱ CRONOANÁLISE)
+  substitui a 🖨 FILA DE CRONOANÁLISE: imprime a mesma lista da tela, só o que
+  falta medir, com uma coluna **MEDIDO EM / POR** para anotar na linha. A FILA
+  antiga (UEP provisória, estimada, no limite da esteira, família incoerente)
+  saiu — eram duas listas de "o que medir" com regras diferentes.
+- **📄 IMPORTAR PDF virou 📄 PDF (contingência)**, discreto: desde o app
+  v2.103 a medição analisada chega sozinha; o PDF fica para a medição antiga ou
+  para quando o app avisar que não foi ao painel. A mesma medição pelos dois
+  caminhos não duplica.
+- **App de cronoanálise v2.103.2**: a medição enviada leva o nome de quem
+  salvou a análise — a coluna MEDIDO POR deixa de mostrar só "app".
+- **Atenção:** nenhum número de UEP, meta ou produção mudou. Mudou o que a
+  lista do O QUE MEDIR mostra e o que a 🖨 imprime.
+
+---
+
 ## v7.215.0 — 06/11/2026 · PRODUTOS EMBALADOS HOJE: faixa mais alta, nome em 2 linhas
 
 - PPCP, com o print do GERENCIAL (o bloco das 12:12–12:51 escrito só *MEL*):
