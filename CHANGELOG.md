@@ -11,6 +11,21 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.207.0 — 06/11/2026 · RÉGUAS e ONDE O TEMPO VAI viram sub-abas
+
+- PPCP: *"analisar o que pode unir"*. Aprovados, com prévia, o A1 e o A2: a
+  barra de abas do gerencial do PC passa de 13 para 11 botões.
+- **⏳ ONDE O TEMPO VAI é a 5ª sub-aba da ⏱ CRONOANÁLISE.** A tela é a mesma.
+  O botão dela já diz a diferença estudo × produção e as horas. O 🖨 foi para
+  o menu 🖨 IMPRIMIR ▾ da aba.
+- **📏 RÉGUAS é a 5ª sub-aba da ⚖ UEP.** A tela é a mesma. O botão dela já diz
+  quanto cada régua varia. O 🖨 CAIXAS × PONTOS × UEP foi para o menu
+  🖨 IMPRIMIR ▾ da ⚖ UEP.
+- Nenhum número, conta ou impressão mudou. TV, celular e diretoria não mudam.
+  Sem mudança no `.gs`.
+
+---
+
 ## v7.206.0 — 05/11/2026 · ⚖ UEP · POR PRODUTO na régua de hoje
 
 - PPCP, com a sub-aba POR PRODUTO na tela: *"como interpretar?"*. O CX/H

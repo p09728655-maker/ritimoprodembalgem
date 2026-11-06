@@ -890,6 +890,8 @@ via Google Apps Script (JSONP).
     medir de novo.
 
 ## ABA 📏 RÉGUAS — a meta de pontos cabe no mix? (v7.187.0 / `.gs` v5.42)
+- ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⚖ UEP**, não aba própria — ver
+  *RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS*.
 - PPCP, 29/10/2026: *"régua pela UEP é a justa, não adianta querer produzir
   [a meta de pontos] por dia com SLEEP por exemplo, não consegue fazer"* →
   *"essa impressão vire uma tela"* → prévia aprovada → *"sim"* (a meta na
@@ -6457,7 +6459,45 @@ feito e dá ar de verdade ao que sobrou.
   abrem pelo menu.
 - Testes em `relatorios.test.js` (*SUB-ABAS DO 📐 PLANO*), 14 de 14 mutações.
 
+## RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS (v7.207.0)
+- PPCP, 06/11/2026: *"analisar o que pode unir"* → A1 e A2 → *"ME MOSTRA COMO
+  VAI FICAR ANTES DE SUBIR"* (prints com os dados reais) → *"ok"*. A barra do
+  gerencial do PC cai de 13 para 11 abas. Nenhuma conta, leitura, impressão ou
+  linha do `.gs` mudou; TV, celular e diretoria não foram tocados.
+- **A1 — ⏳ ONDE O TEMPO VAI é a 5ª sub-aba da ⏱ CRONOANÁLISE** (`UCV_SUBS` +
+  `'tempo'`; painel `<div class="ucv-pn" data-sub="tempo"><div
+  id="uep-conv-tempo">`). A MESMA tela (comparada no Chromium com a v7.206.0).
+  `_ucvAbaOn()` = `_abaOn('crono')`. O botão (`_ucvSubMontar().tempo`) diz o 1º
+  cartão — *"+42% sobre o estudo · ≈ 25,8 h"* —, sem cor: diferença não é perda.
+  O 🖨 saiu do título do bloco para o menu 🖨 IMPRIMIR ▾ (cinco impressões). O
+  toque num volume abre o MEDIR.
+  - ⚠ Revoga a *aba própria* da v7.196.0. O pedido daquele dia (*"parece um
+    excel melhorado"*) foi atendido pela tela em painel; a cronoanálise ainda
+    era uma rolagem só — as sub-abas vieram depois. O PPCP foi avisado disso
+    antes de aprovar.
+  - CSS: o escopo `#sec-tempo` virou `#uep-conv-tempo` (o mesmo conteúdo).
+- **A2 — 📏 RÉGUAS é a 5ª sub-aba da ⚖ UEP** (`UEP_SUBS` + `'reguas'`). O
+  painel é FIXO (`#uep-reguas`), FORA do `#uep-bloco`: o `renderUep` refaz o
+  bloco a cada refresh e levaria a tela junto. `_uepSubMarca` acende botão e
+  painel (o `setTab` também usa); `_uepSub('reguas')` pinta e lê
+  (`renderReguas`, como a aba lia) — as outras quatro seguem sem leitura.
+  `_regOn()` = ⚖ UEP aberta com a RÉGUAS acesa.
+  - **Uma leitura de cada vez**: `_uepDepoisDe(ocupada, fn)` espera a outra
+    (`UEP_CARREGANDO` ou `REG_RODANDO`) e só roda se a tela ainda pede. A ⚖ UEP
+    aberta já na RÉGUAS lê ela primeiro, depois o resto da aba.
+  - O botão (`_regSubMontar(R.reguas)`) diz a variação das três réguas, da
+    menor para a maior (*"varia UEP ±11% · pontos ±19% · caixas ±26%"*); antes
+    da leitura, *"caixas × pontos × UEP"*, nunca 0.
+  - O 🖨 CAIXAS × PONTOS × UEP foi para o menu da ⚖ UEP (quatro impressões); o
+    atalho 📏 RÉGUAS → saiu. CSS: `#sec-reguas` → `#uep-reguas`.
+- **O nome antigo abre a sub-aba**: `setTab('reguas')` → ⚖ UEP na RÉGUAS;
+  `setTab('tempo')` → ⏱ CRONOANÁLISE no ONDE O TEMPO VAI.
+- Medido no Chromium com os dados reais de 06/11 (1920×1015): nada passa da
+  largura; o ONDE O TEMPO VAI antes × depois saiu igual.
+
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
+- ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
+  v7.196.0, abaixo, saiu) — ver *RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS*.
 - PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde
   onde ganha?"* → *"não altera nada"* → prévia com os 34 estudos reais
   (artifact privado) → *"pode subir na aba cronoanálise"* → *"capricha na

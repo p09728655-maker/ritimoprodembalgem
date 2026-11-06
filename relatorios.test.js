@@ -4652,7 +4652,7 @@ console.log('\n── estudo de UEP ──');
   // v7.127.0: sem a leitura do dia a aba não desenha nada — quando ela falta, vem PRIMEIRO
   ok('ao abrir a aba: leitura do dia (só se faltar) → histórico → cadastro, em sequência',
      [CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaHistCarregar') && CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('_uepAbaCatCarregar'),
-      /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ renderUep\(\); _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
+      /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ _uepSubMarca\(UEP_SUB\); renderUep\(\); if\(UEP_SUB==='reguas'\)\{[^\n]*\} else _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('tela, impressão, diretoria e Telas F/G da TV leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
@@ -4665,23 +4665,28 @@ console.log('\n── estudo de UEP ──');
   // v7.198.0 (PPCP 03/11/2026, depois das sub-abas da cronoanálise: "faz o mesmo na aba uep")
   { const iU = src.indexOf('<section id="sec-uep"'), SU = src.slice(iU, src.indexOf('</section>', iU));
     const iM = SU.indexOf('<details class="ucv-imp" id="uep-imp">'), MENU = SU.slice(iM, SU.indexOf('</details>', iM));
-    ok('⚖ UEP em sub-abas: quatro botões (HOJE · PERÍODO · PRÓXIMOS DIAS · POR PRODUTO), HOJE aceso; o renderUep desenha um painel por chave, na mesma ordem',
-       [[...SU.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), /const UEP_SUBS = \['hoje', 'periodo', 'prox', 'prod'\];/.test(JS), /class="ucv-sb on" data-sub="hoje" role="tab" aria-selected="true"/.test(SU),
-        ['hoje', 'periodo', 'prox', 'prod'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R)],
-       [['hoje', 'periodo', 'prox', 'prod'], true, true, true, true]);
-    ok('o cabeçalho: as três impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE e RÉGUAS na ponta da faixa; o título não diz mais "— HOJE"',
-       [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()'].every(f => MENU.includes(f)),
-        /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('crono'\)"/.test(SU) && /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('reguas'\)"/.test(SU),
+    // v7.207.0 (PPCP 06/11/2026, "A1 E A2"): a 5ª é a RÉGUAS, que era aba — o painel dela é
+    // fixo (fora do #uep-bloco), os outros quatro o renderUep desenha
+    ok('⚖ UEP em sub-abas: cinco botões (HOJE · PERÍODO · PRÓXIMOS DIAS · POR PRODUTO · RÉGUAS), HOJE aceso; o renderUep desenha um painel por chave, na mesma ordem, e a RÉGUAS é fixa',
+       [[...SU.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), /const UEP_SUBS = \['hoje', 'periodo', 'prox', 'prod', 'reguas'\];/.test(JS), /class="ucv-sb on" data-sub="hoje" role="tab" aria-selected="true"/.test(SU),
+        ['hoje', 'periodo', 'prox', 'prod'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R),
+        R.includes("pn('reguas'"), /<div class="ucv-pn" data-sub="reguas" id="uep-reguas">/.test(SU)],
+       [['hoje', 'periodo', 'prox', 'prod', 'reguas'], true, true, true, true, false, true]);
+    ok('o cabeçalho: as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE na ponta da faixa (a RÉGUAS é sub-aba); o título não diz mais "— HOJE"',
+       [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()', 'gerarRelatorioCxUep(_regN())'].every(f => MENU.includes(f)),
+        /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('crono'\)"/.test(SU), /setTab\('reguas'\)/.test(SU),
         SU.includes('⚖ UEP — HOJE'), /gerarRelatorioUepPadrao\(\)/.test(R)],
-       [3, true, true, false, false]);
+       [4, true, true, false, false, false]);
     ok('os títulos dos blocos sem número (cada sub-aba é o seu contexto) e o renderUep pinta os botões, também sem os dados do dia',
        [/\d · (HOJE|HORA A HORA|O MIX|ORIGEM|PERÍODO|PRÓXIMOS|PADRÃO)/.test(R), /_uepSubPintar\(_uepSubMontar\(\{ D, H:Hpad, padEst:/.test(R),
         /el\.innerHTML=`<div class="empty-msg">\$\{D\.msg\}\$\{tentar\}<\/div>`;\s*_uepSubPintar\(_uepSubMontar\(\{ D \}\)\); return;/.test(R)],
        [false, true, true]);
-    ok('o gráfico é redesenhado na largura do painel ACESO (escondido não tem largura); trocar de sub-aba redesenha a aba, sem leitura',
+    // v7.207.0: só a RÉGUAS lê ao abrir (como a aba lia), esperando a leitura da ⚖ UEP terminar
+    ok('o gráfico é redesenhado na largura do painel ACESO (escondido não tem largura); trocar de sub-aba redesenha a aba, sem leitura — fora a RÉGUAS, que lê ao abrir',
        [/if\(nb&&nb\.offsetParent\)\{ const sv=nb\.querySelector\('svg'\); if\(sv&&Math\.abs\(\(sv\.viewBox\.baseVal\.width\|\|0\)-_svgLargura\(nb\)\)>2\)/.test(R),
-        /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /if\(_abaOn\('uep'\)\) renderUep\(\);/.test(pega('function _uepSub(')), /jsonp|_uepAbaCarregar|action=/.test(pega('function _uepSub('))],
-       [true, true, true, false]);
+        /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /else renderUep\(\);/.test(pega('function _uepSub(')), /jsonp|_uepAbaCarregar|action=/.test(pega('function _uepSub(')),
+        /if\(k === 'reguas'\)\{ _regPintar\(\); _uepDepoisDe\(/.test(pega('function _uepSub('))],
+       [true, true, true, false, true]);
     eval(pega('function _uepSubMontar(')); eval(pega('function _uepSubProx('));
     if (typeof _fmtHM === 'undefined') eval(pega('function _fmtHM('));
     const DU = { estado:'ok', k:{ minNorm:200 }, feito:667.4, card:{ ef:25.9, c:'red' }, P:{ n:10, res:{ media:2656.4, bateu:6 } } };
@@ -4713,14 +4718,15 @@ console.log('\n── estudo de UEP ──');
        [false, true, true]);
     // _uepSub: acende, e a entrada (animação) só na troca — o refresh redesenha sem piscar
     { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); }, add(c){ this.o.s.add(c); } }, setAttribute(k, v){ this.at[k] = v; } });
-      const SB = ['hoje', 'periodo', 'prox', 'prod'].map(el), PN = ['hoje', 'periodo', 'prox', 'prod'].map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
-      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#uep-bloco .ucv-pn' ? PN : []), querySelector:q => (q === '#uep-bloco .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null) };
-      global.UEP_SUBS = ['hoje', 'periodo', 'prox', 'prod']; global.UEP_SUB = 'hoje'; const abaA = global._abaOn; global._abaOn = () => false;
-      eval(pega('function _uepSub('));
+      const KS = ['hoje', 'periodo', 'prox', 'prod', 'reguas'], SB = KS.map(el), PN = KS.map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
+      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#sec-uep .ucv-pn' ? PN : []), querySelector:q => (q === '#sec-uep .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null) };
+      global.UEP_SUBS = KS; global.UEP_SUB = 'hoje'; const abaA = global._abaOn; global._abaOn = () => false;
+      eval(pega('function _uepSubMarca(')); eval(pega('function _uepSub('));
       _uepSub('prox'); const r1 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), SB.map(e => e.at['aria-selected']), PN[2].s.has('entra')];
+      _uepSub('reguas'); const r2 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), PN[4].s.has('entra')];
       _uepSub('xx');
-      ok('_uepSub acende painel e botão (aria-selected) e marca a entrada só no painel novo; chave desconhecida não muda nada',
-         [r1, UEP_SUB], [['prox', ['prox'], ['false', 'false', 'true', 'false'], true], 'prox']);
+      ok('_uepSub acende painel e botão (aria-selected) e marca a entrada só no painel novo — a RÉGUAS também; chave desconhecida não muda nada',
+         [r1, r2, UEP_SUB], [['prox', ['prox'], ['false', 'false', 'true', 'false', 'false'], true], ['reguas', ['reguas'], true], 'reguas']);
       global.document = docA; global._abaOn = abaA; }
     ok('a pele: o painel aceso aparece; a entrada só com .entra (o refresh redesenha o painel) e sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
        [/#sec-uep \.ucv-pn\{display:none\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block\}/.test(src), /#sec-uep \.ucv-pn\.entra\{animation:ucvIn/.test(src),
