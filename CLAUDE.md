@@ -1094,6 +1094,12 @@ via Google Apps Script (JSONP).
   DEITADOS no `_rpDocParadas` (13 usuários hoje — o teste conta), peles
   `.fila-doc` e `.cxu-doc`. Cartão sem status fica com borda NEUTRA: a do
   documento comum é vermelha (lá marca perda).
+- ⚠ **A FILA DE CRONOANÁLISE abaixo SAIU na v7.216.0**: a 🖨 é a AGENDA DA
+  CRONOANÁLISE (ver *O QUE MEDIR: A AGENDA*). `_filaCronoMontar`,
+  `_filaCronoHtml`, `_FILA_DOC_SKIN`, `FILA_MOTIVOS`, `FILA_FAM_RAZAO`,
+  `FILA_TETO_FOLGA`, `FILA_MAX_SEM` e `_filaUteis` foram apagados; ficou a
+  amostra (`_filaAmostra`, `_filaAmostraDeItens`, `FILA_AMOSTRA_DE`), que a
+  régua usa, e o `_filaN2br`. O texto abaixo é histórico.
 - **FILA DE CRONOANÁLISE** (`_filaCronoMontar` conta, `_filaCronoHtml`
   desenho). Produto (modelo + `_capNome`) entra por: SEM UEP · ESTIMADA (EST)
   · PROVISÓRIA (< `UEP_MIN_DIAS` dias distintos na amostra) · NO LIMITE DA
@@ -6043,6 +6049,12 @@ feito e dá ar de verdade ao que sobrou.
   e fechar"** do app (PC, Embalagem Takt Time) manda a medição para a aba
   CRONOANALISE pelo `registrarCrono` deste `.gs`. O IMPORTAR PDF fica como
   reserva.
+- **v7.216.0 (PPCP: *"importa pdf não faz mais sentido?"*)**: o botão virou
+  **📄 PDF (contingência)**, discreto (`btn-ghost`, era o laranja), com o
+  title dizendo quando usar (a medição não chegou do app, ou é antiga). O app
+  v2.103.2 manda `quem` = quem salvou a análise (`analisada_por`, até 40
+  caracteres) — o MEDIDO POR deixa de ser só "app"; o `.gs` já aceitava. Não
+  apagar o import: é o caminho das medições antigas e da falha do app.
 - **B1 já estava feito** (conferido em 06/11): em 03/11 a lista de produtos da
   embalagem do app foi carregada com os nomes do painel (o `rot` do
   `_uepConvProdutos`: *"501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2"*), 168
@@ -6374,7 +6386,43 @@ feito e dá ar de verdade ao que sobrou.
   somar os 15% de novo contaria a fadiga duas vezes.
 - ⚠ Mudou o `.gs` → **re-deploy manual**.
 
-## PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0)
+## PRINCIPAIS PARA ANÁLISE DE TEMPO (v7.189.0) → O QUE MEDIR: A AGENDA (v7.216.0)
+- ⚠ **Desde a v7.216.0 a lista é a AGENDA COMPLETA** (PPCP, 06/11/2026:
+  *"precisamos listar os produtos que falta coletar tempos"* → *"sim, faz os
+  três"*). Antes ela mostrava só a **classe A** (os volumes que somam 80% da
+  UEP): um volume das classes B/C programado para segunda (RACK FLIP 2.2) não
+  aparecia em lugar nenhum. `_ucvPrincipais` agora devolve, em `lista`, TODO
+  volume que falta medir, em grupos (`g.grupo`):
+  - `prog` — **na programação**, de qualquer classe, inclusive o volume do
+    cadastro que **não rodou** nos 30 dias (`semProd`: sem posição, sem
+    caixas, sem NA PRODUÇÃO; UEP/cx do cadastro). Ordem: hoje/atraso → data;
+    no mesmo dia, o mais pesado (o que não rodou, pelas caixas programadas).
+  - `rodou` — rodou na janela e não está programado: suspeita (NA PRODUÇÃO
+    fora de 90–110% → sem leitura → confirma) e peso. Sem a programação lida,
+    todos os que rodaram vão aqui.
+  - `medido` — os medidos que rodaram, pela posição.
+  - O volume que rodou **sem UEP no cadastro** entra na agenda (`semUep`, sem
+    posição — antes ficava fora, só contado). Código fora do cadastro: só
+    contado (`cxFora`). O que nem rodou nem está programado (e não é a base):
+    só contado (`nSemNada`, "fora da agenda").
+  - A classe A continua contada (`nPrinc`/`nPrincMed`, `g.principal`): é a
+    régua para rever a referência de UEP ("classe A: 15 de 34" no resumo).
+    `nDemais`/`pctDemais` saíram.
+  - Desenho: um título por grupo (`tr.ucv-grp`, `UCV_AGENDA_GRP`), o resumo
+    em `_ucvAgendaResumo` e o peso da linha em `_ucvAgendaPeso` (tela e papel
+    usam os mesmos). O botão da sub-aba diz *"N a medir na programação · X% da
+    UEP medida"*.
+  - Com os dados de 06/11/2026 às 18h: 36 a medir na programação até 18/11
+    (8 hoje ou em atraso, 16 sem rodar em 30 dias), 21 rodaram fora da
+    programação, 22 de 63 medidos (43,2% da UEP), classe A 15 de 34, 65
+    volumes fora da agenda.
+  - **🖨 AGENDA DA CRONOANÁLISE** (`gerarRelatorioFilaCrono`, o nome antigo
+    ficou para os dois menus 🖨 — ⚖ UEP e ⏱ CRONOANÁLISE): a MESMA agenda
+    (`UCV_PRINC_M`, guardada no `_ucvRegPintar`) — a janela abre no clique,
+    abre a ⏱ CRONOANÁLISE no O QUE MEDIR e espera as leituras (até 90 s).
+    Só o que falta medir, com a coluna **MEDIDO EM / POR** para anotar à mão
+    (`_ucvAgendaDocHtml`, pele `_UCV_AGENDA_DOC_SKIN`). Com os dados reais:
+    57 linhas, 4 páginas — a altura da linha é a de escrever.
 - PPCP, 30/10/2026, depois de decidir que a referência de UEP só é revista
   quando a cronoanálise cobrir o mix: *"deixar os principais produtos marcados
   para análise de tempo"*. Bloco `#uep-conv-princ` da ⏱ CRONOANÁLISE, entre o
