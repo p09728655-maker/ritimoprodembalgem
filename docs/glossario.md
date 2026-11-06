@@ -281,6 +281,26 @@ grava com a base medida no período: 5+ dias e abaixo de 90% do teto
 (`UEP_TRAVADA_DESDE`): o GRAVAR não grava nada, e a UEP só muda digitada na
 coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
+## Aba ⚖ UEP · TAKT DA SEMANA (v7.209.0)
+
+Três números na mesma unidade, **segundos por UEP** (menor = mais rápido). A
+semana é a de hoje, segunda a domingo, lida pelo `getProgramacaoSemana` (`.gs`
+v5.59: as duas abas da programação pela data de cada lote). Dia útil = segunda
+a sexta fora dos feriados da aba FERIADOS.
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **TAKT** (o que a programação pede) | dias úteis × 527 × 60 ÷ UEP programada na semana (Σ caixas × UEP do cadastro de hoje; fora da esteira de fora; código sem UEP fica fora e é dito). UEP/dia = UEP programada ÷ dias úteis; % = UEP/dia ÷ META DIA (UEP). Lote em sábado, domingo ou feriado entra na UEP, não nos dias úteis | s/UEP | `v7:_taktMontar` |
+| **REFERÊNCIA** | 527 × 60 ÷ META DIA (UEP) do ⚙ — a mesma *referência de UEP* da RÉGUAS | s/UEP | `v7:_taktMontar` (`ref`) |
+| **EXECUTADO NA SEMANA** | minutos de jornada (527 por dia útil fechado com UEP no HISTORICO; hoje, os minutos de jornada com lançamento) × 60 ÷ UEP de jornada feita nesses dias. % = UEP feita ÷ Σ (META UEP do dia × minutos ÷ 527). Hora extra e dia não útil à parte (*+ X UEP em hora extra*) | s/UEP · % | `v7:_taktMontar` (`exec`) |
+| **CARGA ACIMA DA REFERÊNCIA** | por dia útil fechado: (pedido − feito) − ritmo, onde pedido = UEP programada do dia. É o que o dia pediu além da referência (ou além do feito, quando a linha passou dela): decisão do PCP (re-datar ou hora extra). Soma dos dias | UEP | `v7:_taktMontar` (`cas`) |
+| **GAP DE RITMO** | por dia útil fechado: máx(0, mín(pedido, META UEP do dia) − feito) — o que faltou para a referência **com trabalho programado**. Dia que pediu menos que a referência não cobra a folga (a linha não tinha o trabalho). Soma dos dias. Fecha: pedido − carga − ritmo + adiantou = feito | UEP | `v7:_taktMontar` (`cas`) |
+| **ADIANTOU** | por dia útil fechado: máx(0, feito − pedido) | UEP | `v7:_taktMontar` (`cas`) |
+| **FALTA DA SEMANA** | Σ saldo de cada lote da semana × UEP do código (o saldo do `.gs`: o da planilha só quando PRODUZIDO + SALDO = QTDE; concluída e fora da esteira 0; linha sem saldo confiável fica fora e é dita). *De dias que já passaram* = a parte dos lotes com data antes de hoje | UEP | `v7:_taktMontar` (`falta`) |
+| **CABEM** | minutos de jornada que faltam hoje (a hora em andamento só o resto; hora extra fora) × META UEP ÷ 527 + dias úteis que vêm × META UEP. *Faltam* = falta − cabem | UEP | `v7:_taktRestMin` · `v7:_taktMontar` |
+| **AGORA · PELO TAKT / PELA REFERÊNCIA** | o takt (ou a referência) × UEP por caixa do código que está rodando (cadastro; sem ele, a média de hoje do produto e da cor) — 1 caixa a cada X s | s/cx | `v7:_taktAgora` |
+| **AGORA · ÚLTIMA HORA** | a última hora de jornada fechada: só desse produto e cor = minutos × 60 ÷ caixas da hora; com outro produto ou cor = (minutos × 60 ÷ UEP da hora) × UEP por caixa do produto de agora. Cor = a da hora no HORA A HORA | s/cx | `v7:_taktAgora` |
+
 ## Gerencial — PRODUTOS EMBALADOS HOJE (mobile 1.39.0 · PC v7.201.0)
 
 Tudo sai do `getPontosDia` que o gerencial já lê (`porHoraModelo` e `porHora`);

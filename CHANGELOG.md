@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.209.0 — 06/11/2026 · TAKT DA SEMANA (6ª sub-aba da ⚖ UEP)
+
+- PPCP: *"colocar takt da semana e comparar com o takt que está sendo
+  executado"* → prévia → *"sim"*. Nova sub-aba **TAKT DA SEMANA** na ⚖ UEP,
+  só no painel (não depende do app). Três números em **segundos por UEP**:
+  - **TAKT** — o que a programação da semana pede (dias úteis × 527 min ÷ UEP
+    programada);
+  - **REFERÊNCIA** — a META DIA (UEP) do ⚙ no mesmo formato (527 min ÷ 2.761);
+  - **EXECUTADO** — o que a linha fez na jornada da semana até agora.
+- **POR QUE NÃO ACOMPANHOU**, nos dias fechados: o que não saiu na jornada
+  separado em **CARGA ACIMA DA REFERÊNCIA** (o dia pediu mais do que cabe:
+  decisão do PCP — re-datar ou hora extra) e **GAP DE RITMO** (a linha ficou
+  abaixo da referência com trabalho programado: paradas e ritmo).
+- **FALTA DA SEMANA**: o saldo dos lotes da semana em UEP, e quanto ainda cabe
+  na referência até o fim da semana (vermelho quando não cabe).
+- **AGORA**: o takt e a referência em *1 caixa a cada X s* do produto que está
+  rodando, contra a última hora de jornada fechada.
+- **DIA A DIA**: programado × feito por dia, com a hora extra e as linhas da
+  referência e do takt.
+- ⚠ **Atenção — número diferente da prévia**: a conta do porquê é feita **dia
+  a dia** (03–05/11: carga 1.903, ritmo 707), não com a semana somada (a
+  prévia mostrou 1.978 e 633). Somada, a folga de um dia que pediu menos que a
+  referência virava "ritmo" — culpava a produção por trabalho que não estava
+  programado.
+- Os botões das sub-abas da ⚖ UEP ficam em colunas iguais: em tela menor, a
+  TAKT DA SEMANA desce para a 2ª linha do mesmo tamanho das outras.
+- Usa a leitura do `.gs` v5.59 (já publicado). Sem ele, a sub-aba diz que
+  falta colar o v5.59.
+
+---
+
 ## v7.208.1 + `.gs` v5.59 — 06/11/2026 · a programação da semana para o TAKT ⚠ **re-deploy**
 
 - PPCP: *"me manda gs"*, depois da prévia do TAKT DA SEMANA. O `.gs` ganha a

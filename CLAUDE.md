@@ -104,6 +104,14 @@ via Google Apps Script (JSONP).
   cobertura e os casos de borda (A,B,A,B na hora, madrugada lançada depois,
   501130 com mesas irmãs, sem UEP); no PC, o "lendo" antes da 1ª leitura e o
   cadastro lido no clique uma vez só: `node produtos-dia.test.js`.
+- `takt-semana.test.js` — sub-aba TAKT DA SEMANA da ⚖ UEP (v7.209.0), com o
+  retrato real de 06/11/2026 11:58 (as 49 linhas da semana 02–08/11 do
+  `getProgramacaoSemana`, os dias fechados do HISTORICO e o hoje da aba): os
+  três números em s por UEP, o porquê dia a dia (e por que não a semana
+  somada), a falta e o que cabe, o AGORA em caixas (hora só do produto e hora
+  com outra cor), o sábado trabalhado, a espera entre leituras, os estados do
+  botão, o desenho sem conta e a ligação com a
+  aba: `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6471,8 +6479,12 @@ feito e dá ar de verdade ao que sobrou.
 - Faixa estática `#uep-sub` (botões `.ucv-sb`, `data-sub`) e painéis `.ucv-pn`
   dentro do `#uep-bloco`, desenhados pelo `renderUep` (`pn(k, h)`): **HOJE**
   (`hoje`: cartões, hora a hora, mix, origem) · **PERÍODO** (`periodo`) ·
-  **PRÓXIMOS DIAS** (`prox`: `#ger-prox`) · **POR PRODUTO** (`prod`: bloco 7).
-  `UEP_SUBS`, `UEP_SUB` (começa no HOJE, só na memória da sessão).
+  **PRÓXIMOS DIAS** (`prox`: `#ger-prox`) · **POR PRODUTO** (`prod`: bloco 7)
+  · RÉGUAS (v7.207.0) · **TAKT DA SEMANA** (`takt`, v7.209.0 — ver *TAKT DA
+  SEMANA*). `UEP_SUBS`, `UEP_SUB` (começa no HOJE, só na memória da sessão).
+  A faixa da ⚖ UEP é GRADE de colunas iguais (v7.209.0, `minmax(180px,1fr)`):
+  no flex, a 6ª que descia para a 2ª linha (~1.100 px) esticava a linha
+  inteira; estreitar os botões para caberem seis cortava o número deles.
   - ⚠ **`_uepSub(k)` REDESENHA a aba** (`renderUep`, sem leitura): os gráficos
     são desenhados na largura do painel ACESO, e escondido ele não tem largura
     (o `_svgLargura` cairia nos 760). Depois do `innerHTML`, o hora a hora e o
@@ -6608,15 +6620,54 @@ feito e dá ar de verdade ao que sobrou.
 - Medido no Chromium com os dados reais de 06/11 (1920×1015): nada passa da
   largura; o ONDE O TEMPO VAI antes × depois saiu igual.
 
-## TAKT DA SEMANA — a leitura no `.gs` (v5.59; a tela ainda não existe)
+## TAKT DA SEMANA — 6ª sub-aba da ⚖ UEP (v7.209.0; a leitura é do `.gs` v5.59)
 - PPCP, 06/11/2026: *"tenho a programação no painel, colocar takt da semana e
   comparar com o takt que está sendo executado"* → *"quero só no painel"* →
   *"sem depender do app"* → prévia (imagem com os números reais da semana) →
   *"me manda gs"*. A tela proposta é a 6ª sub-aba da ⚖ UEP: TAKT (minutos de
   jornada ÷ UEP programada), REFERÊNCIA (527 × 60 ÷ 2.761) e EXECUTADO (minutos
   ÷ UEP feita), em **segundos por UEP**, e a cascata PEDIDO − CARGA ACIMA DA
-  REFERÊNCIA − GAP DE RITMO = FEITO NA JORNADA. ⚠ **Ainda não implementada**:
-  a sub-aba, o nome final e os blocos dependem do OK do PPCP sobre a prévia.
+  REFERÊNCIA − GAP DE RITMO = FEITO NA JORNADA. PPCP: *"sim"* → a tela
+  (v7.209.0), abaixo.
+- **A TELA (v7.209.0)**: botão `data-sub="takt"` depois da RÉGUAS (`UEP_SUBS`
+  + `'takt'`), painel `pn('takt', bT)` no `renderUep`. Quatro blocos, os da
+  prévia: os cards TAKT · REFERÊNCIA · EXECUTADO · FALTA DA SEMANA, a frase,
+  POR QUE NÃO ACOMPANHOU (a cascata) e AGORA lado a lado (`.uep-2`), e o DIA A
+  DIA (programado tracejado × feito, hora extra em cima, linhas da referência
+  e do takt/dia). Botão: *pede X% da referência* (âmbar acima de 100%).
+  - **Conta pura** `_taktMontar(S, hist, H)` (S = a leitura, hist =
+    `UEP_HIST`, H = o hoje da aba: `num`, `minNorm`, `restMin`, `uep`, `he`,
+    `meta`, `fim`), `_taktRestMin`, `_taktAgora`, `_uepSubTakt` · **desenho**
+    `_taktHtml`, `_taktSvg` (sem conta; o teste prende).
+  - **Leitura** `_taktCarregar(forcar)`: `TKS`, `TKS_TS`, `TKS_VOO`,
+    `TKS_FALHA` (`sem-url` · `sem-resposta` · `sem-endpoint` = `.gs` antes da
+    v5.59, o ÚNICO caso que manda re-deployar · `erro`), 3 tentativas em
+    sequência, cache de 5 min (`TKS_TTL`). É a **última da fila** do
+    `_uepAbaCarregar` e entra no `_uepLendo` (a RÉGUAS espera por ela). O
+    `renderUep` renova: de outro dia, sempre; velha (5 min, 1 min na falha),
+    só com a sub-aba TAKT na tela. Sem o `UEP_HIST` não monta (os dias
+    fechados sairiam "sem dado").
+  - **O porquê é DIA A DIA**, não a semana somada (a prévia somava: 1.978 de
+    carga e 633 de ritmo; a tela dá **1.903 e 707** nos mesmos 03–05/11). No
+    dia: falta = pedido − feito; ritmo = máx(0, mín(pedido, META UEP do dia) −
+    feito); carga = falta − ritmo; adiantou = máx(0, feito − pedido). Somada,
+    a folga de um dia que pediu MENOS que a referência (05/11 pediu 2.727,6)
+    virava ritmo, e o 04/11 acima da referência "pagava" o 05/11 — culpava a
+    produção por trabalho que não estava programado. Fecha sempre: pedido −
+    carga − ritmo + adiantou = feito (o teste prende).
+  - **AGORA na MESMA unidade**: takt e referência × UEP/cx do código de agora
+    = segundos por caixa; a última hora de jornada FECHADA em s por caixa
+    também (só desse produto e cor: as caixas; com outro produto ou cor: o
+    ritmo dela em UEP × UEP/cx de agora). ⚠ Na 1ª versão a hora com troca saía
+    em s por UEP (14,3) ao lado de 17,1 e 19,8 s por caixa — parecia a mais
+    rápida e era a mais lenta. A cor é a do HORA A HORA (`h.cls`).
+  - **Dia não útil**: lote em sábado/domingo/feriado entra na UEP programada,
+    não nos dias úteis (nota). Produção nele vai para o *+ X fora da jornada*.
+  - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
+    (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
+    8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;
+    cabem ~1.504 até 17:00 → faltam 3.593). AGORA: MEL VOL 1/2 BRANCO 1,73 →
+    17,1 s (takt), 19,8 s (referência), 10:00 = 24,8 s (vermelho).
 - **Por que UEP e não caixa** (medido em 03–05/11/2026): em caixas a linha fez
   1.340, 1.327 e 1.009 contra ~1.800/dia que o takt em caixas pediria — vermelho
   todo dia —, mas em UEP fez 97%, 104% e 76% da referência. O que faltou foi

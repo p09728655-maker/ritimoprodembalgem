@@ -4667,11 +4667,11 @@ console.log('\n── estudo de UEP ──');
     const iM = SU.indexOf('<details class="ucv-imp" id="uep-imp">'), MENU = SU.slice(iM, SU.indexOf('</details>', iM));
     // v7.207.0 (PPCP 06/11/2026, "A1 E A2"): a 5ª é a RÉGUAS, que era aba — o painel dela é
     // fixo (fora do #uep-bloco), os outros quatro o renderUep desenha
-    ok('⚖ UEP em sub-abas: cinco botões (HOJE · PERÍODO · PRÓXIMOS DIAS · POR PRODUTO · RÉGUAS), HOJE aceso; o renderUep desenha um painel por chave, na mesma ordem, e a RÉGUAS é fixa',
-       [[...SU.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), /const UEP_SUBS = \['hoje', 'periodo', 'prox', 'prod', 'reguas'\];/.test(JS), /class="ucv-sb on" data-sub="hoje" role="tab" aria-selected="true"/.test(SU),
-        ['hoje', 'periodo', 'prox', 'prod'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R),
+    ok('⚖ UEP em sub-abas: seis botões (HOJE · PERÍODO · PRÓXIMOS DIAS · POR PRODUTO · RÉGUAS · TAKT DA SEMANA), HOJE aceso; o renderUep desenha um painel por chave, na mesma ordem, e a RÉGUAS é fixa',
+       [[...SU.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), /const UEP_SUBS = \['hoje', 'periodo', 'prox', 'prod', 'reguas', 'takt'\];/.test(JS), /class="ucv-sb on" data-sub="hoje" role="tab" aria-selected="true"/.test(SU),
+        ['hoje', 'periodo', 'prox', 'prod', 'takt'].map(k => R.indexOf("pn('" + k + "'")).every((x, i, a) => x > 0 && (!i || x > a[i - 1])), /UEP_SUB===k\?' on':''/.test(R),
         R.includes("pn('reguas'"), /<div class="ucv-pn" data-sub="reguas" id="uep-reguas">/.test(SU)],
-       [['hoje', 'periodo', 'prox', 'prod', 'reguas'], true, true, true, true, false, true]);
+       [['hoje', 'periodo', 'prox', 'prod', 'reguas', 'takt'], true, true, true, true, false, true]);
     ok('o cabeçalho: as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes); CRONOANÁLISE na ponta da faixa (a RÉGUAS é sub-aba); o título não diz mais "— HOJE"',
        [(MENU.match(/onclick="_uepImpFecha\(\);/g) || []).length, ['gerarRelatorioUepAba()', 'gerarRelatorioUepPadrao()', 'gerarRelatorioFilaCrono()', 'gerarRelatorioCxUep(_regN())'].every(f => MENU.includes(f)),
         /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('crono'\)"/.test(SU), /setTab\('reguas'\)/.test(SU),
@@ -4688,7 +4688,7 @@ console.log('\n── estudo de UEP ──');
         /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /else \{ renderUep\(\); if\(UEP_ABA_PEND\)\{/.test(pega('function _uepSub(')), /jsonp|action=/.test(pega('function _uepSub(')),
         /if\(k === 'reguas'\) _regAbrir\(\);/.test(pega('function _uepSub('))],
        [true, true, true, false, true]);
-    eval(pega('function _uepSubMontar(')); eval(pega('function _uepSubProx('));
+    eval(pega('function _uepSubMontar(')); eval(pega('function _uepSubProx(')); eval(pega('function _uepSubTakt('));
     if (typeof _fmtHM === 'undefined') eval(pega('function _fmtHM('));
     const DU = { estado:'ok', k:{ minNorm:200 }, feito:667.4, card:{ ef:25.9, c:'red' }, P:{ n:10, res:{ media:2656.4, bateu:6 } } };
     const HU = { julgados:[{ st:'acima' }, { st:'acima' }, { st:'abaixo' }, { st:'no' }] };
@@ -4736,7 +4736,7 @@ console.log('\n── estudo de UEP ──');
       const toA = global.setTimeout, fila = []; global.setTimeout = fn => { fila.push(fn); return 0; };
       const roda = () => { const f = fila.splice(0); f.forEach(fn => fn()); };
       const ch = [], G = global;
-      Object.assign(G, { UEP_SUB:'hoje', UEP_ABA_PEND:false, REG_ESPERA:false, REG_RODANDO:false, UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, _pontosVoo:null,
+      Object.assign(G, { UEP_SUB:'hoje', UEP_ABA_PEND:false, REG_ESPERA:false, REG_RODANDO:false, UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, TKS_VOO:null, _pontosVoo:null,
         renderReguas:f => ch.push('reguas' + (f ? '!' : '')), renderUep:() => ch.push('uep'), _uepAbaCarregar:() => ch.push('carga'), _regPintar:() => ch.push('pinta') });
       global._abaOn = t => t === 'uep';
       ['function _uepDepoisDe(', 'function _uepLendo(', 'function _regOn(', 'function _regAbrir('].forEach(f => eval.call(global, pega(f)));
