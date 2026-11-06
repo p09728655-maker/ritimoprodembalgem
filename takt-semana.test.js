@@ -33,7 +33,7 @@ global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatr
 global.TKS_DET = false;
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
- 'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
+ 'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
  'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
@@ -124,6 +124,36 @@ ok('REFERÊNCIA = 527 × 60 ÷ 2.761 = 11,45 s por UEP',
 ok('EXECUTADO = (3 × 527 + 240) min × 60 ÷ 8.647,2 UEP = 12,64 s por UEP, 90,6% da referência; hora extra à parte (586,7 + 523,5)',
    [r1(T.exec.uep), T.exec.min, Math.round(T.exec.s * 100) / 100, r1(T.exec.pct), T.exec.nFech, T.exec.minHoje, r1(T.exec.he), T.exec.fora],
    [8647.2, 1821, 12.64, 90.6, 3, 240, 1110.2, 0]);
+
+// v7.217.0 (PPCP: "sim, mostra takt por caixa"): por produto · volume programado, takt × UEP por caixa
+{ const L2 = (d, codigo, desc, cor, qtde, uepCx, fora) => ({ data:d + '/2026', dataNum:_cartNum(d + '/2026'), codigo, desc, cor, qtde, uepCx, uep:uepCx ? qtde * uepCx : null, saldo:qtde, foraEsteira:!!fora });
+  const S2 = { ok:true, de:'09/11/2026', ate:'15/11/2026', hoje:'06/11/2026', feriados:[], linhas:[
+    L2('09/11', '501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 200, 0.83), L2('09/11', '501094002', 'VOL 1/1 MESA CABECEIRA SLEEP', 'PRETO', 300, 0.83),
+    L2('10/11', '501060001', 'VOL 1/2 PENTEADEIRA CAMARIM MEL', 'BRANCO', 100, 1.73), L2('10/11', '501060003', 'VOL 1/2 PENTEADEIRA CAMARIM MEL', 'OFF WHITE', 100, 1.75),
+    L2('10/11', '501060002', 'VOL 2/2 PENTEADEIRA CAMARIM MEL', 'BRANCO', 200, 1.71),
+    L2('09/11', '501135001', 'VOL 1/1 PENT CAMARIM 1PT 2GAV DIAMANTE', 'OFF WHITE', 50, 2.48), L2('12/11', '501135001', 'VOL 1/1 PENT CAMARIM 1PT 2GAV DIAMANTE', 'OFF WHITE', 450, 2.48),
+    L2('11/11', '501999001', 'VOL 1/1 PRODUTO NOVO', 'BRANCO', 80, null),
+    L2('11/11', '501777001', 'VOL 1/1 FORA DA ESTEIRA', 'BRANCO', 999, 1, true), L2('16/11', '501094001', 'VOL 1/1 MESA CABECEIRA SLEEP', 'BRANCO', 777, 0.83)] };
+  const T2 = _taktMontar(S2, [], { num:20261106, meta:2761 }), R2 = _taktPorCaixa(T2), por = n => R2.find(g => g.rot.includes(n));
+  ok('takt por caixa: um por produto · volume (as cores juntas; fora da esteira e fora da semana de fora), na ordem do 1º dia, das caixas e do nome',
+     R2.map(g => [g.rot, g.cx, g.dias.map(n => n % 100)]),
+     [['501094 · MESA CABECEIRA SLEEP', 500, [9]], ['501135 · PENT CAMARIM 1PT 2GAV DIAMANTE', 500, [9, 12]], ['501060 · PENTEADEIRA CAMARIM MEL · VOL 1/2', 200, [10]],
+      ['501060 · PENTEADEIRA CAMARIM MEL · VOL 2/2', 200, [10]], ['501999 · PRODUTO NOVO', 80, [11]]]);   // empate de caixas: pelo nome
+  const dm = por('DIAMANTE'), mel = por('VOL 1/2');
+  ok('PELO TAKT = takt da semana × UEP por caixa; NA MÉDIA DA LINHA = referência × UEP por caixa; cx/h = 3.600 ÷ pelo takt',
+     [Math.round(dm.sTakt * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(dm.sRef * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(dm.cxhTakt), Math.round(3600 / dm.sTakt)],
+     [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(3600 / (T2.takt * 2.48)), Math.round(3600 / (T2.takt * 2.48))]);
+  ok('a UEP por caixa é a média das cores pesada pelas caixas (MEL 1/2: 1,73 e 1,75 → 1,74, diz que difere por cor); sem UEP → sem takt, nunca 0',
+     [mel.uepCx, mel.difCor, por('PRODUTO NOVO').uepCx, por('PRODUTO NOVO').sTakt, por('PRODUTO NOVO').cxSemUep, por('SLEEP').difCor], [1.74, true, null, null, 80, false]);
+  const HC = _taktPorCaixaHtml(R2, T2);
+  ok('o desenho: título com o takt da semana, uma linha por produto, PELO TAKT em s e cx/h, as cores que diferem, o sem UEP; a nota diz por que o takt do app (por volume) engana no pesado',
+     [HC.includes('<b>TAKT POR CAIXA</b>'), (HC.match(/<tr><td>/g) || []).length, HC.includes('<b>' + _tkS(dm.sTakt) + ' s</b><small>' + fmtN(Math.round(dm.cxhTakt)) + ' cx/h</small>'),
+      HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('o takt do app de cronoanálise é por volume')],
+     [true, 5, true, true, true, true, true]);
+  ok('nos DETALHES das duas semanas (a ESTA e a QUE VEM), logo depois da leitura; o desenho não faz conta',
+     [/_taktDetHtml\(kpis\+leitura\+_taktPorCaixaHtml\(_taktPorCaixa\(T\), T\)/.test(pega('function _taktHtml(')), /_taktDetHtml\(kpis\+leitura\+_taktPorCaixaHtml\(_taktPorCaixa\(T\), T\)/.test(pega('function _taktProxHtml(')),
+      /\.uepSoma|\*|\/ *g\./.test(pega('function _taktPorCaixaHtml(').replace(/\/\*[\s\S]*?\*\//g, '').replace(/3600|_tkS\([^)]*\)/g, '')), _taktPorCaixa(null), _taktPorCaixaHtml([], T2)],
+     [true, true, false, [], '']); }
 
 console.log('\n── por que não acompanhou: dia a dia nos dias fechados ──');
 const C = T.cas;

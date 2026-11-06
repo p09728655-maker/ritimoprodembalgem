@@ -6847,6 +6847,22 @@ feito e dá ar de verdade ao que sobrou.
       feriado dito (v7.214.1, PPCP: *"06 e 08/11 está considerando fim de
       semana"* — a conta já dava 0 h ao sábado/domingo; o rótulo seg–dom é
       que enganava).
+    - **TAKT POR CAIXA (v7.217.0)** — PPCP: *"onde fica registrado o takt da
+      semana ex: 15seg"* (o do app) → *"no painel onde vai aparecer"* → *"sim,
+      mostra takt por caixa"*. Nos DETALHES PARA O PCP da ESTA SEMANA e da
+      SEMANA QUE VEM, depois da leitura: uma linha por produto · volume
+      programado (`T.prods`, montado no `_taktMontar` junto com o dia: fora da
+      esteira e fora da janela de fora; sem `desc`, pelo código). Conta
+      `_taktPorCaixa(T)`: UEP/cx = Σ(caixas × UEP) ÷ caixas com UEP (avisa se
+      as cores diferem), PELO TAKT = `T.takt` × UEP/cx (+ cx/h), NA MÉDIA DA
+      LINHA = `T.ref` × UEP/cx; ordem 1º dia → caixas → nome. Desenho
+      `_taktPorCaixaHtml` (sem conta). ⚠ O takt do app (crono-analise) é OUTRA
+      conta: (44 h − setup do cadastro do grupo, 8 × 8 min/dia) ÷ VOLUMES da
+      semana (digitados à mão no app desde 06/11; a leitura automática da
+      planilha precisa do `GOOGLE_CONTA_SERVICO` no projeto do app) — todo
+      volume igual, então produto pesado sempre parece acima dele. Medido em
+      06/11: semana 09–13/11 = 10,9 s/UEP; DIAMANTE (2,48) 27,0 s/cx pelo takt
+      × 26,9 s no período da medição (em cima); 21 produtos na tabela.
     - **FALTA e SOBRA: palavra, nunca sinal (v7.214.2, PPCP: *"deixa regra
       clara sobre falta e sobra"*).** Falta = precisa − tem (não cabe), sobra
       = tem − precisa (cabe); a sobra não vira crédito, só abate atraso que já
