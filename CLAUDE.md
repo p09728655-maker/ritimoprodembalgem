@@ -6766,6 +6766,36 @@ feito e dá ar de verdade ao que sobrou.
       cursor) e o `_tkaAvaliar` tira o foco antes de desenhar.
     - Medido com a 042-26 colada (F:I e A:I): 16 produtos, 8.000 produtos =
       14.503,5 UEP → NÃO CABE, 2h13 — o mesmo do SEMANA QUE VEM.
+    - **SALDO DE HORAS (v7.214.0**, PPCP: *"avaliar as anteriores para ver
+      saldo de horas"* → *"cuidado para não duplicar"* → *"essa sem lote ainda
+      não está na programação do sheets"*): `_tkaCorrente(painel, itens, o)`
+      (pura), de HOJE ao último dia colado, DIA A DIA: demanda = o saldo dos
+      lotes do PAINEL (o vencido entra hoje) + as linhas NOVAS da colagem;
+      capacidade = o resto de hoje (`restMin`) e 527 por dia útil (sem HE).
+      **Sem duplicar**: linha colada com Nº LOTE SIST. (coluna E, 2 à esquerda
+      do produto — `_tkaLer` guarda `lote` sem o zero da frente; 025441 = lote
+      25441 do painel) que o painel tem → `dup`; sem o número → `dup` se o
+      painel tem o mesmo produto (`_tkaChave(_capNome(desc, cor))`) no mesmo
+      dia. Dia útil SEM programação (nem painel, nem colagem) → fora
+      (capacidade e demanda) e listado em `lacunas` (contar a folga dele
+      apagaria atraso). Atraso B = máx(0, B + demanda − capacidade): passa ao
+      dia seguinte, a folga não vira crédito (o teste prende); `Br` no ritmo
+      atual. Semanas seg–dom: precisa, tem, atraso no fim; `chegada` = o atraso
+      antes do 1º dia colado.
+    - **De onde vem o painel** (`_tkaPainel(fimN)`): TKS (esta semana), TKP (a
+      que vem), `TKF` (faixas da 3ª segunda ao último dia colado, de 14 em 14
+      dias — `_tkaFaixas`, `_taktLer` com de/ate) e o vencido de antes desta
+      segunda (`PROG_DETALHADA`, o `falta`). `_tkaPainelCarregar` lê o que
+      faltar NA FILA (`_uepDepoisDe(_uepLendo, …)`; `TKA_VOO` fica fora do
+      `_uepLendo`, senão esperaria a si mesmo).
+    - **🖨 AVALIAÇÃO DA PROGRAMAÇÃO** (`gerarRelatorioAvaliacao`, menu): a
+      frase, a colagem (veredito + dia a dia) e o saldo (`_tkaSaldoHtml`, sem a
+      frase repetida); `_TKS_DOC_SKIN` + `_TKA_DOC_SKIN`. Uma folha.
+    - Medido em 06/11 ~14:40 com a 043 colada (A:I): 12 de 17 linhas já no
+      painel (16–18/11), 5 novas (19 e 23/11); a 043 sozinha CABE (sobram
+      1h15), a linha chega em 16/11 com 14h25 de atraso e termina 23/11 com
+      13h10 (ritmo atual 22h21). Com só a 044 colada: 19/11, 23/11 e 24/11
+      (lote 216/26 sem quantidade) são lacunas.
   - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
     (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
     8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;
@@ -6813,8 +6843,9 @@ feito e dá ar de verdade ao que sobrou.
     na planilha) + a troca registrada em AB27:AF27 (lote 203/26, PREV EMB
     04/11: 2.057 → 2.310). Os outros 120 produtos batem com o PRODUTO_CODIGO de
     06/11; 14 sem código na planilha (estimativa de 25/09); EXPOSITOR PATRIMAR
-    (2,67) × EXPOSITOR PATRIMAR III do cadastro (3,47 EST) **não mexido** — a
-    confirmar com o PPCP.
+    (2,67) × EXPOSITOR PATRIMAR III do cadastro (3,47 EST) **não mexido** —
+    PPCP, 06/11/2026: *"não importa esses produtos"* (nem ele nem os 14 sem
+    código); ficam como estão na planilha.
   - **Teste CABE/PASSA** (042–049): parâmetros `DADOS!Y2` = 2.761 (média da
     linha sem hora extra) e `Z2` = 527; por lote X:Z (% da média, horas de
     linha, CABE / PASSA +h) com formato condicional; nas 043–049 o bloco do
