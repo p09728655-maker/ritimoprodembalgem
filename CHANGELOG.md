@@ -11,6 +11,24 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.212.0 — 06/11/2026 · TAKT: "média da linha sem hora extra" e a falta em pontos
+
+- PPCP: *"troca [referência] por média da linha entregue sem hora extra"*. Na
+  tela (a parte de cima) e na folha da diretoria, o 2.761 passa a ser dito como
+  **a média que a linha entrega sem hora extra** (1 dia de linha = 8h47 = 2.761
+  UEP); o ritmo atual sai em **% dessa média**. Nos DETALHES PARA O PCP e na
+  RÉGUAS continua *referência de UEP* — a definição da folha liga os dois nomes.
+- PPCP: *"valor da UEP em pontos"* → **a falta também em pontos**, ao lado das
+  horas: *"faltam 2h13 de linha ≈ X pontos"*, no ritmo atual e na soma com o que
+  não fechar desta semana. ⚠ **A UEP não tem valor fixo em pontos**: depende do
+  produto (em 06/11, ~46 pontos por UEP no PAINEL RIPADO e ~90 na PENTEADEIRA
+  MEL). A conta usa os pontos por UEP **dos lotes da própria semana** (o
+  cadastro de pontos de cada código) — por isso o "≈", arredondado à centena. A
+  folha diz quantos pontos vale a UEP em cada semana.
+- Sem o cadastro de pontos lido, a tela mostra só as horas (nunca 0 pontos).
+
+---
+
 ## v7.211.0 — 06/11/2026 · TAKT direto: cabe ou não cabe, em horas de linha
 
 - PPCP: *"impressão deixar nível direto para qualquer um olhar e entender se
