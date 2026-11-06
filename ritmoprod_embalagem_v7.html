@@ -3956,7 +3956,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.214.0';
+const APP_VER   = '7.214.1';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10614,13 +10614,18 @@ function _tkaCorrente(painel, itens, o){
     if(n===ini){ chegada=B; chegadaR=Br; }
     B=Math.max(0, B+dem-cap); if(r) Br=Math.max(0, Br+dem-cap*r);
     const seg=new Date(d); seg.setDate(seg.getDate()-((dow+6)%7));
-    if(!w || w.seg!==num(seg)){ w={ seg:num(seg), de:n, ate:n, precisa:0, tem:0, pai:false, col:false, lacunas:[] }; semanas.push(w); }
-    w.ate=n; w.precisa+=dem; w.tem+=cap; w.pai=w.pai || x.pai; w.col=w.col || x.col; if(vazio) w.lacunas.push(n);
+    if(!w || w.seg!==num(seg)){ w={ seg:num(seg), de:null, ate:null, precisa:0, tem:0, pai:false, col:false, lacunas:[], feriados:[], hoje:false }; semanas.push(w); }
+    // de/ate = os dias que CONTAM (úteis ou com programação): sábado e domingo sem lote não
+    // entram no rótulo (PPCP, com o print: "06 e 08/11 está considerando fim de semana")
+    if(util || dem>0){ if(w.de==null) w.de=n; w.ate=n; }
+    if(fer[n]!=null && dow>=1 && dow<=5) w.feriados.push(n);
+    if(n===hojeN) w.hoje=true;
+    w.precisa+=dem; w.tem+=cap; w.pai=w.pai || x.pai; w.col=w.col || x.col; if(vazio) w.lacunas.push(n);
     w.atraso=B; w.atrasoR=r ? Br : null;
     dias.push({ n, dow, util, feriado:fer[n]||null, uep:x.uep, pai:x.pai, col:x.col, vazio, cap, dem, atraso:B });
   }
   semanas.forEach(s=>{ s.precisa=Math.round(s.precisa); s.tem=Math.round(s.tem); s.atraso=Math.round(s.atraso); if(s.atrasoR!=null) s.atrasoR=Math.round(s.atrasoR); });
-  return { dias, semanas, dup, novos, ini, fim, chegada:Math.round(chegada||0), chegadaR:r ? Math.round(chegadaR||0) : null,
+  return { dias, semanas:semanas.filter(s=>s.de!=null), dup, novos, ini, fim, chegada:Math.round(chegada||0), chegadaR:r ? Math.round(chegadaR||0) : null,
            atraso:Math.round(B), atrasoR:r ? Math.round(Br) : null, lacunas:dias.filter(d=>d.vazio).map(d=>d.n), ritPct:r ? r*100 : null };
 }
 // As leituras do painel que a corrente precisa além desta semana (TKS) e da que
@@ -10682,7 +10687,9 @@ function _tkaSaldoHtml(C, o){
     +(C.atrasoR!=null ? `; no ritmo atual (${fmtP(C.ritPct)} da média), <b>${hm(C.atrasoR)}</b>` : '')+'.';
   const lin=C.semanas.map(s=>{
     const og=s.pai && s.col ? 'painel + colagem' : s.col ? 'colagem' : s.pai ? 'painel' : '—';
-    return `<tr><td>${dd(s.de)}${s.ate!==s.de ? '–'+dd(s.ate) : ''}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
+    const rot=`${dd(s.de)}${s.ate!==s.de ? '–'+dd(s.ate) : ''}`+(s.hoje && s.de===C.dias[0].n ? ' (hoje: o que resta)' : '')
+      +(s.feriados.length ? ` <span class="mono">(${s.feriados.map(n=>dd(n)+' feriado').join(', ')})</span>` : '');
+    return `<tr><td>${rot}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
       +`<td class="n">${s.tem-s.precisa>=0 ? '+' : '−'}${hm(Math.abs(s.tem-s.precisa))}</td><td class="n"><b>${sx(s.atraso)}</b></td>${C.atrasoR!=null ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`
       +(s.lacunas.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">sem programação no painel nem na colagem: ${s.lacunas.map(dd).join(', ')} — fora da conta</td></tr>` : '');
   }).join('');
@@ -10693,7 +10700,7 @@ function _tkaSaldoHtml(C, o){
   return `<div class="uep-sec"><b>SALDO DE HORAS</b> de hoje até ${dd(C.fim)} · a programação do painel + a colada, sem duplicar</div>`
     +`<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">${fr}</div>`
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">SALDO DA SEMANA</th><th class="n">ATRASO NO FIM</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). O atraso passa para o dia seguinte; a folga de um dia só absorve o atraso que já existe.${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
+    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). O atraso passa para o dia seguinte; a folga de um dia só absorve o atraso que já existe.${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
 }
 // O DESENHO (sem conta): a caixa de colar e, embaixo, o veredito, o dia a dia e o
 // que ficou de fora.

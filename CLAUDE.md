@@ -6781,7 +6781,11 @@ feito e dá ar de verdade ao que sobrou.
       apagaria atraso). Atraso B = máx(0, B + demanda − capacidade): passa ao
       dia seguinte, a folga não vira crédito (o teste prende); `Br` no ritmo
       atual. Semanas seg–dom: precisa, tem, atraso no fim; `chegada` = o atraso
-      antes do 1º dia colado.
+      antes do 1º dia colado. ⚠ O rótulo da semana (`de`/`ate`) são os dias
+      que CONTAM (úteis ou com lote), o 1º marcado *(hoje: o que resta)* e o
+      feriado dito (v7.214.1, PPCP: *"06 e 08/11 está considerando fim de
+      semana"* — a conta já dava 0 h ao sábado/domingo; o rótulo seg–dom é
+      que enganava).
     - **De onde vem o painel** (`_tkaPainel(fimN)`): TKS (esta semana), TKP (a
       que vem), `TKF` (faixas da 3ª segunda ao último dia colado, de 14 em 14
       dias — `_tkaFaixas`, `_taktLer` com de/ate) e o vencido de antes desta
