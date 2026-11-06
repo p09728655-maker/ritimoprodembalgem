@@ -11,6 +11,35 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.210.0 — 06/11/2026 · TAKT da semana que vem, simulação e 🖨 para a diretoria
+
+- PPCP: *"quero ver da semana que vem"*. A sub-aba **TAKT DA SEMANA** ganha a
+  escolha **ESTA SEMANA · SEMANA QUE VEM**. A semana que vem é planejamento
+  (nada foi feito ainda): o takt que ela pede, **A SEMANA × A JORNADA** (em
+  horas de linha — o mesmo *"semana que vem: faltam 2h13"* do PRÓXIMOS DIAS),
+  os **DIAS ACIMA DA REFERÊNCIA** e quanto redistribuir os lotes dentro da
+  semana resolve. O botão da sub-aba passa a dizer a semana escolhida.
+- PPCP: *"simulação e impressão para diretoria ver que não cabe"*.
+  - **SIMULAÇÃO** (na semana que vem): o saldo da semana em três ritmos — na
+    referência, no ritmo que a linha fez nesta semana e na média do PERÍODO.
+    Para cada um: quanto falta, quantas horas de hora extra nesse ritmo, ou
+    quantas caixas re-datar. Medido em 06/11: na referência faltam **2h13**; no
+    ritmo desta semana (90,6%), **6h59**; na média do período, **4h06**.
+  - **🖨 TAKT DA SEMANA** no menu 🖨 IMPRIMIR ▾ da ⚖ UEP: **uma folha** A4
+    deitada com a conclusão no topo, esta semana e a semana que vem lado a lado
+    (os números, o porquê, a simulação, os gráficos) e as definições.
+  - ⚠ **A folha mostra as duas causas**, não só a carga: esta semana a
+    programação pediu 116% da referência **e** a linha rodou a 91% dela (73% do
+    que não saiu foi carga, 27% ritmo). Mostrar só a carga seria meia verdade.
+  - A referência sai no papel como ela é: *em avaliação — ainda não é a meta
+    oficial da embalagem*.
+- PPCP, com print a 1.920 px: *"pode aumentar um pouco"*. Os botões das
+  sub-abas da ⚖ UEP voltam a ocupar a largura toda (na v7.209.0 sobravam
+  colunas vazias à direita e o texto saía cortado) e a letra ficou um pouco maior.
+- Nada muda no `.gs` (a mesma leitura v5.59, com as datas da semana que vem).
+
+---
+
 ## v7.209.0 — 06/11/2026 · TAKT DA SEMANA (6ª sub-aba da ⚖ UEP)
 
 - PPCP: *"colocar takt da semana e comparar com o takt que está sendo

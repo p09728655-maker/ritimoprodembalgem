@@ -110,8 +110,10 @@ via Google Apps Script (JSONP).
   três números em s por UEP, o porquê dia a dia (e por que não a semana
   somada), a falta e o que cabe, o AGORA em caixas (hora só do produto e hora
   com outra cor), o sábado trabalhado, a espera entre leituras, os estados do
-  botão, o desenho sem conta e a ligação com a
-  aba: `node takt-semana.test.js`.
+  botão, o desenho sem conta e a ligação com a aba; e (v7.210.0) a SEMANA QUE
+  VEM com a programação real de 09–15/11 (o mesmo 2h13 do PRÓXIMOS DIAS, a
+  redistribuição, o adiantado), a SIMULAÇÃO nos três ritmos e a 🖨 para a
+  diretoria (as duas causas na conclusão; 8 de 8 mutações pegas): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6482,9 +6484,12 @@ feito e dá ar de verdade ao que sobrou.
   **PRÓXIMOS DIAS** (`prox`: `#ger-prox`) · **POR PRODUTO** (`prod`: bloco 7)
   · RÉGUAS (v7.207.0) · **TAKT DA SEMANA** (`takt`, v7.209.0 — ver *TAKT DA
   SEMANA*). `UEP_SUBS`, `UEP_SUB` (começa no HOJE, só na memória da sessão).
-  A faixa da ⚖ UEP é GRADE de colunas iguais (v7.209.0, `minmax(180px,1fr)`):
-  no flex, a 6ª que descia para a 2ª linha (~1.100 px) esticava a linha
-  inteira; estreitar os botões para caberem seis cortava o número deles.
+  A faixa da ⚖ UEP é GRADE de colunas iguais (v7.209.0): no flex, a 6ª que
+  descia para a 2ª linha (~1.100 px) esticava a linha inteira; estreitar os
+  botões para caberem seis cortava o número deles. ⚠ **auto-FIT, não
+  auto-fill** (v7.210.0, PPCP com print a 1.920 px: *"pode aumentar um
+  pouco"*): o auto-fill deixava colunas vazias à direita e os botões estreitos;
+  `minmax(200px,1fr)` e a letra um pouco maior (12 / 14,5 px).
   - ⚠ **`_uepSub(k)` REDESENHA a aba** (`renderUep`, sem leitura): os gráficos
     são desenhados na largura do painel ACESO, e escondido ele não tem largura
     (o `_svgLargura` cairia nos 760). Depois do `innerHTML`, o hora a hora e o
@@ -6663,6 +6668,37 @@ feito e dá ar de verdade ao que sobrou.
     rápida e era a mais lenta. A cor é a do HORA A HORA (`h.cls`).
   - **Dia não útil**: lote em sábado/domingo/feriado entra na UEP programada,
     não nos dias úteis (nota). Produção nele vai para o *+ X fora da jornada*.
+  - **SEMANA QUE VEM (v7.210.0**, PPCP: *"quero ver da semana que vem"*):
+    escolha `TKS_SEM` (0/1, só na sessão; `_taktSemSet`, `_taktSemBotoes`) no
+    título do painel. A MESMA leitura (`_taktLer(qs)`, usada pelas duas) com
+    `&de=&ate=` da segunda seguinte (`_taktProxSemana`): `TKP`, `TKP_TS`,
+    `TKP_VOO` (no `_uepLendo`), `TKP_FALHA`, `TKP_ERRO`, `_taktProxCarregar`.
+    Só lê quando escolhida, pela fila (`_uepDepoisDe(_uepLendo, …)`); renova
+    ao virar a semana (`TKP.de` ≠ a segunda seguinte). O botão da sub-aba diz a
+    semana escolhida (*semana que vem: pede X%*).
+    - **Conta** `_taktProxMontar(T)`: pelo SALDO de cada dia útil
+      (`d.saldoUep`; `d.baixaUep` = o que já saiu do lote — num dia que vem,
+      adiantado). passa = Σ saldo − dias úteis × META UEP; em minutos
+      `Math.round(UEP × 527 ÷ META) − 527 × dias` — **a MESMA conta do
+      PRÓXIMOS DIAS** (medido: 2h13 nas duas telas). acima/folga por dia;
+      redistribuir absorve mín(acima, folga); lote de fim de semana à parte.
+    - **Desenho** `_taktProxHtml` (TAKT · REFERÊNCIA · A SEMANA × A JORNADA ·
+      DIAS ACIMA DA REFERÊNCIA, a frase, a SIMULAÇÃO, o DIA A DIA pelo saldo:
+      `_taktSvg(T, w, { fut:true })`, âmbar acima da referência, número dentro
+      da barra quando encostaria nas linhas).
+  - **SIMULAÇÃO (v7.210.0**, PPCP: *"simulação e impressão para diretoria ver
+    que não cabe"*): `_taktCenarios(meta, T0, per)` → referência · ritmo desta
+    semana (`exec.uep ÷ exec.min × 527`) · média do PERÍODO (`D.P.res.media`,
+    o número do botão PERÍODO); `_taktSimular(P, nUteis, cen)` → cabem, falta,
+    min (horas de HE NAQUELE ritmo), cx (pelo peso médio do saldo). Medido em
+    06/11 (09–13/11, 14.503,5 UEP): 2h13 · 6h59 · 4h06.
+  - **🖨 TAKT DA SEMANA** (`gerarRelatorioTakt`, menu 🖨 IMPRIMIR ▾ — uma
+    impressão, um lugar): abre no clique, lê o que faltar, monta com as MESMAS
+    contas (`_taktHoje` é o hoje da tela e do papel) e desenha
+    `_taktDocHtml` + `_TKS_DOC_SKIN`. **Uma folha A4 deitada** (medido no PDF
+    do Chromium: com gráficos de 190 e o título longo transbordava para a 2ª;
+    `TKS_DOC_SVG_H` = 165). ⚠ A conclusão mostra as DUAS causas (carga e
+    ritmo) e a referência como *em avaliação* (`UEP_REF_STATUS`).
   - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
     (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
     8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;

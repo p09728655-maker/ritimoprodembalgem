@@ -23,16 +23,18 @@ function pega(assinatura) {
   throw new Error('função não fecha: ' + assinatura);
 }
 function pegaConst(nome) {
-  const m = JS.match(new RegExp('const ' + nome + '\s*=[^\n]*'));
+  const m = JS.match(new RegExp('const ' + nome + '\\s*=[^\\n]*'));
   if (!m) throw new Error('não encontrei a const ' + nome);
   return m[0];
 }
 global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
+global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatrimar'])[1].toUpperCase();
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
- 'function _uepSubTakt(', 'function _tkHM(', 'function _taktHtml(', 'function _taktSvg('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+ 'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
+ 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml('].forEach(f => eval.call(global, pega(f)));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -235,17 +237,17 @@ ok('o desenho não faz conta (tudo vem da montagem) e a conta não lê a tela ne
    [false, false]);
 
 console.log('\n── a ligação com a aba ──');
-const R = pega('function renderUep('), CAR = pega('async function _uepAbaCarregar('), LD = pega('function _taktCarregar(');
+const R = pega('function renderUep('), CAR = pega('async function _uepAbaCarregar('), LD = pega('function _taktCarregar('), LER = pega('async function _taktLer(');
 ok('a 6ª sub-aba: botão, chave, painel no renderUep e o número pintado com os outros',
    [/data-sub="takt"[^>]*onclick="_uepSub\('takt'\)"><b>TAKT DA SEMANA<\/b><span id="uep-sb-takt">/.test(html), /const UEP_SUBS = \[[^\]]*'takt'\];/.test(JS),
     R.includes("+pn('takt', bT)"), /\['hoje', 'periodo', 'prod', 'takt'\]\.forEach/.test(pega('function _uepSubPintar(')), /T, taktEst:/.test(R)],
    [true, true, true, true, true]);
 ok('a leitura: action=getProgramacaoSemana, 3 tentativas em sequência, voo compartilhado, a última da fila da aba e na fila da RÉGUAS',
-   [LD.includes("action=getProgramacaoSemana"), /for\(let t=1; t<=3; t\+\+\)/.test(LD), /if\(TKS_VOO\) return TKS_VOO;/.test(LD),
-    CAR.indexOf('await _taktCarregar()') > CAR.indexOf('await _uepPadCarregar()'), /TKS_VOO \|\| _pontosVoo/.test(pega('function _uepLendo('))],
+   [LER.includes("action=getProgramacaoSemana"), /for\(let t=1; t<=3; t\+\+\)/.test(LER), /if\(TKS_VOO\) return TKS_VOO;/.test(LD) && /TKS_VOO=_taktLer\(''\)/.test(LD),
+    CAR.indexOf('await _taktCarregar()') > CAR.indexOf('await _uepPadCarregar()'), /TKS_VOO \|\| TKP_VOO \|\| _pontosVoo/.test(pega('function _uepLendo('))],
    [true, true, true, true, true]);
 ok('o .gs antigo (responde sem linhas) é o único caso que manda re-deployar; renova de outro dia sempre, velha só com a sub-aba aberta',
-   [/TKS_FALHA='sem-endpoint'; return false;/.test(LD), R.includes('cole o ritmoprod_appscript.gs v5.59 e re-deploye'),
+   [/return \{ falha:'sem-endpoint', erro:'' \};/.test(LER), _taktEstadoHtml('sem-endpoint', '', 'x()', '').includes('cole o ritmoprod_appscript.gs v5.59 e re-deploye'),
     R.includes("((TKS && !tksDia && (!TKS_FALHA || tksVelha)) || (UEP_SUB==='takt' && tksVelha))"), /tksVelha=Date\.now\(\)-TKS_TS>_taktEspera\(\)/.test(R)],
    [true, true, true, true]);
 // a espera: 1 min na falha de leitura; o cache com a leitura boa e com o .gs antigo
@@ -260,6 +262,144 @@ ok('sem o histórico não monta (os dias fechados sairiam vazios): espera, ou di
    [/else if\(!UEP_HIST\)\{/.test(R), R.indexOf('else if(!UEP_HIST){') < R.indexOf('T=_taktMontar(')], [true, true]);
 ok('o .gs tem a leitura (v5.59) que a tela pede',
    /function getProgramacaoSemana\(p\)/.test(fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8')), true);
+
+console.log('\n── a semana que vem (v7.210.0): o planejamento ──');
+// [data, código, qtde, uepCx, saldo] — a programação de 09–15/11 lida em 06/11/2026 (nenhum lote adiantado)
+const LINP = [
+  ["09/11", "501094001", 200, 0.83, 200],
+  ["09/11", "501094002", 400, 0.83, 400],
+  ["09/11", "501094003", 400, 0.83, 400],
+  ["09/11", "501094004", 1000, 0.83, 1000],
+  ["09/11", "501094005", 200, 0.83, 200],
+  ["09/11", "501106001", 85, 1.85, 85],
+  ["09/11", "501106002", 170, 1.85, 170],
+  ["09/11", "501106011", 45, 1.85, 45],
+  ["09/11", "501083122", 20, 3.15, 20],
+  ["09/11", "501083124", 280, 3.15, 280],
+  ["10/11", "501097001", 100, 1.42, 100],
+  ["10/11", "501097002", 100, 1.42, 100],
+  ["10/11", "501097003", 100, 1.42, 100],
+  ["10/11", "501097004", 500, 1.42, 500],
+  ["10/11", "501097005", 50, 1.42, 50],
+  ["10/11", "501071004", 100, 2.92, 100],
+  ["10/11", "501071005", 100, 2.96, 100],
+  ["10/11", "501071006", 100, 2.19, 100],
+  ["10/11", "501154001", 115, 1.77, 115],
+  ["10/11", "501154002", 40, 1.77, 40],
+  ["10/11", "501154003", 45, 1.77, 45],
+  ["10/11", "501134001", 100, 1.9, 100],
+  ["10/11", "501134002", 350, 1.9, 350],
+  ["11/11", "501085006", 40, 2.33, 40],
+  ["11/11", "501085079", 25, 2.33, 25],
+  ["11/11", "501085118", 135, 2.33, 135],
+  ["11/11", "501151001", 110, 3.01, 110],
+  ["11/11", "501151002", 90, 3.01, 90],
+  ["11/11", "501060001", 140, 1.73, 140],
+  ["11/11", "501060002", 140, 1.71, 140],
+  ["11/11", "501060003", 230, 1.73, 230],
+  ["11/11", "501060004", 230, 1.71, 230],
+  ["11/11", "501060005", 30, 1.73, 30],
+  ["11/11", "501060006", 30, 1.71, 30],
+  ["12/11", "501126001", 240, 1.67, 240],
+  ["12/11", "501126002", 10, 1.67, 10],
+  ["12/11", "501141004", 140, 1.84, 140],
+  ["12/11", "501141005", 430, 1.84, 430],
+  ["12/11", "501141006", 30, 1.84, 30],
+  ["12/11", "501061001", 100, 1.85, 100],
+  ["12/11", "501061002", 100, 2.2, 100],
+  ["12/11", "501061003", 150, 1.85, 150],
+  ["12/11", "501061004", 150, 2.2, 150],
+  ["12/11", "501061005", 50, 1.85, 50],
+  ["12/11", "501061006", 50, 2.2, 50],
+  ["13/11", "501142001", 25, 0.95, 25],
+  ["13/11", "501142002", 635, 0.95, 635],
+  ["13/11", "501142003", 50, 0.95, 50],
+  ["13/11", "501142004", 390, 0.95, 390],
+  ["13/11", "501086116", 35, 3.87, 35],
+  ["13/11", "501086117", 35, 2.99, 35],
+  ["13/11", "501086118", 115, 3.87, 115],
+  ["13/11", "501086119", 115, 2.99, 115],
+  ["13/11", "501117001", 60, 1.75, 60],
+  ["13/11", "501117002", 30, 1.75, 30],
+  ["13/11", "501117003", 20, 1.75, 20],
+  ["13/11", "501117004", 240, 1.75, 240],
+  ["13/11", "501117005", 25, 1.75, 25],
+  ["13/11", "501117006", 25, 1.75, 25]
+];
+const SP = { ok:true, de:'09/11/2026', ate:'15/11/2026', hoje:'06/11/2026', feriados:[],
+  linhas: LINP.map(([d, codigo, qtde, uepCx, saldo]) => ({ data:d + '/2026', dataNum:_cartNum(d + '/2026'), codigo, qtde, uepCx,
+    uep:uepCx ? Math.round(qtde * uepCx * 10) / 10 : null, saldo, aba:'aberta', encerrada:false, foraEsteira:false })) };
+ok('a semana que vem: da segunda seguinte ao domingo — de sexta, de domingo (a semana vira na segunda) e na virada do mês',
+   [_taktProxSemana('06/11/2026'), _taktProxSemana('08/11/2026'), _taktProxSemana('09/11/2026'), _taktProxSemana('26/11/2026')],
+   [{ de:'09/11/2026', ate:'15/11/2026' }, { de:'09/11/2026', ate:'15/11/2026' }, { de:'16/11/2026', ate:'22/11/2026' }, { de:'30/11/2026', ate:'06/12/2026' }]);
+const T1 = _taktMontar(SP, [], { num:20261106, meta:2761 }), P1 = _taktProxMontar(T1);
+ok('09–13/11: 9.050 cx = 14.504,2 UEP em 5 dias úteis → takt 10,90 s por UEP, 2.900,8/dia, 105,1% da referência; nada feito ainda',
+   [T1.progCx, r1(T1.progUep), T1.nUteis, Math.round(T1.takt * 100) / 100, r1(T1.porDia), r1(T1.pede), T1.exec.s, T1.cas.n],
+   [9050, 14504.2, 5, 10.9, 2900.8, 105.1, null, 0]);
+ok('a semana × a jornada pelo saldo: pedem 2h48 de linha (14.503,5 × 527 ÷ 2.761) para 43h55 — faltam 2h13, o MESMO "semana que vem: faltam 2h13" do PRÓXIMOS DIAS',
+   [r1(P1.uep), r1(P1.cap), r1(P1.passa), Math.round(P1.minPede), P1.minJorn, P1.saldoMin, _fmtHM(P1.saldoMin)],
+   [14503.5, 13805, 698.5, 2768, 2635, 133, _fmtHM(133)]);
+ok('dia a dia: 09/11 (120%), 10/11 (117%) e 13/11 (100,5%) passam da referência (1.040); 11/11 e 12/11 têm folga (341,5); redistribuir absorve 341,5 e 698,5 ficam sem lugar',
+   [P1.acima.map(d => [d.data.slice(0, 5), r1(d.pct)]), P1.folga.map(d => [d.data.slice(0, 5), r1(-d.exc)]), r1(P1.exc), r1(P1.sobra), r1(P1.redist), r1(P1.exc - P1.redist)],
+   [[['09/11', 120.5], ['10/11', 116.7], ['13/11', 100.5]], [['11/11', 317], ['12/11', 24.5]], 1040, 341.5, 341.5, 698.5]);
+{ const L = SP.linhas.map(l => l.data === '09/11/2026' && l.codigo === SP.linhas[0].codigo ? Object.assign({}, l, { saldo:0 }) : l);
+  L.push({ data:'14/11/2026', dataNum:20261114, codigo:'501001001', qtde:100, uepCx:2, uep:200, saldo:100, aba:'aberta', foraEsteira:false });
+  const Px = _taktProxMontar(_taktMontar(Object.assign({}, SP, { linhas:L }), [], { num:20261106, meta:2761 }));
+  const a0 = SP.linhas[0].qtde * SP.linhas[0].uepCx;
+  ok('lote já adiantado sai da conta (o saldo manda, e a nota diz quanto); sábado com lote fica à parte, como hora extra',
+     [r1(Px.adiant), r1(P1.uep - Px.uep), P1.adiant, Px.fds.map(d => [d.data.slice(0, 5), d.uep])], [r1(a0), r1(a0), 0, [['14/11', 200]]]); }
+const HP = _taktProxHtml(T1, P1, { largura:1200, botoes:_taktSemBotoes(1) });
+ok('o desenho da semana que vem: takt, referência, 2h13 além da jornada (vermelho), 3 de 5 dias acima, a frase com a redistribuição; sem executado e sem porquê',
+   [['10,9<small>s por UEP</small>', '2h13<small> além da jornada</small>', '3<small> de 5</small>', '<b>5,1% acima</b>', 'passam <b>699 UEP</b> da jornada, <b>2h13 de linha</b>',
+     'os dias com folga (11/11 e 12/11) absorvem <b>341</b> e <b>699</b> continuam sem lugar na jornada.', 'onclick="_taktProxCarregar(true)"',
+     'O PRÓXIMOS DIAS mostra esta semana dia a dia'].filter(t => !HP.includes(_fmtHM(133) === '2h13' ? t : t)),
+    /<div class="kpi-card red"[^>]*><div class="kpi-lbl">A SEMANA × A JORNADA/.test(HP), /EXECUTADO|POR QUE NÃO ACOMPANHOU|AGORA ·/.test(HP)],
+   [[], true, false]);
+{ const SV1 = _taktSvg(T1, 1200, { fut:true });
+  ok('o gráfico da semana que vem: o saldo de cada dia com o % da referência, âmbar acima dela, sem barra de feito',
+     [(SV1.match(/stroke="var\(--warn\)" stroke-width="1.5" stroke-dasharray="5 4"/g) || []).length, (SV1.match(/stroke-dasharray="5 4"/g) || []).length,
+      SV1.includes('3.326 · 120%'), SV1.includes('var(--tks-feito)')], [3, 5, true, false]); }
+ok('a escolha da semana e o botão: o painel e o número são da semana escolhida',
+   [_taktSemBotoes(0).includes('class="on" onclick="_taktSemSet(0)"'), _taktSemBotoes(1).includes('class="on" onclick="_taktSemSet(1)"'),
+    _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===1 \? 'semana que vem' : ''/.test(R), /T:TKS_SEM===1 \? T1 : T/.test(R)],
+   [true, true, { txt:'semana que vem: pede ' + fmtP(T1.pede), cls:'warn' }, true, true]);
+{ const LP = pega('function _taktProxCarregar('), SS = pega('function _taktSemSet(');
+  ok('a leitura da semana que vem: a MESMA (_taktLer) com de/ate, só quando escolhida e na fila (uma leitura por vez); renova ao virar a semana',
+     [/_taktLer\('&de='\+encodeURIComponent\(w\.de\)\+'&ate='\+encodeURIComponent\(w\.ate\)\)/.test(LP), /TKP\.de===w\.de/.test(LP),
+      /_uepDepoisDe\(_uepLendo, /.test(SS), /tkpOk=!!\(TKP && TKP\.de===w\.de\)/.test(R), /!_uepLendo\(\) && Date\.now\(\)-TKP_TS>/.test(R)],
+     [true, true, true, true, true]); }
+console.log('\n── simulação e 🖨 para a diretoria (v7.210.0) ──');
+const CEN = _taktCenarios(2761, T, { n:10, media:2653 }), SIM = _taktSimular(P1, T1.nUteis, CEN);
+ok('três cenários: a referência, o ritmo desta semana (8.647,2 UEP em 1.821 min = 2.502,5/dia, o EXECUTADO) e a média do PERÍODO',
+   CEN.map(c => [c.id, r1(c.uepDia)]), [['ref', 2761], ['sem', 2502.5], ['per', 2653]]);
+ok('a semana que vem (14.503,5 UEP de saldo, 9.050 cx) em cada ritmo: na referência faltam 698,5 UEP = 2h13 (o do PRÓXIMOS DIAS) ≈ 436 cx; no ritmo desta semana 1.990,9 = 6h59; na média do período 1.238,5 = 4h06',
+   SIM.map(c => [c.id, Math.round(c.cap), r1(c.falta), c.min, _fmtHM(c.min), Math.round(c.cx)]),
+   [['ref', 13805, 698.5, 133, _fmtHM(133), 436], ['sem', 12513, 1990.9, 419, _fmtHM(419), 1242], ['per', 13265, 1238.5, 246, _fmtHM(246), 773]]);
+ok('sem o executado nem o período, só a referência; semana que cabe = falta negativa (sobra), nunca hora extra',
+   [_taktCenarios(2761, null, null).map(c => c.id), _taktCenarios(2761, Object.assign({}, T, { exec:{ uep:0, min:0 } }), { n:0, media:null }).length,
+    (c => [c.falta < 0, c.min < 0])(_taktSimular(Object.assign({}, P1, { uep:10000 }), 5, [{ id:'ref', uepDia:2761 }])[0])],
+   [['ref'], 1, [true, true]]);
+{ const HS = _taktProxHtml(T1, P1, { largura:1200, sim:SIM });
+  ok('na tela: o quadro da simulação (um por cenário, horas de hora extra e caixas a re-datar) e a frase com o ritmo desta semana',
+     [HS.includes('<b>SIMULAÇÃO</b>'), (HS.match(/de hora extra nesse ritmo/g) || []).length, HS.includes('No ritmo desta semana (90,6% da referência) faltariam <b>' + _fmtHM(419) + '</b>'),
+      HS.includes('ou re-datar 1.991 UEP (≈ 1.242 cx)')], [true, 3, true, true]); }
+{ const DOC = _taktDocHtml({ T0:T, T1, P1, sim:SIM }, { data:'06/11/2026', hora:'11:58' });
+  ok('🖨 a conclusão no topo diz as DUAS causas (carga e ritmo), não só a carga, e o que fecha a semana que vem',
+     ['A <b>semana que vem</b> (09/11 a 13/11) pede <b>105,1% da referência</b>', 'mesmo com a linha na referência, <b>faltam 2h13 de linha</b> (699 UEP)',
+      'no ritmo desta semana, <b>faltam ' + _fmtHM(419) + '</b>', '<b>73% foi carga acima da referência</b> (programação) e <b>27% ritmo</b> (produção)',
+      'Para fechar a semana que vem: hora extra, re-datar lotes, ou as duas.'].filter(x => !DOC.includes(x)), []);
+  ok('🖨 as duas semanas lado a lado, a simulação em tabela, os dois gráficos no tamanho do papel e a referência dita como "em avaliação"',
+     [DOC.includes('<div class="td-cols">'), DOC.includes('>ESTA SEMANA<small>'), DOC.includes('>SEMANA QUE VEM<small>'), (DOC.match(/<tr><td>N[ao]/g) || []).length,
+      (DOC.match(new RegExp('viewBox="0 0 ' + TKS_DOC_SVG_W + ' ' + TKS_DOC_SVG_H + '"', 'g')) || []).length, DOC.includes(UEP_REF_STATUS), /AGORA|ÚLTIMA HORA/.test(DOC)],
+     [true, true, true, 3, 2, true, false]); }
+{ const G0 = pega('async function gerarRelatorioTakt(');
+  ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem) e monta com as MESMAS contas da tela; no menu 🖨 IMPRIMIR ▾',
+     [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\)\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0), /_taktSimular\(/.test(G0),
+      /onclick="_uepImpFecha\(\);gerarRelatorioTakt\(\)"/.test(html), /T=_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\)\)/.test(R)],
+     [true, true, true, true, true, true]); }
+ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
+   [/#sec-uep \.ucv-sub\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(200px,1fr\)\)\}/.test(html), /auto-fill,minmax\(180px/.test(html),
+    /#sec-uep \.ucv-sb span\{font-size:14\.5px\}/.test(html)], [true, false, true]);
 
 console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — três números em s por UEP, o porquê dia a dia, o agora em caixas');
 process.exit(falhas ? 1 : 0);
