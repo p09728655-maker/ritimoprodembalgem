@@ -1,5 +1,13 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.58 — A MEDIÇÃO VEM DO APP DE CRONOANÁLISE (registrarCrono origem=app)
+//               PPCP, 06/11/2026 ("b2"): no "Salvar análise e fechar" do app, a
+//               medição da embalagem vem sozinha para a aba CRONOANALISE — sem
+//               PDF, sem importar, sem digitar. O app manda o produto pelo
+//               rótulo da lista e o que ele mediu; modelo, volume, códigos e a
+//               UEP do cadastro saem daqui (_cronoDoApp). A mesma medição não
+//               duplica, venha do app ou do PDF (_cronoMesmaMedicao). Coluna
+//               ORIGEM (APP) e toda resposta do app com app:true.
 // Versão: 5.57 — A VERSÃO DO .gs VAI AO PAINEL (GS_VERSAO)
 //               PPCP, 05/11/2026: "quando muda gs está salvando no git?". O
 //               GitHub e o editor do Apps Script não se falam, e nada mostrava
@@ -477,9 +485,9 @@
 //   • Só zera se houver produção pendente na planilha (planilhaTemProducao).
 // ════════════════════════════════════════════════════════
 
-// A versão deste arquivo, a mesma do cabeçalho (v5.57). Vai no getDados para o
+// A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.57';
+const GS_VERSAO = '5.58';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -2363,7 +2371,8 @@ const CRONO_COLS = [
   ['BASE', 'base'], ['BASE_S', 'baseS'], ['TOLERANCIA_PCT', 'tol'], ['TEMPO_PADRAO_S', 'tpS'],
   ['UEP_CRONO', 'uep'], ['UEP_CADASTRO', 'uepCad'],
   ['LINHA_CX_H', 'linhaCxh'], ['LINHA_S_CX', 'linhaSCx'], ['LINHA_DIAS', 'linhaDias'], ['LINHA_PERIODO', 'linhaPer'],
-  ['VELOCIDADE', 'vel'], ['ENTRE_PECAS', 'entre'], ['MEDIDO_POR', 'quem'], ['REG_ID', 'regId']];
+  ['VELOCIDADE', 'vel'], ['ENTRE_PECAS', 'entre'], ['MEDIDO_POR', 'quem'], ['REG_ID', 'regId'],
+  ['ORIGEM', 'origem']];   // v5.58: APP quando veio do app de cronoanálise; vazio = o painel (PDF ou digitada)
 const CRONO_NUM = { sRod: 1, sPer: 1, sLac: 1, volumes: 1, baseS: 1, tol: 1, tpS: 1, uep: 1, uepCad: 1,
                     linhaCxh: 1, linhaSCx: 1, linhaDias: 1, vel: 1, entre: 1 };
 const CRONO_LER_MAX = 500;   // medições devolvidas ao painel, da mais nova para trás
@@ -2388,17 +2397,149 @@ function _cronoHdr(sh, nomes) {
   return hdr;
 }
 
+// ── A MEDIÇÃO QUE VEM DO APP DE CRONOANÁLISE (v5.58) ──────────────────────
+// PPCP, 06/11/2026 ("b2"): no "Salvar análise e fechar" do app (PC, Embalagem
+// Takt Time) a medição vem sozinha para esta aba. O app manda só o que ele
+// MEDIU: o produto pelo rótulo da lista — o mesmo nome do painel, "501059 ·
+// PENTEADEIRA CAMARIM STRASS · VOL 2/2" —, o dia, os três tempos com o texto
+// do PDF e os volumes. O resto sai daqui, do cadastro (PRODUTO_CODIGO), pela
+// régua do painel (_uepConvProdutos / _ucvRegMontar):
+//  - PRODUTO = o nome do cadastro sem o VOL e sem a cor (_cronoNomeCad = o
+//    _capNome do painel; o teste confere os dois), VOLUME = "VOL v/n", "JOGO n
+//    VOL" ou "VOL 1/1" (o _ucvRegVol);
+//  - CODIGOS = todos os códigos do volume, de todas as cores: é por eles que o
+//    ✓ TROCAR A UEP confere as medições;
+//  - UEP_CADASTRO = a UEP do volume no cadastro de agora (média das cores; no
+//    JOGO, a soma dos volumes ÷ o nº de volumes) — o volCad do painel;
+//  - BASE / BASE_S / UEP_CRONO pela MADERO sem as lacunas (CRONO_BASE_S_GS);
+//    TOLERANCIA e TEMPO PADRÃO vazios: a tolerância é de cada computador do
+//    painel e não entra em regra nenhuma; VELOCIDADE e ENTRE_PECAS do cadastro.
+// Produto fora do cadastro ou dados que não fecham: RECUSA com o motivo, com
+// ok:true — o app não retenta o que não vai mudar. Toda resposta ao app leva
+// app:true: o .gs antigo responde sem ele, e o app sabe que falta este.
+const CRONO_BASE_ROT_GS = 'MADERO SEM LACUNAS 20/10/2026';   // = a BASE que o painel grava (o teste prende)
+const CRONO_APP_SEG_MAX = 120;      // = UCV_REG_SEG_MAX do painel (s por volume)
+const CRONO_APP_ROD_MAX = 3;        // = UCV_REG_ROD_MAX: RODANDO até 3× o SEM AS LACUNAS
+const CRONO_APP_PER_MAX = 5;        // = UCV_REG_PER_MAX: NO PERÍODO até 5× o RODANDO
+
+// O nome do produto no cadastro: a descrição sem o "VOL a/b" e sem a cor no
+// fim (linha antiga) — o _capNome do painel, linha por linha.
+function _cronoNomeCad(desc, cor) {
+  let n = String(desc || '').toUpperCase().replace(/^\s*VOL\.?\s*\d+\s*\/\s*\d+\s*/, '').replace(/\s+/g, ' ').trim();
+  const c = String(cor || '').toUpperCase().trim();
+  if (c && n.endsWith(' ' + c)) n = n.slice(0, -(c.length + 1)).trim();
+  return n;
+}
+// O volume da descrição ("VOL 2/3 …" → 2 de 3; sem a marca, 1 de 1) — o _capVol.
+function _cronoVolCad(desc) {
+  const m = String(desc || '').match(/^\s*VOL\.?\s*(\d+)\s*\/\s*(\d+)/i);
+  return m ? { vol: Number(m[1]), nVol: Number(m[2]) } : { vol: 1, nVol: 1 };
+}
+const _cronoCodFmt = function (c) { const d = codKey(c); return d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d; };
+
+// PURA (o catálogo entra por parâmetro): os campos da linha que o app não
+// sabe, ou { recusa: motivo }. Confere também o que o app mediu, com as réguas
+// do 💾 REGISTRAR do painel (_ucvRegValida).
+function _cronoDoApp(p, catalogo) {
+  const rot = String(p.rotulo || '').replace(/\s+/g, ' ').trim();
+  const m = /^(\d{6}) · (.+?)(?: · VOL (\d+)\/(\d+))?$/.exec(rot);
+  if (!m) return { recusa: 'O produto "' + rot + '" não está no formato da lista do painel (código · nome · VOL): corrija o produto no app e envie de novo.' };
+  const modelo = m[1], nome = m[2].toUpperCase().trim(), volSel = m[3] ? Number(m[3]) : 0;
+  const cods = [];
+  (catalogo || []).forEach(function (c) {
+    const cod = codKey(c.codigo);
+    if (cod.slice(0, 6) !== modelo || _cronoNomeCad(c.desc, c.cor) !== nome) return;
+    const v = _cronoVolCad(c.desc);
+    cods.push({ cod: cod, vol: v.vol, nVol: v.nVol, uep: Number(c.uep) > 0 ? Number(c.uep) : null,
+                vel: Number(c.velocidade) > 0 ? Number(c.velocidade) : null, entre: c.entrePeca === '' || c.entrePeca == null ? null : Number(c.entrePeca) });
+  });
+  if (!cods.length) return { recusa: 'O produto "' + rot + '" não está no cadastro do painel (PRODUTO_CODIGO).' };
+  const nVol = Math.max.apply(null, cods.map(function (c) { return c.nVol; }));
+  if (volSel && (volSel > nVol || Number(m[4]) !== nVol)) return { recusa: 'O "' + rot + '" não bate com o cadastro: o produto tem ' + nVol + ' volume(s).' };
+  const doVol = volSel ? cods.filter(function (c) { return c.vol === volSel; }) : cods;
+  if (!doVol.length) return { recusa: 'O cadastro do painel não tem código do volume ' + volSel + ' do "' + rot + '".' };
+  // o que o app mediu (as réguas do 💾 REGISTRAR do painel)
+  const data = String(p.data || '').trim();
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return { recusa: 'DATA DA MEDIÇÃO "' + data + '" não é dd/mm/aaaa.' };
+  const vols = Number(_cronoNum(p.volumes)), sLac = Number(_cronoNum(p.sLac)), sRod = Number(_cronoNum(p.sRod));
+  if (!(vols > 0) || Math.floor(vols) !== vols) return { recusa: 'VOLUMES MEDIDOS "' + p.volumes + '" não é um número inteiro de volumes.' };
+  if (!(sLac > 0) || sLac > CRONO_APP_SEG_MAX) return { recusa: 'SEM AS LACUNAS de ' + p.sLac + ' s por volume não parece certo.' };
+  if (!(sRod >= sLac) || sRod > CRONO_APP_ROD_MAX * sLac) return { recusa: 'RODANDO de ' + p.sRod + ' s não fecha com o SEM AS LACUNAS de ' + p.sLac + ' s.' };
+  // o NO PERÍODO é opcional e só informa: fora da régua, fica vazio (não recusa a medição)
+  let sPer = _cronoNum(p.sPer);
+  if (sPer !== '' && (sPer < sRod - 0.05 || sPer > CRONO_APP_PER_MAX * sRod)) sPer = '';
+  // a UEP do cadastro do volume: média das cores de cada volume; o jogo, a soma ÷ o nº de volumes
+  const nV = volSel ? 1 : nVol, porVol = [];
+  for (let v = 1; v <= nV; v++) {
+    const us = doVol.filter(function (c) { return (volSel ? true : c.vol === v) && c.uep > 0; }).map(function (c) { return c.uep; });
+    porVol.push(us.length ? us.reduce(function (a, b) { return a + b; }, 0) / us.length : null);
+  }
+  const completo = porVol.every(function (u) { return u != null; });
+  const uepCad = completo ? Math.round(porVol.reduce(function (a, b) { return a + b; }, 0) / nV * 100) / 100 : '';
+  const c0 = doVol.filter(function (c) { return c.vel > 0; })[0] || {};
+  return { campos: {
+    modelo: modelo, produto: nome,
+    volume: volSel ? 'VOL ' + volSel + '/' + nVol : nVol > 1 ? 'JOGO ' + nVol + ' VOL' : 'VOL 1/1',
+    codigos: doVol.map(function (c) { return _cronoCodFmt(c.cod); }).join(' '),
+    data: data, volumes: vols, sLac: sLac, sRod: sRod, sPer: sPer,
+    base: CRONO_BASE_ROT_GS, baseS: CRONO_BASE_S_GS, tol: '', tpS: '',
+    uep: Math.round(sLac / CRONO_BASE_S_GS * 100) / 100, uepCad: uepCad,
+    vel: c0.vel || '', entre: c0.entre != null ? c0.entre : '', origem: 'APP',
+  } };
+}
+
+// A MESMA MEDIÇÃO já está na aba (v5.58)? O mesmo dia, produto, volume, os
+// dois tempos que fazem a régua e os volumes. É o que impede a duplicata entre
+// os dois caminhos: a medição que veio do app e depois tem o PDF importado (o
+// REG_ID do painel sai do conteúdo e do MEDIDO POR, o do app do id dele), ou o
+// contrário. Os tempos com a folga de uma casa (o texto do PDF tem uma).
+// Com `tudo` (o mesmo REG_ID do app reenviado), o NO PERÍODO também tem de bater:
+// é a linha inteira que se compara para decidir entre "já estava" e substituir.
+function _cronoMesmaMedicao(hdr, linhas, d, tudo) {
+  const ix = function (n) { return hdr.indexOf(n); };
+  const iD = ix('DATA_MEDICAO'), iM = ix('MODELO'), iP = ix('PRODUTO'), iV = ix('VOLUME'),
+        iR = ix('S_RODANDO'), iL = ix('S_SEM_LACUNAS'), iQ = ix('VOLUMES_MEDIDOS'), iPe = ix('S_PERIODO');
+  if ([iD, iM, iP, iV, iR, iL, iQ].some(function (i) { return i < 0; })) return -1;
+  const perto = function (a, b) { return a !== '' && b !== '' && Math.abs(_numBR(a) - Number(b)) < 0.051; };
+  const vazio = function (x) { return x === '' || x == null; };
+  const mesmoPer = function (a, b) { return vazio(a) && vazio(b) ? true : !vazio(a) && !vazio(b) && Math.abs(_numBR(a) - Number(b)) < 0.051; };
+  const dia = fmtDataBR(d.data), up = function (x) { return String(x == null ? '' : x).trim().toUpperCase(); };
+  for (let i = 0; i < linhas.length; i++) {
+    const r = linhas[i];
+    if (fmtDataBR(r[iD]) === dia && up(r[iM]) === up(d.modelo) && up(r[iP]) === up(d.produto) && up(r[iV]) === up(d.volume) &&
+        perto(r[iR], d.sRod) && perto(r[iL], d.sLac) && Number(_numBR(r[iQ])) === Number(d.volumes) &&
+        (!tudo || iPe < 0 || mesmoPer(r[iPe], d.sPer))) return i;
+  }
+  return -1;
+}
+
 function registrarCrono(p) {
   p = p || {};
+  const doApp = String(p.origem || '').trim().toLowerCase() === 'app';
   const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try { return _registrarCronoCore(p); }
+  try { lock.waitLock(30000); }
+  catch (e) { return doApp ? { ok: false, app: true, erro: 'A planilha do painel está ocupada; tente de novo.' } : { ok: false, erro: e.message }; }
+  try {
+    const r = _registrarCronoCore(p, doApp);
+    if (doApp) r.app = true;
+    return r;
+  } catch (e) {
+    // revisão da v5.58: a falha passageira do Sheets saía pelo catch do doGet SEM
+    // app:true, e o app concluiria "falta colar o v5.58". Com app:true, ele reenvia.
+    if (doApp) return { ok: false, app: true, erro: 'O painel não gravou: ' + (e && e.message || 'falha da planilha') + '. Tente de novo.' };
+    throw e;
+  }
   finally { lock.releaseLock(); }
 }
 
-function _registrarCronoCore(p) {
+function _registrarCronoCore(p, doApp) {
   const regId = String(p.regId || '').trim();
   if (!regId) return { ok: false, erro: 'Registro sem identificador (REG_ID).' };
+  if (doApp) {
+    const A = _cronoDoApp(p, lerCatalogoProdutos());
+    if (A.recusa) return { ok: true, registrado: false, recusado: true, erro: A.recusa };
+    p = Object.assign({}, p, A.campos, { regId: regId, quem: String(p.quem || '').trim() });
+  }
   if (!(Number(_cronoNum(p.sRod)) > 0)) return { ok: false, erro: 'Sem o tempo RODANDO da medição.' };
   // v5.44: o SEM AS LACUNAS é a régua da UEP — medição sem ele não entraria na troca
   if (!(Number(_cronoNum(p.sLac)) > 0)) return { ok: false, erro: 'Sem o tempo SEM AS LACUNAS da medição.' };
@@ -2412,20 +2553,41 @@ function _registrarCronoCore(p) {
   }
   const hdr = _cronoHdr(sh, CRONO_COLS.map(function (c) { return c[0]; }));
   const iId = hdr.indexOf('REG_ID');
+  let substituir = -1, antiga = null;
   if (sh.getLastRow() > 1) {
-    const ids = sh.getRange(2, iId + 1, sh.getLastRow() - 1, 1).getValues();
-    for (let i = 0; i < ids.length; i++) {
-      if (String(ids[i][0]).trim() === regId) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
+    const linhas = sh.getRange(2, 1, sh.getLastRow() - 1, hdr.length).getValues();
+    for (let i = 0; i < linhas.length; i++) {
+      if (String(linhas[i][iId]).trim() !== regId) continue;
+      // revisão da v5.58: o REG_ID do app é o id da medição, não o conteúdo. Reaberta
+      // a análise no app, marcada uma parada e salva de novo, a MESMA medição volta com
+      // outros tempos — e "já estava" deixaria a aba com os números velhos. Igual:
+      // já estava. Diferente: SUBSTITUI, com a antiga copiada na CRONO_EXCLUIDOS (o
+      // mesmo rastro do EXCLUIR). O REG_ID do painel sai do conteúdo: igual é igual.
+      if (!doApp || _cronoMesmaMedicao(hdr, [linhas[i]], p, true) === 0) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
+      substituir = i;
+      break;
+    }
+    if (substituir < 0) {
+      // v5.58: a mesma medição por outro caminho (app × PDF) também não duplica
+      const j = _cronoMesmaMedicao(hdr, linhas, p);
+      if (j >= 0) return { ok: true, registrado: true, duplicado: true, mesmaMedicao: true, linha: j + 2 };
+    } else {
+      antiga = linhas[substituir];
+      _cronoCopiarExcluida(ss, hdr, antiga, substituir + 2);
     }
   }
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
-  const linha = hdr.map(function (t) {
+  const linha = hdr.map(function (t, k) {
     const c = CRONO_COLS.filter(function (x) { return x[0] === t; })[0];
-    if (!c) return '';
+    if (!c) return antiga ? antiga[k] : '';   // coluna que alguém pôs na aba: a substituição não apaga
     if (!c[1]) return agora;
     const v = p[c[1]];
     return CRONO_NUM[c[1]] ? _cronoNum(v) : String(v == null ? '' : v).trim().slice(0, 300);
   });
+  if (substituir >= 0) {
+    sh.getRange(substituir + 2, 1, 1, linha.length).setValues([linha]);
+    return { ok: true, registrado: true, substituido: true, linha: substituir + 2 };
+  }
   sh.appendRow(linha);
   return { ok: true, registrado: true, linha: sh.getLastRow() };
 }
@@ -2492,6 +2654,17 @@ function _excluirCronoCore(p) {
     return _cronoJaExcluida(shX, regId) ? { ok: true, excluido: true, jaExcluido: true }
                                         : { ok: true, excluido: false, naoAchou: true };
   }
+  _cronoCopiarExcluida(ss, hdr, v[i], i + 1);
+  // O Sheets não apaga a última linha não congelada: sobra uma em branco.
+  if (sh.getMaxRows() - sh.getFrozenRows() <= 1) sh.insertRowAfter(sh.getMaxRows());
+  sh.deleteRow(i + 1);
+  return { ok: true, excluido: true, linha: i + 1 };
+}
+
+// A linha INTEIRA na CRONO_EXCLUIDOS (criada na 1ª vez), com a hora e a linha onde
+// estava — o rastro do EXCLUIR (v5.33) e da medição do app substituída (v5.58).
+function _cronoCopiarExcluida(ss, hdr, valores, linhaNum) {
+  let shX = ss.getSheetByName(SHEET_CRONO_EXCL);
   const nomes = ['EXCLUIDO_EM', 'LINHA_ORIGINAL'].concat(hdr.filter(function (t) {
     return t && t !== 'EXCLUIDO_EM' && t !== 'LINHA_ORIGINAL';
   }));
@@ -2503,14 +2676,10 @@ function _excluirCronoCore(p) {
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   shX.appendRow(_cronoHdr(shX, nomes).map(function (t) {
     if (t === 'EXCLUIDO_EM') return agora;
-    if (t === 'LINHA_ORIGINAL') return i + 1;
+    if (t === 'LINHA_ORIGINAL') return linhaNum;
     const j = t ? hdr.indexOf(t) : -1;
-    return j >= 0 ? v[i][j] : '';
+    return j >= 0 ? valores[j] : '';
   }));
-  // O Sheets não apaga a última linha não congelada: sobra uma em branco.
-  if (sh.getMaxRows() - sh.getFrozenRows() <= 1) sh.insertRowAfter(sh.getMaxRows());
-  sh.deleteRow(i + 1);
-  return { ok: true, excluido: true, linha: i + 1 };
 }
 
 function _cronoJaExcluida(shX, regId) {
