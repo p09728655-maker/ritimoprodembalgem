@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.214.0 — 06/11/2026 · AVALIAR: o saldo de horas até a programação colada, e a 🖨
+
+- PPCP: *"a simulação tem que ganhar uma impressão, com ela avaliar as
+  anteriores para ver saldo de horas"*. Embaixo do veredito da colagem, o
+  **SALDO DE HORAS de hoje até o último dia colado**: semana a semana, o que a
+  programação precisa × a jornada que a linha tem (sem hora extra), e o
+  **atraso que passa de uma semana para a outra**. A frase diz com quanto
+  atraso a linha **chega** na programação colada e com quanto **termina** — na
+  média da linha e no ritmo atual. Medido em 06/11 com a 043 colada: ela
+  sozinha **cabe** (sobram 1h15), mas a linha chega nela com **14h25** de
+  atraso (esta semana + a que vem) e termina 23/11 com **13h10**.
+- PPCP: *"tem que ter um cuidado para não duplicar"* e *"essa sem lote ainda
+  não está na programação do sheets"*. A programação do painel entra como está
+  (o saldo de cada lote); da colagem só entra o que é **novo**: linha com **Nº
+  LOTE SIST.** que o painel já tem **não soma** (colagem A a I); sem o número
+  (colagem F a I), não soma se o painel já tem o mesmo produto no mesmo dia. A
+  tela diz quantas linhas já estavam no painel.
+- Dia útil sem programação nenhuma (não lançada nem colada — ex.: 19 e 23/11
+  quando só a 044 é colada) **fica fora da conta e é dito**: contar a folga dele
+  faria o atraso sumir de mentira. Cole também essa semana.
+- A folga de um dia só absorve o atraso que já existe; não vira crédito.
+- **🖨 AVALIAÇÃO DA PROGRAMAÇÃO** no menu 🖨 IMPRIMIR ▾: uma folha deitada com a
+  frase, a programação colada (veredito e dia a dia) e o saldo de horas.
+
+---
+
 ## v7.213.0 — 06/11/2026 · AVALIAR PROGRAMAÇÃO antes de aprovar
 
 - PPCP: *"como fazer para programar dentro do padrão?"* → *"a no painel"*. Na
