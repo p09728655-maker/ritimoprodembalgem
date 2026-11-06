@@ -940,7 +940,7 @@ via Google Apps Script (JSONP).
   do `PG_TELA_PEND`). ↻ ATUALIZAR passa por cima dos caches.
 - **Conta** `_regMontar` (pura) · **desenho** `_regHtml` (sem conta, o teste
   prende) · **leitura** `renderReguas`/`_regPintar`. O gráfico é o do papel com
-  as cores por token (`var(--cxu-*, cor do papel)`); `#sec-reguas` define a
+  as cores por token (`var(--cxu-*, cor do papel)`); `#uep-reguas` (era `#sec-reguas` até a v7.207.0) define a
   paleta escura (CAIXAS `#4f95e8`, 5,4:1 no fundo — o `#2a78d6` do papel dava
   3,8). O 🖨 da aba é o relatório (quatro páginas desde a v7.188.0) com os
   dias da tela (`gerarRelatorioCxUep(n)`).
@@ -6475,19 +6475,41 @@ feito e dá ar de verdade ao que sobrou.
     excel melhorado"*) foi atendido pela tela em painel; a cronoanálise ainda
     era uma rolagem só — as sub-abas vieram depois. O PPCP foi avisado disso
     antes de aprovar.
-  - CSS: o escopo `#sec-tempo` virou `#uep-conv-tempo` (o mesmo conteúdo).
+  - CSS: o escopo `#sec-tempo` virou `#uep-conv-tempo` (o mesmo conteúdo). Dentro
+    do `#sec-crono` ele herdava a `.uep-nota` mono da cronoanálise; o
+    `#uep-conv-tempo .uep-nota` devolve o `inherit` da aba própria (v7.207.1).
+  - O botão diz *"medições não lidas"* quando a leitura das medições falha
+    (era *"…"* para sempre).
 - **A2 — 📏 RÉGUAS é a 5ª sub-aba da ⚖ UEP** (`UEP_SUBS` + `'reguas'`). O
   painel é FIXO (`#uep-reguas`), FORA do `#uep-bloco`: o `renderUep` refaz o
   bloco a cada refresh e levaria a tela junto. `_uepSubMarca` acende botão e
   painel (o `setTab` também usa); `_uepSub('reguas')` pinta e lê
   (`renderReguas`, como a aba lia) — as outras quatro seguem sem leitura.
   `_regOn()` = ⚖ UEP aberta com a RÉGUAS acesa.
-  - **Uma leitura de cada vez**: `_uepDepoisDe(ocupada, fn)` espera a outra
-    (`UEP_CARREGANDO` ou `REG_RODANDO`) e só roda se a tela ainda pede. A ⚖ UEP
-    aberta já na RÉGUAS lê ela primeiro, depois o resto da aba.
+  - **Uma leitura de cada vez** (v7.207.1, achado BLOQUEANTE da revisão da
+    v7.207.0: a ⚖ UEP aberta na RÉGUAS punha 3 JSONP no ar — o `renderUep`
+    disparava, sozinho, as leituras dos painéis ESCONDIDOS):
+    - com a RÉGUAS na tela o `renderUep` sai na 1ª linha (nada a desenhar nem
+      ler) e o `#uep-bloco` some (`_uepSubMarca`) — o aviso de estado dele fica
+      fora dos painéis e aparecia em cima da RÉGUAS;
+    - a RÉGUAS entra pela fila: `_regAbrir(forcar)` espera `_uepLendo()` (a
+      carga da aba, histórico, POR PRODUTO, programação e a leitura do dia — a
+      do refresh também), e diz *"Esperando a outra leitura…"*. O ↻, o TENTAR
+      DE NOVO e a troca de período passam por ela;
+    - aberta na RÉGUAS, a aba não lê as outras quatro (`UEP_ABA_PEND`): a 1ª
+      troca para uma delas lê, depois do `REG_RODANDO`. As auto-leituras do
+      `renderUep` (histórico, POR PRODUTO) e do `renderProxDias` esperam o
+      `REG_RODANDO`;
+    - o `relatorios.test.js` roda a fila com o relógio na mão (o mock do
+      `setTimeout`): regex não prende ordem de leitura.
+    - Medido no Chrome com o script da revisão (cada JSONP segurado 2,5 s):
+      v7.207.0 punha 3 ao mesmo tempo; a v7.207.1, 1 — como a v7.206.0.
   - O botão (`_regSubMontar(R.reguas)`) diz a variação das três réguas, da
-    menor para a maior (*"varia UEP ±11% · pontos ±19% · caixas ±26%"*); antes
-    da leitura, *"caixas × pontos × UEP"*, nunca 0.
+    menor para a maior (*"UEP ±11,0% · pontos ±18,6% · caixas ±26,1%"*, a
+    precisão da tela — `fmtP`); antes da leitura, *"caixas × pontos × UEP"*,
+    nunca 0. Fora do sucesso o `_regPintar` diz o estado (…, histórico não
+    lido, nenhum dia para comparar, não montou) — nunca os números de outro
+    período.
   - O 🖨 CAIXAS × PONTOS × UEP foi para o menu da ⚖ UEP (quatro impressões); o
     atalho 📏 RÉGUAS → saiu. CSS: `#sec-reguas` → `#uep-reguas`.
 - **O nome antigo abre a sub-aba**: `setTab('reguas')` → ⚖ UEP na RÉGUAS;

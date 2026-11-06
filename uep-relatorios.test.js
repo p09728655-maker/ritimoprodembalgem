@@ -403,18 +403,31 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   const iU = html.indexOf('<section id="sec-uep"'), SU7 = html.slice(iU, html.indexOf('</section>', iU)), US = pegaJs('function _uepSub(');
   ok('v7.207.0 RÉGUAS é sub-aba da ⚖ UEP: sem botão nem seção própria; o painel fixo depois do #uep-bloco; o 🖨 com os dias da tela',
      [/data-tab="reguas"/.test(html), html.includes('id="sec-reguas"'), /data-sub="reguas" role="tab"[^>]*onclick="_uepSub\('reguas'\)"><b>RÉGUAS<\/b><span id="uep-sb-reguas">/.test(SU7),
-      SU7.indexOf('<div class="ucv-pn" data-sub="reguas" id="uep-reguas">') > SU7.indexOf('<div id="uep-bloco">'), /id="reg-bloco"/.test(SU7) && /id="reg-per"/.test(SU7) && /onclick="renderReguas\(true\)"/.test(SU7),
+      SU7.indexOf('<div class="ucv-pn" data-sub="reguas" id="uep-reguas">') > SU7.indexOf('<div id="uep-bloco">'), /id="reg-bloco"/.test(SU7) && /id="reg-per"/.test(SU7) && /onclick="_regAbrir\(true\)"/.test(SU7),
       /onclick="_uepImpFecha\(\);gerarRelatorioCxUep\(_regN\(\)\)"/.test(SU7)], [false, false, true, true, true, true]);
-  ok('v7.207.0 abrir a RÉGUAS lê só quando a ⚖ UEP não está lendo, e só se ainda estiver na tela; a ⚖ UEP aberta na RÉGUAS lê ela primeiro',
-     [/if\(k === 'reguas'\)\{ _regPintar\(\); _uepDepoisDe\(\(\) => UEP_CARREGANDO, \(\) => \{ if\(_regOn\(\)\) renderReguas\(\); \}\); \}/.test(US),
-      /if\(UEP_SUB==='reguas'\)\{ _regPintar\(\); renderReguas\(\); _uepDepoisDe\(\(\)=>REG_RODANDO, \(\)=>\{ if\(_abaOn\('uep'\)\) _uepAbaCarregar\(\); \}\); \} else _uepAbaCarregar\(\);/.test(ST),
+  // v7.207.1 (revisão da v7.207.0: o renderUep disparava as leituras dos painéis escondidos
+  // junto com a da RÉGUAS — 3 JSONP no ar): a RÉGUAS espera TODA leitura da ⚖ UEP; com ela
+  // na tela o renderUep não desenha nem lê; as auto-leituras dele esperam a RÉGUAS.
+  const RU = pegaJs('function renderUep('), RPX7 = pegaJs('function renderProxDias(');
+  ok('v7.207.1 uma leitura de cada vez: a RÉGUAS pela fila (_regAbrir); o renderUep sai com ela na tela; as leituras sozinhas do renderUep e do PRÓXIMOS DIAS esperam a RÉGUAS',
+     [/if\(k === 'reguas'\) _regAbrir\(\);/.test(US), /if\(UEP_SUB==='reguas'\)\{ UEP_ABA_PEND=true; _regAbrir\(\); \}/.test(ST),
       /if\(tab==='reguas'\)\{ UEP_SUB='reguas'; tab='uep'; \}/.test(ST), /function _regOn\(\)\{ return _abaOn\('uep'\) && UEP_SUB === 'reguas'; \}/.test(html),
-      /if\(_regOn\(\)\) _regPintar\(\);/.test(html)], [true, true, true, true, true]);
+      /if\(_regOn\(\)\) _regPintar\(\);/.test(html), /^function renderUep\(\)\{\n  if\(UEP_SUB==='reguas'\) return;/.test(RU),
+      /UEP_HIST_TS && !UEP_HIST_VOO && !REG_RODANDO &&/.test(RU), /UEP_PAD_TS && !UEP_PAD_VOO && !REG_RODANDO &&/.test(RU), /!GPX_CARREGANDO && !REG_RODANDO &&/.test(RPX7),
+      /function _uepLendo\(\)\{ return !!\(UEP_CARREGANDO \|\| UEP_HIST_VOO \|\| UEP_PAD_VOO \|\| GPX_CARREGANDO \|\| PROG_DET_VOO \|\| _pontosVoo\); \}/.test(html),
+      /function _regSetPer\(v\)\{[^\n]*_regAbrir\(\); \}/.test(html), (html.match(/renderReguas\(/g) || []).length],
+     [true, true, true, true, true, true, true, true, true, true, true, 3]);
+  ok('v7.207.1 na RÉGUAS o #uep-bloco some inteiro (o aviso de estado dele não é da RÉGUAS)',
+     /const b = document\.getElementById\('uep-bloco'\); if\(b\) b\.style\.display = k === 'reguas' \? 'none' : '';/.test(pegaJs('function _uepSubMarca(')), true);
   eval.call(global, pegaJs('function _regSubMontar('));
   ok('v7.207.0 o botão RÉGUAS diz a variação das três réguas, da menor para a maior (o osc da frase); sem leitura, o nome — nunca 0',
      [_regSubMontar({ cx:{ osc:26.9 }, pts:{ osc:18.5 }, uep:{ osc:10.4 } }).txt, _regSubMontar({ cx:{ osc:20 }, uep:{ osc:null } }).txt, _regSubMontar(null).txt,
       /_sbPinta\(document\.getElementById\('uep-sb-reguas'\), _regSubMontar\(R\.reguas\)\)/.test(RPI)],
-     ['varia UEP ±10% · pontos ±19% · caixas ±27%', 'varia caixas ±20%', 'caixas × pontos × UEP', true]);
+     ['UEP ±10,4% · pontos ±18,5% · caixas ±26,9%', 'caixas ±20,0%', 'caixas × pontos × UEP', true]);
+  // v7.207.1 (revisão): fora do sucesso o botão diz o estado — nunca os números de outro período
+  ok('v7.207.1 o botão RÉGUAS fora do sucesso: lendo/esperando "…", histórico não lido, nenhum dia, não montou',
+     [/sb\(REG_RODANDO \|\| REG_ESPERA \? '…' : 'caixas × pontos × UEP'\)/.test(RPI), /sb\('histórico não lido'\)/.test(RPI),
+      /sb\('nenhum dia para comparar'\)/.test(RPI), /sb\('não montou'\)/.test(RPI), /Esperando a outra leitura da ⚖ UEP terminar/.test(RPI)], [true, true, true, true, true]);
   ok('o gráfico na tela escura: as cores do papel trocadas por token no #uep-reguas', /#uep-reguas\{--cxu-banda:#1B2D44;[^}]*--cxu-cx:#4f95e8\}/.test(html), true);
   // v7.187.1 (PPCP, com a aba na mão: "essa não está na impressão"): o papel
   // leva a meta de pontos × mix e o produto a produto — o MESMO desenho da aba.
@@ -1821,9 +1834,10 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   const sbT = o => _ucvSubMontar(Object.assign({ p:null, M:null, L:null, C:null }, o)).tempo.txt;
   ok('v7.207.0 o botão ONDE O TEMPO VAI diz o 1º cartão (diferença e horas), sem cor; sem a conta, o estado — nunca 0',
      [sbT({ T, LH:HRS }), _ucvSubMontar({ T, LH:HRS }).tempo.cls, sbT({ T:null, LH:'lendo' }), sbT({ T:null, LH:'falhou' }), sbT({ T:null, LH:'sem-endpoint' }),
-      sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS }), sbT({ T:_ucvTempoMontar([], PRODS, HRS, 2530), LH:HRS })],
+      sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS }), sbT({ T:_ucvTempoMontar([], PRODS, HRS, 2530), LH:HRS }),
+      sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS, regsFalha:'falhou' }), sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS, regsFalha:'sem-endpoint' })],
      [`${T.tot.gapPct > 0 ? '+' : '−'}${Math.abs(T.tot.gapPct).toFixed(0)}% sobre o estudo · ≈ ${T.tot.hGap.toFixed(1).replace('.', ',')} h`, '',
-      '…', 'a produção não foi lida', 'falta o .gs novo', '…', 'nenhuma medição com volumes']);
+      '…', 'a produção não foi lida', 'falta o .gs novo', '…', 'nenhuma medição com volumes', 'medições não lidas', 'falta o .gs novo']);
   // 🖨 IMPRIMIR do bloco (v7.195.0, PPCP: "impressa"): a MESMA marcação no modo papel
   const HTp = _ucvTempoHtml(T, HRS, '501149|MESA CABECEIRA MADERO', false), HP = _ucvTempoHtml(T, null, null, true, true);
   const nTr = h => (h.match(/<tbody>[\s\S]*<\/tbody>/)[0].match(/<tr[ >]/g) || []).length;

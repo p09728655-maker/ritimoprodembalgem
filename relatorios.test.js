@@ -4652,7 +4652,7 @@ console.log('\n── estudo de UEP ──');
   // v7.127.0: sem a leitura do dia a aba não desenha nada — quando ela falta, vem PRIMEIRO
   ok('ao abrir a aba: leitura do dia (só se faltar) → histórico → cadastro, em sequência',
      [CARR.indexOf('lerPontosDia') < CARR.indexOf('_uepAbaHistCarregar') && CARR.indexOf('_uepAbaHistCarregar') < CARR.indexOf('_uepAbaCatCarregar'),
-      /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ _uepSubMarca\(UEP_SUB\); renderUep\(\); if\(UEP_SUB==='reguas'\)\{[^\n]*\} else _uepAbaCarregar\(\); \}/.test(JS)], [true, true, true]);
+      /PONTOS_DIA\.uep===null/.test(CARR), /tab==='uep'\)\{ _uepSubMarca\(UEP_SUB\); renderUep\(\); if\(UEP_SUB==='reguas'\)\{[^\n]*\} else \{ UEP_ABA_PEND=false; _uepDepoisDe\(\(\)=>REG_RODANDO, \(\)=>\{ if\(_abaOn\('uep'\)\) _uepAbaCarregar\(\); \}\); \} \}/.test(JS)], [true, true, true]);
   const R = pega('function renderUep('), DAD = pega('function _uepAbaDados(');
   ok('a aba usa a régua do card (uepCard) e não reescreve conta', [/uepCard\(/.test(DAD), /\/\s*UEP_MIN_DIA\s*\*\s*60/.test(DAD.replace(/meta\/UEP_MIN_DIA\*60/,''))], [true, false]);
   ok('tela, impressão, diretoria e Telas F/G da TV leem a MESMA montagem (_uepAbaDados), e a tela não monta por conta própria',
@@ -4681,11 +4681,12 @@ console.log('\n── estudo de UEP ──');
        [/\d · (HOJE|HORA A HORA|O MIX|ORIGEM|PERÍODO|PRÓXIMOS|PADRÃO)/.test(R), /_uepSubPintar\(_uepSubMontar\(\{ D, H:Hpad, padEst:/.test(R),
         /el\.innerHTML=`<div class="empty-msg">\$\{D\.msg\}\$\{tentar\}<\/div>`;\s*_uepSubPintar\(_uepSubMontar\(\{ D \}\)\); return;/.test(R)],
        [false, true, true]);
-    // v7.207.0: só a RÉGUAS lê ao abrir (como a aba lia), esperando a leitura da ⚖ UEP terminar
-    ok('o gráfico é redesenhado na largura do painel ACESO (escondido não tem largura); trocar de sub-aba redesenha a aba, sem leitura — fora a RÉGUAS, que lê ao abrir',
+    // v7.207.0: só a RÉGUAS lê ao abrir (como a aba lia). v7.207.1 (revisão): pela fila
+    // (_regAbrir), e as outras quatro só leem quando a aba abriu na RÉGUAS (UEP_ABA_PEND)
+    ok('o gráfico é redesenhado na largura do painel ACESO (escondido não tem largura); trocar de sub-aba redesenha a aba, sem leitura — fora a RÉGUAS e a 1ª depois dela',
        [/if\(nb&&nb\.offsetParent\)\{ const sv=nb\.querySelector\('svg'\); if\(sv&&Math\.abs\(\(sv\.viewBox\.baseVal\.width\|\|0\)-_svgLargura\(nb\)\)>2\)/.test(R),
-        /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /else renderUep\(\);/.test(pega('function _uepSub(')), /jsonp|_uepAbaCarregar|action=/.test(pega('function _uepSub(')),
-        /if\(k === 'reguas'\)\{ _regPintar\(\); _uepDepoisDe\(/.test(pega('function _uepSub('))],
+        /if\(pb&&pb\.offsetParent&&UEP_HIST\)/.test(R), /else \{ renderUep\(\); if\(UEP_ABA_PEND\)\{/.test(pega('function _uepSub(')), /jsonp|action=/.test(pega('function _uepSub(')),
+        /if\(k === 'reguas'\) _regAbrir\(\);/.test(pega('function _uepSub('))],
        [true, true, true, false, true]);
     eval(pega('function _uepSubMontar(')); eval(pega('function _uepSubProx('));
     if (typeof _fmtHM === 'undefined') eval(pega('function _fmtHM('));
@@ -4719,14 +4720,40 @@ console.log('\n── estudo de UEP ──');
     // _uepSub: acende, e a entrada (animação) só na troca — o refresh redesenha sem piscar
     { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); }, add(c){ this.o.s.add(c); } }, setAttribute(k, v){ this.at[k] = v; } });
       const KS = ['hoje', 'periodo', 'prox', 'prod', 'reguas'], SB = KS.map(el), PN = KS.map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
-      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#sec-uep .ucv-pn' ? PN : []), querySelector:q => (q === '#sec-uep .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null) };
+      const BLOCO = { style:{} };
+      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#sec-uep .ucv-pn' ? PN : []), querySelector:q => (q === '#sec-uep .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null),
+                          getElementById:id => (id === 'uep-bloco' ? BLOCO : null) };
       global.UEP_SUBS = KS; global.UEP_SUB = 'hoje'; const abaA = global._abaOn; global._abaOn = () => false;
       eval(pega('function _uepSubMarca(')); eval(pega('function _uepSub('));
       _uepSub('prox'); const r1 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), SB.map(e => e.at['aria-selected']), PN[2].s.has('entra')];
-      _uepSub('reguas'); const r2 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), PN[4].s.has('entra')];
+      const bl1 = BLOCO.style.display;
+      _uepSub('reguas'); const r2 = [UEP_SUB, PN.filter(e => e.s.has('on')).map(e => e.dataset.sub), PN[4].s.has('entra'), BLOCO.style.display];
       _uepSub('xx');
-      ok('_uepSub acende painel e botão (aria-selected) e marca a entrada só no painel novo — a RÉGUAS também; chave desconhecida não muda nada',
-         [r1, r2, UEP_SUB], [['prox', ['prox'], ['false', 'false', 'true', 'false', 'false'], true], ['reguas', ['reguas'], true], 'reguas']);
+      ok('_uepSub acende painel e botão (aria-selected) e marca a entrada só no painel novo — a RÉGUAS também, com o #uep-bloco escondido; chave desconhecida não muda nada',
+         [r1, bl1, r2, UEP_SUB], [['prox', ['prox'], ['false', 'false', 'true', 'false', 'false'], true], '', ['reguas', ['reguas'], true, 'none'], 'reguas']);
+      // v7.207.1 (revisão): a FILA de verdade, com o relógio na mão — a RÉGUAS espera toda leitura da
+      // ⚖ UEP, e a aba aberta na RÉGUAS lê as outras quatro só na 1ª troca, depois da RÉGUAS
+      const toA = global.setTimeout, fila = []; global.setTimeout = fn => { fila.push(fn); return 0; };
+      const roda = () => { const f = fila.splice(0); f.forEach(fn => fn()); };
+      const ch = [], G = global;
+      Object.assign(G, { UEP_SUB:'hoje', UEP_ABA_PEND:false, REG_ESPERA:false, REG_RODANDO:false, UEP_CARREGANDO:false, UEP_HIST_VOO:null, UEP_PAD_VOO:null, GPX_CARREGANDO:false, PROG_DET_VOO:null, _pontosVoo:null,
+        renderReguas:f => ch.push('reguas' + (f ? '!' : '')), renderUep:() => ch.push('uep'), _uepAbaCarregar:() => ch.push('carga'), _regPintar:() => ch.push('pinta') });
+      global._abaOn = t => t === 'uep';
+      ['function _uepDepoisDe(', 'function _uepLendo(', 'function _regOn(', 'function _regAbrir('].forEach(f => eval.call(global, pega(f)));
+      eval.call(global, pega('function _uepSubMarca(')); eval.call(global, pega('function _uepSub('));
+      G.UEP_PAD_VOO = {}; G._uepSub('reguas'); const f1 = [ch.slice(), G.REG_ESPERA, fila.length];
+      roda(); const f2 = ch.slice();
+      G.UEP_PAD_VOO = null; G._pontosVoo = {}; roda(); const f3 = ch.slice();
+      G._pontosVoo = null; roda(); const f4 = [ch.slice(), G.REG_ESPERA];
+      ch.length = 0; G.UEP_ABA_PEND = true; G.REG_RODANDO = true; G._uepSub('hoje'); const f5 = ch.slice(); roda(); const f6 = ch.slice();
+      G.REG_RODANDO = false; roda(); const f7 = [ch.slice(), G.UEP_ABA_PEND];
+      ch.length = 0; G._uepSub('prox'); roda(); const f8 = ch.slice();
+      ch.length = 0; G._regAbrir(); const f9a = ch.slice();             // fora da RÉGUAS (o PRÓXIMOS DIAS na tela): só pinta, não lê
+      ch.length = 0; G.UEP_SUB = 'reguas'; G._regAbrir(true); const f9 = [f9a, ch.slice()];
+      ok('v7.207.1 a fila: a RÉGUAS espera o POR PRODUTO e a leitura do dia no ar; a 1ª troca depois dela lê a aba (só depois da RÉGUAS); as outras trocas não leem; o ↻ passa o forçar',
+         [f1, f2, f3, f4, f5, f6, f7, f8, f9],
+         [[['pinta'], true, 1], ['pinta'], ['pinta'], [['pinta', 'reguas'], false], ['uep'], ['uep'], [['uep', 'carga'], false], ['uep'], [['pinta', 'pinta'], ['pinta', 'reguas!']]]);
+      global.setTimeout = toA;
       global.document = docA; global._abaOn = abaA; }
     ok('a pele: o painel aceso aparece; a entrada só com .entra (o refresh redesenha o painel) e sem ela com menos movimento; faixa e menu são as peças da cronoanálise',
        [/#sec-uep \.ucv-pn\{display:none\}/.test(src), /#sec-uep \.ucv-pn\.on\{display:block\}/.test(src), /#sec-uep \.ucv-pn\.entra\{animation:ucvIn/.test(src),

@@ -11,6 +11,20 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.207.1 — 06/11/2026 · correções da revisão da v7.207.0
+
+- Abrir a ⚖ UEP já na RÉGUAS punha três leituras ao mesmo tempo no Apps
+  Script (as das sub-abas escondidas). Agora é uma de cada vez: a RÉGUAS
+  espera a outra leitura terminar e diz isso na tela.
+- Na RÉGUAS não aparece mais o aviso de estado da ⚖ UEP (*"Lendo a produção
+  do dia…"*), que não era dela.
+- O botão RÉGUAS diz o estado quando não há leitura boa (em vez de manter os
+  números de outro período) e mostra a variação com uma casa, como a tela.
+- O botão ONDE O TEMPO VAI diz *"medições não lidas"* quando a leitura falha.
+- As mensagens do ONDE O TEMPO VAI voltam à letra que tinham na aba própria.
+
+---
+
 ## v7.207.0 — 06/11/2026 · RÉGUAS e ONDE O TEMPO VAI viram sub-abas
 
 - PPCP: *"analisar o que pode unir"*. Aprovados, com prévia, o A1 e o A2: a
