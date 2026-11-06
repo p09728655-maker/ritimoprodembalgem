@@ -308,6 +308,19 @@ via Google Apps Script (JSONP).
     PC dizem *"com hora extra"*.
   - Medido no Chromium com os dados de 04/11 às 09:41: 1280, 1366 e 1920 —
     nada passa da largura, a página não rola de lado, os nomes cabem.
+  - **Faixa de 42 px, nome em até 2 linhas, largura REAL** (v7.215.0, PPCP
+    com o print de um bloco escrito só *MEL*: *"deixar um pouco mais larga e
+    se precisar quebra nome do produto"*). `pdiaCurto(nome, larg, linhas)`:
+    com `linhas` > 1 quebra sem partir palavra e, sem espaço para o nome todo,
+    tenta o FIM do nome (CAMARIM MEL) antes da última palavra; sem `linhas`, a
+    regra de 1 linha de antes (o celular não passa e não muda).
+    `renderGerProdutosDia` mede o `#ger-pdia-corpo` (− 32 px do recuo) e só
+    sem medida (aba escondida, teste) usa os 1.100 de `PDIA_PC_LARG`; um
+    `resize` redesenha (250 ms). `.pdpc-sg` com `white-space:normal`,
+    `line-height:1.1`, `padding:0 3px`. Com os dados de 06/11: 1920 →
+    PENTEADEIRA CAMARIM MEL (2 linhas, bloco de 99 px); 1366/1280 → CAMARIM
+    MEL (69/65 px). HTML novo com `rp-core.js` velho em cache: o 3º argumento é
+    ignorado e cai na regra de 1 linha (sem quebrar nada).
 
 ## Excluir lançamento pelo app (mobile 1.34.0 / `.gs` v5.25)
 - PPCP, 16/10/2026, com o WhatsApp do operador na mão: *"esse 60 foi duas

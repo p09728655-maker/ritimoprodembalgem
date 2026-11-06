@@ -1059,9 +1059,9 @@ html.modo-dir #sec-dir.on{display:flex}
 #ger-pdia .pdpc-n i{font-style:normal;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;margin-top:4px}
 #ger-pdia .pdpc-cob{margin-left:auto;font-size:12px;color:var(--txt2);padding-bottom:2px}
 #ger-pdia .pdpc-seq{padding:8px 16px 14px;display:flex;flex-direction:column;gap:4px;border-bottom:0.5px solid var(--border)}
-#ger-pdia .pdpc-faixa{position:relative;height:32px;background:var(--bg);border-radius:4px;overflow:hidden}
+#ger-pdia .pdpc-faixa{position:relative;height:42px;background:var(--bg);border-radius:4px;overflow:hidden}
 #ger-pdia .pdpc-alm{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(135deg,var(--elevated) 0 3px,transparent 3px 8px);display:flex;align-items:center;justify-content:center;font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;overflow:hidden;white-space:nowrap}
-#ger-pdia .pdpc-sg{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:13px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;border-left:1px solid var(--bg);box-sizing:border-box}
+#ger-pdia .pdpc-sg{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:13px;font-weight:700;line-height:1.1;text-align:center;padding:0 3px;color:var(--txt);white-space:normal;overflow:hidden;border-left:1px solid var(--bg);box-sizing:border-box}
 #ger-pdia .pdpc-sg.t0{background:#44658F}
 #ger-pdia .pdpc-sg.t1{background:#2E4A6E}
 #ger-pdia .pdpc-sg.agora{background:var(--acc);color:#0B1622}
@@ -3956,7 +3956,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.214.2';
+const APP_VER   = '7.215.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -11379,7 +11379,12 @@ function gerarRelatorioUepAba(){
 // detalhe — sem ele, o detalhe sai sem a cor e o cadastro é lido no clique).
 // ⚠ SEM VEREDITO POR PRODUTO (nem verde/vermelho, nem cx/h): o veredito do dia
 // é o selo do % DA META, e hora parcial distorce o ritmo de um produto.
-const PDIA_PC_LARG = 1100;   // largura de referência da faixa no PC (px): só decide se o nome cabe no bloco
+const PDIA_PC_LARG = 1100;   // largura de referência da faixa no PC (px), só sem a medida da tela: decide se o nome cabe no bloco
+// v7.215.0 (PPCP, com o print de um bloco escrito só "MEL": "deixar um pouco mais
+// larga e se precisar quebra nome do produto"): a faixa mais alta, o nome em até
+// 2 linhas, e a largura REAL da faixa nesta tela (a de 1.100 px deixava o bloco
+// estreito demais na conta em tela grande).
+const PDIA_PC_LINHAS = 2;
 let PDIA_PC_ABERTO = '', PDIA_PC_M = null, PDIA_PC_REAL = 0, PDIA_PC_CATPED = false;
 // O cadastro (código → cor) sem leitura nova: o desta sessão ou o guardado.
 function _pdiaPcCat(){
@@ -11474,11 +11479,11 @@ function renderGerProdutosDia(real){
   // PONTOS_DIA nasce com listas vazias: sem a 1ª leitura, é "lendo", nunca "nenhuma caixa".
   if(PONTOS_DIA_TS && Array.isArray(phm)){
     try{
-      const a = new Date();
+      const a = new Date(), wReal = (Number(el.clientWidth) || 0) - 32;   // a faixa = o card − o recuo de 16 px de cada lado
       M = pdiaMontar(phm, PONTOS_DIA.porHora || [], _pdiaPcCat() || [], PONTOS_DIA.produtoAtual, a.getHours()*60 + a.getMinutes(), {
         turnoIni: toMin(CFG.turnoInicio), turnoFim: toMin(CFG.turnoFim),
         almIni: toMin(CFG.almocoInicio), almFim: toMin(CFG.almocoFim), real: PDIA_PC_REAL,
-        larg: PDIA_PC_LARG, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc });
+        larg: wReal > 300 ? wReal : PDIA_PC_LARG, linhas: PDIA_PC_LINHAS, passo: 60, atualDesc: PONTOS_DIA.produtoAtualDesc });
     }catch(err){
       // Falhou a conta: diz isso, nunca "lendo" (que pareceria leitura em curso).
       console.warn('produtos do dia:', err.message);
@@ -11495,6 +11500,10 @@ function renderGerProdutosDia(real){
   }
   el.innerHTML = _pdiaPcHtml(M, PDIA_PC_ABERTO);
 }
+// A janela mudou de tamanho: o que cabe em cada bloco também (só com o quadro já montado).
+let _pdiaPcRz = 0;
+if(typeof window !== 'undefined' && window.addEventListener)
+  window.addEventListener('resize', () => { clearTimeout(_pdiaPcRz); _pdiaPcRz = setTimeout(() => { if(PDIA_PC_M) renderGerProdutosDia(); }, 250); });
 function _pdiaPcToggle(i){
   const p = PDIA_PC_M && PDIA_PC_M.produtos[i];
   if(!p) return;

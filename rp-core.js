@@ -359,11 +359,28 @@ function pdiaBase(desc, cor){
 }
 // O nome que cabe num bloco da faixa: inteiro, sem as medidas, ou a última
 // palavra (BUFFET 4 PT PRISM → PRISM). Não coube nada → sem rótulo.
-function pdiaCurto(nome, larg){
-  const cabe = t => t.length*6 + 6 <= larg;
+// `linhas` (o PC, v7.215.0 — PPCP: "se precisar quebra nome do produto"): o nome
+// pode quebrar em até N linhas, sem partir palavra (PENTEADEIRA / CAMARIM MEL em
+// vez de só MEL). Sem ele, 1 linha — o celular continua como era.
+function pdiaCurto(nome, larg, linhas){
+  const n = Math.max(1, Math.floor(Number(linhas) || 1));
+  const cabeL = t => t.length*6 + 6 <= larg;
+  const cabe = t => {
+    let k = 1, lin = '';
+    for(const w of t.split(' ')){
+      const j = lin ? lin + ' ' + w : w;
+      if(cabeL(j)){ lin = j; continue; }
+      if(!lin || !cabeL(w) || ++k > n) return false;   // palavra que não cabe sozinha, ou linhas demais
+      lin = w;
+    }
+    return true;
+  };
   const pal = String(nome||'').split(/\s+/).filter(Boolean);
   const semMed = pal.filter(w => !/^[\d.,]+$/.test(w));
-  return [pal.join(' '), semMed.join(' '), semMed[semMed.length-1]||''].find(t => t && cabe(t)) || '';
+  // Com mais de 1 linha, antes da última palavra, o fim do nome (o que distingue o
+  // produto): PENTEADEIRA CAMARIM MEL → CAMARIM MEL → MEL. Com 1, a regra de antes.
+  const fins = n > 1 ? semMed.slice(1, -1).map((_, i) => semMed.slice(i + 1).join(' ')) : [];
+  return [pal.join(' '), semMed.join(' '), ...fins, semMed[semMed.length-1]||''].find(t => t && cabe(t)) || '';
 }
 
 // phm: porHoraModelo · ph: porHora · cat: catálogo (PRODUTOS, a cor de cada
@@ -492,7 +509,7 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
   F.segs = segs.map(s => {
     const ag = s.p === pAg;
     return { ini:s.ini, fim:s.fim, nome:s.p.nome, cls: ag ? 'agora' : 't' + (tom++ % 2),
-             rot: pdiaCurto(s.p.nome, (s.fim - s.ini) / span * (Number(o.larg) || PDIA_LARG) - 4) };
+             rot: pdiaCurto(s.p.nome, (s.fim - s.ini) / span * (Number(o.larg) || PDIA_LARG) - 4, o.linhas) };
   });
   F.ticks = [];
   for(let m = Math.ceil(F.ini/60)*60, i = 0; m <= F.fim; m += (Number(o.passo) || 120), i++){

@@ -218,9 +218,10 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'), G);
  'function renderGerProdutosDia(', 'function _pdiaPcToggle(']
   .forEach(f => vm.runInContext(pega(PC_JS, f), G));
 const PC_LARG = Number(PC_JS.match(/const PDIA_PC_LARG = (\d+);/)[1]);
+const PC_LINHAS = Number(PC_JS.match(/const PDIA_PC_LINHAS = (\d+);/)[1]);
 const gEl = {};
 vm.runInContext(`
-  var PDIA_PC_LARG = ${PC_LARG}, PDIA_PC_ABERTO = '', PDIA_PC_M = null, PDIA_PC_REAL = 0, PDIA_PC_CATPED = false;
+  var PDIA_PC_LARG = ${PC_LARG}, PDIA_PC_LINHAS = ${PC_LINHAS}, PDIA_PC_ABERTO = '', PDIA_PC_M = null, PDIA_PC_REAL = 0, PDIA_PC_CATPED = false;
   var CAP_RAW = null, CAP_PED = 0, PONTOS_DIA_TS = 0, PONTOS_DIA = { porHoraModelo: [], porHora: [] };
   var CFG = { turnoInicio: '07:00', turnoFim: '17:00', almocoInicio: '11:00', almocoFim: '12:12' };
   function _capDoLocal(){ return null; }
@@ -231,13 +232,31 @@ vm.runInContext(`
 `, G);
 G.document = { getElementById: id => (gEl[id] = gEl[id] || { innerHTML: '', textContent: '' }) };
 const grun = (expr, vars) => { Object.assign(G, vars || {}); return vm.runInContext(expr, G); };
-const MP = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, passo: 60 }))',
+const MP = grun('pdiaMontar(_phm, _ph, _cat, "501136001", _ag, Object.assign({}, _o, { larg: PDIA_PC_LARG, linhas: PDIA_PC_LINHAS, passo: 60 }))',
   { _phm: PHM, _ph: PH, _cat: CAT, _ag: AGORA, _o: O });
 ok('a mesma conta do celular: caixas, UEP, HE, trocas e parte da UEP',
    [MP.cx, Math.round(MP.uep), MP.heCx, MP.trocas, MP.produtos.map(p => p.pct)], [M.cx, Math.round(M.uep), M.heCx, M.trocas, M.produtos.map(p => p.pct)]);
 ok('faixa do PC: uma marca por hora e o nome inteiro cabe (no celular, PRISM)',
    [MP.faixa.ticks.map(t => t.txt).slice(0, 6), MP.faixa.segs[0].rot, M.faixa.segs[0].rot],
    [['05 HE', '06', '07', '08', '09', '10'], 'BUFFET 4 PT PRISM', 'PRISM']);
+// v7.215.0 (PPCP, print de 06/11 com um bloco escrito só "MEL": "se precisar quebra nome do produto")
+ok('nome em 2 linhas sem partir palavra: PENTEADEIRA / CAMARIM MEL num bloco de 90 px; em 1 linha (o celular) só MEL; estreito demais para PENTEADEIRA, CAMARIM MEL',
+   [grun('pdiaCurto("PENTEADEIRA CAMARIM MEL", 90, 2)'), grun('pdiaCurto("PENTEADEIRA CAMARIM MEL", 90)'), grun('pdiaCurto("PENTEADEIRA CAMARIM MEL", 70, 2)'),
+    grun('pdiaCurto("PENT CAMARIM 1PT 2GAV DIAMANTE", 110, 2)'), grun('pdiaCurto("BUFFET 4 PT PRISM", 60, 2)'), grun('pdiaCurto("X", 5, 2)')],
+   ['PENTEADEIRA CAMARIM MEL', 'MEL', 'CAMARIM MEL', 'PENT CAMARIM 1PT 2GAV DIAMANTE', 'BUFFET 4 PT PRISM', '']);
+ok('2 linhas sem espaço para o nome todo: o fim do nome antes da última palavra (CAMARIM MEL, não só MEL); com 1 linha, a regra de antes',
+   [grun('pdiaCurto("PENTEADEIRA CAMARIM MEL", 63, 2)'), grun('pdiaCurto("PENT CAMARIM 1PT 2GAV DIAMANTE", 63, 2)'), grun('pdiaCurto("PENTEADEIRA CAMARIM MEL", 63)'),
+    grun('pdiaCurto("HOME RIPADO SUPREMO 1.8", 50, 2)'), grun('pdiaCurto("LIVREIRO ENCANTO", 40, 2)')],
+   ['CAMARIM MEL', '1PT 2GAV DIAMANTE', 'MEL', 'RIPADO SUPREMO', '']);
+ok('1 linha é a regra de antes (o celular não muda): o nome inteiro só se couber numa linha',
+   [grun('pdiaCurto("BUFFET 4 PT PRISM", 108)'), grun('pdiaCurto("BUFFET 4 PT PRISM", 107)'), grun('pdiaCurto("BUFFET 4 PT PRISM", 107, 1)'), grun('pdiaCurto("HOME ANGEL 1.8", 70)')],
+   ['BUFFET 4 PT PRISM', 'BUFFET PT PRISM', 'BUFFET PT PRISM', 'HOME ANGEL']);
+{ const RG = pega(PC_JS, 'function renderGerProdutosDia(');
+  ok('o PC mede a faixa desta tela (sem medida, os 1.100 px), passa 2 linhas e redesenha quando a janela muda; a faixa mais alta e o nome quebra',
+     [/wReal = \(Number\(el\.clientWidth\) \|\| 0\) - 32/.test(RG), /larg: wReal > 300 \? wReal : PDIA_PC_LARG, linhas: PDIA_PC_LINHAS/.test(RG), PC_LINHAS,
+      /window\.addEventListener\('resize'[^\n]*renderGerProdutosDia\(\)/.test(PC_JS),
+      /#ger-pdia \.pdpc-faixa\{position:relative;height:42px;/.test(PC), /#ger-pdia \.pdpc-sg\{[^}]*white-space:normal;/.test(PC), /#ger-pdia \.pdpc-sg\{[^}]*nowrap/.test(PC)],
+     [true, true, 2, true, true, true, false]); }
 const HP = grun('_pdiaPcHtml(_M, "")', { _M: MP });
 const HPa = grun('_pdiaPcHtml(_M, _k)', { _M: MP, _k: MP.produtos[1].key });
 ok('resumo: caixas, UEP, produtos e trocas',
