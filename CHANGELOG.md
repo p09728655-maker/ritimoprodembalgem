@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.217.0 — 06/11/2026 · TAKT DA SEMANA: o takt por caixa de cada produto
+
+- PPCP: *"onde fica registrado o takt da semana ex: 15seg"* → *"no painel onde
+  vai aparecer"* → *"sim, mostra takt por caixa"*. O takt do painel é em
+  segundos por UEP; a linha entende em segundos por CAIXA.
+- Em ⚖ UEP → TAKT DA SEMANA → ▸ DETALHES PARA O PCP (esta semana e a que vem):
+  a tabela **TAKT POR CAIXA**, uma linha por produto · volume programado na
+  semana: quando, caixas, UEP por caixa, **PELO TAKT** (o ritmo que o produto
+  precisa para a semana fechar, em s por caixa e cx/h) e **NA MÉDIA DA LINHA**
+  (o ritmo da referência de 2.761 UEP/dia no mesmo produto).
+- Exemplo (09–13/11, 10,9 s por UEP): MESA CABECEIRA SLEEP 9,0 s por caixa
+  (398 cx/h), RACK FLIP 2.2 34,3 s (105 cx/h), DIAMANTE 27,0 s.
+- ⚠ Não é o takt do app de cronoanálise: lá o takt é por VOLUME (todo volume
+  igual) e desconta o setup do cadastro do grupo — produto pesado sempre parece
+  acima dele. Para julgar a medição de um produto, compare o NO PERÍODO da
+  cronoanálise com o PELO TAKT daqui.
+- **Atenção:** nenhum número mudou — é a mesma conta do takt da semana, por
+  produto.
+
+---
+
 ## v7.216.0 — 06/11/2026 · O QUE MEDIR vira a agenda completa · 🖨 AGENDA DA CRONOANÁLISE · PDF em contingência
 
 - PPCP: *"precisamos listar os produtos que falta coletar tempos"* e

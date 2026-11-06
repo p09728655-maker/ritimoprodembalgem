@@ -554,6 +554,7 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tka-bts .tka-go{color:var(--acc);border-color:rgba(255,92,31,.5)}
 #sec-uep .tka-msg{font-family:var(--font-d);font-size:11px;color:var(--txt2)}
 #sec-uep .tka-tab td,#sec-uep .tka-tab th{white-space:nowrap}
+#sec-uep .tks-cx td small{display:block;font-size:11px;color:var(--txt2);margin-top:2px;font-family:var(--font-b)}
 #sec-uep .tka-tab tr.tka-lac td{font-family:var(--font-d);font-size:11px;color:var(--warn);border-bottom:none;padding-top:0}
 #sec-uep .tks-ok{color:var(--ok)}
 /* v7.211.0: o VEREDITO (palavra · quanto falta · precisa × tem) e os detalhes recolhidos */
@@ -3963,7 +3964,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.216.0';
+const APP_VER   = '7.217.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10047,11 +10048,21 @@ function _taktMontar(S, hist, H, pts){
   }
   // a programação de cada dia (fora da esteira de fora, como na META do dia) e o saldo
   const falta={ cx:0, uep:0, uepVenc:0, cxSemUep:0, semSaldo:0, pts:0, uepPts:0 };
+  // v7.217.0: a programação por PRODUTO · VOLUME (as cores juntas) — o TAKT POR CAIXA
+  const prods={};
   S.linhas.forEach(l=>{
     const ln=Number(l && l.dataNum) || _cartNum(l && l.data), d=porN[ln];
     const q=Number(l.qtde)||0, u=Number(l.uepCx)>0 ? Number(l.uepCx) : null;
     if(l.foraEsteira){ if(d) d.cxFora+=q; return; }
     if(d){ d.cx+=q; if(u) d.uep+=(l.uep!=null && isFinite(Number(l.uep))) ? Number(l.uep) : q*u; else d.cxSemUep+=q; }
+    if(d && q>0){
+      const cod=String(l.codigo||'').replace(/\D/g, ''), mv=String(l.desc||'').match(/^\s*VOL\.?\s*(\d+)\s*\/\s*(\d+)\s*/i);
+      const base=String(l.desc||'').replace(/^\s*VOL\.?\s*\d+\s*\/\s*\d+\s*/i, '').replace(/\s+/g, ' ').trim().toUpperCase();
+      const k=base ? cod.slice(0, 6)+'|'+base+'|'+(mv ? mv[1] : '1') : 'cod|'+cod;
+      const g=prods[k]=prods[k] || { modelo:cod.slice(0, 6), nome:base, cod, va:mv ? Number(mv[1]) : 1, vb:mv ? Number(mv[2]) : 1, cx:0, cxUep:0, uepSoma:0, uMin:null, uMax:null, dias:{} };
+      g.cx+=q; g.dias[ln]=1;
+      if(u){ g.cxUep+=q; g.uepSoma+=q*u; g.uMin=g.uMin==null ? u : Math.min(g.uMin, u); g.uMax=g.uMax==null ? u : Math.max(g.uMax, u); }
+    }
     if(l.saldo==null){ falta.semSaldo++; return; }
     const s=Math.max(0, Number(l.saldo)||0);
     if(d && u) d.baixaUep+=Math.max(0, q-s)*u;   // o que já saiu do lote (feito; num dia que vem, adiantado)
@@ -10102,7 +10113,7 @@ function _taktMontar(S, hist, H, pts){
   falta.capRest=restHoje+futuros.length*meta;
   falta.ate=futuros.length ? futuros[futuros.length-1].data.slice(0, 5) : (h.fim || null);
   falta.passa=falta.uep-falta.capRest;
-  return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, takt, porDia,
+  return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, takt, porDia, prods:Object.values(prods),
     ref:UEP_MIN_DIA*60/meta, pede:porDia!=null ? porDia/meta*100 : null,
     cxSemUep:soma(dias, d=>d.cxSemUep), cxFora:soma(dias, d=>d.cxFora),
     progForaUtil:soma(dias.filter(d=>!d.util), d=>d.uep),
@@ -10233,6 +10244,40 @@ function _taktAgora(T, A){
   return { cod, desc:A.desc||'', cor:A.cor||'', uepCx,
     sTakt:T.takt!=null && uepCx ? T.takt*uepCx : null, sRef:uepCx ? T.ref*uepCx : null, hora };
 }
+// TAKT POR CAIXA (v7.217.0, PPCP: "sim, mostra takt por caixa"): o takt da
+// semana é em segundos por UEP; a linha entende em segundos por CAIXA do produto.
+// Por produto · volume programado na semana: takt × UEP por caixa (a média das
+// cores, pesada pelas caixas) = o ritmo que o produto precisa para a semana
+// fechar; referência × UEP por caixa = o ritmo da média da linha no mesmo
+// produto. É o "1 caixa a cada X s" do AGORA para todos os produtos — e o número
+// para comparar com o NO PERÍODO da cronoanálise do produto (o takt do app é por
+// VOLUME, todo volume igual: produto pesado sempre parece acima dele).
+// Conta pura. Ordem: o 1º dia programado, depois as caixas.
+function _taktPorCaixa(T){
+  if(!T || !Array.isArray(T.prods)) return [];
+  return T.prods.map(g=>{
+    const uepCx=g.cxUep>0 ? g.uepSoma/g.cxUep : null, sTakt=T.takt!=null && uepCx ? T.takt*uepCx : null;
+    const dias=Object.keys(g.dias).map(Number).sort((a, b)=>a-b);
+    return { rot:g.modelo+' · '+(g.nome || 'código '+g.cod)+(g.vb>1 ? ` · VOL ${g.va}/${g.vb}` : ''), cx:g.cx, dias, uepCx,
+      difCor:g.uMin!=null && g.uMax-g.uMin>0.005, uMin:g.uMin, uMax:g.uMax, sTakt, sRef:uepCx ? T.ref*uepCx : null,
+      cxhTakt:sTakt ? 3600/sTakt : null, cxSemUep:g.cx-g.cxUep };
+  }).sort((a, b)=>a.dias[0]-b.dias[0] || b.cx-a.cx || a.rot.localeCompare(b.rot));
+}
+// O desenho (sem conta).
+function _taktPorCaixaHtml(R, T){
+  if(!R || !R.length) return '';
+  const e=_rpEsc, f2=v=>v.toFixed(2).replace('.', ','), dd=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
+  const quando=g=>g.dias.length>3 ? `${g.dias.slice(0, 3).map(dd).join(', ')} +${g.dias.length-3}` : g.dias.map(dd).join(', ');
+  return `<div class="uep-sec"><b>TAKT POR CAIXA</b> cada produto programado · ${_tkS(T.takt)} s por UEP × a UEP por caixa dele</div>`
+    +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks-cx"><thead><tr><th>PRODUTO · VOLUME</th><th>QUANDO</th><th class="n">CAIXAS</th><th class="n">UEP/CX</th>`
+    +`<th class="n" title="O ritmo que o produto precisa para a programação da semana fechar: o takt da semana (${_tkS(T.takt)} s por UEP) × a UEP por caixa">PELO TAKT</th>`
+    +`<th class="n" title="O ritmo da média da linha (${_tkS(T.ref)} s por UEP, a referência de ${fmtN(Math.round(T.meta))} UEP/dia) no mesmo produto">NA MÉDIA DA LINHA</th></tr></thead><tbody>`
+    +R.map(g=>`<tr><td>${e(g.rot)}</td><td class="mono">${quando(g)}</td><td class="n">${fmtN(g.cx)}</td>`
+      +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
+      +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
+      +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}</td></tr>`).join('')
+    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos, com a linha na jornada. PELO TAKT = o que a programação da semana pede; NA MÉDIA DA LINHA = o ritmo que a linha entrega em média (sem hora extra) nesse produto. Para a medição do produto, compare o NO PERÍODO da cronoanálise com o PELO TAKT — o takt do app de cronoanálise é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
+}
 // O texto do botão da sub-aba (só lê a montagem). est: 'falha' | 'sem-endpoint' | 'sem-url' | 'lendo'
 function _uepSubTakt(T, est, rot){
   if(est==='sem-endpoint') return { txt:'falta o .gs v5.59', cls:'' };
@@ -10345,7 +10390,7 @@ function _taktHtml(T, G, opt){
   return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate })+por
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito</div><div class="uep-card" id="tks-g-box">${svg}`
     +`<div class="uep-leg"><span class="tks-lp">programado do dia</span><span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
-    +_taktDetHtml(kpis+leitura
+    +_taktDetHtml(kpis+leitura+_taktPorCaixaHtml(_taktPorCaixa(T), T)
       +`<div class="uep-2"><div><div class="uep-sec"><b>${tituloC}</b></div><div class="uep-card uep-grow">${bC}</div></div>`
       +`<div><div class="uep-sec"><b>${tituloA}</b></div><div class="uep-card uep-grow">${bA}</div></div></div>`
       +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : ''));
@@ -10729,7 +10774,7 @@ function _taktProxHtml(T, P, opt){
   return tit+_taktHeroHtml(o.V, { semana:'prox', nUteis:T.nUteis, sobra:o.sobra })+por
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha programadas</div><div class="uep-card" id="tks-g-box">${_taktSvg(T, o.largura||760, { fut:true })}`
     +`<div class="uep-leg"><span class="tks-lp">programado do dia</span><span class="tks-lpw">acima de 1 dia de linha</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
-    +_taktDetHtml(kpis+leitura+_taktSimHtml(o.sim, P)+`<div class="uep-nota">${notas.join(' · ')}</div>`);
+    +_taktDetHtml(kpis+leitura+_taktPorCaixaHtml(_taktPorCaixa(T), T)+_taktSimHtml(o.sim, P)+`<div class="uep-nota">${notas.join(' · ')}</div>`);
 }
 // O gráfico DIA A DIA (sem conta), em HORAS DE LINHA (v7.211.0: a mesma unidade
 // do veredito; era UEP com a linha do takt, que repetia a média do programado):
