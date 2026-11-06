@@ -5998,6 +5998,10 @@ feito e dá ar de verdade ao que sobrou.
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
 
 ## A MEDIÇÃO VEM SOZINHA DO APP DE CRONOANÁLISE (v7.208.0 / `.gs` v5.58 / app 2.103.0)
+- ⚠ **Estado em 06/11/2026**: o lado do painel (`.gs` v5.58) está pronto; o do
+  app (2.103.0) estava em construção. Até o app sair **e** a variável
+  `PAINEL_APPS_SCRIPT_URL` ser configurada, nada vem sozinho — o 📄 IMPORTAR
+  PDF continua sendo o caminho. Ao confirmar o app, tirar esta nota.
 - PPCP, 06/11/2026: *"analisar o que pode unir"* → B1/B2 → *"b2"*. Antes: no
   app (repositório `crono-analise`), Salvar análise → imprimir o PDF → no
   painel, 📄 IMPORTAR PDF → conferir → 💾 REGISTRAR. Agora o **"Salvar análise
@@ -6026,8 +6030,20 @@ feito e dá ar de verdade ao que sobrou.
   - **Recusa com `ok:true, recusado:true`** e o motivo (fora do formato da
     lista, fora do cadastro, volume que o produto não tem, data, volumes não
     inteiros, RODANDO < SEM AS LACUNAS, tempo absurdo): o app não retenta o
-    que não vai mudar. Planilha ocupada (lock): `ok:false, app:true` → o app
-    pode reenviar. NO PERÍODO fora da régua fica vazio (só informa).
+    que não vai mudar. Planilha ocupada (lock) ou QUALQUER falha da planilha
+    no caminho do app: `ok:false, app:true` → o app pode reenviar (revisão: a
+    falha saía pelo catch do doGet sem `app`, e o app acusaria o `.gs` antigo).
+    NO PERÍODO fora da régua fica vazio (só informa).
+  - **O mesmo REG_ID do app com outros números SUBSTITUI a linha** (revisão da
+    v5.58): o REG_ID do app é o id da medição, e reaberta a análise no app,
+    marcada uma parada e salva de novo, a MESMA medição volta com outros tempos.
+    Igual (a linha inteira, NO PERÍODO incluído) → `duplicado`; diferente →
+    `substituido:true`, no lugar, com a antiga na CRONO_EXCLUIDOS
+    (`_cronoCopiarExcluida`, a mesma do EXCLUIR) e as colunas que alguém pôs na
+    aba preservadas. O REG_ID do painel sai do conteúdo: lá, igual é igual.
+  - ⚠ Limite aceito: medição importada por PDF ANTES e depois corrigida no app
+    (números diferentes, REG_ID diferente) entra de novo — exclua a do PDF no
+    painel. Só acontece na transição.
   - Os limites são os do `_ucvRegValida` (`CRONO_APP_*` = `UCV_REG_*`; o
     teste prende).
 - **A MESMA MEDIÇÃO NÃO DUPLICA** (`_cronoMesmaMedicao`, para os dois caminhos):

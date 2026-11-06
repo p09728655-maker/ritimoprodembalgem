@@ -2493,17 +2493,22 @@ function _cronoDoApp(p, catalogo) {
 // os dois caminhos: a medição que veio do app e depois tem o PDF importado (o
 // REG_ID do painel sai do conteúdo e do MEDIDO POR, o do app do id dele), ou o
 // contrário. Os tempos com a folga de uma casa (o texto do PDF tem uma).
-function _cronoMesmaMedicao(hdr, linhas, d) {
+// Com `tudo` (o mesmo REG_ID do app reenviado), o NO PERÍODO também tem de bater:
+// é a linha inteira que se compara para decidir entre "já estava" e substituir.
+function _cronoMesmaMedicao(hdr, linhas, d, tudo) {
   const ix = function (n) { return hdr.indexOf(n); };
   const iD = ix('DATA_MEDICAO'), iM = ix('MODELO'), iP = ix('PRODUTO'), iV = ix('VOLUME'),
-        iR = ix('S_RODANDO'), iL = ix('S_SEM_LACUNAS'), iQ = ix('VOLUMES_MEDIDOS');
+        iR = ix('S_RODANDO'), iL = ix('S_SEM_LACUNAS'), iQ = ix('VOLUMES_MEDIDOS'), iPe = ix('S_PERIODO');
   if ([iD, iM, iP, iV, iR, iL, iQ].some(function (i) { return i < 0; })) return -1;
   const perto = function (a, b) { return a !== '' && b !== '' && Math.abs(_numBR(a) - Number(b)) < 0.051; };
+  const vazio = function (x) { return x === '' || x == null; };
+  const mesmoPer = function (a, b) { return vazio(a) && vazio(b) ? true : !vazio(a) && !vazio(b) && Math.abs(_numBR(a) - Number(b)) < 0.051; };
   const dia = fmtDataBR(d.data), up = function (x) { return String(x == null ? '' : x).trim().toUpperCase(); };
   for (let i = 0; i < linhas.length; i++) {
     const r = linhas[i];
     if (fmtDataBR(r[iD]) === dia && up(r[iM]) === up(d.modelo) && up(r[iP]) === up(d.produto) && up(r[iV]) === up(d.volume) &&
-        perto(r[iR], d.sRod) && perto(r[iL], d.sLac) && Number(_numBR(r[iQ])) === Number(d.volumes)) return i;
+        perto(r[iR], d.sRod) && perto(r[iL], d.sLac) && Number(_numBR(r[iQ])) === Number(d.volumes) &&
+        (!tudo || iPe < 0 || mesmoPer(r[iPe], d.sPer))) return i;
   }
   return -1;
 }
@@ -2518,6 +2523,11 @@ function registrarCrono(p) {
     const r = _registrarCronoCore(p, doApp);
     if (doApp) r.app = true;
     return r;
+  } catch (e) {
+    // revisão da v5.58: a falha passageira do Sheets saía pelo catch do doGet SEM
+    // app:true, e o app concluiria "falta colar o v5.58". Com app:true, ele reenvia.
+    if (doApp) return { ok: false, app: true, erro: 'O painel não gravou: ' + (e && e.message || 'falha da planilha') + '. Tente de novo.' };
+    throw e;
   }
   finally { lock.releaseLock(); }
 }
@@ -2543,23 +2553,41 @@ function _registrarCronoCore(p, doApp) {
   }
   const hdr = _cronoHdr(sh, CRONO_COLS.map(function (c) { return c[0]; }));
   const iId = hdr.indexOf('REG_ID');
+  let substituir = -1, antiga = null;
   if (sh.getLastRow() > 1) {
     const linhas = sh.getRange(2, 1, sh.getLastRow() - 1, hdr.length).getValues();
     for (let i = 0; i < linhas.length; i++) {
-      if (String(linhas[i][iId]).trim() === regId) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
+      if (String(linhas[i][iId]).trim() !== regId) continue;
+      // revisão da v5.58: o REG_ID do app é o id da medição, não o conteúdo. Reaberta
+      // a análise no app, marcada uma parada e salva de novo, a MESMA medição volta com
+      // outros tempos — e "já estava" deixaria a aba com os números velhos. Igual:
+      // já estava. Diferente: SUBSTITUI, com a antiga copiada na CRONO_EXCLUIDOS (o
+      // mesmo rastro do EXCLUIR). O REG_ID do painel sai do conteúdo: igual é igual.
+      if (!doApp || _cronoMesmaMedicao(hdr, [linhas[i]], p, true) === 0) return { ok: true, registrado: true, duplicado: true, linha: i + 2 };
+      substituir = i;
+      break;
     }
-    // v5.58: a mesma medição por outro caminho (app × PDF) também não duplica
-    const j = _cronoMesmaMedicao(hdr, linhas, p);
-    if (j >= 0) return { ok: true, registrado: true, duplicado: true, mesmaMedicao: true, linha: j + 2 };
+    if (substituir < 0) {
+      // v5.58: a mesma medição por outro caminho (app × PDF) também não duplica
+      const j = _cronoMesmaMedicao(hdr, linhas, p);
+      if (j >= 0) return { ok: true, registrado: true, duplicado: true, mesmaMedicao: true, linha: j + 2 };
+    } else {
+      antiga = linhas[substituir];
+      _cronoCopiarExcluida(ss, hdr, antiga, substituir + 2);
+    }
   }
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
-  const linha = hdr.map(function (t) {
+  const linha = hdr.map(function (t, k) {
     const c = CRONO_COLS.filter(function (x) { return x[0] === t; })[0];
-    if (!c) return '';
+    if (!c) return antiga ? antiga[k] : '';   // coluna que alguém pôs na aba: a substituição não apaga
     if (!c[1]) return agora;
     const v = p[c[1]];
     return CRONO_NUM[c[1]] ? _cronoNum(v) : String(v == null ? '' : v).trim().slice(0, 300);
   });
+  if (substituir >= 0) {
+    sh.getRange(substituir + 2, 1, 1, linha.length).setValues([linha]);
+    return { ok: true, registrado: true, substituido: true, linha: substituir + 2 };
+  }
   sh.appendRow(linha);
   return { ok: true, registrado: true, linha: sh.getLastRow() };
 }
@@ -2626,6 +2654,17 @@ function _excluirCronoCore(p) {
     return _cronoJaExcluida(shX, regId) ? { ok: true, excluido: true, jaExcluido: true }
                                         : { ok: true, excluido: false, naoAchou: true };
   }
+  _cronoCopiarExcluida(ss, hdr, v[i], i + 1);
+  // O Sheets não apaga a última linha não congelada: sobra uma em branco.
+  if (sh.getMaxRows() - sh.getFrozenRows() <= 1) sh.insertRowAfter(sh.getMaxRows());
+  sh.deleteRow(i + 1);
+  return { ok: true, excluido: true, linha: i + 1 };
+}
+
+// A linha INTEIRA na CRONO_EXCLUIDOS (criada na 1ª vez), com a hora e a linha onde
+// estava — o rastro do EXCLUIR (v5.33) e da medição do app substituída (v5.58).
+function _cronoCopiarExcluida(ss, hdr, valores, linhaNum) {
+  let shX = ss.getSheetByName(SHEET_CRONO_EXCL);
   const nomes = ['EXCLUIDO_EM', 'LINHA_ORIGINAL'].concat(hdr.filter(function (t) {
     return t && t !== 'EXCLUIDO_EM' && t !== 'LINHA_ORIGINAL';
   }));
@@ -2637,14 +2676,10 @@ function _excluirCronoCore(p) {
   const agora = Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm:ss');
   shX.appendRow(_cronoHdr(shX, nomes).map(function (t) {
     if (t === 'EXCLUIDO_EM') return agora;
-    if (t === 'LINHA_ORIGINAL') return i + 1;
+    if (t === 'LINHA_ORIGINAL') return linhaNum;
     const j = t ? hdr.indexOf(t) : -1;
-    return j >= 0 ? v[i][j] : '';
+    return j >= 0 ? valores[j] : '';
   }));
-  // O Sheets não apaga a última linha não congelada: sobra uma em branco.
-  if (sh.getMaxRows() - sh.getFrozenRows() <= 1) sh.insertRowAfter(sh.getMaxRows());
-  sh.deleteRow(i + 1);
-  return { ok: true, excluido: true, linha: i + 1 };
 }
 
 function _cronoJaExcluida(shX, regId) {

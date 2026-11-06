@@ -13,13 +13,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ## v7.208.0 + `.gs` v5.58 — 06/11/2026 · a medição vem sozinha do app de cronoanálise ⚠ **re-deploy**
 
-- PPCP: *"b2"*. No **"Salvar análise e fechar"** do app de cronoanálise (PC,
-  Embalagem Takt Time), a medição da embalagem vai sozinha para a aba
-  CRONOANALISE do painel — sem PDF, sem 📄 IMPORTAR PDF, sem digitar.
+- PPCP: *"b2"*. O painel passa a **aceitar** a medição que vem do app de
+  cronoanálise: no **"Salvar análise e fechar"** do app (PC, Embalagem Takt
+  Time), a medição da embalagem irá sozinha para a aba CRONOANALISE — sem PDF,
+  sem 📄 IMPORTAR PDF, sem digitar.
+- ⚠ **Ainda não acontece**: depende do app 2.103.0 (em construção) **e** da
+  variável `PAINEL_APPS_SCRIPT_URL` na Vercel do app. Até lá, continue com o
+  📄 IMPORTAR PDF.
 - Vai só medição com produto **da lista** do cadastro. Nome solto não vai: o
   app diz para corrigir o produto e enviar de novo.
 - **A mesma medição não duplica**, venha do app ou do PDF: o `.gs` confere o
   dia, o produto, o volume, os tempos e os volumes.
+- **Medição corrigida no app** (reaberta, com parada marcada, salva de novo)
+  **substitui** a do painel; a antiga fica na aba CRONO_EXCLUIDOS.
 - Na lista MEDIÇÕES da ⏱ CRONOANÁLISE, a medição que veio do app diz **app**
   no MEDIDO POR.
 - O ✓ TROCAR A UEP, a regra dos 30 volumes e a base MADERO não mudaram: a

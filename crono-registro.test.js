@@ -436,6 +436,33 @@ console.log('\n── v5.58: a medição do app ──');
      [vm.runInContext('`${_uepBaseCurto()} SEM LACUNAS ${UEP_BASE_MEDIDA.data}`', ctxH), vm.runInContext('UEP_BASE_MEDIDA.seg', ctxH), [Number(cst('UCV_REG_SEG_MAX')), Number(cst('UCV_REG_ROD_MAX')), Number(cst('UCV_REG_PER_MAX'))]]);
   ok('o painel grava a BASE com o mesmo texto (a conta da paridade é a do _ucvRegMontar)', /\$\{_uepBaseCurto\(\)\} SEM LACUNAS \$\{UEP_BASE_MEDIDA\.data\}/.test(pegaH('function _ucvRegMontar(')), true);
   // o lock que não vem: o app ouve app:true e pode reenviar
+  // revisão da v5.58: a MESMA medição do app reenviada com outros números (reabriu a análise,
+  // marcou uma parada, salvou de novo) SUBSTITUI a linha, com a antiga na CRONO_EXCLUIDOS
+  const P6 = montar(CAT, null, '06/11/2026');
+  P6.run(`return registrarCrono(${q(APP)});`);
+  P6.ABAS.CRONOANALISE[0].push('NOTA DO PPCP'); P6.ABAS.CRONOANALISE[1].push('conferir a cor');
+  const rS = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '22.1' }))});`);
+  const H6 = P6.ABAS.CRONOANALISE[0], L6 = P6.ABAS.CRONOANALISE[1], X6 = P6.ABAS.CRONO_EXCLUIDOS || [];
+  ok('o mesmo REG_ID do app com outros números: substitui no lugar (uma linha só), a antiga vai para a CRONO_EXCLUIDOS, a coluna que o PPCP pôs fica',
+     [rS.ok, rS.app, rS.registrado, rS.substituido, rS.linha, P6.ABAS.CRONOANALISE.length, L6[H6.indexOf('S_SEM_LACUNAS')], L6[H6.indexOf('S_PERIODO')], L6[H6.indexOf('NOTA DO PPCP')],
+      X6.length, X6[1] && X6[1][X6[0].indexOf('S_SEM_LACUNAS')], X6[1] && X6[1][X6[0].indexOf('REG_ID')], X6[1] && X6[1][X6[0].indexOf('LINHA_ORIGINAL')]],
+     [true, true, true, true, 2, 2, 16.2, 22.1, 'conferir a cor', 2, 16.6, APP.regId, 2]);
+  const rS2 = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '22.1' }))});`);
+  const rS3 = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '' }))});`);
+  ok('reenviada igual: "já estava" (sem nova cópia); só o NO PERÍODO mudou: também substitui (a linha inteira é comparada)',
+     [rS2.duplicado, rS2.substituido, rS3.substituido, (P6.ABAS.CRONO_EXCLUIDOS || []).length, P6.ABAS.CRONOANALISE.length], [true, undefined, true, 3, 2]);
+  const PDF2 = Object.assign({}, PDF, { regId: 'cPDF999' });
+  const P7 = montar(CAT, null, '06/11/2026');
+  P7.run(`return registrarCrono(${q(PDF2)});`);
+  const rP = P7.run(`return registrarCrono(${q(Object.assign({}, PDF2, { sLac: '16.0' }))});`);
+  ok('o caminho do painel não substitui: o REG_ID dele sai do conteúdo — o mesmo REG_ID é a mesma medição', [rP.duplicado, rP.substituido, P7.ABAS.CRONOANALISE.length], [true, undefined, 2]);
+  // revisão da v5.58: a falha da planilha no caminho do app volta com app:true (o app reenvia, não acusa o .gs antigo)
+  const P8 = montar(CAT);
+  P8.ctx.lerCatalogoProdutos = () => { throw new Error('Serviço Planilhas indisponível'); };
+  const rE = P8.run(`return registrarCrono(${q(APP)});`);
+  let rEp; try { rEp = P8.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'cX' }))});`); } catch (e) { rEp = 'lançou'; }
+  ok('a falha da planilha no caminho do app: ok:false com app:true e o motivo; no caminho do painel nada muda (ele não lê o cadastro)',
+     [rE.ok, rE.app, /indisponível/.test(rE.erro), rEp && rEp.registrado], [false, true, true, true]);
   const P5 = montar(CAT);
   P5.ctx.LockService.getScriptLock = () => ({ waitLock: () => { throw new Error('timeout'); }, releaseLock: () => {} });
   const rL = P5.run(`return registrarCrono(${q(APP)});`), rLp = P5.run(`return registrarCrono(${q(MED)});`);
