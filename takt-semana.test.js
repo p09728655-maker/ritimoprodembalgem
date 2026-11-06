@@ -409,7 +409,7 @@ ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do P
 { const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5, sobra:V0 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
   ok('o veredito: a palavra, quanto falta, PRECISA × TEM, o ritmo atual, e na semana que vem a soma com o que não fechar desta (o PRÓXIMOS DIAS não soma)',
      [h1.includes('<div class="tks-hv">NÃO CABE</div>'), h1.includes('faltam <b>2h13</b> de linha'), h1.includes('a programação precisa de <b>46h08</b> de linha · a linha tem <b>43h55</b> (5 dias de ' + _fmtHM(527) + ')'),
-      h1.includes('com a sobra desta semana (' + _fmtHM(686) + ', se nada mudar): faltam <b>' + _fmtHM(133 + 686) + '</b>'),
+      h1.includes('com o que não fechar desta semana (' + _fmtHM(686) + ', se nada mudar): faltam <b>' + _fmtHM(133 + 686) + '</b>'),
       h1.includes('para fechar: hora extra, ou tirar ≈ <b>436</b> caixas da semana (≈ 1.242 no ritmo atual)'),
       h0.includes('<div class="tks-hv">NÃO FECHA</div>'), h0.includes('resta' + 'm <b>' + _fmtHM(287) + '</b> de jornada até 17:00'), h0.includes('o que não couber passa para a semana que vem (≈ 1.671 caixas)'),
       (h1.match(/class="tks-br/g) || []).length, h1.includes('tks-br pr')],
@@ -528,7 +528,7 @@ ok('a 043 colada inteira (A:I, com o Nº LOTE SIST.): os 12 lotes de 16–18/11 
 const KH = 527 / 2761, sem = C43.semanas;
 ok('por semana: esta (o saldo dos lotes × o resto de hoje), a que vem (46h08 × 43h55, o mesmo do TAKT), 16–22/11 (20/11 feriado: 4 dias) e 23/11; o painel nos dias que ele tem, a colagem só no que é novo',
    [sem.map(s => [s.de, s.ate]), sem.map(s => s.pai ? (s.col ? 'pc' : 'p') : 'c'), _fmtHM(sem[1].precisa), _fmtHM(sem[1].tem), sem[2].tem, sem[2].precisa, sem[3].precisa, sem[3].tem],
-   [[[20261106, 20261108], [20261109, 20261115], [20261116, 20261122], [20261123, 20261123]], ['p', 'p', 'pc', 'c'], _fmtHM(2768), _fmtHM(2635), 4 * 527,
+   [[[20261106, 20261106], [20261109, 20261113], [20261116, 20261119], [20261123, 20261123]], ['p', 'p', 'pc', 'c'], _fmtHM(2768), _fmtHM(2635), 4 * 527,
     Math.round((2858.5 + 2700.5 + 3105 + 1300 * 0.83 + 400 * 3.44) * KH), Math.round((300 * 1.42 + 500 * 1.83 + 500 * 1.9) * KH), 527]);
 { const w0 = FX.ATUAL.filter(l => !l.foraEsteira && l.saldo > 0 && l.uepCx > 0).reduce((a, l) => a + l.saldo * l.uepCx, 0) * KH;
   ok('o atraso passa de uma semana para a outra: chega em 16/11 com o desta semana + o da que vem; a folha da conta fecha com a soma (nenhum dia zerou o atraso)',
@@ -543,7 +543,21 @@ ok('por semana: esta (o saldo dos lotes × o resto de hoje), a que vem (46h08 ×
      [[20261119, 20261123, 20261124], 0, 'CONSCIÊNCIA NEGRA', 20261125, 20261125]); }   // 24/11: o lote 216/26 ainda sem quantidade
 { // a folga não se guarda: segunda folgada (1.000 UEP) e terça carregada (4.000) — a folga de segunda não abate a terça
   const Cg = _tkaCorrente([], [{ n:20261109, nome:'X', qtde:1000, uepJogo:1 }, { n:20261110, nome:'X', qtde:4000, uepJogo:1 }], { hojeN:20261106, restMin:0, meta:2761, rit:null, fer:{} });
-  ok('a folga de um dia não vira crédito: só absorve atraso que já existe (segunda folgada não abate a terça carregada)',
+  { const HR = _tkaSaldoHtml(C43);
+  ok('o rótulo da semana mostra só os dias que contam (PPCP: "06 e 08/11 está considerando fim de semana"): hoje é o que resta, o feriado é dito, sábado e domingo ficam fora',
+     [HR.includes('<tr><td>06/11 (hoje: o que resta)</td>'), HR.includes('<tr><td>09/11–13/11</td>'), HR.includes('<tr><td>16/11–19/11 <span class="mono">(20/11 feriado)</span></td>'), /08\/11|15\/11|22\/11/.test(HR),
+      C43.dias.filter(d => d.dow === 0 || d.dow === 6).every(d => d.cap === 0)],
+     [true, true, true, false, true]);
+  // v7.214.2 (PPCP: "deixa regra clara sobre falta e sobra"): por extenso, nunca sinal — falta = precisa − tem, sobra = tem − precisa
+  const s0 = C43.semanas[0], sU = C43.semanas[C43.semanas.length - 1];
+  ok('falta e sobra por extenso na semana; o atraso acumulado sem sinal; a regra escrita na nota; nenhuma hora com + ou − na tabela',
+     [s0.precisa > s0.tem, HR.includes('<span class="tks-red">falta ' + _fmtHM(s0.precisa - s0.tem) + '</span>'),
+      sU.tem > sU.precisa, HR.includes('<span class="tks-ok">sobra ' + _fmtHM(sU.tem - sU.precisa) + '</span>'),
+      HR.includes('<b><span class="tks-red">' + _fmtHM(sU.atraso) + '</span></b>'), /[+−]\d+h\d\d/.test(HR.split('<div class="uep-nota">')[0]),
+      HR.includes('<b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe)'), HR.includes('a sobra não vira crédito — só abate atraso que já existe'),
+      HR.includes('<th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>')],
+     [true, true, true, true, true, false, true, true, true]); }
+ok('a folga de um dia não vira crédito: só absorve atraso que já existe (segunda folgada não abate a terça carregada)',
      [Cg.dias.find(d => d.n === 20261109).atraso, Math.round(Cg.dias.find(d => d.n === 20261110).atraso), Cg.atrasoR], [0, Math.round(4000 * 527 / 2761 - 527), null]); }
 ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de 14 em 14 dias (o máximo da leitura)',
    [_tkaFaixas(20261106, 20261123), _tkaFaixas(20261106, 20261130), _tkaFaixas(20261106, 20261113)],
