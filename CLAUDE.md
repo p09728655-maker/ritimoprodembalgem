@@ -113,7 +113,11 @@ via Google Apps Script (JSONP).
   botão, o desenho sem conta e a ligação com a aba; e (v7.210.0) a SEMANA QUE
   VEM com a programação real de 09–15/11 (o mesmo 2h13 do PRÓXIMOS DIAS, a
   redistribuição, o adiantado), a SIMULAÇÃO nos três ritmos e a 🖨 para a
-  diretoria (as duas causas na conclusão; 8 de 8 mutações pegas): `node takt-semana.test.js`.
+  diretoria (as duas causas na conclusão; 8 de 8 mutações pegas); e
+  (v7.211.0) o veredito em horas de linha das duas semanas (o 2h13 igual ao
+  PRÓXIMOS DIAS e à simulação, a soma com a sobra desta semana, o sábado, a
+  semana que cabe, as caixas sem UEP fora do peso), o gráfico em horas e a 🖨
+  sem s por UEP (6 de 6 mutações pegas): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6699,6 +6703,27 @@ feito e dá ar de verdade ao que sobrou.
     do Chromium: com gráficos de 190 e o título longo transbordava para a 2ª;
     `TKS_DOC_SVG_H` = 165). ⚠ A conclusão mostra as DUAS causas (carga e
     ritmo) e a referência como *em avaliação* (`UEP_REF_STATUS`).
+  - **DIRETO (v7.211.0**, PPCP: *"deixar nível direto para qualquer um olhar
+    e entender se cabe ou não, está muito poluído. A tela também"*): a tela e a
+    folha falam **HORAS DE LINHA** (UEP × 527 ÷ META UEP; 1 dia de linha =
+    8h47). s por UEP é unidade do PCP — foi para os detalhes.
+    - **Conta** `_taktVeredito(T, P, rit)`: esta semana (P null) precisa = o
+      saldo, tem = o resto da jornada + os dias úteis que vêm; semana que vem
+      precisa/tem/falta = `P.minPede`/`P.minJorn`/`P.saldoMin` (o PRÓXIMOS
+      DIAS); `rit` = o ritmo desta semana (o cenário `sem`); `faltaCx` pela
+      falta em UEP sem arredondar (`passa`) ÷ UEP/cx do saldo COM UEP — as
+      mesmas caixas da simulação.
+    - **Desenho** `_taktHeroHtml(V, o)` — UMA marcação para tela e papel: a
+      palavra (NÃO CABE · CABE · NÃO FECHA · FECHA · NÃO FECHOU · FECHOU ·
+      SEM CARGA), quanto falta, PRECISA × TEM em barras, o ritmo atual, e na
+      semana que vem **a soma com o que não fechar desta** (`o.sobra`; o
+      PRÓXIMOS DIAS não soma — em 06/11: 2h13 → 13h39). Embaixo, o porquê
+      numa linha (`.tks-por`) e o `_taktSvg` **só em horas** (a linha do takt
+      saiu: repetia a média do programado). O resto em `_taktDetHtml`
+      (`<details>`, `TKS_DET` lembra aberto/fechado no refresh).
+    - **🖨** `_taktDocHtml(A={T0,T1,P1,V0,V1})`: a frase do topo, os dois
+      vereditos lado a lado com o porquê e o gráfico, uma linha de definição.
+      Nada de s por UEP, cascata ou tabela (o teste prende).
   - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
     (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
     8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;

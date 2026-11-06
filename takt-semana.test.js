@@ -30,10 +30,11 @@ function pegaConst(nome) {
 global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatrimar'])[1].toUpperCase();
+global.TKS_DET = false;
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
- 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml('].forEach(f => eval.call(global, pega(f)));
+ 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
@@ -175,6 +176,11 @@ console.log('\n── o que fica fora, e diz ──');
   ok('sábado trabalhado: fora do executado (só os 4 dias úteis fechados) e do "cabem" (0, nenhum dia útil pela frente); a produção dele vai para o fora da jornada',
      [Ts.exec.nFech, Ts.exec.minHoje, Ts.exec.min, r1(Ts.exec.uep), r1(Ts.exec.fora), r1(Ts.exec.he), Ts.falta.capRest, Ts.falta.ate],
      [4, 0, 4 * 527, r1(2686 + 2869.1 + 2095.2 + 2400), 540, r1(586.7 + 600), 0, '17:00']); }
+{ // caixa de saldo sem UEP não entra no peso médio das caixas do veredito
+  const L = S.linhas.concat([{ data:'06/11/2026', dataNum:20261106, codigo:'501002001', qtde:500, uepCx:null, uep:null, saldo:500, aba:'aberta', foraEsteira:false }]);
+  const Tc = _taktMontar(Object.assign({}, S, { linhas:L }), HIST, HOJE), Vc = _taktVeredito(Tc, null, null);
+  ok('as caixas que faltam saem do peso médio das caixas COM UEP (500 cx sem UEP no saldo não diluem a conta)',
+     [Tc.falta.cxSemUep, Math.round(Vc.faltaCx), Math.round(Tc.falta.passa / (Tc.falta.uep / (Tc.falta.cx - 500)))], [500, Math.round(Tc.falta.passa / (Tc.falta.uep / 2370)), Math.round(Tc.falta.passa / (Tc.falta.uep / 2370))]); }
 ok('sem dado, null — nunca 0: sem a leitura, sem dia útil, sem UEP programada',
    [_taktMontar(null, HIST, HOJE), _taktMontar({ linhas:[] , de:'xx', ate:'yy' }, HIST, HOJE),
     (t => [t.takt, t.porDia, t.pede, t.exec.s === null || t.exec.s > 0])(_taktMontar(Object.assign({}, S, { linhas:[] }), HIST, HOJE))],
@@ -212,13 +218,19 @@ ok('o botão: quanto a programação pede da referência (âmbar acima de 100%);
    [{ txt:'pede ' + fmtP(T.pede) + ' da referência', cls:'warn' }, '', '…', 'programação não lida', 'falta o .gs v5.59', 'sem Google Sheets', 'nenhuma UEP programada', 'nenhum dia útil']);
 
 console.log('\n── o desenho ──');
-const HT = _taktHtml(T, G, { largura:1200 });
+const HT = _taktHtml(T, G, { largura:1200, V:_taktVeredito(T, null, T.exec.uep / T.exec.min * 527) });
 ok('os quatro cards, a frase, o porquê, o agora e o dia a dia, com os números da montagem',
    ['TAKT · O QUE A PROGRAMAÇÃO PEDE', 'REFERÊNCIA · META DIA (UEP) DO ⚙', 'EXECUTADO NA SEMANA · JORNADA', 'FALTA DA SEMANA · SALDO DOS LOTES',
     '9,9<small>s por UEP</small>', '11,5<small>s por UEP</small>', '12,6<small>s por UEP</small>', '5.097<small>UEP</small>',
     '<b>16,2% acima</b>', '<b>73% é carga acima da referência</b>', '<b>27% é ritmo</b>', 'POR QUE NÃO ACOMPANHOU · dias fechados 03/11–05/11',
     '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '17,1 s', '19,8 s', '24,8 s',
-    'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', 'takt da semana 3.208/dia', 'referência 2.761'].filter(t => !HT.includes(t)), []);
+    'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', '1 dia de linha (' + _fmtHM(527) + ' = 2.761 UEP)'].filter(t => !HT.includes(t)), []);
+ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha; os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',
+   [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA</div>') > 0, HT.includes('faltam <b>' + _fmtHM(686) + '</b> de linha'),
+    HT.includes('<b>Por quê:</b> a programação pediu <b>116,2%</b> do que a linha faz (a referência) e a linha rodou a <b>90,6%</b> dela. Do que não saiu nos dias fechados, <b>73% foi excesso de programação</b> e <b>27% ritmo da linha</b>.'),
+    HT.indexOf('<details class="tks-det"') > HT.indexOf('id="tks-g-box"'), HT.indexOf('TAKT · O QUE A PROGRAMAÇÃO PEDE') > HT.indexOf('<details class="tks-det"'),
+    HT.indexOf('AGORA ·') > HT.indexOf('<details class="tks-det"'), HT.includes('s por UEP') && HT.indexOf('s por UEP') > HT.indexOf('<details')],
+   [true, true, true, true, true, true, true]);
 ok('o card do takt âmbar (pede acima), o do executado na cor do sc (90,6% → atenção), a falta vermelha (não cabe)',
    [/<div class="kpi-card warn"[^>]*><div class="kpi-lbl">TAKT/.test(HT), /<div class="kpi-card warn"[^>]*><div class="kpi-lbl">EXECUTADO/.test(HT), /<div class="kpi-card red"[^>]*><div class="kpi-lbl">FALTA/.test(HT)],
    [true, true, true]);
@@ -226,11 +238,12 @@ ok('na segunda de manhã (nenhum dia fechado): a conta do porquê espera, sem ca
    (h => [h.includes('Nenhum dia útil fechado na semana ainda'), h.includes('tks-casc')])(_taktHtml(_taktMontar(S, [], Object.assign({}, HOJE, { num:20261103 })), null, {})),
    [true, false]);
 const SV = _taktSvg(T, 1200);
-ok('o gráfico: 02/11 FINADOS sem barras, quatro dias com o programado tracejado e o feito, hoje "até agora", as duas linhas; números com halo por cima das linhas',
-   [SV.includes('>FINADOS<'), (SV.match(/stroke-dasharray="5 4"/g) || []).length, (SV.match(/fill="var\(--tks-feito\)"/g) || []).length, SV.includes('1.520 até agora'),
-    SV.includes('stroke="var(--acc)" stroke-width="2.5" stroke-dasharray="12 6"'), SV.lastIndexOf('stroke-dasharray="12 6"') < SV.indexOf('paint-order="stroke"'),
+ok('o gráfico em HORAS DE LINHA: 02/11 FINADOS sem barras, quatro dias com o programado e o feito (03/11: 10h16 pedidas, 8h33 feitas), hoje 4h50 até agora; a linha de 1 dia (8h47); sem a linha do takt; números com halo por cima',
+   [SV.includes('>FINADOS<'), (SV.match(/stroke-dasharray="5 4"/g) || []).length, (SV.match(/fill="var\(--tks-feito\)"/g) || []).length,
+    ['>10h16<', '>8h33<', '>' + _fmtHM(Math.round((996.9 + 523.5) * 527 / 2761)) + ' até agora<', '>8h<'].filter(x => !SV.includes(x)),
+    SV.includes('stroke-dasharray="12 6"'), SV.includes('<title>1 dia de linha: ' + _fmtHM(527)), SV.lastIndexOf('stroke-width="2"><title>1 dia') < SV.indexOf('paint-order="stroke"'),
     /06\/11 sex \(hoje\)/.test(SV)],
-   [true, 4, 4, true, true, true, true]);
+   [true, 4, 4, [], false, true, true, true]);
 ok('o desenho não faz conta (tudo vem da montagem) e a conta não lê a tela nem a planilha',
    [/_taktMontar\(|_taktAgora\(|uepDiaMeta\(|\.linhas/.test(pega('function _taktHtml(') + pega('function _taktSvg(')),
     /document\.|PONTOS_DIA|UEP_HIST|CFG\.|jsonpFetch/.test(pega('function _taktMontar(') + pega('function _taktAgora(') + pega('function _taktRestMin('))],
@@ -356,9 +369,9 @@ ok('o desenho da semana que vem: takt, referência, 2h13 além da jornada (verme
     /<div class="kpi-card red"[^>]*><div class="kpi-lbl">A SEMANA × A JORNADA/.test(HP), /EXECUTADO|POR QUE NÃO ACOMPANHOU|AGORA ·/.test(HP)],
    [[], true, false]);
 { const SV1 = _taktSvg(T1, 1200, { fut:true });
-  ok('o gráfico da semana que vem: o saldo de cada dia com o % da referência, âmbar acima dela, sem barra de feito',
+  ok('o gráfico da semana que vem em horas: o saldo de cada dia (09/11 10h35), âmbar acima de 1 dia de linha, sem barra de feito',
      [(SV1.match(/stroke="var\(--warn\)" stroke-width="1.5" stroke-dasharray="5 4"/g) || []).length, (SV1.match(/stroke-dasharray="5 4"/g) || []).length,
-      SV1.includes('3.326 · 120%'), SV1.includes('var(--tks-feito)')], [3, 5, true, false]); }
+      SV1.includes('>' + _fmtHM(Math.round(3326 * 527 / 2761)) + '<'), SV1.includes('var(--tks-feito)')], [3, 5, true, false]); }
 ok('a escolha da semana e o botão: o painel e o número são da semana escolhida',
    [_taktSemBotoes(0).includes('class="on" onclick="_taktSemSet(0)"'), _taktSemBotoes(1).includes('class="on" onclick="_taktSemSet(1)"'),
     _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===1 \? 'semana que vem' : ''/.test(R), /T:TKS_SEM===1 \? T1 : T/.test(R)],
@@ -383,18 +396,47 @@ ok('sem o executado nem o período, só a referência; semana que cabe = falta n
   ok('na tela: o quadro da simulação (um por cenário, horas de hora extra e caixas a re-datar) e a frase com o ritmo desta semana',
      [HS.includes('<b>SIMULAÇÃO</b>'), (HS.match(/de hora extra nesse ritmo/g) || []).length, HS.includes('No ritmo desta semana (90,6% da referência) faltariam <b>' + _fmtHM(419) + '</b>'),
       HS.includes('ou re-datar 1.991 UEP (≈ 1.242 cx)')], [true, 3, true, true]); }
-{ const DOC = _taktDocHtml({ T0:T, T1, P1, sim:SIM }, { data:'06/11/2026', hora:'11:58' });
-  ok('🖨 a conclusão no topo diz as DUAS causas (carga e ritmo), não só a carga, e o que fecha a semana que vem',
-     ['A <b>semana que vem</b> (09/11 a 13/11) pede <b>105,1% da referência</b>', 'mesmo com a linha na referência, <b>faltam 2h13 de linha</b> (699 UEP)',
-      'no ritmo desta semana, <b>faltam ' + _fmtHM(419) + '</b>', '<b>73% foi carga acima da referência</b> (programação) e <b>27% ritmo</b> (produção)',
-      'Para fechar a semana que vem: hora extra, re-datar lotes, ou as duas.'].filter(x => !DOC.includes(x)), []);
-  ok('🖨 as duas semanas lado a lado, a simulação em tabela, os dois gráficos no tamanho do papel e a referência dita como "em avaliação"',
-     [DOC.includes('<div class="td-cols">'), DOC.includes('>ESTA SEMANA<small>'), DOC.includes('>SEMANA QUE VEM<small>'), (DOC.match(/<tr><td>N[ao]/g) || []).length,
-      (DOC.match(new RegExp('viewBox="0 0 ' + TKS_DOC_SVG_W + ' ' + TKS_DOC_SVG_H + '"', 'g')) || []).length, DOC.includes(UEP_REF_STATUS), /AGORA|ÚLTIMA HORA/.test(DOC)],
-     [true, true, true, 3, 2, true, false]); }
+console.log('\n── v7.211.0: o veredito em horas de linha (tela e 🖨 diretas) ──');
+const RIT = CEN.find(c => c.id === 'sem').uepDia, K = 527 / 2761;
+const V0 = _taktVeredito(T, null, RIT), V1 = _taktVeredito(T1, P1, RIT);
+ok('esta semana: o saldo (5.096,8 UEP) precisa de 16h13 de linha e restam 4h47 de jornada → faltam 11h26 (≈ 1.671 cx); no ritmo atual, 13h06',
+   [V0.precisaMin, V0.temMin, V0.faltaMin, _fmtHM(V0.faltaMin), V0.cabe, V0.encerrada, Math.round(V0.faltaCx), V0.ritmo.faltaMin, r1(V0.ritmo.pct)],
+   [Math.round(T.falta.uep * K), 287, Math.round(T.falta.uep * K) - 287, _fmtHM(686), false, false, Math.round(T.falta.passa / (T.falta.uep / 2370)), Math.round(T.falta.uep * 527 / RIT) - 287, 90.6]);
+ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do PRÓXIMOS DIAS e da simulação (≈ 436 cx; no ritmo atual 6h59 e ≈ 1.242 cx)',
+   [_fmtHM(V1.precisaMin), _fmtHM(V1.temMin), V1.faltaMin === P1.saldoMin && V1.faltaMin === SIM[0].min, Math.round(V1.faltaCx) === Math.round(SIM[0].cx),
+    V1.ritmo.faltaMin, Math.round(V1.ritmo.faltaCx) === Math.round(SIM[1].cx)],
+   [_fmtHM(2768), _fmtHM(2635), true, true, SIM[1].min, true]);
+{ const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5, sobra:V0 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
+  ok('o veredito: a palavra, quanto falta, PRECISA × TEM, o ritmo atual, e na semana que vem a soma com o que não fechar desta (o PRÓXIMOS DIAS não soma)',
+     [h1.includes('<div class="tks-hv">NÃO CABE</div>'), h1.includes('faltam <b>2h13</b> de linha'), h1.includes('a programação precisa de <b>46h08</b> de linha · a linha tem <b>43h55</b> (5 dias de ' + _fmtHM(527) + ')'),
+      h1.includes('somando o que não fechar desta semana (' + _fmtHM(686) + ', se nada mudar): faltam <b>' + _fmtHM(133 + 686) + '</b>'),
+      h1.includes('para fechar: hora extra, ou tirar ≈ <b>436</b> caixas da semana (≈ 1.242 no ritmo atual)'),
+      h0.includes('<div class="tks-hv">NÃO FECHA</div>'), h0.includes('resta' + 'm <b>' + _fmtHM(287) + '</b> de jornada até 17:00'), h0.includes('o que não couber passa para a semana que vem (≈ 1.671 caixas)'),
+      (h1.match(/class="tks-br/g) || []).length, h1.includes('tks-br pr')],
+     [true, true, true, true, true, true, true, true, 2, true]); }
+{ const Vc = _taktVeredito(T1, Object.assign({}, P1, { uep:10000, minPede:10000 * K, saldoMin:Math.round(10000 * K) - 2635, passa:10000 - 13805 }), RIT);
+  const Hs = { num:20261107, minNorm:300, restMin:200, uep:500, he:40, meta:2761, fim:'17:00' };
+  const Vs = _taktVeredito(_taktMontar(S, HIST.concat([{ data:'06/11/2026', uep:2400, uepHe:600, metaUep:2761 }]), Hs), null, RIT);
+  ok('a semana que cabe diz CABE e quanto sobra (verde, sem "para fechar"); no sábado a desta semana diz NÃO FECHOU e quanto ficou, sem ritmo (não há jornada)',
+     [(h => [h.includes('<div class="tks-hero ok"><div class="tks-hv">CABE</div>'), h.includes('sobram <b>'), h.includes('para fechar')])(_taktHeroHtml(Vc, { semana:'prox', nUteis:5 })),
+      Vs.encerrada, (h => [h.includes('NÃO FECHOU'), h.includes('ficaram <b>'), h.includes('a jornada da semana acabou'), h.includes('no ritmo atual')])(_taktHeroHtml(Vs, { semana:'esta' }))],
+     [[true, true, false], true, [true, true, true, false]]); }
+ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesenha o painel)',
+   [_taktDetHtml('x').includes('<details class="tks-det" ontoggle="TKS_DET=this.open">'), (global.TKS_DET = true, _taktDetHtml('x').includes('<details class="tks-det" open')), (global.TKS_DET = false)],
+   [true, true, false]);
+{ const DOC = _taktDocHtml({ T0:T, T1, P1, V0, V1 }, { data:'06/11/2026', hora:'11:58' });
+  ok('🖨 direta: uma frase no topo com os dois vereditos e a soma; por semana a palavra, o quanto falta e o porquê com as DUAS causas',
+     ['<b>Nenhuma das duas semanas cabe na linha.</b> Esta semana faltam <b>' + _fmtHM(686) + '</b> de linha; a semana que vem, <b>2h13</b> de linha — <b>' + _fmtHM(819) + '</b> somando o que não fechar desta.',
+      '<div class="tks-hv">NÃO FECHA</div>', '<div class="tks-hv">NÃO CABE</div>', '<b>73% excesso de programação</b>, <b>27% ritmo da linha</b>',
+      '1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP'].filter(x => !DOC.includes(x)), []);
+  ok('🖨 sem poluição: nada de s por UEP, cascata, tabela de cenários ou agora; os dois gráficos em horas no tamanho do papel; a referência dita como "em avaliação"',
+     [DOC.includes('<div class="td-cols">'), /s por UEP|s\/UEP|<table|td-casc|AGORA ·|ÚLTIMA HORA/.test(DOC) || /\btakt\b/i.test(DOC.split('TAKT DA SEMANA').join('')),
+      (DOC.match(new RegExp('viewBox="0 0 ' + TKS_DOC_SVG_W + ' ' + TKS_DOC_SVG_H + '"', 'g')) || []).length, DOC.includes(UEP_REF_STATUS)],
+     [true, false, 2, true]); }
 { const G0 = pega('async function gerarRelatorioTakt(');
   ok('🖨 a janela abre no clique, lê o que faltar (histórico, esta semana, a que vem) e monta com as MESMAS contas da tela; no menu 🖨 IMPRIMIR ▾',
-     [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\)\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0), /_taktSimular\(/.test(G0),
+     [G0.indexOf("window.open(") < G0.indexOf('await '), /_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\)\)/.test(G0), /_taktProxMontar\(T1\)/.test(G0),
+      /_taktVeredito\(T0, null, rit\)/.test(G0) && /_taktVeredito\(T1, P1, rit\)/.test(G0),
       /onclick="_uepImpFecha\(\);gerarRelatorioTakt\(\)"/.test(html), /T=_taktMontar\(TKS, UEP_HIST, _taktHoje\(D, hojeN\)\)/.test(R)],
      [true, true, true, true, true, true]); }
 ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
