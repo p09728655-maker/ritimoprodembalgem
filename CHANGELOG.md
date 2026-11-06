@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.211.0 — 06/11/2026 · TAKT direto: cabe ou não cabe, em horas de linha
+
+- PPCP: *"impressão deixar nível direto para qualquer um olhar e entender se
+  cabe ou não, está muito poluído. A tela também"*. Tela e folha refeitas em
+  **uma unidade só, HORAS DE LINHA** (1 dia de linha = a jornada de 8h47 na
+  referência), no lugar de segundos por UEP.
+- Por semana, na frente: **NÃO CABE / CABE** (esta semana: **NÃO FECHA /
+  FECHA**) em letra grande, **quanto falta em horas**, **PRECISA × TEM** em
+  duas barras, o ritmo atual da linha numa linha e o que fazer. Embaixo, o
+  porquê numa linha e o dia a dia em horas (a linha de 1 dia de linha).
+- **Novo e importante**: a semana que vem soma **o que não fechar desta
+  semana**. O PRÓXIMOS DIAS não soma — em 06/11 eram 2h13 só da semana que vem
+  e **13h39 somando a sobra desta** (se nada mudar até o fim do dia).
+- O resto (takt em s por UEP, por que não acompanhou, o agora, a simulação nos
+  três ritmos) fica em **DETALHES PARA O PCP**, recolhido.
+- **🖨 TAKT DA SEMANA**: uma frase no topo (*"Nenhuma das duas semanas cabe na
+  linha…"*), os dois vereditos lado a lado com o porquê e o gráfico em horas,
+  e uma linha de definição. Uma folha.
+- Os números não mudam: 2h13 continua o mesmo do PRÓXIMOS DIAS, e as caixas
+  são as mesmas da simulação.
+
+---
+
 ## v7.210.0 — 06/11/2026 · TAKT da semana que vem, simulação e 🖨 para a diretoria
 
 - PPCP: *"quero ver da semana que vem"*. A sub-aba **TAKT DA SEMANA** ganha a
