@@ -70,7 +70,7 @@ function montar(abas, meta, hoje) {
   vm.createContext(ctx);
   vm.runInContext(GS, ctx);
   const run = code => vm.runInContext('(function(){ _invalidarValores(); ' + code + ' })()', ctx);
-  return { ABAS, run, locks: () => locks, semLock: () => semLock };
+  return { ABAS, run, ctx, locks: () => locks, semLock: () => semLock };
 }
 
 // O que o painel manda (o _ucvRegMontar): números como o JS escreve, vazio = ''.
@@ -89,8 +89,9 @@ console.log('\n── registrarCrono: a aba nasce sozinha e a linha é a mediç�
   const H = P.ABAS.CRONOANALISE[0], L = P.ABAS.CRONOANALISE[1];
   const col = n => L[H.indexOf(n)];
   ok('grava e diz que gravou (o painel confere o "registrado")', [r.ok, r.registrado, r.duplicado, r.linha], [true, true, undefined, 2]);
-  ok('a aba CRONOANALISE nasce com o cabeçalho, REGISTRADO_EM primeiro e REG_ID por último',
-     [H[0], H[1], H[H.length - 1], H.length, P.ABAS.CRONOANALISE.length], ['REGISTRADO_EM', 'DATA_MEDICAO', 'REG_ID', 24, 2]);
+  // v5.58: a ORIGEM entrou depois do REG_ID (a coluna nova vai sempre para o fim)
+  ok('a aba CRONOANALISE nasce com o cabeçalho, REGISTRADO_EM primeiro, REG_ID e ORIGEM no fim',
+     [H[0], H[1], H[H.length - 2], H[H.length - 1], H.length, P.ABAS.CRONOANALISE.length], ['REGISTRADO_EM', 'DATA_MEDICAO', 'REG_ID', 'ORIGEM', 25, 2]);
   ok('os segundos e a conversão como NÚMERO',
      [col('S_RODANDO'), col('S_PERIODO'), col('S_SEM_LACUNAS'), col('VOLUMES_MEDIDOS'), col('UEP_CRONO'), col('UEP_CADASTRO'), col('LINHA_S_CX'), col('ENTRE_PECAS')],
      [8.6, 9.4, 7.1, 60, 1.09, 1.2, 20.57, 250]);
@@ -356,6 +357,117 @@ console.log('\n── getHorasCrono (v5.35/v5.36): o log da janela hora a hora, 
       /function _cronoParadasNasHoras[\s\S]*?_valoresPorData\(sh, 'DATA', 0, conv, deNum, ateNum\)[\s\S]*?dn = conv\(r\[iD\]\)/.test(GS)], [2, true, true]);
   ok('no doGet, com cache de leitura (a chave leva de/ate)',
      [/act === 'getHorasCrono'\)\s*result = getHorasCrono\(p\)/.test(GS), /getHorasCrono: 300/.test(GS)], [true, true]);
+}
+// ════════════════════════════════════════════════════════════════════════════
+// v5.58 — A MEDIÇÃO QUE VEM DO APP DE CRONOANÁLISE (PPCP, 06/11/2026: "b2").
+// O app manda o rótulo da lista e o que mediu; o resto sai do cadastro, pela
+// régua do painel. A mesma medição não duplica entre o app e o PDF.
+console.log('\n── v5.58: a medição do app ──');
+{
+  const HTML = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+  const pegaH = sig => { const i = HTML.indexOf(sig); if (i < 0) throw new Error('sem ' + sig); let d = 0; for (let k = HTML.indexOf('{', HTML.indexOf(')', i)); k < HTML.length; k++) { if (HTML[k] === '{') d++; else if (HTML[k] === '}' && --d === 0) return HTML.slice(i, k + 1); } };
+  const cst = n => { const m = new RegExp('const ' + n + '\\s*=\\s*([^;]+);').exec(HTML); return m && m[1].replace(/\/\/.*$/, '').trim(); };
+  const CAT = { PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP', 'VELOCIDADE (m/min)', 'ENTRE_PECAS (mm)'],
+    ['501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.46, 9, 650], ['501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.78, 9, 650],
+    ['501059003', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.46, 9, 650], ['501059004', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.82, 9, 650],
+    ['501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, 9, 250], ['501160001', 'VOL 1/2 BERCO ALGODAO DOCE', 'BRANCO', '', 9, 650]] };
+  const APP = { origem: 'app', regId: 'app-0f8c2a71-5b1e-4c3d-9a6f-2e7d1b4c8a90', rotulo: '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2',
+    data: '04/11/2026', sRod: '20.4', sLac: '16.6', sPer: '24.9', volumes: '60' };
+  const P = montar(CAT, null, '06/11/2026');
+  const r1 = P.run(`return registrarCrono(${q(APP)});`);
+  const H = P.ABAS.CRONOANALISE[0], L = P.ABAS.CRONOANALISE[1], col = n => L[H.indexOf(n)];
+  ok('grava, com app:true (o app sabe que o .gs aceita) e a ORIGEM APP',
+     [r1.ok, r1.app, r1.registrado, r1.duplicado, col('ORIGEM'), col('REG_ID')], [true, true, true, undefined, 'APP', APP.regId]);
+  ok('o resto sai do cadastro, pela régua do painel: produto sem o VOL, o volume, TODOS os códigos do volume (as cores), a UEP do volume (média das cores)',
+     [col('MODELO'), col('PRODUTO'), col('VOLUME'), col('CODIGOS'), col('UEP_CADASTRO'), col('VELOCIDADE'), col('ENTRE_PECAS')],
+     ['501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '501.059.002 501.059.004', 1.8, 9, 650]);
+  ok('a base é a MADERO sem as lacunas; UEP_CRONO = sem as lacunas ÷ 6,7; tolerância e tempo padrão vazios (são do painel de cada computador)',
+     [col('BASE'), col('BASE_S'), col('UEP_CRONO'), col('TOLERANCIA_PCT'), col('TEMPO_PADRAO_S'), col('S_RODANDO'), col('S_SEM_LACUNAS'), col('S_PERIODO'), col('VOLUMES_MEDIDOS'), col('DATA_MEDICAO')],
+     ['MADERO SEM LACUNAS 20/10/2026', 6.7, 2.48, '', '', 20.4, 16.6, 24.9, 60, '04/11/2026']);
+  const r2 = P.run(`return registrarCrono(${q(APP)});`);
+  ok('a retentativa do app (o mesmo REG_ID) não duplica e diz que já estava', [r2.ok, r2.app, r2.duplicado, P.ABAS.CRONOANALISE.length], [true, true, true, 2]);
+  // o PDF da MESMA medição importado depois no painel (o REG_ID do painel sai do conteúdo e do MEDIDO POR)
+  const PDF = Object.assign({}, MED, { regId: 'cPDF123', data: '04/11/2026', modelo: '501059', produto: 'PENTEADEIRA CAMARIM STRASS', volume: 'VOL 2/2',
+    sRod: '20.4', sLac: '16.6', sPer: '24.9', volumes: '60', quem: 'PPCP' });
+  const r3 = P.run(`return registrarCrono(${q(PDF)});`);
+  ok('o PDF da mesma medição importado no painel não duplica (mesmaMedicao), e a resposta do painel não leva app',
+     [r3.ok, r3.duplicado, r3.mesmaMedicao, r3.linha, r3.app, P.ABAS.CRONOANALISE.length], [true, true, true, 2, undefined, 2]);
+  // e o contrário: primeiro o PDF, depois o app
+  const P2 = montar(CAT, null, '06/11/2026');
+  P2.run(`return registrarCrono(${q(PDF)});`);
+  const r4 = P2.run(`return registrarCrono(${q(APP)});`);
+  ok('e o contrário: o PDF primeiro, o app depois — o app ouve "já estava"', [r4.ok, r4.app, r4.duplicado, r4.mesmaMedicao, P2.ABAS.CRONOANALISE.length], [true, true, true, true, 2]);
+  const r5 = P2.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-outra', sLac: '16.8', sRod: '20.6' }))});`);
+  ok('outra medição do mesmo volume no mesmo dia (tempos diferentes) entra', [r5.registrado, r5.duplicado, P2.ABAS.CRONOANALISE.length], [true, undefined, 3]);
+  // o JOGO e o produto de um volume
+  const P3 = montar(CAT, null, '06/11/2026');
+  P3.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-j', rotulo: '501059 · PENTEADEIRA CAMARIM STRASS' }))});`);
+  P3.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-m', rotulo: '501149 · MESA CABECEIRA MADERO', sRod: '7.9', sLac: '6.7', sPer: '' }))});`);
+  const H3 = P3.ABAS.CRONOANALISE[0], c3 = (i, n) => P3.ABAS.CRONOANALISE[i][H3.indexOf(n)];
+  ok('o JOGO: "JOGO 2 VOL", os 4 códigos e a UEP = a soma das médias dos volumes ÷ 2; produto de um volume: "VOL 1/1"',
+     [c3(1, 'VOLUME'), c3(1, 'CODIGOS'), c3(1, 'UEP_CADASTRO'), c3(2, 'VOLUME'), c3(2, 'CODIGOS'), c3(2, 'UEP_CADASTRO'), c3(2, 'UEP_CRONO'), c3(2, 'S_PERIODO')],
+     ['JOGO 2 VOL', '501.059.001 501.059.002 501.059.003 501.059.004', 1.63, 'VOL 1/1', '501.149.001', 1, 1, '']);
+  // as recusas: ok:true (o app não retenta), recusado, o motivo, e nada gravado
+  const rec = o => { const PX = montar(CAT, null, '06/11/2026'); const r = PX.run(`return registrarCrono(${q(Object.assign({}, APP, o))});`); return [r.ok, r.app, r.registrado, r.recusado, !!(PX.ABAS.CRONOANALISE && PX.ABAS.CRONOANALISE.length > 1), r.erro]; };
+  const R = [rec({ rotulo: 'Penteadeira strass - caixa 2/2' }), rec({ rotulo: '501999 · PRODUTO QUE NAO EXISTE' }), rec({ rotulo: '501059 · PENTEADEIRA CAMARIM STRASS · VOL 3/3' }),
+    rec({ data: '2026-11-04' }), rec({ volumes: '60.5' }), rec({ sRod: '15.0' }), rec({ sLac: '130' })];
+  ok('recusa com o motivo (formato, fora do cadastro, volume que não existe, data, volumes, rodando < sem as lacunas, tempo absurdo) e não grava nada',
+     R.map(x => x.slice(0, 5)), R.map(() => [true, true, false, true, false]));
+  ok('os motivos dizem o que corrigir', [/formato da lista/.test(R[0][5]), /não está no cadastro do painel/.test(R[1][5]), /tem 2 volume/.test(R[2][5]),
+     /dd\/mm\/aaaa/.test(R[3][5]), /inteiro/.test(R[4][5]), /não fecha/.test(R[5][5]), /não parece certo/.test(R[6][5])], [true, true, true, true, true, true, true]);
+  const P4 = montar(CAT, null, '06/11/2026');
+  P4.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-p', sPer: '15.1' }))});`);
+  P4.run(`return registrarCrono(${q(Object.assign({}, APP, { regId: 'app-q', rotulo: '501160 · BERCO ALGODAO DOCE · VOL 1/2' }))});`);
+  const H4 = P4.ABAS.CRONOANALISE[0];
+  ok('NO PERÍODO fora da régua fica vazio (só informa; não recusa a medição); volume sem UEP no cadastro: UEP_CADASTRO vazia, nunca 0',
+     [P4.ABAS.CRONOANALISE[1][H4.indexOf('S_PERIODO')], P4.ABAS.CRONOANALISE[2][H4.indexOf('UEP_CADASTRO')], P4.ABAS.CRONOANALISE.length], ['', '', 3]);
+  const lido = P.run(`return getCronoRegistros();`).registros[0];
+  ok('a leitura devolve a ORIGEM', [lido.origem, lido.produto, lido.volume], ['APP', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2']);
+  // as réguas do painel (o mesmo nome, o mesmo volume, a mesma base, os mesmos limites)
+  const ctxH = {}; vm.createContext(ctxH);
+  vm.runInContext(pegaH('function _capVol(') + pegaH('function _capNome(') + 'const UEP_BASE=' + cst('UEP_BASE') + ';const UEP_BASE_MEDIDA=' + cst('UEP_BASE_MEDIDA') + ';' + pegaH('function _uepBaseCurto('), ctxH);
+  const DESCS = [['VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA'], ['  vol. 1 / 3  home  ripado antares 1.8', ''], ['RACK BRITO 137 CM MARSALA', 'MARSALA'], ['MESA CENTRO LUNA 670', 'CUMARU'], ['VOL 1/1 MESA CABECEIRA MADERO', '']];
+  const G = montar(CAT);
+  ok('_cronoNomeCad e _cronoVolCad = o _capNome e o _capVol do painel, nas mesmas descrições',
+     DESCS.map(([d, c]) => [G.run(`return _cronoNomeCad(${q(d)}, ${q(c)});`), G.run(`return _cronoVolCad(${q(d)});`)]),
+     DESCS.map(([d, c]) => [vm.runInContext(`_capNome(${q(d)}, ${q(c)})`, ctxH), JSON.parse(JSON.stringify(vm.runInContext(`_capVol(${q(d)})`, ctxH)))]));
+  ok('a BASE e o BASE_S = o que o 💾 REGISTRAR do painel grava; os limites = os do _ucvRegValida',
+     [G.run('return CRONO_BASE_ROT_GS;'), G.run('return CRONO_BASE_S_GS;'), G.run('return [CRONO_APP_SEG_MAX, CRONO_APP_ROD_MAX, CRONO_APP_PER_MAX];')],
+     [vm.runInContext('`${_uepBaseCurto()} SEM LACUNAS ${UEP_BASE_MEDIDA.data}`', ctxH), vm.runInContext('UEP_BASE_MEDIDA.seg', ctxH), [Number(cst('UCV_REG_SEG_MAX')), Number(cst('UCV_REG_ROD_MAX')), Number(cst('UCV_REG_PER_MAX'))]]);
+  ok('o painel grava a BASE com o mesmo texto (a conta da paridade é a do _ucvRegMontar)', /\$\{_uepBaseCurto\(\)\} SEM LACUNAS \$\{UEP_BASE_MEDIDA\.data\}/.test(pegaH('function _ucvRegMontar(')), true);
+  // o lock que não vem: o app ouve app:true e pode reenviar
+  // revisão da v5.58: a MESMA medição do app reenviada com outros números (reabriu a análise,
+  // marcou uma parada, salvou de novo) SUBSTITUI a linha, com a antiga na CRONO_EXCLUIDOS
+  const P6 = montar(CAT, null, '06/11/2026');
+  P6.run(`return registrarCrono(${q(APP)});`);
+  P6.ABAS.CRONOANALISE[0].push('NOTA DO PPCP'); P6.ABAS.CRONOANALISE[1].push('conferir a cor');
+  const rS = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '22.1' }))});`);
+  const H6 = P6.ABAS.CRONOANALISE[0], L6 = P6.ABAS.CRONOANALISE[1], X6 = P6.ABAS.CRONO_EXCLUIDOS || [];
+  ok('o mesmo REG_ID do app com outros números: substitui no lugar (uma linha só), a antiga vai para a CRONO_EXCLUIDOS, a coluna que o PPCP pôs fica',
+     [rS.ok, rS.app, rS.registrado, rS.substituido, rS.linha, P6.ABAS.CRONOANALISE.length, L6[H6.indexOf('S_SEM_LACUNAS')], L6[H6.indexOf('S_PERIODO')], L6[H6.indexOf('NOTA DO PPCP')],
+      X6.length, X6[1] && X6[1][X6[0].indexOf('S_SEM_LACUNAS')], X6[1] && X6[1][X6[0].indexOf('REG_ID')], X6[1] && X6[1][X6[0].indexOf('LINHA_ORIGINAL')]],
+     [true, true, true, true, 2, 2, 16.2, 22.1, 'conferir a cor', 2, 16.6, APP.regId, 2]);
+  const rS2 = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '22.1' }))});`);
+  const rS3 = P6.run(`return registrarCrono(${q(Object.assign({}, APP, { sRod: '19.8', sLac: '16.2', sPer: '' }))});`);
+  ok('reenviada igual: "já estava" (sem nova cópia); só o NO PERÍODO mudou: também substitui (a linha inteira é comparada)',
+     [rS2.duplicado, rS2.substituido, rS3.substituido, (P6.ABAS.CRONO_EXCLUIDOS || []).length, P6.ABAS.CRONOANALISE.length], [true, undefined, true, 3, 2]);
+  const PDF2 = Object.assign({}, PDF, { regId: 'cPDF999' });
+  const P7 = montar(CAT, null, '06/11/2026');
+  P7.run(`return registrarCrono(${q(PDF2)});`);
+  const rP = P7.run(`return registrarCrono(${q(Object.assign({}, PDF2, { sLac: '16.0' }))});`);
+  ok('o caminho do painel não substitui: o REG_ID dele sai do conteúdo — o mesmo REG_ID é a mesma medição', [rP.duplicado, rP.substituido, P7.ABAS.CRONOANALISE.length], [true, undefined, 2]);
+  // revisão da v5.58: a falha da planilha no caminho do app volta com app:true (o app reenvia, não acusa o .gs antigo)
+  const P8 = montar(CAT);
+  P8.ctx.lerCatalogoProdutos = () => { throw new Error('Serviço Planilhas indisponível'); };
+  const rE = P8.run(`return registrarCrono(${q(APP)});`);
+  let rEp; try { rEp = P8.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'cX' }))});`); } catch (e) { rEp = 'lançou'; }
+  ok('a falha da planilha no caminho do app: ok:false com app:true e o motivo; no caminho do painel nada muda (ele não lê o cadastro)',
+     [rE.ok, rE.app, /indisponível/.test(rE.erro), rEp && rEp.registrado], [false, true, true, true]);
+  const P5 = montar(CAT);
+  P5.ctx.LockService.getScriptLock = () => ({ waitLock: () => { throw new Error('timeout'); }, releaseLock: () => {} });
+  const rL = P5.run(`return registrarCrono(${q(APP)});`), rLp = P5.run(`return registrarCrono(${q(MED)});`);
+  ok('a planilha ocupada (o lock não vem): o app ouve ok:false com app:true (pode reenviar); o painel, o erro de sempre, sem app',
+     [rL.ok, rL.app, /ocupada/.test(rL.erro), rLp.ok, rLp.app, !!(P5.ABAS.CRONOANALISE)], [false, true, true, false, undefined, false]);
 }
 ok('a troca e a conferência estão no doGet, e a troca invalida as leituras',
    [/act === 'trocarUepCrono'\)\s*result = trocarUepCrono\(p\)/.test(GS), /act === 'getConferenciaCrono'\)\s*result = getConferenciaCrono\(\)/.test(GS),

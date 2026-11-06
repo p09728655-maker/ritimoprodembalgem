@@ -193,10 +193,12 @@ ok('o motivo da divergência sai EM NÚMERO (16/10: a meta em caixas pedia 146,8
    HC.includes(_CXU_PORQUE['meta-alta'] + ' · pedia 146,8%'), true);
 ok('o desenho não faz conta', /_cxUepMontar\(|uepDiaMeta\(|_qpRealDia\(/.test(pegaJs('function _cxUepHtml(')), false);
 // v7.187.1: a mesma impressão estava nas duas abas — o 🖨 CAIXAS × PONTOS × UEP
-// ficou só na 📏 RÉGUAS; a ⚖ UEP tem o caminho até ela.
-ok('a FILA na aba ⚖ UEP; o CAIXAS × PONTOS × UEP só na 📏 RÉGUAS (um botão no painel), com o caminho na ⚖ UEP',
-   [/<section id="sec-uep"[\s\S]*?onclick="_uepImpFecha\(\);gerarRelatorioFilaCrono\(\)"[\s\S]*?<\/section>/.test(html), (html.match(/onclick="gerarRelatorioCxUep\(/g) || []).length,
-    /<section id="sec-uep"[\s\S]*?onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS →<[\s\S]*?<\/section>/.test(html)], [true, 1, true]);
+// ficou só na 📏 RÉGUAS. v7.207.0: a RÉGUAS é sub-aba da ⚖ UEP e o 🖨 mora no
+// menu 🖨 IMPRIMIR ▾ dela — um botão só, e nenhum caminho para a aba que saiu.
+ok('a FILA e o CAIXAS × PONTOS × UEP no menu da ⚖ UEP (um botão só, que fecha o menu); nenhum caminho para a aba que saiu',
+   [/<section id="sec-uep"[\s\S]*?onclick="_uepImpFecha\(\);gerarRelatorioFilaCrono\(\)"[\s\S]*?<\/section>/.test(html), (html.match(/gerarRelatorioCxUep\(_regN\(\)\)"/g) || []).length,
+    /<details class="ucv-imp" id="uep-imp">[\s\S]*?onclick="_uepImpFecha\(\);gerarRelatorioCxUep\(_regN\(\)\)"[\s\S]*?<\/details>/.test(html), /setTab\('reguas'\)/.test(html.replace(/<script[\s\S]*?<\/script>/g, ''))],
+   [true, 1, true, false]);
 ok('cartão sem status não herda o vermelho do relatório de paradas',
    [/\.fila-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS), /\.cxu-doc \.kpi-card\{border-left-color:#cbd5e0\}/.test(JS)], [true, true]);
 
@@ -377,7 +379,7 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   // v7.187.2 (PPCP: "alinha essa inf de volumes"): os volumes numa coluna, nunca colados no nome
   ok('VOL. é coluna própria, centrada, logo depois do PRODUTO; o nome sai sozinho',
      [/<th class="l" rowspan="2">PRODUTO<\/th><th class="vol" rowspan="2">VOL\.<\/th>/.test(HR), /vol\.<\/span>/.test(HR), HR.includes('MESA CABECEIRA SLEEP</td><td class="n vol">1</td>'),
-      /#sec-reguas \.reg-tab th\.vol,#sec-reguas \.reg-tab td\.vol\{text-align:center\}/.test(html), /\.cxu-doc \.reg-tab th\.vol,\.cxu-doc \.reg-tab td\.vol\{text-align:center\}/.test(JS)],
+      /#uep-reguas \.reg-tab th\.vol,#uep-reguas \.reg-tab td\.vol\{text-align:center\}/.test(html), /\.cxu-doc \.reg-tab th\.vol,\.cxu-doc \.reg-tab td\.vol\{text-align:center\}/.test(JS)],
      [true, false, true, true, true]);
   ok('o mix abaixo do que a meta pede fica vermelho (o único número de cor do bloco)', /kpi-card red r reg-alerta"><div class="kpi-lbl">MIX DOS 20 DIAS/.test(HR), true);
   const HS = _regHtml(RPH, _regMontar(RPH, CAT, PROD, null, 2761), { n: 30, svgW: 1200, filtro: 'rodaram', todos: false });
@@ -395,9 +397,38 @@ console.log('\n── ABA 📏 RÉGUAS: o mix contra a meta de pontos, produto a
   ok('a tela lê a meta do ⚙ (_metaPtsDia) e a META UEP da config; o gráfico na largura do cartão',
      [/meta = _metaPtsDia\(\)/.test(RPI), /Number\(PONTOS_DIA\.metaUep\) > 0/.test(RPI), /svgW:_svgLargura\(el\)/.test(RPI)], [true, true, true]);
   const ST = pegaJs('function setTab(');
-  ok('a aba: botão, seção, o setTab e o 🖨 com os dias da tela', [/data-tab="reguas" onclick="setTab\('reguas'\)"[^>]*>📏 RÉGUAS</.test(html), html.includes('<section id="sec-reguas" class="sec">'),
-     /if\(tab==='reguas'\)\{ _regPintar\(\); renderReguas\(\); \}/.test(ST), /onclick="gerarRelatorioCxUep\(_regN\(\)\)"/.test(html)], [true, true, true, true]);
-  ok('o gráfico na tela escura: as cores do papel trocadas por token no #sec-reguas', /#sec-reguas\{--cxu-banda:#1B2D44;[^}]*--cxu-cx:#4f95e8\}/.test(html), true);
+  // v7.207.0 (PPCP 06/11/2026, "A1 E A2"): a aba virou a 5ª sub-aba da ⚖ UEP. O painel é
+  // fixo, fora do #uep-bloco (o renderUep o refaria a cada refresh); abrir a sub-aba lê
+  // como a aba lia, esperando a leitura da ⚖ UEP terminar (uma de cada vez).
+  const iU = html.indexOf('<section id="sec-uep"'), SU7 = html.slice(iU, html.indexOf('</section>', iU)), US = pegaJs('function _uepSub(');
+  ok('v7.207.0 RÉGUAS é sub-aba da ⚖ UEP: sem botão nem seção própria; o painel fixo depois do #uep-bloco; o 🖨 com os dias da tela',
+     [/data-tab="reguas"/.test(html), html.includes('id="sec-reguas"'), /data-sub="reguas" role="tab"[^>]*onclick="_uepSub\('reguas'\)"><b>RÉGUAS<\/b><span id="uep-sb-reguas">/.test(SU7),
+      SU7.indexOf('<div class="ucv-pn" data-sub="reguas" id="uep-reguas">') > SU7.indexOf('<div id="uep-bloco">'), /id="reg-bloco"/.test(SU7) && /id="reg-per"/.test(SU7) && /onclick="_regAbrir\(true\)"/.test(SU7),
+      /onclick="_uepImpFecha\(\);gerarRelatorioCxUep\(_regN\(\)\)"/.test(SU7)], [false, false, true, true, true, true]);
+  // v7.207.1 (revisão da v7.207.0: o renderUep disparava as leituras dos painéis escondidos
+  // junto com a da RÉGUAS — 3 JSONP no ar): a RÉGUAS espera TODA leitura da ⚖ UEP; com ela
+  // na tela o renderUep não desenha nem lê; as auto-leituras dele esperam a RÉGUAS.
+  const RU = pegaJs('function renderUep('), RPX7 = pegaJs('function renderProxDias(');
+  ok('v7.207.1 uma leitura de cada vez: a RÉGUAS pela fila (_regAbrir); o renderUep sai com ela na tela; as leituras sozinhas do renderUep e do PRÓXIMOS DIAS esperam a RÉGUAS',
+     [/if\(k === 'reguas'\) _regAbrir\(\);/.test(US), /if\(UEP_SUB==='reguas'\)\{ UEP_ABA_PEND=true; _regAbrir\(\); \}/.test(ST),
+      /if\(tab==='reguas'\)\{ UEP_SUB='reguas'; tab='uep'; \}/.test(ST), /function _regOn\(\)\{ return _abaOn\('uep'\) && UEP_SUB === 'reguas'; \}/.test(html),
+      /if\(_regOn\(\)\) _regPintar\(\);/.test(html), /^function renderUep\(\)\{\n  if\(UEP_SUB==='reguas'\) return;/.test(RU),
+      /UEP_HIST_TS && !UEP_HIST_VOO && !REG_RODANDO &&/.test(RU), /UEP_PAD_TS && !UEP_PAD_VOO && !REG_RODANDO &&/.test(RU), /!GPX_CARREGANDO && !REG_RODANDO &&/.test(RPX7),
+      /function _uepLendo\(\)\{ return !!\(UEP_CARREGANDO \|\| UEP_HIST_VOO \|\| UEP_PAD_VOO \|\| GPX_CARREGANDO \|\| PROG_DET_VOO \|\| _pontosVoo\); \}/.test(html),
+      /function _regSetPer\(v\)\{[^\n]*_regAbrir\(\); \}/.test(html), (html.match(/renderReguas\(/g) || []).length],
+     [true, true, true, true, true, true, true, true, true, true, true, 3]);
+  ok('v7.207.1 na RÉGUAS o #uep-bloco some inteiro (o aviso de estado dele não é da RÉGUAS)',
+     /const b = document\.getElementById\('uep-bloco'\); if\(b\) b\.style\.display = k === 'reguas' \? 'none' : '';/.test(pegaJs('function _uepSubMarca(')), true);
+  eval.call(global, pegaJs('function _regSubMontar('));
+  ok('v7.207.0 o botão RÉGUAS diz a variação das três réguas, da menor para a maior (o osc da frase); sem leitura, o nome — nunca 0',
+     [_regSubMontar({ cx:{ osc:26.9 }, pts:{ osc:18.5 }, uep:{ osc:10.4 } }).txt, _regSubMontar({ cx:{ osc:20 }, uep:{ osc:null } }).txt, _regSubMontar(null).txt,
+      /_sbPinta\(document\.getElementById\('uep-sb-reguas'\), _regSubMontar\(R\.reguas\)\)/.test(RPI)],
+     ['UEP ±10,4% · pontos ±18,5% · caixas ±26,9%', 'caixas ±20,0%', 'caixas × pontos × UEP', true]);
+  // v7.207.1 (revisão): fora do sucesso o botão diz o estado — nunca os números de outro período
+  ok('v7.207.1 o botão RÉGUAS fora do sucesso: lendo/esperando "…", histórico não lido, nenhum dia, não montou',
+     [/sb\(REG_RODANDO \|\| REG_ESPERA \? '…' : 'caixas × pontos × UEP'\)/.test(RPI), /sb\('histórico não lido'\)/.test(RPI),
+      /sb\('nenhum dia para comparar'\)/.test(RPI), /sb\('não montou'\)/.test(RPI), /Esperando a outra leitura da ⚖ UEP terminar/.test(RPI)], [true, true, true, true, true]);
+  ok('o gráfico na tela escura: as cores do papel trocadas por token no #uep-reguas', /#uep-reguas\{--cxu-banda:#1B2D44;[^}]*--cxu-cx:#4f95e8\}/.test(html), true);
   // v7.187.1 (PPCP, com a aba na mão: "essa não está na impressão"): o papel
   // leva a meta de pontos × mix e o produto a produto — o MESMO desenho da aba.
   const PAP = _cxUepHtml(RM, { data: '29/10/2026', hora: '10:00', n: 30, D, origem: 'planilha' });
@@ -615,11 +646,12 @@ ok('abrir a aba desenha o conversor e lê o cadastro; o cadastro que chega redes
 {
   const SC = html.slice(iCr, fCr), iB = SC.indexOf('<div class="ucv-hdr-bts">'), iM = SC.indexOf('<details class="ucv-imp" id="uep-conv-imp">');
   const MENU = SC.slice(iM, SC.indexOf('</details>', iM)), FORA = SC.slice(iB, iM);
-  ok('cabeçalho da ⏱ CRONOANÁLISE: o IMPORTAR PDF à vista, as quatro impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes), a frase de ajuda no title do título',
+  // v7.207.0: o 🖨 do ONDE O TEMPO VAI (que virou sub-aba) entrou no menu — cinco impressões
+  ok('cabeçalho da ⏱ CRONOANÁLISE: o IMPORTAR PDF à vista, as cinco impressões no menu 🖨 IMPRIMIR ▾ (cada uma fecha o menu antes), a frase de ajuda no title do título',
      [iB > 0 && iM > iB, (FORA.match(/<button /g) || []).length, (MENU.match(/onclick="_ucvImpFecha\(\);/g) || []).length, /<summary class="btn btn-ghost"[^>]*>🖨 IMPRIMIR ▾<\/summary>/.test(MENU),
       SC.includes('ucv-hdr-sub'), /class="tbl-hdr-ttl" title="O tempo por volume medido no tablet, convertido/.test(SC),
       /#sec-crono \.ucv-hdr \.tbl-hdr-ttl,#sec-uep \.ucv-hdr \.tbl-hdr-ttl[,{][^\n]*\{white-space:nowrap\}/.test(html), /#sec-crono \.ucv-imp-m,#sec-uep \.ucv-imp-m[,{][^\n]*\{position:absolute/.test(html)],
-     [true, 1, 4, true, false, true, true, true]);
+     [true, 1, 5, true, false, true, true, true]);
   // v7.198.0: a ⚖ UEP tem o mesmo menu — clique fora e Esc fecham qualquer um
   ok('o menu fecha no clique fora e no Esc (qualquer menu 🖨 aberto: cronoanálise e UEP); cada aba tem o seu fechar',
      [/document\.addEventListener\('click', e => \{ document\.querySelectorAll\('details\.ucv-imp\[open\]'\)\.forEach\(d => \{ if\(!d\.contains\(e\.target\)\) d\.open = false; \}\); \}\);/.test(html),
@@ -1727,8 +1759,8 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   const hBar = [...HT.matchAll(/<span class="ucv-tp-h">[^<]* h<i><span class="g?" style="width:(\d+)%"><\/span><\/i><\/span>/g)].map(m => +m[1]);
   const pele = (src, sel) => src.includes(sel + ' i{display:inline-block;flex:0 0 ');
   ok('v7.195.1: a barra das HORAS A MAIS mora num trilho de largura fixa (em %), e o % da DIFERENÇA tem largura mínima: os números não andam',
-     [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#sec-tempo .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
-      /#sec-tempo \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
+     [hBar.length, Math.max(...hBar), Math.min(...hBar) >= 3, pele(html, '#uep-conv-tempo .ucv-tp-h'), pele(pegaConst('_UCV_TEMPO_SKIN'), '.ucv-tempo .ucv-tp-h'),
+      /#uep-conv-tempo \.ucv-tp-tab td \.ucv-tp-pc\{display:inline-block;min-width:/.test(html), /\.ucv-tempo \.ucv-tp-pc\{display:inline-block;min-width:/.test(pegaConst('_UCV_TEMPO_SKIN'))],
      [T.linhas.filter(l => l.hGap != null).length, 100, true, true, true, true, true]);
   ok('v7.195.2: o nome diz que só saem as paradas APONTADAS (as microparadas não apontadas ficam dentro), na coluna e na cascata',
      [HT.includes('>PRODUÇÃO SEM<br>PARADAS APONTADAS</th>'), />PRODUÇÃO<br>SEM PARADAS</.test(HT), / s sem as paradas apontadas</.test(HT), / s sem as paradas</.test(HT)],
@@ -1741,7 +1773,7 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('v7.195.3: produção real × meta em PALAVRAS (mais rápida = cabe, mais lenta = passa), nunca o sinal; o ONDE GANHA e o COMO LER dizem o mesmo',
      [celPm, espPm.some(e => e[2] === 'mais rápida'), espPm.some(e => e[2] === 'mais lenta'), HT.includes('>PRODUÇÃO REAL<br>× META</th>'), /FOLGA \(\+\)|FALTA \(−\)/.test(HT),
       /s\/cx mais (rápida|lenta) que a meta/.test(HG), /· (folga|falta) \d/.test(HG), /<b>Produção real × meta<\/b>/.test(HT),
-      /\.ucv-tempo \.ucv-tp-pm small\{display:block/.test(pegaConst('_UCV_TEMPO_SKIN')), /#sec-tempo \.ucv-tp-tab td \.ucv-tp-pm small\{display:block/.test(html)],
+      /\.ucv-tempo \.ucv-tp-pm small\{display:block/.test(pegaConst('_UCV_TEMPO_SKIN')), /#uep-conv-tempo \.ucv-tp-tab td \.ucv-tp-pm small\{display:block/.test(html)],
      [espPm, true, true, true, false, true, false, true, true, true]);
   ok('a linha abre o volume no conversor; o selecionado fica marcado; a tabela inteira fica recolhida (v7.196.0)',
      [/onclick="_ucvAbrirTempo\(0\)"/.test(HT), /<tr class="sel"[^>]*onclick="_ucvAbrirTempo\(2\)"/.test(HT), /<details class="ucv-tp-todos" ontoggle="_ucvTempoTodos\(this\.open\)"><summary>VER TODOS OS VOLUMES \(5\)/.test(HT),
@@ -1754,12 +1786,13 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
   ok('o desenho não faz conta; a conta não lê nada (as horas, as medições e o cadastro que a aba já tem)',
      [UCV_SEM_CONTA.test(TH), /_ucvPadraoDe\(|_uepConvCadastro\(|_ucvTempoMontar\(|\.reduce\(/.test(TH), /jsonp|action=|getElementById/.test(TM + TH)], [false, false, false]);
   const RPT = pegaJs('function _ucvRegPintar('), iCrT = html.indexOf('<section id="sec-crono"'), SECT = html.slice(iCrT, html.indexOf('</section>', iCrT));
-  const iTpT = html.indexOf('<section id="sec-tempo"'), SECTP = html.slice(iTpT, html.indexOf('</section>', iTpT));
-  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro); desde a v7.196.0 na aba própria, e o caminho para ela (v7.197.0) na faixa das sub-abas',
+  // v7.207.0 (PPCP 06/11/2026, "A1 E A2"): a aba própria (v7.196.0) virou a 5ª sub-aba da
+  // ⏱ CRONOANÁLISE — a MESMA tela, num painel; o caminho (.ucv-sb-ir) virou o botão da sub-aba.
+  ok('pintado com os PRINCIPAIS (mesmas horas, medições e cadastro); desde a v7.207.0 no painel "tempo" da ⏱ CRONOANÁLISE, sem aba nem caminho próprios',
      [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
-      SECT.includes('id="uep-conv-tempo"'), SECTP.includes('<div id="uep-conv-tempo"></div>'),
-      SECT.indexOf('ucv-sb-ir') > SECT.indexOf('id="uep-conv-sub"') && SECT.indexOf('ucv-sb-ir') < SECT.indexOf('<div class="ucv-pn on"'),
-      /class="btn btn-ghost ucv-sb-ir" onclick="setTab\('tempo'\)"/.test(SECT), SECT.includes('ucv-tp-ponteiro')], [true, true, false, true, true, true, false]);
+      SECT.includes('<div class="ucv-pn" data-sub="tempo"><div id="uep-conv-tempo"></div></div>'), html.includes('id="sec-tempo"'),
+      /ucv-sb-ir/.test(SECT), /setTab\('tempo'\)/.test(html.replace(/<script[\s\S]*?<\/script>/g, '')), SECT.includes('ucv-tp-ponteiro'),
+      /T:TV \}\)\);/.test(RPT)], [true, true, true, false, false, false, false, true]);
   // v7.196.0 (PPCP: "não achei legal junto com a cronoanálise, parece um excel melhorado"): aba própria, a tela em painel
   ok('v7.196.0 ONDE PERDE MAIS (conta): os de mais horas a mais, sem o volume que o JOGO já conta (a STRASS VOL 2/2), no máximo UCV_TEMPO_TOP; o resto contado',
      [T.top.map(l => l.rot.replace(/^\d+ · /, '')), T.top.every(l => !l.dentro && l.hGap > 0), T.topResto, r2(T.topMax), UCV_TEMPO_TOP],
@@ -1787,22 +1820,30 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
        [/kpi-grid c4 ucv-cards"/.test(HP0), /ucv-tp-hero|ucv-tp-p"|ucv-tp-rod|<details/.test(HP0)], [true, false]);
   }
   const STT = pegaJs('function setTab(');
-  ok('v7.196.0 a aba: o botão logo depois da ⏱ CRONOANÁLISE; abrir lê cadastro → medições → horas (uma de cada vez); toda leitura da cronoanálise redesenha as duas abas; o toque abre o volume na ⏱ CRONOANÁLISE',
-     [/data-tab="crono"[^\n]*\n\s*<button class="tab"\s+data-tab="tempo" onclick="setTab\('tempo'\)"/.test(html),
-      /if\(tab==='tempo'\)\{ _uepConvAtualiza\(\); _uepAbaCatCarregar\(\)\.then\(\(\)=>_ucvRegsCarregar\(\)\)\.then\(\(\)=>_ucvLinhaCarregar\(\)\); \}/.test(STT),
-      (html.match(/if\(_ucvAbaOn\(\)\) _uepConvAtualiza\(\);/g) || []).length, /_abaOn\('crono'\)\) _uepConvAtualiza/.test(html),
-      /function _ucvAbaOn\(\)\{ return _abaOn\('crono'\) \|\| _abaOn\('tempo'\); \}/.test(html),
-      /if\(!_abaOn\('crono'\)\) setTab\('crono'\)/.test(pegaJs('function _ucvAbrirTempo('))],
-     [true, true, 5, false, true, true]);
-  ok('v7.196.0 a pele: o bloco é do #sec-tempo (nenhuma regra .ucv-tp no #sec-crono além do ponteiro) e as peças comuns valem nas duas abas',
-     [(html.match(/^#sec-crono \.ucv-tp-(?!ponteiro)/gm) || []).length, /^#sec-tempo\{--ucv-tp-puro:/m.test(html),
-      ['.ucv-regs{', '.ucv-regs th{', '.ucv-regs td{', '.ucv-chip{', '.uep-conv-tit{', '.ucv-cards .kpi-val{', '.ucv-pill.warn{', '.ucv-regs-t{'].filter(c => !html.includes(',#sec-tempo ' + c))],
-     [0, true, []]);
+  ok('v7.207.0 sem aba própria: o nome antigo abre a sub-aba; as leituras são as da ⏱ CRONOANÁLISE (cadastro → medições → conferência → horas → programação); toda leitura redesenha a aba; o toque abre o volume no MEDIR',
+     [/data-tab="tempo"/.test(html), /if\(tab==='tempo'\)\{ setTab\('crono'\); _ucvSub\('tempo'\); return; \}/.test(STT),
+      /_ucvLinhaCarregar\(\)\)\.then\(\(\)=>_ucvProgCarregar\(\)\)/.test(STT),
+      (html.match(/if\(_ucvAbaOn\(\)\) _uepConvAtualiza\(\);/g) || []).length, /function _ucvAbaOn\(\)\{ return _abaOn\('crono'\); \}/.test(html),
+      /_ucvSub\('medir'\);\s*if\(!_abaOn\('crono'\)\) setTab\('crono'\)/.test(pegaJs('function _ucvAbrirTempo('))],
+     [false, true, true, 5, true, true]);
+  ok('v7.207.0 a pele: o bloco é do #uep-conv-tempo (nenhuma regra .ucv-tp solta no #sec-crono) e as peças comuns seguem com o seletor dele',
+     [(html.match(/^#sec-crono \.ucv-tp-/gm) || []).length, /^#uep-conv-tempo\{--ucv-tp-puro:/m.test(html), /#sec-tempo/.test(html),
+      ['.ucv-regs{', '.ucv-regs th{', '.ucv-regs td{', '.ucv-chip{', '.uep-conv-tit{', '.ucv-cards .kpi-val{', '.ucv-pill.warn{', '.ucv-regs-t{'].filter(c => !html.includes(',#uep-conv-tempo ' + c))],
+     [0, true, false, []]);
+  eval.call(global, pegaJs('function _ucvSubMontar('));
+  const sbT = o => _ucvSubMontar(Object.assign({ p:null, M:null, L:null, C:null }, o)).tempo.txt;
+  ok('v7.207.0 o botão ONDE O TEMPO VAI diz o 1º cartão (diferença e horas), sem cor; sem a conta, o estado — nunca 0',
+     [sbT({ T, LH:HRS }), _ucvSubMontar({ T, LH:HRS }).tempo.cls, sbT({ T:null, LH:'lendo' }), sbT({ T:null, LH:'falhou' }), sbT({ T:null, LH:'sem-endpoint' }),
+      sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS }), sbT({ T:_ucvTempoMontar([], PRODS, HRS, 2530), LH:HRS }),
+      sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS, regsFalha:'falhou' }), sbT({ T:_ucvTempoMontar(null, PRODS, HRS, 2530), LH:HRS, regsFalha:'sem-endpoint' })],
+     [`${T.tot.gapPct > 0 ? '+' : '−'}${Math.abs(T.tot.gapPct).toFixed(0)}% sobre o estudo · ≈ ${T.tot.hGap.toFixed(1).replace('.', ',')} h`, '',
+      '…', 'a produção não foi lida', 'falta o .gs novo', '…', 'nenhuma medição com volumes', 'medições não lidas', 'falta o .gs novo']);
   // 🖨 IMPRIMIR do bloco (v7.195.0, PPCP: "impressa"): a MESMA marcação no modo papel
   const HTp = _ucvTempoHtml(T, HRS, '501149|MESA CABECEIRA MADERO', false), HP = _ucvTempoHtml(T, null, null, true, true);
   const nTr = h => (h.match(/<tbody>[\s\S]*<\/tbody>/)[0].match(/<tr[ >]/g) || []).length;
-  ok('na tela: o 🖨 no título do bloco, a tabela inteira dentro do VER TODOS; no papel: sem botão, sem clique, todas as linhas, sem o "toque na linha"',
-     [HTp.includes('onclick="gerarRelatorioTempo()"'), nTr(HTp), /VER TODOS OS VOLUMES \(5\)/.test(HTp),
+  // v7.207.0: o 🖨 saiu do título do bloco para o menu 🖨 IMPRIMIR ▾ da ⏱ CRONOANÁLISE
+  ok('na tela: o 🖨 no menu da aba (não no bloco), a tabela inteira dentro do VER TODOS; no papel: sem botão, sem clique, todas as linhas, sem o "toque na linha"',
+     [!HTp.includes('gerarRelatorioTempo') && /onclick="_ucvImpFecha\(\);gerarRelatorioTempo\(\)"/.test(html), nTr(HTp), /VER TODOS OS VOLUMES \(5\)/.test(HTp),
       /gerarRelatorioTempo|_ucvAbrirTempo|_ucvTempoTodos|<button/.test(HP), nTr(HP), /toque na linha/.test(HP), /class="sel"/.test(HP)],
      [true, T.linhas.length, true, false, T.linhas.length, false, false]);
   ok('no papel o COMO LER vem aberto (título de seção, não <details>) e sobe para a folha 1: cascata → como ler → tabela → onde ganha',
@@ -2093,15 +2134,19 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
 // SUB-ABAS DA ⏱ CRONOANÁLISE (v7.197.0, PPCP 03/11/2026: "está muito cheia a
 // tela, tem que enxugar, deixar mais dinâmica" → sub-abas por tarefa e as
 // impressões num menu). Os blocos, ids e leituras são os de antes.
+// v7.208.0 / .gs v5.58 (PPCP, 06/11/2026: "b2"): a medição que veio do app (ORIGEM APP) diz isso no MEDIDO POR
+ok('v7.208.0 a medição que veio do app diz "app" no MEDIDO POR (com o porquê no title); a do painel, o nome digitado',
+   /<td\$\{r\.origem === 'APP' \? ' title="Veio sozinha do app de cronoanálise \(Salvar análise\), sem PDF"' : ''\}>\$\{_rpEsc\(r\.quem \|\| \(r\.origem === 'APP' \? 'app' : ''\)\)\}<\/td>/.test(pegaJs('function _ucvRegsHtml(')), true);
 console.log('\n── CRONOANÁLISE: sub-abas ──');
 {
   const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC));
   const pn = k => { const i = SC.indexOf(`<div class="ucv-pn${k === 'medir' ? ' on' : ''}" data-sub="${k}">`); return i < 0 ? '' : SC.slice(i, SC.indexOf('<div class="ucv-pn', i + 10) > 0 ? SC.indexOf('<div class="ucv-pn', i + 10) : SC.length); };
-  ok('quatro botões e quatro painéis, com as mesmas chaves; o MEDIR começa aceso nos dois; a faixa vem antes dos painéis',
+  // v7.207.0: o 5º é o ONDE O TEMPO VAI, que era aba
+  ok('cinco botões e cinco painéis, com as mesmas chaves; o MEDIR começa aceso nos dois; a faixa vem antes dos painéis',
      [[...SC.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), [...SC.matchAll(/class="ucv-pn[^"]*" data-sub="(\w+)"/g)].map(m => m[1]),
       /class="ucv-sb on" data-sub="medir" role="tab" aria-selected="true"/.test(SC), SC.includes('<div class="ucv-pn on" data-sub="medir">'),
       SC.indexOf('id="uep-conv-sub"') < SC.indexOf('<div class="ucv-pn'), pegaConst('UCV_SUBS')],
-     [['medir', 'princ', 'regs', 'trocas'], ['medir', 'princ', 'regs', 'trocas'], true, true, true, "['medir', 'princ', 'regs', 'trocas']"]);
+     [['medir', 'princ', 'regs', 'trocas', 'tempo'], ['medir', 'princ', 'regs', 'trocas', 'tempo'], true, true, true, "['medir', 'princ', 'regs', 'trocas', 'tempo']"]);
   ok('cada painel tem o seu bloco: MEDIR (campos, resultado, registro, as medições do volume, ⓘ COMO LER), O QUE MEDIR, MEDIÇÕES, TROCAS',
      [['id="uep-conv-prod"', 'id="uep-conv-res"', 'id="uep-conv-reg"', 'id="uep-conv-reg-falta"', 'id="uep-conv-regs-p"', 'id="uep-conv-ler"'].filter(t => !pn('medir').includes(t)),
       pn('princ').includes('id="uep-conv-princ"'), pn('regs').includes('id="uep-conv-regs"'), pn('trocas').includes('id="uep-conv-conf"'),

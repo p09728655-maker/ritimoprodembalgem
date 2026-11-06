@@ -86,7 +86,10 @@ via Google Apps Script (JSONP).
   `getHorasCrono` (v5.35: o log da janela hora a hora, código por código; v5.36:
   as paradas apontadas de cada hora, por tipo) e a régua SEM AS LACUNAS (v5.44:
   o `registrarCrono` pede o S_SEM_LACUNAS, a troca sai dele e ignora o rodando e
-  a UEP gravada, toda resposta diz `regua:'lac'`): `node crono-registro.test.js`.
+  a UEP gravada, toda resposta diz `regua:'lac'`) e a MEDIÇÃO DO APP (v5.58: o
+  rótulo vira modelo, volume, códigos e UEP do cadastro pela régua do painel, as
+  recusas, a mesma medição app × PDF não duplica, a paridade com o `_capNome`,
+  a base e os limites do painel): `node crono-registro.test.js`.
 - `pontos.test.js` — PONTOS do passado congelados (`.gs` v5.40): o dia e o
   período somam o PONTOS gravado no lançamento, não o cadastro de agora. Roda o
   `.gs` inteiro (lançar, trocar o cadastro, lançar de novo):
@@ -890,6 +893,8 @@ via Google Apps Script (JSONP).
     medir de novo.
 
 ## ABA 📏 RÉGUAS — a meta de pontos cabe no mix? (v7.187.0 / `.gs` v5.42)
+- ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⚖ UEP**, não aba própria — ver
+  *RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS*.
 - PPCP, 29/10/2026: *"régua pela UEP é a justa, não adianta querer produzir
   [a meta de pontos] por dia com SLEEP por exemplo, não consegue fazer"* →
   *"essa impressão vire uma tela"* → prévia aprovada → *"sim"* (a meta na
@@ -938,7 +943,7 @@ via Google Apps Script (JSONP).
   do `PG_TELA_PEND`). ↻ ATUALIZAR passa por cima dos caches.
 - **Conta** `_regMontar` (pura) · **desenho** `_regHtml` (sem conta, o teste
   prende) · **leitura** `renderReguas`/`_regPintar`. O gráfico é o do papel com
-  as cores por token (`var(--cxu-*, cor do papel)`); `#sec-reguas` define a
+  as cores por token (`var(--cxu-*, cor do papel)`); `#uep-reguas` (era `#sec-reguas` até a v7.207.0) define a
   paleta escura (CAIXAS `#4f95e8`, 5,4:1 no fundo — o `#2a78d6` do papel dava
   3,8). O 🖨 da aba é o relatório (quatro páginas desde a v7.188.0) com os
   dias da tela (`gerarRelatorioCxUep(n)`).
@@ -5992,6 +5997,95 @@ feito e dá ar de verdade ao que sobrou.
   PRODUTO) passou para ele. Medido no Chromium: a linha de campos cabe em 1920,
   1366 e 1280. Campo novo no estudo? Entra na lista do LIMPAR.
 
+## A MEDIÇÃO VEM SOZINHA DO APP DE CRONOANÁLISE (v7.208.0 / `.gs` v5.58 / app 2.103.0)
+- ⚠ **Estado em 06/11/2026**: `.gs` v5.58 **implantado** (conferido: o
+  `getDados` responde `gsVersao` 5.58); variável `PAINEL_APPS_SCRIPT_URL`
+  criada na Vercel do app (projeto `crono-analise`, só Production, tipo
+  Config); app 2.103.0 **pronto na branch** `claude/serene-einstein-otq7ic` do
+  `crono-analise`, **ainda não mesclado**. Até o merge (que publica e roda a
+  migração do banco do app), nada vem sozinho — o 📄 IMPORTAR PDF continua
+  sendo o caminho. Ao ver a 1ª medição com ORIGEM = APP na aba, tirar esta
+  nota.
+- PPCP, 06/11/2026: *"analisar o que pode unir"* → B1/B2 → *"b2"*. Antes: no
+  app (repositório `crono-analise`), Salvar análise → imprimir o PDF → no
+  painel, 📄 IMPORTAR PDF → conferir → 💾 REGISTRAR. Agora o **"Salvar análise
+  e fechar"** do app (PC, Embalagem Takt Time) manda a medição para a aba
+  CRONOANALISE pelo `registrarCrono` deste `.gs`. O IMPORTAR PDF fica como
+  reserva.
+- **B1 já estava feito** (conferido em 06/11): em 03/11 a lista de produtos da
+  embalagem do app foi carregada com os nomes do painel (o `rot` do
+  `_uepConvProdutos`: *"501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2"*), 168
+  = 168. O duplicado *"501141 BUFFET 4 PT PRISM"* (sem o "·", cadastrado pelo
+  tablet) foi desativado no banco do app a pedido do PPCP. O que sobra do B1
+  (o app ler a lista sozinho; o tablet não cadastrar nome solto) NÃO foi feito.
+- **O contrato** (`registrarCrono` com `origem=app`, GET sem callback, resposta
+  JSON): o app manda `regId` (`app-` + id da conferência), `rotulo` (o nome da
+  lista), `data` (dd/mm/aaaa, São Paulo), `sRod`, `sLac`, `sPer` (o texto do
+  PDF, `formatarSegundos`) e `volumes`. O resto sai do cadastro, pela régua do
+  painel (`_cronoDoApp`, PURA): PRODUTO = `_cronoNomeCad` (= `_capNome`),
+  VOLUME como o `_ucvRegVol`, CODIGOS = todos os do volume (as cores), UEP_CADASTRO
+  = o `volCad` (média das cores; JOGO = soma ÷ nº de volumes), BASE/BASE_S pela
+  MADERO sem as lacunas (`CRONO_BASE_ROT_GS`/`CRONO_BASE_S_GS`), VELOCIDADE e
+  ENTRE_PECAS do cadastro. TOLERANCIA e TEMPO PADRÃO vazios (são do painel de
+  cada computador). Coluna nova **ORIGEM** = `APP`.
+  - **Toda resposta ao app leva `app:true`**: o `.gs` antigo responde
+    *"Sem o produto da medição."* sem ele, e o app diz que falta o v5.58 — e
+    não grava nada (o app NÃO manda `produto`, de propósito).
+  - **Recusa com `ok:true, recusado:true`** e o motivo (fora do formato da
+    lista, fora do cadastro, volume que o produto não tem, data, volumes não
+    inteiros, RODANDO < SEM AS LACUNAS, tempo absurdo): o app não retenta o
+    que não vai mudar. Planilha ocupada (lock) ou QUALQUER falha da planilha
+    no caminho do app: `ok:false, app:true` → o app pode reenviar (revisão: a
+    falha saía pelo catch do doGet sem `app`, e o app acusaria o `.gs` antigo).
+    NO PERÍODO fora da régua fica vazio (só informa).
+  - **O mesmo REG_ID do app com outro conteúdo SUBSTITUI a linha** (revisão da
+    v5.58). Igual (a linha inteira, NO PERÍODO incluído) → `duplicado`;
+    diferente → `substituido:true`, no lugar, com a antiga na CRONO_EXCLUIDOS
+    (`_cronoCopiarExcluida`, a mesma do EXCLUIR) e as colunas que alguém pôs na
+    aba preservadas. O REG_ID do painel sai do conteúdo: lá, igual é igual.
+  - ⚠ **O que muda o conteúdo é o PRODUTO, não a parada** (corrigido pela
+    revisão do app, 06/11). Os três tempos saem só dos TOQUES, que não mudam
+    depois da análise: **parada marcada no PC não muda nada do que vai** — a
+    medição reaberta e salva de novo volta "já estava". Troca a linha o produto
+    corrigido no app (o *Editar produto* reenvia sozinho a que já foi) ou o NO
+    PERÍODO (setup ou programa do grupo mudados). ⚠ O comentário do
+    `_registrarCronoCore` no `.gs` v5.58 ainda diz "marcada uma parada… volta com
+    outros tempos": está errado; corrigir na próxima versão do `.gs` (só
+    comentário — não justifica re-deploy sozinho).
+  - Por isso a mesma medição do PDF e do app **bate e não duplica**. O único
+    caso que duplica: o PDF entrou com o produto ERRADO e o produto foi
+    corrigido no app — outro produto, outra linha. Exclua a do PDF no painel.
+  - ⚠ **Em aberto (não feito)**: duas medições DIFERENTES do app (REG_IDs
+    `app-…` diferentes) do mesmo dia, produto e volume, com RODANDO, SEM AS
+    LACUNAS e VOLUMES iguais, viram uma só — o `_cronoMesmaMedicao` não olha a
+    ORIGEM, e a 2ª volta "já estava" (o app grava como no painel). Raro (os
+    volumes e os dois tempos têm de bater ao décimo); a falta é de volumes na
+    regra da troca, nunca número errado. A correção (não casar APP com APP pelo
+    conteúdo) pede um `.gs` v5.59.
+  - Os limites são os do `_ucvRegValida` (`CRONO_APP_*` = `UCV_REG_*`; o
+    teste prende).
+- **A MESMA MEDIÇÃO NÃO DUPLICA** (`_cronoMesmaMedicao`, para os dois caminhos):
+  mesmo dia, modelo, produto, volume, RODANDO e SEM AS LACUNAS (folga de 0,05 —
+  o texto do PDF tem uma casa) e volumes → `duplicado:true, mesmaMedicao:true`.
+  O REG_ID do painel sai do conteúdo e do MEDIDO POR; o do app, do id dele: sem
+  isso, o PDF de uma medição já enviada entraria de novo.
+- **No app** (repositório `crono-analise`, v2.103.0): `api/_lib/painel.js`
+  (monta e envia), rota `PATCH /api/conferencias?id=…&painel=1`, colunas
+  `conferencias.painel_em`/`painel_erro`, e a variável de ambiente
+  **`PAINEL_APPS_SCRIPT_URL`** na Vercel do app (a URL `/exec` deste Apps
+  Script). **Sem ela, nada é enviado** (o envio nasce desligado). ⚠ Trocou a
+  implantação do Apps Script (a URL `/exec` mudou)? Trocar nos DOIS HTMLs do
+  painel **e** nessa variável.
+  - **No app, a fila de envio mora na página** (revisão de 06/11): a gravação
+    da análise (e do produto corrigido) já deixa em `painel_erro` "o envio ao
+    painel não foi confirmado…"; o envio troca pelo desfecho. Página fechada no
+    meio → a lista do app mostra "⚠ não foi ao painel" e o PCP manda de novo
+    (o painel responde "já estava" se ela tinha chegado). Recarregar ou fechar
+    com envios na fila pergunta antes.
+- No painel, a lista MEDIÇÕES diz **app** no MEDIDO POR da medição que veio do
+  app. Excluir/arquivar no app NÃO exclui no painel (decisão do 1º passo).
+- ⚠ **re-deploy manual** do `.gs` v5.58 antes de ligar a variável.
+
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
   volumes, nenhuma parada marcada, período = rodando = 20,4 s, **5 lacunas** —
@@ -6457,7 +6551,67 @@ feito e dá ar de verdade ao que sobrou.
   abrem pelo menu.
 - Testes em `relatorios.test.js` (*SUB-ABAS DO 📐 PLANO*), 14 de 14 mutações.
 
+## RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS (v7.207.0)
+- PPCP, 06/11/2026: *"analisar o que pode unir"* → A1 e A2 → *"ME MOSTRA COMO
+  VAI FICAR ANTES DE SUBIR"* (prints com os dados reais) → *"ok"*. A barra do
+  gerencial do PC cai de 13 para 11 abas. Nenhuma conta, leitura, impressão ou
+  linha do `.gs` mudou; TV, celular e diretoria não foram tocados.
+- **A1 — ⏳ ONDE O TEMPO VAI é a 5ª sub-aba da ⏱ CRONOANÁLISE** (`UCV_SUBS` +
+  `'tempo'`; painel `<div class="ucv-pn" data-sub="tempo"><div
+  id="uep-conv-tempo">`). A MESMA tela (comparada no Chromium com a v7.206.0).
+  `_ucvAbaOn()` = `_abaOn('crono')`. O botão (`_ucvSubMontar().tempo`) diz o 1º
+  cartão — *"+42% sobre o estudo · ≈ 25,8 h"* —, sem cor: diferença não é perda.
+  O 🖨 saiu do título do bloco para o menu 🖨 IMPRIMIR ▾ (cinco impressões). O
+  toque num volume abre o MEDIR.
+  - ⚠ Revoga a *aba própria* da v7.196.0. O pedido daquele dia (*"parece um
+    excel melhorado"*) foi atendido pela tela em painel; a cronoanálise ainda
+    era uma rolagem só — as sub-abas vieram depois. O PPCP foi avisado disso
+    antes de aprovar.
+  - CSS: o escopo `#sec-tempo` virou `#uep-conv-tempo` (o mesmo conteúdo). Dentro
+    do `#sec-crono` ele herdava a `.uep-nota` mono da cronoanálise; o
+    `#uep-conv-tempo .uep-nota` devolve o `inherit` da aba própria (v7.207.1).
+  - O botão diz *"medições não lidas"* quando a leitura das medições falha
+    (era *"…"* para sempre).
+- **A2 — 📏 RÉGUAS é a 5ª sub-aba da ⚖ UEP** (`UEP_SUBS` + `'reguas'`). O
+  painel é FIXO (`#uep-reguas`), FORA do `#uep-bloco`: o `renderUep` refaz o
+  bloco a cada refresh e levaria a tela junto. `_uepSubMarca` acende botão e
+  painel (o `setTab` também usa); `_uepSub('reguas')` pinta e lê
+  (`renderReguas`, como a aba lia) — as outras quatro seguem sem leitura.
+  `_regOn()` = ⚖ UEP aberta com a RÉGUAS acesa.
+  - **Uma leitura de cada vez** (v7.207.1, achado BLOQUEANTE da revisão da
+    v7.207.0: a ⚖ UEP aberta na RÉGUAS punha 3 JSONP no ar — o `renderUep`
+    disparava, sozinho, as leituras dos painéis ESCONDIDOS):
+    - com a RÉGUAS na tela o `renderUep` sai na 1ª linha (nada a desenhar nem
+      ler) e o `#uep-bloco` some (`_uepSubMarca`) — o aviso de estado dele fica
+      fora dos painéis e aparecia em cima da RÉGUAS;
+    - a RÉGUAS entra pela fila: `_regAbrir(forcar)` espera `_uepLendo()` (a
+      carga da aba, histórico, POR PRODUTO, programação e a leitura do dia — a
+      do refresh também), e diz *"Esperando a outra leitura…"*. O ↻, o TENTAR
+      DE NOVO e a troca de período passam por ela;
+    - aberta na RÉGUAS, a aba não lê as outras quatro (`UEP_ABA_PEND`): a 1ª
+      troca para uma delas lê, depois do `REG_RODANDO`. As auto-leituras do
+      `renderUep` (histórico, POR PRODUTO) e do `renderProxDias` esperam o
+      `REG_RODANDO`;
+    - o `relatorios.test.js` roda a fila com o relógio na mão (o mock do
+      `setTimeout`): regex não prende ordem de leitura.
+    - Medido no Chrome com o script da revisão (cada JSONP segurado 2,5 s):
+      v7.207.0 punha 3 ao mesmo tempo; a v7.207.1, 1 — como a v7.206.0.
+  - O botão (`_regSubMontar(R.reguas)`) diz a variação das três réguas, da
+    menor para a maior (*"UEP ±11,0% · pontos ±18,6% · caixas ±26,1%"*, a
+    precisão da tela — `fmtP`); antes da leitura, *"caixas × pontos × UEP"*,
+    nunca 0. Fora do sucesso o `_regPintar` diz o estado (…, histórico não
+    lido, nenhum dia para comparar, não montou) — nunca os números de outro
+    período.
+  - O 🖨 CAIXAS × PONTOS × UEP foi para o menu da ⚖ UEP (quatro impressões); o
+    atalho 📏 RÉGUAS → saiu. CSS: `#sec-reguas` → `#uep-reguas`.
+- **O nome antigo abre a sub-aba**: `setTab('reguas')` → ⚖ UEP na RÉGUAS;
+  `setTab('tempo')` → ⏱ CRONOANÁLISE no ONDE O TEMPO VAI.
+- Medido no Chromium com os dados reais de 06/11 (1920×1015): nada passa da
+  largura; o ONDE O TEMPO VAI antes × depois saiu igual.
+
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
+- ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da
+  v7.196.0, abaixo, saiu) — ver *RÉGUAS E ONDE O TEMPO VAI VIRAM SUB-ABAS*.
 - PPCP, 03/11/2026: *"com esses estudos o que dá pra mostrar em KPI onde perde
   onde ganha?"* → *"não altera nada"* → prévia com os 34 estudos reais
   (artifact privado) → *"pode subir na aba cronoanálise"* → *"capricha na

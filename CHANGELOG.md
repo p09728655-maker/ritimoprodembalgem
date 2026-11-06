@@ -11,6 +11,62 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.208.0 + `.gs` v5.58 — 06/11/2026 · a medição vem sozinha do app de cronoanálise ⚠ **re-deploy**
+
+- PPCP: *"b2"*. O painel passa a **aceitar** a medição que vem do app de
+  cronoanálise: no **"Salvar análise e fechar"** do app (PC, Embalagem Takt
+  Time), a medição da embalagem irá sozinha para a aba CRONOANALISE — sem PDF,
+  sem 📄 IMPORTAR PDF, sem digitar.
+- ⚠ **Ainda não acontece**: depende do app 2.103.0 ser **mesclado e
+  publicado** (a variável `PAINEL_APPS_SCRIPT_URL` já está na Vercel do app,
+  desde 06/11). Até lá, continue com o 📄 IMPORTAR PDF.
+- Vai só medição com produto **da lista** do cadastro. Nome solto não vai: o
+  app diz para corrigir o produto e enviar de novo.
+- **A mesma medição não duplica**, venha do app ou do PDF: o `.gs` confere o
+  dia, o produto, o volume, os tempos e os volumes.
+- **Medição com o produto corrigido no app** depois do envio **substitui** a
+  do painel; a antiga fica na aba CRONO_EXCLUIDOS. Marcar parada no app
+  depois **não** muda os tempos enviados (eles saem só dos toques): a medição
+  reenviada volta "já estava". *(Corrigido em 06/11: a 1ª versão desta nota
+  dizia o contrário.)*
+- Na lista MEDIÇÕES da ⏱ CRONOANÁLISE, a medição que veio do app diz **app**
+  no MEDIDO POR.
+- O ✓ TROCAR A UEP, a regra dos 30 volumes e a base MADERO não mudaram: a
+  troca da UEP continua sendo decisão do PPCP, no painel.
+- ⚠ **re-deploy** do `.gs` v5.58. Antes dele o app recebe a recusa do `.gs`
+  antigo e diz que falta colar o v5.58; nada é gravado errado.
+
+---
+
+## v7.207.1 — 06/11/2026 · correções da revisão da v7.207.0
+
+- Abrir a ⚖ UEP já na RÉGUAS punha três leituras ao mesmo tempo no Apps
+  Script (as das sub-abas escondidas). Agora é uma de cada vez: a RÉGUAS
+  espera a outra leitura terminar e diz isso na tela.
+- Na RÉGUAS não aparece mais o aviso de estado da ⚖ UEP (*"Lendo a produção
+  do dia…"*), que não era dela.
+- O botão RÉGUAS diz o estado quando não há leitura boa (em vez de manter os
+  números de outro período) e mostra a variação com uma casa, como a tela.
+- O botão ONDE O TEMPO VAI diz *"medições não lidas"* quando a leitura falha.
+- As mensagens do ONDE O TEMPO VAI voltam à letra que tinham na aba própria.
+
+---
+
+## v7.207.0 — 06/11/2026 · RÉGUAS e ONDE O TEMPO VAI viram sub-abas
+
+- PPCP: *"analisar o que pode unir"*. Aprovados, com prévia, o A1 e o A2: a
+  barra de abas do gerencial do PC passa de 13 para 11 botões.
+- **⏳ ONDE O TEMPO VAI é a 5ª sub-aba da ⏱ CRONOANÁLISE.** A tela é a mesma.
+  O botão dela já diz a diferença estudo × produção e as horas. O 🖨 foi para
+  o menu 🖨 IMPRIMIR ▾ da aba.
+- **📏 RÉGUAS é a 5ª sub-aba da ⚖ UEP.** A tela é a mesma. O botão dela já diz
+  quanto cada régua varia. O 🖨 CAIXAS × PONTOS × UEP foi para o menu
+  🖨 IMPRIMIR ▾ da ⚖ UEP.
+- Nenhum número, conta ou impressão mudou. TV, celular e diretoria não mudam.
+  Sem mudança no `.gs`.
+
+---
+
 ## v7.206.0 — 05/11/2026 · ⚖ UEP · POR PRODUTO na régua de hoje
 
 - PPCP, com a sub-aba POR PRODUTO na tela: *"como interpretar?"*. O CX/H
