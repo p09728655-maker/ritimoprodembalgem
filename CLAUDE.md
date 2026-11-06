@@ -6786,6 +6786,15 @@ feito e dá ar de verdade ao que sobrou.
       feriado dito (v7.214.1, PPCP: *"06 e 08/11 está considerando fim de
       semana"* — a conta já dava 0 h ao sábado/domingo; o rótulo seg–dom é
       que enganava).
+    - **FALTA e SOBRA: palavra, nunca sinal (v7.214.2, PPCP: *"deixa regra
+      clara sobre falta e sobra"*).** Falta = precisa − tem (não cabe), sobra
+      = tem − precisa (cabe); a sobra não vira crédito, só abate atraso que já
+      existe. A tabela escreve *falta 2h13* / *sobra 1h30* (coluna NA SEMANA)
+      e o ATRASO ACUMULADO sem "−" (atraso já é a falta). Motivo: a planilha
+      dizia `+2h13` = falta e o painel `−2h13` = a mesma falta — o sinal
+      mudava de sentido entre os dois. Não volte a pôr `+`/`−` em falta/sobra
+      no TAKT nem na planilha; e "sobra" é só folga — o que não fechou numa
+      semana e passa para a outra é *o que não fechar*, nunca "a sobra".
     - **De onde vem o painel** (`_tkaPainel(fimN)`): TKS (esta semana), TKP (a
       que vem), `TKF` (faixas da 3ª segunda ao último dia colado, de 14 em 14
       dias — `_tkaFaixas`, `_taktLer` com de/ate) e o vencido de antes desta
@@ -6858,6 +6867,16 @@ feito e dá ar de verdade ao que sobrou.
     SITUAÇÃO (T47) e UEP/DIA MÉD. (U47); na 042 (rodapé antigo) o resumo em
     X46:Z47. Verificado recalculando uma CÓPIA no LibreOffice: os mesmos 30
     `#N/A` de antes (RESUMO M² T219:T248, já no original), nenhum novo.
+  - **FALTAM / SOBRAM por extenso** (06/11/2026, PPCP: *"deixa regra clara
+    sobre falta e sobra"*, junto com a v7.214.2 do painel). A 1ª entrega
+    tinha *FALTA (+) SOBRA (−)* com `+2h13` — o sinal ao contrário do SALDO DE
+    HORAS do painel. Agora Q47 (043–049) = *FALTAM 2h13* / *SOBRAM 1h15*
+    (vermelho/verde, a letra reduz para caber na coluna Q); na 042 a SITUAÇÃO
+    (Z47) é só *NÃO CABE* / *CABE* e o FALTAM/SOBRAM foi para AA46:AA47 (coluna
+    vazia, alargada como X:Z). A regra escrita em K48 (043–049, 2 linhas) e
+    X48 (042): *FALTAM = PRECISA − TEM: NÃO CABE · SOBRAM = TEM − PRECISA:
+    CABE · a sobra não passa para a semana seguinte*. SITUAÇÃO e UEP/DIA MÉD.
+    (T46/U46) reduzem a letra (se encostavam).
 
 ## ONDE O TEMPO VAI — estudo × produção × meta (v7.194.0)
 - ⚠ **Desde a v7.207.0 é a 5ª sub-aba da ⏱ CRONOANÁLISE** (a *aba própria* da

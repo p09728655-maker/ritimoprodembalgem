@@ -11,6 +11,25 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.214.2 — 06/11/2026 · Falta e sobra: palavra, nunca sinal
+
+- PPCP, com o print da coluna *FALTA (+) SOBRA (−)* da planilha: *"deixa
+  regra clara sobre falta e sobra"*. O problema era real: a planilha escrevia
+  `+2h13` para falta e o SALDO DE HORAS do painel `−2h13` para a mesma
+  falta. Regra única agora, escrita na tela, na 🖨 e na planilha:
+  **falta = precisa − tem (não cabe); sobra = tem − precisa (cabe); a sobra
+  não vira crédito — só abate atraso que já existe.**
+- SALDO DE HORAS: a coluna *SALDO DA SEMANA* virou **NA SEMANA** com *falta
+  12h24* (vermelho) / *sobra 1h30* (verde); *ATRASO NO FIM* virou **ATRASO
+  ACUMULADO**, sem o "−" (atraso já é falta). A nota diz a regra.
+- TAKT · SEMANA QUE VEM: *"com a sobra desta semana (…): faltam …"* trocado
+  por *"com o que não fechar desta semana (…)"* — ali "sobra" queria dizer o
+  que faltou, o contrário da regra. A folha da diretoria define faltam/sobram
+  no rodapé.
+- **Atenção:** nenhum número mudou — só a forma de escrever.
+
+---
+
 ## v7.214.1 — 06/11/2026 · SALDO DE HORAS: a semana mostra só os dias úteis
 
 - PPCP, com o print: *"06 e 08/11 está considerando fim de semana"*. A conta

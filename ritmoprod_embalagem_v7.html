@@ -3956,7 +3956,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.214.1';
+const APP_VER   = '7.214.2';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10681,7 +10681,10 @@ function _tkaPainelCarregar(fimN){
 function _tkaSaldoHtml(C, o){
   if(!C) return '';
   const e=_rpEsc, hm=_fmtHM, op=o||{}, dd=n=>p2(n%100)+'/'+p2(Math.floor(n/100)%100);
-  const sx=m=>m>0 ? `<span class="tks-red">−${hm(m)}</span>` : `<span class="tks-ok">em dia</span>`;
+  const sx=m=>m>0 ? `<span class="tks-red">${hm(m)}</span>` : `<span class="tks-ok">em dia</span>`;
+  // FALTA e SOBRA por extenso, nunca sinal (v7.214.2; PPCP: "deixa regra clara sobre falta e sobra"):
+  // falta = precisa − tem (não cabe), sobra = tem − precisa (cabe).
+  const fs=(pr, tm)=>pr>tm ? `<span class="tks-red">falta ${hm(pr-tm)}</span>` : `<span class="tks-ok">sobra ${hm(tm-pr)}</span>`;
   const fr=`A linha chega em <b>${dd(C.ini)}</b> ${C.chegada>0 ? `com <b>${hm(C.chegada)}</b> de atraso` : '<b>em dia</b>'} (a programação de hoje até lá)`
     +` e termina <b>${dd(C.fim)}</b> ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso` : '<b>em dia</b>'}, na média da linha sem hora extra`
     +(C.atrasoR!=null ? `; no ritmo atual (${fmtP(C.ritPct)} da média), <b>${hm(C.atrasoR)}</b>` : '')+'.';
@@ -10690,7 +10693,7 @@ function _tkaSaldoHtml(C, o){
     const rot=`${dd(s.de)}${s.ate!==s.de ? '–'+dd(s.ate) : ''}`+(s.hoje && s.de===C.dias[0].n ? ' (hoje: o que resta)' : '')
       +(s.feriados.length ? ` <span class="mono">(${s.feriados.map(n=>dd(n)+' feriado').join(', ')})</span>` : '');
     return `<tr><td>${rot}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
-      +`<td class="n">${s.tem-s.precisa>=0 ? '+' : '−'}${hm(Math.abs(s.tem-s.precisa))}</td><td class="n"><b>${sx(s.atraso)}</b></td>${C.atrasoR!=null ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`
+      +`<td class="n">${fs(s.precisa, s.tem)}</td><td class="n"><b>${sx(s.atraso)}</b></td>${C.atrasoR!=null ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`
       +(s.lacunas.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">sem programação no painel nem na colagem: ${s.lacunas.map(dd).join(', ')} — fora da conta</td></tr>` : '');
   }).join('');
   const notas=[
@@ -10699,8 +10702,8 @@ function _tkaSaldoHtml(C, o){
   ].filter(Boolean);
   return `<div class="uep-sec"><b>SALDO DE HORAS</b> de hoje até ${dd(C.fim)} · a programação do painel + a colada, sem duplicar</div>`
     +`<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">${fr}</div>`
-    +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">SALDO DA SEMANA</th><th class="n">ATRASO NO FIM</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). O atraso passa para o dia seguinte; a folga de um dia só absorve o atraso que já existe.${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
+    +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
+    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe.${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
 }
 // O DESENHO (sem conta): a caixa de colar e, embaixo, o veredito, o dia a dia e o
 // que ficou de fora.
@@ -10908,7 +10911,7 @@ function _taktHeroHtml(V, o){
     if(V.ritmo && !V.encerrada) ls.push(`no ritmo atual da linha (${fmtP(V.ritmo.pct)} da média): ${V.ritmo.faltaMin>0 ? `faltam <b>${hm(V.ritmo.faltaMin)}</b>${V.ritmo.faltaPts ? ` (${_tkPts(V.ritmo.faltaPts)})` : ''}` : `sobram ${hm(-V.ritmo.faltaMin)}`}`);
     const so=o.sobra && o.sobra.faltaMin>0 ? o.sobra.faltaMin : 0;
     if(!esta && so){ const t=V.faltaMin+so, tp=(V.faltaPts||0)+(o.sobra.faltaPts||0);
-      ls.push(t>0 ? `com a sobra desta semana (${hm(so)}${o.sobra.encerrada ? '' : ', se nada mudar'}): faltam <b>${hm(t)}</b>${V.faltaPts && o.sobra.faltaPts ? ` (${_tkPts(tp)})` : ''}` : `cabe mesmo com o que não fechar desta semana (${hm(so)})`); }
+      ls.push(t>0 ? `com o que não fechar desta semana (${hm(so)}${o.sobra.encerrada ? '' : ', se nada mudar'}): faltam <b>${hm(t)}</b>${V.faltaPts && o.sobra.faltaPts ? ` (${_tkPts(tp)})` : ''}` : `cabe mesmo com o que não fechar desta semana (${hm(so)})`); }
     if(!V.cabe) ls.push(esta ? `o que não couber passa para a semana que vem${V.faltaCx ? ` (≈ ${n0(V.faltaCx)} caixas)` : ''}`
       : `para fechar: hora extra, ou tirar ≈ <b>${n0(V.faltaCx)}</b> ${o.unid||'caixas'} da semana${V.ritmo && V.ritmo.faltaCx ? ` (≈ ${n0(V.ritmo.faltaCx)} no ritmo atual)` : ''}`);
   }
@@ -11004,7 +11007,7 @@ function _taktDocHtml(A, ctx){
   const m=(T||T1||{}).meta;
   const pu=[V0 && V0.ptsUep, V1 && V1.ptsUep].filter(x=>x>0).map(x=>fmtN(Math.round(x)));
   const def=`<div class="td-def"><b>Hora de linha</b> = o trabalho programado em horas, pela <b>média que a linha entrega sem hora extra: 1 dia de linha = ${hm(UEP_MIN_DIA)} de jornada = ${fmtN(Math.round(m||0))} UEP</b> (a referência de UEP do painel, ${e(UEP_REF_STATUS)}). `
-    +`<b>Precisa</b> = o que a programação pede; <b>tem</b> = a jornada disponível (sem hora extra). <b>Ritmo atual</b> = o que a linha fez nesta semana, na jornada, em % dessa média. `
+    +`<b>Precisa</b> = o que a programação pede; <b>tem</b> = a jornada disponível (sem hora extra); <b>faltam</b> = precisa − tem (não cabe), <b>sobram</b> = tem − precisa (cabe). <b>Ritmo atual</b> = o que a linha fez nesta semana, na jornada, em % dessa média. `
     +(pu.length ? `<b>Pontos</b> = a falta em UEP × os pontos por UEP dos lotes da semana (${pu.length===2 ? `esta semana ${pu[0]}, a que vem ${pu[1]}` : pu[0]} pontos por UEP; muda com os produtos). ` : '')
     +`Fonte: programação (PROGRAMACAO + PROGRAMACAO_CONCLUIDA), HISTORICO e HORA_A_HORA.</div>`;
   return (concl ? `<div class="td-concl">${concl}</div>` : '')+`<div class="td-cols"><div>${esq}</div><div>${dir}</div></div>`+def
