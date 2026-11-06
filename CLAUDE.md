@@ -117,7 +117,9 @@ via Google Apps Script (JSONP).
   (v7.211.0) o veredito em horas de linha das duas semanas (o 2h13 igual ao
   PRÓXIMOS DIAS e à simulação, a soma com a sobra desta semana, o sábado, a
   semana que cabe, as caixas sem UEP fora do peso), o gráfico em horas e a 🖨
-  sem s por UEP (6 de 6 mutações pegas): `node takt-semana.test.js`.
+  sem s por UEP (6 de 6 mutações pegas); e (v7.212.0) a falta em pontos pelo
+  mix da semana (o mapa do cadastro, o código com ponto ou traço) e o nome
+  "média da linha entregue sem hora extra" (5 de 5): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6724,6 +6726,19 @@ feito e dá ar de verdade ao que sobrou.
     - **🖨** `_taktDocHtml(A={T0,T1,P1,V0,V1})`: a frase do topo, os dois
       vereditos lado a lado com o porquê e o gráfico, uma linha de definição.
       Nada de s por UEP, cascata ou tabela (o teste prende).
+  - **NOME E PONTOS (v7.212.0**, PPCP: *"troca por média da linha entregue sem
+    hora extra"* e *"valor da UEP em pontos"*): na frente da tela e na folha o
+    2.761 é **a média que a linha entrega sem hora extra** (ritmo atual em % da
+    média); nos detalhes e na RÉGUAS segue *referência de UEP* (a definição da
+    folha liga os nomes). A falta também em **pontos**: `_taktMontar(S, hist, H,
+    pts)` soma, no saldo das linhas com UEP E pontos no cadastro
+    (`_taktPtsMapa(_pdiaPcCat())`, código só com dígitos), `falta.pts`/
+    `falta.uepPts` e por dia `saldoPts`/`saldoUepPts`; `_taktProxMontar` →
+    `ptsUep`; `_taktVeredito` → `ptsUep`, `faltaPts` = falta em UEP (sem
+    arredondar) × pontos por UEP da semana, e `ritmo.faltaPts`. `_tkPts` =
+    "≈ N pontos" à centena. ⚠ **UEP não tem valor fixo em pontos** (06/11:
+    PAINEL RIPADO ~46, PENTEADEIRA MEL ~90 pontos por UEP; ~70 no mês) — por
+    isso a média é a dos lotes DA SEMANA, e sem cadastro de pontos nada sai.
   - Medido na tela em 06/11/2026 11:58 (leituras reais): takt **9,9** s/UEP
     (3.208/dia, 116,2%), referência **11,5**, executado **12,6** (90,6%,
     8.647 UEP em 3 dias e 4h00 + 1.110 em HE), falta **5.097 UEP** (2.370 cx;
