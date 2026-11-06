@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.215.0 — 06/11/2026 · PRODUTOS EMBALADOS HOJE: faixa mais alta, nome em 2 linhas
+
+- PPCP, com o print do GERENCIAL (o bloco das 12:12–12:51 escrito só *MEL*):
+  *"dá para deixar um pouco mais larga e se precisar quebra nome do
+  produto"*. O *MEL* era o PENTEADEIRA CAMARIM MEL depois do almoço: o bloco
+  é estreito, e a regra só usava 1 linha, então sobrava a última palavra.
+- A faixa passou de 32 para **42 px** de altura e o nome **quebra em até 2
+  linhas, sem partir palavra** (PENTEADEIRA / CAMARIM MEL). Se nem assim
+  couber, aparece o **fim do nome** (CAMARIM MEL) antes de ficar só a última
+  palavra.
+- O nome passa a ser decidido pela **largura real da faixa nesta tela**. Antes
+  era uma referência fixa de 1.100 px, que em tela de 1.920 achava o bloco
+  menor do que ele é. A faixa é redesenhada quando a janela muda de tamanho.
+- Medido com os dados reais de hoje: em 1.920 px o bloco das 12:12 mostra
+  *PENTEADEIRA CAMARIM MEL* inteiro; em 1.366 e 1.280 px, *CAMARIM MEL*. Nada
+  corta e a página não rola de lado.
+- O celular não muda: a mesma conta (`rp-core.js`), com 1 linha.
+
+---
+
 ## v7.214.2 — 06/11/2026 · Falta e sobra: palavra, nunca sinal
 
 - PPCP, com o print da coluna *FALTA (+) SOBRA (−)* da planilha: *"deixa
