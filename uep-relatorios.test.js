@@ -1212,7 +1212,7 @@ const _assincronos = [];
      [/_ucvRegUrl\(D\)/.test(RGS) && /action=registrarCrono&/.test(pegaJs('function _ucvRegUrl(')), /jsonpEscrita\(/.test(RGS), /!r \|\| !r\.registrado/.test(RGS), /setUepCatalogo|simularUepCatalogo/.test(RGS), /confirm\(/.test(RGS)],
      [true, true, true, false, true]);
   ok('o formulário mora FORA do resultado (refeito a cada tecla) e só aparece com a conversão pronta',
-     [html.indexOf('id="uep-conv-reg"') > html.indexOf('id="uep-conv-res"'), /box\.style\.display = R\.estado === 'ok'/.test(pegaJs('function _ucvRegPintar(')), /_ucvRegPintar\(R\)/.test(AT3)],
+     [html.indexOf('id="uep-conv-reg"') > html.indexOf('id="uep-conv-res"'), /box\.style\.display = R\.estado === 'ok'/.test(pegaJs('function _ucvRegPintar(')), /_ucvRegPintar\(R, ja\)/.test(AT3)],
      [true, true, true]);
   ok('a leitura da linha só sai com produto escolhido, uma de cada vez (espera a das medições)',
      [/if\(\(E\.linha === 'nao-lida' && UCV_REGS\) \|\| E\.linha === 'falhou'\) _ucvLinhaCarregar\(\)/.test(AT3), /if\(UCV_REGS_VOO\) await UCV_REGS_VOO/.test(pegaJs('function _ucvLinhaCarregar('))],
@@ -1750,7 +1750,7 @@ console.log('\n── CRONOANÁLISE → UEP: onde o tempo vai ──');
      [/_ucvTempoMontar\(L, UEP_CONV_PRODS, LH, R\.base\.meta\)/.test(RPT), /_ucvEl\('tempo'\)/.test(RPT),
       SECT.includes('<div class="ucv-pn" data-sub="tempo"><div id="uep-conv-tempo"></div></div>'), html.includes('id="sec-tempo"'),
       /ucv-sb-ir/.test(SECT), /setTab\('tempo'\)/.test(html.replace(/<script[\s\S]*?<\/script>/g, '')), SECT.includes('ucv-tp-ponteiro'),
-      /T:TV \}\)\);/.test(RPT)], [true, true, true, false, false, false, false, true]);
+      /T:TV, app:A \}\)\);/.test(RPT)], [true, true, true, false, false, false, false, true]);
   // v7.196.0 (PPCP: "não achei legal junto com a cronoanálise, parece um excel melhorado"): aba própria, a tela em painel
   ok('v7.196.0 ONDE PERDE MAIS (conta): os de mais horas a mais, sem o volume que o JOGO já conta (a STRASS VOL 2/2), no máximo UCV_TEMPO_TOP; o resto contado',
      [T.top.map(l => l.rot.replace(/^\d+ · /, '')), T.top.every(l => !l.dentro && l.hGap > 0), T.topResto, r2(T.topMax), UCV_TEMPO_TOP],
@@ -2155,21 +2155,150 @@ console.log('\n── CRONOANÁLISE: sub-abas ──');
       '💾 O REGISTRO DA MEDIÇÃO aparece quando o cadastro de produtos terminar de ser lido.', '', '',
       '💾 O REGISTRO DA MEDIÇÃO não aparece: a base tem de ser a MADERO medida (6,7 s sem as lacunas): é contra ela que a regra da troca compara todas as medições — clique em VOLTAR À MADERO MEDIDA.']);
   ok('o formulário do 💾 só aparece com a base MADERO medida (a regra da troca compara contra ela); o REGISTRAR recusa com outra base',
-     [/box\.style\.display = R\.estado === 'ok' && R\.base\.medida \? '' : 'none'/.test(pegaJs('function _ucvRegPintar(')),
+     [/box\.style\.display = R\.estado === 'ok' && R\.base\.medida && !ja \? '' : 'none'/.test(pegaJs('function _ucvRegPintar(')),
       /if\(!R\.base\.medida\)\{ alert\('Não registra: ' \+ _ucvRegBaseTxt\(\)/.test(pegaJs('async function _ucvRegistrar('))], [true, true]);
   const AT4 = pegaJs('function _uepConvAtualiza('), RP4 = pegaJs('function _ucvRegPintar(');
   ok('a tela: a linha do 💾 pelo _uepConvAtualiza; as medições do volume só com produto (no MEDIR), todas no MEDIÇÕES; os botões no fim do _ucvRegPintar',
-     [/const fl = _ucvEl\('reg-falta'\); if\(fl\) fl\.textContent = _ucvRegFalta\(R, E\);/.test(AT4), /lstP\.innerHTML = !R\.p \? '' : _ucvRegsHtml\(L \? RL : null, R\.p,/.test(RP4),
+     [/const fl = _ucvEl\('reg-falta'\); if\(fl\)\{ fl\.textContent = ja \? _ucvAppJaTxt\(ja\) : _ucvRegFalta\(R, E\);/.test(AT4), /lstP\.innerHTML = !R\.p \? '' : _ucvRegsHtml\(L \? RL : null, R\.p,/.test(RP4),
       /lst\.innerHTML = _ucvProntasHtml\(UCV_PRONTAS\)\s*\+ _ucvRegsHtml\(L, null,/.test(RP4), /_ucvSubPintar\(_ucvSubMontar\(\{ p:R\.p, M, LH, L, prontas:UCV_PRONTAS,/.test(RP4)],
      [true, true, true, true]);
-  ok('quem abre um volume volta ao MEDIR: os PRINCIPAIS, as PRONTAS, o ONDE O TEMPO VAI e um PDF importado; o aviso da conferência leva às TROCAS',
-     [['function _ucvAbrirPrincipal(', 'function _ucvAbrirPronta(', 'function _ucvAbrirTempo(', 'async function _ucvImportar('].filter(f => !pegaJs(f).includes("_ucvSub('medir')")),
+  ok('quem abre um volume volta ao MEDIR: os PRINCIPAIS, as PRONTAS, o ONDE O TEMPO VAI, as que CHEGARAM DO APP e um PDF importado; o aviso da conferência leva às TROCAS',
+     [['function _ucvAbrirPrincipal(', 'function _ucvAbrirPronta(', 'function _ucvAbrirTempo(', 'function _ucvAbrirApp(', 'async function _ucvImportar('].filter(f => !pegaJs(f).includes("_ucvSub('medir')")),
       _ucvConfAvisoHtml({ nAlerta:1 }).includes(`onclick="_ucvSub('trocas')"`), _ucvConfAvisoHtml({ nAlerta:1 }).includes('no fim da tela')],
      [[], true, false]);
   ok('a pele: só o painel aceso aparece; a entrada não se mexe com menos movimento pedido; o cartão dos campos é do painel',
      [/#sec-crono \.ucv-pn\{display:none\}/.test(html), /#sec-crono \.ucv-pn\.on\{display:block;/.test(html), /@media \(prefers-reduced-motion:reduce\)\{#sec-crono \.ucv-pn\.on\{animation:none\}\}/.test(html),
       /#sec-crono \.ucv-pn>\.uep-card\{/.test(html), /#sec-crono \.uep-conv>\.uep-card\{/.test(html)],
      [true, true, true, true, false]);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CHEGARAM DO APP (v7.218.0). PPCP, 09/11/2026, com o MEDIR vazio na tela:
+// "nessa tela tem como vir o que foi enviado pelo app". As medições com ORIGEM
+// APP (o "Salvar análise" do app, .gs v5.58) já estão na aba e já contam na
+// regra; a faixa no topo do MEDIR as lista pela hora em que CHEGARAM e abre o
+// volume com o SEM AS LACUNAS. Os registros são os reais de 06 e 09/11/2026.
+console.log('\n── CRONOANÁLISE: CHEGARAM DO APP ──');
+{ const KA = html.match(/const UCV_APP_DIAS = (\d+), UCV_APP_MAX = (\d+);/);
+  global.UCV_APP_DIAS = Number(KA[1]); global.UCV_APP_MAX = Number(KA[2]);
+  ['function _ucvAppRecentes(', 'function _ucvAppJa(', 'function _ucvAppJaTxt(', 'function _ucvAppHtml('].forEach(f => eval.call(global, pegaJs(f)));
+  ok('as constantes: 7 dias, no máximo 4 linhas', [UCV_APP_DIAS, UCV_APP_MAX], [7, 4]);
+  const PA = _uepConvProdutos([
+    CV('501079001', 'VOL 1/2 BUFFET FLIP 1.6', 'BRANCO', 1.6, '16/10/2026'), CV('501079002', 'VOL 2/2 BUFFET FLIP 1.6', 'BRANCO', 1.52, '04/11/2026 DIGITADA'),
+    CV('501093001', 'VOL 1/1 CANT CAFE AURORA', 'BRANCO', 2.04, '16/10/2026'),
+    CV('501135001', 'VOL 1/1 PENT CAMARIM 1PT 2GAV DIAMANTE', 'BRANCO', 2.48, '06/11/2026 DIGITADA'),
+    CV('501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1, '25/09/2026'),
+    CV('501134001', 'VOL 1/1 PENTEADEIRA PRINCESA', 'BRANCO', 1.9, '16/10/2026')]);
+  const AR = (linha, em, data, modelo, produto, volume, sRod, sLac, volumes, uepCad, quem, origem) =>
+    ({ linha, em, data, modelo, produto, volume, sRod, sLac, volumes, uepCad, quem, origem, regId:origem === 'APP' ? 'app-' + linha : 'c' + linha });
+  const LA = [
+    AR(60, '09/11/2026 08:35', '09/11/2026', '501079', 'BUFFET FLIP 1.6', 'VOL 2/2', 12, 10.5, 61, 1.52, 'ODERLI SERGIO GARCIA', 'APP'),
+    AR(59, '09/11/2026 08:33', '09/11/2026', '501093', 'CANT CAFE AURORA', 'VOL 1/1', 14.5, 13.4, 30, 2.04, 'ODERLI SERGIO GARCIA', 'APP'),
+    AR(58, '06/11/2026 14:28', '06/11/2026', '501135', 'PENT CAMARIM 1PT 2GAV DIAMANTE', 'VOL 1/1', 18.4, 16.6, 100, 1.83, '', 'APP'),
+    AR(57, '06/11/2026 10:44', '20/10/2026', '501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 7.7, 6.5, 37, 1, '', 'APP'),
+    AR(56, '06/11/2026 10:43', '04/11/2026', '501134', 'PENTEADEIRA PRINCESA', 'VOL 1/1', 15.2, 14.4, 65, 1.9, '', 'APP'),
+    AR(51, '06/11/2026 07:46', '06/11/2026', '501060', 'PENTEADEIRA CAMARIM MEL', 'VOL 2/2', 13.8, 13.6, 70, 1.71, 'ADRIANO RODRIGUES', ''),   // do PDF: não entra
+    AR(40, '01/11/2026 09:00', '01/11/2026', '501093', 'CANT CAFE AURORA', 'VOL 1/1', 14, 13, 40, 2.04, '', 'APP'),                              // 9 dias antes: fora da janela
+    AR(61, '10/11/2026 07:00', '10/11/2026', '501093', 'CANT CAFE AURORA', 'VOL 1/1', 14, 13, 40, 2.04, '', 'APP'),                              // "amanhã" (relógio errado): fora
+    AR(55, '06/11/2026 10:42', '05/11/2026', '501999', 'PRODUTO QUE SAIU', 'VOL 1/1', 20, 19.5, 35, 2.98, '', 'APP')];                           // fora do cadastro
+  const TROC = [{ modelo:'501135', produto:'PENT CAMARIM 1PT 2GAV DIAMANTE', volume:'VOL 1/1', gravado:'06/11/2026 15:10', vig:'06/11/2026 DIGITADA', codigos:[{ cod:'501135001', antes:1.83, uep:2.48 }] }];
+  const A = _ucvAppRecentes(LA, PA, TROC, '09/11/2026', 7, 4);
+  ok('só ORIGEM APP, que CHEGOU nos últimos 7 dias (nem o de 9 dias atrás nem o de "amanhã"), a mais nova primeiro, no máximo 4',
+     [A.linhas.map(x => x.r.linha), A.nJan, A.nHoje, A.dias, A.ultima.linha], [[60, 59, 58, 57], 6, 2, 7, 61]);
+  ok('cada linha: o volume do cadastro, a UEP pela régua de hoje (sem as lacunas ÷ 6,7), hoje, e "medida em" quando a data é de outro dia',
+     [A.linhas.map(x => x.p && x.p.rot), A.linhas.map(x => _ucvU2(x.uep)), A.linhas.map(x => x.hoje), A.linhas.map(x => x.outroDia)],
+     [['501079 · BUFFET FLIP 1.6 · VOL 2/2', '501093 · CANT CAFE AURORA', '501135 · PENT CAMARIM 1PT 2GAV DIAMANTE', '501149 · MESA CABECEIRA MADERO'],
+      ['1,57', '2,00', '2,48', '0,97'], [true, true, false, false], [false, false, false, true]]);
+  ok('a célula TROCA é a da lista (_ucvRegsStatus): NÃO TROCA dentro da faixa, TROCADA pelo ✓ TROCAR, BASE; a versão do cadastro diz se ainda vale',
+     [A.linhas.map(x => x.st.est), A.linhas.map(x => x.st.vigor), Math.round(A.linhas[0].st.dif * 10) / 10],
+     [['nao-troca', 'nao-troca', 'trocada', 'base'], [true, true, false, true], 3.1]);
+  const AF = _ucvAppRecentes(LA, PA, TROC, '09/11/2026', 7, 9);
+  ok('o volume que saiu do cadastro entra sem produto (não abre); a lista não lida dá null; nenhuma do app: lista vazia e a última que chegou',
+     [AF.linhas.map(x => x.r.linha), AF.linhas[5].p, _ucvAppRecentes(null, PA, TROC, '09/11/2026'), _ucvAppRecentes(LA.slice(5, 6), PA, [], '09/11/2026').linhas.length,
+      _ucvAppRecentes(LA.slice(5, 7), PA, [], '20/11/2026').ultima.linha],
+     [[60, 59, 58, 57, 56, 55], null, null, 0, 40]);
+  // o desenho
+  const H = _ucvAppHtml(A, null, 'app-60');
+  ok('o desenho: título, hoje em negrito, "medida em", a linha aberta marcada, o clique pelo índice, quem mediu (ou "app"), e o VER TODAS na própria faixa',
+     [H.includes('CHEGARAM DO APP'), H.includes('<b>hoje</b> 08:35'), H.includes('<small>medida em 20/10</small>'), H.includes('<tr class="sel" onclick="_ucvAbrirApp(0)"'),
+      H.includes('onclick="_ucvAbrirApp(3)"'), H.includes('>ODERLI SERGIO GARCIA<'), H.includes('<td>app</td>'), H.includes('+ 2 outras chegaram nos últimos 7 dias'),
+      H.includes('onclick="_ucvAppTodas()">VER TODAS (6)</button>'), H.includes('class="ucv-app-w novo"'), H.includes('<b>10,5 s</b>'), H.includes('<b>1,57</b>'), H.includes("_ucvSub('regs')")],
+     [true, true, true, true, true, true, true, true, true, true, true, true, false]);
+  const HT = _ucvAppHtml(_ucvAppRecentes(LA, PA, TROC, '09/11/2026', 7, Infinity), null, null, true);
+  ok('VER TODAS: as 6 da janela, com VER MENOS; com até 4 na janela, nenhum dos dois',
+     [(HT.match(/<tr class="(?:sel)?" onclick|<tr class="fora"/g) || []).length, HT.includes('>VER MENOS</button>'), HT.includes('VER TODAS'),
+      /VER TODAS|VER MENOS/.test(_ucvAppHtml(_ucvAppRecentes(LA, PA, TROC, '13/11/2026', 7, 4), null, null, false))], [6, true, false, false]);
+  ok('horário de chegada fora do formato (digitado à mão) sai escapado',
+     _ucvAppHtml(_ucvAppRecentes([AR(70, '09/11/2026 <b>x</b>', '09/11/2026', '501093', 'CANT CAFE AURORA', 'VOL 1/1', 14, 13, 40, 2.04, '', 'APP')], PA, [], '10/11/2026'), null).includes('&lt;b&gt;x&lt;/b&gt;'), true);
+  const HF = _ucvAppHtml(AF, null, null);
+  ok('o volume fora do cadastro não abre (sem onclick) e diz por quê', [HF.includes('<tr class="fora"'), HF.includes('fora do cadastro'), (HF.match(/_ucvAbrirApp\(/g) || []).length], [true, true, 5]);
+  ok('os estados: lendo, não lida, .gs antigo, nenhuma nos últimos dias (com a última), nenhuma ainda (diz como chega); sem novidade de hoje, sem a borda laranja',
+     [_ucvAppHtml(null, null).includes('Lendo as medições'), _ucvAppHtml(null, 'falhou').includes('não foram lidas'), _ucvAppHtml(null, 'sem-endpoint').includes('.gs v5.30'),
+      _ucvAppHtml(_ucvAppRecentes(LA.slice(5, 7), PA, [], '20/11/2026'), null).includes('a última chegou em 01/11/2026 09:00 (CANT CAFE AURORA · VOL 1/1)'),
+      _ucvAppHtml(_ucvAppRecentes([], PA, [], '09/11/2026'), null).includes('Salvar análise e fechar'),
+      _ucvAppHtml(_ucvAppRecentes(LA, PA, TROC, '12/11/2026'), null).includes('ucv-app-w novo')],
+     [true, true, true, true, true, false]);
+  ok('o desenho não faz conta (a UEP, a troca e a janela vêm prontas)', [/_ucvRegUep\(|_ucvRegsStatus\(|Date\.UTC|_uepConvCadastro\(/.test(pegaJs('function _ucvAppHtml(')), UCV_SEM_CONTA.test(pegaJs('function _ucvAppHtml('))], [false, false]);
+  // já registrada: o 💾 some enquanto os campos são os da medição aberta
+  const RA = { p:{ rot:'501079 · BUFFET FLIP 1.6 · VOL 2/2' }, seg:10.5 }, AB = { regId:'app-60', rot:RA.p.rot, seg:10.5 };
+  ok('a medição aberta "já está registrada" só com o MESMO volume e o MESMO sem as lacunas, e se ela está na lista',
+     [_ucvAppJa(AB, RA, LA) && _ucvAppJa(AB, RA, LA).linha, _ucvAppJa(AB, Object.assign({}, RA, { seg:10.4 }), LA), _ucvAppJa(AB, { p:{ rot:'501093 · CANT CAFE AURORA' }, seg:10.5 }, LA),
+      _ucvAppJa(null, RA, LA), _ucvAppJa(AB, RA, LA.slice(1)), _ucvAppJa(AB, { p:null, seg:10.5 }, LA)],
+     [60, null, null, null, null, null]);
+  ok('o aviso: de onde veio, quando, quem, os volumes e o rodando; não manda registrar de novo',
+     _ucvAppJaTxt(LA[0]), '✓ ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA — chegou do app em 09/11/2026 08:35 (ODERLI SERGIO GARCIA): medida em 09/11/2026, 61 volumes, rodando 12,0 s. Não precisa registrar de novo: ela já conta na regra da troca (as medições do volume, abaixo).');
+  const AT5 = pegaJs('function _uepConvAtualiza('), RP5 = pegaJs('function _ucvRegPintar('), TH5 = pegaJs('function _uepConvTrocaHtml(');
+  ok('a tela: o já registrada ANTES do resultado (o NÃO PRECISA TROCAR não manda registrar), o 💾 escondido, a faixa e o botão MEDIR pelo _ucvRegPintar',
+     [/const ja = _ucvAppJa\(UCV_APP_ABERTA, R, E\.regs\);[\s\S]*if\(ja\) R\.jaReg = true;[\s\S]*res\.innerHTML = _uepConvHtml\(R, true\);[\s\S]*_ucvRegPintar\(R, ja\);/.test(AT5),
+      /fl\.classList\.toggle\('ja', !!ja\)/.test(AT5), /R\.jaReg \? 'Ela já está registrada \(veio do app\)\.' : 'Registre a medição para ela ficar guardada\.'/.test(TH5),
+      /const A = _ucvAppRecentes\(L, UEP_CONV_PRODS, UCV_CONF && UCV_CONF\.trocas, hojeStr\(\), UCV_APP_DIAS, UCV_APP_TODAS \? Infinity : UCV_APP_MAX\);\s*UCV_APP = A \? A\.linhas : \[\];/.test(RP5),
+      /_ucvEl\('app'\); if\(ap\) ap\.innerHTML = _ucvAppHtml\(A, UCV_REGS && UCV_REGS\.falha, ja \? ja\.regId : null, UCV_APP_TODAS\);/.test(RP5)],
+     [true, true, true, true, true]);
+  // a revisão (09/11): o "já registrada" não pode esconder o 💾 de um estudo NOVO do mesmo volume com o mesmo tempo
+  ok('outro estudo esquece a medição aberta: importar um PDF, abrir pelas PRONTAS, pelos PRINCIPAIS, pelo ONDE O TEMPO VAI, o 📌 FIXAR e DIGITAR no produto ou no tempo',
+     [['async function _ucvImportar(', 'function _ucvAbrirPronta(', 'function _ucvAbrirPrincipal(', 'function _ucvAbrirTempo(', 'function _uepConvFixarBase(', 'function _ucvDigitou(']
+        .filter(f => !/UCV_APP_ABERTA = null;/.test(pegaJs(f))),
+      /id="uep-conv-prod"[^>]*oninput="_ucvDigitou\(\)"/.test(html), /id="uep-conv-seg"[^>]*oninput="_ucvDigitou\(\)"/.test(html),
+      /UCV_APP_ABERTA = null;[^\n]*\n\s*put\('prod'/.test(pegaJs('async function _ucvImportar('))],
+     [[], true, true, true]);
+  { const antes = global._uepConvAtualiza; let n = 0; global._uepConvAtualiza = () => { n++; };
+    eval.call(global, pegaJs('function _ucvDigitou('));
+    global.UCV_APP_ABERTA = { regId:'app-60', rot:RA.p.rot, seg:10.5 };
+    _ucvDigitou();
+    ok('digitou: a aberta some (o mesmo produto e o mesmo tempo digitados de novo já não "estão registrados") e a tela redesenha',
+       [global.UCV_APP_ABERTA, _ucvAppJa(global.UCV_APP_ABERTA, RA, LA), n], [null, null, 1]);
+    global._uepConvAtualiza = antes; global.UCV_APP_ABERTA = null; }
+  const DJ = _uepConvDocHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 2530), { data:'09/11/2026', hora:'09:00', ja:LA[0] });
+  const DN = _uepConvDocHtml(_uepConvMontar(PRODS, 'ARMARIO ENCANTO', 27.8, 0, 2530), { data:'09/11/2026', hora:'09:00' });
+  ok('a 🖨 do estudo diz o mesmo que a tela: com a medição do app aberta, "já registrada" no lugar das linhas para a caneta',
+     [DJ.includes('ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA'), DJ.includes('class="ucv-reg"'), DN.includes('class="ucv-reg"'), DN.includes('JÁ ESTÁ REGISTRADA'),
+      /const ja = _ucvAppJa\(UCV_APP_ABERTA, R, E\.regs\);[\s\S]*if\(ja\) R\.jaReg = true;[\s\S]*hour:'2-digit', minute:'2-digit' \}\), ja \};/.test(pegaJs('function gerarRelatorioCrono('))],
+     [true, false, true, false, true]);
+  ok('a faixa mora no topo do MEDIR (antes dos campos); o ✕ LIMPAR esquece a medição aberta',
+     [html.indexOf('<div id="uep-conv-app"></div>') > html.indexOf('data-sub="medir">') && html.indexOf('<div id="uep-conv-app"></div>') < html.indexOf('id="uep-conv-prod"'),
+      /UCV_APP_ABERTA = null;/.test(pegaJs('function _ucvLimpar('))], [true, true]);
+  // o botão MEDIR: sem produto, quantas chegaram hoje
+  ok('o botão MEDIR: sem produto, quantas chegaram do app hoje (em laranja); com produto, o produto; sem nenhuma hoje, "escolha o produto"',
+     [_ucvSubMontar({ app:A }).medir, _ucvSubMontar({ app:{ nHoje:1 } }).medir.txt, _ucvSubMontar({ app:{ nHoje:0 } }).medir, _ucvSubMontar({ p:{ nome:'CANT CAFE AURORA' }, app:A }).medir],
+     [{ txt:'2 chegaram do app hoje', cls:'acc' }, '1 chegou do app hoje', { txt:'escolha o produto', cls:'' }, { txt:'CANT CAFE AURORA', cls:'' }]);
+  // abrir: o MEDIR com o volume e o SEM AS LACUNAS da medição
+  { const campos = { prod:{ value:'' }, seg:{ value:'' }, res:{ scrollIntoView(){} } }, docAntes = global.document;
+    const subs = []; let att = 0;
+    const antes = { el:global._ucvEl, sub:global._ucvSub, at:global._uepConvAtualiza, app:global.UCV_APP, ab:global.UCV_APP_ABERTA };
+    global._ucvEl = n => campos[n] || null; global._ucvSub = k => subs.push(k); global._uepConvAtualiza = () => { att++; };
+    global.UCV_APP = AF.linhas; global.UCV_APP_ABERTA = null;
+    eval.call(global, pegaJs('function _ucvAbrirApp('));
+    _ucvAbrirApp(0);
+    const r0 = [subs.slice(), campos.prod.value, campos.seg.value, JSON.stringify(UCV_APP_ABERTA), att];
+    _ucvAbrirApp(5); _ucvAbrirApp(9);
+    ok('abrir: volta ao MEDIR, o volume no PRODUTO, o sem as lacunas no campo (com vírgula), guarda qual foi aberta; fora do cadastro ou índice que não existe não faz nada',
+       [r0, subs.length, att], [[['medir'], '501079 · BUFFET FLIP 1.6 · VOL 2/2', '10,5', '{"regId":"app-60","rot":"501079 · BUFFET FLIP 1.6 · VOL 2/2","seg":10.5}', 1], 1, 1]);
+    global.document = docAntes;
+    global._ucvEl = antes.el; global._ucvSub = antes.sub; global._uepConvAtualiza = antes.at; global.UCV_APP = antes.app; global.UCV_APP_ABERTA = antes.ab;
+  }
+  ok('a pele da faixa: a borda laranja só com novidade de hoje, o aberto marcado, a linha fora do cadastro sem cursor, o já registrada em verde',
+     [/#sec-crono \.ucv-app-w\.novo\{/.test(html), /#sec-crono \.ucv-app tbody tr\.sel td\{/.test(html), /#sec-crono \.ucv-app tbody tr\.fora\{cursor:default/.test(html),
+      /#sec-crono #uep-conv-reg-falta\.ja\{/.test(html)], [true, true, true, true]);
 }
 
 // os testes assíncronos (o fluxo do EXCLUIR) rodam antes do resumo; um que não

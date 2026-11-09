@@ -11,6 +11,30 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.218.0 — 09/11/2026 · CRONOANÁLISE: o que chegou do app aparece no MEDIR
+
+- PPCP, com o MEDIR vazio na tela: *"nessa tela tem como vir o que foi enviado
+  pelo app"*. A medição que o app manda no "Salvar análise" já ia para a aba
+  CRONOANALISE e já contava na regra da troca, mas no MEDIR só aparecia depois
+  de escolher o produto.
+- Em ⏱ CRONOANÁLISE → MEDIR, no topo: **CHEGARAM DO APP** — as medições que o
+  app mandou nos últimos 7 dias, a mais nova primeiro (até 4, com VER TODAS),
+  com quando chegou, produto e volume, o SEM AS LACUNAS, os
+  volumes, a UEP, o cadastro e se troca. O botão MEDIR diz quantas chegaram
+  hoje.
+- **Tocar numa linha** abre o volume com o SEM AS LACUNAS dela no campo: o
+  resultado, a NA PRODUÇÃO, as medições do volume e a caixa da troca aparecem
+  como sempre. O 💾 REGISTRAR some e a tela diz que a medição **já está
+  registrada** — não precisa registrar de novo. Mudou o produto ou o tempo, é
+  outro estudo e o 💾 volta.
+- Exemplo (09/11): BUFFET FLIP 1.6 VOL 2/2, 10,5 s, 61 volumes → 1,57 contra
+  1,52 no cadastro (+3,1%, NÃO TROCA); CANT CAFE AURORA, 13,4 s → 2,00 contra
+  2,04 (−2,0%, NÃO TROCA).
+- **Atenção:** nenhum número mudou e nada é gravado — é a mesma lista de
+  medições, mostrada no MEDIR.
+
+---
+
 ## v7.217.0 — 06/11/2026 · TAKT DA SEMANA: o takt por caixa de cada produto
 
 - PPCP: *"onde fica registrado o takt da semana ex: 15seg"* → *"no painel onde
