@@ -18,8 +18,8 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
   CRONOANALISE e já contava na regra da troca, mas no MEDIR só aparecia depois
   de escolher o produto.
 - Em ⏱ CRONOANÁLISE → MEDIR, no topo: **CHEGARAM DO APP** — as medições que o
-  app mandou nos últimos 7 dias, a mais nova primeiro (até 4; o resto na
-  sub-aba MEDIÇÕES), com quando chegou, produto e volume, o SEM AS LACUNAS, os
+  app mandou nos últimos 7 dias, a mais nova primeiro (até 4, com VER TODAS),
+  com quando chegou, produto e volume, o SEM AS LACUNAS, os
   volumes, a UEP, o cadastro e se troca. O botão MEDIR diz quantas chegaram
   hoje.
 - **Tocar numa linha** abre o volume com o SEM AS LACUNAS dela no campo: o

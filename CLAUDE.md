@@ -6133,8 +6133,9 @@ feito e dá ar de verdade ao que sobrou.
   de escolher o produto. Faixa `#uep-conv-app` no TOPO do painel MEDIR (antes
   dos campos): as medições com ORIGEM = APP que CHEGARAM (REGISTRADO_EM) nos
   últimos `UCV_APP_DIAS`=7 dias, a mais nova primeiro, no máximo
-  `UCV_APP_MAX`=4 (o resto: *"+ N outras… na sub-aba MEDIÇÕES"*; com 6 a 1366
-  px a faixa tomava a tela inteira). Colunas: CHEGOU (*hoje 08:35*, *medida em
+  `UCV_APP_MAX`=4 (o resto no VER TODAS da própria faixa, `UCV_APP_TODAS`;
+  com 6 linhas a 1366 px a faixa tomava a tela inteira — e a MEDIÇÕES só
+  mostra as 15 últimas, então mandar o resto para lá podia ser falso). Colunas: CHEGOU (*hoje 08:35*, *medida em
   dd/mm* quando a data é de outro dia) · PRODUTO · VOLUME · SEM LACUNAS ·
   VOLUMES · UEP · VERSÃO DO CADASTRO · TROCA · MEDIDO POR — as mesmas células
   da lista de medições (`_ucvRegUep`, `_ucvRegsStatus`, `_ucvStatusCel`).
@@ -6151,7 +6152,11 @@ feito e dá ar de verdade ao que sobrou.
     do `#uep-conv-reg-falta` diz *"✓ ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA — chegou do
     app em…"* (`_ucvAppJaTxt`, classe `ja`) e o NÃO PRECISA TROCAR não manda
     registrar (`R.jaReg`, posto pela tela, não pela conta). Mexeu no produto ou
-    no tempo, é outro estudo: o 💾 volta. O ✕ LIMPAR esquece a aberta.
+    no tempo (`_ucvDigitou`), importar um PDF, abrir pelas PRONTAS, PRINCIPAIS,
+    ONDE O TEMPO VAI ou o 📌 FIXAR é outro estudo: a aberta é esquecida e o 💾
+    volta (achado da revisão: senão o mesmo tempo de um estudo NOVO do volume
+    escondia o 💾). O ✕ LIMPAR também esquece. A 🖨 do estudo diz o mesmo
+    (`ctx.ja` no lugar das linhas para a caneta).
   - Medido no Chromium com as leituras reais de 09/11: 1920, 1366 e 1280, nada
     passa da largura.
 
