@@ -694,6 +694,16 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-crono .ucv-pronta{font-family:var(--font-b);font-size:12.5px;color:var(--txt);background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:6px 11px;cursor:pointer}
 #sec-crono .ucv-pronta:hover{border-color:var(--acc)}
 #sec-crono .ucv-pronta b{color:var(--acc);margin-left:6px}
+#sec-crono .ucv-app-w{margin-bottom:14px;padding:12px 14px;border:1px solid var(--border);border-radius:8px}
+#sec-crono .ucv-app-w.novo{border-color:rgba(255,92,31,.35);border-left:4px solid var(--acc)}
+#sec-crono .ucv-app-w .ucv-regs-w{margin-top:8px}
+#sec-crono .ucv-app tbody tr{cursor:pointer}
+#sec-crono .ucv-app tbody tr:hover td{background:var(--elevated)}
+#sec-crono .ucv-app tbody tr.sel td{background:rgba(255,92,31,.08)}
+#sec-crono .ucv-app tbody tr.fora{cursor:default;color:var(--txt2)}
+#sec-crono .ucv-app td small{display:block;margin-top:3px;font-size:11px;color:var(--txt2)}
+#sec-crono .ucv-app-w .ucv-princ-mais span{margin-left:8px;font-family:var(--font-b);font-size:12.5px;color:var(--txt2)}
+#sec-crono #uep-conv-reg-falta.ja{border-style:solid;border-color:rgba(46,204,113,.45);color:var(--txt)}
 #sec-crono .ucv-princ-r{font-family:var(--font-b);font-size:13.5px;color:var(--txt);padding:9px 14px;margin-bottom:10px;border:1px solid var(--border);border-left:4px solid var(--warn);border-radius:8px}
 #sec-crono .ucv-princ-r.ok{border-left-color:var(--ok)}
 #sec-crono .ucv-princ tbody tr{cursor:pointer}
@@ -3369,10 +3379,11 @@ if (_v7Instalado()) _v7EscondeBotao();
     <div class="uep-nota" id="uep-conv-i-msg"></div>
     <div class="uep-nota" id="uep-conv-x-msg"></div>
     <div class="ucv-pn on" data-sub="medir">
+      <div id="uep-conv-app"></div>
       <div class="uep-card">
         <div class="uep-conv-f">
-          <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_uepConvAtualiza()"></label>
-          <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME SEM AS LACUNAS — o mesmo em que a MADERO deu 6,7 s. Com a régua da meta como base, o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME SEM AS LACUNAS</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão SEM AS LACUNAS do app" oninput="_uepConvAtualiza()"></label>
+          <label>PRODUTO<input id="uep-conv-prod" class="frm-inp" list="uep-conv-lista" autocomplete="off" placeholder="nome ou código — ex.: ARMARIO ENCANTO" oninput="_ucvDigitou()"></label>
+          <label title="Do Volume a volume do PRODUTO: o cartão POR VOLUME SEM AS LACUNAS — o mesmo em que a MADERO deu 6,7 s. Com a régua da meta como base, o POR VOLUME NO PERÍODO. O tempo MEDIDO, sem somar tolerância: ela entra pelo campo TOLERÂNCIA."><span id="uep-conv-seg-rot">s/VOLUME SEM AS LACUNAS</span><input id="uep-conv-seg" class="frm-inp" inputmode="decimal" placeholder="cartão SEM AS LACUNAS do app" oninput="_ucvDigitou()"></label>
           <label title="O tempo por volume da BASE (MESA CABECEIRA MADERO, 1,00) sem as lacunas — NÃO o tempo do próprio produto. Vazio, vale a MADERO medida em 20/10/2026: 6,7 s sem as lacunas (60 volumes). O que for digitado ou fixado vale só neste computador, e com ele a medição não é registrada; a régua da meta (527 min × 60 ÷ a meta de UEP) volta ao método antigo, com o tempo NO PERÍODO."><span>s/VOLUME DA BASE (<span id="uep-conv-base-nome">MADERO</span>)</span><input id="uep-conv-base" class="frm-inp" inputmode="decimal" oninput="this.dataset.auto='';_uepConvBase()" onblur="_uepConvAtualiza()"></label>
           <label title="Fadiga e movimentação (decisão do PPCP: 15% iguais para todos). Tempo padrão = medido × (1 + tolerância), no produto e na base — a mesma tolerância nos dois se cancela na UEP. Só entra com a base cronometrada (sem as lacunas): a régua da meta já tem fadiga e paradas dentro.">TOLERÂNCIA (%)<input id="uep-conv-tol" class="frm-inp" inputmode="decimal" oninput="_uepConvTol()" onblur="_uepConvAtualiza()"></label>
           <button type="button" class="btn btn-ghost" id="uep-conv-fixar" onclick="_uepConvFixarBase()">📌 FIXAR MADERO</button>
@@ -3964,7 +3975,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.217.0';
+const APP_VER   = '7.218.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -6696,7 +6707,7 @@ function _uepConvTrocaHtml(R){
     // tempo digitado — antes o PARA TROCAR mostrava só a medição dos campos
     // (1,57 da STRASS) ao lado da média das registradas (1,51) na lista.
     + (R.troca ? _ucvTrocaHtml(R)
-      : R.confere ? `<div class="ucv-acao ok"><div class="ucv-acao-t">✓ NÃO PRECISA TROCAR</div><p>A UEP do cadastro confere com a medição (${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%). Registre a medição para ela ficar guardada.</p></div>`
+      : R.confere ? `<div class="ucv-acao ok"><div class="ucv-acao-t">✓ NÃO PRECISA TROCAR</div><p>A UEP do cadastro confere com a medição (${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}%). ${R.jaReg ? 'Ela já está registrada (veio do app).' : 'Registre a medição para ela ficar guardada.'}</p></div>`
       : _ucvAindaHtml(R));
 }
 // A lista do que muda em cada código (a mesma da troca e do "esta medição dá").
@@ -6887,13 +6898,15 @@ function _uepConvAtualiza(){
   const guia = _ucvEl('guia');
   try{
     const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
+    const ja = _ucvAppJa(UCV_APP_ABERTA, R, E.regs);   // v7.218.0: a medição do app aberta já está registrada
+    if(ja) R.jaReg = true;                            // o NÃO PRECISA TROCAR não manda registrar de novo
     if(guia) guia.innerHTML = _uepConvQualCurto(R.base);   // a MESMA régua da conta (com a tolerância da meta)
     // v7.197.0: os três cartões, o porquê e as notas no ⓘ COMO LER (só o miolo é refeito: aberto, ele não fecha a cada tecla)
     const ler = _ucvEl('ler-c'); if(ler) ler.innerHTML = _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta) + (R.estado === 'ok' ? _uepConvNotasHtml(R.base) : '');
     const rot = _ucvEl('seg-rot'); if(rot) rot.textContent = R.base.daMeta ? 's/VOLUME NO PERÍODO' : 's/VOLUME SEM AS LACUNAS';
     res.innerHTML = _uepConvHtml(R, true);
-    const fl = _ucvEl('reg-falta'); if(fl) fl.textContent = _ucvRegFalta(R, E);
-    _ucvRegPintar(R);
+    const fl = _ucvEl('reg-falta'); if(fl){ fl.textContent = ja ? _ucvAppJaTxt(ja) : _ucvRegFalta(R, E); fl.classList.toggle('ja', !!ja); }
+    _ucvRegPintar(R, ja);
     if((E.linha === 'nao-lida' && UCV_REGS) || E.linha === 'falhou') _ucvLinhaCarregar();   // a 1ª leitura é a do setTab, depois das medições
   }catch(e){ res.innerHTML = '<div class="uep-nota">Não consegui converter: ' + _rpEsc(e.message) + '</div>'; }
 }
@@ -6919,6 +6932,7 @@ function _uepConvFixar(prods, txt, seg){
 function _uepConvFixarBase(){
   const elP = _ucvEl('prod'), elS = _ucvEl('seg'), elB = _ucvEl('base');
   const o = _uepConvFixar(UEP_CONV_PRODS, elP ? elP.value : '', _pgSimNum(elS ? elS.value : ''));
+  UCV_APP_ABERTA = null;
   if(o.acao === 'fixar' && elB){
     elB.value = String(o.seg).replace('.', ','); elB.dataset.auto = '';
     if(elP) elP.value = ''; if(elS) elS.value = '';     // pronto para o próximo produto
@@ -6934,6 +6948,7 @@ function _uepConvFixarBase(){
 const UCV_LIMPAR_CAMPOS = ['prod', 'seg', 'r-data', 'r-per', 'r-rod', 'r-vol', 'r-vel'];
 const UCV_LIMPAR_MSGS = ['i-msg', 't-msg', 'r-msg', 'x-msg'];
 function _ucvLimpar(){
+  UCV_APP_ABERTA = null;
   UCV_LIMPAR_CAMPOS.forEach(n => { const el = _ucvEl(n); if(el) el.value = ''; });
   UCV_LIMPAR_MSGS.forEach(n => { const el = _ucvEl(n); if(el) el.textContent = ''; });
   _uepConvAtualiza();
@@ -6977,6 +6992,8 @@ let UCV_EXCL = null;                          // REG_ID da medição sendo exclu
 let UCV_TROCANDO = false;                     // troca da UEP em curso (v7.158.0): uma de cada vez
 let UCV_PRONTAS = [];                         // os volumes que a regra deixa trocar (a lista PRONTAS PARA TROCAR)
 let UCV_CONF = null, UCV_CONF_VOO = null;     // a CONFERÊNCIA DAS TROCAS: { trocas, falha, ts }
+let UCV_APP = [], UCV_APP_ABERTA = null;     // CHEGARAM DO APP (v7.218.0): as linhas da faixa e a aberta no MEDIR { regId, rot, seg }
+let UCV_APP_TODAS = false;                    // a faixa com todas as da janela (VER TODAS)
 // Conta pura: o volume na produção, nas horas em que SÓ estes códigos rodaram
 // (hora com outro produto ou outro volume fica fora). v7.161.0 (PPCP, 26/10/2026:
 // "a idéia é ajustar as paradas para menos, não pode normalizar e a UEP ficar
@@ -7295,12 +7312,16 @@ function _ucvRegsHtml(regs, p, est, excl, cadAtual, pads, sts, resRegs){
 // ── Tela (DOM) ─────────────────────────────────────────────────────────────
 // O formulário do registro mora FORA do #uep-conv-res: o resultado é refeito a
 // cada tecla e levaria junto o que está sendo digitado nele.
-function _ucvRegPintar(R){
-  const box = _ucvEl('reg'); if(box) box.style.display = R.estado === 'ok' && R.base.medida ? '' : 'none';   // v7.200.0: só com a base medida
+function _ucvRegPintar(R, ja){
+  const box = _ucvEl('reg'); if(box) box.style.display = R.estado === 'ok' && R.base.medida && !ja ? '' : 'none';   // v7.200.0: só com a base medida; v7.218.0: a do app já está registrada
   const c0 = R.p ? R.p.cods.find(c => c.vel > 0) : null, vl = _ucvEl('r-vel');
   if(vl) vl.placeholder = c0 ? 'cadastro: ' + String(c0.vel).replace('.', ',') : '';
   const L = UCV_REGS && UCV_REGS.lista;
   UCV_PRONTAS = L ? _ucvProntas(L, UEP_CONV_PRODS) : [];
+  // CHEGARAM DO APP (v7.218.0): no topo do MEDIR, as medições que o app mandou nos últimos dias
+  const A = _ucvAppRecentes(L, UEP_CONV_PRODS, UCV_CONF && UCV_CONF.trocas, hojeStr(), UCV_APP_DIAS, UCV_APP_TODAS ? Infinity : UCV_APP_MAX);
+  UCV_APP = A ? A.linhas : [];
+  const ap = _ucvEl('app'); if(ap) ap.innerHTML = _ucvAppHtml(A, UCV_REGS && UCV_REGS.falha, ja ? ja.regId : null, UCV_APP_TODAS);
   // v7.197.0 (sub-abas): no MEDIR, as medições do volume escolhido (a regra da troca dele);
   // no MEDIÇÕES, as últimas de todos, com as PRONTAS PARA TROCAR em cima
   const lst = _ucvEl('regs'), lstP = _ucvEl('regs-p');
@@ -7324,7 +7345,7 @@ function _ucvRegPintar(R){
   const tp = _ucvEl('tempo'); if(tp) tp.innerHTML = _ucvTempoHtml(TV, LH, R.p ? R.p.chave : null, UCV_TEMPO_TODOS);
   const cf = _ucvEl('conf'); if(cf) cf.innerHTML = _ucvConfHtml(C, UCV_CONF && UCV_CONF.falha);
   const av = _ucvEl('conf-av'); if(av) av.innerHTML = _ucvConfAvisoHtml(C);
-  _ucvSubPintar(_ucvSubMontar({ p:R.p, M, LH, L, prontas:UCV_PRONTAS, regsFalha:UCV_REGS && UCV_REGS.falha, C, confFalha:UCV_CONF && UCV_CONF.falha, T:TV }));
+  _ucvSubPintar(_ucvSubMontar({ p:R.p, M, LH, L, prontas:UCV_PRONTAS, regsFalha:UCV_REGS && UCV_REGS.falha, C, confFalha:UCV_CONF && UCV_CONF.falha, T:TV, app:A }));
 }
 // ── Sub-abas da ⏱ CRONOANÁLISE (v7.197.0) ──────────────────────────────────
 // PPCP, 03/11/2026: "está muito cheia a tela, tem que enxugar, deixar mais
@@ -7339,7 +7360,9 @@ function _ucvSubMontar(o){
   const p = o.p, M = o.M, L = o.L, C = o.C, np = (o.prontas || []).length;
   const lendo = x => x === 'sem-endpoint' ? 'falta o .gs novo' : x === 'falhou' ? 'a produção não foi lida' : '…';
   return {
-    medir:  { txt:p ? p.nome + (p.volSel ? ' · VOL ' + p.volSel + '/' + p.nVolTot : '') : 'escolha o produto', cls:'' },
+    // v7.218.0: sem produto escolhido, quantas medições chegaram do app hoje
+    medir:  { txt:p ? p.nome + (p.volSel ? ' · VOL ' + p.volSel + '/' + p.nVolTot : '') : o.app && o.app.nHoje ? plural(o.app.nHoje, 'chegou do app hoje', 'chegaram do app hoje') : 'escolha o produto',
+              cls:!p && o.app && o.app.nHoje ? 'acc' : '' },
     // v7.216.0: o que falta medir na programação (a agenda), e quanto da UEP já está medido
     princ:  M ? { txt:(M.progLida ? (M.nProg ? `${M.nProg} a medir na programação` : 'nada a medir na programação') : `${M.nPend} a medir`) + (M.cobertura != null ? ` · ${fmtP(M.cobertura)} da UEP medida` : ''), cls:M.nPend ? '' : 'ok' }
               : { txt:Array.isArray(o.LH) ? '…' : lendo(o.LH), cls:'' },
@@ -7645,6 +7668,7 @@ async function _ucvImportar(files){
       const a = _ucvPdfAchar(UEP_CONV_PRODS, x.produto), br = v => v == null ? '' : String(v).replace('.', ',');
       const put = (n, v) => { const el = _ucvEl(n); if(el) el.value = v; };
       _ucvSub('medir');                     // um PDF preenche o MEDIR (confira e registre)
+      UCV_APP_ABERTA = null;                // é outro estudo: o 💾 volta (v7.218.0)
       put('prod', a.p ? a.p.rot : x.produto); put('seg', br(x.lac));   // v7.200.0: o SEM AS LACUNAS é o tempo da UEP
       put('r-data', x.data); put('r-per', br(x.per)); put('r-rod', br(x.rod)); put('r-vol', x.vol == null ? '' : String(x.vol));
       _uepConvAtualiza();
@@ -7742,8 +7766,95 @@ function _ucvProntasHtml(L){
 function _ucvAbrirPronta(i){
   const x = UCV_PRONTAS[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!x || !elP) return;
-  _ucvSub('medir');
+  _ucvSub('medir'); UCV_APP_ABERTA = null;
   elP.value = x.p.rot; if(elS) elS.value = '';
+  _uepConvAtualiza();
+  const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+// ── CHEGARAM DO APP (v7.218.0) ─────────────────────────────────────────────
+// PPCP, 09/11/2026, com o MEDIR vazio na tela: "nessa tela tem como vir o que
+// foi enviado pelo app". Desde o .gs v5.58 o "Salvar análise" do app manda a
+// medição sozinho para a aba CRONOANALISE (ORIGEM = APP): ela JÁ está
+// registrada e já conta na regra da troca — só não aparecia no MEDIR antes de
+// alguém escolher o produto. A faixa no topo do MEDIR lista as que CHEGARAM
+// (REGISTRADO_EM) nos últimos UCV_APP_DIAS dias, a mais nova primeiro; o toque
+// abre o volume com o SEM AS LACUNAS dela no campo, e o resultado, a NA
+// PRODUÇÃO, as medições do volume e a caixa da troca aparecem como sempre.
+// Enquanto os campos são os dela, o 💾 REGISTRAR some (já está na planilha).
+// Nenhuma leitura nova: a lista do getCronoRegistros que a aba já lê.
+const UCV_APP_DIAS = 7, UCV_APP_MAX = 4;
+// Conta pura. hoje = dd/mm/aaaa. Sem a lista lida: null (o desenho diz o estado).
+// Cada linha: a medição, o volume do cadastro (null = fora dele: não abre), a UEP
+// pela régua de hoje (_ucvRegUep) e a célula TROCA da lista (_ucvRegsStatus).
+function _ucvAppRecentes(lista, prods, trocas, hoje, dias, max){
+  if(!Array.isArray(lista)) return null;
+  const diaN = s => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m ? Date.UTC(+m[3], +m[2] - 1, +m[1]) / 864e5 : null; };
+  const h = diaN(hoje), D = Number(dias) > 0 ? Number(dias) : UCV_APP_DIAS, N = Number(max) > 0 ? Number(max) : UCV_APP_MAX;
+  const app = lista.filter(r => r && r.origem === 'APP')
+    .map(r => ({ r, n:_ucvGravNum(r.em), d:diaN(r.em) }))
+    .sort((a, b) => b.n - a.n || (Number(b.r.linha) || 0) - (Number(a.r.linha) || 0));
+  const jan = app.filter(x => x.d != null && h != null && h - x.d >= 0 && h - x.d < D);
+  const sts = _ucvRegsStatus(jan.map(x => x.r), trocas, prods);
+  const linhas = jan.map((x, i) => {
+    const r = x.r, u = _ucvRegUep(r);
+    const p = (prods || []).find(q => q.modelo === String(r.modelo || '') && _uepConvNorm(q.nome) === _uepConvNorm(r.produto) && _ucvRegVol(q) === String(r.volume || '')) || null;
+    const dm = diaN(r.data);
+    return { r, p, uep:u > 0 ? u : null, st:sts[i], hoje:x.d === h, outroDia:dm != null && dm !== x.d };
+  });
+  return { linhas:linhas.slice(0, N), nJan:linhas.length, nHoje:linhas.filter(x => x.hoje).length, ultima:app.length ? app[0].r : null, dias:D };
+}
+// A medição do app aberta no MEDIR, se os campos ainda são os dela (o mesmo
+// volume e o mesmo SEM AS LACUNAS) e ela está na lista. Mexeu no produto ou no
+// tempo, é outro estudo: o 💾 REGISTRAR volta.
+function _ucvAppJa(a, R, lista){
+  if(!a || !R || !R.p || R.p.rot !== a.rot || !(Math.abs(Number(R.seg) - Number(a.seg)) < 0.005)) return null;
+  return (lista || []).find(r => r && r.regId === a.regId) || null;
+}
+function _ucvAppJaTxt(r){
+  return `✓ ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA — chegou do app em ${r.em}${r.quem ? ' (' + r.quem + ')' : ''}: medida em ${r.data}`
+    + `${Number(r.volumes) > 0 ? ', ' + fmtN(Number(r.volumes)) + ' volumes' : ''}${Number(r.sRod) > 0 ? ', rodando ' + _taktTxt(Number(r.sRod)) : ''}. `
+    + 'Não precisa registrar de novo: ela já conta na regra da troca (as medições do volume, abaixo).';
+}
+// ── Desenho (sem conta) ────────────────────────────────────────────────────
+function _ucvAppHtml(A, est, selId, todas){
+  const tit = `<div class="ucv-regs-t">CHEGARAM DO APP <span title="Medições que o app de cronoanálise mandou sozinho (Salvar análise) e já estão na aba CRONOANALISE. Toque numa linha para abrir o volume aqui: o SEM AS LACUNAS vai para o campo. Não precisa registrar de novo.">o que o app de cronoanálise mandou nos últimos ${UCV_APP_DIAS} dias — já registrado; toque para abrir</span></div>`;
+  if(est === 'sem-endpoint') return `<div class="ucv-app-w">${tit}<div class="uep-nota">O Apps Script ainda não tem o registro da cronoanálise: cole o .gs v5.30 no editor e re-deploye.</div></div>`;
+  if(!A) return `<div class="ucv-app-w">${tit}<div class="uep-nota">${est ? 'As medições não foram lidas — tenta de novo em 1 min.' : 'Lendo as medições registradas…'}</div></div>`;
+  if(!A.linhas.length) return `<div class="ucv-app-w">${tit}<div class="uep-nota">${A.ultima
+    ? `Nenhuma medição chegou do app nos últimos ${A.dias} dias — a última chegou em ${_rpEsc(A.ultima.em || '')} (${_rpEsc(A.ultima.produto || '')} · ${_rpEsc(A.ultima.volume || '')}).`
+    : 'Nenhuma medição chegou do app ainda. No app de cronoanálise, "Salvar análise e fechar" manda a medição para cá.'}</div></div>`;
+  const hm = s => { const m = String(s || '').match(/(\d{2})\/(\d{2})\/\d{4}\s+(\d{2}:\d{2})/); return m ? [m[1] + '/' + m[2], m[3]] : [String(s || ''), '']; };
+  return `<div class="ucv-app-w${A.nHoje ? ' novo' : ''}">${tit}`
+    + '<div class="ucv-regs-w"><table class="ucv-regs ucv-app"><thead><tr><th>CHEGOU</th><th>PRODUTO · VOLUME</th><th class="n">SEM LACUNAS</th><th class="n">VOLUMES</th>'
+    + `<th class="n" title="SEM AS LACUNAS ÷ ${_taktTxt(UEP_BASE_MEDIDA.seg)} da ${_uepBaseCurto()} sem as lacunas — a régua de hoje">UEP</th>`
+    + '<th class="n" title="A UEP do cadastro quando a medição chegou. EM VIGOR = ainda é a de hoje; ANTERIOR = já foi trocada.">VERSÃO DO<br>CADASTRO</th>'
+    + `<th title="Esta medição contra o cadastro que ela viu (${UEP_PAD_FAIXA[0]}–${UEP_PAD_FAIXA[1]}% não troca). A troca é decidida pela regra do volume, com todas as medições: abra para ver.">TROCA</th><th>MEDIDO POR</th></tr></thead><tbody>`
+    + A.linhas.map((x, i) => {
+      const r = x.r, e = hm(r.em), V = String(r.volumes || '');
+      const tr = x.p ? `<tr class="${r.regId && r.regId === selId ? 'sel' : ''}" onclick="_ucvAbrirApp(${i})" title="Abrir este volume no MEDIR, com o SEM AS LACUNAS desta medição">`
+                     : '<tr class="fora" title="O volume não está no cadastro: não dá para abrir">';
+      return tr + `<td>${x.hoje ? '<b>hoje</b>' : _rpEsc(e[0])} ${_rpEsc(e[1])}${x.outroDia ? `<small>medida em ${_rpEsc(String(r.data || '').slice(0, 5))}</small>` : ''}</td>`
+        + `<td class="ucv-pr">${_rpEsc(x.p ? x.p.rot : [r.modelo, r.produto, r.volume].filter(Boolean).join(' · '))}${x.p ? '' : '<small>fora do cadastro</small>'}</td>`
+        + `<td class="n"><b>${Number(r.sLac) > 0 ? _taktTxt(Number(r.sLac)) : '—'}</b></td><td class="n">${_rpEsc(V || '—')}</td>`
+        + `<td class="n"><b>${x.uep != null ? _ucvU2(x.uep) : '—'}</b></td>`
+        + `<td class="n ucv-vc">${Number(r.uepCad) > 0 ? _ucvU2(Number(r.uepCad)) : '—'}${x.st && x.st.vigor != null ? `<small>${x.st.vigor ? 'em vigor' : 'anterior'}</small>` : ''}</td>`
+        + `<td class="ucv-st">${_ucvStatusCel(x.st)}</td><td>${_rpEsc(r.quem || 'app')}</td></tr>`;
+    }).join('')
+    + '</tbody></table></div>'
+    + (A.nJan > A.linhas.length ? `<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvAppTodas()">VER TODAS (${A.nJan})</button> <span>+ ${plural(A.nJan - A.linhas.length, 'outra chegou', 'outras chegaram')} nos últimos ${A.dias} dias</span></div>`
+      : todas && A.nJan > UCV_APP_MAX ? '<div class="ucv-princ-mais"><button type="button" class="btn btn-ghost" onclick="_ucvAppTodas()">VER MENOS</button></div>' : '')
+    + '</div>';
+}
+// Digitar no produto ou no tempo é outro estudo: a medição aberta fica para trás
+// e o 💾 volta (o mesmo vale para abrir por outro caminho e para importar PDF).
+function _ucvDigitou(){ UCV_APP_ABERTA = null; _uepConvAtualiza(); }
+function _ucvAppTodas(){ UCV_APP_TODAS = !UCV_APP_TODAS; _uepConvAtualiza(); }
+function _ucvAbrirApp(i){
+  const x = UCV_APP[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
+  if(!x || !x.p || !elP || !(Number(x.r.sLac) > 0)) return;
+  _ucvSub('medir');
+  elP.value = x.p.rot; if(elS) elS.value = String(x.r.sLac).replace('.', ',');
+  UCV_APP_ABERTA = { regId:x.r.regId, rot:x.p.rot, seg:Number(x.r.sLac) };
   _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
 }
@@ -8105,7 +8216,7 @@ function _ucvPrincHtml(M, est, sel, todos, progEst){
 function _ucvAbrirPrincipal(i){
   const g = UCV_PRINC[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!g || !elP) return;
-  _ucvSub('medir');
+  _ucvSub('medir'); UCV_APP_ABERTA = null;
   elP.value = g.p.rot; if(elS) elS.value = '';
   _uepConvAtualiza();
   const res = _ucvEl('res'); if(res && res.scrollIntoView) res.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -8337,6 +8448,7 @@ function _ucvTempoHtml(T, est, sel, todos, papel){
 function _ucvAbrirTempo(i){
   const l = UCV_TEMPO[i], elP = _ucvEl('prod'), elS = _ucvEl('seg');
   if(!l || !elP) return;
+  UCV_APP_ABERTA = null;
   elP.value = l.rot; if(elS) elS.value = '';
   _ucvSub('medir');
   if(!_abaOn('crono')) setTab('crono');      // o volume abre no conversor (desde a v7.207.0 a tabela é sub-aba da mesma aba)
@@ -8511,8 +8623,10 @@ function _uepConvDocTitulo(R, ctx){
 function _uepConvDocHtml(R, ctx){
   return '<div class="rp-sec-ttl">A MEDIÇÃO</div>' + _uepConvHtml(R)
     + '<div class="rp-sec-ttl">COMO LER</div>' + _uepConvQual(R.base) + _uepConvGuia(R.base.daMeta)
-    + '<div class="rp-sec-ttl">REGISTRO DA MEDIÇÃO</div><div class="ucv-reg">'
-    + UCV_REG_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>'
+    + '<div class="rp-sec-ttl">REGISTRO DA MEDIÇÃO</div>'
+    // v7.218.0: a medição do app já está na planilha — nada a preencher à caneta
+    + (ctx.ja ? `<div class="uep-nota">${_rpEsc(_ucvAppJaTxt(ctx.ja))}</div>`
+      : '<div class="ucv-reg">' + UCV_REG_CAMPOS.map(l => `<div><span>${l}</span><i></i></div>`).join('') + '</div>')
     + `<div class="rp-footer"><span>${APP_NOME_CX} · Embalagem · cronoanálise → UEP</span><span>gerado ${_rpEsc(ctx.data)} às ${_rpEsc(ctx.hora)} · só gerencial</span></div>`;
 }
 // 🖨 CAPACIDADE POR PRODUTO (v7.164.0, PPCP 26/10/2026: "colocar essa impressão
@@ -8633,6 +8747,8 @@ function gerarRelatorioCrono(){
   _uepConvAtualiza();                       // a tela fica com o MESMO retrato que vai ao papel
   const E = _uepConvEntradas();
   const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);
+  const ja = _ucvAppJa(UCV_APP_ABERTA, R, E.regs);   // v7.218.0: o papel diz o mesmo que a tela
+  if(ja) R.jaReg = true;
   if(R.estado !== 'ok'){
     alert(R.estado === 'sem-cadastro' ? 'O cadastro de UEP ainda não foi lido. Tente em alguns segundos.'
         : R.estado === 'sem-produto' ? 'Escolha o produto antes de imprimir.' : 'Digite o tempo por volume medido antes de imprimir.');
@@ -8642,7 +8758,7 @@ function gerarRelatorioCrono(){
   const win = window.open('', '_blank', 'width=900,height=1000');
   if(!win){ alert('Pop-up bloqueado.\nPermita pop-ups para este site e tente de novo.'); return; }
   const agora = new Date();
-  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) };
+  const ctx = { data:hojeStr(), hora:agora.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }), ja };
   let corpo = '';
   try{ corpo = _uepConvDocHtml(R, ctx); }catch(err){ win.close(); alert(_rpErroRelatorio(err)); return; }
   const html = _rpDocParadas(_uepConvDocTitulo(R, ctx), false)

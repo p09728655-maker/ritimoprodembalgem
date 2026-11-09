@@ -59,7 +59,9 @@ via Google Apps Script (JSONP).
   SLEEP de verdade, a meta do ⚙) e a régua SEM AS LACUNAS (v7.200.0: a UEP de
   cada medição pelo sem as lacunas ÷ 6,7, o PDF real da HOME ANGEL de 04/11, o
   RODANDO obrigatório no registro, a base que não é a medida não registra, a
-  base antiga guardada apagada): `node uep-relatorios.test.js`.
+  base antiga guardada apagada) e o CHEGARAM DO APP do MEDIR (v7.218.0: as
+  medições reais do app de 06 e 09/11, a janela, a linha aberta, o 💾 que
+  some com a medição já registrada): `node uep-relatorios.test.js`.
 - `programacao.test.js` — produção ADIANTADA, coluna ENCERRAR e aviso de cor
   errada do app. Carrega o `.gs` **inteiro** numa planilha de mentira e roda o
   caminho real (calcular → gravar saldo → arquivar → recalcular), e a ORDEM do
@@ -6125,6 +6127,33 @@ feito e dá ar de verdade ao que sobrou.
 - No painel, a lista MEDIÇÕES diz **app** no MEDIDO POR da medição que veio do
   app. Excluir/arquivar no app NÃO exclui no painel (decisão do 1º passo).
 - ⚠ **re-deploy manual** do `.gs` v5.58 antes de ligar a variável.
+- **CHEGARAM DO APP no MEDIR (v7.218.0**, PPCP 09/11/2026, com o MEDIR vazio
+  na tela: *"nessa tela tem como vir o que foi enviado pelo app"*). A medição
+  do app já estava na aba e na regra da troca, mas só aparecia no MEDIR depois
+  de escolher o produto. Faixa `#uep-conv-app` no TOPO do painel MEDIR (antes
+  dos campos): as medições com ORIGEM = APP que CHEGARAM (REGISTRADO_EM) nos
+  últimos `UCV_APP_DIAS`=7 dias, a mais nova primeiro, no máximo
+  `UCV_APP_MAX`=4 (o resto: *"+ N outras… na sub-aba MEDIÇÕES"*; com 6 a 1366
+  px a faixa tomava a tela inteira). Colunas: CHEGOU (*hoje 08:35*, *medida em
+  dd/mm* quando a data é de outro dia) · PRODUTO · VOLUME · SEM LACUNAS ·
+  VOLUMES · UEP · VERSÃO DO CADASTRO · TROCA · MEDIDO POR — as mesmas células
+  da lista de medições (`_ucvRegUep`, `_ucvRegsStatus`, `_ucvStatusCel`).
+  - **Conta** `_ucvAppRecentes(lista, prods, trocas, hoje, dias, max)` (pura;
+    `null` sem a lista lida; data de "amanhã" fica fora) · **desenho**
+    `_ucvAppHtml` (sem conta) · pintada no `_ucvRegPintar`, nenhuma leitura
+    nova (`getCronoRegistros`). Borda laranja só com medição de HOJE; o botão
+    MEDIR diz *"N chegaram do app hoje"* quando não há produto escolhido.
+  - **O toque** (`_ucvAbrirApp(i)`, pelo índice): MEDIR com o volume no
+    PRODUTO e o SEM AS LACUNAS no campo; guarda `UCV_APP_ABERTA` = `{regId,
+    rot, seg}`. Volume fora do cadastro não abre.
+  - **Já registrada**: enquanto os campos são os dela (`_ucvAppJa`: mesmo
+    volume, mesmo sem as lacunas, e ela na lista), o 💾 REGISTRAR some, a linha
+    do `#uep-conv-reg-falta` diz *"✓ ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA — chegou do
+    app em…"* (`_ucvAppJaTxt`, classe `ja`) e o NÃO PRECISA TROCAR não manda
+    registrar (`R.jaReg`, posto pela tela, não pela conta). Mexeu no produto ou
+    no tempo, é outro estudo: o 💾 volta. O ✕ LIMPAR esquece a aberta.
+  - Medido no Chromium com as leituras reais de 09/11: 1920, 1366 e 1280, nada
+    passa da largura.
 
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
