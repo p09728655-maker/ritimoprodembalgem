@@ -575,7 +575,7 @@ ok('por semana: esta (o saldo dos lotes × o resto de hoje), a que vem (46h08 ×
   const Cg = _tkaCorrente([], [{ n:20261109, nome:'X', qtde:1000, uepJogo:1 }, { n:20261110, nome:'X', qtde:4000, uepJogo:1 }], { hojeN:20261106, restMin:0, meta:2761, rit:null, fer:{} });
   { const HR = _tkaSaldoHtml(C43);
   ok('o rótulo da semana mostra só os dias que contam (PPCP: "06 e 08/11 está considerando fim de semana"): hoje é o que resta, o feriado é dito, sábado e domingo ficam fora',
-     [HR.includes('<tr><td>06/11 (hoje: o que resta)</td>'), HR.includes('<tr><td>09/11–13/11</td>'), HR.includes('<tr><td>16/11–19/11 <span class="mono">(20/11 feriado)</span></td>'), /08\/11|15\/11|22\/11/.test(HR),
+     [HR.includes('<tr><td>06/11 (hoje: o que resta)</td>'), HR.includes('<tr><td>09/11–13/11</td>'), HR.includes('<tr class="tka-col"><td>16/11–19/11 <span class="mono">(20/11 feriado)</span></td>'), /08\/11|15\/11|22\/11/.test(HR),
       C43.dias.filter(d => d.dow === 0 || d.dow === 6).every(d => d.cap === 0)],
      [true, true, true, false, true]);
   // v7.214.2 (PPCP: "deixa regra clara sobre falta e sobra"): por extenso, nunca sinal — falta = precisa − tem, sobra = tem − precisa
@@ -594,7 +594,7 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
    [[{ de:'16/11/2026', ate:'29/11/2026' }], [{ de:'16/11/2026', ate:'29/11/2026' }, { de:'30/11/2026', ate:'13/12/2026' }], []]);
 { const HS = _tkaSaldoHtml(C43), M43 = _tkaMontar(L43, OC.fer, 2761, RIT), DOC = _tkaDocHtml({ L:L43, M:M43, C:C43 }, { data:'06/11/2026', hora:'14:40' });
   ok('o desenho do saldo: a frase (chega com, termina com, no ritmo atual), a tabela por semana, o que não somou (já no painel); a 🖨: a colagem e o saldo lado a lado, a frase uma vez só',
-     [HS.includes('A linha chega em <b>16/11</b> com <b>' + _fmtHM(C43.chegada) + '</b> de atraso'), (HS.match(/<tr><td>/g) || []).length, HS.includes('12 linhas coladas já estão na programação do painel (pelo Nº LOTE SIST.)'),
+     [HS.includes('A linha chega em <b>16/11</b> com <b>' + _fmtHM(C43.chegada) + '</b> de atraso'), (HS.match(/<tr( class="tka-col")?><td>/g) || []).length, HS.includes('12 linhas coladas já estão na programação do painel (pelo Nº LOTE SIST.)'),
       DOC.includes('A programação colada (<b>16/11 a 23/11</b>) <b>cabe</b>'), DOC.includes('A linha chega nela com <b>' + _fmtHM(C43.chegada) + '</b> de atraso'),
       (DOC.match(/A linha chega/g) || []).length, DOC.includes('>SALDO DE HORAS<small>'), DOC.includes('<div class="tks-hv">CABE</div>')],
      [true, 4, true, true, true, 1, true, true]);
@@ -630,6 +630,26 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
       DC.includes('de atraso' + _tkaDias(CR.atraso) + ' (no ritmo atual'), HS.includes('chega com <b>' + _fmtHM(CR.chegadaR) + '</b>' + _tkaDias(CR.chegadaR)),
       (HS.split('<table')[1] || '').split('<div class="uep-nota">')[0].includes('dia)'), HS.includes('<b>Dias</b> = horas ÷ 8h47 (1 jornada)')],
      [' (≈ 2,5 dias)', ' (≈ 2,9 dias)', ' (≈ 1,0 dia)', '', '', true, ' (≈ 0,8 dia)', ' (≈ 1,2 dia)', true, false, false, true]); }
+{ // v7.221.0 (PPCP: "como explicar isso, não cabe e sobra"): a colagem 12–16/11 não cabe, mas a semana dela que começa
+  // na segunda (16/11) sobra. A linha COLAGEM INTEIRA traz os números do veredito debaixo das semanas.
+  const IT = [{ n:20261112, nome:'X', qtde:4000, uepJogo:1, ptsJogo:0, lote:null }, { n:20261113, nome:'X', qtde:4000, uepJogo:1, ptsJogo:0, lote:null },
+              { n:20261116, nome:'X', qtde:1500, uepJogo:1, ptsJogo:0, lote:null }];
+  const L = { itens:IT, semCad:[], semData:0 }, OCc = { hojeN:20261106, restMin:0, meta:2761, rit:null, fer:{} };
+  const Cc = _tkaCorrente([], IT, OCc), Mc = _tkaMontar(L, {}, 2761, null), V = Mc.V, hm = _fmtHM;
+  const sCol = Cc.semanas.filter(w => w.col), soma = sCol.reduce((a, w) => a + w.precisa - w.tem, 0);
+  global.TKA_TXT = '';
+  const HT = _tkaHtml(L, Mc, { botoes:'', corrente:Cc }), DOC = _tkaDocHtml({ L, M:Mc, C:Cc }, { data:'06/11/2026', hora:'14:40' });
+  const linhaTot = '<tr class="tka-tot"><td colspan="2">colagem inteira 12/11–16/11 <span class="mono">(= o NÃO CABE)</span></td><td class="n">' + hm(V.precisaMin)
+    + '</td><td class="n">' + hm(V.temMin) + '</td><td class="n"><span class="tks-red">falta ' + hm(V.faltaMin) + '</span></td>';
+  ok('não cabe e sobra: a colagem inteira falta, a semana de 16/11 sobra; as semanas da colagem somam a falta dela; a linha COLAGEM INTEIRA (o veredito) fecha a tabela, nas semanas da colagem a marca',
+     [V.cabe, sCol.length, sCol[1].precisa < sCol[1].tem, Math.abs(soma - V.faltaMin) <= 1,
+      HT.includes(linhaTot), HT.indexOf('tka-tot') > HT.lastIndexOf('<tr class="tka-col">'), (HT.match(/<tr class="tka-col">/g) || []).length,
+      DOC.includes('colagem inteira 12/11 a 16/11 <span class="mono">(= o NÃO CABE)</span>'), HT.includes('<b>Colagem inteira</b> = só a programação colada'),
+      _tkaSaldoHtml(Cc).includes('tka-tot'), _tkaSaldoHtml(Cc).includes('<b>Colagem inteira</b>')],
+     [false, 2, true, true, true, true, 2, true, true, false, false]);
+  ok('a pele: a marca das semanas da colagem e a linha de total na tela e no papel',
+     [/#sec-uep \.tka-tab tr\.tka-col td:first-child\{border-left:3px solid var\(--acc\)\}/.test(html), /#sec-uep \.tka-tab tr\.tka-tot td\{/.test(html),
+      /\.tks-doc \.tka-tab tr\.tka-tot td\{border-top:1px solid #1F2328;font-weight:600\}/.test(html)], [true, true, true]); }
 ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
    [/#sec-uep \.ucv-sub\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(200px,1fr\)\)\}/.test(html), /auto-fill,minmax\(180px/.test(html),
     /#sec-uep \.ucv-sb span\{font-size:14\.5px\}/.test(html)], [true, false, true]);
