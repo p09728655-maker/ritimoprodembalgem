@@ -491,7 +491,7 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
      [true, true, true, true, true, true]); }
 
 console.log('\n── v7.213.0: AVALIAR PROGRAMAÇÃO (a colagem da planilha) ──');
-['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml('].forEach(f => eval.call(global, pega(f)));
+['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml('].forEach(f => eval.call(global, pega(f)));
 eval.call(global, pegaConst('ESTEIRA_VAO_PADRAO').replace(/^const /, 'global.'));
 global.TKA_TXT = '';
 // o cadastro de 06/11/2026 dos 16 produtos da semana 042-26 (60 códigos) e o bloco F5:I44 dela como o Excel copia
@@ -619,10 +619,17 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
   ok('a régua velha (demanda − jornada × ritmo, horas de linha na média) não volta', /Br=Math\.max\(0, Br\+dem-cap\*r\)/.test(pega('function _tkaCorrente(')), false);
   const HS = _tkaSaldoHtml(CR), DC = _tkaDocHtml({ L:{ itens:IT, semCad:[] }, M:MR, C:CR }, { data:'06/11/2026', hora:'14:40' });
   ok('a tela e a 🖨 dizem a chegada E o fim no ritmo atual (o leitor confere a soma), e a nota diz que é a mesma régua do veredito',
-     [HS.includes('No ritmo atual (90,0% da média, desde hoje): chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>.'),
-      DC.includes('(no ritmo atual, chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>)'),
+     [HS.includes('No ritmo atual (90,0% da média, desde hoje): chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>' + _tkaDias(CR.atrasoR) + '.'),
+      DC.includes('(no ritmo atual, chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>' + _tkaDias(CR.atrasoR) + ')'),
       HS.includes('chegada + o “faltam” no ritmo atual = o fim')],
-     [true, true, true]); }
+     [true, true, true]);
+  // v7.220.0 (PPCP: "coloca em dias tbm… no fim"): o atraso do FIM também em dias (÷ 8h47), na média e no ritmo atual; a chegada e a tabela não
+  ok('o fim em dias: minutos ÷ 527 com uma casa, "dia" abaixo de 2; na frase da tela e da 🖨, só no fim (na média e no ritmo atual)',
+     [_tkaDias(1297), _tkaDias(1526), _tkaDias(527), _tkaDias(0), _tkaDias(null),
+      HS.includes('de atraso' + _tkaDias(CR.atraso) + ', na média'), _tkaDias(CR.atraso), _tkaDias(CR.atrasoR),
+      DC.includes('de atraso' + _tkaDias(CR.atraso) + ' (no ritmo atual'), HS.includes('chega com <b>' + _fmtHM(CR.chegadaR) + '</b>' + _tkaDias(CR.chegadaR)),
+      (HS.split('<table')[1] || '').split('<div class="uep-nota">')[0].includes('dia)'), HS.includes('<b>Dias</b> = horas ÷ 8h47 (1 jornada)')],
+     [' (≈ 2,5 dias)', ' (≈ 2,9 dias)', ' (≈ 1,0 dia)', '', '', true, ' (≈ 0,8 dia)', ' (≈ 1,2 dia)', true, false, false, true]); }
 ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
    [/#sec-uep \.ucv-sub\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(200px,1fr\)\)\}/.test(html), /auto-fill,minmax\(180px/.test(html),
     /#sec-uep \.ucv-sb span\{font-size:14\.5px\}/.test(html)], [true, false, true]);

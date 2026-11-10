@@ -3975,7 +3975,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.219.0';
+const APP_VER   = '7.220.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10748,7 +10748,14 @@ function _tkaPainelCarregar(fimN){
 // "chega com 17h58 e termina com 26h43" — chegada + o "faltam" do veredito = o fim.
 function _tkaRitTxt(C){
   const hm=_fmtHM, c=m=>m>0 ? `com <b>${hm(m)}</b>` : '<b>em dia</b>';
-  return `chega ${c(C.chegadaR)} e termina ${c(C.atrasoR)}`;
+  return `chega ${c(C.chegadaR)} e termina ${c(C.atrasoR)}${_tkaDias(C.atrasoR)}`;
+}
+// O atraso do FIM também em dias (v7.220.0, PPCP: "coloca em dias tbm… no fim"):
+// minutos ÷ 527 (1 jornada = 8h47), uma casa. Só no fim — na tabela as horas bastam.
+function _tkaDias(m){
+  if(!(m>0)) return '';
+  const v=Math.round(m/UEP_MIN_DIA*10)/10;
+  return ` (≈ ${v.toLocaleString('pt-BR', { minimumFractionDigits:1, maximumFractionDigits:1 })} ${v>=2 ? 'dias' : 'dia'})`;
 }
 // O DESENHO do saldo de horas (sem conta): a frase, a tabela por semana, o que
 // não foi somado (já está no painel) e os dias sem programação.
@@ -10760,7 +10767,7 @@ function _tkaSaldoHtml(C, o){
   // falta = precisa − tem (não cabe), sobra = tem − precisa (cabe).
   const fs=(pr, tm)=>pr>tm ? `<span class="tks-red">falta ${hm(pr-tm)}</span>` : `<span class="tks-ok">sobra ${hm(tm-pr)}</span>`;
   const fr=`A linha chega em <b>${dd(C.ini)}</b> ${C.chegada>0 ? `com <b>${hm(C.chegada)}</b> de atraso` : '<b>em dia</b>'} (a programação de hoje até lá)`
-    +` e termina <b>${dd(C.fim)}</b> ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso` : '<b>em dia</b>'}, na média da linha sem hora extra`
+    +` e termina <b>${dd(C.fim)}</b> ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso${_tkaDias(C.atraso)}` : '<b>em dia</b>'}, na média da linha sem hora extra`
     +(C.atrasoR!=null ? `. No ritmo atual (${fmtP(C.ritPct)} da média, desde hoje): ${_tkaRitTxt(C)}` : '')+'.';
   const lin=C.semanas.map(s=>{
     const og=s.pai && s.col ? 'painel + colagem' : s.col ? 'colagem' : s.pai ? 'painel' : '—';
@@ -10777,7 +10784,7 @@ function _tkaSaldoHtml(C, o){
   return `<div class="uep-sec"><b>SALDO DE HORAS</b> de hoje até ${dd(C.fim)} · a programação do painel + a colada, sem duplicar</div>`
     +`<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">${fr}</div>`
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe.${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
+    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe. <b>Dias</b> = horas ÷ ${hm(UEP_MIN_DIA)} (1 jornada).${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
 }
 // O DESENHO (sem conta): a caixa de colar e, embaixo, o veredito, o dia a dia e o
 // que ficou de fora.
@@ -11115,7 +11122,7 @@ function _tkaDocHtml(A, ctx){
   const T=M.T, P=M.P, V=M.V, k=UEP_MIN_DIA/T.meta, uteis=T.dias.filter(d=>d.util);
   const per=uteis.length ? `${uteis[0].data.slice(0, 5)} a ${uteis[uteis.length-1].data.slice(0, 5)}` : `${T.de.slice(0, 5)} a ${T.ate.slice(0, 5)}`;
   let fr=`A programação colada (<b>${per}</b>) ${V.cabe ? `<b>cabe</b> (sobram ${hm(-V.faltaMin)} de linha)` : `<b>não cabe: faltam ${hm(V.faltaMin)} de linha</b>${V.faltaPts ? ` (${_tkPts(V.faltaPts)})` : ''}`}.`;
-  if(C) fr+=` A linha chega nela ${C.chegada>0 ? `com <b>${hm(C.chegada)}</b> de atraso` : '<b>em dia</b>'} e termina ${dd(C.fim)} ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso` : '<b>em dia</b>'}${C.atrasoR!=null ? ` (no ritmo atual, ${_tkaRitTxt(C)})` : ''}.`;
+  if(C) fr+=` A linha chega nela ${C.chegada>0 ? `com <b>${hm(C.chegada)}</b> de atraso` : '<b>em dia</b>'} e termina ${dd(C.fim)} ${C.atraso>0 ? `com <b>${hm(C.atraso)}</b> de atraso${_tkaDias(C.atraso)}` : '<b>em dia</b>'}${C.atrasoR!=null ? ` (no ritmo atual, ${_tkaRitTxt(C)})` : ''}.`;
   const esq=`<div class="td-h">PROGRAMAÇÃO COLADA<small>${per} · ${fmtN(T.progCx)} produtos = ${fmtN(Math.round(T.progUep))} UEP</small></div>`
     +_taktHeroHtml(V, { semana:'prox', nUteis:T.nUteis, unid:'produtos' })
     +`<div class="tks-por">`+(P.acima.length
