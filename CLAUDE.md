@@ -6892,6 +6892,11 @@ feito e dá ar de verdade ao que sobrou.
       o *faltam* do veredito = o fim. O fim no ritmo atual passa do da média
       em ~4 h ali porque o ritmo menor vale para TODOS os dias desde hoje
       (~13 dias × 18 min), não só para o atraso.
+    - **O FIM TAMBÉM EM DIAS** (v7.220.0, PPCP: *"coloca em dias tbm… no
+      fim"*): `_tkaDias(min)` = min ÷ `UEP_MIN_DIA` com uma casa (*"(≈ 2,5
+      dias)"*, "dia" abaixo de 2, vazio sem atraso), só no atraso do FIM — na
+      média (frase da tela e da 🖨) e no ritmo atual (`_tkaRitTxt`). A chegada
+      e a tabela ficam em horas; a nota da tabela diz *Dias = horas ÷ 8h47*.
     - **TAKT POR CAIXA (v7.217.0)** — PPCP: *"onde fica registrado o takt da
       semana ex: 15seg"* (o do app) → *"no painel onde vai aparecer"* → *"sim,
       mostra takt por caixa"*. Nos DETALHES PARA O PCP da ESTA SEMANA e da

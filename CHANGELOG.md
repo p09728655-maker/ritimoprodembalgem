@@ -11,6 +11,19 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.220.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: o atraso do fim também em dias
+
+- PPCP, com o SALDO DE HORAS na tela: *"coloca em dias tbm… no fim"*. A frase
+  do saldo (tela e 🖨 AVALIAÇÃO DA PROGRAMAÇÃO) diz o atraso do último dia
+  também em dias: *"termina 30/11 com 21h37 de atraso (≈ 2,5 dias)… no ritmo
+  atual… termina com 25h26 (≈ 2,9 dias)"*. Dias = horas ÷ 8h47 (1 jornada),
+  uma casa; abaixo de 2, "dia".
+- Só no fim: a chegada e a tabela por semana continuam em horas. A nota da
+  tabela diz a conversão.
+- Nenhum número mudou.
+
+---
+
 ## v7.219.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: o saldo no ritmo atual fecha com o veredito
 
 - PPCP, com a 🖨 AVALIAÇÃO DA PROGRAMAÇÃO de 10/11 na mão: *"está dando 25h49
