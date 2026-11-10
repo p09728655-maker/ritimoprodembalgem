@@ -6881,6 +6881,17 @@ feito e dá ar de verdade ao que sobrou.
       feriado dito (v7.214.1, PPCP: *"06 e 08/11 está considerando fim de
       semana"* — a conta já dava 0 h ao sábado/domingo; o rótulo seg–dom é
       que enganava).
+    - ⚠ **NO RITMO ATUAL é em HORAS DO RELÓGIO** (v7.219.0, PPCP com a 🖨 de
+      10/11 na mão: *"está dando 25h49 no final"*). Até a v7.218.0 o `Br` era
+      `máx(0, Br + dem − cap × ritmo)` — horas de linha NA MÉDIA —, enquanto o
+      *"no ritmo atual: faltam 8h45"* do veredito (`_taktVeredito`) é demanda ÷
+      ritmo − jornada, horas do relógio. Na mesma folha: chegada 14h52 (média)
+      + 8h45 (relógio) não dava os 25h49 do fim. Hoje `Br = máx(0, Br + dem ÷
+      ritmo − cap)` (= o de antes ÷ ritmo: 25h49 → ~26h43 na folha de 10/11) e
+      a frase diz a chegada E o fim no ritmo atual (`_tkaRitTxt`): chegada +
+      o *faltam* do veredito = o fim. O fim no ritmo atual passa do da média
+      em ~4 h ali porque o ritmo menor vale para TODOS os dias desde hoje
+      (~13 dias × 18 min), não só para o atraso.
     - **TAKT POR CAIXA (v7.217.0)** — PPCP: *"onde fica registrado o takt da
       semana ex: 15seg"* (o do app) → *"no painel onde vai aparecer"* → *"sim,
       mostra takt por caixa"*. Nos DETALHES PARA O PCP da ESTA SEMANA e da

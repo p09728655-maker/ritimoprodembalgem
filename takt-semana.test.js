@@ -491,7 +491,7 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
      [true, true, true, true, true, true]); }
 
 console.log('\n── v7.213.0: AVALIAR PROGRAMAÇÃO (a colagem da planilha) ──');
-['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml('].forEach(f => eval.call(global, pega(f)));
+['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml('].forEach(f => eval.call(global, pega(f)));
 eval.call(global, pegaConst('ESTEIRA_VAO_PADRAO').replace(/^const /, 'global.'));
 global.TKA_TXT = '';
 // o cadastro de 06/11/2026 dos 16 produtos da semana 042-26 (60 códigos) e o bloco F5:I44 dela como o Excel copia
@@ -605,6 +605,24 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
      [/await new Promise\(ok=>_uepDepoisDe\(_uepLendo, ok\)\)/.test(PC), /_taktLer\('&de='\+encodeURIComponent\(f\.de\)/.test(PC), /onclick="_uepImpFecha\(\);gerarRelatorioAvaliacao\(\)"/.test(html),
       /_tkaCorrente\(PN\.lin, TKA\.itens/.test(G1) && /_tkaCorrente\(PN\.lin, TKA\.itens/.test(R), /PROG_DETALHADA/.test(pega('function _tkaPainel('))],
      [true, true, true, true, true]); }
+{ // v7.219.0 (PPCP com a 🖨: "está dando 25h49 no final"): o NO RITMO ATUAL do saldo é em horas do RELÓGIO, a
+  // mesma régua do "no ritmo atual: faltam X" do veredito — a chegada + o que falta da colagem = o fim.
+  // Até a v7.218.0 o saldo era em horas de linha na média (demanda − jornada × ritmo) e a folha não fechava.
+  const r = 0.9, rit = r * 2761, OR = { hojeN:20261106, restMin:0, meta:2761, rit, fer:{} };
+  const PR = [{ dataNum:20261109, data:'09/11/2026', lote:'99001', desc:'MESA X', cor:'', saldo:3500, uepCx:1, foraEsteira:false }];
+  const IT = [{ n:20261110, nome:'COLADO', qtde:4000, uepJogo:1, ptsJogo:0, lote:null }, { n:20261111, nome:'COLADO', qtde:3000, uepJogo:1, ptsJogo:0, lote:null }];
+  const CR = _tkaCorrente(PR, IT, OR), MR = _tkaMontar({ itens:IT, semCad:[], semData:0 }, {}, 2761, rit);
+  const k = 527 / 2761, bc = [3500, 4000, 3000].reduce((b, u) => Math.max(0, b + u * k / r - 527), 0);
+  ok('no ritmo atual o saldo fecha com o veredito: chegada + "faltam" no ritmo atual = o fim (horas do relógio, demanda ÷ ritmo − jornada)',
+     [CR.chegadaR, CR.atrasoR, Math.abs(CR.chegadaR + MR.V.ritmo.faltaMin - CR.atrasoR) <= 1, CR.atrasoR === Math.round(bc), CR.chegada + MR.V.faltaMin === CR.atraso],
+     [Math.round(3500 * k / r - 527), Math.round(bc), true, true, true]);
+  ok('a régua velha (demanda − jornada × ritmo, horas de linha na média) não volta', /Br=Math\.max\(0, Br\+dem-cap\*r\)/.test(pega('function _tkaCorrente(')), false);
+  const HS = _tkaSaldoHtml(CR), DC = _tkaDocHtml({ L:{ itens:IT, semCad:[] }, M:MR, C:CR }, { data:'06/11/2026', hora:'14:40' });
+  ok('a tela e a 🖨 dizem a chegada E o fim no ritmo atual (o leitor confere a soma), e a nota diz que é a mesma régua do veredito',
+     [HS.includes('No ritmo atual (90,0% da média, desde hoje): chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>.'),
+      DC.includes('(no ritmo atual, chega com <b>' + _fmtHM(CR.chegadaR) + '</b> e termina com <b>' + _fmtHM(CR.atrasoR) + '</b>)'),
+      HS.includes('chegada + o “faltam” no ritmo atual = o fim')],
+     [true, true, true]); }
 ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
    [/#sec-uep \.ucv-sub\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(200px,1fr\)\)\}/.test(html), /auto-fill,minmax\(180px/.test(html),
     /#sec-uep \.ucv-sb span\{font-size:14\.5px\}/.test(html)], [true, false, true]);

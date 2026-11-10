@@ -11,6 +11,27 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.219.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: o saldo no ritmo atual fecha com o veredito
+
+- PPCP, com a 🖨 AVALIAÇÃO DA PROGRAMAÇÃO de 10/11 na mão: *"está dando 25h49
+  no final"*. A folha dizia *"no ritmo atual: faltam 8h45"* para a colagem e
+  *"chega com 14h52 de atraso"*, mas o fim no ritmo atual saía 25h49 — e
+  14h52 + 8h45 não dá isso.
+- Causa: duas réguas na mesma folha. O *faltam 8h45* é em horas do relógio
+  (quanto a linha, rodando como está, levaria). A coluna NO RITMO ATUAL do
+  SALDO DE HORAS era em horas de linha na média. E a chegada mostrada era só a
+  da média: no ritmo atual a linha já chega mais atrasada, porque rende menos
+  todo dia desde hoje.
+- Agora a coluna NO RITMO ATUAL é em horas do relógio, como o veredito, e a
+  frase diz a chegada e o fim no ritmo atual. Na folha de 10/11 (pela conta
+  dos números impressos): *"chega com ≈ 17h58 e termina com ≈ 26h43"* —
+  17h58 + 8h45 = 26h43.
+- **Atenção**: o NO RITMO ATUAL do SALDO DE HORAS (tela e 🖨) sobe — fica o
+  número de antes ÷ o ritmo (25h49 ÷ 96,6% ≈ 26h43 na folha de 10/11). O
+  ATRASO ACUMULADO na média, o PRECISA, o TEM e o veredito não mudaram.
+
+---
+
 ## v7.218.0 — 09/11/2026 · CRONOANÁLISE: o que chegou do app aparece no MEDIR
 
 - PPCP, com o MEDIR vazio na tela: *"nessa tela tem como vir o que foi enviado
