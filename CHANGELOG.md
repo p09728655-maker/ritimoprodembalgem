@@ -11,6 +11,22 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.221.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: a linha COLAGEM INTEIRA no saldo de horas
+
+- PPCP, com a tela na mão: *"como explicar isso, não cabe e sobra"*. O
+  veredito dizia NÃO CABE (faltam 6h59) e a última linha do saldo, *sobra
+  1h39*. Os dois estavam certos: o veredito é a colagem inteira (24 a 30/11) e
+  a tabela é por semana de calendário — 24–27/11 falta 8h37, 30/11 (segunda)
+  sobra 1h39.
+- A tabela do SALDO DE HORAS (tela e 🖨) ganhou, no fim, a linha **colagem
+  inteira 24/11–30/11 (= o NÃO CABE)** com o PRECISA, o TEM e a falta do
+  veredito, e as semanas que têm dias da colagem levam uma marca laranja à
+  esquerda. A nota diz por que uma semana pode sobrar com a colagem não
+  cabendo.
+- Nenhum número mudou.
+
+---
+
 ## v7.220.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: o atraso do fim também em dias
 
 - PPCP, com o SALDO DE HORAS na tela: *"coloca em dias tbm… no fim"*. A frase

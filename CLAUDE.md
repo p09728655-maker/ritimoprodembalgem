@@ -6897,6 +6897,17 @@ feito e dá ar de verdade ao que sobrou.
       dias)"*, "dia" abaixo de 2, vazio sem atraso), só no atraso do FIM — na
       média (frase da tela e da 🖨) e no ritmo atual (`_tkaRitTxt`). A chegada
       e a tabela ficam em horas; a nota da tabela diz *Dias = horas ÷ 8h47*.
+    - **A LINHA COLAGEM INTEIRA** (v7.221.0, PPCP: *"como explicar isso, não
+      cabe e sobra"*): o veredito é a colagem inteira e a tabela é por semana
+      de calendário — com a colagem de 24–30/11, a semana 23–27 falta e o 30/11
+      (segunda) sobra 1h39. O `_tkaSaldoHtml(C, { col:{ per, V } })` fecha a
+      tabela com *colagem inteira 24/11–30/11 (= o NÃO CABE)* e o PRECISA, TEM
+      e falta do `_taktVeredito` da colagem (`M.V`); as semanas com dia da
+      colagem (`s.col`) levam `tr.tka-col` (marca laranja à esquerda). Sem
+      `o.col` (chamada antiga), a tabela é a de antes. ⚠ Com linha colada já
+      no painel (`dup`) ou dia do painel na mesma semana, a soma das semanas
+      da colagem não é a falta do total — a linha é o veredito, não um
+      subtotal.
     - **TAKT POR CAIXA (v7.217.0)** — PPCP: *"onde fica registrado o takt da
       semana ex: 15seg"* (o do app) → *"no painel onde vai aparecer"* → *"sim,
       mostra takt por caixa"*. Nos DETALHES PARA O PCP da ESTA SEMANA e da

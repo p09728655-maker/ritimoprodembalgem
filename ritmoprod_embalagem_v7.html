@@ -556,6 +556,9 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tka-tab td,#sec-uep .tka-tab th{white-space:nowrap}
 #sec-uep .tks-cx td small{display:block;font-size:11px;color:var(--txt2);margin-top:2px;font-family:var(--font-b)}
 #sec-uep .tka-tab tr.tka-lac td{font-family:var(--font-d);font-size:11px;color:var(--warn);border-bottom:none;padding-top:0}
+#sec-uep .tka-tab tr.tka-col td:first-child{border-left:3px solid var(--acc)}
+#sec-uep .tka-tab tr.tka-tot td{border-top:1px solid var(--txt2);font-weight:600;background:rgba(255,92,31,.07)}
+#sec-uep .tka-tab tr.tka-tot td:first-child{border-left:3px solid var(--acc)}
 #sec-uep .tks-ok{color:var(--ok)}
 /* v7.211.0: o VEREDITO (palavra · quanto falta · precisa × tem) e os detalhes recolhidos */
 #sec-uep .tks-hero{display:grid;grid-template-columns:auto 1fr minmax(240px,32%);gap:22px;align-items:center;background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--txt2);border-radius:9px;padding:16px 22px;margin:0 0 8px}
@@ -3975,7 +3978,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.220.0';
+const APP_VER   = '7.221.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10773,18 +10776,25 @@ function _tkaSaldoHtml(C, o){
     const og=s.pai && s.col ? 'painel + colagem' : s.col ? 'colagem' : s.pai ? 'painel' : '—';
     const rot=`${dd(s.de)}${s.ate!==s.de ? '–'+dd(s.ate) : ''}`+(s.hoje && s.de===C.dias[0].n ? ' (hoje: o que resta)' : '')
       +(s.feriados.length ? ` <span class="mono">(${s.feriados.map(n=>dd(n)+' feriado').join(', ')})</span>` : '');
-    return `<tr><td>${rot}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
+    return `<tr${s.col ? ' class="tka-col"' : ''}><td>${rot}</td><td class="mono">${og}</td><td class="n">${hm(s.precisa)}</td><td class="n">${hm(s.tem)}</td>`
       +`<td class="n">${fs(s.precisa, s.tem)}</td><td class="n"><b>${sx(s.atraso)}</b></td>${C.atrasoR!=null ? `<td class="n">${sx(s.atrasoR)}</td>` : ''}</tr>`
       +(s.lacunas.length ? `<tr class="tka-lac"><td></td><td colspan="${C.atrasoR!=null ? 6 : 5}">sem programação no painel nem na colagem: ${s.lacunas.map(dd).join(', ')} — fora da conta</td></tr>` : '');
   }).join('');
+  // A COLAGEM INTEIRA (v7.221.0, PPCP: "como explicar isso, não cabe e sobra"): as semanas
+  // partem a colagem pelo calendário — 24–27/11 falta, 30/11 (segunda) sobra —, e o veredito
+  // é dela inteira. A linha de total traz os números do veredito (o.col.V, o _taktVeredito
+  // da colagem sozinha), para a conta fechar debaixo das semanas. Desenho: nenhuma conta.
+  const cv=op.col && op.col.V, ncol=C.atrasoR!=null ? 2 : 1;
+  const tot=cv ? `<tr class="tka-tot"><td colspan="2">colagem inteira ${e(op.col.per||'')} <span class="mono">(= o ${cv.cabe ? 'CABE' : 'NÃO CABE'})</span></td>`
+    +`<td class="n">${hm(cv.precisaMin)}</td><td class="n">${hm(cv.temMin)}</td><td class="n">${fs(cv.precisaMin, cv.temMin)}</td><td colspan="${ncol}"></td></tr>` : '';
   const notas=[
     C.dup.length ? `${plural(C.dup.length, 'linha colada já está', 'linhas coladas já estão')} na programação do painel (${C.dup.some(x=>x.lote) ? 'pelo Nº LOTE SIST.' : 'mesmo produto no mesmo dia'}) — contada${C.dup.length===1 ? '' : 's'} uma vez só, pelo painel.` : '',
     C.lacunas.length ? `<b>${plural(C.lacunas.length, 'dia útil', 'dias úteis')} sem programação</b> (${C.lacunas.map(dd).join(', ')}): a programação deles ainda não foi lançada nem colada — cole também essa semana para ver o saldo real.` : ''
   ].filter(Boolean);
   return `<div class="uep-sec"><b>SALDO DE HORAS</b> de hoje até ${dd(C.fim)} · a programação do painel + a colada, sem duplicar</div>`
     +`<div class="tks-ler${C.atraso>0 ? ' warn' : ''}">${fr}</div>`
-    +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}</tbody></table>`
-    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe. <b>Dias</b> = horas ÷ ${hm(UEP_MIN_DIA)} (1 jornada).${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
+    +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab"><thead><tr><th>SEMANA</th><th>DE ONDE</th><th class="n">PRECISA</th><th class="n">TEM</th><th class="n">NA SEMANA</th><th class="n">ATRASO ACUMULADO</th>${C.atrasoR!=null ? '<th class="n">NO RITMO ATUAL</th>' : ''}</tr></thead><tbody>${lin}${tot}</tbody></table>`
+    +`<div class="uep-nota">Só os dias úteis contam: sábado, domingo e feriado têm 0 h (sem hora extra) — lote com data neles entra no precisa. Precisa = a programação em horas de linha (o vencido entra hoje); tem = a jornada sem hora extra (hoje, o que resta). <b>Falta</b> = precisa − tem (não cabe); <b>sobra</b> = tem − precisa (cabe). O atraso acumulado passa para o dia seguinte; a sobra não vira crédito — só abate atraso que já existe.${cv ? ' <b>Colagem inteira</b> = só a programação colada, de ponta a ponta (o veredito); as semanas a dividem pelo calendário, e uma semana pode sobrar com a colagem não cabendo.' : ''} <b>Dias</b> = horas ÷ ${hm(UEP_MIN_DIA)} (1 jornada).${C.atrasoR!=null ? ` <b>No ritmo atual</b> = as horas da linha rodando como está (${fmtP(C.ritPct)} da média) desde hoje — cada dia rende menos, então o atraso cresce também antes da colagem; chegada + o “faltam” no ritmo atual = o fim.` : ''}${notas.length ? '<br>'+notas.join('<br>') : ''}</div></div>`;
 }
 // O DESENHO (sem conta): a caixa de colar e, embaixo, o veredito, o dia a dia e o
 // que ficou de fora.
@@ -10816,7 +10826,7 @@ function _tkaHtml(L, M, o){
     +`<div class="uep-leg"><span class="tks-lp">programado do dia</span><span class="tks-lpw">acima de 1 dia de linha</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div>`
     +(notas.length ? `<div class="uep-nota">${notas.join('<br>')}</div>` : '')
     +`<div class="uep-nota">O veredito acima é só a programação colada; o SALDO DE HORAS, abaixo, soma o que vem antes dela.</div></div>`
-    +(op.corrente ? _tkaSaldoHtml(op.corrente) : op.lendoPainel ? `<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo a programação do painel até ${e(op.lendoPainel)} para o saldo de horas…</div></div>` : '');
+    +(op.corrente ? _tkaSaldoHtml(op.corrente, { col:{ per, V:M.V } }) : op.lendoPainel ? `<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo a programação do painel até ${e(op.lendoPainel)} para o saldo de horas…</div></div>` : '');
   return h;
 }
 // Ações da caixa (o cadastro é o que a ⚖ UEP já leu; sem ele, pede a leitura e avalia na volta).
@@ -11112,6 +11122,8 @@ const _TKA_DOC_SKIN = `
   .tks-doc .tka-tab .n{text-align:right;font-family:'IBM Plex Mono',monospace}
   .tks-doc .tka-tab .mono{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5B6470}
   .tks-doc .tka-tab tr.tka-lac td{font-size:9px;color:#B26A00;border-bottom:none;padding-top:0}
+  .tks-doc .tka-tab tr.tka-col td:first-child,.tks-doc .tka-tab tr.tka-tot td:first-child{border-left:3px solid #E65100}
+  .tks-doc .tka-tab tr.tka-tot td{border-top:1px solid #1F2328;font-weight:600}
   .tks-doc .uep-nota{font-size:9px;color:#5B6470;line-height:1.4;margin-top:4px}
   .tks-doc .tks-red{color:#C62828} .tks-doc .tks-ok{color:#2E7D32}
 `;
@@ -11131,7 +11143,7 @@ function _tkaDocHtml(A, ctx){
     +(L && L.semCad.length ? `<br><b class="tks-red">Fora do cadastro (não contados):</b> ${L.semCad.map(x=>`${e(x.nome)} (${fmtN(x.qtde)})`).join(', ')}.` : '')+`</div>`
     +`<div class="td-t">Dia a dia · horas de linha</div>${_taktSvg(T, TKS_DOC_SVG_W, { fut:true, h:TKS_DOC_SVG_H })}`
     +`<div class="td-leg"><span><i style="border:1.2px dashed #5B6470"></i>programado</span><span><i style="border:1.2px dashed #B26A00"></i>acima de 1 dia de linha</span><span><i style="height:0;border-top:2px solid #1F2328"></i>1 dia de linha (${hm(UEP_MIN_DIA)})</span></div>`;
-  const dir=C ? `<div class="td-h">SALDO DE HORAS<small>de hoje até ${dd(C.fim)}</small></div>`+_tkaSaldoHtml(C).replace(/^<div class="uep-sec">.*?<\/div><div class="tks-ler[^"]*">.*?<\/div>/, '')
+  const dir=C ? `<div class="td-h">SALDO DE HORAS<small>de hoje até ${dd(C.fim)}</small></div>`+_tkaSaldoHtml(C, { col:{ per, V } }).replace(/^<div class="uep-sec">.*?<\/div><div class="tks-ler[^"]*">.*?<\/div>/, '')
     : `<div class="td-h">SALDO DE HORAS</div><div class="tks-por">A programação do painel até a data colada não foi lida — sem o saldo de horas.</div>`;
   const def=`<div class="td-def"><b>Hora de linha</b> = o trabalho em horas pela <b>média que a linha entrega sem hora extra: 1 dia de linha = ${hm(UEP_MIN_DIA)} = ${fmtN(Math.round(T.meta))} UEP</b> (${e(UEP_REF_STATUS)}). `
     +`<b>Saldo de horas</b> = de hoje até o último dia colado, a programação do painel (o saldo de cada lote) mais as linhas novas da colagem — linha com Nº LOTE SIST. que o painel já tem, ou o mesmo produto no mesmo dia, conta uma vez só. Sem hora extra.</div>`;
