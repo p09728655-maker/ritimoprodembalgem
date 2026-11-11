@@ -40,8 +40,8 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
- 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktSetupDia', '_taktFProd', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+ 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -126,7 +126,7 @@ ok('por dia, as metas gravadas de cada dia (03/11 1.200 · 04/11 2.070 · 05/11 
 // v7.225.0 (PPCP: "não bate takt" → "ideal é painel ficar também com setup igual"): os segundos são
 // com a linha rodando — a jornada menos o setup do grupo do app (8 × 8 min = 64 min por dia)
 ok('o setup do painel é o do app: 8 × 8 = 64 min por dia → 463 min de linha rodando por dia',
-   [_taktSetupDia(), T.setupDia, T.minProd], [64, 64, 463]);
+   [_taktSetup(), T.setup, T.setupDia, T.minProd], [{ setupsDia:8, setupMin:8, origem:'padrao' }, { setupsDia:8, setupMin:8, origem:'padrao' }, 64, 463]);
 ok('TAKT = 4 × (527 − 64) × 60 ÷ 12.831,2 = 8,66 s por UEP (3.207,8 UEP/dia, 116,2% da referência — o setup sai dos dois lados, o % não muda)',
    [Math.round(T.takt * 100) / 100, r1(T.porDia), r1(T.pede)], [8.66, 3207.8, 116.2]);
 ok('REFERÊNCIA = (527 − 64) × 60 ÷ 2.761 = 10,06 s por UEP',
@@ -836,9 +836,9 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
   ok('o desenho: PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA em destaque, a jornada, o s por volume sem o setup, o takt (âmbar acima da média) e o agora em caixas; o TAKT POR PRODUTO fechado, sem repetir o título',
      ['<div class="kpi-lbl">PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA</div><div class="tks-fx-n">5.970<small>volumes</small></div>',
       'caixas programadas = 12.831 UEP · 4 dias úteis (03/11 a 06/11) · 02/11 finados fora',
-      'takt no app: <b>18,7 s por volume</b> (193 vol/h) = 30h56 ÷ 5.970 · o app conta 8h48 por dia com volume e desconta o setup do grupo, 8 × 8 min por dia (4h16 nos 4 dias)',
+      'takt no app: <b>18,7 s por volume</b> (193 vol/h) = 30h56 ÷ 5.970 · o app conta 8h48 por dia com volume e desconta o setup, 8 × 8 min por dia (4h16 nos 4 dias)',
       '<div class="tks-fx-n">8,7<small>s por UEP</small></div>', 'a média da linha sem hora extra é <b>10,1 s</b>', 'a programação pede <b class="tks-warn">116,2%</b> dela',
-      'sem o setup do grupo: 1h04 por dia, o mesmo do app',
+      'sem o setup do ⚙: 1h04 por dia · padrão — digite o setup no ⚙ e o mesmo no app',
       '<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div><div class="tks-fx-n">15,0<small>s por caixa</small></div>',
       '≈ <b>211 cx por hora</b> de relógio', '<details class="tks-tpc" ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>', 'class="tks-fx c3"'].filter(t => !HF.includes(t)).concat(
       HF.includes('<b>TAKT POR CAIXA</b>') ? ['o título da tabela repetido'] : [], (global.TKS_TPC = true, _taktFaixaHtml(F0, _taktPorCaixa(T), T)).includes('<details class="tks-tpc" open') ? [] : ['abre aberto com TKS_TPC']), []);
@@ -849,8 +849,8 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
       _taktFaixaHtml(Object.assign({}, F2, { semVol:500 })).includes('<span class="tks-red">500 produtos fora do cadastro não contam</span>'), H2.includes('class="tks-fx"')],
      [true, true, true, true, true]);
   ok('v7.225.0: o painel e o app leem o MESMO setup (CRONO_APP_GRUPO, um lugar só); a faixa não diz mais "sem descontar o setup"; várias semanas somadas são ditas',
-     [/_taktSetupDia\(\)/.test(pega('function _taktMontar(')), /\b64\b/.test(pega('function _taktMontar(') + pega('function _taktApp(')),
-      /CRONO_APP_GRUPO\.setupsDia\*CRONO_APP_GRUPO\.setupMin/.test(pegaConst('_taktSetupDia')), /grupo\|\|CRONO_APP_GRUPO/.test(pega('function _taktApp(')),
+     [/h\.setup \|\| _taktSetup\(\)/.test(pega('function _taktMontar(')), /\b64\b/.test(pega('function _taktMontar(') + pega('function _taktApp(')),
+      /_taktApp\(T\.dias, vol, T\.setup/.test(pega('function _taktFaixa(')), /grupo\|\|CRONO_APP_GRUPO/.test(pega('function _taktApp(')),
       /sem descontar o setup/.test(pega('function _taktFaixaHtml(')),
       _taktFaixaHtml(Object.assign({}, F0, { app:Object.assign({}, F0.app, { nSem:2 }) })).includes(' · 2 semanas somadas (no app, uma linha por semana)')],
      [true, false, true, true, false, true]);
@@ -860,6 +860,44 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
     ok('na AVALIAR o cx/h do TAKT POR PRODUTO também é por hora de relógio (o Tv leva os minutos sem o setup)',
        [Math.round(g0.cxhTakt), HA.includes('<small>' + fmtN(esp) + ' cx/h</small>'), HA.includes('<small>' + fmtN(Math.round(3600 / g0.sTakt)) + ' cx/h</small>')],
        [esp, true, false]); }
+  // v7.226.0 (PPCP: "melhor deixar para eu configurar setup nos dois, assim coloco igual, vamos usar setup médio"):
+  // o setup é do ⚙ — CONFIG_PAINEL (.gs v5.61), senão este computador, senão o padrão 8 × 8
+  { const SUP = { setupsDia:4.3, setupMin:7.65, origem:'planilha' };   // o setup médio medido: 13/10–10/11, troca de produto na jornada
+    const Ts = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:SUP })), Fs = _taktFaixa(Ts, { G });
+    ok('setup médio do ⚙ (4,3 × 7,65 = 32,9 min/dia): o painel tira 32,9 da jornada (takt 9,24 s por UEP); o % e o executado em % não mudam (116,2 e 90,6)',
+       [r1(Ts.setupDia), r1(Ts.minProd), Math.round(Ts.takt * 100) / 100, r1(Ts.pede), r1(Ts.exec.pct)], [32.9, 494.1, 9.24, 116.2, 90.6]);
+    ok('no app, com o MESMO setup (44 h × 4/5 − 4,3 × 7,65 × 4 = 33h00): 19,9 s por volume, 181 vol/h — a conta do ritmoExigido do app',
+       [_fmtHM(Fs.app.prod), _tkS(Fs.app.s), Math.round(Fs.app.vh), _tkS((44 * 4 / 5 - 4.3 * 7.65 * 4 / 60) * 3600 / 5970)], ['33h00', '19,9', 181, '19,9']);
+    const Hs = _taktFaixaHtml(Fs, [], Ts);
+    ok('a faixa escreve o setup do ⚙ com vírgula, e os detalhes os minutos com uma casa',
+       ['desconta o setup, 4,3 × 7,65 min por dia (2h12 nos 4 dias)', 'sem o setup do ⚙: 0h33 por dia · digite o mesmo no app'].filter(t => !Hs.includes(t))
+         .concat(_taktHtml(Ts, G, { largura:1200, V:_taktVeredito(Ts, null, RIT) }).includes('em 494,1 min (a jornada sem o setup)') ? [] : ['494,1 nos detalhes']), []);
+    const Tz = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:0, setupMin:8, origem:'planilha' } }));
+    ok('setup ZERO (sem setup) é valor: o takt volta à jornada inteira (9,86) e a faixa diz "nenhum"',
+       [Math.round(Tz.takt * 100) / 100, Tz.setupDia, _taktFaixaHtml(_taktFaixa(Tz, {}), [], Tz).includes('sem o setup do ⚙: nenhum')], [9.86, 0, true]);
+    const gPD = global.PONTOS_DIA, gCFG = global.CFG;
+    global.PONTOS_DIA = { setupsDia:4.3, setupMin:7.65 }; global.CFG = { setupsDia:4, setupMin:8 };
+    const a1 = _taktSetup();
+    global.PONTOS_DIA = { setupsDia:null, setupMin:null }; const a2 = _taktSetup();
+    global.CFG = { setupsDia:70, setupMin:8 }; const a3 = _taktSetup();    // 560 min não cabe na jornada
+    global.CFG = { setupsDia:4 }; const a4 = _taktSetup();                // só um dos dois não vale
+    global.PONTOS_DIA = gPD; global.CFG = gCFG;
+    ok('a ordem: a CONFIG_PAINEL; sem ela, este computador; setup que não cabe na jornada ou só um campo → o padrão',
+       [a1, a2, a3.origem, a4.origem], [{ setupsDia:4.3, setupMin:7.65, origem:'planilha' }, { setupsDia:4, setupMin:8, origem:'computador' }, 'padrao', 'padrao']);
+    ok('só neste computador fica dito na faixa (âmbar)',
+       _taktFaixaHtml(_taktFaixa(_taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:4, setupMin:8, origem:'computador' } })), {}), [], T).includes('<span class="tks-warn">só neste computador</span>'), true);
+    ok('os campos do ⚙: vírgula ou ponto, até duas casas; vazio null; texto e negativo NaN (nunca 0)',
+       [_setupLer('4,3'), _setupLer('7.65'), _setupLer('1,234'), _setupLer(' '), Number.isNaN(_setupLer('abc')), Number.isNaN(_setupLer('-1')), _setupLer('0')],
+       [4.3, 7.65, 1.23, null, true, true, 0]);
+    ok('a ajuda do ⚙: o total por dia, o MESMO no app, de onde vale; não cabe na jornada; só um campo',
+       [_setupCfgTxt(4.3, 7.65, 'planilha'), _setupCfgTxt(4.3, 7.65, 'novo'), _setupCfgTxt(4.3, 7.65, 'computador'), _setupCfgTxt(8, 8, 'padrao'),
+        _setupCfgTxt(70, 8, 'planilha'), _setupCfgTxt(4.3, null, 'planilha'), _setupCfgTxt(NaN, 8, 'planilha')],
+       ['32,9 min · o mesmo no app', '32,9 min · salve', '32,9 min · só neste PC', '64 min · padrão', 'passa da jornada', 'os dois campos', 'só número ≥ 0']);
+    const sv = pega('function saveCfg('), env = pega('function enviarConfigPainel(');
+    ok('o ⚙ só manda o setup à planilha quando o gestor MUDOU o que viu ao abrir (um PC que abriu antes de ler a config não apaga o dos outros), os dois juntos',
+       [/_setupAberto && \(a!==_setupAberto\.a \|\| b!==_setupAberto\.b\)/.test(sv), /'setupsDia='\+_setupNovo\.a, 'setupMin='\+_setupNovo\.b/.test(env),
+        /setupsDia: \(json\.painelConfig\|\|\{\}\)\.setupsDia, setupMin: \(json\.painelConfig\|\|\{\}\)\.setupMin/.test(JS)],
+       [true, true, true]); }
   ok('o desenho da faixa não faz conta; a conta não lê tela nem servidor',
      [/\*|\/ *[A-Za-z_]+\./.test(pega('function _taktFaixaHtml(').replace(/\/\/[^\n]*/g, '').replace(/<\/?[a-z]+[^>]*>/gi, '')),
       /document\.|jsonpFetch|CFG\./.test(pega('function _taktFaixa(') + pega('function _tkaVolumes('))], [false, false]);

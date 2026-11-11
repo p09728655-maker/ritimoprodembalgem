@@ -1,5 +1,18 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.61 — O SETUP DO TAKT NA CONFIG_PAINEL (SETUPS_DIA, SETUP_MIN)
+//               PPCP, 11/11/2026: o takt da sub-aba TAKT DA SEMANA não batia
+//               com o do app de cronoanálise (o app desconta o setup do grupo)
+//               → "ideal é painel ficar também com setup igual" → "melhor deixar
+//               para eu configurar setup nos dois, assim coloco igual, vamos
+//               usar setup médio". Os dois campos do app (trocas por dia ×
+//               minutos por troca) passam a ser digitados no ⚙ do painel e
+//               valem para todo aparelho, como a META DIA (UEP).
+//               getConfigPainel devolve setupsDia e setupMin (null sem a
+//               chave; ZERO vale = sem setup); setConfigPainel grava os dois
+//               juntos, só número ≥ 0 — vazio ou texto não apaga.
+//               ⚠ re-deploy manual. Antes dele, o setup digitado no ⚙ vale só
+//               no computador onde foi digitado.
 // Versão: 5.60 — SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS
 //               PPCP, 11/11/2026: "07/11 foi sábado, a meta tem que ser sobre
 //               as horas trabalhadas" → "sábado não pode ser dia todo, a meta
@@ -511,7 +524,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.60';
+const GS_VERSAO = '5.61';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -4353,8 +4366,21 @@ function getConfigPainel() {
     // SOMAR ATRASO na META DO DIA (v5.56): a mesma para todo aparelho — é a META
     // que o FECHAR DIA grava (v5.55). Sem a chave (ou ilegível) → null: o painel
     // fica com a marcação dele e manda a sua na próxima vez que salvar o ⚙.
-    metaComAtraso: kv.META_COM_ATRASO !== undefined ? bool(kv.META_COM_ATRASO, null) : null
+    metaComAtraso: kv.META_COM_ATRASO !== undefined ? bool(kv.META_COM_ATRASO, null) : null,
+    // SETUP DO TAKT (v5.61): trocas por dia e minutos por troca — os dois campos
+    // do app de cronoanálise. Sem a chave → null (o painel usa o dele); ZERO é
+    // valor (sem setup), nunca "não tem".
+    setupsDia: _cfgSetupNum(kv.SETUPS_DIA),
+    setupMin:  _cfgSetupNum(kv.SETUP_MIN)
   };
+}
+// Número do setup (v5.61): ≥ 0, duas casas; vazio, texto ou negativo → null.
+// Pela URL o painel manda com PONTO decimal e no máximo duas casas ("7.65"),
+// que o _numBR lê certo (só "1.234" com grupo de 3 é milhar).
+function _cfgSetupNum(v) {
+  if (v === undefined || v === null || String(v).trim() === '' || !/\d/.test(String(v))) return null;
+  const n = _numBR(v);
+  return isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
 }
 
 // Grava a config (upsert chave/valor). Chamada pelo app ao salvar as
@@ -4399,6 +4425,13 @@ function setConfigPainel(p) {
     // SOMAR ATRASO (v5.56): só quando o painel manda — ele manda quando o gestor
     // muda a marcação ou quando a planilha ainda não tem a chave.
     if (p.metaComAtraso !== undefined && String(p.metaComAtraso).trim() !== '') novos.META_COM_ATRASO = b01(p.metaComAtraso);
+    // SETUP DO TAKT (v5.61): os dois juntos ou nenhum — trocas por dia sem os
+    // minutos não é setup. Gravados como NÚMERO (a célula pt-BR não confunde
+    // decimal com milhar).
+    if (p.setupsDia !== undefined && p.setupMin !== undefined) {
+      const sd = _cfgSetupNum(p.setupsDia), sm = _cfgSetupNum(p.setupMin);
+      if (sd !== null && sm !== null) { novos.SETUPS_DIA = sd; novos.SETUP_MIN = sm; }
+    }
 
     const vals = sh.getDataRange().getValues();
     const linhaDe = {};

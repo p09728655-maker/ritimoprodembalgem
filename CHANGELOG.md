@@ -11,6 +11,45 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.226.0 — 11/11/2026 · O setup do takt no ⚙ (⚠ re-deploy · `.gs` v5.61)
+
+PPCP, depois da v7.225.0: *"melhor deixar para eu configurar setup nos dois,
+assim coloco igual, vamos usar setup médio"*. O setup do takt deixa de ser um
+número fixo no código: vira dois campos no ⚙ CONFIGURAÇÕES → METAS DO DIA,
+os MESMOS dois do app de cronoanálise.
+
+- **TROCAS/DIA e MIN/TROCA** (com o total SETUP/DIA ao lado). Digite no ⚙ e o
+  mesmo no app (Demanda semanal → Tempo disponível). Ficam na aba
+  `CONFIG_PAINEL` (`SETUPS_DIA`, `SETUP_MIN`) e valem para todo computador e a
+  TV, como a META DIA (UEP). Zero vale (sem setup).
+- **Só vai à planilha o que o gestor MUDOU** no ⚙: um computador que abriu as
+  configurações antes de ler a planilha não devolve o padrão por cima.
+- **Setup médio medido** (paradas apontadas, só na jornada, 20 dias úteis de
+  13/10 a 10/11/2026): **4,3 trocas de produto por dia × 7,65 min = 32,9
+  min/dia** (o app estava com 8 × 8 = 64). A troca de plástico (2,6 por dia ×
+  4,75 min = 12 min/dia) ficou fora — é consumo de bobina, não troca de
+  produto.
+- Antes de digitar, vale o padrão de antes (8 × 8, o do app em 11/11), e a faixa
+  do TAKT DA SEMANA diz *padrão — digite o setup no ⚙*.
+
+**Atenção — números que mudam quando o setup médio for digitado** (semana
+16–19/11, 8.770 volumes):
+
+| | com 8 × 8 (64 min) | com 4,3 × 7,65 (32,9 min) |
+|---|---|---|
+| Takt no app (s por volume) | 12,7 | 13,6 |
+| Takt do painel (s por UEP) | 8,8 | 9,4 |
+| Média da linha (s por UEP) | 10,1 | 10,7 |
+
+O % que a programação pede, o veredito, as horas de linha e as caixas por hora
+continuam iguais.
+
+- ⚠ **re-deploy** do `ritmoprod_appscript.gs` (v5.61). Antes dele o setup
+  digitado vale só no computador onde foi digitado (a faixa diz *só neste
+  computador*).
+
+---
+
 ## v7.225.0 — 11/11/2026 · O takt do painel com o mesmo setup do app de cronoanálise
 
 PPCP, com a SEMANA QUE VEM e o app lado a lado: *"não bate takt"* → *"ideal é

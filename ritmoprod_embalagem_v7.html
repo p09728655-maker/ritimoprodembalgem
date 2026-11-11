@@ -1997,6 +1997,7 @@ body.tv-fullscreen .tv-right{ height:100%!important; }
 #modal-cfg .cfg-vg{justify-content:flex-end}
 #modal-cfg .cfg-full{grid-column:1/-1;margin-top:-4px}
 #modal-cfg .frm-row{margin-bottom:10px}
+#modal-cfg .frm-row.cfg-setup{grid-template-columns:1fr 1fr 1fr}
 #modal-cfg .frm-inp{min-width:0;width:100%;box-sizing:border-box}
 #modal-cfg .cfg-r3{grid-template-columns:1fr 1fr}
 #modal-cfg .cfg-r3>.frm-grp:first-child{grid-column:1/-1}
@@ -3817,6 +3818,14 @@ if (_v7Instalado()) _v7EscondeBotao();
       <div class="frm-grp"><label class="frm-lbl">PONTOS POR UEP QUE A META PEDE</label><div id="c-meta-pts-h" class="cfg-v">—</div></div>
       <div class="cfg-h cfg-full">faturamento · vale para todos os aparelhos · julga o mix, não a linha (⚖ UEP · RÉGUAS)</div>
     </div>
+    <!-- SETUP DO TAKT (v7.226.0 / .gs v5.61): os dois campos do app de cronoanálise
+         (Demanda semanal → Tempo disponível). Grava na CONFIG_PAINEL e vale para
+         todos os aparelhos; o MESMO número vai no app, digitado pelo PPCP. -->
+    <div class="frm-row cfg-setup" title="Trocas de produto por dia × minutos por troca: sai da jornada no takt da ⚖ UEP · TAKT DA SEMANA. Digite o MESMO no app de cronoanálise (Demanda semanal → Tempo disponível). Vale para todos os aparelhos.">
+      <div class="frm-grp"><label class="frm-lbl">TROCAS/DIA</label><input class="frm-inp" id="c-setups-dia" type="text" inputmode="decimal" placeholder="ex.: 4,3"></div>
+      <div class="frm-grp"><label class="frm-lbl">MIN/TROCA</label><input class="frm-inp" id="c-setup-min" type="text" inputmode="decimal" placeholder="ex.: 7,65"></div>
+      <div class="frm-grp"><label class="frm-lbl">SETUP/DIA</label><div id="c-setup-h" class="cfg-v">—</div></div>
+    </div>
     <div class="frm-row" style="margin-bottom:0">
       <div class="frm-grp"><label class="frm-lbl">DEMANDA IDEAL (CX/DIA)</label><input class="frm-inp" id="c-takt-dem" type="number" min="0"></div>
       <div class="frm-grp"><label class="frm-lbl">TAKT IDEAL (CALCULADO)</label><div id="c-takt-hint" class="cfg-v">—</div></div>
@@ -4047,14 +4056,14 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.225.0';
+const APP_VER   = '7.226.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
 // .gs v5.57) e o rodapé compara: o GitHub e o editor do Apps Script não se
 // falam, e sem isso ninguém via qual .gs estava rodando. Mudou o .gs? Suba este
 // número junto com o GS_VERSAO de lá (o apps-script.test.js confere).
-const GS_REPO   = '5.60';
+const GS_REPO   = '5.61';
 let GS_IMPL;   // undefined = ainda não leu · null = o .gs implantado não informa (antes da v5.57)
 
 // Nome do produto. Os rodapés de relatório, o título do popup do histórico, o
@@ -5089,7 +5098,9 @@ function _aplicarPontosDia(json){
         // gerencial lê (card UEP DO DIA). Backend antigo: uep undefined.
         uep: json.uep===undefined ? false : json.uep, metaUep: (json.painelConfig||{}).metaUep,
         // META DE PONTOS / DIA da CONFIG_PAINEL (.gs v5.42) — a régua do mix na aba 📏 RÉGUAS
-        metaPts: (json.painelConfig||{}).metaPts
+        metaPts: (json.painelConfig||{}).metaPts,
+        // SETUP DO TAKT da CONFIG_PAINEL (.gs v5.61): trocas por dia × min por troca (_taktSetup)
+        setupsDia: (json.painelConfig||{}).setupsDia, setupMin: (json.painelConfig||{}).setupMin
       };
       aplicarMetaDiaAutomatica();
       // Config do ciclo de telas compartilhada via planilha: se veio do backend,
@@ -10223,17 +10234,32 @@ function _taktEspera(){ return TKS_FALHA && TKS_FALHA!=='sem-endpoint' ? 60000 :
 // MESMOS 4 dias: o app desconta o setup do grupo (8 × 8 min por dia, 5,3 h por
 // semana) e conta 8h48 por dia (44 h ÷ 5; o painel, 8h47 — o último slot é
 // 16:00-16:59). Toda a diferença era o setup.
-// ⚠ CRONO_APP_GRUPO é CÓPIA do cadastro do grupo 0005 · EMBALAGEM no app
-// (Demanda semanal → TEMPO DISPONÍVEL: 44 h, 5 dias, 8 setups × 8 min por dia,
-// conferido em 11/11/2026). Mudou lá? Mudar aqui — a tela escreve os números
-// que usa, então a diferença aparece.
-// Quem lê: o takt do app (_taktApp, na faixa) e o TAKT DO PAINEL em segundos
-// (_taktMontar: takt, referência e executado — minutos de jornada MENOS o setup
-// do dia, _taktSetupDia). As HORAS de linha, o veredito e os % não mudam: a
+// CRONO_APP_GRUPO: a jornada do grupo 0005 · EMBALAGEM no app (Demanda semanal
+// → TEMPO DISPONÍVEL: 44 h em 5 dias, conferido em 11/11/2026). O SETUP é do ⚙
+// desde a v7.226.0 (PPCP: "melhor deixar para eu configurar setup nos dois,
+// assim coloco igual, vamos usar setup médio") — _taktSetup; os 8 × 8 daqui são
+// só o padrão de antes de alguém digitar (o do app em 11/11/2026).
+// Quem lê o setup: o takt do app (_taktApp, na faixa) e o TAKT DO PAINEL em
+// segundos (_taktMontar: takt, referência e executado — minutos de jornada
+// MENOS o setup do dia). As HORAS de linha, o veredito e os % não mudam: a
 // média de 2.761 UEP/dia foi feita com o setup dentro, então o setup sai dos
 // dois lados e se cancela.
 const CRONO_APP_GRUPO={ hSemana:44, diasSemana:5, setupsDia:8, setupMin:8 };
-const _taktSetupDia=()=>CRONO_APP_GRUPO.setupsDia*CRONO_APP_GRUPO.setupMin;   // 64 min por dia
+// O SETUP QUE VALE (v7.226.0 / .gs v5.61): os dois campos do ⚙ (trocas por dia
+// × minutos por troca — os mesmos dois do app). Na CONFIG_PAINEL (todo
+// aparelho); sem ela, o deste computador (CFG, rpe_cfg); sem nenhum, o padrão.
+// Os DOIS juntos ou nenhum, e o setup do dia tem de caber na jornada.
+function _taktSetup(){
+  const ok=(a, b)=>[a, b].every(v=>v!=null && v!=='' && isFinite(Number(v)) && Number(v)>=0) && Number(a)*Number(b)<UEP_MIN_DIA;
+  const pd=typeof PONTOS_DIA!=='undefined' && PONTOS_DIA ? PONTOS_DIA : {};
+  if(ok(pd.setupsDia, pd.setupMin)) return { setupsDia:Number(pd.setupsDia), setupMin:Number(pd.setupMin), origem:'planilha' };
+  const c=typeof CFG!=='undefined' && CFG ? CFG : {};
+  if(ok(c.setupsDia, c.setupMin)) return { setupsDia:Number(c.setupsDia), setupMin:Number(c.setupMin), origem:'computador' };
+  return { setupsDia:CRONO_APP_GRUPO.setupsDia, setupMin:CRONO_APP_GRUPO.setupMin, origem:'padrao' };
+}
+// Os números do setup nos textos: até duas casas (4,3 · 7,65) e minutos com uma (32,9).
+const _tkDec=v=>String(Math.round((Number(v)||0)*100)/100).replace('.', ',');
+const _tkM=v=>{ const r=Math.round((Number(v)||0)*10)/10; return Number.isInteger(r) ? fmtN(r) : r.toFixed(1).replace('.', ','); };
 // A parte da jornada sem o setup (463 ÷ 527). Converte minuto de RELÓGIO em minuto
 // sem o setup (na média do dia) — a última hora do AGORA, como o EXECUTADO — e de
 // volta o cx/h: o takt em s por caixa é sem o setup, mas a hora que se confere no
@@ -10325,7 +10351,7 @@ function _taktMontar(S, hist, H, pts){
   const uteis=dias.filter(d=>d.util), nUteis=uteis.length;
   const progUep=soma(dias, d=>d.uep), progCx=soma(dias, d=>d.cx);
   // v7.225.0: os SEGUNDOS são SEM O SETUP — a jornada menos o setup do grupo (o mesmo do app)
-  const setupDia=_taktSetupDia(), minProd=UEP_MIN_DIA-setupDia>0 ? UEP_MIN_DIA-setupDia : UEP_MIN_DIA, fProd=minProd/UEP_MIN_DIA;
+  const SU=h.setup || _taktSetup(), setupDia=SU.setupsDia*SU.setupMin, minProd=UEP_MIN_DIA-setupDia>0 ? UEP_MIN_DIA-setupDia : UEP_MIN_DIA, fProd=minProd/UEP_MIN_DIA;
   const takt=nUteis>0 && progUep>0 ? nUteis*minProd*60/progUep : null;
   const porDia=nUteis>0 && progUep>0 ? progUep/nUteis : null;
   // EXECUTADO: só a jornada dos dias úteis (hora extra e dia não útil à parte)
@@ -10354,7 +10380,7 @@ function _taktMontar(S, hist, H, pts){
   falta.ate=futuros.length ? futuros[futuros.length-1].data.slice(0, 5) : (h.fim || null);
   falta.passa=falta.uep-falta.capRest;
   return { de:S.de, ate:S.ate, hojeN, dias, nUteis, progCx, progUep, meta, takt, porDia, prods:Object.values(prods),
-    setupDia:minProd<UEP_MIN_DIA ? setupDia : 0, minProd,
+    setup:SU, setupDia:minProd<UEP_MIN_DIA ? setupDia : 0, minProd,
     ref:minProd*60/meta, pede:porDia!=null ? porDia/meta*100 : null,
     cxSemUep:soma(dias, d=>d.cxSemUep), cxFora:soma(dias, d=>d.cxFora),
     progForaUtil:soma(dias.filter(d=>!d.util), d=>d.uep),
@@ -10520,7 +10546,7 @@ function _taktPorCaixaHtml(R, T, semTit){
       +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
       +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
       +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}</td></tr>`).join('')
-    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do grupo, o mesmo do app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; NA MÉDIA DA LINHA = o ritmo que a linha entrega em média (sem hora extra) nesse produto. Para a medição do produto, compare o NO PERÍODO da cronoanálise com o PELO TAKT — o takt do app de cronoanálise é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
+    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do ⚙ — o mesmo digitado no app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; NA MÉDIA DA LINHA = o ritmo que a linha entrega em média (sem hora extra) nesse produto. Para a medição do produto, compare o NO PERÍODO da cronoanálise com o PELO TAKT — o takt do app de cronoanálise é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
 }
 // ── A FAIXA DO TAKT (v7.224.0) ─────────────────────────────────────────────
 // PPCP, 11/11/2026, com a SEMANA QUE VEM na tela: "onde fica o takt que temos
@@ -10545,8 +10571,9 @@ function _taktFaixa(T, o){
   return { vol, prod:op.prod!=null ? op.prod : null, semVol:op.semVol||0, uep:T.progUep, nUteis:T.nUteis,
     de:uteis.length ? uteis[0].data.slice(0, 5) : null, ate:uteis.length ? uteis[uteis.length-1].data.slice(0, 5) : null,
     fer:T.dias.filter(d=>d.feriado && d.dow>=1 && d.dow<=5).map(d=>d.data.slice(0, 5)+' '+String(d.feriado).toLowerCase()),
-    volFds, porDia:T.nUteis>0 ? vol/T.nUteis : null, app:_taktApp(T.dias, vol),
-    takt:T.takt, ref:T.ref, pede:T.pede, setupDia:T.setupDia||0,
+    volFds, porDia:T.nUteis>0 ? vol/T.nUteis : null,
+    app:_taktApp(T.dias, vol, T.setup ? Object.assign({}, CRONO_APP_GRUPO, { setupsDia:T.setup.setupsDia, setupMin:T.setup.setupMin }) : null),
+    takt:T.takt, ref:T.ref, pede:T.pede, setupDia:T.setupDia||0, setupOrigem:T.setup ? T.setup.origem : null,
     agora:G && G.uepCx && G.sTakt!=null ? { nome:String(G.desc||G.cod||'').replace(/\s+/g, ' ').trim(), cor:G.cor||'', uepCx:G.uepCx,
       sTakt:G.sTakt, cxh:3600*_taktFProd(T)/G.sTakt } : null };   // cx por hora de RELÓGIO (o setup na média)
 }
@@ -10559,18 +10586,19 @@ function _taktFaixaHtml(F, R, Tt){
   const ext=[F.fer.length ? `${e(F.fer.join(', '))} fora` : '', F.volFds>0 ? `${n0(F.volFds)} em dia não útil (hora extra) estão no total` : '',
     F.semVol>0 ? `<span class="tks-red">${n0(F.semVol)} produtos fora do cadastro não contam</span>` : ''].filter(Boolean);
   const A0=F.app;
-  const c1=`<div class="tks-fx-c tks-fx-v" title="O número que se digita no app de cronoanálise para o takt da semana. O takt ao lado é a MESMA conta do app: as horas do grupo nos dias com volume, menos o setup do grupo, divididas pelos volumes. Se não bater com o do app, conferir no app o cadastro do grupo (Demanda semanal → Tempo disponível) e os volumes da semana. Volume = caixa: cada volume de um produto é uma caixa.">`
+  const c1=`<div class="tks-fx-c tks-fx-v" title="O número que se digita no app de cronoanálise para o takt da semana. O takt ao lado é a MESMA conta do app: as horas do grupo nos dias com volume, menos o setup do ⚙, divididas pelos volumes. Se não bater com o do app, o setup do ⚙ e o do app (Demanda semanal → Tempo disponível) estão diferentes, ou os volumes da semana. Volume = caixa: cada volume de um produto é uma caixa.">`
     +`<div class="kpi-lbl">PARA O APP DE CRONOANÁLISE · ${F.prod!=null ? 'VOLUMES DA PROGRAMAÇÃO COLADA' : 'VOLUMES DA SEMANA'}</div>`
     +`<div class="tks-fx-n">${n0(F.vol)}<small>volumes</small></div>`
     +`<div class="tks-fx-d">${F.prod!=null ? `de ${n0(F.prod)} produtos colados` : 'caixas programadas'} = ${n0(F.uep)} UEP · ${plural(F.nUteis, 'dia útil', 'dias úteis')}${per ? ` (${per})` : ''}`
     +(ext.length ? ' · '+ext.join(' · ') : '')
-    +(A0 ? `<br>takt no app: <b>${_tkS(A0.s)} s por volume</b> (${n0(A0.vh)} vol/h) = ${_fmtHM(A0.prod)} ÷ ${n0(F.vol)} · o app conta ${_fmtHM(A0.minDia)} por dia com volume e desconta o setup do grupo, ${A0.setupsDia} × ${A0.setupMin} min por dia (${_fmtHM(A0.setup)} ${A0.dias===1 ? 'no dia' : `nos ${A0.dias} dias`})`
+    +(A0 ? `<br>takt no app: <b>${_tkS(A0.s)} s por volume</b> (${n0(A0.vh)} vol/h) = ${_fmtHM(A0.prod)} ÷ ${n0(F.vol)} · o app conta ${_fmtHM(A0.minDia)} por dia com volume e desconta o setup, ${_tkDec(A0.setupsDia)} × ${_tkDec(A0.setupMin)} min por dia (${_fmtHM(A0.setup)} ${A0.dias===1 ? 'no dia' : `nos ${A0.dias} dias`})`
       +(A0.nSem>1 ? ` · ${A0.nSem} semanas somadas (no app, uma linha por semana)` : '') : '')+`</div></div>`;
-  const c2=`<div class="tks-fx-c" title="A jornada dos dias úteis menos o setup do grupo (o mesmo do app de cronoanálise) × 60 ÷ a UEP programada: o ritmo fora do setup. A média da linha está na mesma régua (o setup sai dos dois lados), por isso o % não muda. A UEP pesa cada produto pelo tempo dele; o de cada produto está no TAKT POR PRODUTO.">`
+  const c2=`<div class="tks-fx-c" title="A jornada dos dias úteis menos o setup do ⚙ (digite o mesmo no app de cronoanálise) × 60 ÷ a UEP programada: o ritmo fora do setup. A média da linha está na mesma régua (o setup sai dos dois lados), por isso o % não muda. A UEP pesa cada produto pelo tempo dele; o de cada produto está no TAKT POR PRODUTO.">`
     +`<div class="kpi-lbl">TAKT DA SEMANA · NO PAINEL</div>`
     +`<div class="tks-fx-n">${_tkS(F.takt)}<small>s por UEP</small></div>`
     +`<div class="tks-fx-d">a média da linha sem hora extra é <b>${_tkS(F.ref)} s</b> · a programação pede <b class="${F.pede>100 ? 'tks-warn' : ''}">${fmtP(F.pede)}</b> dela`
-    +(F.setupDia>0 ? `<br>sem o setup do grupo: ${_fmtHM(F.setupDia)} por dia, o mesmo do app` : '')+`</div></div>`;
+    +`<br>sem o setup do ⚙: ${F.setupDia>0 ? _fmtHM(F.setupDia)+' por dia' : 'nenhum'}`
+    +(F.setupOrigem==='computador' ? ' · <span class="tks-warn">só neste computador</span>' : F.setupOrigem==='padrao' ? ' · padrão — digite o setup no ⚙ e o mesmo no app' : ' · digite o mesmo no app')+`</div></div>`;
   const A=F.agora;
   const c3=A ? `<div class="tks-fx-c" title="O takt da semana × a UEP por caixa do produto que está rodando: 1 caixa a cada X segundos (sem o setup) para a semana fechar. As caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA.">`
     +`<div class="kpi-lbl">AGORA · ${e(A.nome)}${A.cor ? ' '+e(A.cor) : ''}</div>`
@@ -10611,10 +10639,10 @@ function _taktHtml(T, G, opt){
   const cards=[
     { l:'TAKT · O QUE A PROGRAMAÇÃO PEDE', v:`${_tkS(T.takt)}<small>s por UEP</small>`, c:T.pede>100 ? 'warn' : 'ok',
       sub:`= <b>${n0(T.porDia)} UEP/dia</b> · <span class="${T.pede>100 ? 'tks-warn' : ''}">${fmtP(T.pede)} da referência</span>`,
-      t:`${T.nUteis} dias úteis × ${T.minProd} min (${UEP_MIN_DIA} de jornada − ${T.setupDia} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana. Menor que a referência = a programação pede mais rápido do que a referência de UEP.` },
+      t:`${T.nUteis} dias úteis × ${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana. Menor que a referência = a programação pede mais rápido do que a referência de UEP.` },
     { l:'REFERÊNCIA · META DIA (UEP) DO ⚙', v:`${_tkS(T.ref)}<small>s por UEP</small>`, c:'',
-      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${T.minProd} min (a jornada sem o setup)`,
-      t:`${T.minProd} min (${UEP_MIN_DIA} de jornada − ${T.setupDia} de setup) × 60 ÷ ${n0(T.meta)} UEP — a referência de UEP (a META DIA (UEP) do ⚙), a mesma META da RÉGUAS e do card UEP DO DIA. Lá ela vale a jornada inteira (${UEP_MIN_DIA} min, ${_tkS(UEP_MIN_DIA*60/T.meta)} s por UEP); aqui é sem o setup.` },
+      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${_tkM(T.minProd)} min (a jornada sem o setup)`,
+      t:`${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.meta)} UEP — a referência de UEP (a META DIA (UEP) do ⚙), a mesma META da RÉGUAS e do card UEP DO DIA. Lá ela vale a jornada inteira (${UEP_MIN_DIA} min, ${_tkS(UEP_MIN_DIA*60/T.meta)} s por UEP); aqui é sem o setup.` },
     X.s!=null
       ? { l:'EXECUTADO NA SEMANA · JORNADA', v:`${_tkS(X.s)}<small>s por UEP</small>`, c:cls(X.pct),
           sub:`<b>${fmtP(X.pct)} da referência</b> · ${n0(X.uep)} UEP em ${X.nFech ? plural(X.nFech, 'dia', 'dias') : ''}${X.nFech && X.minHoje ? ' e ' : ''}${X.minHoje ? _tkHM(X.minHoje)+' de hoje' : ''}`
@@ -10667,7 +10695,7 @@ function _taktHtml(T, G, opt){
       bA=`<div class="tks-agora">`
         +passo('', 'PELO TAKT', `${_tkS(G.sTakt)} s`, `1 caixa a cada · ${_tkS(T.takt)} × ${f2(G.uepCx)}`)
         +passo('', 'PELA REFERÊNCIA', `${_tkS(G.sRef)} s`, `1 caixa a cada · ${_tkS(T.ref)} × ${f2(G.uepCx)}`)
-        +real+`</div><div class="uep-nota">A UEP por caixa é a do cadastro (o código de agora). Takt, referência e a última hora são sem o setup (a hora: os minutos dela × ${T.minProd}/${UEP_MIN_DIA}, como o EXECUTADO), na mesma régua: a hora na meta dá a referência. A cor da última hora é a do HORA A HORA.</div>`;
+        +real+`</div><div class="uep-nota">A UEP por caixa é a do cadastro (o código de agora). Takt, referência e a última hora são sem o setup (a hora: os minutos dela × ${_tkM(T.minProd)}/${UEP_MIN_DIA}, como o EXECUTADO), na mesma régua: a hora na meta dá a referência. A cor da última hora é a do HORA A HORA.</div>`;
     }
   }
   // DIA A DIA
@@ -11134,9 +11162,9 @@ function _taktProxHtml(T, P, opt){
   const cards=[
     { l:'TAKT · O QUE A PROGRAMAÇÃO PEDE', v:`${_tkS(T.takt)}<small>s por UEP</small>`, c:T.pede>100 ? 'warn' : 'ok',
       sub:`= <b>${n0(T.porDia)} UEP/dia</b> · <span class="${T.pede>100 ? 'tks-warn' : ''}">${fmtP(T.pede)} da referência</span>`,
-      t:`${T.nUteis} dias úteis × ${T.minProd} min (${UEP_MIN_DIA} de jornada − ${T.setupDia} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana.` },
+      t:`${T.nUteis} dias úteis × ${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana.` },
     { l:'REFERÊNCIA · META DIA (UEP) DO ⚙', v:`${_tkS(T.ref)}<small>s por UEP</small>`, c:'',
-      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${T.minProd} min (a jornada sem o setup)` },
+      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${_tkM(T.minProd)} min (a jornada sem o setup)` },
     { l:'A SEMANA × A JORNADA', c:P.saldoMin>0 ? 'red' : 'ok',
       v:P.saldoMin>0 ? `${_fmtHM(P.saldoMin)}<small> além da jornada</small>` : P.saldoMin<0 ? `${_fmtHM(-P.saldoMin)}<small> de folga</small>` : `cabe<small> na jornada</small>`,
       sub:`pedem <b>${_fmtHM(P.minPede)}</b> de linha para <b>${_fmtHM(P.minJorn)}</b><br>`
@@ -16810,6 +16838,12 @@ function openCfg(){
         const e=document.getElementById('c-meta-pts-h'); if(!e) return;
         e.textContent=v>0 ? `${fmtN(Math.round(v/u))} pontos por UEP (${fmtN(v)} ÷ ${fmtN(u)} UEP)` : Number.isNaN(v) ? 'só o número, com ou sem ponto de milhar' : '—'; };
       ip.oninput=h; const mu=document.getElementById('c-meta-uep'); if(mu) mu.addEventListener('input', h); h(); } }
+  { const sd=document.getElementById('c-setups-dia'), sm=document.getElementById('c-setup-min');
+    if(sd && sm){ const su=_taktSetup(); sd.value=_tkDec(su.setupsDia); sm.value=_tkDec(su.setupMin);
+      _setupAberto={ a:su.setupsDia, b:su.setupMin };
+      const h=()=>{ const e=document.getElementById('c-setup-h'), a=_setupLer(sd.value), b=_setupLer(sm.value);
+        if(e) e.textContent=_setupCfgTxt(a, b, a===su.setupsDia && b===su.setupMin ? su.origem : 'novo'); };
+      sd.oninput=h; sm.oninput=h; h(); } }
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
   { const _ti=_taktIdeal(); const h=document.getElementById('c-takt-hint');
     if(h) h.textContent=_ti.taktSeg>0?`takt ideal ≈ ${fmt1(_ti.taktSeg)} s/cx (${fmtN(_ti.ritmoHora)} cx/h)`:''; }
@@ -16907,6 +16941,16 @@ function saveCfg(){
     const atual=Number(PONTOS_DIA.metaPts)>0?Number(PONTOS_DIA.metaPts):null;
     _metaPtsNova=(v>0&&v!==atual)?v:null;
     if(v>0){ PONTOS_DIA.metaPts=v; try{ localStorage.setItem(CAP_PTS_LS, String(v)); }catch(e){} } }
+  // SETUP DO TAKT (v7.226.0): os dois juntos, e só quando o gestor MUDOU o que o ⚙
+  // mostrou ao abrir — um computador que abriu o ⚙ antes de ler a config não pode
+  // devolver o padrão por cima do setup dos outros (a regra da META DIA (UEP)).
+  // Fica também neste computador (CFG): a rede antes do .gs v5.61.
+  { const a=_setupLer((document.getElementById('c-setups-dia')||{}).value), b=_setupLer((document.getElementById('c-setup-min')||{}).value);
+    const valido=a!=null && b!=null && !Number.isNaN(a) && !Number.isNaN(b) && a*b<UEP_MIN_DIA;
+    if(valido && _setupAberto && (a!==_setupAberto.a || b!==_setupAberto.b)){
+      CFG.setupsDia=a; CFG.setupMin=b; _setupNovo={ a, b };
+      if(typeof PONTOS_DIA!=='undefined' && PONTOS_DIA){ PONTOS_DIA.setupsDia=a; PONTOS_DIA.setupMin=b; }
+    } }
   CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
@@ -16971,6 +17015,24 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 let _metaUepNova=null;   // meta de UEP digitada nas configurações, a enviar uma vez
 let _metaPtsNova=null;   // meta de PONTOS, idem (v7.187.0)
+// SETUP DO TAKT (v7.226.0): o que o ⚙ mostrou ao abrir e o que mudou, a enviar uma vez.
+let _setupAberto=null, _setupNovo=null;
+// O número de um campo do setup: vazio → null; ≥ 0 com vírgula ou ponto e até
+// duas casas; o resto → NaN (nunca 0 inventado).
+function _setupLer(v){
+  const t=String(v==null ? '' : v).trim();
+  if(!t) return null;
+  if(!/^\d+([.,]\d+)?$/.test(t)) return NaN;
+  const n=Number(t.replace(',', '.'));
+  return n>=0 ? Math.round(n*100)/100 : NaN;
+}
+// A linha de ajuda dos campos (desenho).
+function _setupCfgTxt(a, b, origem){
+  if(a==null || b==null) return 'os dois campos';
+  if(Number.isNaN(a) || Number.isNaN(b)) return 'só número ≥ 0';
+  if(a*b>=UEP_MIN_DIA) return 'passa da jornada';
+  return `${_tkM(a*b)} min · ${origem==='novo' ? 'salve' : origem==='planilha' ? 'o mesmo no app' : origem==='computador' ? 'só neste PC' : 'padrão'}`;
+}
 // SOMAR ATRASO (v7.203.0 / .gs v5.56): vai à planilha quando o gestor MUDA a
 // marcação, ou quando a planilha ainda não tem a chave. Mandar sempre deixaria
 // um computador que abriu antes de ler a config desfazer a escolha dos outros.
@@ -17001,6 +17063,7 @@ function enviarConfigPainel(){
   ];
   if(_metaUepNova){ params.push('metaUep='+_metaUepNova); _metaUepNova=null; }
   if(_metaPtsNova){ params.push('metaPts='+_metaPtsNova); _metaPtsNova=null; }
+  if(_setupNovo){ params.push('setupsDia='+_setupNovo.a, 'setupMin='+_setupNovo.b); _setupNovo=null; }
   if(_metaAtrasoNovo!==null){ params.push('metaComAtraso='+(_metaAtrasoNovo?1:0)); _metaAtrasoNovo=null; }
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
   try{ jsonpFetch(url).catch(function(){}); }catch(e){}

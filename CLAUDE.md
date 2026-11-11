@@ -81,7 +81,9 @@ via Google Apps Script (JSONP).
   `_metaPartes` do painel com o `saveDay`; e o fim de semana (`.gs` v5.60): o
   sábado real de 07/11 (240 min de jornada → META 524, META UEP pelas horas)
   nos três fechamentos, o domingo, o dia útil igual, o sábado só de madrugada,
-  os 527 min dos slots e o `preencherUepPassada`: `node fechamento.test.js`.
+  os 527 min dos slots e o `preencherUepPassada`; e o SETUP DO TAKT na
+  CONFIG_PAINEL (`.gs` v5.61: os dois juntos, número ≥ 0, zero vale, vírgula à
+  mão na planilha): `node fechamento.test.js`.
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
@@ -136,8 +138,10 @@ via Google Apps Script (JSONP).
   números da tabela PROGRAMA GRAVADO do app (038-26 18,7 s · 193 vol/h, 039-26
   15,4 · 234, 040-26 12,7 · 284) e o takt, a referência e o executado do
   painel sem o setup, a última hora do AGORA na mesma régua, o cx/h de
-  relógio e a semana refeita com setup zero (12 de 12 mutações):
-  `node takt-semana.test.js`.
+  relógio e a semana refeita com setup zero (12 de 12 mutações); e (v7.226.0)
+  o setup do ⚙ (a ordem planilha → computador → padrão, o setup médio 4,3 ×
+  7,65 contra a conta do app, o zero, o que não cabe na jornada, os campos e o
+  envio só do que mudou): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -3635,6 +3639,8 @@ feito e dá ar de verdade ao que sobrou.
   - **Publicado e conferido em 05/11/2026**: `META_COM_ATRASO = 1` na
     `CONFIG_PAINEL` (linha 21), o ⚙ diz *"vale para todos os computadores"* e
     o card META DO DIA mostra *"1.550 do dia + 852 de atraso"* (2.402).
+- ⚠ Desde a v7.226.0 o ⚙ tem a linha do SETUP DO TAKT na coluna 1 (815 px;
+  a 1600×860 rola 9 px).
 - **O ⚙ CONFIGURAÇÕES em três colunas (v7.204.0**, PPCP: *"aumentar dos lados
   para não dar rolagem"*). `#modal-cfg .modal` a 1.240 px (`max-width:96vw`,
   `max-height:94vh`), `.cfg-cols` com três `.cfg-col` de cartões `.cfg-sec`:
@@ -7088,10 +7094,34 @@ feito e dá ar de verdade ao que sobrou.
       que o app desconta) e 1 min por dia (o app conta 44 h ÷ 5 = 8h48; o
       painel, 527 = 8h47, pelo slot 16:00-16:59).
       - **`CRONO_APP_GRUPO`** `{ hSemana:44, diasSemana:5, setupsDia:8,
-        setupMin:8 }` é CÓPIA do cadastro do grupo 0005 · EMBALAGEM no app
-        (Demanda semanal → TEMPO DISPONÍVEL). ⚠ Mudou lá, mudar aqui — é o
-        único número do app copiado no painel; a faixa escreve o setup que usa,
-        então a diferença aparece. `_taktSetupDia()` = 64 min.
+        setupMin:8 }`: a jornada do grupo 0005 · EMBALAGEM no app (Demanda
+        semanal → TEMPO DISPONÍVEL). O SETUP é do ⚙ desde a v7.226.0 (abaixo);
+        os 8 × 8 daqui só valem até alguém digitar.
+      - **O SETUP NO ⚙ (v7.226.0 / `.gs` v5.61)** — PPCP: *"melhor deixar para
+        eu configurar setup nos dois, assim coloco igual, vamos usar setup
+        médio"*. ⚙ → METAS DO DIA: **TROCAS/DIA · MIN/TROCA · SETUP/DIA** (os
+        dois campos do app; `.frm-row.cfg-setup`, três colunas — ⚠ a
+        `cfg-r3` já era da IDENTIFICAÇÃO). CONFIG_PAINEL `SETUPS_DIA` /
+        `SETUP_MIN` (gravados como NÚMERO, os dois juntos, ≥ 0; zero = sem
+        setup; `_cfgSetupNum`), devolvidos pelo `getConfigPainel` como
+        `setupsDia`/`setupMin` → `PONTOS_DIA`. `_taktSetup()` é a leitura
+        ÚNICA: planilha → este computador (`CFG.setupsDia/setupMin`, rpe_cfg) →
+        padrão; o setup do dia tem de caber na jornada. O `_taktMontar` lê
+        `h.setup || _taktSetup()` e guarda `T.setup`; a `_taktFaixa` passa o
+        `T.setup` ao `_taktApp`. Textos com `_tkDec` (até 2 casas) e `_tkM`
+        (minutos com 1 casa: 494,1).
+        - **Só vai à planilha o que o gestor MUDOU** no ⚙ (`_setupAberto` ×
+          campos; `_setupNovo` no `enviarConfigPainel`): um PC que abriu o ⚙
+          antes de ler a config não devolve o padrão por cima (a regra da META
+          DIA (UEP)).
+        - **Setup médio medido** (PARADAS, só a jornada 07–17, 20 dias úteis de
+          13/10 a 10/11/2026): **4,3 trocas de produto/dia × 7,65 min = 32,9
+          min/dia** (mediana por troca 6,8; por dia 29,8). Troca de plástico
+          (2,6/dia × 4,75 = 12 min/dia) fora — consumo de bobina. Com 32,9: takt
+          no app 16–19/11 = 13,6 s (era 12,7), takt do painel 9,4 s por UEP.
+        - Antes do re-deploy: o digitado vale só no PC (a faixa diz *só neste
+          computador*, âmbar). O ⚙ ficou com 815 px (era 787): sem rolagem a
+          1920×1015 e 1920×937; a 1600×860 rola 9 px.
       - **`_taktApp(dias, vol)`** (pura): a conta do app (`ritmoExigido` +
         `horasDeSetup` + `fracaoDaSemana`), por semana seg–dom: dias com volume
         (no máximo 5) × (8h48 − 1h04) ÷ volumes. Várias semanas (a AVALIAR)
@@ -7118,10 +7148,8 @@ feito e dá ar de verdade ao que sobrou.
         O `Tv` da AVALIAR leva o `minProd` para isso.
       - **"sem o setup", nunca "com a linha rodando"** nos textos: RODANDO é o
         cartão da cronoanálise (sem as paradas marcadas), outra coisa.
-      - ⚠ **64 min é o setup PLANEJADO do app** (8 × 8); a troca de produto
-        apontada deu ~32 min/dia em 28/09–26/10. Se o real for esse, os dois
-        takts ficam ~6% apertados. Rever é decisão do PPCP, no app; o painel
-        copia.
+      - ~~⚠ 64 min é o setup PLANEJADO do app~~ — o PPCP escolheu o setup
+        médio medido, digitado nos dois (v7.226.0, acima).
       - **Não muda**: o % (o setup sai dos dois lados: 2.761 UEP/dia foi feito
         com setup dentro), as horas de linha (PRECISA, TEM, FALTAM — continuam
         em jornada de 8h47, a do PRÓXIMOS DIAS), o PARA FECHAR, a simulação e o

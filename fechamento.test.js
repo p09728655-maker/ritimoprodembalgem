@@ -292,6 +292,26 @@ console.log('\n── v5.56: SOMAR ATRASO na CONFIG_PAINEL — a META gravada n�
      [/getPontosDia: \[[^\]]*'cfg'/.test(GS), /setConfigPainel: \['cfg'\]/.test(GS)], [true, true]);
 }
 
+console.log('\n── v5.61: o SETUP DO TAKT na CONFIG_PAINEL — trocas por dia × minutos por troca, os dois do app ──');
+{
+  const P = montar();
+  const cfg = () => { const c = P.run('_valoresMemo = {}; return getConfigPainel();'); return [c.setupsDia, c.setupMin]; };
+  const linhas = () => ['SETUPS_DIA', 'SETUP_MIN'].map(k => (P.ABAS.CONFIG_PAINEL.find(r => r[0] === k) || [])[1]);
+  const grava = q => P.run('_valoresMemo = {}; return setConfigPainel(' + JSON.stringify(q) + ');');
+  ok('sem as chaves → null nos dois (o painel usa o dele), e as chaves existem no objeto (sinal de .gs novo)',
+     [cfg(), ['setupsDia', 'setupMin'].every(k => Object.prototype.hasOwnProperty.call(P.run('return getConfigPainel();'), k))], [[null, null], true]);
+  grava({ setupsDia: '4.3' }); grava({ setupsDia: '', setupMin: '7.65' }); grava({ setupsDia: 'abc', setupMin: '8' }); grava({ setupsDia: '-1', setupMin: '8' });
+  ok('só os dois juntos, e só número ≥ 0: um campo só, vazio, texto ou negativo não grava nada', linhas(), [undefined, undefined]);
+  const r = grava({ setupsDia: '4.3', setupMin: '7.65' });
+  ok('4.3 e 7.65 (o painel manda com ponto) → gravados como NÚMERO, e a resposta já devolve os dois', [linhas(), r.painelConfig.setupsDia, r.painelConfig.setupMin], [[4.3, 7.65], 4.3, 7.65]);
+  grava({ setupsDia: '0', setupMin: '7.65' });
+  ok('ZERO é valor (sem setup): regrava a MESMA linha, uma linha só', [cfg(), P.ABAS.CONFIG_PAINEL.filter(x => x[0] === 'SETUPS_DIA').length], [[0, 7.65], 1]);
+  const Q = montar();
+  Q.ABAS.CONFIG_PAINEL.push(['SETUPS_DIA', '4,3'], ['SETUP_MIN', 'talvez']);
+  const q = Q.run('return getConfigPainel();');
+  ok('digitado na planilha à mão com vírgula vale; ilegível → null, nunca 0', [q.setupsDia, q.setupMin], [4.3, null]);
+}
+
 console.log('\n── v5.60: sábado e domingo — a meta é a das horas de jornada trabalhadas ──');
 {
   // 07/11/2026 (sábado), como na planilha: 225 cx de madrugada (05–07, hora extra)
