@@ -5746,9 +5746,15 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
   const RG = mJS.slice(mJS.indexOf('function renderGerencial('), mJS.indexOf('function renderGerencial(') + 9000);
   const ini = RG.indexOf('  const _prog = PONTOS_DIA.programacao'), fimK = RG.indexOf('  const kpis=[');
   const trecho = RG.slice(ini, fimK);
-  const card = (prog, prods, metaUep, semFn, cat) => { const C = { PONTOS_DIA:{ programacao:prog, metaUep }, PRODUTOS:prods, fmtN, plural, p2,
+  // o aparelho de mentira (o retrato do card) e os dois ajudantes REAIS
+  const AJ = ['function _atrRetGuarda(', 'function _atrRetLe('].map(a => { const i = mJS.indexOf(a); return mJS.slice(i, mJS.indexOf('\n}\n', i) + 2); }).join('\n');
+  const LS = {}, ls = { getItem:k => (k in LS ? LS[k] : null), setItem:(k, v) => { LS[k] = String(v); } };
+  const card = (prog, prods, metaUep, semFn, cat, o) => { o = o || {};
+    const C = { PONTOS_DIA:{ programacao:prog, metaUep, lidoEm: o.lido === false ? undefined : 1 }, PRODUTOS:prods, fmtN, plural, p2, hojeStr: () => o.hoje || '11/11/2026',
+      Date: o.agora ? class extends Date { constructor(...a){ a.length ? super(...a) : super(o.agora); } static now(){ return o.agora; } } : Date,
+      localStorage: ls, PONTOS_DIA_FALHA: !!o.falhaDia,
       atrasoVencido: semFn ? undefined : atrasoVencido, PROD_CAT_TS: cat && cat.ts != null ? cat.ts : 1, PROD_CAT_FALHA: !!(cat && cat.falha) };
-    vm.createContext(C); vm.runInContext(trecho + ';globalThis.R = atrKpi;', C); return C.R; };
+    vm.createContext(C); vm.runInContext(AJ + trecho + ';globalThis.R = atrKpi;', C); return C.R; };
   const LST = [{ codigo:'501070001', falta:100, atraso:100, atrasoDesde:'06/11/2026' }, { codigo:'501071004', falta:300, atraso:200, atrasoDesde:'10/11/2026' },
                { codigo:'501085118', falta:135, atraso:0 }];
   const PRODS = [{ codigo:'501070001', uep:2.72 }, { codigo:'501071004', uep:2.92 }, { codigo:'501085118', uep:2.33 }];
@@ -5774,6 +5780,30 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
      ['desde 06/11 · cadastro não lido — tenta de novo em 6 min', 'desde 06/11 · cadastro não lido — tenta de novo em 6 min',
       '300 cx · desde 06/11 · UEP do cadastro guardado no aparelho', '300 cx · desde 06/11',
       { l:'⚠ ATRASO · LOTES VENCIDOS', v:'&lt;1 min<small>de linha</small>', sub:'1 cx · desde 10/11', c:'red larga atr' }]);
+  // 1.44.0 (PPCP: "demora pro card do atraso entrar, os outros entram antes"): o card do dia guardado no aparelho entra
+  // JÁ na abertura, marcado com a hora, até a leitura nova; só o de HOJE; o incompleto (cadastro por ler) não é guardado
+  { for(const k in LS) delete LS[k];
+    const t0 = new Date(2026, 10, 11, 8, 10).getTime();
+    const lido = card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { agora:t0 });
+    const abre = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
+    const falhou = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, falhaDia:true });
+    const amanha = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, hoje:'12/11/2026' });
+    ok('celular: lida a programação, o card é guardado; na abertura seguinte do MESMO dia ele entra já, com a hora dele; a leitura que não veio é dita; outro dia, nada',
+       [abre && abre.v === lido.v, abre && abre.sub, falhou && falhou.sub, amanha],
+       [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null]);
+    card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761, false, null, { agora:t0 });
+    const semAtr = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
+    card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { agora:t0 });
+    card({ lista:LST, atrasoTotal:300 }, [], 2761, false, { ts:0 }, { agora:t0 + 3600000 });
+    const incompleto = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
+    ok('celular: sem atraso lido, o guardado é "nenhum" (sem card na abertura); o card com o cadastro ainda por ler NÃO substitui o guardado; o card lido nunca leva a marca',
+       [semAtr, incompleto && incompleto.sub, /de \d\d:\d\d/.test(lido.sub)], [null, '300 cx · desde 06/11 · de 08:10, atualizando…', false]);
+    const mJSc = mJS.slice(mJS.indexOf('function entrar('));
+    ok('celular: na abertura do gerencial a leitura do dia vem logo depois do lerSheets (antes do histórico); ela tenta duas vezes, em sequência, 30 s e 45 s',
+       [/await passo\('pontos',lerPontosDia\); renderGerencial\(\);\s*const dias=await passo\('historico',lerHistorico\)/.test(mJSc),
+        /for\(const ms of \[30000, 45000\]\)\{\s*try\{ json = await jsonpFetch\(url, ms\); erro = null; break; \}catch\(e\)\{ erro = e; \}/.test(mJS),
+        /PONTOS_DIA_FALHA = true;\s*return false;\s*\}/.test(mJS.slice(mJS.indexOf('async function lerPontosDia(')))],
+       [true, true, true]); }
   ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
      [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
       /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function refresh('))),

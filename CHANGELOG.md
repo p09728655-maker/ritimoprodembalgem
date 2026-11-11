@@ -11,6 +11,28 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.44.0 — 11/11/2026 · O card ATRASO entra junto com os outros
+
+PPCP, com a 1.43.0 publicada: *"apareceu, mas demora para o card do atraso
+entrar, os outros entram antes"*. Os outros cards saem da 1ª leitura (a
+produção do dia). O atraso sai da leitura da programação (`getPontosDia`), a
+mais cara do backend. Na abertura, ela era a 3ª da fila, depois do histórico, e
+tinha UMA tentativa de 20 s. No cold start ela estourava, e o card só aparecia
+no ciclo seguinte, 6 minutos depois.
+
+- **A leitura do dia vem logo depois da 1ª**, antes do histórico. O histórico
+  fica mais abaixo na tela.
+- **Duas tentativas em sequência, 30 s e 45 s**, como no PC.
+- **O card do dia fica guardado no aparelho.** Na abertura seguinte do MESMO
+  dia, ele entra junto com os outros, marcado com a hora: *"425 cx · desde 06/11
+  · de 08:10, atualizando…"*. Quando a leitura nova chega, a marca sai. Se a
+  leitura não vier, o card diz *"sem leitura nova (tenta a cada 6 min)"*. O
+  atraso só cai ao longo do dia, porque a linha embala o vencido, então o número
+  guardado nunca é menor que o de agora. O card de outro dia não é usado.
+
+**Atenção:** na 1ª abertura do dia o card ainda espera a leitura (não há card
+guardado de hoje). A UEP DO DIA, que vem da mesma leitura, também chega antes.
+
 ## v7.228.0 / mobile 1.43.0 — 11/11/2026 · O ATRASO à vista no gerencial do celular
 
 PPCP, depois do cartão ATRASO do PC: *"essa card do atraso pode ir para app
