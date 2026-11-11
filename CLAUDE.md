@@ -6227,6 +6227,35 @@ feito e dá ar de verdade ao que sobrou.
   - Medido no Chromium com as leituras reais de 09/11: 1920, 1366 e 1280, nada
     passa da largura.
 
+## O TEMPO-ALVO DE CADA PRODUTO (`.gs` v5.62 / v7.229.0)
+- PPCP, 11/11/2026: *"hoje takt está pela programação, mas ideal não seria pela
+  quantidade de volumes que fizemos sem horas extras?"* → análise de engenharia
+  (o que ele descreveu é o ritmo DEMONSTRADO, não takt; em VOLUMES ele oscila
+  ±27,5% com o mix nos 20 dias úteis de 13/10–10/11, em UEP ±10,4%) → *"isso
+  que quis dizer: tempo-alvo de cada produto"* → a regra da referência fica
+  como está (2.761 até a cronoanálise cobrir os principais) → prévia → cor do
+  tablet pelo alvo (o takt vira linha de carga, sem cor), sem UEP = sem alvo e
+  sem cor, no tablet e no PC.
+- **Tempo-alvo = (527 − setup do ⚙) × 60 ÷ META UEP × UEP do volume** — hoje
+  10,74 s por UEP. A régua do NA MÉDIA DA LINHA do TAKT POR PRODUTO. Só muda
+  quando a META UEP for revista ou a cronoanálise trocar a UEP do produto.
+  - Nos produtos com UEP pela cronoanálise ele dá ~1,6 × o trabalho puro (sem
+    as lacunas): 10,74 ÷ 6,7. É a folga da média da linha para paradas,
+    lacunas e microparadas — não é o tempo padrão (o padrão é a UEP).
+- **`getTemposAlvo`** (leitura, cache 300 s, grupos `cat`+`cfg`):
+  `_temposAlvoMontar(catalogo, cfg)` (pura) devolve `ref` (metaUep e
+  metaOrigem, setupsDia/setupMin/setupOrigem, setupDia, minProd, sUep) e
+  `produtos` = { rot, uep, alvo } para cada nome da lista do app — o `rot` do
+  `_uepConvProdutos` do painel ("modelo · NOME" e "· VOL v/n"; o teste
+  confere). A UEP é o `_cronoUepCad`, a MESMA função da medição do app
+  (`_cronoDoApp` → UEP_CADASTRO): média das cores no volume, soma ÷ nº de
+  volumes no produto inteiro, jogo com volume sem UEP = null. Sem a
+  CONFIG_PAINEL: META padrão do `.gs` e setup padrão 8 × 8
+  (`TA_SETUP_PADRAO_GS` = o do `CRONO_APP_GRUPO` do painel), ditos como
+  `padrao`. ⚠ **re-deploy manual**.
+- O app de cronoanálise (repositório `crono-analise`) lê pelo servidor dele e
+  guarda no tablet; ver o README de lá.
+
 ## A RÉGUA DA CRONOANÁLISE É O SEM AS LACUNAS (v7.200.0 / `.gs` v5.44)
 - PPCP, 04/11/2026, com o PDF da **HOME ANGEL 1.8 · VOL 2/2** na tela (60
   volumes, nenhuma parada marcada, período = rodando = 20,4 s, **5 lacunas** —

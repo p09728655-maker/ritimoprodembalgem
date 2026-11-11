@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.229.0 / `.gs` v5.62 — 11/11/2026 · O tempo-alvo de cada produto para o app de cronoanálise ⚠ re-deploy
+
+PPCP: *"hoje o takt está pela programação, mas o ideal não seria pela quantidade
+que fizemos sem horas extras?"*. Depois da análise, a resposta foi *"isso que quis
+dizer: tempo-alvo de cada produto"*. O takt da semana é um número só para todo
+volume, então o produto pesado sai sempre acima dele e o leve sempre abaixo, por
+causa do peso e não do desempenho.
+
+- **Leitura nova no `.gs`, `getTemposAlvo`.** Para cada nome da lista do app de
+  cronoanálise (*"modelo · NOME"* e, com 2 ou mais volumes, *"· VOL v/n"*), ela
+  devolve a UEP do cadastro e o **tempo-alvo** = (527 min − o setup do ⚙) × 60 ÷
+  META UEP × UEP. Com a planilha de hoje, isso dá **10,74 s por UEP**: a
+  STRASS VOL 2/2 (1,80) fica em 19,3 s, e a MADERO em 10,7 s.
+- A UEP é a MESMA que a medição do app grava (UEP_CADASTRO): as duas contas usam
+  uma função só (`_cronoUepCad`). A régua é a mesma do *NA MÉDIA DA LINHA* do
+  TAKT POR PRODUTO.
+- Produto sem UEP fica sem alvo (null, nunca 0).
+- A leitura não grava nada. Ela fica em cache por 5 min e é invalidada quando o
+  cadastro ou a config mudam.
+- No painel só muda a etiqueta da versão do `.gs` no rodapé (`GS_REPO` 5.62).
+
+**Atenção:** nada muda no painel. O app de cronoanálise passa a julgar a medição
+contra o alvo do produto, e não mais contra o takt da semana: a cor do tablet
+segue o alvo, e o takt fica numa linha embaixo, sem cor. Antes do re-deploy, o
+app mostra só o takt, sem cor.
+
 ## mobile 1.44.0 — 11/11/2026 · O card ATRASO entra junto com os outros
 
 PPCP, com a 1.43.0 publicada: *"apareceu, mas demora para o card do atraso
