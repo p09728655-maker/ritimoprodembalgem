@@ -34,8 +34,11 @@ global.TKS_DET = false;
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
- 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+ 'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts(',
+ // v7.222.0: o nível diretoria
+ 'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
+ 'function _taktHerancaHtml(', 'function _taktExcessoHtml('].forEach(f => eval.call(global, pega(f)));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -256,11 +259,17 @@ ok('os quatro cards, a frase, o porquê, o agora e o dia a dia, com os números 
     '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '17,1 s', '19,8 s', '24,8 s',
     'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', '1 dia de linha (' + _fmtHM(527) + ' = média de 2.761 UEP entregues sem hora extra)'].filter(t => !HT.includes(t)), []);
 ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha; os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',
-   [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA</div>') > 0, HT.includes('faltam <b>' + _fmtHM(686) + '</b> de linha'),
+   [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA<small>') > 0, HT.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
     HT.includes('<b>Por quê:</b> a programação pediu <b>116,2%</b> da média que a linha entrega sem hora extra, e a linha rodou a <b>90,6%</b> dessa média. Do que não saiu nos dias fechados, <b>73% foi excesso de programação</b> e <b>27% ritmo da linha</b>.'),
     HT.indexOf('<details class="tks-det"') > HT.indexOf('id="tks-g-box"'), HT.indexOf('TAKT · O QUE A PROGRAMAÇÃO PEDE') > HT.indexOf('<details class="tks-det"'),
     HT.indexOf('AGORA ·') > HT.indexOf('<details class="tks-det"'), HT.includes('s por UEP') && HT.indexOf('s por UEP') > HT.indexOf('<details')],
    [true, true, true, true, true, true, true]);
+ok('v7.222.0: esta semana tem o PARA FECHAR logo depois do veredito (hora extra até o fim da jornada, ou passa para a semana que vem), antes do porquê',
+   [HT.indexOf('<b>PARA FECHAR</b>') > HT.indexOf('tks-hero') && HT.indexOf('<b>PARA FECHAR</b>') < HT.indexOf('<b>Por quê:</b>'),
+    HT.includes('<div class="kpi-lbl">HORA EXTRA</div><div class="tks-fn">≈ 11h30</div><div class="tks-fd">da linha inteira, além da jornada que resta</div>'),
+    HT.includes('<div class="kpi-lbl">PASSAR PARA A SEMANA QUE VEM</div><div class="tks-fn">≈ 1.700<small>caixas</small></div>'), HT.includes('SÓ REMANEJAR'),
+    / · \d[\d.]* caixas programadas/.test(HT), /programação [\d.]+ cx = [\d.]+ UEP/.test(HT)],
+   [true, true, true, false, true, false]);
 ok('o card do takt âmbar (pede acima), o do executado na cor do sc (90,6% → atenção), a falta vermelha (não cabe)',
    [/<div class="kpi-card warn"[^>]*><div class="kpi-lbl">TAKT/.test(HT), /<div class="kpi-card warn"[^>]*><div class="kpi-lbl">EXECUTADO/.test(HT), /<div class="kpi-card red"[^>]*><div class="kpi-lbl">FALTA/.test(HT)],
    [true, true, true]);
@@ -399,9 +408,10 @@ ok('o desenho da semana que vem: takt, referência, 2h13 além da jornada (verme
     /<div class="kpi-card red"[^>]*><div class="kpi-lbl">A SEMANA × A JORNADA/.test(HP), /EXECUTADO|POR QUE NÃO ACOMPANHOU|AGORA ·/.test(HP)],
    [[], true, false]);
 { const SV1 = _taktSvg(T1, 1200, { fut:true });
-  ok('o gráfico da semana que vem em horas: o saldo de cada dia (09/11 10h35), âmbar acima de 1 dia de linha, sem barra de feito',
-     [(SV1.match(/stroke="var\(--warn\)" stroke-width="1.5" stroke-dasharray="5 4"/g) || []).length, (SV1.match(/stroke-dasharray="5 4"/g) || []).length,
-      SV1.includes('>' + _fmtHM(Math.round(3326 * 527 / 2761)) + '<'), SV1.includes('var(--tks-feito)')], [3, 5, true, false]); }
+  ok('o gráfico da semana que vem em horas (v7.222.0): barra sólida até 1 dia de linha, o que passa dele em VERMELHO com o "+h" em cima, a folga escrita no dia abaixo; o total dentro da barra (09/11 10h35); sem tracejado e sem feito',
+     [(SV1.match(/fill="var\(--red\)"><title>/g) || []).length, (SV1.match(/fill="var\(--tks-base\)"><title>/g) || []).length, (SV1.match(/stroke-dasharray/g) || []).length,
+      SV1.includes('>' + _fmtHM(Math.round(3326 * 527 / 2761)) + '<'), SV1.includes('>+' + _fmtHM(Math.round(3326 * 527 / 2761) - 527) + '<'),
+      (SV1.match(/>folga \d+h\d\d</g) || []).length, SV1.includes('var(--tks-feito)')], [3, 5, 0, true, true, 2, false]); }
 ok('a escolha da semana e o botão: o painel e o número são da semana escolhida',
    [_taktSemBotoes(0).includes('class="on" onclick="_taktSemSet(0)"'), _taktSemBotoes(1).includes('class="on" onclick="_taktSemSet(1)"'),
     _uepSubTakt(T1, null, 'semana que vem'), /taktRot:TKS_SEM===2 \? 'avaliação' : TKS_SEM===1 \? 'semana que vem' : ''/.test(R), /T:TKS_SEM===2 \? TA : TKS_SEM===1 \? T1 : T/.test(R)],
@@ -436,20 +446,68 @@ ok('semana que vem: precisa de 46h08, tem 43h55 → faltam 2h13 — o MESMO do P
    [_fmtHM(V1.precisaMin), _fmtHM(V1.temMin), V1.faltaMin === P1.saldoMin && V1.faltaMin === SIM[0].min, Math.round(V1.faltaCx) === Math.round(SIM[0].cx),
     V1.ritmo.faltaMin, Math.round(V1.ritmo.faltaCx) === Math.round(SIM[1].cx)],
    [_fmtHM(2768), _fmtHM(2635), true, true, SIM[1].min, true]);
-{ const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5, sobra:V0 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
-  ok('o veredito: a palavra, quanto falta, PRECISA × TEM, o ritmo atual, e na semana que vem a soma com o que não fechar desta (o PRÓXIMOS DIAS não soma)',
-     [h1.includes('<div class="tks-hv">NÃO CABE</div>'), h1.includes('faltam <b>2h13</b> de linha'), h1.includes('a programação precisa de <b>46h08</b> de linha · a linha tem <b>43h55</b> (5 dias de ' + _fmtHM(527) + ')'),
-      h1.includes('com o que não fechar desta semana (' + _fmtHM(686) + ', se nada mudar): faltam <b>' + _fmtHM(133 + 686) + '</b>'),
-      h1.includes('para fechar: hora extra, ou tirar ≈ <b>436</b> caixas da semana (≈ 1.242 no ritmo atual)'),
-      h0.includes('<div class="tks-hv">NÃO FECHA</div>'), h0.includes('resta' + 'm <b>' + _fmtHM(287) + '</b> de jornada até 17:00'), h0.includes('o que não couber passa para a semana que vem (≈ 1.671 caixas)'),
+{ const h1 = _taktHeroHtml(V1, { semana:'prox', nUteis:5 }), h0 = _taktHeroHtml(V0, { semana:'esta', ate:'17:00' });
+  // v7.222.0 (PPCP: "nível diretoria, bater o olho e entender"): UM número e a tradução dele, arredondada
+  ok('o veredito: a palavra com o que ela quer dizer, UM número (o que falta), a tradução em dias, caixas (arredondadas) e as barras PRECISA × TEM com a falta marcada',
+     [h1.includes('<div class="tks-hv">NÃO CABE<small>a programação passa da jornada da semana</small></div>'), h1.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">2h13<small> de linha</small></div>'),
+      h1.includes('<span><b>≈ 0,3 dia</b> de produção</span>'), h1.includes('<span><b>≈ 440</b> caixas</span>'),
+      h1.includes('<b>46h08</b>') && h1.includes('<b>43h55</b>'), h1.includes('<div class="tks-bcap">5 dias de ' + _fmtHM(527) + ' de jornada</div>'), /<em style="left:[\d.]+%;width:[\d.]+%"><\/em>/.test(h1),
+      h0.includes('<div class="tks-hv">NÃO FECHA<small>o que falta da semana passa da jornada que resta</small>'), h0.includes('<div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
+      h0.includes('<span><b>≈ 1,3 dia</b> de produção</span><span><b>≈ 1.700</b> caixas</span>'), h0.includes('jornada que resta até 17:00'),
       (h1.match(/class="tks-br/g) || []).length, h1.includes('tks-br pr')],
-     [true, true, true, true, true, true, true, true, 2, true]); }
+     [true, true, true, true, true, true, true, true, true, true, true, 2, true]);
+  ok('um "faltam" só no quadro: o somado com esta semana e o "para fechar" saíram do veredito (blocos próprios); o ritmo a 90,6% muda a conta e aparece, só em horas',
+     [h1.includes('não fechar'), /para fechar/i.test(h1), h1.includes('no ritmo atual da linha (90,6% da média): faltam <b>' + _fmtHM(SIM[1].min) + '</b></div>'),
+      (h1.match(/faltam/g) || []).length], [false, false, true, 1]);
+  const Vq = Object.assign({}, V1, { ritmo:Object.assign({}, V1.ritmo, { pct:98.9 }) });
+  ok('o ritmo a 98,9% da média (o print de 11/11) não muda a conta: some do veredito; a AVALIAÇÃO pede sempre (ritmo:true — o saldo de horas soma com ele)',
+     [_taktHeroHtml(Vq, { semana:'prox', nUteis:5 }).includes('no ritmo atual'), _taktHeroHtml(Vq, { semana:'prox', nUteis:5, ritmo:true }).includes('no ritmo atual'),
+      _taktHeroHtml(Object.assign({}, V1, { ritmo:Object.assign({}, V1.ritmo, { pct:95 }) }), { semana:'prox', nUteis:5 }).includes('no ritmo atual'), TKS_RITMO_DESVIO],
+     [false, true, true, 5]); }
+console.log('\n── v7.222.0: PARA FECHAR, o que vem desta semana e onde está o excesso ──');
+{ const pc = _taktPico(P1, K), top = P1.acima.reduce((a, d) => d.exc > a.exc ? d : a);
+  ok('o dia mais carregado: o que mais passa de 1 dia de linha (em minutos) e a parte dele no excesso da semana (em UEP)',
+     [pc.data, pc.min, pc.pct, pc.n, _taktPico(Object.assign({}, P1, { acima:[] }), K)],
+     [top.data, Math.round(top.uep * K) - 527, Math.round(top.exc / P1.exc * 100), P1.acima.length, null]);
+  const F1 = _taktFecharDados(V1, { semana:'prox', P:P1, k:K, ultimo:'13/11' });
+  ok('PARA FECHAR da semana que vem: hora extra = o que falta (2h13), adiar = as caixas (≈ 436), remanejar = a folga dos dias abaixo (341 UEP = 1h05)',
+     [F1.he, Math.round(F1.cx), F1.remanejar, _fmtHM(F1.remanejar), F1.pico.data, F1.ultimo],
+     [133, Math.round(V1.faltaCx), Math.round(341 * 527 / 2761), '1h05', pc.data, '13/11']);
+  ok('cabe, sem carga ou semana encerrada → nada a decidir', [_taktFecharDados(Object.assign({}, V1, { cabe:true, faltaMin:-10 }), { semana:'prox' }),
+     _taktFecharDados(Object.assign({}, V0, { encerrada:true }), { semana:'esta' }), _taktFecharDados(Object.assign({}, V1, { uep:0 }), { semana:'prox' }), _taktFecharHtml(null)],
+     [null, null, null, '']);
+  const HF = _taktFecharHtml(F1), PF = _taktFecharHtml(F1, { papel:true });
+  ok('os três cartões: HORA EXTRA ≈ 2h · ADIAR ≈ 440 caixas (o PCP escolhe; o dia mais carregado) · SÓ REMANEJAR só 1h05, apagado (não resolve)',
+     [HF.includes('<div class="kpi-lbl">HORA EXTRA</div><div class="tks-fn">≈ 2h</div>'), HF.includes('<div class="kpi-lbl">ADIAR LOTES</div><div class="tks-fn">≈ 440<small>caixas</small></div>'),
+      HF.includes('para depois de 13/11 · o PCP escolhe quais — o dia mais carregado é <b>' + pc.data.slice(0, 5) + ' (+' + _fmtHM(pc.min) + ')</b>'),
+      HF.includes('<div class="tks-fc no"><div class="kpi-lbl">SÓ REMANEJAR ENTRE OS DIAS</div><div class="tks-fn"><small>só</small> 1h05</div>'), HF.includes('<b>não resolve</b>')],
+     [true, true, true, true, true]);
+  ok('no papel, uma linha com os mesmos números',
+     PF, '<div class="tks-por"><b>Para fechar:</b> hora extra de ≈ 2h, ou adiar ≈ 440 caixas para depois de 13/11 (o dia mais carregado é ' + pc.data.slice(0, 5) + ' (+' + _fmtHM(pc.min) + ')); remanejar entre os dias resolve só 1h05.</div>');
+  ok('as aproximações: horas de meia em meia (5 em 5 min abaixo de 1 h), caixas à dezena/centena, dias com uma casa (nada abaixo de 0,1), pontos em mil acima de 10 mil',
+     [_tkHAprox(299), _tkHAprox(686), _tkHAprox(133), _tkHAprox(12), _tkAprox(37), _tkAprox(436), _tkAprox(1091), _tkDia(299), _tkDia(819), _tkDia(1200), _tkDia(20), _tkPts(109400), _tkPts(9440)],
+     ['5h', '11h30', '2h', '10 min', '37', '440', '1.100', '≈ 0,6 dia de produção', '≈ 1,6 dia de produção', '≈ 2,3 dias de produção', '', '≈ 109 mil pontos', '≈ 9.400 pontos']);
+  const HH = _taktHerancaHtml(V1, V0, '09 a 13/11');
+  ok('E ESTA SEMANA AINDA NÃO FECHA: a soma escrita numa barra (2h13 da programação + 11h26 que não fechar desta = 13h39 ≈ 1,6 dia)',
+     [HH.includes('E ESTA SEMANA AINDA NÃO FECHA'), HH.includes('<span class="a" style="flex:133">2h13</span><span class="b" style="flex:686"><i>' + _fmtHM(686) + '</i></span>'),
+      HH.includes('a programação de 09 a 13/11'), HH.includes('o que não fechar desta semana'), HH.includes('<div class="tks-hn">' + _fmtHM(819) + '</div>'), HH.includes('≈ 1,6 dia de produção'),
+      /sobra/.test(HH)], [true, true, true, true, true, true, false]);
+  ok('sem o que vir desta semana (ela fecha), nada; semana que vem com folga: a folga cobre ou não, escrito',
+     [_taktHerancaHtml(V1, Object.assign({}, V0, { cabe:true, faltaMin:-30 }), 'x'),
+      _taktHerancaHtml(Object.assign({}, V1, { cabe:true, faltaMin:-60 }), Object.assign({}, V0, { faltaMin:40 }), 'x').includes('a folga da semana que vem (1h00) cobre o que vem desta (0h40)'),
+      _taktHerancaHtml(Object.assign({}, V1, { cabe:true, faltaMin:-60 }), V0, 'x').includes('não cobre')],
+     ['', true, true]);
+  const HP2 = _taktProxHtml(T1, P1, { largura:1200, sim:SIM, V:V1, sobra:V0 });
+  ok('a semana que vem na ordem do olhar: veredito → PARA FECHAR → esta semana ainda não fecha → onde está o excesso (com o dia que mais pesa) → detalhes',
+     [['tks-hero', '<b>PARA FECHAR</b>', 'class="tks-her"', '<b>ONDE ESTÁ O EXCESSO</b>', 'tks-det'].map(x => HP2.indexOf(x)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
+      HP2.includes('<span class="tks-sec-r">' + (pc.pct >= 50 ? '<b>' + pc.data.slice(0, 5) + ' sozinho</b> tem ' + pc.pct + '% do excesso da semana' : 'o dia mais carregado é <b>' + pc.data.slice(0, 5) + '</b> (+' + _fmtHM(pc.min) + ')') + '</span>'),
+      HP2.includes('<b>Dia a dia:</b>'), / · [\d.]+ caixas programadas/.test(HP2)], [true, true, false, true]); }
 { const Vc = _taktVeredito(T1, Object.assign({}, P1, { uep:10000, minPede:10000 * K, saldoMin:Math.round(10000 * K) - 2635, passa:10000 - 13805 }), RIT);
   const Hs = { num:20261107, minNorm:300, restMin:200, uep:500, he:40, meta:2761, fim:'17:00' };
   const Vs = _taktVeredito(_taktMontar(S, HIST.concat([{ data:'06/11/2026', uep:2400, uepHe:600, metaUep:2761 }]), Hs), null, RIT);
   ok('a semana que cabe diz CABE e quanto sobra (verde, sem "para fechar"); no sábado a desta semana diz NÃO FECHOU e quanto ficou, sem ritmo (não há jornada)',
-     [(h => [h.includes('<div class="tks-hero ok"><div class="tks-hv">CABE</div>'), h.includes('sobram <b>'), h.includes('para fechar')])(_taktHeroHtml(Vc, { semana:'prox', nUteis:5 })),
-      Vs.encerrada, (h => [h.includes('NÃO FECHOU'), h.includes('ficaram <b>'), h.includes('a jornada da semana acabou'), h.includes('no ritmo atual')])(_taktHeroHtml(Vs, { semana:'esta' }))],
+     [(h => [h.includes('<div class="tks-hero ok"><div class="tks-hv">CABE<small>a programação cabe na jornada da semana</small>'), h.includes('<div class="tks-hl">SOBRAM</div>'), /para fechar/i.test(h)])(_taktHeroHtml(Vc, { semana:'prox', nUteis:5 })),
+      Vs.encerrada, (h => [h.includes('NÃO FECHOU'), h.includes('<div class="tks-hl">FICARAM</div>'), h.includes('a jornada da semana acabou'), h.includes('no ritmo atual')])(_taktHeroHtml(Vs, { semana:'esta' }))],
      [[true, true, false], true, [true, true, true, false]]); }
 console.log('\n── v7.212.0: a falta também em pontos; "média da linha entregue sem hora extra" ──');
 { // pontos do cadastro: 36 por caixa a cada 0,5 UEP (72 pontos por UEP em todas as linhas) — e um código sem pontos
@@ -463,11 +521,11 @@ console.log('\n── v7.212.0: a falta também em pontos; "média da linha entr
   ok('pontos por UEP da semana = Σ pontos ÷ Σ UEP do saldo com pontos (72); a falta em pontos = a falta em UEP × 72 (a semana que vem: 698,5 UEP ≈ 50.300 pontos)',
      [r1(V0p.ptsUep), r1(V1p.ptsUep), Math.round(V0p.faltaPts) === Math.round(Tp.falta.passa * V0p.ptsUep), Math.round(V1p.faltaPts), _tkPts(V1p.faltaPts),
       Math.round(V1p.ritmo.faltaPts) === Math.round(SIM[1].falta * V1p.ptsUep), _taktVeredito(T1, P1, RIT).faltaPts],
-     [72, 72, true, Math.round(P1.passa * 72), '≈ ' + fmtN(Math.round(P1.passa * 72 / 100) * 100) + ' pontos', true, null]);
-  const h1 = _taktHeroHtml(V1p, { semana:'prox', nUteis:5, sobra:V0p }), D2 = _taktDocHtml({ T0:Tp, T1:T1p, P1:P1p, V0:V0p, V1:V1p }, { data:'06/11/2026', hora:'11:58' });
-  ok('na tela e na folha: a falta em horas e em pontos, o ritmo atual em % da MÉDIA, a soma em pontos; a definição diz quantos pontos vale a UEP de cada semana',
-     [h1.includes('faltam <b>2h13</b> de linha <small>' + _tkPts(V1p.faltaPts) + '</small>'), h1.includes('no ritmo atual da linha (90,6% da média): faltam <b>' + _fmtHM(SIM[1].min) + '</b> (' + _tkPts(V1p.ritmo.faltaPts) + ')'),
-      h1.includes('faltam <b>' + _fmtHM(819) + '</b> (' + _tkPts(V1p.faltaPts + V0p.faltaPts) + ')'), h1.includes('referência'),
+     [72, 72, true, Math.round(P1.passa * 72), '≈ ' + fmtN(Math.round(P1.passa * 72 / 1000)) + ' mil pontos', true, null]);
+  const h1 = _taktHeroHtml(V1p, { semana:'prox', nUteis:5 }), D2 = _taktDocHtml({ T0:Tp, T1:T1p, P1:P1p, V0:V0p, V1:V1p }, { data:'06/11/2026', hora:'11:58' });
+  ok('na tela e na folha: a falta em horas e em pontos (um só, em mil), o ritmo atual em % da MÉDIA, a soma em pontos na frase da folha; a definição diz quantos pontos vale a UEP de cada semana',
+     [h1.includes('<span><b>≈ 50 mil</b> pontos</span>'), h1.includes('no ritmo atual da linha (90,6% da média): faltam <b>' + _fmtHM(SIM[1].min) + '</b>'),
+      D2.includes(_fmtHM(819) + '</b> (' + _tkPts(V1p.faltaPts + V0p.faltaPts) + ') somando'), h1.includes('referência'),
       D2.includes('a semana que vem, <b>2h13</b> de linha (' + _tkPts(V1p.faltaPts) + ')'), D2.includes('<b>Pontos</b> = a falta em UEP × os pontos por UEP dos lotes da semana (esta semana 72, a que vem 72 pontos por UEP'),
       D2.includes('média que a linha entrega sem hora extra: 1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP</b> (a referência de UEP do painel, ' + UEP_REF_STATUS)],
      [true, true, true, false, true, true, true]); }
@@ -477,7 +535,9 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
 { const DOC = _taktDocHtml({ T0:T, T1, P1, V0, V1 }, { data:'06/11/2026', hora:'11:58' });
   ok('🖨 direta: uma frase no topo com os dois vereditos e a soma; por semana a palavra, o quanto falta e o porquê com as DUAS causas',
      ['<b>Nenhuma das duas semanas cabe na linha.</b> Esta semana faltam <b>' + _fmtHM(686) + '</b> de linha; a semana que vem, <b>2h13</b> de linha — <b>' + _fmtHM(819) + '</b> somando o que não fechar desta.',
-      '<div class="tks-hv">NÃO FECHA</div>', '<div class="tks-hv">NÃO CABE</div>', '<b>73% excesso de programação</b>, <b>27% ritmo da linha</b>',
+      '<div class="tks-hv">NÃO FECHA<small>', '<div class="tks-hv">NÃO CABE<small>', '<b>73% excesso de programação</b>, <b>27% ritmo da linha</b>',
+      '<b>Para fechar:</b> hora extra de ≈ 11h30, ou ≈ 1.700 caixas passam para a semana que vem.', '<b>Para fechar:</b> hora extra de ≈ 2h, ou adiar ≈ 440 caixas para depois de 13/11',
+      'Onde está o excesso · horas de linha programadas',
       '1 dia de linha = ' + _fmtHM(527) + ' de jornada = 2.761 UEP'].filter(x => !DOC.includes(x)), []);
   ok('🖨 sem poluição: nada de s por UEP, cascata, tabela de cenários ou agora; os dois gráficos em horas no tamanho do papel; a referência dita como "em avaliação"',
      [DOC.includes('<div class="td-cols">'), /s por UEP|s\/UEP|<table|td-casc|AGORA ·|ÚLTIMA HORA/.test(DOC) || /\btakt\b/i.test(DOC.split('TAKT DA SEMANA').join('')),
@@ -534,9 +594,10 @@ ok('a conta do TAKT na colagem: 14.503,5 UEP em 5 dias → NÃO CABE, faltam 2h1
   const H = _tkaHtml(L42, M42, { botoes:'', msg:'16 linhas lidas', largura:1200 });
   const H0 = _tkaHtml(null, null, { botoes:'' });
   ok('o desenho: a caixa de colar (o texto escapado), o veredito em horas com "produtos", o dia a dia; antes de colar, só a caixa',
-     [H.includes('<textarea id="tka-txt"'), H.includes('a&lt;b&gt;'), H.includes('<div class="tks-hv">NÃO CABE</div>'), H.includes('faltam <b>2h13</b> de linha'),
-      H.includes('caixas'), H.includes('produtos da semana'), H.includes('id="tks-g-box"'), H0.includes('tks-hero'), H0.includes('AVALIAR')],
-     [true, true, true, true, false, true, true, false, true]);
+     [H.includes('<textarea id="tka-txt"'), H.includes('a&lt;b&gt;'), H.includes('<div class="tks-hv">NÃO CABE<small>'), H.includes('<div class="tks-hn">2h13<small> de linha</small></div>'),
+      H.includes('caixas'), H.includes('<small>produtos</small>'), H.includes('id="tks-g-box"'), H0.includes('tks-hero'), H0.includes('AVALIAR'),
+      H.includes('no ritmo atual da linha'), H.includes('<b>PARA FECHAR</b>'), H.includes('<b>ONDE ESTÁ O EXCESSO</b> horas de linha da programação colada')],
+     [true, true, true, true, false, true, true, false, true, true, true, true]);
   const Hs = _tkaHtml(_tkaLer('500\tPRODUTO NOVO SEM UEP\t\t9/11\n300\tRACK SIRIUS 0.9', PRODS, 20261106), _tkaMontar(_tkaLer('500\tPRODUTO NOVO SEM UEP\t\t9/11\n300\tRACK SIRIUS 0.9', PRODS, 20261106), {}, 2761, RIT), { botoes:'' });
   ok('produto fora do cadastro é dito em destaque: a carga dele NÃO entrou', Hs.includes('com produto que não está no cadastro — a carga delas NÃO entrou</b>: PRODUTO NOVO SEM UEP (500)'), true);
   global.TKA_TXT = ''; }
@@ -596,7 +657,7 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
   ok('o desenho do saldo: a frase (chega com, termina com, no ritmo atual), a tabela por semana, o que não somou (já no painel); a 🖨: a colagem e o saldo lado a lado, a frase uma vez só',
      [HS.includes('A linha chega em <b>16/11</b> com <b>' + _fmtHM(C43.chegada) + '</b> de atraso'), (HS.match(/<tr( class="tka-col")?><td>/g) || []).length, HS.includes('12 linhas coladas já estão na programação do painel (pelo Nº LOTE SIST.)'),
       DOC.includes('A programação colada (<b>16/11 a 23/11</b>) <b>cabe</b>'), DOC.includes('A linha chega nela com <b>' + _fmtHM(C43.chegada) + '</b> de atraso'),
-      (DOC.match(/A linha chega/g) || []).length, DOC.includes('>SALDO DE HORAS<small>'), DOC.includes('<div class="tks-hv">CABE</div>')],
+      (DOC.match(/A linha chega/g) || []).length, DOC.includes('>SALDO DE HORAS<small>'), DOC.includes('<div class="tks-hv">CABE<small>')],
      [true, 4, true, true, true, 1, true, true]);
   const H44 = _tkaSaldoHtml(_tkaCorrente(PAI, _tkaLer(FX.C44AI, PRODS, 20261106).itens, OC));
   ok('lacuna dita na linha da semana e na nota', [H44.includes('sem programação no painel nem na colagem: 19/11'), H44.includes('<b>3 dias úteis sem programação</b> (19/11, 23/11, 24/11)')], [true, true]); }
