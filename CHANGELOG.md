@@ -11,6 +11,23 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.230.0 — 11/11/2026 · TEMPO-ALVO no TAKT DA SEMANA
+
+PPCP: *"troca por TEMPO ALVO"*. O app de cronoanálise passou a julgar cada volume
+pelo **tempo-alvo** do produto (v2.106.0 de lá), e o mesmo número já estava no
+painel com outro nome.
+
+- ⚖ UEP → TAKT DA SEMANA → TAKT POR PRODUTO: a coluna **NA MÉDIA DA LINHA** passa a
+  se chamar **TEMPO-ALVO**. O título e a nota dizem a conta (os s por UEP da média
+  da linha sem hora extra × a UEP por caixa). A nota agora manda comparar o NO
+  PERÍODO da cronoanálise com o TEMPO-ALVO; antes mandava comparar com o PELO TAKT.
+- No AGORA da ESTA SEMANA, **PELA REFERÊNCIA** passa a se chamar **TEMPO-ALVO**.
+- **Atenção:** nenhum número mudou, só o nome. O número pode diferir do app de
+  cronoanálise na 2ª casa decimal: aqui a UEP por caixa é a média das cores pesada
+  pelas caixas programadas; lá, a média simples das cores do volume.
+
+---
+
 ## v7.229.0 / `.gs` v5.62 — 11/11/2026 · O tempo-alvo de cada produto para o app de cronoanálise ⚠ re-deploy
 
 PPCP: *"hoje o takt está pela programação, mas o ideal não seria pela quantidade

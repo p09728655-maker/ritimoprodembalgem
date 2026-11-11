@@ -6237,7 +6237,9 @@ feito e dá ar de verdade ao que sobrou.
   tablet pelo alvo (o takt vira linha de carga, sem cor), sem UEP = sem alvo e
   sem cor, no tablet e no PC.
 - **Tempo-alvo = (527 − setup do ⚙) × 60 ÷ META UEP × UEP do volume** — hoje
-  10,74 s por UEP. A régua do NA MÉDIA DA LINHA do TAKT POR PRODUTO. Só muda
+  10,74 s por UEP. A régua da coluna TEMPO-ALVO do TAKT POR PRODUTO (era NA
+  MÉDIA DA LINHA até a v7.230.0; o PELA REFERÊNCIA do AGORA também virou
+  TEMPO-ALVO — PPCP: *"troca por TEMPO ALVO"*, UM NOME POR INDICADOR). Só muda
   quando a META UEP for revista ou a cronoanálise trocar a UEP do produto.
   - Nos produtos com UEP pela cronoanálise ele dá ~1,6 × o trabalho puro (sem
     as lacunas): 10,74 ÷ 6,7. É a folga da média da linha para paradas,

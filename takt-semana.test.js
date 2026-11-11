@@ -160,7 +160,7 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
      [['501094 · MESA CABECEIRA SLEEP', 500, [9]], ['501135 · PENT CAMARIM 1PT 2GAV DIAMANTE', 500, [9, 12]], ['501060 · PENTEADEIRA CAMARIM MEL · VOL 1/2', 200, [10]],
       ['501060 · PENTEADEIRA CAMARIM MEL · VOL 2/2', 200, [10]], ['501999 · PRODUTO NOVO', 80, [11]]]);   // empate de caixas: pelo nome
   const dm = por('DIAMANTE'), mel = por('VOL 1/2');
-  ok('PELO TAKT = takt da semana × UEP por caixa; NA MÉDIA DA LINHA = referência × UEP por caixa; cx/h = por hora de RELÓGIO: 3.600 × 463/527 ÷ pelo takt (o setup na média)',
+  ok('PELO TAKT = takt da semana × UEP por caixa; TEMPO-ALVO = referência × UEP por caixa; cx/h = por hora de RELÓGIO: 3.600 × 463/527 ÷ pelo takt (o setup na média)',
      [Math.round(dm.sTakt * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(dm.sRef * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(dm.cxhTakt), Math.round(3600 / dm.sTakt)],
      [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(3600 * 463 / 527 / (T2.takt * 2.48)), Math.round(3600 / (T2.takt * 2.48))]);
   ok('a UEP por caixa é a média das cores pesada pelas caixas (MEL 1/2: 1,73 e 1,75 → 1,74, diz que difere por cor); sem UEP → sem takt, nunca 0',
@@ -168,8 +168,14 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
   const HC = _taktPorCaixaHtml(R2, T2);
   ok('o desenho: título com o takt da semana, uma linha por produto, PELO TAKT em s e cx/h, as cores que diferem, o sem UEP; a nota diz por que o takt do app (por volume) engana no pesado',
      [HC.includes('<b>TAKT POR CAIXA</b>'), (HC.match(/<tr><td>/g) || []).length, HC.includes('<b>' + _tkS(dm.sTakt) + ' s</b><small>' + fmtN(Math.round(dm.cxhTakt)) + ' cx/h</small>'),
-      HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('o takt do app de cronoanálise é por volume')],
+      HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('o takt do app é por volume')],
      [true, 5, true, true, true, true, true]);
+  // v7.230.0 (PPCP: "troca por TEMPO ALVO"): a coluna era NA MÉDIA DA LINHA; é o mesmo número que julga cada
+  // volume no app de cronoanálise (getTemposAlvo), e a nota manda comparar o NO PERÍODO com ele
+  ok('TEMPO-ALVO: a coluna (nunca mais NA MÉDIA DA LINHA), o título com a conta, a nota que manda comparar o NO PERÍODO com ele',
+     [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'), HC.includes('compare o NO PERÍODO da cronoanálise com o TEMPO-ALVO'),
+      HC.includes('O tempo-alvo do produto: os ' + _tkS(T2.ref) + ' s por UEP da média da linha sem hora extra')],
+     [true, false, true, true]);
   // v7.224.0 (PPCP: "não consigo localizar com facilidade"): a tabela saiu dos DETALHES e abre no TAKT POR PRODUTO,
   // logo abaixo da faixa do topo — nas três telas (a AVALIAR, por volume, pelo _tkaVolumes)
   ok('no TAKT POR PRODUTO da faixa do topo, nas três telas (não mais nos detalhes); o desenho não faz conta',
@@ -281,7 +287,7 @@ ok('os quatro cards, a frase, o porquê, o agora e o dia a dia, com os números 
    ['TAKT · O QUE A PROGRAMAÇÃO PEDE', 'REFERÊNCIA · META DIA (UEP) DO ⚙', 'EXECUTADO NA SEMANA · JORNADA', 'FALTA DA SEMANA · SALDO DOS LOTES',
     '8,7<small>s por UEP</small>', '10,1<small>s por UEP</small>', '11,1<small>s por UEP</small>', '5.097<small>UEP</small>', 'em 463 min (a jornada sem o setup)',
     '<b>16,2% acima</b>', '<b>73% é carga acima da referência</b>', '<b>27% é ritmo</b>', 'POR QUE NÃO ACOMPANHOU · dias fechados 03/11–05/11',
-    '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '15,0 s', '17,4 s', '21,8 s', 'Takt, referência e a última hora são sem o setup (a hora: os minutos dela × 463/527, como o EXECUTADO)',
+    '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '15,0 s', '17,4 s', '21,8 s', 'Takt, tempo-alvo e a última hora são sem o setup (a hora: os minutos dela × 463/527, como o EXECUTADO)', '>TEMPO-ALVO<',
     'Lá ela vale a jornada inteira (527 min, 11,5 s por UEP); aqui é sem o setup.',
     'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', '1 dia de linha (' + _fmtHM(527) + ' = média de 2.761 UEP entregues sem hora extra)'].filter(t => !HT.includes(t)), []);
 ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha (v7.223.0: o recado do gráfico, a frase inteira no title); os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',

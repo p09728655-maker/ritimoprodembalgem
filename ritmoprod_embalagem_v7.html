@@ -4058,7 +4058,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.229.0';
+const APP_VER   = '7.230.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10549,10 +10549,14 @@ function _taktAgora(T, A){
 // semana é em segundos por UEP; a linha entende em segundos por CAIXA do produto.
 // Por produto · volume programado na semana: takt × UEP por caixa (a média das
 // cores, pesada pelas caixas) = o ritmo que o produto precisa para a semana
-// fechar; referência × UEP por caixa = o ritmo da média da linha no mesmo
-// produto. É o "1 caixa a cada X s" do AGORA para todos os produtos — e o número
-// para comparar com o NO PERÍODO da cronoanálise do produto (o takt do app é por
-// VOLUME, todo volume igual: produto pesado sempre parece acima dele).
+// fechar; referência × UEP por caixa = o TEMPO-ALVO do produto (v7.230.0, PPCP:
+// "troca por TEMPO ALVO" — era "NA MÉDIA DA LINHA"): o tempo que cada caixa pode
+// levar para a linha fazer a média sem hora extra, o MESMO do getTemposAlvo
+// (.gs v5.62) que julga cada volume no app de cronoanálise desde a v2.106.0
+// dele. É o "1 caixa a cada X s" do AGORA para todos os produtos — e o número
+// para comparar com o NO PERÍODO da cronoanálise do produto.
+// ⚠ Pode diferir do app na 2ª casa: aqui a UEP por caixa é a média das cores
+// PESADA PELAS CAIXAS programadas; lá, a média simples das cores do volume.
 // Conta pura. Ordem: o 1º dia programado, depois as caixas.
 function _taktPorCaixa(T){
   if(!T || !Array.isArray(T.prods)) return [];
@@ -10573,12 +10577,12 @@ function _taktPorCaixaHtml(R, T, semTit){
   return (semTit ? '' : `<div class="uep-sec"><b>TAKT POR CAIXA</b> cada produto programado · ${_tkS(T.takt)} s por UEP × a UEP por caixa dele</div>`)
     +`<div class="uep-card" style="overflow-x:auto"><table class="tka-tab tks-cx"><thead><tr><th>PRODUTO · VOLUME</th><th>QUANDO</th><th class="n">CAIXAS</th><th class="n">UEP/CX</th>`
     +`<th class="n" title="O ritmo que o produto precisa para a programação da semana fechar: o takt da semana (${_tkS(T.takt)} s por UEP) × a UEP por caixa">PELO TAKT</th>`
-    +`<th class="n" title="O ritmo da média da linha (${_tkS(T.ref)} s por UEP, a referência de ${fmtN(Math.round(T.meta))} UEP/dia) no mesmo produto">NA MÉDIA DA LINHA</th></tr></thead><tbody>`
+    +`<th class="n" title="O tempo-alvo do produto: os ${_tkS(T.ref)} s por UEP da média da linha sem hora extra (a referência de ${fmtN(Math.round(T.meta))} UEP/dia, sem o setup) × a UEP por caixa. É o tempo que cada caixa pode levar para a linha fazer a média sem hora extra — o mesmo que julga cada volume no app de cronoanálise">TEMPO-ALVO</th></tr></thead><tbody>`
     +R.map(g=>`<tr><td>${e(g.rot)}</td><td class="mono">${quando(g)}</td><td class="n">${fmtN(g.cx)}</td>`
       +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
       +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
       +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}</td></tr>`).join('')
-    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do ⚙ — o mesmo digitado no app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; NA MÉDIA DA LINHA = o ritmo que a linha entrega em média (sem hora extra) nesse produto. Para a medição do produto, compare o NO PERÍODO da cronoanálise com o PELO TAKT — o takt do app de cronoanálise é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
+    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do ⚙ — o mesmo digitado no app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; TEMPO-ALVO = o tempo que cada caixa do produto pode levar para a linha fazer a média sem hora extra (${_tkS(T.ref)} s por UEP × a UEP por caixa). Para a medição do produto, compare o NO PERÍODO da cronoanálise com o TEMPO-ALVO — é contra ele que o app de cronoanálise julga cada volume; o takt do app é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
 }
 // ── A FAIXA DO TAKT (v7.224.0) ─────────────────────────────────────────────
 // PPCP, 11/11/2026, com a SEMANA QUE VEM na tela: "onde fica o takt que temos
@@ -10726,8 +10730,8 @@ function _taktHtml(T, G, opt){
         : passo('real '+(H.cls||''), `ÚLTIMA HORA (${e(H.inicio)})`, `${_tkS(H.sCx)} s`, `o ritmo da hora (${_tkS(H.sUep)} s por UEP) em caixas deste produto — a hora não foi só dele`);
       bA=`<div class="tks-agora">`
         +passo('', 'PELO TAKT', `${_tkS(G.sTakt)} s`, `1 caixa a cada · ${_tkS(T.takt)} × ${f2(G.uepCx)}`)
-        +passo('', 'PELA REFERÊNCIA', `${_tkS(G.sRef)} s`, `1 caixa a cada · ${_tkS(T.ref)} × ${f2(G.uepCx)}`)
-        +real+`</div><div class="uep-nota">A UEP por caixa é a do cadastro (o código de agora). Takt, referência e a última hora são sem o setup (a hora: os minutos dela × ${_tkM(T.minProd)}/${UEP_MIN_DIA}, como o EXECUTADO), na mesma régua: a hora na meta dá a referência. A cor da última hora é a do HORA A HORA.</div>`;
+        +passo('', 'TEMPO-ALVO', `${_tkS(G.sRef)} s`, `1 caixa a cada · ${_tkS(T.ref)} × ${f2(G.uepCx)}`)
+        +real+`</div><div class="uep-nota">A UEP por caixa é a do cadastro (o código de agora). Takt, tempo-alvo e a última hora são sem o setup (a hora: os minutos dela × ${_tkM(T.minProd)}/${UEP_MIN_DIA}, como o EXECUTADO), na mesma régua: a hora na meta dá o tempo-alvo. O tempo-alvo é o tempo que cada caixa pode levar para a linha fazer a média sem hora extra. A cor da última hora é a do HORA A HORA.</div>`;
     }
   }
   // DIA A DIA
