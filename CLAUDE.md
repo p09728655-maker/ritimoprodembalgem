@@ -135,7 +135,9 @@ via Google Apps Script (JSONP).
   detalhes; e (v7.225.0) o SETUP do app: o *takt no app* da faixa com os
   números da tabela PROGRAMA GRAVADO do app (038-26 18,7 s · 193 vol/h, 039-26
   15,4 · 234, 040-26 12,7 · 284) e o takt, a referência e o executado do
-  painel em linha rodando (7 de 7 mutações): `node takt-semana.test.js`.
+  painel sem o setup, a última hora do AGORA na mesma régua, o cx/h de
+  relógio e a semana refeita com setup zero (12 de 12 mutações):
+  `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -7103,13 +7105,29 @@ feito e dá ar de verdade ao que sobrou.
         463 × 60 ÷ UEP, `ref` = 463 × 60 ÷ META, `exec.s` = minutos × 463/527
         × 60 ÷ UEP feita. Daí o TAKT DA SEMANA · NO PAINEL, o TAKT POR
         PRODUTO, o AGORA e os DETALHES. `exec.min` continua bruto (a simulação
-        lê ele). A última hora do AGORA é o relógio inteiro (é fato, não régua).
+        lê ele).
+      - **A ÚLTIMA HORA do AGORA na mesma régua** (revisão da v7.225.0, o único
+        BLOQUEIA): em relógio ela saía 19,8 s numa hora EXATAMENTE na meta ao
+        lado da referência de 17,4 s — dois vereditos na mesma linha, com a cor
+        do HORA A HORA dizendo verde. Hoje os minutos dela × 463/527
+        (`_taktFProd(T)`, como o EXECUTADO): hora na meta = a referência (o
+        teste prende).
+      - **As caixas por hora são de RELÓGIO** (`cxh` do AGORA, `cxhTakt` do
+        TAKT POR PRODUTO: 3.600 × 463/527 ÷ s por caixa — o setup na média):
+        é o número que o líder confere no HORA A HORA (211 da MEL, não 240).
+        O `Tv` da AVALIAR leva o `minProd` para isso.
+      - **"sem o setup", nunca "com a linha rodando"** nos textos: RODANDO é o
+        cartão da cronoanálise (sem as paradas marcadas), outra coisa.
+      - ⚠ **64 min é o setup PLANEJADO do app** (8 × 8); a troca de produto
+        apontada deu ~32 min/dia em 28/09–26/10. Se o real for esse, os dois
+        takts ficam ~6% apertados. Rever é decisão do PPCP, no app; o painel
+        copia.
       - **Não muda**: o % (o setup sai dos dois lados: 2.761 UEP/dia foi feito
         com setup dentro), as horas de linha (PRECISA, TEM, FALTAM — continuam
         em jornada de 8h47, a do PRÓXIMOS DIAS), o PARA FECHAR, a simulação e o
         🖨 TAKT (que não mostra segundos).
-      - **Por que é o certo**: o NO PERÍODO de uma medição não tem setup (a
-        troca acontece entre medições); comparado com um takt que tinha o setup
+      - **Por que**: o NO PERÍODO de uma medição não tem setup (a troca
+        acontece entre medições); comparado com um takt que tinha o setup
         dentro, o produto parecia caber com até ~12% a mais de tempo.
       - ⚠ **Fora da sub-aba TAKT a régua em segundos continua BRUTA** (527 × 60
         ÷ META): o TAKT s/CX do bloco 7 e da AGENDA (`_taktUep`), a META da ⏳

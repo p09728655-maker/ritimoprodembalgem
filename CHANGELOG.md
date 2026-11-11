@@ -24,11 +24,15 @@ painel não descontava nada.
   app** — *takt no app: 12,7 s por volume (284 vol/h) = 30h56 ÷ 8.770*, com o
   setup escrito. Bate com a tabela PROGRAMA GRAVADO do app nas três semanas do
   print (038-26 18,7 s · 193 vol/h; 039-26 15,4 s · 234; 040-26 12,7 s · 284).
-- **O takt do painel desconta o mesmo setup**: TAKT, REFERÊNCIA e EXECUTADO em
-  segundos são *com a linha rodando* — a jornada menos 1h04 por dia (527 − 64 =
-  463 min). Vale para o TAKT DA SEMANA · NO PAINEL, o TAKT POR PRODUTO, o AGORA
-  e os DETALHES PARA O PCP, nas três telas (ESTA SEMANA, SEMANA QUE VEM,
-  AVALIAR).
+- **O takt do painel desconta o mesmo setup**: TAKT, REFERÊNCIA, EXECUTADO e a
+  ÚLTIMA HORA do AGORA em segundos são *sem o setup* — a jornada menos 1h04 por
+  dia (527 − 64 = 463 min; a hora e o executado, os minutos × 463/527). Uma
+  hora exatamente na meta dá a referência. Vale para o TAKT DA SEMANA · NO
+  PAINEL, o TAKT POR PRODUTO, o AGORA e os DETALHES PARA O PCP, nas três telas
+  (ESTA SEMANA, SEMANA QUE VEM, AVALIAR).
+- **As caixas por hora continuam de relógio** (o setup na média): o *≈ 211 cx
+  por hora* do AGORA e o cx/h do TAKT POR PRODUTO são o número que se confere
+  no HORA A HORA — não mudam.
 
 **Atenção — números que mudam** (todos os segundos da sub-aba TAKT DA SEMANA,
 × 463 ÷ 527 ≈ −12%):
@@ -39,14 +43,21 @@ painel não descontava nada.
 | Média da linha sem hora extra (s por UEP) | 11,5 | 10,1 |
 | *s por volume* da faixa, 16–19/11 | 14,4 (sem setup) | 12,7 (= o app) |
 | Pelo takt de um produto de 2,48 UEP/cx (16–19/11) | 24,9 s/cx | 21,8 s/cx |
+| Última hora do AGORA (a hora das 10:00 de 06/11, MEL 1/2) | 24,8 s/cx | 21,8 s/cx |
 
-- **Não mudam**: o % que a programação pede da média (114,2%), o veredito
+- **Não mudam**: as caixas por hora, o % que a programação pede da média (114,2%), o veredito
   (CABE / NÃO CABE), as horas de linha (PRECISA, TEM, FALTAM), o PARA FECHAR, a
   simulação e o 🖨 TAKT. A média de 2.761 UEP/dia foi feita com o setup dentro:
   o setup sai dos dois lados e se cancela no %.
 - **Leitura que muda**: comparar uma medição da cronoanálise (NO PERÍODO) com o
-  PELO TAKT do produto ficou justo — antes o takt tinha o tempo de setup dentro
-  e a medição não, e o produto parecia caber com até ~12% a mais de tempo.
+  PELO TAKT do produto ficou na mesma régua — antes o takt tinha o tempo de
+  setup dentro e a medição não, e o produto parecia caber com até ~12% a mais
+  de tempo (com o setup do cadastro do app, 64 min por dia).
+- ⚠ **Os 64 min são o setup PLANEJADO do app, não medido.** A troca de produto
+  apontada nas paradas deu ~32 min por dia (28/09–26/10/2026). Se o setup real
+  for esse, o takt do app e o do painel ficam ~6% mais apertados do que
+  precisam. Rever o cadastro do grupo no app é decisão do PPCP; mudou lá, muda
+  o `CRONO_APP_GRUPO` do painel.
 - ⚠ **O setup do app está COPIADO no painel** (`CRONO_APP_GRUPO`: 44 h, 5 dias,
   8 setups × 8 min — o cadastro do grupo 0005 · EMBALAGEM, Demanda semanal →
   Tempo disponível). Mudou lá, muda aqui; a faixa escreve o setup que usa, então
