@@ -11,6 +11,39 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.44.0 — 11/11/2026 · O card ATRASO entra junto com os outros
+
+PPCP, com a 1.43.0 publicada: *"apareceu, mas demora para o card do atraso
+entrar, os outros entram antes"*. Os outros cards saem da 1ª leitura (a
+produção do dia). O atraso sai da leitura da programação (`getPontosDia`), a
+mais cara do backend. Na abertura, ela era a 3ª da fila, depois do histórico, e
+tinha UMA tentativa de 20 s. No cold start ela estourava, e o card só aparecia
+no ciclo seguinte, 6 minutos depois.
+
+- **A leitura do dia vem logo depois da 1ª**, antes do histórico. O histórico
+  fica mais abaixo na tela.
+- **Duas tentativas em sequência, 30 s e 45 s**, como no PC.
+- **O card do dia fica guardado no aparelho.** Na abertura seguinte do MESMO
+  dia, ele entra junto com os outros, marcado com a hora da leitura: *"425 cx ·
+  desde 06/11 · de 08:10, atualizando…"*. Quando a leitura nova chega, a marca
+  sai. Se a leitura não vier, o card diz *"sem leitura nova (tenta a cada 6
+  min)"*. O card guardado em outro dia não é usado, e a leitura de ontem, com o
+  app aberto na virada, também não: à meia-noite o que não fechou ontem virou
+  atraso. Não é um teto: no mesmo dia o atraso pode subir (lançamento excluído
+  ou trocado, linha com data passada, X do ENCERRAR apagado, troca de UEP).
+- O ↻ ATUALIZAR tocado durante a carga espera ela terminar, em vez de correr ao
+  lado dela, e o botão diz *ATUALIZANDO…* até acabar. Toques seguidos viram um
+  pedido só. A leitura do dia pedida duas vezes vira uma só no Apps Script.
+- Com o app aberto na virada, a leitura de ONTEM deixa de valer para TODOS os
+  cards que dependem dela (UEP DO DIA, META, PONTOS, PESO, PRODUTOS EMBALADOS
+  HOJE): eles esperam a leitura de hoje juntos. Antes, a UEP de ontem chegou a
+  ser julgada contra os minutos de hoje.
+- As PARADAS do gerencial (média/dia do mês pelos dias trabalhados) redesenham
+  quando o histórico chega.
+
+**Atenção:** na 1ª abertura do dia o card ainda espera a leitura (não há card
+guardado de hoje). A UEP DO DIA, que vem da mesma leitura, também chega antes.
+
 ## v7.228.0 / mobile 1.43.0 — 11/11/2026 · O ATRASO à vista no gerencial do celular
 
 PPCP, depois do cartão ATRASO do PC: *"essa card do atraso pode ir para app

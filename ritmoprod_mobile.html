@@ -97,6 +97,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .status-txt{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;flex:1}
 .btn-refresh{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:4px;padding:5px 10px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;cursor:pointer}
 .btn-refresh:active{opacity:.6}
+.btn-refresh:disabled{opacity:.55;cursor:default}
 
 /* ═══ SECTION LABEL ═══ */
 .sec-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;padding-left:2px}
@@ -1030,7 +1031,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.43.0';
+const APP_VER   = '1.44.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1082,7 +1083,16 @@ const COR_AVISO_MIN = 10, COR_AVISO_PCT = 10;
 // quem continua no código depois de fechar o lote tomaria o aviso a cada caixa.
 let COR_OK = { dia:'', cod:{} };
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
+function _pontosDiaVazio(){ return { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null }; }
+let PONTOS_DIA = _pontosDiaVazio();
+// A leitura do dia é de HOJE? (1.44.0, revisão do card ATRASO) Com o app aberto na
+// virada, o PONTOS_DIA de ontem continuava valendo para a UEP DO DIA, a META, os
+// PONTOS, o PESO e os PRODUTOS EMBALADOS HOJE até o 1º getPontosDia de hoje dar
+// certo — "2.700 UEP de 314 esperadas" com a UEP de ontem e os minutos de hoje.
+// Leitura de outro dia volta ao vazio: os cards da mesma leitura esperam juntos.
+function _pontosDiaDeHoje(){
+  if(PONTOS_DIA.lidoEm && dtToStr(new Date(PONTOS_DIA.lidoEm)) !== hojeStr()) PONTOS_DIA = _pontosDiaVazio();
+}
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
 let META_HORA_A_HORA = 0;
@@ -1362,12 +1372,30 @@ async function carregarProgramacaoHoje(){
 }
 
 // Produção do dia em PONTOS/PESO (aba PRODUCAO_PRODUTO), usada só no gerencial.
-async function lerPontosDia(){
+// 1.44.0 (PPCP: "demora pro card do atraso entrar, os outros entram antes"): é a
+// leitura mais cara do backend e ia com UMA tentativa de 20 s — no cold start ela
+// estourava e o card ATRASO (e a UEP do dia) só vinham no ciclo seguinte, 6 min
+// depois. Agora duas, em SEQUÊNCIA, com o tempo crescendo (30 s, 45 s: o JSONP não
+// cancela nada no servidor, e tentativas curtas iguais só empilham execução — a
+// regra do PC). PONTOS_DIA_FALHA diz se a última leitura não veio.
+let PONTOS_DIA_FALHA = false, _pontosVoo = null;
+// Voo compartilhado (revisão da 1.44.0, a regra do PC): o ATUALIZAR, o ciclo e a
+// carga inicial pedindo a leitura ao mesmo tempo viram UMA execução no Apps Script.
+function lerPontosDia(){
+  if(!_pontosVoo) _pontosVoo = _lerPontosDia().finally(() => { _pontosVoo = null; });
+  return _pontosVoo;
+}
+async function _lerPontosDia(){
   if(!CFG.sheetsUrl) return false;
   try{
     const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=getPontosDia';
-    const json = await jsonpFetch(url);
+    let json = null, erro = null;
+    for(const ms of [30000, 45000]){
+      try{ json = await jsonpFetch(url, ms); erro = null; break; }catch(e){ erro = e; }
+    }
+    if(erro) throw erro;
     if(json && json.ok){
+      PONTOS_DIA_FALHA = false;
       PONTOS_DIA = {
         pontos: json.pontos||0, pesoKg: json.pesoKg||0, caixas: json.caixas||0,
         programacao: json.programacao || { lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 },
@@ -1387,6 +1415,7 @@ async function lerPontosDia(){
       return true;
     }
   }catch(e){ console.warn('lerPontosDia:', e.message); }
+  PONTOS_DIA_FALHA = true;
   return false;
 }
 
@@ -1397,6 +1426,7 @@ async function lerPontosDia(){
 // nunca somava e o card META DO DIA dava um número diferente do PC.
 // Sem nada cadastrado pra hoje, cai na meta da HORA_A_HORA em vez do default.
 function aplicarMetaDiaAutomatica(){
+  _pontosDiaDeHoje();   // a programação de ontem não é a meta de hoje
   const prog = PONTOS_DIA.programacao || {};
   const auto = (PONTOS_DIA.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
   const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
@@ -2475,16 +2505,20 @@ function entrar(tipo){
       // Segura o ciclo automático enquanto a carga inicial roda: o tick 0 (90s
       // pós-login) disparava as mesmas chamadas em paralelo com a cadeia ainda
       // em voo — dobrando a fila justamente com o Apps Script frio.
-      _refreshRodando = true;
+      _refreshRodando = true; const _fimR = _refreshMarca();
       const passo=async(nome,fn)=>{ try{ return await fn(); }catch(e){ console.warn('carga inicial · '+nome+':', e.message); } };
       try{
         // lerSheets com retry: é o cold start que ela paga pelos demais.
         for(let i=1;i<=3;i++){ if(await passo('lerSheets',lerSheets)!==undefined||DADOS.length) break; await new Promise(r=>setTimeout(r,1500*i)); }
         renderGerProduto();
-        const dias=await passo('historico',lerHistorico); if(dias) renderHistoricoComDados(dias);
+        // 1.44.0: a leitura do dia ANTES do histórico — é dela que saem o card ATRASO
+        // (o 1º da tela) e a UEP do dia; o histórico fica mais abaixo na tela
         await passo('pontos',lerPontosDia); renderGerencial();
+        // o histórico depois: as PARADAS do gerencial (média/dia do mês pelos dias
+        // trabalhados) redesenham com ele — antes vinha no renderGerencial de depois
+        const dias=await passo('historico',lerHistorico); if(dias){ renderHistoricoComDados(dias); renderGerParadasResumo(); }
         const okM=await passo('medias',lerMediaHoras); if(okM) renderGerencial();
-      }finally{ _refreshRodando = false; }
+      }finally{ _refreshRodando = false; _fimR(); }
     })();
   }
 }
@@ -2510,7 +2544,15 @@ const REFRESH_MS      = 90*1000;   // paradas (banner)
 const A_CADA_DADOS    = 2;         // ticks → 3 min: hora a hora
 const A_CADA_PESADO   = 4;         // ticks → 6 min: histórico + pontos/programação
 let _refreshCiclo = 0;
-let _refreshRodando = false;
+let _refreshRodando = false, _refreshP = null;
+// A leitura em curso (carga inicial, ciclo ou ATUALIZAR) como promessa: o
+// ATUALIZAR ESPERA por ela em vez de correr ao lado (revisão da 1.44.0 — com a
+// leitura do dia de até 75 s, tocar ↻ enquanto o card não chega punha três
+// fluxos de leitura na fila do Apps Script). A promessa nunca rejeita.
+function _refreshMarca(){
+  let fim; const p = new Promise(r => { fim = r; }); _refreshP = p;
+  return () => { if(_refreshP === p) _refreshP = null; fim(); };
+}
 
 function iniciarRefreshAuto(){
   pararRefreshAuto();
@@ -2523,7 +2565,7 @@ function iniciarRefreshAuto(){
 // salvando. A guarda impede ciclos empilhados quando a planilha está lenta.
 async function cicloRefresh(){
   if(_refreshRodando) return;
-  _refreshRodando = true;
+  _refreshRodando = true; const _fimR = _refreshMarca();
   const c = _refreshCiclo++;
   // Cada etapa tolera a própria falha: um timeout no getParadas não pode
   // impedir o hora a hora e o histórico de atualizarem no mesmo tick.
@@ -2548,7 +2590,7 @@ async function cicloRefresh(){
       // sem isto elas nunca mais chegavam na sessão.
       if(!Object.keys(MEDIA_HORAS).length) await passo(async()=>{ if(await lerMediaHoras()) renderGerencial(); });
     }
-  }finally{ _refreshRodando = false; }
+  }finally{ _refreshRodando = false; _fimR(); }
 }
 
 function pararRefreshAuto(){
@@ -2558,8 +2600,20 @@ function pararRefreshAuto(){
 // Botão ATUALIZAR: o usuário quer o número de AGORA, então busca tudo (inclusive
 // o que o ciclo automático só faz em ciclos alternados) e derruba os caches de
 // paradas por período. Segura o ciclo automático enquanto roda, p/ não duplicar.
-async function refresh(){
-  _refreshRodando = true;
+// Toques seguidos viram UM pedido (revisão da 1.44.0): com a carga em curso o
+// ATUALIZAR espera, e sem sinal na tela quem toca 3 vezes ganhava 3 rodadas
+// inteiras na fila. O botão diz ATUALIZANDO… até acabar.
+let _refreshPedido = null;
+function refresh(){
+  if(_refreshPedido) return _refreshPedido;
+  const bts = [...document.querySelectorAll('.btn-refresh')];
+  bts.forEach(b => { b.disabled = true; b.textContent = '↻ ATUALIZANDO…'; });
+  _refreshPedido = _refresh().finally(() => { _refreshPedido = null; bts.forEach(b => { b.disabled = false; b.textContent = '↻ ATUALIZAR'; }); });
+  return _refreshPedido;
+}
+async function _refresh(){
+  while(_refreshP) await _refreshP;   // a carga ou o ciclo em curso termina antes (1.44.0)
+  _refreshRodando = true; const _fimR = _refreshMarca();
   const passo=async fn=>{ try{ await fn(); }catch(e){ console.warn('refresh:', e.message); } };
   try{
     await passo(lerSheets);
@@ -2571,7 +2625,7 @@ async function refresh(){
       await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
       await passo(()=>carregarParadasPeriodoSel(true));
     }
-  }finally{ _refreshRodando = false; }
+  }finally{ _refreshRodando = false; _fimR(); }
 }
 
 // ════════════════════════════════════════════════
@@ -3308,7 +3362,21 @@ async function salvarLanc(){
 // ════════════════════════════════════════════════
 // RENDER GERENCIAL — KPIs
 // ════════════════════════════════════════════════
+// O retrato do card ATRASO do dia (1.44.0): 'rp_atr_ret' = { dia, ts, kpi } — kpi
+// null = sem atraso. Chave nova; nunca renomear (regra das chaves do aparelho).
+function _atrRetGuarda(kpi, lidoEm){
+  try{ localStorage.setItem('rp_atr_ret', JSON.stringify({ dia:dtToStr(new Date(lidoEm)), ts:lidoEm, kpi: kpi || null })); }catch(e){}
+}
+function _atrRetLe(){
+  try{
+    const r = JSON.parse(localStorage.getItem('rp_atr_ret') || 'null');
+    if(!r || r.dia !== hojeStr() || !r.ts) return null;
+    const d = new Date(r.ts);
+    return { kpi: r.kpi && r.kpi.l ? r.kpi : null, hora: p2(d.getHours()) + ':' + p2(d.getMinutes()) };
+  }catch(e){ return null; }
+}
 function renderGerencial(){
+  _pontosDiaDeHoje();
   const k = calcKPIs();
   // Verde/vermelho pela META DO DIA (efRitmo), a MESMA régua da TV e do
   // gerencial do desktop.
@@ -3336,7 +3404,7 @@ function renderGerencial(){
   // cadastro guardado no aparelho (sem leitura nesta sessão) é dito; sem cadastro
   // nenhum, "lendo" só enquanto a leitura não falhou.
   const _guard = !PROD_CAT_TS && PROD_CAT_FALHA ? ' · UEP do cadastro guardado no aparelho' : '';
-  const atrKpi = _atr && _atr.n > 0
+  const atrKpi0 = _atr && _atr.n > 0
     ? (_atr.min != null
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:(_atr.min > 0 ? _hm(_atr.min) : '&lt;1 min') + (_atr.semUep ? '*' : '') + '<small>de linha</small>',
            sub:`${fmtN(_atr.cx)} cx${_atr.desde ? ' · desde ' + _atr.desde : ''}${_atr.semUep ? ` · * ${plural(_atr.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas` : ''}${_guard}`, c:'red larga atr'}
@@ -3345,6 +3413,26 @@ function renderGerencial(){
     : (!_atr && _prog.atrasoTotal > 0
         ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_prog.atrasoTotal) + '<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr'}
         : null);
+  // ABERTURA (1.44.0, PPCP: "demora pro card do atraso entrar, os outros entram
+  // antes"): os outros cards saem do getDados; o atraso, do getPontosDia, que vem
+  // depois. Lida a programação HOJE, o card é guardado no aparelho com o dia e a
+  // hora da LEITURA (_atrRetGuarda; só o completo — com o cadastro ainda por ler,
+  // não). Sem leitura de hoje, entra o guardado de HOJE, marcado com a hora dele;
+  // a leitura de ONTEM (app aberto na virada) não vale — à meia-noite o que não
+  // fechou ontem virou atraso. A última leitura falhou: a marca diz de quando é.
+  // ⚠ O guardado não é teto: excluir/trocar lançamento, linha nova com data
+  // passada, X apagado ou troca de UEP sobem o atraso no mesmo dia.
+  const _lidoHoje = !!PONTOS_DIA.lidoEm && dtToStr(new Date(PONTOS_DIA.lidoEm)) === hojeStr();
+  let atrKpi = null;
+  if(_lidoHoje){
+    atrKpi = atrKpi0;
+    if(!(_atr && _atr.n > 0 && _atr.min == null && !PROD_CAT_TS)) _atrRetGuarda(atrKpi0, PONTOS_DIA.lidoEm);
+    if(atrKpi && PONTOS_DIA_FALHA){ const d = new Date(PONTOS_DIA.lidoEm);
+      atrKpi = Object.assign({}, atrKpi, { sub: atrKpi.sub + ` · de ${p2(d.getHours())}:${p2(d.getMinutes())} · sem leitura nova (tenta a cada 6 min)` }); }
+  } else {
+    const r = _atrRetLe();
+    atrKpi = r && r.kpi ? Object.assign({}, r.kpi, { sub: r.kpi.sub + ` · de ${r.hora}${PONTOS_DIA_FALHA ? ' · sem leitura nova (tenta a cada 6 min)' : ', atualizando…'}` }) : null;
+  }
   const kpis=[
     ...(atrKpi ? [atrKpi] : []),
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},

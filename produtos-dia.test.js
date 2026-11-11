@@ -204,7 +204,7 @@ ok('produto sem veredito: nenhum NO RITMO, verde ou vermelho no quadro',
 ok('a conta mora só no rp-core.js (nenhum painel com cópia)',
    [/function _?pdiaMontar\(/.test(MJS), /function _?pdiaMontar\(/.test(PC_JS), /function pdiaMontar\(/.test(CORE)], [false, false, true]);
 ok('o gerencial pinta o quadro', /renderGerProdutosDia\(k\.real\)/.test(pega(MJS, 'function renderGerencial(')), true);
-ok('o porHora é guardado na leitura do dia', /porHora: Array\.isArray\(json\.porHora\)/.test(pega(MJS, 'async function lerPontosDia(')), true);
+ok('o porHora é guardado na leitura do dia', /porHora: Array\.isArray\(json\.porHora\)/.test(pega(MJS, 'async function _lerPontosDia(')), true);
 const SW = fs.readFileSync(path.join(__dirname, 'sw-mobile.js'), 'utf8');
 const ver = MJS.match(/const APP_VER\s*=\s*'([\d.]+)'/)[1];
 ok('APP_VER e o cache do service worker andam juntos', SW.includes('// APP_VER ' + ver), true);
