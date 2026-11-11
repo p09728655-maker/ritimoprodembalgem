@@ -132,7 +132,10 @@ via Google Apps Script (JSONP).
   da SEMANA QUE VEM: o programado cheio com o excesso em vermelho, o porquê no
   título do gráfico, a caixa de colar recolhida, o bloco A LINHA CHEGA (a soma
   em barra só quando fecha, a folga que não cobre, o em dia) e a tabela nos
-  detalhes: `node takt-semana.test.js`.
+  detalhes; e (v7.225.0) o SETUP do app: o *takt no app* da faixa com os
+  números da tabela PROGRAMA GRAVADO do app (038-26 18,7 s · 193 vol/h, 039-26
+  15,4 · 234, 040-26 12,7 · 284) e o takt, a referência e o executado do
+  painel em linha rodando (7 de 7 mutações): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -7049,8 +7052,9 @@ feito e dá ar de verdade ao que sobrou.
       - **PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA** (laranja): os
         volumes (= caixas: cada volume de um produto é uma caixa), a UEP, os
         dias úteis, a jornada (`nUteis` × 527; feriado dito) e *jornada ÷
-        volumes = X s por volume, sem descontar o setup* (o app desconta o dele
-        — o takt do app sai menor; ver a nota da 7.217.0 acima). Na esta
+        volumes = X s por volume, sem descontar o setup* — ~~(o app desconta o
+        dele)~~ **trocado na v7.225.0** pelo *takt no app* (ver *O SETUP DO APP
+        NO TAKT DO PAINEL*, logo abaixo). Na esta
         semana e na que vem, `T.progCx` (as mesmas linhas do takt: as duas
         abas, fora da esteira de fora); volume em dia não útil é dito
         (`volFds`, está no total);
@@ -7070,10 +7074,49 @@ feito e dá ar de verdade ao que sobrou.
         fora do cadastro não conta e é dito.
       - Medido no Chromium com as fixtures: 1920, 1366 e 1280, nada passa da
         largura nem corta; a faixa tem ~125 px (145 na esta semana a 1366).
-      - ⚠ **Não verificado no app** (o repositório `crono-analise` não pôde
-        ser aberto nesta sessão): que o campo do app seja os VOLUMES e as horas
-        fixas de 44 h. Numa semana com feriado (16–19/11: 4 dias, 35h08) as
-        44 h do app dariam takt ~25% folgado — conferir no app.
+      - ~~⚠ Não verificado no app~~ — **conferido na v7.225.0** no código do
+        app (`src/domain/demanda/capacidade.js`): o app usa os VOLUMES e faz a
+        fração da semana pelos DIAS COM LOTE (`fracaoDaSemana`: 16–19/11 = 4 de
+        5, 44 h × 4/5), então o feriado NÃO deixa o takt do app folgado.
+    - **O SETUP DO APP NO TAKT DO PAINEL (v7.225.0)** — PPCP, 11/11/2026, com o
+      print do app (PROGRAMA GRAVADO: 040-26 8.770 · 4 de 5 · 284 vol/h ·
+      12.7s) e o da faixa (14,4 s por volume): *"não bate takt"* → *"ideal é
+      painel ficar também com setup igual"*. Volumes e dias batiam; a diferença
+      era toda o setup do grupo (8 setups × 8 min por dia = 5,3 h por semana,
+      que o app desconta) e 1 min por dia (o app conta 44 h ÷ 5 = 8h48; o
+      painel, 527 = 8h47, pelo slot 16:00-16:59).
+      - **`CRONO_APP_GRUPO`** `{ hSemana:44, diasSemana:5, setupsDia:8,
+        setupMin:8 }` é CÓPIA do cadastro do grupo 0005 · EMBALAGEM no app
+        (Demanda semanal → TEMPO DISPONÍVEL). ⚠ Mudou lá, mudar aqui — é o
+        único número do app copiado no painel; a faixa escreve o setup que usa,
+        então a diferença aparece. `_taktSetupDia()` = 64 min.
+      - **`_taktApp(dias, vol)`** (pura): a conta do app (`ritmoExigido` +
+        `horasDeSetup` + `fracaoDaSemana`), por semana seg–dom: dias com volume
+        (no máximo 5) × (8h48 − 1h04) ÷ volumes. Várias semanas (a AVALIAR)
+        somam e a faixa diz *"N semanas somadas (no app, uma linha por
+        semana)"*. A faixa: *takt no app: 12,7 s por volume (284 vol/h) = 30h56
+        ÷ 8.770 · o app conta 8h48 por dia com volume e desconta o setup do
+        grupo, 8 × 8 min por dia (4h16 nos 4 dias)*. Saiu o *"= 35h08 de
+        jornada"* do cartão (era o 8h47 do painel ao lado do 8h48 do app).
+      - **O painel desconta o MESMO setup** em todo SEGUNDO da sub-aba
+        (`_taktMontar`: `minProd` = 527 − 64 = 463): `takt` = dias úteis ×
+        463 × 60 ÷ UEP, `ref` = 463 × 60 ÷ META, `exec.s` = minutos × 463/527
+        × 60 ÷ UEP feita. Daí o TAKT DA SEMANA · NO PAINEL, o TAKT POR
+        PRODUTO, o AGORA e os DETALHES. `exec.min` continua bruto (a simulação
+        lê ele). A última hora do AGORA é o relógio inteiro (é fato, não régua).
+      - **Não muda**: o % (o setup sai dos dois lados: 2.761 UEP/dia foi feito
+        com setup dentro), as horas de linha (PRECISA, TEM, FALTAM — continuam
+        em jornada de 8h47, a do PRÓXIMOS DIAS), o PARA FECHAR, a simulação e o
+        🖨 TAKT (que não mostra segundos).
+      - **Por que é o certo**: o NO PERÍODO de uma medição não tem setup (a
+        troca acontece entre medições); comparado com um takt que tinha o setup
+        dentro, o produto parecia caber com até ~12% a mais de tempo.
+      - ⚠ **Fora da sub-aba TAKT a régua em segundos continua BRUTA** (527 × 60
+        ÷ META): o TAKT s/CX do bloco 7 e da AGENDA (`_taktUep`), a META da ⏳
+        ONDE O TEMPO VAI, a régua da meta da ⏱ CRONOANÁLISE. Mudar lá é outra
+        decisão do PPCP — não foi pedido.
+      - Medido no Chromium (fixtures do teste): 1920, 1366 e 1280, nada passa
+        da largura; a faixa da ESTA SEMANA vai de 145 para 161 px a 1366.
     - **FALTA e SOBRA: palavra, nunca sinal (v7.214.2, PPCP: *"deixa regra
       clara sobre falta e sobra"*).** Falta = precisa − tem (não cabe), sobra
       = tem − precisa (cabe); a sobra não vira crédito, só abate atraso que já
