@@ -581,6 +581,41 @@ function pdiaMontar(phm, ph, cat, atual, agoraMin, o){
   };
 }
 
+// ATRASO VENCIDO (rp-core 1.14.0, card ATRASO do gerencial do celular 1.43.0):
+// os lotes com data ANTES de hoje que ainda têm saldo — o `atraso` de cada código
+// do calcularProgramacao (FIFO; linha com X fora) — em CAIXAS e em HORAS DE LINHA
+// no ritmo da META UEP (UEP ÷ (meta ÷ 527 min)). O programado de hoje não é
+// atraso. É o MESMO número do cartão ATRASO da ⚖ UEP do PC (v7.227.0: o `conta.venc`
+// do _gpxMontar e as caixas do _gpxAtrasoMontar; o relatorios.test.js confere a
+// paridade). `uepDe`: { código: UEP/cx } — os códigos são comparados só pelos
+// dígitos (a lista e o cadastro escrevem o código de jeitos diferentes).
+// Código sem UEP fica só nas caixas (`semUep`); sem nenhum com UEP, `min` null.
+// null = sem a lista por código, ou o .gs sem o `atraso` por código.
+function atrasoVencido(lista, uepDe, metaUep){
+  if(!Array.isArray(lista)) return null;
+  const k = c => String(c == null ? '' : c).replace(/\D/g, '');
+  const dNum = s => { const m = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(String(s || '')); return m ? Number(m[3] + m[2] + m[1]) : null; };
+  const u = {};
+  Object.keys(uepDe || {}).forEach(c => { const v = Number(uepDe[c]); if(v > 0) u[k(c)] = v; });
+  let n = 0, cx = 0, uep = 0, semUep = 0, desde = '', dMin = null, temAtr = true;
+  lista.forEach(x => {
+    if(!x) return;
+    const f = Number(x.falta) || 0;
+    if(f <= 0) return;
+    if(x.atraso == null) temAtr = false;
+    const a = Math.min(f, Math.max(0, Number(x.atraso) || 0));
+    if(a <= 0) return;
+    n++; cx += a;
+    const uc = u[k(x.codigo)];
+    if(uc) uep += a * uc; else semUep++;
+    const d = dNum(x.atrasoDesde);
+    if(d != null && (dMin == null || d < dMin)){ dMin = d; desde = String(x.atrasoDesde).slice(0, 5); }
+  });
+  if(!temAtr) return null;
+  const meta = Number(metaUep) > 0 ? Number(metaUep) : UEP_META_PADRAO;
+  return { n, cx, uep, min: n > semUep ? Math.round(uep / (meta / UEP_MIN_DIA)) : null, semUep, desde };
+}
+
 // ── Identificação do módulo ─────────────────────────────────────────────────
 // O paradas-calc.js carregou? Função pura, estava copiada IGUAL nos dois HTMLs
 // — exatamente o padrão que este arquivo existe para evitar. Quem usa isto são
@@ -592,9 +627,9 @@ function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PA
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.13.0',
+  versao: '1.14.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar']
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido']
 };

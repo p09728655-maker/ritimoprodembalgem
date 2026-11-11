@@ -4058,7 +4058,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.227.0';
+const APP_VER   = '7.228.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -9934,7 +9934,9 @@ function _uepSubAtr(P, A, est){
     : { txt: est === 'falha' ? 'programação não lida' : est === 'sem-uep' ? 'sem UEP na programação' : est === 'sem-lista' ? '—' : '…', cls:'' };
   if(!A) return { txt:'…', cls:'' };
   if(!A.venc.length) return { txt:'nada vencido', cls:'ok' };
-  const k = P && P.conta, h = k && k.venc != null && k.venc > 0 ? _fmtHM(k.venc) + (A.semUep ? '*' : '') : null;
+  // v7.228.0 (revisão do card do celular): atraso de MENOS de 1 min de linha (uma sobra de 1 cx) arredonda
+  // para 0 — tem UEP (uVenc > 0), então é "menos de 1 min", nunca "sem UEP"
+  const k = P && P.conta, h = k && k.venc != null && k.uVenc > 0 ? (k.venc > 0 ? _fmtHM(k.venc) : 'menos de 1 min') + (A.semUep ? '*' : '') : null;
   const desde = (A.venc[0].desde || '').slice(0, 5);
   return { txt:`${h ? h + ' · ' : ''}${fmtN(A.cxVenc)} cx${h ? '' : ' · sem UEP'}${desde ? ' · desde ' + desde : ''}`, cls:'red' };
 }
