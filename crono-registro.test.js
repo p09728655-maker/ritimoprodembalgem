@@ -491,5 +491,61 @@ ok('a troca e a conferência estão no doGet, e a troca invalida as leituras',
    [/act === 'trocarUepCrono'\)\s*result = trocarUepCrono\(p\)/.test(GS), /act === 'getConferenciaCrono'\)\s*result = getConferenciaCrono\(\)/.test(GS),
     /ACOES_ESCRITA = \[[^\]]*'trocarUepCrono'/.test(GS)], [true, true, true]);
 
+// ════════════════════════════════════════════════════════════════════════════
+// v5.62 — O TEMPO-ALVO DE CADA PRODUTO (getTemposAlvo), para o app de
+// cronoanálise. PPCP, 11/11/2026: "isso que quis dizer: tempo-alvo de cada
+// produto" → a cor do tablet segue o alvo; sem UEP, sem alvo.
+console.log('\n── v5.62: o tempo-alvo de cada produto ──');
+{
+  const HTML = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+  const CAT = { PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP'],
+    ['501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.46], ['501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.78],
+    ['501059003', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.46], ['501059004', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.82],
+    [501149001, 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1], ['501160001', 'VOL 1/2 BERCO ALGODAO DOCE', 'BRANCO', ''],
+    ['501160002', 'VOL 2/2 BERCO ALGODAO DOCE', 'BRANCO', 2.1]],
+    CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['META_UEP', 2761], ['SETUPS_DIA', 4], ['SETUP_MIN', '8,2']] };
+  const P = montar(CAT, null, '11/11/2026');
+  const r = P.run('return getTemposAlvo();');
+  const por = {}; (r.produtos || []).forEach(x => { por[x.rot] = x; });
+  const sUep = (527 - 32.8) * 60 / 2761;
+  ok('a régua: (527 − o setup do ⚙ 4 × 8,2) × 60 ÷ a META UEP da planilha = 10,74 s por UEP; diz de onde veio cada um',
+     [r.ok, r.ref.metaUep, r.ref.metaOrigem, r.ref.setupsDia, r.ref.setupMin, r.ref.setupOrigem, r.ref.setupDia, r.ref.minProd, r.ref.sUep, Math.round(r.ref.sUep * 100) / 100],
+     [true, 2761, 'planilha', 4, 8.2, 'planilha', 32.8, 494.2, Math.round(sUep * 1000) / 1000, 10.74]);
+  ok('os nomes da lista do app: o produto inteiro e, com 2+ volumes, cada volume; o volume 2/2 da STRASS = média das cores (1,80); o produto = média por caixa dos volumes',
+     [Object.keys(por), por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].uep, por['501059 · PENTEADEIRA CAMARIM STRASS'].uep, por['501149 · MESA CABECEIRA MADERO'].uep],
+     [['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 1/2', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2',
+       '501149 · MESA CABECEIRA MADERO', '501160 · BERCO ALGODAO DOCE', '501160 · BERCO ALGODAO DOCE · VOL 1/2', '501160 · BERCO ALGODAO DOCE · VOL 2/2'],
+      1.8, 1.63, 1]);
+  ok('o alvo = s por UEP × UEP (duas casas): STRASS 2/2 19,33 s, MADERO 10,74 s; o código número (501149001) casa igual',
+     [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].alvo, por['501149 · MESA CABECEIRA MADERO'].alvo, por['501059 · PENTEADEIRA CAMARIM STRASS'].alvo],
+     [Math.round(sUep * 1.8 * 100) / 100, Math.round(sUep * 1 * 100) / 100, Math.round(sUep * 1.63 * 100) / 100]);
+  ok('sem UEP, sem alvo (null, nunca 0): o volume 1/2 do BERÇO sem UEP e o produto inteiro dele (um volume sem UEP); o 2/2 tem',
+     [por['501160 · BERCO ALGODAO DOCE · VOL 1/2'], por['501160 · BERCO ALGODAO DOCE'], por['501160 · BERCO ALGODAO DOCE · VOL 2/2'].uep],
+     [{ rot:'501160 · BERCO ALGODAO DOCE · VOL 1/2', uep:null, alvo:null }, { rot:'501160 · BERCO ALGODAO DOCE', uep:null, alvo:null }, 2.1]);
+  // a UEP do alvo é a MESMA da medição que o app manda (UEP_CADASTRO): a mesma função
+  const rm = P.run(`return _cronoDoApp(${q({ rotulo:'501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', data:'04/11/2026', volumes:'60', sLac:'16.6', sRod:'20.4' })}, lerCatalogoProdutos());`);
+  const rj = P.run(`return _cronoDoApp(${q({ rotulo:'501059 · PENTEADEIRA CAMARIM STRASS', data:'04/11/2026', volumes:'60', sLac:'16.6', sRod:'20.4' })}, lerCatalogoProdutos());`);
+  ok('a UEP do alvo = o UEP_CADASTRO da medição do app, no volume e no jogo (uma função, _cronoUepCad)',
+     [rm.campos.uepCad, rj.campos.uepCad, /const uepCad = _cronoUepCad\(doVol, volSel, nVol\);/.test(GS), /_cronoUepCad\(g\.cods, 0, g\.nVol\)/.test(GS)],
+     [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].uep, por['501059 · PENTEADEIRA CAMARIM STRASS'].uep, true, true]);
+  // sem a CONFIG_PAINEL: a meta padrão do .gs e o setup padrão (o do app); setup que não cabe: erro, nada inventado
+  const P0 = montar({ PRODUTO_CODIGO: CAT.PRODUTO_CODIGO }, null, '11/11/2026');
+  const r0 = P0.run('return getTemposAlvo();');
+  const rx = P.run('return _temposAlvoMontar(lerCatalogoProdutos(), { metaUep: 2761, setupsDia: 100, setupMin: 6 });');
+  ok('sem a CONFIG_PAINEL: a META UEP padrão e o setup padrão 8 × 8 (o do app), ditos como padrão; setup que não cabe na jornada: erro',
+     [r0.ok, r0.ref.metaUep, r0.ref.metaOrigem, r0.ref.setupDia, r0.ref.setupOrigem, rx.ok, /não cabe/.test(rx.erro)],
+     [true, 2530, 'padrao', 64, 'padrao', false, true]);
+  // o padrão do setup = o do painel (CRONO_APP_GRUPO); o nome = o rot do _uepConvProdutos do painel
+  const m = /const CRONO_APP_GRUPO=\{ hSemana:44, diasSemana:5, setupsDia:(\d+), setupMin:(\d+) \};/.exec(HTML);
+  ok('o setup padrão do .gs = o do painel (CRONO_APP_GRUPO); o nome segue o rot do painel ("modelo · NOME" e "· VOL v/n")',
+     [m && [Number(m[1]), Number(m[2])], P.run('return [TA_SETUP_PADRAO_GS.setupsDia, TA_SETUP_PADRAO_GS.setupMin];'),
+      /rot:cod\.slice\(0, 6\) \+ ' · ' \+ nome/.test(HTML), /rot:p\.rot \+ ' · VOL ' \+ v \+ '\/' \+ p\.nVol/.test(HTML)],
+     [[8, 8], [8, 8], true, true]);
+  ok('a leitura está no doGet, no cache (o cadastro e a config invalidam) e não grava nada',
+     [/act === 'getTemposAlvo'\) result = getTemposAlvo\(\);/.test(GS), /getTemposAlvo: 300/.test(GS), /getTemposAlvo: \['cat', 'cfg'\]/.test(GS),
+      JSON.stringify(P.ABAS.PRODUTO_CODIGO) === JSON.stringify(CAT.PRODUTO_CODIGO), !('UEP_VERSOES' in P.ABAS)],
+     [true, true, true, true, true]);
+}
+
 console.log(falhas ? `\n❌ ${falhas} falha(s)` : '\n✅ tudo certo');
 process.exit(falhas ? 1 : 0);

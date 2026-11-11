@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.62 — O TEMPO-ALVO DE CADA PRODUTO (getTemposAlvo) para o app de
+//               cronoanálise. PPCP, 11/11/2026: o takt da semana julga todo
+//               volume pelo mesmo número (produto pesado sempre acima, leve
+//               sempre abaixo) → "isso que quis dizer: tempo-alvo de cada
+//               produto". Para cada nome da lista do app, a UEP do cadastro (a
+//               MESMA da medição do app, _cronoUepCad) e o alvo = (527 − setup
+//               do ⚙) × 60 ÷ META UEP × UEP. Leitura: nada é gravado. O app lê
+//               pelo servidor dele e guarda no tablet.
+//               ⚠ re-deploy manual. Antes dele o app diz que o painel ainda não
+//               tem o tempo-alvo e mostra só o takt, sem cor.
 // Versão: 5.61 — O SETUP DO TAKT NA CONFIG_PAINEL (SETUPS_DIA, SETUP_MIN)
 //               PPCP, 11/11/2026: o takt da sub-aba TAKT DA SEMANA não batia
 //               com o do app de cronoanálise (o app desconta o setup do grupo)
@@ -531,7 +541,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.61';
+const GS_VERSAO = '5.62';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1297,7 +1307,8 @@ const CACHE_TTL_LEITURA = {
   getCronoRegistros: 300,          // v5.30: aba pequena; o registro invalida
   getConferenciaCrono: 300,        // v5.34: a troca e o lançamento invalidam
   getHorasCrono: 300,              // v5.35: o lançamento invalida (a chave leva de/ate)
-  getProgramacaoSemana: 120        // v5.59: as duas abas e o cadastro; o lançamento invalida
+  getProgramacaoSemana: 120,       // v5.59: as duas abas e o cadastro; o lançamento invalida
+  getTemposAlvo: 300               // v5.62: o cadastro e a config; mudar a UEP ou a meta invalida
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
@@ -1421,7 +1432,7 @@ const CACHE_DEP_LEITURA = {
   getPontosDia: ['prod', 'cat', 'cfg'], getProgramacaoHoje: ['prod', 'cat'],
   getProgramacaoDetalhada: ['prod', 'cat'], getProducaoModeloPeriodo: ['prod', 'cat'],
   getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat'],
-  getProgramacaoSemana: ['prod', 'cat']
+  getProgramacaoSemana: ['prod', 'cat'], getTemposAlvo: ['cat', 'cfg']
 };
 const CACHE_INV_ESCRITA = {
   saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
@@ -1546,6 +1557,7 @@ function doGet(e) {
     else if (act === 'getProgramacaoHoje') result = getProgramacaoHoje();
     else if (act === 'getProgramacaoDetalhada') result = getProgramacaoDetalhada();
     else if (act === 'getProgramacaoSemana') result = getProgramacaoSemana(p);   // v5.59
+    else if (act === 'getTemposAlvo') result = getTemposAlvo();   // v5.62: o tempo-alvo de cada produto (app de cronoanálise)
     else if (act === 'setConfigPainel') result = setConfigPainel(p);
     else if (act === 'setUepCatalogo')  result = setUepCatalogo(p);
     else if (act === 'simularUepCatalogo') result = simularUepCatalogo(p);   // v5.24: antes → depois, sem gravar
@@ -2488,6 +2500,21 @@ function _cronoVolCad(desc) {
 }
 const _cronoCodFmt = function (c) { const d = codKey(c); return d.length === 9 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6) : d; };
 
+// A UEP do cadastro de um volume (volSel) ou do JOGO (volSel 0): média das
+// cores de cada volume; o jogo, a soma dos volumes ÷ o nº de volumes. Volume
+// sem UEP em alguma cor não conta; jogo com algum volume sem UEP → '' (nunca
+// uma UEP pela metade). UMA função para a medição do app (_cronoDoApp) e para o
+// tempo-alvo (_temposAlvoMontar, v5.62): o mesmo nome dá o mesmo número.
+function _cronoUepCad(doVol, volSel, nVol) {
+  const nV = volSel ? 1 : nVol, porVol = [];
+  for (let v = 1; v <= nV; v++) {
+    const us = doVol.filter(function (c) { return (volSel ? true : c.vol === v) && c.uep > 0; }).map(function (c) { return c.uep; });
+    porVol.push(us.length ? us.reduce(function (a, b) { return a + b; }, 0) / us.length : null);
+  }
+  const completo = porVol.every(function (u) { return u != null; });
+  return completo ? Math.round(porVol.reduce(function (a, b) { return a + b; }, 0) / nV * 100) / 100 : '';
+}
+
 // PURA (o catálogo entra por parâmetro): os campos da linha que o app não
 // sabe, ou { recusa: motivo }. Confere também o que o app mediu, com as réguas
 // do 💾 REGISTRAR do painel (_ucvRegValida).
@@ -2519,14 +2546,7 @@ function _cronoDoApp(p, catalogo) {
   // o NO PERÍODO é opcional e só informa: fora da régua, fica vazio (não recusa a medição)
   let sPer = _cronoNum(p.sPer);
   if (sPer !== '' && (sPer < sRod - 0.05 || sPer > CRONO_APP_PER_MAX * sRod)) sPer = '';
-  // a UEP do cadastro do volume: média das cores de cada volume; o jogo, a soma ÷ o nº de volumes
-  const nV = volSel ? 1 : nVol, porVol = [];
-  for (let v = 1; v <= nV; v++) {
-    const us = doVol.filter(function (c) { return (volSel ? true : c.vol === v) && c.uep > 0; }).map(function (c) { return c.uep; });
-    porVol.push(us.length ? us.reduce(function (a, b) { return a + b; }, 0) / us.length : null);
-  }
-  const completo = porVol.every(function (u) { return u != null; });
-  const uepCad = completo ? Math.round(porVol.reduce(function (a, b) { return a + b; }, 0) / nV * 100) / 100 : '';
+  const uepCad = _cronoUepCad(doVol, volSel, nVol);
   const c0 = doVol.filter(function (c) { return c.vel > 0; })[0] || {};
   return { campos: {
     modelo: modelo, produto: nome,
@@ -2537,6 +2557,69 @@ function _cronoDoApp(p, catalogo) {
     uep: Math.round(sLac / CRONO_BASE_S_GS * 100) / 100, uepCad: uepCad,
     vel: c0.vel || '', entre: c0.entre != null ? c0.entre : '', origem: 'APP',
   } };
+}
+
+// ── TEMPO-ALVO DO PRODUTO (v5.62) ──────────────────────────────────────────
+// PPCP, 11/11/2026: "hoje takt está pela programação, mas ideal não seria pela
+// quantidade que fizemos sem horas extras?" → análise → "isso que quis dizer:
+// tempo-alvo de cada produto". O takt da semana é um número só para todo
+// volume (jornada ÷ volumes programados): produto pesado sai sempre acima dele
+// e o leve sempre abaixo, pelo peso e não pelo desempenho. O tempo-alvo é o
+// tempo que CADA volume pode levar para a linha fazer a média sem hora extra:
+//   s por UEP = (jornada 527 min − setup do dia) × 60 ÷ META UEP (a média da
+//   linha sem hora extra, 2.761) · tempo-alvo = s por UEP × UEP do volume.
+// É a mesma régua do NA MÉDIA DA LINHA do TAKT POR PRODUTO do painel (o setup
+// do ⚙, o mesmo do app). Só muda quando a META UEP (a referência) for revista
+// ou a cronoanálise trocar a UEP do produto.
+// Os nomes são os da lista do app (o rot do _uepConvProdutos do painel):
+// "modelo · NOME" (o produto inteiro, volumes intercalados: a UEP média por
+// caixa) e, com 2+ volumes, "modelo · NOME · VOL v/n". A UEP sai do
+// _cronoUepCad — a MESMA da medição que o app manda (UEP_CADASTRO).
+// Produto sem UEP (ou jogo com volume sem UEP): uep e alvo null — o app diz
+// "sem tempo-alvo", nunca inventa.
+const TA_SETUP_PADRAO_GS = { setupsDia: 8, setupMin: 8 };   // = o padrão do CRONO_APP_GRUPO do painel (o teste prende)
+function _temposAlvoMontar(catalogo, cfg) {
+  cfg = cfg || {};
+  const meta = Number(cfg.metaUep) > 0 ? Number(cfg.metaUep) : UEP_META_PADRAO_GS;
+  const temSetup = cfg.setupsDia != null && cfg.setupMin != null && Number(cfg.setupsDia) >= 0 && Number(cfg.setupMin) >= 0;
+  const sd = temSetup ? Number(cfg.setupsDia) : TA_SETUP_PADRAO_GS.setupsDia;
+  const sm = temSetup ? Number(cfg.setupMin) : TA_SETUP_PADRAO_GS.setupMin;
+  const setupDia = Math.round(sd * sm * 10) / 10, minProd = UEP_MIN_DIA_GS - setupDia;
+  if (!(minProd > 0)) return { ok: false, erro: 'O setup do dia (' + setupDia + ' min) não cabe na jornada.' };
+  const sUep = minProd * 60 / meta;
+  const G = {};
+  (catalogo || []).forEach(function (c) {
+    const cod = codKey(c.codigo);
+    if (cod.length < 6) return;
+    const nome = _cronoNomeCad(c.desc, c.cor);
+    if (!nome) return;
+    const v = _cronoVolCad(c.desc), k = cod.slice(0, 6) + '|' + nome;
+    const g = G[k] = G[k] || { modelo: cod.slice(0, 6), nome: nome, nVol: 1, cods: [] };
+    g.nVol = Math.max(g.nVol, v.nVol);
+    g.cods.push({ cod: cod, vol: v.vol, nVol: v.nVol, uep: Number(c.uep) > 0 ? Number(c.uep) : null });
+  });
+  const linha = function (rot, uep) {
+    const u = uep === '' ? null : uep;
+    return { rot: rot, uep: u, alvo: u ? Math.round(sUep * u * 100) / 100 : null };
+  };
+  const L = [];
+  Object.keys(G).forEach(function (k) {
+    const g = G[k], rot = g.modelo + ' · ' + g.nome;
+    L.push(linha(rot, _cronoUepCad(g.cods, 0, g.nVol)));
+    for (let v = 1; g.nVol > 1 && v <= g.nVol; v++) {
+      const doVol = g.cods.filter(function (c) { return c.vol === v; });
+      if (doVol.length) L.push(linha(rot + ' · VOL ' + v + '/' + g.nVol, _cronoUepCad(doVol, v, g.nVol)));
+    }
+  });
+  L.sort(function (a, b) { return a.rot < b.rot ? -1 : a.rot > b.rot ? 1 : 0; });
+  return { ok: true, ref: {
+    metaUep: meta, metaOrigem: Number(cfg.metaUep) > 0 ? 'planilha' : 'padrao',
+    minDia: UEP_MIN_DIA_GS, setupsDia: sd, setupMin: sm, setupOrigem: temSetup ? 'planilha' : 'padrao',
+    setupDia: setupDia, minProd: Math.round(minProd * 10) / 10, sUep: Math.round(sUep * 1000) / 1000
+  }, produtos: L };
+}
+function getTemposAlvo() {
+  return _temposAlvoMontar(lerCatalogoProdutos(), getConfigPainel());
 }
 
 // A MESMA MEDIÇÃO já está na aba (v5.58)? O mesmo dia, produto, volume, os
