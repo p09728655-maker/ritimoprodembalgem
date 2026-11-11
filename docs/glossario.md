@@ -237,7 +237,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **DIAS NA META** (mesmo relatório e cartão da ⚖ UEP · RÉGUAS) | dias em que o realizado ≥ a meta (ou a referência) daquele dia — 100%, não a régua do selo da TV (96%) | dias | `v7:_cxUepMontar` (`reguas.*.diasMeta`) |
 | **REFERÊNCIA DE UEP** (relatório e ⚖ UEP · RÉGUAS, v7.188.0) | a META UEP gravada no fechamento de cada dia (o campo META DIA (UEP) do ⚙). **Em avaliação: ainda não é a meta oficial da embalagem** (`UEP_REF_STATUS`). Cada dia é julgado contra a da sua data; o histórico sai em trechos (`refUep`) com o motivo de cada troca (`UEP_REF_MOTIVO`) | UEP | `v7:_cxUepMontar` · `v7:_cxuRefHtml` |
 | **CAPACIDADE ESTIMADA × LIMITE FÍSICO × REALIZADO** (página 2 e ⚖ UEP · RÉGUAS) | capacidade estimada = ⌊referência de UEP ÷ UEP do produto⌋, o produto sozinho na linha o dia inteiro; limite físico = velocidade ÷ (caixa + vão) em 527 min, sem parada; realizado = caixas do produto no período. Nenhum dos dois primeiros é produção garantida | produtos/dia · cx | `v7:_capDia` · `v7:_regMontar` |
-| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos dias com UEP; bateu = UEP ≥ META UEP daquele dia | UEP | `rp-core:uepHistResumo` |
+| **UEP / DIA (JORNADA)** (HISTÓRICO) | média da coluna UEP do HISTORICO nos **dias úteis** com UEP (sábado e domingo ficam fora da média — v7.222.0); bateu = UEP ≥ META UEP daquele dia, fim de semana incluído (a META UEP dele é a das horas trabalhadas, `.gs` v5.60; META UEP 0 = só hora extra, não é julgado) | UEP | `rp-core:uepHistResumo` |
 | **UEP/cx do grupo** (comparativo) | Σ(caixas × UEP/cx do produto) ÷ Σ caixas dos produtos com UEP no grupo | UEP/cx | `v7:_phUepPorGrupo` |
 | **UEP EM 8 H** | UEP/h da linha (UEP do dia ÷ horas da linha) × 8 — a capacidade num dia padrão | UEP | `v7:_uepEstudo` |
 | **VALIDAÇÃO FORA DA AMOSTRA** | oscilação cx/h → UEP/h na 2ª metade dos dias, com a UEP calculada só na 1ª | % | `v7:_uepValidacao` |
@@ -255,7 +255,7 @@ tempo de esteira soma, e a aritmética superestimaria o teto. Cobertura abaixo d
 | **UEP NA HORA** (gráfico) | Σ caixas × UEP do código na hora (pelo início, HH:MM); meta da hora = meta do dia × minutos do slot ÷ 527; HE sem meta; a hora em andamento aparece sem cor ("até HH:MM"), não é julgada | UEP | `rp-core:uepPorHora` + `v7:_uepAbaHoras` |
 | **MIX DE HOJE** | por produto (modelo + nome), só jornada normal: caixas, UEP, UEP/cx = UEP ÷ caixas com UEP, % = UEP do produto ÷ UEP do dia | UEP | `v7:_uepAbaMix` |
 | **ORIGEM DA UEP** (era CONFIABILIDADE) | caixas de hoje por código: UEP medida — estudo ou digitada, **não é cronoanálise** (vigência sem `EST`) · estimada (vigência termina em `EST`) · sem UEP, ÷ caixas apontadas | % | `v7:_uepAbaConf` |
-| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos dias fechados com UEP ÷ nº desses dias; % = Σ UEP ÷ Σ META UEP dos mesmos dias | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
+| **MÉDIA POR DIA** (período) | Σ UEP de jornada gravada nos **dias úteis** fechados com UEP ÷ nº desses dias (o fim de semana entra no % e no bateu, não na média — v7.222.0); % = Σ UEP ÷ Σ META UEP de todos os dias com UEP | UEP | `rp-core:uepHistResumo` + `v7:_uepAbaPeriodo` |
 | **DIAS QUE BATERAM** (período) | dias com UEP ≥ META UEP daquele dia | dias | `rp-core:uepHistResumo` |
 | **OSCILAÇÃO DIA A DIA** (período) | desvio padrão ÷ média, dia a dia, em UEP e em caixas de jornada (realizado − HE) dos mesmos dias | % | `v7:_qpOscilacao` + `v7:_uepAbaPeriodo` |
 | **UEP PADRÃO** (bloco 7) | a UEP por caixa do código **vigente na data**: a última versão da aba `UEP_VERSOES` com vigência ≤ dia; sem a aba, o cadastro de hoje. A semente (1ª mudança) é o cadastro como estava, valendo desde sempre | UEP/cx | `.gs:_uepVigente` + `.gs:getProducaoModeloPeriodo` (`?uepVer=1`) |
@@ -419,3 +419,20 @@ campo PESSOAS NA EMBALAGEM.
 o payback) e o **ano** tem linha própria logo abaixo — é o valor comparável ao
 orçamento de um equipamento. Vale na tela (aba GESTÃO DE PERDAS) e na PROPOSTA DE
 INVESTIMENTO em PDF, com os mesmos valores nos dois.
+
+## Meta do fim de semana (`.gs` v5.60)
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **META / META DIA / META UEP do sábado e do domingo** (HISTORICO) | a meta do dia (a da aba, sem o atraso; META UEP do ⚙) × minutos dos slots de jornada (07:00–17:00) com produção ÷ 527. Dia útil: a meta cheia, como sempre | cx / UEP | `gs:_fracSemJornada` + `gs:_minDoSlot` |
+
+## TAKT DA SEMANA — o veredito para a diretoria (v7.222.0)
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **FALTAM** (veredito) | precisa − tem, em horas de linha (o mesmo `_taktVeredito`); traduzido em dias (÷ 527, uma casa), caixas (≈, à dezena até 999, depois à centena) e pontos (≈, em mil acima de 10 mil) | h de linha | `v7:_taktHeroHtml` |
+| **NO RITMO ATUAL** (veredito) | só quando o ritmo desta semana fica a ≥ 5% da média (`TKS_RITMO_DESVIO`); na AVALIAÇÃO, sempre | h | `v7:_taktHeroHtml` |
+| **PARA FECHAR** | hora extra ≈ o que falta (de meia em meia hora); adiar ≈ as caixas que faltam; remanejar = a folga dos dias abaixo de 1 dia de linha (`P.redist`), só na semana que vem | h / cx | `v7:_taktFecharDados` |
+| **FALTAM NO TOTAL** (esta semana ainda não fecha) | o que falta da semana que vem + o que falta desta (se nada mudar) | h de linha | `v7:_taktHerancaHtml` |
+| **O DIA MAIS CARREGADO** | o dia que mais passa de 1 dia de linha (minutos) e a parte dele no excesso da semana (Σ UEP acima da referência) | h / % | `v7:_taktPico` |
+

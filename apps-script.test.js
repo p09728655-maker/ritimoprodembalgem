@@ -739,8 +739,9 @@ console.log('\n── UEP no cadastro (setUepCatalogo / catálogo / meta) ──
   // v5.55: depois das três da UEP vêm META DIA e ATRASO META (opção A). O das
   // 23:59 não sabe a meta do painel: a META é a da aba e o atraso, 0.
   ok('fechamento automático e FECHAR DIA gravam as três colunas calculadas no backend (+ META DIA e ATRASO META)',
-     [/\]\.concat\(_uepColsDoDia\(p\.data\), \[metaDia, atrasoMeta\]\)/.test(pega('function saveDay(')),
-      /\]\.concat\(_uepColsDoDia\(dataRef\), \[meta, 0\]\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
+     // v5.60: com a fração do fim de semana (null em dia útil: a meta cheia de sempre)
+     [/\]\.concat\(_uepColsDoDia\(p\.data, frac\), \[metaDia, atrasoMeta\]\)/.test(pega('function saveDay(')),
+      /\]\.concat\(_uepColsDoDia\(dataRef, frac\), \[meta, 0\]\)/.test(pega('function arquivarDiaAtual('))], [true, true]);
   eval(pega('function _uepPorHoraDoLog('));
   const hl = _uepPorHoraDoLog([
     { hora: '8:00', codigo: 'A', cx: 100 }, { hora: '08:00', codigo: 'X', cx: 20 },

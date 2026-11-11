@@ -263,6 +263,20 @@ ok('sem meta do dia também não',
   ok('dia sem meta gravada usa a padrão', uepDiaMeta({ uep: 1 }), 2530);
   ok('metaTot = soma das metas de cada dia COM UEP (não meta × dias do filtro)', r.metaTot, 6500);
   ok('período sem nenhum dia com UEP não inventa média', uepHistResumo([{ uep: null }]).media, null);
+  // v7.222.0: o sábado 07/11/2026 — 950,9 UEP em 4 horas de jornada, META UEP pelas horas (1.257).
+  const S = [{ data: '05/11/2026', uep: 2095.2, metaUep: 2761 }, { data: '06/11/2026', uep: 2324, metaUep: 2761 },
+             { data: '07/11/2026', uep: 950.9, metaUep: 1257, uepHe: 393.8 }, { data: '09/11/2026', uep: 2595.8, metaUep: 2761 }];
+  const rs = uepHistResumo(S);
+  ok('fim de semana: sábado e domingo; dia útil e data ilegível não',
+     [uepFimDeSemana('07/11/2026'), uepFimDeSemana('08/11/2026'), uepFimDeSemana('06/11/2026'), uepFimDeSemana('')], [true, true, false, false]);
+  ok('a MÉDIA POR DIA é dos dias úteis (o sábado de 4 horas fica fora); total, bateu e meta somada com ele',
+     [Math.round(rs.media), rs.nMedia, rs.nFds, rs.n, Math.round(rs.total), rs.metaTot, rs.bateu, Math.round(rs.metaMedia)],
+     [Math.round((2095.2 + 2324 + 2595.8) / 3), 3, 1, 4, Math.round(2095.2 + 2324 + 950.9 + 2595.8), 2761 * 3 + 1257, 0, 2761]);
+  const so = uepHistResumo([{ data: '07/11/2026', uep: 950.9, metaUep: 1257 }]);
+  ok('período só com o fim de semana: a média é dele (não some)', [Math.round(so.media), so.nMedia, so.nFds], [951, 1, 1]);
+  const he = uepHistResumo([{ data: '07/11/2026', uep: 0, metaUep: 0, uepHe: 400 }, { data: '06/11/2026', uep: 2324, metaUep: 2761 }]);
+  ok('sábado só de hora extra (META UEP 0): sem meta, não é julgado; a HE dele continua contada',
+     [uepDiaMeta({ metaUep: 0 }), he.n, he.bateu, he.metaTot, he.he], [0, 1, 0, 2761, 400]);
 }
 
 // ── R$ por UEP no período (uepCustoPeriodo) ────────────────────────────────

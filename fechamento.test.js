@@ -77,6 +77,8 @@ function montar(o) {
     // da 12ª à 14ª, e a v5.55 escreve META DIA e ATRASO META na 15ª e 16ª.
     HISTORICO: (o.hist || [['DATA', 'REALIZADO', 'META', 'EFICIÊNCIA %', 'MELHOR H.', 'PIOR H.', 'HE', 'FECHADO', 'FECHADO EM',
       'MEDIA CX/H', 'HE CX', 'UEP', 'UEP HE', 'META UEP']]).map(r => r.slice()),
+
+    HISTORICO_HORA: (o.histHora || [['DATA', 'HORA', 'REALIZADO']]).map(r => r.slice()),
   };
   function aba(nome) {
     const v = ABAS[nome];
@@ -99,12 +101,13 @@ function montar(o) {
   }
   const ss = { getSheetByName: aba, insertSheet: nome => { ABAS[nome] = []; return aba(nome); }, getName: () => 'teste' };
   // `dataDados` é o carimbo de a qual dia pertence a HORA_A_HORA (gravado a cada lançamento).
-  const PROPS = { dataDados: 'carimbo' in o ? o.carimbo : '19/10/2026' };
+  const HOJE = o.hoje || '19/10/2026';
+  const PROPS = { dataDados: 'carimbo' in o ? o.carimbo : HOJE };
   const LOGS = [];
   const LOCK = { wait: 0, rel: 0 };
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
-    Utilities: { formatDate: (d, tz, f) => f === 'yyyy' ? '2026' : (/HH/.test(f) ? '19/10/2026 17:05' : '19/10/2026') },
+    Utilities: { formatDate: (d, tz, f) => f === 'yyyy' ? '2026' : (/HH/.test(f) ? HOJE + ' 17:05' : HOJE) },
     CacheService: { getScriptCache: () => ({ get: () => null, put: () => {}, remove: () => {} }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in PROPS ? PROPS[k] : null),
       setProperty: (k, x) => { PROPS[k] = x; }, deleteProperty: k => { delete PROPS[k]; } }) },
@@ -287,6 +290,82 @@ console.log('\n── v5.56: SOMAR ATRASO na CONFIG_PAINEL — a META gravada n�
      Q.run('return getConfigPainel();').metaComAtraso, null);
   ok('as leituras dependem do grupo cfg e o setConfigPainel o invalida',
      [/getPontosDia: \[[^\]]*'cfg'/.test(GS), /setConfigPainel: \['cfg'\]/.test(GS)], [true, true]);
+}
+
+console.log('\n── v5.60: sábado e domingo — a meta é a das horas de jornada trabalhadas ──');
+{
+  // 07/11/2026 (sábado), como na planilha: 225 cx de madrugada (05–07, hora extra)
+  // e 465 cx de 07 às 11 (4 horas de jornada). A aba ficou com a meta da sexta,
+  // 1.150 cx nas nove horas de jornada; o fechamento gravou META 1.150 e META UEP
+  // cheia — 60% e 34%. Pelas horas: 1.150 × 240 ÷ 527 = 524 e 3.048 × 240 ÷ 527 = 1.388.
+  const metaH = ['128', '128', '128', '128', '128', '128', '128', '128', '126'];   // 1.150
+  const rots = HORAS_1910.map(([rot]) => rot);
+  const prod = [128, 110, 92, 135, 0, 0, 0, 0, 0];
+  const horas = [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 125, 125]]
+    .concat(rots.map((rot, i) => prod[i] ? [rot, metaH[i], prod[i], prod[i]] : [rot, metaH[i], 0]));
+  const sab = o => montar(Object.assign({ horas, hoje: '07/11/2026' }, o || {}));
+  const r = sab().run("return _resumoHoraAHora(SpreadsheetApp.getActiveSpreadsheet().getSheetByName('HORA_A_HORA').getDataRange().getValues());");
+  ok('o resumo da aba diz os minutos de jornada com produção (4 horas = 240; a madrugada é hora extra e fica fora)',
+     [r.minJorn, r.meta, r.real, r.heCx], [240, 1150, 690, 225]);
+  const S = sab();
+  saveDay(S, { data: '07/11/2026', real: '690', meta: '1150', heCx: '225', he: '2', fechadoEm: '07/11/2026, 17:05:00' });
+  const l = hist(S)[0];
+  ok('FECHAR DIA no sábado: META, META DIA e META UEP × 240 ÷ 527 (524 cx, 1.388 UEP), ATRASO 0, EF pela META cortada',
+     [l[2], l[14], l[15], l[13], l[3]], [524, 524, 0, 1388, Number((690 / 524 * 100).toFixed(1))]);
+  const S2 = sab();
+  saveDay(S2, { data: '07/11/2026', real: '690', meta: '2002', heCx: '225', he: '2' });   // o painel somando atraso
+  ok('no fim de semana o atraso não entra: a base é a meta da aba (não há programação no sábado)',
+     [hist(S2)[0][2], hist(S2)[0][14], hist(S2)[0][15]], [524, 524, 0]);
+  const A = sab();
+  A.run("arquivarDiaAtual('07/11/2026');");
+  const b = hist(A)[0];
+  ok('o fechamento das 23:59 faz a MESMA conta (o que aconteceu em 07/11: AUTO 23:53)',
+     [b[2], b[3], b[13], b[14], b[15]], [524, Number((690 / 524 * 100).toFixed(1)), 1388, 524, 0]);
+  ok('a produção da linha não muda: REALIZADO, HE CX e HE como antes',
+     [b[1], b[10], b[6]], [690, 225, 2]);
+  // Domingo também; e o dia útil fica igual (os testes de cima são de segunda, 19/10).
+  const D = montar({ horas, hoje: '08/11/2026' });
+  D.run("arquivarDiaAtual('08/11/2026');");
+  ok('domingo: a mesma regra', [hist(D)[0][2], hist(D)[0][13]], [524, 1388]);
+  const U = montar({ horas, hoje: '06/11/2026' });
+  U.run("arquivarDiaAtual('06/11/2026');");
+  ok('dia útil (sexta 06/11) com as mesmas horas: meta cheia, como sempre', [hist(U)[0][2], hist(U)[0][13]], [1150, 3048]);
+  // Só madrugada (nenhuma hora de jornada): meta 0, nunca a do dia inteiro.
+  const M = montar({ hoje: '07/11/2026', horas: [['05:00-06:00', '', 100, 100], ['06:00-07:00', '', 125, 125]]
+    .concat(rots.map((rot, i) => [rot, metaH[i], 0])) });
+  M.run("arquivarDiaAtual('07/11/2026');");
+  ok('sábado só de madrugada: META e META UEP 0 (tudo hora extra)', [hist(M)[0][2], hist(M)[0][13], hist(M)[0][10]], [0, 0, 225]);
+  // Sem a aba do dia (carimbo de outro dia): sem os minutos, fica a meta que veio.
+  const C = sab({ carimbo: '06/11/2026' });
+  saveDay(C, { data: '07/11/2026', real: '690', meta: '1150' });
+  ok('sábado sem a HORA_A_HORA do dia: meta cheia e o log diz por quê',
+     [hist(C)[0][2], C.LOGS.some(x => /Fim de semana 07\/11\/2026 sem a HORA_A_HORA do dia/.test(x))], [1150, true]);
+  // Lançamento DEPOIS do fechamento (v5.49) num sábado: a hora a mais refaz a meta pelas horas.
+  const P = sab();
+  P.run("arquivarDiaAtual('07/11/2026');");
+  P.ABAS.HORA_A_HORA.forEach(row => { if (row[0] === '12:12-13:00') { row[2] = 48; row[3] = 48; } });
+  P.run('_atualizarHistoricoPosLancamento();');
+  const q = hist(P)[0];
+  ok('lançamento depois do fechamento no sábado: + o slot de 48 min → 288 min, META 628, META UEP 1.666, EF refeita',
+     [q[1], q[2], q[13], q[14], q[3]], [738, Math.round(1150 * 288 / 527), Math.round(3048 * 288 / 527), Math.round(1150 * 288 / 527),
+      Number((738 / Math.round(1150 * 288 / 527) * 100).toFixed(1))]);
+  // Os minutos dos slots: a jornada inteira são 527 (a mesma do rp-core).
+  const RC = fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8');
+  const minRC = Number((RC.match(/const UEP_MIN_DIA\s*=\s*(\d+)/) || [])[1]);
+  ok('os nove slots somam 527 min (12:12 vale 48, 16:00-16:59 vale 59) = UEP_MIN_DIA do rp-core = UEP_MIN_DIA_GS',
+     [S.run('return ' + JSON.stringify(rots) + '.reduce(function (a, r) { return a + _minDoSlot(r); }, 0);'), minRC, S.run('return UEP_MIN_DIA_GS;')],
+     [527, 527, 527]);
+  // O editor (preencherUepPassada) faz a mesma conta nos fins de semana, pela HISTORICO_HORA.
+  const histHora = [['DATA', 'HORA', 'REALIZADO'], ['07/11/2026', '07:00-08:00', 128], ['07/11/2026', '08:00-09:00', 110],
+    ['07/11/2026', '09:00-10:00', 92], ['07/11/2026', '10:00-11:00', 135], ['06/11/2026', '07:00-08:00', 153]];
+  const hHist = [['DATA', 'REALIZADO', 'META', 'EFICIÊNCIA %', 'MELHOR H.', 'PIOR H.', 'HE', 'FECHADO', 'FECHADO EM', 'MEDIA CX/H', 'HE CX', 'UEP', 'UEP HE', 'META UEP'],
+    ['06/11/2026', 1305, 1150, 113.5, 153, 71, 2, false, 'AUTO', 145, 150, '', '', ''],
+    ['07/11/2026', 690, 1150, 60, 135, 92, 2, false, 'AUTO', 173, 225, '', '', '']];
+  const E = montar({ hist: hHist, histHora });
+  E.ABAS.PRODUCAO_PRODUTO.push(['06/11/2026', '07:00', '501141005', 'X', 10, 0, 0, ''], ['07/11/2026', '07:00', '501141005', 'X', 10, 0, 0, '']);
+  E.run('preencherUepPassada(true);');
+  ok('regravarUepPassada (editor): o sábado pela HISTORICO_HORA (240 min → 1.388), a sexta cheia (3.048)',
+     [E.ABAS.HISTORICO[1][13], E.ABAS.HISTORICO[2][13]], [3048, 1388]);
 }
 
 console.log('\n── o lock dos lançamentos ──');

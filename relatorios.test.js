@@ -4706,7 +4706,7 @@ console.log('\n── estudo de UEP ──');
     ok('PRÓXIMOS DIAS: o saldo da 1ª semana com dia útil pela frente (a conta do "pedem … para …"); faltar é vermelho, sobrar e caber não',
        [_uepSubProx(WU), _uepSubProx([{ rot:'ESTA SEMANA', nUteis:2, minPede:1000.4, minJorn:1054 }]), _uepSubProx([{ rot:'ESTA SEMANA', nUteis:2, minPede:1054, minJorn:1054 }]).txt,
         _uepSubProx(null, 'falha').txt, _uepSubProx(null, 'lendo').txt, _uepSubProx(null, 'sem-uep').txt, _uepSubProx([]).txt],
-       [{ txt:'semana que vem: faltam ' + _fmtHM(204), cls:'red' }, { txt:'esta semana: sobram ' + _fmtHM(54), cls:'' }, 'esta semana: cabe na jornada',
+       [{ txt:'semana que vem: faltam ' + _fmtHM(204), cls:'red' }, { txt:'dias que vêm: sobram ' + _fmtHM(54), cls:'' }, 'dias que vêm: cabe na jornada',   // v7.222.0: o "esta semana" do PRÓXIMOS DIAS é só dos dias que vêm (sem o atraso)
         'programação não lida', '…', 'sem UEP na programação', 'nenhum dia útil à frente']);
     const RPX = pega('function renderProxDias(');
     ok('o botão PRÓXIMOS DIAS é pintado pelo renderProxDias, em cada desfecho da leitura, com as MESMAS semanas do bloco',

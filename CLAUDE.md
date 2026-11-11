@@ -78,7 +78,10 @@ via Google Apps Script (JSONP).
   real de 19/10 (painel 1.491 × planilha 1.509) e a mesma conta do
   `arquivarDiaAtual`, rodando o `.gs` inteiro; e a opção A (`.gs` v5.55): a
   META do painel com META DIA e ATRASO META nas colunas 15–16, e a paridade do
-  `_metaPartes` do painel com o `saveDay`: `node fechamento.test.js`.
+  `_metaPartes` do painel com o `saveDay`; e o fim de semana (`.gs` v5.60): o
+  sábado real de 07/11 (240 min de jornada → META 524, META UEP pelas horas)
+  nos três fechamentos, o domingo, o dia útil igual, o sábado só de madrugada,
+  os 527 min dos slots e o `preencherUepPassada`: `node fechamento.test.js`.
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
@@ -121,7 +124,11 @@ via Google Apps Script (JSONP).
   semana que cabe, as caixas sem UEP fora do peso), o gráfico em horas e a 🖨
   sem s por UEP (6 de 6 mutações pegas); e (v7.212.0) a falta em pontos pelo
   mix da semana (o mapa do cadastro, o código com ponto ou traço) e o nome
-  "média da linha entregue sem hora extra" (5 de 5): `node takt-semana.test.js`.
+  "média da linha entregue sem hora extra" (5 de 5); e (v7.222.0) o nível
+  diretoria: UM número no veredito com dias, caixas e pontos arredondados, o
+  ritmo só fora de ±5%, o PARA FECHAR (hora extra, adiar, remanejar), o que vem
+  desta semana somado numa barra, o excesso em vermelho e o dia mais carregado
+  (3 de 3 mutações): `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -3637,6 +3644,43 @@ feito e dá ar de verdade ao que sobrou.
 - Dias fechados com a v5.48–v5.54 publicada ficaram com a META da aba (e a EF
   por ela); não foram regravados.
 
+## SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS (`.gs` v5.60 / v7.222.0)
+- PPCP, 11/11/2026: *"07/11 foi sábado, a meta tem que ser sobre as horas
+  trabalhadas"* → *"sábado não pode ser dia todo, a meta fica errada, porque não
+  tem programação para sábado"*. Na planilha: 07/11 com 690 cx (225 de 05–07,
+  hora extra; 465 de 07–11, 4 horas de jornada), gravado com META 1.150 (a da
+  sexta, que ficou na aba) e META UEP 2.761 — 60% e 34%.
+- **`.gs` v5.60**: `_resumoHoraAHora` devolve `minJorn` (minutos dos slots de
+  JORNADA com produção, `_minDoSlot`: 12:12 = 48, 16:00-16:59 = 59, os nove = 527
+  = `UEP_MIN_DIA_GS` = `UEP_MIN_DIA` do rp-core, o teste confere).
+  `_fracSemJornada(data, res)` = minJorn ÷ 527 no sábado e no domingo
+  (`_heFimDeSemana`), `null` em dia útil (tudo como antes) ou sem o resumo da aba
+  (meta cheia, com log). Os TRÊS fechamentos usam: `arquivarDiaAtual`, `saveDay`
+  (base = a meta da ABA — o atraso do painel não entra no fim de semana; META DIA
+  = META, ATRASO 0) e `_atualizarHistoricoPosLancamento` (a hora a mais refaz
+  META, META DIA, META UEP e EF). `_uepColsDoDia(data, frac)` corta a META UEP. O
+  `preencherUepPassada` (editor) faz a mesma conta nos fins de semana pela
+  HISTORICO_HORA (`_minJornHistHora`).
+  - Fim de semana só de madrugada: META e META UEP **0** = sem meta. No rp-core,
+    `uepDiaMeta` devolve 0 (não a padrão) e o `uepHistResumo` não julga o dia.
+  - A HE continua pelo horário (antes das 07:00 e depois das 17:00). A regra
+    "sábado é todo hora extra" (`HE_SABADO_INTEIRO`) é só do backfill antigo.
+  - ⚠ A EF continua somando a hora extra, como em todo dia: 07/11 = 690 ÷ 524
+    = **131,7%**; na jornada são 465 de 524 (88,8%).
+  - ⚠ **re-deploy manual**. Antes dele, o fim de semana segue com a meta cheia.
+  - ⚠ Feriado trabalhado NÃO entra na regra (só sábado e domingo).
+- **A linha de 07/11/2026 foi corrigida pela API em 11/11** (só ela): META 524,
+  EF 131,7, META UEP 1.257, META DIA 524, ATRASO 0 (240 min). O sábado 04/07/2026
+  (backfill, HE CX = REALIZADO) não foi mexido.
+- **Média por dia (v7.222.0, rp-core)**: `uepHistResumo.media` é dos **dias
+  úteis** (`uepFimDeSemana`), com `nMedia`, `nFds` e `metaMedia` (a cor do card
+  compara média com `metaMedia`). O fim de semana entra no total, na meta somada
+  e no bateu. Quem lê a média: PERÍODO (card e botão), HISTÓRICO (card), a semana
+  (`gsem-uep-sub`), a faixa dos relatórios, `_gpxCapDem` e o cenário do período
+  na simulação do TAKT. Com o print de 11/11: 2.587 → ≈ 2.670.
+  - ⚠ A régua de capacidade da aba PLANO (`_qpDiasBase`, em caixas) **ainda conta
+    o sábado** de 07/11 como um dia (465 cx de jornada): não mexido.
+
 ## `.gs` v5.46 a v5.54 — o que mudou de regra (05/11/2026)
 - Feitos na conversa do Apps Script e subidos à `main` pelo upload de 05/11
   (`9949a4e`, sem PR). O cabeçalho do `.gs` tem o registro de cada versão; os
@@ -4588,8 +4632,10 @@ feito e dá ar de verdade ao que sobrou.
   - Cards: desvio escrito no UEP ATÉ AGORA (do mesmo `esperado`), projeção "na
     média da jornada até agora · só jornada normal", HE "fora do UEP até agora,
     da projeção e da meta". Barras do mix neutras.
-  - **Sábado na UEP fica como está** (PPCP): o `_uepPorDiaDoLog` separa HE só
-    pelo horário, e sábado 07–17 entraria como jornada. Não mexer sem pedido.
+  - ~~**Sábado na UEP fica como está**~~ — mexido no `.gs` v5.60 (PPCP, ver
+    *SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS*): a HE continua só pelo
+    horário (07–17 é jornada também no sábado), mas a META do fim de semana é a
+    das horas de jornada trabalhadas.
   - **Maquete do ChatGPT recusada em conteúdo**: projeção somando HE, "meta do
     período", "vs período anterior" e "% do total do dia" não existem aqui.
 - O `_mixFator` da carteira é a mesma ideia com âncora na média da linha e
@@ -6821,6 +6867,40 @@ feito e dá ar de verdade ao que sobrou.
     - **🖨** `_taktDocHtml(A={T0,T1,P1,V0,V1})`: a frase do topo, os dois
       vereditos lado a lado com o porquê e o gráfico, uma linha de definição.
       Nada de s por UEP, cascata ou tabela (o teste prende).
+  - **NÍVEL DIRETORIA (v7.222.0**, PPCP 11/11/2026, com o print da SEMANA QUE
+    VEM: *"preciso de melhorar nível diretoria, bater o olho e entender"* →
+    prévia (imagem) → *"implementa"*). Revoga a "soma com o que não fechar
+    desta" e o "para fechar" DENTRO do veredito (v7.211.0):
+    - **Veredito** `_taktHeroHtml`: a palavra com o que ela quer dizer embaixo,
+      UM número (FALTAM/SOBRAM/FICARAM, em horas de linha) e a tradução
+      (`_tkDia`, `_tkAprox`, `_tkPts`): ≈ dias de produção, ≈ caixas (dezena até
+      999, depois centena), ≈ pontos (mil acima de 10 mil). Barras PRECISA × TEM
+      com a falta hachurada (`.tks-tr em`) e a legenda (`.tks-bcap`). O ritmo
+      atual só a ≥ `TKS_RITMO_DESVIO`=5% da média (a 98,9% eram 26 min), só em
+      horas; `ritmo:true` (AVALIAÇÃO) mostra sempre — o saldo de horas soma com
+      ele. Eram três "faltam" e ~13 números no quadro.
+    - **PARA FECHAR** `_taktFecharDados` (conta) / `_taktFecharHtml` (cartões;
+      `papel:true` = uma linha): hora extra ≈ (`_tkHAprox`, meia em meia hora),
+      ADIAR LOTES ≈ caixas com o dia mais carregado (semana que vem) ou PASSAR
+      PARA A SEMANA QUE VEM (esta), e SÓ REMANEJAR ENTRE OS DIAS (`P.redist`),
+      apagado. Nada quando cabe ou a semana acabou.
+    - **E ESTA SEMANA AINDA NÃO FECHA** `_taktHerancaHtml` (só a semana que vem,
+      tela): a soma numa barra (programação + o que não fechar desta = FALTAM NO
+      TOTAL). ⚠ Nunca "sobra" para o que passa de uma semana (v7.214.2).
+    - **ONDE ESTÁ O EXCESSO** `_taktExcessoHtml` + `_taktSvg(…, {fut:true})`:
+      barra sólida `var(--tks-base)` até 1 dia de linha, o excesso
+      `var(--red)` com o "+h" em cima, "folga" no dia abaixo, o total dentro; no
+      título o dia que mais pesa (`_taktPico`: % do excesso em UEP).
+    - ⚠ **Classes**: `tks-op` já era o sinal "−" da cascata (com `align-self:
+      center` e fonte de 22 px) — os cartões são `tks-fc`/`tks-fn`/`tks-fd`.
+      Classe nova no TAKT? Procurar antes se o nome já existe.
+    - O título da semana diz "N caixas programadas" (sem UEP). O botão
+      PRÓXIMOS DIAS diz "dias que vêm" (só os dias que vêm, sem o atraso).
+    - 🖨: o veredito em grade (`.tks-doc .tks-hero` 2 colunas) e o PARA FECHAR
+      numa linha. Medido (Chromium, fontes, A4 deitada 1.032 × 718): 688 px,
+      uma folha (sem a grade dava 736 e duas folhas). Conteúdo novo no papel:
+      medir de novo.
+    - Medido na tela (dados de 06/11): 1920, 1366 e 1280, nada passa da largura.
   - **NOME E PONTOS (v7.212.0**, PPCP: *"troca por média da linha entregue sem
     hora extra"* e *"valor da UEP em pontos"*): na frente da tela e na folha o
     2.761 é **a média que a linha entrega sem hora extra** (ritmo atual em % da

@@ -11,6 +11,65 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.222.0 / `.gs` v5.60 — 11/11/2026 · TAKT DA SEMANA para a diretoria e o sábado com a meta das horas trabalhadas
+
+**TAKT DA SEMANA, nível diretoria** — PPCP, com o print da SEMANA QUE VEM:
+*"preciso de melhorar nível diretoria, bater o olho e entender"* → prévia →
+*"implementa"*.
+- O veredito tem **um número só** (o que falta, em horas de linha) e a
+  tradução dele: dias de produção, caixas e pontos, arredondados (≈ 1.100
+  caixas, ≈ 109 mil pontos). Eram três "faltam" no mesmo quadro (o da semana, o
+  do ritmo atual e o somado com esta semana) e uns 13 números.
+- **PARA FECHAR** em cartões: hora extra (≈ h), adiar lotes (≈ caixas, com o dia
+  mais carregado) e, na semana que vem, quanto **remanejar entre os dias**
+  resolveria — apagado quando não resolve.
+- **E ESTA SEMANA AINDA NÃO FECHA**: o que não fechar desta semana passa para a
+  que vem, escrito como soma numa barra (no print: 4h59 + 4h40 = 9h39).
+- **ONDE ESTÁ O EXCESSO**: a barra de cada dia é sólida até 1 dia de linha e o
+  que passa dele é vermelho, com o "+h" em cima; o dia abaixo diz a folga. O
+  título diz o dia que mais pesa (no print: 19/11 com 73% do excesso).
+- O título da semana diz **caixas programadas**, sem UEP.
+- Os detalhes do PCP (takt em s/UEP, simulação, takt por caixa) não mudaram.
+- A 🖨 TAKT DA SEMANA continua em uma folha deitada: o veredito lado a lado e o
+  PARA FECHAR numa linha por semana.
+- A AVALIAÇÃO DA PROGRAMAÇÃO usa o mesmo veredito (com o ritmo atual sempre — o
+  saldo de horas soma com ele) e o mesmo PARA FECHAR.
+- O botão **PRÓXIMOS DIAS** diz *"dias que vêm: sobram…"* em vez de *"esta
+  semana: sobram…"*: ali só entram os dias que vêm, sem o atraso nem o de hoje;
+  com o mesmo nome, contradizia o TAKT ("esta semana não fecha").
+
+**Atenção — números que mudam na tela:**
+- O **ritmo atual** só aparece no veredito quando fica a 5% ou mais da média
+  (a 98,9% ele dava 26 min de diferença e era mais um número).
+- Caixas e pontos do veredito são arredondados: até 999 à dezena, daí à
+  centena; pontos acima de 10 mil em mil. A conta não mudou.
+
+**Sábado e domingo: a meta é a das horas trabalhadas** (`.gs` v5.60, ⚠ **re-deploy**)
+— PPCP: *"07/11 foi sábado, a meta tem que ser sobre as horas trabalhadas"* →
+*"sábado não pode ser dia todo, a meta fica errada, porque não tem programação
+para sábado"*.
+- 07/11 trabalhou 4 horas de jornada (07–11; 05–07 é hora extra) e foi gravado
+  com a meta de um dia inteiro: META 1.150 cx (a da sexta, que ficou na aba) e
+  META UEP 2.761 — 60% e 34%.
+- Agora, no sábado e no domingo, os três fechamentos (23:59, FECHAR DIA e o
+  lançamento depois do fechamento) gravam **META, META DIA e META UEP × minutos
+  de jornada com produção ÷ 527**. O atraso não entra (não há programação no fim
+  de semana). Dia útil não muda.
+- **A linha de 07/11 foi corrigida na planilha**: META 524, EF 131,7, META UEP
+  1.257, META DIA 524, ATRASO META 0. A EF continua somando a hora extra, como em
+  todo dia (690 ÷ 524); na jornada são 465 de 524 = 88,8%, e em UEP 950,9 de
+  1.257 = 75,6% — ainda abaixo da meta, só que agora numa conta justa.
+
+**Atenção — a média UEP/dia:**
+- A **MÉDIA POR DIA** (PERÍODO, HISTÓRICO, semana, relatórios, capacidade do
+  PRÓXIMOS DIAS e a simulação do TAKT) é só dos **dias úteis**. O fim de semana
+  entra no total, na meta somada e no "bateu", mas não na média: um sábado de 4
+  horas puxava a média de um dia inteiro para baixo. Com o print de 11/11:
+  2.587 → ≈ 2.670 UEP/dia.
+- Fim de semana só de hora extra grava META UEP 0 = sem meta: não é julgado.
+
+---
+
 ## v7.221.0 — 10/11/2026 · AVALIAR PROGRAMAÇÃO: a linha COLAGEM INTEIRA no saldo de horas
 
 - PPCP, com a tela na mão: *"como explicar isso, não cabe e sobra"*. O

@@ -322,16 +322,36 @@ function uepCelula(h, metaCfg, minSlot, ehHE){
 // fechamento (.gs v5.14) — congeladas: mudar a UEP do cadastro hoje não reescreve
 // o dia de ontem. Dia sem UEP (null) fica FORA da média e da contagem, e é
 // contado à parte; nunca vira zero.
+// Sábado e domingo não são dia de jornada (v7.222.0, PPCP 11/11/2026: "sábado
+// não pode ser dia todo, a meta fica errada, porque não tem programação para
+// sábado"). Desde o .gs v5.60 a META UEP gravada deles é a das HORAS de jornada
+// trabalhadas; fim de semana só com hora extra grava 0 = sem meta.
+function uepFimDeSemana(data){
+  const m = String(data || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return false;
+  const dw = new Date(+m[3], +m[2] - 1, +m[1]).getDay();
+  return dw === 0 || dw === 6;
+}
 function uepDiaMeta(d){
+  if (d && d.metaUep !== null && d.metaUep !== undefined && d.metaUep !== '' && Number(d.metaUep) === 0) return 0;
   return d && Number(d.metaUep) > 0 ? Number(d.metaUep) : UEP_META_PADRAO;
 }
 function uepHistResumo(dias){
-  const com = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
+  const comUep = (dias || []).filter(d => d && d.uep != null && isFinite(Number(d.uep)));
+  // dia sem meta (fim de semana só de hora extra) não é julgado: sai do n, do bateu e da meta somada
+  const com = comUep.filter(d => uepDiaMeta(d) > 0);
   const tot = com.reduce((s, d) => s + Number(d.uep), 0);
   const bateu = com.filter(d => Number(d.uep) >= uepDiaMeta(d)).length;
+  // A MÉDIA POR DIA é de dia de jornada: o fim de semana (horas a menos) fica fora
+  // dela — um sábado de 4 horas puxava a média de um dia inteiro para baixo. No
+  // total, na meta somada e no bateu ele entra, com a meta das horas dele.
+  const util = com.filter(d => !uepFimDeSemana(d.data));
+  const base = util.length ? util : com;
   return { n: com.length, semUep: (dias || []).length - com.length,
-           total: tot, media: com.length ? tot / com.length : null,
-           bateu, he: com.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
+           total: tot, media: base.length ? base.reduce((s, d) => s + Number(d.uep), 0) / base.length : null,
+           nMedia: base.length, nFds: com.length - util.length,
+           metaMedia: base.length ? base.reduce((s, d) => s + uepDiaMeta(d), 0) / base.length : null,
+           bateu, he: comUep.reduce((s, d) => s + (Number(d.uepHe) || 0), 0),
            // Soma das metas DOS DIAS COM UEP (cada um com a sua): é contra ela
            // que o total do período se compara, nunca meta × nº de dias do filtro.
            metaTot: com.reduce((s, d) => s + uepDiaMeta(d), 0),

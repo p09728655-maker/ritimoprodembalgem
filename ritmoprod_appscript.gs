@@ -1,5 +1,19 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.60 — SÁBADO E DOMINGO: A META É A DAS HORAS TRABALHADAS
+//               PPCP, 11/11/2026: "07/11 foi sábado, a meta tem que ser sobre
+//               as horas trabalhadas" → "sábado não pode ser dia todo, a meta
+//               fica errada, porque não tem programação para sábado". O sábado
+//               07/11 trabalhou 4 horas de jornada (07–11) e foi gravado com a
+//               META e a META UEP de um dia inteiro (1.150 cx da sexta e 2.761
+//               UEP): 60% e 34%. No fim de semana, os três fechamentos
+//               (arquivarDiaAtual, saveDay e o lançamento depois do fechamento)
+//               gravam META, META DIA e META UEP × minutos de jornada com
+//               produção ÷ 527 (_fracSemJornada). O que já é hora extra (antes
+//               das 07:00, depois das 17:00) continua hora extra, sem meta, como
+//               em dia útil. Dia útil não muda nada. O preencherUepPassada
+//               (editor) faz a mesma conta nos fins de semana, pela HISTORICO_HORA.
+//               ⚠ re-deploy manual.
 // Versão: 5.59 — A PROGRAMAÇÃO DA SEMANA (getProgramacaoSemana) para o TAKT
 //               PPCP, 06/11/2026: "tenho a programação no painel, colocar takt
 //               da semana e comparar com o takt que está sendo executado" →
@@ -497,7 +511,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.59';
+const GS_VERSAO = '5.60';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1906,12 +1920,16 @@ function _atualizarHistoricoPosLancamento() {
     Logger.log('HISTORICO ' + hoje + ' mantido: gravado ' + realG + ' cx, aba ' + r.real + ' cx.');
     return false;
   }
-  const meta = Number(v[k][2]) || 0;
+  // v5.60: no fim de semana a hora a mais muda as horas trabalhadas — a meta
+  // é refeita pela aba (META, META DIA e META UEP). Dia útil: META fica.
+  const frac = _fracSemJornada(hoje, r);
+  const meta = frac !== null && r.meta > 0 ? _metaFrac(r.meta, frac) : (Number(v[k][2]) || 0);
   const ef = meta > 0 ? Number((r.real / meta * 100).toFixed(1)) : 0;
   const media = r.horas > 0 ? Math.round(r.real / r.horas) : 0;
   sh.getRange(k + 1, 2).setValue(r.real);
+  if (frac !== null && r.meta > 0) { sh.getRange(k + 1, 3).setValue(meta); sh.getRange(k + 1, 15, 1, 2).setValues([[meta, 0]]); }
   sh.getRange(k + 1, 4, 1, 4).setValues([[ef, r.melhor, r.pior === null ? 0 : r.pior, r.he]]);
-  sh.getRange(k + 1, 10, 1, 5).setValues([[media, r.heCx].concat(_uepColsDoDia(hoje))]);
+  sh.getRange(k + 1, 10, 1, 5).setValues([[media, r.heCx].concat(_uepColsDoDia(hoje, frac))]);
   return true;
 }
 // v5.48: o log falhou depois de gravar a hora: a célula volta ao valor anterior.
@@ -3795,12 +3813,13 @@ function _uepHoraDoDia(dataBR) {
 
 // As três colunas novas de um dia: [UEP, UEP HE, META UEP]. Sem UEP no
 // cadastro → vazias (nunca 0: zero afirmaria "o dia não pediu esforço").
-function _uepColsDoDia(dataBR) {
+// v5.60: `frac` (fim de semana) corta a META UEP pelas horas de jornada trabalhadas.
+function _uepColsDoDia(dataBR, frac) {
   try {
     const D = _uepLogPorDia(String(dataBR || ''));
     if (D === null) return ['', '', ''];
     const d = D[fmtDataBR(dataBR)] || D[String(dataBR)] || { normal: 0, he: 0 };
-    return [d.normal, d.he, _metaUepAtual()];
+    return [d.normal, d.he, _metaFrac(_metaUepAtual(), frac)];
   } catch (e) {
     Logger.log('_uepColsDoDia falhou (ignorado): ' + e.message);
     return ['', '', ''];
@@ -3821,13 +3840,16 @@ function preencherUepPassada(sobrescrever) {
   const datas = sh.getRange(2, 1, n, 1).getValues();
   const cols  = sh.getRange(2, 12, n, 3).getValues();
   const meta  = _metaUepAtual();
+  const minFds = _minJornHistHora();   // v5.60: o fim de semana pelas horas de jornada arquivadas
   let gravados = 0, semLog = 0;
   for (let i = 0; i < n; i++) {
     if (!datas[i][0]) continue;
     if (!sobrescrever && cols[i][0] !== '' && cols[i][0] !== null) continue;
-    const d = D[fmtDataBR(datas[i][0])];
+    const dBR = fmtDataBR(datas[i][0]);
+    const d = D[dBR];
     if (!d) { semLog++; continue; }
-    cols[i] = [d.normal, d.he, meta];
+    const fr = _heFimDeSemana(dBR) ? Math.max(0, Math.min(1, (minFds[dBR] || 0) / UEP_MIN_DIA_GS)) : null;
+    cols[i] = [d.normal, d.he, _metaFrac(meta, fr)];
     gravados++;
     Logger.log(fmtDataBR(datas[i][0]) + ' → ' + d.normal + ' UEP (+' + d.he + ' em HE)' +
                (d.cxSem ? ' · ' + d.cxSem + ' cx sem UEP' : ''));
@@ -3835,6 +3857,20 @@ function preencherUepPassada(sobrescrever) {
   sh.getRange(2, 12, n, 3).setValues(cols);
   invalidarCacheLeitura();
   Logger.log('RESUMO: ' + gravados + ' dia(s) gravados · ' + semLog + ' sem lançamento com produto no log · meta ' + meta + '.');
+}
+
+// v5.60: minutos de jornada por dia, pelas horas ARQUIVADAS na HISTORICO_HORA
+// (o arquivarHorasDoDia só grava hora de jornada com produção).
+function _minJornHistHora() {
+  const m = {};
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_HIST_HORA);
+  if (!sh || sh.getLastRow() < 2) return m;
+  sh.getDataRange().getValues().slice(1).forEach(function (r) {
+    if (!r[0] || !(Number(r[2]) > 0) || _ehHoraExtraCaixas(_horaStr(r[1]))) return;
+    const d = fmtDataBR(r[0]);
+    m[d] = (m[d] || 0) + _minDoSlot(_horaStr(r[1]));
+  });
+  return m;
 }
 
 // Rodar no EDITOR depois de mudar a meta: regrava UEP / UEP HE / META UEP de
@@ -3880,10 +3916,19 @@ function saveDay(p) {
     const pl0  = _resumoParaFechar(p.data);
     const heLocal = !!pl0 && (Number(p.heCx) || 0) > pl0.heCx;
     const pl   = heLocal ? null : pl0;
+    // v5.60: sábado e domingo — a meta pelas horas de jornada trabalhadas (a aba
+    // diz quais), a partir da meta da aba (não há programação no fim de semana:
+    // o atraso não entra). Dia útil: frac null e tudo como antes.
+    const frac = _fracSemJornada(p.data, pl0);
     // v5.55: a META é a do painel; META DIA e ATRASO META mostram do que ela é feita.
     const metaPainel = Number(p.meta) || 0;
-    const meta = metaPainel > 0 ? metaPainel : (pl ? pl.meta : 0);
-    const metaDia = (pl && pl.meta > 0) ? pl.meta : '';
+    let meta = metaPainel > 0 ? metaPainel : (pl ? pl.meta : 0);
+    let metaDia = (pl && pl.meta > 0) ? pl.meta : '';
+    if (frac !== null) {
+      meta = _metaFrac(pl0.meta > 0 ? pl0.meta : meta, frac);
+      metaDia = meta;
+      Logger.log('saveDay ' + p.data + ' (fim de semana): ' + (pl0.minJorn || 0) + ' min de jornada → meta ' + meta + '.');
+    }
     const atrasoMeta = metaDia === '' ? '' : Math.max(0, meta - metaDia);
     if (metaDia !== '' && meta !== metaDia) Logger.log('saveDay ' + p.data + ': meta do painel ' + meta + ', meta do dia ' + metaDia + '.');
     const real = pl ? pl.real : (Number(p.real) || 0);
@@ -3899,7 +3944,7 @@ function saveDay(p) {
       String(p.fechadoEm || ''),
       pl ? (pl.horas > 0 ? Math.round(pl.real / pl.horas) : 0) : Number(p.mediaH || 0),
       pl ? pl.heCx : Number(p.heCx || 0)   // caixas produzidas em hora extra
-    ].concat(_uepColsDoDia(p.data), [metaDia, atrasoMeta]);   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
+    ].concat(_uepColsDoDia(p.data, frac), [metaDia, atrasoMeta]);   // UEP · UEP HE · META UEP (v5.14), calculadas AQUI
 
     if (pl && real !== (Number(p.real) || 0)) {
       Logger.log('saveDay ' + p.data + ': painel mandou ' + (Number(p.real) || 0) +
@@ -6788,7 +6833,7 @@ function _resumoHoraAHora(data) {
 
   // v5.48: slot antes do início do turno (C3) não entra na META, como no getDados.
   const iniTurnoMin = (data[2] && Number(data[2][2]) === 5 ? 5 : 7) * 60;
-  let real = 0, meta = 0, he = 0, heCx = 0, melhor = 0, pior = null, horas = 0;
+  let real = 0, meta = 0, he = 0, heCx = 0, melhor = 0, pior = null, horas = 0, minJorn = 0;
   const horasArr = []; // {hora, real} por hora produtiva (não-HE) para a média por horário
 
   for (let i = hIdx + 1; i < data.length; i++) {
@@ -6816,6 +6861,7 @@ function _resumoHoraAHora(data) {
         heCx += realVal;   // caixas feitas em hora extra (fica na coluna HE CX)
       } else {
         horas++; // horas produtivas (não-HE) para a média cx/h
+        minJorn += _minDoSlot(hora);   // v5.60: a meta do fim de semana é a destes minutos
         if (realVal > melhor) melhor = realVal;
         if (pior === null || realVal < pior) pior = realVal;
         horasArr.push({ hora: hora, real: realVal });
@@ -6823,7 +6869,34 @@ function _resumoHoraAHora(data) {
     }
   }
 
-  return { real, meta, he, heCx, melhor, pior, horas, horasArr };
+  return { real, meta, he, heCx, melhor, pior, horas, horasArr, minJorn };
+}
+
+// v5.60: minutos de um slot pelo rótulo ("07:00-08:00" → 60, "12:12-13:00" → 48,
+// "16:00-16:59" → 59 — a soma dos nove slots é a jornada de 527 min). Rótulo
+// sem fim legível → 60.
+function _minDoSlot(rotulo) {
+  const m = _semPrefixoHE(String(rotulo || '')).match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  if (!m) return 60;
+  const d = ((+m[3]) * 60 + (+m[4])) - ((+m[1]) * 60 + (+m[2]));
+  return d > 0 && d <= 120 ? d : 60;
+}
+
+// v5.60 (PPCP, 11/11/2026: "sábado não pode ser dia todo, a meta fica errada,
+// porque não tem programação para sábado"). No SÁBADO e no DOMINGO a meta do dia
+// vale só pelas horas de JORNADA trabalhadas: a fração é minutos de jornada com
+// produção ÷ 527 (a jornada inteira). Dia útil → null (a meta cheia,
+// como sempre). Sem o resumo da aba (carimbo de outro dia) → null: sem os
+// minutos não há como cortar, e fica a meta cheia, com o log dizendo.
+const UEP_MIN_DIA_GS = 527;   // = UEP_MIN_DIA do rp-core (o teste confere)
+function _fracSemJornada(dataBR, res) {
+  if (!_heFimDeSemana(String(dataBR || ''))) return null;
+  if (!res) { Logger.log('Fim de semana ' + dataBR + ' sem a HORA_A_HORA do dia: meta cheia.'); return null; }
+  const m = Number(res.minJorn) || 0;
+  return Math.max(0, Math.min(1, m / UEP_MIN_DIA_GS));
+}
+function _metaFrac(meta, frac) {
+  return frac === null || frac === undefined ? meta : Math.round((Number(meta) || 0) * frac);
 }
 
 // ════════════════════════════════════════════════════════
@@ -6841,7 +6914,9 @@ function arquivarDiaAtual(dataRef) {
 
   const res = _resumoHoraAHora(sh.getDataRange().getValues());
   if (!res) throw new Error('HORA_A_HORA sem cabeçalho HORA/REALIZADO/META: dia não arquivado, aba não zerada.');
-  const { real, meta, he, heCx, melhor, pior, horas, horasArr } = res;
+  const { real, he, heCx, melhor, pior, horas, horasArr } = res;
+  const frac = _fracSemJornada(dataRef, res);   // v5.60: fim de semana → as horas trabalhadas
+  const meta = _metaFrac(res.meta, frac);
 
   if (real <= 0) return; // nada produzido — nada a arquivar
 
@@ -6885,7 +6960,7 @@ function arquivarDiaAtual(dataRef) {
     'AUTO ' + Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy HH:mm'),
     mediaH,
     heCx   // caixas produzidas nas linhas de hora extra
-  ].concat(_uepColsDoDia(dataRef), [meta, 0]);   // UEP · UEP HE · META UEP (v5.14)
+  ].concat(_uepColsDoDia(dataRef, frac), [meta, 0]);   // UEP · UEP HE · META UEP (v5.14)
 
   if (idx >= 0) {
     shH.getRange(idx + 2, 1, 1, row.length).setValues([row]);
