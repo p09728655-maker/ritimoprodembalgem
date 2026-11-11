@@ -32,6 +32,7 @@ require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'
 global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatrimar'])[1].toUpperCase();
 global.TKS_DET = false;
 global.TKS_TPC = false;
+global.SETUP_PEND = null; global.SETUP_PLAN = null;   // v7.226.0: o setup enviado e a chave na planilha
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
@@ -40,8 +41,8 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
- 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+ 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -861,43 +862,83 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
        [Math.round(g0.cxhTakt), HA.includes('<small>' + fmtN(esp) + ' cx/h</small>'), HA.includes('<small>' + fmtN(Math.round(3600 / g0.sTakt)) + ' cx/h</small>')],
        [esp, true, false]); }
   // v7.226.0 (PPCP: "melhor deixar para eu configurar setup nos dois, assim coloco igual, vamos usar setup médio"):
-  // o setup é do ⚙ — CONFIG_PAINEL (.gs v5.61), senão este computador, senão o padrão 8 × 8
-  { const SUP = { setupsDia:4.3, setupMin:7.65, origem:'planilha' };   // o setup médio medido: 13/10–10/11, troca de produto na jornada
+  // o setup é do ⚙ — CONFIG_PAINEL (.gs v5.61), senão este computador, senão o padrão 8 × 8.
+  // Medido: 4,3 trocas de produto/dia × 7,65 min = 32,9 min/dia (13/10–10/11). O app só aceita
+  // trocas INTEIRAS e minutos com UMA casa (revisão): o mesmo setup do dia é 4 × 8,2 = 32,8.
+  { const SUP = { setupsDia:4, setupMin:8.2, origem:'planilha' };
     const Ts = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:SUP })), Fs = _taktFaixa(Ts, { G });
-    ok('setup médio do ⚙ (4,3 × 7,65 = 32,9 min/dia): o painel tira 32,9 da jornada (takt 9,24 s por UEP); o % e o executado em % não mudam (116,2 e 90,6)',
-       [r1(Ts.setupDia), r1(Ts.minProd), Math.round(Ts.takt * 100) / 100, r1(Ts.pede), r1(Ts.exec.pct)], [32.9, 494.1, 9.24, 116.2, 90.6]);
-    ok('no app, com o MESMO setup (44 h × 4/5 − 4,3 × 7,65 × 4 = 33h00): 19,9 s por volume, 181 vol/h — a conta do ritmoExigido do app',
-       [_fmtHM(Fs.app.prod), _tkS(Fs.app.s), Math.round(Fs.app.vh), _tkS((44 * 4 / 5 - 4.3 * 7.65 * 4 / 60) * 3600 / 5970)], ['33h00', '19,9', 181, '19,9']);
+    ok('setup médio do ⚙ (4 × 8,2 = 32,8 min/dia): o painel tira 32,8 da jornada (takt 9,24 s por UEP); o % e o executado em % não mudam (116,2 e 90,6)',
+       [r1(Ts.setupDia), r1(Ts.minProd), Math.round(Ts.takt * 100) / 100, r1(Ts.pede), r1(Ts.exec.pct)], [32.8, 494.2, 9.24, 116.2, 90.6]);
+    ok('no app, com o MESMO setup (44 h × 4/5 − 4 × 8,2 × 4 = 33h01): 19,9 s por volume, 181 vol/h — a conta do ritmoExigido do app',
+       [_fmtHM(Fs.app.prod), _tkS(Fs.app.s), Math.round(Fs.app.vh), _tkS((44 * 4 / 5 - 4 * 8.2 * 4 / 60) * 3600 / 5970)], ['33h01', '19,9', 181, '19,9']);
     const Hs = _taktFaixaHtml(Fs, [], Ts);
     ok('a faixa escreve o setup do ⚙ com vírgula, e os detalhes os minutos com uma casa',
-       ['desconta o setup, 4,3 × 7,65 min por dia (2h12 nos 4 dias)', 'sem o setup do ⚙: 0h33 por dia · digite o mesmo no app'].filter(t => !Hs.includes(t))
-         .concat(_taktHtml(Ts, G, { largura:1200, V:_taktVeredito(Ts, null, RIT) }).includes('em 494,1 min (a jornada sem o setup)') ? [] : ['494,1 nos detalhes']), []);
+       ['desconta o setup, 4 × 8,2 min por dia (2h11 nos 4 dias)', 'sem o setup do ⚙: 0h33 por dia · digite o mesmo no app'].filter(t => !Hs.includes(t))
+         .concat(_taktHtml(Ts, G, { largura:1200, V:_taktVeredito(Ts, null, RIT) }).includes('em 494,2 min (a jornada sem o setup)') ? [] : ['494,2 nos detalhes']), []);
     const Tz = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:0, setupMin:8, origem:'planilha' } }));
     ok('setup ZERO (sem setup) é valor: o takt volta à jornada inteira (9,86) e a faixa diz "nenhum"',
        [Math.round(Tz.takt * 100) / 100, Tz.setupDia, _taktFaixaHtml(_taktFaixa(Tz, {}), [], Tz).includes('sem o setup do ⚙: nenhum')], [9.86, 0, true]);
     const gPD = global.PONTOS_DIA, gCFG = global.CFG;
-    global.PONTOS_DIA = { setupsDia:4.3, setupMin:7.65 }; global.CFG = { setupsDia:4, setupMin:8 };
+    global.PONTOS_DIA = { setupsDia:4, setupMin:8.2 }; global.CFG = { setupsDia:5, setupMin:6 };
     const a1 = _taktSetup();
     global.PONTOS_DIA = { setupsDia:null, setupMin:null }; const a2 = _taktSetup();
     global.CFG = { setupsDia:70, setupMin:8 }; const a3 = _taktSetup();    // 560 min não cabe na jornada
     global.CFG = { setupsDia:4 }; const a4 = _taktSetup();                // só um dos dois não vale
+    global.SETUP_PEND = { a:3, b:9 }; const a5 = _taktSetup(); global.SETUP_PEND = null;
     global.PONTOS_DIA = gPD; global.CFG = gCFG;
-    ok('a ordem: a CONFIG_PAINEL; sem ela, este computador; setup que não cabe na jornada ou só um campo → o padrão',
-       [a1, a2, a3.origem, a4.origem], [{ setupsDia:4.3, setupMin:7.65, origem:'planilha' }, { setupsDia:4, setupMin:8, origem:'computador' }, 'padrao', 'padrao']);
-    ok('só neste computador fica dito na faixa (âmbar)',
-       _taktFaixaHtml(_taktFaixa(_taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:4, setupMin:8, origem:'computador' } })), {}), [], T).includes('<span class="tks-warn">só neste computador</span>'), true);
-    ok('os campos do ⚙: vírgula ou ponto, até duas casas; vazio null; texto e negativo NaN (nunca 0)',
-       [_setupLer('4,3'), _setupLer('7.65'), _setupLer('1,234'), _setupLer(' '), Number.isNaN(_setupLer('abc')), Number.isNaN(_setupLer('-1')), _setupLer('0')],
-       [4.3, 7.65, 1.23, null, true, true, 0]);
-    ok('a ajuda do ⚙: o total por dia, o MESMO no app, de onde vale; não cabe na jornada; só um campo',
-       [_setupCfgTxt(4.3, 7.65, 'planilha'), _setupCfgTxt(4.3, 7.65, 'novo'), _setupCfgTxt(4.3, 7.65, 'computador'), _setupCfgTxt(8, 8, 'padrao'),
-        _setupCfgTxt(70, 8, 'planilha'), _setupCfgTxt(4.3, null, 'planilha'), _setupCfgTxt(NaN, 8, 'planilha')],
-       ['32,9 min · o mesmo no app', '32,9 min · salve', '32,9 min · só neste PC', '64 min · padrão', 'passa da jornada', 'os dois campos', 'só número ≥ 0']);
-    const sv = pega('function saveCfg('), env = pega('function enviarConfigPainel(');
-    ok('o ⚙ só manda o setup à planilha quando o gestor MUDOU o que viu ao abrir (um PC que abriu antes de ler a config não apaga o dos outros), os dois juntos',
-       [/_setupAberto && \(a!==_setupAberto\.a \|\| b!==_setupAberto\.b\)/.test(sv), /'setupsDia='\+_setupNovo\.a, 'setupMin='\+_setupNovo\.b/.test(env),
-        /setupsDia: \(json\.painelConfig\|\|\{\}\)\.setupsDia, setupMin: \(json\.painelConfig\|\|\{\}\)\.setupMin/.test(JS)],
-       [true, true, true]); }
+    ok('a ordem: o recém-salvo (gravando); a CONFIG_PAINEL; sem ela, este computador; setup que não cabe na jornada ou só um campo → o padrão',
+       [a5, a1, a2, a3.origem, a4.origem],
+       [{ setupsDia:3, setupMin:9, origem:'enviando' }, { setupsDia:4, setupMin:8.2, origem:'planilha' }, { setupsDia:5, setupMin:6, origem:'computador' }, 'padrao', 'padrao']);
+    const fx = o => _taktFaixaHtml(_taktFaixa(_taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:4, setupMin:8, origem:o } })), {}), [], T);
+    ok('só neste computador fica dito na faixa (âmbar), e o recém-salvo diz que está gravando',
+       [fx('computador').includes('<span class="tks-warn">só neste computador</span>'), fx('enviando').includes(' · gravando na planilha…')], [true, true]);
+    ok('os campos do ⚙ no domínio do app: trocas INTEIRAS até 100, minutos com até UMA casa até 600 (zero à direita não conta); vazio null; o resto NaN, nunca 0',
+       [_setupLer('4', 0, 100), _setupLer('4,0', 0, 100), _setupLer('8,2', 1, 600), _setupLer('8.20', 1, 600), _setupLer('0', 0, 100), _setupLer(' ', 0, 100),
+        ...[_setupLer('4,3', 0, 100), _setupLer('7,65', 1, 600), _setupLer('101', 0, 100), _setupLer('600,1', 1, 600), _setupLer('abc', 0, 100), _setupLer('-1', 0, 100), _setupLer('8 min', 1, 600)].map(Number.isNaN)],
+       [4, 4, 8.2, 8.2, 0, null, true, true, true, true, true, true, true]);
+    ok('o que impede salvar diz o porquê (e os dois vazios não impedem: não muda)',
+       [_setupErro(null, null), _setupErro(4, 8.2), _setupErro(4, null), _setupErro(NaN, 8), _setupErro(4, NaN), _setupErro(66, 8)],
+       [null, null, 'preencha TROCAS/DIA e MIN/TROCA (os dois)', 'TROCAS/DIA é número inteiro, de 0 a 100 — o app de cronoanálise não aceita fração',
+        'MIN/TROCA vai de 0 a 600, com até uma casa — o app de cronoanálise grava uma casa', 'o setup do dia (528 min) passa da jornada (527 min)']);
+    ok('a ajuda do ⚙: o total por dia, o MESMO no app, de onde vale; gravando; não cabe; só um campo; fora do domínio',
+       [_setupCfgTxt(4, 8.2, 'planilha'), _setupCfgTxt(4, 8.2, 'novo'), _setupCfgTxt(4, 8.2, 'computador'), _setupCfgTxt(4, 8.2, 'enviando'), _setupCfgTxt(8, 8, 'padrao'),
+        _setupCfgTxt(70, 8, 'planilha'), _setupCfgTxt(4, null, 'planilha'), _setupCfgTxt(NaN, 8, 'planilha'), _setupCfgTxt(4, NaN, 'planilha')],
+       ['32,8 min · o mesmo no app', '32,8 min · salve', '32,8 min · só neste PC', '32,8 min · gravando', '64 min · padrão', 'passa da jornada', 'os dois campos', 'trocas: número inteiro', 'min: até uma casa']);
+    // O ENVIO: o que mudou; e, com a planilha sem a chave, o setup DESTE computador (o
+    // digitado antes do re-deploy) — nunca o padrão (apagaria o de outro computador).
+    const ab = (a, b, origem) => ({ a, b, origem });
+    ok('o ⚙ manda o setup quando o gestor MUDOU o que viu, ou quando a planilha não tem a chave e o setup era deste computador; o padrão nunca é semeado',
+       [_setupEnviar(4, 8.2, ab(8, 8, 'padrao'), 'planilha'), _setupEnviar(4, 8.2, ab(4, 8.2, 'planilha'), 'planilha'),
+        _setupEnviar(8, 8, ab(8, 8, 'padrao'), 'sem-chave'), _setupEnviar(4, 8.2, ab(4, 8.2, 'computador'), 'sem-chave'),
+        _setupEnviar(4, 8.2, ab(4, 8.2, 'computador'), 'antigo'), _setupEnviar(NaN, 8, ab(8, 8, 'padrao'), 'planilha'), _setupEnviar(null, null, ab(8, 8, 'padrao'), 'sem-chave'),
+        _setupEnviar(4, 8.2, null, 'planilha')],
+       [{ a:4, b:8.2 }, null, null, { a:4, b:8.2 }, null, null, null, null]);
+    // O caso da revisão, do começo ao fim: digitado no ⚙ com o .gs antigo, re-deploy, abrir o ⚙ e SALVAR.
+    const alertas = [], gAl = global.alert; global.alert = m => alertas.push(m);
+    global.PONTOS_DIA = {}; global.CFG = { setupsDia:4, setupMin:8.2 };
+    _setupDaConfig({ metaUep:2761 });                                   // .gs v5.60: sem o campo
+    const f1 = [SETUP_PLAN, _taktSetup().origem];
+    _setupDaConfig({ metaUep:2761, setupsDia:null, setupMin:null });    // .gs v5.61, planilha sem a chave
+    const su0 = _taktSetup(), env = _setupEnviar(su0.setupsDia, su0.setupMin, ab(su0.setupsDia, su0.setupMin, su0.origem), SETUP_PLAN);
+    global.SETUP_PEND = env;
+    _setupResposta(env, { ok:true, painelConfig:{ setupsDia:4, setupMin:8.2 } });
+    const f2 = [SETUP_PLAN, _taktSetup(), SETUP_PEND, alertas.length];
+    global.SETUP_PEND = { a:5, b:6 };
+    _setupResposta({ a:5, b:6 }, null);                                 // sem resposta: avisa, e o pendente sai
+    const f3 = [SETUP_PEND, _taktSetup().origem, alertas.length, /não respondeu/.test(alertas[0] || '')];
+    _setupResposta({ a:5, b:6 }, { ok:true, painelConfig:{ metaUep:2761 } });   // .gs antigo: vale neste computador, sem alerta
+    const f4 = [SETUP_PLAN, alertas.length];
+    global.alert = gAl; global.PONTOS_DIA = gPD; global.CFG = gCFG; global.SETUP_PLAN = null; global.SETUP_PEND = null;
+    ok('o caso da revisão: digitado com o .gs antigo (só neste PC) → depois do re-deploy, o SALVAR sem mexer leva o setup à planilha, e a resposta confirma',
+       [f1, env, f2], [['antigo', 'computador'], { a:4, b:8.2 }, ['planilha', { setupsDia:4, setupMin:8.2, origem:'planilha' }, null, 0]]);
+    ok('sem resposta: avisa (o tempo esgotado não prova que não gravou) e deixa de dizer "gravando"; com o .gs antigo, sem alerta',
+       [f3, f4], [[null, 'planilha', 1, true], ['antigo', 1]]);
+    const sv = pega('function saveCfg('), env2 = pega('function enviarConfigPainel(');
+    ok('o SALVAR para no setup que não vale ANTES de mudar qualquer coisa, e o envio passa a resposta da planilha ao _setupResposta',
+       [sv.indexOf('_setupErro(') > 0 && sv.indexOf('_setupErro(') < sv.indexOf('CFG.empresa='), /_setupEnviar\([^;]*SETUP_PLAN\)/.test(sv), /PONTOS_DIA\.setupsDia=/.test(sv),
+        /jsonpFetch\(url\)\.then\(function\(r\)\{ _setupResposta\(su, r\); \}, function\(\)\{ _setupResposta\(su, null\); \}\)/.test(env2),
+        /setupsDia: \(json\.painelConfig\|\|\{\}\)\.setupsDia, setupMin: \(json\.painelConfig\|\|\{\}\)\.setupMin/.test(JS), /_setupDaConfig\(pc\);/.test(pega('function aplicarConfigPainel('))],
+       [true, true, false, true, true, true]); }
   ok('o desenho da faixa não faz conta; a conta não lê tela nem servidor',
      [/\*|\/ *[A-Za-z_]+\./.test(pega('function _taktFaixaHtml(').replace(/\/\/[^\n]*/g, '').replace(/<\/?[a-z]+[^>]*>/gi, '')),
       /document\.|jsonpFetch|CFG\./.test(pega('function _taktFaixa(') + pega('function _tkaVolumes('))], [false, false]);

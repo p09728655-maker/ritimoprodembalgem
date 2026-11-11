@@ -281,14 +281,23 @@ grava com a base medida no período: 5+ dias e abaixo de 90% do teto
 (`UEP_TRAVADA_DESDE`): o GRAVAR não grava nada, e a UEP só muda digitada na
 coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
+## Aba ⚖ UEP · cartão ATRASO (v7.227.0)
+
+| Indicador | Fórmula | Unidade | Onde |
+|---|---|---|---|
+| **ATRASO** (cartão na faixa das sub-abas) | o total do quadro ATRASO — CONFERÊNCIA (PRÓXIMOS DIAS): **horas** = Σ (atraso do código × UEP/cx da programação) ÷ (META UEP ÷ 527), em minuto inteiro — o `conta.venc` do `_gpxMontar`; **caixas** = Σ atraso por código (o `atraso` do `calcularProgramacao`: saldo dos lotes com data ANTES de hoje, FIFO por código; linha com X fora); **desde** = o `atrasoDesde` mais antigo. Código sem UEP: só nas caixas, e as horas levam `*`. O programado de hoje não entra. Vermelho com atraso; *nada vencido* em verde | h:min · cx | `v7:_uepSubAtr` · `v7:_gpxAtrasoMontar` · `v7:_gpxMontar` |
+
 ## Aba ⚖ UEP · TAKT DA SEMANA (v7.209.0)
 
 Três números na mesma unidade, **segundos por UEP** (menor = mais rápido), **sem
 o setup** (v7.225.0): os minutos de jornada menos o **setup do grupo**, o
 mesmo do app de cronoanálise: **TROCAS/DIA × MIN/TROCA do ⚙** (CONFIG_PAINEL
 `SETUPS_DIA`/`SETUP_MIN`, `.gs` v5.61, v7.226.0 — digitados também no app; sem
-eles, o padrão 8 × 8 = 64 min por dia → 463 min; `_taktSetup`). Setup médio
-medido em 13/10–10/11/2026: 4,3 × 7,65 = 32,9 min/dia. O setup sai dos dois
+eles, o padrão 8 × 8 = 64 min por dia → 463 min; `_taktSetup`). No domínio do
+app: trocas por dia inteiras (0–100) e minutos com uma casa (0–600), o setup do
+dia abaixo de 527 (`_setupLer`/`_setupErro` no painel, `_cfgSetup` no `.gs`).
+Setup médio medido em 13/10–10/11/2026: 4,3 × 7,65 = 32,9 min/dia, digitado como
+4 × 8,2 = 32,8. O setup sai dos dois
 lados da comparação, então os % e as horas de linha não mudam. A semana é a de hoje, segunda a domingo, lida pelo `getProgramacaoSemana` (`.gs`
 v5.59: as duas abas da programação pela data de cada lote). Dia útil = segunda
 a sexta fora dos feriados da aba FERIADOS.
@@ -305,7 +314,7 @@ a sexta fora dos feriados da aba FERIADOS.
 | **FALTA DA SEMANA** | Σ saldo de cada lote da semana × UEP do código (o saldo do `.gs`: o da planilha só quando PRODUZIDO + SALDO = QTDE; concluída e fora da esteira 0; linha sem saldo confiável fica fora e é dita). *De dias que já passaram* = a parte dos lotes com data antes de hoje | UEP | `v7:_taktMontar` (`falta`) |
 | **CABEM** | minutos de jornada que faltam hoje (a hora em andamento só o resto; hora extra fora) × META UEP ÷ 527 + dias úteis que vêm × META UEP. *Faltam* = falta − cabem | UEP | `v7:_taktRestMin` · `v7:_taktMontar` |
 | **AVALIAR PROGRAMAÇÃO** (TAKT, v7.213.0) | a programação colada da planilha: por linha, QTDE (produtos) × UEP do produto (soma dos volumes no cadastro de hoje, cor mais rápida), no dia da PREV EMB; depois a mesma conta da SEMANA QUE VEM (precisa × tem, dias acima, redistribuir). Produto fora do cadastro: listado, fora da conta | h:min · UEP | `v7:_tkaLer` · `v7:_tkaMontar` |
-| **TAKT POR CAIXA** (TAKT DA SEMANA → DETALHES, v7.217.0) | por produto · volume programado na semana (as cores juntas): **pelo takt** = takt da semana (s por UEP) × UEP por caixa (média das cores pesada pelas caixas) — o ritmo que o produto precisa, sem o setup, para a semana fechar; **na média da linha** = referência (s por UEP) × UEP por caixa. O **cx/h** ao lado é por hora de RELÓGIO (3.600 × (527 − setup/dia)/527 ÷ pelo takt — o setup na média), o que se confere no HORA A HORA. A última hora do AGORA também sai sem o setup (os minutos dela × (527 − setup/dia)/527): uma hora na meta dá a referência. Não é o takt do app de cronoanálise, que é por VOLUME (todo volume igual) | s/cx · cx/h | `v7:_taktPorCaixa` |
+| **TAKT POR CAIXA** (TAKT DA SEMANA → faixa, TAKT POR PRODUTO, v7.217.0; na faixa desde a v7.224.0) | por produto · volume programado na semana (as cores juntas): **pelo takt** = takt da semana (s por UEP) × UEP por caixa (média das cores pesada pelas caixas) — o ritmo que o produto precisa, sem o setup, para a semana fechar; **na média da linha** = referência (s por UEP) × UEP por caixa. O **cx/h** ao lado é por hora de RELÓGIO (3.600 × (527 − setup/dia)/527 ÷ pelo takt — o setup na média), o que se confere no HORA A HORA. A última hora do AGORA também sai sem o setup (os minutos dela × (527 − setup/dia)/527): uma hora na meta dá a referência. Não é o takt do app de cronoanálise, que é por VOLUME (todo volume igual) | s/cx · cx/h | `v7:_taktPorCaixa` |
 | **SALDO DE HORAS** (AVALIAR, v7.214.0) | de hoje ao último dia colado, dia a dia: atraso = máx(0, atraso de ontem + demanda − capacidade), em horas de linha. Demanda = saldo dos lotes do painel (vencido hoje) + linhas novas da colagem (não soma a que tem Nº LOTE SIST. já no painel, nem o mesmo produto no mesmo dia); capacidade = resto da jornada de hoje e 8h47 por dia útil (sem hora extra); dia útil sem programação nenhuma fica fora. *Chega com* = o atraso antes do 1º dia colado. **No ritmo atual** (v7.219.0) = em horas do relógio com a linha no ritmo desta semana: máx(0, atraso de ontem + demanda ÷ ritmo − capacidade) — a régua do *no ritmo atual: faltam* do veredito, então chegada + esse *faltam* = o fim. O atraso do **fim** sai também em dias (v7.220.0): horas ÷ 8h47, uma casa. A linha **colagem inteira** (v7.221.0) repete o PRECISA, o TEM e a falta do veredito da colagem (as semanas a partem pelo calendário) | h:min | `v7:_tkaCorrente` |
 | **FALTA · SOBRA** (TAKT e planilha, v7.214.2) | *falta* = precisa − tem, quando a programação passa da jornada → NÃO CABE; *sobra* = tem − precisa → CABE. Sempre por extenso (*falta 2h13*, *sobra 1h30*), nunca com sinal. A sobra não vira crédito para a semana seguinte: só abate atraso que já existe | h:min de linha | `v7:_tkaSaldoHtml` · `v7:_taktHeroHtml` |
 | **AGORA · PELO TAKT / PELA REFERÊNCIA** | o takt (ou a referência) × UEP por caixa do código que está rodando (cadastro; sem ele, a média de hoje do produto e da cor) — 1 caixa a cada X s | s/cx | `v7:_taktAgora` |

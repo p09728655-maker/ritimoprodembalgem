@@ -82,8 +82,10 @@ via Google Apps Script (JSONP).
   sábado real de 07/11 (240 min de jornada → META 524, META UEP pelas horas)
   nos três fechamentos, o domingo, o dia útil igual, o sábado só de madrugada,
   os 527 min dos slots e o `preencherUepPassada`; e o SETUP DO TAKT na
-  CONFIG_PAINEL (`.gs` v5.61: os dois juntos, número ≥ 0, zero vale, vírgula à
-  mão na planilha): `node fechamento.test.js`.
+  CONFIG_PAINEL (`.gs` v5.61: os dois juntos, no domínio do app — trocas
+  inteiras, minutos com uma casa, o dia abaixo de 527 —, zero vale, vírgula à
+  mão na planilha, "8 min" nunca vira 0, e a MESMA régua no ⚙ e no `.gs` em 17
+  casos): `node fechamento.test.js`.
 - `crono-registro.test.js` — REGISTRO DA CRONOANÁLISE (`.gs` v5.30):
   `registrarCrono` e `getCronoRegistros` rodando o `.gs` inteiro numa planilha
   de mentira (aba nasce sozinha, REG_ID não duplica, grava pelo nome da coluna,
@@ -139,9 +141,11 @@ via Google Apps Script (JSONP).
   15,4 · 234, 040-26 12,7 · 284) e o takt, a referência e o executado do
   painel sem o setup, a última hora do AGORA na mesma régua, o cx/h de
   relógio e a semana refeita com setup zero (12 de 12 mutações); e (v7.226.0)
-  o setup do ⚙ (a ordem planilha → computador → padrão, o setup médio 4,3 ×
-  7,65 contra a conta do app, o zero, o que não cabe na jornada, os campos e o
-  envio só do que mudou): `node takt-semana.test.js`.
+  o setup do ⚙ (a ordem gravando → planilha → computador → padrão, o setup
+  médio 4 × 8,2 contra a conta do app, o zero, o que não cabe na jornada, os
+  campos no domínio do app, o que impede salvar, o envio do que mudou e do
+  digitado antes do re-deploy, a resposta da planilha):
+  `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6668,6 +6672,25 @@ feito e dá ar de verdade ao que sobrou.
   - Os títulos dos blocos perderam o número (revoga a numeração da v7.114.0
     na TELA; o papel já não numerava).
   - ⏱ CRONOANÁLISE → e 📏 RÉGUAS → são `.ucv-sb-ir` na ponta da faixa.
+- **Cartão ATRASO na faixa (v7.227.0**, PPCP 11/11/2026, com o TAKT DA SEMANA
+  na tela: *"onde consigo ver hora que está em atraso?"* → *"deixar em um lugar
+  para ver card"* → *"deixar à vista"*). `<button class="ucv-sb uep-sb-atr">`
+  depois do TAKT DA SEMANA, SEM `data-sub` nem `role=tab` (não é sub-aba: o
+  `_uepSubMarca` só acende `.ucv-sb[data-sub]`). Texto do `_uepSubAtr(P, A,
+  est)` (conta pura): *3h45 · 425 cx · desde 06/11* — o total do quadro ATRASO
+  — CONFERÊNCIA (`conta.venc` do `_gpxMontar` e `_gpxAtrasoMontar`), nenhuma
+  conta nova; `*` nas horas com código sem UEP; *nada vencido* em verde; sem
+  leitura, o estado (`…`, *programação não lida*, *sem UEP na programação*, `—`
+  com o `.gs` sem o atraso por código). Pintado pelo `renderProxDias` em toda
+  saída (o mesmo `A` do quadro). O toque (`_uepAtrAbrir`) abre o PRÓXIMOS DIAS
+  com o quadro aberto e rola até ele. Borda vermelha com atraso
+  (`.uep-sb-atr.red`). Só o VENCIDO: o programado de hoje continua fora (v7.156.0).
+  - ⚠ **O NÃO FECHA da TAKT ESTA SEMANA não soma o vencido de antes da
+    segunda** (só os lotes datados na semana). Em 11/11/2026: cartão 3h45 (425
+    cx: 25396 de 06/11 1h44 · 25411 de 10/11 1h52 · 25413 de 10/11 0h09),
+    TAKT faltam 5h47 sem o 1h44 do 25396. Somar foi oferecido, não decidido.
+  - Medido no Chromium: 1920, uma linha (o cartão com 228 px, texto inteiro);
+    1366 e 1280, duas linhas (o corte de texto nos outros cartões já existia).
 - **Menu 🖨 IMPRIMIR ▾** (`#uep-imp`): VERSÃO EXECUTIVA, PADRÃO × REALIZADO e
   FILA DE CRONOANÁLISE, cada um com `_uepImpFecha();` antes. O 🖨 do bloco 7
   saiu dele (uma impressão, um lugar). Os listeners de clique fora e Esc fecham
@@ -7102,48 +7125,74 @@ feito e dá ar de verdade ao que sobrou.
         médio"*. ⚙ → METAS DO DIA: **TROCAS/DIA · MIN/TROCA · SETUP/DIA** (os
         dois campos do app; `.frm-row.cfg-setup`, três colunas — ⚠ a
         `cfg-r3` já era da IDENTIFICAÇÃO). CONFIG_PAINEL `SETUPS_DIA` /
-        `SETUP_MIN` (gravados como NÚMERO, os dois juntos, ≥ 0; zero = sem
-        setup; `_cfgSetupNum`), devolvidos pelo `getConfigPainel` como
+        `SETUP_MIN` (gravados como NÚMERO, os dois juntos; zero = sem setup;
+        `_cfgSetup`), devolvidos pelo `getConfigPainel` como
         `setupsDia`/`setupMin` → `PONTOS_DIA`. `_taktSetup()` é a leitura
-        ÚNICA: planilha → este computador (`CFG.setupsDia/setupMin`, rpe_cfg) →
-        padrão; o setup do dia tem de caber na jornada. O `_taktMontar` lê
-        `h.setup || _taktSetup()` e guarda `T.setup`; a `_taktFaixa` passa o
-        `T.setup` ao `_taktApp`. Textos com `_tkDec` (até 2 casas) e `_tkM`
-        (minutos com 1 casa: 494,1).
-        - **Só vai à planilha o que o gestor MUDOU** no ⚙ (`_setupAberto` ×
-          campos; `_setupNovo` no `enviarConfigPainel`): um PC que abriu o ⚙
-          antes de ler a config não devolve o padrão por cima (a regra da META
-          DIA (UEP)).
+        ÚNICA: o recém-salvo (`SETUP_PEND`, origem `enviando`, *gravando na
+        planilha…*) → planilha → este computador (`CFG.setupsDia/setupMin`,
+        rpe_cfg) → padrão; o setup do dia tem de caber na jornada. O
+        `_taktMontar` lê `h.setup || _taktSetup()` e guarda `T.setup`; a
+        `_taktFaixa` passa o `T.setup` ao `_taktApp`. Textos com `_tkDec` (até
+        2 casas) e `_tkM` (minutos com 1 casa: 494,2).
+        - ⚠ **NO DOMÍNIO DO APP** (revisão da v7.226.0, BLOQUEIA): no banco do
+          app `setups_dia` é smallint 0–100 e `setup_min` numeric(5,1) 0–600.
+          O 4,3 × 7,65 que o ⚙ aceitava dava erro 400 no app (trocas) e 7,7 nos
+          minutos — os dois takts voltariam a não bater. Hoje o ⚙
+          (`_setupLer(v, casas, max)` + `_setupErro`; `SETUP_TROCAS_MAX`/
+          `SETUP_MIN_MAX`) e o `.gs` (`_cfgSetup`, `SETUP_*_MAX_GS`) aceitam só
+          trocas inteiras e minutos com uma casa (zero à direita não conta), e o
+          setup do dia < 527. A MESMA régua nos dois (`fechamento.test.js`
+          compara 17 casos). Texto com algarismo (*"8 min"*, *"8x8"*) não é
+          número — o `_numBR` lia como 0.
+        - **SALVAR com setup que não vale** (um campo só, fração, duas casas,
+          passa da jornada) dá um alerta com o motivo e **não salva nada**,
+          ANTES de mexer no CFG. Os dois vazios = não muda.
+        - **O que vai à planilha** (`_setupEnviar`): o que o gestor MUDOU no ⚙
+          (`_setupAberto` × campos) — um PC que abriu o ⚙ antes de ler a config
+          não devolve o padrão por cima (a regra da META DIA (UEP)) —, **ou**,
+          com a planilha sem a chave (`SETUP_PLAN` `sem-chave`), o setup deste
+          computador (origem `computador`): é o que leva à planilha o setup
+          digitado antes do re-deploy (revisão, BLOQUEIA: sem isso ele ficava
+          só no PC para sempre). O PADRÃO nunca é semeado (apagaria o setup que
+          outro PC ainda vai levar).
+        - **`SETUP_PLAN`** (`_setupDaConfig`, no `aplicarConfigPainel`, o
+          esquema do `ATRASO_PLAN`): `planilha` · `sem-chave` · `antigo` (o
+          `.gs` sem o campo) · null. O SALVAR não escreve no `PONTOS_DIA`: o
+          `setConfigPainel` devolve a config gravada e o `_setupResposta`
+          confirma (ou, sem resposta ou com outro valor, dá um alerta para
+          conferir no ⚙ — tempo esgotado não prova que não gravou). Com o `.gs`
+          antigo, vale só neste PC, sem alerta.
         - **Setup médio medido** (PARADAS, só a jornada 07–17, 20 dias úteis de
           13/10 a 10/11/2026): **4,3 trocas de produto/dia × 7,65 min = 32,9
-          min/dia** (mediana por troca 6,8; por dia 29,8). Troca de plástico
-          (2,6/dia × 4,75 = 12 min/dia) fora — consumo de bobina. Com 32,9: takt
-          no app 16–19/11 = 13,6 s (era 12,7), takt do painel 9,4 s por UEP.
-        - Antes do re-deploy: o digitado vale só no PC (a faixa diz *só neste
-          computador*, âmbar). O ⚙ ficou com 815 px (era 787): sem rolagem a
-          1920×1015 e 1920×937; a 1600×860 rola 9 px.
-      - **`_taktApp(dias, vol)`** (pura): a conta do app (`ritmoExigido` +
-        `horasDeSetup` + `fracaoDaSemana`), por semana seg–dom: dias com volume
-        (no máximo 5) × (8h48 − 1h04) ÷ volumes. Várias semanas (a AVALIAR)
-        somam e a faixa diz *"N semanas somadas (no app, uma linha por
-        semana)"*. A faixa: *takt no app: 12,7 s por volume (284 vol/h) = 30h56
-        ÷ 8.770 · o app conta 8h48 por dia com volume e desconta o setup do
-        grupo, 8 × 8 min por dia (4h16 nos 4 dias)*. Saiu o *"= 35h08 de
+          min/dia** (mediana por troca 6,8; por dia 29,8), **digitado como 4 ×
+          8,2 = 32,8** (o domínio do app). Troca de plástico (2,6/dia × 4,75 =
+          12 min/dia) fora — consumo de bobina. Com 32,8: takt no app 16–19/11
+          = 13,6 s (era 12,7), takt do painel 9,4 s por UEP.
+        - O ⚙ ficou com 815 px (era 787): sem rolagem a 1920×1015 e 1920×937;
+          a 1600×860 rola 9 px.
+      - **`_taktApp(dias, vol, grupo)`** (pura): a conta do app (`ritmoExigido`
+        + `horasDeSetup` + `fracaoDaSemana`), por semana seg–dom: dias com
+        volume (no máximo 5) × (8h48 − setup do dia) ÷ volumes; `grupo` = o
+        `CRONO_APP_GRUPO` com o setup do ⚙. Várias semanas (a AVALIAR) somam e
+        a faixa diz *"N semanas somadas (no app, uma linha por semana)"*. A
+        faixa: *takt no app: 12,7 s por volume (284 vol/h) = 30h56 ÷ 8.770 · o
+        app conta 8h48 por dia com volume e desconta o setup, 8 × 8 min por dia
+        (4h16 nos 4 dias)* (os números com o padrão 8 × 8). Saiu o *"= 35h08 de
         jornada"* do cartão (era o 8h47 do painel ao lado do 8h48 do app).
       - **O painel desconta o MESMO setup** em todo SEGUNDO da sub-aba
-        (`_taktMontar`: `minProd` = 527 − 64 = 463): `takt` = dias úteis ×
-        463 × 60 ÷ UEP, `ref` = 463 × 60 ÷ META, `exec.s` = minutos × 463/527
-        × 60 ÷ UEP feita. Daí o TAKT DA SEMANA · NO PAINEL, o TAKT POR
+        (`_taktMontar`: `minProd` = 527 − setup/dia; com o padrão, 527 − 64 =
+        463): `takt` = dias úteis × minProd × 60 ÷ UEP, `ref` = minProd × 60 ÷
+        META, `exec.s` = minutos × minProd/527 × 60 ÷ UEP feita. Daí o TAKT DA SEMANA · NO PAINEL, o TAKT POR
         PRODUTO, o AGORA e os DETALHES. `exec.min` continua bruto (a simulação
         lê ele).
       - **A ÚLTIMA HORA do AGORA na mesma régua** (revisão da v7.225.0, o único
         BLOQUEIA): em relógio ela saía 19,8 s numa hora EXATAMENTE na meta ao
         lado da referência de 17,4 s — dois vereditos na mesma linha, com a cor
-        do HORA A HORA dizendo verde. Hoje os minutos dela × 463/527
+        do HORA A HORA dizendo verde. Hoje os minutos dela × minProd/527
         (`_taktFProd(T)`, como o EXECUTADO): hora na meta = a referência (o
         teste prende).
       - **As caixas por hora são de RELÓGIO** (`cxh` do AGORA, `cxhTakt` do
-        TAKT POR PRODUTO: 3.600 × 463/527 ÷ s por caixa — o setup na média):
+        TAKT POR PRODUTO: 3.600 × minProd/527 ÷ s por caixa — o setup na média):
         é o número que o líder confere no HORA A HORA (211 da MEL, não 240).
         O `Tv` da AVALIAR leva o `minProd` para isso.
       - **"sem o setup", nunca "com a linha rodando"** nos textos: RODANDO é o

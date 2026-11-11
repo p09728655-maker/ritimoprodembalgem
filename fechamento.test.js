@@ -292,7 +292,7 @@ console.log('\n── v5.56: SOMAR ATRASO na CONFIG_PAINEL — a META gravada n�
      [/getPontosDia: \[[^\]]*'cfg'/.test(GS), /setConfigPainel: \['cfg'\]/.test(GS)], [true, true]);
 }
 
-console.log('\n── v5.61: o SETUP DO TAKT na CONFIG_PAINEL — trocas por dia × minutos por troca, os dois do app ──');
+console.log('\n── v5.61: o SETUP DO TAKT na CONFIG_PAINEL — trocas por dia × minutos por troca, no domínio do app ──');
 {
   const P = montar();
   const cfg = () => { const c = P.run('_valoresMemo = {}; return getConfigPainel();'); return [c.setupsDia, c.setupMin]; };
@@ -300,16 +300,32 @@ console.log('\n── v5.61: o SETUP DO TAKT na CONFIG_PAINEL — trocas por dia
   const grava = q => P.run('_valoresMemo = {}; return setConfigPainel(' + JSON.stringify(q) + ');');
   ok('sem as chaves → null nos dois (o painel usa o dele), e as chaves existem no objeto (sinal de .gs novo)',
      [cfg(), ['setupsDia', 'setupMin'].every(k => Object.prototype.hasOwnProperty.call(P.run('return getConfigPainel();'), k))], [[null, null], true]);
-  grava({ setupsDia: '4.3' }); grava({ setupsDia: '', setupMin: '7.65' }); grava({ setupsDia: 'abc', setupMin: '8' }); grava({ setupsDia: '-1', setupMin: '8' });
-  ok('só os dois juntos, e só número ≥ 0: um campo só, vazio, texto ou negativo não grava nada', linhas(), [undefined, undefined]);
-  const r = grava({ setupsDia: '4.3', setupMin: '7.65' });
-  ok('4.3 e 7.65 (o painel manda com ponto) → gravados como NÚMERO, e a resposta já devolve os dois', [linhas(), r.painelConfig.setupsDia, r.painelConfig.setupMin], [[4.3, 7.65], 4.3, 7.65]);
-  grava({ setupsDia: '0', setupMin: '7.65' });
-  ok('ZERO é valor (sem setup): regrava a MESMA linha, uma linha só', [cfg(), P.ABAS.CONFIG_PAINEL.filter(x => x[0] === 'SETUPS_DIA').length], [[0, 7.65], 1]);
-  const Q = montar();
-  Q.ABAS.CONFIG_PAINEL.push(['SETUPS_DIA', '4,3'], ['SETUP_MIN', 'talvez']);
-  const q = Q.run('return getConfigPainel();');
-  ok('digitado na planilha à mão com vírgula vale; ilegível → null, nunca 0', [q.setupsDia, q.setupMin], [4.3, null]);
+  grava({ setupsDia: '4' }); grava({ setupsDia: '', setupMin: '8.2' }); grava({ setupsDia: 'abc', setupMin: '8' }); grava({ setupsDia: '-1', setupMin: '8' });
+  grava({ setupsDia: '4.3', setupMin: '8' }); grava({ setupsDia: '4', setupMin: '7.65' }); grava({ setupsDia: '70', setupMin: '8' }); grava({ setupsDia: '4', setupMin: '8 min' });
+  ok('só os dois juntos e no domínio do app: um campo só, vazio, texto, negativo, fração nas trocas, 2 casas nos minutos ou o setup do dia passando da jornada não gravam nada',
+     linhas(), [undefined, undefined]);
+  const r = grava({ setupsDia: '4', setupMin: '8.2' });
+  ok('4 e 8.2 (o painel manda com ponto) → gravados como NÚMERO, e a resposta já devolve os dois', [linhas(), r.painelConfig.setupsDia, r.painelConfig.setupMin], [[4, 8.2], 4, 8.2]);
+  grava({ setupsDia: '0', setupMin: '8.2' });
+  ok('ZERO é valor (sem setup): regrava a MESMA linha, uma linha só', [cfg(), P.ABAS.CONFIG_PAINEL.filter(x => x[0] === 'SETUPS_DIA').length], [[0, 8.2], 1]);
+  const mao = (a, b) => { const Q = montar(); Q.ABAS.CONFIG_PAINEL.push(['SETUPS_DIA', a], ['SETUP_MIN', b]); const q = Q.run('return getConfigPainel();'); return [q.setupsDia, q.setupMin]; };
+  ok('digitado à mão na planilha: vírgula vale; "8 min", "8x8", fração nas trocas e o que passa da jornada → null nos DOIS, nunca 0',
+     [mao('4', '8,2'), mao(4, 8.2), mao('4', '8 min'), mao('8x8', '8'), mao('4,3', '8'), mao(70, 8), mao('4', 'talvez')],
+     [[4, 8.2], [4, 8.2], [null, null], [null, null], [null, null], [null, null], [null, null]]);
+  // A MESMA régua no painel (_setupLer + _setupErro) e no .gs (_cfgSetup): o ⚙ não
+  // pode aceitar um setup que a planilha recusa, nem o contrário.
+  const V7 = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
+  const fn = nome => { const k = V7.indexOf('function ' + nome + '('); return V7.slice(k, V7.indexOf('\n}\n', k) + 2); };
+  const painel = new Function('UEP_MIN_DIA', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX', '_tkM',
+    fn('_setupLer') + fn('_setupErro') + '; return (a, b) => { const x = _setupLer(a, 0, SETUP_TROCAS_MAX), y = _setupLer(b, 1, SETUP_MIN_MAX); return x != null && !_setupErro(x, y) ? [x, y] : null; };')
+    (527, 100, 600, v => String(v));
+  const casos = [['4', '8,2'], ['4', '8.2'], ['0', '8'], ['4', '0'], ['4,0', '8,20'], ['4,3', '8'], ['4', '7,65'], ['101', '1'], ['4', '600,1'],
+                 ['66', '8'], ['65', '8,1'], ['4', '8 min'], ['8x8', '8'], ['-1', '8'], ['', '8'], ['4', ''], ['1.234', '1']];
+  const gs = casos.map(([a, b]) => { const q = P.run('return _cfgSetup(' + JSON.stringify(a) + ',' + JSON.stringify(b) + ');'); return q ? [q.setupsDia, q.setupMin] : null; });
+  ok('a régua do ⚙ e a do .gs dão o MESMO em ' + casos.length + ' casos (dentro, fora do domínio, passando da jornada, texto)',
+     casos.map(([a, b]) => painel(a, b)), gs);
+  ok('… e os casos dizem o que se espera (4 × 8,2 vale; 4,3 trocas, 7,65 min, 66 × 8 = 528 e "8 min" não)',
+     gs.slice(0, 8), [[4, 8.2], [4, 8.2], [0, 8], [4, 0], [4, 8.2], null, null, null]);
 }
 
 console.log('\n── v5.60: sábado e domingo — a meta é a das horas de jornada trabalhadas ──');

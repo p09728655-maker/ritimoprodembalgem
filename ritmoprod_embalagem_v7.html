@@ -538,7 +538,8 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .ucv-pn.entra{animation:ucvIn .18s ease-out}
 @media (prefers-reduced-motion:reduce){#sec-uep .ucv-pn.entra{animation:none}}
 #sec-uep .uep-sb-irs{display:flex;flex-wrap:wrap;gap:8px;align-self:center}
-#sec-uep .ucv-sub{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}   /* v7.209.0: seis sub-abas em colunas iguais — no flex, a 6ª que descia esticava a linha inteira; estreitar cortava o número dos botões */
+#sec-uep .ucv-sub{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+#sec-uep .ucv-sb.uep-sb-atr.red{border-color:rgba(245,85,74,.6);box-shadow:inset 3px 0 0 var(--red)}   /* v7.227.0: o ATRASO à vista — não é sub-aba, nunca fica "aceso" */   /* v7.209.0: seis sub-abas em colunas iguais — no flex, a 6ª que descia esticava a linha inteira; estreitar cortava o número dos botões */
 /* v7.210.0 (PPCP, print a 1.920 px: "pode aumentar um pouco"): auto-FIT, não auto-fill — o fill deixava colunas
    vazias à direita e os botões estreitos, com o número cortado; e a letra um pouco maior. */
 #sec-uep .ucv-sb{padding:12px 16px 13px}
@@ -3394,6 +3395,7 @@ if (_v7Instalado()) _v7EscondeBotao();
     <button type="button" class="ucv-sb" data-sub="prod" role="tab" aria-selected="false" onclick="_uepSub('prod')"><b>POR PRODUTO</b><span id="uep-sb-prod">…</span></button>
     <button type="button" class="ucv-sb" data-sub="reguas" role="tab" aria-selected="false" onclick="_uepSub('reguas')"><b>RÉGUAS</b><span id="uep-sb-reguas">caixas × pontos × UEP</span></button>
     <button type="button" class="ucv-sb" data-sub="takt" role="tab" aria-selected="false" onclick="_uepSub('takt')"><b>TAKT DA SEMANA</b><span id="uep-sb-takt">…</span></button>
+    <button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir()" title="Os lotes com data ANTES de hoje que ainda têm saldo na PROGRAMACAO (o STATUS EM ATRASO; linha com X fora), em horas de linha no ritmo da META UEP (o dia de 527 min). O programado de hoje não é atraso. Toque: o quadro código a código, em PRÓXIMOS DIAS."><b>ATRASO</b><span id="uep-sb-atr">…</span></button>
     <span class="uep-sb-irs"><button type="button" class="btn btn-ghost ucv-sb-ir" onclick="setTab('crono')" title="Converter o tempo por volume da cronoanálise em UEP (aba própria)">⏱ CRONOANÁLISE → UEP</button></span>
   </div>
   <div id="uep-bloco"><div class="empty-msg">Carregando…</div></div>
@@ -3821,9 +3823,9 @@ if (_v7Instalado()) _v7EscondeBotao();
     <!-- SETUP DO TAKT (v7.226.0 / .gs v5.61): os dois campos do app de cronoanálise
          (Demanda semanal → Tempo disponível). Grava na CONFIG_PAINEL e vale para
          todos os aparelhos; o MESMO número vai no app, digitado pelo PPCP. -->
-    <div class="frm-row cfg-setup" title="Trocas de produto por dia × minutos por troca: sai da jornada no takt da ⚖ UEP · TAKT DA SEMANA. Digite o MESMO no app de cronoanálise (Demanda semanal → Tempo disponível). Vale para todos os aparelhos.">
-      <div class="frm-grp"><label class="frm-lbl">TROCAS/DIA</label><input class="frm-inp" id="c-setups-dia" type="text" inputmode="decimal" placeholder="ex.: 4,3"></div>
-      <div class="frm-grp"><label class="frm-lbl">MIN/TROCA</label><input class="frm-inp" id="c-setup-min" type="text" inputmode="decimal" placeholder="ex.: 7,65"></div>
+    <div class="frm-row cfg-setup" title="Trocas de produto por dia × minutos por troca: sai da jornada no takt da ⚖ UEP · TAKT DA SEMANA. Digite o MESMO no app de cronoanálise (Demanda semanal → Tempo disponível) — lá as trocas são inteiras e os minutos têm uma casa. Vale para todos os aparelhos.">
+      <div class="frm-grp"><label class="frm-lbl">TROCAS/DIA</label><input class="frm-inp" id="c-setups-dia" type="text" inputmode="numeric" placeholder="ex.: 4"></div>
+      <div class="frm-grp"><label class="frm-lbl">MIN/TROCA</label><input class="frm-inp" id="c-setup-min" type="text" inputmode="decimal" placeholder="ex.: 8,2"></div>
       <div class="frm-grp"><label class="frm-lbl">SETUP/DIA</label><div id="c-setup-h" class="cfg-v">—</div></div>
     </div>
     <div class="frm-row" style="margin-bottom:0">
@@ -4056,7 +4058,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.226.0';
+const APP_VER   = '7.227.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -9867,7 +9869,7 @@ function _regAbrir(forcar){
 // O botão e o painel acesos, sem desenhar nada (o setTab também usa). Na RÉGUAS o
 // #uep-bloco some inteiro: o aviso de estado dele (fora dos painéis) não é dela.
 function _uepSubMarca(k){
-  document.querySelectorAll('#uep-sub .ucv-sb').forEach(el => { const on = el.dataset.sub === k; el.classList.toggle('on', on); el.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  document.querySelectorAll('#uep-sub .ucv-sb[data-sub]').forEach(el => { const on = el.dataset.sub === k; el.classList.toggle('on', on); el.setAttribute('aria-selected', on ? 'true' : 'false'); });
   document.querySelectorAll('#sec-uep .ucv-pn').forEach(el => el.classList.toggle('on', el.dataset.sub === k));
   const b = document.getElementById('uep-bloco'); if(b) b.style.display = k === 'reguas' ? 'none' : '';
 }
@@ -9917,6 +9919,31 @@ function _uepSubProx(W, est){
   // "sobram" num botão e "não fecha" no outro.
   const s = Math.round(w.minPede) - w.minJorn, rot = w.rot === 'ESTA SEMANA' ? 'dias que vêm' : w.rot.toLowerCase();
   return s > 0 ? { txt:`${rot}: faltam ${_fmtHM(s)}`, cls:'red' } : s < 0 ? { txt:`${rot}: sobram ${_fmtHM(-s)}`, cls:'' } : { txt:`${rot}: cabe na jornada`, cls:'' };
+}
+// ATRASO (v7.227.0, PPCP 11/11/2026: "onde consigo ver hora que está em atraso?"
+// → "deixar em um lugar para ver card" → "deixar à vista"). O total do quadro
+// ATRASO — CONFERÊNCIA (que mora recolhido no fim do PRÓXIMOS DIAS) num cartão da
+// faixa da ⚖ UEP, à vista em qualquer sub-aba. O MESMO número do quadro: as horas
+// do `conta.venc` do _gpxMontar e as caixas do _gpxAtrasoMontar — nenhuma conta
+// nova. Só o VENCIDO: o programado de hoje não é atraso (v7.156.0, "nem aconteceu
+// ainda"). Horas só dos códigos com UEP: código sem UEP fica nas caixas e leva *.
+// est: 'lendo' | 'falha' | 'sem-uep' | 'sem-lista' (o .gs sem o atraso por código)
+// | 'vazia' (o dia lido, nada em aberto).
+function _uepSubAtr(P, A, est){
+  if(est) return est === 'vazia' ? { txt:'nada vencido', cls:'ok' }
+    : { txt: est === 'falha' ? 'programação não lida' : est === 'sem-uep' ? 'sem UEP na programação' : est === 'sem-lista' ? '—' : '…', cls:'' };
+  if(!A) return { txt:'…', cls:'' };
+  if(!A.venc.length) return { txt:'nada vencido', cls:'ok' };
+  const k = P && P.conta, h = k && k.venc != null && k.venc > 0 ? _fmtHM(k.venc) + (A.semUep ? '*' : '') : null;
+  const desde = (A.venc[0].desde || '').slice(0, 5);
+  return { txt:`${h ? h + ' · ' : ''}${fmtN(A.cxVenc)} cx${h ? '' : ' · sem UEP'}${desde ? ' · desde ' + desde : ''}`, cls:'red' };
+}
+// O toque: PRÓXIMOS DIAS com o quadro aberto, rolado até ele.
+function _uepAtrAbrir(){
+  GPX_ATR_ABERTO = true;
+  _uepSub('prox');
+  const d = document.querySelector('#ger-prox .gpx-atr');
+  if(d){ d.open = true; try{ d.scrollIntoView({ behavior:'smooth', block:'start' }); }catch(e){} }
 }
 function _uepSubPintar(D){ ['hoje', 'periodo', 'prod', 'takt'].forEach(k => _sbPinta(document.getElementById('uep-sb-' + k), D && D[k])); }
 function _uepImpFecha(){ const d = document.getElementById('uep-imp'); if(d) d.open = false; }
@@ -10248,9 +10275,12 @@ const CRONO_APP_GRUPO={ hSemana:44, diasSemana:5, setupsDia:8, setupMin:8 };
 // O SETUP QUE VALE (v7.226.0 / .gs v5.61): os dois campos do ⚙ (trocas por dia
 // × minutos por troca — os mesmos dois do app). Na CONFIG_PAINEL (todo
 // aparelho); sem ela, o deste computador (CFG, rpe_cfg); sem nenhum, o padrão.
-// Os DOIS juntos ou nenhum, e o setup do dia tem de caber na jornada.
+// O recém-salvo no ⚙ vale enquanto a planilha não responde (SETUP_PEND,
+// "gravando"). Os DOIS juntos ou nenhum, e o setup do dia cabe na jornada.
 function _taktSetup(){
   const ok=(a, b)=>[a, b].every(v=>v!=null && v!=='' && isFinite(Number(v)) && Number(v)>=0) && Number(a)*Number(b)<UEP_MIN_DIA;
+  const pe=typeof SETUP_PEND!=='undefined' ? SETUP_PEND : null;
+  if(pe && ok(pe.a, pe.b)) return { setupsDia:Number(pe.a), setupMin:Number(pe.b), origem:'enviando' };
   const pd=typeof PONTOS_DIA!=='undefined' && PONTOS_DIA ? PONTOS_DIA : {};
   if(ok(pd.setupsDia, pd.setupMin)) return { setupsDia:Number(pd.setupsDia), setupMin:Number(pd.setupMin), origem:'planilha' };
   const c=typeof CFG!=='undefined' && CFG ? CFG : {};
@@ -10598,7 +10628,7 @@ function _taktFaixaHtml(F, R, Tt){
     +`<div class="tks-fx-n">${_tkS(F.takt)}<small>s por UEP</small></div>`
     +`<div class="tks-fx-d">a média da linha sem hora extra é <b>${_tkS(F.ref)} s</b> · a programação pede <b class="${F.pede>100 ? 'tks-warn' : ''}">${fmtP(F.pede)}</b> dela`
     +`<br>sem o setup do ⚙: ${F.setupDia>0 ? _fmtHM(F.setupDia)+' por dia' : 'nenhum'}`
-    +(F.setupOrigem==='computador' ? ' · <span class="tks-warn">só neste computador</span>' : F.setupOrigem==='padrao' ? ' · padrão — digite o setup no ⚙ e o mesmo no app' : ' · digite o mesmo no app')+`</div></div>`;
+    +(F.setupOrigem==='computador' ? ' · <span class="tks-warn">só neste computador</span>' : F.setupOrigem==='enviando' ? ' · gravando na planilha…' : F.setupOrigem==='padrao' ? ' · padrão — digite o setup no ⚙ e o mesmo no app' : ' · digite o mesmo no app')+`</div></div>`;
   const A=F.agora;
   const c3=A ? `<div class="tks-fx-c" title="O takt da semana × a UEP por caixa do produto que está rodando: 1 caixa a cada X segundos (sem o setup) para a semana fechar. As caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA.">`
     +`<div class="kpi-lbl">AGORA · ${e(A.nome)}${A.cor ? ' '+e(A.cor) : ''}</div>`
@@ -16840,8 +16870,8 @@ function openCfg(){
       ip.oninput=h; const mu=document.getElementById('c-meta-uep'); if(mu) mu.addEventListener('input', h); h(); } }
   { const sd=document.getElementById('c-setups-dia'), sm=document.getElementById('c-setup-min');
     if(sd && sm){ const su=_taktSetup(); sd.value=_tkDec(su.setupsDia); sm.value=_tkDec(su.setupMin);
-      _setupAberto={ a:su.setupsDia, b:su.setupMin };
-      const h=()=>{ const e=document.getElementById('c-setup-h'), a=_setupLer(sd.value), b=_setupLer(sm.value);
+      _setupAberto={ a:su.setupsDia, b:su.setupMin, origem:su.origem };
+      const h=()=>{ const e=document.getElementById('c-setup-h'), a=_setupLer(sd.value, 0, SETUP_TROCAS_MAX), b=_setupLer(sm.value, 1, SETUP_MIN_MAX);
         if(e) e.textContent=_setupCfgTxt(a, b, a===su.setupsDia && b===su.setupMin ? su.origem : 'novo'); };
       sd.oninput=h; sm.oninput=h; h(); } }
   document.getElementById('c-takt-dem').value=CFG.taktDemandaDia||1850;
@@ -16913,6 +16943,12 @@ function onToggleMetaComAtraso(){
   }
 }
 function saveCfg(){
+  // SETUP DO TAKT (revisão da v7.226.0): setup que não vale (um campo só, fração
+  // nas trocas, duas casas nos minutos, passa da jornada) NÃO fecha o ⚙ calado —
+  // diz o que corrigir e não salva nada. Os dois vazios = não muda.
+  { const sd=document.getElementById('c-setups-dia'), sm=document.getElementById('c-setup-min');
+    const e=sd && sm ? _setupErro(_setupLer(sd.value, 0, SETUP_TROCAS_MAX), _setupLer(sm.value, 1, SETUP_MIN_MAX)) : null;
+    if(e){ alert('SETUP DO TAKT: '+e+'.\n\nNada foi salvo — corrija ou apague os dois campos.'); try{ sd.focus(); }catch(x){} return; } }
   CFG.empresa=document.getElementById('c-empresa').value;
   CFG.unidade=document.getElementById('c-unidade').value;
   CFG.setor=document.getElementById('c-setor').value;
@@ -16941,16 +16977,16 @@ function saveCfg(){
     const atual=Number(PONTOS_DIA.metaPts)>0?Number(PONTOS_DIA.metaPts):null;
     _metaPtsNova=(v>0&&v!==atual)?v:null;
     if(v>0){ PONTOS_DIA.metaPts=v; try{ localStorage.setItem(CAP_PTS_LS, String(v)); }catch(e){} } }
-  // SETUP DO TAKT (v7.226.0): os dois juntos, e só quando o gestor MUDOU o que o ⚙
+  // SETUP DO TAKT (v7.226.0): os dois juntos, quando o gestor MUDOU o que o ⚙
   // mostrou ao abrir — um computador que abriu o ⚙ antes de ler a config não pode
-  // devolver o padrão por cima do setup dos outros (a regra da META DIA (UEP)).
-  // Fica também neste computador (CFG): a rede antes do .gs v5.61.
-  { const a=_setupLer((document.getElementById('c-setups-dia')||{}).value), b=_setupLer((document.getElementById('c-setup-min')||{}).value);
-    const valido=a!=null && b!=null && !Number.isNaN(a) && !Number.isNaN(b) && a*b<UEP_MIN_DIA;
-    if(valido && _setupAberto && (a!==_setupAberto.a || b!==_setupAberto.b)){
-      CFG.setupsDia=a; CFG.setupMin=b; _setupNovo={ a, b };
-      if(typeof PONTOS_DIA!=='undefined' && PONTOS_DIA){ PONTOS_DIA.setupsDia=a; PONTOS_DIA.setupMin=b; }
-    } }
+  // devolver o padrão por cima do setup dos outros (a regra da META DIA (UEP)) —
+  // ou quando a planilha ainda não tem a chave e este computador tem o seu (é o
+  // que leva à planilha o setup digitado antes do re-deploy do .gs v5.61).
+  // Fica também neste computador (CFG). Até a planilha responder, vale o enviado
+  // (SETUP_PEND, "gravando"); a resposta confirma ou avisa (_setupResposta).
+  { const env=_setupEnviar(_setupLer((document.getElementById('c-setups-dia')||{}).value, 0, SETUP_TROCAS_MAX),
+      _setupLer((document.getElementById('c-setup-min')||{}).value, 1, SETUP_MIN_MAX), _setupAberto, SETUP_PLAN);
+    if(env){ CFG.setupsDia=env.a; CFG.setupMin=env.b; _setupNovo=env; if(SETUP_PLAN!=='antigo') SETUP_PEND=env; } }
   CFG.taktDemandaDia=parseInt(document.getElementById('c-takt-dem').value)||1850;
   CFG.turnoInicio=document.getElementById('c-t0').value;
   CFG.turnoFim=document.getElementById('c-t1').value;
@@ -17015,23 +17051,70 @@ document.getElementById('modal-cfg').addEventListener('click',function(e){ if(e.
 // que grava na aba CONFIG_PAINEL. Fire-and-forget: não bloqueia o salvar.
 let _metaUepNova=null;   // meta de UEP digitada nas configurações, a enviar uma vez
 let _metaPtsNova=null;   // meta de PONTOS, idem (v7.187.0)
-// SETUP DO TAKT (v7.226.0): o que o ⚙ mostrou ao abrir e o que mudou, a enviar uma vez.
-let _setupAberto=null, _setupNovo=null;
-// O número de um campo do setup: vazio → null; ≥ 0 com vírgula ou ponto e até
-// duas casas; o resto → NaN (nunca 0 inventado).
-function _setupLer(v){
+// SETUP DO TAKT (v7.226.0): o que o ⚙ mostrou ao abrir (e de onde) e o que mudou,
+// a enviar uma vez; o enviado até a planilha responder; e o estado da chave na
+// planilha — 'planilha' · 'sem-chave' · 'antigo' (.gs sem o campo) · null (não lida).
+let _setupAberto=null, _setupNovo=null, SETUP_PEND=null, SETUP_PLAN=null;
+// O DOMÍNIO DO APP de cronoanálise (o banco dele: setups_dia smallint 0–100,
+// setup_min numeric(5,1) 0–600). Fora dele o PPCP digitaria aqui um número que
+// o app recusa (4,3 trocas) ou arredonda (7,65 → 7,7), e os dois takts voltariam
+// a não bater (revisão da v7.226.0). O .gs tem a mesma régua (_cfgSetup).
+const SETUP_TROCAS_MAX=100;   // setups_dia smallint 0–100
+const SETUP_MIN_MAX=600;      // setup_min numeric(5,1) 0–600
+// O número de um campo: vazio → null; número com vírgula ou ponto, até `casas`
+// casas (zero à direita não conta) e até `max`; o resto → NaN (nunca 0 inventado).
+function _setupLer(v, casas, max){
   const t=String(v==null ? '' : v).trim();
   if(!t) return null;
-  if(!/^\d+([.,]\d+)?$/.test(t)) return NaN;
-  const n=Number(t.replace(',', '.'));
-  return n>=0 ? Math.round(n*100)/100 : NaN;
+  const m=/^(\d+)(?:[.,](\d+))?$/.exec(t);
+  if(!m || (m[2]||'').replace(/0+$/, '').length>(casas||0)) return NaN;
+  const n=Number(m[1]+'.'+(m[2]||'0'));
+  return n<=(max==null ? Infinity : max) ? n : NaN;
+}
+// O que impede salvar (null = vale, ou os dois vazios: não muda).
+function _setupErro(a, b){
+  if(a==null && b==null) return null;
+  if(a==null || b==null) return 'preencha TROCAS/DIA e MIN/TROCA (os dois)';
+  if(Number.isNaN(a)) return `TROCAS/DIA é número inteiro, de 0 a ${SETUP_TROCAS_MAX} — o app de cronoanálise não aceita fração`;
+  if(Number.isNaN(b)) return `MIN/TROCA vai de 0 a ${SETUP_MIN_MAX}, com até uma casa — o app de cronoanálise grava uma casa`;
+  if(a*b>=UEP_MIN_DIA) return `o setup do dia (${_tkM(a*b)} min) passa da jornada (${UEP_MIN_DIA} min)`;
+  return null;
+}
+// O que mandar à planilha ao SALVAR (null = nada): o setup que vale, quando o
+// gestor mudou o que viu, ou quando a planilha não tem a chave e o que o ⚙
+// mostrou era DESTE computador (o padrão nunca é semeado: apagaria o setup que
+// outro computador ainda vai levar).
+function _setupEnviar(a, b, aberto, plan){
+  if(a==null || _setupErro(a, b)) return null;
+  const mudou=!!aberto && (a!==aberto.a || b!==aberto.b);
+  return mudou || (plan==='sem-chave' && !!aberto && aberto.origem==='computador') ? { a, b } : null;
 }
 // A linha de ajuda dos campos (desenho).
 function _setupCfgTxt(a, b, origem){
   if(a==null || b==null) return 'os dois campos';
-  if(Number.isNaN(a) || Number.isNaN(b)) return 'só número ≥ 0';
+  if(Number.isNaN(a)) return 'trocas: número inteiro';
+  if(Number.isNaN(b)) return 'min: até uma casa';
   if(a*b>=UEP_MIN_DIA) return 'passa da jornada';
-  return `${_tkM(a*b)} min · ${origem==='novo' ? 'salve' : origem==='planilha' ? 'o mesmo no app' : origem==='computador' ? 'só neste PC' : 'padrão'}`;
+  return `${_tkM(a*b)} min · ${origem==='novo' ? 'salve' : origem==='planilha' ? 'o mesmo no app' : origem==='enviando' ? 'gravando' : origem==='computador' ? 'só neste PC' : 'padrão'}`;
+}
+// A chave na planilha (getConfigPainel): sem o campo no objeto = .gs antes da v5.61.
+function _setupDaConfig(pc){
+  if(!pc) return;
+  SETUP_PLAN=!Object.prototype.hasOwnProperty.call(pc, 'setupsDia') ? 'antigo' : (pc.setupsDia!=null && pc.setupMin!=null) ? 'planilha' : 'sem-chave';
+  if(typeof PONTOS_DIA!=='undefined' && PONTOS_DIA){ PONTOS_DIA.setupsDia=pc.setupsDia; PONTOS_DIA.setupMin=pc.setupMin; }
+}
+// A resposta do setConfigPainel com o setup enviado: a planilha devolve a config
+// que ficou gravada. Gravou → vale para todos. .gs antigo → só neste computador
+// (a faixa diz). Sem resposta ou outro valor gravado → avisa: o tempo esgotado
+// não prova que não gravou, mas o gestor precisa saber que não foi confirmado.
+function _setupResposta(su, r){
+  if(!su) return;
+  SETUP_PEND=null;
+  const pc=r && r.painelConfig;
+  if(pc) _setupDaConfig(pc);
+  const ok=SETUP_PLAN==='antigo' || (!!pc && pc.setupsDia===su.a && pc.setupMin===su.b);
+  if(!ok) alert(`SETUP DO TAKT: a planilha ${pc ? 'ficou com outro setup' : 'não respondeu'} — o ${_tkDec(su.a)} × ${_tkDec(su.b)} min vale neste computador, mas pode não valer nos outros. Abra o ⚙ e confira (a linha embaixo dos campos diz de onde vem o setup).`);
+  try{ if(typeof _abaOn==='function' && _abaOn('uep')) renderUep(); }catch(e){}
 }
 // SOMAR ATRASO (v7.203.0 / .gs v5.56): vai à planilha quando o gestor MUDA a
 // marcação, ou quando a planilha ainda não tem a chave. Mandar sempre deixaria
@@ -17063,10 +17146,11 @@ function enviarConfigPainel(){
   ];
   if(_metaUepNova){ params.push('metaUep='+_metaUepNova); _metaUepNova=null; }
   if(_metaPtsNova){ params.push('metaPts='+_metaPtsNova); _metaPtsNova=null; }
-  if(_setupNovo){ params.push('setupsDia='+_setupNovo.a, 'setupMin='+_setupNovo.b); _setupNovo=null; }
+  const su=_setupNovo;
+  if(su){ params.push('setupsDia='+su.a, 'setupMin='+su.b); _setupNovo=null; }
   if(_metaAtrasoNovo!==null){ params.push('metaComAtraso='+(_metaAtrasoNovo?1:0)); _metaAtrasoNovo=null; }
   const url=CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+params.join('&');
-  try{ jsonpFetch(url).catch(function(){}); }catch(e){}
+  try{ jsonpFetch(url).then(function(r){ _setupResposta(su, r); }, function(){ _setupResposta(su, null); }); }catch(e){ _setupResposta(su, null); }
 }
 
 // Aplica a config recebida da planilha. Só reage quando a config MUDA (assinatura),
@@ -17081,6 +17165,7 @@ function aplicarConfigPainel(pc){
   // chave e valor null = a planilha ainda não tem (o próximo SALVAR do ⚙ grava).
   ATRASO_PLAN = !Object.prototype.hasOwnProperty.call(pc,'metaComAtraso') ? 'antigo'
               : (pc.metaComAtraso===true||pc.metaComAtraso===false) ? 'planilha' : 'sem-chave';
+  _setupDaConfig(pc);   // SETUP DO TAKT (.gs v5.61): o mesmo esquema
   if(ATRASO_PLAN==='planilha' && CFG.metaComAtraso!==pc.metaComAtraso){
     CFG.metaComAtraso = pc.metaComAtraso;
     saveCfgLocal();
@@ -19376,18 +19461,22 @@ function renderProxDias(){
   }
   box.style.display = '';
   const sb = o => _sbPinta(document.getElementById('uep-sb-prox'), o);   // o número do botão PRÓXIMOS DIAS (v7.198.0)
+  const sbA = o => _sbPinta(document.getElementById('uep-sb-atr'), o);   // o cartão ATRASO (v7.227.0)
   if(!PROG_DET_TS){
     const f = !GPX_CARREGANDO && _progDetFalhaInfo();
     corpo.innerHTML = f ? `<div class="empty-msg" style="padding:14px 16px;color:var(--warn)">${f.t} — ${f.d}</div>`
                         : '<div class="empty-msg" style="padding:14px 16px">Lendo a programação…</div>';
-    sb(_uepSubProx(null, f ? 'falha' : 'lendo'));
+    sb(_uepSubProx(null, f ? 'falha' : 'lendo')); sbA(_uepSubAtr(null, null, f ? 'falha' : 'lendo'));
     return;
   }
   const hoje = new Date(), P = _gpxDoPainel(_gpxNSemanas(hoje, PROG_FERIADOS));
-  if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; sb(_uepSubProx(null, 'sem-uep')); return; }
-  const W = _gpxSemanasMontar(P, hoje, _gpxPassadosDoPainel(hoje));
-  corpo.innerHTML = _gpxSemanasHtml(P, W) + _gpxAtrasoHtml(_gpxAtrasoMontar(P.divLinhas, P.porMin), P);
+  if(P.falha){ corpo.innerHTML = '<div class="empty-msg" style="padding:14px 16px">A programação não traz UEP (cadastro sem UEP ou .gs anterior à v5.13) — sem ela não há como converter a carteira em horas.</div>'; sb(_uepSubProx(null, 'sem-uep')); sbA(_uepSubAtr(null, null, 'sem-uep')); return; }
+  const W = _gpxSemanasMontar(P, hoje, _gpxPassadosDoPainel(hoje)), A = _gpxAtrasoMontar(P.divLinhas, P.porMin);
+  corpo.innerHTML = _gpxSemanasHtml(P, W) + _gpxAtrasoHtml(A, P);
   sb(_uepSubProx(W));
+  // sem a lista por código: o dia ainda não foi lido ('…'), nada em aberto, ou o .gs sem o atraso por código
+  const lista = (PONTOS_DIA.programacao && PONTOS_DIA.programacao.lista) || [];
+  sbA(_uepSubAtr(P, A, A ? null : !PONTOS_DIA_TS ? 'lendo' : lista.length ? 'sem-lista' : 'vazia'));
   const sub = document.getElementById('gpx-sub');
   if(sub) sub.textContent = 'horas de linha · jornada ' + _fmtHM(UEP_MIN_DIA) + ' · programação de ' + new Date(PROG_DET_TS).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
