@@ -31,13 +31,16 @@ global.window = global;
 require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'), 'utf8'));
 global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatrimar'])[1].toUpperCase();
 global.TKS_DET = false;
+global.TKS_TPC = false;
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
  'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts(',
  // v7.222.0: o nível diretoria
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
- 'function _taktHerancaHtml(', 'function _taktExcessoHtml('].forEach(f => eval.call(global, pega(f)));
+ 'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
+ // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
+ 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
 ['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
@@ -153,8 +156,11 @@ ok('EXECUTADO = (3 × 527 + 240) min × 60 ÷ 8.647,2 UEP = 12,64 s por UEP, 90,
      [HC.includes('<b>TAKT POR CAIXA</b>'), (HC.match(/<tr><td>/g) || []).length, HC.includes('<b>' + _tkS(dm.sTakt) + ' s</b><small>' + fmtN(Math.round(dm.cxhTakt)) + ' cx/h</small>'),
       HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('o takt do app de cronoanálise é por volume')],
      [true, 5, true, true, true, true, true]);
-  ok('nos DETALHES das duas semanas (a ESTA e a QUE VEM), logo depois da leitura; o desenho não faz conta',
-     [/_taktDetHtml\(kpis\+leitura\+_taktPorCaixaHtml\(_taktPorCaixa\(T\), T\)/.test(pega('function _taktHtml(')), /_taktDetHtml\(kpis\+leitura\+_taktPorCaixaHtml\(_taktPorCaixa\(T\), T\)/.test(pega('function _taktProxHtml(')),
+  // v7.224.0 (PPCP: "não consigo localizar com facilidade"): a tabela saiu dos DETALHES e abre no TAKT POR PRODUTO,
+  // logo abaixo da faixa do topo — nas três telas (a AVALIAR, por volume, pelo _tkaVolumes)
+  ok('no TAKT POR PRODUTO da faixa do topo, nas três telas (não mais nos detalhes); o desenho não faz conta',
+     [/_taktFaixaHtml\(_taktFaixa\(T, \{ G \}\), _taktPorCaixa\(T\), T\)\+_taktHeroHtml/.test(pega('function _taktHtml(')) && !/_taktDetHtml\([^\n]*_taktPorCaixaHtml/.test(pega('function _taktHtml(')),
+      /_taktFaixaHtml\(_taktFaixa\(T\), _taktPorCaixa\(T\), T\)\+_taktHeroHtml/.test(pega('function _taktProxHtml(')) && !/_taktDetHtml\([^\n]*_taktPorCaixaHtml/.test(pega('function _taktProxHtml(')),
       /\.uepSoma|\*|\/ *g\./.test(pega('function _taktPorCaixaHtml(').replace(/\/\*[\s\S]*?\*\//g, '').replace(/3600|_tkS\([^)]*\)/g, '')), _taktPorCaixa(null), _taktPorCaixaHtml([], T2)],
      [true, true, false, [], '']); }
 
@@ -262,14 +268,17 @@ ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha (v7
    [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA<small>') > 0, HT.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
     HT.includes('<span class="tks-sec-r" title="A programação pediu 116,2% da média que a linha entrega sem hora extra, e a linha rodou a 90,6% dessa média. Do que não saiu nos dias fechados, 73% foi excesso de programação e 27% ritmo da linha.">do que não saiu: <b>73% excesso de programação</b> · <b>27% ritmo da linha</b></span>'),
     HT.indexOf('<details class="tks-det"') > HT.indexOf('id="tks-g-box"'), HT.indexOf('TAKT · O QUE A PROGRAMAÇÃO PEDE') > HT.indexOf('<details class="tks-det"'),
-    HT.indexOf('AGORA ·') > HT.indexOf('<details class="tks-det"'), HT.includes('s por UEP') && HT.indexOf('s por UEP') > HT.indexOf('<details')],
+    // v7.224.0: o takt e o agora em caixas sobem para a FAIXA, antes do veredito; a cascata e o card do agora seguem nos detalhes
+    HT.indexOf('POR QUE NÃO ACOMPANHOU') > HT.indexOf('<details class="tks-det"') && HT.indexOf('<b>AGORA ·') > HT.indexOf('<details class="tks-det"'),
+    HT.indexOf('<div class="tks-fx') > 0 && HT.indexOf('<div class="tks-fx') < HT.indexOf('tks-hero') && HT.indexOf('s por UEP') < HT.indexOf('tks-hero')],
    [true, true, true, true, true, true, true]);
 ok('v7.222.0: esta semana tem o PARA FECHAR logo depois do veredito (hora extra até o fim da jornada, ou passa para a semana que vem), antes do porquê',
    [HT.indexOf('<b>PARA FECHAR</b>') > HT.indexOf('tks-hero') && HT.indexOf('<b>PARA FECHAR</b>') < HT.indexOf('<b>DIA A DIA</b>') && !HT.includes('<b>Por quê:</b>'),
     HT.includes('<div class="kpi-lbl">HORA EXTRA</div><div class="tks-fn">≈ 11h30</div><div class="tks-fd">da linha inteira, além da jornada que resta</div>'),
     HT.includes('<div class="kpi-lbl">PASSAR PARA A SEMANA QUE VEM</div><div class="tks-fn">≈ 1.700<small>caixas</small></div>'), HT.includes('SÓ REMANEJAR'),
+    // v7.224.0: a contagem saiu do título (ela é o 1º número da faixa)
     / · \d[\d.]* caixas programadas/.test(HT), /programação [\d.]+ cx = [\d.]+ UEP/.test(HT)],
-   [true, true, true, false, true, false]);
+   [true, true, true, false, false, false]);
 ok('o card do takt âmbar (pede acima), o do executado na cor do sc (90,6% → atenção), a falta vermelha (não cabe)',
    [/<div class="kpi-card warn"[^>]*><div class="kpi-lbl">TAKT/.test(HT), /<div class="kpi-card warn"[^>]*><div class="kpi-lbl">EXECUTADO/.test(HT), /<div class="kpi-card red"[^>]*><div class="kpi-lbl">FALTA/.test(HT)],
    [true, true, true]);
@@ -509,9 +518,9 @@ console.log('\n── v7.222.0: PARA FECHAR, o que vem desta semana e onde está
      ['', true, true]);
   const HP2 = _taktProxHtml(T1, P1, { largura:1200, sim:SIM, V:V1, sobra:V0 });
   ok('a semana que vem na ordem do olhar: veredito → PARA FECHAR → esta semana ainda não fecha → onde está o excesso (com o dia que mais pesa) → detalhes',
-     [['tks-hero', '<b>PARA FECHAR</b>', 'class="tks-her"', '<b>ONDE ESTÁ O EXCESSO</b>', 'tks-det'].map(x => HP2.indexOf(x)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
+     [['class="tks-fx', 'tks-hero', '<b>PARA FECHAR</b>', 'class="tks-her"', '<b>ONDE ESTÁ O EXCESSO</b>', 'tks-det'].map(x => HP2.indexOf(x)).every((v, i, a) => v > 0 && (!i || v > a[i - 1])),
       HP2.includes('<span class="tks-sec-r">' + (pc.pct >= 50 ? '<b>' + pc.data.slice(0, 5) + ' sozinho</b> tem ' + pc.pct + '% do excesso da semana' : 'o dia mais carregado é <b>' + pc.data.slice(0, 5) + '</b> (+' + _fmtHM(pc.min) + ')') + '</span>'),
-      HP2.includes('<b>Dia a dia:</b>'), / · [\d.]+ caixas programadas/.test(HP2)], [true, true, false, true]); }
+      HP2.includes('<b>Dia a dia:</b>'), / · [\d.]+ caixas programadas/.test(HP2)], [true, true, false, false]); }
 { const Vc = _taktVeredito(T1, Object.assign({}, P1, { uep:10000, minPede:10000 * K, saldoMin:Math.round(10000 * K) - 2635, passa:10000 - 13805 }), RIT);
   const Hs = { num:20261107, minNorm:300, restMin:200, uep:500, he:40, meta:2761, fim:'17:00' };
   const Vs = _taktVeredito(_taktMontar(S, HIST.concat([{ data:'06/11/2026', uep:2400, uepHe:600, metaUep:2761 }]), Hs), null, RIT);
@@ -561,7 +570,7 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
      [true, true, true, true, true, true]); }
 
 console.log('\n── v7.213.0: AVALIAR PROGRAMAÇÃO (a colagem da planilha) ──');
-['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml(', 'function _tkaChegadaHtml('].forEach(f => eval.call(global, pega(f)));
+['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml(', 'function _tkaChegadaHtml(', 'function _tkaVolumes('].forEach(f => eval.call(global, pega(f)));
 global.TKA_IN = false;
 eval.call(global, pegaConst('ESTEIRA_VAO_PADRAO').replace(/^const /, 'global.'));
 global.TKA_TXT = '';
@@ -735,7 +744,7 @@ ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colun
   const HA = _tkaHtml(L43, M43, { botoes:_taktSemBotoes(2), msg:'30 linhas lidas', largura:1200, corrente:C43 });
   const iHero = HA.indexOf('<div class="tks-hero'), iCh = HA.indexOf('<div class="tks-her-t">'), iG = HA.indexOf('id="tks-g-box"'), iDet = HA.indexOf('<details class="tks-det"');
   ok('a avaliação na ordem do padrão: título com o período, a caixa recolhida (uma linha), veredito, A LINHA CHEGA, o gráfico, os detalhes com a tabela',
-     [/<b>TAKT DA SEMANA<\/b> .*16\/11–23\/11 · 5 dias úteis \(20\/11 consciência negra\) · [\d.]+ produtos colados = [\d.]+ UEP<\/div>/.test(HA.split('</div>')[0] + '</div>'),
+     [/<b>TAKT DA SEMANA<\/b> .*16\/11–23\/11 · 5 dias úteis \(20\/11 consciência negra\)<\/div>/.test(HA.split('</div>')[0] + '</div>'),
       HA.includes('<details class="uep-card tka-in tka-rec" ontoggle="TKA_IN=this.open"><summary><b>PROGRAMAÇÃO COLADA</b> · 30 linhas lidas<span class="tka-ed">'),
       HA.indexOf('<textarea id="tka-txt"') > 0 && HA.indexOf('<textarea id="tka-txt"') < iHero, iHero < iCh, iCh < iG, iG < iDet,
       HA.slice(iDet).includes('<table class="tka-tab">'), HA.slice(iDet).includes('class="tks-ler'), HA.includes('A PROGRAMAÇÃO COLADA</b>'),
@@ -768,6 +777,50 @@ ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colun
       /#sec-uep \.tks-hv small\{[^}]*max-width:300px;line-height:1\.35\}/.test(html), /TKA_IN=false;   \/\/ avaliou/.test(pega('function _tkaAvaliar('))],
      [true, true, true, true]);
   global.TKA_TXT = ''; }
+
+console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cronoanálise, o takt e o agora, logo abaixo do título ──');
+{ // PPCP, 11/11/2026: "onde fica o takt que temos que seguir? e a quantidade de volumes" → "não consigo localizar com
+  // facilidade" → "preciso saber o takt da semana para colocar no app de cronoanálise"
+  const F0 = _taktFaixa(T, { G }), F1 = _taktFaixa(T1), VC = _tkaVolumes(L42, M42.T);
+  const F2 = _taktFaixa(M42.T, { vol:VC.vol, prod:VC.prod, semVol:VC.semVol, volFds:VC.volFds });
+  ok('esta semana (02–08/11): 5.970 volumes = as caixas programadas (o mesmo do takt) em 4 dias úteis = 35h08 de jornada, 02/11 fora; 21,2 s por volume sem o setup; o takt 9,9 s por UEP; agora a MEL 1/2 BRANCO 17,1 s por caixa (211 cx/h)',
+     [F0.vol, F0.vol === T.progCx, F0.nUteis, _fmtHM(F0.jornMin), F0.fer, F0.de + '–' + F0.ate, _tkS(F0.sVol), _tkS(F0.takt), _tkS(F0.ref), F0.agora && _tkS(F0.agora.sTakt), F0.agora && Math.round(F0.agora.cxh)],
+     [5970, true, 4, '35h08', ['02/11 finados'], '03/11–06/11', '21,2', '9,9', '11,5', '17,1', 211]);
+  ok('semana que vem (09–13/11): 9.050 volumes em 5 dias = 43h55 (17,5 s por volume), sem o agora (nada roda nela ainda)',
+     [F1.vol, F1.nUteis, _fmtHM(F1.jornMin), _tkS(F1.sVol), F1.agora, F1.fer], [9050, 5, '43h55', '17,5', null, []]);
+  ok('AVALIAR a 042-26 colada: 8.000 produtos × os volumes de cada um = 9.050 volumes — o MESMO das caixas que o painel tem para 09–13/11 (a colagem e a programação batem)',
+     [VC.prod, VC.vol, VC.vol === T1.progCx, F2.vol, F2.prod, VC.semVol, VC.volFds], [8000, 9050, true, 9050, 8000, 0, 0]);
+  const pv = {}; VC.prods.forEach(g => { pv[g.nome] = r1(((pv[g.nome] || 0) + (g.cxUep ? g.uepSoma / g.cxUep : 0)) * 100) / 100; });
+  ok('o TAKT POR PRODUTO da colagem é por VOLUME: a UEP de cada volume (a cor mais rápida do cadastro) soma a UEP do produto; MEL tem as duas linhas',
+     [L42.itens.every(x => r1(pv[x.nome] * 100) === r1(x.uepJogo * 100)), VC.prods.filter(g => g.nome === 'PENTEADEIRA CAMARIM MEL').map(g => [g.va, g.vb]),
+      _taktPorCaixa(Object.assign({}, M42.T, { prods:VC.prods })).length === VC.prods.length],
+     [true, [[1, 2], [2, 2]], true]);
+  ok('sem takt (sem UEP programada), sem faixa; dia não útil com volume é dito (está no total, é hora extra)',
+     [_taktFaixa({ takt:null }), _taktFaixaHtml(null),
+      _taktFaixa({ takt:10, ref:11, pede:110, nUteis:1, progCx:300, progUep:300, dias:[{ util:true, data:'09/11/2026', dow:1, cx:200 }, { util:false, data:'14/11/2026', dow:6, cx:100 }] }).volFds],
+     [null, '', 100]);
+  global.TKS_TPC = false;
+  const HF = _taktFaixaHtml(F0, _taktPorCaixa(T), T);
+  ok('o desenho: PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA em destaque, a jornada, o s por volume sem o setup, o takt (âmbar acima da média) e o agora em caixas; o TAKT POR PRODUTO fechado, sem repetir o título',
+     ['<div class="kpi-lbl">PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA</div><div class="tks-fx-n">5.970<small>volumes</small></div>',
+      'caixas programadas = 12.831 UEP · 4 dias úteis (03/11 a 06/11) = <b>35h08</b> de jornada · 02/11 finados fora', 'jornada ÷ volumes = <b>21,2 s por volume</b>, sem descontar o setup',
+      '<div class="tks-fx-n">9,9<small>s por UEP</small></div>', 'a programação pede <b class="tks-warn">116,2%</b> dela', '<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div><div class="tks-fx-n">17,1<small>s por caixa</small></div>',
+      '≈ <b>211 cx/h</b>', '<details class="tks-tpc" ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>', 'class="tks-fx c3"'].filter(t => !HF.includes(t)).concat(
+      HF.includes('<b>TAKT POR CAIXA</b>') ? ['o título da tabela repetido'] : [], (global.TKS_TPC = true, _taktFaixaHtml(F0, _taktPorCaixa(T), T)).includes('<details class="tks-tpc" open') ? [] : ['abre aberto com TKS_TPC']), []);
+  global.TKS_TPC = false;
+  const H2 = _taktFaixaHtml(F2, _taktPorCaixa(Object.assign({}, M42.T, { prods:VC.prods })), M42.T);
+  ok('na AVALIAR: VOLUMES DA PROGRAMAÇÃO COLADA, de quantos produtos; produto fora do cadastro dito em vermelho (não conta)',
+     [H2.includes('PARA O APP DE CRONOANÁLISE · VOLUMES DA PROGRAMAÇÃO COLADA'), H2.includes('9.050<small>volumes</small>'), H2.includes('de 8.000 produtos colados = 14.504 UEP'),
+      _taktFaixaHtml(Object.assign({}, F2, { semVol:500 })).includes('<span class="tks-red">500 produtos fora do cadastro não contam</span>'), H2.includes('class="tks-fx"')],
+     [true, true, true, true, true]);
+  ok('o desenho da faixa não faz conta; a conta não lê tela nem servidor',
+     [/\*|\/ *[A-Za-z_]+\./.test(pega('function _taktFaixaHtml(').replace(/\/\/[^\n]*/g, '').replace(/<\/?[a-z]+[^>]*>/gi, '')),
+      /document\.|jsonpFetch|CFG\./.test(pega('function _taktFaixa(') + pega('function _tkaVolumes('))], [false, false]);
+  ok('a ordem nas três telas: título → FAIXA → veredito',
+     [HT.indexOf('class="tks-fx') > HT.indexOf('<b>TAKT DA SEMANA</b>') && HT.indexOf('class="tks-fx') < HT.indexOf('tks-hero'),
+      (h => h.indexOf('class="tks-fx') > 0 && h.indexOf('class="tks-fx') < h.indexOf('tks-hero'))(_taktProxHtml(T1, P1, { largura:1200, V:_taktVeredito(T1, P1, RIT) })),
+      (h => h.indexOf('class="tks-fx') > 0 && h.indexOf('class="tks-fx') < h.indexOf('tks-hero') && h.indexOf('<textarea') < h.indexOf('class="tks-fx'))(_tkaHtml(L42, M42, { botoes:'' }))],
+     [true, true, true]); }
 
 console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — três números em s por UEP, o porquê dia a dia, o agora em caixas');
 process.exit(falhas ? 1 : 0);

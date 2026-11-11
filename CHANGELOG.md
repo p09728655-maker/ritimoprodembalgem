@@ -11,6 +11,41 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.224.0 — 11/11/2026 · O TAKT e os VOLUMES DA SEMANA à vista (para o app de cronoanálise)
+
+PPCP, com a SEMANA QUE VEM na tela: *"onde fica o takt que temos que seguir? e
+a quantidade de volumes"* → *"não consigo localizar com facilidade"* →
+*"preciso saber o takt da semana para colocar no app de cronoanálise"*. A
+sub-aba se chama TAKT DA SEMANA e o takt só aparecia nos DETALHES PARA O PCP,
+recolhidos no fim da tela (desde a v7.211.0). Na AVALIAR PROGRAMAÇÃO não
+aparecia em lugar nenhum.
+
+- **Faixa logo abaixo do título, nas três telas** (ESTA SEMANA, SEMANA QUE VEM
+  e AVALIAR PROGRAMAÇÃO), antes do veredito:
+  - **PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA** (em laranja): o número
+    que se digita no app de cronoanálise, com a UEP, os dias úteis, as horas de
+    jornada (feriado fora) e *jornada ÷ volumes = X s por volume, sem descontar
+    o setup*. O app desconta o setup dele, então o takt do app sai um pouco
+    menor que esse número;
+  - **TAKT DA SEMANA · NO PAINEL** em s por UEP, com a média da linha ao lado e
+    o quanto a programação pede dela (âmbar acima de 100%);
+  - na ESTA SEMANA, **AGORA**: o takt do produto que está rodando, em s por
+    caixa e cx/h.
+- **TAKT POR PRODUTO** (a tabela que estava nos detalhes) abre logo abaixo da
+  faixa: 1 caixa a cada X s, produto a produto. Aberta, rola dentro do cartão
+  (até 440 px, cabeçalho fixo) para o veredito não ir para longe. Na AVALIAR
+  PROGRAMAÇÃO ela é **por volume**, com a UEP de cada volume do cadastro.
+- **AVALIAR PROGRAMAÇÃO conta volumes**: a planilha programa por produto; o
+  painel multiplica cada produto pelos volumes dele. Conferido: a 042-26 colada
+  (8.000 produtos) dá **9.050 volumes**, as mesmas 9.050 caixas que o painel tem
+  para 09–13/11. Produto fora do cadastro não conta, e a faixa diz quantos.
+- **Atenção:** nenhuma conta mudou. A contagem saiu do título (*"N caixas
+  programadas"*, *"N produtos colados = X UEP"*) e foi para a faixa, com o
+  nome VOLUMES. Volume = caixa: cada volume de um produto é uma caixa.
+- A 🖨 TAKT DA SEMANA (diretoria) não mudou.
+
+---
+
 ## v7.223.0 — 11/11/2026 · ESTA SEMANA e AVALIAR PROGRAMAÇÃO no padrão da SEMANA QUE VEM
 
 PPCP, com o `.gs` v5.60 já implantado: *"as telas essa semana e avaliar
