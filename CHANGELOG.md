@@ -11,6 +11,46 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.223.0 — 11/11/2026 · ESTA SEMANA e AVALIAR PROGRAMAÇÃO no padrão da SEMANA QUE VEM
+
+PPCP, com o `.gs` v5.60 já implantado: *"as telas essa semana e avaliar
+programação ficou fora do padrão"*. Na v7.222.0 só a SEMANA QUE VEM ganhou o
+desenho novo; as outras duas sub-abas do TAKT DA SEMANA ficaram com o antigo.
+Nenhuma conta mudou.
+
+- **ESTA SEMANA**: o gráfico DIA A DIA usa o desenho da SEMANA QUE VEM — o
+  programado do dia é uma barra cheia até 1 dia de linha, com o que passa dele
+  em **vermelho** e o "+h" em cima (03/11 +1h29, 04/11 +4h55 no retrato de
+  06/11), e o total dentro da barra. O feito fica ao lado, em azul, com a hora
+  extra em âmbar. Era um contorno tracejado com o número miúdo.
+- **ESTA SEMANA**: o "Por quê" saiu do parágrafo entre os cartões e o gráfico e
+  virou o recado do gráfico, à direita do título (*"do que não saiu: 73%
+  excesso de programação · 27% ritmo da linha"*). A frase inteira continua no
+  `title`.
+- **AVALIAR PROGRAMAÇÃO**: o período, os dias úteis e o total colado sobem para
+  a barra do título, como nas outras duas. Depois de AVALIAR, a caixa de colar
+  **recolhe numa linha** (*PROGRAMAÇÃO COLADA · N linhas lidas · colar outra ou
+  editar ▾*) e o veredito sobe.
+- **AVALIAR PROGRAMAÇÃO**: o SALDO DE HORAS virou o bloco **A LINHA CHEGA**, no
+  desenho do *"e esta semana ainda não fecha"*: o atraso que chega na colagem,
+  a colagem, e à direita **TERMINA dd/mm COM Xh** (em dias). Com a colagem
+  faltando, as duas partes vão somadas numa barra; com ela cabendo, a frase diz
+  se a folga dela cobre o atraso que chega. A tabela semana a semana foi para
+  os **DETALHES PARA O PCP**, sem a frase repetida.
+- O que ficou de fora do cadastro (carga que não entrou) aparece logo abaixo
+  do veredito, com a borda vermelha. Antes ficava dentro do cartão do gráfico.
+- O subtítulo do veredito tem entrelinha própria: ao quebrar em duas linhas
+  (1366 px), a 2ª linha não fica mais espremida contra a 1ª.
+
+**Atenção**
+- Nenhum número muda: o veredito, o PARA FECHAR, o saldo de horas e o gráfico
+  leem as mesmas contas. Muda onde e como cada número aparece.
+- 🖨 TAKT DA SEMANA: o dia a dia desta semana sai com o novo desenho (cinza até
+  1 dia de linha, vermelho acima) e a legenda acompanha. A folha continua uma
+  só (688 de 718 px, medido com as fontes). A 🖨 AVALIAÇÃO não muda.
+
+---
+
 ## v7.222.0 / `.gs` v5.60 — 11/11/2026 · TAKT DA SEMANA para a diretoria e o sábado com a meta das horas trabalhadas
 
 **TAKT DA SEMANA, nível diretoria** — PPCP, com o print da SEMANA QUE VEM:

@@ -128,7 +128,11 @@ via Google Apps Script (JSONP).
   diretoria: UM número no veredito com dias, caixas e pontos arredondados, o
   ritmo só fora de ±5%, o PARA FECHAR (hora extra, adiar, remanejar), o que vem
   desta semana somado numa barra, o excesso em vermelho e o dia mais carregado
-  (3 de 3 mutações): `node takt-semana.test.js`.
+  (3 de 3 mutações); e (v7.223.0) ESTA SEMANA e AVALIAR PROGRAMAÇÃO no padrão
+  da SEMANA QUE VEM: o programado cheio com o excesso em vermelho, o porquê no
+  título do gráfico, a caixa de colar recolhida, o bloco A LINHA CHEGA (a soma
+  em barra só quando fecha, a folga que não cobre, o em dia) e a tabela nos
+  detalhes: `node takt-semana.test.js`.
 - `lint-js.js` — **`node lint-js.js`: nome usado sem existir nos `<script>` dos
   dois HTMLs**. Rodar SEMPRE que mexer no JS embutido. Nenhum teste de conta vê
   um identificador que não existe, e o painel só quebra em runtime: o relatório
@@ -6901,6 +6905,35 @@ feito e dá ar de verdade ao que sobrou.
       uma folha (sem a grade dava 736 e duas folhas). Conteúdo novo no papel:
       medir de novo.
     - Medido na tela (dados de 06/11): 1920, 1366 e 1280, nada passa da largura.
+  - **ESTA SEMANA e AVALIAR PROGRAMAÇÃO NO PADRÃO (v7.223.0**, PPCP, com o
+    `.gs` v5.60 implantado: *"as telas essa semana e avaliar programação ficou
+    fora do padrão"*). Na v7.222.0 só a SEMANA QUE VEM mudou de desenho. A ordem
+    das três é a mesma: veredito → PARA FECHAR → o bloco somado → o gráfico →
+    detalhes. Nenhuma conta mudou.
+    - **ESTA SEMANA**: no `_taktSvg` sem `fut`, o PROGRAMADO do dia é a barra da
+      semana que vem (`var(--tks-base)` até 1 dia de linha, `var(--red)` acima,
+      "+h" grande em cima, o total dentro); o FEITO ao lado (`--tks-feito`, HE
+      âmbar), rótulo em Barlow Condensed; "até agora" num `<tspan>` menor (a
+      1366 encostava na barra vizinha). No papel (`opt.h`) a letra desce
+      (+h a 15, feito a 12) e o total não vai dentro (barras de ~27 px). O
+      porquê é o recado do gráfico (`tks-sec-r`, a frase inteira no `title`);
+      era um `.tks-por` entre os cartões e o gráfico. O papel mantém o "Por
+      quê" escrito.
+    - **AVALIAR**: o período na barra do título; avaliada, a caixa de colar é um
+      `<details class="tka-rec">` fechado (`TKA_IN`, só na sessão; o
+      `_tkaAvaliar` fecha); o que ficou fora do cadastro vai logo abaixo do
+      veredito (`.tka-fora`). O saldo é o **`_tkaChegadaHtml(C, V, per)`**
+      (desenho, no `.tks-her` da herança): título E A LINHA CHEGA ATRASADA / A
+      LINHA CHEGA EM DIA (`.tks-her.ok`, verde), à direita TERMINA dd/mm COM o
+      `C.atraso` (`_tkDia`), o ritmo atual pelo `_tkaRitTxt`. A **barra somada
+      só quando fecha** (chegada + falta da colagem = o fim, ±1 min): a folga de
+      um dia não vira crédito, então com a colagem cabendo ou chegando em dia a
+      soma não é a conta — vai a frase (*"a folga da colagem (1h15) não cobre o
+      atraso que chega (14h44)"*). A tabela semana a semana fica nos detalhes
+      (`_taktDetHtml(corpo, sum)` aceita o título; `_tkaSaldoHtml(C,
+      {semFrase:true})` não repete a frase).
+    - Medido no Chromium (dados de 06/11): 1920, 1366 e 1280, nada passa da
+      largura; 🖨 TAKT uma folha (688 de 718 px), 🖨 AVALIAÇÃO igual.
   - **NOME E PONTOS (v7.212.0**, PPCP: *"troca por média da linha entregue sem
     hora extra"* e *"valor da UEP em pontos"*): na frente da tela e na folha o
     2.761 é **a média que a linha entrega sem hora extra** (ritmo atual em % da

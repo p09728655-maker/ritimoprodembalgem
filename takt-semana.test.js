@@ -258,14 +258,14 @@ ok('os quatro cards, a frase, o porquê, o agora e o dia a dia, com os números 
     '<b>16,2% acima</b>', '<b>73% é carga acima da referência</b>', '<b>27% é ritmo</b>', 'POR QUE NÃO ACOMPANHOU · dias fechados 03/11–05/11',
     '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '17,1 s', '19,8 s', '24,8 s',
     'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', '1 dia de linha (' + _fmtHM(527) + ' = média de 2.761 UEP entregues sem hora extra)'].filter(t => !HT.includes(t)), []);
-ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha; os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',
+ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha (v7.223.0: o recado do gráfico, a frase inteira no title); os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',
    [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA<small>') > 0, HT.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
-    HT.includes('<b>Por quê:</b> a programação pediu <b>116,2%</b> da média que a linha entrega sem hora extra, e a linha rodou a <b>90,6%</b> dessa média. Do que não saiu nos dias fechados, <b>73% foi excesso de programação</b> e <b>27% ritmo da linha</b>.'),
+    HT.includes('<span class="tks-sec-r" title="A programação pediu 116,2% da média que a linha entrega sem hora extra, e a linha rodou a 90,6% dessa média. Do que não saiu nos dias fechados, 73% foi excesso de programação e 27% ritmo da linha.">do que não saiu: <b>73% excesso de programação</b> · <b>27% ritmo da linha</b></span>'),
     HT.indexOf('<details class="tks-det"') > HT.indexOf('id="tks-g-box"'), HT.indexOf('TAKT · O QUE A PROGRAMAÇÃO PEDE') > HT.indexOf('<details class="tks-det"'),
     HT.indexOf('AGORA ·') > HT.indexOf('<details class="tks-det"'), HT.includes('s por UEP') && HT.indexOf('s por UEP') > HT.indexOf('<details')],
    [true, true, true, true, true, true, true]);
 ok('v7.222.0: esta semana tem o PARA FECHAR logo depois do veredito (hora extra até o fim da jornada, ou passa para a semana que vem), antes do porquê',
-   [HT.indexOf('<b>PARA FECHAR</b>') > HT.indexOf('tks-hero') && HT.indexOf('<b>PARA FECHAR</b>') < HT.indexOf('<b>Por quê:</b>'),
+   [HT.indexOf('<b>PARA FECHAR</b>') > HT.indexOf('tks-hero') && HT.indexOf('<b>PARA FECHAR</b>') < HT.indexOf('<b>DIA A DIA</b>') && !HT.includes('<b>Por quê:</b>'),
     HT.includes('<div class="kpi-lbl">HORA EXTRA</div><div class="tks-fn">≈ 11h30</div><div class="tks-fd">da linha inteira, além da jornada que resta</div>'),
     HT.includes('<div class="kpi-lbl">PASSAR PARA A SEMANA QUE VEM</div><div class="tks-fn">≈ 1.700<small>caixas</small></div>'), HT.includes('SÓ REMANEJAR'),
     / · \d[\d.]* caixas programadas/.test(HT), /programação [\d.]+ cx = [\d.]+ UEP/.test(HT)],
@@ -278,11 +278,21 @@ ok('na segunda de manhã (nenhum dia fechado): a conta do porquê espera, sem ca
    [true, false]);
 const SV = _taktSvg(T, 1200);
 ok('o gráfico em HORAS DE LINHA: 02/11 FINADOS sem barras, quatro dias com o programado e o feito (03/11: 10h16 pedidas, 8h33 feitas), hoje 4h50 até agora; a linha de 1 dia (8h47); sem a linha do takt; números com halo por cima',
-   [SV.includes('>FINADOS<'), (SV.match(/stroke-dasharray="5 4"/g) || []).length, (SV.match(/fill="var\(--tks-feito\)"/g) || []).length,
-    ['>10h16<', '>8h33<', '>' + _fmtHM(Math.round((996.9 + 523.5) * 527 / 2761)) + ' até agora<', '>8h<'].filter(x => !SV.includes(x)),
+   [SV.includes('>FINADOS<'), (SV.match(/stroke-dasharray/g) || []).length, (SV.match(/fill="var\(--tks-feito\)"/g) || []).length,
+    ['>10h16<', '>8h33<', '>' + _fmtHM(Math.round((996.9 + 523.5) * 527 / 2761)) + '<tspan', ' até agora</tspan>', '>8h<'].filter(x => !SV.includes(x)),
     SV.includes('stroke-dasharray="12 6"'), SV.includes('<title>1 dia de linha: ' + _fmtHM(527)), SV.lastIndexOf('stroke-width="2"><title>1 dia') < SV.indexOf('paint-order="stroke"'),
     /06\/11 sex \(hoje\)/.test(SV)],
-   [true, 4, 4, [], false, true, true, true]);
+   [true, 0, 4, [], false, true, true, true]);
+// v7.223.0 (PPCP: "essa semana e avaliar programação ficou fora do padrão"): o programado do
+// dia é o desenho da SEMANA QUE VEM — cheio até 1 dia de linha, o excesso em vermelho com o
+// "+h" em cima, o total dentro — ao lado do feito. Era contorno tracejado com o número miúdo.
+ok('v7.223.0: o programado no padrão da semana que vem — quatro barras cheias, o excesso de 03/11 e 04/11 em vermelho com o +h, o feito ao lado; no papel a letra desce',
+   [(SV.match(/fill="var\(--tks-base\)"><title>/g) || []).length, (SV.match(/fill="var\(--red\)"><title>/g) || []).length,
+    SV.includes('>+' + _fmtHM(Math.round(T.dias.find(d => d.data.startsWith('03/11')).uep * 527 / T.meta) - 527) + '<'),
+    SV.includes('>+' + _fmtHM(Math.round(T.dias.find(d => d.data.startsWith('04/11')).uep * 527 / T.meta) - 527) + '<'),
+    /font-size="21" font-weight="700" fill="var\(--red\)"/.test(SV), /font-size="16" font-weight="700" fill="var\(--txt\)"/.test(SV),
+    /font-size="15" font-weight="700" fill="var\(--red\)"/.test(_taktSvg(T, 480, { h:165 })), /fill="var\(--tks-base-t\)"/.test(_taktSvg(T, 480, { h:165 }))],
+   [4, 2, true, true, true, true, true, false]);
 ok('o desenho não faz conta (tudo vem da montagem) e a conta não lê a tela nem a planilha',
    [/_taktMontar\(|_taktAgora\(|uepDiaMeta\(|\.linhas/.test(pega('function _taktHtml(') + pega('function _taktSvg(')),
     /document\.|PONTOS_DIA|UEP_HIST|CFG\.|jsonpFetch/.test(pega('function _taktMontar(') + pega('function _taktAgora(') + pega('function _taktRestMin('))],
@@ -551,7 +561,8 @@ ok('os detalhes recolhidos lembram se estavam abertos (o refresh da tela redesen
      [true, true, true, true, true, true]); }
 
 console.log('\n── v7.213.0: AVALIAR PROGRAMAÇÃO (a colagem da planilha) ──');
-['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml('].forEach(f => eval.call(global, pega(f)));
+['function _capVol(', 'function _capNome(', 'function _capProdutos(', 'function _tkaCorrente(', 'function _tkaFaixas(', 'function _tkaRitTxt(', 'function _tkaDias(', 'function _tkaSaldoHtml(', 'function _tkaDocHtml(', 'function _tkaNorm(', 'function _tkaChave(', 'function _tkaAchar(', 'function _tkaNum(', 'function _tkaData(', 'function _tkaLer(', 'function _tkaMontar(', 'function _tkaHtml(', 'function _tkaChegadaHtml('].forEach(f => eval.call(global, pega(f)));
+global.TKA_IN = false;
 eval.call(global, pegaConst('ESTEIRA_VAO_PADRAO').replace(/^const /, 'global.'));
 global.TKA_TXT = '';
 // o cadastro de 06/11/2026 dos 16 produtos da semana 042-26 (60 códigos) e o bloco F5:I44 dela como o Excel copia
@@ -714,6 +725,49 @@ ok('as faixas que faltam ler: da 3ª segunda-feira até o último dia colado, de
 ok('a faixa das sub-abas preenche a largura (auto-fit; o auto-fill deixava colunas vazias a 1.920 px) e a letra é um pouco maior',
    [/#sec-uep \.ucv-sub\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(200px,1fr\)\)\}/.test(html), /auto-fill,minmax\(180px/.test(html),
     /#sec-uep \.ucv-sb span\{font-size:14\.5px\}/.test(html)], [true, false, true]);
+
+{ // v7.223.0 (PPCP, depois do .gs v5.60 implantado: "essa semana e avaliar programação ficou fora do padrão"):
+  // a AVALIAÇÃO na ordem da SEMANA QUE VEM — o período na barra do título; avaliada, a caixa de colar
+  // recolhe; veredito, PARA FECHAR, o bloco A LINHA CHEGA (o saldo de horas somado), o gráfico e, nos
+  // detalhes, a tabela semana a semana (sem a frase, que o bloco já diz).
+  global.TKA_TXT = FX.C43AI; global.TKA_IN = false;
+  const M43 = _tkaMontar(L43, OC.fer, 2761, RIT), V = M43.V;
+  const HA = _tkaHtml(L43, M43, { botoes:_taktSemBotoes(2), msg:'30 linhas lidas', largura:1200, corrente:C43 });
+  const iHero = HA.indexOf('<div class="tks-hero'), iCh = HA.indexOf('<div class="tks-her-t">'), iG = HA.indexOf('id="tks-g-box"'), iDet = HA.indexOf('<details class="tks-det"');
+  ok('a avaliação na ordem do padrão: título com o período, a caixa recolhida (uma linha), veredito, A LINHA CHEGA, o gráfico, os detalhes com a tabela',
+     [/<b>TAKT DA SEMANA<\/b> .*16\/11–23\/11 · 5 dias úteis \(20\/11 consciência negra\) · [\d.]+ produtos colados = [\d.]+ UEP<\/div>/.test(HA.split('</div>')[0] + '</div>'),
+      HA.includes('<details class="uep-card tka-in tka-rec" ontoggle="TKA_IN=this.open"><summary><b>PROGRAMAÇÃO COLADA</b> · 30 linhas lidas<span class="tka-ed">'),
+      HA.indexOf('<textarea id="tka-txt"') > 0 && HA.indexOf('<textarea id="tka-txt"') < iHero, iHero < iCh, iCh < iG, iG < iDet,
+      HA.slice(iDet).includes('<table class="tka-tab">'), HA.slice(iDet).includes('class="tks-ler'), HA.includes('A PROGRAMAÇÃO COLADA</b>'),
+      _tkaHtml(L43, M43, { botoes:'', corrente:C43 }).includes(' open ontoggle') , (global.TKA_IN = true, _tkaHtml(L43, M43, { botoes:'', corrente:C43 }).includes('tka-rec" open ontoggle'))],
+     [true, true, true, true, true, true, true, false, false, false, true]);
+  global.TKA_IN = false;
+  const HC = _tkaChegadaHtml(C43, V, '16/11 a 23/11');
+  ok('A LINHA CHEGA (a colagem cabe, a linha chega atrasada): a folga da colagem não cobre o atraso que chega; termina com o atraso do saldo, em dias; o ritmo atual',
+     [V.cabe, C43.chegada > 0, HC.includes('<div class="tks-her"><div><div class="tks-her-t">E A LINHA CHEGA ATRASADA</div>'),
+      HC.includes('a folga da colagem (<b>' + _fmtHM(-V.faltaMin) + '</b>) não cobre o atraso que chega (<b>' + _fmtHM(C43.chegada) + '</b>)'),
+      HC.includes('<div class="kpi-lbl">TERMINA 23/11 COM</div><div class="tks-hn">' + _fmtHM(C43.atraso) + '</div>'), HC.includes(_tkDia(C43.atraso)),
+      HC.includes('no ritmo atual (' + fmtP(C43.ritPct) + ' da média): ' + _tkaRitTxt(C43))],
+     [true, true, true, true, true, true, true]);
+  // a barra somada só quando ela FECHA com o total (chegada + falta da colagem = o fim)
+  const IT = [{ n:20261110, nome:'X', qtde:4000, uepJogo:1, ptsJogo:0, lote:null }, { n:20261111, nome:'X', qtde:4000, uepJogo:1, ptsJogo:0, lote:null }];
+  const PRb = [{ dataNum:20261109, data:'09/11/2026', lote:'99001', desc:'MESA X', cor:'', saldo:3500, uepCx:1, foraEsteira:false }];
+  const OCb = { hojeN:20261106, restMin:0, meta:2761, rit:null, fer:{} }, Cb = _tkaCorrente(PRb, IT, OCb), Vb = _tkaMontar({ itens:IT, semCad:[], semData:0 }, {}, 2761, null).V;
+  const HB = _tkaChegadaHtml(Cb, Vb, '10/11 a 11/11');
+  ok('chega atrasada e a colagem falta: a barra somada (o que chega + a colagem = o fim), sem o ritmo atual quando não há ritmo',
+     [Cb.chegada > 0, Vb.faltaMin > 0, Math.abs(Cb.chegada + Vb.faltaMin - Cb.atraso) <= 1,
+      HB.includes('<span class="b" style="flex:' + Cb.chegada + '"><i>' + _fmtHM(Cb.chegada) + '</i></span><span class="a" style="flex:' + Vb.faltaMin + '">' + _fmtHM(Vb.faltaMin) + '</span>'),
+      HB.includes('o atraso que chega em 10/11'), HB.includes('tka-rit')],
+     [true, true, true, true, true, false]);
+  const Cd = _tkaCorrente([], [{ n:20261110, nome:'X', qtde:1000, uepJogo:1, ptsJogo:0, lote:null }], OCb);
+  const HD = _tkaChegadaHtml(Cd, _tkaMontar({ itens:[{ n:20261110, nome:'X', qtde:1000, uepJogo:1, ptsJogo:0, lote:null }], semCad:[], semData:0 }, {}, 2761, null).V, '10/11');
+  ok('chega em dia e termina em dia: o bloco verde, sem barra', [HD.includes('<div class="tks-her ok">'), HD.includes('A LINHA CHEGA EM DIA'), HD.includes('<div class="tks-hn">em dia</div>'), HD.includes('tks-stk')], [true, true, true, false]);
+  ok('o desenho não faz conta (vem do _tkaCorrente e do veredito)', /_tkaCorrente\(|_taktVeredito\(|_taktMontar\(/.test(pega('function _tkaChegadaHtml(') + pega('function _tkaHtml(')), false);
+  ok('a pele: a caixa recolhida, o bloco verde, o subtítulo do veredito com entrelinha (quebra a 1366 sem encavalar)',
+     [/#sec-uep \.tka-rec>summary\{cursor:pointer;display:flex/.test(html), /#sec-uep \.tks-her\.ok\{border-left-color:var\(--ok\)\}/.test(html),
+      /#sec-uep \.tks-hv small\{[^}]*max-width:300px;line-height:1\.35\}/.test(html), /TKA_IN=false;   \/\/ avaliou/.test(pega('function _tkaAvaliar('))],
+     [true, true, true, true]);
+  global.TKA_TXT = ''; }
 
 console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — três números em s por UEP, o porquê dia a dia, o agora em caixas');
 process.exit(falhas ? 1 : 0);
