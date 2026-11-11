@@ -6736,7 +6736,14 @@ feito e dá ar de verdade ao que sobrou.
     - **O ATUALIZAR espera a leitura em curso** (`_refreshP` /
       `_refreshMarca`, marcada pela carga inicial, pelo ciclo e pelo próprio
       ATUALIZAR): com a leitura do dia de até 75 s, tocar ↻ no meio dela punha
-      três fluxos na fila do Apps Script.
+      três fluxos na fila do Apps Script. Toques seguidos viram UM pedido
+      (`refresh` → `_refreshPedido` → `_refresh`) e o botão diz *↻
+      ATUALIZANDO…* (desabilitado) até acabar.
+    - **A leitura de ONTEM não vale para card nenhum** (`_pontosDiaDeHoje`, no
+      começo do `renderGerencial` e do `aplicarMetaDiaAutomatica`): com o
+      `PONTOS_DIA.lidoEm` de outro dia, o objeto volta ao vazio
+      (`_pontosDiaVazio`) — UEP DO DIA "aguardando", META pela HORA_A_HORA,
+      pontos/peso/produtos do dia esperando a leitura de hoje.
   - A ênfase do TAKT NO APP na faixa da TAKT DA SEMANA (número grande ao lado
     dos volumes) foi feita, mostrada em prévia e **guardada fora** do commit
     (*"só card de atraso"*): não está no painel.

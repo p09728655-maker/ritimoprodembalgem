@@ -97,6 +97,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .status-txt{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:1px;flex:1}
 .btn-refresh{background:transparent;border:0.5px solid var(--border);color:var(--txt2);border-radius:4px;padding:5px 10px;font-family:var(--font-d);font-size:9px;letter-spacing:1px;cursor:pointer}
 .btn-refresh:active{opacity:.6}
+.btn-refresh:disabled{opacity:.55;cursor:default}
 
 /* ═══ SECTION LABEL ═══ */
 .sec-lbl{font-family:var(--font-d);font-size:9px;color:var(--txt2);letter-spacing:3px;text-transform:uppercase;padding-left:2px}
@@ -1082,7 +1083,16 @@ const COR_AVISO_MIN = 10, COR_AVISO_PCT = 10;
 // quem continua no código depois de fechar o lote tomaria o aviso a cada caixa.
 let COR_OK = { dia:'', cod:{} };
 // Produção do dia em pontos/peso (aba PRODUCAO_PRODUTO) — só para o gerencial.
-let PONTOS_DIA = { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null };
+function _pontosDiaVazio(){ return { pontos:0, pesoKg:0, caixas:0, programacao:{ lista:[], metaEfetiva:0, programadoHoje:0, atrasoTotal:0, embaladoHoje:0 }, uep:null, metaUep:null }; }
+let PONTOS_DIA = _pontosDiaVazio();
+// A leitura do dia é de HOJE? (1.44.0, revisão do card ATRASO) Com o app aberto na
+// virada, o PONTOS_DIA de ontem continuava valendo para a UEP DO DIA, a META, os
+// PONTOS, o PESO e os PRODUTOS EMBALADOS HOJE até o 1º getPontosDia de hoje dar
+// certo — "2.700 UEP de 314 esperadas" com a UEP de ontem e os minutos de hoje.
+// Leitura de outro dia volta ao vazio: os cards da mesma leitura esperam juntos.
+function _pontosDiaDeHoje(){
+  if(PONTOS_DIA.lidoEm && dtToStr(new Date(PONTOS_DIA.lidoEm)) !== hojeStr()) PONTOS_DIA = _pontosDiaVazio();
+}
 // Último metaDia bruto vindo da aba HORA_A_HORA (fallback quando a PROGRAMAÇÃO
 // não tem nada cadastrado pra hoje — nunca deve cair no default fixo de CFG).
 let META_HORA_A_HORA = 0;
@@ -1416,6 +1426,7 @@ async function _lerPontosDia(){
 // nunca somava e o card META DO DIA dava um número diferente do PC.
 // Sem nada cadastrado pra hoje, cai na meta da HORA_A_HORA em vez do default.
 function aplicarMetaDiaAutomatica(){
+  _pontosDiaDeHoje();   // a programação de ontem não é a meta de hoje
   const prog = PONTOS_DIA.programacao || {};
   const auto = (PONTOS_DIA.metaComAtraso ? prog.metaEfetiva : prog.programadoHoje) || 0;
   const novoValor = auto > 0 ? auto : META_HORA_A_HORA;
@@ -2589,7 +2600,18 @@ function pararRefreshAuto(){
 // Botão ATUALIZAR: o usuário quer o número de AGORA, então busca tudo (inclusive
 // o que o ciclo automático só faz em ciclos alternados) e derruba os caches de
 // paradas por período. Segura o ciclo automático enquanto roda, p/ não duplicar.
-async function refresh(){
+// Toques seguidos viram UM pedido (revisão da 1.44.0): com a carga em curso o
+// ATUALIZAR espera, e sem sinal na tela quem toca 3 vezes ganhava 3 rodadas
+// inteiras na fila. O botão diz ATUALIZANDO… até acabar.
+let _refreshPedido = null;
+function refresh(){
+  if(_refreshPedido) return _refreshPedido;
+  const bts = [...document.querySelectorAll('.btn-refresh')];
+  bts.forEach(b => { b.disabled = true; b.textContent = '↻ ATUALIZANDO…'; });
+  _refreshPedido = _refresh().finally(() => { _refreshPedido = null; bts.forEach(b => { b.disabled = false; b.textContent = '↻ ATUALIZAR'; }); });
+  return _refreshPedido;
+}
+async function _refresh(){
   while(_refreshP) await _refreshP;   // a carga ou o ciclo em curso termina antes (1.44.0)
   _refreshRodando = true; const _fimR = _refreshMarca();
   const passo=async fn=>{ try{ await fn(); }catch(e){ console.warn('refresh:', e.message); } };
@@ -3354,6 +3376,7 @@ function _atrRetLe(){
   }catch(e){ return null; }
 }
 function renderGerencial(){
+  _pontosDiaDeHoje();
   const k = calcKPIs();
   // Verde/vermelho pela META DO DIA (efRitmo), a MESMA régua da TV e do
   // gerencial do desktop.

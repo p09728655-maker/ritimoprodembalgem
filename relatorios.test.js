@@ -5707,7 +5707,7 @@ console.log('\n── estudo de UEP ──');
   const mJS = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
   const i = mJS.indexOf('function aplicarMetaDiaAutomatica(');
   const corpo = mJS.slice(i, mJS.indexOf('\n}\n', i) + 2);
-  const metaMob = (liga, prog) => { const C = { CFG: { metaDia: 0 }, META_HORA_A_HORA: 1400, PONTOS_DIA: { metaComAtraso: liga, programacao: prog } };
+  const metaMob = (liga, prog) => { const C = { CFG: { metaDia: 0 }, META_HORA_A_HORA: 1400, _pontosDiaDeHoje: () => {}, PONTOS_DIA: { metaComAtraso: liga, programacao: prog } };
     vm.createContext(C); vm.runInContext(corpo + ';aplicarMetaDiaAutomatica();', C); return C.CFG.metaDia; };
   const PROG = { programadoHoje: 1550, metaEfetiva: 2150 };
   ok('celular: com a chave ligada a META é a metaEfetiva (como no PC); desligada, o programado; sem programação, a da aba',
@@ -5823,17 +5823,39 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
     ok('celular: lerPontosDia com voo compartilhado; carga inicial, ciclo e ATUALIZAR marcam a leitura em curso; o ATUALIZAR espera por ela antes de começar',
        [/if\(!_pontosVoo\) _pontosVoo = _lerPontosDia\(\)\.finally\(\(\) => \{ _pontosVoo = null; \}\);/.test(mJS),
         (mJS.match(/_refreshRodando = true; const _fimR = _refreshMarca\(\);/g) || []).length, (mJS.match(/_refreshRodando = false; _fimR\(\);/g) || []).length,
-        /async function refresh\(\)\{\s*while\(_refreshP\) await _refreshP;/.test(mJS)],
+        /async function _refresh\(\)\{\s*while\(_refreshP\) await _refreshP;/.test(mJS)],
        [true, 3, 3, true]);
-    { // o ATUALIZAR tocado com a carga em curso: só começa quando ela termina
-      const RM = mJS.slice(mJS.indexOf('function _refreshMarca('), mJS.indexOf('\n}\n', mJS.indexOf('function _refreshMarca(')) + 2);
-      const C = {}; vm.createContext(C); vm.runInContext('let _refreshP = null, ordem = [];' + RM +
-        ';globalThis.T = async () => { const fim = _refreshMarca(); const a = (async () => { while(_refreshP) await _refreshP; ordem.push("atualizar"); })();' +
-        ' await null; ordem.push("carga"); fim(); await a; return ordem; };', C);
-      ok('celular: o ATUALIZAR tocado no meio da carga só começa quando ela termina', await C.T(), ['carga', 'atualizar']); } }
+    { // o ATUALIZAR REAL (refresh + _refresh + _refreshMarca) tocado 3 vezes no meio da carga: UMA rodada, depois dela, com o botão
+      // dizendo ATUALIZANDO… enquanto espera (revisão: antes cada toque enfileirava uma rodada inteira, sem sinal na tela)
+      const fn = a => { const i = mJS.indexOf(a); return mJS.slice(i, mJS.indexOf('\n}\n', i) + 2); };
+      const bts = [{ disabled:false, textContent:'↻ ATUALIZAR' }, { disabled:false, textContent:'↻ ATUALIZAR' }];
+      const C = { ordem:[], console, document:{ querySelectorAll:q => (q === '.btn-refresh' ? bts : []) } };
+      vm.createContext(C);
+      vm.runInContext('let _refreshP = null, _refreshRodando = false, PERFIL = "operador";' +
+        'let _refreshPedido = null;' + fn('function _refreshMarca(') + fn('function refresh(') + fn('async function _refresh(') +
+        ';async function lerSheets(){ ordem.push("lerSheets"); } async function carregarParadas(){ ordem.push("paradas"); }' +
+        ';globalThis.T = async () => { const fim = _refreshMarca(); const a = refresh(), b = refresh(), c = refresh();' +
+        ' await null; await null; const meio = [globalThis.document.querySelectorAll(".btn-refresh").map(x => [x.disabled, x.textContent]), a === b && b === c, ordem.slice()];' +
+        ' ordem.push("carga"); fim(); await a; return [meio, ordem.slice(), globalThis.document.querySelectorAll(".btn-refresh").map(x => [x.disabled, x.textContent])]; };', C);
+      ok('celular: 3 toques no ATUALIZAR durante a carga = UMA rodada, depois dela; o botão diz ATUALIZANDO… (desabilitado) até acabar',
+         await C.T(), [[[[true, '↻ ATUALIZANDO…'], [true, '↻ ATUALIZANDO…']], true, []], ['carga', 'lerSheets', 'paradas'],
+                       [[false, '↻ ATUALIZAR'], [false, '↻ ATUALIZAR']]]); }
+    { // revisão: a leitura de ONTEM (app aberto na virada) não vale para NENHUM card da mesma leitura — volta ao vazio
+      const fn = a => { const i = mJS.indexOf(a); return mJS.slice(i, mJS.indexOf('\n}\n', i) + 2); };
+      const C = { dtToStr, hojeStr: () => '11/11/2026', Date };
+      vm.createContext(C);
+      const iV = mJS.indexOf('function _pontosDiaVazio('), iH = mJS.indexOf('function _pontosDiaDeHoje(');
+      vm.runInContext(mJS.slice(iV, mJS.indexOf('\n}\n', iH) + 2) +   // o vazio, a declaração e o _pontosDiaDeHoje, como estão no arquivo
+        ';globalThis.T = (lido) => { PONTOS_DIA = Object.assign(_pontosDiaVazio(), { uep:{ normal:2700 }, pontos:99, lidoEm:lido, programacao:{ lista:[1], programadoHoje:1550 } });' +
+        ' _pontosDiaDeHoje(); return [PONTOS_DIA.uep, PONTOS_DIA.pontos, PONTOS_DIA.programacao.programadoHoje, PONTOS_DIA.lidoEm == null]; };', C);
+      ok('celular: leitura de ONTEM → o PONTOS_DIA volta ao vazio (UEP "aguardando", pontos 0, a meta pela HORA_A_HORA); de hoje fica; o renderGerencial e a meta automática conferem primeiro',
+         [C.T(new Date(2026, 10, 10, 17, 30).getTime()), C.T(new Date(2026, 10, 11, 8, 10).getTime())[1],
+          /function renderGerencial\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS), /function aplicarMetaDiaAutomatica\(\)\{\s*_pontosDiaDeHoje\(\);/.test(mJS),
+          /let PONTOS_DIA = _pontosDiaVazio\(\);/.test(mJS)],
+         [[null, 0, 0, true], 99, true, true, true]); } }
   ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
      [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
-      /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function refresh('))),
+      /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function _refresh('))),
       /PROD_CAT_TS = Date\.now\(\); PROD_CAT_FALHA = false;/.test(mJS), /\} else PROD_CAT_FALHA = true;\s*\}catch\(e\)\{ PROD_CAT_FALHA = true;/.test(mJS),
       /const PROD_CAT_TTL = 30 \* 60 \* 1000;/.test(mJS)],
      [true, true, true, true, true]);

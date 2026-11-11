@@ -32,7 +32,12 @@ no ciclo seguinte, 6 minutos depois.
   atraso. Não é um teto: no mesmo dia o atraso pode subir (lançamento excluído
   ou trocado, linha com data passada, X do ENCERRAR apagado, troca de UEP).
 - O ↻ ATUALIZAR tocado durante a carga espera ela terminar, em vez de correr ao
-  lado dela. A leitura do dia pedida duas vezes vira uma só no Apps Script.
+  lado dela, e o botão diz *ATUALIZANDO…* até acabar. Toques seguidos viram um
+  pedido só. A leitura do dia pedida duas vezes vira uma só no Apps Script.
+- Com o app aberto na virada, a leitura de ONTEM deixa de valer para TODOS os
+  cards que dependem dela (UEP DO DIA, META, PONTOS, PESO, PRODUTOS EMBALADOS
+  HOJE): eles esperam a leitura de hoje juntos. Antes, a UEP de ontem chegou a
+  ser julgada contra os minutos de hoje.
 - As PARADAS do gerencial (média/dia do mês pelos dias trabalhados) redesenham
   quando o histórico chega.
 
