@@ -6719,14 +6719,24 @@ feito e dá ar de verdade ao que sobrou.
       atraso entrar, os outros entram antes"*): o card sai do `getPontosDia`
       (a leitura mais cara), que era a 3ª da carga inicial, com UMA tentativa
       de 20 s — no cold start estourava e o card só vinha 6 min depois. Hoje:
-      a leitura do dia logo depois do `lerSheets`; `lerPontosDia` com duas
-      tentativas em sequência (30 s, 45 s; `PONTOS_DIA_FALHA`); e o card do
-      dia guardado no aparelho (`rp_atr_ret` = {dia, ts, kpi}, `_atrRetGuarda` /
-      `_atrRetLe`) entra na abertura do MESMO dia marcado *"de HH:MM,
-      atualizando…"* (ou *"sem leitura nova"*) até `PONTOS_DIA.lidoEm`. Só o
-      card completo é guardado (com o cadastro por ler, não); kpi null = sem
-      atraso. O atraso só cai no dia, então o guardado é teto. ⚠ Chave nova:
-      não renomear.
+      a leitura do dia logo depois do `lerSheets` (o histórico depois, e com
+      ele o `renderGerParadasResumo`); `lerPontosDia` com duas tentativas em
+      sequência (30 s, 45 s; `PONTOS_DIA_FALHA`) e voo compartilhado
+      (`_pontosVoo` → `_lerPontosDia`); e o card do dia guardado no aparelho
+      (`rp_atr_ret` = {dia, ts, kpi}, `_atrRetGuarda(kpi, lidoEm)` /
+      `_atrRetLe`), com o DIA e a HORA DA LEITURA (`PONTOS_DIA.lidoEm`, nunca
+      a do redesenho — o `lerSheets` redesenha a cada 3 min). Sem leitura de
+      HOJE (`_lidoHoje`: o `lidoEm` de ontem, com o app aberto na virada, não
+      vale), entra o guardado de hoje marcado *"de HH:MM, atualizando…"* (ou
+      *"sem leitura nova"*); a última leitura de hoje falhou → *"de HH:MM ·
+      sem leitura nova"*. Só o card completo é guardado (com o cadastro por
+      ler, não); kpi null = sem atraso. ⚠ **Não é teto**: excluir/trocar
+      lançamento, linha com data passada, X apagado ou troca de UEP sobem o
+      atraso no mesmo dia. ⚠ Chave nova: não renomear.
+    - **O ATUALIZAR espera a leitura em curso** (`_refreshP` /
+      `_refreshMarca`, marcada pela carga inicial, pelo ciclo e pelo próprio
+      ATUALIZAR): com a leitura do dia de até 75 s, tocar ↻ no meio dela punha
+      três fluxos na fila do Apps Script.
   - A ênfase do TAKT NO APP na faixa da TAKT DA SEMANA (número grande ao lado
     dos volumes) foi feita, mostrada em prévia e **guardada fora** do commit
     (*"só card de atraso"*): não está no painel.

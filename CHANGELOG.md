@@ -24,11 +24,17 @@ no ciclo seguinte, 6 minutos depois.
   fica mais abaixo na tela.
 - **Duas tentativas em sequência, 30 s e 45 s**, como no PC.
 - **O card do dia fica guardado no aparelho.** Na abertura seguinte do MESMO
-  dia, ele entra junto com os outros, marcado com a hora: *"425 cx · desde 06/11
-  · de 08:10, atualizando…"*. Quando a leitura nova chega, a marca sai. Se a
-  leitura não vier, o card diz *"sem leitura nova (tenta a cada 6 min)"*. O
-  atraso só cai ao longo do dia, porque a linha embala o vencido, então o número
-  guardado nunca é menor que o de agora. O card de outro dia não é usado.
+  dia, ele entra junto com os outros, marcado com a hora da leitura: *"425 cx ·
+  desde 06/11 · de 08:10, atualizando…"*. Quando a leitura nova chega, a marca
+  sai. Se a leitura não vier, o card diz *"sem leitura nova (tenta a cada 6
+  min)"*. O card guardado em outro dia não é usado, e a leitura de ontem, com o
+  app aberto na virada, também não: à meia-noite o que não fechou ontem virou
+  atraso. Não é um teto: no mesmo dia o atraso pode subir (lançamento excluído
+  ou trocado, linha com data passada, X do ENCERRAR apagado, troca de UEP).
+- O ↻ ATUALIZAR tocado durante a carga espera ela terminar, em vez de correr ao
+  lado dela. A leitura do dia pedida duas vezes vira uma só no Apps Script.
+- As PARADAS do gerencial (média/dia do mês pelos dias trabalhados) redesenham
+  quando o histórico chega.
 
 **Atenção:** na 1ª abertura do dia o card ainda espera a leitura (não há card
 guardado de hoje). A UEP DO DIA, que vem da mesma leitura, também chega antes.

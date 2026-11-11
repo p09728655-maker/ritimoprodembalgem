@@ -5749,10 +5749,10 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
   // o aparelho de mentira (o retrato do card) e os dois ajudantes REAIS
   const AJ = ['function _atrRetGuarda(', 'function _atrRetLe('].map(a => { const i = mJS.indexOf(a); return mJS.slice(i, mJS.indexOf('\n}\n', i) + 2); }).join('\n');
   const LS = {}, ls = { getItem:k => (k in LS ? LS[k] : null), setItem:(k, v) => { LS[k] = String(v); } };
+  const T0 = new Date(2026, 10, 11, 8, 10).getTime();   // a leitura de 11/11 às 08:10
   const card = (prog, prods, metaUep, semFn, cat, o) => { o = o || {};
-    const C = { PONTOS_DIA:{ programacao:prog, metaUep, lidoEm: o.lido === false ? undefined : 1 }, PRODUTOS:prods, fmtN, plural, p2, hojeStr: () => o.hoje || '11/11/2026',
-      Date: o.agora ? class extends Date { constructor(...a){ a.length ? super(...a) : super(o.agora); } static now(){ return o.agora; } } : Date,
-      localStorage: ls, PONTOS_DIA_FALHA: !!o.falhaDia,
+    const C = { PONTOS_DIA:{ programacao:prog, metaUep, lidoEm: o.lido === false ? undefined : (o.lido || T0) }, PRODUTOS:prods, fmtN, plural, p2, dtToStr, Date,   // o Date de fora: o dtToStr confere instanceof Date
+      hojeStr: () => o.hoje || '11/11/2026', localStorage: ls, PONTOS_DIA_FALHA: !!o.falhaDia,
       atrasoVencido: semFn ? undefined : atrasoVencido, PROD_CAT_TS: cat && cat.ts != null ? cat.ts : 1, PROD_CAT_FALHA: !!(cat && cat.falha) };
     vm.createContext(C); vm.runInContext(AJ + trecho + ';globalThis.R = atrKpi;', C); return C.R; };
   const LST = [{ codigo:'501070001', falta:100, atraso:100, atrasoDesde:'06/11/2026' }, { codigo:'501071004', falta:300, atraso:200, atrasoDesde:'10/11/2026' },
@@ -5783,27 +5783,54 @@ process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não te
   // 1.44.0 (PPCP: "demora pro card do atraso entrar, os outros entram antes"): o card do dia guardado no aparelho entra
   // JÁ na abertura, marcado com a hora, até a leitura nova; só o de HOJE; o incompleto (cadastro por ler) não é guardado
   { for(const k in LS) delete LS[k];
-    const t0 = new Date(2026, 10, 11, 8, 10).getTime();
-    const lido = card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { agora:t0 });
+    const lido = card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0 });
     const abre = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
     const falhou = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, falhaDia:true });
     const amanha = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false, hoje:'12/11/2026' });
     ok('celular: lida a programação, o card é guardado; na abertura seguinte do MESMO dia ele entra já, com a hora dele; a leitura que não veio é dita; outro dia, nada',
        [abre && abre.v === lido.v, abre && abre.sub, falhou && falhou.sub, amanha],
        [true, '300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null]);
-    card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761, false, null, { agora:t0 });
+    card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:T0 });
     const semAtr = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
-    card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { agora:t0 });
-    card({ lista:LST, atrasoTotal:300 }, [], 2761, false, { ts:0 }, { agora:t0 + 3600000 });
+    card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0 });
+    card({ lista:LST, atrasoTotal:300 }, [], 2761, false, { ts:0 }, { lido:T0 + 3600000 });
     const incompleto = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
     ok('celular: sem atraso lido, o guardado é "nenhum" (sem card na abertura); o card com o cadastro ainda por ler NÃO substitui o guardado; o card lido nunca leva a marca',
        [semAtr, incompleto && incompleto.sub, /de \d\d:\d\d/.test(lido.sub)], [null, '300 cx · desde 06/11 · de 08:10, atualizando…', false]);
+    // revisão da 1.44.0 (BLOQUEIA): o retrato leva o dia e a hora da LEITURA, não do redesenho; a leitura de ONTEM não
+    // é guardada nem mostrada (na virada, o que não fechou virou atraso); a última leitura de hoje que falhou leva a marca
+    for(const k in LS) delete LS[k];
+    card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0, falhaDia:true });   // redesenhos depois, com a leitura falhando
+    card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0, falhaDia:true });
+    const reabre = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
+    const ontem = new Date(2026, 10, 10, 17, 30).getTime(), L100 = { lista:[{ codigo:'501070001', falta:100, atraso:100, atrasoDesde:'06/11/2026' }], atrasoTotal:100 };
+    const comHoje = card(L100, PRODS, 2761, false, null, { lido:ontem, falhaDia:true });   // há o guardado de hoje (08:10): ele, não o de ontem
+    const depois = card({ lista:[], atrasoTotal:0 }, PRODS, 2761, false, null, { lido:false });
+    const falhaHoje = card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, null, { lido:T0, falhaDia:true });
+    for(const k in LS) delete LS[k];
+    const semHoje = card(L100, PRODS, 2761, false, null, { lido:ontem });                   // sem guardado de hoje: nada
+    ok('celular: lido às 08:10 e redesenhado depois → o guardado diz 08:10; leitura de ONTEM na virada → os 100 cx de ontem NUNCA aparecem nem são guardados (vale o guardado de hoje, ou nada); a última leitura de hoje falhou → "de 08:10 · sem leitura nova"',
+       [reabre && reabre.sub, comHoje && comHoje.sub, depois && depois.sub, falhaHoje.sub, semHoje, 'rp_atr_ret' in LS],
+       ['300 cx · desde 06/11 · de 08:10, atualizando…', '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', '300 cx · desde 06/11 · de 08:10, atualizando…',
+        '300 cx · desde 06/11 · de 08:10 · sem leitura nova (tenta a cada 6 min)', null, false]);
     const mJSc = mJS.slice(mJS.indexOf('function entrar('));
     ok('celular: na abertura do gerencial a leitura do dia vem logo depois do lerSheets (antes do histórico); ela tenta duas vezes, em sequência, 30 s e 45 s',
-       [/await passo\('pontos',lerPontosDia\); renderGerencial\(\);\s*const dias=await passo\('historico',lerHistorico\)/.test(mJSc),
+       [/await passo\('pontos',lerPontosDia\); renderGerencial\(\);[\s\S]{0,260}const dias=await passo\('historico',lerHistorico\); if\(dias\)\{ renderHistoricoComDados\(dias\); renderGerParadasResumo\(\); \}/.test(mJSc),
         /for\(const ms of \[30000, 45000\]\)\{\s*try\{ json = await jsonpFetch\(url, ms\); erro = null; break; \}catch\(e\)\{ erro = e; \}/.test(mJS),
-        /PONTOS_DIA_FALHA = true;\s*return false;\s*\}/.test(mJS.slice(mJS.indexOf('async function lerPontosDia(')))],
-       [true, true, true]); }
+        /PONTOS_DIA_FALHA = true;\s*return false;\s*\}/.test(mJS.slice(mJS.indexOf('async function _lerPontosDia(')))],
+       [true, true, true]);
+    // revisão da 1.44.0: o ATUALIZAR espera a leitura em curso (nunca três fluxos na fila), e a leitura do dia tem voo compartilhado
+    ok('celular: lerPontosDia com voo compartilhado; carga inicial, ciclo e ATUALIZAR marcam a leitura em curso; o ATUALIZAR espera por ela antes de começar',
+       [/if\(!_pontosVoo\) _pontosVoo = _lerPontosDia\(\)\.finally\(\(\) => \{ _pontosVoo = null; \}\);/.test(mJS),
+        (mJS.match(/_refreshRodando = true; const _fimR = _refreshMarca\(\);/g) || []).length, (mJS.match(/_refreshRodando = false; _fimR\(\);/g) || []).length,
+        /async function refresh\(\)\{\s*while\(_refreshP\) await _refreshP;/.test(mJS)],
+       [true, 3, 3, true]);
+    { // o ATUALIZAR tocado com a carga em curso: só começa quando ela termina
+      const RM = mJS.slice(mJS.indexOf('function _refreshMarca('), mJS.indexOf('\n}\n', mJS.indexOf('function _refreshMarca(')) + 2);
+      const C = {}; vm.createContext(C); vm.runInContext('let _refreshP = null, ordem = [];' + RM +
+        ';globalThis.T = async () => { const fim = _refreshMarca(); const a = (async () => { while(_refreshP) await _refreshP; ordem.push("atualizar"); })();' +
+        ' await null; ordem.push("carga"); fim(); await a; return ordem; };', C);
+      ok('celular: o ATUALIZAR tocado no meio da carga só começa quando ela termina', await C.T(), ['carga', 'atualizar']); } }
   ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
      [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
       /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function refresh('))),
