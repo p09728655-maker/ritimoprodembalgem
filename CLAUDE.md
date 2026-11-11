@@ -7037,6 +7037,43 @@ feito e dá ar de verdade ao que sobrou.
       volume igual, então produto pesado sempre parece acima dele. Medido em
       06/11: semana 09–13/11 = 10,9 s/UEP; DIAMANTE (2,48) 27,0 s/cx pelo takt
       × 26,9 s no período da medição (em cima); 21 produtos na tabela.
+      ⚠ **Desde a v7.224.0 a tabela NÃO mora mais nos detalhes** — ver o item
+      abaixo (a FAIXA DO TAKT).
+    - **A FAIXA DO TAKT (v7.224.0)** — PPCP, 11/11/2026: *"onde fica o takt
+      que temos que seguir? e a quantidade de volumes"* → *"não consigo
+      localizar com facilidade"* → *"preciso saber o takt da semana para
+      colocar no app de cronoanálise"*. O takt só existia nos DETALHES
+      recolhidos (v7.211.0) e, na AVALIAR, em lugar nenhum. Hoje, logo abaixo
+      do título das TRÊS telas (antes do veredito), `_taktFaixa(T, o)` (conta)
+      + `_taktFaixaHtml(F, R, Tt)` (desenho, sem conta):
+      - **PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA** (laranja): os
+        volumes (= caixas: cada volume de um produto é uma caixa), a UEP, os
+        dias úteis, a jornada (`nUteis` × 527; feriado dito) e *jornada ÷
+        volumes = X s por volume, sem descontar o setup* (o app desconta o dele
+        — o takt do app sai menor; ver a nota da 7.217.0 acima). Na esta
+        semana e na que vem, `T.progCx` (as mesmas linhas do takt: as duas
+        abas, fora da esteira de fora); volume em dia não útil é dito
+        (`volFds`, está no total);
+      - **TAKT DA SEMANA · NO PAINEL** em s por UEP, a média ao lado e o %;
+      - na ESTA SEMANA, **AGORA**: o `_taktAgora` (s por caixa e cx/h).
+      - **TAKT POR PRODUTO** (`<details class="tks-tpc">`, `TKS_TPC` lembra
+        aberto no refresh): a tabela `_taktPorCaixaHtml(R, T, semTit)` saiu dos
+        DETALHES (o teste falha se voltar); aberta, rola dentro (440 px,
+        cabeçalho fixo). A contagem saiu dos títulos (*"N caixas
+        programadas"*, *"N produtos colados = X UEP"*).
+      - **AVALIAR**: a planilha programa por PRODUTO; `_tkaVolumes(L, T)` =
+        produtos × `nVol` de cada um, e o TAKT POR PRODUTO por VOLUME com a UEP
+        de cada volume (`uepVols`, campo novo do `_capProdutos`: a cor mais
+        rápida, a mesma que soma o `uepJogo`; o `_tkaLer` leva `modelo`,
+        `nVol`, `uepVols` no item). Medido: a 042-26 colada (8.000 produtos)
+        = **9.050 volumes** = as 9.050 caixas do painel para 09–13/11. Produto
+        fora do cadastro não conta e é dito.
+      - Medido no Chromium com as fixtures: 1920, 1366 e 1280, nada passa da
+        largura nem corta; a faixa tem ~125 px (145 na esta semana a 1366).
+      - ⚠ **Não verificado no app** (o repositório `crono-analise` não pôde
+        ser aberto nesta sessão): que o campo do app seja os VOLUMES e as horas
+        fixas de 44 h. Numa semana com feriado (16–19/11: 4 dias, 35h08) as
+        44 h do app dariam takt ~25% folgado — conferir no app.
     - **FALTA e SOBRA: palavra, nunca sinal (v7.214.2, PPCP: *"deixa regra
       clara sobre falta e sobra"*).** Falta = precisa − tem (não cabe), sobra
       = tem − precisa (cabe); a sobra não vira crédito, só abate atraso que já
