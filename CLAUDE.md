@@ -10,7 +10,8 @@ via Google Apps Script (JSONP).
 - `ritmoprod_mobile.html` — painel mobile.
 - `rp-core.js` — **núcleo comum dos dois painéis, implementação ÚNICA**:
   formatação (`p2`/`fmtN`/`fmtP`), horário (`toMin`/`fromMin`/`normHora`), data
-  (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`. Só função
+  (`hojeStr`/`dtToStr`), `mergeMedias`, `calcAtrasoHoras`, `sc`,
+  `atrasoVencido` (o card ATRASO do celular, 1.14.0). Só função
   **pura** entra aqui — nada que leia `DADOS`/`CFG` ou toque no DOM.
   `node rp-core.test.js` cobre a regra e falha se algum HTML voltar a declarar
   a própria cópia.
@@ -1907,7 +1908,7 @@ via Google Apps Script (JSONP).
   só para o `getParadas` (banner de PRODUÇÃO PARADA quase ao vivo); `lerSheets`
   a cada 2 ticks (3 min); `getHistory` + `getPontosDia` a cada 4 ticks (6 min).
   Dá ~90 chamadas/hora contra as 240 do ciclo antigo de 1 min. Medido no
-  navegador: login = 8 chamadas, 12 min de refresh = 16, botão ATUALIZAR = 5.
+  navegador: login = 8 chamadas, 12 min de refresh = 16, botão ATUALIZAR = 5 (6 no gerencial desde a 1.43.0: o cadastro, para a UEP do card ATRASO).
   - `cicloRefresh()` tem **guarda de reentrância** e roda em `await` sequencial —
     em paralelo as chamadas só se enfileiram no Apps Script (uma execução por
     vez) e ainda competem com o que o operador está salvando.
@@ -6691,6 +6692,31 @@ feito e dá ar de verdade ao que sobrou.
     TAKT faltam 5h47 sem o 1h44 do 25396. Somar foi oferecido, não decidido.
   - Medido no Chromium: 1920, uma linha (o cartão com 228 px, texto inteiro);
     1366 e 1280, duas linhas (o corte de texto nos outros cartões já existia).
+  - **NO CELULAR (mobile 1.43.0**, PPCP: *"essa card do atraso pode ir para
+    app gerencial"* → *"no mobile deixar bem à vista"* → prévia → *"ok"* →
+    *"só card de atraso"*): o card **⚠ ATRASO · LOTES VENCIDOS** é o 1º do
+    gerencial do celular (`atrKpi` no `renderGerencial`; `.kpi-card.larga` =
+    a largura toda, `.atr` = fundo e número vermelhos a 34 px). Conta
+    `atrasoVencido(lista, uepDe, meta)` no **`rp-core.js`** (1.14.0): o MESMO
+    número do cartão do PC (o `relatorios.test.js` confere a paridade com o
+    `conta.venc` e o `_gpxAtrasoMontar`), com a UEP do CADASTRO (`PRODUTOS`,
+    código pelos dígitos) — o celular não lê a `getProgramacaoDetalhada`. Sem
+    atraso, sem card. Sem UEP nenhuma, ou o `.gs` sem o `atraso` por código, ou
+    `rp-core` velho em cache: só as caixas (`atrasoTotal`). O cadastro que
+    chega redesenha o gerencial. Saiu o card *"⚠ ATRASO NA PROGRAMAÇÃO"* do fim
+    da lista (só caixas).
+    - Revisão: o gerencial RELÊ o cadastro no ciclo pesado quando passou de
+      `PROD_CAT_TTL` (30 min) ou falhou, e no ATUALIZAR (`PROD_CAT_TS` /
+      `PROD_CAT_FALHA` no `carregarProdutos`) — uma troca de UEP no dia chega
+      ao card. Falhou e não há UEP: *"cadastro não lido — tenta de novo em 6
+      min"*, nunca "lendo" para sempre; horas pelo cadastro guardado no aparelho
+      (sem leitura na sessão, com falha) dizem isso.
+    - **min 0 com UEP é "<1 min", não "sem UEP"** (uma sobra de 1 cx). O cartão
+      do PC tinha o mesmo erro: `_uepSubAtr` decide pelo `conta.uVenc > 0` e
+      escreve *"menos de 1 min"* (v7.228.0, a única mudança do PC).
+  - A ênfase do TAKT NO APP na faixa da TAKT DA SEMANA (número grande ao lado
+    dos volumes) foi feita, mostrada em prévia e **guardada fora** do commit
+    (*"só card de atraso"*): não está no painel.
 - **Menu 🖨 IMPRIMIR ▾** (`#uep-imp`): VERSÃO EXECUTIVA, PADRÃO × REALIZADO e
   FILA DE CRONOANÁLISE, cada um com `_uepImpFecha();` antes. O 🖨 do bloco 7
   saiu dele (uma impressão, um lugar). Os listeners de clique fora e Esc fecham

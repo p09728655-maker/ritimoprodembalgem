@@ -5060,6 +5060,19 @@ console.log('\n── estudo de UEP ──');
     eval(pega('function _uepSubAtr('));
     ok('cartão ATRASO: as horas e as caixas do total do quadro, desde o lote mais antigo; * quando há código sem UEP (fica só nas caixas); vermelho',
        _uepSubAtr(PA, AM), { txt:_fmtHM(PA.conta.venc) + '* · 339 cx · desde 20/10', cls:'red' });
+    // celular 1.43.0 ("essa card do atraso pode ir para app gerencial" → "no mobile deixar bem à vista"): o card do gerencial do
+    // celular conta pelo atrasoVencido do rp-core, com a UEP do cadastro — tem de dar o MESMO número do cartão do PC
+    { const LST = [{ codigo:'501.082.003', falta:185, atraso:185, atrasoDesde:'22/10/2026' }, { codigo:'501.059.002', falta:4, atraso:4, atrasoDesde:'22/10/2026' },
+                   { codigo:'501.088.007', falta:140, atraso:140, atrasoDesde:'20/10/2026' }, { codigo:'501.083.121', falta:320, atraso:0 },
+                   { codigo:'501.999.001', falta:10, atraso:10, atrasoDesde:'21/10/2026' }];
+      const AV = atrasoVencido(LST, { 501082003:1.58, 501059002:2.29, 501088007:1.77, 501083121:2.89 }, 2530);
+      ok('celular = PC: o atrasoVencido (rp-core, cadastro por dígitos) dá as MESMAS horas, caixas, códigos sem UEP e desde do cartão ATRASO do PC',
+         [AV.min, AV.cx, AV.semUep, AV.desde, Math.round(AV.uep)], [PA.conta.venc, AM.cxVenc, AM.semUep, '20/10', Math.round(PA.conta.uVenc)]); }
+    { // revisão da v7.227.0 (v7.228.0): 1 cx vencida (menos de 1 min de linha) tem UEP — "menos de 1 min", nunca "sem UEP"
+      const L1 = _gpxDivida([{ codigo:'501.088.007', desc:'X', cor:'', falta:1, atraso:1, atrasoDesde:'10/11/2026' }], [{ codigo:'501.088.007', uepCx:1.77 }], 0);
+      const P1 = _gpxMontar([it('26/10/2026','25340',700,1.69)], new Date(2026, 9, 23), L1.uep, 425, 2530, 5, L1.uepAtr);
+      ok('cartão ATRASO do PC: 1 cx vencida com UEP (0 min no arredondamento) diz "menos de 1 min"; só sem UEP diz "sem UEP"',
+         [P1.conta.venc, _uepSubAtr(P1, _gpxAtrasoMontar(L1.linhas, 2530 / 527)).txt], [0, 'menos de 1 min · 1 cx · desde 10/11']); }
     const AM2 = _gpxAtrasoMontar(LA.linhas.filter(l => l.u), 2530 / 527);
     const AM0 = _gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8);
     const AMs = _gpxAtrasoMontar([{ codigo:'9', desc:'SEM', cor:'', desde:'21/10/2026', atr:10, hoje:0, u:null }], 4.8);
@@ -5725,7 +5738,61 @@ process.exitCode = 1;
 process.on('beforeExit', () => console.error('\n❌ um teste assíncrono não terminou\n'));
 (async () => {
   for (const f of _assincronos) await f();
-  console.log(falhas === 0
+  // ── CARD ATRASO no gerencial do celular (1.43.0) ──────────────────────────────
+// PPCP, 11/11/2026: "essa card do atraso pode ir para app gerencial" → "celular" → "no mobile deixar bem à vista" → "atraso"
+// → prévia → "ok" → "só card de atraso". Roda o trecho REAL do renderGerencial (do _prog ao kpis) com a conta do rp-core.
+{ const vm = require('vm'), mob = fs.readFileSync(path.join(__dirname, 'ritmoprod_mobile.html'), 'utf8');
+  const mJS = [...mob.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]).join('\n');
+  const RG = mJS.slice(mJS.indexOf('function renderGerencial('), mJS.indexOf('function renderGerencial(') + 9000);
+  const ini = RG.indexOf('  const _prog = PONTOS_DIA.programacao'), fimK = RG.indexOf('  const kpis=[');
+  const trecho = RG.slice(ini, fimK);
+  const card = (prog, prods, metaUep, semFn, cat) => { const C = { PONTOS_DIA:{ programacao:prog, metaUep }, PRODUTOS:prods, fmtN, plural, p2,
+      atrasoVencido: semFn ? undefined : atrasoVencido, PROD_CAT_TS: cat && cat.ts != null ? cat.ts : 1, PROD_CAT_FALHA: !!(cat && cat.falha) };
+    vm.createContext(C); vm.runInContext(trecho + ';globalThis.R = atrKpi;', C); return C.R; };
+  const LST = [{ codigo:'501070001', falta:100, atraso:100, atrasoDesde:'06/11/2026' }, { codigo:'501071004', falta:300, atraso:200, atrasoDesde:'10/11/2026' },
+               { codigo:'501085118', falta:135, atraso:0 }];
+  const PRODS = [{ codigo:'501070001', uep:2.72 }, { codigo:'501071004', uep:2.92 }, { codigo:'501085118', uep:2.33 }];
+  const hm = m => Math.floor(m / 60) + 'h' + p2(Math.round(m) % 60);
+  const min = Math.round((100 * 2.72 + 200 * 2.92) / (2761 / 527));
+  ok('celular: o card ATRASO em horas de linha (o MESMO atrasoVencido do rp-core), caixas e desde; o programado de hoje fica fora; vermelho, a largura toda',
+     card({ lista:LST, atrasoTotal:300 }, PRODS, 2761),
+     { l:'⚠ ATRASO · LOTES VENCIDOS', v:hm(min) + '<small>de linha</small>', sub:'300 cx · desde 06/11', c:'red larga atr' });
+  ok('celular: código sem UEP no cadastro leva * e fica só nas caixas; cadastro ainda não lido → em caixas, "lendo o cadastro…"; lido nesta sessão e sem UEP → "sem UEP no cadastro"',
+     [card({ lista:LST.concat([{ codigo:'9', falta:10, atraso:10, atrasoDesde:'21/10/2026' }]), atrasoTotal:310 }, PRODS, 2761).v.includes('*<small>'),
+      card({ lista:LST.concat([{ codigo:'9', falta:10, atraso:10, atrasoDesde:'21/10/2026' }]), atrasoTotal:310 }, PRODS, 2761).sub,
+      card({ lista:LST, atrasoTotal:300 }, [], 2761, false, { ts:0 }), card({ lista:LST, atrasoTotal:300 }, [{ codigo:'1', uep:2 }], 2761).sub],
+     [true, '310 cx · desde 21/10 · * 1 código sem UEP fica só nas caixas',
+      { l:'⚠ ATRASO · LOTES VENCIDOS', v:'300<small>cx</small>', sub:'desde 06/11 · lendo o cadastro…', c:'red larga atr' }, 'desde 06/11 · sem UEP no cadastro']);
+  // revisão: a leitura do cadastro que FALHOU não é "lendo" para sempre; o guardado no aparelho é dito; 1 cx vencida
+  // (menos de 1 min de linha) tem UEP — "<1 min", nunca "sem UEP no cadastro"
+  ok('celular: cadastro que falhou diz que não leu (e tenta de novo); UEP do cadastro guardado no aparelho é dita; atraso de menos de 1 min com UEP é "<1 min", não "sem UEP"',
+     [card({ lista:LST, atrasoTotal:300 }, [], 2761, false, { ts:0, falha:true }).sub,
+      card({ lista:LST, atrasoTotal:300 }, [{ codigo:'1', uep:2 }], 2761, false, { ts:0, falha:true }).sub,
+      card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0, falha:true }).sub,
+      card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, false, { ts:0 }).sub,
+      card({ lista:[{ codigo:'501085118', falta:1, atraso:1, atrasoDesde:'10/11/2026' }], atrasoTotal:1 }, PRODS, 2761)],
+     ['desde 06/11 · cadastro não lido — tenta de novo em 6 min', 'desde 06/11 · cadastro não lido — tenta de novo em 6 min',
+      '300 cx · desde 06/11 · UEP do cadastro guardado no aparelho', '300 cx · desde 06/11',
+      { l:'⚠ ATRASO · LOTES VENCIDOS', v:'&lt;1 min<small>de linha</small>', sub:'1 cx · desde 10/11', c:'red larga atr' }]);
+  ok('celular: o gerencial relê o cadastro (a UEP de agora) no ciclo pesado quando passou de 30 min ou falhou, e no ATUALIZAR; a leitura marca quando e se falhou',
+     [/if\(Date\.now\(\)-PROD_CAT_TS > PROD_CAT_TTL\) await passo\(carregarProdutos\);\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function cicloRefresh('))),
+      /await passo\(carregarProdutos\);[^\n]*\n\s*await passo\(async\(\)=>\{ await lerPontosDia\(\); renderGerencial\(\); \}\);/.test(mJS.slice(mJS.indexOf('async function refresh('))),
+      /PROD_CAT_TS = Date\.now\(\); PROD_CAT_FALHA = false;/.test(mJS), /\} else PROD_CAT_FALHA = true;\s*\}catch\(e\)\{ PROD_CAT_FALHA = true;/.test(mJS),
+      /const PROD_CAT_TTL = 30 \* 60 \* 1000;/.test(mJS)],
+     [true, true, true, true, true]);
+  ok('celular: sem atraso, sem card (nunca "0 h"); programação ainda não lida, sem card; .gs sem o atraso por código ou rp-core velho → as caixas do atrasoTotal, como era',
+     [card({ lista:[{ codigo:'501085118', falta:135, atraso:0 }], atrasoTotal:0 }, PRODS, 2761), card(undefined, PRODS, 2761),
+      card({ lista:[{ codigo:'501070001', falta:100 }], atrasoTotal:100 }, PRODS, 2761), card({ lista:LST, atrasoTotal:300 }, PRODS, 2761, true)],
+     [null, null, { l:'⚠ ATRASO · LOTES VENCIDOS', v:'100<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr' },
+      { l:'⚠ ATRASO · LOTES VENCIDOS', v:'300<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr' }]);
+  ok('celular: é o 1º card da grade (antes da PRODUÇÃO REAL), o antigo "⚠ ATRASO NA PROGRAMAÇÃO" do fim da lista saiu; o card vai largo e vermelho pelo CSS; o cadastro que chega redesenha',
+     [/const kpis=\[\s*\.\.\.\(atrKpi \? \[atrKpi\] : \[\]\),\s*\{l:'PRODUÇÃO REAL'/.test(RG), /ATRASO NA PROGRAMAÇÃO/.test(mob),
+      /\.kpi-card\.larga\{grid-column:1\/-1\}/.test(mob), /\.kpi-card\.atr \.kpi-val\{font-size:34px;color:var\(--red\)\}/.test(mob),
+      /carregarProdutos\(\)\.then\(\(\) => \{ if\(PERFIL === 'gerencial'\) renderGerencial\(\); \}\)/.test(mJS), /<div class="kpi-card \$\{k\.c\}">/.test(RG)],
+     [true, false, true, true, true, true]);
+}
+
+console.log(falhas === 0
     ? '\n✅ relatórios ok — contas testáveis e peças comuns em um lugar só\n'
     : `\n❌ ${falhas} falha(s)\n`);
   process.exit(falhas === 0 ? 0 : 1);

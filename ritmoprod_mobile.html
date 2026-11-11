@@ -150,6 +150,13 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .kpi-card.warn::before{background:var(--warn)}
 .kpi-card.red::before{background:var(--red)}
 .kpi-card.acc::before{background:var(--acc)}
+/* ATRASO À VISTA (1.43.0): o 1º cartão, a largura toda, em vermelho */
+.kpi-card.larga{grid-column:1/-1}
+.kpi-card.atr{background:rgba(245,85,74,.10);border-color:rgba(245,85,74,.55)}
+.kpi-card.atr .kpi-lbl{color:var(--red)}
+.kpi-card.atr .kpi-val{font-size:34px;color:var(--red)}
+.kpi-card.atr .kpi-val small{font-size:14px;font-weight:600;color:var(--txt2);margin-left:6px}
+.kpi-card.atr .kpi-sub{font-size:11px;color:var(--txt)}
 .kpi-lbl{font-family:var(--font-d);font-size:8px;color:var(--txt2);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
 .kpi-val{font-family:var(--font-h);font-size:26px;font-weight:700;line-height:1;color:var(--txt)}
 .kpi-sub{font-family:var(--font-d);font-size:9px;color:var(--txt2);margin-top:4px}
@@ -1023,7 +1030,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.42.0';
+const APP_VER   = '1.43.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1049,6 +1056,11 @@ let _refreshTimer = null;
 // Catálogo de produtos (PRODUTO_CODIGO) e produto atual do turno — OPCIONAL,
 // não bloqueia lançamento de caixas.
 let PRODUTOS = [];
+// Quando o cadastro foi lido NESTA sessão (0 = ainda não; o PRODUTOS pode ser o
+// guardado no aparelho) e se a última leitura falhou (1.43.0, revisão do card
+// ATRASO): o gerencial relê a cada PROD_CAT_TTL e, sem o cadastro, diz que não leu.
+let PROD_CAT_TS = 0, PROD_CAT_FALHA = false;
+const PROD_CAT_TTL = 30 * 60 * 1000;
 let PROD_ATUAL = '';
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
@@ -1327,9 +1339,10 @@ async function carregarProdutos(){
     const json = await jsonpLeituraApoio(url);
     if(json && json.ok && Array.isArray(json.produtos)){
       PRODUTOS = json.produtos;
-      localStorage.setItem('rpe_produtos', JSON.stringify(PRODUTOS));
-    }
-  }catch(e){ console.warn('carregarProdutos:', e.message); }
+      PROD_CAT_TS = Date.now(); PROD_CAT_FALHA = false;
+      try{ localStorage.setItem('rpe_produtos', JSON.stringify(PRODUTOS)); }catch(e){}
+    } else PROD_CAT_FALHA = true;
+  }catch(e){ PROD_CAT_FALHA = true; console.warn('carregarProdutos:', e.message); }
 }
 
 // Produtos programados para hoje (+ em atraso). Fica no topo do seletor para o
@@ -1378,7 +1391,7 @@ async function lerPontosDia(){
 }
 
 // Meta do dia automática: puxa da PROGRAMAÇÃO. Por padrão só o programadoHoje —
-// o atraso de dias anteriores aparece à parte, no KPI "⚠ ATRASO NA PROGRAMAÇÃO".
+// o atraso de dias anteriores aparece à parte, no card "⚠ ATRASO · LOTES VENCIDOS" (o 1º do gerencial, 1.43.0).
 // Com o SOMAR ATRASO ligado na planilha (CONFIG_PAINEL, .gs v5.56 — o mesmo
 // checkbox do ⚙ do PC), a meta é a metaEfetiva, como no PC: antes o celular
 // nunca somava e o card META DO DIA dava um número diferente do PC.
@@ -2442,7 +2455,9 @@ function entrar(tipo){
     showView('view-gerencial');
     iniciarRefreshAuto();
     renderGerencial();
-    carregarProdutos();   // catálogo p/ mostrar "codigo · descrição" do produto atual
+    // catálogo p/ mostrar "codigo · descrição" do produto atual — e a UEP do card
+    // ATRASO (1.43.0): chegou o cadastro, redesenha (sem ele o card fica em caixas)
+    carregarProdutos().then(() => { if(PERFIL === 'gerencial') renderGerencial(); });
     carregarParadas();    // banner de produção parada
     // Sem isto o PAR_CLASSE_MAP_M fica VAZIO no gerencial e a classificação
     // planejada/não-planejada cai na heurística por nome — o desktop usa a
@@ -2524,6 +2539,9 @@ async function cicloRefresh(){
     }
     if(PERFIL==='gerencial' && c % A_CADA_PESADO === 0){
       await passo(async()=>renderHistoricoComDados(await lerHistorico()));
+      // a UEP do card ATRASO (1.43.0): o cadastro de 30 min atrás — uma troca de UEP no
+      // dia chega; falhou, tenta de novo no próximo ciclo pesado (6 min)
+      if(Date.now()-PROD_CAT_TS > PROD_CAT_TTL) await passo(carregarProdutos);
       await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
       await passo(()=>carregarParadasPeriodoSel());   // respeita o cache
       // Médias por horário (alerta de hora fraca ⚠): se a carga inicial falhou,
@@ -2549,6 +2567,7 @@ async function refresh(){
     if(PERFIL==='gerencial'){
       HIST_PERD_CACHE.k = null;
       await passo(async()=>renderHistoricoComDados(await lerHistorico()));   // repinta e rebusca as perdas
+      await passo(carregarProdutos);   // a UEP de agora no card ATRASO (1.43.0)
       await passo(async()=>{ await lerPontosDia(); renderGerencial(); });
       await passo(()=>carregarParadasPeriodoSel(true));
     }
@@ -3302,7 +3321,32 @@ function renderGerencial(){
     : (k.gap>0
         ? {l:'NEC. P/ META', v:'—', sub:'turno encerrado', c:''}
         : {l:'NEC. P/ META', v:'✓', sub:'META OK', c:'ok'});
+  // ATRASO À VISTA (1.43.0, PPCP 11/11/2026: "essa card do atraso pode ir para app
+  // gerencial" → "no mobile deixar bem à vista atraso"): o MESMO número do cartão
+  // ATRASO da ⚖ UEP do PC (atrasoVencido, rp-core) — lotes com data ANTES de hoje
+  // ainda com saldo, em horas de linha no ritmo da META UEP, com a UEP do cadastro
+  // (PRODUTOS). É o 1º cartão, a largura toda, e só aparece com atraso. O
+  // programado de hoje não é atraso. rp-core velho em cache (sem a função) ou .gs
+  // sem o atraso por código: o cartão em caixas, como era.
+  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
+  const _uepDe = {}; (PRODUTOS || []).forEach(p => { if(p && Number(p.uep) > 0) _uepDe[p.codigo] = Number(p.uep); });
+  const _atr = typeof atrasoVencido === 'function' ? atrasoVencido(_prog.lista, _uepDe, PONTOS_DIA.metaUep) : null;
+  const _hm = m => Math.floor(m/60) + 'h' + p2(Math.round(m) % 60);
+  // Revisão: min 0 é atraso de menos de 1 min (tem UEP) — não "sem UEP"; o
+  // cadastro guardado no aparelho (sem leitura nesta sessão) é dito; sem cadastro
+  // nenhum, "lendo" só enquanto a leitura não falhou.
+  const _guard = !PROD_CAT_TS && PROD_CAT_FALHA ? ' · UEP do cadastro guardado no aparelho' : '';
+  const atrKpi = _atr && _atr.n > 0
+    ? (_atr.min != null
+        ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:(_atr.min > 0 ? _hm(_atr.min) : '&lt;1 min') + (_atr.semUep ? '*' : '') + '<small>de linha</small>',
+           sub:`${fmtN(_atr.cx)} cx${_atr.desde ? ' · desde ' + _atr.desde : ''}${_atr.semUep ? ` · * ${plural(_atr.semUep,'código sem UEP fica','códigos sem UEP ficam')} só nas caixas` : ''}${_guard}`, c:'red larga atr'}
+        : {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_atr.cx) + '<small>cx</small>',
+           sub:`${_atr.desde ? 'desde ' + _atr.desde + ' · ' : ''}${PROD_CAT_TS ? 'sem UEP no cadastro' : PROD_CAT_FALHA ? 'cadastro não lido — tenta de novo em 6 min' : 'lendo o cadastro…'}`, c:'red larga atr'})
+    : (!_atr && _prog.atrasoTotal > 0
+        ? {l:'⚠ ATRASO · LOTES VENCIDOS', v:fmtN(_prog.atrasoTotal) + '<small>cx</small>', sub:'cx de lotes com data anterior a hoje', c:'red larga atr'}
+        : null);
   const kpis=[
+    ...(atrKpi ? [atrKpi] : []),
     {l:'PRODUÇÃO REAL',  v:fmtN(k.real),  sub:k.nHE?`${fmtN(k.realNormal)} normal + ${fmtN(k.realHE)} extra`:`meta ${fmtN(k.meta)} cx`, c:s},
     // Só entra nos dias que tiveram hora extra — sem HE o card diria "tudo
     // normal" e só empurraria os outros KPIs para baixo na tela do celular.
@@ -3341,12 +3385,6 @@ function renderGerencial(){
     {l:'PRODUÇÃO (PONTOS)', v:fmtN(PONTOS_DIA.pontos),      sub:'pts', c:'acc'},
     {l:'PESO PRODUZIDO',    v:fmtN(Math.round(PONTOS_DIA.pesoKg))+' kg', sub:'',   c:'acc'},
   ];
-  // ⚠ ATRASO NA PROGRAMAÇÃO: aviso à parte, não soma na META DO DIA — só entra
-  // quando há atraso acumulado de dias anteriores ainda não embalado.
-  const _prog = PONTOS_DIA.programacao || {lista:[],metaEfetiva:0,programadoHoje:0,atrasoTotal:0};
-  if(_prog.atrasoTotal>0){
-    kpis.push({l:'⚠ ATRASO NA PROGRAMAÇÃO', v:fmtN(_prog.atrasoTotal), sub:`cx atrasadas · meta efetiva ${fmtN(_prog.metaEfetiva)}`, c:'red'});
-  }
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`
     <div class="kpi-card ${k.c}">
       <div class="kpi-lbl">${k.l}</div>

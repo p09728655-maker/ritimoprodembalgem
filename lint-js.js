@@ -40,7 +40,7 @@ const GLOBAIS = [
   'RP_CORE','RP_PARADAS','RP_SEMANA','p2','fmtN','fmtP','fmt1','plural','toMin','fromMin',
   'normHora','hojeStr','dtToStr','mergeMedias','calcAtrasoHoras','sc','efNoRitmo','slRitmo',
   'uepCard','UEP_META_PADRAO','UEP_MIN_DIA','uepPorHora','_uepHHMM','uepCelula','uepDiaMeta','uepHistResumo','uepFimDeSemana','uepCusto','uepCustoPeriodo','minSlotDecorrido',
-  'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar',
+  'nomeComCor','_rpOk','PDIA_LARG','pdiaVol','pdiaBase','pdiaCurto','pdiaMontar','atrasoVencido',
 ];
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rp-lint-'));

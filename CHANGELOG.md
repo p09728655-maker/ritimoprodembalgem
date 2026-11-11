@@ -11,6 +11,36 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.228.0 / mobile 1.43.0 — 11/11/2026 · O ATRASO à vista no gerencial do celular
+
+PPCP, depois do cartão ATRASO do PC: *"essa card do atraso pode ir para app
+gerencial"* → *"celular"* → *"no mobile deixar bem à vista"* → prévia → *"ok"*
+→ *"só card de atraso"*.
+
+- **Card ⚠ ATRASO · LOTES VENCIDOS é o 1º do gerencial do celular**, na largura
+  toda e em vermelho: *3h45 de linha · 425 cx · desde 06/11*. Sem atraso, ele
+  não aparece.
+- **É o MESMO número do cartão ATRASO da ⚖ UEP do PC**: lotes com data ANTES de
+  hoje ainda com saldo, em horas de linha no ritmo da META UEP. A conta mora no
+  `rp-core.js` (`atrasoVencido`, 1.14.0), e o teste confere a paridade com o PC.
+  A UEP vem do cadastro que o celular já lê; quando o cadastro chega, a tela
+  redesenha. Código sem UEP fica só nas caixas, com `*` nas horas.
+- **O cadastro é relido** a cada 30 min (ciclo do gerencial) e no ↻ ATUALIZAR,
+  para pegar uma troca de UEP feita durante o dia. Antes ele só era lido no
+  login. O ATUALIZAR do gerencial passa de 5 para 6 chamadas. Com a leitura do
+  cadastro falhando, o card diz *"cadastro não lido"* e tenta de novo no ciclo
+  seguinte, em vez de ficar em *"lendo"* para sempre. Se as horas vierem do
+  cadastro guardado no aparelho, ele diz isso.
+- **Menos de 1 minuto de linha** (uma sobra de 1 caixa vencida) aparece como
+  *"<1 min"*. Antes, nos dois painéis, isso aparecia como *"sem UEP"*.
+  Correção no cartão ATRASO do PC: *"menos de 1 min · 1 cx"* (v7.228.0).
+
+**Atenção:** o card **⚠ ATRASO NA PROGRAMAÇÃO** saiu do fim da lista. Ele dava
+só as caixas (*"N cx atrasadas · meta efetiva X"*). As caixas continuam no card
+novo e são o mesmo número. A meta efetiva continua no card META DO DIA quando o
+SOMAR ATRASO está ligado. Sem a UEP no cadastro, ou com um `.gs` sem o atraso por
+código, o card mostra só as caixas, como antes.
+
 ## v7.227.0 — 11/11/2026 · O ATRASO à vista na ⚖ UEP
 
 PPCP, com a sub-aba TAKT DA SEMANA na tela: *"onde consigo ver hora que está em

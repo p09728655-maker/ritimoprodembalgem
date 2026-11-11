@@ -301,9 +301,35 @@ ok('sem meta do dia também não',
      [uepCusto(0, 1, 60), uepCusto(10, 1, 0), uepCusto(10, 0, 60)], [null, null, null]);
 }
 
+// ── ATRASO VENCIDO (atrasoVencido, card do gerencial do celular 1.43.0) ─────
+{
+  // 11/11/2026: os lotes de 06/11 e 10/11 ainda com saldo; o programado de hoje (atraso 0) não entra
+  const L = [
+    { codigo:'501070001', falta:10, atraso:10, atrasoDesde:'06/11/2026' }, { codigo:'501.070.004', falta:90, atraso:90, atrasoDesde:'06/11/2026' },
+    { codigo:'501071004', falta:100, atraso:100, atrasoDesde:'10/11/2026' }, { codigo:'501134002', falta:14, atraso:14, atrasoDesde:'10/11/2026' },
+    { codigo:'501085118', falta:135, atraso:0 }, { codigo:'501060003', falta:230, atraso:40, atrasoDesde:'' }
+  ];
+  const U = { 501070001:2.72, '501070004':2.72, 501071004:2.92, 501134002:1.9, 501085118:2.33, 501060003:1.73 };
+  const a = atrasoVencido(L, U, 2761);
+  const uep = 10 * 2.72 + 90 * 2.72 + 100 * 2.92 + 14 * 1.9 + 40 * 1.73;
+  ok('atraso vencido: só o atraso (o programado de hoje fica fora), caixas, UEP e horas de linha no ritmo da META UEP; desde = o lote mais antigo',
+     [a.n, a.cx, Math.round(a.uep * 10) / 10, a.min, a.semUep, a.desde], [5, 254, Math.round(uep * 10) / 10, Math.round(uep / (2761 / 527)), 0, '06/11']);
+  ok('o código é casado pelos dígitos, dos dois lados (501.070.004 = 501070004); o atraso nunca passa da falta',
+     [atrasoVencido([{ codigo:'501.070.004', falta:20, atraso:50, atrasoDesde:'06/11/2026' }], { 501070004:2 }, 2761).cx,
+      atrasoVencido([{ codigo:'501.070.004', falta:20, atraso:50, atrasoDesde:'06/11/2026' }], { 501070004:2 }, 2761).semUep,
+      atrasoVencido([{ codigo:'501070004', falta:20, atraso:20, atrasoDesde:'06/11/2026' }], { '501.070.004':2 }, 2761).semUep], [20, 0, 0]);
+  const s1 = atrasoVencido([{ codigo:'9', falta:10, atraso:10, atrasoDesde:'21/10/2026' }, { codigo:'501070001', falta:10, atraso:10, atrasoDesde:'06/11/2026' }], U, 2761);
+  ok('código sem UEP fica só nas caixas (semUep); só sem UEP → min null (nunca 0 h)',
+     [s1.cx, s1.semUep, s1.min, s1.desde, atrasoVencido([{ codigo:'9', falta:10, atraso:10 }], U, 2761).min], [20, 1, Math.round(10 * 2.72 / (2761 / 527)), '21/10', null]);
+  ok('sem atraso → n 0; sem lista → null; .gs sem o `atraso` por código → null (o card cai nas caixas do atrasoTotal); sem meta → a padrão',
+     [atrasoVencido([{ codigo:'1', falta:50, atraso:0 }], U, 2761).n, atrasoVencido(null, U, 2761),
+      atrasoVencido([{ codigo:'501070001', falta:50 }], U, 2761), atrasoVencido([{ codigo:'501070001', falta:10, atraso:10 }], U, 0).min],
+     [0, null, null, Math.round(27.2 / (UEP_META_PADRAO / 527))]);
+}
+
 console.log('\n── os painéis não podem ter cópia própria ──');
 const FNS = ['toMin', 'fromMin', 'hojeStr', 'dtToStr', 'normHora', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'slRitmo',
-             'efNoRitmo', 'nomeComCor', '_rpOk', 'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar'];
+             'efNoRitmo', 'nomeComCor', '_rpOk', 'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido'];
 const CONSTS = ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural'];
 ['ritmoprod_embalagem_v7.html', 'ritmoprod_mobile.html'].forEach(f => {
   const src = fs.readFileSync(path.join(dir, f), 'utf8');
