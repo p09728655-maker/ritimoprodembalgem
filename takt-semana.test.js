@@ -32,6 +32,7 @@ require('vm').runInThisContext(fs.readFileSync(path.join(__dirname, 'rp-core.js'
 global.APP_NOME_CX = (JS.match(/const APP_NOME\s+= '([^']+)';/) || [, 'RitmoPatrimar'])[1].toUpperCase();
 global.TKS_DET = false;
 global.TKS_TPC = false;
+global.SETUP_PEND = null; global.SETUP_PLAN = null;   // v7.226.0: o setup enviado e a chave na planilha
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
  'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
@@ -40,8 +41,8 @@ global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
  'function _taktHerancaHtml(', 'function _taktExcessoHtml(',
  // v7.224.0: a faixa do takt (os volumes para o app de cronoanálise)
- 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
-['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
+ 'function _taktSetup(', 'function _setupLer(', 'function _setupCfgTxt(', 'function _setupErro(', 'function _setupEnviar(', 'function _setupDaConfig(', 'function _setupResposta(', 'function _taktApp(', 'function _taktFaixa(', 'function _taktFaixaHtml('].forEach(f => eval.call(global, pega(f)));
+['EIXO_PASSOS', '_tkS', 'TKS_DOW', 'CRONO_APP_GRUPO', '_taktFProd', '_tkDec', '_tkM', 'TKS_DOC_SVG_W', 'UEP_REF_STATUS', 'TKS_RITMO_DESVIO', 'SETUP_TROCAS_MAX', 'SETUP_MIN_MAX'].forEach(c => eval.call(global, pegaConst(c).replace(/^const /, 'global.').replace(/^global\.(\w+)\s*=/, 'global.$1 =')));
 
 let falhas = 0;
 function ok(nome, real, esperado) {
@@ -123,13 +124,26 @@ ok('a programação da semana: 5.970 cx = 12.831,2 UEP, só de 03 a 06/11 (02/11
    [5970, 12831.2, 4, ['03/11', '04/11', '05/11', '06/11'], ['FINADOS']]);
 ok('por dia, as metas gravadas de cada dia (03/11 1.200 · 04/11 2.070 · 05/11 1.550 · 06/11 1.150 cx)',
    T.dias.filter(d => d.util).map(d => [d.cx, r1(d.uep)]), [[1200, 3229], [2070, 4304.1], [1550, 2727.6], [1150, 2570.5]]);
-ok('TAKT = 4 × 527 × 60 ÷ 12.831,2 = 9,86 s por UEP (3.207,8 UEP/dia, 116,2% da referência)',
-   [Math.round(T.takt * 100) / 100, r1(T.porDia), r1(T.pede)], [9.86, 3207.8, 116.2]);
-ok('REFERÊNCIA = 527 × 60 ÷ 2.761 = 11,45 s por UEP',
-   Math.round(T.ref * 100) / 100, 11.45);
-ok('EXECUTADO = (3 × 527 + 240) min × 60 ÷ 8.647,2 UEP = 12,64 s por UEP, 90,6% da referência; hora extra à parte (586,7 + 523,5)',
+// v7.225.0 (PPCP: "não bate takt" → "ideal é painel ficar também com setup igual"): os segundos são
+// com a linha rodando — a jornada menos o setup do grupo do app (8 × 8 min = 64 min por dia)
+ok('o setup do painel é o do app: 8 × 8 = 64 min por dia → 463 min de linha rodando por dia',
+   [_taktSetup(), T.setup, T.setupDia, T.minProd], [{ setupsDia:8, setupMin:8, origem:'padrao' }, { setupsDia:8, setupMin:8, origem:'padrao' }, 64, 463]);
+ok('TAKT = 4 × (527 − 64) × 60 ÷ 12.831,2 = 8,66 s por UEP (3.207,8 UEP/dia, 116,2% da referência — o setup sai dos dois lados, o % não muda)',
+   [Math.round(T.takt * 100) / 100, r1(T.porDia), r1(T.pede)], [8.66, 3207.8, 116.2]);
+ok('REFERÊNCIA = (527 − 64) × 60 ÷ 2.761 = 10,06 s por UEP',
+   Math.round(T.ref * 100) / 100, 10.06);
+ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463/527), × 60 ÷ 8.647,2 UEP = 11,10 s por UEP, 90,6% da referência; hora extra à parte (586,7 + 523,5)',
    [r1(T.exec.uep), T.exec.min, Math.round(T.exec.s * 100) / 100, r1(T.exec.pct), T.exec.nFech, T.exec.minHoje, r1(T.exec.he), T.exec.fora],
-   [8647.2, 1821, 12.64, 90.6, 3, 240, 1110.2, 0]);
+   [8647.2, 1821, 11.1, 90.6, 3, 240, 1110.2, 0]);
+{ // a mesma semana refeita com o setup ZERO (o cadastro do app sem setup): os segundos voltam aos da v7.224.0
+  // (9,86 · 11,45 · 12,64) e o %, o executado em % e o veredito em horas são os MESMOS — o setup se cancela
+  const rit = T.exec.uep / T.exec.min * 527, V = _taktVeredito(T, null, rit);
+  CRONO_APP_GRUPO.setupMin = 0;
+  const Tz = _taktMontar(S, HIST, HOJE), Vz = _taktVeredito(Tz, null, rit);
+  CRONO_APP_GRUPO.setupMin = 8;
+  ok('com o setup zero: 9,86 · 11,45 · 12,64 s por UEP (os da v7.224.0); o % (116,2), o executado (90,6%) e o veredito em horas iguais aos de com o setup',
+     [Math.round(Tz.takt * 100) / 100, Math.round(Tz.ref * 100) / 100, Math.round(Tz.exec.s * 100) / 100, Tz.setupDia, r1(Tz.pede), r1(Tz.exec.pct), JSON.stringify(Vz) === JSON.stringify(V)],
+     [9.86, 11.45, 12.64, 0, r1(T.pede), r1(T.exec.pct), true]); }
 
 // v7.217.0 (PPCP: "sim, mostra takt por caixa"): por produto · volume programado, takt × UEP por caixa
 { const L2 = (d, codigo, desc, cor, qtde, uepCx, fora) => ({ data:d + '/2026', dataNum:_cartNum(d + '/2026'), codigo, desc, cor, qtde, uepCx, uep:uepCx ? qtde * uepCx : null, saldo:qtde, foraEsteira:!!fora });
@@ -146,9 +160,9 @@ ok('EXECUTADO = (3 × 527 + 240) min × 60 ÷ 8.647,2 UEP = 12,64 s por UEP, 90,
      [['501094 · MESA CABECEIRA SLEEP', 500, [9]], ['501135 · PENT CAMARIM 1PT 2GAV DIAMANTE', 500, [9, 12]], ['501060 · PENTEADEIRA CAMARIM MEL · VOL 1/2', 200, [10]],
       ['501060 · PENTEADEIRA CAMARIM MEL · VOL 2/2', 200, [10]], ['501999 · PRODUTO NOVO', 80, [11]]]);   // empate de caixas: pelo nome
   const dm = por('DIAMANTE'), mel = por('VOL 1/2');
-  ok('PELO TAKT = takt da semana × UEP por caixa; NA MÉDIA DA LINHA = referência × UEP por caixa; cx/h = 3.600 ÷ pelo takt',
+  ok('PELO TAKT = takt da semana × UEP por caixa; NA MÉDIA DA LINHA = referência × UEP por caixa; cx/h = por hora de RELÓGIO: 3.600 × 463/527 ÷ pelo takt (o setup na média)',
      [Math.round(dm.sTakt * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(dm.sRef * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(dm.cxhTakt), Math.round(3600 / dm.sTakt)],
-     [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(3600 / (T2.takt * 2.48)), Math.round(3600 / (T2.takt * 2.48))]);
+     [Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.takt * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(T2.ref * 2.48 * 100) / 100, Math.round(3600 * 463 / 527 / (T2.takt * 2.48)), Math.round(3600 / (T2.takt * 2.48))]);
   ok('a UEP por caixa é a média das cores pesada pelas caixas (MEL 1/2: 1,73 e 1,75 → 1,74, diz que difere por cor); sem UEP → sem takt, nunca 0',
      [mel.uepCx, mel.difCor, por('PRODUTO NOVO').uepCx, por('PRODUTO NOVO').sTakt, por('PRODUTO NOVO').cxSemUep, por('SLEEP').difCor], [1.74, true, null, null, 80, false]);
   const HC = _taktPorCaixaHtml(R2, T2);
@@ -238,13 +252,18 @@ const HORAS = [
 const SLOTS = [{ inicio:'09:00', min:60 }, { inicio:'10:00', min:60 }, { inicio:'12:12', min:48 }];
 const AG = { cod:'501060001', desc:'VOL 1/2 PENTEADEIRA CAMARIM MEL', cor:'BRANCO', uepCx:1.73, horas:HORAS, slots:SLOTS, phm:PHM };
 const G = _taktAgora(T, AG);
-ok('MEL VOL 1/2 BRANCO (1,73): 1 caixa a cada 17,1 s pelo takt e 19,8 s pela referência',
-   [r1(G.sTakt), r1(G.sRef)], [17.1, 19.8]);
-ok('a última hora fechada (10:00) teve duas cores: o ritmo dela (14,3 s por UEP) em caixas da MEL — 24,8 s, a cor do HORA A HORA',
-   [G.hora.inicio, G.hora.so, r1(G.hora.sUep), r1(G.hora.sCx), G.hora.cls, G.hora.cx], ['10:00', false, 14.3, 24.8, 'red', 145]);
+ok('MEL VOL 1/2 BRANCO (1,73): 1 caixa a cada 15,0 s pelo takt e 17,4 s pela referência (linha rodando, sem o setup)',
+   [r1(G.sTakt), r1(G.sRef)], [15, 17.4]);
+// v7.225.0 (revisão): a última hora na MESMA régua do takt e da referência — os minutos dela × 463/527, como o
+// EXECUTADO. Antes da correção ela saía em relógio (24,8 s) ao lado do takt e da referência sem o setup.
+ok('a última hora fechada (10:00) teve duas cores: o ritmo dela sem o setup (14,3 × 463/527 = 12,6 s por UEP) em caixas da MEL — 21,8 s, a cor do HORA A HORA',
+   [G.hora.inicio, G.hora.so, r1(G.hora.sUep), r1(G.hora.sCx), G.hora.cls, G.hora.cx], ['10:00', false, 12.6, 21.8, 'red', 145]);
+{ const Gm = _taktAgora(T, Object.assign({}, AG, { horas:[{ inicio:'09:00', uep:2761 * 60 / 527, cls:'ok' }] }));
+  ok('uma hora EXATAMENTE na meta (314,4 UEP em 60 min) dá a referência: 10,06 s por UEP e 17,4 s por caixa da MEL — a mesma régua',
+     [Math.round(Gm.hora.sUep * 100) / 100, Math.round(T.ref * 100) / 100, r1(Gm.hora.sCx), r1(Gm.sRef)], [10.06, 10.06, 17.4, 17.4]); }
 { const G2 = _taktAgora(T, Object.assign({}, AG, { horas:HORAS.slice(0, 1).concat([{ inicio:'10:00', andamento:true, uep:120 }]), cor:'OFF WHITE' }));
-  ok('a hora em andamento não conta; hora só do produto (a MEL OFF WHITE das 09:00): as caixas dela, 3600 ÷ 145 = 24,8 s',
-     [G2.hora.inicio, G2.hora.so, r1(G2.hora.sCx), G2.hora.cx], ['09:00', true, 24.8, 145]); }
+  ok('a hora em andamento não conta; hora só do produto (a MEL OFF WHITE das 09:00): as caixas dela, 60 × 463/527 × 60 ÷ 145 = 21,8 s',
+     [G2.hora.inicio, G2.hora.so, r1(G2.hora.sCx), G2.hora.cx], ['09:00', true, 21.8, 145]); }
 ok('sem produto apontado → null; sem UEP no cadastro → sem conta por caixa; nenhuma hora fechada → hora null',
    [_taktAgora(T, Object.assign({}, AG, { cod:'' })), (g => [g.sTakt, g.sRef, g.hora && g.hora.sCx])(_taktAgora(T, Object.assign({}, AG, { uepCx:null }))),
     _taktAgora(T, Object.assign({}, AG, { horas:[] })).hora],
@@ -260,9 +279,10 @@ console.log('\n── o desenho ──');
 const HT = _taktHtml(T, G, { largura:1200, V:_taktVeredito(T, null, T.exec.uep / T.exec.min * 527) });
 ok('os quatro cards, a frase, o porquê, o agora e o dia a dia, com os números da montagem',
    ['TAKT · O QUE A PROGRAMAÇÃO PEDE', 'REFERÊNCIA · META DIA (UEP) DO ⚙', 'EXECUTADO NA SEMANA · JORNADA', 'FALTA DA SEMANA · SALDO DOS LOTES',
-    '9,9<small>s por UEP</small>', '11,5<small>s por UEP</small>', '12,6<small>s por UEP</small>', '5.097<small>UEP</small>',
+    '8,7<small>s por UEP</small>', '10,1<small>s por UEP</small>', '11,1<small>s por UEP</small>', '5.097<small>UEP</small>', 'em 463 min (a jornada sem o setup)',
     '<b>16,2% acima</b>', '<b>73% é carga acima da referência</b>', '<b>27% é ritmo</b>', 'POR QUE NÃO ACOMPANHOU · dias fechados 03/11–05/11',
-    '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '17,1 s', '19,8 s', '24,8 s',
+    '>1.903<', '>707<', '>7.650<', '+ 587 em hora extra', 'AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO (1,73 UEP por caixa)', '15,0 s', '17,4 s', '21,8 s', 'Takt, referência e a última hora são sem o setup (a hora: os minutos dela × 463/527, como o EXECUTADO)',
+    'Lá ela vale a jornada inteira (527 min, 11,5 s por UEP); aqui é sem o setup.',
     'cabem ~1.504 até 17:00 · faltam 3.593', 'id="tks-g-box"', '1 dia de linha (' + _fmtHM(527) + ' = média de 2.761 UEP entregues sem hora extra)'].filter(t => !HT.includes(t)), []);
 ok('v7.211.0: na frente, o VEREDITO em horas de linha e o porquê numa linha (v7.223.0: o recado do gráfico, a frase inteira no title); os cards em s por UEP, a cascata e o agora ficam nos DETALHES PARA O PCP (recolhidos)',
    [HT.indexOf('<div class="tks-hero red"><div class="tks-hv">NÃO FECHA<small>') > 0, HT.includes('<div class="tks-hl">FALTAM</div><div class="tks-hn">' + _fmtHM(686) + '<small> de linha</small></div>'),
@@ -404,9 +424,9 @@ ok('a semana que vem: da segunda seguinte ao domingo — de sexta, de domingo (a
    [_taktProxSemana('06/11/2026'), _taktProxSemana('08/11/2026'), _taktProxSemana('09/11/2026'), _taktProxSemana('26/11/2026')],
    [{ de:'09/11/2026', ate:'15/11/2026' }, { de:'09/11/2026', ate:'15/11/2026' }, { de:'16/11/2026', ate:'22/11/2026' }, { de:'30/11/2026', ate:'06/12/2026' }]);
 const T1 = _taktMontar(SP, [], { num:20261106, meta:2761 }), P1 = _taktProxMontar(T1);
-ok('09–13/11: 9.050 cx = 14.504,2 UEP em 5 dias úteis → takt 10,90 s por UEP, 2.900,8/dia, 105,1% da referência; nada feito ainda',
+ok('09–13/11: 9.050 cx = 14.504,2 UEP em 5 dias úteis → takt 5 × 463 × 60 ÷ 14.504,2 = 9,58 s por UEP, 2.900,8/dia, 105,1% da referência; nada feito ainda',
    [T1.progCx, r1(T1.progUep), T1.nUteis, Math.round(T1.takt * 100) / 100, r1(T1.porDia), r1(T1.pede), T1.exec.s, T1.cas.n],
-   [9050, 14504.2, 5, 10.9, 2900.8, 105.1, null, 0]);
+   [9050, 14504.2, 5, 9.58, 2900.8, 105.1, null, 0]);
 ok('a semana × a jornada pelo saldo: pedem 2h48 de linha (14.503,5 × 527 ÷ 2.761) para 43h55 — faltam 2h13, o MESMO "semana que vem: faltam 2h13" do PRÓXIMOS DIAS',
    [r1(P1.uep), r1(P1.cap), r1(P1.passa), Math.round(P1.minPede), P1.minJorn, P1.saldoMin, _fmtHM(P1.saldoMin)],
    [14503.5, 13805, 698.5, 2768, 2635, 133, _fmtHM(133)]);
@@ -421,7 +441,7 @@ ok('dia a dia: 09/11 (120%), 10/11 (117%) e 13/11 (100,5%) passam da referência
      [r1(Px.adiant), r1(P1.uep - Px.uep), P1.adiant, Px.fds.map(d => [d.data.slice(0, 5), d.uep])], [r1(a0), r1(a0), 0, [['14/11', 200]]]); }
 const HP = _taktProxHtml(T1, P1, { largura:1200, botoes:_taktSemBotoes(1) });
 ok('o desenho da semana que vem: takt, referência, 2h13 além da jornada (vermelho), 3 de 5 dias acima, a frase com a redistribuição; sem executado e sem porquê',
-   [['10,9<small>s por UEP</small>', '2h13<small> além da jornada</small>', '3<small> de 5</small>', '<b>5,1% acima</b>', 'passam <b>699 UEP</b> da jornada, <b>2h13 de linha</b>',
+   [['9,6<small>s por UEP</small>', '2h13<small> além da jornada</small>', '3<small> de 5</small>', '<b>5,1% acima</b>', 'passam <b>699 UEP</b> da jornada, <b>2h13 de linha</b>',
      'os dias com folga (11/11 e 12/11) absorvem <b>341</b> e <b>699</b> continuam sem lugar na jornada.', 'onclick="_taktProxCarregar(true)"',
      'O PRÓXIMOS DIAS mostra esta semana dia a dia'].filter(t => !HP.includes(_fmtHM(133) === '2h13' ? t : t)),
     /<div class="kpi-card red"[^>]*><div class="kpi-lbl">A SEMANA × A JORNADA/.test(HP), /EXECUTADO|POR QUE NÃO ACOMPANHOU|AGORA ·/.test(HP)],
@@ -783,11 +803,24 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
   // facilidade" → "preciso saber o takt da semana para colocar no app de cronoanálise"
   const F0 = _taktFaixa(T, { G }), F1 = _taktFaixa(T1), VC = _tkaVolumes(L42, M42.T);
   const F2 = _taktFaixa(M42.T, { vol:VC.vol, prod:VC.prod, semVol:VC.semVol, volFds:VC.volFds });
-  ok('esta semana (02–08/11): 5.970 volumes = as caixas programadas (o mesmo do takt) em 4 dias úteis = 35h08 de jornada, 02/11 fora; 21,2 s por volume sem o setup; o takt 9,9 s por UEP; agora a MEL 1/2 BRANCO 17,1 s por caixa (211 cx/h)',
-     [F0.vol, F0.vol === T.progCx, F0.nUteis, _fmtHM(F0.jornMin), F0.fer, F0.de + '–' + F0.ate, _tkS(F0.sVol), _tkS(F0.takt), _tkS(F0.ref), F0.agora && _tkS(F0.agora.sTakt), F0.agora && Math.round(F0.agora.cxh)],
-     [5970, true, 4, '35h08', ['02/11 finados'], '03/11–06/11', '21,2', '9,9', '11,5', '17,1', 211]);
-  ok('semana que vem (09–13/11): 9.050 volumes em 5 dias = 43h55 (17,5 s por volume), sem o agora (nada roda nela ainda)',
-     [F1.vol, F1.nUteis, _fmtHM(F1.jornMin), _tkS(F1.sVol), F1.agora, F1.fer], [9050, 5, '43h55', '17,5', null, []]);
+  // v7.225.0: o "s por volume" da faixa é o TAKT DO APP — os mesmos números da tabela PROGRAMA GRAVADO do app
+  // (print de 11/11/2026: 038-26 5.970 · 4 de 5 · 193 vol/h · 18.7s; 039-26 9.050 · 5 de 5 · 234 · 15.4s)
+  ok('esta semana (02–08/11): 5.970 volumes = as caixas programadas (o mesmo do takt) em 4 dias úteis, 02/11 fora; no app 4 × 8h48 − 4 × 1h04 = 30h56 ÷ 5.970 = 18,7 s (193 vol/h), o 038-26 do app; o takt do painel 8,7 s por UEP; agora a MEL 1/2 BRANCO 15,0 s por caixa (211 caixas por hora de relógio — o setup na média)',
+     [F0.vol, F0.vol === T.progCx, F0.nUteis, F0.fer, F0.de + '–' + F0.ate, F0.app.dias, F0.app.nSem, _fmtHM(F0.app.prod), _tkS(F0.app.s), Math.round(F0.app.vh),
+      _tkS(F0.takt), _tkS(F0.ref), F0.setupDia, F0.agora && _tkS(F0.agora.sTakt), F0.agora && Math.round(F0.agora.cxh)],
+     [5970, true, 4, ['02/11 finados'], '03/11–06/11', 4, 1, '30h56', '18,7', 193, '8,7', '10,1', 64, '15,0', 211]);
+  ok('semana que vem (09–13/11): 9.050 volumes em 5 dias; no app 5 × (8h48 − 1h04) = 38h40 ÷ 9.050 = 15,4 s (234 vol/h), o 039-26 do app; sem o agora (nada roda nela ainda)',
+     [F1.vol, F1.nUteis, F1.app.dias, _fmtHM(F1.app.prod), _tkS(F1.app.s), Math.round(F1.app.vh), F1.agora, F1.fer], [9050, 5, 5, '38h40', '15,4', 234, null, []]);
+  { const dia = (d, cx) => { const [dd, mm, yy] = d.split('/').map(Number); return { data:d, dow:new Date(yy, mm - 1, dd).getDay(), cx }; };
+    const S16 = [dia('16/11/2026', 2200), dia('17/11/2026', 2200), dia('18/11/2026', 2200), dia('19/11/2026', 2170), dia('20/11/2026', 0), dia('21/11/2026', 0), dia('22/11/2026', 0)];
+    const A16 = _taktApp(S16, 8770);
+    ok('o 040-26 do print: 8.770 volumes em 16–19/11 (20/11 consciência negra sem lote) → 4 de 5 dias, 30h56, 12,7 s e 284 vol/h — o MESMO do app (era 14,4 s: jornada ÷ volumes, sem o setup)',
+       [A16.dias, _fmtHM(A16.prod), _tkS(A16.s), Math.round(A16.vh), _tkS(4 * 527 * 60 / 8770)], [4, '30h56', '12,7', 284, '14,4']);
+    const S6 = S16.slice(0, 4).concat([dia('20/11/2026', 100), dia('21/11/2026', 300)]);
+    const S2 = S16.concat([dia('23/11/2026', 500), dia('24/11/2026', 500)]);
+    ok('como o app: dia sem volume não conta; com volume em 6 dias a semana fica em 5 (a jornada do grupo); duas semanas somam as horas; sem volume → null',
+       [_taktApp(S6, 9070).dias, (a => [a.dias, a.nSem])(_taktApp(S2, 9770)), _taktApp(S16, 0), _taktApp([], 100), _taktApp(S16, 8770, { hSemana:44, diasSemana:5, setupsDia:0, setupMin:8 }).setup],
+       [5, [6, 2], null, null, 0]); }
   ok('AVALIAR a 042-26 colada: 8.000 produtos × os volumes de cada um = 9.050 volumes — o MESMO das caixas que o painel tem para 09–13/11 (a colagem e a programação batem)',
      [VC.prod, VC.vol, VC.vol === T1.progCx, F2.vol, F2.prod, VC.semVol, VC.volFds], [8000, 9050, true, 9050, 8000, 0, 0]);
   const pv = {}; VC.prods.forEach(g => { pv[g.nome] = r1(((pv[g.nome] || 0) + (g.cxUep ? g.uepSoma / g.cxUep : 0)) * 100) / 100; });
@@ -803,9 +836,12 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
   const HF = _taktFaixaHtml(F0, _taktPorCaixa(T), T);
   ok('o desenho: PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA em destaque, a jornada, o s por volume sem o setup, o takt (âmbar acima da média) e o agora em caixas; o TAKT POR PRODUTO fechado, sem repetir o título',
      ['<div class="kpi-lbl">PARA O APP DE CRONOANÁLISE · VOLUMES DA SEMANA</div><div class="tks-fx-n">5.970<small>volumes</small></div>',
-      'caixas programadas = 12.831 UEP · 4 dias úteis (03/11 a 06/11) = <b>35h08</b> de jornada · 02/11 finados fora', 'jornada ÷ volumes = <b>21,2 s por volume</b>, sem descontar o setup',
-      '<div class="tks-fx-n">9,9<small>s por UEP</small></div>', 'a programação pede <b class="tks-warn">116,2%</b> dela', '<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div><div class="tks-fx-n">17,1<small>s por caixa</small></div>',
-      '≈ <b>211 cx/h</b>', '<details class="tks-tpc" ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>', 'class="tks-fx c3"'].filter(t => !HF.includes(t)).concat(
+      'caixas programadas = 12.831 UEP · 4 dias úteis (03/11 a 06/11) · 02/11 finados fora',
+      'takt no app: <b>18,7 s por volume</b> (193 vol/h) = 30h56 ÷ 5.970 · o app conta 8h48 por dia com volume e desconta o setup, 8 × 8 min por dia (4h16 nos 4 dias)',
+      '<div class="tks-fx-n">8,7<small>s por UEP</small></div>', 'a média da linha sem hora extra é <b>10,1 s</b>', 'a programação pede <b class="tks-warn">116,2%</b> dela',
+      'sem o setup do ⚙: 1h04 por dia · padrão — digite o setup no ⚙ e o mesmo no app',
+      '<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div><div class="tks-fx-n">15,0<small>s por caixa</small></div>',
+      '≈ <b>211 cx por hora</b> de relógio', '<details class="tks-tpc" ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>', 'class="tks-fx c3"'].filter(t => !HF.includes(t)).concat(
       HF.includes('<b>TAKT POR CAIXA</b>') ? ['o título da tabela repetido'] : [], (global.TKS_TPC = true, _taktFaixaHtml(F0, _taktPorCaixa(T), T)).includes('<details class="tks-tpc" open') ? [] : ['abre aberto com TKS_TPC']), []);
   global.TKS_TPC = false;
   const H2 = _taktFaixaHtml(F2, _taktPorCaixa(Object.assign({}, M42.T, { prods:VC.prods })), M42.T);
@@ -813,6 +849,96 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
      [H2.includes('PARA O APP DE CRONOANÁLISE · VOLUMES DA PROGRAMAÇÃO COLADA'), H2.includes('9.050<small>volumes</small>'), H2.includes('de 8.000 produtos colados = 14.504 UEP'),
       _taktFaixaHtml(Object.assign({}, F2, { semVol:500 })).includes('<span class="tks-red">500 produtos fora do cadastro não contam</span>'), H2.includes('class="tks-fx"')],
      [true, true, true, true, true]);
+  ok('v7.225.0: o painel e o app leem o MESMO setup (CRONO_APP_GRUPO, um lugar só); a faixa não diz mais "sem descontar o setup"; várias semanas somadas são ditas',
+     [/h\.setup \|\| _taktSetup\(\)/.test(pega('function _taktMontar(')), /\b64\b/.test(pega('function _taktMontar(') + pega('function _taktApp(')),
+      /_taktApp\(T\.dias, vol, T\.setup/.test(pega('function _taktFaixa(')), /grupo\|\|CRONO_APP_GRUPO/.test(pega('function _taktApp(')),
+      /sem descontar o setup/.test(pega('function _taktFaixaHtml(')),
+      _taktFaixaHtml(Object.assign({}, F0, { app:Object.assign({}, F0.app, { nSem:2 }) })).includes(' · 2 semanas somadas (no app, uma linha por semana)')],
+     [true, false, true, true, false, true]);
+  { // a AVALIAR monta o TAKT POR PRODUTO com um T só dela (Tv): o cx/h tem de ser de relógio lá também
+    const HA = _tkaHtml(L42, M42, { botoes:'' }), R42 = _taktPorCaixa(Object.assign({}, M42.T, { prods:VC.prods }));
+    const g0 = R42.find(g => g.cxhTakt), esp = Math.round(3600 * 463 / 527 / g0.sTakt);
+    ok('na AVALIAR o cx/h do TAKT POR PRODUTO também é por hora de relógio (o Tv leva os minutos sem o setup)',
+       [Math.round(g0.cxhTakt), HA.includes('<small>' + fmtN(esp) + ' cx/h</small>'), HA.includes('<small>' + fmtN(Math.round(3600 / g0.sTakt)) + ' cx/h</small>')],
+       [esp, true, false]); }
+  // v7.226.0 (PPCP: "melhor deixar para eu configurar setup nos dois, assim coloco igual, vamos usar setup médio"):
+  // o setup é do ⚙ — CONFIG_PAINEL (.gs v5.61), senão este computador, senão o padrão 8 × 8.
+  // Medido: 4,3 trocas de produto/dia × 7,65 min = 32,9 min/dia (13/10–10/11). O app só aceita
+  // trocas INTEIRAS e minutos com UMA casa (revisão): o mesmo setup do dia é 4 × 8,2 = 32,8.
+  { const SUP = { setupsDia:4, setupMin:8.2, origem:'planilha' };
+    const Ts = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:SUP })), Fs = _taktFaixa(Ts, { G });
+    ok('setup médio do ⚙ (4 × 8,2 = 32,8 min/dia): o painel tira 32,8 da jornada (takt 9,24 s por UEP); o % e o executado em % não mudam (116,2 e 90,6)',
+       [r1(Ts.setupDia), r1(Ts.minProd), Math.round(Ts.takt * 100) / 100, r1(Ts.pede), r1(Ts.exec.pct)], [32.8, 494.2, 9.24, 116.2, 90.6]);
+    ok('no app, com o MESMO setup (44 h × 4/5 − 4 × 8,2 × 4 = 33h01): 19,9 s por volume, 181 vol/h — a conta do ritmoExigido do app',
+       [_fmtHM(Fs.app.prod), _tkS(Fs.app.s), Math.round(Fs.app.vh), _tkS((44 * 4 / 5 - 4 * 8.2 * 4 / 60) * 3600 / 5970)], ['33h01', '19,9', 181, '19,9']);
+    const Hs = _taktFaixaHtml(Fs, [], Ts);
+    ok('a faixa escreve o setup do ⚙ com vírgula, e os detalhes os minutos com uma casa',
+       ['desconta o setup, 4 × 8,2 min por dia (2h11 nos 4 dias)', 'sem o setup do ⚙: 0h33 por dia · digite o mesmo no app'].filter(t => !Hs.includes(t))
+         .concat(_taktHtml(Ts, G, { largura:1200, V:_taktVeredito(Ts, null, RIT) }).includes('em 494,2 min (a jornada sem o setup)') ? [] : ['494,2 nos detalhes']), []);
+    const Tz = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:0, setupMin:8, origem:'planilha' } }));
+    ok('setup ZERO (sem setup) é valor: o takt volta à jornada inteira (9,86) e a faixa diz "nenhum"',
+       [Math.round(Tz.takt * 100) / 100, Tz.setupDia, _taktFaixaHtml(_taktFaixa(Tz, {}), [], Tz).includes('sem o setup do ⚙: nenhum')], [9.86, 0, true]);
+    const gPD = global.PONTOS_DIA, gCFG = global.CFG;
+    global.PONTOS_DIA = { setupsDia:4, setupMin:8.2 }; global.CFG = { setupsDia:5, setupMin:6 };
+    const a1 = _taktSetup();
+    global.PONTOS_DIA = { setupsDia:null, setupMin:null }; const a2 = _taktSetup();
+    global.CFG = { setupsDia:70, setupMin:8 }; const a3 = _taktSetup();    // 560 min não cabe na jornada
+    global.CFG = { setupsDia:4 }; const a4 = _taktSetup();                // só um dos dois não vale
+    global.SETUP_PEND = { a:3, b:9 }; const a5 = _taktSetup(); global.SETUP_PEND = null;
+    global.PONTOS_DIA = gPD; global.CFG = gCFG;
+    ok('a ordem: o recém-salvo (gravando); a CONFIG_PAINEL; sem ela, este computador; setup que não cabe na jornada ou só um campo → o padrão',
+       [a5, a1, a2, a3.origem, a4.origem],
+       [{ setupsDia:3, setupMin:9, origem:'enviando' }, { setupsDia:4, setupMin:8.2, origem:'planilha' }, { setupsDia:5, setupMin:6, origem:'computador' }, 'padrao', 'padrao']);
+    const fx = o => _taktFaixaHtml(_taktFaixa(_taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:4, setupMin:8, origem:o } })), {}), [], T);
+    ok('só neste computador fica dito na faixa (âmbar), e o recém-salvo diz que está gravando',
+       [fx('computador').includes('<span class="tks-warn">só neste computador</span>'), fx('enviando').includes(' · gravando na planilha…')], [true, true]);
+    ok('os campos do ⚙ no domínio do app: trocas INTEIRAS até 100, minutos com até UMA casa até 600 (zero à direita não conta); vazio null; o resto NaN, nunca 0',
+       [_setupLer('4', 0, 100), _setupLer('4,0', 0, 100), _setupLer('8,2', 1, 600), _setupLer('8.20', 1, 600), _setupLer('0', 0, 100), _setupLer(' ', 0, 100),
+        ...[_setupLer('4,3', 0, 100), _setupLer('7,65', 1, 600), _setupLer('101', 0, 100), _setupLer('600,1', 1, 600), _setupLer('abc', 0, 100), _setupLer('-1', 0, 100), _setupLer('8 min', 1, 600)].map(Number.isNaN)],
+       [4, 4, 8.2, 8.2, 0, null, true, true, true, true, true, true, true]);
+    ok('o que impede salvar diz o porquê (e os dois vazios não impedem: não muda)',
+       [_setupErro(null, null), _setupErro(4, 8.2), _setupErro(4, null), _setupErro(NaN, 8), _setupErro(4, NaN), _setupErro(66, 8)],
+       [null, null, 'preencha TROCAS/DIA e MIN/TROCA (os dois)', 'TROCAS/DIA é número inteiro, de 0 a 100 — o app de cronoanálise não aceita fração',
+        'MIN/TROCA vai de 0 a 600, com até uma casa — o app de cronoanálise grava uma casa', 'o setup do dia (528 min) passa da jornada (527 min)']);
+    ok('a ajuda do ⚙: o total por dia, o MESMO no app, de onde vale; gravando; não cabe; só um campo; fora do domínio',
+       [_setupCfgTxt(4, 8.2, 'planilha'), _setupCfgTxt(4, 8.2, 'novo'), _setupCfgTxt(4, 8.2, 'computador'), _setupCfgTxt(4, 8.2, 'enviando'), _setupCfgTxt(8, 8, 'padrao'),
+        _setupCfgTxt(70, 8, 'planilha'), _setupCfgTxt(4, null, 'planilha'), _setupCfgTxt(NaN, 8, 'planilha'), _setupCfgTxt(4, NaN, 'planilha')],
+       ['32,8 min · o mesmo no app', '32,8 min · salve', '32,8 min · só neste PC', '32,8 min · gravando', '64 min · padrão', 'passa da jornada', 'os dois campos', 'trocas: número inteiro', 'min: até uma casa']);
+    // O ENVIO: o que mudou; e, com a planilha sem a chave, o setup DESTE computador (o
+    // digitado antes do re-deploy) — nunca o padrão (apagaria o de outro computador).
+    const ab = (a, b, origem) => ({ a, b, origem });
+    ok('o ⚙ manda o setup quando o gestor MUDOU o que viu, ou quando a planilha não tem a chave e o setup era deste computador; o padrão nunca é semeado',
+       [_setupEnviar(4, 8.2, ab(8, 8, 'padrao'), 'planilha'), _setupEnviar(4, 8.2, ab(4, 8.2, 'planilha'), 'planilha'),
+        _setupEnviar(8, 8, ab(8, 8, 'padrao'), 'sem-chave'), _setupEnviar(4, 8.2, ab(4, 8.2, 'computador'), 'sem-chave'),
+        _setupEnviar(4, 8.2, ab(4, 8.2, 'computador'), 'antigo'), _setupEnviar(NaN, 8, ab(8, 8, 'padrao'), 'planilha'), _setupEnviar(null, null, ab(8, 8, 'padrao'), 'sem-chave'),
+        _setupEnviar(4, 8.2, null, 'planilha')],
+       [{ a:4, b:8.2 }, null, null, { a:4, b:8.2 }, null, null, null, null]);
+    // O caso da revisão, do começo ao fim: digitado no ⚙ com o .gs antigo, re-deploy, abrir o ⚙ e SALVAR.
+    const alertas = [], gAl = global.alert; global.alert = m => alertas.push(m);
+    global.PONTOS_DIA = {}; global.CFG = { setupsDia:4, setupMin:8.2 };
+    _setupDaConfig({ metaUep:2761 });                                   // .gs v5.60: sem o campo
+    const f1 = [SETUP_PLAN, _taktSetup().origem];
+    _setupDaConfig({ metaUep:2761, setupsDia:null, setupMin:null });    // .gs v5.61, planilha sem a chave
+    const su0 = _taktSetup(), env = _setupEnviar(su0.setupsDia, su0.setupMin, ab(su0.setupsDia, su0.setupMin, su0.origem), SETUP_PLAN);
+    global.SETUP_PEND = env;
+    _setupResposta(env, { ok:true, painelConfig:{ setupsDia:4, setupMin:8.2 } });
+    const f2 = [SETUP_PLAN, _taktSetup(), SETUP_PEND, alertas.length];
+    global.SETUP_PEND = { a:5, b:6 };
+    _setupResposta({ a:5, b:6 }, null);                                 // sem resposta: avisa, e o pendente sai
+    const f3 = [SETUP_PEND, _taktSetup().origem, alertas.length, /não respondeu/.test(alertas[0] || '')];
+    _setupResposta({ a:5, b:6 }, { ok:true, painelConfig:{ metaUep:2761 } });   // .gs antigo: vale neste computador, sem alerta
+    const f4 = [SETUP_PLAN, alertas.length];
+    global.alert = gAl; global.PONTOS_DIA = gPD; global.CFG = gCFG; global.SETUP_PLAN = null; global.SETUP_PEND = null;
+    ok('o caso da revisão: digitado com o .gs antigo (só neste PC) → depois do re-deploy, o SALVAR sem mexer leva o setup à planilha, e a resposta confirma',
+       [f1, env, f2], [['antigo', 'computador'], { a:4, b:8.2 }, ['planilha', { setupsDia:4, setupMin:8.2, origem:'planilha' }, null, 0]]);
+    ok('sem resposta: avisa (o tempo esgotado não prova que não gravou) e deixa de dizer "gravando"; com o .gs antigo, sem alerta',
+       [f3, f4], [[null, 'planilha', 1, true], ['antigo', 1]]);
+    const sv = pega('function saveCfg('), env2 = pega('function enviarConfigPainel(');
+    ok('o SALVAR para no setup que não vale ANTES de mudar qualquer coisa, e o envio passa a resposta da planilha ao _setupResposta',
+       [sv.indexOf('_setupErro(') > 0 && sv.indexOf('_setupErro(') < sv.indexOf('CFG.empresa='), /_setupEnviar\([^;]*SETUP_PLAN\)/.test(sv), /PONTOS_DIA\.setupsDia=/.test(sv),
+        /jsonpFetch\(url\)\.then\(function\(r\)\{ _setupResposta\(su, r\); \}, function\(\)\{ _setupResposta\(su, null\); \}\)/.test(env2),
+        /setupsDia: \(json\.painelConfig\|\|\{\}\)\.setupsDia, setupMin: \(json\.painelConfig\|\|\{\}\)\.setupMin/.test(JS), /_setupDaConfig\(pc\);/.test(pega('function aplicarConfigPainel('))],
+       [true, true, false, true, true, true]); }
   ok('o desenho da faixa não faz conta; a conta não lê tela nem servidor',
      [/\*|\/ *[A-Za-z_]+\./.test(pega('function _taktFaixaHtml(').replace(/\/\/[^\n]*/g, '').replace(/<\/?[a-z]+[^>]*>/gi, '')),
       /document\.|jsonpFetch|CFG\./.test(pega('function _taktFaixa(') + pega('function _tkaVolumes('))], [false, false]);

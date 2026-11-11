@@ -4710,7 +4710,7 @@ console.log('\n── estudo de UEP ──');
         'programação não lida', '…', 'sem UEP na programação', 'nenhum dia útil à frente']);
     const RPX = pega('function renderProxDias(');
     ok('o botão PRÓXIMOS DIAS é pintado pelo renderProxDias, em cada desfecho da leitura, com as MESMAS semanas do bloco',
-       [/const W = _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\)/.test(RPX), /sb\(_uepSubProx\(W\)\)/.test(RPX),
+       [/const W = _gpxSemanasMontar\(P, hoje, _gpxPassadosDoPainel\(hoje\)\), A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\)/.test(RPX), /sb\(_uepSubProx\(W\)\)/.test(RPX),
         /sb\(_uepSubProx\(null, f \? 'falha' : 'lendo'\)\)/.test(RPX), /sb\(_uepSubProx\(null, 'sem-uep'\)\)/.test(RPX)],
        [true, true, true, true]);
     ok('os textos dos botões não fazem conta (só leem o que já foi montado) e a pintura é uma só para a cronoanálise e a UEP',
@@ -4721,7 +4721,7 @@ console.log('\n── estudo de UEP ──');
     { const docA = global.document, el = d => ({ dataset:{ sub:d }, s:new Set(), at:{}, classList:{ toggle(c, on){ on ? this.o.s.add(c) : this.o.s.delete(c); }, add(c){ this.o.s.add(c); } }, setAttribute(k, v){ this.at[k] = v; } });
       const KS = ['hoje', 'periodo', 'prox', 'prod', 'reguas'], SB = KS.map(el), PN = KS.map(el); SB.concat(PN).forEach(e => { e.classList.o = e; });
       const BLOCO = { style:{} };
-      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb' ? SB : q === '#sec-uep .ucv-pn' ? PN : []), querySelector:q => (q === '#sec-uep .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null),
+      global.document = { querySelectorAll:q => (q === '#uep-sub .ucv-sb[data-sub]' ? SB : q === '#sec-uep .ucv-pn' ? PN : []), querySelector:q => (q === '#sec-uep .ucv-pn.on' ? PN.find(e => e.s.has('on')) : null),
                           getElementById:id => (id === 'uep-bloco' ? BLOCO : null) };
       global.UEP_SUBS = KS; global.UEP_SUB = 'hoje'; const abaA = global._abaOn; global._abaOn = () => false;
       eval(pega('function _uepSubMarca(')); eval(pega('function _uepSub('));
@@ -5055,6 +5055,29 @@ console.log('\n── estudo de UEP ──');
        [true, true, false, true]);
     // v7.198.0 (aba ⚖ UEP em sub-abas, "enxugar"): recolhido, com o total no título; aberto, fica aberto no refresh
     global.GPX_ATR_ABERTO = true; const AHa = _gpxAtrasoHtml(AM, PA); global.GPX_ATR_ABERTO = false;
+    // v7.227.0 (PPCP: "onde consigo ver hora que está em atraso?" → "deixar em um lugar para ver card" → "deixar à vista"):
+    // o total do quadro num cartão da faixa da ⚖ UEP, à vista em qualquer sub-aba — o MESMO número
+    eval(pega('function _uepSubAtr('));
+    ok('cartão ATRASO: as horas e as caixas do total do quadro, desde o lote mais antigo; * quando há código sem UEP (fica só nas caixas); vermelho',
+       _uepSubAtr(PA, AM), { txt:_fmtHM(PA.conta.venc) + '* · 339 cx · desde 20/10', cls:'red' });
+    const AM2 = _gpxAtrasoMontar(LA.linhas.filter(l => l.u), 2530 / 527);
+    const AM0 = _gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8);
+    const AMs = _gpxAtrasoMontar([{ codigo:'9', desc:'SEM', cor:'', desde:'21/10/2026', atr:10, hoje:0, u:null }], 4.8);
+    ok('cartão ATRASO: sem código sem UEP, sem *; nada vencido é verde; só sem UEP diz isso; sem leitura diz o estado, nunca 0',
+       [_uepSubAtr(PA, AM2).txt, _uepSubAtr(PA, AM0), _uepSubAtr({ conta:null }, AMs).txt, _uepSubAtr(null, null, 'lendo').txt, _uepSubAtr(null, null, 'falha').txt,
+        _uepSubAtr(null, null, 'sem-uep').txt, _uepSubAtr(null, null, 'vazia'), _uepSubAtr(null, null, 'sem-lista').txt, _uepSubAtr(PA, null).txt],
+       [_fmtHM(PA.conta.venc) + ' · 339 cx · desde 20/10'.replace('339', String(AM2.cxVenc)), { txt:'nada vencido', cls:'ok' }, '10 cx · sem UEP · desde 21/10', '…', 'programação não lida',
+        'sem UEP na programação', { txt:'nada vencido', cls:'ok' }, '—', '…']);
+    { const RPXa = pega('function renderProxDias(');
+      ok('o cartão é pintado pelo renderProxDias em cada desfecho (o mesmo A do quadro); sem a lista: dia não lido "…", nada em aberto "nada vencido"',
+         [/sbA\(_uepSubAtr\(null, null, f \? 'falha' : 'lendo'\)\)/.test(RPXa), /sbA\(_uepSubAtr\(null, null, 'sem-uep'\)\)/.test(RPXa),
+          /sbA\(_uepSubAtr\(P, A, A \? null : !PONTOS_DIA_TS \? 'lendo' : lista\.length \? 'sem-lista' : 'vazia'\)\)/.test(RPXa),
+          /_gpxMontar\(|_gpxDivida\(|uepCx|porMin/.test(pega('function _uepSubAtr('))], [true, true, true, false]);
+      ok('o cartão mora na faixa, à vista em qualquer sub-aba, mas NÃO é sub-aba (sem data-sub e sem role=tab; o _uepSubMarca só acende as sub-abas); o toque abre o quadro',
+         [/<button type="button" class="ucv-sb uep-sb-atr" onclick="_uepAtrAbrir\(\)"[^>]*><b>ATRASO<\/b><span id="uep-sb-atr">…<\/span><\/button>/.test(src),
+          /class="ucv-sb uep-sb-atr"[^>]*(data-sub|role=)/.test(src), /querySelectorAll\('#uep-sub \.ucv-sb\[data-sub\]'\)/.test(pega('function _uepSubMarca(')),
+          /GPX_ATR_ABERTO = true;\s*_uepSub\('prox'\);/.test(pega('function _uepAtrAbrir(')), /#sec-uep \.ucv-sb\.uep-sb-atr\.red\{border-color:/.test(src)],
+         [true, false, true, true, true]); }
     ok('o quadro do atraso nasce RECOLHIDO, com o total (cx · UEP · horas) e os códigos no título; aberto, continua aberto no refresh',
        [/^<details class="gpx-atr" ontoggle="_gpxAtrToggle\(this\.open\)"><summary class="gpx-atr-t"><b>ATRASO — CONFERÊNCIA<\/b>/.test(AH),
         AH.includes('<b>339 cx · 549 UEP · ' + _fmtHM(PA.conta.venc) + '</b> · 4 códigos'), /^<details class="gpx-atr" open /.test(AHa), /<\/details>$/.test(AH),
@@ -5063,7 +5086,7 @@ console.log('\n── estudo de UEP ──');
     ok('quadro sem a lista por código (backend antigo) ou sem vencido: nada',
        [_gpxAtrasoHtml(_gpxAtrasoMontar(null, 4.8), PA), _gpxAtrasoHtml(_gpxAtrasoMontar([{ codigo:'1', desc:'X', cor:'', desde:'', atr:0, hoje:50, u:2 }], 4.8), PA)], ['', '']);
     ok('quadro do atraso só na tela (papel e diretoria mostram só as semanas) e os desenhos não fazem conta de carga',
-       [/_gpxSemanasHtml\(P, W\) \+ _gpxAtrasoHtml\(_gpxAtrasoMontar\(P\.divLinhas, P\.porMin\), P\)/.test(pega('function renderProxDias(')),
+       [/A = _gpxAtrasoMontar\(P\.divLinhas, P\.porMin\);\s*corpo\.innerHTML = _gpxSemanasHtml\(P, W\) \+ _gpxAtrasoHtml\(A, P\)/.test(pega('function renderProxDias(')),
         /_gpxAtrasoHtml/.test(pega('function _uepDocHtml(') + pega('function _dirCartHtml(') + pega('function _gpxSemanasHtml(')),
         /uepCx|_gpxDivida\(|_cartAberta\(/.test(pega('function _gpxAtrasoHtml(') + pega('function _gpxSemanasBlocos('))], [true, false, false]);
     // v7.181.0: o ANEXO do papel saiu; quem diz isso é o tooltip do cartão do dia
@@ -5646,8 +5669,9 @@ console.log('\n── estudo de UEP ──');
   // aplicarConfigPainel real, num contexto separado (não mexe no CFG dos outros testes)
   const roda = (local, pc) => {
     const C = { CFG: { metaComAtraso: local, telasAtivas: {} }, _painelCfgSig: null, ATRASO_PLAN: null, _tvUepTs: 0,
+      SETUP_PLAN: null, PONTOS_DIA: {},   // v7.227.0: o setup do takt, no mesmo esquema
       META: 0, saveCfgLocal() {}, aplicarMetaDiaAutomatica() { C.META++; } };
-    vm.createContext(C); vm.runInContext(pega('function aplicarConfigPainel('), C);
+    vm.createContext(C); vm.runInContext(pega('function aplicarConfigPainel(') + pega('function _setupDaConfig('), C);
     vm.runInContext('aplicarConfigPainel(' + JSON.stringify(pc) + ')', C);
     return [C.CFG.metaComAtraso, C.ATRASO_PLAN, C.META];
   };
@@ -5655,6 +5679,12 @@ console.log('\n── estudo de UEP ──');
   ok('planilha desligada num PC ligado → desliga', roda(true, { telaA: true, metaComAtraso: false }), [false, 'planilha', 1]);
   ok('planilha sem a chave (null) → fica a deste PC, e o próximo SALVAR grava', roda(true, { telaA: true, metaComAtraso: null }), [true, 'sem-chave', 0]);
   ok('.gs antigo (sem o campo) → fica a deste PC', roda(true, { telaA: true }), [true, 'antigo', 0]);
+  { const C = { CFG:{ telasAtivas:{} }, _painelCfgSig:null, ATRASO_PLAN:null, _tvUepTs:0, SETUP_PLAN:null, PONTOS_DIA:{}, saveCfgLocal() {}, aplicarMetaDiaAutomatica() {} };
+    vm.createContext(C); vm.runInContext(pega('function aplicarConfigPainel(') + pega('function _setupDaConfig('), C);
+    const st = pc => { vm.runInContext('_painelCfgSig = null; aplicarConfigPainel(' + JSON.stringify(pc) + ')', C); return [C.SETUP_PLAN, C.PONTOS_DIA.setupsDia, C.PONTOS_DIA.setupMin]; };
+    ok('o SETUP DO TAKT no mesmo esquema (v7.227.0): sem o campo = .gs antigo; null = planilha sem a chave; com os dois = vale para todos',
+       [st({ telaA:true }), st({ telaA:true, setupsDia:null, setupMin:null }), st({ telaA:true, setupsDia:4, setupMin:8.2 })],
+       [['antigo', undefined, undefined], ['sem-chave', null, null], ['planilha', 4, 8.2]]); }
   ok('o saveCfg decide pelo _atrasoEnviar e o enviarConfigPainel só manda quando há o que mandar',
      [/_metaAtrasoNovo=_atrasoEnviar\(_atrasoAntes, CFG\.metaComAtraso, ATRASO_PLAN\)/.test(pega('function saveCfg(')),
       /if\(_metaAtrasoNovo!==null\)\{ params\.push\('metaComAtraso='\+\(_metaAtrasoNovo\?1:0\)\); _metaAtrasoNovo=null; \}/.test(pega('function enviarConfigPainel('))],
