@@ -126,17 +126,59 @@ function abrirLancSlotAtivo() { abriu++; return true; }
 function nomeComCor(d, c) { return d + (c ? ' ' + c : ''); }
 function corDeProduto(p) { return p.cor || ''; }
 function _confirmaResolve() {}
+let acendeu = [];
+function _mlProdPintar(bip) { acendeu.push(!!bip); }
 PRODUTOS = CAT;
 processarBipe('800678985990784240202');
 ok('bipe do VOL 2/2: seleciona 501060004, aviso verde, bipe agudo, abre a hora atual',
    [sel, toasts[0][1], sons, abriu], [['501060004'], true, [true], 1]);
 ok('o aviso de acerto diz o volume (a descrição tem o VOL)', /^✓ 501060004 · VOL 2\/2 PENTEADEIRA CAMARIM MEL/.test(toasts[0][0]), true);
-sel = []; toasts = []; sons = []; abriu = 0;
+ok('e a linha PRODUTO do lançamento acende com o que chegou', acendeu, [true]);
+_corrTroca = { x: 1 }; acendeu = [];
+processarBipe('800678985990784240202');
+ok('no TROCAR PRODUTO (correção de um lançamento antigo) a linha do lançamento NÃO acende', acendeu, []);
+_corrTroca = null;
+sel = []; toasts = []; sons = []; abriu = 0; acendeu = [];
 processarBipe('7898599078424');
 ok('bipe ambíguo: não seleciona nada, aviso vermelho com o motivo, bipe grave, não abre a hora',
    [sel, toasts, sons, abriu],
    [[], [['Etiqueta sem volume: o EAN 7898599078424 serve para 2 códigos — escolha na lista', false]], [false], 0]);
 ok('produtoPorEan (o atalho) lê o mesmo que o bipe', produtoPorEan('(8006)78985990784240202').codigo, '501060004');
+
+console.log('\n── o produto à vista no lançamento ("quando bipa não aparece o código") ──');
+{
+  // DOM de mentira com a linha PRODUTO
+  const cls = new Set(), el = { textContent: '' }, sub = { innerHTML: '' };
+  const box = { classList: { toggle: (c, on) => on ? cls.add(c) : cls.delete(c), remove: c => cls.delete(c), add: c => cls.add(c) }, offsetWidth: 1 };
+  global.document = { getElementById: id => ({ 'ml-prod': box, 'ml-prod-val': el, 'ml-prod-sub': sub })[id] || null };
+  var PROD_ATUAL = '501060004';
+  PRODUTOS = [L('501060004', 'VOL 2/2 PENTEADEIRA CAMARIM MEL', 'CINAMOMO/OFF WHITE', '(8006)78987139448950202'),
+              L('501060099', 'VOL 1/2 PENTEADEIRA CAMARIM MEL OFF WHITE', 'OFF WHITE', '')];
+  eval(pega(MJS, 'function _escH(')); eval(pega(MJS, 'function _mlProdTxt(')); eval(pega(MJS, 'function _mlProdPintar('));
+  _mlProdPintar(true);
+  ok('com produto: o nome, a COR numa etiqueta à parte (não some quando o nome é cortado) e o código; acende no bipe',
+     [el.textContent, sub.innerHTML, cls.has('sem'), cls.has('bip')],
+     ['VOL 2/2 PENTEADEIRA CAMARIM MEL', '<span>501060004</span><span class="ml-prod-cor">CINAMOMO/OFF WHITE</span>', false, true]);
+  ok('descrição antiga que já termina com a cor não repete a cor',
+     _mlProdTxt(PRODUTOS[1], '501060099'), { nome: 'VOL 1/2 PENTEADEIRA CAMARIM MEL OFF WHITE', cor: '', cod: '501060099' });
+  ok('código fora do catálogo: o código, sem inventar nome', _mlProdTxt(null, '501999001'), { nome: '501999001', cor: '', cod: '' });
+  PROD_ATUAL = ''; cls.clear(); _mlProdPintar();
+  ok('sem produto: diz isso, em âmbar, e manda tocar', [el.textContent, sub.innerHTML, cls.has('sem')], ['SEM PRODUTO — toque para escolher', '', true]);
+  delete global.document;
+}
+ok('o lançamento tem a linha PRODUTO, e tocar nela abre o seletor (que abre por cima)',
+   [/<div class="ml-prod" id="ml-prod" role="button"[^>]*onclick="abrirModalProduto\(\)">/.test(MOB),
+    MOB.indexOf('id="modal-produto"') > MOB.indexOf('id="modal-lanc"')], [true, true]);
+ok('ela é pintada ao abrir o lançamento e em toda troca de produto (barra do produto)',
+   [/_mlProdPintar\(\);/.test(pega(MJS, 'function abrirLanc(')), /_mlProdPintar\(\);/.test(pega(MJS, 'function atualizarProdutoBar('))], [true, true]);
+ok('o bipe acende a linha (menos no TROCAR PRODUTO)', /if\(!trocando\) _mlProdPintar\(true\);/.test(pega(MJS, 'function processarBipe(')), true);
+{
+  const zToast = +(MOB.match(/\.scan-toast\{[^}]*z-index:(\d+)/) || [])[1];
+  const zModal = +(MOB.match(/\.modal-over\{[^}]*z-index:(\d+)/) || [])[1];
+  const zConf = +(MOB.match(/#modal-confirma\{z-index:(\d+)\}/) || [])[1];
+  ok('o aviso do bipe fica ACIMA dos modais (era 50, atrás do lançamento que o bipe abre) e no alto da tela',
+     [zToast > zModal, zToast > zConf, /\.scan-toast\{position:fixed;left:50%;top:/.test(MOB)], [true, true, true]);
+}
 
 console.log('\n── guarda-corpo ──');
 ok('o processarBipe passa pelo eanAchar (não volta a casar só o núcleo)',

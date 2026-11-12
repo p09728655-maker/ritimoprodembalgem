@@ -305,6 +305,25 @@ via Google Apps Script (JSONP).
   `(8006)` + GTIN + peça/total do volume, ou `(01)` + GTIN no VOL 1/1.
 - ⚠ O operador só vê o cadastro novo quando entra de novo no app: no perfil
   OPERADOR o catálogo é lido no login (e guardado no aparelho).
+- **O PRODUTO NO LANÇAMENTO** (mesma versão, PPCP: *"quando bipa não aparece o
+  código"* → *"quando operador digitar qtde vai fechar a banqueta ou
+  buffet?"*). A quantidade vai para o **produto atual do turno** na hora do
+  ADICIONAR (`codLanc = PROD_ATUAL`, sincronizado com o `.gs` — vale para todos
+  os aparelhos). O bipe abria o lançamento da hora POR CIMA do aviso verde
+  (`.scan-toast` z-index 50, `.modal-over` 100) e o lançamento não dizia o
+  produto: um bipe de TESTE deixava o produto do turno trocado sem ninguém ver.
+  - Linha `#ml-prod` no lançamento: código + cor em etiqueta (`.ml-prod-cor`:
+    cortado o nome, a cor não pode ir junto) + nome em até 2 linhas + `›`;
+    tocar abre o seletor por cima (`abrirModalProduto`, o `#modal-produto` vem
+    depois no HTML). `_mlProdTxt` (pura) + `_mlProdPintar(bip)`, chamada no
+    `abrirLanc`, no `atualizarProdutoBar` (toda troca de produto) e no bipe
+    (acende, menos no TROCAR PRODUTO). Sem produto: âmbar, *SEM PRODUTO*.
+  - O aviso do bipe vai ao ALTO da tela e acima dos modais (z-index 130): no pé
+    ele cobria o CANCELAR/ADICIONAR. Falha fica 4,5 s.
+  - Tela baixa (`max-height:760px`): menos ar no `#modal-lanc` (gap, padding,
+    teclado), nunca letra. Medido no Chromium: 320×658, 360×740, 800×1280 e
+    1280×800 com a folha sem rolar e o ADICIONAR inteiro à vista (antes, a
+    320×658 já rolava 11 px). Peça nova no lançamento? Medir de novo.
 
 ## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
 - PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os
