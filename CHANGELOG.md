@@ -11,6 +11,37 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.45.0 — 12/11/2026 · O bipe da etiqueta respeita o VOLUME e o produto aparece no lançamento
+
+PPCP: *"como está lendo hoje a entrada pela etiqueta"*. A etiqueta traz o
+GTIN e a peça/total (`0202` = volume 2 de 2), e no cadastro os volumes da mesma
+cor têm o mesmo GTIN. O app jogava a peça/total fora e ficava com o primeiro
+código: **bipar o VOL 2/2 selecionava o VOL 1/2**.
+
+- O bipe agora casa o EAN **e** o volume: cada etiqueta chama um código do
+  produto. Conferido nos 429 códigos do cadastro de 12/11: todos chamam o
+  próprio código (na leitura antiga, 60 chamavam outro). VOL 1/1 cadastrado com
+  `(01)` continua sendo achado.
+- Quando a etiqueta não diz qual volume, ou o volume dela não está no cadastro,
+  o app **não escolhe**: o aviso vermelho diz o motivo e pede para tocar no
+  produto na lista. Antes ele escolhia o primeiro código da lista.
+- **O produto aparece na tela do lançamento** (PPCP: *"quando bipa não aparece o
+  código"*). O bipe abre o lançamento da hora, e o lançamento cobria o aviso
+  verde e não dizia o produto: o operador digitava a quantidade sem ver em que
+  produto ela ia entrar. Agora o lançamento tem a linha do produto (código, cor
+  numa etiqueta, nome; tocar troca), que acende quando o bipe chega. Sem produto
+  ela fica âmbar. O aviso do bipe passou para o alto da tela, acima de tudo.
+- Em tela baixa (celular pequeno) o lançamento tem menos espaço entre as peças,
+  para o ADICIONAR continuar à vista.
+- Cadastro (planilha, `PRODUTO_CODIGO`): os três códigos do HOME RIPADO SUPREMO
+  2.3 CINAMOMO (501.070.001 a 003) estavam com `(8806)` no EAN e o bipe dizia
+  "EAN não cadastrado". Corrigido para `(8006)`.
+
+**Atenção:** nenhum número muda. Não dá para saber se algum lançamento já foi
+gravado no VOL 1/2 pelo bipe: o registro de produção não diz se o código veio
+do bipe ou do toque. O operador só recebe a correção do cadastro ao entrar de
+novo no app.
+
 ## v7.233.0 — 12/11/2026 · A TRAVA DA UEP · ⚠ re-deploy (.gs v5.64)
 
 PPCP: *"o que precisamos hoje é de ter limite de medição. Se não tiver um

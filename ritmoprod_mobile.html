@@ -316,10 +316,13 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
   font-weight:700}
 .prod-search-cor.sem{background:transparent;color:var(--txt2);border:0.5px solid var(--border);font-weight:400}
 .prod-search-empty{text-align:center;padding:20px;color:var(--txt2);font-family:var(--font-d);font-size:10px;letter-spacing:1px}
-/* Toast de confirmação do BIPE (seleção de produto por leitor de código). */
-.scan-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%) translateY(20px);
+/* Toast de confirmação do BIPE (seleção de produto por leitor de código).
+   EM CIMA e ACIMA dos modais (1.45.0): com z-index 50 e no pé da tela ele ficava
+   ATRÁS do lançamento que o próprio bipe abre — o operador bipava e não via o
+   produto. Em cima não cobre os botões CANCELAR/ADICIONAR. */
+.scan-toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translateX(-50%) translateY(-20px);
   max-width:88%;padding:14px 20px;border-radius:10px;font-family:var(--font-h);font-size:14px;font-weight:700;letter-spacing:1px;
-  color:#111;background:var(--acc);box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;z-index:50;
+  color:#111;background:var(--acc);box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;pointer-events:none;z-index:130;
   transition:opacity .2s, transform .2s;text-align:center;line-height:1.3}
 .scan-toast.err{background:var(--red);color:#fff}
 .scan-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -431,6 +434,33 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 .modal-slot-meta{font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
 .modal-slot-acum{font-family:var(--font-h);font-size:16px;font-weight:700;color:var(--acc);letter-spacing:1px;margin-top:6px}
 .modal-slot-acum .un{font-size:10px;color:var(--txt2);font-weight:400}
+/* PRODUTO do lançamento (1.45.0): o que o bipe (ou o toque) escolheu, à vista
+   na tela em que se digita a quantidade. Toque = trocar (o seletor abre por cima).
+   Em cima o código e a COR (etiqueta própria: cortado o nome, a cor — que separa um
+   código do outro — não pode ir junto); embaixo o nome, em até 2 linhas; a seta é a
+   mesma da barra do produto. Baixo de propósito: não empurra o ADICIONAR para fora. */
+.ml-prod{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:10px;row-gap:2px;margin-top:6px;
+  padding:6px 12px;background:var(--elevated);border:0.5px solid var(--border);border-radius:8px;cursor:pointer}
+.ml-prod-sub{grid-column:1;display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;
+  font-family:var(--font-d);font-size:10px;color:var(--txt2);letter-spacing:.5px}
+.ml-prod-sub:empty{display:none}
+.ml-prod-cor{padding:1px 7px;border-radius:4px;background:var(--acc);color:#111;font-weight:700;letter-spacing:1px}
+.ml-prod-val{grid-column:1;min-width:0;font-family:var(--font-h);font-size:15px;font-weight:700;line-height:1.25;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ml-prod-tr{grid-column:2;grid-row:1 / span 2;font-size:24px;line-height:1;color:var(--acc)}
+.ml-prod.sem{border-color:var(--warn)}
+.ml-prod.sem .ml-prod-val{color:var(--warn)}
+.ml-prod.bip{animation:mlBip 1.2s ease-out}
+@keyframes mlBip{0%{border-color:var(--ok);box-shadow:0 0 0 3px rgba(46,204,113,.45)}100%{box-shadow:0 0 0 0 rgba(46,204,113,0)}}
+@media (prefers-reduced-motion:reduce){.ml-prod.bip{animation:none;border-color:var(--ok)}}
+/* Tela baixa (celular pequeno): a linha PRODUTO não pode empurrar o ADICIONAR para
+   fora — tira AR do lançamento (espaços e enchimento), nunca a letra nem o botão. */
+@media (max-height:760px){
+  #modal-lanc .modal-sheet{gap:12px;padding:18px}
+  #modal-lanc .numpad-btn{padding:11px}
+  #modal-lanc .numpad{gap:7px}
+  #modal-lanc .inp-num{padding:12px}
+}
 .modal-slot-lotes{font-family:var(--font-d);font-size:11px;color:var(--acc);letter-spacing:.5px;margin-top:8px;line-height:1.4;word-break:break-word}
 .modal-slot-lotes .lbl{display:block;color:var(--txt2);font-size:9px;letter-spacing:1px;margin-bottom:2px}
 /* CORRIGIR LANÇAMENTO (v1.34.0): a lista da hora com o produto de cada um. O
@@ -876,6 +906,11 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <div class="modal-slot-info">
       <div class="modal-slot-hora" id="ml-hora">--:-- – --:--</div>
       <div class="modal-slot-nome" id="ml-nome">LANÇAR PRODUÇÃO</div>
+      <div class="ml-prod" id="ml-prod" role="button" aria-label="Produto do lançamento — tocar para trocar" onclick="abrirModalProduto()">
+        <span class="ml-prod-sub" id="ml-prod-sub"></span>
+        <span class="ml-prod-val" id="ml-prod-val">—</span>
+        <span class="ml-prod-tr" aria-hidden="true">›</span>
+      </div>
       <div class="modal-slot-meta" id="ml-meta">META: --- CX/HORA</div>
       <div class="modal-slot-acum" id="ml-acum">ACUMULADO NA HORA: 0 <span class="un">CX</span></div>
       <div class="modal-slot-lotes" id="ml-lotes" style="display:none"></div>
@@ -1031,7 +1066,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.44.0';
+const APP_VER   = '1.45.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1463,11 +1498,37 @@ function linhaProdutoHtml(p){
   return `<div class="prod-search-desc">${p.desc||''}</div>`;
 }
 function atualizarProdutoBar(){
+  _mlProdPintar();   // a linha PRODUTO do lançamento acompanha toda troca
   const el = document.getElementById('prod-bar-val');
   if(!el) return;
   if(!PROD_ATUAL){ el.textContent='BIPAR OU TOCAR PARA SELECIONAR'; return; }
   const p = PRODUTOS.find(x=>x.codigo===PROD_ATUAL);
   el.textContent = p ? `${p.codigo} · ${nomeComCor(p.desc, corDeProduto(p))}` : PROD_ATUAL;
+}
+// O texto da linha PRODUTO, PURO: nome (sem a cor), a cor à parte e o código.
+// Descrição antiga que já termina com a cor não ganha a cor duas vezes.
+function _mlProdTxt(p, cod){
+  if(!cod) return { nome:'SEM PRODUTO — toque para escolher', cor:'', cod:'' };
+  if(!p) return { nome:String(cod), cor:'', cod:'' };
+  const cor = String(corDeProduto(p) || '').trim(), desc = String(p.desc || '').trim();
+  const jaTem = cor && desc.toUpperCase().endsWith(' ' + cor.toUpperCase());
+  return { nome: desc || String(p.codigo), cor: jaTem ? '' : cor, cod: String(p.codigo) };
+}
+// A linha PRODUTO do lançamento (1.45.0). PPCP, 12/11/2026: "quando bipa não
+// aparece o código" — o bipe abria o lançamento POR CIMA do aviso verde, e o
+// lançamento não dizia o produto. `bip` acende a linha (o produto acabou de
+// chegar pelo leitor). Sem produto: âmbar — o lançamento vale, mas sem produto
+// não entra UEP, pontos nem baixa de lote.
+function _mlProdPintar(bip){
+  const box = document.getElementById('ml-prod'), el = document.getElementById('ml-prod-val'),
+        sub = document.getElementById('ml-prod-sub');
+  if(!box || !el) return;
+  const p = PROD_ATUAL ? PRODUTOS.find(x=>x.codigo===PROD_ATUAL) : null;
+  const m = _mlProdTxt(p, PROD_ATUAL);
+  el.textContent = m.nome;
+  if(sub) sub.innerHTML = (m.cod ? `<span>${_escH(m.cod)}</span>` : '') + (m.cor ? `<span class="ml-prod-cor">${_escH(m.cor)}</span>` : '');
+  box.classList.toggle('sem', !PROD_ATUAL);
+  if(bip){ box.classList.remove('bip'); void box.offsetWidth; box.classList.add('bip'); }
 }
 
 // Remove acentos p/ a busca não depender de digitar acento certo.
@@ -1592,9 +1653,9 @@ async function selecionarProduto(codigo){
 // O leitor físico pareado no tablet age como TECLADO: "digita" o conteúdo da
 // etiqueta e manda Enter no fim. A etiqueta é GS1-128 com AI (8006) = GTIN +
 // peça/total (ex.: "(8006)78985990784240102" → EAN 7898599078424, peça 01 de 02).
-// Aqui a gente extrai só o EAN e casa com o catálogo (coluna EAN 128) para
-// PREENCHER o "produto atual" — troca o "digitar lote/código no numpad" por um
-// bipe. Não grava produção; o operador segue lançando a quantidade normalmente.
+// Aqui a gente casa o EAN E o volume (peça/total) com o catálogo (coluna EAN
+// 128, `eanAchar`) para PREENCHER o "produto atual" — troca o "digitar
+// lote/código no numpad" por um bipe. Não grava produção; o operador segue lançando a quantidade normalmente.
 // Ligado por padrão; o gerencial liga/desliga central via CONFIG_PAINEL
 // (getConfigPainel → modoLeitor). Aparelho sem leitor nunca recebe bipe.
 let MODO_LEITOR = true;   // padrão ligado; o backend/gerencial pode desligar
@@ -1612,21 +1673,63 @@ async function carregarConfigPainel(){
   }catch(e){ console.warn('carregarConfigPainel:', e.message); }
 }
 
-// Reduz qualquer valor (etiqueta OU a coluna EAN 128, em qualquer formato) ao
-// núcleo de 13 dígitos do EAN — tolerante a "(8006)", GTIN-14 e ao peça/total.
-function eanCore(v){
+// Reduz qualquer valor (etiqueta OU a coluna EAN 128, em qualquer formato) às
+// duas partes: o núcleo de 13 dígitos do EAN e o VOLUME (peça+total, "0202" =
+// volume 2 de 2), quando vem — tolerante a "(8006)" e GTIN-14.
+// ⚠ O VOLUME NÃO PODE SER JOGADO FORA (mobile 1.45.0): no cadastro os volumes
+// da mesma cor têm o MESMO GTIN e só a peça/total muda — 501.060.003 VOL 1/2
+// MEL (8006)7898599078424 0102 × 501.060.004 VOL 2/2 …0202. Comparando só o
+// núcleo, o bipe do VOL 2/2 selecionava o VOL 1/2 (o 1º da lista), sempre.
+function eanPartes(v){
   let s = String(v||'').replace(/\D/g,'');            // só dígitos
-  if(!s) return '';
+  if(!s) return { core:'', vol:'' };
+  let vol = '';
   if(s.length>=17 && s.slice(0,4)==='8006') s=s.slice(4); // remove o AI (8006)
-  if(s.length===17 || s.length===18) s=s.slice(0,-4);     // remove peça+total (nn/nn)
+  if(s.length===17 || s.length===18){ vol=s.slice(-4); s=s.slice(0,-4); } // peça+total (nn/nn)
   if(s.length===14) s=s.slice(1);                         // GTIN-14 → EAN-13
-  return s.slice(-13);                                    // núcleo p/ comparar
+  return { core:s.slice(-13), vol };                      // núcleo p/ comparar
 }
-function produtoPorEan(raw){
-  const core = eanCore(raw);
-  if(core.length<8) return null;                          // curto demais p/ ser EAN
-  return PRODUTOS.find(p => p.ean && eanCore(p.ean)===core) || null;
+function eanCore(v){ return eanPartes(v).core; }
+// "0202" → "2/2" (para o aviso); fora do formato, como veio.
+function eanVolTxt(vol){
+  return /^\d{4}$/.test(vol||'') ? (+vol.slice(0,2))+'/'+(+vol.slice(2)) : (vol||'');
 }
+// A leitura da etiqueta contra o catálogo, PURA. Devolve { p, motivo, core, vol, n }:
+//   ok          → p = o código; exato pelo EAN + volume, ou o único código do EAN
+//                 quando o cadastro não diz volume (VOL 1/1 cadastrado com "(01)").
+//   curto       → menos de 8 dígitos: não é EAN.
+//   nao-cad     → nenhum código com esse EAN.
+//   vol-nao-cad → o EAN existe, mas não esse volume (VOL 2/2 que falta no cadastro):
+//                 escolher outro volume gravaria as caixas no volume errado.
+//   ambiguo     → o EAN serve para N códigos e a etiqueta (ou o cadastro) não diz
+//                 qual: NUNCA o 1º da lista — o operador escolhe tocando.
+function eanAchar(raw, prods){
+  const L = eanPartes(raw);
+  const r = { p:null, motivo:'', core:L.core, vol:L.vol, n:0 };
+  if(L.core.length<8){ r.motivo='curto'; return r; }      // curto demais p/ ser EAN
+  const cands = (prods||[]).filter(p => p && p.ean && eanCore(p.ean)===L.core);
+  r.n = cands.length;
+  if(!cands.length){ r.motivo='nao-cad'; return r; }
+  if(L.vol){
+    const exato = cands.filter(p => eanPartes(p.ean).vol===L.vol);
+    if(exato.length===1){ r.p=exato[0]; r.motivo='ok'; return r; }
+    if(exato.length>1){ r.n=exato.length; r.motivo='ambiguo'; return r; }
+    // Nenhum com esse volume: só vale o código único do EAN que NÃO diz volume
+    // no cadastro (não contradiz a etiqueta). Um que diz outro volume, não.
+    if(cands.length===1 && !eanPartes(cands[0].ean).vol){ r.p=cands[0]; r.motivo='ok'; return r; }
+    r.motivo = cands.some(p => eanPartes(p.ean).vol) ? 'vol-nao-cad' : 'ambiguo';
+    return r;
+  }
+  if(cands.length===1){ r.p=cands[0]; r.motivo='ok'; return r; }
+  r.motivo='ambiguo'; return r;
+}
+// O aviso da leitura que não selecionou nada (uma linha, cabe no toast).
+function eanFalhaTxt(r){
+  if(r.motivo==='vol-nao-cad') return 'VOL '+eanVolTxt(r.vol)+' deste EAN não está no cadastro: '+r.core+' — escolha na lista';
+  if(r.motivo==='ambiguo') return 'Etiqueta sem volume: o EAN '+r.core+' serve para '+r.n+' códigos — escolha na lista';
+  return 'EAN não cadastrado no catálogo'+(r.core?': '+r.core:'');
+}
+function produtoPorEan(raw){ return eanAchar(raw, PRODUTOS).p; }
 
 let _toastTimer=null;
 function bipeToast(msg, ok){
@@ -1635,7 +1738,8 @@ function bipeToast(msg, ok){
   el.textContent=msg;
   el.className='scan-toast '+(ok?'':'err ')+'show';
   if(_toastTimer) clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>{ el.className='scan-toast'; }, 2600);
+  // o aviso de falha é mais longo e pede uma ação (escolher na lista): fica mais tempo
+  _toastTimer=setTimeout(()=>{ el.className='scan-toast'; }, ok?2600:4500);
 }
 // Bipe curto de confirmação (agudo = achou / grave = não achou). Sem arquivo
 // externo: gera o som na hora. Se o navegador bloquear áudio, ignora em silêncio.
@@ -1673,7 +1777,8 @@ function abrirLancSlotAtivo(){
 }
 
 function processarBipe(raw){
-  const p = produtoPorEan(raw);
+  const r = eanAchar(raw, PRODUTOS);
+  const p = r.p;
   if(p){
     // Lançamento já aberto (com a hora escolhida e a quantidade digitada): o
     // bipe só TROCA O PRODUTO. Reabrir na hora corrente apagava a quantidade e,
@@ -1690,9 +1795,9 @@ function processarBipe(raw){
     bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
     if(!lancAberto && !trocando) abrirLancSlotAtivo();   // já abre a hora atual p/ digitar a quantidade
+    if(!trocando) _mlProdPintar(true);           // no lançamento, a linha PRODUTO acende com o que chegou
   }else{
-    const core = eanCore(raw);
-    bipeToast('EAN não cadastrado no catálogo'+(core?': '+core:''), false);
+    bipeToast(eanFalhaTxt(r), false);
     bipeSom(false);
   }
 }
@@ -2811,6 +2916,7 @@ function abrirLanc(inicio, fim, label, meta, prodAtual){
   document.getElementById('ml-nome').textContent = mad ? 'LANÇAR · HORA EXTRA DA MADRUGADA' : 'LANÇAR PRODUÇÃO';
   document.getElementById('ml-meta').textContent = `META: ${fmtN(meta)} CX/HORA`;
   document.getElementById('ml-acum').innerHTML = `ACUMULADO NA HORA: ${fmtN(acumAtual)} <span class="un">CX</span>`;
+  _mlProdPintar();
   // Lotes já lançados nesta hora (busca em DADOS pelo horário de início)
   const slotDados = DADOS.find(d=>d.data===hojeStr() && d.horario===inicio);
   const lotesAtuais = (slotDados && slotDados.lotes) ? slotDados.lotes : [];

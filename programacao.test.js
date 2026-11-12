@@ -772,7 +772,10 @@ function pegaMob(assinatura) {
   // bipe com o lançamento aberto: só troca o produto
   {
     let reabriu = 0, resolvido = null;
-    global.produtoPorEan = () => ({ codigo: '501.128.001', desc: 'VOL 1/1 MESA CENTRO SLIM', cor: 'BRANCO' });
+    // a leitura da etiqueta (eanAchar, mobile 1.45.0) tem teste próprio: etiqueta.test.js
+    global.eanAchar = () => ({ p: { codigo: '501.128.001', desc: 'VOL 1/1 MESA CENTRO SLIM', cor: 'BRANCO' }, motivo: 'ok' });
+    global.eanFalhaTxt = () => '';
+    global._mlProdPintar = () => {};   // a linha PRODUTO do lançamento (mobile 1.45.0)
     global.selecionarProduto = c => { global.PROD_ATUAL = c; };
     global.bipeToast = () => {}; global.bipeSom = () => {}; global.nomeComCor = d => d; global.eanCore = x => x;
     global.abrirLancSlotAtivo = () => { reabriu++; };

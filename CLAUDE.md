@@ -28,6 +28,10 @@ via Google Apps Script (JSONP).
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real, e o lançamento RECUSADO
   pelo servidor (mobile 1.41.0, o `salvarLanc` real): `node lancamento.test.js`.
+- `etiqueta.test.js` — a leitura da ETIQUETA pelo bipe do celular (mobile
+  1.45.0): o volume da etiqueta escolhe o código, com linhas reais do cadastro
+  (MEL, ANTARES, SLEEP), e na dúvida o app não escolhe; roda o `eanAchar` e o
+  `processarBipe` reais: `node etiqueta.test.js`.
 - `exclusao.test.js` — EXCLUIR e TROCAR PRODUTO do lançamento:
   `getLancamentosHora`, `excluirLancamento` e `trocarProdutoLancamento`
   rodando o `.gs` inteiro numa planilha de mentira (as três abas, o
@@ -275,6 +279,60 @@ via Google Apps Script (JSONP).
   - A exclusão de lançamento da madrugada não avisa "não dá para relançar"
     (`_corrHoraTravada` usa a mesma regra). O bipe segue só na hora corrente.
   - Gerencial do PC **não** lança: ele não tem seletor de produto.
+
+## A ETIQUETA NO BIPE — o volume escolhe o código (mobile 1.45.0)
+- PPCP, 12/11/2026: *"como está lendo hoje a entrada pela etiqueta"* → *"sim,
+  faz os dois"*. O bipe (`processarBipe`, só no perfil OPERADOR, com
+  `MODO_LEITOR` na CONFIG_PAINEL) lê a etiqueta GS1-128 `(8006)` = GTIN +
+  peça/total (`0202` = volume 2 de 2) e casa com a coluna `EAN 128` da
+  `PRODUTO_CODIGO`. Não conta caixa: seleciona o produto e abre a hora atual.
+- ⚠ **No cadastro, os volumes da mesma cor têm o MESMO GTIN** — só a
+  peça/total muda (501.060.003 VOL 1/2 MEL `…78424 0102` × 501.060.004 VOL 2/2
+  `…78424 0202`). Até a 1.44.0 o `eanCore` jogava a peça/total fora e o
+  `PRODUTOS.find` ficava com o 1º código: **bipar o VOL 2/2 selecionava o VOL
+  1/2, sempre** (~60 códigos de 22 modelos nunca saíam pelo bipe). Não dá para
+  saber se já gravou caixa no volume errado: a `PRODUCAO_PRODUTO` não diz se o
+  código veio do bipe ou do toque. O log tem muitos VOL 2/2 — selecionados por
+  toque ou LOTE.
+- **`eanAchar(raw, prods)`** (pura) + `eanPartes` (núcleo de 13 dígitos +
+  volume) + `eanFalhaTxt` (o aviso):
+  - etiqueta com volume → o código com o MESMO EAN e volume; sem nenhum, só o
+    código ÚNICO do EAN cujo cadastro não diz volume (VOL 1/1 em `(01)`); um que
+    diz OUTRO volume, nunca (`vol-nao-cad`: escolher outro volume gravaria as
+    caixas no volume errado);
+  - etiqueta sem volume → só com um código no EAN; com mais, `ambiguo`;
+  - mesmo EAN + volume em dois códigos → `ambiguo`. **Nunca o 1º da lista**: o
+    aviso (vermelho, 4,5 s) diz o motivo e manda escolher na lista.
+- **Cadastro corrigido pela API em 12/11/2026**: 501.070.001–003 (HOME RIPADO
+  SUPREMO 2.3 CINAMOMO) estavam com `(8806)` e davam "EAN não cadastrado";
+  viraram `(8006)`.
+- **Regra: o EAN da etiqueta chama UM código do produto** (PPCP, mesmo dia).
+  Conferido no cadastro de 12/11/2026 (429 códigos: 113 com volume em
+  `(8006)`, 316 em `(01)`): cada EAN passado pelo `eanAchar` chama o próprio
+  código, e a peça/total bate com o VOL da descrição em todos. Na leitura
+  antiga, 60 (os VOL 2/n e 3/n) chamavam outro código. EAN novo no cadastro:
+  `(8006)` + GTIN + peça/total do volume, ou `(01)` + GTIN no VOL 1/1.
+- ⚠ O operador só vê o cadastro novo quando entra de novo no app: no perfil
+  OPERADOR o catálogo é lido no login (e guardado no aparelho).
+- **O PRODUTO NO LANÇAMENTO** (mesma versão, PPCP: *"quando bipa não aparece o
+  código"* → *"quando operador digitar qtde vai fechar a banqueta ou
+  buffet?"*). A quantidade vai para o **produto atual do turno** na hora do
+  ADICIONAR (`codLanc = PROD_ATUAL`, sincronizado com o `.gs` — vale para todos
+  os aparelhos). O bipe abria o lançamento da hora POR CIMA do aviso verde
+  (`.scan-toast` z-index 50, `.modal-over` 100) e o lançamento não dizia o
+  produto: um bipe de TESTE deixava o produto do turno trocado sem ninguém ver.
+  - Linha `#ml-prod` no lançamento: código + cor em etiqueta (`.ml-prod-cor`:
+    cortado o nome, a cor não pode ir junto) + nome em até 2 linhas + `›`;
+    tocar abre o seletor por cima (`abrirModalProduto`, o `#modal-produto` vem
+    depois no HTML). `_mlProdTxt` (pura) + `_mlProdPintar(bip)`, chamada no
+    `abrirLanc`, no `atualizarProdutoBar` (toda troca de produto) e no bipe
+    (acende, menos no TROCAR PRODUTO). Sem produto: âmbar, *SEM PRODUTO*.
+  - O aviso do bipe vai ao ALTO da tela e acima dos modais (z-index 130): no pé
+    ele cobria o CANCELAR/ADICIONAR. Falha fica 4,5 s.
+  - Tela baixa (`max-height:760px`): menos ar no `#modal-lanc` (gap, padding,
+    teclado), nunca letra. Medido no Chromium: 320×658, 360×740, 800×1280 e
+    1280×800 com a folha sem rolar e o ADICIONAR inteiro à vista (antes, a
+    320×658 já rolava 11 px). Peça nova no lançamento? Medir de novo.
 
 ## PRODUTOS EMBALADOS HOJE — gerencial do celular (mobile 1.39.0) e do PC (v7.201.0)
 - PPCP, 04/11/2026: *"sugestão para tela gerencial do app celular, colocando os

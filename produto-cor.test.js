@@ -592,6 +592,8 @@ ok('linha única sem cor sai limpa',
 // A barra do produto atual, o toast do bipe e o produto do gerencial usam o
 // MESMO rótulo (nomeComCor + a queda para o catálogo).
 // v1.34.0: o aviso de LANÇAMENTO REPETIDO (_nomeProdLanc) é o 4º — mesmo rótulo.
+// (v1.45.0: a linha PRODUTO do lançamento mostra a cor numa etiqueta à parte —
+// `_mlProdTxt`, testada no etiqueta.test.js.)
 ok('as telas de produto do app levam a cor',
    (MJS.match(/nomeComCor\(p\.desc, corDeProduto\(p\)\)/g) || []).length, 4);
 // Guarda-corpo: foi imprimir a descrição sozinha que causou o problema — as
