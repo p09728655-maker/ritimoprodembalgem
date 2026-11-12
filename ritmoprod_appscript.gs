@@ -1,5 +1,15 @@
 // ════════════════════════════════════════════════════════
 // RitmoPatrimar · Apps Script — Google Sheets
+// Versão: 5.63 — O TAKT DA SEMANA JUNTO COM OS TEMPOS-ALVO (getTemposAlvo).
+//               PPCP, 11/11/2026: o tablet mostrava o takt da semana POR VOLUME,
+//               igual para todo produto (16,4 s), e a MESA CABECEIRA SLEEP no
+//               tempo-alvo (8,9 s) parecia folgada — "quem vê a tela acha que
+//               está tudo bem" — quando a semana pede 8,5 s nela. Junto com os
+//               alvos vai o takt de cada semana em s por UEP (a semana de hoje e
+//               as 5 anteriores): dias úteis × (527 − setup) × 60 ÷ a UEP
+//               programada — a MESMA conta do TAKT DA SEMANA do painel. O app
+//               multiplica pela UEP do produto: "a semana pede 8,5 s".
+//               ⚠ re-deploy manual. Antes dele o app segue com o takt por volume.
 // Versão: 5.62 — O TEMPO-ALVO DE CADA PRODUTO (getTemposAlvo) para o app de
 //               cronoanálise. PPCP, 11/11/2026: o takt da semana julga todo
 //               volume pelo mesmo número (produto pesado sempre acima, leve
@@ -541,7 +551,7 @@
 
 // A versão deste arquivo, a mesma do cabeçalho (v5.58). Vai no getDados para o
 // rodapé do painel dizer qual .gs está implantado — o GitHub não sabe.
-const GS_VERSAO = '5.62';
+const GS_VERSAO = '5.63';
 
 const SHEET_DADOS     = 'HORA_A_HORA';
 const SHEET_HIST      = 'HISTORICO';
@@ -1308,7 +1318,7 @@ const CACHE_TTL_LEITURA = {
   getConferenciaCrono: 300,        // v5.34: a troca e o lançamento invalidam
   getHorasCrono: 300,              // v5.35: o lançamento invalida (a chave leva de/ate)
   getProgramacaoSemana: 120,       // v5.59: as duas abas e o cadastro; o lançamento invalida
-  getTemposAlvo: 300               // v5.62: o cadastro e a config; mudar a UEP ou a meta invalida
+  getTemposAlvo: 300               // v5.62: o cadastro e a config; v5.63: e a programação (o takt da semana)
 };
 
 const ACOES_ESCRITA = ['saveDay', 'addHE', 'saveParadas', 'endParada',
@@ -1432,7 +1442,7 @@ const CACHE_DEP_LEITURA = {
   getPontosDia: ['prod', 'cat', 'cfg'], getProgramacaoHoje: ['prod', 'cat'],
   getProgramacaoDetalhada: ['prod', 'cat'], getProducaoModeloPeriodo: ['prod', 'cat'],
   getCronoRegistros: ['crono'], getConferenciaCrono: ['crono', 'cat'],
-  getProgramacaoSemana: ['prod', 'cat'], getTemposAlvo: ['cat', 'cfg']
+  getProgramacaoSemana: ['prod', 'cat'], getTemposAlvo: ['cat', 'cfg', 'prod']
 };
 const CACHE_INV_ESCRITA = {
   saveDay: ['prod'], addHE: ['prod'], saveRealizado: ['prod'], setTurnoInicio: ['prod'],
@@ -1574,8 +1584,10 @@ function doGet(e) {
 
   const json = JSON.stringify(result);
 
-  // 3) Guarda leituras que deram certo (erro não se cacheia).
-  if (cache && result && result.ok !== false) {
+  // 3) Guarda leituras que deram certo (erro não se cacheia). v5.63: nem os
+  //    tempos-alvo com o takt da semana que falhou (semanasErro) — sem isso o
+  //    app ficaria 5 min com o takt por volume por causa de uma falha passageira.
+  if (cache && result && result.ok !== false && !result.semanasErro) {
     try { cache.put(cacheKey, json, ttl); } catch (errPut) { /* >100KB: só não cacheia */ }
   }
 
@@ -2619,7 +2631,77 @@ function _temposAlvoMontar(catalogo, cfg) {
   }, produtos: L };
 }
 function getTemposAlvo() {
-  return _temposAlvoMontar(lerCatalogoProdutos(), getConfigPainel());
+  const cat = lerCatalogoProdutos();
+  const r = _temposAlvoMontar(cat, getConfigPainel());
+  if (!r.ok) return r;
+  // v5.63: o takt de cada semana. Falhar aqui não derruba os alvos: o app
+  // segue com o takt dele (por volume) e a resposta diz por quê.
+  try {
+    const catByKey = {};
+    cat.forEach(function (pr) { catByKey[codKey(pr.codigo)] = pr; });
+    const hojeNum = dataParaNum(Utilities.formatDate(new Date(), TZ, 'dd/MM/yyyy'));
+    r.semanas = _taktSemanasMontar(lerProgramacao(true), catByKey, _feriadosNums(), hojeNum,
+      r.ref.minProd, r.ref.metaUep, TA_SEMANAS_ANTES);
+  } catch (e) {
+    Logger.log('getTemposAlvo: o takt da semana não saiu — ' + e);
+    r.semanas = null;
+    r.semanasErro = String(e && e.message || e).slice(0, 200);
+  }
+  return r;
+}
+
+// ── O TAKT DA SEMANA, EM SEGUNDOS POR UEP (v5.63) ──────────────────────────
+// PPCP, 11/11/2026, com a MESA CABECEIRA SLEEP na tela (takt 8,5 s, tempo-alvo
+// 8,9 s): o tablet mostrava o takt POR VOLUME (jornada ÷ volumes, 16,4 s para
+// todo produto) e a medição no tempo-alvo parecia folgada. O certo é o takt de
+// CADA produto: os segundos por UEP que a semana pede × a UEP do produto — a
+// coluna PELO TAKT do TAKT POR PRODUTO do painel. A cor continua pelo
+// tempo-alvo; esta é a linha da carga.
+//   s por UEP da semana = dias úteis × (527 − setup do dia) × 60 ÷ UEP programada
+// A MESMA conta do _taktMontar do painel (TAKT DA SEMANA): as linhas das DUAS
+// abas pela DATA (a regra da META do dia e do getProgramacaoSemana), fora da
+// esteira de fora, a UEP do cadastro de agora arredondada por linha (uma casa,
+// como no getProgramacaoSemana), o lote de sábado, domingo ou feriado na UEP e
+// fora dos dias úteis. `pede` = a UEP por dia útil ÷ a META UEP (o "pede X% da
+// referência" do painel). Sem UEP programada ou sem dia útil: sUep null.
+// A semana de hoje e as `nAntes` anteriores: a medição é lida com a semana DELA.
+const TA_SEMANAS_ANTES = 5;
+function _taktSemanasMontar(prog, catByKey, fer, hojeNum, minProd, meta, nAntes) {
+  fer = fer || {};
+  const seg0 = _segundaNum(hojeNum);
+  if (!seg0 || !(minProd > 0) || !(meta > 0)) return [];
+  const ini = _somaDiasNum(seg0, -7 * nAntes), fim = _somaDiasNum(seg0, 6);
+  const W = {}, ordem = [];
+  for (let k = nAntes; k >= 0; k--) {
+    const de = _somaDiasNum(seg0, -7 * k);
+    let uteis = 0;
+    const feriados = [];
+    for (let i = 0; i < 7; i++) {
+      const n = _somaDiasNum(de, i);
+      if (fer[n]) feriados.push({ data: _numParaDataBR(n), desc: String(fer[n]) });
+      if (i < 5 && !fer[n]) uteis++;
+    }
+    W[de] = { de: de, uep: 0, cx: 0, cxSemUep: 0, nUteis: uteis, feriados: feriados };
+    ordem.push(de);
+  }
+  (prog || []).forEach(function (pr) {
+    const dNum = dataParaNum(pr.data);
+    if (!dNum || dNum < ini || dNum > fim || pr.foraEsteira) return;
+    const w = W[_segundaNum(dNum)];
+    if (!w) return;
+    const cat = catByKey[codKey(pr.codigo)], q = Number(pr.qtde) || 0;
+    w.cx += q;
+    if (cat && cat.uep > 0) w.uep += Math.round(q * cat.uep * 10) / 10;
+    else w.cxSemUep += q;
+  });
+  return ordem.map(function (de) {
+    const w = W[de], ok = w.nUteis > 0 && w.uep > 0;
+    const sUep = ok ? w.nUteis * minProd * 60 / w.uep : null;
+    return { de: _numParaDataBR(de), ate: _numParaDataBR(_somaDiasNum(de, 6)), atual: de === seg0,
+      uep: Math.round(w.uep * 10) / 10, cx: w.cx, cxSemUep: w.cxSemUep, nUteis: w.nUteis, feriados: w.feriados,
+      sUep: ok ? Math.round(sUep * 1000) / 1000 : null,
+      pede: ok ? Math.round(w.uep / w.nUteis / meta * 1000) / 10 : null };
+  });
 }
 
 // A MESMA MEDIÇÃO já está na aba (v5.58)? O mesmo dia, produto, volume, os

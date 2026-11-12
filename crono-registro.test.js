@@ -542,7 +542,7 @@ console.log('\n── v5.62: o tempo-alvo de cada produto ──');
       /rot:cod\.slice\(0, 6\) \+ ' · ' \+ nome/.test(HTML), /rot:p\.rot \+ ' · VOL ' \+ v \+ '\/' \+ p\.nVol/.test(HTML)],
      [[8, 8], [8, 8], true, true]);
   ok('a leitura está no doGet, no cache (o cadastro e a config invalidam) e não grava nada',
-     [/act === 'getTemposAlvo'\) result = getTemposAlvo\(\);/.test(GS), /getTemposAlvo: 300/.test(GS), /getTemposAlvo: \['cat', 'cfg'\]/.test(GS),
+     [/act === 'getTemposAlvo'\) result = getTemposAlvo\(\);/.test(GS), /getTemposAlvo: 300/.test(GS), /getTemposAlvo: \['cat', 'cfg', 'prod'\]/.test(GS),
       JSON.stringify(P.ABAS.PRODUTO_CODIGO) === JSON.stringify(CAT.PRODUTO_CODIGO), !('UEP_VERSOES' in P.ABAS)],
      [true, true, true, true, true]);
 }

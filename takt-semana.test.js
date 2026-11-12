@@ -176,6 +176,12 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
      [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'), HC.includes('compare o NO PERÍODO da cronoanálise com o TEMPO-ALVO'),
       HC.includes('O tempo-alvo do produto: os ' + _tkS(T2.ref) + ' s por UEP da média da linha sem hora extra')],
      [true, false, true, true]);
+  // v7.231.0 (PPCP, com a SLEEP na tela: 8,5 s pelo takt e 8,9 s no tempo-alvo): o cx/h embaixo do TEMPO-ALVO
+  // também, na mesma régua do PELO TAKT (hora de relógio, o setup na média) — os dois se comparam na mesma unidade
+  ok('TEMPO-ALVO com o cx/h embaixo: 3.600 × 463/527 ÷ o tempo-alvo, como o PELO TAKT; sem UEP, sem cx/h',
+     [Math.round(dm.cxhRef), HC.includes(_tkS(dm.sRef) + ' s<small>' + fmtN(Math.round(dm.cxhRef)) + ' cx/h</small></td>'), por('PRODUTO NOVO').cxhRef,
+      dm.cxhRef < dm.cxhTakt === T2.ref > T2.takt],
+     [Math.round(3600 * 463 / 527 / (T2.ref * 2.48)), true, null, true]);
   // v7.224.0 (PPCP: "não consigo localizar com facilidade"): a tabela saiu dos DETALHES e abre no TAKT POR PRODUTO,
   // logo abaixo da faixa do topo — nas três telas (a AVALIAR, por volume, pelo _tkaVolumes)
   ok('no TAKT POR PRODUTO da faixa do topo, nas três telas (não mais nos detalhes); o desenho não faz conta',

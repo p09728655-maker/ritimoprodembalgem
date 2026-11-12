@@ -11,6 +11,29 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## v7.231.0 / `.gs` v5.63 — 12/11/2026 · O takt da semana vai para o app de cronoanálise ⚠ re-deploy
+
+PPCP, com a MESA CABECEIRA SLEEP na tela (8,5 s pelo takt e 8,9 s no tempo-alvo):
+*"quem vê a tela acha que está tudo bem"*. O tablet do app de cronoanálise mostrava,
+embaixo do tempo-alvo, o takt da semana POR VOLUME (16,4 s, igual para todo
+produto). A SLEEP no tempo-alvo parecia folgada, quando a semana pede 8,5 s nela.
+
+- **`.gs` v5.63, `getTemposAlvo`.** Junto com os tempos-alvo vai o takt de cada
+  semana em s por UEP: a de hoje e as 5 anteriores, cada uma com `sUep` = dias úteis
+  × (527 − setup do ⚙) × 60 ÷ a UEP programada e `pede` = UEP por dia útil ÷ META
+  UEP. É a MESMA conta do TAKT DA SEMANA do painel (as duas abas pela DATA, fora da
+  esteira de fora, a UEP do cadastro de agora). O app multiplica pela UEP do produto
+  e mostra *"a semana pede 8,5 s"*: o mesmo número da coluna PELO TAKT. A cor do
+  app continua sendo do tempo-alvo.
+- **TAKT DA SEMANA → TAKT POR PRODUTO: o TEMPO-ALVO ganha o cx/h embaixo**, como o
+  PELO TAKT (hora de relógio, com o setup na média). Na SLEEP: 398 cx/h pelo takt e
+  379 cx/h no tempo-alvo.
+- **Atenção:** nenhum número do painel mudou. A leitura do `getTemposAlvo` passa a
+  ler também a programação (as duas abas), e o cache dela passa a ser invalidado
+  pelo lançamento. Antes do re-deploy, o app segue mostrando o takt por volume.
+
+---
+
 ## v7.230.0 — 11/11/2026 · TEMPO-ALVO no TAKT DA SEMANA
 
 PPCP: *"troca por TEMPO ALVO"*. O app de cronoanálise passou a julgar cada volume
