@@ -25,7 +25,8 @@ function ok(nome, real, esperado) {
 
 // META: linhas em branco abaixo dos dados (o Sheets nasce com ~1.000) e as
 // congeladas. Como no Sheets, apagar a ÚLTIMA linha não congelada dá erro.
-function montar(abas, meta, hoje) {
+function montar(abas, meta, hoje, props) {
+  const PROPS = props || {};
   const HOJE = hoje || '20/10/2026';
   const ABAS = Object.assign({
     PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP'], ['501149001', 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1.2]],
@@ -48,29 +49,30 @@ function montar(abas, meta, hoje) {
       getDataRange: () => ({ getValues: () => v.map(r => r.slice()) }),
       getRange: (l, c, nl, nc) => ({
         getValues: () => { const out = []; for (let i = 0; i < (nl || 1); i++) { const r = v[l - 1 + i] || []; const x = []; for (let j = 0; j < (nc || 1); j++) x.push(r[c - 1 + j] === undefined ? '' : r[c - 1 + j]); out.push(x); } return out; },
+        getValue: () => { const r = v[l - 1] || []; return r[c - 1] === undefined ? '' : r[c - 1]; },
         setValue: x => { if (!lockDePe) semLock++; (v[l - 1] = v[l - 1] || [])[c - 1] = x; },
         setValues: vals => { vals.forEach((r, i) => { const L = v[l - 1 + i] = v[l - 1 + i] || []; r.forEach((x, j) => { L[c - 1 + j] = x; }); }); },
-        setNumberFormat: () => {},
+        setNumberFormat(f) { for (let i = 0; i < (nl || 1); i++) for (let j = 0; j < (nc || 1); j++) FMT[nome + '|' + (l + i) + '|' + (c + j)] = f; return this; },
       }),
       appendRow: r => { if (!lockDePe) semLock++; v.push(r.slice()); },
       setFrozenRows: n => { m.frozen = n; },
     };
   }
   const ss = { getSheetByName: aba, insertSheet: nome => { ABAS[nome] = []; META[nome] = { extra: 1000, frozen: 0 }; return aba(nome); }, getName: () => 'teste' };
-  const CACHE = {};
+  const CACHE = {}, FMT = {};
   let locks = 0, lockDePe = false, semLock = 0;
   const ctx = {
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush: () => {} },
     Utilities: { formatDate: (d, tz, f) => (/HH/.test(f) ? HOJE + ' 15:40:00' : HOJE) },
     CacheService: { getScriptCache: () => ({ get: k => (k in CACHE ? CACHE[k] : null), put: (k, x) => { CACHE[k] = x; }, remove: k => { delete CACHE[k]; } }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: () => null, setProperty: () => {} }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in PROPS ? PROPS[k] : null), setProperty: (k, x) => { PROPS[k] = x; } }) },
     LockService: { getScriptLock: () => ({ waitLock: () => { locks++; lockDePe = true; }, releaseLock: () => { lockDePe = false; } }) },
     Logger: { log: () => {} },
   };
   vm.createContext(ctx);
   vm.runInContext(GS, ctx);
   const run = code => vm.runInContext('(function(){ _invalidarValores(); ' + code + ' })()', ctx);
-  return { ABAS, run, ctx, locks: () => locks, semLock: () => semLock };
+  return { ABAS, run, ctx, FMT, locks: () => locks, semLock: () => semLock };
 }
 
 // O que o painel manda (o _ucvRegMontar): números como o JS escreve, vazio = ''.
@@ -138,7 +140,7 @@ console.log('\n── registrarCrono: grava pelo NOME da coluna ──');
 console.log('\n── getCronoRegistros ──');
 {
   const P = montar();
-  ok('sem a aba ainda: lista vazia, não erro', P.run(`return getCronoRegistros();`), { ok: true, registros: [] });
+  ok('sem a aba ainda: lista vazia, não erro (v5.64: e as travas, vazias)', P.run(`return getCronoRegistros();`), { ok: true, registros: [], travas: [] });
   P.run(`return registrarCrono(${q(MED)});`);
   P.run(`return registrarCrono(${q(Object.assign({}, MED, { regId: 'c2', data: '17/10/2026', sRod: '8.8', sPer: '' }))});`);
   const r = P.run(`return getCronoRegistros();`);
@@ -226,10 +228,10 @@ ok('as três ações estão no doGet',
 ok('o registro e a exclusão não chamam nada que grave a UEP do cadastro',
    [/setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function registrarCrono('), GS.indexOf('function getCronoRegistros('))),
     /setUepCatalogo|_uepVerDaEdicao|UEP_VERSOES/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('function _cronoJaExcluida(')))], [false, false]);
-ok('a troca da UEP lê as abas DIRETO (é escrita: nunca o memo de leitura)',
-   /_valores\(|_valoresDaAba\(|lerCatalogoProdutos\(/.test(GS.slice(GS.indexOf('function _trocarUepCronoCore('), GS.indexOf('CONFERÊNCIA DAS TROCAS (v5.34'))), false);
+ok('a trava e a destrava leem as abas DIRETO (é escrita: nunca o memo de leitura)',
+   /_valores\(|_valoresDaAba\(|lerCatalogoProdutos\(/.test(GS.slice(GS.indexOf('function _travaMedicoes('), GS.indexOf('function _travasLer('))), false);
 ok('a exclusão lê a aba DIRETO (é escrita: nunca o memo de leitura)',
-   /_valores\(|_valoresDaAba\(/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('TROCAR A UEP PELA CRONOANÁLISE (v5.34)'))), false);
+   /_valores\(|_valoresDaAba\(/.test(GS.slice(GS.indexOf('function excluirCrono('), GS.indexOf('A TRAVA DA UEP (v5.64)'))), false);
 
 // ════════════════════════════════════════════════════════════════════════════
 // TROCAR A UEP PELA CRONOANÁLISE + CONFERÊNCIA DAS TROCAS (.gs v5.34)
@@ -251,56 +253,186 @@ const CAD = uep2 => [['CODIGO', 'DESCRICAO', 'COR', 'UEP', 'UEP_VIGENCIA'],
 const PEDIDO = { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', cods:'501059002:1.78,501059004:1.78,501059008:1.78', regua:'lac' };
 const abasST = (regs, uep2) => ({ PRODUTO_CODIGO: CAD(uep2 == null ? 2.29 : uep2), CRONOANALISE: [CRONO_COLS_NOMES].concat(regs || [MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]) });
 
-console.log('\n── trocarUepCrono: grava a média das medições quando a regra deixa ──');
+// ════════════════════════════════════════════════════════════════════════════
+// A TRAVA DA UEP (.gs v5.64). PPCP, 12/11/2026: "colocar um carimbo em cada
+// produto que já cumpriu a regra e travar a uep, mas essa trava passa por mim" →
+// "eu valido a troca". O código do PPCP vem das Propriedades do script.
+const COD = { PPCP_CODIGO: '4321' };
+const TRV = Object.assign({}, PEDIDO, { modo:'trocar', codigo:'4321', travaId:'tA', motivo:'2 medições' });
+const travar = (P, x) => P.run(`return travarUep(${q(x)});`);
+console.log('\n── travarUep: o PPCP troca e TRAVA (a regra deixa) ──');
 {
-  const P = montar(abasST(), null, '26/10/2026');
-  const r = P.run(`return trocarUepCrono(${q(PEDIDO)});`);
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  const r = travar(P, TRV);
   const C = P.ABAS.PRODUTO_CODIGO;
-  ok('trocou: 3 códigos, a média pelos segundos SEM AS LACUNAS ÷ 6,7 (1,78), 113 volumes de 2 medições, vigência de hoje — e a resposta diz a régua',
-     [r.ok, r.trocado, r.n, r.uep, r.nVol, r.medicoes, r.vigencia, r.regua], [true, true, 3, 1.78, 113, 2, '26/10/2026', 'lac']);
-  ok('o cadastro: o VOL 2/2 em 1,78 com a vigência DIGITADA; o VOL 1/2 não é tocado',
-     C.slice(1).map(l => [l[0], l[3], l[4]]),
-     [['501059001', 2.71, '16/10/2026'], ['501059002', 1.78, '26/10/2026 DIGITADA'], ['501059004', 1.78, '26/10/2026 DIGITADA'], ['501059008', 1.78, '26/10/2026 DIGITADA']]);
+  ok('travou: 3 códigos, a média pelos segundos SEM AS LACUNAS ÷ 6,7 (1,78), 2 medições e 113 volumes, a regra dizia TROCA, o PPCP trocou',
+     [r.ok, r.travado, r.n, r.uep, r.antes, r.uepMedida, r.volumes, r.medicoes, r.regra, r.decisao, r.contraRegra, r.vigencia],
+     [true, true, 3, 1.78, 2.29, 1.78, 113, 2, 'TROCA', 'TROCOU', false, '26/10/2026']);
+  ok('o cadastro: o VOL 2/2 em 1,78, vigência DIGITADA, e a coluna UEP_TRAVA criada com o carimbo; o VOL 1/2 não é tocado',
+     [C[0][5], C.slice(1).map(l => [l[0], l[3], l[4], l[5] || ''])],
+     ['UEP_TRAVA', [['501059001', 2.71, '16/10/2026', ''], ['501059002', 1.78, '26/10/2026 DIGITADA', '26/10/2026 PPCP'],
+                    ['501059004', 1.78, '26/10/2026 DIGITADA', '26/10/2026 PPCP'], ['501059008', 1.78, '26/10/2026 DIGITADA', '26/10/2026 PPCP']]]);
+  const T = P.ABAS.UEP_TRAVAS;
+  ok('a UEP_TRAVAS nasce com a linha da trava (os códigos com a UEP de cada um, a regra, a decisão e o motivo)',
+     [T[0], T[1].slice(0, 15)],
+     [['TRAVA_ID', 'TRAVADA_EM', 'MODELO', 'PRODUTO', 'VOLUME', 'CODIGOS', 'UEP', 'UEP_ANTES', 'UEP_MEDIDA', 'DIFERENCA_PCT', 'REGRA', 'DECISAO', 'MEDICOES', 'VOLUMES', 'MOTIVO', 'DESTRAVADA_EM', 'MOTIVO_DESTRAVA'],
+      ['tA', '26/10/2026 15:40:00', '501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '501059002:1.78 501059004:1.78 501059008:1.78', 1.78, 2.29, 1.78, -22.3, 'TROCA', 'TROCOU', 2, 113, '2 medições']]);
   const V = P.ABAS.UEP_VERSOES;
-  ok('a UEP_VERSOES nasce com a SEMENTE (o cadastro de antes) e uma versão por código, ORIGEM CRONOANÁLISE',
-     [V[0], V.slice(1, 5).map(l => [l[0], l[1], l[3]]), V.slice(5).map(l => [l[0], l[1], l[2], l[3], l[5]])],
-     [['CODIGO', 'UEP', 'VIGENCIA', 'ORIGEM', 'GRAVADO_EM', 'ANTERIOR'],
-      [['501059001', 2.71, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059002', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059004', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026'], ['501059008', 2.29, 'PADRÃO INICIAL · cadastro 16/10/2026']],
-      ['501059002', '501059004', '501059008'].map(c => [c, 1.78, '26/10/2026', 'CRONOANÁLISE · 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2 · 2 medições, 113 volumes', 2.29])]);
+  ok('a UEP_VERSOES: a semente e uma versão por código, ORIGEM CRONOANÁLISE · … · TRAVA PPCP (a CONFERÊNCIA acha por ela)',
+     V.slice(5).map(l => [l[0], l[1], l[3], l[5]]),
+     ['501059002', '501059004', '501059008'].map(c => [c, 1.78, 'CRONOANÁLISE · 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2 · 2 medições, 113 volumes · TRAVA PPCP', 2.29]));
   ok('roda sob o lock, e nenhuma escrita fora dele', [P.locks() > 0, P.semLock()], [true, 0]);
-  const r2 = P.run(`return trocarUepCrono(${q(PEDIDO)});`);
-  ok('a retentativa (timeout) acha a UEP já trocada: jaTrocado, nada regravado', [r2.trocado, r2.jaTrocado, P.ABAS.UEP_VERSOES.length, r2.regua], [true, true, 8, 'lac']);
-  // as lacunas (paradas que ninguém marcou) no RODANDO não mudam nada: a régua é o SEM AS LACUNAS
-  const PL = montar(abasST([MED_ST('26/10/2026', 12.4, 52, 1.9, 'c1', 15.8), MED_ST('23/10/2026', 11.5, 61, 1.8, 'c2', 14.3)]), null, '26/10/2026');
-  const rl = PL.run(`return trocarUepCrono(${q(PEDIDO)});`);
-  ok('com lacunas no RODANDO (15,8 e 14,3 s), a troca é a mesma 1,78 — sai do SEM AS LACUNAS, nunca do rodando nem da UEP gravada',
-     [rl.trocado, rl.uep, PL.ABAS.PRODUTO_CODIGO[2][3]], [true, 1.78, 1.78]);
+  { const h = T[0], f = n => P.FMT['UEP_TRAVAS|2|' + (h.indexOf(n) + 1)] || '';
+    ok('revisão: na UEP_TRAVAS o texto vai como TEXTO (o Sheets leria "501059002:1.78" como duração e um MOTIVO "12/11" como data); os números ficam número',
+       [f('CODIGOS'), f('MOTIVO'), f('TRAVADA_EM'), f('MODELO'), f('UEP'), f('MEDICOES'), f('DIFERENCA_PCT')], ['@', '@', '@', '@', '', '', '']); }
+  const r2 = travar(P, TRV);
+  ok('a retentativa (timeout) com o MESMO travaId devolve a 1ª resposta — nada regravado', [r2.travado, r2.uep, P.ABAS.UEP_VERSOES.length, P.ABAS.UEP_TRAVAS.length], [true, 1.78, 8, 2]);
+  const r3 = travar(P, Object.assign({}, TRV, { travaId:'tB' }));
+  ok('outro pedido no volume já travado: jaTravada, nada regravado', [r3.travado, r3.jaTravada, P.ABAS.UEP_TRAVAS.length], [true, true, 2]);
+  const L = P.run('return lerCatalogoProdutos();').filter(c => /^501059/.test(c.codigo)).map(c => [c.codigo, c.uepTrava]);
+  ok('o getProdutos manda o uepTrava de cada código (é por ele que o painel sabe da trava)', L,
+     [['501059001', ''], ['501059002', '26/10/2026 PPCP'], ['501059004', '26/10/2026 PPCP'], ['501059008', '26/10/2026 PPCP']]);
+  const G = P.run('return getCronoRegistros();');
+  ok('o getCronoRegistros manda as travas (a UEP_TRAVAS), com os números como número',
+     [G.travas.length, G.travas[0].modelo, G.travas[0].volume, G.travas[0].uep, G.travas[0].antes, G.travas[0].medida, G.travas[0].dif, G.travas[0].decisao, G.travas[0].medicoes, G.travas[0].destravadaEm],
+     [1, '501059', 'VOL 2/2', 1.78, 2.29, 1.78, -22.3, 'TROCOU', 2, '']);
+  // lacunas no RODANDO até 15% não mudam a UEP: a régua é o SEM AS LACUNAS
+  const PL = montar(abasST([MED_ST('26/10/2026', 12.4, 52, 1.9, 'c1', 13.8), MED_ST('23/10/2026', 11.5, 61, 1.8, 'c2', 12.9)]), null, '26/10/2026', Object.assign({}, COD));
+  const rl = travar(PL, TRV);
+  ok('com lacunas de 10% e 11% no RODANDO, a UEP é a mesma 1,78 — sai do SEM AS LACUNAS', [rl.travado, rl.uep], [true, 1.78]);
 }
 
-console.log('\n── trocarUepCrono: o que NÃO troca (e não grava nada) ──');
+console.log('\n── travarUep: MANTER e o que fica (o PPCP decide, contra a regra fica registrado) ──');
 {
-  const caso = (abas, pedido) => { const P = montar(abas, null, '26/10/2026'); const r = P.run(`return trocarUepCrono(${q(pedido)});`);
-    return [r.ok, r.trocado, r.recusado, r.motivo, P.ABAS.PRODUTO_CODIGO[2][3], 'UEP_VERSOES' in P.ABAS]; };
-  ok('amostra pequena (uma medição de 20 volumes)', caso(abasST([MED_ST('26/10/2026', 12.4, 20, 1.57, 'c1')]), PEDIDO), [true, false, true, 'pouca-amostra', 2.29, false]);
-  ok('o cadastro já confere com as medições (outro computador trocou para 1,80)', caso(abasST(null, 1.8), PEDIDO), [true, false, true, 'confere', 1.8, false]);
-  ok('medição sem o SEM AS LACUNAS (linha antiga sem o campo) não conta: sem-medicao', caso(abasST([MED_ST('26/10/2026', '', 52, 1.57, 'c1', 12.4), MED_ST('23/10/2026', '', 61, 1.46, 'c2', 11.5)]), PEDIDO),
-     [true, false, true, 'sem-medicao', 2.29, false]);
-  { const PR = montar(abasST([MED_ST('26/10/2026', 12.4, 20, 1.57, 'c1')]), null, '26/10/2026');
-    ok('a recusa também diz a régua (o painel reconhece o .gs antigo pela falta dela)', PR.run(`return trocarUepCrono(${q(PEDIDO)});`).regua, 'lac'); }
-  ok('as medições discordam (uma 12,4 s, outra 15,4 s = 2,30 confere)', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 15.4, 61, 2.41, 'c2')]), PEDIDO),
-     [true, false, true, 'discordam', 2.29, false]);
-  ok('a UEP enviada não bate com a média das medições (a tela estava velha)', caso(abasST(), Object.assign({}, PEDIDO, { cods:'501059002:1.70,501059004:1.70,501059008:1.70' })),
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  const r = travar(P, Object.assign({}, TRV, { modo:'manter', cods:'501059002,501059004,501059008' }));
+  ok('a regra dizia TROCA e o PPCP MANTEVE: trava em 2,29, contra a regra, a UEP não muda, nenhuma versão',
+     [r.travado, r.decisao, r.contraRegra, r.uep, P.ABAS.PRODUTO_CODIGO[2][3], P.ABAS.PRODUTO_CODIGO[2][5], P.ABAS.UEP_TRAVAS[1][11], 'UEP_VERSOES' in P.ABAS],
+     [true, 'MANTEVE', true, 2.29, 2.29, '26/10/2026 PPCP', 'MANTEVE (CONTRA A REGRA)', false]);
+  const PF = montar(abasST(null, 1.8), null, '26/10/2026', Object.assign({}, COD));
+  const rf = travar(PF, Object.assign({}, TRV, { modo:'manter', cods:'501059002,501059004,501059008' }));
+  ok('o cadastro em 1,80 (dentro de 90–110%): a regra diz FICA, o PPCP mantém e trava', [rf.travado, rf.regra, rf.decisao, rf.contraRegra, rf.uep], [true, 'FICA', 'MANTEVE', false, 1.8]);
+  const PT = montar(abasST(null, 1.8), null, '26/10/2026', Object.assign({}, COD));
+  const rt = travar(PT, TRV);
+  ok('a regra diz FICA e o PPCP troca para a média: vale, contra a regra', [rt.travado, rt.regra, rt.decisao, rt.contraRegra, PT.ABAS.PRODUTO_CODIGO[2][3]], [true, 'FICA', 'TROCOU', true, 1.78]);
+  const PS = montar(abasST(null, ''), null, '26/10/2026', Object.assign({}, COD));
+  const rs = travar(PS, Object.assign({}, TRV, { modo:'manter', cods:'501059002,501059004,501059008' }));
+  const rs2 = travar(PS, TRV);
+  ok('sem UEP no cadastro: manter é recusado (não há o que manter); trocar vale', [rs.recusado, rs.motivo, rs2.travado, rs2.regra, rs2.antes, PS.ABAS.PRODUTO_CODIGO[2][3]],
+     [true, 'sem-cadastro', true, 'TROCA', null, 1.78]);
+}
+
+console.log('\n── travarUep: o código do PPCP ──');
+{
+  const caso = (props, pedido) => { const P = montar(abasST(), null, '26/10/2026', props); const r = travar(P, pedido || TRV);
+    return [r.ok, r.travado, r.recusado, r.motivo, P.ABAS.PRODUTO_CODIGO[2][3], P.ABAS.PRODUTO_CODIGO[0].length, 'UEP_TRAVAS' in P.ABAS]; };
+  ok('sem a propriedade PPCP_CODIGO: recusa e diz onde configurar — nada gravado', caso({}), [true, false, true, 'codigo-sem-codigo', 2.29, 5, false]);
+  ok('código errado: recusa, nada gravado', caso(Object.assign({}, COD), Object.assign({}, TRV, { codigo:'1234' })), [true, false, true, 'codigo-errado', 2.29, 5, false]);
+  ok('código com espaço em volta vale (o campo de senha)', caso(Object.assign({}, COD), Object.assign({}, TRV, { codigo:' 4321 ' })).slice(0, 2), [true, true]);
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  const err = [1, 2, 3, 4, 5].map(() => travar(P, Object.assign({}, TRV, { codigo:'0000' })).motivo);
+  const certo = travar(P, TRV);
+  ok('5 erros seguidos: bloqueia 15 min — até o código certo é recusado', [err, certo.motivo, P.ABAS.PRODUTO_CODIGO[2][3]],
+     [['codigo-errado', 'codigo-errado', 'codigo-errado', 'codigo-errado', 'codigo-bloqueado'], 'codigo-bloqueado', 2.29]);
+  ok('o código certo zera os erros', (() => { const Q = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+    travar(Q, Object.assign({}, TRV, { codigo:'x' })); travar(Q, Object.assign({}, TRV, { codigo:'x' }));
+    return [travar(Q, TRV).travado, Q.ctx.CacheService.getScriptCache().get('rp_trava_err')]; })(), [true, null]);
+  ok('o código não volta na resposta nem vai para a aba', [JSON.stringify(certo).includes('4321'),
+     (() => { const Q = montar(abasST(), null, '26/10/2026', Object.assign({}, COD)); travar(Q, TRV); return JSON.stringify(Q.ABAS).includes('4321'); })()], [false, false]);
+}
+
+console.log('\n── travarUep: o que NÃO trava (e não grava nada) ──');
+{
+  const caso = (abas, pedido) => { const P = montar(abas, null, '26/10/2026', Object.assign({}, COD)); const r = travar(P, pedido);
+    return [r.ok, r.travado, r.recusado, r.motivo, P.ABAS.PRODUTO_CODIGO[2][3], 'UEP_TRAVAS' in P.ABAS]; };
+  ok('uma medição só (61 volumes): falta', caso(abasST([MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]), TRV), [true, false, true, 'falta', 2.29, false]);
+  ok('duas medições somando 92 volumes: falta', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1'), MED_ST('23/10/2026', 11.5, 40, 1.46, 'c2')]), TRV), [true, false, true, 'falta', 2.29, false]);
+  ok('uma das duas com 29 volumes não vale: falta', caso(abasST([MED_ST('26/10/2026', 12.4, 29, 1.57, 'c1'), MED_ST('23/10/2026', 11.5, 80, 1.46, 'c2')]), TRV), [true, false, true, 'falta', 2.29, false]);
+  ok('uma das duas com lacunas de 15,1% (12,4 de 14,6 s) não vale: falta', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1', 14.6), MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]), TRV),
+     [true, false, true, 'falta', 2.29, false]);
+  ok('lacunas de exatamente 15,0% (11,05 de 13 s) ainda valem', caso(abasST([MED_ST('26/10/2026', 11.05, 52, 1.57, 'c1', 13), MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]),
+     Object.assign({}, TRV, { cods:'501059002:1.69,501059004:1.69,501059008:1.69' })).slice(0, 2), [true, true]);
+  ok('medição sem o RODANDO não vale (não dá para medir as lacunas)', caso(abasST([MED_ST('26/10/2026', 12.4, 52, 1.57, 'c1', ''), MED_ST('23/10/2026', 11.5, 61, 1.46, 'c2')]), TRV),
+     [true, false, true, 'falta', 2.29, false]);
+  ok('a UEP enviada não bate com a média das medições (a tela estava velha)', caso(abasST(), Object.assign({}, TRV, { cods:'501059002:1.70,501059004:1.70,501059008:1.70' })),
      [true, false, true, 'nao-bate', 2.29, false]);
-  ok('código que não está nas medições (o VOL 1/2)', caso(abasST(), Object.assign({}, PEDIDO, { cods:'501059001:1.51' })), [true, false, true, 'codigo-fora', 2.29, false]);
-  ok('código de outro modelo', caso(abasST(), Object.assign({}, PEDIDO, { cods:'501149001:1.51' })), [true, false, true, 'outro-modelo', 2.29, false]);
-  ok('sem medição registrada do volume', caso(abasST([]), PEDIDO), [true, false, true, 'sem-medicao', 2.29, false]);
-  ok('sem produto: erro dito (não é recusa da regra)', caso(abasST(), { cods:'501059002:1.51' }).slice(0, 2), [false, undefined]);
+  ok('código que não está nas medições (o VOL 1/2)', caso(abasST(), Object.assign({}, TRV, { cods:'501059001:1.51' })), [true, false, true, 'codigo-fora', 2.29, false]);
+  ok('código de outro modelo', caso(abasST(), Object.assign({}, TRV, { cods:'501149001:1.51' })), [true, false, true, 'outro-modelo', 2.29, false]);
+  ok('sem medição registrada do volume', caso(abasST([]), TRV), [true, false, true, 'falta', 2.29, false]);
+  ok('o JOGO não trava (a UEP é por volume)', caso(abasST(), Object.assign({}, TRV, { volume:'JOGO 2 VOL' })), [true, false, true, 'jogo', 2.29, false]);
+  ok('a base (MADERO) não trava', caso(abasST(), Object.assign({}, TRV, { modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1', cods:'501149001:1' })),
+     [true, false, true, 'base', 2.29, false]);
+  ok('sem produto ou sem a decisão: erro dito (não é recusa da regra)',
+     [caso(abasST(), { cods:'501059002:1.51', modo:'trocar', codigo:'4321' }).slice(0, 2), caso(abasST(), Object.assign({}, TRV, { modo:'' })).slice(0, 2)], [[false, undefined], [false, undefined]]);
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  P.ABAS.PRODUTO_CODIGO[0].push('UEP_TRAVA'); P.ABAS.PRODUTO_CODIGO[2][5] = '20/10/2026 PPCP';
+  ok('parte dos códigos já travada (à mão): recusa — destrave antes', [travar(P, TRV).motivo, P.ABAS.PRODUTO_CODIGO[3][3]], ['parcial', 2.29]);
+}
+
+console.log('\n── trocarUepCrono (v5.64): a troca sem o PPCP acabou ──');
+{
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  const r = P.run(`return trocarUepCrono(${q(PEDIDO)});`);
+  ok('sempre recusa (o painel antigo em cache ainda pode chamar) e não grava nada', [r.ok, r.trocado, r.recusado, r.motivo, r.regua, P.ABAS.PRODUTO_CODIGO[2][3], 'UEP_VERSOES' in P.ABAS],
+     [true, false, true, 'use-trava', 'lac', 2.29, false]);
+}
+
+console.log('\n── destravarUep: o código e o MOTIVO ──');
+{
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  travar(P, TRV);
+  const DT = { modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', cods:'501059002,501059004,501059008', codigo:'4321', motivo:'mudou a embalagem' };
+  const d = s => P.run(`return destravarUep(${q(s)});`);
+  ok('sem motivo e com código errado: recusa, a trava fica',
+     [d(Object.assign({}, DT, { motivo:'' })).motivo, d(Object.assign({}, DT, { codigo:'1' })).motivo, P.ABAS.PRODUTO_CODIGO[2][5]], ['sem-motivo', 'codigo-errado', '26/10/2026 PPCP']);
+  const r = d(DT);
+  ok('destravado: a UEP_TRAVA limpa, a linha da trava com DESTRAVADA_EM e o motivo — a UEP não muda',
+     [r.destravado, r.n, P.ABAS.PRODUTO_CODIGO.slice(2).map(l => l[5]), P.ABAS.PRODUTO_CODIGO[2][3], P.ABAS.UEP_TRAVAS[1][15], P.ABAS.UEP_TRAVAS[1][16]],
+     [true, 3, ['', '', ''], 1.78, '26/10/2026 15:40:00', 'mudou a embalagem']);
+  ok('de novo: jaDestravada', d(DT).jaDestravada, true);
+  ok('o DESTRAVADA_EM e o motivo vão como texto', [P.FMT['UEP_TRAVAS|2|16'], P.FMT['UEP_TRAVAS|2|17']], ['@', '@']);
+  ok('destravado, a regra volta a valer: trava de novo (outra linha na UEP_TRAVAS)', [travar(P, Object.assign({}, TRV, { travaId:'tC', modo:'manter', cods:'501059002,501059004,501059008' })).travado,
+     P.ABAS.UEP_TRAVAS.length], [true, 3]);
+}
+
+console.log('\n── travado, o GRAVAR UEP não toca e a digitação de UMA célula é desfeita ──');
+{
+  const P = montar(abasST(), null, '26/10/2026', Object.assign({}, COD));
+  travar(P, TRV);
+  const g = P.run(`return setUepCatalogo({ dados:${q(JSON.stringify([['501059', 'PENTEADEIRA CAMARIM STRASS', 2.5]]))}, substituir:'1' });`);
+  ok('setUepCatalogo: os 3 códigos travados ficam (1,78), o VOL 1/2 (não travado) troca', [g.travados, P.ABAS.PRODUTO_CODIGO.slice(1).map(l => l[3]), P.ABAS.UEP_VERSOES.length], [3, [2.5, 1.78, 1.78, 1.78], 9]);
+  // a estimativa (estimar=1) re-estima as EST: travar MANTENDO uma UEP estimada não muda a vigência — é a coluna que segura
+  const PE = montar({ PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP', 'UEP_VIGENCIA', 'MEDIDA DA CAIXA (mm)', 'VELOCIDADE (m/min)', 'ENTRE_PECAS (mm)', 'UEP_TRAVA'],
+    ['501700001', 'VOL 1/1 MESA TESTE', 'BRANCO', 1.5, '16/10/2026 EST', 800, 9, 250, '12/11/2026 PPCP'],
+    ['501700002', 'VOL 1/1 MESA TESTE', 'PRETO', 1.5, '16/10/2026 EST', 800, 9, 250, '']] }, null, '12/11/2026', Object.assign({}, COD));
+  const ge = PE.run(`return setUepCatalogo({ estimar:'1', k:'300', tetoAnc:'300' });`);
+  ok('a estimativa (estimar=1) pula o código travado de verdade: a UEP estimada travada fica, a outra é re-estimada',
+     [ge.ok, PE.ABAS.PRODUTO_CODIGO[1][3], PE.ABAS.PRODUTO_CODIGO[1][4], PE.ABAS.PRODUTO_CODIGO[2][3] !== 1.5, /EST$/.test(PE.ABAS.PRODUTO_CODIGO[2][4])], [true, 1.5, '16/10/2026 EST', true, true]);
+  // a edição de uma célula, como o Sheets manda ao onEdit
+  const SH = P.ctx.SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PRODUTO_CODIGO'), notas = {};
+  const editar = (l, c, novo, velho) => {
+    SH.getRange(l, c).setValue(novo);
+    const rg = { getSheet: () => SH, getRow: () => l, getColumn: () => c, getNumRows: () => 1, getNumColumns: () => 1,
+      getValue: () => SH.getRange(l, c).getValues()[0][0], setValue: x => SH.getRange(l, c).setValue(x), setNote: x => { notas[l + ',' + c] = x; } };
+    P.ctx.onEdit({ range: rg, oldValue: velho, value: String(novo) });
+  };
+  editar(3, 4, 2.4, '1.78');
+  ok('digitou 2,4 na UEP de um código travado: volta a 1,78 (o valor da trava) com uma nota; nenhuma versão DIGITADA nova',
+     [P.ABAS.PRODUTO_CODIGO[2][3], /travada pelo PPCP/.test(notas['3,4'] || ''), P.ABAS.UEP_VERSOES.length], [1.78, true, 9]);
+  editar(3, 6, '', '26/10/2026 PPCP');
+  ok('apagou a UEP_TRAVA de um código: o carimbo volta', P.ABAS.PRODUTO_CODIGO[2][5], '26/10/2026 PPCP');
+  editar(2, 4, 2.6, '2.5');
+  ok('o código NÃO travado segue a regra de sempre: fica, e vira versão DIGITADA', [P.ABAS.PRODUTO_CODIGO[1][3], P.ABAS.UEP_VERSOES.length, P.ABAS.UEP_VERSOES[9][3]], [2.6, 10, 'DIGITADA']);
+  editar(4, 4, 1.9, '1.78');
+  delete P.ABAS.UEP_TRAVAS;                     // sem o registro da trava, não há para onde voltar: fica (o painel acusa a diferença)
+  editar(5, 4, 1.95, '1.78');
+  ok('sem a UEP_TRAVAS, a digitação no código travado fica (o painel diz UEP MUDOU NA PLANILHA)', [P.ABAS.PRODUTO_CODIGO[3][3], P.ABAS.PRODUTO_CODIGO[4][3]], [1.78, 1.95]);
 }
 
 console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o volume na linha ──');
 {
-  const P = montar(abasST(), null, '18/10/2026');
-  P.run(`return trocarUepCrono(${q(PEDIDO)});`);                     // troca em 18/10
+  const P = montar(abasST(), null, '18/10/2026', Object.assign({}, COD));
+  travar(P, TRV);                                                     // trocou e travou em 18/10
   P.ABAS.PRODUCAO_PRODUTO = [['DATA', 'HORA', 'CODIGO', 'DESCRICAO', 'CAIXAS', 'PONTOS', 'PESO_KG', 'OPERADOR'],
     ['18/10/2026', '15:00', '501059002', 'VOL 2/2', 90, 0, 0, 'Mobile'],     // o dia da troca: fora
     ['19/10/2026', '09:00', '501059002', 'VOL 2/2', 100, 0, 0, 'Mobile'],
@@ -312,7 +444,7 @@ console.log('\n── getConferenciaCrono: a produção DEPOIS da troca, só o v
   const r = P2.run('return getConferenciaCrono();');
   const t = r.trocas[0];
   ok('uma troca, achada pela ORIGEM da UEP_VERSOES (a semente não é troca)', [r.ok, r.trocas.length, t.modelo, t.produto, t.volume, t.vig, t.amostra, t.substituida],
-     [true, 1, '501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '18/10/2026', '2 medições, 113 volumes', false]);
+     [true, 1, '501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', '18/10/2026', '2 medições, 113 volumes · TRAVA PPCP', false]);
   ok('v5.36: a conferência não lê mais o log — as horas depois da troca são contadas no painel, pelo getHorasCrono (com as paradas)',
      [t.dias, /SHEET_PROD_LOG/.test(GS.slice(GS.indexOf('function getConferenciaCrono('), GS.indexOf('HORAS DA LINHA POR CÓDIGO (v5.35)')))], [undefined, false]);
   ok('os códigos com a UEP nova, a anterior e a de agora', t.codigos.map(c => [c.cod, c.uep, c.antes, c.atual]),
@@ -487,9 +619,10 @@ console.log('\n── v5.58: a medição do app ──');
   ok('a planilha ocupada (o lock não vem): o app ouve ok:false com app:true (pode reenviar); o painel, o erro de sempre, sem app',
      [rL.ok, rL.app, /ocupada/.test(rL.erro), rLp.ok, rLp.app, !!(P5.ABAS.CRONOANALISE)], [false, true, true, false, undefined, false]);
 }
-ok('a troca e a conferência estão no doGet, e a troca invalida as leituras',
-   [/act === 'trocarUepCrono'\)\s*result = trocarUepCrono\(p\)/.test(GS), /act === 'getConferenciaCrono'\)\s*result = getConferenciaCrono\(\)/.test(GS),
-    /ACOES_ESCRITA = \[[^\]]*'trocarUepCrono'/.test(GS)], [true, true, true]);
+ok('a trava, a destrava e a conferência estão no doGet; travar e destravar invalidam o cadastro e as medições',
+   [/act === 'travarUep'\)\s*result = travarUep\(p\)/.test(GS), /act === 'destravarUep'\)\s*result = destravarUep\(p\)/.test(GS),
+    /act === 'getConferenciaCrono'\)\s*result = getConferenciaCrono\(\)/.test(GS),
+    /ACOES_ESCRITA = \[[^\]]*'travarUep', 'destravarUep'/.test(GS), /travarUep: \['cat', 'crono'\], destravarUep: \['cat', 'crono'\]/.test(GS)], [true, true, true, true, true]);
 
 // ════════════════════════════════════════════════════════════════════════════
 // v5.62 — O TEMPO-ALVO DE CADA PRODUTO (getTemposAlvo), para o app de

@@ -456,16 +456,15 @@ global.UCV_REG_VEREDITO = eval('(' + pegaConst('UCV_REG_VEREDITO') + ')');
 global.UCV_REG_SEG_MAX = eval('(' + pegaConst('UCV_REG_SEG_MAX') + ')');
 global.UCV_REG_PER_MAX = eval('(' + pegaConst('UCV_REG_PER_MAX') + ')');
 global.UCV_REG_ROD_MAX = eval('(' + pegaConst('UCV_REG_ROD_MAX') + ')');
-// v7.158.0: a regra da troca (amostra), o TROCAR A UEP e a CONFERÊNCIA DAS TROCAS
-global.UCV_TROCA_MIN_VOL = eval('(' + pegaConst('UCV_TROCA_MIN_VOL') + ')');
+// v7.233.0: a regra da UEP (a medição vale · a regra se cumpre · o PPCP trava) e a CONFERÊNCIA DAS TROCAS
+['UCV_MED_MIN_VOL', 'UCV_MED_MAX_LAC', 'UCV_REGRA_MIN_MED', 'UCV_REGRA_MIN_VOL', 'UCV_REGRA_BORDA', '_ucvDifTxt'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UEP_PAD_MIN_MIN = eval('(' + pegaConst('UEP_PAD_MIN_MIN') + ')');
-global.UCV_AINDA = eval('(' + pegaConst('UCV_AINDA') + ')');
 global.UCV_CONF_ESTADO = eval('(' + pegaConst('UCV_CONF_ESTADO') + ')');
 global.UCV_REL_TXT = eval('(' + pegaConst('UCV_REL_TXT') + ')');
 global.UCV_ST = eval('(' + pegaConst('UCV_ST') + ')');
 ['UCV_PRINC_PCT', 'UCV_PRINC_LINHAS', 'UCV_PRINC_SIT', 'UCV_PRINC_ORD', 'GPX_DOW', 'UCV_AGENDA_GRP'].forEach(c => { global[c] = eval('(' + pegaConst(c) + ')'); });
 global.UCV_PRINC = []; global.UCV_PRINC_TODOS = false;
-global.UCV_TROCANDO = false; global.UCV_PRONTAS = []; global.UCV_CONF_VOO = null;
+global.UCV_TRAVANDO = false; global.UCV_TRAVA = null; global.UCV_TRAVA_DLG = null; global.UCV_TRAVA_MSG = ''; global.UCV_CONF_VOO = null;
 global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; global.UCV_REGS = null;
 ['function _phVal(', 'function _phAcc(', 'function _phAdd(', 'function _phMediaAparada(', 'function _uepPadJanela(', 'function _pgSimNum(', 'function _ucvLinhaItens(']
   .forEach(f => eval.call(global, pegaJs(f)));
@@ -473,14 +472,14 @@ global.UEP_PAD = null; global.UCV_LINHA = null; global.UCV_LINHA_VOO = null; glo
 // desenho em peças por bloco; os campos e o que fica guardado por _ucvEl/_ucvLe/_ucvGuarda.
 const UCV_CONTA = ['function _uepConvBaseDe(', 'function _uepConvCadastro(', 'function _uepConvDigitar(', 'function _uepConvMontar(',
   'function _ucvPadraoDe(', 'function _ucvRefDe(', 'function _ucvRel(', 'function _ucvRelEst(', 'function _ucvRegsPadrao(', 'function _ucvRegsStatus(', 'function _ucvRegVol(', 'function _ucvRegValida(', 'function _ucvHash(', 'function _ucvRegMontar(',
-  'function _ucvRegsDoProduto(', 'function _ucvRegsResumo(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
-  'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvProntas(', 'function _ucvTrocaConfirmaTxt(',
-  'function _ucvTrocaResposta(', 'function _ucvTrocaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar(', 'function _ucvPrincEstado(', 'function _ucvProgDe(', 'function _ucvPrincipais('];
+  'function _ucvRegsDoProduto(', 'function _ucvLacPct(', 'function _ucvMedValida(', 'function _ucvRegraUep(', 'function _ucvExclPode(', 'function _ucvExclConfirmaTxt(',
+  'function _ucvExclResposta(', 'function _ucvExclConfere(', 'function _ucvRegUep(', 'function _ucvTravaDe(', 'function _ucvTravaMontar(', 'function _ucvTravaUrl(',
+  'function _ucvTravaResposta(', 'function _ucvTravaConfere(', 'function _ucvGravNum(', 'function _ucvConfMontar(', 'function _ucvPrincEstado(', 'function _ucvProgDe(', 'function _ucvPrincipais('];
 const UCV_DESENHO = ['function _ucvU2(', 'function _ucvSeg(', 'function _ucvCard(', 'function _ucvTolTxt(', 'function _ucvTolFora(', 'function _ucvTpMed(',
   'function _uepConvRegua(', 'function _uepConvAvisoBase(', 'function _uepConvCadTxt(', 'function _uepConvNotasHtml(', 'function _uepConvBaseHtml(',
   'function _uepConvTrocaHtml(', 'function _uepConvHtml(', 'function _uepConvQual(', 'function _ucvLinhaHtml(', 'function _ucvRegsHtml(',
-  'function _ucvHoras(', 'function _ucvVolTxt(', 'function _ucvListaHtml(', 'function _ucvTrocaHtml(', 'function _ucvAindaHtml(',
-  'function _ucvProntasHtml(', 'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel(',
+  'function _ucvHoras(', 'function _ucvListaHtml(', 'function _ucvRegraBoxHtml(', 'function _ucvTravaRot(', 'function _ucvTravaHtml(', 'function _ucvTravaDlgHtml(',
+  'function _ucvConfHtml(', 'function _ucvConfAvisoHtml(', 'function _ucvPadCel(', 'function _ucvPerdaTxt(', 'function _ucvStatusCel(',
   'function _ucvPrincSub(', 'function _ucvProgCel(', 'function _ucvAgendaPeso(', 'function _ucvAgendaResumo(', 'function _ucvAgendaDocHtml(', 'function _ucvPrincHtml(', 'function _uepConvQualCurto(', 'function _ucvSubMontar(', 'function _ucvRegFalta('];
 // "O desenho não faz conta" vale em TODAS as peças dele, e pelo parâmetro que
 // cada uma recebe (R ou base): refazer a régua (_taktUep), o CONFERE (a faixa)
@@ -535,11 +534,12 @@ ok('estados antes do número', [_uepConvMontar([], 'X', 1, 0, 2530).estado, _uep
    _uepConvMontar(PRODS, 'ARMARIO ENCANTO', 0, 0, 2530).estado], ['sem-cadastro', 'sem-produto', 'sem-tempo']);
 
 const H1 = _uepConvHtml(E1), H2 = _uepConvHtml(E2);
-ok('o desenho: CONFERE, o número e que a UEP fica', [H1.includes('CONFERE'), H1.includes('>2,22<'), H1.includes('PRODUTO_CODIGO'), H1.includes('NÃO PRECISA TROCAR'), H1.includes('TROCAR A UEP NO CADASTRO')],
+ok('o desenho: CONFERE, o número e o que esta medição dá (as medições registradas ainda não lidas); botão de troca nenhum (v7.233.0: a troca é do PPCP, na TRAVA DA UEP)',
+   [H1.includes('CONFERE'), H1.includes('>2,22<'), H1.includes('LENDO AS MEDIÇÕES REGISTRADAS'), H1.includes('Esta medição dá'), H1.includes('TROCAR A UEP NO CADASTRO')],
    [true, true, true, true, false]);
-ok('o desenho: rodando contra a meta sai mais LEVE; sem medição registrada, AINDA NÃO TROQUE (com o que ela dá) e conferir o tempo antes',
-   [H2.includes('mais LEVE que o cadastro'), H2.includes('AINDA NÃO TROQUE'), H2.includes('<b>1,41</b>'), H2.includes('PARA TROCAR'), H2.includes('TROCAR A UEP NO CADASTRO'),
-    H2.includes('CONFIRA O TEMPO ANTES DE TROCAR'), H2.indexOf('CONFIRA') < H2.indexOf('AINDA NÃO TROQUE')],
+ok('o desenho: rodando contra a meta sai mais LEVE; o que ela dá e conferir o tempo antes',
+   [H2.includes('mais LEVE que o cadastro'), H2.includes('Esta medição dá'), H2.includes('<b>1,41</b>'), H2.includes('PARA TROCAR'), H2.includes('TROCAR A UEP NO CADASTRO'),
+    H2.includes('CONFIRA O TEMPO ANTES DE TROCAR'), H2.indexOf('CONFIRA') < H2.indexOf('Esta medição dá')],
    [true, true, true, false, false, true, true]);
 ok('o aviso do tempo só com a base pela meta e o produto mais leve que a faixa',
    [E1.confRegua, E2.confRegua, E3.confRegua, _uepConvHtml(E1).includes('CONFIRA O TEMPO')], [false, true, false, false]);
@@ -637,7 +637,7 @@ ok('o último foco do conversor (o LIMPAR, depois do FIXAR) tem o Tab ligado; o 
   const docAntes = global.document, elAntes = global._ucvEl, atAntes = global._uepConvAtualiza;
   const val = { prod:'501155 · SAPATEIRA VIVARE', seg:'13,5', base:'6,7', tol:'15', 'r-data':'03/11/2026', 'r-per':'16,2',
                 'r-rod':'14,0', 'r-vol':'55', 'r-vel':'9', 'r-quem':'JOÃO' };
-  const txt = { 'i-msg':'✓ Importado: Sapateira Vivare', 't-msg':'✓ UEP trocada', 'r-msg':'✓ Medição registrada', 'x-msg':'✓ excluída' };
+  const txt = { 'i-msg':'✓ Importado: Sapateira Vivare', 'r-msg':'✓ Medição registrada', 'x-msg':'✓ excluída' };
   const els = {}; let foco = null, redesenhou = 0;
   Object.keys(val).forEach(n => { els[n] = { value: val[n], focus: () => { foco = n; } }; });
   Object.keys(txt).forEach(n => { els[n] = { textContent: txt[n] }; });
@@ -649,8 +649,8 @@ ok('o último foco do conversor (o LIMPAR, depois do FIXAR) tem o Tab ligado; o 
   ok('✕ LIMPAR zera produto, tempo e os campos do registro; base, tolerância e MEDIDO POR ficam',
      Object.keys(val).map(n => n + '=' + els[n].value),
      ['prod=', 'seg=', 'base=6,7', 'tol=15', 'r-data=', 'r-per=', 'r-rod=', 'r-vol=', 'r-vel=', 'r-quem=JOÃO']);
-  ok('✕ LIMPAR apaga os avisos (importado, troca, registro, exclusão), redesenha a tela e volta ao PRODUTO',
-     [Object.keys(txt).map(n => els[n].textContent), redesenhou, foco], [['', '', '', ''], 1, 'prod']);
+  ok('✕ LIMPAR apaga os avisos (importado, registro, exclusão), redesenha a tela e volta ao PRODUTO',
+     [Object.keys(txt).map(n => els[n].textContent), redesenhou, foco], [['', '', ''], 1, 'prod']);
   ok('✕ LIMPAR não grava nem apaga nada: nem planilha nem o que é guardado neste computador',
      /jsonp|_ucvGuarda|localStorage|CFG\.sheetsUrl/.test(pegaJs('function _ucvLimpar(')), false);
   global.document = docAntes; global._ucvEl = elAntes; global._uepConvAtualiza = atAntes;
@@ -697,7 +697,7 @@ global.UCV_REG_CAMPOS = eval('(' + pegaConst('UCV_REG_CAMPOS') + ')');
 const ctxI = { data: '19/10/2026', hora: '16:05' };
 const DI = _uepConvDocHtml(E1, ctxI), DV = _uepConvDocHtml(EV, ctxI);
 ok('o papel tem a medição (a MESMA marcação da tela), o como ler e o registro da medição',
-   [DI.includes(_uepConvHtml(E1)), DI.includes(_uepConvGuia(E1.base.daMeta)), DI.includes('NÃO PRECISA TROCAR'), DI.includes('>2,22<'),
+   [DI.includes(_uepConvHtml(E1)), DI.includes(_uepConvGuia(E1.base.daMeta)), DI.includes('Esta medição dá'), DI.includes('>2,22<'),
     DI.includes('REGISTRO DA MEDIÇÃO'), DI.includes('VELOCIDADE DA ESTEIRA (m/min)'), DI.includes('gerado 19/10/2026 às 16:05')],
    [true, true, true, true, true, true, true]);
 ok('o desenho do papel não faz conta (só a tela + títulos + caneta)',
@@ -709,11 +709,11 @@ const GC = pegaJs('function gerarRelatorioCrono(');
 // Revisão adversarial da v7.145.0: o papel lia o campo da base cru e a tela o
 // sincronizava com a meta — com a meta mudada pelo ⚙ ou pelo refresh, o papel
 // saía "BASE DIGITADA" com a régua antiga. Hoje as DUAS leem _uepConvEntradas.
-const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs);';
+const MONTA = 'const R = _uepConvMontar(UEP_CONV_PRODS, E.txt, E.seg, E.base, E.meta, E.tol, E.linha, E.regs, E.travas);';
 ok('tela e papel leem as entradas pela MESMA função e montam com a MESMA chamada',
    [/const E = _uepConvEntradas\(\);/.test(AT), /const E = _uepConvEntradas\(\);/.test(GC), AT.includes(MONTA), GC.includes(MONTA),
     (JS.match(/(?<!function )_uepConvEntradas\(\)/g) || []).length, /_uepConvDocHtml\(R, ctx\)/.test(GC), GC.indexOf('_uepConvAtualiza();') < GC.indexOf('_uepConvEntradas()')],
-   [true, true, true, true, 5, true, true]);   // 5: tela, papel, o 💾 REGISTRAR (v7.150.0), o ✓ TROCAR A UEP e o 📄 IMPORTAR (v7.158.0)
+   [true, true, true, true, 4, true, true]);   // 4: tela, papel, o 💾 REGISTRAR (v7.150.0) e o 📄 IMPORTAR (v7.158.0) — o ✓ TROCAR saiu na v7.233.0
 {
   // O caso da revisão, rodando a função real: campo automático em 10,4 (meta
   // 3.048) e a meta muda para 2.530 sem a aba redesenhar.
@@ -927,7 +927,7 @@ ok('o título do campo diz que vazio é a MADERO medida (e não mais a régua da
       Q1D.includes('base digitada: <b>8,6 s</b>')],
      [true, true, true, true, true, true, true]);
   ok('na tela o resultado sai sem as notas TOLERÂNCIA · RÉGUA · GRAVAÇÃO (vão para o ⓘ COMO LER); o papel continua com elas',
-     [_uepConvHtml(E1).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('NÃO PRECISA TROCAR'),
+     [_uepConvHtml(E1).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('<span>GRAVAÇÃO</span>'), _uepConvHtml(E1, true).includes('Esta medição dá'),
       /res\.innerHTML = _uepConvHtml\(R, true\);/.test(AT2), /_uepConvHtml\(R\)/.test(DH)],
      [true, false, true, true, true]);
   ok('o cartão MEDIDO diz de qual cartão do app veio o número',
@@ -1029,7 +1029,7 @@ console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume
       /não rodou sozinha/.test(_ucvPadCel(_ucvRegsPadrao([REG2(1.82, '501061002 501061004 501061006')], HE, 2530, null)[0])), /não rodou sozinho/.test(_ucvPadCel(null)),
       _ucvPadCel(Object.assign(_ucvPadraoDe(HE.slice(4, 5), V2, 1.82, 2530), { rel:90 })).includes('0,9 h*')], ['…', true, true, true, true, true]);
   ok('o painel calcula os % da lista no _ucvRegPintar (o desenho não faz conta)',
-     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\),\s*_ucvRegsStatus\(RL && RL\.slice\(0, 15\), UCV_CONF && UCV_CONF\.trocas, UEP_CONV_PRODS\)\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
+     [/_ucvRegsPadrao\(RL && RL\.slice\(0, 15\), LH, R\.base\.meta, ref\),\s*_ucvRegsStatus\(RL && RL\.slice\(0, 15\), UCV_CONF && UCV_CONF\.trocas, UEP_CONV_PRODS\), null, R\.trava\)/.test(pegaJs('function _ucvRegPintar(')), /ref = Array\.isArray\(LH\) \? _ucvRefDe\(LH, UEP_CONV_PRODS, R\.base\.meta\)/.test(pegaJs('function _ucvRegPintar(')),
       /_ucvConfMontar\(UCV_CONF\.trocas, R\.base\.meta, LH, UEP_CONV_PRODS\)/.test(pegaJs('function _ucvRegPintar('))], [true, true, true]);
 
   // os campos do registro
@@ -1083,37 +1083,57 @@ console.log('\n── CRONOANÁLISE → UEP: na produção (% do padrão, volume
       _ucvRegMontar(_uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 9.5, 10.4, 3048, 15), V).tol],
      ['RÉGUA DA META', 'DIGITADA', 0]);
 
-  // a regra da troca: v7.150.0 duas datas; v7.158.0 (PPCP, 26/10/2026: "não dá para travar em duas datas diferentes") AMOSTRA
-  // v7.200.0: a UEP de cada medição é o SEM AS LACUNAS ÷ 6,7 (a UEP gravada não entra) — o sLac dá a UEP do caso
-  const RG = (data, uep, uepCad, extra) => Object.assign({ data, modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1', uep, uepCad, volumes:40, sLac:uep * UEP_BASE_MEDIDA.seg }, extra || {});
-  ok('UM dia só, com amostra (30+ volumes), os dois mais LEVES: pode trocar — a data não trava mais',
-     [_ucvRegsResumo([RG(H, 1.05, 1.2), RG(H, 1.06, 1.2)]).veredito, _ucvRegsResumo([RG(H, 1.05, 1.2), RG(H, 1.06, 1.2)]).nDias], ['trocar', 1]);
-  ok('UMA medição de 30 volumes basta; de 29 é amostra pequena',
-     [_ucvRegsResumo([RG(H, 1.05, 1.2, { volumes:30 })]).veredito, _ucvRegsResumo([RG(H, 1.05, 1.2, { volumes:29 })]).veredito], ['trocar', 'pouca-amostra']);
-  ok('volumes somam entre medições (11 + 19 = 30)', _ucvRegsResumo([RG(H, 1.05, 1.2, { volumes:11 }), RG('17/10/2026', 1.04, 1.2, { volumes:19 })]).veredito, 'trocar');
-  ok('dois dias, um fora e um dentro da faixa: discordam (mesmo com amostra)', _ucvRegsResumo([RG(H, 1.05, 1.2), RG('17/10/2026', 1.12, 1.2)]).veredito, 'discordam');
-  ok('dentro da faixa: a UEP fica (mesmo com amostra pequena)', [_ucvRegsResumo([RG(H, 1.11, 1.2), RG('17/10/2026', 1.14, 1.2)]).veredito, _ucvRegsResumo([RG(H, 1.11, 1.2, { volumes:5 })]).veredito], ['confere', 'confere']);
-  ok('medição sem VOLUMES MEDIDOS não entra; só ela = sem-volumes',
-     [_ucvRegsResumo([RG(H, 1.05, 1.2, { volumes:null })]).veredito, _ucvRegsResumo([RG(H, 1.05, 1.2, { volumes:null }), RG(H, 1.12, 1.2)]).veredito],
-     ['sem-volumes', 'confere']);
+  // A REGRA DA UEP (v7.233.0, PPCP 12/11/2026: "limite de medição" → "travar a uep, mas essa trava passa por mim"):
+  // a medição vale com 30+ volumes e lacunas até 15%; a regra se cumpre com 2 válidas somando 100 volumes;
+  // dentro de 90–110% do cadastro a regra diz FICA, fora TROCA. A UEP de cada medição: SEM AS LACUNAS ÷ 6,7.
+  const RG = (data, uep, uepCad, extra) => Object.assign({ data, modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1', uep, uepCad, volumes:60,
+    sLac:uep * UEP_BASE_MEDIDA.seg, sRod:uep * UEP_BASE_MEDIDA.seg }, extra || {});
+  const Rg = (L, c) => _ucvRegraUep(L, c == null ? 1.2 : c);
+  ok('a medição vale: 30+ volumes e lacunas até 15% (com uma casa, o que a tela mostra)',
+     [_ucvMedValida(RG(H, 1, 1, { volumes:30 })).ok, _ucvMedValida(RG(H, 1, 1, { volumes:29 })).k,
+      _ucvMedValida({ sLac:11.05, sRod:13, volumes:52 }).ok, _ucvMedValida({ sLac:6.7, sRod:7.9, volumes:60 }).k, _ucvMedValida({ sLac:6.7, sRod:7.9, volumes:60 }).mot,
+      _ucvMedValida({ sLac:12, sRod:'', volumes:60 }).k, _ucvMedValida({ sLac:'', sRod:12, volumes:60 }).k, _ucvMedValida({ sLac:12, sRod:12, volumes:null }).k],
+     [true, 'poucos-volumes', true, 'lacunas', 'lacunas 15,2% (até 15%)', 'sem-rodando', 'sem-lacunas', 'sem-volumes']);
+  ok('a regra: UMA medição não basta, por maior que seja; DUAS válidas somando 100 volumes, sim',
+     [Rg([RG(H, 1.05, 1.2, { volumes:300 })]).veredito, Rg([RG(H, 1.05, 1.2), RG(H, 1.06, 1.2)]).veredito, Rg([RG(H, 1.05, 1.2, { volumes:50 }), RG(H, 1.06, 1.2, { volumes:49 })]).veredito,
+      Rg([RG(H, 1.05, 1.2, { volumes:50 }), RG(H, 1.06, 1.2, { volumes:50 })]).veredito],
+     ['falta', 'troca', 'falta', 'troca']);
+  ok('a medição que não vale não conta nem na média: 2 válidas de 3', (() => { const S = Rg([RG(H, 1.05, 1.2), RG(H, 1.06, 1.2), RG(H, 2, 1.2, { volumes:20 })]); return [S.nVal, S.nInv, S.nVol, S.n, S.inv[0].k]; })(),
+     [2, 1, 120, 3, 'poucos-volumes']);
+  ok('não é mais "todas do mesmo lado": a MÉDIA decide (1,00 e 1,12 → 1,06, fora de 90–110% de 1,2; 1,05 e 1,12 → 1,085, dentro)',
+     [Rg([RG(H, 1.0, 1.2), RG('17/10/2026', 1.12, 1.2)]).veredito, _ucvU2(Rg([RG(H, 1.0, 1.2), RG('17/10/2026', 1.12, 1.2)]).uepMed),
+      Rg([RG(H, 1.05, 1.2), RG('17/10/2026', 1.12, 1.2)]).veredito], ['troca', '1,06', 'fica']);
+  ok('dentro da faixa: FICA; sem UEP no cadastro, cumprida a regra: TROCA (não há o que manter)',
+     [Rg([RG(H, 1.11, 1.2), RG('17/10/2026', 1.14, 1.2)]).veredito, _ucvRegraUep([RG(H, 1.11, 1.2), RG(H, 1.14, 1.2)], null).veredito, _ucvRegraUep([RG(H, 1.11, 1.2), RG(H, 1.14, 1.2)], null).difPct],
+     ['fica', 'troca', null]);
+  ok('o que falta, por extenso (sem medição nenhuma: null — o desenho diz)', [Rg([]), Rg([RG(H, 1, 1.2, { volumes:61 })]).faltaTxt, Rg([RG(H, 1, 1.2, { volumes:45 }), RG(H, 1, 1.2, { volumes:45 })]).faltaTxt,
+     Rg([RG(H, 1, 1.2, { volumes:120 })]).faltaTxt], [null, 'falta 1 medição válida · faltam 39 volumes', 'faltam 10 volumes', 'falta 1 medição válida']);
+  ok('NA BORDA: a média a até 2 pontos do limite da faixa (8–12% de diferença), com a regra cumprida',
+     [Rg([RG(H, 1.31, 1.2), RG(H, 1.32, 1.2)]).borda, Rg([RG(H, 1.36, 1.2), RG(H, 1.37, 1.2)]).borda, Rg([RG(H, 1.2, 1.2), RG(H, 1.21, 1.2)]).borda, Rg([RG(H, 1.31, 1.2)]).borda],
+     [true, false, false, false]);
   // o caso real: STRASS VOL 2/2, 11,5 s × 61 e 12,4 s × 52 (sem lacuna: rodando = sem as lacunas); cadastro 2,29.
-  // A linha guarda a régua antiga (BASE_S 7,9, UEP_CRONO 1,46/1,57); desde a v7.200.0 nada disso entra: sem as lacunas ÷ 6,7.
-  const ST2 = (data, sLac, volumes, uep) => ({ data, modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', sRod:sLac, sLac, baseS:7.9, uep, uepCad:2.29, volumes });
-  const SS = _ucvRegsResumo([ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 11.5, 61, 1.46)], 2.29);
-  ok('STRASS VOL 2/2: média pelos SEGUNDOS sem as lacunas, pesada pelos volumes, ÷ 6,7 = 1,78 (pela régua rodando, 1,51) — a BASE_S e a UEP gravadas não entram',
-     [SS.veredito, SS.nVol, _ucvU2(SS.uepMed), SS.datas, _ucvU2(_ucvRegUep(ST2('x', 12.4, 52, 1.57)))], ['trocar', 113, '1,78', ['23/10/2026', '26/10/2026'], '1,85']);
-  ok('a regra é contra o cadastro de AGORA: depois de trocado para 1,78, as mesmas medições conferem',
-     _ucvRegsResumo([ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 11.5, 61, 1.46)], 1.78).veredito, 'confere');
-  ok('medição sem o SEM AS LACUNAS não conta (nunca cai na UEP gravada nem no rodando): sem-medicao',
-     [_ucvRegUep({ sRod:12.4, baseS:7.9, uep:1.57 }), _ucvRegsResumo([{ data:H, sRod:12.4, baseS:7.9, uep:1.57, uepCad:2.29, volumes:52 }], 2.29).veredito],
-     [0, 'sem-medicao']);
+  const ST2 = (data, sLac, volumes, uep, sRod) => ({ data, modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', sRod:sRod == null ? sLac : sRod, sLac, baseS:7.9, uep, uepCad:2.29, volumes });
+  const SS = _ucvRegraUep([ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 11.5, 61, 1.46)], 2.29);
+  ok('STRASS VOL 2/2: média pelos SEGUNDOS sem as lacunas, pesada pelos volumes, ÷ 6,7 = 1,78 — 2 válidas, 113 volumes: a regra diz TROCA',
+     [SS.veredito, SS.nVal, SS.nVol, _ucvU2(SS.uepMed), SS.datas, fmt1(SS.difPct)], ['troca', 2, 113, '1,78', ['23/10/2026', '26/10/2026'], '-22,3']);
+  ok('a regra é contra o cadastro de AGORA: com 1,78 no cadastro, as mesmas medições dizem FICA',
+     _ucvRegraUep([ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 11.5, 61, 1.46)], 1.78).veredito, 'fica');
+  ok('os casos de 12/11/2026 (planilha): TAURUS +9,7% FICA na borda; VIVARE +14,3% TROCA; SLEEP (25,3% de lacunas) não vale',
+     [(() => { const S = _ucvRegraUep([{ sLac:12.7, sRod:12.9, volumes:60 }, { sLac:12.5, sRod:12.9, volumes:54 }, { sLac:12.8, sRod:13.1, volumes:60 }, { sLac:11.7, sRod:12.3, volumes:60 }], 1.69);
+        return [S.veredito, fmt1(S.difPct), S.borda]; })(),
+      _ucvRegraUep([{ sLac:14.6, sRod:14.9, volumes:60 }, { sLac:15.3, sRod:15.3, volumes:72 }, { sLac:13.5, sRod:13.5, volumes:55 }, { sLac:14.1, sRod:14.1, volumes:38 }], 1.89).veredito,
+      _ucvRegraUep([{ data:'09/11/2026', sLac:6.8, sRod:9.1, volumes:82 }], 0.83).inv[0].mot],
+     [['fica', '9,7', true], 'troca', 'lacunas 25,3% (até 15%)']);
+  ok('medição sem o SEM AS LACUNAS não conta (nunca cai na UEP gravada nem no rodando)',
+     [_ucvRegUep({ sRod:12.4, baseS:7.9, uep:1.57 }), _ucvRegraUep([{ data:H, sRod:12.4, baseS:7.9, uep:1.57, uepCad:2.29, volumes:52 }], 2.29).nVal], [0, 0]);
   ok('o filtro do produto: mesmo modelo, nome e volume', _ucvRegsDoProduto([RG(H, 1, 1), RG(H, 1, 1, { volume:'JOGO 2 VOL' }), RG(H, 1, 1, { modelo:'501094' })], pM).length, 1);
-  const HR = _ucvRegsHtml([RG(H, 1.05, 1.2, { sRod:8.6, uep:1.4 })], pM, null);
+  const HR = _ucvRegsHtml([RG(H, 1.05, 1.2, { sRod:7.6, uep:1.4, volumes:40 })], pM, null, null, 1.2);
   ok('a lista diz a regra e mostra os segundos e a UEP — o SEM AS LACUNAS em destaque e a UEP pela régua de hoje (não a gravada)',
-     [HR.includes('1 medição · 40 volumes'), HR.includes('pode trocar a UEP'), HR.includes('<td class="n">8,6 s</td>'), HR.includes('<td class="n"><b>7,0 s</b></td>'), HR.includes('<b>1,05</b>'), HR.includes('1,40')],
-     [true, true, true, true, true, false]);
-  ok('amostra pequena: a lista diz quantos volumes faltam para a regra',
-     _ucvRegsHtml([RG(H, 1.05, 1.2, { volumes:11 })], pM, null).includes('11 volumes (a troca pede 30)'), true);
+     [HR.includes('1 medição · 1 válida, 40 volumes'), HR.includes('a regra ainda não se cumpre: falta 1 medição válida · faltam 60 volumes'), HR.includes('<td class="n">7,6 s</td>'),
+      HR.includes('<td class="n"><b>7,0 s</b></td>'), HR.includes('<b>1,05</b>'), HR.includes('1,40'), HR.includes('UEP medida 1,05 (−12,5% do cadastro)')],
+     [true, true, true, true, true, false, true]);
+  ok('travada: a linha de cima diz UEP TRAVADA (a regra não pede mais nada)',
+     _ucvRegsHtml([RG(H, 1.05, 1.2)], pM, null, null, 1.2, null, null, null, { travada:true }).includes(UCV_REG_VEREDITO.travada[1]), true);
   ok('lista sem o .gs novo, ainda lendo, vazia: diz qual',
      [_ucvRegsHtml(null, pM, 'sem-endpoint').includes('cole o .gs v5.30'), _ucvRegsHtml(null, pM, null).includes('Lendo as medições'),
       _ucvRegsHtml([], pM, null).includes('Nenhuma medição registrada deste produto')], [true, true, true]);
@@ -1258,66 +1278,152 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
                 { data:'19/10/2026', modelo:'501139', produto:'ARMARIO ENCANTO', volume:'VOL 1/1', sRod:17.6, sLac:17.6, baseS:7.9, uep:2.23, uepCad:2.23, volumes:11 },
                 { data:'20/10/2026', modelo:'501149', produto:'MESA CABECEIRA MADERO', volume:'VOL 1/1', sRod:7.9, sLac:6.7, baseS:7.9, uep:1, uepCad:1.2, volumes:60 }];
   const RS = _uepConvMontar(PRODS, ROT, 0, 6.7, 2530, 15, undefined, REGS), HS = _uepConvHtml(RS);
-  ok('sem tempo digitado, as medições registradas liberam a troca: 1,78 no 501.059.002 (o VOL 1/2 não entra)',
-     [RS.estado, _ucvU2(RS.troca.uep), _ucvU2(RS.troca.antes), Math.round(RS.troca.difPct), RS.troca.digitar.map(g => [g.uep, g.cods.map(c => c.cod)])],
-     ['sem-tempo', '1,78', '2,29', -22, [[1.78, ['501059002']]]]);
-  ok('o desenho da troca: PODE TROCAR, a média, a amostra, as datas e o botão (só da tela)',
-     [HS.includes('PODE TROCAR · PELAS MEDIÇÕES REGISTRADAS'), HS.includes('<b>1,78</b>'), HS.includes('2 medições · 113 volumes'), HS.includes('(23/10/2026, 26/10/2026)'),
-      HS.includes('<div class="ucv-troca-bt so-tela"><button type="button" class="btn btn-acc" id="uep-conv-troca" onclick="_ucvTrocar()">✓ TROCAR A UEP NO CADASTRO</button>')],
-     [true, true, true, true, true]);
+  // v7.233.0: a regra só põe o carimbo; quem troca (ou mantém) e trava é o PPCP, na TRAVA DA UEP
+  ok('sem tempo digitado, as medições registradas cumprem a regra: 2 válidas, 113 volumes, média 1,78 — TROCA (o VOL 1/2 não entra)',
+     [RS.estado, RS.regRes.veredito, RS.regRes.nVal, RS.regRes.nVol, _ucvU2(RS.regRes.uepMed), Math.round(RS.regRes.difPct), RS.troca], ['sem-tempo', 'troca', 2, 113, '1,78', -22, undefined]);
+  ok('o desenho: REGRA CUMPRIDA · O PPCP DECIDE, o que a regra diz e o caminho para a TRAVA DA UEP (só da tela) — nenhum botão de troca direto',
+     [HS.includes('✓ REGRA CUMPRIDA · O PPCP DECIDE'), HS.includes('<b>2 medições válidas · 113 volumes</b>'), HS.includes('A regra diz <b>TROCA PARA 1,78</b>'),
+      HS.includes('<div class="ucv-tv-dest so-tela"><button type="button" class="btn btn-acc" onclick="_ucvSub(\'trava\')">🔒 ABRIR NA TRAVA DA UEP</button>'), HS.includes('_ucvTrocar'), HS.includes('TROCAR A UEP NO CADASTRO')],
+     [true, true, true, true, false, false]);
   const RT = _uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, REGS), HT = _uepConvHtml(RT);
-  ok('com o tempo da medição digitado (12,4 s → 1,85): os cartões são DELA, mas a troca é a das registradas (1,78) — o caso do print',
-     [_ucvU2(RT.uepVol), HT.includes('>1,85<'), HT.includes('PODE TROCAR'), HT.includes('<b>1,78</b>'), HT.includes('PARA TROCAR'), HT.includes('AINDA NÃO TROQUE')],
-     ['1,85', true, true, true, false, false]);
-  ok('sem medição registrada do volume: AINDA NÃO TROQUE, pede o registro; lista não lida: diz que não leu',
-     [_uepConvHtml(_uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, [])).includes('nenhuma medição registrada deste volume'),
-      _uepConvHtml(_uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, null)).includes('ainda não foram lidas'),
-      _uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, []).troca], [true, true, undefined]);
-  const RP = _uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, [ST2('26/10/2026', 12.4, 20, 1.57)]);
-  ok('amostra pequena (20 volumes): AINDA NÃO TROQUE com quantos faltam', [RP.troca, _uepConvHtml(RP).includes('20 volumes (a troca pede 30)'), RP.regRes.veredito], [undefined, true, 'pouca-amostra']);
-  ok('a BASE (MADERO) nunca ganha troca, mesmo com medições que "liberariam"',
-     _uepConvMontar(PRODS, 'MESA CABECEIRA MADERO', 6.7, 6.7, 2530, 15, undefined, REGS).troca, undefined);
-  ok('o JOGO (produto inteiro) e o volume são medições diferentes: as do VOL 2/2 não liberam o JOGO',
-     _uepConvMontar(PRODS, '501059 · PENTEADEIRA CAMARIM STRASS', 30, 0, 2530, 15, undefined, REGS).troca, undefined);
-  // as prontas
-  const PR = _ucvProntas(REGS, PRODS);
-  ok('PRONTAS PARA TROCAR: só o STRASS VOL 2/2 (o ENCANTO tem só 11 volumes; a MADERO é a base)', [PR.map(x => x.p.rot), _ucvU2(PR[0].uep)], [[ROT], '1,78']);
-  const HP = _ucvProntasHtml(PR);
-  ok('as prontas: botão que abre o volume pelo índice (nada do nome no clique)', [HP.includes('onclick="_ucvAbrirPronta(0)"'), HP.includes('<b>2,29 → 1,78</b>'), _ucvProntasHtml([])], [true, true, '']);
-  // a confirmação e as respostas
-  const CT = _ucvTrocaConfirmaTxt(RS, '26/10/2026');
-  ok('a confirmação diz o que muda, de onde vem e quando vale',
-     [ROT, '2,29 → 1,78 por volume (-22,3%)', '1,78 — 501.059.002 BRANCO', '2 medições, 113 volumes (23/10/2026, 26/10/2026) — sem as lacunas ÷ 6,7 s da MADERO sem as lacunas',
-      'Vale a partir de hoje (26/10/2026)', 'os dias fechados não mudam', 'planilha de programação'].filter(t => !CT.includes(t)), []);
-  ok('a resposta: trocou · já estava · recusou (com o motivo) · .gs antigo (cai no getDados)',
-     [_ucvTrocaResposta({ ok:true, trocado:true, n:3, vigencia:'26/10/2026' }).tipo, _ucvTrocaResposta({ ok:true, trocado:true, jaTrocado:true }).tipo,
-      _ucvTrocaResposta({ ok:true, trocado:false, recusado:true, erro:'as medições somam menos de 30 volumes', regua:'lac' }).txt.includes('menos de 30 volumes'),
-      _ucvTrocaResposta({ ok:true, slots:[] }).tipo, /v5\.34/.test(_ucvTrocaResposta({ ok:true }).txt),
-      _ucvTrocaResposta({ ok:true, trocado:true, n:3, versaoErro:'x' }).txt.includes('NÃO FICOU REGISTRADA')],
-     ['ok', 'ja', true, 'velho', true, true]);
-  // v7.200.0 / .gs v5.44: a recusa sem `regua` é o .gs antigo conferindo pela régua RODANDO — é re-deploy, não "tela desatualizada"
-  const RV1 = _ucvTrocaResposta({ ok:true, trocado:false, recusado:true, motivo:'nao-bate', erro:'a UEP enviada (1.78) não bate com a média das medições (1.51) — a tela estava desatualizada' });
-  ok('recusa do .gs antigo (sem a régua na resposta): diz que falta o v5.44 e que nada foi gravado', [RV1.tipo, RV1.txt.includes('.gs v5.44'), RV1.txt.includes('desatualizada')], ['velho', true, false]);
-  ok('sem resposta ≠ não trocou: o cadastro relido decide; cadastro que não veio não decide',
-     [_ucvTrocaConfere([{ codigo:'501.059.002', uep:1.78 }], RS.troca.digitar).tipo, _ucvTrocaConfere([{ codigo:'501059002', uep:2.29 }], RS.troca.digitar).tipo,
-      _ucvTrocaConfere(null, RS.troca.digitar).tipo], ['trocou', 'nao', 'incerto']);
-  ok('o plural é "medições", nunca "mediçãoões" (o defeito da lista do print de 26/10)', [/medição\$\{/.test(JS), _ucvRegsHtml(REGS.slice(0, 2), PRODS.find(p => p.rot === ROT), null).includes('2 medições ·')], [false, true]);
-  // a paridade da regra: painel (_ucvRegsResumo) × .gs (_cronoTrocaRegra), nos mesmos casos
+  ok('com o tempo digitado (12,4 s → 1,85): os cartões são DELE, a regra é a das registradas (1,78), e embaixo o que ele dá',
+     [_ucvU2(RT.uepVol), HT.includes('>1,85<'), HT.includes('REGRA CUMPRIDA'), HT.includes('A regra diz <b>TROCA PARA 1,78</b>'), HT.includes('Esta medição dá:')],
+     ['1,85', true, true, true, true]);
+  ok('sem medição registrada do volume: A REGRA AINDA NÃO SE CUMPRE (o que ela pede); lista não lida: LENDO',
+     [_uepConvHtml(_uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, [])).includes('A REGRA AINDA NÃO SE CUMPRE</div><p>nenhuma medição registrada deste volume. A regra pede 2 medições válidas (30+ volumes e lacunas até 15% cada), somando 100 volumes.'),
+      _uepConvHtml(_uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, null)).includes('LENDO AS MEDIÇÕES REGISTRADAS')], [true, true]);
+  const RP = _uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, [ST2('26/10/2026', 12.4, 20, 1.57), ST2('23/10/2026', 11.5, 61, 1.46)]);
+  ok('uma medição de 20 volumes não vale: AINDA NÃO SE CUMPRE, com o que falta e o porquê', [RP.regRes.veredito, _uepConvHtml(RP).includes('1 medição válida de 2, 61 volumes: falta 1 medição válida · faltam 39 volumes. Não vale: 26/10 20 volumes (pede 30).')],
+     ['falta', true]);
+  // a TRAVA: o cadastro manda (coluna UEP_TRAVA, uepTrava no getProdutos); o detalhe vem da UEP_TRAVAS
+  const CATT = [{ codigo:'501059001', desc:'VOL 1/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', uep:2.71, uepVig:'16/10/2026', uepTrava:'' },
+                { codigo:'501059002', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'BRANCO', uep:1.78, uepVig:'26/10/2026 DIGITADA', uepTrava:'26/10/2026 PPCP' },
+                { codigo:'501139001', desc:'VOL 1/1 ARMARIO ENCANTO', cor:'BRANCO', uep:2.23, uepVig:'25/09/2026', uepTrava:'' },
+                { codigo:'501149001', desc:'VOL 1/1 MESA CABECEIRA MADERO', cor:'BRANCO', uep:1, uepVig:'25/09/2026', uepTrava:'' }];
+  const PT = _uepConvProdutos(CATT), pV2 = PT.find(p => p.rot === ROT);
+  const TRAVAS = [{ em:'26/10/2026 10:40', modelo:'501059', produto:'PENTEADEIRA CAMARIM STRASS', volume:'VOL 2/2', uep:1.78, antes:2.29, medida:1.78, decisao:'TROCOU', medicoes:2, volumes:113, motivo:'', destravadaEm:'' }];
+  const tr = _ucvTravaDe(pV2, TRAVAS);
+  ok('_ucvTravaDe: travada pelo cadastro, com o detalhe do registro; sem a coluna no cadastro (.gs antigo), vale o registro',
+     [tr.travada, tr.carimbo, tr.T.uep, tr.mudou, tr.apagada, _ucvTravaDe(PT.find(p => /ENCANTO/.test(p.rot)), TRAVAS),
+      _ucvTravaDe(_uepConvProdutos(CATT.map(c => Object.assign({}, c, { uepTrava:undefined }))).find(p => p.rot === ROT), TRAVAS).travada],
+     [true, '26/10/2026 PPCP', 1.78, false, false, null, true]);
+  ok('_ucvTravaDe: a UEP mudou na planilha (cadastro ≠ travada) · a trava foi apagada na planilha (registro ativo, cadastro sem carimbo) · destravada não conta',
+     [_ucvTravaDe(_uepConvProdutos(CATT.map(c => c.codigo === '501059002' ? Object.assign({}, c, { uep:1.9 }) : c)).find(p => p.rot === ROT), TRAVAS).mudou,
+      (() => { const t = _ucvTravaDe(_uepConvProdutos(CATT.map(c => Object.assign({}, c, { uepTrava:'' }))).find(p => p.rot === ROT), TRAVAS); return [t.travada, t.apagada]; })(),
+      _ucvTravaDe(_uepConvProdutos(CATT.map(c => Object.assign({}, c, { uepTrava:'' }))).find(p => p.rot === ROT), [Object.assign({}, TRAVAS[0], { destravadaEm:'27/10/2026 09:00' })])],
+     [true, [false, true], null]);
+  { // revisão: uma cor nova entra num volume travado — a trava continua nos códigos antigos; conta como TRAVADA, com DESTRAVAR e o aviso
+    const CP = CATT.concat([{ codigo:'501059004', desc:'VOL 2/2 PENTEADEIRA CAMARIM STRASS', cor:'ROSA', uep:1.78, uepVig:'12/11/2026', uepTrava:'' }]);
+    const PPc = _uepConvProdutos(CP), tp = _ucvTravaDe(PPc.find(p => p.rot === ROT), TRAVAS);
+    const TMp = _ucvTravaMontar([], PPc, TRAVAS);
+    ok('travada em parte (cor nova sem a trava): TRAVADA com o aviso e o 🔓 DESTRAVAR — nunca o TRAVAR que o .gs recusaria',
+       [tp.travada, tp.parcial, TMp.travadas.length, TMp.cumpriu.length, _ucvTravaHtml(TMp, null).includes('entrou código novo no volume, sem a trava — destrave e trave de novo'),
+        _ucvTravaHtml(TMp, null).includes('onclick="_ucvDestravaAbrir(0)"'), _uepConvHtml(_uepConvMontar(PPc, ROT, 12.4, 6.7, 2530, 15, undefined, REGS, TRAVAS)).includes('Entrou código novo neste volume, sem a trava')],
+       [true, true, 1, 0, true, true, true]); }
+  { const RJ = _uepConvMontar(PRODS, '501059 · PENTEADEIRA CAMARIM STRASS', 30, 6.7, 2530, 15, undefined, REGS.concat([Object.assign(ST2('27/10/2026', 30, 60, 4), { volume:'JOGO 2 VOL' }), Object.assign(ST2('28/10/2026', 30.5, 60, 4), { volume:'JOGO 2 VOL' })]));
+    const HJ = _uepConvHtml(RJ);
+    ok('o JOGO (os volumes juntos): a caixa diz que a trava é por volume — nunca REGRA CUMPRIDA nem o caminho para a TRAVA, que não lista JOGO; a lista diz o mesmo',
+       [HJ.includes('A TRAVA É POR VOLUME'), HJ.includes('REGRA CUMPRIDA'), HJ.includes('ABRIR NA TRAVA DA UEP'),
+        _ucvRegsHtml(RJ.regs, RJ.p, null, null, RJ.volCad).includes(UCV_REG_VEREDITO.jogo[1])], [true, false, false, true]); }
+  { const RF = _uepConvMontar(PRODS, ROT, 12.4, 6.7, 2530, 15, undefined, null);
+    const lendo = _uepConvHtml(RF); RF.regsFalha = 'sem-resposta'; const falhou = _uepConvHtml(RF);
+    ok('a leitura das medições: LENDO enquanto lê; NÃO FORAM LIDAS quando falhou (como a lista logo abaixo diz)',
+       [lendo.includes('LENDO AS MEDIÇÕES REGISTRADAS'), falhou.includes('AS MEDIÇÕES REGISTRADAS NÃO FORAM LIDAS'), falhou.includes('LENDO')], [true, true, false]);
+    ok('as duas pinturas (tela e papel) passam a falha da leitura ao R',
+       [/R\.regsFalha = UCV_REGS && !UCV_REGS\.lista \? UCV_REGS\.falha : null;[\s\S]*res\.innerHTML = _uepConvHtml\(R, true\);/.test(pegaJs('function _uepConvAtualiza(')),
+        /R\.regsFalha = UCV_REGS && !UCV_REGS\.lista \? UCV_REGS\.falha : null;/.test(pegaJs('function gerarRelatorioCrono('))], [true, true]); }
+  const RTV = _uepConvMontar(PT, ROT, 12.4, 6.7, 2530, 15, undefined, REGS, TRAVAS), HTV = _uepConvHtml(RTV);
+  ok('travada: a caixa diz UEP TRAVADA, quando e por quê; a medição nova só informa (1,85 → +4,0%); o caminho para destravar é só do PPCP',
+     [HTV.includes('🔒 UEP TRAVADA · 1,78'), HTV.includes('Travada pelo PPCP em 26/10/2026 pelas 2 medições válidas (113 volumes, média 1,78)'), HTV.includes('<b>não muda a UEP</b>'),
+      HTV.includes('Esta dá 1,85 (+4,0%) — só informa'), HTV.includes('🔓 DESTRAVAR NA TRAVA DA UEP'), HTV.includes('REGRA CUMPRIDA')], [true, true, true, true, true, false]);
+  // a sub-aba
+  const RG2 = (modelo, produto, volume, sLac, volumes, em, sRod) => ({ data:String(em).slice(0, 10), em, modelo, produto, volume, sLac, sRod:sRod == null ? sLac : sRod, volumes });
+  const LT = [RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 12.4, 52, '26/10/2026 10:19'), RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 11.5, 61, '26/10/2026 10:18'),
+              RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 12.6, 70, '28/10/2026 09:00'),        // depois da trava
+              RG2('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 17.6, 11, '26/10/2026 10:11'), RG2('501149', 'MESA CABECEIRA MADERO', 'VOL 1/1', 6.7, 60, '20/10/2026 15:58', 7.9),
+              RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'JOGO 2 VOL', 13, 65, '30/10/2026 15:43'), RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'JOGO 2 VOL', 13.2, 60, '31/10/2026 09:10')];
+  const TM = _ucvTravaMontar(LT, PT, TRAVAS);
+  ok('a sub-aba: o STRASS VOL 2/2 travado, a medição de depois só informa; o ENCANTO ainda não cumpre; a base e o JOGO fora',
+     [TM.travadas.map(x => x.p.rot), TM.travadas[0].novas.n, _ucvU2(TM.travadas[0].novas.uepMed), fmt1(TM.travadas[0].novas.difPct), TM.falta.map(x => x.p.rot), TM.cumpriu.length, TM.base, TM.jogos, TM.travasLidas],
+     [[ROT], 1, '1,88', '5,7', ['501139 · ARMARIO ENCANTO'], 0, true, 2, true]);
+  const TM2 = _ucvTravaMontar(LT.slice(0, 2), _uepConvProdutos(CATT.map(c => Object.assign({}, c, { uepTrava:'', uep:c.codigo === '501059002' ? 2.29 : c.uep }))), []);
+  ok('sem trava: o STRASS VOL 2/2 cumpriu (TROCA para 1,78), com o que gravar em cada código', [TM2.cumpriu.map(x => [x.p.rot, x.S.veredito, _ucvU2(x.S.uepMed)]), TM2.cumpriu[0].digitar.map(g => [g.uep, g.cods.map(c => c.cod)])],
+     [[[ROT, 'troca', '1,78']], [[1.78, ['501059002']]]]);
+  ok('a ordem de quem cumpriu: TROCA primeiro, depois a borda, depois a maior diferença', (() => {
+    const mk = (rot, ver, borda, dif) => ({ p:{ rot }, S:{ veredito:ver, borda, difPct:dif } });
+    const L = [mk('a', 'fica', false, 1), mk('b', 'fica', true, 9.7), mk('c', 'troca', false, 12.7), mk('d', 'troca', false, 14.3), mk('e', 'fica', false, -3)];
+    const ad = x => x.S.difPct == null ? 99 : Math.abs(x.S.difPct);
+    return L.sort((a, b) => (b.S.veredito === 'troca') - (a.S.veredito === 'troca') || b.S.borda - a.S.borda || ad(b) - ad(a) || a.p.rot.localeCompare(b.p.rot)).map(x => x.p.rot); })(),
+     ['d', 'c', 'b', 'e', 'a']);
+  ok('a mesma ordem está no _ucvTravaMontar', /out\.cumpriu\.sort\(\(a, b\) => \(b\.S\.veredito === 'troca'\) - \(a\.S\.veredito === 'troca'\) \|\| b\.S\.borda - a\.S\.borda \|\| ad\(b\) - ad\(a\)/.test(pegaJs('function _ucvTravaMontar(')), true);
+  global.UCV_TRAVA_MSG = ''; global.UCV_TRAVANDO = false;
+  const HTM = _ucvTravaHtml(TM2, null), HTT = _ucvTravaHtml(TM, null);
+  ok('o desenho: as 3 regras, CUMPRIRAM (com TROCAR E TRAVAR pelo índice), TRAVADAS e AINDA NÃO CUMPRIRAM, a base e o JOGO fora',
+     [HTM.includes('1 · A MEDIÇÃO VALE'), HTM.includes('<em>30 volumes</em>'), HTM.includes('<em>15%</em>'), HTM.includes('<em>2 medições válidas</em>'), HTM.includes('<em>100 volumes</em>'), HTM.includes('<em>90–110%</em>'),
+      HTM.includes('CUMPRIRAM A REGRA · ESPERANDO O PPCP'), HTM.includes('onclick="_ucvTravaAbrir(0)"'), HTM.includes('🔒 TROCAR E TRAVAR<small>em 1,78</small>'), HTM.includes('TROCA PARA 1,78'),
+      HTT.includes('TRAVADAS PELO PPCP'), HTT.includes('onclick="_ucvDestravaAbrir(0)"'), HTT.includes('1 medição · média 1,88 (+5,7%)<small>só informa — a UEP não muda</small>'),
+      HTT.includes('AINDA NÃO CUMPRIRAM'), HTT.includes('não vale: 26/10 11 volumes (pede 30)'), HTT.includes('MESA CABECEIRA MADERO</b> — a base, 6,7 s congelados'), HTT.includes('2 medições de JOGO — a trava é por volume')],
+     new Array(17).fill(true));
+  ok('o desenho: o .gs antigo (sem as travas) é dito; sem as medições lidas, o estado — nunca 0',
+     [_ucvTravaHtml(Object.assign({}, TM, { travasLidas:false }), null).includes('FALTA O .gs v5.64'), _ucvTravaHtml(null, null).includes('Lendo'), _ucvTravaHtml(null, 'falhou').includes('não foram lidas'),
+      _ucvTravaHtml(null, 'sem-endpoint').includes('re-deploye')], [true, true, true, true]);
+  ok('o desenho da trava não faz conta (tudo pronto do _ucvTravaMontar)',
+     ['function _ucvTravaHtml(', 'function _ucvTravaDlgHtml(', 'function _ucvRegraBoxHtml('].filter(f => /_ucvRegraUep\(|_ucvMedValida\(|_uepConvCadastro\(|_ucvTravaMontar\(|UEP_PAD_FAIXA\[0\] *<=/.test(pegaJs(f))), []);
+  // o diálogo do PPCP
+  const DL = _ucvTravaDlgHtml({ x:TM2.cumpriu[0], acao:'travar', modo:'trocar' });
+  ok('o diálogo: o que a regra diz em destaque (A REGRA), a outra opção contra a regra, o código (senha) e o motivo; o código não fica no painel',
+     [DL.includes('🔒 TRAVAR A UEP · 501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'), DL.includes('2 medições válidas (26/10) · 113 volumes · média 1,78 · cadastro 2,29 (−22,3%)'),
+      /TROCAR PARA 1,78 E TRAVAR<\/b><i>A REGRA<\/i>/.test(DL), DL.includes('TRAVAR EM 2,29, COMO ESTÁ'), DL.includes('contra a regra — fica registrado que o PPCP escolheu manter.'),
+      DL.includes('id="ucv-dlg-cod" type="password"'), DL.includes('MOTIVO (opcional)'), DL.indexOf('TROCAR PARA') < DL.indexOf('TRAVAR EM')], new Array(8).fill(true));
+  const DLF = _ucvTravaDlgHtml({ x:Object.assign({}, TM2.cumpriu[0], { S:Object.assign({}, TM2.cumpriu[0].S, { veredito:'fica' }) }), acao:'travar', modo:'manter' });
+  ok('a regra diz FICA: TRAVAR EM … em cima (A REGRA), TROCAR contra a regra embaixo; sem UEP no cadastro, não há MANTER',
+     [DLF.indexOf('TRAVAR EM 2,29') < DLF.indexOf('TROCAR PARA'), /TRAVAR EM 2,29, COMO ESTÁ<\/b><i>A REGRA<\/i>/.test(DLF), DLF.includes('Contra a regra — fica registrado.'),
+      _ucvTravaDlgHtml({ x:Object.assign({}, TM2.cumpriu[0], { cad:null }), acao:'travar', modo:'trocar' }).includes('COMO ESTÁ')], [true, true, true, false]);
+  const DD = _ucvTravaDlgHtml({ x:TM.travadas[0], acao:'destravar' });
+  ok('destravar: o código e o MOTIVO obrigatório', [DD.includes('🔓 DESTRAVAR A UEP'), DD.includes('MOTIVO (obrigatório)'), DD.includes('Travada em 26/10/2026 · 1,78')], [true, true, true]);
+  global.CFG = { sheetsUrl:'https://script.google.com/macros/s/X/exec' };
+  const UT = decodeURIComponent(_ucvTravaUrl({ x:TM2.cumpriu[0], acao:'travar', modo:'trocar' }, '4321', 'ok', 'tZ'));
+  ok('a URL: travarUep com os códigos e a UEP de cada um (trocar), o modo, o id da retentativa; manter manda só os códigos; destravar, o motivo',
+     [UT.includes('action=travarUep&modelo=501059&produto=PENTEADEIRA CAMARIM STRASS&volume=VOL 2/2&modo=trocar&travaId=tZ&cods=501059002:1.78&codigo=4321&motivo=ok'),
+      decodeURIComponent(_ucvTravaUrl({ x:TM2.cumpriu[0], acao:'travar', modo:'manter' }, '4321', '', 'tZ')).includes('&cods=501059002&'),
+      decodeURIComponent(_ucvTravaUrl({ x:TM.travadas[0], acao:'destravar' }, '4321', 'mudou', '')).includes('action=destravarUep&modelo=501059&produto=PENTEADEIRA CAMARIM STRASS&volume=VOL 2/2&cods=501059002&codigo=4321&motivo=mudou')],
+     [true, true, true]);
+  ok('a resposta: travou (trocou · manteve) · já · recusou (com o motivo) · erro · .gs antigo (cai no getDados)',
+     [_ucvTravaResposta({ ok:true, travado:true, decisao:'TROCOU', uep:1.78, n:3 }, 'travar').txt, _ucvTravaResposta({ ok:true, travado:true, decisao:'MANTEVE', uep:2.29, n:3 }, 'travar').txt,
+      _ucvTravaResposta({ ok:true, travado:true, jaTravada:true }, 'travar').tipo, _ucvTravaResposta({ ok:true, recusado:true, erro:'código do PPCP errado' }, 'travar').txt,
+      _ucvTravaResposta({ ok:true, slots:[] }, 'travar').txt.includes('.gs v5.64'),
+      _ucvTravaResposta({ ok:true, destravado:true, n:3 }, 'destravar').tipo, _ucvTravaResposta({ ok:true, travado:true, decisao:'TROCOU', uep:1.78, n:1, logErro:'y' }, 'travar').txt.includes('UEP_TRAVAS FALHOU')],
+     ['✓ UEP trocada para 1,78 e travada (3 códigos). Atualize a aba UEP da sua planilha de programação hoje.', '✓ UEP 2,29 travada (3 códigos).', 'ja',
+      'O Apps Script não travou: código do PPCP errado. Nada foi gravado.', true, 'ok', true]);
+  ok('sem resposta ≠ não gravou: o cadastro relido decide (a UEP_TRAVA dos códigos); sem ele, diz que não dá para saber',
+     [_ucvTravaConfere([{ codigo:'501.059.002', uepTrava:'26/10/2026 PPCP' }], { x:TM2.cumpriu[0], acao:'travar' }).startsWith('✓ Travado'),
+      _ucvTravaConfere([{ codigo:'501059002', uepTrava:'' }], { x:TM2.cumpriu[0], acao:'travar' }).startsWith('Não travou'),
+      _ucvTravaConfere([{ codigo:'501059002', uepTrava:'' }], { x:TM.travadas[0], acao:'destravar' }).startsWith('✓ Destravado'),
+      _ucvTravaConfere(null, { x:TM2.cumpriu[0], acao:'travar' }).includes('não dá para saber')], [true, true, true, true]);
+  ok('o plural é "medições", nunca "mediçãoões"', [/medição\$\{/.test(JS), _ucvRegsHtml(REGS.slice(0, 2), PRODS.find(p => p.rot === ROT), null).includes('2 medições ·')], [false, true]);
+  // a paridade da regra: painel (_ucvRegraUep) × .gs (_cronoRegraUep), nos mesmos casos
   const GS = fs.readFileSync(path.join(__dirname, 'ritmoprod_appscript.gs'), 'utf8');
   const pegaGs = a => { const i = GS.indexOf(a); let k = GS.indexOf('{', GS.indexOf(')', i)), n = 0, j = k; for(; j < GS.length; j++){ if(GS[j] === '{') n++; else if(GS[j] === '}' && --n === 0) break; } return GS.slice(i, j + 1); };
   const gConst = n => eval('(' + new RegExp('const ' + n + ' = ([^;]+);').exec(GS)[1] + ')');
-  ok('as constantes da regra são as mesmas no painel e no .gs (a base sem as lacunas também)',
-     [gConst('CRONO_TROCA_MIN_VOL_GS'), gConst('CRONO_TROCA_FAIXA_GS'), gConst('CRONO_BASE_S_GS')], [UCV_TROCA_MIN_VOL, UEP_PAD_FAIXA, UEP_BASE_MEDIDA.seg]);
-  const G = new Function('CRONO_TROCA_FAIXA_GS', 'CRONO_TROCA_MIN_VOL_GS', 'CRONO_BASE_S_GS', pegaGs('function _cronoTrocaRegra(') + '\nreturn _cronoTrocaRegra;')(gConst('CRONO_TROCA_FAIXA_GS'), gConst('CRONO_TROCA_MIN_VOL_GS'), gConst('CRONO_BASE_S_GS'));
-  const CASOS = [[REGS.slice(0, 2), 2.29], [REGS.slice(0, 2), 1.78], [[ST2('26/10/2026', 12.4, 29, 1.57)], 2.29], [[ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 19, 61, 2.4)], 2.29],
-                 [[ST2('26/10/2026', 12.4, null, 1.57)], 2.29], [[ST2('26/10/2026', 0, 40, 1.57, { baseS:0 })], 2.29], [[ST2('26/10/2026', 12.4, 40, 1.57)], 0],
-                 [[ST2('26/10/2026', 22, 40, 2.78)], 2.29], [[ST2('26/10/2026', 0, 0, 0)], 2.29],
-                 [[ST2('04/11/2026', 16.6, 60, 2.58, { sRod:20.4 })], 2.07],                                   // HOME ANGEL: lacunas no rodando, a régua é o sem
-                 [[{ data:'26/10/2026', sRod:12.4, baseS:7.9, uep:1.57, uepCad:2.29, volumes:52 }], 2.29]];  // sem o SEM AS LACUNAS: não conta
+  ok('as constantes da regra são as mesmas no painel e no .gs (a base sem as lacunas e a base também)',
+     [gConst('TRAVA_MED_MIN_VOL_GS'), gConst('TRAVA_MED_MAX_LAC_GS'), gConst('TRAVA_MIN_MED_GS'), gConst('TRAVA_MIN_VOL_GS'), gConst('TRAVA_FAIXA_GS'), gConst('CRONO_BASE_S_GS'), gConst('TRAVA_BASE_GS')],
+     [UCV_MED_MIN_VOL, UCV_MED_MAX_LAC, UCV_REGRA_MIN_MED, UCV_REGRA_MIN_VOL, UEP_PAD_FAIXA, UEP_BASE_MEDIDA.seg, UEP_BASE]);
+  const NOMES = ['TRAVA_MED_MIN_VOL_GS', 'TRAVA_MED_MAX_LAC_GS', 'TRAVA_MIN_MED_GS', 'TRAVA_MIN_VOL_GS', 'TRAVA_FAIXA_GS', 'CRONO_BASE_S_GS'];
+  const G = new Function(...NOMES, pegaGs('function _cronoMedValida(') + '\n' + pegaGs('function _cronoRegraUep(') + '\nreturn _cronoRegraUep;')(...NOMES.map(gConst));
+  const CASOS = [[REGS.slice(0, 2), 2.29], [REGS.slice(0, 2), 1.78], [[ST2('26/10/2026', 12.4, 29, 1.57), ST2('23/10/2026', 11.5, 80, 1.46)], 2.29],
+                 [[ST2('26/10/2026', 12.4, 52, 1.57), ST2('23/10/2026', 19, 61, 2.4)], 2.29], [[ST2('26/10/2026', 12.4, null, 1.57)], 2.29], [[ST2('26/10/2026', 0, 40, 1.57)], 2.29],
+                 [REGS.slice(0, 2), 0], [[ST2('26/10/2026', 22, 140, 2.78)], 2.29], [[ST2('26/10/2026', 0, 0, 0)], 2.29],
+                 [[ST2('04/11/2026', 16.6, 60, 2.58, { sRod:20.4 }), ST2('04/11/2026', 17.7, 60, 2.6, { sRod:19 })], 2.07],     // HOME ANGEL: 18,6% não vale; 6,8% vale
+                 [[ST2('26/10/2026', 11.05, 52, 1.6, { sRod:13 }), ST2('23/10/2026', 11.5, 61, 1.46)], 2.29],                // 15,0% exato vale
+                 [[ST2('26/10/2026', 12.4, 52, 1.6, { sRod:14.6 }), ST2('23/10/2026', 11.5, 61, 1.46)], 2.29],               // 15,1% não vale
+                 [[ST2('26/10/2026', 12.4, 52, 1.6, { sRod:'' }), ST2('23/10/2026', 11.5, 61, 1.46)], 2.29],                 // sem o rodando
+                 [[ST2('26/10/2026', 14.14, 60, 2.1), ST2('23/10/2026', 14.16, 60, 2.1)], 1.9],                              // a borda de 110%
+                 [[{ data:'26/10/2026', sRod:12.4, baseS:7.9, uep:1.57, uepCad:2.29, volumes:52 }], 2.29]];
   ok('a regra do painel e a do .gs dão o MESMO veredito, amostra e média em todos os casos',
-     CASOS.map(([r, c]) => { const a = _ucvRegsResumo(r, c), b = G(r, c); return [a.veredito === b.veredito, a.nVol === b.nVol, (a.uepMed || 0).toFixed(6) === (b.uepMed || 0).toFixed(6)]; }).filter(x => x.includes(false)), []);
+     CASOS.map(([r, c]) => { const a = _ucvRegraUep(r, c), b = G(r, c); return [a.veredito === b.veredito, a.nVal === b.nVal, a.nVol === b.nVol, (a.uepMed || 0).toFixed(6) === (b.uepMed || 0).toFixed(6)]; }).filter(x => x.includes(false)), []);
+  ok('os casos cobrem os três vereditos', [...new Set(CASOS.map(([r, c]) => _ucvRegraUep(r, c).veredito))].sort(), ['falta', 'fica', 'troca']);
   // a coluna TROCA (PPCP, 26/10/2026: "colocar que não troca devido a variar 90 a 110 e tbm se foi trocado")
-  const RTR = (modelo, produto, volume, uep, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, uep, uepCad, volumes:50, sLac:uep * UEP_BASE_MEDIDA.seg });
+  const RTR = (modelo, produto, volume, uep, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, uep, uepCad, volumes:50, sLac:uep * UEP_BASE_MEDIDA.seg, sRod:uep * UEP_BASE_MEDIDA.seg });
   const TROCASR = [{ modelo:'501061', produto:'PENTEADEIRA CAMARIM ELOA', volume:'VOL 2/2', gravado:'26/10/2026 12:11', vig:'26/10/2026', codigos:[{ cod:'501061002', uep:1.82, antes:2.53 }, { cod:'501061004', uep:1.82, antes:2.53 }] }];
   const STR = _ucvRegsStatus([RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), RTR('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 1.81, 1.49),
     RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.82, 2.53), RTR('501061', 'PENTEADEIRA CAMARIM ELOA', 'VOL 2/2', 1.90, 1.82),
@@ -1325,6 +1431,9 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
   ok('a coluna TROCA: dentro de 90–110% NÃO TROCA, fora FORA DA FAIXA, TROCADA só a medição que viu o cadastro de ANTES da troca (a de depois é julgada contra a UEP nova), a base nunca, sem cadastro —',
      STR.map(x => [x.est, x.dif != null ? +x.dif.toFixed(1) : x.antes != null ? [x.antes, x.depois, x.vig] : null]),
      [['nao-troca', 7.6], ['fora', 21.5], ['trocada', [2.53, 1.82, '26/10/2026']], ['nao-troca', 4.4], ['nao-troca', -8.7], ['base', null], ['sem-cadastro', null]]);
+  { const NV = _ucvRegsStatus([Object.assign(RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), { volumes:28 }), Object.assign(RTR('501094', 'MESA CABECEIRA SLEEP', 'VOL 1/1', 1.01, 0.83), { sRod:9.1, volumes:82 })], TROCASR);
+    ok('v7.233.0: a medição que não vale (menos de 30 volumes, lacunas acima de 15%) sai NÃO VALE com o porquê — antes de qualquer outra situação',
+       [NV.map(x => [x.est, x.mot]), _ucvStatusCel(NV[1])], [[['nao-vale', '28 volumes (pede 30)'], ['nao-vale', 'lacunas 25,6% (até 15%)']], '<span class="ucv-pill warn">NÃO VALE</span><small>lacunas 25,6% (até 15%)</small>']); }
   ok('v7.200.0: a coluna TROCA julga pela régua de hoje (sem as lacunas ÷ 6,7), nunca pela UEP_CRONO gravada (a rodando de 1,40 daria FORA)',
      _ucvRegsStatus([Object.assign(RTR('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 1.70, 1.58), { uep:1.4 })], TROCASR).map(x => [x.est, +x.dif.toFixed(1)]), [['nao-troca', 7.6]]);
   ok('a célula diz o porquê: quanto variou e a faixa; a troca com a data e antes → depois',
@@ -1391,58 +1500,79 @@ console.log('\n── CRONOANÁLISE → UEP: trocar pelas medições e a confer�
      [true, true, '', true, '', '']);
   // a tela
   const iCr2 = html.indexOf('<section id="sec-crono"'), SEC = html.slice(iCr2, html.indexOf('</section>', iCr2));
-  ok('a marcação: o aviso da conferência no topo, a mensagem da troca e a conferência FORA do resultado (refeito a cada tecla)',
-     [SEC.indexOf('id="uep-conv-conf-av"') < SEC.indexOf('class="uep-card"'), SEC.indexOf('id="uep-conv-t-msg"') > SEC.indexOf('id="uep-conv-res"'),
-      SEC.indexOf('id="uep-conv-conf"') > SEC.indexOf('id="uep-conv-regs"'), /placeholder="dd\/mm\/aaaa"/.test(SEC), /placeholder="obrigatório"/.test(SEC)],
-     [true, true, true, true, true]);
-  const RPI = pegaJs('function _ucvRegPintar('), REG = pegaJs('async function _ucvRegistrar('), TRC = pegaJs('async function _ucvTrocar(');
+  ok('a marcação: o aviso da conferência no topo; a TRAVA DA UEP e a conferência FORA do resultado (refeito a cada tecla); o diálogo do PPCP fora da aba',
+     [SEC.indexOf('id="uep-conv-conf-av"') < SEC.indexOf('class="uep-card"'), SEC.indexOf('id="uep-conv-trava"') > SEC.indexOf('id="uep-conv-regs"'),
+      SEC.indexOf('id="uep-conv-conf"') > SEC.indexOf('id="uep-conv-trava"'), /placeholder="dd\/mm\/aaaa"/.test(SEC), /placeholder="obrigatório"/.test(SEC),
+      SEC.includes('id="uep-conv-t-msg"'), html.includes('<div class="modal-over" id="modal-trava">'), html.includes('onclick="_ucvTravaEnviar()"'), html.includes('onclick="fecharTrava()"')],
+     [true, true, true, true, true, false, true, true, true]);
+  const RPI = pegaJs('function _ucvRegPintar('), REG = pegaJs('async function _ucvRegistrar('), TRE = pegaJs('async function _ucvTravaEnviar(');
   ok('a data não tem mais HOJE de enfeite e sai do campo depois de registrar (cada medição com a sua)',
-     [/r-data[^\n]*hojeStr|placeholder *= *hojeStr/.test(RPI), /\['data', 'per', 'rod', 'vol'\]/.test(REG)], [false, true]);   // o hojeStr dos PRINCIPAIS (v7.191.0) é a data da programação, não o campo
-  ok('o TROCAR vai pelo trocarUepCrono, com confirmação e retentativa, e relê cadastro → medições → conferência em sequência',
-     [/action=trocarUepCrono/.test(TRC), /confirm\(_ucvTrocaConfirmaTxt\(/.test(TRC), /jsonpEscrita\(/.test(TRC),
-      /await _capBuscar\(\);\s*await _ucvRegsCarregar\(true\);\s*await _ucvConfCarregar\(true\);/.test(TRC), /setUepCatalogo|simularUepCatalogo/.test(TRC)],
-     [true, true, true, true, false]);
-  // o fluxo REAL do _ucvTrocar, com o Apps Script de mentira
-  eval.call(global, TRC);
-  const tMsg = { textContent:'' };
-  const fluxoTroca = resposta => {
-    const F = { chamadas:[], ordem:[] };
+     [/r-data[^\n]*hojeStr|placeholder *= *hojeStr/.test(RPI), /\['data', 'per', 'rod', 'vol'\]/.test(REG)], [false, true]);
+  ok('o ✓ TROCAR saiu: nenhuma chamada ao trocarUepCrono no painel; a TRAVA vai pelo travarUep/destravarUep, com retentativa, e relê cadastro → medições → conferência',
+     [/trocarUepCrono/.test(JS), /function _ucvTrocar\(|_ucvProntas|UCV_PRONTAS|UCV_TROCANDO/.test(JS), /jsonpEscrita\(_ucvTravaUrl\(/.test(TRE),
+      /await _capBuscar\(\);\s*await _ucvRegsCarregar\(true\);\s*await _ucvConfCarregar\(true\);/.test(TRE), /setUepCatalogo|simularUepCatalogo/.test(TRE)],
+     [false, false, true, true, false]);
+  ok('o código do PPCP nunca é guardado no painel (nem localStorage, nem variável global)', /localStorage|_ucvGuarda|UCV_[A-Z_]*COD/.test(TRE), false);
+  // o fluxo REAL do _ucvTravaEnviar, com o Apps Script de mentira
+  ['function _ucvTravaPinta(', 'function _ucvTravaAbrir(', 'function _ucvDestravaAbrir(', 'function fecharTrava(', 'async function _ucvTravaEnviar('].forEach(f => eval.call(global, pegaJs(f)));
+  const fluxoTrava = (resposta, campos) => {
+    const F = { chamadas:[], ordem:[], alertas:[], modal:{ on:true }, pinturas:[] };
+    const els = { 'ucv-dlg-cod':{ value:(campos || {}).cod == null ? '4321' : campos.cod, focus:() => {} }, 'ucv-dlg-mot':{ value:(campos || {}).mot || '' },
+                  'modal-trava':{ classList:{ add:() => { F.modal.on = true; }, remove:() => { F.modal.on = false; } } }, 'modal-trava-c':{ innerHTML:'' }, 'modal-trava-ok':{ textContent:'', disabled:false } };
+    global.document = { getElementById:id => els[id] || null };
     global.CFG = { sheetsUrl:'https://script.google.com/macros/s/X/exec' };
-    global.UCV_TROCANDO = false; global.UEP_CONV_PRODS = PRODS; global.hojeStr = () => '26/10/2026';
-    global._uepConvEntradas = () => ({ txt:ROT, seg:0, base:6.7, meta:2530, tol:15, linha:'nao-lida', regs:REGS });
-    global._ucvEl = n => (n === 't-msg' ? tMsg : null);
-    global.confirm = () => true; global.alert = () => {};
-    global._uepConvAtualiza = () => { F.trocandoNaPintura = F.trocandoNaPintura || global.UCV_TROCANDO; };
-    global.CAP_FALHA = null; global.CAP_RAW = [{ codigo:'501059002', uep:2.29 }];
+    global.UCV_TRAVANDO = false; global.UCV_TRAVA_MSG = ''; global.UCV_TRAVA = TM2;
+    global.alert = t => F.alertas.push(t);
+    global._uepConvAtualiza = () => { F.pinturas.push({ msg:global.UCV_TRAVA_MSG, travando:global.UCV_TRAVANDO }); };
+    global.CAP_FALHA = null; global.CAP_RAW = [{ codigo:'501059002', uepTrava:'' }];
     global._capBuscar = async () => { F.ordem.push('cadastro'); };
     global._ucvRegsCarregar = async () => { F.ordem.push('medições'); };
     global._ucvConfCarregar = async () => { F.ordem.push('conferência'); };
-    global.jsonpEscrita = async url => { F.chamadas.push(url); if(resposta instanceof Error) throw resposta; return resposta; };
+    // como o de verdade: chama o onTentativa (a sub-aba pinta "Gravando…") e lança no erro
+    global.jsonpEscrita = async (url, onT) => { if(onT) onT(1); F.chamadas.push(url); F.botao = els['modal-trava-ok'].textContent; F.travandoNaPintura = global.UCV_TRAVANDO; if(resposta instanceof Error) throw resposta; return resposta; };
+    _ucvTravaAbrir(0);
     return F;
   };
   _assincronos.push(async () => {
-    let F = fluxoTroca({ ok:true, trocado:true, n:1, vigencia:'26/10/2026' });
-    await _ucvTrocar();
+    let F = fluxoTrava({ ok:true, travado:true, decisao:'TROCOU', uep:1.78, n:1 });
+    await _ucvTravaEnviar();
     const u = decodeURIComponent(F.chamadas[0] || '');
-    ok('fluxo TROCAR: manda modelo, produto, volume e o código com a UEP nova; relê cadastro → medições → conferência; destrava',
-       [F.chamadas.length, u.includes('action=trocarUepCrono&modelo=501059&produto=PENTEADEIRA CAMARIM STRASS&volume=VOL 2/2&cods=501059002:1.78&regua=lac'),
-        F.ordem, global.UCV_TROCANDO, F.trocandoNaPintura, tMsg.textContent.startsWith('✓ UEP trocada no cadastro: 1 código')],
-       [1, true, ['cadastro', 'medições', 'conferência'], false, true, true]);
-    F = fluxoTroca({ ok:true, slots:[] });
-    await _ucvTrocar();
-    ok('fluxo TROCAR: .gs antigo → diz que falta o v5.34 (nada gravado)', tMsg.textContent.includes('.gs v5.34'), true);
-    F = fluxoTroca({ ok:true, trocado:false, recusado:true, motivo:'nao-bate', erro:'a UEP enviada (1.78) não bate com a média das medições (1.51) — a tela estava desatualizada' });
-    await _ucvTrocar();
-    ok('fluxo TROCAR: .gs da régua rodando recusa pela média → diz que falta o v5.44 (nada gravado)', [tMsg.textContent.includes('.gs v5.44'), F.chamadas.length], [true, 1]);
-    F = fluxoTroca(new Error('Timeout — o Apps Script não respondeu em 25 s'));
-    global._capBuscar = async () => { F.ordem.push('cadastro'); global.CAP_RAW = [{ codigo:'501059002', uep:1.78 }]; };
-    await _ucvTrocar();
-    ok('fluxo TROCAR: sem resposta, mas o cadastro relido já tem 1,78 → trocou (sem falar em "Timeout")',
-       [tMsg.textContent.startsWith('✓ A UEP foi trocada'), /Timeout/.test(tMsg.textContent), global.UCV_TROCANDO], [true, false, false]);
-    F = fluxoTroca({ ok:true });
-    global._uepConvEntradas = () => ({ txt:ROT, seg:0, base:6.7, meta:2530, tol:15, linha:'nao-lida', regs:[ST2('26/10/2026', 12.4, 20, 1.57)] });
-    await _ucvTrocar();
-    ok('fluxo TROCAR: as medições não liberam (amostra pequena) → não chama o Apps Script', [F.chamadas.length, tMsg.textContent.includes('não liberam')], [0, true]);
+    ok('fluxo TRAVAR: manda o volume, o modo da regra (trocar), os códigos com a UEP e o código; relê cadastro → medições → conferência; fecha o diálogo',
+       [F.chamadas.length, u.includes('action=travarUep&modelo=501059&produto=PENTEADEIRA CAMARIM STRASS&volume=VOL 2/2&modo=trocar'), u.includes('&cods=501059002:1.78&codigo=4321&'),
+        F.ordem, global.UCV_TRAVANDO, [F.travandoNaPintura, F.botao], global.UCV_TRAVA_MSG.startsWith('✓ UEP trocada para 1,78 e travada'), F.modal.on, global.UCV_TRAVA_DLG],
+       [1, true, true, ['cadastro', 'medições', 'conferência'], false, [true, 'GRAVANDO…'], true, false, null]);
+    F = fluxoTrava({ ok:true, travado:false, recusado:true, motivo:'codigo-errado', erro:'código do PPCP errado' });
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: código errado → avisa, o diálogo FICA aberto e o campo do código é limpo; nada relido; a sub-aba sai do "Gravando…" (revisão)',
+       [F.alertas[0], F.modal.on, document.getElementById('ucv-dlg-cod').value, F.ordem, global.UCV_TRAVANDO, F.pinturas[0].msg, F.pinturas[F.pinturas.length - 1]],
+       ['O Apps Script não travou: código do PPCP errado. Nada foi gravado.', true, '', [], false, 'Gravando…', { msg:'', travando:false }]);
+    F = fluxoTrava({ ok:true, travado:false, recusado:true, motivo:'falta', erro:'a regra ainda não se cumpre para este volume' });
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: recusa da regra (a tela estava velha) → fecha, diz por quê e relê', [global.UCV_TRAVA_MSG.includes('a regra ainda não se cumpre'), F.modal.on, F.ordem.length], [true, false, 3]);
+    F = fluxoTrava({ ok:true, slots:[] });
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: .gs antigo → diz que falta o v5.64 (nada gravado)', global.UCV_TRAVA_MSG.includes('.gs v5.64'), true);
+    F = fluxoTrava(new Error('Timeout — o Apps Script não respondeu em 25 s'));
+    global._capBuscar = async () => { F.ordem.push('cadastro'); global.CAP_RAW = [{ codigo:'501059002', uepTrava:'12/11/2026 PPCP' }]; };
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: sem resposta, mas o cadastro relido já tem a trava → travou', [global.UCV_TRAVA_MSG.startsWith('✓ Travado'), global.UCV_TRAVANDO], [true, false]);
+    F = fluxoTrava(new Error('Lock timeout'));
+    global._capBuscar = async () => { F.ordem.push('cadastro'); global.CAP_RAW = [{ codigo:'501059002', uepTrava:'' }]; };
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: o servidor responde erro (ok:false — o jsonpEscrita lança com a mensagem): diz a mensagem dele, nunca "sem resposta"',
+       [global.UCV_TRAVA_MSG, /sem resposta/i.test(global.UCV_TRAVA_MSG)], ['Não travou — o Apps Script respondeu: Lock timeout. Tente de novo — repetir é seguro.', false]);
+    F = fluxoTrava({ ok:true, travado:true }, { cod:'   ' });
+    await _ucvTravaEnviar();
+    ok('fluxo TRAVAR: sem o código → não chama o Apps Script', [F.chamadas.length, F.alertas[0]], [0, 'Digite o código do PPCP.']);
+    F = fluxoTrava({ ok:true, destravado:true, n:1 }, { mot:'' });
+    global.UCV_TRAVA = TM; _ucvDestravaAbrir(0);
+    await _ucvTravaEnviar();
+    ok('fluxo DESTRAVAR: sem motivo → não chama o Apps Script', [F.chamadas.length, F.alertas[0]], [0, 'Escreva o motivo para destravar.']);
+    F = fluxoTrava({ ok:true, destravado:true, n:1 }, { mot:'mudou a embalagem' });
+    global.UCV_TRAVA = TM; _ucvDestravaAbrir(0);
+    await _ucvTravaEnviar();
+    ok('fluxo DESTRAVAR: com o motivo → destravarUep; diz que a regra volta a valer', [decodeURIComponent(F.chamadas[0] || '').includes('action=destravarUep'), global.UCV_TRAVA_MSG],
+       [true, '✓ Destravado. A regra volta a valer para este volume.']);
   });
 }
 
@@ -1467,12 +1597,12 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
     CV2('501114004', 'VOL 1/1 PAINEL SIRIUS 1.4', 1.49, '16/10/2026'),
     CV2('501999002', 'VOL 1/1 MESA RABO', 2, '16/10/2026'),
     CV2('501888001', 'VOL 1/1 PRODUTO SEM UEP', '', '')]);
-  // os mesmos casos de antes da v7.200.0: o sLac dá a MESMA UEP que o rodando ÷ 7,9 dava (a situação de cada um não muda)
-  const RG2 = (modelo, produto, volume, sRod, volumes, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, sRod, sLac:sRod * UEP_BASE_MEDIDA.seg / 7.9, baseS:7.9, uep:Math.round(sRod / 7.9 * 100) / 100, uepCad, volumes });
+  // os mesmos casos de antes da v7.200.0: o sLac dá a MESMA UEP que o rodando ÷ 7,9 dava; v7.233.0: sem lacuna (rodando = sem as lacunas), a medição vale
+  const RG2 = (modelo, produto, volume, sRod, volumes, uepCad) => ({ data:'26/10/2026', modelo, produto, volume, sRod:sRod * UEP_BASE_MEDIDA.seg / 7.9, sLac:sRod * UEP_BASE_MEDIDA.seg / 7.9, baseS:7.9, uep:Math.round(sRod / 7.9 * 100) / 100, uepCad, volumes });
   const RGS = [RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 12.4, 52, 2.29), RG2('501059', 'PENTEADEIRA CAMARIM STRASS', 'VOL 2/2', 11.5, 61, 2.29),
-    RG2('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 13.4, 70, 1.58),                                // 107% com 70 volumes: confere
-    RG2('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 17.6, 11, 2.23),                                  // confere, mas 11 volumes
-    RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 12.8, 51, 1.49), RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 14.3, 50, 1.49)];   // discordam
+    RG2('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 13.4, 70, 1.58), RG2('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 13.0, 40, 1.58),   // 2 válidas, 110 volumes, 106%: FICA (medido)
+    RG2('501139', 'ARMARIO ENCANTO', 'VOL 1/1', 17.6, 11, 2.23),                                  // 11 volumes: não vale
+    RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 12.8, 51, 1.49), RG2('501114', 'PAINEL SIRIUS 1.4', 'VOL 1/1', 14.3, 50, 1.49)];   // 2 válidas, 101 volumes: a média 1,71 (115%) — TROCA
   const HP2 = (data, hora, cods) => ({ data, hora, min:60, cods, par:{} });
   const HRS = [HP2('27/10/2026', '07:00', { 501094001:600 }), HP2('28/10/2026', '07:00', { 501094001:400 }),   // SLEEP 1.000 cx × 0,83 = 830, em 2 dias
     HP2('27/10/2026', '08:00', { 501149001:800 }), HP2('27/10/2026', '09:00', { 501060001:400, 501060002:400 }),
@@ -1488,13 +1618,17 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
   ok('a agenda: tudo o que falta medir (sem a programação lida: o mais pesado no topo; o sem UEP no fim, sem posição), depois os medidos; # é a posição pela UEP',
      M.lista.map(g => [g.rank, g.p.rot.replace(/^\d+ · /, ''), g.sit, g.grupo]),
      [[1, 'MESA CABECEIRA SLEEP', 'falta', 'rodou'], [3, 'PENTEADEIRA CAMARIM MEL · VOL 1/2', 'falta', 'rodou'], [4, 'PENTEADEIRA CAMARIM MEL · VOL 2/2', 'falta', 'rodou'],
-      [6, 'PENTEADEIRA CAMARIM STRASS · VOL 2/2', 'pronta', 'rodou'], [8, 'ARMARIO ENCANTO', 'medindo', 'rodou'], [9, 'PAINEL SIRIUS 1.4', 'medindo', 'rodou'],
+      [6, 'PENTEADEIRA CAMARIM STRASS · VOL 2/2', 'cumpriu', 'rodou'], [8, 'ARMARIO ENCANTO', 'medindo', 'rodou'], [9, 'PAINEL SIRIUS 1.4', 'cumpriu', 'rodou'],
       [10, 'MESA RABO', 'falta', 'rodou'], [11, 'PENTEADEIRA CAMARIM ELOA · VOL 1/2', 'falta', 'rodou'], [null, 'PRODUTO SEM UEP', 'falta', 'rodou'],
-      [2, 'MESA CABECEIRA MADERO', 'base', 'medido'], [5, 'PENTEADEIRA CAMARIM ELOA · VOL 2/2', 'trocada', 'medido'], [7, 'TOUCADOR MAGIC NEW', 'confere', 'medido']]);
+      [2, 'MESA CABECEIRA MADERO', 'base', 'medido'], [5, 'PENTEADEIRA CAMARIM ELOA · VOL 2/2', 'trocada', 'medido'], [7, 'TOUCADOR MAGIC NEW', 'cumpriu', 'medido']]);
   ok('as contagens da agenda: a medir, que rodaram, medidos entre os que rodaram; sem a programação, ninguém "fora da agenda" (nSemNada null)',
      [M.nPend, M.nRodou, M.nProg, M.nMed, M.nVolMed, M.nSemUep, M.nSemNada], [9, 9, 0, 3, 3, 1, null]);
-  ok('a cobertura: UEP de volume medido (base + trocada + confere com 30+ volumes) ÷ UEP da janela; PRONTA ainda não conta (o cadastro é o antigo)',
-     [fmtP(M.cobertura), M.nPrincMed, M.lista.find(g => g.sit === 'pronta').medido], ['33,0%', 3, false]);
+  ok('a cobertura: UEP de volume medido (base + trocada + a regra cumprida com a UEP que FICA) ÷ UEP da janela; cumprida com TROCA ainda não conta (o cadastro é o antigo, até o PPCP trocar e travar)',
+     [fmtP(M.cobertura), M.nPrincMed, M.lista.find(g => g.sit === 'cumpriu' && g.S.veredito === 'troca').medido, M.lista.find(g => g.sit === 'cumpriu' && g.S.veredito === 'fica').medido],
+     ['33,0%', 3, false, true]);
+  { const PPT = _uepConvProdutos([CV2('501082001', 'VOL 1/1 TOUCADOR MAGIC NEW', 1.58, '25/09/2026')].map(c => Object.assign(c, { uepTrava:'12/11/2026 PPCP' })));
+    ok('travada pelo PPCP (a coluna UEP_TRAVA do cadastro): 🔒 TRAVADA, medida, mesmo sem medição lida', [_ucvPrincEstado(PPT[0], null), _ucvPrincSub({ sit:'travada', vig:'12/11/2026 PPCP' })],
+       [{ sit:'travada', medido:true, vig:'12/11/2026' }, 'pelo PPCP em 12/11']); }
   const sl = M.lista.find(g => g.sit === 'falta' && g.rank === 1), mv2 = M.lista.find(g => g.rank === 4), el = M.lista.find(g => g.sit === 'trocada');
   ok('por volume: caixas, dias, UEP/cx do cadastro, estimada marcada; a data da troca sai da vigência',
      [sl.cx, sl.nDias, _ucvU2(sl.uepCx), mv2.estimada, sl.estimada, el.vig], [1000, 2, '0,83', true, false, '26/10/2026']);
@@ -1502,9 +1636,9 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
   ok('código sem UEP: o volume entra na AGENDA sem posição (sem peso) — é o que mais precisa do tempo; fora do cadastro só é contado',
      [M.cxSemUep, M.cxFora, su.rank, su.semUep, su.cx, su.uepCx, su.pct], [70, 30, null, true, 70, null, 0]);
   const est = n => _ucvPrincEstado(PP.find(p => p.rot.includes(n)), RGS);
-  ok('a situação: confere com menos de 30 volumes e medições que discordam continuam MEDINDO; sem medição, FALTA MEDIR',
-     [[est('ARMARIO ENCANTO').sit, est('ARMARIO ENCANTO').S.nVol], est('PAINEL SIRIUS').sit, est('PAINEL SIRIUS').S.veredito, est('MESA RABO').sit, est('MESA CABECEIRA MADERO').sit],
-     [['medindo', 11], 'medindo', 'discordam', 'falta', 'base']);
+  ok('a situação: a medição de 11 volumes não vale (MEDINDO); a regra cumprida diz PPCP DECIDE; sem medição, FALTA MEDIR',
+     [[est('ARMARIO ENCANTO').sit, est('ARMARIO ENCANTO').S.nVal, est('ARMARIO ENCANTO').S.nInv], est('PAINEL SIRIUS').sit, est('PAINEL SIRIUS').S.veredito, est('MESA RABO').sit, est('MESA CABECEIRA MADERO').sit],
+     [['medindo', 0, 1], 'cumpriu', 'troca', 'falta', 'base']);
   const M0 = _ucvPrincipais(HRS, PP, null, ehHE);
   ok('medições ainda não lidas: sem cobertura (nunca inventa 0%) e quem não é base nem trocada fica "lendo"',
      [M0.cobertura, M0.regsLidas, M0.lista.filter(g => g.sit === 'lendo').length, M0.nPrincMed], [null, false, 10, 2]);
@@ -1513,17 +1647,17 @@ console.log('\n── CRONOANÁLISE → UEP: os principais para a análise de te
   const H = _ucvPrincHtml(M, HRS, PP.find(p => p.rot.includes('SLEEP')).chave, false);
   ok('o desenho: a cobertura e quantos faltam no topo, a situação de cada um, a linha clicável e a selecionada',
      [H.includes('<b>33,0%</b> da UEP da janela já vem de volume medido'), H.includes('<b>3 de 11</b> volumes que rodaram estão medidos · classe A (80% da UEP): <b>3 de 7</b><br>A medir: <b>9</b> que rodaram · lendo a programação…'),
-      H.includes('FALTA MEDIR'), H.includes('PRONTA PARA TROCAR</span><small>113 volumes — falta o ✓ TROCAR A UEP'), H.includes('✓ TROCADA</span><small>UEP nova desde 26/10'),
-      H.includes('✓ BASE</span><small>cronometrada em 20/10'), H.includes('✓ CONFERE</span><small>70 volumes — a UEP fica'),
+      H.includes('FALTA MEDIR'), H.includes('PPCP DECIDE</span><small>a regra diz TROCA para 1,51 — na TRAVA DA UEP'), H.includes('✓ TROCADA</span><small>UEP nova desde 26/10'),
+      H.includes('✓ BASE</span><small>cronometrada em 20/10'), H.includes('PPCP DECIDE</span><small>a regra diz FICA — na TRAVA DA UEP'),
       H.includes('onclick="_ucvAbrirPrincipal(0)"'), /<tr class="sel"[^>]*>\s*<td class="n">1<\/td>/.test(H), H.includes('1,71<small>estimada</small>')],
      [true, true, true, true, true, true, true, true, true, true]);
   ok('o sem UEP na agenda diz por que não tem peso; o rodapé conta o código fora do cadastro e aponta a 🖨 da agenda; nada da FILA antiga',
      [H.includes('<td class="n">—</td><td class="ucv-pr">501888 · PRODUTO SEM UEP</td>'), H.includes('<b>—</b><small>70 cx sem UEP no cadastro</small>'), H.includes('—<small>sem UEP</small>'),
       H.includes('30 cx de código fora do cadastro (sem produto para medir)'), H.includes('🖨 IMPRIMIR → AGENDA DA CRONOANÁLISE'), H.includes('FILA DE CRONOANÁLISE'), H.includes('Fora da agenda')],
      [true, true, true, true, true, false, false]);
-  ok('o MEDINDO diz o que falta: N de 30 volumes (confere até agora) ou que as medições discordam',
-     [_ucvPrincSub(Object.assign({ sit:'medindo' }, est('ARMARIO ENCANTO'))), _ucvPrincSub(Object.assign({ sit:'medindo' }, est('PAINEL SIRIUS')))],
-     ['11 de 30 volumes · confere até agora', 'as medições discordam — meça de novo']);
+  ok('o MEDINDO diz o que falta (e quantas não valem)',
+     [_ucvPrincSub(Object.assign({ sit:'medindo' }, est('ARMARIO ENCANTO'))), _ucvPrincSub({ sit:'medindo', S:_ucvRegraUep([RG2('501082', 'TOUCADOR MAGIC NEW', 'VOL 1/1', 13.4, 70, 1.58)], 1.58) })],
+     ['faltam 2 medições válidas · faltam 100 volumes · 1 não vale', 'falta 1 medição válida · faltam 30 volumes']);
   ok('a classe A toda medida: o resumo diz que pode rever a referência',
      _ucvPrincHtml(Object.assign({}, M, { nPrincMed:7 }), HRS, null, false).includes('classe A (80% da UEP): <b>7 de 7</b> — pode rever a referência'), true);
   ok('estados da leitura das horas: lendo · falhou · .gs sem as horas', [_ucvPrincHtml(null, 'lendo').includes('Lendo a produção'), _ucvPrincHtml(null, 'falhou').includes('não foi lida'),
@@ -1998,7 +2132,7 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
     .forEach(f => eval.call(global, pegaJs(f)));
   let nId = 0;
   // v7.200.0: a UEP da medição sai do SEM AS LACUNAS ÷ 6,7 — o sLac dá a UEP do caso
-  const RD = (data, modelo, produto, volume, uep, uepCad, volumes, extra) => Object.assign({ data, modelo, produto, volume, codigos:'', sRod:uep * 7.9, sLac:uep * UEP_BASE_MEDIDA.seg, baseS:7.9,
+  const RD = (data, modelo, produto, volume, uep, uepCad, volumes, extra) => Object.assign({ data, modelo, produto, volume, codigos:'', sRod:uep * 7.0, sLac:uep * UEP_BASE_MEDIDA.seg, baseS:7.9,
     volumes, uep, uepCad, base:'MADERO MEDIDA 20/10/2026', quem:'ADRIANO RODRIGUES', regId:'c' + (++nId) }, extra || {});
   const LD = [   // da mais nova para trás, como o getCronoRegistros devolve
     RD('27/10/2026', '501139', 'ARMARIO ENCANTO', 'VOL 1/1', 2.20, 2.23, 60, { codigos:'501.139.001' }),
@@ -2018,7 +2152,7 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
      [5, [['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', 1, 0, true], ['501139 · ARMARIO ENCANTO', 2, 1, true], ['501149 · MESA CABECEIRA MADERO', 1, 0, true],
           ['501777 · PRODUTO SUMIDO', 1, 0, false]], 264, '27/10/2026']);
   ok('a coluna TROCA pela MESMA conta da lista; os contadores do dia saem dela',
-     [D.grupos.map(g => g.sts.map(x => x.est).join(',')), D.est], [['trocada', 'nao-troca,nao-troca', 'base', 'nao-troca'], { 'nao-troca':3, fora:0, trocada:1, base:1, 'sem-cadastro':0 }]);
+     [D.grupos.map(g => g.sts.map(x => x.est).join(',')), D.est], [['trocada', 'nao-troca,nao-troca', 'base', 'nao-troca'], { 'nao-troca':3, fora:0, trocada:1, base:1, 'sem-cadastro':0, 'nao-vale':0 }]);
   ok('as UEP trocadas no cadastro NESTE dia (a de 26/10 fica fora), com os códigos e a UEP nova',
      D.trocasDia, [{ rot:'501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', hora:'10:40', amostra:'2 medições, 113 volumes', antes:2.29, uep:1.51, cods:[{ cod:'501059002', uep:1.51 }], substituida:false }]);
   ok('sem as trocas lidas: null (o cartão diz que não foram lidas), nunca "nenhuma"; produção não lida: o estado vai para a NA PRODUÇÃO',
@@ -2032,11 +2166,16 @@ console.log('\n── 🖨 ESTUDOS DO DIA ──');
      [_ucvDiaDoCampo('2026-10-27'), _ucvDiaDoCampo(''), _ucvDiaDoCampo('27/10/2026'), _ucvDiaParaCampo('27/10/2026'), _ucvDiaParaCampo('')], ['27/10/2026', null, null, '2026-10-27', '']);
   // o resumo de cada volume é a regra da troca com TODAS as medições dele
   const gE = D.grupos[1];
-  ok('o resumo do volume conta as medições de outros dias (a regra da troca é do volume): as duas de hoje conferem, com a de 26/10 discordam',
-     [_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts).includes(UCV_REG_VEREDITO.confere[1]),
-      _ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas).includes(UCV_REG_VEREDITO.discordam[1]),
+  ok('o resumo do volume conta as medições de outros dias (a regra é do volume): a linha de cima segue a regra de TODAS as medições dele',
+     [_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts).includes(UCV_REG_VEREDITO[_ucvRegraUep(gE.regs, gE.cad).veredito][1]),
+      _ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas).includes(UCV_REG_VEREDITO[_ucvRegraUep(gE.todas, gE.cad).veredito][1]),
       _ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas).includes('3 medições ·')], [true, true, true]);
   const DH = _ucvDiaHtml(D, { data:'27/10/2026', hora:'10:50' });
+  { const TRd = [{ modelo:gE.p.modelo, produto:gE.p.nome, volume:_ucvRegVol(gE.p), em:'26/10/2026 09:00', uep:1, destravadaEm:'' }];
+    const DT = _ucvDiaMontar(LD, '27/10/2026', PRODS, TRD, 'lendo', 2530, TRd);
+    ok('revisão: o papel dos ESTUDOS DO DIA sabe da trava — o volume travado sai UEP TRAVADA, como na tela (nunca "o PPCP decide")',
+       [DT.grupos[1].trava && DT.grupos[1].trava.travada, _ucvDiaHtml(DT, { data:'27/10/2026', hora:'10:50' }).includes(UCV_REG_VEREDITO.travada[1]), DH.includes(UCV_REG_VEREDITO.travada[1])],
+       [true, true, false]); }
   ok('o papel: os cartões, a tabela de cada volume (a MESMA da tela), a nota das medições de outros dias e as trocas do dia',
      [DH.includes('MEDIÇÕES DO DIA'), DH.includes('3 dentro de 90–110% · 1 já trocada · 1 da base'), DH.includes(_ucvRegsHtml(gE.regs, gE.p, null, null, gE.cad, gE.pads, gE.sts, gE.todas)),
       DH.includes('as 3 medições registradas do volume — 1 é de outro dia'), DH.includes('UEP TROCADA NO CADASTRO NESTE DIA'), DH.includes('501.059.002 <b>1,51</b>'),
@@ -2101,29 +2240,32 @@ console.log('\n── CRONOANÁLISE: sub-abas ──');
   const iC = html.indexOf('<section id="sec-crono"'), SC = html.slice(iC, html.indexOf('</section>', iC));
   const pn = k => { const i = SC.indexOf(`<div class="ucv-pn${k === 'medir' ? ' on' : ''}" data-sub="${k}">`); return i < 0 ? '' : SC.slice(i, SC.indexOf('<div class="ucv-pn', i + 10) > 0 ? SC.indexOf('<div class="ucv-pn', i + 10) : SC.length); };
   // v7.207.0: o 5º é o ONDE O TEMPO VAI, que era aba
-  ok('cinco botões e cinco painéis, com as mesmas chaves; o MEDIR começa aceso nos dois; a faixa vem antes dos painéis',
+  // v7.233.0: a TRAVA DA UEP entra depois das MEDIÇÕES
+  ok('seis botões e seis painéis, com as mesmas chaves; o MEDIR começa aceso nos dois; a faixa vem antes dos painéis',
      [[...SC.matchAll(/class="ucv-sb[^"]*" data-sub="(\w+)"/g)].map(m => m[1]), [...SC.matchAll(/class="ucv-pn[^"]*" data-sub="(\w+)"/g)].map(m => m[1]),
       /class="ucv-sb on" data-sub="medir" role="tab" aria-selected="true"/.test(SC), SC.includes('<div class="ucv-pn on" data-sub="medir">'),
       SC.indexOf('id="uep-conv-sub"') < SC.indexOf('<div class="ucv-pn'), pegaConst('UCV_SUBS')],
-     [['medir', 'princ', 'regs', 'trocas', 'tempo'], ['medir', 'princ', 'regs', 'trocas', 'tempo'], true, true, true, "['medir', 'princ', 'regs', 'trocas', 'tempo']"]);
+     [['medir', 'princ', 'regs', 'trava', 'trocas', 'tempo'], ['medir', 'princ', 'regs', 'trava', 'trocas', 'tempo'], true, true, true, "['medir', 'princ', 'regs', 'trava', 'trocas', 'tempo']"]);
   ok('cada painel tem o seu bloco: MEDIR (campos, resultado, registro, as medições do volume, ⓘ COMO LER), O QUE MEDIR, MEDIÇÕES, TROCAS',
      [['id="uep-conv-prod"', 'id="uep-conv-res"', 'id="uep-conv-reg"', 'id="uep-conv-reg-falta"', 'id="uep-conv-regs-p"', 'id="uep-conv-ler"'].filter(t => !pn('medir').includes(t)),
-      pn('princ').includes('id="uep-conv-princ"'), pn('regs').includes('id="uep-conv-regs"'), pn('trocas').includes('id="uep-conv-conf"'),
+      pn('princ').includes('id="uep-conv-princ"'), pn('regs').includes('id="uep-conv-regs"') && pn('trava').includes('id="uep-conv-trava"'), pn('trocas').includes('id="uep-conv-conf"'),
       ['conf-av', 'i-msg', 'x-msg'].filter(n => SC.indexOf(`id="uep-conv-${n}"`) > SC.indexOf('<div class="ucv-pn'))],
      [[], true, true, true, []]);
   // a conta dos botões: só lê o que o _ucvRegPintar já montou
   const Mx = { nPrincMed:10, nPrinc:33, cobertura:34.9, progLida:true, nProg:12, nPend:20 }, Lx = new Array(34).fill({}), Cx = { lista:new Array(9).fill({}), nAlerta:0 };
   const PV = { nome:'PENTEADEIRA CAMARIM STRASS', volSel:2, nVolTot:2 };
-  const D1 = _ucvSubMontar({ p:PV, M:Mx, LH:[], L:Lx, prontas:[{}, {}], C:Cx });
+  const TRx = { cumpriu:[{}, {}], travadas:[{}], travasLidas:true };
+  const D1 = _ucvSubMontar({ p:PV, M:Mx, LH:[], L:Lx, trava:TRx, C:Cx });
   // v7.216.0: o O QUE MEDIR diz quantos a medir estão na programação (a agenda) e quanto da UEP já está medido
-  ok('os números dos botões: o volume escolhido, a medir na programação e a UEP medida, as registradas e as prontas, as trocas e os alertas',
-     [D1.medir.txt, D1.princ.txt, D1.regs.txt, D1.regs.cls, D1.trocas.txt, D1.trocas.cls, _ucvSubMontar({ M:Object.assign({}, Mx, { progLida:false }) }).princ.txt,
+  ok('os números dos botões: o volume escolhido, a medir na programação e a UEP medida, as registradas, quantos cumpriram e quantos o PPCP travou, as trocas e os alertas',
+     [D1.medir.txt, D1.princ.txt, D1.regs.txt, D1.trava.txt, D1.trava.cls, D1.trocas.txt, D1.trocas.cls, _ucvSubMontar({ M:Object.assign({}, Mx, { progLida:false }) }).princ.txt,
       _ucvSubMontar({ M:Object.assign({}, Mx, { nProg:0 }) }).princ.txt],
-     ['PENTEADEIRA CAMARIM STRASS · VOL 2/2', '12 a medir na programação · 34,9% da UEP medida', '34 registradas · 2 prontas para trocar', 'acc', '9 trocas · nenhum alerta', '',
+     ['PENTEADEIRA CAMARIM STRASS · VOL 2/2', '12 a medir na programação · 34,9% da UEP medida', '34 registradas', '2 cumpriram · 1 travada', 'acc', '9 trocas · nenhum alerta', '',
       '20 a medir · 34,9% da UEP medida', 'nada a medir na programação · 34,9% da UEP medida']);
-  const D2 = _ucvSubMontar({ p:null, M:Object.assign({}, Mx, { nPend:0, nProg:0 }), LH:[], L:Lx, prontas:[], C:{ lista:new Array(9).fill({}), nAlerta:2 } });
+  const D2 = _ucvSubMontar({ p:null, M:Object.assign({}, Mx, { nPend:0, nProg:0 }), LH:[], L:Lx, trava:{ cumpriu:[], travadas:[], travasLidas:false }, C:{ lista:new Array(9).fill({}), nAlerta:2 } });
   ok('alerta na conferência pinta o TROCAS; tudo medido pinta o O QUE MEDIR; sem produto, o MEDIR pede um',
-     [D2.trocas.txt, D2.trocas.cls, D2.princ.cls, D2.medir.txt, D2.regs.txt, D2.regs.cls], ['9 trocas · 2 alertas', 'warn', 'ok', 'escolha o produto', '34 registradas', '']);
+     [D2.trocas.txt, D2.trocas.cls, D2.princ.cls, D2.medir.txt, D2.regs.txt, D2.regs.cls, D2.trava.txt, D2.trava.cls],
+     ['9 trocas · 2 alertas', 'warn', 'ok', 'escolha o produto', '34 registradas', '', '0 cumpriram · 0 travadas · falta o .gs novo', '']);
   const D3 = _ucvSubMontar({ p:null, M:null, LH:'sem-endpoint', L:null, regsFalha:'sem-resposta', C:null, confFalha:'sem-endpoint' });
   const D4 = _ucvSubMontar({ p:null, M:null, LH:'lendo', L:null, C:null });
   ok('sem a leitura, o botão diz o estado (nunca 0): falta o .gs, não foi lida, ou …',
@@ -2160,10 +2302,10 @@ console.log('\n── CRONOANÁLISE: sub-abas ──');
   const AT4 = pegaJs('function _uepConvAtualiza('), RP4 = pegaJs('function _ucvRegPintar(');
   ok('a tela: a linha do 💾 pelo _uepConvAtualiza; as medições do volume só com produto (no MEDIR), todas no MEDIÇÕES; os botões no fim do _ucvRegPintar',
      [/const fl = _ucvEl\('reg-falta'\); if\(fl\)\{ fl\.textContent = ja \? _ucvAppJaTxt\(ja\) : _ucvRegFalta\(R, E\);/.test(AT4), /lstP\.innerHTML = !R\.p \? '' : _ucvRegsHtml\(L \? RL : null, R\.p,/.test(RP4),
-      /lst\.innerHTML = _ucvProntasHtml\(UCV_PRONTAS\)\s*\+ _ucvRegsHtml\(L, null,/.test(RP4), /_ucvSubPintar\(_ucvSubMontar\(\{ p:R\.p, M, LH, L, prontas:UCV_PRONTAS,/.test(RP4)],
+      /lst\.innerHTML = _ucvRegsHtml\(L, null,/.test(RP4), /_ucvSubPintar\(_ucvSubMontar\(\{ p:R\.p, M, LH, L, trava:UCV_TRAVA,/.test(RP4)],
      [true, true, true, true]);
-  ok('quem abre um volume volta ao MEDIR: os PRINCIPAIS, as PRONTAS, o ONDE O TEMPO VAI, as que CHEGARAM DO APP e um PDF importado; o aviso da conferência leva às TROCAS',
-     [['function _ucvAbrirPrincipal(', 'function _ucvAbrirPronta(', 'function _ucvAbrirTempo(', 'function _ucvAbrirApp(', 'async function _ucvImportar('].filter(f => !pegaJs(f).includes("_ucvSub('medir')")),
+  ok('quem abre um volume volta ao MEDIR: os PRINCIPAIS, o ONDE O TEMPO VAI, as que CHEGARAM DO APP e um PDF importado; o aviso da conferência leva às TROCAS',
+     [['function _ucvAbrirPrincipal(', 'function _ucvAbrirTempo(', 'function _ucvAbrirApp(', 'async function _ucvImportar('].filter(f => !pegaJs(f).includes("_ucvSub('medir')")),
       _ucvConfAvisoHtml({ nAlerta:1 }).includes(`onclick="_ucvSub('trocas')"`), _ucvConfAvisoHtml({ nAlerta:1 }).includes('no fim da tela')],
      [[], true, false]);
   ok('a pele: só o painel aceso aparece; a entrada não se mexe com menos movimento pedido; o cartão dos campos é do painel',
@@ -2247,16 +2389,16 @@ console.log('\n── CRONOANÁLISE: CHEGARAM DO APP ──');
      [60, null, null, null, null, null]);
   ok('o aviso: de onde veio, quando, quem, os volumes e o rodando; não manda registrar de novo',
      _ucvAppJaTxt(LA[0]), '✓ ESTA MEDIÇÃO JÁ ESTÁ REGISTRADA — chegou do app em 09/11/2026 08:35 (ODERLI SERGIO GARCIA): medida em 09/11/2026, 61 volumes, rodando 12,0 s. Não precisa registrar de novo: ela já conta na regra da troca (as medições do volume, abaixo).');
-  const AT5 = pegaJs('function _uepConvAtualiza('), RP5 = pegaJs('function _ucvRegPintar('), TH5 = pegaJs('function _uepConvTrocaHtml(');
-  ok('a tela: o já registrada ANTES do resultado (o NÃO PRECISA TROCAR não manda registrar), o 💾 escondido, a faixa e o botão MEDIR pelo _ucvRegPintar',
+  const AT5 = pegaJs('function _uepConvAtualiza('), RP5 = pegaJs('function _ucvRegPintar(');
+  ok('a tela: o já registrada ANTES do resultado (a caixa da regra não manda registrar de novo), o 💾 escondido, a faixa e o botão MEDIR pelo _ucvRegPintar',
      [/const ja = _ucvAppJa\(UCV_APP_ABERTA, R, E\.regs\);[\s\S]*if\(ja\) R\.jaReg = true;[\s\S]*res\.innerHTML = _uepConvHtml\(R, true\);[\s\S]*_ucvRegPintar\(R, ja\);/.test(AT5),
-      /fl\.classList\.toggle\('ja', !!ja\)/.test(AT5), /R\.jaReg \? 'Ela já está registrada \(veio do app\)\.' : 'Registre a medição para ela ficar guardada\.'/.test(TH5),
+      /fl\.classList\.toggle\('ja', !!ja\)/.test(AT5), /R\.jaReg \? ' Esta medição já está registrada \(veio do app\)\.' : ''/.test(pegaJs('function _ucvRegraBoxHtml(')),
       /const A = _ucvAppRecentes\(L, UEP_CONV_PRODS, UCV_CONF && UCV_CONF\.trocas, hojeStr\(\), UCV_APP_DIAS, UCV_APP_TODAS \? Infinity : UCV_APP_MAX\);\s*UCV_APP = A \? A\.linhas : \[\];/.test(RP5),
       /_ucvEl\('app'\); if\(ap\) ap\.innerHTML = _ucvAppHtml\(A, UCV_REGS && UCV_REGS\.falha, ja \? ja\.regId : null, UCV_APP_TODAS\);/.test(RP5)],
      [true, true, true, true, true]);
   // a revisão (09/11): o "já registrada" não pode esconder o 💾 de um estudo NOVO do mesmo volume com o mesmo tempo
-  ok('outro estudo esquece a medição aberta: importar um PDF, abrir pelas PRONTAS, pelos PRINCIPAIS, pelo ONDE O TEMPO VAI, o 📌 FIXAR e DIGITAR no produto ou no tempo',
-     [['async function _ucvImportar(', 'function _ucvAbrirPronta(', 'function _ucvAbrirPrincipal(', 'function _ucvAbrirTempo(', 'function _uepConvFixarBase(', 'function _ucvDigitou(']
+  ok('outro estudo esquece a medição aberta: importar um PDF, abrir pelos PRINCIPAIS, pelo ONDE O TEMPO VAI, o 📌 FIXAR e DIGITAR no produto ou no tempo',
+     [['async function _ucvImportar(', 'function _ucvAbrirPrincipal(', 'function _ucvAbrirTempo(', 'function _uepConvFixarBase(', 'function _ucvDigitou(']
         .filter(f => !/UCV_APP_ABERTA = null;/.test(pegaJs(f))),
       /id="uep-conv-prod"[^>]*oninput="_ucvDigitou\(\)"/.test(html), /id="uep-conv-seg"[^>]*oninput="_ucvDigitou\(\)"/.test(html),
       /UCV_APP_ABERTA = null;[^\n]*\n\s*put\('prod'/.test(pegaJs('async function _ucvImportar('))],
