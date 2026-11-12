@@ -35,7 +35,7 @@ global.TKS_TPC = false;
 global.SETUP_PEND = null; global.SETUP_PLAN = null;   // v7.226.0: o setup enviado e a chave na planilha
 global._rpEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 ['function _cartNum(', 'function _eixoGrade(', 'function _taktMontar(', 'function _taktRestMin(', 'function _taktAgora(',
- 'function _uepSubTakt(', 'function _tkHM(', 'function _tkLista(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
+ 'function _uepSubTakt(', 'function _taktPorCaixa(', 'function _taktPorCaixaHtml(', 'function _taktHtml(', 'function _taktSvg(', 'function _taktProxMontar(', 'function _taktProxHtml(',
  'function _taktProxSemana(', 'function _taktSemBotoes(', 'function _taktEstadoHtml(', 'function _fmtHM(', 'function _taktSimHtml(', 'function _taktCenRot(', 'function _taktCenarios(', 'function _taktSimular(', 'function _taktDocHtml(', 'function _taktVeredito(', 'function _taktHeroHtml(', 'function _taktDetHtml(', 'function _taktPtsMapa(', 'function _tkPts(',
  // v7.222.0: o nível diretoria
  'function _tkAprox(', 'function _tkDia(', 'function _tkHAprox(', 'function _taktPico(', 'function _taktFecharDados(', 'function _taktFecharHtml(',
@@ -166,14 +166,14 @@ ok('EXECUTADO = (3 × 527 + 240) min, menos o setup na mesma proporção (× 463
   ok('a UEP por caixa é a média das cores pesada pelas caixas (MEL 1/2: 1,73 e 1,75 → 1,74, diz que difere por cor); sem UEP → sem takt, nunca 0',
      [mel.uepCx, mel.difCor, por('PRODUTO NOVO').uepCx, por('PRODUTO NOVO').sTakt, por('PRODUTO NOVO').cxSemUep, por('SLEEP').difCor], [1.74, true, null, null, 80, false]);
   const HC = _taktPorCaixaHtml(R2, T2);
-  ok('o desenho: título com o takt da semana, uma linha por produto, PELO TAKT em s e cx/h, as cores que diferem, o sem UEP; a nota (uma linha, v7.232.0) diz que é com o TEMPO-ALVO que se compara a cronoanálise',
+  ok('o desenho: título com o takt da semana, uma linha por produto, PELO TAKT em s e cx/h, as cores que diferem, o sem UEP; a nota (uma linha, v7.232.0) manda comparar o NO PERÍODO da cronoanálise com o TEMPO-ALVO',
      [HC.includes('<b>TAKT POR CAIXA</b>'), (HC.match(/<tr><td>/g) || []).length, HC.includes('<b>' + _tkS(dm.sTakt) + ' s</b><small>' + fmtN(Math.round(dm.cxhTakt)) + ' cx/h</small>'),
-      HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('é com ele que se compara a cronoanálise')],
+      HC.includes('1,74<small>1,73–1,75 por cor</small>'), HC.includes('—<small>sem UEP</small>'), HC.includes('09/11, 12/11'), HC.includes('compare o NO PERÍODO da cronoanálise com ele')],
      [true, 5, true, true, true, true, true]);
   // v7.230.0 (PPCP: "troca por TEMPO ALVO"): a coluna era NA MÉDIA DA LINHA; é o mesmo número que julga cada
   // volume no app de cronoanálise (getTemposAlvo), e a nota manda comparar o NO PERÍODO com ele
-  ok('TEMPO-ALVO: a coluna (nunca mais NA MÉDIA DA LINHA), o título com a conta, a nota que manda comparar a cronoanálise com ele',
-     [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'), HC.includes('TEMPO-ALVO = a média da linha sem hora extra: é com ele que se compara a cronoanálise'),
+  ok('TEMPO-ALVO: a coluna (nunca mais NA MÉDIA DA LINHA), o título com a conta, a nota que manda comparar o NO PERÍODO com ele',
+     [HC.includes('>TEMPO-ALVO</th>'), HC.includes('NA MÉDIA DA LINHA'), HC.includes('TEMPO-ALVO = o tempo de cada caixa com a linha na média, sem hora extra: compare o NO PERÍODO da cronoanálise com ele'),
       HC.includes('O tempo-alvo do produto: os ' + _tkS(T2.ref) + ' s por UEP da média da linha sem hora extra')],
      [true, false, true, true]);
   // v7.231.0 (PPCP, com a SLEEP na tela: 8,5 s pelo takt e 8,9 s no tempo-alvo): o cx/h embaixo do TEMPO-ALVO
@@ -852,6 +852,23 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
       '<details class="tks-tpc" ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>', 'class="tks-nl c2"'].filter(t => !HF.includes(t)).concat(
       HF.includes('<b>TAKT POR CAIXA</b>') ? ['o título da tabela repetido'] : [], HF.slice(0, HF.indexOf('<details class="tks-tpc"')).includes('s por UEP') ? ['s por UEP na faixa'] : [],
       (global.TKS_TPC = true, _taktFaixaHtml(F0, _taktPorCaixa(T), T)).includes('<details class="tks-tpc" open') ? [] : ['abre aberto com TKS_TPC']), []);
+  { // v7.232.0 (revisão): o cartão do AGORA nunca some calado; o dia não útil e o plural ditos; as notas à vista
+    const semHora = _taktAgora(T, Object.assign({}, AG, { horas:[] })), F3 = _taktFaixa(T, { G:semHora });
+    const H3 = _taktFaixaHtml(F3, [], T);
+    ok('o AGORA antes da 1ª hora fechada continua (o que a semana pede e o tempo-alvo) e diz que nenhuma hora fechou',
+       [H3.includes('a semana pede <b class="tks-nl-n">15,0 s</b> por caixa'), H3.includes('nenhuma hora de jornada fechada hoje · 1,73 UEP por caixa'), H3.includes('class="tks-nl c2"')], [true, true, true]);
+    const Hn = _taktFaixaHtml(_taktFaixa(T, { G:null }), [], T), Hu = _taktFaixaHtml(_taktFaixa(T, { G:_taktAgora(T, Object.assign({}, AG, { uepCx:null })) }), [], T);
+    ok('sem produto apontado ou com o produto sem UEP, o cartão do AGORA diz por quê (antes dizia nos DETALHES); a semana que vem não tem AGORA',
+       [Hn.includes('nenhum produto apontado agora'), Hn.includes('class="tks-nl c2"'),
+        Hu.includes('<div class="kpi-lbl">AGORA · VOL 1/2 PENTEADEIRA CAMARIM MEL BRANCO</div>'), Hu.includes('o produto de agora não tem UEP no cadastro — sem tempo por caixa'),
+        _taktFaixaHtml(_taktFaixa(T1), [], T1).includes('AGORA')], [true, true, true, true, false]);
+    ok('o dia não útil com volume (no total) e o produto fora do cadastro ditos na faixa; "1 dia útil" no singular',
+       [_taktFaixaHtml(Object.assign({}, F0, { volFds:100 })).includes('100 em dia não útil estão no total'),
+        _taktFaixaHtml(Object.assign({}, F0, { nUteis:1, de:'03/11', ate:'03/11' })).includes('UEP · 1 dia útil (03/11).')], [true, true]);
+    ok('as notas ficam à vista (mudam a leitura do veredito): cx sem UEP na esta semana e na que vem',
+       [_taktHtml(Object.assign({}, T, { cxSemUep:80 }), G, { largura:1200, V:_taktVeredito(T, null, RIT) }).includes('80 cx programadas sem UEP no cadastro ficaram fora (o takt real é um pouco mais apertado).'),
+        _taktProxHtml(Object.assign({}, T1, { cxSemUep:80 }), P1, { largura:1200, V:_taktVeredito(T1, P1, RIT) }).includes('80 cx programadas sem UEP no cadastro ficaram fora (a semana é um pouco mais pesada).')],
+       [true, true]); }
   global.TKS_TPC = false;
   const H2 = _taktFaixaHtml(F2, _taktPorCaixa(Object.assign({}, M42.T, { prods:VC.prods })), M42.T);
   ok('na AVALIAR: VOLUMES DA PROGRAMAÇÃO COLADA, de quantos produtos; produto fora do cadastro dito em vermelho (não conta)',
@@ -882,10 +899,12 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
        [_fmtHM(Fs.app.prod), _tkS(Fs.app.s), Math.round(Fs.app.vh), _tkS((44 * 4 / 5 - 4 * 8.2 * 4 / 60) * 3600 / 5970)], ['33h01', '19,9', 181, '19,9']);
     const Hs = _taktFaixaHtml(Fs, [], Ts);
     ok('a faixa escreve o setup do ⚙ com vírgula (e o total do dia), e o title a conta do app',
-       ['setup 4 × 8,2 min por dia (0h33), o mesmo do app', 'menos o setup, 2h11 nos 4 dias'].filter(t => !Hs.includes(t)), []);
+       ['setup 4 × 8,2 min por dia (0h33) · digite o mesmo no app', 'menos o setup, 2h11 nos 4 dias',
+        'Se não bater com o do app, o setup do ⚙ e o do app (Demanda semanal → Tempo disponível) estão diferentes, ou os volumes da semana.'].filter(t => !Hs.includes(t))
+         .concat(/o mesmo do app/.test(Hs) ? ['afirma que o app está igual (o painel não sabe)'] : []), []);
     const Tz = _taktMontar(S, HIST, Object.assign({}, HOJE, { setup:{ setupsDia:0, setupMin:8, origem:'planilha' } }));
-    ok('setup ZERO (sem setup) é valor: o takt volta à jornada inteira (9,86) e a faixa diz "nenhum"',
-       [Math.round(Tz.takt * 100) / 100, Tz.setupDia, _taktFaixaHtml(_taktFaixa(Tz, {}), [], Tz).includes('>sem setup, o mesmo do app')], [9.86, 0, true]);
+    ok('setup ZERO (sem setup) é valor: o takt volta à jornada inteira (9,86) e a faixa diz "sem setup"',
+       [Math.round(Tz.takt * 100) / 100, Tz.setupDia, _taktFaixaHtml(_taktFaixa(Tz, {}), [], Tz).includes('>sem setup · digite o mesmo no app')], [9.86, 0, true]);
     const gPD = global.PONTOS_DIA, gCFG = global.CFG;
     global.PONTOS_DIA = { setupsDia:4, setupMin:8.2 }; global.CFG = { setupsDia:5, setupMin:6 };
     const a1 = _taktSetup();
@@ -957,5 +976,5 @@ console.log('\n── v7.224.0: a FAIXA DO TAKT — os volumes para o app de cro
       (h => h.indexOf('class="tks-nl') > h.indexOf('<b>ONDE ESTÁ O EXCESSO</b>') && h.indexOf('<textarea') < h.indexOf('tks-hero'))(_tkaHtml(L42, M42, { botoes:'' }))],
      [true, true, true]); }
 
-console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — três números em s por UEP, o porquê dia a dia, o agora em caixas');
+console.log(falhas ? '\n❌ ' + falhas + ' falha(s)' : '\n✅ takt da semana ok — o veredito em horas de linha, o porquê dia a dia, o agora em caixas');
 process.exit(falhas ? 1 : 0);

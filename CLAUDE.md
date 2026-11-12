@@ -6970,6 +6970,11 @@ feito e dá ar de verdade ao que sobrou.
     cartões e a frase (nos DETALHES só a SIMULAÇÃO). As contas (`_taktMontar`,
     `cas`, `exec`) não mudaram; o 🖨 TAKT não mudou. Duas unidades na frente:
     horas de linha para decidir, segundos por caixa para a linha e o app.
+    O AGORA nunca some calado (`agoraEst`: nenhum produto apontado · sem UEP
+    no cadastro), a faixa diz *"digite o mesmo no app"* (o painel não sabe o
+    setup do app — afirmar *"o mesmo do app"* foi pego na revisão) e o takt em
+    s por UEP mora no *title* do PELO TAKT e do recado. As notas (cx sem UEP,
+    fora da esteira…) ficam à vista: mudam a leitura do veredito.
   - **Conta pura** `_taktMontar(S, hist, H)` (S = a leitura, hist =
     `UEP_HIST`, H = o hoje da aba: `num`, `minNorm`, `restMin`, `uep`, `he`,
     `meta`, `fim`), `_taktRestMin`, `_taktAgora`, `_uepSubTakt` · **desenho**

@@ -31,8 +31,20 @@ Eram cinco unidades misturadas.
   linha*). O takt contra a média em s por UEP fica no *title* do recado.
 - **SEMANA QUE VEM:** sem os cartões em s por UEP e a frase. Nos DETALHES fica
   só a simulação em outros ritmos.
+- **O AGORA nunca some calado:** sem produto apontado, ou com o produto de
+  agora sem UEP no cadastro, o cartão diz isso (antes dizia nos detalhes).
 - **Atenção:** nenhum número mudou. As contas são as mesmas, e o 🖨 TAKT DA
-  SEMANA (a folha da diretoria) não mudou.
+  SEMANA (a folha da diretoria) e o 🖨 AVALIAÇÃO não mudaram. Saíram da frente,
+  nas três telas:
+  - o cartão **TAKT DA SEMANA · NO PAINEL** (o takt em s por UEP, da v7.224.0).
+    Ele agora está no *title* da coluna PELO TAKT do TAKT POR PRODUTO e, na
+    ESTA SEMANA, no *title* do recado do DIA A DIA. O % que a programação pede
+    fica no botão da sub-aba;
+  - na faixa do app, o "N caixas programadas = X UEP" (ou "de N produtos
+    colados") e a conta do takt do app foram para o *title* do cartão. Os
+    volumes e o takt do app continuam à vista.
+- A faixa diz *"digite o mesmo no app"*: o painel não sabe o setup digitado no
+  app, então não afirma que é igual.
 
 ## v7.231.0 / `.gs` v5.63 — 12/11/2026 · O takt da semana vai para o app de cronoanálise ⚠ re-deploy
 
