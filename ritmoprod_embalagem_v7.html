@@ -4091,7 +4091,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.233.0';
+const APP_VER   = '7.234.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -21443,7 +21443,9 @@ const PG_SMED_TEND_EP    = 2;
 
 // Tipo genérico = o balaio onde a causa real fica escondida. Não é "anormal"
 // nem "redutível": é DESCONHECIDO, e o relatório diz isso em vez de chutar.
-const PG_RE_GENERICO   = /^\s*(outr|divers|n[aã]o identific|indefinid)/i;
+// v7.234.0: a parada ainda sem motivo (A INFORMAR, o PAROU do celular) também é
+// causa desconhecida — vai para A IDENTIFICAR e para o bloco "OUTROS".
+const PG_RE_GENERICO   = /^\s*(outr|divers|n[aã]o identific|indefinid|a\s+informar)/i;
 const PG_RE_TROCA_PROD = /troca\W*(de\W*)?produ/i;
 const PG_RE_TROCA_PLAS = /troca\W*(de\W*)?pl[áa]stic/i;
 
@@ -25657,8 +25659,11 @@ function renderParadaOverlay(){
   const dispensada = !PARADA_PREVIEW && PARADA_OVER_DISMISS && PARADA_OVER_DISMISS === chave && chave!=='';
   const mostrar = PARADA_PREVIEW ? true : (PARADA_TV && naTV && !dispensada);
   if(cur && mostrar && !noLogin){
-    document.getElementById('tv-parada-tipo').textContent   = cur.tipo || 'PARADA';
-    document.getElementById('tv-parada-motivo').textContent = cur.obs || '';
+    // Parada registrada sem motivo (mobile 1.47.0: PAROU primeiro, motivo depois):
+    // a 15 m a TV diz PARADA, e a linha de baixo, que o motivo ainda vem do app.
+    const semMotivo = paradaAInformar(cur.tipo);
+    document.getElementById('tv-parada-tipo').textContent   = semMotivo ? 'PARADA' : cur.tipo;
+    document.getElementById('tv-parada-motivo').textContent = cur.obs || (semMotivo ? 'motivo a informar no app' : '');
     document.getElementById('tv-parada-desde').textContent  = cur.ini ? ('INÍCIO '+cur.ini) : '';
     if(fecharBtn) fecharBtn.style.display = PARADA_PREVIEW ? 'inline-block' : 'none';
     if(fecharReal) fecharReal.style.display = PARADA_PREVIEW ? 'none' : 'block';

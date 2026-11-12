@@ -11,6 +11,32 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.47.0 / v7.234.0 — 12/11/2026 · PAROU agora, motivo depois
+
+PPCP: *"na cronoanálise tem a opção de parar e colocar motivo depois, faz o
+mesmo"*.
+
+- **Celular:** em PARADAS, o primeiro botão é **⏸ PAROU — REGISTRAR AGORA**.
+  Tipo e motivo são opcionais; sem eles, a parada fica como **A INFORMAR**.
+  - Com a parada aberta, o quadro PRODUÇÃO PARADA pede o motivo
+    (**SALVAR MOTIVO**), e o START funciona com ou sem motivo.
+  - Depois do START, a parada sem motivo aparece na lista com **INFORMAR
+    MOTIVO**.
+  - O botão PARADAS diz quantas estão **sem motivo**.
+- **TV:** parada sem motivo mostra **PARADA** e, embaixo, *motivo a informar no
+  app*.
+- **GESTÃO DE PERDAS:** A INFORMAR é causa desconhecida e entra em **A
+  IDENTIFICAR**, junto com "Outros".
+
+**Atenção:** antes, o tipo da parada começava no primeiro da lista (Troca de
+produto). Quem não escolhia gravava esse tipo sem saber. Agora começa em
+"informar depois" e grava **A INFORMAR**. Nos relatórios de paradas, "Troca de
+produto" pode cair e "A INFORMAR" aparecer até o motivo ser informado.
+A INFORMAR conta como parada não programada, ou seja, como perda. Nada muda no
+`.gs`: o motivo entra pela mesma gravação de parada.
+
+---
+
 ## mobile 1.46.0 — 12/11/2026 · CONFIRMAR O PRODUTO quando ele mudou
 
 PPCP: *"tem que ter uma confirmação"*. Um bipe de teste da BANQUETA trocou o
