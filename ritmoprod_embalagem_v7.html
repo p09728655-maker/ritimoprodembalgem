@@ -597,15 +597,6 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-tr em{position:absolute;top:0;bottom:0;border-radius:0 3px 3px 0;background:repeating-linear-gradient(135deg,rgba(245,85,74,.8) 0 6px,rgba(245,85,74,.25) 6px 12px)}
 #sec-uep .tks-br b{font-family:var(--font-h);font-size:24px;color:var(--txt);letter-spacing:0;text-align:right}
 #sec-uep .tks-bcap{font-size:12px;color:var(--txt2);text-align:right;margin-top:2px}
-#sec-uep .tks-fcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;align-items:stretch;margin-bottom:10px}
-#sec-uep .tks-fc{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 18px}
-#sec-uep .tks-fn{font-family:var(--font-h);font-size:38px;font-weight:700;color:var(--txt);line-height:1.05;margin:2px 0}
-#sec-uep .tks-fn small{font-size:17px;font-weight:600;color:var(--txt2);margin-left:6px}
-#sec-uep .tks-fc.no .tks-fn small{margin:0 4px 0 0}
-#sec-uep .tks-fd{font-family:var(--font-b);font-size:14px;font-weight:400;letter-spacing:0;color:var(--txt2);line-height:1.4}
-#sec-uep .tks-fd b{color:var(--txt);font-weight:600}
-#sec-uep .tks-fc.no{opacity:.62}
-#sec-uep .tks-fc.no .tks-fn{color:var(--txt2)}
 #sec-uep .tks-her{display:grid;grid-template-columns:minmax(220px,300px) 1fr auto;gap:24px;align-items:center;background:var(--surface);border:1px solid var(--border);border-left:6px solid var(--warn);border-radius:9px;padding:14px 22px;margin:12px 0 0}
 #sec-uep .tks-her-t{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--warn);line-height:1.1}
 #sec-uep .tks-stk{display:flex;height:34px;border-radius:3px;overflow:hidden}
@@ -621,22 +612,13 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-sec-r b{font-weight:700}
 #sec-uep .tks-por{font-size:14px;color:var(--txt2);line-height:1.5;margin:0 0 4px;padding:0 4px}
 #sec-uep .tks-por b{color:var(--txt);font-weight:600}
+#sec-uep .tks-fl{font-size:15px;color:var(--txt);background:var(--elevated);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:7px;padding:9px 14px;margin:0 0 10px}
 #sec-uep .tks-det{margin-top:16px;border-top:1px solid var(--border);padding-top:10px}
 #sec-uep .tks-det>summary{cursor:pointer;font-family:var(--font-d);font-size:10.5px;letter-spacing:1.5px;color:var(--txt2);padding:4px 0;list-style-position:inside}
 #sec-uep .tks-det>summary:hover{color:var(--txt)}
 #sec-uep .tks-det[open]>summary{color:var(--txt);margin-bottom:10px}
 /* v7.224.0: a FAIXA DO TAKT logo abaixo do título (volumes para o app de cronoanálise, o takt
    do painel, o do produto de agora) e o TAKT POR PRODUTO, que abre logo abaixo dela */
-#sec-uep .tks-fx{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:10px;margin:0 0 8px}
-#sec-uep .tks-fx.c3{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)}
-#sec-uep .tks-fx-c{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 18px;min-width:0}
-#sec-uep .tks-fx-v{border-left:6px solid var(--acc)}
-#sec-uep .tks-fx-v .kpi-lbl{color:var(--acc)}
-#sec-uep .tks-fx-n{font-family:var(--font-h);font-size:38px;font-weight:700;color:var(--txt);line-height:1.05;margin:2px 0;white-space:nowrap}
-#sec-uep .tks-fx-n small{font-size:16px;font-weight:600;color:var(--txt2);margin-left:6px}
-#sec-uep .tks-fx-d{font-size:13.5px;color:var(--txt2);line-height:1.45}
-#sec-uep .tks-fx-d b{color:var(--txt);font-weight:600}
-#sec-uep .tks-fx-d b.tks-warn{color:var(--warn)}
 #sec-uep .tks-tpc{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px 16px;margin:0 0 10px}
 #sec-uep .tks-tpc>summary{cursor:pointer;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;font-family:var(--font-d);font-size:11px;letter-spacing:1px;color:var(--txt2);list-style:none}
 #sec-uep .tks-tpc>summary::-webkit-details-marker{display:none}
@@ -648,7 +630,21 @@ html.modo-dir #sec-dir.on{display:flex}
 #sec-uep .tks-tpc[open]>summary{margin-bottom:10px}
 #sec-uep .tks-tpc .uep-card{margin:0;padding:0;border:none;background:none;max-height:440px;overflow:auto}
 #sec-uep .tks-tpc thead th{position:sticky;top:0;background:var(--surface);z-index:1}
-@media (max-width:1100px){#sec-uep .tks-fx,#sec-uep .tks-fx.c3{grid-template-columns:1fr}}
+#sec-uep .tks-nl{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:0 0 8px}
+#sec-uep .tks-nl.c2{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}
+#sec-uep .tks-nl-c{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 16px;min-width:0}
+#sec-uep .tks-nl-v{border-left:5px solid var(--acc)}
+#sec-uep .tks-nl-v .kpi-lbl{color:var(--acc)}
+#sec-uep .tks-nl-l{font-size:15px;color:var(--txt2);margin:3px 0 2px;line-height:1.3}
+#sec-uep .tks-nl-n{font-family:var(--font-h);font-size:24px;font-weight:700;color:var(--txt)}
+#sec-uep .tks-nl-l i{font-style:normal;font-size:13px;color:var(--txt2)}
+#sec-uep .tks-nl-d{font-size:12.5px;color:var(--txt2);line-height:1.4}
+#sec-uep .tks-nl-d b{color:var(--txt);font-weight:600}
+#sec-uep .tks-nl-d b.tks-c-ok{color:var(--ok)}
+#sec-uep .tks-nl-d b.tks-c-warn{color:var(--warn)}
+#sec-uep .tks-nl-d b.tks-c-red{color:var(--red)}
+#sec-uep .tks-nl-d .tks-warn{color:var(--warn)}
+@media (max-width:1100px){#sec-uep .tks-nl.c2{grid-template-columns:1fr}}
 @media (max-width:1000px){#sec-uep .tks-hero,#sec-uep .tks-her{grid-template-columns:1fr;gap:10px} #sec-uep .tks-her-n{text-align:left}}
 /* ── SUB-ABAS DO 📐 PLANO (v7.199.0) ── os painéis são marcação fixa (o render só refaz
    o #qp-carteira / #qp-corpo dentro deles), então a entrada anima no .on, como na cronoanálise. */
@@ -911,24 +907,14 @@ html.modo-dir #sec-dir.on{display:flex}
 /* TAKT DA SEMANA (v7.209.0): a 6ª sub-aba. Azul local do "feito" (o mesmo da régua de caixas da RÉGUAS). */
 #sec-uep{--tks-feito:#4f95e8;--tks-base:#44658F;--tks-base-t:#E8EEF6}
 #sec-uep .tks-warn{color:var(--warn)} #sec-uep .tks-red{color:var(--red)}
-#sec-uep .tks-ler{background:var(--elevated);border:1px solid var(--border);border-left:4px solid var(--txt2);border-radius:7px;padding:11px 15px;font-size:14px;line-height:1.5;color:var(--txt2);margin:0 0 4px}
-#sec-uep .tks-ler.warn{border-left-color:var(--warn)}
-#sec-uep .tks-ler b{color:var(--txt);font-weight:600}
-#sec-uep .tks-casc{display:flex;align-items:stretch;gap:6px}
-#sec-uep .tks-agora{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 #sec-uep .tks-p{flex:1;min-width:0;background:var(--elevated);border:1px solid var(--border);border-radius:6px;padding:9px 10px}
 #sec-uep .tks-p .kpi-lbl{margin-bottom:3px;letter-spacing:1.2px}
 #sec-uep .tks-n{font-family:var(--font-h);font-size:26px;font-weight:700;line-height:1.1;color:var(--txt)}
 #sec-uep .tks-d{font-family:var(--font-d);font-size:10.5px;color:var(--txt2);line-height:1.35;margin-top:3px}
-#sec-uep .tks-op{align-self:center;font-family:var(--font-h);font-size:22px;color:var(--txt2)}
-#sec-uep .tks-p.carga{border-color:var(--warn)} #sec-uep .tks-p.carga .tks-n{color:var(--warn)}
 #sec-uep .tks-p.ritmo{border-color:var(--red)} #sec-uep .tks-p.ritmo .tks-n{color:var(--red)}
-#sec-uep .tks-p.fim{border-color:var(--tks-feito)}
-#sec-uep .tks-p.real.ok .tks-n{color:var(--ok)} #sec-uep .tks-p.real.warn .tks-n{color:var(--warn)} #sec-uep .tks-p.real.red .tks-n{color:var(--red)}
 #sec-uep .uep-leg .tks-lp::before{background:none;border:1.5px dashed var(--txt2);width:8px;height:8px}
 #sec-uep .uep-leg .tks-lb::before{background:var(--tks-base)} #sec-uep .uep-leg .tks-lx::before{background:var(--red)}
 #sec-uep .uep-leg .tks-lr::before{height:0;border-top:2px solid var(--txt);width:14px;background:none;vertical-align:3px}
-@media (max-width:1100px){#sec-uep .tks-casc{flex-wrap:wrap}#sec-uep .tks-op{display:none}#sec-uep .tks-casc .tks-p{flex:1 1 30%}}
 .pg-sim-wrap .pg-sim{border:1px solid var(--border);border-radius:8px;padding:13px 15px;background:var(--surface)}
 .pg-sim-wrap .pg-sim-tag{font-family:var(--font-d);font-size:9.5px;font-weight:700;letter-spacing:1px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 5px;margin-left:8px;vertical-align:1px}
 .pg-sim-wrap .pg-sim-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:18px}
@@ -4058,7 +4044,7 @@ if (_v7Instalado()) _v7EscondeBotao();
 // mudança na raiz, suba este número. (O mobile tem o APP_VER dele + o CACHE do
 // sw-mobile.js; aqui não há service worker de propósito — ver o comentário do
 // aviso de atualização, no fim do arquivo.)
-const APP_VER   = '7.231.0';
+const APP_VER   = '7.232.0';
 const APP_VER_K = 'rp_v7_ver';   // última versão que este navegador já abriu
 // A versão do ritmoprod_appscript.gs que está no REPOSITÓRIO junto com este
 // painel (v7.205.0). O Apps Script implantado diz a dele no getDados (gsVersao,
@@ -10504,7 +10490,7 @@ function _taktHoje(D, hojeN){
            uep:D.feito, he:D.he, meta:D.meta, fim:CFG.turnoFim||'17:00' };
 }
 // Minutos de jornada que ainda faltam hoje (a hora em andamento, só o que resta;
-// hora extra fora). É o "cabem até …" da FALTA DA SEMANA.
+// hora extra fora). É o TEM do veredito da esta semana (com os dias úteis que vêm).
 function _taktRestMin(slots, allHoje, agoraMin){
   const ag=Number(agoraMin);
   if(!isFinite(ag)) return 0;
@@ -10583,7 +10569,7 @@ function _taktPorCaixaHtml(R, T, semTit){
       +`<td class="n">${g.uepCx!=null ? f2(g.uepCx)+(g.difCor ? `<small>${f2(g.uMin)}–${f2(g.uMax)} por cor</small>` : '') : '—<small>sem UEP</small>'}</td>`
       +`<td class="n"><b>${g.sTakt!=null ? _tkS(g.sTakt)+' s' : '—'}</b>${g.cxhTakt ? `<small>${fmtN(Math.round(g.cxhTakt))} cx/h</small>` : ''}</td>`
       +`<td class="n">${g.sRef!=null ? _tkS(g.sRef)+' s' : '—'}${g.cxhRef ? `<small>${fmtN(Math.round(g.cxhRef))} cx/h</small>` : ''}</td></tr>`).join('')
-    +`</tbody></table><div class="uep-nota">1 caixa a cada X segundos sem o setup (a jornada menos o setup do ⚙ — o mesmo digitado no app de cronoanálise); o cx/h é por hora de relógio, com o setup na média — o que se confere no HORA A HORA. PELO TAKT = o que a programação da semana pede; TEMPO-ALVO = o tempo que cada caixa do produto pode levar para a linha fazer a média sem hora extra (${_tkS(T.ref)} s por UEP × a UEP por caixa). Para a medição do produto, compare o NO PERÍODO da cronoanálise com o TEMPO-ALVO — é contra ele que o app de cronoanálise julga cada volume; o takt do app é por volume (todo volume igual) e faz o produto pesado parecer sempre acima.</div></div>`;
+    +`</tbody></table><div class="uep-nota">PELO TAKT = o que a programação da semana pede · TEMPO-ALVO = o tempo de cada caixa com a linha na média, sem hora extra: compare o NO PERÍODO da cronoanálise com ele · segundos sem o setup; cx/h de relógio.</div></div>`;
 }
 // ── A FAIXA DO TAKT (v7.224.0) ─────────────────────────────────────────────
 // PPCP, 11/11/2026, com a SEMANA QUE VEM na tela: "onde fica o takt que temos
@@ -10591,15 +10577,19 @@ function _taktPorCaixaHtml(R, T, semTit){
 // facilidade" → "preciso saber o takt da semana para colocar no app de
 // cronoanálise". A sub-aba se chama TAKT DA SEMANA e o takt morava só nos
 // DETALHES recolhidos (desde a v7.211.0); na AVALIAR PROGRAMAÇÃO, em lugar
-// nenhum. A faixa fica logo abaixo do título, nas três telas: os VOLUMES (o
-// número que se digita no app de cronoanálise — o app divide as horas dele por
-// ele), o takt do painel e, na esta semana, o do produto de agora; e o TAKT POR
-// PRODUTO (a tabela que estava nos detalhes) abre logo abaixo dela.
+// nenhum. A faixa, nas três telas: os VOLUMES (o número que se digita no app de
+// cronoanálise — o app divide as horas dele por ele) e, na esta semana, o tempo
+// por caixa do produto de agora; e o TAKT POR PRODUTO (a tabela que estava nos
+// detalhes) logo abaixo dela. ⚠ v7.232.0 (PPCP: "tire redundância"): compacta
+// (NA LINHA E NO APP), DEPOIS do gráfico — o veredito vem primeiro; o takt do
+// painel em s por UEP saiu dela (fica no title do PELO TAKT e do recado).
 // ⚠ Volume = caixa (cada volume de um produto é uma caixa). Na esta semana e na
 // que vem, as caixas programadas das linhas (as duas abas, fora da esteira de
 // fora — as mesmas do takt); na AVALIAR, os produtos colados × os volumes de cada
 // um (_tkaVolumes). O "s por volume" é o TAKT DO APP (_taktApp, v7.225.0).
 // A CONTA (pura). o: { vol, prod, semVol, volFds, G (o agora da esta semana) }.
+// Com a chave G (só a esta semana): agoraEst = 'nenhum' (nenhum produto apontado) ou
+// 'sem-uep' (o produto de agora sem UEP no cadastro) — o cartão diz, nunca some.
 function _taktFaixa(T, o){
   if(!T || T.takt==null) return null;
   const op=o||{}, uteis=T.dias.filter(d=>d.util), G=op.G;
@@ -10612,7 +10602,11 @@ function _taktFaixa(T, o){
     app:_taktApp(T.dias, vol, T.setup ? Object.assign({}, CRONO_APP_GRUPO, { setupsDia:T.setup.setupsDia, setupMin:T.setup.setupMin }) : null),
     takt:T.takt, ref:T.ref, pede:T.pede, setupDia:T.setupDia||0, setupOrigem:T.setup ? T.setup.origem : null,
     agora:G && G.uepCx && G.sTakt!=null ? { nome:String(G.desc||G.cod||'').replace(/\s+/g, ' ').trim(), cor:G.cor||'', uepCx:G.uepCx,
-      sTakt:G.sTakt, cxh:3600*_taktFProd(T)/G.sTakt } : null };   // cx por hora de RELÓGIO (o setup na média)
+      sTakt:G.sTakt, cxh:3600*_taktFProd(T)/G.sTakt,   // cx por hora de RELÓGIO (o setup na média)
+      sRef:G.sRef!=null ? G.sRef : null, cxhRef:G.sRef>0 ? 3600*_taktFProd(T)/G.sRef : null,
+      hora:G.hora && G.hora.sCx!=null ? { inicio:G.hora.inicio, sCx:G.hora.sCx, cls:G.hora.cls||'', so:!!G.hora.so } : null } : null,
+    agoraEst:!('G' in op) ? null : !G ? 'nenhum' : !(G.uepCx && G.sTakt!=null) ? 'sem-uep' : null,
+    agoraNome:G ? String(G.desc||G.cod||'').replace(/\s+/g, ' ').trim()+(G.cor ? ' '+G.cor : '') : '' };
 }
 // O DESENHO (sem conta). R/Tt: as linhas do TAKT POR PRODUTO e o T delas (_taktPorCaixa).
 let TKS_TPC=false;   // o TAKT POR PRODUTO aberto sobrevive ao refresh da tela (só na sessão)
@@ -10620,30 +10614,33 @@ function _taktFaixaHtml(F, R, Tt){
   if(!F) return '';
   const e=_rpEsc, n0=v=>fmtN(Math.round(Number(v)||0));
   const per=F.de ? (F.de===F.ate ? F.de : `${F.de} a ${F.ate}`) : '';
-  const ext=[F.fer.length ? `${e(F.fer.join(', '))} fora` : '', F.volFds>0 ? `${n0(F.volFds)} em dia não útil (hora extra) estão no total` : '',
-    F.semVol>0 ? `<span class="tks-red">${n0(F.semVol)} produtos fora do cadastro não contam</span>` : ''].filter(Boolean);
   const A0=F.app;
-  const c1=`<div class="tks-fx-c tks-fx-v" title="O número que se digita no app de cronoanálise para o takt da semana. O takt ao lado é a MESMA conta do app: as horas do grupo nos dias com volume, menos o setup do ⚙, divididas pelos volumes. Se não bater com o do app, o setup do ⚙ e o do app (Demanda semanal → Tempo disponível) estão diferentes, ou os volumes da semana. Volume = caixa: cada volume de um produto é uma caixa.">`
-    +`<div class="kpi-lbl">PARA O APP DE CRONOANÁLISE · ${F.prod!=null ? 'VOLUMES DA PROGRAMAÇÃO COLADA' : 'VOLUMES DA SEMANA'}</div>`
-    +`<div class="tks-fx-n">${n0(F.vol)}<small>volumes</small></div>`
-    +`<div class="tks-fx-d">${F.prod!=null ? `de ${n0(F.prod)} produtos colados` : 'caixas programadas'} = ${n0(F.uep)} UEP · ${plural(F.nUteis, 'dia útil', 'dias úteis')}${per ? ` (${per})` : ''}`
-    +(ext.length ? ' · '+ext.join(' · ') : '')
-    +(A0 ? `<br>takt no app: <b>${_tkS(A0.s)} s por volume</b> (${n0(A0.vh)} vol/h) = ${_fmtHM(A0.prod)} ÷ ${n0(F.vol)} · o app conta ${_fmtHM(A0.minDia)} por dia com volume e desconta o setup, ${_tkDec(A0.setupsDia)} × ${_tkDec(A0.setupMin)} min por dia (${_fmtHM(A0.setup)} ${A0.dias===1 ? 'no dia' : `nos ${A0.dias} dias`})`
-      +(A0.nSem>1 ? ` · ${A0.nSem} semanas somadas (no app, uma linha por semana)` : '') : '')+`</div></div>`;
-  const c2=`<div class="tks-fx-c" title="A jornada dos dias úteis menos o setup do ⚙ (digite o mesmo no app de cronoanálise) × 60 ÷ a UEP programada: o ritmo fora do setup. A média da linha está na mesma régua (o setup sai dos dois lados), por isso o % não muda. A UEP pesa cada produto pelo tempo dele; o de cada produto está no TAKT POR PRODUTO.">`
-    +`<div class="kpi-lbl">TAKT DA SEMANA · NO PAINEL</div>`
-    +`<div class="tks-fx-n">${_tkS(F.takt)}<small>s por UEP</small></div>`
-    +`<div class="tks-fx-d">a média da linha sem hora extra é <b>${_tkS(F.ref)} s</b> · a programação pede <b class="${F.pede>100 ? 'tks-warn' : ''}">${fmtP(F.pede)}</b> dela`
-    +`<br>sem o setup do ⚙: ${F.setupDia>0 ? _fmtHM(F.setupDia)+' por dia' : 'nenhum'}`
-    +(F.setupOrigem==='computador' ? ' · <span class="tks-warn">só neste computador</span>' : F.setupOrigem==='enviando' ? ' · gravando na planilha…' : F.setupOrigem==='padrao' ? ' · padrão — digite o setup no ⚙ e o mesmo no app' : ' · digite o mesmo no app')+`</div></div>`;
-  const A=F.agora;
-  const c3=A ? `<div class="tks-fx-c" title="O takt da semana × a UEP por caixa do produto que está rodando: 1 caixa a cada X segundos (sem o setup) para a semana fechar. As caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA.">`
+  const ext=[F.fer.length ? `${e(F.fer.join(', '))} fora` : '', F.volFds>0 ? `${n0(F.volFds)} em dia não útil estão no total` : '',
+    F.semVol>0 ? `<span class="tks-red">${n0(F.semVol)} produtos fora do cadastro não contam</span>` : ''].filter(Boolean);
+  const stp=A0 ? (F.setupDia>0 ? `setup ${_tkDec(A0.setupsDia)} × ${_tkDec(A0.setupMin)} min por dia (${_fmtHM(F.setupDia)})` : 'sem setup')
+    +(F.setupOrigem==='computador' ? ' · <span class="tks-warn">só neste computador</span>' : F.setupOrigem==='enviando' ? ' · gravando na planilha…'
+      : F.setupOrigem==='padrao' ? ' · <span class="tks-warn">padrão — digite o setup no ⚙ e o mesmo no app</span>' : ' · digite o mesmo no app') : '';
+  const tip1=`O número que se digita no app de cronoanálise (Demanda semanal). Volume = caixa: cada volume de um produto é uma caixa. `
+    +`${F.prod!=null ? `De ${n0(F.prod)} produtos colados` : 'Caixas programadas'} = ${n0(F.uep)} UEP · ${plural(F.nUteis, 'dia útil', 'dias úteis')}${per ? ` (${per})` : ''}.`
+    +(A0 ? ` O takt do app é a mesma conta dele: ${_fmtHM(A0.prod)} (${_fmtHM(A0.minDia)} por dia com volume, menos o setup, ${_fmtHM(A0.setup)} ${A0.dias===1 ? 'no dia' : `nos ${A0.dias} dias`}) ÷ ${n0(F.vol)} volumes — todo volume igual; o de cada produto está no TAKT POR PRODUTO.`
+      +(A0.nSem>1 ? ` ${A0.nSem} semanas somadas (no app, uma linha por semana).` : '')
+      +' Se não bater com o do app, o setup do ⚙ e o do app (Demanda semanal → Tempo disponível) estão diferentes, ou os volumes da semana.' : '');
+  const c1=`<div class="tks-nl-c tks-nl-v" title="${e(tip1)}"><div class="kpi-lbl">PARA O APP DE CRONOANÁLISE${F.prod!=null ? ' · PROGRAMAÇÃO COLADA' : ''}</div>`
+    +`<div class="tks-nl-l"><b class="tks-nl-n">${n0(F.vol)}</b> volumes${A0 ? ` · takt no app <b class="tks-nl-n">${_tkS(A0.s)} s</b> por volume` : ''}</div>`
+    +`<div class="tks-nl-d">${[stp].concat(ext).filter(Boolean).join(' · ')}</div></div>`;
+  const A=F.agora, H=A && A.hora;
+  const c2=A ? `<div class="tks-nl-c" title="O tempo de 1 caixa do produto que está rodando (sem o setup): o que a semana pede para fechar e o tempo-alvo (a média da linha sem hora extra). As caixas por hora são de relógio, com o setup na média — o que se confere no HORA A HORA.">`
     +`<div class="kpi-lbl">AGORA · ${e(A.nome)}${A.cor ? ' '+e(A.cor) : ''}</div>`
-    +`<div class="tks-fx-n">${_tkS(A.sTakt)}<small>s por caixa</small></div>`
-    +`<div class="tks-fx-d">pelo takt · ≈ <b>${n0(A.cxh)} cx por hora</b> de relógio · ${A.uepCx.toFixed(2).replace('.', ',')} UEP por caixa</div></div>` : '';
+    +`<div class="tks-nl-l">a semana pede <b class="tks-nl-n">${_tkS(A.sTakt)} s</b> por caixa <i>≈ ${n0(A.cxh)} cx/h</i>`
+    +(A.sRef!=null ? ` · tempo-alvo <b class="tks-nl-n">${_tkS(A.sRef)} s</b> <i>≈ ${n0(A.cxhRef)} cx/h</i>` : '')+`</div>`
+    +`<div class="tks-nl-d">${H ? `última hora (${e(H.inicio)}): <b class="${H.cls ? 'tks-c-'+H.cls : ''}">${_tkS(H.sCx)} s por caixa</b>${H.so ? '' : ' — a hora não foi só dele'}` : 'nenhuma hora de jornada fechada hoje'}`
+    +` · ${A.uepCx.toFixed(2).replace('.', ',')} UEP por caixa</div></div>`
+    : F.agoraEst ? `<div class="tks-nl-c"><div class="kpi-lbl">AGORA${F.agoraEst==='sem-uep' && F.agoraNome ? ' · '+e(F.agoraNome) : ''}</div>`
+      +`<div class="tks-nl-d" style="margin-top:6px">${F.agoraEst==='sem-uep' ? 'o produto de agora não tem UEP no cadastro — sem tempo por caixa' : 'nenhum produto apontado agora'}</div></div>` : '';
   const tab=R && R.length ? `<details class="tks-tpc"${TKS_TPC ? ' open' : ''} ontoggle="TKS_TPC=this.open"><summary><b>TAKT POR PRODUTO</b>`
     +`<span>1 caixa a cada X s, produto a produto · ${plural(R.length, 'linha', 'linhas')}</span><i>ver</i></summary>${_taktPorCaixaHtml(R, Tt, true)}</details>` : '';
-  return `<div class="tks-fx${A ? ' c3' : ''}">${c1}${c2}${c3}</div>${tab}`;
+  return `<div class="uep-sec"><b>NA LINHA E NO APP</b> o tempo de cada caixa · o número do app de cronoanálise</div>`
+    +`<div class="tks-nl${c2 ? ' c2' : ''}">${c1}${c2}</div>${tab}`;
 }
 // O texto do botão da sub-aba (só lê a montagem). est: 'falha' | 'sem-endpoint' | 'sem-url' | 'lendo'
 function _uepSubTakt(T, est, rot){
@@ -10655,8 +10652,6 @@ function _uepSubTakt(T, est, rot){
   return { txt:rot ? `${rot}: pede ${fmtP(T.pede)}` : `pede ${fmtP(T.pede)} da referência`, cls:T.pede>100 ? 'warn' : '' };
 }
 const _tkS=v=>v!=null && isFinite(v) ? v.toFixed(1).replace('.', ',') : '—';   // segundos com 1 casa
-function _tkLista(a){ return a.length<2 ? a.join('') : a.slice(0, -1).join(', ')+' e '+a[a.length-1]; }   // 'a, b e c'
-function _tkHM(min){ const m=Math.round(Number(min)||0); return Math.floor(m/60)+'h'+p2(m%60); }
 const TKS_DOW=['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 // O DESENHO (sem conta). G: _taktAgora ou null · fim: texto do fim do turno.
 function _taktHtml(T, G, opt){
@@ -10671,70 +10666,11 @@ function _taktHtml(T, G, opt){
       ? `Nenhuma UEP programada de ${e(T.de.slice(0, 5))} a ${e(T.ate.slice(0, 5))}${T.cxSemUep>0 ? ` — ${fmtN(T.cxSemUep)} cx sem UEP no cadastro` : ''}. Sem programação não há takt.`
       : 'Nenhum dia útil nesta semana: sem jornada, não há takt.'}</div></div>`;
   }
+  // v7.232.0 (PPCP: "tire redundância, deixar enxuta, direta"): sem os cartões em s
+  // por UEP, a frase, a cascata e o agora dos DETALHES — repetiam o veredito, o
+  // gráfico e a faixa NA LINHA E NO APP. O porquê é o recado do gráfico.
   const X=T.exec, C=T.cas, F=T.falta;
-  const cls=v=>v==null ? '' : sc(v);
-  const cards=[
-    { l:'TAKT · O QUE A PROGRAMAÇÃO PEDE', v:`${_tkS(T.takt)}<small>s por UEP</small>`, c:T.pede>100 ? 'warn' : 'ok',
-      sub:`= <b>${n0(T.porDia)} UEP/dia</b> · <span class="${T.pede>100 ? 'tks-warn' : ''}">${fmtP(T.pede)} da referência</span>`,
-      t:`${T.nUteis} dias úteis × ${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana. Menor que a referência = a programação pede mais rápido do que a referência de UEP.` },
-    { l:'REFERÊNCIA · META DIA (UEP) DO ⚙', v:`${_tkS(T.ref)}<small>s por UEP</small>`, c:'',
-      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${_tkM(T.minProd)} min (a jornada sem o setup)`,
-      t:`${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.meta)} UEP — a referência de UEP (a META DIA (UEP) do ⚙), a mesma META da RÉGUAS e do card UEP DO DIA. Lá ela vale a jornada inteira (${UEP_MIN_DIA} min, ${_tkS(UEP_MIN_DIA*60/T.meta)} s por UEP); aqui é sem o setup.` },
-    X.s!=null
-      ? { l:'EXECUTADO NA SEMANA · JORNADA', v:`${_tkS(X.s)}<small>s por UEP</small>`, c:cls(X.pct),
-          sub:`<b>${fmtP(X.pct)} da referência</b> · ${n0(X.uep)} UEP em ${X.nFech ? plural(X.nFech, 'dia', 'dias') : ''}${X.nFech && X.minHoje ? ' e ' : ''}${X.minHoje ? _tkHM(X.minHoje)+' de hoje' : ''}`
-            +(X.he>0 || X.fora>0 ? `<br>+ ${n0(X.he+X.fora)} UEP ${X.fora>0 ? 'fora da jornada (hora extra e dia não útil)' : 'em hora extra'}` : ''),
-          t:`Minutos de jornada (${UEP_MIN_DIA} por dia fechado; hoje, os lançados) menos o setup na mesma proporção × 60 ÷ UEP feita na jornada. A hora extra fica fora, como na meta.` }
-      : { l:'EXECUTADO NA SEMANA · JORNADA', v:'—', c:'', sub:'nenhuma hora de jornada lançada na semana ainda' },
-    { l:'FALTA DA SEMANA · SALDO DOS LOTES', v:`${n0(F.uep)}<small>UEP</small>`, c:F.uep>0 && F.passa>0 ? 'red' : (F.uep>0 ? '' : 'ok'),
-      sub:`${fmtN(F.cx)} cx${F.uepVenc>0 ? ` · ${n0(F.uepVenc)} UEP de dias que já passaram` : ''}`
-        +(F.uep>0 ? `<br><span class="${F.passa>0 ? 'tks-red' : ''}">na referência cabem ~${n0(F.capRest)}${F.ate ? ' até '+e(F.ate) : ''}${F.passa>0 ? ` · faltam ${n0(F.passa)}` : ''}</span>` : '<br>nenhum lote da semana em aberto'),
-      t:'O saldo de cada lote (o da planilha, só quando PRODUZIDO + SALDO = QTDE) × a UEP do código. "Cabem" = o resto da jornada de hoje e os dias úteis que vêm, na referência.' }
-  ];
-  const kpis=`<div class="kpi-grid c4">${cards.map(c=>`<div class="kpi-card ${c.c||''}"${c.t ? ` title="${e(c.t)}"` : ''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`;
-  // a leitura em uma frase
   const tot=C.carga+C.ritmo, pc=v=>tot>0 ? Math.round(v/tot*100)+'%' : '—';
-  let ler=T.pede>100
-    ? `A programação desta semana pede <b>${fmtP(T.pede-100)} acima</b> da referência (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP)`
-    : `A programação desta semana cabe na referência: pede ${fmtP(T.pede)} (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP)`;
-  ler+=X.s!=null ? `, e a linha rodou a <b>${fmtP(X.pct)} da referência</b> na jornada.` : '.';
-  if(tot>=1) ler+=` Nos dias fechados, do que não saiu na jornada, <b>${pc(C.carga)} é carga acima da referência</b> (PCP: re-datar ou hora extra) e <b>${pc(C.ritmo)} é ritmo</b> (produção: paradas e ritmo).`;
-  const leitura=`<div class="tks-ler${T.pede>100 || (X.pct!=null && X.pct<90) ? ' warn' : ''}">${ler}</div>`;
-  // POR QUE NÃO ACOMPANHOU
-  const passo=(cl, l, n, d)=>`<div class="tks-p${cl ? ' '+cl : ''}"><div class="kpi-lbl">${l}</div><div class="tks-n">${n}</div><div class="tks-d">${d}</div></div>`;
-  let bC;
-  if(!C.n){
-    bC=`<div class="uep-nota" style="margin-top:0">Nenhum dia útil fechado na semana ainda — a conta começa quando o 1º dia fechar.</div>`;
-  } else {
-    bC=`<div class="tks-casc">`
-      +passo('', 'PEDIDO', n0(C.pedido), `UEP programada ${C.n>1 ? `nos ${C.n} dias` : 'no dia'}`)
-      +`<div class="tks-op">−</div>`+passo('carga', 'CARGA ACIMA DA REFERÊNCIA', n0(C.carga), 'PCP: o que o dia pediu além da referência')
-      +`<div class="tks-op">−</div>`+passo('ritmo', 'GAP DE RITMO', n0(C.ritmo), 'produção: abaixo da referência com programação')
-      +(C.adiant>=1 ? `<div class="tks-op">+</div>`+passo('', 'ADIANTOU', n0(C.adiant), 'feito além do pedido do dia') : '')
-      +`<div class="tks-op">=</div>`+passo('fim', 'FEITO NA JORNADA', n0(C.feito), C.he>0 ? `+ ${n0(C.he)} em hora extra` : 'sem hora extra')
-      +`</div><div class="uep-nota">Dia a dia: ${C.dias.map(d=>`${e(d.data.slice(0, 5))} pediu ${n0(d.pedido)} (${fmtP(d.pedePct)} da ref.) e fez ${n0(d.feito)} (${fmtP(d.feitoPct)})${d.he>0 ? ` + ${n0(d.he)} em HE` : ''}`).join(' · ')}.</div>`;
-  }
-  const tituloC=`POR QUE NÃO ACOMPANHOU${C.n ? ` · ${C.n>1 ? `dias fechados ${e(C.dias[0].data.slice(0, 5))}–${e(C.dias[C.n-1].data.slice(0, 5))}` : `dia fechado ${e(C.dias[0].data.slice(0, 5))}`}` : ''}`;
-  // AGORA
-  let bA, tituloA='AGORA';
-  if(!G){
-    bA=`<div class="uep-nota" style="margin-top:0">Nenhum produto apontado agora.</div>`;
-  } else {
-    const nomeG=String(G.desc||G.cod).replace(/\s+/g, ' ').trim();
-    tituloA=`AGORA · ${e(nomeG)}${G.cor ? ' '+e(G.cor) : ''}${G.uepCx ? ` (${G.uepCx.toFixed(2).replace('.', ',')} UEP por caixa)` : ''}`;
-    if(!G.uepCx){
-      bA=`<div class="uep-nota" style="margin-top:0">O produto de agora não tem UEP no cadastro — sem takt por caixa.</div>`;
-    } else {
-      const H=G.hora, f2=v=>v.toFixed(2).replace('.', ',');
-      const real=!H || H.sCx==null ? passo('', 'ÚLTIMA HORA FECHADA', '—', 'nenhuma hora de jornada fechada hoje')
-        : H.so ? passo('real '+(H.cls||''), `ÚLTIMA HORA (${e(H.inicio)})`, `${_tkS(H.sCx)} s`, `1 caixa a cada · ${fmtN(H.cx)} caixas em ${H.min} min de relógio, ${fmtN(Math.round(H.min*_taktFProd(T)))} sem o setup`)
-        : passo('real '+(H.cls||''), `ÚLTIMA HORA (${e(H.inicio)})`, `${_tkS(H.sCx)} s`, `o ritmo da hora (${_tkS(H.sUep)} s por UEP) em caixas deste produto — a hora não foi só dele`);
-      bA=`<div class="tks-agora">`
-        +passo('', 'PELO TAKT', `${_tkS(G.sTakt)} s`, `1 caixa a cada · ${_tkS(T.takt)} × ${f2(G.uepCx)}`)
-        +passo('', 'TEMPO-ALVO', `${_tkS(G.sRef)} s`, `1 caixa a cada · ${_tkS(T.ref)} × ${f2(G.uepCx)}`)
-        +real+`</div><div class="uep-nota">A UEP por caixa é a do cadastro (o código de agora). Takt, tempo-alvo e a última hora são sem o setup (a hora: os minutos dela × ${_tkM(T.minProd)}/${UEP_MIN_DIA}, como o EXECUTADO), na mesma régua: a hora na meta dá o tempo-alvo. O tempo-alvo é o tempo que cada caixa pode levar para a linha fazer a média sem hora extra. A cor da última hora é a do HORA A HORA.</div>`;
-    }
-  }
   // DIA A DIA
   const svg=_taktSvg(T, o.largura||760);
   const fora=T.progForaUtil>0 ? T.dias.filter(d=>!d.util && d.uep>0).map(d=>`${d.data.slice(0, 5)} ${TKS_DOW[d.dow]}`).join(', ') : '';
@@ -10747,27 +10683,18 @@ function _taktHtml(T, G, opt){
     F.cxSemUep>0 ? `${fmtN(F.cxSemUep)} cx de saldo sem UEP ficaram fora da falta.` : '',
     o.escala || ''
   ].filter(Boolean);
-  // v7.211.0 (PPCP: "deixar nível direto … está muito poluído"): na frente, o
-  // VEREDITO em horas de linha e o dia a dia em horas; o resto (s por UEP, a
-  // cascata, o agora) vai para os DETALHES PARA O PCP.
-  // v7.223.0 (PPCP: "essa semana … ficou fora do padrão"): a ordem e o desenho da
-  // SEMANA QUE VEM — veredito, PARA FECHAR, o gráfico com o recado no título,
-  // detalhes. O porquê era um parágrafo solto entre os cartões e o gráfico; virou
-  // o recado do gráfico (é dele que ele fala: barra vermelha = excesso de
-  // programação, feito abaixo da linha = ritmo), com a frase inteira no title.
-  const porT=`A programação pediu ${fmtP(T.pede)} da média que a linha entrega sem hora extra`
+  // a ordem: o veredito e o que fazer, o dia a dia (onde e por quê), o número da linha e do app.
+  const porT=`A programação pediu ${fmtP(T.pede)} da média que a linha entrega sem hora extra (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP, sem o setup)`
     +(X.pct!=null ? `, e a linha rodou a ${fmtP(X.pct)} dessa média` : '')
     +(tot>=1 ? `. Do que não saiu nos dias fechados, ${pc(C.carga)} foi excesso de programação e ${pc(C.ritmo)} ritmo da linha` : '')+'.';
   const porR=tot>=1 ? `do que não saiu: <b>${pc(C.carga)} excesso de programação</b> · <b>${pc(C.ritmo)} ritmo da linha</b>`
     : `a programação pede <b>${fmtP(T.pede)}</b> da média${X.pct!=null ? ` · a linha rodou a <b>${fmtP(X.pct)}</b>` : ''}`;
-  return tit+_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate })
+  return tit+_taktHeroHtml(o.V, { semana:'esta', ate:F.ate })
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'esta', ate:F.ate }))
     +`<div class="uep-sec"><b>DIA A DIA</b> horas de linha · programado × feito<span class="tks-sec-r" title="${e(porT)}">${porR}</span></div><div class="uep-card" id="tks-g-box">${svg}`
     +`<div class="uep-leg"><span class="tks-lb">programado até 1 dia de linha</span><span class="tks-lx">programado acima de 1 dia</span><span style="--c:var(--tks-feito)">feito na jornada</span><span style="--c:var(--warn)">hora extra</span><span class="tks-lr">1 dia de linha (${_fmtHM(UEP_MIN_DIA)} = média de ${n0(T.meta)} UEP entregues sem hora extra)</span></div></div>`
-    +_taktDetHtml(kpis+leitura
-      +`<div class="uep-2"><div><div class="uep-sec"><b>${tituloC}</b></div><div class="uep-card uep-grow">${bC}</div></div>`
-      +`<div><div class="uep-sec"><b>${tituloA}</b></div><div class="uep-card uep-grow">${bA}</div></div></div>`
-      +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : ''));
+    +_taktFaixaHtml(_taktFaixa(T, { G }), _taktPorCaixa(T), T)
+    +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
 // O nome e o ritmo de cada cenário (desenho).
 function _taktCenRot(c){
@@ -11115,13 +11042,13 @@ function _tkaHtml(L, M, o){
   const fora=notas.length ? `<div class="uep-card tka-fora"><div class="uep-nota" style="margin-top:0">${notas.join('<br>')}</div></div>` : '';
   const perTxt=uteis.length ? `${uteis[0].data.slice(0, 5)} a ${uteis[uteis.length-1].data.slice(0, 5)}` : per;
   const VC=_tkaVolumes(L, T), Tv={ takt:T.takt, ref:T.ref, meta:T.meta, minProd:T.minProd, prods:VC ? VC.prods : [] };
-  h+=_taktFaixaHtml(_taktFaixa(T, VC ? { vol:VC.vol, prod:VC.prod, semVol:L.semCad.reduce((a, x)=>a+(Number(x.qtde)||0), 0)+VC.semVol, volFds:VC.volFds } : null),
-       _taktPorCaixa(Tv), Tv)
-    +_taktHeroHtml(M.V, { semana:'prox', nUteis:T.nUteis, unid:'produtos', ritmo:true })+fora
+  h+=_taktHeroHtml(M.V, { semana:'prox', nUteis:T.nUteis, unid:'produtos', ritmo:true })+fora
     +_taktFecharHtml(_taktFecharDados(M.V, { semana:'prox', P, k, ultimo:uteis.length ? uteis[uteis.length-1].data.slice(0, 5) : null }), { unid:'produtos' })
     +(op.corrente ? _tkaChegadaHtml(op.corrente, M.V, perTxt)
       : op.lendoPainel ? `<div class="uep-card"><div class="uep-nota" style="margin-top:0">Lendo a programação do painel até ${e(op.lendoPainel)} para somar o que vem antes da colagem…</div></div>` : '')
     +_taktExcessoHtml(T, P, op.largura, { colada:true })
+    +_taktFaixaHtml(_taktFaixa(T, VC ? { vol:VC.vol, prod:VC.prod, semVol:L.semCad.reduce((a, x)=>a+(Number(x.qtde)||0), 0)+VC.semVol, volFds:VC.volFds } : null),
+       _taktPorCaixa(Tv), Tv)
     +(op.corrente ? _taktDetHtml(_tkaSaldoHtml(op.corrente, { col:{ per, V:M.V }, semFrase:true }), 'DETALHES PARA O PCP · o saldo de horas semana a semana, o que já estava no painel') : '');
   return h;
 }
@@ -11180,10 +11107,10 @@ function _taktEstadoHtml(est, erro, fn, botoes){
   return `<div class="uep-sec" style="margin-top:0"><b>TAKT DA SEMANA</b> ${botoes||''}</div><div class="uep-card"><div class="uep-nota" style="margin-top:0${est==='lendo' ? '' : ';color:var(--warn)'}">${msg}`
     +(est==='lendo' || est==='sem-url' ? '' : ` <button class="btn btn-ghost" style="padding:3px 10px;font-size:10px" onclick="${fn}">↻ TENTAR AGORA</button>`)+'</div></div>';
 }
-// SEMANA QUE VEM (desenho, sem conta): TAKT e REFERÊNCIA como na esta semana; no
-// lugar do executado e da falta, A SEMANA × A JORNADA (em horas de linha, as do
-// PRÓXIMOS DIAS) e os DIAS ACIMA DA REFERÊNCIA; a frase diz o que redistribuir
-// resolve e o que sobra para hora extra ou re-datar; o DIA A DIA pelo saldo.
+// SEMANA QUE VEM (desenho, sem conta): o veredito em horas de linha (as do
+// PRÓXIMOS DIAS), o PARA FECHAR numa linha (com o que remanejar resolve), o que
+// vem desta semana, ONDE ESTÁ O EXCESSO pelo saldo, a faixa NA LINHA E NO APP e,
+// nos detalhes, a simulação em outros ritmos (v7.232.0: sem os cartões e a frase).
 function _taktProxHtml(T, P, opt){
   const e=_rpEsc, o=opt||{}, n0=v=>fmtN(Math.round(Number(v)||0)), dd=d=>`${d.data.slice(0, 5)} ${TKS_DOW[d.dow]}`;
   const uteis=T.dias.filter(d=>d.util), fer=T.dias.filter(d=>d.feriado);
@@ -11196,51 +11123,24 @@ function _taktProxHtml(T, P, opt){
       ? `Nenhuma UEP programada de ${e(T.de.slice(0, 5))} a ${e(T.ate.slice(0, 5))} ainda${T.cxSemUep>0 ? ` — ${fmtN(T.cxSemUep)} cx sem UEP no cadastro` : ''}. Sem programação não há takt.`
       : 'Nenhum dia útil na semana que vem: sem jornada, não há takt.'}</div></div>`;
   }
-  const cards=[
-    { l:'TAKT · O QUE A PROGRAMAÇÃO PEDE', v:`${_tkS(T.takt)}<small>s por UEP</small>`, c:T.pede>100 ? 'warn' : 'ok',
-      sub:`= <b>${n0(T.porDia)} UEP/dia</b> · <span class="${T.pede>100 ? 'tks-warn' : ''}">${fmtP(T.pede)} da referência</span>`,
-      t:`${T.nUteis} dias úteis × ${_tkM(T.minProd)} min (${UEP_MIN_DIA} de jornada − ${_tkM(T.setupDia)} de setup) × 60 ÷ ${n0(T.progUep)} UEP programada na semana.` },
-    { l:'REFERÊNCIA · META DIA (UEP) DO ⚙', v:`${_tkS(T.ref)}<small>s por UEP</small>`, c:'',
-      sub:`= <b>${n0(T.meta)} UEP/dia</b> em ${_tkM(T.minProd)} min (a jornada sem o setup)` },
-    { l:'A SEMANA × A JORNADA', c:P.saldoMin>0 ? 'red' : 'ok',
-      v:P.saldoMin>0 ? `${_fmtHM(P.saldoMin)}<small> além da jornada</small>` : P.saldoMin<0 ? `${_fmtHM(-P.saldoMin)}<small> de folga</small>` : `cabe<small> na jornada</small>`,
-      sub:`pedem <b>${_fmtHM(P.minPede)}</b> de linha para <b>${_fmtHM(P.minJorn)}</b><br>`
-        +(P.passa>0 ? `<span class="tks-red">${n0(P.uep)} UEP para ${n0(P.cap)} na referência · passam ${n0(P.passa)}</span>` : `${n0(P.uep)} UEP para ${n0(P.cap)} na referência · sobram ${n0(-P.passa)}`),
-      t:'O saldo dos lotes dos dias úteis em minutos de linha (UEP × 527 ÷ META UEP) contra 527 min por dia útil — a mesma conta do PRÓXIMOS DIAS.' },
-    { l:'DIAS ACIMA DA REFERÊNCIA', v:`${P.acima.length}<small> de ${T.nUteis}</small>`, c:P.acima.length ? 'warn' : 'ok',
-      sub:P.acima.length ? P.acima.map(d=>`${e(dd(d))} <b>${fmtP(d.pct)}</b>`).join(' · ') : 'nenhum dia passa da referência' }
-  ];
-  const kpis=`<div class="kpi-grid c4">${cards.map(c=>`<div class="kpi-card ${c.c||''}"${c.t ? ` title="${e(c.t)}"` : ''}><div class="kpi-lbl">${c.l}</div><div class="kpi-val">${c.v}</div><div class="kpi-sub">${c.sub}</div></div>`).join('')}</div>`;
-  let ler=T.pede>100
-    ? `A programação da semana que vem pede <b>${fmtP(T.pede-100)} acima</b> da referência (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP)`
-    : `A programação da semana que vem cabe na referência: pede ${fmtP(T.pede)} (${_tkS(T.takt)} contra ${_tkS(T.ref)} s por UEP)`;
-  ler+=P.passa>0 && P.saldoMin>0 ? `: passam <b>${n0(P.passa)} UEP</b> da jornada, <b>${_fmtHM(P.saldoMin)} de linha</b> — hora extra ou re-datar.` : '.';
-  if(P.acima.length){
-    ler+=` Dia a dia, ${P.acima.length===1 ? '1 dia passa' : P.acima.length+' dias passam'} da referência (${n0(P.exc)} UEP)`;
-    ler+=P.redist>=1
-      ? `; redistribuindo na semana, ${P.folga.length===1 ? 'o dia com folga' : 'os dias com folga'} (${_tkLista(P.folga.map(d=>e(d.data.slice(0, 5))))}) ${P.folga.length===1 ? 'absorve' : 'absorvem'} <b>${n0(P.redist)}</b>`
-        +(P.passa>=1 ? ` e <b>${n0(P.passa)}</b> continuam sem lugar na jornada.` : ' e a semana fecha na jornada.')
-      : ', e nenhum dia tem folga para absorver.';
-  }
-  const sem=(o.sim||[]).find(c=>c.id==='sem');
-  if(sem && sem.falta>=1) ler+=` No ritmo desta semana (${fmtP(sem.pct)} da referência) faltariam <b>${_fmtHM(sem.min)}</b>.`;
-  const leitura=`<div class="tks-ler${P.saldoMin>0 || P.acima.length ? ' warn' : ''}">${ler}</div>`;
+  // v7.232.0: sem os cartões em s por UEP e a frase — repetiam o veredito e o gráfico.
   const notas=[
     P.fds.length ? `${P.fds.map(d=>`${e(dd(d))} ${n0(d.uep)} UEP`).join(', ')} programado fora dos dias úteis — hora extra, fora da conta da jornada.` : '',
     P.adiant>=1 ? `${n0(P.adiant)} UEP desta programação já foram adiantados (a conta usa o saldo).` : '',
     T.cxSemUep>0 ? `${fmtN(T.cxSemUep)} cx programadas sem UEP no cadastro ficaram fora (a semana é um pouco mais pesada).` : '',
-    T.cxFora>0 ? `${fmtN(T.cxFora)} cx fora da esteira não entram.` : '',
-    'O PRÓXIMOS DIAS mostra esta semana dia a dia, em horas de linha, com os lotes.'
+    T.cxFora>0 ? `${fmtN(T.cxFora)} cx fora da esteira não entram.` : ''
   ].filter(Boolean);
   // v7.222.0 (PPCP: "nível diretoria, bater o olho e entender"): o veredito com UM
-  // número, o PARA FECHAR em cartões, o que vem desta semana numa barra somada e o
-  // gráfico com o excesso em vermelho; o resto nos DETALHES PARA O PCP.
+  // número, o PARA FECHAR (numa linha desde a v7.232.0), o que vem desta semana numa
+  // barra somada e o gráfico com o excesso em vermelho; nos DETALHES só a simulação.
   const k=UEP_MIN_DIA/T.meta, perTxt=uteis.length ? `${uteis[0].data.slice(0, 5)} a ${uteis[uteis.length-1].data.slice(0, 5)}` : per;
-  return tit+_taktFaixaHtml(_taktFaixa(T), _taktPorCaixa(T), T)+_taktHeroHtml(o.V, { semana:'prox', nUteis:T.nUteis })
+  return tit+_taktHeroHtml(o.V, { semana:'prox', nUteis:T.nUteis })
     +_taktFecharHtml(_taktFecharDados(o.V, { semana:'prox', P, k, ultimo:uteis.length ? uteis[uteis.length-1].data.slice(0, 5) : null }))
     +_taktHerancaHtml(o.V, o.sobra, perTxt)
     +_taktExcessoHtml(T, P, o.largura)
-    +_taktDetHtml(kpis+leitura+_taktSimHtml(o.sim, P)+`<div class="uep-nota">${notas.join(' · ')}</div>`);
+    +_taktFaixaHtml(_taktFaixa(T), _taktPorCaixa(T), T)
+    +_taktDetHtml(_taktSimHtml(o.sim, P), 'DETALHES PARA O PCP · e se a linha rodar em outro ritmo')
+    +(notas.length ? `<div class="uep-nota">${notas.join(' · ')}</div>` : '');
 }
 // ONDE ESTÁ O EXCESSO (desenho, sem conta; semana que vem e AVALIAÇÃO): o gráfico
 // dos dias com o que passa de 1 dia de linha em vermelho, e no título o dia que
@@ -11378,7 +11278,8 @@ function _taktFecharDados(V, o){
     pico:prox ? _taktPico(P, o.k) : null,
     remanejar:prox && P && P.acima && P.acima.length ? Math.round(P.redist*o.k) : null };
 }
-// O desenho (sem conta). Tela: três cartões; papel: uma linha.
+// O desenho (sem conta). Uma linha na tela e no papel (v7.232.0: na tela eram três
+// cartões que repetiam os números do veredito — a tela não repete as caixas).
 function _taktFecharHtml(F, o){
   if(!F) return '';
   const hm=_fmtHM, un=(o && o.unid) || 'caixas', prox=F.semana==='prox';
@@ -11389,14 +11290,10 @@ function _taktFecharHtml(F, o){
               : `${F.cx ? `≈ ${_tkAprox(F.cx)} ${un}` : `≈ ${_tkHAprox(F.he)} de lotes`} passam para a semana que vem`)
       +(F.remanejar!=null ? `; remanejar entre os dias resolve só ${hm(F.remanejar)}` : '')+'.</div>';
   }
-  const op=(cl, l, n, d)=>`<div class="tks-fc${cl ? ' '+cl : ''}"><div class="kpi-lbl">${l}</div><div class="tks-fn">${n}</div><div class="tks-fd">${d}</div></div>`;
-  const qtd=F.cx ? `≈ ${_tkAprox(F.cx)}<small>${un}</small>` : `≈ ${_tkHAprox(F.he)}<small>de lotes</small>`;
-  return `<div class="uep-sec"><b>PARA FECHAR</b> escolher uma — ou combinar as duas</div><div class="tks-fcs">`
-    +op('', 'HORA EXTRA', `≈ ${_tkHAprox(F.he)}`, prox ? 'da linha inteira, além da jornada da semana' : 'da linha inteira, além da jornada que resta')
-    +(prox ? op('', 'ADIAR LOTES', qtd, `para depois de ${_rpEsc(F.ultimo || 'a semana')} · o PCP escolhe quais${pico ? ` — o dia mais carregado é <b>${pico}</b>` : ''}`)
-           : op('', 'PASSAR PARA A SEMANA QUE VEM', qtd, 'o que não couber até o fim desta semana'))
-    +(F.remanejar!=null ? op('no', 'SÓ REMANEJAR ENTRE OS DIAS', `<small>só</small> ${hm(F.remanejar)}`, '<b>não resolve</b>: a semana inteira passa da jornada, não só um dia') : '')
-    +'</div>';
+  return `<div class="tks-por tks-fl"><b>Para fechar:</b> hora extra de ≈ ${_tkHAprox(F.he)} da linha inteira, ou `
+    +(prox ? `adiar esses lotes${F.ultimo ? ` para depois de ${_rpEsc(F.ultimo)}` : ''}${pico ? ` — o dia mais carregado é <b>${pico}</b>` : ''}`
+            : 'o que não couber passa para a semana que vem')
+    +(F.remanejar!=null ? `; remanejar entre os dias resolve só ${hm(F.remanejar)}` : '')+'.</div>';
 }
 // O QUE VEM DESTA SEMANA (desenho, sem conta; só na semana que vem): o que não
 // fechar desta semana passa para a que vem — a soma escrita, numa barra só (era
@@ -11462,11 +11359,11 @@ function _taktHeroHtml(V, o){
     +`<div class="tks-bcap">${cap}</div></div>`;
   return `<div class="tks-hero ${cls}"><div class="tks-hv">${pal}${sub ? `<small>${sub}</small>` : ''}</div><div class="tks-hb">${corpo}</div>${barras}</div>`;
 }
-// Os detalhes do PCP (takt em s/UEP, o porquê, o agora, a simulação) ficam
-// recolhidos (v7.211.0); o estado aberto/fechado sobrevive ao refresh da tela.
+// Os detalhes do PCP ficam recolhidos (v7.211.0; v7.232.0: só a simulação da semana
+// que vem e o saldo de horas da AVALIAR); aberto/fechado sobrevive ao refresh.
 let TKS_DET=false;
 function _taktDetHtml(corpo, sum){
-  return `<details class="tks-det"${TKS_DET ? ' open' : ''} ontoggle="TKS_DET=this.open"><summary>${sum || 'DETALHES PARA O PCP · takt em segundos por UEP, por que não acompanhou, simulação'}</summary>${corpo}</details>`;
+  return `<details class="tks-det"${TKS_DET ? ' open' : ''} ontoggle="TKS_DET=this.open"><summary>${sum || 'DETALHES PARA O PCP'}</summary>${corpo}</details>`;
 }
 // ── 🖨 TAKT DA SEMANA (v7.210.0; v7.211.0 direta) ──────────────────────────
 // PPCP, 06/11/2026: "simulação e impressão para diretoria ver que não cabe" →

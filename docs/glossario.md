@@ -290,6 +290,12 @@ coluna UEP da PRODUTO_CODIGO (cronoanálise), registrada na `UEP_VERSOES`.
 
 ## Aba ⚖ UEP · TAKT DA SEMANA (v7.209.0)
 
+> Desde a v7.232.0 a tela não mostra mais os cartões em s por UEP (TAKT,
+> REFERÊNCIA, EXECUTADO, FALTA DA SEMANA) nem a cascata: o TAKT contra a
+> REFERÊNCIA e o EXECUTADO em % ficam no *title* do recado do DIA A DIA, e a
+> CARGA e o GAP DE RITMO viram os % do recado (*do que não saiu: X% excesso de
+> programação · Y% ritmo da linha*). As fórmulas abaixo continuam valendo.
+
 Três números na mesma unidade, **segundos por UEP** (menor = mais rápido), **sem
 o setup** (v7.225.0): os minutos de jornada menos o **setup do grupo**, o
 mesmo do app de cronoanálise: **TROCAS/DIA × MIN/TROCA do ⚙** (CONFIG_PAINEL
@@ -307,7 +313,7 @@ a sexta fora dos feriados da aba FERIADOS.
 |---|---|---|---|
 | **TAKT** (o que a programação pede) | dias úteis × (527 − setup/dia do ⚙) × 60 ÷ UEP programada na semana (Σ caixas × UEP do cadastro de hoje; fora da esteira de fora; código sem UEP fica fora e é dito). UEP/dia = UEP programada ÷ dias úteis; % = UEP/dia ÷ META DIA (UEP). Lote em sábado, domingo ou feriado entra na UEP, não nos dias úteis | s/UEP | `v7:_taktMontar` |
 | **REFERÊNCIA** | (527 − setup/dia do ⚙) × 60 ÷ META DIA (UEP) do ⚙ — a mesma *referência de UEP* da RÉGUAS | s/UEP | `v7:_taktMontar` (`ref`) |
-| **VOLUMES DA SEMANA** (faixa do topo, *para o app de cronoanálise*, v7.224.0) | Σ caixas programadas na semana (as duas abas da programação, fora da esteira de fora — as mesmas linhas do TAKT; volume = caixa). Na AVALIAR: Σ produtos colados × nº de volumes de cada produto no cadastro (produto fora do cadastro não conta). **takt no app** (v7.225.0) = a conta do app de cronoanálise, por semana: dias com volume (no máximo 5) × (44 h ÷ 5 − TROCAS/DIA × MIN/TROCA do ⚙) × 60 ÷ volumes — o mesmo número da tabela PROGRAMA GRAVADO do app (8h48 por dia, não 8h47) | volumes · s | `v7:_taktFaixa` · `v7:_taktApp` · `v7:_tkaVolumes` |
+| **VOLUMES DA SEMANA** (faixa NA LINHA E NO APP, *para o app de cronoanálise*, v7.224.0; depois do gráfico desde a v7.232.0) | Σ caixas programadas na semana (as duas abas da programação, fora da esteira de fora — as mesmas linhas do TAKT; volume = caixa). Na AVALIAR: Σ produtos colados × nº de volumes de cada produto no cadastro (produto fora do cadastro não conta). **takt no app** (v7.225.0) = a conta do app de cronoanálise, por semana: dias com volume (no máximo 5) × (44 h ÷ 5 − TROCAS/DIA × MIN/TROCA do ⚙) × 60 ÷ volumes — o mesmo número da tabela PROGRAMA GRAVADO do app (8h48 por dia, não 8h47) | volumes · s | `v7:_taktFaixa` · `v7:_taktApp` · `v7:_tkaVolumes` |
 | **EXECUTADO NA SEMANA** | minutos de jornada (527 por dia útil fechado com UEP no HISTORICO; hoje, os minutos de jornada com lançamento) × (527 − setup/dia) ÷ 527 (o setup na mesma proporção) × 60 ÷ UEP de jornada feita nesses dias. % = UEP feita ÷ Σ (META UEP do dia × minutos ÷ 527). Hora extra e dia não útil à parte (*+ X UEP em hora extra*) | s/UEP · % | `v7:_taktMontar` (`exec`) |
 | **CARGA ACIMA DA REFERÊNCIA** | por dia útil fechado: (pedido − feito) − ritmo, onde pedido = UEP programada do dia. É o que o dia pediu além da referência (ou além do feito, quando a linha passou dela): decisão do PCP (re-datar ou hora extra). Soma dos dias | UEP | `v7:_taktMontar` (`cas`) |
 | **GAP DE RITMO** | por dia útil fechado: máx(0, mín(pedido, META UEP do dia) − feito) — o que faltou para a referência **com trabalho programado**. Dia que pediu menos que a referência não cobra a folga (a linha não tinha o trabalho). Soma dos dias. Fecha: pedido − carga − ritmo + adiantou = feito | UEP | `v7:_taktMontar` (`cas`) |
@@ -448,7 +454,7 @@ INVESTIMENTO em PDF, com os mesmos valores nos dois.
 |---|---|---|---|
 | **FALTAM** (veredito) | precisa − tem, em horas de linha (o mesmo `_taktVeredito`); traduzido em dias (÷ 527, uma casa), caixas (≈, à dezena até 999, depois à centena) e pontos (≈, em mil acima de 10 mil) | h de linha | `v7:_taktHeroHtml` |
 | **NO RITMO ATUAL** (veredito) | só quando o ritmo desta semana fica a ≥ 5% da média (`TKS_RITMO_DESVIO`); na AVALIAÇÃO, sempre | h | `v7:_taktHeroHtml` |
-| **PARA FECHAR** | hora extra ≈ o que falta (de meia em meia hora); adiar ≈ as caixas que faltam; remanejar = a folga dos dias abaixo de 1 dia de linha (`P.redist`), só na semana que vem | h / cx | `v7:_taktFecharDados` |
+| **PARA FECHAR** (uma linha, v7.232.0; na tela sem repetir as caixas do veredito) | hora extra ≈ o que falta (de meia em meia hora); adiar ≈ as caixas que faltam; remanejar = a folga dos dias abaixo de 1 dia de linha (`P.redist`), só na semana que vem | h / cx | `v7:_taktFecharDados` |
 | **FALTAM NO TOTAL** (esta semana ainda não fecha) | o que falta da semana que vem + o que falta desta (se nada mudar) | h de linha | `v7:_taktHerancaHtml` |
 | **O DIA MAIS CARREGADO** | o dia que mais passa de 1 dia de linha (minutos) e a parte dele no excesso da semana (Σ UEP acima da referência) | h / % | `v7:_taktPico` |
 
