@@ -1066,7 +1066,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.45.0';
+const APP_VER   = '1.46.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -1098,6 +1098,7 @@ let PRODUTOS = [];
 let PROD_CAT_TS = 0, PROD_CAT_FALHA = false;
 const PROD_CAT_TTL = 30 * 60 * 1000;
 let PROD_ATUAL = '';
+let _prodConfSel = null;   // o seletor foi aberto por uma pergunta do lançamento (1.46.0): a escolha vale como conferida
 let PARADAS_HOJE = [];
 // Produtos programados para hoje (+ em atraso) — lista rápida no seletor.
 let PROG_HOJE = [];
@@ -1547,6 +1548,7 @@ function abrirModalProduto(){
 }
 function fecharModalProduto(){
   document.getElementById('modal-produto').classList.remove('open');
+  _prodConfSel = null;   // fechou sem escolher: a pergunta volta no próximo ADICIONAR
   // Fechou sem escolher = desistiu da troca: o próximo toque volta a escolher
   // o produto atual do turno.
   if(_corrTroca){
@@ -1636,6 +1638,10 @@ async function selecionarProduto(codigo){
     _corrTrocarPara(t, codigo);
     return;
   }
+  // Aberto por uma pergunta do lançamento (CONFIRMAR O PRODUTO / CONFERIR A COR):
+  // o produto escolhido aqui é o conferido — o ADICIONAR seguinte não pergunta de novo.
+  if(_prodConfSel && _prodConfSel===_slotAtivo) _slotAtivo.prodConf = codigo;
+  _prodConfSel = null;
   PROD_ATUAL = codigo;
   localStorage.setItem('rpe_prod_atual', codigo);
   atualizarProdutoBar();
@@ -1790,7 +1796,9 @@ function processarBipe(raw){
     const trocando = !!_corrTroca;
     // Bipe também responde as perguntas da MADRUGADA: na do produto é TROCAR
     // PRODUTO; na da volta é MANTER (o bipe já escolheu o produto de agora).
-    if(_confirmaCb && (_confirmaTag==='cor' || _confirmaTag==='mad' || _confirmaTag==='mad2')) _confirmaResolve(false);
+    // Na CONFIRMAR O PRODUTO (1.46.0) o bipe é a resposta: o produto bipado é o conferido.
+    if(_confirmaCb && _confirmaTag==='prod' && _slotAtivo) _slotAtivo.prodConf = p.codigo;
+    if(_confirmaCb && (_confirmaTag==='cor' || _confirmaTag==='mad' || _confirmaTag==='mad2' || _confirmaTag==='prod')) _confirmaResolve(false);
     selecionarProduto(p.codigo);                 // mesma seleção do toque (sincroniza backend)
     bipeToast('✓ '+p.codigo+' · '+nomeComCor(p.desc, corDeProduto(p)), true);
     bipeSom(true);
@@ -2974,6 +2982,43 @@ function _lancGuardar(ini, cod, cx){
     localStorage.setItem(LANC_REC_K, JSON.stringify({dia:hojeStr(), itens}));
   }catch(e){}
 }
+// ── CONFIRMAR O PRODUTO (1.46.0) ──
+// PPCP, 12/11/2026: um bipe de TESTE da banqueta trocou o produto do turno, e as
+// 180 cx da hora 09:00 do BUFFET entraram na BANQUETA sem ninguém ver → "tem que
+// ter uma confirmação" → "quando o produto mudou". O aparelho lembra o produto do
+// último lançamento que MANDOU hoje ('rp_lanc_ult' = {dia, cod}; chave nova, não
+// renomear) e pergunta no 1º lançamento depois que ele muda, no 1º do dia (o
+// produto do turno fica de ontem para hoje) e no que vai SEM produto.
+const LANC_ULT_K = 'rp_lanc_ult';
+function _lancUltLe(){
+  try{ const o = JSON.parse(localStorage.getItem(LANC_ULT_K)||'null'); return (o && typeof o==='object') ? o : null; }
+  catch(e){ return null; }
+}
+function _lancUltGuarda(cod){
+  try{ localStorage.setItem(LANC_ULT_K, JSON.stringify({ dia:hojeStr(), cod:String(cod||'') })); }catch(e){}
+}
+// A decisão, PURA: null = não pergunta; senão {tipo:'primeiro'|'mudou'|'sem', antes}.
+// `prodConf` = o produto que o operador acabou de escolher DENTRO deste lançamento
+// (respondeu TROCAR PRODUTO / TROCAR A COR e escolheu, ou bipou com a pergunta
+// aberta): já conferido, não pergunta de novo.
+function lancProdConfirmar(ult, hoje, cod, prodConf){
+  const c = String(cod||''), k = x => String(x||'').replace(/\D/g,'');
+  if(prodConf!=null && k(prodConf)===k(c) && c) return null;
+  const doDia = ult && ult.dia===hoje;
+  if(!c) return (doDia && !String(ult.cod||'')) ? null : { tipo:'sem', antes: doDia ? String(ult.cod||'') : '' };
+  if(!doDia) return { tipo:'primeiro', antes:'' };
+  if(k(ult.cod)===k(c)) return null;
+  return { tipo:'mudou', antes:String(ult.cod||'') };
+}
+function lancProdMudouTxt(q, cx, label, nomeNovo, nomeAntes){
+  if(q.tipo==='sem') return `Lançar ${fmtN(cx)} cx na hora ${label} SEM PRODUTO?`
+    + ' Sem produto, as caixas não baixam o lote nem entram na UEP. Se sabe o produto, use TROCAR PRODUTO.';
+  if(q.tipo==='primeiro') return `Primeiro lançamento do dia neste aparelho: ${fmtN(cx)} cx na hora ${label} em ${nomeNovo}.`
+    + ' Confira: é o produto que está na linha AGORA?';
+  return `O produto mudou desde o último lançamento: era ${nomeAntes || 'outro'}, agora é ${nomeNovo}.`
+    + ` Lançar ${fmtN(cx)} cx na hora ${label} no produto novo?`;
+}
+
 // O texto do lançamento recusado: o motivo do servidor, sem mandar repetir.
 function lancRecusadoTxt(motivo){
   return 'O SERVIDOR RECUSOU O LANÇAMENTO — nada foi gravado.\n\n'
@@ -3354,6 +3399,18 @@ async function salvarLanc(){
     if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta
     if(!seguir){ abrirModalProduto(); return; }
   }
+  // O PRODUTO MUDOU? (1.46.0) A madrugada já perguntou o produto acima.
+  if(!slotLanc.mad){
+    const q = lancProdConfirmar(_lancUltLe(), hojeStr(), codLanc, slotLanc.prodConf);
+    if(q){
+      const seguir = await confirmarModal({titulo:'CONFIRMAR O PRODUTO',
+        msg:lancProdMudouTxt(q, add, slotLanc.label, _nomeProdLanc(codLanc), _nomeProdLanc(q.antes)),
+        ok:'LANÇAR', cancelar:'TROCAR PRODUTO', seguro:'cancelar', tag:'prod'});
+      if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // bipou outro durante a pergunta: confere o novo
+      if(!seguir){ _prodConfSel = slotLanc; abrirModalProduto(); return; }
+      slotLanc.prodConf = codLanc;
+    }
+  }
   // Lançamento REPETIDO? (v1.34.0) Em 16/10 um 60 de LIVREIRO ENCANTO entrou
   // duas vezes na hora 10:00: o lancId protege a retentativa DENTRO do mesmo
   // modal, e o operador fechou e lançou de novo — modal novo, id novo, o
@@ -3373,7 +3430,7 @@ async function salvarLanc(){
       const seguir = await confirmarModal({titulo:'CONFERIR A COR', msg:avisoCorErradaTxt(av, add),
                                            ok:'COR CERTA', cancelar:'TROCAR A COR', seguro:'cancelar', tag:'cor'});
       if(_slotAtivo!==slotLanc || PROD_ATUAL!==codLanc) return;   // mudou durante a pergunta: confere de novo
-      if(!seguir){ abrirModalProduto(); return; }
+      if(!seguir){ _prodConfSel = slotLanc; abrirModalProduto(); return; }
       if(COR_OK.dia!==hojeStr()) COR_OK = { dia:hojeStr(), cod:{} };
       COR_OK.cod[kLanc] = 1;
     }
@@ -3393,6 +3450,7 @@ async function salvarLanc(){
   }
   const lancId = _slotAtivo._lancId;
   _lancGuardar(_slotAtivo.inicio, codLanc, add);
+  _lancUltGuarda(codLanc);   // o produto conferido deste lançamento (antes da resposta: timeout ≠ não gravou)
 
   // O backend grava cada lançamento numa coluna de LOTE separada e SOMA os lotes
   // ao montar o REALIZADO da hora. Por isso enviamos só o INCREMENTO (não o total)

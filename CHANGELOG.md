@@ -11,6 +11,26 @@ Apps Script e re-deployar; essas vêm marcadas com ⚠ **re-deploy**.
 
 ---
 
+## mobile 1.46.0 — 12/11/2026 · CONFIRMAR O PRODUTO quando ele mudou
+
+PPCP: *"tem que ter uma confirmação"*. Um bipe de teste da BANQUETA trocou o
+produto do turno, e as 180 caixas do BUFFET 3 PT PRISM da hora 09:00 entraram
+na banqueta sem ninguém ver (corrigido na planilha no mesmo dia: registro de
+produção linha 3128, HISTORICO_MEDIA_FAMILIA linha 2877, LANC_TROCADOS linha 7).
+
+- Antes de gravar, o app pergunta **CONFIRMAR O PRODUTO** quando o produto
+  mudou desde o último lançamento deste aparelho (*"era BUFFET…, agora é
+  ESCRIVANINHA…"*), no primeiro lançamento do dia e no lançamento sem produto.
+  O destaque é **TROCAR PRODUTO**; LANÇAR é o botão neutro.
+- Mesmo produto do último lançamento não pergunta nada. Produto escolhido ou
+  bipado em resposta à pergunta (ou ao TROCAR A COR) não pergunta de novo.
+- Na hora da madrugada vale só a pergunta que já existia (PRODUTO DA MADRUGADA).
+
+**Atenção:** um toque a mais a cada troca de produto e no primeiro lançamento
+do dia. Nenhum número muda. Nada no `.gs`.
+
+---
+
 ## mobile 1.45.0 — 12/11/2026 · O bipe da etiqueta respeita o VOLUME e o produto aparece no lançamento
 
 PPCP: *"como está lendo hoje a entrada pela etiqueta"*. A etiqueta traz o
