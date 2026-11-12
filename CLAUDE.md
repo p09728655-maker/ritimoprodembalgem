@@ -6503,6 +6503,38 @@ feito e dá ar de verdade ao que sobrou.
     passa da largura.
 
 ## O TEMPO-ALVO DE CADA PRODUTO (`.gs` v5.62 / v7.229.0)
+- ⚠ **DESDE A v7.235.0 / `.gs` v5.65 O ALVO É PELA ESTEIRA** — o que segue
+  sobre "(527 − setup) × 60 ÷ META UEP × UEP" é a régua ANTIGA. PPCP,
+  12/11/2026, com o RACK MOVE 1.6 (alvo 32,3 s; medido 25,2 s com as paradas,
+  18,2 s sem as lacunas): *"tempo alvo está equivocado"* → *"tamanho da caixa,
+  velocidade da esteira"* → *"85 ok"* → *"no painel, onde eu possa atualizar"*.
+  - **esteira = (MEDIDA DA CAIXA + ENTRE_PECAS) ÷ VELOCIDADE** (3600 ÷
+    `_tetoEsteiraCxH`, a conta do % TETO EST.); **tempo-alvo = esteira ÷
+    EFICIÊNCIA DA EMBALAGEM** (⚙, `EFICIENCIA_EMB` na CONFIG_PAINEL, padrão 85 =
+    `TA_EFICIENCIA_PADRAO_GS` = `EF_EMB_PADRAO`; o `crono-registro.test.js`
+    prende os dois). Célula em % (0,85) vale 85 (`_cfgEficiencia`).
+  - Por quê (medido nas 69 medições da CRONOANALISE): o sem as lacunas = 0,99 ×
+    a esteira, sem ajuste; o alvo pela UEP dava 1,6 × o trabalho limpo (a UEP é
+    medida contra os 6,7 s LIMPOS da MADERO, os 10,74 s por UEP são a MÉDIA do
+    dia) e 62 de 68 medições ficavam abaixo dele. Em média a linha entrega 76%
+    da esteira no NO PERÍODO: a perda é quase toda parada marcada (20% do
+    período), lacunas 4%, o passo bate com a esteira.
+  - Os 85% são da linha **com o produto rodando** (paradas, lacunas e fadiga
+    dentro). **Não são a meta do dia** — o dia perde mais (trocas, esperas; o
+    % TETO EST. mostra 22–68%). Por isso a carga da semana (PELO TAKT, o "pede
+    X% da referência", as `semanas` do `getTemposAlvo`) **continua pela UEP**,
+    e o TEMPO-ALVO e o PELO TAKT **não se comparam** (a nota da tabela diz).
+  - `_temposAlvoMontar` manda por linha `{ rot, uep, esteira, alvo, medida,
+    vel, entre }` (medida/vel/entre só quando todo código da linha tem os
+    mesmos três — senão null, e o app escreve só a esteira) e na `ref`
+    `metodo:'esteira'`, `eficiencia`, `eficienciaOrigem`. Jogo = esteira média
+    por caixa dos volumes (`_taEsteiraCad`, como o `_cronoUepCad`). Sem medida
+    ou velocidade: esteira e alvo null — **nunca a UEP no lugar**.
+  - Painel: `_taktEstMapa(cat)` (código → s de esteira) entra no `_taktMontar`
+    como 5º parâmetro (pesada pelas caixas, `cxEst`/`estSoma`; produto com um
+    código sem medida fica sem alvo) e a eficiência vem em `H.ef` (`_efEmb()`;
+    o `_taktMontar` não lê global). O cx/h do TEMPO-ALVO é com o produto
+    rodando (3.600 ÷ alvo), não de relógio.
 - PPCP, 11/11/2026: *"hoje takt está pela programação, mas ideal não seria pela
   quantidade de volumes que fizemos sem horas extras?"* → análise de engenharia
   (o que ele descreveu é o ritmo DEMONSTRADO, não takt; em VOLUMES ele oscila

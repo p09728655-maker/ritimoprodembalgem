@@ -627,53 +627,99 @@ ok('a trava, a destrava e a conferência estão no doGet; travar e destravar inv
 // ════════════════════════════════════════════════════════════════════════════
 // v5.62 — O TEMPO-ALVO DE CADA PRODUTO (getTemposAlvo), para o app de
 // cronoanálise. PPCP, 11/11/2026: "isso que quis dizer: tempo-alvo de cada
-// produto" → a cor do tablet segue o alvo; sem UEP, sem alvo.
-console.log('\n── v5.62: o tempo-alvo de cada produto ──');
+// produto" → a cor do tablet segue o alvo.
+// v5.65 — PELA ESTEIRA. PPCP, 12/11/2026, com o RACK MOVE 1.6 (alvo 32,3 s pela
+// UEP, 18,2 s medido sem as lacunas): "tempo alvo está equivocado" → "hoje temos
+// tamanho da caixa, velocidade da esteira" → "85 ok".
+//   esteira = (medida + entre-peças) ÷ velocidade · alvo = esteira ÷ 85%
+console.log('\n── v5.62/v5.65: o tempo-alvo de cada produto, pela esteira ──');
 {
   const HTML = fs.readFileSync(path.join(__dirname, 'ritmoprod_embalagem_v7.html'), 'utf8');
-  const CAT = { PRODUTO_CODIGO: [['CODIGO', 'DESCRICAO', 'COR', 'UEP'],
-    ['501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.46], ['501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1.78],
-    ['501059003', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.46], ['501059004', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1.82],
-    [501149001, 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 1], ['501160001', 'VOL 1/2 BERCO ALGODAO DOCE', 'BRANCO', ''],
-    ['501160002', 'VOL 2/2 BERCO ALGODAO DOCE', 'BRANCO', 2.1]],
-    CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['META_UEP', 2761], ['SETUPS_DIA', 4], ['SETUP_MIN', '8,2']] };
-  const P = montar(CAT, null, '11/11/2026');
+  // linhas reais da PRODUTO_CODIGO de 12/11/2026 (medida, 9 m/min, 400 mm); o
+  // BERÇO 1/2 sem medida e COM UEP: sem alvo mesmo assim (nunca a UEP no lugar)
+  const HDR = ['CODIGO', 'DESCRICAO', 'COR', 'MEDIDA DA CAIXA', 'VELOCIDADE', 'ENTRE_PECAS (mm)', 'UEP'];
+  const CAT = { PRODUTO_CODIGO: [HDR,
+    ['501059001', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1705, 9, 400, 1.46], ['501059002', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'BRANCO', 1344, 9, 400, 1.78],
+    ['501059003', 'VOL 1/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1705, 9, 400, 1.46], ['501059004', 'VOL 2/2 PENTEADEIRA CAMARIM STRASS', 'ROSA', 1344, 9, 400, 1.82],
+    [501149001, 'VOL 1/1 MESA CABECEIRA MADERO', 'BRANCO', 881, 9, 400, 1],
+    ['501151001', 'VOL 1/1 RACK MOVE 1.6', 'CINAMOMO/OFF WHITE', 2076, 9, 400, 3.01],
+    ['501160001', 'VOL 1/2 BERCO ALGODAO DOCE', 'BRANCO', '', 9, 400, 1.5], ['501160002', 'VOL 2/2 BERCO ALGODAO DOCE', 'BRANCO', 1673, 9, 400, 2.1]],
+    CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['META_UEP', 2761], ['SETUPS_DIA', 4], ['SETUP_MIN', '8,2'], ['EFICIENCIA_EMB', 85]] };
+  const P = montar(CAT, null, '12/11/2026');
   const r = P.run('return getTemposAlvo();');
   const por = {}; (r.produtos || []).forEach(x => { por[x.rot] = x; });
+  const r2 = x => Math.round(x * 100) / 100, est = mm => (mm + 400) / 1000 / (9 / 60);
   const sUep = (527 - 32.8) * 60 / 2761;
-  ok('a régua: (527 − o setup do ⚙ 4 × 8,2) × 60 ÷ a META UEP da planilha = 10,74 s por UEP; diz de onde veio cada um',
-     [r.ok, r.ref.metaUep, r.ref.metaOrigem, r.ref.setupsDia, r.ref.setupMin, r.ref.setupOrigem, r.ref.setupDia, r.ref.minProd, r.ref.sUep, Math.round(r.ref.sUep * 100) / 100],
-     [true, 2761, 'planilha', 4, 8.2, 'planilha', 32.8, 494.2, Math.round(sUep * 1000) / 1000, 10.74]);
-  ok('os nomes da lista do app: o produto inteiro e, com 2+ volumes, cada volume; o volume 2/2 da STRASS = média das cores (1,80); o produto = média por caixa dos volumes',
+  ok('a régua diz o método e a eficiência (85% da planilha); a referência da UEP continua indo (a carga da semana é por ela)',
+     [r.ok, r.ref.metodo, r.ref.eficiencia, r.ref.eficienciaOrigem, r.ref.metaUep, r.ref.metaOrigem, r.ref.setupDia, r.ref.minProd, Math.round(r.ref.sUep * 100) / 100],
+     [true, 'esteira', 85, 'planilha', 2761, 'planilha', 32.8, 494.2, Math.round(sUep * 100) / 100]);
+  ok('os nomes da lista do app: o produto inteiro e, com 2+ volumes, cada volume; a UEP continua indo (a mesma da medição)',
      [Object.keys(por), por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].uep, por['501059 · PENTEADEIRA CAMARIM STRASS'].uep, por['501149 · MESA CABECEIRA MADERO'].uep],
      [['501059 · PENTEADEIRA CAMARIM STRASS', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 1/2', '501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2',
-       '501149 · MESA CABECEIRA MADERO', '501160 · BERCO ALGODAO DOCE', '501160 · BERCO ALGODAO DOCE · VOL 1/2', '501160 · BERCO ALGODAO DOCE · VOL 2/2'],
+       '501149 · MESA CABECEIRA MADERO', '501151 · RACK MOVE 1.6', '501160 · BERCO ALGODAO DOCE', '501160 · BERCO ALGODAO DOCE · VOL 1/2', '501160 · BERCO ALGODAO DOCE · VOL 2/2'],
       1.8, 1.63, 1]);
-  ok('o alvo = s por UEP × UEP (duas casas): STRASS 2/2 19,33 s, MADERO 10,74 s; o código número (501149001) casa igual',
-     [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].alvo, por['501149 · MESA CABECEIRA MADERO'].alvo, por['501059 · PENTEADEIRA CAMARIM STRASS'].alvo],
-     [Math.round(sUep * 1.8 * 100) / 100, Math.round(sUep * 1 * 100) / 100, Math.round(sUep * 1.63 * 100) / 100]);
-  ok('sem UEP, sem alvo (null, nunca 0): o volume 1/2 do BERÇO sem UEP e o produto inteiro dele (um volume sem UEP); o 2/2 tem',
-     [por['501160 · BERCO ALGODAO DOCE · VOL 1/2'], por['501160 · BERCO ALGODAO DOCE'], por['501160 · BERCO ALGODAO DOCE · VOL 2/2'].uep],
-     [{ rot:'501160 · BERCO ALGODAO DOCE · VOL 1/2', uep:null, alvo:null }, { rot:'501160 · BERCO ALGODAO DOCE', uep:null, alvo:null }, 2.1]);
-  // a UEP do alvo é a MESMA da medição que o app manda (UEP_CADASTRO): a mesma função
+  ok('o RACK MOVE 1.6 de 12/11: (2076 + 400) mm ÷ 9 m/min = 16,51 s de esteira; ÷ 85% = 19,42 s de alvo (era 32,3 pela UEP); a caixa vai junto para o app escrever a conta',
+     [por['501151 · RACK MOVE 1.6']], [{ rot: '501151 · RACK MOVE 1.6', uep: 3.01, esteira: 16.51, alvo: 19.42, medida: 2076, vel: 9, entre: 400 }]);
+  ok('o alvo = esteira ÷ 85% (duas casas): STRASS 2/2 e MADERO; o código número (501149001) casa igual',
+     [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].esteira, por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].alvo,
+      por['501149 · MESA CABECEIRA MADERO'].esteira, por['501149 · MESA CABECEIRA MADERO'].alvo],
+     [r2(est(1344)), r2(est(1344) / 0.85), r2(est(881)), r2(est(881) / 0.85)]);
+  ok('o JOGO (produto inteiro) = a esteira média por caixa dos volumes; com caixas diferentes, sem medida/velocidade (a média não é caixa de ninguém)',
+     [por['501059 · PENTEADEIRA CAMARIM STRASS'].esteira, por['501059 · PENTEADEIRA CAMARIM STRASS'].alvo,
+      por['501059 · PENTEADEIRA CAMARIM STRASS'].medida, por['501059 · PENTEADEIRA CAMARIM STRASS'].vel],
+     [r2((est(1705) + est(1344)) / 2), r2((est(1705) + est(1344)) / 2 / 0.85), null, null]);
+  ok('sem medida, sem alvo — MESMO COM UEP (nunca a UEP no lugar): o BERÇO 1/2 e o jogo dele; o 2/2 tem',
+     [por['501160 · BERCO ALGODAO DOCE · VOL 1/2'], por['501160 · BERCO ALGODAO DOCE'].alvo, por['501160 · BERCO ALGODAO DOCE · VOL 2/2'].alvo],
+     [{ rot: '501160 · BERCO ALGODAO DOCE · VOL 1/2', uep: 1.5, esteira: null, alvo: null, medida: null, vel: null, entre: null }, null, r2(est(1673) / 0.85)]);
+  ok('a esteira é a do % TETO EST. (3600 ÷ _tetoEsteiraCxH): UMA conta para o painel e o app',
+     [P.run("return Math.round(3600 / _tetoEsteiraCxH({ medida: 2076, velocidade: 9, entrePeca: 400 }) * 100) / 100;"),
+      /return t > 0 \? 3600 \/ t : null;/.test(GS), /const t = _tetoEsteiraCxH\(c\);/.test(GS)],
+     [16.51, true, true]);
+  // a UEP que vai é a MESMA da medição que o app manda (UEP_CADASTRO): a mesma função
   const rm = P.run(`return _cronoDoApp(${q({ rotulo:'501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2', data:'04/11/2026', volumes:'60', sLac:'16.6', sRod:'20.4' })}, lerCatalogoProdutos());`);
   const rj = P.run(`return _cronoDoApp(${q({ rotulo:'501059 · PENTEADEIRA CAMARIM STRASS', data:'04/11/2026', volumes:'60', sLac:'16.6', sRod:'20.4' })}, lerCatalogoProdutos());`);
-  ok('a UEP do alvo = o UEP_CADASTRO da medição do app, no volume e no jogo (uma função, _cronoUepCad)',
+  ok('a UEP da lista = o UEP_CADASTRO da medição do app, no volume e no jogo (uma função, _cronoUepCad)',
      [rm.campos.uepCad, rj.campos.uepCad, /const uepCad = _cronoUepCad\(doVol, volSel, nVol\);/.test(GS), /_cronoUepCad\(g\.cods, 0, g\.nVol\)/.test(GS)],
      [por['501059 · PENTEADEIRA CAMARIM STRASS · VOL 2/2'].uep, por['501059 · PENTEADEIRA CAMARIM STRASS'].uep, true, true]);
-  // sem a CONFIG_PAINEL: a meta padrão do .gs e o setup padrão (o do app); setup que não cabe: erro, nada inventado
-  const P0 = montar({ PRODUTO_CODIGO: CAT.PRODUTO_CODIGO }, null, '11/11/2026');
+  // sem a CONFIG_PAINEL: a meta padrão, o setup padrão e a eficiência padrão (85), ditos como padrão
+  const P0 = montar({ PRODUTO_CODIGO: CAT.PRODUTO_CODIGO }, null, '12/11/2026');
   const r0 = P0.run('return getTemposAlvo();');
   const rx = P.run('return _temposAlvoMontar(lerCatalogoProdutos(), { metaUep: 2761, setupsDia: 100, setupMin: 6 });');
-  ok('sem a CONFIG_PAINEL: a META UEP padrão e o setup padrão 8 × 8 (o do app), ditos como padrão; setup que não cabe na jornada: erro',
-     [r0.ok, r0.ref.metaUep, r0.ref.metaOrigem, r0.ref.setupDia, r0.ref.setupOrigem, rx.ok, /não cabe/.test(rx.erro)],
-     [true, 2530, 'padrao', 64, 'padrao', false, true]);
-  // o padrão do setup = o do painel (CRONO_APP_GRUPO); o nome = o rot do _uepConvProdutos do painel
+  ok('sem a CONFIG_PAINEL: META UEP, setup 8 × 8 e eficiência 85% padrão, ditos como padrão; o alvo sai igual; setup que não cabe na jornada: erro',
+     [r0.ok, r0.ref.metaUep, r0.ref.metaOrigem, r0.ref.setupDia, r0.ref.setupOrigem, r0.ref.eficiencia, r0.ref.eficienciaOrigem,
+      r0.produtos.find(x => x.rot === '501151 · RACK MOVE 1.6').alvo, rx.ok, /não cabe/.test(rx.erro)],
+     [true, 2530, 'padrao', 64, 'padrao', 85, 'padrao', 19.42, false, true]);
+  // a eficiência digitada na planilha: 80 muda o alvo; a célula em % (0,85) e o texto "85%" valem 85; lixo e fora de 1–100: o padrão
+  const comEf = v => montar({ PRODUTO_CODIGO: CAT.PRODUTO_CODIGO, CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['EFICIENCIA_EMB', v]] }, null, '12/11/2026').run('return getTemposAlvo();');
+  const ef = v => { const x = comEf(v); return [x.ref.eficiencia, x.ref.eficienciaOrigem]; };
+  ok('EFICIENCIA_EMB na planilha: 80 → o RACK MOVE 1.6 vai a 20,64 s; 0,85 (célula em %) e "85%" = 85; "abc", 0, 150 e "8 5": o padrão',
+     [comEf(80).produtos.find(x => x.rot === '501151 · RACK MOVE 1.6').alvo, ef(0.85), ef('85%'), ef('82,5'), ef('abc'), ef(0), ef(150), ef('8 5')],
+     [r2(est(2076) / 0.8), [85, 'planilha'], [85, 'planilha'], [82.5, 'planilha'], [85, 'padrao'], [85, 'padrao'], [85, 'padrao'], [85, 'padrao']]);
+  // o ⚙ do painel grava a eficiência (setConfigPainel): número válido, nunca lixo por cima da que vale
+  const PS = montar({ CONFIG_PAINEL: [['CHAVE', 'VALOR'], ['EFICIENCIA_EMB', 85]] }, null, '12/11/2026');
+  const g1 = PS.run("_valoresMemo = {}; return setConfigPainel({ eficienciaEmb: '82,5' });");
+  const v1 = PS.ABAS.CONFIG_PAINEL.find(l => l[0] === 'EFICIENCIA_EMB')[1];
+  PS.run("_valoresMemo = {}; return setConfigPainel({ eficienciaEmb: 'abc' });");
+  const v2 = PS.ABAS.CONFIG_PAINEL.find(l => l[0] === 'EFICIENCIA_EMB')[1];
+  ok('o ⚙ grava a eficiência como NÚMERO (82,5) e devolve a config com ela; lixo não apaga a que vale',
+     [g1.ok, v1, g1.painelConfig.eficienciaEmb, v2], [true, 82.5, 82.5, 82.5]);
+  // o padrão do .gs = o do painel (EF_EMB_PADRAO e CRONO_APP_GRUPO); o nome = o rot do _uepConvProdutos do painel
   const m = /const CRONO_APP_GRUPO=\{ hSemana:44, diasSemana:5, setupsDia:(\d+), setupMin:(\d+) \};/.exec(HTML);
-  ok('o setup padrão do .gs = o do painel (CRONO_APP_GRUPO); o nome segue o rot do painel ("modelo · NOME" e "· VOL v/n")',
+  const me = /const EF_EMB_PADRAO=(\d+);/.exec(HTML);
+  ok('os padrões do .gs = os do painel (setup do CRONO_APP_GRUPO, eficiência do EF_EMB_PADRAO); o nome segue o rot do painel',
      [m && [Number(m[1]), Number(m[2])], P.run('return [TA_SETUP_PADRAO_GS.setupsDia, TA_SETUP_PADRAO_GS.setupMin];'),
+      me && Number(me[1]), P.run('return TA_EFICIENCIA_PADRAO_GS;'),
       /rot:cod\.slice\(0, 6\) \+ ' · ' \+ nome/.test(HTML), /rot:p\.rot \+ ' · VOL ' \+ v \+ '\/' \+ p\.nVol/.test(HTML)],
-     [[8, 8], [8, 8], true, true]);
+     [[8, 8], [8, 8], 85, 85, true, true]);
+  // o ⚙ do painel (v7.235.0): o campo, a leitura do que se digita e o envio só quando mudou
+  { const i = HTML.indexOf('function _efEmbLer('), j = HTML.indexOf('\n}', i);
+    const ler = new Function(HTML.slice(i, j + 2) + '; return _efEmbLer;')();
+    ok('⚙ EFICIÊNCIA DA EMBALAGEM: o campo, "85" / "85%" / "82,5" valem, lixo e fora de 1–100 não; vai à planilha (eficienciaEmb=) só quando mudou',
+       [HTML.includes('id="c-ef-emb"'), ['85', '85%', '82,5', ' 90 % ', 'abc', '0', '150', ''].map(ler),
+        /if\(_efEmbNova!=null\)\{ params\.push\('eficienciaEmb='\+_efEmbNova\); _efEmbNova=null; \}/.test(HTML),
+        /_efEmbNova=x!=null && x!==_efEmb\(\) \? x : null;/.test(HTML),
+        /eficienciaEmb: \(json\.painelConfig\|\|\{\}\)\.eficienciaEmb/.test(HTML)],
+       [true, [85, 85, 82.5, 90, null, null, null, null], true, true, true]); }
   ok('a leitura está no doGet, no cache (o cadastro e a config invalidam) e não grava nada',
      [/act === 'getTemposAlvo'\) result = getTemposAlvo\(\);/.test(GS), /getTemposAlvo: 300/.test(GS), /getTemposAlvo: \['cat', 'cfg', 'prod'\]/.test(GS),
       JSON.stringify(P.ABAS.PRODUTO_CODIGO) === JSON.stringify(CAT.PRODUTO_CODIGO), !('UEP_VERSOES' in P.ABAS)],
