@@ -25,6 +25,10 @@ via Google Apps Script (JSONP).
 - `apps-script.test.js` — memo de leitura do backend, com planilha de mentira
   que conta leituras, **e o carimbo `ATUALIZADO_EM` da `PROGRAMACAO`** (roda a
   função real): `node apps-script.test.js`.
+- `parada-motivo.test.js` — PAROU agora, motivo depois (mobile 1.47.0 /
+  v7.234.0): o PAROU grava A INFORMAR, o quadro da parada aberta, a lista depois
+  do START, o SALVAR MOTIVO que relê antes de gravar, a TV e a GESTÃO DE PERDAS:
+  `node parada-motivo.test.js`.
 - `lancamento.test.js` — qual hora aceita lançamento no mobile (hora corrente +
   tolerância da recém-fechada), contra o código real, e o lançamento RECUSADO
   pelo servidor (mobile 1.41.0, o `salvarLanc` real) e a CONFIRMAR O PRODUTO
@@ -1394,6 +1398,31 @@ via Google Apps Script (JSONP).
   existe **uma** parada aberta no dia, é essa (com duas, devolve erro em vez de
   chutar). O mobile manda `data` e `ini` junto; backend antigo ignora os extras.
   ⚠ Mudou o `.gs` → **re-deploy manual** no Apps Script.
+- **PAROU AGORA, MOTIVO DEPOIS** (mobile 1.47.0 / v7.234.0 / rp-core 1.15.0;
+  PPCP, 12/11/2026: *"na cronoanálise tem a opção de parar e colocar motivo
+  depois, faz o mesmo"*). O 1º botão do modal é **⏸ PAROU — REGISTRAR AGORA**;
+  tipo e motivo são opcionais. Sem tipo, a linha da `PARADAS` grava o TIPO
+  **`A INFORMAR`** (`PARADA_A_INFORMAR` / `paradaAInformar` no rp-core — TIPO
+  vazio também conta). Texto à vista, nunca vazio: o Pareto mostra quanto tempo
+  parado está sem causa.
+  - ⚠ Antes o select começava no 1º tipo da `TIPOS_PARADA` (Troca de produto) e a
+    parada sem escolha gravava ESSE tipo, calada. Agora começa em *informar
+    depois*.
+  - Parada aberta A INFORMAR: o quadro PRODUÇÃO PARADA pede o motivo
+    (`_parMotivoForm`, **SALVAR MOTIVO**); com tipo, **✎ ALTERAR MOTIVO**. O
+    START vale com ou sem. Depois do START: **INFORMAR MOTIVO** na lista
+    (`#par-edit`, `renderParadaEdit`). Botão PARADAS: *N SEM MOTIVO*.
+  - `salvarMotivoParada` grava pelo MESMO `saveParadas` (upsert pelo ID) — nada
+    no `.gs`. ⚠ O upsert regrava a linha INTEIRA, FIM incluído: ele **relê as
+    paradas antes** e manda o FIM do servidor (senão um START dado em outro
+    aparelho seria desfeito). Linha sem ID (`'L'+linha`, lançada à mão) não é
+    editável pelo app: gravar criaria outra linha. A marca *encerrada
+    automaticamente* da OBS fica (o `.gs` lê FIM = INÍCIO por ela).
+  - O quadro não é redesenhado pelo poll com o mesmo dado (assinatura em
+    `_parEstadoRender` / `_parEditRender`): o que se digita não some.
+  - TV: A INFORMAR mostra **PARADA** e *motivo a informar no app*. GESTÃO DE
+    PERDAS: `PG_RE_GENERICO` inclui *a informar* → classe A IDENTIFICAR.
+    `paradas-calc`: A INFORMAR não é planejada — conta como perda.
 - **Tipos de parada (dropdown) são editáveis na planilha:** aba **`TIPOS_PARADA`**
   (coluna A). O mobile lê via `getTiposParada` (criada com padrões na 1ª vez). O
   *motivo* continua **texto livre** digitado pelo operador — não se cadastra.

@@ -623,13 +623,27 @@ function atrasoVencido(lista, uepDe, metaUep){
 // DOM e avisam diferente em cada tela).
 function _rpOk(){ return typeof window.RP_PARADAS === 'object' && !!window.RP_PARADAS; }
 
+// PARADA SEM MOTIVO (rp-core 1.15.0 / mobile 1.47.0 / v7.234.0). PPCP, 12/11/2026:
+// "sobre as paradas na cronoanálise tem a opção de parar e colocar motivo depois,
+// faz o mesmo". O operador registra a parada na hora (PAROU) e escolhe o tipo
+// depois; até lá a linha da aba PARADAS fica com o TIPO 'A INFORMAR'. Um texto
+// à vista na planilha e nos relatórios, nunca vazio: o Pareto mostra quanto
+// tempo parado ainda não tem causa. Linha com o TIPO vazio (lançada à mão) também
+// conta como a informar. Quem lê: o app (pede o motivo), a TV (não escreve
+// "A INFORMAR" em letra de 30 cm) e a GESTÃO DE PERDAS (classe A IDENTIFICAR).
+const PARADA_A_INFORMAR = 'A INFORMAR';
+function paradaAInformar(tipo){
+  const t = String(tipo == null ? '' : tipo).trim().toUpperCase();
+  return !t || t === PARADA_A_INFORMAR;
+}
+
 // Os painéis checam isto na abertura: se o arquivo não carregou (rede caiu
 // entre o HTML e o JS, deploy parcial), eles avisam e buscam de novo em vez de
 // morrer com "toMin is not defined" numa tela em branco.
 window.RP_CORE = {
-  versao: '1.14.0',
+  versao: '1.15.0',
   fns: ['p2', 'fmtN', 'fmt1', 'fmtP', 'plural', 'toMin', 'fromMin', 'normHora',
         'hojeStr', 'dtToStr', 'mergeMedias', 'calcAtrasoHoras', 'sc', 'efNoRitmo',
         'slRitmo', 'nomeComCor', '_rpOk', 'uepCard', 'uepPorHora', 'uepCelula', 'uepDiaMeta', 'uepHistResumo', 'uepCusto', 'uepCustoPeriodo', 'minSlotDecorrido',
-        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido']
+        'pdiaVol', 'pdiaBase', 'pdiaCurto', 'pdiaMontar', 'atrasoVencido', 'paradaAInformar']
 };

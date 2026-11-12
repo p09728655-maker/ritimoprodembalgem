@@ -346,6 +346,18 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 /* especificidade dupla p/ vencer o .btn-salvar (laranja) definido depois */
 .btn-salvar.par-btn-parar{width:100%;background:var(--red);color:#fff}
 .btn-salvar.par-btn-start{width:100%;background:var(--ok);color:#0a2a0c}
+.par-dica{font-family:var(--font-d);font-size:10px;letter-spacing:.5px;color:var(--txt2);text-align:center;margin:8px 0 14px}
+#par-estado > .inp-grp{margin-bottom:10px}
+/* PARADA SEM MOTIVO (1.47.0): o operador para primeiro e informa depois. */
+.par-banner-ainf{color:var(--warn)}
+.par-motivo{background:var(--elevated);border:1px solid var(--warn);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;margin:4px 0 8px}
+.par-motivo-ttl{font-family:var(--font-d);font-size:10px;letter-spacing:1.5px;color:var(--warn);text-transform:uppercase}
+.par-motivo-btns{display:flex;gap:8px}
+.btn-salvar.par-btn-motivo{flex:1;background:var(--warn);color:#111}
+.par-alterar{background:transparent;border:0;color:var(--acc);font-family:var(--font-d);font-size:11px;letter-spacing:1px;padding:6px 0 10px;cursor:pointer;width:100%}
+.parada-item.ainf{border-color:var(--warn)}
+.parada-item.ainf .parada-tipo{color:var(--warn)}
+.parada-inf{flex:none;background:var(--warn);color:#111;border:0;border-radius:6px;padding:8px 10px;font-family:var(--font-d);font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer}
 .btn-paradas.parada-ativa{color:var(--red);border-color:var(--red);animation:pulse 2s infinite}
 /* Gerencial: produto embalando + banner de produção parada */
 .ger-prod{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:6px}
@@ -1001,6 +1013,8 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
     <!-- Estado ao vivo: RODANDO (registrar parada) x PARADO (dar start).
          Preenchido por renderParadaEstado(). -->
     <div id="par-estado"></div>
+    <!-- INFORMAR O MOTIVO de uma parada que já levou START (1.47.0). -->
+    <div id="par-edit"></div>
 
     <div class="prod-search-list" id="paradas-list" style="max-height:24vh">
       <div class="prod-search-empty">Nenhuma parada registrada.</div>
@@ -1066,7 +1080,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--txt);fo
 //      — é o que faz o service worker limpar o cache antigo e disparar o aviso
 //      "Nova versão disponível" em quem está com o app instalado.
 // A versão aparece na tela de login e no aviso de atualização.
-const APP_VER   = '1.46.0';
+const APP_VER   = '1.47.0';
 const APP_VER_K = 'rp_mob_ver';   // última versão que este aparelho já abriu
 
 // Nome do produto (mesma constante do painel desktop). Os pontos estáticos
@@ -2204,6 +2218,7 @@ async function carregarParadas(){
       }
       renderParadasList();
       renderParadaEstado();
+      renderParadaEdit();
       atualizarBadgeParadas();
       renderGerParada();          // banner da gerencial (mobile)
       renderGerParadasResumo();   // resumo/análise de paradas (gerencial)
@@ -2214,81 +2229,185 @@ function atualizarBadgeParadas(){
   const btn = document.getElementById('btn-paradas');
   if(!btn) return;
   const ativa = !!paradaAtiva();
+  const ainf = PARADAS_HOJE.filter(p=>paradaAInformar(p.tipo)).length;   // 1.47.0
   btn.classList.toggle('tem-paradas', PARADAS_HOJE.length>0 && !ativa);
   btn.classList.toggle('parada-ativa', ativa);
-  btn.textContent = ativa ? '⏸ PARADO' : '⏸ PARADAS';
+  btn.textContent = ativa ? '⏸ PARADO' : (ainf ? `⏸ PARADAS · ${ainf} SEM MOTIVO` : '⏸ PARADAS');
 }
 function renderParadasList(){
   const el = document.getElementById('paradas-list');
   if(!el) return;
   if(!PARADAS_HOJE.length){ el.innerHTML='<div class="prod-search-empty">Nenhuma parada registrada.</div>'; return; }
-  el.innerHTML = PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>`
-    <div class="parada-item">
+  el.innerHTML = PARADAS_HOJE.slice().sort((a,b)=>String(a.ini).localeCompare(String(b.ini))).map(p=>{
+    const ainf = paradaAInformar(p.tipo);
+    // A parada aberta pede o motivo no quadro de cima; a fechada, aqui. Linha
+    // lançada à mão (id 'L'+linha) não tem ID na planilha: gravar duplicaria.
+    const pede = ainf && p.fim ? (_parIdApp(p.id)
+      ? `<button class="parada-inf" onclick="_parEditAbrir('${_parIdDom(p.id)}')">INFORMAR MOTIVO</button>`
+      : `<div class="parada-obs">sem ID — corrija o tipo na planilha</div>`) : '';
+    return `
+    <div class="parada-item${ainf?' ainf':''}">
       <div class="parada-info">
-        <div class="parada-tipo">${p.tipo||'—'}</div>
+        <div class="parada-tipo">${ainf ? '⚠ MOTIVO A INFORMAR' : _escH(p.tipo||'—')}</div>
         <div class="parada-hora">${p.ini||'--:--'} – ${p.fim||'<span style="color:var(--warn)">EM ANDAMENTO</span>'}</div>
-        ${p.obs?`<div class="parada-obs">${p.obs}</div>`:''}
-      </div>
-    </div>`).join('');
+        ${p.obs?`<div class="parada-obs">${_escH(p.obs)}</div>`:''}
+      </div>${pede}
+    </div>`;
+  }).join('');
 }
-// Alterna entre "PRODUÇÃO RODANDO" (form p/ registrar parada) e "PRODUÇÃO PARADA"
-// (botão grande de START). É o que o operador usa no dia a dia.
-// Guarda qual layout ('parado'/'rodando') já está no DOM. Serve pra NÃO
-// reconstruir o form no meio da interação do operador.
+// ── MOTIVO DEPOIS (1.47.0) ──
+// PPCP, 12/11/2026: "na cronoanálise tem a opção de parar e colocar motivo
+// depois, faz o mesmo". O PAROU registra na hora com o tipo A INFORMAR
+// (PARADA_A_INFORMAR, rp-core); o tipo e o motivo entram depois — com a parada
+// ainda aberta (no quadro PRODUÇÃO PARADA) ou depois do START (na lista). A
+// gravação é o mesmo saveParadas (upsert pelo ID): nada muda no .gs.
+let _parEditId = null;       // a parada FECHADA cujo motivo está sendo informado
+let _parEditRender = null;   // assinatura do que está no #par-edit (não apagar o que se digita)
+function _parIdApp(id){ return !/^L\d+$/.test(String(id)); }
+function _parIdDom(id){ return String(id).replace(/[^\w-]/g,''); }
+function _parOpcoes(sel, vazio){
+  return `<option value="">${vazio}</option>` + PAR_TIPOS.map(t=>`<option${t===sel?' selected':''}>${_escH(t)}</option>`).join('');
+}
+// Troca as opções do select sem perder a escolha (o gestor mexeu na TIPOS_PARADA).
+function _parSelAtualiza(sel, vazio){
+  if(!sel) return;
+  const k = PAR_TIPOS.join('|');
+  if(sel.dataset.tipos === k) return;
+  const atual = sel.value;
+  sel.innerHTML = _parOpcoes(PAR_TIPOS.includes(atual) ? atual : '', vazio);
+  sel.dataset.tipos = k;
+}
+// O bloco INFORMAR O MOTIVO (desenho): tipo, motivo e SALVAR MOTIVO.
+function _parMotivoForm(p, titulo, cancelar){
+  const k = _parIdDom(p.id), ainf = paradaAInformar(p.tipo);
+  return `<div class="par-motivo">
+      <div class="par-motivo-ttl">${titulo}</div>
+      <div class="inp-grp">
+        <div class="inp-lbl">TIPO DE PARADA</div>
+        <select class="sel-tipo" id="par-m-tipo-${k}" data-tipos="${_escH(PAR_TIPOS.join('|'))}">${_parOpcoes(ainf ? '' : p.tipo, '— escolha o tipo —')}</select>
+      </div>
+      <div class="inp-grp">
+        <div class="inp-lbl">MOTIVO (aparece na TV)</div>
+        <textarea class="inp-obs" id="par-m-obs-${k}" rows="2" placeholder="Ex: máquina travou, aguardando material…">${_escH(p.obs||'')}</textarea>
+      </div>
+      <div class="par-motivo-btns">${cancelar ? '<button class="btn-cancelar" onclick="_parEditFechar()">CANCELAR</button>' : ''}
+        <button class="btn-salvar par-btn-motivo" id="btn-motivo-parada-${k}" onclick="salvarMotivoParada('${k}')">SALVAR MOTIVO</button></div>
+    </div>`;
+}
+function _parEditAbrir(id){ _parEditId = String(id); renderParadaEstado(); renderParadaEdit(); }
+function _parEditFechar(){ _parEditId = null; renderParadaEstado(); renderParadaEdit(); }
+// A parada FECHADA em edição, no #par-edit (a aberta é editada no quadro de cima).
+function renderParadaEdit(){
+  const el = document.getElementById('par-edit');
+  if(!el) return;
+  const p = _parEditId!=null ? PARADAS_HOJE.find(x=>_parIdDom(x.id)===_parEditId) : null;
+  if(!p || !p.fim){ el.innerHTML=''; _parEditRender=null; return; }
+  const chave = [p.id, p.tipo, p.obs, p.ini, p.fim].join('¦');
+  if(_parEditRender===chave && document.getElementById('par-m-tipo-'+_parIdDom(p.id))){
+    _parSelAtualiza(document.getElementById('par-m-tipo-'+_parIdDom(p.id)), '— escolha o tipo —');
+    return;
+  }
+  el.innerHTML = _parMotivoForm(p, `Informar o motivo · parada das ${_escH(p.ini||'--:--')} às ${_escH(p.fim)}`, true);
+  _parEditRender = chave;
+}
+// Grava o tipo e o motivo. Relê as paradas ANTES: o saveParadas regrava a linha
+// inteira, FIM incluído — com a lista velha, um START dado em outro aparelho (ou
+// pelo fechamento) seria desfeito e a parada voltaria a ficar aberta.
+async function salvarMotivoParada(k){
+  if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
+  if(_parEscrevendo) return;
+  const tipo = (document.getElementById('par-m-tipo-'+k)||{}).value || '';
+  let obs = ((document.getElementById('par-m-obs-'+k)||{}).value || '').trim();
+  if(!tipo){ alert('Escolha o TIPO DE PARADA.'); return; }
+  const btn = document.getElementById('btn-motivo-parada-'+k);
+  const btnTxt = t=>{ const b=document.getElementById('btn-motivo-parada-'+k); if(b) b.textContent=t; };
+  const btnOn  = ()=>{ const b=document.getElementById('btn-motivo-parada-'+k); if(b){ b.textContent='SALVAR MOTIVO'; b.disabled=false; } };
+  if(btn){ btn.textContent='SALVANDO...'; btn.disabled=true; }
+  await carregarParadas();
+  const p = PARADAS_HOJE.find(x=>_parIdDom(x.id)===k);
+  if(!p){ alert('Esta parada não está mais na lista de hoje.'); btnOn(); return; }
+  if(!_parIdApp(p.id)){ alert('Esta parada foi lançada na planilha, sem ID: corrija o tipo lá.'); btnOn(); return; }
+  // A marca do fechamento automático fica (o .gs lê FIM = INÍCIO por ela).
+  if(/encerrada automaticamente/i.test(p.obs||'') && !/encerrada automaticamente/i.test(obs)) obs = (obs ? obs + ' ' : '') + '(encerrada automaticamente no fechamento)';
+  const linha = { id:p.id, tipo, ini:p.ini||'', fim:p.fim||'', obs };
+  const url = CFG.sheetsUrl+(CFG.sheetsUrl.includes('?')?'&':'?')+'action=saveParadas&paradas='+encodeURIComponent(JSON.stringify([linha]));
+  let erro = null;
+  _parEscrevendo = true;
+  try{ await jsonpEscritaParada(url, i=>btnTxt(i>1?`SALVANDO... (${i}/3)`:'SALVANDO...')); }catch(e){ erro = e; }
+  _parEscrevendo = false;
+  if(erro){
+    // Timeout ≠ não gravou: confere no servidor antes de pedir de novo.
+    await carregarParadas();
+    const q = PARADAS_HOJE.find(x=>_parIdDom(x.id)===k);
+    if(!q || q.tipo!==tipo){
+      alert('O servidor não respondeu depois de 3 tentativas.\n\nO motivo NÃO foi gravado. Toque em SALVAR MOTIVO de novo em alguns segundos; repetir é seguro.');
+      btnOn(); return;
+    }
+  } else { p.tipo = tipo; p.obs = obs; }
+  _parEditId = null;
+  renderParadasList(); renderParadaEstado(); renderParadaEdit(); atualizarBadgeParadas();
+  await carregarParadas();
+}
+// Alterna entre "PRODUÇÃO RODANDO" (PAROU) e "PRODUÇÃO PARADA" (botão grande de
+// START). É o que o operador usa no dia a dia.
+// Guarda o que já está no DOM. Serve pra NÃO reconstruir o form no meio da
+// interação do operador: recriar o <select> fecharia o dropdown nativo no meio da
+// escolha (o poll de 90s voltava o select para o 1º item) e apagaria o MOTIVO já
+// digitado. Só atualiza as opções se o gestor mexeu na aba TIPOS_PARADA.
 let _parEstadoRender = null;
 function renderParadaEstado(){
   const el = document.getElementById('par-estado');
   if(!el) return;
   const at = paradaAtiva();
   if(at){
+    // PARADA (1.47.0): sem tipo informado, o quadro já pede o motivo; com tipo,
+    // ✎ ALTERAR MOTIVO abre o mesmo quadro. O START vale com ou sem motivo.
+    const k = _parIdDom(at.id), ainf = paradaAInformar(at.tipo);
+    const editando = _parIdApp(at.id) && (ainf || _parEditId===k);
+    const chave = ['parado', at.id, at.tipo, at.obs, at.ini, editando].join('¦');
+    if(_parEstadoRender===chave && document.getElementById('btn-start-parada')){
+      _parSelAtualiza(document.getElementById('par-m-tipo-'+k), '— escolha o tipo —');
+      return;
+    }
     el.innerHTML = `
       <div class="par-banner par-banner-off">
         <div class="par-banner-ttl">⏸ PRODUÇÃO PARADA</div>
-        <div class="par-banner-tipo">${at.tipo||'—'}</div>
-        ${at.obs?`<div class="par-banner-obs">${at.obs}</div>`:''}
+        <div class="par-banner-tipo${ainf?' par-banner-ainf':''}">${ainf ? '⚠ MOTIVO A INFORMAR' : _escH(at.tipo)}</div>
+        ${at.obs?`<div class="par-banner-obs">${_escH(at.obs)}</div>`:''}
         <div class="par-banner-hora">Desde ${at.ini||'--:--'}</div>
       </div>
+      ${editando ? _parMotivoForm(at, ainf ? 'Informe o motivo — agora ou depois do START' : 'Alterar o motivo', !ainf)
+                 : (_parIdApp(at.id) ? `<button class="par-alterar" onclick="_parEditAbrir('${k}')">✎ ALTERAR MOTIVO</button>` : '')}
       <button class="btn-salvar par-btn-start" id="btn-start-parada" onclick="darStartParada()">▶ DAR START (RETOMAR)</button>`;
-    _parEstadoRender = 'parado';
+    _parEstadoRender = chave;
     return;
   }
-  // RODANDO. Se o form já está montado, NÃO reconstruir o innerHTML: recriar o
-  // <select id="par-tipo"> fecharia o dropdown nativo no meio da escolha (o
-  // operador toca em TIPO, o poll de 60s dispara e o select voltava sempre pro
-  // 1º item) e apagaria o MOTIVO já digitado. Só atualiza as opções se o gestor
-  // mexeu na aba TIPOS_PARADA — preservando a escolha atual.
   const selJa = document.getElementById('par-tipo');
-  const tiposKey = PAR_TIPOS.join('|');
-  if(_parEstadoRender==='rodando' && selJa){
-    if(selJa.dataset.tipos !== tiposKey){
-      const atual = selJa.value;
-      selJa.innerHTML = PAR_TIPOS.map(t=>`<option>${t}</option>`).join('');
-      if(PAR_TIPOS.includes(atual)) selJa.value = atual;
-      selJa.dataset.tipos = tiposKey;
-    }
-    return;
-  }
+  if(_parEstadoRender==='rodando' && selJa){ _parSelAtualiza(selJa, '— informar depois —'); return; }
+  // RODANDO (1.47.0): o PAROU vem primeiro e grava na hora; tipo e motivo são
+  // opcionais — sem eles a parada fica A INFORMAR. Antes o select começava no 1º
+  // tipo da lista, e a parada sem escolha gravava esse tipo calada.
   el.innerHTML = `
       <div class="par-banner par-banner-on">
         <div class="par-banner-ttl">▶ PRODUÇÃO RODANDO</div>
       </div>
+      <button class="btn-salvar par-btn-parar" id="btn-registrar-parada" onclick="registrarParadaAgora()">⏸ PAROU — REGISTRAR AGORA</button>
+      <div class="par-dica">O motivo pode ser informado agora ou depois.</div>
       <div class="inp-grp">
-        <div class="inp-lbl">TIPO DE PARADA</div>
-        <select class="sel-tipo" id="par-tipo">${PAR_TIPOS.map(t=>`<option>${t}</option>`).join('')}</select>
+        <div class="inp-lbl">TIPO DE PARADA (se já souber)</div>
+        <select class="sel-tipo" id="par-tipo" data-tipos="${_escH(PAR_TIPOS.join('|'))}">${_parOpcoes('', '— informar depois —')}</select>
       </div>
       <div class="inp-grp">
         <div class="inp-lbl">MOTIVO (aparece na TV)</div>
         <textarea class="inp-obs" id="par-obs" rows="2" placeholder="Ex: máquina travou, aguardando material…"></textarea>
-      </div>
-      <button class="btn-salvar par-btn-parar" id="btn-registrar-parada" onclick="registrarParadaAgora()">⏸ REGISTRAR PARADA</button>`;
-  const sel = document.getElementById('par-tipo');
-  if(sel) sel.dataset.tipos = tiposKey;
+      </div>`;
   _parEstadoRender = 'rodando';
 }
 function abrirModalParadas(){
   document.getElementById('par-data').textContent = hojeStr();
   renderParadasList();
   renderParadaEstado();
+  renderParadaEdit();
   document.getElementById('modal-paradas').classList.add('open');
   carregarParadas();
   carregarTiposParada();
@@ -2296,6 +2415,7 @@ function abrirModalParadas(){
 function fecharModalParadas(){
   document.getElementById('modal-paradas').classList.remove('open');
   _parEstadoRender = null; // reabrir monta um form limpo (sem motivo/tipo antigos)
+  _parEditId = null; _parEditRender = null;
 }
 // Registra uma parada EM ANDAMENTO (início = agora, sem fim). Assim que grava,
 // a TV (que faz poll de getParadas) mostra a tela cheia com tipo + motivo.
@@ -2303,10 +2423,12 @@ async function registrarParadaAgora(){
   if(!CFG.sheetsUrl){ alert('URL do Google Sheets não configurada.'); return; }
   if(paradaAtiva()){ alert('Já existe uma parada em andamento. Dê START antes de registrar outra.'); return; }
   if(_parEscrevendo) return;   // toque duplo não dispara duas gravações
-  const tipo = (document.getElementById('par-tipo')||{}).value || 'Outro';
+  // Sem tipo escolhido: A INFORMAR (1.47.0). Era 'Outro' — e o select nunca vinha
+  // vazio, então valia o 1º tipo da lista sem o operador ter escolhido.
+  const tipo = (document.getElementById('par-tipo')||{}).value || PARADA_A_INFORMAR;
   const obs  = ((document.getElementById('par-obs')||{}).value || '').trim();
   const btnTxt = t=>{ const b=document.getElementById('btn-registrar-parada'); if(b) b.textContent=t; };
-  const btnOn  = ()=>{ const b=document.getElementById('btn-registrar-parada'); if(b){ b.textContent='⏸ REGISTRAR PARADA'; b.disabled=false; } };
+  const btnOn  = ()=>{ const b=document.getElementById('btn-registrar-parada'); if(b){ b.textContent='⏸ PAROU — REGISTRAR AGORA'; b.disabled=false; } };
   const btn  = document.getElementById('btn-registrar-parada');
   if(btn){ btn.textContent='REGISTRANDO...'; btn.disabled=true; }
 
